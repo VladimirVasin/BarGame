@@ -1,0 +1,36 @@
+{
+  "version": 1,
+  "size": [
+    2048,
+    1024
+  ],
+  "worldRepeat": 24.0,
+  "halfDepth": 4.0,
+  "surface": "opaque PS1 Lit / baked compensated linear-light mix",
+  "uvOrigin": "world X; Z relative to church\u2013yard seam",
+  "recipes": [
+    {
+      "file": "CityParkLawnAlbedo.png",
+      "metersPerTile": 3.0,
+      "tint": [
+        0.2,
+        0.26,
+        0.17
+      ],
+      "compensation": 1.394,
+      "sha256": "d2e0f9edd27919a823151235690c1edc58a84829273dbb75394057547e93bad2"
+    },
+    {
+      "file": "CityFringeForefieldAlbedo.png",
+      "metersPerTile": 8.0,
+      "tint": [
+        0.3,
+        0.26,
+        0.19
+      ],
+      "compensation": 1.4415,
+      "sha256": "6a00c60a83fbb66b4fa27ead7235c8eb820f7c482487c7ee18fbef11eb5aaa85"
+    }
+  ],
+  "pixelSha256": "69e4018b6672d1f710b6baaf049efff27739de22c873fe73c17e1a8efc146c60"
+}

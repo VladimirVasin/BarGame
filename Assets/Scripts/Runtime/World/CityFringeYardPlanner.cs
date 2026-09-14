@@ -13,6 +13,9 @@ namespace BarPromenade
         // cart is appended after the landmark pass.
         public const int MaximumPartCount = 656;
         public const float MinimumTunnelDriveClearWidth = 6f;
+        // Keep the first working entrance readable through the unchanged fog
+        // from the public side of the closed checkpoint fence.
+        public const float FirstEastUtilityShedDepth = 22f;
 
         private const float SurfaceLift = 0.035f;
         private const float SurfaceThickness = 0.055f;
@@ -417,20 +420,8 @@ namespace BarPromenade
                 2f,
                 null,
                 parts);
-            AddGradedStrip(
-                layout,
-                surfaces,
-                areaId,
-                "east-access-apron",
-                CityFringeYardPartKind.AccessApron,
-                CityFringeYardStyle.ServiceGround,
-                access.Center + outward * 0.45f,
-                roadLine,
-                Mathf.Min(5.5f, access.Width - 1f),
-                SurfaceThickness,
-                4f,
-                null,
-                parts);
+            // The checkpoint road is the yard's only visible entrance.
+            // The former access apron ran straight through its closed fence.
             AddLongSurfaceRun(
                 layout,
                 surfaces,
@@ -480,7 +471,8 @@ namespace BarPromenade
 
             CityEastExitPlan exit = CityEastExitPlanner.Create(layout);
             if (exit.IsEnabled)
-                parts.RemoveAll(part => part.Footprint.Overlaps(exit.ClearanceBounds));
+                parts.RemoveAll(part => part.Footprint.Overlaps(exit.ClearanceBounds) ||
+                    part.Kind == CityFringeYardPartKind.DrainChannel && part.Footprint.Overlaps(exit.Swale.Bounds));
 
             return new CityFringeYardDescriptor(
                 "fringe-yard-east",
@@ -1156,7 +1148,8 @@ namespace BarPromenade
             Quaternion rotation = Quaternion.LookRotation(axis, Vector3.up);
             for (int index = 0; index < 3; index++)
             {
-                Vector3 center = anchor + outward * (35f + index * 2.2f);
+                float depth = index == 0 ? FirstEastUtilityShedDepth : 35f + index * 2.2f;
+                Vector3 center = anchor + outward * depth;
                 center = SetLongCoordinate(
                     center,
                     axis,

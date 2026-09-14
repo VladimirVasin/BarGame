@@ -1,42 +1,44 @@
 # Architecture notes
 
-Decisions marked `Proposed` become accepted only after implementation confirms them.
+`Proposed` decisions require implementation before acceptance.
 
 ## Current facts
 
 - **Accepted — 2026-09-14, checkpoint placement:**
-  User: visible post `(198,-39)`, `12 m` from street edge.
-  Level T-junction opens sidewalk/markings; tail `X=286`, church paths/story §6 stay.
+  Post `(198,-39)`, street gap `12 m`, tail `286`; front open, mask corners
+  retained. Church paths/story §6 hold.
 
-- **Accepted — 2026-09-13, eastern post surroundings:**
-  Supported canopy/empty bench/closed cabinet, gravel shoulders/asphalt patch/
-  dry drain crossing, low banks/shrubs/grass, trace to existing sheds/poles,
-  repaired fence. Art §18.25/action/text/water/light unchanged;
-  paths/patrol/view stay.
+- **Accepted — 2026-09-14, full eastern fence dressing:**
+  Art §10e: seeded Blender perimeter shrubs/grass/gravel, rear banks/drain/
+  grate/repairs, one shed stock. Paths/patrol/§16 hold; no new life/light/water/
+  text/story or §6 exception.
+
+- **Accepted — 2026-09-14, eastern dry swale:**
+  `CityEastSwalePlan`: dry drainage lowers existing terrain/collision/walk/map.
+  Shallow intake/broad hollow, feathered ends/crossings; replaces drain/spur,
+  reuses gravel/plants/stone. Road/fence stay. Art §10e/story §16;
+  no model/overlay/exception.
+
+- **Accepted architecture exception — 2026-09-14, checkpoint landscape:**
+  Blender landscape/church-yard cover, nearer shed/trace; paths/patrol/fence/
+  view stay. Warm canopy/shed lights: site registry, day >=2/3 night, same
+  street pool. Story §6/art §10e/§18.22 bound light; no water/text/action/story.
+  Art §18.25/§16; story §16/§20/§21.
 
 - **Accepted architecture exception — 2026-09-13, eastern post guards:**
-  Story §6 permits two guards/first pair-E pools.
-  Senior: ~40, stocky/calm/terse; Junior: ~28, tall/lean/lively, dry humour.
-  Own hero-quality models/rigs/faces/clothes, shoulder rifles: no fire/hero
-  aiming/pickup/pursuit. One holds post, one patrols; swap on return.
-  Closed road/church paths stay. Shared head bubbles arbitrate pairs/E,
-  no repeats/pause/range replay. Both hide being gay from others;
-  mutual attraction: held partner glances/everyday care, E restores reserve.
-  No stated relationship/shared biography/stereotypes, state border/police/
-  ranks/insignia/closure reason/quarantine/crime knowledge/wider poisoning/
-  quest/reward/travel. §16/§21/nine art checks hold.
+  Story §6: two guards/first pair-E pools. Senior ~40, stocky/calm/terse;
+  Junior ~28, tall/lean/lively/dry humour. Hero-quality rigs/faces/clothes,
+  passive shoulder rifles. Post/patrol swap on return; shared head bubbles,
+  no repeat/pause/range replay. Both hide being gay; glances/care, E reserve.
+  Story §6's dated guard row bounds all exclusions; closed road/church paths,
+  §16/§21/nine art checks hold.
 
 - **Accepted architecture exception — 2026-09-13, eastern mainland road:**
-  Story §6/art §2.1a/§10e: closed civilian post north of church, pooled
-  lamp/low former-lake scrub. Booth/barrier/fences/gate close exit;
-  church/garden/cemetery paths stay. Long road/empty land precede distant broad
-  low skyline/dissolved bases; central warm windows/glow by day (§20).
-  No east mountain/suburb. World-direction projection inside `48 m`, shared
-  haze, far depth behind physical foreground;
-  no terrain/collision/Light/shadow/map
-  destination/navigation/transition, named city/distance/water/closure reason/
-  police/quarantine/wider poisoning. Guard decision owns life; §16/§21/nine art
-  checks hold. Imported/placed bounds verify road/booth axes/metres.
+  Story §6/art §2.1a/§10e own post/closed exit/paths/low scrub and all exclusions.
+  Long empty road/land → low skyline/dissolved bases/central warm windows/day
+  glow (§20). Direction projection within `48 m`, shared haze/far depth;
+  no remote terrain/collision/Light/shadow/map/navigation. Guard decision owns
+  life; §16/§21/nine art checks hold. Imported/placed road/booth bounds verify metres/axes.
 
 - **Accepted — 2026-09-13, refined hero, M-65 and modular clothing:**
   The user accepts refining the existing Hero V2 to the latest cannery

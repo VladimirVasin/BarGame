@@ -412,6 +412,18 @@ namespace BarPromenade
                 return false;
             }
 
+            // The checkpoint fence, set back from the street, is the visible
+            // boundary. Its whole public frontage is open ground, not a single
+            // entrance aligned with the yard's original composition anchor.
+            // The height classifier above still checks each actual street join.
+            if (surface.Kind == CitySurfaceKind.OpenGround &&
+                layout.BlueprintId == CityBlueprintCatalog.DefaultBlueprintId &&
+                layout.GetPathKind(edge) == CityPathKind.Street &&
+                (surface.AreaId == "yard-east" || surface.AreaId == "yard-north-east"))
+            {
+                return false;
+            }
+
             // The waterfront sand ramps down from its boundary street
             // in plain sight, exactly like the mountain belt's open
             // ground: walling 300 m of it behind one composition

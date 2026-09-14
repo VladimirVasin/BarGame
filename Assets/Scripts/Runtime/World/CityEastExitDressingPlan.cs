@@ -8,6 +8,19 @@ namespace BarPromenade
 {
     public enum CityEastExitDressingFit { Feet, Ground, Road }
 
+    /// <summary>A whole collinear fence run, independent of its four-metre mesh bays.</summary>
+    public readonly struct CityEastFenceLandscapeRun
+    {
+        internal CityEastFenceLandscapeRun(string id, Vector2 start, Vector2 end, Vector2 inward, bool front)
+        { Id = id; Start = start; End = end; Inward = inward; IsFront = front; }
+        public string Id { get; }
+        public Vector2 Start { get; }
+        public Vector2 End { get; }
+        public Vector2 Inward { get; }
+        public bool IsFront { get; }
+        public float Length => Vector2.Distance(Start, End);
+    }
+
     public readonly struct CityEastExitDressingPart
     {
         internal CityEastExitDressingPart(string id, string assembly, string group, Vector3 position,
@@ -46,6 +59,7 @@ namespace BarPromenade
         private readonly CityEastExitPlan exit;
         public bool IsEnabled => exit.IsEnabled;
         public IReadOnlyList<CityEastExitDressingPart> Parts { get; }
+        public IReadOnlyList<CityEastFenceLandscapeRun> FenceRuns { get; }
         /// <summary>Only grounded obstacles; the shelter's overhead roof never excludes map landings.</summary>
         public IReadOnlyList<CityEastExitDressingSolid> Solids { get; }
         public static CityEastExitDressingPlan Create(CityEastExitPlan exit)
@@ -60,16 +74,24 @@ namespace BarPromenade
             var solids = new List<CityEastExitDressingSolid>();
             Parts = new ReadOnlyCollection<CityEastExitDressingPart>(parts);
             Solids = new ReadOnlyCollection<CityEastExitDressingSolid>(solids);
+            FenceRuns = CreateFenceRuns(exit);
             if (!exit.IsEnabled) return;
             float x = exit.CheckpointPosition.x, z = exit.CheckpointPosition.z;
+            // The authored apron outline selects existing terrain triangles;
+            // it has no second, raised skin under the canopy or its approach.
+            Part("Canopy Gravel Apron", "CanopyApron", "Booth Ground", new Vector2(x - 2.7f, z - 10.2f), 0f,
+                Vector3.one, new Vector3(4.8f, .02f, 3.65f), CityEastExitDressingFit.Ground);
             Part("Booth Shelter", "Shelter", "Booth Surroundings", new Vector2(x - 2f, z - 10.15f), 0f,
                 Vector3.one, new Vector3(3.6f, 2.65f, 3.2f), CityEastExitDressingFit.Feet, exit.BoothPosition.y);
             for (int side = -1; side <= 1; side += 2)
                 Solid("Shelter Post " + side, "Booth Shelter", new Vector2(x - 2f + side * 1.55f, z - 11.45f),
                     Quaternion.identity, new Vector3(.30f, 2.56f, .30f), exit.BoothPosition.y + 2.56f);
-            Part("Shelter Bench", "Bench", "Booth Surroundings", new Vector2(x - 2.8f, z - 10.8f), 0f,
+            // The bench sits outside the western canopy edge and faces the
+            // main street. Its north end clears the door approach and patrol.
+            Vector2 benchPoint = new Vector2(x - 4.85f, z - 11.4f);
+            Part("Shelter Bench", "Bench", "Booth Surroundings", benchPoint, 90f,
                 Vector3.one, new Vector3(1.9f, .88f, .66f), CityEastExitDressingFit.Feet);
-            Solid("Shelter Bench", "Shelter Bench", new Vector2(x - 2.8f, z - 10.8f), Quaternion.identity,
+            Solid("Shelter Bench", "Shelter Bench", benchPoint, Quaternion.Euler(0f, 90f, 0f),
                 new Vector3(1.9f, .88f, .66f));
             Part("Booth Utility Cabinet", "UtilityCabinet", "Booth Surroundings", new Vector2(x - 3.78f, z - 7.5f), 90f,
                 Vector3.one, new Vector3(.82f, 1.45f, .56f), CityEastExitDressingFit.Feet);
@@ -84,11 +106,7 @@ namespace BarPromenade
             Trace("Post Foot Trace West 1", "GravelPatch", "Post Foot Traces",
                 new Vector2(x - 5.35f, z - 6.8f), new Vector2(x - 5.2f, z - 9.8f), .68f);
             Trace("Post Foot Trace South 0", "GravelPatch", "Post Foot Traces",
-                new Vector2(x - 5.2f, z - 9.8f), new Vector2(x - 3.9f, z - 9.9f), .68f);
-            Trace("Post Foot Trace South 1", "GravelPatch", "Post Foot Traces",
-                new Vector2(x - 3.9f, z - 9.9f), new Vector2(x - 2f, z - 9.65f), .68f);
-            Trace("Post Foot Trace Door", "GravelPatch", "Post Foot Traces",
-                new Vector2(x - 2f, z - 9.65f), new Vector2(x - 2f, z - 8.82f), .68f);
+                new Vector2(x - 5.2f, z - 9.8f), new Vector2(x - 2.7f, z - 10.2f), .82f);
             Trace("Post Foot Trace Gate 0", "GravelPatch", "Post Foot Traces",
                 new Vector2(x - 6.5f, z - 4.6f), new Vector2(x - 4.85f, z - 3.45f), .66f);
             Trace("Post Foot Trace Gate 1", "GravelPatch", "Post Foot Traces",
@@ -104,21 +122,36 @@ namespace BarPromenade
                     new Vector2(x - 8f, z + side * 4.43f), .72f);
             Part("Old Road Repair", "RoadRepair", "Road Margins", new Vector2(exit.YardBounds.xMin + 5f, z - .35f), -5f,
                 Vector3.one, new Vector3(4.4f, .02f, 3.10f), CityEastExitDressingFit.Road);
+            // One channel continues beneath the crossing. Joining two raised
+            // drain sheets at a bent endpoint doubled their fitted lips.
             Trace("Dry Road Drain", "DryDrain", "Road Margins",
-                new Vector2(exit.YardBounds.xMin + 2.5f, z - 6.2f), new Vector2(x - 8f, z - 6.45f), .76f);
+                new Vector2(exit.YardBounds.xMin + 2.5f, z - 6.2f), new Vector2(x - 4.8f, z - 6.2f), .76f);
+            Part("Post Drain Crossing", "DrainCrossing", "Road Margins", new Vector2(x - 5.65f, z - 6.2f), 0f,
+                Vector3.one, new Vector3(1.3f, .058f, 1.02f), CityEastExitDressingFit.Ground);
 
             float serviceX = exit.YardBounds.xMin + 24f;
+            float firstServiceX = exit.YardBounds.xMin + CityFringeYardPlanner.FirstEastUtilityShedDepth - 5f;
+            float firstShedZ = Mathf.Lerp(exit.YardBounds.yMin + 12f, exit.YardBounds.yMax - 12f, .18f);
+            // The nearest shed sits forward of the other two. Follow its
+            // western door frontage, then rejoin the original northern trace;
+            // the old straight backbone would pass through the building.
             Trace("Service Yard Entry", "GravelPatch", "Service Yard Traces",
-                new Vector2(exit.YardBounds.xMin + 18f, z + 4.3f), new Vector2(serviceX, z + 9f), .78f);
+                new Vector2(exit.YardBounds.xMin + 18f, z + 4.3f), new Vector2(firstServiceX, z + 9f), .78f);
+            Trace("Service Yard Frontage", "GravelPatch", "Service Yard Traces",
+                new Vector2(firstServiceX, z + 9f), new Vector2(firstServiceX, firstShedZ + 5f), .78f);
+            Trace("Service Yard Return", "GravelPatch", "Service Yard Traces",
+                new Vector2(firstServiceX, firstShedZ + 5f), new Vector2(serviceX, firstShedZ + 5f), .78f);
             Trace("Service Yard Trace", "GravelPatch", "Service Yard Traces",
-                new Vector2(serviceX, z + 9f), new Vector2(serviceX + .3f, exit.YardBounds.yMax - 8f), .78f);
+                new Vector2(serviceX, firstShedZ + 5f), new Vector2(serviceX + .3f, exit.YardBounds.yMax - 8f), .78f);
             for (int i = 0; i < 3; i++)
             {
                 float shedZ = Mathf.Lerp(exit.YardBounds.yMin + 12f, exit.YardBounds.yMax - 12f, .18f + i * .32f);
+                float shedDepth = i == 0 ? CityFringeYardPlanner.FirstEastUtilityShedDepth : 35f + i * 2.2f;
                 Trace("Shed Approach " + i, "GravelPatch", "Service Yard Traces",
-                    new Vector2(serviceX, shedZ), new Vector2(exit.YardBounds.xMin + 32.2f + i * 2.2f, shedZ), .76f);
+                    new Vector2(i == 0 ? firstServiceX : serviceX, shedZ),
+                    new Vector2(exit.YardBounds.xMin + shedDepth - 2.8f, shedZ), .76f);
                 Part("Shed Door Apron " + i, "GravelPatch", "Service Yard Traces",
-                    new Vector2(exit.YardBounds.xMin + 31.45f + i * 2.2f, shedZ), 0f,
+                    new Vector2(exit.YardBounds.xMin + shedDepth - 3.55f, shedZ), 0f,
                     new Vector3(1.8f / 6f, 1f, 1.4f / 3.46f),
                     new Vector3(6f, .02f, 3.46f), CityEastExitDressingFit.Ground);
             }
@@ -126,33 +159,185 @@ namespace BarPromenade
                 Trace("Pole Approach " + poleZ, "GravelPatch", "Service Yard Traces",
                     new Vector2(serviceX, poleZ), new Vector2(exit.YardBounds.xMin + 26.7f, poleZ), .62f);
 
-            Vector2[] groups = { new Vector2(x + 13f, z + 22f), new Vector2(x - 7f, exit.NorthYardBounds.yMin + 22f),
-                new Vector2(x + 12f, exit.NorthYardBounds.yMin + 42f), new Vector2(exit.YardBounds.xMin + 47f, exit.NorthYardBounds.yMax - 17f) };
-            Vector2[] grass = { new Vector2(-2.4f, -.9f), new Vector2(1.8f, -1.25f), new Vector2(3.7f, .7f),
-                new Vector2(-1.1f, 2.1f), new Vector2(1.5f, 3.2f) };
-            for (int i = 0; i < groups.Length; i++)
+            // Every run, including its returns, receives an interrupted worn
+            // toe. The old front trace covered only 32 m of a 192 m run.
+            foreach (CityEastFenceLandscapeRun run in FenceRuns)
             {
-                string group = "Roadside Group " + (i + 1);
-                float yaw = 17f + i * 53f;
-                Quaternion turn = Quaternion.Euler(0f, yaw, 0f);
-                Vector3 ridgeScale = new Vector3(1.2f + i % 2 * .18f, .8f + i % 2 * .12f, 1.15f);
-                Part(group + " Low Ridge", "GroundRidge", group, groups[i], yaw, ridgeScale,
-                    new Vector3(4.04f, .48f, 1.81f), CityEastExitDressingFit.Ground);
-                Solid(group + " Low Ridge", group + " Low Ridge", groups[i], turn,
-                    Vector3.Scale(new Vector3(4.04f, .48f, 1.81f), ridgeScale));
-                for (int shrub = 0; shrub < 2; shrub++)
+                Vector2 direction = (run.End - run.Start).normalized;
+                int count = Mathf.Max(1, Mathf.RoundToInt(run.Length / 12f));
+                for (int i = 0; i < count; i++)
                 {
-                    Vector3 offset = turn * new Vector3(shrub == 0 ? -1.7f : 2.15f, 0, shrub == 0 ? .8f : 1.2f);
-                    Part(group + " Shrub " + shrub, "Shrub", group, groups[i] + new Vector2(offset.x, offset.z), yaw + shrub * 71f,
-                        Vector3.one * (.85f + (i + shrub) % 3 * .12f), new Vector3(1.80f, 1.17f, 1.60f), CityEastExitDressingFit.Feet);
+                    float middle = run.Length * (i + .5f) / count;
+                    float half = Mathf.Min(4.2f + i % 3 * .55f, run.Length / count * .40f);
+                    Vector2 center = run.Start + direction * middle + run.Inward * .58f;
+                    Trace(run.Id + " Worn Toe " + i, "FenceToe", "Fence Ground",
+                        center - direction * half, center + direction * half, .68f + i % 2 * .14f);
                 }
-                for (int j = 0; j < grass.Length; j++)
+            }
+            int footing = 0;
+            foreach (CityEastExitFence span in exit.Fences)
+            {
+                if (footing++ % 3 != 0) continue;
+                Vector3 foot = span.Start;
+                // South bases are embedded on the closed-yard side, never
+                // on the church's independently graded garden surface.
+                Vector2 point = new Vector2(Mathf.Clamp(foot.x, x + .03f, exit.YardBounds.xMax - .24f),
+                    Mathf.Clamp(foot.z, exit.YardBounds.yMin + .24f, exit.NorthYardBounds.yMax - .24f));
+                Part("Old Fence Footing " + footing, "FenceFooting", "Fence Ground", point, 0f,
+                    Vector3.one, new Vector3(.46f, .105f, .42f), CityEastExitDressingFit.Ground);
+            }
+
+            // Density belongs to distance along the whole boundary, not to
+            // six fixed points. Independent seeded streams keep a change to
+            // one run from reshuffling all the others.
+            for (int r = 0; r < FenceRuns.Count; r++)
+            {
+                CityEastFenceLandscapeRun run = FenceRuns[r];
+                Vector2 direction = (run.End - run.Start).normalized;
+                float alongYaw = -Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
+                var random = new System.Random(unchecked(exit.Layout.Seed * 397 ^ (r + 1) * 7919));
+                int count = Mathf.Max(1, Mathf.RoundToInt(run.Length / (run.IsFront ? 14f : 16f)));
+                for (int i = 0; i < count; i++)
                 {
-                    Vector3 offset = turn * new Vector3(grass[j].x, 0, grass[j].y);
-                    float scale = .72f + (i + j) % 4 * .14f;
-                    Part(group + " Dry Grass " + j, "DryGrass", group, groups[i] + new Vector2(offset.x, offset.z), yaw + j * 61f,
-                        Vector3.one * scale, new Vector3(1.4f, .65f, 1.1f), CityEastExitDressingFit.Ground);
+                    string group = run.Id + " Patch " + i;
+                    float t = run.Length * (i + .5f) / count + (float)(random.NextDouble() - .5) * 1.8f;
+                    Vector2 axis = run.Start + direction * t;
+                    Vector2 inside = axis + run.Inward * (2.5f + (float)random.NextDouble() * .5f);
+                    int variety = (i + r + random.Next(3)) % 4;
+                    // A few long, low ground masses sit wholly behind the
+                    // fence. The city-side walk has no raised earth island.
+                    if (run.Length > 25f && i % 3 == 1)
+                        LandscapePart(group + " Bank", "EarthBank", group, axis + run.Inward * 4.8f,
+                            alongYaw + (float)(random.NextDouble() - .5) * 10f,
+                            new Vector3(.92f + variety * .09f, .42f + variety * .055f, .80f),
+                            new Vector3(10.1f, .59f, 2.8f), CityEastExitDressingFit.Ground, false, true);
+
+                    Plant(group + " Inner Shrub", variety % 2 == 0 ? "BranchShrub" : "CreepingScrub",
+                        group, inside, alongYaw + variety * 23f, .84f + variety * .055f, false);
+                    Plant(group + " Inner Grass", variety % 2 == 0 ? "MattedGrass" : "TallWeeds", group,
+                        inside + direction * 2.8f + run.Inward * .45f, alongYaw - 17f, .88f, false);
+                    if (i % 2 == 0)
+                        Plant(group + " Inner Scatter", "GravelScatter", group,
+                            axis + run.Inward * 1.15f - direction * 2.1f, alongYaw + 9f, .82f, false);
+
+                    if (run.IsFront && run.Length > 25f)
+                    {
+                        // The 12 m foreground retains a continuous walking
+                        // corridor. Plants spread across its fence-side edge,
+                        // with enough body clearance to approach from the road.
+                        Vector2 foreground = axis - run.Inward * (2.45f + (float)random.NextDouble() * .35f);
+                        bool broadSwale = axis.y > z + 34f && axis.y < exit.Swale.EndZ - 8f;
+                        if (broadSwale)
+                            foreground.x = exit.Swale.CenterX(axis.y) + exit.Swale.HalfWidth(axis.y) * .70f;
+                        string primary = new[] { "CreepingScrub", "BranchShrub", "LowShrub", "MattedGrass" }[variety];
+                        Plant(group + " Front Main", primary, group, foreground, alongYaw + variety * 19f, 1f, true);
+                        int tufts = 2 + random.Next(3);
+                        for (int j = 0; j < tufts; j++)
+                        {
+                            float along = (j - (tufts - 1) * .5f) * 2.4f + (float)(random.NextDouble() - .5);
+                            Vector2 tuft = foreground + direction * along - run.Inward * (j % 2 == 0 ? 1.1f : -.8f);
+                            if (broadSwale)
+                                tuft.x = exit.Swale.CenterX(tuft.y) + exit.Swale.HalfWidth(tuft.y) *
+                                    (j % 2 == 0 ? -.62f : .70f);
+                            string assembly = (j + variety) % 3 == 0 ? "MattedGrass" :
+                                (j + variety) % 3 == 1 ? "TallWeeds" : "DryGrass";
+                            Plant(group + " Front Grass " + j, assembly, group, tuft,
+                                alongYaw + (float)(random.NextDouble() - .5) * 42f, .72f + j % 3 * .11f, true);
+                        }
+                        if (i % 3 == 0)
+                        {
+                            Vector2 scatter = foreground + direction * 3.8f;
+                            if (broadSwale) scatter.x = exit.Swale.CenterX(scatter.y) + .15f;
+                            Plant(group + " Front Scatter", "GravelScatter", group,
+                                scatter, alongYaw + 6f, .95f, true);
+                        }
+                        // This broad worn patch is a material region in the
+                        // standing ground; it cannot float or introduce steps.
+                        if (!broadSwale)
+                            LandscapePart(group + " Wear", "GravelPatch", "Fence Wear", foreground + direction * 1.4f,
+                                alongYaw + 6f, new Vector3(.9f + variety * .08f, 1f, .55f),
+                                new Vector3(6f, .02f, 3.46f), CityEastExitDressingFit.Ground, true);
+                    }
+
+                    if (run.IsFront && run.Length > 25f && i % 4 == 2)
+                    {
+                        // Short dry branches make the long drainage system
+                        // visible through the bars; the grate has a real bed.
+                        Vector2 drain = axis + run.Inward * 1.3f;
+                        if (ClearLandscape(FootprintFor(new Vector3(drain.x, 0, drain.y),
+                            Quaternion.Euler(0, alongYaw, 0), new Vector3(6f, .1f, .9f)), false))
+                        {
+                            Trace(group + " Dry Drain", "DryDrain", group, drain - direction * 3f, drain + direction * 3f, .76f);
+                            LandscapePart(group + " Inspection", "DrainInspection", group, drain, alongYaw,
+                                Vector3.one, new Vector3(1.3f, .12f, .85f), CityEastExitDressingFit.Ground, false);
+                        }
+                    }
                 }
+            }
+
+            // One small, supported repair reserve belongs to the existing
+            // nearest shed; it is kept off its western door and service trace.
+            LandscapePart("Shed Repair Reserve", "RepairStock", "Service Yard Traces",
+                new Vector2(exit.YardBounds.xMin + CityFringeYardPlanner.FirstEastUtilityShedDepth + 4.7f, firstShedZ + 7.4f),
+                0f, Vector3.one, new Vector3(2f, .45f, .8f), CityEastExitDressingFit.Feet, false, true);
+
+            void Plant(string id, string assembly, string group, Vector2 point, float yaw, float scale, bool front)
+            {
+                Vector3 size = assembly == "CreepingScrub" ? new Vector3(2.4f, .45f, 1.7f) :
+                    assembly == "BranchShrub" ? new Vector3(1.8f, 1.05f, 1.5f) :
+                    assembly == "MattedGrass" ? new Vector3(2.8f, .27f, 1.5f) :
+                    assembly == "TallWeeds" ? new Vector3(1.4f, .85f, 1f) :
+                    assembly == "GravelScatter" ? new Vector3(2.1f, .12f, 1.2f) :
+                    assembly == "LowShrub" ? new Vector3(1.6f, .8f, 1.35f) : new Vector3(1.4f, .65f, 1.1f);
+                LandscapePart(id, assembly, group, point, yaw, Vector3.one * scale, size,
+                    assembly == "BranchShrub" || assembly == "LowShrub" ? CityEastExitDressingFit.Feet : CityEastExitDressingFit.Ground, front);
+            }
+            void LandscapePart(string id, string assembly, string group, Vector2 point, float yaw, Vector3 scale,
+                Vector3 size, CityEastExitDressingFit fit, bool front, bool solid = false)
+            {
+                Quaternion rotation = Quaternion.Euler(0, yaw, 0);
+                Rect footprint = FootprintFor(new Vector3(point.x, 0, point.y), rotation, Vector3.Scale(size, scale));
+                if (!ClearLandscape(footprint, front, !solid)) return;
+                Part(id, assembly, group, point, yaw, scale, size, fit);
+                if (solid) Solid(id, id, point, rotation, Vector3.Scale(size, scale));
+            }
+            bool ClearLandscape(Rect footprint, bool front, bool allowBank = false)
+            {
+                // Reject the whole footprint instead of clamping its centre
+                // onto a fence, church boundary, street or neighbouring prop.
+                // Behind the closure, low planting clears the actual road
+                // shoulder. The much wider shed/patrol reservation otherwise
+                // removes every plant along the entire southern return.
+                Rect roadReserve = exit.RoadBounds;
+                roadReserve.yMin -= .8f; roadReserve.yMax += .8f;
+                if (footprint.xMin < exit.YardBounds.xMin + .4f || footprint.xMax > exit.YardBounds.xMax - .4f ||
+                    footprint.yMin < exit.YardBounds.yMin + .4f || footprint.yMax > exit.NorthYardBounds.yMax - .4f ||
+                    footprint.Overlaps(front ? exit.ClearanceBounds : roadReserve)) return false;
+                if (front && exit.Swale.OverlapsCrossing(footprint)) return false;
+                if (front ? footprint.xMin < exit.YardBounds.xMin + 5.6f || footprint.xMax > x - .45f :
+                    footprint.xMin < x + .45f) return false;
+                foreach (CityEastExitDressingSolid obstacle in solids)
+                {
+                    if (allowBank && obstacle.Id.EndsWith(" Bank", StringComparison.Ordinal)) continue;
+                    Rect b = obstacle.Footprint; b.xMin -= .55f; b.xMax += .55f; b.yMin -= .55f; b.yMax += .55f;
+                    if (footprint.Overlaps(b)) return false;
+                }
+                foreach (CityEastExitDressingPart existing in parts)
+                {
+                    if (existing.GroupId != "Post Foot Traces" && existing.GroupId != "Service Yard Traces") continue;
+                    Rect b = existing.Footprint; b.xMin -= .35f; b.xMax += .35f; b.yMin -= .35f; b.yMax += .35f;
+                    if (footprint.Overlaps(b)) return false;
+                }
+                // All three shed shells predate this kit and have their own
+                // collision. Reserve their real footprints before decoration.
+                for (int i = 0; i < 3; i++)
+                {
+                    float shedZ = Mathf.Lerp(exit.YardBounds.yMin + 12f, exit.YardBounds.yMax - 12f, .18f + i * .32f);
+                    float depth = i == 0 ? CityFringeYardPlanner.FirstEastUtilityShedDepth : 35f + i * 2.2f;
+                    var shed = new Rect(exit.YardBounds.xMin + depth - 3.1f, shedZ - 4.1f, 6.2f, 8.2f);
+                    if (footprint.Overlaps(shed)) return false;
+                }
+                return true;
             }
 
             void Part(string id, string assembly, string group, Vector2 point, float yaw, Vector3 scale, Vector3 size,
@@ -178,7 +363,8 @@ namespace BarPromenade
                 int count = Mathf.Max(1, Mathf.CeilToInt(total / 8f));
                 Vector2 direction = (end - start).normalized;
                 float yaw = -Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
-                Vector3 size = assembly == "DryDrain" ? new Vector3(10f, .10f, 1.382f) : new Vector3(6f, .02f, 3.46f);
+                Vector3 size = assembly == "DryDrain" ? new Vector3(10f, .10f, 1.382f) :
+                    assembly == "FenceToe" ? new Vector3(7.8f, .02f, .56f) : new Vector3(6f, .02f, 3.46f);
                 for (int i = 0; i < count; i++)
                     Part(id + " " + i, assembly, group, Vector2.Lerp(start, end, (i + .5f) / count), yaw,
                         new Vector3(total / count / size.x, 1f, width / size.z), size, CityEastExitDressingFit.Ground);
@@ -198,8 +384,43 @@ namespace BarPromenade
         public bool IsRepairSpan(CityEastExitFence span)
         {
             Vector3 center = (span.Start + span.End) * .5f;
-            return Mathf.Abs(center.x - exit.CheckpointPosition.x) < .01f &&
-                center.z > exit.CheckpointPosition.z + 11f && center.z < exit.CheckpointPosition.z + 15f;
+            if (Mathf.Abs(center.x - exit.CheckpointPosition.x) > .01f) return false;
+            float first = exit.CheckpointPosition.z + 13f;
+            // One whole bay at each old repair, widely separated along the
+            // front. They remain complete barriers with the same collision.
+            for (float repair = first; repair < exit.NorthYardBounds.yMax - 8f; repair += 53f)
+                if (repair >= Mathf.Min(span.Start.z, span.End.z) && repair < Mathf.Max(span.Start.z, span.End.z)) return true;
+            return false;
+        }
+        private static IReadOnlyList<CityEastFenceLandscapeRun> CreateFenceRuns(CityEastExitPlan source)
+        {
+            var runs = new List<CityEastFenceLandscapeRun>();
+            if (!source.IsEnabled) return runs.AsReadOnly();
+            Vector2 start = default, end = default, direction = default;
+            bool pending = false;
+            foreach (CityEastExitFence span in source.Fences)
+            {
+                var a = new Vector2(span.Start.x, span.Start.z);
+                var b = new Vector2(span.End.x, span.End.z);
+                Vector2 forward = (b - a).normalized;
+                if (pending && ((end - a).sqrMagnitude > .001f || Vector2.Dot(direction, forward) < .999f)) Flush();
+                if (!pending) { start = a; direction = forward; pending = true; }
+                end = b;
+            }
+            if (pending) Flush();
+            return runs.AsReadOnly();
+
+            void Flush()
+            {
+                Vector2 middle = (start + end) * .5f;
+                Vector2 inward = new Vector2(-direction.y, direction.x);
+                Vector2 yardCenter = new Vector2((source.CheckpointPosition.x + source.YardBounds.xMax) * .5f,
+                    (source.YardBounds.yMin + source.NorthYardBounds.yMax) * .5f);
+                if (Vector2.Dot(inward, yardCenter - middle) < 0f) inward = -inward;
+                bool front = Mathf.Abs(middle.x - source.CheckpointPosition.x) < .01f;
+                runs.Add(new CityEastFenceLandscapeRun("Fence Run " + runs.Count, start, end, inward, front));
+                pending = false;
+            }
         }
         internal static Rect FootprintFor(Vector3 position, Quaternion rotation, Vector3 size)
         {

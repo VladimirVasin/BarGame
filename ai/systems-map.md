@@ -69,7 +69,7 @@ A row never carries a status outside this table. Product-level scope cuts
 | City blueprint and layout model | One immutable stable-ID blueprint per session: connected cells, typed areas, one Residential bar across from home. | `CityBlueprint`, `CityBlueprintCatalog` | Current |
 | City elevation and exterior stairs | Validated elevation plans keep external stairs and walkable ground consistent with collision. | `CityElevation{Plan,Planner,Validator,Rebaser,StairPlacement}`, `CityTerrainSurfacePlan` | Current |
 | City mountain boundary and open tunnel | `default-coastal` closes west/south around the non-traversable river cave and one gate-free `8 x 5.5 m` portal. | `CityMountainBoundary*`, `CityMountainBackdrop*` | Current |
-| Eastern mainland view | Street-visible post, joined walk mask, fitted ground/road; distant road/skyline, shared fog/light. | `CityEastExit{Plan,Planner,WorldBuilder,DressingPlan,DressingWorldBuilder}`, `CityEastDistanceWorldBuilder` | Current |
+| Eastern mainland view | Closed post, planted fence/dry swale, shared terrain/collision grade, local lights; distant road/skyline. | `CityEastExit*`, `CityEastSwalePlan`, `CityEastGroundTransition*`, `CityEastDistanceWorldBuilder` | Current |
 | Eastern checkpoint guards | Distinct guards alternate physical patrols; shared pair/E bubbles, passive shoulder rifles, pause/cleanup. | `CityEastGuard{Duty,Plan,Controller}`, `EastGuardActor` | Current |
 | South tunnel travel stub | Walking triggers the authored refusal/return. Gap: no pedestrian transition to Mountain Road. | `CityTunnelTravel{Plan,Planner,Controller,CrossingModel}`, `InteractionPromptView` | Partial |
 | Mountain Road area | Open curved tunnel tail, ten hairpins, gorge bridge, forest, summit cafe and cableway; plans own surfaces. | `MountainRoad*`, `MountainRoadBridge*` | Current |
@@ -141,7 +141,7 @@ A row never carries a status outside this table. Product-level scope cuts
 | Footstep surfaces | Stamped ground and overlays pick a per-surface cue for the hero and registered NPC rigs; three variants per cue. | `FootstepGround`, `HeroFootstepGround`, `NpcFootstepDirector` | Current |
 | Causal City soundscape | Visible local sources own City sound; bounded schedules and shared routing control the mix. | `CitySound{SourceDescriptor,scapePlan,scapePlanner,SchedulePlanner,Occlusion}` | Current |
 | Home alarm clock | Bed-relative `27.6 cm` clock: frozen flickering `05:59`, solid `06:00` on Wake, then session time. | `HomeAlarmClock{Plan,Builder,Synthesis}`, `HomeAlarmClock` | Current |
-| Road, park and ground navigation | Pure walkable masks constrain roads, parks and authored ground consistently with physical boundaries. | `RoadWalkableArea`, `CityGroundTraversalPlan{,ner}` | Current |
+| Road, park and ground navigation | Masks follow physical bounds; exclusions retain corner overlap, safe eastern street margins stay open. | `RoadWalkableArea`, `CityGroundTraversalPlan{,ner}`, `CityRoadGroundBoundaryPlanner` | Current |
 | City route planning | Deterministic ordered shortest paths over generated street and park-path edges with a binary min-heap. | `Runtime/Map`, `CityLayout` | Current |
 | Player motor | Shared tank movement/run uses constrained velocity and common input; contextual approaches retain their own owner. | `PlayerMotor`, `PlayerDirectionalInput` | Current |
 | Third-person chase camera | Shared collision-aware chase/orbit blends cinematic motion and yields to owned fixed/modal shots. | `PlayerCameraFollow`, `IntoxicationDollyZoomModel` | Current |

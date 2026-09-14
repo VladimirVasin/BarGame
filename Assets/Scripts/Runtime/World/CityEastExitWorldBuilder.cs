@@ -19,12 +19,18 @@ namespace BarPromenade
     {
         public const string ResourcePath = "City/EastExit/CityEastExit3D";
         public const string RootName = "Eastern Mainland Exit";
+        public const string CanopyLightName = "Checkpoint Canopy Work Light";
+        public const string ServiceLightName = "Checkpoint Service Shed Light";
+        public const float CanopyNightIntensity = 9.5f;
+        public const float ServiceNightIntensity = 10.5f;
 
-        public static CityEastExitWorldResult Build(Transform parent, CityEastExitPlan plan)
+        public static CityEastExitWorldResult Build(Transform parent, CityEastExitPlan plan,
+            CityFringeYardPlan fringePlan)
         {
             if (parent == null) throw new ArgumentNullException(nameof(parent));
             if (plan == null) throw new ArgumentNullException(nameof(plan));
             if (!plan.IsEnabled) return null;
+            if (fringePlan == null) throw new ArgumentNullException(nameof(fringePlan));
             GameObject asset = Resources.Load<GameObject>(ResourcePath);
             if (asset == null) throw new InvalidOperationException("Missing authored eastern exit kit: " + ResourcePath);
             var templates = new Dictionary<string, Transform>(StringComparer.Ordinal);
@@ -87,7 +93,7 @@ namespace BarPromenade
                 Vector3 delta = span.End - span.Start;
                 bool repaired = dressing.IsRepairSpan(span);
                 Transform fence = Place(templates, root, repaired ? "RepairedFence" : "Fence",
-                    repaired ? "Repaired Boundary Fence" : "Boundary Fence " + ordinal++,
+                    (repaired ? "Repaired Boundary Fence " : "Boundary Fence ") + ordinal++,
                     (span.Start + span.End) * .5f,
                     Quaternion.LookRotation(delta.normalized, Vector3.up), new Vector3(1f, 1f, delta.magnitude / 4f));
                 AddBox(fence, new Vector3(0f, .9275f, 0f), new Vector3(CityEastExitPlan.FenceThickness, 1.855f, 4f));
@@ -98,6 +104,7 @@ namespace BarPromenade
                 Quaternion.identity, Vector3.one);
 
             CityEastExitDressingWorldBuilder.Build(root, plan, dressing, templates);
+            BuildSiteLights(root, dressing, fringePlan, templates);
             Transform lamp = Place(templates, root, "Lamp", "Checkpoint Practical", plan.LampPosition,
                 Quaternion.identity, Vector3.one);
             Transform lightAnchor = null;
@@ -109,6 +116,76 @@ namespace BarPromenade
             // street Spot; it never creates another realtime Light.
             return new CityEastExitWorldResult(root.gameObject,
                 new CityFringePracticalAnchor(CityFringeYardKind.EastUtilityEdge, lightAnchor));
+        }
+
+        private static void BuildSiteLights(Transform root, CityEastExitDressingPlan dressing,
+            CityFringeYardPlan fringePlan, IDictionary<string, Transform> templates)
+        {
+            bool canopyFound = false, shedFound = false;
+            foreach (CityEastExitDressingPart part in dressing.Parts)
+            {
+                if (part.Id != "Booth Shelter") continue;
+                // The mounting plate touches the existing roof underside.
+                // Use the actual shelter plan, including its level support pad.
+                Transform fixture = Place(templates, root, "CanopyLamp", "Checkpoint Canopy Fixture",
+                    part.Position + part.Rotation * new Vector3(0f, 2.44f, .15f), part.Rotation, Vector3.one);
+                AddSiteLight(fixture, CanopyLightName, Vector3.down, CanopyNightIntensity, 5.2f, 120f, 88f);
+                canopyFound = true;
+                break;
+            }
+            foreach (CityFringeYardDescriptor yard in fringePlan.Yards)
+            {
+                if (yard.Kind != CityFringeYardKind.EastUtilityEdge) continue;
+                foreach (CityFringeYardPartDescriptor shed in yard.Parts)
+                {
+                    if (shed.StableId != "yard-east-utility-shed-00") continue;
+                    // The shed shell has its own terrain embed. Its imported
+                    // root, rather than an independent ground sample, owns
+                    // the height of this ordinary door fixture.
+                    Vector3 modelRoot = shed.Center + Vector3.up * (-shed.Size.y * .5f + .16f);
+                    Transform fixture = Place(templates, root, "ServiceWallLamp", "Checkpoint Service Shed Fixture",
+                        modelRoot + shed.Rotation * new Vector3(-shed.Size.x * .5f - .005f, 2.55f, 0f),
+                        shed.Rotation * Quaternion.Euler(0f, 90f, 0f), Vector3.one);
+                    AddSiteLight(fixture, ServiceLightName, shed.Rotation * new Vector3(-.65f, -1f, 0f),
+                        ServiceNightIntensity, 6.5f, 105f, 65f);
+                    shedFound = true;
+                    break;
+                }
+            }
+            if (!canopyFound || !shedFound)
+                throw new InvalidOperationException("Checkpoint local lamps require their existing canopy and first service shed.");
+        }
+
+        private static void AddSiteLight(Transform fixture, string name, Vector3 direction,
+            float intensity, float range, float angle, float innerAngle)
+        {
+            Transform anchor = null;
+            foreach (Transform candidate in fixture.GetComponentsInChildren<Transform>(true))
+                if (candidate.name.EndsWith("LightAnchor", StringComparison.Ordinal)) { anchor = candidate; break; }
+            if (anchor == null) throw new InvalidOperationException(name + " lacks its authored lens anchor.");
+            // Preserve the imported anchor's world metres. The emitter itself
+            // stays outside the FBX unit-scaled hierarchy so its halo does too.
+            Transform emitter = new GameObject(name).transform;
+            emitter.SetParent(fixture, false);
+            emitter.position = anchor.position;
+            emitter.rotation = Quaternion.LookRotation(direction, Vector3.forward);
+            Light light = emitter.gameObject.AddComponent<Light>();
+            light.type = LightType.Spot;
+            light.color = new Color(1f, .72f, .42f);
+            light.range = range;
+            light.spotAngle = angle;
+            light.innerSpotAngle = innerAngle;
+            light.shadows = LightShadows.Hard;
+            light.shadowStrength = .78f;
+            light.shadowBias = .015f;
+            light.shadowNormalBias = .06f;
+            light.renderMode = LightRenderMode.ForcePixel;
+            light.lightmapBakeType = LightmapBakeType.Realtime;
+            CityLightHalo halo = CityLightHalo.CreateAlwaysBurning(emitter, Vector3.zero,
+                .16f, .52f, new Color(1f, .72f, .42f, .12f), new Color(.8f, .51f, .3f, .035f));
+            // These two accepted fixed site lamps follow the shared day floor
+            // and scene lifetime; the original twelve-slot pool is unchanged.
+            CityNightSiteLightRegistry.Register(light, intensity, halo);
         }
 
         private static void FitRoad(Transform road, CityEastExitPlan plan)

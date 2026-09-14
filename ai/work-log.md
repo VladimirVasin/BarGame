@@ -8,40 +8,46 @@ Earlier entries: [`work-log-2026-08.md`](archive/work-log-2026-08.md).
 
 ## 2026-09-14 — City geometry and eastern checkpoint
 
-- Added explicit City audit probes/captures: walkable mask versus physics,
-  collider registry, world triangles, planted-defect controls and camera-shift
-  pairs. Coplanarity alone did not prove flicker; visible defects included the
-  river cave and eastern backdrop, while equal-material church overlaps stayed
-  stable. Frames also exposed fence/shelter collisions, wall seams, untextured
-  east yards and repeated resident outfits.
+- City audit compares walk mask/physics, registry/triangles, planted controls
+  and shifted cameras. Coplanarity alone did not prove flicker: church overlaps
+  stayed stable; frames exposed cave/backdrop flicker, fence/shelter collisions,
+  wall seams, bare east yards/repeated outfits.
   Checks: `CityAuditProbeTests` (control + A–E + `F_Diagnose`),
   `AreaCaptureFixture.CityAudit`.
-- Filled bus-junction stair gaps with their own kerb bands. Cemetery fences
-  use each part's width and their planned north edge; church iron opens around
-  the bus shelter. Boundary fragments overlap, the port opening has a skirt,
-  cave lining clears channel beams and gabion cages bed into stone. Esplanade
-  slabs join and follow sand; fittings/walking height use their top. East ground
-  uses the forefield sheet; grandmothers receive distinct registry outfits.
-  POI terracing remains unchanged by decision.
+- Bus stair gaps receive kerb bands. Cemetery fences use part widths/north
+  edge; church iron clears bus shelter. Boundary fragments overlap, port skirt
+  closes opening, cave lining clears beams, gabions bed into stone. Joined
+  esplanade slabs follow sand; fittings/walking use their top. East ground
+  uses forefield texture; grandmothers have distinct outfits. POI terraces stay.
   Checks: EditMode `CityStreetSurfacePlannerTests`, `CityChurchPlanningTests`,
   `CityCemeteryPlannerTests`, `CityFringeYard*`, `CitySeacoastPlannerTests`,
   `CityMountainBoundaryTests`, `DryingYardBabushkaTests`.
-- Joined the checkpoint approach to
-  the street asphalt edge/height, opening sidewalk and edge markings. The road
-  replaces the underlying terrain skin; dressing fits locally refined
-  rendered support triangles with clearance. The distant panorama tests behind
-  physical foreground: its short projection radius had intersected real land.
-  One welded road collider closes slab-edge ray gaps; the northern patrol
-  skirts the existing shed after relocation.
-  Check: `AreaCaptureFixture.CityEastExit`, including inspected day/night
-  views and camera-shift pairs; `check-docs.py`.
-- Ordinary walking exposed a missing radius-aware connector between abutting
-  walk-mask rectangles; the prior test's large steps had jumped the forbidden
-  seam. Added the connector and moved the post to `12 m` from the asphalt edge
-  for visibility with normal camera/fog. Compact grade/shoulders/patch/drain
-  follow the shorter approach; the southern patrol turns before the sidewalk.
-  Check: `AreaCaptureFixture.CityEastExit` passed with held `W` through the
-  seam to the visible barrier; the production-camera street view was inspected.
+- Checkpoint joins street edge/height, opening sidewalk/markings; road replaces
+  terrain, dressing fits refined supports. Panorama tests behind land; its short
+  projection had intersected it. Welded road collision closes ray gaps. North
+  patrol skirts shed, south turns before sidewalk. A radius connector closes
+  mask seams that large test steps jumped. Post/grade/shoulders/patch/drain
+  moved to `12 m` from asphalt for normal-camera visibility.
+- Garden/yard share partitioned grass/soil, matched UVs/footsteps. Fitted apron/
+  drain crossing/fence toes/bases, banks/shrubs share support/yard UVs. Nearer
+  shed keeps its lamp visible in fog; accepted warm fixtures leave street pool.
+  Checks: `build-city-east-ground-texture.py --verify`,
+  `build-city-east-exit-3d-model.py --dressing-only --validate-only`.
+- Bench outside canopy faces city. Apron/traces select existing ground/road
+  triangles; raised sheets flickered. Mask subtraction retains corners; safe
+  east street margins open to physical fence instead of the single yard anchor.
+- Seeded planting follows whole fence runs: open/creeping shrubs, matted/tall
+  grass/gravel, embedded wear/toes, rear banks/drain/grate/repairs, one shed
+  stock. Broad shed clearance had removed south planting; low rear plants now
+  reserve road shoulders, public planting retains patrol clearance.
+  Generator `validate_dressing`: signed volumes/metres/determinism.
+- Dry swale lowers shared terrain/collision/walk/map heights; broad shallow
+  crossings stay open, gravel/old plants follow slopes. Removed overlapping
+  drain and the redundant east-access apron that darkened the hollow.
+  Check: `AreaCaptureFixture.CityEastExit` with east-landscape capture:
+  held walking/bench/materials/frontage, coverage/placed metres, swale profiles/
+  landing/crossings, no old spur. Ordinary day/night and shifted views inspected:
+  continuous ground without raised sheets. `check-docs.py`.
 
 ## 2026-09-13 — Hero, cannery and eastern edge
 

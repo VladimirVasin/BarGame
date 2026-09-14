@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Linq;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -11,10 +12,11 @@ namespace BarPromenade.Tests.PlayMode
     public sealed partial class AreaCaptureFixture
     {
         [UnityTest]
-        [Explicit("East road ground, closed civilian post, map boundary and distant mainland day/night views.")]
+        [Explicit("East road/church landscape, local lights, closed civilian post and distant mainland day/night views.")]
         [PrebuildSetup(typeof(EastGuardAssetsSetup))]
         public IEnumerator CityEastExit()
         {
+            bool landscapeOnly = Environment.GetEnvironmentVariable("BAR_PROMENADE_CAPTURE_EAST_LANDSCAPE") == "1";
             GameSessionState.BeginNewGame();
             GameSessionState.TryStartGameTimeFromWake();
             GameSessionState.AdvanceGameTime((float)((12d * 60d - GameSessionState.GameTimeOfDayMinutes) /
@@ -43,7 +45,15 @@ namespace BarPromenade.Tests.PlayMode
                 Vector2 postGround = new Vector2(p.CheckpointPosition.x - 10f, p.CheckpointPosition.z - 4.9f);
                 Vector3 postGroundEye = new Vector3(postGround.x, p.SampleGroundTop(postGround) + .65f, postGround.y);
                 Vector3 postGroundTarget = p.BoothPosition + new Vector3(-1.5f, .04f, 1.8f);
+                Vector2 benchApproach = new Vector2(p.CheckpointPosition.x - 8f, p.CheckpointPosition.z - 9.9f);
+                Vector2 benchPoint = new Vector2(p.CheckpointPosition.x - 4.85f, p.CheckpointPosition.z - 11.4f);
                 Vector3 cameraShift = Vector3.forward * .002f;
+                Vector2 seamView = new Vector2(p.CheckpointPosition.x - 6f, p.YardBounds.yMin - 1.2f);
+                CityTerrainSurfacePlan.TrySampleGroundTop(city.Layout, seamView, out float seamHeight, out _);
+                Vector3 seamEye = new Vector3(seamView.x, seamHeight + EyeHeight, seamView.y);
+                if (landscapeOnly)
+                    return new[] { Shot.At("east-exit-landscape-post", postEye,
+                        p.CheckpointPosition + Vector3.up * EyeHeight) };
                 return new[]
                 {
                     Shot.At("east-exit-00-city-junction", junctionEye, p.ApproachStart + new Vector3(2f, .2f, 0f)),
@@ -55,7 +65,11 @@ namespace BarPromenade.Tests.PlayMode
                     Shot.At("east-exit-00-road-ground-a", repairEye, repairTarget),
                     Shot.At("east-exit-00-road-ground-b", repairEye + cameraShift, repairTarget + cameraShift),
                     Shot.At("east-exit-00-post-ground-a", postGroundEye, postGroundTarget),
-                    Shot.At("east-exit-00-post-ground-b", postGroundEye + cameraShift, postGroundTarget + cameraShift)
+                    Shot.At("east-exit-00-post-ground-b", postGroundEye + cameraShift, postGroundTarget + cameraShift),
+                    Shot.At("east-exit-00-garden-seam", seamEye, p.BoothPosition + new Vector3(-.5f, .55f, -3.2f)),
+                    Shot.At("east-exit-00-bench-approach",
+                        new Vector3(benchApproach.x, p.SampleGroundTop(benchApproach) + EyeHeight, benchApproach.y),
+                        new Vector3(benchPoint.x, p.SampleGroundTop(benchPoint) + .65f, benchPoint.y))
                 };
             });
 
@@ -72,6 +86,19 @@ namespace BarPromenade.Tests.PlayMode
             Physics.SyncTransforms();
             VerifyEastStreetJoin(city, plan);
             VerifyEastDressing(city, plan, landing);
+            VerifyEastGroundTransition(city, plan, landing);
+            VerifyEastOpenForefield(city, plan);
+            VerifyEastSwale(city, plan, landing);
+            yield return CaptureEastFenceThirdPerson(city, plan, landing, "day");
+            if (landscapeOnly)
+            {
+                GameSessionState.AdvanceGameTime((float)((21d * 60d - GameSessionState.GameTimeOfDayMinutes) /
+                    GameTimeState.GameMinutesPerRealSecond));
+                city.DayNight.ApplyCurrentTime(true);
+                yield return CaptureEastFenceThirdPerson(city, plan, landing, "night");
+                Debug.Log("EAST FENCE LANDSCAPE: full-run coverage, real dry swale and gentle crossings, pedestrian corridor, grounded dressing and third-person day/night views verified.");
+                yield break;
+            }
             for (float x = plan.ApproachStart.x + 1f; x < plan.CheckpointPosition.x - 1.5f; x += 3f)
             {
                 Assert.That(landing.TryResolveStandingPosition(new Vector2(x, plan.ApproachStart.z),
@@ -140,8 +167,11 @@ namespace BarPromenade.Tests.PlayMode
             {
                 if (follow != null) follow.enabled = false;
                 foreach (Renderer renderer in hero) renderer.enabled = false;
-                Vector2 firstShed = new Vector2(plan.YardBounds.xMin + 32.4f,
-                    Mathf.Lerp(plan.YardBounds.yMin + 12f, plan.YardBounds.yMax - 12f, .18f));
+                Light serviceLamp = GameObject.Find(CityEastExitWorldBuilder.ServiceLightName).GetComponent<Light>();
+                Light canopyLamp = GameObject.Find(CityEastExitWorldBuilder.CanopyLightName).GetComponent<Light>();
+                Vector3 serviceTarget = ResolveEastLightGround(serviceLamp);
+                Vector3 serviceView = ResolveEastServiceView(plan, landing, serviceTarget);
+                var lightSamples = new System.Collections.Generic.List<EastSurfaceLightSample>();
                 for (int phase = 0; phase < 2; phase++)
                 {
                     if (phase == 1)
@@ -149,6 +179,7 @@ namespace BarPromenade.Tests.PlayMode
                             GameTimeState.GameMinutesPerRealSecond));
                     city.DayNight.ApplyCurrentTime(true);
                     string light = phase == 0 ? "day" : "night";
+                    VerifyEastLocalLights(city, phase == 0);
                     yield return EastView("00-city-junction-" + light,
                         plan.ApproachStart.x - 3.5f, plan.ApproachStart.z + 6f,
                         plan.ApproachStart + new Vector3(2f, .2f, 0f));
@@ -171,9 +202,39 @@ namespace BarPromenade.Tests.PlayMode
                         plan.CheckpointPosition.x - 16f, plan.CheckpointPosition.z + 8f,
                         plan.CheckpointPosition + new Vector3(-12f, 1.1f, 0f));
                     yield return EastView("07-service-approach-" + light,
-                        plan.CheckpointPosition.x - 6f, plan.CheckpointPosition.z + 6f,
-                        new Vector3(firstShed.x, plan.SampleGroundTop(firstShed) + .8f, firstShed.y));
+                        serviceView.x, serviceView.z, serviceTarget + Vector3.up * .45f);
+                    Pose servicePose = new Pose(camera.transform.position, camera.transform.rotation);
+                    // Look across the former hard texture boundary, then back
+                    // from the usable southern approach. Both include human-
+                    // scale furniture and keep the original fog/camera contract.
+                    yield return EastView("08-garden-to-canopy-" + light,
+                        plan.CheckpointPosition.x - 6f, plan.YardBounds.yMin - 1.2f,
+                        plan.BoothPosition + new Vector3(-.5f, .55f, -3.2f));
+                    Vector3 seamTarget = new Vector3(plan.CheckpointPosition.x - 5f,
+                        plan.SampleGroundTop(new Vector2(plan.CheckpointPosition.x - 5f, plan.YardBounds.yMin)),
+                        plan.YardBounds.yMin);
+                    yield return EastView("09-canopy-to-garden-" + light,
+                        plan.CheckpointPosition.x - 5.2f, plan.CheckpointPosition.z - 9.9f, seamTarget);
+                    CaptureCurrentCamera(camera, SceneIds.City, "east-exit-09-seam-ground-a-" + light);
+                    camera.transform.position += Vector3.right * .002f;
+                    CaptureCurrentCamera(camera, SceneIds.City, "east-exit-09-seam-ground-b-" + light);
+                    yield return EastView("10-canopy-pool-" + light,
+                        plan.CheckpointPosition.x - 5.2f, plan.CheckpointPosition.z - 9.9f,
+                        plan.BoothPosition + new Vector3(0f, .03f, -2.65f));
+                    Pose canopyPose = new Pose(camera.transform.position, camera.transform.rotation);
+                    yield return EastView("11-boundary-landscape-" + light,
+                        plan.CheckpointPosition.x - 3f, plan.CheckpointPosition.z + 7f,
+                        new Vector3(plan.CheckpointPosition.x, plan.CheckpointPosition.y + .45f,
+                            plan.CheckpointPosition.z + 22f));
+                    // Take the entire visual set before evaluating photometry.
+                    // A faulty emitter must not hide the opposite time-of-day
+                    // landscape from the person reviewing the capture.
+                    camera.transform.SetPositionAndRotation(servicePose.position, servicePose.rotation);
+                    lightSamples.Add(MeasureEastSurfaceLight(camera, serviceLamp, light));
+                    camera.transform.SetPositionAndRotation(canopyPose.position, canopyPose.rotation);
+                    lightSamples.Add(MeasureEastSurfaceLight(camera, canopyLamp, light));
                 }
+                foreach (EastSurfaceLightSample sample in lightSamples) sample.Verify();
                 yield return VerifyEastGuards(city, camera, landing);
             }
             finally
@@ -184,7 +245,7 @@ namespace BarPromenade.Tests.PlayMode
                 for (int i = 0; i < hero.Length; i++) hero[i].enabled = enabled[i];
                 motor.SetInputEnabled(true);
             }
-            Debug.Log("EAST EXIT: physical road, closed boundary, passive far mainland and day/night captures verified.");
+            Debug.Log("EAST EXIT: continuous church/yard surface, physical road, closed boundary, local day/night illumination and passive far mainland verified.");
 
             IEnumerator EastView(string name, float x, float z, Vector3 target)
             {
@@ -196,6 +257,72 @@ namespace BarPromenade.Tests.PlayMode
                 camera.fieldOfView = 60f;
                 for (int frame = 0; frame < 4; frame++) yield return null;
                 CaptureCurrentCamera(camera, SceneIds.City, "east-exit-" + name);
+            }
+        }
+
+        private static IEnumerator CaptureEastFenceThirdPerson(CityGameRoot city, CityEastExitPlan exit,
+            CityMapCityTeleportGround landing, string phase)
+        {
+            PlayerMotor motor = city.Player.Motor;
+            Camera camera = Camera.main;
+            PlayerCameraFollow follow = camera.GetComponent<PlayerCameraFollow>();
+            Assert.That(follow, Is.Not.Null);
+            Assert.That(follow.FixedPoseActive, Is.False);
+            Assert.That(city.Player.GameObject.GetComponentsInChildren<Renderer>().Any(renderer => renderer.enabled),
+                Is.True, "Landscape acceptance keeps the actual hero visible for scale.");
+            bool oldFollow = follow.enabled, oldInput = motor.InputEnabled;
+            Vector3 oldFeet = motor.transform.position, oldEye = camera.transform.position;
+            Quaternion oldBody = motor.transform.rotation, oldCamera = camera.transform.rotation;
+            float oldPitch = follow.TargetOrbitPitch, oldFov = camera.fieldOfView;
+            try
+            {
+                follow.enabled = true;
+                motor.SetInputEnabled(false);
+                float laneX = exit.YardBounds.xMin + 4.5f;
+                yield return View("front-near", new Vector2(laneX, exit.CheckpointPosition.z + 20f), 25f);
+                yield return View("front-middle", new Vector2(laneX,
+                    Mathf.Lerp(exit.CheckpointPosition.z + 15f, exit.NorthYardBounds.yMax - 4f, .5f)), 25f);
+                yield return View("front-north", new Vector2(laneX, exit.NorthYardBounds.yMax - 16f), 155f);
+                float swaleZ = EastSwaleBroadSection(exit.Swale, .15f);
+                yield return View("swale-shoulder", new Vector2(
+                    exit.Swale.CenterX(swaleZ) - exit.Swale.HalfWidth(swaleZ) - .6f, swaleZ), 45f);
+                swaleZ = EastSwaleBroadSection(exit.Swale, .50f);
+                yield return View("swale-bed", new Vector2(exit.Swale.CenterX(swaleZ), swaleZ), 12f);
+                float crossingZ = exit.Swale.CrossingZ[exit.Swale.CrossingZ.Count / 2];
+                yield return View("swale-crossing", new Vector2(laneX, crossingZ), 90f);
+                yield return View("south-return", new Vector2(
+                    Mathf.Lerp(exit.CheckpointPosition.x, exit.YardBounds.xMax, .5f), exit.YardBounds.yMin - 2.5f), 65f);
+            }
+            finally
+            {
+                motor.Teleport(oldFeet);
+                motor.transform.rotation = oldBody;
+                follow.RotateYaw(Mathf.DeltaAngle(camera.transform.eulerAngles.y, oldCamera.eulerAngles.y));
+                follow.RotatePitch(oldPitch - follow.TargetOrbitPitch);
+                follow.Snap();
+                follow.enabled = oldFollow;
+                camera.transform.SetPositionAndRotation(oldEye, oldCamera);
+                camera.fieldOfView = oldFov;
+                motor.SetInputEnabled(oldInput);
+            }
+
+            IEnumerator View(string name, Vector2 point, float yaw)
+            {
+                Assert.That(landing.TryResolveStandingPosition(point, out Vector3 feet), Is.True,
+                    "The full-fence view must stand on accessible ground: " + name);
+                Assert.That(Vector2.Distance(new Vector2(feet.x, feet.z), point), Is.LessThan(.02f),
+                    "A capture must not silently clamp to a different part of the fence: " + name);
+                motor.Teleport(feet);
+                motor.transform.rotation = Quaternion.Euler(0f, yaw, 0f);
+                follow.Snap();
+                follow.RotateYaw(Mathf.DeltaAngle(camera.transform.eulerAngles.y, yaw));
+                follow.Snap();
+                for (int frame = 0; frame < 8; frame++) yield return null;
+                Assert.That(camera.fieldOfView, Is.EqualTo(follow.FollowFieldOfView).Within(.1f),
+                    "Full-fence shots retain the normal third-person lens.");
+                Assert.That(camera.farClipPlane, Is.EqualTo(48f).Within(.001f));
+                Assert.That(RenderSettings.fogDensity, Is.EqualTo(.070f).Within(.0001f));
+                CaptureCurrentCamera(camera, SceneIds.City, "east-exit-fence-" + name + "-" + phase);
             }
         }
 
@@ -297,6 +424,7 @@ namespace BarPromenade.Tests.PlayMode
                 input.Press(keyboard.wKey, queueEventOnly: true);
                 float previousX = motor.transform.position.x;
                 int stalledFrames = 0;
+                var movementTrace = new System.Collections.Generic.Queue<string>();
                 for (int frame = 0; frame < 600 && motor.transform.position.x < exit.CheckpointPosition.x - .9f; frame++)
                 {
                     yield return null;
@@ -305,6 +433,8 @@ namespace BarPromenade.Tests.PlayMode
                     float x = motor.transform.position.x;
                     stalledFrames = x - previousX < .001f ? stalledFrames + 1 : 0;
                     previousX = x;
+                    RecordEastMotorTrace(motor, frame, movementTrace);
+                    if (stalledFrames == 60) DiagnoseEastWalkingStall(city, camera, "asphalt", movementTrace);
                     Assert.That(stalledFrames, Is.LessThan(60),
                         "Ordinary W walking hit an invisible wall at " + motor.transform.position);
                 }
@@ -319,6 +449,54 @@ namespace BarPromenade.Tests.PlayMode
                 CaptureCurrentCamera(camera, SceneIds.City, "east-exit-00-normal-walk-barrier");
                 Debug.Log("EAST NORMAL WALK: held W crossed the city seam from " + start +
                     " and stopped at the visible barrier at " + motor.transform.position + ".");
+
+                input.Release(keyboard.wKey, queueEventOnly: true);
+                yield return null;
+                // Reproduce the two reported off-asphalt approaches with the
+                // same actual controller and ordinary held movement. The south
+                // lane ends before the visible booth; the north reaches iron.
+                foreach (float offset in new[] { -5f, 6.6f })
+                {
+                    float z = exit.ApproachStart.z + offset;
+                    float goalX = exit.CheckpointPosition.x - (offset < 0f ? 6f : .9f);
+                    Assert.That(landing.TryResolveStandingPosition(new Vector2(
+                        exit.ApproachStart.x - city.Layout.RoadWidth * .5f, z), out start), Is.True);
+                    motor.Teleport(start);
+                    motor.transform.rotation = Quaternion.LookRotation(Vector3.right);
+                    motor.SetInputEnabled(true);
+                    follow.Snap();
+                    input.Press(keyboard.wKey, queueEventOnly: true);
+                    previousX = motor.transform.position.x;
+                    stalledFrames = 0;
+                    movementTrace.Clear();
+                    for (int frame = 0; frame < 480 && motor.transform.position.x < goalX; frame++)
+                    {
+                        yield return null;
+                        Assert.That(GameInput.ReadMovement().y, Is.EqualTo(1f));
+                        Assert.That(motor.InteractionPoseMoveActive, Is.False);
+                        float x = motor.transform.position.x;
+                        stalledFrames = x - previousX < .001f ? stalledFrames + 1 : 0;
+                        previousX = x;
+                        RecordEastMotorTrace(motor, frame, movementTrace);
+                        if (stalledFrames == 45) DiagnoseEastWalkingStall(city, camera,
+                            offset < 0f ? "south-shoulder" : "north-shoulder", movementTrace);
+                        Assert.That(stalledFrames, Is.LessThan(45),
+                            "Held W hits an invisible wall beside the asphalt at " + motor.transform.position + "; side=" + offset);
+                    }
+                    Assert.That(motor.transform.position.x, Is.GreaterThanOrEqualTo(goalX),
+                        "Walking off the main road must cross the " + (offset < 0f ? "south" : "north") + " shoulder.");
+                    if (offset > 0f)
+                    {
+                        for (int frame = 0; frame < 30; frame++) yield return null;
+                        Assert.That(motor.transform.position.x,
+                            Is.InRange(exit.CheckpointPosition.x - 1.1f, exit.CheckpointPosition.x - .25f),
+                            "Only the physical fence ends the north off-asphalt approach.");
+                    }
+                    CaptureCurrentCamera(camera, SceneIds.City,
+                        "east-exit-00-normal-walk-" + (offset < 0f ? "south" : "north") + "-shoulder");
+                    input.Release(keyboard.wKey, queueEventOnly: true);
+                    yield return null;
+                }
             }
             finally
             {

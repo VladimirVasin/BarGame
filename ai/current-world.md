@@ -486,29 +486,20 @@ The vertical slice contains:
   authored approaches remain open.
   Portal, physical entry and visual continuation pieces deliberately retain
   `RuntimePrimitiveLit`;
-- one immutable default-only `CityFringeYardPlan` turns all five typed Yard
-  areas into authored middle ground derived from their canonical bounds,
-  declared access and sampled terrain. Four west/south variants share an old
-  municipal service-belt grammar of graded maintenance trace, drainage,
-  retaining work, sparse poles/cables and bounded repair/rockfall pockets.
-  Their complete roughly `22 m` road-to-toe terrain is a separate conforming
-  batch with a quiet compacted-fill albedo. A narrow terrain-conforming
-  `0-4 m` road-shoulder trace,
-  three cross-field service traces and three or four seeded meso anchors per
-  strip fill the `4-14 m` working band; no longitudinal anchor gap exceeds
-  `40 m`, while the established paired-trace-or-flood-drain/retaining language
-  stays in the `14-22 m` toe band. All four mountain strips omit broad
-  earth-textured longitudinal service-track overlays.
-  Their macro anchors are a stepped culvert terrace, an industrial repair
-  frame, the `6.9 m` tunnel forecourt with a validated `>6 m` clear terrain
-  lane, narrow embedded marks, two continuous grounded concrete return wings,
-  a two-post service frame and a crown-mounted floodlight, and caged floodworks
-  with a gauge; four dedicated measured sheets distinguish
-  compacted forefield, service aggregate, board-formed concrete and old
-  masonry at close range. Four small
-  emissive practicals remain separate from the combined geometry, while the
-  nearest supported anchor within `20 m` can lease the last existing street
-  Spot from `CityNightAtmosphere`; its `12`-Light pool is unchanged. The tunnel
+- immutable default-only `CityFringeYardPlan` derives five Yard compositions
+  from canonical bounds/access/terrain. Four west/south strips share graded
+  maintenance traces, drainage, retaining work, poles/cables and repair/rockfall
+  pockets. Their roughly `22 m` road-to-toe terrain forms one conforming
+  compacted-fill batch: `0-4 m` shoulder trace, three transverse traces and
+  three or four seeded anchors in `4-14 m` (gaps ≤`40 m`), paired traces or
+  flood-drain/retaining work in `14-22 m`. No broad longitudinal track overlays.
+  Macro anchors: stepped culvert terrace, industrial repair frame, `6.9 m`
+  tunnel forecourt (`>6 m` clear lane, embedded marks, two grounded concrete
+  return wings, two-post frame/crown floodlight), caged floodworks/gauge.
+  Four measured sheets: compacted forefield, aggregate, board-formed concrete,
+  old masonry. Four emissive practicals stay outside the combined geometry;
+  nearest supported anchor within `20 m` leases `CityNightAtmosphere`'s last
+  street Spot, preserving its `12`-Light pool. The tunnel
   moves that lease to the faulty second ceiling fixture, keeps a `0.22`
   daytime floor and applies the same sparse flicker to its lens and pooled
   light. Four additional emissive-only fixtures continue into the bend; the
@@ -529,18 +520,24 @@ The vertical slice contains:
   on continuous terrain; the fourth route continues through the open tunnel
   forecourt. Fringe dressing adds no destination, Light, north/east mountain
   or world-bounds expansion;
-- Default-only `CityEastExitPlanner`: road `Z=-39`, `X=186→198` post, tail `286`.
-  Apron/blend `5/4 m`; street-level junction, open sidewalk/markings;
-  radius-aware walk connector.
-  Booth/barrier/grille/gate/fences/drain close map/physics; church/garden/cemetery
-  paths stay, pooled practical.
-  `CityEastDistanceWorldBuilder`: land/road/shoulders/skyline
-  inside `44 m`, angular scale/parallax, `48 m` clip/`0.070` fog, depth behind
-  foreground; empty land, central windows/glow by day. No distance,
-  remote gameplay/Light/shadow/audio. `CityEastExitDressing{Plan,WorldBuilder}`:
-  canopy/bench/cabinet, shoulders/patch/drain, shed traces/fence/shrub-grass.
-  Road replaces ground skin;
-  dressing clears rendered supports; mesh cleanup, Soil ridges; map excludes solids;
+- Default `CityEastExitPlanner`: `Z=-39`, street `X=186`→post `198`→tail `286`;
+  `5/4 m` apron/blend, level junction/open sidewalk/markings/radius connector.
+  Front open/mask corners retained; only checkpoint road enters. Booth/barrier/grille/
+  gate/fences/drain close map/physics. `CityEastGroundTransition*`: partitioned
+  grass-soil `3–5 m` in `8 m`, baked/phased UVs/welded edge/footstep mask.
+  Canopy/cabinet/outside west-facing bench; apron/traces select terrain triangles.
+  `CityEastSwalePlan` lowers public terrain/collision/walk/map heights:
+  narrow intake → `3.9–4.7 m` wide/`.37–.48 m` deep,
+  meanders/feathered ends/level crossings, embedded gravel/old plants/stone.
+  `X=188–191.5`/patrol/church/fence unchanged.
+  Seeded Blender branch/creeping shrubs/matted/tall grass/gravel follow fence
+  runs/returns/corners; front `12–16 m`, gaps ≤`20 m`. Behind: banks/drain/
+  grate/repairs, nearer shed/stock. Shed-door/pole traces, toes/footings;
+  yard UV/support, cleanup/map solids. Pooled lamp + warm canopy/shed Spots
+  (`CityNightSiteLightRegistry`): day floor/halos/hard shadows.
+  `CityEastDistanceWorldBuilder`: land/road/shoulders/skyline `44 m`,
+  angular/parallax, `48 m` clip/`.070` fog/foreground depth, central windows/day
+  glow. No distance/remote gameplay/Light/shadow/audio; road replaces skin;
 - `CityEastGuardDuty`: one home, one three-point out-and-back patrol; swap
   on return. Senior/Junior: own rigs/faces/clothes, separate shoulder rifles
   (`EastGuardActor`), body-aware grounded movement. Speech/modals hold duty.

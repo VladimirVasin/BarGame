@@ -332,6 +332,13 @@ namespace BarPromenade
 
             bool expectsServiceTrack =
                 yard.Kind != CityFringeYardKind.SouthFloodWorks;
+            if (yard.Kind == CityFringeYardKind.EastUtilityEdge)
+            {
+                CityEastExitPlan east = CityEastExitPlanner.Create(layout);
+                // This edge's drainage is now carved into its shared ground
+                // skin, replacing the former raised straight drain pieces.
+                hasDrain |= east.IsEnabled && east.Swale.Bounds.Overlaps(yard.AreaBounds);
+            }
             if ((expectsServiceTrack && !hasTrack) ||
                 (!expectsServiceTrack && hasTrack) ||
                 !hasDrain)

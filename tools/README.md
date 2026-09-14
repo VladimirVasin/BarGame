@@ -1,10 +1,10 @@
 # Art and native tool entry points
 
-`build-city-east-exit-3d-model.py`: post/far FBX/JSON; `--dressing-only`: kit.
-`build-city-east-guards-3d-model.py`: rigs/actions/atlases/rifle in `Guards`.
-Assets: `Assets/Resources/City/EastExit`; source: `ArtSource/City/EastExit`.
-
-Both use `tools/run-blender.py` and `--validate-only`.
+`build-city-east-{exit,guards}-3d-model.py`: post/far/guard rigs/actions/atlas/rifle;
+`run-blender.py`/`--validate-only`. Exit `--dressing-only`: ground/fixtures,
+`BranchShrub/CreepingScrub/MattedGrass/TallWeeds/GravelScatter`, drain/grate/stock.
+`Assets/Resources/City/EastExit`; source `ArtSource/City/EastExit`.
+`build-city-east-ground-texture.py --verify`: grass/soil seam.
 
 `build-city-cannery-3d-model.py`: ten metre FBXs/JSON in `Assets/Resources/City/Cannery`,
 source `ArtSource/City/Cannery`; port maps/outdoor scales/`CartonStack`;
@@ -39,12 +39,12 @@ python tools/run-blender.py tools/build-last-route-coin-3d-model.py --validate-o
 `LastRouteCoinAssetValidation`: imported bounds at build gate;
 source `ArtSource/Vehicles/Blender/LastRouteCoin3D.blend`.
 
-The final village household slice adds two isolated generators:
+Village generators:
 `build-village-outdoor-player-actions-3d-model.py` publishes thirteen optional
 hero clips and matching metre-space prop tracks;
 `build-village-errands-3d-model.py` publishes the household bucket and its
-resident filling and station strap actions. Both use `run-blender.py`, validate real contacts and
-preserve the production character models. The focused
+resident filling/station strap actions. Both use `run-blender.py`, validate contacts and
+preserve models. The focused
 `AreaCaptureFixture.VillageOutdoorLife` imports these banks and checks their
 placed contacts, ordinary carried travel and outcomes after a scene reload.
 `AreaCaptureFixture.VillageOutdoorPartners` starts with explicitly seeded basket,

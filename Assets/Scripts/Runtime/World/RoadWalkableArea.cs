@@ -149,7 +149,8 @@ namespace BarPromenade
         internal static void SubtractRectangle(
             Rect source,
             Rect cut,
-            ICollection<Rect> destination)
+            ICollection<Rect> destination,
+            bool preserveTraversalOverlap = false)
         {
             float xMin = Mathf.Max(source.xMin, cut.xMin);
             float xMax = Mathf.Min(source.xMax, cut.xMax);
@@ -163,8 +164,14 @@ namespace BarPromenade
 
             AddRect(destination, source.xMin, source.yMin, xMin, source.yMax);
             AddRect(destination, xMax, source.yMin, source.xMax, source.yMax);
-            AddRect(destination, xMin, source.yMin, xMax, zMin);
-            AddRect(destination, xMin, zMax, xMax, source.yMax);
+            // A walk mask erodes each member rectangle by the body radius.
+            // Keep the corner regions overlapping when subtracting a solid:
+            // disjoint strips create invisible walls on the cut's extended
+            // edges, even many metres away from the actual obstacle.
+            float horizontalMin = preserveTraversalOverlap ? source.xMin : xMin;
+            float horizontalMax = preserveTraversalOverlap ? source.xMax : xMax;
+            AddRect(destination, horizontalMin, source.yMin, horizontalMax, zMin);
+            AddRect(destination, horizontalMin, zMax, horizontalMax, source.yMax);
         }
 
         private static void AddRect(
@@ -590,6 +597,13 @@ namespace BarPromenade
             if (eastExit.IsEnabled)
             {
                 area.Add(eastExit.RoadBounds);
+                // The public forefield is one continuous piece of real land.
+                // Cell-sized street connectors alone leave radius holes at
+                // their T-junctions with the ground-cell connectors. Cover
+                // this entire visible approach, then cut the actual solids.
+                area.Add(Rect.MinMaxRect(eastExit.ApproachStart.x - CityGroundTraversalPlanner.ConnectorReach,
+                    eastExit.YardBounds.yMin, eastExit.CheckpointPosition.x,
+                    eastExit.NorthYardBounds.yMax));
                 // Contains erodes each rectangle by the agent radius. Two
                 // touching asphalt footprints therefore need the same overlap
                 // connector as the city's other traversable ground seams.
@@ -673,7 +687,7 @@ namespace BarPromenade
             {
                 var next = new List<Rect>();
                 foreach (Rect piece in pieces)
-                    CityGroundTraversalPlanner.SubtractRectangle(piece, exclusion, next);
+                    CityGroundTraversalPlanner.SubtractRectangle(piece, exclusion, next, true);
                 pieces = next;
             }
             rectangles.AddRange(pieces);
@@ -685,7 +699,7 @@ namespace BarPromenade
             exclusions.Add(footprint);
             var pieces = new List<Rect>();
             foreach (Rect rectangle in rectangles)
-                CityGroundTraversalPlanner.SubtractRectangle(rectangle, footprint, pieces);
+                CityGroundTraversalPlanner.SubtractRectangle(rectangle, footprint, pieces, true);
             rectangles.Clear();
             rectangles.AddRange(pieces);
             spatialIndexDirty = true;

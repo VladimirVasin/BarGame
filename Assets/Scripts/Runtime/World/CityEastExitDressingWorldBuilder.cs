@@ -10,6 +10,11 @@ namespace BarPromenade
     {
         public const string ResourcePath = "City/EastExit/CityEastExitDressing3D";
         public const string RootName = "Eastern Checkpoint Surroundings";
+        public const string EmbeddedGroundMeshSuffix = " Embedded Post Gravel";
+
+        public static bool IsEmbeddedGroundPart(CityEastExitDressingPart part) =>
+            part.Assembly == "CanopyApron" || part.GroupId == "Post Foot Traces" ||
+            part.Assembly == "FenceToe" || part.GroupId == "Fence Wear";
 
         internal static void AddTemplates(IDictionary<string, Transform> templates)
         {
@@ -22,12 +27,14 @@ namespace BarPromenade
         internal static Transform Build(Transform parent, CityEastExitPlan exit, CityEastExitDressingPlan plan,
             IDictionary<string, Transform> templates)
         {
+            EmbedPostGround(parent, exit, plan, templates);
             Transform root = new GameObject(RootName).transform;
             root.SetParent(parent, false);
             var support = new SurfaceSupport(parent);
             var groups = new Dictionary<string, Transform>(StringComparer.Ordinal);
             foreach (CityEastExitDressingPart part in plan.Parts)
             {
+                if (IsEmbeddedGroundPart(part)) continue;
                 if (!groups.TryGetValue(part.GroupId, out Transform group))
                 {
                     group = new GameObject(part.GroupId).transform;
@@ -36,10 +43,6 @@ namespace BarPromenade
                 Transform placed = CityEastExitWorldBuilder.Place(templates, group, part.Assembly, part.Id,
                     part.Position, part.Rotation, part.Scale);
                 FitAuthoredMeshes(placed, exit, part, support);
-                if (part.GroupId == "Post Foot Traces")
-                    foreach (Renderer renderer in placed.GetComponentsInChildren<Renderer>(true))
-                        CityFringeYardSurfaceAppearance.ApplyCombined(renderer, CityFringeYardSurfaceKind.ForefieldGround,
-                            new Color(.285f, .30f, .245f));
                 if (part.Assembly == "RoadRepair")
                     foreach (Renderer renderer in placed.GetComponentsInChildren<Renderer>(true))
                     {
@@ -47,11 +50,13 @@ namespace BarPromenade
                         block.SetColor("_BaseColor", new Color(.23f, .24f, .21f));
                         block.SetColor("_Color", new Color(.23f, .24f, .21f)); renderer.SetPropertyBlock(block);
                     }
-                if (part.Assembly == "GroundRidge")
+                if (part.Assembly == "GroundRidge" || part.Assembly == "EarthBank" || part.Assembly == "DrainCrossing" ||
+                    part.Assembly == "DrainInspection")
                 {
                     foreach (MeshFilter filter in placed.GetComponentsInChildren<MeshFilter>(true))
                         filter.gameObject.AddComponent<MeshCollider>().sharedMesh = filter.sharedMesh;
-                    FootstepGround.Stamp(placed.gameObject, FootstepGroundKind.Soil);
+                    FootstepGround.Stamp(placed.gameObject, part.Assembly == "DrainCrossing" || part.Assembly == "DrainInspection"
+                        ? FootstepGroundKind.Concrete : FootstepGroundKind.Soil);
                 }
                 else
                     foreach (CityEastExitDressingSolid solid in plan.Solids)
@@ -63,13 +68,168 @@ namespace BarPromenade
                         }
                 if (part.Assembly == "Shelter")
                     CityEastExitWorldBuilder.AddBox(placed, new Vector3(0, 2.57f, 0), new Vector3(3.6f, .16f, 3.2f));
+                // The banks and grass roots belong to the yard's earth.
+                // Their former generic soil role carried a different tile
+                // and tint, producing separate dark islands in the field.
+                if (part.Assembly == "EarthBank" || part.Assembly == "GroundRidge" || part.Assembly == "DryGrass")
+                    foreach (Renderer renderer in placed.GetComponentsInChildren<Renderer>(true))
+                        if (renderer.name.EndsWith("_Ground", StringComparison.Ordinal))
+                        {
+                            CityFringeYardSurfaceAppearance.ApplyCombined(renderer,
+                                CityFringeYardSurfaceKind.ForefieldGround, CityExteriorAppearance.YardGround);
+                            float pitch = CityFringeYardSurfaceAppearance.GetRecipe(CityFringeYardSurfaceKind.ForefieldGround).MetersPerTile;
+                            var block = new MaterialPropertyBlock(); renderer.GetPropertyBlock(block);
+                            block.SetVector("_BaseMap_ST", new Vector4(1f, 1f, 0f, -exit.YardBounds.yMin / pitch));
+                            renderer.SetPropertyBlock(block);
+                        }
             }
             return root;
+        }
+
+        private static void EmbedPostGround(Transform exitRoot, CityEastExitPlan exit,
+            CityEastExitDressingPlan plan, IDictionary<string, Transform> templates)
+        {
+            var masks = new List<GroundMask>();
+            foreach (CityEastExitDressingPart part in plan.Parts)
+            {
+                if (!IsEmbeddedGroundPart(part)) continue;
+                if (!templates.TryGetValue(part.Assembly, out Transform template))
+                    throw new InvalidOperationException("Missing post-ground outline " + part.Assembly);
+                var faces = new List<Vector2>();
+                foreach (MeshFilter filter in template.GetComponentsInChildren<MeshFilter>(true))
+                {
+                    Vector3[] vertices = filter.sharedMesh.vertices;
+                    int[] triangles = filter.sharedMesh.triangles;
+                    foreach (int index in triangles)
+                    {
+                        // Match Place's complete imported basis and unit scale.
+                        Vector3 authored = filter.transform.TransformPoint(vertices[index]) - template.position;
+                        Vector3 point = part.Position + part.Rotation * Vector3.Scale(part.Scale, authored);
+                        faces.Add(new Vector2(point.x, point.z));
+                    }
+                }
+                masks.Add(new GroundMask(part.Footprint, faces));
+            }
+            HomeSurfaceRecipe recipe = CityFringeYardSurfaceAppearance.GetRecipe(CityFringeYardSurfaceKind.ForefieldGround);
+            foreach (MeshFilter filter in exitRoot.parent.GetComponentsInChildren<MeshFilter>(true))
+            {
+                bool yard = filter.name == CityFringeYardGroundWorldBuilder.GenericGroundObjectName;
+                bool road = filter.transform.IsChildOf(exitRoot) && filter.name.StartsWith("EEX_Road_", StringComparison.Ordinal);
+                if (!yard && !road) continue;
+                Mesh source = filter.sharedMesh;
+                Vector3[] positions = source.vertices, sourceNormals = source.normals;
+                Vector2[] sourceUvs = source.uv;
+                var vertices = new List<Vector3>(positions);
+                var normals = new List<Vector3>(sourceNormals);
+                var uv = new List<Vector2>(sourceUvs);
+                int originalSlots = source.subMeshCount;
+                var ordinary = new List<int>[originalSlots];
+                var embedded = new List<int>();
+                for (int slot = 0; slot < originalSlots; slot++)
+                {
+                    int[] triangles = source.GetTriangles(slot);
+                    ordinary[slot] = new List<int>(triangles.Length);
+                    for (int index = 0; index < triangles.Length; index += 3)
+                    {
+                        int a = triangles[index], b = triangles[index + 1], c = triangles[index + 2];
+                        Vector3 worldA = filter.transform.TransformPoint(positions[a]);
+                        Vector3 worldB = filter.transform.TransformPoint(positions[b]);
+                        Vector3 worldC = filter.transform.TransformPoint(positions[c]);
+                        Vector3 center = (worldA + worldB + worldC) / 3f;
+                        bool covered = false;
+                        // Imported road bevels share smoothed vertex normals
+                        // with their top. Only the actual upward face carries
+                        // standing ground; a side/skirt must never be painted.
+                        if (Vector3.Cross(worldB - worldA, worldC - worldA).normalized.y > .7f)
+                        {
+                            covered = yard && exit.Swale.IsBed(new Vector2(center.x, center.z));
+                            foreach (GroundMask mask in masks)
+                                if (mask.Contains(new Vector2(center.x, center.z))) { covered = true; break; }
+                        }
+                        if (!covered)
+                        {
+                            ordinary[slot].Add(a); ordinary[slot].Add(b); ordinary[slot].Add(c);
+                            continue;
+                        }
+                        // Reuse whole terrain triangles: the existing half-
+                        // metre detail follows the worn outline without any
+                        // added T-junction, raised sheet or hidden collision.
+                        for (int corner = 0; corner < 3; corner++)
+                        {
+                            int original = triangles[index + corner];
+                            Vector3 world = filter.transform.TransformPoint(positions[original]);
+                            embedded.Add(vertices.Count);
+                            vertices.Add(positions[original]); normals.Add(sourceNormals[original]);
+                            uv.Add(new Vector2(world.x / recipe.MetersPerTile, world.z / recipe.MetersPerTile));
+                        }
+                    }
+                }
+                if (embedded.Count == 0) continue;
+                Mesh mesh = Object.Instantiate(source);
+                mesh.name = source.name + EmbeddedGroundMeshSuffix;
+                if (vertices.Count > ushort.MaxValue) mesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
+                mesh.SetVertices(vertices); mesh.SetNormals(normals); mesh.SetUVs(0, uv);
+                mesh.subMeshCount = originalSlots + 1;
+                for (int slot = 0; slot < originalSlots; slot++) mesh.SetTriangles(ordinary[slot], slot, false);
+                mesh.SetTriangles(embedded, originalSlots, false);
+                mesh.bounds = source.bounds;
+                filter.sharedMesh = mesh;
+                filter.gameObject.AddComponent<RuntimeGeneratedMeshOwner>().Initialize(mesh);
+
+                Renderer renderer = filter.GetComponent<Renderer>();
+                Material[] previous = renderer.sharedMaterials;
+                var materials = new Material[originalSlots + 1];
+                var blocks = new MaterialPropertyBlock[originalSlots];
+                var global = new MaterialPropertyBlock(); renderer.GetPropertyBlock(global);
+                for (int slot = 0; slot < originalSlots; slot++)
+                {
+                    materials[slot] = previous[Mathf.Min(slot, previous.Length - 1)];
+                    blocks[slot] = new MaterialPropertyBlock(); renderer.GetPropertyBlock(blocks[slot], slot);
+                    if (blocks[slot].isEmpty) blocks[slot] = global;
+                }
+                materials[originalSlots] = RuntimePrimitiveFactory.DefaultMaterial;
+                renderer.sharedMaterials = materials;
+                renderer.SetPropertyBlock(null);
+                for (int slot = 0; slot < originalSlots; slot++) renderer.SetPropertyBlock(blocks[slot], slot);
+                var gravel = new MaterialPropertyBlock();
+                gravel.SetTexture("_BaseMap", CityFringeYardSurfaceAppearance.GetTexture(CityFringeYardSurfaceKind.ForefieldGround));
+                Color tint = CityFringeYardSurfaceAppearance.CreateDisplayTint(new Color(.285f, .30f, .245f),
+                    CityFringeYardSurfaceKind.ForefieldGround);
+                gravel.SetColor("_BaseColor", tint); gravel.SetColor("_Color", tint);
+                gravel.SetVector("_BaseMap_ST", new Vector4(1f, 1f, 0f, -exit.YardBounds.yMin / recipe.MetersPerTile));
+                gravel.SetFloat("_Smoothness", recipe.Smoothness); gravel.SetFloat("_Metallic", recipe.Metallic);
+                renderer.SetPropertyBlock(gravel, originalSlots);
+            }
+        }
+
+        private sealed class GroundMask
+        {
+            private readonly Rect bounds;
+            private readonly IReadOnlyList<Vector2> faces;
+            internal GroundMask(Rect bounds, IReadOnlyList<Vector2> faces) { this.bounds = bounds; this.faces = faces; }
+            internal bool Contains(Vector2 point)
+            {
+                if (!bounds.Contains(point)) return false;
+                for (int index = 0; index < faces.Count; index += 3)
+                {
+                    Vector2 a = faces[index], b = faces[index + 1], c = faces[index + 2];
+                    float area = Cross(b - a, c - a);
+                    if (Mathf.Abs(area) < .000001f) continue;
+                    if (Cross(b - a, point - a) / area >= -.00001f &&
+                        Cross(c - b, point - b) / area >= -.00001f &&
+                        Cross(a - c, point - c) / area >= -.00001f) return true;
+                }
+                return false;
+            }
+            private static float Cross(Vector2 a, Vector2 b) => a.x * b.y - a.y * b.x;
         }
 
         private static void FitAuthoredMeshes(Transform placement, CityEastExitPlan exit, CityEastExitDressingPart part,
             SurfaceSupport support)
         {
+            bool shrub = part.Assembly == "Shrub" || part.Assembly == "LowShrub" || part.Assembly == "BranchShrub";
+            float rootLift = shrub && support.TrySample(new Vector2(part.Position.x, part.Position.z), out float rootGround)
+                ? rootGround - part.Position.y : 0f;
             foreach (MeshFilter filter in placement.GetComponentsInChildren<MeshFilter>(true))
             {
                 Mesh source = filter.sharedMesh;
@@ -96,11 +256,12 @@ namespace BarPromenade
                     else
                     {
                         float weight = foot ? 1f : Mathf.Clamp01(1f - authoredHeight / (post ? 2.48f : .30f));
-                        world.y += (ground - part.Position.y) * weight;
+                        world.y += rootLift + (ground - part.Position.y - rootLift) * weight;
                     }
                     worldVertices[i] = world;
                 }
-                bool sheet = part.Assembly == "GravelPatch" || part.Assembly == "RoadRepair" ||
+                bool sheet = part.Assembly == "GravelPatch" || part.Assembly == "CanopyApron" ||
+                    part.Assembly == "FenceToe" || part.Assembly == "RoadRepair" ||
                     part.Assembly == "DryDrain" && !filter.name.EndsWith("_Gravel", StringComparison.Ordinal);
                 if (sheet)
                 {
@@ -114,9 +275,20 @@ namespace BarPromenade
                         for (int i = 0; i < worldVertices.Length; i++) worldVertices[i].y += lift;
                     support.Add(worldVertices, mesh.triangles);
                 }
+                else if (part.Assembly == "EarthBank" || part.Assembly == "GroundRidge")
+                    support.Add(worldVertices, mesh.triangles);
                 for (int i = 0; i < vertices.Length; i++)
                     vertices[i] = filter.transform.InverseTransformPoint(worldVertices[i]);
                 mesh.vertices = vertices;
+                if ((part.Assembly == "EarthBank" || part.Assembly == "GroundRidge" || part.Assembly == "DryGrass") &&
+                    filter.name.EndsWith("_Ground", StringComparison.Ordinal))
+                {
+                    float pitch = CityFringeYardSurfaceAppearance.GetRecipe(CityFringeYardSurfaceKind.ForefieldGround).MetersPerTile;
+                    var uv = new Vector2[worldVertices.Length];
+                    for (int i = 0; i < uv.Length; i++)
+                        uv[i] = new Vector2(worldVertices[i].x / pitch, worldVertices[i].z / pitch);
+                    mesh.uv = uv;
+                }
                 mesh.RecalculateBounds(); mesh.RecalculateNormals();
                 filter.sharedMesh = mesh;
                 filter.gameObject.AddComponent<RuntimeGeneratedMeshOwner>().Initialize(mesh);

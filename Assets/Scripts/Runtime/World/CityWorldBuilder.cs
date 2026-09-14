@@ -166,7 +166,7 @@ namespace BarPromenade
                     layout.ElevationPlan.SignatureStairs.Count));
             subTimer.Restart();
             RoadFenceWorldBuilder.Build(world, fencePlan);
-            CityEastExitWorldResult eastExit = CityEastExitWorldBuilder.Build(world, eastExitPlan);
+            CityEastExitWorldResult eastExit = CityEastExitWorldBuilder.Build(world, eastExitPlan, fringeYardPlan);
             if (eastExitPlan.IsEnabled) CityEastDistanceWorldBuilder.Build(world, eastExitPlan);
             ReportBlock(
                 "roads_and_river/fences",
@@ -529,6 +529,7 @@ namespace BarPromenade
                 surfaces,
                 layout,
                 precinctBoundaryApertures);
+            CityEastGroundTransition.Apply(surfaces, layout);
             // The sand carries the seacoast's tide-banded sheet over
             // UVs baked at its metre pitch; the tint stays the flat
             // colour the map and the compensation were solved against.

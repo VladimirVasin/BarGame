@@ -1,8 +1,8 @@
 {
   "generator": "tools/build-city-east-exit-3d-model.py",
-  "version": "1.0.0",
+  "version": "1.2.0",
   "design_id": "city_east_exit_dressing_v1",
-  "signature": "59de61ccf9fe43c676ebf8046e65ce2d1fbfec3ce3aba2dd7389eeec37e77898",
+  "signature": "f0d14cee9c9f9edd14b95b1b494638d1fbc21f2cbf3399816927fe5e13e2175a",
   "export_settings": {
     "axis_forward": "-Z",
     "axis_up": "Y",
@@ -17,18 +17,48 @@
   "lights": false,
   "animation_count": 0,
   "surface_contract": "Runtime adds terrain sample to every authored vertex Y; preserve topology/UV",
+  "anchors": {
+    "CanopyLamp/CanopyLampLightAnchor": [
+      0,
+      -0.065,
+      0
+    ],
+    "ServiceWallLamp/ServiceWallLampLightAnchor": [
+      0,
+      -0.105,
+      -0.195
+    ]
+  },
   "terrain_conform_assemblies": [
     "GravelPatch",
+    "CanopyApron",
+    "FenceToe",
     "RoadRepair",
     "DryDrain",
     "GroundRidge",
-    "DryGrass"
+    "EarthBank",
+    "DryGrass",
+    "LowShrub",
+    "CreepingScrub",
+    "BranchShrub",
+    "MattedGrass",
+    "TallWeeds",
+    "GravelScatter"
   ],
   "terrain_conform_max_local_y": {
     "GravelPatch": 0.017,
+    "CanopyApron": 0.014,
+    "FenceToe": 0.016,
     "RoadRepair": 0.018,
     "DryDrain": 0.099696,
     "GroundRidge": 0.476477,
+    "EarthBank": 0.568275,
+    "LowShrub": 0.62,
+    "CreepingScrub": 0.45,
+    "BranchShrub": 1.05,
+    "MattedGrass": 0.27,
+    "TallWeeds": 0.85,
+    "GravelScatter": 0.095,
     "DryGrass": 0.615085
   },
   "shelter": {
@@ -336,6 +366,70 @@
       ]
     },
     {
+      "name": "CanopyApron",
+      "bounds_min_unity": [
+        -2.4,
+        0.008,
+        -1.815064
+      ],
+      "bounds_max_unity": [
+        2.4,
+        0.014,
+        1.793349
+      ],
+      "parts": [
+        {
+          "mesh": "EEX_CanopyApron_Gravel",
+          "role": "Gravel",
+          "vertex_count": 247,
+          "triangle_count": 432,
+          "bounds_min_unity": [
+            -2.4,
+            0.008,
+            -1.815064
+          ],
+          "bounds_max_unity": [
+            2.4,
+            0.014,
+            1.793349
+          ],
+          "surface_only": true
+        }
+      ]
+    },
+    {
+      "name": "FenceToe",
+      "bounds_min_unity": [
+        -3.9,
+        0.008,
+        -0.275986
+      ],
+      "bounds_max_unity": [
+        3.9,
+        0.016,
+        0.27535
+      ],
+      "parts": [
+        {
+          "mesh": "EEX_FenceToe_Gravel",
+          "role": "Gravel",
+          "vertex_count": 105,
+          "triangle_count": 160,
+          "bounds_min_unity": [
+            -3.9,
+            0.008,
+            -0.275986
+          ],
+          "bounds_max_unity": [
+            3.9,
+            0.016,
+            0.27535
+          ],
+          "surface_only": true
+        }
+      ]
+    },
+    {
       "name": "RoadRepair",
       "bounds_min_unity": [
         -2.2,
@@ -500,6 +594,575 @@
       ]
     },
     {
+      "name": "EarthBank",
+      "bounds_min_unity": [
+        -4.871573,
+        -0.039,
+        -1.334749
+      ],
+      "bounds_max_unity": [
+        4.8,
+        0.568275,
+        1.147412
+      ],
+      "parts": [
+        {
+          "mesh": "EEX_EarthBank_Ground",
+          "role": "Ground",
+          "vertex_count": 52,
+          "triangle_count": 100,
+          "bounds_min_unity": [
+            -4.871573,
+            -0.039,
+            -1.334749
+          ],
+          "bounds_max_unity": [
+            4.8,
+            0.568275,
+            1.147412
+          ],
+          "surface_only": false
+        }
+      ]
+    },
+    {
+      "name": "DrainCrossing",
+      "bounds_min_unity": [
+        -0.65,
+        0.0,
+        -0.505
+      ],
+      "bounds_max_unity": [
+        0.65,
+        0.058,
+        0.505
+      ],
+      "parts": [
+        {
+          "mesh": "EEX_DrainCrossing_Stone",
+          "role": "Stone",
+          "vertex_count": 32,
+          "triangle_count": 56,
+          "bounds_min_unity": [
+            -0.65,
+            0.0,
+            -0.505
+          ],
+          "bounds_max_unity": [
+            0.65,
+            0.048,
+            0.505
+          ],
+          "surface_only": false
+        },
+        {
+          "mesh": "EEX_DrainCrossing_Metal",
+          "role": "Metal",
+          "vertex_count": 176,
+          "triangle_count": 308,
+          "bounds_min_unity": [
+            -0.6175,
+            0.027,
+            -0.435
+          ],
+          "bounds_max_unity": [
+            0.6175,
+            0.058,
+            0.435
+          ],
+          "surface_only": false
+        }
+      ]
+    },
+    {
+      "name": "FenceFooting",
+      "bounds_min_unity": [
+        -0.23,
+        0.0,
+        -0.21
+      ],
+      "bounds_max_unity": [
+        0.23,
+        0.102,
+        0.21
+      ],
+      "parts": [
+        {
+          "mesh": "EEX_FenceFooting_Stone",
+          "role": "Stone",
+          "vertex_count": 16,
+          "triangle_count": 28,
+          "bounds_min_unity": [
+            -0.23,
+            0.0,
+            -0.21
+          ],
+          "bounds_max_unity": [
+            0.23,
+            0.096,
+            0.21
+          ],
+          "surface_only": false
+        },
+        {
+          "mesh": "EEX_FenceFooting_Dark",
+          "role": "Dark",
+          "vertex_count": 16,
+          "triangle_count": 28,
+          "bounds_min_unity": [
+            -0.075,
+            0.096,
+            -0.075
+          ],
+          "bounds_max_unity": [
+            0.075,
+            0.102,
+            0.075
+          ],
+          "surface_only": false
+        }
+      ]
+    },
+    {
+      "name": "LowShrub",
+      "bounds_min_unity": [
+        -0.775,
+        0.0,
+        -0.6
+      ],
+      "bounds_max_unity": [
+        0.775,
+        0.62,
+        0.6
+      ],
+      "parts": [
+        {
+          "mesh": "EEX_LowShrub_Wood",
+          "role": "Wood",
+          "vertex_count": 448,
+          "triangle_count": 784,
+          "bounds_min_unity": [
+            -0.56341,
+            0.0,
+            -0.448615
+          ],
+          "bounds_max_unity": [
+            0.627338,
+            0.605607,
+            0.457572
+          ],
+          "surface_only": false
+        },
+        {
+          "mesh": "EEX_LowShrub_Foliage",
+          "role": "Foliage",
+          "vertex_count": 224,
+          "triangle_count": 336,
+          "bounds_min_unity": [
+            -0.775,
+            0.346136,
+            -0.6
+          ],
+          "bounds_max_unity": [
+            0.775,
+            0.62,
+            0.6
+          ],
+          "surface_only": false
+        }
+      ]
+    },
+    {
+      "name": "CreepingScrub",
+      "bounds_min_unity": [
+        -1.2,
+        0.0,
+        -0.85
+      ],
+      "bounds_max_unity": [
+        1.2,
+        0.45,
+        0.85
+      ],
+      "parts": [
+        {
+          "mesh": "EEX_CreepingScrub_Wood",
+          "role": "Wood",
+          "vertex_count": 640,
+          "triangle_count": 1120,
+          "bounds_min_unity": [
+            -0.933243,
+            0.0,
+            -0.623255
+          ],
+          "bounds_max_unity": [
+            1.026359,
+            0.40476,
+            0.662593
+          ],
+          "surface_only": false
+        },
+        {
+          "mesh": "EEX_CreepingScrub_Foliage",
+          "role": "Foliage",
+          "vertex_count": 320,
+          "triangle_count": 480,
+          "bounds_min_unity": [
+            -1.2,
+            0.213394,
+            -0.85
+          ],
+          "bounds_max_unity": [
+            1.2,
+            0.45,
+            0.85
+          ],
+          "surface_only": false
+        }
+      ]
+    },
+    {
+      "name": "BranchShrub",
+      "bounds_min_unity": [
+        -0.9,
+        0.0,
+        -0.75
+      ],
+      "bounds_max_unity": [
+        0.9,
+        1.05,
+        0.75
+      ],
+      "parts": [
+        {
+          "mesh": "EEX_BranchShrub_Wood",
+          "role": "Wood",
+          "vertex_count": 448,
+          "triangle_count": 784,
+          "bounds_min_unity": [
+            -0.65792,
+            0.0,
+            -0.567923
+          ],
+          "bounds_max_unity": [
+            0.809061,
+            1.05,
+            0.591985
+          ],
+          "surface_only": false
+        },
+        {
+          "mesh": "EEX_BranchShrub_Foliage",
+          "role": "Foliage",
+          "vertex_count": 144,
+          "triangle_count": 216,
+          "bounds_min_unity": [
+            -0.9,
+            0.6303,
+            -0.75
+          ],
+          "bounds_max_unity": [
+            0.9,
+            0.987939,
+            0.75
+          ],
+          "surface_only": false
+        }
+      ]
+    },
+    {
+      "name": "MattedGrass",
+      "bounds_min_unity": [
+        -1.4,
+        0.0,
+        -0.75
+      ],
+      "bounds_max_unity": [
+        1.4,
+        0.27,
+        0.75
+      ],
+      "parts": [
+        {
+          "mesh": "EEX_MattedGrass_DryGrass",
+          "role": "DryGrass",
+          "vertex_count": 312,
+          "triangle_count": 468,
+          "bounds_min_unity": [
+            -1.4,
+            0.0,
+            -0.75
+          ],
+          "bounds_max_unity": [
+            1.4,
+            0.27,
+            0.75
+          ],
+          "surface_only": false
+        }
+      ]
+    },
+    {
+      "name": "TallWeeds",
+      "bounds_min_unity": [
+        -0.7,
+        0.0,
+        -0.5
+      ],
+      "bounds_max_unity": [
+        0.7,
+        0.85,
+        0.5
+      ],
+      "parts": [
+        {
+          "mesh": "EEX_TallWeeds_DryGrass",
+          "role": "DryGrass",
+          "vertex_count": 800,
+          "triangle_count": 1320,
+          "bounds_min_unity": [
+            -0.7,
+            0.0,
+            -0.5
+          ],
+          "bounds_max_unity": [
+            0.7,
+            0.85,
+            0.5
+          ],
+          "surface_only": false
+        }
+      ]
+    },
+    {
+      "name": "GravelScatter",
+      "bounds_min_unity": [
+        -1.05,
+        -0.025,
+        -0.6
+      ],
+      "bounds_max_unity": [
+        1.05,
+        0.095,
+        0.6
+      ],
+      "parts": [
+        {
+          "mesh": "EEX_GravelScatter_Gravel",
+          "role": "Gravel",
+          "vertex_count": 272,
+          "triangle_count": 476,
+          "bounds_min_unity": [
+            -1.05,
+            -0.025,
+            -0.6
+          ],
+          "bounds_max_unity": [
+            1.05,
+            0.095,
+            0.6
+          ],
+          "surface_only": false
+        }
+      ]
+    },
+    {
+      "name": "DrainInspection",
+      "bounds_min_unity": [
+        -0.65,
+        -0.015,
+        -0.425
+      ],
+      "bounds_max_unity": [
+        0.65,
+        0.105,
+        0.425
+      ],
+      "parts": [
+        {
+          "mesh": "EEX_DrainInspection_Stone",
+          "role": "Stone",
+          "vertex_count": 64,
+          "triangle_count": 112,
+          "bounds_min_unity": [
+            -0.65,
+            -0.015,
+            -0.425
+          ],
+          "bounds_max_unity": [
+            0.65,
+            0.065,
+            0.425
+          ],
+          "surface_only": false
+        },
+        {
+          "mesh": "EEX_DrainInspection_Metal",
+          "role": "Metal",
+          "vertex_count": 224,
+          "triangle_count": 392,
+          "bounds_min_unity": [
+            -0.565,
+            0.064,
+            -0.34625
+          ],
+          "bounds_max_unity": [
+            0.565,
+            0.105,
+            0.34625
+          ],
+          "surface_only": false
+        }
+      ]
+    },
+    {
+      "name": "RepairStock",
+      "bounds_min_unity": [
+        -1.0,
+        0.0,
+        -0.4
+      ],
+      "bounds_max_unity": [
+        1.0,
+        0.45,
+        0.4
+      ],
+      "parts": [
+        {
+          "mesh": "EEX_RepairStock_Wood",
+          "role": "Wood",
+          "vertex_count": 32,
+          "triangle_count": 56,
+          "bounds_min_unity": [
+            -0.695,
+            0.0,
+            -0.4
+          ],
+          "bounds_max_unity": [
+            0.695,
+            0.120133,
+            0.4
+          ],
+          "surface_only": false
+        },
+        {
+          "mesh": "EEX_RepairStock_Metal",
+          "role": "Metal",
+          "vertex_count": 192,
+          "triangle_count": 368,
+          "bounds_min_unity": [
+            -1.0,
+            0.120133,
+            -0.325
+          ],
+          "bounds_max_unity": [
+            1.0,
+            0.45,
+            0.335
+          ],
+          "surface_only": false
+        }
+      ]
+    },
+    {
+      "name": "CanopyLamp",
+      "bounds_min_unity": [
+        -0.23,
+        -0.055,
+        -0.1
+      ],
+      "bounds_max_unity": [
+        0.23,
+        0.05,
+        0.1
+      ],
+      "parts": [
+        {
+          "mesh": "EEX_CanopyLamp_Metal",
+          "role": "Metal",
+          "vertex_count": 48,
+          "triangle_count": 84,
+          "bounds_min_unity": [
+            -0.23,
+            -0.05,
+            -0.1
+          ],
+          "bounds_max_unity": [
+            0.23,
+            0.05,
+            0.1
+          ],
+          "surface_only": false
+        },
+        {
+          "mesh": "EEX_CanopyLamp_Glow",
+          "role": "Glow",
+          "vertex_count": 16,
+          "triangle_count": 28,
+          "bounds_min_unity": [
+            -0.18,
+            -0.055,
+            -0.0675
+          ],
+          "bounds_max_unity": [
+            0.18,
+            -0.043,
+            0.0675
+          ],
+          "surface_only": false
+        }
+      ]
+    },
+    {
+      "name": "ServiceWallLamp",
+      "bounds_min_unity": [
+        -0.125,
+        -0.15,
+        -0.19
+      ],
+      "bounds_max_unity": [
+        0.125,
+        0.15,
+        0.0005
+      ],
+      "parts": [
+        {
+          "mesh": "EEX_ServiceWallLamp_Metal",
+          "role": "Metal",
+          "vertex_count": 48,
+          "triangle_count": 84,
+          "bounds_min_unity": [
+            -0.125,
+            -0.15,
+            -0.19
+          ],
+          "bounds_max_unity": [
+            0.125,
+            0.15,
+            0.0005
+          ],
+          "surface_only": false
+        },
+        {
+          "mesh": "EEX_ServiceWallLamp_Glow",
+          "role": "Glow",
+          "vertex_count": 16,
+          "triangle_count": 28,
+          "bounds_min_unity": [
+            -0.0725,
+            -0.1065,
+            -0.167
+          ],
+          "bounds_max_unity": [
+            0.0725,
+            -0.0595,
+            -0.149
+          ],
+          "surface_only": false
+        }
+      ]
+    },
+    {
       "name": "DryGrass",
       "bounds_min_unity": [
         -0.620716,
@@ -615,5 +1278,5 @@
       ]
     }
   ],
-  "triangle_count": 6760
+  "triangle_count": 15008
 }

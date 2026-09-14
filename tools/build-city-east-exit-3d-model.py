@@ -24,7 +24,7 @@ import bpy
 from mathutils import Vector
 
 VERSION = "1.1.0"
-DRESSING_VERSION = "1.0.0"
+DRESSING_VERSION = "1.2.0"
 EXPORT_SETTINGS = {
     "axis_forward": "-Z", "axis_up": "Y",
     "apply_scale_options": "FBX_SCALE_NONE", "bake_space_transform": False,
@@ -50,7 +50,24 @@ PART_ROLES = {"MetalPostL": "Metal", "MetalPostR": "Metal",
 PART_NAMES = {"MetalPostL": "Metal_PostL", "MetalPostR": "Metal_PostR",
               "StoneFootL": "Stone_FootL", "StoneFootR": "Stone_FootR"}
 SHEET_PARTS = {("GravelPatch", "Gravel"), ("RoadRepair", "Asphalt"),
-               ("RoadRepair", "Dark"), ("DryDrain", "Ground"), ("DryDrain", "Dark")}
+               ("RoadRepair", "Dark"), ("DryDrain", "Ground"), ("DryDrain", "Dark"),
+               ("CanopyApron", "Gravel"), ("FenceToe", "Gravel")}
+DRESSING_LIGHT_ANCHORS = {"CanopyLamp": (0, -.065, 0),
+                          "ServiceWallLamp": (0, -.105, -.195)}
+LANDSCAPE_BOUNDS = {
+    "LowShrub": ((1.55, .62, 1.20), 0),
+    "CreepingScrub": ((2.40, .45, 1.70), 0),
+    "BranchShrub": ((1.80, 1.05, 1.50), 0),
+    "MattedGrass": ((2.80, .27, 1.50), 0),
+    "TallWeeds": ((1.40, .85, 1.00), 0),
+    "GravelScatter": ((2.10, .12, 1.20), -.025),
+    "DrainInspection": ((1.30, .12, .85), -.015),
+    "RepairStock": ((2.00, .45, .80), 0),
+}
+TERRAIN_CONFORM_ASSEMBLIES = (
+    "GravelPatch", "CanopyApron", "FenceToe", "RoadRepair", "DryDrain",
+    "GroundRidge", "EarthBank", "DryGrass", "LowShrub", "CreepingScrub",
+    "BranchShrub", "MattedGrass", "TallWeeds", "GravelScatter")
 
 
 def box(center, size, bevel=.012):
@@ -135,6 +152,36 @@ def ground_sheet(length, width, rows, columns, elevation, seed=1):
     return vertices, faces
 
 
+def folded_leaf(length, width, thickness=.024):
+    """Closed six-edged leaf with a lifted midrib; no opaque canopy cone."""
+    outline = ((-.50, 0), (-.22, -.46), (.21, -.38),
+               (.50, .02), (.11, .50), (-.30, .35))
+    vertices = [(x * length, 0, z * width) for x, z in outline]
+    vertices += [(0, thickness, 0), (-.06 * length, -thickness * .32, 0)]
+    faces = []
+    for i in range(6):
+        following = (i + 1) % 6
+        faces.extend(((following, i, 6), (i, following, 7)))
+    return vertices, faces
+
+
+def open_pipe(length, radius, wall=.012, sides=8):
+    """Short hollow stock along X: actual open ends and finite wall thickness."""
+    vertices = []
+    for x, r in ((-length / 2, radius), (length / 2, radius),
+                 (-length / 2, radius - wall), (length / 2, radius - wall)):
+        vertices += [(x, math.cos(i * math.tau / sides) * r,
+                      math.sin(i * math.tau / sides) * r) for i in range(sides)]
+    faces = []
+    for i in range(sides):
+        j = (i + 1) % sides
+        faces.extend(((i, j, sides + j, sides + i),
+                      (2 * sides + j, 2 * sides + i, 3 * sides + i, 3 * sides + j),
+                      (j, i, 2 * sides + i, 2 * sides + j),
+                      (sides + i, sides + j, 3 * sides + j, 3 * sides + i)))
+    return vertices, faces
+
+
 def make_dressing():
     """Small passive furnishings and continuous, terrain-following ground marks."""
     assemblies = {}
@@ -209,6 +256,12 @@ def make_dressing():
 
     add("GravelPatch", "Gravel", ground_sheet(6, 3, 14, 6,
         lambda t, s: .008 + .009 * (1 - abs(s)) * math.sin(t * math.pi), 11))
+    # A single worn surface under the canopy joins the foot approach to the
+    # doorway. Its gently broken edges remain a ground mark, never a slab.
+    add("CanopyApron", "Gravel", ground_sheet(4.8, 3.15, 18, 12,
+        lambda t, s: .008 + .006 * (1 - abs(s)) * math.sin(t * math.pi), 19))
+    add("FenceToe", "Gravel", ground_sheet(7.8, .48, 20, 4,
+        lambda t, s: .008 + .008 * (1 - abs(s)), 31))
     add("RoadRepair", "Asphalt", ground_sheet(4.4, 2.7, 12, 6,
         lambda t, s: .010 + .004 * math.sin(t * math.pi) * (1 - abs(s)), 7))
     # Two short sealed cracks inside the patch. They stay thin and climb the
@@ -231,6 +284,126 @@ def make_dressing():
     for i, (x, z) in enumerate(((-1.15, -.28), (.87, .36), (.25, -.46))):
         add("GroundRidge", "Gravel", move(kit.scaled(berm(), (.060, .095, .073)),
             (x, .09, z), i * 53))
+
+    # Broad low earth, with an asymmetric shoulder and an embedded toe. This
+    # is a loose bank inside the fence rather than a new perimeter wall.
+    bank = kit.scaled(berm(), (1.60, .65, .83))
+    bank = ([(x + .14 * math.sin(z * 2.1), y,
+              z + .15 * math.sin(x * .71) * max(0, y)) for x, y, z in bank[0]], bank[1])
+    add("EarthBank", "Ground", bank)
+
+    # One shallow, supported pedestrian drain crossing. The metal bears on
+    # both low stone kerbs; every top stays within a normal walking step.
+    for z in (-.43, .43):
+        add("DrainCrossing", "Stone", box((0, .024, z), (1.30, .048, .15), .012))
+    for x in (-.58, .58):
+        add("DrainCrossing", "Metal", box((x, .042, 0), (.075, .030, .87), .005))
+    for i in range(9):
+        add("DrainCrossing", "Metal", box((-.49 + i * .1225, .045, 0), (.055, .026, .84), .004))
+
+    # Worn individual post bases, not a new continuous concrete plinth.
+    add("FenceFooting", "Stone", box((0, .048, 0), (.46, .096, .42), .035))
+    add("FenceFooting", "Dark", box((0, .099, 0), (.15, .006, .15), .005))
+
+    # Open irregular shrubs: the silhouette belongs to branches and separated
+    # folded leaves. Sparse fork ends remain bare rather than meeting a solid
+    # boulder-like canopy. All roots share the same terrain datum.
+    for group, count, spread, height in (("LowShrub", 7, .57, .54),
+                                        ("CreepingScrub", 10, 1.10, .36),
+                                        ("BranchShrub", 7, .63, .94)):
+        for i in range(count):
+            angle = .43 + i * 2.399
+            radius = spread * (.70 + i % 3 * .13)
+            root = (math.cos(angle) * .10, .016, math.sin(angle) * .08)
+            elbow = (math.cos(angle) * radius * .42,
+                     height * (.30 + i % 3 * .07), math.sin(angle) * radius * .40)
+            end = (math.cos(angle) * radius, height * (.68 + i % 4 * .085),
+                   math.sin(angle) * radius * .72)
+            add(group, "Wood", beam(root, elbow, .022 if group != "BranchShrub" else .033),
+                beam(elbow, end, .016))
+            for fork in range(2):
+                t = .53 + fork * .22
+                start = tuple(elbow[a] + (end[a] - elbow[a]) * t for a in range(3))
+                fork_angle = angle + (-.85 if fork == 0 else .92)
+                tip = (start[0] + math.cos(fork_angle) * .20,
+                       start[1] + .065, start[2] + math.sin(fork_angle) * .19)
+                add(group, "Wood", beam(start, tip, .011))
+                if group == "BranchShrub" and (i + fork) % 3 == 0:
+                    continue
+                leaf_length = .31 if group != "CreepingScrub" else .43
+                for side in (-1, 1):
+                    leaf = bp.u_rotated(folded_leaf(leaf_length, leaf_length * .59),
+                        (side * 19, math.degrees(fork_angle) + side * 36, -11 + i % 3 * 12))
+                    add(group, "Foliage", move(leaf, (tip[0] + side * .055,
+                        tip[1] - .005, tip[2] + side * .038)))
+
+    # Flattened grass has long folded ribbons in staggered roots and broken
+    # patches; the taller seed stems retain their own slender upright rhythm.
+    for i in range(39):
+        x = -1.21 + (i * 17 % 37) / 36 * 2.42
+        z = -.60 + (i * 11 % 31) / 30 * 1.20
+        angle = 25 + math.sin(i * 2.31) * 33
+        blade = bp.u_rotated(folded_leaf(.28 + i % 5 * .068, .031 + i % 3 * .013, .012),
+            (-8 + i % 3 * 9, angle, 9 + i % 4 * 6))
+        add("MattedGrass", "DryGrass", move(blade, (x, -kit.bounds(blade)[0][1], z)))
+    for i in range(15):
+        angle = i * 2.399
+        x, z = math.cos(angle) * (.17 + i % 3 * .105), math.sin(angle) * .26
+        height = .49 + i % 5 * .087
+        elbow = (x + math.cos(angle) * .055, height * .60, z + math.sin(angle) * .050)
+        tip = (x + math.cos(angle) * .11, height, z + math.sin(angle) * .10)
+        add("TallWeeds", "DryGrass", beam((x, .008, z), elbow, .008), beam(elbow, tip, .006))
+        for side in (-1, 1):
+            leaf = bp.u_rotated(folded_leaf(.27 + i % 3 * .025, .033, .010),
+                (side * 12, i * 43 + side * 37, side * 28))
+            add("TallWeeds", "DryGrass", move(leaf, (elbow[0], elbow[1] * .77, elbow[2])))
+        if i % 3 != 0:
+            add("TallWeeds", "DryGrass", move(bp.u_rotated(folded_leaf(.071, .027, .020),
+                (0, i * 37, 72)), tip))
+
+    # Only distinct stones break the ground: there is no shared dark pedestal.
+    for i in range(17):
+        angle = i * 2.399
+        radius = .15 + (i * 7 % 13) / 12 * .85
+        stone = box((0, 0, 0), (.13 + i % 4 * .045, .06 + i % 3 * .025,
+            .10 + i % 5 * .026), .025)
+        stone = bp.u_rotated(stone, (i % 3 * 9, i * 43, -7 + i % 4 * 5))
+        add("GravelScatter", "Gravel", move(stone,
+            (math.cos(angle) * radius, -.025 - kit.bounds(stone)[0][1], math.sin(angle) * radius * .53)))
+
+    # A dry inspection grate visibly bears on four narrow old stone edges;
+    # open slots show the terrain, not a broad opaque black backing plate.
+    for x in (-.595, .595):
+        add("DrainInspection", "Stone", box((x, .025, 0), (.11, .080, .85), .016))
+    for z in (-.375, .375):
+        add("DrainInspection", "Stone", box((0, .025, z), (1.14, .080, .10), .014))
+        add("DrainInspection", "Metal", box((0, .083, z * .85), (1.13, .038, .055), .005))
+    for i in range(12):
+        add("DrainInspection", "Metal", box((-.52 + i * 1.04 / 11, .085, 0),
+            (.045, .040, .67), .004))
+
+    # A modest repair supply, physically carried by two timber bearers. Open
+    # pipe ends and angle iron distinguish this from repeated decorative boxes.
+    for x in (-.62, .62):
+        add("RepairStock", "Wood", box((x, .060, 0), (.15, .12, .80), .012))
+    for length, z, radius in ((2.0, -.25, .075), (1.81, -.07, .065), (1.93, .10, .070)):
+        add("RepairStock", "Metal", move(open_pipe(length, radius), (0, .12 + radius, z)))
+    add("RepairStock", "Metal", box((.02, .145, .295), (1.78, .05, .080), .004),
+        box((.02, .195, .327), (1.78, .10, .016), .003))
+    # One upper replacement rail rests across the three lower pipe crowns.
+    for x in (-.52, .52):
+        add("RepairStock", "Metal", box((x, .290, -.07), (.085, .075, .45), .006))
+    add("RepairStock", "Metal", move(open_pipe(1.72, .061), (0, .3885, -.07)))
+
+    # Passive measured fixtures. Runtime owns the two bounded practicals.
+    add("CanopyLamp", "Metal", box((0, 0, 0), (.46, .10, .20), .018),
+        box((-.15, .043, 0), (.07, .014, .16), .003),
+        box((.15, .043, 0), (.07, .014, .16), .003))
+    add("CanopyLamp", "Glow", box((0, -.049, 0), (.36, .012, .135), .004))
+    add("ServiceWallLamp", "Metal", box((0, 0, -.027), (.16, .30, .055), .015),
+        box((0, -.01, -.105), (.22, .20, .13), .028),
+        box((0, .11, -.10), (.25, .04, .18), .014))
+    add("ServiceWallLamp", "Glow", box((0, -.083, -.158), (.145, .047, .018), .007))
 
     # Three sparse, uneven bunches. Narrow closed blades survive a low-poly
     # silhouette without billboard transparency or a repeated hedge line.
@@ -263,8 +436,18 @@ def make_dressing():
         for z in (-.49, .59):
             add("RepairedFence", "Dark", box((-.070, y, z), (.011, .020, .020), .002))
     add("RepairedFence", "Metal", beam((.045, .24, -.52), (.045, 1.62, .62), .035))
-    return {group: {role: kit.merge_all(items) for role, items in roles.items()}
-            for group, roles in assemblies.items()}
+    result = {group: {role: kit.merge_all(items) for role, items in roles.items()}
+              for group, roles in assemblies.items()}
+    # Fix the authored metre envelopes once here. Runtime retains these actual
+    # bounds and only applies its ordinary bounded variation and terrain fitting.
+    for group, (size, floor) in LANDSCAPE_BOUNDS.items():
+        low, high = kit.bounds(kit.merge_all(result[group].values()))
+        scale = tuple(size[a] / (high[a] - low[a]) for a in range(3))
+        origin = ((low[0] + high[0]) / 2, low[1], (low[2] + high[2]) / 2)
+        for role, (vertices, faces) in result[group].items():
+            result[group][role] = ([tuple((point[a] - origin[a]) * scale[a] +
+                (floor if a == 1 else 0) for a in range(3)) for point in vertices], faces)
+    return result
 
 
 def make_assemblies():
@@ -449,9 +632,10 @@ def dressing_manifest(assemblies):
             "root_scale_contract": measured["root_scale_contract"],
             "colliders": False, "lights": False, "animation_count": 0,
             "surface_contract": "Runtime adds terrain sample to every authored vertex Y; preserve topology/UV",
-            "terrain_conform_assemblies": ["GravelPatch", "RoadRepair", "DryDrain", "GroundRidge", "DryGrass"],
+            "anchors": {name + "/" + name + "LightAnchor": list(point) for name, point in DRESSING_LIGHT_ANCHORS.items()},
+            "terrain_conform_assemblies": list(TERRAIN_CONFORM_ASSEMBLIES),
             "terrain_conform_max_local_y": {r["name"]: r["bounds_max_unity"][1] for r in records
-                if r["name"] in ("GravelPatch", "RoadRepair", "DryDrain", "GroundRidge", "DryGrass")},
+                if r["name"] in TERRAIN_CONFORM_ASSEMBLIES},
             "shelter": {"back_edge": "+Z attaches to booth", "rigid_roof_height": 2.65,
                 "front_post_xz": [[-1.55, -1.3], [1.55, -1.3]],
                 "fit_posts": ["EEX_Shelter_Metal_PostL", "EEX_Shelter_Metal_PostR"],
@@ -461,7 +645,10 @@ def dressing_manifest(assemblies):
 
 def validate_dressing(assemblies, manifest):
     expected = {"Shelter", "Bench", "UtilityCabinet", "GravelPatch", "RoadRepair",
-                "DryDrain", "GroundRidge", "DryGrass", "RepairedFence"}
+                "DryDrain", "GroundRidge", "DryGrass", "RepairedFence", "CanopyApron",
+                "EarthBank", "DrainCrossing", "FenceFooting", "FenceToe", "LowShrub",
+                "CanopyLamp", "ServiceWallLamp", "CreepingScrub", "BranchShrub",
+                "MattedGrass", "TallWeeds", "GravelScatter", "DrainInspection", "RepairStock"}
     if set(assemblies) != expected or manifest["triangle_count"] > 16000:
         raise ValueError("Dressing assembly/budget contract mismatch")
     if manifest != dressing_manifest(make_dressing()):
@@ -487,6 +674,19 @@ def validate_dressing(assemblies, manifest):
         if "_Post" in part["mesh"] or "_Foot" in part["mesh"]:
             if part["bounds_min_unity"][1] != 0:
                 raise ValueError("Shelter fitted posts/feet must begin at Y=0")
+    if records["EarthBank"]["bounds_max_unity"][1] > .60 or records["LowShrub"]["bounds_max_unity"][1] > .85:
+        raise ValueError("Eastern landscape must remain low earth and open shrub groups")
+    if records["DrainCrossing"]["bounds_max_unity"][1] > .065:
+        raise ValueError("The shallow drain crossing must stay within walking height")
+    for group, (size, floor) in LANDSCAPE_BOUNDS.items():
+        low, high = records[group]["bounds_min_unity"], records[group]["bounds_max_unity"]
+        if abs(low[1] - floor) > 1e-6 or any(abs(high[a] - low[a] - size[a]) > 1e-6 for a in range(3)):
+            raise ValueError(f"Landscape grounding/metre envelope changed: {group}")
+    for group in ("LowShrub", "CreepingScrub", "BranchShrub", "MattedGrass", "TallWeeds"):
+        if "Ground" in assemblies[group] or "Dark" in assemblies[group]:
+            raise ValueError(f"Vegetation cannot carry a broad ground pedestal: {group}")
+    if records["DrainInspection"]["bounds_max_unity"][1] > .11:
+        raise ValueError("The inspection grate must remain low and embedded")
 
 
 def build_scene(assemblies, root_name="ROOT_CityEastExit3D"):
@@ -527,6 +727,13 @@ def build_scene(assemblies, root_name="ROOT_CityEastExit3D"):
         scene.collection.objects.link(anchor)
         anchor.parent = groups["Lamp"]
         anchor.location = (.32, 0, 3.335)
+    for group, (x, y, z) in DRESSING_LIGHT_ANCHORS.items():
+        if group not in groups:
+            continue
+        anchor = bpy.data.objects.new(group + "LightAnchor", None)
+        scene.collection.objects.link(anchor)
+        anchor.parent = groups[group]
+        anchor.location = (x, z, y)
     return root, groups
 
 
@@ -738,7 +945,11 @@ def preview(groups, output):
             ("UtilityCabinet", (2.8, 0, 1.2), -12), ("GravelPatch", (-.2, 0, -.7), 3),
             ("RoadRepair", (-4.0, 0, -2.3), 12), ("DryDrain", (1.0, 0, -3.3), 0),
             ("RepairedFence", (3.8, 0, 2.0), 0), ("GroundRidge", (5.1, 0, 2.0), 67),
-            ("DryGrass", (4.4, 0, .6), 35), ("DryGrass", (5.7, 0, 3), -17)]
+            ("DryGrass", (4.4, 0, .6), 35), ("DryGrass", (5.7, 0, 3), -17),
+            ("LowShrub", (-3.9, 0, 2.9), 23), ("BranchShrub", (4.9, 0, -1), 46),
+            ("CreepingScrub", (4.4, 0, -3.3), -19), ("MattedGrass", (-2.9, 0, .2), 11),
+            ("TallWeeds", (-4.8, 0, -.8), -34), ("GravelScatter", (1.3, 0, -1.5), 14),
+            ("DrainInspection", (1, 0, -3.3), 0), ("RepairStock", (1.7, 0, 3.3), 0)]
     else:
         placements = [("Road", (x, 0, 0), 0) for x in (-15, -5, 5, 15)]
         placements += [("Booth", (-2, 0, -5.5), 0), ("Barrier", (0, .035, 0), 0),

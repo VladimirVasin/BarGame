@@ -1018,6 +1018,18 @@ namespace BarPromenade
                         zAnchors.Add(east.BoothPad.yMin + offset);
                         zAnchors.Add(east.BoothPad.yMax + offset);
                     }
+                    // The hollow is sampled by the original mesh and its
+                    // collider. One global grid keeps adjoining cells aligned.
+                    Rect swale = east.Swale.Bounds;
+                    if (swale.Overlaps(patch))
+                    {
+                        for (float x = Mathf.Floor(Mathf.Max(patch.xMin, swale.xMin) * 4f) * .25f;
+                             x < Mathf.Min(patch.xMax, swale.xMax); x += .25f)
+                            xAnchors.Add(x);
+                        for (float z = Mathf.Floor(Mathf.Max(patch.yMin, swale.yMin) * 2f) * .5f;
+                             z < Mathf.Min(patch.yMax, swale.yMax); z += .5f)
+                            zAnchors.Add(z);
+                    }
                     // Thin imported ground traces need the rendered grade,
                     // not a three-metre chord across its curved transition.
                     // Refine only their source patches, on one shared grid.
