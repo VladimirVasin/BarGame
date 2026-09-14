@@ -529,16 +529,18 @@ The vertical slice contains:
   on continuous terrain; the fourth route continues through the open tunnel
   forecourt. Fringe dressing adds no destination, Light, north/east mountain
   or world-bounds expansion;
-- Default-only `CityEastExitPlanner`: graded road `Z=-39`, `X=182→258` post,
-  visual tail to `286`; booth/barrier/grille/gate/fences/drain close map/physics.
-  Church/garden/cemetery paths stay; one pooled practical.
-  `CityEastDistanceWorldBuilder`: passive land/road/shoulders/low skyline
-  inside `44 m`, angular scale/parallax, `48 m` clip/`0.070` fog. Long empty
-  land; warm central windows/basal glow persist by day. No named distance or
+- Default-only `CityEastExitPlanner`: road `Z=-39`, `X=186→198` post, tail `286`.
+  Apron/blend `5/4 m`; street-level junction, open sidewalk/markings;
+  radius-aware walk connector.
+  Booth/barrier/grille/gate/fences/drain close map/physics; church/garden/cemetery
+  paths stay, pooled practical.
+  `CityEastDistanceWorldBuilder`: land/road/shoulders/skyline
+  inside `44 m`, angular scale/parallax, `48 m` clip/`0.070` fog, depth behind
+  foreground; empty land, central windows/glow by day. No distance,
   remote gameplay/Light/shadow/audio. `CityEastExitDressing{Plan,WorldBuilder}`:
-  imported canopy/bench/cabinet, shoulders/patch/dry drain, shed-door aprons/
-  service traces, repaired fence/low shrub-grass groups. Vertices fit terrain;
-  owned meshes clean up, ridges give Soil steps. Map excludes solids, not roof;
+  canopy/bench/cabinet, shoulders/patch/drain, shed traces/fence/shrub-grass.
+  Road replaces ground skin;
+  dressing clears rendered supports; mesh cleanup, Soil ridges; map excludes solids;
 - `CityEastGuardDuty`: one home, one three-point out-and-back patrol; swap
   on return. Senior/Junior: own rigs/faces/clothes, separate shoulder rifles
   (`EastGuardActor`), body-aware grounded movement. Speech/modals hold duty.

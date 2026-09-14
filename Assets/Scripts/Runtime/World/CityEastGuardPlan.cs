@@ -15,10 +15,14 @@ namespace BarPromenade
             float x = exit.CheckpointPosition.x, z = exit.CheckpointPosition.z;
             Vector3 senior = Ground(x - 5.2f, z + 4.5f);
             Vector3 junior = Ground(x - 6.5f, z - 4.6f);
-            Vector3 northTurn = Ground(x - 7f, z + 10f);
+            // The northern round stays near the fence, away from the yard's
+            // utility sheds and the street-side service equipment.
+            Vector3 northTurn = Ground(x - 3.6f, z + 10f);
             Vector3 northEnd = Ground(x - 4.8f, z + 16f);
-            Vector3 southTurn = Ground(x - 10.2f, z - 9f);
-            Vector3 southEnd = Ground(x - 17f, z - 9f);
+            Vector3 southTurn = Ground(Mathf.Max(exit.YardBounds.xMin + 5f, x - 10.2f), z - 9f);
+            // A compact approach shortens this leg before the street's
+            // pavement and graded frontage instead of sending duty into it.
+            Vector3 southEnd = Ground(Mathf.Max(exit.YardBounds.xMin + 4f, x - 17f), z - 9f);
             routes = new[] { new[] { senior, northTurn, northEnd, northTurn, senior },
                 new[] { junior, southTurn, southEnd, southTurn, junior } };
             Influence = new Bounds(senior, Vector3.one * 3f);
@@ -38,6 +42,6 @@ namespace BarPromenade
         public Quaternion StationFacing(int index) => Quaternion.Euler(0f, index == 0 ? 242f : 300f, 0f);
         public Vector3 Ground(float x, float z) => new Vector3(x, GroundTop(new Vector2(x, z)), z);
         public float GroundTop(Vector2 point) => exit.RoadBounds.Contains(point)
-            ? exit.SampleRoadTop(point.x) : exit.SampleGroundTop(point);
+            ? exit.SampleRoadTop(point.x, point.y) : exit.SampleGroundTop(point);
     }
 }

@@ -4,34 +4,39 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
 
 ## Current facts
 
+- **Accepted — 2026-09-14, checkpoint placement:**
+  User: visible post `(198,-39)`, `12 m` from street edge.
+  Level T-junction opens sidewalk/markings; tail `X=286`, church paths/story §6 stay.
+
 - **Accepted — 2026-09-13, eastern post surroundings:**
-  Attached supported canopy/empty bench/closed cabinet, gravel shoulders/asphalt
-  patch/dry drain crossing, low banks/shrubs/dry grass, gravel trace to existing
-  sheds/poles, one repaired fence segment. Post outfitting, no art §18.25 vignette.
-  No new action/text/water/light; patrol/church paths/distant view stay.
+  Supported canopy/empty bench/closed cabinet, gravel shoulders/asphalt patch/
+  dry drain crossing, low banks/shrubs/grass, trace to existing sheds/poles,
+  repaired fence. Art §18.25/action/text/water/light unchanged;
+  paths/patrol/view stay.
 
 - **Accepted architecture exception — 2026-09-13, eastern post guards:**
-  Story §6 lifts empty/no-NPC/speech/action rules for two guards/first pair-E pools.
-  Senior: ~40, stocky/calm/terse; Junior: ~28, tall/lean/livelier, dry humour.
-  Own hero-quality models/rigs/faces/clothes, separate shoulder rifles: no fire,
-  hero aiming/pickup/pursuit. One holds post until the other's round ends, then
-  swap; closed road/church paths stay. Shared head bubbles arbitrate pairs/E,
-  no repeats/pause/range replay. Both knowingly hide being gay from others;
+  Story §6 permits two guards/first pair-E pools.
+  Senior: ~40, stocky/calm/terse; Junior: ~28, tall/lean/lively, dry humour.
+  Own hero-quality models/rigs/faces/clothes, shoulder rifles: no fire/hero
+  aiming/pickup/pursuit. One holds post, one patrols; swap on return.
+  Closed road/church paths stay. Shared head bubbles arbitrate pairs/E,
+  no repeats/pause/range replay. Both hide being gay from others;
   mutual attraction: held partner glances/everyday care, E restores reserve.
-  No announced relationship/shared biography/stereotypes, state border/police/
+  No stated relationship/shared biography/stereotypes, state border/police/
   ranks/insignia/closure reason/quarantine/crime knowledge/wider poisoning/
   quest/reward/travel. §16/§21/nine art checks hold.
 
 - **Accepted architecture exception — 2026-09-13, eastern mainland road:**
-  Story §6 lifts art §2.1a/§10e: closed civilian post north of church, one pooled
-  practical/low former-lake scrub. Booth/barrier/fences/gate close exit;
-  clearance preserves church/garden/cemetery paths. Long road/empty land precede
-  extremely distant broad low skyline/dissolved bases; central warm windows/
-  basal glow persist by day (§20). No east mountain/suburb. Passive world-direction
-  projection inside `48 m`, shared haze; no terrain/collision/Light/shadow/map
+  Story §6/art §2.1a/§10e: closed civilian post north of church, pooled
+  lamp/low former-lake scrub. Booth/barrier/fences/gate close exit;
+  church/garden/cemetery paths stay. Long road/empty land precede distant broad
+  low skyline/dissolved bases; central warm windows/glow by day (§20).
+  No east mountain/suburb. World-direction projection inside `48 m`, shared
+  haze, far depth behind physical foreground;
+  no terrain/collision/Light/shadow/map
   destination/navigation/transition, named city/distance/water/closure reason/
   police/quarantine/wider poisoning. Guard decision owns life; §16/§21/nine art
-  checks hold. Imported/placed road/booth bounds prove axes/metres, unlike ground samples.
+  checks hold. Imported/placed bounds verify road/booth axes/metres.
 
 - **Accepted — 2026-09-13, refined hero, M-65 and modular clothing:**
   The user accepts refining the existing Hero V2 to the latest cannery

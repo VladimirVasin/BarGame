@@ -116,6 +116,7 @@ namespace BarPromenade
                 fringeYardPlan,
                 settings,
                 seacoastPlan != null,
+                DescribeBoundaryStreetFurniture(layout, decorationPlan),
                 out GameObject parkLawn,
                 out CityCemeteryGroundExcavation cemeteryExcavation);
             ReportBlock("ground", blockTimer);
@@ -419,12 +420,41 @@ namespace BarPromenade
             GameLog.Debug("city", "world_build_block", fields);
         }
 
+        /// <summary>
+        /// Street furniture standing on a precinct boundary. A shelter is
+        /// set <c>RoadsidePoleOutsideRoadEdge</c> behind the kerb, so the
+        /// one at the church corner lands on church land; the garden fence
+        /// is planned in the ground pass, long before any stop exists, and
+        /// used to run a post through the shelter and both rails across its
+        /// bench. The footprints travel into the ground pass so a boundary
+        /// run can open around them, the way the church's own gate opens.
+        /// Grounding a stop reads the street surface plan and nothing
+        /// physical, so asking for the plan this early is safe and the
+        /// memo hands the same instance to the stop builder later.
+        /// </summary>
+        private static IReadOnlyList<Rect> DescribeBoundaryStreetFurniture(
+            CityLayout layout,
+            CityDecorationPlan decorationPlan)
+        {
+            CityBusPlan busPlan = CityBusPlanner.Create(layout, decorationPlan);
+            var footprints = new List<Rect>(busPlan.Stops.Count);
+            for (int index = 0; index < busPlan.Stops.Count; index++)
+            {
+                footprints.Add(
+                    CityBusStopWorldBuilder.DescribeFurnitureFootprint(
+                        busPlan.Stops[index]));
+            }
+
+            return footprints;
+        }
+
         private static Bounds BuildGround(
             Transform parent,
             CityLayout layout,
             CityFringeYardPlan fringeYardPlan,
             CityGenerationSettings settings,
             bool seacoastBuildsTheSea,
+            IReadOnlyList<Rect> precinctBoundaryApertures,
             out GameObject parkLawn,
             out CityCemeteryGroundExcavation cemeteryExcavation)
         {
@@ -497,7 +527,8 @@ namespace BarPromenade
                 fringeYardPlan);
             CityChurchGroundWorldBuilder.Build(
                 surfaces,
-                layout);
+                layout,
+                precinctBoundaryApertures);
             // The sand carries the seacoast's tide-banded sheet over
             // UVs baked at its metre pitch; the tint stays the flat
             // colour the map and the compensation were solved against.

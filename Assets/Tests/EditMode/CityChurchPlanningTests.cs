@@ -433,6 +433,87 @@ namespace BarPromenade.Tests.EditMode
             }
         }
 
+        [Test]
+        [Category("CityChurch")]
+        public void WestFence_OpensAroundTheShelterStandingOnItsLine()
+        {
+            CityLayout layout = CityLayoutGenerator.Generate(
+                CityBlueprintCatalog.Default,
+                CityGenerationSettings.Default,
+                GameSessionState.DefaultCitySeed);
+            CityChurchPlan church = CityChurchPlanner.Create(layout);
+            float line = church.Grounds.xMin +
+                (CityChurchGroundPlan.FenceThickness * 0.5f);
+            // Grounding a stop moves nothing but its height, so the
+            // routing plan carries the same footprints the game builds.
+            CityBusPlan busPlan = CityBusPlanner.CreateRoadRouting(layout);
+            Rect[] furniture = busPlan.Stops
+                .Select(CityBusStopWorldBuilder.DescribeFurnitureFootprint)
+                .ToArray();
+            Rect[] straddling = furniture
+                .Where(footprint =>
+                    footprint.xMin <= line &&
+                    footprint.xMax >= line &&
+                    footprint.yMax >= church.Grounds.yMin &&
+                    footprint.yMin <= church.Grounds.yMax)
+                .ToArray();
+            Assert.That(
+                straddling,
+                Has.Length.EqualTo(1),
+                "A shelter set behind the kerb lands on church land; the " +
+                "west run must be told about it.");
+
+            CityChurchGroundFenceSpan[] west = CityChurchGroundPlan
+                .CreateFenceSpans(layout, church, furniture)
+                .Where(span =>
+                    span.First.x - church.Grounds.xMin < 0.2f &&
+                    span.Second.x - church.Grounds.xMin < 0.2f)
+                .ToArray();
+            Assert.That(west, Is.Not.Empty);
+            Rect shelter = straddling[0];
+            foreach (CityChurchGroundFenceSpan span in west)
+            {
+                Assert.That(
+                    span.Second.z <= shelter.yMin + Tolerance ||
+                    span.First.z >= shelter.yMax - Tolerance,
+                    Is.True,
+                    "No rail may cross the shelter bench at " +
+                    $"{span.First.z:F2}..{span.Second.z:F2}.");
+            }
+
+            float opened = west.Sum(span => span.Second.z - span.First.z);
+            CityChurchGroundFenceSpan[] closedSpans = CityChurchGroundPlan
+                .CreateFenceSpans(layout, church)
+                .Where(span =>
+                    span.First.x - church.Grounds.xMin < 0.2f &&
+                    span.Second.x - church.Grounds.xMin < 0.2f)
+                .ToArray();
+            // The aperture is the footprint plus an end post at each
+            // side, clipped to the run and to whatever the church's own
+            // gate already leaves open beside it.
+            float postInset =
+                CityChurchGroundPlan.FenceThickness * 0.5f;
+            float from = Mathf.Max(
+                shelter.yMin - postInset, church.Grounds.yMin);
+            float to = Mathf.Min(
+                shelter.yMax + postInset, church.Grounds.yMax);
+            float removed = closedSpans.Sum(span =>
+                Mathf.Max(
+                    0f,
+                    Mathf.Min(span.Second.z, to) -
+                    Mathf.Max(span.First.z, from)));
+            float closed = closedSpans.Sum(span =>
+                span.Second.z - span.First.z);
+            Assert.That(
+                removed,
+                Is.GreaterThan(3f),
+                "The shelter must really have stood behind iron.");
+            Assert.That(
+                closed - opened,
+                Is.EqualTo(removed).Within(0.001f),
+                "The run loses exactly the iron that crossed the shelter.");
+        }
+
         private static void AssertFollowsSampledGrade(
             CityLayout layout,
             CitySurfaceDescriptor[] grounds,

@@ -1007,7 +1007,8 @@ namespace BarPromenade
                 if (east.IsEnabled)
                 {
                     xAnchors.Add(east.YardBounds.xMin);
-                    xAnchors.Add(east.CheckpointPosition.x - 12f);
+                    xAnchors.Add(east.ApproachStart.x + CityEastExitPlan.StreetGradeBlendLength);
+                    xAnchors.Add(east.CheckpointPosition.x - CityEastExitPlan.CheckpointApronLength);
                     foreach (float offset in new[] { -7f, -4f, 0f, 4f, 7f })
                         zAnchors.Add(east.CheckpointPosition.z + offset);
                     foreach (float offset in new[] { -2f, 0f, 2f })
@@ -1016,6 +1017,21 @@ namespace BarPromenade
                         xAnchors.Add(east.BoothPad.xMax + offset);
                         zAnchors.Add(east.BoothPad.yMin + offset);
                         zAnchors.Add(east.BoothPad.yMax + offset);
+                    }
+                    // Thin imported ground traces need the rendered grade,
+                    // not a three-metre chord across its curved transition.
+                    // Refine only their source patches, on one shared grid.
+                    foreach (CityEastExitDressingPart part in CityEastExitDressingPlan.Create(east).Parts)
+                    {
+                        if (part.Fit != CityEastExitDressingFit.Ground ||
+                            !part.Footprint.Overlaps(patch)) continue;
+                        Rect footprint = part.Footprint;
+                        for (float x = Mathf.Floor(Mathf.Max(patch.xMin, footprint.xMin - .5f) * 2f) * .5f;
+                             x < Mathf.Min(patch.xMax, footprint.xMax + .5f); x += .5f)
+                            xAnchors.Add(x);
+                        for (float z = Mathf.Floor(Mathf.Max(patch.yMin, footprint.yMin - .5f) * 2f) * .5f;
+                             z < Mathf.Min(patch.yMax, footprint.yMax + .5f); z += .5f)
+                            zAnchors.Add(z);
                     }
                 }
             }

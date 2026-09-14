@@ -14,6 +14,20 @@ namespace BarPromenade
         private static readonly Vector3 LensSize =
             new Vector3(0.34f, 0.22f, 0.055f);
 
+        // The iron cage that clasps a flood gabion. Every bar is set by
+        // its own half thickness plus a shallow bed, so it bears on the
+        // stone instead of floating a finger above it or - as the two end
+        // posts did, centred exactly on the end planes - reading from a
+        // distance as one rod driven straight through the monolith.
+        private const float CageBarThickness = 0.10f;
+        private const float CageFaceThickness = 0.08f;
+        private const float CageBarEmbed = 0.01f;
+        private const float CageBarOverhang = 0.18f;
+        private const float CageBarSeat =
+            (CageBarThickness * 0.5f) - CageBarEmbed;
+        private const float CageFaceSeat =
+            (CageFaceThickness * 0.5f) - CageBarEmbed;
+
         public static CityFringeYardPlan CreatePlan(
             CityLayout layout,
             IList<CityFringeYardDescriptor> sourceYards,
@@ -184,7 +198,16 @@ namespace BarPromenade
                     0.07f);
             }
 
-            Vector3 lampBase = PointAtDepth(yard, 19.12f, anchorLong);
+            // The lintel above the culvert mouth stands at depth 20.05 and
+            // reaches 2.51 up; the lamp used to hang at depth 19.12 and
+            // 2.76 up, which left a fifth of a metre of clear sky under it
+            // and another fifth in front - a lit housing floating over the
+            // portal from every angle. Its three sibling lamps in this plan
+            // all sit on a real trestle, post or mast; this one has no
+            // support part, so it is seated on the lintel itself: the body
+            // now straddles the lintel top and its back face overlaps the
+            // masonry face instead of standing proud of it.
+            Vector3 lampBase = PointAtDepth(yard, 19.9f, anchorLong);
             Quaternion lampRotation = Quaternion.LookRotation(
                 -yard.Access.OutwardNormal,
                 Vector3.up);
@@ -199,8 +222,8 @@ namespace BarPromenade
                 lampRotation,
                 new Vector3(0.48f, 0.34f, 0.42f),
                 false,
-                2.76f);
-            Vector3 lampPosition = WithGroundY(layout, yard, lampBase, 2.92f);
+                2.42f);
+            Vector3 lampPosition = WithGroundY(layout, yard, lampBase, 2.58f);
             return CreatePractical(
                 yard,
                 CityFringeYardPracticalKind.CulvertLamp,
@@ -529,16 +552,22 @@ namespace BarPromenade
                     $"{gabion.StableId}-cage-top",
                     gabion,
                     gabion.Center + Vector3.up *
-                        (gabion.Size.y * 0.5f + 0.07f),
-                    new Vector3(0.10f, 0.10f, gabion.Size.z + 0.18f));
+                        ((gabion.Size.y * 0.5f) + CageBarSeat),
+                    new Vector3(
+                        CageBarThickness,
+                        CageBarThickness,
+                        gabion.Size.z + CageBarOverhang));
                 AddElevatedPart(
                     yard,
                     parts,
                     $"{gabion.StableId}-cage-face",
                     gabion,
                     gabion.Center + roadward *
-                        (gabion.Size.x * 0.5f + 0.045f),
-                    new Vector3(0.08f, 0.08f, gabion.Size.z + 0.18f));
+                        ((gabion.Size.x * 0.5f) + CageFaceSeat),
+                    new Vector3(
+                        CageFaceThickness,
+                        CageFaceThickness,
+                        gabion.Size.z + CageBarOverhang));
                 for (int side = -1; side <= 1; side += 2)
                 {
                     AddElevatedPart(
@@ -547,11 +576,11 @@ namespace BarPromenade
                         $"{gabion.StableId}-cage-post-{side}",
                         gabion,
                         gabion.Center + axis *
-                            (gabion.Size.z * 0.5f * side),
+                            (((gabion.Size.z * 0.5f) + CageBarSeat) * side),
                         new Vector3(
-                            0.10f,
+                            CageBarThickness,
                             gabion.Size.y + 0.16f,
-                            0.10f));
+                            CageBarThickness));
                 }
             }
 

@@ -674,7 +674,9 @@ namespace BarPromenade
                 }
 
                 if (Mathf.Abs(
-                        part.Center.z - passage.BoundaryZ) > 0.001f)
+                        part.Center.z -
+                        CityCemeteryPlanner.GetNorthFenceLineZ(
+                            passage.BoundaryZ)) > 0.001f)
                 {
                     continue;
                 }

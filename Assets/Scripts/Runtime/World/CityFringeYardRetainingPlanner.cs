@@ -96,7 +96,8 @@ namespace BarPromenade
                 true,
                 0.18f,
                 reserved,
-                parts);
+                parts,
+                true);
         }
     }
 }

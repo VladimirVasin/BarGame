@@ -1597,6 +1597,83 @@ namespace BarPromenade.Tests.EditMode
                 : point.x;
         }
 
+        /// <summary>
+        /// The boundary wall is a run of separate fragments. Each one used
+        /// to be laid 0.7 m SHORT of its own pitch, so every joint along
+        /// the western wall was a slot you could see the rock backdrop
+        /// through - the surface strips beside them had an overlap
+        /// constant all along and the walls had none. Fragments split
+        /// around a declared gate keep their gap; only whole neighbours
+        /// are compared here, by the plain stable id the uncut ones get.
+        /// </summary>
+        [Test]
+        [Category("CityFringeYard")]
+        public void DefaultCoastal_JoinsEveryWholeRetainingFragmentToItsNeighbour()
+        {
+            CityFringeYardPlan plan = CityFringeYardPlanner.Create(
+                CityLayoutGenerator.Generate(
+                    CityBlueprintCatalog.Default,
+                    CityGenerationSettings.Default,
+                    GameSessionState.DefaultCitySeed),
+                CityMountainBoundaryPlanner.Create(
+                    CityLayoutGenerator.Generate(
+                        CityBlueprintCatalog.Default,
+                        CityGenerationSettings.Default,
+                        GameSessionState.DefaultCitySeed)));
+            int joints = 0;
+
+            foreach (CityFringeYardDescriptor yard in plan.Yards)
+            {
+                var whole = new Dictionary<string, Rect>();
+                foreach (CityFringeYardPartDescriptor part in yard.Parts)
+                {
+                    int marker = part.StableId.IndexOf(
+                        "-retaining-",
+                        System.StringComparison.Ordinal);
+                    if (marker < 0)
+                    {
+                        continue;
+                    }
+
+                    string suffix = part.StableId.Substring(
+                        marker + "-retaining-".Length);
+                    if (suffix.Length != 2)
+                    {
+                        continue;
+                    }
+
+                    whole[part.StableId.Substring(0, marker) + suffix] =
+                        part.Footprint;
+                }
+
+                foreach (KeyValuePair<string, Rect> entry in whole)
+                {
+                    string prefix = entry.Key.Substring(
+                        0, entry.Key.Length - 2);
+                    int index = int.Parse(
+                        entry.Key.Substring(entry.Key.Length - 2));
+                    if (!whole.TryGetValue(
+                            $"{prefix}{index + 1:00}",
+                            out Rect next))
+                    {
+                        continue;
+                    }
+
+                    joints++;
+                    Assert.That(
+                        entry.Value.Overlaps(next),
+                        Is.True,
+                        $"{yard.AreaId} wall shows daylight between " +
+                        $"fragment {index:00} and {index + 1:00}.");
+                }
+            }
+
+            Assert.That(
+                joints,
+                Is.GreaterThan(10),
+                "The boundary wall must still be a run of fragments.");
+        }
+
         private static Rect Expanded(Rect source, float amount)
         {
             return Rect.MinMaxRect(

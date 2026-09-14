@@ -45,8 +45,22 @@ namespace BarPromenade
         private const float EsplanadeSetback = 6.4f;
         private const float EsplanadeDepth = 3.0f;
         private const float EsplanadeSlabPitch = 3.25f;
-        private const float EsplanadeSlabLift = 0.10f;
-        private const float EsplanadeSlabThickness = 0.16f;
+        /// <summary>
+        /// How far the walk's surface stands above the planned sand at
+        /// the band's centre line. It must clear
+        /// <see cref="CityBeachSandPlan.MaximumLooseDepth"/>: the drawn
+        /// sand is lifted by up to that much after planning, and at the
+        /// old ten centimetres - exactly the loose depth - the granite
+        /// was swallowed in places. A kerb this high is still one safe
+        /// step up from the sand.
+        /// </summary>
+        private const float EsplanadeSlabLift = 0.18f;
+        /// <summary>
+        /// Deep enough that the slab's underside stays buried where the
+        /// sand ripples up across the band's three-metre depth, so no
+        /// joint shows daylight under the granite.
+        /// </summary>
+        private const float EsplanadeSlabThickness = 0.36f;
 
         // The sea wall at the waterline: the centre zone's authored
         // water edge, knee-high granite where the wild shore has bare
@@ -366,17 +380,16 @@ namespace BarPromenade
             CityPortAccessPlan access = CityPortAccessPlan.ForLayout(layout);
             if (access != null && access.TrySampleTop(new Vector2(x, z), out float pavedTop))
                 return pavedTop;
-            float top = SampleSandTop(layout, x, z);
             float bandNorth = frame.WaterlineZ - EsplanadeSetback;
             if (x >= frame.CenterZone.xMin + 0.4f &&
                 x <= frame.CenterZone.xMax - 0.4f &&
                 z <= bandNorth &&
                 z >= bandNorth - EsplanadeDepth)
             {
-                top += EsplanadeSlabLift;
+                return SampleEsplanadeTop(layout, frame, x);
             }
 
-            return top;
+            return SampleSandTop(layout, x, z);
         }
 
         /// <summary>
@@ -1010,33 +1023,122 @@ namespace BarPromenade
             CityLayout layout,
             in CitySeacoastFrame frame)
         {
-            float bandNorth = frame.WaterlineZ - EsplanadeSetback;
-            float bandCenter = bandNorth - EsplanadeDepth * 0.5f;
-            float from = frame.CenterZone.xMin + 0.4f;
-            float to = frame.CenterZone.xMax - 0.4f;
-            int slabs = Mathf.Max(
-                1,
-                Mathf.RoundToInt((to - from) / EsplanadeSlabPitch));
-            float pitch = (to - from) / slabs;
+            GetEsplanadeRun(frame, out float from, out int slabs, out float pitch);
+            float bandCenter = EsplanadeBandCenterZ(frame);
+            float low = EsplanadeJointTop(layout, frame, from);
             for (int index = 0; index < slabs; index++)
             {
-                float center = from + (index + 0.5f) * pitch;
-                float top = SampleSandTop(layout, center, bandCenter) +
-                            EsplanadeSlabLift;
+                float high = EsplanadeJointTop(
+                    layout, frame, from + (index + 1) * pitch);
+                // Each slab spans its own two joints, so the walk is one
+                // continuous surface. Flat slabs each sampling their own
+                // centre stepped by up to fifteen centimetres at every
+                // joint: the sand's dunes rise faster than four
+                // centimetres a metre, which is more than a slab's own
+                // length can hide.
+                float rise = high - low;
+                Quaternion rotation = Quaternion.AngleAxis(
+                    Mathf.Atan2(rise, pitch) * Mathf.Rad2Deg,
+                    Vector3.forward);
+                var topCenter = new Vector3(
+                    from + (index + 0.5f) * pitch,
+                    (low + high) * 0.5f,
+                    bandCenter);
                 parts.Add(Part(
                     $"seacoast-esplanade-slab-{index:D2}",
                     CitySeacoastPartKind.EsplanadeSlab,
                     CitySeacoastStyle.Granite,
+                    topCenter - rotation *
+                        (Vector3.up * (EsplanadeSlabThickness * 0.5f)),
+                    rotation,
                     new Vector3(
-                        center,
-                        top - EsplanadeSlabThickness * 0.5f,
-                        bandCenter),
-                    Quaternion.identity,
-                    new Vector3(
-                        pitch - 0.04f,
+                        Mathf.Sqrt(pitch * pitch + rise * rise),
                         EsplanadeSlabThickness,
                         EsplanadeDepth)));
+                low = high;
             }
+        }
+
+        /// <summary>
+        /// The walk's run along the shore, so the slabs, the fittings
+        /// and the pedestrian lane all read one set of joints.
+        /// </summary>
+        private static void GetEsplanadeRun(
+            in CitySeacoastFrame frame,
+            out float from,
+            out int slabs,
+            out float pitch)
+        {
+            from = frame.CenterZone.xMin + 0.4f;
+            float to = frame.CenterZone.xMax - 0.4f;
+            slabs = Mathf.Max(
+                1,
+                Mathf.RoundToInt((to - from) / EsplanadeSlabPitch));
+            pitch = (to - from) / slabs;
+        }
+
+        private static float EsplanadeBandCenterZ(in CitySeacoastFrame frame)
+        {
+            return frame.WaterlineZ - EsplanadeSetback -
+                   (EsplanadeDepth * 0.5f);
+        }
+
+        private static float EsplanadeJointTop(
+            CityLayout layout,
+            in CitySeacoastFrame frame,
+            float x)
+        {
+            return SampleSandTop(layout, x, EsplanadeBandCenterZ(frame)) +
+                   EsplanadeSlabLift;
+        }
+
+        /// <summary>
+        /// The granite's own surface at a point along the walk. One
+        /// rule for the slabs, the benches, the lamps and the walking
+        /// height: the fittings used to read the sand at their own z
+        /// and stood in it beside the walk they belong to.
+        /// </summary>
+        private static float SampleEsplanadeTop(
+            CityLayout layout,
+            in CitySeacoastFrame frame,
+            float x)
+        {
+            GetEsplanadeRun(frame, out float from, out int slabs, out float pitch);
+            float clamped = Mathf.Clamp(x, from, from + slabs * pitch);
+            int index = Mathf.Clamp(
+                Mathf.FloorToInt((clamped - from) / pitch), 0, slabs - 1);
+            float low = from + (index * pitch);
+            return Mathf.Lerp(
+                EsplanadeJointTop(layout, frame, low),
+                EsplanadeJointTop(layout, frame, low + pitch),
+                Mathf.InverseLerp(low, low + pitch, clamped));
+        }
+
+        /// <summary>
+        /// The lowest granite under a fitting's whole footprint. A
+        /// bench seated on the height at its own centre would hang a
+        /// leg over the slope; seated on the lowest point, the gap
+        /// goes where the seat hides it.
+        /// </summary>
+        private static float SampleEsplanadeFootingTop(
+            CityLayout layout,
+            in CitySeacoastFrame frame,
+            float x,
+            float halfWidth)
+        {
+            float lowest = float.PositiveInfinity;
+            for (int sample = 0; sample <= 4; sample++)
+            {
+                lowest = Mathf.Min(
+                    lowest,
+                    SampleEsplanadeTop(
+                        layout,
+                        frame,
+                        Mathf.Lerp(
+                            x - halfWidth, x + halfWidth, sample / 4f)));
+            }
+
+            return lowest;
         }
 
         /// <summary>
@@ -1152,8 +1254,7 @@ namespace BarPromenade
                     continue;
                 }
 
-                float top = SampleSandTop(layout, x, benchZ) +
-                            EsplanadeSlabLift;
+                float top = SampleEsplanadeFootingTop(layout, frame, x, 0.85f);
                 string id = $"{BenchIdPrefix}{accepted:D2}";
                 parts.Add(Part(
                     $"{id}-seat",
@@ -1208,8 +1309,7 @@ namespace BarPromenade
                     continue;
                 }
 
-                float top = SampleSandTop(layout, x, lampZ) +
-                            EsplanadeSlabLift;
+                float top = SampleEsplanadeFootingTop(layout, frame, x, 0.4f);
                 lamps.Add(new CitySeacoastLampDescriptor(
                     $"seacoast-lamp-esplanade-{accepted:D2}",
                     CitySeacoastLampKind.Esplanade,

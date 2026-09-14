@@ -61,14 +61,14 @@ namespace BarPromenade.Tests.EditMode
                         CityFringeYardGroundWorldBuilder
                             .MountainGroundObjectName));
 
+                HomeSurfaceRecipe recipe =
+                    CityFringeYardSurfaceAppearance.GetRecipe(
+                        CityFringeYardSurfaceKind.ForefieldGround);
                 HashSet<string> genericAreas = AssertTerrainSkin(
                     layout,
                     result.GenericGround,
                     expectedGeneric,
-                    null);
-                HomeSurfaceRecipe recipe =
-                    CityFringeYardSurfaceAppearance.GetRecipe(
-                        CityFringeYardSurfaceKind.ForefieldGround);
+                    recipe.MetersPerTile);
                 HashSet<string> mountainAreas = AssertTerrainSkin(
                     layout,
                     result.MountainGround,
@@ -93,11 +93,18 @@ namespace BarPromenade.Tests.EditMode
                 genericRenderer.GetPropertyBlock(genericProperties);
                 Assert.That(
                     genericProperties.GetTexture(BaseMapId),
-                    Is.Null,
-                    "The east/custom batch keeps generic YardGround.");
+                    Is.Not.Null,
+                    "The east/custom batch wears the forefield sheet too: " +
+                    "its ground is a hundred by two hundred metres the " +
+                    "player walks, not a backdrop.");
+                // The sheet is mean-controlled, so its measured
+                // compensation multiplies the authored tint and the
+                // ground keeps the brightness it had as flat colour.
                 AssertColor(
                     genericProperties.GetColor(BaseColorId),
-                    CityExteriorAppearance.YardGround);
+                    CityFringeYardSurfaceAppearance.CreateDisplayTint(
+                        CityExteriorAppearance.YardGround,
+                        CityFringeYardSurfaceKind.ForefieldGround));
 
                 Renderer mountainRenderer =
                     result.MountainGround.GetComponent<Renderer>();
@@ -163,13 +170,15 @@ namespace BarPromenade.Tests.EditMode
                         layout,
                         result.GenericGround,
                         expectedAreas,
-                        null),
+                        CityFringeYardSurfaceAppearance.GetRecipe(
+                            CityFringeYardSurfaceKind.ForefieldGround)
+                            .MetersPerTile),
                     Is.EquivalentTo(expectedAreas));
 
                 var properties = new MaterialPropertyBlock();
                 result.GenericGround.GetComponent<Renderer>()
                     .GetPropertyBlock(properties);
-                Assert.That(properties.GetTexture(BaseMapId), Is.Null);
+                Assert.That(properties.GetTexture(BaseMapId), Is.Not.Null);
             }
             finally
             {

@@ -19,7 +19,10 @@ namespace BarPromenade
         private static readonly Color GardenGrass =
             new Color(0.20f, 0.26f, 0.17f);
 
-        public static GameObject Build(Transform parent, CityLayout layout)
+        public static GameObject Build(
+            Transform parent,
+            CityLayout layout,
+            IReadOnlyList<Rect> boundaryApertures = null)
         {
             if (parent == null)
             {
@@ -54,7 +57,10 @@ namespace BarPromenade
             ReplaceGrassUnderPaving(ground, layout, church);
             FootstepGround.Stamp(ground, FootstepGroundKind.Grass);
             BuildFence(ground.transform,
-                CityChurchGroundPlan.CreateFenceSpans(layout, church));
+                CityChurchGroundPlan.CreateFenceSpans(
+                    layout,
+                    church,
+                    boundaryApertures));
             return ground;
         }
 

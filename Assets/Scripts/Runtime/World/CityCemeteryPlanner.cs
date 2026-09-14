@@ -20,8 +20,24 @@ namespace BarPromenade
         private const float FenceThickness =
             CityChurchCemeteryPassagePlanner.FenceThickness;
         private const float FencePostSpacing = 3.2f;
+        private const float FencePostThickness = 0.18f;
+        private const float CornerPillarThickness = 0.50f;
+        private const float GatePillarThickness = 0.58f;
         private const float AccessClearance = 0.45f;
         private const float SpatialChunkSize = 48f;
+
+        /// <summary>
+        /// Where the cemetery's north fence actually runs. Every fence
+        /// part is seated by its own half width inside the grounds, so
+        /// the boundary is where its OUTER face lands and not where its
+        /// centre sits; a consumer looking for the north run - the
+        /// shared church passage does, for its two end posts - asks
+        /// here instead of assuming the boundary plane.
+        /// </summary>
+        public static float GetNorthFenceLineZ(float boundaryZ)
+        {
+            return boundaryZ - (FencePostThickness * 0.5f);
+        }
 
         // The dressed interior stays off the fence line so monuments
         // and trees never poke through the railing.
@@ -438,8 +454,9 @@ namespace BarPromenade
                 }
 
                 if (part.Kind == CityCemeteryPartKind.FencePost &&
-                    Mathf.Abs(part.Center.z - passage.BoundaryZ) <=
-                        0.001f)
+                    Mathf.Abs(
+                        part.Center.z -
+                        GetNorthFenceLineZ(passage.BoundaryZ)) <= 0.001f)
                 {
                     hasMinimumEndPost |= Mathf.Abs(
                         part.Center.x -
@@ -757,21 +774,31 @@ namespace BarPromenade
             float gateMaximum = gateCenter + gateHalfWidth;
             int id = 0;
 
+            // The grounds rect is also the road band's edge: the cemetery's
+            // west line IS the eastern kerb of the street. Centring the
+            // fence on it pushed posts, rails and pillars up to 0.29 m out
+            // over the pavement. Each part is seated by its own half width
+            // instead, so their outer faces all land on the boundary and
+            // nothing leans into the street - the same convention the
+            // church garden fence beside it already follows.
+            float postInset = FencePostThickness * 0.5f;
+            float cornerInset = CornerPillarThickness * 0.5f;
+            float gateInset = GatePillarThickness * 0.5f;
             AddFenceSide(
-                parts, ref id, false, bounds.xMin,
-                bounds.yMin, bounds.yMax,
+                parts, ref id, false, bounds.xMin + postInset,
+                bounds.yMin + postInset, bounds.yMax - postInset,
                 gateOnWest, gateMinimum, gateMaximum, groundTopY);
             AddFenceSide(
-                parts, ref id, false, bounds.xMax,
-                bounds.yMin, bounds.yMax,
+                parts, ref id, false, bounds.xMax - postInset,
+                bounds.yMin + postInset, bounds.yMax - postInset,
                 gateOnEast, gateMinimum, gateMaximum, groundTopY);
             AddFenceSide(
-                parts, ref id, true, bounds.yMin,
-                bounds.xMin, bounds.xMax,
+                parts, ref id, true, bounds.yMin + postInset,
+                bounds.xMin + postInset, bounds.xMax - postInset,
                 gateOnSouth, gateMinimum, gateMaximum, groundTopY);
             AddFenceSide(
-                parts, ref id, true, bounds.yMax,
-                bounds.xMin, bounds.xMax,
+                parts, ref id, true, bounds.yMax - postInset,
+                bounds.xMin + postInset, bounds.xMax - postInset,
                 gateOnNorth || churchPassage != null,
                 gateOnNorth
                     ? gateMinimum
@@ -781,15 +808,31 @@ namespace BarPromenade
                     : churchPassage?.FenceBreakBounds.xMax ?? 0f,
                 groundTopY);
 
-            AddCornerPillar(parts, "a", bounds.xMin, bounds.yMin, groundTopY);
-            AddCornerPillar(parts, "b", bounds.xMax, bounds.yMin, groundTopY);
-            AddCornerPillar(parts, "c", bounds.xMin, bounds.yMax, groundTopY);
-            AddCornerPillar(parts, "d", bounds.xMax, bounds.yMax, groundTopY);
+            AddCornerPillar(
+                parts, "a",
+                bounds.xMin + cornerInset, bounds.yMin + cornerInset,
+                groundTopY);
+            AddCornerPillar(
+                parts, "b",
+                bounds.xMax - cornerInset, bounds.yMin + cornerInset,
+                groundTopY);
+            AddCornerPillar(
+                parts, "c",
+                bounds.xMin + cornerInset, bounds.yMax - cornerInset,
+                groundTopY);
+            AddCornerPillar(
+                parts, "d",
+                bounds.xMax - cornerInset, bounds.yMax - cornerInset,
+                groundTopY);
 
             bool gateAlongX = gateOnWest || gateOnEast;
             float gateLine = gateAlongX
-                ? (gateOnWest ? bounds.xMin : bounds.xMax)
-                : (gateOnSouth ? bounds.yMin : bounds.yMax);
+                ? (gateOnWest
+                    ? bounds.xMin + gateInset
+                    : bounds.xMax - gateInset)
+                : (gateOnSouth
+                    ? bounds.yMin + gateInset
+                    : bounds.yMax - gateInset);
             AddGatePillar(
                 parts, "cemetery-gate-a", gateAlongX,
                 gateLine, gateMinimum, groundTopY);
@@ -982,7 +1025,10 @@ namespace BarPromenade
                     CityCemeteryStyle.Iron,
                     position,
                     Quaternion.identity,
-                    new Vector3(0.18f, 1.48f, 0.18f),
+                    new Vector3(
+                        FencePostThickness,
+                        1.48f,
+                        FencePostThickness),
                     -1,
                     CityCemeteryGraveVariant.ClassicStele));
             }
@@ -1041,7 +1087,10 @@ namespace BarPromenade
                 CityCemeteryStyle.WeatheredConcrete,
                 new Vector3(x, groundTopY + 0.81f, z),
                 Quaternion.identity,
-                new Vector3(0.50f, 1.62f, 0.50f),
+                new Vector3(
+                    CornerPillarThickness,
+                    1.62f,
+                    CornerPillarThickness),
                 -1,
                 CityCemeteryGraveVariant.ClassicStele));
         }
@@ -1063,7 +1112,10 @@ namespace BarPromenade
                 CityCemeteryStyle.WeatheredConcrete,
                 position,
                 Quaternion.identity,
-                new Vector3(0.58f, 2.40f, 0.58f),
+                new Vector3(
+                    GatePillarThickness,
+                    2.40f,
+                    GatePillarThickness),
                 -1,
                 CityCemeteryGraveVariant.ClassicStele));
         }

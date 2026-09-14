@@ -22,6 +22,11 @@ namespace BarPromenade
         private const float MarkingHeight = 0.025f;
         private const float MarkingCenterAboveRoadBase = 0.095f;
         private const float CrosswalkStripeDepth = 0.36f;
+        // Deep enough to outlast the graded apron's own fall across the
+        // crossing: a pavement thickness plus the crossfall over half the
+        // opening, with room to spare. It is buried; only its outer face
+        // is ever seen, through the kerb line it closes.
+        private const float PortOpeningSkirtDepth = 0.6f;
         private const float GeometryTolerance = 0.0001f;
 
         public static CityStreetSurfacePlan Create(CityLayout layout)
@@ -58,6 +63,8 @@ namespace BarPromenade
             var crosswalkWalkableRectangles = new List<Rect>();
             var crosswalks = new List<CityCrosswalkDescriptor>();
             var markingExclusions = new List<Rect>();
+            CityEastExitPlan eastExit = CityEastExitPlanner.Create(layout);
+            if (eastExit.IsEnabled) markingExclusions.Add(eastExit.StreetOpening);
             var edgesWithSidewalks = new HashSet<RoadEdge>();
 
             Dictionary<Vector2Int, NodeConnections> connections =
@@ -206,6 +213,15 @@ namespace BarPromenade
                     streetGeometry.Add(geometry);
                     streetNodes.Add(edge.A);
                     streetNodes.Add(edge.B);
+                    if (hasSignatureStair)
+                    {
+                        AddStairEdgeKerbBands(
+                            layout,
+                            edge,
+                            segmentStart,
+                            segmentEnd,
+                            streetGeometry);
+                    }
                 }
             }
 
@@ -238,6 +254,115 @@ namespace BarPromenade
                         RoadSurfaceHeight,
                         nodeWidth)));
             }
+        }
+
+        // A signature-stair edge narrows its slab to the carriageway so the
+        // flight is never paved over, and at a bus node the pavement starts
+        // 8.5 m out instead of 4. District ground stops at the road band by
+        // contract, so between the two the metre-wide kerb strip had NO
+        // surface at all: four 4.5 x 1 m holes the hero fell through, one at
+        // each stair whose edge ends on a bus node. The band is floored here
+        // at road level, under whatever pavement exists above it, and cut
+        // around the stair's own ground cut so the flight stays clear.
+        private static void AddStairEdgeKerbBands(
+            CityLayout layout,
+            RoadEdge edge,
+            Vector3 segmentStart,
+            Vector3 segmentEnd,
+            ICollection<RuntimeOrientedBox> streetGeometry)
+        {
+            Vector3 delta = segmentEnd - segmentStart;
+            var tangent = new Vector3(delta.x, 0f, delta.z);
+            if (tangent.sqrMagnitude <= GeometryTolerance)
+            {
+                return;
+            }
+
+            tangent.Normalize();
+            var left = new Vector3(-tangent.z, 0f, tangent.x);
+            float sideOffset = (layout.RoadWidth * 0.5f) -
+                               (SidewalkWidth * 0.5f);
+            Rect cut = default;
+            bool hasCut = layout.ElevationPlan.TryGetSignatureStair(
+                edge,
+                out CityElevationStairDescriptor stair);
+            if (hasCut)
+            {
+                cut = CityElevationStairPlacementPlanner
+                    .Create(layout, stair)
+                    .GroundCutFootprint;
+            }
+
+            for (int side = -1; side <= 1; side += 2)
+            {
+                Vector3 offset = left * (sideOffset * side);
+                AddKerbBandOutsideCut(
+                    segmentStart + offset + (Vector3.up * RoadTop),
+                    segmentEnd + offset + (Vector3.up * RoadTop),
+                    hasCut,
+                    cut,
+                    streetGeometry);
+            }
+        }
+
+        private static void AddKerbBandOutsideCut(
+            Vector3 start,
+            Vector3 end,
+            bool hasCut,
+            Rect cut,
+            ICollection<RuntimeOrientedBox> streetGeometry)
+        {
+            if (hasCut)
+            {
+                bool horizontal = Mathf.Abs(end.z - start.z) <
+                                  GeometryTolerance;
+                bool vertical = Mathf.Abs(end.x - start.x) <
+                                GeometryTolerance;
+                float fixedValue = horizontal ? start.z : start.x;
+                float fixedMin = horizontal ? cut.yMin : cut.xMin;
+                float fixedMax = horizontal ? cut.yMax : cut.xMax;
+                float from = horizontal ? start.x : start.z;
+                float to = horizontal ? end.x : end.z;
+                float minimum = horizontal ? cut.xMin : cut.yMin;
+                float maximum = horizontal ? cut.xMax : cut.yMax;
+                if ((horizontal || vertical) &&
+                    fixedValue >= fixedMin &&
+                    fixedValue <= fixedMax &&
+                    Mathf.Max(from, to) > minimum &&
+                    Mathf.Min(from, to) < maximum &&
+                    Mathf.Abs(to - from) > GeometryTolerance)
+                {
+                    float first = (minimum - from) / (to - from);
+                    float second = (maximum - from) / (to - from);
+                    float low = Mathf.Clamp01(Mathf.Min(first, second));
+                    float high = Mathf.Clamp01(Mathf.Max(first, second));
+                    if (low > 0.001f)
+                    {
+                        streetGeometry.Add(CreateSurfaceBox(
+                            start,
+                            Vector3.Lerp(start, end, low),
+                            SidewalkWidth,
+                            RoadSurfaceHeight));
+                    }
+
+                    if (high < 0.999f)
+                    {
+                        streetGeometry.Add(CreateSurfaceBox(
+                            Vector3.Lerp(start, end, high),
+                            end,
+                            SidewalkWidth,
+                            RoadSurfaceHeight));
+                    }
+
+                    return;
+                }
+            }
+
+            streetGeometry.Add(CreateSurfaceBox(
+                start,
+                end,
+                SidewalkWidth,
+                RoadSurfaceHeight));
         }
 
         // A crossing edge runs bank node to bank node, but the eight metres
@@ -277,6 +402,7 @@ namespace BarPromenade
             // pavement strip.
             CityCanneryPlan cannery = CityCanneryPlan.Create(layout);
             CityPortAccessPlan port = CityPortAccessPlan.ForLayout(layout);
+            CityEastExitPlan eastExit = CityEastExitPlanner.Create(layout);
             for (int index = 0; index < sortedEdges.Count; index++)
             {
                 RoadEdge edge = sortedEdges[index];
@@ -362,7 +488,7 @@ namespace BarPromenade
 
                 if (!hasStair || !stairOnLeft)
                 {
-                    AddSidewalkWithPortOpening(cannery, port,
+                    AddSidewalkWithPortOpening(cannery, port, eastExit,
                             start + left * sideOffset + Vector3.up * SidewalkTop,
                             end + left * sideOffset + Vector3.up * SidewalkTop,
                         sidewalks,
@@ -372,7 +498,7 @@ namespace BarPromenade
 
                 if (!hasStair || stairOnLeft)
                 {
-                    AddSidewalkWithPortOpening(cannery, port,
+                    AddSidewalkWithPortOpening(cannery, port, eastExit,
                             start - left * sideOffset + Vector3.up * SidewalkTop,
                             end - left * sideOffset + Vector3.up * SidewalkTop,
                         sidewalks,
@@ -394,9 +520,33 @@ namespace BarPromenade
         }
 
         private static void AddSidewalkWithPortOpening(CityCanneryPlan cannery, CityPortAccessPlan port,
+            CityEastExitPlan eastExit,
             Vector3 start, Vector3 end,
             ICollection<Bounds> sidewalks, ICollection<RuntimeOrientedBox> geometry, ICollection<Rect> walkable)
         {
+            // The eastern road joins the outside asphalt edge. Only its
+            // near-side pavement is opened; the opposite pavement continues.
+            if (eastExit.IsEnabled && Mathf.Abs(end.x - start.x) < .01f &&
+                start.x > eastExit.ApproachStart.x - SidewalkWidth &&
+                start.x < eastExit.ApproachStart.x + GeometryTolerance)
+            {
+                Rect opening = eastExit.StreetOpening;
+                if (Mathf.Max(start.z, end.z) > opening.yMin &&
+                    Mathf.Min(start.z, end.z) < opening.yMax)
+                {
+                    float a = (opening.yMin - start.z) / (end.z - start.z);
+                    float b = (opening.yMax - start.z) / (end.z - start.z);
+                    float low = Mathf.Clamp01(Mathf.Min(a, b));
+                    float high = Mathf.Clamp01(Mathf.Max(a, b));
+                    if (low > .001f) AddSidewalk(CreateSurfaceBox(start,
+                        Vector3.Lerp(start, end, low), SidewalkWidth, SidewalkHeight), sidewalks, geometry, walkable);
+                    if (high < .999f) AddSidewalk(CreateSurfaceBox(Vector3.Lerp(start, end, high),
+                        end, SidewalkWidth, SidewalkHeight), sidewalks, geometry, walkable);
+                    walkable.Add(Rect.MinMaxRect(eastExit.ApproachStart.x - SidewalkWidth,
+                        opening.yMin, eastExit.ApproachStart.x, opening.yMax));
+                    return;
+                }
+            }
             if(cannery!=null)
             {
                 Rect opening=cannery.StreetOpening;
@@ -430,10 +580,39 @@ namespace BarPromenade
                     float low=Mathf.Clamp01(Mathf.Min(a,b)),high=Mathf.Clamp01(Mathf.Max(a,b));
                     if(low>.001f)AddSidewalk(CreateSurfaceBox(start,Vector3.Lerp(start,end,low),SidewalkWidth,SidewalkHeight),sidewalks,geometry,walkable);
                     if(high<.999f)AddSidewalk(CreateSurfaceBox(Vector3.Lerp(start,end,high),end,SidewalkWidth,SidewalkHeight),sidewalks,geometry,walkable);
+                    AddPortOpeningSkirt(
+                        Vector3.Lerp(start, end, low),
+                        Vector3.Lerp(start, end, high),
+                        geometry);
                     return;
                 }
             }
             AddSidewalk(CreateSurfaceBox(start,end,SidewalkWidth,SidewalkHeight),sidewalks,geometry,walkable);
+        }
+
+        // The port crossing drops the kerb so a truck can cross, and the
+        // graded apron behind it is laid a pavement thickness below the
+        // street datum - lower still across the crossfall. The road slab's
+        // own underside sits exactly on nominal ground, so along that one
+        // stretch its side face stood over open sky and the player saw a
+        // fog-coloured slit under the kerb. This buried skirt closes the
+        // line without touching the port's own height contract.
+        private static void AddPortOpeningSkirt(
+            Vector3 start,
+            Vector3 end,
+            ICollection<RuntimeOrientedBox> geometry)
+        {
+            if ((end - start).sqrMagnitude <= GeometryTolerance)
+            {
+                return;
+            }
+
+            Vector3 drop = Vector3.up * (SidewalkTop + RoadTop);
+            geometry.Add(CreateSurfaceBox(
+                start - drop,
+                end - drop,
+                SidewalkWidth,
+                PortOpeningSkirtDepth));
         }
 
         private static void AddSignatureStairApproaches(

@@ -590,6 +590,12 @@ namespace BarPromenade
             if (eastExit.IsEnabled)
             {
                 area.Add(eastExit.RoadBounds);
+                // Contains erodes each rectangle by the agent radius. Two
+                // touching asphalt footprints therefore need the same overlap
+                // connector as the city's other traversable ground seams.
+                AddVerticalSeam(area, eastExit.ApproachStart.x,
+                    eastExit.RoadBounds.yMin, eastExit.RoadBounds.yMax,
+                    CityGroundTraversalPlanner.ConnectorReach);
                 area.Exclude(eastExit.ClosedGroundBounds);
                 area.Exclude(eastExit.BoothBounds);
             }

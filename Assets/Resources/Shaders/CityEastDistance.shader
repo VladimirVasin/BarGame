@@ -62,6 +62,14 @@ Shader "Bar Promenade/City East Distance"
                     6.0 * distance / (distance + 300.0));
                 float3 projected = _WorldSpaceCameraPos + ray * (radius / distance);
                 output.positionCS = TransformWorldToHClip(projected);
+                // Projection changes angular presentation, never foreground
+                // ownership. Testing at the compressed radius made distant
+                // land cut through the real road/yard as the camera moved.
+                #if UNITY_REVERSED_Z
+                    output.positionCS.z = output.positionCS.w * 0.000001;
+                #else
+                    output.positionCS.z = output.positionCS.w * 0.999999;
+                #endif
                 output.uv = input.uv;
                 output.distance = distance;
                 output.east = ray.x;

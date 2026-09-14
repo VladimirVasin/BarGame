@@ -30,7 +30,13 @@ namespace BarPromenade
         /// </summary>
         internal const float SubmergedSideTop = 0.08f;
 
-        private const float SubmergedSideThickness = 0.44f;
+        /// <summary>
+        /// How far the channel's own stone sides stand proud of the water
+        /// rect. Anything lining the channel from outside - the river
+        /// cave's rock, for one - has to clear this before it can keep a
+        /// joint of its own.
+        /// </summary>
+        internal const float SubmergedSideThickness = 0.44f;
 
         /// <summary>
         /// How far the water sheet runs past the channel and into the

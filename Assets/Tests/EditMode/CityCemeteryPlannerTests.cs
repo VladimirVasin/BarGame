@@ -254,8 +254,10 @@ namespace BarPromenade.Tests.EditMode
             CityCemeteryPartDescriptor[] endPosts = cemetery.Parts
                 .Where(part =>
                     part.Kind == CityCemeteryPartKind.FencePost &&
-                    Mathf.Abs(part.Center.z - passage.BoundaryZ) <
-                        0.001f &&
+                    Mathf.Abs(
+                        part.Center.z -
+                        CityCemeteryPlanner.GetNorthFenceLineZ(
+                            passage.BoundaryZ)) < 0.001f &&
                     (Mathf.Abs(
                          part.Center.x -
                          passage.FenceBreakBounds.xMin) < 0.001f ||
@@ -411,7 +413,8 @@ namespace BarPromenade.Tests.EditMode
 
             Vector2 closedPoint = new Vector2(
                 passage.AxisX,
-                passage.BoundaryZ);
+                CityCemeteryPlanner.GetNorthFenceLineZ(
+                    passage.BoundaryZ));
             Assert.That(
                 independent.Parts.Any(part =>
                     part.Kind == CityCemeteryPartKind.FenceRail &&

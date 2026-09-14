@@ -35,8 +35,10 @@ namespace BarPromenade
             Transform root = new GameObject(RootName).transform;
             root.SetParent(parent, false);
 
-            var stops = new List<float> { plan.ApproachStart.x, plan.YardBounds.xMin,
-                plan.CheckpointPosition.x - 12f, plan.CheckpointPosition.x, plan.RoadEnd.x };
+            var stops = new List<float> { plan.ApproachStart.x,
+                plan.ApproachStart.x + CityEastExitPlan.StreetGradeBlendLength,
+                plan.CheckpointPosition.x - CityEastExitPlan.CheckpointApronLength,
+                plan.CheckpointPosition.x, plan.RoadEnd.x };
             int ordinal = 0;
             for (int s = 1; s < stops.Count; s++)
             {
@@ -48,13 +50,27 @@ namespace BarPromenade
                     float bx = Mathf.Lerp(first, last, (i + 1f) / count);
                     Vector3 a = new Vector3(ax, plan.SampleRoadTop(ax) - CityEastExitPlan.RoadSurfaceLift, plan.CheckpointPosition.z);
                     Vector3 b = new Vector3(bx, plan.SampleRoadTop(bx) - CityEastExitPlan.RoadSurfaceLift, plan.CheckpointPosition.z);
-                    Vector3 delta = b - a;
                     Transform road = Place(templates, root, "Road", "Road " + ordinal++, (a + b) * .5f,
-                        Quaternion.FromToRotation(Vector3.right, delta.normalized), new Vector3(delta.magnitude / 10f, 1f, 1f));
-                    AddBox(road, new Vector3(0f, -.0725f, 0f), new Vector3(10f, .215f, 8f));
+                        Quaternion.identity, new Vector3((bx - ax) / 10f, 1f, 1f));
+                    FitRoad(road, plan);
                     FootstepGround.Stamp(road.gameObject, FootstepGroundKind.Concrete);
                 }
             }
+            // One cooked mesh welds the shared slab edges. Separate collider
+            // cooks can reject a ray exactly on the boundary of both slabs.
+            var roadCollision = new List<CombineInstance>();
+            foreach (MeshFilter filter in root.GetComponentsInChildren<MeshFilter>(true))
+                if (filter.name.EndsWith("_Asphalt", StringComparison.Ordinal) ||
+                    filter.name.EndsWith("_Ground", StringComparison.Ordinal))
+                    roadCollision.Add(new CombineInstance { mesh = filter.sharedMesh,
+                        transform = root.worldToLocalMatrix * filter.transform.localToWorldMatrix });
+            var collisionMesh = new Mesh { name = "Continuous East Road Collision" };
+            collisionMesh.CombineMeshes(roadCollision.ToArray(), true, true);
+            Transform collisionRoot = new GameObject("EEX_Road_Collision").transform;
+            collisionRoot.SetParent(root, false);
+            collisionRoot.gameObject.AddComponent<MeshCollider>().sharedMesh = collisionMesh;
+            collisionRoot.gameObject.AddComponent<RuntimeGeneratedMeshOwner>().Initialize(collisionMesh);
+            FootstepGround.Stamp(collisionRoot.gameObject, FootstepGroundKind.Concrete);
             Transform booth = Place(templates, root, "Booth", "Civilian Booth", plan.BoothPosition, Quaternion.identity, Vector3.one);
             AddBox(booth, new Vector3(0f, 1.5475f, 0f), new Vector3(3f, 3.095f, 3.4f));
             Transform barrier = Place(templates, root, "Barrier", "Closed Road Barrier",
@@ -93,6 +109,40 @@ namespace BarPromenade
             // street Spot; it never creates another realtime Light.
             return new CityEastExitWorldResult(root.gameObject,
                 new CityFringePracticalAnchor(CityFringeYardKind.EastUtilityEdge, lightAnchor));
+        }
+
+        private static void FitRoad(Transform road, CityEastExitPlan plan)
+        {
+            // Deform the imported slab onto the same grade used by terrain
+            // and landings. Tilting one box cannot match the crossfall at a
+            // T-junction, and overlapping the city slab hides the seam badly.
+            foreach (MeshFilter filter in road.GetComponentsInChildren<MeshFilter>(true))
+            {
+                Mesh mesh = Object.Instantiate(filter.sharedMesh);
+                mesh.name = "Fitted " + filter.sharedMesh.name;
+                Vector3[] vertices = mesh.vertices;
+                for (int i = 0; i < vertices.Length; i++)
+                {
+                    Vector3 world = filter.transform.TransformPoint(vertices[i]);
+                    // Consecutive slabs share a full top edge. Keeping the
+                    // kit's end chamfers leaves a narrow V-shaped hole at
+                    // every join once the duplicate terrain is removed.
+                    Vector3 local = road.InverseTransformPoint(world);
+                    if (Mathf.Abs(local.x) > 4.98f)
+                    {
+                        local.x = Mathf.Sign(local.x) * 5f;
+                        world = road.TransformPoint(local);
+                    }
+                    float offset = world.y - road.position.y;
+                    world.y = plan.SampleRoadTop(world.x, world.z) - CityEastExitPlan.RoadSurfaceLift + offset;
+                    vertices[i] = filter.transform.InverseTransformPoint(world);
+                }
+                mesh.vertices = vertices;
+                mesh.RecalculateBounds();
+                mesh.RecalculateNormals();
+                filter.sharedMesh = mesh;
+                filter.gameObject.AddComponent<RuntimeGeneratedMeshOwner>().Initialize(mesh);
+            }
         }
 
         internal static Transform Place(IDictionary<string, Transform> templates, Transform parent,

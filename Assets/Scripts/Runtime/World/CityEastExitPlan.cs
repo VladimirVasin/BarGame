@@ -17,23 +17,19 @@ namespace BarPromenade
             YardBounds = yard;
             NorthYardBounds = northYard;
             float axisZ = yard.yMin + layout.NodeSpacing.y * .5f;
-            float streetX = yard.xMin - layout.RoadWidth * .5f;
-            float gateX = yard.xMax - 28f;
-            float entryTop = CityEastExitPlanner.RawGroundTop(layout,
-                new Vector2(yard.xMin, axisZ)) + .22f;
-            if (layout.ElevationPlan.TrySampleSurface(new Vector2(streetX, axisZ),
-                CitySurfaceRole.SidewalkTop, out float streetTop, out _))
-                entryTop = streetTop;
+            float streetX = yard.xMin;
+            float gateX = yard.xMin + CheckpointSetback;
+            if (!layout.ElevationPlan.TrySampleSurface(new Vector2(streetX, axisZ),
+                CitySurfaceRole.RoadTop, out float entryTop, out _))
+                throw new InvalidOperationException("The eastern approach must meet the city asphalt edge.");
             float gateTop = CityEastExitPlanner.RawGroundTop(layout,
                 new Vector2(gateX, axisZ)) + RoadSurfaceLift;
-            YardEntryTop = entryTop + .008f;
-            float streetRoadTop = entryTop - .06f;
-            layout.ElevationPlan.TrySampleSurface(new Vector2(streetX, axisZ),
-                CitySurfaceRole.RoadTop, out streetRoadTop, out _);
-            ApproachStart = new Vector3(streetX, streetRoadTop + .008f, axisZ);
+            ApproachStart = new Vector3(streetX, entryTop, axisZ);
             CheckpointPosition = new Vector3(gateX, gateTop, axisZ);
             RoadEnd = new Vector3(yard.xMax, gateTop, axisZ);
             RoadBounds = Rect.MinMaxRect(streetX, axisZ - 4f, yard.xMax, axisZ + 4f);
+            StreetOpening = Rect.MinMaxRect(streetX - layout.RoadWidth,
+                RoadBounds.yMin, streetX, RoadBounds.yMax);
             ClearanceBounds = Rect.MinMaxRect(streetX, axisZ - 11f, yard.xMax, axisZ + 8f);
             // The three visible fence runs close the same outboard land the
             // walk mask excludes, including approaches from church and beach.
@@ -59,6 +55,11 @@ namespace BarPromenade
         }
 
         public const float RoadSurfaceLift = .035f;
+        // Keep the booth silhouette readable from the street with the normal
+        // third-person camera and the city's existing exponential fog.
+        public const float CheckpointSetback = 12f;
+        public const float CheckpointApronLength = 5f;
+        public const float StreetGradeBlendLength = 4f;
         public const float FenceThickness = .20f;
         public bool IsEnabled { get; }
         public bool Enabled => IsEnabled;
@@ -68,6 +69,7 @@ namespace BarPromenade
         public Vector3 RoadEnd { get; }
         public Vector3 RoadAxis => Vector3.right;
         public Rect RoadBounds { get; }
+        public Rect StreetOpening { get; }
         public Rect ClearanceBounds { get; }
         public Rect ClosedGroundBounds { get; }
         public Rect YardBounds { get; }
@@ -76,18 +78,26 @@ namespace BarPromenade
         public Rect BoothPad { get; }
         public Vector3 BoothPosition { get; }
         public Vector3 LampPosition { get; }
-        private float YardEntryTop { get; }
         public IReadOnlyList<CityEastExitFence> Fences { get; } = Array.Empty<CityEastExitFence>();
 
         public float SampleRoadTop(float x)
         {
             // The stop apron is level; the approach absorbs the existing
             // yard elevation before the booth and the closed gate.
-            if (x <= YardBounds.xMin)
-                return Mathf.Lerp(ApproachStart.y, YardEntryTop,
-                    Mathf.InverseLerp(ApproachStart.x, YardBounds.xMin, x));
-            return Mathf.Lerp(YardEntryTop, CheckpointPosition.y,
-                Mathf.InverseLerp(YardBounds.xMin, CheckpointPosition.x - 12f, x));
+            return Mathf.Lerp(ApproachStart.y, CheckpointPosition.y,
+                Mathf.InverseLerp(YardBounds.xMin, CheckpointPosition.x - CheckpointApronLength, x));
+        }
+
+        public float SampleRoadTop(float x, float z)
+        {
+            // Carry the street's longitudinal slope across the mouth of the
+            // side road, then ease it out before the level checkpoint apron.
+            float blend = 1f - Mathf.InverseLerp(ApproachStart.x,
+                ApproachStart.x + StreetGradeBlendLength, x);
+            if (blend <= 0f) return SampleRoadTop(x);
+            Layout.ElevationPlan.TrySampleSurface(new Vector2(ApproachStart.x, z),
+                CitySurfaceRole.RoadTop, out float streetTop, out _);
+            return SampleRoadTop(x) + (streetTop - ApproachStart.y) * blend;
         }
 
         internal float ApplyGroundTop(Vector2 point, float original)
@@ -96,7 +106,7 @@ namespace BarPromenade
                 point.y < YardBounds.yMin || point.y > NorthYardBounds.yMax) return original;
             float roadWeight = 1f - Mathf.SmoothStep(0f, 1f,
                 Mathf.InverseLerp(4f, 7f, Mathf.Abs(point.y - CheckpointPosition.z)));
-            float top = Mathf.Lerp(original, SampleRoadTop(point.x) - RoadSurfaceLift, roadWeight);
+            float top = Mathf.Lerp(original, SampleRoadTop(point.x, point.y) - RoadSurfaceLift, roadWeight);
             float dx = Mathf.Max(BoothPad.xMin - point.x, 0f, point.x - BoothPad.xMax);
             float dz = Mathf.Max(BoothPad.yMin - point.y, 0f, point.y - BoothPad.yMax);
             float padWeight = 1f - Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(Mathf.Max(dx, dz) / 2f));
@@ -145,7 +155,8 @@ namespace BarPromenade
             var plan = new CityEastExitPlan(layout, yard, north);
             if (yard.width < 70f || yard.height < 30f || Mathf.Abs(yard.yMax - north.yMin) > .01f ||
                 plan.RoadBounds.yMin <= yard.yMin || plan.BoothPad.yMin <= yard.yMin ||
-                plan.CheckpointPosition.x <= plan.ApproachStart.x + 40f)
+                plan.CheckpointPosition.x <= plan.ApproachStart.x +
+                    CityEastExitPlan.CheckpointApronLength + CityEastExitPlan.StreetGradeBlendLength)
                 throw new InvalidOperationException("The eastern road needs its contiguous north-of-church yards.");
             return plan;
         }

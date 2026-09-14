@@ -126,7 +126,7 @@ namespace BarPromenade
             CityEastExitPlan eastExit = CityEastExitPlanner.Create(layout);
             if (eastExit.IsEnabled && eastExit.RoadBounds.Contains(worldXZ))
             {
-                top = eastExit.SampleRoadTop(worldXZ.x);
+                top = eastExit.SampleRoadTop(worldXZ.x, worldXZ.y);
                 return true;
             }
             if (layout.ElevationPlan != null &&

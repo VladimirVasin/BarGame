@@ -68,6 +68,17 @@ namespace BarPromenade
                 descriptor.Position,
                 Quaternion.LookRotation(descriptor.Facing, Vector3.up));
             registry.ApplyPaletteVariant(descriptor.PaletteVariant);
+            if (string.Equals(
+                    descriptor.DesignId,
+                    CityPedestrianResources.BabushkaDesignId,
+                    StringComparison.Ordinal))
+            {
+                // The drying yard already stands three of this body. The
+                // cast stays - her smoking loop is what makes a woman
+                // commenting on somebody's bicycle repair read at all -
+                // but she is a fourth woman, not a fourth copy.
+                registry.ApplyOutfit(CityBabushkaOutfits.CourtyardBicycle);
+            }
 
             pedestrian = registry.GetComponent<CityPedestrianPresentation>();
             if (pedestrian == null)

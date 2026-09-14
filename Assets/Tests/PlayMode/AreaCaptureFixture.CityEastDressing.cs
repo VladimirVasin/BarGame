@@ -25,20 +25,32 @@ namespace BarPromenade.Tests.PlayMode
             CheckSize("Shelter Bench", new Vector3(1.9f, .882f, .62f), new Vector3(.06f, .12f, .06f));
             CheckSize("Booth Utility Cabinet", new Vector3(.82f, 1.45f, .54f), new Vector3(.06f, .15f, .06f));
 
-            // Thin authored markings follow the actual terrain at every vertex;
-            // a correct root point alone would still let their ends float above a slope.
+            MeshCollider[] support = city.World.Root.GetComponentsInChildren<MeshCollider>(true)
+                .Where(collider => collider.name == "Yard Ground" ||
+                    collider.transform.IsChildOf(city.World.EastExit.Root.transform) &&
+                    collider.name.StartsWith("EEX_Road_", StringComparison.Ordinal)).ToArray();
+            Assert.That(support, Is.Not.Empty);
+            float minimumClearance = float.PositiveInfinity;
+            float maximumClearance = float.NegativeInfinity;
+            // Use the actual rendered/colliding support, not the analytic
+            // terrain function: distinct triangulations used to intersect
+            // between otherwise-correct vertices. Check face interiors too.
             foreach (CityEastExitDressingPart part in dressing.Parts)
             {
                 if (part.Assembly != "GravelPatch" && part.Assembly != "RoadRepair" && part.Assembly != "DryDrain") continue;
                 Transform placed = root.GetComponentsInChildren<Transform>(true).Single(t => t.name == part.Id);
                 foreach (MeshFilter filter in placed.GetComponentsInChildren<MeshFilter>(true))
-                foreach (Vector3 vertex in filter.sharedMesh.vertices)
                 {
-                    Vector3 world = filter.transform.TransformPoint(vertex);
-                    Vector2 xz = new Vector2(world.x, world.z);
-                    float ground = exit.RoadBounds.Contains(xz) ? exit.SampleRoadTop(world.x) : exit.SampleGroundTop(xz);
-                    Assert.That(world.y - ground, Is.InRange(-.035f, .125f),
-                        "Ground dressing detaches from the standing surface: " + part.Id);
+                    Vector3[] vertices = filter.sharedMesh.vertices;
+                    for (int i = 0; i < vertices.Length; i++)
+                    {
+                        vertices[i] = filter.transform.TransformPoint(vertices[i]);
+                        CheckClearance(vertices[i], part.Id);
+                    }
+                    int[] triangles = filter.sharedMesh.triangles;
+                    for (int i = 0; i < triangles.Length; i += 3)
+                        CheckClearance((vertices[triangles[i]] + vertices[triangles[i + 1]] +
+                            vertices[triangles[i + 2]]) / 3f, part.Id);
                 }
             }
 
@@ -54,11 +66,31 @@ namespace BarPromenade.Tests.PlayMode
                 foreach (RaycastHit hit in Physics.CapsuleCastAll(from + Vector3.up * .36f,
                     from + Vector3.up * 1.59f, .31f, delta.normalized, delta.magnitude,
                     ~0, QueryTriggerInteraction.Ignore))
-                    Assert.That(hit.collider.transform.IsChildOf(root.transform) && hit.normal.y < .7f, Is.False,
-                        "New dressing blocks the physical duty route: " + hit.collider.name);
+                    Assert.That(hit.collider.transform.IsChildOf(city.World.Root.transform) &&
+                        !hit.collider.transform.IsChildOf(city.EastGuards.transform) &&
+                        !hit.collider.transform.IsChildOf(city.Player.GameObject.transform) &&
+                        hit.normal.y < .7f, Is.False,
+                        "Checkpoint surroundings block duty " + actor + "/" + waypoint +
+                        " from " + from + " to " + to + ": " + hit.collider.name + " at " + hit.point);
             }
 
-            Debug.Log("EAST DRESSING: imported metre scale, passive furniture, map arrivals and physical duty-route clearance verified.");
+            Debug.Log("EAST DRESSING: imported metre scale, passive furniture, map arrivals and physical duty-route clearance verified; " +
+                "rendered ground clearance=" + minimumClearance + ".." + maximumClearance + " m.");
+
+            void CheckClearance(Vector3 world, string id)
+            {
+                float ground = float.NegativeInfinity;
+                var ray = new Ray(world + Vector3.up, Vector3.down);
+                foreach (MeshCollider collider in support)
+                    if (collider.Raycast(ray, out RaycastHit hit, 2f)) ground = Mathf.Max(ground, hit.point.y);
+                Assert.That(float.IsNegativeInfinity(ground), Is.False,
+                    "Ground dressing must have an actual supporting mesh beneath it: " + id + " at " + world);
+                float clearance = world.y - ground;
+                minimumClearance = Mathf.Min(minimumClearance, clearance);
+                maximumClearance = Mathf.Max(maximumClearance, clearance);
+                Assert.That(clearance, Is.InRange(.0015f, .125f),
+                    "Thin dressing must clear its rendered support without floating: " + id + " at " + world);
+            }
 
             void CheckSize(string id, Vector3 expected, Vector3 tolerance)
             {

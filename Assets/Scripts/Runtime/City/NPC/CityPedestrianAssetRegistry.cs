@@ -138,6 +138,13 @@ namespace BarPromenade
         /// </summary>
         [SerializeField] private Player3DFaceAtlasBinding faceAtlas;
 
+        /// <summary>
+        /// A deliberate outfit for this body, or null. Not serialized: a
+        /// staged site dresses its own copy at initialization and the
+        /// choice belongs to the site, not to the shared prefab.
+        /// </summary>
+        private CityPedestrianOutfit outfit;
+
         public Animator Animator => animator;
         public Transform ModelRoot => modelRoot;
         public IReadOnlyList<Renderer> Renderers => renderers;
@@ -311,6 +318,20 @@ namespace BarPromenade
             faceAtlas = binding;
         }
 
+        /// <summary>
+        /// Dresses this body in a named outfit, or clears one with
+        /// <c>null</c>. The palette variant tints a garment by a tenth,
+        /// which tells two copies of one design apart only if you stand
+        /// them side by side; an outfit replaces the colour of every
+        /// palette it names outright. It survives a disable and enable,
+        /// because the colours are reapplied through this same path.
+        /// </summary>
+        public void ApplyOutfit(CityPedestrianOutfit dress)
+        {
+            outfit = dress;
+            ApplyPaletteVariant(paletteVariant);
+        }
+
         public void ApplyPaletteVariant(int variant)
         {
             int normalized = variant % 4;
@@ -328,7 +349,11 @@ namespace BarPromenade
 
                 Renderer target = binding.Renderer;
                 target.GetPropertyBlock(properties);
-                Color color = binding.GetColor(paletteVariant);
+                Color color =
+                    outfit != null &&
+                    outfit.TryGetColor(binding.PaletteName, out Color dressed)
+                        ? dressed
+                        : binding.GetColor(paletteVariant);
                 properties.SetColor(BaseColorId, color);
                 properties.SetColor(LegacyColorId, color);
                 // No _BaseMap_ST: the UVs are authored straight into the

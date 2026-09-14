@@ -404,10 +404,32 @@ namespace BarPromenade.Tests.EditMode
                     FindChild(host.transform, "River Cave Portal")
                         .GetComponentsInChildren<Renderer>(true),
                     Is.Not.Empty);
+                Transform darkLining =
+                    FindChild(host.transform, "River Cave Dark Lining");
                 Assert.That(
-                    FindChild(host.transform, "River Cave Dark Lining")
-                        .GetComponentsInChildren<Renderer>(true),
+                    darkLining.GetComponentsInChildren<Renderer>(true),
                     Is.Not.Empty);
+                // The channel's own side beams and the portal ring both
+                // end exactly on the water rect's edge. A lining seated
+                // on that same edge shared their plane with nothing
+                // between, and the whole throat flickered. The road
+                // tunnel keeps the same joint; so does the cave now.
+                float liningInnerPlane = darkLining
+                    .GetComponent<MeshFilter>()
+                    .sharedMesh
+                    .vertices
+                    .Select(vertex => darkLining.TransformPoint(vertex))
+                    .Min(vertex => Mathf.Abs(
+                        vertex.x - cave.WaterApproachBounds.center.x));
+                Assert.That(
+                    liningInnerPlane,
+                    Is.EqualTo(
+                            (cave.WaterApproachBounds.width * 0.5f) +
+                            CityRiverWorldBuilder.SubmergedSideThickness +
+                            CityMountainBoundaryWorldBuilder
+                                .ThroatJointOverlap)
+                        .Within(0.001f),
+                    "The cave lining must clear the channel's own beams.");
                 Assert.That(
                     FindChild(host.transform, "River Cave Rock Stop")
                         .GetComponentsInChildren<Collider>(true),

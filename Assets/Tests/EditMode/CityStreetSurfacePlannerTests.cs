@@ -658,6 +658,92 @@ namespace BarPromenade.Tests.EditMode
             return false;
         }
 
+        /// <summary>
+        /// A signature-stair edge narrows its slab to the carriageway, and
+        /// a bus junction pushes the pavement out to 8.5 m instead of 4.
+        /// District ground never reaches under the road band, so the metre
+        /// of kerb between the two carried no surface at all: four holes
+        /// the hero dropped through, one per stair that ends on a bus node.
+        /// </summary>
+        [Test]
+        public void DefaultCity_FloorsTheKerbBandOfEveryStairAtABusJunction()
+        {
+            CityLayout layout = CityLayoutGenerator.Generate(
+                CityBlueprintCatalog.Default,
+                CityGenerationSettings.Default,
+                GameSessionState.DefaultCitySeed);
+            CityStreetSurfacePlan plan =
+                CityStreetSurfacePlanner.Create(layout);
+            var busNodes = new HashSet<Vector2Int>(
+                CityBusIntersectionSelector.Select(layout));
+            float sideOffset = (layout.RoadWidth * 0.5f) -
+                (CityStreetSurfacePlanner.SidewalkWidth * 0.5f);
+            int bands = 0;
+
+            foreach (RoadEdge edge in layout.RoadEdges)
+            {
+                if (!layout.ElevationPlan.TryGetSignatureStair(
+                        edge,
+                        out CityElevationStairDescriptor stair))
+                {
+                    continue;
+                }
+
+                Rect cut = CityElevationStairPlacementPlanner
+                    .Create(layout, stair)
+                    .GroundCutFootprint;
+                foreach (Vector2Int node in new[] { edge.A, edge.B })
+                {
+                    if (!busNodes.Contains(node))
+                    {
+                        continue;
+                    }
+
+                    Vector3 origin = layout.GetNodeWorldPosition(node);
+                    Vector3 other = layout.GetNodeWorldPosition(
+                        node == edge.A ? edge.B : edge.A);
+                    Vector3 tangent = (other - origin).normalized;
+                    var left = new Vector3(-tangent.z, 0f, tangent.x);
+                    bands++;
+                    for (int side = -1; side <= 1; side += 2)
+                    {
+                        for (int step = 0; step <= 9; step++)
+                        {
+                            Vector3 probe = origin +
+                                (tangent * Mathf.Lerp(4.05f, 8.45f, step / 9f)) +
+                                (left * (sideOffset * side));
+                            var point = new Vector2(probe.x, probe.z);
+                            if (cut.Contains(point))
+                            {
+                                continue;
+                            }
+
+                            Assert.That(
+                                plan.StreetGeometry.Any(box =>
+                                    Covers(box, point)),
+                                Is.True,
+                                $"The kerb band at {point} is a hole in " +
+                                "the world.");
+                        }
+                    }
+                }
+            }
+
+            Assert.That(
+                bands,
+                Is.GreaterThan(0),
+                "The default city must still have a stair on a bus node, " +
+                "or this regression no longer tests anything.");
+        }
+
+        private static bool Covers(RuntimeOrientedBox box, Vector2 point)
+        {
+            Vector3 local = Quaternion.Inverse(box.Rotation) *
+                (new Vector3(point.x, box.Center.y, point.y) - box.Center);
+            return Mathf.Abs(local.x) <= (box.Size.x * 0.5f) + Tolerance &&
+                   Mathf.Abs(local.z) <= (box.Size.z * 0.5f) + Tolerance;
+        }
+
         private static bool Approximately(Rect first, Rect second)
         {
             return Mathf.Abs(first.x - second.x) <= Tolerance &&

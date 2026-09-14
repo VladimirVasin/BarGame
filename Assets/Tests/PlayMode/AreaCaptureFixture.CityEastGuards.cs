@@ -28,10 +28,14 @@ namespace BarPromenade.Tests.PlayMode
             guards.AutoAdvance = false;
             var motor = city.Player.Motor;
             bool interactorEnabled = city.Player.Interactor.InputEnabled;
+            Vector3 checkpoint = city.World.EastExitPlan.CheckpointPosition;
+            float streetCenterX = city.World.EastExitPlan.ApproachStart.x - city.Layout.RoadWidth * .5f;
+            Vector2 waitingPoint = new Vector2(streetCenterX, checkpoint.z);
+            Vector2 pairedWatchPoint = new Vector2(Mathf.Max(streetCenterX, checkpoint.x - 16f), checkpoint.z);
             city.Player.Interactor.SetInputEnabled(true);
             try
             {
-                Stand(236f, -39f);
+                Stand(waitingPoint.x, waitingPoint.y);
                 for (int i = 0; i < 2; i++)
                 {
                     EastGuardActor actor = guards.Actor(i);
@@ -79,7 +83,7 @@ namespace BarPromenade.Tests.PlayMode
                                 for (int wait = 0; wait < 25; wait++) { Physics.SyncTransforms(); guards.Advance(.1f); }
                                 Assert.That(guards.IsBlocked, Is.True, "A visitor standing in the patrol route must make the guard wait.");
                                 Assert.That(Vector3.Distance(before, actor.transform.position), Is.LessThan(1f));
-                                Stand(236f, -39f);
+                                Stand(waitingPoint.x, waitingPoint.y);
                                 checkedBlocking = true;
                             }
                         }
@@ -120,7 +124,7 @@ namespace BarPromenade.Tests.PlayMode
                 }
 
                 // Observe a whole pair from the public approach; it cannot be interrupted by queued E.
-                Stand(242f, -39f);
+                Stand(pairedWatchPoint.x, pairedWatchPoint.y);
                 int exchanges = guards.CompletedExchanges;
                 bool sawPair = false;
                 for (int step = 0; step < 1300 && guards.CompletedExchanges == exchanges; step++)
@@ -128,7 +132,8 @@ namespace BarPromenade.Tests.PlayMode
                     Physics.SyncTransforms(); guards.Advance(.1f);
                     if (!guards.LastLineKey.Contains(".pair.") || !guards.HasExchange || sawPair) continue;
                     sawPair = true;
-                    camera.transform.SetPositionAndRotation(new Vector3(242f, guards.Plan.GroundTop(new Vector2(242f, -39f)) + EyeHeight, -39f),
+                    camera.transform.SetPositionAndRotation(new Vector3(pairedWatchPoint.x,
+                        guards.Plan.GroundTop(pairedWatchPoint) + EyeHeight, pairedWatchPoint.y),
                         Quaternion.LookRotation(new Vector3(1f, 0f, 0f)));
                     camera.fieldOfView = 65f;
                     yield return null;

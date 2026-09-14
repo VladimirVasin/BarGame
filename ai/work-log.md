@@ -6,36 +6,42 @@ Older whole dates move to `ai/archive/` when the byte budget is reached;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-08.md`](archive/work-log-2026-08.md).
 
-## 2026-09-14 — City geometry audit
+## 2026-09-14 — City geometry and eastern checkpoint
 
-- Audited the whole City for invisible walls, terrain gaps, coplanar flicker and
-  placement; no game change. Two instruments added: `CityAuditProbeTests`
-  (production city in EditMode, 0.25 m standing grid against physics, collider
-  registry, world triangle index, seven checks plus a control test that plants
-  one defect per detector) and `AreaCaptureFixture.CityAudit` (top-down tiles
-  with the walkable mask drawn, station grid, evidence frames, 2 mm camera-shift
-  pairs for flicker). Both `[Explicit]`, category `CityAudit`.
-- Real defects are few. Four places carry no collider at all inside the walkable
-  mask, so the hero falls out of the world: the sidewalk strip is inset by
-  `BusApproachApronLength` past the junction apron, the carriageway does not
-  reach it and district ground never runs under a road band. The east edge is
-  ~7 000 m² of drawn ground outside the mask with nothing to stop anyone, which
-  the in-progress east exit should close. Everything else that looked like a
-  wall is the hero capsule radius at rock, a railed step or a retaining wall.
-- Coplanar geometry is not flicker: 1 133 clusters exist, but camera-shift pairs
-  show a solid changed patch in only two places (river cave lining over its bed,
-  and the far east backdrop). The 537 m² church cluster does not flicker because
-  both faces share one material. Keep the list for any material change.
-- Then 1 082 captured frames were read by eye and each report checked against the
-  neighbouring azimuths. The city core came through clean, which is the second,
-  instrument-independent confirmation of the gap between 16 677 raw rows and four
-  real blocking places. It also caught what no measurement asks for: a guard rail
-  running through a bus shelter so its bench is fenced off, two see-through seams
-  in the western boundary wall, a lamp hanging with no mast over the waterworks
-  portal, untextured ground across both eastern yards, and one market NPC standing
-  in four copies within four metres.
+- Added explicit City audit probes/captures: walkable mask versus physics,
+  collider registry, world triangles, planted-defect controls and camera-shift
+  pairs. Coplanarity alone did not prove flicker; visible defects included the
+  river cave and eastern backdrop, while equal-material church overlaps stayed
+  stable. Frames also exposed fence/shelter collisions, wall seams, untextured
+  east yards and repeated resident outfits.
   Checks: `CityAuditProbeTests` (control + A–E + `F_Diagnose`),
   `AreaCaptureFixture.CityAudit`.
+- Filled bus-junction stair gaps with their own kerb bands. Cemetery fences
+  use each part's width and their planned north edge; church iron opens around
+  the bus shelter. Boundary fragments overlap, the port opening has a skirt,
+  cave lining clears channel beams and gabion cages bed into stone. Esplanade
+  slabs join and follow sand; fittings/walking height use their top. East ground
+  uses the forefield sheet; grandmothers receive distinct registry outfits.
+  POI terracing remains unchanged by decision.
+  Checks: EditMode `CityStreetSurfacePlannerTests`, `CityChurchPlanningTests`,
+  `CityCemeteryPlannerTests`, `CityFringeYard*`, `CitySeacoastPlannerTests`,
+  `CityMountainBoundaryTests`, `DryingYardBabushkaTests`.
+- Joined the checkpoint approach to
+  the street asphalt edge/height, opening sidewalk and edge markings. The road
+  replaces the underlying terrain skin; dressing fits locally refined
+  rendered support triangles with clearance. The distant panorama tests behind
+  physical foreground: its short projection radius had intersected real land.
+  One welded road collider closes slab-edge ray gaps; the northern patrol
+  skirts the existing shed after relocation.
+  Check: `AreaCaptureFixture.CityEastExit`, including inspected day/night
+  views and camera-shift pairs; `check-docs.py`.
+- Ordinary walking exposed a missing radius-aware connector between abutting
+  walk-mask rectangles; the prior test's large steps had jumped the forbidden
+  seam. Added the connector and moved the post to `12 m` from the asphalt edge
+  for visibility with normal camera/fog. Compact grade/shoulders/patch/drain
+  follow the shorter approach; the southern patrol turns before the sidewalk.
+  Check: `AreaCaptureFixture.CityEastExit` passed with held `W` through the
+  seam to the visible barrier; the production-camera street view was inspected.
 
 ## 2026-09-13 — Hero, cannery and eastern edge
 

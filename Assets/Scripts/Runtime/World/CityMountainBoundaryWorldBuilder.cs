@@ -532,7 +532,16 @@ namespace BarPromenade
             float depth = cave.ThroatDepth + portalOverlap;
             float centreDistance = depth * 0.5f;
             float centreX = cave.WaterApproachBounds.center.x;
-            float halfWidth = cave.WaterApproachBounds.width * 0.5f;
+            // The channel's own side beams stand SubmergedSideThickness
+            // proud of the water rect and the portal ring ends on it, so
+            // a lining seated on that same edge shared their plane with
+            // zero separation and the whole throat flickered. Clear the
+            // beams outright, then keep beyond them the joint overlap the
+            // road tunnel already uses.
+            float halfWidth = (cave.WaterApproachBounds.width * 0.5f) +
+                              CityRiverWorldBuilder.SubmergedSideThickness +
+                              ThroatJointOverlap;
+            float linedWidth = halfWidth * 2f;
             Vector3 origin = new Vector3(
                 centreX,
                 portalBaseY,
@@ -562,8 +571,7 @@ namespace BarPromenade
                     Vector3.up * (cave.OpeningHeight + 0.35f),
                     rotation,
                     new Vector3(
-                        cave.WaterApproachBounds.width +
-                        wallThickness * 2f,
+                        linedWidth + wallThickness * 2f,
                         0.70f,
                         depth)),
                 new RuntimeOrientedBox(
@@ -571,8 +579,7 @@ namespace BarPromenade
                     Vector3.up * (cave.OpeningHeight * 0.5f),
                     rotation,
                     new Vector3(
-                        cave.WaterApproachBounds.width +
-                        wallThickness * 2f,
+                        linedWidth + wallThickness * 2f,
                         cave.OpeningHeight,
                         0.90f))
             };

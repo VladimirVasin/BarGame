@@ -53,6 +53,19 @@ namespace BarPromenade
 
             List<string> mountainAreaIds =
                 CollectMountainAreaIds(fringePlan);
+            // Both branches wear the forefield sheet. The split is about
+            // which yards get the mountain belt's dressing, not about
+            // whether their ground has a surface at all: the eastern yards
+            // used to be a hundred by two hundred metres of flat brown
+            // default material with a hard seam against the textured
+            // asphalt two metres away. The sheet's own measured source
+            // tint is YardGround, so it needs no new art to sit here.
+            HomeSurfaceRecipe groundRecipe =
+                CityFringeYardSurfaceAppearance.GetRecipe(
+                    CityFringeYardSurfaceKind.ForefieldGround);
+            CityEastExitPlan eastExit = CityEastExitPlanner.Create(layout);
+            IReadOnlyList<Rect> roadCut = eastExit.IsEnabled
+                ? new[] { eastExit.RoadBounds } : null;
             GameObject genericGround =
                 CityTerrainSurfaceWorldBuilder.Build(
                     GenericGroundObjectName,
@@ -61,18 +74,23 @@ namespace BarPromenade
                     CitySurfaceKind.OpenGround,
                     CityExteriorAppearance.YardGround,
                     false,
-                    null,
-                    null,
+                    groundRecipe.MetersPerTile,
+                    roadCut,
                     CityTerrainSurfaceAreaFilter.Excluding(
                         mountainAreaIds));
             FootstepGround.Stamp(genericGround, FootstepGroundKind.Soil);
+            if (genericGround != null)
+            {
+                CityFringeYardSurfaceAppearance.ApplyCombined(
+                    genericGround.GetComponent<Renderer>(),
+                    CityFringeYardSurfaceKind.ForefieldGround,
+                    CityExteriorAppearance.YardGround);
+            }
 
             GameObject mountainGround = null;
             if (mountainAreaIds.Count > 0)
             {
-                HomeSurfaceRecipe recipe =
-                    CityFringeYardSurfaceAppearance.GetRecipe(
-                        CityFringeYardSurfaceKind.ForefieldGround);
+                HomeSurfaceRecipe recipe = groundRecipe;
                 mountainGround = CityTerrainSurfaceWorldBuilder.Build(
                     MountainGroundObjectName,
                     parent,

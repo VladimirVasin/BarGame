@@ -100,12 +100,12 @@ namespace BarPromenade
 
             for (int side = -1; side <= 1; side += 2)
                 Trace("Road Shoulder " + side, "GravelPatch", "Road Margins",
-                    new Vector2(exit.YardBounds.xMin + 3f, z + side * 4.35f),
-                    new Vector2(x - 14f, z + side * 4.43f), .72f);
-            Part("Old Road Repair", "RoadRepair", "Road Margins", new Vector2(x - 34f, z - .35f), -5f,
+                    new Vector2(exit.YardBounds.xMin + 1.5f, z + side * 4.35f),
+                    new Vector2(x - 8f, z + side * 4.43f), .72f);
+            Part("Old Road Repair", "RoadRepair", "Road Margins", new Vector2(exit.YardBounds.xMin + 5f, z - .35f), -5f,
                 Vector3.one, new Vector3(4.4f, .02f, 3.10f), CityEastExitDressingFit.Road);
             Trace("Dry Road Drain", "DryDrain", "Road Margins",
-                new Vector2(exit.YardBounds.xMin + 8f, z - 6.2f), new Vector2(x - 20f, z - 6.45f), .76f);
+                new Vector2(exit.YardBounds.xMin + 2.5f, z - 6.2f), new Vector2(x - 8f, z - 6.45f), .76f);
 
             float serviceX = exit.YardBounds.xMin + 24f;
             Trace("Service Yard Entry", "GravelPatch", "Service Yard Traces",
@@ -181,7 +181,7 @@ namespace BarPromenade
                 Vector3 size = assembly == "DryDrain" ? new Vector3(10f, .10f, 1.382f) : new Vector3(6f, .02f, 3.46f);
                 for (int i = 0; i < count; i++)
                     Part(id + " " + i, assembly, group, Vector2.Lerp(start, end, (i + .5f) / count), yaw,
-                        new Vector3((total / count + .08f) / size.x, 1f, width / size.z), size, CityEastExitDressingFit.Ground);
+                        new Vector3(total / count / size.x, 1f, width / size.z), size, CityEastExitDressingFit.Ground);
             }
         }
 

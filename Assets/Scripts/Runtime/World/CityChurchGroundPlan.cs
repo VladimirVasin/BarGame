@@ -96,7 +96,8 @@ namespace BarPromenade
         /// </summary>
         public static IReadOnlyList<CityChurchGroundFenceSpan> CreateFenceSpans(
             CityLayout layout,
-            CityChurchPlan church)
+            CityChurchPlan church,
+            IReadOnlyList<Rect> boundaryApertures = null)
         {
             var spans = new List<CityChurchGroundFenceSpan>();
             if (church == null)
@@ -108,14 +109,59 @@ namespace BarPromenade
             float halfAccess = church.Access.Width * 0.5f;
             // Set the end posts outside the measured clear aperture.
             float postInset = FenceThickness * 0.5f;
-            AppendFence(layout, church, spans,
-                new Vector2(grounds.xMin + postInset, grounds.yMin),
-                new Vector2(grounds.xMin + postInset,
-                    church.Access.Center.z - halfAccess - postInset));
-            AppendFence(layout, church, spans,
-                new Vector2(grounds.xMin + postInset,
-                    church.Access.Center.z + halfAccess + postInset),
-                new Vector2(grounds.xMin + postInset, grounds.yMax));
+            // The west line is the precinct boundary along a street, so
+            // street furniture can legitimately stand on it: bus shelter 27
+            // straddles it, and the fence used to run straight through the
+            // shelter with a post inside it and both rails across the bench.
+            // Every such footprint opens the run the same way the church's
+            // own gate does. This is not a second way in - the shelter's
+            // own back wall stands on the frontage side and closes the
+            // boundary where the iron steps aside - so the garden keeps
+            // exactly one west entrance.
+            var gaps = new List<Vector2>
+            {
+                new Vector2(
+                    church.Access.Center.z - halfAccess - postInset,
+                    church.Access.Center.z + halfAccess + postInset)
+            };
+            AppendBoundaryGaps(
+                gaps,
+                boundaryApertures,
+                grounds.xMin + postInset,
+                postInset);
+            gaps.Sort((first, second) => first.x.CompareTo(second.x));
+            float cursor = grounds.yMin;
+            for (int index = 0; index < gaps.Count; index++)
+            {
+                Vector2 gap = gaps[index];
+                // A shelter footprint is street furniture, not a church
+                // measurement: it can sit wholly north or south of this
+                // precinct. Clamped to the run, an outside one opens
+                // nothing rather than dragging the run past its corner.
+                if (gap.y <= grounds.yMin || gap.x >= grounds.yMax)
+                {
+                    continue;
+                }
+
+                float opening = Mathf.Max(gap.x, grounds.yMin);
+                if (opening > cursor)
+                {
+                    AppendFence(layout, church, spans,
+                        new Vector2(grounds.xMin + postInset, cursor),
+                        new Vector2(grounds.xMin + postInset, opening));
+                }
+
+                cursor = Mathf.Max(
+                    cursor,
+                    Mathf.Min(gap.y, grounds.yMax));
+            }
+
+            if (cursor < grounds.yMax)
+            {
+                AppendFence(layout, church, spans,
+                    new Vector2(grounds.xMin + postInset, cursor),
+                    new Vector2(grounds.xMin + postInset, grounds.yMax));
+            }
 
             for (int index = 0; index < layout.Surfaces.Count; index++)
             {
@@ -148,6 +194,32 @@ namespace BarPromenade
             }
 
             return spans;
+        }
+
+        private static void AppendBoundaryGaps(
+            ICollection<Vector2> gaps,
+            IReadOnlyList<Rect> apertures,
+            float fenceLineX,
+            float margin)
+        {
+            if (apertures == null)
+            {
+                return;
+            }
+
+            for (int index = 0; index < apertures.Count; index++)
+            {
+                Rect aperture = apertures[index];
+                if (aperture.xMin > fenceLineX ||
+                    aperture.xMax < fenceLineX)
+                {
+                    continue;
+                }
+
+                gaps.Add(new Vector2(
+                    aperture.yMin - margin,
+                    aperture.yMax + margin));
+            }
         }
 
         private static bool HasNeighbour(CityLayout layout, Vector2Int cell)

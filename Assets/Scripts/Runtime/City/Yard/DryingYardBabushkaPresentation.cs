@@ -107,6 +107,11 @@ namespace BarPromenade
             ActiveClip = clip;
             playbackSpeed = Mathf.Max(0.05f, stance.PlaybackSpeed);
             registry.ApplyPaletteVariant(stance.PaletteVariant);
+            // The variant is a tint within a tenth of one, so all three
+            // women wore the same dark dress at the same frame. Each
+            // slot now owns a real scarf, robe and apron.
+            registry.ApplyOutfit(
+                CityBabushkaOutfits.ForYardSlot(stance.PaletteVariant));
             AttachHeldProp(registry, stance.Role);
 
             if (stance.Role == DryingYardBabushkaRole.CarpetBeater)

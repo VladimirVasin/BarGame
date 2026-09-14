@@ -17,6 +17,7 @@ namespace BarPromenade
         private const float SurfaceLift = 0.035f;
         private const float SurfaceThickness = 0.055f;
         private const float SurfaceSegmentOverlap = 0.06f;
+        private const float RetainingSegmentOverlap = 0.10f;
         private const float BeltRunSegmentLength = 17.5f;
         private const float NarrowSurfaceRunSegmentLength = 8f;
         private const float TunnelRunSegmentLength = 3f;
@@ -519,7 +520,15 @@ namespace BarPromenade
             float pitch = length / segmentCount;
             for (int index = 0; index < segmentCount; index++)
             {
-                float segmentLength = Mathf.Max(1f, pitch - 0.7f);
+                // Surface runs in this planner overlap by
+                // SurfaceSegmentOverlap; retaining runs used to be SHORT of
+                // their pitch by 0.7 m instead, so every joint along the
+                // western boundary wall was a seven-hundred-millimetre slot
+                // you could see the rock backdrop through. Walls now join
+                // the way the ground strips beside them already do.
+                float segmentLength = Mathf.Max(
+                    1f,
+                    pitch + RetainingSegmentOverlap);
                 float segmentMiddle = start + pitch * (index + 0.5f);
                 float segmentMinimum = segmentMiddle - segmentLength * 0.5f;
                 float segmentMaximum = segmentMiddle + segmentLength * 0.5f;
@@ -1368,12 +1377,25 @@ namespace BarPromenade
             bool blocksMovement,
             float embed,
             Rect reserved,
-            ICollection<CityFringeYardPartDescriptor> parts)
+            ICollection<CityFringeYardPartDescriptor> parts,
+            bool seatOnLowestCorner = false)
         {
-            float ground = SampleAreaTop(
-                layout,
-                surfaces,
-                ToXZ(xzCenter));
+            // A sixteen-metre rigid wall seated on the single sample under
+            // its centre rides up off terraced ground at one end and buries
+            // itself at the other, which reads as a leaning slab. Long parts
+            // take the lowest of their four corners instead, the way the
+            // tunnel returns and the landmark posts already do.
+            float ground = seatOnLowestCorner
+                ? SampleLowestCornerTop(
+                    layout,
+                    surfaces,
+                    xzCenter,
+                    rotation,
+                    size)
+                : SampleAreaTop(
+                    layout,
+                    surfaces,
+                    ToXZ(xzCenter));
             Vector3 center = new Vector3(
                 xzCenter.x,
                 ground + size.y * 0.5f - embed,
@@ -1394,6 +1416,36 @@ namespace BarPromenade
 
             parts.Add(part);
             return true;
+        }
+
+        private static float SampleLowestCornerTop(
+            CityLayout layout,
+            IReadOnlyList<CitySurfaceDescriptor> surfaces,
+            Vector3 xzCenter,
+            Quaternion rotation,
+            Vector3 size)
+        {
+            Vector3 right = (rotation * Vector3.right) * (size.x * 0.5f);
+            Vector3 forward = (rotation * Vector3.forward) * (size.z * 0.5f);
+            float lowest = float.PositiveInfinity;
+            for (int rightSign = -1; rightSign <= 1; rightSign += 2)
+            {
+                for (int forwardSign = -1;
+                     forwardSign <= 1;
+                     forwardSign += 2)
+                {
+                    Vector3 corner = xzCenter +
+                                     (right * rightSign) +
+                                     (forward * forwardSign);
+                    lowest = Mathf.Min(
+                        lowest,
+                        SampleAreaTop(layout, surfaces, ToXZ(corner)));
+                }
+            }
+
+            return float.IsPositiveInfinity(lowest)
+                ? SampleAreaTop(layout, surfaces, ToXZ(xzCenter))
+                : lowest;
         }
 
         private static CityFringeYardStyle ResolveWallStyle(
