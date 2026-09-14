@@ -386,7 +386,7 @@ namespace BarPromenade
                 traversal,
                 parts);
         }
-        private static CityFringeYardDescriptor CreateEastUtilityYard(
+        internal static CityFringeYardDescriptor CreateEastUtilityYard(
             CityLayout layout)
         {
             const string areaId = "yard-east";
@@ -471,7 +471,10 @@ namespace BarPromenade
 
             CityEastExitPlan exit = CityEastExitPlanner.Create(layout);
             if (exit.IsEnabled)
-                parts.RemoveAll(part => part.Footprint.Overlaps(exit.ClearanceBounds) ||
+                // The checkpoint owns the only road here; the former parallel
+                // service strip must leave continuous ground behind the fence.
+                parts.RemoveAll(part => part.Kind == CityFringeYardPartKind.ServiceTrack ||
+                    part.Footprint.Overlaps(exit.ClearanceBounds) ||
                     part.Kind == CityFringeYardPartKind.DrainChannel && part.Footprint.Overlaps(exit.Swale.Bounds));
 
             return new CityFringeYardDescriptor(

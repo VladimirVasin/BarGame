@@ -29,6 +29,7 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(body, Is.Not.Null);
             float radius = body.radius;
             CityEastExitDressingPlan dressing = CityEastExitDressingPlan.Create(exit);
+            CityEastTreePlan trees = CityEastTreePlan.Create(exit);
             Assert.That(city.Night, Is.Not.Null);
             Bounds[] lampPoles = city.Night.Plan.StreetLamps.Select(lamp =>
                 CityStaticCollisionBuilder.CreateLowerPoleBounds(lamp.Position)).ToArray();
@@ -45,7 +46,7 @@ namespace BarPromenade.Tests.PlayMode
                 }
                 return point.x >= booth.xMin - radius && point.x <= booth.xMax + radius &&
                     point.y >= booth.yMin - radius && point.y <= booth.yMax + radius ||
-                    dressing.BlocksStandingAt(point, radius);
+                    dressing.BlocksStandingAt(point, radius) || trees.BlocksStandingAt(point, radius);
             }
             float Ground(Vector2 point)
             {
@@ -129,6 +130,8 @@ namespace BarPromenade.Tests.PlayMode
         {
             CityEastSwalePlan swale = exit.Swale;
             Transform litterRoot = GameObject.Find(CityEastLitterWorldBuilder.RootName).transform;
+            Transform treeRoot = GameObject.Find(CityEastTreeWorldBuilder.RootName).transform;
+            var treeTrunks = CityEastTreePlan.Create(exit).Parts.ToDictionary(part => part.Id, StringComparer.Ordinal);
             var litterSolids = CityEastLitterPlan.Create(exit).Parts.Where(part => part.Item.Solid)
                 .ToDictionary(part => part.Id, StringComparer.Ordinal);
             Assert.That(swale, Is.Not.Null);
@@ -255,6 +258,9 @@ namespace BarPromenade.Tests.PlayMode
                     if (other.collider.transform.parent == litterRoot &&
                         litterSolids.TryGetValue(other.collider.name, out CityEastLitterPart litter) &&
                         litter.Footprint.Contains(point)) continue;
+                    if (other.collider.transform.parent == treeRoot &&
+                        treeTrunks.TryGetValue(other.collider.name, out CityEastTreePart tree) &&
+                        tree.TrunkFootprint.Contains(point)) continue;
                     Assert.That(other.point.y, Is.LessThanOrEqualTo(top + .035f),
                         "A competing raised surface must not leave the hero above the hollow: " + other.collider.name + " at " + point);
                 }

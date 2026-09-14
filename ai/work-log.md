@@ -23,8 +23,9 @@ Earlier entries: [`work-log-2026-08.md`](archive/work-log-2026-08.md).
 - Checkpoint joins street edge/height; road replaces terrain, dressing fits
   refined supports; panorama stays behind land, welded road collision and a
   radius connector close ray/mask gaps. Patrols skirt shed/sidewalk. Garden/
-  yard share grass-soil UVs/footsteps; seeded fence planting, terrain swale and
-  level crossings replace raised traces. Checks: `build-city-east-ground-texture.py --verify`,
+  yard share grass-soil UVs/footsteps; terrain swale/crossings, shared gentle
+  relief and sparse grounded trees replace the parallel service strip.
+  Checks: `build-city-east-ground-texture.py --verify`,
   `build-city-east-exit-3d-model.py --dressing-only --validate-only`,
   `AreaCaptureFixture.CityEastExit`, `check-docs.py`.
 - Litter: 36 Blender variants reuse City misc across five spaced width bands. Shared

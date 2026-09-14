@@ -505,8 +505,8 @@ The vertical slice contains:
   light. Four additional emissive-only fixtures continue into the bend; the
   faulty ballast owns a positional `5.6 m` buzz and crackles only on visible
   power dips. The
-  east utility road/drain/pole/shed/berm profile yields only within the
-  mainland-road clearance and creates no ridge. A late life pass adds one
+  east drain/pole/shed/berm profile yields within the mainland-road clearance;
+  its old parallel service-road strip is removed. A late life pass adds one
   grounded, unoccupied mason cart at the west terraces; no winch-service,
   tunnel-repair, flood-maintenance or open-hood-car vignette. Large masses are
   physical, small traces and cables are visual only. Every physical ridge
@@ -521,22 +521,24 @@ The vertical slice contains:
   forecourt. Fringe dressing adds no destination, Light, north/east mountain
   or world-bounds expansion;
 - Default `CityEastExitPlanner`: `Z=-39`, street `X=186`→post `198`→tail `286`;
-  `5/4 m` apron/blend, level open street join/radius connector; mask corners stay.
+  `5/4 m` apron/blend, level street join/radius connector.
   Booth/barrier/gate/fences close map/physics. `CityEastGroundTransition*`:
-  grass-soil `3–5 m` in `8 m`, shared UVs/edge/footsteps. West-facing outside
-  bench, canopy/cabinet; apron/traces use terrain triangles. `CityEastSwalePlan`:
+  grass-soil `3–5 m` in `8 m`, shared UVs/edge/footsteps. West-facing bench,
+  canopy/cabinet; embedded traces. `CityEastSwalePlan`:
   narrow intake → `3.9–4.7 m`/`.37–.48 m` hollow, level crossings; same visible/
-  physical/map grade. Seeded shrubs/grass/gravel follow all fence runs/corners,
-  front `12–16 m`, gaps ≤`20 m`; rear banks/drain/grate/repairs, shed/stock/traces.
-  `CityEastLitterPlan`/`CityLitterCatalog`: 36 Blender variants, five width
-  bands with spaced slots/`.45 m` gaps; empty vessels/parts/four damaged bicycles.
-  Own seeds; shared rigid meshes settle on the existing support index.
-  Small litter is nonblocking; solids exclude map arrivals. Whole footprints
+  physical/map grade. `CityEastReliefPlan`: seeded metre-grid relief, fixed
+  edges/pads/crossings. `CityEastTreePlan`: sparse `3–5 m` City misc trees on
+  both sides, supported roots, trunk collision/map cuts.
+  Seeded shrubs/grass/gravel along the fence,
+  front `12–16 m`, gaps ≤`20 m`; rear banks/drain/grate/repairs, shed stock.
+  `CityEastLitterPlan`/`CityLitterCatalog`: 36 seeded Blender variants, five
+  width bands/`.45 m` gaps; vessels/parts/four damaged bicycles. Shared rigid
+  meshes on indexed ground; solids block/map-cut. Footprints
   clear `X=188–191.5`, patrol/church/crossings/fence. Pooled lamp + canopy/shed Spots
-  (`CityNightSiteLightRegistry`): day floor/halos/hard shadows.
+  registry: day floor/halos/hard shadows.
   `CityEastDistanceWorldBuilder`: land/road/shoulders/skyline `44 m`,
-  angular/parallax, `48 m` clip/`.070` fog/foreground depth, central windows/day
-  glow. No distance/remote gameplay/Light/shadow/audio; road replaces skin;
+  parallax, `48 m` clip/`.070` fog/foreground depth, central windows/day
+  glow; no remote gameplay/Light/shadow/audio; road replaces skin;
 - `CityEastGuardDuty`: one home, one three-point out-and-back patrol; swap
   on return. Senior/Junior: own rigs/faces/clothes, separate shoulder rifles
   (`EastGuardActor`), body-aware grounded movement. Speech/modals hold duty.

@@ -87,6 +87,7 @@ namespace BarPromenade.Tests.PlayMode
             VerifyEastStreetJoin(city, plan);
             VerifyEastDressing(city, plan, landing);
             VerifyEastGroundTransition(city, plan, landing);
+            VerifyEastReliefAndTrees(city, plan, landing);
             VerifyEastOpenForefield(city, plan);
             VerifyEastLitter(city, plan, landing);
             VerifyEastSwale(city, plan, landing);
@@ -98,7 +99,7 @@ namespace BarPromenade.Tests.PlayMode
                     GameTimeState.GameMinutesPerRealSecond));
                 city.DayNight.ApplyCurrentTime(true);
                 yield return CaptureEastFenceThirdPerson(city, plan, landing, "night");
-                Debug.Log("EAST FENCE LANDSCAPE: full-run coverage, real dry swale and gentle crossings, pedestrian corridor, grounded dressing and third-person day/night views verified.");
+                Debug.Log("EAST FENCE LANDSCAPE: no service-road strip, relief and sparse trees on both sides, real dry swale, clear pedestrian lanes and third-person day/night views verified.");
                 yield break;
             }
             for (float x = plan.ApproachStart.x + 1f; x < plan.CheckpointPosition.x - 1.5f; x += 3f)
@@ -292,6 +293,13 @@ namespace BarPromenade.Tests.PlayMode
                 yield return View("swale-bed", new Vector2(exit.Swale.CenterX(swaleZ), swaleZ), 12f);
                 float crossingZ = exit.Swale.CrossingZ[exit.Swale.CrossingZ.Count / 2];
                 yield return View("swale-crossing", new Vector2(laneX, crossingZ), 90f);
+                // Match the reported close fence view: the normal camera is
+                // behind the hero while both near and closed-side ground
+                // remain in frame. The crossing gives an unobstructed stance.
+                yield return View("close-cross-fence", new Vector2(
+                    exit.CheckpointPosition.x - 1.3f, crossingZ), 32f);
+                yield return View("actual-road", new Vector2(
+                    exit.CheckpointPosition.x - 3f, exit.CheckpointPosition.z), 90f);
                 yield return View("south-return", new Vector2(
                     Mathf.Lerp(exit.CheckpointPosition.x, exit.YardBounds.xMax, .5f), exit.YardBounds.yMin - 2.5f), 65f);
             }

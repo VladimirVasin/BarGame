@@ -208,6 +208,8 @@ namespace BarPromenade
                     footprints.Add(Expand(solid.Footprint, radius));
                 foreach (CityEastLitterPart part in CityEastLitterPlan.Create(eastExit).Parts)
                     if (part.Item.Solid) footprints.Add(Expand(part.Footprint, radius));
+                foreach (CityEastTreePart tree in CityEastTreePlan.Create(eastExit).Parts)
+                    footprints.Add(Expand(tree.TrunkFootprint, radius));
             }
             if (church != null)
             {

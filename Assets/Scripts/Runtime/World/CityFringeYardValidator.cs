@@ -335,6 +335,8 @@ namespace BarPromenade
             if (yard.Kind == CityFringeYardKind.EastUtilityEdge)
             {
                 CityEastExitPlan east = CityEastExitPlanner.Create(layout);
+                // The closed mainland road replaces the parallel service strip.
+                expectsServiceTrack = !east.IsEnabled;
                 // This edge's drainage is now carved into its shared ground
                 // skin, replacing the former raised straight drain pieces.
                 hasDrain |= east.IsEnabled && east.Swale.Bounds.Overlaps(yard.AreaBounds);

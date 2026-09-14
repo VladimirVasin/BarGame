@@ -93,6 +93,10 @@ namespace BarPromenade.Tests.EditMode
                 mountains.Ridges.Any(item => item.SourceAreaId == "yard-east"),
                 Is.False,
                 "The eastern utility edge must not acquire a mountain.");
+            Assert.That(first.Yards.Single(yard => yard.Kind == CityFringeYardKind.EastUtilityEdge)
+                    .Parts.Any(part => part.Kind == CityFringeYardPartKind.ServiceTrack),
+                Is.False,
+                "Continuous ground replaces the old service road parallel to the checkpoint fence.");
 
             for (int yardIndex = 0;
                  yardIndex < first.Yards.Count;

@@ -112,6 +112,7 @@ namespace BarPromenade
             // The scatter uses the already indexed visible terrain; rigid
             // props retain shared meshes instead of entering foliage fitting.
             CityEastLitterWorldBuilder.Build(root, exit, support.TrySample);
+            CityEastTreeWorldBuilder.Build(root, exit, support.TrySample);
             return root;
         }
 

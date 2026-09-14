@@ -4,24 +4,26 @@
 
 ## Current facts
 
+- **Accepted — 2026-09-14, eastern fence relief and trees:**
+  Art §10e: shared terrain relief replaces parallel track; sparse City misc
+  trees, supported roots/trunk collision/map cuts. Road/paths/story §16/nine
+  art checks hold; no exception.
+
 - **Accepted architecture exception — 2026-09-14, eastern verge litter:**
-  Reused/new passive Blender litter covers the `12 m` eastern road-to-fence
-  strip. Art §10e/story §6 own support/distribution/clearance/materials/bans;
-  §16/§21/nine art checks.
+  Passive Blender litter: `12 m` road-to-fence strip. Art §10e/story §6 own
+  form/exclusions; §16/§21/nine art checks hold.
 
 - **Accepted — 2026-09-14, checkpoint placement:**
-  Post `(198,-39)`, street gap `12 m`, tail `286`; open front, mask corners,
-  church paths/story §6 retained.
+  Post `(198,-39)`, street gap `12 m`, tail `286`; front/mask/paths/story §6 hold.
 
 - **Accepted — 2026-09-14, full eastern fence dressing:**
-  Art §10e owns seeded Blender perimeter plants/gravel, rear banks/drain/
-  grate/repairs, one shed stock and exclusions. Paths/patrol/§16 hold;
-  no §6 exception.
+  Art §10e: seeded Blender perimeter cover/works/stock/exclusions;
+  paths/patrol/§16 hold, no §6 exception.
 
 - **Accepted — 2026-09-14, eastern dry swale:**
-  `CityEastSwalePlan` lowers shared terrain/collision/walk/map; shallow intake,
-  broad hollow, feathered ends/crossings replace drain/spur, reuse gravel/
-  plants/stone. Road/fence/art §10e/story §16 hold; no model/overlay/exception.
+  `CityEastSwalePlan`: shared terrain/collision/walk/map hollow replaces
+  drain/spur; art §10e owns grade/cover/crossings. Road/fence/story §16 hold;
+  no model/overlay/exception.
 
 - **Accepted architecture exception — 2026-09-14, checkpoint landscape:**
   Blender/church-yard cover, nearer shed/trace. Warm canopy/shed lights:

@@ -41,6 +41,7 @@ namespace BarPromenade
             BoothPad = new Rect(BoothPosition.x - 3.5f, BoothPosition.z - 3f, 7f, 6f);
             LampPosition = new Vector3(gateX - 4f, gateTop - RoadSurfaceLift, axisZ - 4.4f);
             Swale = new CityEastSwalePlan(this);
+            Relief = new CityEastReliefPlan(this);
             var fences = new List<CityEastExitFence>();
             AddFence(fences, new Vector2(gateX, yard.yMin), new Vector2(gateX, axisZ - 4.4f));
             AddFence(fences, new Vector2(gateX, axisZ + 3f), new Vector2(gateX, northYard.yMax));
@@ -80,6 +81,7 @@ namespace BarPromenade
         public Vector3 BoothPosition { get; }
         public Vector3 LampPosition { get; }
         public CityEastSwalePlan Swale { get; }
+        public CityEastReliefPlan Relief { get; }
         public IReadOnlyList<CityEastExitFence> Fences { get; } = Array.Empty<CityEastExitFence>();
 
         public float SampleRoadTop(float x)
@@ -112,7 +114,8 @@ namespace BarPromenade
             float dx = Mathf.Max(BoothPad.xMin - point.x, 0f, point.x - BoothPad.xMax);
             float dz = Mathf.Max(BoothPad.yMin - point.y, 0f, point.y - BoothPad.yMax);
             float padWeight = 1f - Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(Mathf.Max(dx, dz) / 2f));
-            return Mathf.Lerp(top, BoothPosition.y, padWeight) + Swale.SampleOffset(point);
+            return Mathf.Lerp(top, BoothPosition.y, padWeight) +
+                Swale.SampleOffset(point) + Relief.SampleOffset(point);
         }
 
         public float SampleGroundTop(Vector2 point) => ApplyGroundTop(point,

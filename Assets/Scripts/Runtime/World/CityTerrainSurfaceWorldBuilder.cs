@@ -1047,7 +1047,15 @@ namespace BarPromenade
                 CityEastExitPlan east = CityEastExitPlanner.Create(layout);
                 if (east.IsEnabled)
                 {
+                    // One metre sampling resolves the broad relief on both
+                    // sides. World-aligned cuts keep neighbouring cells joined;
+                    // the original mesh still supplies its collision skin.
+                    for (float x = Mathf.Ceil(patch.xMin); x < patch.xMax; x += 1f)
+                        xAnchors.Add(x);
+                    for (float z = Mathf.Ceil(patch.yMin); z < patch.yMax; z += 1f)
+                        zAnchors.Add(z);
                     xAnchors.Add(east.YardBounds.xMin);
+                    xAnchors.Add(east.CheckpointPosition.x);
                     xAnchors.Add(east.ApproachStart.x + CityEastExitPlan.StreetGradeBlendLength);
                     xAnchors.Add(east.CheckpointPosition.x - CityEastExitPlan.CheckpointApronLength);
                     foreach (float offset in new[] { -7f, -4f, 0f, 4f, 7f })
