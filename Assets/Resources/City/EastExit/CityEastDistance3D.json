@@ -1,0 +1,172 @@
+{
+  "generator": "tools/build-city-east-exit-3d-model.py",
+  "version": "1.1.0",
+  "design_id": "city_east_distance_v1",
+  "parts": [
+    {
+      "mesh": "DistanceLand",
+      "role": "DistanceLand",
+      "vertex_count": 435,
+      "triangle_count": 784,
+      "bounds_min_unity": [
+        0,
+        -0.035,
+        -6900.0
+      ],
+      "bounds_max_unity": [
+        15000,
+        98.174944,
+        6900.0
+      ],
+      "uv_min": [
+        0.0,
+        -575.0
+      ],
+      "uv_max": [
+        1250.0,
+        575.0
+      ],
+      "uv_signature": "5b3de3170cbc42967504e7daa1c9f296b5242d65ebff6b5eeafd333110901df9"
+    },
+    {
+      "mesh": "DistanceRoad",
+      "role": "DistanceRoad",
+      "vertex_count": 58,
+      "triangle_count": 56,
+      "bounds_min_unity": [
+        0,
+        0.0,
+        -303.0
+      ],
+      "bounds_max_unity": [
+        15000,
+        93.217733,
+        697.346356
+      ],
+      "uv_min": [
+        0.0,
+        -25.25
+      ],
+      "uv_max": [
+        1250.0,
+        58.112196
+      ],
+      "uv_signature": "908dad721705e6f60b39b0662baa3d0927418c76f9090d6a0f53cb87aa4857c4"
+    },
+    {
+      "mesh": "DistanceShoulder",
+      "role": "DistanceShoulder",
+      "vertex_count": 58,
+      "triangle_count": 56,
+      "bounds_min_unity": [
+        0,
+        -0.02,
+        -305.0
+      ],
+      "bounds_max_unity": [
+        15000,
+        93.200853,
+        699.346356
+      ],
+      "uv_min": [
+        0.0,
+        -25.416667
+      ],
+      "uv_max": [
+        1250.0,
+        58.278863
+      ],
+      "uv_signature": "e55d91520cac766ddc29e4929d613fdea5231a1b2418b3c338a57564fe281213"
+    },
+    {
+      "mesh": "DistanceCity",
+      "role": "DistanceCity",
+      "vertex_count": 1120,
+      "triangle_count": 1680,
+      "bounds_min_unity": [
+        10901.0,
+        63.981561,
+        -3582.746292
+      ],
+      "bounds_max_unity": [
+        13528.5,
+        411.070934,
+        3563.841343
+      ],
+      "uv_min": [
+        -0.011821,
+        0.0
+      ],
+      "uv_max": [
+        1.00912,
+        1.0
+      ],
+      "uv_signature": "201f56ebc40ca9fa2632eea6ad525b450bff7d93370a15d5240093d26a7e721b"
+    },
+    {
+      "mesh": "DistanceWindows",
+      "role": "DistanceWindows",
+      "vertex_count": 872,
+      "triangle_count": 1308,
+      "bounds_min_unity": [
+        10908.69,
+        69.205568,
+        -3318.025994
+      ],
+      "bounds_max_unity": [
+        12312.41,
+        281.773328,
+        3196.340009
+      ],
+      "uv_min": [
+        0.025996,
+        1.0
+      ],
+      "uv_max": [
+        0.95662,
+        1.0
+      ],
+      "uv_signature": "328eaad3f3df969df607161523aa4d8ef7c95947da41228a72dd9fd489c32a93"
+    },
+    {
+      "mesh": "DistanceGlow",
+      "role": "DistanceGlow",
+      "vertex_count": 66,
+      "triangle_count": 64,
+      "bounds_min_unity": [
+        14200.0,
+        57.386397,
+        -3900.0
+      ],
+      "bounds_max_unity": [
+        14460.0,
+        230.382823,
+        3900.0
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ],
+      "uv_signature": "83b61be69b27a45aedb535252f727e7ddd09faee3f37672a96c412b1267d21bc"
+    }
+  ],
+  "export_settings": {
+    "axis_forward": "-Z",
+    "axis_up": "Y",
+    "apply_scale_options": "FBX_SCALE_NONE",
+    "bake_space_transform": false,
+    "hierarchy_contract": "Preserve complete imported transform basis when cloning an assembly"
+  },
+  "units": "virtual Unity metres, visual projection parameters only",
+  "origin": "east road end, local +X outbound, ground Y=0",
+  "source_to_unity": "swap Y/Z and rewind faces",
+  "colliders": false,
+  "lights": false,
+  "animation_count": 0,
+  "triangle_count": 3948,
+  "signature": "86bc505c0adfecab36c508e8e3940124824874971b4e3276f1794dd734f35785"
+}

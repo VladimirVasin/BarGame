@@ -461,7 +461,7 @@ namespace BarPromenade
         }
 
         /// <summary>Sample before contact solving; all variants remain planted idle for speech admission.</summary>
-        public void ApplyIdleVariation(float seconds, bool outside, float listeningWeight)
+        public void ApplyIdleVariation(float seconds, bool outside, float listeningWeight, Vector3? lookAt = null)
         {
             // Configure the complete blend before evaluating it. Sampling the
             // unblended idle first would immediately be overwritten below.
@@ -473,6 +473,7 @@ namespace BarPromenade
             if (outsideIdlePlayable.IsValid()) outsideIdlePlayable.SetTime(Mathf.Repeat(seconds, outsideIdleClip.length));
             if (listeningIdlePlayable.IsValid()) listeningIdlePlayable.SetTime(Mathf.Repeat(seconds, listeningIdleClip.length));
             graph.Evaluate(0);
+            ApplyLook(lookAt);
         }
 
         /// <summary>Local pose of the separate shovel; origin is the bottom of its blade.</summary>

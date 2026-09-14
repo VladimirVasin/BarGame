@@ -97,6 +97,7 @@ namespace BarPromenade
         public IReadOnlyList<WeighbridgeAttendantPresentation>
             WeighbridgeAttendants { get; private set; }
         public CityCanneryController Cannery { get; private set; }
+        public CityEastGuardController EastGuards { get; private set; }
         public CityWeighbridgeNeedleController WeighbridgeNeedle
         {
             get;
@@ -1091,6 +1092,8 @@ namespace BarPromenade
             SpeechBubbles.Initialize(
                 camera,
                 Player.GameObject.transform);
+            EastGuards = CityEastGuardWorldBuilder.Build(transform, World.EastExitPlan,
+                Player.GameObject.transform, camera, Layout.Seed);
             // Every act of the gravedigger's job is now a piece of
             // work rather than a press. Raised here rather than beside
             // the jobs themselves because it takes the camera down onto

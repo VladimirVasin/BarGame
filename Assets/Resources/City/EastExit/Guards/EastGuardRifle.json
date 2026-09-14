@@ -1,0 +1,91 @@
+{
+  "generator": "build-city-east-guards-3d-model.py",
+  "version": "1.0.0",
+  "role": "EastGuardRifle",
+  "units": "metres",
+  "source_forward": "-Y",
+  "source_up": "+Z",
+  "bounds_min": [
+    -0.043,
+    -0.0475,
+    -0.38
+  ],
+  "bounds_max": [
+    0.043,
+    0.1312401,
+    0.631
+  ],
+  "mesh_count": 3,
+  "triangle_count": 908,
+  "anchors": {
+    "ANCHOR_Carry": [
+      0,
+      0,
+      0
+    ],
+    "ANCHOR_SlingUpper": [
+      0.0,
+      -0.014999999664723873,
+      0.23999999463558197
+    ],
+    "ANCHOR_SlingLower": [
+      0.0,
+      0.017999999225139618,
+      -0.2800000011920929
+    ]
+  },
+  "parts": [
+    {
+      "name": "GEO_RifleMetal",
+      "role": "Metal",
+      "triangle_count": 616,
+      "bounds_min_blender": [
+        -0.043,
+        -0.0475,
+        -0.284
+      ],
+      "bounds_max_blender": [
+        0.043,
+        0.1312401,
+        0.631
+      ]
+    },
+    {
+      "name": "GEO_RifleFurniture",
+      "role": "Furniture",
+      "triangle_count": 264,
+      "bounds_min_blender": [
+        -0.041,
+        -0.041,
+        -0.37
+      ],
+      "bounds_max_blender": [
+        0.041,
+        0.1071144,
+        0.32
+      ]
+    },
+    {
+      "name": "GEO_RifleDark",
+      "role": "Dark",
+      "triangle_count": 28,
+      "bounds_min_blender": [
+        -0.039,
+        -0.0385,
+        -0.38
+      ],
+      "bounds_max_blender": [
+        0.039,
+        0.0865,
+        -0.366
+      ]
+    }
+  ],
+  "texture": "EastGuardRifleAtlas.png",
+  "atlas_sha256": "45fa065300b1bf0993b4efaac40a659d5d6a5c51ff2ed8efa729f1a8434f5ce7",
+  "gameplay": false,
+  "colliders": false,
+  "rigidbodies": false,
+  "geometry_signature": "53fc38ccbc8526e50c713c94f6d39a9b1f85d95238b240663d9d3183fe74b01e",
+  "shared_instances": 2
+}

@@ -97,6 +97,7 @@ namespace BarPromenade
             CityChurchCourtyardPlan churchCourtyardPlan =
                 plans.ChurchCourtyard;
             CityFringeYardPlan fringeYardPlan = plans.FringeYard;
+            CityEastExitPlan eastExitPlan = plans.EastExit;
             CityDecorationPlan decorationPlan =
                 plans.GetDecoration(nightPlan);
             // Planned before the ground pass: when the seacoast will
@@ -164,6 +165,8 @@ namespace BarPromenade
                     layout.ElevationPlan.SignatureStairs.Count));
             subTimer.Restart();
             RoadFenceWorldBuilder.Build(world, fencePlan);
+            CityEastExitWorldResult eastExit = CityEastExitWorldBuilder.Build(world, eastExitPlan);
+            if (eastExitPlan.IsEnabled) CityEastDistanceWorldBuilder.Build(world, eastExitPlan);
             ReportBlock(
                 "roads_and_river/fences",
                 subTimer,
@@ -389,6 +392,8 @@ namespace BarPromenade
                 windDressingRoot,
                 archShelterPlan,
                 archShelter,
+                eastExitPlan,
+                eastExit,
                 bounds));
             ReportBlock(
                 "world_complete",
@@ -2655,6 +2660,7 @@ namespace BarPromenade
                     layout,
                     MountainBoundary);
             Seacoast = CitySeacoastPlanner.Create(layout);
+            EastExit = CityEastExitPlanner.Create(layout);
         }
 
         internal CityLayout Layout { get; }
@@ -2666,6 +2672,7 @@ namespace BarPromenade
         internal CityChurchCourtyardPlan ChurchCourtyard { get; }
         internal CityFringeYardPlan FringeYard { get; }
         internal CitySeacoastPlan Seacoast { get; }
+        internal CityEastExitPlan EastExit { get; }
 
         internal static bool IsMemoised(CityLayout layout)
         {

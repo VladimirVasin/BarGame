@@ -1557,6 +1557,19 @@ namespace BarPromenade
                         Mathf.Max(2f,roadWidth*port.CarriagewayWidth/controller.Layout.RoadWidth),
                         GetPathColor(CityPathKind.Street));
             }
+            CityEastExitPlan eastExit = CityEastExitPlanner.Create(controller.Layout);
+            if (eastExit.IsEnabled)
+            {
+                Color roadColor = GetPathColor(CityPathKind.Street);
+                DrawLine(projection.WorldToScreen(eastExit.ApproachStart),
+                    projection.WorldToScreen(eastExit.CheckpointPosition), roadWidth, roadColor);
+                DrawLine(projection.WorldToScreen(eastExit.CheckpointPosition),
+                    projection.WorldToScreen(eastExit.RoadEnd), Mathf.Max(1f, roadWidth * .55f),
+                    new Color(.40f, .41f, .34f));
+                Vector2 gate = projection.WorldToScreen(eastExit.CheckpointPosition);
+                DrawLine(gate + Vector2.up * 5f, gate - Vector2.up * 5f, 2f, new Color(.66f, .48f, .29f));
+                DrawSolidRect(ProjectWorldRect(projection, eastExit.BoothBounds), new Color(.48f, .47f, .36f));
+            }
         }
 
         private void DrawRiverBridges(MapProjection projection)

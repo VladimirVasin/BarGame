@@ -1,0 +1,584 @@
+{
+  "generator": "tools/build-city-east-exit-3d-model.py",
+  "version": "1.1.0",
+  "design_id": "city_civilian_east_exit_v1",
+  "signature": "a88553b9322cf9dab79121fd57a59f505274ed44b469aa427e6b4c35b2b88690",
+  "export_settings": {
+    "axis_forward": "-Z",
+    "axis_up": "Y",
+    "apply_scale_options": "FBX_SCALE_NONE",
+    "bake_space_transform": false,
+    "hierarchy_contract": "Preserve complete imported transform basis when cloning an assembly"
+  },
+  "units": "Unity local metres",
+  "source_to_unity": "swap Y/Z and rewind faces",
+  "root_scale_contract": "Preserve imported template lossyScale; FBX uses file units",
+  "colliders": false,
+  "lights": false,
+  "animation_count": 0,
+  "road_asphalt_width": 6,
+  "road_shoulder_width": 8,
+  "road_unit_length": 10,
+  "barrier_clearance_below_grille": 0.095,
+  "anchors": {
+    "Lamp/LightAnchor": [
+      0.32,
+      3.335,
+      0
+    ]
+  },
+  "assemblies": [
+    {
+      "name": "Road",
+      "bounds_min_unity": [
+        -5.0,
+        -0.19,
+        -4.0
+      ],
+      "bounds_max_unity": [
+        5.0,
+        0.048,
+        4.0
+      ],
+      "parts": [
+        {
+          "mesh": "EEX_Road_Asphalt",
+          "role": "Asphalt",
+          "vertex_count": 16,
+          "triangle_count": 28,
+          "bounds_min_unity": [
+            -5.0,
+            -0.185,
+            -3.0
+          ],
+          "bounds_max_unity": [
+            5.0,
+            0.035,
+            3.0
+          ]
+        },
+        {
+          "mesh": "EEX_Road_Ground",
+          "role": "Ground",
+          "vertex_count": 32,
+          "triangle_count": 56,
+          "bounds_min_unity": [
+            -5.0,
+            -0.19,
+            -4.0
+          ],
+          "bounds_max_unity": [
+            5.0,
+            0.01,
+            4.0
+          ]
+        },
+        {
+          "mesh": "EEX_Road_Paint",
+          "role": "Paint",
+          "vertex_count": 64,
+          "triangle_count": 112,
+          "bounds_min_unity": [
+            -5.0,
+            0.036,
+            -2.78
+          ],
+          "bounds_max_unity": [
+            5.0,
+            0.048,
+            2.78
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Booth",
+      "bounds_min_unity": [
+        -1.73,
+        0.0,
+        -2.165
+      ],
+      "bounds_max_unity": [
+        1.73,
+        3.094839,
+        1.935
+      ],
+      "parts": [
+        {
+          "mesh": "EEX_Booth_Stone",
+          "role": "Stone",
+          "vertex_count": 128,
+          "triangle_count": 224,
+          "bounds_min_unity": [
+            -1.655,
+            0.0,
+            -2.165
+          ],
+          "bounds_max_unity": [
+            1.655,
+            1.225,
+            1.79
+          ]
+        },
+        {
+          "mesh": "EEX_Booth_Wall",
+          "role": "Wall",
+          "vertex_count": 192,
+          "triangle_count": 336,
+          "bounds_min_unity": [
+            -1.5,
+            0.16,
+            -1.7
+          ],
+          "bounds_max_unity": [
+            1.5,
+            2.82,
+            1.7
+          ]
+        },
+        {
+          "mesh": "EEX_Booth_Glass",
+          "role": "Glass",
+          "vertex_count": 48,
+          "triangle_count": 84,
+          "bounds_min_unity": [
+            -1.4375,
+            1.295,
+            -1.6725
+          ],
+          "bounds_max_unity": [
+            1.4375,
+            2.205,
+            0.865
+          ]
+        },
+        {
+          "mesh": "EEX_Booth_Metal",
+          "role": "Metal",
+          "vertex_count": 272,
+          "triangle_count": 476,
+          "bounds_min_unity": [
+            -1.73,
+            0.084311,
+            -1.935
+          ],
+          "bounds_max_unity": [
+            1.73,
+            2.95,
+            1.935
+          ]
+        },
+        {
+          "mesh": "EEX_Booth_Dark",
+          "role": "Dark",
+          "vertex_count": 128,
+          "triangle_count": 224,
+          "bounds_min_unity": [
+            -1.31,
+            0.17,
+            -1.792
+          ],
+          "bounds_max_unity": [
+            1.31,
+            1.577,
+            1.51
+          ]
+        },
+        {
+          "mesh": "EEX_Booth_Roof",
+          "role": "Roof",
+          "vertex_count": 80,
+          "triangle_count": 140,
+          "bounds_min_unity": [
+            -1.72196,
+            2.79203,
+            -1.92
+          ],
+          "bounds_max_unity": [
+            1.72196,
+            3.094839,
+            1.92
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Barrier",
+      "bounds_min_unity": [
+        -0.25,
+        0.0,
+        -3.37
+      ],
+      "bounds_max_unity": [
+        0.25,
+        1.2825,
+        3.37
+      ],
+      "parts": [
+        {
+          "mesh": "EEX_Barrier_Stone",
+          "role": "Stone",
+          "vertex_count": 32,
+          "triangle_count": 56,
+          "bounds_min_unity": [
+            -0.25,
+            0.0,
+            -3.37
+          ],
+          "bounds_max_unity": [
+            0.25,
+            0.2,
+            3.37
+          ]
+        },
+        {
+          "mesh": "EEX_Barrier_Metal",
+          "role": "Metal",
+          "vertex_count": 528,
+          "triangle_count": 924,
+          "bounds_min_unity": [
+            -0.16,
+            0.095,
+            -3.36
+          ],
+          "bounds_max_unity": [
+            0.25,
+            1.2825,
+            3.285
+          ]
+        },
+        {
+          "mesh": "EEX_Barrier_Paint",
+          "role": "Paint",
+          "vertex_count": 16,
+          "triangle_count": 28,
+          "bounds_min_unity": [
+            -0.08,
+            1.1,
+            -3.08
+          ],
+          "bounds_max_unity": [
+            0.08,
+            1.28,
+            3.08
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Fence",
+      "bounds_min_unity": [
+        -0.125,
+        0.0,
+        -2.125
+      ],
+      "bounds_max_unity": [
+        0.125,
+        1.855,
+        2.125
+      ],
+      "parts": [
+        {
+          "mesh": "EEX_Fence_Stone",
+          "role": "Stone",
+          "vertex_count": 32,
+          "triangle_count": 56,
+          "bounds_min_unity": [
+            -0.125,
+            0.0,
+            -2.125
+          ],
+          "bounds_max_unity": [
+            0.125,
+            0.22,
+            2.125
+          ]
+        },
+        {
+          "mesh": "EEX_Fence_Metal",
+          "role": "Metal",
+          "vertex_count": 416,
+          "triangle_count": 728,
+          "bounds_min_unity": [
+            -0.07,
+            0.1,
+            -2.07
+          ],
+          "bounds_max_unity": [
+            0.07,
+            1.855,
+            2.07
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Gate",
+      "bounds_min_unity": [
+        -0.125,
+        0.0,
+        -0.825
+      ],
+      "bounds_max_unity": [
+        0.125,
+        1.855,
+        0.825
+      ],
+      "parts": [
+        {
+          "mesh": "EEX_Gate_Stone",
+          "role": "Stone",
+          "vertex_count": 32,
+          "triangle_count": 56,
+          "bounds_min_unity": [
+            -0.125,
+            0.0,
+            -0.825
+          ],
+          "bounds_max_unity": [
+            0.125,
+            0.22,
+            0.825
+          ]
+        },
+        {
+          "mesh": "EEX_Gate_Metal",
+          "role": "Metal",
+          "vertex_count": 224,
+          "triangle_count": 392,
+          "bounds_min_unity": [
+            -0.095,
+            0.1,
+            -0.77
+          ],
+          "bounds_max_unity": [
+            0.07,
+            1.855,
+            0.77
+          ]
+        }
+      ]
+    },
+    {
+      "name": "DrainCover",
+      "bounds_min_unity": [
+        -0.6,
+        -0.19,
+        -4.0
+      ],
+      "bounds_max_unity": [
+        0.6,
+        0.0405,
+        4.0
+      ],
+      "parts": [
+        {
+          "mesh": "EEX_DrainCover_Stone",
+          "role": "Stone",
+          "vertex_count": 16,
+          "triangle_count": 28,
+          "bounds_min_unity": [
+            -0.6,
+            -0.19,
+            -4.0
+          ],
+          "bounds_max_unity": [
+            0.6,
+            0.0,
+            4.0
+          ]
+        },
+        {
+          "mesh": "EEX_DrainCover_Dark",
+          "role": "Dark",
+          "vertex_count": 16,
+          "triangle_count": 28,
+          "bounds_min_unity": [
+            -0.415,
+            -0.0065,
+            -3.87
+          ],
+          "bounds_max_unity": [
+            0.415,
+            0.0185,
+            3.87
+          ]
+        },
+        {
+          "mesh": "EEX_DrainCover_Metal",
+          "role": "Metal",
+          "vertex_count": 736,
+          "triangle_count": 1288,
+          "bounds_min_unity": [
+            -0.5175,
+            0.0135,
+            -3.9
+          ],
+          "bounds_max_unity": [
+            0.5175,
+            0.0405,
+            3.9
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Mound",
+      "bounds_min_unity": [
+        -3.098769,
+        -0.06,
+        -1.608131
+      ],
+      "bounds_max_unity": [
+        3.0,
+        0.874269,
+        1.382424
+      ],
+      "parts": [
+        {
+          "mesh": "EEX_Mound_Ground",
+          "role": "Ground",
+          "vertex_count": 52,
+          "triangle_count": 100,
+          "bounds_min_unity": [
+            -3.098769,
+            -0.06,
+            -1.608131
+          ],
+          "bounds_max_unity": [
+            3.0,
+            0.874269,
+            1.382424
+          ]
+        },
+        {
+          "mesh": "EEX_Mound_Foliage",
+          "role": "Foliage",
+          "vertex_count": 192,
+          "triangle_count": 336,
+          "bounds_min_unity": [
+            -1.93466,
+            0.350375,
+            -0.551445
+          ],
+          "bounds_max_unity": [
+            1.569678,
+            0.858036,
+            0.664535
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Shrub",
+      "bounds_min_unity": [
+        -0.884172,
+        -0.006565,
+        -0.800499
+      ],
+      "bounds_max_unity": [
+        0.907542,
+        1.15959,
+        0.548245
+      ],
+      "parts": [
+        {
+          "mesh": "EEX_Shrub_Wood",
+          "role": "Wood",
+          "vertex_count": 112,
+          "triangle_count": 196,
+          "bounds_min_unity": [
+            -0.316512,
+            -0.006565,
+            -0.417403
+          ],
+          "bounds_max_unity": [
+            0.363295,
+            0.92628,
+            0.23009
+          ]
+        },
+        {
+          "mesh": "EEX_Shrub_Foliage",
+          "role": "Foliage",
+          "vertex_count": 364,
+          "triangle_count": 700,
+          "bounds_min_unity": [
+            -0.884172,
+            0.3564,
+            -0.800499
+          ],
+          "bounds_max_unity": [
+            0.907542,
+            1.15959,
+            0.548245
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Lamp",
+      "bounds_min_unity": [
+        -0.23,
+        0.0,
+        -0.23
+      ],
+      "bounds_max_unity": [
+        0.555,
+        3.495,
+        0.23
+      ],
+      "parts": [
+        {
+          "mesh": "EEX_Lamp_Stone",
+          "role": "Stone",
+          "vertex_count": 16,
+          "triangle_count": 28,
+          "bounds_min_unity": [
+            -0.23,
+            0.0,
+            -0.23
+          ],
+          "bounds_max_unity": [
+            0.23,
+            0.22,
+            0.23
+          ]
+        },
+        {
+          "mesh": "EEX_Lamp_Metal",
+          "role": "Metal",
+          "vertex_count": 48,
+          "triangle_count": 84,
+          "bounds_min_unity": [
+            -0.061,
+            0.11,
+            -0.14
+          ],
+          "bounds_max_unity": [
+            0.555,
+            3.495,
+            0.14
+          ]
+        },
+        {
+          "mesh": "EEX_Lamp_Glow",
+          "role": "Glow",
+          "vertex_count": 16,
+          "triangle_count": 28,
+          "bounds_min_unity": [
+            0.15,
+            3.3425,
+            -0.095
+          ],
+          "bounds_max_unity": [
+            0.49,
+            3.3675,
+            0.095
+          ]
+        }
+      ]
+    }
+  ],
+  "triangle_count": 6736
+}

@@ -1,0 +1,35 @@
+{
+  "generator": "build-city-east-guards-3d-model.py",
+  "version": "1.0.0",
+  "bone_count": 31,
+  "fps": 24,
+  "root_motion": false,
+  "clips": [
+    {
+      "name": "EastGuardJuniorIdle",
+      "duration_seconds": 7.5,
+      "loop": true
+    },
+    {
+      "name": "EastGuardJuniorWalk",
+      "duration_seconds": 1.5,
+      "loop": true
+    },
+    {
+      "name": "EastGuardJuniorListen",
+      "duration_seconds": 5.5,
+      "loop": true
+    },
+    {
+      "name": "EastGuardJuniorBreak",
+      "duration_seconds": 10.0,
+      "loop": true
+    }
+  ],
+  "validation": {
+    "max_ground_error_m": 2e-07,
+    "max_grip_error_m": 4e-07,
+    "max_loop_endpoint_error": 0,
+    "curve_signature": "2c86f207f9b667be0ebc5b61c69200d3072cd575ae0fa7e754aec5f9c8c87c19"
+  }
+}

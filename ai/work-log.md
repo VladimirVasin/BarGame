@@ -6,46 +6,78 @@ Older whole dates move to `ai/archive/` when the byte budget is reached;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-08.md`](archive/work-log-2026-08.md).
 
-## 2026-09-13 — Hero and cannery cast
+## 2026-09-14 — City geometry audit
 
-- Existing hero refined: lean torso/upper arms and narrow shoulders inside
-  oversized open M-65 with slimmer upper sleeves, constructed
-  pockets/cuffs, even medium curtains, corrected hands/neutral-face UV.
-  Separate body/outfit and atomic wardrobe restore current clothes through
-  shower/toilet/head leases. Hair and anchored hem/cuffs use bounded
-  inertia/wind/body contacts; pause/reset and passive mirror/arm copies keep
-  one rig. Old clothed anatomy had blocked real undressing and contacts.
+- Audited the whole City for invisible walls, terrain gaps, coplanar flicker and
+  placement; no game change. Two instruments added: `CityAuditProbeTests`
+  (production city in EditMode, 0.25 m standing grid against physics, collider
+  registry, world triangle index, seven checks plus a control test that plants
+  one defect per detector) and `AreaCaptureFixture.CityAudit` (top-down tiles
+  with the walkable mask drawn, station grid, evidence frames, 2 mm camera-shift
+  pairs for flicker). Both `[Explicit]`, category `CityAudit`.
+- Real defects are few. Four places carry no collider at all inside the walkable
+  mask, so the hero falls out of the world: the sidewalk strip is inset by
+  `BusApproachApronLength` past the junction apron, the carriageway does not
+  reach it and district ground never runs under a road band. The east edge is
+  ~7 000 m² of drawn ground outside the mask with nothing to stop anyone, which
+  the in-progress east exit should close. Everything else that looked like a
+  wall is the hero capsule radius at rock, a railed step or a retaining wall.
+- Coplanar geometry is not flicker: 1 133 clusters exist, but camera-shift pairs
+  show a solid changed patch in only two places (river cave lining over its bed,
+  and the far east backdrop). The 537 m² church cluster does not flicker because
+  both faces share one material. Keep the list for any material change.
+- Then 1 082 captured frames were read by eye and each report checked against the
+  neighbouring azimuths. The city core came through clean, which is the second,
+  instrument-independent confirmation of the gap between 16 677 raw rows and four
+  real blocking places. It also caught what no measurement asks for: a guard rail
+  running through a bus shelter so its bench is fenced off, two see-through seams
+  in the western boundary wall, a lamp hanging with no mast over the waterworks
+  portal, untextured ground across both eastern yards, and one market NPC standing
+  in four copies within four metres.
+  Checks: `CityAuditProbeTests` (control + A–E + `F_Diagnose`),
+  `AreaCaptureFixture.CityAudit`.
+
+## 2026-09-13 — Hero, cannery and eastern edge
+
+- Hero: narrow torso/shoulders/upper sleeves in oversized M-65; shaped
+  pockets/cuffs, medium curtains, fixed hands/face UV. Body/outfit separated:
+  clothed anatomy had blocked undressing/contacts. Wardrobe survives bathroom/
+  head leases; bounded hair/hem/cuff inertia/wind/body contacts freeze/reset,
+  mirror/arms copy one rig.
   Checks: `build-player-3d-model-v2.py`, `build-home-toilet-seated-3d-model.py`,
   `AreaCaptureFixture.HeroAppearance`.
-- Receiver slot 0: athletic 1.96 m, 3D glasses/fitted orange hat, painted face/
-  four tattoos, five own clips, hands +18%, longer trouser rise. Both NPC hands
-  fixed from anatomy; larger hands required delayed scale release. Fitted
-  routes/ramp soles, carton/glasses fingertip contacts, reserved waiting
-  gesture. `NpcWardrobe`: separate body/clothes,
-  one outfit each, old woman bindings retained. Checks:
+- Receiver: athletic 1.96 m, glasses/orange hat, painted face/tattoos, own
+  clips, hands +18%, longer trouser rise. Both hands fixed from anatomy;
+  larger grip delayed scale release. Routes/soles/carton/glasses contacts,
+  reserved gestures. `NpcWardrobe`: body/clothes, one outfit, old woman
+  bindings retained. Checks:
   `build-cannery-receiver-3d-model.py --validate-only`,
   `AreaCaptureFixture.CityCanneryInspection`.
-- Seamer: 1.63 m/8000 triangles, painted blink/speech/rare colleague smile,
-  five own clips/contacts, sixteen RU/EN lines/shared bubbles; range re-enable
-  restores palette/outfit. Hair skin/sleeve/arm/strand contacts, fixed nape,
-  20°/30°/40° bend caps, pause/seek reset; cached poses/groups/planes, lazy diagnostics
-  and idle-once reduce CPU/GC. Checks:
+- Seamer: 1.63 m/8000 triangles, painted blink/speech/colleague smile,
+  own clips/contacts, RU/EN shared bubbles; range re-enable restores outfit/
+  palette. Hair/body/strand contacts, covered nape, bounded bends, pause/seek
+  reset; cached contacts/lazy diagnostics/idle-once reduce CPU/GC. Checks:
   `build-cannery-woman-3d-model.py --validate-only`,
   `AreaCaptureFixture.CityCanneryWomanPerformance`,
   `AreaCaptureFixture.CityCanneryWomanContacts`.
-  Same woman accepted: story §6/§11/§16.10, art §8; crime stays, chronology
-  open in §25, romance undeveloped.
-- Fixed brook approach (`CityMapTeleportGrounds.RouteEnd`) and bank slope
-  (`AlpineVillageTerrainSampler`). Stale fixtures now follow
-  house collision/walkable routes, port perches, owned audio, beach slope,
-  array `Has.Count` and bar menu-rest versus committed shop cancellation. Checks:
+  Same woman: story §6/§11/§16.10, art §8; crime retained, chronology/romance open.
+- Fixed brook approach/bank slope. Stale fixtures follow real house routes,
+  port perches/audio/beach, array `Has.Count` and menu-rest/shop cancellation. Checks:
   EditMode `AlpineVillage*|VillageAsset|CityChurchPlanning|CityTerrainSurfaceWorldBuilder|RavenRoostPlan|CityFishSupplyCycle|CityMiscAsset|CityStreetSurfacePlanner|CityWetSurface|BarSurfaceAppearance`;
   PlayMode `SceneFlowSmoke|HomeOpening|MothersHouseInterior|BarDrinkPhysicalShop|StairwellInteriorPresentation`.
-- Ground footsteps: eight cues before `Count`, appended table rows; collision
-  tags and rug/tile/paving/shader-matched puddle overlays. `HeroFootstepGround`
-  sits between claimant/plain step; hashed three-variant steps avoid two-cue
-  alternation. Known-ground NPC roots exclude riders; cafe has 4 mm linoleum. Checks:
+- Surface footsteps: appended cues/tags/overlays, `HeroFootstepGround` between
+  claimant/plain step; hashed variants avoid alternation. NPC roots exclude
+  riders; cafe linoleum. Checks:
   `RetroSfxLibraryTests|HeroFootstepGroundTests|NpcFootstepsTests|MountainRoadCafeCollision*`.
+- East: closed civilian post, long road/distant skyline lights; canopy/bench/
+  cabinet, repaired fence/road, dry drain/shoulders/service traces, low shrub/
+  grass groups. Imported FBX axes needed hierarchy export + placed bounds:
+  ground samples missed them. Terrain-fitted kit keeps routes/map/roof clear.
+  Two distinct guards: shoulder rifles, alternating duty, shared pair/E
+  speech/pause/cleanup; hidden mutual attraction canon. Import/patrol/motor/
+  closed map/barrier/day-night verified. Checks:
+  `build-city-east-exit-3d-model.py --validate-only` (also `--dressing-only`),
+  `build-city-east-guards-3d-model.py --validate-only`, `AreaCaptureFixture.CityEastExit`.
 - Documentation: `python tools/check-docs.py`, `git diff --check`.
 
 ## 2026-09-12 — Glovebox prompt and cannery driver's lunch

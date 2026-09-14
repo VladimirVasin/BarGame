@@ -36,7 +36,7 @@ namespace BarPromenade.Tests.EditMode
 
                 AssertDefaultStreetAssignment(atmosphere, nightRoot);
 
-                for (int index = 0; index < 4; index++)
+                for (int index = 0; index < practicals.Count; index++)
                 {
                     CityFringePracticalAnchor practical = practicals[index];
                     player.position = practical.Anchor.position;
@@ -137,20 +137,6 @@ namespace BarPromenade.Tests.EditMode
                 Assert.That(practicalLight.intensity, Is.EqualTo(150f));
                 Assert.That(practicalHalo.IntensityFactor, Is.EqualTo(1f));
                 Assert.That(practicalHalo.IsVisible, Is.True);
-
-                player.position = practicals[4].Anchor.position;
-                atmosphere.RefreshImmediate();
-
-                Assert.That(
-                    atmosphere.IsPracticalSlotLeased,
-                    Is.False,
-                    "The east utility edge does not own a pooled profile.");
-                Assert.That(atmosphere.ActivePracticalKind, Is.Null);
-                Assert.That(atmosphere.ActivePracticalLight, Is.Null);
-                Assert.That(
-                    atmosphere.AssignedStreetLightCount,
-                    Is.EqualTo(8));
-                AssertStreetProfile(atmosphere.StreetLightPool[7]);
 
                 Object.DestroyImmediate(nightRoot);
                 var noFringeRoot = new GameObject("Night Without Practicals");
@@ -320,6 +306,7 @@ namespace BarPromenade.Tests.EditMode
             switch (practical.Kind)
             {
                 case CityFringeYardKind.WestStoneTerraces:
+                case CityFringeYardKind.EastUtilityEdge:
                     expectedIntensity = 18f;
                     expectedRange = 8f;
                     expectedSpotAngle = 65f;

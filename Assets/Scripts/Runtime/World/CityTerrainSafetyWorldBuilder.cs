@@ -111,6 +111,14 @@ namespace BarPromenade
                 }
                 rails = cleared;
             }
+            CityEastExitPlan eastExit = CityEastExitPlanner.Create(layout);
+            if (eastExit.IsEnabled)
+            {
+                var cleared = new List<Bounds>();
+                foreach (Bounds rail in rails)
+                    AddWithSuppression(rail, rail.size.x >= rail.size.z, cleared, eastExit.RoadBounds);
+                rails = cleared;
+            }
             if (rails.Count == 0)
             {
                 return null;

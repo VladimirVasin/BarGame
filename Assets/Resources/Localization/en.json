@@ -3591,6 +3591,90 @@
     {
       "key": "city.cannery.wait.10.b",
       "value": "You've been saying that for a while."
+    },
+    {
+      "key": "interaction.talk_east_guard",
+      "value": "Talk to the guard"
+    },
+    {
+      "key": "city.east.guard.senior.reply.01",
+      "value": "Hello."
+    },
+    {
+      "key": "city.east.guard.senior.reply.02",
+      "value": "The road is closed."
+    },
+    {
+      "key": "city.east.guard.senior.reply.03",
+      "value": "I'm on duty."
+    },
+    {
+      "key": "city.east.guard.senior.reply.04",
+      "value": "Same as before today."
+    },
+    {
+      "key": "city.east.guard.junior.reply.01",
+      "value": "Hi."
+    },
+    {
+      "key": "city.east.guard.junior.reply.02",
+      "value": "It's still closed up ahead."
+    },
+    {
+      "key": "city.east.guard.junior.reply.03",
+      "value": "Damp today."
+    },
+    {
+      "key": "city.east.guard.junior.reply.04",
+      "value": "Standing here. Watching the road."
+    },
+    {
+      "key": "city.east.guard.pair.01.a",
+      "value": "Your collar is crooked."
+    },
+    {
+      "key": "city.east.guard.pair.01.b",
+      "value": "You notice everything."
+    },
+    {
+      "key": "city.east.guard.pair.02.a",
+      "value": "Your hands are cold."
+    },
+    {
+      "key": "city.east.guard.pair.02.b",
+      "value": "So are yours."
+    },
+    {
+      "key": "city.east.guard.pair.03.a",
+      "value": "It's better here with you."
+    },
+    {
+      "key": "city.east.guard.pair.03.b",
+      "value": "Quiet."
+    },
+    {
+      "key": "city.east.guard.pair.04.a",
+      "value": "Your sling slipped again."
+    },
+    {
+      "key": "city.east.guard.pair.04.b",
+      "value": "Gave my shoulder a rest."
+    },
+    {
+      "key": "city.east.guard.pair.05.a",
+      "value": "My boots are soaked."
+    },
+    {
+      "key": "city.east.guard.pair.05.b",
+      "value": "Mine were soaked yesterday."
+    },
+    {
+      "key": "city.east.guard.pair.06.a",
+      "value": "Your sleeve is wet."
+    },
+    {
+      "key": "city.east.guard.pair.06.b",
+      "value": "So is the other one."
     }
   ]
 }

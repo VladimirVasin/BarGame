@@ -464,36 +464,22 @@ The vertical slice contains:
   over one low, dark `10 m`-wide river-cave water mouth; surrounding rock
   terminates both bank routes physically, and the cave itself is never
   walkable. A
-  separate gate-free `8 x 5.5 m` tunnel portal derived from
-  `yard-south-west-access` has a terrain-overlapping raised floor and
-  non-coplanar, closed wall/ceiling joints. Its `72 m` faceted shell stays
-  straight and physical for `12 m`, then bends west until neither its open end
-  nor the camera-relative mountain shell can enter the sightline. The first
-  `11 m` belong to player navigation. Walking through the decision plane at
-  `8 m` shows a localized unavailable-travel thought and guides the ordinary
-  rig back to `6.5 m`; the river cave still has no interaction, and the tunnel
-  still has no physical transition handler even though the separate mountain
-  destination now exists. The north remains the open sea
-  edge and the east remains deliberately unbounded for a separate pass. One
-  two-layer camera-relative presentation shell adds only west/south ridge silhouette at
-  `39.4-43.2 m`, inside the unchanged `48 m` far plane; it keeps fixed world
-  azimuth and has no collider/light/navigation/world-bounds role. Physical
-  ridge chunks use one shared opaque `CityMountainPhysical` material with the
-  deterministic `CityMountainRockAlbedo`: matching forward/depth/depth-normal
-  passes dither the horizontal-distance handoff from `43 m` to `31 m`, retain
-  a restrained `0.10` visibility floor only after native Exp2 reaches it and
-  return to native fog on approach. The fog-exempt shell mixes `0.86` toward
-  the City fog colour, leaving only a faint distant mass while close physical
-  rock becomes readable. At the south-west turn, the mountain plan owns a
-  validated city-side corner earthwork over the otherwise omitted `(-1,-1)`
-  blueprint cell instead of leaving a void. The closure is one continuous
-  textured natural-soil slope, not a stair, terrace or platform; its centre is
-  about `16.2°` and remains outside navigation behind the ordinary L-shaped
-  road fence whose two physical legs meet at the exact corner. Its outer wings retain the sampled west/south terrain seams and
-  exact diagonal toe, and the
-  diagonal ridge interpolates the full west-to-south cross-section, welding
-  its ground bond, shoulder, crest and back at both ends without changing the
-  northern/eastern openings.
+  gate-free `8 x 5.5 m` portal at `yard-south-west-access` has a raised,
+  terrain-overlapping floor and closed non-coplanar lining joints. Its `72 m`
+  shell stays straight/physical for `12 m`, then bends west to hide its end
+  and the backdrop. Navigation reaches `11 m`; crossing `8 m` shows the
+  unavailable-travel thought and walks the ordinary rig back to `6.5 m`.
+  No tunnel transition handler or cave interaction. North remains sea;
+  east has the closed mainland road below. Two camera-relative west/south
+  layers at `39.4-43.2 m` keep world azimuth within `48 m` far clip, without
+  collision/lights/navigation/world bounds. Shared `CityMountainPhysical` and
+  deterministic `CityMountainRockAlbedo` use matching forward/depth/normal
+  dither across `43-31 m`, a `0.10` contrast floor only after native Exp2
+  reaches it, and natural fog on approach. The fog-exempt shell mixes `0.86`
+  toward City fog. The omitted `(-1,-1)` cell holds one textured natural-soil
+  slope around `16.2°`, outside navigation behind the exact L-shaped road
+  fence, with no steps/terraces/platforms. Outer wings follow sampled terrain
+  and diagonal toe; the whole turning ridge profile welds west to south.
   A separate default-only `CornerGuard` pair closes the north-east urban-core
   road cap beside lot `[12,11]` as an ordinary physical `4 m + 4 m` L. It does
   not add ground or extend a boundary along the yards/waterfront, so their
@@ -528,12 +514,10 @@ The vertical slice contains:
   light. Four additional emissive-only fixtures continue into the bend; the
   faulty ballast owns a positional `5.6 m` buzz and crackles only on visible
   power dips. The
-  eastern variant stays a separate low, unlit road/drain/pole/shed/berm utility
-  edge and creates no ridge. A late life pass adds only one grounded,
-  unoccupied mason cart at the west stone terraces. The former winch-service,
-  tunnel-repair, flood-maintenance and open-hood-car sets are absent; the other
-  typed Yards and the residual north-east former-lake Yard receive no separate
-  vignette. Large masses are
+  east utility road/drain/pole/shed/berm profile yields only within the
+  mainland-road clearance and creates no ridge. A late life pass adds one
+  grounded, unoccupied mason cart at the west terraces; no winch-service,
+  tunnel-repair, flood-maintenance or open-hood-car vignette. Large masses are
   physical, small traces and cables are visual only. Every physical ridge
   overlaps beneath its sampled terrain
   toe and extends the near-toe collider across that join; only the open
@@ -543,10 +527,25 @@ The vertical slice contains:
   capsule-clear cuts through the retaining line to the rock toe. Two use broad
   gravel aprons, while the south-east flood route uses a narrow embedded trace
   on continuous terrain; the fourth route continues through the open tunnel
-  forecourt. The fringe plan adds no destination, Light component,
-  north/east mountain or world-bounds expansion. Portal frame, segmented
-  lining, bounded navigation and future-travel decision remain owned by the
-  mountain/tunnel runtime contracts;
+  forecourt. Fringe dressing adds no destination, Light, north/east mountain
+  or world-bounds expansion;
+- Default-only `CityEastExitPlanner`: graded road `Z=-39`, `X=182→258` post,
+  visual tail to `286`; booth/barrier/grille/gate/fences/drain close map/physics.
+  Church/garden/cemetery paths stay; one pooled practical.
+  `CityEastDistanceWorldBuilder`: passive land/road/shoulders/low skyline
+  inside `44 m`, angular scale/parallax, `48 m` clip/`0.070` fog. Long empty
+  land; warm central windows/basal glow persist by day. No named distance or
+  remote gameplay/Light/shadow/audio. `CityEastExitDressing{Plan,WorldBuilder}`:
+  imported canopy/bench/cabinet, shoulders/patch/dry drain, shed-door aprons/
+  service traces, repaired fence/low shrub-grass groups. Vertices fit terrain;
+  owned meshes clean up, ridges give Soil steps. Map excludes solids, not roof;
+- `CityEastGuardDuty`: one home, one three-point out-and-back patrol; swap
+  on return. Senior/Junior: own rigs/faces/clothes, separate shoulder rifles
+  (`EastGuardActor`), body-aware grounded movement. Speech/modals hold duty.
+  Six RU/EN pairs/four E replies each share one no-repeat bubble/face clock.
+  Whole pair precedes one pending E; no input lock, cancel/distance clears it.
+  Personal pairs/glances wait beyond `4 m`, hearing `13 m`; E restores reserve.
+  Pause freezes, range never replays;
 - one immutable river contract splits that default urban envelope with a
   `10 m` channel. Two continuous `3 m` promenades flank it; an `8 m` Works
   road bridge and an `8 m` Mouth road bridge carry ordinary Street traffic
@@ -1310,7 +1309,7 @@ The vertical slice contains:
   story-bible §6 and the accepted architecture exception define that scope;
 - a reusable Cemetery non-urban profile on the default city's eastern edge
   (the church occupies the next `4 x 2` rows and the former lake block above
-  that remains a plain `4 x 4` north-east yard),
+  that remains an open `4 x 4` north-east yard with sparse scrub),
   where the `3 x 2` cemetery is walkable ground;
   it requires one street-linked open-area approach and exposes the same data
   to world, fence, navigation, map and deterministic landmark consumers. The

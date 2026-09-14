@@ -1,0 +1,1045 @@
+{
+  "generator": "build-city-east-guards-3d-model.py",
+  "version": "1.0.0",
+  "role": "EastGuardJunior",
+  "anatomy_standard": "NpcHumanV2",
+  "height_m": 1.9,
+  "height_scale": 1.0,
+  "bone_count": 31,
+  "body_bone_count": 31,
+  "mesh_count": 78,
+  "triangle_count": 8828,
+  "bounds_min": [
+    -0.753359,
+    -0.19448,
+    0.0
+  ],
+  "bounds_max": [
+    0.770021,
+    0.14608,
+    1.9
+  ],
+  "triangle_budget": [
+    7500,
+    11000
+  ],
+  "closed_mesh_count": 75,
+  "profile": {
+    "age": 28,
+    "width_factor": 0.85,
+    "head_width_factor": 0.87,
+    "hair_length_source_m": 0.033
+  },
+  "atlas_sha256": "812010cdac0865ba7d05239464383fe34debfa180df47a9108994e07d0d2ca04",
+  "face_atlas_sha256": "83ee06abc03e683106da90552da4035a6524b4e68684d882fe16b893a15618c1",
+  "surface_signature": "49045dcd1bdc68602fb8894e63d4a17cf9b8424081fd2938aaaacab1929f2c05",
+  "geometry_signature": "5867c813d571f58a94aac0bd4ef0b63f62d8092fb89d209bd9565f86f40b7ea3",
+  "outfit": {
+    "id": "east_guard_junior_duty",
+    "atlas": "EastGuardJuniorAtlas.png",
+    "parts": [
+      {
+        "slot": "jacket",
+        "renderers": [
+          "CLO_DutyJacket",
+          "CLO_FrontPlacket",
+          "CLO_Fastener0",
+          "CLO_Fastener1",
+          "CLO_Fastener2",
+          "CLO_Fastener3",
+          "CLO_Collar-1",
+          "CLO_ChestPocket-1",
+          "CLO_LowerPocket-1",
+          "CLO_Collar1",
+          "CLO_ChestPocket1",
+          "CLO_LowerPocket1",
+          "CLO_ShirtNeck",
+          "CLO_RearYoke",
+          "CLO_DutySleeve.L",
+          "CLO_Cuff.L",
+          "CLO_DutySleeve.R",
+          "CLO_Cuff.R"
+        ]
+      },
+      {
+        "slot": "trousers",
+        "renderers": [
+          "CLO_WorkTrousers"
+        ]
+      },
+      {
+        "slot": "belt",
+        "renderers": [
+          "CLO_LeatherBelt",
+          "CLO_BeltBuckle20",
+          "CLO_BeltBuckle21",
+          "CLO_BeltBuckle22",
+          "CLO_BeltBuckle23",
+          "CLO_BeltBuckle24",
+          "CLO_BeltLoop25",
+          "CLO_BeltLoop26",
+          "CLO_BeltLoop27",
+          "CLO_BeltLoop28",
+          "CLO_BeltLoop29"
+        ]
+      },
+      {
+        "slot": "boots",
+        "renderers": [
+          "GEO_DutyBoot.L",
+          "GEO_BootWelt.L",
+          "GEO_BootHeel.L",
+          "GEO_BootLace0.L",
+          "GEO_BootLace1.L",
+          "GEO_BootLace2.L",
+          "GEO_BootLace3.L",
+          "GEO_BootLace4.L",
+          "GEO_DutyBoot.R",
+          "GEO_BootWelt.R",
+          "GEO_BootHeel.R",
+          "GEO_BootLace0.R",
+          "GEO_BootLace1.R",
+          "GEO_BootLace2.R",
+          "GEO_BootLace3.R",
+          "GEO_BootLace4.R"
+        ]
+      }
+    ]
+  },
+  "face": {
+    "renderer": "GEO_FaceSurface",
+    "texture": "EastGuardJuniorFaceAtlas.png",
+    "width": 512,
+    "height": 256,
+    "columns": 8,
+    "rows": 4,
+    "cell_size": 64,
+    "uv_contract": "local_0_1_runtime_cell_scale_offset"
+  },
+  "carry": {
+    "socket": "SOCKET_ShoulderCarry",
+    "bone": "chest",
+    "prop": "EastGuardRifle",
+    "prop_anchor": "ANCHOR_Carry",
+    "socket_rest_blender": [
+      -0.30175,
+      0.066,
+      1.3156046
+    ],
+    "socket_source_rotation_xyzw": [
+      0,
+      0,
+      0,
+      1
+    ],
+    "sling_renderers": [
+      "GEO_WeaponSling",
+      "GEO_SlingBuckle"
+    ],
+    "sling_path_blender": [
+      [
+        -0.30175,
+        0.051,
+        1.5556046
+      ],
+      [
+        -0.2295,
+        0.1056,
+        1.5015053
+      ],
+      [
+        -0.195638,
+        0.0132,
+        1.5281987
+      ],
+      [
+        -0.19975,
+        -0.1012,
+        1.5015053
+      ],
+      [
+        -0.22525,
+        -0.16456,
+        1.3775715
+      ],
+      [
+        -0.25925,
+        -0.16456,
+        1.2059709
+      ],
+      [
+        -0.30175,
+        0.084,
+        1.0356046
+      ]
+    ],
+    "hand_contact_anchor": "ANCHOR_SlingHand",
+    "hand_contact_blender": [
+      -0.23325,
+      -0.18256,
+      1.3615714
+    ],
+    "attachment_rule": "Align imported ANCHOR_Carry to imported SOCKET_ShoulderCarry, preserve file-unit basis"
+  },
+  "parts": [
+    {
+      "name": "GEO_FaceSurface",
+      "role": "facial_atlas",
+      "color": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "triangles": 220
+    },
+    {
+      "name": "GEO_Head",
+      "role": "body",
+      "color": [
+        0.5088813208549338,
+        0.3712376804741491,
+        0.26225065752969623,
+        1.0
+      ],
+      "triangles": 352
+    },
+    {
+      "name": "GEO_Neck",
+      "role": "body",
+      "color": [
+        0.5088813208549338,
+        0.3712376804741491,
+        0.26225065752969623,
+        1.0
+      ],
+      "triangles": 196
+    },
+    {
+      "name": "GEO_Ear.L",
+      "role": "body_detail",
+      "color": [
+        0.5088813208549338,
+        0.3712376804741491,
+        0.26225065752969623,
+        1.0
+      ],
+      "triangles": 144
+    },
+    {
+      "name": "GEO_EarFold.L",
+      "role": "body_detail",
+      "color": [
+        0.5088813208549338,
+        0.3712376804741491,
+        0.26225065752969623,
+        1.0
+      ],
+      "triangles": 32
+    },
+    {
+      "name": "GEO_Ear.R",
+      "role": "body_detail",
+      "color": [
+        0.5088813208549338,
+        0.3712376804741491,
+        0.26225065752969623,
+        1.0
+      ],
+      "triangles": 144
+    },
+    {
+      "name": "GEO_EarFold.R",
+      "role": "body_detail",
+      "color": [
+        0.5088813208549338,
+        0.3712376804741491,
+        0.26225065752969623,
+        1.0
+      ],
+      "triangles": 32
+    },
+    {
+      "name": "HAIR_Crown",
+      "role": "hair",
+      "color": [
+        0.0953074666309647,
+        0.06301001765316767,
+        0.03560131487502034,
+        1.0
+      ],
+      "triangles": 432
+    },
+    {
+      "name": "HAIR_Nape",
+      "role": "hair",
+      "color": [
+        0.04970656598412723,
+        0.03954623527673284,
+        0.027320891639074894,
+        1.0
+      ],
+      "triangles": 240
+    },
+    {
+      "name": "HAIR_SweptLock0",
+      "role": "hair",
+      "color": [
+        0.1651321945016676,
+        0.11953842798834562,
+        0.06662593864377289,
+        1.0
+      ],
+      "triangles": 60
+    },
+    {
+      "name": "HAIR_SweptLock1",
+      "role": "hair",
+      "color": [
+        0.0953074666309647,
+        0.06301001765316767,
+        0.03560131487502034,
+        1.0
+      ],
+      "triangles": 60
+    },
+    {
+      "name": "HAIR_SweptLock2",
+      "role": "hair",
+      "color": [
+        0.0953074666309647,
+        0.06301001765316767,
+        0.03560131487502034,
+        1.0
+      ],
+      "triangles": 60
+    },
+    {
+      "name": "HAIR_SweptLock3",
+      "role": "hair",
+      "color": [
+        0.0953074666309647,
+        0.06301001765316767,
+        0.03560131487502034,
+        1.0
+      ],
+      "triangles": 60
+    },
+    {
+      "name": "HAIR_SweptLock4",
+      "role": "hair",
+      "color": [
+        0.1651321945016676,
+        0.11953842798834562,
+        0.06662593864377289,
+        1.0
+      ],
+      "triangles": 60
+    },
+    {
+      "name": "HAIR_SweptLock5",
+      "role": "hair",
+      "color": [
+        0.0953074666309647,
+        0.06301001765316767,
+        0.03560131487502034,
+        1.0
+      ],
+      "triangles": 60
+    },
+    {
+      "name": "HAIR_SweptLock6",
+      "role": "hair",
+      "color": [
+        0.0953074666309647,
+        0.06301001765316767,
+        0.03560131487502034,
+        1.0
+      ],
+      "triangles": 60
+    },
+    {
+      "name": "HAIR_SweptLock7",
+      "role": "hair",
+      "color": [
+        0.0953074666309647,
+        0.06301001765316767,
+        0.03560131487502034,
+        1.0
+      ],
+      "triangles": 60
+    },
+    {
+      "name": "HAIR_SweptLock8",
+      "role": "hair",
+      "color": [
+        0.1651321945016676,
+        0.11953842798834562,
+        0.06662593864377289,
+        1.0
+      ],
+      "triangles": 60
+    },
+    {
+      "name": "CLO_WorkTrousers",
+      "role": "clothing",
+      "color": [
+        0.07227185068231748,
+        0.08437621154414882,
+        0.08021982031446832,
+        1.0
+      ],
+      "triangles": 1156
+    },
+    {
+      "name": "CLO_LeatherBelt",
+      "role": "clothing",
+      "color": [
+        0.0595112381629812,
+        0.04970656598412723,
+        0.03560131487502034,
+        1.0
+      ],
+      "triangles": 124
+    },
+    {
+      "name": "CLO_BeltBuckle20",
+      "role": "clothing",
+      "color": [
+        0.184474994500441,
+        0.184474994500441,
+        0.15292615199615017,
+        1.0
+      ],
+      "triangles": 12
+    },
+    {
+      "name": "CLO_BeltBuckle21",
+      "role": "clothing",
+      "color": [
+        0.184474994500441,
+        0.184474994500441,
+        0.15292615199615017,
+        1.0
+      ],
+      "triangles": 12
+    },
+    {
+      "name": "CLO_BeltBuckle22",
+      "role": "clothing",
+      "color": [
+        0.184474994500441,
+        0.184474994500441,
+        0.15292615199615017,
+        1.0
+      ],
+      "triangles": 12
+    },
+    {
+      "name": "CLO_BeltBuckle23",
+      "role": "clothing",
+      "color": [
+        0.184474994500441,
+        0.184474994500441,
+        0.15292615199615017,
+        1.0
+      ],
+      "triangles": 12
+    },
+    {
+      "name": "CLO_BeltBuckle24",
+      "role": "clothing",
+      "color": [
+        0.184474994500441,
+        0.184474994500441,
+        0.15292615199615017,
+        1.0
+      ],
+      "triangles": 12
+    },
+    {
+      "name": "CLO_BeltLoop25",
+      "role": "clothing",
+      "color": [
+        0.07227185068231748,
+        0.08437621154414882,
+        0.08021982031446832,
+        1.0
+      ],
+      "triangles": 12
+    },
+    {
+      "name": "CLO_BeltLoop26",
+      "role": "clothing",
+      "color": [
+        0.07227185068231748,
+        0.08437621154414882,
+        0.08021982031446832,
+        1.0
+      ],
+      "triangles": 12
+    },
+    {
+      "name": "CLO_BeltLoop27",
+      "role": "clothing",
+      "color": [
+        0.07227185068231748,
+        0.08437621154414882,
+        0.08021982031446832,
+        1.0
+      ],
+      "triangles": 12
+    },
+    {
+      "name": "CLO_BeltLoop28",
+      "role": "clothing",
+      "color": [
+        0.07227185068231748,
+        0.08437621154414882,
+        0.08021982031446832,
+        1.0
+      ],
+      "triangles": 12
+    },
+    {
+      "name": "CLO_BeltLoop29",
+      "role": "clothing",
+      "color": [
+        0.07227185068231748,
+        0.08437621154414882,
+        0.08021982031446832,
+        1.0
+      ],
+      "triangles": 12
+    },
+    {
+      "name": "CLO_DutyJacket",
+      "role": "clothing",
+      "color": [
+        0.09989872824711389,
+        0.12213877222960187,
+        0.11697066775851084,
+        1.0
+      ],
+      "triangles": 956
+    },
+    {
+      "name": "CLO_FrontPlacket",
+      "role": "clothing",
+      "color": [
+        0.16826940018969075,
+        0.19806931955994886,
+        0.1714411007328226,
+        1.0
+      ],
+      "triangles": 28
+    },
+    {
+      "name": "CLO_Fastener0",
+      "role": "clothing",
+      "color": [
+        0.184474994500441,
+        0.184474994500441,
+        0.15292615199615017,
+        1.0
+      ],
+      "triangles": 48
+    },
+    {
+      "name": "CLO_Fastener1",
+      "role": "clothing",
+      "color": [
+        0.184474994500441,
+        0.184474994500441,
+        0.15292615199615017,
+        1.0
+      ],
+      "triangles": 48
+    },
+    {
+      "name": "CLO_Fastener2",
+      "role": "clothing",
+      "color": [
+        0.184474994500441,
+        0.184474994500441,
+        0.15292615199615017,
+        1.0
+      ],
+      "triangles": 48
+    },
+    {
+      "name": "CLO_Fastener3",
+      "role": "clothing",
+      "color": [
+        0.184474994500441,
+        0.184474994500441,
+        0.15292615199615017,
+        1.0
+      ],
+      "triangles": 48
+    },
+    {
+      "name": "CLO_Collar-1",
+      "role": "clothing",
+      "color": [
+        0.16826940018969075,
+        0.19806931955994886,
+        0.1714411007328226,
+        1.0
+      ],
+      "triangles": 56
+    },
+    {
+      "name": "CLO_ChestPocket-1",
+      "role": "clothing",
+      "color": [
+        0.16826940018969075,
+        0.19806931955994886,
+        0.1714411007328226,
+        1.0
+      ],
+      "triangles": 28
+    },
+    {
+      "name": "CLO_LowerPocket-1",
+      "role": "clothing",
+      "color": [
+        0.16826940018969075,
+        0.19806931955994886,
+        0.1714411007328226,
+        1.0
+      ],
+      "triangles": 28
+    },
+    {
+      "name": "CLO_Collar1",
+      "role": "clothing",
+      "color": [
+        0.16826940018969075,
+        0.19806931955994886,
+        0.1714411007328226,
+        1.0
+      ],
+      "triangles": 56
+    },
+    {
+      "name": "CLO_ChestPocket1",
+      "role": "clothing",
+      "color": [
+        0.16826940018969075,
+        0.19806931955994886,
+        0.1714411007328226,
+        1.0
+      ],
+      "triangles": 28
+    },
+    {
+      "name": "CLO_LowerPocket1",
+      "role": "clothing",
+      "color": [
+        0.16826940018969075,
+        0.19806931955994886,
+        0.1714411007328226,
+        1.0
+      ],
+      "triangles": 28
+    },
+    {
+      "name": "CLO_ShirtNeck",
+      "role": "clothing",
+      "color": [
+        0.09989872824711389,
+        0.12213877222960187,
+        0.11697066775851084,
+        1.0
+      ],
+      "triangles": 140
+    },
+    {
+      "name": "CLO_RearYoke",
+      "role": "clothing",
+      "color": [
+        0.16826940018969075,
+        0.19806931955994886,
+        0.1714411007328226,
+        1.0
+      ],
+      "triangles": 44
+    },
+    {
+      "name": "CLO_DutySleeve.L",
+      "role": "clothing",
+      "color": [
+        0.09989872824711389,
+        0.12213877222960187,
+        0.11697066775851084,
+        1.0
+      ],
+      "triangles": 556
+    },
+    {
+      "name": "CLO_Cuff.L",
+      "role": "clothing",
+      "color": [
+        0.16826940018969075,
+        0.19806931955994886,
+        0.1714411007328226,
+        1.0
+      ],
+      "triangles": 92
+    },
+    {
+      "name": "GEO_Palm.L",
+      "role": "body",
+      "color": [
+        0.5088813208549338,
+        0.3712376804741491,
+        0.26225065752969623,
+        1.0
+      ],
+      "triangles": 144
+    },
+    {
+      "name": "GEO_Finger0.L",
+      "role": "body_detail",
+      "color": [
+        0.5088813208549338,
+        0.3712376804741491,
+        0.26225065752969623,
+        1.0
+      ],
+      "triangles": 44
+    },
+    {
+      "name": "GEO_Finger1.L",
+      "role": "body_detail",
+      "color": [
+        0.5088813208549338,
+        0.3712376804741491,
+        0.26225065752969623,
+        1.0
+      ],
+      "triangles": 44
+    },
+    {
+      "name": "GEO_Finger2.L",
+      "role": "body_detail",
+      "color": [
+        0.5088813208549338,
+        0.3712376804741491,
+        0.26225065752969623,
+        1.0
+      ],
+      "triangles": 44
+    },
+    {
+      "name": "GEO_Finger3.L",
+      "role": "body_detail",
+      "color": [
+        0.5088813208549338,
+        0.3712376804741491,
+        0.26225065752969623,
+        1.0
+      ],
+      "triangles": 44
+    },
+    {
+      "name": "GEO_Thumb.L",
+      "role": "body_detail",
+      "color": [
+        0.5088813208549338,
+        0.3712376804741491,
+        0.26225065752969623,
+        1.0
+      ],
+      "triangles": 60
+    },
+    {
+      "name": "GEO_DutyBoot.L",
+      "role": "footwear",
+      "color": [
+        0.0595112381629812,
+        0.04970656598412723,
+        0.03560131487502034,
+        1.0
+      ],
+      "triangles": 332
+    },
+    {
+      "name": "GEO_BootWelt.L",
+      "role": "footwear",
+      "color": [
+        0.022173884793387385,
+        0.02518685962736163,
+        0.02315336617811041,
+        1.0
+      ],
+      "triangles": 140
+    },
+    {
+      "name": "GEO_BootHeel.L",
+      "role": "footwear",
+      "color": [
+        0.022173884793387385,
+        0.02518685962736163,
+        0.02315336617811041,
+        1.0
+      ],
+      "triangles": 92
+    },
+    {
+      "name": "GEO_BootLace0.L",
+      "role": "footwear",
+      "color": [
+        0.022173884793387385,
+        0.02518685962736163,
+        0.02315336617811041,
+        1.0
+      ],
+      "triangles": 20
+    },
+    {
+      "name": "GEO_BootLace1.L",
+      "role": "footwear",
+      "color": [
+        0.022173884793387385,
+        0.02518685962736163,
+        0.02315336617811041,
+        1.0
+      ],
+      "triangles": 20
+    },
+    {
+      "name": "GEO_BootLace2.L",
+      "role": "footwear",
+      "color": [
+        0.022173884793387385,
+        0.02518685962736163,
+        0.02315336617811041,
+        1.0
+      ],
+      "triangles": 20
+    },
+    {
+      "name": "GEO_BootLace3.L",
+      "role": "footwear",
+      "color": [
+        0.022173884793387385,
+        0.02518685962736163,
+        0.02315336617811041,
+        1.0
+      ],
+      "triangles": 20
+    },
+    {
+      "name": "GEO_BootLace4.L",
+      "role": "footwear",
+      "color": [
+        0.022173884793387385,
+        0.02518685962736163,
+        0.02315336617811041,
+        1.0
+      ],
+      "triangles": 20
+    },
+    {
+      "name": "CLO_DutySleeve.R",
+      "role": "clothing",
+      "color": [
+        0.09989872824711389,
+        0.12213877222960187,
+        0.11697066775851084,
+        1.0
+      ],
+      "triangles": 556
+    },
+    {
+      "name": "CLO_Cuff.R",
+      "role": "clothing",
+      "color": [
+        0.16826940018969075,
+        0.19806931955994886,
+        0.1714411007328226,
+        1.0
+      ],
+      "triangles": 92
+    },
+    {
+      "name": "GEO_Palm.R",
+      "role": "body",
+      "color": [
+        0.5088813208549338,
+        0.3712376804741491,
+        0.26225065752969623,
+        1.0
+      ],
+      "triangles": 144
+    },
+    {
+      "name": "GEO_Thumb.R",
+      "role": "body_detail",
+      "color": [
+        0.5088813208549338,
+        0.3712376804741491,
+        0.26225065752969623,
+        1.0
+      ],
+      "triangles": 60
+    },
+    {
+      "name": "GEO_Finger0.R",
+      "role": "body_detail",
+      "color": [
+        0.5088813208549338,
+        0.3712376804741491,
+        0.26225065752969623,
+        1.0
+      ],
+      "triangles": 56
+    },
+    {
+      "name": "GEO_Finger1.R",
+      "role": "body_detail",
+      "color": [
+        0.5088813208549338,
+        0.3712376804741491,
+        0.26225065752969623,
+        1.0
+      ],
+      "triangles": 56
+    },
+    {
+      "name": "GEO_Finger2.R",
+      "role": "body_detail",
+      "color": [
+        0.5088813208549338,
+        0.3712376804741491,
+        0.26225065752969623,
+        1.0
+      ],
+      "triangles": 56
+    },
+    {
+      "name": "GEO_Finger3.R",
+      "role": "body_detail",
+      "color": [
+        0.5088813208549338,
+        0.3712376804741491,
+        0.26225065752969623,
+        1.0
+      ],
+      "triangles": 56
+    },
+    {
+      "name": "GEO_DutyBoot.R",
+      "role": "footwear",
+      "color": [
+        0.0595112381629812,
+        0.04970656598412723,
+        0.03560131487502034,
+        1.0
+      ],
+      "triangles": 332
+    },
+    {
+      "name": "GEO_BootWelt.R",
+      "role": "footwear",
+      "color": [
+        0.022173884793387385,
+        0.02518685962736163,
+        0.02315336617811041,
+        1.0
+      ],
+      "triangles": 140
+    },
+    {
+      "name": "GEO_BootHeel.R",
+      "role": "footwear",
+      "color": [
+        0.022173884793387385,
+        0.02518685962736163,
+        0.02315336617811041,
+        1.0
+      ],
+      "triangles": 92
+    },
+    {
+      "name": "GEO_BootLace0.R",
+      "role": "footwear",
+      "color": [
+        0.022173884793387385,
+        0.02518685962736163,
+        0.02315336617811041,
+        1.0
+      ],
+      "triangles": 20
+    },
+    {
+      "name": "GEO_BootLace1.R",
+      "role": "footwear",
+      "color": [
+        0.022173884793387385,
+        0.02518685962736163,
+        0.02315336617811041,
+        1.0
+      ],
+      "triangles": 20
+    },
+    {
+      "name": "GEO_BootLace2.R",
+      "role": "footwear",
+      "color": [
+        0.022173884793387385,
+        0.02518685962736163,
+        0.02315336617811041,
+        1.0
+      ],
+      "triangles": 20
+    },
+    {
+      "name": "GEO_BootLace3.R",
+      "role": "footwear",
+      "color": [
+        0.022173884793387385,
+        0.02518685962736163,
+        0.02315336617811041,
+        1.0
+      ],
+      "triangles": 20
+    },
+    {
+      "name": "GEO_BootLace4.R",
+      "role": "footwear",
+      "color": [
+        0.022173884793387385,
+        0.02518685962736163,
+        0.02315336617811041,
+        1.0
+      ],
+      "triangles": 20
+    },
+    {
+      "name": "GEO_WeaponSling",
+      "role": "accessory",
+      "color": [
+        0.0595112381629812,
+        0.04970656598412723,
+        0.03560131487502034,
+        1.0
+      ],
+      "triangles": 52
+    },
+    {
+      "name": "GEO_SlingBuckle",
+      "role": "accessory",
+      "color": [
+        0.184474994500441,
+        0.184474994500441,
+        0.15292615199615017,
+        1.0
+      ],
+      "triangles": 28
+    }
+  ],
+  "signature": "523aec19b6dd8955c9ed7288e73b3ec4690ad601fde002fd4cfcca566108c0c3"
+}

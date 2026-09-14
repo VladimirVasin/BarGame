@@ -2,7 +2,7 @@ using System;
 
 namespace BarPromenade
 {
-    public enum SpeechFaceProfile { Hero, Foreman, CanneryWoman, CanneryReceiver }
+    public enum SpeechFaceProfile { Hero, Foreman, CanneryWoman, CanneryReceiver, EastGuardSenior, EastGuardJunior }
     public enum SpeechMouthPose { Closed = 0, Narrow = 1, Open = 2, Round = 3, Wide = 4, Teeth = 5 }
     public enum SpeechFaceExpression { Rest = 0, HalfBlink = 1, Blink = 2, Emphasis = 3, Skeptical = 4 }
 
@@ -68,7 +68,7 @@ namespace BarPromenade
                 return new SpeechFacePose(SpeechMouthPose.Closed, blink);
             // Her ordinary attentive face stays quiet; warmth is an authored
             // social cue owned by the actual exchange, never a periodic smile.
-            if (profile == SpeechFaceProfile.CanneryWoman)
+            if (profile == SpeechFaceProfile.CanneryWoman || profile == SpeechFaceProfile.EastGuardJunior)
                 return new SpeechFacePose(SpeechMouthPose.Closed, SpeechFaceExpression.Rest);
             // A held, occasional listening squint; the foreman keeps it longer. It never mouths
             // silent choices, and is independent of the speaker's mouth and line boundaries.
@@ -122,6 +122,12 @@ namespace BarPromenade
             if (profile == SpeechFaceProfile.CanneryReceiver)
                 return Phase(sample.ElapsedSeconds, 2.6d) < .8d
                     ? SpeechFaceExpression.Skeptical : SpeechFaceExpression.Rest;
+            if (profile == SpeechFaceProfile.EastGuardSenior)
+                return Phase(sample.ElapsedSeconds, 2.8d) < .55d
+                    ? SpeechFaceExpression.Skeptical : SpeechFaceExpression.Rest;
+            if (profile == SpeechFaceProfile.EastGuardJunior)
+                return Phase(sample.ElapsedSeconds, 2.4d) < .50d
+                    ? SpeechFaceExpression.Emphasis : SpeechFaceExpression.Rest;
             int current = sample.RevealedCharacters - 1;
             int phrase = 0;
             for (int index = 0; index < current; index++)
@@ -150,7 +156,9 @@ namespace BarPromenade
 
         private static SpeechFaceExpression ResolveBlink(SpeechFaceProfile profile, double seconds)
         {
-            double phase = Phase(seconds + (profile == SpeechFaceProfile.Hero ? .43d : 1.27d),
+            double phase = Phase(seconds + (profile == SpeechFaceProfile.EastGuardSenior ? 1.91d :
+                profile == SpeechFaceProfile.EastGuardJunior ? .73d : profile == SpeechFaceProfile.Hero ? .43d : 1.27d),
+                profile == SpeechFaceProfile.EastGuardSenior ? 5.6d : profile == SpeechFaceProfile.EastGuardJunior ? 4.35d :
                 profile == SpeechFaceProfile.CanneryWoman ? 4.65d : profile == SpeechFaceProfile.CanneryReceiver ? 5.2d :
                 profile == SpeechFaceProfile.Hero ? 4.1d : 3.55d);
             if (phase < .055d || phase >= .14d && phase < .205d) return SpeechFaceExpression.HalfBlink;

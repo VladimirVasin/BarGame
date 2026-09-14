@@ -1,5 +1,11 @@
 # Art and native tool entry points
 
+`build-city-east-exit-3d-model.py`: post/far FBX/JSON; `--dressing-only`: kit.
+`build-city-east-guards-3d-model.py`: rigs/actions/atlases/rifle in `Guards`.
+Assets: `Assets/Resources/City/EastExit`; source: `ArtSource/City/EastExit`.
+
+Both use `tools/run-blender.py` and `--validate-only`.
+
 `build-city-cannery-3d-model.py`: ten metre FBXs/JSON in `Assets/Resources/City/Cannery`,
 source `ArtSource/City/Cannery`; port maps/outdoor scales/`CartonStack`;
 contacts/scale/truck/`.29 m` ordinary crew clearance/UVs/determinism.
@@ -7,7 +13,7 @@ contacts/scale/truck/`.29 m` ordinary crew clearance/UVs/determinism.
 `Receiver/CanneryReceiver{,Actions}` FBX/JSONs, wardrobe/painted-face PNGs;
 source/reviews `ArtSource/City/Cannery{Woman,Receiver}`. Five clips/shared rig,
 mesh/atlas hashes, layered clothes; woman hair/receiver glasses contacts.
-Use the same validator call for each generator:
+Validate each:
 
 ```powershell
 python tools/run-blender.py tools/build-cannery-receiver-3d-model.py --validate-only -- --validate-only
@@ -21,20 +27,17 @@ asphalt city `12 m`. `build-city-port-foreman-3d-model.py`: `Foreman/PortForeman
 model/manifest/actions/atlas, continuous lower face/chin-jowl shapes/mouth/export validation.
 `python tools/dialogue_face_atlas.py [--validate-only]`: face PNGs/manifest, no Blender.
 
-The Ferryman's coin and glovebox contents share one small passive resource.
-`build-last-route-coin-3d-model.py` preserves the earlier octagonal brass coin's
-`54 x 9 mm` silhouette and combines its repeated geometry into one contained
-pile mesh. Both export in bare-mesh Unity metres; runtime supplies the same
-shared material and tint. The generator checks deterministic reconstruction,
-outward faces and each coin's compartment/bulb clearance:
+`build-last-route-coin-3d-model.py`: passive `54 x 9 mm` octagonal brass coin
+and one contained glovebox pile mesh in Unity metres, sharing runtime material/
+tint. Checks determinism, outward faces and compartment/bulb clearance:
 
 ```powershell
 python tools/run-blender.py tools/build-last-route-coin-3d-model.py --expect Assets/Resources/Vehicles/LastRouteCoin3D.fbx --expect Assets/Resources/Vehicles/LastRouteCoin3D.json
 python tools/run-blender.py tools/build-last-route-coin-3d-model.py --validate-only -- --validate-only
 ```
 
-`LastRouteCoinAssetValidation` adds the imported mesh bounds to the read-only
-player-build gate. The editable source is `ArtSource/Vehicles/Blender/LastRouteCoin3D.blend`.
+`LastRouteCoinAssetValidation`: imported bounds at build gate;
+source `ArtSource/Vehicles/Blender/LastRouteCoin3D.blend`.
 
 The final village household slice adds two isolated generators:
 `build-village-outdoor-player-actions-3d-model.py` publishes thirteen optional

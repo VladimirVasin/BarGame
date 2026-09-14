@@ -146,7 +146,7 @@ namespace BarPromenade
             }
         }
 
-        private static void SubtractRectangle(
+        internal static void SubtractRectangle(
             Rect source,
             Rect cut,
             ICollection<Rect> destination)
@@ -329,6 +329,7 @@ namespace BarPromenade
         private const float BoundaryEpsilon = 0.0001f;
 
         private readonly List<Rect> rectangles = new List<Rect>();
+        private readonly List<Rect> exclusions = new List<Rect>();
         private readonly ReadOnlyCollection<Rect> readOnlyRectangles;
         private SpatialNode[] spatialNodes = Array.Empty<SpatialNode>();
         private int spatialRoot = -1;
@@ -585,6 +586,13 @@ namespace BarPromenade
                 area.Add(placement.GroundCutFootprint);
             }
 
+            CityEastExitPlan eastExit = CityEastExitPlanner.Create(layout);
+            if (eastExit.IsEnabled)
+            {
+                area.Add(eastExit.RoadBounds);
+                area.Exclude(eastExit.ClosedGroundBounds);
+                area.Exclude(eastExit.BoothBounds);
+            }
             return area;
         }
 
@@ -654,7 +662,26 @@ namespace BarPromenade
                     nameof(xzRectangle));
             }
 
-            rectangles.Add(Rect.MinMaxRect(xMin, zMin, xMax, zMax));
+            var pieces = new List<Rect> { Rect.MinMaxRect(xMin, zMin, xMax, zMax) };
+            foreach (Rect exclusion in exclusions)
+            {
+                var next = new List<Rect>();
+                foreach (Rect piece in pieces)
+                    CityGroundTraversalPlanner.SubtractRectangle(piece, exclusion, next);
+                pieces = next;
+            }
+            rectangles.AddRange(pieces);
+            spatialIndexDirty = true;
+        }
+
+        internal void Exclude(Rect footprint)
+        {
+            exclusions.Add(footprint);
+            var pieces = new List<Rect>();
+            foreach (Rect rectangle in rectangles)
+                CityGroundTraversalPlanner.SubtractRectangle(rectangle, footprint, pieces);
+            rectangles.Clear();
+            rectangles.AddRange(pieces);
             spatialIndexDirty = true;
         }
 

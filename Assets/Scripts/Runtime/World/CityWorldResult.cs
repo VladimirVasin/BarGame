@@ -41,6 +41,8 @@ namespace BarPromenade
             GameObject windDressingRoot,
             CityArchShelterPlan archShelterPlan,
             CityArchShelterWorldResult archShelter,
+            CityEastExitPlan eastExitPlan,
+            CityEastExitWorldResult eastExit,
             Bounds bounds)
         {
             Root = root;
@@ -103,6 +105,12 @@ namespace BarPromenade
             ArchShelter = archShelter ??
                 throw new ArgumentNullException(nameof(archShelter));
             Bounds = bounds;
+            EastExitPlan = eastExitPlan;
+            EastExit = eastExit;
+            var practicals = new List<CityFringePracticalAnchor>();
+            if (fringeYard != null) practicals.AddRange(fringeYard.PracticalAnchors);
+            if (eastExit != null) practicals.Add(eastExit.Practical);
+            FringePracticalAnchors = practicals.AsReadOnly();
             barsById = new Dictionary<string, BarEntrance>(
                 StringComparer.Ordinal);
 
@@ -162,9 +170,9 @@ namespace BarPromenade
         public CityFringeYardWorldResult FringeYard { get; }
         public GameObject FringeYardRoot => FringeYard?.Root;
         public IReadOnlyList<CityFringePracticalAnchor>
-            FringePracticalAnchors => FringeYard != null
-                ? FringeYard.PracticalAnchors
-                : Array.Empty<CityFringePracticalAnchor>();
+            FringePracticalAnchors { get; }
+        public CityEastExitPlan EastExitPlan { get; }
+        public CityEastExitWorldResult EastExit { get; }
         public CityMountainBackdropWorldResult MountainBackdrop { get; }
         public CityWindDressingPlan WindDressingPlan { get; }
         public GameObject WindDressingRoot { get; }

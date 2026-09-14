@@ -1001,6 +1001,24 @@ namespace BarPromenade
                 patch,
                 xAnchors,
                 zAnchors);
+            if (surface.AreaId == "yard-east" || surface.AreaId == "yard-north-east")
+            {
+                CityEastExitPlan east = CityEastExitPlanner.Create(layout);
+                if (east.IsEnabled)
+                {
+                    xAnchors.Add(east.YardBounds.xMin);
+                    xAnchors.Add(east.CheckpointPosition.x - 12f);
+                    foreach (float offset in new[] { -7f, -4f, 0f, 4f, 7f })
+                        zAnchors.Add(east.CheckpointPosition.z + offset);
+                    foreach (float offset in new[] { -2f, 0f, 2f })
+                    {
+                        xAnchors.Add(east.BoothPad.xMin + offset);
+                        xAnchors.Add(east.BoothPad.xMax + offset);
+                        zAnchors.Add(east.BoothPad.yMin + offset);
+                        zAnchors.Add(east.BoothPad.yMax + offset);
+                    }
+                }
+            }
             List<float> xCoordinates = CreateAxisCoordinates(
                 patch.xMin,
                 patch.xMax,

@@ -626,6 +626,7 @@ namespace BarPromenade
             switch (kind)
             {
                 case CityFringeYardKind.WestStoneTerraces:
+                case CityFringeYardKind.EastUtilityEdge:
                     return new PracticalLightProfile(
                         new Color(1f, 0.63f, 0.32f),
                         18f,
@@ -800,7 +801,8 @@ namespace BarPromenade
             return kind == CityFringeYardKind.WestStoneTerraces ||
                    kind == CityFringeYardKind.WestIndustrialBelt ||
                    kind == CityFringeYardKind.SouthTunnelForecourt ||
-                   kind == CityFringeYardKind.SouthFloodWorks;
+                   kind == CityFringeYardKind.SouthFloodWorks ||
+                   kind == CityFringeYardKind.EastUtilityEdge;
         }
 
         private readonly struct PracticalLightProfile

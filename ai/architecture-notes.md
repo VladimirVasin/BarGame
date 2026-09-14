@@ -4,6 +4,35 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
 
 ## Current facts
 
+- **Accepted — 2026-09-13, eastern post surroundings:**
+  Attached supported canopy/empty bench/closed cabinet, gravel shoulders/asphalt
+  patch/dry drain crossing, low banks/shrubs/dry grass, gravel trace to existing
+  sheds/poles, one repaired fence segment. Post outfitting, no art §18.25 vignette.
+  No new action/text/water/light; patrol/church paths/distant view stay.
+
+- **Accepted architecture exception — 2026-09-13, eastern post guards:**
+  Story §6 lifts empty/no-NPC/speech/action rules for two guards/first pair-E pools.
+  Senior: ~40, stocky/calm/terse; Junior: ~28, tall/lean/livelier, dry humour.
+  Own hero-quality models/rigs/faces/clothes, separate shoulder rifles: no fire,
+  hero aiming/pickup/pursuit. One holds post until the other's round ends, then
+  swap; closed road/church paths stay. Shared head bubbles arbitrate pairs/E,
+  no repeats/pause/range replay. Both knowingly hide being gay from others;
+  mutual attraction: held partner glances/everyday care, E restores reserve.
+  No announced relationship/shared biography/stereotypes, state border/police/
+  ranks/insignia/closure reason/quarantine/crime knowledge/wider poisoning/
+  quest/reward/travel. §16/§21/nine art checks hold.
+
+- **Accepted architecture exception — 2026-09-13, eastern mainland road:**
+  Story §6 lifts art §2.1a/§10e: closed civilian post north of church, one pooled
+  practical/low former-lake scrub. Booth/barrier/fences/gate close exit;
+  clearance preserves church/garden/cemetery paths. Long road/empty land precede
+  extremely distant broad low skyline/dissolved bases; central warm windows/
+  basal glow persist by day (§20). No east mountain/suburb. Passive world-direction
+  projection inside `48 m`, shared haze; no terrain/collision/Light/shadow/map
+  destination/navigation/transition, named city/distance/water/closure reason/
+  police/quarantine/wider poisoning. Guard decision owns life; §16/§21/nine art
+  checks hold. Imported/placed road/booth bounds prove axes/metres, unlike ground samples.
+
 - **Accepted — 2026-09-13, refined hero, M-65 and modular clothing:**
   The user accepts refining the existing Hero V2 to the latest cannery
   characters' detail level, with a recognisable Vietnam-era M-65, physical
@@ -1644,7 +1673,7 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   walkable northern beach and continuous non-walkable water row remain. The
   playable default also extends east
   with a `3 x 2` cemetery, a separate `4 x 2` church precinct immediately
-  north of it, and a residual plain `4 x 4` north-east yard (the drained
+  north of it, and a residual `4 x 4` north-east yard (the drained
   former lake block). Cemetery and yard retain the shared open-area
   street-access contract; the church owns one explicit west frontage without
   participating in the pre-MST access repair. The cemetery owns deterministic
@@ -2027,48 +2056,32 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   ground heights, safe shared threshold and capsule-clear route instead of
   treating a missing fence segment as sufficient traversal.
 - **Accepted — The coastal basin closes only west and south:**
-  `CityMountainBoundaryDefinition` opts in only `default-coastal`; custom and
-  legacy layouts receive `CityMountainBoundaryPlan.Empty` instead of acquiring
-  scenery from coincidentally named cells. The planner derives flat-shaded
-  physical ridges from the stable west/south perimeter Yards and samples every
-  toe from `CityTerrainSurfacePlan`. Each cross-section adds an exact toe
-  anchor plus a shallow rock lip buried `0.04 m` under the terrain and extended
-  `0.08 m` cityward; the renderer and near-toe collider cover the same join
-  instead of beginning at the former `0.35 m` outer foot inset. South remains
-  one closed skyline: at the river axis the physical mass spans above a low,
-  dark `10 m`-wide water mouth and closes both promenade ends against rock.
-  Only the water opening itself and the separate portal interrupt the near toe. A
-  diagonal south-west strip closes the otherwise empty `(-1,-1)` corner. The
-  west ridge tapers toward the northern beach; north remains the sea and east
-  is deliberately untouched.
+  `CityMountainBoundaryDefinition` enables only `default-coastal`; custom and
+  legacy layouts receive `CityMountainBoundaryPlan.Empty`. Flat-shaded ridges
+  follow west/south Yard bounds and `CityTerrainSurfacePlan`: exact toes plus
+  a lip `0.04 m` below terrain and `0.08 m` cityward share rendering/collision.
+  South stays closed above the dark `10 m` river mouth, with physical rock
+  ending both promenades. Only that mouth and the separate portal interrupt
+  the toe. A diagonal strip closes `(-1,-1)`; west tapers toward the northern
+  beach. North remains sea; east has no ridge.
   The physical ridge chunks use one shared opaque `CityMountainPhysical`
   material, MPBs and deterministic `CityMountainRockAlbedo`; only the near toe
   owns collision, while the tall rear mass casts no huge distant shadow. A
-  screen-space dither uses horizontal camera distance so the camera-relative
-  silhouette yields to physical coverage over `43-31 m` instead of being
-  erased by an almost fully fogged opaque depth write. The shader holds a
-  restrained `0.10` visibility floor only once native City Exp2 reaches it,
-  so rock remains naturally stronger at `9-20 m`, and repeats the identical
-  clip contract in `DepthOnly` and
-  `DepthNormalsOnly`. Portal frame, physical entry and visual continuation
-  remain ordinary
-  `RuntimePrimitiveLit` pieces because they are close-range props, not part of
-  the silhouette handoff. The throat floor reaches `0.25 m` under the terrain
-  edge and sits `0.03 m` above its old plane; the wall planes move `0.04 m`
-  outside the portal faces, overlap both floor and ceiling, and the ceiling
-  overhangs their outer faces by another `0.04 m`. This eliminates the former
-  `0.45 m` ground gap, `0.175 m` coplanar strip and `0.275 m` upper slit. The
-  conforming approach terrain, narrow ruts, cross-drain, grounded
-  stepped return wings, side service frame and crown floodlight belong to the
-  sibling fringe-Yard plan.
+  screen-space dither hands the shell to physical rock over `43-31 m`
+  horizontal distance; forward, `DepthOnly` and `DepthNormalsOnly` share clips.
+  A `0.10` visibility floor starts only when native Exp2 reaches it, leaving
+  natural stronger contrast at `9-20 m`. Near portal/lining pieces retain
+  `RuntimePrimitiveLit`. The floor reaches `0.25 m` beneath the terrain edge,
+  raised `0.03 m`; walls sit `0.04 m` outside portal faces and overlap floor/
+  ceiling, whose overhang is another `0.04 m`. Conforming terrain, narrow ruts,
+  cross-drain, grounded stepped wings, side frame and crown lamp belong to the
+  fringe-Yard plan.
   The one portal is derived from `yard-south-west-access`: an approximately
   `8 x 5.5 m` gate-free opening into twelve `6 m` floor/lining chords. The
-  first `12 m` remain straight and collidered; their collinear joint meets
-  exactly, while later joints overlap only where each chord turns another
-  `4°` west. At `40 m` the centreline has already
-  left the original opening sightline, and total `72 m` depth also places the
-  uncapped end beyond the player's `11 m` navigation plus City's `48 m` far
-  plane. The decision plane is intentionally earlier at `8 m`: while
+  first `12 m` are straight/collidered with exact joints; later overlaps follow
+  each `4°` westward turn. The axis leaves the entry sightline by `40 m`;
+  total `72 m` hides the uncapped end beyond `11 m` navigation plus `48 m`
+  far clip. At the earlier `8 m` decision plane, while
   `TravelAvailable` is false, an inward crossing shows one localized thought,
   walks the normal rig back to `6.5 m` facing inward, and rearms only after
   that retreat. This automatic boundary owns no prompt action, fake `SceneId`
@@ -2080,24 +2093,17 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   physical lining changes the player-following rain to a dry-core shape,
   clears exterior fog particles and hides the camera-relative ridge shell;
   all three restore with mouth hysteresis on exit.
-  Because ordinary geometry at the fixed `48 m` plane disappears into City's
-  `0.070` Exp2 fog, a separate presentation-only two-layer shell sits at
-  `39.4-43.2 m`. `CityMountainBackdropFollower` copies camera translation but
-  never rotation, so west/south remain world directions while finite-radius
-  parallax cannot expose the shell. Its shader skips Unity distance fog and
-  mixes `0.86` toward `RuntimeSceneSetup.CityFogColor`, leaving only a faint
-  distant mass whose contrast matches the physical `0.10` floor; the shell
-  has no collider, Light, shadow, probe, navigation, map or `CityWorldResult`
-  bounds role. It contains only west and south sectors, keeps the southern
-  silhouette closed above the low physical river mouth, leaves north and east
-  open, and does not change fog, grade or far clip. The schematic map does not
-  consume this presentation shell; it consumes
-  `CityWorldResult.MountainBoundaryPlan`, expands display
-  bounds only at the west/south minima, and renders the physical toe/outer-foot
-  hatch, the visible narrow river approach into rock and an uncrossed open
-  tunnel arch with only `12 m` of schematic throat. It does not expose the
-  hidden cave or the tunnel's `72 m` visual tail as open map space. The layout's
-  north/east maxima remain exact.
+  The presentation shell sits at `39.4-43.2 m` inside `48 m` far clip.
+  `CityMountainBackdropFollower` copies translation, never rotation; the shader
+  skips distance fog and mixes `0.86` toward `RuntimeSceneSetup.CityFogColor`.
+  This faint mass matches the physical `0.10` floor despite `0.070` Exp2.
+  Only west/south sectors exist, south closed above the river mouth. No
+  collider, Light, shadow, probe, navigation, map or world-bounds role; no
+  changed fog/grade/far clip. The map consumes the physical
+  `CityWorldResult.MountainBoundaryPlan`: west/south bounds expand to toe/
+  outer-foot hatching, river ends visibly in rock, open arch has `12 m`
+  schematic throat. Hidden cave and `72 m` visual tail remain absent; north/
+  east map maxima remain exact.
 - **Accepted — Water is a surface the engine does not ship:** Unity has a
   full water system, but only in HDRP; URP 17 has no official water package
   and Unity's own URP samples author water as an ordinary Shader Graph.
@@ -2350,9 +2356,10 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   mountain Yards opt out of single-gate navigation: every frontage interval
   already classified step-safe becomes a real connector, while unsafe height
   changes keep their rails. Custom layouts and the eastern Yard retain the
-  ordinary authored-access rule. The east profile instead stays
-  low and unlit with a longitudinal service road, drain, poles, locked utility
-  masses and broken spoil berm, and never creates an east ridge. Large masses
+  ordinary authored-access rule. The east profile uses
+  low service road, drain, poles, locked utility masses and broken spoil berm;
+  the `2026-09-13` mainland decision owns its new crossing and lamp. No east
+  ridge. Large masses
   collide; tracks, drains, cables and small traces do not.
   Four west/south anchors each expose one small emissive practical to
   `CityNightGlowRegistry`, but the fringe root creates no `Light`. When the
@@ -2362,7 +2369,7 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   outside the activation radius. The tunnel lease is the deliberate stronger
   exception: a warm shadowless `150`-intensity, `16 m`, `72°`/`40°` Spot is
   moved from the crown to the faulty second ceiling fixture and retains a
-  `0.22` day floor. The eastern edge has no practical. A separate mountain
+  `0.22` day floor. A separate mountain
   destination now exists, but this physical City crossing remains deliberately
   unwired; bounded tunnel navigation and automatic refusal are owned by the
   tunnel contracts rather than this fringe plan. The lot and road-grid footprint is

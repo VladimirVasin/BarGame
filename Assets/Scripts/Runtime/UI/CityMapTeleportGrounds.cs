@@ -39,6 +39,9 @@ namespace BarPromenade
             out Vector3 standingPosition)
         {
             standingPosition = default;
+            CityEastExitPlan eastExit = CityEastExitPlanner.Create(layout);
+            if (eastExit.IsEnabled && (eastExit.ClosedGroundBounds.Contains(worldXZ) ||
+                eastExit.BoothBounds.Contains(worldXZ))) return false;
             float radius = CityGroundTraversalPlanner.MaximumAgentRadius;
             var probe = new Vector3(worldXZ.x, 0f, worldXZ.y);
             RoadWalkableArea mask = EnsureWalkableArea();
@@ -120,6 +123,12 @@ namespace BarPromenade
         /// </summary>
         private bool TryResolveSurfaceTop(Vector2 worldXZ, out float top)
         {
+            CityEastExitPlan eastExit = CityEastExitPlanner.Create(layout);
+            if (eastExit.IsEnabled && eastExit.RoadBounds.Contains(worldXZ))
+            {
+                top = eastExit.SampleRoadTop(worldXZ.x);
+                return true;
+            }
             if (layout.ElevationPlan != null &&
                 layout.ElevationPlan.TrySampleSurface(
                     worldXZ,
@@ -191,6 +200,13 @@ namespace BarPromenade
             }
 
             CityChurchPlan church = CityChurchPlanner.Create(layout);
+            CityEastExitPlan eastExit = CityEastExitPlanner.Create(layout);
+            if (eastExit.IsEnabled)
+            {
+                footprints.Add(Expand(eastExit.BoothBounds, radius));
+                foreach (CityEastExitDressingSolid solid in CityEastExitDressingPlan.Create(eastExit).Solids)
+                    footprints.Add(Expand(solid.Footprint, radius));
+            }
             if (church != null)
             {
                 footprints.Add(Expand(church.ModelFootprint, radius));

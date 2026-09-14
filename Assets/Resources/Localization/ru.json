@@ -3591,6 +3591,90 @@
     {
       "key": "city.cannery.wait.10.b",
       "value": "Ты это давно говоришь."
+    },
+    {
+      "key": "interaction.talk_east_guard",
+      "value": "Поговорить с дежурным"
+    },
+    {
+      "key": "city.east.guard.senior.reply.01",
+      "value": "Здравствуй."
+    },
+    {
+      "key": "city.east.guard.senior.reply.02",
+      "value": "Проезд закрыт."
+    },
+    {
+      "key": "city.east.guard.senior.reply.03",
+      "value": "Я на дежурстве."
+    },
+    {
+      "key": "city.east.guard.senior.reply.04",
+      "value": "Сегодня всё по-прежнему."
+    },
+    {
+      "key": "city.east.guard.junior.reply.01",
+      "value": "Привет."
+    },
+    {
+      "key": "city.east.guard.junior.reply.02",
+      "value": "Дальше пока закрыто."
+    },
+    {
+      "key": "city.east.guard.junior.reply.03",
+      "value": "Сырость сегодня."
+    },
+    {
+      "key": "city.east.guard.junior.reply.04",
+      "value": "Стоим. Смотрим на дорогу."
+    },
+    {
+      "key": "city.east.guard.pair.01.a",
+      "value": "Воротник сбился."
+    },
+    {
+      "key": "city.east.guard.pair.01.b",
+      "value": "Ты всё замечаешь."
+    },
+    {
+      "key": "city.east.guard.pair.02.a",
+      "value": "У тебя руки замёрзли."
+    },
+    {
+      "key": "city.east.guard.pair.02.b",
+      "value": "У тебя тоже."
+    },
+    {
+      "key": "city.east.guard.pair.03.a",
+      "value": "Вдвоём здесь лучше."
+    },
+    {
+      "key": "city.east.guard.pair.03.b",
+      "value": "Тише."
+    },
+    {
+      "key": "city.east.guard.pair.04.a",
+      "value": "Ремень опять сполз."
+    },
+    {
+      "key": "city.east.guard.pair.04.b",
+      "value": "Зато плечо отдохнуло."
+    },
+    {
+      "key": "city.east.guard.pair.05.a",
+      "value": "Ботинки промокли."
+    },
+    {
+      "key": "city.east.guard.pair.05.b",
+      "value": "Мои ещё вчера."
+    },
+    {
+      "key": "city.east.guard.pair.06.a",
+      "value": "Рукав промок."
+    },
+    {
+      "key": "city.east.guard.pair.06.b",
+      "value": "Другой тоже."
     }
   ]
 }

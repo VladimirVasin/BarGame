@@ -138,6 +138,9 @@ namespace BarPromenade
                 surface,
                 worldXZ,
                 baseDatum);
+            if (surface.AreaId == "yard-east" || surface.AreaId == "yard-north-east")
+                datum = CityEastExitPlanner.Create(layout).ApplyGroundTop(worldXZ,
+                    datum + CityElevationPlan.GroundTopOffset) - CityElevationPlan.GroundTopOffset;
             if (surface.Kind == CitySurfaceKind.Beach && context.Access != null)
                 datum = context.Access.ApplyGroundTop(worldXZ, datum + CityElevationPlan.GroundTopOffset) -
                     CityElevationPlan.GroundTopOffset;

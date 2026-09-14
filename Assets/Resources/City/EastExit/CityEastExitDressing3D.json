@@ -1,0 +1,619 @@
+{
+  "generator": "tools/build-city-east-exit-3d-model.py",
+  "version": "1.0.0",
+  "design_id": "city_east_exit_dressing_v1",
+  "signature": "59de61ccf9fe43c676ebf8046e65ce2d1fbfec3ce3aba2dd7389eeec37e77898",
+  "export_settings": {
+    "axis_forward": "-Z",
+    "axis_up": "Y",
+    "apply_scale_options": "FBX_SCALE_NONE",
+    "bake_space_transform": false,
+    "hierarchy_contract": "Preserve complete imported transform basis when cloning an assembly"
+  },
+  "units": "Unity local metres",
+  "source_to_unity": "swap Y/Z and rewind faces",
+  "root_scale_contract": "Preserve imported template lossyScale; FBX uses file units",
+  "colliders": false,
+  "lights": false,
+  "animation_count": 0,
+  "surface_contract": "Runtime adds terrain sample to every authored vertex Y; preserve topology/UV",
+  "terrain_conform_assemblies": [
+    "GravelPatch",
+    "RoadRepair",
+    "DryDrain",
+    "GroundRidge",
+    "DryGrass"
+  ],
+  "terrain_conform_max_local_y": {
+    "GravelPatch": 0.017,
+    "RoadRepair": 0.018,
+    "DryDrain": 0.099696,
+    "GroundRidge": 0.476477,
+    "DryGrass": 0.615085
+  },
+  "shelter": {
+    "back_edge": "+Z attaches to booth",
+    "rigid_roof_height": 2.65,
+    "front_post_xz": [
+      [
+        -1.55,
+        -1.3
+      ],
+      [
+        1.55,
+        -1.3
+      ]
+    ],
+    "fit_posts": [
+      "EEX_Shelter_Metal_PostL",
+      "EEX_Shelter_Metal_PostR"
+    ],
+    "fit_feet": [
+      "EEX_Shelter_Stone_FootL",
+      "EEX_Shelter_Stone_FootR"
+    ]
+  },
+  "assemblies": [
+    {
+      "name": "Shelter",
+      "bounds_min_unity": [
+        -1.8,
+        0.0,
+        -1.605
+      ],
+      "bounds_max_unity": [
+        1.8,
+        2.65,
+        1.6
+      ],
+      "parts": [
+        {
+          "mesh": "EEX_Shelter_Stone_FootL",
+          "role": "Stone",
+          "vertex_count": 16,
+          "triangle_count": 28,
+          "bounds_min_unity": [
+            -1.705,
+            0.0,
+            -1.455
+          ],
+          "bounds_max_unity": [
+            -1.395,
+            0.13,
+            -1.145
+          ],
+          "surface_only": false
+        },
+        {
+          "mesh": "EEX_Shelter_Metal_PostL",
+          "role": "Metal",
+          "vertex_count": 16,
+          "triangle_count": 28,
+          "bounds_min_unity": [
+            -1.5875,
+            0.0,
+            -1.3375
+          ],
+          "bounds_max_unity": [
+            -1.5125,
+            2.49,
+            -1.2625
+          ],
+          "surface_only": false
+        },
+        {
+          "mesh": "EEX_Shelter_Metal",
+          "role": "Metal",
+          "vertex_count": 240,
+          "triangle_count": 420,
+          "bounds_min_unity": [
+            -1.79,
+            1.987656,
+            -1.605
+          ],
+          "bounds_max_unity": [
+            1.79,
+            2.65,
+            1.6
+          ],
+          "surface_only": false
+        },
+        {
+          "mesh": "EEX_Shelter_Stone_FootR",
+          "role": "Stone",
+          "vertex_count": 16,
+          "triangle_count": 28,
+          "bounds_min_unity": [
+            1.395,
+            0.0,
+            -1.455
+          ],
+          "bounds_max_unity": [
+            1.705,
+            0.13,
+            -1.145
+          ],
+          "surface_only": false
+        },
+        {
+          "mesh": "EEX_Shelter_Metal_PostR",
+          "role": "Metal",
+          "vertex_count": 16,
+          "triangle_count": 28,
+          "bounds_min_unity": [
+            1.5125,
+            0.0,
+            -1.3375
+          ],
+          "bounds_max_unity": [
+            1.5875,
+            2.49,
+            -1.2625
+          ],
+          "surface_only": false
+        },
+        {
+          "mesh": "EEX_Shelter_Roof",
+          "role": "Roof",
+          "vertex_count": 96,
+          "triangle_count": 168,
+          "bounds_min_unity": [
+            -1.8,
+            2.47773,
+            -1.6
+          ],
+          "bounds_max_unity": [
+            1.8,
+            2.636908,
+            1.6
+          ],
+          "surface_only": false
+        }
+      ]
+    },
+    {
+      "name": "Bench",
+      "bounds_min_unity": [
+        -0.95,
+        0.0,
+        -0.2715
+      ],
+      "bounds_max_unity": [
+        0.95,
+        0.875264,
+        0.32642
+      ],
+      "parts": [
+        {
+          "mesh": "EEX_Bench_Metal",
+          "role": "Metal",
+          "vertex_count": 160,
+          "triangle_count": 280,
+          "bounds_min_unity": [
+            -0.725,
+            0.0,
+            -0.27
+          ],
+          "bounds_max_unity": [
+            0.725,
+            0.851736,
+            0.31929
+          ],
+          "surface_only": false
+        },
+        {
+          "mesh": "EEX_Bench_Wood",
+          "role": "Wood",
+          "vertex_count": 112,
+          "triangle_count": 196,
+          "bounds_min_unity": [
+            -0.95,
+            0.4305,
+            -0.2715
+          ],
+          "bounds_max_unity": [
+            0.95,
+            0.875264,
+            0.32642
+          ],
+          "surface_only": false
+        },
+        {
+          "mesh": "EEX_Bench_Dark",
+          "role": "Dark",
+          "vertex_count": 64,
+          "triangle_count": 112,
+          "bounds_min_unity": [
+            -0.708,
+            0.633,
+            0.245
+          ],
+          "bounds_max_unity": [
+            0.708,
+            0.82,
+            0.28036
+          ],
+          "surface_only": false
+        }
+      ]
+    },
+    {
+      "name": "UtilityCabinet",
+      "bounds_min_unity": [
+        -0.41,
+        0.0,
+        -0.276
+      ],
+      "bounds_max_unity": [
+        0.41,
+        1.45,
+        0.25
+      ],
+      "parts": [
+        {
+          "mesh": "EEX_UtilityCabinet_Stone",
+          "role": "Stone",
+          "vertex_count": 16,
+          "triangle_count": 28,
+          "bounds_min_unity": [
+            -0.41,
+            0.0,
+            -0.25
+          ],
+          "bounds_max_unity": [
+            0.41,
+            0.21,
+            0.25
+          ],
+          "surface_only": false
+        },
+        {
+          "mesh": "EEX_UtilityCabinet_Metal",
+          "role": "Metal",
+          "vertex_count": 224,
+          "triangle_count": 392,
+          "bounds_min_unity": [
+            -0.41,
+            0.2,
+            -0.276
+          ],
+          "bounds_max_unity": [
+            0.41,
+            1.45,
+            0.25
+          ],
+          "surface_only": false
+        },
+        {
+          "mesh": "EEX_UtilityCabinet_Dark",
+          "role": "Dark",
+          "vertex_count": 128,
+          "triangle_count": 224,
+          "bounds_min_unity": [
+            -0.3325,
+            0.258,
+            -0.255
+          ],
+          "bounds_max_unity": [
+            0.3325,
+            1.362,
+            -0.202
+          ],
+          "surface_only": false
+        }
+      ]
+    },
+    {
+      "name": "GravelPatch",
+      "bounds_min_unity": [
+        -3.0,
+        0.008,
+        -1.716516
+      ],
+      "bounds_max_unity": [
+        3.0,
+        0.017,
+        1.726851
+      ],
+      "parts": [
+        {
+          "mesh": "EEX_GravelPatch_Gravel",
+          "role": "Gravel",
+          "vertex_count": 105,
+          "triangle_count": 168,
+          "bounds_min_unity": [
+            -3.0,
+            0.008,
+            -1.716516
+          ],
+          "bounds_max_unity": [
+            3.0,
+            0.017,
+            1.726851
+          ],
+          "surface_only": true
+        }
+      ]
+    },
+    {
+      "name": "RoadRepair",
+      "bounds_min_unity": [
+        -2.2,
+        0.01,
+        -1.540639
+      ],
+      "bounds_max_unity": [
+        2.2,
+        0.018,
+        1.511041
+      ],
+      "parts": [
+        {
+          "mesh": "EEX_RoadRepair_Asphalt",
+          "role": "Asphalt",
+          "vertex_count": 91,
+          "triangle_count": 144,
+          "bounds_min_unity": [
+            -2.2,
+            0.01,
+            -1.540639
+          ],
+          "bounds_max_unity": [
+            2.2,
+            0.014,
+            1.511041
+          ],
+          "surface_only": true
+        },
+        {
+          "mesh": "EEX_RoadRepair_Dark",
+          "role": "Dark",
+          "vertex_count": 28,
+          "triangle_count": 24,
+          "bounds_min_unity": [
+            -1.142872,
+            0.018,
+            -0.479638
+          ],
+          "bounds_max_unity": [
+            1.124229,
+            0.018,
+            0.563486
+          ],
+          "surface_only": true
+        }
+      ]
+    },
+    {
+      "name": "DryDrain",
+      "bounds_min_unity": [
+        -5.0,
+        0.004,
+        -0.685142
+      ],
+      "bounds_max_unity": [
+        5.0,
+        0.099696,
+        0.6906
+      ],
+      "parts": [
+        {
+          "mesh": "EEX_DryDrain_Ground",
+          "role": "Ground",
+          "vertex_count": 189,
+          "triangle_count": 320,
+          "bounds_min_unity": [
+            -5.0,
+            0.004,
+            -0.685142
+          ],
+          "bounds_max_unity": [
+            5.0,
+            0.079,
+            0.6906
+          ],
+          "surface_only": true
+        },
+        {
+          "mesh": "EEX_DryDrain_Dark",
+          "role": "Dark",
+          "vertex_count": 63,
+          "triangle_count": 80,
+          "bounds_min_unity": [
+            -4.925,
+            0.012,
+            -0.142901
+          ],
+          "bounds_max_unity": [
+            4.925,
+            0.022,
+            0.142483
+          ],
+          "surface_only": true
+        },
+        {
+          "mesh": "EEX_DryDrain_Gravel",
+          "role": "Gravel",
+          "vertex_count": 468,
+          "triangle_count": 900,
+          "bounds_min_unity": [
+            -4.183667,
+            0.03056,
+            -0.471296
+          ],
+          "bounds_max_unity": [
+            4.312263,
+            0.099696,
+            0.438874
+          ],
+          "surface_only": false
+        }
+      ]
+    },
+    {
+      "name": "GroundRidge",
+      "bounds_min_unity": [
+        -2.0142,
+        0.0,
+        -0.900553
+      ],
+      "bounds_max_unity": [
+        1.95,
+        0.476477,
+        0.774157
+      ],
+      "parts": [
+        {
+          "mesh": "EEX_GroundRidge_Ground",
+          "role": "Ground",
+          "vertex_count": 52,
+          "triangle_count": 100,
+          "bounds_min_unity": [
+            -2.0142,
+            0.0,
+            -0.900553
+          ],
+          "bounds_max_unity": [
+            1.95,
+            0.476477,
+            0.774157
+          ],
+          "surface_only": false
+        },
+        {
+          "mesh": "EEX_GroundRidge_Gravel",
+          "role": "Gravel",
+          "vertex_count": 156,
+          "triangle_count": 300,
+          "bounds_min_unity": [
+            -1.335926,
+            0.0843,
+            -0.640455
+          ],
+          "bounds_max_unity": [
+            1.017354,
+            0.173056,
+            0.525265
+          ],
+          "surface_only": false
+        }
+      ]
+    },
+    {
+      "name": "DryGrass",
+      "bounds_min_unity": [
+        -0.620716,
+        -0.006732,
+        -0.443547
+      ],
+      "bounds_max_unity": [
+        0.526957,
+        0.615085,
+        0.406934
+      ],
+      "parts": [
+        {
+          "mesh": "EEX_DryGrass_DryGrass",
+          "role": "DryGrass",
+          "vertex_count": 864,
+          "triangle_count": 1512,
+          "bounds_min_unity": [
+            -0.592331,
+            -0.006732,
+            -0.443547
+          ],
+          "bounds_max_unity": [
+            0.526957,
+            0.615085,
+            0.406934
+          ],
+          "surface_only": false
+        },
+        {
+          "mesh": "EEX_DryGrass_Ground",
+          "role": "Ground",
+          "vertex_count": 156,
+          "triangle_count": 300,
+          "bounds_min_unity": [
+            -0.620716,
+            0.0013,
+            -0.417597
+          ],
+          "bounds_max_unity": [
+            0.494,
+            0.043342,
+            0.335478
+          ],
+          "surface_only": false
+        }
+      ]
+    },
+    {
+      "name": "RepairedFence",
+      "bounds_min_unity": [
+        -0.125,
+        0.0,
+        -2.125
+      ],
+      "bounds_max_unity": [
+        0.125,
+        1.855,
+        2.125
+      ],
+      "parts": [
+        {
+          "mesh": "EEX_RepairedFence_Stone",
+          "role": "Stone",
+          "vertex_count": 32,
+          "triangle_count": 56,
+          "bounds_min_unity": [
+            -0.125,
+            0.0,
+            -2.125
+          ],
+          "bounds_max_unity": [
+            0.125,
+            0.22,
+            2.125
+          ],
+          "surface_only": false
+        },
+        {
+          "mesh": "EEX_RepairedFence_Metal",
+          "role": "Metal",
+          "vertex_count": 464,
+          "triangle_count": 812,
+          "bounds_min_unity": [
+            -0.07,
+            0.1,
+            -2.07
+          ],
+          "bounds_max_unity": [
+            0.07,
+            1.855,
+            2.07
+          ],
+          "surface_only": false
+        },
+        {
+          "mesh": "EEX_RepairedFence_Dark",
+          "role": "Dark",
+          "vertex_count": 64,
+          "triangle_count": 112,
+          "bounds_min_unity": [
+            -0.0755,
+            0.3,
+            -0.5
+          ],
+          "bounds_max_unity": [
+            -0.0645,
+            1.53,
+            0.6
+          ],
+          "surface_only": false
+        }
+      ]
+    }
+  ],
+  "triangle_count": 6760
+}

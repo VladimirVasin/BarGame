@@ -313,6 +313,8 @@ namespace BarPromenade
                 paths.Add(layout.River.Promenades[index].Bounds);
             }
 
+            CityEastExitPlan eastExit = CityEastExitPlanner.Create(layout);
+            if (eastExit.IsEnabled) paths.Add(eastExit.RoadBounds);
             return paths;
         }
 

@@ -477,6 +477,10 @@ namespace BarPromenade
                 traversal,
                 parts);
 
+            CityEastExitPlan exit = CityEastExitPlanner.Create(layout);
+            if (exit.IsEnabled)
+                parts.RemoveAll(part => part.Footprint.Overlaps(exit.ClearanceBounds));
+
             return new CityFringeYardDescriptor(
                 "fringe-yard-east",
                 areaId,
