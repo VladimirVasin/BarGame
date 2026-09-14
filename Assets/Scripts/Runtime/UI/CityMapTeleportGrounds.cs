@@ -211,6 +211,11 @@ namespace BarPromenade
                 foreach (CityEastTreePart tree in CityEastTreePlan.Create(eastExit).Parts)
                     footprints.Add(Expand(tree.TrunkFootprint, radius));
             }
+            // The city-wide litter's crates, buckets, tyres and wrecked
+            // bicycles block the same way; a memo hit once the world is built.
+            foreach (CityLitterPart part in CityWorldPlans.GetOrCreate(layout)
+                         .GetLitter(CityLayoutCache.GetOrCreateNightPlan(layout)).Parts)
+                if (part.Item.Solid) footprints.Add(Expand(part.Footprint, radius));
             if (church != null)
             {
                 footprints.Add(Expand(church.ModelFootprint, radius));

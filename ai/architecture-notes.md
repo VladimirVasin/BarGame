@@ -4,6 +4,12 @@
 
 ## Current facts
 
+- **Accepted architecture exception — 2026-09-15, eastern valley:**
+  User: story §6 `0`/art §10e own descent/city/halo on valley floor,
+  near/panorama seam; shared road/land/car/lamp datum. First lamp: existing
+  model/pool `12`; distant fixtures passive. Blender depth/cars pause/§20.
+  Fog `.070`/clip `48 m`, sea/west/south/post/paths, §16/§21/nine art checks hold.
+
 - **Accepted — 2026-09-14, eastern fence relief and trees:**
   Art §10e: shared terrain relief replaces parallel track; sparse City misc
   trees, supported roots/trunk collision/map cuts. Road/paths/story §16/nine
@@ -13,8 +19,14 @@
   Passive Blender litter: `12 m` road-to-fence strip. Art §10e/story §6 own
   form/exclusions; §16/§21/nine art checks hold.
 
+- **Accepted — 2026-09-15, city-wide litter:**
+  The same catalog sparse everywhere art §2.3 lets it lie; §10a/§10c/§10c.1/
+  §10e exclusions hold, no §6 row. Planned with the world plans (primed),
+  solids block/map-cut, same variant never within `18/45/90 m`; §16/nine
+  art checks hold.
+
 - **Accepted — 2026-09-14, checkpoint placement:**
-  Post `(198,-39)`, street gap `12 m`, tail `286`; front/mask/paths/story §6 hold.
+  Post `(198,-39)`, street gap `12 m`, origin `286`; front/mask/paths/§6 hold.
 
 - **Accepted — 2026-09-14, full eastern fence dressing:**
   Art §10e: seeded Blender perimeter cover/works/stock/exclusions;
@@ -38,8 +50,8 @@
 
 - **Accepted architecture exception — 2026-09-13, eastern mainland road:**
   Story §6/art §2.1a/§10e own closed post/paths/scrub/distant road/skyline/lights
-  and exclusions; guard decision owns life. Projection within `48 m`, shared
-  haze/far depth; no remote terrain/collision/Light/shadow/map/navigation.
+  and exclusions; guards own life. Projection within `48 m`,
+  haze; no remote collision/Light/shadow/map/navigation.
   Imported/placed road/booth bounds verify metres/axes; §16/§21/nine art checks.
 
 - **Accepted — 2026-09-13, refined hero, M-65 and modular clothing:**
@@ -741,33 +753,31 @@
 
 - **Accepted exception — Alpine Village cold presentation (2026-09-07,
   explicitly refined by the user on 2026-09-08):**
-  The user explicitly accepted the plan for a hunched, self-hugging idle and
-  walk, periodic shoulder rubbing, restrained shivers and visible breath in
-  the village. This narrowly lifts art-bible §1's uniform-animation rule for
-  the exterior of `AlpineVillage`, from story level `0`; the dated §6 registry
-  row and art-bible §10g own the same boundary. The shared motor, leg gait,
-  speed and controls remain unchanged. The user's refinement keeps the
-  self-hug and shoulder rubbing during running too, with noticeable rubs and
-  small hand movements between series. Balance, falling and contextual
-  actions take precedence.
+  The user accepted a hunched, self-hugging idle and walk, periodic shoulder
+  rubbing, restrained shivers and visible breath in the village. This narrowly
+  lifts art-bible §1's uniform-animation rule for the exterior of
+  `AlpineVillage`, from story level `0`; the dated §6 registry row and
+  art-bible §10g own the same boundary. The shared motor, leg gait, speed and
+  controls are unchanged. The refinement keeps the self-hug and shoulder
+  rubbing while running, with noticeable rubs and small hand movements between
+  series. Balance, falling and contextual actions take precedence.
   The open station canopy remains cold; the mother's house and enclosed
-  cableway cabin suppress the body pose and visible breath. The user's further
-  explicit `2026-09-08` request extends this same exception to short upper-body
-  shiver bouts, gradual frost at the game image's edges and its characteristic
-  sound. Existing frost and sound thaw in the mother's house and enclosed cabin.
-  Cold is ordinary weather, independent of intoxication, degradation and the
-  village's dimming grade.
+  cableway cabin suppress the body pose and visible breath. The `2026-09-08`
+  request extends the exception to short upper-body shiver bouts, gradual
+  frost at the image's edges and its characteristic sound; frost and sound
+  thaw in the mother's house and enclosed cabin. Cold is ordinary weather,
+  independent of intoxication, degradation and the village's dimming grade.
   Growth uses quiet dry crackles and a thin icy ring in irregular swells.
-  The user's further explicit refinement gives thaw its own soft ice-release
-  sound and tiny damp clicks, fading with the remaining frost; neither phase
-  uses sharp impacts or breaking glass. The same refinement permits background
-  blur only beneath already frozen patches, increasing with their coverage.
+  A further refinement gives thaw its own soft ice-release sound and tiny
+  damp clicks, fading with the remaining frost; neither phase uses sharp
+  impacts or breaking glass, and background blur is permitted only beneath
+  already frozen patches, increasing with their coverage.
   The existing 2D source switches to three deterministic `1.2 s` thaw clips:
   warm entry fades its old tail over `0.12 s` and schedules the first thaw cue
   after `0.22 s`, independent of the previous cold-cue wait. Returning outdoors
   releases the thaw tail and schedule under the same pause/reset lifecycle.
-  No new fiction text, NPC response, damage, health need or gameplay meter is added,
-  and the village's emotionally warm light remains binding.
+  No new fiction text, NPC response, damage, health need or gameplay meter;
+  the village's emotionally warm light remains binding.
 
   `Player3DCharacterPresentation.Cold` places authored `ColdHold` (`4 s`),
   `ColdShoulderRub` (`2.5 s` per series) and non-looping `ColdShiver` (`1 s`,
@@ -785,13 +795,12 @@
   Protective actions clear conflicting cold weights in the same final-pose
   evaluation before their IK runs, including a nausea state written after the
   hero's Update. Return to cold remains a `0.45 s` blend.
-  `PlayerColdBreathEffect` reuses the fog-particle
-  material with at most `40` world-space particles, emitted after the final
-  mouth pose and advected by the same shaped village wind. The root opts in
-  only while outside vehicle/cabin, scene-transition and hidden-renderer
-  ownership. The mother's-house root does not opt in. Scaled time freezes the
-  clock and particles on pause; contextual ownership and lifecycle cleanup
-  clear the profile. This is ordinary rig presentation, not a replacement
+  `PlayerColdBreathEffect` reuses the fog-particle material with at most `40`
+  world-space particles, emitted after the final mouth pose and advected by
+  the same shaped village wind. The root opts in only outside vehicle/cabin,
+  scene-transition and hidden-renderer ownership; the mother's-house root does
+  not. Scaled time freezes the clock and particles on pause; contextual
+  ownership and lifecycle cleanup clear the profile. This is ordinary rig presentation, not a replacement
   contextual atlas; it creates no exception to `contextual-animation-standard.md`.
 
   `AlpineColdExposureModel` owns a separate presentation clock and normalized
@@ -804,10 +813,8 @@
   route from `Station.BoardingDockPosition` through the lane's four segments
   to `MothersHouse.DoorDockPosition`: `36.1163 s` at the ordinary `2.6 m/s`
   walk, with `43 s` about `19 %` longer. The focused CharacterController check
-  confirms `93.90223694 m` in `36.11631775 s`, with frost amount `0.90904` at
-  the usable door. `StationToMotherHouseFrostTiming` passes in `8.868760 s`
-  in `TestResults/alpine-frost-walk.xml`; measurements are in
-  `Captures/ColdHeroVerification/station-to-mothers-house-frost-timing.json`.
+  (`StationToMotherHouseFrostTiming`) confirms `93.90223694 m` in
+  `36.11631775 s`, with frost amount `0.90904` at the usable door.
   The direct-load `SpawnPosition` already lies two metres up the lane and is
   not the cableway starting point. The initial `6 s` delay is included in the
   `43 s` total.
@@ -2065,15 +2072,13 @@
   `CityChurchCemeteryPassagePlan`; the latter owns the fence opening, both
   ground heights, safe shared threshold and capsule-clear route instead of
   treating a missing fence segment as sufficient traversal.
-- **Accepted — The coastal basin closes only west and south:**
-  `CityMountainBoundaryDefinition` enables only `default-coastal`; custom and
-  legacy layouts receive `CityMountainBoundaryPlan.Empty`. Flat-shaded ridges
-  follow west/south Yard bounds and `CityTerrainSurfacePlan`: exact toes plus
-  a lip `0.04 m` below terrain and `0.08 m` cityward share rendering/collision.
-  South stays closed above the dark `10 m` river mouth, with physical rock
-  ending both promenades. Only that mouth and the separate portal interrupt
-  the toe. A diagonal strip closes `(-1,-1)`; west tapers toward the northern
-  beach. North remains sea; east has no ridge.
+- **Accepted — The physical coastal basin closes only west and south:**
+  `CityMountainBoundaryDefinition`: `default-coastal` only; custom/legacy get
+  `CityMountainBoundaryPlan.Empty`. Flat-shaded ridges follow west/south Yards/
+  `CityTerrainSurfacePlan`; render/collision share exact toes, lip `0.04 m`
+  below terrain/`0.08 m` cityward. South closes above the dark `10 m` river mouth;
+  rock ends both promenades. Only mouth/portal interrupt toes. `(-1,-1)` has
+  a diagonal closure; west tapers to northern beach, north remains sea.
   The physical ridge chunks use one shared opaque `CityMountainPhysical`
   material, MPBs and deterministic `CityMountainRockAlbedo`; only the near toe
   owns collision, while the tall rear mass casts no huge distant shadow. A
@@ -2103,17 +2108,14 @@
   physical lining changes the player-following rain to a dry-core shape,
   clears exterior fog particles and hides the camera-relative ridge shell;
   all three restore with mouth hysteresis on exit.
-  The presentation shell sits at `39.4-43.2 m` inside `48 m` far clip.
-  `CityMountainBackdropFollower` copies translation, never rotation; the shader
-  skips distance fog and mixes `0.86` toward `RuntimeSceneSetup.CityFogColor`.
-  This faint mass matches the physical `0.10` floor despite `0.070` Exp2.
-  Only west/south sectors exist, south closed above the river mouth. No
-  collider, Light, shadow, probe, navigation, map or world-bounds role; no
-  changed fog/grade/far clip. The map consumes the physical
-  `CityWorldResult.MountainBoundaryPlan`: west/south bounds expand to toe/
-  outer-foot hatching, river ends visibly in rock, open arch has `12 m`
-  schematic throat. Hidden cave and `72 m` visual tail remain absent; north/
-  east map maxima remain exact.
+  Shell: `39.4-43.2 m` inside clip `48 m`; `CityMountainBackdropFollower`
+  copies translation only. Shader skips distance fog, mixes `0.86` toward
+  `RuntimeSceneSetup.CityFogColor`, matching physical `0.10`/Exp2 `0.070`.
+  West/south only, closed above river mouth; no collider/Light/shadow/probe/
+  navigation/map/world bounds or fog/grade/clip change. Map reads physical
+  `CityWorldResult.MountainBoundaryPlan`: west/south toe→foot hatching,
+  river ends in rock, arch/`12 m` throat; hidden cave/`72 m` tail absent,
+  north/east exact.
 - **Accepted — Water is a surface the engine does not ship:** Unity has a
   full water system, but only in HDRP; URP 17 has no official water package
   and Unity's own URP samples author water as an ordinary Shader Graph.

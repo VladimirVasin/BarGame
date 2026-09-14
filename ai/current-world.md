@@ -498,58 +498,57 @@ The vertical slice contains:
   return wings, two-post frame/crown floodlight), caged floodworks/gauge.
   Four measured sheets: compacted forefield, aggregate, board-formed concrete,
   old masonry. Four emissive practicals stay outside the combined geometry;
-  nearest supported anchor within `20 m` leases `CityNightAtmosphere`'s last
-  street Spot, preserving its `12`-Light pool. The tunnel
-  moves that lease to the faulty second ceiling fixture, keeps a `0.22`
-  daytime floor and applies the same sparse flicker to its lens and pooled
-  light. Four additional emissive-only fixtures continue into the bend; the
-  faulty ballast owns a positional `5.6 m` buzz and crackles only on visible
-  power dips. The
-  east drain/pole/shed/berm profile yields within the mainland-road clearance;
-  its old parallel service-road strip is removed. A late life pass adds one
-  grounded, unoccupied mason cart at the west terraces; no winch-service,
-  tunnel-repair, flood-maintenance or open-hood-car vignette. Large masses are
-  physical, small traces and cables are visual only. Every physical ridge
-  overlaps beneath its sampled terrain
-  toe and extends the near-toe collider across that join; only the open
-  tunnel portal and low river water mouth interrupt the rock, while the bank
-  ends close against it. Every level-safe ring-road seam into the four
-  mountain Yards is walkable, while true drops retain rails; three `6 m` routes reserve
-  capsule-clear cuts through the retaining line to the rock toe. Two use broad
-  gravel aprons, while the south-east flood route uses a narrow embedded trace
-  on continuous terrain; the fourth route continues through the open tunnel
-  forecourt. Fringe dressing adds no destination, Light, north/east mountain
-  or world-bounds expansion;
-- Default `CityEastExitPlanner`: `Z=-39`, street `X=186`→post `198`→tail `286`;
-  `5/4 m` apron/blend, level street join/radius connector.
-  Booth/barrier/gate/fences close map/physics. `CityEastGroundTransition*`:
-  grass-soil `3–5 m` in `8 m`, shared UVs/edge/footsteps. West-facing bench,
-  canopy/cabinet; embedded traces. `CityEastSwalePlan`:
-  narrow intake → `3.9–4.7 m`/`.37–.48 m` hollow, level crossings; same visible/
-  physical/map grade. `CityEastReliefPlan`: seeded metre-grid relief, fixed
-  edges/pads/crossings. `CityEastTreePlan`: sparse `3–5 m` City misc trees on
-  both sides, supported roots, trunk collision/map cuts.
-  Seeded shrubs/grass/gravel along the fence,
-  front `12–16 m`, gaps ≤`20 m`; rear banks/drain/grate/repairs, shed stock.
-  `CityEastLitterPlan`/`CityLitterCatalog`: 36 seeded Blender variants, five
-  width bands/`.45 m` gaps; vessels/parts/four damaged bicycles. Shared rigid
-  meshes on indexed ground; solids block/map-cut. Footprints
-  clear `X=188–191.5`, patrol/church/crossings/fence. Pooled lamp + canopy/shed Spots
-  registry: day floor/halos/hard shadows.
-  `CityEastDistanceWorldBuilder`: land/road/shoulders/skyline `44 m`,
-  parallax, `48 m` clip/`.070` fog/foreground depth, central windows/day
-  glow; no remote gameplay/Light/shadow/audio; road replaces skin;
+  the nearest supported anchor within `20 m` leases `CityNightAtmosphere`'s
+  last street Spot, keeping its `12`-Light pool. The tunnel moves that lease
+  to the faulty second ceiling fixture, keeps a `0.22` daytime floor and gives
+  its lens and pooled light the same sparse flicker. Four more emissive-only
+  fixtures continue into the bend; the faulty ballast owns a positional
+  `5.6 m` buzz and crackles only on visible power dips. The east drain/pole/
+  shed/berm profile yields within the mainland-road clearance;
+  its old parallel service-road strip is removed. One grounded empty mason
+  cart stands at the west terraces; no other fringe vignette. Large masses
+  are physical, small traces and cables visual only. Ridges overlap under
+  the sampled terrain toe and carry its collider across the join; only the
+  tunnel portal and low river mouth interrupt the rock, the bank ending against
+  it. Every level-safe ring-road seam into the four mountain Yards is walkable,
+  true drops keep rails; three `6 m` routes cut capsule-clear through the
+  retaining line to the rock toe — two on broad gravel aprons, the south-east
+  flood route on a narrow embedded trace — and the fourth runs through the open
+  tunnel forecourt. Fringe dressing adds no destination, Light or world bounds;
+  the eastern valley is a separate passive panorama;
+- Default `CityEastExitPlanner`: `Z=-39`, street `X=186`→post `198`; origin `286`,
+  real road ends `230` (`32 m` past post), flat first `10 m`; `5/4 m`
+  apron/blend; booth/barrier/gate/fences close map/physics.
+  `CityEastGroundTransition*`: grass-soil `3–5 m` in `8 m`, shared UVs/edge/footsteps.
+  `CityEast{Swale,Relief,Tree}Plan`: graded hollow/level crossings, seeded
+  metre relief/fixed edges/pads; shared render/physics/map; sparse `3–5 m`
+  trees both sides, supported roots, trunk collision/map cuts. Seeded fence
+  shrubs/grass/gravel, front `12–16 m`, gaps ≤`20 m`; rear banks/drain/grate/
+  repairs, shed stock.
+  `CityEastLitterPlan`: the 36-variant `CityLitterCatalog` dense in five bands/
+  `.45 m` gaps; solids block/map-cut, clear `X=188–191.5`/patrol/church/
+  crossings/fence. `CityLitterPlan` (`CityWorldPlans.GetLitter`, primed): same
+  catalog sparse city-wide: sidewalk edges, lot bands at walls, tide line, ≤6
+  by park benches/paths; off roads/crossings/scenes/yards/cemetery/church/bar
+  yard; `1.5 m` gaps, same variant ≥`18/45/90 m`; one instancer.
+  Pooled lamp + canopy/shed Spots: day floor/halos/hard shadows.
+  `CityEastRoadProfile`: shared road/land/car/lamp datum; `RoadGroundCuts` bends.
+  First mast joins pool `12`; later shells/lenses/halos/pools are passive.
+  `CityEastDistance*`: city/warm uneven steady glow dome on valley floor.
+  Source depth: clip's last `.20 m`; foreground/`48 m`/`.070` fog stay.
+  2 cars: exported lanes/session phase/pause/time guard;
+  no gameplay/Light/physics/shadow/audio;
 - `CityEastGuardDuty`: one home, one three-point out-and-back patrol; swap
   on return. Senior/Junior: own rigs/faces/clothes, separate shoulder rifles
   (`EastGuardActor`), body-aware grounded movement. Speech/modals hold duty.
-  Six RU/EN pairs/four E replies each share one no-repeat bubble/face clock.
-  Whole pair precedes one pending E; no input lock, cancel/distance clears it.
-  Personal pairs/glances wait beyond `4 m`, hearing `13 m`; E restores reserve.
-  Pause freezes, range never replays;
+  Six RU/EN pairs/four E replies share one no-repeat bubble/face clock.
+  A whole pair precedes one pending E; no input lock, cancel/distance clears it.
+  Personal pairs/glances wait beyond `4 m`, hearing `13 m`; E restores
+  reserve. Pause freezes, range never replays;
 - one immutable river contract splits that default urban envelope with a
-  `10 m` channel. Two continuous `3 m` promenades flank it; an `8 m` Works
-  road bridge and an `8 m` Mouth road bridge carry ordinary Street traffic
-  across its south and north edges, while a separate `2.8 m` timber
+  `10 m` channel. Two continuous `3 m` promenades flank it; `8 m` Works and
+  Mouth road bridges carry ordinary Street traffic across its south and
+  north edges, while a separate `2.8 m` timber
   ParkPath bridge reconnects the two `2 x 4` halves of the 16-cell central
   park. Each road bridge owns one staircase and lower waterside platform per
   bank, producing four navigable lower landings. Each promenade cut has a
@@ -1399,13 +1398,12 @@ The vertical slice contains:
   tanks, pipe racks, billboards, fire escapes, markets, discarded furniture,
   cargo, vending queues, a legacy shelter recipe, phone booths, roadworks, a
   fountain/statue, bandstand, chess tables and playground equipment. The
-  playground's two swing seats are the one decoration that is not baked
-  into a batch: each hangs from the top beam as a hinged rigid body the
-  hero pushes by walking into it. The
-  ordinary random roadside pool deliberately omits bus shelters because
-  Route 01 owns its target-derived physical stop poles. Ground-level
-  frontage and roadside descriptors sample the rendered terrain at their
-  final XZ anchor, so their geometry, collision proxies and interaction
+  playground's two swing seats are the one decoration not baked into a
+  batch: each hangs from the top beam as a hinged rigid body the hero
+  pushes by walking into it. The ordinary random roadside pool omits bus
+  shelters because Route 01 owns its target-derived physical stop poles.
+  Ground-level frontage and roadside descriptors sample the rendered terrain
+  at their final XZ anchor, so geometry, collision proxies and interaction
   docks share the actual pavement height rather than the lot datum;
 - one deterministic residential-courtyard pass selects at most four shallow
   facade-side pockets, each no more than `1.05 m` deep. Six imported variants

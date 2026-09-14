@@ -50,7 +50,8 @@ namespace BarPromenade
             Transform parent,
             CityNightFixturePlan plan,
             IReadOnlyList<BarEntrance> bars,
-            bool buildCollision = true)
+            bool buildCollision = true,
+            CityEastExitPlan eastExit = null)
         {
             if (parent == null)
             {
@@ -65,6 +66,19 @@ namespace BarPromenade
             if (bars == null)
             {
                 throw new ArgumentNullException(nameof(bars));
+            }
+
+            if (eastExit != null && eastExit.IsEnabled)
+            {
+                // The first valley mast is another location in the existing
+                // street pool. Its shell, bulb, halo and lifetime follow the
+                // same owner as every city lamp; no fixed Light is added.
+                var lamps = new List<StreetLampDescriptor>(plan.StreetLamps);
+                foreach (CityEastRoadProfile.Lamp lamp in eastExit.RoadProfile.Lamps)
+                    if (lamp.real)
+                        lamps.Add(new StreetLampDescriptor(default, 0f, StreetLampSide.Right,
+                            eastExit.RoadEnd + lamp.Position, lamp.Forward));
+                plan = new CityNightFixturePlan(lamps, new List<TrafficSignalDescriptor>(plan.TrafficSignals));
             }
 
             Transform root = new GameObject("Night Street Furniture").transform;

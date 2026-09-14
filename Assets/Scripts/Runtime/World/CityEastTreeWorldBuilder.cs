@@ -9,7 +9,7 @@ namespace BarPromenade
     {
         public const string RootName = "Eastern Fence Trees";
 
-        internal static Transform Build(Transform parent, CityEastExitPlan exit, CityEastLitterWorldBuilder.SampleGround sample)
+        internal static Transform Build(Transform parent, CityEastExitPlan exit, CityLitterGroundSample sample)
         {
             CityEastTreePlan plan = CityEastTreePlan.Create(exit);
             CityMiscAssetProvider provider = CityMiscAssetProvider.LoadOrThrow();

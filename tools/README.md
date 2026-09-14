@@ -1,7 +1,7 @@
 # Art and native tool entry points
 
-`build-city-east-{exit,guards}-3d-model.py`: post/far/guards; exit
-`--dressing-only`: ground/fixtures/plants/drain/stock. Common launcher/validator.
+`build-city-east-{exit,guards}-3d-model.py`; exit selectors:
+`--near-only`, `--distance-only` (`city_east_distance.py`), `--dressing-only`.
 `Assets/Resources/City/EastExit`; source `ArtSource/City/EastExit`.
 `build-city-east-ground-texture.py --verify`: grass/soil seam.
 

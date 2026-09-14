@@ -27,7 +27,13 @@ namespace BarPromenade
             ApproachStart = new Vector3(streetX, entryTop, axisZ);
             CheckpointPosition = new Vector3(gateX, gateTop, axisZ);
             RoadEnd = new Vector3(yard.xMax, gateTop, axisZ);
+            RoadProfile = CityEastRoadProfile.Load();
+            Vector3 authoredGate = RoadProfile.Sample(RoadProfile.GateX) + RoadEnd;
+            if (Vector3.Distance(authoredGate, CheckpointPosition) > .01f)
+                throw new InvalidOperationException("The authored eastern road must join the unchanged checkpoint datum.");
+            RealRoadEnd = RoadEnd + RoadProfile.Sample(RoadProfile.RealEndX);
             RoadBounds = Rect.MinMaxRect(streetX, axisZ - 4f, yard.xMax, axisZ + 4f);
+            RoadGroundCuts = CreateRoadGroundCuts();
             StreetOpening = Rect.MinMaxRect(streetX - layout.RoadWidth,
                 RoadBounds.yMin, streetX, RoadBounds.yMax);
             ClearanceBounds = Rect.MinMaxRect(streetX, axisZ - 11f, yard.xMax, axisZ + 8f);
@@ -69,6 +75,9 @@ namespace BarPromenade
         public Vector3 ApproachStart { get; }
         public Vector3 CheckpointPosition { get; }
         public Vector3 RoadEnd { get; }
+        public Vector3 RealRoadEnd { get; }
+        public CityEastRoadProfile RoadProfile { get; }
+        public IReadOnlyList<Rect> RoadGroundCuts { get; } = Array.Empty<Rect>();
         public Vector3 RoadAxis => Vector3.right;
         public Rect RoadBounds { get; }
         public Rect StreetOpening { get; }
@@ -86,6 +95,8 @@ namespace BarPromenade
 
         public float SampleRoadTop(float x)
         {
+            if (x > CheckpointPosition.x)
+                return SampleRoadCenter(x).y;
             // The stop apron is level; the approach absorbs the existing
             // yard elevation before the booth and the closed gate.
             return Mathf.Lerp(ApproachStart.y, CheckpointPosition.y,
@@ -94,6 +105,11 @@ namespace BarPromenade
 
         public float SampleRoadTop(float x, float z)
         {
+            if (x > CheckpointPosition.x)
+            {
+                Vector3 center = SampleRoadCenter(x);
+                return center.y - Mathf.Abs(z - center.z) * RoadProfile.CrossfallAt(x - RoadEnd.x);
+            }
             // Carry the street's longitudinal slope across the mouth of the
             // side road, then ease it out before the level checkpoint apron.
             float blend = 1f - Mathf.InverseLerp(ApproachStart.x,
@@ -114,8 +130,64 @@ namespace BarPromenade
             float dx = Mathf.Max(BoothPad.xMin - point.x, 0f, point.x - BoothPad.xMax);
             float dz = Mathf.Max(BoothPad.yMin - point.y, 0f, point.y - BoothPad.yMax);
             float padWeight = 1f - Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(Mathf.Max(dx, dz) / 2f));
-            return Mathf.Lerp(top, BoothPosition.y, padWeight) +
+            float surface = Mathf.Lerp(top, BoothPosition.y, padWeight) +
                 Swale.SampleOffset(point) + Relief.SampleOffset(point);
+            if (point.x <= RoadEnd.x + RoadProfile.FlatEndX) return surface;
+            // The valley road descends together with its surrounding earth.
+            // Restrict the blend to the closed side and feather before the
+            // church/beach boundaries, whose accessible returns stay intact.
+            Vector3 road = SampleRoadCenter(point.x);
+            float lateral = Mathf.Abs(point.y - road.z);
+            float widthWeight = 1f - Mathf.SmoothStep(0f, 1f,
+                Mathf.InverseLerp(RoadProfile.GroundFlatHalfWidth, RoadProfile.GroundBlendHalfWidth, lateral));
+            float startWeight = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(
+                RoadEnd.x + RoadProfile.FlatEndX, RealRoadEnd.x, point.x));
+            float boundaryWeight = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0f, 4f,
+                Mathf.Min(point.y - YardBounds.yMin, NorthYardBounds.yMax - point.y)));
+            return Mathf.Lerp(surface, road.y - RoadProfile.GroundLift,
+                widthWeight * startWeight * boundaryWeight);
+        }
+
+        public Vector3 SampleRoadCenter(float worldX)
+        {
+            if (worldX <= CheckpointPosition.x)
+                return new Vector3(worldX, SampleRoadTop(worldX), CheckpointPosition.z);
+            return RoadEnd + RoadProfile.Sample(worldX - RoadEnd.x);
+        }
+
+        public float SampleRoadGroundHalfWidth(float worldX) => Mathf.Lerp(4f, 5f,
+            Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(RoadEnd.x + RoadProfile.FlatEndX, RealRoadEnd.x, worldX)));
+
+        public float SampleRoadGroundTop(float worldX, float worldZ)
+        {
+            if (worldX <= CheckpointPosition.x) return SampleRoadTop(worldX, worldZ) - RoadSurfaceLift;
+            Vector3 center = SampleRoadCenter(worldX);
+            float blend = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(
+                RoadEnd.x + RoadProfile.FlatEndX, RealRoadEnd.x, worldX));
+            float edge = Mathf.Clamp01(Mathf.Abs(worldZ - center.z) / SampleRoadGroundHalfWidth(worldX));
+            return center.y - RoadProfile.GroundLift -
+                (RoadProfile.OuterShoulderOffset - RoadProfile.GroundLift) * edge * blend;
+        }
+
+        private IReadOnlyList<Rect> CreateRoadGroundCuts()
+        {
+            var cuts = new List<Rect> { Rect.MinMaxRect(ApproachStart.x, CheckpointPosition.z - 4f,
+                CheckpointPosition.x, CheckpointPosition.z + 4f) };
+            int count = Mathf.CeilToInt((RoadEnd.x - CheckpointPosition.x) / 4f);
+            for (int i = 0; i < count; i++)
+            {
+                float ax = Mathf.Lerp(CheckpointPosition.x, RoadEnd.x, i / (float)count);
+                float bx = Mathf.Lerp(CheckpointPosition.x, RoadEnd.x, (i + 1f) / count);
+                Vector3 a = SampleRoadCenter(ax), b = SampleRoadCenter(bx);
+                float halfWidth = Mathf.Max(SampleRoadGroundHalfWidth(ax), SampleRoadGroundHalfWidth(bx));
+                // The decorative road may turn beyond this yard, but its
+                // physical terrain cut must retain the shared garden/beach
+                // edges. In particular the church seam still has two owners.
+                float lower = Mathf.Max(YardBounds.yMin + .25f, Mathf.Min(a.z, b.z) - halfWidth);
+                float upper = Mathf.Min(NorthYardBounds.yMax - .25f, Mathf.Max(a.z, b.z) + halfWidth);
+                if (upper > lower) cuts.Add(Rect.MinMaxRect(ax, lower, bx, upper));
+            }
+            return new ReadOnlyCollection<Rect>(cuts);
         }
 
         public float SampleGroundTop(Vector2 point) => ApplyGroundTop(point,

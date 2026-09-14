@@ -154,29 +154,10 @@ namespace BarPromenade
             return !solid || !Expand(footprint, .4f).Overlaps(PedestrianCorridor);
         }
 
-        private int Seed(string name)
-        {
-            unchecked
-            {
-                uint value = 2166136261u;
-                foreach (char letter in name) value = (value ^ letter) * 16777619u;
-                return (int)(value ^ (uint)exit.Layout.Seed ^ 0x51D3A927u);
-            }
-        }
+        private int Seed(string name) => CityLitterGeometry.Seed(name, exit.Layout.Seed, 0x51D3A927u);
         private static float Next(System.Random random) => (float)random.NextDouble();
-        private static Rect Expand(Rect rect, float amount) => Rect.MinMaxRect(
-            rect.xMin - amount, rect.yMin - amount, rect.xMax + amount, rect.yMax + amount);
-
-        private static Rect Project(Bounds bounds, Vector3 position, Quaternion rotation, float scale)
-        {
-            Vector3 low = Vector3.positiveInfinity, high = Vector3.negativeInfinity;
-            for (int corner = 0; corner < 8; corner++)
-            {
-                Vector3 p = position + rotation * ((bounds.center + Vector3.Scale(bounds.extents,
-                    new Vector3((corner & 1) == 0 ? -1 : 1, (corner & 2) == 0 ? -1 : 1, (corner & 4) == 0 ? -1 : 1))) * scale);
-                low = Vector3.Min(low, p); high = Vector3.Max(high, p);
-            }
-            return Expand(Rect.MinMaxRect(low.x, low.z, high.x, high.z), .025f);
-        }
+        private static Rect Expand(Rect rect, float amount) => CityLitterGeometry.Expand(rect, amount);
+        private static Rect Project(Bounds bounds, Vector3 position, Quaternion rotation, float scale) =>
+            CityLitterGeometry.Project(bounds, position, rotation, scale);
     }
 }

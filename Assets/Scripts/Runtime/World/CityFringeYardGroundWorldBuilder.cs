@@ -65,7 +65,7 @@ namespace BarPromenade
                     CityFringeYardSurfaceKind.ForefieldGround);
             CityEastExitPlan eastExit = CityEastExitPlanner.Create(layout);
             IReadOnlyList<Rect> roadCut = eastExit.IsEnabled
-                ? new[] { eastExit.RoadBounds } : null;
+                ? eastExit.RoadGroundCuts : null;
             GameObject genericGround =
                 CityTerrainSurfaceWorldBuilder.Build(
                     GenericGroundObjectName,

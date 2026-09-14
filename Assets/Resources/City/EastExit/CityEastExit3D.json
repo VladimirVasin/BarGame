@@ -1,8 +1,8 @@
 {
   "generator": "tools/build-city-east-exit-3d-model.py",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "design_id": "city_civilian_east_exit_v1",
-  "signature": "a88553b9322cf9dab79121fd57a59f505274ed44b469aa427e6b4c35b2b88690",
+  "signature": "e9a9a2b12569dcfc76fb7006418e84169cd78a6d137c8d65a205a68127feb87e",
   "export_settings": {
     "axis_forward": "-Z",
     "axis_up": "Y",
@@ -44,8 +44,8 @@
         {
           "mesh": "EEX_Road_Asphalt",
           "role": "Asphalt",
-          "vertex_count": 16,
-          "triangle_count": 28,
+          "vertex_count": 20,
+          "triangle_count": 36,
           "bounds_min_unity": [
             -5.0,
             -0.185,
@@ -580,5 +580,5 @@
       ]
     }
   ],
-  "triangle_count": 6736
+  "triangle_count": 6744
 }

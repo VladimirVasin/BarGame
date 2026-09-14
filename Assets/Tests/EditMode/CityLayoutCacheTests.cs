@@ -323,6 +323,9 @@ namespace BarPromenade.Tests.EditMode
             CityWorldPlans plans = CityWorldPlans.GetOrCreate(layout);
             CityDecorationPlan decoration = plans.GetDecoration(night);
             Assert.That(plans.GetDecoration(night), Is.SameAs(decoration));
+            CityLitterPlan litter = plans.GetLitter(night);
+            Assert.That(plans.GetLitter(night), Is.SameAs(litter));
+            Assert.That(litter.Parts.Count, Is.GreaterThan(0));
             Assert.That(
                 CityBusPlanner.Create(layout, decoration),
                 Is.SameAs(CityBusPlanner.Create(layout, decoration)));

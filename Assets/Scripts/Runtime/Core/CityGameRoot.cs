@@ -396,7 +396,8 @@ namespace BarPromenade
             Night = CityNightWorldBuilder.Build(
                 transform,
                 nightPlan,
-                World.Bars);
+                World.Bars,
+                eastExit: World.EastExitPlan);
             GameLogPhases.Report("city", "night_build", phaseTimer);
             yield return new CompositionStep("night", 0.68f);
             GameLog.Info(

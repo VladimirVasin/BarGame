@@ -146,10 +146,10 @@ namespace BarPromenade
         /// <summary>
         /// Starts, off the main thread, the whole pure planning chain the
         /// City's build would otherwise run under the door's black: the
-        /// layout, the night plan, the world plans with their bus routing
-        /// and decoration, the grounded bus plan, the street surface, the
-        /// pedestrian plan, the cannery truck route and the sampled beach
-        /// and seabed mesh lists. Called when a new game starts inside a
+        /// layout, the night plan, the world plans with their bus routing,
+        /// decoration and litter, the grounded bus plan, the street surface,
+        /// the pedestrian plan, the cannery truck route and the sampled
+        /// beach and seabed mesh lists. Called when a new game starts inside a
         /// City interior, where the seed, blueprint and settings are final
         /// and the stay covers the ~2 s of pool time several times over.
         /// A matching prime already out, or a session that already holds
@@ -194,9 +194,12 @@ namespace BarPromenade
             }
 
             // Everything the chain needs from the engine, taken here: the
-            // port contract asset, and the sand recipe whose class
-            // initialiser resolves shader property ids.
+            // port contract asset, the eastern road profile the exit plan
+            // reads, the litter catalog asset, and the sand recipe whose
+            // class initialiser resolves shader property ids.
             CityPortAccessPlan.WarmDefinition();
+            CityEastRoadProfile.Load();
+            CityLitterCatalog.Load();
             float sandTile = CitySeacoastSurfaceAppearance.GetRecipe(
                 CitySeacoastSurfaceKind.Sand).MetersPerTile;
             CityGenerationSettings copy = settings.Copy();
@@ -243,6 +246,8 @@ namespace BarPromenade
                 CityWorldPlans plans = CityWorldPlans.GetOrCreate(layout);
                 CityDecorationPlan decoration = plans.GetDecoration(night);
                 long worldPlansMs = Restart(stage);
+                plans.GetLitter(night);
+                long litterMs = Restart(stage);
                 CityBusPlanner.Create(layout, decoration);
                 long busMs = Restart(stage);
                 CityStreetSurfacePlanner.Create(layout);
@@ -266,6 +271,7 @@ namespace BarPromenade
                     GameLog.Field("layout_ms", layoutMs),
                     GameLog.Field("night_ms", nightMs),
                     GameLog.Field("world_plans_ms", worldPlansMs),
+                    GameLog.Field("litter_ms", litterMs),
                     GameLog.Field("bus_ms", busMs),
                     GameLog.Field("street_ms", streetMs),
                     GameLog.Field("pedestrian_ms", pedestrianMs),

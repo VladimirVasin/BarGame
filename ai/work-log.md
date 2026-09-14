@@ -6,6 +6,46 @@ Older whole dates move to `ai/archive/` when the byte budget is reached;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-08.md`](archive/work-log-2026-08.md).
 
+## 2026-09-15 — Eastern valley road, lights, city glow and city-wide litter
+
+- The closed eastern post overlooks a broad Blender valley. After a short
+  level apron the road descends in unequal curves; the larger soft city and
+  its broad, warm, uneven glow dome sit on the valley floor. The glow stays
+  visible day/night. Art/story canon records the scope; post/paths, northern
+  sea, west/south and shared fog/clip remain.
+- `CityEastRoadProfile` shares one exported datum across road, terrain, cars
+  and lamps. The real road joins the panorama early; curved ground cuts stay
+  inside the closed yard so the garden seam retains both terrain owners.
+  The first existing street mast joins the unchanged light pool;
+  later bodies/lenses/halos/ground pools are passive. Two cars preserve lane/
+  grade, session phase and pause/game-time guards.
+- Source depth gives terrain/road/cars their own occlusion behind the nearby
+  city boundary; painter order alone could not do both. The near asphalt now
+  shares a central vertex row: the uncut source box lowered the crown under
+  crossfall despite unchanged bounds/volume. Blender triangle sampling proves
+  crown/seam height; `--near-only` publishes just that asset. The panorama adds
+  no Light, audio, collision or travel.
+- Checks: `build-city-east-exit-3d-model.py --validate-only` (separate
+  `--near-only`/`--distance-only` selections); `AreaCaptureFixture.CityEastExit`: real/panorama
+  asphalt seam, imported bounds, lamp pool/daytime floor, traffic/pause and
+  reviewed daytime/nighttime valley, skyline and glow frames.
+- The 36 litter variants now lie sparsely across the whole city, where the
+  art bible already lets them: pavement edges, the bare band at lot walls, the
+  tide line and a handful by park benches; never on carriageways, crossings,
+  authored scenes, yards, the cemetery or the church. `CityLitterPlan` is a
+  pure world plan memoised with its decoration and primed with the rest;
+  `CityLitterInstancer`/`CityLitterGeometry` are shared with the eastern strip.
+  Non-obvious: the same variant is refused within a radius by a spatial hash
+  at pick time, so a slot is skipped rather than repeated; a pavement part
+  rests on its own built strip box (graded strips are chords, not the plan's
+  curve), and road caps/corner pads that rise over a strip end are refused
+  by sampling the neighbouring boxes; beach litter stays where the drawn
+  loose sand has zero depth; bus shelters come from the bus plan, not the
+  decoration that seeded them. The prime now warms the eastern road profile
+  too, since the exit plan reads it. Checks: `CityLitterPlanTests`,
+  `CityLayoutCacheTests.PrimeCityPlans_JoinsPlansEqualToPlanningOnTheMainThread`,
+  `AreaCaptureFixture.CityLitter`, `check-docs.py`.
+
 ## 2026-09-14 — City geometry, eastern checkpoint, cold City loading
 
 - City audit compares walk mask/physics, registry/triangles, planted controls

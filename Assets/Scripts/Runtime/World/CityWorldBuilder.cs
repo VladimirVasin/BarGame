@@ -104,6 +104,7 @@ namespace BarPromenade
             // draw its own animated sea, the ground pass must not lay
             // the flat municipal slab under it.
             CitySeacoastPlan seacoastPlan = plans.Seacoast;
+            CityLitterPlan litterPlan = plans.GetLitter(nightPlan);
             ReportBlock(
                 "world_plans",
                 blockTimer,
@@ -347,6 +348,17 @@ namespace BarPromenade
                     decorationPlan);
             ReportBlock("street_dressing", blockTimer);
             yield return new CompositionStep("street_dressing", 0.94f);
+            blockTimer.Restart();
+
+            // Litter lies on what every dresser before it has drawn; the
+            // plan itself was read with the other world plans.
+            CityLitterWorldBuilder.Build(world, layout, litterPlan);
+            ReportBlock(
+                "litter",
+                blockTimer,
+                GameLog.Field("parts", litterPlan.Parts.Count),
+                GameLog.Field("triangles", litterPlan.TriangleCount));
+            yield return new CompositionStep("litter", 0.955f);
             blockTimer.Restart();
 
             // The playground's seats hang outside the batched decoration
@@ -2688,7 +2700,8 @@ namespace BarPromenade
     /// The plans the world builder draws before its first yield, kept per
     /// layout so a second entry into the same city reads them instead of
     /// planning them again. Every member is a pure function of the layout
-    /// and is read, never written, by the builders and the world result.
+    /// (the decoration and the litter also of the night plan) and is read,
+    /// never written, by the builders and the world result.
     ///
     /// Not here on purpose: the walkable area, which the church, the port
     /// and the cannery extend while building; the cemetery, which reads the
@@ -2702,6 +2715,8 @@ namespace BarPromenade
 
         private CityNightFixturePlan decorationNightPlan;
         private CityDecorationPlan decoration;
+        private CityDecorationPlan litterDecoration;
+        private CityLitterPlan litter;
 
         private CityWorldPlans(CityLayout layout)
         {
@@ -2781,6 +2796,31 @@ namespace BarPromenade
             }
 
             return decoration;
+        }
+
+        /// <summary>
+        /// The city-wide litter keeps off the decoration it was planned
+        /// against, so it follows the decoration instance the same way the
+        /// decoration follows its night plan. The catalog it reads is a
+        /// cached asset; the prime warms it before leaving the main thread.
+        /// </summary>
+        internal CityLitterPlan GetLitter(CityNightFixturePlan nightPlan)
+        {
+            CityDecorationPlan current = GetDecoration(nightPlan);
+            if (!ReferenceEquals(litterDecoration, current))
+            {
+                litter = CityLitterPlanner.Create(
+                    Layout,
+                    nightPlan,
+                    Fence,
+                    current,
+                    Seacoast,
+                    ArchShelter,
+                    CityLitterCatalog.Load());
+                litterDecoration = current;
+            }
+
+            return litter;
         }
 
         internal static void Reset()

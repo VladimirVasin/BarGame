@@ -44,7 +44,7 @@ namespace BarPromenade
             var stops = new List<float> { plan.ApproachStart.x,
                 plan.ApproachStart.x + CityEastExitPlan.StreetGradeBlendLength,
                 plan.CheckpointPosition.x - CityEastExitPlan.CheckpointApronLength,
-                plan.CheckpointPosition.x, plan.RoadEnd.x };
+                plan.CheckpointPosition.x, plan.RoadEnd.x + plan.RoadProfile.FlatEndX, plan.RealRoadEnd.x };
             int ordinal = 0;
             for (int s = 1; s < stops.Count; s++)
             {
@@ -54,8 +54,8 @@ namespace BarPromenade
                 {
                     float ax = Mathf.Lerp(first, last, i / (float)count);
                     float bx = Mathf.Lerp(first, last, (i + 1f) / count);
-                    Vector3 a = new Vector3(ax, plan.SampleRoadTop(ax) - CityEastExitPlan.RoadSurfaceLift, plan.CheckpointPosition.z);
-                    Vector3 b = new Vector3(bx, plan.SampleRoadTop(bx) - CityEastExitPlan.RoadSurfaceLift, plan.CheckpointPosition.z);
+                    Vector3 a = plan.SampleRoadCenter(ax) - Vector3.up * CityEastExitPlan.RoadSurfaceLift;
+                    Vector3 b = plan.SampleRoadCenter(bx) - Vector3.up * CityEastExitPlan.RoadSurfaceLift;
                     Transform road = Place(templates, root, "Road", "Road " + ordinal++, (a + b) * .5f,
                         Quaternion.identity, new Vector3((bx - ax) / 10f, 1f, 1f));
                     FitRoad(road, plan);
@@ -211,7 +211,13 @@ namespace BarPromenade
                         world = road.TransformPoint(local);
                     }
                     float offset = world.y - road.position.y;
-                    world.y = plan.SampleRoadTop(world.x, world.z) - CityEastExitPlan.RoadSurfaceLift + offset;
+                    float across = world.z - road.position.z;
+                    bool ground = filter.name.EndsWith("_Ground", StringComparison.Ordinal);
+                    if (ground)
+                        across *= plan.SampleRoadGroundHalfWidth(world.x) / 4f;
+                    world.z = plan.SampleRoadCenter(world.x).z + across;
+                    world.y = (ground ? plan.SampleRoadGroundTop(world.x, world.z) :
+                        plan.SampleRoadTop(world.x, world.z) - CityEastExitPlan.RoadSurfaceLift) + offset;
                     vertices[i] = filter.transform.InverseTransformPoint(world);
                 }
                 mesh.vertices = vertices;

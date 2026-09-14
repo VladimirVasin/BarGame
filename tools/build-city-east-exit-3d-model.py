@@ -20,10 +20,11 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tools"))
 import interior_kit as kit
 import bar_parts as bp
+import city_east_distance as mainland
 import bpy
 from mathutils import Vector
 
-VERSION = "1.1.0"
+VERSION = "1.1.1"
 DRESSING_VERSION = "1.2.0"
 EXPORT_SETTINGS = {
     "axis_forward": "-Z", "axis_up": "Y",
@@ -72,6 +73,41 @@ TERRAIN_CONFORM_ASSEMBLIES = (
 
 def box(center, size, bevel=.012):
     return bp.u_box(center, size, bevel)
+
+
+def road_asphalt():
+    """One closed slab, split at its crown so runtime crossfall retains Y=.035."""
+    original, polygons = box((0, -.075, 0), (10, .22, 6), .015)
+    vertices, faces, intersections = list(original), [], {}
+
+    def crossing(a, b):
+        if abs(vertices[a][2]) < 1e-10:
+            return a
+        if abs(vertices[b][2]) < 1e-10:
+            return b
+        edge = tuple(sorted((a, b)))
+        if edge not in intersections:
+            va, vb = vertices[a], vertices[b]
+            t = -va[2] / (vb[2] - va[2])
+            intersections[edge] = len(vertices)
+            vertices.append((va[0] + t * (vb[0] - va[0]),
+                             va[1] + t * (vb[1] - va[1]), 0.0))
+        return intersections[edge]
+
+    for polygon in polygons:
+        zs = [vertices[i][2] for i in polygon]
+        if min(zs) >= 0 or max(zs) <= 0:
+            faces.append(polygon)
+            continue
+        for side in (-1, 1):
+            clipped = []
+            for a, b in zip(polygon, polygon[1:] + polygon[:1]):
+                if vertices[a][2] * side >= 0:
+                    clipped.append(a)
+                if vertices[a][2] * vertices[b][2] < 0:
+                    clipped.append(crossing(a, b))
+            faces.append(tuple(clipped))
+    return vertices, faces
 
 
 def cylinder(center, radius, height, sides=8):
@@ -460,7 +496,7 @@ def make_assemblies():
             assemblies.setdefault(group, {}).setdefault(role, []).append(geometry)
 
     # Matched full-width road and gravel shoulders; no curb sealing the walk-in.
-    add("Road", "Asphalt", box((0, -.075, 0), (10, .22, 6), .015))
+    add("Road", "Asphalt", road_asphalt())
     for side in (-1, 1):
         add("Road", "Ground", box((0, -.09, side * 3.5), (10, .20, 1), .008))
         add("Road", "Paint", box((0, .042, side * 2.73), (10, .012, .10), .002))
@@ -614,6 +650,34 @@ def validate(assemblies, manifest):
     road = next(r for r in manifest["assemblies"] if r["name"] == "Road")
     if road["bounds_min_unity"][0] != -5 or road["bounds_max_unity"][2] != 4:
         raise ValueError("Road contract changed")
+    asphalt = assemblies["Road"]["Asphalt"]
+    original = box((0, -.075, 0), (10, .22, 6), .015)
+    if kit.bounds(asphalt) != kit.bounds(original) or not math.isclose(
+            bp.signed_volume(asphalt), bp.signed_volume(original), abs_tol=1e-9):
+        raise ValueError("Road crown split changed the slab envelope/volume")
+    vertices, faces = asphalt
+    if any(min(vertices[i][2] for i in face) < -1e-9 and
+           max(vertices[i][2] for i in face) > 1e-9 for face in faces):
+        raise ValueError("Road slab has a face bridging both sides of the crown")
+    # Sample actual face triangles after the same crossfall deformation as FitRoad.
+    # The old uncut top lowered the centre by .018, despite an unchanged AABB.
+    for x in (-4.8, 0, 4.8):
+        for z in (-2.97, 0, 2.97):
+            heights = []
+            for face in faces:
+                for j in range(1, len(face) - 1):
+                    a, b, c = (vertices[i] for i in (face[0], face[j], face[j + 1]))
+                    denominator = (b[2] - c[2]) * (a[0] - c[0]) + (c[0] - b[0]) * (a[2] - c[2])
+                    if abs(denominator) < 1e-10:
+                        continue
+                    u = ((b[2] - c[2]) * (x - c[0]) + (c[0] - b[0]) * (z - c[2])) / denominator
+                    v = ((c[2] - a[2]) * (x - c[0]) + (a[0] - c[0]) * (z - c[2])) / denominator
+                    w = 1 - u - v
+                    if min(u, v, w) >= -1e-9:
+                        heights.append(sum(weight * (point[1] - .006 * abs(point[2]))
+                                           for weight, point in zip((u, v, w), (a, b, c))))
+            if not heights or abs(max(heights) - (.035 - .006 * abs(z))) > 1e-9:
+                raise ValueError(f"Road triangle crown/crossfall mismatch at {x}/{z}")
 
 
 def dressing_manifest(assemblies):
@@ -737,113 +801,8 @@ def build_scene(assemblies, root_name="ROOT_CityEastExit3D"):
     return root, groups
 
 
-def distant_height(x, z=0):
-    rise = 74 * (max(0, x) / 12000) ** 1.12
-    return rise + min(1, x / 500) * (3.2 * math.sin(x / 920 + z / 1700))
-
-
-def distant_center(x):
-    # Continuous broad bends, preserving the local +X entry tangent.
-    keys = ((0, 0), (400, -12), (1800, -300), (5000, 700), (8500, 100), (12000, 0), (15000, 0))
-    for (a, az), (b, bz) in zip(keys, keys[1:]):
-        if x <= b:
-            t = max(0, (x - a) / (b - a))
-            t = t * t * (3 - 2 * t)
-            return az + (bz - az) * t
-    return 0
-
-
 def make_distance():
-    # Surfaces are tessellated along depth AND width, so radial projection of
-    # vertices cannot turn the near plain into a single horizon-spanning triangle.
-    xs = (0, 5, 10, 18, 25, 40, 60, 90, 130, 180, 250, 350, 500, 700,
-          1000, 1400, 1800, 2300, 2900, 3600, 4400, 5200, 6200, 7400,
-          8800, 10200, 11600, 13200, 15000)
-    fractions = (-1, -.76, -.53, -.34, -.20, -.10, -.035, 0,
-                 .035, .10, .20, .34, .53, .76, 1)
-    vertices, faces = [], []
-    for x in xs:
-        half_width = 150 + x * .45
-        for fraction in fractions:
-            z = fraction * half_width
-            vertices.append((x, distant_height(x, z) - .035, z))
-    stride = len(fractions)
-    for row in range(len(xs) - 1):
-        for col in range(stride - 1):
-            a = row * stride + col
-            b, c, d = a + 1, a + stride + 1, a + stride
-            faces.extend(((a, b, c), (a, c, d)))
-    result = {"DistanceLand": (vertices, faces)}
-    for role, width, elevation in (("DistanceRoad", 6, 0), ("DistanceShoulder", 10, -.02)):
-        vertices, faces = [], []
-        for x in xs:
-            z = distant_center(x)
-            for side in (-1, 1):
-                side_z = z + side * width / 2
-                vertices.append((x, distant_height(x, side_z) + elevation, side_z))
-        for row in range(len(xs) - 1):
-            a = row * 2
-            faces.extend(((a, a + 1, a + 3), (a, a + 3, a + 2)))
-        result[role] = vertices, faces
-
-    buildings, windows = [], []
-    for rank, count in enumerate((37, 43, 31)):
-        for i in range(count):
-            seed = (i * 7919 + rank * 104729 + 37) % 65521
-            z = -3500 + i * 7000 / (count - 1) + math.sin(seed) * 47
-            x = 11000 + rank * 1060 + (seed % 340)
-            width = 68 + seed % 107
-            depth = 95 + seed % 135
-            height = 48 + seed % 113
-            if i % 11 == 4:
-                height = 250 + seed % 94
-                width *= .70
-            elif i % 6 == 1:
-                height += 58
-            base = distant_height(x, z)
-            block = kit.box((x, base + height / 2, z), (depth, height, width))
-            if bp.signed_volume(block) <= 0:
-                raise ValueError("Distance building has inverted normals")
-            buildings.append(block)
-            if i % 4 == 0:
-                cap_h = 8 + seed % 19
-                buildings.append(kit.box((x + depth * .13, base + height + cap_h / 2, z - width * .12),
-                                         (depth * .62, cap_h, width * .60)))
-            # Sparse grouped lit rooms on the western facade, never a bright
-            # continuous night band or billboard. Geometry is separate for day/night.
-            if rank < 2 and (i % 3 == 1 or abs(z) < 1300 and i % 4 == 0):
-                for j in range(2 + seed % 3):
-                    y = base + height * (.24 + .15 * j)
-                    wz = z + ((seed + j * 17) % 31 - 15) * width / 75
-                    # Authored groups of several lit rooms, rather than single
-                    # subpixel windows. At the panoramic projection distance
-                    # these retain a restrained 1–3-pixel rhythm at 1280px.
-                    windows.append(kit.box((x - depth / 2 - .2, y, wz),
-                                           (.22, 8 + seed % 5, 18 + (seed + j * 7) % 17)))
-                if abs(z) < 1850:
-                    # A few lower street/window groups gather the centre without
-                    # making a continuous illuminated skyline or destination.
-                    windows.append(kit.box((x - depth / 2 - .3, base + 9 + seed % 7, z - width * .12),
-                                           (.24, 9, 28 + seed % 17)))
-    result["DistanceCity"] = kit.merge_all(buildings)
-    result["DistanceWindows"] = kit.merge_all(windows)
-    # Very shallow haze glow BEHIND the silhouette. This is an unlit visual
-    # surface, not a light source. The shader owns the soft alpha envelope and
-    # shared all-day practical strength; no building or surrounding world is lit.
-    glow_vertices, glow_faces = [], []
-    for i in range(33):
-        lateral = -1 + i / 16
-        z = lateral * 3900
-        x = 14200 + abs(lateral) * 260
-        base = distant_height(x, z)
-        rise = 56 + 84 * (1 - lateral * lateral)
-        glow_vertices.extend(((x, base - 30, z), (x, base + rise, z)))
-    for i in range(32):
-        a = i * 2
-        # West-facing sheet: the source is converted and rewound on export.
-        glow_faces.extend(((a, a + 3, a + 1), (a, a + 2, a + 3)))
-    result["DistanceGlow"] = glow_vertices, glow_faces
-    return result
+    return mainland.make_parts(kit, bp)
 
 
 def distance_manifest(parts):
@@ -858,11 +817,12 @@ def distance_manifest(parts):
                         "uv_min": [round(min(uv[a] for uv in uvs), 6) for a in range(2)],
                         "uv_max": [round(max(uv[a] for uv in uvs), 6) for a in range(2)],
                         "uv_signature": hashlib.sha256(json.dumps(uvs).encode()).hexdigest()})
-    return {"generator": "tools/build-city-east-exit-3d-model.py", "version": VERSION,
-            "design_id": "city_east_distance_v1", "parts": records,
+    return {"generator": "tools/build-city-east-exit-3d-model.py", "version": mainland.VERSION,
+            "design_id": "city_east_distance_v2", "parts": records,
+            **mainland.metadata(),
             "export_settings": EXPORT_SETTINGS,
             "units": "virtual Unity metres, visual projection parameters only",
-            "origin": "east road end, local +X outbound, ground Y=0",
+            "origin": "fixed anchor at former east road end; local +X outbound; Y=0 is checkpoint asphalt datum",
             "source_to_unity": "swap Y/Z and rewind faces",
             "colliders": False, "lights": False, "animation_count": 0,
             "triangle_count": sum(r["triangle_count"] for r in records),
@@ -872,6 +832,16 @@ def distance_manifest(parts):
 
 def distance_uv(name, geometry, vertex_index):
     x, y, z = geometry[0][vertex_index]
+    if name == "DistanceRoad":
+        return max(0.0, min(1.0, (z - mainland.road_center(x) + 3) / 6)), mainland.route_at_x(x)[2]
+    if name == "DistanceLampHalo":
+        return ((0, 0), (1, 0), (1, 1), (0, 1))[vertex_index % 4]
+    if name == "DistanceLampPool":
+        _, center, arc = mainland.route_at_x(x)
+        nearest = min((lamp for lamp in mainland.road_lamps() if not lamp["real"]),
+                      key=lambda lamp: abs(lamp["distance"] - arc))
+        return (max(0.0, min(1.0, (z - center + 2.7) / 5.4)),
+                max(0.0, min(1.0, (arc - nearest["distance"] + 5) / 10)))
     if name == "DistanceCity":
         # Every source block is an authored eight-vertex box. Normalize its
         # own full height so low, ordinary buildings survive the same base haze
@@ -882,11 +852,11 @@ def distance_uv(name, geometry, vertex_index):
     if name == "DistanceWindows":
         return z / 7000 + .5, 1.0
     if name == "DistanceGlow":
-        return z / 7800 + .5, float(vertex_index % 2)
+        return z / 9000 + .5, float(vertex_index % 2)
     return x / 12, z / 12
 
 
-def export_distance(parts, path):
+def export_distance(parts, path, hide_source=True):
     root = bpy.data.objects.new("ROOT_CityEastDistance3D", None)
     bpy.context.scene.collection.objects.link(root)
     bpy.ops.object.select_all(action="DESELECT")
@@ -900,9 +870,10 @@ def export_distance(parts, path):
         bpy.context.scene.collection.objects.link(obj)
         obj.parent = root
         obj["role"] = name
+        obj["template_only"] = name.startswith("DistanceTraffic")
         uv = mesh.uv_layers.new(name="UVMap")
-        # UV.y is local building base-to-roof height for controllable base haze;
-        # land/road carry actual tiled source coordinates instead.
+        # Buildings use base-to-roof UV; road uses normalized lateral/arc
+        # metres, and each lamp halo/pavement pool owns one complete 0..1 UV.
         for polygon in mesh.polygons:
             for loop in polygon.loop_indices:
                 vertex_index = mesh.loops[loop].vertex_index
@@ -914,11 +885,37 @@ def export_distance(parts, path):
         apply_scale_options=EXPORT_SETTINGS["apply_scale_options"],
         bake_space_transform=EXPORT_SETTINGS["bake_space_transform"], add_leaf_bones=False,
         bake_anim=False, use_mesh_modifiers=True, mesh_smooth_type="FACE", use_custom_props=True)
-    # Keep the source hidden next to near templates in the source file.
-    root.hide_viewport = True
+    # The combined historical source hides the panorama beside the near kit;
+    # its dedicated source stays inspectable without unhiding every mesh.
+    root.hide_viewport = hide_source
     for child in root.children:
-        child.hide_render = True
-        child.hide_viewport = True
+        child.hide_render = hide_source or child.get("template_only", False)
+        child.hide_viewport = hide_source or child.get("template_only", False)
+
+
+def run_distance(args):
+    parts = make_distance()
+    mainland.validate(parts, kit, bp)
+    manifest = distance_manifest(parts)
+    if manifest != distance_manifest(make_distance()):
+        raise ValueError("Mainland geometry/route determinism failed")
+    path = args.model_dir / "CityEastDistance3D.json"
+    if args.validate_only:
+        if not path.is_file() or json.loads(path.read_text(encoding="utf-8")) != manifest:
+            raise ValueError("Checked-in mainland manifest differs from deterministic geometry/route")
+        print(f"CITY EAST DISTANCE VALIDATION OK: {manifest['triangle_count']} triangles; {manifest['signature']}")
+        return
+    args.model_dir.mkdir(parents=True, exist_ok=True)
+    args.source_dir.mkdir(parents=True, exist_ok=True)
+    bpy.ops.object.select_all(action="SELECT")
+    bpy.ops.object.delete(use_global=False)
+    bpy.context.scene.unit_settings.system = "METRIC"
+    bpy.context.scene.unit_settings.scale_length = 1
+    export_distance(parts, args.model_dir / "CityEastDistance3D.fbx", hide_source=False)
+    path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
+    bpy.context.preferences.filepaths.save_version = 0
+    bpy.ops.wm.save_as_mainfile(filepath=str(args.source_dir / "CityEastDistance3D.blend"), check_existing=False)
+    print(f"CITY EAST DISTANCE BUILD OK: {manifest['triangle_count']} triangles; {manifest['signature']}")
 
 
 def preview(groups, output):
@@ -1068,11 +1065,21 @@ def main():
                         help="Render the separate dressing source without republishing model files")
     parser.add_argument("--dressing-only", action="store_true",
                         help="Build/validate only the separate passive dressing asset; preserve near/far kit files")
+    parser.add_argument("--distance-only", action="store_true",
+                        help="Build/validate only mainland relief/road/skyline/traffic templates; preserve near/dressing")
+    parser.add_argument("--near-only", action="store_true",
+                        help="Export the near kit and measured manifests; preserve distance/dressing model binaries")
     args = parser.parse_args(argv)
     # Blender resolves relative render/save paths against its own file context,
     # unlike Python's file writes. Pin every output to the invocation workspace.
     args.model_dir = args.model_dir.resolve()
     args.source_dir = args.source_dir.resolve()
+    if sum((args.dressing_only, args.distance_only, args.near_only)) > 1:
+        parser.error("--dressing-only, --distance-only and --near-only are mutually exclusive")
+    if args.distance_only:
+        if args.preview_only:
+            parser.error("--preview-only requires --dressing-only")
+        return run_distance(args)
     if args.dressing_only:
         return run_dressing(args)
     if args.preview_only:
@@ -1082,6 +1089,7 @@ def main():
     validate(assemblies, manifest)
     manifest_path = args.model_dir / "CityEastExit3D.json"
     distance = make_distance()
+    mainland.validate(distance, kit, bp)
     distance_payload = distance_manifest(distance)
     if distance_payload != distance_manifest(make_distance()) or distance_payload["triangle_count"] > 20000:
         raise ValueError("Distance geometry determinism/budget failed")
@@ -1107,7 +1115,8 @@ def main():
     manifest_path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
     if not args.no_preview:
         preview(groups, args.source_dir / "CityEastExit3D.png")
-    export_distance(distance, args.model_dir / "CityEastDistance3D.fbx")
+    if not args.near_only:
+        export_distance(distance, args.model_dir / "CityEastDistance3D.fbx")
     distance_manifest_path.write_text(json.dumps(distance_payload, indent=2) + "\n", encoding="utf-8")
     bpy.context.preferences.filepaths.save_version = 0
     bpy.ops.wm.save_as_mainfile(filepath=str(args.source_dir / "CityEastExit3D.blend"), check_existing=False)

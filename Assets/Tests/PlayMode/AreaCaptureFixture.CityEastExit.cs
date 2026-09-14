@@ -17,6 +17,7 @@ namespace BarPromenade.Tests.PlayMode
         public IEnumerator CityEastExit()
         {
             bool landscapeOnly = Environment.GetEnvironmentVariable("BAR_PROMENADE_CAPTURE_EAST_LANDSCAPE") == "1";
+            bool panoramaOnly = Environment.GetEnvironmentVariable("BAR_PROMENADE_CAPTURE_EAST_PANORAMA") == "1";
             GameSessionState.BeginNewGame();
             GameSessionState.TryStartGameTimeFromWake();
             GameSessionState.AdvanceGameTime((float)((12d * 60d - GameSessionState.GameTimeOfDayMinutes) /
@@ -29,6 +30,13 @@ namespace BarPromenade.Tests.PlayMode
             }, () =>
             {
                 CityEastExitPlan p = CityEastExitPlanner.Create(city.Layout);
+                if (panoramaOnly)
+                {
+                    Vector3 panoramaEye = p.CheckpointPosition + new Vector3(-2.1f, EyeHeight, 0f);
+                    return new[] { Shot.At("east-exit-panorama-initial", panoramaEye,
+                        panoramaEye + Vector3.right * 8000f,
+                        Camera.main.GetComponent<PlayerCameraFollow>().FollowFieldOfView) };
+                }
                 float approachEyeX = p.ApproachStart.x + CityEastExitPlan.CheckpointSetback * .33f;
                 Vector3 eye = new Vector3(approachEyeX,
                     p.SampleRoadTop(approachEyeX) + EyeHeight, p.ApproachStart.z);
@@ -84,6 +92,12 @@ namespace BarPromenade.Tests.PlayMode
                 city.World.ChurchPlan.DoorGroundPosition.x - 2f,
                 city.World.ChurchPlan.DoorGroundPosition.z), out _), Is.True);
             Physics.SyncTransforms();
+            if (panoramaOnly)
+            {
+                yield return CaptureEastPanorama(city, plan, landing);
+                VerifyEastDistanceModel(plan);
+                yield break;
+            }
             VerifyEastStreetJoin(city, plan);
             VerifyEastDressing(city, plan, landing);
             VerifyEastGroundTransition(city, plan, landing);
@@ -135,28 +149,7 @@ namespace BarPromenade.Tests.PlayMode
             yield return VerifyEastNormalWalking(city, plan, landing);
             motor.SetInputEnabled(false);
 
-            GameObject panorama = GameObject.Find(CityEastDistanceWorldBuilder.ObjectName);
-            Assert.That(panorama, Is.Not.Null);
-            Assert.That(panorama.GetComponentsInChildren<Collider>(), Is.Empty);
-            Assert.That(panorama.GetComponentsInChildren<Light>(), Is.Empty);
-            MeshFilter skyline = Array.Find(panorama.GetComponentsInChildren<MeshFilter>(),
-                mesh => mesh.name.StartsWith("DistanceCity", StringComparison.Ordinal));
-            Assert.That(skyline, Is.Not.Null);
-            Bounds sourceBounds = skyline.sharedMesh.bounds;
-            Bounds measured = new Bounds(skyline.transform.TransformPoint(sourceBounds.center), Vector3.zero);
-            for (int corner = 0; corner < 8; corner++)
-                measured.Encapsulate(skyline.transform.TransformPoint(new Vector3(
-                    (corner & 1) == 0 ? sourceBounds.min.x : sourceBounds.max.x,
-                    (corner & 2) == 0 ? sourceBounds.min.y : sourceBounds.max.y,
-                    (corner & 4) == 0 ? sourceBounds.min.z : sourceBounds.max.z)));
-            Vector3 minimum = measured.min;
-            Vector3 maximum = measured.max;
-            Debug.Log("EAST DISTANCE imported world bounds: " + measured + "; root " + panorama.transform.rotation.eulerAngles);
-            Assert.That(minimum.x - plan.RoadEnd.x, Is.GreaterThan(9000f),
-                "The imported source describes a far city, preserving metre scale and the east axis.");
-            Assert.That(maximum.z - minimum.z, Is.GreaterThan(5000f));
-            Assert.That(maximum.y - minimum.y, Is.InRange(100f, 500f));
-            Assert.That(minimum.y, Is.GreaterThan(plan.RoadEnd.y), "The skyline must rise above its ground datum.");
+            VerifyEastDistanceModel(plan);
 
             Camera camera = Camera.main;
             PlayerCameraFollow follow = camera.GetComponent<PlayerCameraFollow>();
@@ -260,6 +253,239 @@ namespace BarPromenade.Tests.PlayMode
                 camera.fieldOfView = 60f;
                 for (int frame = 0; frame < 4; frame++) yield return null;
                 CaptureCurrentCamera(camera, SceneIds.City, "east-exit-" + name);
+            }
+        }
+
+        private static void VerifyEastDistanceModel(CityEastExitPlan exit)
+        {
+            GameObject panorama = GameObject.Find(CityEastDistanceWorldBuilder.ObjectName);
+            Assert.That(panorama, Is.Not.Null);
+            Assert.That(panorama.GetComponentsInChildren<Collider>(true), Is.Empty);
+            Assert.That(panorama.GetComponentsInChildren<Light>(true), Is.Empty);
+            Assert.That(panorama.GetComponentsInChildren<AudioSource>(true), Is.Empty);
+            MeshFilter[] meshes = panorama.GetComponentsInChildren<MeshFilter>(true);
+            MeshFilter skyline = Array.Find(meshes,
+                mesh => mesh.name.StartsWith("DistanceCity", StringComparison.Ordinal));
+            MeshFilter land = Array.Find(meshes,
+                mesh => mesh.name.StartsWith("DistanceLand", StringComparison.Ordinal));
+            Assert.That(skyline, Is.Not.Null);
+            Assert.That(land, Is.Not.Null);
+            Bounds measured = EastImportedBounds(skyline);
+            Bounds terrain = EastImportedBounds(land);
+            Assert.That(measured.min.x - exit.RoadEnd.x, Is.InRange(7000f, 8500f),
+                "The imported city begins near its authored 7800 virtual metres; FBX scale and +X survive placement.");
+            Assert.That(measured.size.z, Is.GreaterThan(5000f));
+            Assert.That(measured.size.y, Is.InRange(100f, 500f));
+            Assert.That(measured.min.y, Is.LessThan(exit.CheckpointPosition.y - 100f),
+                "The skyline is grounded in the lower basin rather than raised on the distant approach.");
+            float angularWidth = (Mathf.Atan2(measured.max.z - exit.RoadEnd.z, measured.center.x - exit.RoadEnd.x) -
+                Mathf.Atan2(measured.min.z - exit.RoadEnd.z, measured.center.x - exit.RoadEnd.x)) * Mathf.Rad2Deg;
+            Assert.That(angularWidth, Is.InRange(40f, 60f),
+                "The closer city remains a broad distant silhouette, with its original authored width.");
+            Assert.That(terrain.size.y, Is.GreaterThan(40f),
+                "The middle distance must contain substantial slopes, not the former nearly flat plain.");
+            foreach (string role in new[] { "DistanceLampBody", "DistanceLampLens", "DistanceLampHalo", "DistanceLampPool" })
+                Assert.That(meshes.Any(mesh => mesh.name.StartsWith(role, StringComparison.Ordinal)), Is.True,
+                    "The decorative road fixtures include their supported body, lens, haze and road pool: " + role);
+            Assert.That(exit.RealRoadEnd.x - exit.CheckpointPosition.x, Is.InRange(25f, 38f),
+                "The visible descent joins the panorama before the ordinary camera's far clip.");
+            Assert.That(exit.RealRoadEnd.y, Is.LessThan(exit.CheckpointPosition.y - .1f));
+            Assert.That(exit.SampleRoadTop(exit.CheckpointPosition.x + 8f),
+                Is.EqualTo(exit.CheckpointPosition.y).Within(.005f), "The short checkpoint apron stays level.");
+            MeshFilter road = Array.Find(meshes, mesh => mesh.name.StartsWith("DistanceRoad", StringComparison.Ordinal));
+            Assert.That(road, Is.Not.Null);
+            Vector3 closest = road.sharedMesh.vertices.Select(road.transform.TransformPoint)
+                .OrderBy(vertex => (vertex - exit.RealRoadEnd).sqrMagnitude).First();
+            Assert.That(Vector3.Distance(closest, exit.RealRoadEnd), Is.LessThan(.005f),
+                "The actual imported road starts at the same centre and height as the real approach.");
+            MeshCollider realRoad = GameObject.Find("EEX_Road_Collision").GetComponent<MeshCollider>();
+            Assert.That(realRoad.bounds.max.x, Is.EqualTo(exit.RealRoadEnd.x).Within(.04f));
+            Vector3 lastRealSample = exit.SampleRoadCenter(exit.RealRoadEnd.x - .05f);
+            Assert.That(realRoad.Raycast(new Ray(lastRealSample + Vector3.up * 2f, Vector3.down),
+                out RaycastHit roadHit, 4f), Is.True);
+            Assert.That(roadHit.point.y, Is.EqualTo(lastRealSample.y).Within(.015f),
+                "The fitted real asphalt reaches the shared descending profile without a step.");
+            foreach (MeshRenderer renderer in panorama.GetComponentsInChildren<MeshRenderer>(true))
+            {
+                Assert.That(renderer.sharedMaterial, Is.Not.Null);
+                Assert.That(renderer.sharedMaterial.shader.name, Is.EqualTo("Bar Promenade/City East Distance"));
+                Assert.That(renderer.shadowCastingMode, Is.EqualTo(UnityEngine.Rendering.ShadowCastingMode.Off));
+                Assert.That(renderer.receiveShadows, Is.False);
+            }
+            Debug.Log("EAST PANORAMA imported city=" + measured + "; terrain=" + terrain +
+                "; city angular width=" + angularWidth + "; root=" + panorama.transform.rotation.eulerAngles);
+        }
+
+        // Renderer.bounds deliberately encloses the shader projection. Measure
+        // the imported vertices through their actual FBX transform instead.
+        private static Bounds EastImportedBounds(MeshFilter filter)
+        {
+            Bounds source = filter.sharedMesh.bounds;
+            Bounds result = new Bounds(filter.transform.TransformPoint(source.center), Vector3.zero);
+            for (int corner = 0; corner < 8; corner++)
+                result.Encapsulate(filter.transform.TransformPoint(new Vector3(
+                    (corner & 1) == 0 ? source.min.x : source.max.x,
+                    (corner & 2) == 0 ? source.min.y : source.max.y,
+                    (corner & 4) == 0 ? source.min.z : source.max.z)));
+            return result;
+        }
+
+        private static IEnumerator CaptureEastPanorama(CityGameRoot city, CityEastExitPlan exit,
+            CityMapCityTeleportGround landing)
+        {
+            PlayerMotor motor = city.Player.Motor;
+            Camera camera = Camera.main;
+            PlayerCameraFollow follow = camera.GetComponent<PlayerCameraFollow>();
+            CityEastDistanceTraffic traffic = GameObject.Find(CityEastDistanceWorldBuilder.ObjectName)
+                .GetComponent<CityEastDistanceTraffic>();
+            Assert.That(follow, Is.Not.Null);
+            Assert.That(follow.FixedPoseActive, Is.False);
+            Assert.That(traffic, Is.Not.Null);
+            Assert.That(traffic.Vehicles.Count, Is.EqualTo(2));
+            Renderer[] hero = city.Player.GameObject.GetComponentsInChildren<Renderer>();
+            bool[] heroEnabled = Array.ConvertAll(hero, renderer => renderer.enabled);
+            Assert.That(heroEnabled.Any(value => value), Is.True,
+                "The normal third-person camera keeps the hero visible for scale.");
+            bool oldFollow = follow.enabled, oldInput = motor.InputEnabled, oldAdvance = traffic.AutoAdvance;
+            Vector3 oldFeet = motor.transform.position, oldEye = camera.transform.position;
+            Quaternion oldBody = motor.transform.rotation, oldCamera = camera.transform.rotation;
+            float oldPitch = follow.TargetOrbitPitch, oldFov = camera.fieldOfView;
+            double oldTrafficTime = traffic.ElapsedSeconds;
+            float dayRoadLampIntensity = 0f;
+            try
+            {
+                motor.SetInputEnabled(false);
+                traffic.AutoAdvance = false;
+                traffic.SampleAt(traffic.VisibleWitnessSeconds);
+                for (int phase = 0; phase < 2; phase++)
+                {
+                    if (phase == 1)
+                        GameSessionState.AdvanceGameTime((float)((21d * 60d - GameSessionState.GameTimeOfDayMinutes) /
+                            GameTimeState.GameMinutesPerRealSecond));
+                    city.DayNight.ApplyCurrentTime(true);
+                    string light = phase == 0 ? "day" : "night";
+                    traffic.SampleAt(traffic.VisibleWitnessSeconds);
+                    Assert.That(traffic.Vehicles[0].gameObject.activeSelf, Is.True,
+                        "The route sequence starts with an actual active car in its visible road window.");
+                    yield return ThirdPerson("actual-road-" + light,
+                        new Vector2(exit.CheckpointPosition.x - 3f, exit.CheckpointPosition.z), 90f);
+                    CityEastRoadProfile.Lamp realLamp = exit.RoadProfile.Lamps.Single(lamp => lamp.real);
+                    Vector3 lampAnchor = exit.RoadEnd + realLamp.Position +
+                        Quaternion.LookRotation(realLamp.Forward, Vector3.up) * new Vector3(0f, 4.70f, 1.07f);
+                    Assert.That(city.Night.Atmosphere.LampAnchors.Any(anchor =>
+                        Vector3.Distance(anchor.position, lampAnchor) < .01f), Is.True);
+                    Light leasedLamp = city.Night.Atmosphere.StreetLightPool.FirstOrDefault(lamp =>
+                        lamp.enabled && Vector3.Distance(lamp.transform.position, lampAnchor) < .01f);
+                    Assert.That(leasedLamp, Is.Not.Null, "The first road lamp actually illuminates the near road from the existing pool.");
+                    Assert.That(city.Night.Atmosphere.StreetLightPool.Count + city.Night.Atmosphere.BarLights.Count,
+                        Is.LessThanOrEqualTo(CityNightAtmosphere.MaximumRealtimeLights));
+                    if (phase == 0) dayRoadLampIntensity = leasedLamp.intensity;
+                    else Assert.That(dayRoadLampIntensity, Is.GreaterThanOrEqualTo(leasedLamp.intensity * (2f / 3f) - .001f));
+                    yield return ThirdPerson("fence-north-" + light,
+                        new Vector2(exit.CheckpointPosition.x - 3f, exit.CheckpointPosition.z + 20f), 100f);
+                    yield return ThirdPerson("fence-south-" + light,
+                        new Vector2(exit.CheckpointPosition.x - 8f, exit.CheckpointPosition.z - 12.5f), 80f);
+                    yield return Horizon("horizon-" + light, Vector3.right);
+                    // The same ordinary eye and lens expose road/ridge/car
+                    // overlap at several points in the actual authored route.
+                    foreach (double seconds in new[] { 8d, 16d, 32d })
+                    {
+                        traffic.SampleAt(traffic.VisibleWitnessSeconds + seconds);
+                        for (int frame = 0; frame < 2; frame++) yield return null;
+                        CaptureCurrentCamera(camera, SceneIds.City,
+                            "east-exit-panorama-traffic-" + seconds + "-" + light);
+                    }
+                    if (phase == 0) yield return Horizon("north-open-sea", Vector3.forward);
+                }
+
+                // At zero the outbound actor is moving for every seeded
+                // phase. Later route frames may legitimately put both cars
+                // in their offscreen waiting intervals.
+                traffic.SampleAt(0d);
+                Vector3[] before = traffic.Vehicles.Select(vehicle => vehicle.position).ToArray();
+                double beforeSeconds = traffic.ElapsedSeconds;
+                traffic.Advance(.1f);
+                Assert.That(traffic.ElapsedSeconds, Is.GreaterThan(beforeSeconds));
+                Assert.That(traffic.Vehicles.Where((vehicle, i) =>
+                    Vector3.Distance(vehicle.position, before[i]) > .001f).Any(), Is.True,
+                    "Distant traffic must advance on its authored road.");
+                before = traffic.Vehicles.Select(vehicle => vehicle.position).ToArray();
+                beforeSeconds = traffic.ElapsedSeconds;
+                using (GameTimeScaleRuntime.AcquirePause())
+                {
+                    traffic.Advance(5f);
+                    traffic.AutoAdvance = true;
+                    for (int frame = 0; frame < 3; frame++) yield return null;
+                    Assert.That(traffic.ElapsedSeconds, Is.EqualTo(beforeSeconds));
+                    for (int i = 0; i < before.Length; i++)
+                        Assert.That(Vector3.Distance(traffic.Vehicles[i].position, before[i]), Is.LessThan(.0001f),
+                            "Pause must freeze every distant car without hiding it.");
+                }
+                traffic.AutoAdvance = false;
+                Debug.Log("EAST PANORAMA: imported terrain/city scale, passive rendering and moving/pause-aware traffic verified; " +
+                    "normal third-person, oblique, horizon and route-sequence day/night frames captured for overlap review.");
+            }
+            finally
+            {
+                traffic.SampleAt(oldTrafficTime);
+                traffic.AutoAdvance = oldAdvance;
+                for (int i = 0; i < hero.Length; i++) hero[i].enabled = heroEnabled[i];
+                motor.Teleport(oldFeet);
+                motor.transform.rotation = oldBody;
+                follow.enabled = true;
+                follow.RotateYaw(Mathf.DeltaAngle(camera.transform.eulerAngles.y, oldCamera.eulerAngles.y));
+                follow.RotatePitch(oldPitch - follow.TargetOrbitPitch);
+                follow.Snap();
+                follow.enabled = oldFollow;
+                camera.transform.SetPositionAndRotation(oldEye, oldCamera);
+                camera.fieldOfView = oldFov;
+                motor.SetInputEnabled(oldInput);
+            }
+
+            IEnumerator ThirdPerson(string name, Vector2 point, float yaw)
+            {
+                for (int i = 0; i < hero.Length; i++) hero[i].enabled = heroEnabled[i];
+                follow.enabled = true;
+                Vector3 feet = StandingPoint(point, name);
+                motor.Teleport(feet);
+                motor.transform.rotation = Quaternion.Euler(0f, yaw, 0f);
+                follow.Snap();
+                follow.RotateYaw(Mathf.DeltaAngle(camera.transform.eulerAngles.y, yaw));
+                follow.Snap();
+                city.Night.Atmosphere.RefreshImmediate();
+                for (int frame = 0; frame < 8; frame++) yield return null;
+                VerifyLens();
+                CaptureCurrentCamera(camera, SceneIds.City, "east-exit-panorama-" + name);
+            }
+
+            IEnumerator Horizon(string name, Vector3 direction)
+            {
+                follow.enabled = false;
+                foreach (Renderer renderer in hero) renderer.enabled = false;
+                Vector3 feet = StandingPoint(new Vector2(exit.CheckpointPosition.x - 2.1f,
+                    exit.CheckpointPosition.z), name);
+                motor.Teleport(feet);
+                camera.transform.SetPositionAndRotation(feet + Vector3.up * EyeHeight,
+                    Quaternion.LookRotation(direction));
+                for (int frame = 0; frame < 4; frame++) yield return null;
+                VerifyLens();
+                CaptureCurrentCamera(camera, SceneIds.City, "east-exit-panorama-" + name);
+            }
+
+            Vector3 StandingPoint(Vector2 point, string name)
+            {
+                Assert.That(landing.TryResolveStandingPosition(point, out Vector3 feet), Is.True,
+                    "Panorama capture stands on accessible ground: " + name);
+                Assert.That(Vector2.Distance(new Vector2(feet.x, feet.z), point), Is.LessThan(.02f),
+                    "A panorama view cannot silently clamp away from its declared position: " + name);
+                return feet;
+            }
+
+            void VerifyLens()
+            {
+                Assert.That(camera.fieldOfView, Is.EqualTo(follow.FollowFieldOfView).Within(.1f));
+                Assert.That(camera.farClipPlane, Is.EqualTo(48f).Within(.001f));
+                Assert.That(RenderSettings.fogDensity, Is.EqualTo(.070f).Within(.0001f));
             }
         }
 
