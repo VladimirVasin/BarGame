@@ -166,12 +166,19 @@ namespace BarPromenade
                     layout.ElevationPlan.SignatureStairs.Count));
             subTimer.Restart();
             RoadFenceWorldBuilder.Build(world, fencePlan);
-            CityEastExitWorldResult eastExit = CityEastExitWorldBuilder.Build(world, eastExitPlan, fringeYardPlan);
-            if (eastExitPlan.IsEnabled) CityEastDistanceWorldBuilder.Build(world, eastExitPlan);
             ReportBlock(
                 "roads_and_river/fences",
                 subTimer,
                 GameLog.Field("segments", fencePlan.Segments.Count));
+            subTimer.Restart();
+            CityEastExitWorldResult eastExit = CityEastExitWorldBuilder.Build(world, eastExitPlan, fringeYardPlan);
+            ReportBlock(
+                "roads_and_river/east_exit",
+                subTimer,
+                GameLog.Field("enabled", eastExitPlan.IsEnabled));
+            subTimer.Restart();
+            if (eastExitPlan.IsEnabled) CityEastDistanceWorldBuilder.Build(world, eastExitPlan);
+            ReportBlock("roads_and_river/east_distance", subTimer);
             ReportBlock("roads_and_river", blockTimer);
             yield return new CompositionStep("roads_and_river", 0.40f);
             blockTimer.Restart();
@@ -215,9 +222,15 @@ namespace BarPromenade
 
             if (seacoastPlan != null)
             {
+                // Sub-rows as for roads_and_river: the shore's own
+                // meshes, then each port owner, so a slow seacoast row
+                // names its cause instead of hiding half a second.
+                Stopwatch seacoastTimer = Stopwatch.StartNew();
                 CitySeacoastWorldBuilder.Build(world, seacoastPlan, layout);
+                ReportBlock("seacoast/shore", seacoastTimer);
                 if (seacoastPlan.Port != null)
                 {
+                    seacoastTimer.Restart();
                     CityPortController port = CityPortController.Build(world, seacoastPlan.Port);
                     if (port.Plan.Access != null)
                     {
@@ -225,15 +238,23 @@ namespace BarPromenade
                         GameObject serviceAccess = CityPortAssetProvider.Create("AccessRoad", port.transform);
                         serviceAccess.transform.position = port.Plan.Origin;
                     }
+                    ReportBlock("seacoast/port_controller", seacoastTimer);
+                    seacoastTimer.Restart();
                     CityPortLighting.Build(port);
                     CityPortWater.Build(port);
+                    ReportBlock("seacoast/port_lighting_and_water", seacoastTimer);
+                    seacoastTimer.Restart();
                     CityPortCrew.Build(port.transform, port);
+                    ReportBlock("seacoast/port_crew", seacoastTimer);
+                    seacoastTimer.Restart();
                     CityPortSound.Build(port.transform, port, layout.Seed);
+                    ReportBlock("seacoast/port_sound", seacoastTimer);
                 }
                 // The lighthouse island stands off the dressed shore
                 // only: presentation scenery at the edge of the fog,
                 // fixed in world space, contributing nothing to
                 // bounds, walkability or collision.
+                seacoastTimer.Restart();
                 CityLighthouseIslandPlan lighthouseIslandPlan =
                     CityLighthouseIslandPlanner.Create(
                         layout.Seed,
@@ -244,9 +265,12 @@ namespace BarPromenade
                         world,
                         lighthouseIslandPlan);
                 }
+                ReportBlock("seacoast/lighthouse", seacoastTimer);
+                seacoastTimer.Restart();
                 CityOffshoreBoatController.Build(world, layout.Seed,
                     seacoastPlan, lighthouseIslandPlan,
                     layout.BuildingLots);
+                ReportBlock("seacoast/offshore_boats", seacoastTimer);
             }
 
             var bars = new List<BarEntrance>(settings.BarCount);
@@ -533,6 +557,16 @@ namespace BarPromenade
             // The sand carries the seacoast's tide-banded sheet over
             // UVs baked at its metre pitch; the tint stays the flat
             // colour the map and the compensation were solved against.
+            // Both skins are the most expensive sampling of the build; a
+            // City-interior start primes them on a pool thread.
+            CityLayoutCache.TryTakePrimedTerrainSource(
+                layout,
+                PrimedTerrainSourceKind.BeachVisual,
+                out CityTerrainMeshSource primedBeach);
+            CityLayoutCache.TryTakePrimedTerrainSource(
+                layout,
+                PrimedTerrainSourceKind.BeachCollision,
+                out CityTerrainMeshSource primedBeachCollision);
             GameObject beach = CityTerrainSurfaceWorldBuilder.BuildWithSource(
                 "Beach",
                 surfaces,
@@ -545,7 +579,9 @@ namespace BarPromenade
                 null,
                 null,
                 false,
-                out CityTerrainMeshSource beachSource);
+                out CityTerrainMeshSource beachSource,
+                primedBeach,
+                primedBeachCollision);
             if (beach != null)
             {
                 CitySeacoastSurfaceAppearance.ApplyCombined(

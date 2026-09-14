@@ -521,19 +521,18 @@ The vertical slice contains:
   forecourt. Fringe dressing adds no destination, Light, north/east mountain
   or world-bounds expansion;
 - Default `CityEastExitPlanner`: `Z=-39`, street `X=186`→post `198`→tail `286`;
-  `5/4 m` apron/blend, level junction/open sidewalk/markings/radius connector.
-  Front open/mask corners retained; only checkpoint road enters. Booth/barrier/grille/
-  gate/fences/drain close map/physics. `CityEastGroundTransition*`: partitioned
-  grass-soil `3–5 m` in `8 m`, baked/phased UVs/welded edge/footstep mask.
-  Canopy/cabinet/outside west-facing bench; apron/traces select terrain triangles.
-  `CityEastSwalePlan` lowers public terrain/collision/walk/map heights:
-  narrow intake → `3.9–4.7 m` wide/`.37–.48 m` deep,
-  meanders/feathered ends/level crossings, embedded gravel/old plants/stone.
-  `X=188–191.5`/patrol/church/fence unchanged.
-  Seeded Blender branch/creeping shrubs/matted/tall grass/gravel follow fence
-  runs/returns/corners; front `12–16 m`, gaps ≤`20 m`. Behind: banks/drain/
-  grate/repairs, nearer shed/stock. Shed-door/pole traces, toes/footings;
-  yard UV/support, cleanup/map solids. Pooled lamp + warm canopy/shed Spots
+  `5/4 m` apron/blend, level open street join/radius connector; mask corners stay.
+  Booth/barrier/gate/fences close map/physics. `CityEastGroundTransition*`:
+  grass-soil `3–5 m` in `8 m`, shared UVs/edge/footsteps. West-facing outside
+  bench, canopy/cabinet; apron/traces use terrain triangles. `CityEastSwalePlan`:
+  narrow intake → `3.9–4.7 m`/`.37–.48 m` hollow, level crossings; same visible/
+  physical/map grade. Seeded shrubs/grass/gravel follow all fence runs/corners,
+  front `12–16 m`, gaps ≤`20 m`; rear banks/drain/grate/repairs, shed/stock/traces.
+  `CityEastLitterPlan`/`CityLitterCatalog`: 36 Blender variants, five width
+  bands with spaced slots/`.45 m` gaps; empty vessels/parts/four damaged bicycles.
+  Own seeds; shared rigid meshes settle on the existing support index.
+  Small litter is nonblocking; solids exclude map arrivals. Whole footprints
+  clear `X=188–191.5`, patrol/church/crossings/fence. Pooled lamp + canopy/shed Spots
   (`CityNightSiteLightRegistry`): day floor/halos/hard shadows.
   `CityEastDistanceWorldBuilder`: land/road/shoulders/skyline `44 m`,
   angular/parallax, `48 m` clip/`.070` fog/foreground depth, central windows/day

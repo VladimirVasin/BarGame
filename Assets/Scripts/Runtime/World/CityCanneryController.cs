@@ -61,10 +61,11 @@ namespace BarPromenade
         {
             Stopwatch phaseTimer = Stopwatch.StartNew();
             Plan = plan; port = source; hero = player; deliveryLayout = layout;
-            Route = CityCanneryTruckRoute.Create(layout, plan, port.Plan.Access);
+            Route = CityLayoutCache.GetOrCreateCanneryRoute(layout, plan, port.Plan.Access);
             // The street search and the per-pose ground sampling are pure
             // arithmetic over the whole road graph; they are timed apart from
-            // the imported model so a slow row names its own cause.
+            // the imported model so a slow row names its own cause. Memoised
+            // per layout, so a primed start or a second entry pays nothing.
             ReportCanneryPhase("equipment_route", phaseTimer);
             // The site builder owns the passive shell, including the Home vista.
             // This owner adds only the working parts and the shared delivery vehicle.

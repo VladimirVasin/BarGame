@@ -6,48 +6,45 @@ Older whole dates move to `ai/archive/` when the byte budget is reached;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-08.md`](archive/work-log-2026-08.md).
 
-## 2026-09-14 — City geometry and eastern checkpoint
+## 2026-09-14 — City geometry, eastern checkpoint, cold City loading
 
 - City audit compares walk mask/physics, registry/triangles, planted controls
-  and shifted cameras. Coplanarity alone did not prove flicker: church overlaps
-  stayed stable; frames exposed cave/backdrop flicker, fence/shelter collisions,
-  wall seams, bare east yards/repeated outfits.
+  and shifted cameras; coplanarity alone did not prove flicker, frames exposed
+  cave/backdrop flicker, fence/shelter collisions, wall seams, bare east yards.
   Checks: `CityAuditProbeTests` (control + A–E + `F_Diagnose`),
   `AreaCaptureFixture.CityAudit`.
-- Bus stair gaps receive kerb bands. Cemetery fences use part widths/north
-  edge; church iron clears bus shelter. Boundary fragments overlap, port skirt
-  closes opening, cave lining clears beams, gabions bed into stone. Joined
-  esplanade slabs follow sand; fittings/walking use their top. East ground
-  uses forefield texture; grandmothers have distinct outfits. POI terraces stay.
-  Checks: EditMode `CityStreetSurfacePlannerTests`, `CityChurchPlanningTests`,
+- Bus stair kerb bands; cemetery fences use part widths/north edge; boundary
+  fragments overlap, port skirt closes its opening, cave lining clears beams,
+  gabions bed into stone; joined esplanade slabs follow sand; east ground uses
+  forefield texture; grandmothers have distinct outfits. Checks: EditMode
+  `CityStreetSurfacePlannerTests`, `CityChurchPlanningTests`,
   `CityCemeteryPlannerTests`, `CityFringeYard*`, `CitySeacoastPlannerTests`,
   `CityMountainBoundaryTests`, `DryingYardBabushkaTests`.
-- Checkpoint joins street edge/height, opening sidewalk/markings; road replaces
-  terrain, dressing fits refined supports. Panorama tests behind land; its short
-  projection had intersected it. Welded road collision closes ray gaps. North
-  patrol skirts shed, south turns before sidewalk. A radius connector closes
-  mask seams that large test steps jumped. Post/grade/shoulders/patch/drain
-  moved to `12 m` from asphalt for normal-camera visibility.
-- Garden/yard share partitioned grass/soil, matched UVs/footsteps. Fitted apron/
-  drain crossing/fence toes/bases, banks/shrubs share support/yard UVs. Nearer
-  shed keeps its lamp visible in fog; accepted warm fixtures leave street pool.
-  Checks: `build-city-east-ground-texture.py --verify`,
-  `build-city-east-exit-3d-model.py --dressing-only --validate-only`.
-- Bench outside canopy faces city. Apron/traces select existing ground/road
-  triangles; raised sheets flickered. Mask subtraction retains corners; safe
-  east street margins open to physical fence instead of the single yard anchor.
-- Seeded planting follows whole fence runs: open/creeping shrubs, matted/tall
-  grass/gravel, embedded wear/toes, rear banks/drain/grate/repairs, one shed
-  stock. Broad shed clearance had removed south planting; low rear plants now
-  reserve road shoulders, public planting retains patrol clearance.
-  Generator `validate_dressing`: signed volumes/metres/determinism.
-- Dry swale lowers shared terrain/collision/walk/map heights; broad shallow
-  crossings stay open, gravel/old plants follow slopes. Removed overlapping
-  drain and the redundant east-access apron that darkened the hollow.
-  Check: `AreaCaptureFixture.CityEastExit` with east-landscape capture:
-  held walking/bench/materials/frontage, coverage/placed metres, swale profiles/
-  landing/crossings, no old spur. Ordinary day/night and shifted views inspected:
-  continuous ground without raised sheets. `check-docs.py`.
+- Checkpoint joins street edge/height; road replaces terrain, dressing fits
+  refined supports; panorama stays behind land, welded road collision and a
+  radius connector close ray/mask gaps. Patrols skirt shed/sidewalk. Garden/
+  yard share grass-soil UVs/footsteps; seeded fence planting, terrain swale and
+  level crossings replace raised traces. Checks: `build-city-east-ground-texture.py --verify`,
+  `build-city-east-exit-3d-model.py --dressing-only --validate-only`,
+  `AreaCaptureFixture.CityEastExit`, `check-docs.py`.
+- Litter: 36 Blender variants reuse City misc across five spaced width bands. Shared
+  rigid meshes settle on actual ground; solids clear routes/map arrivals.
+  Swale checks distinguish validated props from competing terrain. Checks:
+  `build-city-litter-3d-model.py --validate-only`, `AreaCaptureFixture.CityEastExit`.
+- A start inside a City interior ended at a door into an unbuilt City, all
+  its planning and sampling under the black. `NewGameStartService` primes
+  the City's pure chain (layout, night, world plans, grounded bus, street
+  surface, pedestrians, cannery route, beach/seabed lists) on one pool `Task`
+  that `CityLayoutCache.GetOrGenerate` joins; one owner per layout until then
+  (`CityTravelDistance` cache locked, port contract loaded first), a fault
+  plans in place. Street/pedestrian/route plans memoised per layout, door pump
+  at a 250 ms floor, seabed shore taps cached per column, crackle moments
+  hoisted, east-exit support cells 1 m; rows `east_exit`/`east_distance`/
+  `dressing` and phase rows for the old gaps. Checks: EditMode
+  `CityLayoutCacheTests` (`PrimeCityPlans_*`, `PostYieldPlans_*`),
+  `CityTerrainSurfaceWorldBuilderTests` (pool-thread/seabed bit-identity),
+  PlayMode `ChurchInteriorPlayModeTests.NewGame_InTheChurch_*`; a temporary
+  mesh-hash probe matched every east-exit/seabed/beach/crackle hash.
 
 ## 2026-09-13 — Hero, cannery and eastern edge
 

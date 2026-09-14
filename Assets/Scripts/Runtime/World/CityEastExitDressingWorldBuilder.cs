@@ -27,10 +27,19 @@ namespace BarPromenade
         internal static Transform Build(Transform parent, CityEastExitPlan exit, CityEastExitDressingPlan plan,
             IDictionary<string, Transform> templates)
         {
+            // Timed apart: the embedding and the support index scale with the
+            // yard's triangle count, the placing with the kit, the fitting with both.
+            var total = System.Diagnostics.Stopwatch.StartNew();
             EmbedPostGround(parent, exit, plan, templates);
+            double embedMs = total.Elapsed.TotalMilliseconds;
             Transform root = new GameObject(RootName).transform;
             root.SetParent(parent, false);
+            var stage = System.Diagnostics.Stopwatch.StartNew();
             var support = new SurfaceSupport(parent);
+            double supportMs = stage.Elapsed.TotalMilliseconds;
+            double placeMs = 0d, fitMs = 0d;
+            var timings = new FitTimings();
+            int parts = 0;
             var groups = new Dictionary<string, Transform>(StringComparer.Ordinal);
             foreach (CityEastExitDressingPart part in plan.Parts)
             {
@@ -40,9 +49,14 @@ namespace BarPromenade
                     group = new GameObject(part.GroupId).transform;
                     group.SetParent(root, false); groups.Add(part.GroupId, group);
                 }
+                parts++;
+                stage.Restart();
                 Transform placed = CityEastExitWorldBuilder.Place(templates, group, part.Assembly, part.Id,
                     part.Position, part.Rotation, part.Scale);
-                FitAuthoredMeshes(placed, exit, part, support);
+                placeMs += stage.Elapsed.TotalMilliseconds;
+                stage.Restart();
+                FitAuthoredMeshes(placed, exit, part, support, timings);
+                fitMs += stage.Elapsed.TotalMilliseconds;
                 if (part.Assembly == "RoadRepair")
                     foreach (Renderer renderer in placed.GetComponentsInChildren<Renderer>(true))
                     {
@@ -83,6 +97,21 @@ namespace BarPromenade
                             renderer.SetPropertyBlock(block);
                         }
             }
+            GameLog.Debug("city", "world_build_block",
+                GameLog.Field("block", "roads_and_river/east_exit/dressing"),
+                GameLog.Field("duration_ms", total.Elapsed.TotalMilliseconds),
+                GameLog.Field("embed_ms", embedMs),
+                GameLog.Field("support_ms", supportMs),
+                GameLog.Field("place_ms", placeMs),
+                GameLog.Field("fit_ms", fitMs),
+                GameLog.Field("fit_sample_ms", timings.SampleMs),
+                GameLog.Field("fit_lift_ms", timings.LiftMs),
+                GameLog.Field("fit_mesh_ms", timings.MeshMs),
+                GameLog.Field("parts", parts),
+                GameLog.Field("faces", support.FaceCount));
+            // The scatter uses the already indexed visible terrain; rigid
+            // props retain shared meshes instead of entering foliage fitting.
+            CityEastLitterWorldBuilder.Build(root, exit, support.TrySample);
             return root;
         }
 
@@ -224,9 +253,18 @@ namespace BarPromenade
             private static float Cross(Vector2 a, Vector2 b) => a.x * b.y - a.y * b.x;
         }
 
-        private static void FitAuthoredMeshes(Transform placement, CityEastExitPlan exit, CityEastExitDressingPart part,
-            SurfaceSupport support)
+        /// <summary>The fit's three costs, accumulated over every part: the
+        /// support samples, the sheet lifts and the Unity mesh work around them.</summary>
+        private sealed class FitTimings
         {
+            public double SampleMs, LiftMs, MeshMs;
+            public readonly System.Diagnostics.Stopwatch Clock = new System.Diagnostics.Stopwatch();
+        }
+
+        private static void FitAuthoredMeshes(Transform placement, CityEastExitPlan exit, CityEastExitDressingPart part,
+            SurfaceSupport support, FitTimings timings)
+        {
+            System.Diagnostics.Stopwatch clock = timings.Clock;
             bool shrub = part.Assembly == "Shrub" || part.Assembly == "LowShrub" || part.Assembly == "BranchShrub";
             float rootLift = shrub && support.TrySample(new Vector2(part.Position.x, part.Position.z), out float rootGround)
                 ? rootGround - part.Position.y : 0f;
@@ -235,9 +273,12 @@ namespace BarPromenade
                 Mesh source = filter.sharedMesh;
                 if (source == null || !source.isReadable)
                     throw new InvalidOperationException("Checkpoint ground fitting requires readable authored mesh: " + filter.name);
+                clock.Restart();
                 Mesh mesh = Object.Instantiate(source);
                 mesh.name = part.Id + " Ground Fitted " + source.name;
                 Vector3[] vertices = mesh.vertices;
+                timings.MeshMs += clock.Elapsed.TotalMilliseconds;
+                clock.Restart();
                 var worldVertices = new Vector3[vertices.Length];
                 bool post = part.Assembly == "Shelter" && filter.name.IndexOf("_Post", StringComparison.Ordinal) >= 0;
                 bool foot = part.Assembly == "Shelter" && filter.name.IndexOf("_Foot", StringComparison.Ordinal) >= 0;
@@ -260,6 +301,8 @@ namespace BarPromenade
                     }
                     worldVertices[i] = world;
                 }
+                timings.SampleMs += clock.Elapsed.TotalMilliseconds;
+                clock.Restart();
                 bool sheet = part.Assembly == "GravelPatch" || part.Assembly == "CanopyApron" ||
                     part.Assembly == "FenceToe" || part.Assembly == "RoadRepair" ||
                     part.Assembly == "DryDrain" && !filter.name.EndsWith("_Gravel", StringComparison.Ordinal);
@@ -270,13 +313,16 @@ namespace BarPromenade
                     // difference reaches its maximum at one of those corners.
                     // A local tile moves only by the clearance it actually needs;
                     // this also separates the worn traces where branches meet.
-                    float lift = support.RequiredLift(worldVertices, mesh.triangles, .002f);
+                    int[] triangles = mesh.triangles;
+                    float lift = support.RequiredLift(worldVertices, triangles, .002f);
                     if (lift > 0f)
                         for (int i = 0; i < worldVertices.Length; i++) worldVertices[i].y += lift;
-                    support.Add(worldVertices, mesh.triangles);
+                    support.Add(worldVertices, triangles);
                 }
                 else if (part.Assembly == "EarthBank" || part.Assembly == "GroundRidge")
                     support.Add(worldVertices, mesh.triangles);
+                timings.LiftMs += clock.Elapsed.TotalMilliseconds;
+                clock.Restart();
                 for (int i = 0; i < vertices.Length; i++)
                     vertices[i] = filter.transform.InverseTransformPoint(worldVertices[i]);
                 mesh.vertices = vertices;
@@ -292,15 +338,21 @@ namespace BarPromenade
                 mesh.RecalculateBounds(); mesh.RecalculateNormals();
                 filter.sharedMesh = mesh;
                 filter.gameObject.AddComponent<RuntimeGeneratedMeshOwner>().Initialize(mesh);
+                timings.MeshMs += clock.Elapsed.TotalMilliseconds;
             }
         }
 
         /// <summary>Build-local XZ index of the actual supporting mesh faces.</summary>
         private sealed class SurfaceSupport
         {
-            private const float CellSize = 4f;
+            // Sheet triangles span 0.3-0.7 m and the yard under the
+            // dressing is refined to 0.5 m: a 4 m cell held 130-350 faces,
+            // every one scanned per fitted vertex and per sheet triangle.
+            private const float CellSize = 1f;
             private readonly List<Face> faces = new List<Face>();
             private readonly Dictionary<Vector2Int, List<int>> cells = new Dictionary<Vector2Int, List<int>>();
+
+            internal int FaceCount => faces.Count;
 
             internal SurfaceSupport(Transform exitRoot)
             {
@@ -364,9 +416,9 @@ namespace BarPromenade
                         if (!cells.TryGetValue(new Vector2Int(x, z), out List<int> items)) continue;
                         foreach (int index in items)
                         {
-                            if (!visited.Add(index)) continue;
                             Face other = faces[index];
-                            if (!face.Bounds.Overlaps(other.Bounds)) continue;
+                            // Cheap rejection first: the set only grows with real candidates.
+                            if (!face.Bounds.Overlaps(other.Bounds) || !visited.Add(index)) continue;
                             polygon.Clear(); polygon.Add(face.A); polygon.Add(face.B); polygon.Add(face.C);
                             Clip(other.A, other.B, other.Area);
                             Clip(other.B, other.C, other.Area);

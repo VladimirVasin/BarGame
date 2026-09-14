@@ -4,41 +4,41 @@
 
 ## Current facts
 
+- **Accepted architecture exception — 2026-09-14, eastern verge litter:**
+  Reused/new passive Blender litter covers the `12 m` eastern road-to-fence
+  strip. Art §10e/story §6 own support/distribution/clearance/materials/bans;
+  §16/§21/nine art checks.
+
 - **Accepted — 2026-09-14, checkpoint placement:**
-  Post `(198,-39)`, street gap `12 m`, tail `286`; front open, mask corners
-  retained. Church paths/story §6 hold.
+  Post `(198,-39)`, street gap `12 m`, tail `286`; open front, mask corners,
+  church paths/story §6 retained.
 
 - **Accepted — 2026-09-14, full eastern fence dressing:**
-  Art §10e: seeded Blender perimeter shrubs/grass/gravel, rear banks/drain/
-  grate/repairs, one shed stock. Paths/patrol/§16 hold; no new life/light/water/
-  text/story or §6 exception.
+  Art §10e owns seeded Blender perimeter plants/gravel, rear banks/drain/
+  grate/repairs, one shed stock and exclusions. Paths/patrol/§16 hold;
+  no §6 exception.
 
 - **Accepted — 2026-09-14, eastern dry swale:**
-  `CityEastSwalePlan`: dry drainage lowers existing terrain/collision/walk/map.
-  Shallow intake/broad hollow, feathered ends/crossings; replaces drain/spur,
-  reuses gravel/plants/stone. Road/fence stay. Art §10e/story §16;
-  no model/overlay/exception.
+  `CityEastSwalePlan` lowers shared terrain/collision/walk/map; shallow intake,
+  broad hollow, feathered ends/crossings replace drain/spur, reuse gravel/
+  plants/stone. Road/fence/art §10e/story §16 hold; no model/overlay/exception.
 
 - **Accepted architecture exception — 2026-09-14, checkpoint landscape:**
-  Blender landscape/church-yard cover, nearer shed/trace; paths/patrol/fence/
-  view stay. Warm canopy/shed lights: site registry, day >=2/3 night, same
-  street pool. Story §6/art §10e/§18.22 bound light; no water/text/action/story.
-  Art §18.25/§16; story §16/§20/§21.
+  Blender/church-yard cover, nearer shed/trace. Warm canopy/shed lights:
+  site registry, day >=2/3 night, same street pool. Story §6/art §10e/§18.22
+  own scope/exclusions; art §18.25/§16, story §16/§20/§21 hold.
 
 - **Accepted architecture exception — 2026-09-13, eastern post guards:**
-  Story §6: two guards/first pair-E pools. Senior ~40, stocky/calm/terse;
-  Junior ~28, tall/lean/lively/dry humour. Hero-quality rigs/faces/clothes,
-  passive shoulder rifles. Post/patrol swap on return; shared head bubbles,
-  no repeat/pause/range replay. Both hide being gay; glances/care, E reserve.
-  Story §6's dated guard row bounds all exclusions; closed road/church paths,
-  §16/§21/nine art checks hold.
+  Story §6/art §10e own both guards' appearance/roles/first pair-E pools and
+  exclusions. Hero-quality rigs/faces/clothes, passive shoulder rifles;
+  post/patrol swap on return. Shared head bubbles: no repeat/pause/range
+  replay. Closed road/church paths/§16/§21/nine art checks hold.
 
 - **Accepted architecture exception — 2026-09-13, eastern mainland road:**
-  Story §6/art §2.1a/§10e own post/closed exit/paths/low scrub and all exclusions.
-  Long empty road/land → low skyline/dissolved bases/central warm windows/day
-  glow (§20). Direction projection within `48 m`, shared haze/far depth;
-  no remote terrain/collision/Light/shadow/map/navigation. Guard decision owns
-  life; §16/§21/nine art checks hold. Imported/placed road/booth bounds verify metres/axes.
+  Story §6/art §2.1a/§10e own closed post/paths/scrub/distant road/skyline/lights
+  and exclusions; guard decision owns life. Projection within `48 m`, shared
+  haze/far depth; no remote terrain/collision/Light/shadow/map/navigation.
+  Imported/placed road/booth bounds verify metres/axes; §16/§21/nine art checks.
 
 - **Accepted — 2026-09-13, refined hero, M-65 and modular clothing:**
   The user accepts refining the existing Hero V2 to the latest cannery
@@ -1092,34 +1092,35 @@
   progress and lifetime, pause and transition ownership.
 
 - **Current — Runtime reliability and tooling (2026-09-06):**
-  `BarPromenade.Rules` is an engine-free assembly containing the calendar/day
-  rules, transient vehicle ownership and input-priority policy. Runtime keeps
-  the existing session facade. Cableway activity is a generation-safe lease:
-  resetting a session or disposing an old scene cannot retain or clear a later
-  ride. Shared `GameInput` owns common bindings; context-specific look/debug
-  controls remain with their callers. Both ride skips respect pause, modal
-  ownership and scene transitions.
-- **Current — Staged area composition (2026-09-06, ext. 2026-09-12):** City,
-  Mountain Road, Alpine Village and Home (door only) register construction
+  `BarPromenade.Rules` is an engine-free assembly holding the calendar/day
+  rules, transient vehicle ownership and input-priority policy. Cableway
+  activity is a generation-safe lease: resetting a session or disposing an
+  old scene cannot retain or clear a later ride. Shared `GameInput` owns
+  common bindings; context-specific look/debug controls stay with their
+  callers. Both ride skips respect pause, modal ownership and scene
+  transitions.
+- **Current — Staged area composition (2026-09-06, ext. 2026-09-14):** City,
+  Mountain Road, Alpine Village and Home (door only) register build
   iterators; direct loads drain them. A Single load unloads the source
-  first; a door build runs behind a black overlay. Activation waits for the
-  held load. `RuntimeComposition` yields between indivisible stages at an
-  8 ms floor. `CityLayoutCache` memoises plans per session; foreign planners
-  may run on a `Task`, never `UnityEngine.Object` work. The driver holds a
-  tempo lease, a listener pause and `renderFrameInterval` 4 until a frame
-  before the overlay leaves. Water cubemaps wait for the whole world.
+  first; a door build runs behind a black overlay at a 250 ms stage floor,
+  the loading bar at 8 ms. Activation waits for the held load.
+  `CityLayoutCache` memoises plans per session; foreign planners and, from
+  a new game in a City interior, the City plans and beach/seabed lists run
+  on a `Task` (one owner per layout until joined; a fault plans in place),
+  never `UnityEngine.Object` work. The driver holds a tempo lease, listener
+  pause and `renderFrameInterval` 4 until a frame before the overlay
+  leaves. Water cubemaps wait for the whole world.
 - **Current — Transition/resource ownership (2026-09-06):** Both transition
   services release held scene activation on disable/destruction. Ordinary
   transitions drive nested routines through one exception/cleanup boundary.
-  Generated puddle and village ground/path/snow/lane meshes use the existing
-  `RuntimeGeneratedMeshOwner`; imported and shared meshes retain their owners.
+  Generated puddle and village ground/path/snow/lane meshes use
+  `RuntimeGeneratedMeshOwner`; imported and shared meshes keep their owners.
 - **Current — Opt-in performance evidence (2026-09-06):**
   `RuntimePerformanceCapture` records bounded frame distributions and render
-  context, with named foot-sole bake and water-reflection work scopes. It does
-  not alter render scale, quality, animation or post-processing. Unavailable
+  context, with named foot-sole bake and water-reflection work scopes. It
+  alters no render scale, quality, animation or post-processing. Unavailable
   counters report zero samples, not zero cost; Editor measurements are
-  diagnostics rather than player benchmarks. See `ai/debug-log.md` for the
-  invocation and interpretation.
+  diagnostics rather than player benchmarks. See `ai/debug-log.md`.
 - **Current — Read-only build gate and checked authoring (2026-09-06):**
   `PlayerBuildAssetValidation` runs on all player-build paths, aggregating
   required-resource, owner-contract and Hero dependency-stamp failures with

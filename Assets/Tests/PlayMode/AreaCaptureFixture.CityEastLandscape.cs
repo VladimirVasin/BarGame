@@ -128,6 +128,9 @@ namespace BarPromenade.Tests.PlayMode
             CityMapCityTeleportGround landing)
         {
             CityEastSwalePlan swale = exit.Swale;
+            Transform litterRoot = GameObject.Find(CityEastLitterWorldBuilder.RootName).transform;
+            var litterSolids = CityEastLitterPlan.Create(exit).Parts.Where(part => part.Item.Solid)
+                .ToDictionary(part => part.Id, StringComparer.Ordinal);
             Assert.That(swale, Is.Not.Null);
             Assert.That(swale.CrossingZ.Count, Is.GreaterThanOrEqualTo(2),
                 "A long lowered verge needs several broad pedestrian crossings.");
@@ -246,6 +249,12 @@ namespace BarPromenade.Tests.PlayMode
                 {
                     if (other.collider.transform.IsChildOf(city.Player.GameObject.transform) ||
                         other.collider.transform.IsChildOf(city.EastGuards.transform) || other.normal.y < .7f) continue;
+                    // VerifyEastLitter has measured these finite bodies and
+                    // their map exclusions. They are ordinary objects resting
+                    // in the swale, not a second standing-ground skin.
+                    if (other.collider.transform.parent == litterRoot &&
+                        litterSolids.TryGetValue(other.collider.name, out CityEastLitterPart litter) &&
+                        litter.Footprint.Contains(point)) continue;
                     Assert.That(other.point.y, Is.LessThanOrEqualTo(top + .035f),
                         "A competing raised surface must not leave the hero above the hollow: " + other.collider.name + " at " + point);
                 }

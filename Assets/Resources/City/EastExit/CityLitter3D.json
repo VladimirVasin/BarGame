@@ -1,0 +1,1672 @@
+{
+  "schema_version": 1,
+  "version": "1.0.0",
+  "design_id": "city_east_strip_litter_v1",
+  "generator": "tools/build-city-litter-3d-model.py",
+  "signature": "b1b7f874a59fe945f027757ad752fca7bd47913764e245ee1610e244112acf6f",
+  "units": "Unity local metres",
+  "source_to_unity": "swap Y/Z and rewind faces",
+  "root_scale_contract": "Preserve imported template lossyScale; FBX uses file units",
+  "normals_contract": "Positive signed volume for every closed component and material part",
+  "export_settings": {
+    "axis_forward": "-Z",
+    "axis_up": "Y",
+    "apply_scale_options": "FBX_SCALE_NONE",
+    "bake_space_transform": false
+  },
+  "palette": {
+    "GlassGreen": [
+      0.16,
+      0.24,
+      0.16,
+      1
+    ],
+    "GlassBrown": [
+      0.25,
+      0.16,
+      0.08,
+      1
+    ],
+    "GlassClear": [
+      0.36,
+      0.42,
+      0.38,
+      1
+    ],
+    "Steel": [
+      0.35,
+      0.37,
+      0.33,
+      1
+    ],
+    "Rust": [
+      0.3,
+      0.17,
+      0.1,
+      1
+    ],
+    "PaintGreen": [
+      0.19,
+      0.28,
+      0.23,
+      1
+    ],
+    "PaintBlue": [
+      0.21,
+      0.29,
+      0.33,
+      1
+    ],
+    "Rubber": [
+      0.065,
+      0.073,
+      0.065,
+      1
+    ],
+    "Plastic": [
+      0.4,
+      0.42,
+      0.32,
+      1
+    ],
+    "Paper": [
+      0.43,
+      0.37,
+      0.26,
+      1
+    ],
+    "Timber": [
+      0.29,
+      0.25,
+      0.16,
+      1
+    ],
+    "Brick": [
+      0.36,
+      0.24,
+      0.17,
+      1
+    ],
+    "Dark": [
+      0.09,
+      0.1,
+      0.08,
+      1
+    ]
+  },
+  "lights": false,
+  "animation_count": 0,
+  "colliders": false,
+  "items": [
+    {
+      "name": "BottleGreen",
+      "category": "glass",
+      "solid": false,
+      "bounds_min_unity": [
+        -0.077324,
+        0.0,
+        -0.139655
+      ],
+      "bounds_max_unity": [
+        0.077324,
+        0.091488,
+        0.139655
+      ],
+      "triangle_count": 236,
+      "reuse_source": "build-city-misc-3d-model.py:build_yard_bottle measured silhouette; continuous hollow reauthoring",
+      "parts": [
+        {
+          "mesh": "ELI_BottleGreen_GlassGreen",
+          "role": "GlassGreen",
+          "triangle_count": 236,
+          "bounds_min_unity": [
+            -0.077324,
+            0.0,
+            -0.139655
+          ],
+          "bounds_max_unity": [
+            0.077324,
+            0.091488,
+            0.139655
+          ]
+        }
+      ]
+    },
+    {
+      "name": "BottleBrown",
+      "category": "glass",
+      "solid": false,
+      "bounds_min_unity": [
+        -0.093115,
+        0.0,
+        -0.169935
+      ],
+      "bounds_max_unity": [
+        0.093115,
+        0.108292,
+        0.169935
+      ],
+      "triangle_count": 236,
+      "reuse_source": "build-city-misc-3d-model.py:build_yard_bottle measured silhouette; continuous hollow reauthoring",
+      "parts": [
+        {
+          "mesh": "ELI_BottleBrown_GlassBrown",
+          "role": "GlassBrown",
+          "triangle_count": 236,
+          "bounds_min_unity": [
+            -0.093115,
+            0.0,
+            -0.169935
+          ],
+          "bounds_max_unity": [
+            0.093115,
+            0.108292,
+            0.169935
+          ]
+        }
+      ]
+    },
+    {
+      "name": "BottleClear",
+      "category": "glass",
+      "solid": false,
+      "bounds_min_unity": [
+        -0.09302,
+        0.0,
+        -0.192206
+      ],
+      "bounds_max_unity": [
+        0.09302,
+        0.084223,
+        0.192206
+      ],
+      "triangle_count": 236,
+      "reuse_source": "build-city-misc-3d-model.py:build_yard_bottle measured silhouette; continuous hollow reauthoring",
+      "parts": [
+        {
+          "mesh": "ELI_BottleClear_GlassClear",
+          "role": "GlassClear",
+          "triangle_count": 236,
+          "bounds_min_unity": [
+            -0.09302,
+            0.0,
+            -0.192206
+          ],
+          "bounds_max_unity": [
+            0.09302,
+            0.084223,
+            0.192206
+          ]
+        }
+      ]
+    },
+    {
+      "name": "BottleShort",
+      "category": "glass",
+      "solid": false,
+      "bounds_min_unity": [
+        -0.075473,
+        0.0,
+        -0.114369
+      ],
+      "bounds_max_unity": [
+        0.075473,
+        0.112066,
+        0.114369
+      ],
+      "triangle_count": 236,
+      "reuse_source": "build-city-misc-3d-model.py:build_yard_bottle measured silhouette; continuous hollow reauthoring",
+      "parts": [
+        {
+          "mesh": "ELI_BottleShort_GlassBrown",
+          "role": "GlassBrown",
+          "triangle_count": 236,
+          "bounds_min_unity": [
+            -0.075473,
+            0.0,
+            -0.114369
+          ],
+          "bounds_max_unity": [
+            0.075473,
+            0.112066,
+            0.114369
+          ]
+        }
+      ]
+    },
+    {
+      "name": "BottleBrokenNeck",
+      "category": "glass",
+      "solid": false,
+      "bounds_min_unity": [
+        -0.071538,
+        0.0,
+        -0.116103
+      ],
+      "bounds_max_unity": [
+        0.071538,
+        0.095641,
+        0.116103
+      ],
+      "triangle_count": 156,
+      "reuse_source": "build-city-misc-3d-model.py:build_yard_bottle measured silhouette; continuous hollow reauthoring",
+      "parts": [
+        {
+          "mesh": "ELI_BottleBrokenNeck_GlassGreen",
+          "role": "GlassGreen",
+          "triangle_count": 156,
+          "bounds_min_unity": [
+            -0.071538,
+            0.0,
+            -0.116103
+          ],
+          "bounds_max_unity": [
+            0.071538,
+            0.095641,
+            0.116103
+          ]
+        }
+      ]
+    },
+    {
+      "name": "BottleBrokenBase",
+      "category": "glass",
+      "solid": false,
+      "bounds_min_unity": [
+        -0.06215,
+        0.0,
+        -0.058888
+      ],
+      "bounds_max_unity": [
+        0.06215,
+        0.10408,
+        0.058888
+      ],
+      "triangle_count": 76,
+      "reuse_source": "build-city-misc-3d-model.py:build_yard_bottle measured silhouette; continuous hollow reauthoring",
+      "parts": [
+        {
+          "mesh": "ELI_BottleBrokenBase_GlassClear",
+          "role": "GlassClear",
+          "triangle_count": 76,
+          "bounds_min_unity": [
+            -0.06215,
+            0.0,
+            -0.058888
+          ],
+          "bounds_max_unity": [
+            0.06215,
+            0.10408,
+            0.058888
+          ]
+        }
+      ]
+    },
+    {
+      "name": "CanOpen",
+      "category": "metal",
+      "solid": false,
+      "bounds_min_unity": [
+        -0.05643,
+        0.0,
+        -0.075742
+      ],
+      "bounds_max_unity": [
+        0.05643,
+        0.133897,
+        0.075742
+      ],
+      "triangle_count": 316,
+      "reuse_source": "build-city-misc-3d-model.py:NightlifeShelterClutter can proportions and outward_annulus_z; new ribbed hollow shell",
+      "parts": [
+        {
+          "mesh": "ELI_CanOpen_Steel",
+          "role": "Steel",
+          "triangle_count": 316,
+          "bounds_min_unity": [
+            -0.05643,
+            0.0,
+            -0.075742
+          ],
+          "bounds_max_unity": [
+            0.05643,
+            0.133897,
+            0.075742
+          ]
+        }
+      ]
+    },
+    {
+      "name": "CanOpenWide",
+      "category": "metal",
+      "solid": false,
+      "bounds_min_unity": [
+        -0.088041,
+        0.0,
+        -0.068129
+      ],
+      "bounds_max_unity": [
+        0.088041,
+        0.162146,
+        0.068129
+      ],
+      "triangle_count": 316,
+      "reuse_source": "build-city-misc-3d-model.py:NightlifeShelterClutter can proportions and outward_annulus_z; new ribbed hollow shell",
+      "parts": [
+        {
+          "mesh": "ELI_CanOpenWide_Steel",
+          "role": "Steel",
+          "triangle_count": 316,
+          "bounds_min_unity": [
+            -0.088041,
+            0.0,
+            -0.068129
+          ],
+          "bounds_max_unity": [
+            0.088041,
+            0.162146,
+            0.068129
+          ]
+        }
+      ]
+    },
+    {
+      "name": "CanClosed",
+      "category": "metal",
+      "solid": false,
+      "bounds_min_unity": [
+        -0.085809,
+        0.0,
+        -0.091686
+      ],
+      "bounds_max_unity": [
+        0.085809,
+        0.112907,
+        0.091686
+      ],
+      "triangle_count": 352,
+      "reuse_source": "build-city-misc-3d-model.py:NightlifeShelterClutter can proportions and outward_annulus_z; new ribbed hollow shell",
+      "parts": [
+        {
+          "mesh": "ELI_CanClosed_PaintGreen",
+          "role": "PaintGreen",
+          "triangle_count": 316,
+          "bounds_min_unity": [
+            -0.085809,
+            0.0,
+            -0.091686
+          ],
+          "bounds_max_unity": [
+            0.085809,
+            0.112907,
+            0.091686
+          ]
+        },
+        {
+          "mesh": "ELI_CanClosed_Steel",
+          "role": "Steel",
+          "triangle_count": 36,
+          "bounds_min_unity": [
+            -0.003288,
+            0.013219,
+            0.029786
+          ],
+          "bounds_max_unity": [
+            0.083007,
+            0.109701,
+            0.089796
+          ]
+        }
+      ]
+    },
+    {
+      "name": "CanCrushed",
+      "category": "metal",
+      "solid": false,
+      "bounds_min_unity": [
+        -0.08321,
+        0.0,
+        -0.08014
+      ],
+      "bounds_max_unity": [
+        0.08321,
+        0.130509,
+        0.08014
+      ],
+      "triangle_count": 316,
+      "reuse_source": "build-city-misc-3d-model.py:NightlifeShelterClutter can proportions and outward_annulus_z; new ribbed hollow shell",
+      "parts": [
+        {
+          "mesh": "ELI_CanCrushed_Steel",
+          "role": "Steel",
+          "triangle_count": 316,
+          "bounds_min_unity": [
+            -0.08321,
+            0.0,
+            -0.08014
+          ],
+          "bounds_max_unity": [
+            0.08321,
+            0.130509,
+            0.08014
+          ]
+        }
+      ]
+    },
+    {
+      "name": "CanRusty",
+      "category": "metal",
+      "solid": false,
+      "bounds_min_unity": [
+        -0.078634,
+        0.0,
+        -0.080198
+      ],
+      "bounds_max_unity": [
+        0.078634,
+        0.132214,
+        0.080198
+      ],
+      "triangle_count": 476,
+      "reuse_source": "build-city-misc-3d-model.py:NightlifeShelterClutter can proportions and outward_annulus_z; new ribbed hollow shell",
+      "parts": [
+        {
+          "mesh": "ELI_CanRusty_Steel",
+          "role": "Steel",
+          "triangle_count": 316,
+          "bounds_min_unity": [
+            -0.078634,
+            0.0,
+            -0.080198
+          ],
+          "bounds_max_unity": [
+            0.078634,
+            0.132214,
+            0.080198
+          ]
+        },
+        {
+          "mesh": "ELI_CanRusty_Rust",
+          "role": "Rust",
+          "triangle_count": 160,
+          "bounds_min_unity": [
+            -0.073719,
+            0.001534,
+            -0.079179
+          ],
+          "bounds_max_unity": [
+            0.071421,
+            0.131175,
+            0.076668
+          ]
+        }
+      ]
+    },
+    {
+      "name": "CanLid",
+      "category": "metal",
+      "solid": false,
+      "bounds_min_unity": [
+        -0.058,
+        0.0,
+        -0.055161
+      ],
+      "bounds_max_unity": [
+        0.058,
+        0.007,
+        0.055161
+      ],
+      "triangle_count": 116,
+      "reuse_source": "build-city-misc-3d-model.py:outward_annulus_z",
+      "parts": [
+        {
+          "mesh": "ELI_CanLid_Steel",
+          "role": "Steel",
+          "triangle_count": 116,
+          "bounds_min_unity": [
+            -0.058,
+            0.0,
+            -0.055161
+          ],
+          "bounds_max_unity": [
+            0.058,
+            0.007,
+            0.055161
+          ]
+        }
+      ]
+    },
+    {
+      "name": "PetBottle",
+      "category": "plastic",
+      "solid": false,
+      "bounds_min_unity": [
+        -0.082274,
+        0.0,
+        -0.124639
+      ],
+      "bounds_max_unity": [
+        0.082274,
+        0.120256,
+        0.124639
+      ],
+      "triangle_count": 316,
+      "reuse_source": "New geometry; shared bar_parts/interior_kit solids",
+      "parts": [
+        {
+          "mesh": "ELI_PetBottle_Plastic",
+          "role": "Plastic",
+          "triangle_count": 316,
+          "bounds_min_unity": [
+            -0.082274,
+            0.0,
+            -0.124639
+          ],
+          "bounds_max_unity": [
+            0.082274,
+            0.120256,
+            0.124639
+          ]
+        }
+      ]
+    },
+    {
+      "name": "PetCrushed",
+      "category": "plastic",
+      "solid": false,
+      "bounds_min_unity": [
+        -0.069662,
+        0.0,
+        -0.093604
+      ],
+      "bounds_max_unity": [
+        0.069662,
+        0.12876,
+        0.093604
+      ],
+      "triangle_count": 316,
+      "reuse_source": "New geometry; shared bar_parts/interior_kit solids",
+      "parts": [
+        {
+          "mesh": "ELI_PetCrushed_Plastic",
+          "role": "Plastic",
+          "triangle_count": 316,
+          "bounds_min_unity": [
+            -0.069662,
+            0.0,
+            -0.093604
+          ],
+          "bounds_max_unity": [
+            0.069662,
+            0.12876,
+            0.093604
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Canister",
+      "category": "plastic",
+      "solid": false,
+      "bounds_min_unity": [
+        -0.176933,
+        0.0,
+        -0.229622
+      ],
+      "bounds_max_unity": [
+        0.176933,
+        0.162176,
+        0.229622
+      ],
+      "triangle_count": 176,
+      "reuse_source": "New geometry; shared bar_parts/interior_kit solids",
+      "parts": [
+        {
+          "mesh": "ELI_Canister_Plastic",
+          "role": "Plastic",
+          "triangle_count": 176,
+          "bounds_min_unity": [
+            -0.176933,
+            0.0,
+            -0.229622
+          ],
+          "bounds_max_unity": [
+            0.176933,
+            0.162176,
+            0.229622
+          ]
+        }
+      ]
+    },
+    {
+      "name": "CanisterDented",
+      "category": "plastic",
+      "solid": false,
+      "bounds_min_unity": [
+        -0.168875,
+        0.0,
+        -0.227528
+      ],
+      "bounds_max_unity": [
+        0.168875,
+        0.162176,
+        0.227528
+      ],
+      "triangle_count": 176,
+      "reuse_source": "New geometry; shared bar_parts/interior_kit solids",
+      "parts": [
+        {
+          "mesh": "ELI_CanisterDented_Plastic",
+          "role": "Plastic",
+          "triangle_count": 176,
+          "bounds_min_unity": [
+            -0.168875,
+            0.0,
+            -0.227528
+          ],
+          "bounds_max_unity": [
+            0.168875,
+            0.162176,
+            0.227528
+          ]
+        }
+      ]
+    },
+    {
+      "name": "BagTied",
+      "category": "bag",
+      "solid": false,
+      "bounds_min_unity": [
+        -0.239192,
+        0.0,
+        -0.284892
+      ],
+      "bounds_max_unity": [
+        0.239192,
+        0.418764,
+        0.284892
+      ],
+      "triangle_count": 92,
+      "reuse_source": "build-city-misc-3d-model.py:build_nightlife_shelter_clutter first Bags_Street component; standalone with tied neck",
+      "parts": [
+        {
+          "mesh": "ELI_BagTied_Dark",
+          "role": "Dark",
+          "triangle_count": 92,
+          "bounds_min_unity": [
+            -0.239192,
+            0.0,
+            -0.284892
+          ],
+          "bounds_max_unity": [
+            0.239192,
+            0.418764,
+            0.284892
+          ]
+        }
+      ]
+    },
+    {
+      "name": "BagTorn",
+      "category": "bag",
+      "solid": false,
+      "bounds_min_unity": [
+        -0.265469,
+        0.0,
+        -0.204168
+      ],
+      "bounds_max_unity": [
+        0.265469,
+        0.320246,
+        0.204168
+      ],
+      "triangle_count": 136,
+      "reuse_source": "New geometry; shared bar_parts/interior_kit solids",
+      "parts": [
+        {
+          "mesh": "ELI_BagTorn_Dark",
+          "role": "Dark",
+          "triangle_count": 124,
+          "bounds_min_unity": [
+            -0.265469,
+            0.0,
+            -0.204168
+          ],
+          "bounds_max_unity": [
+            0.265469,
+            0.320246,
+            0.128696
+          ]
+        },
+        {
+          "mesh": "ELI_BagTorn_Plastic",
+          "role": "Plastic",
+          "triangle_count": 12,
+          "bounds_min_unity": [
+            -0.048044,
+            0.071622,
+            0.045566
+          ],
+          "bounds_max_unity": [
+            0.135923,
+            0.131279,
+            0.204168
+          ]
+        }
+      ]
+    },
+    {
+      "name": "SackFlattened",
+      "category": "bag",
+      "solid": false,
+      "bounds_min_unity": [
+        -0.263156,
+        0.0,
+        -0.318977
+      ],
+      "bounds_max_unity": [
+        0.263156,
+        0.078,
+        0.318977
+      ],
+      "triangle_count": 72,
+      "reuse_source": "build-city-misc-3d-model.py:build_nightlife_shelter_clutter first Bags_Street component compressed into an empty sack",
+      "parts": [
+        {
+          "mesh": "ELI_SackFlattened_Paper",
+          "role": "Paper",
+          "triangle_count": 72,
+          "bounds_min_unity": [
+            -0.263156,
+            0.0,
+            -0.318977
+          ],
+          "bounds_max_unity": [
+            0.263156,
+            0.078,
+            0.318977
+          ]
+        }
+      ]
+    },
+    {
+      "name": "CardboardFolded",
+      "category": "paper",
+      "solid": false,
+      "bounds_min_unity": [
+        -0.26,
+        0.0,
+        -0.275
+      ],
+      "bounds_max_unity": [
+        0.26,
+        0.123,
+        0.275
+      ],
+      "triangle_count": 36,
+      "reuse_source": "New geometry; shared bar_parts/interior_kit solids",
+      "parts": [
+        {
+          "mesh": "ELI_CardboardFolded_Paper",
+          "role": "Paper",
+          "triangle_count": 36,
+          "bounds_min_unity": [
+            -0.26,
+            0.0,
+            -0.275
+          ],
+          "bounds_max_unity": [
+            0.26,
+            0.123,
+            0.275
+          ]
+        }
+      ]
+    },
+    {
+      "name": "CardboardTorn",
+      "category": "paper",
+      "solid": false,
+      "bounds_min_unity": [
+        -0.31,
+        0.0,
+        -0.2
+      ],
+      "bounds_max_unity": [
+        0.31,
+        0.043,
+        0.2
+      ],
+      "triangle_count": 32,
+      "reuse_source": "New geometry; shared bar_parts/interior_kit solids",
+      "parts": [
+        {
+          "mesh": "ELI_CardboardTorn_Paper",
+          "role": "Paper",
+          "triangle_count": 32,
+          "bounds_min_unity": [
+            -0.31,
+            0.0,
+            -0.2
+          ],
+          "bounds_max_unity": [
+            0.31,
+            0.043,
+            0.2
+          ]
+        }
+      ]
+    },
+    {
+      "name": "CrateBroken",
+      "category": "wood",
+      "solid": true,
+      "bounds_min_unity": [
+        -0.293086,
+        0.0,
+        -0.252529
+      ],
+      "bounds_max_unity": [
+        0.293086,
+        0.26845,
+        0.252529
+      ],
+      "triangle_count": 252,
+      "reuse_source": "build-city-misc-3d-model.py:NightlifeShelterClutter slatted crate construction; reduced broken standalone crate",
+      "parts": [
+        {
+          "mesh": "ELI_CrateBroken_Timber",
+          "role": "Timber",
+          "triangle_count": 224,
+          "bounds_min_unity": [
+            -0.293086,
+            0.0,
+            -0.252529
+          ],
+          "bounds_max_unity": [
+            0.293086,
+            0.26845,
+            0.252529
+          ]
+        },
+        {
+          "mesh": "ELI_CrateBroken_Rust",
+          "role": "Rust",
+          "triangle_count": 28,
+          "bounds_min_unity": [
+            -0.277086,
+            0.24045,
+            -0.181529
+          ],
+          "bounds_max_unity": [
+            -0.266086,
+            0.25645,
+            -0.146529
+          ]
+        }
+      ]
+    },
+    {
+      "name": "PlankLong",
+      "category": "wood",
+      "solid": false,
+      "bounds_min_unity": [
+        -0.52,
+        0.0,
+        -0.071
+      ],
+      "bounds_max_unity": [
+        0.52,
+        0.061685,
+        0.071
+      ],
+      "triangle_count": 32,
+      "reuse_source": "New geometry; shared bar_parts/interior_kit solids",
+      "parts": [
+        {
+          "mesh": "ELI_PlankLong_Timber",
+          "role": "Timber",
+          "triangle_count": 20,
+          "bounds_min_unity": [
+            -0.52,
+            0.0,
+            -0.071
+          ],
+          "bounds_max_unity": [
+            0.52,
+            0.043,
+            0.071
+          ]
+        },
+        {
+          "mesh": "ELI_PlankLong_Rust",
+          "role": "Rust",
+          "triangle_count": 12,
+          "bounds_min_unity": [
+            -0.349087,
+            0.036315,
+            0.018
+          ],
+          "bounds_max_unity": [
+            -0.319246,
+            0.061685,
+            0.026
+          ]
+        }
+      ]
+    },
+    {
+      "name": "PlankShort",
+      "category": "wood",
+      "solid": false,
+      "bounds_min_unity": [
+        -0.24,
+        0.0,
+        -0.071
+      ],
+      "bounds_max_unity": [
+        0.24,
+        0.061685,
+        0.071
+      ],
+      "triangle_count": 32,
+      "reuse_source": "New geometry; shared bar_parts/interior_kit solids",
+      "parts": [
+        {
+          "mesh": "ELI_PlankShort_Timber",
+          "role": "Timber",
+          "triangle_count": 20,
+          "bounds_min_unity": [
+            -0.24,
+            0.0,
+            -0.071
+          ],
+          "bounds_max_unity": [
+            0.24,
+            0.043,
+            0.071
+          ]
+        },
+        {
+          "mesh": "ELI_PlankShort_Rust",
+          "role": "Rust",
+          "triangle_count": 12,
+          "bounds_min_unity": [
+            -0.16242,
+            0.036315,
+            0.018
+          ],
+          "bounds_max_unity": [
+            -0.13258,
+            0.061685,
+            0.026
+          ]
+        }
+      ]
+    },
+    {
+      "name": "BrickWhole",
+      "category": "masonry",
+      "solid": false,
+      "bounds_min_unity": [
+        -0.1225,
+        0.0,
+        -0.058
+      ],
+      "bounds_max_unity": [
+        0.1225,
+        0.078,
+        0.058
+      ],
+      "triangle_count": 28,
+      "reuse_source": "New geometry; shared bar_parts/interior_kit solids",
+      "parts": [
+        {
+          "mesh": "ELI_BrickWhole_Brick",
+          "role": "Brick",
+          "triangle_count": 28,
+          "bounds_min_unity": [
+            -0.1225,
+            0.0,
+            -0.058
+          ],
+          "bounds_max_unity": [
+            0.1225,
+            0.078,
+            0.058
+          ]
+        }
+      ]
+    },
+    {
+      "name": "BrickBroken",
+      "category": "masonry",
+      "solid": false,
+      "bounds_min_unity": [
+        -0.093,
+        0.0,
+        -0.06
+      ],
+      "bounds_max_unity": [
+        0.093,
+        0.069,
+        0.06
+      ],
+      "triangle_count": 20,
+      "reuse_source": "New geometry; shared bar_parts/interior_kit solids",
+      "parts": [
+        {
+          "mesh": "ELI_BrickBroken_Brick",
+          "role": "Brick",
+          "triangle_count": 20,
+          "bounds_min_unity": [
+            -0.093,
+            0.0,
+            -0.06
+          ],
+          "bounds_max_unity": [
+            0.093,
+            0.069,
+            0.06
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Bucket",
+      "category": "metal",
+      "solid": true,
+      "bounds_min_unity": [
+        -0.187019,
+        0.0,
+        -0.213993
+      ],
+      "bounds_max_unity": [
+        0.187019,
+        0.319805,
+        0.213993
+      ],
+      "triangle_count": 364,
+      "reuse_source": "New geometry; shared bar_parts/interior_kit solids",
+      "parts": [
+        {
+          "mesh": "ELI_Bucket_PaintGreen",
+          "role": "PaintGreen",
+          "triangle_count": 188,
+          "bounds_min_unity": [
+            -0.149289,
+            0.0,
+            -0.213993
+          ],
+          "bounds_max_unity": [
+            0.186328,
+            0.319805,
+            0.104179
+          ]
+        },
+        {
+          "mesh": "ELI_Bucket_Rust",
+          "role": "Rust",
+          "triangle_count": 176,
+          "bounds_min_unity": [
+            -0.187019,
+            0.051821,
+            -0.208267
+          ],
+          "bounds_max_unity": [
+            0.187019,
+            0.284168,
+            0.213993
+          ]
+        }
+      ]
+    },
+    {
+      "name": "BucketCrushed",
+      "category": "metal",
+      "solid": true,
+      "bounds_min_unity": [
+        -0.188481,
+        0.0,
+        -0.213993
+      ],
+      "bounds_max_unity": [
+        0.188481,
+        0.344304,
+        0.213993
+      ],
+      "triangle_count": 364,
+      "reuse_source": "New geometry; shared bar_parts/interior_kit solids",
+      "parts": [
+        {
+          "mesh": "ELI_BucketCrushed_PaintBlue",
+          "role": "PaintBlue",
+          "triangle_count": 188,
+          "bounds_min_unity": [
+            -0.128179,
+            0.0,
+            -0.213993
+          ],
+          "bounds_max_unity": [
+            0.188481,
+            0.344304,
+            0.05945
+          ]
+        },
+        {
+          "mesh": "ELI_BucketCrushed_Rust",
+          "role": "Rust",
+          "triangle_count": 176,
+          "bounds_min_unity": [
+            -0.188481,
+            0.062351,
+            -0.208267
+          ],
+          "bounds_max_unity": [
+            0.185557,
+            0.294698,
+            0.213993
+          ]
+        }
+      ]
+    },
+    {
+      "name": "PipeShort",
+      "category": "metal",
+      "solid": false,
+      "bounds_min_unity": [
+        -0.06,
+        0.0,
+        -0.26
+      ],
+      "bounds_max_unity": [
+        0.06,
+        0.114127,
+        0.26
+      ],
+      "triangle_count": 160,
+      "reuse_source": "New geometry; shared bar_parts/interior_kit solids",
+      "parts": [
+        {
+          "mesh": "ELI_PipeShort_Steel",
+          "role": "Steel",
+          "triangle_count": 80,
+          "bounds_min_unity": [
+            -0.058,
+            0.001902,
+            -0.26
+          ],
+          "bounds_max_unity": [
+            0.058,
+            0.112225,
+            0.26
+          ]
+        },
+        {
+          "mesh": "ELI_PipeShort_Rust",
+          "role": "Rust",
+          "triangle_count": 80,
+          "bounds_min_unity": [
+            -0.06,
+            0.0,
+            -0.257
+          ],
+          "bounds_max_unity": [
+            0.06,
+            0.114127,
+            -0.227
+          ]
+        }
+      ]
+    },
+    {
+      "name": "PipeBent",
+      "category": "metal",
+      "solid": false,
+      "bounds_min_unity": [
+        -0.131252,
+        0.0,
+        -0.282004
+      ],
+      "bounds_max_unity": [
+        0.131252,
+        0.125055,
+        0.282004
+      ],
+      "triangle_count": 240,
+      "reuse_source": "New geometry; shared bar_parts/interior_kit solids",
+      "parts": [
+        {
+          "mesh": "ELI_PipeBent_PaintGreen",
+          "role": "PaintGreen",
+          "triangle_count": 160,
+          "bounds_min_unity": [
+            -0.131252,
+            0.0,
+            -0.282004
+          ],
+          "bounds_max_unity": [
+            0.131252,
+            0.122452,
+            0.282004
+          ]
+        },
+        {
+          "mesh": "ELI_PipeBent_Rust",
+          "role": "Rust",
+          "triangle_count": 80,
+          "bounds_min_unity": [
+            0.000386,
+            0.007155,
+            0.005887
+          ],
+          "bounds_max_unity": [
+            0.126634,
+            0.125055,
+            0.085093
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Tyre",
+      "category": "rubber",
+      "solid": true,
+      "bounds_min_unity": [
+        -0.34,
+        0.0,
+        -0.34
+      ],
+      "bounds_max_unity": [
+        0.34,
+        0.13,
+        0.34
+      ],
+      "triangle_count": 320,
+      "reuse_source": "build-city-misc-3d-model.py:outward_annulus_z topology; new faceted rounded tyre cross-section",
+      "parts": [
+        {
+          "mesh": "ELI_Tyre_Rubber",
+          "role": "Rubber",
+          "triangle_count": 320,
+          "bounds_min_unity": [
+            -0.34,
+            0.0,
+            -0.34
+          ],
+          "bounds_max_unity": [
+            0.34,
+            0.13,
+            0.34
+          ]
+        }
+      ]
+    },
+    {
+      "name": "BicycleRim",
+      "category": "metal",
+      "solid": false,
+      "bounds_min_unity": [
+        -0.344,
+        0.0,
+        -0.344
+      ],
+      "bounds_max_unity": [
+        0.344,
+        0.04,
+        0.344
+      ],
+      "triangle_count": 256,
+      "reuse_source": "build-city-misc-3d-model.py:outward_annulus_z; empty detached bicycle rim",
+      "parts": [
+        {
+          "mesh": "ELI_BicycleRim_Steel",
+          "role": "Steel",
+          "triangle_count": 128,
+          "bounds_min_unity": [
+            -0.344,
+            0.0,
+            -0.344
+          ],
+          "bounds_max_unity": [
+            0.344,
+            0.04,
+            0.344
+          ]
+        },
+        {
+          "mesh": "ELI_BicycleRim_Rust",
+          "role": "Rust",
+          "triangle_count": 128,
+          "bounds_min_unity": [
+            -0.327,
+            0.009,
+            -0.327
+          ],
+          "bounds_max_unity": [
+            0.327,
+            0.031,
+            0.327
+          ]
+        }
+      ]
+    },
+    {
+      "name": "BicycleNoWheels",
+      "category": "bicycle",
+      "solid": true,
+      "bounds_min_unity": [
+        -0.76338,
+        0.0,
+        -0.428022
+      ],
+      "bounds_max_unity": [
+        0.76338,
+        0.480758,
+        0.428022
+      ],
+      "triangle_count": 536,
+      "reuse_source": "build-city-misc-3d-model.py:build_courtyard_bicycle_repair BicycleFrame_Residential_PaintedMetal geometry and wheel radii; isolated, damaged and laid down",
+      "parts": [
+        {
+          "mesh": "ELI_BicycleNoWheels_PaintGreen",
+          "role": "PaintGreen",
+          "triangle_count": 292,
+          "bounds_min_unity": [
+            -0.76338,
+            0.102203,
+            -0.428022
+          ],
+          "bounds_max_unity": [
+            0.76338,
+            0.480758,
+            0.363866
+          ]
+        },
+        {
+          "mesh": "ELI_BicycleNoWheels_Rust",
+          "role": "Rust",
+          "triangle_count": 72,
+          "bounds_min_unity": [
+            -0.322588,
+            0.18061,
+            -0.318772
+          ],
+          "bounds_max_unity": [
+            0.473343,
+            0.304385,
+            0.152497
+          ]
+        },
+        {
+          "mesh": "ELI_BicycleNoWheels_Steel",
+          "role": "Steel",
+          "triangle_count": 88,
+          "bounds_min_unity": [
+            -0.317929,
+            0.085283,
+            -0.354929
+          ],
+          "bounds_max_unity": [
+            0.091,
+            0.35327,
+            0.355661
+          ]
+        },
+        {
+          "mesh": "ELI_BicycleNoWheels_Rubber",
+          "role": "Rubber",
+          "triangle_count": 84,
+          "bounds_min_unity": [
+            -0.424171,
+            0.0,
+            -0.37277
+          ],
+          "bounds_max_unity": [
+            0.151872,
+            0.438595,
+            0.428022
+          ]
+        }
+      ]
+    },
+    {
+      "name": "BicycleOneWheel",
+      "category": "bicycle",
+      "solid": true,
+      "bounds_min_unity": [
+        -0.933202,
+        0.0,
+        -0.584018
+      ],
+      "bounds_max_unity": [
+        0.933202,
+        0.487388,
+        0.584018
+      ],
+      "triangle_count": 888,
+      "reuse_source": "build-city-misc-3d-model.py:build_courtyard_bicycle_repair BicycleFrame_Residential_PaintedMetal geometry and wheel radii; isolated, damaged and laid down",
+      "parts": [
+        {
+          "mesh": "ELI_BicycleOneWheel_PaintBlue",
+          "role": "PaintBlue",
+          "triangle_count": 292,
+          "bounds_min_unity": [
+            -0.559277,
+            0.0,
+            -0.224401
+          ],
+          "bounds_max_unity": [
+            0.933202,
+            0.38105,
+            0.563635
+          ]
+        },
+        {
+          "mesh": "ELI_BicycleOneWheel_Rust",
+          "role": "Rust",
+          "triangle_count": 72,
+          "bounds_min_unity": [
+            -0.137414,
+            0.176188,
+            -0.148247
+          ],
+          "bounds_max_unity": [
+            0.653922,
+            0.297008,
+            0.32839
+          ]
+        },
+        {
+          "mesh": "ELI_BicycleOneWheel_Steel",
+          "role": "Steel",
+          "triangle_count": 312,
+          "bounds_min_unity": [
+            -0.889209,
+            0.116016,
+            -0.538488
+          ],
+          "bounds_max_unity": [
+            0.290556,
+            0.396513,
+            0.519635
+          ]
+        },
+        {
+          "mesh": "ELI_BicycleOneWheel_Rubber",
+          "role": "Rubber",
+          "triangle_count": 212,
+          "bounds_min_unity": [
+            -0.933202,
+            0.02515,
+            -0.584018
+          ],
+          "bounds_max_unity": [
+            0.349727,
+            0.487388,
+            0.584018
+          ]
+        }
+      ]
+    },
+    {
+      "name": "BicycleBentFork",
+      "category": "bicycle",
+      "solid": true,
+      "bounds_min_unity": [
+        -0.94008,
+        0.0,
+        -0.607507
+      ],
+      "bounds_max_unity": [
+        0.94008,
+        0.488295,
+        0.607507
+      ],
+      "triangle_count": 892,
+      "reuse_source": "build-city-misc-3d-model.py:build_courtyard_bicycle_repair BicycleFrame_Residential_PaintedMetal geometry and wheel radii; isolated, damaged and laid down",
+      "parts": [
+        {
+          "mesh": "ELI_BicycleBentFork_PaintGreen",
+          "role": "PaintGreen",
+          "triangle_count": 296,
+          "bounds_min_unity": [
+            -0.567371,
+            0.046692,
+            -0.240905
+          ],
+          "bounds_max_unity": [
+            0.94008,
+            0.488295,
+            0.607507
+          ]
+        },
+        {
+          "mesh": "ELI_BicycleBentFork_Rust",
+          "role": "Rust",
+          "triangle_count": 72,
+          "bounds_min_unity": [
+            -0.169432,
+            0.177789,
+            -0.137645
+          ],
+          "bounds_max_unity": [
+            0.618978,
+            0.303128,
+            0.361857
+          ]
+        },
+        {
+          "mesh": "ELI_BicycleBentFork_Steel",
+          "role": "Steel",
+          "triangle_count": 312,
+          "bounds_min_unity": [
+            -0.896107,
+            0.083069,
+            -0.56179
+          ],
+          "bounds_max_unity": [
+            0.275586,
+            0.351057,
+            0.516192
+          ]
+        },
+        {
+          "mesh": "ELI_BicycleBentFork_Rubber",
+          "role": "Rubber",
+          "triangle_count": 212,
+          "bounds_min_unity": [
+            -0.94008,
+            0.0,
+            -0.607507
+          ],
+          "bounds_max_unity": [
+            0.334219,
+            0.434105,
+            0.583829
+          ]
+        }
+      ]
+    },
+    {
+      "name": "BicycleNoSaddle",
+      "category": "bicycle",
+      "solid": true,
+      "bounds_min_unity": [
+        -0.891111,
+        0.0,
+        -0.646414
+      ],
+      "bounds_max_unity": [
+        0.891111,
+        0.495472,
+        0.646414
+      ],
+      "triangle_count": 860,
+      "reuse_source": "build-city-misc-3d-model.py:build_courtyard_bicycle_repair BicycleFrame_Residential_PaintedMetal geometry and wheel radii; isolated, damaged and laid down",
+      "parts": [
+        {
+          "mesh": "ELI_BicycleNoSaddle_PaintBlue",
+          "role": "PaintBlue",
+          "triangle_count": 292,
+          "bounds_min_unity": [
+            -0.52064,
+            0.0,
+            -0.279106
+          ],
+          "bounds_max_unity": [
+            0.891111,
+            0.379031,
+            0.646414
+          ]
+        },
+        {
+          "mesh": "ELI_BicycleNoSaddle_Rust",
+          "role": "Rust",
+          "triangle_count": 72,
+          "bounds_min_unity": [
+            -0.149635,
+            0.178291,
+            -0.147096
+          ],
+          "bounds_max_unity": [
+            0.635608,
+            0.303526,
+            0.378786
+          ]
+        },
+        {
+          "mesh": "ELI_BicycleNoSaddle_Steel",
+          "role": "Steel",
+          "triangle_count": 312,
+          "bounds_min_unity": [
+            -0.847279,
+            0.120373,
+            -0.601044
+          ],
+          "bounds_max_unity": [
+            0.31313,
+            0.404214,
+            0.388673
+          ]
+        },
+        {
+          "mesh": "ELI_BicycleNoSaddle_Rubber",
+          "role": "Rubber",
+          "triangle_count": 184,
+          "bounds_min_unity": [
+            -0.891111,
+            0.02907,
+            -0.646414
+          ],
+          "bounds_max_unity": [
+            0.371729,
+            0.495472,
+            0.143377
+          ]
+        }
+      ]
+    }
+  ],
+  "triangle_count": 9664
+}

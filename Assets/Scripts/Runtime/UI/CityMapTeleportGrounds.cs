@@ -206,6 +206,8 @@ namespace BarPromenade
                 footprints.Add(Expand(eastExit.BoothBounds, radius));
                 foreach (CityEastExitDressingSolid solid in CityEastExitDressingPlan.Create(eastExit).Solids)
                     footprints.Add(Expand(solid.Footprint, radius));
+                foreach (CityEastLitterPart part in CityEastLitterPlan.Create(eastExit).Parts)
+                    if (part.Item.Solid) footprints.Add(Expand(part.Footprint, radius));
             }
             if (church != null)
             {

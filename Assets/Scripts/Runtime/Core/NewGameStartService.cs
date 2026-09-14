@@ -59,6 +59,22 @@ namespace BarPromenade
                 pendingLocation = location;
                 pendingOperationId = SceneTransitionService.CurrentOperationId;
             }
+
+            // A start inside one of the City's interiors ends at a door
+            // into a City nobody has built: its pure plans are primed on a
+            // pool thread now, so the door joins finished work instead of
+            // planning under the black. The flat is left out - its root
+            // reads the City layout while booting and would only wait.
+            if (!isArea &&
+                location != NewGameLocation.Home &&
+                ResidentExteriorPolicy.GetExteriorOfInterior(scene) == SceneIds.City)
+            {
+                CityLayoutCache.PrimeCityPlans(
+                    CityBlueprintCatalog.Resolve(GameSessionState.CityBlueprintId),
+                    CityGenerationSettings.Default,
+                    GameSessionState.CitySeed,
+                    "new_game_" + location.ToString().ToLowerInvariant());
+            }
             GameLog.Info("session", "new_game_location_selected",
                 GameLog.Field("location", location.ToString()),
                 GameLog.Field("scene", scene),

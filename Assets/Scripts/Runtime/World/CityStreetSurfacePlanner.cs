@@ -1,11 +1,23 @@
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using UnityEngine;
 
 namespace BarPromenade
 {
     public static class CityStreetSurfacePlanner
     {
+        /// <summary>
+        /// One plan per layout: the result is read-only copies all the way
+        /// down, and the bus grounding, the road batches, the pedestrian
+        /// planner and the cannery trolleys each used to plan it again
+        /// (18-54 ms apiece) for the same answer.
+        /// </summary>
+        private static readonly ConditionalWeakTable<CityLayout, CityStreetSurfacePlan>
+            Plans = new ConditionalWeakTable<CityLayout, CityStreetSurfacePlan>();
+        private static readonly ConditionalWeakTable<CityLayout, CityStreetSurfacePlan>
+            .CreateValueCallback CreateUncachedCallback = CreateUncached;
+
         public const float SidewalkWidth = 1f;
         public const float RoadTop = 0.08f;
         public const float SidewalkTop = 0.14f;
@@ -36,6 +48,11 @@ namespace BarPromenade
                 throw new ArgumentNullException(nameof(layout));
             }
 
+            return Plans.GetValue(layout, CreateUncachedCallback);
+        }
+
+        private static CityStreetSurfacePlan CreateUncached(CityLayout layout)
+        {
             float carriagewayWidth =
                 layout.RoadWidth - (SidewalkWidth * 2f);
             if (!IsFinite(layout.RoadWidth) ||

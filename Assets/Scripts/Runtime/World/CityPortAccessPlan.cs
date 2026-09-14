@@ -154,12 +154,7 @@ namespace BarPromenade
                 return null;
             if (!Plans.TryGetValue(layout, out CityPortAccessPlan plan))
             {
-                if (definition == null)
-                {
-                    TextAsset asset = Resources.Load<TextAsset>("City/Port/PortAccessLayout");
-                    if (asset == null) throw new InvalidOperationException("Missing authored port access contract.");
-                    definition = JsonUtility.FromJson<Definition>(asset.text);
-                }
+                WarmDefinition();
                 plan = new CityPortAccessPlan(layout, port, definition);
                 Plans.Add(layout, plan);
             }
@@ -167,6 +162,17 @@ namespace BarPromenade
                 throw new InvalidOperationException("Port civil geometry and seacoast origin disagree.");
             port.Access = plan;
             return plan;
+        }
+
+        /// <summary>Loads the authored contract once. The only UnityEngine.Object
+        /// read in the whole City planning chain: a pool-thread prime
+        /// (CityLayoutCache) calls this on the main thread before it starts.</summary>
+        internal static void WarmDefinition()
+        {
+            if (definition != null) return;
+            TextAsset asset = Resources.Load<TextAsset>("City/Port/PortAccessLayout");
+            if (asset == null) throw new InvalidOperationException("Missing authored port access contract.");
+            definition = JsonUtility.FromJson<Definition>(asset.text);
         }
 
         private static bool Supports(CityLayout layout) =>

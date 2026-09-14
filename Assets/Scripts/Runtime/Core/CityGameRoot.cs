@@ -583,12 +583,14 @@ namespace BarPromenade
                 Music,
                 World.CemeteryPlan);
             stepTimer.Restart();
+            // Both memoised per layout (the plan per seed too): a primed
+            // start, or a second entry, reads them; the walkable area
+            // stays per build.
             CityStreetSurfacePlan pedestrianStreetSurfacePlan =
                 CityStreetSurfacePlanner.Create(Layout);
-            PedestrianPlan = CityPedestrianPlanner.Create(
+            PedestrianPlan = CityLayoutCache.GetOrCreatePedestrianPlan(
                 Layout,
-                GameSessionState.CitySeed,
-                pedestrianStreetSurfacePlan);
+                GameSessionState.CitySeed);
             RoadWalkableArea pedestrianWalkableArea =
                 CityPedestrianPlanner.CreateWalkableArea(PedestrianPlan);
             GameLogPhases.Report("city", "pedestrian_plan", stepTimer);
@@ -599,6 +601,7 @@ namespace BarPromenade
                 Player.GameObject.transform,
                 pedestrianWalkableArea);
             GameLogPhases.Report("city", "pedestrian_pool", stepTimer);
+            stepTimer.Restart();
             Night.InitializeLighting(
                 Player.GameObject.transform,
                 Layout.Seed,
@@ -614,6 +617,7 @@ namespace BarPromenade
             }
             DayNight = gameObject.AddComponent<CityDayNightController>();
             DayNight.Initialize(Night);
+            GameLogPhases.Report("city", "night_lighting", stepTimer);
             yield return new CompositionStep("player_and_pedestrians", 0.76f);
             stepTimer.Restart();
             BusPlan = CityBusPlanner.Create(
@@ -629,6 +633,7 @@ namespace BarPromenade
                 Pedestrians,
                 () => Night.NightFactor);
             GameLogPhases.Report("city", "bus", stepTimer);
+            stepTimer.Restart();
             // The yard rider is authored, not ambient: one staged NPC on
             // the invisible circuit immediately left of the selected bar,
             // outside the pedestrian pool and its spawn bands.
@@ -662,12 +667,16 @@ namespace BarPromenade
                 Layout.Seed,
                 CityBalconySmokerPlan.CreateCandidates(Layout),
                 Player.GameObject.transform);
+            GameLogPhases.Report("city", "staged_npcs", stepTimer);
+            stepTimer.Restart();
             if (World.ArchShelterPlan.IsEnabled)
             {
                 ArchShelterPresentation = World.ArchShelter.Root
                     .AddComponent<CityArchShelterPresentation>();
                 ArchShelterPresentation.Initialize(Layout.Seed);
             }
+
+            GameLogPhases.Report("city", "arch_shelter", stepTimer);
             // The public industrial lot now carries a working cannery. Its
             // production controller owns the crew; the retired human-weighing
             // tableau and its player-sensitive scale are never instantiated.
@@ -677,6 +686,7 @@ namespace BarPromenade
             Cannery = CityCanneryController.Build(transform, Layout,
                 World.Root.GetComponentInChildren<CityPortController>(), Player.GameObject.transform);
             GameLogPhases.Report("city", "cannery", stepTimer);
+            stepTimer.Restart();
             // The cemetery's one scripted visitor: while the hero is
             // near the grounds a mourner spawns out of sight, walks
             // through the gate to a deterministic random grave, lays
@@ -723,6 +733,7 @@ namespace BarPromenade
                 transform,
                 SeacoastFishermanPlan.Create(World.SeacoastPlan),
                 GameSessionState.CitySeed);
+            GameLogPhases.Report("city", "cemetery_staff", stepTimer);
             // The last route island kept its timetable and lost its buses.
             // A car waits beside the paving instead, off the circle and
             // clear of every way in - and absent altogether on a seed that
@@ -770,6 +781,7 @@ namespace BarPromenade
                     LastRouteCarLamps.RideOnly);
             }
             GameLogPhases.Report("city", "last_route_car", stepTimer);
+            stepTimer.Restart();
             // The park kept a place for company and two men still keep
             // it: an old player at each of the two chess tables, on
             // seats that are each other's rotated 180 degrees about the
@@ -846,7 +858,9 @@ namespace BarPromenade
             }
 
             follow.Initialize(camera, Player.GameObject.transform, false);
+            GameLogPhases.Report("city", "park_and_benches", stepTimer);
             yield return new CompositionStep("residents_and_interactions", 0.87f);
+            stepTimer.Restart();
             TargetInteraction =
                 ui.AddComponent<InventoryTargetInteractionController>();
             TargetInteraction.Initialize(
@@ -984,6 +998,7 @@ namespace BarPromenade
                 "city",
                 "bus_stop_waits_planned",
                 GameLog.Field("wait_points", BusStopWaits.Count));
+            GameLogPhases.Report("city", "interactions_and_rides", stepTimer);
             // The city sound layer is composed only after every moving
             // physical owner exists. Its plan contains no anonymous fallback
             // emitters: missing fixtures stay silent.
@@ -1080,6 +1095,7 @@ namespace BarPromenade
                     (TunnelShelter != null && TunnelShelter.IsSheltered),
                 new CityEternalRainShaper());
             GameLogPhases.Report("city", "soundscape_and_weather", stepTimer);
+            stepTimer.Restart();
             Clouds = ExteriorCloudField.Create(
                 transform,
                 camera,
@@ -1138,6 +1154,7 @@ namespace BarPromenade
             // with no work controller at all. The ground is the one the
             // arrival already built: it is a function of the layout, and
             // the map takes the same instance below.
+            GameLogPhases.Report("city", "ambient_ai", stepTimer);
             stepTimer.Restart();
             CityRavenRoosts = RavenRoostController.Create(
                 transform,

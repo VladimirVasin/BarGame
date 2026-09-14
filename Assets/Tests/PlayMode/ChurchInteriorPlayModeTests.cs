@@ -124,6 +124,73 @@ namespace BarPromenade.Tests.PlayMode
         }
 
         /// <summary>
+        /// A new game that starts in the church ends at a door into a City
+        /// nobody has built. The start primes the City's pure plans on a
+        /// pool thread while the player is inside, and the exit's build
+        /// joins them instead of planning under the black: the layout the
+        /// City reads is the primed one, and every plan the worker ran is
+        /// a memo hit by the time the hero stands at the church door.
+        /// </summary>
+        [UnityTest]
+        public IEnumerator NewGame_InTheChurch_PrimesTheCityThePlayerExitsInto()
+        {
+            yield return SceneManager.LoadSceneAsync(
+                SceneIds.MainMenu,
+                LoadSceneMode.Single);
+            StartMenuRoot menu = UnityEngine.Object.FindAnyObjectByType<StartMenuRoot>();
+            Assert.That(menu, Is.Not.Null);
+            Assert.That(menu.ConfirmSelection(), Is.True);
+            Assert.That(menu.SelectLocation(NewGameLocation.Church), Is.True);
+            Assert.That(menu.ConfirmSelection(), Is.True);
+            yield return WaitUntil(
+                () => !SceneTransitionService.IsTransitioning &&
+                      SceneManager.GetActiveScene().name == SceneIds.ChurchInterior,
+                "The church start did not settle.");
+            Assert.That(
+                CityLayoutCache.HasPendingCityPlans,
+                Is.True,
+                "A church start must have the City's plans out on the pool.");
+
+            ChurchInteriorRoot interior = null;
+            yield return WaitForLoadedRoot(
+                SceneIds.ChurchInterior,
+                ChurchRootName,
+                (ChurchInteriorRoot root) => interior = root);
+            yield return WaitUntil(
+                () => interior.IsInitialized,
+                "ChurchInterior did not boot.");
+            PlacePlayerAtDoor(interior.Player, interior.Exit);
+            interior.Exit.Interact(interior.Player.Interactor);
+            yield return WaitUntil(
+                () => SceneTransitionService.IsTransitioning,
+                "Church exit DoorUse did not complete.");
+
+            CityGameRoot city = null;
+            yield return WaitForLoadedRoot(
+                SceneIds.City,
+                CityRootName,
+                (CityGameRoot root) => city = root);
+            yield return WaitUntil(
+                () => city.IsInitialized &&
+                      !SceneTransitionService.IsTransitioning,
+                "Church return to City did not settle.");
+
+            Assert.That(CityLayoutCache.HasPendingCityPlans, Is.False, "The build joined the prime.");
+            Assert.That(CityWorldPlans.IsMemoised(city.Layout), Is.True, "The world plans came from the prime.");
+            Assert.That(
+                CityLayoutCache.GetOrCreatePedestrianPlan(city.Layout, GameSessionState.CitySeed),
+                Is.SameAs(city.PedestrianPlan));
+            Vector3 expectedReturn = city.World.ChurchPlan.ReturnPosition;
+            Vector3 actualReturn = city.Player.GameObject.transform.position;
+            Assert.That(
+                Vector2.Distance(
+                    new Vector2(actualReturn.x, actualReturn.z),
+                    new Vector2(expectedReturn.x, expectedReturn.z)),
+                Is.LessThan(0.05f));
+            LogAssert.NoUnexpectedReceived();
+        }
+
+        /// <summary>
         /// The City half of the round trip, which the interior test
         /// above never touches: walk in off the street and open the
         /// door. The dock used to be computed from the top of the

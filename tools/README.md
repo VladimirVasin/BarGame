@@ -1,10 +1,12 @@
 # Art and native tool entry points
 
-`build-city-east-{exit,guards}-3d-model.py`: post/far/guard rigs/actions/atlas/rifle;
-`run-blender.py`/`--validate-only`. Exit `--dressing-only`: ground/fixtures,
-`BranchShrub/CreepingScrub/MattedGrass/TallWeeds/GravelScatter`, drain/grate/stock.
+`build-city-east-{exit,guards}-3d-model.py`: post/far/guards; exit
+`--dressing-only`: ground/fixtures/plants/drain/stock. Common launcher/validator.
 `Assets/Resources/City/EastExit`; source `ArtSource/City/EastExit`.
 `build-city-east-ground-texture.py --verify`: grass/soil seam.
+
+`build-city-litter-3d-model.py`: 36 props; `--validate-only`:
+geometry/determinism. Contact sheet.
 
 `build-city-cannery-3d-model.py`: ten metre FBXs/JSON in `Assets/Resources/City/Cannery`,
 source `ArtSource/City/Cannery`; port maps/outdoor scales/`CartonStack`;

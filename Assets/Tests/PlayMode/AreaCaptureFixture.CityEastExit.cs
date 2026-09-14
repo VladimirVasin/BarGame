@@ -88,7 +88,9 @@ namespace BarPromenade.Tests.PlayMode
             VerifyEastDressing(city, plan, landing);
             VerifyEastGroundTransition(city, plan, landing);
             VerifyEastOpenForefield(city, plan);
+            VerifyEastLitter(city, plan, landing);
             VerifyEastSwale(city, plan, landing);
+            yield return CaptureEastLitterDetails(city, plan);
             yield return CaptureEastFenceThirdPerson(city, plan, landing, "day");
             if (landscapeOnly)
             {

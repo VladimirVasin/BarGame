@@ -121,6 +121,189 @@ namespace BarPromenade.Tests.EditMode
             }
         }
 
+        /// <summary>
+        /// The bit-identity proof for the primed terrain: the three lists
+        /// a City-interior start samples on a pool thread must be the
+        /// lists the build would sample here, float for float, and the
+        /// build fed those lists must draw and collide on exactly them.
+        /// </summary>
+        [Test]
+        [Category("CityTraversal")]
+        public void CreateMeshSource_OnAPoolThread_IsBitIdenticalToTheMainThread()
+        {
+            CityLayout layout = CityLayoutGenerator.Generate(
+                CityBlueprintCatalog.Default,
+                CityGenerationSettings.Default,
+                20260727);
+            // A twin instance for the pool thread, so every per-layout memo
+            // the sampling fills (port access, cannery, road index) is
+            // filled there from nothing, as a primed start fills them.
+            CityLayout twin = CityLayoutGenerator.Generate(
+                CityBlueprintCatalog.Default,
+                CityGenerationSettings.Default,
+                20260727);
+            // What the prime resolves on the main thread before it starts.
+            CityPortAccessPlan.WarmDefinition();
+            float sandTile = CitySeacoastSurfaceAppearance.GetRecipe(
+                CitySeacoastSurfaceKind.Sand).MetersPerTile;
+            CityTerrainMeshSource[] expected = SampleBeachSources(layout, sandTile);
+
+            CityTerrainMeshSource[] primed = System.Threading.Tasks.Task
+                .Run(() => SampleBeachSources(twin, sandTile))
+                .GetAwaiter()
+                .GetResult();
+
+            for (int index = 0; index < expected.Length; index++)
+            {
+                AssertSameSource(primed[index], expected[index]);
+            }
+
+            var root = new GameObject("Primed Beach Test Root");
+            try
+            {
+                GameObject beach = CityTerrainSurfaceWorldBuilder.Build(
+                    "Beach",
+                    root.transform,
+                    layout,
+                    CitySurfaceKind.Beach,
+                    Color.yellow,
+                    false,
+                    sandTile,
+                    primedVisual: primed[0],
+                    primedCollision: primed[1]);
+                Assert.That(beach, Is.Not.Null);
+                Mesh drawn = beach.GetComponent<MeshFilter>().sharedMesh;
+                Mesh collision = beach.GetComponent<MeshCollider>().sharedMesh;
+                Assert.That(collision, Is.Not.SameAs(drawn));
+                Assert.That(drawn.vertexCount, Is.EqualTo(expected[0].Vertices.Count));
+                Assert.That(collision.vertexCount, Is.EqualTo(expected[1].Vertices.Count));
+                Assert.That(drawn.vertices[0], Is.EqualTo(expected[0].Vertices[0]));
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(root);
+            }
+        }
+
+        /// <summary>
+        /// The seabed's per-column shore cache is a memo, not an
+        /// approximation: every height and normal it answers must be the
+        /// bits the uncached taps compute, over the whole slope including
+        /// the port's dredge and the graded core.
+        /// </summary>
+        [Test]
+        [Category("CityTraversal")]
+        public void SeabedShoreColumns_AnswerTheUncachedTapsToTheBit()
+        {
+            CityLayout layout = CityLayoutGenerator.Generate(
+                CityBlueprintCatalog.Default,
+                CityGenerationSettings.Default,
+                20260727);
+            CityPortPlan port = CitySeacoastPlanner.CreatePortPlan(layout);
+            int compared = 0;
+            foreach (CitySurfaceDescriptor surface in layout.Surfaces)
+            {
+                if (surface.Kind != CitySurfaceKind.Beach ||
+                    surface.Feature != CityAreaFeatureKind.NorthWaterfront ||
+                    !CityTerrainSurfacePlan.UsesContinuousTop(surface))
+                {
+                    continue;
+                }
+
+                CityTerrainSurfacePlan.SurfaceContext context =
+                    CityTerrainSurfacePlan.ResolveSurfaceContext(layout, surface);
+                var columns = new CitySeacoastSeaLayout.SeabedShoreColumns();
+                Rect bounds = surface.WorldBounds;
+                for (float x = bounds.xMin; x <= bounds.xMax; x += 0.4f)
+                {
+                    for (float reach = 0.5f;
+                         reach <= CitySeacoastSeaLayout.SeabedReach;
+                         reach += 1.3f)
+                    {
+                        var point = new Vector2(x, bounds.yMax + reach);
+                        float expectedTop = CitySeacoastSeaLayout.SampleSeabedTop(
+                            layout, surface, point, port, in context);
+                        Vector3 expectedNormal = CitySeacoastSeaLayout.SampleSeabedNormal(
+                            layout, surface, point, port, in context);
+                        float cachedTop = CitySeacoastSeaLayout.SampleSeabedTop(
+                            layout, surface, point, port, in context, columns);
+                        Vector3 cachedNormal = CitySeacoastSeaLayout.SampleSeabedNormal(
+                            layout, surface, point, port, in context, columns);
+                        Assert.That(
+                            System.BitConverter.SingleToInt32Bits(cachedTop),
+                            Is.EqualTo(System.BitConverter.SingleToInt32Bits(expectedTop)),
+                            $"top at {point}");
+                        AssertSameBits(cachedNormal, expectedNormal, "seabed normal", compared);
+                        compared++;
+                    }
+                }
+            }
+
+            Assert.That(compared, Is.GreaterThan(1000), "the shore must have been sampled");
+        }
+
+        private static CityTerrainMeshSource[] SampleBeachSources(
+            CityLayout layout,
+            float sandTile)
+        {
+            return new[]
+            {
+                CityTerrainSurfaceWorldBuilder.CreateMeshSource(
+                    layout, CitySurfaceKind.Beach, sandTile, null, null, false,
+                    CityBeachSandPlan.MeshPitch),
+                CityTerrainSurfaceWorldBuilder.CreateMeshSource(
+                    layout, CitySurfaceKind.Beach, sandTile, null, null, false,
+                    CityBeachSandPlan.CollisionPitch),
+                CityTerrainSurfaceWorldBuilder.CreateMeshSource(
+                    layout, CitySurfaceKind.Beach, sandTile, null, null, true,
+                    CityBeachSandPlan.MeshPitch)
+            };
+        }
+
+        private static void AssertSameSource(
+            CityTerrainMeshSource actual,
+            CityTerrainMeshSource expected)
+        {
+            Assert.That(actual.Vertices.Count, Is.EqualTo(expected.Vertices.Count));
+            Assert.That(actual.Normals.Count, Is.EqualTo(expected.Normals.Count));
+            Assert.That(actual.Uvs.Count, Is.EqualTo(expected.Uvs.Count));
+            Assert.That(actual.Triangles.Count, Is.EqualTo(expected.Triangles.Count));
+            for (int index = 0; index < expected.Vertices.Count; index++)
+            {
+                AssertSameBits(actual.Vertices[index], expected.Vertices[index], "vertex", index);
+                AssertSameBits(actual.Normals[index], expected.Normals[index], "normal", index);
+                Assert.That(
+                    System.BitConverter.SingleToInt32Bits(actual.Uvs[index].x),
+                    Is.EqualTo(System.BitConverter.SingleToInt32Bits(expected.Uvs[index].x)),
+                    $"uv {index} x");
+                Assert.That(
+                    System.BitConverter.SingleToInt32Bits(actual.Uvs[index].y),
+                    Is.EqualTo(System.BitConverter.SingleToInt32Bits(expected.Uvs[index].y)),
+                    $"uv {index} y");
+            }
+
+            for (int index = 0; index < expected.Triangles.Count; index++)
+            {
+                Assert.That(actual.Triangles[index], Is.EqualTo(expected.Triangles[index]));
+            }
+        }
+
+        private static void AssertSameBits(Vector3 actual, Vector3 expected, string what, int index)
+        {
+            Assert.That(
+                System.BitConverter.SingleToInt32Bits(actual.x),
+                Is.EqualTo(System.BitConverter.SingleToInt32Bits(expected.x)),
+                $"{what} {index} x");
+            Assert.That(
+                System.BitConverter.SingleToInt32Bits(actual.y),
+                Is.EqualTo(System.BitConverter.SingleToInt32Bits(expected.y)),
+                $"{what} {index} y");
+            Assert.That(
+                System.BitConverter.SingleToInt32Bits(actual.z),
+                Is.EqualTo(System.BitConverter.SingleToInt32Bits(expected.z)),
+                $"{what} {index} z");
+        }
+
         [Test]
         [Category("CityTraversal")]
         public void DefaultPlazasAndPublicPads_ClearContinuousTerrain()

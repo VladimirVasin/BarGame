@@ -169,11 +169,14 @@ namespace BarPromenade
 
             // Same sand, same UVs and matching edge vertices. Water
             // absorption supplies the darkening as the slope gets deeper.
+            // A City-interior start samples the slope on a pool thread.
+            CityLayoutCache.TryTakePrimedTerrainSource(
+                layout, PrimedTerrainSourceKind.Seabed, out CityTerrainMeshSource primedBed);
             GameObject bed = CityTerrainSurfaceWorldBuilder.Build(
                 "Sea Bed Slope", sea, layout, CitySurfaceKind.Beach,
                 CityExteriorAppearance.BeachSand, false,
                 CitySeacoastSurfaceAppearance.GetRecipe(CitySeacoastSurfaceKind.Sand).MetersPerTile,
-                seabedOnly: true);
+                seabedOnly: true, primedVisual: primedBed);
             if (bed != null)
                 CitySeacoastSurfaceAppearance.ApplyCombined(bed.GetComponent<Renderer>(),
                     CitySeacoastSurfaceKind.Sand, CityExteriorAppearance.BeachSand);
@@ -1222,19 +1225,47 @@ namespace BarPromenade
         /// Only a Beach surface is ever extended into the sea, so
         /// <c>context.Access</c> is exactly what <c>ForLayout</c> returned.
         /// </summary>
+        /// <summary>
+        /// The two beach taps the slope hangs on - the shore's height and
+        /// its tangent - depend on the column's x alone, while the mesh
+        /// asks for them at every row and at the four normal taps of every
+        /// vertex. Keyed by the exact float, so a hit returns the very
+        /// value the taps computed and the slope stays bit-identical.
+        /// </summary>
+        internal sealed class SeabedShoreColumns
+        {
+            private readonly Dictionary<float, (float edgeTop, float shoreSlope)> columns =
+                new Dictionary<float, (float, float)>();
+
+            internal bool TryGet(float x, out float edgeTop, out float shoreSlope)
+            {
+                bool hit = columns.TryGetValue(x, out (float edgeTop, float shoreSlope) column);
+                edgeTop = column.edgeTop;
+                shoreSlope = column.shoreSlope;
+                return hit;
+            }
+
+            internal void Set(float x, float edgeTop, float shoreSlope) =>
+                columns[x] = (edgeTop, shoreSlope);
+        }
+
         internal static float SampleSeabedTop(
             CityLayout layout, CitySurfaceDescriptor surface, Vector2 point, CityPortPlan port,
-            in CityTerrainSurfacePlan.SurfaceContext context)
+            in CityTerrainSurfacePlan.SurfaceContext context, SeabedShoreColumns columns = null)
         {
             float distance = point.y - surface.WorldBounds.yMax;
             if (distance <= 0f)
                 return CityTerrainSurfacePlan.SampleTop(layout, surface, point, in context);
-            var edge = new Vector2(point.x, surface.WorldBounds.yMax);
-            float edgeTop = CityTerrainSurfacePlan.SampleTop(layout, surface, edge, in context);
-            const float tangentSample = 0.10f;
-            float shoreSlope = Mathf.Max(0f,
-                (CityTerrainSurfacePlan.SampleTop(layout, surface,
-                    edge - Vector2.up * tangentSample, in context) - edgeTop) / tangentSample);
+            if (columns == null || !columns.TryGet(point.x, out float edgeTop, out float shoreSlope))
+            {
+                var edge = new Vector2(point.x, surface.WorldBounds.yMax);
+                edgeTop = CityTerrainSurfacePlan.SampleTop(layout, surface, edge, in context);
+                const float tangentSample = 0.10f;
+                shoreSlope = Mathf.Max(0f,
+                    (CityTerrainSurfacePlan.SampleTop(layout, surface,
+                        edge - Vector2.up * tangentSample, in context) - edgeTop) / tangentSample);
+                columns?.Set(point.x, edgeTop, shoreSlope);
+            }
             float easedDistance = ShoreSlopeBlendReach *
                 (1f - Mathf.Exp(-distance / ShoreSlopeBlendReach));
             float natural = edgeTop - DeepSandSlope * distance -
@@ -1247,13 +1278,13 @@ namespace BarPromenade
 
         internal static Vector3 SampleSeabedNormal(
             CityLayout layout, CitySurfaceDescriptor surface, Vector2 point, CityPortPlan port,
-            in CityTerrainSurfacePlan.SurfaceContext context)
+            in CityTerrainSurfacePlan.SurfaceContext context, SeabedShoreColumns columns = null)
         {
             const float offset = 0.10f;
-            float west = SampleSeabedTop(layout, surface, point - Vector2.right * offset, port, in context);
-            float east = SampleSeabedTop(layout, surface, point + Vector2.right * offset, port, in context);
-            float south = SampleSeabedTop(layout, surface, point - Vector2.up * offset, port, in context);
-            float north = SampleSeabedTop(layout, surface, point + Vector2.up * offset, port, in context);
+            float west = SampleSeabedTop(layout, surface, point - Vector2.right * offset, port, in context, columns);
+            float east = SampleSeabedTop(layout, surface, point + Vector2.right * offset, port, in context, columns);
+            float south = SampleSeabedTop(layout, surface, point - Vector2.up * offset, port, in context, columns);
+            float north = SampleSeabedTop(layout, surface, point + Vector2.up * offset, port, in context, columns);
             return new Vector3(west - east, offset * 2f, south - north).normalized;
         }
 

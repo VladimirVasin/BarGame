@@ -13,6 +13,12 @@ namespace BarPromenade
         // node/edge lists - rebuilding the weighted graph per call made
         // generation super-linear in bars and lots for nothing. Keyed by
         // list identity plus counts, so a regrown list drops the cache.
+        // The five fields are one entry and are read and written under
+        // CacheSync: a layout primed on a pool thread (CityLayoutCache)
+        // validates itself there while the main thread may be reporting
+        // or generating another, and a torn entry would pair one layout's
+        // lists with the other's graph.
+        private static readonly object CacheSync = new object();
         private static IReadOnlyList<Vector2Int> cachedNodes;
         private static IReadOnlyList<RoadEdge> cachedEdges;
         private static int cachedNodeCount;
@@ -23,11 +29,14 @@ namespace BarPromenade
             RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void ResetCache()
         {
-            cachedNodes = null;
-            cachedEdges = null;
-            cachedNodeCount = 0;
-            cachedEdgeCount = 0;
-            cachedGraph = null;
+            lock (CacheSync)
+            {
+                cachedNodes = null;
+                cachedEdges = null;
+                cachedNodeCount = 0;
+                cachedEdgeCount = 0;
+                cachedGraph = null;
+            }
         }
 
         public static float BetweenBars(
@@ -85,24 +94,27 @@ namespace BarPromenade
             }
 
             WeightedGraph graph;
-            if (ReferenceEquals(nodes, cachedNodes) &&
-                ReferenceEquals(edges, cachedEdges) &&
-                nodes.Count == cachedNodeCount &&
-                edges.Count == cachedEdgeCount)
+            lock (CacheSync)
             {
-                graph = cachedGraph;
-            }
-            else
-            {
-                graph = WeightedGraph.Create(
-                    nodes,
-                    edges,
-                    getNodeWorldPosition);
-                cachedNodes = nodes;
-                cachedEdges = edges;
-                cachedNodeCount = nodes.Count;
-                cachedEdgeCount = edges.Count;
-                cachedGraph = graph;
+                if (ReferenceEquals(nodes, cachedNodes) &&
+                    ReferenceEquals(edges, cachedEdges) &&
+                    nodes.Count == cachedNodeCount &&
+                    edges.Count == cachedEdgeCount)
+                {
+                    graph = cachedGraph;
+                }
+                else
+                {
+                    graph = WeightedGraph.Create(
+                        nodes,
+                        edges,
+                        getNodeWorldPosition);
+                    cachedNodes = nodes;
+                    cachedEdges = edges;
+                    cachedNodeCount = nodes.Count;
+                    cachedEdgeCount = edges.Count;
+                    cachedGraph = graph;
+                }
             }
 
             Vector3 validatedFirstAnchor = ValidateAnchor(

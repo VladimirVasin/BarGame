@@ -23,7 +23,7 @@ namespace BarPromenade.Tests.EditMode
             // A run the reset abandoned finishes on its pool thread; wait
             // for it here so it cannot overlap a fixture that plans directly.
             Assert.That(
-                CityLayoutCache.AbandonedForeignAreaPlanWork.Wait(60_000),
+                CityLayoutCache.AbandonedPlanWork.Wait(60_000),
                 Is.True);
         }
 
@@ -242,6 +242,223 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 CityLayoutCache.GetOrCreateAlpineVillage(Seed),
                 Is.SameAs(village));
+        }
+
+        [Test]
+        public void PostYieldPlans_AreOneInstancePerLayout()
+        {
+            CityLayout layout = CityLayoutGenerator.Generate(
+                CityBlueprintCatalog.Default,
+                CityGenerationSettings.Default,
+                Seed);
+            CityLayout other = CityLayoutGenerator.Generate(
+                CityBlueprintCatalog.Default,
+                CityGenerationSettings.Default,
+                Seed);
+
+            CityStreetSurfacePlan street = CityStreetSurfacePlanner.Create(layout);
+            Assert.That(CityStreetSurfacePlanner.Create(layout), Is.SameAs(street));
+            Assert.That(CityStreetSurfacePlanner.Create(other), Is.Not.SameAs(street));
+
+            CityPedestrianPlan pedestrians =
+                CityLayoutCache.GetOrCreatePedestrianPlan(layout, Seed);
+            Assert.That(
+                CityLayoutCache.GetOrCreatePedestrianPlan(layout, Seed),
+                Is.SameAs(pedestrians));
+            Assert.That(
+                CityLayoutCache.GetOrCreatePedestrianPlan(layout, OtherSeed),
+                Is.Not.SameAs(pedestrians));
+            Assert.That(
+                CityLayoutCache.GetOrCreatePedestrianPlan(other, Seed),
+                Is.Not.SameAs(pedestrians));
+
+            CityCanneryPlan site = CityCanneryPlan.Create(layout);
+            CityPortAccessPlan access = CityPortAccessPlan.ForLayout(layout);
+            Assert.That(site, Is.Not.Null, "The default seed must grow a cannery.");
+            Assert.That(access, Is.Not.Null, "The default seed must grow the port access.");
+            CityCanneryTruckRoute route =
+                CityLayoutCache.GetOrCreateCanneryRoute(layout, site, access);
+            Assert.That(route, Is.Not.Null);
+            Assert.That(
+                CityLayoutCache.GetOrCreateCanneryRoute(layout, site, access),
+                Is.SameAs(route));
+            Assert.That(
+                CityLayoutCache.GetOrCreateCanneryRoute(layout, null, access),
+                Is.Null);
+        }
+
+        [Test]
+        public void PrimeCityPlans_JoinsPlansEqualToPlanningOnTheMainThread()
+        {
+            CityBlueprint blueprint = CityBlueprintCatalog.Default;
+            CityLayoutCache.PrimeCityPlans(
+                blueprint,
+                CityGenerationSettings.Default,
+                Seed,
+                "test");
+            Assert.That(CityLayoutCache.HasPendingCityPlans, Is.True);
+            // Priming again starts nothing: the key's work is already out.
+            CityLayoutCache.PrimeCityPlans(
+                blueprint,
+                CityGenerationSettings.Default,
+                Seed,
+                "test");
+            Assert.That(CityLayoutCache.HasPendingCityPlans, Is.True);
+
+            CityLayout layout = CityLayoutCache.GetOrGenerate(
+                blueprint,
+                CityGenerationSettings.Default,
+                Seed);
+
+            Assert.That(CityLayoutCache.HasPendingCityPlans, Is.False);
+            Assert.That(
+                CityLayoutCache.GetOrGenerate(
+                    blueprint,
+                    CityGenerationSettings.Default,
+                    Seed),
+                Is.SameAs(layout));
+            // Every stage the worker ran is a memo hit for the build.
+            Assert.That(CityWorldPlans.IsMemoised(layout), Is.True);
+            CityNightFixturePlan night = CityLayoutCache.GetOrCreateNightPlan(layout);
+            CityWorldPlans plans = CityWorldPlans.GetOrCreate(layout);
+            CityDecorationPlan decoration = plans.GetDecoration(night);
+            Assert.That(plans.GetDecoration(night), Is.SameAs(decoration));
+            Assert.That(
+                CityBusPlanner.Create(layout, decoration),
+                Is.SameAs(CityBusPlanner.Create(layout, decoration)));
+            Assert.That(
+                CityLayoutCache.GetOrCreatePedestrianPlan(layout, Seed),
+                Is.SameAs(CityLayoutCache.GetOrCreatePedestrianPlan(layout, Seed)));
+            Assert.That(
+                CityLayoutCache.TryTakePrimedTerrainSource(
+                    layout,
+                    PrimedTerrainSourceKind.BeachVisual,
+                    out CityTerrainMeshSource beach),
+                Is.True);
+            Assert.That(beach.IsEmpty, Is.False);
+            // Handed out once.
+            Assert.That(
+                CityLayoutCache.TryTakePrimedTerrainSource(
+                    layout,
+                    PrimedTerrainSourceKind.BeachVisual,
+                    out _),
+                Is.False);
+            Assert.That(
+                CityLayoutCache.TryTakePrimedTerrainSource(
+                    layout,
+                    PrimedTerrainSourceKind.BeachCollision,
+                    out CityTerrainMeshSource collision),
+                Is.True);
+            Assert.That(
+                CityLayoutCache.TryTakePrimedTerrainSource(
+                    layout,
+                    PrimedTerrainSourceKind.Seabed,
+                    out CityTerrainMeshSource seabed),
+                Is.True);
+            Assert.That(collision.Vertices.Count, Is.LessThan(beach.Vertices.Count));
+            Assert.That(seabed.IsEmpty, Is.False);
+
+            AssertSameLayout(
+                layout,
+                CityLayoutGenerator.Generate(
+                    blueprint,
+                    CityGenerationSettings.Default,
+                    Seed));
+        }
+
+        [Test]
+        public void PrimeCityPlans_HangsItsPlansOnTheLayoutTheSessionHolds()
+        {
+            // The Bar start generates the layout on the main thread before
+            // it primes; the chain must plan for that instance, not a twin.
+            CityBlueprint blueprint = CityBlueprintCatalog.Default;
+            CityLayout held = CityLayoutCache.GetOrGenerate(
+                blueprint,
+                CityGenerationSettings.Default,
+                Seed);
+            Assert.That(CityWorldPlans.IsMemoised(held), Is.False);
+
+            CityLayoutCache.PrimeCityPlans(
+                blueprint,
+                CityGenerationSettings.Default,
+                Seed,
+                "test");
+            CityLayout joined = CityLayoutCache.GetOrGenerate(
+                blueprint,
+                CityGenerationSettings.Default,
+                Seed);
+
+            Assert.That(joined, Is.SameAs(held));
+            Assert.That(CityWorldPlans.IsMemoised(held), Is.True);
+            Assert.That(
+                CityLayoutCache.TryTakePrimedTerrainSource(
+                    held,
+                    PrimedTerrainSourceKind.Seabed,
+                    out _),
+                Is.True);
+        }
+
+        [Test]
+        public void Reset_DropsPendingCityPlansWithoutWaiting()
+        {
+            CityLayoutCache.PrimeCityPlans(
+                CityBlueprintCatalog.Default,
+                CityGenerationSettings.Default,
+                Seed,
+                "test");
+            Assert.That(CityLayoutCache.HasPendingCityPlans, Is.True);
+
+            Assert.DoesNotThrow(CityLayoutCache.Reset);
+
+            Assert.That(CityLayoutCache.HasPendingCityPlans, Is.False);
+            // Nothing left to join: the getter plans on the main thread
+            // again, and nothing primed reaches the terrain builders.
+            CityLayout layout = CityLayoutCache.GetOrGenerate(
+                CityBlueprintCatalog.Default,
+                CityGenerationSettings.Default,
+                Seed);
+            Assert.That(layout.Seed, Is.EqualTo(Seed));
+            Assert.That(
+                CityLayoutCache.TryTakePrimedTerrainSource(
+                    layout,
+                    PrimedTerrainSourceKind.BeachVisual,
+                    out _),
+                Is.False);
+        }
+
+        /// <summary>
+        /// Exact, not approximate: the layout is a pure function of its
+        /// inputs, and a primed layout must be the one the main thread
+        /// would have generated, to the last node and lot.
+        /// </summary>
+        private static void AssertSameLayout(CityLayout actual, CityLayout expected)
+        {
+            Assert.That(actual.Seed, Is.EqualTo(expected.Seed));
+            Assert.That(actual.BlueprintId, Is.EqualTo(expected.BlueprintId));
+            Assert.That(actual.SpawnWorldPosition, Is.EqualTo(expected.SpawnWorldPosition));
+            Assert.That(actual.Nodes.Count, Is.EqualTo(expected.Nodes.Count));
+            for (int index = 0; index < expected.Nodes.Count; index++)
+            {
+                Assert.That(actual.Nodes[index], Is.EqualTo(expected.Nodes[index]));
+            }
+
+            Assert.That(actual.RoadEdges.Count, Is.EqualTo(expected.RoadEdges.Count));
+            for (int index = 0; index < expected.RoadEdges.Count; index++)
+            {
+                Assert.That(actual.RoadEdges[index], Is.EqualTo(expected.RoadEdges[index]));
+            }
+
+            Assert.That(actual.Surfaces.Count, Is.EqualTo(expected.Surfaces.Count));
+            Assert.That(actual.BuildingLots.Count, Is.EqualTo(expected.BuildingLots.Count));
+            for (int index = 0; index < expected.BuildingLots.Count; index++)
+            {
+                Assert.That(
+                    actual.BuildingLots[index].ReturnPosition,
+                    Is.EqualTo(expected.BuildingLots[index].ReturnPosition));
+                Assert.That(
+                    actual.BuildingLots[index].SidewalkArrivalPosition,
+                    Is.EqualTo(expected.BuildingLots[index].SidewalkArrivalPosition));
+            }
         }
 
         /// <summary>

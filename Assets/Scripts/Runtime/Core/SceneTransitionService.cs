@@ -383,7 +383,10 @@ namespace BarPromenade
             // while the destination, registered from its Awake, is built a
             // frame at a time instead of inside the activation frame.
             blackout = TransitionBlackoutOverlay.Create();
-            doorComposition = new CompositionDriver("door", sceneName);
+            doorComposition = new CompositionDriver(
+                "door",
+                sceneName,
+                CompositionDriver.DoorFrameBudgetMilliseconds);
             acceptingComposition = true;
             try
             {
@@ -702,7 +705,10 @@ namespace BarPromenade
             }
 
             yield return UnloadScene(doorScene);
-            doorComposition = new CompositionDriver("door", sceneName);
+            doorComposition = new CompositionDriver(
+                "door",
+                sceneName,
+                CompositionDriver.DoorFrameBudgetMilliseconds);
             acceptingComposition = true;
             bool installed;
             try

@@ -27,10 +27,21 @@ namespace BarPromenade
         /// </summary>
         internal const int ThrottledRenderFrameInterval = 4;
 
+        /// <summary>
+        /// The floor a pump behind the door's black runs its stages to. The
+        /// overlay there is a static IMGUI black with nothing to keep
+        /// moving, while every frame the engine turns over costs ~20 ms in
+        /// the editor on top of the build; at the shared 8 ms floor nearly
+        /// each of the City's ~26 stages became its own frame. The loading
+        /// bar keeps the shared floor, because it animates.
+        /// </summary>
+        internal const double DoorFrameBudgetMilliseconds = 250d;
+
         private static CompositionDriver active;
 
         private readonly string path;
         private readonly string destination;
+        private readonly double frameBudgetMilliseconds;
         private readonly bool previousListenerPause;
         private readonly int previousRenderFrameInterval;
         private RuntimeComposition composition;
@@ -41,10 +52,15 @@ namespace BarPromenade
         private long pumpStarted;
         private double advanceMs;
 
-        public CompositionDriver(string path, string destination)
+        public CompositionDriver(
+            string path,
+            string destination,
+            double frameBudgetMilliseconds =
+                RuntimeComposition.FrameBudgetMilliseconds)
         {
             this.path = path ?? string.Empty;
             this.destination = destination ?? string.Empty;
+            this.frameBudgetMilliseconds = frameBudgetMilliseconds;
             tempoPause = GameTimeScaleRuntime.AcquirePause();
             previousListenerPause = AudioListener.pause;
             AudioListener.pause = true;
@@ -105,8 +121,7 @@ namespace BarPromenade
                 return false;
             }
 
-            if (!TryRun(report, RuntimeComposition.FrameBudgetMilliseconds,
-                    out bool more))
+            if (!TryRun(report, frameBudgetMilliseconds, out bool more))
             {
                 return false;
             }
@@ -211,6 +226,7 @@ namespace BarPromenade
                 GameLog.Field("destination", destination),
                 GameLog.Field("path", path),
                 GameLog.Field("frames", Frames),
+                GameLog.Field("frame_budget_ms", frameBudgetMilliseconds),
                 GameLog.Field("advance_ms", advanceMs),
                 GameLog.Field("wall_ms", wallMs),
                 GameLog.Field("overhead_ms", wallMs - advanceMs),

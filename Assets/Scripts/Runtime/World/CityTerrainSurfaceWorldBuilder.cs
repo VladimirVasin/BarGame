@@ -101,8 +101,8 @@ namespace BarPromenade
             mesh.SetVertices(Vertices);
             mesh.SetNormals(Normals);
             mesh.SetUVs(0, Uvs);
+            // SetTriangles already recalculates the bounds.
             mesh.SetTriangles(Triangles, 0, true);
-            mesh.RecalculateBounds();
             return mesh;
         }
     }
@@ -130,7 +130,9 @@ namespace BarPromenade
             float? worldUvTileSize = null,
             IReadOnlyList<Rect> excavations = null,
             CityTerrainSurfaceAreaFilter areaFilter = null,
-            bool seabedOnly = false)
+            bool seabedOnly = false,
+            CityTerrainMeshSource primedVisual = default,
+            CityTerrainMeshSource primedCollision = default)
         {
             return BuildWithSource(
                 name,
@@ -143,7 +145,9 @@ namespace BarPromenade
                 excavations,
                 areaFilter,
                 seabedOnly,
-                out _);
+                out _,
+                primedVisual,
+                primedCollision);
         }
 
         /// <summary>
@@ -151,7 +155,12 @@ namespace BarPromenade
         /// drawn mesh was set from, for a caller that reshapes that skin.
         /// The beach collides on a coarser second mesh of the same plan
         /// (see <see cref="CityBeachSandPlan.CollisionPitch"/>); every
-        /// other kind collides on what it draws.
+        /// other kind collides on what it draws. A caller holding lists
+        /// already sampled for exactly these inputs - the beach and seabed
+        /// sources a City-interior start primes on a pool thread through
+        /// <see cref="CityLayoutCache"/> - passes them as
+        /// <paramref name="primedVisual"/> / <paramref name="primedCollision"/>
+        /// and only the mesh and its cook stay on this thread.
         /// </summary>
         internal static GameObject BuildWithSource(
             string name,
@@ -164,7 +173,9 @@ namespace BarPromenade
             IReadOnlyList<Rect> excavations,
             CityTerrainSurfaceAreaFilter areaFilter,
             bool seabedOnly,
-            out CityTerrainMeshSource visualSource)
+            out CityTerrainMeshSource visualSource,
+            CityTerrainMeshSource primedVisual = default,
+            CityTerrainMeshSource primedCollision = default)
         {
             if (string.IsNullOrWhiteSpace(name))
             {
@@ -179,14 +190,18 @@ namespace BarPromenade
             }
 
             Stopwatch meshTimer = Stopwatch.StartNew();
-            visualSource = CreateMeshSource(
-                layout,
-                kind,
-                worldUvTileSize,
-                excavations,
-                areaFilter,
-                seabedOnly,
-                CityBeachSandPlan.MeshPitch);
+            bool primed = !primedVisual.IsEmpty;
+            visualSource = primed
+                ? primedVisual
+                : CreateMeshSource(
+                    layout,
+                    kind,
+                    worldUvTileSize,
+                    excavations,
+                    areaFilter,
+                    seabedOnly,
+                    CityBeachSandPlan.MeshPitch);
+            double sampleMs = meshTimer.Elapsed.TotalMilliseconds;
             if (visualSource.IsEmpty)
             {
                 return null;
@@ -207,6 +222,7 @@ namespace BarPromenade
 
             meshTimer.Stop();
             double colliderMs = 0d;
+            double cookMs = 0d;
             int colliderVertices = 0;
             Mesh collisionMesh = null;
             if (!seabedOnly)
@@ -214,21 +230,34 @@ namespace BarPromenade
                 Stopwatch colliderTimer = Stopwatch.StartNew();
                 if (kind == CitySurfaceKind.Beach)
                 {
-                    collisionMesh = CreateMesh(
-                        $"{name} Collision",
-                        layout,
-                        kind,
-                        worldUvTileSize,
-                        excavations,
-                        areaFilter,
-                        false,
-                        CityBeachSandPlan.CollisionPitch);
+                    string collisionName = ContinuousMeshName($"{name} Collision");
+                    if (!primedCollision.IsEmpty)
+                    {
+                        primed = true;
+                        collisionMesh = primedCollision.CreateMesh(collisionName);
+                    }
+                    else
+                    {
+                        collisionMesh = CreateMesh(
+                            $"{name} Collision",
+                            layout,
+                            kind,
+                            worldUvTileSize,
+                            excavations,
+                            areaFilter,
+                            false,
+                            CityBeachSandPlan.CollisionPitch);
+                    }
                 }
 
+                // The cook is the sharedMesh assignment; the row tells it
+                // apart from the collision skin's own sampling.
+                Stopwatch cookTimer = Stopwatch.StartNew();
                 MeshCollider terrainCollider =
                     result.AddComponent<MeshCollider>();
                 terrainCollider.sharedMesh =
                     collisionMesh != null ? collisionMesh : mesh;
+                cookMs = cookTimer.Elapsed.TotalMilliseconds;
                 colliderTimer.Stop();
                 colliderMs = colliderTimer.Elapsed.TotalMilliseconds;
                 colliderVertices = terrainCollider.sharedMesh.vertexCount;
@@ -238,8 +267,11 @@ namespace BarPromenade
                 result.name,
                 mesh,
                 meshTimer.Elapsed.TotalMilliseconds,
+                sampleMs,
                 colliderMs,
-                colliderVertices);
+                cookMs,
+                colliderVertices,
+                primed);
             result.AddComponent<RuntimeGeneratedMeshOwner>()
                 .Initialize(mesh);
             if (collisionMesh != null)
@@ -716,8 +748,11 @@ namespace BarPromenade
                 result.name,
                 mesh,
                 meshTimer.Elapsed.TotalMilliseconds,
+                meshTimer.Elapsed.TotalMilliseconds,
                 colliderTimer.Elapsed.TotalMilliseconds,
-                mesh.vertexCount);
+                colliderTimer.Elapsed.TotalMilliseconds,
+                mesh.vertexCount,
+                false);
             result.AddComponent<RuntimeGeneratedMeshOwner>()
                 .Initialize(mesh);
             mesh.UploadMeshData(false);
@@ -728,8 +763,11 @@ namespace BarPromenade
             string name,
             Mesh mesh,
             double meshMs,
+            double sampleMs,
             double colliderMs,
-            int colliderVertices)
+            double cookMs,
+            int colliderVertices,
+            bool primed)
         {
             GameLog.Debug(
                 "city",
@@ -738,8 +776,11 @@ namespace BarPromenade
                 GameLog.Field("vertices", mesh.vertexCount),
                 GameLog.Field("indices", (long)mesh.GetIndexCount(0)),
                 GameLog.Field("mesh_ms", meshMs),
+                GameLog.Field("sample_ms", sampleMs),
                 GameLog.Field("collider_ms", colliderMs),
-                GameLog.Field("collider_vertices", colliderVertices));
+                GameLog.Field("cook_ms", cookMs),
+                GameLog.Field("collider_vertices", colliderVertices),
+                GameLog.Field("primed", primed));
         }
 
         private static void AppendDiscSurfaceVertices(
@@ -1066,6 +1107,10 @@ namespace BarPromenade
 
             int firstVertex = vertices.Count;
             float tilesPerMeter = 1f / worldUvTileSize;
+            // The seabed's shore taps are per column; one cache per patch.
+            CitySeacoastSeaLayout.SeabedShoreColumns shoreColumns = seabedOnly
+                ? new CitySeacoastSeaLayout.SeabedShoreColumns()
+                : null;
             for (int zIndex = 0;
                  zIndex < zCoordinates.Count;
                  zIndex++)
@@ -1080,11 +1125,13 @@ namespace BarPromenade
                     vertices.Add(new Vector3(
                         worldXZ.x,
                         seabedOnly
-                            ? CitySeacoastSeaLayout.SampleSeabedTop(layout, surface, worldXZ, port, in context)
+                            ? CitySeacoastSeaLayout.SampleSeabedTop(
+                                layout, surface, worldXZ, port, in context, shoreColumns)
                             : CityTerrainSurfacePlan.SampleTop(layout, surface, worldXZ, in context),
                         worldXZ.y));
                     normals.Add(seabedOnly
-                        ? CitySeacoastSeaLayout.SampleSeabedNormal(layout, surface, worldXZ, port, in context)
+                        ? CitySeacoastSeaLayout.SampleSeabedNormal(
+                            layout, surface, worldXZ, port, in context, shoreColumns)
                         : CityTerrainSurfacePlan.SampleNormal(layout, surface, worldXZ, in context));
                     uvs.Add(worldXZ * tilesPerMeter);
                 }

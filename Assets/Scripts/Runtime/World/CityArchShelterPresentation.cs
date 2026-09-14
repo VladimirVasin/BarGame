@@ -526,6 +526,17 @@ namespace BarPromenade
                 CrackleSampleRate * CrackleDurationSeconds);
             var samples = new float[count];
             float seedPhase = HashToUnit(seed) * Mathf.PI * 2f;
+            // The nine event moments are per clip, not per sample: the
+            // same nine floats, taken once instead of 88 200 times.
+            var eventCycles = new float[9];
+            for (int eventIndex = 0; eventIndex < eventCycles.Length; eventIndex++)
+            {
+                eventCycles[eventIndex] = Mathf.Repeat(
+                    0.075f + eventIndex * 0.103f +
+                    HashToUnit(seed + eventIndex * 7919) * 0.045f,
+                    1f);
+            }
+
             for (int index = 0; index < count; index++)
             {
                 float cycle = index / (float)count;
@@ -537,13 +548,17 @@ namespace BarPromenade
                 float crackle = 0f;
                 for (int eventIndex = 0; eventIndex < 9; eventIndex++)
                 {
-                    float eventCycle = Mathf.Repeat(
-                        0.075f + eventIndex * 0.103f +
-                        HashToUnit(seed + eventIndex * 7919) * 0.045f,
-                        1f);
-                    float distance = Mathf.Abs(cycle - eventCycle);
+                    float distance = Mathf.Abs(cycle - eventCycles[eventIndex]);
                     distance = Mathf.Min(distance, 1f - distance);
                     float envelope = Mathf.Clamp01(1f - distance / 0.009f);
+                    // Outside an event the term is a signed zero and the
+                    // sum is unchanged to the bit; the sine is not worth
+                    // taking for it.
+                    if (envelope <= 0f)
+                    {
+                        continue;
+                    }
+
                     crackle += envelope * envelope *
                                Mathf.Sin(
                                    angle * (241f + eventIndex * 17f)) *
