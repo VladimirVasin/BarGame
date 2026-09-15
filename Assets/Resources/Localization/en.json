@@ -1,6 +1,14 @@
 {
   "entries": [
     {
+      "key": "interaction.fair_organ",
+      "value": "Turn the organ crank"
+    },
+    {
+      "key": "interaction.fair_bell",
+      "value": "Ring the bell"
+    },
+    {
       "key": "npc.name.foreman",
       "value": "Foreman"
     },

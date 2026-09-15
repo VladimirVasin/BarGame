@@ -6,45 +6,48 @@ Older whole dates move to `ai/archive/` when the byte budget is reached;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-08.md`](archive/work-log-2026-08.md).
 
-## 2026-09-15 — Eastern valley road, lights, city glow and city-wide litter
+## 2026-09-15 — Eastern valley, city litter and Nightlife fair
 
-- The closed eastern post overlooks a broad Blender valley. After a short
-  level apron the road descends in unequal curves; the larger soft city and
-  its broad, warm, uneven glow dome sit on the valley floor. The glow stays
-  visible day/night. Art/story canon records the scope; post/paths, northern
-  sea, west/south and shared fog/clip remain.
-- `CityEastRoadProfile` shares one exported datum across road, terrain, cars
-  and lamps. The real road joins the panorama early; curved ground cuts stay
-  inside the closed yard so the garden seam retains both terrain owners.
-  The first existing street mast joins the unchanged light pool;
-  later bodies/lenses/halos/ground pools are passive. Two cars preserve lane/
-  grade, session phase and pause/game-time guards.
-- Source depth gives terrain/road/cars their own occlusion behind the nearby
-  city boundary; painter order alone could not do both. The near asphalt now
-  shares a central vertex row: the uncut source box lowered the crown under
-  crossfall despite unchanged bounds/volume. Blender triangle sampling proves
-  crown/seam height; `--near-only` publishes just that asset. The panorama adds
-  no Light, audio, collision or travel.
-- Checks: `build-city-east-exit-3d-model.py --validate-only` (separate
-  `--near-only`/`--distance-only` selections); `AreaCaptureFixture.CityEastExit`: real/panorama
-  asphalt seam, imported bounds, lamp pool/daytime floor, traffic/pause and
-  reviewed daytime/nighttime valley, skyline and glow frames.
-- The 36 litter variants now lie sparsely across the whole city, where the
-  art bible already lets them: pavement edges, the bare band at lot walls, the
-  tide line and a handful by park benches; never on carriageways, crossings,
-  authored scenes, yards, the cemetery or the church. `CityLitterPlan` is a
-  pure world plan memoised with its decoration and primed with the rest;
-  `CityLitterInstancer`/`CityLitterGeometry` are shared with the eastern strip.
-  Non-obvious: the same variant is refused within a radius by a spatial hash
-  at pick time, so a slot is skipped rather than repeated; a pavement part
-  rests on its own built strip box (graded strips are chords, not the plan's
-  curve), and road caps/corner pads that rise over a strip end are refused
-  by sampling the neighbouring boxes; beach litter stays where the drawn
-  loose sand has zero depth; bus shelters come from the bus plan, not the
-  decoration that seeded them. The prime now warms the eastern road profile
-  too, since the exit plan reads it. Checks: `CityLitterPlanTests`,
+- The closed eastern post overlooks a broad Blender valley: short level
+  apron, unequal descending road curves, larger soft city and warm uneven
+  day/night glow on the valley floor. Art/story scope preserves post/paths,
+  sea/west/south and shared fog/clip. `CityEastRoadProfile` owns road/land/
+  car/lamp datum; cuts stay inside the yard to retain the garden seam.
+  First mast joins the existing light pool; later fixtures stay passive.
+  Two cars keep lane/grade, session phase and pause/game-time guards.
+- Source depth lets terrain/road/cars occlude independently; painter order
+  could not. A central asphalt vertex row preserves crossfall crown and
+  real/panorama seam where the uncut box failed despite correct bounds/
+  volume. `--near-only` publishes that fix without panorama Light/audio/
+  collision/travel. Checks: `build-city-east-exit-3d-model.py --validate-only`
+  (`--near-only`/`--distance-only`); `AreaCaptureFixture.CityEastExit`:
+  seam/imports, lamp pool/day floor, traffic/pause and reviewed valley/
+  skyline/glow day/night frames.
+- The 36 litter variants sparsely cover permitted pavement/wall/tide bands
+  and park benches; carriageways/crossings, authored scenes, yards,
+  cemetery/church stay clear. Memoised `CityLitterPlan` shares geometry/
+  instancing with the eastern strip. Spatial hashing refuses nearby repeats;
+  placement samples built strip/cap/corner boxes, not graded plan curves.
+  Beach parts avoid loose sand; shelters come from the bus plan. Priming
+  also warms the exit's road profile. Checks: `CityLitterPlanTests`,
   `CityLayoutCacheTests.PrimeCityPlans_JoinsPlansEqualToPlanningOnTheMainThread`,
   `AreaCaptureFixture.CityLitter`, `check-docs.py`.
+- Fair `[11;3]`/`[11;4]`: four passive goods displays/silent vendors,
+  organ/bell on shared contextual hero actions, two seats, three garlands.
+  Actual ground sampling and tilted supports fix the buried north row;
+  cell heights described lots, not their continuous terrain. Blender prop/action
+  banks keep the hero prefab; shared light/speech rules and ordinary
+  level-zero meaning hold. The second layer adds three simultaneous children on one detailed
+  body, three constructed outfits and child clips. Display watching, a personal
+  toy car/low table and shared seat claims keep trade/speech/story untouched;
+  local routes and terrain-foot contacts preserve the narrow circulation.
+  The user's trouser correction connects both legs to the waist; equipped
+  triangle totals alone had missed the bare pelvis. Checks: `CityFair`,
+  `check-docs.py`: imported models/actions and waist continuity, grounded
+  activities/hand contacts, shared bench claims, pause/disable/re-entry;
+  reviewed activity/detail frames and neutral/sit/walk source poses.
+  Gaze now adds the residual face angle and removes look/secondary offsets
+  before resampling, fixing doubled head tilt. Check: `CityFairChildHeads`.
 
 ## 2026-09-14 — City geometry, eastern checkpoint, cold City loading
 

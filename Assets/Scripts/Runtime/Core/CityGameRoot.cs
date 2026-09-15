@@ -603,11 +603,13 @@ namespace BarPromenade
                 pedestrianWalkableArea);
             GameLogPhases.Report("city", "pedestrian_pool", stepTimer);
             stepTimer.Restart();
+            var lowLampAnchors = new List<Transform>(World.RiverQuayLampAnchors);
+            if (World.Fair != null) lowLampAnchors.AddRange(World.Fair.LampAnchors);
             Night.InitializeLighting(
                 Player.GameObject.transform,
                 Layout.Seed,
                 World.FringePracticalAnchors,
-                World.RiverQuayLampAnchors);
+                lowLampAnchors);
             if (World.MountainBoundaryPlan.HasTunnel)
             {
                 TunnelLighting = CityTunnelLightingController.Create(
@@ -829,6 +831,12 @@ namespace BarPromenade
                     pedestrianStreetSurfacePlan,
                     World.SeacoastPlan,
                     World.ChurchCourtyardPlan);
+            if (World.Fair != null)
+            {
+                foreach (CityBenchSeat seat in World.Fair.Plan.Benches)
+                    benchPlans.Add(new CityBenchSitPlan(seat));
+                World.Fair.InstallInteractions(Player, camera);
+            }
             BenchSits = CityBenchSitWorldBuilder.Build(
                 transform,
                 benchPlans,
@@ -837,9 +845,15 @@ namespace BarPromenade
             InstallChurchGardenPot();
             // Life simulation: every now and then a walker near a free
             // bench sits down for a while and moves on.
+            // Fair seats stay available to the hero; background walkers
+            // have no authored approach through the fair's props.
+            var restBenchPlans = new List<CityBenchSitPlan>(benchPlans);
+            if (World.Fair != null)
+                foreach (CityBenchSeat fairSeat in World.Fair.Plan.Benches)
+                    restBenchPlans.RemoveAll(bench => bench.Id == fairSeat.Id);
             BenchRests = CityBenchNpcRestController.Create(
                 transform,
-                CityBenchRestPlanner.Create(benchPlans, PedestrianPlan),
+                CityBenchRestPlanner.Create(restBenchPlans, PedestrianPlan),
                 Pedestrians,
                 GameSessionState.CitySeed);
             // Placeholder interactions on every booth door and dumpster
@@ -1033,8 +1047,9 @@ namespace BarPromenade
                 Layout.Seed,
                 CityEternalRainShaper.FloorIntensity(
                     GameWeatherRules.EvaluateCurrent().RainIntensity));
-            Rain.SetLocalShelters(
-                World.ArchShelter.RainShelterColliders);
+            var rainShelters = new List<Collider>(World.ArchShelter.RainShelterColliders);
+            if (World.Fair != null) rainShelters.AddRange(World.Fair.RainShelters);
+            Rain.SetLocalShelters(rainShelters);
             if (World.MountainBoundaryPlan.HasTunnel)
             {
                 var tunnelShelterObject =

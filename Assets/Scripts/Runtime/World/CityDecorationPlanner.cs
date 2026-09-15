@@ -547,7 +547,7 @@ namespace BarPromenade
                         CityDecorationKind.RoadsideRoadworkAndBicycle;
                     float roadworkRadius = CityDecorationValidator
                         .ResolveProtectionRadius(kind);
-                    // Re-check both gates at the roadwork's larger
+                    // Re-check placement at the roadwork's larger
                     // radius - the anchor was cleared for the smaller
                     // utility footprint, and a cluster that fits a booth
                     // slot could still crowd a neighbour's clearance.
@@ -559,7 +559,10 @@ namespace BarPromenade
                         !IsSeparated(
                             position,
                             occupiedGroundPositions,
-                            roadworkRadius + 1.35f))
+                            roadworkRadius + 1.35f) ||
+                        CityFairPlanner.Create(layout).Suppresses(new Rect(
+                            position.x - roadworkRadius, position.z - roadworkRadius,
+                            roadworkRadius * 2f, roadworkRadius * 2f)))
                     {
                         continue;
                     }
@@ -1174,7 +1177,10 @@ namespace BarPromenade
                     !IsSeparated(
                         position,
                         occupiedGroundPositions,
-                        objectRadius + 1.35f))
+                        objectRadius + 1.35f) ||
+                    CityFairPlanner.Create(layout).Suppresses(new Rect(
+                        position.x - objectRadius, position.z - objectRadius,
+                        objectRadius * 2f, objectRadius * 2f)))
                 {
                     continue;
                 }

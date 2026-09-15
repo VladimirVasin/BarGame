@@ -1,0 +1,590 @@
+{
+  "generator": "tools/build-city-fair-3d-model.py",
+  "generator_version": "1.1.0",
+  "blender_version": "5.0.1",
+  "build_signature": "d001ebce9b9128c761716cd3fe663e5f3c3d0a4702a978bafc946c6e73407a8f",
+  "units": "metres",
+  "unity_forward": "+Z",
+  "unity_up": "+Y",
+  "passive": true,
+  "fbx_bake_space_transform": false,
+  "exported_fbx_validation": "mesh and anchor world metres after FBX round trip",
+  "signed_volumes": "every solid positive before and after axis swap",
+  "determinism": "two independent geometry builds match",
+  "triangle_count": 24828,
+  "materials": {
+    "Timber": [
+      0.46,
+      0.34,
+      0.23
+    ],
+    "TimberLight": [
+      0.58,
+      0.46,
+      0.31
+    ],
+    "TimberDark": [
+      0.25,
+      0.2,
+      0.16
+    ],
+    "FabricPlum": [
+      0.4,
+      0.26,
+      0.34
+    ],
+    "FabricCream": [
+      0.67,
+      0.61,
+      0.48
+    ],
+    "Steel": [
+      0.23,
+      0.25,
+      0.24
+    ],
+    "Brass": [
+      0.56,
+      0.43,
+      0.22
+    ],
+    "Rubber": [
+      0.115,
+      0.12,
+      0.115
+    ],
+    "Bread": [
+      0.67,
+      0.4,
+      0.15
+    ],
+    "Crust": [
+      0.4,
+      0.215,
+      0.075
+    ],
+    "Flour": [
+      0.77,
+      0.64,
+      0.4
+    ],
+    "Apple": [
+      0.53,
+      0.205,
+      0.13
+    ],
+    "Pear": [
+      0.58,
+      0.58,
+      0.245
+    ],
+    "Leaf": [
+      0.27,
+      0.33,
+      0.17
+    ],
+    "Clay": [
+      0.57,
+      0.31,
+      0.195
+    ],
+    "Glaze": [
+      0.28,
+      0.435,
+      0.4
+    ],
+    "Rope": [
+      0.57,
+      0.5,
+      0.35
+    ],
+    "Bulb": [
+      0.95,
+      0.7,
+      0.36
+    ]
+  },
+  "models": [
+    {
+      "name": "Stall",
+      "bounds_min": [
+        -1.49,
+        0.0,
+        -1.207
+      ],
+      "bounds_max": [
+        1.49,
+        2.56,
+        1.207
+      ],
+      "triangle_count": 3616,
+      "solid_count": 132,
+      "mesh_count": 7,
+      "anchors": [
+        {
+          "name": "VendorAnchor",
+          "position": [
+            0,
+            0,
+            -0.6
+          ],
+          "parent": null
+        },
+        {
+          "name": "CounterAnchor",
+          "position": [
+            0,
+            0.95,
+            0.625
+          ],
+          "parent": null
+        }
+      ]
+    },
+    {
+      "name": "Bread",
+      "bounds_min": [
+        -1.123394,
+        0.952,
+        0.305
+      ],
+      "bounds_max": [
+        1.09,
+        1.186949,
+        0.855
+      ],
+      "triangle_count": 2880,
+      "solid_count": 67,
+      "mesh_count": 7,
+      "anchors": []
+    },
+    {
+      "name": "Fruit",
+      "bounds_min": [
+        -1.13,
+        0.952,
+        0.28
+      ],
+      "bounds_max": [
+        1.01,
+        1.262086,
+        0.92
+      ],
+      "triangle_count": 4088,
+      "solid_count": 83,
+      "mesh_count": 6,
+      "anchors": []
+    },
+    {
+      "name": "Pottery",
+      "bounds_min": [
+        -1.2,
+        0.95,
+        0.26
+      ],
+      "bounds_max": [
+        1.207668,
+        1.36,
+        0.94
+      ],
+      "triangle_count": 2284,
+      "solid_count": 48,
+      "mesh_count": 3,
+      "anchors": []
+    },
+    {
+      "name": "WoodenToys",
+      "bounds_min": [
+        -1.21,
+        0.95,
+        0.27
+      ],
+      "bounds_max": [
+        1.21,
+        1.335,
+        0.95
+      ],
+      "triangle_count": 1736,
+      "solid_count": 38,
+      "mesh_count": 6,
+      "anchors": []
+    },
+    {
+      "name": "Organ",
+      "bounds_min": [
+        -0.53,
+        0.0,
+        -0.432247
+      ],
+      "bounds_max": [
+        0.53,
+        1.310434,
+        0.63
+      ],
+      "triangle_count": 1512,
+      "solid_count": 48,
+      "mesh_count": 8,
+      "anchors": [
+        {
+          "name": "CrankPivot",
+          "position": [
+            0.32,
+            1.1,
+            0.43
+          ],
+          "parent": null
+        },
+        {
+          "name": "CrankGripAnchor",
+          "position": [
+            0.32,
+            1.28,
+            0.58
+          ],
+          "parent": "CrankPivot"
+        },
+        {
+          "name": "InteractionDock",
+          "position": [
+            0.54,
+            0,
+            1.08
+          ],
+          "parent": null
+        },
+        {
+          "name": "AudioAnchor",
+          "position": [
+            0,
+            0.85,
+            0.28
+          ],
+          "parent": null
+        }
+      ]
+    },
+    {
+      "name": "Bell",
+      "bounds_min": [
+        -0.405,
+        0.0,
+        -0.325
+      ],
+      "bounds_max": [
+        0.405,
+        1.98,
+        0.325
+      ],
+      "triangle_count": 924,
+      "solid_count": 16,
+      "mesh_count": 7,
+      "anchors": [
+        {
+          "name": "BellSwingPivot",
+          "position": [
+            0,
+            1.76,
+            0
+          ],
+          "parent": null
+        },
+        {
+          "name": "RopeTopAnchor",
+          "position": [
+            0.25,
+            1.62,
+            0.24
+          ],
+          "parent": "BellSwingPivot"
+        },
+        {
+          "name": "RopePivot",
+          "position": [
+            0.25,
+            1.56,
+            0.24
+          ],
+          "parent": null
+        },
+        {
+          "name": "RopeGripAnchor",
+          "position": [
+            0.25,
+            1.13,
+            0.24
+          ],
+          "parent": "RopePivot"
+        },
+        {
+          "name": "RopeTailAnchor",
+          "position": [
+            0.25,
+            1.08,
+            0.24
+          ],
+          "parent": "RopePivot"
+        },
+        {
+          "name": "RopeSpanPivot",
+          "position": [
+            0.25,
+            1.62,
+            0.24
+          ],
+          "parent": null
+        },
+        {
+          "name": "RopeSpanTopAnchor",
+          "position": [
+            0.25,
+            1.62,
+            0.24
+          ],
+          "parent": "RopeSpanPivot"
+        },
+        {
+          "name": "RopeSpanBottomAnchor",
+          "position": [
+            0.25,
+            1.08,
+            0.24
+          ],
+          "parent": "RopeSpanPivot"
+        },
+        {
+          "name": "InteractionDock",
+          "position": [
+            0.47,
+            0,
+            0.76
+          ],
+          "parent": null
+        },
+        {
+          "name": "AudioAnchor",
+          "position": [
+            0,
+            1.42,
+            0
+          ],
+          "parent": null
+        }
+      ]
+    },
+    {
+      "name": "Clutter",
+      "bounds_min": [
+        -0.78,
+        0.0,
+        -0.445
+      ],
+      "bounds_max": [
+        0.845,
+        0.69,
+        0.449848
+      ],
+      "triangle_count": 3528,
+      "solid_count": 100,
+      "mesh_count": 6,
+      "anchors": []
+    },
+    {
+      "name": "Garland",
+      "bounds_min": [
+        -0.065,
+        -0.886983,
+        -0.04
+      ],
+      "bounds_max": [
+        10.065,
+        0.09,
+        0.075
+      ],
+      "triangle_count": 3728,
+      "solid_count": 83,
+      "mesh_count": 31,
+      "anchors": [
+        {
+          "name": "Fixture_00",
+          "position": [
+            0.38461538461538464,
+            -0.09615384615384616,
+            0
+          ],
+          "parent": null
+        },
+        {
+          "name": "Fixture_01",
+          "position": [
+            1.153846153846154,
+            -0.26538461538461544,
+            0
+          ],
+          "parent": null
+        },
+        {
+          "name": "Fixture_02",
+          "position": [
+            1.9230769230769231,
+            -0.40384615384615385,
+            0
+          ],
+          "parent": null
+        },
+        {
+          "name": "Fixture_03",
+          "position": [
+            2.692307692307692,
+            -0.5115384615384616,
+            0
+          ],
+          "parent": null
+        },
+        {
+          "name": "Fixture_04",
+          "position": [
+            3.4615384615384617,
+            -0.5884615384615385,
+            0
+          ],
+          "parent": null
+        },
+        {
+          "name": "Fixture_05",
+          "position": [
+            4.230769230769231,
+            -0.6346153846153846,
+            0
+          ],
+          "parent": null
+        },
+        {
+          "name": "Fixture_06",
+          "position": [
+            5.0,
+            -0.65,
+            0
+          ],
+          "parent": null
+        },
+        {
+          "name": "Fixture_07",
+          "position": [
+            5.769230769230768,
+            -0.6346153846153847,
+            0
+          ],
+          "parent": null
+        },
+        {
+          "name": "Fixture_08",
+          "position": [
+            6.538461538461538,
+            -0.5884615384615385,
+            0
+          ],
+          "parent": null
+        },
+        {
+          "name": "Fixture_09",
+          "position": [
+            7.3076923076923075,
+            -0.5115384615384616,
+            0
+          ],
+          "parent": null
+        },
+        {
+          "name": "Fixture_10",
+          "position": [
+            8.076923076923077,
+            -0.40384615384615385,
+            0
+          ],
+          "parent": null
+        },
+        {
+          "name": "Fixture_11",
+          "position": [
+            8.846153846153847,
+            -0.26538461538461544,
+            0
+          ],
+          "parent": null
+        },
+        {
+          "name": "Fixture_12",
+          "position": [
+            9.615384615384615,
+            -0.09615384615384609,
+            0
+          ],
+          "parent": null
+        },
+        {
+          "name": "Mount_00",
+          "position": [
+            0,
+            -0.0,
+            0
+          ],
+          "parent": null
+        },
+        {
+          "name": "Mount_01",
+          "position": [
+            10,
+            -0.0,
+            0
+          ],
+          "parent": null
+        },
+        {
+          "name": "SpanStart",
+          "position": [
+            0,
+            0,
+            0
+          ],
+          "parent": null
+        },
+        {
+          "name": "SpanEnd",
+          "position": [
+            10,
+            0,
+            0
+          ],
+          "parent": null
+        }
+      ]
+    },
+    {
+      "name": "Bench",
+      "bounds_min": [
+        -0.9,
+        0.0,
+        -0.343759
+      ],
+      "bounds_max": [
+        0.9,
+        0.893728,
+        0.31
+      ],
+      "triangle_count": 532,
+      "solid_count": 19,
+      "mesh_count": 3,
+      "anchors": [
+        {
+          "name": "SeatAnchor",
+          "position": [
+            0,
+            0.5,
+            0.07
+          ],
+          "parent": null
+        }
+      ]
+    }
+  ]
+}

@@ -46,6 +46,14 @@ namespace BarPromenade.Editor
             RegisterGenerated("Bartender", BarBartenderV2AssetSetup.ValidateOrThrow, "BarBartenderV2AssetSetup");
             RegisterGenerated("City buildings", CityBuildingAssetSetup.ValidateOrThrow, "CityBuildingAssetSetup");
             RegisterGenerated("City misc", CityMiscAssetSetup.ValidateOrThrow, "CityMiscAssetSetup");
+            Register("City fair", CityFairAssetSetup.ValidateOrThrow,
+                "Run tools/build-city-fair-3d-model.py through tools/run-blender.py, then import Assets/Resources/City/Fair.");
+            Register("City fair player actions", CityFairPlayerActionAssetSetup.ValidateOrThrow,
+                "Run tools/build-city-fair-player-actions-3d-model.py through tools/run-blender.py, then CityFairPlayerActionAssetSetup.BuildOrThrow.");
+            Register("City fair child models", CityFairChildAssetSetup.ValidateOrThrow,
+                "Run tools/build-city-fair-child-3d-model.py through tools/run-blender.py, then import Assets/Resources/City/FairChild.");
+            Register("City fair child actions", CityFairChildActionAssetSetup.ValidateOrThrow,
+                "Run tools/build-city-fair-child-actions-3d-model.py through tools/run-blender.py, then CityFairChildActionAssetSetup.BuildOrThrow.");
             RegisterGenerated("Cannery woman", CanneryWomanAssetSetup.ValidateOrThrow, "CanneryWomanAssetSetup");
             RegisterGenerated("Cannery receiver", CanneryReceiverAssetSetup.ValidateOrThrow, "CanneryReceiverAssetSetup");
             RegisterGenerated("Eastern duty guards", EastGuardAssetSetup.ValidateOrThrow, "EastGuardAssetSetup");

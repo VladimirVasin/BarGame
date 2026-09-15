@@ -4,6 +4,19 @@
 
 ## Current facts
 
+- **Accepted — 2026-09-15, Nightlife fair:**
+  Art §9/story §18: four staffed displays, organ/bell, two seats, three
+  garlands; user adds three simultaneous silent children. One `1.3 m`,
+  age `8–10` body; ochre raincoat, blue quilted coat/cap, burgundy sweater/
+  grey vest. Equipped `9–12k` tris: `11144/11764/11140`; ≥hero detail, `47` bones.
+  Child clips; trousers continue to the waist.
+  Toys stay displayed; personal car/low table and sitting are local routines.
+  Terrain-foot contacts, pause/routes/collision and `CityBenchSeatClaims`
+  preserve shared seats/`2.2 m` paths. Blender banks, original hero rig/
+  contextual actions, causal sound, materials and light pool `12` stay shared.
+  No trade/speech/lore/reward/cat response/carnival or §6 exception; §16/§21/
+  nine art checks hold.
+
 - **Accepted architecture exception — 2026-09-15, eastern valley:**
   User: story §6 `0`/art §10e own descent/city/halo on valley floor,
   near/panorama seam; shared road/land/car/lamp datum. First lamp: existing
@@ -62,13 +75,11 @@
   existing actions remain; no insignia, biography, speech or new activity.
   The bartender's shared Walk copies body curves and excludes the hero's
   auxiliary hair tracks, which have no target on that rig.
-  `player_detailed_model.py` extends the existing deterministic generator:
-  shaped hands/neck, slim torso/upper arms and narrow shoulders inside an
+  `player_detailed_model.py`: shaped hands/neck, slim torso/upper arms and shoulders inside an
   oversized open M-65: slimmer upper sleeves, loose sides/hem, long bunched
   cuffs, trouser/boot profiles, constructed
   pockets/flaps/collar/plackets/cuffs, refined atlas painting. The manifest
-  separately measures dressed geometry and hidden anatomy against a
-  maximum `8,000` dressed-triangle budget.
+  measures hidden anatomy separately; dressed geometry stays within `8,000` triangles.
   The user's same-day cloth-physics request uses `PlayerJacketCloth`: eight
   open-hem nodes plus four per cuff, with smooth pinned-to-free fields over
   the existing coat surfaces. Shoulders/chest/upper sleeves stay fixed;
@@ -1568,18 +1579,13 @@
   roughly `7–7.5` heads and `2.3–2.5` head-width shoulders. The Long-Arm figure, kettle head and hopper feet remain
   authored overlays on that substrate; six bartender arms and the Watcher's
   long neck are retained asset history, not active-world overlays.
-  Amended 2026-08-31 by explicit user request: the three arch-shelter residents
-  are no longer unrigged exceptions. They are staged Hero-Avatar prefabs with
-  separate `256 px` detail atlases and three long, autonomous, bone-only loops
-  in an isolated animation bank. The bank records deformed all-frame planar
-  envelopes; the generator and Unity importer independently reject a sleeper
-  that leaves the imported mattress's measured `1.89618 × 0.83633 m`
-  surface. Its resident-local yaw is zero because the sleeper root inherits
-  the bedding assembly's authored `-5°` world yaw. The legacy static blanket
-  stays addressable for surface validation but is not rendered; the rigged,
-  breathing blanket replaces it. The
-  legacy static residents remain in the City-misc catalog only for
-  compatibility and are never instantiated.
+  User decision 2026-08-31: the three arch residents are Hero-Avatar prefabs
+  with separate `256 px` detail atlases and three long bone-only loops in an
+  isolated bank. Its all-frame planar envelopes and Unity import must keep
+  the sleeper on the measured `1.89618 × 0.83633 m` mattress. Resident-local yaw
+  is zero; the bedding root owns `-5°` world yaw. The rigged breathing blanket
+  replaces the static one; static residents/blanket remain compatibility and
+  surface-validation assets only, never rendered.
   User decision `2026-09-04`: ordinary adults match Hero V2 anatomy, beyond
   bone names. `PedestrianBuilder.build_ordinary_adult_body` supplies shelled
   chest/waist/seat, ellipsoid hands/thumb, ears, profiled limbs/angular boots
@@ -1653,17 +1659,13 @@
   untouched. The bounded active NPC population makes the extra offscreen
   skinning cost preferable to angle-dependent missing limbs or whole figures.
 - **Accepted — The Nightlife arch reuses measured City surface families:**
-  fifteen exact imported component names map shell, stairs, terrace, cladding,
-  roof, barrel, fuel, bedding and sparse clutter to existing masonry,
-  concrete, paving, metal, timber, cloth, paper, enamel and roof albedos.
-  The visible underside of the vault belongs to `Shell_Masonry`; the raised
-  surface and its vertical mass remain separate `PlatformSlab_Street` and
-  `PlatformSupport_Masonry` renderers, so ceiling, top and elevation all
-  receive their intended texture family rather than a flat fallback.
-  `CityArchShelterSurfaceAppearance` applies metre-scale tiling and compensated
-  tints through `MaterialPropertyBlock`, keeps the shared primitive material,
-  and deliberately ignores the six fire/spill renderers and all resident rigs.
-  The pass is idempotent and adds no material instance or new surface family.
+  Fifteen imported names map to existing masonry, concrete, paving, metal,
+  timber, cloth, paper, enamel and roof albedos. Vault underside is
+  `Shell_Masonry`; top/support are separate `PlatformSlab_Street` and
+  `PlatformSupport_Masonry`. `CityArchShelterSurfaceAppearance` applies metric
+  tiling/compensated MPB tints idempotently, retaining shared material and
+  excluding six fire/spill renderers and resident rigs.
+
 
 ## MVP decisions
 

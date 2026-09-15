@@ -5,8 +5,16 @@
 `Assets/Resources/City/EastExit`; source `ArtSource/City/EastExit`.
 `build-city-east-ground-texture.py --verify`: grass/soil seam.
 
-`build-city-litter-3d-model.py`: 36 props; `--validate-only`:
-geometry/determinism. Contact sheet.
+`build-city-litter-3d-model.py`: 36 props; `--validate-only`: geometry/determinism.
+
+`build-city-fair-3d-model.py`: 10 props; `--verify-fbx`.
+`build-city-fair-child-3d-model.py`: child base/3 outfits/toys.
+FBXs/JSON: `Assets/Resources/City/{Fair,FairChild}`;
+source: `ArtSource/City/{Fair,FairChild}`.
+`build-city-fair-{player,child}-actions-3d-model.py`: 6 hero/15 child clips;
+`Assets/Resources/Player/CityFairPlayerActions`,
+`Assets/Resources/City/FairChild/ChildActions` (`.fbx/.json`).
+Use `run-blender.py`/`--validate-only`.
 
 `build-city-cannery-3d-model.py`: ten metre FBXs/JSON in `Assets/Resources/City/Cannery`,
 source `ArtSource/City/Cannery`; port maps/outdoor scales/`CartonStack`;
@@ -29,17 +37,11 @@ asphalt city `12 m`. `build-city-port-foreman-3d-model.py`: `Foreman/PortForeman
 model/manifest/actions/atlas, continuous lower face/chin-jowl shapes/mouth/export validation.
 `python tools/dialogue_face_atlas.py [--validate-only]`: face PNGs/manifest, no Blender.
 
-`build-last-route-coin-3d-model.py`: passive `54 x 9 mm` octagonal brass coin
-and one contained glovebox pile mesh in Unity metres, sharing runtime material/
-tint. Checks determinism, outward faces and compartment/bulb clearance:
-
-```powershell
-python tools/run-blender.py tools/build-last-route-coin-3d-model.py --expect Assets/Resources/Vehicles/LastRouteCoin3D.fbx --expect Assets/Resources/Vehicles/LastRouteCoin3D.json
-python tools/run-blender.py tools/build-last-route-coin-3d-model.py --validate-only -- --validate-only
-```
-
-`LastRouteCoinAssetValidation`: imported bounds at build gate;
+`build-last-route-coin-3d-model.py`: `54 x 9 mm` brass coin/glovebox pile.
+`run-blender.py`/`--validate-only`: determinism, winding, compartment/light
+clearance. Outputs: `Assets/Resources/Vehicles/LastRouteCoin3D.{fbx,json}`;
 source `ArtSource/Vehicles/Blender/LastRouteCoin3D.blend`.
+`LastRouteCoinAssetValidation` measures import bounds at the build gate.
 
 Village generators:
 `build-village-outdoor-player-actions-3d-model.py` publishes thirteen optional
@@ -157,11 +159,8 @@ publishing it. `-Validate` remains compatible; `-CompileOnly` leaves its output
 in `Captures` and does not publish. See [audio-vhs/README.md](audio-vhs/README.md).
 
 `build-player-3d-model-v2.py`/`player_detailed_model.py`: M-65, outfit/skin,
-curtains; validates 31 body/12 hair bones, dressed/hidden geometry and slots:
-
-```powershell
-python tools/run-blender.py tools/build-player-3d-model-v2.py --expect Assets/Player3D/V2/Models/PlayerCharacter3DV2.fbx --expect Assets/Player3D/V2/Models/PlayerCharacter3DV2.json
-```
+curtains; validates 31 body/12 hair bones, dressed/hidden geometry and slots.
+Output: `Assets/Player3D/V2/Models/PlayerCharacter3DV2.{fbx,json}`.
 
 `player_jacket_cloth.py --write` derives hem/cuff metadata only; `--check` verifies it.
 Refresh `Player3DV2` through its asset setup. Lower-body changes also require

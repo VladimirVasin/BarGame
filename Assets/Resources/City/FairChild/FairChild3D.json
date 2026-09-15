@@ -1,0 +1,1958 @@
+{
+  "generator": "tools/build-city-fair-child-3d-model.py",
+  "generator_version": "1.0.1",
+  "blender_version": "5.0.1",
+  "build_signature": "2a4d1bdf03a1ed5a44a8b9f6a9b099a622d99042b1c9ccaa872c1deab9746044",
+  "height_m": 1.3,
+  "bone_count": 47,
+  "forward": "Unity +Z / Blender +Y",
+  "anatomical_left": "-X",
+  "shared_body_triangles": 8984,
+  "shared_visible_body_triangles": 5792,
+  "bones": [
+    {
+      "name": "root",
+      "head": [
+        0,
+        0,
+        0
+      ],
+      "tail": [
+        0,
+        0.08,
+        0
+      ],
+      "parent": null,
+      "deform": false
+    },
+    {
+      "name": "pelvis",
+      "head": [
+        0,
+        0.63,
+        0
+      ],
+      "tail": [
+        0,
+        0.77,
+        0
+      ],
+      "parent": "root",
+      "deform": true
+    },
+    {
+      "name": "spine",
+      "head": [
+        0,
+        0.77,
+        0
+      ],
+      "tail": [
+        0,
+        0.91,
+        0
+      ],
+      "parent": "pelvis",
+      "deform": true
+    },
+    {
+      "name": "chest",
+      "head": [
+        0,
+        0.91,
+        0
+      ],
+      "tail": [
+        0,
+        1.03,
+        0.003
+      ],
+      "parent": "spine",
+      "deform": true
+    },
+    {
+      "name": "neck",
+      "head": [
+        0,
+        1.065,
+        0.005
+      ],
+      "tail": [
+        0,
+        1.135,
+        0.004
+      ],
+      "parent": "chest",
+      "deform": true
+    },
+    {
+      "name": "head",
+      "head": [
+        0,
+        1.135,
+        0.004
+      ],
+      "tail": [
+        0,
+        1.29,
+        0.004
+      ],
+      "parent": "neck",
+      "deform": true
+    },
+    {
+      "name": "clavicle.L",
+      "head": [
+        0,
+        0.99,
+        0
+      ],
+      "tail": [
+        -0.151,
+        0.994,
+        0
+      ],
+      "parent": "chest",
+      "deform": true
+    },
+    {
+      "name": "upper_arm.L",
+      "head": [
+        -0.151,
+        0.994,
+        0
+      ],
+      "tail": [
+        -0.235,
+        0.844,
+        0.006
+      ],
+      "parent": "clavicle.L",
+      "deform": true
+    },
+    {
+      "name": "forearm.L",
+      "head": [
+        -0.235,
+        0.844,
+        0.006
+      ],
+      "tail": [
+        -0.281,
+        0.703,
+        0.028
+      ],
+      "parent": "upper_arm.L",
+      "deform": true
+    },
+    {
+      "name": "hand.L",
+      "head": [
+        -0.281,
+        0.703,
+        0.028
+      ],
+      "tail": [
+        -0.307,
+        0.639,
+        0.033
+      ],
+      "parent": "forearm.L",
+      "deform": true
+    },
+    {
+      "name": "thigh.L",
+      "head": [
+        -0.082,
+        0.615,
+        0
+      ],
+      "tail": [
+        -0.083,
+        0.338,
+        0.024
+      ],
+      "parent": "pelvis",
+      "deform": true
+    },
+    {
+      "name": "shin.L",
+      "head": [
+        -0.083,
+        0.338,
+        0.024
+      ],
+      "tail": [
+        -0.079,
+        0.065,
+        0
+      ],
+      "parent": "thigh.L",
+      "deform": true
+    },
+    {
+      "name": "foot.L",
+      "head": [
+        -0.079,
+        0.065,
+        0
+      ],
+      "tail": [
+        -0.079,
+        0.036,
+        0.132
+      ],
+      "parent": "shin.L",
+      "deform": true
+    },
+    {
+      "name": "SOCKET_Grip.L",
+      "head": [
+        -0.3,
+        0.671,
+        0.044
+      ],
+      "tail": [
+        -0.3,
+        0.671,
+        0.07
+      ],
+      "parent": "hand.L",
+      "deform": false
+    },
+    {
+      "name": "finger.index.01.L",
+      "head": [
+        -0.27948370575904846,
+        0.6588551998138428,
+        0.02800000086426735
+      ],
+      "tail": [
+        -0.2846364676952362,
+        0.6370792388916016,
+        0.02900814823806286
+      ],
+      "parent": "hand.L",
+      "deform": true
+    },
+    {
+      "name": "finger.index.02.L",
+      "head": [
+        -0.2846364676952362,
+        0.6370792388916016,
+        0.02900814823806286
+      ],
+      "tail": [
+        -0.28868505358695984,
+        0.6199695467948914,
+        0.029800262302160263
+      ],
+      "parent": "finger.index.01.L",
+      "deform": true
+    },
+    {
+      "name": "finger.middle.01.L",
+      "head": [
+        -0.2911612391471863,
+        0.6616184115409851,
+        0.02800000086426735
+      ],
+      "tail": [
+        -0.2968292534351349,
+        0.6376648545265198,
+        0.029108962044119835
+      ],
+      "parent": "hand.L",
+      "deform": true
+    },
+    {
+      "name": "finger.middle.02.L",
+      "head": [
+        -0.2968292534351349,
+        0.6376648545265198,
+        0.029108962044119835
+      ],
+      "tail": [
+        -0.30128270387649536,
+        0.618844211101532,
+        0.029980288818478584
+      ],
+      "parent": "finger.middle.01.L",
+      "deform": true
+    },
+    {
+      "name": "finger.ring.01.L",
+      "head": [
+        -0.3028387427330017,
+        0.6643815636634827,
+        0.02800000086426735
+      ],
+      "tail": [
+        -0.3081203103065491,
+        0.642061173915863,
+        0.029033351689577103
+      ],
+      "parent": "hand.L",
+      "deform": true
+    },
+    {
+      "name": "finger.ring.02.L",
+      "head": [
+        -0.3081203103065491,
+        0.642061173915863,
+        0.029033351689577103
+      ],
+      "tail": [
+        -0.3122701048851013,
+        0.6245237588882446,
+        0.02984526939690113
+      ],
+      "parent": "finger.ring.01.L",
+      "deform": true
+    },
+    {
+      "name": "finger.pinky.01.L",
+      "head": [
+        -0.3145162761211395,
+        0.667144775390625,
+        0.02800000086426735
+      ],
+      "tail": [
+        -0.31863847374916077,
+        0.649724006652832,
+        0.028806518763303757
+      ],
+      "parent": "hand.L",
+      "deform": true
+    },
+    {
+      "name": "finger.pinky.02.L",
+      "head": [
+        -0.31863847374916077,
+        0.649724006652832,
+        0.028806518763303757
+      ],
+      "tail": [
+        -0.3218773603439331,
+        0.636036217212677,
+        0.02944021113216877
+      ],
+      "parent": "finger.pinky.01.L",
+      "deform": true
+    },
+    {
+      "name": "finger.thumb.01.L",
+      "head": [
+        -0.2770000100135803,
+        0.6840000152587891,
+        0.029999999329447746
+      ],
+      "tail": [
+        -0.26499998569488525,
+        0.6700000166893005,
+        0.03700000047683716
+      ],
+      "parent": "hand.L",
+      "deform": true
+    },
+    {
+      "name": "finger.thumb.02.L",
+      "head": [
+        -0.26499998569488525,
+        0.6700000166893005,
+        0.03700000047683716
+      ],
+      "tail": [
+        -0.25699999928474426,
+        0.6549999713897705,
+        0.03999999910593033
+      ],
+      "parent": "finger.thumb.01.L",
+      "deform": true
+    },
+    {
+      "name": "clavicle.R",
+      "head": [
+        0,
+        0.99,
+        0
+      ],
+      "tail": [
+        0.151,
+        0.994,
+        0
+      ],
+      "parent": "chest",
+      "deform": true
+    },
+    {
+      "name": "upper_arm.R",
+      "head": [
+        0.151,
+        0.994,
+        0
+      ],
+      "tail": [
+        0.235,
+        0.844,
+        0.006
+      ],
+      "parent": "clavicle.R",
+      "deform": true
+    },
+    {
+      "name": "forearm.R",
+      "head": [
+        0.235,
+        0.844,
+        0.006
+      ],
+      "tail": [
+        0.281,
+        0.703,
+        0.028
+      ],
+      "parent": "upper_arm.R",
+      "deform": true
+    },
+    {
+      "name": "hand.R",
+      "head": [
+        0.281,
+        0.703,
+        0.028
+      ],
+      "tail": [
+        0.307,
+        0.639,
+        0.033
+      ],
+      "parent": "forearm.R",
+      "deform": true
+    },
+    {
+      "name": "thigh.R",
+      "head": [
+        0.082,
+        0.615,
+        0
+      ],
+      "tail": [
+        0.083,
+        0.338,
+        0.024
+      ],
+      "parent": "pelvis",
+      "deform": true
+    },
+    {
+      "name": "shin.R",
+      "head": [
+        0.083,
+        0.338,
+        0.024
+      ],
+      "tail": [
+        0.079,
+        0.065,
+        0
+      ],
+      "parent": "thigh.R",
+      "deform": true
+    },
+    {
+      "name": "foot.R",
+      "head": [
+        0.079,
+        0.065,
+        0
+      ],
+      "tail": [
+        0.079,
+        0.036,
+        0.132
+      ],
+      "parent": "shin.R",
+      "deform": true
+    },
+    {
+      "name": "SOCKET_Grip.R",
+      "head": [
+        0.3,
+        0.671,
+        0.044
+      ],
+      "tail": [
+        0.3,
+        0.671,
+        0.07
+      ],
+      "parent": "hand.R",
+      "deform": false
+    },
+    {
+      "name": "finger.index.01.R",
+      "head": [
+        0.27948370575904846,
+        0.6588551998138428,
+        0.02800000086426735
+      ],
+      "tail": [
+        0.2846364676952362,
+        0.6370792388916016,
+        0.02900814823806286
+      ],
+      "parent": "hand.R",
+      "deform": true
+    },
+    {
+      "name": "finger.index.02.R",
+      "head": [
+        0.2846364676952362,
+        0.6370792388916016,
+        0.02900814823806286
+      ],
+      "tail": [
+        0.28868505358695984,
+        0.6199695467948914,
+        0.029800262302160263
+      ],
+      "parent": "finger.index.01.R",
+      "deform": true
+    },
+    {
+      "name": "finger.middle.01.R",
+      "head": [
+        0.2911612391471863,
+        0.6616184115409851,
+        0.02800000086426735
+      ],
+      "tail": [
+        0.2968292534351349,
+        0.6376648545265198,
+        0.029108962044119835
+      ],
+      "parent": "hand.R",
+      "deform": true
+    },
+    {
+      "name": "finger.middle.02.R",
+      "head": [
+        0.2968292534351349,
+        0.6376648545265198,
+        0.029108962044119835
+      ],
+      "tail": [
+        0.30128270387649536,
+        0.618844211101532,
+        0.029980288818478584
+      ],
+      "parent": "finger.middle.01.R",
+      "deform": true
+    },
+    {
+      "name": "finger.ring.01.R",
+      "head": [
+        0.3028387427330017,
+        0.6643815636634827,
+        0.02800000086426735
+      ],
+      "tail": [
+        0.3081203103065491,
+        0.642061173915863,
+        0.029033351689577103
+      ],
+      "parent": "hand.R",
+      "deform": true
+    },
+    {
+      "name": "finger.ring.02.R",
+      "head": [
+        0.3081203103065491,
+        0.642061173915863,
+        0.029033351689577103
+      ],
+      "tail": [
+        0.3122701048851013,
+        0.6245237588882446,
+        0.02984526939690113
+      ],
+      "parent": "finger.ring.01.R",
+      "deform": true
+    },
+    {
+      "name": "finger.pinky.01.R",
+      "head": [
+        0.3145162761211395,
+        0.667144775390625,
+        0.02800000086426735
+      ],
+      "tail": [
+        0.31863847374916077,
+        0.649724006652832,
+        0.028806518763303757
+      ],
+      "parent": "hand.R",
+      "deform": true
+    },
+    {
+      "name": "finger.pinky.02.R",
+      "head": [
+        0.31863847374916077,
+        0.649724006652832,
+        0.028806518763303757
+      ],
+      "tail": [
+        0.3218773603439331,
+        0.636036217212677,
+        0.02944021113216877
+      ],
+      "parent": "finger.pinky.01.R",
+      "deform": true
+    },
+    {
+      "name": "finger.thumb.01.R",
+      "head": [
+        0.2770000100135803,
+        0.6840000152587891,
+        0.029999999329447746
+      ],
+      "tail": [
+        0.26499998569488525,
+        0.6700000166893005,
+        0.03700000047683716
+      ],
+      "parent": "hand.R",
+      "deform": true
+    },
+    {
+      "name": "finger.thumb.02.R",
+      "head": [
+        0.26499998569488525,
+        0.6700000166893005,
+        0.03700000047683716
+      ],
+      "tail": [
+        0.25699999928474426,
+        0.6549999713897705,
+        0.03999999910593033
+      ],
+      "parent": "finger.thumb.01.R",
+      "deform": true
+    },
+    {
+      "name": "SOCKET_Mouth",
+      "head": [
+        0,
+        1.12,
+        0.095
+      ],
+      "tail": [
+        0,
+        1.12,
+        0.118
+      ],
+      "parent": "head",
+      "deform": false
+    },
+    {
+      "name": "Hair.Fringe",
+      "head": [
+        0.025,
+        1.264,
+        0.073
+      ],
+      "tail": [
+        0.025,
+        1.238,
+        0.08
+      ],
+      "parent": "head",
+      "deform": true
+    },
+    {
+      "name": "Cloth.Hem.L",
+      "head": [
+        -0.11,
+        0.655,
+        0
+      ],
+      "tail": [
+        -0.11,
+        0.585,
+        0.02
+      ],
+      "parent": "pelvis",
+      "deform": true
+    },
+    {
+      "name": "Cloth.Hem.R",
+      "head": [
+        0.11,
+        0.655,
+        0
+      ],
+      "tail": [
+        0.11,
+        0.585,
+        0.02
+      ],
+      "parent": "pelvis",
+      "deform": true
+    },
+    {
+      "name": "Cloth.Hood",
+      "head": [
+        0,
+        1.005,
+        -0.071
+      ],
+      "tail": [
+        0,
+        0.925,
+        -0.071
+      ],
+      "parent": "chest",
+      "deform": true
+    }
+  ],
+  "parts": [
+    {
+      "name": "GEO_Head",
+      "texture": "ChildSkin",
+      "outfit": null,
+      "visible_body": true,
+      "triangles": 1052,
+      "bounds_min": [
+        -0.095,
+        1.057,
+        -0.091
+      ],
+      "bounds_max": [
+        0.095,
+        1.292,
+        0.106888
+      ]
+    },
+    {
+      "name": "GEO_Face",
+      "texture": "ChildFace",
+      "outfit": null,
+      "visible_body": true,
+      "triangles": 568,
+      "bounds_min": [
+        -0.078812,
+        1.08,
+        0.025668
+      ],
+      "bounds_max": [
+        0.078812,
+        1.266,
+        0.091409
+      ]
+    },
+    {
+      "name": "GEO_Ears",
+      "texture": "ChildSkin",
+      "outfit": null,
+      "visible_body": true,
+      "triangles": 832,
+      "bounds_min": [
+        -0.116,
+        1.141503,
+        -0.012636
+      ],
+      "bounds_max": [
+        0.116,
+        1.202991,
+        0.023526
+      ]
+    },
+    {
+      "name": "GEO_Neck",
+      "texture": "ChildSkin",
+      "outfit": null,
+      "visible_body": true,
+      "triangles": 124,
+      "bounds_min": [
+        -0.033,
+        1.015,
+        -0.028
+      ],
+      "bounds_max": [
+        0.033,
+        1.086,
+        0.034
+      ]
+    },
+    {
+      "name": "GEO_Hair",
+      "texture": "ChildHair",
+      "outfit": null,
+      "visible_body": true,
+      "triangles": 1024,
+      "bounds_min": [
+        -0.091473,
+        1.192494,
+        -0.099941
+      ],
+      "bounds_max": [
+        0.097343,
+        1.3,
+        0.081941
+      ]
+    },
+    {
+      "name": "GEO_Torso",
+      "texture": "ChildSkin",
+      "outfit": null,
+      "visible_body": false,
+      "triangles": 276,
+      "bounds_min": [
+        -0.127,
+        0.66,
+        -0.068
+      ],
+      "bounds_max": [
+        0.127,
+        1.02,
+        0.068
+      ]
+    },
+    {
+      "name": "GEO_Pelvis",
+      "texture": "ChildSkin",
+      "outfit": null,
+      "visible_body": false,
+      "triangles": 156,
+      "bounds_min": [
+        -0.109,
+        0.565,
+        -0.07
+      ],
+      "bounds_max": [
+        0.109,
+        0.69,
+        0.07
+      ]
+    },
+    {
+      "name": "GEO_Arm.L",
+      "texture": "ChildSkin",
+      "outfit": null,
+      "visible_body": false,
+      "triangles": 496,
+      "bounds_min": [
+        -0.301915,
+        0.695642,
+        -0.028934
+      ],
+      "bounds_max": [
+        -0.126221,
+        1.007876,
+        0.047288
+      ]
+    },
+    {
+      "name": "GEO_Hand.L",
+      "texture": "ChildSkin",
+      "outfit": null,
+      "visible_body": true,
+      "triangles": 1096,
+      "bounds_min": [
+        -0.324875,
+        0.618015,
+        0.018511
+      ],
+      "bounds_max": [
+        -0.253824,
+        0.708495,
+        0.044413
+      ]
+    },
+    {
+      "name": "GEO_Leg.L",
+      "texture": "ChildSkin",
+      "outfit": null,
+      "visible_body": false,
+      "triangles": 568,
+      "bounds_min": [
+        -0.1375,
+        0.062478,
+        -0.041833
+      ],
+      "bounds_max": [
+        -0.0275,
+        0.618522,
+        0.065833
+      ]
+    },
+    {
+      "name": "GEO_Foot.L",
+      "texture": "ChildSkin",
+      "outfit": null,
+      "visible_body": false,
+      "triangles": 316,
+      "bounds_min": [
+        -0.119397,
+        0.007012,
+        -0.033676
+      ],
+      "bounds_max": [
+        -0.038603,
+        0.086988,
+        0.143676
+      ]
+    },
+    {
+      "name": "GEO_Arm.R",
+      "texture": "ChildSkin",
+      "outfit": null,
+      "visible_body": false,
+      "triangles": 496,
+      "bounds_min": [
+        0.126221,
+        0.695642,
+        -0.028934
+      ],
+      "bounds_max": [
+        0.301915,
+        1.007876,
+        0.047288
+      ]
+    },
+    {
+      "name": "GEO_Hand.R",
+      "texture": "ChildSkin",
+      "outfit": null,
+      "visible_body": true,
+      "triangles": 1096,
+      "bounds_min": [
+        0.253824,
+        0.618015,
+        0.018511
+      ],
+      "bounds_max": [
+        0.324875,
+        0.708495,
+        0.044413
+      ]
+    },
+    {
+      "name": "GEO_Leg.R",
+      "texture": "ChildSkin",
+      "outfit": null,
+      "visible_body": false,
+      "triangles": 568,
+      "bounds_min": [
+        0.0275,
+        0.062478,
+        -0.041833
+      ],
+      "bounds_max": [
+        0.1375,
+        0.618522,
+        0.065833
+      ]
+    },
+    {
+      "name": "GEO_Foot.R",
+      "texture": "ChildSkin",
+      "outfit": null,
+      "visible_body": false,
+      "triangles": 316,
+      "bounds_min": [
+        0.038603,
+        0.007012,
+        -0.033676
+      ],
+      "bounds_max": [
+        0.119397,
+        0.086988,
+        0.143676
+      ]
+    },
+    {
+      "name": "OUTFIT_Raincoat_Body",
+      "texture": "RaincoatAtlas",
+      "outfit": "Raincoat",
+      "visible_body": false,
+      "triangles": 392,
+      "bounds_min": [
+        -0.145,
+        0.565,
+        -0.082196
+      ],
+      "bounds_max": [
+        0.145,
+        1.028,
+        0.076206
+      ]
+    },
+    {
+      "name": "OUTFIT_Raincoat_Closure",
+      "texture": "RaincoatAtlas",
+      "outfit": "Raincoat",
+      "visible_body": false,
+      "triangles": 248,
+      "bounds_min": [
+        -0.011,
+        0.565,
+        0.075
+      ],
+      "bounds_max": [
+        0.011,
+        1.005,
+        0.095
+      ]
+    },
+    {
+      "name": "OUTFIT_Raincoat_Collar",
+      "texture": "RaincoatAtlas",
+      "outfit": "Raincoat",
+      "visible_body": false,
+      "triangles": 216,
+      "bounds_min": [
+        -0.05175,
+        1.019876,
+        -0.041316
+      ],
+      "bounds_max": [
+        0.05175,
+        1.044124,
+        0.047316
+      ]
+    },
+    {
+      "name": "OUTFIT_Raincoat_Pockets",
+      "texture": "RaincoatAtlas",
+      "outfit": "Raincoat",
+      "visible_body": false,
+      "triangles": 280,
+      "bounds_min": [
+        -0.114,
+        0.7185,
+        0.067
+      ],
+      "bounds_max": [
+        0.114,
+        0.8155,
+        0.0915
+      ]
+    },
+    {
+      "name": "OUTFIT_Raincoat_FoldedHood",
+      "texture": "RaincoatAtlas",
+      "outfit": "Raincoat",
+      "visible_body": false,
+      "triangles": 428,
+      "bounds_min": [
+        -0.071,
+        0.925,
+        -0.122908
+      ],
+      "bounds_max": [
+        0.071,
+        1.028,
+        -0.028653
+      ]
+    },
+    {
+      "name": "OUTFIT_Raincoat_TrouserWaist",
+      "texture": "RaincoatAtlas",
+      "outfit": "Raincoat",
+      "visible_body": false,
+      "triangles": 156,
+      "bounds_min": [
+        -0.116,
+        0.565,
+        -0.07
+      ],
+      "bounds_max": [
+        0.116,
+        0.739,
+        0.07
+      ]
+    },
+    {
+      "name": "OUTFIT_Raincoat_Sleeve.L",
+      "texture": "RaincoatAtlas",
+      "outfit": "Raincoat",
+      "visible_body": false,
+      "triangles": 528,
+      "bounds_min": [
+        -0.316651,
+        0.690463,
+        -0.045312
+      ],
+      "bounds_max": [
+        -0.080051,
+        1.031695,
+        0.060789
+      ]
+    },
+    {
+      "name": "OUTFIT_Raincoat_Cuff.L",
+      "texture": "RaincoatAtlas",
+      "outfit": "Raincoat",
+      "visible_body": false,
+      "triangles": 108,
+      "bounds_min": [
+        -0.314785,
+        0.692524,
+        -0.006551
+      ],
+      "bounds_max": [
+        -0.238932,
+        0.738867,
+        0.05859
+      ]
+    },
+    {
+      "name": "OUTFIT_Raincoat_Trousers.L",
+      "texture": "RaincoatAtlas",
+      "outfit": "Raincoat",
+      "visible_body": false,
+      "triangles": 500,
+      "bounds_min": [
+        -0.137989,
+        0.061442,
+        -0.046697
+      ],
+      "bounds_max": [
+        -0.018051,
+        0.708828,
+        0.078
+      ]
+    },
+    {
+      "name": "OUTFIT_Raincoat_Boots.L",
+      "texture": "RaincoatAtlas",
+      "outfit": "Raincoat",
+      "visible_body": false,
+      "triangles": 680,
+      "bounds_min": [
+        -0.135,
+        0.0,
+        -0.065317
+      ],
+      "bounds_max": [
+        -0.023,
+        0.2,
+        0.143317
+      ]
+    },
+    {
+      "name": "OUTFIT_Raincoat_Sleeve.R",
+      "texture": "RaincoatAtlas",
+      "outfit": "Raincoat",
+      "visible_body": false,
+      "triangles": 528,
+      "bounds_min": [
+        0.080051,
+        0.690463,
+        -0.045312
+      ],
+      "bounds_max": [
+        0.316651,
+        1.031695,
+        0.060789
+      ]
+    },
+    {
+      "name": "OUTFIT_Raincoat_Cuff.R",
+      "texture": "RaincoatAtlas",
+      "outfit": "Raincoat",
+      "visible_body": false,
+      "triangles": 108,
+      "bounds_min": [
+        0.238932,
+        0.692524,
+        -0.006551
+      ],
+      "bounds_max": [
+        0.314785,
+        0.738867,
+        0.05859
+      ]
+    },
+    {
+      "name": "OUTFIT_Raincoat_Trousers.R",
+      "texture": "RaincoatAtlas",
+      "outfit": "Raincoat",
+      "visible_body": false,
+      "triangles": 500,
+      "bounds_min": [
+        0.018051,
+        0.061442,
+        -0.046697
+      ],
+      "bounds_max": [
+        0.137989,
+        0.708828,
+        0.078
+      ]
+    },
+    {
+      "name": "OUTFIT_Raincoat_Boots.R",
+      "texture": "RaincoatAtlas",
+      "outfit": "Raincoat",
+      "visible_body": false,
+      "triangles": 680,
+      "bounds_min": [
+        0.023,
+        0.0,
+        -0.065317
+      ],
+      "bounds_max": [
+        0.135,
+        0.2,
+        0.143317
+      ]
+    },
+    {
+      "name": "OUTFIT_Quilted_Body",
+      "texture": "QuiltedAtlas",
+      "outfit": "Quilted",
+      "visible_body": false,
+      "triangles": 968,
+      "bounds_min": [
+        -0.1457,
+        0.695,
+        -0.082196
+      ],
+      "bounds_max": [
+        0.1457,
+        1.028,
+        0.079698
+      ]
+    },
+    {
+      "name": "OUTFIT_Quilted_Closure",
+      "texture": "QuiltedAtlas",
+      "outfit": "Quilted",
+      "visible_body": false,
+      "triangles": 204,
+      "bounds_min": [
+        -0.011,
+        0.695,
+        0.075
+      ],
+      "bounds_max": [
+        0.011,
+        1.005,
+        0.095
+      ]
+    },
+    {
+      "name": "OUTFIT_Quilted_Collar",
+      "texture": "QuiltedAtlas",
+      "outfit": "Quilted",
+      "visible_body": false,
+      "triangles": 216,
+      "bounds_min": [
+        -0.05175,
+        1.019876,
+        -0.041316
+      ],
+      "bounds_max": [
+        0.05175,
+        1.044124,
+        0.047316
+      ]
+    },
+    {
+      "name": "OUTFIT_Quilted_Pockets",
+      "texture": "QuiltedAtlas",
+      "outfit": "Quilted",
+      "visible_body": false,
+      "triangles": 280,
+      "bounds_min": [
+        -0.114,
+        0.7185,
+        0.067
+      ],
+      "bounds_max": [
+        0.114,
+        0.8155,
+        0.0915
+      ]
+    },
+    {
+      "name": "OUTFIT_Quilted_KnittedCap",
+      "texture": "QuiltedAtlas",
+      "outfit": "Quilted",
+      "visible_body": false,
+      "triangles": 436,
+      "bounds_min": [
+        -0.098,
+        1.227,
+        -0.10008
+      ],
+      "bounds_max": [
+        0.098,
+        1.3,
+        0.08808
+      ]
+    },
+    {
+      "name": "OUTFIT_Quilted_TrouserWaist",
+      "texture": "QuiltedAtlas",
+      "outfit": "Quilted",
+      "visible_body": false,
+      "triangles": 156,
+      "bounds_min": [
+        -0.143,
+        0.565,
+        -0.081
+      ],
+      "bounds_max": [
+        0.143,
+        0.739,
+        0.081
+      ]
+    },
+    {
+      "name": "OUTFIT_Quilted_Sleeve.L",
+      "texture": "QuiltedAtlas",
+      "outfit": "Quilted",
+      "visible_body": false,
+      "triangles": 528,
+      "bounds_min": [
+        -0.311897,
+        0.692133,
+        -0.04385
+      ],
+      "bounds_max": [
+        -0.082911,
+        1.029678,
+        0.05714
+      ]
+    },
+    {
+      "name": "OUTFIT_Quilted_Cuff.L",
+      "texture": "QuiltedAtlas",
+      "outfit": "Quilted",
+      "visible_body": false,
+      "triangles": 108,
+      "bounds_min": [
+        -0.309233,
+        0.694058,
+        -0.002797
+      ],
+      "bounds_max": [
+        -0.244483,
+        0.737332,
+        0.054836
+      ]
+    },
+    {
+      "name": "OUTFIT_Quilted_Trousers.L",
+      "texture": "QuiltedAtlas",
+      "outfit": "Quilted",
+      "visible_body": false,
+      "triangles": 528,
+      "bounds_min": [
+        -0.146,
+        0.061442,
+        -0.056425
+      ],
+      "bounds_max": [
+        -0.018,
+        0.708729,
+        0.078
+      ]
+    },
+    {
+      "name": "OUTFIT_Quilted_Boots.L",
+      "texture": "QuiltedAtlas",
+      "outfit": "Quilted",
+      "visible_body": false,
+      "triangles": 692,
+      "bounds_min": [
+        -0.135,
+        0.0,
+        -0.065317
+      ],
+      "bounds_max": [
+        -0.023,
+        0.142,
+        0.143317
+      ]
+    },
+    {
+      "name": "OUTFIT_Quilted_Sleeve.R",
+      "texture": "QuiltedAtlas",
+      "outfit": "Quilted",
+      "visible_body": false,
+      "triangles": 528,
+      "bounds_min": [
+        0.082911,
+        0.692133,
+        -0.04385
+      ],
+      "bounds_max": [
+        0.311897,
+        1.029678,
+        0.05714
+      ]
+    },
+    {
+      "name": "OUTFIT_Quilted_Cuff.R",
+      "texture": "QuiltedAtlas",
+      "outfit": "Quilted",
+      "visible_body": false,
+      "triangles": 108,
+      "bounds_min": [
+        0.244483,
+        0.694058,
+        -0.002797
+      ],
+      "bounds_max": [
+        0.309233,
+        0.737332,
+        0.054836
+      ]
+    },
+    {
+      "name": "OUTFIT_Quilted_Trousers.R",
+      "texture": "QuiltedAtlas",
+      "outfit": "Quilted",
+      "visible_body": false,
+      "triangles": 528,
+      "bounds_min": [
+        0.018,
+        0.061442,
+        -0.056425
+      ],
+      "bounds_max": [
+        0.146,
+        0.708729,
+        0.078
+      ]
+    },
+    {
+      "name": "OUTFIT_Quilted_Boots.R",
+      "texture": "QuiltedAtlas",
+      "outfit": "Quilted",
+      "visible_body": false,
+      "triangles": 692,
+      "bounds_min": [
+        0.023,
+        0.0,
+        -0.065317
+      ],
+      "bounds_max": [
+        0.135,
+        0.142,
+        0.143317
+      ]
+    },
+    {
+      "name": "OUTFIT_Vest_Body",
+      "texture": "VestAtlas",
+      "outfit": "Vest",
+      "visible_body": false,
+      "triangles": 392,
+      "bounds_min": [
+        -0.145,
+        0.695,
+        -0.082196
+      ],
+      "bounds_max": [
+        0.145,
+        1.028,
+        0.076206
+      ]
+    },
+    {
+      "name": "OUTFIT_Vest_Closure",
+      "texture": "VestAtlas",
+      "outfit": "Vest",
+      "visible_body": false,
+      "triangles": 204,
+      "bounds_min": [
+        -0.011,
+        0.695,
+        0.075
+      ],
+      "bounds_max": [
+        0.011,
+        1.005,
+        0.095
+      ]
+    },
+    {
+      "name": "OUTFIT_Vest_Collar",
+      "texture": "VestAtlas",
+      "outfit": "Vest",
+      "visible_body": false,
+      "triangles": 216,
+      "bounds_min": [
+        -0.05175,
+        1.019876,
+        -0.041316
+      ],
+      "bounds_max": [
+        0.05175,
+        1.044124,
+        0.047316
+      ]
+    },
+    {
+      "name": "OUTFIT_Vest_Pockets",
+      "texture": "VestAtlas",
+      "outfit": "Vest",
+      "visible_body": false,
+      "triangles": 280,
+      "bounds_min": [
+        -0.114,
+        0.7185,
+        0.067
+      ],
+      "bounds_max": [
+        0.114,
+        0.8155,
+        0.0915
+      ]
+    },
+    {
+      "name": "OUTFIT_Vest_Vest",
+      "texture": "VestAtlas",
+      "outfit": "Vest",
+      "visible_body": false,
+      "triangles": 388,
+      "bounds_min": [
+        -0.144,
+        0.6925,
+        -0.077206
+      ],
+      "bounds_max": [
+        0.144,
+        1.013,
+        0.0945
+      ]
+    },
+    {
+      "name": "OUTFIT_Vest_TrouserWaist",
+      "texture": "VestAtlas",
+      "outfit": "Vest",
+      "visible_body": false,
+      "triangles": 156,
+      "bounds_min": [
+        -0.143,
+        0.565,
+        -0.081
+      ],
+      "bounds_max": [
+        0.143,
+        0.739,
+        0.081
+      ]
+    },
+    {
+      "name": "OUTFIT_Vest_Sleeve.L",
+      "texture": "VestAtlas",
+      "outfit": "Vest",
+      "visible_body": false,
+      "triangles": 528,
+      "bounds_min": [
+        -0.311897,
+        0.692133,
+        -0.04385
+      ],
+      "bounds_max": [
+        -0.082911,
+        1.029678,
+        0.05714
+      ]
+    },
+    {
+      "name": "OUTFIT_Vest_Cuff.L",
+      "texture": "VestAtlas",
+      "outfit": "Vest",
+      "visible_body": false,
+      "triangles": 108,
+      "bounds_min": [
+        -0.309233,
+        0.694058,
+        -0.002797
+      ],
+      "bounds_max": [
+        -0.244483,
+        0.737332,
+        0.054836
+      ]
+    },
+    {
+      "name": "OUTFIT_Vest_Trousers.L",
+      "texture": "VestAtlas",
+      "outfit": "Vest",
+      "visible_body": false,
+      "triangles": 528,
+      "bounds_min": [
+        -0.146,
+        0.061442,
+        -0.056425
+      ],
+      "bounds_max": [
+        -0.018,
+        0.708729,
+        0.078
+      ]
+    },
+    {
+      "name": "OUTFIT_Vest_Boots.L",
+      "texture": "VestAtlas",
+      "outfit": "Vest",
+      "visible_body": false,
+      "triangles": 692,
+      "bounds_min": [
+        -0.135,
+        0.0,
+        -0.065317
+      ],
+      "bounds_max": [
+        -0.023,
+        0.142,
+        0.143317
+      ]
+    },
+    {
+      "name": "OUTFIT_Vest_Sleeve.R",
+      "texture": "VestAtlas",
+      "outfit": "Vest",
+      "visible_body": false,
+      "triangles": 528,
+      "bounds_min": [
+        0.082911,
+        0.692133,
+        -0.04385
+      ],
+      "bounds_max": [
+        0.311897,
+        1.029678,
+        0.05714
+      ]
+    },
+    {
+      "name": "OUTFIT_Vest_Cuff.R",
+      "texture": "VestAtlas",
+      "outfit": "Vest",
+      "visible_body": false,
+      "triangles": 108,
+      "bounds_min": [
+        0.244483,
+        0.694058,
+        -0.002797
+      ],
+      "bounds_max": [
+        0.309233,
+        0.737332,
+        0.054836
+      ]
+    },
+    {
+      "name": "OUTFIT_Vest_Trousers.R",
+      "texture": "VestAtlas",
+      "outfit": "Vest",
+      "visible_body": false,
+      "triangles": 528,
+      "bounds_min": [
+        0.018,
+        0.061442,
+        -0.056425
+      ],
+      "bounds_max": [
+        0.146,
+        0.708729,
+        0.078
+      ]
+    },
+    {
+      "name": "OUTFIT_Vest_Boots.R",
+      "texture": "VestAtlas",
+      "outfit": "Vest",
+      "visible_body": false,
+      "triangles": 692,
+      "bounds_min": [
+        0.023,
+        0.0,
+        -0.065317
+      ],
+      "bounds_max": [
+        0.135,
+        0.142,
+        0.143317
+      ]
+    }
+  ],
+  "outfits": [
+    {
+      "name": "Raincoat",
+      "visible_triangles": 11144,
+      "visible_parts": [
+        "GEO_Head",
+        "GEO_Face",
+        "GEO_Ears",
+        "GEO_Neck",
+        "GEO_Hair",
+        "GEO_Hand.L",
+        "GEO_Hand.R",
+        "OUTFIT_Raincoat_Body",
+        "OUTFIT_Raincoat_Closure",
+        "OUTFIT_Raincoat_Collar",
+        "OUTFIT_Raincoat_Pockets",
+        "OUTFIT_Raincoat_FoldedHood",
+        "OUTFIT_Raincoat_TrouserWaist",
+        "OUTFIT_Raincoat_Sleeve.L",
+        "OUTFIT_Raincoat_Cuff.L",
+        "OUTFIT_Raincoat_Trousers.L",
+        "OUTFIT_Raincoat_Boots.L",
+        "OUTFIT_Raincoat_Sleeve.R",
+        "OUTFIT_Raincoat_Cuff.R",
+        "OUTFIT_Raincoat_Trousers.R",
+        "OUTFIT_Raincoat_Boots.R"
+      ],
+      "bounds_min": [
+        -0.324875,
+        0.0,
+        -0.122908
+      ],
+      "bounds_max": [
+        0.324875,
+        1.3,
+        0.143317
+      ]
+    },
+    {
+      "name": "Quilted",
+      "visible_triangles": 11764,
+      "visible_parts": [
+        "GEO_Head",
+        "GEO_Face",
+        "GEO_Ears",
+        "GEO_Neck",
+        "GEO_Hair",
+        "GEO_Hand.L",
+        "GEO_Hand.R",
+        "OUTFIT_Quilted_Body",
+        "OUTFIT_Quilted_Closure",
+        "OUTFIT_Quilted_Collar",
+        "OUTFIT_Quilted_Pockets",
+        "OUTFIT_Quilted_KnittedCap",
+        "OUTFIT_Quilted_TrouserWaist",
+        "OUTFIT_Quilted_Sleeve.L",
+        "OUTFIT_Quilted_Cuff.L",
+        "OUTFIT_Quilted_Trousers.L",
+        "OUTFIT_Quilted_Boots.L",
+        "OUTFIT_Quilted_Sleeve.R",
+        "OUTFIT_Quilted_Cuff.R",
+        "OUTFIT_Quilted_Trousers.R",
+        "OUTFIT_Quilted_Boots.R"
+      ],
+      "bounds_min": [
+        -0.324875,
+        0.0,
+        -0.10008
+      ],
+      "bounds_max": [
+        0.324875,
+        1.3,
+        0.143317
+      ]
+    },
+    {
+      "name": "Vest",
+      "visible_triangles": 11140,
+      "visible_parts": [
+        "GEO_Head",
+        "GEO_Face",
+        "GEO_Ears",
+        "GEO_Neck",
+        "GEO_Hair",
+        "GEO_Hand.L",
+        "GEO_Hand.R",
+        "OUTFIT_Vest_Body",
+        "OUTFIT_Vest_Closure",
+        "OUTFIT_Vest_Collar",
+        "OUTFIT_Vest_Pockets",
+        "OUTFIT_Vest_Vest",
+        "OUTFIT_Vest_TrouserWaist",
+        "OUTFIT_Vest_Sleeve.L",
+        "OUTFIT_Vest_Cuff.L",
+        "OUTFIT_Vest_Trousers.L",
+        "OUTFIT_Vest_Boots.L",
+        "OUTFIT_Vest_Sleeve.R",
+        "OUTFIT_Vest_Cuff.R",
+        "OUTFIT_Vest_Trousers.R",
+        "OUTFIT_Vest_Boots.R"
+      ],
+      "bounds_min": [
+        -0.324875,
+        0.0,
+        -0.099941
+      ],
+      "bounds_max": [
+        0.324875,
+        1.3,
+        0.143317
+      ]
+    }
+  ],
+  "props": [
+    {
+      "name": "LowTable",
+      "bounds_min": [
+        -0.397,
+        0.0,
+        -0.275
+      ],
+      "bounds_max": [
+        0.397,
+        0.55,
+        0.275
+      ],
+      "triangles": 476,
+      "anchors": [
+        {
+          "name": "TableTopAnchor",
+          "position": [
+            0,
+            0.55,
+            0
+          ],
+          "parent": null
+        }
+      ]
+    },
+    {
+      "name": "WoodenCar",
+      "bounds_min": [
+        -0.091,
+        0.0,
+        -0.138
+      ],
+      "bounds_max": [
+        0.091,
+        0.105,
+        0.138
+      ],
+      "triangles": 520,
+      "anchors": [
+        {
+          "name": "AxleFront",
+          "position": [
+            0,
+            0.029,
+            0.085
+          ],
+          "parent": null
+        },
+        {
+          "name": "WheelPivot_FL",
+          "position": [
+            -0.077,
+            0.029,
+            0.085
+          ],
+          "parent": null
+        },
+        {
+          "name": "WheelPivot_FR",
+          "position": [
+            0.077,
+            0.029,
+            0.085
+          ],
+          "parent": null
+        },
+        {
+          "name": "AxleRear",
+          "position": [
+            0,
+            0.029,
+            -0.085
+          ],
+          "parent": null
+        },
+        {
+          "name": "WheelPivot_RL",
+          "position": [
+            -0.077,
+            0.029,
+            -0.085
+          ],
+          "parent": null
+        },
+        {
+          "name": "WheelPivot_RR",
+          "position": [
+            0.077,
+            0.029,
+            -0.085
+          ],
+          "parent": null
+        },
+        {
+          "name": "SOCKET_Grip",
+          "position": [
+            0,
+            0.08,
+            0
+          ],
+          "parent": null
+        }
+      ]
+    }
+  ],
+  "textures": [
+    {
+      "name": "ChildSkin",
+      "width": 256,
+      "height": 256,
+      "sha256": "368c5b19ac1b0f5f1318dee0dca7922654f76471a7376156c95057bf7000bcac"
+    },
+    {
+      "name": "ChildFace",
+      "width": 512,
+      "height": 128,
+      "sha256": "43f175aa222239794190111c15514f3657c0824a7c297e6a360f71bab30bf6f5"
+    },
+    {
+      "name": "ChildHair",
+      "width": 256,
+      "height": 256,
+      "sha256": "12829d7f3f99fcc49013827c508c474f7ad6e7baa4d6f4675ae897b9364a675e"
+    },
+    {
+      "name": "RaincoatAtlas",
+      "width": 512,
+      "height": 512,
+      "sha256": "d983a808a2fbfb1e88e890bc6a9469d2cb314d38434cc31e2d8daa92f4350733"
+    },
+    {
+      "name": "QuiltedAtlas",
+      "width": 512,
+      "height": 512,
+      "sha256": "aca71a9ed854b650edb1600338188b8e326279348760af46ce5c1aadafeacc60"
+    },
+    {
+      "name": "VestAtlas",
+      "width": 512,
+      "height": 512,
+      "sha256": "6b1e153861393e77b0b78fd7a22ea52d6c6991549ff8cb5eadf86c593186d7a6"
+    },
+    {
+      "name": "ToyWood",
+      "width": 256,
+      "height": 256,
+      "sha256": "4e7e84185836391ba9907b1693628836b2c428d38063e3fa4b8de240ee66b5da"
+    }
+  ],
+  "validation": {
+    "signed_volume": "every authored solid outward",
+    "weights": "one or two normalized influences",
+    "fbx": "round-trip world meshes and skeleton anchors"
+  }
+}

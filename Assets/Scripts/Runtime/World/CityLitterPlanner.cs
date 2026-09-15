@@ -659,6 +659,8 @@ namespace BarPromenade
                         surface.Feature == CityAreaFeatureKind.Cemetery || surface.Feature == CityAreaFeatureKind.Church)
                         blocked.Add(Expand(surface.WorldBounds, .5f));
                 }
+                CityFairPlan fair = CityFairPlanner.Create(layout);
+                if (fair.IsEnabled) blocked.Add(Expand(fair.Bounds, .5f));
                 if (archShelter != null && archShelter.IsEnabled)
                 {
                     CityArchShelterPlacement placement = archShelter.Placement;

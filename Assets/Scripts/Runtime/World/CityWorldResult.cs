@@ -46,6 +46,7 @@ namespace BarPromenade
             Bounds bounds)
         {
             Root = root;
+            Fair = root != null ? root.GetComponentInChildren<CityFairWorld>(true) : null;
             WalkableArea = walkableArea;
             Bars = new ReadOnlyCollection<BarEntrance>(
                 new List<BarEntrance>(bars));
@@ -122,6 +123,7 @@ namespace BarPromenade
         }
 
         public GameObject Root { get; }
+        public CityFairWorld Fair { get; }
         public RoadWalkableArea WalkableArea { get; }
         public IReadOnlyList<BarEntrance> Bars { get; }
         public HomeEntrance PlayerHome { get; }

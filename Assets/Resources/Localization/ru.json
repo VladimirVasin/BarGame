@@ -1,6 +1,14 @@
 {
   "entries": [
     {
+      "key": "interaction.fair_organ",
+      "value": "Покрутить шарманку"
+    },
+    {
+      "key": "interaction.fair_bell",
+      "value": "Позвонить в колокол"
+    },
+    {
       "key": "npc.name.foreman",
       "value": "Бригадир"
     },

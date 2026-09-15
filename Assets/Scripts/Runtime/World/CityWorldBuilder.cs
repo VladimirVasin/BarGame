@@ -77,6 +77,7 @@ namespace BarPromenade
             bool plansReused = CityWorldPlans.IsMemoised(layout);
             CityWorldPlans plans = CityWorldPlans.GetOrCreate(layout);
             CityArchShelterPlan archShelterPlan = plans.ArchShelter;
+            CityFairPlan fairPlan = plans.Fair;
 
             Transform world = new GameObject("Generated City").transform;
             world.SetParent(parent, false);
@@ -340,6 +341,8 @@ namespace BarPromenade
                     world,
                     layout,
                     archShelterPlan);
+            CityFairWorldBuilder.Build(world, fairPlan);
+            if (fairPlan.IsEnabled) walkableArea.Add(fairPlan.Bounds);
 
             GameObject decorationRoot =
                 CityDecorationWorldBuilder.Build(
@@ -2726,6 +2729,7 @@ namespace BarPromenade
             // the same way.
             Layout = layout;
             ArchShelter = CityArchShelterPlanner.Create(layout);
+            Fair = CityFairPlanner.Create(layout);
             Fence = RoadFencePlanner.CreatePlan(layout);
             MountainBoundary = CityMountainBoundaryPlanner.Create(layout);
             Church = CityChurchPlanner.Create(layout);
@@ -2748,6 +2752,7 @@ namespace BarPromenade
 
         internal CityLayout Layout { get; }
         internal CityArchShelterPlan ArchShelter { get; }
+        internal CityFairPlan Fair { get; }
         internal RoadFencePlan Fence { get; }
         internal CityMountainBoundaryPlan MountainBoundary { get; }
         internal CityChurchPlan Church { get; }

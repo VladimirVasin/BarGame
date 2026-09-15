@@ -123,6 +123,12 @@ namespace BarPromenade
         /// </summary>
         private bool TryResolveSurfaceTop(Vector2 worldXZ, out float top)
         {
+            CityFairPlan fair = CityFairPlanner.Create(layout);
+            if (fair.IsEnabled && fair.Bounds.Contains(worldXZ))
+            {
+                top = fair.SampleGroundY(new Vector3(worldXZ.x, 0f, worldXZ.y));
+                return true;
+            }
             CityEastExitPlan eastExit = CityEastExitPlanner.Create(layout);
             if (eastExit.IsEnabled && eastExit.RoadBounds.Contains(worldXZ))
             {
@@ -240,6 +246,11 @@ namespace BarPromenade
                     }
                 }
             }
+
+            CityFairPlan fair = CityFairPlanner.Create(layout);
+            if (fair.IsEnabled)
+                foreach (Rect obstacle in fair.Obstacles)
+                    footprints.Add(Expand(obstacle, radius));
 
             CityArchShelterPlan archShelter =
                 CityArchShelterPlanner.Create(layout);

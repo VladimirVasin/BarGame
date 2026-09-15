@@ -1166,30 +1166,31 @@ The vertical slice contains:
   four ordinary benches per region from real non-bridge path runs; one
   descriptor keeps the oriented timber, collider and path-facing sit dock in
   agreement;
-- one fixed Nightlife survival pocket in the walkable ground gap between
-  presentation cells `[10;5]` and `[11;5]`. A closed, non-walkable service
-  bridge spans the two ordinary buildings as a full `11.602 m`-deep arch while
-  the ground remains traversable: a northern ten-step flight resolves the
-  native `1.562 m` terrain difference and meets one `7.30614 x 8.851 m`
-  supported service terrace. The slab runs from that stair seam into the east
-  facade support and south to the raw wall end, so it is not a detached central
-  plinth. It contains the visible `1.50 m` upper landing, barrel, standing and
-  seated warmers, bedding and sleeper; its masonry mass reaches the lower datum,
-  while sparse mundane clutter remains on the lower ground.
-  Fifteen exact-name renderers reuse measured masonry, concrete, paving,
-  metal, timber, cloth, paper, enamel and roof albedos through MPBs. The three
-  residents are detailed Hero-Avatar `NpcHumanV2` prefabs with separate
-  `256 px` garment/face atlases and independent standing-warm, seated-warm and
-  sleeping-breath loops; they stay colliderless and never read the player. One
-  full-depth west `2.2 m` route remains on that lower ground. The terrace is a
-  stair-only dead end: `1.09 m` north/south guards plus a west guard south of the stair
-  close every sampled `0.41-1.562 m` drop instead of pretending the east side
-  is a seamless second route. The only opening is the stair band. Five
-  independently moving emissive flame/ember parts, a transparent ground spill,
-  deterministic sparks and one synchronized strong warm realtime Point Light
-  give the barrel a causal moving pool, plus one bounded synthesized crackle;
-  a local particle trigger removes rain only under the roof and does not add
-  local fog;
+- one fixed Nightlife survival pocket between `[10;5]`/`[11;5]`: a closed,
+  non-walkable `11.602 m`-deep arch above a `1.562 m` terrain step. Ten north
+  steps meet a supported east `7.30614 x 8.851 m` terrace, including its
+  `1.50 m` landing; slab/masonry join the facade and south wall end.
+  Barrel, two warmers, bedding/sleeper occupy the terrace; sparse clutter
+  stays below. Three detailed Hero-Avatar rigs have `256 px` atlases and
+  separate warming/sleeping loops, no colliders or player response.
+  The sole full-depth route is west/lower, `2.2 m` wide. `1.09 m` north/south
+  and partial west guards close `0.41–1.562 m` drops; only the stairs enter.
+  Fifteen named renderers reuse measured City surface families through MPBs.
+  Five flame/ember parts, spill/sparks, one strong warm Point Light and
+  bounded synthesized crackle belong to the barrel. Rain dies under the
+  roof; no local fog;
+- fair `[11;3]`/`[11;4]`: four staffed passive bread/fruit/pottery/toy stalls,
+  shared hero organ/bell actions, two seats, clutter, three always-burning
+  garlands in light pool `12`. Three silent children share one detailed body/
+  three constructed outfits with continuous trousers to the waist and child
+  clips: watching toys, rolling a personal
+  car at a low table, sitting via `CityBenchSeatClaims`. Local routes/pauses,
+  hand/terrain-foot contacts preserve `2.2 m` paths and the west door approach.
+  Child gaze uses the sampled face orientation and fades with the activity;
+  look/secondary offsets restore before resampling.
+  `CityFairPlanner` aligns supports to continuous ground; exclusions keep
+  decoration/litter/map arrivals clear. No buying/collecting/speech/reward,
+  cat response or story state;
 - one mandatory north-edge waterfront in the default blueprint, dressed as
   the seacoast precinct (`CitySeacoastPlanner`): its connected beach has a
   deterministic street approach and remains walkable to the water line,
