@@ -12,6 +12,10 @@ from mathutils import Vector
 import player_hand_frames
 
 
+HAND_SIZE_SCALE = 1.20
+HAND_GIRTH_SCALE = .85
+
+
 HAIR_PATHS = {
     "HairBack": ((0, .071, 1.650), (0, .074, 1.609), (.002, .073, 1.565), (.004, .069, 1.522)),
     "HairLeft": ((.088, -.008, 1.668), (.095, -.006, 1.618), (.099, .004, 1.566), (.096, .014, 1.520)),
@@ -189,14 +193,25 @@ def _hands(builder, api, common):
         # made both thumbs point out. These axes rotate with the unchanged hand.
         across=(Vector((0,1,0))-direction*direction.y).normalized()
         depth=direction.cross(across).normalized()*(-sign)
+
+        def local(along, width=0., thickness=0., thin_palm=False):
+            # The cuff/wrist ring stays put; the visible palm and fingers grow
+            # together. Thin their cross-sections independently of that reach;
+            # keep the original skeleton and grip/socket frames.
+            blend=max(0.,min(1.,along/.030))
+            size=1+(HAND_SIZE_SCALE-1)*blend
+            if thin_palm:
+                thickness*=1+(HAND_GIRTH_SCALE-1)*blend
+            return wrist+(direction*builder.d(along)+across*builder.d(width)+
+                          depth*builder.d(thickness))*size
+
         palm= bpy.data.objects[f"GEO_Hand.{side}"]
         vertices=[]; sides=10
         stations=((-.012,.020,.012),(.012,.030,.017),(.042,.032,.018),(.060,.025,.015))
         for along,width,thickness in stations:
-            centre=wrist+direction*builder.d(along)
             for j in range(sides):
                 angle=math.tau*j/sides
-                vertices.append(centre+across*(math.cos(angle)*builder.d(width))+depth*(math.sin(angle)*builder.d(thickness)))
+                vertices.append(local(along,math.cos(angle)*width,math.sin(angle)*thickness,thin_palm=True))
         faces=[tuple(reversed(range(sides)))]
         faces += [(r*sides+j,r*sides+(j+1)%sides,(r+1)*sides+(j+1)%sides,(r+1)*sides+j)
                   for r in range(len(stations)-1) for j in range(sides)]
@@ -206,17 +221,20 @@ def _hands(builder, api, common):
         _replace_mesh(palm,(vertices,faces)); _smooth(palm)
         palm["bp_palm_normal_bind"]=list(depth)
         palm["bp_thumb_direction_bind"]=list(-across)
+        palm["bp_hand_size_scale"]=HAND_SIZE_SCALE
+        palm["bp_hand_girth_scale"]=HAND_GIRTH_SCALE
         for index,(offset,length,radius) in enumerate(((-.023,.033,.0085),(-.007,.042,.009),(.009,.039,.0085),(.024,.030,.0075))):
-            start=wrist+direction*builder.d(.052)+across*builder.d(offset)
-            tip=start+direction*builder.d(length)+depth*builder.d(.004)
+            start=local(.052,offset)
+            tip=local(.052+length,offset,.004)
+            radius*=HAND_SIZE_SCALE*HAND_GIRTH_SCALE
             obj=builder.add_part(f"GEO_Finger{index}.{side}",api.make_profiled_segment_geometry(start,tip,
                 ((0,builder.d(radius),.85),(.42,builder.d(radius*1.03),.85),(.80,builder.d(radius*.90),.82),(1,builder.d(radius*.67),.80)),sides=7),
                 "Skin","core",f"hand.{side}",f"{'Left' if side=='L' else 'Right'}LowerArm","body_detail","Left" if side=="L" else "Right",origin=wrist)
             _smooth(obj)
         thumb=bpy.data.objects[f"GEO_Thumb.{side}"]
-        start=wrist+direction*builder.d(.018)+across*builder.d(-.022)
-        tip=wrist+direction*builder.d(.055)+across*builder.d(-.041)+depth*builder.d(.002)
-        _replace_mesh(thumb,api.make_profiled_segment_geometry(start,tip,((0,builder.d(.013),.8),(.45,builder.d(.013),.8),(1,builder.d(.009),.8)),sides=7))
+        start=local(.018,-.022)
+        tip=local(.055,-.041,.002)
+        _replace_mesh(thumb,api.make_profiled_segment_geometry(start,tip,((0,builder.d(.013*HAND_SIZE_SCALE*HAND_GIRTH_SCALE),.8),(.45,builder.d(.013*HAND_SIZE_SCALE*HAND_GIRTH_SCALE),.8),(1,builder.d(.009*HAND_SIZE_SCALE*HAND_GIRTH_SCALE),.8)),sides=7))
         _smooth(thumb)
 
 
@@ -625,6 +643,8 @@ def manifest(result):
                 "hidden_body_triangle_count":sum(counts[name] for name in hidden),
                 "complete_triangle_count":sum(counts.values()),"worn_triangle_budget":[0,8000]},
             "fit":{"body_torso_width_factor":.88,"shirt_torso_width_factor":.88,
+                "hand_size_scale":HAND_SIZE_SCALE,"hand_girth_scale":HAND_GIRTH_SCALE,
+                "hand_wrist_blend_m":.030,
                 "torso_depth_factor":.87,"upper_sleeve_max_radius_m":.050,
                 "shoulder_shell_half_width_m":.188,
                 "jacket":"narrow shoulders and upper sleeves; loose body, hem and long cuffs"},

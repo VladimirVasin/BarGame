@@ -8,7 +8,7 @@ namespace BarPromenade
     /// <summary>
     /// A design's declared permission to ride Route 01, with the numbers that
     /// place it on a seat. Every walker shares the hero's 31-bone rig and its
-    /// `0.70 m` rest pelvis, so seating is one pelvis alignment for all of
+    /// `0.835 m` rest pelvis, so seating is one pelvis alignment for all of
     /// them; what a design owns here is how its own authored seated posture
     /// meets the cushion.
     /// </summary>
@@ -378,14 +378,14 @@ namespace BarPromenade
         /// </summary>
         private static readonly CityPedestrianSeatedRide
             WeighAttendantSeatedRide =
-                new CityPedestrianSeatedRide(0.044f, 0.21f, 0.915f);
+                new CityPedestrianSeatedRide(0.056f, 0.21f, 0.915f);
 
         /// <summary>
         /// Bony hips under a telogreika: the least of any rider, which is why
         /// he needs the smallest lift of the five.
         /// </summary>
         private static readonly CityPedestrianSeatedRide WatchmanSeatedRide =
-            new CityPedestrianSeatedRide(0.038f, 0.20f, 0.909f);
+            new CityPedestrianSeatedRide(0.052f, 0.20f, 0.909f);
 
         // THREE ORDINARY RESIDENTS DELIBERATELY DO NOT RIDE. The band above
         // is measured from the design's own seated clip, and for these three

@@ -55,17 +55,15 @@ placed contacts, ordinary carried travel and outcomes after a scene reload.
 porch and chair results to isolate the gate, station partner and remaining NPC
 errands. Its `partners-verification.json` does not claim to verify player carrying.
 
-Village household life uses separate deterministic prop, resident and doorway
-packs. Keep Unity closed during generation; the focused
-`AreaCaptureFixture.VillageLife` prebuild runs `VillageLifePropAssetSetup`,
-`VillageResidentAssetSetup` and `VillageResidentDoorAssetSetup` to import metre
-geometry, clips and resident prefabs. The original resident command builds the
-first two people and their household bank; `--phase-two` adds the other four
-people and the separate `VillageResidentLifeActions` bank:
+Keep Unity closed during generation. The default worker has an independent
+body/wardrobe generator and `DefaultNpcAssetSetup` importer. The legacy resident
+command builds WoodWoman/shared actions; `--phase-two` builds the other four.
+`VillageLife` prebuild imports residents/props/doors through their asset setups.
 
 ```powershell
 python tools/run-blender.py tools/build-village-life-props-3d-model.py --expect Assets/Resources/VillageLife/VillageLifeProps3D.fbx --expect Assets/Resources/VillageLife/VillageLifeProps3D.json -- --no-preview
-python tools/run-blender.py tools/build-village-residents-3d-model.py --expect Assets/Resources/VillageLife/StationWorker.fbx --expect Assets/Resources/VillageLife/WoodWoman.fbx --expect Assets/Resources/VillageLife/VillageResidentActions.fbx --expect Assets/Resources/VillageLife/VillageResidentActions.json -- --no-preview
+python tools/run-blender.py tools/build-default-npc-3d-model.py --expect Assets/Resources/VillageLife/StationWorker.fbx --expect Assets/Resources/VillageLife/StationWorker.json -- --no-preview
+python tools/run-blender.py tools/build-village-residents-3d-model.py --expect Assets/Resources/VillageLife/WoodWoman.fbx --expect Assets/Resources/VillageLife/VillageResidentActions.fbx --expect Assets/Resources/VillageLife/VillageResidentActions.json -- --no-preview
 python tools/run-blender.py tools/build-village-residents-3d-model.py `
   --expect Assets/Resources/VillageLife/RepairNeighbor.fbx `
   --expect Assets/Resources/VillageLife/SewingWoman.fbx `
@@ -76,23 +74,20 @@ python tools/run-blender.py tools/build-village-residents-3d-model.py `
 python tools/run-blender.py tools/build-village-resident-doors-3d-model.py --expect Assets/Resources/VillageLife/VillageResidentDoors3D.fbx --expect Assets/Resources/VillageLife/VillageResidentDoors3D.json -- --no-preview
 ```
 
-Each generator accepts `--validate-only` (also pass the launcher's
-`--validate-only`) to reconstruct and compare its recorded manifests without
-publishing; retain `--phase-two` when validating the second resident bank.
-That bank checks the original two people and their actions remain byte-for-byte
-unchanged. The seventeen-kind prop pack pins the first eleven geometry/anchor
-recipes and adds a shovel/rack, closed basket, gate posts/leaf and porch mat.
-The doorway generator retains the three existing exterior envelopes, carves
-real openings and validates six concealed docks behind solid vestibule turns.
+Validate with `--validate-only` on both launcher and generator; retain
+`--phase-two` for that bank. The worker generator preserves the other five
+bodies/actions; the later resident bank preserves the original bodies/actions.
+Unity menu `Bar Promenade/Default NPC/Rebuild Ordinary Worker` imports only
+the worker/12 face-hair atlases; Inspector chooses faces/hair/presets/slots.
+Register new IDs/constraints in `DefaultNpcPopulation`, use `CreateForCharacter`;
+global assignment avoids repeats and restores the same look across loads.
+The 17-kind props retain the first eleven recipes; doors retain three exterior
+envelopes, real openings and six concealed docks behind solid vestibule turns.
 
-Source and review images live in `ArtSource/VillageLife`. The one household
-journey writes frames plus `verification.json` and
-`neighbours-verification.json` to `Captures/VillageLife`; the latter extension
-covers all six actual bodies, two-hand props, reserved doors, wall/prop
-clearance, yielding, gusts, pause and day/night returns. Resident detail must
-meet the production hero's floor; triangle counts support, but do not replace,
-equal-scale rendered comparisons. The focused journey passed for both parts;
-generator validation alone does not establish gameplay acceptance.
+Sources/reviews: `ArtSource/VillageLife`; household frames/reports:
+`Captures/VillageLife`. `VillageLife` checks bodies, held props, doors/clearance,
+yielding, gusts, pause and daily returns. Compare detail beside the hero at
+equal scale; geometry counts alone do not prove visible or gameplay quality.
 
 Part 3 uses three separate generators with Unity closed:
 

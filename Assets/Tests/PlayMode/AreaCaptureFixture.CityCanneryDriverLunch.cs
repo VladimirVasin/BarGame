@@ -61,7 +61,7 @@ namespace BarPromenade.Tests.PlayMode
                         Assert.That(Vector3.Distance(rightFoot.position, right), Is.LessThan(.025f), "Right sole stays planted at " + at);
                     }
                     cannery.ApplyAt(wait + 3.5d);
-                    Assert.That(Vector3.Distance(pelvis.position, cannery.DriverBenchSeatContact + Vector3.up * .08f),
+                    Assert.That(Vector3.Distance(pelvis.position, cannery.DriverBenchPelvisTarget),
                         Is.LessThan(.025f), "The skinned seated pelvis meets the actual plank, not the ground or the truck seat.");
                     foreach (double edge in new[] { wait - 12d, wait - 3d, wait, load, load + 2.4d, load + 5.4d, load + 12d })
                     {

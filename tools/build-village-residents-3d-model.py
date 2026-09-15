@@ -882,6 +882,11 @@ def main():
         build_phase_two(args,assets,sources)
         return
     for index,name in enumerate(ROLE_NAMES):
+        if name == "StationWorker":
+            # Its upgraded catalog body/wardrobe has an independent owner;
+            # rebuilding village actions must never publish the retired body.
+            print("StationWorker: use build-default-npc-3d-model.py", flush=True)
+            continue
         texture=assets/(name+"Atlas.png"); texture_hash=atlas(texture,index==1,args.validate_only)
         result=ResidentBuilder(index==1).build(); metrics=measured(result)
         if metrics["triangle_count"]<2384 or metrics["mesh_count"]<34:

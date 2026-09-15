@@ -16,29 +16,6 @@ namespace BarPromenade
         private readonly Transform[] shoreCleats = new Transform[2];
         private readonly VillageResidentPresentation[] workers = new VillageResidentPresentation[5];
         private readonly Transform[] spines = new Transform[5];
-        private readonly Color[] clothingTints =
-        {
-            new Color(.72f, .82f, 1.18f), new Color(1.55f, .89f, .74f),
-            new Color(.97f, 1.06f, 1.13f), new Color(1.20f, 1.05f, .78f),
-            new Color(1.72f, 1.10f, .87f)
-        };
-        private readonly Color[] knitTints =
-        {
-            new Color(.76f, .81f, .94f), new Color(.80f, .77f, .72f),
-            new Color(1.20f, 1.16f, 1.07f), new Color(.79f, .85f, .78f),
-            new Color(.76f, .73f, .69f)
-        };
-        private readonly Color[] gloveTints =
-        {
-            new Color(.64f, .67f, .70f), new Color(1.17f, 1.10f, 1.01f),
-            new Color(.83f, .82f, .78f), new Color(.94f, .89f, .78f),
-            new Color(1.28f, 1.23f, 1.12f)
-        };
-        private Renderer[][] clothing;
-        private Color[][] originalColors;
-        private Vector4[][] fabricUvTransforms;
-        private Texture fabricTexture;
-        private MaterialPropertyBlock block;
         private bool initialized;
         private Vector3[] deckRoute;
         private Vector3[] shoreRoute;
@@ -57,16 +34,13 @@ namespace BarPromenade
         public static CityPortCrew Build(Transform parent, CityPortController controller)
         {
             if (controller == null) throw new ArgumentNullException(nameof(controller));
-            var library = VillageResidentLibrary.Load();
-            if (library == null || library.GetPrefab(VillageResidentRole.StationWorker) == null)
-                throw new InvalidOperationException("The port requires the authored ordinary worker rig.");
+            DefaultNpcCatalog.GetPrefab();
             var hero = Player3DResources.LoadPrefab()?.GetComponent<Player3DAssetRegistry>();
             if (hero == null || !hero.TryGetAnimation("Run", out var run) || run.Clip == null)
                 throw new InvalidOperationException("The port requires the shared authored Hero V2 run.");
             var host = new GameObject("Port Crew");
             host.transform.SetParent(parent, false);
             var crew = host.AddComponent<CityPortCrew>();
-            crew.block = new MaterialPropertyBlock();
             crew.port = controller;
             crew.captainDock = Require(controller.Vessel, "ANCHOR_Captain");
             crew.helmLeft = Require(controller.Vessel, "ANCHOR_HelmLeft");
@@ -86,16 +60,11 @@ namespace BarPromenade
 
             string[] names = { "Captain", "Deckhand", "West Crane Operator", "East Crane Operator", "Quay Worker" };
             float[] scales = { 1f, .97f, 1.015f, .985f, 1f };
-            crew.clothing = new Renderer[5][];
-            crew.originalColors = new Color[5][];
-            crew.fabricUvTransforms = new Vector4[5][];
-            Material fabric = CityPortAssetProvider.GetSurfaceMaterial("Fabric");
-            crew.fabricTexture = fabric.GetTexture("_BaseMap");
             for (int i = 0; i < crew.workers.Length; i++)
             {
-                // The library prefab contains only the passive rig/presentation.
+                // The default prefab contains only the passive rig/presentation.
                 // No village life controller, greeting or interaction is installed.
-                var actor = library.Create(VillageResidentRole.StationWorker, host.transform);
+                var actor = DefaultNpcFactory.CreateForCharacter(host.transform, DefaultNpcPopulation.PortWorkerId(i));
                 actor.name = names[i];
                 actor.transform.localScale *= scales[i];
                 AlignWorkerModelWithPlacement(actor);
@@ -109,20 +78,6 @@ namespace BarPromenade
                 body.radius = .21f;
                 crew.workers[i] = actor;
                 crew.spines[i] = Require(actor.ModelRoot, "spine");
-                crew.clothing[i] = Array.FindAll(actor.GetComponentsInChildren<Renderer>(true),
-                    renderer => renderer.name.StartsWith("CLO_", StringComparison.Ordinal) || IsGlove(renderer.name));
-                crew.originalColors[i] = new Color[crew.clothing[i].Length];
-                crew.fabricUvTransforms[i] = new Vector4[crew.clothing[i].Length];
-                for (int j = 0; j < crew.clothing[i].Length; j++)
-                {
-                    Renderer renderer = crew.clothing[i][j];
-                    renderer.GetPropertyBlock(crew.block);
-                    crew.originalColors[i][j] = crew.block.GetColor("_BaseColor");
-                    crew.block.Clear();
-                    if (!IsFabric(renderer.name)) continue;
-                    crew.fabricUvTransforms[i][j] = FabricUvTransform(renderer);
-                    renderer.sharedMaterial = fabric;
-                }
             }
             crew.deckRoute = new Vector3[5];
             crew.shoreRoute = new Vector3[6];
@@ -217,8 +172,6 @@ namespace BarPromenade
             ApplyShoreWorker(t);
             }
             ApplySocialLife();
-            for (int i = 0; i < workers.Length; i++)
-                if (workers[i].gameObject.activeSelf) Tint(i);
         }
 
         private void ApplyDeckhand(float t)
@@ -491,35 +444,6 @@ namespace BarPromenade
             if (look.HasValue) ApplyTaskLook(actor, look.Value);
         }
 
-        private void Tint(int index)
-        {
-            for (int j = 0; j < clothing[index].Length; j++)
-            {
-                var renderer = clothing[index][j];
-                renderer.GetPropertyBlock(block);
-                string part = renderer.name;
-                Color tint = IsGlove(part) ? gloveTints[index] :
-                    part.Contains("Cap") || part.Contains("Scarf") || part.Contains("Collar") || part.Contains("Cuff") ?
-                    knitTints[index] : part.Contains("Thigh") || part.Contains("Shin") ?
-                    new Color(.85f, .88f, .90f) : clothingTints[index];
-                Color color = originalColors[index][j] * tint;
-                color.a = 1f;
-                block.SetColor("_BaseColor", color);
-                block.SetColor("_Color", color);
-                if (IsFabric(part))
-                {
-                    // Presentation reapplies its shared atlas on enable. Only
-                    // these five workers replace the authored fabric cells;
-                    // skin, faces, gloves and rubber boots retain that atlas.
-                    block.SetTexture("_BaseMap", fabricTexture);
-                    block.SetTexture("_MainTex", fabricTexture);
-                    block.SetVector("_BaseMap_ST", fabricUvTransforms[index][j]);
-                }
-                renderer.SetPropertyBlock(block);
-                block.Clear();
-            }
-        }
-
         private void ApplyPlantedTorso(int index, float leanDegrees, float rollDegrees, double seconds)
         {
             // Apply only after the absolute authored pose, before both hand
@@ -539,32 +463,6 @@ namespace BarPromenade
                 new Vector2(direction.x, direction.z).magnitude) * Mathf.Rad2Deg, -18f, 18f);
             actor.Head.rotation = Quaternion.AngleAxis(yaw * weight, actor.transform.up) *
                 Quaternion.AngleAxis(pitch * weight, actor.transform.right) * actor.Head.rotation;
-        }
-
-        private static bool IsGlove(string name) => name.StartsWith("GEO_Hand.", StringComparison.Ordinal) ||
-            name.StartsWith("GEO_Thumb.", StringComparison.Ordinal);
-
-        private static bool IsFabric(string name) => name.StartsWith("CLO_", StringComparison.Ordinal) &&
-            !name.StartsWith("CLO_Shin", StringComparison.Ordinal);
-
-        private static Vector4 FabricUvTransform(Renderer renderer)
-        {
-            // StationWorker's Blender generator maps every fabric part from
-            // its rest X/Y bounds into one declared atlas cell. Undo that
-            // packing, retaining its authored projection at one repeat/metre.
-            Mesh mesh = renderer is SkinnedMeshRenderer skin ? skin.sharedMesh :
-                renderer.GetComponent<MeshFilter>().sharedMesh;
-            Vector3 size = mesh.bounds.size;
-            float width = size.x * Mathf.Abs(renderer.transform.lossyScale.x);
-            float height = size.y * Mathf.Abs(renderer.transform.lossyScale.y);
-            bool coat = renderer.name == "CLO_WinterCoat";
-            bool knit = renderer.name.Contains("Cap") || renderer.name.Contains("Scarf") ||
-                renderer.name.Contains("Collar") || renderer.name.Contains("Cuff");
-            float cellX = coat ? 2f : 130f, cellY = coat || knit ? 130f : 2f;
-            float cellWidth = coat || knit ? 123f : 60f;
-            float u = Mathf.Max(.01f, width) * 256f / cellWidth;
-            float v = Mathf.Max(.01f, height) * 256f / 123f;
-            return new Vector4(u, v, -cellX / 256f * u, -cellY / 256f * v);
         }
 
         private static void SetVisible(VillageResidentPresentation actor, bool visible)

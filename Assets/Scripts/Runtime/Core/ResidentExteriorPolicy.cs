@@ -263,11 +263,9 @@ namespace BarPromenade
         {
             RootScratch.Clear();
             Collect(Object.FindObjectsByType<CityGameRoot>(
-                FindObjectsInactive.Include,
-                FindObjectsSortMode.None));
+                FindObjectsInactive.Include));
             Collect(Object.FindObjectsByType<AlpineVillageRoot>(
-                FindObjectsInactive.Include,
-                FindObjectsSortMode.None));
+                FindObjectsInactive.Include));
         }
 
         private static void Collect<T>(T[] roots)

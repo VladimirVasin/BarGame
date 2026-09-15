@@ -66,7 +66,7 @@ namespace BarPromenade
                 if (library == null || !library.IsComplete)
                     throw new InvalidOperationException("Village resident library has not been imported.");
                 life.Woman = library.Create(VillageResidentRole.WoodWoman, host.transform);
-                life.StationWorker = library.Create(VillageResidentRole.StationWorker, host.transform);
+                life.StationWorker = DefaultNpcFactory.CreateForCharacter(host.transform, DefaultNpcPopulation.VillageStationWorker);
                 life.Woman.transform.SetPositionAndRotation(life.Plan.Dock(life.Plan.Pickups[0]),
                     Quaternion.LookRotation(-life.Plan.Forward));
                 life.StationWorker.transform.SetPositionAndRotation(life.Plan.StationWork,

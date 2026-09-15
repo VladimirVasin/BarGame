@@ -4,8 +4,10 @@
 
 - Silhouette: weary adult man with a slender torso, narrow shoulders and slim
   upper arms; near-black medium-length
-  parted curtains, full temples/ears and a covered nape, without a ponytail; articulated hands
-  and heavy work boots.
+  parted curtains, full temples/ears and a covered nape, without a ponytail;
+  articulated hands and heavy work boots. Hand reach/width is 20% larger,
+  with slimmer palm depth/finger girth (user decision, 2026-09-15).
+  Original wrist joins, rig and grip sockets remain.
 - Clothing: faded, unfastened dark olive-drab M-65 visibly large on the lean torso, with long sleeves
   over a charcoal shirt, desaturated navy trousers and dark military boots.
 - The accepted `2026-09-09` optional scarf is a separate yellow garment,

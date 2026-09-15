@@ -52,6 +52,7 @@ namespace BarPromenade
         private int authoredActionInputIndex = -1;
         private float authoredActionWeight;
         private Transform seatAnchor;
+        private Vector3 seatLocalUp;
         private CityPedestrianSeatedRide seatedRide;
         private CityPedestrianAssetRegistry registry;
         private CityPedestrianClipSource clipSource =
@@ -59,6 +60,7 @@ namespace BarPromenade
         private AnimationClip activeIdleClip;
         private AnimationClip activeWalkClip;
         private Vector3 modelBaseLocalPosition;
+        private Quaternion modelBaseLocalRotation;
         private float animationSpeed = 0.91f;
         private float targetWalkWeight;
         private float groundedFootHeightOffset;
@@ -159,6 +161,9 @@ namespace BarPromenade
             modelBaseLocalPosition = registry.ModelRoot != null
                 ? registry.ModelRoot.localPosition
                 : Vector3.zero;
+            modelBaseLocalRotation = registry.ModelRoot != null
+                ? registry.ModelRoot.localRotation
+                : Quaternion.identity;
 
             BuildGraph(animator);
             IsInitialized = true;
@@ -248,22 +253,34 @@ namespace BarPromenade
         /// </summary>
         public bool TrySeat(Transform anchor, CityPedestrianSeatedRide ride)
         {
+            return TrySeat(anchor, ride, transform.up);
+        }
+
+        public bool TrySeat(Transform anchor, CityPedestrianSeatedRide ride, Vector3 surfaceUp)
+        {
             if (!IsInitialized ||
                 anchor == null ||
                 ride == null ||
                 !hasSitPlayable ||
                 registry == null ||
-                registry.PelvisAnchor == null)
+                registry.PelvisAnchor == null ||
+                !IsFinite(surfaceUp.x) || !IsFinite(surfaceUp.y) || !IsFinite(surfaceUp.z) ||
+                surfaceUp.sqrMagnitude < .001f)
             {
                 return false;
             }
 
             seatAnchor = anchor;
+            // Imported FBX empty axes need not match the cushion plane.
+            // The owner supplies its physical normal; retain it in anchor
+            // space so subsequent suspension/seat motion carries that plane.
+            seatLocalUp = anchor.InverseTransformDirection(surfaceUp.normalized);
             seatedRide = ride;
             IsMoving = false;
             targetWalkWeight = 0f;
             WalkWeight = 0f;
             ApplyMixerWeights();
+            EvaluateGraph(0f);
             return true;
         }
 
@@ -566,11 +583,34 @@ namespace BarPromenade
                 return;
             }
 
+            // The sprung cushion may tilt after the pedestrian's animation
+            // tick. Keep the whole seated body on its plane, including both
+            // hips, and retain the model's imported facing convention.
+            Transform model = registry.ModelRoot;
+            Vector3 seatUp = seatAnchor.TransformDirection(seatLocalUp).normalized;
+            Quaternion baseRotation = model.parent != null
+                ? model.parent.rotation * modelBaseLocalRotation
+                : modelBaseLocalRotation;
+            model.rotation = Quaternion.FromToRotation(
+                transform.up, seatUp) * baseRotation;
+            Vector3 forward = Vector3.ProjectOnPlane(
+                transform.forward, seatUp).normalized;
             Vector3 target = seatAnchor.position +
-                (transform.up * seatedRide.SeatLift) -
-                (transform.forward * seatedRide.SeatBackOffset);
+                (seatUp * seatedRide.SeatLift) -
+                (forward * seatedRide.SeatBackOffset);
             registry.ModelRoot.position +=
                 target - registry.PelvisAnchor.position;
+        }
+
+        // The passenger controller moves its root after the bus has moved,
+        // later than the pedestrian animation tick. Reapply only the contact;
+        // advancing the graph here would tick animation and effects twice.
+        internal void SynchronizeSeatContact()
+        {
+            if (IsInitialized && IsSeated)
+            {
+                AlignPelvisToSeat();
+            }
         }
 
         private void GroundFeetToPresentationRoot()
@@ -638,6 +678,7 @@ namespace BarPromenade
             if (registry != null && registry.ModelRoot != null)
             {
                 registry.ModelRoot.localPosition = modelBaseLocalPosition;
+                registry.ModelRoot.localRotation = modelBaseLocalRotation;
             }
         }
 

@@ -466,7 +466,8 @@ namespace BarPromenade
                 if (archetype == null ||
                     archetype.SeatedRide == null ||
                     seat == null ||
-                    !waiter.Walker.BeginRide(seat, archetype.SeatedRide))
+                    !waiter.Walker.BeginRide(seat, archetype.SeatedRide,
+                        actor.Presentation.CabinUp))
                 {
                     return AbortTransfer(waiter, actor);
                 }
@@ -703,7 +704,8 @@ namespace BarPromenade
                 CityPedestrianDirector.GetActorArchetype(walker);
             if (archetype == null ||
                 archetype.SeatedRide == null ||
-                !walker.BeginSeatedRide(seat, archetype.SeatedRide))
+                !walker.BeginSeatedRide(seat, archetype.SeatedRide,
+                    actor.Presentation.CabinUp))
             {
                 pedestrians.ReleaseRouteBoundActor(walker);
                 actor.ReleasePassenger(placeholder);

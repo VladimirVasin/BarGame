@@ -4,6 +4,29 @@
 
 ## Current facts
 
+- **Accepted — 2026-09-15, default NPC catalog:**
+  `DefaultNpcCatalog` allowlists models; bespoke models/pool extension needs
+  a user request. `DefaultNpcPopulation` owns permanent IDs,
+  model/garment constraints and complete sorted assignments before scene spawns.
+  Stable hashing searches valid combinations, avoids used model/face/hair/clothes
+  tuples and balances repeats only after exhaustion. Loads/order retain looks;
+  no local randomizers. New actors register here and use
+  `DefaultNpcFactory.CreateForCharacter`; raw `Create` is authoring/legacy.
+  `ordinary-worker-v1` (`VillageLife/StationWorker`) serves four fair, five port,
+  two factory, driver and village workers. Factory initializes rig/footsteps.
+
+- **Accepted — 2026-09-15, modular default worker:**
+  Prefab/GUID, 31 bones/grips/actions retained. Hero/NPC hands: +20% reach/width,
+  slim depth/girth, fixed wrists. `NpcWardrobe`: eight slots/18 items, three
+  presets, coverage/restoration, 8,000 worn triangles. `DefaultNpcAppearance`:
+  four faces, gray/brunette/blond hair/brows/beards; twelve shared atlases.
+  `build-default-npc-3d-model.py`/`DefaultNpcAssetSetup` own this body alone.
+  Art §15; no cast/lore/speech/§6 change. Truck/bench cache trouser seat fits.
+  Shared arm IK bends elbows down/out in the rig frame; lateral poles caused
+  apparent sleeve growth. `NpcHandPose` blends authored cylindrical grips on
+  bare/gloved fingers and thumb, reset with actions. Authored frames align the
+  grip cavity to the wheel tube; open fingers along the rim are not a grasp.
+
 - **Accepted — 2026-09-15, Nightlife fair:**
   Art §9/story §18: four staffed displays, organ/bell, two seats, three
   garlands; user adds three simultaneous silent children. One `1.3 m`,
@@ -580,57 +603,36 @@
   renderer swap, teleport, currency or quest is involved. Cross-visit outcomes
   and the remaining outdoor help belong to part 4; no canon exception is needed.
 
-- **Accepted — 2026-09-08, second part of village household life:** The six
-  ordinary residents are persistent active objects. A household owns two
-  separate parking places behind a solid vestibule turn; residents reserve
-  one door, reach its actual handle, walk with its inward swing and release
-  it after crossing. No renderer or actor is toggled to simulate entry.
-  Houses `04`, `08` and `11` retain their measured original default-seed
-  dimensions and door offsets; seed still controls placement and yaw. Their
-  fitted Blender shells replace only the solid masses at real entrances.
-  Whole-footprint walkability exclusions are replaced by those physical
-  shell colliders. Closing waits while the hero occupies the house or swing.
-  This prepares actual entrances within the accepted form; it is not a
-  canon exception or the accessible workroom of part 3.
-  `VillageNeighbourhoodPlan` uses existing plot approaches and the street.
-  A shared six-person controller reserves at most four outside slots during
-  `05:00–18:30`; evening finishes outings before returning home. Short gust
-  reactions read the same weather rhythm, keep carried grips and defer until
-  a safe action boundary. Walking waits for the hero and uses ordered passing
-  on the street and household approaches. A sidestep checks the actual body
-  against nearby residents, walls and props along its whole route; the person
-  stays aside until the oncoming neighbour passes. Return approaches end at
-  a side waiting point and reserve the door after its exit corridor clears.
-  With both hands occupied, the gust layer moves only the neck/head and
-  attached cloth, preserving the authored torso lean and reachable grips.
-  The shovel uses the existing snow-treading surface; the
-  closed basket visits the other yard and returns to its original support.
-  Repair and sewing residents make visits until their indoor work is added
-  in part 3. Player assistance and cross-visit outcomes remain part 4.
+- **Accepted — 2026-09-08, second part of village household life:** Six
+  active residents use two household places behind a solid vestibule turn.
+  They reserve a door, grip its handle, follow its inward swing and release
+  after crossing; no visibility toggles simulate entry.
+  Houses `04`, `08`, `11` retain measured default-seed dimensions/door offsets;
+  seed controls placement/yaw. Fitted Blender shells replace entrance masses;
+  shell colliders replace whole-footprint exclusions. Closing waits for the
+  hero to clear house/swing; no canon exception.
+  `VillageNeighbourhoodPlan` uses existing approaches/street. The controller
+  reserves at most four outside slots during `05:00–18:30`, finishing outings
+  before evening returns. Gust reactions share weather rhythm, retain carried
+  grips and wait for safe action boundaries. Walking yields to the hero;
+  ordered passing checks bodies against residents/walls/props along the full
+  sidestep and waits until the neighbour passes. Returns use side waiting
+  points, reserving doors after exit corridors clear. With both hands full,
+  gusts affect only neck/head/attached cloth, preserving torso lean/grips.
+  Shovels use snow-treading surfaces; a closed basket visits the other yard
+  and returns to its support.
 
 - **Accepted — 2026-09-08, first part of village household life:** The user
-  accepted the four-part plan in `village-life-plan.md` and required new
-  residents to match or exceed the hero's detail. Separate deterministic
-  Blender packs own two ordinary winter residents and eleven household prop
-  types. `AlpineVillageLifePlan` derives the courtyard from house `04` and
-  appends narrow working paths to the existing snow/path plan. A local
-  controller uses the shared human rig and speech service without the City's
-  population/bus director. Two filled baskets move between physical supports,
-  stay filled and delivered, and do not reset during the visit; the woman
-  then alternates tending the stack with rest. The station resident checks
-  a hinged cargo lid. Work yields to pause and walking waits for the hero.
-  Recognition happens between actions and never explains the village or
-  story. These new ordinary roles and their initial lines are authorized by
-  the user's plan and satisfy art §10g / story §12, §16 and §21; no canon
-  exception is required. The second-part decision above extends this roster
-  and schedule; the indoor room, player help and session persistence remain
-  subsequent parts.
-  Model import explicitly enables FBX file units and a 2D atlas shape;
-  publication measures transformed mesh vertices against the source bounds.
-  Both residents have separate 256px atlases, 40 mesh parts and at least the
-  `2,384`-triangle baseline of that decision; equal-scale in-scene captures also verify the face,
-  clothing, hand and boot detail. The focused `VillageLife` journey checks
-  physical delivery, deformed visible hand contacts and the real station exit.
+  accepted `village-life-plan.md`, with hero-level detail. Deterministic Blender
+  packs own winter residents/eleven household props. `AlpineVillageLifePlan`
+  uses courtyard `04` and narrow snow paths. The local controller shares rig/
+  speech, not City's population/bus director. Two filled baskets stay delivered
+  on physical supports; the woman alternates stack tending/rest. The worker
+  checks a hinged cargo lid. Work pauses; walking yields to the hero.
+  Recognition occurs between actions, explaining no village/story. Roles/lines
+  satisfy art §10g/story §12/§16/§21 without exception. FBX file units/2D atlases
+  and transformed source bounds govern import. Equal-scale captures verify
+  detail; `VillageLife` checks delivery, deformed hands and the station exit.
 
 - **Accepted — 2026-09-08, mother's chair follows its measured runner
   contacts:** `MothersHouseRockingChairMotion` uses the imported FBX's lower
@@ -2798,12 +2800,11 @@
   the `88 m` pedestrian recycle rule, from distant simulation acceleration and
   from the bus's own pedestrian yielding, which would otherwise make the bus
   stop for its own passenger.
-  Seating is one rule for the whole catalog because every design copies the
-  hero's exact 31-bone rig at a `0.835 m` rest pelvis: `CityPedestrianPresentation`
-  aligns that bone to the cushion anchor, the same technique
-  `CityBusDriverPresentation` already uses for the driver. Sole pinning is
-  switched off while seated — on a seat it would drag the model down until the
-  boots touched the cabin floor — and the mixer gains a third Sit input.
+  `CityPedestrianPresentation` aligns the shared 31-bone pelvis to the seat,
+  with per-body lift measured from seated hips/thighs and 1 cm compression.
+  Weigher/watchman lifts are `0.056/0.052 m`. Sit samples immediately; owners
+  bind the physical cushion normal independently of FBX axes. After bus movement,
+  `SetRidePose` restores contact without advancing animation/effects twice.
 - **Accepted — Declared seated rides over a blanket allowance:** a design may
   ride only by declaring `CityPedestrianArchetype.SeatedRide`, which owns its
   pelvis lift, back offset and headroom, and by owning an authored `Sit` loop

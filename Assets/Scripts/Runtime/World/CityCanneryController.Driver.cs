@@ -24,7 +24,8 @@ namespace BarPromenade
             DriverReverseLean = lean;
             actor.transform.SetPositionAndRotation(Truck.position, Truck.rotation);
             actor.Apply(VillageResidentAction.Idle, 0f);
-            Vector3 seat = driverSeat.position + (-Truck.right * .12f + Truck.forward * .06f) * lean;
+            EnsureDriverSeatFit();
+            Vector3 seat = DriverSeatTarget(lean);
             actor.transform.position += seat - driverPelvis.position;
             driverPelvis.rotation = Quaternion.AngleAxis(12f * lean, Truck.forward) * driverPelvis.rotation;
             Transform spine = workerSpines[4];
@@ -40,19 +41,19 @@ namespace BarPromenade
             }
             DriverSeatedContactsMatch &= Vector3.Distance(driverPelvis.position, seat) <= .01f;
 
-            Vector3 wheelCentre = (driverRightHand.position + driverLeftHand.position) * .5f;
-            Vector3 wheelAxis = Truck.TransformDirection(new Vector3(0, .8f, .6f));
+            Vector3 wheelCentre = DriverWheelCentre;
+            Vector3 wheelAxis = DriverWheelAxis;
             // Grip the near portion of the authored 23 cm oblique ring when
             // leaning, instead of stretching across it to the forward grip.
-            Vector3 nearRim = Vector3.ProjectOnPlane(driverSteeringShoulder.position - wheelCentre, wheelAxis).normalized * .23f;
+            Vector3 nearRim = Vector3.ProjectOnPlane(driverSteeringShoulder.position - wheelCentre, wheelAxis).normalized * DriverWheelRadius;
             Quaternion steering = Quaternion.AngleAxis(TruckSteeringAngle * .35f, wheelAxis);
-            DriverSteeringContact = Vector3.Lerp(driverRightHand.position, wheelCentre + steering * nearRim, lean);
+            DriverSteeringContact = DriverWheelRimContact(Vector3.Lerp(DriverWheelRimContact(driverRightHand.position),
+                wheelCentre + steering * nearRim, lean));
             // Hold the inner upper lip of the partly opened door while the
             // other hand keeps correcting the steering. The grip follows the
             // actual leaf all the way through opening and closing.
             DriverDoorContact = driverDoor.TransformPoint(new Vector3(.08f, .67f, -1.18f));
-            Vector3 left = Vector3.Lerp(driverLeftHand.position, DriverDoorContact, ReverseDoorWeight);
-            ApplyCrewContacts(actor, DriverSteeringContact, left, 1f);
+            ApplyDriverWheelContacts(DriverSteeringContact, DriverDoorContact, 1f, 1f - ReverseDoorWeight);
 
             DriverRearLookTarget = Truck.TransformPoint(new Vector3(-CityCanneryTruckDimensions.HalfWidth-1f,
                 1.9f, CityCanneryTruckDimensions.Rear-5.4f));

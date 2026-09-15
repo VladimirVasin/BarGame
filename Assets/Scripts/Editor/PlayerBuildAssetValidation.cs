@@ -56,6 +56,7 @@ namespace BarPromenade.Editor
                 "Run tools/build-city-fair-child-actions-3d-model.py through tools/run-blender.py, then CityFairChildActionAssetSetup.BuildOrThrow.");
             RegisterGenerated("Cannery woman", CanneryWomanAssetSetup.ValidateOrThrow, "CanneryWomanAssetSetup");
             RegisterGenerated("Cannery receiver", CanneryReceiverAssetSetup.ValidateOrThrow, "CanneryReceiverAssetSetup");
+            RegisterGenerated("Default NPC", DefaultNpcAssetSetup.ValidateOrThrow, "DefaultNpcAssetSetup");
             RegisterGenerated("Eastern duty guards", EastGuardAssetSetup.ValidateOrThrow, "EastGuardAssetSetup");
             Register("Working fishing port", CityPortAssetSetup.ValidateOrThrow,
                 "Run tools/build-city-port-3d-model.py through tools/run-blender.py, then import Assets/Resources/City/Port.");

@@ -72,7 +72,7 @@ namespace BarPromenade
                 !animation.IsInitialized || !animation.isActiveAndEnabled || animation.IsActive || follow == null ||
                 !PlayerDialogueActions.TryAttach(registry)) return false;
             if (!modal.TryCaptureAndDisable(interactor, follow,
-                FindFirstObjectByType<IntoxicationHudView>())) return false;
+                FindAnyObjectByType<IntoxicationHudView>())) return false;
             listener = interactor; npc = participant;
             heroFace = interactor.GetComponentInChildren<Player3DCharacterPresentation>();
             npcFace = participant.Owner as ISpeechFaceActor;

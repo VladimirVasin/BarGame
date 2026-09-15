@@ -77,7 +77,7 @@ namespace BarPromenade
         public static void ApplyPowerState(bool radioOn)
         {
             SceneMusicPlayer[] players =
-                Object.FindObjectsByType<SceneMusicPlayer>(FindObjectsSortMode.None);
+                Object.FindObjectsByType<SceneMusicPlayer>();
             for (int pass = 0; pass < 2; pass++)
             {
                 foreach (SceneMusicPlayer player in players)
@@ -122,7 +122,7 @@ namespace BarPromenade
         public static void ApplyTuningState(int station)
         {
             foreach (LastRouteRadioMusicPlayer player in
-                     Object.FindObjectsByType<LastRouteRadioMusicPlayer>(FindObjectsSortMode.None))
+                     Object.FindObjectsByType<LastRouteRadioMusicPlayer>())
             {
                 if (player.ownerGeneration == sessionGeneration && !player.IsSceneExitFadeRequested)
                     player.SelectStation(station);
@@ -195,7 +195,7 @@ namespace BarPromenade
             CapturePlayhead();
             float nearestDistance = float.PositiveInfinity;
             foreach (AudioListener listener in
-                     Object.FindObjectsByType<AudioListener>(FindObjectsSortMode.None))
+                     Object.FindObjectsByType<AudioListener>())
             {
                 if (listener.enabled)
                 {

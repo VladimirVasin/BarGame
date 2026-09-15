@@ -40,6 +40,14 @@ repository evidence. This does not require running every test layer.
   is the requested deliverable or release gate; add a smoke only when requested
   or when packaged startup behavior is the changed contract.
 - Start from `ai/project-overview.md` and `ai/systems-map.md`.
+- **New default NPCs use the global population.** Register a permanent ID/model/
+  garment constraints in `DefaultNpcPopulation`; create through
+  `DefaultNpcFactory.CreateForCharacter`. Whole-world allocation keeps face/hair/
+  clothes stable across loads and avoids repeats. `DefaultNpcCatalog` owns the
+  model allowlist; bespoke appearance or pool extension needs an explicit user
+  request. No unlisted substitutes or local randomizers. `NpcWardrobe` owns
+  items/coverage; placement/actions stay local. See the accepted `2026-09-15`
+  decisions in `ai/architecture-notes.md` and AGENTS.md.
 - **All speech and dialogue must follow**
   [the mandatory speech standard](ai/speech-presentation-standard.md): every
   spoken line, including `E` replies, uses the shared bubble above its speaker.

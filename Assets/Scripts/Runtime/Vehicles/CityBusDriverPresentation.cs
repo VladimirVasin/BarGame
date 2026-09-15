@@ -22,21 +22,19 @@ namespace BarPromenade
 
         /// <summary>
         /// Metres the driver's pelvis bone sits above the cushion anchor.
-        /// Measured, not nominal: his hip geometry reaches `0.0387 m` below
-        /// that bone, so the old `0.015` buried him `2.4 cm` in the seat. The
-        /// value is that depth less `0.01 m`, which reads as a cushion taking
-        /// his weight. The thighs are deliberately not part of the
-        /// measurement - they slope down to the pedals, so their lowest point
-        /// is a knee rather than anything resting on the seat.
+        /// Clearance includes the upper-thigh surface over the actual
+        /// cushion footprint. A hip-only measurement left that surface
+        /// three centimetres inside the seat. Pedal targets remain anchored
+        /// to the cushion independently of this body placement.
         /// </summary>
-        private const float DriverSeatLift = 0.029f;
+        private const float DriverSeatLift = 0.060f;
         private const float DriverSeatBackOffset = 0.20f;
         private const float FootForwardOffset = 0.35f;
         private const float FootSideOffset = 0.14f;
-        private const float AnkleDropFromSeat = 0.34f;
+        private const float AnkleDropFromSeat = 0.311f;
         private const float KneeForwardOffset = 0.30f;
         private const float KneeSideOffset = 0.18f;
-        private const float KneeDropFromSeat = 0.10f;
+        private const float KneeDropFromSeat = 0.071f;
         private const float ReachArcHeight = 0.055f;
         private const float BreathingDegrees = 0.55f;
         private const float BreathingRadiansPerSecond = 1.25f;
@@ -373,7 +371,9 @@ namespace BarPromenade
             Vector3 up = driverRoot.up;
             Vector3 forward = driverRoot.forward;
             Vector3 right = driverRoot.right;
-            Vector3 seat = registry.Pelvis.position;
+            // The feet and knee hints belong to the bus. Raising the hips
+            // must not raise the soles off their existing pedal/floor plane.
+            Vector3 seat = busRegistry.DriverSeatAnchor.position - forward * DriverSeatBackOffset;
 
             ApplyLegPose(
                 registry.LeftThigh,

@@ -653,6 +653,7 @@ namespace BarPromenade
             blockedTime = 0f;
             transform.SetPositionAndRotation(seatPosition, seatRotation);
             MotionState = CityPedestrianMotionState.SittingOnBench;
+            presentation.SynchronizeSeatContact();
             return true;
         }
 
@@ -764,11 +765,12 @@ namespace BarPromenade
         /// </summary>
         public bool BeginRide(
             Transform seatAnchor,
-            CityPedestrianSeatedRide seatedRide)
+            CityPedestrianSeatedRide seatedRide,
+            Vector3? surfaceUp = null)
         {
             if (!IsSpawned ||
                 MotionState != CityPedestrianMotionState.Boarding ||
-                !presentation.TrySeat(seatAnchor, seatedRide))
+                !presentation.TrySeat(seatAnchor, seatedRide, surfaceUp ?? transform.up))
             {
                 return false;
             }
@@ -791,11 +793,12 @@ namespace BarPromenade
         /// </summary>
         public bool BeginSeatedRide(
             Transform seatAnchor,
-            CityPedestrianSeatedRide seatedRide)
+            CityPedestrianSeatedRide seatedRide,
+            Vector3? surfaceUp = null)
         {
             if (!IsSpawned ||
                 MotionState != CityPedestrianMotionState.Walking ||
-                !presentation.TrySeat(seatAnchor, seatedRide))
+                !presentation.TrySeat(seatAnchor, seatedRide, surfaceUp ?? transform.up))
             {
                 return false;
             }
@@ -863,6 +866,7 @@ namespace BarPromenade
             }
 
             transform.SetPositionAndRotation(position, rotation);
+            presentation.SynchronizeSeatContact();
         }
 
         private bool AdvanceTransfer(float deltaTime)

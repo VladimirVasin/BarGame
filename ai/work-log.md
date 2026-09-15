@@ -6,48 +6,48 @@ Older whole dates move to `ai/archive/` when the byte budget is reached;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-08.md`](archive/work-log-2026-08.md).
 
-## 2026-09-15 — Eastern valley, city litter and Nightlife fair
+## 2026-09-15 — Eastern valley, litter, fair and default NPCs
 
-- The closed eastern post overlooks a broad Blender valley: short level
-  apron, unequal descending road curves, larger soft city and warm uneven
-  day/night glow on the valley floor. Art/story scope preserves post/paths,
-  sea/west/south and shared fog/clip. `CityEastRoadProfile` owns road/land/
-  car/lamp datum; cuts stay inside the yard to retain the garden seam.
-  First mast joins the existing light pool; later fixtures stay passive.
-  Two cars keep lane/grade, session phase and pause/game-time guards.
-- Source depth lets terrain/road/cars occlude independently; painter order
-  could not. A central asphalt vertex row preserves crossfall crown and
-  real/panorama seam where the uncut box failed despite correct bounds/
-  volume. `--near-only` publishes that fix without panorama Light/audio/
-  collision/travel. Checks: `build-city-east-exit-3d-model.py --validate-only`
-  (`--near-only`/`--distance-only`); `AreaCaptureFixture.CityEastExit`:
-  seam/imports, lamp pool/day floor, traffic/pause and reviewed valley/
-  skyline/glow day/night frames.
-- The 36 litter variants sparsely cover permitted pavement/wall/tide bands
-  and park benches; carriageways/crossings, authored scenes, yards,
-  cemetery/church stay clear. Memoised `CityLitterPlan` shares geometry/
-  instancing with the eastern strip. Spatial hashing refuses nearby repeats;
-  placement samples built strip/cap/corner boxes, not graded plan curves.
-  Beach parts avoid loose sand; shelters come from the bus plan. Priming
-  also warms the exit's road profile. Checks: `CityLitterPlanTests`,
+- Eastern post: broad valley, level apron, descending curves, soft city/warm
+  day/night glow. `CityEastRoadProfile` owns road/land/car/lamp datum; yard
+  cuts retain the garden seam. First mast shares the light pool. Two cars
+  retain lane/grade/session/pause. Source depth resolves terrain/road/car
+  occlusion; asphalt vertices preserve crown/panorama seam, unlike the box.
+  `--near-only` retains panorama Light/audio/collision/travel exclusion.
+  Checks: `build-city-east-exit-3d-model.py --validate-only` (`--near-only`/
+  `--distance-only`), `AreaCaptureFixture.CityEastExit`: import/seam,
+  lamp/day floor, traffic/pause and reviewed valley/skyline/glow frames.
+- Litter sparsely covers permitted pavement/wall/tide/bench bands, outside
+  roads/crossings/authored sites. Memoised `CityLitterPlan` shares geometry/
+  instancing with the eastern strip. Spatial hashing prevents nearby repeats;
+  actual strip/cap/corner boxes correct graded-curve placement. Beach avoids
+  loose sand; shelters use the bus plan; priming warms the exit profile.
+  Checks: `CityLitterPlanTests`,
   `CityLayoutCacheTests.PrimeCityPlans_JoinsPlansEqualToPlanningOnTheMainThread`,
   `AreaCaptureFixture.CityLitter`, `check-docs.py`.
-- Fair `[11;3]`/`[11;4]`: four passive goods displays/silent vendors,
-  organ/bell on shared contextual hero actions, two seats, three garlands.
-  Actual ground sampling and tilted supports fix the buried north row;
-  cell heights described lots, not their continuous terrain. Blender prop/action
-  banks keep the hero prefab; shared light/speech rules and ordinary
-  level-zero meaning hold. The second layer adds three simultaneous children on one detailed
-  body, three constructed outfits and child clips. Display watching, a personal
-  toy car/low table and shared seat claims keep trade/speech/story untouched;
-  local routes and terrain-foot contacts preserve the narrow circulation.
-  The user's trouser correction connects both legs to the waist; equipped
-  triangle totals alone had missed the bare pelvis. Checks: `CityFair`,
-  `check-docs.py`: imported models/actions and waist continuity, grounded
-  activities/hand contacts, shared bench claims, pause/disable/re-entry;
-  reviewed activity/detail frames and neutral/sit/walk source poses.
-  Gaze now adds the residual face angle and removes look/secondary offsets
-  before resampling, fixing doubled head tilt. Check: `CityFairChildHeads`.
+- Fair: passive displays/silent vendors, organ/bell/shared hero actions,
+  seats/garlands. Sampled terrain/tilted supports fix the buried north row.
+  Three children share detailed body/outfits/clips; watching, toy car/table
+  and seat claims preserve circulation. Trousers now join the waist;
+  triangle totals missed the bare pelvis. Residual gaze/removing secondary
+  offsets fixes doubled head tilt. Checks: `CityFair`, `CityFairChildHeads`,
+  reviewed source/activity frames, contacts/claims/pause/re-entry.
+- Global `DefaultNpcPopulation`/`CreateForCharacter` assigns stable looks by ID,
+  avoiding repeated visible model/face/hair/clothes tuples until exhaustion.
+  Detailed body, modular outfits, painted faces and matched hair/beards
+  retain bind frames/actions; explicit coverage replaces local tint/apron loops.
+  Checks: `build-default-npc-3d-model.py --validate-only`,
+  `DefaultNpcFactoryPlayModeTests`, `AreaCaptureFixture.DefaultNpcWardrobe`,
+  `check-docs.py`. Old fair wipe reach failure remains; FBX bind frames match.
+- Hero/default hands retain 20% larger reach with slimmer depth/girth and fixed
+  wrists/grips. Seated meshes exposed stale passenger lifts and post-animation
+  bus movement; seat-plane alignment now follows that movement without reticking.
+  Truck caches trouser fit; capture checks cushion/pedals/reverse/bench.
+  Lateral elbow hints caused apparent sleeve growth. Shared hints fix it;
+  authored finger/thumb grip shapes replace open hands along the wheel.
+  Checks: `DefaultNpcDriverGrip`, hero source contact validator,
+  `NauseaHand_ReachesTheMouthAndRendersTheSheet`,
+  `SeatedPassengers_StayOnActualCushionsAcrossAnimationAndBusMotion`.
 
 ## 2026-09-14 — City geometry, eastern checkpoint, cold City loading
 

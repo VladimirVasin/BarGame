@@ -513,7 +513,7 @@ namespace BarPromenade
                 CollectPresentationCopies();
 
                 Renderer[] all = Object.FindObjectsByType<Renderer>(
-                    FindObjectsInactive.Exclude, FindObjectsSortMode.None);
+                    FindObjectsInactive.Exclude);
                 LastDiscoveryMilliseconds = ElapsedMilliseconds(phase);
                 phase = Stopwatch.GetTimestamp();
                 ScannedRendererCount = all.Length;
@@ -576,15 +576,15 @@ namespace BarPromenade
             // camera layer. Its owning component, not an object-name whitelist,
             // identifies that presentation-only geometry.
             foreach (HomeBathroomMirrorWorld mirror in Object.FindObjectsByType<HomeBathroomMirrorWorld>(
-                         FindObjectsInactive.Exclude, FindObjectsSortMode.None))
+                         FindObjectsInactive.Exclude))
                 if (mirror.MirrorSpace != null) presentationCopies.Add(mirror.MirrorSpace);
             foreach (InventoryItemPreviewRenderer preview in Object.FindObjectsByType<InventoryItemPreviewRenderer>(
-                         FindObjectsInactive.Exclude, FindObjectsSortMode.None))
+                         FindObjectsInactive.Exclude))
                 if (preview.ModelRoot != null) presentationCopies.Add(preview.ModelRoot);
             // Camera-only hiding of the real rig must not remove its body
             // from the simulation that also drives the reflected scarf.
             foreach (Player3DAssetRegistry registry in Object.FindObjectsByType<Player3DAssetRegistry>(
-                         FindObjectsInactive.Exclude, FindObjectsSortMode.None))
+                         FindObjectsInactive.Exclude))
             {
                 if (IsPresentationCopy(registry.transform)) continue;
                 foreach (Player3DMeshBinding binding in registry.MeshBindings)

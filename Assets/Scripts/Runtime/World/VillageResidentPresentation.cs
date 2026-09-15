@@ -169,6 +169,7 @@ namespace BarPromenade
         private void PrepareAction(VillageResidentAction action, float elapsedSeconds)
         {
             Initialize();
+            GetComponent<NpcHandPose>()?.ResetGrip();
             ResetIdleVariants();
             weatherLayers.SetInputWeight(1, 0);
             contactLayers.SetInputWeight(1, 0);
@@ -182,6 +183,7 @@ namespace BarPromenade
         public void ApplyLocomotion(float speed, bool carry, float elapsedSeconds, Vector3? lookAt = null)
         {
             Initialize();
+            GetComponent<NpcHandPose>()?.ResetGrip();
             ResetIdleVariants();
             weatherLayers.SetInputWeight(1, 0);
             contactLayers.SetInputWeight(1, 0);
@@ -271,6 +273,7 @@ namespace BarPromenade
         public void ApplyFreeLocomotion(float speed, float gaitCycles, Vector3? lookAt = null)
         {
             Initialize();
+            GetComponent<NpcHandPose>()?.ResetGrip();
             ResetIdleVariants();
             if (!freeRunPlayable.IsValid())
                 throw new InvalidOperationException("Free running needs the shared authored run clip.");
@@ -382,11 +385,19 @@ namespace BarPromenade
         }
 
         public bool ApplyHandContacts(Vector3? right, Vector3? left, float weight = 1f)
+            => ApplyHandContacts(right, left, null, null, weight);
+
+        /// <summary>Opt-in world hand rotations for a surface grip; ordinary reaches retain their sampled wrists.</summary>
+        public bool ApplyHandContacts(Vector3? right, Vector3? left,
+            Quaternion? rightRotation, Quaternion? leftRotation, float weight = 1f)
         {
             Initialize();
             bool matches = true;
-            if (right.HasValue) matches &= SolveArm(false, right.Value, weight, rightHand.rotation);
-            if (left.HasValue) matches &= SolveArm(true, left.Value, weight, leftHand.rotation);
+            float blend = Mathf.Clamp01(weight);
+            if (right.HasValue) matches &= SolveArm(false, right.Value, weight,
+                rightRotation.HasValue ? Quaternion.Slerp(rightHand.rotation, rightRotation.Value, blend) : rightHand.rotation);
+            if (left.HasValue) matches &= SolveArm(true, left.Value, weight,
+                leftRotation.HasValue ? Quaternion.Slerp(leftHand.rotation, leftRotation.Value, blend) : leftHand.rotation);
             return matches;
         }
 
@@ -408,7 +419,18 @@ namespace BarPromenade
                 upperLength + lowerLength - .001f);
             Vector3 axis = delta.normalized;
             wrist = shoulder + axis * distance;
-            Vector3 pole = transform.right * (isLeft ? -1f : 1f) - transform.forward * .15f;
+            // A forward reach bends below the shoulder. A purely lateral
+            // pole spread both elbows sideways and made unchanged sleeves
+            // look inflated whenever the hands came close to the chest.
+            // Read the actual rig frame: some village placement wrappers
+            // face opposite their imported model until their caller aligns it.
+            Vector3 anatomicalRight = Vector3.ProjectOnPlane(
+                rightUpperArm.position - leftUpperArm.position, transform.up).normalized;
+            if (anatomicalRight.sqrMagnitude < .5f) anatomicalRight = transform.right;
+            Vector3 outward = anatomicalRight * (isLeft ? -1f : 1f);
+            Vector3 anatomicalForward = Vector3.Cross(anatomicalRight, transform.up).normalized;
+            float acrossBody = Mathf.Clamp01(-Vector3.Dot(delta, outward) / Mathf.Max(.01f, upperLength));
+            Vector3 pole = -transform.up + outward * (.35f + .45f * acrossBody) - anatomicalForward * .08f;
             Vector3 bend = Vector3.ProjectOnPlane(pole, axis).normalized;
             if (bend.sqrMagnitude < .1f) bend = Vector3.ProjectOnPlane(transform.up, axis).normalized;
             float along = (upperLength * upperLength - lowerLength * lowerLength + distance * distance) / (2f * distance);
@@ -532,6 +554,7 @@ namespace BarPromenade
                 block.SetTexture("_BaseMap", atlas); block.SetTexture("_MainTex", atlas);
                 renderers[i].SetPropertyBlock(block); block.Clear();
             }
+            GetComponent<DefaultNpcAppearance>()?.RestoreFace();
         }
         private void OnEnable() => ApplyAppearance();
         private void ReleaseGraph()
@@ -548,7 +571,11 @@ namespace BarPromenade
             if (heldGustMask != null) { if (Application.isPlaying) Destroy(heldGustMask); else DestroyImmediate(heldGustMask); heldGustMask = null; }
             if (doorWalkMask != null) { if (Application.isPlaying) Destroy(doorWalkMask); else DestroyImmediate(doorWalkMask); doorWalkMask = null; }
         }
-        private void OnDisable() => ReleaseGraph();
+        private void OnDisable()
+        {
+            GetComponent<NpcHandPose>()?.ResetGrip();
+            ReleaseGraph();
+        }
         private void OnDestroy() => ReleaseGraph();
     }
 }

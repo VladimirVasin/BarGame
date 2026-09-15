@@ -83,7 +83,9 @@ def tracked_code(exclude: tuple[str, ...] = ()) -> list[str]:
         ["git", "ls-files", "*.cs", "*.json", "*.py"],
         cwd=ROOT, capture_output=True, text=True, encoding="utf-8",
     )
-    return sorted(p for p in out.stdout.splitlines() if p and p not in exclude)
+    # Uncommitted deletions still appear in the Git index. Citation checks
+    # inspect live source; dead references in documents are checked separately.
+    return sorted(p for p in out.stdout.splitlines() if p and p not in exclude and (ROOT / p).is_file())
 
 
 def load_document(path: str) -> Document:

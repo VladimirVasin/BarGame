@@ -59,7 +59,7 @@ namespace BarPromenade.Tests.PlayMode
             var dynamicBodies = new List<Collider>();
             // Diagnose static access separately from visible movable work bodies.
             // Restore every enabled state even when an assertion fails.
-            foreach (Collider body in UnityEngine.Object.FindObjectsByType<Collider>(FindObjectsSortMode.None))
+            foreach (Collider body in UnityEngine.Object.FindObjectsByType<Collider>())
                 if (body.enabled && (body.GetComponentInParent<CityPedestrianActor>() != null ||
                     body.GetComponentInParent<CityPortCrew>() != null ||
                     city.Cannery != null && body.transform.IsChildOf(city.Cannery.Truck) ||

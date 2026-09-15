@@ -41,7 +41,7 @@ namespace BarPromenade.Tests.PlayMode
             // tail) would play into the next test's listener-less scene and
             // trip its log assertions.
             foreach (AudioSource source in Object.FindObjectsByType<AudioSource>(
-                         FindObjectsInactive.Include, FindObjectsSortMode.None))
+                         FindObjectsInactive.Include))
             {
                 if (source != null) source.Stop();
             }

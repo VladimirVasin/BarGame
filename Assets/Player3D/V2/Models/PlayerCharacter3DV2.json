@@ -15,12 +15,12 @@
   "action_count": 48,
   "socket_count": 6,
   "bounds_min": [
-    -0.759514,
+    -0.775209,
     -0.212,
     0.0
   ],
   "bounds_max": [
-    0.76173,
+    0.777429,
     0.124,
     1.751787
   ],
@@ -2097,7 +2097,7 @@
   ],
   "design_version": "HeroV2",
   "cold_authoring_sha256": "7028b5689b681d88478d99567dca6c01e0b20175b7b96fc5cb8523069fd137d8",
-  "detail_authoring_sha256": "9ba325ef0137b34d688330bba27d32f73599fdbc010a14a2ea419e3c1cdc8837",
+  "detail_authoring_sha256": "dd8a5695c05ddd48201176b48b8972e632fab6e4463b3e21e0fd8b1744c6656c",
   "face_paint_sha256": "3b74355582ac1095a8a6ed0a30840e53d4bd45d78e6087b7e67d4b5331189970",
   "hand_frames_sha256": "0a527fa0da29d22421d0af3d37b2825fc956f0a64f667e939eb9bb8d52b24e82",
   "lineage_reference": "ArtSource/Player/PlayerDirectionalTurntable.png",
@@ -2128,7 +2128,7 @@
     "action_count": 48,
     "preserves_authored_contacts": true
   },
-  "content_signature_sha256": "3c12481ab13b4376d8a7e29653ee5e1890ebb2ff5b1b4aa20345de5b1223f28b",
+  "content_signature_sha256": "e067da3ebfbdbede41673b67e2c6300d86a1069899e174e2ca324d12530a3449",
   "material_palette": {
     "MAT_FaceAtlas": "FFFFFF",
     "MAT_JacketAtlas": "FFFFFF",
@@ -2814,6 +2814,9 @@
   "fit": {
     "body_torso_width_factor": 0.88,
     "shirt_torso_width_factor": 0.88,
+    "hand_size_scale": 1.2,
+    "hand_girth_scale": 0.85,
+    "hand_wrist_blend_m": 0.03,
     "torso_depth_factor": 0.87,
     "upper_sleeve_max_radius_m": 0.05,
     "shoulder_shell_half_width_m": 0.188,

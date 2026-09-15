@@ -39,6 +39,13 @@ namespace BarPromenade.Editor
                 var prefabs = new GameObject[Enum.GetValues(typeof(VillageResidentRole)).Length];
                 for (int index = 0; index < prefabs.Length; ++index)
                 {
+                    if (index == (int)VillageResidentRole.StationWorker)
+                    {
+                        // The shared default model owns its independent wardrobe and importer.
+                        DefaultNpcAssetSetup.BuildOrThrow();
+                        prefabs[index] = AssetDatabase.LoadAssetAtPath<GameObject>(DefaultNpcAssetSetup.PrefabPath);
+                        continue;
+                    }
                     string name = ((VillageResidentRole)index).ToString();
                     ConfigureImporter(Folder + name + ".fbx", false, avatar);
                     var manifest = JsonUtility.FromJson<Manifest>(File.ReadAllText(Folder + name + ".json"));

@@ -28,29 +28,22 @@ The vertical slice contains:
 
 ### Areas and scenes
 
-- six ordinary winter village residents, with the production hero's detail
-  as the authoring floor, recognize him through short local lines. The station
-  worker checks his cargo lid; the woman at house `04` loads six actual logs and carries two filled
-  baskets to separate supports, then tends the stack and rests. Houses `08`
-  and `11` add a shovel with its support, a closed basket with matching rests,
-  and a hinged gate with short fence returns. The shovel worker takes up the
-  tool, makes three working strokes and puts it back; the basket visitor
-  carries her closed basket to `08` and back through the gate. The repair
-  neighbour and sewing woman work in the accessible lower room of house `08`
-  and visit other yards. The same people and furniture are visible through
-  two physical window openings. Chair repair is finite; sewing includes an
-  actual sit, unpack, work, fold, closed box stow and stand sequence.
-  `VillageNeighbourhoodPlan` owns these destinations; the controller reserves
-  at most four outdoor places, starting outings from `05:00` until `18:30`.
-  Existing outings finish before the residents return home for the evening.
-  Each of `04`/`08`/`11` has a real moving door and solid L-shaped vestibule:
-  the six actors remain active and walk behind the interior wall. The shared
-  weather's rising strong gust pauses eligible outdoor movement or waiting
-  for `2.2 s`, with hands retaining the carried basket or shovel. Residents
-  wait for the hero and one another; a street encounter can use a side step.
-  World pause freezes the schedule, bodies, loads and door motion.
-  The focused `VillageLife` journey verifies all six bodies, held contacts,
-  door passages, evening returns and morning resumption in the real scene.
+- six ordinary winter village residents recognize him through short local
+  lines. The station worker checks his cargo lid. At `04` the woman loads six
+  logs, delivers two filled baskets to separate supports, then tends/rests.
+  Houses `08`/`11` have shovel/support, closed basket/rests and hinged gate/
+  fence returns. The shovel worker takes up, makes three strokes and returns
+  the tool; the visitor carries her basket to `08` and back through the gate.
+  Repair/sewing neighbours work in `08`'s accessible lower room and visit yards,
+  visible with their furniture through two real windows. Chair repair is
+  finite; sewing includes sit/unpack/work/fold/closed-box stow/stand.
+  `VillageNeighbourhoodPlan` owns destinations: at most four outdoor places,
+  outings start `05:00–18:30` and finish before evening returns. Moving doors
+  and solid L-shaped vestibules at `04`/`08`/`11` hide continuously active
+  actors behind walls. Shared gusts pause eligible movement/waiting for `2.2 s`
+  without losing held grips. Residents yield to hero/neighbours and sidestep;
+  world pause freezes schedule/bodies/loads/doors. `VillageLife` verifies bodies,
+  contacts, passages and evening/morning transitions.
   The hero can open and close `08`, walk inside, sit on its bench and hold
   the chair rail while the neighbour finishes the joint. The enclosed room
   stops exterior cold, removes indoor snow/fog particles and muffles the same
@@ -904,6 +897,7 @@ The vertical slice contains:
   separate passive `CityBusDriver3D` uses the shared `Player3DLit` material
   and the `NpcHumanV2` rig/Avatar copied from Hero V2, with a normal low-poly
   head and its canonical long horizontal eyes.
+  Passengers follow the cushion plane after bus movement; lifts match seated mesh depth.
   Procedural seated IK keeps both hands on the rotating wheel grips. For each
   door command, a deterministic timeline moves only the right hand to the
   dashboard button with `12 mm` travel while the left stays planted, and turns
@@ -1235,7 +1229,7 @@ The vertical slice contains:
   next ship awaits truck. Seek restores custody silently.
   Cargo passes store baffle; roller leaf/rails move together, bumpers on outer jambs.
   Sway <`9 cm` settles before lowering; empty trolley/cranes return.
-  Five StationWorkers: captain/deckhand/operators/docker; shore trio rests under
+  Five default workers: captain/deckhand/operators/docker; shore trio rests under
   canopy, returns by clear south lanes. Paired speech retains absent/no-repeat
   rounds; rest ends before greetings, staggered farewells fit earshot, no replay.
   Pause-aware breath/weight/gaze; turns/Walk→Run retain grips, levers follow hands.
@@ -1267,7 +1261,13 @@ The vertical slice contains:
   Hat/3D glasses/painted face/arm ink/5 clips; free-hand adjustment.
   Unload→two-hand carry→outdoor scales→release/settle/nod→support; empty=0.
   Three approvals/put-aways/clearance gate loading.
-  `NpcWardrobe`: one outfit each; body/ink/face/hair/glasses kept, UI/save Deferred.
+  Receiver/seamer retain fixed `NpcWardrobe` outfits; body/ink/face/hair/glasses
+  stay independent. The shared `ordinary-worker-v1` supplies 13 existing people:
+  four fair, five port, two factory, driver and village station worker.
+  Four faces, three hair colors, 18 items/8 slots/3 presets; hero/NPC hands +20%,
+  slim depth, fixed wrists. `NpcWardrobe` owns coverage; `NpcHandPose` bends
+  bare/gloved fingers around wheel tubes. `DefaultNpcPopulation` assigns stable
+  role-valid looks by ID without repeats; `CreateForCharacter` builds them.
   Four wait at bench. Snapshot-owned `DriverRest`/`DriverLunch`:
   cart→bench/bread→stow/stand→load; shared seat/food/pause/seek/range/debug/custody.
   `LifeSeconds` pauses; work time owns walks.

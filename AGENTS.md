@@ -80,6 +80,14 @@ Rules:
 - Keep runtime, editor, and test code separated with assembly definitions as the project grows.
 - Prefer deterministic, data-first world generation and test its pure logic outside scene construction.
 - Reuse shared materials and assets; avoid per-instance material creation.
+- New default NPCs register a permanent character ID/model/garment constraints
+  in the global `DefaultNpcPopulation`, then use
+  `DefaultNpcFactory.CreateForCharacter`. Its whole-world assignment retains
+  face/hair/clothes across loads and avoids repeats. Models come from
+  `DefaultNpcCatalog`; a bespoke appearance or missing type's pool extension
+  requires an explicit user request. Do not borrow unlisted models or build
+  local randomizers. Placement/actions stay local. See the accepted
+  `2026-09-15` default-NPC decisions in `ai/architecture-notes.md`.
 - All speech and dialogue must follow
   [`ai/speech-presentation-standard.md`](ai/speech-presentation-standard.md).
   Every spoken line, including `E` replies, uses the shared bubble above its

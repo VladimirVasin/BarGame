@@ -53,7 +53,7 @@ namespace BarPromenade.Tests.PlayMode
             // music tail) would play into the next test's listener-less
             // scene and trip its log assertions.
             foreach (AudioSource source in Object.FindObjectsByType<AudioSource>(
-                         FindObjectsInactive.Include, FindObjectsSortMode.None))
+                         FindObjectsInactive.Include))
             {
                 if (source != null) source.Stop();
             }
@@ -210,7 +210,7 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(ReferenceEquals(woken, village), Is.True,
                     $"{label}: the door back must wake the same village root, not build another.");
                 Assert.That(Object.FindObjectsByType<AlpineVillageRoot>(
-                        FindObjectsInactive.Include, FindObjectsSortMode.None), Has.Length.EqualTo(1));
+                        FindObjectsInactive.Include), Has.Length.EqualTo(1));
                 Assert.That(village.VillageArrival, Is.EqualTo(AlpineVillageArrivalKind.MothersHouseDoor),
                     $"{label}: the resume must consume the arrival the exit armed.");
                 Assert.That(GameSessionState.AlpineVillageArrival, Is.EqualTo(AlpineVillageArrivalKind.Default),
@@ -361,7 +361,7 @@ namespace BarPromenade.Tests.PlayMode
             CityGameRoot woken = Object.FindAnyObjectByType<CityGameRoot>();
             Assert.That(ReferenceEquals(woken, city), Is.True,
                 $"{label}: the door back must wake the same City root, not build another.");
-            Assert.That(Object.FindObjectsByType<CityGameRoot>(FindObjectsInactive.Include, FindObjectsSortMode.None),
+            Assert.That(Object.FindObjectsByType<CityGameRoot>(FindObjectsInactive.Include),
                 Has.Length.EqualTo(1), $"{label}: exactly one City root may exist.");
             Assert.That(city.Camera, Is.SameAs(cityCamera));
             Assert.That(city.Player.GameObject.activeInHierarchy, Is.True);
@@ -387,7 +387,7 @@ namespace BarPromenade.Tests.PlayMode
         {
             Scene active = SceneManager.GetActiveScene();
             GameObject hero = null;
-            foreach (PlayerMotor motor in Object.FindObjectsByType<PlayerMotor>(FindObjectsSortMode.None))
+            foreach (PlayerMotor motor in Object.FindObjectsByType<PlayerMotor>())
             {
                 if (motor == null || motor.gameObject.scene != active) continue;
                 Assert.That(hero, Is.Null, $"{label}: two live heroes in {active.name}.");
@@ -401,7 +401,7 @@ namespace BarPromenade.Tests.PlayMode
         private static void AssertOneLiveListener(string expectedScene, string label)
         {
             AudioListener[] listeners = Object.FindObjectsByType<AudioListener>(
-                FindObjectsInactive.Include, FindObjectsSortMode.None);
+                FindObjectsInactive.Include);
             int live = 0;
             AudioListener lastLive = null;
             for (int index = 0; index < listeners.Length; index++)

@@ -50,8 +50,8 @@ namespace BarPromenade
             var instance = Instantiate(prefab, parent, false);
             var presentation = instance.GetComponent<VillageResidentPresentation>();
             presentation.Initialize();
-            // The one door every wearer of these rigs comes through - the
-            // village, the port crew, the cannery - so their steps are heard.
+            // Role-bound village residents share the same footstep service
+            // as the reusable bodies created through DefaultNpcFactory.
             NpcFootstepSources.Register(instance.transform);
             return presentation;
         }

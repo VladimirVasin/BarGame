@@ -17,6 +17,7 @@ namespace BarPromenade
         public Vector3 DriverBenchSeatContact { get; private set; }
         public Vector3 DriverBenchStandingPosition { get; private set; }
         public float DriverBenchSeatWeight { get; private set; }
+        public Vector3 DriverBenchPelvisTarget => DriverBenchSeatContact + Vector3.up * driverBenchFit.y + Plan.Right * driverBenchFit.x;
 
         private void CreateDriverRest()
         {
@@ -115,12 +116,13 @@ namespace BarPromenade
                 driverPlantedFeet[i] = driverFeet[i].position;
                 driverPlantedFootRotations[i] = driverFeet[i].rotation;
             }
+            EnsureDriverBenchFit();
             actor.Apply(standing ? VillageResidentAction.SewingExit : VillageResidentAction.SewingEnter, seconds);
             // The shared clip reaches its chair at 2.3 seconds. Adapt only
             // that seat displacement to this bench, keeping both soles planted.
             DriverBenchSeatWeight = Ease((standing ? DriverSitSeconds - seconds : seconds) / 2.3f);
             Vector3 authoredSeat = DriverBenchStandingPosition + actor.transform.rotation * driverSeatedPelvisLocal;
-            driverPelvis.position += (DriverBenchSeatContact + Vector3.up * .08f - authoredSeat) * DriverBenchSeatWeight;
+            driverPelvis.position += (DriverBenchPelvisTarget - authoredSeat) * DriverBenchSeatWeight;
             for (int i = 0; i < 2; i++)
                 LimbTwoBoneIk.Solve(driverThighs[i], driverShins[i], driverFeet[i], driverPlantedFeet[i],
                     driverPlantedFootRotations[i], driverThighs[i].position + Plan.Right * .65f, 1f, 1f, true);

@@ -1929,8 +1929,7 @@ namespace BarPromenade
 
             Stopwatch inventoryTimer = Stopwatch.StartNew();
             MeshCollider[] meshColliders = FindObjectsByType<MeshCollider>(
-                FindObjectsInactive.Include,
-                FindObjectsSortMode.None);
+                FindObjectsInactive.Include);
             long meshColliderVertices = 0;
             for (int i = 0; i < meshColliders.Length; i++)
             {
@@ -1942,17 +1941,13 @@ namespace BarPromenade
             }
 
             int boxColliderCount = FindObjectsByType<BoxCollider>(
-                FindObjectsInactive.Include,
-                FindObjectsSortMode.None).Length;
+                FindObjectsInactive.Include).Length;
             int rendererCount = FindObjectsByType<Renderer>(
-                FindObjectsInactive.Include,
-                FindObjectsSortMode.None).Length;
+                FindObjectsInactive.Include).Length;
             int clothCount = FindObjectsByType<Cloth>(
-                FindObjectsInactive.Include,
-                FindObjectsSortMode.None).Length;
+                FindObjectsInactive.Include).Length;
             int transformCount = FindObjectsByType<Transform>(
-                FindObjectsInactive.Include,
-                FindObjectsSortMode.None).Length;
+                FindObjectsInactive.Include).Length;
             inventoryTimer.Stop();
             GameLog.Debug(
                 "city",

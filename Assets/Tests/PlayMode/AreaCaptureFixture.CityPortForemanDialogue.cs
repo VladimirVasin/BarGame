@@ -88,7 +88,7 @@ namespace BarPromenade.Tests.PlayMode
                     Physics.SyncTransforms(); follow.Snap();
                     yield return null; yield return null;
                     Assert.That(hero.ActiveInteractable, Is.SameAs(interaction));
-                    var prompt = Object.FindFirstObjectByType<InteractionPromptView>();
+                    var prompt = Object.FindAnyObjectByType<InteractionPromptView>();
                     Assert.That(prompt.GetDisplayedTextAt(Time.unscaledTime), Does.StartWith("E — "));
                     Assert.That(prompt.LastRenderedText, Is.EqualTo(LocalizationService.Get(interaction.PromptKey)));
                     Assert.That(prompt.LastRenderedTextFits, Is.True);

@@ -1279,13 +1279,13 @@ MonoBehaviour:
   metrics:
     canonicalHeight: 1.75
     localBounds:
-      m_Center: {x: -0.0011079311, y: 0.8758936, z: 0.044000015}
-      m_Extent: {x: 0.7606218, y: 0.8758936, z: 0.16800004}
+      m_Center: {x: -0.0011100173, y: 0.8758936, z: 0.044000015}
+      m_Extent: {x: 0.77631927, y: 0.8758936, z: 0.16800004}
     localForward: {x: 0, y: 0, z: 1}
   sourceGeneratorVersion: 2.0.0
   sourcePose: apose
   sourceTriangleCount: 8856
-  buildSignature: 01f6437554b15e1db0984ec94a2feb97
+  buildSignature: c541539c21c30c2a5b8381aba3bd8230
   faceAtlas:
     renderer: {fileID: 5003129424709676154}
     texture: {fileID: 2800000, guid: d6f6d740cb0367244abd513c4b15dbea, type: 3}

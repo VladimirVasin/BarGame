@@ -138,6 +138,11 @@ namespace BarPromenade
         public float WiperAngleDegrees { get; private set; }
         public float BrakeFactor => brakeFactor;
         public Transform SuspensionVisual => suspensionVisual;
+        // The imported body's native up points along the bus. Remove its
+        // neutral import rotation before exposing the physical cushion normal.
+        public Vector3 CabinUp => IsInitialized && suspensionVisual != null
+            ? (suspensionVisual.rotation * Quaternion.Inverse(suspensionRotationInPresentation)) * Vector3.up
+            : transform.up;
         public float SuspensionHeave => suspensionHeave;
         public float SuspensionPitch => suspensionPitch;
         public float SuspensionRoll => suspensionRoll;

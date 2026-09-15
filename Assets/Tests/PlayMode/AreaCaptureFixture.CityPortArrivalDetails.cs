@@ -111,7 +111,7 @@ namespace BarPromenade.Tests.PlayMode
                     casters.Add(renderer, renderer.shadowCastingMode);
                     Assert.That(renderer.shadowCastingMode, Is.EqualTo(ShadowCastingMode.On));
                 }
-                foreach (Light light in Object.FindObjectsByType<Light>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+                foreach (Light light in Object.FindObjectsByType<Light>(FindObjectsInactive.Include))
                 {
                     lights.Add(light, light.enabled);
                     light.enabled = light == lamp;

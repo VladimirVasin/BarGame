@@ -166,7 +166,7 @@ namespace BarPromenade.Tests.PlayMode
                 if (actor.StableId == "cat") eye += Vector3.up * .65f;
                 frame.Camera.transform.SetPositionAndRotation(eye,
                     Quaternion.LookRotation(actor.Head.position - Vector3.up * .15f - eye));
-                foreach (NpcSpeechBubbleView speech in Object.FindObjectsByType<NpcSpeechBubbleView>(FindObjectsSortMode.None))
+                foreach (NpcSpeechBubbleView speech in Object.FindObjectsByType<NpcSpeechBubbleView>())
                     speech.DismissAll();
                 Color32[] without = frame.RenderWithout(actor);
                 Color32[] with = frame.Render();

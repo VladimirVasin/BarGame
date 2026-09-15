@@ -28,9 +28,7 @@ namespace BarPromenade
 
         private void CreateWorkers()
         {
-            VillageResidentLibrary library = VillageResidentLibrary.Load();
-            if (library == null || library.GetPrefab(VillageResidentRole.StationWorker) == null)
-                throw new InvalidOperationException("The cannery requires the ordinary authored worker rig.");
+            DefaultNpcCatalog.GetPrefab();
             string[] names = { "Cannery Receiver", "Cannery Preparation Worker", "Cannery Seamer",
                 "Cannery Retort and Packing Worker", "Fish Delivery Driver" };
             workers = new VillageResidentPresentation[names.Length];
@@ -38,7 +36,8 @@ namespace BarPromenade
             {
                 workers[i] = i == CanneryWomanPresentation.WorkerSlot ? CanneryWomanAssetProvider.Create(transform) :
                     i == CanneryReceiverPresentation.WorkerSlot ? CanneryReceiverAssetProvider.Create(transform) :
-                    library.Create(VillageResidentRole.StationWorker, transform);
+                    DefaultNpcFactory.CreateForCharacter(transform, i == 1 ? DefaultNpcPopulation.CanneryPreparation :
+                        i == 3 ? DefaultNpcPopulation.CanneryRetort : DefaultNpcPopulation.DeliveryDriver);
                 workers[i].name = names[i];
                 if (i == 4) CityPortCrew.AlignWorkerModelWithPlacement(workers[i]);
                 workerSpines[i] = Require(workers[i].ModelRoot, "spine");
@@ -69,7 +68,6 @@ namespace BarPromenade
             driverDoorRest = Quaternion.Inverse(Truck.rotation) * driverDoor.rotation;
             trolleyLeftHand = Require(trolley, "ANCHOR_TrolleyHandleLeft");
             trolleyRightHand = Require(trolley, "ANCHOR_TrolleyHandleRight");
-            CreateCrewAppearance();
             portConversation = port.GetComponentInChildren<CityPortConversationController>();
             if (portConversation != null) portConversation.RegisterDriver(workers[4]);
         }
@@ -87,7 +85,6 @@ namespace BarPromenade
                 bool visible = i == 4 ? TruckPresentationActive : FactoryPresentationActive;
                 if (workers[i].gameObject.activeSelf == visible) continue;
                 workers[i].gameObject.SetActive(visible);
-                if (visible) workerAppearanceDirty[i] = true;
             }
             float seconds = (float)Snapshot.Seconds;
             if (FactoryPresentationActive)
@@ -124,10 +121,6 @@ namespace BarPromenade
             if (DriverRestPhase != CityCanneryDriverRestPhase.GettingLunch &&
                 DriverRestPhase != CityCanneryDriverRestPhase.Eating &&
                 DriverRestPhase != CityCanneryDriverRestPhase.StowingLunch) HideDriverLunch();
-            // Enabling the shared resident rig restores its village atlas.
-            // Reapply this crew's clothes after that first pose, once per wake.
-            for (int i = 0; i < workers.Length; i++)
-                if (workers[i].gameObject.activeSelf && workerAppearanceDirty[i]) ApplyCrewAppearance(i);
             ApplyDriverConversation();
             FactoryConversation?.ApplyCrewPose();
             if (Receiver != null && Receiver.gameObject.activeInHierarchy)
@@ -420,7 +413,9 @@ namespace BarPromenade
             actor.transform.SetPositionAndRotation(Truck.position,
                 Quaternion.Slerp(Truck.rotation, exitRotation, standing));
             actor.Apply(VillageResidentAction.Idle, 0);
-            Vector3 seatedRoot = actor.transform.position + driverSeat.position - driverPelvis.position;
+            EnsureDriverSeatFit();
+            Vector3 seatTarget = DriverSeatTarget(0f);
+            Vector3 seatedRoot = actor.transform.position + seatTarget - driverPelvis.position;
             actor.transform.position = Vector3.Lerp(seatedRoot, exit, standing);
             for (int i = 0; i < 2; i++)
             {
@@ -433,16 +428,16 @@ namespace BarPromenade
                     DriverSeatedContactsMatch &= Vector3.Distance(driverFeet[i].position, pedal) <= .025f;
             }
             if (standing <= .001f)
-                DriverSeatedContactsMatch &= Vector3.Distance(driverPelvis.position, driverSeat.position) <= .01f;
+                DriverSeatedContactsMatch &= Vector3.Distance(driverPelvis.position, seatTarget) <= .01f;
             ApplyCrewLook(actor, driverSeat.position + Truck.forward * 12f + Vector3.up * .45f, 1f - standing);
-            ApplyCrewContacts(actor, driverRightHand.position, driverLeftHand.position, hands);
+            ApplyDriverWheelContacts(driverRightHand.position, driverLeftHand.position, hands);
         }
 
         private void ApplyCrewContacts(VillageResidentPresentation actor, Vector3? right, Vector3? left, float weight)
             => ApplyCrewContacts(actor, right, left, weight, weight);
 
         private void ApplyCrewContacts(VillageResidentPresentation actor, Vector3? right, Vector3? left,
-            float rightWeight, float leftWeight)
+            float rightWeight, float leftWeight, Quaternion? rightRotation = null, Quaternion? leftRotation = null)
         {
             // Measure the actual requested frame targets, including the entry
             // and release interpolation. Full contact still targets the model
@@ -451,7 +446,7 @@ namespace BarPromenade
                 Mathf.Clamp01(rightWeight)) : (Vector3?)null;
             Vector3? leftTarget = left.HasValue ? Vector3.Lerp(actor.LeftGrip.position, left.Value,
                 Mathf.Clamp01(leftWeight)) : (Vector3?)null;
-            bool matches = actor.ApplyHandContacts(rightTarget, leftTarget);
+            bool matches = actor.ApplyHandContacts(rightTarget, leftTarget, rightRotation, leftRotation);
             if (rightTarget.HasValue) matches &= Vector3.Distance(actor.RightGrip.position, rightTarget.Value) <= .025f;
             if (leftTarget.HasValue) matches &= Vector3.Distance(actor.LeftGrip.position, leftTarget.Value) <= .025f;
             WorkerHandsMatch &= matches;

@@ -174,8 +174,7 @@ namespace BarPromenade.Tests.EditMode
         {
             var timer = Stopwatch.StartNew();
             int foreignBefore = Object.FindObjectsByType<Collider>(
-                FindObjectsInactive.Include,
-                FindObjectsSortMode.None).Length;
+                FindObjectsInactive.Include).Length;
             CityLayout layout = CityLayoutGenerator.Generate(
                 CityBlueprintCatalog.Default,
                 CityGenerationSettings.Default,
