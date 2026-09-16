@@ -275,10 +275,11 @@ namespace BarPromenade
         public const string HelmetLampPrefabResourcePath =
             "Pedestrians/HelmetLampPedestrian3D";
 
-        // The seven ordinary residents promoted to the street (2026-09-02).
-        // Each keeps its placed role as well: the babushka still beats her
-        // carpet in the drying yard, the watchman still holds the cemetery
-        // gate. Only their roaming copies read the ambient gait.
+        // The six ordinary residents. Promoted to the street on 2026-09-02
+        // and taken off it again on 2026-09-16, when the pool became the
+        // default NPC catalog; each keeps its placed role - the babushka
+        // still beats her carpet, the watchman still holds the gate - and the
+        // balcony smokers still wear these bodies. See `OrdinaryResidents`.
         public const string BabushkaDesignId = "yard_babushka_v1";
         public const string BabushkaPrefabResourcePath =
             "Pedestrians/YardBabushka3D";
@@ -314,14 +315,36 @@ namespace BarPromenade
         /// </summary>
         public const string FishermanDesignId = "lake_fisherman_v1";
 
-        // The legacy single-prefab entry point. It used to resolve to the
-        // Lampshade Walker and then to the Chair Carrier, and each in turn
-        // stopped roaming - a caller asking for "a pedestrian" with no
-        // further qualification must get one that is actually on the street,
-        // so it now names the babushka, who is the most ordinary body in the
-        // catalog and the least likely to be withdrawn from it.
+        // The legacy single-prefab entry point: the babushka, the most
+        // ordinary body in the pedestrian library. Since 2026-09-16 nothing
+        // in this library roams - the street pool is built from the default
+        // NPC catalog - so this is what a staged vignette or a test asking
+        // for "a pedestrian body with a registry" gets, not what the street
+        // shows.
         public const string PrefabResourcePath =
             BabushkaPrefabResourcePath;
+
+        /// <summary>
+        /// The pooled walkers' pace. Every default NPC walks its own authored
+        /// village gait - `Walk` covers `0.82 m/s` at unit speed over a
+        /// `1.25 s` cycle - so the band is the same for every catalog model
+        /// and the animation band brackets `speed / 0.82`.
+        /// </summary>
+        public const float DefaultNpcMinimumMovementSpeed = 0.78f;
+        public const float DefaultNpcMaximumMovementSpeed = 0.90f;
+        public const float DefaultNpcMinimumAnimationSpeed = 0.95f;
+        public const float DefaultNpcMaximumAnimationSpeed = 1.10f;
+
+        /// <summary>
+        /// The library design whose authored seated loop and personal-space
+        /// pair the default NPC walkers borrow. A default NPC carries its own
+        /// idle and walk, but no seated citizen and no guard or shove were
+        /// ever authored for it; the weigher's are "an ordinary seated
+        /// citizen on a bus bench" on the same 31-bone NpcHumanV2 rig and the
+        /// same `ROOT_Player/RIG_Player` paths, so they bind without
+        /// retargeting. The prefab asset is read, never instantiated.
+        /// </summary>
+        public const string StreetClipDonorDesignId = WeighAttendantDesignId;
 
         // Headroom values below are the measured maxima the deterministic
         // generator reports for each design's own authored seated clip, and
@@ -387,6 +410,15 @@ namespace BarPromenade
         private static readonly CityPedestrianSeatedRide WatchmanSeatedRide =
             new CityPedestrianSeatedRide(0.052f, 0.20f, 0.909f);
 
+        /// <summary>
+        /// The default NPC rides on the weigher's seated clip and her measured
+        /// lift. Its trousers are a different mesh, so this is the one number
+        /// to tune if a pooled rider reads as sunk into or floating over the
+        /// cushion.
+        /// </summary>
+        private static readonly CityPedestrianSeatedRide DefaultNpcSeatedRide =
+            new CityPedestrianSeatedRide(0.056f, 0.21f, 0.915f);
+
         // THREE ORDINARY RESIDENTS DELIBERATELY DO NOT RIDE. The band above
         // is measured from the design's own seated clip, and for these three
         // the measurement is dominated by something that is not a hip: the
@@ -398,23 +430,18 @@ namespace BarPromenade
         // stop, and the bus passes them by.
 
         /// <summary>
-        /// The designs that ROAM. Ordinary people only, and SIX of them
-        /// since 2026-09-02: the four strange walkers came off the street
-        /// first, then the user took two more off by hand - the fisherman
-        /// because he is a story figure, and the Chair Carrier because a man
-        /// carrying a chair everywhere is not an ordinary man however
-        /// ordinary his body is.
-        ///
-        /// A thinner street was the accepted price, decided in the same
-        /// breath: the population profile was deliberately NOT raised to
-        /// compensate.
-        ///
-        /// This is no longer the whole catalog. Anything that merely needs to
-        /// RESOLVE a design - the courtyard vignettes, the mother's teapot -
-        /// must go through `TryGetArchetype`, which also searches
-        /// `NonRoamingArchetypes`.
+        /// The six ordinary residents of the pedestrian library. They walked
+        /// the street from 2026-09-02, when the four strange walkers, the
+        /// fisherman and the Chair Carrier came off it, until 2026-09-16, when
+        /// the user closed the pool to everything but the default NPC catalog
+        /// («прохожие берутся только из default NPC»). They stay here because
+        /// they are still bodies with a citizen gait, a seated ride and a
+        /// personal-space pair: the balcony smokers wear them, the weigher
+        /// lends her seated loop and her guard/shove to the pooled default
+        /// NPCs, and every placed role still resolves through
+        /// `TryGetArchetype`.
         /// </summary>
-        private static readonly CityPedestrianArchetype[] OrderedArchetypes =
+        private static readonly CityPedestrianArchetype[] OrdinaryResidents =
         {
             new CityPedestrianArchetype(
                 BabushkaDesignId,
@@ -559,50 +586,134 @@ namespace BarPromenade
                 0.05f)
         };
 
-        private static readonly IReadOnlyList<CityPedestrianArchetype>
-            ReadOnlyArchetypes = Array.AsReadOnly(OrderedArchetypes);
+        /// <summary>
+        /// The designs that ROAM: one archetype per default NPC catalog model,
+        /// derived from <see cref="DefaultNpcCatalog.ModelIds"/> at first use
+        /// so a model added to the catalog is on the pavement with no
+        /// registration here. Its design ID is the catalog model ID and its
+        /// prefab path is the catalog's; the body itself is built by
+        /// `CityPedestrianDefaultNpcBody`, not loaded from a registry prefab.
+        /// </summary>
+        private static CityPedestrianArchetype[] roamingArchetypes;
+
+        private static CityPedestrianArchetype[] RoamingArchetypes
+        {
+            get
+            {
+                if (roamingArchetypes == null)
+                {
+                    IReadOnlyList<string> models = DefaultNpcCatalog.ModelIds;
+                    var built = new CityPedestrianArchetype[models.Count];
+                    for (int index = 0; index < models.Count; index++)
+                    {
+                        built[index] = new CityPedestrianArchetype(
+                            models[index],
+                            DefaultNpcCatalog.GetResourcePath(models[index]),
+                            DefaultNpcMinimumMovementSpeed,
+                            DefaultNpcMaximumMovementSpeed,
+                            DefaultNpcMinimumAnimationSpeed,
+                            DefaultNpcMaximumAnimationSpeed,
+                            CityPedestrianArchetype.UnlimitedPoolInstances,
+                            0f,
+                            DefaultNpcSeatedRide);
+                    }
+
+                    roamingArchetypes = built;
+                }
+
+                return roamingArchetypes;
+            }
+        }
 
         private static readonly IReadOnlyList<CityPedestrianArchetype>
-            ReadOnlyAllArchetypes = Array.AsReadOnly(
-                Concat(OrderedArchetypes, NonRoamingArchetypes));
+            ReadOnlyOrdinaryResidents = Array.AsReadOnly(OrdinaryResidents);
+
+        private static IReadOnlyList<CityPedestrianArchetype>
+            readOnlyArchetypes;
+
+        private static IReadOnlyList<CityPedestrianArchetype>
+            readOnlyAllArchetypes;
 
         private static CityPedestrianArchetype[] Concat(
-            CityPedestrianArchetype[] first,
-            CityPedestrianArchetype[] second)
+            params CityPedestrianArchetype[][] tables)
         {
-            var all = new CityPedestrianArchetype[
-                first.Length + second.Length];
-            Array.Copy(first, 0, all, 0, first.Length);
-            Array.Copy(second, 0, all, first.Length, second.Length);
+            int total = 0;
+            for (int index = 0; index < tables.Length; index++)
+            {
+                total += tables[index].Length;
+            }
+
+            var all = new CityPedestrianArchetype[total];
+            int cursor = 0;
+            for (int index = 0; index < tables.Length; index++)
+            {
+                Array.Copy(
+                    tables[index],
+                    0,
+                    all,
+                    cursor,
+                    tables[index].Length);
+                cursor += tables[index].Length;
+            }
+
             return all;
         }
 
+        /// <summary>What walks the street: the default NPC catalog.</summary>
         public static IReadOnlyList<CityPedestrianArchetype> Archetypes =>
-            ReadOnlyArchetypes;
+            readOnlyArchetypes ??
+            (readOnlyArchetypes = Array.AsReadOnly(RoamingArchetypes));
 
         /// <summary>
-        /// Every design the library can resolve, roaming or not, in a stable
-        /// order: the street pool first, then the rest. This is what a
-        /// contract test that means "the whole catalog" should read;
-        /// <see cref="Archetypes"/> means "what walks the street", and the
-        /// two stopped being the same thing on 2026-09-02.
+        /// The six library residents with a citizen gait, a seated ride and
+        /// a personal-space pair - the balcony smokers' bodies and the clip
+        /// donor's table. Off the street since 2026-09-16.
+        /// </summary>
+        public static IReadOnlyList<CityPedestrianArchetype>
+            OrdinaryResidentArchetypes => ReadOnlyOrdinaryResidents;
+
+        /// <summary>
+        /// Every design the runtime can resolve, in a stable order: the
+        /// street pool first, then the ordinary residents, then the rest.
+        /// This is what a contract test that means "the whole catalog" should
+        /// read; <see cref="Archetypes"/> means "what walks the street".
         /// </summary>
         public static IReadOnlyList<CityPedestrianArchetype> AllArchetypes =>
-            ReadOnlyAllArchetypes;
+            readOnlyAllArchetypes ??
+            (readOnlyAllArchetypes = Array.AsReadOnly(Concat(
+                RoamingArchetypes,
+                OrdinaryResidents,
+                NonRoamingArchetypes)));
 
         /// <summary>
         /// Whether a design is on the street, as opposed to merely being
-        /// resolvable. `TryGetArchetype` answers the second question and
-        /// searches both tables; this one answers the first.
-        ///
-        /// The distinction only started to matter when the two tables
-        /// stopped being the same thing: the Kettle Hat walker still has to
-        /// resolve, because the mother's teapot is built out of him, but he
-        /// no longer roams.
+        /// resolvable. Since 2026-09-16 only a default NPC catalog model
+        /// roams; `TryGetArchetype` answers the second question and searches
+        /// every table.
         /// </summary>
         public static bool Roams(string designId)
         {
-            return TryFind(OrderedArchetypes, designId, out _);
+            return TryFind(RoamingArchetypes, designId, out _);
+        }
+
+        /// <summary>Whether a design is one of the six library residents.</summary>
+        public static bool IsOrdinaryResident(string designId)
+        {
+            return TryFind(OrdinaryResidents, designId, out _);
+        }
+
+        /// <summary>
+        /// The registry of the design that lends the pooled default NPCs
+        /// their seated loop and personal-space pair, read off the prefab
+        /// asset, or <c>null</c> when the prefab is missing.
+        /// </summary>
+        public static CityPedestrianAssetRegistry LoadStreetClipDonor()
+        {
+            return TryGetArchetype(
+                       StreetClipDonorDesignId,
+                       out CityPedestrianArchetype donor)
+                ? LoadPrefab(donor)?.GetComponent<CityPedestrianAssetRegistry>()
+                : null;
         }
 
         public static GameObject LoadPrefab()
@@ -622,16 +733,15 @@ namespace BarPromenade
                 archetype.PrefabResourcePath);
         }
 
-        public static GameObject[] LoadPrefabs()
-        {
-            return LoadPrefabs(OrderedArchetypes);
-        }
-
         /// <summary>
-        /// Spreads <paramref name="poolSize"/> pooled instances over the
-        /// catalog in stable order: every design appears once, then the
-        /// remainder is dealt round-robin while each design stays under its
-        /// declared instance limit.
+        /// The design of each pooled slot, in slot order. The population
+        /// decides it, not a round-robin: slot <c>i</c> is the permanent
+        /// walker `DefaultNpcPopulation.PedestrianId(i)`, whose model the
+        /// whole-world allocation chose least-used first, so every catalog
+        /// model appears at least once whenever the pool is large enough to
+        /// hold them all. Reading it prepares the population, which loads the
+        /// catalog prefabs; a warm-up wanting paths alone reads
+        /// <see cref="CollectPooledPrefabResourcePaths"/>.
         /// </summary>
         public static IReadOnlyList<CityPedestrianArchetype>
             CreatePoolComposition(int poolSize)
@@ -643,80 +753,59 @@ namespace BarPromenade
                     "A pedestrian pool requires at least one instance.");
             }
 
-            if (poolSize < OrderedArchetypes.Length)
+            if (poolSize > DefaultNpcPopulation.PedestrianCount)
             {
                 throw new ArgumentOutOfRangeException(
                     nameof(poolSize),
-                    "A pedestrian pool must hold every registered design at " +
-                    "least once.");
+                    "The population registers " +
+                    $"{DefaultNpcPopulation.PedestrianCount} permanent " +
+                    "walkers; a larger pool would spawn people it does not " +
+                    "know.");
             }
 
-            var counts = new int[OrderedArchetypes.Length];
             var composition =
                 new List<CityPedestrianArchetype>(poolSize);
-            for (int index = 0; index < OrderedArchetypes.Length; index++)
+            for (int index = 0; index < poolSize; index++)
             {
-                counts[index] = 1;
-                composition.Add(OrderedArchetypes[index]);
-            }
-
-            int cursor = 0;
-            while (composition.Count < poolSize)
-            {
-                bool dealt = false;
-                for (int step = 0;
-                     step < OrderedArchetypes.Length &&
-                     composition.Count < poolSize;
-                     step++)
-                {
-                    int index =
-                        (cursor + step) % OrderedArchetypes.Length;
-                    CityPedestrianArchetype archetype =
-                        OrderedArchetypes[index];
-                    if (counts[index] >= archetype.MaximumPoolInstances)
-                    {
-                        continue;
-                    }
-
-                    counts[index]++;
-                    composition.Add(archetype);
-                    cursor = index + 1;
-                    dealt = true;
-                    break;
-                }
-
-                if (!dealt)
+                string modelId = DefaultNpcPopulation
+                    .GetAssignment(DefaultNpcPopulation.PedestrianId(index))
+                    .ModelId;
+                if (!TryFind(RoamingArchetypes, modelId, out var archetype))
                 {
                     throw new InvalidOperationException(
-                        $"A pool of {poolSize} pedestrian instances exceeds " +
-                        "the total declared instance limits of the catalog.");
+                        $"The population assigned model '{modelId}' to " +
+                        "a pooled walker, but the street catalog does not " +
+                        "know it.");
                 }
+
+                composition.Add(archetype);
             }
 
             return composition;
         }
 
-        public static GameObject[] LoadPooledPrefabs(int poolSize)
-        {
-            return LoadPrefabs(CreatePoolComposition(poolSize));
-        }
-
         /// <summary>
-        /// The distinct prefab resource paths <see cref="LoadPooledPrefabs"/>
-        /// resolves for a pool of <paramref name="poolSize"/>, in first
-        /// appearance order of <see cref="CreatePoolComposition"/>. Read-only:
-        /// what a warm-up may fetch ahead of the pool, never a second list of
-        /// prefabs.
+        /// The distinct prefab resource paths the pool of
+        /// <paramref name="poolSize"/> may build a body from: every catalog
+        /// model's, because the population may hand any of them to any slot.
+        /// Read-only and prefab-free, so a warm-up can fetch them ahead of
+        /// the pool without preparing the population itself.
         /// </summary>
         public static IReadOnlyList<string>
             CollectPooledPrefabResourcePaths(int poolSize)
         {
-            IReadOnlyList<CityPedestrianArchetype> composition =
-                CreatePoolComposition(poolSize);
-            var paths = new List<string>(composition.Count);
-            for (int index = 0; index < composition.Count; index++)
+            if (poolSize <= 0)
             {
-                string path = composition[index].PrefabResourcePath;
+                throw new ArgumentOutOfRangeException(
+                    nameof(poolSize),
+                    "A pedestrian pool requires at least one instance.");
+            }
+
+            CityPedestrianArchetype[] roaming = RoamingArchetypes;
+            var paths = new List<string>(roaming.Length);
+            for (int index = 0; index < roaming.Length; index++)
+            {
+                string path = roaming[index].PrefabResourcePath;
                 if (!paths.Contains(path))
                 {
                     paths.Add(path);
@@ -726,37 +815,18 @@ namespace BarPromenade
             return paths;
         }
 
-        private static GameObject[] LoadPrefabs(
-            IReadOnlyList<CityPedestrianArchetype> archetypes)
-        {
-            var prefabs = new GameObject[archetypes.Count];
-            for (int index = 0; index < archetypes.Count; index++)
-            {
-                CityPedestrianArchetype archetype = archetypes[index];
-                prefabs[index] = LoadPrefab(archetype);
-                if (prefabs[index] == null)
-                {
-                    throw new InvalidOperationException(
-                        $"The '{archetype.DesignId}' city pedestrian prefab " +
-                        $"is missing at Resources/" +
-                        $"{archetype.PrefabResourcePath}.");
-                }
-            }
-
-            return prefabs;
-        }
-
         public static bool TryGetArchetype(
             string designId,
             out CityPedestrianArchetype archetype)
         {
-            // BOTH lists, and that is the whole point of the split. Resolving
-            // a design is not the same question as spawning one: the mother's
-            // teapot and the courtyard vignettes ask this about designs that
-            // deliberately never roam, and answering `false` for them would
-            // throw at `MothersHouseKettleProp.Create` and
-            // `CityCourtyardResidentFactory.ResolveArchetype`.
-            return TryFind(OrderedArchetypes, designId, out archetype) ||
+            // EVERY table, and that is the whole point of the split. Resolving
+            // a design is not the same question as spawning one: the placed
+            // residents, the mother's teapot and the courtyard vignettes ask
+            // this about designs that deliberately never roam, and answering
+            // `false` for them would throw at `MothersHouseKettleProp.Create`
+            // and `CityCourtyardResidentFactory.ResolveArchetype`.
+            return TryFind(RoamingArchetypes, designId, out archetype) ||
+                   TryFind(OrdinaryResidents, designId, out archetype) ||
                    TryFind(NonRoamingArchetypes, designId, out archetype);
         }
 

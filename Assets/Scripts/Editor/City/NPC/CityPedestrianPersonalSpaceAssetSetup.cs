@@ -6,7 +6,12 @@ using UnityEngine;
 
 namespace BarPromenade.Editor
 {
-    /// <summary>Attach only the dedicated street reaction clips to existing models.</summary>
+    /// <summary>
+    /// Attach only the dedicated street reaction clips to existing models:
+    /// the library's six ordinary residents, who authored them. Since
+    /// 2026-09-16 they no longer roam; the pooled default NPCs borrow the
+    /// clip donor's pair at runtime (`CityPedestrianResources.StreetClipDonorDesignId`).
+    /// </summary>
     [InitializeOnLoad]
     public static class CityPedestrianPersonalSpaceAssetSetup
     {
@@ -68,13 +73,13 @@ namespace BarPromenade.Editor
                 AssetDatabase.ImportAsset(AnimationPath, ImportAssetOptions.ForceSynchronousImport);
                 AssetDatabase.ImportAsset(ManifestPath, ImportAssetOptions.ForceSynchronousImport);
                 ValidateBank();
-                foreach (CityPedestrianArchetype archetype in CityPedestrianResources.Archetypes)
+                foreach (CityPedestrianArchetype archetype in CityPedestrianResources.OrdinaryResidentArchetypes)
                 {
                     string path = "Assets/Resources/" + archetype.PrefabResourcePath + ".prefab";
                     GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(path);
                     if (prefab == null)
                     {
-                        throw new InvalidOperationException("Missing roaming prefab: " + path);
+                        throw new InvalidOperationException("Missing ordinary resident prefab: " + path);
                     }
                     CityPedestrianAssetRegistry source = prefab.GetComponent<CityPedestrianAssetRegistry>();
                     AnimationClip guard = LoadClip(archetype.DesignId, "Guard");
@@ -106,7 +111,7 @@ namespace BarPromenade.Editor
 
         public static void ConfigureRegistry(CityPedestrianAssetRegistry registry)
         {
-            if (!CityPedestrianResources.Roams(registry.DesignId))
+            if (!CityPedestrianResources.IsOrdinaryResident(registry.DesignId))
             {
                 return;
             }
@@ -132,12 +137,12 @@ namespace BarPromenade.Editor
             Manifest manifest = JsonUtility.FromJson<Manifest>(File.ReadAllText(ManifestPath));
             if (manifest == null || manifest.bone_count != 31 || manifest.mesh_count != 0 ||
                 manifest.root_motion || manifest.fps != 24 || manifest.clips == null ||
-                manifest.clip_count != CityPedestrianResources.Archetypes.Count * 2 ||
+                manifest.clip_count != CityPedestrianResources.OrdinaryResidentArchetypes.Count * 2 ||
                 manifest.clips.Length != manifest.clip_count)
             {
                 throw new InvalidOperationException("Personal-space bank must contain only the six grounded bone-only pairs.");
             }
-            foreach (CityPedestrianArchetype archetype in CityPedestrianResources.Archetypes)
+            foreach (CityPedestrianArchetype archetype in CityPedestrianResources.OrdinaryResidentArchetypes)
             {
                 foreach (string suffix in new[] { "Guard", "Shove" })
                 {

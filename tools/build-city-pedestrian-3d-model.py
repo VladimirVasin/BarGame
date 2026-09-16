@@ -494,7 +494,10 @@ class ArchetypeSpec:
     # but their prefabs live outside Resources and are not eligible for the
     # runtime pedestrian catalog until a later accessibility milestone.
     staged: bool = False
-    pool_eligible: bool = True
+    # Since 2026-09-16 the street pool is the default NPC catalog, so no
+    # library design is pool-eligible; the six ordinary residents keep their
+    # street gait for the balcony smokers and lend seated/personal-space clips.
+    pool_eligible: bool = False
     # Most designs consume the common City locomotion library. A staged
     # ensemble may own a smaller animation-only FBX instead, keeping its
     # highly specific poses out of the ambient pedestrian import contract.
@@ -660,7 +663,7 @@ ARCHETYPES = {
         # number and is compared exactly.
         (1650, 2400),
         staged=True,
-        pool_eligible=True,
+        pool_eligible=False,
         ambient_idle_clip="BabushkaStreetIdle",
         ambient_walk_clip="BabushkaStreetWalk",
     ),
@@ -700,7 +703,7 @@ ARCHETYPES = {
         (1800, 2400),
         sit_clip="WeigherSit", seated_clearance_m=(0.84, 0.99),
         staged=True,
-        pool_eligible=True,
+        pool_eligible=False,
         ambient_idle_clip="WeigherStreetIdle",
         ambient_walk_clip="WeigherStreetWalk",
     ),
@@ -722,7 +725,7 @@ ARCHETYPES = {
         ambient_idle_clip="MournerStreetIdle",
         ambient_walk_clip="MournerStreetWalk",
         staged=True,
-        pool_eligible=True,
+        pool_eligible=False,
     ),
     # The cemetery watchman. One staged model for the permanent post
     # at the gate lodge: an extremely snide old man who watches every
@@ -737,7 +740,7 @@ ARCHETYPES = {
         (1800, 2400),
         sit_clip="WatchmanSit", seated_clearance_m=(0.84, 0.99),
         staged=True,
-        pool_eligible=True,
+        pool_eligible=False,
         ambient_idle_clip="WatchmanStreetIdle",
         ambient_walk_clip="WatchmanStreetWalk",
     ),
@@ -830,7 +833,7 @@ ARCHETYPES = {
         ambient_idle_clip="ChessStreetIdle",
         ambient_walk_clip="ChessStreetWalk",
         staged=True,
-        pool_eligible=True,
+        pool_eligible=False,
         perch_seat_height_m=(0.53, 0.55),
         action_clip="ChessJeer",
     ),
@@ -863,7 +866,7 @@ ARCHETYPES = {
         ambient_idle_clip="CheckersStreetIdle",
         ambient_walk_clip="CheckersStreetWalk",
         staged=True,
-        pool_eligible=True,
+        pool_eligible=False,
         perch_seat_height_m=(0.53, 0.55),
         action_clip="CheckersJeer",
     ),

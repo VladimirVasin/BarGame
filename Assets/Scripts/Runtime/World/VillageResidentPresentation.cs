@@ -82,6 +82,15 @@ namespace BarPromenade
         public float CurrentLocomotionCycle { get; private set; }
         public bool IsInitialized => graph.IsValid();
         public float ClipLength(VillageResidentAction action) => clips[(int)action].length;
+        /// <summary>The authored clip behind one action; the street pool reads its own idle/walk pair here.</summary>
+        public AnimationClip GetClip(VillageResidentAction action) => clips[(int)action];
+
+        /// <summary>
+        /// Hands the Animator to another sampler. The pooled walker adapter calls this
+        /// after alignment so one graph, not two, writes this body; disabling releases
+        /// the same way, and Apply/ApplyLocomotion rebuild the graph on demand.
+        /// </summary>
+        public void ReleaseAnimation() => ReleaseGraph();
 
         /// <summary>A city actor can reuse this sampler without joining the village cast.</summary>
         public void ConfigureAuthoredActor(string identity, Animator configuredAnimator, Transform configuredModelRoot,

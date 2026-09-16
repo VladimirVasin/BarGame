@@ -356,12 +356,12 @@ namespace BarPromenade.Tests.EditMode
                 CityBalconySmokerArchetypeCatalog.EligibleDesignIds;
             Assert.That(eligible.Count, Is.GreaterThanOrEqualTo(2));
             CollectionAssert.AreEqual(
-                CityPedestrianResources.Archetypes.Select(
+                CityPedestrianResources.OrdinaryResidentArchetypes.Select(
                     item => item.DesignId),
                 eligible,
-                "Every current roaming pedestrian has the shared Hero V2 " +
-                "Avatar and canonical smoking sockets; none needs an " +
-                "arbitrary silhouette exclusion.");
+                "Every ordinary resident has the shared Hero V2 Avatar and " +
+                "canonical smoking sockets; none needs an arbitrary " +
+                "silhouette exclusion.");
             var observed = new HashSet<string>();
             var cell = new Vector2Int(7, 11);
             for (int seed = 0; seed < 128; seed++)

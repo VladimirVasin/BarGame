@@ -46,11 +46,13 @@ namespace BarPromenade.Tests.EditMode
                     case CityCourtyardPocketGeometry.NardiVariant:
                         expected = 2;
                         break;
-                    case CityCourtyardPocketGeometry.BicycleVariant:
                     case CityCourtyardPocketGeometry.ChairRepairVariant:
                     case CityCourtyardPocketGeometry.SweepingVariant:
                         expected = 1;
                         break;
+                    // The bicycle pocket lost its figure on 2026-09-16 at
+                    // the user's request; the bicycle itself stays.
+                    case CityCourtyardPocketGeometry.BicycleVariant:
                     default:
                         expected = 0;
                         break;
@@ -135,7 +137,7 @@ namespace BarPromenade.Tests.EditMode
                 lot.Cell,
                 lot.Center,
                 Vector3.forward,
-                CityCourtyardPocketGeometry.BicycleVariant,
+                CityCourtyardPocketGeometry.ChairRepairVariant,
                 CityDecorationPalette.ResidentialCool,
                 CityDecorationVisibilityTier.Near,
                 CityDecorationCollisionTier.Blocking);

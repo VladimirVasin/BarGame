@@ -228,10 +228,13 @@ namespace BarPromenade
             CityDecorationPlan decorations,
             ICollection<CityCourtyardResidentDescriptor> selected)
         {
+            // The bicycle-repair pocket keeps its upturned bicycle and
+            // nobody over it: the user withdrew that figure on 2026-09-16
+            // («убери NPC от перевёрнутого велосипеда пока что»). The
+            // variant's dock and cast below stay in place for its return.
             int[] activeVariants =
             {
                 NardiVariant,
-                BicycleRepairVariant,
                 ChairRepairVariant,
                 SweepingVariant
             };

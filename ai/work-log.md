@@ -8,23 +8,20 @@ Earlier entries: [`work-log-2026-08.md`](archive/work-log-2026-08.md).
 
 ## 2026-09-16 — Nightlife lane crossroads
 
-- The x = 10 lane dead-ended at node `(10,4)` between lots `(9,4)`/`(10,4)`,
-  one block short of the `(9..12,5)` street. Inserting the edge as a
-  required edge would have re-seeded the whole spanning tree and every loop
-  draw after it, so `CityBlueprint.AuthoredStreets` is appended after the
-  outer ring, like the ring itself. `default-coastal` authors
-  `(10,4)-(10,5)`; `(10,5)` is now a four-way crossroads and lot `(9,4)`
-  fronts north. Check:
+- The x = 10 lane dead-ended at node `(10,4)`, one block short of the
+  `(9..12,5)` street. A required edge would have re-seeded the spanning tree
+  and every loop draw after it, so `CityBlueprint.AuthoredStreets` is
+  appended after the outer ring. `default-coastal` authors `(10,4)-(10,5)`;
+  `(10,5)` is a four-way crossroads and lot `(9,4)` fronts north. Check:
   `CityLayoutGeneratorTests.DefaultCoastalBlueprint_AuthoredStreetTurnsTheNightlifeStubIntoACrossroads`
   with the canonical-home canary and `CityArchShelterTests` in the same run.
-- Empties on the shelter terrace: one new misc kind
-  `NightlifeShelterPlatformLitter` (v4.11, fifteen bottles standing and
-  lying plus cans in four tint parts) placed by a fifth, non-blocking
-  `PlatformLitter` prop. Its envelope must wrap the bedding, so the plan
-  cannot prove clearance; the sleeper exemption widened and
+- Empties on the shelter terrace: misc kind `NightlifeShelterPlatformLitter`
+  (v4.11, bottles and cans in four tint parts) placed by a fifth,
+  non-blocking `PlatformLitter` prop. Its envelope wraps the bedding, so the
+  plan cannot prove clearance; the sleeper exemption widened and
   `WorldBuilder_PlatformLitterLiesAroundTheBeddingClearOfTheWarmers` checks
-  the imported vertices against both warmers, the barrel and the mattress
-  instead. Surface contract grew to nineteen components. Checks: generator
+  the imported vertices against warmers, barrel and mattress.
+  Surface contract: nineteen parts. Checks: generator
   `--validate-only`, `CityMiscAssetSetup.RunBatch`, `CityMiscAssetTests`,
   `CityArchShelterTests`.
 - Shelter residents talk on the port principle: pure
@@ -34,20 +31,26 @@ Earlier entries: [`work-log-2026-08.md`](archive/work-log-2026-08.md).
   `CityArchShelterConversationController` on the shelter root owns one
   manual-clock bubble view over the residents' real heads, raised from
   `CityGameRoot` beside the guards because it needs the camera. 48 RU/EN
-  lines (`city.shelter.*`). The story bible's «молчат» was lifted by a §6
+  lines (`city.shelter.*`); the story bible's «молчат» was lifted by a §6
   row. Checks: `CityArchShelterConversationTests` (pools, order, deferral,
-  earshot, seek, and the controller on the built shelter),
-  `LocalizationCatalogTests`.
+  earshot, seek, built shelter), `LocalizationCatalogTests`.
 - The map's planned bar route (ordered `BarId` list, Dijkstra path,
   distance readout, «Очистить маршрут») is removed as obsolete: session API,
-  `Runtime/Map`, map commands/keys, four localization keys retired, bars stay
-  as named markers, the side panel keeps only the POI legend and `XYZ`.
-  Three world-gen tests that borrowed the pathfinder as a ruler now measure
-  the straight line, which on a shared frontage is the road distance. Checks:
+  `Runtime/Map`, map commands/keys and four localization keys retired; bars
+  stay as named markers. Three world-gen tests that used the pathfinder as
+  a ruler measure the straight line. Checks:
   `CityMapDistrictPresentationTests`, `CityMapAreaPresentationTests`,
   `GameSessionStateTests`, `LocalizationCatalogTests`,
   `CityLayoutGeneratorTests`, `PlayerHomeLayoutTests`,
   `CityTravelDistanceTests`.
+- Street pool = default NPC population: the body is adapted, not the
+  director. `CityPedestrianDefaultNpcBody` puts a registry ABOVE the
+  character root (a bound presentation is reset to unit scale; the body
+  keeps its `1.017` height scale), drops the village graph, keeps one
+  footstep root, binds no palette; sit/guard/shove read off the weigher
+  prefab asset. Six manifests flip `pool_eligible` by hand (outside the
+  signature). Bicycle-pocket figure withdrawn, dock kept. Checks:
+  `CityPedestrianRuntimeTests`, `CityCourtyardResidentTests`.
 
 ## 2026-09-15 — Eastern valley, litter, fair and default NPCs
 

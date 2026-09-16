@@ -59,8 +59,9 @@ namespace BarPromenade
 
         /// <summary>
         /// The resource paths the menu warms: the hero first, then every
-        /// distinct archetype prefab the City pedestrian pool loads. Derived
-        /// from the same catalog the roots read, never listed by hand.
+        /// default NPC catalog model the City pedestrian pool may build a
+        /// body from. Derived from the same catalog the roots read, never
+        /// listed by hand.
         /// </summary>
         public static IReadOnlyList<string> CollectMenuWarmupPaths()
         {

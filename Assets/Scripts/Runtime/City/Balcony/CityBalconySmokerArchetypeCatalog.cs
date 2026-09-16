@@ -7,9 +7,11 @@ namespace BarPromenade
 {
     /// <summary>
     /// Technical eligibility for reusing Hero V2 SmokeLoop. Every accepted
-    /// design is a current roaming archetype with the exact shared Avatar,
-    /// both foot anchors, and the canonical mouth/right-hand sockets, and
-    /// the cigarette hand prop prefab must be buildable.
+    /// design is one of the library's six ordinary residents - the street
+    /// set until 2026-09-16, when the pavement went to the default NPC
+    /// catalog and the balconies kept these bodies - with the exact shared
+    /// Avatar, both foot anchors and the canonical mouth/right-hand sockets,
+    /// and the cigarette hand prop prefab must be buildable.
     /// </summary>
     public static class CityBalconySmokerArchetypeCatalog
     {
@@ -18,18 +20,18 @@ namespace BarPromenade
             get
             {
                 var eligible = new List<string>();
-                IReadOnlyList<CityPedestrianArchetype> roaming =
-                    CityPedestrianResources.Archetypes;
-                for (int index = 0; index < roaming.Count; index++)
+                IReadOnlyList<CityPedestrianArchetype> residents =
+                    CityPedestrianResources.OrdinaryResidentArchetypes;
+                for (int index = 0; index < residents.Count; index++)
                 {
                     if (TryGetIneligibilityReason(
-                            roaming[index],
+                            residents[index],
                             out _))
                     {
                         continue;
                     }
 
-                    eligible.Add(roaming[index].DesignId);
+                    eligible.Add(residents[index].DesignId);
                 }
 
                 return new ReadOnlyCollection<string>(eligible);
@@ -60,9 +62,9 @@ namespace BarPromenade
             if (!CityPedestrianResources.TryGetArchetype(
                     designId,
                     out CityPedestrianArchetype archetype) ||
-                !CityPedestrianResources.Roams(designId))
+                !CityPedestrianResources.IsOrdinaryResident(designId))
             {
-                reason = "not a registered roaming archetype";
+                reason = "not one of the library's ordinary residents";
                 return true;
             }
 

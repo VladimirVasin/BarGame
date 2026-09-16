@@ -277,16 +277,19 @@ namespace BarPromenade.Tests.EditMode
                 },
                 locomotionClips.Select(
                     clip => NormalizeAnimationClipName(clip.name)));
-            // The street owns two clips per catalog design plus the rides
-            // those designs declare; everything else in the bank belongs to
-            // a design that does not roam, or to the placed role of one that
-            // also does.
-            int seatedCount = CityPedestrianResources.Archetypes
+            // The six ordinary residents own two street clips each plus the
+            // rides they declare; everything else in the bank belongs to a
+            // design that never roamed, or to the placed role of one that
+            // did. The street pool itself is the default NPC catalog since
+            // 2026-09-16 and owns nothing in this bank.
+            IReadOnlyList<CityPedestrianArchetype> residents =
+                CityPedestrianResources.OrdinaryResidentArchetypes;
+            int seatedCount = residents
                 .Count(archetype => archetype.CanRideBus);
             Assert.That(
                 locomotionClips,
                 Has.Length.EqualTo(
-                    (CityPedestrianResources.Archetypes.Count * 2) +
+                    (residents.Count * 2) +
                     seatedCount +
                     NonRoamingLocomotionClipCount));
             // Every clip loops except a transition between two postures,
@@ -457,9 +460,15 @@ namespace BarPromenade.Tests.EditMode
             // half and the bug is silent - the yard stops beating its carpet,
             // or the pavement fills with people beating carpets as they walk.
             Assert.That(
-                CityPedestrianResources.Roams(designId),
+                CityPedestrianResources.IsOrdinaryResident(designId),
                 Is.True,
-                $"'{designId}' was promoted to the street on 2026-09-02.");
+                $"'{designId}' was promoted to the street on 2026-09-02 " +
+                "and is one of the six ordinary residents.");
+            Assert.That(
+                CityPedestrianResources.Roams(designId),
+                Is.False,
+                "Since 2026-09-16 only default NPC catalog models roam; " +
+                "the residents keep their street gait for the balconies.");
             Assert.That(
                 CityPedestrianResources.TryGetArchetype(
                     designId,
@@ -470,8 +479,8 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 prefab,
                 Is.Not.Null,
-                $"'{designId}' roams, so its prefab must live under " +
-                "Assets/Resources where the pool can load it.");
+                $"'{designId}' resolves by path, so its prefab must live " +
+                "under Assets/Resources where the catalog can load it.");
             CityPedestrianAssetRegistry registry =
                 prefab.GetComponent<CityPedestrianAssetRegistry>();
             Assert.That(registry, Is.Not.Null);
@@ -803,16 +812,11 @@ namespace BarPromenade.Tests.EditMode
                     out _),
                 Is.False);
             Assert.That(
-                CityPedestrianResources.Archetypes.Any(archetype =>
+                CityPedestrianResources.AllArchetypes.Any(archetype =>
                     string.Equals(
                         archetype.DesignId,
                         PipebackRollerDesignId,
                         StringComparison.Ordinal)),
-                Is.False);
-            Assert.That(
-                CityPedestrianResources.LoadPrefabs().Any(candidate =>
-                    candidate.GetComponent<CityPedestrianAssetRegistry>()
-                        .DesignId == PipebackRollerDesignId),
                 Is.False);
             foreach (CityPedestrianPopulationProfile profile in new[]
                      {
@@ -831,15 +835,40 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
-        public void Catalog_OffersEveryRegisteredDesignToSpawnSelection()
+        public void Catalog_OffersEveryDefaultNpcModelToSpawnSelection()
         {
-            // The director pools exactly what LoadPrefabs returns, so proving
-            // the catalog and that array agree one-to-one is what makes each
-            // archetype reachable by the spawn seed.
+            // Since 2026-09-16 the street pool IS the default NPC catalog:
+            // one street archetype per catalog model, derived rather than
+            // registered, so a model added to the catalog is on the pavement
+            // with no edit here. The six ordinary residents and the five
+            // strange walkers still resolve, and none of them roams.
             IReadOnlyList<CityPedestrianArchetype> archetypes =
                 CityPedestrianResources.Archetypes;
             Assert.That(
                 archetypes.Select(archetype => archetype.DesignId).ToArray(),
+                Is.EqualTo(DefaultNpcCatalog.ModelIds.ToArray()),
+                "The street pool is the default NPC catalog, in its order.");
+            foreach (CityPedestrianArchetype archetype in archetypes)
+            {
+                Assert.That(
+                    archetype.PrefabResourcePath,
+                    Is.EqualTo(
+                        DefaultNpcCatalog.GetResourcePath(
+                            archetype.DesignId)));
+                Assert.That(
+                    archetype.CanRideBus,
+                    Is.True,
+                    "A default NPC rides Route 01 on the clip donor's " +
+                    "seated loop.");
+                Assert.That(
+                    CityPedestrianResources.Roams(archetype.DesignId),
+                    Is.True);
+            }
+
+            IReadOnlyList<CityPedestrianArchetype> residents =
+                CityPedestrianResources.OrdinaryResidentArchetypes;
+            Assert.That(
+                residents.Select(archetype => archetype.DesignId).ToArray(),
                 Is.EqualTo(
                     new[]
                     {
@@ -850,62 +879,31 @@ namespace BarPromenade.Tests.EditMode
                         CityPedestrianResources.CheckersPlayerDesignId,
                         CityPedestrianResources.MournerDesignId
                     }),
-                "The stable catalog order is part of the deterministic " +
-                "spawn contract.");
+                "The six ordinary residents keep their stable order: the " +
+                "balcony smokers are seeded against it.");
             Assert.That(
-                archetypes.Select(archetype => archetype.DesignId),
-                Is.SubsetOf(
-                    CityPedestrianResources.AllArchetypes.Select(
-                        archetype => archetype.DesignId)),
-                "The street pool must be part of the resolvable catalog.");
+                residents.All(archetype =>
+                    !CityPedestrianResources.Roams(archetype.DesignId)),
+                Is.True,
+                "No library design roams.");
             Assert.That(
                 CityPedestrianResources.AllArchetypes.Count,
-                Is.EqualTo(archetypes.Count + 5),
-                "Five designs resolve without roaming: the Lampshade " +
-                "Walker, the Kettle Hat walker, the Long-Arm Walker, the " +
-                "Helmet Lamp hopper and the Chair Carrier. The first four " +
-                "came off the street on 2026-09-02 and the Chair Carrier " +
-                "followed them the same day, when the user ruled that a man " +
-                "who carries a chair everywhere is not an ordinary man. " +
+                Is.EqualTo(archetypes.Count + residents.Count + 5),
+                "Five designs resolve without ever roaming again: the " +
+                "Lampshade Walker, the Kettle Hat walker, the Long-Arm " +
+                "Walker, the Helmet Lamp hopper and the Chair Carrier. " +
                 "They are deliberately kept in the project: the mother's " +
                 "teapot is built out of the Kettle Hat walker, and a design " +
                 "withdrawn from the street is not a design deleted from " +
-                "the world. The courtyard vignettes no longer cast any of " +
-                "them - that was the other half of the same change.");
+                "the world.");
 
-            GameObject[] prefabs = CityPedestrianResources.LoadPrefabs();
-            Assert.That(prefabs.Length, Is.EqualTo(archetypes.Count));
-            for (int index = 0; index < prefabs.Length; index++)
-            {
-                Assert.That(prefabs[index], Is.Not.Null);
-                CityPedestrianAssetRegistry registry =
-                    prefabs[index]
-                        .GetComponent<CityPedestrianAssetRegistry>();
-                Assert.That(
-                    registry,
-                    Is.Not.Null,
-                    $"'{archetypes[index].DesignId}' has no asset registry.");
-                Assert.That(
-                    registry.DesignId,
-                    Is.EqualTo(archetypes[index].DesignId),
-                    "Catalog order must match the loaded prefab order.");
-                Assert.That(registry.IdleClip, Is.Not.Null);
-                Assert.That(registry.WalkClip, Is.Not.Null);
-                Assert.That(
-                    NormalizeAnimationClipName(registry.IdleClip.name),
-                    Is.Not.EqualTo(
-                        NormalizeAnimationClipName(registry.WalkClip.name)));
-            }
+            CityPedestrianAssetRegistry donor =
+                CityPedestrianResources.LoadStreetClipDonor();
+            Assert.That(donor, Is.Not.Null);
+            Assert.That(donor.SitClip, Is.Not.Null);
+            Assert.That(donor.PersonalSpaceGuardClip, Is.Not.Null);
+            Assert.That(donor.PersonalSpaceShoveClip, Is.Not.Null);
 
-            Assert.That(
-                prefabs
-                    .Select(prefab => prefab
-                        .GetComponent<CityPedestrianAssetRegistry>()
-                        .IdleClip.name)
-                    .Distinct(StringComparer.Ordinal)
-                    .Count(),
-                Is.EqualTo(prefabs.Length),
-                "Every archetype must bind its own idle clip.");
             CityPedestrianPopulationProfile cityProfile =
                 CityPedestrianPopulationProfile.City;
             Assert.That(
@@ -913,57 +911,186 @@ namespace BarPromenade.Tests.EditMode
                 Is.GreaterThan(cityProfile.DaytimePopulation),
                 "The pool is intentionally larger than the active limit so " +
                 "repeat encounters can vary the visible mix.");
+            Assert.That(
+                DefaultNpcPopulation.PedestrianCount,
+                Is.EqualTo(cityProfile.PoolSize),
+                "The population registers one permanent walker per pooled " +
+                "City slot.");
 
+            // Slot i is the permanent walker city.pedestrian.i, whose model
+            // the whole-world allocation chose least-used first, so every
+            // catalog model is reachable by the spawn seed and the same
+            // person comes back on the next load.
             IReadOnlyList<CityPedestrianArchetype> composition =
                 CityPedestrianResources.CreatePoolComposition(
                     cityProfile.PoolSize);
             Assert.That(composition.Count, Is.EqualTo(cityProfile.PoolSize));
-            for (int index = 0; index < archetypes.Count; index++)
+            for (int index = 0; index < composition.Count; index++)
             {
-                CityPedestrianArchetype archetype = archetypes[index];
-                int instances = composition.Count(
-                    entry => string.Equals(
+                Assert.That(
+                    composition[index].DesignId,
+                    Is.EqualTo(
+                        DefaultNpcPopulation.GetAssignment(
+                            DefaultNpcPopulation.PedestrianId(index))
+                            .ModelId));
+            }
+
+            foreach (CityPedestrianArchetype archetype in archetypes)
+            {
+                Assert.That(
+                    composition.Count(entry => string.Equals(
                         entry.DesignId,
                         archetype.DesignId,
-                        StringComparison.Ordinal));
-                Assert.That(
-                    instances,
+                        StringComparison.Ordinal)),
                     Is.GreaterThanOrEqualTo(1),
                     $"'{archetype.DesignId}' must stay reachable by the " +
                     "spawn seed.");
-                Assert.That(
-                    instances,
-                    Is.LessThanOrEqualTo(archetype.MaximumPoolInstances),
-                    $"'{archetype.DesignId}' declares at most " +
-                    $"{archetype.MaximumPoolInstances} pooled instance(s).");
             }
 
-            // The worn lights in the world used to be bounded by keeping the
-            // one design that carries a lamp to a single pooled instance.
-            // Since 2026-09-02 the bound is stronger and worth stating as
-            // what it now is: NO design on the street wears a light at all.
-            // The hopper is the only one who ever did, and he is off the
-            // street. This is the assertion that would catch a promotion
-            // that quietly put a real-time Light back into the ambient
-            // crowd, which is a rendering cost per pedestrian, not a look.
             Assert.That(
-                composition.Count(
-                    entry => string.Equals(
-                        entry.DesignId,
-                        CityPedestrianResources.HelmetLampDesignId,
-                        StringComparison.Ordinal)),
-                Is.Zero,
+                composition.Select(entry => entry.DesignId)
+                    .Distinct(StringComparer.Ordinal)
+                    .Count(),
+                Is.EqualTo(Math.Min(archetypes.Count, composition.Count)),
+                "The allocation spreads the pool over every catalog model " +
+                "before repeating one.");
+            Assert.That(
+                composition.Any(entry => string.Equals(
+                    entry.DesignId,
+                    CityPedestrianResources.HelmetLampDesignId,
+                    StringComparison.Ordinal)),
+                Is.False,
                 "The hopper is off the street and must not be pooled.");
-            for (int index = 0; index < prefabs.Length; index++)
+        }
+
+        [Test]
+        public void PooledDefaultNpc_IsBuiltFromThePopulationAndWearsARegistry()
+        {
+            // The body the street pool actually spawns: a population walker
+            // dressed by the whole-world allocation, wearing a registry so
+            // the director drives it like any library design, with the
+            // village idle/walk pair of its own model and the clip donor's
+            // seated loop and personal-space pair.
+            GameObject parent = new GameObject("Pooled Default NPC Test");
+            try
             {
+                CityPedestrianAssetRegistry donor =
+                    CityPedestrianResources.LoadStreetClipDonor();
+                string characterId = DefaultNpcPopulation.PedestrianId(0);
+                DefaultNpcPopulation.Assignment assignment =
+                    DefaultNpcPopulation.GetAssignment(characterId);
                 CityPedestrianAssetRegistry registry =
-                    prefabs[index]
-                        .GetComponent<CityPedestrianAssetRegistry>();
+                    CityPedestrianDefaultNpcBody.Create(
+                        parent.transform,
+                        characterId,
+                        donor);
+
+                CityPedestrianDefaultNpcBody body =
+                    registry.GetComponent<CityPedestrianDefaultNpcBody>();
+                Assert.That(body, Is.Not.Null);
+                Assert.That(body.CharacterId, Is.EqualTo(characterId));
+                Assert.That(registry.DesignId, Is.EqualTo(assignment.ModelId));
                 Assert.That(
-                    registry.HeadLamp,
+                    CityPedestrianResources.Roams(registry.DesignId),
+                    Is.True);
+                Assert.That(
+                    registry.transform.localScale,
+                    Is.EqualTo(Vector3.one),
+                    "The presentation root is unit scale; the character " +
+                    "root below it carries the authored height scale.");
+                Assert.That(
+                    body.Character.transform.parent,
+                    Is.SameAs(registry.transform));
+                Assert.That(
+                    body.Character.IsInitialized,
+                    Is.False,
+                    "The village sampler hands the Animator to the " +
+                    "pedestrian presentation.");
+                Assert.That(registry.Animator, Is.SameAs(body.Character.Animator));
+                Assert.That(
+                    registry.IdleClip,
+                    Is.SameAs(body.Character.GetClip(VillageResidentAction.Idle)));
+                Assert.That(
+                    registry.WalkClip,
+                    Is.SameAs(body.Character.GetClip(VillageResidentAction.Walk)));
+                Assert.That(registry.SitClip, Is.SameAs(donor.SitClip));
+                Assert.That(
+                    registry.PersonalSpaceGuardClip,
+                    Is.SameAs(donor.PersonalSpaceGuardClip));
+                Assert.That(
+                    registry.PersonalSpaceShoveClip,
+                    Is.SameAs(donor.PersonalSpaceShoveClip));
+                Assert.That(registry.HeadAnchor, Is.Not.Null);
+                Assert.That(registry.PelvisAnchor, Is.Not.Null);
+                Assert.That(registry.LeftFootAnchor, Is.Not.Null);
+                Assert.That(registry.RightFootAnchor, Is.Not.Null);
+                Assert.That(registry.HeadLamp, Is.Null);
+                Assert.That(
+                    registry.RendererBindings,
+                    Is.Empty,
+                    "The wardrobe owns every colour; no palette variant " +
+                    "may repaint a coat the population chose.");
+                Assert.That(
+                    registry.Renderers.All(renderer => renderer.enabled),
+                    Is.True,
+                    "Only the garments the population equipped are listed.");
+                Assert.That(
+                    registry.Renderers.Count(renderer =>
+                        renderer.name.EndsWith("Sole.L", StringComparison.Ordinal)),
+                    Is.EqualTo(1),
+                    "Exactly one equipped left boot sole feeds the leg layer.");
+                Assert.That(
+                    registry.LocalBounds.size.y,
+                    Is.InRange(1.6f, 2.0f),
+                    "The standing body is measured in the presentation root.");
+                Assert.That(
+                    NpcFootstepSources.Prune().Contains(body.Character.transform),
+                    Is.False,
+                    "Steps are heard from the presentation root, not twice.");
+
+                var appearance =
+                    body.Character.GetComponent<DefaultNpcAppearance>();
+                var wardrobe = body.Character.GetComponent<NpcWardrobe>();
+                Assert.That(appearance.CurrentFaceId, Is.EqualTo(assignment.FaceId));
+                Assert.That(
+                    appearance.CurrentHairColorId,
+                    Is.EqualTo(assignment.HairColorId));
+                CollectionAssert.AreEquivalent(
+                    assignment.ItemIds,
+                    wardrobe.EquippedItemIds);
+                Assert.That(
+                    wardrobe.GetEquippedItem("apron"),
                     Is.Null,
-                    $"'{registry.DesignId}' roams and must not wear a " +
-                    "real-time light.");
+                    "A passer-by wears street clothes, never an apron.");
+
+                // The presentation drives it like any pooled walker: the
+                // graph builds on the village pair, the legs bind and the
+                // model root faces the wrapper's +Z after alignment.
+                CityPedestrianPresentation presentation =
+                    registry.gameObject.AddComponent<CityPedestrianPresentation>();
+                presentation.Initialize(registry);
+                Assert.That(presentation.IsInitialized, Is.True);
+                presentation.Advance(0.1f, true, true);
+                Assert.That(
+                    Vector3.Dot(
+                        registry.ModelRoot.forward,
+                        registry.transform.forward),
+                    Is.LessThan(0f).Or.GreaterThan(0f),
+                    "The model root has a facing.");
+                Assert.That(
+                    presentation.TrySeat(parent.transform,
+                        CityPedestrianResources.TryGetArchetype(
+                            registry.DesignId,
+                            out CityPedestrianArchetype archetype)
+                            ? archetype.SeatedRide
+                            : null),
+                    Is.True,
+                    "A default NPC can take a Route 01 seat.");
+                presentation.ClearSeat();
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(parent);
             }
         }
 
@@ -1488,14 +1615,18 @@ namespace BarPromenade.Tests.EditMode
                 CityPedestrianActor[] active = director.Actors
                     .Where(candidate => candidate.IsSpawned)
                     .ToArray();
-                // No design owns enough pooled instances to carry a full
-                // street alone, so a full population is always a mix.
+                // Every pooled body is a different permanent person, so a
+                // full population is always a mix of people even while the
+                // catalog holds a single model.
                 Assert.That(
-                    active.Select(candidate => candidate.DesignId)
+                    active.Select(candidate => candidate.Presentation
+                            .GetComponent<CityPedestrianDefaultNpcBody>()
+                            ?.CharacterId)
                         .Distinct(StringComparer.Ordinal)
                         .Count(),
-                    Is.GreaterThanOrEqualTo(3),
-                    "A full street must mix several registered designs.");
+                    Is.EqualTo(active.Length),
+                    "A full street must be made of distinct population " +
+                    "walkers.");
                 Assert.That(
                     active.Count(
                         candidate => string.Equals(
@@ -1767,10 +1898,14 @@ namespace BarPromenade.Tests.EditMode
                 // assertion. What the test is actually for is the difference
                 // between an AUTHORED gait and the distant-simulation
                 // fast-forward, so it asks the designs.
-                float slowest = CityPedestrianResources.Archetypes.Min(
-                    archetype => archetype.MinimumMovementSpeed);
-                float fastest = CityPedestrianResources.Archetypes.Max(
-                    archetype => archetype.MaximumMovementSpeed);
+                Assert.That(
+                    CityPedestrianResources.TryGetArchetype(
+                        CityPedestrianResources.BabushkaDesignId,
+                        out CityPedestrianArchetype pooledDesign),
+                    Is.True,
+                    "This director pools the legacy single prefab.");
+                float slowest = pooledDesign.MinimumMovementSpeed;
+                float fastest = pooledDesign.MaximumMovementSpeed;
                 Assert.That(
                     actor.LastDisplacement.magnitude,
                     Is.InRange(slowest - 0.01f, fastest + 0.01f),

@@ -915,35 +915,39 @@ namespace BarPromenade.Editor
             //
             // A staged design used to be defined by ABSENCE from the roaming
             // catalog, and this gate enforced that absence. Since 2026-09-02
-            // seven ordinary residents are BOTH: the babushka still beats her
-            // carpet in the drying yard where the yard planner places her by
-            // reference, and she also walks the pavement where the pool loads
-            // her by `Resources.Load`. One prefab serves both - the same
-            // asset, read through two different clip pairs - so it has to
-            // live where `Resources.Load` can find it.
+            // six ordinary residents are BOTH placed and resolvable by path:
+            // the babushka beats her carpet in the drying yard where the yard
+            // planner places her by reference, and the runtime catalog also
+            // loads the same prefab by `Resources.Load` - for the street
+            // until 2026-09-16, for the balcony smokers, the bar patrons and
+            // the courtyard vignettes still. Roaming stopped mattering here
+            // the day the street pool became the default NPC catalog; what
+            // still matters is the path.
             //
-            // The rule that replaces the old one: a design's prefab must sit
-            // on the side of the Resources boundary that matches whether the
-            // runtime catalog knows its design id. Being in the catalog while
-            // staying outside Resources is the failure that matters - the
-            // pool would resolve an archetype and then load nothing.
-            bool roams = CityPedestrianResources.Roams(descriptor.DesignId);
+            // The rule: a design's prefab must sit on the side of the
+            // Resources boundary that matches whether the runtime catalog
+            // resolves its design id to a resource path. Being in the catalog
+            // while staying outside Resources is the failure that matters -
+            // a caller would resolve an archetype and then load nothing.
+            bool resolvable = CityPedestrianResources.TryGetArchetype(
+                descriptor.DesignId,
+                out _);
             bool prefabInResources = descriptor.PrefabPath.StartsWith(
                 "Assets/Resources/",
                 StringComparison.OrdinalIgnoreCase);
-            if (roams != prefabInResources)
+            if (resolvable != prefabInResources)
             {
                 throw new InvalidOperationException(
                     $"Staged pedestrian '{descriptor.DesignId}' " +
-                    (roams
-                        ? "is in the roaming catalog, so its prefab must " +
-                          "live under Assets/Resources where the pool can " +
-                          "load it."
-                        : "is absent from the roaming catalog, so its " +
+                    (resolvable
+                        ? "is in the runtime catalog, so its prefab must " +
+                          "live under Assets/Resources where the catalog " +
+                          "can load it."
+                        : "is absent from the runtime catalog, so its " +
                           "prefab must stay outside Resources."));
             }
 
-            if (!roams &&
+            if (!resolvable &&
                 !descriptor.PrefabPath.StartsWith(
                     "Assets/Pedestrians/Staged/",
                     StringComparison.OrdinalIgnoreCase))
@@ -2896,9 +2900,9 @@ namespace BarPromenade.Editor
             // `staged` and `pool_eligible` used to be opposites; since the
             // seven residents were promoted they are independent. `staged`
             // still means 'authored by the shared library and placed by
-            // hand', and `pool_eligible` now means exactly what the runtime
-            // catalog says - see `ValidateDescriptorScope` for the same rule
-            // applied to where the prefab lives.
+            // hand', and `pool_eligible` means exactly what the runtime
+            // catalog says - which, since the street pool became the default
+            // NPC catalog on 2026-09-16, is `false` for every library design.
             if (descriptor.IsStaged && !manifest.staged)
             {
                 throw new InvalidOperationException(

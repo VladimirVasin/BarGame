@@ -51,6 +51,16 @@ namespace BarPromenade
                 CityPedestrianPopulationProfile.City);
         }
 
+        /// <summary>
+        /// The street pool proper. Since 2026-09-16 it is not loaded from
+        /// registry prefabs at all: slot <c>i</c> is the permanent walker
+        /// `DefaultNpcPopulation.PedestrianId(i)`, built through the default
+        /// NPC factory and dressed by the whole-world allocation, then given
+        /// a registry by <see cref="CityPedestrianDefaultNpcBody"/>. The
+        /// seated loop and the personal-space pair come from the library's
+        /// clip donor; a missing donor leaves the walkers on the pavement
+        /// and silent about their space rather than failing the city.
+        /// </summary>
         public static CityPedestrianDirector Create(
             Transform parent,
             CityPedestrianPlan plan,
@@ -64,12 +74,35 @@ namespace BarPromenade
                 throw new ArgumentNullException(nameof(profile));
             }
 
+            if (profile.PoolSize > DefaultNpcPopulation.PedestrianCount)
+            {
+                throw new InvalidOperationException(
+                    $"The '{profile.Id}' profile pools {profile.PoolSize} " +
+                    "walkers, but the population registers only " +
+                    $"{DefaultNpcPopulation.PedestrianCount}.");
+            }
+
+            CityPedestrianAssetRegistry donor =
+                CityPedestrianResources.LoadStreetClipDonor();
             return Create(
                 parent,
                 plan,
                 player,
                 walkableArea,
-                CityPedestrianResources.LoadPooledPrefabs(profile.PoolSize),
+                poolRoot =>
+                {
+                    var bodies = new List<CityPedestrianAssetRegistry>(
+                        profile.PoolSize);
+                    for (int index = 0; index < profile.PoolSize; index++)
+                    {
+                        bodies.Add(CityPedestrianDefaultNpcBody.Create(
+                            poolRoot,
+                            DefaultNpcPopulation.PedestrianId(index),
+                            donor));
+                    }
+
+                    return bodies;
+                },
                 nightModeProvider,
                 profile,
                 true);
@@ -101,12 +134,17 @@ namespace BarPromenade
                 plan,
                 player,
                 walkableArea,
-                presentationPrefabs,
+                poolRoot => InstantiatePrefabs(presentationPrefabs, poolRoot),
                 nightModeProvider,
                 resolved,
                 false);
         }
 
+        /// <summary>
+        /// A pool of explicit registry prefabs: staged vignettes and tests
+        /// that want a particular library body on a route. Nothing here
+        /// consults the population or the street catalog.
+        /// </summary>
         public static CityPedestrianDirector Create(
             Transform parent,
             CityPedestrianPlan plan,
@@ -121,10 +159,45 @@ namespace BarPromenade
                 plan,
                 player,
                 walkableArea,
-                presentationPrefabs,
+                poolRoot => InstantiatePrefabs(presentationPrefabs, poolRoot),
                 nightModeProvider,
                 profile ?? CityPedestrianPopulationProfile.City,
                 false);
+        }
+
+        private static List<CityPedestrianAssetRegistry> InstantiatePrefabs(
+            IReadOnlyList<GameObject> presentationPrefabs,
+            Transform poolRoot)
+        {
+            var registries = new List<CityPedestrianAssetRegistry>(
+                presentationPrefabs != null ? presentationPrefabs.Count : 0);
+            for (int index = 0;
+                 presentationPrefabs != null &&
+                 index < presentationPrefabs.Count;
+                 index++)
+            {
+                GameObject presentationPrefab = presentationPrefabs[index];
+                if (presentationPrefab == null)
+                {
+                    throw new InvalidOperationException(
+                        $"City pedestrian presentation prefab " +
+                        $"{index + 1} is missing.");
+                }
+
+                if (!CityPedestrianResources.TryInstantiate(
+                        presentationPrefab,
+                        poolRoot,
+                        out CityPedestrianAssetRegistry registry))
+                {
+                    throw new InvalidOperationException(
+                        "The city pedestrian presentation prefab has no " +
+                        "CityPedestrianAssetRegistry on its root.");
+                }
+
+                registries.Add(registry);
+            }
+
+            return registries;
         }
 
         private static CityPedestrianDirector Create(
@@ -132,7 +205,7 @@ namespace BarPromenade
             CityPedestrianPlan plan,
             Transform player,
             IWalkableArea walkableArea,
-            IReadOnlyList<GameObject> presentationPrefabs,
+            Func<Transform, List<CityPedestrianAssetRegistry>> buildPool,
             Func<bool> nightModeProvider,
             CityPedestrianPopulationProfile profile,
             bool requireCatalogComposition)
@@ -165,16 +238,6 @@ namespace BarPromenade
             int slotCount = Mathf.Min(
                 plan.Count,
                 profile.DaytimePopulation);
-            int presentationCount = presentationPrefabs != null
-                ? presentationPrefabs.Count
-                : 0;
-            if (slotCount > 0 && presentationCount == 0)
-            {
-                throw new InvalidOperationException(
-                    "At least one city pedestrian presentation prefab is " +
-                    "required when the plan has an actor slot.");
-            }
-
             CityPedestrianCollision.EnsureRuntimePolicy();
 
             GameObject runtimeRoot = new GameObject(RuntimeRootName);
@@ -208,33 +271,25 @@ namespace BarPromenade
                     actors.Add(actor);
                 }
 
-                var presentations =
-                    new List<CityPedestrianPresentation>(
-                        presentationPrefabs != null
-                            ? presentationPrefabs.Count
-                            : 0);
-                for (int index = 0;
-                     presentationPrefabs != null &&
-                     index < presentationPrefabs.Count;
-                     index++)
+                List<CityPedestrianAssetRegistry> pooledBodies =
+                    buildPool(modelPoolRoot.transform);
+                if (slotCount > 0 && pooledBodies.Count == 0)
                 {
-                    GameObject presentationPrefab =
-                        presentationPrefabs[index];
-                    if (presentationPrefab == null)
-                    {
-                        throw new InvalidOperationException(
-                            $"City pedestrian presentation prefab " +
-                            $"{index + 1} is missing.");
-                    }
+                    throw new InvalidOperationException(
+                        "At least one city pedestrian presentation is " +
+                        "required when the plan has an actor slot.");
+                }
 
-                    if (!CityPedestrianResources.TryInstantiate(
-                            presentationPrefab,
-                            modelPoolRoot.transform,
-                            out CityPedestrianAssetRegistry registry))
+                var presentations =
+                    new List<CityPedestrianPresentation>(pooledBodies.Count);
+                for (int index = 0; index < pooledBodies.Count; index++)
+                {
+                    CityPedestrianAssetRegistry registry = pooledBodies[index];
+                    if (registry == null)
                     {
                         throw new InvalidOperationException(
-                            "The city pedestrian presentation prefab has no " +
-                            "CityPedestrianAssetRegistry on its root.");
+                            $"City pedestrian pooled body {index + 1} is " +
+                            "missing its registry.");
                     }
 
                     ValidatePassivePresentation(registry);
@@ -251,11 +306,13 @@ namespace BarPromenade
                     {
                         if (!CityPedestrianResources.TryGetArchetype(
                                 registry.DesignId,
-                                out CityPedestrianArchetype archetype))
+                                out CityPedestrianArchetype archetype) ||
+                            !CityPedestrianResources.Roams(registry.DesignId))
                         {
                             throw new InvalidOperationException(
                                 $"Pedestrian design '{registry.DesignId}' " +
-                                "is not registered in the ordered catalog.");
+                                "is not a street design: only default NPC " +
+                                "catalog models roam.");
                         }
 
                         // The boil is declared twice on purpose - on the
@@ -304,9 +361,14 @@ namespace BarPromenade
                         }
                     }
 
-                    registry.gameObject.name =
-                        $"Pedestrian Model {index + 1:00} " +
-                        $"({registry.DesignId})";
+                    // A population body already names itself after its
+                    // permanent identity; a prefab copy is numbered here.
+                    if (registry.GetComponent<CityPedestrianDefaultNpcBody>() == null)
+                    {
+                        registry.gameObject.name =
+                            $"Pedestrian Model {index + 1:00} " +
+                            $"({registry.DesignId})";
+                    }
 
                     // An anonymous body carries nothing in its hands by
                     // construction: every hand prop is a separate prefab a

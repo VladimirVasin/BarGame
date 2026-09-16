@@ -339,7 +339,8 @@ namespace BarPromenade.Tests.PlayMode
         private static void AssertPopulationAllocation(Transform parent)
         {
             string[] ids = DefaultNpcPopulation.Characters.Select(character => character.Id).ToArray();
-            Assert.That(ids.Length, Is.EqualTo(13));
+            Assert.That(ids.Length, Is.EqualTo(13 + DefaultNpcPopulation.PedestrianCount),
+                "Thirteen placed roles plus one permanent walker per pooled City slot.");
             Assert.That(ids.Distinct().Count(), Is.EqualTo(ids.Length));
             var remembered = new System.Collections.Generic.Dictionary<string, string>();
             var visibleLooks = new System.Collections.Generic.HashSet<string>();
@@ -352,7 +353,9 @@ namespace BarPromenade.Tests.PlayMode
                     var appearance = actor.GetComponent<DefaultNpcAppearance>();
                     var wardrobe = actor.GetComponent<NpcWardrobe>();
                     Assert.That(assignment.CharacterId, Is.EqualTo(id));
-                    Assert.That(assignment.ModelId, Is.EqualTo(DefaultNpcPopulation.Characters.Single(c => c.Id == id).ModelId));
+                    DefaultNpcPopulation.CharacterDefinition definition = DefaultNpcPopulation.Characters.Single(c => c.Id == id);
+                    if (!definition.UsesAnyCatalogModel)
+                        Assert.That(assignment.ModelId, Is.EqualTo(definition.ModelId));
                     Assert.That(DefaultNpcCatalog.ModelIds, Does.Contain(assignment.ModelId));
                     Assert.That(appearance.AppearanceKey, Is.EqualTo(id));
                     Assert.That(appearance.CurrentFaceId, Is.EqualTo(assignment.FaceId));

@@ -285,9 +285,15 @@ namespace BarPromenade.Tests.EditMode
                 Is.SameAs(prefab),
                 "The weighbridge and the street must share one prefab.");
             Assert.That(
-                CityPedestrianResources.Roams(
+                CityPedestrianResources.IsOrdinaryResident(
                     WeighbridgeAttendantProvider.DesignId),
                 Is.True);
+            Assert.That(
+                CityPedestrianResources.Roams(
+                    WeighbridgeAttendantProvider.DesignId),
+                Is.False,
+                "Since 2026-09-16 the street pool is the default NPC " +
+                "catalog; the resident keeps the placed role.");
         }
 
         private static float DistancePointToSegment(

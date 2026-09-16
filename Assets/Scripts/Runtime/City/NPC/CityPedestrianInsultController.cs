@@ -308,10 +308,21 @@ namespace BarPromenade
             }
 
             CityPedestrianPresentation owner = nearest.Presentation;
-            NpcSpeaker speaker = NpcSpeaker.FromRegistry(
-                owner,
-                owner.Registry,
-                NpcEarshotProfile.Conversation);
+            // A population walker speaks in a voice of its own: every pooled
+            // body shares one catalog design id, so the voice is keyed by
+            // the permanent person instead of by the model.
+            CityPedestrianDefaultNpcBody person =
+                owner.GetComponent<CityPedestrianDefaultNpcBody>();
+            NpcSpeaker speaker = person != null
+                ? new NpcSpeaker(
+                    owner,
+                    owner.Registry.HeadAnchor,
+                    person.CharacterId,
+                    NpcEarshotProfile.Conversation)
+                : NpcSpeaker.FromRegistry(
+                    owner,
+                    owner.Registry,
+                    NpcEarshotProfile.Conversation);
             if (!bubbles.DeclareSpeaker(speaker))
             {
                 // The view is full. Not this walker's fault: he keeps his

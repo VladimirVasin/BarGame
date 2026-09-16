@@ -276,15 +276,26 @@ namespace BarPromenade.Tests.EditMode
             // band applies to every seated clip a design owns.
             Assert.That(
                 riders,
+                Is.EqualTo(archetypes.Count),
+                "Every street design rides since 2026-09-16: the pool is " +
+                "the default NPC catalog and each model sits on the clip " +
+                "donor's seated loop. Before that two of the six library " +
+                "residents rode - the Weigh Attendant and the Cemetery " +
+                "Watchman - and the measurements that kept the other four " +
+                "off the cushion still hold for their bodies.");
+            int residentRiders = 0;
+            foreach (CityPedestrianArchetype resident in
+                     CityPedestrianResources.OrdinaryResidentArchetypes)
+            {
+                if (resident.CanRideBus)
+                {
+                    residentRiders++;
+                }
+            }
+            Assert.That(
+                residentRiders,
                 Is.EqualTo(2),
-                "Two of the six street designs ride: the Weigh Attendant " +
-                "and the Cemetery Watchman. The other four walk to the stop " +
-                "and watch the bus go. It was three of eight until " +
-                "2026-09-02, when the fisherman and the Chair Carrier both " +
-                "came off the street - the fisherman because he is a story " +
-                "figure and the Chair Carrier because the user ruled him " +
-                "strange. The Chair Carrier still DECLARES his ride; " +
-                "nothing on the street asks him for it any more.");
+                "Two of the six ordinary residents declare a ride.");
             Assert.That(
                 CityPedestrianResources.TryGetArchetype(
                     CityPedestrianResources.HelmetLampDesignId,

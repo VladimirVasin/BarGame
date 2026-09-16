@@ -14,6 +14,17 @@ namespace BarPromenade
         public const string VillageStationWorker = "village.station-worker";
         private static readonly string[] FairIds = { "fair.vendor.0", "fair.vendor.1", "fair.vendor.2", "fair.vendor.3" };
         private static readonly string[] PortIds = { "port.captain", "port.deckhand", "port.crane.west", "port.crane.east", "port.docker" };
+        /// <summary>
+        /// The street pool since 2026-09-16: one permanent identity per pooled
+        /// City walker, so a repeat encounter meets the same person. They declare
+        /// no model - <see cref="AnyCatalogModel"/> - and take the least-used
+        /// catalog model, which is how a model added to <see cref="DefaultNpcCatalog"/>
+        /// joins the pavement without a registration here.
+        /// </summary>
+        public const string PedestrianIdPrefix = "city.pedestrian.";
+        public static int PedestrianCount => CityPedestrianPopulationProfile.City.PoolSize;
+        /// <summary>A character whose model the population picks from the whole catalog.</summary>
+        public const string AnyCatalogModel = null;
 
         public sealed class SlotConstraint
         {
@@ -29,7 +40,9 @@ namespace BarPromenade
         public sealed class CharacterDefinition
         {
             public string Id { get; }
+            /// <summary>A catalog model, or <see cref="AnyCatalogModel"/> to let the population choose one.</summary>
             public string ModelId { get; }
+            public bool UsesAnyCatalogModel => ModelId == AnyCatalogModel;
             public IReadOnlyList<SlotConstraint> Slots { get; }
             public CharacterDefinition(string id, string modelId, params SlotConstraint[] slots)
             {
@@ -46,9 +59,9 @@ namespace BarPromenade
             public string HairColorId { get; }
             public IReadOnlyList<string> ItemIds { get; }
             public string VisibleSignature { get; }
-            internal Assignment(CharacterDefinition character, string face, string hairColor, string[] items, string signature)
+            internal Assignment(CharacterDefinition character, string modelId, string face, string hairColor, string[] items, string signature)
             {
-                CharacterId = character.Id; ModelId = character.ModelId; FaceId = face; HairColorId = hairColor;
+                CharacterId = character.Id; ModelId = modelId; FaceId = face; HairColorId = hairColor;
                 ItemIds = Array.AsReadOnly((string[])items.Clone()); VisibleSignature = signature;
             }
         }
@@ -67,6 +80,13 @@ namespace BarPromenade
 
         public static string FairVendorId(int index) => FairIds[index];
         public static string PortWorkerId(int index) => PortIds[index];
+
+        public static string PedestrianId(int index)
+        {
+            if (index < 0 || index >= PedestrianCount)
+                throw new ArgumentOutOfRangeException(nameof(index), "The street pool holds " + PedestrianCount + " permanent walkers.");
+            return PedestrianIdPrefix + index.ToString("00");
+        }
 
         private static CharacterDefinition[] BuildCharacters()
         {
@@ -100,6 +120,15 @@ namespace BarPromenade
                 new SlotConstraint("outerwear", "outerwear.warm"), new SlotConstraint("boots", "boots.warm"),
                 new SlotConstraint("headwear", "headwear.warm"), new SlotConstraint("scarf", "scarf.warm"),
                 new SlotConstraint("gloves", "gloves.work"), new SlotConstraint("apron", new string[] { null })));
+            // Passers-by: any catalog model, street clothes only. Every worn
+            // slot stays free so the allocator spreads coats, boots and hats;
+            // an apron is work wear and a bare head, hands or neck are allowed.
+            for (int i = 0; i < PedestrianCount; i++)
+                roster.Add(new CharacterDefinition(PedestrianId(i), AnyCatalogModel,
+                    new SlotConstraint("apron", new string[] { null }),
+                    new SlotConstraint("gloves", null, "gloves.work"),
+                    new SlotConstraint("scarf", null, "scarf.warm"),
+                    new SlotConstraint("headwear", null, "headwear.everyday", "headwear.work", "headwear.warm")));
             roster.Sort((a, b) => string.CompareOrdinal(a.Id, b.Id));
             return roster.ToArray();
         }
@@ -121,8 +150,11 @@ namespace BarPromenade
             {
                 if (string.IsNullOrWhiteSpace(character.Id) || !identities.Add(character.Id))
                     throw new InvalidOperationException("Default NPC character IDs must be unique.");
-                if (!models.ContainsKey(character.ModelId)) models.Add(character.ModelId, ReadModel(character.ModelId, signature));
-                signature.Append(character.Id).Append(':').Append(character.ModelId).Append(';');
+                // A free choice ranges over the whole catalog, so every model is
+                // read and every model's authored bindings enter the signature.
+                foreach (string modelId in character.UsesAnyCatalogModel ? DefaultNpcCatalog.ModelIds : new[] { character.ModelId })
+                    if (!models.ContainsKey(modelId)) models.Add(modelId, ReadModel(modelId, signature));
+                signature.Append(character.Id).Append(':').Append(character.ModelId ?? "<any>").Append(';');
                 foreach (SlotConstraint slot in character.Slots)
                 {
                     signature.Append(slot.Slot).Append('=');
@@ -133,9 +165,17 @@ namespace BarPromenade
             if (catalog == cachedCatalog && assignments != null) return;
             var next = new List<Assignment>();
             var usage = new Dictionary<string, int>(StringComparer.Ordinal);
+            var modelUsage = new Dictionary<string, int>(StringComparer.Ordinal);
+            string[] catalogModels = new List<string>(DefaultNpcCatalog.ModelIds).ToArray();
             foreach (CharacterDefinition character in Characters)
             {
-                ModelDefinition model = models[character.ModelId];
+                // The model is the first choice and follows the same rule as the
+                // rest: an unused catalog model first, then the least used one, so
+                // a second model splits the pavement instead of waiting its turn.
+                string modelId = character.UsesAnyCatalogModel
+                    ? DefaultNpcAppearanceSelection.Choose(character.Id, new[] { catalogModels }, choice => choice[0], modelUsage)[0]
+                    : character.ModelId;
+                ModelDefinition model = models[modelId];
                 var dimensions = new List<string[]> { model.Faces, model.HairColors };
                 var constraints = new Dictionary<string, SlotConstraint>(StringComparer.Ordinal);
                 foreach (SlotConstraint slot in character.Slots)
@@ -156,11 +196,11 @@ namespace BarPromenade
                     }
                     dimensions.Add(new List<string>(allowed).ToArray());
                 }
-                string Visible(string[] candidate) => VisibleSignature(character.ModelId, model, candidate);
+                string Visible(string[] candidate) => VisibleSignature(modelId, model, candidate);
                 string[] chosen = DefaultNpcAppearanceSelection.Choose(character.Id, dimensions, Visible, usage);
                 var equipped = new List<string>();
                 for (int i = 2; i < chosen.Length; i++) if (!string.IsNullOrEmpty(chosen[i])) equipped.Add(chosen[i]);
-                next.Add(new Assignment(character, chosen[0], chosen[1], equipped.ToArray(), Visible(chosen)));
+                next.Add(new Assignment(character, modelId, chosen[0], chosen[1], equipped.ToArray(), Visible(chosen)));
             }
             assignments = next.AsReadOnly(); cachedCatalog = catalog;
         }

@@ -597,9 +597,10 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(observed.Count, Is.GreaterThanOrEqualTo(2));
             Assert.That(
                 observed.Count,
-                Is.EqualTo(CityPedestrianResources.Archetypes.Count),
-                "Every current roaming archetype should remain compatible " +
-                "with the shared smoking rig.");
+                Is.EqualTo(
+                    CityPedestrianResources.OrdinaryResidentArchetypes.Count),
+                "Every ordinary resident should remain compatible with " +
+                "the shared smoking rig.");
             for (int index = 0; index < observed.Count; index++)
             {
                 string designId = observed[index];

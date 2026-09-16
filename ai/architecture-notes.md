@@ -4,6 +4,24 @@
 
 ## Current facts
 
+- **Accepted — 2026-09-16, street pool is the default NPC catalog:**
+  User: passers-by come only from the default NPC set and obey its
+  allocation; a new catalog model joins them at once. `DefaultNpcPopulation`
+  registers `city.pedestrian.00..12` (one per City pool slot; Home uses the
+  first eight) with `AnyCatalogModel`: the model is chosen least-used first
+  over `DefaultNpcCatalog.ModelIds`, then face/hair/street clothes (no apron;
+  hat/scarf/gloves optional). `CityPedestrianResources.Archetypes` derives
+  one street archetype per catalog model; `CityPedestrianDefaultNpcBody`
+  wraps `CreateForCharacter` (aligned, village graph released, one footstep
+  root) in a registry: own village `Idle`/`Walk`, no palette bindings,
+  equipped boot soles feed the leg layer, insult voice keyed by person. The
+  weigher is the clip donor for the seated loop and guard/shove (same rig
+  and paths; her lift `0.056` is the number to tune). The six residents are
+  `OrdinaryResidentArchetypes`: placed roles, balcony smokers, donor; no
+  library design roams (`pool_eligible=false`, prefab side = resolvable).
+  Checks: `CityPedestrianRuntimeTests`, `CityBusStopWaitPlannerTests`,
+  `CityBalconySmokerTests`, `AreaAssetWarmupTests`, placed-role tests.
+
 - **Accepted — 2026-09-15, default NPC catalog:**
   `DefaultNpcCatalog` allowlists models; bespoke models/pool extension needs
   a user request. `DefaultNpcPopulation` owns permanent IDs,

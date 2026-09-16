@@ -835,31 +835,37 @@ namespace BarPromenade
                 deltaTime);
         }
 
+        /// <summary>
+        /// The boot soles the leg layer probes, by the names every rig in
+        /// the project gives them: a library design's `LeftBootSole` /
+        /// `ShoeSole.L`, a default NPC's equipped `CLO_Boot_*Sole.L`. Read
+        /// from the registry's renderer list rather than its palette
+        /// bindings, because a population body binds no palette - its
+        /// wardrobe owns the colours - and its visible renderers are the
+        /// garments the population equipped.
+        /// </summary>
         private void CollectSoleRenderers(
             out List<SkinnedMeshRenderer> leftSoles,
             out List<SkinnedMeshRenderer> rightSoles)
         {
             leftSoles = new List<SkinnedMeshRenderer>();
             rightSoles = new List<SkinnedMeshRenderer>();
-            IReadOnlyList<CityPedestrianRendererBinding> bindings =
-                registry.RendererBindings;
-            for (int index = 0; index < bindings.Count; index++)
+            IReadOnlyList<Renderer> renderers = registry.Renderers;
+            for (int index = 0; index < renderers.Count; index++)
             {
-                CityPedestrianRendererBinding binding = bindings[index];
-                if (binding == null ||
-                    !(binding.Renderer is SkinnedMeshRenderer skinned))
+                if (!(renderers[index] is SkinnedMeshRenderer skinned))
                 {
                     continue;
                 }
 
-                string rendererName = binding.RendererName ?? string.Empty;
+                string rendererName = skinned.name ?? string.Empty;
                 if (rendererName.IndexOf("LeftBootSole", StringComparison.Ordinal) >= 0 ||
-                    rendererName.IndexOf("ShoeSole.L", StringComparison.Ordinal) >= 0)
+                    rendererName.EndsWith("Sole.L", StringComparison.Ordinal))
                 {
                     leftSoles.Add(skinned);
                 }
                 else if (rendererName.IndexOf("RightBootSole", StringComparison.Ordinal) >= 0 ||
-                         rendererName.IndexOf("ShoeSole.R", StringComparison.Ordinal) >= 0)
+                         rendererName.EndsWith("Sole.R", StringComparison.Ordinal))
                 {
                     rightSoles.Add(skinned);
                 }

@@ -163,7 +163,7 @@ namespace BarPromenade.Tests.EditMode
                 Is.EqualTo(PlayerModelPath));
 
             var ambientPrefabs = new HashSet<GameObject>(
-                CityPedestrianResources.Archetypes
+                CityPedestrianResources.AllArchetypes
                     .Select(archetype => Resources.Load<GameObject>(
                         archetype.PrefabResourcePath))
                     .Where(prefab => prefab != null));

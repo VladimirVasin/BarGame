@@ -788,6 +788,10 @@ The vertical slice contains:
   capped at one slot and uses much longer `15-35 s` initial and `30-70 s`
   replacement delays without distant acceleration; the clock never removes an
   already active dusk walker.
+  Every pooled body is the permanent default NPC `city.pedestrian.i` (`13`
+  City, first `8` Home): model least-used over the catalog, street wear,
+  own village gait; the weigher lends sit and guard/shove. The six library
+  residents left the street on `2026-09-16`.
   A slot's `CharacterController` is enabled only after a unique, obstacle-safe
   spawn and disabled before pooling. The dedicated layer collides with the player,
   ignores other pedestrians and is excluded from camera/interaction queries.
@@ -795,8 +799,8 @@ The vertical slice contains:
   `60` through `80` selects the Guard hand at `1 m`, and above `80` selects a
   Shove at `0.75 m`. One reaction at a time stops and turns the walker, samples
   a dedicated one-second action, then resumes its graph route. The isolated
-  `CityPedestrianPersonalSpace` bank contains Guard/Shove for all six roaming
-  designs: the free left palm acts while the right hand keeps its grip pose
+  `CityPedestrianPersonalSpace` bank contains Guard/Shove for the six ordinary
+  residents: the free left palm acts while the right hand keeps its grip pose
   (a roaming walker holds no prop in it; see the hand-prop library below).
   Contact occurs at one third of the action. A strong contact
   requests a collision-constrained `0.4 m` push over `0.3 s` and a modest balance
@@ -1268,8 +1272,8 @@ The vertical slice contains:
   Unload→two-hand carry→outdoor scales→release/settle/nod→support; empty=0.
   Three approvals/put-aways/clearance gate loading.
   Receiver/seamer retain fixed `NpcWardrobe` outfits; body/ink/face/hair/glasses
-  stay independent. The shared `ordinary-worker-v1` supplies 13 existing people:
-  four fair, five port, two factory, driver and village station worker.
+  stay independent. The shared `ordinary-worker-v1` supplies 13 placed people:
+  fair, port, factory, driver, village; plus 13 walkers.
   Four faces, three hair colors, 18 items/8 slots/3 presets; hero/NPC hands +20%,
   slim depth, fixed wrists. `NpcWardrobe` owns coverage; `NpcHandPose` bends
   bare/gloved fingers around wheel tubes. `DefaultNpcPopulation` assigns stable
@@ -1420,8 +1424,8 @@ The vertical slice contains:
   and drying lines; because those proxies enter the shared static-collision
   plan before wind dressing, laundry moves or is omitted instead of intersecting
   a pocket. Selected active pockets may receive generic, colliderless
-  residents, capped at five; balcony-basket and quiet pocket compositions remain unoccupied,
-  and fringe Yards receive no residents. They add no text, interaction, light,
+  residents, capped at five; bicycle (since `2026-09-16`), balcony-basket and
+  quiet pockets stay unoccupied; fringe Yards get none. They add no text, interaction, light,
   audio or story reaction;
 - every ordinary Residential building contributes one deterministic passive
   balcony-smoker candidate, while a per-session director rolls local

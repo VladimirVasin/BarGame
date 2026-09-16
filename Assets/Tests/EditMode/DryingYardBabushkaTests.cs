@@ -411,9 +411,15 @@ namespace BarPromenade.Tests.EditMode
                 Is.SameAs(prefab),
                 "The yard and the street must share one prefab asset.");
             Assert.That(
-                CityPedestrianResources.Roams(
+                CityPedestrianResources.IsOrdinaryResident(
                     DryingYardBabushkaProvider.DesignId),
                 Is.True);
+            Assert.That(
+                CityPedestrianResources.Roams(
+                    DryingYardBabushkaProvider.DesignId),
+                Is.False,
+                "Since 2026-09-16 the street pool is the default NPC " +
+                "catalog; the resident keeps the placed role.");
         }
 
         /// <summary>
