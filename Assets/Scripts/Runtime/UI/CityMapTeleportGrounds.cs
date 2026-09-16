@@ -179,7 +179,20 @@ namespace BarPromenade
             // Built on first use, not in the constructor: it is the same
             // mask CityWorldBuilder makes, and building it costs a full
             // layout validation nobody needs unless a teleport happens.
-            return walkableArea ??= RoadWalkableArea.FromLayout(layout);
+            if (walkableArea == null)
+            {
+                walkableArea = RoadWalkableArea.FromLayout(layout);
+                // The fair straddles the absent road strip between its two
+                // lots, which no cell ground covers; the world admits that
+                // ground after the buildings, and so must the chart.
+                CityFairPlan fair = CityFairPlanner.Create(layout);
+                if (fair.IsEnabled)
+                {
+                    walkableArea.Add(fair.Bounds);
+                }
+            }
+
+            return walkableArea;
         }
 
         private static List<Rect> CollectObstacleFootprints(

@@ -30,6 +30,10 @@ namespace BarPromenade
             new Vector3(2.193f, BeddingMattressTop, 1.153f);
         private static readonly Vector3 ClutterSize =
             new Vector3(1.35f, 0.90f, 1.10f);
+        // Conservative envelope of the measured 3.142 x 0.300 x 2.797 m
+        // platform-litter assembly, which is authored centred on its root.
+        private static readonly Vector3 PlatformLitterSize =
+            new Vector3(3.20f, 0.32f, 2.86f);
 
         public static CityArchShelterPlan Create(CityLayout layout)
         {
@@ -213,8 +217,19 @@ namespace BarPromenade
                         upperDirection * 1.65f,
                         3.35f),
                     sheltered.center.y + 0.55f));
+            // The empties surround the bedding on three sides and stop
+            // short of the barrel and both warmers; the authored offsets
+            // in build-city-misc-3d-model.py assume exactly this root.
+            Vector3 platformLitterBase = OnSurface(
+                placement,
+                new Vector2(
+                    ClampToUpperSide(
+                        placement,
+                        barrelBase.x + upperDirection * 2.67f,
+                        PlatformLitterSize.x * 0.5f + 0.30f),
+                    sheltered.center.y + 0.05f));
 
-            return new List<CityArchShelterPropDescriptor>(4)
+            return new List<CityArchShelterPropDescriptor>(5)
             {
                 CreateProp(
                     "burn-barrel",
@@ -247,7 +262,15 @@ namespace BarPromenade
                     clutterBase,
                     Quaternion.Euler(0f, 9f, 0f),
                     ClutterSize,
-                    true)
+                    true),
+                CreateProp(
+                    "platform-litter",
+                    CityArchShelterPropKind.PlatformLitter,
+                    0,
+                    platformLitterBase,
+                    Quaternion.identity,
+                    PlatformLitterSize,
+                    false)
             };
         }
 

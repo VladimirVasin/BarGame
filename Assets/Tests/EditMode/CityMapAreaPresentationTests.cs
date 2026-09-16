@@ -186,6 +186,11 @@ namespace BarPromenade.Tests.EditMode
                         1),
                     "City should contain one point per legacy map object, " +
                     "one per open-area target and the current player.");
+                Assert.That(
+                    controller.PointsOfInterest.All(point => point.HasLotCell),
+                    Is.True,
+                    "The legacy layout builds none of the named places, " +
+                    "which is what keeps the count above lot-shaped.");
                 AssertUniqueFinitePoints(cityPoints, GameAreaId.City);
                 AssertUniqueFinitePoints(
                     mountainPoints,
@@ -221,7 +226,8 @@ namespace BarPromenade.Tests.EditMode
                     {
                         CityMapPointOfInterest pointOfInterest =
                             controller.PointsOfInterest.FirstOrDefault(
-                                point => point.LotCell == lot.Cell);
+                                point => point.HasLotCell &&
+                                         point.LotCell == lot.Cell);
                         if (!string.IsNullOrEmpty(pointOfInterest.StableId))
                         {
                             stableId =
@@ -920,6 +926,195 @@ namespace BarPromenade.Tests.EditMode
             }
         }
 
+        /// <summary>
+        /// The five named places exist only on the shipped city, so the
+        /// legacy-layout tests never see them. This is the one proof that
+        /// they join the list after the district lots, carry localized
+        /// names, and that every marker is a point the teleport ground
+        /// accepts as it stands - not one it slides to a street.
+        /// </summary>
+        [Test]
+        public void NamedPlaces_JoinThePointsOfInterestAndTeleportOnTheDefaultCity()
+        {
+            var host = new GameObject("Named Places Map Test");
+            var playerObject = new GameObject("Named Places Map Player");
+            var previousRoute = new List<string>(GameSessionState.PlannedBarRoute);
+            CityMapController controller = null;
+            try
+            {
+                CityLayout layout = CityLayoutGenerator.Generate(
+                    CityBlueprintCatalog.Default,
+                    CityGenerationSettings.Default,
+                    GameSessionState.DefaultCitySeed);
+                RoadWalkableArea walkable = RoadWalkableArea.FromLayout(layout);
+                var ground = new CityMapCityTeleportGround(layout);
+                PlayerInteractor interactor = playerObject.AddComponent<PlayerInteractor>();
+                PlayerMotor motor = playerObject.AddComponent<PlayerMotor>();
+                var player = new PlayerRuntime(playerObject, motor, interactor, null);
+                controller = host.AddComponent<CityMapController>();
+                // No seacoast plan on purpose: the road and village roots
+                // chart the City this way, and the docks must still be
+                // listed there, on the same deck the world's plan names.
+                controller.Initialize(layout, player, null, null);
+                CityPortPlan worldPort = CitySeacoastPlanner.Create(layout).Port;
+                Assert.That(worldPort, Is.Not.Null);
+
+                var expectedKinds = new[]
+                {
+                    CityMapPointOfInterestKind.Fair,
+                    CityMapPointOfInterestKind.EasternPost,
+                    CityMapPointOfInterestKind.Docks,
+                    CityMapPointOfInterestKind.ArchShelter,
+                    CityMapPointOfInterestKind.Church
+                };
+                var expectedIds = new[]
+                {
+                    "fair", "eastern-post", "docks", "arch", "church-entrance"
+                };
+                var expectedDistricts = new[]
+                {
+                    CityDistrictKind.Nightlife,
+                    CityDistrictKind.Yard,
+                    CityDistrictKind.NorthWaterfront,
+                    CityDistrictKind.Nightlife,
+                    CityDistrictKind.Church
+                };
+                int lotCount = layout.DistrictPointsOfInterest.Count;
+                Assert.That(controller.PointsOfInterest, Has.Count.EqualTo(lotCount + expectedKinds.Length));
+                for (int index = 0; index < lotCount; index++)
+                {
+                    Assert.That(controller.PointsOfInterest[index].HasLotCell, Is.True,
+                        "District lots come first.");
+                }
+
+                CityEastExitPlan eastExit = CityEastExitPlanner.Create(layout);
+                Assert.That(eastExit.IsEnabled, Is.True);
+                CityFairPlan fair = CityFairPlanner.Create(layout);
+                Assert.That(fair.IsEnabled, Is.True);
+                // The world adds the fair ground to its mask after the
+                // buildings (CityWorldBuilder); the landing check needs the
+                // same mask the hero actually walks.
+                walkable.Add(fair.Bounds);
+
+                var standingByIndex = new Dictionary<int, Vector3>();
+                for (int offset = 0; offset < expectedKinds.Length; offset++)
+                {
+                    int index = lotCount + offset;
+                    CityMapPointOfInterest place = controller.PointsOfInterest[index];
+                    string context = expectedIds[offset];
+                    Assert.That(place.Kind, Is.EqualTo(expectedKinds[offset]), context);
+                    Assert.That(place.StableId, Is.EqualTo(expectedIds[offset]), context);
+                    Assert.That(place.District, Is.EqualTo(expectedDistricts[offset]), context);
+                    Assert.That(place.HasLotCell, Is.False, context);
+                    string label = controller.GetPointOfInterestLabel(index);
+                    Assert.That(label, Is.Not.Null.And.Not.Empty, context);
+                    Assert.That(label, Does.Not.StartWith("map."), $"{context} is not localized.");
+
+                    var xz = new Vector2(place.WorldPosition.x, place.WorldPosition.z);
+                    Assert.That(place.HasFootprint, Is.EqualTo(place.Kind == CityMapPointOfInterestKind.Fair), context);
+                    if (place.HasFootprint)
+                    {
+                        Assert.That(place.Footprint, Is.EqualTo(fair.Bounds), context);
+                        Assert.That(place.Footprint.Contains(xz), Is.True, context);
+                    }
+
+                    if (place.Kind == CityMapPointOfInterestKind.EasternPost)
+                    {
+                        Assert.That(eastExit.ClosedGroundBounds.Contains(xz), Is.False, context);
+                        Assert.That(eastExit.BoothPad.Contains(xz), Is.False, context);
+                        Assert.That(eastExit.RoadBounds.Contains(xz), Is.True, context);
+                    }
+
+                    Vector3 standing;
+                    if (place.Kind == CityMapPointOfInterestKind.Docks)
+                    {
+                        Assert.That(Vector3.Distance(place.WorldPosition, worldPort.ArrivalWorld),
+                            Is.LessThanOrEqualTo(0.001f), $"{context} must be the world's own deck arrival.");
+                        // The quay has no terrain sample; the marker must
+                        // pass through the over-water path untouched.
+                        Assert.That(ground.TryClampArrival(place.WorldPosition, out standing), Is.True, context);
+                        Assert.That(Vector3.Distance(standing, place.WorldPosition),
+                            Is.LessThanOrEqualTo(0.001f), $"{context} must land where it is drawn.");
+                        Assert.That(walkable.Contains(standing, CityGroundTraversalPlanner.MaximumAgentRadius),
+                            Is.True, $"{context} arrives outside the walkable mask.");
+                    }
+                    else
+                    {
+                        Assert.That(ground.TryResolveStandingPosition(xz, out standing), Is.True,
+                            $"{context} is refused by the teleport ground.");
+                        Assert.That(Vector2.Distance(new Vector2(standing.x, standing.z), xz),
+                            Is.LessThanOrEqualTo(0.001f), $"{context} slides off its marker.");
+                        Assert.That(standing.y, Is.EqualTo(place.WorldPosition.y).Within(1f),
+                            $"{context} marker height is far from the ground's answer.");
+                        if (place.Kind == CityMapPointOfInterestKind.EasternPost)
+                        {
+                            // The side road is not a layout road and sits a
+                            // lift above the yard it replaces, so the exit
+                            // plan's own sampler is the surface to stand on.
+                            Assert.That(walkable.Contains(standing, CityGroundTraversalPlanner.MaximumAgentRadius),
+                                Is.True, $"{context} arrives outside the walkable mask.");
+                            Assert.That(standing.y,
+                                Is.EqualTo(eastExit.SampleRoadTop(xz.x, xz.y) + PlayerFactory.GroundedRootOffset)
+                                    .Within(0.001f), $"{context} must stand on the side road.");
+                        }
+                        else
+                        {
+                            AssertCityTeleportLanding(layout, walkable, standing, context);
+                        }
+                    }
+
+                    standingByIndex.Add(index, standing);
+                }
+
+                Assert.That(controller.Open(), Is.True);
+                Assert.That(controller.SetMapPointInspectionEnabled(true), Is.True);
+                for (int offset = 0; offset < expectedKinds.Length; offset++)
+                {
+                    int index = lotCount + offset;
+                    string stableId = "city:poi:" + expectedIds[offset];
+                    int pointIndex = -1;
+                    IReadOnlyList<CityMapPointDescriptor> points = controller.ActiveMapPoints;
+                    for (int candidate = 0; candidate < points.Count; candidate++)
+                    {
+                        if (points[candidate].StableId == stableId)
+                        {
+                            pointIndex = candidate;
+                            break;
+                        }
+                    }
+
+                    Assert.That(pointIndex, Is.GreaterThanOrEqualTo(0), $"Missing point {stableId}.");
+                    Assert.That(points[pointIndex].Kind, Is.EqualTo(CityMapPointKind.PointOfInterest), stableId);
+                    Assert.That(points[pointIndex].Label,
+                        Is.EqualTo(controller.GetPointOfInterestLabel(index)), stableId);
+                    Assert.That(controller.SelectMapPoint(pointIndex), Is.True, stableId);
+                    Assert.That(controller.ConfirmMapPointTeleport(), Is.True, $"XYZ {stableId}.");
+                    Assert.That(controller.IsOpen, Is.False);
+                    Assert.That(Vector3.Distance(playerObject.transform.position, standingByIndex[index]),
+                        Is.LessThanOrEqualTo(0.001f),
+                        $"{stableId} must land on the ground's own answer for its marker.");
+                    Assert.That(controller.Open(), Is.True);
+                    Assert.That(controller.SetMapPointInspectionEnabled(true), Is.True);
+                }
+            }
+            finally
+            {
+                if (controller != null && controller.IsOpen)
+                {
+                    controller.Close();
+                }
+
+                GameSessionState.ClearRoute();
+                foreach (string stop in previousRoute)
+                {
+                    GameSessionState.TryAddRouteStop(stop);
+                }
+
+                UnityEngine.Object.DestroyImmediate(host);
+                UnityEngine.Object.DestroyImmediate(playerObject);
+            }
+        }
+
         private static int FindLotMapPointIndex(CityMapController controller, BuildingLot lot)
         {
             string stableId = $"city:lot:{lot.Cell.x}:{lot.Cell.y}";
@@ -929,7 +1124,7 @@ namespace BarPromenade.Tests.EditMode
             else
             {
                 CityMapPointOfInterest point = controller.PointsOfInterest.FirstOrDefault(
-                    candidate => candidate.LotCell == lot.Cell);
+                    candidate => candidate.HasLotCell && candidate.LotCell == lot.Cell);
                 if (!string.IsNullOrEmpty(point.StableId)) stableId = "city:poi:" + point.StableId;
             }
 

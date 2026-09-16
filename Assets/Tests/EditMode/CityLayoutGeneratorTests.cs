@@ -708,6 +708,39 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
+        public void DefaultCoastalBlueprint_AuthoredStreetTurnsTheNightlifeStubIntoACrossroads()
+        {
+            CityBlueprint blueprint = CityBlueprintCatalog.Default;
+            var authored = new RoadEdge(
+                new Vector2Int(10, 4),
+                new Vector2Int(10, 5));
+            Assert.That(blueprint.AuthoredStreets, Is.EqualTo(new[] { authored }));
+
+            CityLayout layout = CityLayoutGenerator.Generate(
+                blueprint,
+                CityGenerationSettings.Default,
+                GameSessionState.DefaultCitySeed);
+
+            Assert.That(layout.HasRoad(authored), Is.True);
+            Assert.That(
+                layout.GetPathKind(authored),
+                Is.EqualTo(CityPathKind.Street));
+            // The lane must not stop again one node on: (10,5) meets the
+            // street on both sides and the x = 10 street continuing north.
+            var crossroads = new Vector2Int(10, 5);
+            Assert.That(
+                layout.RoadEdges.Count(edge => edge.Contains(crossroads)),
+                Is.EqualTo(4),
+                "(10,5) must be a four-way crossroads.");
+            Assert.That(
+                layout.RoadEdges.Count(edge =>
+                    edge.Contains(new Vector2Int(10, 4))),
+                Is.EqualTo(2),
+                "(10,4) must be a through node, not a dead end.");
+            Assert.DoesNotThrow(layout.ValidateOrThrow);
+        }
+
+        [Test]
         public void DefaultSeed_KeepsCanonicalHomePlacement()
         {
             // Canary against random-stream drift: the river shift must keep

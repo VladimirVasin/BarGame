@@ -166,9 +166,7 @@ namespace BarPromenade
                 case NewGameLocation.Docks:
                     CityPortPlan port = world.PortPlan ??
                         throw new InvalidOperationException("The new-game docks need the working port.");
-                    // West of the crane/trolley lanes and north of the store.
-                    position = port.World(new Vector3(-10f,
-                        CityPortPlan.DeckHeight + PlayerFactory.GroundedRootOffset, -8f));
+                    position = port.ArrivalWorld;
                     forward = new Vector3(10f, 0f, 5f).normalized;
                     break;
                 case NewGameLocation.Cannery:

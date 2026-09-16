@@ -1567,4 +1567,28 @@ MonoBehaviour:
     role: 9
     surface: 0
     mesh: {fileID: -5562780237967033619, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
-  buildSignature: 8ec083eb3d9653652f114f7dec4c22aaab5589f99702d3b1ff2ca883281e32f2
+  - kind: 82
+    variant: 0
+    component: StandingBottles_Residential
+    role: 7
+    surface: 0
+    mesh: {fileID: 2846576641235424443, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 82
+    variant: 0
+    component: LyingBottles_Residential
+    role: 7
+    surface: 0
+    mesh: {fileID: 6214023681398957728, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 82
+    variant: 0
+    component: DarkBottles_Street
+    role: 1
+    surface: 0
+    mesh: {fileID: 636444171406672204, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 82
+    variant: 0
+    component: Cans_Industrial
+    role: 0
+    surface: 0
+    mesh: {fileID: -5855636505254906777, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  buildSignature: a36f9621349e1914516efbb3e6a1897fed824b274a01d71b66a438be72dfee7a

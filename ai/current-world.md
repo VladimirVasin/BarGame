@@ -291,7 +291,7 @@ The vertical slice contains:
   `Ps1Lit` inherits URP Lit's `COLOR`-free `Attributes` and never read them; its enclosing
   ridge starts `15 m` outside the top house's envelope (`TerrainMargin 12`
   plus `RidgeStandoff 3`) and climbs at `3.6` (`74°`) to a `60 m` crest
-  `16.7 m` past the toe, deliberately steeper than the hero's own `45°` slope
+  `16.7 m` past the toe, steeper than the hero's own `45°` slope
   limit — the mean silhouette from mid-lane is `34.1°` and reaches `43°` on
   the nearest bearings. `TerrainBounds` remains the inhabited bowl
   (and the map's chart patch, now the bowl plus `12 m`) while the larger
@@ -325,7 +325,7 @@ The vertical slice contains:
   under a `110 m` far plane. The §12 dimming grade is held at `0`, but its per-minute
   apply already drives isolated garland loss, seeded window darkness, dirtying
   snow, five practicals and all six causal sounds together. The weather now
-  stays deliberately severe independently of that grade: a village-only
+  stays severe independently of that grade: a village-only
   stretched `Blizzard` profile keeps snow in `.88–1`, the shaped shared wind
   stays in `.82–1`, and a second terrain-sampled layer carries low spindrift
   with a continuous wind bed on the same deterministic bearing and gust
@@ -335,9 +335,9 @@ The vertical slice contains:
   soft curtains over the exposed side fields and closes rapidly behind the
   house. It never writes global fog and never changes collision, damage,
   speed or the walkable mask. Walking off a route raises the field's overall
-  visual pressure and additionally gathers new sheets near the player, so
-  free traversal remains the contract and the existing
-  crest/trough visibility cycle of the house is unchanged. The nine batched garland spans read that shaped wind through bounded
+  visual pressure and gathers new sheets near the player; free traversal
+  remains the contract and the house's crest/trough visibility cycle is
+  unchanged. The nine batched garland spans read that shaped wind through bounded
   vertex deformation: both anchors remain fixed while bulbs and the two real
   lights follow each moving midpoint. The enclosing ridge closes sight and traversal rather than sheltering
   the bowl; only the station canopy and moving cabin are locally dry.
@@ -477,7 +477,7 @@ The vertical slice contains:
   road cap beside lot `[12,11]` as an ordinary physical `4 m + 4 m` L. It does
   not add ground or extend a boundary along the yards/waterfront, so their
   authored approaches remain open.
-  Portal, physical entry and visual continuation pieces deliberately retain
+  Portal, physical entry and visual continuation pieces retain
   `RuntimePrimitiveLit`;
 - immutable default-only `CityFringeYardPlan` derives five Yard compositions
   from canonical bounds/access/terrain. Four west/south strips share graded
@@ -603,24 +603,24 @@ The vertical slice contains:
   heights for the same step-safe decision, and segmented guards follow every
   unsafe physical edge. `CityVerticalTraversalPlan` inventories those seams
   and authored road frontages and proves their authorized component from the
-  spawn road. The first version deliberately permits only one walkable surface
-  at any XZ projection;
+  spawn road. The first version permits only one walkable surface at any XZ
+  projection;
 - one shared MVP day/night lighting cycle for City, the Home window and the
   Home balcony exterior: night before `06:00`, smooth dawn from `06:00` to
   `07:00`, day until `18:00`, smooth dusk until `19:00`, then night again.
   It blends directional/ambient/reflection lighting and the bounded City/Home
-  exterior night fixtures; the fixed neighbour-wall yard Spot is deliberately
+  exterior night fixtures; the fixed neighbour-wall yard Spot is
   outside `NightFactor` and stays on. The atmosphere pool remains capped at
   `12` local realtime lights. One active bus may add `4`, the single pooled
   helmet-lamp pedestrian `1`, the yard `1` and the drying yard's night-only
   pole floodlight `1`. Fixed site lights, including the cemetery and the ten
   church-garden uplights, remain separate from the twelve-light pool;
   the scene Directional and transient lightning Directional are counted
-  separately. Bar, Supermarket and Stairwell lighting remain unchanged. The
+  separately. Bar, Supermarket and Stairwell lighting are unchanged. The
   `0.070` exponential-squared luminous gray-green fog,
   fog-matched terminal camera backdrop, City-only `48 m` visibility cap,
   `CityFogField` and `CityNoirVolumeProfile` stay fixed across the cycle. The
-  Windows player explicitly retains the runtime-only Exp2 shader variant;
+  Windows player retains the runtime-only Exp2 shader variant;
 
 ### Weather, sky and presentation
 
@@ -760,8 +760,9 @@ The vertical slice contains:
 
 - All speech/`E` uses shared head bubbles; bottom UI is silent. `SpeechDelivery`:
   `24` chars/s, `.13 s` clicks, `4.4 s` bubble, `2.5 s` tail; pairs/chess retain full lines;
-- ten RU/EN role labels: Foreman, Watchman, Fisherman, Ferryman, Chess player,
-  Checkers player, Bartender, Cashier, Cat, Cafe attendant; village/Mother excluded.
+- eleven RU/EN role labels: Foreman, Watchman, Fisherman, Ferryman, Chess player,
+  Checkers player, Bartender, Cashier, Cat, Cafe attendant, Guard (both east-post
+  guards); village/Mother excluded.
   Moving actor/head: `6→4 m`, `.25–.5 m` gap, shared `10 px`/charcoal. Depth/actor-ID
   mask rejects colliderless occlusion; no edge clamp. Speech/pause/modal/transition
   suppress; overlap priority is active interaction→nearest;
@@ -772,7 +773,7 @@ The vertical slice contains:
   band. If that band contains no anchor in a graph component capable of reaching
   the player, a linked dense-fog fallback may use `32-86 m`. The
   first event waits `1.25-7.5 s`; every later slot or replacement waits its own
-  `3.5-12.5 s`, so the two walkers are deliberately staggered. Each walks
+  `3.5-12.5 s`, so the two walkers are staggered. Each walks
   forward through available turns, has an independent 50% choice at a zebra,
   and is recycled only after moving beyond `88 m` from the hero. Before a fresh
   walker first reaches `24 m`, eligible non-backtracking turns follow the
@@ -909,8 +910,8 @@ The vertical slice contains:
   runtime-only sprung presentation pivot gives the moving body speed-scaled
   cartoon heave up to `0.045 m`, acceleration/road pitch up to `0.8` degrees
   and steering/road roll up to `1` degree. All four wheel assemblies stay
-  outside that pivot and grounded while the actor, collider and route pose
-  remain unchanged. Its bounded audio presentation is equally physical: a
+  outside that pivot and grounded; actor, collider and route pose do not
+  move. Its bounded audio presentation is equally physical: a
   fully spatial rear-engine loop uses a linear `24-48 m` tail tied to
   `RuntimeSceneSetup.CityFarClipPlane`: it is silent through the `76-86 m`
   fog-hidden activation band and becomes readable only after entering the
@@ -1135,8 +1136,7 @@ The vertical slice contains:
   concrete room bed, ventilation and electrical buzz with rarer pipe knocks,
   metal stress,
   distant water and movement. Both use deterministic schedules, `22050 Hz`
-  mono clips, deliberately quantized retro waveforms and layout-derived
-  anchors;
+  mono clips, quantized retro waveforms and layout-derived anchors;
 
 ### City structure, districts and dressing
 
@@ -1144,15 +1144,16 @@ The vertical slice contains:
   and area IDs. Area definitions separate `UrbanBuilt` districts from
   `NonUrbanOpen` areas, retain a reusable visual archetype, declare movable,
   center-anchor or north-edge placement and assign buildable, park, open-land
-  or water topology per cell. The legacy rectangular blueprint remains an
-  explicit compatibility path;
+  or water topology per cell. The legacy rectangular blueprint remains a
+  compatibility path;
 - a spanning-tree road graph over only the sparse road footprint, with
   deterministic optional interior loops, filtered cross-city arterials,
-  required open-area access edges and exactly three declared river crossings.
-  `default-coastal` additionally requires every exterior road-grid frontage as
-  Street after the seeded passes; the two road bridges and continuous bank
-  roads therefore close one drivable outer circuit instead of leaving random
-  gaps at the city edge;
+  required open-area access edges and three declared river crossings. After
+  the seeded passes `default-coastal` requires every exterior road-grid
+  frontage as Street, so bridges and bank roads close one drivable outer
+  circuit, then appends its authored street `(10,4)-(10,5)`:
+  the x = 10 Nightlife lane meets `[9..12;5]` at a crossroads instead of
+  dead-ending between `[9;4]` and `[10;4]`;
 - four readable built areas—Old Town, Residential, Industrial and
   Nightlife—plus a fixed 16-cell central park split into two `2 x 4` regions
   with lawn, plazas, trees, benches and hedges. A dedicated timber footbridge
@@ -1164,14 +1165,19 @@ The vertical slice contains:
   non-walkable `11.602 m`-deep arch above a `1.562 m` terrain step. Ten north
   steps meet a supported east `7.30614 x 8.851 m` terrace, including its
   `1.50 m` landing; slab/masonry join the facade and south wall end.
-  Barrel, two warmers, bedding/sleeper occupy the terrace; sparse clutter
-  stays below. Three detailed Hero-Avatar rigs have `256 px` atlases and
-  separate warming/sleeping loops, no colliders or player response.
-  The sole full-depth route is west/lower, `2.2 m` wide. `1.09 m` north/south
-  and partial west guards close `0.41–1.562 m` drops; only the stairs enter.
-  Fifteen named renderers reuse measured City surface families through MPBs.
-  Five flame/ember parts, spill/sparks, one strong warm Point Light and
-  bounded synthesized crackle belong to the barrel. Rain dies under the
+  Barrel, two warmers, bedding/sleeper occupy the terrace; fifteen passive
+  empties (bottles standing and lying, cans) ring the bedding clear of every
+  anchor; sparse clutter stays below. Three detailed Hero-Avatar rigs have
+  `256 px` atlases and separate warming/sleeping loops, no colliders or
+  player response. The three talk among themselves over the shared bubble
+  channel like the port crew: 20 warmer pairs and 4 sleeper answers, no
+  repeat until a pool is spent, within `13 m` of the hero, never about him,
+  frozen by pause, dropped out of earshot.
+  The sole full-depth route is west/lower, `2.2 m` wide; `1.09 m` guards
+  close `0.41–1.562 m` drops and only the stairs enter.
+  Nineteen named renderers reuse measured City surface families through MPBs.
+  Five flame/ember parts, spill/sparks, one warm Point Light and bounded
+  synthesized crackle belong to the barrel. Rain dies under the
   roof; no local fog;
 - fair `[11;3]`/`[11;4]`: four staffed passive bread/fruit/pottery/toy stalls,
   shared hero organ/bell actions, two seats, clutter, three always-burning
@@ -1183,8 +1189,8 @@ The vertical slice contains:
   Child gaze uses the sampled face orientation and fades with the activity;
   look/secondary offsets restore before resampling.
   `CityFairPlanner` aligns supports to continuous ground; exclusions keep
-  decoration/litter/map arrivals clear. No buying/collecting/speech/reward,
-  cat response or story state;
+  decoration/litter/arrivals clear; no buying/speech/reward, cat response or
+  story state;
 - one mandatory north-edge waterfront in the default blueprint, dressed as
   the seacoast precinct (`CitySeacoastPlanner`): its connected beach has a
   deterministic street approach and remains walkable to the water line,
@@ -1486,7 +1492,7 @@ The vertical slice contains:
   rack — painted-metal posts and crossbar with two hung carpets textured
   by the shared Home rug albedo. In the city each carpet is real
   simulated cloth pinned over the bar (heavy: stiff and damped,
-  deliberately outside the laundry's weather-wind registry; the vista
+  outside the laundry's weather-wind registry; the vista
   keeps static boxes), and the yard's three authored staged NPCs work
   around it: two babushka grandmothers beat those carpets from opposite
   sides with the forward-biased bright plastic beater (one shared
@@ -1544,7 +1550,7 @@ The vertical slice contains:
   narrative details stay non-physical. Park benches/hedges, the home mailbox
   and lower lamp/signal poles also own focused proxies. The bounded Home
   balcony exterior rebuilds the same descriptors in Home-local space but
-  deliberately remains collision-free;
+  remains collision-free;
 - rendered streets, park paths, lawn and plaza own matching static colliders,
   so the existing `0.28 m` controller step climbs their real height changes
   instead of letting the character mesh intersect raised surfaces;
@@ -1643,8 +1649,8 @@ The vertical slice contains:
   continuations count as connected and are not capped. Rails are physical;
   their narrow posts remain visual-only, and all former entrance/gate/public
   opening descriptors remain available as decoration-clearance metadata;
-- player navigation now includes complete logical `BuildableGround` regions
-  as well as existing streets, park and `OpenLand`. Radius-safe seams connect
+- player navigation includes complete logical `BuildableGround` regions
+  plus existing streets, park and `OpenLand`. Radius-safe seams connect
   road-to-ground and adjacent ground cells for the maximum `0.35 m` agent;
   water, unmapped cells and outside space stay excluded, while real building,
   prop, vegetation, pole, fence and pedestrian colliders decide local
@@ -1733,7 +1739,7 @@ The vertical slice contains:
   scripted interaction approaches remain at walking pace;
 - in City, BarInterior and ordinary Supermarket play, a very close freely
   orbiting perspective third-person chase camera with
-  `2.6 m / 53°` exterior and `2.2 m / 57°` interior framing, deliberately
+  `2.6 m / 53°` exterior and `2.2 m / 57°` interior framing,
   raised `1.4 m / 1.3 m` focus points that keep the hero in the lower frame,
   weighty yaw/pitch/focus damping, a player-controlled vertical orbit bounded
   to `-20°..55°`, bounded focus lag, teleport snapping, subtle deterministic
@@ -1836,38 +1842,39 @@ The vertical slice contains:
   true easting),
   plus separate map treatments for the Works, Mouth and timber bridges,
   player/home-bar markers,
-  a dedicated labeled home icon, a distinct
-  grocery-shop marker and four kind-specific public-place
-  markers with a localized legend. Hovering a bar, home, shop or public-place
-  marker shows its localized name in a bounded high-contrast tooltip. Public
-  lots are drawn as open ground rather than buildings, and all landmark data
-  comes directly from the canonical validated layout used by the world
-  builder. It consumes `CityWorldResult.MountainBoundaryPlan`, expands its
-  display bounds only toward west and south, explicitly including the visible
-  cave approach and the first `12 m` of the tunnel, and draws each ridge as a toe-to-outer-foot
-  hatch while carrying only the visible narrow river approach into its
-  mountain mouth. The hidden cave continuation is not drawn as open map space.
-  The open portal uses a fixed `19 x 17` uncrossed arch
-  marker with a localized hover label; when its world position is
-  outside the scrolling viewport, the marker clamps to the visible edge as a
-  direction indicator. North and east keep the layout's original map maxima.
-  It also draws the canonical Route 01 loop as a pale neutral line below the
-  darker bone-toned player itinerary, adds five numbered stop markers in the
-  default layout with localized hover labels and keeps both symbols in a
-  compact legend. The map deliberately has no live bus marker. With the
-  ordinary area tabs, City and Mountain Road can each be inspected as a
-  separate schematic; the player marker is drawn only on the current area's
-  tab. An ordinary observational `XYZ` mode is available on both tabs through
-  the panel button, keyboard `C` or gamepad north/`Y`. A click selects the
-  point under the pointer; Left/Right or D-pad Left/Right cycle the complete
-  active-area catalog, persistently highlight the selection and automatically
-  centre keyboard-picked points. The side panel gives the localized point
-  name, its area and invariant world `X/Y/Z` to one decimal place.
+  a dedicated labeled home icon, a distinct grocery-shop marker and nine
+  kind-specific point-of-interest markers (four public lots, fair, eastern
+  post, docks, arch, church door) in one localized legend that caps its rows
+  to the panel. Hovering a bar, home, shop or point-of-interest marker shows
+  its localized name in a bounded tooltip. Public lots and the fair ground
+  are drawn as open ground rather than buildings; lot data comes from the
+  validated layout the world builder uses, the five places from the memoised
+  world plans and the port. It consumes `CityWorldResult.MountainBoundaryPlan`,
+  expands display bounds only west and south, including the visible cave
+  approach and the first `12 m` of tunnel, and draws each ridge as a
+  toe-to-outer-foot hatch carrying only the visible narrow river approach
+  into its mountain mouth. The hidden cave continuation is not drawn as open
+  map space. The open portal uses a fixed `19 x 17` uncrossed arch marker
+  with a localized hover label; outside the scrolling viewport the marker
+  clamps to the visible edge as a direction indicator. North and east keep
+  the layout's original map maxima. It also draws the canonical Route 01 loop
+  as a pale neutral line below the darker bone-toned player itinerary, adds
+  five numbered stop markers in the default layout with localized hover
+  labels and keeps both symbols in a compact legend. The map has no live bus
+  marker. City and Mountain Road are separate schematics under the area tabs;
+  the player marker is drawn only on the current area's tab. An observational
+  `XYZ` mode opens on both tabs through the panel button, keyboard `C` or
+  gamepad north/`Y`. A click selects the point under the pointer; Left/Right
+  or D-pad cycle the complete active-area catalog, persistently highlight the
+  selection and centre keyboard-picked points. The side panel gives the
+  localized point name, its area and invariant world `X/Y/Z` to one decimal
+  place.
   City's catalog owns every `BuildingLot`, every open-area arrival, every bus
-  stop, the current player, the city mountain-tunnel portal and the boat
-  station hut. Special lots replace rather than duplicate their generic lot:
-  the bar exposes `ReturnPosition`, home and supermarket expose `Center`, and each
-  district POI exposes its authored position. Mountain Road owns the current
+  stop, the current player, the city mountain-tunnel portal, the boat station
+  hut and the fair, eastern post, docks, arch and church door. Special lots
+  replace their generic lot: the bar exposes `ReturnPosition`, home and
+  supermarket `Center`, each district POI its authored position. Mountain
+  Road owns the current
   player, tunnel, every authored hairpin apex, bridge centre, plateau endpoint,
   cafe, cableway and brink. Road and itinerary polylines, intermediate route samples
   and mountain hatches remain decorative. Point inspection is mutually
@@ -1980,11 +1987,10 @@ The vertical slice contains:
   AudioSource. The bubbles likewise add no voice or
   other AudioSource. Her fingers hold the filter rather than the ember; the
   filter still reaches the mouth and the burning tip points clear of hand and
-  face. The
-  plan continues to own entry,
-  shelter, anchors, lighting and exactly `17` logical colliders. The existing
-  two visible practicals and one shadowless technical wash are redistributed,
-  not multiplied: the warm key reaches the sleeping husband, while
+  face. The plan owns entry, shelter, anchors, lighting and exactly `17`
+  logical colliders. The two visible practicals and one shadowless technical
+  wash are redistributed, not multiplied: the warm key reaches the sleeping
+  husband, while
   `Light.ColdService` now starts inside the visible task fixture over the stove
   with a cold emissive lens. Its widened bisector cone contains the stove and
   pan task surface as well as all four figures, where it works with the wash to
@@ -2042,9 +2048,9 @@ The vertical slice contains:
   Keep at least `22` logical pixels per map cell; clip overflowing content and
   pan it independently on X/Y with WASD, the right stick, mouse-wheel gestures
   or middle/right-button dragging while drawing scroll indicators only for
-  overflowing axes. Ordinary ordered route editing and deterministic shortest paths
-  remain unchanged outside this debug mode and are constrained to the generated
-  road graph;
+  overflowing axes. Ordinary ordered route editing and deterministic shortest
+  paths are unchanged outside this debug mode and stay on the generated road
+  graph;
 - localized RU/EN interaction prompts whose pointer, keyboard and gamepad
   activation share one action path;
 - guarded asynchronous transitions and persistent blueprint ID,
@@ -2354,7 +2360,7 @@ The vertical slice contains:
   signals. City and Home share the exterior ground, street-surface, facade,
   window and complete passive pub-exterior appearance
   recipe. It also reconstructs the target-derived Home stop as the same static
-  blue `01` pole in Home-local space, deliberately without colliders. The balcony
+  blue `01` pole in Home-local space, without colliders. The balcony
   shot temporarily applies City's exact exponential-squared fog, matching
   background, `48 m` visibility cap, current time-of-day lighting, grading,
   local fog field and bounded `12`-light street/bar pool, then restores the
@@ -2439,8 +2445,7 @@ The vertical slice contains:
   half-crouch on the mattress with both boots drawn under him, uses the same
   two supported pelvis steps to reach the side, then drops the right
   leg over the near edge, then the left, and only then stands. Per-sample pelvis alignment
-  keeps the same longitudinal coordinate through entry, sleep and exit;
-  sitting no longer carries him along the mattress from the foot end. The
+  keeps the same longitudinal coordinate through entry, sleep and exit. The
   standing approach stays clear beside the `1.30 m`-wide corner storage pile.
   The sleeper remains at the authored bed action anchor, with the head at the
   `xMin` pillow. Both hip anchors are the mattress top plus a measured body
@@ -2509,8 +2514,8 @@ The vertical slice contains:
   orbit/follow input and retains only quarter-strength intoxication, balance
   and fall rotation;
 - while the Home fixed-camera controller is active, the same world-oriented 3D
-  hero remains visible in MainRoom, Bathroom and Balcony; the shots no longer
-  require camera-plane or yaw-billboard modes to preserve a sprite aspect;
+  hero remains visible in MainRoom, Bathroom and Balcony without camera-plane
+  or yaw-billboard modes;
 - a lived-in bathroom: a rebuilt shower stall (hand-operated entrance curtain on an
   L-rail, mixer, rusty pipe, tilted head, soap shelf); the green hose segments
   alongside the pipe are removed. Its red/blue cross valves share the sink's

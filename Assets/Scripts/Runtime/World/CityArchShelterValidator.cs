@@ -10,7 +10,7 @@ namespace BarPromenade
         private const float DirectionTolerance = 0.01f;
         private const int ExpectedClearLaneCount = 1;
         private const int ExpectedNpcAnchorCount = 3;
-        private const int ExpectedPropCount = 4;
+        private const int ExpectedPropCount = 5;
         private const int ExpectedObstacleCount = 10;
         private const int ExpectedRainOccluderCount = 1;
 
@@ -404,7 +404,8 @@ namespace BarPromenade
             {
                 CityArchShelterPropDescriptor prop = plan.Props[index];
                 if ((prop.Kind == CityArchShelterPropKind.BurnBarrel ||
-                     prop.Kind == CityArchShelterPropKind.Bedding) &&
+                     prop.Kind == CityArchShelterPropKind.Bedding ||
+                     prop.Kind == CityArchShelterPropKind.PlatformLitter) &&
                     (!Contains(platform, ToXZRect(prop.Bounds)) ||
                      !Approximately(
                          prop.Position.y,
@@ -455,7 +456,7 @@ namespace BarPromenade
             {
                 throw new InvalidOperationException(
                     "The arch shelter requires one clear lower lane, three " +
-                    "staged residents, four authored prop assemblies, seven " +
+                    "staged residents, five authored prop assemblies, seven " +
                     "tableau/structure blockers, three platform guards and " +
                     "one rain volume.");
             }
@@ -566,7 +567,8 @@ namespace BarPromenade
             {
                 throw new InvalidOperationException(
                     "The shelter prop recipe must contain barrel, flame, " +
-                    "bedding and clutter with only the flame non-blocking.");
+                    "bedding, clutter and platform litter with only the " +
+                    "flame and the litter non-blocking.");
             }
 
             CityArchShelterPropDescriptor barrel = FindProp(
@@ -666,9 +668,14 @@ namespace BarPromenade
                 {
                     CityArchShelterPropDescriptor prop =
                         plan.Props[propIndex];
+                    // The sleeper lies on the bedding, and the litter
+                    // envelope wraps that bedding on three sides; the
+                    // authored geometry itself keeps clear of the mattress.
                     if (anchor.Stage ==
                             CityArchShelterNpcStageKind.Sleeper &&
-                        prop.Kind == CityArchShelterPropKind.Bedding)
+                        (prop.Kind == CityArchShelterPropKind.Bedding ||
+                         prop.Kind ==
+                         CityArchShelterPropKind.PlatformLitter))
                     {
                         continue;
                     }

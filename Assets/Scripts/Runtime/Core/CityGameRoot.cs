@@ -94,6 +94,11 @@ namespace BarPromenade
             get;
             private set;
         }
+        public CityArchShelterConversationController ArchShelterConversations
+        {
+            get;
+            private set;
+        }
         public IReadOnlyList<WeighbridgeAttendantPresentation>
             WeighbridgeAttendants { get; private set; }
         public CityCanneryController Cannery { get; private set; }
@@ -1126,6 +1131,14 @@ namespace BarPromenade
                 Player.GameObject.transform);
             EastGuards = CityEastGuardWorldBuilder.Build(transform, World.EastExitPlan,
                 Player.GameObject.transform, camera, Layout.Seed);
+            // The two men at the barrel and the sleeper under the arch talk
+            // among themselves over the same shared bubbles; raised here for
+            // the same reason as the guards.
+            if (World.ArchShelterPlan.IsEnabled)
+            {
+                ArchShelterConversations = CityArchShelterConversationController.Create(
+                    World.ArchShelter, Player.GameObject.transform, camera, Layout.Seed);
+            }
             // Every act of the gravedigger's job is now a piece of
             // work rather than a press. Raised here rather than beside
             // the jobs themselves because it takes the camera down onto

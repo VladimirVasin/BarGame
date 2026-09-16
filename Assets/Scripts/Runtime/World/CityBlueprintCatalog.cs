@@ -104,6 +104,17 @@ namespace BarPromenade
             }
 
             AddEasternOpenAreas(builder, settings);
+            // The x = 10 Nightlife lane climbs from the south ring and,
+            // under the canonical seed, dead-ends at node (10,4) between
+            // lots (9,4) and (10,4), one block short of the (9..12, 5)
+            // street. Carrying it that one edge makes (10,5) a crossroads
+            // and joins it to the x = 10 street already running north to
+            // the central avenue. Appended after the seeded passes, so it
+            // takes nothing from the rest of the selection.
+            builder.WithAuthoredStreet(
+                new RoadEdge(
+                    new Vector2Int(10, 4),
+                    new Vector2Int(10, 5)));
             int urbanWidth = settings.BlocksX + 1;
             CityAreaDefinition waterfront = CreateNorthWaterfront();
             builder.AddRectangle(

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using NUnit.Framework;
 using UnityEngine;
@@ -562,6 +563,131 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
+        public void WorldBuilder_PlatformLitterLiesAroundTheBeddingClearOfTheWarmers()
+        {
+            // The empties are one passive assembly whose declared envelope
+            // wraps the bedding, so the plan-level overlap rules cannot
+            // prove clearance; the imported vertices themselves must.
+            CityLayout layout = CreateDefaultLayout();
+            CityArchShelterPlan plan = CityArchShelterPlanner.Create(layout);
+            CityArchShelterPropDescriptor litter = FindProp(
+                plan,
+                CityArchShelterPropKind.PlatformLitter);
+            CityArchShelterPropDescriptor barrel = FindProp(
+                plan,
+                CityArchShelterPropKind.BurnBarrel);
+            CityArchShelterPropDescriptor bedding = FindProp(
+                plan,
+                CityArchShelterPropKind.Bedding);
+            Assert.That(litter.BlocksMovement, Is.False);
+            Assert.That(
+                plan.Obstacles.Any(obstacle =>
+                    obstacle.StableId == litter.StableId),
+                Is.False,
+                "Empties never become a physical blocker.");
+            Assert.That(
+                Contains(plan.Platform.Footprint, ToXZRect(litter.Bounds)),
+                Is.True);
+            Assert.That(
+                litter.Position.y,
+                Is.EqualTo(plan.Platform.SurfaceY).Within(Tolerance));
+
+            var parent = new GameObject("Arch Shelter Litter Test");
+            try
+            {
+                CityArchShelterWorldResult result =
+                    CityArchShelterWorldBuilder.Build(
+                        parent.transform,
+                        layout,
+                        plan);
+                Transform root = result.PropRoots.Single(candidate =>
+                    candidate.name == litter.StableId);
+                MeshFilter[] filters =
+                    root.GetComponentsInChildren<MeshFilter>(true);
+                Assert.That(filters, Has.Length.EqualTo(4));
+
+                Rect beddingRect = ToXZRect(bedding.Bounds);
+                Rect barrelRect = Expand(ToXZRect(barrel.Bounds), 0.05f);
+                Rect envelope = ToXZRect(litter.Bounds);
+                var warmers = plan.NpcAnchors
+                    .Where(anchor =>
+                        anchor.Stage != CityArchShelterNpcStageKind.Sleeper)
+                    .Select(anchor => anchor.Position)
+                    .ToArray();
+                Assert.That(warmers, Has.Length.EqualTo(2));
+                float floor = plan.Platform.SurfaceY;
+                var tallest = new Dictionary<string, float>();
+                int vertexCount = 0;
+                foreach (MeshFilter filter in filters)
+                {
+                    float highest = float.NegativeInfinity;
+                    foreach (Vector3 local in filter.sharedMesh.vertices)
+                    {
+                        Vector3 world = filter.transform.TransformPoint(local);
+                        vertexCount++;
+                        highest = Mathf.Max(highest, world.y - floor);
+                        var xz = new Vector2(world.x, world.z);
+                        Assert.That(
+                            world.y,
+                            Is.GreaterThanOrEqualTo(floor - 0.002f),
+                            $"{filter.name} sinks into the terrace.");
+                        Assert.That(
+                            envelope.Contains(xz),
+                            Is.True,
+                            $"{filter.name} leaves the declared envelope.");
+                        Assert.That(
+                            plan.Placement.TableauFootprint.Contains(xz),
+                            Is.True,
+                            $"{filter.name} leaves the sheltered tableau.");
+                        Assert.That(
+                            beddingRect.Contains(xz),
+                            Is.False,
+                            $"{filter.name} lies on the bedding.");
+                        Assert.That(
+                            barrelRect.Contains(xz),
+                            Is.False,
+                            $"{filter.name} touches the barrel.");
+                        foreach (Vector3 warmer in warmers)
+                        {
+                            Assert.That(
+                                Mathf.Max(
+                                    Mathf.Abs(world.x - warmer.x),
+                                    Mathf.Abs(world.z - warmer.z)),
+                                Is.GreaterThan(0.32f),
+                                $"{filter.name} lies under a warmer.");
+                        }
+                    }
+
+                    tallest[filter.name] = highest;
+                }
+
+                Assert.That(vertexCount, Is.GreaterThan(0));
+                // Standing bottles rise as bottles; toppled ones lie no
+                // higher than their own body, and the cans do both.
+                Assert.That(
+                    tallest[CityArchShelterSurfaceAppearance
+                        .StandingBottlesComponentName],
+                    Is.GreaterThan(0.25f));
+                Assert.That(
+                    tallest[CityArchShelterSurfaceAppearance
+                        .LyingBottlesComponentName],
+                    Is.LessThan(0.10f));
+                Assert.That(
+                    tallest[CityArchShelterSurfaceAppearance
+                        .DarkBottlesComponentName],
+                    Is.GreaterThan(0.25f));
+                Assert.That(
+                    tallest[CityArchShelterSurfaceAppearance
+                        .CansComponentName],
+                    Is.InRange(0.10f, 0.14f));
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(parent);
+            }
+        }
+
+        [Test]
         public void WorldBuilder_MaterializesThePassiveShelterAndPresentation()
         {
             CityLayout layout = CreateDefaultLayout();
@@ -585,7 +711,7 @@ namespace BarPromenade.Tests.EditMode
                     result.StructureRoot.name,
                     Is.EqualTo(
                         CityArchShelterWorldBuilder.StructureRootName));
-                Assert.That(result.PropRoots, Has.Count.EqualTo(4));
+                Assert.That(result.PropRoots, Has.Count.EqualTo(5));
                 Assert.That(result.ResidentRoots, Has.Count.EqualTo(3));
                 Assert.That(
                     result.PropRoots.Select(root => root.name),
@@ -1142,6 +1268,8 @@ namespace BarPromenade.Tests.EditMode
                     return CityMiscKind.NightlifeShelterBedding;
                 case CityArchShelterPropKind.Clutter:
                     return CityMiscKind.NightlifeShelterClutter;
+                case CityArchShelterPropKind.PlatformLitter:
+                    return CityMiscKind.NightlifeShelterPlatformLitter;
                 default:
                     throw new ArgumentOutOfRangeException(
                         nameof(kind),
@@ -1362,6 +1490,15 @@ namespace BarPromenade.Tests.EditMode
                    left.max.y > right.min.y + Tolerance &&
                    left.min.z < right.max.z - Tolerance &&
                    left.max.z > right.min.z + Tolerance;
+        }
+
+        private static Rect Expand(Rect rect, float margin)
+        {
+            return Rect.MinMaxRect(
+                rect.xMin - margin,
+                rect.yMin - margin,
+                rect.xMax + margin,
+                rect.yMax + margin);
         }
 
         private static Rect ToXZRect(Bounds bounds)

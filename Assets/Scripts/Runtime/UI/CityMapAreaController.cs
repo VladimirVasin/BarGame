@@ -1278,7 +1278,9 @@ namespace BarPromenade
             for (int index = 0; index < pointsOfInterest.Count; index++)
             {
                 CityMapPointOfInterest point = pointsOfInterest[index];
-                int lotIndex = FindMapObjectIndex(point.LotCell);
+                int lotIndex = point.HasLotCell
+                    ? FindMapObjectIndex(point.LotCell)
+                    : -1;
                 if (lotIndex >= 0 && !claimedLots.Add(lotIndex))
                 {
                     continue;

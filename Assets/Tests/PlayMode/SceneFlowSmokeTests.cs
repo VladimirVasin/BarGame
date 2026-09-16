@@ -2095,29 +2095,51 @@ namespace BarPromenade.Tests.PlayMode
             CityMapController map)
         {
             var expectedDistricts = new Dictionary<
-                CityDistrictPointOfInterestKind,
+                CityMapPointOfInterestKind,
                 CityDistrictKind>
             {
                 {
-                    CityDistrictPointOfInterestKind.OldTownWaterworksCourt,
+                    CityMapPointOfInterestKind.OldTownWaterworksCourt,
                     CityDistrictKind.OldTown
                 },
                 {
-                    CityDistrictPointOfInterestKind.ResidentialDryingYard,
+                    CityMapPointOfInterestKind.ResidentialDryingYard,
                     CityDistrictKind.Residential
                 },
                 {
-                    CityDistrictPointOfInterestKind.IndustrialCannery,
+                    CityMapPointOfInterestKind.IndustrialCannery,
                     CityDistrictKind.Industrial
                 },
                 {
-                    CityDistrictPointOfInterestKind.NightlifeLastRouteIsland,
+                    CityMapPointOfInterestKind.NightlifeLastRouteIsland,
                     CityDistrictKind.Nightlife
+                },
+                {
+                    CityMapPointOfInterestKind.Fair,
+                    CityDistrictKind.Nightlife
+                },
+                {
+                    CityMapPointOfInterestKind.EasternPost,
+                    CityDistrictKind.Yard
+                },
+                {
+                    CityMapPointOfInterestKind.Docks,
+                    CityDistrictKind.NorthWaterfront
+                },
+                {
+                    CityMapPointOfInterestKind.ArchShelter,
+                    CityDistrictKind.Nightlife
+                },
+                {
+                    CityMapPointOfInterestKind.Church,
+                    CityDistrictKind.Church
                 }
             };
             var actualKinds =
-                new HashSet<CityDistrictPointOfInterestKind>();
+                new HashSet<CityMapPointOfInterestKind>();
             var stableIds = new HashSet<string>(StringComparer.Ordinal);
+            var teleportGround =
+                new CityMapCityTeleportGround(cityRoot.Layout);
 
             Assert.That(
                 map.PointsOfInterest,
@@ -2153,51 +2175,76 @@ namespace BarPromenade.Tests.PlayMode
                     Does.Not.StartWith("map.poi."),
                     $"POI '{pointOfInterest.Kind}' was not localized.");
 
-                Assert.That(
-                    cityRoot.Layout.TryGetDistrictPointOfInterest(
-                        pointOfInterest.LotCell,
-                        out CityDistrictPointOfInterestDescriptor descriptor),
-                    Is.True,
-                    $"Map POI '{pointOfInterest.StableId}' is absent " +
-                    "from the city layout.");
-                Assert.That(
-                    descriptor.Id,
-                    Is.EqualTo(pointOfInterest.StableId));
-                Assert.That(
-                    descriptor.Kind,
-                    Is.EqualTo(pointOfInterest.Kind));
-                Assert.That(
-                    descriptor.District,
-                    Is.EqualTo(pointOfInterest.District));
-
-                BuildingLot lot = null;
-                for (int lotIndex = 0;
-                     lotIndex < cityRoot.Layout.BuildingLots.Count;
-                     lotIndex++)
+                if (pointOfInterest.HasLotCell)
                 {
-                    BuildingLot candidate =
-                        cityRoot.Layout.BuildingLots[lotIndex];
-                    if (candidate.Cell == pointOfInterest.LotCell)
-                    {
-                        lot = candidate;
-                        break;
-                    }
-                }
+                    Assert.That(
+                        cityRoot.Layout.TryGetDistrictPointOfInterest(
+                            pointOfInterest.LotCell,
+                            out CityDistrictPointOfInterestDescriptor descriptor),
+                        Is.True,
+                        $"Map POI '{pointOfInterest.StableId}' is absent " +
+                        "from the city layout.");
+                    Assert.That(
+                        descriptor.Id,
+                        Is.EqualTo(pointOfInterest.StableId));
+                    Assert.That(
+                        CityMapPointOfInterest.FromDistrictKind(descriptor.Kind),
+                        Is.EqualTo(pointOfInterest.Kind));
+                    Assert.That(
+                        descriptor.District,
+                        Is.EqualTo(pointOfInterest.District));
 
-                Assert.That(
-                    lot,
-                    Is.Not.Null,
-                    $"Map POI '{pointOfInterest.StableId}' has no lot.");
-                Assert.That(lot.District, Is.EqualTo(pointOfInterest.District));
-                Assert.That(lot.IsDistrictPointOfInterest, Is.True);
-                Assert.That(lot.HasBuilding, Is.False);
-                Assert.That(
-                    Vector3.Distance(
-                        pointOfInterest.WorldPosition,
-                        lot.Center),
-                    Is.LessThan(0.001f),
-                    $"Map POI '{pointOfInterest.StableId}' must use its " +
-                    "lot center.");
+                    BuildingLot lot = null;
+                    for (int lotIndex = 0;
+                         lotIndex < cityRoot.Layout.BuildingLots.Count;
+                         lotIndex++)
+                    {
+                        BuildingLot candidate =
+                            cityRoot.Layout.BuildingLots[lotIndex];
+                        if (candidate.Cell == pointOfInterest.LotCell)
+                        {
+                            lot = candidate;
+                            break;
+                        }
+                    }
+
+                    Assert.That(
+                        lot,
+                        Is.Not.Null,
+                        $"Map POI '{pointOfInterest.StableId}' has no lot.");
+                    Assert.That(lot.District, Is.EqualTo(pointOfInterest.District));
+                    Assert.That(lot.IsDistrictPointOfInterest, Is.True);
+                    Assert.That(lot.HasBuilding, Is.False);
+                    Assert.That(
+                        Vector3.Distance(
+                            pointOfInterest.WorldPosition,
+                            lot.Center),
+                        Is.LessThan(0.001f),
+                        $"Map POI '{pointOfInterest.StableId}' must use its " +
+                        "lot center.");
+                }
+                else
+                {
+                    // A named place has no lot to vouch for it; the teleport
+                    // ground certifies its position instead, and must land the
+                    // hero where the marker says rather than nudge him aside.
+                    Assert.That(
+                        teleportGround.TryClampArrival(
+                            pointOfInterest.WorldPosition,
+                            out Vector3 arrival),
+                        Is.True,
+                        $"Map POI '{pointOfInterest.StableId}' is not " +
+                        "standable ground.");
+                    Assert.That(
+                        Vector2.Distance(
+                            new Vector2(arrival.x, arrival.z),
+                            new Vector2(
+                                pointOfInterest.WorldPosition.x,
+                                pointOfInterest.WorldPosition.z)),
+                        Is.LessThanOrEqualTo(0.01f),
+                        $"Map POI '{pointOfInterest.StableId}' must stand " +
+                        "where its marker is.");
+                }
             }
 
             CollectionAssert.AreEquivalent(

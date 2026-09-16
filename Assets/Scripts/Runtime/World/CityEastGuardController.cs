@@ -59,6 +59,8 @@ namespace BarPromenade
                 solid.radius = .31f; solid.height = actors[i].Height;
                 solid.center = Vector3.up * (solid.height * .5f);
                 actors[i].gameObject.AddComponent<CityEastGuardInteraction>().Initialize(this, i);
+                // Both guards wear one role and one identity above the head the bubbles already use.
+                NpcNameplateTarget.Attach(actors[i].gameObject, "npc.name.east_guard", actors[i].Motion.Head, "east_guard");
                 replies[i] = new Deck(4, seed + 73 + i * 397);
             }
             distancePresentation = new WorldDistancePresentation(actors[0].transform, actors[1].transform);

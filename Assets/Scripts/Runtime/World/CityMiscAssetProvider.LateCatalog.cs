@@ -151,5 +151,13 @@ namespace BarPromenade
             P("WheelAndHardware_Fixture", CityMiscMeshRole.Fixture)
         };
 
+        private static readonly ExpectedPartSpec[]
+            NightlifeShelterPlatformLitterParts =
+        {
+            P("StandingBottles_Residential", CityMiscMeshRole.Residential),
+            P("LyingBottles_Residential", CityMiscMeshRole.Residential),
+            P("DarkBottles_Street", CityMiscMeshRole.Street),
+            P("Cans_Industrial", CityMiscMeshRole.Industrial)
+        };
     }
 }

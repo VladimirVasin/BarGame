@@ -68,19 +68,34 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [TestCase(
-            CityDistrictPointOfInterestKind.OldTownWaterworksCourt,
+            CityMapPointOfInterestKind.OldTownWaterworksCourt,
             "map.poi.old_town_waterworks_court")]
         [TestCase(
-            CityDistrictPointOfInterestKind.ResidentialDryingYard,
+            CityMapPointOfInterestKind.ResidentialDryingYard,
             "map.poi.residential_drying_yard")]
         [TestCase(
-            CityDistrictPointOfInterestKind.IndustrialCannery,
-            "map.poi.industrial_weighbridge")]
+            CityMapPointOfInterestKind.IndustrialCannery,
+            "map.poi.industrial_cannery")]
         [TestCase(
-            CityDistrictPointOfInterestKind.NightlifeLastRouteIsland,
+            CityMapPointOfInterestKind.NightlifeLastRouteIsland,
             "map.poi.nightlife_last_route_island")]
+        [TestCase(
+            CityMapPointOfInterestKind.Fair,
+            "map.poi.fair")]
+        [TestCase(
+            CityMapPointOfInterestKind.EasternPost,
+            "map.poi.eastern_post")]
+        [TestCase(
+            CityMapPointOfInterestKind.Docks,
+            "map.poi.docks")]
+        [TestCase(
+            CityMapPointOfInterestKind.ArchShelter,
+            "map.poi.arch")]
+        [TestCase(
+            CityMapPointOfInterestKind.Church,
+            "map.poi.church_entrance")]
         public void PointOfInterestLocalizationKeys_AreStable(
-            CityDistrictPointOfInterestKind kind,
+            CityMapPointOfInterestKind kind,
             string expected)
         {
             Assert.That(
@@ -96,9 +111,36 @@ namespace BarPromenade.Tests.EditMode
         {
             Assert.That(
                 CityMapController.TryGetPointOfInterestLocalizationKey(
-                    (CityDistrictPointOfInterestKind)999,
+                    (CityMapPointOfInterestKind)999,
                     out _),
                 Is.False);
+        }
+
+        [Test]
+        public void DistrictKinds_MapOntoLegendKinds()
+        {
+            // The layout enum is a lot contract the map mirrors one-to-one;
+            // a district kind the map cannot name must fail loudly, not
+            // draw an unlabeled marker.
+            foreach (CityDistrictPointOfInterestKind districtKind in
+                     Enum.GetValues(typeof(CityDistrictPointOfInterestKind)))
+            {
+                CityMapPointOfInterestKind kind =
+                    CityMapPointOfInterest.FromDistrictKind(districtKind);
+                Assert.That(
+                    kind.ToString(),
+                    Is.EqualTo(districtKind.ToString()));
+                Assert.That(
+                    CityMapController.TryGetPointOfInterestLocalizationKey(
+                        kind,
+                        out _),
+                    Is.True,
+                    districtKind.ToString());
+            }
+
+            Assert.Throws<ArgumentOutOfRangeException>(
+                () => CityMapPointOfInterest.FromDistrictKind(
+                    (CityDistrictPointOfInterestKind)999));
         }
 
         [Test]
@@ -156,8 +198,14 @@ namespace BarPromenade.Tests.EditMode
                             out CityMapPointOfInterest marker),
                         Is.True,
                         descriptor.Id);
-                    Assert.That(marker.Kind, Is.EqualTo(descriptor.Kind));
+                    Assert.That(
+                        marker.Kind,
+                        Is.EqualTo(
+                            CityMapPointOfInterest.FromDistrictKind(
+                                descriptor.Kind)));
                     Assert.That(marker.District, Is.EqualTo(descriptor.District));
+                    Assert.That(marker.HasLotCell, Is.True);
+                    Assert.That(marker.HasFootprint, Is.False);
                     Assert.That(marker.LotCell, Is.EqualTo(descriptor.Cell));
                     Assert.That(
                         marker.WorldPosition,
@@ -578,25 +626,60 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(publicPlace.a, Is.EqualTo(1f).Within(0.001f));
         }
 
-        [TestCase(0, 1)]
-        [TestCase(0, 4)]
-        [TestCase(4, 1)]
-        [TestCase(4, 4)]
+        // The route panel is 311 px tall before the area tabs are charted
+        // and 289 px once they are (the header grows by 22 px); the
+        // distance label, the first footer element, starts 41 px above
+        // the panel's bottom. Nine entries must fit on both with the
+        // shipped one-bar route, and never overlap a route row.
+        [TestCase(0, 1, false)]
+        [TestCase(0, 4, false)]
+        [TestCase(0, 9, false)]
+        [TestCase(1, 9, false)]
+        [TestCase(2, 9, false)]
+        [TestCase(3, 9, false)]
+        [TestCase(4, 1, false)]
+        [TestCase(4, 4, false)]
+        [TestCase(4, 9, false)]
+        [TestCase(0, 4, true)]
+        [TestCase(0, 9, true)]
+        [TestCase(1, 9, true)]
+        [TestCase(2, 9, true)]
+        [TestCase(3, 9, true)]
+        [TestCase(4, 4, true)]
+        [TestCase(4, 9, true)]
         public void PointOfInterestLegend_FitsBetweenRouteAndFooter(
             int routeCount,
-            int pointOfInterestCount)
+            int entryCount,
+            bool areaTabsCharted)
         {
-            var panel = new Rect(461f, 41f, 170f, 311f);
+            var panel = areaTabsCharted
+                ? new Rect(461f, 63f, 170f, 289f)
+                : new Rect(461f, 41f, 170f, 311f);
+            int visible = CityMapView.ResolvePointOfInterestLegendVisibleEntries(
+                panel,
+                routeCount,
+                entryCount);
+            int rowCount = visible + (visible < entryCount ? 1 : 0);
             Rect legend = CityMapView.CreatePointOfInterestLegendRect(
                 panel,
                 routeCount,
-                pointOfInterestCount);
+                rowCount);
             float routeContentBottom = routeCount == 0
                 ? panel.y + 74f
                 : panel.y + 29f +
                   (routeCount - 1) * 26f +
                   22f;
 
+            Assert.That(visible, Is.GreaterThanOrEqualTo(Mathf.Min(4, entryCount)));
+            if (routeCount <= 2)
+            {
+                Assert.That(visible, Is.EqualTo(entryCount));
+            }
+
+            Assert.That(
+                legend.height,
+                Is.EqualTo(
+                    22f + rowCount * CityMapView.PointOfInterestLegendRowHeight));
             Assert.That(legend.xMin, Is.GreaterThan(panel.xMin));
             Assert.That(legend.xMax, Is.LessThan(panel.xMax));
             Assert.That(
@@ -604,7 +687,7 @@ namespace BarPromenade.Tests.EditMode
                 Is.GreaterThan(routeContentBottom));
             Assert.That(
                 legend.yMax,
-                Is.LessThanOrEqualTo(panel.yMax - 68f));
+                Is.LessThanOrEqualTo(panel.yMax - 41f));
         }
 
         [Test]

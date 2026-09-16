@@ -26,7 +26,8 @@ namespace BarPromenade.Tests.PlayMode
         {
             string[][] roles =
             {
-                new[] { "foreman", "watchman", "fisherman", "ferryman", "chess_player", "checkers_player" },
+                new[] { "foreman", "watchman", "fisherman", "ferryman", "chess_player", "checkers_player",
+                    "east_guard", "east_guard" },
                 new[] { "bartender" }, new[] { "cashier" }, new[] { "cat" },
                 new[] { "ferryman", "cafe_attendant" }
             };
@@ -44,7 +45,7 @@ namespace BarPromenade.Tests.PlayMode
                 NameplateEntry[] entries = JsonUtility.FromJson<NameplateCatalog>(asset.text).entries
                     .Where(entry => entry.key.StartsWith("npc.name.", StringComparison.Ordinal)).ToArray();
                 CollectionAssert.AreEquivalent(allKeys, entries.Select(entry => entry.key),
-                    "Only the approved ten roles are named; Mother and village residents remain deferred.");
+                    "Only the approved eleven roles are named; Mother and village residents remain deferred.");
                 font.RequestCharactersInTexture(string.Join("", entries.Select(entry => entry.value)), NpcNameplatePolicy.FontSize);
                 foreach (NameplateEntry entry in entries)
                 {
@@ -112,13 +113,23 @@ namespace BarPromenade.Tests.PlayMode
                 if (area == 0) ValidateNameplateDepthAndLifecycle(player);
                 using (var frame = new NameplateFrame(camera, player))
                 {
+                    // Two actors may wear one role (the east guards); each
+                    // still gets its own frame on disk.
+                    var framesByRole = new Dictionary<string, int>();
                     foreach (NpcNameplateTarget actor in current)
-                        yield return CaptureNameplateActor(frame, player, actor, scenes[area]);
+                    {
+                        framesByRole.TryGetValue(actor.StableId, out int seen);
+                        framesByRole[actor.StableId] = seen + 1;
+                        string frameName = seen == 0
+                            ? "nameplate-" + actor.StableId
+                            : "nameplate-" + actor.StableId + "-" + seen;
+                        yield return CaptureNameplateActor(frame, player, actor, scenes[area], frameName);
+                    }
                 }
                 previous = current;
             }
             }
-            Debug.Log("NPC NAMEPLATES: ten localized identities; five real roots; near/far, shared speech, opaque depth without colliders, panel depth and scene teardown.");
+            Debug.Log("NPC NAMEPLATES: eleven localized identities; five real roots; near/far, shared speech, opaque depth without colliders, panel depth and scene teardown.");
         }
 
         private static PlayerRuntime NameplatePlayer(string scene)
@@ -136,7 +147,7 @@ namespace BarPromenade.Tests.PlayMode
         }
 
         private static IEnumerator CaptureNameplateActor(NameplateFrame frame, PlayerRuntime player,
-            NpcNameplateTarget actor, string scene)
+            NpcNameplateTarget actor, string scene, string frameName)
         {
             // Start on the NPC's customer-facing side. The shorter alternatives
             // keep a camera inside a narrow landing or behind an interior counter.
@@ -173,7 +184,7 @@ namespace BarPromenade.Tests.PlayMode
                 if (!frame.Feature.DebugTryGetNameplate(actor, out Rect panel, out float opacity)) continue;
                 if (NameplateChangedPixels(without, with, panel) < 30) continue;
                 Assert.That(opacity, Is.EqualTo(1f).Within(.01f), actor.StableId + " is fully readable nearby.");
-                frame.Save(scene, "nameplate-" + actor.StableId);
+                frame.Save(scene, frameName);
                 shown = true;
                 break;
             }
@@ -447,7 +458,7 @@ namespace BarPromenade.Tests.PlayMode
 
             public NameplateLanguageScope(NameplateEntry[] entries)
             {
-                // Force resource loading before borrowing only these ten keys.
+                // Force resource loading before borrowing only these eleven keys.
                 // Every screenshot is then readable in the player's language,
                 // independently of the build machine's operating-system locale.
                 LocalizationService.Get(entries[0].key);

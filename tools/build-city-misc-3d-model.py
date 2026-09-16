@@ -48,7 +48,7 @@ sys.path.insert(0, str(ROOT / "tools"))
 import interior_kit as kit  # noqa: E402
 
 
-GENERATOR_VERSION = "4.10.0"
+GENERATOR_VERSION = "4.11.0"
 DESIGN_ID = "city_misc_citywide_v4"
 DISPLAY_NAME = (
     "City Misc Citywide Catalog + Church Courtyard + Nightlife Shelter + "
@@ -4568,6 +4568,153 @@ def build_nightlife_shelter_clutter() -> AssemblySpec:
     )
 
 
+def shelter_empty_bottle(
+    height: float,
+    radius: float,
+    neck: float,
+) -> Geometry:
+    """One empty glass bottle standing on the local origin: a body up to
+    ~62% of its height, a rounded shoulder and a lipped neck."""
+    shoulder = height * 0.62
+    return local_profile_solid((
+        (0.0, 0.0, 0.0, radius * 0.90, radius * 0.90),
+        (0.012, 0.0, 0.0, radius, radius),
+        (shoulder, 0.0, 0.0, radius, radius),
+        (shoulder + height * 0.10, 0.0, 0.0, neck * 1.35, neck * 1.35),
+        (shoulder + height * 0.18, 0.0, 0.0, neck, neck),
+        (height - 0.010, 0.0, 0.0, neck, neck),
+        (height, 0.0, 0.0, neck * 1.12, neck * 1.12),
+    ), sides=8)
+
+
+def shelter_tin_can(height: float, radius: float) -> Geometry:
+    """One drink can standing on the local origin with rolled rims."""
+    return local_profile_solid((
+        (0.0, 0.0, 0.0, radius * 0.94, radius * 0.94),
+        (0.006, 0.0, 0.0, radius, radius),
+        (0.014, 0.0, 0.0, radius * 0.965, radius * 0.965),
+        (height - 0.014, 0.0, 0.0, radius * 0.965, radius * 0.965),
+        (height - 0.006, 0.0, 0.0, radius, radius),
+        (height, 0.0, 0.0, radius * 0.92, radius * 0.92),
+    ), sides=10)
+
+
+def standing_on_ground(
+    geometry: Geometry,
+    x: float,
+    forward: float,
+    yaw_degrees: float,
+) -> Geometry:
+    return transform_geometry(
+        geometry,
+        translation=(x, forward, 0.0),
+        yaw_up_degrees=yaw_degrees,
+    )
+
+
+def lying_on_ground(
+    geometry: Geometry,
+    x: float,
+    forward: float,
+    body_radius: float,
+    yaw_degrees: float,
+) -> Geometry:
+    """Tip an upright vessel over so its base sits at (x, forward) and it
+    runs along the yawed forward axis, resting on its widest ring."""
+    return transform_geometry(
+        geometry,
+        translation=(x, forward, body_radius),
+        pitch_x_degrees=90.0,
+        yaw_up_degrees=yaw_degrees,
+    )
+
+
+def build_nightlife_shelter_platform_litter() -> AssemblySpec:
+    """Empties around the warmers' terrace: standing and toppled bottles in
+    two glass tints plus a few cans, authored in three bands that keep
+    clear of the barrel, the bedding envelope and both warmers' feet. The
+    root sits at the composition's own XZ centre so the runtime plan can
+    declare one conservative envelope around it."""
+    kind, variant = "NightlifeShelterPlatformLitter", 0
+    # Offsets below are authored against the terrace layout with the
+    # barrel at x -2.67, the bedding envelope at x -1.97..0.23 /
+    # forward -0.38..0.78 and both warmers west of x -2.1; the bands lie
+    # south (forward <= -0.45), north (forward >= 1.0) and east
+    # (x >= 0.85) of the bedding. The centre shift keeps the root in the
+    # middle of the measured envelope.
+    cx, cf = 0.52, 0.05
+
+    def at(x: float, forward: float) -> tuple[float, float]:
+        return x - cx, forward - cf
+
+    standing_bottles: list[Geometry] = []
+    for (x, forward), height, radius, neck, yaw in (
+        ((-1.02, -0.66), 0.272, 0.040, 0.0135, 0.0),
+        ((-0.56, -1.12), 0.236, 0.044, 0.0140, 40.0),
+        ((1.38, 0.62), 0.300, 0.037, 0.0130, 110.0),
+        ((0.28, 1.24), 0.215, 0.047, 0.0150, 200.0),
+    ):
+        standing_bottles.append(standing_on_ground(
+            shelter_empty_bottle(height, radius, neck),
+            *at(x, forward), yaw))
+
+    lying_bottles: list[Geometry] = []
+    for (x, forward), height, radius, neck, yaw in (
+        ((-0.20, -0.62), 0.270, 0.041, 0.0135, 250.0),
+        ((0.62, -1.30), 0.250, 0.042, 0.0140, 335.0),
+        ((1.95, -0.85), 0.280, 0.039, 0.0130, 160.0),
+        ((1.10, 1.05), 0.260, 0.043, 0.0140, 100.0),
+    ):
+        lying_bottles.append(lying_on_ground(
+            shelter_empty_bottle(height, radius, neck),
+            *at(x, forward), radius, yaw))
+
+    dark_bottles: list[Geometry] = [
+        standing_on_ground(
+            shelter_empty_bottle(0.262, 0.042, 0.0140),
+            *at(0.92, -0.72), 75.0),
+    ]
+    for (x, forward), height, radius, neck, yaw in (
+        ((-0.95, -1.32), 0.270, 0.040, 0.0135, 60.0),
+        ((2.05, 0.95), 0.240, 0.044, 0.0145, 215.0),
+        ((-0.55, 1.38), 0.250, 0.040, 0.0135, 280.0),
+    ):
+        dark_bottles.append(lying_on_ground(
+            shelter_empty_bottle(height, radius, neck),
+            *at(x, forward), radius, yaw))
+
+    cans: list[Geometry] = [
+        standing_on_ground(
+            shelter_tin_can(0.125, 0.033), *at(0.15, -0.98), 0.0),
+        lying_on_ground(
+            shelter_tin_can(0.130, 0.033), *at(1.55, -1.22), 0.033, 120.0),
+        lying_on_ground(
+            shelter_tin_can(0.120, 0.033), *at(1.62, 1.28), 0.033, 20.0),
+    ]
+    return AssemblySpec(
+        kind,
+        variant,
+        (
+            make_named_part(
+                kind, variant, "StandingBottles_Residential",
+                "Residential", *standing_bottles),
+            make_named_part(
+                kind, variant, "LyingBottles_Residential",
+                "Residential", *lying_bottles),
+            make_named_part(
+                kind, variant, "DarkBottles_Street", "Street",
+                *dark_bottles),
+            make_named_part(
+                kind, variant, "Cans_Industrial", "Industrial", *cans),
+        ),
+        root_derivation=(
+            "NightlifeArchShelterPlan.PlatformLitterGround+Rotation"),
+        coordinate_profile="root_local_direct",
+        expected_source_min_z=0.0,
+    )
+
+
+
 def build_nightlife_shelter_fire() -> AssemblySpec:
     kind, variant = "NightlifeShelterFire", 0
     core = [
@@ -5432,6 +5579,9 @@ def make_assemblies() -> tuple[AssemblySpec, ...]:
         # signatures deliberately cover catalog prefixes.
         *(build_residential_courtyard_pocket(index) for index in range(6)),
         build_fringe_mason_cart(),
+        # Citywide v4.11: empties on the shelter terrace (2026-09-16),
+        # appended after the mason cart for the same reason.
+        build_nightlife_shelter_platform_litter(),
     )
 
 
@@ -5601,6 +5751,7 @@ EXPECTED_VARIANTS = {
     "NightlifeShelterSleepingPerson": 1,
     "ResidentialCourtyardPocket": 6,
     "FringeMasonCart": 1,
+    "NightlifeShelterPlatformLitter": 1,
 }
 
 EXPECTED_ROLES = {
@@ -5748,6 +5899,8 @@ EXPECTED_ROLES = {
         "Residential_Timber", "Masonry_Stone", "Street_PaintedMetal"),
     ("FringeMasonCart", 0): (
         "Residential_Timber", "Masonry_Stone", "Fixture"),
+    ("NightlifeShelterPlatformLitter", 0): (
+        "Residential", "Residential", "Street", "Industrial"),
 }
 
 
@@ -5838,6 +5991,11 @@ EXPECTED_MESH_SUFFIXES = {
         "Cart_Residential_Timber",
         "MasonryLoad_Masonry_Stone",
         "WheelAndHardware_Fixture"),
+    ("NightlifeShelterPlatformLitter", 0): (
+        "StandingBottles_Residential",
+        "LyingBottles_Residential",
+        "DarkBottles_Street",
+        "Cans_Industrial"),
 }
 
 
@@ -6450,11 +6608,11 @@ def validate_assemblies(assemblies: Sequence[AssemblySpec]) -> None:
         if actual != list(range(count)):
             problems.append(
                 f"{kind} variants are {actual}, expected 0..{count - 1}")
-    if len(assemblies) != 122:
+    if len(assemblies) != 123:
         problems.append(
-            f"assembly count is {len(assemblies)}, expected 122")
-    if len(names) != 259:
-        problems.append(f"mesh count is {len(names)}, expected 259")
+            f"assembly count is {len(assemblies)}, expected 123")
+    if len(names) != 263:
+        problems.append(f"mesh count is {len(names)}, expected 263")
     validate_mirror_bounds(assemblies, "IndustrialCargo", problems)
     validate_mirror_bounds(
         assemblies, "RoadsideRoadworkAndBicycle", problems)

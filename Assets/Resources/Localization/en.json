@@ -49,6 +49,10 @@
       "value": "Cafe attendant"
     },
     {
+      "key": "npc.name.east_guard",
+      "value": "Guard"
+    },
+    {
       "key": "interaction.inspect_garden_pot",
       "value": "Pick up pot"
     },
@@ -1323,6 +1327,30 @@
     {
       "key": "map.poi.nightlife_last_route_island",
       "value": "Last Route Island"
+    },
+    {
+      "key": "map.poi.fair",
+      "value": "Fair"
+    },
+    {
+      "key": "map.poi.eastern_post",
+      "value": "Eastern Post"
+    },
+    {
+      "key": "map.poi.docks",
+      "value": "Docks"
+    },
+    {
+      "key": "map.poi.arch",
+      "value": "Archway"
+    },
+    {
+      "key": "map.poi.church_entrance",
+      "value": "Church Entrance"
+    },
+    {
+      "key": "map.poi.more",
+      "value": "{0} more"
     },
     {
       "key": "map.district.old_town",
@@ -3683,6 +3711,198 @@
     {
       "key": "city.east.guard.pair.06.b",
       "value": "So is the other one."
+    },
+    {
+      "key": "city.shelter.warmers.01.a",
+      "value": "The wood runs out by morning."
+    },
+    {
+      "key": "city.shelter.warmers.01.b",
+      "value": "We will break up another crate."
+    },
+    {
+      "key": "city.shelter.warmers.02.a",
+      "value": "The smoke keeps coming my way."
+    },
+    {
+      "key": "city.shelter.warmers.02.b",
+      "value": "Sit over here, I am not holding the spot."
+    },
+    {
+      "key": "city.shelter.warmers.03.a",
+      "value": "The wind is meaner under the arch than out there."
+    },
+    {
+      "key": "city.shelter.warmers.03.b",
+      "value": "Nothing drips from above, though."
+    },
+    {
+      "key": "city.shelter.warmers.04.a",
+      "value": "Your mitten has burnt through."
+    },
+    {
+      "key": "city.shelter.warmers.04.b",
+      "value": "The other one is whole."
+    },
+    {
+      "key": "city.shelter.warmers.05.a",
+      "value": "Move the bottles, you will step on one."
+    },
+    {
+      "key": "city.shelter.warmers.05.b",
+      "value": "I will pick them up in the morning."
+    },
+    {
+      "key": "city.shelter.warmers.06.a",
+      "value": "I cannot feel my feet."
+    },
+    {
+      "key": "city.shelter.warmers.06.b",
+      "value": "Sit closer, there is room."
+    },
+    {
+      "key": "city.shelter.warmers.07.a",
+      "value": "The cardboard is damp, it will not catch."
+    },
+    {
+      "key": "city.shelter.warmers.07.b",
+      "value": "Dry it on the barrel."
+    },
+    {
+      "key": "city.shelter.warmers.08.a",
+      "value": "What time is it by now?"
+    },
+    {
+      "key": "city.shelter.warmers.08.b",
+      "value": "The lamps are on. Still night."
+    },
+    {
+      "key": "city.shelter.warmers.09.a",
+      "value": "My back will stiffen by morning."
+    },
+    {
+      "key": "city.shelter.warmers.09.b",
+      "value": "Turn your back to the fire."
+    },
+    {
+      "key": "city.shelter.warmers.10.a",
+      "value": "Three matches left."
+    },
+    {
+      "key": "city.shelter.warmers.10.b",
+      "value": "You can light one off the barrel."
+    },
+    {
+      "key": "city.shelter.warmers.11.a",
+      "value": "The barrel has burnt through at the bottom."
+    },
+    {
+      "key": "city.shelter.warmers.11.b",
+      "value": "It will last another winter."
+    },
+    {
+      "key": "city.shelter.warmers.12.a",
+      "value": "The rain has stopped."
+    },
+    {
+      "key": "city.shelter.warmers.12.b",
+      "value": "It will be back by morning."
+    },
+    {
+      "key": "city.shelter.warmers.13.a",
+      "value": "He is snoring for the whole corner again."
+    },
+    {
+      "key": "city.shelter.warmers.13.b",
+      "value": "Let him. At least one of us sleeps."
+    },
+    {
+      "key": "city.shelter.warmers.14.a",
+      "value": "My fingers will not bend."
+    },
+    {
+      "key": "city.shelter.warmers.14.b",
+      "value": "Rub them. Keep them out of the fire."
+    },
+    {
+      "key": "city.shelter.warmers.15.a",
+      "value": "It was cleaner here last week."
+    },
+    {
+      "key": "city.shelter.warmers.15.b",
+      "value": "One of us tidied up."
+    },
+    {
+      "key": "city.shelter.warmers.16.a",
+      "value": "My boot is coming apart at the toe."
+    },
+    {
+      "key": "city.shelter.warmers.16.b",
+      "value": "Tie it with wire."
+    },
+    {
+      "key": "city.shelter.warmers.17.a",
+      "value": "I could use some hot tea."
+    },
+    {
+      "key": "city.shelter.warmers.17.b",
+      "value": "There is boiling water. No tea."
+    },
+    {
+      "key": "city.shelter.warmers.18.a",
+      "value": "The frost will bite by morning."
+    },
+    {
+      "key": "city.shelter.warmers.18.b",
+      "value": "It is still bearable tonight."
+    },
+    {
+      "key": "city.shelter.warmers.19.a",
+      "value": "The mattress is damp on your side."
+    },
+    {
+      "key": "city.shelter.warmers.19.b",
+      "value": "I will turn it over in the day."
+    },
+    {
+      "key": "city.shelter.warmers.20.a",
+      "value": "The coals look good."
+    },
+    {
+      "key": "city.shelter.warmers.20.b",
+      "value": "Mind you do not fall asleep by them."
+    },
+    {
+      "key": "city.shelter.sleeper.01.a",
+      "value": "You are snoring for the whole arch."
+    },
+    {
+      "key": "city.shelter.sleeper.01.b",
+      "value": "That is not me."
+    },
+    {
+      "key": "city.shelter.sleeper.02.a",
+      "value": "Move over, your feet are in the fire."
+    },
+    {
+      "key": "city.shelter.sleeper.02.b",
+      "value": "Let me sleep."
+    },
+    {
+      "key": "city.shelter.sleeper.03.a",
+      "value": "Your blanket slipped off."
+    },
+    {
+      "key": "city.shelter.sleeper.03.b",
+      "value": "I am warm as it is."
+    },
+    {
+      "key": "city.shelter.sleeper.04.a",
+      "value": "I will wake you in the morning."
+    },
+    {
+      "key": "city.shelter.sleeper.04.b",
+      "value": "Do not."
     }
   ]
 }

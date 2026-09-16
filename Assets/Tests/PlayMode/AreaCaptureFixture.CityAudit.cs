@@ -1108,6 +1108,7 @@ namespace BarPromenade.Tests.PlayMode
                 Guard("fringe-yards", FringeYards);
                 Guard("open-area-accesses", OpenAreaAccesses);
                 Guard("arch-shelter", ArchShelter);
+                Guard("fair", Fair);
                 Guard("last-route", LastRoute);
                 Guard("east-exit", EastExit);
                 return shots;
@@ -1821,6 +1822,26 @@ namespace BarPromenade.Tests.PlayMode
                 var foot = new Vector3(centre.x, bounds.min.y, centre.z);
                 Add("arch-shelter", foot + axis * (extent + 4f), centre, false);
                 Add("arch-shelter", foot - axis * (extent + 4f), centre, false);
+            }
+
+            private void Fair()
+            {
+                CityFairPlan fair = world.Fair != null ? world.Fair.Plan : null;
+                if (fair == null || !fair.IsEnabled)
+                {
+                    Skip("fair");
+                    return;
+                }
+
+                // The eyes stay on the plan's validated clear paths: the centre
+                // path end to end, then the east-west cross aisle at its south end.
+                Add("fair", fair.CenterPathSouth, fair.CenterPathNorth + Vector3.up * 1.4f, false);
+                Add("fair", fair.CenterPathNorth, fair.CenterPathSouth + Vector3.up * 1.4f, false);
+                Add(
+                    "fair",
+                    new Vector3(fair.Bounds.xMin + 1.2f, fair.CenterPathSouth.y, fair.CenterPathSouth.z),
+                    new Vector3(fair.Bounds.xMax - 1f, fair.CenterPathSouth.y + 1.2f, fair.CenterPathSouth.z),
+                    false);
             }
 
             private void LastRoute()

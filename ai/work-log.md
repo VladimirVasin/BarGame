@@ -6,48 +6,84 @@ Older whole dates move to `ai/archive/` when the byte budget is reached;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-08.md`](archive/work-log-2026-08.md).
 
+## 2026-09-16 — Nightlife lane crossroads
+
+- The x = 10 lane dead-ended at node `(10,4)` between lots `(9,4)`/`(10,4)`,
+  one block short of the `(9..12,5)` street. Inserting the edge as a
+  required edge would have re-seeded the whole spanning tree and every loop
+  draw after it, so `CityBlueprint.AuthoredStreets` is appended after the
+  outer ring, like the ring itself. `default-coastal` authors
+  `(10,4)-(10,5)`; `(10,5)` is now a four-way crossroads and lot `(9,4)`
+  fronts north. Check:
+  `CityLayoutGeneratorTests.DefaultCoastalBlueprint_AuthoredStreetTurnsTheNightlifeStubIntoACrossroads`
+  with the canonical-home canary and `CityArchShelterTests` in the same run.
+- Empties on the shelter terrace: one new misc kind
+  `NightlifeShelterPlatformLitter` (v4.11, fifteen bottles standing and
+  lying plus cans in four tint parts) placed by a fifth, non-blocking
+  `PlatformLitter` prop. Its envelope must wrap the bedding, so the plan
+  cannot prove clearance; the sleeper exemption widened and
+  `WorldBuilder_PlatformLitterLiesAroundTheBeddingClearOfTheWarmers` checks
+  the imported vertices against both warmers, the barrel and the mattress
+  instead. Surface contract grew to nineteen components. Checks: generator
+  `--validate-only`, `CityMiscAssetSetup.RunBatch`, `CityMiscAssetTests`,
+  `CityArchShelterTests`.
+- Shelter residents talk on the port principle: pure
+  `CityArchShelterConversationSchedule` (Rules) picks authored pairs with the
+  port's no-repeat/deferral/discontinuity rules but takes each line's length
+  from the shared delivery via the caller instead of a fixed clock;
+  `CityArchShelterConversationController` on the shelter root owns one
+  manual-clock bubble view over the residents' real heads, raised from
+  `CityGameRoot` beside the guards because it needs the camera. 48 RU/EN
+  lines (`city.shelter.*`). The story bible's «молчат» was lifted by a §6
+  row. Checks: `CityArchShelterConversationTests` (pools, order, deferral,
+  earshot, seek, and the controller on the built shelter),
+  `LocalizationCatalogTests`.
+
 ## 2026-09-15 — Eastern valley, litter, fair and default NPCs
 
-- Eastern post: broad valley, level apron, descending curves, soft city/warm
-  day/night glow. `CityEastRoadProfile` owns road/land/car/lamp datum; yard
+- Eastern post: broad valley, level apron, descending curves, soft day/night
+  glow. `CityEastRoadProfile` owns road/land/car/lamp datum; yard
   cuts retain the garden seam. First mast shares the light pool. Two cars
   retain lane/grade/session/pause. Source depth resolves terrain/road/car
-  occlusion; asphalt vertices preserve crown/panorama seam, unlike the box.
+  occlusion; asphalt vertices keep the crown/panorama seam.
   `--near-only` retains panorama Light/audio/collision/travel exclusion.
   Checks: `build-city-east-exit-3d-model.py --validate-only` (`--near-only`/
-  `--distance-only`), `AreaCaptureFixture.CityEastExit`: import/seam,
-  lamp/day floor, traffic/pause and reviewed valley/skyline/glow frames.
+  `--distance-only`), `AreaCaptureFixture.CityEastExit`, reviewed frames.
 - Litter sparsely covers permitted pavement/wall/tide/bench bands, outside
   roads/crossings/authored sites. Memoised `CityLitterPlan` shares geometry/
   instancing with the eastern strip. Spatial hashing prevents nearby repeats;
-  actual strip/cap/corner boxes correct graded-curve placement. Beach avoids
+  real strip/cap/corner boxes fix graded-curve placement. Beach avoids
   loose sand; shelters use the bus plan; priming warms the exit profile.
   Checks: `CityLitterPlanTests`,
   `CityLayoutCacheTests.PrimeCityPlans_JoinsPlansEqualToPlanningOnTheMainThread`,
   `AreaCaptureFixture.CityLitter`, `check-docs.py`.
 - Fair: passive displays/silent vendors, organ/bell/shared hero actions,
   seats/garlands. Sampled terrain/tilted supports fix the buried north row.
-  Three children share detailed body/outfits/clips; watching, toy car/table
-  and seat claims preserve circulation. Trousers now join the waist;
-  triangle totals missed the bare pelvis. Residual gaze/removing secondary
-  offsets fixes doubled head tilt. Checks: `CityFair`, `CityFairChildHeads`,
-  reviewed source/activity frames, contacts/claims/pause/re-entry.
+  Three children share body/outfits/clips; watching, toy car/table and seat
+  claims preserve circulation. Trousers now join the waist; triangle totals
+  missed the bare pelvis. Residual gaze fixes doubled head tilt. Checks:
+  `CityFair`, `CityFairChildHeads`, reviewed activity frames.
 - Global `DefaultNpcPopulation`/`CreateForCharacter` assigns stable looks by ID,
-  avoiding repeated visible model/face/hair/clothes tuples until exhaustion.
-  Detailed body, modular outfits, painted faces and matched hair/beards
-  retain bind frames/actions; explicit coverage replaces local tint/apron loops.
+  no repeated model/face/hair/clothes tuples until exhaustion.
+  Detailed body, outfits, faces and hair/beards retain bind frames/actions;
+  explicit coverage replaces local tint/apron loops.
   Checks: `build-default-npc-3d-model.py --validate-only`,
   `DefaultNpcFactoryPlayModeTests`, `AreaCaptureFixture.DefaultNpcWardrobe`,
-  `check-docs.py`. Old fair wipe reach failure remains; FBX bind frames match.
-- Hero/default hands retain 20% larger reach with slimmer depth/girth and fixed
-  wrists/grips. Seated meshes exposed stale passenger lifts and post-animation
-  bus movement; seat-plane alignment now follows that movement without reticking.
-  Truck caches trouser fit; capture checks cushion/pedals/reverse/bench.
-  Lateral elbow hints caused apparent sleeve growth. Shared hints fix it;
-  authored finger/thumb grip shapes replace open hands along the wheel.
-  Checks: `DefaultNpcDriverGrip`, hero source contact validator,
+  `check-docs.py`.
+- Hero/default hands: 20% larger reach, slimmer depth/girth, fixed
+  wrists/grips. Seated meshes exposed stale passenger lifts after bus
+  movement; seat planes now follow it without reticking. Truck caches
+  trouser fit. Shared elbow hints end the sleeve growth lateral hints caused;
+  authored finger/thumb grips replace open hands on the wheel.
+  Checks: `DefaultNpcDriverGrip`,
   `NauseaHand_ReachesTheMouthAndRendersTheSheet`,
   `SeatedPassengers_StayOnActualCushionsAcrossAnimationAndBusMotion`.
+- Map: fair, eastern post, docks, arch and church door join the POI list/
+  legend/hover/`XYZ` via a map-level kind enum; the layout POI enum stays a
+  lot contract; legend rows shrink, overflow line; «Дежурный» on both east
+  guards; `fair` audit group; stale cannery/balance key expectations fixed.
+  Checks: `CityMapDistrictPresentationTests`, `CityMapAreaPresentationTests`,
+  `LocalizationCatalogTests`, `check-docs.py`.
 
 ## 2026-09-14 — City geometry, eastern checkpoint, cold City loading
 

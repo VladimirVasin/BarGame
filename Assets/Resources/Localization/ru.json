@@ -49,6 +49,10 @@
       "value": "Работник кафе"
     },
     {
+      "key": "npc.name.east_guard",
+      "value": "Дежурный"
+    },
+    {
       "key": "interaction.inspect_garden_pot",
       "value": "Поднять горшок"
     },
@@ -1323,6 +1327,30 @@
     {
       "key": "map.poi.nightlife_last_route_island",
       "value": "Остров последнего рейса"
+    },
+    {
+      "key": "map.poi.fair",
+      "value": "Ярмарка"
+    },
+    {
+      "key": "map.poi.eastern_post",
+      "value": "Восточный пост"
+    },
+    {
+      "key": "map.poi.docks",
+      "value": "Доки"
+    },
+    {
+      "key": "map.poi.arch",
+      "value": "Междомовая арка"
+    },
+    {
+      "key": "map.poi.church_entrance",
+      "value": "Вход в церковь"
+    },
+    {
+      "key": "map.poi.more",
+      "value": "Ещё {0}"
     },
     {
       "key": "map.district.old_town",
@@ -3683,6 +3711,198 @@
     {
       "key": "city.east.guard.pair.06.b",
       "value": "Другой тоже."
+    },
+    {
+      "key": "city.shelter.warmers.01.a",
+      "value": "Дрова к утру кончатся."
+    },
+    {
+      "key": "city.shelter.warmers.01.b",
+      "value": "Ящик ещё разломаем."
+    },
+    {
+      "key": "city.shelter.warmers.02.a",
+      "value": "Дым опять в мою сторону."
+    },
+    {
+      "key": "city.shelter.warmers.02.b",
+      "value": "Пересядь, я тут не держу."
+    },
+    {
+      "key": "city.shelter.warmers.03.a",
+      "value": "Ветер под аркой злее, чем на улице."
+    },
+    {
+      "key": "city.shelter.warmers.03.b",
+      "value": "Зато сверху не капает."
+    },
+    {
+      "key": "city.shelter.warmers.04.a",
+      "value": "У тебя рукавица прогорела."
+    },
+    {
+      "key": "city.shelter.warmers.04.b",
+      "value": "Вторая целая."
+    },
+    {
+      "key": "city.shelter.warmers.05.a",
+      "value": "Бутылки убери, наступишь."
+    },
+    {
+      "key": "city.shelter.warmers.05.b",
+      "value": "Утром соберу."
+    },
+    {
+      "key": "city.shelter.warmers.06.a",
+      "value": "Ноги не чувствую."
+    },
+    {
+      "key": "city.shelter.warmers.06.b",
+      "value": "Сядь ближе, место есть."
+    },
+    {
+      "key": "city.shelter.warmers.07.a",
+      "value": "Картон сырой, не горит."
+    },
+    {
+      "key": "city.shelter.warmers.07.b",
+      "value": "Подсуши на бочке."
+    },
+    {
+      "key": "city.shelter.warmers.08.a",
+      "value": "Сколько там натикало?"
+    },
+    {
+      "key": "city.shelter.warmers.08.b",
+      "value": "Фонари горят. Ночь ещё."
+    },
+    {
+      "key": "city.shelter.warmers.09.a",
+      "value": "Спина к утру задеревенеет."
+    },
+    {
+      "key": "city.shelter.warmers.09.b",
+      "value": "Повернись к огню спиной."
+    },
+    {
+      "key": "city.shelter.warmers.10.a",
+      "value": "Спичек осталось три."
+    },
+    {
+      "key": "city.shelter.warmers.10.b",
+      "value": "От бочки прикуришь."
+    },
+    {
+      "key": "city.shelter.warmers.11.a",
+      "value": "Бочка прогорела снизу."
+    },
+    {
+      "key": "city.shelter.warmers.11.b",
+      "value": "Ещё зиму выдержит."
+    },
+    {
+      "key": "city.shelter.warmers.12.a",
+      "value": "Дождь стих."
+    },
+    {
+      "key": "city.shelter.warmers.12.b",
+      "value": "К утру снова."
+    },
+    {
+      "key": "city.shelter.warmers.13.a",
+      "value": "Он опять на весь угол храпит."
+    },
+    {
+      "key": "city.shelter.warmers.13.b",
+      "value": "Пусть. Хоть кто-то спит."
+    },
+    {
+      "key": "city.shelter.warmers.14.a",
+      "value": "Пальцы не гнутся."
+    },
+    {
+      "key": "city.shelter.warmers.14.b",
+      "value": "Разотри. К огню не суй."
+    },
+    {
+      "key": "city.shelter.warmers.15.a",
+      "value": "На той неделе тут чище было."
+    },
+    {
+      "key": "city.shelter.warmers.15.b",
+      "value": "Кто-то из нас убирал."
+    },
+    {
+      "key": "city.shelter.warmers.16.a",
+      "value": "Сапог каши просит."
+    },
+    {
+      "key": "city.shelter.warmers.16.b",
+      "value": "Проволокой стяни."
+    },
+    {
+      "key": "city.shelter.warmers.17.a",
+      "value": "Чаю бы горячего."
+    },
+    {
+      "key": "city.shelter.warmers.17.b",
+      "value": "Кипяток есть. Чая нет."
+    },
+    {
+      "key": "city.shelter.warmers.18.a",
+      "value": "К утру мороз ударит."
+    },
+    {
+      "key": "city.shelter.warmers.18.b",
+      "value": "Ночью ещё терпимо."
+    },
+    {
+      "key": "city.shelter.warmers.19.a",
+      "value": "Матрас на твоей стороне отсырел."
+    },
+    {
+      "key": "city.shelter.warmers.19.b",
+      "value": "Переверну днём."
+    },
+    {
+      "key": "city.shelter.warmers.20.a",
+      "value": "Угли красивые."
+    },
+    {
+      "key": "city.shelter.warmers.20.b",
+      "value": "Смотри, не усни у них."
+    },
+    {
+      "key": "city.shelter.sleeper.01.a",
+      "value": "Ты храпишь на всю арку."
+    },
+    {
+      "key": "city.shelter.sleeper.01.b",
+      "value": "Это не я."
+    },
+    {
+      "key": "city.shelter.sleeper.02.a",
+      "value": "Подвинься, ноги в огонь лезут."
+    },
+    {
+      "key": "city.shelter.sleeper.02.b",
+      "value": "Дай поспать."
+    },
+    {
+      "key": "city.shelter.sleeper.03.a",
+      "value": "Одеяло сползло."
+    },
+    {
+      "key": "city.shelter.sleeper.03.b",
+      "value": "Мне и так тепло."
+    },
+    {
+      "key": "city.shelter.sleeper.04.a",
+      "value": "Утром разбужу тебя."
+    },
+    {
+      "key": "city.shelter.sleeper.04.b",
+      "value": "Не надо."
     }
   ]
 }

@@ -29,6 +29,10 @@ namespace BarPromenade
         // Look at the initial trolley parking place even after it moves.
         public Vector3 ForemanSeatWorld => World(new Vector3(-3.6f, DeckHeight, -11.45f));
         public Quaternion ForemanFacing => Quaternion.LookRotation(World(LandingLocal(0)) - ForemanSeatWorld, Vector3.up);
+        // Where a new game and the map's docks point put the hero: west of
+        // the crane/trolley lanes and north of the store, on the deck itself.
+        public Vector3 ArrivalWorld =>
+            World(new Vector3(-10f, DeckHeight + PlayerFactory.GroundedRootOffset, -8f));
         public Vector3 RavenPerch => World(new Vector3(-23f, DeckHeight, 30.9f));
         public Vector3 RavenCompanion => World(new Vector3(-23f, DeckHeight, 27.1f));
 

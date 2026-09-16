@@ -91,7 +91,8 @@ namespace BarPromenade
         NightlifeShelterSeatedPerson = 78,
         NightlifeShelterSleepingPerson = 79,
         ResidentialCourtyardPocket = 80,
-        FringeMasonCart = 81
+        FringeMasonCart = 81,
+        NightlifeShelterPlatformLitter = 82
     }
 
     /// <summary>
@@ -182,11 +183,11 @@ namespace BarPromenade
     public sealed partial class CityMiscAssetProvider : ScriptableObject
     {
         public const string ResourcePath = "City/CityMiscAssetProvider";
-        public const string GeneratorVersion = "4.10.0";
+        public const string GeneratorVersion = "4.11.0";
         public const string DesignId = "city_misc_citywide_v4";
-        public const int ExpectedAssemblyCount = 122;
-        public const int ExpectedMeshCount = 259;
-        public const int SupportedKindCount = 82;
+        public const int ExpectedAssemblyCount = 123;
+        public const int ExpectedMeshCount = 263;
+        public const int SupportedKindCount = 83;
 
         private const float GroundTolerance = 0.003f;
 
@@ -273,7 +274,8 @@ namespace BarPromenade
             CityMiscKind.NightlifeShelterSeatedPerson,
             CityMiscKind.NightlifeShelterSleepingPerson,
             CityMiscKind.ResidentialCourtyardPocket,
-            CityMiscKind.FringeMasonCart
+            CityMiscKind.FringeMasonCart,
+            CityMiscKind.NightlifeShelterPlatformLitter
         };
 
         private static readonly ExpectedPartSpec[] IndustrialStreetParts =
@@ -1306,6 +1308,8 @@ namespace BarPromenade
                     }
                 case CityMiscKind.FringeMasonCart:
                     return FringeMasonCartParts;
+                case CityMiscKind.NightlifeShelterPlatformLitter:
+                    return NightlifeShelterPlatformLitterParts;
                 default:
                     throw UnsupportedKind(kind);
             }

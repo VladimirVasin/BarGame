@@ -239,12 +239,13 @@
   seek reset/cancel restore. Rig/snack/speech stay.
 
 - **Accepted — 2026-09-11, nearby NPC role labels:**
-  §24.26/§21/art §15a: ten RU/EN roles, no personal names/lore/voice; village/Mother
-  excluded. Actor/head/stable ID via `NpcNameplateTarget`, camera/listener via
-  `PlayerFactory`. `6→4 m`, shared `10 px`/charcoal, gaps `.25/.4/.5 m`.
+  §24.26/§21/art §15a: eleven RU/EN roles (`2026-09-15`: both east-post guards
+  share `npc.name.east_guard`), no names/lore/voice; village/Mother excluded.
+  Actor/head/ID via `NpcNameplateTarget`, camera/listener via `PlayerFactory`.
+  `6→4 m`, shared `10 px`/charcoal, gaps `.25/.4/.5 m`.
   No edge clamp; speech/pause/modal/transition suppress. Overlap: selected→nearest.
   After PS1: cleared actor-ID mask of existing meshes + camera/text depth rejects
-  colliderless occlusion. Identity survives movement/reparenting/busy; scene cleanup.
+  colliderless occlusion. Identity survives movement/reparenting/busy.
 
 - **Accepted — 2026-09-11, every spoken line above its speaker:**
   `NpcSpeechBubbleView`/`SpeechDelivery`/`NpcSpeechVoice` own all speech, including E;
@@ -1679,6 +1680,11 @@
   the seeded graph and access-repair passes as mandatory Street. This preserves
   the existing interior selection while the continuous river-bank roads and
   two road bridges join the west/east perimeters into one outer circuit.
+  A blueprint's `AuthoredStreets` (`CityBlueprintBuilder.WithAuthoredStreet`,
+  validated against the road grid) are appended last under the same rule;
+  `default-coastal` authors `(10,4)-(10,5)` (`2026-09-16`) so the x = 10
+  Nightlife lane ends in a crossroads at `(10,5)` rather than a stub between
+  lots `(9,4)` and `(10,4)`. Seven other one-block stubs remain seeded.
   Legacy and custom blueprints retain their prior graph policy.
 - **Accepted — Stable blueprint identity over position:** An immutable
   `CityBlueprint` owns stable area IDs, category, reusable visual archetype,
@@ -5377,46 +5383,6 @@
   orbit input but deliberately retain cinematic motion so intoxication lean
   and fall reactions remain visible. Fixed Home/Stairwell and contextual
   camera owners remain non-orbiting; the bus keeps its separate seated bounds.
-- **Superseded 2026-08-04 — Eight-direction player presentation:** A corrected
-  point-filtered `512x96` reference and a derived `512x864` layered atlas
-  provide eight explicit `64x96` views at PPU 48. Each view has one body layer
-  and upper/lower segments for both arms and legs. A signed player-camera
-  angle selects the view in 45-degree sectors with 5-degree hysteresis; views
-  are never mirrored and share one foot pivot. Jointed walking projects the
-  actor's sagittal plane into the active billboard view: side views swing in
-  screen space, front/back views swing in depth, diagonal views blend both,
-  and contralateral limbs remain in opposite gait phases. Explicit
-  atlas-derived contact points keep whichever foot is lower pinned to the
-  visual ground plane; a `5 mm` base clearance is consumed by the footfall
-  compression instead of adding an always-positive whole-puppet bob.
-  Breathing and impact compression offset only the body and arm roots, while
-  the projected joints retain grounded feet plus readable weight transfer and
-  deterministic alternating left/right arm gestures while idle. A separate
-  `512x480` body-expression
-  atlas provides neutral, half-blink, closed-blink, watchful and tense rows;
-  the stronger blink remains available during locomotion, watchful/tense
-  states require sustained idle below strong intoxication and outside a
-  balance/fall state, runtime swaps only the existing body renderer, and all
-  rear variants remain neutral. The same joint hierarchy accepts continuous
-  intoxication sway, arm spread, knee bend and balance lean. A failed balance
-  check temporarily reuses its body renderer for a full-body `128x96` frame,
-  disables the other eight visible layers and lazily slices one of 16
-  point-filtered `10x8` fall atlases. Eight camera-relative views each own
-  separately authored screen-left and screen-right variants, so the physical
-  bandage/patch asymmetry never relies on mirroring. Explicit
-  `Falling`/`Down`/`Rising` progress maps to `14`/`36`/`30` frames and restores
-  the original nine-part puppet without changing renderer count.
-- **Superseded 2026-08-04 — Camera-independent sprite shadow:** One collider-free
-  nine-part `ShadowsOnly` puppet reuses the directional part sprites and a
-  shared alpha-clipped URP shadow-caster material. It selects its authored view
-  from the signed player-to-main-light angle, faces the directional light
-  rather than the camera and remaps the live joint angles into that view, so
-  City and BarInterior receive the animated gait, upper-body compression and
-  whole-puppet sway without changing the nine visible puppet renderers. A
-  separate shared four-vertex analytic contact quad stays on the player root
-  instead of following `PoseRoot`, remains visible when realtime shadows are
-  unavailable and supplies the stable ambient-occlusion cue beneath the feet.
-  Practical street/bar lights remain shadowless.
 - **Accepted — Runtime presentation:** City geometry, primitive colors and the
   shared interior are built at runtime. The hero, ambient City pedestrians and
   the stairwell cat all load as low-poly 3D prefabs; the runtime draws no

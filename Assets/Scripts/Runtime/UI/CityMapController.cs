@@ -6,11 +6,33 @@ using Stopwatch = System.Diagnostics.Stopwatch;
 
 namespace BarPromenade
 {
+    /// <summary>
+    /// The map's own catalogue of marked places. The first four mirror the
+    /// layout's district lots one-to-one: <see cref="CityDistrictPointOfInterestKind"/>
+    /// is a lot-reservation contract (bus stops, walkable ground, terrain,
+    /// fences all hang off it) and is never extended for a map label. The
+    /// rest are named places the map reads from their world plans.
+    /// Declaration order is the legend order.
+    /// </summary>
+    public enum CityMapPointOfInterestKind
+    {
+        OldTownWaterworksCourt = 0,
+        ResidentialDryingYard = 1,
+        IndustrialCannery = 2,
+        NightlifeLastRouteIsland = 3,
+        Fair = 4,
+        EasternPost = 5,
+        Docks = 6,
+        ArchShelter = 7,
+        Church = 8
+    }
+
     public readonly struct CityMapPointOfInterest
     {
+        /// <summary>A district lot: the marker sits on the lot's centre.</summary>
         internal CityMapPointOfInterest(
             string stableId,
-            CityDistrictPointOfInterestKind kind,
+            CityMapPointOfInterestKind kind,
             CityDistrictKind district,
             Vector2Int lotCell,
             Vector3 worldPosition)
@@ -18,15 +40,71 @@ namespace BarPromenade
             StableId = stableId ?? string.Empty;
             Kind = kind;
             District = district;
+            HasLotCell = true;
             LotCell = lotCell;
             WorldPosition = worldPosition;
+            HasFootprint = false;
+            Footprint = default;
+        }
+
+        /// <summary>
+        /// A named place without a lot of its own. The position is where
+        /// the XYZ teleport lands, so it must be a standable root position.
+        /// </summary>
+        internal CityMapPointOfInterest(
+            string stableId,
+            CityMapPointOfInterestKind kind,
+            CityDistrictKind district,
+            Vector3 worldPosition,
+            Rect footprint = default,
+            bool hasFootprint = false)
+        {
+            StableId = stableId ?? string.Empty;
+            Kind = kind;
+            District = district;
+            HasLotCell = false;
+            LotCell = default;
+            WorldPosition = worldPosition;
+            HasFootprint = hasFootprint;
+            Footprint = footprint;
         }
 
         public string StableId { get; }
-        public CityDistrictPointOfInterestKind Kind { get; }
+        public CityMapPointOfInterestKind Kind { get; }
         public CityDistrictKind District { get; }
+
+        /// <summary>Only the four district lots answer a lot-cell lookup.</summary>
+        public bool HasLotCell { get; }
         public Vector2Int LotCell { get; }
         public Vector3 WorldPosition { get; }
+
+        /// <summary>
+        /// Open ground the map paints as a public place (world XZ: x = X,
+        /// y = Z). Only a place squeezed between drawn lots needs one.
+        /// </summary>
+        public bool HasFootprint { get; }
+        public Rect Footprint { get; }
+
+        public static CityMapPointOfInterestKind FromDistrictKind(
+            CityDistrictPointOfInterestKind kind)
+        {
+            switch (kind)
+            {
+                case CityDistrictPointOfInterestKind.OldTownWaterworksCourt:
+                    return CityMapPointOfInterestKind.OldTownWaterworksCourt;
+                case CityDistrictPointOfInterestKind.ResidentialDryingYard:
+                    return CityMapPointOfInterestKind.ResidentialDryingYard;
+                case CityDistrictPointOfInterestKind.IndustrialCannery:
+                    return CityMapPointOfInterestKind.IndustrialCannery;
+                case CityDistrictPointOfInterestKind.NightlifeLastRouteIsland:
+                    return CityMapPointOfInterestKind.NightlifeLastRouteIsland;
+                default:
+                    throw new ArgumentOutOfRangeException(
+                        nameof(kind),
+                        kind,
+                        "Unsupported district point of interest kind.");
+            }
+        }
     }
 
     /// <summary>
@@ -967,22 +1045,37 @@ namespace BarPromenade
         }
 
         internal static bool TryGetPointOfInterestLocalizationKey(
-            CityDistrictPointOfInterestKind kind,
+            CityMapPointOfInterestKind kind,
             out string key)
         {
             switch (kind)
             {
-                case CityDistrictPointOfInterestKind.OldTownWaterworksCourt:
+                case CityMapPointOfInterestKind.OldTownWaterworksCourt:
                     key = "map.poi.old_town_waterworks_court";
                     return true;
-                case CityDistrictPointOfInterestKind.ResidentialDryingYard:
+                case CityMapPointOfInterestKind.ResidentialDryingYard:
                     key = "map.poi.residential_drying_yard";
                     return true;
-                case CityDistrictPointOfInterestKind.IndustrialCannery:
+                case CityMapPointOfInterestKind.IndustrialCannery:
                     key = "map.poi.industrial_cannery";
                     return true;
-                case CityDistrictPointOfInterestKind.NightlifeLastRouteIsland:
+                case CityMapPointOfInterestKind.NightlifeLastRouteIsland:
                     key = "map.poi.nightlife_last_route_island";
+                    return true;
+                case CityMapPointOfInterestKind.Fair:
+                    key = "map.poi.fair";
+                    return true;
+                case CityMapPointOfInterestKind.EasternPost:
+                    key = "map.poi.eastern_post";
+                    return true;
+                case CityMapPointOfInterestKind.Docks:
+                    key = "map.poi.docks";
+                    return true;
+                case CityMapPointOfInterestKind.ArchShelter:
+                    key = "map.poi.arch";
+                    return true;
+                case CityMapPointOfInterestKind.Church:
+                    key = "map.poi.church_entrance";
                     return true;
                 default:
                     key = string.Empty;
@@ -1450,7 +1543,10 @@ namespace BarPromenade
         {
             for (int index = 0; index < pointsOfInterest.Count; index++)
             {
-                if (pointsOfInterest[index].LotCell == cell)
+                // A named place carries a default cell; without the flag
+                // it would claim whichever lot sits at (0, 0).
+                if (pointsOfInterest[index].HasLotCell &&
+                    pointsOfInterest[index].LotCell == cell)
                 {
                     return index;
                 }
@@ -1543,13 +1639,115 @@ namespace BarPromenade
                 pointsOfInterest.Add(
                     new CityMapPointOfInterest(
                         descriptor.Id,
-                        descriptor.Kind,
+                        CityMapPointOfInterest.FromDistrictKind(descriptor.Kind),
                         descriptor.District,
                         descriptor.Cell,
                         descriptor.Center));
             }
 
             pointsOfInterest.Sort(ComparePointsOfInterest);
+            AppendNamedPlaces();
+        }
+
+        /// <summary>
+        /// The places the map names without a lot of their own, after the
+        /// sorted district lots and in legend order. Each planner is the
+        /// memoised one the teleport ground already consults, so a place is
+        /// present exactly when the world builds it; every position is the
+        /// standing point the XYZ teleport will be asked to land on.
+        /// </summary>
+        private void AppendNamedPlaces()
+        {
+            float rootOffset = PlayerFactory.GroundedRootOffset;
+
+            CityFairPlan fair = CityFairPlanner.Create(Layout);
+            if (fair.IsEnabled)
+            {
+                // The gap between two ordinary lots: the marker stands on
+                // the validated south clear lane, and the ground is drawn
+                // because the neighbouring lot rects overrun it.
+                pointsOfInterest.Add(
+                    new CityMapPointOfInterest(
+                        "fair",
+                        CityMapPointOfInterestKind.Fair,
+                        CityDistrictKind.Nightlife,
+                        fair.CenterPathSouth + Vector3.up * rootOffset,
+                        fair.Bounds,
+                        true));
+            }
+
+            CityEastExitPlan eastExit = CityEastExitPlanner.Create(Layout);
+            if (eastExit.IsEnabled)
+            {
+                // The gate itself lies inside the closed ground the
+                // teleport refuses first; two metres back is the last apron
+                // sample the exit fixture certifies as standable.
+                float x = eastExit.CheckpointPosition.x - 2f;
+                float z = eastExit.CheckpointPosition.z;
+                pointsOfInterest.Add(
+                    new CityMapPointOfInterest(
+                        "eastern-post",
+                        CityMapPointOfInterestKind.EasternPost,
+                        CityDistrictKind.Yard,
+                        new Vector3(
+                            x,
+                            eastExit.SampleRoadTop(x, z) + rootOffset,
+                            z)));
+            }
+
+            // The road and village roots chart the City without a seacoast
+            // plan; the port is a function of the layout, so the docks are
+            // listed from every root, like the other four places.
+            CityPortPlan port = SeacoastPlan?.Port ??
+                                CitySeacoastPlanner.CreatePortPlan(Layout);
+            if (port != null)
+            {
+                // The quay has no terrain sample, so the arrival keeps its
+                // own deck height through the teleport's over-water path.
+                pointsOfInterest.Add(
+                    new CityMapPointOfInterest(
+                        "docks",
+                        CityMapPointOfInterestKind.Docks,
+                        CityDistrictKind.NorthWaterfront,
+                        port.ArrivalWorld));
+            }
+
+            CityArchShelterPlan arch = CityArchShelterPlanner.Create(Layout);
+            if (arch.IsEnabled)
+            {
+                // The west clear lane's east edge: the west lot's teleport
+                // obstacle follows lot.Size, which overruns the built
+                // envelope the passage is measured from by up to 1.5 m.
+                CityArchShelterClearLaneDescriptor lane = arch.ClearLanes[0];
+                pointsOfInterest.Add(
+                    new CityMapPointOfInterest(
+                        "arch",
+                        CityMapPointOfInterestKind.ArchShelter,
+                        CityDistrictKind.Nightlife,
+                        new Vector3(
+                            lane.Footprint.xMax -
+                            CityGroundTraversalPlanner.MaximumAgentRadius,
+                            lane.SurfaceY + rootOffset,
+                            arch.Placement.PassageFootprint.center.y)));
+            }
+
+            CityChurchPlan church = CityChurchPlanner.Create(Layout);
+            if (church != null)
+            {
+                // Two metres before the leaf, the certified standing point;
+                // the door dock is an interaction pose, not an arrival.
+                Vector3 door = church.DoorGroundPosition +
+                               church.EntranceOutwardDirection * 2f;
+                pointsOfInterest.Add(
+                    new CityMapPointOfInterest(
+                        "church-entrance",
+                        CityMapPointOfInterestKind.Church,
+                        CityDistrictKind.Church,
+                        new Vector3(
+                            door.x,
+                            church.GroundTopY + rootOffset,
+                            door.z)));
+            }
         }
 
         private static int CompareBarLots(BuildingLot left, BuildingLot right)

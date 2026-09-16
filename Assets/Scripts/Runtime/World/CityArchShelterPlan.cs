@@ -10,7 +10,11 @@ namespace BarPromenade
         BurnBarrel = 0,
         Fire = 1,
         Bedding = 2,
-        Clutter = 3
+        Clutter = 3,
+        // Empties around the warmers on the upper terrace: passive,
+        // non-blocking, authored around the barrel, the bedding and both
+        // warmers' feet.
+        PlatformLitter = 4
     }
 
     public enum CityArchShelterNpcStageKind

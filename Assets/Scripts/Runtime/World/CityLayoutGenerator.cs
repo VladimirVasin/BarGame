@@ -99,6 +99,7 @@ namespace BarPromenade
                 snapshot,
                 allEdges,
                 roads);
+            EnsureAuthoredStreets(snapshot, allEdges, roads);
             roads.Sort(RoadEdge.Compare);
 
             Vector3 origin = anchorAtBlueprintCenter
@@ -777,6 +778,28 @@ namespace BarPromenade
                             descriptor.Cell,
                             direction));
                 }
+            }
+        }
+
+        private static void EnsureAuthoredStreets(
+            CityGenerationSettings settings,
+            IReadOnlyList<RoadEdge> availableEdges,
+            ICollection<RoadEdge> roads)
+        {
+            IReadOnlyList<RoadEdge> authored =
+                settings.Blueprint?.AuthoredStreets;
+            if (authored == null || authored.Count == 0)
+            {
+                return;
+            }
+
+            // Authored structure, appended like the outer ring: after every
+            // seeded pass, so no earlier random draw shifts.
+            var available = new HashSet<RoadEdge>(availableEdges);
+            var roadSet = new HashSet<RoadEdge>(roads);
+            for (int index = 0; index < authored.Count; index++)
+            {
+                AddRequiredEdge(roads, roadSet, available, authored[index]);
             }
         }
 

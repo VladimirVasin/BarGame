@@ -558,6 +558,8 @@ namespace BarPromenade
                     return CityMiscKind.NightlifeShelterBedding;
                 case CityArchShelterPropKind.Clutter:
                     return CityMiscKind.NightlifeShelterClutter;
+                case CityArchShelterPropKind.PlatformLitter:
+                    return CityMiscKind.NightlifeShelterPlatformLitter;
                 default:
                     throw new ArgumentOutOfRangeException(
                         nameof(kind),

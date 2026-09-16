@@ -1,6 +1,6 @@
 {
   "generator": "tools/build-city-misc-3d-model.py",
-  "generator_version": "4.10.0",
+  "generator_version": "4.11.0",
   "blender_version": "5.0.1",
   "design_id": "city_misc_citywide_v4",
   "display_name": "City Misc Citywide Catalog + Church Courtyard + Nightlife Shelter + Residential Courtyard Life + Unoccupied Fringe Mason Cart",
@@ -79,9 +79,9 @@
   "materials": false,
   "preview_materials_in_presentation_only": true,
   "animation_count": 0,
-  "mesh_count": 259,
-  "assembly_count": 122,
-  "triangle_count": 46546,
+  "mesh_count": 263,
+  "assembly_count": 123,
+  "triangle_count": 48190,
   "assemblies": [
     {
       "kind": "IndustrialStacksAndTanks",
@@ -5573,6 +5573,44 @@
         1.4,
         1.11,
         0.74
+      ]
+    },
+    {
+      "kind": "NightlifeShelterPlatformLitter",
+      "variant": 0,
+      "scale_mode": "fixed_meters",
+      "placement_contract": "ground_forward_frame",
+      "canonical_reference": {},
+      "scale_parameters": [],
+      "unity_owned_parts": [],
+      "root_derivation": "NightlifeArchShelterPlan.PlatformLitterGround+Rotation",
+      "coordinate_profile": "root_local_direct",
+      "expected_source_min_z": 0.0,
+      "part_meshes": [
+        "GEO_CMM_NightlifeShelterPlatformLitter_Variant01_StandingBottles_Residential",
+        "GEO_CMM_NightlifeShelterPlatformLitter_Variant01_LyingBottles_Residential",
+        "GEO_CMM_NightlifeShelterPlatformLitter_Variant01_DarkBottles_Street",
+        "GEO_CMM_NightlifeShelterPlatformLitter_Variant01_Cans_Industrial"
+      ],
+      "bounds_min_source": [
+        -1.57996,
+        -1.401177,
+        0.0
+      ],
+      "bounds_max_source": [
+        1.562438,
+        1.396148,
+        0.3
+      ],
+      "bounds_min_unity": [
+        -1.57996,
+        0.0,
+        -1.401177
+      ],
+      "bounds_max_unity": [
+        1.562438,
+        0.3,
+        1.396148
       ]
     }
   ],
@@ -15936,7 +15974,167 @@
         1.0,
         1.0
       ]
+    },
+    {
+      "mesh": "GEO_CMM_NightlifeShelterPlatformLitter_Variant01_StandingBottles_Residential",
+      "kind": "NightlifeShelterPlatformLitter",
+      "variant": 0,
+      "part_role": "Residential",
+      "surface_kind": "ResidentialGlass",
+      "tint_role": "Residential",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 224,
+      "triangles": 432,
+      "bounds_min_source": [
+        -1.57996,
+        -1.213616,
+        0.0
+      ],
+      "bounds_max_source": [
+        0.895765,
+        1.235432,
+        0.3
+      ],
+      "bounds_min_unity": [
+        -1.57996,
+        0.0,
+        -1.213616
+      ],
+      "bounds_max_unity": [
+        0.895765,
+        0.3,
+        1.235432
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_NightlifeShelterPlatformLitter_Variant01_LyingBottles_Residential",
+      "kind": "NightlifeShelterPlatformLitter",
+      "variant": 0,
+      "part_role": "Residential",
+      "surface_kind": "ResidentialGlass",
+      "tint_role": "Residential",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 224,
+      "triangles": 432,
+      "bounds_min_source": [
+        -0.978701,
+        -1.365975,
+        3.9e-05
+      ],
+      "bounds_max_source": [
+        1.538952,
+        1.04022,
+        0.085956
+      ],
+      "bounds_min_unity": [
+        -0.978701,
+        3.9e-05,
+        -1.365975
+      ],
+      "bounds_max_unity": [
+        1.538952,
+        0.085956,
+        1.04022
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_NightlifeShelterPlatformLitter_Variant01_DarkBottles_Street",
+      "kind": "NightlifeShelterPlatformLitter",
+      "variant": 0,
+      "part_role": "Street",
+      "surface_kind": "StreetMetal",
+      "tint_role": "Street",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 224,
+      "triangles": 432,
+      "bounds_min_source": [
+        -1.488,
+        -1.401177,
+        0.0
+      ],
+      "bounds_max_source": [
+        1.562438,
+        1.396148,
+        0.262
+      ],
+      "bounds_min_unity": [
+        -1.488,
+        0.0,
+        -1.401177
+      ],
+      "bounds_max_unity": [
+        1.562438,
+        0.262,
+        1.396148
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_NightlifeShelterPlatformLitter_Variant01_Cans_Industrial",
+      "kind": "NightlifeShelterPlatformLitter",
+      "variant": 0,
+      "part_role": "Industrial",
+      "surface_kind": "IndustrialMetal",
+      "tint_role": "Industrial",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 180,
+      "triangles": 348,
+      "bounds_min_source": [
+        -0.402967,
+        -1.36063,
+        0.0
+      ],
+      "bounds_max_source": [
+        1.169499,
+        1.352885,
+        0.125
+      ],
+      "bounds_min_unity": [
+        -0.402967,
+        0.0,
+        -1.36063
+      ],
+      "bounds_max_unity": [
+        1.169499,
+        0.125,
+        1.352885
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
     }
   ],
-  "build_signature": "8ec083eb3d9653652f114f7dec4c22aaab5589f99702d3b1ff2ca883281e32f2"
+  "build_signature": "a36f9621349e1914516efbb3e6a1897fed824b274a01d71b66a438be72dfee7a"
 }

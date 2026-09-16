@@ -66,8 +66,15 @@ namespace BarPromenade
         public const string BottlesComponentName =
             "Bottles_Residential";
         public const string CanComponentName = "Can_Industrial";
+        public const string StandingBottlesComponentName =
+            "StandingBottles_Residential";
+        public const string LyingBottlesComponentName =
+            "LyingBottles_Residential";
+        public const string DarkBottlesComponentName =
+            "DarkBottles_Street";
+        public const string CansComponentName = "Cans_Industrial";
 
-        public const int ExpectedComponentCount = 15;
+        public const int ExpectedComponentCount = 19;
 
         private const float MinimumUvScale = 0.35f;
         private const int HashSaltBase = 15000;
@@ -101,7 +108,11 @@ namespace BarPromenade
             CrateComponentName,
             BagsComponentName,
             BottlesComponentName,
-            CanComponentName
+            CanComponentName,
+            StandingBottlesComponentName,
+            LyingBottlesComponentName,
+            DarkBottlesComponentName,
+            CansComponentName
         };
 
         private static readonly IReadOnlyList<string> ReadOnlyComponentNames =
@@ -416,6 +427,22 @@ namespace BarPromenade
                     return true;
                 case CanComponentName:
                     recipe = R(14, SurfaceSource.RustedIron,
+                        SurfaceProjection.CylinderSide);
+                    return true;
+                case StandingBottlesComponentName:
+                    recipe = R(15, SurfaceSource.Enamel,
+                        SurfaceProjection.CylinderSide);
+                    return true;
+                case LyingBottlesComponentName:
+                    recipe = R(16, SurfaceSource.Enamel,
+                        SurfaceProjection.CylinderSide);
+                    return true;
+                case DarkBottlesComponentName:
+                    recipe = R(17, SurfaceSource.Enamel,
+                        SurfaceProjection.CylinderSide);
+                    return true;
+                case CansComponentName:
+                    recipe = R(18, SurfaceSource.RustedIron,
                         SurfaceProjection.CylinderSide);
                     return true;
                 default:

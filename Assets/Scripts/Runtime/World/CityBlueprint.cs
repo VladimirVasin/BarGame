@@ -316,6 +316,7 @@ namespace BarPromenade
             Vector2Int centerNode,
             IList<CityAreaPlacement> sourceAreas,
             CityRiverDefinition river,
+            IList<RoadEdge> authoredStreets,
             bool requireCentralPark,
             bool requireNorthWaterfront)
         {
@@ -436,6 +437,7 @@ namespace BarPromenade
             MapNodeBounds = CalculateCenteredMapNodeBounds(
                 CellBounds,
                 CenterNode);
+            AuthoredStreets = CopyAuthoredStreets(authoredStreets);
             ValidateConnectedMappedFootprint();
             ValidateConnectedRoadFootprint();
             ValidateStructuralAreas(
@@ -453,6 +455,15 @@ namespace BarPromenade
         public CityAreaPlacement CentralPark { get; private set; }
         public CityAreaPlacement NorthWaterfront { get; private set; }
         public CityRiverDefinition River { get; }
+
+        /// <summary>
+        /// Streets the blueprint insists on regardless of the seed, each a
+        /// single grid edge. They are appended after every seeded road pass
+        /// so the rest of the graph keeps its selection — the same rule the
+        /// default blueprint's outer ring already follows.
+        /// </summary>
+        public IReadOnlyList<RoadEdge> AuthoredStreets { get; }
+
         public int LotCellCount { get; private set; }
         internal bool RequiresCentralPark { get; }
         internal bool RequiresNorthWaterfront { get; }
@@ -532,6 +543,38 @@ namespace BarPromenade
             }
 
             return result;
+        }
+
+        private ReadOnlyCollection<RoadEdge> CopyAuthoredStreets(
+            IList<RoadEdge> source)
+        {
+            var copied = new List<RoadEdge>(source?.Count ?? 0);
+            var unique = new HashSet<RoadEdge>();
+            for (int index = 0; source != null && index < source.Count; index++)
+            {
+                RoadEdge edge = source[index];
+                if (!unique.Add(edge))
+                {
+                    continue;
+                }
+
+                // An edge exists in the road grid when a lot-creating cell
+                // lies on at least one of its sides, exactly as the
+                // generator enumerates candidate edges.
+                Vector2Int side = edge.IsHorizontal
+                    ? Vector2Int.down
+                    : Vector2Int.left;
+                if (!ParticipatesInRoadGrid(edge.A) &&
+                    !ParticipatesInRoadGrid(edge.A + side))
+                {
+                    throw new InvalidOperationException(
+                        $"Authored street {edge} lies outside the road grid.");
+                }
+
+                copied.Add(edge);
+            }
+
+            return new ReadOnlyCollection<RoadEdge>(copied);
         }
 
         private void ValidateAreaCells(CityAreaPlacement area)
@@ -1126,6 +1169,8 @@ namespace BarPromenade
         private readonly bool requireCentralPark;
         private readonly bool requireNorthWaterfront;
         private CityRiverDefinition river;
+        private readonly List<RoadEdge> authoredStreets =
+            new List<RoadEdge>();
         private readonly List<MutableArea> orderedAreas =
             new List<MutableArea>();
         private readonly Dictionary<string, MutableArea> areasById =
@@ -1180,6 +1225,7 @@ namespace BarPromenade
                 source.RequiresCentralPark,
                 source.RequiresNorthWaterfront,
                 source.River);
+            builder.authoredStreets.AddRange(source.AuthoredStreets);
             for (int areaIndex = 0;
                  areaIndex < source.Areas.Count;
                  areaIndex++)
@@ -1203,6 +1249,12 @@ namespace BarPromenade
         {
             river = definition ??
                 throw new ArgumentNullException(nameof(definition));
+            return this;
+        }
+
+        public CityBlueprintBuilder WithAuthoredStreet(RoadEdge edge)
+        {
+            authoredStreets.Add(edge);
             return this;
         }
 
@@ -1403,6 +1455,7 @@ namespace BarPromenade
                 centerNode,
                 placements,
                 river,
+                authoredStreets,
                 requireCentralPark,
                 requireNorthWaterfront);
         }

@@ -2392,12 +2392,27 @@ namespace BarPromenade
             {
                 CityMapPointOfInterest pointOfInterest =
                     pointsOfInterest[index];
+                Color districtColor =
+                    GetDistrictColor(pointOfInterest.District);
+                if (pointOfInterest.HasFootprint)
+                {
+                    // A place squeezed between two ordinary lots: their
+                    // drawn rects follow lot.Size and overrun the built
+                    // facades, so the place paints its own open ground
+                    // the way a public lot does.
+                    Rect ground = ProjectWorldRect(
+                        projection,
+                        pointOfInterest.Footprint);
+                    DrawSolidRect(ground, PublicPlaceLand);
+                    DrawOpenPublicPlaceLot(ground, districtColor);
+                }
+
                 Vector2 position = projection.WorldToScreen(
                     pointOfInterest.WorldPosition);
                 DrawPointOfInterestMarker(
                     pointOfInterest.Kind,
                     position,
-                    GetDistrictColor(pointOfInterest.District),
+                    districtColor,
                     6f,
                     4f,
                     2f);
@@ -3300,16 +3315,26 @@ namespace BarPromenade
             Rect panel,
             int routeCount)
         {
-            int pointOfInterestCount = controller.PointsOfInterest.Count;
-            if (pointOfInterestCount == 0)
+            int entryCount = controller.PointsOfInterest.Count;
+            if (entryCount == 0)
             {
                 return;
             }
 
+            int visibleCount = ResolvePointOfInterestLegendVisibleEntries(
+                panel,
+                routeCount,
+                entryCount);
+            if (visibleCount == 0)
+            {
+                return;
+            }
+
+            bool overflows = visibleCount < entryCount;
             Rect legend = CreatePointOfInterestLegendRect(
                 panel,
                 routeCount,
-                pointOfInterestCount);
+                visibleCount + (overflows ? 1 : 0));
             DrawSolidRect(
                 legend,
                 RetroUiTheme.WithAlpha(RetroUiTheme.MapGround, 0.55f));
@@ -3326,54 +3351,107 @@ namespace BarPromenade
                 LocalizationService.Get("map.poi.title"),
                 pointOfInterestTitleStyle);
 
-            const float rowHeight = 17f;
+            const float rowHeight = PointOfInterestLegendRowHeight;
             float rowY = legend.y + 19f;
-            for (int index = 0;
-                 index < pointOfInterestCount;
-                 index++)
+            for (int index = 0; index < visibleCount; index++)
             {
                 CityMapPointOfInterest pointOfInterest =
                     controller.PointsOfInterest[index];
                 Vector2 markerCenter = new Vector2(
-                    legend.x + 10f,
+                    legend.x + 9f,
                     rowY + rowHeight * 0.5f);
                 DrawPointOfInterestMarker(
                     pointOfInterest.Kind,
                     markerCenter,
                     GetDistrictColor(pointOfInterest.District),
-                    4f,
-                    3f,
+                    3.5f,
+                    2f,
                     1f);
                 GUI.Label(
                     new Rect(
-                        legend.x + 19f,
+                        legend.x + 17f,
                         rowY,
-                        legend.width - 23f,
+                        legend.width - 21f,
                         rowHeight),
                     controller.GetPointOfInterestLabel(index),
                     pointOfInterestItemStyle);
                 rowY += rowHeight;
             }
+
+            if (overflows)
+            {
+                // The rows that did not fit are still on the chart and
+                // still answer hover; the legend only says they exist.
+                GUI.Label(
+                    new Rect(
+                        legend.x + 17f,
+                        rowY,
+                        legend.width - 21f,
+                        rowHeight),
+                    string.Format(
+                        LocalizationService.Get("map.poi.more"),
+                        entryCount - visibleCount),
+                    pointOfInterestItemStyle);
+            }
+        }
+
+        internal const float PointOfInterestLegendRowHeight = 12f;
+
+        // The footer starts with the distance label at panel.yMax - 41.
+        internal const float PointOfInterestLegendFooterReserve = 46f;
+
+        private const float PointOfInterestLegendTitleHeight = 19f;
+        private const float PointOfInterestLegendBottomPadding = 3f;
+
+        /// <summary>
+        /// How many legend entries fit between the route rows and the
+        /// footer. When not all do, one row is kept back for the overflow
+        /// line, so the answer is at most rows - 1; below two rows the
+        /// legend is not worth drawing at all.
+        /// </summary>
+        internal static int ResolvePointOfInterestLegendVisibleEntries(
+            Rect panel,
+            int routeCount,
+            int entryCount)
+        {
+            if (entryCount <= 0)
+            {
+                return 0;
+            }
+
+            float preferredTop = ResolvePointOfInterestLegendPreferredTop(
+                panel,
+                routeCount);
+            int availableRows = Mathf.FloorToInt(
+                (panel.yMax - PointOfInterestLegendFooterReserve -
+                 preferredTop - PointOfInterestLegendTitleHeight -
+                 PointOfInterestLegendBottomPadding) /
+                PointOfInterestLegendRowHeight);
+            if (availableRows < 2)
+            {
+                return 0;
+            }
+
+            return entryCount <= availableRows
+                ? entryCount
+                : availableRows - 1;
         }
 
         internal static Rect CreatePointOfInterestLegendRect(
             Rect panel,
             int routeCount,
-            int pointOfInterestCount)
+            int rowCount)
         {
-            const float titleHeight = 19f;
-            const float rowHeight = 17f;
-            const float bottomPadding = 3f;
-            const float footerReserve = 68f;
-            float height = titleHeight +
-                           Mathf.Max(0, pointOfInterestCount) * rowHeight +
-                           bottomPadding;
-            float routeBottom = panel.y + 29f +
-                                Mathf.Max(0, routeCount) * 26f;
-            float preferredTop = Mathf.Max(
-                panel.y + 94f,
-                routeBottom + 9f);
-            float maximumTop = panel.yMax - footerReserve - height;
+            float height = PointOfInterestLegendTitleHeight +
+                           Mathf.Max(0, rowCount) *
+                           PointOfInterestLegendRowHeight +
+                           PointOfInterestLegendBottomPadding;
+            float preferredTop = ResolvePointOfInterestLegendPreferredTop(
+                panel,
+                routeCount);
+            float maximumTop = panel.yMax -
+                               PointOfInterestLegendFooterReserve -
+                               height;
             float top = Mathf.Max(
                 panel.y + 4f,
                 Mathf.Min(preferredTop, maximumTop));
@@ -3382,6 +3460,15 @@ namespace BarPromenade
                 top,
                 panel.width - 12f,
                 height);
+        }
+
+        private static float ResolvePointOfInterestLegendPreferredTop(
+            Rect panel,
+            int routeCount)
+        {
+            float routeBottom = panel.y + 29f +
+                                Mathf.Max(0, routeCount) * 26f;
+            return Mathf.Max(panel.y + 94f, routeBottom + 9f);
         }
 
         private void DrawRouteRows(
@@ -3567,7 +3654,7 @@ namespace BarPromenade
         }
 
         private void DrawPointOfInterestMarker(
-            CityDistrictPointOfInterestKind kind,
+            CityMapPointOfInterestKind kind,
             Vector2 center,
             Color districtColor,
             float halfSize,
@@ -3591,8 +3678,10 @@ namespace BarPromenade
                 districtColor);
         }
 
+        // Every kind is its own silhouette; the district colour only sits
+        // in the core dot, so the chart reads without it (art bible §15a).
         private void DrawPointOfInterestOutline(
-            CityDistrictPointOfInterestKind kind,
+            CityMapPointOfInterestKind kind,
             Vector2 center,
             float halfSize,
             float width,
@@ -3600,7 +3689,7 @@ namespace BarPromenade
         {
             switch (kind)
             {
-                case CityDistrictPointOfInterestKind.OldTownWaterworksCourt:
+                case CityMapPointOfInterestKind.OldTownWaterworksCourt:
                     DrawDiamondOutline(
                         new Vector2(center.x, center.y - halfSize),
                         new Vector2(center.x + halfSize, center.y),
@@ -3609,7 +3698,7 @@ namespace BarPromenade
                         width,
                         color);
                     break;
-                case CityDistrictPointOfInterestKind.ResidentialDryingYard:
+                case CityMapPointOfInterestKind.ResidentialDryingYard:
                     RetroUiTheme.StrokeRect(
                         new Rect(
                             center.x - halfSize,
@@ -3619,7 +3708,7 @@ namespace BarPromenade
                         width,
                         color);
                     break;
-                case CityDistrictPointOfInterestKind.IndustrialCannery:
+                case CityMapPointOfInterestKind.IndustrialCannery:
                     RetroUiTheme.StrokeRect(
                         new Rect(
                             center.x - halfSize,
@@ -3629,10 +3718,66 @@ namespace BarPromenade
                         width,
                         color);
                     break;
-                case CityDistrictPointOfInterestKind.NightlifeLastRouteIsland:
+                case CityMapPointOfInterestKind.NightlifeLastRouteIsland:
                     DrawOpenOctagonOutline(
                         center,
                         halfSize,
+                        width,
+                        color);
+                    break;
+                case CityMapPointOfInterestKind.Fair:
+                    // A stall canopy: the only triangle on the chart.
+                    DrawTriangleOutline(
+                        new Vector2(center.x, center.y - halfSize),
+                        new Vector2(center.x + halfSize, center.y + halfSize * 0.7f),
+                        new Vector2(center.x - halfSize, center.y + halfSize * 0.7f),
+                        width,
+                        color);
+                    break;
+                case CityMapPointOfInterestKind.EasternPost:
+                    // A lowered boom: post and bar, open on the right.
+                    DrawLine(
+                        new Vector2(center.x - halfSize * 0.7f, center.y - halfSize),
+                        new Vector2(center.x - halfSize * 0.7f, center.y + halfSize),
+                        width,
+                        color);
+                    DrawLine(
+                        new Vector2(center.x - halfSize * 0.7f, center.y - halfSize * 0.2f),
+                        new Vector2(center.x + halfSize, center.y - halfSize * 0.2f),
+                        width,
+                        color);
+                    break;
+                case CityMapPointOfInterestKind.Docks:
+                    // A quay crane: mast, jib and the hanging cable.
+                    DrawLine(
+                        new Vector2(center.x - halfSize * 0.5f, center.y + halfSize),
+                        new Vector2(center.x - halfSize * 0.5f, center.y - halfSize),
+                        width,
+                        color);
+                    DrawLine(
+                        new Vector2(center.x - halfSize * 0.5f, center.y - halfSize),
+                        new Vector2(center.x + halfSize, center.y - halfSize),
+                        width,
+                        color);
+                    DrawLine(
+                        new Vector2(center.x + halfSize * 0.6f, center.y - halfSize),
+                        new Vector2(center.x + halfSize * 0.6f, center.y - halfSize * 0.2f),
+                        width,
+                        color);
+                    break;
+                case CityMapPointOfInterestKind.ArchShelter:
+                    DrawArchOutline(center, halfSize, width, color);
+                    break;
+                case CityMapPointOfInterestKind.Church:
+                    // A Latin cross: the only glyph whose strokes intersect.
+                    DrawLine(
+                        new Vector2(center.x, center.y - halfSize),
+                        new Vector2(center.x, center.y + halfSize),
+                        width,
+                        color);
+                    DrawLine(
+                        new Vector2(center.x - halfSize * 0.6f, center.y - halfSize * 0.35f),
+                        new Vector2(center.x + halfSize * 0.6f, center.y - halfSize * 0.35f),
                         width,
                         color);
                     break;
@@ -3689,6 +3834,46 @@ namespace BarPromenade
             DrawLine(right, bottom, width, color);
             DrawLine(bottom, left, width, color);
             DrawLine(left, top, width, color);
+        }
+
+        private void DrawTriangleOutline(
+            Vector2 apex,
+            Vector2 right,
+            Vector2 left,
+            float width,
+            Color color)
+        {
+            DrawLine(apex, right, width, color);
+            DrawLine(right, left, width, color);
+            DrawLine(left, apex, width, color);
+        }
+
+        // The upper half of the octagon ring on two straight legs: a
+        // rounded arch open at the bottom, the chart's one curved top.
+        private void DrawArchOutline(
+            Vector2 center,
+            float radius,
+            float width,
+            Color color)
+        {
+            const float diagonal = 0.7071068f;
+            Vector2 leftFoot = center + new Vector2(-radius, radius);
+            Vector2 rightFoot = center + new Vector2(radius, radius);
+            Vector2[] crown =
+            {
+                center + new Vector2(-radius, 0f),
+                center + new Vector2(-radius * diagonal, -radius * diagonal),
+                center + new Vector2(0f, -radius),
+                center + new Vector2(radius * diagonal, -radius * diagonal),
+                center + new Vector2(radius, 0f)
+            };
+            DrawLine(leftFoot, crown[0], width, color);
+            for (int index = 0; index + 1 < crown.Length; index++)
+            {
+                DrawLine(crown[index], crown[index + 1], width, color);
+            }
+
+            DrawLine(crown[crown.Length - 1], rightFoot, width, color);
         }
 
         internal static bool TryClipLineToRect(
