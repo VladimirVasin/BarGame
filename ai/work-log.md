@@ -38,6 +38,16 @@ Earlier entries: [`work-log-2026-08.md`](archive/work-log-2026-08.md).
   row. Checks: `CityArchShelterConversationTests` (pools, order, deferral,
   earshot, seek, and the controller on the built shelter),
   `LocalizationCatalogTests`.
+- The map's planned bar route (ordered `BarId` list, Dijkstra path,
+  distance readout, «Очистить маршрут») is removed as obsolete: session API,
+  `Runtime/Map`, map commands/keys, four localization keys retired, bars stay
+  as named markers, the side panel keeps only the POI legend and `XYZ`.
+  Three world-gen tests that borrowed the pathfinder as a ruler now measure
+  the straight line, which on a shared frontage is the road distance. Checks:
+  `CityMapDistrictPresentationTests`, `CityMapAreaPresentationTests`,
+  `GameSessionStateTests`, `LocalizationCatalogTests`,
+  `CityLayoutGeneratorTests`, `PlayerHomeLayoutTests`,
+  `CityTravelDistanceTests`.
 
 ## 2026-09-15 — Eastern valley, litter, fair and default NPCs
 

@@ -30,14 +30,12 @@ namespace BarPromenade.Tests.PlayMode
             previousTimeScale = Time.timeScale;
             Time.timeScale = 1f;
             GameSessionState.BeginNewGame();
-            GameSessionState.ClearRoute();
         }
 
         [TearDown]
         public void TearDown()
         {
             GameSessionState.BeginNewGame();
-            GameSessionState.ClearRoute();
             Time.timeScale = previousTimeScale;
         }
 
@@ -104,7 +102,6 @@ namespace BarPromenade.Tests.PlayMode
             previousField = village.Clouds;
 
             GameSessionState.EnterHome();
-            GameSessionState.ClearRoute();
             HomeInteriorRoot home = null;
             yield return LoadSceneAndWaitForRoot<HomeInteriorRoot>(
                 SceneIds.HomeInterior,

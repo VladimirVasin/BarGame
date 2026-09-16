@@ -88,21 +88,8 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 homeFrontage.Contains(first.SpawnNode),
                 Is.True);
-
-            float nearestBarDistance = first.BuildingLots
-                .Where(lot => lot.IsBar)
-                .Min(bar =>
-                    CityRoutePathfinder.Build(
-                        first,
-                        home.ReturnPosition,
-                        new[] { bar })
-                    .TotalLength);
-            Assert.That(
-                nearestBarDistance,
-                Is.LessThanOrEqualTo(
-                    CityLayoutGenerator
-                        .MaximumHomeBarRouteDistance +
-                    0.001f));
+            // The 48 m home-to-bar contract itself is enforced by
+            // CityLayout.ValidateOrThrow on every Generate above.
         }
 
         [TestCase(6.20f, false)]

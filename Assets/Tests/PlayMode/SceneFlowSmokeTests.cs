@@ -173,20 +173,14 @@ namespace BarPromenade.Tests.PlayMode
             float nearestBarDistance = float.PositiveInfinity;
             for (int index = 0; index < barLots.Count; index++)
             {
-                CityRoutePath route = CityRoutePathfinder.Build(
-                    cityRoot.Layout,
-                    playerSpawn,
-                    new[] { barLots[index] });
+                Vector3 doorside = barLots[index].ReturnPosition;
+                doorside.y = playerSpawn.y;
                 nearestBarDistance = Mathf.Min(
                     nearestBarDistance,
-                    route.TotalLength);
+                    Vector3.Distance(playerSpawn, doorside));
             }
 
-            // Half a block, plus the road the route has to cross to reach a
-            // door. `nearestBarDistance` is a ROUTE length, not a straight
-            // line, so it is always longer than the block geometry alone -
-            // bounding it by exactly half a node spacing was knife-edge and
-            // duly failed by thirteen centimetres once the city grew. The
+            // Half a block, plus the road to cross to reach a door. The
             // guarantee being made is "you wake up within a block of a
             // bar", and crossing one carriageway is part of that.
             Assert.That(
@@ -499,7 +493,7 @@ namespace BarPromenade.Tests.PlayMode
         }
 
         [UnityTest]
-        public IEnumerator CityMap_IsModalAndBuildsTheHomeBarRoadRoute()
+        public IEnumerator CityMap_IsModalAndListsTheHomeBarAndPlaces()
         {
             CityGameRoot cityRoot = null;
             yield return LoadSceneAndWaitForRoot<CityGameRoot>(
@@ -519,13 +513,7 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(map, Is.Not.Null);
             Assert.That(map.Bars, Has.Count.EqualTo(1));
             AssertMapPointsOfInterest(cityRoot, map);
-            Assert.That(
-                GameSessionState.TryAddRouteStop("bar-from-another-city"),
-                Is.True);
             Assert.That(map.Open(), Is.True);
-            Assert.That(
-                GameSessionState.PlannedBarRoute,
-                Does.Not.Contain("bar-from-another-city"));
             Assert.That(cityRoot.Player.Motor.InputEnabled, Is.False);
             Assert.That(cityRoot.Player.Interactor.InputEnabled, Is.False);
             Assert.That(follow.OrbitInputEnabled, Is.False);
@@ -540,50 +528,7 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(follow.OrbitInputEnabled, Is.True);
             Assert.That(hud.Visible, Is.True);
             Assert.That(map.Open(), Is.True);
-
-            Assert.That(map.ToggleBar(0), Is.True);
-            CollectionAssert.AreEqual(
-                new[] { map.Bars[0].BarId },
-                GameSessionState.PlannedBarRoute);
-            Assert.That(map.CurrentPath, Is.Not.Null);
-            Assert.That(map.CurrentPath.IsEmpty, Is.False);
-            Assert.That(map.CurrentPath.TotalLength, Is.GreaterThan(0f));
-
-            Vector3 expectedStart =
-                cityRoot.Player.GameObject.transform.position;
-            expectedStart.y = 0f;
-            Vector3 expectedEnd = map.Bars[0].ReturnPosition;
-            expectedEnd.y = 0f;
-            // The route runs along roads, so it begins at the road anchor
-            // NEAREST the player rather than under his feet - the exact
-            // equality here only ever held while he happened to wake up on
-            // one, and the tunnel forecourt spawn ended that. What the map
-            // owes the player is a line that starts where he is standing,
-            // within the snap to the network.
-            Assert.That(
-                Vector3.Distance(map.CurrentPath.Points[0], expectedStart),
-                Is.LessThan(
-                    Mathf.Max(
-                        cityRoot.Layout.NodeSpacing.x,
-                        cityRoot.Layout.NodeSpacing.y)),
-                "The drawn route must start at the road nearest the hero.");
-            // And the far end snaps to the road outside the bar for the
-            // same reason the near end snaps to the road under the hero:
-            // the line is drawn along the network, not through buildings.
-            Assert.That(
-                Vector3.Distance(
-                    map.CurrentPath.Points[map.CurrentPath.Points.Count - 1],
-                    expectedEnd),
-                Is.LessThan(
-                    Mathf.Max(
-                        cityRoot.Layout.NodeSpacing.x,
-                        cityRoot.Layout.NodeSpacing.y)),
-                "The drawn route must end at the road outside the bar.");
-
-            Assert.That(map.MoveBar(map.Bars[0].BarId, -1), Is.False);
-            CollectionAssert.AreEqual(
-                new[] { map.Bars[0].BarId },
-                GameSessionState.PlannedBarRoute);
+            Assert.That(map.GetBarLabel(0), Is.Not.Empty);
 
             Assert.That(map.Close(), Is.True);
             Assert.That(cityRoot.Player.Motor.InputEnabled, Is.True);
@@ -1604,9 +1549,6 @@ namespace BarPromenade.Tests.PlayMode
                 expectedIntoxication,
                 expectedLastDrink,
                 expectedDrinkCount);
-            Assert.That(
-                GameSessionState.TryAddRouteStop(expectedBarId),
-                Is.True);
             PlacePlayerAtDoor(firstCity.Player, entrance);
             entrance.Interact(firstCity.Player.Interactor);
             Assert.That(SceneTransitionService.IsTransitioning, Is.False);
@@ -1689,9 +1631,6 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 GameSessionState.ActiveBarActivity,
                 Is.EqualTo(expectedBarActivity));
-            CollectionAssert.AreEqual(
-                new[] { expectedBarId },
-                GameSessionState.PlannedBarRoute);
 
             BarExit exit = interior.GetComponentInChildren<BarExit>(true);
             Assert.That(exit, Is.Not.Null);
@@ -1766,9 +1705,6 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 GameSessionState.DrinksConsumed,
                 Is.EqualTo(expectedDrinkCount));
-            CollectionAssert.AreEqual(
-                new[] { expectedBarId },
-                GameSessionState.PlannedBarRoute);
         }
 
         [UnityTest]
@@ -1787,8 +1723,6 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(entrance, Is.Not.Null);
             Vector3 expectedReturn = entrance.ReturnPosition;
             int expectedSeed = firstCity.Layout.Seed;
-            string routeBarId =
-                firstCity.World.Bars[0].BarId;
             RoadEdge[] expectedRoads =
                 new RoadEdge[firstCity.Layout.RoadEdges.Count];
             for (int index = 0;
@@ -1803,9 +1737,6 @@ namespace BarPromenade.Tests.PlayMode
                 37,
                 DrinkId.RedWine,
                 2);
-            Assert.That(
-                GameSessionState.TryAddRouteStop(routeBarId),
-                Is.True);
             PlacePlayerAtDoor(firstCity.Player, entrance);
             entrance.Interact(firstCity.Player.Interactor);
 
@@ -1959,9 +1890,6 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 GameSessionState.IntoxicationLevel,
                 Is.InRange(34, 37));
-            CollectionAssert.AreEqual(
-                new[] { routeBarId },
-                GameSessionState.PlannedBarRoute);
 
             PlacePlayerAtDoor(home.Player, home.Exit);
             home.Exit.Interact(home.Player.Interactor);
@@ -2079,9 +2007,6 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 GameSessionState.IntoxicationLevel,
                 Is.InRange(34, 37));
-            CollectionAssert.AreEqual(
-                new[] { routeBarId },
-                GameSessionState.PlannedBarRoute);
             PlayerCameraFollow returnedFollow =
                 Camera.main.GetComponent<PlayerCameraFollow>();
             Assert.That(returnedFollow, Is.Not.Null);

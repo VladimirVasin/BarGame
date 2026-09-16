@@ -27,7 +27,6 @@ namespace BarPromenade.Tests.PlayMode
             inputFixture.Setup();
             keyboard = InputSystem.AddDevice<Keyboard>();
             GameSessionState.EnterHome();
-            GameSessionState.ClearRoute();
             GameSessionState.ResetDrinkingState();
             yield return null;
         }
@@ -64,7 +63,6 @@ namespace BarPromenade.Tests.PlayMode
             inputFixture?.TearDown();
             inputFixture = null;
 
-            GameSessionState.ClearRoute();
             GameSessionState.ResetDrinkingState();
             yield return null;
         }

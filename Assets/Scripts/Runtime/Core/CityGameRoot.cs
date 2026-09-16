@@ -361,10 +361,7 @@ namespace BarPromenade
                     GameSessionState.ActiveBarId),
                 GameLog.Field(
                     "intoxication",
-                    GameSessionState.IntoxicationLevel),
-                GameLog.Field(
-                    "route_count",
-                    GameSessionState.PlannedBarRoute.Count));
+                    GameSessionState.IntoxicationLevel));
 
             Camera camera = RuntimeSceneSetup.EnsureCityNight();
             Camera = camera;

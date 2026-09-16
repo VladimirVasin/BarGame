@@ -1074,14 +1074,17 @@ namespace BarPromenade.Tests.EditMode
                 seed);
             RoadWalkableArea walkable =
                 RoadWalkableArea.FromLayout(layout);
+            // The spawn is a frontage node and a bar's return position
+            // lies on that frontage edge, so the straight line is the
+            // road distance itself.
             float nearestBarDistance = layout.BuildingLots
                 .Where(lot => lot.IsBar)
-                .Min(lot =>
-                    CityRoutePathfinder.Build(
-                        layout,
-                        layout.SpawnWorldPosition,
-                        new[] { lot })
-                    .TotalLength);
+                .Min(lot => Vector3.Distance(
+                    layout.SpawnWorldPosition,
+                    new Vector3(
+                        lot.ReturnPosition.x,
+                        layout.SpawnWorldPosition.y,
+                        lot.ReturnPosition.z)));
 
             Assert.That(
                 layout.SpawnWorldPosition,

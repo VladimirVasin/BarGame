@@ -111,12 +111,7 @@ namespace BarPromenade
                     GameSessionState.BalanceCheckDelayRemaining),
                 GameLog.Field(
                     "next_balance_sequence",
-                    GameSessionState.BalanceCheckSequence),
-                GameLog.Field(
-                    "planned_route",
-                    string.Join(
-                        ">",
-                        GameSessionState.PlannedBarRoute))
+                    GameSessionState.BalanceCheckSequence)
             };
 
             CityGameRoot city =

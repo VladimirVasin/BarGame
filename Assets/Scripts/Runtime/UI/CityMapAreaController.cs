@@ -763,7 +763,6 @@ namespace BarPromenade
 
             Close(false, "map_point_teleport");
             player.Motor.Teleport(destination);
-            RefreshPath("map_point_teleport");
             RetroAudio.Play(RetroSfxId.UiConfirm);
             GameLog.Info(
                 "map",

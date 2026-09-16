@@ -20,7 +20,7 @@ intended to answer four questions quickly:
 Override the profile with
 `-bp-debug-log off`, `-bp-debug-log basic`, or
 `-bp-debug-log verbose`. `basic` records state and result events;
-`verbose` additionally records phase timings, build sizes and rebuilt map paths.
+`verbose` additionally records phase timings and build sizes.
 
 Press `F8` in either gameplay scene to write and immediately flush a
 `diagnostics/snapshot` event. Press `Shift+F8` to open the directory containing
@@ -54,12 +54,12 @@ Manual snapshots include the current `hunger`, `stress` and `fatigue` beside
 
 | Category | Recorded events |
 | --- | --- |
-| `session` | start/end, seed, route, active bar, return state, drinking mutations and resolved drink purchases with cash before/after |
+| `session` | start/end, seed, active bar, return state, drinking mutations and resolved drink purchases with cash before/after |
 | `needs`, `inventory` | visible hunger/fatigue passive-progression boundaries, explicit hunger/stress/fatigue mutations, committed alcohol relief and atomic item-use results |
 | `scene` | loaded/ready plus transition requested, rejected, fallback, completed or failed; `composition_frames` records frames, `path` (`area`/`door`), `frame_budget_ms` and `AdvanceFrame` CPU versus wall time; a door `transition_completed` adds `composition_frames`, its `duration_ms` including the build |
 | `city`, `bar`, `mountain_road`, `alpine_village`, `home`, `stairwell`, `supermarket`, `church`, `mothers_house` | deterministic layout/world summaries, bar placement, spawn choice and `initialize_phase` timings from every gameplay root, the session's first sealed grave (`cemetery_first_grave_sealed`), the cemetery raven pair (`cemetery_raven_spawned`, `cemetery_raven_provider_missing`, `cemetery_raven_plot_missing`) and each outdoor scene's raven roosts (`raven_roost_spawned`, `raven_roost_provider_missing`); verbose-only build sizes for `city`, `mountain_road` and `alpine_village`: `world_build_block` (with `seacoast/*`, `roads_and_river/east_exit*` sub-rows), `terrain_mesh` (`sample_ms`, `cook_ms`, `primed`), `terrain_grid`, `water_surface`, `cloth_panels`, `world_inventory`, `cannery_phase`; `city_plans_prime` (stages `started`/`finished`/`joined`) when a new game in a City interior primes the City's plans on a pool thread |
 | `primitive` | verbose-only `combined_mesh`: source count, vertices, combine and collider time |
-| `interaction`, `map` | entrance/exit results, map lifecycle and City test-teleport mode/result events; path rebuilds are verbose-only |
+| `interaction`, `map` | entrance/exit results, map lifecycle and City test-teleport mode/result events |
 | `intoxication`, `balance` | stage changes and balance scheduling, start, result, fall, recovery or cancellation |
 | `diagnostics` | manual snapshots and support-directory commands |
 | `unity` | Unity warnings, assertions, errors and exceptions with stack traces |

@@ -830,7 +830,6 @@ namespace BarPromenade.Tests.EditMode
         {
             var host = new GameObject("North Row Teleport Test");
             var playerObject = new GameObject("North Row Teleport Player");
-            var previousRoute = new List<string>(GameSessionState.PlannedBarRoute);
             CityMapController controller = null;
             try
             {
@@ -915,11 +914,6 @@ namespace BarPromenade.Tests.EditMode
                     controller.Close();
                 }
 
-                GameSessionState.ClearRoute();
-                foreach (string stop in previousRoute)
-                {
-                    GameSessionState.TryAddRouteStop(stop);
-                }
 
                 UnityEngine.Object.DestroyImmediate(host);
                 UnityEngine.Object.DestroyImmediate(playerObject);
@@ -938,7 +932,6 @@ namespace BarPromenade.Tests.EditMode
         {
             var host = new GameObject("Named Places Map Test");
             var playerObject = new GameObject("Named Places Map Player");
-            var previousRoute = new List<string>(GameSessionState.PlannedBarRoute);
             CityMapController controller = null;
             try
             {
@@ -1104,11 +1097,6 @@ namespace BarPromenade.Tests.EditMode
                     controller.Close();
                 }
 
-                GameSessionState.ClearRoute();
-                foreach (string stop in previousRoute)
-                {
-                    GameSessionState.TryAddRouteStop(stop);
-                }
 
                 UnityEngine.Object.DestroyImmediate(host);
                 UnityEngine.Object.DestroyImmediate(playerObject);

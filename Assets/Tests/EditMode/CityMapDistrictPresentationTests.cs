@@ -150,8 +150,6 @@ namespace BarPromenade.Tests.EditMode
                 CityGenerationSettings.Default,
                 58021);
             var mapObject = new GameObject("City Map Test");
-            var previousRoute = new List<string>(
-                GameSessionState.PlannedBarRoute);
             try
             {
                 CityMapController controller =
@@ -214,11 +212,6 @@ namespace BarPromenade.Tests.EditMode
             }
             finally
             {
-                GameSessionState.ClearRoute();
-                for (int index = 0; index < previousRoute.Count; index++)
-                {
-                    GameSessionState.TryAddRouteStop(previousRoute[index]);
-                }
 
                 UnityEngine.Object.DestroyImmediate(mapObject);
             }
@@ -231,8 +224,6 @@ namespace BarPromenade.Tests.EditMode
                 CityGenerationSettings.Default,
                 58021);
             var mapObject = new GameObject("City Map Supermarket Test");
-            var previousRoute = new List<string>(
-                GameSessionState.PlannedBarRoute);
             try
             {
                 CityMapController controller =
@@ -253,11 +244,6 @@ namespace BarPromenade.Tests.EditMode
             }
             finally
             {
-                GameSessionState.ClearRoute();
-                for (int index = 0; index < previousRoute.Count; index++)
-                {
-                    GameSessionState.TryAddRouteStop(previousRoute[index]);
-                }
 
                 UnityEngine.Object.DestroyImmediate(mapObject);
             }
@@ -353,8 +339,6 @@ namespace BarPromenade.Tests.EditMode
                 CityGenerationSettings.Default,
                 58021);
             var mapObject = new GameObject("City Map Area Target Test");
-            var previousRoute = new List<string>(
-                GameSessionState.PlannedBarRoute);
             try
             {
                 CityMapController controller =
@@ -465,11 +449,6 @@ namespace BarPromenade.Tests.EditMode
             }
             finally
             {
-                GameSessionState.ClearRoute();
-                for (int index = 0; index < previousRoute.Count; index++)
-                {
-                    GameSessionState.TryAddRouteStop(previousRoute[index]);
-                }
 
                 UnityEngine.Object.DestroyImmediate(mapObject);
             }
@@ -626,29 +605,17 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(publicPlace.a, Is.EqualTo(1f).Within(0.001f));
         }
 
-        // The route panel is 311 px tall before the area tabs are charted
-        // and 289 px once they are (the header grows by 22 px); the
-        // distance label, the first footer element, starts 41 px above
-        // the panel's bottom. Nine entries must fit on both with the
-        // shipped one-bar route, and never overlap a route row.
-        [TestCase(0, 1, false)]
-        [TestCase(0, 4, false)]
-        [TestCase(0, 9, false)]
-        [TestCase(1, 9, false)]
-        [TestCase(2, 9, false)]
-        [TestCase(3, 9, false)]
-        [TestCase(4, 1, false)]
-        [TestCase(4, 4, false)]
-        [TestCase(4, 9, false)]
-        [TestCase(0, 4, true)]
-        [TestCase(0, 9, true)]
-        [TestCase(1, 9, true)]
-        [TestCase(2, 9, true)]
-        [TestCase(3, 9, true)]
-        [TestCase(4, 4, true)]
-        [TestCase(4, 9, true)]
-        public void PointOfInterestLegend_FitsBetweenRouteAndFooter(
-            int routeCount,
+        // The side panel is 311 px tall before the area tabs are charted
+        // and 289 px once they are (the header grows by 22 px). The legend
+        // hangs under the XYZ mode button and every entry the shipped
+        // city has must fit on both, with nothing but padding below it.
+        [TestCase(1, false)]
+        [TestCase(4, false)]
+        [TestCase(9, false)]
+        [TestCase(4, true)]
+        [TestCase(9, true)]
+        [TestCase(30, false)]
+        public void PointOfInterestLegend_FitsThePanelUnderTheModeButton(
             int entryCount,
             bool areaTabsCharted)
         {
@@ -657,23 +624,20 @@ namespace BarPromenade.Tests.EditMode
                 : new Rect(461f, 41f, 170f, 311f);
             int visible = CityMapView.ResolvePointOfInterestLegendVisibleEntries(
                 panel,
-                routeCount,
                 entryCount);
             int rowCount = visible + (visible < entryCount ? 1 : 0);
             Rect legend = CityMapView.CreatePointOfInterestLegendRect(
                 panel,
-                routeCount,
                 rowCount);
-            float routeContentBottom = routeCount == 0
-                ? panel.y + 74f
-                : panel.y + 29f +
-                  (routeCount - 1) * 26f +
-                  22f;
 
-            Assert.That(visible, Is.GreaterThanOrEqualTo(Mathf.Min(4, entryCount)));
-            if (routeCount <= 2)
+            Assert.That(visible, Is.GreaterThanOrEqualTo(Mathf.Min(9, entryCount)));
+            if (entryCount <= 9)
             {
                 Assert.That(visible, Is.EqualTo(entryCount));
+            }
+            else
+            {
+                Assert.That(visible, Is.LessThan(entryCount));
             }
 
             Assert.That(
@@ -684,10 +648,11 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(legend.xMax, Is.LessThan(panel.xMax));
             Assert.That(
                 legend.yMin,
-                Is.GreaterThan(routeContentBottom));
+                Is.EqualTo(panel.y + CityMapView.PointOfInterestLegendTop));
             Assert.That(
                 legend.yMax,
-                Is.LessThanOrEqualTo(panel.yMax - 41f));
+                Is.LessThanOrEqualTo(
+                    panel.yMax - CityMapView.PointOfInterestLegendFooterReserve));
         }
 
         [Test]

@@ -17,7 +17,6 @@ namespace BarPromenade.Tests.PlayMode
             GameSessionState.BeginNewGame();
             GameSessionState.TrySetDebugGameDay(3);
             GameSessionState.EnterHome();
-            GameSessionState.ClearRoute();
             GameSessionState.ResetDrinkingState();
             GameSessionState.ResetEconomyState();
             yield return null;

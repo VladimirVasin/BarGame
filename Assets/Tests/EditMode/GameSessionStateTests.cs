@@ -80,7 +80,6 @@ namespace BarPromenade.Tests.EditMode
             GameSessionState.EnterBar(
                 "bar-before-home",
                 BarActivityKind.BeerPong);
-            GameSessionState.TryAddRouteStop("bar-route");
             GameSessionState.UpdateDrinkingProgress(
                 37,
                 DrinkId.RedWine,
@@ -93,9 +92,6 @@ namespace BarPromenade.Tests.EditMode
                 GameSessionState.ActiveBarActivity,
                 Is.EqualTo(BarActivityKind.None));
             Assert.That(GameSessionState.IsReturningToCity, Is.False);
-            CollectionAssert.AreEqual(
-                new[] { "bar-route" },
-                GameSessionState.PlannedBarRoute);
             Assert.That(
                 GameSessionState.IntoxicationLevel,
                 Is.EqualTo(37));
@@ -227,8 +223,6 @@ namespace BarPromenade.Tests.EditMode
             GameSessionState.SetCitySeed(-7001);
             GameSessionState.SetCityBlueprint(
                 CityBlueprintCatalog.LegacyBlueprintId);
-            GameSessionState.TryAddRouteStop("bar-route");
-            GameSessionState.TryAddRouteStop("bar-second");
             GameSessionState.EnterBar(
                 "bar-active",
                 BarActivityKind.BeerPong);
@@ -315,9 +309,6 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 GameSessionState.BalanceCheckSequence,
                 Is.Zero);
-            Assert.That(
-                GameSessionState.PlannedBarRoute,
-                Is.Empty);
             Assert.That(
                 GameSessionState.InventoryItems,
                 Has.Count.EqualTo(2));
@@ -1370,7 +1361,6 @@ namespace BarPromenade.Tests.EditMode
         {
             GameSessionState.SetCitySeed(9988);
             GameSessionState.EnterBar("bar-economy-reset");
-            GameSessionState.TryAddRouteStop("bar-economy-reset");
             GameSessionState.UpdateDrinkingProgress(
                 42,
                 DrinkId.RedWine,
@@ -1388,9 +1378,6 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 GameSessionState.ActiveBarId,
                 Is.EqualTo("bar-economy-reset"));
-            Assert.That(
-                GameSessionState.PlannedBarRoute,
-                Does.Contain("bar-economy-reset"));
             Assert.That(GameSessionState.IntoxicationLevel, Is.EqualTo(42));
             Assert.That(
                 GameSessionState.LastAlcoholicDrink,
@@ -1399,93 +1386,8 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
-        public void TryAddRouteStop_PreservesOrderAndRejectsInvalidOrDuplicateIds()
+        public void SetCityBlueprint_KeepsThePendingReturnAndRejectsUnknownIds()
         {
-            Assert.That(GameSessionState.TryAddRouteStop(null), Is.False);
-            Assert.That(GameSessionState.TryAddRouteStop(string.Empty), Is.False);
-            Assert.That(GameSessionState.TryAddRouteStop("   "), Is.False);
-            Assert.That(GameSessionState.TryAddRouteStop("bar-a"), Is.True);
-            Assert.That(GameSessionState.TryAddRouteStop("bar-b"), Is.True);
-            Assert.That(GameSessionState.TryAddRouteStop("bar-a"), Is.False);
-            Assert.That(GameSessionState.TryAddRouteStop("bar-c"), Is.True);
-
-            CollectionAssert.AreEqual(
-                new[] { "bar-a", "bar-b", "bar-c" },
-                GameSessionState.PlannedBarRoute);
-        }
-
-        [Test]
-        public void RemoveAndClearRoute_UpdateOnlyThePlannedStops()
-        {
-            GameSessionState.TryAddRouteStop("bar-a");
-            GameSessionState.TryAddRouteStop("bar-b");
-            GameSessionState.TryAddRouteStop("bar-c");
-
-            Assert.That(GameSessionState.RemoveRouteStop("bar-b"), Is.True);
-            Assert.That(GameSessionState.RemoveRouteStop("bar-missing"), Is.False);
-            CollectionAssert.AreEqual(
-                new[] { "bar-a", "bar-c" },
-                GameSessionState.PlannedBarRoute);
-
-            GameSessionState.ClearRoute();
-
-            Assert.That(GameSessionState.PlannedBarRoute, Is.Empty);
-        }
-
-        [Test]
-        public void MoveRouteStop_MovesOnePositionAndRespectsBoundaries()
-        {
-            GameSessionState.TryAddRouteStop("bar-a");
-            GameSessionState.TryAddRouteStop("bar-b");
-            GameSessionState.TryAddRouteStop("bar-c");
-
-            Assert.That(GameSessionState.MoveRouteStop("bar-b", -1), Is.True);
-            CollectionAssert.AreEqual(
-                new[] { "bar-b", "bar-a", "bar-c" },
-                GameSessionState.PlannedBarRoute);
-            Assert.That(GameSessionState.MoveRouteStop("bar-b", -1), Is.False);
-            Assert.That(GameSessionState.MoveRouteStop("bar-c", 1), Is.False);
-            Assert.That(GameSessionState.MoveRouteStop("bar-a", 0), Is.False);
-            Assert.That(GameSessionState.MoveRouteStop("bar-missing", 1), Is.False);
-
-            Assert.That(GameSessionState.MoveRouteStop("bar-a", 1), Is.True);
-            CollectionAssert.AreEqual(
-                new[] { "bar-b", "bar-c", "bar-a" },
-                GameSessionState.PlannedBarRoute);
-        }
-
-        [Test]
-        public void SetCitySeed_ClearsRouteOnlyWhenSeedChanges()
-        {
-            const int seed = 8877;
-            GameSessionState.SetCitySeed(seed);
-            GameSessionState.TryAddRouteStop("bar-a");
-            GameSessionState.TryAddRouteStop("bar-b");
-
-            GameSessionState.SetCitySeed(seed);
-
-            CollectionAssert.AreEqual(
-                new[] { "bar-a", "bar-b" },
-                GameSessionState.PlannedBarRoute);
-
-            GameSessionState.SetCitySeed(seed + 1);
-
-            Assert.That(GameSessionState.PlannedBarRoute, Is.Empty);
-        }
-
-        [Test]
-        public void SetCityBlueprint_ClearsRouteOnlyWhenIdChanges()
-        {
-            GameSessionState.TryAddRouteStop("bar-a");
-            GameSessionState.TryAddRouteStop("bar-b");
-
-            GameSessionState.SetCityBlueprint(
-                CityBlueprintCatalog.DefaultBlueprintId);
-
-            CollectionAssert.AreEqual(
-                new[] { "bar-a", "bar-b" },
-                GameSessionState.PlannedBarRoute);
-
             GameSessionState.EnterBar(
                 "bar-pending-return",
                 BarActivityKind.BeerPong);
@@ -1496,7 +1398,6 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 GameSessionState.CityBlueprintId,
                 Is.EqualTo(CityBlueprintCatalog.LegacyBlueprintId));
-            Assert.That(GameSessionState.PlannedBarRoute, Is.Empty);
             Assert.That(
                 GameSessionState.ReturnKind,
                 Is.EqualTo(CityReturnKind.Bar));

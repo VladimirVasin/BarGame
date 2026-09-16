@@ -62,14 +62,12 @@ namespace BarPromenade.Tests.PlayMode
         {
             Time.captureDeltaTime = PinnedFrameSeconds;
             GameSessionState.BeginNewGame();
-            GameSessionState.ClearRoute();
         }
         [UnityTearDown]
         public IEnumerator TearDown()
         {
             Time.captureDeltaTime = 0f;
             GameSessionState.BeginNewGame();
-            GameSessionState.ClearRoute();
             Scene road = SceneManager.GetSceneByName(SceneIds.MountainRoad);
             if (!road.isLoaded)
             {

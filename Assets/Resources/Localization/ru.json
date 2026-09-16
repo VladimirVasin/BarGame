@@ -1029,14 +1029,6 @@
       "value": "Родник"
     },
     {
-      "key": "map.route_title",
-      "value": "Бар у дома"
-    },
-    {
-      "key": "map.route_empty",
-      "value": "Отметьте «Огонёк» на карте, чтобы построить путь"
-    },
-    {
       "key": "map.bar_name",
       "value": "Бар {0}"
     },
@@ -1275,14 +1267,6 @@
     {
       "key": "bus.stop.default_coastal.loop_east_8",
       "value": "Остановка «Восточная улица, 8»"
-    },
-    {
-      "key": "map.clear",
-      "value": "Очистить маршрут"
-    },
-    {
-      "key": "map.distance",
-      "value": "Длина: {0:0} м"
     },
     {
       "key": "map.object",

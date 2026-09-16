@@ -248,13 +248,11 @@ namespace BarPromenade
             RetroUiTheme.MapRoad;
         private static readonly Color ParkPath =
             RetroUiTheme.Muted;
-        private static readonly Color Route =
-            RetroUiTheme.Accent;
         private static readonly Color BusRoute =
             RetroUiTheme.Text;
         private static readonly Color BusStop =
             RetroUiTheme.AccentPale;
-        private static readonly Color UnselectedBar =
+        private static readonly Color BarMarker =
             RetroUiTheme.MapBar;
         private static readonly Color Player =
             RetroUiTheme.AccentPale;
@@ -313,9 +311,8 @@ namespace BarPromenade
         private GUIStyle titleStyle;
         private GUIStyle subtitleStyle;
         private GUIStyle centeredStyle;
-        private GUIStyle routeItemStyle;
         private GUIStyle markerButtonStyle;
-        private GUIStyle routeBadgeStyle;
+        private GUIStyle ordinalBadgeStyle;
         private GUIStyle hintStyle;
         private GUIStyle smallButtonStyle;
         private GUIStyle pointOfInterestTitleStyle;
@@ -407,7 +404,7 @@ namespace BarPromenade
                 float headerHeight = controller.AreaTabsConfigured
                     ? 55f
                     : 33f;
-                float routePanelWidth = Mathf.Clamp(
+                float sidePanelWidth = Mathf.Clamp(
                     panel.width * 0.28f,
                     130f,
                     170f);
@@ -419,12 +416,12 @@ namespace BarPromenade
                 Rect mapArea = new Rect(
                     content.x,
                     content.y,
-                    content.width - routePanelWidth - 9f,
+                    content.width - sidePanelWidth - 9f,
                     content.height);
-                Rect routePanel = new Rect(
+                Rect sidePanel = new Rect(
                     mapArea.xMax + 9f,
                     content.y,
-                    routePanelWidth,
+                    sidePanelWidth,
                     content.height);
 
                 mapViewport.Configure(
@@ -490,7 +487,7 @@ namespace BarPromenade
                     1f,
                     RetroUiTheme.BorderMuted);
                 DrawScrollIndicators(mapArea);
-                DrawRoutePanel(routePanel);
+                DrawSidePanel(sidePanel);
                 DrawHoverTooltip(
                     mapArea,
                     logicalPointer);
@@ -535,7 +532,6 @@ namespace BarPromenade
             DrawMountainTunnel(projection);
             DrawSeacoastLandmarks(projection);
             DrawBusRoute(projection);
-            DrawRoute(projection);
             DrawBusStops(projection);
             DrawPointsOfInterest(projection);
             DrawSupermarket(projection);
@@ -2134,25 +2130,6 @@ namespace BarPromenade
             }
         }
 
-        private void DrawRoute(MapProjection projection)
-        {
-            CityRoutePath path = controller.CurrentPath;
-            if (path == null || path.IsEmpty)
-            {
-                return;
-            }
-
-            IReadOnlyList<Vector3> points = path.Points;
-            for (int index = 1; index < points.Count; index++)
-            {
-                DrawLine(
-                    projection.WorldToScreen(points[index - 1]),
-                    projection.WorldToScreen(points[index]),
-                    3f,
-                    Route);
-            }
-        }
-
         private void DrawBusStops(MapProjection projection)
         {
             IReadOnlyList<CityMapBusStopMarker> stops =
@@ -2206,7 +2183,7 @@ namespace BarPromenade
                 BusStop);
             if (!string.IsNullOrEmpty(ordinal))
             {
-                GUI.Label(marker, ordinal, routeBadgeStyle);
+                GUI.Label(marker, ordinal, ordinalBadgeStyle);
             }
         }
 
@@ -2298,14 +2275,11 @@ namespace BarPromenade
                 BuildingLot bar = controller.Bars[index];
                 Vector2 position =
                     projection.WorldToScreen(bar.ReturnPosition);
-                int routeOrder = controller.GetRouteOrder(bar.BarId);
-                bool selected = routeOrder >= 0;
                 int mapObjectIndex =
                     controller.GetBarMapObjectIndex(index);
-                bool focused = controller.DebugTeleportEnabled
-                    ? mapObjectIndex ==
-                      controller.SelectedMapObjectIndex
-                    : index == controller.SelectedBarIndex;
+                bool focused = controller.DebugTeleportEnabled &&
+                               mapObjectIndex ==
+                               controller.SelectedMapObjectIndex;
                 const float markerSize = 17f;
                 Rect marker = new Rect(
                     position.x - markerSize * 0.5f,
@@ -2329,55 +2303,24 @@ namespace BarPromenade
                         RetroUiTheme.Text);
                 }
 
-                DrawSolidRect(marker, UnselectedBar);
+                DrawSolidRect(marker, BarMarker);
 
                 Color previousContentColor = GUI.contentColor;
                 GUI.contentColor = RetroUiTheme.Text;
                 string markerLabel = GetNumberLabel(index + 1);
-                bool pressed = false;
-                if (controller.MapPointInspectionEnabled)
+                // A bar is a place on the chart, not a control: only the
+                // debug teleport mode makes its marker pick a destination.
+                if (controller.DebugTeleportEnabled &&
+                    !controller.MapPointInspectionEnabled)
                 {
-                    GUI.Label(marker, markerLabel, markerButtonStyle);
-                }
-                else
-                {
-                    pressed = GUI.Button(
-                        marker,
-                        markerLabel,
-                        markerButtonStyle);
-                }
-
-                if (pressed)
-                {
-                    if (controller.DebugTeleportEnabled)
+                    if (GUI.Button(marker, markerLabel, markerButtonStyle))
                     {
                         controller.QueueSelectMapObject(mapObjectIndex);
                     }
-                    else
-                    {
-                        controller.QueueToggleBar(index);
-                    }
                 }
-
-                if (selected)
+                else
                 {
-                    Rect routeBadge = new Rect(
-                        marker.xMax - 5f,
-                        marker.y - 5f,
-                        10f,
-                        10f);
-                    RetroUiTheme.DrawPanel(
-                        routeBadge,
-                        RetroUiTheme.AccentPale,
-                        RetroUiTheme.Ink,
-                        false,
-                        0f,
-                        1f);
-                    GUI.contentColor = RetroUiTheme.Ink;
-                    GUI.Label(
-                        routeBadge,
-                        (routeOrder + 1).ToString(),
-                        routeBadgeStyle);
+                    GUI.Label(marker, markerLabel, markerButtonStyle);
                 }
 
                 GUI.contentColor = previousContentColor;
@@ -2906,7 +2849,7 @@ namespace BarPromenade
                 height);
         }
 
-        private void DrawRoutePanel(Rect panel)
+        private void DrawSidePanel(Rect panel)
         {
             RetroUiTheme.DrawPanel(
                 panel,
@@ -2936,70 +2879,7 @@ namespace BarPromenade
                 return;
             }
 
-            GUI.Label(
-                new Rect(
-                    panel.x + 6f,
-                    panel.y + 5f,
-                    panel.width - 58f,
-                    18f),
-                LocalizationService.Get("map.route_title"),
-                subtitleStyle);
-
-            IReadOnlyList<string> route = controller.Route;
-            if (route.Count == 0)
-            {
-                GUI.Label(
-                    new Rect(
-                        panel.x + 9f,
-                        panel.y + 32f,
-                        panel.width - 18f,
-                        42f),
-                    LocalizationService.Get("map.route_empty"),
-                    centeredStyle);
-            }
-            else
-            {
-                DrawRouteRows(panel, route);
-            }
-
-            DrawPointOfInterestLegend(panel, route.Count);
-
-            CityRoutePath path = controller.CurrentPath;
-            float distance = path == null ? 0f : path.TotalLength;
-            GUI.Label(
-                new Rect(
-                    panel.x + 7f,
-                    panel.yMax - 41f,
-                    panel.width - 14f,
-                    14f),
-                string.Format(
-                    LocalizationService.Get("map.distance"),
-                    distance),
-                centeredStyle);
-
-            Rect clearButton = new Rect(
-                panel.x + 8f,
-                panel.yMax - 24f,
-                panel.width - 16f,
-                16f);
-            RetroUiTheme.DrawPanel(
-                clearButton,
-                RetroUiTheme.PanelRaised,
-                RetroUiTheme.AccentPale,
-                false,
-                0f,
-                1f);
-            bool previousEnabled = GUI.enabled;
-            GUI.enabled = route.Count > 0;
-            if (GUI.Button(
-                clearButton,
-                LocalizationService.Get("map.clear"),
-                hintStyle))
-            {
-                controller.QueueClearRoute();
-            }
-
-            GUI.enabled = previousEnabled;
+            DrawPointOfInterestLegend(panel);
             DrawMapPointModeButton(panel);
         }
 
@@ -3311,9 +3191,7 @@ namespace BarPromenade
             }
         }
 
-        private void DrawPointOfInterestLegend(
-            Rect panel,
-            int routeCount)
+        private void DrawPointOfInterestLegend(Rect panel)
         {
             int entryCount = controller.PointsOfInterest.Count;
             if (entryCount == 0)
@@ -3323,7 +3201,6 @@ namespace BarPromenade
 
             int visibleCount = ResolvePointOfInterestLegendVisibleEntries(
                 panel,
-                routeCount,
                 entryCount);
             if (visibleCount == 0)
             {
@@ -3333,7 +3210,6 @@ namespace BarPromenade
             bool overflows = visibleCount < entryCount;
             Rect legend = CreatePointOfInterestLegendRect(
                 panel,
-                routeCount,
                 visibleCount + (overflows ? 1 : 0));
             DrawSolidRect(
                 legend,
@@ -3397,21 +3273,21 @@ namespace BarPromenade
 
         internal const float PointOfInterestLegendRowHeight = 12f;
 
-        // The footer starts with the distance label at panel.yMax - 41.
-        internal const float PointOfInterestLegendFooterReserve = 46f;
+        // Under the XYZ mode button in the panel's top-right corner.
+        internal const float PointOfInterestLegendTop = 29f;
+        internal const float PointOfInterestLegendFooterReserve = 5f;
 
         private const float PointOfInterestLegendTitleHeight = 19f;
         private const float PointOfInterestLegendBottomPadding = 3f;
 
         /// <summary>
-        /// How many legend entries fit between the route rows and the
-        /// footer. When not all do, one row is kept back for the overflow
-        /// line, so the answer is at most rows - 1; below two rows the
-        /// legend is not worth drawing at all.
+        /// How many legend entries fit in the side panel. When not all
+        /// do, one row is kept back for the overflow line, so the answer
+        /// is at most rows - 1; below two rows the legend is not worth
+        /// drawing at all.
         /// </summary>
         internal static int ResolvePointOfInterestLegendVisibleEntries(
             Rect panel,
-            int routeCount,
             int entryCount)
         {
             if (entryCount <= 0)
@@ -3419,9 +3295,7 @@ namespace BarPromenade
                 return 0;
             }
 
-            float preferredTop = ResolvePointOfInterestLegendPreferredTop(
-                panel,
-                routeCount);
+            float preferredTop = panel.y + PointOfInterestLegendTop;
             int availableRows = Mathf.FloorToInt(
                 (panel.yMax - PointOfInterestLegendFooterReserve -
                  preferredTop - PointOfInterestLegendTitleHeight -
@@ -3439,16 +3313,13 @@ namespace BarPromenade
 
         internal static Rect CreatePointOfInterestLegendRect(
             Rect panel,
-            int routeCount,
             int rowCount)
         {
             float height = PointOfInterestLegendTitleHeight +
                            Mathf.Max(0, rowCount) *
                            PointOfInterestLegendRowHeight +
                            PointOfInterestLegendBottomPadding;
-            float preferredTop = ResolvePointOfInterestLegendPreferredTop(
-                panel,
-                routeCount);
+            float preferredTop = panel.y + PointOfInterestLegendTop;
             float maximumTop = panel.yMax -
                                PointOfInterestLegendFooterReserve -
                                height;
@@ -3460,141 +3331,6 @@ namespace BarPromenade
                 top,
                 panel.width - 12f,
                 height);
-        }
-
-        private static float ResolvePointOfInterestLegendPreferredTop(
-            Rect panel,
-            int routeCount)
-        {
-            float routeBottom = panel.y + 29f +
-                                Mathf.Max(0, routeCount) * 26f;
-            return Mathf.Max(panel.y + 94f, routeBottom + 9f);
-        }
-
-        private void DrawRouteRows(
-            Rect panel,
-            IReadOnlyList<string> route)
-        {
-            const float rowHeight = 22f;
-            const float rowGap = 4f;
-            float rowY = panel.y + 29f;
-
-            for (int routeIndex = 0;
-                 routeIndex < route.Count;
-                 routeIndex++)
-            {
-                string barId = route[routeIndex];
-                int barIndex = controller.FindBarIndex(barId);
-                if (barIndex < 0)
-                {
-                    continue;
-                }
-
-                Rect row = new Rect(
-                    panel.x + 6f,
-                    rowY,
-                    panel.width - 12f,
-                    rowHeight);
-                bool focused =
-                    barIndex == controller.SelectedBarIndex;
-                RetroUiTheme.DrawPanel(
-                    row,
-                    RetroUiTheme.Panel,
-                    RetroUiTheme.BorderMuted,
-                    false,
-                    0f,
-                    1f);
-                RetroUiTheme.DrawSelection(row, focused);
-
-                const float buttonWidth = 15f;
-                const float buttonGap = 2f;
-                bool showReorderControls = route.Count > 1;
-                float buttonsWidth = showReorderControls
-                    ? buttonWidth * 3f + buttonGap * 2f
-                    : buttonWidth;
-                GUI.Label(
-                    new Rect(
-                        row.x + 5f,
-                        row.y,
-                        row.width - buttonsWidth - 9f,
-                        row.height),
-                    $"{routeIndex + 1}. {controller.GetBarLabel(barIndex)}",
-                    routeItemStyle);
-
-                float buttonX = row.xMax - buttonsWidth - 3f;
-                bool previousEnabled = GUI.enabled;
-                if (showReorderControls)
-                {
-                    Rect upButton = new Rect(
-                        buttonX,
-                        row.y + 3f,
-                        buttonWidth,
-                        15f);
-                    RetroUiTheme.DrawPanel(
-                        upButton,
-                        RetroUiTheme.PanelRaised,
-                        RetroUiTheme.BorderMuted,
-                        false,
-                        0f,
-                        1f);
-                    GUI.enabled = routeIndex > 0;
-                    if (GUI.Button(
-                        upButton,
-                        "\u25B2",
-                        smallButtonStyle))
-                    {
-                        controller.QueueMoveBar(barId, -1);
-                    }
-
-                    buttonX += buttonWidth + buttonGap;
-                    Rect downButton = new Rect(
-                        buttonX,
-                        row.y + 3f,
-                        buttonWidth,
-                        15f);
-                    RetroUiTheme.DrawPanel(
-                        downButton,
-                        RetroUiTheme.PanelRaised,
-                        RetroUiTheme.BorderMuted,
-                        false,
-                        0f,
-                        1f);
-                    GUI.enabled = routeIndex < route.Count - 1;
-                    if (GUI.Button(
-                        downButton,
-                        "\u25BC",
-                        smallButtonStyle))
-                    {
-                        controller.QueueMoveBar(barId, 1);
-                    }
-
-                    buttonX += buttonWidth + buttonGap;
-                }
-
-                Rect removeButton = new Rect(
-                    buttonX,
-                    row.y + 3f,
-                    buttonWidth,
-                    15f);
-                RetroUiTheme.DrawPanel(
-                    removeButton,
-                    RetroUiTheme.PanelRaised,
-                    RetroUiTheme.Bad,
-                    false,
-                    0f,
-                    1f);
-                GUI.enabled = true;
-                if (GUI.Button(
-                    removeButton,
-                    "\u00D7",
-                    smallButtonStyle))
-                {
-                    controller.QueueToggleBar(barIndex);
-                }
-
-                GUI.enabled = previousEnabled;
-                rowY += rowHeight + rowGap;
-            }
         }
 
         private MapProjection CreateProjection(Rect mapRect)
@@ -4217,17 +3953,12 @@ namespace BarPromenade
                 RetroUiTheme.Text,
                 false,
                 true);
-            routeItemStyle = RetroUiTheme.CreateLabelStyle(
-                8,
-                TextAnchor.MiddleLeft,
-                RetroUiTheme.Text,
-                true);
             markerButtonStyle = RetroUiTheme.CreateButtonStyle(
                 9,
                 TextAnchor.MiddleCenter,
                 RetroUiTheme.Text,
                 true);
-            routeBadgeStyle = RetroUiTheme.CreateLabelStyle(
+            ordinalBadgeStyle = RetroUiTheme.CreateLabelStyle(
                 7,
                 TextAnchor.MiddleCenter,
                 RetroUiTheme.Ink,

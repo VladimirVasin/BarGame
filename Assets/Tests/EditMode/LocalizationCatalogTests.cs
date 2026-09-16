@@ -352,8 +352,6 @@ namespace BarPromenade.Tests.EditMode
             "map.mountain_road.bridge",
             "map.mountain_road.cafe",
             "map.mountain_road.cableway",
-            "map.route_title",
-            "map.route_empty",
             "map.bar_name",
             "map.player",
             "map.home",
@@ -384,8 +382,6 @@ namespace BarPromenade.Tests.EditMode
             "bus.stop.default_coastal.loop_south",
             "bus.stop.default_coastal.loop_west",
             "bus.stop.default_coastal.loop_east",
-            "map.clear",
-            "map.distance",
             "map.object",
             "map.teleport.title",
             "map.teleport.select",
@@ -431,6 +427,10 @@ namespace BarPromenade.Tests.EditMode
             "drink_shop.controls",
             "map.open_hint",
             "map.instructions",
+            "map.route_title",
+            "map.route_empty",
+            "map.clear",
+            "map.distance",
             "debug.minigames.controls"
         };
 

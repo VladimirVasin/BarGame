@@ -18,7 +18,6 @@ namespace BarPromenade.Tests.PlayMode
         {
             GameSessionState.BeginNewGame();
             GameSessionState.EnterHome();
-            GameSessionState.ClearRoute();
             yield return null;
         }
 
@@ -46,7 +45,6 @@ namespace BarPromenade.Tests.PlayMode
                 }
             }
 
-            GameSessionState.ClearRoute();
             yield return null;
         }
 

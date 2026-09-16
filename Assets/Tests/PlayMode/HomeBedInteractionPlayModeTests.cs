@@ -36,7 +36,6 @@ namespace BarPromenade.Tests.PlayMode
             inputFixture.Setup();
             keyboard = InputSystem.AddDevice<Keyboard>();
             GameSessionState.EnterHome();
-            GameSessionState.ClearRoute();
             GameSessionState.ResetDrinkingState();
             GameSessionState.ResetEconomyState();
             GameSessionState.UpdateFatigue(
@@ -81,7 +80,6 @@ namespace BarPromenade.Tests.PlayMode
                 Object.DestroyImmediate(bodyProbeMesh);
                 bodyProbeMesh = null;
             }
-            GameSessionState.ClearRoute();
             GameSessionState.ResetDrinkingState();
             GameSessionState.ResetEconomyState();
             GameSessionState.UpdateFatigue(

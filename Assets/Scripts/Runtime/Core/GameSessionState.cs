@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using UnityEngine;
 
 namespace BarPromenade
@@ -94,10 +93,6 @@ namespace BarPromenade
         public const int FirstDebugGameDayNumber = 1;
         public const int LastDebugGameDayNumber = 7;
 
-        private static readonly List<string> plannedBarRoute =
-            new List<string>();
-        private static readonly ReadOnlyCollection<string> plannedBarRouteView =
-            plannedBarRoute.AsReadOnly();
         private static readonly HashSet<string> collectedWorldItems =
             new HashSet<string>(StringComparer.Ordinal);
         private static readonly InventoryState inventory =
@@ -285,8 +280,6 @@ namespace BarPromenade
             IsRidingTheFerryman || IsRidingTheCableway;
         public static float BalanceCheckDelayRemaining { get; private set; }
         public static int BalanceCheckSequence { get; private set; }
-        public static IReadOnlyList<string> PlannedBarRoute =>
-            plannedBarRouteView;
         public static IReadOnlyList<InventoryItemStack> InventoryItems =>
             inventory.Items;
         public static event Action InventoryEquipmentChanged;
@@ -548,7 +541,6 @@ namespace BarPromenade
             gameTime.Reset();
             BalanceCheckDelayRemaining = 0f;
             BalanceCheckSequence = 0;
-            plannedBarRoute.Clear();
             LastTeethBrushingDayIndex = -1;
             collectedWorldItems.Clear();
             inventory.ResetWithStarterItems();
@@ -1280,18 +1272,13 @@ namespace BarPromenade
             }
 
             int previousSeed = CitySeed;
-            int clearedRouteCount = plannedBarRoute.Count;
             CitySeed = seed;
             GameLog.SetCitySeed(seed);
-            ClearRoute();
             GameLog.Info(
                 "session",
                 "city_seed_changed",
                 GameLog.Field("previous_seed", previousSeed),
-                GameLog.Field("new_seed", CitySeed),
-                GameLog.Field(
-                    "cleared_route_count",
-                    clearedRouteCount));
+                GameLog.Field("new_seed", CitySeed));
         }
 
         public static void SetCityBlueprint(string blueprintId)
@@ -1308,9 +1295,7 @@ namespace BarPromenade
             }
 
             string previousBlueprintId = CityBlueprintId;
-            int clearedRouteCount = plannedBarRoute.Count;
             CityBlueprintId = resolvedId;
-            ClearRoute();
             GameLog.Info(
                 "session",
                 "city_blueprint_changed",
@@ -1319,101 +1304,7 @@ namespace BarPromenade
                     previousBlueprintId),
                 GameLog.Field(
                     "new_blueprint_id",
-                    CityBlueprintId),
-                GameLog.Field(
-                    "cleared_route_count",
-                    clearedRouteCount));
-        }
-
-        public static bool TryAddRouteStop(string barId)
-        {
-            if (string.IsNullOrWhiteSpace(barId) ||
-                plannedBarRoute.Contains(barId))
-            {
-                return false;
-            }
-
-            plannedBarRoute.Add(barId);
-            GameLog.Info(
-                "session",
-                "route_stop_added",
-                GameLog.Field("bar_id", barId),
-                GameLog.Field(
-                    "route_index",
-                    plannedBarRoute.Count - 1),
-                GameLog.Field("route", FormatRoute()));
-            return true;
-        }
-
-        public static bool RemoveRouteStop(string barId)
-        {
-            if (string.IsNullOrWhiteSpace(barId))
-            {
-                return false;
-            }
-
-            int routeIndex = plannedBarRoute.IndexOf(barId);
-            if (routeIndex < 0)
-            {
-                return false;
-            }
-
-            plannedBarRoute.RemoveAt(routeIndex);
-            GameLog.Info(
-                "session",
-                "route_stop_removed",
-                GameLog.Field("bar_id", barId),
-                GameLog.Field("previous_index", routeIndex),
-                GameLog.Field("route", FormatRoute()));
-            return true;
-        }
-
-        public static bool MoveRouteStop(string barId, int direction)
-        {
-            if (string.IsNullOrWhiteSpace(barId) ||
-                (direction != -1 && direction != 1))
-            {
-                return false;
-            }
-
-            int currentIndex = plannedBarRoute.IndexOf(barId);
-            int targetIndex = currentIndex + direction;
-            if (currentIndex < 0 ||
-                targetIndex < 0 ||
-                targetIndex >= plannedBarRoute.Count)
-            {
-                return false;
-            }
-
-            string displacedBarId = plannedBarRoute[targetIndex];
-            plannedBarRoute[targetIndex] = barId;
-            plannedBarRoute[currentIndex] = displacedBarId;
-            GameLog.Info(
-                "session",
-                "route_stop_moved",
-                GameLog.Field("bar_id", barId),
-                GameLog.Field("previous_index", currentIndex),
-                GameLog.Field("new_index", targetIndex),
-                GameLog.Field("displaced_bar_id", displacedBarId),
-                GameLog.Field("route", FormatRoute()));
-            return true;
-        }
-
-        public static void ClearRoute()
-        {
-            if (plannedBarRoute.Count == 0)
-            {
-                return;
-            }
-
-            string previousRoute = FormatRoute();
-            int previousCount = plannedBarRoute.Count;
-            plannedBarRoute.Clear();
-            GameLog.Info(
-                "session",
-                "route_cleared",
-                GameLog.Field("previous_route", previousRoute),
-                GameLog.Field("previous_count", previousCount));
+                    CityBlueprintId));
         }
 
         public static void EnterBar(string barId)
@@ -2303,9 +2194,5 @@ namespace BarPromenade
                     result.ItemCountAfter));
         }
 
-        private static string FormatRoute()
-        {
-            return string.Join(",", plannedBarRoute);
-        }
     }
 }

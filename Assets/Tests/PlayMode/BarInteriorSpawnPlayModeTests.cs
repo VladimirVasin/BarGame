@@ -87,7 +87,6 @@ namespace BarPromenade.Tests.PlayMode
 
             GameSessionState.ResetEconomyState();
             GameSessionState.ResetDrinkingState();
-            GameSessionState.ClearRoute();
             yield return null;
         }
 

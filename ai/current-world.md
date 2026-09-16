@@ -1858,7 +1858,7 @@ The vertical slice contains:
   with a localized hover label; outside the scrolling viewport the marker
   clamps to the visible edge as a direction indicator. North and east keep
   the layout's original map maxima. It also draws the canonical Route 01 loop
-  as a pale neutral line below the darker bone-toned player itinerary, adds
+  as a pale neutral line, adds
   five numbered stop markers in the default layout with localized hover
   labels and keeps both symbols in a compact legend. The map has no live bus
   marker. City and Mountain Road are separate schematics under the area tabs;
@@ -1876,9 +1876,9 @@ The vertical slice contains:
   supermarket `Center`, each district POI its authored position. Mountain
   Road owns the current
   player, tunnel, every authored hairpin apex, bridge centre, plateau endpoint,
-  cafe, cableway and brink. Road and itinerary polylines, intermediate route samples
+  cafe, cableway and brink. Road polylines, intermediate route samples
   and mountain hatches remain decorative. Point inspection is mutually
-  exclusive with debug teleport and suppresses route editing, area travel and
+  exclusive with debug teleport and suppresses area travel and
   teleport confirmation until the player exits `XYZ` mode. Confirming the
   other area requests a map arrival, Single-loads `AreaLoading`, then the
   destination. Its overlay holds until construction ends: 20% of the bar for
@@ -2048,13 +2048,11 @@ The vertical slice contains:
   Keep at least `22` logical pixels per map cell; clip overflowing content and
   pan it independently on X/Y with WASD, the right stick, mouse-wheel gestures
   or middle/right-button dragging while drawing scroll indicators only for
-  overflowing axes. Ordinary ordered route editing and deterministic shortest
-  paths are unchanged outside this debug mode and stay on the generated road
-  graph;
+  overflowing axes;
 - localized RU/EN interaction prompts whose pointer, keyboard and gamepad
   activation share one action path;
 - guarded asynchronous transitions and persistent blueprint ID,
-  seed/bar/route context for the current city, with an explicit
+  seed/bar context for the current city, with an explicit
   bar/home/supermarket/church return
   kind, a separate stairwell-arrival side and a consumed
   `Normal`/`OpeningSleep` Home arrival value and a resettable one-shot
@@ -2764,8 +2762,8 @@ The vertical slice contains:
   interaction flash is composed by that single presentation writer;
 - one exit and one ordinary-drink counter station remain authoritative; the
   activity fixture (beer-pong table, stage) survives purely as layout
-  dressing. The bar-visited mechanic is removed entirely: the map route is
-  edited only by hand and entering a bar changes nothing about it;
+  dressing. There is no bar-visited mechanic and no planned bar route on
+  the map: bars are numbered markers with names, nothing more;
 - `F9` City/Bar/Road/Home: closes map, modal lock; clicks/Left/Right adjust
   intoxication `±20` within `0–100`, keep drink context. Days `1–7` keep
   `HH:MM`/running/needs; days uncapped. City owns teleport flag;
@@ -2781,7 +2779,7 @@ The vertical slice contains:
   calendar/needs/hero stay;
 - bounded structured session diagnostics in `debug.log`: stable NDJSON
   envelopes correlate scene transitions, generated-city/bar/home initialization,
-  route state, drinking and balance outcomes, plus
+  drinking and balance outcomes, plus
   Unity warnings/errors; `F8` writes an immediate state snapshot and
   `Shift+F8` opens the log directory;
 - a session-only cash wallet starting at `$999`, shared by finite supermarket

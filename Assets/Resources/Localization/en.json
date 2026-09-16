@@ -1029,14 +1029,6 @@
       "value": "The spring"
     },
     {
-      "key": "map.route_title",
-      "value": "Home Bar"
-    },
-    {
-      "key": "map.route_empty",
-      "value": "Select The Ogonyok on the map to plot a route"
-    },
-    {
       "key": "map.bar_name",
       "value": "Bar {0}"
     },
@@ -1275,14 +1267,6 @@
     {
       "key": "bus.stop.default_coastal.loop_east_8",
       "value": "East Street stop, 8"
-    },
-    {
-      "key": "map.clear",
-      "value": "Clear route"
-    },
-    {
-      "key": "map.distance",
-      "value": "Distance: {0:0} m"
     },
     {
       "key": "map.object",

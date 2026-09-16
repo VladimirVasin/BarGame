@@ -161,9 +161,6 @@ namespace BarPromenade
         private enum CommandType
         {
             ToggleMap,
-            ToggleBar,
-            MoveBar,
-            ClearRoute,
             SelectMapObject,
             ConfirmDebugTeleport,
             ToggleMapPointInspection,
@@ -178,26 +175,21 @@ namespace BarPromenade
             public PendingCommand(
                 CommandType type,
                 int barIndex = -1,
-                string barId = "",
                 int direction = 0)
             {
                 Type = type;
                 BarIndex = barIndex;
-                BarId = barId ?? string.Empty;
                 Direction = direction;
             }
 
             public CommandType Type { get; }
             public int BarIndex { get; }
-            public string BarId { get; }
             public int Direction { get; }
         }
 
         private readonly List<BuildingLot> bars = new List<BuildingLot>();
         private readonly List<CityMapPointOfInterest> pointsOfInterest =
             new List<CityMapPointOfInterest>();
-        private readonly List<BuildingLot> orderedStops =
-            new List<BuildingLot>();
         private readonly Queue<PendingCommand> pendingCommands =
             new Queue<PendingCommand>();
 
@@ -266,9 +258,6 @@ namespace BarPromenade
             Layout?.BuildingLots ?? Array.Empty<BuildingLot>();
         public BuildingLot PlayerHome => Layout?.PlayerHome;
         public BuildingLot Supermarket => Layout?.Supermarket;
-        public IReadOnlyList<string> Route => GameSessionState.PlannedBarRoute;
-        public CityRoutePath CurrentPath { get; private set; }
-        public int SelectedBarIndex { get; private set; }
         public int SelectedMapObjectIndex { get; private set; } = -1;
         public bool DebugTeleportEnabled { get; private set; }
         public BuildingLot SelectedMapObject =>
@@ -341,9 +330,6 @@ namespace BarPromenade
 
             bars.Sort(CompareBarLots);
             CollectPointsOfInterest();
-            SelectedBarIndex = bars.Count == 0
-                ? -1
-                : Mathf.Clamp(SelectedBarIndex, 0, bars.Count - 1);
             SelectedMapObjectIndex = -1;
             RebuildMapPointCatalogs();
 
@@ -355,7 +341,6 @@ namespace BarPromenade
 
             View.Initialize(this);
             IsInitialized = true;
-            RefreshPath("initialize");
             GameLog.Info(
                 "map",
                 "initialized",
@@ -371,16 +356,7 @@ namespace BarPromenade
                     BusOverlay.RoutePoints.Count),
                 GameLog.Field(
                     "bus_stop_count",
-                    BusOverlay.Stops.Count),
-                GameLog.Field(
-                    "selected_bar_index",
-                    SelectedBarIndex),
-                GameLog.Field(
-                    "route",
-                    FormatRoute()),
-                GameLog.Field(
-                    "path_length",
-                    CurrentPath.TotalLength));
+                    BusOverlay.Stops.Count));
         }
 
         internal static Rect CreateDisplayWorldXZBounds(
@@ -500,23 +476,10 @@ namespace BarPromenade
             inputUnlockFrame = Time.frameCount + 1;
             IsOpen = true;
             openedTimestamp = Stopwatch.GetTimestamp();
-            RefreshPath("open");
             RetroAudio.Play(RetroSfxId.MapOpen);
             GameLog.Info(
                 "map",
                 "opened",
-                GameLog.Field(
-                    "selected_bar_id",
-                    GetSelectedBarId()),
-                GameLog.Field(
-                    "selected_bar_index",
-                    SelectedBarIndex),
-                GameLog.Field(
-                    "route_count",
-                    Route.Count),
-                GameLog.Field(
-                    "path_length",
-                    CurrentPath.TotalLength),
                 GameLog.Field(
                     "player_x",
                     PlayerWorldPosition.x),
@@ -555,105 +518,9 @@ namespace BarPromenade
                 GameLog.Field("reason", reason),
                 GameLog.Field(
                     "open_duration_ms",
-                    GetOpenDurationMilliseconds()),
-                GameLog.Field(
-                    "route",
-                    FormatRoute()),
-                GameLog.Field(
-                    "path_length",
-                    CurrentPath == null
-                        ? 0f
-                        : CurrentPath.TotalLength));
+                    GetOpenDurationMilliseconds()));
             openedTimestamp = 0L;
             return true;
-        }
-
-        public bool ToggleBar(int barIndex)
-        {
-            if (!IsValidBarIndex(barIndex))
-            {
-                return false;
-            }
-
-            SelectedBarIndex = barIndex;
-            string barId = bars[barIndex].BarId;
-            bool wasSelected = GetRouteOrder(barId) >= 0;
-            if (wasSelected)
-            {
-                GameSessionState.RemoveRouteStop(barId);
-            }
-            else
-            {
-                GameSessionState.TryAddRouteStop(barId);
-            }
-
-            RefreshPath(
-                wasSelected
-                    ? "remove_stop"
-                    : "add_stop");
-            bool changed =
-                wasSelected != (GetRouteOrder(barId) >= 0);
-            if (changed)
-            {
-                RetroAudio.Play(RetroSfxId.UiConfirm);
-            }
-
-            return changed;
-        }
-
-        public bool MoveBar(string barId, int direction)
-        {
-            int previousIndex = GetRouteOrder(barId);
-            if (previousIndex < 0 || direction == 0)
-            {
-                return false;
-            }
-
-            int barIndex = FindBarIndex(barId);
-            if (barIndex >= 0)
-            {
-                SelectedBarIndex = barIndex;
-            }
-
-            GameSessionState.MoveRouteStop(barId, direction);
-            RefreshPath("move_stop");
-            bool changed = GetRouteOrder(barId) != previousIndex;
-            if (changed)
-            {
-                RetroAudio.Play(RetroSfxId.UiMove);
-            }
-
-            return changed;
-        }
-
-        public bool ClearRoute()
-        {
-            if (GameSessionState.PlannedBarRoute.Count == 0)
-            {
-                return false;
-            }
-
-            GameSessionState.ClearRoute();
-            RefreshPath("clear_route");
-            RetroAudio.Play(RetroSfxId.UiCancel);
-            return true;
-        }
-
-        public int GetRouteOrder(string barId)
-        {
-            IReadOnlyList<string> route = GameSessionState.PlannedBarRoute;
-            for (int index = 0; index < route.Count; index++)
-            {
-                if (string.Equals(
-                    route[index],
-                    barId,
-                    StringComparison.Ordinal))
-                {
-                    return index;
-                }
-            }
-
-            return -1;
         }
 
         public int FindBarIndex(string barId)
@@ -956,7 +823,6 @@ namespace BarPromenade
                     Quaternion.LookRotation(facing.normalized, Vector3.up);
             }
 
-            RefreshPath("debug_teleport");
             RetroAudio.Play(RetroSfxId.UiConfirm);
             GameLog.Info(
                 "map",
@@ -1089,29 +955,6 @@ namespace BarPromenade
                 new PendingCommand(CommandType.ToggleMap));
         }
 
-        public void QueueToggleBar(int barIndex)
-        {
-            pendingCommands.Enqueue(
-                new PendingCommand(
-                    CommandType.ToggleBar,
-                    barIndex: barIndex));
-        }
-
-        public void QueueMoveBar(string barId, int direction)
-        {
-            pendingCommands.Enqueue(
-                new PendingCommand(
-                    CommandType.MoveBar,
-                    barId: barId,
-                    direction: direction));
-        }
-
-        public void QueueClearRoute()
-        {
-            pendingCommands.Enqueue(
-                new PendingCommand(CommandType.ClearRoute));
-        }
-
         public void QueueSelectMapObject(int mapObjectIndex)
         {
             pendingCommands.Enqueue(
@@ -1224,39 +1067,17 @@ namespace BarPromenade
                     MoveMapPointSelection(selectionDelta);
                 }
 
-                // Coordinate mode is intentionally observational: route
-                // editing, travel and debug teleport stay behind their own
-                // explicit modes and cannot be triggered by a stale focus.
+                // Coordinate mode is intentionally observational: travel
+                // and debug teleport stay behind their own explicit modes
+                // and cannot be triggered by a stale focus.
                 return;
             }
 
             if (IsCityMapInteractionActive &&
-                !DebugTeleportEnabled &&
-                WasClearPressed())
+                DebugTeleportEnabled &&
+                selectionDelta != 0)
             {
-                ClearRoute();
-                return;
-            }
-
-            if (IsCityMapInteractionActive && selectionDelta != 0)
-            {
-                if (DebugTeleportEnabled)
-                {
-                    MoveMapObjectSelection(selectionDelta);
-                }
-                else
-                {
-                    MoveSelection(selectionDelta);
-                }
-            }
-
-            int routeMove = ReadRouteMove();
-            if (IsCityMapInteractionActive &&
-                !DebugTeleportEnabled &&
-                routeMove != 0 &&
-                IsValidBarIndex(SelectedBarIndex))
-            {
-                MoveBar(bars[SelectedBarIndex].BarId, routeMove);
+                MoveMapObjectSelection(selectionDelta);
             }
 
             if (WasConfirmPressed())
@@ -1269,11 +1090,6 @@ namespace BarPromenade
                          DebugTeleportEnabled)
                 {
                     ConfirmDebugTeleport();
-                }
-                else if (IsCityMapInteractionActive &&
-                         IsValidBarIndex(SelectedBarIndex))
-                {
-                    ToggleBar(SelectedBarIndex);
                 }
             }
         }
@@ -1305,27 +1121,6 @@ namespace BarPromenade
                         else
                         {
                             Open();
-                        }
-
-                        break;
-                    case CommandType.ToggleBar:
-                        if (IsOpen)
-                        {
-                            ToggleBar(command.BarIndex);
-                        }
-
-                        break;
-                    case CommandType.MoveBar:
-                        if (IsOpen)
-                        {
-                            MoveBar(command.BarId, command.Direction);
-                        }
-
-                        break;
-                    case CommandType.ClearRoute:
-                        if (IsOpen)
-                        {
-                            ClearRoute();
                         }
 
                         break;
@@ -1365,86 +1160,6 @@ namespace BarPromenade
             }
         }
 
-        private void RefreshPath(string reason)
-        {
-            if (!IsInitialized && Layout == null)
-            {
-                return;
-            }
-
-            RemoveUnknownRouteStops();
-            orderedStops.Clear();
-            IReadOnlyList<string> route = GameSessionState.PlannedBarRoute;
-            for (int index = 0; index < route.Count; index++)
-            {
-                int barIndex = FindBarIndex(route[index]);
-                if (barIndex >= 0)
-                {
-                    orderedStops.Add(bars[barIndex]);
-                }
-            }
-
-            CurrentPath = CityRoutePathfinder.Build(
-                Layout,
-                PlayerWorldPosition,
-                orderedStops);
-            GameLog.Debug(
-                "map",
-                "path_rebuilt",
-                GameLog.Field("reason", reason),
-                GameLog.Field("route", FormatRoute()),
-                GameLog.Field(
-                    "ordered_stop_count",
-                    orderedStops.Count),
-                GameLog.Field(
-                    "point_count",
-                    CurrentPath.Points.Count),
-                GameLog.Field(
-                    "path_length",
-                    CurrentPath.TotalLength),
-                GameLog.Field(
-                    "is_empty",
-                    CurrentPath.IsEmpty),
-                GameLog.Field(
-                    "player_x",
-                    PlayerWorldPosition.x),
-                GameLog.Field(
-                    "player_z",
-                    PlayerWorldPosition.z));
-        }
-
-        private void RemoveUnknownRouteStops()
-        {
-            IReadOnlyList<string> route =
-                GameSessionState.PlannedBarRoute;
-            for (int index = route.Count - 1; index >= 0; index--)
-            {
-                if (FindBarIndex(route[index]) < 0)
-                {
-                    string barId = route[index];
-                    GameSessionState.RemoveRouteStop(barId);
-                    GameLog.Warning(
-                        "map",
-                        "unknown_route_stop_removed",
-                        GameLog.Field("bar_id", barId));
-                }
-            }
-        }
-
-        private string GetSelectedBarId()
-        {
-            return IsValidBarIndex(SelectedBarIndex)
-                ? bars[SelectedBarIndex].BarId
-                : string.Empty;
-        }
-
-        private static string FormatRoute()
-        {
-            return string.Join(
-                ",",
-                GameSessionState.PlannedBarRoute);
-        }
-
         private long GetOpenDurationMilliseconds()
         {
             if (openedTimestamp <= 0L)
@@ -1459,27 +1174,6 @@ namespace BarPromenade
                 (long)(
                     (elapsedTicks * 1000d) /
                     Stopwatch.Frequency));
-        }
-
-        private void MoveSelection(int delta)
-        {
-            if (bars.Count == 0 || delta == 0)
-            {
-                SelectedBarIndex = -1;
-                return;
-            }
-
-            int previousIndex = SelectedBarIndex;
-            SelectedBarIndex = (SelectedBarIndex + Math.Sign(delta)) % bars.Count;
-            if (SelectedBarIndex < 0)
-            {
-                SelectedBarIndex += bars.Count;
-            }
-
-            if (SelectedBarIndex != previousIndex)
-            {
-                RetroAudio.Play(RetroSfxId.UiMove);
-            }
         }
 
         private void MoveMapObjectSelection(int delta)
@@ -1797,19 +1491,6 @@ namespace BarPromenade
                 GameInputAction.Interact, GameInputContext.Menu);
         }
 
-        private static bool WasClearPressed()
-        {
-            Keyboard keyboard = Keyboard.current;
-            if (keyboard != null && keyboard.rKey.wasPressedThisFrame)
-            {
-                return true;
-            }
-
-            Gamepad gamepad = Gamepad.current;
-            return gamepad != null &&
-                   gamepad.buttonWest.wasPressedThisFrame;
-        }
-
         private static int ReadSelectionDelta()
         {
             Keyboard keyboard = Keyboard.current;
@@ -1843,37 +1524,5 @@ namespace BarPromenade
             return 0;
         }
 
-        private static int ReadRouteMove()
-        {
-            Keyboard keyboard = Keyboard.current;
-            if (keyboard != null)
-            {
-                if (keyboard.upArrowKey.wasPressedThisFrame)
-                {
-                    return -1;
-                }
-
-                if (keyboard.downArrowKey.wasPressedThisFrame)
-                {
-                    return 1;
-                }
-            }
-
-            Gamepad gamepad = Gamepad.current;
-            if (gamepad != null)
-            {
-                if (gamepad.leftShoulder.wasPressedThisFrame)
-                {
-                    return -1;
-                }
-
-                if (gamepad.rightShoulder.wasPressedThisFrame)
-                {
-                    return 1;
-                }
-            }
-
-            return 0;
-        }
     }
 }

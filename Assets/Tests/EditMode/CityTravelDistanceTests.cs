@@ -61,29 +61,6 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
-        public void BetweenBars_MatchesSingleStopRouteLength()
-        {
-            CityLayout layout = CreateLayout();
-            BuildingLot[] bars = GetBars(layout);
-            BuildingLot first = bars[0];
-            BuildingLot second = bars[1];
-
-            float distance = CityTravelDistance.BetweenBars(
-                layout,
-                first,
-                second);
-            CityRoutePath route = CityRoutePathfinder.Build(
-                layout,
-                first.ReturnPosition,
-                new[] { second });
-
-            Assert.That(route.IsEmpty, Is.False);
-            Assert.That(
-                distance,
-                Is.EqualTo(route.TotalLength).Within(Tolerance));
-        }
-
-        [Test]
         public void BetweenAnchors_UsesPartialAndWorldWeightedEdges()
         {
             var nodes = new[]

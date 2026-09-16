@@ -72,7 +72,6 @@ namespace BarPromenade.Tests.PlayMode
             MainMenu_WakeStartsAlarmThenRestoresGameplay()
         {
             GameSessionState.SetCitySeed(-91);
-            GameSessionState.TryAddRouteStop("stale-route");
             GameSessionState.UpdateDrinkingProgress(
                 63,
                 DrinkId.RedWine,
@@ -274,7 +273,6 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 GameSessionState.CitySeed,
                 Is.EqualTo(GameSessionState.DefaultCitySeed));
-            Assert.That(GameSessionState.PlannedBarRoute, Is.Empty);
             Assert.That(GameSessionState.IntoxicationLevel, Is.Zero);
             Assert.That(
                 home.AnimatedInteraction.Phase,

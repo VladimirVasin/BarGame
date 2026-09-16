@@ -23,7 +23,6 @@ namespace BarPromenade.Tests.PlayMode
             mouse = InputSystem.AddDevice<Mouse>();
             GameSessionState.ResetInventoryState();
             GameSessionState.EnterHome();
-            GameSessionState.ClearRoute();
             GameSessionState.ResetDrinkingState();
             GameSessionState.ResetEconomyState();
             yield return null;
@@ -55,7 +54,6 @@ namespace BarPromenade.Tests.PlayMode
                 }
             }
 
-            GameSessionState.ClearRoute();
             GameSessionState.ResetDrinkingState();
             GameSessionState.ResetEconomyState();
             GameSessionState.ResetInventoryState();
