@@ -6,7 +6,7 @@ Older whole dates move to `ai/archive/` when the byte budget is reached;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-08.md`](archive/work-log-2026-08.md).
 
-## 2026-09-19 — Steering wheel and authored grip
+## 2026-09-19 — Wheel, seats and scarf
 
 - The truck wheel leant away from its column and the driver saw its edge.
   Authored rim/column frames now agree; hands follow the tube with opposed
@@ -23,6 +23,10 @@ Earlier entries: [`work-log-2026-08.md`](archive/work-log-2026-08.md).
   Default trousers need a measured `0.076` seat lift; the clip donor's `0.056`
   left their hips below the cushion.
   Check: `SeatedPassengers_StayOnActualCushionsAcrossAnimationAndBusMotion`.
+- Scarf height now follows location after five seconds of free third-person
+  play. Travel retains it; disembark and mouth actions defer the change.
+  Check: `ScarfLocationPostureWaitsForThirdPersonAndSurvivesTravel`, rendered
+  raised/lowered/hand frames, `check-docs.py`.
 
 ## 2026-09-16 — Nightlife lane crossroads
 

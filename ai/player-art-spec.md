@@ -12,8 +12,11 @@
   over a charcoal shirt, desaturated navy trousers and dark military boots.
 - The accepted `2026-09-09` optional scarf is a separate yellow garment,
   following the user's same-day colour correction:
-  neck/nape wrap, covered lower face with open eyes, back knot and a hanging cloth
-  tail. The folded pickup has no inscription or implied previous owner; it is
+  neck/nape wrap, lower face covered when raised, back knot and a hanging cloth
+  tail. Decision `2026-09-19`: the shared left-hand pull lowers it outside Alpine
+  Village and raises it there after five seconds of free third-person play,
+  following completed disembark. Mouth actions retain priority.
+  The folded pickup has no inscription or implied previous owner; it is
   ordinary clothing from the parents' bedroom, never the father's relic.
   `tools/build-player-scarf-3d-model.py` authors both forms against this rig;
   `PlayerScarfResources` shares the mother's-house `BookCloth` atlas tile.

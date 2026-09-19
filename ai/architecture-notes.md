@@ -496,6 +496,19 @@
   retain the contracts below. No new fiction, meaning, world sound or
   contextual-animation exception is introduced.
 
+- **Accepted — 2026-09-19, location-dependent scarf resting posture:**
+  The user requested lowering everywhere except Alpine Village and raising
+  there after arrival. `PlayerScarfController` waits five seconds of visible,
+  free third-person play; head/body visibility, vehicle, motor and interaction
+  ownership prevent the clock from starting during first-person/disembark.
+  Pause/transition freeze it. The existing left-hand reach/pull/release performs
+  both changes, without a new camera or full-body action. `GameSessionState`
+  keeps the resting posture across scene recreation; new game, inventory reset
+  and unequipping clear it. Mouth leases override this posture temporarily and
+  release back to it, with one target shared by playback and interaction gating.
+  Equipment and cold protection remain tied to wearing the item. This ordinary
+  clothing movement adds no story event or canon exception.
+
 - **Accepted — 2026-09-09, wearable scarf and bounded cold protection:**
   The user approved the scarf plan and explicitly chose less shaking and slower
   frost. This is a bounded exception to the story bible's §6/§25 prohibition on
@@ -508,7 +521,7 @@
   action keeps the item. Collection and equipment survive scene loads and reset
   with a new game. There is still no disk save.
   The accepted form wraps the neck and back of the head, covers the lower half
-  of the face with open eyes, and leaves a hanging cloth tail behind. The user's
+  of the face with open eyes when raised, and leaves a hanging cloth tail behind. The user's
   same-day clarification lengthens it to approximately `45 cm`, reaching the
   middle of the back at rest, without adding a new meaning or family history. The tail
   responds to the existing exterior wind; enclosed shelter removes that wind.

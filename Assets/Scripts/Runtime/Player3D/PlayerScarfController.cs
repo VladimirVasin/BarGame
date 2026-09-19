@@ -13,6 +13,7 @@ namespace BarPromenade
         public const float PullSeconds = 0.55f;
         public const float ReleaseSeconds = 0.24f;
         public const float GestureSeconds = ReachSeconds + PullSeconds + ReleaseSeconds;
+        public const float LocationDelaySeconds = 5f;
 
         public sealed class MouthAccess : IDisposable
         {
@@ -37,9 +38,11 @@ namespace BarPromenade
         private MountainRoadRoot road;
         private AlpineVillageRoot village;
         private HomeInteriorRoot home;
+        private PlayerAnimatedInteractionController interaction;
         private Transform upperArm, forearm, hand, grip;
         private bool requestedLower, gestureActive, armApplied;
         private float elapsed, startLower, targetLower;
+        private float locationElapsed;
         private Quaternion upperBase, forearmBase, handBase;
         private Quaternion gripInHand;
         private readonly List<Vector3> handSurfaceFromGrip = new List<Vector3>();
@@ -48,7 +51,9 @@ namespace BarPromenade
         public bool IsMouthReady => Presentation == null || !Presentation.IsEquipped ||
             (Presentation.MouthLowered >= 0.999f && !gestureActive);
         public bool IsGestureActive => Presentation != null && Presentation.IsEquipped &&
-            (gestureActive || (access.Count > 0) != requestedLower);
+            (gestureActive || WantsLower != requestedLower);
+        private bool WantsLower => Presentation != null && Presentation.IsEquipped &&
+            (access.Count > 0 || GameSessionState.ScarfRestingLowered);
         public float HandContactError { get; private set; }
         public float GestureProgress => Mathf.Clamp01(elapsed / GestureSeconds);
 
@@ -64,6 +69,7 @@ namespace BarPromenade
             controller.road = runtime.GameObject.GetComponentInParent<MountainRoadRoot>();
             controller.village = runtime.GameObject.GetComponentInParent<AlpineVillageRoot>();
             controller.home = runtime.GameObject.GetComponentInParent<HomeInteriorRoot>();
+            controller.interaction = runtime.GameObject.GetComponent<PlayerAnimatedInteractionController>();
             controller.upperArm = controller.Bone(Player3DAnatomicalPart.LeftUpperArm);
             controller.forearm = controller.Bone(Player3DAnatomicalPart.LeftForearm);
             controller.hand = controller.Bone(Player3DAnatomicalPart.LeftHand);
@@ -76,6 +82,7 @@ namespace BarPromenade
             GameSessionState.InventoryEquipmentChanged += controller.RefreshEquipment;
             runtime.Interactor?.SetInteractionFilter(controller, controller.AllowsInteraction);
             controller.RefreshEquipment();
+            controller.RestoreRestingPose();
             controller.RefreshEnvironmentAndVisibility();
             return controller;
         }
@@ -128,7 +135,19 @@ namespace BarPromenade
 
         private bool AllowsInteraction(IInteractable candidate) => !IsGestureActive;
 
-        private void OnEnable() => player.Interactor?.SetInteractionFilter(this, AllowsInteraction);
+        private void OnEnable()
+        {
+            player.Interactor?.SetInteractionFilter(this, AllowsInteraction);
+            if (Presentation != null) RestoreRestingPose();
+        }
+
+        private void RestoreRestingPose()
+        {
+            locationElapsed = 0f;
+            gestureActive = false;
+            requestedLower = Presentation.IsEquipped && GameSessionState.ScarfRestingLowered;
+            Presentation.SetMouthLowered(requestedLower ? 1f : 0f);
+        }
 
         private void RefreshEquipment()
         {
@@ -139,7 +158,38 @@ namespace BarPromenade
             {
                 RestoreGestureArm();
                 requestedLower = gestureActive = false;
+                locationElapsed = 0f;
                 Presentation.SetMouthLowered(0f);
+            }
+        }
+
+        private void UpdateLocationPosture()
+        {
+            if (PauseMenuController.IsAnyPaused || SceneTransitionService.IsTransitioning) return;
+            // The head is restored at the start of some disembarks. Wait for
+            // their input/animation ownership as well, including fixed cameras
+            // in interiors which do not use the ordinary follow camera.
+            bool freeThirdPerson = Presentation.IsEquipped &&
+                Player3DHeadVisibility.IsHeadDrawn(visual.Registry) &&
+                (player.PresentationVisibility == null || !player.PresentationVisibility.RenderersHidden) &&
+                !GameSessionState.IsRidingAVehicle &&
+                (player.Motor == null || player.Motor.InputEnabled) &&
+                (interaction == null || !interaction.IsActive) &&
+                (player.Ragdoll == null || !player.Ragdoll.IsActive) &&
+                !Player3DBathingAppearance.IsActive && access.Count == 0 && !gestureActive;
+            if (!freeThirdPerson)
+            {
+                locationElapsed = 0f;
+                return;
+            }
+
+            bool lowerHere = gameObject.scene.name != SceneIds.AlpineVillage;
+            if (GameSessionState.ScarfRestingLowered == lowerHere) return;
+            locationElapsed = Mathf.Min(LocationDelaySeconds, locationElapsed + Time.deltaTime);
+            if (locationElapsed >= LocationDelaySeconds)
+            {
+                GameSessionState.ScarfRestingLowered = lowerHere;
+                locationElapsed = 0f;
             }
         }
 
@@ -148,7 +198,8 @@ namespace BarPromenade
             if (Presentation == null) return;
             for (int index = access.Count - 1; index >= 0; index--)
                 if (access[index].Owner == null) access.RemoveAt(index);
-            bool lower = access.Count > 0 && Presentation.IsEquipped;
+            UpdateLocationPosture();
+            bool lower = WantsLower;
             if (lower != requestedLower)
             {
                 requestedLower = lower;
@@ -247,10 +298,9 @@ namespace BarPromenade
             player.Interactor?.SetInteractionFilter(this, null);
             access.Clear();
             RestoreGestureArm();
-            requestedLower = gestureActive = false;
             if (Presentation != null)
             {
-                Presentation.SetMouthLowered(0f);
+                RestoreRestingPose();
                 Presentation.SetEnvironment(false, new WindSample(0f, 0f));
                 Presentation.SyncVisibility(false, false);
             }

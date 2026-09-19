@@ -154,7 +154,7 @@ A row never carries a status outside this table. Product-level scope cuts
 | Hero wardrobe | Atomic slot replacement and body coverage; one authored outfit. Gap: extra outfits, UI and persistence. | `PlayerWardrobe`, `Player3DBathingAppearance` | Partial |
 | Hero hair | Parted curtains: bounded motion/wind/body/clothing/scarf contacts; pause freeze and copied mirror pose. | `PlayerHair`, `PlayerHairContacts` | Current |
 | Hero jacket cloth | Anchored hem/cuffs: motion/wind/body/hand contacts; pause/reset and passive mirror/arm copies. | `PlayerJacketCloth`, `PlayerJacketClothSurface` | Current |
-| Wearable scarf | Bounded wind/motion and simple hero-body contacts; external objects are ignored. Mouth, visibility and mirror share it. | `PlayerScarf*`, `PlayerFactory` | Current |
+| Wearable scarf | Hero-only contacts; shared mouth/mirror pose. Location sets resting height after 5 s of free third-person play. | `PlayerScarf*`, `PlayerFactory`, `GameSessionState` | Current |
 | Alpine Village cold hero | Self-hug and rubs persist through running; an equipped scarf halves shiver amplitude, gait and breath keep priority. | `Player3DCharacterPresentation.Cold`, `PlayerCold{PresentationModel,BreathEffect}` | Current |
 | Alpine frost presentation | Rim frost survives village/house travel; scarf halves new exposure and leaves existing ice and ordinary thaw intact. | `AlpineColdExposure{Model,Driver}`, `AlpineColdFrostPass`, `AlpineFrostAudio` | Current |
 | Silent Hill attention | Layered gaze reacts to nearby authored targets within rig limits and yields to contextual ownership. | `PlayerAttention{Rules,Controller,Magnet}`, `IntoxicationHeadModel` | Current |

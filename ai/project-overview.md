@@ -113,11 +113,11 @@ contracts are documented in [../tools/README.md](../tools/README.md).
   session clock, needs, inventory, purchases, dated quests and grave work.
 - A collectible scarf in the mother's upstairs bedroom has reversible inventory
   equipment and reduces alpine shivering and the rate of new frost exposure.
-  Its yellow wrap and 45 cm tail follow the hero, wind and movement through
-  bounded deformation and simple body contacts; the tail rises and trails
-  behind when running, then settles after stopping. The scarf ignores external
-  objects and NPCs; ordinary gameplay does not scan world triangles or bake
-  body meshes each frame. The earlier detailed solver is an explicit diagnostic mode.
+  After five seconds of free third-person play it lowers outside Alpine Village
+  and rises there; its resting posture survives travel and yields to mouth actions.
+  Its yellow wrap and 45 cm tail follow wind/motion with simple hero contacts;
+  running lifts the tail. External objects/NPCs are ignored. Detailed contacts
+  remain diagnostic-only; see [current-world.md](current-world.md).
 - Home toilet choices share actual hand-operated lid actions; the seated
   branch coordinates the original rig, lowered clothing, inspection/flush
   and an underwater camera that returns while the hero dresses.

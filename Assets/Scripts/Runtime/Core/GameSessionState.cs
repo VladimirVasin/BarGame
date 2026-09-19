@@ -161,6 +161,9 @@ namespace BarPromenade
         /// survive an area change - he walks home from the bar with it.
         /// </summary>
         public static bool HeroMouthSoiled { get; private set; }
+
+        /// <summary>Resting scarf posture survives travel; temporary mouth access does not.</summary>
+        public static bool ScarfRestingLowered { get; internal set; }
         public static int LastTeethBrushingDayIndex
         {
             get;
@@ -526,6 +529,7 @@ namespace BarPromenade
             // A new game starts with a clean face; assigned directly
             // because nothing here is a change worth a log line.
             HeroMouthSoiled = false;
+            ScarfRestingLowered = false;
             needsProgression.Reset();
             StressLevel = DefaultStress;
             intoxicationRecoveryElapsed = 0f;
@@ -831,6 +835,7 @@ namespace BarPromenade
             {
                 if (wasEquipped && !inventory.IsEquipped(itemId))
                 {
+                    if (itemId == InventoryItemId.Scarf) ScarfRestingLowered = false;
                     InventoryEquipmentChanged?.Invoke();
                 }
 
@@ -864,6 +869,7 @@ namespace BarPromenade
 
             if (previous != equipped)
             {
+                if (itemId == InventoryItemId.Scarf) ScarfRestingLowered = false;
                 // Wearing it is what she asked for, so wearing it is
                 // what closes the entry. Taking it off again does not
                 // reopen a one-shot quest: he did the thing once.
@@ -1251,6 +1257,7 @@ namespace BarPromenade
             int previousCollectedCount = collectedWorldItems.Count;
             collectedWorldItems.Clear();
             inventory.ResetWithStarterItems();
+            ScarfRestingLowered = false;
             InventoryEquipmentChanged?.Invoke();
             GameLog.Info(
                 "inventory",

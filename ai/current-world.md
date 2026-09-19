@@ -2320,21 +2320,20 @@ The vertical slice contains:
   item, requires ownership and clears when its last unit is removed; a new
   game resets both collection and equipment. `PlayerFactory` installs the
   optional `PlayerScarfController` on the shared hero. Its separate imported
-  yellow wrap covers the neck, nape and lower face; a `45 cm` pinned cloth
-  tail responds to the actual exterior wind and ordinary body motion through
-  bounded procedural bending. Running lifts the tail into a curved ribbon
-  trailing behind the hero, with travelling flutter and a smooth rise/settle
-  after starting/stopping. The authored topology stays unchanged.
+  yellow wrap covers the neck and nape, and the lower face when raised. After
+  `5 s` of free third-person play it lowers everywhere except Alpine Village,
+  where it rises. Travel keeps the prior resting posture; first-person views,
+  rides and action ownership restart the wait, and pause freezes it. The same
+  left-hand gesture changes both ways, beginning only after disembark completes.
+  The `45 cm` pinned tail responds to exterior wind and motion with bounded
+  bending. Running lifts it behind the hero, with flutter and smooth settling.
   Wrap, knot and tail keep simple contact with
   the hero's body parts through bone-following proxy volumes derived from
   the authored body meshes. External objects, buildings and NPCs are ignored.
-  `PlayerScarfBodyContacts` measures the body once on installation, then follows
-  its bones. Ordinary gameplay does not gather world triangles, bake the hero's
-  body meshes each frame or run the detailed cloth/contact jobs; their former implementation
-  remains available only through explicit diagnostic capture mode.
-  `PlayerScarfContactSurface` prepares the authored wrap/knot pose and applies
-  the cheap body corrections. Shared rest geometry stays immutable; each
-  actor owns its dynamic surfaces. Paused frames retain their deformation;
+  `PlayerScarfBodyContacts` measures the body once and follows its bones;
+  `PlayerScarfContactSurface` corrects the wrap/knot. Ordinary gameplay avoids
+  world scans and body baking; detailed contacts remain diagnostic-only.
+  Rest geometry is immutable; actors own dynamic surfaces. Pause freezes them;
   teleports reset motion. Closed
   cabins, the village workroom and interiors remove exterior wind; the home
   balcony uses it. One shared matte material samples the mother's-house
@@ -2342,9 +2341,10 @@ The vertical slice contains:
   left-hand reach/pull/release (`0.24/0.55/0.24 s`), which lowers the authored
   wrap shape before drinking, smoking or brushing; vomiting also owns access.
   Cached hand/thumb surfaces place the actual hand exterior `4 mm` in front
-  of the garment. Historical full-contact captures and their performance
-  costs in [work-log.md](work-log.md) describe the previous implementation.
-  Returning the scarf preserves its equipment and cold protection. Shower
+  of the garment.
+  Mouth access overrides the location posture and restores it on release;
+  it never changes equipment or cold protection. Unequipping and session/inventory
+  reset clear the resting posture. Shower
   clothing ownership temporarily removes its visible form. Head/body hiding
   applies to the accessory, and the bathroom mirror copies its live appearance
   and all corrected surfaces without another deformation/contact update. Instant inventory
