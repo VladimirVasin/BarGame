@@ -140,6 +140,18 @@ namespace BarPromenade
                 obstacles.Add(CityFairPlanner.Footprint(position, 1.70f, 0.90f));
             obstacles.Add(CityFairPlanner.Footprint(ChildTablePosition, .80f, .55f));
             Obstacles = obstacles.ToArray();
+            // Visitors browse from the inner sides of the first three stalls.
+            // The front lanes and the children's toy/table/bench routes stay clear.
+            AdultPositions = new Vector3[DefaultNpcPopulation.FairVisitorCount];
+            AdultFacings = new Vector3[AdultPositions.Length];
+            for (int i = 0; i < AdultPositions.Length; i++)
+            {
+                CityFairStall stall = Stalls[i];
+                float side = stall.Position.x < centerX ? 1f : -1f;
+                AdultPositions[i] = GroundPoint(stall.Position.x + side * 1.95f,
+                    stall.Position.z + stall.Facing.z * .45f);
+                AdultFacings[i] = new Vector3(-side, 0f, 0f);
+            }
         }
 
         public bool IsEnabled { get; }
@@ -166,6 +178,8 @@ namespace BarPromenade
         public Quaternion ChildTableRotation { get; }
         public Rect[] Obstacles { get; } = Array.Empty<Rect>();
         public Rect[] ClearPaths { get; } = Array.Empty<Rect>();
+        public Vector3[] AdultPositions { get; } = Array.Empty<Vector3>();
+        public Vector3[] AdultFacings { get; } = Array.Empty<Vector3>();
 
         public bool Contains(Vector3 point) => IsEnabled &&
             Bounds.Contains(new Vector2(point.x, point.z));
@@ -286,6 +300,20 @@ namespace BarPromenade
                 "The fair requires the measured two-facade gap.");
             Require(plan.Stalls.Length == 4 && plan.Benches.Length == 2 &&
                 plan.Garlands.Length == 3, "The fair must retain its bounded MVP population.");
+            Require(plan.AdultPositions.Length == DefaultNpcPopulation.FairVisitorCount &&
+                plan.AdultFacings.Length == plan.AdultPositions.Length,
+                "The fair must place its three registered adult visitors.");
+            foreach (Vector3 position in plan.AdultPositions)
+            {
+                Rect body = Footprint(position, CityFairAdults.BodyRadius * 2f, CityFairAdults.BodyRadius * 2f);
+                Require(Contains(plan.Bounds, body), "An adult visitor leaves the fair.");
+                Require(Mathf.Abs(position.y - plan.SampleGroundY(position)) < .001f,
+                    "An adult visitor must stand on the actual ground.");
+                foreach (Rect path in plan.ClearPaths)
+                    Require(!Overlaps(body, path), "An adult visitor blocks a clear path.");
+                foreach (Rect obstacle in plan.Obstacles)
+                    Require(!Overlaps(body, obstacle), "An adult visitor intersects a fair prop.");
+            }
             foreach (Rect obstacle in plan.Obstacles)
             {
                 Require(Contains(plan.Bounds, obstacle), "A fair obstacle leaves its site.");

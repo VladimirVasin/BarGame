@@ -6,27 +6,28 @@ Older whole dates move to `ai/archive/` when the byte budget is reached;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-08.md`](archive/work-log-2026-08.md).
 
-## 2026-09-19 — Wheel, seats and scarf
+## 2026-09-19 — Wheel, seats, scarf and fair visitors
 
-- The truck wheel leant away from its column and the driver saw its edge.
-  Authored rim/column frames now agree; hands follow the tube with opposed
-  thumbs and curled fingers. `DefaultNpcAssetSetup` now imports and binds
-  the existing bare/gloved `CylindricalGrip` shapes; generating them alone
-  had left the prefab without its runtime pose component.
+- Truck rim/column frames now agree and face the driver; curled fingers and
+  opposed thumbs grip the tube. `DefaultNpcAssetSetup` imports/binds existing
+  bare/gloved `CylindricalGrip` shapes: generation had left the prefab without
+  its runtime pose component.
   Checks: `build-city-cannery-3d-model.py` / `build-default-npc-3d-model.py`,
   `AreaCaptureFixture.DefaultNpcDriverGrip` (mesh contact, reverse, release,
   wake and rendered views), `check-docs.py`.
-- Bus driver knees bend forward over the feet; low lateral hints had pushed
-  thighs into the cushion despite lifting the hips. The seated regression
-  clips joined trousers by upper-leg weights, excluding shins beneath the seat,
-  and uses the current default-body factory alongside the library bodies.
-  Default trousers need a measured `0.076` seat lift; the clip donor's `0.056`
-  left their hips below the cushion.
+- Bus knees bend over feet; low lateral hints pushed thighs into the cushion.
+  The regression clips joined trousers by upper-leg weights, excluding shins,
+  and covers the current factory/library bodies. Default trousers need a
+  `0.076` seat lift; the donor's `0.056` left hips below the cushion.
   Check: `SeatedPassengers_StayOnActualCushionsAcrossAnimationAndBusMotion`.
 - Scarf height now follows location after five seconds of free third-person
   play. Travel retains it; disembark and mouth actions defer the change.
   Check: `ScarfLocationPostureWaitsForThirdPersonAndSurvivesTravel`, rendered
   raised/lowered/hand frames, `check-docs.py`.
+- Three silent adults stand at the fair stalls with shared idle animation and
+  permanent global NPC identities. Grounded collision leaves the children's
+  routes and `2.2 m` paths clear.
+  Check: `AreaCaptureFixture.CityFair` and reviewed views, `check-docs.py`.
 
 ## 2026-09-16 — Nightlife lane crossroads
 

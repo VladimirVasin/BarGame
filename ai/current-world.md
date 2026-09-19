@@ -1184,17 +1184,16 @@ The vertical slice contains:
   synthesized crackle belong to the barrel. Rain dies under the
   roof; no local fog;
 - fair `[11;3]`/`[11;4]`: four staffed passive bread/fruit/pottery/toy stalls,
-  shared hero organ/bell actions, two seats, clutter, three always-burning
-  garlands in light pool `12`. Three silent children share one detailed body/
-  three constructed outfits with continuous trousers to the waist and child
-  clips: watching toys, rolling a personal
-  car at a low table, sitting via `CityBenchSeatClaims`. Local routes/pauses,
-  hand/terrain-foot contacts preserve `2.2 m` paths and the west door approach.
-  Child gaze uses the sampled face orientation and fades with the activity;
-  look/secondary offsets restore before resampling.
-  `CityFairPlanner` aligns supports to continuous ground; exclusions keep
-  decoration/litter/arrivals clear; no buying/speech/reward, cat response or
-  story state;
+  shared hero organ/bell actions, two seats, clutter, three always-lit garlands
+  in pool `12`. Three silent adults idle at the first three stalls' inner ends:
+  global `fair.visitor.0..2` identities/wardrobe, no aprons, grounded collision.
+  Three silent children share one detailed body, three constructed outfits
+  with waist-high trousers and child clips: watching toys, rolling a personal
+  car at a low table, sitting via `CityBenchSeatClaims`. Routes and hand/foot
+  contacts preserve `2.2 m` paths and the west door approach. Child gaze follows
+  sampled face orientation, fades with activity; offsets restore before sampling.
+  `CityFairPlanner` grounds supports; decoration/litter/arrivals stay clear.
+  No buying/speech/reward, cat response or story state;
 - one mandatory north-edge waterfront in the default blueprint, dressed as
   the seacoast precinct (`CitySeacoastPlanner`): its connected beach has a
   deterministic street approach and remains walkable to the water line,

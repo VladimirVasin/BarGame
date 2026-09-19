@@ -42,6 +42,9 @@ namespace BarPromenade.Tests.PlayMode
             public int[] child_visible_triangles, child_completed_cycles;
             public float maximum_child_hand_error_metres, maximum_child_root_ground_error_metres;
             public bool child_pause_verified, bench_claims_verified, child_disable_reentry_verified;
+            public int adults;
+            public bool adult_pause_verified, adult_disable_reentry_verified, adult_routes_clear;
+            public float maximum_adult_ground_error_metres;
         }
 
         [UnityTest]
@@ -106,6 +109,7 @@ namespace BarPromenade.Tests.PlayMode
                 }
                 AssertFairGeometry(city, fair, report);
                 AssertFairGround(fair, report);
+                yield return VerifyFairAdults(fair, camera, captures, report);
 
                 Debug.Log("FAIR: walking the real capsule across the continuous ground.");
                 PlayerMotor motor = city.Player.Motor;

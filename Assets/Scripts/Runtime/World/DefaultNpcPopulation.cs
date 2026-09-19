@@ -13,6 +13,7 @@ namespace BarPromenade
         public const string DeliveryDriver = "cannery.delivery-driver";
         public const string VillageStationWorker = "village.station-worker";
         private static readonly string[] FairIds = { "fair.vendor.0", "fair.vendor.1", "fair.vendor.2", "fair.vendor.3" };
+        public const int FairVisitorCount = 3;
         private static readonly string[] PortIds = { "port.captain", "port.deckhand", "port.crane.west", "port.crane.east", "port.docker" };
         /// <summary>
         /// The street pool since 2026-09-16: one permanent identity per pooled
@@ -79,6 +80,11 @@ namespace BarPromenade
         private static IReadOnlyList<Assignment> assignments;
 
         public static string FairVendorId(int index) => FairIds[index];
+        public static string FairVisitorId(int index)
+        {
+            if (index < 0 || index >= FairVisitorCount) throw new ArgumentOutOfRangeException(nameof(index));
+            return "fair.visitor." + index;
+        }
         public static string PortWorkerId(int index) => PortIds[index];
 
         public static string PedestrianId(int index)
@@ -94,6 +100,14 @@ namespace BarPromenade
             const string model = DefaultNpcCatalog.OrdinaryWorker;
             foreach (string id in FairIds)
                 roster.Add(new CharacterDefinition(id, model,
+                    new SlotConstraint("apron", new string[] { null }),
+                    new SlotConstraint("gloves", null, "gloves.work"),
+                    new SlotConstraint("scarf", null, "scarf.warm")));
+            for (int i = 0; i < FairVisitorCount; i++)
+                roster.Add(new CharacterDefinition(FairVisitorId(i), AnyCatalogModel,
+                    new SlotConstraint("outerwear", "outerwear.everyday", "outerwear.warm"),
+                    new SlotConstraint("boots", "boots.everyday", "boots.warm"),
+                    new SlotConstraint("headwear", null, "headwear.everyday", "headwear.warm"),
                     new SlotConstraint("apron", new string[] { null }),
                     new SlotConstraint("gloves", null, "gloves.work"),
                     new SlotConstraint("scarf", null, "scarf.warm")));

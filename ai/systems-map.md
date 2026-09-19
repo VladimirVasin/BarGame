@@ -81,7 +81,7 @@ A row never carries a status outside this table. Product-level scope cuts
 | Yard wheelchair rider | One staged yard rider follows its reserved circuit, with authored wheelchair motion and existing local lighting. | `YardWheelchair{Motion,Plan,Presentation,Actor,Factory,Provider}` | Current |
 | Bar-side yard composition | The yard keeps its bare-ground wheelchair circuit and reserved utility anchors under the fixed cold spotlight. | `CityOpenAreaDecoration{Plan,Planner}`, `CityOpenAreaWorldBuilder` | Current |
 | Cemetery precinct | Deterministic graves, paths, fences and practical lamps dress the separate eastern cemetery. | `CityCemetery{Plan,Planner,WorldBuilder,SurfaceAppearance}`, `CityBenchSitPlan.CreateAll` | Current |
-| Nightlife fair | Four staffed stalls, three children, shared seats/actions, grounded paths and garlands. | `CityFair{Plan,World,Children,Interaction}` | Current |
+| Nightlife fair | Four staffed stalls, three adult visitors and three children, shared seats/actions, clear paths and garlands. | `CityFair{Plan,World,Adults,Children,Interaction}` | Current |
 | Church precinct and interior | Garden loop, two seats, hedge, ground lights, fountain and pot; west entry, one cemetery link, separate interior. | `CityChurch*`, `ChurchGarden*` | Current |
 | Residential courtyard pockets | Plan-owned residential courtyards preserve walkable approaches and bounded authored dressing. | `CityCourtyardPocket{Planner,Geometry}`, `CityCourtyardResident{Plan,Factory,Presentation}` | Current |
 | City yards | Only west stone terraces add a mason's cart; other fringe yards retain their existing service-belt infrastructure. | `CityFringeYard*`, `CityFringeYardLifePlanner` | Current |

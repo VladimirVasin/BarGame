@@ -22,6 +22,7 @@ namespace BarPromenade
         public CityFairInteraction Bell { get; private set; }
         public CityFairVendors Vendors { get; private set; }
         public CityFairChildren Children { get; private set; }
+        public CityFairAdults Adults { get; private set; }
 
         internal void Build(CityFairPlan plan)
         {
@@ -52,6 +53,7 @@ namespace BarPromenade
                 Place("Clutter", plan.ClutterPositions[index], plan.ClutterRotations[index], true);
             BuildGarlands();
             Vendors = CityFairVendors.Build(transform, plan);
+            Adults = CityFairAdults.Build(transform, plan);
             Children = CityFairChildren.Build(transform, plan);
         }
 
