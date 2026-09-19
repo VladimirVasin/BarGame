@@ -15,8 +15,8 @@
   wraps `CreateForCharacter` (aligned, village graph released, one footstep
   root) in a registry: own village `Idle`/`Walk`, no palette bindings,
   equipped boot soles feed the leg layer, insult voice keyed by person. The
-  weigher is the clip donor for the seated loop and guard/shove (same rig
-  and paths; her lift `0.056` is the number to tune). The six residents are
+  weigher donates the seated loop and guard/shove (same rig and paths);
+  default trousers have their own measured seat lift `0.076`. The six residents are
   `OrdinaryResidentArchetypes`: placed roles, balcony smokers, donor; no
   library design roams (`pool_eligible=false`, prefab side = resolvable).
   Checks: `CityPedestrianRuntimeTests`, `CityBusStopWaitPlannerTests`,
@@ -42,8 +42,8 @@
   Art §15; no cast/lore/speech/§6 change. Truck/bench cache trouser seat fits.
   Shared arm IK bends elbows down/out in the rig frame; lateral poles caused
   apparent sleeve growth. `NpcHandPose` blends authored cylindrical grips on
-  bare/gloved fingers and thumb, reset with actions. Authored frames align the
-  grip cavity to the wheel tube; open fingers along the rim are not a grasp.
+  bare/gloved digits, reset with actions. Prefab binds shapes and grip frames;
+  truck rim/column share an authored axis facing the driver. Palms oppose it.
 
 - **Accepted — 2026-09-15, Nightlife fair:**
   Art §9/story §18: four staffed displays, organ/bell, two seats, three

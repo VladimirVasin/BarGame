@@ -6,6 +6,24 @@ Older whole dates move to `ai/archive/` when the byte budget is reached;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-08.md`](archive/work-log-2026-08.md).
 
+## 2026-09-19 — Steering wheel and authored grip
+
+- The truck wheel leant away from its column and the driver saw its edge.
+  Authored rim/column frames now agree; hands follow the tube with opposed
+  thumbs and curled fingers. `DefaultNpcAssetSetup` now imports and binds
+  the existing bare/gloved `CylindricalGrip` shapes; generating them alone
+  had left the prefab without its runtime pose component.
+  Checks: `build-city-cannery-3d-model.py` / `build-default-npc-3d-model.py`,
+  `AreaCaptureFixture.DefaultNpcDriverGrip` (mesh contact, reverse, release,
+  wake and rendered views), `check-docs.py`.
+- Bus driver knees bend forward over the feet; low lateral hints had pushed
+  thighs into the cushion despite lifting the hips. The seated regression
+  clips joined trousers by upper-leg weights, excluding shins beneath the seat,
+  and uses the current default-body factory alongside the library bodies.
+  Default trousers need a measured `0.076` seat lift; the clip donor's `0.056`
+  left their hips below the cushion.
+  Check: `SeatedPassengers_StayOnActualCushionsAcrossAnimationAndBusMotion`.
+
 ## 2026-09-16 — Nightlife lane crossroads
 
 - The x = 10 lane dead-ended at node `(10,4)`, one block short of the
@@ -87,10 +105,8 @@ Earlier entries: [`work-log-2026-08.md`](archive/work-log-2026-08.md).
   wrists/grips. Seated meshes exposed stale passenger lifts after bus
   movement; seat planes now follow it without reticking. Truck caches
   trouser fit. Shared elbow hints end the sleeve growth lateral hints caused;
-  authored finger/thumb grips replace open hands on the wheel.
-  Checks: `DefaultNpcDriverGrip`,
-  `NauseaHand_ReachesTheMouthAndRendersTheSheet`,
-  `SeatedPassengers_StayOnActualCushionsAcrossAnimationAndBusMotion`.
+  authored finger/thumb grip shapes were prepared in the source model.
+  Check: `NauseaHand_ReachesTheMouthAndRendersTheSheet`.
 - Map: fair, eastern post, docks, arch and church door join the POI list/
   legend/hover/`XYZ` via a map-level kind enum; the layout POI enum stays a
   lot contract; legend rows shrink, overflow line; «Дежурный» on both east

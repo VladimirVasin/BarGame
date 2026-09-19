@@ -60,6 +60,8 @@ namespace BarPromenade
             driverSeat = Require(Truck, "ANCHOR_TruckDriver");
             driverLeftHand = Require(Truck, "ANCHOR_DriverLeftHand");
             driverRightHand = Require(Truck, "ANCHOR_DriverRightHand");
+            driverWheelCentre = Require(Truck, "ANCHOR_DriverWheelCentre");
+            driverWheelAxis = Require(Truck, "ANCHOR_DriverWheelAxis");
             driverFoot = Require(Truck, "ANCHOR_DriverFoot");
             driverDoor = Require(Truck, "MOVE_DriverDoor");
             driverExit = Require(Truck, "ANCHOR_DriverExit");

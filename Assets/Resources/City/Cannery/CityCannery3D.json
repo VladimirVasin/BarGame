@@ -1363,6 +1363,30 @@
           ]
         },
         {
+          "name": "ANCHOR_DriverWheelAxis",
+          "position": [
+            -0.56,
+            2.09,
+            3.54
+          ]
+        },
+        {
+          "name": "ANCHOR_DriverWheelCentre",
+          "position": [
+            -0.56,
+            2.01,
+            3.6
+          ]
+        },
+        {
+          "name": "ANCHOR_DriverWheelColumnBase",
+          "position": [
+            -0.56,
+            1.61,
+            3.9
+          ]
+        },
+        {
           "name": "ANCHOR_HeadlampLeft",
           "position": [
             -0.88,
@@ -1987,6 +2011,30 @@
           ]
         },
         {
+          "name": "TruckSteeringColumn",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "TruckSteeringHub",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "TruckSteeringRim",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
           "name": "TruckVisible",
           "position": [
             0.0,
@@ -1995,8 +2043,8 @@
           ]
         }
       ],
-      "triangles": 11862,
-      "geometry_signature": "2e3a49da5c13b27d57a32c8017170e96a78730b770841f16fd4423b66cb04f5f",
+      "triangles": 11990,
+      "geometry_signature": "9d6ba5f6fa2f24a35851b748a6dd85e0697fd6e8871436f6f53714ab4d52fd6e",
       "folded_bounds_min": [
         -1.2,
         0.0,

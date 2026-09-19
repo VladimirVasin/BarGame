@@ -411,13 +411,12 @@ namespace BarPromenade
             new CityPedestrianSeatedRide(0.052f, 0.20f, 0.909f);
 
         /// <summary>
-        /// The default NPC rides on the weigher's seated clip and her measured
-        /// lift. Its trousers are a different mesh, so this is the one number
-        /// to tune if a pooled rider reads as sunk into or floating over the
-        /// cushion.
+        /// The default NPC borrows the weigher's seated clip. Its own trousers
+        /// need a higher pelvis: measured against the actual cushion throughout
+        /// the seated loop and suspension tilt, rather than the donor's mesh.
         /// </summary>
         private static readonly CityPedestrianSeatedRide DefaultNpcSeatedRide =
-            new CityPedestrianSeatedRide(0.056f, 0.21f, 0.915f);
+            new CityPedestrianSeatedRide(0.076f, 0.21f, 0.915f);
 
         // THREE ORDINARY RESIDENTS DELIBERATELY DO NOT RIDE. The band above
         // is measured from the design's own seated clip, and for these three

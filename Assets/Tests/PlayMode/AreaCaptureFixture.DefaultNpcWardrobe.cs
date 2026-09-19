@@ -20,6 +20,10 @@ namespace BarPromenade.Tests.PlayMode
                 .GetMethod("BuildOrThrow", Type.EmptyTypes).Invoke(null, null);
             Type.GetType("BarPromenade.Editor.DefaultNpcAssetSetup, BarPromenade.Editor", true)
                 .GetMethod("BuildOrThrow", Type.EmptyTypes).Invoke(null, null);
+            // The cannery uses imported FBXs directly. Its existing asset
+            // postprocessor configures this one changed truck on import.
+            UnityEditor.AssetDatabase.ImportAsset("Assets/Resources/City/Cannery/Truck.fbx",
+                UnityEditor.ImportAssetOptions.ForceSynchronousImport | UnityEditor.ImportAssetOptions.ForceUpdate);
 #endif
         }
     }
@@ -33,6 +37,8 @@ namespace BarPromenade.Tests.PlayMode
             public bool completed, fair_contacts, port_contacts, factory_contacts, driver_contacts;
             public int city_instances, village_instances, hero_visible_triangles;
             public float truck_seat_contact_m, bench_seat_contact_m;
+            public Vector3 wheel_driver_facing_normal;
+            public float wheel_chest_side_m, wheel_column_alignment, wheel_column_offset_m;
             public List<DefaultNpcGripSnapshot> grips = new List<DefaultNpcGripSnapshot>();
             public List<string> grip_failures = new List<string>();
             public List<string> captures = new List<string>();
@@ -209,8 +215,14 @@ namespace BarPromenade.Tests.PlayMode
                     Vector3 forward = DefaultNpcFacing(driver), right = cannery.Truck.right;
                     Vector3 target = driver.Head.position - Vector3.up * .22f;
                     if (!gloves)
+                    {
                         DefaultNpcFrame(camera, report, "15-driver-seated-clothing",
                             target + right * .57f + forward * .45f + Vector3.up * .02f, target, 88f, driver);
+                        Vector3 wheel = cannery.DriverWheelCentre;
+                        DefaultNpcFrame(camera, report, "15-driver-wheel-column-profile",
+                            wheel + right * .80f + cannery.Truck.up * .06f - cannery.Truck.forward * .02f,
+                            wheel - cannery.Truck.up * .17f, 70f, driver);
+                    }
                     CaptureDefaultNpcWheelHands(camera, driver, cannery, report, variant, true);
                     report.driver_contacts = cannery.DriverSeatedContactsMatch;
                     Assert.That(report.driver_contacts, Is.True, cannery.LastCrewContactFailure);
@@ -285,16 +297,16 @@ namespace BarPromenade.Tests.PlayMode
             CityCanneryController cannery, DefaultNpcWardrobeReport report, string variant, bool bothHands)
         {
             NpcHandPose pose = driver.GetComponent<NpcHandPose>();
-            Vector3 axis = cannery.DriverWheelAxis.normalized;
+            Vector3 axis = cannery.DriverWheelPalmNormal.normalized;
             Vector3 hands = bothHands ? cannery.DriverWheelCentre : pose.CylinderCentre(false);
             DefaultNpcFrame(camera, report, "15-driver-" + variant + "-wheel-back",
-                hands + cannery.Truck.right * .30f - axis * .27f + cannery.Truck.up * .40f, hands, 68f, driver);
+                hands + cannery.Truck.right * .30f - axis * .27f + cannery.Truck.up * .18f, hands, 68f, driver);
             foreach (bool left in bothHands ? new[] { true, false } : new[] { false })
             {
                 Vector3 contact = pose.CylinderCentre(left);
                 Vector3 radial = Vector3.ProjectOnPlane(contact - cannery.DriverWheelCentre, axis).normalized;
                 DefaultNpcFrame(camera, report, "15-driver-" + variant + (left ? "-left-wrap" : "-right-wrap"),
-                    contact + axis * .31f + radial * .14f + cannery.Truck.up * .08f, contact, 48f, driver);
+                    contact + axis * .31f + radial * .14f + cannery.Truck.up * .30f, contact, 48f, driver);
             }
         }
 
@@ -693,7 +705,7 @@ namespace BarPromenade.Tests.PlayMode
         {
             // Read the drawn 16-sided rim and its actual tube surface. Hand
             // anchors and the runtime's requested rotation cannot prove curl.
-            DefaultNpcRimSurface rim = DefaultNpcReadRim(cannery);
+            DefaultNpcRimSurface rim = DefaultNpcReadRim(cannery, actor, report);
             NpcHandPose pose = actor.GetComponent<NpcHandPose>();
             var meshes = actor.GetComponentsInChildren<SkinnedMeshRenderer>(true);
             var baked = new Mesh();
@@ -763,44 +775,88 @@ namespace BarPromenade.Tests.PlayMode
             WriteDefaultNpcReport(report);
         }
 
-        private static DefaultNpcRimSurface DefaultNpcReadRim(CityCanneryController cannery)
+        private static DefaultNpcRimSurface DefaultNpcReadRim(CityCanneryController cannery,
+            VillageResidentPresentation driver, DefaultNpcWardrobeReport report)
         {
-            Vector3 centre = cannery.DriverWheelCentre, axis = cannery.DriverWheelAxis.normalized;
-            var vertices = new List<Vector3>();
-            var triangles = new List<Vector3[]>();
-            foreach (MeshFilter filter in cannery.Truck.GetComponentsInChildren<MeshFilter>(true))
-            {
-                if (!filter.name.StartsWith("TruckVisible", StringComparison.Ordinal)) continue;
-                Vector3[] points = filter.sharedMesh.vertices.Select(vertex => filter.transform.TransformPoint(vertex)).ToArray();
-                bool[] onRim = points.Select(point =>
-                {
-                    Vector3 offset = point - centre;
-                    float radius = Vector3.ProjectOnPlane(offset, axis).magnitude;
-                    return Mathf.Abs(Vector3.Dot(offset, axis)) < .03f && radius > .19f && radius < .27f;
-                }).ToArray();
-                for (int i = 0; i < points.Length; i++) if (onRim[i]) vertices.Add(points[i]);
-                int[] indices = filter.sharedMesh.triangles;
-                for (int i = 0; i < indices.Length; i += 3)
-                    if (onRim[indices[i]] && onRim[indices[i + 1]] && onRim[indices[i + 2]])
-                        triangles.Add(new[] { points[indices[i]], points[indices[i + 1]], points[indices[i + 2]] });
-            }
-            Assert.That(vertices.Count, Is.GreaterThanOrEqualTo(64), "The actual wheel rim mesh is present in the cab.");
-            Assert.That(triangles.Count, Is.GreaterThan(32));
-            Vector3 measuredCentre = vertices.Aggregate(Vector3.zero, (sum, point) => sum + point) / vertices.Count;
-            Assert.That(Vector3.Distance(measuredCentre, centre), Is.LessThan(.006f), "Hand diagnostics agree with the physical rim centre.");
-            float[] radii = vertices.Select(point => Vector3.ProjectOnPlane(point - measuredCentre, axis).magnitude).ToArray();
+            MeshFilter[] meshes = cannery.Truck.GetComponentsInChildren<MeshFilter>(true);
+            MeshFilter rim = meshes.Single(mesh => mesh.name == "TruckSteeringRim__Rubber");
+            Vector3[] vertices = rim.sharedMesh.vertices.Select(vertex => rim.transform.TransformPoint(vertex)).ToArray();
+            Vector3 centre = vertices.Aggregate(Vector3.zero, (sum, point) => sum + point) / vertices.Length;
+            // A ring's smallest spatial variance is perpendicular to its
+            // plane. Fit its actual vertices independently of runtime anchors.
+            Vector3 facing = DefaultNpcMeshAxis(vertices, centre, cannery.Truck.up, true);
+            Assert.That(Vector3.Dot(facing, cannery.Truck.up), Is.GreaterThan(.65f), "Wheel face tilts upward.");
+            Assert.That(Vector3.Dot(facing, cannery.Truck.forward), Is.LessThan(-.30f),
+                "The physical wheel faces back toward the driver, not up toward the windscreen.");
+            Transform chest = CityPedestrianHandProps.FindSocket(driver.ModelRoot, "chest");
+            Assert.That(chest, Is.Not.Null);
+            report.wheel_driver_facing_normal = facing;
+            report.wheel_chest_side_m = Vector3.Dot(chest.position - centre, facing);
+            Assert.That(report.wheel_chest_side_m, Is.GreaterThan(.04f), "The drawn wheel's front side faces the driver's chest.");
+            Assert.That(Vector3.Distance(centre, cannery.DriverWheelCentre), Is.LessThan(.006f));
+            Assert.That(Vector3.Dot(facing, cannery.DriverWheelAxis.normalized), Is.GreaterThan(.995f),
+                "Runtime wheel axis agrees with the measured mesh plane.");
+            Assert.That(Vector3.Dot(-facing, cannery.DriverWheelPalmNormal.normalized), Is.GreaterThan(.995f),
+                "Palms face into the wheel from the driver's side.");
+
+            MeshFilter column = meshes.Single(mesh => mesh.name == "TruckSteeringColumn__Steel");
+            Vector3[] shaft = column.sharedMesh.vertices.Select(vertex => column.transform.TransformPoint(vertex)).ToArray();
+            Vector3 shaftCentre = shaft.Aggregate(Vector3.zero, (sum, point) => sum + point) / shaft.Length;
+            Vector3 shaftAxis = DefaultNpcMeshAxis(shaft, shaftCentre, facing, false);
+            report.wheel_column_alignment = Vector3.Dot(shaftAxis, facing);
+            report.wheel_column_offset_m = Vector3.ProjectOnPlane(shaftCentre - centre, facing).magnitude;
+            Assert.That(report.wheel_column_alignment, Is.GreaterThan(.995f), "The visible steering column shares the wheel's axis.");
+            Assert.That(report.wheel_column_offset_m, Is.LessThan(.005f), "The visible shaft meets the wheel hub at its centre.");
+            float shaftTop = shaft.Max(point => Vector3.Dot(point - centre, facing));
+            float shaftBottom = shaft.Min(point => Vector3.Dot(point - centre, facing));
+            MeshFilter hub = meshes.Single(mesh => mesh.name == "TruckSteeringHub__Steel");
+            float[] hubDepths = hub.sharedMesh.vertices.Select(vertex =>
+                Vector3.Dot(hub.transform.TransformPoint(vertex) - centre, facing)).ToArray();
+            Assert.That(shaftTop, Is.InRange(hubDepths.Min() + .002f, hubDepths.Max() - .002f),
+                "The shaft ends inside the drawn hub rather than stopping short or protruding through its face.");
+            Assert.That(hubDepths.Min(), Is.LessThan(0f));
+            Assert.That(hubDepths.Max(), Is.GreaterThan(0f), "The hub straddles the rim plane.");
+            Assert.That(shaftBottom, Is.InRange(-.55f, -.45f), "The column extends under the dashboard along the same axis.");
+
+            float[] radii = vertices.Select(point => Vector3.ProjectOnPlane(point - centre, facing).magnitude).ToArray();
             float radiusMean = (radii.Min() + radii.Max()) * .5f;
             float tubeRadius = vertices.Max(point =>
             {
-                Vector3 offset = point - measuredCentre;
-                float radial = Vector3.ProjectOnPlane(offset, axis).magnitude - radiusMean;
-                float axial = Vector3.Dot(offset, axis);
+                Vector3 offset = point - centre;
+                float radial = Vector3.ProjectOnPlane(offset, facing).magnitude - radiusMean;
+                float axial = Vector3.Dot(offset, facing);
                 return Mathf.Sqrt(radial * radial + axial * axial);
             });
             Assert.That(radiusMean, Is.InRange(.225f, .235f));
             Assert.That(tubeRadius, Is.InRange(.017f, .025f));
-            return new DefaultNpcRimSurface { Centre = measuredCentre, Axis = axis,
+            var triangles = new List<Vector3[]>();
+            int[] indices = rim.sharedMesh.triangles;
+            for (int i = 0; i < indices.Length; i += 3)
+                triangles.Add(new[] { vertices[indices[i]], vertices[indices[i + 1]], vertices[indices[i + 2]] });
+            WriteDefaultNpcReport(report);
+            // Positive grip depth points away from the driver, through the
+            // tube. The palm stays near and fingertips curl onto its far half.
+            return new DefaultNpcRimSurface { Centre = centre, Axis = -facing,
                 Radius = radiusMean, TubeRadius = tubeRadius, Triangles = triangles };
+        }
+
+        private static Vector3 DefaultNpcMeshAxis(Vector3[] points, Vector3 centre, Vector3 seed, bool smallest)
+        {
+            float xx = 0f, yy = 0f, zz = 0f, xy = 0f, xz = 0f, yz = 0f;
+            foreach (Vector3 point in points)
+            {
+                Vector3 delta = point - centre;
+                xx += delta.x * delta.x; yy += delta.y * delta.y; zz += delta.z * delta.z;
+                xy += delta.x * delta.y; xz += delta.x * delta.z; yz += delta.y * delta.z;
+            }
+            Vector3 axis = seed.normalized;
+            for (int i = 0; i < 24; i++)
+            {
+                Vector3 product = new Vector3(xx * axis.x + xy * axis.y + xz * axis.z,
+                    xy * axis.x + yy * axis.y + yz * axis.z, xz * axis.x + yz * axis.y + zz * axis.z);
+                axis = (smallest ? (xx + yy + zz) * axis - product : product).normalized;
+            }
+            return Vector3.Dot(axis, seed) < 0f ? -axis : axis;
         }
 
         private sealed class DefaultNpcRimSurface

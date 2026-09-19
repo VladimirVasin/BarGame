@@ -1841,32 +1841,32 @@
     "cylindrical_grip": {
       "surface_clearances_m": {
         "GEO_HandPalm.L": 0.001017,
-        "GEO_HandFinger0.L": 0.000826,
-        "GEO_HandFinger1.L": 0.000169,
-        "GEO_HandFinger2.L": 0.000333,
-        "GEO_HandFinger3.L": 0.000912,
+        "GEO_HandFinger0.L": 0.00083,
+        "GEO_HandFinger1.L": 0.000173,
+        "GEO_HandFinger2.L": 0.000336,
+        "GEO_HandFinger3.L": 0.000915,
         "GEO_HandThumb.L": 0.000215,
         "CLO_GlovePalm.L": 0.001017,
-        "CLO_GloveFinger0.L": 0.000973,
-        "CLO_GloveFinger1.L": 0.000362,
-        "CLO_GloveFinger2.L": 0.000505,
-        "CLO_GloveFinger3.L": 0.001038,
+        "CLO_GloveFinger0.L": 0.000978,
+        "CLO_GloveFinger1.L": 0.000365,
+        "CLO_GloveFinger2.L": 0.000509,
+        "CLO_GloveFinger3.L": 0.001042,
         "CLO_GloveThumb.L": -0.001021,
         "GEO_HandPalm.R": 0.001017,
-        "GEO_HandFinger0.R": 0.000826,
-        "GEO_HandFinger1.R": 0.000169,
-        "GEO_HandFinger2.R": 0.000333,
-        "GEO_HandFinger3.R": 0.000912,
+        "GEO_HandFinger0.R": 0.00083,
+        "GEO_HandFinger1.R": 0.000173,
+        "GEO_HandFinger2.R": 0.000336,
+        "GEO_HandFinger3.R": 0.000915,
         "GEO_HandThumb.R": 0.000215,
         "CLO_GlovePalm.R": 0.001017,
-        "CLO_GloveFinger0.R": 0.000973,
-        "CLO_GloveFinger1.R": 0.000362,
-        "CLO_GloveFinger2.R": 0.000505,
-        "CLO_GloveFinger3.R": 0.001038,
+        "CLO_GloveFinger0.R": 0.000978,
+        "CLO_GloveFinger1.R": 0.000365,
+        "CLO_GloveFinger2.R": 0.000509,
+        "CLO_GloveFinger3.R": 0.001042,
         "CLO_GloveThumb.R": -0.001021
       },
-      "maximum_segment_length_error_m": 1.3e-07,
-      "maximum_cross_section_radius_error_m": 8e-08,
+      "maximum_segment_length_error_m": 1.2e-07,
+      "maximum_cross_section_radius_error_m": 9e-08,
       "wrist_unchanged": true,
       "opposed_thumb": true
     }
@@ -1980,7 +1980,7 @@
         ]
       }
     ],
-    "shape_signature": "8b6915ce84b99c7ce6a02f1182c096b88c1fd11bcb492d3fea0a35bd3d83ec5e"
+    "shape_signature": "0a5134347f60b6ecd4419d55e1a0bb97befc309b7d5a172114ef82b291068dd3"
   },
   "hair_atlas_sha256": [
     {
@@ -2025,5 +2025,5 @@
     }
   ],
   "uv_signature": "5e7f059f1e9aac51137f19f04eb8081c752e714ca758ab91d95449243f21a38b",
-  "signature": "a7350bbf8d93c429f0430b20a625c002333f92928a17ab6de28ad0cd27624121"
+  "signature": "53965f4755b0afda07ad405eebc87c436c371580190583154088eacae99b7939"
 }

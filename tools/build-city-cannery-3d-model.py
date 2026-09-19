@@ -34,6 +34,10 @@ CONVEYOR_ROLLER_AXES=("Z","Z","X","X","Z","Z","X","X")
 CONVEYOR_ROLLER_SIGNS=(-1,-1,1,1,1,1,1,1)
 TRUCK_REAR, TRUCK_FRONT, TRUCK_HALF_WIDTH, TRUCK_WHEELBASE = -2.0, 4.5, 1.2, 3.3
 TRUCK_CAB_OFFSET = -.9
+DRIVER_WHEEL_CENTRE = (-.56, 2.01, 4.50 + TRUCK_CAB_OFFSET)
+# Signed toward the seated driver: up and back, rather than into the dashboard.
+DRIVER_WHEEL_AXIS = (0, .8, -.6)
+DRIVER_WHEEL_RADIUS, DRIVER_WHEEL_TUBE_RADIUS = .23, .022
 CREW_SERVICE_ANCHORS = {
     "PreparationTidyWorker":(-6.65,.18,-2.35),
     "PreparationTidyHand":(-6.12,1.238,-2.50),
@@ -892,9 +896,28 @@ def truck(mat):
         chamfer(g,(x,1.45,4.0),(.59,.22,.69),DARK,.065)
         chamfer(g,(x,1.83,3.77),(.59,.68,.16),DARK,.065)
     chamfer(g,(0,1.94,4.73),(1.95,.20,.22),METAL,.045)
-    g.rod((-.56,1.28,4.45),(-.56,1.94,4.50),.035,METAL,8)
-    ring(g,(-.56,2.01,4.50),.23,.022,DARK,(0,.8,.6),16)
     shift_geometry(g,interior_start,(0,0,TRUCK_CAB_OFFSET))
+    # The column and ring share one authored axis. Separate renderers allow
+    # contact validation to measure the actual tube without dashboard vertices.
+    wheel_centre=Vector(DRIVER_WHEEL_CENTRE);wheel_axis=Vector(DRIVER_WHEEL_AXIS)
+    wheel_base=wheel_centre-wheel_axis*.50
+    rim=Geometry();rim.role="Rubber"
+    ring(rim,wheel_centre,DRIVER_WHEEL_RADIUS,DRIVER_WHEEL_TUBE_RADIUS,DARK,wheel_axis,16)
+    obj(rim,"TruckSteeringRim",root,mat)
+    column=Geometry();column.role="Steel"
+    column.rod(wheel_base,wheel_centre-wheel_axis*.025,.035,METAL,8)
+    obj(column,"TruckSteeringColumn",root,mat)
+    hub=Geometry();hub.role="Steel"
+    hub.rod(wheel_centre-wheel_axis*.033,wheel_centre+wheel_axis*.012,.052,METAL,12)
+    wheel_up=Vector((0,.6,.8))
+    for angle in (math.pi/4,3*math.pi/4,3*math.pi/2):
+        radial=Vector((1,0,0))*math.cos(angle)+wheel_up*math.sin(angle)
+        hub.rod(wheel_centre+radial*.035-wheel_axis*.009,
+                wheel_centre+radial*(DRIVER_WHEEL_RADIUS-.015)-wheel_axis*.009,.014,METAL,8)
+    obj(hub,"TruckSteeringHub",root,mat)
+    anchor("DriverWheelCentre",root,wheel_centre)
+    anchor("DriverWheelAxis",root,wheel_centre+wheel_axis*.10)
+    anchor("DriverWheelColumnBase",root,wheel_base)
     for side,x in (("L",-1.0),("R",1.0)):
         for axle,z in (("F",TRUCK_WHEELBASE),("R",0)):
             pivot=empty("MOVE_Wheel"+axle+side,root,(x,.45,z));w=Geometry();w.role="Rubber"
@@ -1227,6 +1250,37 @@ def validate_shipping(equipment_root,carton_root,points):
             raise RuntimeError('A real packing can is outside the continuous finished carton')
 
 
+def validate_driver_wheel(root,points):
+    centre=Vector(points['ANCHOR_DriverWheelCentre'])
+    axis=(Vector(points['ANCHOR_DriverWheelAxis'])-centre).normalized()
+    base=Vector(points['ANCHOR_DriverWheelColumnBase'])
+    chest=Vector(points['ANCHOR_TruckDriver'])+Vector((0,.55,0))
+    if (centre-Vector(DRIVER_WHEEL_CENTRE)).length>.0001 or axis.y<.79 or axis.z>-.59 or axis.dot(chest-centre)<.3:
+        raise RuntimeError('The steering wheel must face up/back toward the driver chest')
+    if (base-(centre-axis*.50)).length>.0001:
+        raise RuntimeError('The steering column base must continue the wheel axis into the dashboard')
+    inverse=root.matrix_world.inverted()
+    def vertices(name):
+        part=next(p for p in root.children_recursive if p.type=='MESH' and p.name.split('.')[0]==name)
+        return [Vector(source(inverse@part.matrix_world@v.co)) for v in part.data.vertices]
+    rim=vertices('TruckSteeringRim__Rubber')
+    mean=sum(rim,Vector())/len(rim)
+    axial=[(v-centre).dot(axis) for v in rim]
+    radial=[((v-centre)-axis*(v-centre).dot(axis)).length for v in rim]
+    if ((mean-centre).length>.0001 or max(abs(v) for v in axial)>DRIVER_WHEEL_TUBE_RADIUS+.0001
+            or min(radial)<DRIVER_WHEEL_RADIUS*math.cos(math.pi/16)-DRIVER_WHEEL_TUBE_RADIUS-.0001
+            or max(radial)>DRIVER_WHEEL_RADIUS+DRIVER_WHEEL_TUBE_RADIUS+.0001):
+        raise RuntimeError('The actual steering tube differs from its authored contact plane')
+    column=vertices('TruckSteeringColumn__Steel')
+    axial=[(v-centre).dot(axis) for v in column]
+    radial=[((v-centre)-axis*(v-centre).dot(axis)).length for v in column]
+    if abs(min(axial)+.50)>.0001 or abs(max(axial)+.025)>.0001 or max(radial)>.0351:
+        raise RuntimeError('The actual steering column must end coaxially behind the wheel hub')
+    hub=vertices('TruckSteeringHub__Steel')
+    if max((v-centre).dot(axis) for v in hub)>.0121:
+        raise RuntimeError('The steering hub projects through the driver-facing grip surface')
+
+
 def validate(roots):
     port.validate_surfaces(roots)
     entries={r.name.split('.')[0]:port.describe(r) for r in roots}
@@ -1247,6 +1301,7 @@ def validate(roots):
         if math.dist(truck_points['ANCHOR_'+name],position)>.001:
             raise RuntimeError('The compact truck must preserve the full-sized driver contact arrangement')
     truck_root=next(r for r in roots if r.name.split('.')[0]=='Truck')
+    validate_driver_wheel(truck_root,truck_points)
     front=next(part for part in truck_root.children_recursive
                if part.type=='MESH' and part.name.split('.')[0]=='TruckFrontPanel__Steel')
     vertices=[truck_root.matrix_world.inverted()@front.matrix_world@v.co for v in front.data.vertices]

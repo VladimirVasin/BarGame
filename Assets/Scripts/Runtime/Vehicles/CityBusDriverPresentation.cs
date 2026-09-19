@@ -33,8 +33,8 @@ namespace BarPromenade
         private const float FootSideOffset = 0.14f;
         private const float AnkleDropFromSeat = 0.311f;
         private const float KneeForwardOffset = 0.30f;
-        private const float KneeSideOffset = 0.18f;
-        private const float KneeDropFromSeat = 0.071f;
+        private const float KneeSideOffset = 0.14f;
+        private const float KneeHintLift = 0.10f;
         private const float ReachArcHeight = 0.055f;
         private const float BreathingDegrees = 0.55f;
         private const float BreathingRadiansPerSecond = 1.25f;
@@ -371,8 +371,10 @@ namespace BarPromenade
             Vector3 up = driverRoot.up;
             Vector3 forward = driverRoot.forward;
             Vector3 right = driverRoot.right;
-            // The feet and knee hints belong to the bus. Raising the hips
-            // must not raise the soles off their existing pedal/floor plane.
+            // Feet remain on the bus pedal/floor plane. The knee hint is a
+            // bend direction, not a knee target: putting it below the cushion
+            // and too far sideways lowers the outer thigh into the seat even
+            // when the pelvis rises. Keep both knees forward over the feet.
             Vector3 seat = busRegistry.DriverSeatAnchor.position - forward * DriverSeatBackOffset;
 
             ApplyLegPose(
@@ -385,8 +387,8 @@ namespace BarPromenade
                 up * AnkleDropFromSeat,
                 seat +
                 right * KneeSideOffset +
-                forward * KneeForwardOffset -
-                up * KneeDropFromSeat,
+                forward * KneeForwardOffset +
+                up * KneeHintLift,
                 driverRoot.rotation * leftFootRotationInDriver);
             ApplyLegPose(
                 registry.RightThigh,
@@ -398,8 +400,8 @@ namespace BarPromenade
                 up * AnkleDropFromSeat,
                 seat -
                 right * KneeSideOffset +
-                forward * KneeForwardOffset -
-                up * (KneeDropFromSeat + 0.015f),
+                forward * KneeForwardOffset +
+                up * (KneeHintLift - 0.015f),
                 driverRoot.rotation * rightFootRotationInDriver);
 
             registry.Spine.rotation = Quaternion.AngleAxis(

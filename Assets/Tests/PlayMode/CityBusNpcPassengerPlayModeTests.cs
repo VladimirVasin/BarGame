@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -103,9 +103,20 @@ namespace BarPromenade.Tests.PlayMode
                     CityPedestrianActor actor = actorObject.AddComponent<CityPedestrianActor>();
                     CityPedestrianPlan plan = CreatePedestrianPlan(Vector3.zero, Vector3.forward);
                     actor.Initialize(new AlwaysWalkableArea(), plan.AgentRadius);
-                    Assert.That(CityPedestrianResources.TryInstantiate(
-                        Resources.Load<GameObject>(archetype.PrefabResourcePath), root.transform,
-                        out CityPedestrianAssetRegistry npc), Is.True, archetype.DesignId);
+                    CityPedestrianAssetRegistry npc;
+                    bool defaultBody = DefaultNpcCatalog.ModelIds.Contains(archetype.DesignId);
+                    if (defaultBody)
+                    {
+                        string identity = Enumerable.Range(0, DefaultNpcPopulation.PedestrianCount)
+                            .Select(DefaultNpcPopulation.PedestrianId).First(id =>
+                                DefaultNpcPopulation.GetAssignment(id).ModelId == archetype.DesignId);
+                        npc = CityPedestrianDefaultNpcBody.Create(root.transform, identity,
+                            CityPedestrianResources.LoadStreetClipDonor());
+                    }
+                    else
+                        Assert.That(CityPedestrianResources.TryInstantiate(
+                            Resources.Load<GameObject>(archetype.PrefabResourcePath), root.transform,
+                            out npc), Is.True, archetype.DesignId);
                     CityPedestrianPresentation presentation = npc.GetComponent<CityPedestrianPresentation>() ??
                         npc.gameObject.AddComponent<CityPedestrianPresentation>();
                     presentation.Initialize(npc);
@@ -116,48 +127,72 @@ namespace BarPromenade.Tests.PlayMode
                     actor.transform.SetPositionAndRotation(
                         busActor.transform.TransformPoint(ridePosition), busActor.transform.rotation * rideRotation);
                     SetSeatedCaptureLayer(actorObject);
-                    Renderer[] support = SeatedSupportRenderers(npc.Renderers);
-                    Assert.That(support.Length, Is.EqualTo(3), archetype.DesignId + " pelvis and both thighs");
-                    Assert.That(Vector3.Distance(busPresentation.CabinUp, passengerFrame.Up), Is.LessThan(.0001f));
-                    Assert.That(actor.BeginSeatedRide(seat, archetype.SeatedRide, busPresentation.CabinUp), Is.True);
-
-                    // Must already be seated before either the next tick or a
-                    // frame yield. A standing graph can have a correct pelvis
-                    // anchor while its visible thighs still cut the cushion.
-                    MeasurePassengerSeat(archetype, npc, actor, passengerFrame, passengerCushions,
-                        support, "initial", report, failures);
-                    yield return null;
-                    CaptureSeatedMesh(camera, bus, passengerFrame, directory, archetype.DesignId + "-level");
-
-                    const int samples = 16;
-                    for (int phase = 1; phase <= samples; phase++)
+                    NpcWardrobe wardrobe = defaultBody ? npc.GetComponentInChildren<NpcWardrobe>() : null;
+                    string[] trouserVariants = defaultBody ? new[] { "everyday", "work", "warm" } : new[] { "" };
+                    foreach (string trouserVariant in trouserVariants)
                     {
-                        actor.Advance(npc.SitClip.length / samples);
-                        // Production order: pedestrians tick, bus advances,
-                        // passenger controller updates the independent root.
-                        // Include sprung body tilt as well as road/root tilt.
-                        float angle = phase * Mathf.PI * 2f / samples;
-                        busActor.transform.SetPositionAndRotation(
-                            new Vector3(phase * .31f, .12f * Mathf.Sin(angle), -phase * .17f),
-                            Quaternion.Euler(2f * Mathf.Sin(angle), phase * 3f, -2f * Mathf.Cos(angle)));
-                        busPresentation.SuspensionVisual.rotation = busActor.transform.rotation * Quaternion.Euler(
-                            CityBusPresentation.MaximumSuspensionPitch * Mathf.Cos(angle), 0f,
-                            CityBusPresentation.MaximumSuspensionRoll * Mathf.Sin(angle)) * suspensionInBus;
-                        actor.SetRidePose(busActor.transform.TransformPoint(ridePosition),
+                        // All three authored cuts must fit the same seat; this
+                        // local swap does not alter the population assignment.
+                        if (defaultBody) wardrobe.SetSlot("trousers", "trousers." + trouserVariant);
+                        string phasePrefix = defaultBody ? trouserVariant + "/" : "";
+                        string captureName = archetype.DesignId + (defaultBody ? "-" + trouserVariant : "");
+                        busActor.transform.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
+                        busPresentation.SuspensionVisual.rotation = busActor.transform.rotation * suspensionInBus;
+                        actor.transform.SetPositionAndRotation(busActor.transform.TransformPoint(ridePosition),
                             busActor.transform.rotation * rideRotation);
-                        Assert.That(Vector3.Distance(busPresentation.CabinUp, passengerFrame.Up), Is.LessThan(.0001f), "Production cabin normal follows the drawn cushion.");
-                        MeasurePassengerSeat(archetype, npc, actor, passengerFrame, passengerCushions,
-                            support, "sit-" + phase, report, failures);
-                    }
+                        Renderer[] occupant = npc.GetComponentsInChildren<Renderer>(true);
+                        Renderer[] support = SeatedSupportRenderers(occupant);
+                        Assert.That(support.Length, Is.EqualTo(defaultBody ? 1 : 3),
+                            archetype.DesignId + " visible pelvis and upper thighs");
+                        Assert.That(Vector3.Distance(busPresentation.CabinUp, passengerFrame.Up), Is.LessThan(.0001f));
+                        Assert.That(actor.BeginSeatedRide(seat, archetype.SeatedRide, busPresentation.CabinUp), Is.True);
 
-                    yield return null; // Refresh GPU skinning for the tilted view.
-                    CaptureSeatedMesh(camera, bus, passengerFrame, directory, archetype.DesignId + "-tilted");
-                    actor.ResumeRoaming(1);
-                    actor.Advance(0f);
-                    if (presentation.IsSeated ||
-                        Quaternion.Angle(npc.ModelRoot.localRotation, standingModelRotation) > .01f)
-                        failures.Add(archetype.DesignId + ": standing retained the seat's model tilt.");
-                    File.WriteAllText(Path.Combine(directory, "report.json"), JsonUtility.ToJson(report, true));
+                        // Must already be seated before either the next tick or a
+                        // frame yield. A standing graph can have a correct pelvis
+                        // anchor while its visible thighs still cut the cushion.
+                        MeasurePassengerSeat(archetype, npc, actor, passengerFrame, passengerCushions,
+                            support, phasePrefix + "initial", report, failures);
+                        yield return null;
+                        // This isolated actor has no director to sample its
+                        // manual graph each frame, unlike a production rider.
+                        // Reapply after Animator's first-frame initialization.
+                        actor.Advance(0f);
+                        MeasurePassengerSeat(archetype, npc, actor, passengerFrame, passengerCushions,
+                            support, phasePrefix + "rendered", report, failures);
+                        CaptureSeatedMesh(camera, bus, passengerFrame, npc.PelvisAnchor,
+                            occupant, passengerCushions, directory, captureName + "-level");
+
+                        const int samples = 16;
+                        for (int phase = 1; phase <= samples; phase++)
+                        {
+                            actor.Advance(npc.SitClip.length / samples);
+                            // Production order: pedestrians tick, bus advances,
+                            // passenger controller updates the independent root.
+                            // Include sprung body tilt as well as road/root tilt.
+                            float angle = phase * Mathf.PI * 2f / samples;
+                            busActor.transform.SetPositionAndRotation(
+                                new Vector3(phase * .31f, .12f * Mathf.Sin(angle), -phase * .17f),
+                                Quaternion.Euler(2f * Mathf.Sin(angle), phase * 3f, -2f * Mathf.Cos(angle)));
+                            busPresentation.SuspensionVisual.rotation = busActor.transform.rotation * Quaternion.Euler(
+                                CityBusPresentation.MaximumSuspensionPitch * Mathf.Cos(angle), 0f,
+                                CityBusPresentation.MaximumSuspensionRoll * Mathf.Sin(angle)) * suspensionInBus;
+                            actor.SetRidePose(busActor.transform.TransformPoint(ridePosition),
+                                busActor.transform.rotation * rideRotation);
+                            Assert.That(Vector3.Distance(busPresentation.CabinUp, passengerFrame.Up), Is.LessThan(.0001f), "Production cabin normal follows the drawn cushion.");
+                            MeasurePassengerSeat(archetype, npc, actor, passengerFrame, passengerCushions,
+                                support, phasePrefix + "sit-" + phase, report, failures);
+                        }
+
+                        yield return null; // Refresh GPU skinning for the tilted view.
+                        CaptureSeatedMesh(camera, bus, passengerFrame, npc.PelvisAnchor,
+                            occupant, passengerCushions, directory, captureName + "-tilted");
+                        actor.ResumeRoaming(1);
+                        actor.Advance(0f);
+                        if (presentation.IsSeated ||
+                            Quaternion.Angle(npc.ModelRoot.localRotation, standingModelRotation) > .01f)
+                            failures.Add(archetype.DesignId + ": standing retained the seat's model tilt.");
+                        File.WriteAllText(Path.Combine(directory, "report.json"), JsonUtility.ToJson(report, true));
+                    }
                     Object.DestroyImmediate(actorObject);
                 }
 
@@ -173,7 +208,8 @@ namespace BarPromenade.Tests.PlayMode
                     MeasureSeatedSurface("bus-driver", sample == 0 ? "wheel" : "button-tilted",
                         driverFrame, driverCushion, driverSupport, report, failures);
                     yield return null;
-                    CaptureSeatedMesh(camera, bus, driverFrame, directory,
+                    CaptureSeatedMesh(camera, bus, driverFrame, driver.Pelvis,
+                        driver.Renderers, driverCushion, directory,
                         sample == 0 ? "driver-wheel" : "driver-button-tilted");
                 }
             }
@@ -204,10 +240,12 @@ namespace BarPromenade.Tests.PlayMode
 
         private static Renderer[] SeatedSupportRenderers(IReadOnlyList<Renderer> renderers)
         {
-            return renderers.Where(renderer => renderer != null &&
+            return renderers.Where(renderer => renderer != null && renderer.enabled &&
                 (renderer.name == "GEO_Pelvis" || renderer.name == "CLO_Seat" ||
                  renderer.name == "GEO_Thigh.L" || renderer.name == "GEO_Thigh.R" ||
-                 renderer.name == "CLO_Thigh.L" || renderer.name == "CLO_Thigh.R")).ToArray();
+                 renderer.name == "CLO_Thigh.L" || renderer.name == "CLO_Thigh.R" ||
+                 renderer.name.StartsWith("CLO_Trousers_", System.StringComparison.Ordinal) &&
+                 renderer.name.EndsWith("Upper", System.StringComparison.Ordinal))).ToArray();
         }
 
         private static void SetSeatedCaptureLayer(GameObject root)
@@ -215,7 +253,13 @@ namespace BarPromenade.Tests.PlayMode
             foreach (Renderer renderer in root.GetComponentsInChildren<Renderer>(true))
             {
                 renderer.gameObject.layer = 31;
-                if (renderer is SkinnedMeshRenderer skin) skin.updateWhenOffscreen = true;
+                if (renderer is SkinnedMeshRenderer skin)
+                {
+                    skin.updateWhenOffscreen = true;
+                    // The fixture samples a manual graph before Camera.Render;
+                    // its first image must not reuse the previous bone matrices.
+                    skin.forceMatrixRecalculationPerRender = true;
+                }
             }
         }
 
@@ -244,6 +288,8 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(footprint.width, Is.InRange(.48f, .59f));
                 Assert.That(footprint.height, Is.InRange(.44f, .54f));
                 float minimum = float.PositiveInfinity;
+                string contactRenderer = null;
+                Vector3 contactPoint = Vector3.zero;
                 int clippedTriangles = 0;
                 foreach (Renderer renderer in support)
                 {
@@ -251,23 +297,37 @@ namespace BarPromenade.Tests.PlayMode
                     ReadSeatedMesh(mesh, out Vector3[] meshVertices, out int[] triangles);
                     Vector3[] vertices = meshVertices.Select(vertex =>
                         frame.Coordinates(renderer.transform.TransformPoint(vertex))).ToArray();
+                    float[] supportWeights = SeatedSupportWeights(renderer);
                     for (int index = 0; index < triangles.Length; index += 3)
                     {
                         var polygon = new List<Vector3>
                         {
                             vertices[triangles[index]], vertices[triangles[index + 1]], vertices[triangles[index + 2]]
                         };
+                        if (supportWeights != null)
+                            polygon = ClipSeatedSupportWeights(polygon, new[]
+                            {
+                                supportWeights[triangles[index]], supportWeights[triangles[index + 1]],
+                                supportWeights[triangles[index + 2]]
+                            });
                         // Clip the surface, not just its vertices: a large
                         // triangle may cross a cushion with all corners outside.
-                        // This removes lower legs, knees and coat hems beyond
-                        // the actual seat support area from the measurement.
+                        // The weight clip above separates the thigh from the
+                        // shin inside joined trousers; footprint alone cannot
+                        // distinguish a calf below the seat from a seated hip.
                         polygon = ClipSeatPolygon(polygon, 0, footprint.xMin + .002f, true);
                         polygon = ClipSeatPolygon(polygon, 0, footprint.xMax - .002f, false);
                         polygon = ClipSeatPolygon(polygon, 2, footprint.yMin + .002f, true);
                         polygon = ClipSeatPolygon(polygon, 2, footprint.yMax - .002f, false);
                         if (polygon.Count < 3) continue;
                         clippedTriangles++;
-                        foreach (Vector3 point in polygon) minimum = Mathf.Min(minimum, point.y - surface);
+                        foreach (Vector3 point in polygon)
+                        {
+                            if (point.y - surface >= minimum) continue;
+                            minimum = point.y - surface;
+                            contactPoint = point;
+                            contactRenderer = renderer.name;
+                        }
                     }
                 }
 
@@ -275,14 +335,54 @@ namespace BarPromenade.Tests.PlayMode
                 {
                     design = design, phase = phase, minimum_clearance_m = minimum,
                     support_triangles = clippedTriangles, cushion_width_m = footprint.width,
-                    cushion_depth_m = footprint.height, seat = frame.Seat.position, seat_up = frame.Up
+                    cushion_depth_m = footprint.height, seat = frame.Seat.position, seat_up = frame.Up,
+                    contact_renderer = contactRenderer, contact_in_seat = contactPoint
                 });
                 if (clippedTriangles == 0 || float.IsInfinity(minimum))
                     failures.Add(design + "/" + phase + ": no hip/thigh surface overlaps the cushion.");
                 else if (minimum < -.012f || minimum > .03f)
-                    failures.Add($"{design}/{phase}: visible support clearance {minimum:F4} m; expected -0.012 to 0.030 m.");
+                    failures.Add($"{design}/{phase}: visible support clearance {minimum:F4} m at " +
+                        $"{contactRenderer} {contactPoint:F4}; expected -0.012 to 0.030 m.");
             }
             finally { Object.DestroyImmediate(baked); }
+        }
+
+        private static float[] SeatedSupportWeights(Renderer renderer)
+        {
+            if (!renderer.name.StartsWith("CLO_Trousers_", System.StringComparison.Ordinal)) return null;
+            var skin = (SkinnedMeshRenderer)renderer;
+            // Modular Upper includes the upper calves as well as the hips and
+            // thighs. Only the predominantly pelvis/thigh surface supports a
+            // sitter. Retain the upper half of the blended knee transition.
+            bool[] supportingBones = skin.bones.Select(bone => bone.name == "pelvis" ||
+                bone.name == "thigh.L" || bone.name == "thigh.R").ToArray();
+            Assert.That(supportingBones.Count(value => value), Is.EqualTo(3), renderer.name);
+            BoneWeight[] weights = skin.sharedMesh.boneWeights;
+            Assert.That(weights.Length, Is.EqualTo(skin.sharedMesh.vertexCount));
+            return weights.Select(weight =>
+                (supportingBones[weight.boneIndex0] ? weight.weight0 : 0f) +
+                (supportingBones[weight.boneIndex1] ? weight.weight1 : 0f) +
+                (supportingBones[weight.boneIndex2] ? weight.weight2 : 0f) +
+                (supportingBones[weight.boneIndex3] ? weight.weight3 : 0f)).ToArray();
+        }
+
+        private static List<Vector3> ClipSeatedSupportWeights(List<Vector3> triangle, float[] weights)
+        {
+            const float minimumSupport = .5f;
+            var clipped = new List<Vector3>();
+            int previous = triangle.Count - 1;
+            for (int current = 0; current < triangle.Count; current++)
+            {
+                bool inside = weights[current] >= minimumSupport;
+                if (inside != (weights[previous] >= minimumSupport))
+                {
+                    float t = (minimumSupport - weights[previous]) / (weights[current] - weights[previous]);
+                    clipped.Add(Vector3.LerpUnclamped(triangle[previous], triangle[current], t));
+                }
+                if (inside) clipped.Add(triangle[current]);
+                previous = current;
+            }
+            return clipped;
         }
 
         private static Mesh SeatedMesh(Renderer renderer, Mesh baked)
@@ -333,6 +433,8 @@ namespace BarPromenade.Tests.PlayMode
             private readonly Quaternion orientationInAnchor;
             private Quaternion Orientation => Seat.rotation * orientationInAnchor;
             public Vector3 Up => Orientation * Vector3.up;
+            public Vector3 Right => Orientation * Vector3.right;
+            public Vector3 Forward => Orientation * Vector3.forward;
 
             public SeatedCushionFrame(Transform seat, Quaternion busOrientation)
             {
@@ -371,24 +473,33 @@ namespace BarPromenade.Tests.PlayMode
         }
 
         private static void CaptureSeatedMesh(Camera camera, CityBusAssetRegistry bus, SeatedCushionFrame frame,
-            string directory, string name)
+            Transform pelvis, IReadOnlyList<Renderer> occupant, Renderer cushion, string directory, string name)
         {
-            // Stay inside the opposite window, looking from the aisle across
-            // the cushion edge: its top and the occupant's hip are both visible.
-            Vector3 right = bus.transform.right;
-            Vector3 forward = bus.transform.forward;
+            // A temporary cutaway preserves the drawn occupant and real seat.
+            // The bus driver, rails, dashboard and shell otherwise obscure the
+            // contact from an interior camera. Restore every visibility flag.
+            var visible = new HashSet<Renderer>(occupant) { cushion };
+            Renderer[] hidden = camera.transform.root.GetComponentsInChildren<Renderer>(true)
+                .Where(renderer => renderer.enabled && !visible.Contains(renderer)).ToArray();
+            Vector3 right = frame.Right;
+            Vector3 forward = frame.Forward;
             Transform seat = frame.Seat;
             float side = Mathf.Sign(Vector3.Dot(seat.position - bus.transform.position, right));
-            camera.transform.position = seat.position - right * side * 1.15f +
-                forward * .48f + frame.Up * .50f;
-            camera.transform.LookAt(seat.position + frame.Up * .30f, frame.Up);
-            camera.fieldOfView = 78f;
+            Vector3 contact = Vector3.Lerp(seat.position, pelvis.position, .5f);
+            // Look in from the occupant's window side, so the opposite row's
+            // combined seat mesh stays behind the subject instead of in front.
+            camera.transform.position = contact + right * side * 2.2f +
+                forward * .75f + frame.Up * .55f;
+            camera.transform.LookAt(contact + frame.Up * .10f, frame.Up);
+            camera.orthographic = true;
+            camera.orthographicSize = 1.0f;
             camera.aspect = 4f / 3f;
             var target = new RenderTexture(1280, 960, 24);
             var pixels = new Texture2D(1280, 960, TextureFormat.RGB24, false);
             RenderTexture previous = RenderTexture.active;
             try
             {
+                foreach (Renderer renderer in hidden) renderer.enabled = false;
                 camera.targetTexture = target;
                 camera.Render();
                 RenderTexture.active = target;
@@ -398,6 +509,8 @@ namespace BarPromenade.Tests.PlayMode
             }
             finally
             {
+                foreach (Renderer renderer in hidden)
+                    if (renderer != null) renderer.enabled = true;
                 camera.targetTexture = null;
                 RenderTexture.active = previous;
                 Object.DestroyImmediate(pixels);
@@ -414,10 +527,10 @@ namespace BarPromenade.Tests.PlayMode
         [System.Serializable]
         private sealed class SeatedMeshSample
         {
-            public string design, phase;
+            public string design, phase, contact_renderer;
             public float minimum_clearance_m, cushion_width_m, cushion_depth_m;
             public int support_triangles;
-            public Vector3 seat, seat_up;
+            public Vector3 seat, seat_up, contact_in_seat;
         }
 
         [UnityTest]

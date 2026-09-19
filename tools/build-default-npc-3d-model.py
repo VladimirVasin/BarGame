@@ -357,7 +357,7 @@ class WorkerBuilder(base.PedestrianBuilder):
                 # Preserve both phalanx lengths. Moving the already buried
                 # knuckle to the palm edge permits a real wrap without claws.
                 ring_radius=HAND_GRIP_RADIUS+radii[0]+.003
-                angles=[math.radians(25)]
+                angles=[math.radians(30)]
                 for p,q in zip(points,points[1:]):
                     angles.append(angles[-1]+2*math.asin((q-p).length/(2*ring_radius)))
                 closed_points=[centre+across*(offset*HAND_SIZE_SCALE)+direction*(ring_radius*math.sin(t))-normal*(ring_radius*math.cos(t)) for t in angles]
@@ -791,7 +791,7 @@ def validate_grip(builder):
                 raise RuntimeError("Grip moved wrist/palm base: "+name)
         for name,neutral,closed,radii,sides in builder.hand_grip_segments:
             if not name.endswith("."+frame["side"]):continue
-            if (closed[-1]-centre).dot(normal)<=0:raise RuntimeError("Finger does not curl onto far side: "+name)
+            if (closed[-1]-centre).dot(normal)<=HAND_GRIP_RADIUS*.20:raise RuntimeError("Finger does not curl onto far side: "+name)
             radial=(closed[-1]-centre).dot(direction)
             if ("Thumb" in name and radial>=-.01) or ("Finger" in name and radial<=.01):raise RuntimeError("Grip thumb is not opposed: "+name)
     if segment_error>1e-6 or radius_error>1e-6:raise RuntimeError("Grip stretches finger lengths or girth")

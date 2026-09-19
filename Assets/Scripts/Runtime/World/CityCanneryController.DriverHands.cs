@@ -8,8 +8,12 @@ namespace BarPromenade
         public const float DriverWheelRadius = .23f;
         public const float DriverWheelTubeRadius = .022f;
         private NpcHandPose driverHandPose;
-        public Vector3 DriverWheelCentre => (driverRightHand.position + driverLeftHand.position) * .5f;
-        public Vector3 DriverWheelAxis => Truck.TransformDirection(new Vector3(0f, .8f, .6f));
+        private Transform driverWheelCentre, driverWheelAxis;
+        public Vector3 DriverWheelCentre => driverWheelCentre.position;
+        // The source anchor faces the driver; the palm faces into the rim.
+        // Read world anchor positions so FBX unit scale/reflection stays authored.
+        public Vector3 DriverWheelAxis => (driverWheelAxis.position - driverWheelCentre.position).normalized;
+        public Vector3 DriverWheelPalmNormal => -DriverWheelAxis;
         public float DriverSteeringPalmAlignment { get; private set; } = 1f;
         public float DriverSteeringGripAxisAlignment { get; private set; } = 1f;
 
@@ -25,7 +29,7 @@ namespace BarPromenade
             Vector3 radial = Vector3.ProjectOnPlane(contact - DriverWheelCentre, DriverWheelAxis).normalized;
             // Authored axis anchors point across the palm toward the thumb;
             // both contact frames run toward the upper portion of the rim.
-            return Vector3.Cross(DriverWheelAxis, radial).normalized * (isLeft ? -1f : 1f);
+            return Vector3.Cross(DriverWheelPalmNormal, radial).normalized * (isLeft ? -1f : 1f);
         }
 
         private void ApplyDriverWheelContacts(Vector3 right, Vector3 left, float weight, float leftWheelWeight = 1f)
@@ -38,8 +42,8 @@ namespace BarPromenade
             Vector3 leftCentre = DriverWheelRimContact(driverLeftHand.position);
             Vector3 rightAxis = DriverWheelGripAxis(rightCentre, false);
             Vector3 leftAxis = DriverWheelGripAxis(leftCentre, true);
-            Pose rightPose = driverHandPose.GetSocketPose(false, rightCentre, rightAxis, DriverWheelAxis);
-            Pose leftPose = driverHandPose.GetSocketPose(true, leftCentre, leftAxis, DriverWheelAxis);
+            Pose rightPose = driverHandPose.GetSocketPose(false, rightCentre, rightAxis, DriverWheelPalmNormal);
+            Pose leftPose = driverHandPose.GetSocketPose(true, leftCentre, leftAxis, DriverWheelPalmNormal);
             Quaternion rightRotation = Quaternion.Slerp(driverTrolleyHands[1].rotation, rightPose.rotation, weight);
             Quaternion leftRotation = Quaternion.Slerp(driverTrolleyHands[0].rotation, leftPose.rotation, weight * leftWheelWeight);
             // The source grip centre, not the old socket inside the ring,
@@ -50,13 +54,13 @@ namespace BarPromenade
             driverHandPose.SetGrip(true, weight * leftWheelWeight);
             DriverSteeringContact = rightCentre;
 
-            DriverSteeringPalmAlignment = Vector3.Dot(driverHandPose.PalmNormal(false), DriverWheelAxis);
+            DriverSteeringPalmAlignment = Vector3.Dot(driverHandPose.PalmNormal(false), DriverWheelPalmNormal);
             DriverSteeringGripAxisAlignment = Vector3.Dot(driverHandPose.CylinderAxis(false), rightAxis);
             bool centresMatch = Vector3.Distance(driverHandPose.CylinderCentre(false), rightCentre) <= .025f;
             if (leftWheelWeight >= .999f)
             {
                 DriverSteeringPalmAlignment = Mathf.Min(DriverSteeringPalmAlignment,
-                    Vector3.Dot(driverHandPose.PalmNormal(true), DriverWheelAxis));
+                    Vector3.Dot(driverHandPose.PalmNormal(true), DriverWheelPalmNormal));
                 DriverSteeringGripAxisAlignment = Mathf.Min(DriverSteeringGripAxisAlignment,
                     Vector3.Dot(driverHandPose.CylinderAxis(true), leftAxis));
                 centresMatch &= Vector3.Distance(driverHandPose.CylinderCentre(true), leftCentre) <= .025f;

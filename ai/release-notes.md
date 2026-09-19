@@ -6,6 +6,16 @@ Earlier notes: [`release-notes-2026-09.md`](archive/release-notes-2026-09.md).
 
 ## Unreleased
 
+### 2026-09-19 — Руль и хват водителя
+
+- Руль грузовика обращён к водителю и соединён с колонкой по одной оси.
+  Пальцы обхватывают обод, большой палец удерживает его с другой стороны;
+  хват работает с перчатками и отпускается при снятии руки.
+  Проверено: `DefaultNpcDriverGrip`, генератор грузовика.
+- Уличные NPC и водитель автобуса больше не проваливаются бёдрами в сиденье.
+  Проверено на анимации и наклонах автобуса:
+  `SeatedPassengers_StayOnActualCushionsAcrossAnimationAndBusMotion`.
+
 ### 2026-09-16 — Перекрёсток в Ночном квартале
 
 - Переулок между домами `[9;4]` и `[10;4]` больше не обрывается тупиком:
@@ -43,10 +53,8 @@ Earlier notes: [`release-notes-2026-09.md`](archive/release-notes-2026-09.md).
   человеком, без повторов. Проверено:
   `build-default-npc-3d-model.py --validate-only`,
   `DefaultNpcFactoryPlayModeTests`, `AreaCaptureFixture.DefaultNpcWardrobe`.
-- Кисти героя/NPC крупнее и тоньше; пальцы обхватывают руль, локти опущены.
-  Посадка следует сиденью. Проверено: `DefaultNpcDriverGrip`,
-  `NauseaHand_ReachesTheMouthAndRendersTheSheet`,
-  `SeatedPassengers_StayOnActualCushionsAcrossAnimationAndBusMotion`.
+- Кисти героя/NPC крупнее и тоньше; локти опущены.
+  Проверено: `NauseaHand_ReachesTheMouthAndRendersTheSheet`, `DefaultNpcWardrobe`.
 - Карта: ярмарка, восточный пост, доки, междомовая арка и вход в церковь —
   значки, подписи, строки в «Точках интереса» и точки `XYZ`; над дежурными
   поста — «Дежурный». Проверено: `CityMapAreaPresentationTests`,

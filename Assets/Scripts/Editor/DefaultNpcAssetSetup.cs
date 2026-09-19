@@ -86,6 +86,11 @@ namespace BarPromenade.Editor
                     animator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
                     Transform Find(string name) => CityPedestrianHandProps.FindSocket(model.transform, name)
                         ?? throw new InvalidOperationException("Default NPC lost joint/socket " + name);
+                    root.AddComponent<NpcHandPose>().Configure(manifest.hand_grip.hands.Select(hand =>
+                        new NpcHandPose.HandBinding(hand.side == "L", Find(hand.bone), Find("SOCKET_Grip." + hand.side),
+                            Find(hand.centre_anchor), Find(hand.axis_anchor), Find(hand.palm_anchor),
+                            hand.renderers.Select(name => byName[name] as SkinnedMeshRenderer).ToArray())).ToArray(),
+                        manifest.hand_grip.shape_name, manifest.hand_grip.cylinder_radius_m);
                     var presentation = root.AddComponent<VillageResidentPresentation>();
                     presentation.Configure(VillageResidentRole.StationWorker, animator, model.transform,
                         Find("SOCKET_Grip.R"), Find("SOCKET_Grip.L"), Find("head"), bindings,
@@ -123,6 +128,24 @@ namespace BarPromenade.Editor
                 actor.Animator.runtimeAnimatorController != null)
                 throw new InvalidOperationException("Default NPC lost its modular wardrobe or shared animation bindings.");
             wardrobe.ValidateBindings();
+            NpcHandPose handPose = prefab.GetComponent<NpcHandPose>();
+            if (handPose == null || handPose.ShapeName != manifest.hand_grip.shape_name ||
+                Mathf.Abs(handPose.CylinderRadius - manifest.hand_grip.cylinder_radius_m) > .00001f ||
+                handPose.Hands.Count != 2)
+                throw new InvalidOperationException("Default NPC lost its authored hand-grip bindings.");
+            foreach (HandGripSide authored in manifest.hand_grip.hands)
+            {
+                NpcHandPose.HandBinding hand = handPose.Hands.Single(binding => binding.IsLeft == (authored.side == "L"));
+                if (hand.Hand.name != authored.bone || hand.CentreAnchor.name != authored.centre_anchor ||
+                    hand.AxisAnchor.name != authored.axis_anchor || hand.PalmAnchor.name != authored.palm_anchor ||
+                    !hand.Renderers.Select(renderer => renderer.name).SequenceEqual(authored.renderers))
+                    throw new InvalidOperationException("Default NPC hand-grip frame differs from its source.");
+                foreach (SkinnedMeshRenderer renderer in hand.Renderers)
+                    if (!Enumerable.Range(0, renderer.sharedMesh.blendShapeCount).Any(index =>
+                        renderer.sharedMesh.GetBlendShapeName(index) == handPose.ShapeName ||
+                        renderer.sharedMesh.GetBlendShapeName(index).EndsWith("." + handPose.ShapeName, StringComparison.Ordinal)))
+                        throw new InvalidOperationException("Default NPC lost its finger pose on " + renderer.name);
+            }
             if (!wardrobe.Items.Select(item => item.Id).OrderBy(id => id)
                 .SequenceEqual(manifest.wardrobe.items.Select(item => item.id).OrderBy(id => id)))
                 throw new InvalidOperationException("Default NPC garment catalogue differs from its manifest.");
@@ -171,6 +194,15 @@ namespace BarPromenade.Editor
             if (value.hair_colors.Any(hair => hair.color?.Length != 4) ||
                 !value.hair_colors.Select(hair => hair.id).OrderBy(id => id).SequenceEqual(new[] { "blond", "brunette", "gray" }))
                 throw new InvalidOperationException("Default NPC manifest has invalid hair colors.");
+            if (value.hand_grip == null || string.IsNullOrWhiteSpace(value.hand_grip.shape_name) ||
+                !float.IsFinite(value.hand_grip.cylinder_radius_m) || value.hand_grip.cylinder_radius_m <= 0f ||
+                value.hand_grip.hands?.Length != 2 ||
+                !value.hand_grip.hands.Select(hand => hand.side).OrderBy(side => side).SequenceEqual(new[] { "L", "R" }) ||
+                value.hand_grip.hands.Any(hand => string.IsNullOrWhiteSpace(hand.bone) ||
+                    string.IsNullOrWhiteSpace(hand.centre_anchor) || string.IsNullOrWhiteSpace(hand.axis_anchor) ||
+                    string.IsNullOrWhiteSpace(hand.palm_anchor) || hand.renderers?.Length != 12 ||
+                    hand.renderers.Distinct().Count() != 12 || hand.renderers.Any(name => !value.parts.Any(part => part.name == name))))
+                throw new InvalidOperationException("Default NPC manifest has invalid authored hand-grip frames.");
             return value;
         }
 
@@ -184,6 +216,7 @@ namespace BarPromenade.Editor
             importer.avatarSetup = ModelImporterAvatarSetup.CopyFromOther;
             importer.sourceAvatar = avatar;
             importer.importAnimation = false;
+            importer.importBlendShapes = true;
             importer.globalScale = 1f;
             importer.useFileScale = true;
             importer.isReadable = true;
@@ -254,7 +287,10 @@ namespace BarPromenade.Editor
             public Wardrobe wardrobe;
             public Faces faces;
             public HairColor[] hair_colors;
+            public HandGrip hand_grip;
         }
+        [Serializable] private sealed class HandGrip { public string shape_name; public float cylinder_radius_m; public HandGripSide[] hands; }
+        [Serializable] private sealed class HandGripSide { public string side, bone, centre_anchor, axis_anchor, palm_anchor; public string[] renderers; }
         [Serializable] private sealed class Part { public string name; public float[] color; }
         [Serializable] private sealed class Wardrobe { public string default_outfit_id; public Item[] items; public Outfit[] outfits; }
         [Serializable] private sealed class Item { public string id, slot; public string[] renderers, covered_renderers; }
