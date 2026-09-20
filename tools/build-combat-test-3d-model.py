@@ -62,6 +62,8 @@ LEFT_GRIP_AXIS = 1
 GUARD_HEIGHTS = {"block": 1.490, "block_breath": 1.497, "guard_impact": 1.430}
 GUARD_PALM_ROLL_DEGREES = -90.
 GUARD_LEFT_ELBOW_POLE = (.40, .078, -1.)
+RAISED_WRISTS = {"loaded": (-.12, -.16, 1.59), "windup": (-.12, -.16, 1.62),
+                 "heavy_windup": (-.08, -.18, 1.60)}
 REACTIONS = (("CombatGuardImpact", .06, "CombatBlock", 0., "CombatBlock", 0.),
              ("CombatGuardBreak", .12, "CombatBlock", 0., "CombatReady", 0.),
              ("CombatRecoil", .07, "CombatAttack", .56, "CombatReady", 0.))
@@ -309,6 +311,34 @@ class CombatBuilder(dialogue.DialogueBuilder):
         origin, _ = self.weapon_frame()
         return dict(height=round(origin.z/self.scale, 4), wrist_angles=[round(value, 2) for value in angles])
 
+    def place_raised_grip(self, pose, wrist):
+        """Lift a reachable two-hand grip with a forward elbow and forearm roll."""
+        self._reset_pose(); self._apply_pose(pose)
+        rig = self.result.rig
+        hand = rig.pose.bones["hand.R"]
+        rest = hand.bone
+        def frame(axis, fingers):
+            z = axis.normalized()
+            y = (fingers - z * fingers.dot(z)).normalized()
+            x = y.cross(z).normalized()
+            return Matrix((x, z.cross(x), z)).transposed()
+        rotation = (frame(Vector((.8, .4, .4)), Vector((0, 0, 1))) @
+                    frame(self.hand_frame("R")[1], rest.tail_local-rest.head_local).transposed() @
+                    rest.matrix_local.to_3x3())
+        self.solve_arm("R", Vector(wrist) * self.scale, rotation, (-.2, -.5, -1.))
+        # Pronation belongs to the forearm. Leaving its independent shortest-axis
+        # roll in place sends local quaternion interpolation through a folded
+        # elbow and a backward wrist while the hand still meets the weapon.
+        forearm = rig.pose.bones["forearm.R"]
+        hand_matrix, forearm_matrix = hand.matrix.copy(), forearm.matrix.copy()
+        roll = Quaternion((hand.head-forearm.head).normalized(), -math.pi / 2)
+        forearm.matrix = (Matrix.Translation(forearm_matrix.translation) @
+                          (roll @ forearm_matrix.to_quaternion()).to_matrix().to_4x4())
+        bpy.context.view_layer.update()
+        hand.matrix = hand_matrix
+        bpy.context.view_layer.update()
+        return self.pin_left_grip(self.snapshot_pose())
+
     def combat_pose(self, kind):
         B = common.BonePose
         # Source coordinates: X left, -Y forward, Z up. Arms are solved in
@@ -406,6 +436,8 @@ class CombatBuilder(dialogue.DialogueBuilder):
         bpy.context.view_layer.update()
         result = self.pin_supports(self.snapshot_pose())
         if kind.startswith("rest"): return result
+        if kind in RAISED_WRISTS:
+            return self.place_raised_grip(result, RAISED_WRISTS[kind])
         if kind in GUARD_HEIGHTS:
             return self.place_guard_grip(result, GUARD_HEIGHTS[kind], GUARD_PALM_ROLL_DEGREES)
         try:
@@ -720,7 +752,21 @@ def charge_payload(builder):
     heavy_start, _ = sample("CombatReleaseHeavy", 0.)
     endpoint_error = support_error = lower_error = light_error = 0.
     minimum_left_reach_margin = 100.
+    maximum_charge_wrist_angle = maximum_charge_elbow_flexion = 0.
     reach = {str(q): 0. for q in (0., .5, 1.)}
+    # Endpoint contact alone missed a right elbow folding almost flat during
+    # the lift. Measure both joints throughout the actual authored charge.
+    for frame in range(FPS + 1):
+        sample("CombatCharge", frame / FPS)
+        for side in ("L", "R"):
+            arm, forearm, hand = (rig.pose.bones[name + "." + side]
+                                  for name in ("upper_arm", "forearm", "hand"))
+            maximum_charge_wrist_angle = max(maximum_charge_wrist_angle,
+                math.degrees((hand.head-forearm.head).angle(hand.tail-hand.head)))
+            maximum_charge_elbow_flexion = max(maximum_charge_elbow_flexion,
+                math.degrees((forearm.head-arm.head).angle(hand.head-forearm.head)))
+    if maximum_charge_wrist_angle > 55. or maximum_charge_elbow_flexion > 150.:
+        raise ValueError(f"Charged lift bends arms beyond their envelope: wrist={maximum_charge_wrist_angle:.2f}, elbow={maximum_charge_elbow_flexion:.2f}")
     for q in (0., .5, 1.):
         _, charge = sample("CombatCharge", q)
         released = apply_blend(light_start, heavy_start, q)
@@ -761,6 +807,8 @@ def charge_payload(builder):
                 recovery_seconds=.65, powers=[0., .5, 1.], validation_hz=FPS * 2,
                 maximum_entry_error=endpoint_error, maximum_lower_track_error=lower_error,
                 maximum_light_legacy_error=light_error, maximum_support_error=support_error,
+                maximum_charge_wrist_deflection_degrees=maximum_charge_wrist_angle,
+                maximum_charge_elbow_flexion_degrees=maximum_charge_elbow_flexion,
                 minimum_reach_m=min(reach.values()), minimum_left_wrist_reach_margin_m=minimum_left_reach_margin)
 
 
@@ -940,7 +988,7 @@ def main():
     items = make_items(); signature = kit.signature(items)
     if kit.signature(make_items()) != signature: raise ValueError("Passive geometry is nondeterministic")
     payload = kit.manifest(items, signature)
-    payload.update(generator="tools/build-combat-test-3d-model.py", generator_version="1.7.0", test_only=True)
+    payload.update(generator="tools/build-combat-test-3d-model.py", generator_version="1.7.1", test_only=True)
     OUT.mkdir(parents=True, exist_ok=True); SOURCE.mkdir(parents=True, exist_ok=True)
     if not validate_only and not actions_only:
         roots = kit.build_objects(items)

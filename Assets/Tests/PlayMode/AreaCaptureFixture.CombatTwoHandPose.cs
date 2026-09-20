@@ -12,6 +12,83 @@ namespace BarPromenade.Tests.PlayMode
     public sealed partial class AreaCaptureFixture
     {
         [UnityTest]
+        [Explicit("Continuous charged windup on both original rigs: wrists, elbow bends and the rendered two-hand grip.")]
+        [PrebuildSetup(typeof(CombatTestAssetsSetup))]
+        public IEnumerator CombatChargeArmAlignment()
+        {
+            float captureDelta = Time.captureDeltaTime;
+            Time.captureDeltaTime = 1f / 60f;
+            try
+            {
+                yield return SceneManager.LoadSceneAsync(SceneIds.CombatTest);
+                var root = Object.FindAnyObjectByType<CombatTestRoot>();
+                Assert.That(root, Is.Not.Null);
+                root.AutomaticSimulation = false;
+                foreach (CombatActor actor in new[] { root.Hero, root.Opponent })
+                {
+                    PlaceTwoHandPosePair(root);
+                    for (int frame = 0; frame < 24; frame++) { root.Tick(1f / 60f); yield return null; }
+                    Assert.That(actor.RequestCharge(), Is.True);
+                    string subject = actor == root.Hero ? "hero" : "opponent";
+                    for (int frame = 0; frame <= 60; frame++)
+                    {
+                        if (frame > 0) root.Tick(actor.State.Settings.ChargeSeconds / 60f);
+                        yield return null;
+                        ((Player3DCharacterPresentation)root.Player.Visual).ReapplyLatePresentationPose();
+                        AssertTwoHandWeaponContact(actor);
+                        if (frame % 15 == 0)
+                            CaptureTwoHandActorViews(root.CameraFollow.Camera, actor,
+                                "charge-alignment-" + subject + "-" + frame, upperBody: true);
+                        AssertChargingArmAlignment(actor);
+                    }
+                    Vector3 tip = actor.Weapon.transform.position;
+                    Quaternion rotation = actor.Weapon.transform.rotation;
+                    Assert.That(actor.ReleaseCharge(), Is.True);
+                    ((Player3DCharacterPresentation)root.Player.Visual).ReapplyLatePresentationPose();
+                    Assert.That(Vector3.Distance(tip, actor.Weapon.transform.position), Is.LessThan(.008f));
+                    Assert.That(Quaternion.Angle(rotation, actor.Weapon.transform.rotation), Is.LessThan(.75f));
+                    // Follow the same corrected pose into the release, including its
+                    // return to ready; the support palm must remain on the shaft.
+                    for (int frame = 0; frame < 120; frame++)
+                    {
+                        root.Tick(1f / 60f);
+                        yield return null;
+                        ((Player3DCharacterPresentation)root.Player.Visual).ReapplyLatePresentationPose();
+                        AssertTwoHandWeaponContact(actor);
+                        if (frame == 12 || frame == 30 || frame == 60)
+                            CaptureTwoHandActorViews(root.CameraFollow.Camera, actor,
+                                "charge-alignment-" + subject + "-release-" + frame, upperBody: true);
+                    }
+                }
+                yield return SceneManager.LoadSceneAsync(SceneIds.MainMenu);
+            }
+            finally { Time.captureDeltaTime = captureDelta; }
+        }
+
+        private static void AssertChargingArmAlignment(CombatActor actor)
+        {
+            var hands = actor.GetComponentInChildren<NpcHandPose>();
+            foreach (NpcHandPose.HandBinding binding in hands.Hands)
+            {
+                string side = binding.IsLeft ? "L" : "R";
+                Transform upper = CityPedestrianHandProps.FindSocket(actor.DamageRigRoot, "upper_arm." + side);
+                Transform forearm = CityPedestrianHandProps.FindSocket(actor.DamageRigRoot, "forearm." + side);
+                Vector3 upperDirection = forearm.position - upper.position;
+                Vector3 forearmDirection = binding.Hand.position - forearm.position;
+                // The cylinder centre sits along the fingers and off the palm;
+                // removing the palm offset gives the actual hand direction without
+                // assuming an imported bone axis or the FBX's unit scale.
+                Vector3 fingers = Vector3.ProjectOnPlane(binding.CentreAnchor.position - binding.Hand.position,
+                    hands.PalmNormal(binding.IsLeft));
+                string sample = $"{actor.name}/{side}: charge={actor.State.Charge01:F3}";
+                Assert.That(Vector3.Angle(forearmDirection, fingers), Is.LessThanOrEqualTo(55f),
+                    sample + ": the wrist must continue the forearm while lifting the crowbar.");
+                Assert.That(Vector3.Angle(upperDirection, forearmDirection), Is.LessThanOrEqualTo(150f),
+                    sample + ": the elbow must not fold flat and reverse during charge.");
+            }
+        }
+
+        [UnityTest]
         [Explicit("Both actual rigs: two-hand ready, raised lower-face guard, moving contact and lowered round-end rest.")]
         [PrebuildSetup(typeof(CombatTestAssetsSetup))]
         public IEnumerator CombatTwoHandPose()
@@ -272,14 +349,14 @@ namespace BarPromenade.Tests.PlayMode
             CaptureTwoHandActorViews(camera, root.Opponent, phase + "-opponent");
         }
 
-        private static void CaptureTwoHandActorViews(Camera camera, CombatActor actor, string name)
+        private static void CaptureTwoHandActorViews(Camera camera, CombatActor actor, string name, bool upperBody = false)
         {
             Vector3 position = camera.transform.position;
             Quaternion rotation = camera.transform.rotation;
             float fov = camera.fieldOfView;
             try
             {
-                Vector3 target = actor.transform.position + Vector3.up * .95f;
+                Vector3 target = actor.transform.position + Vector3.up * (upperBody ? 1.4f : .95f);
                 foreach (bool side in new[] { false, true })
                 {
                     // The authored arena obstacle occupies x=3: keep both rigs'
@@ -287,6 +364,7 @@ namespace BarPromenade.Tests.PlayMode
                     Vector3 eye = side
                         ? actor.transform.position + Vector3.left * 3f + Vector3.up * 1.3f + actor.transform.forward * .2f
                         : actor.transform.TransformPoint(new Vector3(1.4f, 1.3f, 3f));
+                    if (upperBody) eye = target + (eye - target) * .65f;
                     camera.transform.SetPositionAndRotation(eye, Quaternion.LookRotation(target - eye));
                     camera.fieldOfView = 42f;
                     CaptureCurrentCamera(camera, SceneIds.CombatTest, "twohand-" + name + (side ? "-side" : "-front"));

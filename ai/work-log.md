@@ -39,6 +39,11 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
   Headless `CombatDuelSimulator` with named habits. Check: `CombatBalanceTests`.
 - Docs: work-log dates before 09-09 archived to `archive/work-log-2026-09.md`;
   `check-docs.py`.
+- Charge arm fix: the old one-hand overhead pose pulled the weapon wrist
+  toward its shoulder to satisfy left reach, folding the elbow and wrist.
+  Reachable two-hand raised landmarks and forearm roll preserve the bend
+  through charge interpolation. Check: `build-combat-test-3d-model.py`,
+  `AreaCaptureFixture.CombatChargeArmAlignment` (both live rigs and views).
 
 ## 2026-09-20 — Combat
 
