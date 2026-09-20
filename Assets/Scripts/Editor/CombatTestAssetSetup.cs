@@ -75,9 +75,11 @@ namespace BarPromenade.Editor
                 manifest.actions.minimum_reaction_tip_separation_m < .2f)
                 throw new InvalidOperationException("Combat manifest violated its isolated, grounded, in-place contract.");
             DefensiveStep step = manifest.actions.defensive_step;
-            if (step == null || Mathf.Abs(step.duration_seconds - .46f) > .0001f ||
-                Mathf.Abs(step.travel_seconds - .30f) > .0001f || Mathf.Abs(step.settle_seconds - .16f) > .0001f ||
-                Mathf.Abs(step.distance_m - .65f) > .0001f || step.travel_curve != "smoothstep")
+            MeleeCombatSettings tuning = MeleeCombatSettings.Crowbar;
+            if (step == null || Mathf.Abs(step.duration_seconds - tuning.StepDurationSeconds) > .0001f ||
+                Mathf.Abs(step.travel_seconds - tuning.StepTravelSeconds) > .0001f ||
+                Mathf.Abs(step.settle_seconds - tuning.StepRecoverySeconds) > .0001f ||
+                Mathf.Abs(step.distance_m - tuning.StepDistance) > .0001f || step.travel_curve != "smoothstep")
                 throw new InvalidOperationException("Combat defensive step differs from its constrained motor travel.");
             Charging charging = manifest.actions.charging;
             if (charging == null || charging.charge_parameter != "linear" ||
@@ -110,8 +112,8 @@ namespace BarPromenade.Editor
                 finally { UnityEngine.Object.DestroyImmediate(model); }
             }
             foreach (bool npc in new[] { false, true })
-            foreach (string name in npc ? CombatAssetProvider.ClipNames :
-                CombatAssetProvider.ClipNames.Concat(CombatAssetProvider.HeroLocomotionClipNames).Concat(CombatAssetProvider.HeroStepClipNames))
+            foreach (string name in npc ? CombatAssetProvider.ClipNames.Concat(CombatAssetProvider.StepClipNames) :
+                CombatAssetProvider.ClipNames.Concat(CombatAssetProvider.HeroLocomotionClipNames).Concat(CombatAssetProvider.StepClipNames))
             {
                 AnimationClip clip = CombatAssetProvider.LoadClip(name, npc);
                 foreach (EditorCurveBinding binding in AnimationUtility.GetCurveBindings(clip))
@@ -312,7 +314,8 @@ namespace BarPromenade.Editor
             Transform[] bones = animator.GetComponentsInChildren<Transform>(true);
             Transform[] feet = { bones.First(bone => bone.name == "foot.L"), bones.First(bone => bone.name == "foot.R") };
             AnimationClip ready = CombatAssetProvider.LoadClip(CombatAssetProvider.ReadyClip);
-            foreach (string name in CombatAssetProvider.HeroStepClipNames)
+            MeleeCombatSettings tuning = MeleeCombatSettings.Crowbar;
+            foreach (string name in CombatAssetProvider.StepClipNames)
             {
                 AnimationClip clip = CombatAssetProvider.LoadClip(name);
                 Vector3 direction = name == CombatAssetProvider.StepForwardClip ? Vector3.forward :
@@ -325,17 +328,17 @@ namespace BarPromenade.Editor
                 Vector3[] start = feet.Select(foot => foot.position).ToArray();
                 Quaternion[] flat = feet.Select(foot => foot.rotation).ToArray();
                 var lifts = new float[2];
-                for (int frame = 0; frame <= 92; frame++)
+                for (int frame = 0; frame <= Mathf.RoundToInt(tuning.StepDurationSeconds * 200f); frame++)
                 {
                     float seconds = frame / 200f;
-                    float travel = Mathf.Clamp01(seconds / .30f);
+                    float travel = Mathf.Clamp01(seconds / tuning.StepTravelSeconds);
                     clip.SampleAnimation(animator.gameObject, Mathf.Min(seconds, clip.length));
-                    Vector3 virtualRoot = direction * Mathf.SmoothStep(0f, .65f, travel);
+                    Vector3 virtualRoot = direction * Mathf.SmoothStep(0f, tuning.StepDistance, travel);
                     for (int i = 0; i < feet.Length; i++)
                     {
                         bool planted = travel >= 1f || (i == leading ? travel >= .5f : travel <= .5f);
                         bool landed = travel >= 1f || i == leading;
-                        Vector3 contact = start[i] + (landed ? direction * .65f : Vector3.zero);
+                        Vector3 contact = start[i] + (landed ? direction * tuning.StepDistance : Vector3.zero);
                         float rise = feet[i].position.y - start[i].y;
                         if (planted && (Vector3.Distance(feet[i].position + virtualRoot, contact) > .003f ||
                             Quaternion.Angle(flat[i], feet[i].rotation) > .15f))

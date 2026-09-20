@@ -9,11 +9,11 @@
   palm opposite right. Ready/Block/Rest: 4 s breath; staggered legs yield to gait.
   `NpcHandPose`/support follow blends/injury. Round end: one-hand Rest.
 
-- **Accepted — 2026-09-20, charged combat:**
-  .9 s hold/release, indefinite cap; damage/block 25→40, stamina 30+15q,
-  recovery ×1→1.5, windup .45→.10 s. No regen; affordability cap.
-  Guard/step/hit/focus/reset cancel; pause freezes/cancels release.
-  AI 0/.5/1, delayed guard; shared clips, hold-only HUD.
+- **Accepted — 2026-09-21, brawl v2:**
+  Free swings; breath pays guard 20/35, step 15, charge 20 (+15/s held);
+  regen 30/s, .6 s, through stuns, own spends only. Fresh press ≤.12 s
+  parries lights, re-arm .35; counter-hit +.30; break ½ dmg .55; .22
+  backhand; buffer .20; heavy windup .28; seeded AI; free camera after fall.
 
 - **Accepted architecture exception — 2026-09-20, combat injury:**
   Directional/HP pose, blood/wounds/puddles; none on block/miss.
@@ -22,7 +22,7 @@
 - **Accepted architecture exception — 2026-09-19, isolated combat test:**
   Story §6/§16.15/art §15a: `CombatTest` only; no story/speech.
   Shared hero/input; mutual buffered hits, vulnerable steps, rig fall/reset.
-  Shoulder/wall lock; W/S travel, A/D strafe; zero stamina/winner walks.
+  Shoulder/wall lock; W/S travel, A/D strafe; winner walks.
   `MeleeCombatSettings`; opponent last.
 
 - **Accepted — 2026-09-16, street pool is the default NPC catalog:**

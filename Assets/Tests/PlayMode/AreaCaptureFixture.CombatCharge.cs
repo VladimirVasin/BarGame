@@ -3,6 +3,7 @@ using System.Collections;
 using System.IO;
 using NUnit.Framework;
 using UnityEngine;
+using static BarPromenade.Tests.PlayMode.CombatTuning;
 
 namespace BarPromenade.Tests.PlayMode
 {
@@ -41,8 +42,8 @@ namespace BarPromenade.Tests.PlayMode
                     CaptureDamageFrame(root, camera, sample);
                     Assert.That(actor.State.IsCharging, Is.True);
                     Assert.That(actor.State.Charge01, Is.EqualTo(power).Within(.001f));
-                    Assert.That(actor.State.Stamina, Is.EqualTo(70f - 15f * power).Within(.001f));
-                    Assert.That(target.State.Health, Is.EqualTo(100f));
+                    Assert.That(actor.State.Stamina, Is.EqualTo(ChargedStamina(power)).Within(.001f));
+                    Assert.That(target.State.Health, Is.EqualTo(S.MaxHealth));
                     Assert.That(target.ReceivedImpactCount, Is.Zero, "Preparation must not open the weapon damage window.");
                     if (power > 0f)
                         Assert.That(Vector3.Distance(previousTip, tip.position), Is.GreaterThan(.01f),
@@ -56,7 +57,7 @@ namespace BarPromenade.Tests.PlayMode
                         ((Player3DCharacterPresentation)root.Player.Visual).ReapplyLatePresentationPose();
                         Assert.That(actor.State.IsCharging, Is.True, "A completed held charge waits for release.");
                         Assert.That(actor.State.AttackSequence, Is.EqualTo(heldSequence));
-                        Assert.That(target.State.Health, Is.EqualTo(100f));
+                        Assert.That(target.State.Health, Is.EqualTo(S.MaxHealth));
                         if (chargeHero) yield return CaptureCombatChargeUi(root);
                     }
                     Vector3 loadedTip = tip.position;
@@ -74,8 +75,8 @@ namespace BarPromenade.Tests.PlayMode
                     string releasePrefix = power == 1f ? "charge-" + subject : sample;
                     CaptureDamageFrame(root, camera, releasePrefix + "-release");
                     int emissions = root.BloodEffects.EmissionCount;
-                    for (int step = 0; step < 100 && target.State.Health == 100f; step++) root.Tick(1f / 120f);
-                    float expectedHealth = 75f - 15f * power;
+                    for (int step = 0; step < ContactTicks(120f) + 24 && target.State.Health == S.MaxHealth; step++) root.Tick(1f / 120f);
+                    float expectedHealth = S.MaxHealth - ChargedDamage(power);
                     Assert.That(target.State.Health, Is.EqualTo(expectedHealth).Within(.001f),
                         sample + ": the visible weapon must deliver its latched damage on either rig.");
                     Assert.That(target.ReceivedImpactCount, Is.EqualTo(1));

@@ -11,9 +11,26 @@ namespace BarPromenade
         private const float TargetLockSmoothTime = .12f;
         private object targetLockOwner;
         private Transform targetLockRoot, targetLockAim, targetLockShoulder;
-        private Vector3 targetLockAnchorPoint, targetLockAnchorVelocity;
+        private Vector3 targetLockAnchorPoint, targetLockAnchorVelocity, targetLockKick;
         private float targetLockYaw, targetLockYawVelocity, targetLockDistance, targetLockDistanceVelocity;
+        private float targetLockFarDistance = TargetLockDistance;
         private bool targetLockInitialized;
+
+        /// <summary>A bounded impact kick on the shoulder anchor. It is added before the
+        /// smoothing and every clearance sweep, so the lock itself absorbs and bounds it.</summary>
+        public void Nudge(Vector3 impulse)
+        {
+            if (!TargetLockActive || !IsFinite(impulse)) return;
+            impulse.y = 0f;
+            targetLockKick = Vector3.ClampMagnitude(targetLockKick + impulse, .05f);
+        }
+
+        /// <summary>The owner may pull the boom back a little, e.g. once the round has ended.</summary>
+        public void SetTargetLockFarDistance(object owner, float distance)
+        {
+            if (owner == null || !ReferenceEquals(owner, targetLockOwner) || float.IsNaN(distance)) return;
+            targetLockFarDistance = Mathf.Clamp(distance, 1.5f, 3f);
+        }
 
         public bool TargetLockActive => targetLockOwner != null &&
             (!(targetLockOwner is Object unityOwner) || unityOwner != null) &&
@@ -32,6 +49,8 @@ namespace BarPromenade
             targetLockOwner = owner;
             targetLockRoot = opponentRoot; targetLockAim = opponentAim; targetLockShoulder = shoulderAnchor;
             targetLockInitialized = false;
+            targetLockKick = Vector3.zero;
+            targetLockFarDistance = TargetLockDistance;
             Snap();
             return true;
         }
@@ -53,15 +72,19 @@ namespace BarPromenade
             targetLockOwner = null;
             targetLockRoot = targetLockAim = targetLockShoulder = null;
             targetLockInitialized = false;
-            targetLockAnchorVelocity = Vector3.zero;
+            targetLockAnchorVelocity = targetLockKick = Vector3.zero;
             targetLockYawVelocity = targetLockDistanceVelocity = 0f;
+            targetLockFarDistance = TargetLockDistance;
         }
 
         private void UpdateTargetLock(float deltaTime, bool snap)
         {
             Vector3 aim = targetLockAim.position;
-            Vector3 anchor = targetLockShoulder.position + Vector3.up * TargetLockHeightOffset;
+            Vector3 anchor = targetLockShoulder.position + Vector3.up * TargetLockHeightOffset + targetLockKick;
             if (!IsFinite(aim) || !IsFinite(anchor)) return;
+            // The kick decays on its own clock; a frozen simulation still lets the camera settle.
+            targetLockKick *= Mathf.Exp(-16f * Mathf.Max(0f, deltaTime));
+            if (targetLockKick.sqrMagnitude < .000001f) targetLockKick = Vector3.zero;
             // Keep the camera sphere clear of the support plane even when the
             // visible shoulder drops with a physical body while its root stays put.
             anchor.y = Mathf.Max(anchor.y, followTarget.position.y + collisionRadius + collisionPadding);
@@ -90,7 +113,7 @@ namespace BarPromenade
             Quaternion orientation = Quaternion.Euler(0f, targetLockYaw, 0f);
             Vector3 forward = orientation * Vector3.forward;
             float duelDistance = Mathf.Max(.2f, axis.magnitude);
-            float boom = Mathf.Lerp(1.5f, TargetLockDistance, Mathf.InverseLerp(.7f, 1.8f, duelDistance));
+            float boom = Mathf.Lerp(1.5f, targetLockFarDistance, Mathf.InverseLerp(.7f, 1.8f, duelDistance));
             // At melee range a narrow shoulder offset aims through the hero's
             // torso. Keep that sight line outside his silhouette in open space.
             float sideOffset = Mathf.Clamp(.72f * (boom + duelDistance) / duelDistance,

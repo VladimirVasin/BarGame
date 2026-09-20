@@ -20,7 +20,8 @@ namespace BarPromenade
         public static readonly string[] ClipNames = { ReadyClip, RestClip, AttackClip, BlockClip, HitClip,
             GuardImpactClip, GuardBreakClip, RecoilClip, DefeatClip, ChargeClip, ReleaseLightClip, ReleaseHeavyClip };
         public static readonly string[] HeroLocomotionClipNames = { StrafeLeftClip, StrafeRightClip };
-        public static readonly string[] HeroStepClipNames = { StepForwardClip, StepBackwardClip, StepLeftClip, StepRightClip };
+        /// <summary>Both banks carry the four defensive steps; the opponent steps too.</summary>
+        public static readonly string[] StepClipNames = { StepForwardClip, StepBackwardClip, StepLeftClip, StepRightClip };
         private static readonly Dictionary<string, Material> Materials = new Dictionary<string, Material>();
         private static readonly Dictionary<string, AnimationClip> Clips = new Dictionary<string, AnimationClip>();
 
@@ -33,7 +34,9 @@ namespace BarPromenade
                 case ReadyClip: case BlockClip: case RestClip: return 4f;
                 case ChargeClip: return 1f;
                 case StrafeLeftClip: case StrafeRightClip: return .8f;
-                case StepForwardClip: case StepBackwardClip: case StepLeftClip: case StepRightClip: return .46f;
+                // The authored step is exactly the motor's committed travel plus settle.
+                case StepForwardClip: case StepBackwardClip: case StepLeftClip: case StepRightClip:
+                    return MeleeCombatSettings.Crowbar.StepDurationSeconds;
                 case AttackClip: case ReleaseLightClip: case ReleaseHeavyClip: return 1.28f;
                 case HitClip: return .36f;
                 case GuardImpactClip: return .28f;

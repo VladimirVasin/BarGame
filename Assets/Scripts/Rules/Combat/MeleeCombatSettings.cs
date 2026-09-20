@@ -2,30 +2,38 @@ using System;
 
 namespace BarPromenade
 {
-    /// <summary>One immutable tuning set shared by both participants on the test range.</summary>
+    /// <summary>One immutable tuning set shared by both participants on the test range.
+    /// Strikes are free; the single meter pays only for guard, steps and charge holds.</summary>
     public sealed class MeleeCombatSettings
     {
         public static MeleeCombatSettings Crowbar { get; } = new MeleeCombatSettings();
 
         public MeleeCombatSettings(float maxHealth = 100f, float maxStamina = 100f,
-            float damage = 25f, float attackCost = 30f, float blockCost = 25f,
-            float staminaPerSecond = 22f, float regenerationDelaySeconds = 1f,
+            float damage = 25f, float attackCost = 0f, float blockCost = 20f,
+            float staminaPerSecond = 30f, float regenerationDelaySeconds = .6f,
             float windupSeconds = 0.45f, float activeSeconds = 0.18f,
-            float recoverySeconds = 0.80f, float guardBreakSeconds = 0.65f,
-            float staggerSeconds = 0.35f, float attackBufferSeconds = 0.15f,
-            float hitRecoverySeconds = 0.32f, float blockRecoverySeconds = 0.50f,
-            float obstacleRecoverySeconds = 0.65f, float guardImpactSeconds = 0.20f,
-            float stepCost = 20f, float stepTravelSeconds = 0.30f,
-            float stepRecoverySeconds = 0.16f, float stepDistance = 0.65f,
+            float recoverySeconds = 0.75f, float guardBreakSeconds = 0.55f,
+            float staggerSeconds = 0.45f, float attackBufferSeconds = 0.20f,
+            float hitRecoverySeconds = 0.22f, float blockRecoverySeconds = 0.40f,
+            float obstacleRecoverySeconds = 0.50f, float guardImpactSeconds = 0.18f,
+            float stepCost = 15f, float stepTravelSeconds = 0.24f,
+            float stepRecoverySeconds = 0.14f, float stepDistance = 0.65f,
             float animationRecoverySeconds = 0.65f, float chargeSeconds = .9f,
-            float chargeDamageBonus = 15f, float chargeStaminaCost = 15f,
-            float chargeBlockCostBonus = 15f, float chargedWindupSeconds = .10f,
-            float chargeRecoveryBonus = .5f)
+            float chargeDamageBonus = 15f, float chargeStaminaCost = 20f,
+            float chargeBlockCostBonus = 15f, float chargedWindupSeconds = .28f,
+            float chargeRecoveryBonus = .5f,
+            float parryWindowSeconds = .12f, float parryRearmSeconds = .35f,
+            float parryImpactSeconds = .06f, float parriedRecoverySeconds = .70f,
+            float parryMaxPower = .5f, float counterHitStaggerBonus = .30f,
+            float chargeStaggerBonus = .15f, float chargeGuardImpactBonus = .10f,
+            float guardBreakDamageScale = .5f, float chainWindupSeconds = .22f,
+            float stepAttackGraceSeconds = .10f, float overholdDrainPerSecond = 15f)
         {
             MaxHealth = Positive(maxHealth, nameof(maxHealth));
             MaxStamina = Positive(maxStamina, nameof(maxStamina));
             Damage = Positive(damage, nameof(damage));
-            AttackCost = Positive(attackCost, nameof(attackCost));
+            // The only free action: a swing costs time, never breath.
+            AttackCost = NonNegative(attackCost, nameof(attackCost));
             BlockCost = Positive(blockCost, nameof(blockCost));
             StaminaPerSecond = Positive(staminaPerSecond, nameof(staminaPerSecond));
             RegenerationDelaySeconds = Positive(regenerationDelaySeconds, nameof(regenerationDelaySeconds));
@@ -50,21 +58,41 @@ namespace BarPromenade
             ChargeBlockCostBonus = Positive(chargeBlockCostBonus, nameof(chargeBlockCostBonus));
             ChargedWindupSeconds = Math.Min(WindupSeconds, Positive(chargedWindupSeconds, nameof(chargedWindupSeconds)));
             ChargeRecoveryBonus = Positive(chargeRecoveryBonus, nameof(chargeRecoveryBonus));
+            ParryWindowSeconds = Positive(parryWindowSeconds, nameof(parryWindowSeconds));
+            ParryRearmSeconds = Positive(parryRearmSeconds, nameof(parryRearmSeconds));
+            ParryImpactSeconds = Positive(parryImpactSeconds, nameof(parryImpactSeconds));
+            ParriedRecoverySeconds = Positive(parriedRecoverySeconds, nameof(parriedRecoverySeconds));
+            ParryMaxPower = Positive(parryMaxPower, nameof(parryMaxPower));
+            CounterHitStaggerBonus = Positive(counterHitStaggerBonus, nameof(counterHitStaggerBonus));
+            ChargeStaggerBonus = Positive(chargeStaggerBonus, nameof(chargeStaggerBonus));
+            ChargeGuardImpactBonus = Positive(chargeGuardImpactBonus, nameof(chargeGuardImpactBonus));
+            GuardBreakDamageScale = Positive(guardBreakDamageScale, nameof(guardBreakDamageScale));
+            ChainWindupSeconds = Math.Min(WindupSeconds, Positive(chainWindupSeconds, nameof(chainWindupSeconds)));
+            StepAttackGraceSeconds = Positive(stepAttackGraceSeconds, nameof(stepAttackGraceSeconds));
+            OverholdDrainPerSecond = Positive(overholdDrainPerSecond, nameof(overholdDrainPerSecond));
             if (AttackCost > MaxStamina) throw new ArgumentOutOfRangeException(nameof(attackCost));
             if (StepCost > MaxStamina) throw new ArgumentOutOfRangeException(nameof(stepCost));
-            if (AttackBufferSeconds > Math.Min(Math.Min(RecoverySeconds, HitRecoverySeconds),
-                Math.Min(BlockRecoverySeconds, ObstacleRecoverySeconds)))
+            if (ParryMaxPower > 1f) throw new ArgumentOutOfRangeException(nameof(parryMaxPower));
+            if (GuardBreakDamageScale > 1f) throw new ArgumentOutOfRangeException(nameof(guardBreakDamageScale));
+            if (AttackBufferSeconds > ShortestRecoverySeconds)
                 throw new ArgumentOutOfRangeException(nameof(attackBufferSeconds));
-            Positive(WindupSeconds + ActiveSeconds + Math.Max(Math.Max(RecoverySeconds, HitRecoverySeconds),
-                Math.Max(BlockRecoverySeconds, ObstacleRecoverySeconds)), nameof(recoverySeconds));
+            // Frame-advantage invariants: a landed hit keeps the initiative, a
+            // counter-hit guarantees the backhand, a parry guarantees one light.
+            if (StaggerSeconds <= HitRecoverySeconds)
+                throw new ArgumentOutOfRangeException(nameof(staggerSeconds));
+            if (StaggerSeconds + CounterHitStaggerBonus <
+                HitRecoverySeconds + ActiveSeconds + ChainWindupSeconds + .10f - .00001f)
+                throw new ArgumentOutOfRangeException(nameof(counterHitStaggerBonus));
+            if (ParriedRecoverySeconds + ActiveSeconds <
+                ParryImpactSeconds + WindupSeconds + .12f - .00001f)
+                throw new ArgumentOutOfRangeException(nameof(parriedRecoverySeconds));
+            Positive(WindupSeconds + ActiveSeconds + LongestRecoverySeconds, nameof(recoverySeconds));
             Positive(AnimationAttackDurationSeconds, nameof(animationRecoverySeconds));
             Positive(StepDurationSeconds, nameof(stepRecoverySeconds));
             Positive(Damage + ChargeDamageBonus, nameof(chargeDamageBonus));
             Positive(AttackCost + ChargeStaminaCost, nameof(chargeStaminaCost));
             Positive(BlockCost + ChargeBlockCostBonus, nameof(chargeBlockCostBonus));
-            Positive(Math.Max(Math.Max(RecoverySeconds, HitRecoverySeconds),
-                Math.Max(BlockRecoverySeconds, ObstacleRecoverySeconds)) * (1f + ChargeRecoveryBonus),
-                nameof(chargeRecoveryBonus));
+            Positive(LongestRecoverySeconds * (1f + ChargeRecoveryBonus), nameof(chargeRecoveryBonus));
         }
 
         public float MaxHealth { get; }
@@ -95,13 +123,36 @@ namespace BarPromenade
         public float ChargeBlockCostBonus { get; }
         public float ChargedWindupSeconds { get; }
         public float ChargeRecoveryBonus { get; }
+        public float ParryWindowSeconds { get; }
+        public float ParryRearmSeconds { get; }
+        public float ParryImpactSeconds { get; }
+        public float ParriedRecoverySeconds { get; }
+        public float ParryMaxPower { get; }
+        public float CounterHitStaggerBonus { get; }
+        public float ChargeStaggerBonus { get; }
+        public float ChargeGuardImpactBonus { get; }
+        public float GuardBreakDamageScale { get; }
+        public float ChainWindupSeconds { get; }
+        public float StepAttackGraceSeconds { get; }
+        public float OverholdDrainPerSecond { get; }
         public float AttackDurationSeconds => WindupSeconds + ActiveSeconds + RecoverySeconds;
         public float AnimationAttackDurationSeconds => WindupSeconds + ActiveSeconds + AnimationRecoverySeconds;
         public float StepDurationSeconds => StepTravelSeconds + StepRecoverySeconds;
+        public float ShortestRecoverySeconds => Math.Min(Math.Min(RecoverySeconds, HitRecoverySeconds),
+            Math.Min(Math.Min(BlockRecoverySeconds, ObstacleRecoverySeconds), ParriedRecoverySeconds));
+        public float LongestRecoverySeconds => Math.Max(Math.Max(RecoverySeconds, HitRecoverySeconds),
+            Math.Max(Math.Max(BlockRecoverySeconds, ObstacleRecoverySeconds), ParriedRecoverySeconds));
 
         private static float Positive(float value, string name)
         {
             if (float.IsNaN(value) || float.IsInfinity(value) || value <= 0f)
+                throw new ArgumentOutOfRangeException(name);
+            return value;
+        }
+
+        private static float NonNegative(float value, string name)
+        {
+            if (float.IsNaN(value) || float.IsInfinity(value) || value < 0f)
                 throw new ArgumentOutOfRangeException(name);
             return value;
         }

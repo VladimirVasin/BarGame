@@ -4,6 +4,7 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.TestTools;
 using Object = UnityEngine.Object;
+using static BarPromenade.Tests.PlayMode.CombatTuning;
 
 namespace BarPromenade.Tests.PlayMode
 {
@@ -34,10 +35,10 @@ namespace BarPromenade.Tests.PlayMode
                     root.CameraFollow.Snap();
                     for (int frame = 0; frame < 6; frame++) yield return null;
                     Assert.That(root.Hero.TryStep(directions[i]), Is.True);
-                    root.Tick(.075f);
+                    root.Tick(S.StepTravelSeconds * .25f);
                     yield return null;
                     CaptureCurrentCamera(camera, SceneIds.CombatTest, "tactics-" + names[i] + "-lead");
-                    root.Tick(.15f);
+                    root.Tick(S.StepTravelSeconds * .5f);
                     yield return null;
                     CaptureCurrentCamera(camera, SceneIds.CombatTest, "tactics-" + names[i] + "-close");
                     root.Tick(.3f);

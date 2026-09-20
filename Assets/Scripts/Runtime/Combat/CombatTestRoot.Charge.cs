@@ -51,10 +51,10 @@ namespace BarPromenade
             {
                 if (attackInputOwned && !Hero.State.IsCharging && !Hero.State.HasBufferedCharge)
                 {
-                    // Damage interrupted the charge. A still-held button must
-                    // not turn recovery into an automatic fresh swing.
+                    // Damage interrupted the charge. The button no longer owns a
+                    // swing; only a new press starts one, so nothing auto-fires and
+                    // nothing has to be released first.
                     attackInputOwned = false;
-                    requireAttackRelease |= held;
                 }
                 if (!requireAttackRelease && !PointerOverToolbar() &&
                     GameInput.WasPressed(GameInputAction.MeleeAttack, GameInputContext.Gameplay))

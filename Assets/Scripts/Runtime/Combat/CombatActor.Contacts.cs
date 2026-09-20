@@ -51,6 +51,7 @@ namespace BarPromenade
             {
                 MeleeHitResult result = target.Receive(source, fromFront, attackSequence, point, normal, direction, damage, blockCost, power);
                 source.State.RecordAttackOutcome(result, attackSequence);
+                if (result == MeleeHitResult.Parried) source.ShowParried(point, direction);
             }
         }
 
@@ -89,6 +90,8 @@ namespace BarPromenade
                 }
                 previousBase = currentBase; previousTip = currentTip; sweepValid = true;
 
+                // The tell may brush a wall; only the live arc is stopped by one.
+                if (elapsed < State.AttackWindupSeconds) continue;
                 // A solid that meets the blade at this sample stops the swing here.
                 // Targets from earlier samples already connected; no centre-to-centre ray
                 // substitutes for the actual weapon path at corners or low cover.
@@ -99,13 +102,12 @@ namespace BarPromenade
                     if (State.CancelAttackOnObstacle())
                     {
                         reaction = recoil; reactionClock = 0f;
-                        RetroAudio.PlayAt(RetroSfxId.SpadeGlance, (currentBase + currentTip) * .5f, 1f);
+                        RetroAudio.PlayAt(RetroSfxId.SpadeGlance, (currentBase + currentTip) * .5f, .6f);
                     }
                     sweepValid = false;
                     return;
                 }
 
-                if (elapsed < State.AttackWindupSeconds) continue;
                 foreach (Collider candidate in sampleContacts)
                 {
                     if (candidate == null) continue;

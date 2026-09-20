@@ -56,6 +56,8 @@ namespace BarPromenade
             // owned clip first would replace that pose with ordinary locomotion.
             if (!Ragdoll.Begin(defeatDirection, defeatPoint))
                 throw new InvalidOperationException("The defeated combat rig could not hand its pose to physics.");
+            // The body meets the floor: one dull thud, no sting.
+            RetroAudio.PlayAt(RetroSfxId.StoneTamp, transform.position, .8f);
             DropWeapon();
         }
 

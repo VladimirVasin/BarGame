@@ -5,7 +5,6 @@ using UnityEngine.InputSystem;
 
 namespace BarPromenade
 {
-    public enum CombatOpponentIntent { Approach, Attack, Guard, Recover }
     /// <summary>A bounded non-narrative session. Combat components are installed only here.</summary>
     [DefaultExecutionOrder(-40)]
     public sealed partial class CombatTestRoot : MonoBehaviour
@@ -25,7 +24,13 @@ namespace BarPromenade
         private Vector3 heroSpawn, opponentSpawn;
         private float opponentDelay = .8f;
         public const float SimulationStep = 1f / 120f;
-        private double pendingSeconds;
+        /// <summary>Once the round has ended and the body has settled, the shoulder lock lets go.</summary>
+        public const float RoundEndCameraReleaseSeconds = 1.5f;
+        private double pendingSeconds, roundEndFreeze, roundEndElapsed;
+        private int hitStopSubsteps;
+        private bool roundCameraReleased;
+        private GameObject opponentObject;
+        private Transform opponentChest, heroChest;
         private readonly List<CombatActor.Contact> pendingContacts = new List<CombatActor.Contact>(4);
         private GUIStyle small, button, controls;
         private static readonly Rect ToolbarRect = new Rect(386, 10, 240, 22);
@@ -38,6 +43,9 @@ namespace BarPromenade
         public bool Sparring { get; private set; } = true;
         public bool RoundFinished => Hero.State.IsDefeated || Opponent.State.IsDefeated;
         public bool AutomaticSimulation { get; set; } = true;
+        /// <summary>Simulation seconds the duel spent frozen on contacts; tests subtract it from wall budgets.</summary>
+        public float HitStopSecondsConsumed { get; private set; }
+        public bool RoundCameraReleased => roundCameraReleased;
 
         private void Awake()
         {
@@ -58,7 +66,7 @@ namespace BarPromenade
             Hero.InitializeHero(Player);
             CameraFollow = camera.GetComponent<PlayerCameraFollow>() ?? camera.gameObject.AddComponent<PlayerCameraFollow>();
             CameraFollow.Initialize(camera, Player.GameObject.transform, false);
-            var opponentObject = new GameObject("Combat Opponent"); opponentObject.transform.SetParent(transform, false);
+            opponentObject = new GameObject("Combat Opponent"); opponentObject.transform.SetParent(transform, false);
             var body = opponentObject.AddComponent<CharacterController>();
             body.height = 1.75f; body.radius = .32f; body.center = Vector3.up * .875f;
             body.skinWidth = PlayerFactory.GroundedRootOffset; body.stepOffset = PlayerFactory.StepOffset;
@@ -67,11 +75,9 @@ namespace BarPromenade
             Opponent = opponentObject.AddComponent<CombatActor>();
             Opponent.InitializeOpponent(presentation, body);
             InitializeDamageEffects();
-            Transform opponentChest = Opponent.Ragdoll.PhysicsController.ChestBody.transform;
-            if (!CameraFollow.SetTargetLock(this, opponentObject.transform, opponentChest,
-                    Hero.Ragdoll.PhysicsController.ChestBody.transform) ||
-                !Player.Motor.SetMovementTarget(this, opponentChest))
-                throw new InvalidOperationException("Combat requires its shoulder camera and target-facing movement.");
+            opponentChest = Opponent.Ragdoll.PhysicsController.ChestBody.transform;
+            heroChest = Hero.Ragdoll.PhysicsController.ChestBody.transform;
+            LockOnOpponent();
             PauseMenu = ui.AddComponent<PauseMenuController>();
             PauseMenu.Initialize(Player, CameraFollow, null);
             IsInitialized = true;
@@ -99,10 +105,33 @@ namespace BarPromenade
             Opponent.ResetActor(opponentSpawn, Vector3.back);
             Physics.SyncTransforms();
             opponentDelay = .8f;
-            pendingSeconds = 0d;
+            pendingSeconds = roundEndFreeze = roundEndElapsed = 0d;
+            hitStopSubsteps = 0;
+            HitStopSecondsConsumed = 0f;
+            roundCameraReleased = false;
             ResetOpponentDecisions();
+            LockOnOpponent();
             CameraFollow.Snap();
         }
+
+        /// <summary>The duel owns the shoulder camera and target-facing movement; a reset takes them back.</summary>
+        private void LockOnOpponent()
+        {
+            if (!CameraFollow.SetTargetLock(this, opponentObject.transform, opponentChest, heroChest) ||
+                !Player.Motor.SetMovementTarget(this, opponentChest))
+                throw new InvalidOperationException("Combat requires its shoulder camera and target-facing movement.");
+        }
+
+        /// <summary>After the fall the player may look around freely; R locks on again.</summary>
+        private void ReleaseRoundCamera()
+        {
+            roundCameraReleased = true;
+            CameraFollow.ClearTargetLock(this);
+            Player.Motor.ClearMovementTarget(this);
+        }
+
+        /// <summary>Hold both fighters on the frame of contact for a few simulation substeps.</summary>
+        private void RequestHitStop(int substeps) => hitStopSubsteps = Math.Max(hitStopSubsteps, substeps);
 
         private void Update()
         {
@@ -117,15 +146,21 @@ namespace BarPromenade
                 throw new ArgumentOutOfRangeException(nameof(seconds));
             if (RoundFinished)
             {
-                Hero.AdvanceRoundEnd(seconds); Opponent.AdvanceRoundEnd(seconds);
-                BloodEffects.Tick(seconds);
-                pendingSeconds = 0d;
+                AdvanceFinishedRound(seconds);
                 return;
             }
             pendingSeconds += seconds;
             while (pendingSeconds + .0000001d >= SimulationStep && !RoundFinished)
             {
                 pendingSeconds = Math.Max(0d, pendingSeconds - SimulationStep);
+                if (hitStopSubsteps > 0)
+                {
+                    // Hit-stop: both fighters, the opponent's mind and the blood hold on
+                    // the frame of contact. Presentation keeps running, so the pose is seen.
+                    hitStopSubsteps--;
+                    HitStopSecondsConsumed += SimulationStep;
+                    continue;
+                }
                 Opponent.SetLocomotion(0f);
                 if (Sparring) AdvanceOpponent(SimulationStep);
                 Physics.SyncTransforms();
@@ -139,11 +174,28 @@ namespace BarPromenade
             }
             if (RoundFinished)
             {
-                Hero.AdvanceRoundEnd((float)pendingSeconds); Opponent.AdvanceRoundEnd((float)pendingSeconds);
-                BloodEffects.Tick((float)pendingSeconds);
-                pendingSeconds = 0d;
+                // The lethal contact's freeze carries into the finished round.
+                roundEndFreeze += hitStopSubsteps * (double)SimulationStep;
+                hitStopSubsteps = 0;
+                AdvanceFinishedRound((float)pendingSeconds);
             }
             else { Hero.Present(); Opponent.Present(); }
+        }
+
+        private void AdvanceFinishedRound(float seconds)
+        {
+            pendingSeconds = 0d;
+            float frozen = (float)Math.Min(seconds, roundEndFreeze);
+            roundEndFreeze = Math.Max(0d, roundEndFreeze - frozen);
+            HitStopSecondsConsumed += frozen;
+            seconds -= frozen;
+            if (seconds <= 0f) return;
+            roundEndElapsed += seconds;
+            Hero.AdvanceRoundEnd(seconds); Opponent.AdvanceRoundEnd(seconds);
+            BloodEffects.Tick(seconds);
+            float settle = Mathf.Clamp01((float)(roundEndElapsed / RoundEndCameraReleaseSeconds));
+            CameraFollow.SetTargetLockFarDistance(this, Mathf.Lerp(1.9f, 2.1f, settle));
+            if (!roundCameraReleased && settle >= 1f) ReleaseRoundCamera();
         }
 
         public bool ReturnToMenu()

@@ -424,6 +424,99 @@
       "stance_stagger_m": 0.16099999845027924,
       "runtime_contract": "final left cylinder solve after charge blend, injury and pose recovery; same shaft axis, opposed palms"
     },
+    "step_clips": [
+      {
+        "name": "CombatStepForward",
+        "duration_seconds": 0.38,
+        "loop": false
+      },
+      {
+        "name": "CombatStepBackward",
+        "duration_seconds": 0.38,
+        "loop": false
+      },
+      {
+        "name": "CombatStepLeft",
+        "duration_seconds": 0.38,
+        "loop": false
+      },
+      {
+        "name": "CombatStepRight",
+        "duration_seconds": 0.38,
+        "loop": false
+      }
+    ],
+    "defensive_step": {
+      "duration_seconds": 0.38,
+      "travel_seconds": 0.24,
+      "settle_seconds": 0.14,
+      "distance_m": 0.65,
+      "travel_curve": "smoothstep",
+      "validation_hz": 200,
+      "signature": "21fb8c46a055b685e60d7cc6454e79379b02b6b52b9947114a6680d4add44628",
+      "clips": [
+        {
+          "name": "CombatStepForward",
+          "leading_foot": "L",
+          "direction_unity": [
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "maximum_world_support_error_m": 0.0008164272880079037,
+          "maximum_upper_body_error": 8.344650268554688e-07,
+          "maximum_ready_seam_error": 8.344650268554688e-07,
+          "minimum_foot_separation_m": 0.2619989812374115,
+          "left_foot_lift_m": 0.06000173091888428,
+          "right_foot_lift_m": 0.0599999874830246
+        },
+        {
+          "name": "CombatStepBackward",
+          "leading_foot": "R",
+          "direction_unity": [
+            -0.0,
+            0.0,
+            -1.0
+          ],
+          "maximum_world_support_error_m": 0.000995523373002075,
+          "maximum_upper_body_error": 8.344650268554688e-07,
+          "maximum_ready_seam_error": 8.344650268554688e-07,
+          "minimum_foot_separation_m": 0.2619989812374115,
+          "left_foot_lift_m": 0.060001760721206665,
+          "right_foot_lift_m": 0.059999942779541016
+        },
+        {
+          "name": "CombatStepLeft",
+          "leading_foot": "L",
+          "direction_unity": [
+            -1.0,
+            0.0,
+            -0.0
+          ],
+          "maximum_world_support_error_m": 0.0008129072420813159,
+          "maximum_upper_body_error": 8.344650268554688e-07,
+          "maximum_ready_seam_error": 8.344650268554688e-07,
+          "minimum_foot_separation_m": 0.2619989812374115,
+          "left_foot_lift_m": 0.06000173091888428,
+          "right_foot_lift_m": 0.0599999725818634
+        },
+        {
+          "name": "CombatStepRight",
+          "leading_foot": "R",
+          "direction_unity": [
+            1.0,
+            0.0,
+            -0.0
+          ],
+          "maximum_world_support_error_m": 0.0008140742036455737,
+          "maximum_upper_body_error": 8.344650268554688e-07,
+          "maximum_ready_seam_error": 8.344650268554688e-07,
+          "minimum_foot_separation_m": 0.2619989961385727,
+          "left_foot_lift_m": 0.06000173091888428,
+          "right_foot_lift_m": 0.05999991297721863
+        }
+      ]
+    },
     "hero_only_clips": [
       {
         "name": "CombatStrafeLeft",
@@ -473,99 +566,6 @@
           "minimum_foot_separation_m": 0.2619990110397339,
           "left_foot_lift_m": 0.06500157713890076,
           "right_foot_lift_m": 0.06499996781349182
-        }
-      ]
-    },
-    "hero_step_clips": [
-      {
-        "name": "CombatStepForward",
-        "duration_seconds": 0.46,
-        "loop": false
-      },
-      {
-        "name": "CombatStepBackward",
-        "duration_seconds": 0.46,
-        "loop": false
-      },
-      {
-        "name": "CombatStepLeft",
-        "duration_seconds": 0.46,
-        "loop": false
-      },
-      {
-        "name": "CombatStepRight",
-        "duration_seconds": 0.46,
-        "loop": false
-      }
-    ],
-    "defensive_step": {
-      "duration_seconds": 0.46,
-      "travel_seconds": 0.3,
-      "settle_seconds": 0.16,
-      "distance_m": 0.65,
-      "travel_curve": "smoothstep",
-      "validation_hz": 200,
-      "signature": "488acd293b0038b9f40652231a7a35514ac5d946dc0a8cdc4167d9e804d74f96",
-      "clips": [
-        {
-          "name": "CombatStepForward",
-          "leading_foot": "L",
-          "direction_unity": [
-            -0.0,
-            0.0,
-            1.0
-          ],
-          "maximum_world_support_error_m": 0.0005272729085492443,
-          "maximum_upper_body_error": 8.344650268554688e-07,
-          "maximum_ready_seam_error": 8.344650268554688e-07,
-          "minimum_foot_separation_m": 0.2619989961385727,
-          "left_foot_lift_m": 0.05934599041938782,
-          "right_foot_lift_m": 0.05934445559978485
-        },
-        {
-          "name": "CombatStepBackward",
-          "leading_foot": "R",
-          "direction_unity": [
-            -0.0,
-            0.0,
-            -1.0
-          ],
-          "maximum_world_support_error_m": 0.0006700806661484438,
-          "maximum_upper_body_error": 8.344650268554688e-07,
-          "maximum_ready_seam_error": 8.344650268554688e-07,
-          "minimum_foot_separation_m": 0.2619989663362503,
-          "left_foot_lift_m": 0.05934622883796692,
-          "right_foot_lift_m": 0.05934438109397888
-        },
-        {
-          "name": "CombatStepLeft",
-          "leading_foot": "L",
-          "direction_unity": [
-            -1.0,
-            0.0,
-            -0.0
-          ],
-          "maximum_world_support_error_m": 0.0005243623882955064,
-          "maximum_upper_body_error": 8.344650268554688e-07,
-          "maximum_ready_seam_error": 8.344650268554688e-07,
-          "minimum_foot_separation_m": 0.2619989961385727,
-          "left_foot_lift_m": 0.059346169233322144,
-          "right_foot_lift_m": 0.059344470500946045
-        },
-        {
-          "name": "CombatStepRight",
-          "leading_foot": "R",
-          "direction_unity": [
-            1.0,
-            0.0,
-            -0.0
-          ],
-          "maximum_world_support_error_m": 0.0005250813434307843,
-          "maximum_upper_body_error": 8.344650268554688e-07,
-          "maximum_ready_seam_error": 8.344650268554688e-07,
-          "minimum_foot_separation_m": 0.2619989961385727,
-          "left_foot_lift_m": 0.05934599041938782,
-          "right_foot_lift_m": 0.05934444069862366
         }
       ]
     }

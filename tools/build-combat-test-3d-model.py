@@ -51,7 +51,9 @@ STEP_CLIPS = (("CombatStepForward", (0., -1., 0.), "L"),
               ("CombatStepBackward", (0., 1., 0.), "R"),
               ("CombatStepLeft", (1., 0., 0.), "L"),
               ("CombatStepRight", (-1., 0., 0.), "R"))
-STEP_TRAVEL_SECONDS, STEP_SETTLE_SECONDS, STEP_DISTANCE = .30, .16, .65
+# .65 m is the longest stride the planted leg still reaches at the mid-travel pelvis dip;
+# the step got quicker (.24 s travel), not longer.
+STEP_TRAVEL_SECONDS, STEP_SETTLE_SECONDS, STEP_DISTANCE = .24, .14, .65
 STEP_DURATION = round(STEP_TRAVEL_SECONDS + STEP_SETTLE_SECONDS, 2)
 SUPPORT_OFFSETS = {"L": (.035, -.070, 0.), "R": (-.035, .055, 0.)}
 SUPPORT_GRIP = .16
@@ -592,7 +594,7 @@ class CombatBuilder(dialogue.DialogueBuilder):
                     raise ValueError(f"{name} at {second:.2f}s: {error}") from error
                 keys.append((frame/count, stepped))
             self._create_action(name, "combat_step", STEP_DURATION, False, count, FPS, keys)
-            print("Authored hero-only " + name, flush=True)
+            print("Authored shared " + name, flush=True)
 
 
 def step_payload(builder):
@@ -954,10 +956,16 @@ def main():
     builder.build()
     if args.probe_only: return
     payload["actions"] = action_payload(builder)
-    # Export the shared NPC bank before creating hero-only locomotion Actions:
-    # Blender's FBX exporter scans all compatible actions, not result.actions.
+    # The defensive steps belong to both fighters, so they are authored before the
+    # shared NPC bank is exported; only the strafes stay hero-only. Blender's FBX
+    # exporter scans all compatible actions, not result.actions.
+    builder.build_step_actions()
+    payload["actions"]["step_clips"] = [dict(name=n, duration_seconds=STEP_DURATION, loop=False) for n,_,_ in STEP_CLIPS]
+    payload["actions"]["defensive_step"] = step_payload(builder)
     previous = json.loads((OUT / "CombatTest3D.json").read_text(encoding="utf8")) if (OUT / "CombatTest3D.json").exists() else {}
-    same_shared_bank = previous.get("actions", {}).get("animation_signature") == payload["actions"]["animation_signature"]
+    previous_actions = previous.get("actions", {})
+    same_shared_bank = (previous_actions.get("animation_signature") == payload["actions"]["animation_signature"] and
+                        previous_actions.get("defensive_step", {}).get("signature") == payload["actions"]["defensive_step"]["signature"])
     if not validate_only and (not actions_only or not same_shared_bank or not (OUT / "CombatNpcActions.fbx").exists()):
         builder.result.root.name = "ROOT_Player"
         common.export_animation_fbx(OUT / "CombatNpcActions.fbx", builder.result)
@@ -965,9 +973,6 @@ def main():
     builder.build_strafe_actions()
     payload["actions"]["hero_only_clips"] = [dict(name=n, duration_seconds=d, loop=l) for n,d,l in STRAFE_CLIPS]
     payload["actions"]["strafing"] = strafe_payload(builder)
-    builder.build_step_actions()
-    payload["actions"]["hero_step_clips"] = [dict(name=n, duration_seconds=STEP_DURATION, loop=False) for n,_,_ in STEP_CLIPS]
-    payload["actions"]["defensive_step"] = step_payload(builder)
     payload = json.loads(json.dumps(payload))
     if validate_only:
         if json.loads((OUT / "CombatTest3D.json").read_text(encoding="utf8")) != payload:

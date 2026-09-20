@@ -384,7 +384,7 @@ ModelImporter:
       takeName: RIG_Player|CombatStepBackward
       internalID: 1776750975038957194
       firstFrame: 0
-      lastFrame: 46
+      lastFrame: 38
       wrapMode: 0
       orientationOffsetY: 0
       level: 0
@@ -413,7 +413,7 @@ ModelImporter:
       takeName: RIG_Player|CombatStepForward
       internalID: 4646048703627972062
       firstFrame: 0
-      lastFrame: 46
+      lastFrame: 38
       wrapMode: 0
       orientationOffsetY: 0
       level: 0
@@ -442,7 +442,7 @@ ModelImporter:
       takeName: RIG_Player|CombatStepLeft
       internalID: -8727810523037377778
       firstFrame: 0
-      lastFrame: 46
+      lastFrame: 38
       wrapMode: 0
       orientationOffsetY: 0
       level: 0
@@ -471,7 +471,7 @@ ModelImporter:
       takeName: RIG_Player|CombatStepRight
       internalID: -8170274688805819139
       firstFrame: 0
-      lastFrame: 46
+      lastFrame: 38
       wrapMode: 0
       orientationOffsetY: 0
       level: 0

@@ -21,9 +21,18 @@ namespace BarPromenade
 
         private void PresentDamagePose()
         {
-            // The committed weapon pose remains the exact pose sampled by SweepWeapon.
-            float weight = State.IsCharging || State.IsAttacking || State.IsBlocking || State.Phase == MeleePhase.GuardImpact ||
-                State.Phase == MeleePhase.Step ? 0f : 1f;
+            // The tell and the swept arc stay on the exact authored pose; a hurt
+            // fighter still recovers and guards hurt.
+            float weight = State.Phase switch
+            {
+                MeleePhase.Charging => 0f,
+                MeleePhase.Windup => 0f,
+                MeleePhase.Active => 0f,
+                MeleePhase.Step => 0f,
+                MeleePhase.Recovery => .6f,
+                MeleePhase.GuardImpact => .5f,
+                _ => State.IsBlocking ? .5f : 1f
+            };
             if (hero != null) hero.SetCombatDamagePose(this, damagePose, weight);
             else damagePose?.Apply(weight);
         }

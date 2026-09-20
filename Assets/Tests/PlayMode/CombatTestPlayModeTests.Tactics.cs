@@ -5,6 +5,7 @@ using UnityEngine.InputSystem;
 using UnityEngine.TestTools;
 using UnityEngine.SceneManagement;
 using Object = UnityEngine.Object;
+using static BarPromenade.Tests.PlayMode.CombatTuning;
 
 namespace BarPromenade.Tests.PlayMode
 {
@@ -32,24 +33,28 @@ namespace BarPromenade.Tests.PlayMode
                     int contactTicks = 0;
                     if (i == 1)
                     {
-                        while (root.Hero.State.AttackOutcome != MeleeAttackOutcome.Blocked && contactTicks < 80)
+                        while (root.Hero.State.AttackOutcome != MeleeAttackOutcome.Blocked &&
+                            contactTicks < ContactTicks(1f / CombatTestRoot.SimulationStep) + 4)
                         { root.Tick(CombatTestRoot.SimulationStep); contactTicks++; }
                         Assert.That(root.Opponent.State.Phase, Is.EqualTo(MeleePhase.GuardImpact));
                         Assert.That(root.Opponent.TryAttack(), Is.False, "A normal block does not grant an immediate counter.");
                     }
-                    root.Tick(Mathf.Max(0f, .7f - contactTicks * CombatTestRoot.SimulationStep));
+                    root.Tick(Mathf.Max(0f, IntoRecoverySeconds - contactTicks * CombatTestRoot.SimulationStep));
                     Assert.That(root.Hero.State.AttackOutcome, Is.EqualTo(outcomes[i]), "Actual weapon contact must set recovery.");
                     recoveries[i] = root.Hero.State.RecoveryRemaining;
                     Assert.That(root.Hero.State.Phase, Is.EqualTo(MeleePhase.Recovery));
-                    Assert.That(root.Hero.TryStep(Vector2.down), Is.False, "A committed attack cannot escape into a step.");
+                    bool queued = root.Hero.TryStep(Vector2.down);
+                    Assert.That(root.Hero.State.Phase, Is.EqualTo(MeleePhase.Recovery),
+                        "A committed attack cannot escape into a step; at most the press waits for the boundary.");
+                    Assert.That(queued, Is.EqualTo(root.Hero.State.HasBufferedStep));
                     if (i == 1)
                     {
-                        Assert.That(root.Opponent.State.Health, Is.EqualTo(100f));
+                        Assert.That(root.Opponent.State.Health, Is.EqualTo(S.MaxHealth));
                     }
-                    if (i == 0) Assert.That(root.Opponent.State.Health, Is.EqualTo(75f));
+                    if (i == 0) Assert.That(root.Opponent.State.Health, Is.EqualTo(S.MaxHealth - S.Damage));
                 }
-                Assert.That(recoveries[1] - recoveries[0], Is.GreaterThan(.15f));
-                Assert.That(recoveries[2] - recoveries[1], Is.GreaterThan(.25f));
+                Assert.That(recoveries[1] - recoveries[0], Is.GreaterThan(S.BlockRecoverySeconds - S.HitRecoverySeconds - .03f));
+                Assert.That(recoveries[2] - recoveries[1], Is.GreaterThan(S.RecoverySeconds - S.BlockRecoverySeconds - .05f));
 
                 var directions = new[] { Vector2.up, Vector2.down, Vector2.left, Vector2.right };
                 var keys = new[] { keyboard.wKey, keyboard.sKey, keyboard.aKey, keyboard.dKey };
@@ -66,19 +71,19 @@ namespace BarPromenade.Tests.PlayMode
                     yield return null;
                     Assert.That(root.Hero.State.Phase, Is.EqualTo(MeleePhase.Step));
                     Assert.That(root.Hero.ActiveClipName, Is.EqualTo(clips[i]));
-                    Assert.That(root.Hero.State.Stamina, Is.EqualTo(80f).Within(.001f));
+                    Assert.That(root.Hero.State.Stamina, Is.EqualTo(AfterStep).Within(.001f));
                     Assert.That(root.Hero.Body.enabled, Is.True, "A step keeps the ordinary hittable capsule.");
                     Assert.That(root.Player.Motor.ApplyOwnedDisplacement(new object(), Vector3.forward), Is.EqualTo(Vector3.zero));
                     Assert.That(root.Hero.TryAttack(), Is.False);
-                    for (int frame = 0; frame < 45 && root.Hero.State.Phase == MeleePhase.Step; frame++)
+                    for (int frame = 0; frame < StepFrames + 17 && root.Hero.State.Phase == MeleePhase.Step; frame++)
                     { yield return null; legs.Sample(); AssertOpponentFramed(root.CameraFollow.Camera); }
                     input.Release(keys[i], queueEventOnly: true);
                     Assert.That(root.Hero.State.Phase, Is.EqualTo(MeleePhase.Ready));
-                    Assert.That(Vector3.Dot(root.Hero.transform.position - start, direction), Is.EqualTo(.65f).Within(.045f));
+                    Assert.That(Vector3.Dot(root.Hero.transform.position - start, direction), Is.EqualTo(S.StepDistance).Within(.045f));
                     legs.AssertMoving(2f, "A short step must move both real legs.");
                     for (int frame = 0; frame < 12; frame++) yield return null;
                     Assert.That(root.Hero.State.Phase, Is.EqualTo(MeleePhase.Ready), "Holding Space cannot repeat steps.");
-                    Assert.That(root.Hero.State.Stamina, Is.EqualTo(80f).Within(.001f));
+                    Assert.That(root.Hero.State.Stamina, Is.EqualTo(AfterStep).Within(.001f));
                     input.Release(keyboard.spaceKey, queueEventOnly: true);
                     yield return null;
                     root.AutomaticSimulation = false;
@@ -103,7 +108,7 @@ namespace BarPromenade.Tests.PlayMode
                 input.Release(keyboard.rKey, queueEventOnly: true);
                 Assert.That(root.Hero.State.Phase, Is.EqualTo(MeleePhase.Ready));
                 Assert.That(root.Hero.State.StepElapsed, Is.Zero);
-                Assert.That(root.Hero.State.Stamina, Is.EqualTo(100f));
+                Assert.That(root.Hero.State.Stamina, Is.EqualTo(S.MaxStamina));
                 yield return null;
                 root.AutomaticSimulation = false;
 
@@ -117,7 +122,7 @@ namespace BarPromenade.Tests.PlayMode
                 root.Tick(.2f);
                 Assert.That(root.Hero.State.Phase, Is.EqualTo(MeleePhase.Step), "A wall cannot refund the step's commitment.");
                 Assert.That(root.Hero.ActiveClipName, Is.EqualTo("CombatReady"), "Blocked feet settle at the actual position.");
-                Assert.That(root.Hero.State.Stamina, Is.EqualTo(80f));
+                Assert.That(root.Hero.State.Stamina, Is.EqualTo(AfterStep));
                 Assert.That(root.Hero.TryAttack(), Is.False);
                 root.Tick(.4f);
                 Assert.That(root.Hero.transform.position.x, Is.LessThan(.15f), "The step cannot tunnel through a thin wall.");
@@ -134,7 +139,7 @@ namespace BarPromenade.Tests.PlayMode
                 root.Tick(.44f);
                 Assert.That(root.Hero.TryStep(Vector2.up), Is.True);
                 root.Tick(.13f);
-                Assert.That(root.Hero.State.Health, Is.EqualTo(75f), "A mistimed step still receives actual weapon contact.");
+                Assert.That(root.Hero.State.Health, Is.EqualTo(S.MaxHealth - S.Damage), "A mistimed step still receives actual weapon contact.");
                 Assert.That(root.Hero.State.Phase, Is.EqualTo(MeleePhase.Stagger));
                 Assert.That(root.Hero.State.StepElapsed, Is.Zero, "A hit cancels remaining step travel.");
 
@@ -174,6 +179,74 @@ namespace BarPromenade.Tests.PlayMode
                 if (wall != null) Object.Destroy(wall);
                 if (keyboard != null && keyboard.added) InputSystem.RemoveDevice(keyboard);
                 input.TearDown();
+            }
+        }
+
+        /// <summary>The step's whole defensive value is geometry: taken at the tell it leaves the
+        /// authored arc, and the swing that follows finds the whiffer still exposed.</summary>
+        [UnityTest]
+        public IEnumerator Range_StepsAtTheTellEvadeTheAuthoredArcAndTheStepAttackCountersTheWhiff()
+        {
+            yield return SceneManager.LoadSceneAsync(SceneIds.MainMenu);
+            yield return EnterRange();
+            try
+            {
+                // Evasion is physical: the capsule's physics pose follows the transform only
+                // across simulation frames, so this fixture runs on frames, not rules-only ticks.
+                // The duel capsule is the honest hurtbox; the wider cloth trigger stays off.
+                ConfigureDuelHurtbox(root.Hero);
+                ConfigureDuelHurtbox(root.Opponent);
+                root.AutomaticSimulation = true;
+                float counterStagger = S.StaggerSeconds + S.CounterHitStaggerBonus;
+                int reactionFrames = Mathf.RoundToInt(.22f * 60f);
+
+                // A back step opens the gap past the crowbar's reach.
+                PlacePair(1.1f);
+                Vector3 heroStart = root.Hero.transform.position;
+                Assert.That(root.Opponent.TryAttack(), Is.True);
+                for (int frame = 0; frame < reactionFrames; frame++) yield return null;
+                Assert.That(root.Hero.TryStep(Vector2.down), Is.True);
+                for (int frame = 0; frame < 40; frame++) yield return null;
+                Assert.That(Vector3.Distance(heroStart, root.Hero.transform.position), Is.EqualTo(S.StepDistance).Within(.05f));
+                Assert.That(root.Hero.State.Health, Is.EqualTo(S.MaxHealth), "A back step at the tell leaves the arc.");
+                Assert.That(root.Opponent.State.AttackOutcome, Is.EqualTo(MeleeAttackOutcome.Miss));
+
+                // One side step leaves the authored arc; the counter that follows lands on the whiffer.
+                string evadedSide = null;
+                foreach (Vector2 side in new[] { Vector2.left, Vector2.right })
+                {
+                    PlacePair(1.1f);
+                    Assert.That(root.Opponent.TryAttack(), Is.True);
+                    for (int frame = 0; frame < reactionFrames; frame++) yield return null;
+                    Assert.That(root.Hero.TryStep(side), Is.True);
+                    // Past the arc's end (.63 s) even when a hit-stop froze a few substeps.
+                    for (int frame = 0; frame < 30; frame++) yield return null;
+                    Assert.That(root.Opponent.State.Phase, Is.EqualTo(MeleePhase.Recovery));
+                    if (root.Hero.State.Health < S.MaxHealth) continue;
+                    evadedSide = side == Vector2.left ? "left" : "right";
+                    Assert.That(root.Opponent.State.AttackOutcome, Is.EqualTo(MeleeAttackOutcome.Miss));
+                    // Close the lateral gap and square up the way a player would, then swing
+                    // while the whiffer is still recovering.
+                    Vector3 toOpponent = root.Opponent.transform.position - root.Hero.transform.position;
+                    toOpponent.y = 0f;
+                    root.Hero.Body.Move(toOpponent.normalized * Mathf.Max(0f, toOpponent.magnitude - 1.05f));
+                    root.Hero.transform.rotation = Quaternion.LookRotation(toOpponent.normalized);
+                    Physics.SyncTransforms();
+                    yield return null;
+                    Assert.That(root.Hero.TryAttack(), Is.True);
+                    float before = root.Opponent.State.Health;
+                    yield return WaitFor(() => root.Opponent.State.Health < before, "The swing after the evasion must reach the whiffer.");
+                    Assert.That(root.Opponent.State.Phase, Is.EqualTo(MeleePhase.Stagger));
+                    Assert.That(root.Opponent.State.ActionRemaining, Is.EqualTo(counterStagger).Within(.04f),
+                        "Punishing a whiff is a counter-hit.");
+                    break;
+                }
+                Assert.That(evadedSide, Is.Not.Null, "At least one side step must leave the authored arc.");
+                Debug.Log("Combat step evasion side: " + evadedSide);
+            }
+            finally
+            {
+                if (root != null) root.AutomaticSimulation = false;
             }
         }
     }

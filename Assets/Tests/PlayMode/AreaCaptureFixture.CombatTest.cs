@@ -6,6 +6,7 @@ using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
 using UnityEngine.TestTools;
 using Object = UnityEngine.Object;
+using static BarPromenade.Tests.PlayMode.CombatTuning;
 
 namespace BarPromenade.Tests.PlayMode
 {
@@ -101,7 +102,7 @@ namespace BarPromenade.Tests.PlayMode
             CaptureCurrentCamera(camera, SceneIds.CombatTest, "camera-05-wall");
 
             CombatCapturePair(root);
-            for (int contact = 0; contact < 4; contact++)
+            for (int contact = 0; contact < HitsToDefeat; contact++)
             {
                 root.Hero.ResetActor(root.Opponent.transform.position - Vector3.forward * 1.1f, Vector3.forward);
                 Physics.SyncTransforms();
@@ -169,8 +170,8 @@ namespace BarPromenade.Tests.PlayMode
             CaptureCombatGrip(camera, root.Opponent, "grip-opponent-contact");
             CaptureCombatGrip(camera, root.Hero, "grip-hero-guard-impact");
 
-            // Keep guard held so the target cannot regenerate between four real blocked contacts.
-            for (int contact = 1; contact < 5; contact++)
+            // Keep guard held so the target cannot regenerate between the real blocked contacts that empty its meter.
+            for (int contact = 1; contact <= AffordableBlocks; contact++)
             {
                 root.Hero.Step(.3f);
                 root.Opponent.ResetActor(new Vector3(0f, .04f, 1.1f), Vector3.back);
@@ -192,11 +193,11 @@ namespace BarPromenade.Tests.PlayMode
                 Quaternion.LookRotation(new Vector3(2.6f, 1f, 1f) - new Vector3(-.5f, 2f, -2f)));
             Physics.SyncTransforms();
             Assert.That(root.Hero.TryAttack(), Is.True);
-            for (int step = 0; step < 90 && root.Hero.State.Phase != MeleePhase.Recovery; step++)
+            for (int step = 0; step < ContactTicks(120f) + 14 && root.Hero.State.Phase != MeleePhase.Recovery; step++)
                 root.Hero.Step(1f / 120f);
             Assert.That(((Player3DCharacterPresentation)root.Player.Visual).ActiveClipName,
                 Is.EqualTo("CombatRecoil"));
-            Assert.That(root.Opponent.State.Health, Is.EqualTo(100f));
+            Assert.That(root.Opponent.State.Health, Is.EqualTo(S.MaxHealth));
             root.Hero.Step(.12f);
             yield return null;
             CaptureCurrentCamera(camera, SceneIds.CombatTest, "07-wall-recoil");
@@ -208,7 +209,7 @@ namespace BarPromenade.Tests.PlayMode
                 CombatCapturePair(root);
                 CombatActor target = defeatHero ? root.Hero : root.Opponent;
                 CombatActor attacker = defeatHero ? root.Opponent : root.Hero;
-                for (int contact = 0; contact < 4; contact++)
+                for (int contact = 0; contact < HitsToDefeat; contact++)
                 {
                     Vector3 facing = defeatHero ? Vector3.back : Vector3.forward;
                     attacker.ResetActor(target.transform.position - facing * 1.1f, facing);
@@ -336,7 +337,7 @@ namespace BarPromenade.Tests.PlayMode
         {
             float health = target.State.Health, stamina = target.State.Stamina;
             Assert.That(attacker.TryAttack(), Is.True);
-            for (int step = 0; step < 90 && target.State.Health == health && target.State.Stamina == stamina; step++)
+            for (int step = 0; step < ContactTicks(120f) + 14 && target.State.Health == health && target.State.Stamina == stamina; step++)
                 attacker.Step(1f / 120f);
             Assert.That(target.State.Health != health || target.State.Stamina != stamina, Is.True,
                 "A reaction capture must be caused by contact from the actual authored weapon.");

@@ -17,7 +17,7 @@ namespace BarPromenade
         private bool heroMovingPose, npcMovingPose;
         private Transform strikeBase, strikeTip;
         private string visibleClip;
-        private float poseClock, locomotionSpeed, reactionClock, pushElapsed, pushDistance = .12f;
+        private float poseClock, locomotionSpeed, reactionClock, pushElapsed, pushDistance = .12f, pushDuration = .16f;
         private Vector3 pushDirection;
         private readonly List<Contact> standaloneContacts = new List<Contact>(4);
         private Transform[] legs;
@@ -37,7 +37,8 @@ namespace BarPromenade
         public float MovementScale => State.Phase switch
         {
             MeleePhase.Charging => .22f,
-            MeleePhase.Windup => .22f,
+            // The swing gathers itself instead of snapping from a walk to a halt.
+            MeleePhase.Windup => Mathf.Lerp(.55f, .2f, State.PhaseProgress),
             MeleePhase.Active => 0f,
             MeleePhase.Recovery => Mathf.Lerp(.15f, .65f, State.PhaseProgress),
             MeleePhase.Ready => State.IsBlocking ? .45f : 1f,
@@ -70,7 +71,7 @@ namespace BarPromenade
                 hero.Registry.RegisterRuntimeAnimation(new Player3DAnimationBinding(
                     clip.name, "Combat", clip, clip.length, clip.isLooping));
             }
-            LoadStepClips();
+            LoadStepClips(false);
             Ragdoll = gameObject.AddComponent<CombatRagdoll>();
             Ragdoll.InitializeHero(player);
             AttachWeapon(hero.Registry.Anchors.RightGrip);
@@ -95,6 +96,7 @@ namespace BarPromenade
             legs = lower.ToArray(); legPositions = new Vector3[legs.Length]; legRotations = new Quaternion[legs.Length];
             InitializeNpcPoseBlend();
             InitializeNpcChargeBlend();
+            LoadStepClips(true);
             Ragdoll = gameObject.AddComponent<CombatRagdoll>();
             Ragdoll.InitializeOpponent(presentation, body);
             AttachWeapon(npc.RightGrip);
@@ -180,9 +182,9 @@ namespace BarPromenade
             AdvanceVisualClock(seconds);
             if (npc != null && Body.enabled)
             {
-                float previous = Mathf.Clamp01(pushElapsed / .16f);
+                float previous = Mathf.Clamp01(pushElapsed / pushDuration);
                 pushElapsed += seconds;
-                float next = Mathf.Clamp01(pushElapsed / .16f);
+                float next = Mathf.Clamp01(pushElapsed / pushDuration);
                 float distance = pushDistance * ((2f * next - next * next) - (2f * previous - previous * previous));
                 Body.Move(pushDirection * distance + Vector3.down * seconds);
             }
@@ -191,10 +193,20 @@ namespace BarPromenade
             MeleePhase previousPhase = State.Phase;
             float previousStep = State.StepTravelProgress;
             MeleeAdvanceResult elapsed = State.Advance(seconds);
-            if (previousPhase == MeleePhase.Step) AdvanceStepMovement(previousStep, State.StepTravelProgress);
+            // A queued step begins inside this advance; give it its clip and its first travel.
+            if (State.Phase == MeleePhase.Step && (previousPhase != MeleePhase.Step || sequence != State.AttackSequence))
+            {
+                BeginStepPresentation();
+                AdvanceStepMovement(0f, State.StepTravelProgress);
+            }
+            else if (previousPhase == MeleePhase.Step) AdvanceStepMovement(previousStep, State.StepTravelProgress);
             if (previousPhase == MeleePhase.GuardImpact && State.Phase != MeleePhase.GuardImpact && reaction == guardImpact)
                 reaction = null;
             if (sequence != State.AttackSequence) { from = 0f; reaction = null; }
+            // The crowbar only starts moving when the arc opens: that is where it whistles.
+            if (previousPhase == MeleePhase.Windup && State.Phase != MeleePhase.Windup && State.IsAttacking &&
+                sequence == State.AttackSequence)
+                RetroAudio.PlayAt(RetroSfxId.SpadeToss, strikeTip.position, .35f);
             if ((State.IsAttacking && reaction != recoil) || elapsed.HasActiveWindow)
                 SweepWeapon(from, State.AttackElapsed, State.AttackSequence, pending);
             else sweepValid = false;
@@ -205,25 +217,70 @@ namespace BarPromenade
         {
             Vector3 incoming = source.transform.position - transform.position;
             incoming.y = 0;
+            Vector3 away = incoming.sqrMagnitude > .0001f ? -incoming.normalized : -transform.forward;
             float healthBefore = State.Health;
-            MeleeHitResult result = State.ReceiveHit(damage, blockCost, front);
+            MeleeHitResult result = State.ReceiveHit(damage, blockCost, front, power);
             if (result == MeleeHitResult.Ignored) return result;
-            RetroAudio.PlayAt(result == MeleeHitResult.Blocked ? RetroSfxId.SpadeGlance : RetroSfxId.CoffinSettle,
-                point, Mathf.Lerp(.75f, .95f, power));
-            if (result != MeleeHitResult.Blocked && motor != null)
-                motor.TryApplyExternalPush(-incoming.normalized, Mathf.Lerp(.12f, .20f, power), .16f);
-            if (result != MeleeHitResult.Blocked && npc != null)
-            { pushDirection = -incoming.normalized; pushDistance = Mathf.Lerp(.12f, .20f, power); pushElapsed = 0f; }
-            reaction = result == MeleeHitResult.Blocked ? guardImpact : null;
+            // Weight lives in time and motion: the body is the loudest cue, a block
+            // moves both fighters, a parry throws the attacker's weapon wide.
+            switch (result)
+            {
+                case MeleeHitResult.Hit:
+                    RetroAudio.PlayAt(RetroSfxId.SpadeBite, point, Mathf.Lerp(.8f, 1f, power));
+                    Shove(away, source.State.IsChained ? .20f : Mathf.Lerp(.15f, .28f, power), Mathf.Lerp(.16f, .20f, power));
+                    reaction = null;
+                    break;
+                case MeleeHitResult.GuardBroken:
+                    RetroAudio.PlayAt(RetroSfxId.SpadeBite, point, 1f);
+                    RetroAudio.PlayAt(RetroSfxId.StoneTamp, transform.position + Vector3.up, .6f);
+                    Shove(away, .35f, .22f);
+                    reaction = null;
+                    break;
+                case MeleeHitResult.Blocked:
+                    RetroAudio.PlayAt(RetroSfxId.SpadeGlance, point, .55f);
+                    Shove(away, .06f, .12f);
+                    source.Shove(-away, .04f, .12f);
+                    damagePose?.Hit(away, .3f);
+                    reaction = guardImpact;
+                    break;
+                case MeleeHitResult.Parried:
+                    RetroAudio.PlayAt(RetroSfxId.SpadeGlance, point, 1f);
+                    RetroAudio.PlayAt(RetroSfxId.StoneTamp, point, .9f);
+                    reaction = guardImpact;
+                    break;
+            }
             reactionClock = 0f;
-            if (result == MeleeHitResult.GuardBroken)
-                RetroAudio.PlayAt(RetroSfxId.SpadeGlance, transform.position + Vector3.up, .85f);
             if (State.IsDefeated)
-                BeginDefeat(-incoming.normalized, point);
+                BeginDefeat(away, point);
             PublishImpact(new CombatImpact(source, this, sequence, point, normal, direction,
                 healthBefore, State.Health, result));
             Present();
             return result;
+        }
+
+        /// <summary>The parried swing stops where it was met: the recoil clip and a short shove back.</summary>
+        internal void ShowParried(Vector3 point, Vector3 direction)
+        {
+            reaction = recoil;
+            reactionClock = 0f;
+            sweepValid = false;
+            Shove(-transform.forward, .10f, .14f);
+        }
+
+        /// <summary>One bounded planar shove through the motor or the opponent's controller.</summary>
+        internal void Shove(Vector3 direction, float distance, float duration)
+        {
+            direction.y = 0f;
+            if (direction.sqrMagnitude < .0001f || distance <= 0f || duration <= 0f) return;
+            direction.Normalize();
+            if (motor != null) motor.TryApplyExternalPush(direction, distance, duration);
+            else if (npc != null)
+            {
+                pushDirection = direction;
+                pushDistance = distance;
+                pushDuration = duration;
+                pushElapsed = 0f;
+            }
         }
 
         private bool SampleAttack(float progress)
@@ -346,8 +403,8 @@ namespace BarPromenade
             if (hero != null) hero.SetCombatSupportGrip(this, supportGrip);
             heroMovingPose = npcMovingPose = false;
             State.Reset(); poseClock = locomotionSpeed = 0f;
-            stepClip = null; stepDirection = Vector3.zero; stepBlocked = false;
-            reaction = null; reactionClock = 0f; pushElapsed = .16f; pushDirection = Vector3.zero;
+            stepClip = null; stepDirection = Vector3.zero; stepBlocked = false; pendingStepInput = Vector2.zero;
+            reaction = null; reactionClock = 0f; pushElapsed = pushDuration; pushDirection = Vector3.zero;
             sweepValid = false;
             if (motor != null) motor.Teleport(position);
             else

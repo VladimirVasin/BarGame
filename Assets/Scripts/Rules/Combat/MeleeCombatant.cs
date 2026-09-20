@@ -4,8 +4,9 @@ using System.Collections.Generic;
 namespace BarPromenade
 {
     public enum MeleePhase { Ready, Windup, Active, Recovery, Stagger, GuardBroken, Defeated, GuardImpact, Step, Charging }
-    public enum MeleeHitResult { Ignored, Hit, Blocked, GuardBroken }
-    public enum MeleeAttackOutcome { None, Miss, Hit, Blocked, Obstacle }
+    public enum MeleeHitResult { Ignored, Hit, Blocked, GuardBroken, Parried }
+    public enum MeleeAttackOutcome { None, Miss, Hit, Blocked, Obstacle, Parried }
+    public enum MeleeBufferedAction { None, Attack, Charge, Step }
 
     /// <summary>The active part crossed by one advance, even if a hitch crosses the whole swing.</summary>
     public readonly struct MeleeAdvanceResult
@@ -25,13 +26,18 @@ namespace BarPromenade
     }
 
     /// <summary>Pure heavy-melee timing. Runtime owns input, facing and weapon collision.
-    /// Advance receives only unpaused seconds; no world needs or story state are involved.</summary>
+    /// Advance receives only unpaused seconds; no world needs or story state are involved.
+    /// Strikes are free; the meter pays for guard, steps and charge holds, regenerates
+    /// through every stun and recovery, and is re-armed only by the actor's own spending.</summary>
     public sealed class MeleeCombatant
     {
         private readonly HashSet<int> hitTargets = new HashSet<int>();
         private double clock, regenerateAt, stamina, attackElapsed, attackStartedAt, stepElapsed, stunRemaining, stunDuration;
         private double charge, chargeLimit;
-        private bool blockHeld, advancedActiveWindow, registeredContactWindow, bufferedAttack, bufferedCharge, bufferedChargeReleased;
+        private double guardPressedAt = double.NegativeInfinity, guardReleasedAt = double.NegativeInfinity;
+        private double stepEndedAt = double.NegativeInfinity;
+        private bool blockHeld, advancedActiveWindow, registeredContactWindow, bufferedChargeReleased, chained, chainArmed;
+        private MeleeBufferedAction bufferedAction;
 
         public MeleeCombatant(MeleeCombatSettings settings = null)
         {
@@ -47,6 +53,9 @@ namespace BarPromenade
         public bool IsCharging => Phase == MeleePhase.Charging;
         public bool IsAttacking => Phase == MeleePhase.Windup || Phase == MeleePhase.Active || Phase == MeleePhase.Recovery;
         public bool IsBlocking => blockHeld && (Phase == MeleePhase.Ready || Phase == MeleePhase.GuardImpact);
+        public bool IsStunned => Phase == MeleePhase.Stagger || Phase == MeleePhase.GuardBroken || Phase == MeleePhase.GuardImpact;
+        /// <summary>The current swing is the one short backhand that follows a landed hit or a step.</summary>
+        public bool IsChained => chained && IsAttacking;
         public int AttackSequence { get; private set; }
         public MeleeAttackOutcome AttackOutcome { get; private set; }
         public float AttackElapsed => (float)attackElapsed;
@@ -55,8 +64,8 @@ namespace BarPromenade
         public float AttackPower { get; private set; }
         public float AttackDamage => Settings.Damage + Settings.ChargeDamageBonus * AttackPower;
         public float AttackBlockCost => Settings.BlockCost + Settings.ChargeBlockCostBonus * AttackPower;
-        public float AttackWindupSeconds => Settings.WindupSeconds * (1f - AttackPower) +
-            Settings.ChargedWindupSeconds * AttackPower;
+        public float AttackWindupSeconds => chained ? Settings.ChainWindupSeconds :
+            Settings.WindupSeconds * (1f - AttackPower) + Settings.ChargedWindupSeconds * AttackPower;
         public float AttackActiveEnd => (float)ActiveEnd;
         // Gameplay windup/recovery vary; contact sampling still traverses the
         // complete authored windup, active arc and recovery exactly once.
@@ -66,19 +75,34 @@ namespace BarPromenade
             MeleeAttackOutcome.Hit => Settings.HitRecoverySeconds,
             MeleeAttackOutcome.Blocked => Settings.BlockRecoverySeconds,
             MeleeAttackOutcome.Obstacle => Settings.ObstacleRecoverySeconds,
+            MeleeAttackOutcome.Parried => Settings.ParriedRecoverySeconds,
             _ => Settings.RecoverySeconds
         }) * (1f + Settings.ChargeRecoveryBonus * AttackPower);
         public float CurrentAttackDurationSeconds => (float)AttackDuration;
         public float StepElapsed => (float)stepElapsed;
         public float StepTravelProgress => (float)Math.Min(1d, stepElapsed / Settings.StepTravelSeconds);
         public float StepProgress => (float)(stepElapsed / StepDuration);
-        public bool HasBufferedAttack => bufferedAttack || bufferedCharge;
-        public bool HasBufferedCharge => bufferedCharge;
+        public MeleeBufferedAction BufferedAction => bufferedAction;
+        public bool HasBufferedAttack => bufferedAction == MeleeBufferedAction.Attack || bufferedAction == MeleeBufferedAction.Charge;
+        public bool HasBufferedCharge => bufferedAction == MeleeBufferedAction.Charge;
+        public bool HasBufferedStep => bufferedAction == MeleeBufferedAction.Step;
         public float RecoveryRemaining => Phase == MeleePhase.Recovery
             ? (float)Math.Max(0d, AttackDuration - attackElapsed) : 0f;
+        /// <summary>Seconds until the current committed phase hands control back; infinite while free or mid-swing.</summary>
+        public float ActionRemaining => (float)ActionRemainingSeconds;
         private double ActiveEnd => (double)AttackWindupSeconds + Settings.ActiveSeconds;
         private double AttackDuration => ActiveEnd + AttackRecoverySeconds;
         private double StepDuration => (double)Settings.StepTravelSeconds + Settings.StepRecoverySeconds;
+        private double ActionRemainingSeconds => Phase switch
+        {
+            MeleePhase.Recovery => Math.Max(0d, AttackDuration - attackElapsed),
+            MeleePhase.Stagger => stunRemaining,
+            MeleePhase.GuardBroken => stunRemaining,
+            MeleePhase.GuardImpact => stunRemaining,
+            MeleePhase.Step => Math.Max(0d, StepDuration - stepElapsed),
+            _ => double.PositiveInfinity
+        };
+        private bool CanBuffer => Phase != MeleePhase.Ready && ActionRemainingSeconds <= Settings.AttackBufferSeconds;
 
         public float PhaseProgress
         {
@@ -99,11 +123,21 @@ namespace BarPromenade
             }
         }
 
-        /// <summary>A held guard resumes after recovery; it never cancels a committed attack.</summary>
+        /// <summary>A held guard resumes after recovery; it never cancels a committed attack.
+        /// Only a press made while free opens the parry window, and only after the re-arm.</summary>
         public void SetBlocking(bool held)
         {
             if (held) CancelCharge();
-            blockHeld = held && !IsDefeated;
+            bool next = held && !IsDefeated;
+            if (next && !blockHeld) guardPressedAt = Phase == MeleePhase.Ready ? clock : double.NegativeInfinity;
+            else if (!next && blockHeld) guardReleasedAt = clock;
+            blockHeld = next;
+        }
+
+        private void DropGuard()
+        {
+            if (blockHeld) guardReleasedAt = clock;
+            blockHeld = false;
         }
 
         public float AnimationProgressAt(float elapsed)
@@ -117,15 +151,13 @@ namespace BarPromenade
             return (float)Math.Min(1d, authored / Settings.AnimationAttackDurationSeconds);
         }
 
-        /// <summary>Charge pays base effort now; a recovery queue begins its hold only once ready.</summary>
+        /// <summary>Charge pays base effort now; a queued charge begins its hold only once ready.</summary>
         public bool RequestCharge()
         {
-            if (IsCharging || bufferedCharge) return true;
+            if (IsCharging || bufferedAction == MeleeBufferedAction.Charge) return true;
             if (Phase == MeleePhase.Ready) return BeginCharge();
-            if (Phase != MeleePhase.Recovery || RecoveryRemaining > Settings.AttackBufferSeconds ||
-                stamina < Settings.AttackCost) return false;
-            bufferedAttack = false;
-            bufferedCharge = true;
+            if (!CanBuffer || stamina < Settings.AttackCost) return false;
+            bufferedAction = MeleeBufferedAction.Charge;
             bufferedChargeReleased = false;
             return true;
         }
@@ -133,13 +165,15 @@ namespace BarPromenade
         private bool BeginCharge()
         {
             if (Phase != MeleePhase.Ready || stamina < Settings.AttackCost) return false;
-            stamina -= Settings.AttackCost;
+            Spend(Settings.AttackCost);
             regenerateAt = clock + Settings.RegenerationDelaySeconds;
             charge = 0d;
             chargeLimit = Math.Min(1d, stamina / Settings.ChargeStaminaCost);
             attackElapsed = stepElapsed = 0d;
             AttackOutcome = MeleeAttackOutcome.None;
-            blockHeld = advancedActiveWindow = registeredContactWindow = bufferedAttack = bufferedCharge = bufferedChargeReleased = false;
+            DropGuard();
+            advancedActiveWindow = registeredContactWindow = bufferedChargeReleased = chained = chainArmed = false;
+            bufferedAction = MeleeBufferedAction.None;
             hitTargets.Clear();
             AttackSequence = unchecked(AttackSequence + 1);
             Phase = MeleePhase.Charging;
@@ -149,7 +183,7 @@ namespace BarPromenade
         /// <summary>An early queued release becomes one ordinary tap at the ready boundary.</summary>
         public bool ReleaseCharge()
         {
-            if (bufferedCharge)
+            if (bufferedAction == MeleeBufferedAction.Charge)
             {
                 bufferedChargeReleased = true;
                 return true;
@@ -159,7 +193,6 @@ namespace BarPromenade
             ClearCharge();
             attackElapsed = 0d;
             attackStartedAt = clock;
-            regenerateAt = clock + Settings.RegenerationDelaySeconds;
             Phase = MeleePhase.Windup;
             return true;
         }
@@ -168,8 +201,9 @@ namespace BarPromenade
         public bool CancelCharge()
         {
             bool active = IsCharging;
-            bool cancelled = active || bufferedCharge;
+            bool cancelled = active || bufferedAction == MeleeBufferedAction.Charge;
             ClearCharge();
+            if (bufferedAction == MeleeBufferedAction.Charge) bufferedAction = MeleeBufferedAction.None;
             if (active)
             {
                 Phase = MeleePhase.Ready;
@@ -183,33 +217,48 @@ namespace BarPromenade
         private void ClearCharge()
         {
             charge = chargeLimit = 0d;
-            bufferedCharge = bufferedChargeReleased = false;
+            bufferedChargeReleased = false;
         }
 
-        /// <summary>One press can wait only in the final recovery window. It reserves no
+        /// <summary>One press can wait in the tail of any committed phase. It reserves no
         /// stamina and cannot create repeated attacks from one input event.</summary>
         public bool RequestAttack()
         {
             if (TryStartAttack()) return true;
-            if (Phase != MeleePhase.Recovery || RecoveryRemaining > Settings.AttackBufferSeconds ||
-                stamina < Settings.AttackCost) return false;
-            bufferedAttack = true;
+            if (!CanBuffer || stamina < Settings.AttackCost) return false;
+            bufferedAction = MeleeBufferedAction.Attack;
             ClearCharge();
             return true;
         }
 
-        public bool TryStartAttack()
+        /// <summary>A step press waits in the same single slot; runtime keeps its direction.</summary>
+        public bool RequestStep()
+        {
+            if (TryStartStep()) return true;
+            if (!CanBuffer || stamina < Settings.StepCost) return false;
+            bufferedAction = MeleeBufferedAction.Step;
+            ClearCharge();
+            return true;
+        }
+
+        public bool TryStartAttack() => TryStartAttack(false);
+
+        private bool TryStartAttack(bool fromBuffer)
         {
             if (Phase != MeleePhase.Ready || stamina < Settings.AttackCost) return false;
-            stamina -= Settings.AttackCost;
+            Spend(Settings.AttackCost);
             AttackPower = 0f;
             ClearCharge();
-            regenerateAt = clock + Settings.RegenerationDelaySeconds;
+            // The backhand follows a landed hit straight out of the buffer, or a
+            // step whose settle just ended. It never chains into itself.
+            chained = (fromBuffer && chainArmed) || clock - stepEndedAt <= Settings.StepAttackGraceSeconds;
+            chainArmed = false;
             attackElapsed = 0d;
             attackStartedAt = clock;
             stepElapsed = 0d;
             AttackOutcome = MeleeAttackOutcome.None;
-            advancedActiveWindow = registeredContactWindow = bufferedAttack = false;
+            advancedActiveWindow = registeredContactWindow = false;
+            bufferedAction = MeleeBufferedAction.None;
             hitTargets.Clear();
             AttackSequence = unchecked(AttackSequence + 1);
             Phase = MeleePhase.Windup;
@@ -217,15 +266,18 @@ namespace BarPromenade
         }
 
         /// <summary>A committed defensive step moves through the ordinary hurtbox.
-        /// Runtime owns direction and travel; these clocks grant no invulnerability.</summary>
+        /// Runtime owns direction and travel; these clocks grant no invulnerability.
+        /// Affordability is checked before any held charge is given up.</summary>
         public bool TryStartStep()
         {
+            if (!(Phase == MeleePhase.Ready || IsCharging) || stamina < Settings.StepCost) return false;
             CancelCharge();
-            if (Phase != MeleePhase.Ready || stamina < Settings.StepCost) return false;
-            stamina -= Settings.StepCost;
+            Spend(Settings.StepCost);
             regenerateAt = clock + Settings.RegenerationDelaySeconds;
             attackElapsed = stepElapsed = 0d;
-            blockHeld = advancedActiveWindow = registeredContactWindow = bufferedAttack = false;
+            DropGuard();
+            advancedActiveWindow = registeredContactWindow = chained = chainArmed = false;
+            bufferedAction = MeleeBufferedAction.None;
             AttackOutcome = MeleeAttackOutcome.None;
             hitTargets.Clear();
             AttackSequence = unchecked(AttackSequence + 1);
@@ -233,24 +285,33 @@ namespace BarPromenade
             return true;
         }
 
+        private void Spend(float cost)
+        {
+            if (cost <= 0f) return;
+            stamina -= cost;
+            regenerateAt = clock + Settings.RegenerationDelaySeconds;
+        }
+
         public MeleeAdvanceResult Advance(float seconds)
         {
             NonNegative(seconds, nameof(seconds));
-            // A buffered press can only exist in Recovery, so the old swing has
-            // no active interval here. The single result belongs to the new swing.
-            double recoveryRemaining = Math.Max(0d, AttackDuration - attackElapsed);
-            if (HasBufferedAttack && Phase == MeleePhase.Recovery && seconds >= recoveryRemaining)
+            // A queued press fires exactly at the boundary of its committed phase,
+            // so the single result belongs to the new swing.
+            double remaining = ActionRemainingSeconds;
+            if (bufferedAction != MeleeBufferedAction.None && Phase != MeleePhase.Ready && seconds >= remaining)
             {
-                bool nextCharge = bufferedCharge, released = bufferedChargeReleased;
-                bufferedAttack = false;
+                MeleeBufferedAction next = bufferedAction;
+                bool released = bufferedChargeReleased;
+                bufferedAction = MeleeBufferedAction.None;
                 ClearCharge();
-                AdvanceWithoutBufferedAttack(recoveryRemaining);
-                if (nextCharge)
+                AdvanceWithoutBufferedAttack(remaining);
+                switch (next)
                 {
-                    if (BeginCharge() && released) ReleaseCharge();
+                    case MeleeBufferedAction.Attack: TryStartAttack(true); break;
+                    case MeleeBufferedAction.Charge: if (BeginCharge() && released) ReleaseCharge(); break;
+                    case MeleeBufferedAction.Step: TryStartStep(); break;
                 }
-                else TryStartAttack();
-                return AdvanceWithoutBufferedAttack(seconds - recoveryRemaining);
+                return AdvanceWithoutBufferedAttack(seconds - remaining);
             }
             return AdvanceWithoutBufferedAttack(seconds);
         }
@@ -259,21 +320,31 @@ namespace BarPromenade
         {
             advancedActiveWindow = registeredContactWindow = false;
             MeleeAdvanceResult result = default;
-            if (IsDefeated || seconds == 0f) return result;
+            if (IsDefeated || seconds == 0d) return result;
 
             double end = clock + seconds;
-            double readyAt = clock;
+            // Breath returns through recovery and every stun; only the swing itself
+            // (windup and the live arc) and a held charge or guard withhold it.
+            double regenFrom = regenerateAt;
+            bool regenerates = !blockHeld && !IsCharging;
             if (IsCharging)
             {
                 double previous = charge;
                 charge = Math.Min(chargeLimit, charge + seconds / Settings.ChargeSeconds);
                 stamina = Math.Max(0d, stamina - (charge - previous) * Settings.ChargeStaminaCost);
+                // A full charge kept waiting burns breath at a steady rate and never fires by itself.
+                if (chargeLimit >= 1d)
+                {
+                    double capReachedAfter = Math.Max(0d, (1d - previous) * Settings.ChargeSeconds);
+                    double overhold = Math.Max(0d, seconds - capReachedAfter);
+                    stamina = Math.Max(0d, stamina - overhold * Settings.OverholdDrainPerSecond);
+                }
                 regenerateAt = end + Settings.RegenerationDelaySeconds;
             }
             else if (IsAttacking)
             {
                 double previous = attackElapsed;
-                readyAt = clock + AttackDuration - previous;
+                regenFrom = Math.Max(regenFrom, attackStartedAt + ActiveEnd);
                 attackElapsed = Math.Min(AttackDuration, previous + seconds);
                 double activeStart = AttackWindupSeconds;
                 double activeEnd = activeStart + Settings.ActiveSeconds;
@@ -294,20 +365,23 @@ namespace BarPromenade
             }
             else if (Phase == MeleePhase.Step)
             {
-                readyAt = clock + StepDuration - stepElapsed;
-                stepElapsed = Math.Min(StepDuration, stepElapsed + seconds);
-                if (stepElapsed >= StepDuration) Phase = MeleePhase.Ready;
+                double previous = stepElapsed;
+                stepElapsed = Math.Min(StepDuration, previous + seconds);
+                if (stepElapsed >= StepDuration)
+                {
+                    Phase = MeleePhase.Ready;
+                    stepEndedAt = clock + (StepDuration - previous);
+                }
             }
-            else if (Phase == MeleePhase.Stagger || Phase == MeleePhase.GuardBroken || Phase == MeleePhase.GuardImpact)
+            else if (IsStunned)
             {
-                readyAt = clock + stunRemaining;
                 stunRemaining = Math.Max(0d, stunRemaining - seconds);
                 if (stunRemaining == 0d) Phase = MeleePhase.Ready;
             }
 
-            if (Phase == MeleePhase.Ready && !blockHeld)
+            if (regenerates)
             {
-                double regenerationSeconds = Math.Max(0d, end - Math.Max(readyAt, regenerateAt));
+                double regenerationSeconds = Math.Max(0d, end - Math.Max(regenFrom, clock));
                 stamina = Math.Min(Settings.MaxStamina, stamina + regenerationSeconds * Settings.StaminaPerSecond);
             }
             clock = end;
@@ -322,43 +396,48 @@ namespace BarPromenade
             if (IsDefeated || (Phase != MeleePhase.Windup && Phase != MeleePhase.Active &&
                 !advancedActiveWindow)) return false;
             AttackOutcome = MeleeAttackOutcome.Obstacle;
+            EndSwingNow();
+            return true;
+        }
+
+        private void EndSwingNow()
+        {
             attackElapsed = ActiveEnd;
             attackStartedAt = clock - ActiveEnd;
             Phase = MeleePhase.Recovery;
-            advancedActiveWindow = bufferedAttack = false;
+            advancedActiveWindow = chainArmed = false;
+            bufferedAction = MeleeBufferedAction.None;
             ClearCharge();
-            return true;
         }
 
         /// <summary>Resolve only the current collected contact window. Registration
         /// survives a simultaneous received hit, but cannot revive its interrupted
-        /// attack. A real hit outranks a block; an obstacle keeps its forced recoil.</summary>
+        /// attack. A real hit outranks a parry, which outranks a block; an obstacle
+        /// keeps its forced recoil. A parried swing stops at once.</summary>
         public bool RecordAttackOutcome(MeleeHitResult result, int attackSequence)
         {
-            if ((result != MeleeHitResult.Hit && result != MeleeHitResult.Blocked && result != MeleeHitResult.GuardBroken) ||
+            if ((result != MeleeHitResult.Hit && result != MeleeHitResult.Blocked &&
+                 result != MeleeHitResult.GuardBroken && result != MeleeHitResult.Parried) ||
                 attackSequence != AttackSequence ||
                 (Phase != MeleePhase.Active && !advancedActiveWindow && !registeredContactWindow) ||
                 AttackOutcome == MeleeAttackOutcome.Obstacle) return false;
-            MeleeAttackOutcome outcome = result == MeleeHitResult.Blocked
-                ? MeleeAttackOutcome.Blocked : MeleeAttackOutcome.Hit;
-            if (AttackOutcome == MeleeAttackOutcome.Hit || AttackOutcome == outcome) return true;
-            double previousDuration = AttackDuration;
+            MeleeAttackOutcome outcome = result == MeleeHitResult.Blocked ? MeleeAttackOutcome.Blocked :
+                result == MeleeHitResult.Parried ? MeleeAttackOutcome.Parried : MeleeAttackOutcome.Hit;
+            if (AttackOutcome == MeleeAttackOutcome.Hit || AttackOutcome == outcome ||
+                (AttackOutcome == MeleeAttackOutcome.Parried && outcome == MeleeAttackOutcome.Blocked)) return true;
             AttackOutcome = outcome;
+            if (outcome == MeleeAttackOutcome.Parried)
+            {
+                if (IsAttacking || (Phase == MeleePhase.Ready && advancedActiveWindow)) EndSwingNow();
+                return true;
+            }
             if (IsAttacking || (Phase == MeleePhase.Ready && advancedActiveWindow))
             {
                 double elapsed = clock - attackStartedAt;
                 attackElapsed = Math.Min(elapsed, AttackDuration);
                 if (elapsed >= AttackDuration) Phase = MeleePhase.Ready;
-                // A large Advance can already have crossed recovery before its
-                // collected contact is applied. Credit the newly earlier ready
-                // boundary rather than losing regeneration to timestep size.
-                if (Phase == MeleePhase.Ready && !blockHeld)
-                {
-                    double currentReady = Math.Max(attackStartedAt + AttackDuration, regenerateAt);
-                    double previousReady = Math.Max(attackStartedAt + previousDuration, regenerateAt);
-                    double additional = Math.Max(0d, clock - currentReady) - Math.Max(0d, clock - previousReady);
-                    stamina = Math.Min(Settings.MaxStamina, stamina + additional * Settings.StaminaPerSecond);
-                }
+                // Landing a clean hit arms the one backhand a queued press may take.
+                if (outcome == MeleeAttackOutcome.Hit && IsAttacking && !chained) chainArmed = true;
             }
             return true;
         }
@@ -374,40 +453,65 @@ namespace BarPromenade
             return accepted;
         }
 
-        /// <summary>Front is decided geometrically by runtime. An affordable block pays the
-        /// whole cost, even down to zero stamina. An unaffordable block breaks and takes full damage.</summary>
-        public MeleeHitResult ReceiveHit(float damage, float blockCost, bool fromFront)
+        /// <summary>Front is decided geometrically by runtime. A fresh, re-armed guard press
+        /// parries a light swing for free. An affordable block pays the whole cost, even
+        /// down to zero. An unaffordable block breaks: half damage, a longer stun, the
+        /// meter and its regeneration untouched. A received hit never delays breath.</summary>
+        public MeleeHitResult ReceiveHit(float damage, float blockCost, bool fromFront, float power = 0f)
         {
             NonNegative(damage, nameof(damage));
             NonNegative(blockCost, nameof(blockCost));
+            NonNegative(power, nameof(power));
             if (IsDefeated || damage == 0f) return MeleeHitResult.Ignored;
-            regenerateAt = clock + Settings.RegenerationDelaySeconds;
-            advancedActiveWindow = bufferedAttack = false;
+            advancedActiveWindow = chainArmed = false;
+            bufferedAction = MeleeBufferedAction.None;
             ClearCharge();
-            if (IsBlocking && fromFront && stamina >= blockCost)
+            if (IsBlocking && fromFront)
             {
-                stamina -= blockCost;
-                stunRemaining = Math.Max(stunRemaining, Settings.GuardImpactSeconds);
-                stunDuration = stunRemaining;
-                Phase = MeleePhase.GuardImpact;
-                return MeleeHitResult.Blocked;
+                bool freshPress = clock - guardPressedAt <= Settings.ParryWindowSeconds &&
+                    guardPressedAt - guardReleasedAt >= Settings.ParryRearmSeconds;
+                guardPressedAt = double.NegativeInfinity;
+                if (freshPress && power < Settings.ParryMaxPower)
+                {
+                    stunRemaining = Math.Max(stunRemaining, Settings.ParryImpactSeconds);
+                    stunDuration = stunRemaining;
+                    Phase = MeleePhase.GuardImpact;
+                    return MeleeHitResult.Parried;
+                }
+                if (stamina >= blockCost)
+                {
+                    Spend(blockCost);
+                    stunRemaining = Math.Max(stunRemaining, Settings.GuardImpactSeconds + Settings.ChargeGuardImpactBonus * power);
+                    stunDuration = stunRemaining;
+                    Phase = MeleePhase.GuardImpact;
+                    return MeleeHitResult.Blocked;
+                }
             }
 
             bool guardBreak = IsBlocking && fromFront;
-            if (guardBreak) stamina = 0d;
-            Health = Math.Max(0f, Health - damage);
+            // A committed swing or a whiff that gets punished pays extra, and being
+            // punished can never end sooner than the swing would have on its own.
+            bool counterHit = Phase == MeleePhase.Charging || Phase == MeleePhase.Windup ||
+                (Phase == MeleePhase.Recovery &&
+                 (AttackOutcome == MeleeAttackOutcome.Miss || AttackOutcome == MeleeAttackOutcome.Obstacle));
+            double swingRemaining = Phase == MeleePhase.Recovery ? Math.Max(0d, AttackDuration - attackElapsed) : 0d;
+            Health = Math.Max(0f, Health - (guardBreak ? damage * Settings.GuardBreakDamageScale : damage));
             attackElapsed = stepElapsed = 0d;
+            chained = false;
             if (Health == 0f)
             {
                 Phase = MeleePhase.Defeated;
-                blockHeld = false;
+                DropGuard();
                 stunRemaining = 0d;
             }
             else
             {
                 // A second hit must not shorten an existing guard break.
                 bool retainGuardBreak = Phase == MeleePhase.GuardBroken;
-                stunRemaining = Math.Max(stunRemaining, guardBreak ? Settings.GuardBreakSeconds : Settings.StaggerSeconds);
+                double stun = guardBreak ? Settings.GuardBreakSeconds :
+                    Settings.StaggerSeconds + Settings.ChargeStaggerBonus * power +
+                    (counterHit ? Settings.CounterHitStaggerBonus : 0d);
+                stunRemaining = Math.Max(Math.Max(stunRemaining, stun), swingRemaining);
                 stunDuration = stunRemaining;
                 Phase = guardBreak || retainGuardBreak ? MeleePhase.GuardBroken : MeleePhase.Stagger;
             }
@@ -420,7 +524,10 @@ namespace BarPromenade
         {
             if (!IsDefeated) Phase = MeleePhase.Ready;
             attackElapsed = stepElapsed = stunRemaining = stunDuration = 0d;
-            blockHeld = advancedActiveWindow = registeredContactWindow = bufferedAttack = false;
+            DropGuard();
+            advancedActiveWindow = registeredContactWindow = chained = chainArmed = false;
+            bufferedAction = MeleeBufferedAction.None;
+            stepEndedAt = double.NegativeInfinity;
             ClearCharge();
             AttackOutcome = MeleeAttackOutcome.None;
             hitTargets.Clear();
@@ -432,10 +539,12 @@ namespace BarPromenade
             Health = Settings.MaxHealth;
             AttackPower = 0f;
             ClearCharge();
+            bufferedAction = MeleeBufferedAction.None;
             stamina = Settings.MaxStamina;
             Phase = MeleePhase.Ready;
             clock = regenerateAt = attackElapsed = attackStartedAt = stepElapsed = stunRemaining = stunDuration = 0d;
-            blockHeld = advancedActiveWindow = registeredContactWindow = bufferedAttack = false;
+            guardPressedAt = guardReleasedAt = stepEndedAt = double.NegativeInfinity;
+            blockHeld = advancedActiveWindow = registeredContactWindow = chained = chainArmed = false;
             AttackOutcome = MeleeAttackOutcome.None;
             hitTargets.Clear();
             // Invalidate a collision result retained by a previous round.
