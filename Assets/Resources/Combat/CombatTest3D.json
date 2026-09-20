@@ -1,0 +1,495 @@
+{
+  "generator": "tools/build-combat-test-3d-model.py",
+  "generator_version": "1.4.0",
+  "blender_version": "5.0.1",
+  "build_signature": "a9be5aed30097210e6e58139547b4b1d1d7b7ba8ab75212ebddf417d17ebb587",
+  "units": "metres",
+  "unity_forward": "+Z",
+  "unity_up": "+Y",
+  "passive": true,
+  "fbx_bake_space_transform": false,
+  "exported_fbx_validation": "mesh and anchor world metres after FBX round trip",
+  "signed_volumes": "every solid positive before and after axis swap",
+  "determinism": "two independent geometry builds match",
+  "triangle_count": 1260,
+  "materials": {
+    "Concrete": [
+      0.5,
+      0.51,
+      0.47
+    ],
+    "ConcreteDark": [
+      0.34,
+      0.36,
+      0.33
+    ],
+    "Patch": [
+      0.58,
+      0.56,
+      0.48
+    ],
+    "Stripe": [
+      0.64,
+      0.54,
+      0.31
+    ],
+    "Steel": [
+      0.25,
+      0.28,
+      0.27
+    ],
+    "WornSteel": [
+      0.52,
+      0.55,
+      0.52
+    ],
+    "Rubber": [
+      0.13,
+      0.15,
+      0.14
+    ]
+  },
+  "models": [
+    {
+      "name": "Arena",
+      "bounds_min": [
+        -8.02,
+        -0.28,
+        -8.02
+      ],
+      "bounds_max": [
+        8.02,
+        1.53,
+        8.02
+      ],
+      "triangle_count": 840,
+      "solid_count": 30,
+      "mesh_count": 10,
+      "anchors": [
+        {
+          "name": "HeroSpawn",
+          "position": [
+            0,
+            0,
+            -2.5
+          ],
+          "parent": null
+        },
+        {
+          "name": "OpponentSpawn",
+          "position": [
+            0,
+            0,
+            1
+          ],
+          "parent": null
+        },
+        {
+          "name": "ObstacleCenter",
+          "position": [
+            3,
+            0.75,
+            1
+          ],
+          "parent": null
+        }
+      ]
+    },
+    {
+      "name": "Crowbar",
+      "bounds_min": [
+        -0.0235,
+        -0.136,
+        -0.0234
+      ],
+      "bounds_max": [
+        0.0235,
+        0.623101,
+        0.1645
+      ],
+      "triangle_count": 420,
+      "solid_count": 15,
+      "mesh_count": 5,
+      "anchors": [
+        {
+          "name": "Grip",
+          "position": [
+            0,
+            0,
+            0
+          ],
+          "parent": null
+        },
+        {
+          "name": "StrikeBase",
+          "position": [
+            0,
+            0.1,
+            0
+          ],
+          "parent": null
+        },
+        {
+          "name": "StrikeTip",
+          "position": [
+            0,
+            0.595,
+            0.145
+          ],
+          "parent": null
+        }
+      ]
+    }
+  ],
+  "test_only": true,
+  "actions": {
+    "rig": "HeroV2",
+    "npc_rig": "NpcHumanV2",
+    "fps": 100,
+    "root_motion": false,
+    "animation_events": 0,
+    "clips": [
+      {
+        "name": "CombatReady",
+        "duration_seconds": 1.0,
+        "loop": true
+      },
+      {
+        "name": "CombatAttack",
+        "duration_seconds": 1.28,
+        "loop": false
+      },
+      {
+        "name": "CombatBlock",
+        "duration_seconds": 1.0,
+        "loop": true
+      },
+      {
+        "name": "CombatHit",
+        "duration_seconds": 0.36,
+        "loop": false
+      },
+      {
+        "name": "CombatGuardImpact",
+        "duration_seconds": 0.28,
+        "loop": false
+      },
+      {
+        "name": "CombatGuardBreak",
+        "duration_seconds": 0.7,
+        "loop": false
+      },
+      {
+        "name": "CombatRecoil",
+        "duration_seconds": 0.48,
+        "loop": false
+      },
+      {
+        "name": "CombatDefeat",
+        "duration_seconds": 0.36,
+        "loop": false
+      }
+    ],
+    "windup_seconds": 0.45,
+    "active_seconds": 0.18,
+    "recovery_seconds": 0.65,
+    "maximum_support_error": 0.00010604904332138926,
+    "maximum_support_angle_degrees": 0.0,
+    "support_validation_hz": 200,
+    "support_bones": [
+      "root",
+      "foot.L",
+      "foot.R"
+    ],
+    "attack_pelvis_travel_m": 0.07376992521318186,
+    "attack_knee_travel_degrees": 14.816392979692038,
+    "defeat_handoff_seconds": 0.16,
+    "defeat_pelvis_drop_m": 0.07200002670288086,
+    "animation_signature": "c50ceaca614aafd146f709ff8e74ccf7bbd6e203ccc952396c4436b48fc7205d",
+    "base_action_signature": "9f9c5b141fd0581a63ad3a53470f8b546367e5c9129bfa2c46c077c285ed21e7",
+    "strike_samples": [
+      {
+        "seconds": 0.0,
+        "grip": [
+          0.33650049567222595,
+          1.3189961099624634,
+          0.33912354707717896
+        ],
+        "tip": [
+          0.3365005552768707,
+          1.8056580209732056,
+          0.7108895778656006
+        ]
+      },
+      {
+        "seconds": 0.45,
+        "grip": [
+          0.40040719509124756,
+          1.8303048992156983,
+          -0.1730738878250122
+        ],
+        "tip": [
+          0.41790929436683655,
+          2.2833464527130127,
+          -0.5847742557525635
+        ]
+      },
+      {
+        "seconds": 0.5,
+        "grip": [
+          0.7070555686950684,
+          1.4799731159210205,
+          0.1581575572490692
+        ],
+        "tip": [
+          1.21504545211792,
+          1.463750638961792,
+          0.49981993436813354
+        ]
+      },
+      {
+        "seconds": 0.55,
+        "grip": [
+          0.23717696964740753,
+          1.1060930871963501,
+          0.4940076470375061
+        ],
+        "tip": [
+          0.2026468813419342,
+          1.2009549522399903,
+          1.098043441772461
+        ]
+      },
+      {
+        "seconds": 0.56,
+        "grip": [
+          0.20526272058486938,
+          1.1125115537643433,
+          0.4929058253765106
+        ],
+        "tip": [
+          0.15702401101589203,
+          1.2092728996276856,
+          1.095699667930603
+        ]
+      },
+      {
+        "seconds": 0.6,
+        "grip": [
+          0.06420494616031647,
+          0.9796125078201294,
+          0.44488468766212463
+        ],
+        "tip": [
+          -0.2547804117202759,
+          0.9290135884284973,
+          0.9652096033096313
+        ]
+      },
+      {
+        "seconds": 0.63,
+        "grip": [
+          -0.05034566670656204,
+          0.9388494277000428,
+          0.37919268012046814
+        ],
+        "tip": [
+          -0.5530694127082825,
+          0.8827600264549256,
+          0.7244066596031189
+        ]
+      },
+      {
+        "seconds": 1.28,
+        "grip": [
+          0.33650052547454834,
+          1.318996229171753,
+          0.33912357687950134
+        ],
+        "tip": [
+          0.3365006148815155,
+          1.8056582593917847,
+          0.7108895778656006
+        ]
+      }
+    ],
+    "reactions": [
+      {
+        "name": "CombatGuardImpact",
+        "peak_seconds": 0.06,
+        "entry_clip": "CombatBlock",
+        "entry_seconds": 0.0,
+        "exit_clip": "CombatBlock",
+        "exit_seconds": 0.0,
+        "grip_travel_m": 0.19803787361823172,
+        "head_travel_m": 0.05872228055535764
+      },
+      {
+        "name": "CombatGuardBreak",
+        "peak_seconds": 0.12,
+        "entry_clip": "CombatBlock",
+        "entry_seconds": 0.0,
+        "exit_clip": "CombatReady",
+        "exit_seconds": 0.0,
+        "grip_travel_m": 0.9488512601344447,
+        "head_travel_m": 0.13127878901486545
+      },
+      {
+        "name": "CombatRecoil",
+        "peak_seconds": 0.07,
+        "entry_clip": "CombatAttack",
+        "entry_seconds": 0.56,
+        "exit_clip": "CombatReady",
+        "exit_seconds": 0.0,
+        "grip_travel_m": 0.7167996814475353,
+        "head_travel_m": 0.1587252797828343
+      }
+    ],
+    "minimum_reaction_tip_separation_m": 0.48705049805564676,
+    "hero_only_clips": [
+      {
+        "name": "CombatStrafeLeft",
+        "duration_seconds": 0.8,
+        "loop": true
+      },
+      {
+        "name": "CombatStrafeRight",
+        "duration_seconds": 0.8,
+        "loop": true
+      }
+    ],
+    "strafing": {
+      "duration_seconds": 0.8,
+      "cycle_distance_m": 0.6,
+      "nominal_speed_m_s": 0.75,
+      "validation_hz": 200,
+      "support_contract": "virtual lateral root travel cancels each planted sole; leading foot opens, trailing closes",
+      "signature": "cfdab17a1c53200bcaf34b81ac991c43f1cedb0daaaa6f0bd0b6a94393d51d0f",
+      "clips": [
+        {
+          "name": "CombatStrafeLeft",
+          "leading_foot": "L",
+          "direction_unity": [
+            -1.0,
+            0.0,
+            0.0
+          ],
+          "maximum_world_support_error_m": 4.9787404799992655e-05,
+          "maximum_upper_body_error": 5.960464477539063e-08,
+          "maximum_ready_seam_error": 1.3709068298339844e-06,
+          "minimum_foot_separation_m": 0.19199882447719574,
+          "left_foot_lift_m": 0.06500107049942017,
+          "right_foot_lift_m": 0.0650000274181366
+        },
+        {
+          "name": "CombatStrafeRight",
+          "leading_foot": "R",
+          "direction_unity": [
+            1.0,
+            0.0,
+            0.0
+          ],
+          "maximum_world_support_error_m": 4.971139321553943e-05,
+          "maximum_upper_body_error": 5.960464477539063e-08,
+          "maximum_ready_seam_error": 1.4007091522216797e-06,
+          "minimum_foot_separation_m": 0.19199882447719574,
+          "left_foot_lift_m": 0.06500104069709778,
+          "right_foot_lift_m": 0.06499999761581421
+        }
+      ]
+    },
+    "hero_step_clips": [
+      {
+        "name": "CombatStepForward",
+        "duration_seconds": 0.46,
+        "loop": false
+      },
+      {
+        "name": "CombatStepBackward",
+        "duration_seconds": 0.46,
+        "loop": false
+      },
+      {
+        "name": "CombatStepLeft",
+        "duration_seconds": 0.46,
+        "loop": false
+      },
+      {
+        "name": "CombatStepRight",
+        "duration_seconds": 0.46,
+        "loop": false
+      }
+    ],
+    "defensive_step": {
+      "duration_seconds": 0.46,
+      "travel_seconds": 0.3,
+      "settle_seconds": 0.16,
+      "distance_m": 0.65,
+      "travel_curve": "smoothstep",
+      "validation_hz": 200,
+      "signature": "3025a7c37fd0da4e1bcd17078e6a0900a1c7cdcc2d5653da0c41b2a662a1fd3b",
+      "clips": [
+        {
+          "name": "CombatStepForward",
+          "leading_foot": "L",
+          "direction_unity": [
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "maximum_world_support_error_m": 0.0005273400093711122,
+          "maximum_upper_body_error": 5.960464477539063e-08,
+          "maximum_ready_seam_error": 1.4007091522216797e-06,
+          "minimum_foot_separation_m": 0.19199645519256592,
+          "left_foot_lift_m": 0.05934625864028931,
+          "right_foot_lift_m": 0.05934444069862366
+        },
+        {
+          "name": "CombatStepBackward",
+          "leading_foot": "R",
+          "direction_unity": [
+            -0.0,
+            0.0,
+            -1.0
+          ],
+          "maximum_world_support_error_m": 0.0005264621625863227,
+          "maximum_upper_body_error": 5.960464477539063e-08,
+          "maximum_ready_seam_error": 1.4007091522216797e-06,
+          "minimum_foot_separation_m": 0.19199669361114502,
+          "left_foot_lift_m": 0.05934625864028931,
+          "right_foot_lift_m": 0.05934441089630127
+        },
+        {
+          "name": "CombatStepLeft",
+          "leading_foot": "L",
+          "direction_unity": [
+            -1.0,
+            0.0,
+            -0.0
+          ],
+          "maximum_world_support_error_m": 0.0005243908387679741,
+          "maximum_upper_body_error": 5.960464477539063e-08,
+          "maximum_ready_seam_error": 1.4007091522216797e-06,
+          "minimum_foot_separation_m": 0.19199881702661514,
+          "left_foot_lift_m": 0.059345752000808716,
+          "right_foot_lift_m": 0.05934438109397888
+        },
+        {
+          "name": "CombatStepRight",
+          "leading_foot": "R",
+          "direction_unity": [
+            1.0,
+            0.0,
+            -0.0
+          ],
+          "maximum_world_support_error_m": 0.0005249912060023744,
+          "maximum_upper_body_error": 5.960464477539063e-08,
+          "maximum_ready_seam_error": 1.3709068298339844e-06,
+          "minimum_foot_separation_m": 0.19199882447719574,
+          "left_foot_lift_m": 0.05934581160545349,
+          "right_foot_lift_m": 0.05934450030326843
+        }
+      ]
+    }
+  }
+}

@@ -157,6 +157,10 @@ in `Captures` and does not publish. See [audio-vhs/README.md](audio-vhs/README.m
 curtains; validates 31 body/12 hair bones, dressed/hidden geometry and slots.
 Output: `Assets/Player3D/V2/Models/PlayerCharacter3DV2.{fbx,json}`.
 
+`build-combat-test-3d-model.py`: isolated arena/crowbar and HeroV2/NPC action
+banks in `Assets/Resources/Combat`; use the shared launcher, then
+`--validate-only`. Scene setup: `ProjectSceneSetup.ConfigureCombatTestScene`.
+
 `player_jacket_cloth.py --write` derives hem/cuff metadata only; `--check` verifies it.
 Refresh `Player3DV2` through its asset setup. Lower-body changes also require
 `build-home-toilet-seated-3d-model.py`: trousers supply fabric, anatomy skin.

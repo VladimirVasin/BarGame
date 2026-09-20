@@ -152,6 +152,16 @@ namespace BarPromenade
                     return Read(keyboard?.leftShiftKey, held) ||
                            Read(keyboard?.rightShiftKey, held) ||
                            Read(gamepad?.leftStickButton, held);
+                case GameInputAction.MeleeAttack:
+                    return Read(Mouse.current?.leftButton, held) || Read(gamepad?.rightTrigger, held);
+                case GameInputAction.MeleeBlock:
+                    return Read(Mouse.current?.rightButton, held) || Read(gamepad?.leftTrigger, held);
+                case GameInputAction.CombatReset:
+                    return Read(keyboard?.rKey, held) || Read(gamepad?.buttonWest, held);
+                case GameInputAction.CombatMode:
+                    return Read(keyboard?.tabKey, held) || Read(gamepad?.buttonNorth, held);
+                case GameInputAction.CombatStep:
+                    return Read(keyboard?.spaceKey, held) || Read(gamepad?.buttonSouth, held);
                 default:
                     return false;
             }

@@ -9,7 +9,7 @@ namespace BarPromenade
     /// </summary>
     [DefaultExecutionOrder(100)]
     [DisallowMultipleComponent]
-    public sealed class PlayerCameraFollow : MonoBehaviour
+    public sealed partial class PlayerCameraFollow : MonoBehaviour
     {
         [Header("Exterior")]
         [SerializeField, Range(1f, 40f)] private float exteriorPitch = 14f;
@@ -184,6 +184,7 @@ namespace BarPromenade
 
         public void Initialize(Camera camera, Transform target, bool interior)
         {
+            ResetTargetLockState();
             controlledCamera = camera != null ? camera : GetComponent<Camera>();
             followTarget = target;
             isInterior = interior;
@@ -459,7 +460,7 @@ namespace BarPromenade
 
         public void RotateYaw(float degrees)
         {
-            if (fixedPoseActive)
+            if (fixedPoseActive || TargetLockActive)
             {
                 return;
             }
@@ -469,7 +470,7 @@ namespace BarPromenade
 
         public void RotatePitch(float degrees)
         {
-            if (fixedPoseActive)
+            if (fixedPoseActive || TargetLockActive)
             {
                 return;
             }
@@ -489,7 +490,7 @@ namespace BarPromenade
             float unscaledDeltaTime,
             bool includeKeyboard = true)
         {
-            if (!OrbitInputEnabled)
+            if (!OrbitInputEnabled || TargetLockActive)
             {
                 return Vector2.zero;
             }
@@ -594,6 +595,12 @@ namespace BarPromenade
                 return;
             }
 
+            if (TargetLockActive)
+            {
+                UpdateTargetLock(0f, true);
+                return;
+            }
+
             if (followTarget == null)
             {
                 return;
@@ -633,6 +640,13 @@ namespace BarPromenade
             if (fixedPoseActive)
             {
                 UpdateFixedPose(deltaTime);
+                return;
+            }
+
+            if (TargetLockActive)
+            {
+                if (!GameTimeScaleRuntime.IsPaused && !PauseMenuController.IsAnyPaused)
+                    UpdateTargetLock(Time.deltaTime, false);
                 return;
             }
 
@@ -1041,21 +1055,30 @@ namespace BarPromenade
             // room the drunk dolly zoom has behind the camera.
             float reach = idealDistance * GetDollyNarrowScale();
             Vector3 direction = -(rotation * Vector3.forward);
+            float obstruction = GetCameraClearance(focusPoint, direction, reach, freeDistance: float.PositiveInfinity);
+            dollyClearance = Mathf.Min(reach, obstruction);
+            return Mathf.Min(idealDistance, obstruction);
+        }
+
+        private float GetCameraClearance(Vector3 origin, Vector3 direction, float reach,
+            Transform ignoredTarget = null, float freeDistance = -1f)
+        {
+            if (reach <= .0001f) return 0f;
             int hitCount = Physics.SphereCastNonAlloc(
-                focusPoint,
+                origin,
                 collisionRadius,
                 direction,
                 collisionHits,
                 reach,
                 collisionMask,
                 QueryTriggerInteraction.Ignore);
-            float allowedDistance = idealDistance;
-            float clearance = reach;
+            float clearance = freeDistance < 0f ? reach : freeDistance;
 
             for (int index = 0; index < hitCount; index++)
             {
                 RaycastHit hit = collisionHits[index];
-                if (hit.collider == null || IsPlayerCollider(hit.collider.transform))
+                if (hit.collider == null || IsPlayerCollider(hit.collider.transform) ||
+                    (ignoredTarget != null && hit.collider.transform.IsChildOf(ignoredTarget)))
                 {
                     continue;
                 }
@@ -1063,12 +1086,10 @@ namespace BarPromenade
                 float limit = Mathf.Max(
                     0.01f,
                     hit.distance - collisionPadding);
-                allowedDistance = Mathf.Min(allowedDistance, limit);
                 clearance = Mathf.Min(clearance, limit);
             }
 
-            dollyClearance = clearance;
-            return allowedDistance;
+            return clearance;
         }
 
         private bool IsPlayerCollider(Transform candidate)

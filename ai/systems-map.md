@@ -1,9 +1,6 @@
 # Systems map
 
-An index, not a specification. One row per system: what it guarantees, where its
-code lives, and whether it is real.
-
-Detail belongs elsewhere and is not repeated here:
+One row per system: guarantee, owner and status. Detail:
 
 - normative decisions and exact tuning values: `ai/architecture-notes.md`;
 - current end-to-end behaviour: `ai/current-world.md`;
@@ -49,10 +46,11 @@ A row never carries a status outside this table. Product-level scope cuts
 | City Blender ordinary buildings | Fixed-metre v2.1 district wrappers total `28` meshes / `4,218` triangles / `194` UV2 opening slots. | `CityBuilding*`, building generators | Current |
 | Residential balcony life | Bounded pooled smokers occupy authored Residential docks; Home reconstructs its own balcony-gated selection. | `City/Balcony/CityBalconySmoker*`, `CityPedestrianHandProps` | Current |
 | City Blender low-rise landmarks | Bar, supermarket and `player_home_exterior_v1` are complete passive semantic exteriors with inset foundations. | `CityBarFacadeWorldBuilder`, `CitySupermarketFacadeWorldBuilder` | Current |
-| Unity URP foundation | Twelve build scenes and PC renderer settings on a project-owned Neutral/Bloom/Vignette baseline volume. | `6000.6.0f1`, `17.6.0` | Current |
+| Unity URP foundation | Thirteen build scenes; PC Neutral/Bloom/Vignette baseline. | `6000.6.0f1`, `17.6.0` | Current |
 | PS1 presentation | Shared low-res composite. Optional 4:3, vertex jitter and Begotten keep controls; Begotten ramps `15 s` in, `3 s` out. | `Runtime/Rendering`, `IntoxicationRenderState`, `BegottenModeRamp` | Current |
 | Depth of field tiers | Exteriors keep broad Gaussian far blur; the six interior scenes cap it at radius `0.55`. | `RuntimeSceneSetup`, `DepthOfFieldSettingsBinder` | Current |
-| Runtime area composition | Nine gameplay roots; four build in frames; interior doors keep the City/village resident and dormant, resumed on exit. | `Runtime/Core`, `Runtime/Scenes` | Current |
+| Runtime area composition | Ten gameplay roots; four build in frames; interior doors retain dormant City/village. | `Runtime/Core`, `Runtime/Scenes` | Current |
+| Combat test | AI/target; outcome recovery, stamina steps; shoulder lock/strafe, ragdoll/drop; R resets. | `CombatTestRoot`, `Runtime/Combat`, `Rules/Combat` | Current |
 | New-game starting place | Eleven starts after New Game, village default; chosen root at day `1`/`07:40`, ordinary loading. | `StartMenu{Root,Model}`, `NewGame{LocationCatalog,StartService}` | Current |
 | Retained Home waking opening | Frozen `05:59`, five-second lock, Wake Up/Quit, continuous wake. Gap: no shipped path reaches it. | `MainMenuRoot`, `HomeOpening{Controller,Timeline}` | Partial |
 | Session clock and day/night rules | Persistent 48-minute day at ×1; two real seconds per game minute. Intoxication preserves its rate. | `GameTimeState`, `GameTimeRuntime` | Current |
@@ -222,7 +220,8 @@ implementation decisions live in `ai/architecture-notes.md`. Earlier verbose
 rows are preserved in `ai/archive/systems-map-2026-09-06.md` as a superseded snapshot.
 
 ```text
-build index 0 -> MainMenu -> New Game / Quit card
+build index 0 -> MainMenu -> New Game / Combat Test / Quit card
+  -> Combat Test -> isolated crowbar target/sparring -> reset or menu
   -> New Game -> eleven locations / Back -> confirmed choice
   -> BeginNewGame + day 1 clock 07:40 -> area/scene loading, no journey still
      -> chosen gameplay root (City also offers docks/cannery)
@@ -257,7 +256,7 @@ blueprint ID + seed -> immutable blueprint -> validated sparse layout
   -> decoration plan -> visuals + collision proxies
   -> fence plan -> rails with clearance openings
 
-nine gameplay roots -> PlayerFactory -> Resources/Player/Player3DV2.prefab
+ten gameplay roots -> PlayerFactory -> Resources/Player/Player3DV2.prefab
   -> 48 authored Actions: Idle / Walk / heavy Run + seated drink 2/3/2 + seated/fours recovery + cold hold/rub/shiver
   -> Shift or L3 + forward -> 4.2 m/s run; backpedal and scripted approaches walk
   -> actual constrained speed owns Run weight; intoxication scales it, fatigue does not

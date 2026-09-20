@@ -45,9 +45,8 @@ Rules:
 ## Current baseline
 
 - Unity `6000.6.0f1`, Universal Render Pipeline `17.6.0`, Input System `1.20.0`.
-- The playable MVP is implemented through runtime composition: scenes are
-  near-empty containers and the world is built from validated pure plans.
-- Twelve build scenes, in build order:
+- Runtime composition builds near-empty scenes from validated pure plans.
+- Thirteen build scenes, in build order:
   `Assets/Scenes/MainMenu.unity` (index `0`),
   `Assets/Scenes/City.unity`,
   `Assets/Scenes/DoorTransition.unity`,
@@ -58,12 +57,11 @@ Rules:
   `Assets/Scenes/MountainRoad.unity`,
   `Assets/Scenes/AreaLoading.unity`,
   `Assets/Scenes/ChurchInterior.unity`,
-  `Assets/Scenes/AlpineVillage.unity`, and
-  `Assets/Scenes/MothersHouseInterior.unity`.
-  Nine of them are gameplay roots: City, BarInterior, SupermarketInterior,
+  `Assets/Scenes/AlpineVillage.unity`,
+  `Assets/Scenes/MothersHouseInterior.unity`, and `Assets/Scenes/CombatTest.unity`.
+  Ten are gameplay roots: City, BarInterior, SupermarketInterior,
   StairwellInterior, HomeInterior, MountainRoad, ChurchInterior, AlpineVillage
-  and MothersHouseInterior. Each
-  instantiates the same
+  MothersHouseInterior and CombatTest. Each instantiates
   `Resources/Player/Player3DV2.prefab` through `PlayerFactory`.
 - `Assets/Scripts/Rules/` owns engine-independent rules and contracts;
   `Assets/Scripts/Runtime/` owns gameplay, `Assets/Scripts/Editor/` owns

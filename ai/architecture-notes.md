@@ -4,6 +4,18 @@
 
 ## Current facts
 
+- **Accepted architecture exception — 2026-09-19, isolated combat test:**
+  Story §6/§16.15/art §15a: third-person crowbar/HUD only in `CombatTest`;
+  no story death/progress/reward/speech/blood/world damage. Shared hero/input/
+  camera/pause; `zz.combat-test.opponent` sorts last. 120 Hz mutual contacts,
+  150 ms buffer. Recovery hit/block/miss/wall: .32/.50/.80/.65 s;
+  guard impact .20, stagger .35. Gait .22 windup, .15–.65 recovery.
+  Space+WASD cardinal step (alone back): 20 stamina, ≤.65 m/.30 s + .16 settle;
+  interruptible, no invulnerability; zero stamina walks. AI observes retreat/
+  misses, varies guard after .22 s; committed swings. Same-rig falls/drop/reset.
+  User 2026-09-20: scene-owned shoulder/chest lock, wall clearance, target-facing
+  W/S travel and A/D strafe; no orbit. Winner walks; R resets.
+
 - **Accepted — 2026-09-16, street pool is the default NPC catalog:**
   User: passers-by come only from the default NPC set and obey its
   allocation; a new catalog model joins them at once. `DefaultNpcPopulation`

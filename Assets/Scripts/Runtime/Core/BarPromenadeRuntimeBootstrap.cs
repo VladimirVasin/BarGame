@@ -140,6 +140,10 @@ namespace BarPromenade
             {
                 EnsureAreaLoadingInstalled();
             }
+            else if (scene.name == SceneIds.CombatTest)
+            {
+                EnsureCombatTestInstalled();
+            }
         }
 
         private static bool IsAllowListedScene(string sceneName)
@@ -155,7 +159,8 @@ namespace BarPromenade
                    sceneName == SceneIds.MountainRoad ||
                    sceneName == SceneIds.AlpineVillage ||
                    sceneName == SceneIds.MothersHouseInterior ||
-                   sceneName == SceneIds.AreaLoading;
+                   sceneName == SceneIds.AreaLoading ||
+                   sceneName == SceneIds.CombatTest;
         }
 
         public static GameTimeRuntime EnsureGameTimeRuntimeInstalled()
@@ -456,6 +461,23 @@ namespace BarPromenade
                 GameObject root = new GameObject(
                     "[Bar Promenade] Mother's House Interior Runtime");
                 return root.AddComponent<MothersHouseInteriorRoot>();
+            }
+            finally
+            {
+                creating = false;
+            }
+        }
+
+        public static CombatTestRoot EnsureCombatTestInstalled()
+        {
+            CombatTestRoot existing = Object.FindAnyObjectByType<CombatTestRoot>();
+            if (existing != null) return existing;
+
+            creating = true;
+            try
+            {
+                GameObject root = new GameObject("[Bar Promenade] Combat Test Runtime");
+                return root.AddComponent<CombatTestRoot>();
             }
             finally
             {

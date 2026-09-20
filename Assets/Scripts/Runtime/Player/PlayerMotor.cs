@@ -2,7 +2,7 @@ using UnityEngine;
 
 namespace BarPromenade
 {
-    public sealed class PlayerMotor : MonoBehaviour
+    public sealed partial class PlayerMotor : MonoBehaviour
     {
         private const float MoveSpeed = 2.6f;
         private const float RunSpeed = 4.2f;
@@ -55,6 +55,32 @@ namespace BarPromenade
         private Quaternion lastInteractionPoseRotation;
 
         public bool InputEnabled { get; private set; } = true;
+        private object movementConstraintOwner;
+        private float ownedMoveScale = 1f, ownedTurnScale = 1f;
+
+        /// <summary>Limits voluntary movement while keeping gravity and physical pushes alive.</summary>
+        public bool SetOwnedMovementConstraint(object owner, float moveScale, float turnScale)
+        {
+            if (owner == null || (movementConstraintOwner != null && !ReferenceEquals(owner, movementConstraintOwner)))
+                return false;
+            movementConstraintOwner = owner;
+            ownedMoveScale = Mathf.Clamp01(moveScale);
+            ownedTurnScale = Mathf.Clamp01(turnScale);
+            if (ownedMoveScale == 0f)
+            {
+                momentumVelocity = PlanarVelocity = Vector3.zero;
+                // A committed action still receives already-owned physical pushes.
+                footstepDistance = 0f;
+            }
+            return true;
+        }
+
+        public void ReleaseMovementConstraint(object owner)
+        {
+            if (owner == null || !ReferenceEquals(owner, movementConstraintOwner)) return;
+            movementConstraintOwner = null;
+            ownedMoveScale = ownedTurnScale = 1f;
+        }
 
         /// <summary>
         /// Grounded as of the player's own move this frame. The balance
@@ -490,25 +516,33 @@ namespace BarPromenade
             bool sprintRequested = InputEnabled &&
                                    !isTransitioning &&
                                    IsSprintRequested();
-            float turnInput = input.x;
+            if (movementConstraintOwner is Object unityOwner && unityOwner == null)
+            {
+                movementConstraintOwner = null;
+                ownedMoveScale = ownedTurnScale = 1f;
+            }
+            float turnInput, yawDelta;
+            Vector3 desiredPlanarVelocity;
+            bool targetRelative = MovementTargetActive;
+            if (targetRelative)
+                desiredPlanarVelocity = ResolveTargetMovement(input, sprintRequested,
+                    InputEnabled && !isTransitioning && GameInput.CanRead(GameInputContext.Movement),
+                    out yawDelta, out turnInput);
+            else
+            {
+                turnInput = input.x * ownedTurnScale;
+                yawDelta = turnInput * TurnSpeedDegreesPerSecond *
+                    speedMultiplier * balanceYawScale * Time.deltaTime;
+                transform.Rotate(0f, yawDelta, 0f);
+                float desiredSpeed = input.y >= 0f
+                    ? input.y * (sprintRequested ? RunSpeed : MoveSpeed)
+                    : input.y * BackwardMoveSpeed;
+                Vector3 heading = Mathf.Abs(balanceHeadingWeaveDegrees) > 0.0001f
+                    ? Quaternion.AngleAxis(balanceHeadingWeaveDegrees, Vector3.up) * transform.forward
+                    : transform.forward;
+                desiredPlanarVelocity = heading * (desiredSpeed * speedMultiplier * ownedMoveScale);
+            }
             CurrentTurnInput = turnInput;
-            float yawDelta =
-                turnInput * TurnSpeedDegreesPerSecond *
-                speedMultiplier * balanceYawScale * Time.deltaTime;
-            transform.Rotate(
-                0f,
-                yawDelta,
-                0f);
-
-            float desiredSpeed = input.y >= 0f
-                ? input.y * (sprintRequested ? RunSpeed : MoveSpeed)
-                : input.y * BackwardMoveSpeed;
-            Vector3 heading = Mathf.Abs(balanceHeadingWeaveDegrees) > 0.0001f
-                ? Quaternion.AngleAxis(balanceHeadingWeaveDegrees, Vector3.up) *
-                  transform.forward
-                : transform.forward;
-            Vector3 desiredPlanarVelocity =
-                heading * (desiredSpeed * speedMultiplier);
             // Tank steering rotates the already-earned forward momentum with
             // the actor. Otherwise changing the velocity direction would
             // consume the same bounded acceleration that raises its speed;
@@ -605,7 +639,9 @@ namespace BarPromenade
                 PlanarVelocity,
                 signedForwardSpeed,
                 turnInput,
-                runBlend));
+                runBlend,
+                targetRelative ? Vector3.Dot(PlanarVelocity, transform.right) : 0f,
+                targetRelative));
             UpdateFootsteps(planarVelocity, runBlend: runBlend);
         }
 

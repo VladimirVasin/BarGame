@@ -19,11 +19,13 @@ namespace BarPromenade
         // Keep these logical rects together so drawing and pointer hitboxes
         // cannot drift apart when the canvas is scaled.
         internal static Rect MenuPanelRect =>
-            new Rect(206f, 147f, 228f, 66f);
+            new Rect(206f, 134f, 228f, 92f);
         internal static Rect MenuNewGameRect =>
-            new Rect(218f, 156f, 204f, 22f);
+            new Rect(218f, 143f, 204f, 22f);
+        internal static Rect MenuCombatTestRect =>
+            new Rect(218f, 169f, 204f, 22f);
         internal static Rect MenuQuitRect =>
-            new Rect(218f, 182f, 204f, 22f);
+            new Rect(218f, 195f, 204f, 22f);
         internal static Rect LocationPanelRect => new Rect(166f, 18f, 308f, 324f);
         internal static Rect LocationOptionRect(int index) => new Rect(178f, 54f + index * 22f, 284f, 20f);
 
@@ -35,13 +37,14 @@ namespace BarPromenade
 
         public Camera BackdropCamera { get; private set; }
         public bool IsStartingNewGame { get; private set; }
+        public bool IsStartingCombatTest { get; private set; }
         public bool QuitRequested { get; private set; }
         public StartMenuOption SelectedOption => model.SelectedOption;
         public bool IsChoosingLocation => model.IsChoosingLocation;
         public NewGameLocation SelectedLocation => model.SelectedLocation;
         public bool IsBackSelected => model.IsBackSelected;
 
-        private bool IsBusy => IsStartingNewGame || QuitRequested;
+        private bool IsBusy => IsStartingNewGame || IsStartingCombatTest || QuitRequested;
 
         private void Awake()
         {
@@ -101,6 +104,9 @@ namespace BarPromenade
                 case StartMenuAction.NewGame:
                     RetroAudio.Play(RetroSfxId.UiConfirm);
                     return BeginNewGame();
+                case StartMenuAction.CombatTest:
+                    RetroAudio.Play(RetroSfxId.UiConfirm);
+                    return BeginCombatTest();
                 case StartMenuAction.Quit:
                     RetroAudio.Play(RetroSfxId.UiConfirm);
                     QuitRequested = true;
@@ -152,6 +158,18 @@ namespace BarPromenade
                 GameLog.Field(
                     "destination_location",
                     location.ToString()));
+            return false;
+        }
+
+        private bool BeginCombatTest()
+        {
+            IsStartingCombatTest = true;
+            if (CombatTestStartService.TryStart()) return true;
+
+            IsStartingCombatTest = false;
+            model.Open();
+            model.SelectOption(StartMenuOption.CombatTest);
+            GameLog.Warning("menu", "combat_test_travel_refused");
             return false;
         }
 
@@ -219,6 +237,11 @@ namespace BarPromenade
                     MenuNewGameRect,
                     StartMenuOption.NewGame,
                     "opening.new_game");
+                DrawOption(
+                    canvas,
+                    MenuCombatTestRect,
+                    StartMenuOption.CombatTest,
+                    "combat.title");
                 DrawOption(
                     canvas,
                     MenuQuitRect,

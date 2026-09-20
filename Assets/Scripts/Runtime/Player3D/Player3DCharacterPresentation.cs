@@ -14,7 +14,9 @@ namespace BarPromenade
         WalkBack = 2,
         TurnLeft = 3,
         TurnRight = 4,
-        Run = 5
+        Run = 5,
+        StrafeLeft = 6,
+        StrafeRight = 7
     }
 
     /// <summary>
@@ -128,7 +130,7 @@ namespace BarPromenade
         private const float FullRunCycleSeconds = 0.75f;
 
         // Locomotion mixer layout: input 0 is Idle, the gaits follow.
-        private const int GaitCount = 5;
+        private const int GaitCount = 7;
         private const int WalkGait = 0;
         private const int WalkBackGait = 1;
         private const int RunGait = 2;
@@ -440,6 +442,7 @@ namespace BarPromenade
             Vector3 planarVelocity = motion.PlanarVelocity;
             planarVelocity.y = 0f;
             planarSpeed = planarVelocity.magnitude;
+            sideStepSpeed = motion.TargetRelative ? Mathf.Abs(motion.SignedSideSpeed) : 0f;
 
             for (int index = 0; index < GaitCount; index++)
             {
@@ -454,6 +457,11 @@ namespace BarPromenade
             Player3DLocomotionState state = Player3DLocomotionState.Idle;
             if (!interactionHandoffLocked && !toppling)
             {
+                if (motion.TargetRelative && TrySetSideStepMotion(motion, out state))
+                {
+                    CurrentLocomotionState = state;
+                    return;
+                }
                 bool turningInPlace =
                     planarSpeed < TurnInPlaceSpeedThreshold &&
                     Mathf.Abs(motion.TurnInput) >
@@ -906,6 +914,8 @@ namespace BarPromenade
 
         public void EndClip()
         {
+            ClearOwnedClipLocomotion();
+            scopedClipOwner = null;
             if (!graph.IsValid() || activeClipBinding == null)
             {
                 activeClipBinding = null;
@@ -961,7 +971,7 @@ namespace BarPromenade
                 return;
             }
 
-            if (!IsClipActive)
+            if (!IsClipActive || scopedClipLocomotion)
             {
                 ApplyLocomotionWeights(immediate: false);
                 UpdateForwardGaitCadence();
@@ -969,6 +979,7 @@ namespace BarPromenade
                     0.70f,
                     0.90f,
                     gaitWeights[WalkBackGait]));
+                UpdateSideStepCadence();
                 EvaluateGraph(deltaTime);
                 UpdateFootPlant();
             }
@@ -1213,6 +1224,10 @@ namespace BarPromenade
                 return false;
             }
 
+            // A higher-priority legacy/contextual owner revokes the optional lease.
+            ClearOwnedClipLocomotion();
+            scopedClipOwner = null;
+
             if (activeClipBinding != null)
             {
                 graph.Disconnect(layerMixer, 1);
@@ -1448,6 +1463,7 @@ namespace BarPromenade
 
         private void UpdateFootPlant()
         {
+            if (TryApplySideStepFootPlant()) return;
             float forwardWeight =
                 gaitWeights[WalkGait] + gaitWeights[RunGait];
             float strongestOther = Mathf.Max(
@@ -3069,6 +3085,9 @@ namespace BarPromenade
 
         private void DestroyGraph()
         {
+            scopedClipOwner = null;
+            ClearSideStepGaits();
+            DisposeOwnedClipMasks();
             DisposeCarryGraph();
             DisposeColdGraph();
             layer.Restore();

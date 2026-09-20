@@ -72,12 +72,16 @@ namespace BarPromenade
             Vector3 planarVelocity,
             float signedForwardSpeed,
             float turnInput,
-            float runBlend = 0f)
+            float runBlend = 0f,
+            float signedSideSpeed = 0f,
+            bool targetRelative = false)
         {
             PlanarVelocity = planarVelocity;
             SignedForwardSpeed = signedForwardSpeed;
             TurnInput = Mathf.Clamp(turnInput, -1f, 1f);
             RunBlend = Mathf.Clamp01(runBlend);
+            SignedSideSpeed = signedSideSpeed;
+            TargetRelative = targetRelative;
         }
 
         /// <summary>Measured planar velocity in metres per second.</summary>
@@ -98,6 +102,10 @@ namespace BarPromenade
         /// not the sprint button, so blocked movement cannot run in place.
         /// </summary>
         public float RunBlend { get; }
+
+        /// <summary>Executed sideways speed; positive goes right while facing the movement target.</summary>
+        public float SignedSideSpeed { get; }
+        public bool TargetRelative { get; }
 
         public static PlayerMotionSample Stationary =>
             new PlayerMotionSample(Vector3.zero, 0f, 0f);

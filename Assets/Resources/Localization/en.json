@@ -1,5 +1,16 @@
 {
   "entries": [
+    { "key": "combat.title", "value": "Combat Test" },
+    { "key": "combat.target", "value": "Target (no AI)" },
+    { "key": "combat.sparring", "value": "AI sparring" },
+    { "key": "combat.reset", "value": "Reset round" },
+    { "key": "combat.menu", "value": "Main menu" },
+    { "key": "combat.health", "value": "Health" },
+    { "key": "combat.stamina", "value": "Stamina" },
+    { "key": "combat.opponent", "value": "Opponent" },
+    { "key": "combat.victory", "value": "Victory" },
+    { "key": "combat.defeat", "value": "Defeat" },
+    { "key": "combat.controls", "value": "WASD — move · Space — step · LMB — attack · RMB — block · R — reset" },
     {
       "key": "interaction.fair_organ",
       "value": "Turn the organ crank"

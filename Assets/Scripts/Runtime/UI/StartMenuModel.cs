@@ -5,8 +5,9 @@ namespace BarPromenade
     public enum StartMenuOption
     {
         NewGame = 0,
-        Quit = 1,
-        Count = 2
+        CombatTest = 1,
+        Quit = 2,
+        Count = 3
     }
 
     public enum StartMenuAction
@@ -15,7 +16,8 @@ namespace BarPromenade
         NewGame = 1,
         Quit = 2,
         ChooseLocation = 3,
-        Back = 4
+        Back = 4,
+        CombatTest = 5
     }
 
     /// <summary>
@@ -122,6 +124,9 @@ namespace BarPromenade
                     IsChoosingLocation = true;
                     SelectedLocation = NewGameLocation.AlpineVillage;
                     return StartMenuAction.ChooseLocation;
+                case StartMenuOption.CombatTest:
+                    IsCommitted = true;
+                    return StartMenuAction.CombatTest;
                 case StartMenuOption.Quit:
                     IsCommitted = true;
                     return StartMenuAction.Quit;

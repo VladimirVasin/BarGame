@@ -6,28 +6,29 @@ Older whole dates move to `ai/archive/` when the byte budget is reached;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-08.md`](archive/work-log-2026-08.md).
 
-## 2026-09-19 — Wheel, seats, scarf and fair visitors
+## 2026-09-20 — Combat tactics and camera
 
-- Truck rim/column frames now agree and face the driver; curled fingers and
-  opposed thumbs grip the tube. `DefaultNpcAssetSetup` imports/binds existing
-  bare/gloved `CylindricalGrip` shapes: generation had left the prefab without
-  its runtime pose component.
-  Checks: `build-city-cannery-3d-model.py` / `build-default-npc-3d-model.py`,
-  `AreaCaptureFixture.DefaultNpcDriverGrip` (mesh contact, reverse, release,
-  wake and rendered views), `check-docs.py`.
-- Bus knees bend over feet; low lateral hints pushed thighs into the cushion.
-  The regression clips joined trousers by upper-leg weights, excluding shins,
-  and covers the current factory/library bodies. Default trousers need a
-  `0.076` seat lift; the donor's `0.056` left hips below the cushion.
+- Winners walk; shoulder lock/strafe keeps the enemy visible. Outcomes now
+  set recovery; vulnerable steps spend stamina; AI observes retreat/misses.
+  Checks: `build-combat-test-3d-model.py --validate-only`, `CombatRulesTests`,
+  `Range_TacticalRecoveryStepsAndFairOpponent`, rendered
+  `AreaCaptureFixture.CombatTactics`, `check-docs.py`.
+
+## 2026-09-19 — Wheel, seats, scarf, fair and combat test
+
+- Truck rim/column face the driver; bare/gloved cylindrical grips now bind
+  the missing runtime component. Checks: `build-city-cannery-3d-model.py`,
+  `build-default-npc-3d-model.py`, rendered `AreaCaptureFixture.DefaultNpcDriverGrip`.
+- Bus knees follow feet; lateral hints buried thighs. Trouser regression
+  excludes shins; default bodies need `0.076`, donor `0.056` seat lift.
   Check: `SeatedPassengers_StayOnActualCushionsAcrossAnimationAndBusMotion`.
-- Scarf height now follows location after five seconds of free third-person
-  play. Travel retains it; disembark and mouth actions defer the change.
-  Check: `ScarfLocationPostureWaitsForThirdPersonAndSurvivesTravel`, rendered
-  raised/lowered/hand frames, `check-docs.py`.
-- Three silent adults stand at the fair stalls with shared idle animation and
-  permanent global NPC identities. Grounded collision leaves the children's
-  routes and `2.2 m` paths clear.
-  Check: `AreaCaptureFixture.CityFair` and reviewed views, `check-docs.py`.
+- Scarf follows location after five free third-person seconds, retained over
+  travel and deferred for disembark/mouth actions. Check:
+  `ScarfLocationPostureWaitsForThirdPersonAndSurvivesTravel` and reviewed frames.
+- Three permanent silent fair adults share idle, grounded collision and clear
+  children's routes/`2.2 m` paths. Check: rendered `AreaCaptureFixture.CityFair`.
+- Crowbar AI/target: mutual hits, walls, falls/drop; safe unload.
+  Checks: `CombatTestPlayModeTests`, rendered `AreaCaptureFixture.CombatTest`.
 
 ## 2026-09-16 — Nightlife lane crossroads
 

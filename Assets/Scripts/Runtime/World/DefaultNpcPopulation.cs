@@ -12,6 +12,8 @@ namespace BarPromenade
         public const string CanneryRetort = "cannery.retort";
         public const string DeliveryDriver = "cannery.delivery-driver";
         public const string VillageStationWorker = "village.station-worker";
+        // Sort after the narrative population so this test participant cannot reshuffle it.
+        public const string CombatTestOpponent = "zz.combat-test.opponent";
         private static readonly string[] FairIds = { "fair.vendor.0", "fair.vendor.1", "fair.vendor.2", "fair.vendor.3" };
         public const int FairVisitorCount = 3;
         private static readonly string[] PortIds = { "port.captain", "port.deckhand", "port.crane.west", "port.crane.east", "port.docker" };
@@ -143,6 +145,13 @@ namespace BarPromenade
                     new SlotConstraint("gloves", null, "gloves.work"),
                     new SlotConstraint("scarf", null, "scarf.warm"),
                     new SlotConstraint("headwear", null, "headwear.everyday", "headwear.work", "headwear.warm")));
+            roster.Add(new CharacterDefinition(CombatTestOpponent, model,
+                new SlotConstraint("outerwear", "outerwear.work"),
+                new SlotConstraint("boots", "boots.work"),
+                new SlotConstraint("headwear", new string[] { null }),
+                new SlotConstraint("gloves", "gloves.work"),
+                new SlotConstraint("scarf", new string[] { null }),
+                new SlotConstraint("apron", new string[] { null })));
             roster.Sort((a, b) => string.CompareOrdinal(a.Id, b.Id));
             return roster.ToArray();
         }

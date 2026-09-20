@@ -32,6 +32,7 @@ namespace BarPromenade.Editor
             "Assets/Scenes/AlpineVillage.unity";
         private const string MothersHouseInteriorScenePath =
             "Assets/Scenes/MothersHouseInterior.unity";
+        private const string CombatTestScenePath = "Assets/Scenes/CombatTest.unity";
         private const string TestBootstrapScenePrefix =
             "Assets/InitTestScene";
 
@@ -48,7 +49,8 @@ namespace BarPromenade.Editor
             AreaLoadingScenePath,
             ChurchInteriorScenePath,
             AlpineVillageScenePath,
-            MothersHouseInteriorScenePath
+            MothersHouseInteriorScenePath,
+            CombatTestScenePath
         };
 
         private static SceneAsset mainMenuStartScene;
@@ -85,6 +87,7 @@ namespace BarPromenade.Editor
             EnsureChurchInteriorScene();
             EnsureAlpineVillageScene();
             EnsureMothersHouseInteriorScene();
+            EnsureCombatTestScene();
             ConfigureBuildScenes();
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
@@ -101,6 +104,7 @@ namespace BarPromenade.Editor
             EnsureChurchInteriorScene();
             EnsureAlpineVillageScene();
             EnsureMothersHouseInteriorScene();
+            EnsureCombatTestScene();
             ConfigureBuildScenes();
             var options = new BuildPlayerOptions
             {
@@ -381,6 +385,19 @@ namespace BarPromenade.Editor
         private static void EnsureMothersHouseInteriorScene()
         {
             EnsureEmptyAdditiveScene(MothersHouseInteriorScenePath);
+        }
+
+        private static void EnsureCombatTestScene()
+        {
+            EnsureEmptyAdditiveScene(CombatTestScenePath);
+        }
+
+        [MenuItem("Bar Promenade/Configure Combat Test Scene")]
+        public static void ConfigureCombatTestScene()
+        {
+            EnsureCombatTestScene();
+            ConfigureBuildScenes();
+            AssetDatabase.SaveAssets();
         }
 
         private static void EnsureEmptyAdditiveScene(string scenePath)

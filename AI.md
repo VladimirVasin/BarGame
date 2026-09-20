@@ -6,7 +6,8 @@ Read this file first, then use [ai/README.md](ai/README.md) as the documentation
 
 - Unity `6000.6.0f1`, URP `17.6.0`, Input System `1.20.0` are pinned in the
   project/package settings. The current target is Windows/PC.
-- Twelve build scenes contain nine gameplay roots. Gameplay is runtime-composed
+- Thirteen build scenes contain ten gameplay roots, including the isolated
+  `CombatTest` polygon. Gameplay is runtime-composed
   from validated plans; every root uses `Resources/Player/Player3DV2.prefab`.
 - City, Mountain Road and Alpine Village occupy separate Single-loaded scenes.
   Area travel keeps its loading overlay until incremental world construction

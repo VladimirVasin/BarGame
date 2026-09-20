@@ -9,11 +9,11 @@
   owned by `ProjectSettings/ProjectVersion.txt` and `Packages/manifest.json`.
 - One active PC quality/pipeline profile applies the PS1 composite after URP
   post-processing. Keyboard, mouse and gamepad retain their existing controls.
-- Twelve scenes are enabled in `ProjectSettings/EditorBuildSettings.asset`:
+- Thirteen scenes are enabled in `ProjectSettings/EditorBuildSettings.asset`:
 
 | Index | Scene | Role |
 | --- | --- | --- |
-| 0 | `MainMenu` | New Game / Quit; eleven starts, village default |
+| 0 | `MainMenu` | New Game / Combat Test / Quit |
 | 1 | `City` | Gameplay |
 | 2 | `DoorTransition` | Door presentation |
 | 3 | `BarInterior` | Gameplay |
@@ -25,8 +25,9 @@
 | 9 | `ChurchInterior` | Gameplay |
 | 10 | `AlpineVillage` | Gameplay |
 | 11 | `MothersHouseInterior` | Gameplay |
+| 12 | `CombatTest` | Isolated melee test |
 
-All nine gameplay roots use `PlayerFactory`/`Resources/Player/Player3DV2.prefab`:
+All ten gameplay roots use `PlayerFactory`/`Resources/Player/Player3DV2.prefab`:
 one rig, `PlayerWardrobe` slots/coverage and bounded hair/jacket physics.
 Near-empty scenes compose validated plans at runtime. Authored geometry follows
 the Blender and world-canon rules in [../AI.md](../AI.md).
@@ -35,7 +36,7 @@ the Blender and world-canon rules in [../AI.md](../AI.md).
 
 | Owner | Responsibility |
 | --- | --- |
-| `BarPromenade.Rules` | Engine-independent calendar/day schedule, finite fish-supply cycle, vehicle ownership and input-priority policy |
+| `BarPromenade.Rules` | Engine-independent calendar, fish supply, melee timing, vehicle ownership and input priorities |
 | `BarPromenade.Runtime` | World composition, gameplay, rendering, audio and shared input bindings |
 | `BarPromenade.Editor` | Authoring/import, scene setup, read-only player-build asset gate and diagnostic commands |
 | `BarPromenade.TestSupport` | Shared test lifecycle support, including listener muting |
@@ -73,13 +74,13 @@ threads, available GPU timing, allocations and foot-bake/reflection scopes.
 Unsupported metrics stay unavailable. Reports are measurements for the captured
 machine and scene, not a project-wide performance guarantee.
 
-Player builds run `PlayerBuildAssetValidation` before packaging. It aggregates
-read-only resource/provider/stamp checks and supplies explicit repair commands;
-it does not regenerate source assets. Generator/toolchain and staged publication
-contracts are documented in [../tools/README.md](../tools/README.md).
+`PlayerBuildAssetValidation` gates packaging with read-only asset checks and
+repair commands. Generation/publication: [../tools/README.md](../tools/README.md).
 
 ## Implemented capabilities
 
+- Crowbar test: buffered strikes, simultaneous exchanges, wall recoil and
+  reactive guard/rest sparring; rounds have no story consequences.
 - A validated connected city with streets, river/shore, neighbourhoods,
   cemetery, church, deterministic weather, residents and Route 01 transport.
   First unpaused dock entry starts finite port→factory→shop supply once;

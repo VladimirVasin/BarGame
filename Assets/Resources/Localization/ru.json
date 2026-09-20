@@ -1,5 +1,16 @@
 {
   "entries": [
+    { "key": "combat.title", "value": "Боевой полигон" },
+    { "key": "combat.target", "value": "Мишень (без ИИ)" },
+    { "key": "combat.sparring", "value": "Спарринг с ИИ" },
+    { "key": "combat.reset", "value": "Сбросить раунд" },
+    { "key": "combat.menu", "value": "Главное меню" },
+    { "key": "combat.health", "value": "Здоровье" },
+    { "key": "combat.stamina", "value": "Выносливость" },
+    { "key": "combat.opponent", "value": "Противник" },
+    { "key": "combat.victory", "value": "Победа" },
+    { "key": "combat.defeat", "value": "Поражение" },
+    { "key": "combat.controls", "value": "WASD — ходьба · Space — шаг · ЛКМ — удар · ПКМ — блок · R — сброс" },
     {
       "key": "interaction.fair_organ",
       "value": "Покрутить шарманку"

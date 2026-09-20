@@ -22,7 +22,12 @@ namespace BarPromenade
         UseItem,
         CounterConfirm,
         SkipRide,
-        Sprint
+        Sprint,
+        MeleeAttack,
+        MeleeBlock,
+        CombatReset,
+        CombatMode,
+        CombatStep
     }
 
     /// <summary>Input ownership rules with no device or scene dependencies.</summary>

@@ -218,6 +218,8 @@ namespace BarPromenade
         private CharacterController characterController;
         private Player3DCharacterPresentation presentation;
         private Player3DAssetRegistry registry;
+        private Transform modelRoot;
+        private float canonicalHeight;
         private Rigidbody rootAnchorBody;
         private ConfigurableJoint pelvisTether;
         private BonePose[] recoveryStart;
@@ -238,8 +240,10 @@ namespace BarPromenade
         public bool IsInitialized => initialized;
         public bool IsSimulating { get; private set; }
         public bool IsRecovering { get; private set; }
-        public bool IsActive => IsSimulating || IsRecovering;
+        public bool IsFrozen { get; private set; }
+        public bool IsActive => IsSimulating || IsRecovering || IsFrozen;
         public int BodyCount => bodyList.Count;
+        public IReadOnlyList<Rigidbody> Bodies => bodyList;
         public Rigidbody PelvisBody => GetBody(Player3DAnatomicalPart.Pelvis);
         public Rigidbody SpineBody => GetBody(Player3DAnatomicalPart.LowerTorso);
         public Rigidbody ChestBody => GetBody(Player3DAnatomicalPart.Torso);
@@ -266,7 +270,39 @@ namespace BarPromenade
             registry = assetRegistry != null
                 ? assetRegistry
                 : throw new ArgumentNullException(nameof(assetRegistry));
+            modelRoot = registry.ModelRoot;
+            canonicalHeight = registry.Metrics.CanonicalHeight;
 
+            InitializeAnatomy();
+        }
+
+        /// <summary>Reuses the same measured joints and colliders on another compatible rig.
+        /// Its caller owns animation sampling and supplies an anatomical rest pose.</summary>
+        public void Initialize(Transform actorRoot, CharacterController controller,
+            Transform targetModelRoot, IReadOnlyDictionary<Player3DAnatomicalPart, Transform> anatomicalBones,
+            float height)
+        {
+            if (initialized) return;
+            if (actorRoot == null) throw new ArgumentNullException(nameof(actorRoot));
+            if (targetModelRoot == null) throw new ArgumentNullException(nameof(targetModelRoot));
+            if (anatomicalBones == null) throw new ArgumentNullException(nameof(anatomicalBones));
+            if (float.IsNaN(height) || float.IsInfinity(height) || height <= 0f)
+                throw new ArgumentOutOfRangeException(nameof(height));
+            gameplayRoot = actorRoot;
+            characterController = controller;
+            modelRoot = targetModelRoot;
+            canonicalHeight = height;
+            foreach (KeyValuePair<Player3DAnatomicalPart, Transform> bone in anatomicalBones)
+            {
+                if (bone.Value == null || !bone.Value.IsChildOf(modelRoot))
+                    throw new ArgumentException("Anatomical bones must belong to the supplied model.", nameof(anatomicalBones));
+                bones.Add(bone.Key, bone.Value);
+            }
+            InitializeAnatomy();
+        }
+
+        private void InitializeAnatomy()
+        {
             CacheRequiredBones();
             // Imported Generic bone axes are not anatomical axes.
             chestFrontLocal = bones[Player3DAnatomicalPart.Torso].InverseTransformDirection(gameplayRoot.forward);
@@ -350,7 +386,7 @@ namespace BarPromenade
                 return false;
             }
 
-            presentation.BeginRagdollPoseFromLatePose();
+            presentation?.BeginRagdollPoseFromLatePose();
             RefreshJointAnchors();
             SetCollidersEnabled(true);
             Physics.SyncTransforms();
@@ -366,7 +402,7 @@ namespace BarPromenade
             for (int index = 0; index < bodyList.Count; index++)
             {
                 Rigidbody body = bodyList[index];
-                if (handoff.AngularSpeed >= SlowToppleAngularVelocity &&
+                if (presentation != null && handoff.AngularSpeed >= SlowToppleAngularVelocity &&
                     presentation.TryGetPresentedBoneVelocity(body.transform, out Vector3 visibleLinear,
                         out Vector3 visibleAngular))
                 {
@@ -596,6 +632,16 @@ namespace BarPromenade
             recoveryStart = null;
         }
 
+        /// <summary>Hold a settled physical pose, with its contacts intact, until the owner resets it.</summary>
+        public bool FreezeInPlace()
+        {
+            if (!initialized || !IsSimulating) return false;
+            FreezeBodies();
+            IsSimulating = false;
+            IsFrozen = true;
+            return true;
+        }
+
         public void Cancel()
         {
             if (!initialized)
@@ -607,6 +653,7 @@ namespace BarPromenade
             SetCollidersEnabled(false);
             IsSimulating = false;
             IsRecovering = false;
+            IsFrozen = false;
             recoveryStart = null;
             if (presentation != null)
             {
@@ -758,6 +805,9 @@ namespace BarPromenade
                 return cached;
             }
 
+            if (registry == null)
+                throw new InvalidOperationException($"Ragdoll requires the supplied {part} bone.");
+
             // The torso and jacket remain continuous skinned surfaces, so
             // their lower segment owns an explicit bone anchor rather than
             // pretending to be a separate anatomical renderer.
@@ -835,7 +885,7 @@ namespace BarPromenade
         {
             float scale = Mathf.Max(
                 0.01f,
-                registry.Metrics.CanonicalHeight / CanonicalHeight);
+                canonicalHeight / CanonicalHeight);
             AddBox(
                 Player3DAnatomicalPart.Pelvis,
                 bones[Player3DAnatomicalPart.Pelvis].position +
@@ -844,7 +894,7 @@ namespace BarPromenade
                 new Vector3(0.28f, 0.20f, 0.20f) * scale);
             AddTorsoBox(
                 Player3DAnatomicalPart.LowerTorso,
-                registry.Anchors.Chest.position,
+                registry != null ? registry.Anchors.Chest.position : bones[Player3DAnatomicalPart.Torso].position,
                 0.32f * scale,
                 0.19f * scale);
             AddTorsoBox(
@@ -1091,6 +1141,13 @@ namespace BarPromenade
         private void BuildPoseTransformList()
         {
             var unique = new HashSet<Transform>();
+            if (registry == null)
+            {
+                foreach (Transform bone in bones.Values) AddBoneLineage(bone, unique);
+                poseTransforms.AddRange(unique);
+                poseTransforms.Sort((first, second) => GetDepth(first).CompareTo(GetDepth(second)));
+                return;
+            }
             for (int index = 0;
                  index < registry.MeshBindings.Count;
                  index++)
@@ -1123,7 +1180,7 @@ namespace BarPromenade
             ISet<Transform> unique)
         {
             Transform current = bone;
-            while (current != null && current != registry.ModelRoot)
+            while (current != null && current != modelRoot)
             {
                 unique.Add(current);
                 current = current.parent;

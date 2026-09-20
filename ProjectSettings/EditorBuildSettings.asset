@@ -41,5 +41,8 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/MothersHouseInterior.unity
     guid: 14fe038b18821f84bb83ef3166ecf4ee
+  - enabled: 1
+    path: Assets/Scenes/CombatTest.unity
+    guid: 9ce0811a565f70b4bbf6bc3038718191
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}

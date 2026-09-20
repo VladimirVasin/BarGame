@@ -61,6 +61,7 @@ Manual snapshots include the current `hunger`, `stress` and `fatigue` beside
 | `primitive` | verbose-only `combined_mesh`: source count, vertices, combine and collider time |
 | `interaction`, `map` | entrance/exit results, map lifecycle and City test-teleport mode/result events |
 | `intoxication`, `balance` | stage changes and balance scheduling, start, result, fall, recovery or cancellation |
+| `combat` | one `movement_summary` at polygon exit/quit: W/S/A/D seen, requested/gated frames, motor/input/capsule gates, last phase, minimum movement scale, `maximum_requested_speed` and `requested_turn_changed`; cached aggregates only, disabled with profile `off` |
 | `diagnostics` | manual snapshots and support-directory commands |
 | `unity` | Unity warnings, assertions, errors and exceptions with stack traces |
 

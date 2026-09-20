@@ -25,7 +25,7 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
-        public void Navigation_WrapsBetweenTheTwoOptions()
+        public void Navigation_WrapsBetweenTheThreeOptions()
         {
             var model = new StartMenuModel();
             model.Open();
@@ -38,6 +38,10 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 model.SelectedOption,
                 Is.EqualTo(StartMenuOption.NewGame));
+            Assert.That(model.MoveSelection(1), Is.True);
+            Assert.That(model.SelectedOption, Is.EqualTo(StartMenuOption.CombatTest));
+            Assert.That(model.MoveSelection(1), Is.True);
+            Assert.That(model.SelectedOption, Is.EqualTo(StartMenuOption.Quit));
             Assert.That(model.MoveSelection(0), Is.False);
         }
 
@@ -135,23 +139,31 @@ namespace BarPromenade.Tests.EditMode
                     Assert.That(label, Is.Not.Null.And.Not.Empty.And.Not.EqualTo(key));
                     Assert.That(labels.Add(label), Is.True, language + " must distinguish all eleven destinations.");
                 }
-                foreach (string key in new[] { "opening.choose_location", "opening.back" })
+                foreach (string key in new[] { "opening.choose_location", "opening.back", "combat.title",
+                    "combat.target", "combat.sparring", "combat.reset", "combat.menu", "combat.health",
+                    "combat.stamina", "combat.opponent", "combat.victory", "combat.defeat", "combat.controls" })
                     Assert.That(values.TryGetValue(key, out string value) && !string.IsNullOrWhiteSpace(value), Is.True, key);
             }
         }
 
-        [Test]
-        public void Confirm_OnQuitAsksToQuit()
+        [TestCase(StartMenuOption.Quit, StartMenuAction.Quit)]
+        [TestCase(StartMenuOption.CombatTest, StartMenuAction.CombatTest)]
+        public void Confirm_DirectActionCommitsOnceWithoutChoosingALocation(
+            StartMenuOption option, StartMenuAction action)
         {
             var model = new StartMenuModel();
             model.Open();
 
             Assert.That(
-                model.SelectOption(StartMenuOption.Quit),
+                model.SelectOption(option),
                 Is.True);
             Assert.That(
                 model.Confirm(),
-                Is.EqualTo(StartMenuAction.Quit));
+                Is.EqualTo(action));
+            Assert.That(model.IsChoosingLocation, Is.False);
+            Assert.That(model.IsCommitted, Is.True);
+            Assert.That(model.Confirm(), Is.EqualTo(StartMenuAction.None));
+            Assert.That(model.MoveSelection(1), Is.False);
         }
 
         [Test]

@@ -476,6 +476,16 @@ namespace BarPromenade
         public IReadOnlyList<Player3DAnatomicalPartBinding> AnatomicalParts =>
             anatomicalParts;
         public IReadOnlyList<Player3DAnimationBinding> Animations => animations;
+        private readonly Dictionary<string, Player3DAnimationBinding> runtimeAnimations =
+            new Dictionary<string, Player3DAnimationBinding>(StringComparer.Ordinal);
+
+        /// <summary>Optional action banks belong to this instance, never the shared prefab.</summary>
+        public void RegisterRuntimeAnimation(Player3DAnimationBinding binding)
+        {
+            if (binding == null || binding.Clip == null || string.IsNullOrEmpty(binding.ClipName))
+                throw new ArgumentException("A runtime action needs a named clip.", nameof(binding));
+            runtimeAnimations[binding.ClipName] = binding;
+        }
         public Player3DBoneAnchors Anchors => anchors;
         public Player3DMetrics Metrics => metrics;
         public string SourceGeneratorVersion => sourceGeneratorVersion;
@@ -546,6 +556,8 @@ namespace BarPromenade
                 binding = null;
                 return false;
             }
+
+            if (runtimeAnimations.TryGetValue(clipName, out binding)) return true;
 
             for (int index = 0; index < animations.Length; index++)
             {

@@ -145,7 +145,7 @@ The vertical slice contains:
   answer, and there is no branch or choice. Cat, dinner and the news remain
   outside this MVP;
 - `MainMenu` is build index `0` and Editor Play's session boundary: black card,
-  New Game/Quit. New Game opens eleven starts: nine gameplay scenes plus City's
+  New Game/Combat Test/Quit. New Game opens eleven starts: nine story scenes plus City's
   docks/cannery; village first/default. Back returns to the card. Mouse,
   keyboard/gamepad share selection. `NewGameStartService` confirms day `1`/`07:40`:
   areas use `AreaLoading`, six interiors load directly without door travel;
@@ -156,18 +156,17 @@ The vertical slice contains:
   pedestrian positions. Operation-scoped City/Bar markers preserve later arrivals.
   Day one raises the mother's-house quest and map marker, closed on entry
   through door/map or immediately when starting inside; no village signpost;
-- a cinematic waking opening inside Home, retained whole but reached by no
-  shipped run and only by an explicit legacy request: the hero begins directly in
-  the persistent bed-sleep loop while the first rendered Home frame fixes on
-  the silent alarm clock at `05:59`; its whole display flickers briefly at
-  long intervals while no menu input exists for five seconds. A localized
-  PS1-style `ПРОСНУТЬСЯ / WAKE UP` or `ВЫЙТИ / QUIT` menu then appears over
-  the same held shot while the silent display keeps flickering `05:59`. Wake
-  Up alone switches it to solid `06:00`, starts the session clock and alarm,
-  and hides the menu. After three more unscaled seconds on the clock and
-  sleeping loop, the alarm stops; only then does the `6.9 s`
-  opening wake begin (`6 s` exit clip at a `1.15` duration multiplier), gliding to the sleeper over `2.25 s`
-  and easing onward into the active gameplay shot without a cut;
+- Combat Test: crowbar AI/target, buffered mutual hits, outcome recovery.
+  Space+WASD steps (alone back) cost stamina; hits interrupt, no invulnerability;
+  zero stamina still walks. AI observes retreat/misses, varies guard, commits swings.
+  .08 s blends; .16 s same-14-body ragdoll/crowbar drop, settled by 4 s.
+  Right-shoulder enemy-chest/wall camera; W/S travel, A/D strafe.
+  Pause/R/re-entry clean up; winner walks. LMB hit, RMB guard, Tab mode. No story combat;
+- the retained Home opening is reachable only by a legacy request: held bed loop,
+  silent `05:59` clock with rare whole-display flicker, five-second input lock,
+  then localized Wake Up/Quit. Wake sets `06:00`, runs the clock/alarm and hides
+  the menu. Three unscaled seconds later the alarm stops; wake lasts `6.9 s`
+  (`6 s` exit at `1.15`), with a `2.25 s` camera glide followed by gameplay easing;
 - one Home F9 debug window with exact reversible apartment day `1–7`
   selection and a separate button to enter City at home with its debug map
   open. Opening, contextual actions, door actions and other modal owners block
@@ -1682,7 +1681,7 @@ The vertical slice contains:
 
 ### The hero
 
-- sole `Resources/Player/Player3DV2` in nine roots, derived
+- sole `Resources/Player/Player3DV2` in ten roots, derived
   refrigerator/bar arms and portrait. Lean `1.75 m` hero: 31 body bones/48
   actions, narrow shoulders/upper arms, refined hands/boots, oversized M-65
   with slim upper sleeves and right repair patch.
@@ -2894,7 +2893,7 @@ The vertical slice contains:
   action set.
 - Minimap, in-world GPS trail, route autopilot, and manual map zoom/pan.
 - Sobering mechanics, long-term save data/slots, income/jobs, a broader economy,
-  combat/online features and other NPC/quest dialogue adapters.
+  combat outside the isolated test, online features and other NPC/quest dialogue adapters.
   Dated quests, the journal, local exchanges and the foreman's player-chosen
   dialogue branches are implemented.
 - Final bespoke art and audio masters, accessibility and platform release work.
