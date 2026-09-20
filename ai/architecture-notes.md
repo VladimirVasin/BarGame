@@ -4,24 +4,26 @@
 
 ## Current facts
 
+- **Accepted — 2026-09-20, two-hand combat hold:**
+  Both: low diagonal Ready, high horizontal Block; left regrips .16→.42 m,
+  palm opposite right. Ready/Block/Rest: 4 s breath; staggered legs yield to gait.
+  `NpcHandPose`/support follow blends/injury. Round end: one-hand Rest.
+
 - **Accepted — 2026-09-20, charged combat:**
-  Both in `CombatTest`: .9 s hold, indefinite cap, release. Damage/block 25→40,
-  stamina 30+15q (base on start, extra while held), recovery ×1→1.5,
-  windup .45→.10 s. No regen; affordability cap. Guard/step/hit/focus/reset
-  cancel; pause freezes, paused release cancels. AI: 0/.5/1, delayed guard.
-  Shared Charge/ReleaseLight/Heavy; power/cap HUD only on hold.
+  .9 s hold/release, indefinite cap; damage/block 25→40, stamina 30+15q,
+  recovery ×1→1.5, windup .45→.10 s. No regen; affordability cap.
+  Guard/step/hit/focus/reset cancel; pause freezes/cancels release.
+  AI 0/.5/1, delayed guard; shared clips, hold-only HUD.
 
 - **Accepted architecture exception — 2026-09-20, combat injury:**
-  Both fighters: directional reactions/HP pose, restrained blood/wounds/puddles;
-  none on block/miss. R/unload clears; ragdoll owns pose. Visual only.
+  Directional/HP pose, blood/wounds/puddles; none on block/miss.
+  R/unload clears; ragdoll wins. Visual only.
 
 - **Accepted architecture exception — 2026-09-19, isolated combat test:**
-  Story §6/§16.15/art §15a: `CombatTest` crowbar/HUD only, no story effects/speech.
-  Shared hero/input/pause; `zz.combat-test.opponent` last. Mutual hits,
-  buffer/outcomes; vulnerable Space+WASD step (alone back).
-  Zero stamina walks; AI observes/commits. Rig fall/reset. 2026-09-20:
-  shoulder/wall lock, no orbit; W/S travel, A/D strafe. Winner walks; R resets.
-  Tuning: `MeleeCombatSettings`.
+  Story §6/§16.15/art §15a: `CombatTest` only; no story/speech.
+  Shared hero/input; mutual buffered hits, vulnerable steps, rig fall/reset.
+  Shoulder/wall lock; W/S travel, A/D strafe; zero stamina/winner walks.
+  `MeleeCombatSettings`; opponent last.
 
 - **Accepted — 2026-09-16, street pool is the default NPC catalog:**
   User: default-only; new models join at once.

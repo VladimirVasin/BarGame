@@ -202,7 +202,9 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(root.Hero.State.Health, Is.EqualTo(100f));
             Assert.That(root.Hero.State.Stamina, Is.EqualTo(100f));
             Assert.That(root.Hero.State.Phase, Is.EqualTo(MeleePhase.Ready));
-            Assert.That(presentation.OwnsClip(root.Hero), Is.False);
+            Assert.That(presentation.OwnsClip(root.Hero), Is.True,
+                "Stationary readiness owns the authored pelvis and planted legs as well as the two-hand pose.");
+            Assert.That(root.Hero.ActiveClipName, Is.EqualTo("CombatReady"));
 
             int minute = GameSessionState.GameMinuteOfDay;
             int hunger = GameSessionState.HungerLevel;
@@ -886,7 +888,7 @@ namespace BarPromenade.Tests.PlayMode
                 $"gameplayInput={GameInput.CanRead(GameInputContext.Gameplay)}, velocity={motor.PlanarVelocity}";
         }
 
-        private sealed class WalkingLegProbe
+        internal sealed class WalkingLegProbe
         {
             private readonly Transform[] bones = new Transform[4];
             private readonly Quaternion[] initial = new Quaternion[4];

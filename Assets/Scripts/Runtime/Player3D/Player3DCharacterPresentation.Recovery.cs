@@ -209,6 +209,7 @@ namespace BarPromenade
                 ApplyAttentionPose(deltaTime);
                 ApplyCombatDamagePose();
                 CompleteRecoveryPresentation(deltaTime);
+                ApplyCombatSupportGrip();
             }
             RememberRecoveryPose(deltaTime);
             AdvanceRecoveryPresentationClock(deltaTime);

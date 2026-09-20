@@ -16,7 +16,7 @@ from pathlib import Path
 import sys
 
 import bpy
-from mathutils import Matrix, Vector
+from mathutils import Matrix, Quaternion, Vector
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tools"))
@@ -37,8 +37,8 @@ hero, common = dialogue.hero, dialogue.common
 OUT = ROOT / "Assets/Resources/Combat"
 SOURCE = ROOT / "ArtSource/Combat"
 FPS = 100
-CLIPS = (("CombatReady", 1., True), ("CombatAttack", 1.28, False),
-         ("CombatBlock", 1., True), ("CombatHit", .36, False),
+CLIPS = (("CombatReady", 4., True), ("CombatRest", 4., True), ("CombatAttack", 1.28, False),
+         ("CombatBlock", 4., True), ("CombatHit", .36, False),
          ("CombatGuardImpact", .28, False), ("CombatGuardBreak", .70, False),
          ("CombatRecoil", .48, False), ("CombatDefeat", .36, False))
 CHARGE_CLIPS = (("CombatCharge", 1., False), ("CombatReleaseLight", 1.28, False),
@@ -53,6 +53,13 @@ STEP_CLIPS = (("CombatStepForward", (0., -1., 0.), "L"),
               ("CombatStepRight", (-1., 0., 0.), "R"))
 STEP_TRAVEL_SECONDS, STEP_SETTLE_SECONDS, STEP_DISTANCE = .30, .16, .65
 STEP_DURATION = round(STEP_TRAVEL_SECONDS + STEP_SETTLE_SECONDS, 2)
+SUPPORT_OFFSETS = {"L": (.035, -.070, 0.), "R": (-.035, .055, 0.)}
+SUPPORT_GRIP = .16
+BLOCK_GRIP = .42
+LEFT_GRIP_AXIS = 1
+GUARD_HEIGHTS = {"block": 1.490, "block_breath": 1.497, "guard_impact": 1.430}
+GUARD_PALM_ROLL_DEGREES = -90.
+GUARD_LEFT_ELBOW_POLE = (.40, .078, -1.)
 REACTIONS = (("CombatGuardImpact", .06, "CombatBlock", 0., "CombatBlock", 0.),
              ("CombatGuardBreak", .12, "CombatBlock", 0., "CombatReady", 0.),
              ("CombatRecoil", .07, "CombatAttack", .56, "CombatReady", 0.))
@@ -105,6 +112,9 @@ def make_items():
 
 
 class CombatBuilder(dialogue.DialogueBuilder):
+    def support(self, side):
+        return self.result.rig.data.bones["foot." + side].head_local + Vector(SUPPORT_OFFSETS[side])
+
     def snapshot_pose(self):
         return {bone.name: common.BonePose(
                 rotation_degrees=tuple(math.degrees(v) for v in bone.rotation_quaternion.to_euler("XYZ")),
@@ -122,7 +132,7 @@ class CombatBuilder(dialogue.DialogueBuilder):
         for side in ("L", "R"):
             thigh, shin, foot = (rig.pose.bones[name + "." + side] for name in ("thigh", "shin", "foot"))
             hip = thigh.head.copy()
-            ankle = foot.bone.head_local.copy() if foot_targets is None else foot_targets[side]
+            ankle = self.support(side) if foot_targets is None else foot_targets[side]
             delta = ankle - hip
             distance = delta.length
             a, b = thigh.bone.length, shin.bone.length
@@ -138,61 +148,214 @@ class CombatBuilder(dialogue.DialogueBuilder):
                 rotation = (rest.tail_local-rest.head_local).normalized().rotation_difference((end-start).normalized()) @ rest.matrix_local.to_quaternion()
                 bone.matrix = Matrix.Translation(start) @ rotation.to_matrix().to_4x4()
                 bpy.context.view_layer.update()
-            if foot_targets is None:
-                foot.matrix = foot.bone.matrix_local.copy()
-            else:
-                planted = foot.bone.matrix_local.copy()
-                planted.translation = ankle
-                foot.matrix = planted
+            planted = foot.bone.matrix_local.copy()
+            planted.translation = ankle
+            foot.matrix = planted
             bpy.context.view_layer.update()
         return self.snapshot_pose()
+
+    def hand_frame(self, side):
+        bone = self.result.rig.data.bones["hand." + side]
+        wrist = bone.head_local
+        fingers = (bone.tail_local - wrist).normalized()
+        across = (Vector((0, 1, 0)) - fingers * fingers.y).normalized()
+        palm = fingers.cross(across).normalized() * (-1 if side == "L" else 1)
+        centre = wrist + fingers * (.060 * self.scale) + palm * (.030 * self.scale)
+        return centre, -across, palm
+
+    def weapon_frame(self):
+        rig = self.result.rig
+        hand = rig.pose.bones["hand.R"]
+        delta = hand.matrix @ hand.bone.matrix_local.inverted()
+        centre, axis, _ = self.hand_frame("R")
+        axis = (delta.to_3x3() @ axis).normalized()
+        socket = rig.pose.bones["SOCKET_Grip.R"].matrix.to_quaternion()
+        rotation = (socket @ Vector((0, 1, 0))).rotation_difference(axis) @ socket
+        return delta @ centre, rotation
+
+    def solve_arm(self, side, wrist, rotation, elbow_pole=None):
+        rig = self.result.rig
+        upper, forearm, hand = (rig.pose.bones[name + "." + side] for name in ("upper_arm", "forearm", "hand"))
+        shoulder = upper.head.copy()
+        delta = wrist - shoulder
+        distance = delta.length
+        a, b = upper.bone.length, forearm.bone.length
+        if distance >= a + b - .0001 or distance <= abs(a - b) + .0001:
+            raise ValueError(f"Unreachable {side} weapon wrist: {distance:.4f}/{a+b:.4f}")
+        direction = delta.normalized()
+        pole = Vector(elbow_pole or (.9 if side == "L" else -.9, .18, -.65))
+        pole = (pole - direction * pole.dot(direction)).normalized()
+        along = (a*a - b*b + distance*distance) / (2*distance)
+        elbow = shoulder + direction*along + pole*math.sqrt(max(0., a*a-along*along))
+        for bone, start, end in ((upper, shoulder, elbow), (forearm, elbow, wrist)):
+            rest = bone.bone
+            q = (rest.tail_local-rest.head_local).normalized().rotation_difference((end-start).normalized()) @ rest.matrix_local.to_quaternion()
+            bone.matrix = Matrix.Translation(start) @ q.to_matrix().to_4x4()
+            bpy.context.view_layer.update()
+        hand.matrix = Matrix.Translation(wrist) @ rotation.to_4x4()
+        bpy.context.view_layer.update()
+
+    def left_contact_frame(self, offset=SUPPORT_GRIP):
+        rig = self.result.rig
+        origin, weapon_rotation = self.weapon_frame()
+        target = origin + weapon_rotation @ Vector((0, offset, 0))
+        centre, axis, palm = self.hand_frame("L")
+        right_delta = rig.pose.bones["hand.R"].matrix @ rig.data.bones["hand.R"].matrix_local.inverted()
+        # The supporting palm wraps the opposite side of the straight shaft.
+        target_axis = weapon_rotation @ Vector((0, LEFT_GRIP_AXIS, 0))
+        target_palm = -(right_delta.to_3x3() @ self.hand_frame("R")[2])
+        def frame(forward, up):
+            z = forward.normalized()
+            x = up.cross(z).normalized()
+            return Matrix((x, z.cross(x), z)).transposed()
+        rotation = frame(target_axis, target_palm) @ frame(axis, palm).transposed()
+        hand = rig.pose.bones["hand.L"]
+        wrist = target - rotation @ (centre - hand.bone.head_local)
+        return wrist, rotation @ hand.bone.matrix_local.to_3x3()
+
+    def pin_left_grip(self, pose, offset=SUPPORT_GRIP):
+        """Bake the opposing palm on the actual shaft, not the neutral socket."""
+        self._reset_pose(); self._apply_pose(pose)
+        rig = self.result.rig
+        wrist, rotation = self.left_contact_frame(offset)
+        upper, forearm = rig.pose.bones["upper_arm.L"], rig.pose.bones["forearm.L"]
+        shoulder = upper.head.copy()
+        delta = wrist - shoulder
+        distance = delta.length
+        a, b = upper.bone.length, forearm.bone.length
+        if distance > a + b - .015:
+            # The former one-hand backswing can extend beyond the other arm.
+            # Bring its original grip inward just enough to leave a bent left
+            # elbow, preserving the bar's axis and the authored swing timing.
+            correction = delta.normalized() * (distance - (a + b - .015))
+            right = rig.pose.bones["hand.R"]
+            self.solve_arm("R", right.head - correction, right.matrix.to_3x3())
+            wrist -= correction
+            self.maximum_grip_adjustment = max(getattr(self, "maximum_grip_adjustment", 0.), correction.length)
+        guard_weight = max(0., min(1., (offset-SUPPORT_GRIP)/(BLOCK_GRIP-SUPPORT_GRIP)))
+        pole = Vector((.9, .18, -.65)).lerp(Vector(GUARD_LEFT_ELBOW_POLE), guard_weight)
+        self.solve_arm("L", wrist, rotation, pole)
+        return self.snapshot_pose()
+
+    def probe_mixed_reach(self, poses):
+        """Reject an impossible charge/release blend before authoring/exporting banks."""
+        rig = self.result.rig
+        upper = {bone.name for bone in rig.pose.bones
+                 if bone.name == "spine" or any(parent.name == "spine" for parent in bone.parent_recursive)}
+        heavy = dict(poses)
+        for name in ("heavy_windup", "heavy_contact", "heavy_follow", "heavy_overrun", "heavy_recover"):
+            heavy[name] = self.combat_pose(name)
+        light_stops = ((0, "ready"), (.10, "anticipation"), (.33, "loaded"), (.45, "windup"),
+                       (.56, "contact"), (.63, "follow"), (.73, "overrun"), (.96, "recover"), (1.28, "ready"))
+        heavy_stops = ((0., "windup"), (.10, "windup"), (.33, "heavy_windup"), (.45, "heavy_windup"),
+                       (.56, "heavy_contact"), (.63, "heavy_follow"), (.73, "heavy_overrun"),
+                       (.96, "heavy_recover"), (1.28, "ready"))
+        def at(stops, source, second):
+            for (a, p), (b, q) in zip(stops, stops[1:]):
+                if second <= b + .00001:
+                    return self.blend(source[p], source[q], dialogue.smooth((second-a)/(b-a)))
+            raise ValueError("Release probe outside timeline")
+        worst = (100., 0., 0.)
+        for second in sorted({frame/FPS for frame in range(0, 129, 4)} | {t for t, _ in light_stops}):
+            light = self.pin_left_grip(self.pin_supports(at(light_stops, poses, second)))
+            heavy_pose = at(heavy_stops, heavy, second)
+            heavy_pose = self.pin_left_grip({name: heavy_pose[name] if name in upper else value for name, value in light.items()})
+            for power in (0., .25, .5, .75, 1.):
+                mixed = self.blend(light, heavy_pose, power)
+                self._reset_pose(); self._apply_pose(mixed)
+                wrist, _ = self.left_contact_frame()
+                arm, forearm = rig.pose.bones["upper_arm.L"], rig.pose.bones["forearm.L"]
+                margin = arm.bone.length + forearm.bone.length - (wrist-arm.head).length
+                worst = min(worst, (margin, second, power))
+        print(f"Opposing palm mixed-release minimum reach margin={worst[0]:.4f}m at t={worst[1]:.2f}, q={worst[2]:.2f}", flush=True)
+        if worst[0] < .010:
+            raise ValueError(f"Charge/release mix leaves less than10mm arm margin: {worst}")
+        self.minimum_mixed_reach_margin = worst[0]
+
+    def place_guard_grip(self, pose, height, roll_degrees):
+        """Raise the physical grip and roll the palms without tilting the bar."""
+        self._reset_pose(); self._apply_pose(pose)
+        rig = self.result.rig
+        hand = rig.pose.bones["hand.R"]
+        origin, weapon_rotation = self.weapon_frame()
+        origin.z = height * self.scale
+        axis = weapon_rotation @ Vector((0, 1, 0))
+        roll = Quaternion(axis, math.radians(roll_degrees)).to_matrix()
+        rotation = roll @ hand.matrix.to_3x3()
+        delta = rotation @ hand.bone.matrix_local.to_3x3().inverted()
+        wrist = origin - delta @ (self.hand_frame("R")[0] - hand.bone.head_local)
+        self.solve_arm("R", wrist, rotation, (-.20, .10, -1.))
+        left_wrist, left_rotation = self.left_contact_frame(BLOCK_GRIP)
+        self.solve_arm("L", left_wrist, left_rotation, GUARD_LEFT_ELBOW_POLE)
+        actual, actual_rotation = self.weapon_frame()
+        if (actual-origin).length > .00001 or (actual_rotation @ Vector((0, 1, 0))).dot(axis) < .99999:
+            raise ValueError("Guard wrist roll changed the physical grip or shaft direction")
+        for side in ("R", "L"):
+            upper, forearm, hand = (rig.pose.bones[name + "." + side] for name in ("upper_arm", "forearm", "hand"))
+            margin = upper.bone.length + forearm.bone.length - (hand.head-upper.head).length
+            if margin < .010:
+                raise ValueError(f"High guard {side} wrist leaves less than10mm arm margin: {margin:.4f}")
+        return self.snapshot_pose()
+
+    def guard_metrics(self, pose):
+        self._reset_pose(); self._apply_pose(pose)
+        rig = self.result.rig
+        angles = []
+        for side in ("R", "L"):
+            forearm, hand = (rig.pose.bones[name + "." + side] for name in ("forearm", "hand"))
+            angles.append(math.degrees((hand.head-forearm.head).angle(hand.tail-hand.head)))
+        origin, _ = self.weapon_frame()
+        return dict(height=round(origin.z/self.scale, 4), wrist_angles=[round(value, 2) for value in angles])
 
     def combat_pose(self, kind):
         B = common.BonePose
         # Source coordinates: X left, -Y forward, Z up. Arms are solved in
         # armature space; the pelvis loads the legs over pinned foot contacts.
         poses = {
-            "ready": ((-.39, -.10, 1.16), (-.32, -.36, 1.28), (0, -.78, .63), (-2, 0, -5)),
-            "ready_breath": ((-.39, -.105, 1.163), (-.32, -.365, 1.286), (0, -.78, .63), (-1.5, 0, -4.6)),
+            "ready": ((-.33, .015, 1.10), (-.25, -.22, .99), (.62, -.43, .65), (4, 1, -9)),
+            "ready_breath": ((-.333, .010, 1.104), (-.247, -.227, 1.001), (.62, -.43, .65), (3.3, 1.3, -8.5)),
+            "rest": ((-.285, .015, 1.08), (-.28, -.045, .82), (-.10, -.19, -.98), (2, 0, -3)),
+            "rest_breath": ((-.282, .013, 1.085), (-.277, -.05, .829), (-.10, -.19, -.98), (1.4, 0, -2.5)),
             "anticipation": ((-.41, -.08, 1.14), (-.35, -.25, 1.17), (0, -.60, .80), (-1, 0, -10)),
             "loaded": ((-.50, .02, 1.44), (-.45, .16, 1.70), (-.10, .38, .92), (-4, 0, -16)),
             "windup": ((-.51, .03, 1.51), (-.43, .16, 1.79), (-.05, .48, .88), (-6, 0, -18)),
-            "contact": ((-.28, -.27, 1.29), (-.08, -.49, 1.18), (.08, -.99, -.08), (7, 0, 13)),
+            "contact": ((-.28, -.27, 1.29), (-.08, -.49, 1.18), (.08, -.99, -.08), (12, 0, 13)),
             "follow": ((-.04, -.28, 1.20), (.22, -.35, 1.07), (.80, -.50, -.32), (12, 0, 26)),
             "overrun": ((.01, -.26, 1.15), (.25, -.32, 1.00), (.85, -.43, -.30), (11, 0, 24)),
             "recover": ((-.22, -.18, 1.08), (-.20, -.30, 1.11), (.24, -.66, .71), (5, 0, 9)),
-            "block": ((-.40, -.15, 1.38), (-.29, -.43, 1.49), (.12, -.10, .99), (-4, 0, -7)),
-            "block_breath": ((-.40, -.152, 1.383), (-.29, -.433, 1.494), (.12, -.10, .99), (-3.5, 0, -7)),
+            "block": ((-.36, -.16, 1.18), (-.28, -.37, 1.34), (.996, -.015, .075), (5, 0, -4)),
+            "block_breath": ((-.362, -.163, 1.184), (-.28, -.375, 1.348), (.996, -.015, .075), (4.3, .2, -3.5)),
             "hit": ((-.44, .01, 1.13), (-.38, -.13, 1.22), (.05, -.45, .89), (-19, 0, -12)),
             "hit_settle": ((-.42, -.02, 1.12), (-.34, -.25, 1.19), (.05, -.60, .80), (-7, 0, -6)),
-            "guard_impact": ((-.42, -.03, 1.38), (-.31, -.27, 1.50), (.20, .22, .96), (-11, 0, -11)),
+            "guard_impact": ((-.37, -.05, 1.19), (-.29, -.23, 1.35), (.98, .10, .14), (-5, 0, -9)),
             "guard_break": ((-.53, .07, 1.26), (-.58, .19, 1.01), (-.80, .25, -.54), (-21, 0, -12)),
             "recoil": ((-.49, -.05, 1.30), (-.53, -.14, 1.58), (-.43, .32, .84), (-10, 0, -7)),
             "defeat": ((-.43, .08, 1.18), (-.52, .13, .91), (-.30, .15, -.94), (-23, 0, 17)),
             "heavy_windup": ((-.53, .045, 1.55), (-.42, .20, 1.81), (-.07, .54, .84), (-8, 0, -26)),
-            "heavy_contact": ((-.27, -.29, 1.25), (-.055, -.55, 1.14), (.10, -.99, -.10), (11, 0, 19)),
+            "heavy_contact": ((-.27, -.29, 1.25), (-.055, -.55, 1.14), (.10, -.99, -.10), (16, 0, 19)),
             "heavy_follow": ((-.015, -.30, 1.17), (.27, -.35, 1.03), (.87, -.41, -.32), (16, 0, 36)),
             "heavy_overrun": ((.045, -.25, 1.11), (.30, -.28, .97), (.90, -.32, -.32), (16, 0, 38)),
             "heavy_recover": ((-.18, -.17, 1.05), (-.14, -.30, 1.08), (.29, -.62, .72), (8, 0, 15)),
         }
         shifts = {
-            "ready": (0, .006, -.016), "ready_breath": (0, .006, -.014),
+            "ready": (-.008, .004, -.016), "ready_breath": (-.005, .002, -.012),
+            "rest": (-.008, .005, -.010), "rest_breath": (-.005, .004, -.006),
             "anticipation": (-.012, .016, -.026), "loaded": (-.022, .024, -.043),
-            "windup": (-.024, .020, -.040), "contact": (.013, -.019, -.020),
-            "follow": (.022, -.035, -.038), "overrun": (.023, -.030, -.039),
-            "recover": (.006, -.005, -.031), "block": (0, .008, -.027),
+            "windup": (-.024, .020, -.040), "contact": (.013, -.069, -.020),
+            "follow": (.022, -.075, -.038), "overrun": (.023, -.060, -.039),
+            "recover": (.006, -.020, -.031), "block": (0, .008, -.027),
             "block_breath": (0, .008, -.025), "hit": (-.014, .040, -.042),
             "hit_settle": (-.006, .016, -.029), "guard_impact": (-.009, .027, -.037),
             "guard_break": (-.024, .045, -.062), "recoil": (-.015, .015, -.035),
             "defeat": (.026, .056, -.088),
-            "heavy_windup": (-.024, .020, -.040), "heavy_contact": (.013, -.019, -.020),
-            "heavy_follow": (.022, -.035, -.038), "heavy_overrun": (.023, -.030, -.039),
-            "heavy_recover": (.006, -.005, -.031),
+            "heavy_windup": (-.024, .020, -.040), "heavy_contact": (.013, -.069, -.020),
+            "heavy_follow": (.022, -.075, -.038), "heavy_overrun": (.023, -.060, -.039),
+            "heavy_recover": (.006, -.020, -.031),
         }
         elbow, wrist, axis, chest = poses[kind]
         shoulder = self.points["shoulder.R"]
         pose = self.merge_pose(self.relaxed_pose(), {
-            "pelvis": B(armature_location_m=shifts[kind]),
+            "pelvis": B(armature_location_m=tuple(Vector(shifts[kind]) + Vector((0, 0, -.040)))),
             "spine": B(rotation_degrees=(-2, 0, chest[2] * .24)),
             "chest": B(rotation_degrees=chest),
             "head": B(rotation_degrees=(3, 0, -chest[2] * .4)),
@@ -204,7 +367,7 @@ class CombatBuilder(dialogue.DialogueBuilder):
         })
         # Each impact has a different silhouette at the game's low resolution:
         # held guard compresses, broken guard opens and drops, wall recoil folds
-        # the weapon elbow high while the free arm counterbalances.
+        # the weapon elbow high. The support palm is solved onto the shaft below.
         if kind == "guard_impact":
             pose.update({"upper_arm.L": B(armature_direction=(.14, -.08, -.27)),
                          "forearm.L": B(armature_direction=(-.10, -.12, .26)),
@@ -227,6 +390,10 @@ class CombatBuilder(dialogue.DialogueBuilder):
             pose.update({"upper_arm.L": B(armature_direction=(.23, .05, -.23)),
                          "forearm.L": B(armature_direction=(.10, .10, -.25)),
                          "head": B(rotation_degrees=(18, 0, -8))})
+        elif kind.startswith("rest"):
+            pose.update({"upper_arm.L": B(armature_direction=(.07, .025, -.31)),
+                         "forearm.L": B(armature_direction=(-.02, -.04, -.28)),
+                         "hand.L": B(rotation_degrees=(0, 0, 0))})
         self._reset_pose(); self._apply_pose(pose)
         hand = self.result.rig.pose.bones["hand.R"]
         # Specify the crowbar's grip-axis explicitly, preserving anatomical
@@ -235,12 +402,44 @@ class CombatBuilder(dialogue.DialogueBuilder):
         rotation = delta @ hand.bone.matrix_local.to_quaternion()
         hand.matrix = Matrix.Translation(hand.head.copy()) @ rotation.to_matrix().to_4x4()
         bpy.context.view_layer.update()
-        return self.pin_supports(self.snapshot_pose())
+        result = self.pin_supports(self.snapshot_pose())
+        if kind.startswith("rest"): return result
+        if kind in GUARD_HEIGHTS:
+            return self.place_guard_grip(result, GUARD_HEIGHTS[kind], GUARD_PALM_ROLL_DEGREES)
+        try:
+            return self.pin_left_grip(result, BLOCK_GRIP if kind in ("block", "block_breath", "guard_impact") else SUPPORT_GRIP)
+        except ValueError as error:
+            raise ValueError(kind + ": " + str(error)) from error
 
     def build_actions(self):
-        poses = {n: self.combat_pose(n) for n in ("ready", "ready_breath", "anticipation", "loaded", "windup",
+        poses = {n: self.combat_pose(n) for n in ("ready", "ready_breath", "rest", "rest_breath", "anticipation", "loaded", "windup",
                     "contact", "follow", "overrun", "recover", "block", "block_breath", "hit", "hit_settle",
                     "guard_impact", "guard_break", "recoil", "defeat")}
+        centre, axis, _ = self.hand_frame("L")
+        far_extent = 0.
+        for part in self.result.parts:
+            obj = part.obj
+            if not obj.name.endswith(".L") or not obj.name.startswith(("GEO_Hand", "GEO_Finger", "GEO_Thumb")): continue
+            matrix = self.result.rig.matrix_world.inverted() @ obj.matrix_world
+            shape = obj.data.shape_keys.key_blocks["CylindricalGrip"]
+            far_extent = max(far_extent, max((matrix @ vertex.co-centre).dot(axis * LEFT_GRIP_AXIS) for vertex in shape.data))
+        if BLOCK_GRIP + far_extent > .485:
+            raise ValueError(f"Left grip reaches the hook: offset={BLOCK_GRIP}, closed-hand extent={far_extent:.4f}")
+        self.closed_left_hand_shaft_extent = far_extent
+        for name in ("contact", "heavy_contact"):
+            self._reset_pose(); self._apply_pose(poses[name] if name in poses else self.combat_pose(name))
+            origin, rotation = self.weapon_frame()
+            tip = origin + rotation @ Vector((0, .595, .145))
+            print(f"Two-hand landmark {name}: physical reach={-tip.y:.4f}m; hook clearance={.49-BLOCK_GRIP-far_extent:.4f}m", flush=True)
+            if -tip.y < 1.:
+                raise ValueError(f"Two-handed {name} needs import-safe physical reach >=1m, got {-tip.y:.4f}m")
+        self.probe_mixed_reach(poses)
+        for kind in ("ready", "block", "block_breath", "guard_impact"):
+            metrics = self.guard_metrics(poses[kind])
+            print(f"Guard wrist landmark {kind}: {metrics}", flush=True)
+            if kind in GUARD_HEIGHTS and max(metrics["wrist_angles"]) > 35.:
+                raise ValueError(f"Guard wrist must continue the forearm without a sharp kink: {kind} {metrics}")
+        if getattr(self, "probe_only", False): return
         for name, duration, loop in CLIPS:
             if name == "CombatAttack":
                 stops = ((0, "ready"), (.10, "anticipation"), (.33, "loaded"), (.45, "windup"),
@@ -256,17 +455,25 @@ class CombatBuilder(dialogue.DialogueBuilder):
             elif name == "CombatDefeat":
                 stops = ((0, "ready"), (.06, "hit"), (DEFEAT_HANDOFF_SECONDS, "defeat"), (.36, "defeat"))
             else:
-                stance = "block" if name == "CombatBlock" else "ready"
-                stops = ((0, stance), (.5, stance + "_breath"), (duration, stance))
+                stance = "block" if name == "CombatBlock" else "rest" if name == "CombatRest" else "ready"
+                stops = ((0, stance), (duration * .42, stance + "_breath"), (duration, stance))
             keys = []
-            for frame in range(round(duration * FPS) + 1):
-                second = frame / FPS
+            sample_fps = 25 if loop else FPS
+            count = round(duration * sample_fps)
+            for frame in range(count + 1):
+                second = frame / sample_fps
                 for (a, p), (b, q) in zip(stops, stops[1:]):
                     if second <= b + .00001:
                         blended = self.blend(poses[p], poses[q], dialogue.smooth((second - a) / (b - a)))
-                        keys.append((frame / round(duration * FPS), self.pin_supports(blended)))
+                        posed = self.pin_supports(blended)
+                        if name != "CombatRest":
+                            grip = BLOCK_GRIP if name in ("CombatBlock", "CombatGuardImpact") else SUPPORT_GRIP
+                            if name == "CombatGuardBreak":
+                                grip = BLOCK_GRIP + (SUPPORT_GRIP-BLOCK_GRIP) * dialogue.smooth(second / .12)
+                            posed = self.pin_left_grip(posed, grip)
+                        keys.append((frame / count, posed))
                         break
-            self._create_action(name, "combat", duration, loop, round(duration * FPS), FPS, keys)
+            self._create_action(name, "combat", duration, loop, count, sample_fps, keys)
             print("Authored " + name, flush=True)
         self.build_charge_actions()
 
@@ -299,7 +506,7 @@ class CombatBuilder(dialogue.DialogueBuilder):
                     upper_pose = self.blend(poses[p], poses[q], dialogue.smooth((second - a) / (b - a)))
                     pose = {name: upper_pose[name] if name in upper else value
                             for name, value in light_poses[frame].items()}
-                    keys.append((frame / 128, pose))
+                    keys.append((frame / 128, self.pin_left_grip(pose)))
                     break
         self._create_action("CombatReleaseHeavy", "combat", 1.28, False, 128, FPS, keys)
         charge_start, charge_end = light_poses[0], keys[0][1]
@@ -338,7 +545,7 @@ class CombatBuilder(dialogue.DialogueBuilder):
                 for side in ("L", "R"):
                     progress = min(1., max(0., 2.*t - (0. if side == leading else 1.)))
                     lift = math.sin(progress*math.pi)**2
-                    ankle = rig.data.bones["foot."+side].head_local.copy()
+                    ankle = self.support(side)
                     ankle += Vector((sign*STRAFE_CYCLE_DISTANCE*(dialogue.smooth(progress)-t),
                                      -.012*lift, STRAFE_FOOT_LIFT*lift))
                     feet[side] = ankle
@@ -375,7 +582,7 @@ class CombatBuilder(dialogue.DialogueBuilder):
                 for side in ("L", "R"):
                     progress = min(1., max(0., 2.*travel - (0. if side == leading else 1.)))
                     lift = math.sin(progress * math.pi)**2
-                    ankle = rig.data.bones["foot."+side].head_local.copy()
+                    ankle = self.support(side)
                     ankle += direction * (STEP_DISTANCE * dialogue.smooth(progress) - root_distance)
                     ankle.z += .06 * lift
                     feet[side] = ankle
@@ -416,7 +623,7 @@ def step_payload(builder):
             bpy.context.scene.frame_set(math.floor(frame), subframe=frame % 1.); bpy.context.view_layer.update()
             for side in ("L", "R"):
                 foot = rig.pose.bones["foot."+side]
-                rest = foot.bone.head_local
+                rest = builder.support(side)
                 lifts[side] = max(lifts[side], foot.head.z-rest.z)
                 planted = travel >= 1. or (side == leading and travel >= .5) or (side != leading and travel <= .5)
                 if planted:
@@ -465,7 +672,7 @@ def strafe_payload(builder):
             bpy.context.scene.frame_set(math.floor(frame), subframe=frame % 1.); bpy.context.view_layer.update()
             for side in ("L", "R"):
                 foot = rig.pose.bones["foot."+side]
-                rest = foot.bone.head_local
+                rest = builder.support(side)
                 lifts[side] = max(lifts[side], foot.head.z-rest.z)
                 planted = (side == leading and t >= .5) or (side != leading and t <= .5)
                 if planted:
@@ -510,6 +717,7 @@ def charge_payload(builder):
     light_start, support = sample("CombatReleaseLight", 0.)
     heavy_start, _ = sample("CombatReleaseHeavy", 0.)
     endpoint_error = support_error = lower_error = light_error = 0.
+    minimum_left_reach_margin = 100.
     reach = {str(q): 0. for q in (0., .5, 1.)}
     for q in (0., .5, 1.):
         _, charge = sample("CombatCharge", q)
@@ -522,10 +730,14 @@ def charge_payload(builder):
         _, attack = sample("CombatAttack", seconds)
         lower_error = max(lower_error, difference(light_world, heavy_world, lower))
         light_error = max(light_error, difference(light_world, attack, attack))
-        for q in (0., .5, 1.):
+        for q in (0., .25, .5, .75, 1.):
             pose = apply_blend(light, heavy, q)
             support_error = max(support_error, difference(pose, support, ("root", "foot.L", "foot.R")))
-            if .45 <= seconds <= .63:
+            wrist, _ = builder.left_contact_frame()
+            arm, forearm = rig.pose.bones["upper_arm.L"], rig.pose.bones["forearm.L"]
+            minimum_left_reach_margin = min(minimum_left_reach_margin,
+                arm.bone.length + forearm.bone.length - (wrist-arm.head).length)
+            if .45 <= seconds <= .63 and str(q) in reach:
                 grip = pose["SOCKET_Grip.R"]
                 tip = grip @ Vector((0, .595, .145))
                 reach[str(q)] = max(reach[str(q)], -tip.y)
@@ -540,12 +752,74 @@ def charge_payload(builder):
             raise ValueError("Charged quarter-power entry mismatch: " + str(q))
     if support_error > .001 or min(reach.values()) < .95:
         raise ValueError(f"Charged release lost grounded supports/reach: {support_error}/{reach}")
+    if minimum_left_reach_margin < .010:
+        raise ValueError(f"Mixed charge/release left wrist lacks10mm reach margin: {minimum_left_reach_margin:.6f}m")
     return dict(charge_clip="CombatCharge", release_light="CombatReleaseLight", release_heavy="CombatReleaseHeavy",
                 charge_parameter="linear", release_seconds=1.28, windup_seconds=.45, active_seconds=.18,
                 recovery_seconds=.65, powers=[0., .5, 1.], validation_hz=FPS * 2,
                 maximum_entry_error=endpoint_error, maximum_lower_track_error=lower_error,
                 maximum_light_legacy_error=light_error, maximum_support_error=support_error,
-                minimum_reach_m=min(reach.values()))
+                minimum_reach_m=min(reach.values()), minimum_left_wrist_reach_margin_m=minimum_left_reach_margin)
+
+
+def holding_payload(builder):
+    """Measure the contacts players actually see on the shaft and planted feet."""
+    rig = builder.result.rig
+    gap = axis_error = palm_error = guard_elevation = 0.
+    ready_heights, block_heights = [], []
+    guard_wrist_angle = 0.
+    loop_travel = {}
+    for name, duration, loop in CLIPS + CHARGE_CLIPS:
+        if name == "CombatRest" or name == "CombatCharge": continue
+        rig.animation_data.action = builder.result.actions[name].action
+        centres = []
+        for sample in range(round(duration * FPS) + 1):
+            second = sample / FPS
+            bpy.context.scene.frame_set(sample); bpy.context.view_layer.update()
+            origin, rotation = builder.weapon_frame()
+            offset = BLOCK_GRIP if name in ("CombatBlock", "CombatGuardImpact") else SUPPORT_GRIP
+            if name == "CombatGuardBreak":
+                offset = BLOCK_GRIP + (SUPPORT_GRIP-BLOCK_GRIP) * dialogue.smooth(second / .12)
+            hand = rig.pose.bones["hand.L"]
+            delta = hand.matrix @ hand.bone.matrix_local.inverted()
+            centre, axis, palm = builder.hand_frame("L")
+            gap = max(gap, (delta @ centre - origin - rotation @ Vector((0, offset, 0))).length)
+            axis_error = max(axis_error, 1. - (delta.to_3x3() @ axis).normalized().dot(rotation @ Vector((0, LEFT_GRIP_AXIS, 0))))
+            right = rig.pose.bones["hand.R"]
+            right_delta = right.matrix @ right.bone.matrix_local.inverted()
+            palm_error = max(palm_error, 1. + (delta.to_3x3() @ palm).normalized().dot(
+                (right_delta.to_3x3() @ builder.hand_frame("R")[2]).normalized()))
+            if name == "CombatBlock":
+                guard_elevation = max(guard_elevation, math.degrees(math.asin(abs((rotation @ Vector((0, 1, 0))).z))))
+                block_heights.append(origin.z)
+            if name in ("CombatBlock", "CombatGuardImpact"):
+                for side in ("R", "L"):
+                    forearm, hand = (rig.pose.bones[bone + "." + side] for bone in ("forearm", "hand"))
+                    guard_wrist_angle = max(guard_wrist_angle, math.degrees((hand.head-forearm.head).angle(hand.tail-hand.head)))
+            if name == "CombatReady": ready_heights.append(origin.z)
+            if loop: centres.append(origin.copy())
+        if loop: loop_travel[name] = max((a-b).length for a in centres for b in centres)
+    if gap > .001 or axis_error > .0001 or palm_error > .0001 or guard_elevation > 20.:
+        raise ValueError(f"Combat two-hand contact/axis/opposed palms/horizontal guard failed: {gap}/{axis_error}/{palm_error}/{guard_elevation}")
+    if not .85 < min(ready_heights) <= max(ready_heights) < 1.3 or min(loop_travel.values()) < .005:
+        raise ValueError(f"Combat ready is too high or the breathing is frozen: {ready_heights[0]}/{loop_travel}")
+    if not 1.45 < min(block_heights) <= max(block_heights) < 1.55 or guard_wrist_angle > 35.:
+        raise ValueError(f"Combat high guard height or wrist alignment failed: {min(block_heights)}/{max(block_heights)}/{guard_wrist_angle}")
+    return dict(ready_grip_offset_m=SUPPORT_GRIP, block_grip_offset_m=BLOCK_GRIP,
+                left_grip_axis_sign=LEFT_GRIP_AXIS, maximum_authored_left_contact_error_m=gap,
+                maximum_opposed_palm_error=palm_error,
+                maximum_left_axis_error=axis_error, maximum_block_elevation_degrees=guard_elevation,
+                minimum_ready_grip_height_m=min(ready_heights), maximum_ready_grip_height_m=max(ready_heights),
+                minimum_block_grip_height_m=min(block_heights), maximum_block_grip_height_m=max(block_heights),
+                maximum_guard_wrist_deflection_degrees=guard_wrist_angle,
+                breathing_grip_travel_m=loop_travel,
+                maximum_two_hand_grip_reposition_m=getattr(builder, "maximum_grip_adjustment", 0.),
+                left_hand_shaft_extent_m=builder.closed_left_hand_shaft_extent,
+                block_hook_clearance_m=.49-BLOCK_GRIP-builder.closed_left_hand_shaft_extent,
+                foot_offsets_blender_m=SUPPORT_OFFSETS,
+                stance_width_m=builder.support("L").x-builder.support("R").x,
+                stance_stagger_m=builder.support("R").y-builder.support("L").y,
+                runtime_contract="final left cylinder solve after charge blend, injury and pose recovery; same shaft axis, opposed palms")
 
 
 def action_payload(builder):
@@ -598,8 +872,9 @@ def action_payload(builder):
     pelvis_travel = max((a-b).length for a in attack_pelvis for b in attack_pelvis)
     if pelvis_travel < .04 or attack_knee_travel < 7.:
         raise ValueError("Attack lacks authored leg/hip weight transfer")
-    if max(p["tip"][2] for p in points if .45 <= p["seconds"] <= .63) < 1.:
-        raise ValueError("Crowbar cannot reach a target in front")
+    reach = max(p["tip"][2] for p in points if .45 <= p["seconds"] <= .63)
+    if reach < .95:
+        raise ValueError(f"Crowbar cannot reach a target in front: {reach:.4f}")
     def snapshot(name, seconds):
         rig.animation_data.action = builder.result.actions[name].action
         bpy.context.scene.frame_set(round(seconds * FPS)); bpy.context.view_layer.update()
@@ -639,7 +914,7 @@ def action_payload(builder):
                 animation_signature=checksum.hexdigest(),
                 base_action_signature=base_checksum.hexdigest(), strike_samples=points,
                 reactions=reactions, minimum_reaction_tip_separation_m=separation,
-                charging=charge_payload(builder))
+                charging=charge_payload(builder), holding=holding_payload(builder))
 
 
 def meta(path):
@@ -653,6 +928,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--validate-only", action="store_true")
     parser.add_argument("--actions-only", action="store_true")
+    parser.add_argument("--probe-only", action="store_true")
     parser.add_argument("--output-dir", type=Path, default=OUT)
     parser.add_argument("--source-dir", type=Path, default=SOURCE)
     args = parser.parse_args(sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else [])
@@ -662,7 +938,7 @@ def main():
     items = make_items(); signature = kit.signature(items)
     if kit.signature(make_items()) != signature: raise ValueError("Passive geometry is nondeterministic")
     payload = kit.manifest(items, signature)
-    payload.update(generator="tools/build-combat-test-3d-model.py", generator_version="1.5.0", test_only=True)
+    payload.update(generator="tools/build-combat-test-3d-model.py", generator_version="1.7.0", test_only=True)
     OUT.mkdir(parents=True, exist_ok=True); SOURCE.mkdir(parents=True, exist_ok=True)
     if not validate_only and not actions_only:
         roots = kit.build_objects(items)
@@ -674,7 +950,9 @@ def main():
     config = common.BuildConfig(SOURCE / "CombatActions.blend", None, None, OUT / "CombatTest3D.json",
                                 None, None, OUT / "CombatActions.fbx", 1.75, 20260919, "apose")
     builder = CombatBuilder(config, hero.DEFAULT_FACE_ATLAS, hero.DEFAULT_CLOTHING_ATLAS)
+    builder.probe_only = args.probe_only
     builder.build()
+    if args.probe_only: return
     payload["actions"] = action_payload(builder)
     # Export the shared NPC bank before creating hero-only locomotion Actions:
     # Blender's FBX exporter scans all compatible actions, not result.actions.

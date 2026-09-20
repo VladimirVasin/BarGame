@@ -5,6 +5,7 @@ namespace BarPromenade
     public sealed partial class CombatActor
     {
         private const float PoseBlendSeconds = .08f;
+        private float poseBlendDuration = PoseBlendSeconds;
         private float poseBlendRemaining;
         private int poseBlendAfterFrame;
         private bool heroPoseBlendOwned;
@@ -28,6 +29,7 @@ namespace BarPromenade
         private void AdvanceVisualClock(float seconds)
         {
             damagePose?.Advance(seconds, State.Health / State.Settings.MaxHealth);
+            supportGrip?.Advance(seconds);
             poseClock += seconds;
             if (poseBlendRemaining > 0f)
             {
@@ -39,15 +41,16 @@ namespace BarPromenade
             if (reactionClock >= reaction.length) reaction = null;
         }
 
-        private void BeginPoseBlend()
+        private void BeginPoseBlend(float duration = PoseBlendSeconds)
         {
             if (visibleClip == null || Time.frameCount <= poseBlendAfterFrame) return;
-            poseBlendRemaining = PoseBlendSeconds;
+            poseBlendDuration = duration;
+            poseBlendRemaining = duration;
             if (hero != null)
             {
                 // The shared final-pose blend preserves the last visible velocity,
                 // and runs after gait/foot planting just like contextual recovery.
-                hero.BeginRecoveryPoseTransition(PoseBlendSeconds);
+                hero.BeginRecoveryPoseTransition(duration);
                 heroPoseBlendOwned = true;
             }
             else
@@ -69,7 +72,7 @@ namespace BarPromenade
             // Runs after damage: blending a final injured source toward an
             // uninjured target and then adding injury would apply it twice.
             if (poseBlendRemaining <= 0f) return;
-            float t = Mathf.SmoothStep(0f, 1f, 1f - poseBlendRemaining / PoseBlendSeconds);
+            float t = Mathf.SmoothStep(0f, 1f, 1f - poseBlendRemaining / poseBlendDuration);
             for (int i = 0; i < npcPoseBones.Length; i++)
             {
                 Transform bone = npcPoseBones[i];

@@ -157,9 +157,9 @@ in `Captures` and does not publish. See [audio-vhs/README.md](audio-vhs/README.m
 `--hand-grip-only --skip-animation-export --no-previews` refreshes hand shapes.
 Output: `Assets/Player3D/V2/Models/PlayerCharacter3DV2.{fbx,json}`.
 
-`build-combat-{test,blood}-3d-model.py`: shared launcher/`--validate-only`.
-Test: arena/crowbar/HeroV2/NPC; `--actions-only` banks/manifest:
-`CombatCharge`/`CombatRelease{Light,Heavy}`. Blood: `--texture-only` PNG.
+`build-combat-{test,blood}-3d-model.py`: launcher/`--validate-only`.
+Test: arena/crowbar/HeroV2/NPC; `--actions-only`: Ready/Block/Rest 4 s,
+two-hand contacts, Charge/ReleaseLight/Heavy. Blood: `--texture-only` PNG.
 `Assets/Resources/{Combat,CombatBlood}`.
 
 `player_jacket_cloth.py --write` derives hem/cuff metadata only; `--check` verifies it.

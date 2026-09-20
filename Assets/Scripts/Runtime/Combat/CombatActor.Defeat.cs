@@ -34,6 +34,7 @@ namespace BarPromenade
         {
             roundEnded = true;
             State.CancelCharge();
+            State.SetBlocking(false);
             if (State.IsDefeated) { AdvanceDefeat(seconds); return; }
             // The winner finishes the visible swing without another damage window.
             AdvanceVisualClock(seconds);
@@ -49,6 +50,7 @@ namespace BarPromenade
             Present();
             if (defeatClock + .000001f < CombatAssetProvider.DefeatHandoffSeconds) return;
             CancelPoseBlend();
+            supportGrip?.Forget();
             if (hero == null) damagePose?.ForgetBase();
             // Begin takes the same bones in their current impact pose. Ending the
             // owned clip first would replace that pose with ordinary locomotion.
@@ -92,6 +94,7 @@ namespace BarPromenade
         {
             if (weaponDropped || Weapon == null) return;
             handPose.SetGrip(false, 0f);
+            handPose.SetGrip(true, 0f);
             Weapon.transform.SetParent(transform.parent, true);
             weaponCollider.enabled = true;
             foreach (Collider owned in GetComponentsInChildren<Collider>(true))

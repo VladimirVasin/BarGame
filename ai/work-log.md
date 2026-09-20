@@ -5,14 +5,13 @@ Earlier: [August](archive/work-log-2026-08.md).
 
 ## 2026-09-20 — Combat
 
-- Tactics/grips/impact/HP pose/blood; fixed resampling/axes/Z stripe.
-  Corner HUD; both rigs charge/release. Quick taps retain entry blend;
-  shared hero sampler mixes releases. Checks: `CombatRulesTests`,
-  `build-combat-{test,blood}-3d-model.py`,
-  `Range_AuthoredContactsRespectGuardWallsPauseAndOwnerCleanup`,
-  `Range_AutomaticUpdateConsumesMouseAndKeyboardWithoutGuiEvent`.
-  Rendered `CombatTactics`/`CombatTest`; `CombatTestLockedCamera` verifies
-  release/contact continuity and HUD; `check-docs.py`.
+- Tactics/HP/blood/charge/HUD; fixed resampling/axes/Z stripe and quick-tap entry.
+  Checks: `CombatRulesTests`, `build-combat-{test,blood}-3d-model.py`, rendered
+  `CombatTactics`/`CombatTestLockedCamera`; `check-docs.py`.
+- Two-hand ready/high guard/opposed regrip, grounded legs/breathing; contacts follow
+  blends/injury. Hero keeps stance at rest; round end clears stale guard.
+  Checks: `build-combat-test-3d-model.py`, rendered
+  `AreaCaptureFixture.CombatTwoHandPose`; guard height/wrists reviewed.
 
 ## 2026-09-19 — Wheel, seats, scarf, fair and combat test
 

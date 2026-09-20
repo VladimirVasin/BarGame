@@ -248,10 +248,22 @@ namespace BarPromenade.Tests.PlayMode
 
         private static NpcHandPose AssertCombatGrip(CombatActor actor)
         {
+            if (actor.IsHero)
+            {
+                // Batch coroutines resume before LateUpdate; measure the same
+                // final two-hand pose that the gameplay camera will render.
+                var visual = actor.GetComponentInChildren<Player3DCharacterPresentation>();
+                Assert.That(visual, Is.Not.Null);
+                visual.ReapplyLatePresentationPose();
+            }
             NpcHandPose pose = actor.GetComponentInChildren<NpcHandPose>();
             Assert.That(pose, Is.Not.Null, actor.name);
             Assert.That(pose.RightGripWeight, Is.EqualTo(1f), actor.name);
-            Assert.That(pose.LeftGripWeight, Is.Zero, "Holding the bar must not close the free hand.");
+            Assert.That(pose.LeftGripWeight, Is.InRange(actor.SupportGripWeight * .70f, actor.SupportGripWeight + .001f),
+                "The support fingers loosen for a regrip and release completely at round end.");
+            if (actor.SupportGripWeight > .99f)
+                Assert.That(Vector3.Distance(pose.CylinderCentre(true), actor.SupportGripWorldPosition),
+                    Is.LessThan(.012f), "The support hand must remain on the visible shaft.");
             Vector3 centre = pose.CylinderCentre(false), axis = pose.CylinderAxis(false);
             Assert.That(Vector3.Distance(CombatAssetProvider.FindAnchor(actor.Weapon, "Grip").position, centre),
                 Is.LessThan(.001f), "The rubber handle must run through the closed fingers, not the neutral socket.");
@@ -290,8 +302,7 @@ namespace BarPromenade.Tests.PlayMode
 
         private static void CaptureCombatGrip(Camera camera, CombatActor actor, string name)
         {
-            NpcHandPose pose = actor.GetComponentInChildren<NpcHandPose>();
-            Assert.That(pose, Is.Not.Null, actor.name);
+            NpcHandPose pose = AssertCombatGrip(actor);
             Vector3 position = camera.transform.position;
             Quaternion rotation = camera.transform.rotation;
             float fov = camera.fieldOfView, near = camera.nearClipPlane;
@@ -304,7 +315,6 @@ namespace BarPromenade.Tests.PlayMode
                 camera.fieldOfView = 42f;
                 camera.nearClipPlane = .02f;
                 CaptureCurrentCamera(camera, SceneIds.CombatTest, name);
-                AssertCombatGrip(actor);
             }
             finally
             {

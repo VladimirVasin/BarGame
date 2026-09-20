@@ -12,7 +12,9 @@ namespace BarPromenade
         private PlayerAnimatedInteractionController interaction;
         private VillageResidentPresentation npc;
         private NpcHandPose handPose;
-        private AnimationClip ready, attack, block, hit, walk, guardImpact, guardBreak, recoil, reaction, defeat;
+        private AnimationClip ready, rest, attack, block, hit, walk, guardImpact, guardBreak, recoil, reaction, defeat;
+        private CombatSupportGrip supportGrip;
+        private bool heroMovingPose, npcMovingPose;
         private Transform strikeBase, strikeTip;
         private string visibleClip;
         private float poseClock, locomotionSpeed, reactionClock, pushElapsed, pushDistance = .12f;
@@ -25,6 +27,8 @@ namespace BarPromenade
         public CharacterController Body { get; private set; }
         public GameObject Weapon { get; private set; }
         public bool IsHero => hero != null;
+        public Vector3 SupportGripWorldPosition => supportGrip != null ? supportGrip.Target : transform.position;
+        public float SupportGripWeight => supportGrip?.Weight ?? 0f;
         public bool IsAvailable => isActiveAndEnabled && (hero == null ||
             (hero.CanAcquireClip(this) && !interaction.IsActive && motor.InputEnabled));
 
@@ -57,7 +61,7 @@ namespace BarPromenade
             interaction = GetComponent<PlayerAnimatedInteractionController>();
             Body = GetComponent<CharacterController>();
             LoadClips(false);
-            foreach (AnimationClip clip in new[] { ready, attack, charge, releaseLight, releaseHeavy, block, hit, guardImpact, guardBreak, recoil, defeat })
+            foreach (AnimationClip clip in new[] { ready, rest, attack, charge, releaseLight, releaseHeavy, block, hit, guardImpact, guardBreak, recoil, defeat })
                 hero.Registry.RegisterRuntimeAnimation(new Player3DAnimationBinding(
                     clip.name, "Combat", clip, clip.length, clip.isLooping));
             foreach (string name in CombatAssetProvider.HeroLocomotionClipNames)
@@ -84,7 +88,7 @@ namespace BarPromenade
             LoadClips(true);
             var lower = new List<Transform>();
             foreach (Transform bone in npc.ModelRoot.GetComponentsInChildren<Transform>())
-                if (bone.name.StartsWith("thigh.", StringComparison.Ordinal) ||
+                if (bone.name == "pelvis" || bone.name.StartsWith("thigh.", StringComparison.Ordinal) ||
                     bone.name.StartsWith("shin.", StringComparison.Ordinal) ||
                     bone.name.StartsWith("foot.", StringComparison.Ordinal) ||
                     bone.name.StartsWith("toe.", StringComparison.Ordinal)) lower.Add(bone);
@@ -101,6 +105,7 @@ namespace BarPromenade
         private void LoadClips(bool forNpc)
         {
             ready = CombatAssetProvider.LoadClip("CombatReady", forNpc);
+            rest = CombatAssetProvider.LoadClip("CombatRest", forNpc);
             attack = CombatAssetProvider.LoadClip("CombatAttack", forNpc);
             charge = CombatAssetProvider.LoadClip("CombatCharge", forNpc);
             releaseLight = CombatAssetProvider.LoadClip("CombatReleaseLight", forNpc);
@@ -121,6 +126,8 @@ namespace BarPromenade
             strikeTip = CombatAssetProvider.FindAnchor(Weapon, "StrikeTip");
             if (strikeBase == null || strikeTip == null) throw new InvalidOperationException("Crowbar needs its authored strike anchors.");
             PrepareWeaponPhysics();
+            supportGrip = new CombatSupportGrip(DamageRigRoot, transform, handPose, Weapon.transform);
+            if (hero != null) hero.SetCombatSupportGrip(this, supportGrip);
         }
 
         public bool TryAttack()
@@ -221,6 +228,7 @@ namespace BarPromenade
 
         private bool SampleAttack(float progress)
         {
+            supportGrip?.Restore();
             damagePose?.Restore();
             AnimationClip chosen = ReleaseClip;
             if (hero != null)
@@ -245,11 +253,13 @@ namespace BarPromenade
         public void Present()
         {
             if (ready == null || IsRagdollActive) return;
+            supportGrip?.Restore();
             damagePose?.Restore();
             bool stagger = State.Phase == MeleePhase.Stagger || State.Phase == MeleePhase.GuardBroken || State.IsDefeated;
             bool stepping = State.Phase == MeleePhase.Step;
             AnimationClip chosen = stepping ? (stepBlocked ? ready : stepClip) : State.IsDefeated ? defeat : State.Phase == MeleePhase.GuardBroken ? guardBreak : stagger ? hit :
-                reaction != null ? reaction : State.IsCharging ? charge : State.IsAttacking ? ReleaseClip : State.IsBlocking ? block : ready;
+                reaction != null ? reaction : State.IsCharging ? charge : State.IsAttacking ? ReleaseClip : roundEnded ? rest : State.IsBlocking ? block : ready;
+            supportGrip?.SetTarget(chosen == block || chosen == guardImpact, chosen != rest && !State.IsDefeated);
             float progress = stagger ?
                 (State.IsDefeated ? Mathf.Clamp01(defeatClock / defeat.length) : State.PhaseProgress) :
                 Mathf.Repeat(poseClock, chosen.length) / chosen.length;
@@ -261,54 +271,47 @@ namespace BarPromenade
             if (hero != null)
             {
                 if (!IsAvailable) { ReleasePresentation(); return; }
-                bool fullBody = State.IsCharging || State.IsAttacking || stagger || reaction != null || stepping;
-                if (fullBody)
+                hero.SetCombatSupportGrip(this, supportGrip);
+                bool movingPose = !stepping && MovementScale > 0f &&
+                    (motor.PlanarVelocity.sqrMagnitude > .0025f || hero.LocomotionBlend > .05f);
+                hero.ReleaseCarryPose(this);
+                if (visibleClip != chosen.name || !hero.OwnsClip(this))
                 {
-                    hero.ReleaseCarryPose(this);
-                    if (visibleClip != chosen.name || !hero.OwnsClip(this))
+                    bool releasingCharge = visibleClip == charge.name && State.IsAttacking && reaction == null;
+                    if (!hero.TryAcquireClip(this, chosen.name, releasingCharge)) return;
+                    // A stationary step starts in the exact ready pose;
+                    // charge/release share their endpoint. Other changes
+                    // inherit the previously displayed pose and velocity.
+                    if (!releasingCharge)
                     {
-                        bool releasingCharge = visibleClip == charge.name && State.IsAttacking && reaction == null;
-                        if (!hero.TryAcquireClip(this, chosen.name, releasingCharge)) return;
-                        // A stationary step starts in the exact ready pose;
-                        // blending it again would slide the planted support foot.
-                        // Charge and release share their endpoint. Keep any
-                        // unfinished ready-to-charge blend across a quick tap.
-                        if (!releasingCharge)
-                        {
-                            if (stepping && !stepBlocked && visibleClip == ready.name && motor.PlanarVelocity.sqrMagnitude < .01f)
-                                CancelPoseBlend();
-                            else BeginPoseBlend();
-                        }
-                        visibleClip = chosen.name;
-                    }
-                    hero.SetOwnedClipLocomotion(this, MovementScale > 0f && motor.PlanarVelocity.sqrMagnitude > .01f);
-                    if (State.IsAttacking && reaction == null && !stagger) SampleHeroRelease(progress);
-                    else if (State.IsCharging) SampleHeroCharge();
-                    else hero.SampleOwnedClip(this, progress);
-                }
-                else
-                {
-                    hero.ReleaseOwnedClip(this);
-                    if (visibleClip != chosen.name || !hero.HasCarryPose)
-                    {
-                        hero.TryAcquireCarryPose(this, chosen.name);
-                        BeginPoseBlend();
+                        if (stepping && !stepBlocked && visibleClip == ready.name && motor.PlanarVelocity.sqrMagnitude < .01f)
+                            CancelPoseBlend();
+                        else BeginPoseBlend(TransitionSeconds(chosen));
                     }
                     visibleClip = chosen.name;
-                    hero.UpdateCarryPose(this, progress * chosen.length);
                 }
+                if (heroMovingPose != movingPose) BeginPoseBlend();
+                heroMovingPose = movingPose;
+                hero.SetOwnedClipLocomotion(this, movingPose);
+                if (State.IsAttacking && reaction == null && !stagger) SampleHeroRelease(progress);
+                else if (State.IsCharging) SampleHeroCharge();
+                else hero.SampleOwnedClip(this, progress);
                 motor.SetOwnedMovementConstraint(this, MovementScale, TurnScale);
             }
             else
             {
                 if (visibleClip != chosen.name)
                 {
-                    if (!(visibleClip == charge.name && State.IsAttacking && reaction == null)) BeginPoseBlend();
+                    if (!(visibleClip == charge.name && State.IsAttacking && reaction == null)) BeginPoseBlend(TransitionSeconds(chosen));
                     visibleClip = chosen.name;
                 }
                 bool walking = Mathf.Abs(locomotionSpeed) > .05f && MovementScale > 0f;
+                if (walking != npcMovingPose && poseBlendRemaining <= 0f) BeginPoseBlend(.14f);
+                npcMovingPose = walking;
                 if (walking)
                 {
+                    // The walking pelvis belongs to the gait too: retaining the
+                    // lowered standing pelvis would drive both boots into the floor.
                     walk.SampleAnimation(npc.Animator.gameObject, Mathf.Repeat(poseClock * Mathf.Sign(locomotionSpeed), walk.length));
                     for (int i = 0; i < legs.Length; i++)
                     { legPositions[i] = legs[i].localPosition; legRotations[i] = legs[i].localRotation; }
@@ -324,9 +327,13 @@ namespace BarPromenade
             if (npc != null)
             {
                 ApplyNpcPoseBlend();
+                supportGrip?.Apply();
                 RememberNpcPresentedPose();
             }
         }
+
+        private float TransitionSeconds(AnimationClip chosen) => chosen == rest ? .35f :
+            chosen == block || visibleClip == block.name ? .18f : PoseBlendSeconds;
 
         public void ResetActor(Vector3 position, Vector3 facing)
         {
@@ -335,6 +342,9 @@ namespace BarPromenade
             ReleasePresentation();
             ResetDefeat();
             ResetDamage();
+            supportGrip?.Reset();
+            if (hero != null) hero.SetCombatSupportGrip(this, supportGrip);
+            heroMovingPose = npcMovingPose = false;
             State.Reset(); poseClock = locomotionSpeed = 0f;
             stepClip = null; stepDirection = Vector3.zero; stepBlocked = false;
             reaction = null; reactionClock = 0f; pushElapsed = .16f; pushDirection = Vector3.zero;
@@ -352,6 +362,9 @@ namespace BarPromenade
 
         private void ReleasePresentation()
         {
+            if (hero != null) hero.ClearCombatSupportGrip(this);
+            if (IsRagdollActive) supportGrip?.Forget();
+            supportGrip?.Reset();
             ReleaseDamagePose();
             if (handPose != null) handPose.SetGrip(false, 0f);
             CancelPoseBlend();

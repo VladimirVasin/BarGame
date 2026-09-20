@@ -745,6 +745,7 @@ namespace BarPromenade
             recoveryPhysics = null;
             layer.ForgetBase();
             ForgetCombatDamagePose();
+            combatGrip?.Forget();
             ReleaseBalanceStep();
             attentionBaseCaptured = false;
             ragdollPoseActive = true;
@@ -816,6 +817,7 @@ namespace BarPromenade
                 return;
             }
 
+            RestoreCombatSupportGrip();
             RestoreCombatDamagePose();
             layer.Restore();
             ragdollPoseActive = active;
@@ -1009,6 +1011,7 @@ namespace BarPromenade
                 ApplyAttentionPose(Time.deltaTime);
                 ApplyCombatDamagePose();
                 CompleteRecoveryPresentation(Time.deltaTime);
+                ApplyCombatSupportGrip();
             }
 
             RememberRecoveryPose(Time.deltaTime);
@@ -1117,12 +1120,14 @@ namespace BarPromenade
                 ApplyAttentionPose(0f);
                 ApplyCombatDamagePose();
                 CompleteRecoveryPresentation(0f);
+                ApplyCombatSupportGrip();
             }
         }
 
         /// <summary>The late pass: the rise's limbs while a rise is on, the balance pose otherwise.</summary>
         private void ApplyLatePose(float deltaTime)
         {
+            RestoreCombatSupportGrip();
             RestoreCombatDamagePose();
             ReleaseColdForProtectivePose();
             if (risePose.Active)
@@ -1150,11 +1155,13 @@ namespace BarPromenade
                 ReapplyFacialPose();
                 ApplyAttentionPose(0f);
                 ApplyCombatDamagePose();
+                ApplyCombatSupportGrip();
             }
         }
 
         private void OnDisable()
         {
+            ClearCombatSupportGrip(combatGripOwner);
             ClearCombatDamagePose();
             ClearSpeechFace();
             ClearCarryPose();
@@ -1215,6 +1222,7 @@ namespace BarPromenade
 
         private void OnDestroy()
         {
+            ClearCombatSupportGrip(combatGripOwner);
             ClearCombatDamagePose();
             ClearSpeechFace();
             layer.Dispose();
@@ -3077,6 +3085,7 @@ namespace BarPromenade
 
         private void EvaluateGraph(float deltaTime)
         {
+            RestoreCombatSupportGrip();
             // Both additive layers come off before the graph writes the
             // frame: restoring them in LateUpdate instead would roll the
             // freshly evaluated head/neck animation back to a stale base

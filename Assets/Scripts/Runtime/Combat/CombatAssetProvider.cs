@@ -9,7 +9,7 @@ namespace BarPromenade
     public static class CombatAssetProvider
     {
         public const string ResourceFolder = "Combat/";
-        public const string ReadyClip = "CombatReady", AttackClip = "CombatAttack",
+        public const string ReadyClip = "CombatReady", RestClip = "CombatRest", AttackClip = "CombatAttack",
             ChargeClip = "CombatCharge", ReleaseLightClip = "CombatReleaseLight", ReleaseHeavyClip = "CombatReleaseHeavy",
             BlockClip = "CombatBlock", HitClip = "CombatHit", GuardImpactClip = "CombatGuardImpact",
             GuardBreakClip = "CombatGuardBreak", RecoilClip = "CombatRecoil", DefeatClip = "CombatDefeat",
@@ -17,20 +17,21 @@ namespace BarPromenade
             StepForwardClip = "CombatStepForward", StepBackwardClip = "CombatStepBackward",
             StepLeftClip = "CombatStepLeft", StepRightClip = "CombatStepRight";
         public const float DefeatHandoffSeconds = .16f;
-        public static readonly string[] ClipNames = { ReadyClip, AttackClip, BlockClip, HitClip,
+        public static readonly string[] ClipNames = { ReadyClip, RestClip, AttackClip, BlockClip, HitClip,
             GuardImpactClip, GuardBreakClip, RecoilClip, DefeatClip, ChargeClip, ReleaseLightClip, ReleaseHeavyClip };
         public static readonly string[] HeroLocomotionClipNames = { StrafeLeftClip, StrafeRightClip };
         public static readonly string[] HeroStepClipNames = { StepForwardClip, StepBackwardClip, StepLeftClip, StepRightClip };
         private static readonly Dictionary<string, Material> Materials = new Dictionary<string, Material>();
         private static readonly Dictionary<string, AnimationClip> Clips = new Dictionary<string, AnimationClip>();
 
-        public static bool IsLoop(string clip) => clip == ReadyClip || clip == BlockClip ||
+        public static bool IsLoop(string clip) => clip == ReadyClip || clip == RestClip || clip == BlockClip ||
             clip == StrafeLeftClip || clip == StrafeRightClip;
         public static float ClipDuration(string clip)
         {
             switch (clip)
             {
-                case ReadyClip: case BlockClip: case ChargeClip: return 1f;
+                case ReadyClip: case BlockClip: case RestClip: return 4f;
+                case ChargeClip: return 1f;
                 case StrafeLeftClip: case StrafeRightClip: return .8f;
                 case StepForwardClip: case StepBackwardClip: case StepLeftClip: case StepRightClip: return .46f;
                 case AttackClip: case ReleaseLightClip: case ReleaseHeavyClip: return 1.28f;
