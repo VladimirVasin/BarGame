@@ -6,22 +6,27 @@ Earlier notes: [`release-notes-2026-09.md`](archive/release-notes-2026-09.md).
 
 ## Unreleased
 
-### 2026-09-20 — Камера, шаги и темп боя на полигоне
+### 2026-09-20 — Бой на полигоне
 
-- Камера за правым плечом держит противника в центре, следует за падением
-  и приближается у стен. Герой смотрит на противника: `W/S` — вперёд/назад,
-  `A/D` — боковые шаги с анимацией. Пауза замораживает камеру; `R` возвращает её.
-- Победа больше не блокирует ходьбу. `R` после падения возвращает тело и бой.
-  Проверено: `Range_CombatWalkingUsesLiveInputAndMovingLegs`,
-  `Range_TargetLockedShoulderCameraTracksOpponentAndResets`,
-  `AreaCaptureFixture.CombatTestLockedCamera`; кадры просмотрены.
-- Попадание, блок, промах и стена дают разное восстановление; после блока
-  есть короткая задержка. `Space` с направлением делает короткий шаг, без него —
-  назад. Шаг расходует силы, прерывается попаданием и не даёт неуязвимости;
-  обычная ходьба доступна и без сил. ИИ учитывает отступление, отвечает на
-  промахи и не ведёт начатый удар за героем. Проверено: валидатор боевых моделей,
-  `CombatRulesTests`, `Range_TacticalRecoveryStepsAndFairOpponent`,
-  `AreaCaptureFixture.CombatTactics`.
+- Камера за плечом держит врага/обходит стены; `W/S` — вперёд/назад,
+  `A/D` — вбок. Победитель ходит; `R` — сброс. Проверки:
+  `Range_CombatWalkingUsesLiveInputAndMovingLegs`,
+  `Range_TargetLockedShoulderCameraTracksOpponentAndResets`.
+- Исход удара задаёт восстановление. `Space` — уязвимый шаг за силы;
+  ИИ замечает отступления/промахи, не доводит удар. Проверки: `CombatRulesTests`,
+  `Range_TacticalRecoveryStepsAndFairOpponent`, `CombatTactics`.
+- Хват отпускается при падении, возвращается по `R`; проверен `CombatTest`.
+- Направленные реакции, поза/дыхание по HP у обоих. Брызги/раны/малые лужи,
+  без Z-полосы; блок/промах не ранят, `R` очищает. Проверки:
+  `build-combat-blood-3d-model.py --validate-only`,
+  `Range_AuthoredContactsRespectGuardWallsPauseAndOwnerCleanup`,
+  `CombatTestLockedCamera` — HP/пауза/падение/сброс; кадры и PNG просмотрены.
+- Малый HUD по углам, без итога в центре: кадр `CombatTestLockedCamera`.
+- Удержание `ЛКМ`/правого триггера усиливает удар за 0,9 с; отпускание бьёт.
+  Мощность ограничена силами: урон 25–40, расход 30–45; ИИ тоже заряжает.
+  Шкала силы видна при удержании. Проверки: `CombatRulesTests`,
+  `build-combat-test-3d-model.py`, `CombatTestLockedCamera` — переход без рывка,
+  попадания обоих бойцов и кадр HUD.
 
 ### 2026-09-19 — Руль, посадка, шарф, ярмарка и полигон
 

@@ -27,7 +27,8 @@ namespace BarPromenade
         public const float SimulationStep = 1f / 120f;
         private double pendingSeconds;
         private readonly List<CombatActor.Contact> pendingContacts = new List<CombatActor.Contact>(4);
-        private GUIStyle label, small, button;
+        private GUIStyle small, button, controls;
+        private static readonly Rect ToolbarRect = new Rect(386, 10, 240, 22);
         public bool IsInitialized { get; private set; }
         public PlayerRuntime Player { get; private set; }
         public CombatActor Hero { get; private set; }
@@ -65,6 +66,7 @@ namespace BarPromenade
                 opponentObject.transform, DefaultNpcPopulation.CombatTestOpponent);
             Opponent = opponentObject.AddComponent<CombatActor>();
             Opponent.InitializeOpponent(presentation, body);
+            InitializeDamageEffects();
             Transform opponentChest = Opponent.Ragdoll.PhysicsController.ChestBody.transform;
             if (!CameraFollow.SetTargetLock(this, opponentObject.transform, opponentChest,
                     Hero.Ragdoll.PhysicsController.ChestBody.transform) ||
@@ -91,6 +93,8 @@ namespace BarPromenade
 
         private void PlaceRound()
         {
+            ResetChargeInput();
+            BloodEffects?.ResetRound();
             Hero.ResetActor(heroSpawn, Vector3.forward);
             Opponent.ResetActor(opponentSpawn, Vector3.back);
             Physics.SyncTransforms();
@@ -102,14 +106,7 @@ namespace BarPromenade
 
         private void Update()
         {
-            if (!IsInitialized || !AutomaticSimulation || !GameInput.CanRead(GameInputContext.Gameplay)) return;
-            if (GameInput.WasPressed(GameInputAction.CombatReset, GameInputContext.Gameplay)) ResetRound();
-            if (GameInput.WasPressed(GameInputAction.CombatMode, GameInputContext.Gameplay)) SetSparring(!Sparring);
-            Hero.SetBlock(GameInput.IsHeld(GameInputAction.MeleeBlock, GameInputContext.Gameplay));
-            if (!RoundFinished && GameInput.WasPressed(GameInputAction.CombatStep, GameInputContext.Gameplay))
-                Hero.TryStep(GameInput.ReadMovement());
-            if (!RoundFinished && !PointerOverToolbar() &&
-                GameInput.WasPressed(GameInputAction.MeleeAttack, GameInputContext.Gameplay)) Hero.RequestAttack();
+            if (!IsInitialized || !AutomaticSimulation || !UpdateCombatInput()) return;
             Tick(Time.deltaTime);
         }
 
@@ -121,6 +118,7 @@ namespace BarPromenade
             if (RoundFinished)
             {
                 Hero.AdvanceRoundEnd(seconds); Opponent.AdvanceRoundEnd(seconds);
+                BloodEffects.Tick(seconds);
                 pendingSeconds = 0d;
                 return;
             }
@@ -137,10 +135,12 @@ namespace BarPromenade
                 // Registration for both actors precedes ANY damage, including lethal
                 // hits. Only contacts on a later tick can be cancelled by interruption.
                 foreach (CombatActor.Contact contact in pendingContacts) contact.Apply();
+                BloodEffects.Tick(SimulationStep);
             }
             if (RoundFinished)
             {
                 Hero.AdvanceRoundEnd((float)pendingSeconds); Opponent.AdvanceRoundEnd((float)pendingSeconds);
+                BloodEffects.Tick((float)pendingSeconds);
                 pendingSeconds = 0d;
             }
             else { Hero.Present(); Opponent.Present(); }
@@ -161,51 +161,60 @@ namespace BarPromenade
             Vector2 screenPosition = mouse.position.ReadValue();
             screenPosition.y = Screen.height - screenPosition.y;
             RetroUiCanvas canvas = RetroUiTheme.CalculateCanvas(Screen.width, Screen.height);
-            return new Rect(12, 44, 616, 25).Contains(canvas.ScreenToLogical(screenPosition));
+            return ToolbarRect.Contains(canvas.ScreenToLogical(screenPosition));
         }
 
         private void OnGUI()
         {
             if (!IsInitialized || PauseMenuController.IsAnyPaused || SceneTransitionService.IsTransitioning) return;
-            if (label == null)
+            if (small == null)
             {
-                label = RetroUiTheme.CreateLabelStyle(13, TextAnchor.MiddleLeft, RetroUiTheme.Text, true);
-                small = RetroUiTheme.CreateLabelStyle(10, TextAnchor.MiddleLeft, RetroUiTheme.Muted, false);
-                button = RetroUiTheme.CreateButtonStyle(11, TextAnchor.MiddleCenter, RetroUiTheme.Text, false);
+                small = RetroUiTheme.CreateLabelStyle(9, TextAnchor.MiddleLeft, RetroUiTheme.Text);
+                controls = RetroUiTheme.CreateLabelStyle(9, TextAnchor.MiddleCenter, RetroUiTheme.Muted);
+                button = RetroUiTheme.CreateButtonStyle(9, TextAnchor.MiddleCenter, RetroUiTheme.Text, false);
+                button.padding = new RectOffset(2, 2, 0, 0);
             }
             RetroUiCanvas canvas = RetroUiTheme.CalculateCanvas(Screen.width, Screen.height);
             Matrix4x4 matrix = RetroUiTheme.BeginCanvas(canvas);
             try
             {
-                RetroUiTheme.DrawPanel(new Rect(12, 10, 616, 62), RetroUiTheme.PanelInset, RetroUiTheme.FrameOuter, false, 0f, .94f);
-                GUI.Label(new Rect(22, 15, 250, 24), LocalizationService.Get("combat.title"), label);
-                GUI.Label(new Rect(360, 15, 256, 24), LocalizationService.Get(Sparring ? "combat.sparring" : "combat.target"), small);
-                if (GUI.Button(new Rect(22, 44, 146, 22), LocalizationService.Get("combat.sparring"), button)) SetSparring(true);
-                if (GUI.Button(new Rect(174, 44, 146, 22), LocalizationService.Get("combat.target"), button)) SetSparring(false);
-                if (GUI.Button(new Rect(326, 44, 138, 22), LocalizationService.Get("combat.reset"), button)) ResetRound();
-                if (GUI.Button(new Rect(470, 44, 146, 22), LocalizationService.Get("combat.menu"), button)) ReturnToMenu();
-                DrawMeter(new Rect(18, 271, 210, 19), "combat.health", Hero.State.Health, Hero.State.Settings.MaxHealth);
-                DrawMeter(new Rect(18, 294, 210, 19), "combat.stamina", Hero.State.Stamina, Hero.State.Settings.MaxStamina);
-                DrawMeter(new Rect(412, 271, 210, 19), "combat.opponent", Opponent.State.Health, Opponent.State.Settings.MaxHealth);
-                DrawMeter(new Rect(412, 294, 210, 19), "combat.stamina", Opponent.State.Stamina, Opponent.State.Settings.MaxStamina);
-                GUI.Label(new Rect(18, 327, 610, 24), LocalizationService.Get("combat.controls"), small);
-                if (RoundFinished)
-                {
-                    RetroUiTheme.DrawPanel(new Rect(198, 152, 244, 42), RetroUiTheme.PanelInset, RetroUiTheme.FrameOuter, false, 0f, 1f);
-                    GUI.Label(new Rect(214, 160, 220, 24), LocalizationService.Get(Hero.State.IsDefeated ? "combat.defeat" : "combat.victory"), label);
-                }
+                RetroUiTheme.DrawPanel(ToolbarRect, RetroUiTheme.PanelInset, RetroUiTheme.BorderMuted, false, 0f, 1f, .72f);
+                if (DrawToolbarButton(canvas, new Rect(392, 12, 102, 18), "combat-mode",
+                    "Tab · " + LocalizationService.Get(Sparring ? "combat.sparring" : "combat.target"))) SetSparring(!Sparring);
+                if (DrawToolbarButton(canvas, new Rect(498, 12, 70, 18), "combat-reset",
+                    "R · " + LocalizationService.Get("combat.reset"))) ResetRound();
+                if (DrawToolbarButton(canvas, new Rect(572, 12, 48, 18), "combat-menu",
+                    LocalizationService.Get("combat.menu"))) ReturnToMenu();
+                DrawFighterHud(new Rect(14, 302, 138, 37), "combat.health", Hero);
+                DrawFighterHud(new Rect(488, 302, 138, 37), "combat.opponent", Opponent);
+                DrawChargeMeter();
+                GUI.Label(new Rect(14, 342, 612, 14), LocalizationService.Get("combat.controls"), controls);
             }
             finally { RetroUiTheme.EndCanvas(matrix); }
         }
 
-        private void DrawMeter(Rect rect, string key, float value, float max)
+        private bool DrawToolbarButton(RetroUiCanvas canvas, Rect rect, string control, string text)
         {
-            Color previous = GUI.color;
-            GUI.color = new Color(.06f, .065f, .06f, .93f); GUI.DrawTexture(rect, Texture2D.whiteTexture);
-            GUI.color = new Color(.43f, .45f, .39f, .95f);
-            GUI.DrawTexture(new Rect(rect.x, rect.yMax - 3f, rect.width * Mathf.Clamp01(value / max), 3f), Texture2D.whiteTexture);
-            GUI.color = previous;
-            GUI.Label(new Rect(rect.x + 5f, rect.y - 1f, rect.width - 10f, rect.height),
+            RetroUiTheme.DrawSelection(rect, rect.Contains(RetroUiTheme.LogicalMousePosition(canvas)) || GUI.GetNameOfFocusedControl() == control);
+            GUI.SetNextControlName(control);
+            return GUI.Button(rect, text, button);
+        }
+
+        private void DrawFighterHud(Rect rect, string healthKey, CombatActor actor)
+        {
+            RetroUiTheme.DrawPanel(rect, RetroUiTheme.PanelInset, RetroUiTheme.BorderMuted, false, 0f, 1f, .72f);
+            DrawMeter(new Rect(rect.x + 6f, rect.y + 3f, rect.width - 12f, 14f), healthKey,
+                actor.State.Health, actor.State.Settings.MaxHealth, RetroUiTheme.AccentPale, 3f);
+            DrawMeter(new Rect(rect.x + 6f, rect.y + 19f, rect.width - 12f, 13f), "combat.stamina",
+                actor.State.Stamina, actor.State.Settings.MaxStamina, RetroUiTheme.Muted, 2f);
+        }
+
+        private void DrawMeter(Rect rect, string key, float value, float max, Color color, float thickness)
+        {
+            var track = new Rect(rect.x, rect.yMax - thickness, rect.width, thickness);
+            RetroUiTheme.FillRect(track, RetroUiTheme.Shadow);
+            RetroUiTheme.FillRect(new Rect(track.x, track.y, track.width * Mathf.Clamp01(value / max), thickness), color);
+            GUI.Label(new Rect(rect.x, rect.y - 2f, rect.width, 12f),
                 LocalizationService.Get(key) + "  " + Mathf.CeilToInt(value), small);
         }
     }

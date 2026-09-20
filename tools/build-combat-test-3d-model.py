@@ -6,6 +6,8 @@ the manifest and checks the published passive FBX files through a round trip.
 The test arena is outside story geography. No text, injury or corpse art.
 """
 from __future__ import annotations
+import argparse
+from dataclasses import replace
 import hashlib
 import importlib.util
 import json
@@ -39,6 +41,8 @@ CLIPS = (("CombatReady", 1., True), ("CombatAttack", 1.28, False),
          ("CombatBlock", 1., True), ("CombatHit", .36, False),
          ("CombatGuardImpact", .28, False), ("CombatGuardBreak", .70, False),
          ("CombatRecoil", .48, False), ("CombatDefeat", .36, False))
+CHARGE_CLIPS = (("CombatCharge", 1., False), ("CombatReleaseLight", 1.28, False),
+                ("CombatReleaseHeavy", 1.28, False))
 DEFEAT_HANDOFF_SECONDS = .16
 STRAFE_CLIPS = (("CombatStrafeLeft", .80, True), ("CombatStrafeRight", .80, True))
 STRAFE_CYCLE_DISTANCE = .60
@@ -165,6 +169,11 @@ class CombatBuilder(dialogue.DialogueBuilder):
             "guard_break": ((-.53, .07, 1.26), (-.58, .19, 1.01), (-.80, .25, -.54), (-21, 0, -12)),
             "recoil": ((-.49, -.05, 1.30), (-.53, -.14, 1.58), (-.43, .32, .84), (-10, 0, -7)),
             "defeat": ((-.43, .08, 1.18), (-.52, .13, .91), (-.30, .15, -.94), (-23, 0, 17)),
+            "heavy_windup": ((-.53, .045, 1.55), (-.42, .20, 1.81), (-.07, .54, .84), (-8, 0, -26)),
+            "heavy_contact": ((-.27, -.29, 1.25), (-.055, -.55, 1.14), (.10, -.99, -.10), (11, 0, 19)),
+            "heavy_follow": ((-.015, -.30, 1.17), (.27, -.35, 1.03), (.87, -.41, -.32), (16, 0, 36)),
+            "heavy_overrun": ((.045, -.25, 1.11), (.30, -.28, .97), (.90, -.32, -.32), (16, 0, 38)),
+            "heavy_recover": ((-.18, -.17, 1.05), (-.14, -.30, 1.08), (.29, -.62, .72), (8, 0, 15)),
         }
         shifts = {
             "ready": (0, .006, -.016), "ready_breath": (0, .006, -.014),
@@ -176,6 +185,9 @@ class CombatBuilder(dialogue.DialogueBuilder):
             "hit_settle": (-.006, .016, -.029), "guard_impact": (-.009, .027, -.037),
             "guard_break": (-.024, .045, -.062), "recoil": (-.015, .015, -.035),
             "defeat": (.026, .056, -.088),
+            "heavy_windup": (-.024, .020, -.040), "heavy_contact": (.013, -.019, -.020),
+            "heavy_follow": (.022, -.035, -.038), "heavy_overrun": (.023, -.030, -.039),
+            "heavy_recover": (.006, -.005, -.031),
         }
         elbow, wrist, axis, chest = poses[kind]
         shoulder = self.points["shoulder.R"]
@@ -205,10 +217,10 @@ class CombatBuilder(dialogue.DialogueBuilder):
             pose.update({"upper_arm.L": B(armature_direction=(.24, 0, -.18)),
                          "forearm.L": B(armature_direction=(-.12, -.14, .22)),
                          "head": B(rotation_degrees=(6, 0, -7))})
-        elif kind in ("windup", "loaded"):
+        elif kind in ("windup", "loaded", "heavy_windup"):
             pose.update({"upper_arm.L": B(armature_direction=(.17, -.18, -.20)),
                          "forearm.L": B(armature_direction=(-.12, -.10, .28))})
-        elif kind in ("follow", "overrun"):
+        elif kind in ("follow", "overrun", "heavy_follow", "heavy_overrun"):
             pose.update({"upper_arm.L": B(armature_direction=(.25, .05, -.13)),
                          "forearm.L": B(armature_direction=(-.03, -.16, .23))})
         elif kind == "defeat":
@@ -256,6 +268,47 @@ class CombatBuilder(dialogue.DialogueBuilder):
                         break
             self._create_action(name, "combat", duration, loop, round(duration * FPS), FPS, keys)
             print("Authored " + name, flush=True)
+        self.build_charge_actions()
+
+    def build_charge_actions(self):
+        """Power changes only the upper-body track; both release feet stay identical."""
+        rig = self.result.rig
+        upper = {bone.name for bone in rig.pose.bones
+                 if bone.name == "spine" or any(parent.name == "spine" for parent in bone.parent_recursive)}
+        attack = self.result.actions["CombatAttack"]
+        light = attack.action.copy()
+        light.name = "CombatReleaseLight"
+        light.use_fake_user = True
+        self.result.actions[light.name] = replace(attack, action=light)
+        light_poses = []
+        rig.animation_data.action = attack.action
+        for frame in range(129):
+            bpy.context.scene.frame_set(frame); bpy.context.view_layer.update()
+            light_poses.append(self.snapshot_pose())
+        # First heavy sample is the loaded torso on the exact ready lower body.
+        poses = {name: self.combat_pose(name) for name in
+                 ("windup", "heavy_windup", "heavy_contact", "heavy_follow", "heavy_overrun", "heavy_recover", "ready")}
+        stops = ((0., "windup"), (.10, "windup"), (.33, "heavy_windup"), (.45, "heavy_windup"),
+                 (.56, "heavy_contact"), (.63, "heavy_follow"), (.73, "heavy_overrun"),
+                 (.96, "heavy_recover"), (1.28, "ready"))
+        keys = []
+        for frame in range(129):
+            second = frame / FPS
+            for (a, p), (b, q) in zip(stops, stops[1:]):
+                if second <= b + .00001:
+                    upper_pose = self.blend(poses[p], poses[q], dialogue.smooth((second - a) / (b - a)))
+                    pose = {name: upper_pose[name] if name in upper else value
+                            for name, value in light_poses[frame].items()}
+                    keys.append((frame / 128, pose))
+                    break
+        self._create_action("CombatReleaseHeavy", "combat", 1.28, False, 128, FPS, keys)
+        charge_start, charge_end = light_poses[0], keys[0][1]
+        # Linear charge parameter, not an eased time remap: the same q selects
+        # the release blend. Dense keys preserve quaternion interpolation.
+        charge_keys = [(frame / FPS, self.blend(charge_start, charge_end, frame / FPS))
+                       for frame in range(FPS + 1)]
+        self._create_action("CombatCharge", "combat", 1., False, FPS, FPS, charge_keys)
+        print("Authored CombatCharge/CombatReleaseLight/CombatReleaseHeavy", flush=True)
 
     def build_strafe_actions(self):
         """A lead-foot opening step followed by the trailing foot closing.
@@ -436,6 +489,65 @@ def strafe_payload(builder):
                 signature=checksum.hexdigest(), clips=records)
 
 
+def charge_payload(builder):
+    rig = builder.result.rig
+    upper = {bone.name for bone in rig.pose.bones
+             if bone.name == "spine" or any(parent.name == "spine" for parent in bone.parent_recursive)}
+    lower = [bone.name for bone in rig.pose.bones if bone.name not in upper]
+    def sample(name, seconds):
+        rig.animation_data.action = builder.result.actions[name].action
+        frame = seconds * FPS
+        bpy.context.scene.frame_set(math.floor(frame), subframe=frame % 1.)
+        bpy.context.view_layer.update()
+        return builder.snapshot_pose(), {bone.name: bone.matrix.copy() for bone in rig.pose.bones}
+    def difference(a, b, names):
+        return max(abs(a[name][i][j] - b[name][i][j]) for name in names for i in range(4) for j in range(4))
+    def apply_blend(a, b, q):
+        rig.animation_data.action = None
+        pose = builder.blend(a, b, q)
+        builder._reset_pose(); builder._apply_pose(pose)
+        return {bone.name: bone.matrix.copy() for bone in rig.pose.bones}
+    light_start, support = sample("CombatReleaseLight", 0.)
+    heavy_start, _ = sample("CombatReleaseHeavy", 0.)
+    endpoint_error = support_error = lower_error = light_error = 0.
+    reach = {str(q): 0. for q in (0., .5, 1.)}
+    for q in (0., .5, 1.):
+        _, charge = sample("CombatCharge", q)
+        released = apply_blend(light_start, heavy_start, q)
+        endpoint_error = max(endpoint_error, difference(charge, released, charge))
+    for frame in range(257):
+        seconds = frame / (FPS * 2)
+        light, light_world = sample("CombatReleaseLight", seconds)
+        heavy, heavy_world = sample("CombatReleaseHeavy", seconds)
+        _, attack = sample("CombatAttack", seconds)
+        lower_error = max(lower_error, difference(light_world, heavy_world, lower))
+        light_error = max(light_error, difference(light_world, attack, attack))
+        for q in (0., .5, 1.):
+            pose = apply_blend(light, heavy, q)
+            support_error = max(support_error, difference(pose, support, ("root", "foot.L", "foot.R")))
+            if .45 <= seconds <= .63:
+                grip = pose["SOCKET_Grip.R"]
+                tip = grip @ Vector((0, .595, .145))
+                reach[str(q)] = max(reach[str(q)], -tip.y)
+    if endpoint_error > .00001 or lower_error > .00001 or light_error > .00001:
+        raise ValueError(f"Charged release mismatched pose/feet/legacy stroke: {endpoint_error}/{lower_error}/{light_error}")
+    # Quarter powers catch quaternion interpolation differences that endpoints
+    # and a midpoint cannot expose; they share the same entry tolerance.
+    for q in (.25, .75):
+        _, charge = sample("CombatCharge", q)
+        released = apply_blend(light_start, heavy_start, q)
+        if difference(charge, released, charge) > .00001:
+            raise ValueError("Charged quarter-power entry mismatch: " + str(q))
+    if support_error > .001 or min(reach.values()) < .95:
+        raise ValueError(f"Charged release lost grounded supports/reach: {support_error}/{reach}")
+    return dict(charge_clip="CombatCharge", release_light="CombatReleaseLight", release_heavy="CombatReleaseHeavy",
+                charge_parameter="linear", release_seconds=1.28, windup_seconds=.45, active_seconds=.18,
+                recovery_seconds=.65, powers=[0., .5, 1.], validation_hz=FPS * 2,
+                maximum_entry_error=endpoint_error, maximum_lower_track_error=lower_error,
+                maximum_light_legacy_error=light_error, maximum_support_error=support_error,
+                minimum_reach_m=min(reach.values()))
+
+
 def action_payload(builder):
     rig = builder.result.rig
     checksum = hashlib.sha256()
@@ -446,7 +558,7 @@ def action_payload(builder):
     attack_pelvis = []
     attack_knee_travel = 0.
     reference = None
-    for name, duration, loop in CLIPS:
+    for name, duration, loop in CLIPS + CHARGE_CLIPS:
         action = builder.result.actions[name].action
         for curve in common.iter_action_fcurves(action):
             if not curve.data_path.startswith('pose.bones['): raise ValueError("Combat object motion")
@@ -518,7 +630,7 @@ def action_payload(builder):
     defeat_drop = ready["pelvis"].translation.z - defeat["pelvis"].translation.z
     if not .04 <= defeat_drop <= .12: raise ValueError("Defeat must lose balance without authoring a fall")
     return dict(rig="HeroV2", npc_rig="NpcHumanV2", fps=FPS, root_motion=False, animation_events=0,
-                clips=[dict(name=n, duration_seconds=d, loop=l) for n,d,l in CLIPS],
+                clips=[dict(name=n, duration_seconds=d, loop=l) for n,d,l in CLIPS + CHARGE_CLIPS],
                 windup_seconds=.45, active_seconds=.18, recovery_seconds=.65,
                 maximum_support_error=lower_error, maximum_support_angle_degrees=support_angle,
                 support_validation_hz=200, support_bones=["root", "foot.L", "foot.R"],
@@ -526,7 +638,8 @@ def action_payload(builder):
                 defeat_handoff_seconds=DEFEAT_HANDOFF_SECONDS, defeat_pelvis_drop_m=defeat_drop,
                 animation_signature=checksum.hexdigest(),
                 base_action_signature=base_checksum.hexdigest(), strike_samples=points,
-                reactions=reactions, minimum_reaction_tip_separation_m=separation)
+                reactions=reactions, minimum_reaction_tip_separation_m=separation,
+                charging=charge_payload(builder))
 
 
 def meta(path):
@@ -536,19 +649,27 @@ def meta(path):
 
 
 def main():
-    validate_only = "--validate-only" in sys.argv
-    actions_only = "--actions-only" in sys.argv
+    global OUT, SOURCE
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--validate-only", action="store_true")
+    parser.add_argument("--actions-only", action="store_true")
+    parser.add_argument("--output-dir", type=Path, default=OUT)
+    parser.add_argument("--source-dir", type=Path, default=SOURCE)
+    args = parser.parse_args(sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else [])
+    published_out = OUT
+    OUT, SOURCE = args.output_dir.resolve(), args.source_dir.resolve()
+    validate_only, actions_only = args.validate_only, args.actions_only
     items = make_items(); signature = kit.signature(items)
     if kit.signature(make_items()) != signature: raise ValueError("Passive geometry is nondeterministic")
     payload = kit.manifest(items, signature)
-    payload.update(generator="tools/build-combat-test-3d-model.py", generator_version="1.4.0", test_only=True)
+    payload.update(generator="tools/build-combat-test-3d-model.py", generator_version="1.5.0", test_only=True)
     OUT.mkdir(parents=True, exist_ok=True); SOURCE.mkdir(parents=True, exist_ok=True)
     if not validate_only and not actions_only:
         roots = kit.build_objects(items)
         for root in roots: kit.export(root, OUT / (root.name + ".fbx"))
         bpy.context.preferences.filepaths.save_version = 0
         bpy.ops.wm.save_as_mainfile(filepath=str(SOURCE / "CombatTest.blend"), check_existing=False)
-    kit.verify_fbx(OUT, payload)
+    kit.verify_fbx(published_out if actions_only else OUT, payload)
     common.ANIMATION_FPS = FPS
     config = common.BuildConfig(SOURCE / "CombatActions.blend", None, None, OUT / "CombatTest3D.json",
                                 None, None, OUT / "CombatActions.fbx", 1.75, 20260919, "apose")
@@ -578,7 +699,7 @@ def main():
         common.save_blend(SOURCE / "CombatActions.blend")
         (OUT / "CombatTest3D.json").write_text(json.dumps(payload, indent=2) + "\n", encoding="utf8")
         for path in OUT.iterdir():
-            if path.suffix != ".meta": meta(path)
+            if path.suffix != ".meta" and path.is_relative_to(ROOT / "Assets"): meta(path)
     print("COMBAT TEST ART CONTRACT OK " + json.dumps(payload["actions"]), flush=True)
 
 

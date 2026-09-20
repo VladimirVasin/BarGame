@@ -11,7 +11,7 @@ namespace BarPromenade.Editor
     {
         public const string Folder = "Assets/Resources/Combat/";
         public const string ManifestPath = Folder + "CombatTest3D.json";
-        public override uint GetVersion() => 2;
+        public override uint GetVersion() => 3;
         private bool IsCombat => assetPath.StartsWith(Folder, StringComparison.Ordinal);
         private bool IsBank => IsCombat && assetPath.EndsWith("Actions.fbx", StringComparison.Ordinal);
 
@@ -62,6 +62,7 @@ namespace BarPromenade.Editor
         [MenuItem("Bar Promenade/Combat Test/Validate Imported Assets")]
         public static void BuildOrThrow()
         {
+            CombatBloodAssetSetup.BuildOrThrow();
             foreach (string file in new[] { "Arena.fbx", "Crowbar.fbx", "CombatActions.fbx", "CombatNpcActions.fbx", "CombatTest3D.json" })
                 AssetDatabase.ImportAsset(Folder + file, ImportAssetOptions.ForceSynchronousImport);
             Manifest manifest = JsonUtility.FromJson<Manifest>(File.ReadAllText(ManifestPath));
@@ -78,6 +79,12 @@ namespace BarPromenade.Editor
                 Mathf.Abs(step.travel_seconds - .30f) > .0001f || Mathf.Abs(step.settle_seconds - .16f) > .0001f ||
                 Mathf.Abs(step.distance_m - .65f) > .0001f || step.travel_curve != "smoothstep")
                 throw new InvalidOperationException("Combat defensive step differs from its constrained motor travel.");
+            Charging charging = manifest.actions.charging;
+            if (charging == null || charging.charge_parameter != "linear" ||
+                charging.maximum_entry_error > .00001f || charging.maximum_lower_track_error > .00001f ||
+                charging.maximum_light_legacy_error > .00001f || charging.maximum_support_error > .001f ||
+                charging.minimum_reach_m < .95f || Mathf.Abs(charging.release_seconds - 1.28f) > .0001f)
+                throw new InvalidOperationException("Combat charge lost its continuous, grounded release contract.");
             foreach (Model entry in manifest.models)
             {
                 GameObject model = CombatAssetProvider.Create(entry.name, null);
@@ -143,7 +150,9 @@ namespace BarPromenade.Editor
                     grip = registry.Anchors.RightGrip;
                 }
                 animator.enabled = false;
-                GameObject bar = CombatAssetProvider.CreateCrowbar(grip);
+                NpcHandPose handPose = grip.GetComponentInParent<NpcHandPose>();
+                GameObject bar = CombatAssetProvider.CreateCrowbar(grip, handPose);
+                handPose.SetGrip(false, 1f);
                 Transform tip = CombatAssetProvider.FindAnchor(bar, "StrikeTip");
                 Transform origin = CombatAssetProvider.FindAnchor(bar, "Grip");
                 AnimationClip attack = CombatAssetProvider.LoadClip(CombatAssetProvider.AttackClip, npc);
@@ -156,7 +165,8 @@ namespace BarPromenade.Editor
                     Vector3 point = actor.transform.InverseTransformPoint(tip.position);
                     reach = Mathf.Max(reach, point.z);
                     travel = Mathf.Max(travel, Vector3.Distance(windup, point));
-                    if (Vector3.Distance(origin.position, grip.position) > .001f ||
+                    if (Vector3.Distance(origin.position, handPose.CylinderCentre(false)) > .001f ||
+                        Vector3.Dot(bar.transform.up, handPose.CylinderAxis(false)) < .999f ||
                         Vector3.Distance(origin.position, tip.position) < .60f || Vector3.Distance(origin.position, tip.position) > .63f)
                         throw new InvalidOperationException("Combat crowbar grip or unit factor differs for " + (npc ? "NPC" : "hero"));
                 }
@@ -164,6 +174,7 @@ namespace BarPromenade.Editor
                     throw new InvalidOperationException($"Combat imported {(npc ? "NPC" : "hero")} attack cannot reach the front target: reach={reach}, travel={travel}.");
                 ValidateReactions(animator, grip, tip, npc);
                 ValidateWeightAndHandoff(animator, npc);
+                ValidateChargedRelease(animator, actor.transform, handPose, bar, origin, tip, npc);
                 if (!npc)
                 {
                     ValidateSideSteps(animator);
@@ -205,6 +216,62 @@ namespace BarPromenade.Editor
             float drop = initialPelvis.y - pelvis.position.y;
             if (drop < .04f || drop > .13f)
                 throw new InvalidOperationException("Combat imported defeat lost balance or authored the physical fall prematurely.");
+        }
+
+        private static void ValidateChargedRelease(Animator animator, Transform actor, NpcHandPose handPose,
+            GameObject bar, Transform origin, Transform tip, bool npc)
+        {
+            Transform[] bones = animator.GetComponentsInChildren<Transform>(true);
+            Transform[] feet = { bones.First(bone => bone.name == "foot.L"), bones.First(bone => bone.name == "foot.R") };
+            AnimationClip charge = CombatAssetProvider.LoadClip(CombatAssetProvider.ChargeClip, npc);
+            AnimationClip light = CombatAssetProvider.LoadClip(CombatAssetProvider.ReleaseLightClip, npc);
+            AnimationClip heavy = CombatAssetProvider.LoadClip(CombatAssetProvider.ReleaseHeavyClip, npc);
+            AnimationClip attack = CombatAssetProvider.LoadClip(CombatAssetProvider.AttackClip, npc);
+            var positions = new Vector3[bones.Length];
+            var rotations = new Quaternion[bones.Length];
+            var entryPositions = new Vector3[bones.Length];
+            var entryRotations = new Quaternion[bones.Length];
+            void Blend(float seconds, float q)
+            {
+                light.SampleAnimation(animator.gameObject, seconds);
+                for (int i = 0; i < bones.Length; i++)
+                { positions[i] = bones[i].localPosition; rotations[i] = bones[i].localRotation; }
+                heavy.SampleAnimation(animator.gameObject, seconds);
+                for (int i = 0; i < bones.Length; i++)
+                {
+                    bones[i].localPosition = Vector3.Lerp(positions[i], bones[i].localPosition, q);
+                    bones[i].localRotation = Quaternion.Slerp(rotations[i], bones[i].localRotation, q);
+                }
+            }
+            light.SampleAnimation(animator.gameObject, 0f);
+            Vector3[] planted = feet.Select(foot => foot.position).ToArray();
+            Quaternion[] flat = feet.Select(foot => foot.rotation).ToArray();
+            foreach (float q in new[] { 0f, .25f, .5f, .75f, 1f })
+            {
+                charge.SampleAnimation(animator.gameObject, q * charge.length);
+                for (int i = 0; i < bones.Length; i++)
+                { entryPositions[i] = bones[i].localPosition; entryRotations[i] = bones[i].localRotation; }
+                Blend(0f, q);
+                for (int i = 0; i < bones.Length; i++)
+                    if (Vector3.Distance(entryPositions[i], bones[i].localPosition) > .0001f ||
+                        Quaternion.Angle(entryRotations[i], bones[i].localRotation) > .06f)
+                        throw new InvalidOperationException("Charged entry differs from its released pose: " + q + "/" + bones[i].name);
+                float reach = 0f;
+                for (int frame = 0; frame <= 128; frame++)
+                {
+                    float seconds = frame / 100f;
+                    if (q == 0f) CompareEndpoint(light, seconds, attack, seconds, animator, bones, "light legacy strike");
+                    Blend(seconds, q);
+                    for (int i = 0; i < feet.Length; i++)
+                        if (Vector3.Distance(planted[i], feet[i].position) > .002f || Quaternion.Angle(flat[i], feet[i].rotation) > .15f)
+                            throw new InvalidOperationException("Charged blend moved an authored support foot: " + q);
+                    if (Vector3.Distance(origin.position, handPose.CylinderCentre(false)) > .001f ||
+                        Vector3.Dot(bar.transform.up, handPose.CylinderAxis(false)) < .999f)
+                        throw new InvalidOperationException("Charged blend lost the crowbar grip: " + q);
+                    if (seconds >= .45f && seconds <= .63f) reach = Mathf.Max(reach, actor.InverseTransformPoint(tip.position).z);
+                }
+                if (reach < .95f) throw new InvalidOperationException("Charged blend cannot reach its target: " + q);
+            }
         }
 
         private static void ValidateSideSteps(Animator animator)
@@ -337,6 +404,13 @@ namespace BarPromenade.Editor
             public float attack_pelvis_travel_m, attack_knee_travel_degrees, defeat_handoff_seconds;
             public Reaction[] reactions;
             public DefensiveStep defensive_step;
+            public Charging charging;
+        }
+        [Serializable] private sealed class Charging
+        {
+            public string charge_parameter;
+            public float release_seconds, maximum_entry_error, maximum_lower_track_error;
+            public float maximum_light_legacy_error, maximum_support_error, minimum_reach_m;
         }
         [Serializable] private sealed class DefensiveStep
         {

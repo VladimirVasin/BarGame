@@ -11,10 +11,11 @@ namespace BarPromenade
         private PlayerMotor motor;
         private PlayerAnimatedInteractionController interaction;
         private VillageResidentPresentation npc;
+        private NpcHandPose handPose;
         private AnimationClip ready, attack, block, hit, walk, guardImpact, guardBreak, recoil, reaction, defeat;
         private Transform strikeBase, strikeTip;
         private string visibleClip;
-        private float poseClock, locomotionSpeed, reactionClock, pushElapsed;
+        private float poseClock, locomotionSpeed, reactionClock, pushElapsed, pushDistance = .12f;
         private Vector3 pushDirection;
         private readonly List<Contact> standaloneContacts = new List<Contact>(4);
         private Transform[] legs;
@@ -31,6 +32,7 @@ namespace BarPromenade
         // still walks. Defeat/stagger and the active swing own their own stop.
         public float MovementScale => State.Phase switch
         {
+            MeleePhase.Charging => .22f,
             MeleePhase.Windup => .22f,
             MeleePhase.Active => 0f,
             MeleePhase.Recovery => Mathf.Lerp(.15f, .65f, State.PhaseProgress),
@@ -40,6 +42,7 @@ namespace BarPromenade
 
         internal float TurnScale => State.Phase switch
         {
+            MeleePhase.Charging => .2f,
             MeleePhase.Windup => .2f,
             MeleePhase.Active => 0f,
             MeleePhase.Recovery => Mathf.Lerp(.15f, .75f, State.PhaseProgress),
@@ -54,7 +57,7 @@ namespace BarPromenade
             interaction = GetComponent<PlayerAnimatedInteractionController>();
             Body = GetComponent<CharacterController>();
             LoadClips(false);
-            foreach (AnimationClip clip in new[] { ready, attack, block, hit, guardImpact, guardBreak, recoil, defeat })
+            foreach (AnimationClip clip in new[] { ready, attack, charge, releaseLight, releaseHeavy, block, hit, guardImpact, guardBreak, recoil, defeat })
                 hero.Registry.RegisterRuntimeAnimation(new Player3DAnimationBinding(
                     clip.name, "Combat", clip, clip.length, clip.isLooping));
             foreach (string name in CombatAssetProvider.HeroLocomotionClipNames)
@@ -68,6 +71,7 @@ namespace BarPromenade
             Ragdoll.InitializeHero(player);
             AttachWeapon(hero.Registry.Anchors.RightGrip);
             hero.RegisterAccessoryRenderers(Weapon.GetComponentsInChildren<Renderer>());
+            InitializeDamagePose();
             Present();
         }
 
@@ -86,9 +90,11 @@ namespace BarPromenade
                     bone.name.StartsWith("toe.", StringComparison.Ordinal)) lower.Add(bone);
             legs = lower.ToArray(); legPositions = new Vector3[legs.Length]; legRotations = new Quaternion[legs.Length];
             InitializeNpcPoseBlend();
+            InitializeNpcChargeBlend();
             Ragdoll = gameObject.AddComponent<CombatRagdoll>();
             Ragdoll.InitializeOpponent(presentation, body);
             AttachWeapon(npc.RightGrip);
+            InitializeDamagePose();
             Present();
         }
 
@@ -96,6 +102,9 @@ namespace BarPromenade
         {
             ready = CombatAssetProvider.LoadClip("CombatReady", forNpc);
             attack = CombatAssetProvider.LoadClip("CombatAttack", forNpc);
+            charge = CombatAssetProvider.LoadClip("CombatCharge", forNpc);
+            releaseLight = CombatAssetProvider.LoadClip("CombatReleaseLight", forNpc);
+            releaseHeavy = CombatAssetProvider.LoadClip("CombatReleaseHeavy", forNpc);
             block = CombatAssetProvider.LoadClip("CombatBlock", forNpc);
             hit = CombatAssetProvider.LoadClip("CombatHit", forNpc);
             guardImpact = CombatAssetProvider.LoadClip("CombatGuardImpact", forNpc);
@@ -106,7 +115,8 @@ namespace BarPromenade
 
         private void AttachWeapon(Transform grip)
         {
-            Weapon = CombatAssetProvider.CreateCrowbar(grip);
+            handPose = grip.GetComponentInParent<NpcHandPose>();
+            Weapon = CombatAssetProvider.CreateCrowbar(grip, handPose);
             strikeBase = CombatAssetProvider.FindAnchor(Weapon, "StrikeBase");
             strikeTip = CombatAssetProvider.FindAnchor(Weapon, "StrikeTip");
             if (strikeBase == null || strikeTip == null) throw new InvalidOperationException("Crowbar needs its authored strike anchors.");
@@ -166,7 +176,7 @@ namespace BarPromenade
                 float previous = Mathf.Clamp01(pushElapsed / .16f);
                 pushElapsed += seconds;
                 float next = Mathf.Clamp01(pushElapsed / .16f);
-                float distance = .12f * ((2f * next - next * next) - (2f * previous - previous * previous));
+                float distance = pushDistance * ((2f * next - next * next) - (2f * previous - previous * previous));
                 Body.Move(pushDirection * distance + Vector3.down * seconds);
             }
             int sequence = State.AttackSequence;
@@ -183,42 +193,50 @@ namespace BarPromenade
             else sweepValid = false;
         }
 
-        private MeleeHitResult Receive(CombatActor source, bool front)
+        private MeleeHitResult Receive(CombatActor source, bool front, int sequence, Vector3 point, Vector3 normal, Vector3 direction,
+            float damage, float blockCost, float power)
         {
             Vector3 incoming = source.transform.position - transform.position;
             incoming.y = 0;
-            MeleeHitResult result = State.ReceiveHit(source.State.Settings.Damage, source.State.Settings.BlockCost, front);
+            float healthBefore = State.Health;
+            MeleeHitResult result = State.ReceiveHit(damage, blockCost, front);
             if (result == MeleeHitResult.Ignored) return result;
             RetroAudio.PlayAt(result == MeleeHitResult.Blocked ? RetroSfxId.SpadeGlance : RetroSfxId.CoffinSettle,
-                transform.position + Vector3.up, .75f);
+                point, Mathf.Lerp(.75f, .95f, power));
             if (result != MeleeHitResult.Blocked && motor != null)
-                motor.TryApplyExternalPush(-incoming.normalized, .12f, .16f);
+                motor.TryApplyExternalPush(-incoming.normalized, Mathf.Lerp(.12f, .20f, power), .16f);
             if (result != MeleeHitResult.Blocked && npc != null)
-            { pushDirection = -incoming.normalized; pushElapsed = 0f; }
+            { pushDirection = -incoming.normalized; pushDistance = Mathf.Lerp(.12f, .20f, power); pushElapsed = 0f; }
             reaction = result == MeleeHitResult.Blocked ? guardImpact : null;
             reactionClock = 0f;
             if (result == MeleeHitResult.GuardBroken)
                 RetroAudio.PlayAt(RetroSfxId.SpadeGlance, transform.position + Vector3.up, .85f);
             if (State.IsDefeated)
-                BeginDefeat(-incoming.normalized, transform.position + Vector3.up * 1.15f);
+                BeginDefeat(-incoming.normalized, point);
+            PublishImpact(new CombatImpact(source, this, sequence, point, normal, direction,
+                healthBefore, State.Health, result));
             Present();
             return result;
         }
 
         private bool SampleAttack(float progress)
         {
+            damagePose?.Restore();
+            AnimationClip chosen = ReleaseClip;
             if (hero != null)
             {
-                if (visibleClip != attack.name || !hero.OwnsClip(this))
+                if (visibleClip != chosen.name || !hero.OwnsClip(this))
                 {
-                    if (!hero.TryAcquireClip(this, attack.name)) return false;
-                    BeginPoseBlend();
+                    bool releasingCharge = visibleClip == charge.name;
+                    if (!hero.TryAcquireClip(this, chosen.name, releasingCharge)) return false;
+                    if (!releasingCharge) BeginPoseBlend();
                 }
-                visibleClip = attack.name;
+                visibleClip = chosen.name;
                 hero.SetOwnedClipLocomotion(this, MovementScale > 0f && motor.PlanarVelocity.sqrMagnitude > .01f);
-                hero.SampleOwnedClip(this, progress);
+                SampleHeroRelease(progress);
             }
-            else attack.SampleAnimation(npc.Animator.gameObject, progress * attack.length);
+            else SampleNpcRelease(progress);
+            handPose.SetGrip(false, 1f);
             return true;
         }
 
@@ -227,36 +245,46 @@ namespace BarPromenade
         public void Present()
         {
             if (ready == null || IsRagdollActive) return;
+            damagePose?.Restore();
             bool stagger = State.Phase == MeleePhase.Stagger || State.Phase == MeleePhase.GuardBroken || State.IsDefeated;
             bool stepping = State.Phase == MeleePhase.Step;
             AnimationClip chosen = stepping ? (stepBlocked ? ready : stepClip) : State.IsDefeated ? defeat : State.Phase == MeleePhase.GuardBroken ? guardBreak : stagger ? hit :
-                reaction != null ? reaction : State.IsAttacking ? attack : State.IsBlocking ? block : ready;
+                reaction != null ? reaction : State.IsCharging ? charge : State.IsAttacking ? ReleaseClip : State.IsBlocking ? block : ready;
             float progress = stagger ?
                 (State.IsDefeated ? Mathf.Clamp01(defeatClock / defeat.length) : State.PhaseProgress) :
                 Mathf.Repeat(poseClock, chosen.length) / chosen.length;
             if (!stagger && reaction != null) progress = Mathf.Clamp01(reactionClock / reaction.length);
+            else if (State.IsCharging) progress = State.Charge01;
             else if (State.IsAttacking) progress = State.AttackProgress;
             if (stepping) progress = stepBlocked ? 0f : State.StepProgress;
             else if (State.Phase == MeleePhase.GuardImpact) progress = State.PhaseProgress;
             if (hero != null)
             {
                 if (!IsAvailable) { ReleasePresentation(); return; }
-                bool fullBody = State.IsAttacking || stagger || reaction != null || stepping;
+                bool fullBody = State.IsCharging || State.IsAttacking || stagger || reaction != null || stepping;
                 if (fullBody)
                 {
                     hero.ReleaseCarryPose(this);
                     if (visibleClip != chosen.name || !hero.OwnsClip(this))
                     {
-                        if (!hero.TryAcquireClip(this, chosen.name)) return;
+                        bool releasingCharge = visibleClip == charge.name && State.IsAttacking && reaction == null;
+                        if (!hero.TryAcquireClip(this, chosen.name, releasingCharge)) return;
                         // A stationary step starts in the exact ready pose;
                         // blending it again would slide the planted support foot.
-                        if (stepping && !stepBlocked && visibleClip == ready.name && motor.PlanarVelocity.sqrMagnitude < .01f)
-                            CancelPoseBlend();
-                        else BeginPoseBlend();
+                        // Charge and release share their endpoint. Keep any
+                        // unfinished ready-to-charge blend across a quick tap.
+                        if (!releasingCharge)
+                        {
+                            if (stepping && !stepBlocked && visibleClip == ready.name && motor.PlanarVelocity.sqrMagnitude < .01f)
+                                CancelPoseBlend();
+                            else BeginPoseBlend();
+                        }
                         visibleClip = chosen.name;
                     }
                     hero.SetOwnedClipLocomotion(this, MovementScale > 0f && motor.PlanarVelocity.sqrMagnitude > .01f);
-                    hero.SampleOwnedClip(this, progress);
+                    if (State.IsAttacking && reaction == null && !stagger) SampleHeroRelease(progress);
+                    else if (State.IsCharging) SampleHeroCharge();
+                    else hero.SampleOwnedClip(this, progress);
                 }
                 else
                 {
@@ -273,7 +301,11 @@ namespace BarPromenade
             }
             else
             {
-                if (visibleClip != chosen.name) { BeginPoseBlend(); visibleClip = chosen.name; }
+                if (visibleClip != chosen.name)
+                {
+                    if (!(visibleClip == charge.name && State.IsAttacking && reaction == null)) BeginPoseBlend();
+                    visibleClip = chosen.name;
+                }
                 bool walking = Mathf.Abs(locomotionSpeed) > .05f && MovementScale > 0f;
                 if (walking)
                 {
@@ -281,11 +313,18 @@ namespace BarPromenade
                     for (int i = 0; i < legs.Length; i++)
                     { legPositions[i] = legs[i].localPosition; legRotations[i] = legs[i].localRotation; }
                 }
-                chosen.SampleAnimation(npc.Animator.gameObject, progress * chosen.length);
+                if (State.IsAttacking && reaction == null && !stagger) SampleNpcRelease(progress);
+                else chosen.SampleAnimation(npc.Animator.gameObject, progress * chosen.length);
                 if (walking)
                     for (int i = 0; i < legs.Length; i++)
                     { legs[i].localPosition = legPositions[i]; legs[i].localRotation = legRotations[i]; }
+            }
+            handPose.SetGrip(false, 1f);
+            PresentDamagePose();
+            if (npc != null)
+            {
                 ApplyNpcPoseBlend();
+                RememberNpcPresentedPose();
             }
         }
 
@@ -295,6 +334,7 @@ namespace BarPromenade
             RestoreWeapon();
             ReleasePresentation();
             ResetDefeat();
+            ResetDamage();
             State.Reset(); poseClock = locomotionSpeed = 0f;
             stepClip = null; stepDirection = Vector3.zero; stepBlocked = false;
             reaction = null; reactionClock = 0f; pushElapsed = .16f; pushDirection = Vector3.zero;
@@ -312,6 +352,8 @@ namespace BarPromenade
 
         private void ReleasePresentation()
         {
+            ReleaseDamagePose();
+            if (handPose != null) handPose.SetGrip(false, 0f);
             CancelPoseBlend();
             if (hero != null) { hero.ReleaseOwnedClip(this); hero.ReleaseCarryPose(this); }
             if (motor != null) motor.ReleaseMovementConstraint(this);
@@ -320,11 +362,13 @@ namespace BarPromenade
 
         private void OnDisable()
         {
+            State.CancelCharge();
             Ragdoll?.Cancel();
             // Scene teardown is already deactivating the arena hierarchy;
             // Unity forbids reparenting the dropped prop during that operation.
             if (gameObject.activeInHierarchy) RestoreWeapon();
             ReleasePresentation();
+            ResetDamage();
         }
 
         private void OnDestroy()
@@ -332,6 +376,7 @@ namespace BarPromenade
             Ragdoll?.Cancel();
             if (weaponDropped && Weapon != null) Destroy(Weapon);
             ReleasePresentation();
+            damagePose?.Dispose();
         }
     }
 }

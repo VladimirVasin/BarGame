@@ -41,6 +41,7 @@ import player_cold_actions  # noqa: E402
 import player_detailed_model  # noqa: E402
 import player_face_paint  # noqa: E402
 import player_jacket_cloth  # noqa: E402
+import player_hand_grip  # noqa: E402
 
 PUBLISHED_PATHS: dict[Path, Path] = {}
 
@@ -295,7 +296,7 @@ def resolve_path(path: Path) -> Path:
     return path.resolve()
 
 
-def parse_args() -> tuple[common.BuildConfig, Path, Path, Path, Path, Path, Path, Path, bool, bool]:
+def parse_args() -> tuple[common.BuildConfig, Path, Path, Path, Path, Path, Path, Path, bool, bool, bool]:
     user_args: list[str] = []
     if "--" in sys.argv:
         user_args = sys.argv[sys.argv.index("--") + 1 :]
@@ -320,6 +321,8 @@ def parse_args() -> tuple[common.BuildConfig, Path, Path, Path, Path, Path, Path
     )
     parser.add_argument("--skip-animation-export", action="store_true",
                         help="Keep the existing animation FBX when only model geometry changes.")
+    parser.add_argument("--hand-grip-only", action="store_true",
+                        help="Refresh hand contact shapes in the verified production source without rebuilding actions.")
     parser.add_argument("--preview-only", action="store_true",
                         help="Validate geometry and render Relaxed studies into a review folder without publishing production assets.")
     parser.add_argument(
@@ -415,6 +418,7 @@ def parse_args() -> tuple[common.BuildConfig, Path, Path, Path, Path, Path, Path
         None if args.no_previews else resolve_path(args.lower_body_closeup),
         args.face_atlas_only,
         args.preview_only,
+        args.hand_grip_only,
     )
 
 
@@ -3013,6 +3017,9 @@ def content_signature(
         "bones": bone_records,
         "actions": action_records,
     }
+    hand_grip = player_hand_grip.manifest(result, config.height / 1.75)
+    if hand_grip is not None:
+        payload["hand_grip"] = hand_grip
     encoded = json.dumps(
         payload,
         sort_keys=True,
@@ -3073,6 +3080,9 @@ def write_v2_manifest(
     # Start with the established model manifest contract, then add only V2 data.
     common.write_manifest(path, config, result, report)
     payload = json.loads(path.read_text(encoding="utf-8"))
+    payload["hand_grip"] = {**player_hand_grip.manifest(result, config.height / 1.75),
+                            "validation": player_hand_grip.validate(result, config.height / 1.75)}
+    payload["hand_grip_authoring_sha256"] = hashlib.sha256(Path(player_hand_grip.__file__).read_bytes()).hexdigest()
     records = {record.obj.name: record for record in result.parts}
     head_min, head_max = common.mesh_bounds_world(records["GEO_Head"].obj)
     head_height = head_max.z - head_min.z
@@ -3435,7 +3445,11 @@ def main() -> None:
         lower_body_closeup_path,
         face_atlas_only,
         preview_only,
+        hand_grip_only,
     ) = parse_args()
+    if hand_grip_only:
+        player_hand_grip.refresh(sys.modules[__name__], config)
+        return
     print("Hero textures: painting deterministic source atlases", flush=True)
     face_atlas_sha256 = build_face_atlas(face_atlas_path, expression_sheet_path)
     if face_atlas_only:

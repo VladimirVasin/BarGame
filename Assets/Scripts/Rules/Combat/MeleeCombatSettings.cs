@@ -17,7 +17,10 @@ namespace BarPromenade
             float obstacleRecoverySeconds = 0.65f, float guardImpactSeconds = 0.20f,
             float stepCost = 20f, float stepTravelSeconds = 0.30f,
             float stepRecoverySeconds = 0.16f, float stepDistance = 0.65f,
-            float animationRecoverySeconds = 0.65f)
+            float animationRecoverySeconds = 0.65f, float chargeSeconds = .9f,
+            float chargeDamageBonus = 15f, float chargeStaminaCost = 15f,
+            float chargeBlockCostBonus = 15f, float chargedWindupSeconds = .10f,
+            float chargeRecoveryBonus = .5f)
         {
             MaxHealth = Positive(maxHealth, nameof(maxHealth));
             MaxStamina = Positive(maxStamina, nameof(maxStamina));
@@ -41,6 +44,12 @@ namespace BarPromenade
             StepRecoverySeconds = Positive(stepRecoverySeconds, nameof(stepRecoverySeconds));
             StepDistance = Positive(stepDistance, nameof(stepDistance));
             AnimationRecoverySeconds = Positive(animationRecoverySeconds, nameof(animationRecoverySeconds));
+            ChargeSeconds = Positive(chargeSeconds, nameof(chargeSeconds));
+            ChargeDamageBonus = Positive(chargeDamageBonus, nameof(chargeDamageBonus));
+            ChargeStaminaCost = Positive(chargeStaminaCost, nameof(chargeStaminaCost));
+            ChargeBlockCostBonus = Positive(chargeBlockCostBonus, nameof(chargeBlockCostBonus));
+            ChargedWindupSeconds = Math.Min(WindupSeconds, Positive(chargedWindupSeconds, nameof(chargedWindupSeconds)));
+            ChargeRecoveryBonus = Positive(chargeRecoveryBonus, nameof(chargeRecoveryBonus));
             if (AttackCost > MaxStamina) throw new ArgumentOutOfRangeException(nameof(attackCost));
             if (StepCost > MaxStamina) throw new ArgumentOutOfRangeException(nameof(stepCost));
             if (AttackBufferSeconds > Math.Min(Math.Min(RecoverySeconds, HitRecoverySeconds),
@@ -50,6 +59,12 @@ namespace BarPromenade
                 Math.Max(BlockRecoverySeconds, ObstacleRecoverySeconds)), nameof(recoverySeconds));
             Positive(AnimationAttackDurationSeconds, nameof(animationRecoverySeconds));
             Positive(StepDurationSeconds, nameof(stepRecoverySeconds));
+            Positive(Damage + ChargeDamageBonus, nameof(chargeDamageBonus));
+            Positive(AttackCost + ChargeStaminaCost, nameof(chargeStaminaCost));
+            Positive(BlockCost + ChargeBlockCostBonus, nameof(chargeBlockCostBonus));
+            Positive(Math.Max(Math.Max(RecoverySeconds, HitRecoverySeconds),
+                Math.Max(BlockRecoverySeconds, ObstacleRecoverySeconds)) * (1f + ChargeRecoveryBonus),
+                nameof(chargeRecoveryBonus));
         }
 
         public float MaxHealth { get; }
@@ -74,6 +89,12 @@ namespace BarPromenade
         public float StepRecoverySeconds { get; }
         public float StepDistance { get; }
         public float AnimationRecoverySeconds { get; }
+        public float ChargeSeconds { get; }
+        public float ChargeDamageBonus { get; }
+        public float ChargeStaminaCost { get; }
+        public float ChargeBlockCostBonus { get; }
+        public float ChargedWindupSeconds { get; }
+        public float ChargeRecoveryBonus { get; }
         public float AttackDurationSeconds => WindupSeconds + ActiveSeconds + RecoverySeconds;
         public float AnimationAttackDurationSeconds => WindupSeconds + ActiveSeconds + AnimationRecoverySeconds;
         public float StepDurationSeconds => StepTravelSeconds + StepRecoverySeconds;

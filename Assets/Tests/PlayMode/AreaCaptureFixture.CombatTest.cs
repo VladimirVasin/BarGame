@@ -16,6 +16,8 @@ namespace BarPromenade.Tests.PlayMode
 #if UNITY_EDITOR
             Type.GetType("BarPromenade.Editor.ProjectSceneSetup, BarPromenade.Editor", true)
                 .GetMethod("ConfigureCombatTestScene", Type.EmptyTypes).Invoke(null, null);
+            Type.GetType("BarPromenade.Editor.Player3DV2AssetSetup, BarPromenade.Editor", true)
+                .GetMethod("BuildOrThrow", Type.EmptyTypes).Invoke(null, null);
             Type.GetType("BarPromenade.Editor.CombatTestAssetSetup, BarPromenade.Editor", true)
                 .GetMethod("BuildOrThrow", Type.EmptyTypes).Invoke(null, null);
 #endif
@@ -36,7 +38,7 @@ namespace BarPromenade.Tests.PlayMode
         }
 
         [UnityTest]
-        [Explicit("The playable target-locked shoulder camera, including close range, walls and a fallen opponent.")]
+        [Explicit("The shoulder camera, charged strikes and damage. Run without -batchmode to capture the actual HUD too.")]
         [PrebuildSetup(typeof(CombatTestAssetsSetup))]
         public IEnumerator CombatTestLockedCamera()
         {
@@ -115,6 +117,8 @@ namespace BarPromenade.Tests.PlayMode
             }
             CaptureCurrentCamera(camera, SceneIds.CombatTest, "camera-06-defeated");
             Assert.That(root.CameraFollow.TargetLockActive, Is.True);
+            yield return CaptureCombatCharge(root, camera);
+            yield return CaptureCombatDamage(root, camera);
             yield return SceneManager.LoadSceneAsync(SceneIds.MainMenu);
         }
 
@@ -135,17 +139,23 @@ namespace BarPromenade.Tests.PlayMode
             camera.fieldOfView = 52f;
             yield return null;
             CaptureCurrentCamera(camera, SceneIds.CombatTest, "01-ready");
+            CaptureCombatGrip(camera, root.Hero, "grip-hero-ready");
+            CaptureCombatGrip(camera, root.Opponent, "grip-opponent-ready");
             Assert.That(root.Hero.TryAttack(), Is.True);
             root.Hero.Step(.42f);
             yield return null;
             CaptureCurrentCamera(camera, SceneIds.CombatTest, "02-windup");
+            CaptureCombatGrip(camera, root.Hero, "grip-hero-windup");
             root.Hero.Step(.14f);
             yield return null;
             CaptureCurrentCamera(camera, SceneIds.CombatTest, "03-contact");
+            CaptureCombatGrip(camera, root.Hero, "grip-hero-contact");
+            CaptureCombatGrip(camera, root.Opponent, "grip-opponent-hit");
             root.Hero.Step(1f);
             root.Hero.SetBlock(true); root.Hero.Present();
             yield return null;
             CaptureCurrentCamera(camera, SceneIds.CombatTest, "04-guard");
+            CaptureCombatGrip(camera, root.Hero, "grip-hero-guard");
             root.Hero.SetBlock(false);
 
             CombatCapturePair(root);
@@ -156,6 +166,8 @@ namespace BarPromenade.Tests.PlayMode
                 Is.EqualTo("CombatGuardImpact"));
             yield return null;
             CaptureCurrentCamera(camera, SceneIds.CombatTest, "05-guard-impact");
+            CaptureCombatGrip(camera, root.Opponent, "grip-opponent-contact");
+            CaptureCombatGrip(camera, root.Hero, "grip-hero-guard-impact");
 
             // Keep guard held so the target cannot regenerate between four real blocked contacts.
             for (int contact = 1; contact < 5; contact++)
@@ -212,17 +224,94 @@ namespace BarPromenade.Tests.PlayMode
                 CaptureCurrentCamera(camera, SceneIds.CombatTest, defeatHero ? "10-hero-defeat" : "08-opponent-defeat");
                 root.Tick(.1f);
                 Assert.That(target.IsRagdollActive, Is.True);
+                Assert.That(target.GetComponentInChildren<NpcHandPose>().RightGripWeight, Is.Zero,
+                    "The defeated hand must release the dropped crowbar.");
                 for (int frame = 0; frame < 300 && !target.Ragdoll.IsSettled; frame++) yield return null;
                 yield return null; // Skinning must see the physical bones before the camera renders.
                 CaptureCurrentCamera(camera, SceneIds.CombatTest, defeatHero ? "11-hero-ragdoll" : "09-opponent-ragdoll");
             }
             root.ResetRound();
+            yield return null;
+            AssertCombatGrip(root.Hero);
+            AssertCombatGrip(root.Opponent);
             camera.transform.SetPositionAndRotation(new Vector3(9f, 8f, -10f),
                 Quaternion.LookRotation(new Vector3(0f, .5f, 0f) - new Vector3(9f, 8f, -10f)));
             camera.fieldOfView = 60f;
             yield return null;
             CaptureCurrentCamera(camera, SceneIds.CombatTest, "00-arena");
+            root.Hero.enabled = false;
+            root.Opponent.enabled = false;
+            Assert.That(root.Hero.GetComponentInChildren<NpcHandPose>().RightGripWeight, Is.Zero);
+            Assert.That(root.Opponent.GetComponentInChildren<NpcHandPose>().RightGripWeight, Is.Zero);
             yield return SceneManager.LoadSceneAsync(SceneIds.MainMenu);
+        }
+
+        private static NpcHandPose AssertCombatGrip(CombatActor actor)
+        {
+            NpcHandPose pose = actor.GetComponentInChildren<NpcHandPose>();
+            Assert.That(pose, Is.Not.Null, actor.name);
+            Assert.That(pose.RightGripWeight, Is.EqualTo(1f), actor.name);
+            Assert.That(pose.LeftGripWeight, Is.Zero, "Holding the bar must not close the free hand.");
+            Vector3 centre = pose.CylinderCentre(false), axis = pose.CylinderAxis(false);
+            Assert.That(Vector3.Distance(CombatAssetProvider.FindAnchor(actor.Weapon, "Grip").position, centre),
+                Is.LessThan(.001f), "The rubber handle must run through the closed fingers, not the neutral socket.");
+            Assert.That(Vector3.Dot(actor.Weapon.transform.up, axis), Is.GreaterThan(.999f));
+            var mesh = new Mesh();
+            try
+            {
+                int fingers = 0, thumbs = 0;
+                foreach (NpcHandPose.HandBinding hand in pose.Hands)
+                {
+                    if (hand.IsLeft) continue;
+                    foreach (SkinnedMeshRenderer renderer in hand.Renderers)
+                    {
+                        bool finger = renderer.name.Contains("Finger"), thumb = renderer.name.Contains("Thumb");
+                        if (!renderer.enabled || !renderer.gameObject.activeInHierarchy || !(finger || thumb)) continue;
+                        renderer.BakeMesh(mesh, true);
+                        float minimumRadius = float.PositiveInfinity, farSide = float.NegativeInfinity;
+                        foreach (Vector3 vertex in mesh.vertices)
+                        {
+                            Vector3 offset = renderer.transform.TransformPoint(vertex) - centre;
+                            minimumRadius = Mathf.Min(minimumRadius, Vector3.ProjectOnPlane(offset, axis).magnitude);
+                            farSide = Mathf.Max(farSide, Vector3.Dot(offset, pose.PalmNormal(false)));
+                        }
+                        Assert.That(minimumRadius, Is.InRange(.019f, .036f), renderer.name + " must touch the handle surface.");
+                        Assert.That(farSide, Is.GreaterThan(.004f), renderer.name + " must curl around the far side.");
+                        if (finger) fingers++;
+                        else thumbs++;
+                    }
+                }
+                Assert.That(fingers, Is.EqualTo(4), "All four visible fingers must wrap the handle.");
+                Assert.That(thumbs, Is.EqualTo(1), "The visible thumb must close on the other side of the handle.");
+            }
+            finally { Object.DestroyImmediate(mesh); }
+            return pose;
+        }
+
+        private static void CaptureCombatGrip(Camera camera, CombatActor actor, string name)
+        {
+            NpcHandPose pose = actor.GetComponentInChildren<NpcHandPose>();
+            Assert.That(pose, Is.Not.Null, actor.name);
+            Vector3 position = camera.transform.position;
+            Quaternion rotation = camera.transform.rotation;
+            float fov = camera.fieldOfView, near = camera.nearClipPlane;
+            try
+            {
+                Vector3 axis = pose.CylinderAxis(false), normal = pose.PalmNormal(false);
+                Vector3 target = pose.CylinderCentre(false) + axis * .045f;
+                Vector3 eye = target + normal * .48f + Vector3.Cross(axis, normal) * .20f + axis * .10f;
+                camera.transform.SetPositionAndRotation(eye, Quaternion.LookRotation(target - eye, axis));
+                camera.fieldOfView = 42f;
+                camera.nearClipPlane = .02f;
+                CaptureCurrentCamera(camera, SceneIds.CombatTest, name);
+                AssertCombatGrip(actor);
+            }
+            finally
+            {
+                camera.transform.SetPositionAndRotation(position, rotation);
+                camera.fieldOfView = fov;
+                camera.nearClipPlane = near;
+            }
         }
 
         private static void CombatCapturePair(CombatTestRoot root)

@@ -10,6 +10,7 @@ import math
 import bpy
 from mathutils import Vector
 import player_hand_frames
+import player_hand_grip
 
 
 HAND_SIZE_SCALE = 1.20
@@ -621,6 +622,7 @@ def refine(builder, api, common):
         elif not obj.get("bp_body_coverage"):
             obj["bp_default_visible"]=True
     player_hand_frames.ensure_contact_convexity(builder)
+    player_hand_grip.author(builder.result, builder.scale)
 
 
 def manifest(result):

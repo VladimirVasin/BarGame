@@ -744,6 +744,7 @@ namespace BarPromenade
             recoveryTransitionDuration = 0f;
             recoveryPhysics = null;
             layer.ForgetBase();
+            ForgetCombatDamagePose();
             ReleaseBalanceStep();
             attentionBaseCaptured = false;
             ragdollPoseActive = true;
@@ -815,6 +816,7 @@ namespace BarPromenade
                 return;
             }
 
+            RestoreCombatDamagePose();
             layer.Restore();
             ragdollPoseActive = active;
             if (active)
@@ -1005,6 +1007,7 @@ namespace BarPromenade
             if (!ragdollPoseActive)
             {
                 ApplyAttentionPose(Time.deltaTime);
+                ApplyCombatDamagePose();
                 CompleteRecoveryPresentation(Time.deltaTime);
             }
 
@@ -1112,6 +1115,7 @@ namespace BarPromenade
                 ApplyLatePose(0f);
                 ReapplyFacialPose();
                 ApplyAttentionPose(0f);
+                ApplyCombatDamagePose();
                 CompleteRecoveryPresentation(0f);
             }
         }
@@ -1119,6 +1123,7 @@ namespace BarPromenade
         /// <summary>The late pass: the rise's limbs while a rise is on, the balance pose otherwise.</summary>
         private void ApplyLatePose(float deltaTime)
         {
+            RestoreCombatDamagePose();
             ReleaseColdForProtectivePose();
             if (risePose.Active)
             {
@@ -1144,11 +1149,13 @@ namespace BarPromenade
                 ApplyLatePose(Mathf.Max(0f, seconds));
                 ReapplyFacialPose();
                 ApplyAttentionPose(0f);
+                ApplyCombatDamagePose();
             }
         }
 
         private void OnDisable()
         {
+            ClearCombatDamagePose();
             ClearSpeechFace();
             ClearCarryPose();
             ResetColdPose();
@@ -1208,6 +1215,7 @@ namespace BarPromenade
 
         private void OnDestroy()
         {
+            ClearCombatDamagePose();
             ClearSpeechFace();
             layer.Dispose();
             faceAtlasPresenter.Reset();
@@ -3073,6 +3081,7 @@ namespace BarPromenade
             // frame: restoring them in LateUpdate instead would roll the
             // freshly evaluated head/neck animation back to a stale base
             // and freeze it for as long as the additive stays engaged.
+            RestoreCombatDamagePose();
             layer.Restore();
             RestoreAttentionPoseBase();
             if (graph.IsValid())

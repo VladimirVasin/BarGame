@@ -1,36 +1,41 @@
 # Architecture notes
 
-`Proposed` decisions require implementation before acceptance.
+`Proposed` requires implementation.
 
 ## Current facts
 
+- **Accepted — 2026-09-20, charged combat:**
+  Both in `CombatTest`: .9 s hold, indefinite cap, release. Damage/block 25→40,
+  stamina 30+15q (base on start, extra while held), recovery ×1→1.5,
+  windup .45→.10 s. No regen; affordability cap. Guard/step/hit/focus/reset
+  cancel; pause freezes, paused release cancels. AI: 0/.5/1, delayed guard.
+  Shared Charge/ReleaseLight/Heavy; power/cap HUD only on hold.
+
+- **Accepted architecture exception — 2026-09-20, combat injury:**
+  Both fighters: directional reactions/HP pose, restrained blood/wounds/puddles;
+  none on block/miss. R/unload clears; ragdoll owns pose. Visual only.
+
 - **Accepted architecture exception — 2026-09-19, isolated combat test:**
-  Story §6/§16.15/art §15a: third-person crowbar/HUD only in `CombatTest`;
-  no story death/progress/reward/speech/blood/world damage. Shared hero/input/
-  camera/pause; `zz.combat-test.opponent` sorts last. 120 Hz mutual contacts,
-  150 ms buffer. Recovery hit/block/miss/wall: .32/.50/.80/.65 s;
-  guard impact .20, stagger .35. Gait .22 windup, .15–.65 recovery.
-  Space+WASD cardinal step (alone back): 20 stamina, ≤.65 m/.30 s + .16 settle;
-  interruptible, no invulnerability; zero stamina walks. AI observes retreat/
-  misses, varies guard after .22 s; committed swings. Same-rig falls/drop/reset.
-  User 2026-09-20: scene-owned shoulder/chest lock, wall clearance, target-facing
-  W/S travel and A/D strafe; no orbit. Winner walks; R resets.
+  Story §6/§16.15/art §15a: `CombatTest` crowbar/HUD only, no story effects/speech.
+  Shared hero/input/pause; `zz.combat-test.opponent` last. Mutual hits,
+  buffer/outcomes; vulnerable Space+WASD step (alone back).
+  Zero stamina walks; AI observes/commits. Rig fall/reset. 2026-09-20:
+  shoulder/wall lock, no orbit; W/S travel, A/D strafe. Winner walks; R resets.
+  Tuning: `MeleeCombatSettings`.
 
 - **Accepted — 2026-09-16, street pool is the default NPC catalog:**
-  User: passers-by come only from the default NPC set and obey its
-  allocation; a new catalog model joins them at once. `DefaultNpcPopulation`
-  registers `city.pedestrian.00..12` (one per City pool slot; Home uses the
-  first eight) with `AnyCatalogModel`: the model is chosen least-used first
-  over `DefaultNpcCatalog.ModelIds`, then face/hair/street clothes (no apron;
-  hat/scarf/gloves optional). `CityPedestrianResources.Archetypes` derives
-  one street archetype per catalog model; `CityPedestrianDefaultNpcBody`
-  wraps `CreateForCharacter` (aligned, village graph released, one footstep
-  root) in a registry: own village `Idle`/`Walk`, no palette bindings,
-  equipped boot soles feed the leg layer, insult voice keyed by person. The
-  weigher donates the seated loop and guard/shove (same rig and paths);
-  default trousers have their own measured seat lift `0.076`. The six residents are
-  `OrdinaryResidentArchetypes`: placed roles, balcony smokers, donor; no
-  library design roams (`pool_eligible=false`, prefab side = resolvable).
+  User: default-only; new models join at once.
+  `DefaultNpcPopulation`: `city.pedestrian.00..12`, one/City slot, first eight/Home.
+  `AnyCatalogModel` chooses least-used
+  `DefaultNpcCatalog.ModelIds`, then face/hair/street clothes: no apron;
+  hat/scarf/gloves optional. `CityPedestrianResources.Archetypes`: one street
+  archetype/model. `CityPedestrianDefaultNpcBody`/`CreateForCharacter`:
+  aligned, village graph released, one footstep root; own village `Idle`/`Walk`,
+  no palette bindings; boot soles feed legs, person-keyed insult voice.
+  Weigher donates seated/guard/shove, same rig/paths; default trousers
+  seat lift `0.076`. Six `OrdinaryResidentArchetypes`: placed roles/balcony
+  smokers/donor; library designs never roam (`pool_eligible=false`,
+  resolvable prefab side).
   Checks: `CityPedestrianRuntimeTests`, `CityBusStopWaitPlannerTests`,
   `CityBalconySmokerTests`, `AreaAssetWarmupTests`, placed-role tests.
 

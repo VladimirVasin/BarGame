@@ -153,13 +153,14 @@ The native command `tools/audio-vhs/build.ps1` validates the staged DLL before
 publishing it. `-Validate` remains compatible; `-CompileOnly` leaves its output
 in `Captures` and does not publish. See [audio-vhs/README.md](audio-vhs/README.md).
 
-`build-player-3d-model-v2.py`/`player_detailed_model.py`: M-65, outfit/skin,
-curtains; validates 31 body/12 hair bones, dressed/hidden geometry and slots.
+`build-player-3d-model-v2.py`: M-65/skin/hair; 31 body/12 hair bones.
+`--hand-grip-only --skip-animation-export --no-previews` refreshes hand shapes.
 Output: `Assets/Player3D/V2/Models/PlayerCharacter3DV2.{fbx,json}`.
 
-`build-combat-test-3d-model.py`: isolated arena/crowbar and HeroV2/NPC action
-banks in `Assets/Resources/Combat`; use the shared launcher, then
-`--validate-only`. Scene setup: `ProjectSceneSetup.ConfigureCombatTestScene`.
+`build-combat-{test,blood}-3d-model.py`: shared launcher/`--validate-only`.
+Test: arena/crowbar/HeroV2/NPC; `--actions-only` banks/manifest:
+`CombatCharge`/`CombatRelease{Light,Heavy}`. Blood: `--texture-only` PNG.
+`Assets/Resources/{Combat,CombatBlood}`.
 
 `player_jacket_cloth.py --write` derives hem/cuff metadata only; `--check` verifies it.
 Refresh `Player3DV2` through its asset setup. Lower-body changes also require

@@ -79,8 +79,8 @@ repair commands. Generation/publication: [../tools/README.md](../tools/README.md
 
 ## Implemented capabilities
 
-- Crowbar test: buffered strikes, simultaneous exchanges, wall recoil and
-  reactive guard/rest sparring; rounds have no story consequences.
+- Crowbar test: charged/buffered hits/guard/steps; directional reactions,
+  low-HP pose/breathing, blood/wounds/puddles. No story consequences.
 - A validated connected city with streets, river/shore, neighbourhoods,
   cemetery, church, deterministic weather, residents and Route 01 transport.
   First unpaused dock entry starts finite port→factory→shop supply once;

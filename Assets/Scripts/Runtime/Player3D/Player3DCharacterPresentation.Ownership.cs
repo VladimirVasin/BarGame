@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Animations;
 using UnityEngine.Playables;
 
 namespace BarPromenade
@@ -8,6 +9,9 @@ namespace BarPromenade
         private object scopedClipOwner;
         private bool scopedClipLocomotion;
         private AvatarMask scopedTorsoMask, scopedFullMask;
+        private AnimationMixerPlayable scopedClipBlend;
+        private AnimationClipPlayable scopedSecondaryClip;
+        private string scopedSecondaryClipName;
 
         public bool OwnsClip(object owner) => owner != null && ReferenceEquals(scopedClipOwner, owner);
 
@@ -15,10 +19,22 @@ namespace BarPromenade
             !ragdollPoseActive && !interactionHandoffLocked && (activeClipBinding == null || OwnsClip(owner));
 
         /// <summary>Optional actions cannot replace a contextual action or a fall.</summary>
-        public bool TryAcquireClip(object owner, string clipName)
+        public bool TryAcquireClip(object owner, string clipName, bool preserveRecoveryPose = false)
         {
             if (!CanAcquireClip(owner)) return false;
-            if (!TryBeginClip(clipName)) return false;
+            if (preserveRecoveryPose && OwnsClip(owner))
+            {
+                // A quick release can replace its preparation clip before the
+                // entry blend finishes. Keep that same visible transition;
+                // restarting or cancelling it would snap to the authored pose.
+                CaptureClipSpatialState();
+                if (!BeginClip(clipName, ClipOwner.External))
+                {
+                    ResetClipSpatialOffset();
+                    return false;
+                }
+            }
+            else if (!TryBeginClip(clipName)) return false;
             scopedClipOwner = owner;
             return true;
         }
@@ -26,8 +42,56 @@ namespace BarPromenade
         public bool SampleOwnedClip(object owner, float progress)
         {
             if (!OwnsClip(owner)) return false;
+            ClearOwnedClipBlend();
             SampleActiveClip(progress);
             return true;
+        }
+
+        /// <summary>One deterministic sample owns both the rendered rig and its weapon-contact anchors.</summary>
+        public bool SampleOwnedClipBlend(object owner, string secondaryClipName, float secondaryWeight, float normalizedTime)
+        {
+            if (!OwnsClip(owner) || !activeClipPlayable.IsValid() ||
+                float.IsNaN(secondaryWeight) || float.IsInfinity(secondaryWeight) ||
+                float.IsNaN(normalizedTime) || float.IsInfinity(normalizedTime) ||
+                !TryResolveAnimation(secondaryClipName, out Player3DAnimationBinding secondary)) return false;
+            if (!scopedClipBlend.IsValid() || scopedSecondaryClipName != secondaryClipName)
+            {
+                // AnimationClip.events allocates an array; validate only when
+                // binding the pair, not at every 120 Hz weapon sample.
+                if (secondary.Clip.events.Length != 0) return false;
+                ClearOwnedClipBlend();
+                graph.Disconnect(layerMixer, 1);
+                scopedClipBlend = AnimationMixerPlayable.Create(graph, 2);
+                scopedSecondaryClip = AnimationClipPlayable.Create(graph, secondary.Clip);
+                scopedSecondaryClip.SetApplyFootIK(false);
+                scopedSecondaryClip.SetApplyPlayableIK(false);
+                scopedSecondaryClip.SetSpeed(0d);
+                graph.Connect(activeClipPlayable, 0, scopedClipBlend, 0);
+                graph.Connect(scopedSecondaryClip, 0, scopedClipBlend, 1);
+                graph.Connect(scopedClipBlend, 0, layerMixer, 1);
+                scopedSecondaryClipName = secondaryClipName;
+            }
+            float weight = Mathf.Clamp01(secondaryWeight);
+            scopedClipBlend.SetInputWeight(0, 1f - weight);
+            scopedClipBlend.SetInputWeight(1, weight);
+            scopedSecondaryClip.SetTime(secondary.Clip.length * Mathf.Clamp01(normalizedTime));
+            SampleActiveClip(normalizedTime);
+            return true;
+        }
+
+        private void ClearOwnedClipBlend()
+        {
+            if (graph.IsValid() && scopedClipBlend.IsValid())
+            {
+                graph.Disconnect(layerMixer, 1);
+                graph.Disconnect(scopedClipBlend, 0);
+                if (scopedSecondaryClip.IsValid()) graph.DestroyPlayable(scopedSecondaryClip);
+                graph.DestroyPlayable(scopedClipBlend);
+                if (activeClipPlayable.IsValid()) graph.Connect(activeClipPlayable, 0, layerMixer, 1);
+            }
+            scopedClipBlend = default;
+            scopedSecondaryClip = default;
+            scopedSecondaryClipName = null;
         }
 
         /// <summary>Lets a scoped action retain its torso while the shared gait moves its feet.</summary>
@@ -58,6 +122,7 @@ namespace BarPromenade
 
         private void ClearOwnedClipLocomotion()
         {
+            ClearOwnedClipBlend();
             if (!scopedClipLocomotion) return;
             scopedClipLocomotion = false;
             if (layerMixer.IsValid()) layerMixer.SetLayerMaskFromAvatarMask(1, scopedFullMask);
@@ -65,6 +130,7 @@ namespace BarPromenade
 
         private void DisposeOwnedClipMasks()
         {
+            ClearOwnedClipBlend();
             scopedClipLocomotion = false;
             if (scopedTorsoMask != null) Destroy(scopedTorsoMask);
             if (scopedFullMask != null) Destroy(scopedFullMask);

@@ -1,18 +1,18 @@
 # Work log
 
-Entries are reverse chronological. Record outcomes and verification, not a transcript.
+Newest outcomes/checks first. Archive whole dates at budget: [policy](README.md).
+Earlier: [August](archive/work-log-2026-08.md).
 
-Older whole dates move to `ai/archive/` when the byte budget is reached;
-see [`ai/README.md`](README.md) for the retention rule.
-Earlier entries: [`work-log-2026-08.md`](archive/work-log-2026-08.md).
+## 2026-09-20 — Combat
 
-## 2026-09-20 — Combat tactics and camera
-
-- Winners walk; shoulder lock/strafe keeps the enemy visible. Outcomes now
-  set recovery; vulnerable steps spend stamina; AI observes retreat/misses.
-  Checks: `build-combat-test-3d-model.py --validate-only`, `CombatRulesTests`,
-  `Range_TacticalRecoveryStepsAndFairOpponent`, rendered
-  `AreaCaptureFixture.CombatTactics`, `check-docs.py`.
+- Tactics/grips/impact/HP pose/blood; fixed resampling/axes/Z stripe.
+  Corner HUD; both rigs charge/release. Quick taps retain entry blend;
+  shared hero sampler mixes releases. Checks: `CombatRulesTests`,
+  `build-combat-{test,blood}-3d-model.py`,
+  `Range_AuthoredContactsRespectGuardWallsPauseAndOwnerCleanup`,
+  `Range_AutomaticUpdateConsumesMouseAndKeyboardWithoutGuiEvent`.
+  Rendered `CombatTactics`/`CombatTest`; `CombatTestLockedCamera` verifies
+  release/contact continuity and HUD; `check-docs.py`.
 
 ## 2026-09-19 — Wheel, seats, scarf, fair and combat test
 

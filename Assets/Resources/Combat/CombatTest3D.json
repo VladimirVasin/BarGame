@@ -1,6 +1,6 @@
 {
   "generator": "tools/build-combat-test-3d-model.py",
-  "generator_version": "1.4.0",
+  "generator_version": "1.5.0",
   "blender_version": "5.0.1",
   "build_signature": "a9be5aed30097210e6e58139547b4b1d1d7b7ba8ab75212ebddf417d17ebb587",
   "units": "metres",
@@ -188,6 +188,21 @@
         "name": "CombatDefeat",
         "duration_seconds": 0.36,
         "loop": false
+      },
+      {
+        "name": "CombatCharge",
+        "duration_seconds": 1.0,
+        "loop": false
+      },
+      {
+        "name": "CombatReleaseLight",
+        "duration_seconds": 1.28,
+        "loop": false
+      },
+      {
+        "name": "CombatReleaseHeavy",
+        "duration_seconds": 1.28,
+        "loop": false
       }
     ],
     "windup_seconds": 0.45,
@@ -205,7 +220,7 @@
     "attack_knee_travel_degrees": 14.816392979692038,
     "defeat_handoff_seconds": 0.16,
     "defeat_pelvis_drop_m": 0.07200002670288086,
-    "animation_signature": "c50ceaca614aafd146f709ff8e74ccf7bbd6e203ccc952396c4436b48fc7205d",
+    "animation_signature": "2bfff2355d6218570a729920dba2cd0f8d5c57f37c22cab8d3a65c73da96e130",
     "base_action_signature": "9f9c5b141fd0581a63ad3a53470f8b546367e5c9129bfa2c46c077c285ed21e7",
     "strike_samples": [
       {
@@ -346,6 +361,27 @@
       }
     ],
     "minimum_reaction_tip_separation_m": 0.48705049805564676,
+    "charging": {
+      "charge_clip": "CombatCharge",
+      "release_light": "CombatReleaseLight",
+      "release_heavy": "CombatReleaseHeavy",
+      "charge_parameter": "linear",
+      "release_seconds": 1.28,
+      "windup_seconds": 0.45,
+      "active_seconds": 0.18,
+      "recovery_seconds": 0.65,
+      "powers": [
+        0.0,
+        0.5,
+        1.0
+      ],
+      "validation_hz": 200,
+      "maximum_entry_error": 4.172325134277344e-07,
+      "maximum_lower_track_error": 4.172325134277344e-07,
+      "maximum_light_legacy_error": 0.0,
+      "maximum_support_error": 3.2573938369750977e-05,
+      "minimum_reach_m": 1.0980432033538818
+    },
     "hero_only_clips": [
       {
         "name": "CombatStrafeLeft",

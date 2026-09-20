@@ -8,7 +8,7 @@ namespace BarPromenade
         private const float DecisionSeconds = .12f;
         private int observedAttackSequence, observedThreats, opponentAttacks;
         private float observationSeconds, guardMemorySeconds, missObservationSeconds;
-        private float decisionElapsed, approachDistance, postAttackDelay;
+        private float decisionElapsed, approachDistance, postAttackDelay, opponentChargeTarget;
         private bool recovering, guardThisAttack, opponentWasAttacking;
         private MeleePhase previousOpponentPhase;
         private Vector3 previousObservedPosition, committedDirection;
@@ -30,6 +30,7 @@ namespace BarPromenade
             committedDirection = Opponent.transform.forward;
             approachDistance = 1.2f;
             postAttackDelay = .32f;
+            opponentChargeTarget = 0f;
             decisionSeed = unchecked((uint)GameSessionState.CitySeed ^ 0x9e3779b9u);
             OpponentIntent = CombatOpponentIntent.Approach;
         }
@@ -47,11 +48,12 @@ namespace BarPromenade
             // Recovery duration belongs to the actual result, not a guessed
             // duration at attack start. A completed/interrupting action still
             // costs its chosen pause before another attack can be committed.
-            if (opponentWasAttacking && !Opponent.State.IsAttacking)
+            bool offensiveAction = Opponent.State.IsCharging || Opponent.State.IsAttacking;
+            if (opponentWasAttacking && !offensiveAction)
                 opponentDelay = Mathf.Max(opponentDelay, postAttackDelay);
-            if (Opponent.State.IsAttacking && !opponentWasAttacking)
+            if (offensiveAction && !opponentWasAttacking)
                 CommitOpponentDirection();
-            opponentWasAttacking = Opponent.State.IsAttacking;
+            opponentWasAttacking = offensiveAction;
             if (Opponent.State.Phase == MeleePhase.GuardImpact && previousOpponentPhase != MeleePhase.GuardImpact)
             {
                 guardThisAttack = false;
@@ -63,9 +65,11 @@ namespace BarPromenade
 
             if (Opponent.State.Phase != MeleePhase.Ready)
             {
-                if (Opponent.State.IsAttacking)
+                if (Opponent.State.IsCharging || Opponent.State.IsAttacking)
                 {
                     OpponentIntent = CombatOpponentIntent.Attack;
+                    if (Opponent.State.IsCharging && Opponent.State.Charge01 + .00001f >= opponentChargeTarget)
+                        Opponent.ReleaseCharge();
                     // The visible windup commits one line. Its small ordinary
                     // movement never turns or steers toward a dodging target.
                     if (Opponent.State.Phase == MeleePhase.Windup)
@@ -90,7 +94,7 @@ namespace BarPromenade
         {
             // Only visible phases and measured movement enter perception: no
             // input, buffered command or future target position is available.
-            if (Hero.State.Phase == MeleePhase.Windup || Hero.State.Phase == MeleePhase.Active)
+            if (Hero.State.IsCharging || Hero.State.Phase == MeleePhase.Windup || Hero.State.Phase == MeleePhase.Active)
             {
                 if (observedAttackSequence != Hero.State.AttackSequence)
                 {
@@ -152,10 +156,11 @@ namespace BarPromenade
                 return;
             }
             OpponentIntent = CombatOpponentIntent.Attack;
-            if (opponentDelay <= 0f && Vector3.Dot(Opponent.transform.forward, direction) > .94f && Opponent.TryAttack())
+            if (opponentDelay <= 0f && Vector3.Dot(Opponent.transform.forward, direction) > .94f && Opponent.RequestCharge())
             {
                 CommitOpponentDirection();
                 opponentWasAttacking = true;
+                if (opponentChargeTarget <= 0f) Opponent.ReleaseCharge();
             }
         }
 
@@ -169,6 +174,8 @@ namespace BarPromenade
             sample = unchecked(sample * 0x7feb352du);
             sample ^= sample >> 15;
             postAttackDelay = .18f + .24f * (sample & 1023u) / 1023f;
+            float plannedCharge = sample % 4u == 0u ? 1f : sample % 4u == 1u ? .5f : 0f;
+            opponentChargeTarget = Mathf.Min(plannedCharge, Opponent.State.ChargeLimit01);
         }
 
         private void MoveOpponent(Vector3 direction, float distance, float seconds, bool steerAroundObstacle = true)

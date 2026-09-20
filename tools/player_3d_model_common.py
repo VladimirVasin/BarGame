@@ -347,10 +347,11 @@ class BuildResult:
     parts: list[PartRecord] = field(default_factory=list)
     presentation_objects: list[bpy.types.Object] = field(default_factory=list)
     actions: dict[str, ActionRecord] = field(default_factory=dict)
+    authored_anchors: list[bpy.types.Object] = field(default_factory=list)
 
     @property
     def export_objects(self) -> list[bpy.types.Object]:
-        return [self.root, self.rig, *(record.obj for record in self.parts)]
+        return [self.root, self.rig, *(record.obj for record in self.parts), *self.authored_anchors]
 
 
 @dataclass(frozen=True)
@@ -6407,6 +6408,14 @@ def export_glb(path: Path, result: BuildResult) -> None:
 def export_fbx(path: Path, result: BuildResult) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     select_export_objects(result)
+    # Evaluating even a Triangulate modifier erases FBX blend shapes. Keep
+    # each keyed mesh's authored topology; unrelated meshes retain their
+    # existing export modifiers. Armature bindings remain ordinary skins.
+    keyed_modifiers = [(modifier, modifier.show_render, modifier.show_viewport)
+                       for record in result.parts if record.obj.data.shape_keys
+                       for modifier in record.obj.modifiers if modifier.type != "ARMATURE"]
+    for modifier, _, _ in keyed_modifiers:
+        modifier.show_render = modifier.show_viewport = False
     try:
         bpy.ops.export_scene.fbx(
             filepath=str(path),
@@ -6425,6 +6434,9 @@ def export_fbx(path: Path, result: BuildResult) -> None:
         raise RuntimeError(
             "FBX export is unavailable in this Blender installation"
         ) from error
+    finally:
+        for modifier, render, viewport in keyed_modifiers:
+            modifier.show_render, modifier.show_viewport = render, viewport
 
 
 def export_animation_fbx(path: Path, result: BuildResult) -> None:

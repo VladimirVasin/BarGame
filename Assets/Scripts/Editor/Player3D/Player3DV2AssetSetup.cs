@@ -36,7 +36,7 @@ namespace BarPromenade.Editor
         public const string PrefabPath =
             "Assets/Resources/Player/Player3DV2.prefab";
 
-        private const int BuildSchemaVersion = 7;
+        private const int BuildSchemaVersion = 8;
         private const string ExpectedDesignVersion = "HeroV2";
         private const string ExpectedAtlasRenderer = "GEO_FaceSurface";
         private const string ExpectedAtlasOrigin = "bottom_left";
@@ -496,6 +496,7 @@ namespace BarPromenade.Editor
             }
 
             ValidateParts(manifest);
+            ValidateHandGripManifest(manifest);
             ValidateAppearanceManifest(manifest);
             Player3DV2StaticTextureContract.ValidateManifest(
                 manifest.texture_bindings,
@@ -509,6 +510,34 @@ namespace BarPromenade.Editor
             ValidateActions(manifest.actions);
             ValidateFaceAtlas(manifest.face_atlas);
             return manifest;
+        }
+
+        private static void ValidateHandGripManifest(Player3DV2Manifest manifest)
+        {
+            Player3DV2ManifestHandGrip grip = manifest.hand_grip;
+            if (grip == null || string.IsNullOrWhiteSpace(grip.shape_name) ||
+                !float.IsFinite(grip.cylinder_radius_m) || grip.cylinder_radius_m <= 0f ||
+                grip.hands?.Length != 2 || grip.hands.Any(hand => hand == null) ||
+                !grip.hands.Select(hand => hand.side).OrderBy(side => side)
+                    .SequenceEqual(new[] { "L", "R" }))
+                throw new InvalidOperationException("Hero V2 requires two authored cylindrical hand-grip frames.");
+
+            foreach (Player3DV2ManifestHandGripSide hand in grip.hands)
+            {
+                string side = "." + hand.side;
+                string[] originalParts = { "GEO_Hand" + side, "GEO_Thumb" + side,
+                    "GEO_Finger0" + side, "GEO_Finger1" + side,
+                    "GEO_Finger2" + side, "GEO_Finger3" + side };
+                if (hand.bone != "hand" + side ||
+                    hand.centre_anchor != "ANCHOR_HandGripCentre" + side ||
+                    hand.axis_anchor != "ANCHOR_HandGripAxis" + side ||
+                    hand.palm_anchor != "ANCHOR_HandGripPalm" + side ||
+                    hand.renderers?.Length != originalParts.Length ||
+                    !hand.renderers.OrderBy(name => name).SequenceEqual(originalParts.OrderBy(name => name)) ||
+                    hand.renderers.Any(name => !manifest.parts.Any(part =>
+                        part.name == name && part.bone == hand.bone)))
+                    throw new InvalidOperationException("Hero V2 hand grips must use their original hand and finger parts.");
+            }
         }
 
         private static void ValidateParts(Player3DV2Manifest manifest)
@@ -1175,6 +1204,17 @@ namespace BarPromenade.Editor
                     faceAtlas);
                 registry.ApplyPalette();
                 ConfigureAppearance(prefabRoot, registry, manifest, renderersByName, transformsByName);
+                prefabRoot.AddComponent<NpcHandPose>().Configure(
+                    manifest.hand_grip.hands.Select(hand => new NpcHandPose.HandBinding(
+                        hand.side == "L",
+                        RequireTransform(transformsByName, hand.bone),
+                        RequireTransform(transformsByName, "SOCKET_Grip." + hand.side),
+                        RequireTransform(transformsByName, hand.centre_anchor),
+                        RequireTransform(transformsByName, hand.axis_anchor),
+                        RequireTransform(transformsByName, hand.palm_anchor),
+                        hand.renderers.Select(name => renderersByName[name] as SkinnedMeshRenderer).ToArray())).ToArray(),
+                    manifest.hand_grip.shape_name,
+                    manifest.hand_grip.cylinder_radius_m);
 
                 GameObject saved = PrefabUtility.SaveAsPrefabAsset(
                     prefabRoot,
@@ -1413,6 +1453,7 @@ namespace BarPromenade.Editor
                 DependencyStamp(TextureImporterScriptPath),
                 DependencyStamp(StaticTextureContractScriptPath),
                 DependencyStamp(RegistryScriptPath),
+                DependencyStamp("Assets/Scripts/Runtime/World/NpcHandPose.cs"),
                 DependencyStamp("Assets/Scripts/Runtime/Player3D/PlayerWardrobe.cs"),
                 DependencyStamp("Assets/Scripts/Runtime/Player3D/PlayerHair.cs"),
                 DependencyStamp("Assets/Scripts/Runtime/Player3D/PlayerJacketCloth.cs"),
@@ -1653,11 +1694,27 @@ namespace BarPromenade.Editor
             public PlayerWardrobeManifest wardrobe;
             public PlayerHairManifest hair;
             public PlayerJacketClothManifest jacket_cloth;
+            public Player3DV2ManifestHandGrip hand_grip;
             public Player3DV2ManifestPart[] parts;
             public Player3DV2ManifestAction[] actions;
             public Player3DV2ManifestFaceAtlas face_atlas;
             public Player3DV2ManifestTextureBinding[] texture_bindings;
             public Player3DV2ManifestBareSkinAtlas bare_skin_atlas;
+        }
+
+        [Serializable]
+        private sealed class Player3DV2ManifestHandGrip
+        {
+            public string shape_name;
+            public float cylinder_radius_m;
+            public Player3DV2ManifestHandGripSide[] hands;
+        }
+
+        [Serializable]
+        private sealed class Player3DV2ManifestHandGripSide
+        {
+            public string side, bone, centre_anchor, axis_anchor, palm_anchor;
+            public string[] renderers;
         }
 
         [Serializable]

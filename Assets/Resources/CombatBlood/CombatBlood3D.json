@@ -1,0 +1,3080 @@
+{
+  "generator": "tools/build-combat-blood-3d-model.py",
+  "version": 2,
+  "test_only": true,
+  "surface_lift_m": 0.0018,
+  "sources": {
+    "Hero": {
+      "path": "Assets/Player3D/V2/Models/PlayerCharacter3DV2.fbx",
+      "sha256": "1fbcfe0a982aced33c9623e7f16a56a505192b7f568a6092624f1fc9eac4d18f"
+    },
+    "Npc": {
+      "path": "Assets/Resources/VillageLife/StationWorker.fbx",
+      "sha256": "30e52d740e2c690fe5c7ffefca945fc0689dd41da0977f4cdf05fbb002ddc4d7"
+    }
+  },
+  "patches": {
+    "Hero": [
+      {
+        "name": "Wound__CLO_JacketBody__0",
+        "source_renderer": "CLO_JacketBody",
+        "vertices": 443,
+        "polygons": 730
+      },
+      {
+        "name": "Wound__CLO_JacketBody__1",
+        "source_renderer": "CLO_JacketBody",
+        "vertices": 412,
+        "polygons": 674
+      },
+      {
+        "name": "Wound__CLO_JacketBody__2",
+        "source_renderer": "CLO_JacketBody",
+        "vertices": 420,
+        "polygons": 682
+      },
+      {
+        "name": "Wound__CLO_JacketBody__3",
+        "source_renderer": "CLO_JacketBody",
+        "vertices": 420,
+        "polygons": 682
+      },
+      {
+        "name": "Wound__CLO_JacketForearm.L__0",
+        "source_renderer": "CLO_JacketForearm.L",
+        "vertices": 26,
+        "polygons": 32
+      },
+      {
+        "name": "Wound__CLO_JacketForearm.L__1",
+        "source_renderer": "CLO_JacketForearm.L",
+        "vertices": 25,
+        "polygons": 30
+      },
+      {
+        "name": "Wound__CLO_JacketForearm.L__2",
+        "source_renderer": "CLO_JacketForearm.L",
+        "vertices": 26,
+        "polygons": 32
+      },
+      {
+        "name": "Wound__CLO_JacketForearm.L__3",
+        "source_renderer": "CLO_JacketForearm.L",
+        "vertices": 28,
+        "polygons": 34
+      },
+      {
+        "name": "Wound__CLO_JacketForearm.R__0",
+        "source_renderer": "CLO_JacketForearm.R",
+        "vertices": 25,
+        "polygons": 30
+      },
+      {
+        "name": "Wound__CLO_JacketForearm.R__1",
+        "source_renderer": "CLO_JacketForearm.R",
+        "vertices": 24,
+        "polygons": 28
+      },
+      {
+        "name": "Wound__CLO_JacketForearm.R__2",
+        "source_renderer": "CLO_JacketForearm.R",
+        "vertices": 28,
+        "polygons": 34
+      },
+      {
+        "name": "Wound__CLO_JacketForearm.R__3",
+        "source_renderer": "CLO_JacketForearm.R",
+        "vertices": 28,
+        "polygons": 34
+      },
+      {
+        "name": "Wound__CLO_JacketSleeve.L__0",
+        "source_renderer": "CLO_JacketSleeve.L",
+        "vertices": 39,
+        "polygons": 55
+      },
+      {
+        "name": "Wound__CLO_JacketSleeve.L__1",
+        "source_renderer": "CLO_JacketSleeve.L",
+        "vertices": 39,
+        "polygons": 55
+      },
+      {
+        "name": "Wound__CLO_JacketSleeve.L__2",
+        "source_renderer": "CLO_JacketSleeve.L",
+        "vertices": 44,
+        "polygons": 62
+      },
+      {
+        "name": "Wound__CLO_JacketSleeve.L__3",
+        "source_renderer": "CLO_JacketSleeve.L",
+        "vertices": 44,
+        "polygons": 62
+      },
+      {
+        "name": "Wound__CLO_JacketSleeve.R__0",
+        "source_renderer": "CLO_JacketSleeve.R",
+        "vertices": 39,
+        "polygons": 55
+      },
+      {
+        "name": "Wound__CLO_JacketSleeve.R__1",
+        "source_renderer": "CLO_JacketSleeve.R",
+        "vertices": 39,
+        "polygons": 55
+      },
+      {
+        "name": "Wound__CLO_JacketSleeve.R__2",
+        "source_renderer": "CLO_JacketSleeve.R",
+        "vertices": 44,
+        "polygons": 62
+      },
+      {
+        "name": "Wound__CLO_JacketSleeve.R__3",
+        "source_renderer": "CLO_JacketSleeve.R",
+        "vertices": 44,
+        "polygons": 62
+      },
+      {
+        "name": "Wound__CLO_TrousersShin.L__0",
+        "source_renderer": "CLO_TrousersShin.L",
+        "vertices": 48,
+        "polygons": 70
+      },
+      {
+        "name": "Wound__CLO_TrousersShin.L__1",
+        "source_renderer": "CLO_TrousersShin.L",
+        "vertices": 48,
+        "polygons": 70
+      },
+      {
+        "name": "Wound__CLO_TrousersShin.L__2",
+        "source_renderer": "CLO_TrousersShin.L",
+        "vertices": 48,
+        "polygons": 70
+      },
+      {
+        "name": "Wound__CLO_TrousersShin.L__3",
+        "source_renderer": "CLO_TrousersShin.L",
+        "vertices": 48,
+        "polygons": 70
+      },
+      {
+        "name": "Wound__CLO_TrousersShin.R__0",
+        "source_renderer": "CLO_TrousersShin.R",
+        "vertices": 48,
+        "polygons": 70
+      },
+      {
+        "name": "Wound__CLO_TrousersShin.R__1",
+        "source_renderer": "CLO_TrousersShin.R",
+        "vertices": 48,
+        "polygons": 70
+      },
+      {
+        "name": "Wound__CLO_TrousersShin.R__2",
+        "source_renderer": "CLO_TrousersShin.R",
+        "vertices": 48,
+        "polygons": 70
+      },
+      {
+        "name": "Wound__CLO_TrousersShin.R__3",
+        "source_renderer": "CLO_TrousersShin.R",
+        "vertices": 48,
+        "polygons": 70
+      },
+      {
+        "name": "Wound__CLO_TrousersThigh.L__0",
+        "source_renderer": "CLO_TrousersThigh.L",
+        "vertices": 48,
+        "polygons": 70
+      },
+      {
+        "name": "Wound__CLO_TrousersThigh.L__1",
+        "source_renderer": "CLO_TrousersThigh.L",
+        "vertices": 48,
+        "polygons": 70
+      },
+      {
+        "name": "Wound__CLO_TrousersThigh.L__2",
+        "source_renderer": "CLO_TrousersThigh.L",
+        "vertices": 48,
+        "polygons": 70
+      },
+      {
+        "name": "Wound__CLO_TrousersThigh.L__3",
+        "source_renderer": "CLO_TrousersThigh.L",
+        "vertices": 48,
+        "polygons": 70
+      },
+      {
+        "name": "Wound__CLO_TrousersThigh.R__0",
+        "source_renderer": "CLO_TrousersThigh.R",
+        "vertices": 48,
+        "polygons": 70
+      },
+      {
+        "name": "Wound__CLO_TrousersThigh.R__1",
+        "source_renderer": "CLO_TrousersThigh.R",
+        "vertices": 48,
+        "polygons": 70
+      },
+      {
+        "name": "Wound__CLO_TrousersThigh.R__2",
+        "source_renderer": "CLO_TrousersThigh.R",
+        "vertices": 48,
+        "polygons": 70
+      },
+      {
+        "name": "Wound__CLO_TrousersThigh.R__3",
+        "source_renderer": "CLO_TrousersThigh.R",
+        "vertices": 48,
+        "polygons": 70
+      },
+      {
+        "name": "Wound__GEO_FaceSurface__0",
+        "source_renderer": "GEO_FaceSurface",
+        "vertices": 48,
+        "polygons": 70
+      },
+      {
+        "name": "Wound__GEO_FaceSurface__2",
+        "source_renderer": "GEO_FaceSurface",
+        "vertices": 48,
+        "polygons": 70
+      },
+      {
+        "name": "Wound__GEO_FaceSurface__3",
+        "source_renderer": "GEO_FaceSurface",
+        "vertices": 48,
+        "polygons": 70
+      },
+      {
+        "name": "Wound__GEO_Head__0",
+        "source_renderer": "GEO_Head",
+        "vertices": 45,
+        "polygons": 67
+      },
+      {
+        "name": "Wound__GEO_Head__1",
+        "source_renderer": "GEO_Head",
+        "vertices": 46,
+        "polygons": 66
+      },
+      {
+        "name": "Wound__GEO_Head__2",
+        "source_renderer": "GEO_Head",
+        "vertices": 46,
+        "polygons": 66
+      },
+      {
+        "name": "Wound__GEO_Head__3",
+        "source_renderer": "GEO_Head",
+        "vertices": 46,
+        "polygons": 66
+      },
+      {
+        "name": "Wound__GEO_Neck__0",
+        "source_renderer": "GEO_Neck",
+        "vertices": 12,
+        "polygons": 10
+      },
+      {
+        "name": "Wound__GEO_Neck__1",
+        "source_renderer": "GEO_Neck",
+        "vertices": 12,
+        "polygons": 10
+      },
+      {
+        "name": "Wound__GEO_Neck__2",
+        "source_renderer": "GEO_Neck",
+        "vertices": 14,
+        "polygons": 12
+      },
+      {
+        "name": "Wound__GEO_Neck__3",
+        "source_renderer": "GEO_Neck",
+        "vertices": 14,
+        "polygons": 12
+      }
+    ],
+    "Npc": [
+      {
+        "name": "Wound__CLO_GlovePalm.L__0",
+        "source_renderer": "CLO_GlovePalm.L",
+        "vertices": 24,
+        "polygons": 15
+      },
+      {
+        "name": "Wound__CLO_GlovePalm.L__1",
+        "source_renderer": "CLO_GlovePalm.L",
+        "vertices": 24,
+        "polygons": 15
+      },
+      {
+        "name": "Wound__CLO_GlovePalm.L__2",
+        "source_renderer": "CLO_GlovePalm.L",
+        "vertices": 24,
+        "polygons": 15
+      },
+      {
+        "name": "Wound__CLO_GlovePalm.L__3",
+        "source_renderer": "CLO_GlovePalm.L",
+        "vertices": 24,
+        "polygons": 15
+      },
+      {
+        "name": "Wound__CLO_GlovePalm.R__0",
+        "source_renderer": "CLO_GlovePalm.R",
+        "vertices": 24,
+        "polygons": 15
+      },
+      {
+        "name": "Wound__CLO_GlovePalm.R__1",
+        "source_renderer": "CLO_GlovePalm.R",
+        "vertices": 24,
+        "polygons": 15
+      },
+      {
+        "name": "Wound__CLO_GlovePalm.R__2",
+        "source_renderer": "CLO_GlovePalm.R",
+        "vertices": 24,
+        "polygons": 15
+      },
+      {
+        "name": "Wound__CLO_GlovePalm.R__3",
+        "source_renderer": "CLO_GlovePalm.R",
+        "vertices": 24,
+        "polygons": 15
+      },
+      {
+        "name": "Wound__CLO_Outer_workBody__0",
+        "source_renderer": "CLO_Outer_workBody",
+        "vertices": 83,
+        "polygons": 65
+      },
+      {
+        "name": "Wound__CLO_Outer_workBody__1",
+        "source_renderer": "CLO_Outer_workBody",
+        "vertices": 86,
+        "polygons": 67
+      },
+      {
+        "name": "Wound__CLO_Outer_workBody__2",
+        "source_renderer": "CLO_Outer_workBody",
+        "vertices": 82,
+        "polygons": 64
+      },
+      {
+        "name": "Wound__CLO_Outer_workBody__3",
+        "source_renderer": "CLO_Outer_workBody",
+        "vertices": 82,
+        "polygons": 64
+      },
+      {
+        "name": "Wound__CLO_Outer_workSleeve.L__0",
+        "source_renderer": "CLO_Outer_workSleeve.L",
+        "vertices": 72,
+        "polygons": 56
+      },
+      {
+        "name": "Wound__CLO_Outer_workSleeve.L__1",
+        "source_renderer": "CLO_Outer_workSleeve.L",
+        "vertices": 71,
+        "polygons": 55
+      },
+      {
+        "name": "Wound__CLO_Outer_workSleeve.L__2",
+        "source_renderer": "CLO_Outer_workSleeve.L",
+        "vertices": 72,
+        "polygons": 56
+      },
+      {
+        "name": "Wound__CLO_Outer_workSleeve.L__3",
+        "source_renderer": "CLO_Outer_workSleeve.L",
+        "vertices": 70,
+        "polygons": 54
+      },
+      {
+        "name": "Wound__CLO_Outer_workSleeve.R__0",
+        "source_renderer": "CLO_Outer_workSleeve.R",
+        "vertices": 72,
+        "polygons": 56
+      },
+      {
+        "name": "Wound__CLO_Outer_workSleeve.R__1",
+        "source_renderer": "CLO_Outer_workSleeve.R",
+        "vertices": 71,
+        "polygons": 55
+      },
+      {
+        "name": "Wound__CLO_Outer_workSleeve.R__2",
+        "source_renderer": "CLO_Outer_workSleeve.R",
+        "vertices": 70,
+        "polygons": 54
+      },
+      {
+        "name": "Wound__CLO_Outer_workSleeve.R__3",
+        "source_renderer": "CLO_Outer_workSleeve.R",
+        "vertices": 72,
+        "polygons": 56
+      },
+      {
+        "name": "Wound__CLO_Trousers_workLower.L__0",
+        "source_renderer": "CLO_Trousers_workLower.L",
+        "vertices": 26,
+        "polygons": 15
+      },
+      {
+        "name": "Wound__CLO_Trousers_workLower.L__1",
+        "source_renderer": "CLO_Trousers_workLower.L",
+        "vertices": 26,
+        "polygons": 15
+      },
+      {
+        "name": "Wound__CLO_Trousers_workLower.L__2",
+        "source_renderer": "CLO_Trousers_workLower.L",
+        "vertices": 24,
+        "polygons": 14
+      },
+      {
+        "name": "Wound__CLO_Trousers_workLower.L__3",
+        "source_renderer": "CLO_Trousers_workLower.L",
+        "vertices": 24,
+        "polygons": 14
+      },
+      {
+        "name": "Wound__CLO_Trousers_workLower.R__0",
+        "source_renderer": "CLO_Trousers_workLower.R",
+        "vertices": 26,
+        "polygons": 15
+      },
+      {
+        "name": "Wound__CLO_Trousers_workLower.R__1",
+        "source_renderer": "CLO_Trousers_workLower.R",
+        "vertices": 26,
+        "polygons": 15
+      },
+      {
+        "name": "Wound__CLO_Trousers_workLower.R__2",
+        "source_renderer": "CLO_Trousers_workLower.R",
+        "vertices": 24,
+        "polygons": 14
+      },
+      {
+        "name": "Wound__CLO_Trousers_workLower.R__3",
+        "source_renderer": "CLO_Trousers_workLower.R",
+        "vertices": 24,
+        "polygons": 14
+      },
+      {
+        "name": "Wound__CLO_Trousers_workUpper__0",
+        "source_renderer": "CLO_Trousers_workUpper",
+        "vertices": 136,
+        "polygons": 106
+      },
+      {
+        "name": "Wound__CLO_Trousers_workUpper__1",
+        "source_renderer": "CLO_Trousers_workUpper",
+        "vertices": 136,
+        "polygons": 106
+      },
+      {
+        "name": "Wound__CLO_Trousers_workUpper__2",
+        "source_renderer": "CLO_Trousers_workUpper",
+        "vertices": 138,
+        "polygons": 104
+      },
+      {
+        "name": "Wound__CLO_Trousers_workUpper__3",
+        "source_renderer": "CLO_Trousers_workUpper",
+        "vertices": 138,
+        "polygons": 104
+      },
+      {
+        "name": "Wound__GEO_FaceSurface__0",
+        "source_renderer": "GEO_FaceSurface",
+        "vertices": 141,
+        "polygons": 118
+      },
+      {
+        "name": "Wound__GEO_FaceSurface__2",
+        "source_renderer": "GEO_FaceSurface",
+        "vertices": 141,
+        "polygons": 117
+      },
+      {
+        "name": "Wound__GEO_FaceSurface__3",
+        "source_renderer": "GEO_FaceSurface",
+        "vertices": 141,
+        "polygons": 117
+      },
+      {
+        "name": "Wound__GEO_Head__1",
+        "source_renderer": "GEO_Head",
+        "vertices": 134,
+        "polygons": 111
+      },
+      {
+        "name": "Wound__GEO_Head__2",
+        "source_renderer": "GEO_Head",
+        "vertices": 134,
+        "polygons": 111
+      },
+      {
+        "name": "Wound__GEO_Head__3",
+        "source_renderer": "GEO_Head",
+        "vertices": 134,
+        "polygons": 111
+      },
+      {
+        "name": "Wound__GEO_Neck__0",
+        "source_renderer": "GEO_Neck",
+        "vertices": 32,
+        "polygons": 21
+      },
+      {
+        "name": "Wound__GEO_Neck__1",
+        "source_renderer": "GEO_Neck",
+        "vertices": 42,
+        "polygons": 23
+      },
+      {
+        "name": "Wound__GEO_Neck__2",
+        "source_renderer": "GEO_Neck",
+        "vertices": 43,
+        "polygons": 25
+      },
+      {
+        "name": "Wound__GEO_Neck__3",
+        "source_renderer": "GEO_Neck",
+        "vertices": 43,
+        "polygons": 25
+      }
+    ]
+  },
+  "files": {
+    "WoundsHero.fbx": "7fa50754327f1b254b0575fffec8b141a2b2f3b4cfc4ea8b82c4664f5019ccba",
+    "WoundsNpc.fbx": "b6267ec8ebed3c7de640d0982dcd85326891bc9f6f31660b83faf295b225ab54",
+    "BloodShapes.fbx": "6ba114462773089f0a3bb892f33e2f90894bf0c078dac8efa25bbaf5da89e77e",
+    "BloodSurface.png": "bbc679fe59cc4568522747b943ad8a70448bc3213470bd86a9e0cb8857de7b8d"
+  },
+  "models": {
+    "WoundsHero": {
+      "meshes": [
+        {
+          "name": "Wound__CLO_JacketBody__0",
+          "vertices": 443,
+          "polygons": 730,
+          "triangles": 730,
+          "uv_loops": 2190,
+          "weighted_vertices": 443,
+          "bounds_unity_m": {
+            "min": [
+              -0.187716,
+              0.805,
+              -0.124503
+            ],
+            "max": [
+              0.187716,
+              1.477,
+              0.12
+            ],
+            "size": [
+              0.375432,
+              0.672,
+              0.244503
+            ]
+          },
+          "semantic_sha256": "79c519827b1b133d60ca1055bca53ca63af038bcc8f71b32b97da957032a43cc"
+        },
+        {
+          "name": "Wound__CLO_JacketBody__1",
+          "vertices": 412,
+          "polygons": 674,
+          "triangles": 674,
+          "uv_loops": 2022,
+          "weighted_vertices": 412,
+          "bounds_unity_m": {
+            "min": [
+              -0.187716,
+              0.805,
+              -0.120618
+            ],
+            "max": [
+              0.185054,
+              1.477,
+              0.124
+            ],
+            "size": [
+              0.37277,
+              0.672,
+              0.244618
+            ]
+          },
+          "semantic_sha256": "6f29bc80bdaba7aed430d54621dabef62e9d41fd7fd816c8a4bedc46f0f64525"
+        },
+        {
+          "name": "Wound__CLO_JacketBody__2",
+          "vertices": 420,
+          "polygons": 682,
+          "triangles": 682,
+          "uv_loops": 2046,
+          "weighted_vertices": 420,
+          "bounds_unity_m": {
+            "min": [
+              -0.187716,
+              0.805,
+              -0.124503
+            ],
+            "max": [
+              0.183722,
+              1.477,
+              0.12
+            ],
+            "size": [
+              0.371438,
+              0.672,
+              0.244503
+            ]
+          },
+          "semantic_sha256": "b4593a78e6b87ae2b524f40e3a0fc758e7850255d481529dfea7604c3d2d99a0"
+        },
+        {
+          "name": "Wound__CLO_JacketBody__3",
+          "vertices": 420,
+          "polygons": 682,
+          "triangles": 682,
+          "uv_loops": 2046,
+          "weighted_vertices": 420,
+          "bounds_unity_m": {
+            "min": [
+              -0.183722,
+              0.805,
+              -0.124503
+            ],
+            "max": [
+              0.187716,
+              1.477,
+              0.12
+            ],
+            "size": [
+              0.371438,
+              0.672,
+              0.244503
+            ]
+          },
+          "semantic_sha256": "3a7d70a5b4c9f15bae5287507b69cc0b9190c8bb6e137fdbdf5c904e7e61160d"
+        },
+        {
+          "name": "Wound__CLO_JacketForearm.L__0",
+          "vertices": 26,
+          "polygons": 32,
+          "triangles": 32,
+          "uv_loops": 96,
+          "weighted_vertices": 26,
+          "bounds_unity_m": {
+            "min": [
+              0.424917,
+              1.046583,
+              -0.054395
+            ],
+            "max": [
+              0.700166,
+              1.286012,
+              -0.012
+            ],
+            "size": [
+              0.275249,
+              0.239428,
+              0.042395
+            ]
+          },
+          "semantic_sha256": "bf96a450b79465e75c011c1b63dcfd975e790e6a50cfc5a1180084597a2caa8b"
+        },
+        {
+          "name": "Wound__CLO_JacketForearm.L__1",
+          "vertices": 25,
+          "polygons": 30,
+          "triangles": 30,
+          "uv_loops": 90,
+          "weighted_vertices": 25,
+          "bounds_unity_m": {
+            "min": [
+              0.427564,
+              1.048549,
+              -0.02
+            ],
+            "max": [
+              0.702102,
+              1.288678,
+              0.030124
+            ],
+            "size": [
+              0.274538,
+              0.240129,
+              0.050123
+            ]
+          },
+          "semantic_sha256": "ff39dd94d47f01847cc1ffd2b4bf6893768ec794739f8e501a9824ef93e954f3"
+        },
+        {
+          "name": "Wound__CLO_JacketForearm.L__2",
+          "vertices": 26,
+          "polygons": 32,
+          "triangles": 32,
+          "uv_loops": 96,
+          "weighted_vertices": 26,
+          "bounds_unity_m": {
+            "min": [
+              0.424917,
+              1.046583,
+              -0.054395
+            ],
+            "max": [
+              0.679338,
+              1.250726,
+              0.026917
+            ],
+            "size": [
+              0.254421,
+              0.204142,
+              0.081312
+            ]
+          },
+          "semantic_sha256": "2c4c39e8daa4effb35d596a9f0ed341809858a958c04e5588f5a0a7d214ba206"
+        },
+        {
+          "name": "Wound__CLO_JacketForearm.L__3",
+          "vertices": 28,
+          "polygons": 34,
+          "triangles": 34,
+          "uv_loops": 102,
+          "weighted_vertices": 28,
+          "bounds_unity_m": {
+            "min": [
+              0.433068,
+              1.048943,
+              -0.054395
+            ],
+            "max": [
+              0.702102,
+              1.288678,
+              0.00412
+            ],
+            "size": [
+              0.269034,
+              0.239735,
+              0.058515
+            ]
+          },
+          "semantic_sha256": "ce2fc87c9830de0f29c1fa34ac1db55c851d3ecdc40e74b970fc34b3052d497d"
+        },
+        {
+          "name": "Wound__CLO_JacketForearm.R__0",
+          "vertices": 25,
+          "polygons": 30,
+          "triangles": 30,
+          "uv_loops": 90,
+          "weighted_vertices": 25,
+          "bounds_unity_m": {
+            "min": [
+              -0.698166,
+              1.040583,
+              -0.050395
+            ],
+            "max": [
+              -0.422917,
+              1.280011,
+              -0.008
+            ],
+            "size": [
+              0.275249,
+              0.239428,
+              0.042395
+            ]
+          },
+          "semantic_sha256": "fb79fe75dbc7b4698d39b953d47521a33c9da0aadd8e6f8478841d7da665b6b4"
+        },
+        {
+          "name": "Wound__CLO_JacketForearm.R__1",
+          "vertices": 24,
+          "polygons": 28,
+          "triangles": 28,
+          "uv_loops": 84,
+          "weighted_vertices": 24,
+          "bounds_unity_m": {
+            "min": [
+              -0.698673,
+              1.040583,
+              -0.016
+            ],
+            "max": [
+              -0.422917,
+              1.279456,
+              0.034124
+            ],
+            "size": [
+              0.275756,
+              0.238873,
+              0.050123
+            ]
+          },
+          "semantic_sha256": "e8446e57811c5dde5612597590ad1f00c7344b1db18d79b141b684ca0a9e9a2c"
+        },
+        {
+          "name": "Wound__CLO_JacketForearm.R__2",
+          "vertices": 28,
+          "polygons": 34,
+          "triangles": 34,
+          "uv_loops": 102,
+          "weighted_vertices": 28,
+          "bounds_unity_m": {
+            "min": [
+              -0.700102,
+              1.042943,
+              -0.050395
+            ],
+            "max": [
+              -0.42485,
+              1.282678,
+              0.00812
+            ],
+            "size": [
+              0.275252,
+              0.239735,
+              0.058515
+            ]
+          },
+          "semantic_sha256": "a4a17a34f766738275ace6e8e23ee98f2dcc444e06156701b8bc1c5a927debea"
+        },
+        {
+          "name": "Wound__CLO_JacketForearm.R__3",
+          "vertices": 28,
+          "polygons": 34,
+          "triangles": 34,
+          "uv_loops": 102,
+          "weighted_vertices": 28,
+          "bounds_unity_m": {
+            "min": [
+              -0.698166,
+              1.040583,
+              -0.050395
+            ],
+            "max": [
+              -0.422917,
+              1.280011,
+              0.00812
+            ],
+            "size": [
+              0.275249,
+              0.239428,
+              0.058515
+            ]
+          },
+          "semantic_sha256": "a675ce93b8d0a518258c662d65a03829bda329b458f7cb3e2fc83926bbbab0f5"
+        },
+        {
+          "name": "Wound__CLO_JacketSleeve.L__0",
+          "vertices": 39,
+          "polygons": 55,
+          "triangles": 55,
+          "uv_loops": 165,
+          "weighted_vertices": 39,
+          "bounds_unity_m": {
+            "min": [
+              0.18609,
+              1.205757,
+              -0.054145
+            ],
+            "max": [
+              0.485929,
+              1.45136,
+              -0.003787
+            ],
+            "size": [
+              0.299839,
+              0.245603,
+              0.050358
+            ]
+          },
+          "semantic_sha256": "1287783ee91add6dd93ff83846b88b6a18733db7b7be2be873f61c3d232e3fb9"
+        },
+        {
+          "name": "Wound__CLO_JacketSleeve.L__1",
+          "vertices": 39,
+          "polygons": 55,
+          "triangles": 55,
+          "uv_loops": 165,
+          "weighted_vertices": 39,
+          "bounds_unity_m": {
+            "min": [
+              0.18609,
+              1.205757,
+              -0.01216
+            ],
+            "max": [
+              0.486626,
+              1.45107,
+              0.037186
+            ],
+            "size": [
+              0.300537,
+              0.245312,
+              0.049346
+            ]
+          },
+          "semantic_sha256": "8c371c2ad4f6719945f7b3feccd33980ecc56edae4ddb2efe5ddb86d91789820"
+        },
+        {
+          "name": "Wound__CLO_JacketSleeve.L__2",
+          "vertices": 44,
+          "polygons": 62,
+          "triangles": 62,
+          "uv_loops": 186,
+          "weighted_vertices": 44,
+          "bounds_unity_m": {
+            "min": [
+              0.18609,
+              1.205757,
+              -0.054145
+            ],
+            "max": [
+              0.485929,
+              1.45136,
+              0.010832
+            ],
+            "size": [
+              0.299839,
+              0.245603,
+              0.064977
+            ]
+          },
+          "semantic_sha256": "b1b2eb437b2fc3400185db91dd556c162be076ec35925db39cd10115825f73d7"
+        },
+        {
+          "name": "Wound__CLO_JacketSleeve.L__3",
+          "vertices": 44,
+          "polygons": 62,
+          "triangles": 62,
+          "uv_loops": 186,
+          "weighted_vertices": 44,
+          "bounds_unity_m": {
+            "min": [
+              0.187618,
+              1.208611,
+              -0.028227
+            ],
+            "max": [
+              0.488484,
+              1.453076,
+              0.037186
+            ],
+            "size": [
+              0.300866,
+              0.244465,
+              0.065413
+            ]
+          },
+          "semantic_sha256": "cad1cf0d6aa4c55a62cedee19e96dcfe7adc61958ba09fb942424ebd0fce6de0"
+        },
+        {
+          "name": "Wound__CLO_JacketSleeve.R__0",
+          "vertices": 39,
+          "polygons": 55,
+          "triangles": 55,
+          "uv_loops": 165,
+          "weighted_vertices": 39,
+          "bounds_unity_m": {
+            "min": [
+              -0.486484,
+              1.203259,
+              -0.050121
+            ],
+            "max": [
+              -0.185088,
+              1.447073,
+              0.005346
+            ],
+            "size": [
+              0.301396,
+              0.243814,
+              0.055467
+            ]
+          },
+          "semantic_sha256": "8976b2a23964c4630ea3908e13605a32038de7b77c8cc6357f6c0b9a31f57f6a"
+        },
+        {
+          "name": "Wound__CLO_JacketSleeve.R__1",
+          "vertices": 39,
+          "polygons": 55,
+          "triangles": 55,
+          "uv_loops": 165,
+          "weighted_vertices": 39,
+          "bounds_unity_m": {
+            "min": [
+              -0.486484,
+              1.202459,
+              -0.00816
+            ],
+            "max": [
+              -0.185747,
+              1.447073,
+              0.044754
+            ],
+            "size": [
+              0.300737,
+              0.244615,
+              0.052914
+            ]
+          },
+          "semantic_sha256": "71b7517d5f4e48b3ea531becba9d901ac02faca593f5c8c55d84d0d5c2a9ceac"
+        },
+        {
+          "name": "Wound__CLO_JacketSleeve.R__2",
+          "vertices": 44,
+          "polygons": 62,
+          "triangles": 62,
+          "uv_loops": 186,
+          "weighted_vertices": 44,
+          "bounds_unity_m": {
+            "min": [
+              -0.486484,
+              1.202459,
+              -0.024218
+            ],
+            "max": [
+              -0.185747,
+              1.447073,
+              0.044754
+            ],
+            "size": [
+              0.300737,
+              0.244615,
+              0.068972
+            ]
+          },
+          "semantic_sha256": "de9ae1ad51146e79f094fda61c3a281de5a11b9c96969395efd9b45e652d455c"
+        },
+        {
+          "name": "Wound__CLO_JacketSleeve.R__3",
+          "vertices": 44,
+          "polygons": 62,
+          "triangles": 62,
+          "uv_loops": 186,
+          "weighted_vertices": 44,
+          "bounds_unity_m": {
+            "min": [
+              -0.483715,
+              1.199758,
+              -0.050121
+            ],
+            "max": [
+              -0.184093,
+              1.445447,
+              0.019238
+            ],
+            "size": [
+              0.299622,
+              0.245689,
+              0.069359
+            ]
+          },
+          "semantic_sha256": "be2a1bda7a2daed08fd0afa127d56ebe6a8e1fec505a40968e8ffd157120f5d5"
+        },
+        {
+          "name": "Wound__CLO_TrousersShin.L__0",
+          "vertices": 48,
+          "polygons": 70,
+          "triangles": 70,
+          "uv_loops": 210,
+          "weighted_vertices": 48,
+          "bounds_unity_m": {
+            "min": [
+              0.020523,
+              0.094141,
+              -0.077689
+            ],
+            "max": [
+              0.160718,
+              0.486537,
+              -0.011269
+            ],
+            "size": [
+              0.140195,
+              0.392397,
+              0.066421
+            ]
+          },
+          "semantic_sha256": "7cd8e2baa16af9215b73ec676f5364c47a562e7ef7640db72fce7c7623b63a2b"
+        },
+        {
+          "name": "Wound__CLO_TrousersShin.L__1",
+          "vertices": 48,
+          "polygons": 70,
+          "triangles": 70,
+          "uv_loops": 210,
+          "weighted_vertices": 48,
+          "bounds_unity_m": {
+            "min": [
+              0.020523,
+              0.093847,
+              -0.024023
+            ],
+            "max": [
+              0.160718,
+              0.486132,
+              0.044317
+            ],
+            "size": [
+              0.140195,
+              0.392284,
+              0.06834
+            ]
+          },
+          "semantic_sha256": "5c55b3438a9f65e7cdfef1fa74a6823b17176d4de93dc2b3c3bfa4a8f3fd428e"
+        },
+        {
+          "name": "Wound__CLO_TrousersShin.L__2",
+          "vertices": 48,
+          "polygons": 70,
+          "triangles": 70,
+          "uv_loops": 210,
+          "weighted_vertices": 48,
+          "bounds_unity_m": {
+            "min": [
+              0.020523,
+              0.093883,
+              -0.077689
+            ],
+            "max": [
+              0.155565,
+              0.486537,
+              0.007168
+            ],
+            "size": [
+              0.135041,
+              0.392654,
+              0.084858
+            ]
+          },
+          "semantic_sha256": "58092760c800112de0721ca6aefe64e9864ef3ea8d2898c9d448e7efaa64a7b5"
+        },
+        {
+          "name": "Wound__CLO_TrousersShin.L__3",
+          "vertices": 48,
+          "polygons": 70,
+          "triangles": 70,
+          "uv_loops": 210,
+          "weighted_vertices": 48,
+          "bounds_unity_m": {
+            "min": [
+              0.025752,
+              0.093847,
+              -0.041072
+            ],
+            "max": [
+              0.160718,
+              0.486481,
+              0.044317
+            ],
+            "size": [
+              0.134966,
+              0.392634,
+              0.085389
+            ]
+          },
+          "semantic_sha256": "fffdb714b881a1741ab030c7d66d06d124a207f03eddb26769b4d83236d8ed12"
+        },
+        {
+          "name": "Wound__CLO_TrousersShin.R__0",
+          "vertices": 48,
+          "polygons": 70,
+          "triangles": 70,
+          "uv_loops": 210,
+          "weighted_vertices": 48,
+          "bounds_unity_m": {
+            "min": [
+              -0.160718,
+              0.094025,
+              -0.049526
+            ],
+            "max": [
+              -0.020524,
+              0.48616,
+              0.016023
+            ],
+            "size": [
+              0.140194,
+              0.392135,
+              0.065549
+            ]
+          },
+          "semantic_sha256": "f182bd75bc69b1c6e57c24dfcc2a1b3a735aeaa57bd1332f2472053d2082cbf2"
+        },
+        {
+          "name": "Wound__CLO_TrousersShin.R__1",
+          "vertices": 48,
+          "polygons": 70,
+          "triangles": 70,
+          "uv_loops": 210,
+          "weighted_vertices": 48,
+          "bounds_unity_m": {
+            "min": [
+              -0.160718,
+              0.09412,
+              0.007268
+            ],
+            "max": [
+              -0.020524,
+              0.48629,
+              0.071927
+            ],
+            "size": [
+              0.140194,
+              0.39217,
+              0.064658
+            ]
+          },
+          "semantic_sha256": "c9ec5cee4fb92aa51da539e1b5e103f984009ad2ee71e48a9174b3ad5fc0d179"
+        },
+        {
+          "name": "Wound__CLO_TrousersShin.R__2",
+          "vertices": 48,
+          "polygons": 70,
+          "triangles": 70,
+          "uv_loops": 210,
+          "weighted_vertices": 48,
+          "bounds_unity_m": {
+            "min": [
+              -0.160718,
+              0.094025,
+              -0.049526
+            ],
+            "max": [
+              -0.025747,
+              0.48629,
+              0.035155
+            ],
+            "size": [
+              0.134971,
+              0.392265,
+              0.084682
+            ]
+          },
+          "semantic_sha256": "99535010ed5db476fa783273e96ff6222eb5392d0e90880355ab447274801185"
+        },
+        {
+          "name": "Wound__CLO_TrousersShin.R__3",
+          "vertices": 48,
+          "polygons": 70,
+          "triangles": 70,
+          "uv_loops": 210,
+          "weighted_vertices": 48,
+          "bounds_unity_m": {
+            "min": [
+              -0.155569,
+              0.094025,
+              -0.012372
+            ],
+            "max": [
+              -0.020524,
+              0.48629,
+              0.071927
+            ],
+            "size": [
+              0.135045,
+              0.392265,
+              0.084299
+            ]
+          },
+          "semantic_sha256": "6b098e446adc8049000a2f4f2e943ac1973b6370319b85e1cd8eec1073e90fcd"
+        },
+        {
+          "name": "Wound__CLO_TrousersThigh.L__0",
+          "vertices": 48,
+          "polygons": 70,
+          "triangles": 70,
+          "uv_loops": 210,
+          "weighted_vertices": 48,
+          "bounds_unity_m": {
+            "min": [
+              0.004664,
+              0.484257,
+              -0.072518
+            ],
+            "max": [
+              0.178376,
+              0.88248,
+              0.014041
+            ],
+            "size": [
+              0.173712,
+              0.398223,
+              0.08656
+            ]
+          },
+          "semantic_sha256": "d31973278a3ea7f7acf475a75c71406f62784d735baaf4d441edde389f069e9e"
+        },
+        {
+          "name": "Wound__CLO_TrousersThigh.L__1",
+          "vertices": 48,
+          "polygons": 70,
+          "triangles": 70,
+          "uv_loops": 210,
+          "weighted_vertices": 48,
+          "bounds_unity_m": {
+            "min": [
+              0.004664,
+              0.482026,
+              -0.01668
+            ],
+            "max": [
+              0.178376,
+              0.87909,
+              0.082458
+            ],
+            "size": [
+              0.173712,
+              0.397064,
+              0.099138
+            ]
+          },
+          "semantic_sha256": "b01ac4604bf692da23564792c4894048216abbcce2220220636b8fcdf8004d3c"
+        },
+        {
+          "name": "Wound__CLO_TrousersThigh.L__2",
+          "vertices": 48,
+          "polygons": 70,
+          "triangles": 70,
+          "uv_loops": 210,
+          "weighted_vertices": 48,
+          "bounds_unity_m": {
+            "min": [
+              0.004664,
+              0.484419,
+              -0.072518
+            ],
+            "max": [
+              0.171912,
+              0.88248,
+              0.037582
+            ],
+            "size": [
+              0.167248,
+              0.398061,
+              0.1101
+            ]
+          },
+          "semantic_sha256": "de352b5da25bdf3285726bf260ee1cf6a87f647d3c09d4fe957d359e00eb00c7"
+        },
+        {
+          "name": "Wound__CLO_TrousersThigh.L__3",
+          "vertices": 48,
+          "polygons": 70,
+          "triangles": 70,
+          "uv_loops": 210,
+          "weighted_vertices": 48,
+          "bounds_unity_m": {
+            "min": [
+              0.011128,
+              0.482026,
+              -0.032289
+            ],
+            "max": [
+              0.178376,
+              0.878904,
+              0.082458
+            ],
+            "size": [
+              0.167247,
+              0.396878,
+              0.114747
+            ]
+          },
+          "semantic_sha256": "335c25975359b4b31c3e70a8d2414fec374d9fe1a88c2493320e6b4c2b9cc66c"
+        },
+        {
+          "name": "Wound__CLO_TrousersThigh.R__0",
+          "vertices": 48,
+          "polygons": 70,
+          "triangles": 70,
+          "uv_loops": 210,
+          "weighted_vertices": 48,
+          "bounds_unity_m": {
+            "min": [
+              -0.178377,
+              0.483223,
+              -0.07775
+            ],
+            "max": [
+              -0.004663,
+              0.878988,
+              0.012683
+            ],
+            "size": [
+              0.173714,
+              0.395765,
+              0.090433
+            ]
+          },
+          "semantic_sha256": "f537eac3957692b504c55486e76d37c8c571d34d7f58a063cb23c0fbde7d90e6"
+        },
+        {
+          "name": "Wound__CLO_TrousersThigh.R__1",
+          "vertices": 48,
+          "polygons": 70,
+          "triangles": 70,
+          "uv_loops": 210,
+          "weighted_vertices": 48,
+          "bounds_unity_m": {
+            "min": [
+              -0.178377,
+              0.484325,
+              -0.008046
+            ],
+            "max": [
+              -0.004663,
+              0.880676,
+              0.075611
+            ],
+            "size": [
+              0.173714,
+              0.39635,
+              0.083657
+            ]
+          },
+          "semantic_sha256": "65eb37f4b44829abee9af9e3bcbd2e5854e76a4110f9b031311e2165cdddb126"
+        },
+        {
+          "name": "Wound__CLO_TrousersThigh.R__2",
+          "vertices": 48,
+          "polygons": 70,
+          "triangles": 70,
+          "uv_loops": 210,
+          "weighted_vertices": 48,
+          "bounds_unity_m": {
+            "min": [
+              -0.178377,
+              0.483223,
+              -0.07775
+            ],
+            "max": [
+              -0.011136,
+              0.878203,
+              0.029653
+            ],
+            "size": [
+              0.167241,
+              0.394981,
+              0.107403
+            ]
+          },
+          "semantic_sha256": "687e6eaddc6c08a7dff93db6b943fd395a1d7d187db2aa839dbe80b7a808c925"
+        },
+        {
+          "name": "Wound__CLO_TrousersThigh.R__3",
+          "vertices": 48,
+          "polygons": 70,
+          "triangles": 70,
+          "uv_loops": 210,
+          "weighted_vertices": 48,
+          "bounds_unity_m": {
+            "min": [
+              -0.171904,
+              0.484884,
+              -0.031616
+            ],
+            "max": [
+              -0.004663,
+              0.880676,
+              0.075611
+            ],
+            "size": [
+              0.167241,
+              0.395792,
+              0.107227
+            ]
+          },
+          "semantic_sha256": "e89fff0c047855edc785730269530482bc1f7911586b5d5f7de5570fb37d5339"
+        },
+        {
+          "name": "Wound__GEO_FaceSurface__0",
+          "vertices": 48,
+          "polygons": 70,
+          "triangles": 70,
+          "uv_loops": 210,
+          "weighted_vertices": 48,
+          "bounds_unity_m": {
+            "min": [
+              -0.07912,
+              1.49,
+              -0.1338
+            ],
+            "max": [
+              0.07912,
+              1.694,
+              -0.05844
+            ],
+            "size": [
+              0.15824,
+              0.204,
+              0.07536
+            ]
+          },
+          "semantic_sha256": "ca396f601b12210cbb6487af82e7c31fad443be4f6a0b754cdf8660e2b6a61b4"
+        },
+        {
+          "name": "Wound__GEO_FaceSurface__2",
+          "vertices": 48,
+          "polygons": 70,
+          "triangles": 70,
+          "uv_loops": 210,
+          "weighted_vertices": 48,
+          "bounds_unity_m": {
+            "min": [
+              -0.07912,
+              1.49,
+              -0.1338
+            ],
+            "max": [
+              0.07912,
+              1.694,
+              -0.05844
+            ],
+            "size": [
+              0.15824,
+              0.204,
+              0.07536
+            ]
+          },
+          "semantic_sha256": "ca396f601b12210cbb6487af82e7c31fad443be4f6a0b754cdf8660e2b6a61b4"
+        },
+        {
+          "name": "Wound__GEO_FaceSurface__3",
+          "vertices": 48,
+          "polygons": 70,
+          "triangles": 70,
+          "uv_loops": 210,
+          "weighted_vertices": 48,
+          "bounds_unity_m": {
+            "min": [
+              -0.07912,
+              1.49,
+              -0.1338
+            ],
+            "max": [
+              0.07912,
+              1.694,
+              -0.05844
+            ],
+            "size": [
+              0.15824,
+              0.204,
+              0.07536
+            ]
+          },
+          "semantic_sha256": "7385fc6436afa2149a6946b0fb7c65a18e033da6f3770cc9b49b702483a4565a"
+        },
+        {
+          "name": "Wound__GEO_Head__0",
+          "vertices": 45,
+          "polygons": 67,
+          "triangles": 67,
+          "uv_loops": 201,
+          "weighted_vertices": 45,
+          "bounds_unity_m": {
+            "min": [
+              -0.07621,
+              1.488,
+              -0.112
+            ],
+            "max": [
+              0.088,
+              1.7216,
+              -0.021
+            ],
+            "size": [
+              0.16421,
+              0.2336,
+              0.091
+            ]
+          },
+          "semantic_sha256": "68fc1623f41bae0eb652f42ec8761b04ec4accc4f887afa88bfae650276c948f"
+        },
+        {
+          "name": "Wound__GEO_Head__1",
+          "vertices": 46,
+          "polygons": 66,
+          "triangles": 66,
+          "uv_loops": 198,
+          "weighted_vertices": 46,
+          "bounds_unity_m": {
+            "min": [
+              -0.088,
+              1.488,
+              -0.033
+            ],
+            "max": [
+              0.07621,
+              1.7216,
+              0.054
+            ],
+            "size": [
+              0.16421,
+              0.2336,
+              0.087
+            ]
+          },
+          "semantic_sha256": "7d8476654ac9c222d67e426f7d62d35b635b23a50a0490da4944f22c901ba4ce"
+        },
+        {
+          "name": "Wound__GEO_Head__2",
+          "vertices": 46,
+          "polygons": 66,
+          "triangles": 66,
+          "uv_loops": 198,
+          "weighted_vertices": 46,
+          "bounds_unity_m": {
+            "min": [
+              -0.088,
+              1.488,
+              -0.0725
+            ],
+            "max": [
+              0.044,
+              1.7216,
+              0.054
+            ],
+            "size": [
+              0.132,
+              0.2336,
+              0.1265
+            ]
+          },
+          "semantic_sha256": "db200db777fdab6a99188514c59674351feaf3c2f2ac6d8906a59f1e3a723e5d"
+        },
+        {
+          "name": "Wound__GEO_Head__3",
+          "vertices": 46,
+          "polygons": 66,
+          "triangles": 66,
+          "uv_loops": 198,
+          "weighted_vertices": 46,
+          "bounds_unity_m": {
+            "min": [
+              -0.044,
+              1.488,
+              -0.0725
+            ],
+            "max": [
+              0.088,
+              1.7216,
+              0.054
+            ],
+            "size": [
+              0.132,
+              0.2336,
+              0.1265
+            ]
+          },
+          "semantic_sha256": "e7ef6d1137b0ac3e8c71debe3b4d0b6d868a168b9a3ae640b00e85f31f139954"
+        },
+        {
+          "name": "Wound__GEO_Neck__0",
+          "vertices": 12,
+          "polygons": 10,
+          "triangles": 10,
+          "uv_loops": 30,
+          "weighted_vertices": 12,
+          "bounds_unity_m": {
+            "min": [
+              -0.064086,
+              1.398658,
+              -0.073061
+            ],
+            "max": [
+              0.074,
+              1.522,
+              -0.008
+            ],
+            "size": [
+              0.138086,
+              0.123342,
+              0.065062
+            ]
+          },
+          "semantic_sha256": "97590ad94a39d95db4d3b1bdc03200281c7337d0312921cb87d988f4bafddf34"
+        },
+        {
+          "name": "Wound__GEO_Neck__1",
+          "vertices": 12,
+          "polygons": 10,
+          "triangles": 10,
+          "uv_loops": 30,
+          "weighted_vertices": 12,
+          "bounds_unity_m": {
+            "min": [
+              -0.074,
+              1.405,
+              -0.02
+            ],
+            "max": [
+              0.064086,
+              1.527442,
+              0.053836
+            ],
+            "size": [
+              0.138086,
+              0.122442,
+              0.073836
+            ]
+          },
+          "semantic_sha256": "95a046a63cf5aee521513f5101af7e1b06089260723abfb2b0f4c5a7d71e1348"
+        },
+        {
+          "name": "Wound__GEO_Neck__2",
+          "vertices": 14,
+          "polygons": 12,
+          "triangles": 12,
+          "uv_loops": 36,
+          "weighted_vertices": 14,
+          "bounds_unity_m": {
+            "min": [
+              -0.074,
+              1.398658,
+              -0.073061
+            ],
+            "max": [
+              0.064086,
+              1.524721,
+              0.022918
+            ],
+            "size": [
+              0.138086,
+              0.126063,
+              0.095979
+            ]
+          },
+          "semantic_sha256": "7f23e3e356eaaecaa958d0e9d98c86b88b310d1658abbf0c7ba1840eb39c5ac1"
+        },
+        {
+          "name": "Wound__GEO_Neck__3",
+          "vertices": 14,
+          "polygons": 12,
+          "triangles": 12,
+          "uv_loops": 36,
+          "weighted_vertices": 14,
+          "bounds_unity_m": {
+            "min": [
+              -0.064086,
+              1.398658,
+              -0.073061
+            ],
+            "max": [
+              0.074,
+              1.524721,
+              0.022918
+            ],
+            "size": [
+              0.138086,
+              0.126063,
+              0.095979
+            ]
+          },
+          "semantic_sha256": "9a84f9e1d5488f4fdce3503999bc411177f90240f926cd79ffff3ddf19a52cf8"
+        }
+      ],
+      "vertices": 3384,
+      "triangles": 5129,
+      "bounds_unity_m": {
+        "min": [
+          -0.700102,
+          0.093847,
+          -0.1338
+        ],
+        "max": [
+          0.702102,
+          1.7216,
+          0.124
+        ],
+        "size": [
+          1.402204,
+          1.627753,
+          0.2578
+        ]
+      },
+      "semantic_sha256": "8ce0108f0a34fa705046857e5dc6acadef1bec3f16cb7139ceacdb506649e643"
+    },
+    "WoundsNpc": {
+      "meshes": [
+        {
+          "name": "Wound__CLO_GlovePalm.L__0",
+          "vertices": 24,
+          "polygons": 15,
+          "triangles": 30,
+          "uv_loops": 60,
+          "weighted_vertices": 24,
+          "bounds_unity_m": {
+            "min": [
+              0.66325,
+              1.02196,
+              -0.066047
+            ],
+            "max": [
+              0.745926,
+              1.081167,
+              0.02179
+            ],
+            "size": [
+              0.082676,
+              0.059208,
+              0.087837
+            ]
+          },
+          "semantic_sha256": "439d88b097a9e3f7f1b6c34c1ea86a417c2e65ef3a2d2733a99ab2b090ee7214"
+        },
+        {
+          "name": "Wound__CLO_GlovePalm.L__1",
+          "vertices": 24,
+          "polygons": 15,
+          "triangles": 30,
+          "uv_loops": 60,
+          "weighted_vertices": 24,
+          "bounds_unity_m": {
+            "min": [
+              0.66325,
+              1.02196,
+              -0.066047
+            ],
+            "max": [
+              0.745926,
+              1.081167,
+              0.02179
+            ],
+            "size": [
+              0.082676,
+              0.059208,
+              0.087837
+            ]
+          },
+          "semantic_sha256": "ef8ae085f2d9ec080992be53a3a0eedb9b8a163d62ed67a7b7386e4bd2563f36"
+        },
+        {
+          "name": "Wound__CLO_GlovePalm.L__2",
+          "vertices": 24,
+          "polygons": 15,
+          "triangles": 30,
+          "uv_loops": 60,
+          "weighted_vertices": 24,
+          "bounds_unity_m": {
+            "min": [
+              0.66325,
+              1.02196,
+              -0.066047
+            ],
+            "max": [
+              0.745926,
+              1.081167,
+              0.02179
+            ],
+            "size": [
+              0.082676,
+              0.059208,
+              0.087837
+            ]
+          },
+          "semantic_sha256": "626598bcf24a489e63807093a9f3105466f0956316a541ec6313102d43217477"
+        },
+        {
+          "name": "Wound__CLO_GlovePalm.L__3",
+          "vertices": 24,
+          "polygons": 15,
+          "triangles": 30,
+          "uv_loops": 60,
+          "weighted_vertices": 24,
+          "bounds_unity_m": {
+            "min": [
+              0.669762,
+              1.035286,
+              -0.066047
+            ],
+            "max": [
+              0.753415,
+              1.09258,
+              0.02179
+            ],
+            "size": [
+              0.083653,
+              0.057295,
+              0.087837
+            ]
+          },
+          "semantic_sha256": "0db751a8ac3ec23b9c0ee498a5ce072ac77b1e2c5574653647e286ed134bb8d2"
+        },
+        {
+          "name": "Wound__CLO_GlovePalm.R__0",
+          "vertices": 24,
+          "polygons": 15,
+          "triangles": 30,
+          "uv_loops": 60,
+          "weighted_vertices": 24,
+          "bounds_unity_m": {
+            "min": [
+              -0.743926,
+              1.01596,
+              -0.062047
+            ],
+            "max": [
+              -0.661249,
+              1.075167,
+              0.02579
+            ],
+            "size": [
+              0.082677,
+              0.059208,
+              0.087837
+            ]
+          },
+          "semantic_sha256": "212ff1e6307b74a6669d5b5645419ec3edafea5bab44af9d6ac0ee247d3954c9"
+        },
+        {
+          "name": "Wound__CLO_GlovePalm.R__1",
+          "vertices": 24,
+          "polygons": 15,
+          "triangles": 30,
+          "uv_loops": 60,
+          "weighted_vertices": 24,
+          "bounds_unity_m": {
+            "min": [
+              -0.743926,
+              1.01596,
+              -0.062047
+            ],
+            "max": [
+              -0.661249,
+              1.075167,
+              0.02579
+            ],
+            "size": [
+              0.082677,
+              0.059208,
+              0.087837
+            ]
+          },
+          "semantic_sha256": "d2478e6d7e65cff88aff9eea4a1483f6fcde06e9d20417430a11c5001f98c9a1"
+        },
+        {
+          "name": "Wound__CLO_GlovePalm.R__2",
+          "vertices": 24,
+          "polygons": 15,
+          "triangles": 30,
+          "uv_loops": 60,
+          "weighted_vertices": 24,
+          "bounds_unity_m": {
+            "min": [
+              -0.751415,
+              1.029285,
+              -0.062047
+            ],
+            "max": [
+              -0.667762,
+              1.08658,
+              0.02579
+            ],
+            "size": [
+              0.083653,
+              0.057295,
+              0.087837
+            ]
+          },
+          "semantic_sha256": "f57672ef09b1b3e569dd0b9f058b39a9c314c3a76afad21f19e49c1f6f9d4bc3"
+        },
+        {
+          "name": "Wound__CLO_GlovePalm.R__3",
+          "vertices": 24,
+          "polygons": 15,
+          "triangles": 30,
+          "uv_loops": 60,
+          "weighted_vertices": 24,
+          "bounds_unity_m": {
+            "min": [
+              -0.743926,
+              1.01596,
+              -0.062047
+            ],
+            "max": [
+              -0.661249,
+              1.075167,
+              0.02579
+            ],
+            "size": [
+              0.082677,
+              0.059208,
+              0.087837
+            ]
+          },
+          "semantic_sha256": "c0358d61a1951f832741ea69d98db311853022ebba038e2585f2ee1c35a331d8"
+        },
+        {
+          "name": "Wound__CLO_Outer_workBody__0",
+          "vertices": 83,
+          "polygons": 65,
+          "triangles": 130,
+          "uv_loops": 260,
+          "weighted_vertices": 83,
+          "bounds_unity_m": {
+            "min": [
+              -0.213,
+              0.935,
+              -0.147
+            ],
+            "max": [
+              0.205742,
+              1.428,
+              0.008
+            ],
+            "size": [
+              0.418742,
+              0.493,
+              0.155
+            ]
+          },
+          "semantic_sha256": "a651d5144f485d8706f953c42429fadb2e08e733b405067b7a537a1a4f365f26"
+        },
+        {
+          "name": "Wound__CLO_Outer_workBody__1",
+          "vertices": 86,
+          "polygons": 67,
+          "triangles": 134,
+          "uv_loops": 268,
+          "weighted_vertices": 86,
+          "bounds_unity_m": {
+            "min": [
+              -0.213,
+              0.935,
+              -0.013
+            ],
+            "max": [
+              0.213,
+              1.428,
+              0.148
+            ],
+            "size": [
+              0.426,
+              0.493,
+              0.161
+            ]
+          },
+          "semantic_sha256": "625821f7b11f15582dfb75950cd8456cc80a4579f90e07d42457a758ee410cf9"
+        },
+        {
+          "name": "Wound__CLO_Outer_workBody__2",
+          "vertices": 82,
+          "polygons": 64,
+          "triangles": 128,
+          "uv_loops": 256,
+          "weighted_vertices": 82,
+          "bounds_unity_m": {
+            "min": [
+              -0.213,
+              0.935,
+              -0.147
+            ],
+            "max": [
+              0.184463,
+              1.428,
+              0.042752
+            ],
+            "size": [
+              0.397463,
+              0.493,
+              0.189752
+            ]
+          },
+          "semantic_sha256": "9bc2087a9ccc3e972bf690415135258ec972a630f70634d19772520e0346f94b"
+        },
+        {
+          "name": "Wound__CLO_Outer_workBody__3",
+          "vertices": 82,
+          "polygons": 64,
+          "triangles": 128,
+          "uv_loops": 256,
+          "weighted_vertices": 82,
+          "bounds_unity_m": {
+            "min": [
+              -0.184463,
+              0.935,
+              -0.147
+            ],
+            "max": [
+              0.213,
+              1.428,
+              0.042752
+            ],
+            "size": [
+              0.397463,
+              0.493,
+              0.189752
+            ]
+          },
+          "semantic_sha256": "4f568cadf9f9d9866b12967efc2bc2a12c97cdd4213b0796b1c2daa193a5855a"
+        },
+        {
+          "name": "Wound__CLO_Outer_workSleeve.L__0",
+          "vertices": 72,
+          "polygons": 56,
+          "triangles": 112,
+          "uv_loops": 224,
+          "weighted_vertices": 72,
+          "bounds_unity_m": {
+            "min": [
+              0.204973,
+              1.04717,
+              -0.077919
+            ],
+            "max": [
+              0.696828,
+              1.419569,
+              0.037393
+            ],
+            "size": [
+              0.491854,
+              0.372399,
+              0.115312
+            ]
+          },
+          "semantic_sha256": "6a0c4af105ccdcda759676c22383a778134a34f193802933ffdc8d19067b8aa6"
+        },
+        {
+          "name": "Wound__CLO_Outer_workSleeve.L__1",
+          "vertices": 71,
+          "polygons": 55,
+          "triangles": 110,
+          "uv_loops": 220,
+          "weighted_vertices": 71,
+          "bounds_unity_m": {
+            "min": [
+              0.204973,
+              1.04717,
+              -0.05108
+            ],
+            "max": [
+              0.697732,
+              1.418292,
+              0.063981
+            ],
+            "size": [
+              0.492759,
+              0.371122,
+              0.11506
+            ]
+          },
+          "semantic_sha256": "83a22e3620de8192de4abeedb2deead7b4e617494e08f62f5312cc8112437366"
+        },
+        {
+          "name": "Wound__CLO_Outer_workSleeve.L__2",
+          "vertices": 72,
+          "polygons": 56,
+          "triangles": 112,
+          "uv_loops": 224,
+          "weighted_vertices": 72,
+          "bounds_unity_m": {
+            "min": [
+              0.204973,
+              1.04717,
+              -0.077919
+            ],
+            "max": [
+              0.696828,
+              1.419569,
+              0.037393
+            ],
+            "size": [
+              0.491854,
+              0.372399,
+              0.115312
+            ]
+          },
+          "semantic_sha256": "6a0c4af105ccdcda759676c22383a778134a34f193802933ffdc8d19067b8aa6"
+        },
+        {
+          "name": "Wound__CLO_Outer_workSleeve.L__3",
+          "vertices": 70,
+          "polygons": 54,
+          "triangles": 108,
+          "uv_loops": 216,
+          "weighted_vertices": 70,
+          "bounds_unity_m": {
+            "min": [
+              0.206514,
+              1.052431,
+              -0.051331
+            ],
+            "max": [
+              0.701709,
+              1.426371,
+              0.063981
+            ],
+            "size": [
+              0.495195,
+              0.37394,
+              0.115312
+            ]
+          },
+          "semantic_sha256": "8f4801d88288893e531fb018eb21370a435d474938cbba1ddcc2bccc6fafa8d8"
+        },
+        {
+          "name": "Wound__CLO_Outer_workSleeve.R__0",
+          "vertices": 72,
+          "polygons": 56,
+          "triangles": 112,
+          "uv_loops": 224,
+          "weighted_vertices": 72,
+          "bounds_unity_m": {
+            "min": [
+              -0.686936,
+              1.04117,
+              -0.070911
+            ],
+            "max": [
+              -0.204367,
+              1.401883,
+              0.063952
+            ],
+            "size": [
+              0.482569,
+              0.360713,
+              0.134863
+            ]
+          },
+          "semantic_sha256": "888057bb33208a3e71ad1fa089a9a559e784706d26182a61034dfba1b29b4b0d"
+        },
+        {
+          "name": "Wound__CLO_Outer_workSleeve.R__1",
+          "vertices": 71,
+          "polygons": 55,
+          "triangles": 110,
+          "uv_loops": 220,
+          "weighted_vertices": 71,
+          "bounds_unity_m": {
+            "min": [
+              -0.695732,
+              1.04117,
+              -0.044356
+            ],
+            "max": [
+              -0.204367,
+              1.412417,
+              0.070906
+            ],
+            "size": [
+              0.491365,
+              0.371247,
+              0.115262
+            ]
+          },
+          "semantic_sha256": "c3305ae1f933e9f1bf2f112e59357f7aa490e4d0cb2cff99f376b64c75126bda"
+        },
+        {
+          "name": "Wound__CLO_Outer_workSleeve.R__2",
+          "vertices": 70,
+          "polygons": 54,
+          "triangles": 108,
+          "uv_loops": 216,
+          "weighted_vertices": 70,
+          "bounds_unity_m": {
+            "min": [
+              -0.699709,
+              1.046431,
+              -0.044356
+            ],
+            "max": [
+              -0.206024,
+              1.42086,
+              0.070906
+            ],
+            "size": [
+              0.493685,
+              0.374429,
+              0.115262
+            ]
+          },
+          "semantic_sha256": "0a725e65881bc1e0135351abc495a275ef1e04a9659dd199892e5eb67888bd1b"
+        },
+        {
+          "name": "Wound__CLO_Outer_workSleeve.R__3",
+          "vertices": 72,
+          "polygons": 56,
+          "triangles": 112,
+          "uv_loops": 224,
+          "weighted_vertices": 72,
+          "bounds_unity_m": {
+            "min": [
+              -0.688243,
+              1.04117,
+              -0.063821
+            ],
+            "max": [
+              -0.204367,
+              1.400134,
+              0.070906
+            ],
+            "size": [
+              0.483876,
+              0.358963,
+              0.134727
+            ]
+          },
+          "semantic_sha256": "0d35b98eeb6f5fc0cae1f32dff8d029093d42bb99fa7743eb54baea053d28c82"
+        },
+        {
+          "name": "Wound__CLO_Trousers_workLower.L__0",
+          "vertices": 26,
+          "polygons": 15,
+          "triangles": 30,
+          "uv_loops": 60,
+          "weighted_vertices": 26,
+          "bounds_unity_m": {
+            "min": [
+              0.074805,
+              0.11,
+              -0.068745
+            ],
+            "max": [
+              0.151385,
+              0.255,
+              0.050996
+            ],
+            "size": [
+              0.07658,
+              0.145,
+              0.119741
+            ]
+          },
+          "semantic_sha256": "9f9fbf72ac8837380ce5e3fabd0b1243ee38804990c22ba8eac0ada0d24f36d2"
+        },
+        {
+          "name": "Wound__CLO_Trousers_workLower.L__1",
+          "vertices": 26,
+          "polygons": 15,
+          "triangles": 30,
+          "uv_loops": 60,
+          "weighted_vertices": 26,
+          "bounds_unity_m": {
+            "min": [
+              0.074805,
+              0.11,
+              -0.060996
+            ],
+            "max": [
+              0.151385,
+              0.255,
+              0.058745
+            ],
+            "size": [
+              0.07658,
+              0.145,
+              0.119741
+            ]
+          },
+          "semantic_sha256": "453e75baf93f6b1b02d31ab2cacafdd8ea4edb3b1822b03355ca0fb6a4a0fa80"
+        },
+        {
+          "name": "Wound__CLO_Trousers_workLower.L__2",
+          "vertices": 24,
+          "polygons": 14,
+          "triangles": 28,
+          "uv_loops": 56,
+          "weighted_vertices": 24,
+          "bounds_unity_m": {
+            "min": [
+              0.040615,
+              0.11,
+              -0.063893
+            ],
+            "max": [
+              0.096,
+              0.255,
+              0.058745
+            ],
+            "size": [
+              0.055385,
+              0.145,
+              0.122638
+            ]
+          },
+          "semantic_sha256": "6b8921fca565e57af35c65b8e5fb9359670a968717a27e59a7de03ed8fe3c9c1"
+        },
+        {
+          "name": "Wound__CLO_Trousers_workLower.L__3",
+          "vertices": 24,
+          "polygons": 14,
+          "triangles": 28,
+          "uv_loops": 56,
+          "weighted_vertices": 24,
+          "bounds_unity_m": {
+            "min": [
+              0.096,
+              0.11,
+              -0.063893
+            ],
+            "max": [
+              0.151385,
+              0.255,
+              0.058745
+            ],
+            "size": [
+              0.055385,
+              0.145,
+              0.122638
+            ]
+          },
+          "semantic_sha256": "5842222295220e943783de7971878f16a910e7c01ea867fbf8fee72a4af1bb31"
+        },
+        {
+          "name": "Wound__CLO_Trousers_workLower.R__0",
+          "vertices": 26,
+          "polygons": 15,
+          "triangles": 30,
+          "uv_loops": 60,
+          "weighted_vertices": 26,
+          "bounds_unity_m": {
+            "min": [
+              -0.151385,
+              0.11,
+              -0.050745
+            ],
+            "max": [
+              -0.074805,
+              0.255,
+              0.068996
+            ],
+            "size": [
+              0.07658,
+              0.145,
+              0.119741
+            ]
+          },
+          "semantic_sha256": "9ca53d9769a7e094ae9fa2687f59c43ed5a1ea9db7d294f354adb0d0083a8d8b"
+        },
+        {
+          "name": "Wound__CLO_Trousers_workLower.R__1",
+          "vertices": 26,
+          "polygons": 15,
+          "triangles": 30,
+          "uv_loops": 60,
+          "weighted_vertices": 26,
+          "bounds_unity_m": {
+            "min": [
+              -0.151385,
+              0.11,
+              -0.042996
+            ],
+            "max": [
+              -0.074805,
+              0.255,
+              0.076745
+            ],
+            "size": [
+              0.07658,
+              0.145,
+              0.119741
+            ]
+          },
+          "semantic_sha256": "2ca2bc26efb5d3ad7df4b95ed793b532e80b7afd55729dda99092e5301e61d8b"
+        },
+        {
+          "name": "Wound__CLO_Trousers_workLower.R__2",
+          "vertices": 24,
+          "polygons": 14,
+          "triangles": 28,
+          "uv_loops": 56,
+          "weighted_vertices": 24,
+          "bounds_unity_m": {
+            "min": [
+              -0.151385,
+              0.11,
+              -0.045893
+            ],
+            "max": [
+              -0.096,
+              0.255,
+              0.076745
+            ],
+            "size": [
+              0.055385,
+              0.145,
+              0.122638
+            ]
+          },
+          "semantic_sha256": "1a853eebcee0a38e43c6654ec6f4f27a72405a34426ea63067709f07d1a32144"
+        },
+        {
+          "name": "Wound__CLO_Trousers_workLower.R__3",
+          "vertices": 24,
+          "polygons": 14,
+          "triangles": 28,
+          "uv_loops": 56,
+          "weighted_vertices": 24,
+          "bounds_unity_m": {
+            "min": [
+              -0.096,
+              0.11,
+              -0.045893
+            ],
+            "max": [
+              -0.040615,
+              0.255,
+              0.076745
+            ],
+            "size": [
+              0.055385,
+              0.145,
+              0.122638
+            ]
+          },
+          "semantic_sha256": "1f9efcde6479dac81267f623a757d049689a8f65db56a162a920c40e9527fc33"
+        },
+        {
+          "name": "Wound__CLO_Trousers_workUpper__0",
+          "vertices": 136,
+          "polygons": 106,
+          "triangles": 212,
+          "uv_loops": 424,
+          "weighted_vertices": 136,
+          "bounds_unity_m": {
+            "min": [
+              -0.129991,
+              0.35,
+              -0.1095
+            ],
+            "max": [
+              0.18805,
+              1.005,
+              0.086893
+            ],
+            "size": [
+              0.318041,
+              0.655,
+              0.196393
+            ]
+          },
+          "semantic_sha256": "6c90db9d38e000d6100e8c8334453d6acbff6a153071c96f263337d4f0fdca92"
+        },
+        {
+          "name": "Wound__CLO_Trousers_workUpper__1",
+          "vertices": 136,
+          "polygons": 106,
+          "triangles": 212,
+          "uv_loops": 424,
+          "weighted_vertices": 136,
+          "bounds_unity_m": {
+            "min": [
+              -0.18805,
+              0.35,
+              -0.078893
+            ],
+            "max": [
+              0.129991,
+              1.005,
+              0.1175
+            ],
+            "size": [
+              0.318041,
+              0.655,
+              0.196393
+            ]
+          },
+          "semantic_sha256": "d96426621c71e38cdbe615c7d7826fad7a89718b6ab091f61b2377bda2631156"
+        },
+        {
+          "name": "Wound__CLO_Trousers_workUpper__2",
+          "vertices": 138,
+          "polygons": 104,
+          "triangles": 208,
+          "uv_loops": 416,
+          "weighted_vertices": 138,
+          "bounds_unity_m": {
+            "min": [
+              -0.18805,
+              0.35,
+              -0.108965
+            ],
+            "max": [
+              0.094,
+              1.005,
+              0.1175
+            ],
+            "size": [
+              0.28205,
+              0.655,
+              0.226465
+            ]
+          },
+          "semantic_sha256": "825b84534bf1dc2b89cf09d648b6fcfe944498a1db21d39a7dbd467cfe072aa2"
+        },
+        {
+          "name": "Wound__CLO_Trousers_workUpper__3",
+          "vertices": 138,
+          "polygons": 104,
+          "triangles": 208,
+          "uv_loops": 416,
+          "weighted_vertices": 138,
+          "bounds_unity_m": {
+            "min": [
+              -0.094,
+              0.35,
+              -0.1095
+            ],
+            "max": [
+              0.18805,
+              1.005,
+              0.116966
+            ],
+            "size": [
+              0.28205,
+              0.655,
+              0.226465
+            ]
+          },
+          "semantic_sha256": "01b069a0257e907bc8ed9644f877137dbaf4e6922d3f23f624ac4c2eac8ac5f1"
+        },
+        {
+          "name": "Wound__GEO_FaceSurface__0",
+          "vertices": 141,
+          "polygons": 118,
+          "triangles": 236,
+          "uv_loops": 472,
+          "weighted_vertices": 141,
+          "bounds_unity_m": {
+            "min": [
+              -0.099861,
+              1.486,
+              -0.147039
+            ],
+            "max": [
+              0.099861,
+              1.735,
+              0.003146
+            ],
+            "size": [
+              0.199722,
+              0.249,
+              0.150185
+            ]
+          },
+          "semantic_sha256": "d3e6682da1a255142e643b92a9770ae4de1687d7e861170b6696989e6ac7aa3b"
+        },
+        {
+          "name": "Wound__GEO_FaceSurface__2",
+          "vertices": 141,
+          "polygons": 117,
+          "triangles": 234,
+          "uv_loops": 468,
+          "weighted_vertices": 141,
+          "bounds_unity_m": {
+            "min": [
+              -0.099861,
+              1.465,
+              -0.147039
+            ],
+            "max": [
+              0.090933,
+              1.735,
+              0.003146
+            ],
+            "size": [
+              0.190794,
+              0.27,
+              0.150185
+            ]
+          },
+          "semantic_sha256": "83bfff82a1929f2bfe7657efa7b827a41821fbf1424389da0c0f2b84395e409e"
+        },
+        {
+          "name": "Wound__GEO_FaceSurface__3",
+          "vertices": 141,
+          "polygons": 117,
+          "triangles": 234,
+          "uv_loops": 468,
+          "weighted_vertices": 141,
+          "bounds_unity_m": {
+            "min": [
+              -0.090933,
+              1.465,
+              -0.147039
+            ],
+            "max": [
+              0.099861,
+              1.735,
+              0.003146
+            ],
+            "size": [
+              0.190794,
+              0.27,
+              0.150185
+            ]
+          },
+          "semantic_sha256": "6fe229573a8c4364ed3bc725dd8e818835292372ea693ef7dcb12d27add56871"
+        },
+        {
+          "name": "Wound__GEO_Head__1",
+          "vertices": 134,
+          "polygons": 111,
+          "triangles": 222,
+          "uv_loops": 444,
+          "weighted_vertices": 134,
+          "bounds_unity_m": {
+            "min": [
+              -0.104894,
+              1.465,
+              -0.029768
+            ],
+            "max": [
+              0.102367,
+              1.735,
+              0.076
+            ],
+            "size": [
+              0.207262,
+              0.27,
+              0.105769
+            ]
+          },
+          "semantic_sha256": "60b166fc03a243fc189b5ac498b0f8dada57495168d8c3cd8a7eb45f642bcf91"
+        },
+        {
+          "name": "Wound__GEO_Head__2",
+          "vertices": 134,
+          "polygons": 111,
+          "triangles": 222,
+          "uv_loops": 444,
+          "weighted_vertices": 134,
+          "bounds_unity_m": {
+            "min": [
+              -0.104894,
+              1.465,
+              -0.053738
+            ],
+            "max": [
+              0.092463,
+              1.735,
+              0.076
+            ],
+            "size": [
+              0.197357,
+              0.27,
+              0.129739
+            ]
+          },
+          "semantic_sha256": "77fb4edc7e251a8f588b234c1f1a00e37d795aae84a4f8698b1fade36d423975"
+        },
+        {
+          "name": "Wound__GEO_Head__3",
+          "vertices": 134,
+          "polygons": 111,
+          "triangles": 222,
+          "uv_loops": 444,
+          "weighted_vertices": 134,
+          "bounds_unity_m": {
+            "min": [
+              -0.092463,
+              1.465,
+              -0.053738
+            ],
+            "max": [
+              0.104894,
+              1.735,
+              0.076
+            ],
+            "size": [
+              0.197357,
+              0.27,
+              0.129739
+            ]
+          },
+          "semantic_sha256": "6ae560fda087728f5dd93af8118f5bc50e10de93fb638662ea167a9308722f77"
+        },
+        {
+          "name": "Wound__GEO_Neck__0",
+          "vertices": 32,
+          "polygons": 21,
+          "triangles": 42,
+          "uv_loops": 84,
+          "weighted_vertices": 32,
+          "bounds_unity_m": {
+            "min": [
+              -0.072986,
+              1.387,
+              -0.076
+            ],
+            "max": [
+              0.079,
+              1.5,
+              -0.002
+            ],
+            "size": [
+              0.151986,
+              0.113,
+              0.074
+            ]
+          },
+          "semantic_sha256": "35e7d7a28b9e0997b13699f2732871ef321014ac90500bcc16e7841cb7438148"
+        },
+        {
+          "name": "Wound__GEO_Neck__1",
+          "vertices": 42,
+          "polygons": 23,
+          "triangles": 58,
+          "uv_loops": 104,
+          "weighted_vertices": 42,
+          "bounds_unity_m": {
+            "min": [
+              -0.074,
+              1.387,
+              -0.076
+            ],
+            "max": [
+              0.079,
+              1.5,
+              0.066
+            ],
+            "size": [
+              0.153,
+              0.113,
+              0.142
+            ]
+          },
+          "semantic_sha256": "828bfa9da2e58e4fa949a6862b8b0ddd25cb5db1044b9729725f78390aef40fe"
+        },
+        {
+          "name": "Wound__GEO_Neck__2",
+          "vertices": 43,
+          "polygons": 25,
+          "triangles": 62,
+          "uv_loops": 112,
+          "weighted_vertices": 43,
+          "bounds_unity_m": {
+            "min": [
+              -0.079,
+              1.387,
+              -0.076
+            ],
+            "max": [
+              0.072986,
+              1.5,
+              0.066
+            ],
+            "size": [
+              0.151986,
+              0.113,
+              0.142
+            ]
+          },
+          "semantic_sha256": "20ecb1d526031ed74ca78d485e1935af6e884d8139726bfba259f2bd9fbfae4a"
+        },
+        {
+          "name": "Wound__GEO_Neck__3",
+          "vertices": 43,
+          "polygons": 25,
+          "triangles": 62,
+          "uv_loops": 112,
+          "weighted_vertices": 43,
+          "bounds_unity_m": {
+            "min": [
+              -0.072986,
+              1.387,
+              -0.076
+            ],
+            "max": [
+              0.079,
+              1.5,
+              0.066
+            ],
+            "size": [
+              0.151986,
+              0.113,
+              0.142
+            ]
+          },
+          "semantic_sha256": "35445c4c0a575b311606b10603300f43ca8a09cad7b79dd225fa1fb412a75baf"
+        }
+      ],
+      "vertices": 2828,
+      "triangles": 4310,
+      "bounds_unity_m": {
+        "min": [
+          -0.751415,
+          0.11,
+          -0.147039
+        ],
+        "max": [
+          0.753415,
+          1.735,
+          0.148
+        ],
+        "size": [
+          1.50483,
+          1.625,
+          0.295039
+        ]
+      },
+      "semantic_sha256": "3ed35598a077e19bae874691f8ae092e841aee9b6af3ef803a5fe0b185742d62"
+    },
+    "BloodShapes": {
+      "meshes": [
+        {
+          "name": "Drop",
+          "vertices": 6,
+          "polygons": 8,
+          "triangles": 8,
+          "uv_loops": 24,
+          "weighted_vertices": 0,
+          "bounds_unity_m": {
+            "min": [
+              -0.3,
+              -0.5,
+              -0.3
+            ],
+            "max": [
+              0.3,
+              0.5,
+              0.3
+            ],
+            "size": [
+              0.6,
+              1.0,
+              0.6
+            ]
+          },
+          "semantic_sha256": "0722f3ad6492ebe69dc09b7a2195ea4e80153adab4bb2c73bf3317ac1b96ec63"
+        },
+        {
+          "name": "Splat0",
+          "vertices": 19,
+          "polygons": 18,
+          "triangles": 18,
+          "uv_loops": 54,
+          "weighted_vertices": 0,
+          "bounds_unity_m": {
+            "min": [
+              -0.525592,
+              0.0,
+              -0.536899
+            ],
+            "max": [
+              0.555,
+              0.0,
+              0.612385
+            ],
+            "size": [
+              1.080592,
+              0.0,
+              1.149284
+            ]
+          },
+          "semantic_sha256": "f055681544ea6110ed34347684a4232166c963ef005d471a0b71debaae756158"
+        },
+        {
+          "name": "Splat1",
+          "vertices": 19,
+          "polygons": 18,
+          "triangles": 18,
+          "uv_loops": 54,
+          "weighted_vertices": 0,
+          "bounds_unity_m": {
+            "min": [
+              -0.627981,
+              0.0,
+              -0.532741
+            ],
+            "max": [
+              0.601242,
+              0.0,
+              0.514144
+            ],
+            "size": [
+              1.229223,
+              0.0,
+              1.046886
+            ]
+          },
+          "semantic_sha256": "92d21d5f5186f45016895fb91f70ea35aac70888cf27c0421a94c0040e30e0ad"
+        },
+        {
+          "name": "Splat2",
+          "vertices": 19,
+          "polygons": 18,
+          "triangles": 18,
+          "uv_loops": 54,
+          "weighted_vertices": 0,
+          "bounds_unity_m": {
+            "min": [
+              -0.612706,
+              0.0,
+              -0.546196
+            ],
+            "max": [
+              0.556731,
+              0.0,
+              0.548914
+            ],
+            "size": [
+              1.169436,
+              0.0,
+              1.09511
+            ]
+          },
+          "semantic_sha256": "73e5535fdc02e7e0b840be82d3b1dc115d7f4c7bc44eae1a77e9ce2d3e886ead"
+        },
+        {
+          "name": "Splat3",
+          "vertices": 19,
+          "polygons": 18,
+          "triangles": 18,
+          "uv_loops": 54,
+          "weighted_vertices": 0,
+          "bounds_unity_m": {
+            "min": [
+              -0.493809,
+              0.0,
+              -0.628289
+            ],
+            "max": [
+              0.558942,
+              0.0,
+              0.574658
+            ],
+            "size": [
+              1.052751,
+              0.0,
+              1.202946
+            ]
+          },
+          "semantic_sha256": "05fabf5e3f1922592e9f68eab7bd239bc79a509eecf80d849d35b81a71a421c3"
+        }
+      ],
+      "vertices": 82,
+      "triangles": 80,
+      "bounds_unity_m": {
+        "min": [
+          -0.627981,
+          -0.5,
+          -0.628289
+        ],
+        "max": [
+          0.601242,
+          0.5,
+          0.612385
+        ],
+        "size": [
+          1.229223,
+          1.0,
+          1.240674
+        ]
+      },
+      "semantic_sha256": "a62b47f57be614c99d4728787c5e3ebfc42d600267fdcdf76d86f5ed1262d198"
+    }
+  }
+}

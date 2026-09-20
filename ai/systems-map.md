@@ -50,7 +50,7 @@ A row never carries a status outside this table. Product-level scope cuts
 | PS1 presentation | Shared low-res composite. Optional 4:3, vertex jitter and Begotten keep controls; Begotten ramps `15 s` in, `3 s` out. | `Runtime/Rendering`, `IntoxicationRenderState`, `BegottenModeRamp` | Current |
 | Depth of field tiers | Exteriors keep broad Gaussian far blur; the six interior scenes cap it at radius `0.55`. | `RuntimeSceneSetup`, `DepthOfFieldSettingsBinder` | Current |
 | Runtime area composition | Ten gameplay roots; four build in frames; interior doors retain dormant City/village. | `Runtime/Core`, `Runtime/Scenes` | Current |
-| Combat test | AI/target; outcome recovery, stamina steps; shoulder lock/strafe, ragdoll/drop; R resets. | `CombatTestRoot`, `Runtime/Combat`, `Rules/Combat` | Current |
+| Combat test | AI/target; charge/release, steps/guard; impacts, HP pose/breathing, blood/wounds/puddles; corner HUD; R clears. | `CombatTestRoot`, `Runtime/Combat`, `Rules/Combat` | Current |
 | New-game starting place | Eleven starts after New Game, village default; chosen root at day `1`/`07:40`, ordinary loading. | `StartMenu{Root,Model}`, `NewGame{LocationCatalog,StartService}` | Current |
 | Retained Home waking opening | Frozen `05:59`, five-second lock, Wake Up/Quit, continuous wake. Gap: no shipped path reaches it. | `MainMenuRoot`, `HomeOpening{Controller,Timeline}` | Partial |
 | Session clock and day/night rules | Persistent 48-minute day at ×1; two real seconds per game minute. Intoxication preserves its rate. | `GameTimeState`, `GameTimeRuntime` | Current |
@@ -90,7 +90,7 @@ A row never carries a status outside this table. Product-level scope cuts
 | Cannery receiver | Athletic 1.96 m actor/ski hat/3D glasses/painted face; own actions, shared contacts/speech/pause. | `CanneryReceiver{AssetProvider,Presentation}`, `CanneryReceiverAssetSetup` | Current |
 | Authored NPC outfits | Fixed outfits and modular items/slots/coverage/presets; editor selection. Gameplay clothing UI/save Deferred. | `NpcWardrobe`, `CanneryWomanWardrobe`, `NpcWardrobeEditor` | Current |
 | Global default NPCs | Stable IDs; four faces/three hair colors/modular clothes, shared no-repeat allocation. | `DefaultNpcCatalog`, `DefaultNpcPopulation`, `DefaultNpcFactory`, `DefaultNpcAppearance` | Current |
-| NPC hand poses | Authored bare/gloved cylindrical grip; independent hand weights, action reset and surface alignment. | `NpcHandPose`, `CityCanneryController.DriverHands` | Current |
+| Hand poses | Hero/NPC authored cylindrical grip; independent weights, neutral release and surface alignment. | `NpcHandPose`, `CityCanneryController.DriverHands` | Current |
 | Cemetery mourner | The grave-side mourner uses her own authored presence, gestures and localized response. | `CemeteryMourner{Provider,Plan,Timeline,Presentation,Factory}`, `CityCemeteryMournerController` | Current |
 | Cemetery watchman and gate lodge | The watchman and lodge provide the authored grave-work offer and payment interaction. | `CemeteryWatchman{Provider,Plan,Quips,Interaction,Presentation,Factory}`, `CityCemeteryPlanner.AddLodge` | Current |
 | Cemetery gravedigging | Up to three open jobs; grave acts/epitaphs persist per plot, with payment committed through the watchman. | `CemeteryGravedigging{Plan,Controller,Register}`, `CemeteryGraveWork{Stage,Ledger}` | Current |

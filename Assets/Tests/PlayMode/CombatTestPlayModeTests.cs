@@ -93,6 +93,12 @@ namespace BarPromenade.Tests.PlayMode
             for (int i = 0; i < 130; i++) root.Hero.Step(.01f);
             Assert.That(root.Opponent.State.Health, Is.EqualTo(75f),
                 "Actual authored crowbar contact must hit once across target colliders and arc samples.");
+            Assert.That(root.Opponent.ReceivedImpactCount, Is.EqualTo(1));
+            Assert.That(root.Opponent.LastImpact.Damage, Is.EqualTo(25f));
+            Assert.That(root.Opponent.LastImpact.Direction.sqrMagnitude, Is.EqualTo(1f).Within(.001f));
+            Assert.That(root.Opponent.LastImpact.Point.y, Is.InRange(.3f, 2f));
+            Assert.That(root.BloodEffects.EmissionCount, Is.EqualTo(1), "Duplicate colliders cannot duplicate blood.");
+            Assert.That(root.BloodEffects.WoundCountFor(root.Opponent), Is.GreaterThan(0));
             upper.enabled = middle.enabled = false;
             Object.Destroy(extraBody);
 
@@ -107,6 +113,7 @@ namespace BarPromenade.Tests.PlayMode
             root.Hero.Step(.7f);
             Assert.That(root.Opponent.State.Health, Is.EqualTo(100f));
             Assert.That(root.Hero.State.Stamina, Is.EqualTo(70f), "A miss pays at attack initiation.");
+            Assert.That(root.BloodEffects.EmissionCount, Is.Zero, "A missed swing has no wound or blood.");
             Assert.That(root.Hero.TryAttack(), Is.False, "Recovery commits the player after a miss.");
 
             PlacePair(1.1f);
@@ -125,6 +132,7 @@ namespace BarPromenade.Tests.PlayMode
                 Is.EqualTo("CombatRecoil"), "A wall needs the authored recoil, not a normal missed swing.");
             Assert.That(root.Opponent.State.Health, Is.EqualTo(100f),
                 "Weapon overlap beyond a wall must not transmit damage.");
+            Assert.That(root.BloodEffects.EmissionCount, Is.Zero, "Solid obstacles cannot bleed.");
             root.Hero.Step(2f);
             wall.enabled = false;
             Object.Destroy(wallObject);
@@ -136,6 +144,9 @@ namespace BarPromenade.Tests.PlayMode
             root.Hero.Step(2f);
             Assert.That(root.Opponent.State.Health, Is.EqualTo(100f));
             Assert.That(root.Opponent.State.Stamina, Is.EqualTo(75f), "Frontal guard pays exactly one contact.");
+            Assert.That(root.Opponent.LastImpact.Result, Is.EqualTo(MeleeHitResult.Blocked));
+            Assert.That(root.Opponent.LastImpact.Damage, Is.Zero);
+            Assert.That(root.BloodEffects.EmissionCount, Is.Zero, "Guard contact cannot bleed without health loss.");
             // Exercise the other authored rig too, with the hero receiving the same frontal rules.
             PlacePair(1.1f);
             root.Hero.SetBlock(true);
@@ -265,14 +276,22 @@ namespace BarPromenade.Tests.PlayMode
                 // Exercise MonoBehaviour.Update through actual device events: no direct combat stepping.
                 input.Press(mouse.leftButton, queueEventOnly: true);
                 yield return null;
-                Assert.That(root.Hero.State.Phase, Is.EqualTo(MeleePhase.Windup),
-                    "The real Update loop must consume LMB without requiring an IMGUI Event.current.");
-                Assert.That(root.Hero.State.Stamina, Is.EqualTo(70f));
-                Assert.That(root.Hero.State.AttackElapsed, Is.GreaterThan(0f));
+                Assert.That(root.Hero.State.IsCharging, Is.True,
+                    "The real Update loop begins charging on LMB without requiring an IMGUI Event.current.");
+                Assert.That(root.ChargeMeterVisible, Is.True);
+                Assert.That(root.Hero.State.Stamina, Is.InRange(55f, 70f));
+                Assert.That(root.Opponent.State.Health, Is.EqualTo(100f), "Holding prepares the strike without contact.");
                 input.Release(mouse.leftButton, queueEventOnly: true);
+                yield return null;
+                Assert.That(root.Hero.State.IsCharging, Is.False);
+                Assert.That(root.ChargeMeterVisible, Is.False);
+                Assert.That(root.Hero.State.Phase, Is.EqualTo(MeleePhase.Windup));
+                float tapDamage = root.Hero.State.AttackDamage;
+                Assert.That(tapDamage, Is.InRange(25f, 26f), "A one-frame tap keeps only its small actual charge.");
                 for (int frame = 0; frame < 90 && root.Opponent.State.Health == 100f; frame++) yield return null;
-                Assert.That(root.Opponent.State.Health, Is.EqualTo(75f),
-                    "Automatic frame advancement must carry the authored swing through real contact.");
+                Assert.That(root.Opponent.State.Health, Is.EqualTo(100f - tapDamage).Within(.001f),
+                    "Release carries the authored swing through one real contact at its latched power.");
+                Assert.That(root.Opponent.ReceivedImpactCount, Is.EqualTo(1));
 
                 input.Press(keyboard.rKey, queueEventOnly: true);
                 yield return null;
@@ -283,7 +302,7 @@ namespace BarPromenade.Tests.PlayMode
                 yield return null;
 
                 // The left toolbar margin belongs to the toolbar but no button: a GUI reset cannot mask a swing.
-                Vector2 toolbarPointer = canvas.LogicalToScreen(new Vector2(17f, 55f));
+                Vector2 toolbarPointer = canvas.LogicalToScreen(new Vector2(389f, 20f));
                 toolbarPointer.y = Screen.height - toolbarPointer.y;
                 input.Set(mouse.position, toolbarPointer, queueEventOnly: true);
                 yield return null;
@@ -305,14 +324,112 @@ namespace BarPromenade.Tests.PlayMode
                 yield return null;
                 Assert.That(root.Hero.State.IsBlocking, Is.False);
 
+                PlacePair(1.1f);
+                input.Press(mouse.leftButton, queueEventOnly: true);
+                for (int frame = 0; frame < 15; frame++) yield return null;
+                Assert.That(root.Hero.State.IsCharging, Is.True);
+                Assert.That(root.PauseMenu.Open(), Is.True);
+                float pausedCharge = root.Hero.State.Charge01, pausedChargeStamina = root.Hero.State.Stamina;
+                for (int frame = 0; frame < 6; frame++) yield return null;
+                Assert.That(root.Hero.State.Charge01, Is.EqualTo(pausedCharge));
+                Assert.That(root.Hero.State.Stamina, Is.EqualTo(pausedChargeStamina));
+                Assert.That(root.ChargeMeterVisible, Is.False);
+                input.Release(mouse.leftButton, queueEventOnly: true);
+                yield return null;
+                Assert.That(root.PauseMenu.Cancel(), Is.True);
+                yield return WaitFor(() => GameInput.CanRead(GameInputContext.Gameplay), "Pause did not release charge input.");
+                yield return null;
+                Assert.That(root.Hero.State.IsCharging, Is.False, "A release while paused cancels rather than firing on resume.");
+                Assert.That(root.Hero.State.Phase, Is.EqualTo(MeleePhase.Ready));
+                Assert.That(root.Opponent.State.Health, Is.EqualTo(100f));
+
+                PlacePair(1.1f);
+                input.Press(mouse.leftButton, queueEventOnly: true);
+                for (int frame = 0; frame < 72; frame++) yield return null;
+                Assert.That(root.Hero.State.IsCharging, Is.True, "A full held charge never auto-fires.");
+                Assert.That(root.Hero.State.Charge01, Is.EqualTo(1f).Within(.0001f));
+                Assert.That(root.Hero.State.Stamina, Is.EqualTo(55f).Within(.001f));
+                Assert.That(root.Opponent.State.Health, Is.EqualTo(100f));
+                input.Release(mouse.leftButton, queueEventOnly: true);
+                yield return null;
+                Assert.That(root.Hero.State.AttackPower, Is.EqualTo(1f).Within(.0001f));
+                Assert.That(root.Hero.State.AttackDamage, Is.EqualTo(40f).Within(.001f));
+                yield return WaitFor(() => root.Opponent.State.Health < 100f, "Released full charge never reached the target.");
+                Assert.That(root.Opponent.State.Health, Is.EqualTo(60f).Within(.001f));
+                Assert.That(root.Opponent.ReceivedImpactCount, Is.EqualTo(1));
+
+                foreach (bool stepInsteadOfGuard in new[] { false, true })
+                {
+                    PlacePair(4f);
+                    input.Press(mouse.leftButton, queueEventOnly: true);
+                    for (int frame = 0; frame < 3; frame++) yield return null;
+                    if (stepInsteadOfGuard) input.Press(keyboard.spaceKey, queueEventOnly: true);
+                    else input.Press(mouse.rightButton, queueEventOnly: true);
+                    yield return null;
+                    Assert.That(root.Hero.State.IsCharging, Is.False, "Guard and defensive step cancel charge ownership.");
+                    if (stepInsteadOfGuard) Assert.That(root.Hero.State.Phase, Is.EqualTo(MeleePhase.Step));
+                    else Assert.That(root.Hero.State.IsBlocking, Is.True);
+                    int cancelledSequence = root.Hero.State.AttackSequence;
+                    input.Release(mouse.leftButton, queueEventOnly: true);
+                    if (stepInsteadOfGuard) input.Release(keyboard.spaceKey, queueEventOnly: true);
+                    else input.Release(mouse.rightButton, queueEventOnly: true);
+                    for (int frame = 0; frame < 4; frame++) yield return null;
+                    Assert.That(root.Hero.State.AttackSequence, Is.EqualTo(cancelledSequence),
+                        "The old attack button release cannot replay a cancelled charge.");
+                }
+
+                PlacePair(4f);
+                input.Press(mouse.leftButton, queueEventOnly: true);
+                for (int frame = 0; frame < 3; frame++) yield return null;
+                root.SendMessage("OnApplicationFocus", false, SendMessageOptions.RequireReceiver);
+                Assert.That(root.Hero.State.IsCharging, Is.False, "Focus loss cancels the prepared strike.");
+                int focusSequence = root.Hero.State.AttackSequence;
+                input.Release(mouse.leftButton, queueEventOnly: true);
+                root.SendMessage("OnApplicationFocus", true, SendMessageOptions.RequireReceiver);
+                yield return null;
+                Assert.That(root.Hero.State.AttackSequence, Is.EqualTo(focusSequence));
+
+                PlacePair(4f);
+                input.Press(mouse.leftButton, queueEventOnly: true);
+                for (int frame = 0; frame < 3; frame++) yield return null;
+                input.Press(keyboard.rKey, queueEventOnly: true);
+                yield return null;
+                Assert.That(root.Hero.State.IsCharging, Is.False, "R releases the old held charge.");
+                Assert.That(root.Hero.State.Stamina, Is.EqualTo(100f));
+                int resetSequence = root.Hero.State.AttackSequence;
+                input.Release(keyboard.rKey, queueEventOnly: true);
+                input.Release(mouse.leftButton, queueEventOnly: true);
+                yield return null;
+                Assert.That(root.Hero.State.AttackSequence, Is.EqualTo(resetSequence), "The pre-reset release cannot start a new attack.");
+
+                PlacePair(4f);
+                // A rules-only setup leaves 37.5 stamina; live input must cap
+                // charge at one half instead of promising unaffordable power.
+                root.Hero.State.SetBlocking(true);
+                Assert.That(root.Hero.State.ReceiveHit(25f, 62.5f, true), Is.EqualTo(MeleeHitResult.Blocked));
+                root.Hero.State.SetBlocking(false);
+                root.Hero.Step(root.Hero.State.Settings.GuardImpactSeconds + .01f);
+                input.Press(mouse.leftButton, queueEventOnly: true);
+                for (int frame = 0; frame < 66; frame++) yield return null;
+                Assert.That(root.Hero.State.IsCharging, Is.True);
+                Assert.That(root.Hero.State.ChargeLimit01, Is.EqualTo(.5f).Within(.001f));
+                Assert.That(root.Hero.State.Charge01, Is.EqualTo(.5f).Within(.001f));
+                Assert.That(root.Hero.State.Stamina, Is.Zero.Within(.001f));
+                input.Release(mouse.leftButton, queueEventOnly: true);
+                yield return null;
+                Assert.That(root.Hero.State.AttackPower, Is.EqualTo(.5f).Within(.001f));
+                Assert.That(root.Hero.State.AttackDamage, Is.EqualTo(32.5f).Within(.001f));
+
                 // A fresh, distant target isolates movement and the one-click recovery buffer.
                 PlacePair(4f);
                 Vector3 beforeWindup = root.Hero.transform.position;
                 input.Press(keyboard.wKey, queueEventOnly: true);
                 input.Press(mouse.leftButton, queueEventOnly: true);
                 yield return null;
-                int firstSequence = root.Hero.State.AttackSequence;
                 input.Release(mouse.leftButton, queueEventOnly: true);
+                yield return null;
+                int firstSequence = root.Hero.State.AttackSequence;
+                float firstAttackPower = root.Hero.State.AttackPower;
                 for (int frame = 0; frame < 12; frame++) yield return null;
                 Assert.That(root.Hero.State.Phase, Is.EqualTo(MeleePhase.Windup));
                 Assert.That(root.Hero.transform.position.z, Is.GreaterThan(beforeWindup.z + .01f),
@@ -327,7 +444,7 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(root.Hero.transform.position.z, Is.GreaterThan(beforeRecovery.z + .01f),
                     "Recovery permits restricted movement without cancelling the committed swing.");
                 input.Release(keyboard.wKey, queueEventOnly: true);
-                float bufferAt = root.Hero.State.Settings.AttackDurationSeconds - .12f;
+                float bufferAt = root.Hero.State.CurrentAttackDurationSeconds - .12f;
                 yield return WaitFor(() => root.Hero.State.AttackElapsed >= bufferAt,
                     "The attack never entered its final recovery input window.");
                 input.Press(mouse.leftButton, queueEventOnly: true);
@@ -338,7 +455,7 @@ namespace BarPromenade.Tests.PlayMode
                 yield return WaitFor(() => root.Hero.State.AttackSequence == firstSequence + 1,
                     "The released click in final recovery must start one subsequent attack.");
                 Assert.That(root.Hero.State.Phase, Is.EqualTo(MeleePhase.Windup));
-                Assert.That(root.Hero.State.Stamina, Is.EqualTo(40f).Within(.01f));
+                Assert.That(root.Hero.State.Stamina, Is.EqualTo(40f - 15f * firstAttackPower).Within(.01f));
                 yield return WaitFor(() => root.Hero.State.Phase == MeleePhase.Ready,
                     "The buffered attack did not finish.");
                 for (int frame = 0; frame < 12; frame++) yield return null;

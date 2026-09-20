@@ -191,9 +191,12 @@ namespace BarPromenade
 
             public void SetWeight(float weight)
             {
-                if (Weight == weight) return;
+                // Sampling a body clip can restore renderer defaults without
+                // changing this owner's cached weight. Reconcile the actual
+                // mesh after sampling, including an unchanged held grip.
                 for (int i = 0; i < shapes.Length; i++)
-                    if (Binding.Renderers[i] != null) Binding.Renderers[i].SetBlendShapeWeight(shapes[i], weight * 100f);
+                    if (Binding.Renderers[i] != null && Binding.Renderers[i].GetBlendShapeWeight(shapes[i]) != weight * 100f)
+                        Binding.Renderers[i].SetBlendShapeWeight(shapes[i], weight * 100f);
                 Weight = weight;
             }
         }

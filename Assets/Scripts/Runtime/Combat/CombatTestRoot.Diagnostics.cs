@@ -44,6 +44,7 @@ namespace BarPromenade
         private void OnApplicationQuit() => WriteMovementSummary();
         private void OnDestroy()
         {
+            ReleaseDamageEffects();
             if (CameraFollow != null) CameraFollow.ClearTargetLock(this);
             if (Player.Motor != null) Player.Motor.ClearMovementTarget(this);
             WriteMovementSummary();
