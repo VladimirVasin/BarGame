@@ -156,12 +156,12 @@ The vertical slice contains:
   pedestrian positions. Operation-scoped City/Bar markers preserve later arrivals.
   Day one raises the mother's-house quest and map marker, closed on entry
   through door/map or immediately when starting inside; no village signpost;
-- Combat Test: crowbar AI/target. Free swings; breath pays guard, quick vulnerable
-  Space steps, .9 s LMB/RT charge (held cap drains); regen through stuns. Fresh
-  guard press parries lights; counter-hits on windups/whiffs; a buffered
-  backhand. Two-hand low ready, face-level guard; contacts follow blends/HP pose.
-  Hit-stop, shoves, blood/wounds/puddles; fall drops, R resets. Seeded AI.
-  Shoulder camera frees 1.5 s after the fall; W/S travel, A/D strafe; corner HUD.
+- Combat Test: crowbar AI/target; free swings. Breath: guard/vulnerable Space
+  steps/.9 s LMB/RT charge (cap drains); regen through stuns. Fresh guard
+  parries lights; windup/whiff counters, buffered backhand. Low two-hand/high
+  guard; whole-body inertia and continuous transitions; contacts use final pose.
+  Hit-stop/shoves/HP/blood/wounds/puddles; fall drops, R clears. Seeded AI.
+  Shoulder frees after 1.5 s; W/S travel, A/D strafe; corner HUD.
   Pause freezes/cancels release; no story fight;
 - the retained Home opening is reachable only by a legacy request: held bed loop,
   silent `05:59` clock with rare whole-display flicker, five-second input lock,

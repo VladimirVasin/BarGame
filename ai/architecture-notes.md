@@ -4,26 +4,27 @@
 
 ## Current facts
 
+- **Accepted — 2026-09-21, combat inertia:**
+  Both: C1 body curves; duel-clock pose/contact; inertial travel/yaw.
+
 - **Accepted — 2026-09-20, two-hand combat hold:**
-  Both: low diagonal Ready, high horizontal Block; left regrips .16→.42 m,
-  palm opposite right. Ready/Block/Rest: 4 s breath; staggered legs yield to gait.
-  `NpcHandPose`/support follow blends/injury. Round end: one-hand Rest.
+  Low diagonal Ready/high horizontal Block; left .16→.42 m/opposed palm.
+  Ready/Block/Rest breathe 4 s; staggered legs yield to gait; end right Rest.
+  `NpcHandPose`/support blend/injury.
 
 - **Accepted — 2026-09-21, brawl v2:**
-  Free swings; breath pays guard 20/35, step 15, charge 20 (+15/s held);
-  regen 30/s, .6 s, through stuns, own spends only. Fresh press ≤.12 s
-  parries lights, re-arm .35; counter-hit +.30; break ½ dmg .55; .22
-  backhand; buffer .20; heavy windup .28; seeded AI; free camera after fall.
+  Free swings; breath guard20/35/step15/charge20 (+15/s cap); regen30/s/.6 s
+  through stuns, own spends. Fresh≤.12 parries lights/re-arm.35; counter+.30;
+  break½/.55; backhand.22; buffer.20; heavy windup.28; seeded AI; free camera postfall.
 
 - **Accepted architecture exception — 2026-09-20, combat injury:**
-  Directional/HP pose, blood/wounds/puddles; none on block/miss.
-  R/unload clears; ragdoll wins. Visual only.
+  HP/directional pose,blood/wounds/puddles; block/miss dry.
+  Visual; R/unload clears; ragdoll wins.
 
 - **Accepted architecture exception — 2026-09-19, isolated combat test:**
-  Story §6/§16.15/art §15a: `CombatTest` only; no story/speech.
-  Shared hero/input; mutual buffered hits, vulnerable steps, rig fall/reset.
-  Shoulder/wall lock; W/S travel, A/D strafe; winner walks.
-  `MeleeCombatSettings`; opponent last.
+  §6/§16.15/art §15a: `CombatTest`, no story/speech; shared hero/input;
+  Mutual hit buffers, vulnerable steps/fall/reset, shoulder/wall lock.
+  W/S travel,A/D strafe; winner walks; `MeleeCombatSettings`; opponent last.
 
 - **Accepted — 2026-09-16, street pool is the default NPC catalog:**
   User: default-only; new models join at once.

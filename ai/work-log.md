@@ -30,13 +30,9 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
   and the manifest key is `step_clips`; the stride stays .65 m (a longer
   planted leg is unreachable at the mid-travel pelvis dip), travel .24/.14.
   Check: `build-combat-test-3d-model.py --actions-only`.
-- Tests: PlayMode literals became `CombatTuning` expressions; direct
-  `SetBlock`+`ReceiveHit` setups age the guard past the parry window or throw
-  a heavy; evasion runs on frames (a capsule's physics pose follows its
-  transform only across simulation steps, so rules-only ticks cannot dodge);
-  the strafe section ticks the duel and the foreign-owner case releases the
-  stance clip first, since the two-hand stance now owns the full clip.
-  Headless `CombatDuelSimulator` with named habits. Check: `CombatBalanceTests`.
+- Coverage: shared `CombatTuning`; guard setups age parries/use heavies;
+  evasion follows capsule physics on frames; strafe ticks duel, foreign owners
+  first release full stance. Headless named habits: `CombatBalanceTests`.
 - Docs: work-log dates before 09-09 archived to `archive/work-log-2026-09.md`;
   `check-docs.py`.
 - Charge arm fix: the old one-hand overhead pose pulled the weapon wrist
@@ -44,6 +40,12 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
   Reachable two-hand raised landmarks and forearm roll preserve the bend
   through charge interpolation. Check: `build-combat-test-3d-model.py`,
   `AreaCaptureFixture.CombatChargeArmAlignment` (both live rigs and views).
+
+- Body inertia: C1 torso curves retain motion through passing keys, pin feet/
+  grip; both rigs carry transition velocity. Body/contact composition shares
+  duel time, so resampling cannot speed it; combat travel/yaw accelerate/brake.
+  Checks: `build-combat-test-3d-model.py --actions-only`,
+  `Range_CombatBodyInertiaKeepsBothRigsContinuousAndClockBound`; rendered motion reviewed.
 
 ## 2026-09-20 — Combat
 

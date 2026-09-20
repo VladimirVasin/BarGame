@@ -70,6 +70,7 @@ namespace BarPromenade
             var body = opponentObject.AddComponent<CharacterController>();
             body.height = 1.75f; body.radius = .32f; body.center = Vector3.up * .875f;
             body.skinWidth = PlayerFactory.GroundedRootOffset; body.stepOffset = PlayerFactory.StepOffset;
+            body.minMoveDistance = 0f;
             VillageResidentPresentation presentation = DefaultNpcFactory.CreateForCharacter(
                 opponentObject.transform, DefaultNpcPopulation.CombatTestOpponent);
             Opponent = opponentObject.AddComponent<CombatActor>();
@@ -112,13 +113,14 @@ namespace BarPromenade
             ResetOpponentDecisions();
             LockOnOpponent();
             CameraFollow.Snap();
+            SetDuelFrozen(false);
         }
 
         /// <summary>The duel owns the shoulder camera and target-facing movement; a reset takes them back.</summary>
         private void LockOnOpponent()
         {
             if (!CameraFollow.SetTargetLock(this, opponentObject.transform, opponentChest, heroChest) ||
-                !Player.Motor.SetMovementTarget(this, opponentChest))
+                !Player.Motor.SetMovementTarget(this, opponentChest, true))
                 throw new InvalidOperationException("Combat requires its shoulder camera and target-facing movement.");
         }
 
@@ -131,7 +133,17 @@ namespace BarPromenade
         }
 
         /// <summary>Hold both fighters on the frame of contact for a few simulation substeps.</summary>
-        private void RequestHitStop(int substeps) => hitStopSubsteps = Math.Max(hitStopSubsteps, substeps);
+        private void SetDuelFrozen(bool frozen)
+        {
+            Player.Motor.SetMovementTargetFrozen(this, frozen);
+            Hero.SetPresentationFrozen(frozen);
+        }
+
+        private void RequestHitStop(int substeps)
+        {
+            hitStopSubsteps = Math.Max(hitStopSubsteps, substeps);
+            SetDuelFrozen(hitStopSubsteps > 0);
+        }
 
         private void Update()
         {
@@ -150,6 +162,7 @@ namespace BarPromenade
                 return;
             }
             pendingSeconds += seconds;
+            bool advanced = false;
             while (pendingSeconds + .0000001d >= SimulationStep && !RoundFinished)
             {
                 pendingSeconds = Math.Max(0d, pendingSeconds - SimulationStep);
@@ -161,8 +174,10 @@ namespace BarPromenade
                     HitStopSecondsConsumed += SimulationStep;
                     continue;
                 }
-                Opponent.SetLocomotion(0f);
+                BeginOpponentMovement();
+                advanced = true;
                 if (Sparring) AdvanceOpponent(SimulationStep);
+                AdvanceOpponentMovement(SimulationStep);
                 Physics.SyncTransforms();
                 pendingContacts.Clear();
                 Hero.AdvanceSimulation(SimulationStep, pendingContacts);
@@ -180,16 +195,20 @@ namespace BarPromenade
                 AdvanceFinishedRound((float)pendingSeconds);
             }
             else { Hero.Present(); Opponent.Present(); }
+            if (hitStopSubsteps > 0 || roundEndFreeze > 0d) SetDuelFrozen(true);
+            else if (advanced && !RoundFinished) SetDuelFrozen(false);
         }
 
         private void AdvanceFinishedRound(float seconds)
         {
+            ResetOpponentMovement();
             pendingSeconds = 0d;
             float frozen = (float)Math.Min(seconds, roundEndFreeze);
             roundEndFreeze = Math.Max(0d, roundEndFreeze - frozen);
             HitStopSecondsConsumed += frozen;
             seconds -= frozen;
             if (seconds <= 0f) return;
+            SetDuelFrozen(false);
             roundEndElapsed += seconds;
             Hero.AdvanceRoundEnd(seconds); Opponent.AdvanceRoundEnd(seconds);
             BloodEffects.Tick(seconds);

@@ -17,12 +17,13 @@ namespace BarPromenade
         {
             damagePose = new CombatDamagePose();
             damagePose.Initialize(DamageRigRoot, transform);
+            bodyMotion = new CombatBodyMotion(DamageRigRoot, transform);
         }
 
         private void PresentDamagePose()
         {
-            // The tell and the swept arc stay on the exact authored pose; a hurt
-            // fighter still recovers and guards hurt.
+            // Injury yields to the committed tell, arc and step. Both contact
+            // and rendering still use the same motion/transition composition.
             float weight = State.Phase switch
             {
                 MeleePhase.Charging => 0f,

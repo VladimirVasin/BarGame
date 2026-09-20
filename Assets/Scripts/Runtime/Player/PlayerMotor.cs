@@ -66,6 +66,7 @@ namespace BarPromenade
             movementConstraintOwner = owner;
             ownedMoveScale = Mathf.Clamp01(moveScale);
             ownedTurnScale = Mathf.Clamp01(turnScale);
+            if (ownedTurnScale == 0f) targetYawVelocity = 0f;
             if (ownedMoveScale == 0f)
             {
                 momentumVelocity = PlanarVelocity = Vector3.zero;
@@ -80,6 +81,7 @@ namespace BarPromenade
             if (owner == null || !ReferenceEquals(owner, movementConstraintOwner)) return;
             movementConstraintOwner = null;
             ownedMoveScale = ownedTurnScale = 1f;
+            targetYawVelocity = 0f;
         }
 
         /// <summary>
@@ -507,6 +509,11 @@ namespace BarPromenade
                 return;
             }
 
+            // Combat owns this short freeze; retain the earned momentum without
+            // advancing locomotion, pushes or turning during hit-stop or pause.
+            if (MovementTargetActive && inertialTargetMovement &&
+                (movementTargetFrozen || GameTimeScaleRuntime.IsPaused)) return;
+
             // Tank controls: A/D yaw the hero on the spot, W walks along
             // the hero's own forward axis and S backs up along it at a
             // reduced pace. The camera no longer steers locomotion.
@@ -530,6 +537,8 @@ namespace BarPromenade
                     out yawDelta, out turnInput);
             else
             {
+                targetYawVelocity = 0f;
+                movementTargetFrozen = false;
                 turnInput = input.x * ownedTurnScale;
                 yawDelta = turnInput * TurnSpeedDegreesPerSecond *
                     speedMultiplier * balanceYawScale * Time.deltaTime;
@@ -551,9 +560,9 @@ namespace BarPromenade
             // momentum is the player's own achieved motion; the balance
             // drift moves the capsule in a second, separate move below and
             // is never re-integrated here.
-            Vector3 steeredPlanarVelocity =
-                Quaternion.AngleAxis(yawDelta, Vector3.up) *
-                momentumVelocity;
+            Vector3 steeredPlanarVelocity = targetRelative && inertialTargetMovement
+                ? momentumVelocity
+                : Quaternion.AngleAxis(yawDelta, Vector3.up) * momentumVelocity;
             if (ExternalPushActive)
             {
                 desiredPlanarVelocity =
@@ -767,6 +776,9 @@ namespace BarPromenade
             ClearExternalPush();
             PlanarVelocity = Vector3.zero;
             momentumVelocity = Vector3.zero;
+            targetYawVelocity = 0f;
+            movementTargetFrozen = false;
+            CurrentTurnInput = 0f;
             balanceDrift = Vector3.zero;
             lastContact = default;
             footstepDistance = 0f;

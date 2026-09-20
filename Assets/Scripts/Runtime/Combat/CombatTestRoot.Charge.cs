@@ -84,6 +84,8 @@ namespace BarPromenade
 
         private void OnDisable()
         {
+            ResetOpponentMovement();
+            if (IsInitialized) SetDuelFrozen(false);
             if (Hero != null) Hero.CancelCharge();
             if (Opponent != null) Opponent.CancelCharge();
             ResetChargeInput();

@@ -16,7 +16,7 @@ from pathlib import Path
 import sys
 
 import bpy
-from mathutils import Matrix, Quaternion, Vector
+from mathutils import Euler, Matrix, Quaternion, Vector
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tools"))
@@ -116,6 +116,67 @@ def make_items():
 
 
 class CombatBuilder(dialogue.DialogueBuilder):
+    def locomotion_torso(self, direction, load, settle):
+        """The ribcage follows the travelling hips, then absorbs the stop."""
+        for name, weight in (("spine", .45), ("chest", .55), ("head", -.55)):
+            bone = self.result.rig.pose.bones[name]
+            pitch = -direction.y * (3.5*load - 2.0*settle)*weight
+            roll = direction.x * (3.5*load - 2.0*settle)*weight
+            bone.rotation_quaternion = bone.rotation_quaternion @ Euler(
+                (math.radians(pitch), math.radians(roll), 0.), "XYZ").to_quaternion()
+        bpy.context.view_layer.update()
+
+    @staticmethod
+    def track_pose(stops, poses, second):
+        """C1 local-pose curves carry momentum through authored landmarks.
+
+        Quaternion Bezier controls use a shared angular velocity at each knot;
+        translations use monotone Hermite tangents. Real reversals/held poses
+        stop, but passing a contact/settling key no longer stops every bone.
+        The endpoints remain exact and the foot/grip solvers run afterwards.
+        """
+        if second <= stops[0][0]: return poses[stops[0][1]]
+        if second >= stops[-1][0]: return poses[stops[-1][1]]
+        index = next(i for i in range(len(stops)-1) if second <= stops[i+1][0] + 1.e-8)
+        a, b = stops[index][0], stops[index+1][0]
+        t, duration = (second-a)/(b-a), b-a
+        source = [poses[key] for _, key in stops]
+
+        def vector_tangent(values, knot):
+            if knot in (0, len(stops)-1): return Vector((0., 0., 0.))
+            left = (values[knot]-values[knot-1])/(stops[knot][0]-stops[knot-1][0])
+            right = (values[knot+1]-values[knot])/(stops[knot+1][0]-stops[knot][0])
+            return Vector(tuple(2*x*y/(x+y) if x*y > 0. else 0. for x,y in zip(left, right)))
+
+        def angular_tangent(values, knot):
+            if knot in (0, len(stops)-1): return Vector((0., 0., 0.))
+            def delta(other):
+                q = values[knot].inverted() @ other
+                if q.w < 0.: q.negate()
+                return q.to_exponential_map()
+            incoming = -delta(values[knot-1])/(stops[knot][0]-stops[knot-1][0])
+            outgoing = delta(values[knot+1])/(stops[knot+1][0]-stops[knot][0])
+            if incoming.dot(outgoing) <= 0.: return Vector((0., 0., 0.))
+            tangent = (incoming+outgoing)*.5
+            maximum = 1.5*min(incoming.length, outgoing.length)
+            return tangent.normalized()*min(maximum, tangent.length)
+
+        result = {}
+        for name in source[0]:
+            rotations = [Euler(tuple(math.radians(v) for v in pose[name].rotation_degrees), "XYZ").to_quaternion() for pose in source]
+            q0, q1 = rotations[index:index+2]
+            c0 = q0 @ Quaternion(angular_tangent(rotations, index)*(duration/3.))
+            c1 = q1 @ Quaternion(angular_tangent(rotations, index+1)*(-duration/3.))
+            p0, p1, p2 = q0.slerp(c0, t), c0.slerp(c1, t), c1.slerp(q1, t)
+            rotation = p0.slerp(p1, t).slerp(p1.slerp(p2, t), t)
+            def interpolate(field):
+                values = [Vector(getattr(pose[name], field)) for pose in source]
+                return tuple((2*t**3-3*t*t+1)*values[index] + (t**3-2*t*t+t)*duration*vector_tangent(values, index) +
+                             (-2*t**3+3*t*t)*values[index+1] + (t**3-t*t)*duration*vector_tangent(values, index+1))
+            result[name] = common.BonePose(rotation_degrees=tuple(math.degrees(v) for v in rotation.to_euler("XYZ")),
+                                          location_m=interpolate("location_m"), scale=interpolate("scale"))
+        return result
+
     def support(self, side):
         return self.result.rig.data.bones["foot." + side].head_local + Vector(SUPPORT_OFFSETS[side])
 
@@ -255,10 +316,7 @@ class CombatBuilder(dialogue.DialogueBuilder):
                        (.56, "heavy_contact"), (.63, "heavy_follow"), (.73, "heavy_overrun"),
                        (.96, "heavy_recover"), (1.28, "ready"))
         def at(stops, source, second):
-            for (a, p), (b, q) in zip(stops, stops[1:]):
-                if second <= b + .00001:
-                    return self.blend(source[p], source[q], dialogue.smooth((second-a)/(b-a)))
-            raise ValueError("Release probe outside timeline")
+            return self.track_pose(stops, source, second)
         worst = (100., 0., 0.)
         for second in sorted({frame/FPS for frame in range(0, 129, 4)} | {t for t, _ in light_stops}):
             light = self.pin_left_grip(self.pin_supports(at(light_stops, poses, second)))
@@ -386,11 +444,16 @@ class CombatBuilder(dialogue.DialogueBuilder):
         }
         elbow, wrist, axis, chest = poses[kind]
         shoulder = self.points["shoulder.R"]
+        # Keep the carefully solved charge/guard docks; the hips unwind into
+        # contact and continue through recovery, instead of moving those grips.
+        body_weight = 1. if kind in ("contact", "follow", "overrun", "recover", "hit", "hit_settle",
+            "guard_impact", "guard_break", "recoil", "defeat", "heavy_contact", "heavy_follow", "heavy_overrun", "heavy_recover") else 0.
         pose = self.merge_pose(self.relaxed_pose(), {
-            "pelvis": B(armature_location_m=tuple(Vector(shifts[kind]) + Vector((0, 0, -.040)))),
-            "spine": B(rotation_degrees=(-2, 0, chest[2] * .24)),
+            "pelvis": B(rotation_degrees=(chest[0]*.12*body_weight, 0, chest[2]*.18*body_weight),
+                        armature_location_m=tuple(Vector(shifts[kind]) + Vector((0, 0, -.040)))),
+            "spine": B(rotation_degrees=(-2 + chest[0]*.22*body_weight, 0, chest[2] * (.24+.06*body_weight))),
             "chest": B(rotation_degrees=chest),
-            "head": B(rotation_degrees=(3, 0, -chest[2] * .4)),
+            "head": B(rotation_degrees=(3-chest[0]*.10, 0, -chest[2] * .52)),
             "upper_arm.R": B(armature_direction=tuple(Vector(elbow) - shoulder)),
             "forearm.R": B(armature_direction=tuple(Vector(wrist) - Vector(elbow))),
             "upper_arm.L": B(armature_direction=(.16, -.13, -.26)),
@@ -417,7 +480,11 @@ class CombatBuilder(dialogue.DialogueBuilder):
                          "forearm.L": B(armature_direction=(-.12, -.10, .28))})
         elif kind in ("follow", "overrun", "heavy_follow", "heavy_overrun"):
             pose.update({"upper_arm.L": B(armature_direction=(.25, .05, -.13)),
-                         "forearm.L": B(armature_direction=(-.03, -.16, .23))})
+                         "forearm.L": B(armature_direction=(-.03, -.16, .23)),
+                         # Eyes stay on the opponent as the chest passes, then
+                         # the head catches the remaining rotation during braking.
+                         "head": B(rotation_degrees=(3-chest[0]*.10, 0,
+                            -chest[2]*(.68 if kind.endswith("follow") else .40)))})
         elif kind == "defeat":
             pose.update({"upper_arm.L": B(armature_direction=(.23, .05, -.23)),
                          "forearm.L": B(armature_direction=(.10, .10, -.25)),
@@ -498,7 +565,7 @@ class CombatBuilder(dialogue.DialogueBuilder):
                 second = frame / sample_fps
                 for (a, p), (b, q) in zip(stops, stops[1:]):
                     if second <= b + .00001:
-                        blended = self.blend(poses[p], poses[q], dialogue.smooth((second - a) / (b - a)))
+                        blended = self.track_pose(stops, poses, second)
                         posed = self.pin_supports(blended)
                         if name != "CombatRest":
                             grip = BLOCK_GRIP if name in ("CombatBlock", "CombatGuardImpact") else SUPPORT_GRIP
@@ -537,7 +604,7 @@ class CombatBuilder(dialogue.DialogueBuilder):
             second = frame / FPS
             for (a, p), (b, q) in zip(stops, stops[1:]):
                 if second <= b + .00001:
-                    upper_pose = self.blend(poses[p], poses[q], dialogue.smooth((second - a) / (b - a)))
+                    upper_pose = self.track_pose(stops, poses, second)
                     pose = {name: upper_pose[name] if name in upper else value
                             for name, value in light_poses[frame].items()}
                     keys.append((frame / 128, self.pin_left_grip(pose)))
@@ -575,6 +642,8 @@ class CombatBuilder(dialogue.DialogueBuilder):
                 weighted.translation += Vector((-sign*.018*math.sin(t*math.tau), 0., -.065*math.sin(t*math.pi)**2))
                 pelvis.matrix = weighted
                 bpy.context.view_layer.update()
+                self.locomotion_torso(Vector((sign, 0., 0.)), math.sin(t*math.pi)**2,
+                                      math.sin(t*math.pi)**2*dialogue.smooth(t))
                 feet = {}
                 for side in ("L", "R"):
                     progress = min(1., max(0., 2.*t - (0. if side == leading else 1.)))
@@ -612,6 +681,8 @@ class CombatBuilder(dialogue.DialogueBuilder):
                 lean = Vector((0., 0., 1.)).rotation_difference((Vector((0., 0., 1.)) + direction*(.12*load)).normalized())
                 pelvis.matrix = Matrix.Translation(position) @ lean.to_matrix().to_4x4() @ weighted.to_3x3().to_4x4()
                 bpy.context.view_layer.update()
+                landing = dialogue.smooth(travel) * math.sin(second/STEP_DURATION*math.pi)**2
+                self.locomotion_torso(direction, load, landing)
                 feet = {}
                 for side in ("L", "R"):
                     progress = min(1., max(0., 2.*travel - (0. if side == leading else 1.)))
@@ -636,7 +707,7 @@ def step_payload(builder):
     rig.animation_data.action = builder.result.actions["CombatReady"].action
     bpy.context.scene.frame_set(0); bpy.context.view_layer.update()
     ready = {bone.name: bone.matrix_basis.copy() for bone in rig.pose.bones}
-    excluded = {"pelvis", "thigh.L", "thigh.R", "shin.L", "shin.R", "foot.L", "foot.R"}
+    excluded = {"pelvis", "spine", "chest", "head", "thigh.L", "thigh.R", "shin.L", "shin.R", "foot.L", "foot.R"}
     for name, axis, leading in STEP_CLIPS:
         action = builder.result.actions[name].action
         for curve in common.iter_action_fcurves(action):
@@ -644,7 +715,7 @@ def step_payload(builder):
             checksum.update(json.dumps([name, curve.data_path, curve.array_index,
                 [[round(v, 7) for v in key.co] for key in curve.keyframe_points]], separators=(",", ":")).encode())
         direction = Vector(axis)
-        support_error = upper_error = seam_error = 0.
+        support_error = upper_error = seam_error = torso_travel = 0.
         lifts = {"L": 0., "R": 0.}
         separation = 100.
         rig.animation_data.action = action
@@ -668,11 +739,14 @@ def step_payload(builder):
             for bone in rig.pose.bones:
                 error = max(abs(bone.matrix_basis[i][j]-ready[bone.name][i][j]) for i in range(4) for j in range(4))
                 if bone.name not in excluded: upper_error = max(upper_error, error)
+                if bone.name in ("spine", "chest"):
+                    torso_travel = max(torso_travel, math.degrees(ready[bone.name].to_quaternion().rotation_difference(bone.rotation_quaternion).angle))
                 if sample in (0, count): seam_error = max(seam_error, error)
-        if support_error > .002 or upper_error > .00001 or seam_error > .00001 or separation < .18 or min(lifts.values()) < .05:
+        if support_error > .002 or upper_error > .00001 or seam_error > .00001 or separation < .18 or min(lifts.values()) < .05 or torso_travel < 1.:
             raise ValueError(f"Defensive step support/guard/seam/spacing failed: {name}: {support_error}, {upper_error}, {seam_error}, {separation}, {lifts}")
         records.append(dict(name=name, leading_foot=leading, direction_unity=[-direction.x, direction.z, -direction.y],
-                            maximum_world_support_error_m=support_error, maximum_upper_body_error=upper_error,
+                            maximum_world_support_error_m=support_error, maximum_arm_local_error=upper_error,
+                            maximum_torso_counterlean_degrees=torso_travel,
                             maximum_ready_seam_error=seam_error, minimum_foot_separation_m=separation,
                             left_foot_lift_m=lifts["L"], right_foot_lift_m=lifts["R"]))
     return dict(duration_seconds=STEP_DURATION, travel_seconds=STEP_TRAVEL_SECONDS,
@@ -687,7 +761,7 @@ def strafe_payload(builder):
     rig.animation_data.action = builder.result.actions["CombatReady"].action
     bpy.context.scene.frame_set(0); bpy.context.view_layer.update()
     ready = {bone.name: bone.matrix_basis.copy() for bone in rig.pose.bones}
-    excluded = {"pelvis", "thigh.L", "thigh.R", "shin.L", "shin.R", "foot.L", "foot.R"}
+    excluded = {"pelvis", "spine", "chest", "head", "thigh.L", "thigh.R", "shin.L", "shin.R", "foot.L", "foot.R"}
     for name, duration, _ in STRAFE_CLIPS:
         action = builder.result.actions[name].action
         for curve in common.iter_action_fcurves(action):
@@ -696,7 +770,7 @@ def strafe_payload(builder):
                 [[round(v, 7) for v in key.co] for key in curve.keyframe_points]], separators=(",", ":")).encode())
         sign = 1. if name == "CombatStrafeLeft" else -1.
         leading = "L" if sign > 0. else "R"
-        support_error = upper_error = seam_error = 0.
+        support_error = upper_error = seam_error = torso_travel = 0.
         lifts = {"L": 0., "R": 0.}
         separation = 100.
         rig.animation_data.action = action
@@ -717,11 +791,14 @@ def strafe_payload(builder):
             for bone in rig.pose.bones:
                 error = max(abs(bone.matrix_basis[i][j]-ready[bone.name][i][j]) for i in range(4) for j in range(4))
                 if bone.name not in excluded: upper_error = max(upper_error, error)
+                if bone.name in ("spine", "chest"):
+                    torso_travel = max(torso_travel, math.degrees(ready[bone.name].to_quaternion().rotation_difference(bone.rotation_quaternion).angle))
                 if sample == 0 or sample == round(duration*FPS)*2: seam_error = max(seam_error, error)
-        if support_error > .001 or upper_error > .00001 or seam_error > .00001 or separation < .18 or min(lifts.values()) < .05:
+        if support_error > .001 or upper_error > .00001 or seam_error > .00001 or separation < .18 or min(lifts.values()) < .05 or torso_travel < 1.:
             raise ValueError(f"Strafe support/guard/seam/foot spacing failed: {name}: {support_error}, {upper_error}, {seam_error}, {separation}, {lifts}")
         records.append(dict(name=name, leading_foot=leading, direction_unity=[-sign,0.,0.],
-                            maximum_world_support_error_m=support_error, maximum_upper_body_error=upper_error,
+                            maximum_world_support_error_m=support_error, maximum_arm_local_error=upper_error,
+                            maximum_torso_counterlean_degrees=torso_travel,
                             maximum_ready_seam_error=seam_error, minimum_foot_separation_m=separation,
                             left_foot_lift_m=lifts["L"], right_foot_lift_m=lifts["R"]))
     return dict(duration_seconds=.80, cycle_distance_m=STRAFE_CYCLE_DISTANCE,
@@ -881,6 +958,8 @@ def action_payload(builder):
     support_angle = 0.
     attack_pelvis = []
     attack_knee_travel = 0.
+    body_rotation = {name: 0. for name in ("pelvis", "spine", "chest", "head")}
+    contact_rotations = {}
     reference = None
     for name, duration, loop in CLIPS + CHARGE_CLIPS:
         action = builder.result.actions[name].action
@@ -901,9 +980,16 @@ def action_payload(builder):
                 support[n].to_quaternion()).angle) for n in reference))
             if name == "CombatAttack":
                 attack_pelvis.append(rig.pose.bones["pelvis"].head.copy())
-                if frame == 0: initial_knees = {s: rig.pose.bones["shin."+s].rotation_quaternion.copy() for s in ("L", "R")}
+                if frame == 0:
+                    initial_knees = {s: rig.pose.bones["shin."+s].rotation_quaternion.copy() for s in ("L", "R")}
+                    initial_body = {n: rig.pose.bones[n].rotation_quaternion.copy() for n in body_rotation}
                 attack_knee_travel = max(attack_knee_travel, max(math.degrees(initial_knees[s].rotation_difference(
                     rig.pose.bones["shin."+s].rotation_quaternion).angle) for s in initial_knees))
+                for bone in body_rotation:
+                    body_rotation[bone] = max(body_rotation[bone], math.degrees(initial_body[bone].rotation_difference(
+                        rig.pose.bones[bone].rotation_quaternion).angle))
+                if frame in (55, 56, 57):
+                    contact_rotations[frame] = {n: rig.pose.bones[n].rotation_quaternion.copy() for n in ("spine", "chest")}
             if name == "CombatAttack" and frame in (0, 45, 50, 55, 56, 60, 63, 128):
                 grip = rig.pose.bones["SOCKET_Grip.R"].matrix
                 # Socket +Y is the exported transform's +Y. Local Z uses the
@@ -922,6 +1008,10 @@ def action_payload(builder):
     pelvis_travel = max((a-b).length for a in attack_pelvis for b in attack_pelvis)
     if pelvis_travel < .04 or attack_knee_travel < 7.:
         raise ValueError("Attack lacks authored leg/hip weight transfer")
+    contact_speeds = {name: [math.degrees(contact_rotations[a][name].rotation_difference(
+        contact_rotations[b][name]).angle)*FPS for a,b in ((55,56), (56,57))] for name in ("spine", "chest")}
+    if body_rotation["pelvis"] < 4. or body_rotation["spine"] < 9. or min(contact_speeds["chest"]) < 100.:
+        raise ValueError(f"Combat torso lost hip drive or stopped at contact: {body_rotation}/{contact_speeds}")
     reach = max(p["tip"][2] for p in points if .45 <= p["seconds"] <= .63)
     if reach < .95:
         raise ValueError(f"Crowbar cannot reach a target in front: {reach:.4f}")
@@ -960,6 +1050,8 @@ def action_payload(builder):
                 maximum_support_error=lower_error, maximum_support_angle_degrees=support_angle,
                 support_validation_hz=200, support_bones=["root", "foot.L", "foot.R"],
                 attack_pelvis_travel_m=pelvis_travel, attack_knee_travel_degrees=attack_knee_travel,
+                body_motion=dict(interpolation="C1 quaternion Bezier; monotone local translation; pinned feet and grip",
+                    attack_local_rotation_degrees=body_rotation, contact_angular_speed_degrees_s=contact_speeds),
                 defeat_handoff_seconds=DEFEAT_HANDOFF_SECONDS, defeat_pelvis_drop_m=defeat_drop,
                 animation_signature=checksum.hexdigest(),
                 base_action_signature=base_checksum.hexdigest(), strike_samples=points,
@@ -988,7 +1080,7 @@ def main():
     items = make_items(); signature = kit.signature(items)
     if kit.signature(make_items()) != signature: raise ValueError("Passive geometry is nondeterministic")
     payload = kit.manifest(items, signature)
-    payload.update(generator="tools/build-combat-test-3d-model.py", generator_version="1.7.1", test_only=True)
+    payload.update(generator="tools/build-combat-test-3d-model.py", generator_version="1.8.0", test_only=True)
     OUT.mkdir(parents=True, exist_ok=True); SOURCE.mkdir(parents=True, exist_ok=True)
     if not validate_only and not actions_only:
         roots = kit.build_objects(items)

@@ -741,10 +741,12 @@ namespace BarPromenade
             }
 
             ReapplyLatePresentationPose();
+            recoveryTargetCaptured = false;
             recoveryTransitionDuration = 0f;
             recoveryPhysics = null;
             layer.ForgetBase();
             ForgetCombatDamagePose();
+            combatBodyMotion?.Forget();
             combatGrip?.Forget();
             ReleaseBalanceStep();
             attentionBaseCaptured = false;
@@ -818,7 +820,9 @@ namespace BarPromenade
             }
 
             RestoreCombatSupportGrip();
+            RestoreRecoveryPoseTransition();
             RestoreCombatDamagePose();
+            RestoreCombatBodyMotion();
             layer.Restore();
             ragdollPoseActive = active;
             if (active)
@@ -957,6 +961,12 @@ namespace BarPromenade
                 return;
             }
 
+            if (scopedPresentationFrozen)
+            {
+                EvaluateGraph(0f);
+                return;
+            }
+
             float deltaTime = Mathf.Max(0f, Time.deltaTime);
             intoxicationAmount = Mathf.MoveTowards(
                 intoxicationAmount,
@@ -997,25 +1007,28 @@ namespace BarPromenade
 
         private void LateUpdate()
         {
+            float deltaTime = scopedPresentationFrozen ? 0f : Time.deltaTime;
             if (!ragdollPoseActive)
             {
-                ApplyLatePose(Time.deltaTime);
+                ApplyLatePose(deltaTime);
             }
 
             // The face is drawn under the ragdoll too: the physics has
             // the bones, but the wince and the closed eyes are the
             // atlas's, and a man on the floor with an idle face is wrong.
-            ApplyFacialPose();
+            if (scopedPresentationFrozen) ReapplyFacialPose();
+            else ApplyFacialPose();
             if (!ragdollPoseActive)
             {
-                ApplyAttentionPose(Time.deltaTime);
+                ApplyAttentionPose(deltaTime);
+                ApplyCombatBodyMotion();
                 ApplyCombatDamagePose();
-                CompleteRecoveryPresentation(Time.deltaTime);
+                CompleteRecoveryPresentation(deltaTime);
                 ApplyCombatSupportGrip();
             }
 
-            RememberRecoveryPose(Time.deltaTime);
-            AdvanceRecoveryPresentationClock(Time.deltaTime);
+            RememberRecoveryPose(deltaTime);
+            AdvanceRecoveryPresentationClock(deltaTime);
             UpdateColdBreath();
 
             if (releaseInteractionHandoffAfterLateUpdate)
@@ -1118,6 +1131,7 @@ namespace BarPromenade
                 ApplyLatePose(0f);
                 ReapplyFacialPose();
                 ApplyAttentionPose(0f);
+                ApplyCombatBodyMotion();
                 ApplyCombatDamagePose();
                 CompleteRecoveryPresentation(0f);
                 ApplyCombatSupportGrip();
@@ -1128,7 +1142,9 @@ namespace BarPromenade
         private void ApplyLatePose(float deltaTime)
         {
             RestoreCombatSupportGrip();
+            RestoreRecoveryPoseTransition();
             RestoreCombatDamagePose();
+            RestoreCombatBodyMotion();
             ReleaseColdForProtectivePose();
             if (risePose.Active)
             {
@@ -1154,6 +1170,7 @@ namespace BarPromenade
                 ApplyLatePose(Mathf.Max(0f, seconds));
                 ReapplyFacialPose();
                 ApplyAttentionPose(0f);
+                ApplyCombatBodyMotion();
                 ApplyCombatDamagePose();
                 ApplyCombatSupportGrip();
             }
@@ -1163,6 +1180,7 @@ namespace BarPromenade
         {
             ClearCombatSupportGrip(combatGripOwner);
             ClearCombatDamagePose();
+            ClearCombatBodyMotion(combatMotionOwner);
             ClearSpeechFace();
             ClearCarryPose();
             ResetColdPose();
@@ -3086,11 +3104,13 @@ namespace BarPromenade
         private void EvaluateGraph(float deltaTime)
         {
             RestoreCombatSupportGrip();
+            RestoreRecoveryPoseTransition();
             // Both additive layers come off before the graph writes the
             // frame: restoring them in LateUpdate instead would roll the
             // freshly evaluated head/neck animation back to a stale base
             // and freeze it for as long as the additive stays engaged.
             RestoreCombatDamagePose();
+            RestoreCombatBodyMotion();
             layer.Restore();
             RestoreAttentionPoseBase();
             if (graph.IsValid())
