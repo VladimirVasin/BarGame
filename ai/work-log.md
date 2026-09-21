@@ -12,15 +12,17 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
   `Range_AnatomicalContactsResolveHeadAndRearHeadForBothRigs`.
 - Rules: free swings; breath pays guard/step/charge, regens in stuns after
   own spends. Fresh press parries lights; counter/whiff floor, break keeps breath,
-  buffered return/step-attack grace. Regen from ActiveEnd is partition invariant;
-  frontal contact consumes press, step/charge drops guard. Check: `CombatRulesTests`.
-- Runtime: skipped 1/120 substeps own hit-stop, including lethal freeze;
+  buffered return/step-attack grace. Regen from ActiveEnd; frontal contact
+  consumes press, step/charge drops guard. Check: `CombatRulesTests`.
+- Runtime: skipped 1/120 substeps own hit-stop, lethal too;
   knockback/two-body block nudge, shoulder kick before clearance, HP .6/.5
   recovery/guard, Windup→Active whoosh, Active-only wall cancel. Camera/target
   free after fall; `PlaceRound` re-locks. Check: `CombatTestPlayModeTests`.
 - Seeded opponent: guard/step/charge intercept/feint/whiff punish/cover,
   winded retreat/corner fighting, probe/press moods; no accidental parry.
-- Space: .8 m/.36 s travel/.21 s settle; symmetric smoothstep replaces front-load.
+  Turns on the hero's table outside charge/windup/arc; stun .35, yaw kept:
+  no free flank after a whiff. Check: `Range_TacticalRecoveryStepsAndFairOpponent`.
+- Space: .8 m/.36 s travel/.21 s settle; smoothstep replaces front-load.
   Shared travel/clip clock; 15 breath/footfalls unchanged. Full Hold freezes breath.
   .02m/.75° camera lag caps keep the raised arm clear.
   Hold check: `Range_AutomaticUpdateConsumesMouseAndKeyboardWithoutGuiEvent`.
@@ -28,22 +30,21 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
   `AreaCaptureFixture.CombatTactics`, `build-combat-test-3d-model.py`.
 - `CombatTuning`: aged guard/heavy hits, physics evasion/duel strafe; foreign
   owner releases stance; `CombatDuelSimulator` habits. Check: `CombatBalanceTests`.
-- Pre-09-09 docs archived (`check-docs.py`).
 - Charge arm: reachable docks/forearm roll stop the left hand folding the
-  overhead right arm. Checks: `build-combat-test-3d-model.py`,
+  raised arm. Checks: `build-combat-test-3d-model.py`,
   `AreaCaptureFixture.CombatChargeArmAlignment`.
-- Aftermath: floor thud/wound-anchored pools. Bleed used to stop before landing;
-  check: `Range_LethalContactsHandOffToRagdollPauseResetAndCleanUp` and frames.
+- Aftermath: floor thud/wound-anchored pools; bleed once stopped early.
+  Check: `Range_LethalContactsHandOffToRagdollPauseResetAndCleanUp`.
 - Winner releases combat at Ready→.35 s normal walk/right crowbar; no
   reacquire until R. Check: `Range_VictoryRestoresOrdinaryWalkingAndResetRestoresCombat`.
   Ready-gait probe fails in `Range_CombatWalkingUsesLiveInputAndMovingLegs`.
 - `MeleeSwing` commits charge-visible step cue/target bearing/last-fate rhythm;
-  both banks have a backhand family. Mirrored bar's support hand is far:
+  both banks have a backhand family. Far support hand:
   down-forward elbow pole keeps the wrist in the charge envelope. Checks:
   `CombatRulesTests`, `AreaCaptureFixture.CombatCharge`.
 - Body: C1 velocity/atan2, travel/yaw inertia; both .42/.28 m
   travel stances, feet settle in Windup. Hero afraid/unskilled:
-  shoulders/chin/awkward effort, stamina breath/tremor/tell flinch/tense face.
+  posture, stamina breath/tremor/tell flinch/tense face.
   NPC calmer; HP separate. Duel-clock render/contacts freeze on resample/pause.
   Checks: `build-combat-test-3d-model.py`,
   `Range_CombatBodyInertiaKeepsBothRigsContinuousAndClockBound`.

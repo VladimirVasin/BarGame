@@ -48,6 +48,9 @@ namespace BarPromenade
             MeleePhase.Active => 0f,
             MeleePhase.Recovery => Mathf.Lerp(.15f, .75f, State.PhaseProgress),
             MeleePhase.Ready => 1f,
+            // A rocked body still brings its head round toward the blow at a third of
+            // the free rate; the step's planted soles, the block's impact and the arc keep zero.
+            MeleePhase.Stagger or MeleePhase.GuardBroken => .35f,
             _ => 0f
         };
 

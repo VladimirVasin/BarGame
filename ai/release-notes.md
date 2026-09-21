@@ -17,15 +17,15 @@ Earlier notes: [`release-notes-2026-09.md`](archive/release-notes-2026-09.md).
   (`AreaCaptureFixture.CombatCharge`).
 - Буфер 0,20 с; шаг → атака; стена ловит дугу. Стоп-кадр/отбросы/камера/свист
   (`CombatTestPlayModeTests`).
-- Space плавнее: 0,8 м/0,57 с; Hold замораживает силы.
-  Проверено: `Range_TacticalRecoveryStepsAndFairOpponent`; Hold проверен:
-  `Range_AutomaticUpdateConsumesMouseAndKeyboardWithoutGuiEvent`.
-- ИИ: блок/шаг/перехват заряда/финт/прикрытие/наказание промаха/отступление
-  (`build-combat-test-3d-model.py`).
+- Space плавнее: 0,8 м/0,57 с; Hold замораживает силы
+  (`Range_TacticalRecoveryStepsAndFairOpponent`,
+  `Range_AutomaticUpdateConsumesMouseAndKeyboardWithoutGuiEvent`).
+- ИИ: блок/шаг/перехват заряда/финт/прикрытие/наказание промаха/отступление;
+  доворот в откате/стане (`Range_TacticalRecoveryStepsAndFairOpponent`).
 - Камера свободна через 1,5 с; `R` берёт лок
   (`Range_TargetLockedShoulderCameraTracksOpponentAndResets`).
-- Победа — обычный шаг. Проверено:
-  `Range_VictoryRestoresOrdinaryWalkingAndResetRestoresCombat`.
+- Победа — обычный шаг
+  (`Range_VictoryRestoresOrdinaryWalkingAndResetRestoresCombat`).
 - Заряд без излома (`CombatChargeArmAlignment`).
 - Лужа после приземления растёт 10 с и живёт до `R`; звук тела — от пола
   (`Range_LethalContactsHandOffToRagdollPauseResetAndCleanUp`).

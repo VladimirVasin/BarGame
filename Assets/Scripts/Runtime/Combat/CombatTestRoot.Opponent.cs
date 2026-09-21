@@ -7,7 +7,8 @@ namespace BarPromenade
 
     /// <summary>The sparring partner: honest perception, a seeded schedule per round, and a
     /// vocabulary of answers (guard, late guard, side step, back step, intercept, feint,
-    /// backhand, cover) chosen by rolls so no two rounds read the same.</summary>
+    /// backhand, cover) chosen by rolls so no two rounds read the same. It turns on the
+    /// hero's own phase table everywhere outside its committed line.</summary>
     public sealed partial class CombatTestRoot
     {
         private const float ReactionSeconds = .20f;
@@ -86,6 +87,7 @@ namespace BarPromenade
             float distance = delta.magnitude;
             if (distance < .0001f || !Opponent.IsAvailable || !Hero.IsAvailable) return;
             Vector3 direction = delta / distance;
+            float bearing = Vector3.SignedAngle(Opponent.transform.forward, direction, Vector3.up);
             MeleeCombatant me = Opponent.State;
 
             // Recovery duration belongs to the actual result, not a guessed
@@ -125,6 +127,16 @@ namespace BarPromenade
             }
             bool decisionDue = ObserveOpponentTarget(seconds, distance);
 
+            // The charge, the windup and the arc keep their committed line: a swing never
+            // homes onto a sidestep. Every other phase turns toward the target on the hero's
+            // own phase table, so a spent swing and a rocked body come back round. The sweep
+            // is closed by then (SweepWeapon returns for from >= activeEnd), so turning in
+            // recovery cannot add a contact.
+            bool committedLine = me.IsCharging || me.Phase == MeleePhase.Windup || me.Phase == MeleePhase.Active;
+            float yaw = PlayerMotor.AdvanceInertialYaw(bearing,
+                committedLine ? 0f : 150f * Opponent.TurnScale, seconds, ref opponentYawVelocity);
+            Opponent.transform.Rotate(0f, yaw, 0f);
+
             if (me.Phase != MeleePhase.Ready)
             {
                 if (me.IsCharging || me.IsAttacking)
@@ -133,7 +145,7 @@ namespace BarPromenade
                     if (me.IsCharging && !feinting && me.Charge01 + .00001f >= opponentChargeTarget)
                         Opponent.ReleaseCharge();
                     // The visible windup commits one line. Its small ordinary
-                    // movement never turns or steers toward a dodging target.
+                    // movement never steers toward a dodging target.
                     if (me.Phase == MeleePhase.Windup)
                         MoveOpponent(committedDirection, 1.8f * Opponent.MovementScale * seconds, seconds, false);
                     // A landed hit may take the backhand straight out of the buffer.
@@ -150,10 +162,6 @@ namespace BarPromenade
                 return;
             }
 
-            float yaw = PlayerMotor.AdvanceInertialYaw(
-                Vector3.SignedAngle(Opponent.transform.forward, direction, Vector3.up),
-                150f * Opponent.TurnScale, seconds, ref opponentYawVelocity);
-            Opponent.transform.Rotate(0f, yaw, 0f);
             if (decisionDue) DecideOpponent(distance, direction);
             if (me.Phase != MeleePhase.Ready) return;
             switch (OpponentIntent)
@@ -427,11 +435,16 @@ namespace BarPromenade
 
         private void BeginOpponentMovement() => opponentMoveRequest = Vector3.zero;
 
-        private void ResetOpponentMovement()
+        private void ResetOpponentTravel()
         {
             opponentMoveRequest = opponentMoveVelocity = Vector3.zero;
-            opponentYawVelocity = 0f;
             if (Opponent != null) Opponent.SetLocomotion(0f);
+        }
+
+        private void ResetOpponentMovement()
+        {
+            ResetOpponentTravel();
+            opponentYawVelocity = 0f;
         }
 
         /// <summary>Every duel step advances both requested travel and its braking tail.</summary>
@@ -439,12 +452,19 @@ namespace BarPromenade
         {
             if (seconds <= 0f) return;
             if (!Sparring || Opponent == null || Hero == null || !Opponent.IsAvailable || !Hero.IsAvailable ||
-                Opponent.Body == null || !Opponent.Body.enabled || Opponent.MovementScale <= 0f)
+                Opponent.Body == null || !Opponent.Body.enabled)
             {
                 ResetOpponentMovement();
                 return;
             }
-            if (Opponent.State.Phase != MeleePhase.Ready) opponentYawVelocity = 0f;
+            // A committed stop or a stun plants the feet, never the head: only the travel
+            // is dropped, the turn keeps its momentum on the shared table (a zero turn
+            // allowance zeroes it itself inside AdvanceInertialYaw).
+            if (Opponent.MovementScale <= 0f)
+            {
+                ResetOpponentTravel();
+                return;
+            }
             // A reduced action allowance is a hard bound, just like the hero's
             // committed stop; the owned step displacement remains independent.
             float maximumSpeed = 1.8f * Opponent.MovementScale;

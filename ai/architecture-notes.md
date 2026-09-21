@@ -8,7 +8,8 @@
   Root guard/parry first; mutual freeze: zone/direction/power.
   One HP/defeat/ragdoll/R.
 - **Accepted — 2026-09-21, combat inertia:**
-  C1 pose/contact, duel-time travel/yaw inertia.
+  C1 pose/contact, duel-time travel/yaw inertia on one table: recovery
+  .15→.75, stun .35, arc 0; AI plants charge/windup, hero .2.
 - **Accepted — 2026-09-21, frightened combat stance:**
   .42/.28m; travel feet settle in Windup. Afraid/unskilled hero, calmer NPC.
   Duel-clock stamina breath/tremor/seen-nearby-tell flinch; separate HP.
@@ -2623,8 +2624,7 @@
   Nightlife, Residential, Old Town, home — and on the default layout it ran
   west, south centre, far north-east, back west and out east again: two full
   crossings, `1166 m` of straight-line tour where `754 m` was available, and a
-  `2592 m` road loop. Reordering alone brought that loop to `1798 m`, a `31%`
-  cut, without touching a single clearance or right-hand proof. Five targets
+  `2592 m` road loop. Five targets
   are solved exactly by fixing the first and permuting the rest; a layout with
   more than `8` falls back to nearest neighbour plus 2-opt. Equal-length tours
   are broken by the ordered target IDs, and the cycle is rotated so

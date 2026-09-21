@@ -174,6 +174,45 @@ namespace BarPromenade.Tests.PlayMode
                 input.Release(keyboard.dKey, queueEventOnly: true);
                 input.Release(keyboard.spaceKey, queueEventOnly: true);
                 root.AutomaticSimulation = false;
+
+                // The committed line never homes even with the target at ninety degrees; a
+                // spent swing and a rocked body come back round on the shared phase table.
+                root.SetSparring(true);
+                Vector3 ground = Vector3.up * PlayerFactory.GroundedRootOffset;
+                root.Opponent.ResetActor(ground, Vector3.forward);
+                root.Hero.ResetActor(ground + Vector3.right * 2f, Vector3.left);
+                Physics.SyncTransforms();
+                Assert.That(root.Opponent.TryAttack(), Is.True);
+                Quaternion committed = root.Opponent.transform.rotation;
+                for (int tick = 0; tick < ContactTicks(120f); tick++)
+                {
+                    root.Tick(CombatTestRoot.SimulationStep);
+                    Assert.That(Quaternion.Angle(committed, root.Opponent.transform.rotation), Is.LessThan(.1f),
+                        "The windup and the arc hold the committed line whatever the target does.");
+                }
+                root.Tick(S.RecoverySeconds + CombatTestRoot.SimulationStep);
+                Assert.That(root.Opponent.State.AttackOutcome, Is.EqualTo(MeleeAttackOutcome.Miss));
+                Assert.That(root.Opponent.State.Phase, Is.EqualTo(MeleePhase.Ready));
+                Vector3 toHero = root.Hero.transform.position - root.Opponent.transform.position;
+                toHero.y = 0f;
+                Assert.That(Quaternion.Angle(committed, root.Opponent.transform.rotation), Is.GreaterThan(30f),
+                    "A spent swing turns the body back toward the target during its recovery.");
+                Assert.That(Vector3.Dot(root.Opponent.transform.forward, toHero.normalized), Is.GreaterThan(.35f),
+                    "After the whiff the hero is back inside the guard cone.");
+
+                root.SetSparring(true);
+                root.Opponent.ResetActor(ground, Vector3.forward);
+                root.Hero.ResetActor(ground + Vector3.right * 1.5f, Vector3.left);
+                Physics.SyncTransforms();
+                float BearingToHero() => Mathf.Abs(Vector3.SignedAngle(root.Opponent.transform.forward,
+                    root.Hero.transform.position - root.Opponent.transform.position, Vector3.up));
+                float flanked = BearingToHero();
+                Assert.That(root.Opponent.State.ReceiveHit(S.Damage, S.BlockCost, false), Is.EqualTo(MeleeHitResult.Hit));
+                Assert.That(root.Opponent.State.Phase, Is.EqualTo(MeleePhase.Stagger));
+                root.Tick(S.StaggerSeconds + CombatTestRoot.SimulationStep);
+                Assert.That(root.Opponent.State.Phase, Is.EqualTo(MeleePhase.Ready));
+                Assert.That(flanked - BearingToHero(), Is.GreaterThan(15f),
+                    "A rocked body turns toward the blow's source during the stagger.");
                 Assert.That(root.ReturnToMenu(), Is.True);
                 yield return WaitFor(() => SceneManager.GetActiveScene().name == SceneIds.MainMenu &&
                     !SceneTransitionService.IsTransitioning, "A step must not retain the scene or its input ownership.");
