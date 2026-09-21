@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.IO;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -1084,10 +1085,14 @@ namespace BarPromenade.Tests.PlayMode
                         "A lethal contact first presents the authored defeat on the same rig.");
                     Assert.That(victim.IsRagdollActive, Is.False,
                         "Physics must not skip the brief visible authored handoff.");
+                    Assert.That(root.BloodEffects.DefeatPoolCount, Is.Zero,
+                        "The slow pool must wait for the fallen body to reach its support.");
                     yield return null;
                     Assert.That(victim.ActiveClipName, Is.EqualTo("CombatDefeat"));
                     yield return WaitFor(() => victim.IsRagdollActive,
                         "A defeated actor never handed its visible rig to physics.");
+                    Assert.That(victim.Ragdoll.HasGroundContact, Is.False,
+                        "Physics handoff must not be mistaken for the later body impact.");
                     Assert.That(victim.Body.enabled, Is.False);
                     Assert.That(victim.IsWeaponDropped, Is.True);
                     Assert.That(victim.Weapon.transform.parent, Is.Not.SameAs(grip));
@@ -1111,6 +1116,7 @@ namespace BarPromenade.Tests.PlayMode
                     { pausedPositions[i] = bodies[i].position; pausedRotations[i] = bodies[i].rotation; }
                     Vector3 pausedWeaponPosition = weaponBody.position;
                     Quaternion pausedWeaponRotation = weaponBody.rotation;
+                    float fallingPauseArea = root.BloodEffects.DefeatPoolAreaFor(victim);
                     for (int frame = 0; frame < 20; frame++) yield return null;
                     for (int i = 0; i < bodies.Length; i++)
                     {
@@ -1119,13 +1125,40 @@ namespace BarPromenade.Tests.PlayMode
                     }
                     Assert.That(Vector3.Distance(weaponBody.position, pausedWeaponPosition), Is.LessThan(.0001f));
                     Assert.That(Quaternion.Angle(weaponBody.rotation, pausedWeaponRotation), Is.LessThan(.01f));
+                    Assert.That(root.BloodEffects.DefeatPoolAreaFor(victim), Is.EqualTo(fallingPauseArea));
                     Assert.That(root.PauseMenu.Cancel(), Is.True);
                     yield return WaitFor(() => !root.PauseMenu.IsOpen && GameInput.CanRead(GameInputContext.Gameplay),
                         "Pause did not release the ragdoll round.");
+                    yield return WaitFor(() => root.BloodEffects.DefeatPoolCount == 1,
+                        "The landed wounded body never started its slow pool.");
+                    Assert.That(victim.Ragdoll.HasGroundContact, Is.True,
+                        "Only actual ragdoll contact may start the post-defeat pool.");
+                    Collider groundContactSurface = victim.Ragdoll.GroundContactSurface;
+                    Vector3 groundContactPoint = victim.Ragdoll.GroundContactPoint;
+                    Assert.That(groundContactSurface, Is.Not.Null);
+                    Assert.That(groundContactSurface.GetComponentInParent<CombatActor>(), Is.Null);
+                    Assert.That(Vector3.Dot(victim.Ragdoll.GroundContactNormal, Vector3.up), Is.GreaterThan(.65f),
+                        "The landing latch must come from an upward support surface.");
+                    root.AutomaticSimulation = false;
+                    Vector3 poolPosition = root.BloodEffects.DefeatPoolPositionFor(victim);
+                    Assert.That(poolPosition.y, Is.InRange(-.02f, .03f),
+                        "The pool must be anchored to the arena floor, not the wound's height.");
+                    float initialPoolArea = root.BloodEffects.DefeatPoolAreaFor(victim);
+                    Assert.That(initialPoolArea, Is.GreaterThan(0f));
+                    CaptureDefeatPool(victim, poolPosition, "00");
+                    float poolAreaAtTwoSeconds = 0f;
                     for (int frame = 0; frame < 300; frame++)
                     {
+                        root.Tick(1f / 60f);
                         yield return null;
                         if (frame % 10 == 0) AssertPhysicalBodyBounds(bodies, fallOrigin);
+                        if (poolAreaAtTwoSeconds <= 0f && root.BloodEffects.DefeatPoolAgeFor(victim) >= 2f)
+                        {
+                            poolAreaAtTwoSeconds = root.BloodEffects.DefeatPoolAreaFor(victim);
+                            Assert.That(poolAreaAtTwoSeconds, Is.GreaterThan(initialPoolArea * 2f),
+                                "The visible mesh area must grow after landing, rather than only its target size.");
+                            CaptureDefeatPool(victim, poolPosition, "02");
+                        }
                     }
                     float settledHeight = AverageBodyHeight(bodies);
                     Assert.That(settledHeight, Is.LessThan(handoffHeight - .25f),
@@ -1133,21 +1166,62 @@ namespace BarPromenade.Tests.PlayMode
                     Assert.That(settledHeight, Is.LessThan(.75f));
                     Assert.That(victim.Ragdoll.MaximumBodySpeed, Is.LessThan(1f),
                         "The fallen body must settle without a continuing joint explosion.");
+                    Assert.That(victim.Ragdoll.HasGroundContact, Is.True);
+                    Assert.That(victim.Ragdoll.GroundContactSurface, Is.SameAs(groundContactSurface));
+                    Assert.That(victim.Ragdoll.GroundContactPoint, Is.EqualTo(groundContactPoint),
+                        "Later physical contacts may not retrigger the first landing latch.");
                     AssertPhysicalBodyBounds(new[] { weaponBody }, fallOrigin);
                     Assert.That(weaponBody.GetComponent<Collider>().bounds.min.y, Is.GreaterThan(-.08f),
                         "The released crowbar must rest on the arena floor rather than fall through it.");
 
+                    // Physics has settled. Advance the caller-owned effect clock directly
+                    // for the remaining samples, without twelve seconds of render waits.
+                    root.Tick(Mathf.Max(0f, 6f - root.BloodEffects.DefeatPoolAgeFor(victim)));
+                    float poolAreaAtSixSeconds = root.BloodEffects.DefeatPoolAreaFor(victim);
+                    Assert.That(poolAreaAtSixSeconds, Is.GreaterThan(poolAreaAtTwoSeconds * 1.15f));
+                    Assert.That(Vector3.Distance(root.BloodEffects.DefeatPoolPositionFor(victim), poolPosition), Is.LessThan(.001f),
+                        "Deposited blood remains on the floor while the physical body settles.");
+                    Assert.That(root.BloodEffects.MinimumStainNormalAlignment, Is.GreaterThan(.999f));
+                    CaptureDefeatPool(victim, poolPosition, "06");
+
+                    Assert.That(root.PauseMenu.Open(), Is.True);
+                    root.Tick(3f);
+                    for (int frame = 0; frame < 20; frame++) yield return null;
+                    Assert.That(root.BloodEffects.DefeatPoolAreaFor(victim), Is.EqualTo(poolAreaAtSixSeconds),
+                        "The growing pool must freeze under the shared pause owner.");
+                    Assert.That(root.PauseMenu.Cancel(), Is.True);
+                    yield return WaitFor(() => !root.PauseMenu.IsOpen && GameInput.CanRead(GameInputContext.Gameplay),
+                        "Pause did not release the growing pool.");
+                    root.Tick(6f);
+                    float finalPoolArea = root.BloodEffects.DefeatPoolAreaFor(victim);
+                    Assert.That(finalPoolArea, Is.GreaterThan(poolAreaAtSixSeconds));
+                    Assert.That(finalPoolArea, Is.InRange(.1f, 1.5f),
+                        "The finite local pool must remain moderate even when its lobe areas are summed.");
+                    CaptureDefeatPool(victim, poolPosition, "12");
+                    root.Tick(30f);
+                    Assert.That(root.BloodEffects.DefeatPoolAreaFor(victim), Is.EqualTo(finalPoolArea).Within(.00001f),
+                        "The visible pool must stop growing and persist until reset or scene exit.");
+                    Assert.That(Vector3.Distance(root.BloodEffects.DefeatPoolPositionFor(victim), poolPosition), Is.LessThan(.001f));
+
+                    root.AutomaticSimulation = true;
                     input.Press(keyboard.rKey, queueEventOnly: true);
                     yield return null;
                     input.Release(keyboard.rKey, queueEventOnly: true);
                     yield return null;
                     Assert.That(victim.IsRagdollActive, Is.False);
+                    Assert.That(victim.Ragdoll.HasGroundContact, Is.False,
+                        "R must clear the previous round's landing latch.");
                     Assert.That(victim.IsWeaponDropped, Is.False);
                     Assert.That(weaponBody.isKinematic, Is.True);
                     Assert.That(root.RoundFinished, Is.False);
                     Assert.That(victim.Body.enabled, Is.True);
                     Assert.That(victim.State.Health, Is.EqualTo(S.MaxHealth));
                     Assert.That(victim.State.Phase, Is.EqualTo(MeleePhase.Ready));
+                    Assert.That(root.BloodEffects.DefeatPoolCount, Is.Zero);
+                    Assert.That(root.BloodEffects.DefeatPoolAreaFor(victim), Is.Zero);
+                    Assert.That(root.BloodEffects.StainCount, Is.Zero);
+                    Assert.That(root.BloodEffects.ActiveDropCount, Is.Zero);
+                    Assert.That(root.BloodEffects.WoundCountFor(victim), Is.Zero);
                     Assert.That(root.Player.Motor.InputEnabled, Is.True);
                     foreach (Rigidbody body in bodies) Assert.That(body.isKinematic, Is.True);
                     Assert.That(AverageBodyHeight(bodies), Is.GreaterThan(settledHeight + .25f),
@@ -1169,19 +1243,28 @@ namespace BarPromenade.Tests.PlayMode
                 // exercises joints and rigidbodies instead of only a restored rig.
                 yield return StrikeToDefeat(root.Hero, root.Opponent);
                 yield return WaitFor(() => root.Opponent.IsRagdollActive, "Cleanup fixture did not reach physics.");
+                yield return WaitFor(() => root.BloodEffects.DefeatPoolCount == 1,
+                    "Cleanup fixture did not reach its persistent pool.");
                 Rigidbody[] formerBodies = root.Opponent.GetComponentsInChildren<Rigidbody>(true);
                 GameObject formerWeapon = root.Opponent.Weapon;
+                CombatBloodEffects formerBlood = root.BloodEffects;
+                Transform formerBloodRoot = root.transform.Find("Combat Blood");
+                Assert.That(formerBloodRoot, Is.Not.Null);
                 Assert.That(root.Opponent.IsWeaponDropped, Is.True);
                 Assert.That(root.ReturnToMenu(), Is.True);
                 yield return WaitFor(() => SceneManager.GetActiveScene().name == SceneIds.MainMenu &&
                     !SceneTransitionService.IsTransitioning, "The physical round did not return to the menu.");
                 foreach (Rigidbody body in formerBodies) Assert.That(body == null, Is.True);
                 Assert.That(formerWeapon == null, Is.True, "A detached crowbar must not survive scene cleanup.");
+                Assert.That(formerBlood == null && formerBloodRoot == null, Is.True,
+                    "Neither the blood owner nor any persistent pool geometry may survive the scene.");
                 Assert.That(Object.FindAnyObjectByType<CombatActor>(), Is.Null);
                 Assert.That(PauseMenuController.IsAnyPaused, Is.False);
                 yield return EnterRange();
                 Assert.That(root.Hero.IsRagdollActive || root.Opponent.IsRagdollActive, Is.False);
                 Assert.That(root.Hero.Body.enabled && root.Opponent.Body.enabled, Is.True);
+                Assert.That(root.BloodEffects.DefeatPoolCount, Is.Zero);
+                Assert.That(root.BloodEffects.StainCount, Is.Zero);
                 Assert.That(root.Hero.TryAttack(), Is.True, "A fresh scene must not inherit a physical presentation lock.");
                 LogAssert.NoUnexpectedReceived();
             }
@@ -1190,6 +1273,33 @@ namespace BarPromenade.Tests.PlayMode
                 if (root != null) root.AutomaticSimulation = false;
                 if (keyboard != null && keyboard.added) InputSystem.RemoveDevice(keyboard);
                 input.TearDown();
+            }
+        }
+
+        private void CaptureDefeatPool(CombatActor victim, Vector3 poolPosition, string seconds)
+        {
+            Camera camera = root.CameraFollow.Camera;
+            Vector3 previousPosition = camera.transform.position;
+            Quaternion previousRotation = camera.transform.rotation;
+            float previousFov = camera.fieldOfView;
+            try
+            {
+                // Keep the same close oblique frame for every growth sample; this
+                // diagnostic camera is restored before the next gameplay frame.
+                Vector3 eye = poolPosition + new Vector3(2.1f, 2.7f, -2.6f);
+                camera.transform.SetPositionAndRotation(eye,
+                    Quaternion.LookRotation(poolPosition + Vector3.up * .15f - eye));
+                camera.fieldOfView = 48f;
+                ((Player3DCharacterPresentation)root.Player.Visual).ReapplyLatePresentationPose();
+                string shotName = "aftermath-" + (victim.IsHero ? "hero" : "opponent") + "-" + seconds;
+                string path = Path.Combine(Directory.GetCurrentDirectory(), "Captures", SceneIds.CombatTest, shotName + ".png");
+                LogAssert.Expect(LogType.Log, "Area capture wrote " + path);
+                AreaCaptureFixture.CaptureCurrentCamera(camera, SceneIds.CombatTest, shotName);
+            }
+            finally
+            {
+                camera.transform.SetPositionAndRotation(previousPosition, previousRotation);
+                camera.fieldOfView = previousFov;
             }
         }
 

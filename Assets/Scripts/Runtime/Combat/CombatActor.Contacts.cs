@@ -101,7 +101,7 @@ namespace BarPromenade
                         candidate.GetComponentInParent<CombatActor>() != null) continue;
                     if (State.CancelAttackOnObstacle())
                     {
-                        reaction = recoil; reactionClock = 0f;
+                        reaction = Current.Recoil; reactionClock = 0f;
                         RetroAudio.PlayAt(RetroSfxId.SpadeGlance, (currentBase + currentTip) * .5f, .6f);
                     }
                     sweepValid = false;

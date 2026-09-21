@@ -31,7 +31,11 @@ namespace BarPromenade
             if (stepClips == null || roundEnded || !IsAvailable ||
                 !GameInput.CanRead(GameInputContext.Gameplay) ||
                 float.IsNaN(input.x) || float.IsInfinity(input.x) ||
-                float.IsNaN(input.y) || float.IsInfinity(input.y) || !State.RequestStep()) return false;
+                float.IsNaN(input.y) || float.IsInfinity(input.y)) return false;
+            // The rules learn only the lateral sign of a side step, resolved to the
+            // same dominant axis as the clip: the step attack swings with the body.
+            int lateral = Mathf.Abs(input.x) > Mathf.Abs(input.y) ? (input.x < 0f ? -1 : 1) : 0;
+            if (!State.RequestStep(lateral)) return false;
             pendingStepInput = input;
             if (State.Phase == MeleePhase.Step) BeginStepPresentation();
             Present();

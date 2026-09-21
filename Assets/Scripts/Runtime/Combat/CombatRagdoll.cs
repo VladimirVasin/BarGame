@@ -18,9 +18,14 @@ namespace BarPromenade
         private bool capsuleWasEnabled, motorWasEnabled, inputWasEnabled, balanceWasEnabled;
         private bool npcWasEnabled, animatorWasEnabled;
         private float simulationSeconds, quietSeconds;
+        private readonly List<CombatRagdollGroundContact> groundContacts = new List<CombatRagdollGroundContact>(4);
 
         public bool IsActive { get; private set; }
         public bool IsSettled { get; private set; }
+        public bool HasGroundContact { get; private set; }
+        public Vector3 GroundContactPoint { get; private set; }
+        public Vector3 GroundContactNormal { get; private set; }
+        public Collider GroundContactSurface { get; private set; }
         public Player3DRagdollController PhysicsController => physicsController;
         public IReadOnlyList<Rigidbody> Bodies => physicsController != null
             ? physicsController.Bodies : Array.Empty<Rigidbody>();
@@ -39,6 +44,9 @@ namespace BarPromenade
             motor = player.Motor;
             balance = player.Balance;
             initialPose = CaptureSkeleton(hero.Registry.ModelRoot, null);
+            if (!hero.Registry.TryGetPart(Player3DAnatomicalPart.Head, out Player3DAnatomicalPartBinding head))
+                throw new InvalidOperationException("Combat ground contact requires the hero's head bone.");
+            PrepareGroundContacts(head.Bone);
         }
 
         public void InitializeOpponent(VillageResidentPresentation presentation, CharacterController controller)
@@ -61,6 +69,7 @@ namespace BarPromenade
                 physicsController.Initialize(controller.transform, controller, npc.ModelRoot, anatomy, controller.height);
             }
             finally { RestorePose(initialPose); }
+            PrepareGroundContacts(anatomy[Player3DAnatomicalPart.Head]);
         }
 
         /// <summary>Called after the defeat clip's handoff sample. The live visible pose stays intact.</summary>
@@ -83,6 +92,7 @@ namespace BarPromenade
 
             IsActive = true;
             IsSettled = false;
+            ClearGroundContact();
             simulationSeconds = quietSeconds = 0f;
             if (capsule != null) capsule.enabled = false;
             if (motor != null) { motor.SetInputEnabled(false); motor.enabled = false; }
@@ -94,6 +104,54 @@ namespace BarPromenade
             point = chest.worldCenterOfMass + Vector3.ClampMagnitude(point - chest.worldCenterOfMass, .3f);
             chest.AddForceAtPosition(direction * .3f, point, ForceMode.VelocityChange);
             return true;
+        }
+
+        private void PrepareGroundContacts(Transform head)
+        {
+            Add(physicsController.PelvisBody);
+            Add(physicsController.SpineBody);
+            Add(physicsController.ChestBody);
+            Add(head.GetComponent<Rigidbody>());
+            void Add(Rigidbody body)
+            {
+                if (body == null) throw new InvalidOperationException("Combat ground contact requires its anatomical rigidbody.");
+                CombatRagdollGroundContact contact = body.gameObject.AddComponent<CombatRagdollGroundContact>();
+                contact.Initialize(this);
+                groundContacts.Add(contact);
+            }
+        }
+
+        internal void RegisterGroundContact(Collision collision)
+        {
+            if (!IsActive || HasGroundContact || !isActiveAndEnabled || Time.timeScale <= 0f ||
+                PauseMenuController.IsAnyPaused || collision == null) return;
+            Collider surface = collision.collider;
+            // Limbs already touch at handoff; only the central body owns this
+            // sound. A weapon, another fighter or a wall is not ground support.
+            if (surface == null || surface.attachedRigidbody != null ||
+                surface.GetComponentInParent<CombatActor>() != null) return;
+            for (int i = 0; i < collision.contactCount; i++)
+            {
+                ContactPoint contact = collision.GetContact(i);
+                // Continuous-speculative bodies may report a future contact;
+                // wait until the surface is within the collider contact skin.
+                if (contact.normal.y <= .65f || contact.separation > .02f || !Finite(contact.point)) continue;
+                HasGroundContact = true;
+                GroundContactPoint = contact.point;
+                GroundContactNormal = contact.normal.normalized;
+                GroundContactSurface = surface;
+                // The first actual body landing owns one dull thud. Recontacts
+                // and the settled body remain silent until the next round.
+                RetroAudio.PlayAt(RetroSfxId.StoneTamp, GroundContactPoint, .8f);
+                return;
+            }
+        }
+
+        private void ClearGroundContact()
+        {
+            HasGroundContact = false;
+            GroundContactPoint = GroundContactNormal = Vector3.zero;
+            GroundContactSurface = null;
         }
 
         private void FixedUpdate()
@@ -118,6 +176,7 @@ namespace BarPromenade
 
         public void Cancel()
         {
+            ClearGroundContact();
             if (!IsActive) return;
             IsActive = IsSettled = false;
             simulationSeconds = quietSeconds = 0f;
@@ -131,7 +190,13 @@ namespace BarPromenade
         }
 
         private void OnDisable() => Cancel();
-        private void OnDestroy() => Cancel();
+        private void OnDestroy()
+        {
+            Cancel();
+            foreach (CombatRagdollGroundContact contact in groundContacts)
+                if (contact != null) Destroy(contact);
+            groundContacts.Clear();
+        }
 
         private static Dictionary<Player3DAnatomicalPart, Transform> ResolveAnatomy(Transform modelRoot)
         {

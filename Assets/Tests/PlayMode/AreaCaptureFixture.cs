@@ -4690,7 +4690,7 @@ namespace BarPromenade.Tests.PlayMode
             return true;
         }
 
-        private static void CaptureCurrentCamera(
+        internal static void CaptureCurrentCamera(
             Camera camera,
             string sceneName,
             string shotName)

@@ -12,7 +12,7 @@ namespace BarPromenade
         private PlayerAnimatedInteractionController interaction;
         private VillageResidentPresentation npc;
         private NpcHandPose handPose;
-        private AnimationClip ready, rest, attack, block, hit, walk, guardImpact, guardBreak, recoil, reaction, defeat;
+        private AnimationClip ready, rest, block, hit, walk, guardImpact, guardBreak, reaction, defeat;
         private CombatSupportGrip supportGrip;
         private bool heroMovingPose, npcMovingPose;
         private Transform strikeBase, strikeTip;
@@ -62,9 +62,11 @@ namespace BarPromenade
             interaction = GetComponent<PlayerAnimatedInteractionController>();
             Body = GetComponent<CharacterController>();
             LoadClips(false);
-            foreach (AnimationClip clip in new[] { ready, rest, attack, charge, releaseLight, releaseHeavy, block, hit, guardImpact, guardBreak, recoil, defeat })
-                hero.Registry.RegisterRuntimeAnimation(new Player3DAnimationBinding(
-                    clip.name, "Combat", clip, clip.length, clip.isLooping));
+            void Register(AnimationClip clip) => hero.Registry.RegisterRuntimeAnimation(new Player3DAnimationBinding(
+                clip.name, "Combat", clip, clip.length, clip.isLooping));
+            foreach (AnimationClip clip in new[] { ready, rest, block, hit, guardImpact, guardBreak, defeat }) Register(clip);
+            foreach (SwingClips side in swings)
+                foreach (AnimationClip clip in new[] { side.Attack, side.ReleaseLight, side.ReleaseHeavy, side.Charge, side.Recoil }) Register(clip);
             foreach (string name in CombatAssetProvider.HeroLocomotionClipNames)
             {
                 AnimationClip clip = CombatAssetProvider.LoadClip(name);
@@ -108,16 +110,12 @@ namespace BarPromenade
         {
             ready = CombatAssetProvider.LoadClip("CombatReady", forNpc);
             rest = CombatAssetProvider.LoadClip("CombatRest", forNpc);
-            attack = CombatAssetProvider.LoadClip("CombatAttack", forNpc);
-            charge = CombatAssetProvider.LoadClip("CombatCharge", forNpc);
-            releaseLight = CombatAssetProvider.LoadClip("CombatReleaseLight", forNpc);
-            releaseHeavy = CombatAssetProvider.LoadClip("CombatReleaseHeavy", forNpc);
             block = CombatAssetProvider.LoadClip("CombatBlock", forNpc);
             hit = CombatAssetProvider.LoadClip("CombatHit", forNpc);
             guardImpact = CombatAssetProvider.LoadClip("CombatGuardImpact", forNpc);
             guardBreak = CombatAssetProvider.LoadClip("CombatGuardBreak", forNpc);
-            recoil = CombatAssetProvider.LoadClip("CombatRecoil", forNpc);
             defeat = CombatAssetProvider.LoadClip("CombatDefeat", forNpc);
+            LoadSwingClips(forNpc);
         }
 
         private void AttachWeapon(Transform grip)
@@ -207,7 +205,7 @@ namespace BarPromenade
             if (previousPhase == MeleePhase.Windup && State.Phase != MeleePhase.Windup && State.IsAttacking &&
                 sequence == State.AttackSequence)
                 RetroAudio.PlayAt(RetroSfxId.SpadeToss, strikeTip.position, .35f);
-            if ((State.IsAttacking && reaction != recoil) || elapsed.HasActiveWindow)
+            if ((State.IsAttacking && !IsRecoil(reaction)) || elapsed.HasActiveWindow)
                 SweepWeapon(from, State.AttackElapsed, State.AttackSequence, pending);
             else sweepValid = false;
         }
@@ -261,7 +259,7 @@ namespace BarPromenade
         /// <summary>The parried swing stops where it was met: the recoil clip and a short shove back.</summary>
         internal void ShowParried(Vector3 point, Vector3 direction)
         {
-            reaction = recoil;
+            reaction = Current.Recoil;
             reactionClock = 0f;
             sweepValid = false;
             Shove(-transform.forward, .10f, .14f);
@@ -292,7 +290,7 @@ namespace BarPromenade
             {
                 if (visibleClip != chosen.name || !hero.OwnsClip(this))
                 {
-                    bool releasingCharge = visibleClip == charge.name;
+                    bool releasingCharge = visibleClip == Current.Charge.name;
                     if (!hero.TryAcquireClip(this, chosen.name, releasingCharge)) return false;
                     if (!releasingCharge) BeginPoseBlend();
                 }
@@ -315,7 +313,7 @@ namespace BarPromenade
             bool stagger = State.Phase == MeleePhase.Stagger || State.Phase == MeleePhase.GuardBroken || State.IsDefeated;
             bool stepping = State.Phase == MeleePhase.Step;
             AnimationClip chosen = stepping ? (stepBlocked ? ready : stepClip) : State.IsDefeated ? defeat : State.Phase == MeleePhase.GuardBroken ? guardBreak : stagger ? hit :
-                reaction != null ? reaction : State.IsCharging ? charge : State.IsAttacking ? ReleaseClip : roundEnded ? rest : State.IsBlocking ? block : ready;
+                reaction != null ? reaction : State.IsCharging ? Current.Charge : State.IsAttacking ? ReleaseClip : roundEnded ? rest : State.IsBlocking ? block : ready;
             supportGrip?.SetTarget(chosen == block || chosen == guardImpact, chosen != rest && !State.IsDefeated);
             float progress = stagger ?
                 (State.IsDefeated ? Mathf.Clamp01(defeatClock / defeat.length) : State.PhaseProgress) :
@@ -334,7 +332,7 @@ namespace BarPromenade
                 hero.ReleaseCarryPose(this);
                 if (visibleClip != chosen.name || !hero.OwnsClip(this))
                 {
-                    bool releasingCharge = visibleClip == charge.name && State.IsAttacking && reaction == null;
+                    bool releasingCharge = visibleClip == Current.Charge.name && State.IsAttacking && reaction == null;
                     if (!hero.TryAcquireClip(this, chosen.name, releasingCharge)) return;
                     // A stationary step starts in the exact ready pose;
                     // charge/release share their endpoint. Other changes
@@ -359,7 +357,7 @@ namespace BarPromenade
             {
                 if (visibleClip != chosen.name)
                 {
-                    if (!(visibleClip == charge.name && State.IsAttacking && reaction == null)) BeginPoseBlend(TransitionSeconds(chosen));
+                    if (!(visibleClip == Current.Charge.name && State.IsAttacking && reaction == null)) BeginPoseBlend(TransitionSeconds(chosen));
                     visibleClip = chosen.name;
                 }
                 bool walking = Mathf.Abs(locomotionSpeed) > .05f && MovementScale > 0f;

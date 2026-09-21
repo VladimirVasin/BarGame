@@ -24,18 +24,22 @@ namespace BarPromenade.Tests.PlayMode
                 yield return null;
             }
 #endif
+            // Both swing sides: a target seen off to the right calls the backhand.
+            foreach (MeleeSwing swing in new[] { MeleeSwing.Forehand, MeleeSwing.Backhand })
             foreach (bool chargeHero in new[] { true, false })
             {
                 CombatActor actor = chargeHero ? root.Hero : root.Opponent;
                 CombatActor target = chargeHero ? root.Opponent : root.Hero;
-                string subject = chargeHero ? "hero" : "opponent";
+                string subject = (chargeHero ? "hero" : "opponent") + (swing == MeleeSwing.Backhand ? "-backhand" : "");
                 Transform tip = CombatAssetProvider.FindAnchor(actor.Weapon, "StrikeTip");
                 Vector3 previousTip = Vector3.zero;
                 foreach (float power in new[] { 0f, .25f, .5f, .75f, 1f })
                 {
                     CombatCapturePair(root);
                     for (int frame = 0; frame < 24; frame++) yield return null;
+                    actor.State.ObserveLateralCue(swing == MeleeSwing.Backhand ? 1 : 0);
                     Assert.That(actor.RequestCharge(), Is.True);
+                    Assert.That(actor.State.Swing, Is.EqualTo(swing));
                     root.Tick(actor.State.Settings.ChargeSeconds * power);
                     yield return null;
                     string sample = "charge-" + subject + "-" + Mathf.RoundToInt(power * 100f);
@@ -58,7 +62,7 @@ namespace BarPromenade.Tests.PlayMode
                         Assert.That(actor.State.IsCharging, Is.True, "A completed held charge waits for release.");
                         Assert.That(actor.State.AttackSequence, Is.EqualTo(heldSequence));
                         Assert.That(target.State.Health, Is.EqualTo(S.MaxHealth));
-                        if (chargeHero) yield return CaptureCombatChargeUi(root);
+                        if (chargeHero && swing == MeleeSwing.Forehand) yield return CaptureCombatChargeUi(root);
                     }
                     Vector3 loadedTip = tip.position;
                     Quaternion loadedRotation = actor.Weapon.transform.rotation;

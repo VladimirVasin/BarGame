@@ -15,10 +15,25 @@ namespace BarPromenade
             GuardBreakClip = "CombatGuardBreak", RecoilClip = "CombatRecoil", DefeatClip = "CombatDefeat",
             StrafeLeftClip = "CombatStrafeLeft", StrafeRightClip = "CombatStrafeRight",
             StepForwardClip = "CombatStepForward", StepBackwardClip = "CombatStepBackward",
-            StepLeftClip = "CombatStepLeft", StepRightClip = "CombatStepRight";
+            StepLeftClip = "CombatStepLeft", StepRightClip = "CombatStepRight",
+            BackhandClip = "CombatBackhand", BackhandRecoilClip = "CombatBackhandRecoil",
+            BackhandChargeClip = "CombatBackhandCharge", BackhandHeavyClip = "CombatBackhandHeavy";
         public const float DefeatHandoffSeconds = .16f;
         public static readonly string[] ClipNames = { ReadyClip, RestClip, AttackClip, BlockClip, HitClip,
-            GuardImpactClip, GuardBreakClip, RecoilClip, DefeatClip, ChargeClip, ReleaseLightClip, ReleaseHeavyClip };
+            GuardImpactClip, GuardBreakClip, RecoilClip, DefeatClip, ChargeClip, ReleaseLightClip, ReleaseHeavyClip,
+            BackhandClip, BackhandRecoilClip, BackhandChargeClip, BackhandHeavyClip };
+
+        /// <summary>The five clips of one swing side. The backhand has no light-release copy: its attack is the light release.</summary>
+        public readonly struct SwingClipSet
+        {
+            public readonly string Attack, ReleaseLight, ReleaseHeavy, Charge, Recoil;
+            internal SwingClipSet(string attack, string light, string heavy, string charge, string recoil)
+            { Attack = attack; ReleaseLight = light; ReleaseHeavy = heavy; Charge = charge; Recoil = recoil; }
+        }
+
+        public static SwingClipSet SwingClips(MeleeSwing swing) => swing == MeleeSwing.Backhand
+            ? new SwingClipSet(BackhandClip, BackhandClip, BackhandHeavyClip, BackhandChargeClip, BackhandRecoilClip)
+            : new SwingClipSet(AttackClip, ReleaseLightClip, ReleaseHeavyClip, ChargeClip, RecoilClip);
         public static readonly string[] HeroLocomotionClipNames = { StrafeLeftClip, StrafeRightClip };
         /// <summary>Both banks carry the four defensive steps; the opponent steps too.</summary>
         public static readonly string[] StepClipNames = { StepForwardClip, StepBackwardClip, StepLeftClip, StepRightClip };
@@ -32,16 +47,16 @@ namespace BarPromenade
             switch (clip)
             {
                 case ReadyClip: case BlockClip: case RestClip: return 4f;
-                case ChargeClip: return 1f;
+                case ChargeClip: case BackhandChargeClip: return 1f;
                 case StrafeLeftClip: case StrafeRightClip: return .8f;
                 // The authored step is exactly the motor's committed travel plus settle.
                 case StepForwardClip: case StepBackwardClip: case StepLeftClip: case StepRightClip:
                     return MeleeCombatSettings.Crowbar.StepDurationSeconds;
-                case AttackClip: case ReleaseLightClip: case ReleaseHeavyClip: return 1.28f;
+                case AttackClip: case ReleaseLightClip: case ReleaseHeavyClip: case BackhandClip: case BackhandHeavyClip: return 1.28f;
                 case HitClip: return .36f;
                 case GuardImpactClip: return .28f;
                 case GuardBreakClip: return .70f;
-                case RecoilClip: return .48f;
+                case RecoilClip: case BackhandRecoilClip: return .48f;
                 case DefeatClip: return .36f;
                 default: throw new ArgumentOutOfRangeException(nameof(clip), clip, "Unknown combat action.");
             }

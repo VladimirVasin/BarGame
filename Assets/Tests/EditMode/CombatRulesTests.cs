@@ -305,6 +305,126 @@ namespace BarPromenade.Tests.EditMode
                 "A heavy blow staggers longer.");
         }
 
+        private static void AdvanceBy(MeleeCombatant actor, float seconds, bool hitch)
+        {
+            if (hitch) { actor.Advance(seconds); return; }
+            for (float t = 0f; t < seconds - Eps; t += .05f) actor.Advance(Math.Min(.05f, seconds - t));
+        }
+
+        [TestCase(MeleeHitResult.Hit, MeleeSwing.Backhand)]
+        [TestCase(MeleeHitResult.GuardBroken, MeleeSwing.Backhand)]
+        [TestCase(MeleeHitResult.Ignored, MeleeSwing.Backhand)]
+        [TestCase(MeleeHitResult.Blocked, MeleeSwing.Forehand)]
+        [TestCase(MeleeHitResult.Parried, MeleeSwing.Forehand)]
+        public void OnlyASwingThatGoesThroughHandsTheNextOneToTheOtherSide(MeleeHitResult result, MeleeSwing next)
+        {
+            var actor = new MeleeCombatant();
+            Assert.That(actor.Swing, Is.EqualTo(MeleeSwing.Forehand));
+            foreach (bool hitch in new[] { false, true })
+            {
+                actor.Reset();
+                Assert.That(actor.TryStartAttack(), Is.True);
+                Assert.That(actor.Swing, Is.EqualTo(MeleeSwing.Forehand), "The first swing is the forehand.");
+                AdvanceBy(actor, S.WindupSeconds + .05f, hitch);
+                if (result != MeleeHitResult.Ignored)
+                {
+                    Assert.That(actor.TryRegisterHit(1, actor.AttackSequence), Is.True);
+                    Assert.That(actor.RecordAttackOutcome(result, actor.AttackSequence), Is.True);
+                }
+                AdvanceBy(actor, 2f, hitch);
+                Assert.That(actor.Phase, Is.EqualTo(MeleePhase.Ready));
+                Assert.That(actor.TryStartAttack(), Is.True);
+                Assert.That(actor.Swing, Is.EqualTo(next), hitch ? "one hitch" : "fine steps");
+            }
+        }
+
+        [Test]
+        public void SideCuesOutrankTheRhythmAndAChargeKeepsItsSide()
+        {
+            var actor = new MeleeCombatant();
+            // A wall stops the swing: the same side comes again.
+            actor.TryStartAttack();
+            actor.Advance(S.WindupSeconds + .05f);
+            Assert.That(actor.CancelAttackOnObstacle(), Is.True);
+            actor.Advance(2f);
+            actor.TryStartAttack();
+            Assert.That(actor.Swing, Is.EqualTo(MeleeSwing.Forehand), "An obstacle repeats the side.");
+            actor.Advance(2f);
+            // The return swing out of the buffer after a landed hit comes from the other side.
+            actor.TryStartAttack();
+            Assert.That(actor.Swing, Is.EqualTo(MeleeSwing.Backhand), "A miss hands the turn over.");
+            actor.Advance(S.WindupSeconds + .05f);
+            actor.TryRegisterHit(1, actor.AttackSequence);
+            actor.RecordAttackOutcome(MeleeHitResult.Hit, actor.AttackSequence);
+            actor.Advance(.2f);
+            Assert.That(actor.RequestAttack(), Is.True);
+            actor.Advance(.2f);
+            Assert.That(actor.IsChained, Is.True);
+            Assert.That(actor.Swing, Is.EqualTo(MeleeSwing.Forehand), "The return swing comes from the other side.");
+            actor.Advance(2f);
+            // Being hit in the windup leaves the turn where it was.
+            actor.TryStartAttack();
+            Assert.That(actor.Swing, Is.EqualTo(MeleeSwing.Backhand));
+            actor.ReceiveHit(S.Damage, S.BlockCost, false);
+            actor.Advance(2f);
+            actor.TryStartAttack();
+            Assert.That(actor.Swing, Is.EqualTo(MeleeSwing.Backhand), "An interrupted swing keeps its turn.");
+            actor.Advance(2f);
+
+            // A target off the facing line outranks the rhythm, read when the swing commits.
+            actor.ObserveLateralCue(1);
+            Assert.That(actor.RequestCharge(), Is.True);
+            Assert.That(actor.Swing, Is.EqualTo(MeleeSwing.Backhand), "A target on the right calls the backhand.");
+            actor.ObserveLateralCue(-1);
+            actor.Advance(.3f);
+            Assert.That(actor.ReleaseCharge(), Is.True);
+            Assert.That(actor.Swing, Is.EqualTo(MeleeSwing.Backhand), "Release keeps the side the held pose showed.");
+            actor.Advance(2f);
+            actor.ObserveLateralCue(0);
+            actor.TryStartAttack();
+            Assert.That(actor.Swing, Is.EqualTo(MeleeSwing.Forehand), "Squared up, the rhythm decides.");
+            actor.Advance(2f);
+            actor.ObserveLateralCue(-1);
+            actor.TryStartAttack();
+            Assert.That(actor.Swing, Is.EqualTo(MeleeSwing.Forehand), "A target on the left calls the forehand over the rhythm.");
+            actor.Advance(2f);
+            actor.ObserveLateralCue(0);
+            Assert.That(actor.RequestCharge(), Is.True);
+            Assert.That(actor.Swing, Is.EqualTo(MeleeSwing.Backhand));
+            Assert.That(actor.CancelCharge(), Is.True);
+            actor.Advance(.5f);
+            actor.TryStartAttack();
+            Assert.That(actor.Swing, Is.EqualTo(MeleeSwing.Backhand), "A cancelled charge spends no turn.");
+            actor.Advance(2f);
+
+            // A side step just taken sets the step attack's side, and only within the grace.
+            Assert.That(actor.TryStartStep(1), Is.True);
+            actor.Advance(S.StepDurationSeconds);
+            Assert.That(actor.TryStartAttack(), Is.True);
+            Assert.That(actor.IsChained, Is.True);
+            Assert.That(actor.Swing, Is.EqualTo(MeleeSwing.Backhand), "A step to the right swings with the body.");
+            actor.Advance(2f);
+            Assert.That(actor.TryStartStep(1), Is.True);
+            actor.Advance(S.StepDurationSeconds + S.StepAttackGraceSeconds + .01f);
+            actor.TryStartAttack();
+            Assert.That(actor.Swing, Is.EqualTo(MeleeSwing.Forehand), "Past the grace the rhythm decides.");
+            actor.Advance(2f);
+            // A queued step keeps its direction for the step attack that follows it.
+            actor.TryStartAttack();
+            Assert.That(actor.Swing, Is.EqualTo(MeleeSwing.Backhand));
+            actor.Advance(S.AttackDurationSeconds - .1f);
+            Assert.That(actor.RequestStep(1), Is.True);
+            // The queued step fires at the tail's boundary; a hair past its own end keeps
+            // the read inside the step-attack grace rather than on the rounding edge.
+            actor.Advance(.1f + S.StepDurationSeconds + .01f);
+            Assert.That(actor.Phase, Is.EqualTo(MeleePhase.Ready));
+            Assert.That(actor.TryStartAttack(), Is.True);
+            Assert.That(actor.Swing, Is.EqualTo(MeleeSwing.Backhand), "A buffered step to the right swings the backhand over the rhythm.");
+
+            actor.Reset();
+            Assert.That(actor.Swing, Is.EqualTo(MeleeSwing.Forehand));
+        }
+
         [Test]
         public void LandedHitKeepsInitiativeAndArmsOneBackhandOutOfTheBuffer()
         {

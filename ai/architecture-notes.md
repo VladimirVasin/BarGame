@@ -5,25 +5,31 @@
 ## Current facts
 
 - **Accepted — 2026-09-20, two-hand combat hold:**
-  Both: low diagonal Ready, high horizontal Block; left regrips .16→.42 m,
-  palm opposite right. Ready/Block/Rest: 4 s breath; staggered legs yield to gait.
-  `NpcHandPose`/support follow blends/injury. Round end: one-hand Rest.
+  Low diagonal Ready/high Block; left .16→.42 m/opposed palm; Ready/Block/Rest
+  breathe 4 s; legs yield to gait; `NpcHandPose` blends/injury; right Rest at end.
 
 - **Accepted — 2026-09-21, brawl v2:**
-  Free swings; breath pays guard 20/35, step 15, charge 20 (+15/s held);
-  regen 30/s, .6 s, through stuns, own spends only. Fresh press ≤.12 s
-  parries lights, re-arm .35; counter-hit +.30; break ½ dmg .55; .22
-  backhand; buffer .20; heavy windup .28; seeded AI; free camera after fall.
+  Free swings; guard 20/35, step 15, charge 20 (+15/s held); regen 30/s/.6 s,
+  through stuns, own spends. Fresh ≤.12 s parries lights/re-arm .35;
+  counter +.30; break ½ dmg/.55; backhand .22; buffer .20; heavy .28;
+  seeded AI; free camera after fall.
+
+- **Accepted — 2026-09-21, swing sides:**
+  Forehand/backhand families, both banks; side fixed at commit (charge shows
+  it); through flips, stopped repeats; side step or target >15° off-line
+  outranks, strafe never; equal damage/timing/cost.
 
 - **Accepted architecture exception — 2026-09-20, combat injury:**
-  Directional/HP pose, blood/wounds/puddles; none on block/miss.
-  R/unload clears; ragdoll wins. Visual only.
+  Directional/HP pose, blood/wounds/puddles; no block/miss blood.
+  R/unload clears; ragdoll wins; visual only.
+
+- **Accepted — 2026-09-21, combat aftermath:**
+  Ground-contact thud; authored blood lobes spread for 10 s, then stay.
 
 - **Accepted architecture exception — 2026-09-19, isolated combat test:**
-  Story §6/§16.15/art §15a: `CombatTest` only; no story/speech.
-  Shared hero/input; mutual buffered hits, vulnerable steps, rig fall/reset.
-  Shoulder/wall lock; W/S travel, A/D strafe; winner walks.
-  `MeleeCombatSettings`; opponent last.
+  §6/§16.15/art §15a: `CombatTest`, no story/speech; shared hero/input, mutual
+  hits, vulnerable steps, rig fall/reset, shoulder/wall lock; W/S travel, A/D
+  strafe; winner walks. `MeleeCombatSettings`; opponent last.
 
 - **Accepted — 2026-09-16, street pool is the default NPC catalog:**
   User: default-only; new models join at once.
@@ -816,26 +822,24 @@
   evidence are recorded in the work log.
 
 - **Accepted exception — Alpine Village cold presentation (2026-09-07,
-  explicitly refined by the user on 2026-09-08):**
-  The user accepted a hunched, self-hugging idle and walk, periodic shoulder
-  rubbing, restrained shivers and visible breath in the village. This narrowly
+  refined 2026-09-08):**
+  Accepted: a hunched, self-hugging idle and walk, periodic shoulder rubbing,
+  restrained shivers and visible breath in the village. This narrowly
   lifts art-bible §1's uniform-animation rule for the exterior of
   `AlpineVillage`, from story level `0`; the dated §6 registry row and
   art-bible §10g own the same boundary. The shared motor, leg gait, speed and
-  controls are unchanged. The refinement keeps the self-hug and shoulder
-  rubbing while running, with noticeable rubs and small hand movements between
-  series. Balance, falling and contextual actions take precedence.
-  The open station canopy remains cold; the mother's house and enclosed
-  cableway cabin suppress the body pose and visible breath. The `2026-09-08`
-  request extends the exception to short upper-body shiver bouts, gradual
-  frost at the image's edges and its characteristic sound; frost and sound
-  thaw in the mother's house and enclosed cabin. Cold is ordinary weather,
-  independent of intoxication, degradation and the village's dimming grade.
-  Growth uses quiet dry crackles and a thin icy ring in irregular swells.
-  A further refinement gives thaw its own soft ice-release sound and tiny
-  damp clicks, fading with the remaining frost; neither phase uses sharp
-  impacts or breaking glass, and background blur is permitted only beneath
-  already frozen patches, increasing with their coverage.
+  controls are unchanged; the self-hug and rubbing persist while running.
+  Balance, falling and contextual actions take precedence.
+  The open station canopy stays cold; the mother's house and enclosed
+  cabin suppress the body pose and breath. `2026-09-08`
+  extends the exception to short upper-body shiver bouts, gradual
+  frost at the image's edges with its sound; both thaw in the mother's house
+  and enclosed cabin. Cold is ordinary weather,
+  independent of intoxication, degradation and dimming grade.
+  Growth: quiet dry crackles and a thin icy ring in irregular swells.
+  Thaw has its own soft ice-release sound and tiny damp clicks, fading with
+  the remaining frost; no sharp impacts or breaking glass; background blur
+  only beneath already frozen patches, growing with their coverage.
   The existing 2D source switches to three deterministic `1.2 s` thaw clips:
   warm entry fades its old tail over `0.12 s` and schedules the first thaw cue
   after `0.22 s`, independent of the previous cold-cue wait. Returning outdoors

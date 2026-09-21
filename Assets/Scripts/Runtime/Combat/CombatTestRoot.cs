@@ -133,6 +133,19 @@ namespace BarPromenade
         /// <summary>Hold both fighters on the frame of contact for a few simulation substeps.</summary>
         private void RequestHitStop(int substeps) => hitStopSubsteps = Math.Max(hitStopSubsteps, substeps);
 
+        /// <summary>Which side of the facing line the target stands on, −1 left / +1 right, or 0 inside
+        /// the dead zone. Target-facing movement keeps a squared-up duel inside it; only a circling
+        /// opponent moves the next swing's side.</summary>
+        internal const float LateralCueDegrees = 15f;
+        internal static int LateralBearing(CombatActor from, CombatActor to)
+        {
+            Vector3 axis = to.transform.position - from.transform.position;
+            axis.y = 0f;
+            if (axis.sqrMagnitude < .0001f) return 0;
+            float angle = Vector3.SignedAngle(from.transform.forward, axis, Vector3.up);
+            return angle < -LateralCueDegrees ? -1 : angle > LateralCueDegrees ? 1 : 0;
+        }
+
         private void Update()
         {
             if (!IsInitialized || !AutomaticSimulation || !UpdateCombatInput()) return;
@@ -162,6 +175,10 @@ namespace BarPromenade
                     continue;
                 }
                 Opponent.SetLocomotion(0f);
+                // Each fighter's rules see only where the other stands relative to
+                // its own facing; a swing committed this step reads that cue.
+                Hero.State.ObserveLateralCue(LateralBearing(Hero, Opponent));
+                Opponent.State.ObserveLateralCue(LateralBearing(Opponent, Hero));
                 if (Sparring) AdvanceOpponent(SimulationStep);
                 Physics.SyncTransforms();
                 pendingContacts.Clear();

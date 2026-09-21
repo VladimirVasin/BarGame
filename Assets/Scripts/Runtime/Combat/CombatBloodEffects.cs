@@ -7,7 +7,7 @@ namespace BarPromenade
 {
     /// <summary>Scene-local, caller-clocked blood; all visible geometry is Blender-authored.</summary>
     [DisallowMultipleComponent]
-    public sealed class CombatBloodEffects : MonoBehaviour
+    public sealed partial class CombatBloodEffects : MonoBehaviour
     {
         public const int MaximumDrops = 256, MaximumStains = 48;
         private sealed class Drop
@@ -29,6 +29,8 @@ namespace BarPromenade
         {
             public CombatDamageMarks Marks;
             public float BleedSeconds, Remainder;
+            public float GroundSeconds;
+            public DefeatPool Pool;
         }
 
         private static Material sharedMaterial;
@@ -150,6 +152,7 @@ namespace BarPromenade
             {
                 Injury injury = pair.Value;
                 injury.Marks.RefreshVisibility();
+                AdvanceDefeatPool(pair.Key, injury, seconds);
                 if (pair.Key == null || !pair.Key.isActiveAndEnabled || injury.BleedSeconds <= 0f) continue;
                 float time = Mathf.Min(injury.BleedSeconds, seconds);
                 injury.BleedSeconds = Mathf.Max(0f, injury.BleedSeconds - seconds);
@@ -271,11 +274,16 @@ namespace BarPromenade
         {
             if (actor == null || !injuries.TryGetValue(actor, out Injury injury)) return;
             injury.Marks.Reset(); injury.BleedSeconds = injury.Remainder = 0f;
+            ResetDefeatPool(injury);
         }
 
         public void ResetRound()
         {
-            foreach (Injury injury in injuries.Values) { injury.Marks.Reset(); injury.BleedSeconds = injury.Remainder = 0f; }
+            foreach (Injury injury in injuries.Values)
+            {
+                injury.Marks.Reset(); injury.BleedSeconds = injury.Remainder = 0f;
+                ResetDefeatPool(injury);
+            }
             foreach (Drop drop in drops)
                 if (drop != null) { drop.Active = false; if (drop.Transform != null) drop.Transform.gameObject.SetActive(false); }
             foreach (Stain stain in stains)

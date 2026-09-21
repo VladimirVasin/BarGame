@@ -8,42 +8,44 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 - Rules: swings free; breath pays guard/step/charge, regenerates through stuns
   and is re-armed only by own spends; parry on a fresh re-armed press, heavies
   immune; counter-hit and the whiff floor `max(stagger, remaining)`; a break
-  keeps the meter; one buffered backhand; step-attack grace; one buffer slot
-  from every committed tail; `TryStartStep` checks the cost before dropping a
-  charge. Not obvious: regen inside Recovery starts at the absolute active end
+  keeps the meter; one buffered return swing; step-attack grace; one buffer
+  slot from every committed tail. Not obvious: regen inside Recovery starts at the absolute active end
   (`attackStartedAt + ActiveEnd`) to stay partition-invariant; every frontal
   contact consumes the press and `DropGuard` on step/charge keeps a held
   button from re-arming the parry. Check: `CombatRulesTests`.
-- Runtime: hit-stop as skipped 1/120 substeps (the round end consumes the
-  lethal freeze), knockback ladder incl. a two-body block nudge, shoulder kick
-  added before clearance, HP pose .6/.5 in recovery/guard, whoosh at
-  Windup→Active, obstacle cancel only in Active; camera and movement target
-  release 1.5 s after the fall, `PlaceRound` re-locks. Check:
-  `CombatTestPlayModeTests`.
-- Opponent v2 around a per-round seed (round 0 keeps the old seed): guard/late
+- Runtime: hit-stop as skipped 1/120 substeps (round end consumes the lethal
+  freeze), knockback ladder incl. a two-body block nudge, shoulder kick added
+  before clearance, HP pose .6/.5 in recovery/guard, whoosh at Windup→Active,
+  obstacle cancel only in Active; camera/movement target release 1.5 s after
+  the fall; `PlaceRound` re-locks. Check: `CombatTestPlayModeTests`.
+- Opponent v2 on a round seed (round 0 keeps the old seed): guard/late
   guard/step/nothing per tell, no guard raised within .14 s of contact except
   the deliberate late one, held-charge intercepts, whiff punish after the
   reaction, feint, cover, backhand, winded retreat then cornered fighting,
   probe/press moods. Not obvious: the anti-accidental-parry rule must never
   lower a guard already up.
-- Steps join the shared bank: `build_step_actions()` runs before the NPC export
-  and the manifest key is `step_clips`; the stride stays .65 m (a longer
-  planted leg is unreachable at the mid-travel pelvis dip), travel .24/.14.
-  Check: `build-combat-test-3d-model.py --actions-only`.
-- Tests: PlayMode literals became `CombatTuning` expressions; direct
-  `SetBlock`+`ReceiveHit` setups age the guard past the parry window or throw
-  a heavy; evasion runs on frames (a capsule's physics pose follows its
-  transform only across simulation steps, so rules-only ticks cannot dodge);
-  the strafe section ticks the duel and the foreign-owner case releases the
-  stance clip first, since the two-hand stance now owns the full clip.
-  Headless `CombatDuelSimulator` with named habits. Check: `CombatBalanceTests`.
-- Docs: work-log dates before 09-09 archived to `archive/work-log-2026-09.md`;
-  `check-docs.py`.
-- Charge arm fix: the old one-hand overhead pose pulled the weapon wrist
-  toward its shoulder to satisfy left reach, folding the elbow and wrist.
-  Reachable two-hand raised landmarks and forearm roll preserve the bend
-  through charge interpolation. Check: `build-combat-test-3d-model.py`,
-  `AreaCaptureFixture.CombatChargeArmAlignment` (both live rigs and views).
+- Steps join the shared bank: `build_step_actions()` precedes the NPC export;
+  the stride stays .65 m (a longer planted leg is unreachable at the mid-travel
+  pelvis dip), travel .24/.14. Check: `build-combat-test-3d-model.py --actions-only`.
+- Tests: `CombatTuning` replaces literals; direct hits age guards or use heavies;
+  evasion advances physics, strafe ticks the duel, foreign-owner setup releases
+  the stance. Habits in `CombatDuelSimulator`. Check: `CombatBalanceTests`.
+- Docs: pre-09-09 archived (`check-docs.py`).
+- Charge arm fix: the one-hand overhead pose pulled the weapon wrist toward
+  its shoulder to satisfy left reach, folding both joints; reachable two-hand
+  raised landmarks and forearm roll keep the bend through the charge.
+  Check: `build-combat-test-3d-model.py`,
+  `AreaCaptureFixture.CombatChargeArmAlignment`.
+- Aftermath: actual body contact owns the thud; wound-anchored blood lobes
+  spread finitely after landing. The old bleed ended before settling and its
+  area metric read targets, so the check measures displayed geometry. Check:
+  `Range_LethalContactsHandOffToRagdollPauseResetAndCleanUp` and its frames.
+- Swing sides: `MeleeSwing` picked at commit (charge shows it) from the step
+  cue, the target's bearing, else the rhythm the last fate set; the backhand
+  family (both banks) is its own pose set. Not obvious: on the mirrored bar the
+  support hand is the far hand, so only a down-forward elbow pole keeps
+  its wrist under the charge envelope. Checks: `CombatRulesTests`,
+  `AreaCaptureFixture.CombatCharge`.
 
 ## 2026-09-20 — Combat
 

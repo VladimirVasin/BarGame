@@ -159,7 +159,7 @@ Output: `Assets/Player3D/V2/Models/PlayerCharacter3DV2.{fbx,json}`.
 
 `build-combat-{test,blood}-3d-model.py`: launcher/`--validate-only`.
 Test: arena/crowbar/HeroV2/NPC; `--actions-only`: Ready/Block/Rest 4 s,
-two-hand contacts, Charge/ReleaseLight/Heavy. Blood: `--texture-only` PNG.
+two-hand contacts, per-side Charge/Heavy/Recoil. Blood: `--texture-only`.
 `Assets/Resources/{Combat,CombatBlood}`.
 
 `player_jacket_cloth.py --write` derives hem/cuff metadata only; `--check` verifies it.

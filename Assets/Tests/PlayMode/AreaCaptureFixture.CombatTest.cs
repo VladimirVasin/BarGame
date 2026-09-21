@@ -117,6 +117,9 @@ namespace BarPromenade.Tests.PlayMode
                 yield return null;
             }
             CaptureCurrentCamera(camera, SceneIds.CombatTest, "camera-06-defeated");
+            // The camera is free 1.5 s after the fall; R takes the lock back and opens
+            // the live round the charge captures need.
+            root.ResetRound();
             Assert.That(root.CameraFollow.TargetLockActive, Is.True);
             yield return CaptureCombatCharge(root, camera);
             yield return CaptureCombatDamage(root, camera);

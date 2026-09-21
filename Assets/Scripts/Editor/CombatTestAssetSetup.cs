@@ -71,8 +71,9 @@ namespace BarPromenade.Editor
                 manifest.actions.maximum_support_error > .001f || manifest.actions.maximum_support_angle_degrees > .1f ||
                 manifest.actions.attack_pelvis_travel_m < .04f || manifest.actions.attack_knee_travel_degrees < 7f ||
                 Mathf.Abs(manifest.actions.defeat_handoff_seconds - CombatAssetProvider.DefeatHandoffSeconds) > .0001f ||
-                manifest.actions.reactions == null || manifest.actions.reactions.Length != 3 ||
-                manifest.actions.minimum_reaction_tip_separation_m < .2f)
+                manifest.actions.reactions == null || manifest.actions.reactions.Length != 4 ||
+                manifest.actions.minimum_reaction_tip_separation_m < .2f ||
+                manifest.actions.swings == null || manifest.actions.swings.Length != 2)
                 throw new InvalidOperationException("Combat manifest violated its isolated, grounded, in-place contract.");
             DefensiveStep step = manifest.actions.defensive_step;
             MeleeCombatSettings tuning = MeleeCombatSettings.Crowbar;
@@ -81,12 +82,25 @@ namespace BarPromenade.Editor
                 Mathf.Abs(step.settle_seconds - tuning.StepRecoverySeconds) > .0001f ||
                 Mathf.Abs(step.distance_m - tuning.StepDistance) > .0001f || step.travel_curve != "smoothstep")
                 throw new InvalidOperationException("Combat defensive step differs from its constrained motor travel.");
-            Charging charging = manifest.actions.charging;
-            if (charging == null || charging.charge_parameter != "linear" ||
-                charging.maximum_entry_error > .00001f || charging.maximum_lower_track_error > .00001f ||
-                charging.maximum_light_legacy_error > .00001f || charging.maximum_support_error > .001f ||
-                charging.minimum_reach_m < .95f || Mathf.Abs(charging.release_seconds - 1.28f) > .0001f)
-                throw new InvalidOperationException("Combat charge lost its continuous, grounded release contract.");
+            // Both swing sides carry the same authored strike and charge contract; the
+            // runtime registry names are the truth the manifest must agree with.
+            foreach (Swing swing in manifest.actions.swings)
+            {
+                CombatAssetProvider.SwingClipSet names = CombatAssetProvider.SwingClips(
+                    swing.name == "backhand" ? MeleeSwing.Backhand : MeleeSwing.Forehand);
+                if ((swing.name != "forehand" && swing.name != "backhand") || swing.attack_clip != names.Attack ||
+                    swing.release_light != names.ReleaseLight || swing.release_heavy != names.ReleaseHeavy ||
+                    swing.charge_clip != names.Charge || swing.recoil_clip != names.Recoil ||
+                    swing.pelvis_travel_m < .04f || swing.knee_travel_degrees < 7f || swing.minimum_reach_m < .95f ||
+                    Mathf.Abs(swing.contact_seconds - .56f) > .0001f)
+                    throw new InvalidOperationException("Combat swing side lost its authored strike contract: " + swing.name);
+                Charging charging = swing.charging;
+                if (charging == null || charging.charge_parameter != "linear" ||
+                    charging.maximum_entry_error > .00001f || charging.maximum_lower_track_error > .00001f ||
+                    charging.maximum_light_legacy_error > .00001f || charging.maximum_support_error > .001f ||
+                    charging.minimum_reach_m < .95f || Mathf.Abs(charging.release_seconds - 1.28f) > .0001f)
+                    throw new InvalidOperationException("Combat charge lost its continuous, grounded release contract: " + swing.name);
+            }
             foreach (Model entry in manifest.models)
             {
                 GameObject model = CombatAssetProvider.Create(entry.name, null);
@@ -157,26 +171,35 @@ namespace BarPromenade.Editor
                 handPose.SetGrip(false, 1f);
                 Transform tip = CombatAssetProvider.FindAnchor(bar, "StrikeTip");
                 Transform origin = CombatAssetProvider.FindAnchor(bar, "Grip");
-                AnimationClip attack = CombatAssetProvider.LoadClip(CombatAssetProvider.AttackClip, npc);
-                float reach = 0f, travel = 0f;
-                attack.SampleAnimation(animator.gameObject, .45f);
-                Vector3 windup = actor.transform.InverseTransformPoint(tip.position);
-                for (int frame = 45; frame <= 63; frame++)
+                Transform[] bones = animator.GetComponentsInChildren<Transform>(true);
+                AnimationClip ready = CombatAssetProvider.LoadClip(CombatAssetProvider.ReadyClip, npc);
+                foreach (MeleeSwing swing in new[] { MeleeSwing.Forehand, MeleeSwing.Backhand })
                 {
-                    attack.SampleAnimation(animator.gameObject, frame / 100f);
-                    Vector3 point = actor.transform.InverseTransformPoint(tip.position);
-                    reach = Mathf.Max(reach, point.z);
-                    travel = Mathf.Max(travel, Vector3.Distance(windup, point));
-                    if (Vector3.Distance(origin.position, handPose.CylinderCentre(false)) > .001f ||
-                        Vector3.Dot(bar.transform.up, handPose.CylinderAxis(false)) < .999f ||
-                        Vector3.Distance(origin.position, tip.position) < .60f || Vector3.Distance(origin.position, tip.position) > .63f)
-                        throw new InvalidOperationException("Combat crowbar grip or unit factor differs for " + (npc ? "NPC" : "hero"));
+                    CombatAssetProvider.SwingClipSet names = CombatAssetProvider.SwingClips(swing);
+                    AnimationClip attack = CombatAssetProvider.LoadClip(names.Attack, npc);
+                    // Every side starts and ends in the shared Ready pose on the imported rig too.
+                    CompareEndpoint(attack, 0f, ready, 0f, animator, bones, names.Attack + " entry");
+                    CompareEndpoint(attack, attack.length, ready, 0f, animator, bones, names.Attack + " exit");
+                    float reach = 0f, travel = 0f;
+                    attack.SampleAnimation(animator.gameObject, .45f);
+                    Vector3 windup = actor.transform.InverseTransformPoint(tip.position);
+                    for (int frame = 45; frame <= 63; frame++)
+                    {
+                        attack.SampleAnimation(animator.gameObject, frame / 100f);
+                        Vector3 point = actor.transform.InverseTransformPoint(tip.position);
+                        reach = Mathf.Max(reach, point.z);
+                        travel = Mathf.Max(travel, Vector3.Distance(windup, point));
+                        if (Vector3.Distance(origin.position, handPose.CylinderCentre(false)) > .001f ||
+                            Vector3.Dot(bar.transform.up, handPose.CylinderAxis(false)) < .999f ||
+                            Vector3.Distance(origin.position, tip.position) < .60f || Vector3.Distance(origin.position, tip.position) > .63f)
+                            throw new InvalidOperationException("Combat crowbar grip or unit factor differs for " + (npc ? "NPC" : "hero"));
+                    }
+                    if (reach < .95f || travel < 1f)
+                        throw new InvalidOperationException($"Combat imported {(npc ? "NPC" : "hero")} {names.Attack} cannot reach the front target: reach={reach}, travel={travel}.");
+                    ValidateChargedRelease(animator, actor.transform, handPose, bar, origin, tip, npc, names);
                 }
-                if (reach < .95f || travel < 1f)
-                    throw new InvalidOperationException($"Combat imported {(npc ? "NPC" : "hero")} attack cannot reach the front target: reach={reach}, travel={travel}.");
                 ValidateReactions(animator, grip, tip, npc);
                 ValidateWeightAndHandoff(animator, npc);
-                ValidateChargedRelease(animator, actor.transform, handPose, bar, origin, tip, npc);
                 if (!npc)
                 {
                     ValidateSideSteps(animator);
@@ -196,21 +219,22 @@ namespace BarPromenade.Editor
             Vector3[] planted = feet.Select(foot => foot.position).ToArray();
             Quaternion[] flat = feet.Select(foot => foot.rotation).ToArray();
             Vector3 initialPelvis = pelvis.position;
-            float shift = 0f;
+            var shifts = new float[2];
             foreach (string name in CombatAssetProvider.ClipNames)
             {
                 AnimationClip clip = CombatAssetProvider.LoadClip(name, npc);
                 int count = Mathf.CeilToInt(clip.length * 100f);
+                int side = name == CombatAssetProvider.AttackClip ? 0 : name == CombatAssetProvider.BackhandClip ? 1 : -1;
                 for (int frame = 0; frame <= count; frame++)
                 {
                     clip.SampleAnimation(animator.gameObject, Mathf.Min(clip.length, frame / 100f));
                     for (int i = 0; i < feet.Length; i++)
                         if (Vector3.Distance(planted[i], feet[i].position) > .002f || Quaternion.Angle(flat[i], feet[i].rotation) > .15f)
                             throw new InvalidOperationException("Combat imported action slid a support foot: " + name);
-                    if (name == CombatAssetProvider.AttackClip) shift = Mathf.Max(shift, Vector3.Distance(initialPelvis, pelvis.position));
+                    if (side >= 0) shifts[side] = Mathf.Max(shifts[side], Vector3.Distance(initialPelvis, pelvis.position));
                 }
             }
-            if (shift < .025f) throw new InvalidOperationException("Combat imported attack lost its hip weight shift.");
+            if (shifts[0] < .025f || shifts[1] < .025f) throw new InvalidOperationException("Combat imported attack lost its hip weight shift.");
             AnimationClip defeat = CombatAssetProvider.LoadClip(CombatAssetProvider.DefeatClip, npc);
             CompareEndpoint(defeat, 0f, ready, 0f, animator, bones, "defeat entry");
             CompareEndpoint(defeat, CombatAssetProvider.DefeatHandoffSeconds, defeat, defeat.length, animator, bones, "defeat handoff hold");
@@ -221,14 +245,16 @@ namespace BarPromenade.Editor
         }
 
         private static void ValidateChargedRelease(Animator animator, Transform actor, NpcHandPose handPose,
-            GameObject bar, Transform origin, Transform tip, bool npc)
+            GameObject bar, Transform origin, Transform tip, bool npc, CombatAssetProvider.SwingClipSet names)
         {
             Transform[] bones = animator.GetComponentsInChildren<Transform>(true);
             Transform[] feet = { bones.First(bone => bone.name == "foot.L"), bones.First(bone => bone.name == "foot.R") };
-            AnimationClip charge = CombatAssetProvider.LoadClip(CombatAssetProvider.ChargeClip, npc);
-            AnimationClip light = CombatAssetProvider.LoadClip(CombatAssetProvider.ReleaseLightClip, npc);
-            AnimationClip heavy = CombatAssetProvider.LoadClip(CombatAssetProvider.ReleaseHeavyClip, npc);
-            AnimationClip attack = CombatAssetProvider.LoadClip(CombatAssetProvider.AttackClip, npc);
+            AnimationClip charge = CombatAssetProvider.LoadClip(names.Charge, npc);
+            AnimationClip light = CombatAssetProvider.LoadClip(names.ReleaseLight, npc);
+            AnimationClip heavy = CombatAssetProvider.LoadClip(names.ReleaseHeavy, npc);
+            AnimationClip attack = CombatAssetProvider.LoadClip(names.Attack, npc);
+            // Only the forehand keeps a separate light-release copy to compare with its attack.
+            bool lightCopy = names.ReleaseLight != names.Attack;
             var positions = new Vector3[bones.Length];
             var rotations = new Quaternion[bones.Length];
             var entryPositions = new Vector3[bones.Length];
@@ -262,7 +288,7 @@ namespace BarPromenade.Editor
                 for (int frame = 0; frame <= 128; frame++)
                 {
                     float seconds = frame / 100f;
-                    if (q == 0f) CompareEndpoint(light, seconds, attack, seconds, animator, bones, "light legacy strike");
+                    if (q == 0f && lightCopy) CompareEndpoint(light, seconds, attack, seconds, animator, bones, "light legacy strike");
                     Blend(seconds, q);
                     for (int i = 0; i < feet.Length; i++)
                         if (Vector3.Distance(planted[i], feet[i].position) > .002f || Quaternion.Angle(flat[i], feet[i].rotation) > .15f)
@@ -272,7 +298,7 @@ namespace BarPromenade.Editor
                         throw new InvalidOperationException("Charged blend lost the crowbar grip: " + q);
                     if (seconds >= .45f && seconds <= .63f) reach = Mathf.Max(reach, actor.InverseTransformPoint(tip.position).z);
                 }
-                if (reach < .95f) throw new InvalidOperationException("Charged blend cannot reach its target: " + q);
+                if (reach < .95f) throw new InvalidOperationException("Charged blend cannot reach its target: " + names.Attack + "/" + q);
             }
         }
 
@@ -407,6 +433,12 @@ namespace BarPromenade.Editor
             public float attack_pelvis_travel_m, attack_knee_travel_degrees, defeat_handoff_seconds;
             public Reaction[] reactions;
             public DefensiveStep defensive_step;
+            public Swing[] swings;
+        }
+        [Serializable] private sealed class Swing
+        {
+            public string name, attack_clip, release_light, release_heavy, charge_clip, recoil_clip;
+            public float contact_seconds, pelvis_travel_m, knee_travel_degrees, minimum_reach_m;
             public Charging charging;
         }
         [Serializable] private sealed class Charging

@@ -7,6 +7,8 @@ namespace BarPromenade
     public enum MeleeHitResult { Ignored, Hit, Blocked, GuardBroken, Parried }
     public enum MeleeAttackOutcome { None, Miss, Hit, Blocked, Obstacle, Parried }
     public enum MeleeBufferedAction { None, Attack, Charge, Step }
+    /// <summary>The side a swing comes from: the forehand sweeps right to left, the backhand left to right.</summary>
+    public enum MeleeSwing { Forehand, Backhand }
 
     /// <summary>The active part crossed by one advance, even if a hitch crosses the whole swing.</summary>
     public readonly struct MeleeAdvanceResult
@@ -38,6 +40,10 @@ namespace BarPromenade
         private double stepEndedAt = double.NegativeInfinity;
         private bool blockHeld, advancedActiveWindow, registeredContactWindow, bufferedChargeReleased, chained, chainArmed;
         private MeleeBufferedAction bufferedAction;
+        // The side the next swing would take on its own, and the observed cues
+        // that outrank it: the target's bearing and the last step's direction.
+        private MeleeSwing rhythm;
+        private int lateralCue, stepCue, pendingStepCue;
 
         public MeleeCombatant(MeleeCombatSettings settings = null)
         {
@@ -54,8 +60,13 @@ namespace BarPromenade
         public bool IsAttacking => Phase == MeleePhase.Windup || Phase == MeleePhase.Active || Phase == MeleePhase.Recovery;
         public bool IsBlocking => blockHeld && (Phase == MeleePhase.Ready || Phase == MeleePhase.GuardImpact);
         public bool IsStunned => Phase == MeleePhase.Stagger || Phase == MeleePhase.GuardBroken || Phase == MeleePhase.GuardImpact;
-        /// <summary>The current swing is the one short backhand that follows a landed hit or a step.</summary>
+        /// <summary>The current swing is the one short return swing that follows a landed hit or a step.</summary>
         public bool IsChained => chained && IsAttacking;
+        /// <summary>The side committed with the current or last swing. Sides alternate on their own:
+        /// a swing that goes through (hit or miss) hands the next one to the other side, a stopped
+        /// swing (blocked, parried, obstacle) repeats its side. A target off the facing line or a
+        /// side step just taken outranks the rhythm; the player never picks a side directly.</summary>
+        public MeleeSwing Swing { get; private set; }
         public int AttackSequence { get; private set; }
         public MeleeAttackOutcome AttackOutcome { get; private set; }
         public float AttackElapsed => (float)attackElapsed;
@@ -140,6 +151,27 @@ namespace BarPromenade
             blockHeld = false;
         }
 
+        /// <summary>Runtime reports where the target stands each tick: −1 left of the facing
+        /// line, +1 right, 0 inside the dead zone. Read only when a swing commits.</summary>
+        public void ObserveLateralCue(int sign) => lateralCue = Math.Sign(sign);
+
+        private MeleeSwing ChooseSwing()
+        {
+            bool stepAttack = clock - stepEndedAt <= Settings.StepAttackGraceSeconds;
+            int cue = stepAttack && stepCue != 0 ? stepCue : lateralCue;
+            // The bar goes toward the cue: a target or a step on the left calls the
+            // forehand, which sweeps right to left.
+            return cue < 0 ? MeleeSwing.Forehand : cue > 0 ? MeleeSwing.Backhand : rhythm;
+        }
+
+        /// <summary>Recomputed whenever the swing's fate is known; later upgrades (a hit after a
+        /// recorded miss) land in the same class, so the call is idempotent.</summary>
+        private void SettleRhythm()
+        {
+            bool through = AttackOutcome == MeleeAttackOutcome.Hit || AttackOutcome == MeleeAttackOutcome.Miss;
+            rhythm = through ? (Swing == MeleeSwing.Forehand ? MeleeSwing.Backhand : MeleeSwing.Forehand) : Swing;
+        }
+
         public float AnimationProgressAt(float elapsed)
         {
             NonNegative(elapsed, nameof(elapsed));
@@ -175,6 +207,8 @@ namespace BarPromenade
             advancedActiveWindow = registeredContactWindow = bufferedChargeReleased = chained = chainArmed = false;
             bufferedAction = MeleeBufferedAction.None;
             hitTargets.Clear();
+            // The held pose already shows the side; release keeps it.
+            Swing = ChooseSwing();
             AttackSequence = unchecked(AttackSequence + 1);
             Phase = MeleePhase.Charging;
             return true;
@@ -231,10 +265,12 @@ namespace BarPromenade
             return true;
         }
 
-        /// <summary>A step press waits in the same single slot; runtime keeps its direction.</summary>
-        public bool RequestStep()
+        /// <summary>A step press waits in the same single slot; runtime keeps its direction and
+        /// reports only its lateral sign, which the step attack in the grace reads.</summary>
+        public bool RequestStep(int lateralSign = 0)
         {
-            if (TryStartStep()) return true;
+            pendingStepCue = Math.Sign(lateralSign);
+            if (TryStartStep(pendingStepCue)) return true;
             if (!CanBuffer || stamina < Settings.StepCost) return false;
             bufferedAction = MeleeBufferedAction.Step;
             ClearCharge();
@@ -249,10 +285,11 @@ namespace BarPromenade
             Spend(Settings.AttackCost);
             AttackPower = 0f;
             ClearCharge();
-            // The backhand follows a landed hit straight out of the buffer, or a
+            // The return swing follows a landed hit straight out of the buffer, or a
             // step whose settle just ended. It never chains into itself.
             chained = (fromBuffer && chainArmed) || clock - stepEndedAt <= Settings.StepAttackGraceSeconds;
             chainArmed = false;
+            Swing = ChooseSwing();
             attackElapsed = 0d;
             attackStartedAt = clock;
             stepElapsed = 0d;
@@ -268,10 +305,11 @@ namespace BarPromenade
         /// <summary>A committed defensive step moves through the ordinary hurtbox.
         /// Runtime owns direction and travel; these clocks grant no invulnerability.
         /// Affordability is checked before any held charge is given up.</summary>
-        public bool TryStartStep()
+        public bool TryStartStep(int lateralSign = 0)
         {
             if (!(Phase == MeleePhase.Ready || IsCharging) || stamina < Settings.StepCost) return false;
             CancelCharge();
+            stepCue = Math.Sign(lateralSign);
             Spend(Settings.StepCost);
             regenerateAt = clock + Settings.RegenerationDelaySeconds;
             attackElapsed = stepElapsed = 0d;
@@ -309,7 +347,7 @@ namespace BarPromenade
                 {
                     case MeleeBufferedAction.Attack: TryStartAttack(true); break;
                     case MeleeBufferedAction.Charge: if (BeginCharge() && released) ReleaseCharge(); break;
-                    case MeleeBufferedAction.Step: TryStartStep(); break;
+                    case MeleeBufferedAction.Step: TryStartStep(pendingStepCue); break;
                 }
                 return AdvanceWithoutBufferedAttack(seconds - remaining);
             }
@@ -358,7 +396,10 @@ namespace BarPromenade
                     advancedActiveWindow = true;
                 }
                 if (attackElapsed >= activeEnd && AttackOutcome == MeleeAttackOutcome.None)
+                {
                     AttackOutcome = MeleeAttackOutcome.Miss;
+                    SettleRhythm();
+                }
                 Phase = attackElapsed < activeStart ? MeleePhase.Windup :
                     attackElapsed < activeEnd ? MeleePhase.Active :
                     attackElapsed < AttackDuration ? MeleePhase.Recovery : MeleePhase.Ready;
@@ -396,6 +437,7 @@ namespace BarPromenade
             if (IsDefeated || (Phase != MeleePhase.Windup && Phase != MeleePhase.Active &&
                 !advancedActiveWindow)) return false;
             AttackOutcome = MeleeAttackOutcome.Obstacle;
+            SettleRhythm();
             EndSwingNow();
             return true;
         }
@@ -426,6 +468,7 @@ namespace BarPromenade
             if (AttackOutcome == MeleeAttackOutcome.Hit || AttackOutcome == outcome ||
                 (AttackOutcome == MeleeAttackOutcome.Parried && outcome == MeleeAttackOutcome.Blocked)) return true;
             AttackOutcome = outcome;
+            SettleRhythm();
             if (outcome == MeleeAttackOutcome.Parried)
             {
                 if (IsAttacking || (Phase == MeleePhase.Ready && advancedActiveWindow)) EndSwingNow();
@@ -531,6 +574,8 @@ namespace BarPromenade
             ClearCharge();
             AttackOutcome = MeleeAttackOutcome.None;
             hitTargets.Clear();
+            Swing = rhythm = MeleeSwing.Forehand;
+            lateralCue = stepCue = pendingStepCue = 0;
             AttackSequence = unchecked(AttackSequence + 1);
         }
 
@@ -539,6 +584,8 @@ namespace BarPromenade
             Health = Settings.MaxHealth;
             AttackPower = 0f;
             ClearCharge();
+            Swing = rhythm = MeleeSwing.Forehand;
+            lateralCue = stepCue = pendingStepCue = 0;
             bufferedAction = MeleeBufferedAction.None;
             stamina = Settings.MaxStamina;
             Phase = MeleePhase.Ready;
