@@ -130,7 +130,7 @@ namespace BarPromenade
     /// <summary>Hand-operated lid around the existing first-person toilet action.</summary>
     [DisallowMultipleComponent]
     [DefaultExecutionOrder(260)]
-    public sealed class HomeToiletInteraction : HomeBathroomSceneInteraction
+    public sealed class HomeToiletInteraction : HomeBathroomSceneInteraction, IHomeToiletGaugeSource
     {
         public const string UsePromptKey = "interaction.use_toilet";
         public const string StopPromptKeyName = "interaction.stop_toilet";

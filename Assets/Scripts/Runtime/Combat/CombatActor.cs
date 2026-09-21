@@ -422,6 +422,7 @@ namespace BarPromenade
         public void ResetActor(Vector3 position, Vector3 facing)
         {
             Ragdoll?.Cancel();
+            ReturnWeaponToRightHand();
             RestoreWeapon();
             ReleasePresentation();
             ResetDefeat();
@@ -474,7 +475,7 @@ namespace BarPromenade
             Ragdoll?.Cancel();
             // Scene teardown is already deactivating the arena hierarchy;
             // Unity forbids reparenting the dropped prop during that operation.
-            if (gameObject.activeInHierarchy) RestoreWeapon();
+            if (gameObject.activeInHierarchy) { ReturnWeaponToRightHand(); RestoreWeapon(); }
             ReleasePresentation();
             ResetDamage();
         }

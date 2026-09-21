@@ -160,7 +160,9 @@ The vertical slice contains:
   release/interrupt; stun regen/counters/buffer. .42/.28m; travel feet settle
   in Windup. Afraid/unskilled hero, calmer NPC. Low two-hand/high guard;
   inertia, recovery/stun yaw; hit-stop/shoves/wounds/thud/10 s pools.
-  AI/target; camera free 1.5s. Hero win: normal walk/crowbar.
+  AI/target; camera free 1.5s. Hero win: normal walk/crowbar; `E` over the
+  settled body runs the toilet action on it: marks on bones/floor until R,
+  crowbar left.
   W/S move, A/D strafe; Space .8m/.36+.21s/15 breath;
   smoothstep, one travel/pose clock.
   LMB/RT charge/release, RMB guard; pause freezes/cancels release;
@@ -2626,14 +2628,12 @@ The vertical slice contains:
   game day; cancellation does neither. Toilet and shower retain their own
   completion-only relief;
 - the toilet's single world trigger opens `HomeToiletChoiceInteraction`
-  with `По-маленькому` / `По-большому`. Common menu navigation and mouse
-  selection dispatch to one bathroom owner; cancellation closes the menu
-  without starting either action. Both branches use the actual hero's hand
-  and shared authored `2 s` lid-opening/closing actions after the grounded
-  approach. The small option blends to eye level over `1.5 s`. A hollow ceramic
-  pedestal and an actually open annular seat keep the water visible and reachable;
-  a layered paper roll with
-  an open cardboard core stands on the cistern. The actual production
+  with `По-маленькому` / `По-большому`. Menu/mouse selection dispatches to
+  one bathroom owner; cancel starts nothing. Both branches use the hero's
+  hand and shared `2 s` lid actions after the grounded approach. The small
+  option blends to eye level over `1.5 s`. A hollow pedestal and open annular
+  seat keep the water reachable; a paper roll stands on the cistern. The
+  view/stream/residue core also serves the polygon taunt. The actual production
   right arm holds a matching Blender anatomy mesh through IK; only head
   geometry hides near the camera. Mouse/right stick aim, with unrestricted
   yaw passed into a body turn on the spot; RMB/gamepad LB provide independent

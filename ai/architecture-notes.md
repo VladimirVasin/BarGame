@@ -32,6 +32,12 @@
   visual, ragdoll wins.
 - **Accepted — 2026-09-21, combat aftermath:**
   Thud; blood lobes grow 10s, stay.
+- **Accepted architecture exception — 2026-09-21, polygon taunt:** `E` over
+  the settled terminal-defeat body hosts the Home toilet first-person action
+  (view/timeline/stream/residue) through `IHomeToiletViewHost`; guided walk to
+  a body-relative dock, aim solved onto the body; marks on ragdoll bones/floor
+  until R (`HomeUrineResidue` scope); crowbar to the left grip and back; silent
+  §21-exempt prompt, no speech/reaction/reward; sixth first-person view.
 - **Accepted architecture exception — 2026-09-19, isolated combat test:**
   §6/§16.15/art§15a: `CombatTest`, no story/speech; one hero/input;
   mutual hits/vulnerable steps/fall/R/shoulder-wall lock. W/S move,
@@ -6292,16 +6298,11 @@
   `HomeToiletSceneTimeline` owns `1.5 s` entry, exactly `6 s` urination,
   `2 s` shaking and `1.3 s` exit; guided travel and the rendered neutral and
   terminal endpoints are separate. The hero stands in place during the action.
-  The user's follow-up slows the other action animations twofold, then restores
-  the shake duration to two seconds. The final
-  `20%` of main emission follows `1 - smoothstep` from full flow to zero,
-  integrated over each consumed timeline interval before driving packet rate,
-  speed and diameter; already emitted packets keep their own velocity.
-  The anatomy base sits `8 mm` inside the actual baked garment/torso
-  intersection at pelvis height, measured once at action entry. It pivots
-  there with the body; the former broad upper-torso measurement and `55 mm`
-  forward clearance are removed. The fixed authored length and base grip
-  remain unchanged.
+  The final `20%` of main emission follows `1 - smoothstep` from full flow to
+  zero, integrated over each consumed timeline interval before driving packet
+  rate, speed and diameter; already emitted packets keep their own velocity.
+  The anatomy base sits `8 mm` inside the baked garment/torso intersection at
+  pelvis height, measured once at entry, and pivots there with the body.
   `HomeToiletAnatomyDynamics` adds camera-driven inertia: a held-shaft torsion
   spring and two gravity pendulums (`g/L`, lengths `0.058/0.050 m`) integrate
   at steps no larger than `1/120 s`, with separate damping and `8/22 degree`
@@ -6325,15 +6326,13 @@
   hinge-origin lid, true annular seat, hollow ceramic pedestal, correctly seated bowl-water
   surface and paper roll with an open cardboard core plus segment, droplet,
   splash, stain and wall-drip meshes, plus two upper-pivot scrotum lobes:
-  initially thirteen FBX models, fifteen meshes, `2,376` triangles, source `.blend`,
-  manifests and a direct export validator.
+  source `.blend`, manifests and a direct export validator.
   The pedestal replaces only the visible solid footprint while preserving its
   logical collision and `0.82 x 0.48 x 0.858 m` envelope; the cavity centres
   `0.10 m` west of that footprint to match the bowl. Eighteen mesh-ray checks
   prove clearance to the real water plane and for the incoming stream. The
-  original lathed seat also carried filled lower caps; its replacement is a
-  true `0.54 x 0.05 x 0.506 m` annular shell, retaining a `70%` opening with
-  `25` unobstructed through-hole rays and a separate physical-rim check. The
+  seat is a true `0.54 x 0.05 x 0.506 m` annular shell with a `70%` opening,
+  `25` through-hole rays and a physical-rim check. The
   `0.10 m`-diameter, `0.095 m`-high paper roll stands on the cistern without a
   label or interaction. The user's later clearance correction limits the lid
   to `90 degrees`, keeping it clear of the cistern.

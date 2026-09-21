@@ -93,13 +93,18 @@ namespace BarPromenade
         public int Count => surfaces.Count;
         public bool TryGet(string id, out Surface surface) => byId.TryGetValue(id, out surface);
 
-        public HomeUrineSurfaceMap(Transform root, Transform excluded)
+        public HomeUrineSurfaceMap(Transform root, Transform excluded) : this(root, excluded, null) { }
+
+        /// <param name="alsoExcluded">Receivers a scene keeps dry beyond the effect's own children: the hero, foreign effects.</param>
+        public HomeUrineSurfaceMap(Transform root, Transform excluded, Func<Transform, bool> alsoExcluded)
         {
+            bool IsExcluded(Transform candidate) =>
+                (excluded != null && candidate.IsChildOf(excluded)) || (alsoExcluded != null && alsoExcluded(candidate));
             var readable = new HashSet<Transform>();
             var geometry = new Dictionary<Mesh, (Vector3[] vertices, int[] triangles)>();
             foreach (MeshFilter filter in root.GetComponentsInChildren<MeshFilter>(true))
             {
-                if (excluded != null && filter.transform.IsChildOf(excluded)) continue;
+                if (IsExcluded(filter.transform)) continue;
                 Renderer renderer = filter.GetComponent<Renderer>();
                 Mesh mesh = filter.sharedMesh;
                 if (renderer == null || mesh == null || !mesh.isReadable || IsEffect(filter.transform, root)) continue;
@@ -117,7 +122,7 @@ namespace BarPromenade
             foreach (Collider collider in root.GetComponentsInChildren<Collider>(true))
             {
                 if (collider.isTrigger || collider is CharacterController ||
-                    (excluded != null && collider.transform.IsChildOf(excluded)) ||
+                    IsExcluded(collider.transform) ||
                     IsEffect(collider.transform, root)) continue;
                 // A gameplay proxy owning visible descendants is never a fluid surface.
                 bool hasMesh = false;

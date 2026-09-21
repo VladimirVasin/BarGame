@@ -1,15 +1,21 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
 namespace BarPromenade
 {
-    /// <summary>Session-local deposits, attached to stable Home surfaces rather than scene objects.</summary>
+    /// <summary>
+    /// Session-local deposits, attached to stable surfaces rather than scene
+    /// objects. Each carries the scope of the scene that left it: Home's own
+    /// have none and last the session, the combat polygon's are cleared by R.
+    /// </summary>
     public static class HomeUrineResidue
     {
         public const int Capacity = 384;
         public sealed class Deposit
         {
             public string SurfaceId;
+            public string Scope;
             public Vector3 LocalPoint;
             public Vector3 LocalNormal;
             public float Radius;
@@ -23,7 +29,9 @@ namespace BarPromenade
         public static IReadOnlyList<Deposit> Deposits => deposits;
         public static int Generation { get; private set; }
 
-        public static int Add(HomeUrineSurfaceMap.Hit hit, float amount)
+        public static int Add(HomeUrineSurfaceMap.Hit hit, float amount) => Add(hit, amount, null);
+
+        public static int Add(HomeUrineSurfaceMap.Hit hit, float amount, string scope)
         {
             HomeUrineSurfaceMap.Surface surface = hit.Surface;
             bool wall = Mathf.Abs(hit.Normal.y) < 0.65f;
@@ -32,7 +40,7 @@ namespace BarPromenade
             for (int i = 0; i < deposits.Count; i++)
             {
                 Deposit old = deposits[i];
-                if (old.SurfaceId != surface.Id || old.Wall != wall) continue;
+                if (old.SurfaceId != surface.Id || old.Wall != wall || !SameScope(old.Scope, scope)) continue;
                 Vector3 oldPoint = surface.Transform.TransformPoint(old.LocalPoint);
                 Vector3 oldNormal = surface.Transform.worldToLocalMatrix.transpose.MultiplyVector(old.LocalNormal).normalized;
                 if (Vector3.Dot(oldNormal, hit.Normal) < 0.94f ||
@@ -45,6 +53,7 @@ namespace BarPromenade
             var deposit = new Deposit
             {
                 SurfaceId = surface.Id,
+                Scope = scope,
                 LocalPoint = surface.Transform.InverseTransformPoint(hit.Point),
                 LocalNormal = surface.Transform.localToWorldMatrix.transpose.MultiplyVector(hit.Normal).normalized,
                 Radius = initial, Wall = wall, Revision = ++revision
@@ -54,6 +63,27 @@ namespace BarPromenade
             deposits[slot] = deposit;
             return slot;
         }
+
+        public static int CountScope(string scope)
+        {
+            int count = 0;
+            for (int i = 0; i < deposits.Count; i++) if (SameScope(deposits[i].Scope, scope)) count++;
+            return count;
+        }
+
+        /// <summary>
+        /// Drops one scene's deposits and moves the generation on, so every
+        /// effect re-projects what remains; other scopes keep their marks,
+        /// not their slots.
+        /// </summary>
+        public static int RemoveScope(string scope)
+        {
+            int removed = deposits.RemoveAll(deposit => SameScope(deposit.Scope, scope));
+            if (removed > 0) { replacement = 0; Generation++; }
+            return removed;
+        }
+
+        public static bool SameScope(string a, string b) => string.Equals(a, b, StringComparison.Ordinal);
 
         public static void ResetSession()
         { deposits.Clear(); replacement = 0; revision = 0; Generation++; }

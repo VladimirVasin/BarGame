@@ -5,6 +5,53 @@ using UnityEngine.InputSystem;
 namespace BarPromenade
 {
     /// <summary>
+    /// What the eye-level toilet view needs from the scene hosting it: the
+    /// hero, a parent for the anatomy kit, an occlusion controller to pause
+    /// (or none), and the world point its stream lands on before the player
+    /// aims. The bathroom is one host; the combat polygon another.
+    /// </summary>
+    public interface IHomeToiletViewHost
+    {
+        PlayerRuntime Player { get; }
+        Transform AnatomyParent { get; }
+        HomePlayerOcclusionController PlayerOcclusion { get; }
+        /// <returns>False keeps the authored rest pitch instead of solving an arc.</returns>
+        bool TryGetAimTarget(Vector3 facing, out Vector3 worldTarget);
+    }
+
+    /// <summary>The apartment bathroom: the kit hangs under the Home root and the stream solves onto the bowl water.</summary>
+    internal sealed class HomeInteriorToiletViewHost : IHomeToiletViewHost
+    {
+        private readonly HomeInteriorRoot home;
+
+        public HomeInteriorToiletViewHost(HomeInteriorRoot home)
+        {
+            this.home = home ?? throw new ArgumentNullException(nameof(home));
+        }
+
+        public PlayerRuntime Player => home.Player;
+        public Transform AnatomyParent => home.transform;
+        public HomePlayerOcclusionController PlayerOcclusion => home.PlayerOcclusion;
+
+        public bool TryGetAimTarget(Vector3 facing, out Vector3 worldTarget)
+        {
+            Transform water = home.Room != null
+                ? home.Room.Find("Home Bathroom Toilet Water") : null;
+            worldTarget = Vector3.zero;
+            if (water == null)
+            {
+                return false;
+            }
+
+            // A low stream from the attached body base must pass over
+            // the near seat. Aim inside the far edge of the 0.34 m water
+            // oval to retain clearance after bringing the base inward.
+            worldTarget = water.position + facing * 0.15f;
+            return true;
+        }
+    }
+
+    /// <summary>
     /// Eye-level toilet presentation on the production hero. The authored
     /// anatomy stays attached to the pelvis and the actual right arm closes
     /// on its measured grip. The bathroom owner supplies the timeline and
@@ -59,7 +106,7 @@ namespace BarPromenade
         public static readonly Vector3 RightScrotumAttachment = new Vector3(0.011f, -0.016f, -0.006f);
         private readonly HomeToiletAnatomyDynamics dynamics = new HomeToiletAnatomyDynamics();
 
-        private HomeInteriorRoot home;
+        private IHomeToiletViewHost host;
         private Player3DAssetRegistry registry;
         private Transform actor;
         private Transform upperArm;
@@ -99,7 +146,7 @@ namespace BarPromenade
         private float anatomyForwardMeters = 0.18f;
         private bool freeLook;
 
-        public bool IsInitialized => home != null;
+        public bool IsInitialized => host != null;
         public bool IsPrepared => anatomyRoot != null && registry != null;
         public bool IsActive { get; private set; }
         public Player3DAssetRegistry Registry => registry;
@@ -131,9 +178,19 @@ namespace BarPromenade
                 throw new ArgumentNullException(nameof(homeRoot));
             }
 
+            Initialize(new HomeInteriorToiletViewHost(homeRoot));
+        }
+
+        public void Initialize(IHomeToiletViewHost viewHost)
+        {
+            if (viewHost == null)
+            {
+                throw new ArgumentNullException(nameof(viewHost));
+            }
+
             End();
             ReleaseAnatomy();
-            home = homeRoot;
+            host = viewHost;
             registry = null;
         }
 
@@ -145,15 +202,15 @@ namespace BarPromenade
                 return true;
             }
 
-            if (home == null || home.Player.GameObject == null ||
-                !(home.Player.Visual is Player3DCharacterPresentation visual) ||
+            if (host == null || host.Player.GameObject == null ||
+                !(host.Player.Visual is Player3DCharacterPresentation visual) ||
                 visual.Registry == null)
             {
                 return false;
             }
 
             registry = visual.Registry;
-            actor = home.Player.GameObject.transform;
+            actor = host.Player.GameObject.transform;
             upperArm = ResolveBone(Player3DAnatomicalPart.RightUpperArm);
             forearm = ResolveBone(Player3DAnatomicalPart.RightForearm);
             hand = ResolveBone(Player3DAnatomicalPart.RightHand);
@@ -179,7 +236,7 @@ namespace BarPromenade
             }
 
             anatomyRoot = new GameObject("Home Toilet Anatomy Aim").transform;
-            anatomyRoot.SetParent(home.transform, false);
+            anatomyRoot.SetParent(host.AnatomyParent, false);
             anatomyRoot.gameObject.SetActive(false);
             // Keep the imported FBX's own 100x authoring-root unit factor.
             GameObject model = Instantiate(template, anatomyRoot, false);
@@ -244,12 +301,13 @@ namespace BarPromenade
             cursorCaptured = true;
             Cursor.lockState = CursorLockMode.Locked;
             Cursor.visible = false;
-            if (home.PlayerOcclusion != null)
+            HomePlayerOcclusionController occlusion = host.PlayerOcclusion;
+            if (occlusion != null)
             {
-                previousOcclusionEnabled = home.PlayerOcclusion.enabled;
+                previousOcclusionEnabled = occlusion.enabled;
                 occlusionCaptured = true;
-                home.PlayerOcclusion.enabled = false;
-                home.PlayerOcclusion.ClearOcclusion();
+                occlusion.enabled = false;
+                occlusion.ClearOcclusion();
             }
             aimYaw = 0f;
             bodyYaw = 0f;
@@ -371,9 +429,10 @@ namespace BarPromenade
             RestoreCursor();
             if (occlusionCaptured)
             {
-                if (home != null && home.PlayerOcclusion != null)
+                HomePlayerOcclusionController occlusion = host?.PlayerOcclusion;
+                if (occlusion != null)
                 {
-                    home.PlayerOcclusion.enabled = previousOcclusionEnabled;
+                    occlusion.enabled = previousOcclusionEnabled;
                 }
 
                 occlusionCaptured = false;
@@ -488,20 +547,14 @@ namespace BarPromenade
 
         private float ResolveInitialAimPitch()
         {
-            Transform water = home.Room != null
-                ? home.Room.Find("Home Bathroom Toilet Water") : null;
-            if (water == null)
+            Vector3 facing = entryRotation * Vector3.forward;
+            if (!host.TryGetAimTarget(facing, out Vector3 waterTarget))
             {
                 return RestAimPitchDegrees;
             }
 
-            Vector3 facing = entryRotation * Vector3.forward;
             Vector3 pivot = registry.Anchors.Pelvis.position +
                 Vector3.up * AnatomyHeightAbovePelvis + facing * anatomyForwardMeters;
-            // A low stream from the attached body base must pass over
-            // the near seat. Aim inside the far edge of the 0.34 m water
-            // oval to retain clearance after bringing the base inward.
-            Vector3 waterTarget = water.position + facing * 0.15f;
             Vector3 towardBowl = Vector3.ProjectOnPlane(
                 waterTarget - pivot, Vector3.up);
             if (towardBowl.sqrMagnitude < 0.01f)

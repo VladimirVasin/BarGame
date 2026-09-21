@@ -2,12 +2,19 @@ using UnityEngine;
 
 namespace BarPromenade
 {
+    /// <summary>Whoever runs the toilet timeline and says when its remaining-volume gauge is on screen.</summary>
+    public interface IHomeToiletGaugeSource
+    {
+        bool GaugeVisible { get; }
+        HomeToiletSceneTimeline Timeline { get; }
+    }
+
     /// <summary>One local remaining-volume gauge on the shared logical canvas.</summary>
     [DisallowMultipleComponent]
     public sealed class HomeToiletGaugeView : MonoBehaviour
     {
-        private HomeToiletInteraction interaction;
-        public void Bind(HomeToiletInteraction value) => interaction = value;
+        private IHomeToiletGaugeSource interaction;
+        public void Bind(IHomeToiletGaugeSource value) => interaction = value;
         public static Rect Track => new Rect(RetroUiTheme.LogicalWidth - 27f, 113f, 11f, 120f);
         private void OnGUI()
         {

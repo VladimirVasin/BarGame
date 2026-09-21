@@ -6,27 +6,24 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 ## 2026-09-21 — Brawl v2
 
 - Anatomy: first/six posed bone-local zones replace capsule damage; one HP.
-  Head x2 cannot defeat full HP; rear head ends after protection;
-  arm/leg/back scale impact data.
+  Head x2 cannot defeat full HP; rear head ends after protection.
   Checks: `CombatRulesTests.Anatomical*`,
   `Range_AnatomicalContactsResolveHeadAndRearHeadForBothRigs`.
 - Rules: free swings; breath pays guard/step/charge, regens in stuns after
   own spends. Fresh press parries lights; counter/whiff floor, break keeps breath,
-  buffered return/step-attack grace. Regen from ActiveEnd; frontal contact
-  consumes press, step/charge drops guard. Check: `CombatRulesTests`.
+  buffered return/step-attack grace; regen from ActiveEnd. Check: `CombatRulesTests`.
 - Runtime: skipped 1/120 substeps own hit-stop, lethal too;
   knockback/two-body block nudge, shoulder kick before clearance, HP .6/.5
   recovery/guard, Windup→Active whoosh, Active-only wall cancel. Camera/target
   free after fall; `PlaceRound` re-locks. Check: `CombatTestPlayModeTests`.
-- Seeded opponent: guard/step/charge intercept/feint/whiff punish/cover,
-  winded retreat/corner fighting, probe/press moods; no accidental parry.
+- Seeded opponent: guard/step/charge intercept/feint/whiff punish/cover/retreat/
+  corner, probe/press moods; no accidental parry.
   Turns on the hero's table outside charge/windup/arc; stun .35, yaw kept:
   no free flank after a whiff. Check: `Range_TacticalRecoveryStepsAndFairOpponent`.
 - Space: .8 m/.36 s travel/.21 s settle; smoothstep replaces front-load.
   Shared travel/clip clock; 15 breath/footfalls unchanged. Full Hold freezes breath.
-  .02m/.75° camera lag caps keep the raised arm clear.
-  Hold check: `Range_AutomaticUpdateConsumesMouseAndKeyboardWithoutGuiEvent`.
-  Step checks: `Range_TacticalRecoveryStepsAndFairOpponent`,
+  .02m/.75° camera lag caps keep the raised arm clear. Checks:
+  `Range_AutomaticUpdateConsumesMouseAndKeyboardWithoutGuiEvent`,
   `AreaCaptureFixture.CombatTactics`, `build-combat-test-3d-model.py`.
 - `CombatTuning`: aged guard/heavy hits, physics evasion/duel strafe; foreign
   owner releases stance; `CombatDuelSimulator` habits. Check: `CombatBalanceTests`.
@@ -44,10 +41,13 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
   `CombatRulesTests`, `AreaCaptureFixture.CombatCharge`.
 - Body: C1 velocity/atan2, travel/yaw inertia; both .42/.28 m
   travel stances, feet settle in Windup. Hero afraid/unskilled:
-  posture, stamina breath/tremor/tell flinch/tense face.
-  NPC calmer; HP separate. Duel-clock render/contacts freeze on resample/pause.
+  posture, breath/tremor/tell flinch/tense face; NPC calmer, HP separate.
   Checks: `build-combat-test-3d-model.py`,
   `Range_CombatBodyInertiaKeepsBothRigsContinuousAndClockBound`.
+- Taunt: `E` over the settled body hosts the toilet action via
+  `IHomeToiletViewHost`; body-relative dock, aim solved onto the body; marks
+  on bones/floor until R; crowbar left. Check:
+  `Range_TauntDesecratesBodyOncePerRoundAndResets`.
 
 ## 2026-09-20 — Combat
 

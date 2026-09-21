@@ -70,17 +70,28 @@ namespace BarPromenade
             if (parent == null || handPose == null)
                 throw new ArgumentException("A crowbar requires its original hand and authored cylindrical grip.");
             GameObject result = Create("Crowbar", parent, false);
+            PlaceCrowbar(result, parent, handPose, false);
+            return result;
+        }
+
+        /// <summary>Seats the bar in either closed hand; the finished round's winner parks it in his left.</summary>
+        public static void PlaceCrowbar(GameObject crowbar, Transform grip, NpcHandPose handPose, bool isLeft)
+        {
+            if (crowbar == null || grip == null || handPose == null)
+                throw new ArgumentException("A crowbar requires its hand and authored cylindrical grip.");
+            Transform bar = crowbar.transform;
+            bar.SetParent(grip, false);
+            bar.localPosition = Vector3.zero;
+            bar.localRotation = Quaternion.identity;
             // A bone can retain the FBX's centimetre unit scale. The wrapper
             // owns world metres; the imported child keeps its exact factors.
-            Vector3 scale = parent.lossyScale;
-            result.transform.localScale = new Vector3(1f / scale.x, 1f / scale.y, 1f / scale.z);
+            Vector3 scale = grip.lossyScale;
+            bar.localScale = new Vector3(1f / scale.x, 1f / scale.y, 1f / scale.z);
             // The generic socket lies inside the neutral palm. The closed
             // fingers instead wrap the authored cylinder centre, with its
             // axis running across the palm toward the thumb.
-            result.transform.position = handPose.CylinderCentre(false);
-            result.transform.rotation = Quaternion.FromToRotation(result.transform.up,
-                handPose.CylinderAxis(false)) * result.transform.rotation;
-            return result;
+            bar.position = handPose.CylinderCentre(isLeft);
+            bar.rotation = Quaternion.FromToRotation(bar.up, handPose.CylinderAxis(isLeft)) * bar.rotation;
         }
 
         public static GameObject Create(string name, Transform parent, bool collision = false)

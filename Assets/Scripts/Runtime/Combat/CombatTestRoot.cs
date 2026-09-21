@@ -30,6 +30,7 @@ namespace BarPromenade
         private int hitStopSubsteps;
         private bool roundCameraReleased;
         private GameObject opponentObject;
+        private ArenaBounds arenaBounds;
         private Transform opponentChest, heroChest;
         private readonly List<CombatActor.Contact> pendingContacts = new List<CombatActor.Contact>(4);
         private GUIStyle small, button, controls;
@@ -40,6 +41,9 @@ namespace BarPromenade
         public CombatActor Opponent { get; private set; }
         public PlayerCameraFollow CameraFollow { get; private set; }
         public PauseMenuController PauseMenu { get; private set; }
+        public InteractionPromptView Prompt { get; private set; }
+        /// <summary>The finished round's `E` over the settled body; the only interactable in the arena.</summary>
+        public CombatTauntInteraction Taunt { get; private set; }
         public bool Sparring { get; private set; } = true;
         public bool RoundFinished => Hero.State.IsDefeated || Opponent.State.IsDefeated;
         public bool AutomaticSimulation { get; set; } = true;
@@ -60,8 +64,9 @@ namespace BarPromenade
             heroSpawn = CombatAssetProvider.FindAnchor(arena, "HeroSpawn").position + Vector3.up * PlayerFactory.GroundedRootOffset;
             opponentSpawn = CombatAssetProvider.FindAnchor(arena, "OpponentSpawn").position + Vector3.up * PlayerFactory.GroundedRootOffset;
             var ui = new GameObject("Combat UI"); ui.transform.SetParent(transform, false);
-            var prompt = ui.AddComponent<InteractionPromptView>();
-            Player = PlayerFactory.Create(transform, heroSpawn, camera, new ArenaBounds(), prompt);
+            Prompt = ui.AddComponent<InteractionPromptView>();
+            arenaBounds = new ArenaBounds();
+            Player = PlayerFactory.Create(transform, heroSpawn, camera, arenaBounds, Prompt);
             Hero = Player.GameObject.AddComponent<CombatActor>();
             Hero.InitializeHero(Player);
             CameraFollow = camera.GetComponent<PlayerCameraFollow>() ?? camera.gameObject.AddComponent<PlayerCameraFollow>();
@@ -78,6 +83,8 @@ namespace BarPromenade
             Hero.SetContactTarget(Opponent);
             Opponent.SetContactTarget(Hero);
             InitializeDamageEffects();
+            Taunt = opponentObject.AddComponent<CombatTauntInteraction>();
+            Taunt.Initialize(this, arenaBounds);
             opponentChest = Opponent.Ragdoll.PhysicsController.ChestBody.transform;
             heroChest = Hero.Ragdoll.PhysicsController.ChestBody.transform;
             LockOnOpponent();
@@ -104,6 +111,7 @@ namespace BarPromenade
         {
             ResetChargeInput();
             BloodEffects?.ResetRound();
+            Taunt?.ResetRound();
             Hero.ResetActor(heroSpawn, Vector3.forward);
             Opponent.ResetActor(opponentSpawn, Vector3.back);
             Physics.SyncTransforms();
@@ -262,7 +270,8 @@ namespace BarPromenade
 
         private void OnGUI()
         {
-            if (!IsInitialized || PauseMenuController.IsAnyPaused || SceneTransitionService.IsTransitioning) return;
+            if (!IsInitialized || PauseMenuController.IsAnyPaused || SceneTransitionService.IsTransitioning ||
+                (Taunt != null && Taunt.IsActive)) return;
             if (small == null)
             {
                 small = RetroUiTheme.CreateLabelStyle(9, TextAnchor.MiddleLeft, RetroUiTheme.Text);

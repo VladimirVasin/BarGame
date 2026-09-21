@@ -20,6 +20,8 @@ namespace BarPromenade
         public bool IsRagdollActive => Ragdoll != null && Ragdoll.IsActive;
         public string ActiveClipName => visibleClip;
         public bool IsWeaponDropped => weaponDropped;
+        /// <summary>The standing winner's bar waits in his closed left hand while the right one is busy.</summary>
+        public bool IsWeaponInLeftHand { get; private set; }
 
         private void BeginDefeat(Vector3 direction, Vector3 point)
         {
@@ -142,6 +144,46 @@ namespace BarPromenade
             Weapon.transform.localRotation = weaponRotation;
             Weapon.transform.localScale = weaponScale;
             weaponDropped = false;
+        }
+
+        /// <summary>
+        /// Only the finished round's standing winner: once combat has let the
+        /// rig go, the bar moves to the closed left hand and the right opens
+        /// for a contextual action. No swing can follow until R.
+        /// </summary>
+        internal bool TryHoldWeaponInLeftHand()
+        {
+            if (IsWeaponInLeftHand) return true;
+            if (Weapon == null || hero == null || weaponDropped || IsRagdollActive || !winnerPresentationReleased) return false;
+            Transform leftGrip = hero.Registry.Anchors.LeftGrip;
+            if (leftGrip == null) return false;
+            CombatAssetProvider.PlaceCrowbar(Weapon, leftGrip, handPose, true);
+            handPose.SetGrip(false, 0f);
+            handPose.SetGrip(true, 1f);
+            IsWeaponInLeftHand = true;
+            return true;
+        }
+
+        /// <summary>Clip sampling can loosen the fingers; the action re-asserts the hold every presentation frame.</summary>
+        internal void ReassertLeftHandHold()
+        {
+            if (!IsWeaponInLeftHand || handPose == null) return;
+            handPose.SetGrip(true, 1f);
+            handPose.SetGrip(false, 0f);
+        }
+
+        internal void ReturnWeaponToRightHand()
+        {
+            if (!IsWeaponInLeftHand || Weapon == null || weaponGrip == null) return;
+            // Scene teardown is already deactivating the hierarchy; Unity forbids reparenting inside it.
+            if (!gameObject.activeInHierarchy) return;
+            Weapon.transform.SetParent(weaponGrip, false);
+            Weapon.transform.localPosition = weaponPosition;
+            Weapon.transform.localRotation = weaponRotation;
+            Weapon.transform.localScale = weaponScale;
+            handPose.SetGrip(true, 0f);
+            handPose.SetGrip(false, 1f);
+            IsWeaponInLeftHand = false;
         }
     }
 }

@@ -30,6 +30,7 @@ namespace BarPromenade.Tests.EditMode
             "interaction.stop_toilet",
             "interaction.toilet.small",
             "interaction.toilet.large",
+            "interaction.desecrate_body",
             "interaction.take_shower",
             "interaction.stop_shower",
             "interaction.brush_teeth",

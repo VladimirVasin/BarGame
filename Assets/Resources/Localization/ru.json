@@ -405,6 +405,10 @@
       "value": "По-большому"
     },
     {
+      "key": "interaction.desecrate_body",
+      "value": "E — надругаться"
+    },
+    {
       "key": "interaction.take_shower",
       "value": "E — принять душ"
     },

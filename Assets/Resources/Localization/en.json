@@ -405,6 +405,10 @@
       "value": "Number two"
     },
     {
+      "key": "interaction.desecrate_body",
+      "value": "E — desecrate"
+    },
+    {
       "key": "interaction.take_shower",
       "value": "E — take a shower"
     },

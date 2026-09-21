@@ -65,6 +65,8 @@ namespace BarPromenade
         private readonly Stain[] stains = new Stain[HomeUrineResidue.Capacity];
         private HomeUrineSurfaceMap surfaces;
         private Transform receiverRoot;
+        private string residueScope;
+        private Func<Transform, bool> excludedReceivers;
         private Mesh segmentMesh;
         private Mesh dropMesh;
         private Mesh splashMesh;
@@ -97,6 +99,9 @@ namespace BarPromenade
         public Vector3 LastHitPoint { get; private set; }
         public string LastHitSurfaceId { get; private set; }
         public int ResidueCount => HomeUrineResidue.Deposits.Count;
+        /// <summary>Deposits this effect's own scene left; Home's effect counts the unscoped ones.</summary>
+        public int ScopedResidueCount => HomeUrineResidue.CountScope(residueScope);
+        public string ResidueScope => residueScope;
         /// <summary>The pipeline's GPU-driven opt-out marker was found and rides every visual.</summary>
         public static bool GpuDrivenOptOutAvailable => DisallowGpuDrivenRenderingType != null;
         public int ReceiverCount => surfaces != null ? surfaces.Count : 0;
@@ -106,10 +111,16 @@ namespace BarPromenade
         }
         public static void ResetSession() => HomeUrineResidue.ResetSession();
 
-        public void Initialize(Transform homeRoot)
+        public void Initialize(Transform homeRoot) => Initialize(homeRoot, null, null);
+
+        /// <param name="scope">Owner of the deposits this effect leaves; null is Home's session-long store.</param>
+        /// <param name="excluded">Receivers that never take liquid beyond this effect's own children: the hero, foreign effects.</param>
+        public void Initialize(Transform homeRoot, string scope, Func<Transform, bool> excluded)
         {
             if (initialized) return;
             if (homeRoot == null) throw new ArgumentNullException(nameof(homeRoot));
+            residueScope = scope;
+            excludedReceivers = excluded;
             segmentMesh = HomeUrineResources.Mesh("StreamSegment");
             dropMesh = HomeUrineResources.Mesh("Droplet");
             splashMesh = HomeUrineResources.Mesh("Splash");
@@ -119,7 +130,7 @@ namespace BarPromenade
             wallStainVertices = wallStainMesh.vertices;
             HomeInteriorRoot home = homeRoot.GetComponent<HomeInteriorRoot>();
             receiverRoot = home != null && home.Room != null ? home.Room : homeRoot;
-            surfaces = new HomeUrineSurfaceMap(receiverRoot, transform);
+            surfaces = new HomeUrineSurfaceMap(receiverRoot, transform, excludedReceivers);
             for (int i = 0; i < packets.Length; i++)
                 packets[i] = new Packet { Visual = CreateVisual("Urine Packet " + i, segmentMesh, HomeUrineResources.Liquid) };
             for (int i = 0; i < splashes.Length; i++)
@@ -136,7 +147,7 @@ namespace BarPromenade
         {
             if (!initialized) return;
             // Exit/door furniture and later calendar dressing are composed after this effect initializes.
-            surfaces = new HomeUrineSurfaceMap(receiverRoot, transform);
+            surfaces = new HomeUrineSurfaceMap(receiverRoot, transform, excludedReceivers);
             mapFrame = -1;
             emissionEnabled = true;
             emissionShaking = false;
@@ -197,6 +208,13 @@ namespace BarPromenade
 
         public void StopEmission() { emissionEnabled = false; emissionRemainder = 0f; }
 
+        /// <summary>Removes this effect's own scope of deposits (the polygon's on R) and hides their films at once.</summary>
+        public void ClearResidue()
+        {
+            HomeUrineResidue.RemoveScope(residueScope);
+            if (initialized) RefreshResidue();
+        }
+
         private void Update()
         {
             if (!initialized) return;
@@ -244,7 +262,7 @@ namespace BarPromenade
             if (hit.Surface.Absorbs)
             { BowlHitCount++; bowlSound = drop ? 0.22f : 1f; bowlAudio.transform.position = hit.Point; }
             else
-            { SurfaceHitCount++; HomeUrineResidue.Add(hit, drop ? 0.2f : 1f); solidSound = drop ? 0.22f : 1f; solidAudio.transform.position = hit.Point; }
+            { SurfaceHitCount++; HomeUrineResidue.Add(hit, drop ? 0.2f : 1f, residueScope); solidSound = drop ? 0.22f : 1f; solidAudio.transform.position = hit.Point; }
             Splash splash = splashes[nextSplash++ % SplashCapacity];
             splash.Active = true; splash.Age = 0f;
             splash.Visual.Transform.SetPositionAndRotation(hit.Point + hit.Normal * 0.003f, SurfaceRotation(hit.Normal));
@@ -279,8 +297,14 @@ namespace BarPromenade
             for (int index = 0; index < HomeUrineResidue.Deposits.Count; index++)
             {
                 HomeUrineResidue.Deposit deposit = HomeUrineResidue.Deposits[index];
-                if (!surfaces.TryGet(deposit.SurfaceId, out HomeUrineSurfaceMap.Surface surface) || surface.Transform == null) continue;
                 Stain stain = stains[index];
+                if (!HomeUrineResidue.SameScope(deposit.Scope, residueScope))
+                {
+                    // Another scene's mark holds this slot now; a film drawn here belongs to nothing.
+                    if (stain != null && stain.Revision != -1) { stain.Visual.Renderer.enabled = false; stain.Revision = -1; }
+                    continue;
+                }
+                if (!surfaces.TryGet(deposit.SurfaceId, out HomeUrineSurfaceMap.Surface surface) || surface.Transform == null) continue;
                 if (stain == null)
                 {
                     stain = new Stain { Mesh = new Mesh { name = "Home Urine Attached Film " + index } };
