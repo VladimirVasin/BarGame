@@ -24,7 +24,7 @@ namespace BarPromenade
                 BloodEffects.Emit(impact.Target, impact.Point, impact.Direction, impact.Damage);
             // Weight is time: a few frozen substeps and a small kick on the shoulder
             // camera, graded by what happened. A killing blow holds longest.
-            bool heavy = impact.Source != null && impact.Source.State.AttackPower >= .5f;
+            bool heavy = impact.AttackPower >= .5f;
             int substeps;
             float kick;
             switch (impact.Result)

@@ -5,21 +5,22 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 
 ## 2026-09-21 — Brawl v2
 
+- Anatomy: six posed zones and bone-local sides replace capsule damage;
+  first contact wins. Head x2 cannot defeat full HP; rear head ends the round
+  after protection. Arm/leg/back scaling shares one HP pool and impact data.
+  Checks: `CombatRulesTests.Anatomical*`,
+  `Range_AnatomicalContactsResolveHeadAndRearHeadForBothRigs`.
 - Rules: free swings; breath pays guard/step/charge, regens through stuns
-  after own spends. Fresh re-armed press parries lights, never heavies;
-  counter-hit/whiff floor `max(stagger, remaining)`; break keeps breath,
-  buffered return/step-attack grace, one slot per committed tail. Recovery
-  regen starts at `attackStartedAt + ActiveEnd` for partition invariance;
-  frontal contact consumes the press; `DropGuard` on step/charge prevents
-  held-button re-arm. Check: `CombatRulesTests`.
+  after own spends. Fresh press parries lights; counter-hit/whiff floor,
+  break keeps breath, buffered return/step-attack grace. Regen from ActiveEnd
+  preserves partition invariance; frontal contact consumes the press,
+  step/charge drops guard to prevent held re-arm. Check: `CombatRulesTests`.
 - Runtime: skipped 1/120 substeps own hit-stop, including lethal freeze;
   knockback/two-body block nudge, shoulder kick before clearance, HP .6/.5
   recovery/guard, Windup→Active whoosh, Active-only wall cancel. Camera/target
   free after fall; `PlaceRound` re-locks. Check: `CombatTestPlayModeTests`.
-- Seeded opponent (round 0 retained): guard/late guard/step/nothing per tell,
-  no accidental parry or lowering an existing guard; charge intercept/feint,
-  delayed whiff punish, cover/backhand, winded retreat/corner fighting,
-  probe/press moods.
+- Seeded opponent: guard/step/charge intercept/feint/whiff punish/cover,
+  winded retreat/corner fighting, probe/press moods; no accidental parry.
 - `build_step_actions()` precedes NPC export; .65 m stride (longer leg cannot
   reach at pelvis dip), .24/.14 travel. Check:
   `build-combat-test-3d-model.py --actions-only`.
@@ -27,13 +28,11 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
   strafe ticks duel, foreign-owner setup releases stance; named habits in
   `CombatDuelSimulator`. Check: `CombatBalanceTests`.
 - Pre-09-09 docs archived (`check-docs.py`).
-- Charge arm: one-hand overhead pulled the wrist toward the shoulder for left
-  reach, folding both joints; reachable two-hand docks/forearm roll keep the
-  bend. Checks: `build-combat-test-3d-model.py`,
+- Charge arm: left-hand reach folded the overhead right arm; reachable
+  two-hand docks/forearm roll preserve the bend. Checks: `build-combat-test-3d-model.py`,
   `AreaCaptureFixture.CombatChargeArmAlignment`.
-- Aftermath: floor contact owns thud, wound-anchored blood lobes spread after
-  landing. Old bleed ended before settling; the check now measures displayed
-  geometry, not targets:
+- Aftermath: floor thud/wound-anchored pools. Bleed used to stop before landing;
+  displayed geometry is now measured:
   `Range_LethalContactsHandOffToRagdollPauseResetAndCleanUp` and frames.
 - `MeleeSwing` commits charge-visible step cue/target bearing/last-fate rhythm;
   both banks have a backhand family. Mirrored bar's support hand is far:

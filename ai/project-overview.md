@@ -79,8 +79,8 @@ repair commands. Generation/publication: [../tools/README.md](../tools/README.md
 
 ## Implemented capabilities
 
-- Crowbar test: charged/buffered hits/guard/steps; directional reactions,
-  HP pose, wounds, slow blood pools after landing. No story effects.
+- Crowbar test: charged/buffered hits/guard/steps; six body zones, rear-head
+  defeat, HP pose/wounds/blood. No story effects.
 - A validated connected city with streets, river/shore, neighbourhoods,
   cemetery, church, deterministic weather, residents and Route 01 transport.
   First unpaused dock entry starts finite port→factory→shop supply once;

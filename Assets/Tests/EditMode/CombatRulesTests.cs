@@ -27,6 +27,141 @@ namespace BarPromenade.Tests.EditMode
             return S.MaxStamina - 3f * S.BlockCost;
         }
 
+        [TestCase(MeleeBodyRegion.Torso, MeleeHitSide.Front, 25f, 40f)]
+        [TestCase(MeleeBodyRegion.Torso, MeleeHitSide.Rear, 31.25f, 50f)]
+        [TestCase(MeleeBodyRegion.Head, MeleeHitSide.Front, 50f, 80f)]
+        [TestCase(MeleeBodyRegion.Head, MeleeHitSide.Left, 50f, 80f)]
+        [TestCase(MeleeBodyRegion.Head, MeleeHitSide.Right, 50f, 80f)]
+        [TestCase(MeleeBodyRegion.Head, MeleeHitSide.Top, 50f, 80f)]
+        [TestCase(MeleeBodyRegion.Head, MeleeHitSide.Bottom, 50f, 80f)]
+        [TestCase(MeleeBodyRegion.Head, MeleeHitSide.Rear, 100f, 100f)]
+        [TestCase(MeleeBodyRegion.LeftArm, MeleeHitSide.Rear, 12.5f, 20f)]
+        [TestCase(MeleeBodyRegion.RightArm, MeleeHitSide.Front, 12.5f, 20f)]
+        [TestCase(MeleeBodyRegion.LeftLeg, MeleeHitSide.Front, 18.75f, 30f)]
+        [TestCase(MeleeBodyRegion.RightLeg, MeleeHitSide.Rear, 18.75f, 30f)]
+        public void AnatomicalDamageTableAppliesToLightAndChargedHits(MeleeBodyRegion region,
+            MeleeHitSide side, float lightDamage, float chargedDamage)
+        {
+            var location = new MeleeHitLocation(region, side);
+            Assert.That(location.IsCritical, Is.EqualTo(region == MeleeBodyRegion.Head));
+            Assert.That(location.IsFinisher, Is.EqualTo(region == MeleeBodyRegion.Head && side == MeleeHitSide.Rear));
+            foreach (float power in new[] { 0f, 1f })
+            {
+                var actor = new MeleeCombatant();
+                float damage = power == 0f ? lightDamage : chargedDamage;
+                float attackDamage = S.Damage + S.ChargeDamageBonus * power;
+                Assert.That(MeleeDamageProfile.Crowbar.ResolveDamage(attackDamage, S.MaxHealth, location),
+                    Is.EqualTo(damage).Within(Eps));
+                Assert.That(actor.ReceiveHit(attackDamage, S.BlockCost, false, power, location), Is.EqualTo(MeleeHitResult.Hit));
+                Assert.That(actor.Health, Is.EqualTo(S.MaxHealth - damage).Within(Eps));
+                Assert.That(actor.IsDefeated, Is.EqualTo(location.IsFinisher));
+            }
+        }
+
+        [TestCase(25f, 100f, 50f)]
+        [TestCase(40f, 100f, 80f)]
+        [TestCase(1000f, 100f, 99f)]
+        [TestCase(1000f, 200f, 198f)]
+        public void AnatomicalNormalHeadSurvivesAtFullHealthButCanFinishAnInjuredTarget(
+            float damage, float maxHealth, float expectedDamage)
+        {
+            var settings = new MeleeCombatSettings(maxHealth: maxHealth);
+            var actor = new MeleeCombatant(settings);
+            var head = new MeleeHitLocation(MeleeBodyRegion.Head, MeleeHitSide.Front);
+            actor.ReceiveHit(damage, S.BlockCost, false, 1f, head);
+            Assert.That(actor.Health, Is.EqualTo(maxHealth - expectedDamage).Within(Eps));
+            Assert.That(actor.IsDefeated, Is.False, "The ordinary head must survive one hit from full HP, including future tuning.");
+            actor.Reset();
+            actor.ReceiveHit(maxHealth - expectedDamage * .5f, S.BlockCost, false);
+            Assert.That(actor.Health, Is.GreaterThan(0f));
+            actor.ReceiveHit(damage, S.BlockCost, false, 1f, head);
+            Assert.That(actor.Health, Is.Zero, "The cap is based on maximum HP; repeated head hits cannot preserve one HP forever.");
+            Assert.That(actor.Phase, Is.EqualTo(MeleePhase.Defeated));
+        }
+
+        [TestCase(MeleeHitSide.Front)]
+        [TestCase(MeleeHitSide.Rear)]
+        public void AnatomicalHeadDamageRespectsProtectionBeforeOrdinaryOrFinishingDamage(MeleeHitSide side)
+        {
+            var actor = new MeleeCombatant();
+            var head = new MeleeHitLocation(MeleeBodyRegion.Head, side);
+            actor.SetBlocking(true);
+            Assert.That(actor.ReceiveHit(S.Damage, S.BlockCost, true, 0f, head), Is.EqualTo(MeleeHitResult.Parried));
+            Assert.That(actor.Health, Is.EqualTo(S.MaxHealth));
+            actor.Reset();
+            HoldGuard(actor);
+            Assert.That(actor.ReceiveHit(S.Damage + S.ChargeDamageBonus, S.BlockCost, true, 1f, head),
+                Is.EqualTo(MeleeHitResult.Blocked));
+            Assert.That(actor.Health, Is.EqualTo(S.MaxHealth));
+            actor.Reset();
+            HoldGuard(actor);
+            Assert.That(actor.ReceiveHit(S.Damage, S.MaxStamina + 1f, true, 0f, head), Is.EqualTo(MeleeHitResult.GuardBroken));
+            Assert.That(actor.Health, Is.EqualTo(head.IsFinisher ? 0f : 75f).Within(Eps),
+                "A broken guard halves the regional hit; an admitted rear-head finisher still defeats.");
+            Assert.That(actor.IsDefeated, Is.EqualTo(head.IsFinisher));
+        }
+
+        [TestCase(0f, 0f, -1f, MeleeHitSide.Rear)]
+        [TestCase(1f, 0f, -1f, MeleeHitSide.Rear)]
+        [TestCase(-1f, 0f, -1f, MeleeHitSide.Rear)]
+        [TestCase(0f, 1f, -1f, MeleeHitSide.Rear)]
+        [TestCase(1.0001f, 0f, -1f, MeleeHitSide.Right)]
+        [TestCase(-1.0001f, 0f, -1f, MeleeHitSide.Left)]
+        [TestCase(0f, 1.0001f, -1f, MeleeHitSide.Top)]
+        [TestCase(0f, -1.0001f, -1f, MeleeHitSide.Bottom)]
+        [TestCase(1f, 1f, -1f, MeleeHitSide.Right)]
+        [TestCase(0f, 0f, 1f, MeleeHitSide.Front)]
+        [TestCase(1f, 0f, 1f, MeleeHitSide.Front)]
+        [TestCase(1.0001f, 0f, 1f, MeleeHitSide.Right)]
+        [TestCase(0f, 1f, 0f, MeleeHitSide.Top)]
+        [TestCase(0f, -1f, 0f, MeleeHitSide.Bottom)]
+        [TestCase(0f, 0f, 0f, MeleeHitSide.Front)]
+        [TestCase(float.MaxValue, 0f, -float.MaxValue, MeleeHitSide.Rear)]
+        [TestCase(float.Epsilon, 0f, -float.Epsilon, MeleeHitSide.Rear)]
+        public void AnatomicalSurfaceConesHaveStableThreeDimensionalBoundaries(
+            float right, float up, float forward, MeleeHitSide expected)
+        {
+            var head = MeleeHitLocation.FromLocalSurface(MeleeBodyRegion.Head, right, up, forward);
+            Assert.That(head.Region, Is.EqualTo(MeleeBodyRegion.Head));
+            Assert.That(head.Side, Is.EqualTo(expected));
+            Assert.That(head.IsFinisher, Is.EqualTo(expected == MeleeHitSide.Rear));
+            var torso = MeleeHitLocation.FromLocalSurface(MeleeBodyRegion.Torso, right, up, forward);
+            Assert.That(torso.Side, Is.EqualTo(expected));
+            Assert.That(torso.IsFinisher || torso.IsCritical, Is.False, "The rear surface of a torso is never a head finisher.");
+        }
+
+        [Test]
+        public void AnatomicalZeroDamageNeverTriggersAFinisherAndInvalidInputsCannotChangeState()
+        {
+            var actor = new MeleeCombatant();
+            var rearHead = new MeleeHitLocation(MeleeBodyRegion.Head, MeleeHitSide.Rear);
+            Assert.That(MeleeDamageProfile.Crowbar.ResolveDamage(0f, S.MaxHealth, rearHead), Is.Zero);
+            Assert.That(actor.ReceiveHit(0f, S.BlockCost, false, 0f, rearHead), Is.EqualTo(MeleeHitResult.Ignored));
+            foreach (float invalid in new[] { -1f, float.NaN, float.PositiveInfinity, float.NegativeInfinity })
+            {
+                Assert.Throws<ArgumentOutOfRangeException>(() => MeleeDamageProfile.Crowbar.ResolveDamage(invalid, S.MaxHealth, rearHead));
+                Assert.Throws<ArgumentOutOfRangeException>(() => MeleeDamageProfile.Crowbar.ResolveDamage(S.Damage, invalid, rearHead));
+                Assert.Throws<ArgumentOutOfRangeException>(() => actor.ReceiveHit(invalid, S.BlockCost, false, 0f, rearHead));
+                if (invalid == -1f) continue;
+                Assert.Throws<ArgumentOutOfRangeException>(() => MeleeHitLocation.FromLocalSurface(MeleeBodyRegion.Head, invalid, 0f, 0f));
+                Assert.Throws<ArgumentOutOfRangeException>(() => MeleeHitLocation.FromLocalSurface(MeleeBodyRegion.Head, 0f, invalid, 0f));
+                Assert.Throws<ArgumentOutOfRangeException>(() => MeleeHitLocation.FromLocalSurface(MeleeBodyRegion.Head, 0f, 0f, invalid));
+            }
+            Assert.Throws<ArgumentOutOfRangeException>(() => MeleeDamageProfile.Crowbar.ResolveDamage(S.Damage, 0f, rearHead));
+            foreach (int invalid in new[] { -1, 6 })
+            {
+                Assert.Throws<ArgumentOutOfRangeException>(() => new MeleeHitLocation((MeleeBodyRegion)invalid, MeleeHitSide.Front));
+                Assert.Throws<ArgumentOutOfRangeException>(() => new MeleeHitLocation(MeleeBodyRegion.Head, (MeleeHitSide)invalid));
+                Assert.Throws<ArgumentOutOfRangeException>(() => MeleeHitLocation.FromLocalSurface((MeleeBodyRegion)invalid, 0f, 0f, 1f));
+            }
+            Assert.That(actor.Health, Is.EqualTo(S.MaxHealth));
+            Assert.That(actor.Phase, Is.EqualTo(MeleePhase.Ready));
+            Assert.That(default(MeleeHitLocation).Region, Is.EqualTo(MeleeBodyRegion.Torso));
+            Assert.That(default(MeleeHitLocation).Side, Is.EqualTo(MeleeHitSide.Front));
+            Assert.That(actor.ReceiveHit(S.Damage, S.BlockCost, false), Is.EqualTo(MeleeHitResult.Hit));
+            Assert.That(actor.Health, Is.EqualTo(S.MaxHealth - S.Damage), "Existing callers retain ordinary torso damage.");
+        }
+
         [Test]
         public void CommittedMissIsFreeAndCannotCancelIntoAttackOrBlock()
         {

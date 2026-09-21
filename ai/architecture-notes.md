@@ -4,12 +4,20 @@
 
 ## Current facts
 
+- **Accepted — 2026-09-21, anatomical combat damage:**
+  CombatTest (§6): posed head/torso/L-R arms/legs; first contact once/sequence,
+  no movement capsule; bone-local direction. Head x2 (50/80), cap .99 MaxHP;
+  wounded can fall. Rear-head ±45° defeats; torso x1/rear x1.25, arms x.5,
+  legs x.75. Guard/parry first, using attacker/root bearing.
+  One HP; frozen zone/direction/power for mutual hits and impacts.
+  Defeat/ragdoll/R; no story effects.
+
 - **Accepted — 2026-09-21, combat inertia:**
   Both: C1 body/pose/contact on duel time; inertial travel/yaw.
 
 - **Accepted — 2026-09-20, two-hand combat hold:**
-  Low Ready/high Block; opposed left .16→.42 m. Ready/Block/Rest breathe 4 s;
-  legs yield to gait; `NpcHandPose` blends/injury; end right Rest.
+  Low Ready/high Block; opposed left .16→.42 m; Ready/Block/Rest breath 4 s.
+  Gait owns legs; `NpcHandPose` blends/injury; end right Rest.
 
 - **Accepted — 2026-09-21, brawl v2:**
   Free swings; guard20/35/step15/charge20 (+15/s held); regen30/s/.6 s,
@@ -35,61 +43,54 @@
   A/D strafe; winner walks; `MeleeCombatSettings`; opponent last.
 
 - **Accepted — 2026-09-16, street pool is the default NPC catalog:**
-  User: default-only; new models join at once.
-  `DefaultNpcPopulation`: `city.pedestrian.00..12`, one/City slot, first eight/Home.
-  `AnyCatalogModel` chooses least-used
-  `DefaultNpcCatalog.ModelIds`, then face/hair/street clothes: no apron;
-  hat/scarf/gloves optional. `CityPedestrianResources.Archetypes`: one street
-  archetype/model. `CityPedestrianDefaultNpcBody`/`CreateForCharacter`:
+  User: default-only, new models join immediately. `DefaultNpcPopulation`:
+  `city.pedestrian.00..12`, one/City slot, first eight/Home. `AnyCatalogModel`:
+  least-used `DefaultNpcCatalog.ModelIds`, then face/hair/street clothes,
+  no apron; optional hat/scarf/gloves. `CityPedestrianResources.Archetypes`:
+  one/model. `CityPedestrianDefaultNpcBody`/`CreateForCharacter`:
   aligned, village graph released, one footstep root; own village `Idle`/`Walk`,
   no palette bindings; boot soles feed legs, person-keyed insult voice.
   Weigher donates seated/guard/shove, same rig/paths; default trousers
   seat lift `0.076`. Six `OrdinaryResidentArchetypes`: placed roles/balcony
   smokers/donor; library designs never roam (`pool_eligible=false`,
   resolvable prefab side).
-  Checks: `CityPedestrianRuntimeTests`, `CityBusStopWaitPlannerTests`,
-  `CityBalconySmokerTests`, `AreaAssetWarmupTests`, placed-role tests.
 
 - **Accepted — 2026-09-15, default NPC catalog:**
-  `DefaultNpcCatalog` allowlists models; bespoke models/pool extension needs
-  a user request. `DefaultNpcPopulation` owns permanent IDs,
-  model/garment constraints and complete sorted assignments before scene spawns.
-  Stable hashing searches valid combinations, avoids used model/face/hair/clothes
-  tuples and balances repeats only after exhaustion. Loads/order retain looks;
-  no local randomizers. New actors register here and use
-  `DefaultNpcFactory.CreateForCharacter`; raw `Create` is authoring/legacy.
-  `ordinary-worker-v1` (`VillageLife/StationWorker`) serves four fair, five port,
-  two factory, driver and village workers. Factory initializes rig/footsteps.
+  `DefaultNpcCatalog` allowlists models; bespoke/pool extensions need user
+  requests. `DefaultNpcPopulation`: permanent IDs/model/garment constraints,
+  sorted whole-world assignment before spawns. Stable hash avoids repeated
+  model/face/hair/clothes until exhaustion, then balances; loads/order preserve
+  looks, no local randomness. Register actors, use
+  `DefaultNpcFactory.CreateForCharacter`; raw `Create`: authoring/legacy.
+  `ordinary-worker-v1` (`VillageLife/StationWorker`): four fair/five port/two
+  factory/driver/village workers. Factory sets rig/footsteps.
 
 - **Accepted — 2026-09-15, modular default worker:**
-  Prefab/GUID, 31 bones/grips/actions retained. Hero/NPC hands: +20% reach/width,
-  slim depth/girth, fixed wrists. `NpcWardrobe`: eight slots/18 items, three
+  Same prefab/GUID, 31 bones/grips/actions. Hero/NPC hands: +20% reach/width,
+  slim depth/girth, fixed wrists. `NpcWardrobe`: eight slots/18 items/three
   presets, coverage/restoration, 8,000 worn triangles. `DefaultNpcAppearance`:
-  four faces, gray/brunette/blond hair/brows/beards; twelve shared atlases.
-  `build-default-npc-3d-model.py`/`DefaultNpcAssetSetup` own this body alone.
-  Art §15; no cast/lore/speech/§6 change. Truck/bench cache trouser seat fits.
-  Shared arm IK bends elbows down/out in the rig frame; lateral poles caused
-  apparent sleeve growth. `NpcHandPose` blends authored cylindrical grips on
-  bare/gloved digits, reset with actions. Prefab binds shapes and grip frames;
-  truck rim/column share an authored axis facing the driver. Palms oppose it.
+  four faces, gray/brunette/blond hair/brows/beards, twelve shared atlases.
+  Body owners: `build-default-npc-3d-model.py`/`DefaultNpcAssetSetup`.
+  Art §15; cast/lore/speech/§6 unchanged. Truck/bench cache trouser seat fits.
+  Arm IK elbows down/out in rig frame (lateral poles stretched sleeves).
+  `NpcHandPose`: authored bare/gloved cylindrical grips, action reset;
+  prefab binds shapes/frames. Truck rim/column: driver-facing axis, opposed palms.
 
 - **Accepted — 2026-09-15, Nightlife fair:**
-  Art §9/story §18: four staffed displays, organ/bell, two seats, three
-  garlands; user adds three simultaneous silent children. One `1.3 m`,
-  age `8–10` body; ochre raincoat, blue quilted coat/cap, burgundy sweater/
-  grey vest. Equipped `9–12k` tris: `11144/11764/11140`; ≥hero detail, `47` bones.
-  Child clips; trousers continue to the waist.
-  Toys stay displayed; personal car/low table and sitting are local routines.
-  Terrain-foot contacts, pause/routes/collision and `CityBenchSeatClaims`
-  preserve shared seats/`2.2 m` paths. Blender banks, original hero rig/
-  contextual actions, causal sound, materials and light pool `12` stay shared.
-  No trade/speech/lore/reward/cat response/carnival or §6 exception; §16/§21/
-  nine art checks hold.
+  Art §9/story §18: four staffed displays, organ/bell, two seats/three garlands;
+  user adds three simultaneous silent children. One `1.3 m`, age `8–10` body: ochre raincoat,
+  blue quilted coat/cap, burgundy sweater/grey vest. Equipped `9–12k` tris:
+  `11144/11764/11140`, ≥hero detail, `47` bones; child clips/waist-high trousers.
+  Toys displayed; personal car/low table/sitting local. Terrain-foot contacts,
+  pause/routes/collision/`CityBenchSeatClaims` preserve seats/`2.2 m` paths.
+  Shared Blender banks/hero rig/contextual actions/causal sound/materials/light
+  pool `12`. No trade/speech/lore/reward/cat response/carnival/§6 exception;
+  §16/§21/nine checks hold.
 
 - **Accepted architecture exception — 2026-09-15, eastern valley:**
-  User: story §6 `0`/art §10e own descent/city/halo on valley floor,
-  near/panorama seam; shared road/land/car/lamp datum. First lamp: existing
-  model/pool `12`; distant fixtures passive. Blender depth/cars pause/§20.
+  User: story §6 `0`/art §10e: valley descent/city/halo, near/panorama seam;
+  common road/land/car/lamp datum. First lamp: existing model/pool `12`;
+  passive distant fixtures. Blender depth/cars pause/§20.
   Fog `.070`/clip `48 m`, sea/west/south/post/paths, §16/§21/nine art checks hold.
 
 - **Accepted — 2026-09-14, eastern fence relief and trees:**

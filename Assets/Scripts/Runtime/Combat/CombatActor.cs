@@ -162,15 +162,20 @@ namespace BarPromenade
             {
                 float step = (float)Math.Min(CombatTestRoot.SimulationStep, remaining);
                 standaloneContacts.Clear();
-                AdvanceSimulation(step, standaloneContacts);
+                AdvanceSimulation(step);
+                Present();
+                CaptureContactPose();
+                contactTarget?.CaptureContactPose();
+                CollectContacts(standaloneContacts);
                 foreach (Contact contact in standaloneContacts) contact.Apply();
                 remaining -= step;
             }
             Present();
         }
 
-        internal void AdvanceSimulation(float seconds, List<Contact> pending)
+        internal void AdvanceSimulation(float seconds)
         {
+            collectSweep = false;
             if (State.IsDefeated) { AdvanceDefeat(seconds); return; }
             if (!IsAvailable)
             {
@@ -206,18 +211,23 @@ namespace BarPromenade
                 sequence == State.AttackSequence)
                 RetroAudio.PlayAt(RetroSfxId.SpadeToss, strikeTip.position, .35f);
             if ((State.IsAttacking && !IsRecoil(reaction)) || elapsed.HasActiveWindow)
-                SweepWeapon(from, State.AttackElapsed, State.AttackSequence, pending);
+            {
+                collectSweep = true;
+                sweepFrom = from;
+                sweepTo = State.AttackElapsed;
+                pendingSequence = State.AttackSequence;
+            }
             else sweepValid = false;
         }
 
         private MeleeHitResult Receive(CombatActor source, bool front, int sequence, Vector3 point, Vector3 normal, Vector3 direction,
-            float damage, float blockCost, float power)
+            float damage, float blockCost, float power, MeleeHitLocation location)
         {
             Vector3 incoming = source.transform.position - transform.position;
             incoming.y = 0;
             Vector3 away = incoming.sqrMagnitude > .0001f ? -incoming.normalized : -transform.forward;
             float healthBefore = State.Health;
-            MeleeHitResult result = State.ReceiveHit(damage, blockCost, front, power);
+            MeleeHitResult result = State.ReceiveHit(damage, blockCost, front, power, location);
             if (result == MeleeHitResult.Ignored) return result;
             // Weight lives in time and motion: the body is the loudest cue, a block
             // moves both fighters, a parry throws the attacker's weapon wide.
@@ -251,7 +261,7 @@ namespace BarPromenade
             if (State.IsDefeated)
                 BeginDefeat(away, point);
             PublishImpact(new CombatImpact(source, this, sequence, point, normal, direction,
-                healthBefore, State.Health, result));
+                healthBefore, State.Health, result, location, power));
             Present();
             return result;
         }

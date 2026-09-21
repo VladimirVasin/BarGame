@@ -6,6 +6,7 @@ namespace BarPromenade
     public sealed partial class CombatActor
     {
         private CombatDamagePose damagePose;
+        internal CombatHurtboxes Hurtboxes { get; private set; }
         public Transform DamageRigRoot => hero != null ? hero.Registry.ModelRoot : npc != null ? npc.ModelRoot : null;
         public CombatDamagePose DamagePose => damagePose;
         public CombatImpact LastImpact { get; private set; }
@@ -18,6 +19,7 @@ namespace BarPromenade
             damagePose = new CombatDamagePose();
             damagePose.Initialize(DamageRigRoot, transform);
             bodyMotion = new CombatBodyMotion(DamageRigRoot, transform);
+            Hurtboxes = new CombatHurtboxes(DamageRigRoot, transform, Ragdoll.PhysicsController);
         }
 
         private void PresentDamagePose()

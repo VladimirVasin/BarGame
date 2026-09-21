@@ -499,8 +499,11 @@ namespace BarPromenade
         /// <summary>Front is decided geometrically by runtime. A fresh, re-armed guard press
         /// parries a light swing for free. An affordable block pays the whole cost, even
         /// down to zero. An unaffordable block breaks: half damage, a longer stun, the
-        /// meter and its regeneration untouched. A received hit never delays breath.</summary>
-        public MeleeHitResult ReceiveHit(float damage, float blockCost, bool fromFront, float power = 0f)
+        /// meter and its regeneration untouched. Anatomical damage is resolved before
+        /// guard reduction; a rear head finisher defeats only after protection fails.
+        /// A received hit never delays breath.</summary>
+        public MeleeHitResult ReceiveHit(float damage, float blockCost, bool fromFront, float power = 0f,
+            MeleeHitLocation location = default)
         {
             NonNegative(damage, nameof(damage));
             NonNegative(blockCost, nameof(blockCost));
@@ -538,7 +541,9 @@ namespace BarPromenade
                 (Phase == MeleePhase.Recovery &&
                  (AttackOutcome == MeleeAttackOutcome.Miss || AttackOutcome == MeleeAttackOutcome.Obstacle));
             double swingRemaining = Phase == MeleePhase.Recovery ? Math.Max(0d, AttackDuration - attackElapsed) : 0d;
-            Health = Math.Max(0f, Health - (guardBreak ? damage * Settings.GuardBreakDamageScale : damage));
+            float resolvedDamage = MeleeDamageProfile.Crowbar.ResolveDamage(damage, Settings.MaxHealth, location);
+            Health = location.IsFinisher ? 0f : Math.Max(0f,
+                Health - (guardBreak ? resolvedDamage * Settings.GuardBreakDamageScale : resolvedDamage));
             attackElapsed = stepElapsed = 0d;
             chained = false;
             if (Health == 0f)

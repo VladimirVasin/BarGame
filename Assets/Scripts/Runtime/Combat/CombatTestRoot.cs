@@ -75,6 +75,8 @@ namespace BarPromenade
                 opponentObject.transform, DefaultNpcPopulation.CombatTestOpponent);
             Opponent = opponentObject.AddComponent<CombatActor>();
             Opponent.InitializeOpponent(presentation, body);
+            Hero.SetContactTarget(Opponent);
+            Opponent.SetContactTarget(Hero);
             InitializeDamageEffects();
             opponentChest = Opponent.Ragdoll.PhysicsController.ChestBody.transform;
             heroChest = Hero.Ragdoll.PhysicsController.ChestBody.transform;
@@ -197,8 +199,14 @@ namespace BarPromenade
                 AdvanceOpponentMovement(SimulationStep);
                 Physics.SyncTransforms();
                 pendingContacts.Clear();
-                Hero.AdvanceSimulation(SimulationStep, pendingContacts);
-                Opponent.AdvanceSimulation(SimulationStep, pendingContacts);
+                Hero.AdvanceSimulation(SimulationStep);
+                Opponent.AdvanceSimulation(SimulationStep);
+                Hero.Present(); Opponent.Present();
+                // Both final poses are frozen as anatomical query data before either
+                // weapon is sampled. Sampling the first swing cannot move its hurtboxes.
+                Hero.CaptureContactPose(); Opponent.CaptureContactPose();
+                Hero.CollectContacts(pendingContacts);
+                Opponent.CollectContacts(pendingContacts);
                 // Registration for both actors precedes ANY damage, including lethal
                 // hits. Only contacts on a later tick can be cancelled by interruption.
                 foreach (CombatActor.Contact contact in pendingContacts) contact.Apply();

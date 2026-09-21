@@ -51,7 +51,11 @@ namespace BarPromenade.Tests.PlayMode
                     {
                         Assert.That(root.Opponent.State.Health, Is.EqualTo(S.MaxHealth));
                     }
-                    if (i == 0) Assert.That(root.Opponent.State.Health, Is.EqualTo(S.MaxHealth - S.Damage));
+                    if (i == 0)
+                    {
+                        Assert.That(root.Opponent.State.Health, Is.LessThan(S.MaxHealth));
+                        Assert.That(root.Opponent.ReceivedImpactCount, Is.EqualTo(1));
+                    }
                 }
                 Assert.That(recoveries[1] - recoveries[0], Is.GreaterThan(S.BlockRecoverySeconds - S.HitRecoverySeconds - .03f));
                 Assert.That(recoveries[2] - recoveries[1], Is.GreaterThan(S.RecoverySeconds - S.BlockRecoverySeconds - .05f));
@@ -72,7 +76,7 @@ namespace BarPromenade.Tests.PlayMode
                     Assert.That(root.Hero.State.Phase, Is.EqualTo(MeleePhase.Step));
                     Assert.That(root.Hero.ActiveClipName, Is.EqualTo(clips[i]));
                     Assert.That(root.Hero.State.Stamina, Is.EqualTo(AfterStep).Within(.001f));
-                    Assert.That(root.Hero.Body.enabled, Is.True, "A step keeps the ordinary hittable capsule.");
+                    Assert.That(root.Hero.Body.enabled, Is.True, "A step keeps its ordinary movement capsule.");
                     Assert.That(root.Player.Motor.ApplyOwnedDisplacement(new object(), Vector3.forward), Is.EqualTo(Vector3.zero));
                     Assert.That(root.Hero.TryAttack(), Is.False);
                     for (int frame = 0; frame < StepFrames + 17 && root.Hero.State.Phase == MeleePhase.Step; frame++)
@@ -139,7 +143,8 @@ namespace BarPromenade.Tests.PlayMode
                 root.Tick(.44f);
                 Assert.That(root.Hero.TryStep(Vector2.up), Is.True);
                 root.Tick(.13f);
-                Assert.That(root.Hero.State.Health, Is.EqualTo(S.MaxHealth - S.Damage), "A mistimed step still receives actual weapon contact.");
+                Assert.That(root.Hero.State.Health, Is.LessThan(S.MaxHealth), "A mistimed step still receives actual weapon contact.");
+                Assert.That(root.Hero.ReceivedImpactCount, Is.EqualTo(1));
                 Assert.That(root.Hero.State.Phase, Is.EqualTo(MeleePhase.Stagger));
                 Assert.That(root.Hero.State.StepElapsed, Is.Zero, "A hit cancels remaining step travel.");
 
@@ -191,11 +196,10 @@ namespace BarPromenade.Tests.PlayMode
             yield return EnterRange();
             try
             {
-                // Evasion is physical: the capsule's physics pose follows the transform only
-                // across simulation frames, so this fixture runs on frames, not rules-only ticks.
-                // The duel capsule is the honest hurtbox; the wider cloth trigger stays off.
-                ConfigureDuelHurtbox(root.Hero);
-                ConfigureDuelHurtbox(root.Opponent);
+                // Evasion uses the moving anatomical pose on automatic simulation frames.
+                // Matching movement capsules standardize travel without replacing either rig.
+                ConfigureDuelMovementCapsule(root.Hero);
+                ConfigureDuelMovementCapsule(root.Opponent);
                 root.AutomaticSimulation = true;
                 float counterStagger = S.StaggerSeconds + S.CounterHitStaggerBonus;
                 int reactionFrames = Mathf.RoundToInt(.22f * 60f);

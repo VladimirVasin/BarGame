@@ -22,7 +22,8 @@ namespace BarPromenade.Tests.PlayMode
         public static float ChargeCost(float power) => S.AttackCost + S.ChargeStaminaCost * power;
         public static float ChargedStamina(float power) => S.MaxStamina - ChargeCost(power);
         public static float ChargedDamage(float power) => S.Damage + S.ChargeDamageBonus * power;
-        public static int HitsToDefeat => Mathf.CeilToInt(S.MaxHealth / S.Damage);
+        /// <summary>Upper bound for unblocked light contacts: the arms take the smallest regional damage, one half.</summary>
+        public static int HitsToDefeat => Mathf.CeilToInt(S.MaxHealth / (S.Damage * .5f));
         /// <summary>Frontal blocks a full meter can pay; the next one breaks the guard.</summary>
         public static int AffordableBlocks => Mathf.FloorToInt(S.MaxStamina / S.BlockCost);
         /// <summary>Seconds that carry an uncharged swing just past its active window, into any outcome's recovery.</summary>
@@ -117,10 +118,11 @@ namespace BarPromenade.Tests.PlayMode
             Physics.SyncTransforms();
             Assert.That(root.Hero.TryAttack(), Is.True);
             for (int i = 0; i < ContactTicks(100f) + 67; i++) root.Hero.Step(.01f);
-            Assert.That(root.Opponent.State.Health, Is.EqualTo(S.MaxHealth - S.Damage),
+            Assert.That(root.Opponent.State.Health, Is.LessThan(S.MaxHealth),
                 "Actual authored crowbar contact must hit once across target colliders and arc samples.");
             Assert.That(root.Opponent.ReceivedImpactCount, Is.EqualTo(1));
-            Assert.That(root.Opponent.LastImpact.Damage, Is.EqualTo(S.Damage));
+            Assert.That(root.Opponent.LastImpact.Damage, Is.EqualTo(S.MaxHealth - root.Opponent.State.Health).Within(.001f));
+            float healthAfterFineContact = root.Opponent.State.Health;
             Assert.That(root.Opponent.LastImpact.Direction.sqrMagnitude, Is.EqualTo(1f).Within(.001f));
             Assert.That(root.Opponent.LastImpact.Point.y, Is.InRange(.3f, 2f));
             Assert.That(root.BloodEffects.EmissionCount, Is.EqualTo(1), "Duplicate colliders cannot duplicate blood.");
@@ -131,8 +133,9 @@ namespace BarPromenade.Tests.PlayMode
             PlacePair(1.1f);
             Assert.That(root.Hero.TryAttack(), Is.True);
             root.Hero.Step(2f);
-            Assert.That(root.Opponent.State.Health, Is.EqualTo(S.MaxHealth - S.Damage),
-                "A hitch crossing all three phases must still sweep the authored active arc.");
+            Assert.That(root.Opponent.State.Health, Is.EqualTo(healthAfterFineContact).Within(.001f),
+                "A hitch crossing all three phases must resolve the same contact as the fine-stepped authored arc.");
+            Assert.That(root.Opponent.ReceivedImpactCount, Is.EqualTo(1));
 
             PlacePair(4f);
             Assert.That(root.Hero.TryAttack(), Is.True);
@@ -244,7 +247,7 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(GameSessionState.GameMinuteOfDay, Is.EqualTo(minute));
             Assert.That(GameSessionState.HungerLevel, Is.EqualTo(hunger));
             PlacePair(1.1f);
-            for (int i = 0; i < HitsToDefeat; i++)
+            for (int i = 0; i < HitsToDefeat && !root.Opponent.State.IsDefeated; i++)
             {
                 root.Hero.ResetActor(Vector3.up * PlayerFactory.GroundedRootOffset, Vector3.forward);
                 Assert.That(root.Hero.TryAttack(), Is.True);
@@ -323,8 +326,10 @@ namespace BarPromenade.Tests.PlayMode
                 float tapDamage = root.Hero.State.AttackDamage;
                 Assert.That(tapDamage, Is.InRange(S.Damage, S.Damage + 1f), "A one-frame tap keeps only its small actual charge.");
                 for (int frame = 0; frame < ContactTicks(60f) + 52 && root.Opponent.State.Health == S.MaxHealth; frame++) yield return null;
-                Assert.That(root.Opponent.State.Health, Is.EqualTo(S.MaxHealth - tapDamage).Within(.001f),
+                Assert.That(root.Opponent.State.Health, Is.LessThan(S.MaxHealth),
                     "Release carries the authored swing through one real contact at its latched power.");
+                Assert.That(root.Hero.State.AttackDamage, Is.EqualTo(tapDamage).Within(.001f),
+                    "The contact must retain the tap's committed strength independently of the region it reaches.");
                 Assert.That(root.Opponent.ReceivedImpactCount, Is.EqualTo(1));
 
                 input.Press(keyboard.rKey, queueEventOnly: true);
@@ -393,7 +398,8 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(root.Hero.State.AttackPower, Is.EqualTo(1f).Within(.0001f));
                 Assert.That(root.Hero.State.AttackDamage, Is.EqualTo(ChargedDamage(1f)).Within(.001f));
                 yield return WaitFor(() => root.Opponent.State.Health < S.MaxHealth, "Released full charge never reached the target.");
-                Assert.That(root.Opponent.State.Health, Is.EqualTo(S.MaxHealth - ChargedDamage(1f)).Within(.001f));
+                Assert.That(root.Opponent.State.Health, Is.LessThan(S.MaxHealth));
+                Assert.That(root.Hero.State.AttackDamage, Is.EqualTo(ChargedDamage(1f)).Within(.001f));
                 Assert.That(root.Opponent.ReceivedImpactCount, Is.EqualTo(1));
 
                 foreach (bool stepInsteadOfGuard in new[] { false, true })
@@ -1352,8 +1358,8 @@ namespace BarPromenade.Tests.PlayMode
         {
             yield return SceneManager.LoadSceneAsync(SceneIds.MainMenu, LoadSceneMode.Single);
             yield return EnterRange();
-            ConfigureDuelHurtbox(root.Hero);
-            ConfigureDuelHurtbox(root.Opponent);
+            ConfigureDuelMovementCapsule(root.Hero);
+            ConfigureDuelMovementCapsule(root.Opponent);
             foreach (float step in new[] { 1f / 120f, 1f / 60f, 1f / 30f, .2f })
             {
                 foreach (bool swapped in new[] { false, true })
@@ -1376,10 +1382,12 @@ namespace BarPromenade.Tests.PlayMode
                         Assert.That(root.Hero.TryAttack(), Is.True);
                     }
                     AdvanceDuel(.72f, step);
-                    Assert.That(root.Hero.State.Health, Is.EqualTo(S.MaxHealth - S.Damage),
+                    Assert.That(root.Hero.State.Health, Is.LessThan(S.MaxHealth),
                         $"Both contact candidates commit together: step={step}, swapped={swapped}.");
-                    Assert.That(root.Opponent.State.Health, Is.EqualTo(S.MaxHealth - S.Damage),
+                    Assert.That(root.Opponent.State.Health, Is.LessThan(S.MaxHealth),
                         "A first-applied hit must not erase an equally timed opposing contact.");
+                    Assert.That(root.Hero.ReceivedImpactCount, Is.EqualTo(1));
+                    Assert.That(root.Opponent.ReceivedImpactCount, Is.EqualTo(1));
 
                     foreach (bool heroFirst in new[] { true, false })
                     {
@@ -1392,7 +1400,9 @@ namespace BarPromenade.Tests.PlayMode
                         AdvanceDuel(.95f, step);
                         Assert.That(earlier.State.Health, Is.EqualTo(S.MaxHealth),
                             $"An earlier contact interrupts the later windup: step={step}, heroFirst={heroFirst}.");
-                        Assert.That(later.State.Health, Is.EqualTo(S.MaxHealth - S.Damage));
+                        Assert.That(later.State.Health, Is.LessThan(S.MaxHealth));
+                        Assert.That(later.ReceivedImpactCount, Is.EqualTo(1));
+                        Assert.That(earlier.ReceivedImpactCount, Is.Zero);
                         Assert.That(later.State.IsAttacking, Is.False,
                             "Interrupted damage may not replay after stagger ends.");
                     }
@@ -1434,12 +1444,10 @@ namespace BarPromenade.Tests.PlayMode
             LogAssert.NoUnexpectedReceived();
         }
 
-        private static void ConfigureDuelHurtbox(CombatActor actor)
+        private static void ConfigureDuelMovementCapsule(CombatActor actor)
         {
-            // The hero also carries a wider cloth trigger. Give this ordering fixture
-            // exactly one identical body capsule per target; normal-range tests retain all colliders.
-            foreach (Collider collider in actor.GetComponentsInChildren<Collider>(true))
-                if (collider != actor.Body) collider.enabled = false;
+            // Keep travel collision identical; actual weapon contacts still use each
+            // posed anatomical rig. The capsule and clothing are never damage targets.
             actor.Body.height = 1.7f;
             actor.Body.radius = .32f;
             actor.Body.center = Vector3.up * .85f;
@@ -1457,7 +1465,7 @@ namespace BarPromenade.Tests.PlayMode
                 root.Tick(1f / 120f);
                 if (receiver.State.Health < receiver.State.Settings.MaxHealth) return tick;
             }
-            Assert.Fail("The authored weapon never reached the calibrated duel capsule.");
+            Assert.Fail("The authored weapon never reached the opponent's anatomical volumes.");
             return 0;
         }
 

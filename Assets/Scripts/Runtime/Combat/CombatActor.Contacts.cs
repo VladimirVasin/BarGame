@@ -10,17 +10,22 @@ namespace BarPromenade
         private Collider[] contactBuffer = new Collider[32];
         private RaycastHit[] castBuffer = new RaycastHit[32];
         private readonly HashSet<Collider> sampleContacts = new HashSet<Collider>();
-        private readonly Dictionary<Collider, SurfaceContact> contactSurfaces = new Dictionary<Collider, SurfaceContact>();
+        private CombatActor contactTarget;
+        private bool collectSweep;
+        private float sweepFrom, sweepTo;
+        private int pendingSequence;
         private bool sweepValid;
         private int sweepSequence;
         private Vector3 previousBase, previousTip;
 
-        private readonly struct SurfaceContact
+        internal void SetContactTarget(CombatActor target) => contactTarget = target;
+        internal void CaptureContactPose() => Hurtboxes?.Capture();
+
+        internal void CollectContacts(List<Contact> pending)
         {
-            public readonly Vector3 Point, Normal, Direction;
-            public readonly float SweepFraction;
-            public SurfaceContact(Vector3 point, Vector3 normal, Vector3 direction, float fraction)
-            { Point = point; Normal = normal; Direction = direction; SweepFraction = fraction; }
+            if (!collectSweep) return;
+            collectSweep = false;
+            SweepWeapon(sweepFrom, sweepTo, pendingSequence, pending);
         }
 
         /// <summary>A registered contact survives interruption of its source in the same simulation step.</summary>
@@ -31,11 +36,14 @@ namespace BarPromenade
             private readonly int attackSequence;
             private readonly Vector3 point, normal, direction;
             private readonly float damage, blockCost, power;
+            private readonly MeleeHitLocation location;
 
-            public Contact(CombatActor source, CombatActor target, Vector3 point, Vector3 normal, Vector3 direction)
+            public Contact(CombatActor source, CombatActor target, Vector3 point, Vector3 normal, Vector3 direction,
+                MeleeHitLocation location)
             {
                 this.source = source; this.target = target;
                 this.point = point; this.normal = normal; this.direction = direction;
+                this.location = location;
                 attackSequence = source.State.AttackSequence;
                 // The other actor may interrupt this source before Apply.
                 // A collected strike keeps the strength that reached its target.
@@ -49,7 +57,8 @@ namespace BarPromenade
 
             public void Apply()
             {
-                MeleeHitResult result = target.Receive(source, fromFront, attackSequence, point, normal, direction, damage, blockCost, power);
+                MeleeHitResult result = target.Receive(source, fromFront, attackSequence, point, normal, direction,
+                    damage, blockCost, power, location);
                 source.State.RecordAttackOutcome(result, attackSequence);
                 if (result == MeleeHitResult.Parried) source.ShowParried(point, direction);
             }
@@ -70,10 +79,9 @@ namespace BarPromenade
                 if (!SampleAttack(State.AnimationProgressAt(elapsed))) return;
                 Vector3 currentBase = strikeBase.position, currentTip = strikeTip.position;
                 sampleContacts.Clear();
-                contactSurfaces.Clear();
                 Vector3 travel = sweepValid ? (currentBase + currentTip - previousBase - previousTip) * .5f : transform.forward;
                 if (travel.sqrMagnitude < .000001f) travel = transform.forward;
-                GatherCapsule(currentBase, currentTip, travel.normalized);
+                GatherCapsule(currentBase, currentTip);
                 if (sweepValid)
                 {
                     // Sweep a row of overlapping spheres along the real moving weapon.
@@ -88,10 +96,12 @@ namespace BarPromenade
                             Vector3.Lerp(currentBase, currentTip, t));
                     }
                 }
-                previousBase = currentBase; previousTip = currentTip; sweepValid = true;
-
                 // The tell may brush a wall; only the live arc is stopped by one.
-                if (elapsed < State.AttackWindupSeconds) continue;
+                if (elapsed < State.AttackWindupSeconds)
+                {
+                    previousBase = currentBase; previousTip = currentTip; sweepValid = true;
+                    continue;
+                }
                 // A solid that meets the blade at this sample stops the swing here.
                 // Targets from earlier samples already connected; no centre-to-centre ray
                 // substitutes for the actual weapon path at corners or low cover.
@@ -108,22 +118,41 @@ namespace BarPromenade
                     return;
                 }
 
-                foreach (Collider candidate in sampleContacts)
-                {
-                    if (candidate == null) continue;
-                    CombatActor target = candidate.GetComponentInParent<CombatActor>();
-                    if (target == null || target == this || !target.IsAvailable || target.State.IsDefeated ||
-                        !State.TryRegisterHit(target.GetEntityId().GetHashCode(), sequence)) continue;
-                    // Prefer the actor's solid capsule over a clothing trigger when
-                    // both registered the same strike; this affects only presentation.
-                    SurfaceContact surface = contactSurfaces.TryGetValue(target.Body, out SurfaceContact bodySurface)
-                        ? bodySurface : contactSurfaces[candidate];
-                    pending.Add(new Contact(this, target, surface.Point, surface.Normal, surface.Direction));
-                }
+                GatherAnatomicalContact(currentBase, currentTip, travel.normalized, sequence, pending);
+                previousBase = currentBase; previousTip = currentTip; sweepValid = true;
             }
         }
 
-        private void GatherCapsule(Vector3 a, Vector3 b, Vector3 direction)
+        private void GatherAnatomicalContact(Vector3 currentBase, Vector3 currentTip, Vector3 direction,
+            int sequence, List<Contact> pending)
+        {
+            CombatActor target = contactTarget;
+            if (target == null || !target.IsAvailable || target.State.IsDefeated || target.Hurtboxes == null) return;
+            // End-pose overlap is later than every swept contact. The row of moving
+            // spheres retains the existing blade coverage, including translation.
+            bool found = target.Hurtboxes.SweepSphere(currentBase, currentTip, WeaponRadius, direction, out var nearest);
+            float earliest = found ? 1f : float.PositiveInfinity;
+            if (sweepValid)
+            {
+                float length = Mathf.Max(Vector3.Distance(previousBase, previousTip), Vector3.Distance(currentBase, currentTip));
+                int intervals = Mathf.Max(1, Mathf.CeilToInt(length / WeaponRadius));
+                for (int point = 0; point <= intervals; point++)
+                {
+                    float t = point / (float)intervals;
+                    Vector3 start = Vector3.Lerp(previousBase, previousTip, t);
+                    Vector3 end = Vector3.Lerp(currentBase, currentTip, t);
+                    Vector3 travel = end - start;
+                    if (travel.sqrMagnitude < .0000001f) continue;
+                    if (!target.Hurtboxes.SweepSphere(start, end, WeaponRadius, travel.normalized, out var hit) ||
+                        hit.Fraction >= earliest) continue;
+                    nearest = hit; earliest = hit.Fraction; found = true;
+                }
+            }
+            if (found && State.TryRegisterHit(target.GetEntityId().GetHashCode(), sequence))
+                pending.Add(new Contact(this, target, nearest.Point, nearest.Normal, nearest.Direction, nearest.Location));
+        }
+
+        private void GatherCapsule(Vector3 a, Vector3 b)
         {
             int count;
             while (true)
@@ -133,20 +162,8 @@ namespace BarPromenade
                 if (count < contactBuffer.Length) break;
                 Array.Resize(ref contactBuffer, contactBuffer.Length * 2);
             }
-            Vector3 segment = b - a;
-            float lengthSquared = segment.sqrMagnitude;
             for (int i = 0; i < count; i++)
-            {
-                Collider candidate = contactBuffer[i];
-                sampleContacts.Add(candidate);
-                float along = lengthSquared > .000001f ?
-                    Mathf.Clamp01(Vector3.Dot(candidate.bounds.center - a, segment) / lengthSquared) : 0f;
-                Vector3 bladePoint = a + segment * along;
-                Vector3 point = ClosestContactPoint(candidate, bladePoint, direction);
-                Vector3 normal = bladePoint - point;
-                if (normal.sqrMagnitude < .000001f) normal = -direction;
-                contactSurfaces[candidate] = new SurfaceContact(point, normal.normalized, direction, float.PositiveInfinity);
-            }
+                sampleContacts.Add(contactBuffer[i]);
         }
 
         private void GatherSweep(Vector3 from, Vector3 to)
@@ -163,37 +180,7 @@ namespace BarPromenade
                 Array.Resize(ref castBuffer, castBuffer.Length * 2);
             }
             for (int i = 0; i < count; i++)
-            {
-                RaycastHit hit = castBuffer[i];
-                sampleContacts.Add(hit.collider);
-                float fraction = hit.distance / distance;
-                if (contactSurfaces.TryGetValue(hit.collider, out SurfaceContact previous) && previous.SweepFraction <= fraction)
-                    continue;
-                Vector3 point = hit.distance > .00001f ? hit.point : ClosestContactPoint(hit.collider, from, delta / distance);
-                Vector3 normal = hit.normal.sqrMagnitude > .000001f ? hit.normal.normalized : -delta / distance;
-                contactSurfaces[hit.collider] = new SurfaceContact(point, normal, delta / distance, fraction);
-            }
-        }
-
-        private static Vector3 ClosestContactPoint(Collider collider, Vector3 point, Vector3 direction)
-        {
-            // CharacterController is the standing hurtbox. Use its capsule
-            // surface even when an overlap sample already lies inside it.
-            if (collider is CharacterController body)
-            {
-                Vector3 axis = body.transform.up, centre = body.transform.TransformPoint(body.center);
-                Vector3 scale = body.transform.lossyScale;
-                float radius = body.radius * Mathf.Max(Mathf.Abs(scale.x), Mathf.Abs(scale.z));
-                float halfSegment = Mathf.Max(0f, body.height * Mathf.Abs(scale.y) * .5f - radius);
-                Vector3 closestAxis = centre + axis * Mathf.Clamp(Vector3.Dot(point - centre, axis), -halfSegment, halfSegment);
-                Vector3 outward = point - closestAxis;
-                if (outward.sqrMagnitude < .000001f) outward = -direction;
-                return closestAxis + outward.normalized * radius;
-            }
-            // Non-convex arena meshes only stop attacks; Unity's closest-point
-            // API does not support their interior. Their metadata never wounds.
-            if (collider is MeshCollider mesh && !mesh.convex) return collider.ClosestPointOnBounds(point);
-            return collider.ClosestPoint(point);
+                sampleContacts.Add(castBuffer[i].collider);
         }
     }
 }

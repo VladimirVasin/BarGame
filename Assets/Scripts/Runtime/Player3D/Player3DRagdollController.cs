@@ -244,6 +244,8 @@ namespace BarPromenade
         public bool IsActive => IsSimulating || IsRecovering || IsFrozen;
         public int BodyCount => bodyList.Count;
         public IReadOnlyList<Rigidbody> Bodies => bodyList;
+        // Combat reads the measured anatomy without activating its physics shapes.
+        internal IReadOnlyDictionary<Collider, Player3DAnatomicalPart> AnatomicalColliders => partByCollider;
         public Rigidbody PelvisBody => GetBody(Player3DAnatomicalPart.Pelvis);
         public Rigidbody SpineBody => GetBody(Player3DAnatomicalPart.LowerTorso);
         public Rigidbody ChestBody => GetBody(Player3DAnatomicalPart.Torso);

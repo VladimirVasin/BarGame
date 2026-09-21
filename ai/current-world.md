@@ -6,12 +6,10 @@ Read [project-overview.md](project-overview.md) for the concise technical baseli
 for implementation decisions. This catalogue describes existing gameplay; the two
 world bibles still govern additions and changes.
 
-The loading presentation accepted on `2026-09-06` assigns one static painterly
-image to each directed edge of City ↔ MountainRoad ↔ AlpineVillage, with the
-existing progress bar moved to the bottom. A direct map transfer across the
-middle area uses its last leg's image. The village keeps its warm inhabited
-contrast; the paintings add no text, portrait, spoiler or new world fact.
-See art-bible §15a and the accepted architecture exception for the exact scope.
+Loading (`2026-09-06`): one static painting per directed City ↔ MountainRoad ↔
+AlpineVillage edge, bottom progress bar. Direct map transfers use the last leg.
+The village stays warm/inhabited; no text, portrait, spoiler or new world fact.
+Scope: art-bible §15a and the accepted architecture exception.
 
 ## Implemented MVP
 
@@ -156,14 +154,15 @@ The vertical slice contains:
   pedestrian positions. Operation-scoped City/Bar markers preserve later arrivals.
   Day one raises the mother's-house quest and map marker, closed on entry
   through door/map or at once when starting inside; no village signpost;
-- Combat Test: crowbar AI/target; free swings, breath: guard/Space
-  steps/.9 s LMB/RT charge (cap drain), stun regen. Fresh guard parries
-  lights; windup/whiff counters, return buffer. Sides: through flips/stopped
-  repeats; side step/off-line target wins. Low two-hand/high guard;
-  body/travel/yaw inertia, final-pose contacts. Hit-stop/shoves/HP/wounds/blood;
-  landing thud/pools grow 10 s, stay. Seeded AI; camera free 1.5 s;
-  W/S travel,A/D strafe; corner HUD. Pause freezes/cancels release;
-  R/unload clear; no story;
+- Combat Test: shared rig contacts, one HP bar; first zone wins once/swing.
+  Head x2 (50/80; capped below full HP), rear cone ±45° defeats; wounded
+  head can finish. Torso x1/rear x1.25, each arm x.5/leg x.75. Directions
+  follow posed bones; guard/parry precedes damage. Free alternating swings,
+  breath: guard/step/.9 s charge; stun regen, counters/buffer. Low two-hand/
+  high guard, inertia/hit-stop/shoves/wounds, landing thud/10 s lasting pools.
+  Seeded AI/target; camera frees after 1.5 s. W/S travel, A/D strafe,
+  Space step, LMB/RT charge/release, RMB guard; corner HUD. Pause freezes/
+  cancels release; R/unload clears; no story. Tuning: architecture notes;
 - the retained Home opening is reachable only by a legacy request: held bed loop,
   silent `05:59` clock with rare whole-display flicker, five-second input lock,
   then localized Wake Up/Quit. Wake sets `06:00`, runs the clock/alarm and hides
