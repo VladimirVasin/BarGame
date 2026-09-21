@@ -7,8 +7,8 @@ namespace BarPromenade.Tests.EditMode
 {
     /// <summary>
     /// Headless proof that the range's numbers leave no dominant habit: the turtle breaks,
-    /// the tap-guard runs dry, a read beats a spam, a rhythm does not, a held charge burns
-    /// out, a step earns its counter, and trades stay symmetric.
+    /// the tap-guard runs dry, a read beats a spam, a rhythm does not, a held charge
+    /// preserves breath, a step earns its counter, and trades stay symmetric.
     /// </summary>
     public sealed class CombatBalanceTests
     {
@@ -82,16 +82,14 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
-        public void AHeldChargeBurnsOutWithinSevenSecondsAndNeverFiresItself()
+        public void AHeldChargePreservesBreathAndNeverFiresItself()
         {
             var duel = new CombatDuelSimulator(new CombatPolicies.ChargeHolder(), new CombatPolicies.Turtle(), 5u);
             duel.Run(7f);
             Assert.That(duel.Actors[0].IsCharging, Is.True, "A held cap never fires by itself.");
-            Assert.That(duel.Actors[0].Stamina, Is.Zero.Within(.001f));
-            // .9 s to the cap, then (100 − 20) / 15 per second of overhold.
             MeleeCombatSettings s = MeleeCombatSettings.Crowbar;
-            float expected = s.ChargeSeconds + (s.MaxStamina - s.ChargeStaminaCost) / s.OverholdDrainPerSecond;
-            Assert.That(duel.BreathEmptyAt, Is.EqualTo(expected).Within(.02f));
+            Assert.That(duel.Actors[0].Stamina, Is.EqualTo(s.MaxStamina - s.ChargeStaminaCost).Within(.001f));
+            Assert.That(duel.BreathEmptyAt, Is.LessThan(0f));
             Assert.That(duel.Contacts[0], Is.Zero);
         }
 

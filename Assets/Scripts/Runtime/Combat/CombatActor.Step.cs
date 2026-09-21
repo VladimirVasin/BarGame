@@ -61,12 +61,14 @@ namespace BarPromenade
             stepDirection.Normalize();
             stepBlocked = false;
             reaction = null; sweepValid = false;
-            RetroAudio.PlayAt(RetroSfxId.FootstepConcrete, transform.position, .5f);
+            RetroAudio.PlayAt(RetroSfxId.FootstepConcrete, transform.position, .6f);
         }
 
         private void AdvanceStepMovement(float from, float to)
         {
             if (stepBlocked || stepDirection.sqrMagnitude < .5f || to <= from) return;
+            // Match the authored clip's smooth acceleration and braking on the
+            // unwarped duel clock, so the loaded sole stays planted throughout.
             float distance = State.Settings.StepDistance *
                 (Mathf.SmoothStep(0f, 1f, to) - Mathf.SmoothStep(0f, 1f, from));
             Vector3 moved;
@@ -85,6 +87,8 @@ namespace BarPromenade
             // settle at the actual position instead of completing a stride into
             // the obstacle. The rules still retain the full cost and commitment.
             if (Vector3.Dot(moved, stepDirection) + .001f < distance) stepBlocked = true;
+            if (!stepBlocked && from < 1f && to >= 1f)
+                RetroAudio.PlayAt(RetroSfxId.FootstepConcrete, transform.position, .75f);
         }
     }
 }

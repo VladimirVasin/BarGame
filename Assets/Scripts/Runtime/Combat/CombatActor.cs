@@ -335,7 +335,7 @@ namespace BarPromenade
 
         public void Present()
         {
-            if (ready == null || IsRagdollActive) return;
+            if (ready == null || IsRagdollActive || winnerPresentationReleased) return;
             // Pause temporarily owns input, not the combat rig. Retain the
             // sampled pose/transition so a paused read cannot release the clip.
             if (PauseMenuController.IsAnyPaused) return;

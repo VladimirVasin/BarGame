@@ -102,13 +102,13 @@ namespace BarPromenade
             {
                 targetLockAnchorPoint = Vector3.SmoothDamp(targetLockAnchorPoint, anchor,
                     ref targetLockAnchorVelocity, TargetLockSmoothTime, Mathf.Infinity, deltaTime);
-                targetLockAnchorPoint = anchor + Vector3.ClampMagnitude(targetLockAnchorPoint - anchor, .05f);
+                targetLockAnchorPoint = anchor + Vector3.ClampMagnitude(targetLockAnchorPoint - anchor, .02f);
                 targetLockYaw = Mathf.SmoothDampAngle(targetLockYaw, desiredYaw,
                     ref targetLockYawVelocity, TargetLockSmoothTime, Mathf.Infinity, deltaTime);
                 // Translation and yaw lag add together during a quick side step.
-                // Bound both so the smoothed view still clears the raised arm,
-                // even while the opponent remains exactly centred.
-                targetLockYaw = desiredYaw + Mathf.Clamp(Mathf.DeltaAngle(desiredYaw, targetLockYaw), -1.5f, 1.5f);
+                // Leave room for the next frame of the .8 m step, so
+                // the sight line clears the raised arm throughout the step.
+                targetLockYaw = desiredYaw + Mathf.Clamp(Mathf.DeltaAngle(desiredYaw, targetLockYaw), -.75f, .75f);
             }
             Quaternion orientation = Quaternion.Euler(0f, targetLockYaw, 0f);
             Vector3 forward = orientation * Vector3.forward;

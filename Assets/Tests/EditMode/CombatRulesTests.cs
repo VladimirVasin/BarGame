@@ -1174,15 +1174,14 @@ namespace BarPromenade.Tests.EditMode
         [Test]
         public void StepChecksAffordabilityBeforeGivingUpAHeldCharge()
         {
-            var actor = new MeleeCombatant();
+            var actor = new MeleeCombatant(new MeleeCombatSettings(maxStamina: S.ChargeStaminaCost));
             actor.RequestCharge();
             actor.Advance(S.ChargeSeconds);
-            actor.Advance((S.MaxStamina - S.ChargeStaminaCost) / S.OverholdDrainPerSecond + .01f);
             Assert.That(actor.Stamina, Is.Zero.Within(Eps));
             Assert.That(actor.TryStartStep(), Is.False, "An unaffordable step must not destroy the charge.");
             Assert.That(actor.IsCharging, Is.True);
             Assert.That(actor.Charge01, Is.EqualTo(1f).Within(Eps));
-            actor.Reset();
+            actor = new MeleeCombatant();
             actor.RequestCharge();
             actor.Advance(.45f);
             Assert.That(actor.TryStartStep(), Is.True);
@@ -1200,8 +1199,7 @@ namespace BarPromenade.Tests.EditMode
             float damage = S.Damage + S.ChargeDamageBonus * power;
             float blockCost = S.BlockCost + S.ChargeBlockCostBonus * power;
             float windup = S.WindupSeconds * (1f - power) + S.ChargedWindupSeconds * power;
-            float stamina = S.MaxStamina - S.ChargeStaminaCost * power -
-                Math.Max(0f, heldSeconds - S.ChargeSeconds) * S.OverholdDrainPerSecond;
+            float stamina = S.MaxStamina - S.ChargeStaminaCost * power;
             var actor = new MeleeCombatant();
             Assert.That(actor.RequestCharge(), Is.True);
             int sequence = actor.AttackSequence;
@@ -1241,7 +1239,7 @@ namespace BarPromenade.Tests.EditMode
         [TestCase(10f, .5f)]
         [TestCase(20f, 1f)]
         [TestCase(30f, 1f)]
-        public void LimitedBreathCapsChargeAndAHeldCapDrainsWithoutAutomaticRelease(float available, float limit)
+        public void LimitedBreathCapsChargeAndAHeldCapPreservesStaminaWithoutAutomaticRelease(float available, float limit)
         {
             var actor = new MeleeCombatant(new MeleeCombatSettings(maxStamina: available,
                 stepCost: Math.Min(S.StepCost, available)));
@@ -1249,29 +1247,40 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(actor.ChargeLimit01, Is.EqualTo(limit).Within(Eps));
             Assert.That(actor.Advance(10f).HasActiveWindow, Is.False);
             Assert.That(actor.Charge01, Is.EqualTo(limit).Within(Eps));
-            Assert.That(actor.Stamina, Is.Zero.Within(Eps), "A held cap burns breath down to nothing.");
+            float remainingStamina = available - S.ChargeStaminaCost * limit;
+            Assert.That(actor.Stamina, Is.EqualTo(remainingStamina).Within(Eps), "Only growing charge spends breath.");
             Assert.That(actor.IsCharging, Is.True);
             actor.Advance(10f);
-            Assert.That(actor.Stamina, Is.Zero.Within(Eps), "A held cap must neither drain below zero nor regenerate.");
+            Assert.That(actor.Stamina, Is.EqualTo(remainingStamina).Within(Eps), "A held cap must neither drain nor regenerate.");
             Assert.That(actor.IsCharging, Is.True, "It never fires by itself.");
             Assert.That(actor.ReleaseCharge(), Is.True);
             Assert.That(actor.AttackDamage, Is.EqualTo(S.Damage + S.ChargeDamageBonus * limit).Within(Eps));
         }
 
-        [Test]
-        public void OverholdDrainsAtASteadyRateOnlyAfterTheCap()
+        [TestCase(false)]
+        [TestCase(true)]
+        public void HeldMaximumPreservesStaminaUntilReleaseOrCancellation(bool release)
         {
             var actor = new MeleeCombatant();
             actor.RequestCharge();
             actor.Advance(S.ChargeSeconds);
-            Assert.That(actor.Stamina, Is.EqualTo(S.MaxStamina - S.ChargeStaminaCost).Within(Eps));
+            float heldStamina = S.MaxStamina - S.ChargeStaminaCost;
+            Assert.That(actor.Stamina, Is.EqualTo(heldStamina).Within(Eps));
             actor.Advance(1f);
-            Assert.That(actor.Stamina, Is.EqualTo(S.MaxStamina - S.ChargeStaminaCost - S.OverholdDrainPerSecond).Within(Eps));
+            Assert.That(actor.Stamina, Is.EqualTo(heldStamina).Within(Eps));
             actor.Advance(10f);
-            Assert.That(actor.Stamina, Is.Zero.Within(Eps));
+            Assert.That(actor.Stamina, Is.EqualTo(heldStamina).Within(Eps));
             Assert.That(actor.IsCharging, Is.True);
-            Assert.That(actor.ReleaseCharge(), Is.True);
-            Assert.That(actor.AttackPower, Is.EqualTo(1f).Within(Eps));
+            if (release)
+            {
+                Assert.That(actor.ReleaseCharge(), Is.True);
+                Assert.That(actor.AttackPower, Is.EqualTo(1f).Within(Eps));
+            }
+            else Assert.That(actor.CancelCharge(), Is.True);
+            actor.Advance(S.RegenerationDelaySeconds - .01f);
+            Assert.That(actor.Stamina, Is.EqualTo(heldStamina).Within(Eps), "Holding preserves the normal delay after exit.");
+            actor.Advance(.02f);
+            Assert.That(actor.Stamina, Is.EqualTo(heldStamina + S.StaminaPerSecond * .01f).Within(Eps));
         }
 
         [TestCase(30)]
@@ -1428,7 +1437,6 @@ namespace BarPromenade.Tests.EditMode
             Assert.Throws<ArgumentOutOfRangeException>(() => new MeleeCombatSettings(guardBreakDamageScale: value));
             Assert.Throws<ArgumentOutOfRangeException>(() => new MeleeCombatSettings(chainWindupSeconds: value));
             Assert.Throws<ArgumentOutOfRangeException>(() => new MeleeCombatSettings(stepAttackGraceSeconds: value));
-            Assert.Throws<ArgumentOutOfRangeException>(() => new MeleeCombatSettings(overholdDrainPerSecond: value));
             if (value != 0f)
                 Assert.Throws<ArgumentOutOfRangeException>(() => new MeleeCombatSettings(attackCost: value));
             else Assert.That(new MeleeCombatSettings(attackCost: 0f).AttackCost, Is.Zero, "Only the swing may be free.");

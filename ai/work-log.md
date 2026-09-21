@@ -5,47 +5,47 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 
 ## 2026-09-21 — Brawl v2
 
-- Anatomy: six posed zones and bone-local sides replace capsule damage;
-  first contact wins. Head x2 cannot defeat full HP; rear head ends the round
-  after protection. Arm/leg/back scaling shares one HP pool and impact data.
+- Anatomy: first/six posed bone-local zones replace capsule damage; one HP.
+  Head x2 cannot defeat full HP; rear head ends after protection;
+  arm/leg/back scale impact data.
   Checks: `CombatRulesTests.Anatomical*`,
   `Range_AnatomicalContactsResolveHeadAndRearHeadForBothRigs`.
-- Rules: free swings; breath pays guard/step/charge, regens through stuns
-  after own spends. Fresh press parries lights; counter-hit/whiff floor,
-  break keeps breath, buffered return/step-attack grace. Regen from ActiveEnd
-  preserves partition invariance; frontal contact consumes the press,
-  step/charge drops guard to prevent held re-arm. Check: `CombatRulesTests`.
+- Rules: free swings; breath pays guard/step/charge, regens in stuns after
+  own spends. Fresh press parries lights; counter/whiff floor, break keeps breath,
+  buffered return/step-attack grace. Regen from ActiveEnd is partition invariant;
+  frontal contact consumes press, step/charge drops guard. Check: `CombatRulesTests`.
 - Runtime: skipped 1/120 substeps own hit-stop, including lethal freeze;
   knockback/two-body block nudge, shoulder kick before clearance, HP .6/.5
   recovery/guard, Windup→Active whoosh, Active-only wall cancel. Camera/target
   free after fall; `PlaceRound` re-locks. Check: `CombatTestPlayModeTests`.
 - Seeded opponent: guard/step/charge intercept/feint/whiff punish/cover,
   winded retreat/corner fighting, probe/press moods; no accidental parry.
-- NPC export follows `build_step_actions()`; reachable .65 m stride/.24/.14
-  travel (`build-combat-test-3d-model.py --actions-only`).
-- `CombatTuning`; direct hits age guards/use heavies; evasion runs physics,
-  strafe ticks duel, foreign-owner setup releases stance; named habits in
-  `CombatDuelSimulator`. Check: `CombatBalanceTests`.
+- Space: .8 m/.36 s travel/.21 s settle; symmetric smoothstep replaces front-load.
+  Shared travel/clip clock; 15 breath/footfalls unchanged. Full Hold freezes breath.
+  .02m/.75° camera lag caps keep the raised arm clear.
+  Hold check: `Range_AutomaticUpdateConsumesMouseAndKeyboardWithoutGuiEvent`.
+  Step checks: `Range_TacticalRecoveryStepsAndFairOpponent`,
+  `AreaCaptureFixture.CombatTactics`, `build-combat-test-3d-model.py`.
+- `CombatTuning`: aged guard/heavy hits, physics evasion/duel strafe; foreign
+  owner releases stance; `CombatDuelSimulator` habits. Check: `CombatBalanceTests`.
 - Pre-09-09 docs archived (`check-docs.py`).
-- Charge arm: left-hand reach folded the overhead right arm; reachable
-  two-hand docks/forearm roll preserve the bend. Checks: `build-combat-test-3d-model.py`,
+- Charge arm: reachable docks/forearm roll stop the left hand folding the
+  overhead right arm. Checks: `build-combat-test-3d-model.py`,
   `AreaCaptureFixture.CombatChargeArmAlignment`.
 - Aftermath: floor thud/wound-anchored pools. Bleed used to stop before landing;
-  displayed geometry is now measured:
-  `Range_LethalContactsHandOffToRagdollPauseResetAndCleanUp` and frames.
+  check: `Range_LethalContactsHandOffToRagdollPauseResetAndCleanUp` and frames.
+- Winner releases combat at Ready→.35 s normal walk/right crowbar; no
+  reacquire until R. Check: `Range_VictoryRestoresOrdinaryWalkingAndResetRestoresCombat`.
+  Ready-gait probe fails in `Range_CombatWalkingUsesLiveInputAndMovingLegs`.
 - `MeleeSwing` commits charge-visible step cue/target bearing/last-fate rhythm;
   both banks have a backhand family. Mirrored bar's support hand is far:
   down-forward elbow pole keeps the wrist in the charge envelope. Checks:
   `CombatRulesTests`, `AreaCaptureFixture.CombatCharge`.
-- Body: C1 transitions retain velocity via atan2 at small angles;
-  travel/yaw accelerate/brake.
-  Both rigs' .42/.28 m stance plants from measured travel; a lifted foot
-  settles in Windup instead of ordinary gait replacing combat legs.
-  Hero: afraid/unskilled, raised shoulders/tucked chin, awkward effort/recovery;
-  stamina breath/tremor/visible-tell flinch/tense face. NPC calmer; HP separate,
-  input/windows/costs unchanged. One duel-clock pose serves render/contacts;
-  resampling/pausing never advances it. Art check:
-  `build-combat-test-3d-model.py` (`COMBAT TEST ART CONTRACT OK`). Check:
+- Body: C1 velocity/atan2, travel/yaw inertia; both .42/.28 m
+  travel stances, feet settle in Windup. Hero afraid/unskilled:
+  shoulders/chin/awkward effort, stamina breath/tremor/tell flinch/tense face.
+  NPC calmer; HP separate. Duel-clock render/contacts freeze on resample/pause.
+  Checks: `build-combat-test-3d-model.py`,
   `Range_CombatBodyInertiaKeepsBothRigsContinuousAndClockBound`.
 
 ## 2026-09-20 — Combat

@@ -154,16 +154,17 @@ The vertical slice contains:
   pedestrian positions. Operation-scoped City/Bar markers preserve later arrivals.
   Day one raises the mother's-house quest and map marker, closed on entry
   through door/map or at once when starting inside; no village signpost;
-- Combat Test: first posed zone/swing, one HP. Head x2 (50/80, below full HP),
-  rear ±45° defeats; torso x1/rear x1.25, arms x.5/legs x.75;
-  guard/parry first. Free swings; breath: guard/step/.9 s charge,
-  stun regen/counters/buffer. Stance .42/.28 m; duel-clock feet follow travel,
-  settle in Windup. Hero afraid/unskilled: uneven stamina breath/tremor/
-  seen-tell flinch, hard recovery; NPC calmer.
+- Combat Test: first zone/one HP; head x2 (50/80, <full HP),
+  rear±45° defeats; torso1/rear1.25/arms.5/legs.75; guard/parry first.
+  Free hits; guard/step/.9s charge cost breath; Hold freezes it;
+  Regen delay on release/interrupt; stun regen/counters/buffer.
+  .42/.28m; travel feet settle in Windup. Afraid/unskilled hero, calmer NPC.
   Low two-hand/high guard; inertia/hit-stop/shoves/wounds/thud/10 s lasting pools.
-  Seeded AI/target; free camera at 1.5 s. W/S move, A/D strafe, Space step,
-  LMB/RT charge/release, RMB guard; corner HUD. Pause freezes/cancels release;
-  R/unload clears; no story/speech;
+  AI/target; camera free 1.5s. Hero win: normal walk/crowbar.
+  W/S move, A/D strafe; Space .8m/.36+.21s/15 breath;
+  smoothstep, one travel/pose clock.
+  LMB/RT charge/release, RMB guard; pause freezes/cancels release;
+  R/unload clear; no story/speech;
 - the retained Home opening is reachable only by a legacy request: held bed loop,
   silent `05:59` clock with rare whole-display flicker, five-second input lock,
   then localized Wake Up/Quit. Wake sets `06:00`, runs the clock/alarm and hides

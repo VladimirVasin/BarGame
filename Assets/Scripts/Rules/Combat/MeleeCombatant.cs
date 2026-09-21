@@ -29,7 +29,7 @@ namespace BarPromenade
 
     /// <summary>Pure heavy-melee timing. Runtime owns input, facing and weapon collision.
     /// Advance receives only unpaused seconds; no world needs or story state are involved.
-    /// Strikes are free; the meter pays for guard, steps and charge holds, regenerates
+    /// Strikes are free; the meter pays for guard, steps and growing charge, regenerates
     /// through every stun and recovery, and is re-armed only by the actor's own spending.</summary>
     public sealed class MeleeCombatant
     {
@@ -370,13 +370,7 @@ namespace BarPromenade
                 double previous = charge;
                 charge = Math.Min(chargeLimit, charge + seconds / Settings.ChargeSeconds);
                 stamina = Math.Max(0d, stamina - (charge - previous) * Settings.ChargeStaminaCost);
-                // A full charge kept waiting burns breath at a steady rate and never fires by itself.
-                if (chargeLimit >= 1d)
-                {
-                    double capReachedAfter = Math.Max(0d, (1d - previous) * Settings.ChargeSeconds);
-                    double overhold = Math.Max(0d, seconds - capReachedAfter);
-                    stamina = Math.Max(0d, stamina - overhold * Settings.OverholdDrainPerSecond);
-                }
+                // Holding the reached cap preserves breath but never restores it or fires by itself.
                 regenerateAt = end + Settings.RegenerationDelaySeconds;
             }
             else if (IsAttacking)

@@ -387,11 +387,12 @@ namespace BarPromenade.Tests.PlayMode
                 for (int frame = 0; frame < FullChargeFrames + 18; frame++) yield return null;
                 Assert.That(root.Hero.State.IsCharging, Is.True, "A full held charge never auto-fires.");
                 Assert.That(root.Hero.State.Charge01, Is.EqualTo(1f).Within(.0001f));
-                // A capped hold keeps burning breath at the overhold rate instead of waiting for free.
-                float overhold = (FullChargeFrames + 18) / 60f - S.ChargeSeconds;
-                Assert.That(root.Hero.State.Stamina,
-                    Is.EqualTo(ChargedStamina(1f) - overhold * S.OverholdDrainPerSecond).Within(.6f));
-                Assert.That(root.Hero.State.Stamina, Is.LessThan(ChargedStamina(1f)));
+                Assert.That(root.Hero.State.Stamina, Is.EqualTo(ChargedStamina(1f)).Within(.001f));
+                // Wait past the regeneration delay: Hold permits neither spending nor recovery.
+                float heldStamina = root.Hero.State.Stamina;
+                for (int frame = 0; frame < 60; frame++) yield return null;
+                Assert.That(root.Hero.State.IsCharging, Is.True);
+                Assert.That(root.Hero.State.Stamina, Is.EqualTo(heldStamina).Within(.001f));
                 Assert.That(root.Opponent.State.Health, Is.EqualTo(S.MaxHealth));
                 input.Release(mouse.leftButton, queueEventOnly: true);
                 yield return null;
@@ -747,6 +748,78 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(Vector3.Dot(offset, forward), Is.LessThan(-.2f), "The camera stays behind the hero on the duel axis.");
             Assert.That(Vector3.Dot(offset, Vector3.Cross(Vector3.up, forward)), Is.GreaterThan(.15f),
                 "The camera stays over the right shoulder when the opponent crosses sides.");
+        }
+
+        [UnityTest]
+        public IEnumerator Range_VictoryRestoresOrdinaryWalkingAndResetRestoresCombat()
+        {
+            var input = new InputTestFixture();
+            Keyboard keyboard = null;
+            try
+            {
+                input.Setup();
+                keyboard = InputSystem.AddDevice<Keyboard>();
+                yield return SceneManager.LoadSceneAsync(SceneIds.MainMenu, LoadSceneMode.Single);
+                yield return EnterRange();
+                PlacePair(1.1f);
+                root.AutomaticSimulation = true;
+                var presentation = (Player3DCharacterPresentation)root.Player.Visual;
+                yield return StrikeToDefeat(root.Hero, root.Opponent);
+                yield return WaitFor(() => root.Hero.State.Phase == MeleePhase.Ready && root.Opponent.IsRagdollActive,
+                    "The winning hero never finished the lethal swing beside the fallen opponent.");
+                Assert.That(root.RoundFinished, Is.True);
+                Assert.That(presentation.OwnsClip(root.Hero), Is.False,
+                    "Completing the winning swing must release the combat torso and footwork owner.");
+                Assert.That(root.Hero.ActiveClipName, Is.Null.Or.Empty,
+                    "The standing winner must leave CombatReady/CombatRest instead of retaining a combat pose.");
+                Assert.That(root.Hero.SupportGripWeight, Is.Zero,
+                    "The free left arm must return to ordinary walking instead of holding the weapon in combat stance.");
+                Assert.That(root.Hero.RequestCharge(), Is.False,
+                    "Releasing presentation must not reopen the finished round's attack gate.");
+
+                // Walk away from the fallen body through live input, without
+                // a reset or teleport that could conceal a retained pose owner.
+                input.Press(keyboard.sKey, queueEventOnly: true);
+                for (int frame = 0; frame < 8; frame++) yield return null;
+                Vector3 start = root.Hero.transform.position;
+                Vector3 forward = root.Hero.transform.forward;
+                Transform pelvis = presentation.Registry.Anchors.Pelvis;
+                Vector3 pelvisStart = pelvis.position;
+                var walk = new WalkingLegProbe(root.Hero);
+                for (int frame = 0; frame < 24; frame++) { yield return null; walk.Sample(); }
+                Assert.That(Vector3.Dot(root.Hero.transform.position - start, forward), Is.LessThan(-.25f),
+                    WalkingDiagnostic("S after victory", start));
+                Assert.That(Vector3.Dot(pelvis.position - pelvisStart, forward), Is.LessThan(-.2f),
+                    "The winning hero's visible pelvis must follow its moving capsule.");
+                walk.AssertMoving(2f, "The winning hero must use ordinary animated walking after the round ends.");
+                Assert.That(presentation.IsClipActive, Is.False,
+                    "Post-victory movement must use ordinary full-body locomotion without a combat clip overlay.");
+                Assert.That(presentation.CurrentLocomotionState, Is.EqualTo(Player3DLocomotionState.WalkBack));
+                Assert.That(root.Hero.SupportGripWeight, Is.Zero);
+                CaptureInertiaFrame(root.Hero, "winner-walk", 0);
+                input.Release(keyboard.sKey, queueEventOnly: true);
+
+                input.Press(keyboard.rKey, queueEventOnly: true);
+                yield return null;
+                input.Release(keyboard.rKey, queueEventOnly: true);
+                yield return null;
+                Assert.That(root.RoundFinished, Is.False);
+                Assert.That(presentation.OwnsClip(root.Hero), Is.True,
+                    "R must restore combat presentation after the winner returned to ordinary walking.");
+                Assert.That(root.Hero.ActiveClipName, Does.Contain("CombatReady"));
+                Assert.That(root.Hero.SupportGripWeight, Is.GreaterThan(0f),
+                    "A new round must restore the combat support grip as well as the clip.");
+                Assert.That(root.Hero.RequestCharge(), Is.True,
+                    "R must reopen attacks as well as restore combat presentation.");
+                Assert.That(root.Hero.State.IsCharging, Is.True);
+                LogAssert.NoUnexpectedReceived();
+            }
+            finally
+            {
+                if (root != null) root.AutomaticSimulation = false;
+                if (keyboard != null && keyboard.added) InputSystem.RemoveDevice(keyboard);
+                input.TearDown();
+            }
         }
 
         [UnityTest]

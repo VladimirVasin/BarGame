@@ -6,6 +6,7 @@ namespace BarPromenade
     public sealed partial class CombatActor
     {
         private bool roundEnded;
+        private bool winnerPresentationReleased;
         private float defeatClock;
         private Vector3 defeatDirection, defeatPoint;
         private Rigidbody weaponBody;
@@ -36,9 +37,22 @@ namespace BarPromenade
             State.CancelCharge();
             State.SetBlocking(false);
             if (State.IsDefeated) { AdvanceDefeat(seconds); return; }
+            if (winnerPresentationReleased) { State.Advance(seconds); return; }
             // The winner finishes the visible swing without another damage window.
             AdvanceVisualClock(seconds);
             State.Advance(seconds);
+            if (hero != null && State.Phase == MeleePhase.Ready)
+            {
+                // Hand the whole rig back to ordinary locomotion once. A Rest
+                // clip with combat footwork would keep the winner shuffling.
+                bool ownedPose = hero.OwnsClip(this);
+                ReleasePresentation();
+                winnerPresentationReleased = true;
+                if (ownedPose) hero.BeginRecoveryPoseTransition(.35f);
+                // Keep the crowbar in the right hand without a combat torso pose.
+                handPose.SetGrip(false, 1f);
+                return;
+            }
             footwork?.Advance(seconds, State);
             Present();
         }
@@ -65,6 +79,7 @@ namespace BarPromenade
         private void ResetDefeat()
         {
             roundEnded = false;
+            winnerPresentationReleased = false;
             defeatClock = 0f;
             defeatDirection = defeatPoint = Vector3.zero;
             poseBlendAfterFrame = Time.frameCount + 1;

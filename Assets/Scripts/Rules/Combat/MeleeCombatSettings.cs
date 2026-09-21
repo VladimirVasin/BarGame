@@ -3,7 +3,7 @@ using System;
 namespace BarPromenade
 {
     /// <summary>One immutable tuning set shared by both participants on the test range.
-    /// Strikes are free; the single meter pays only for guard, steps and charge holds.</summary>
+    /// Strikes are free; the single meter pays only for guard, steps and growing charge.</summary>
     public sealed class MeleeCombatSettings
     {
         public static MeleeCombatSettings Crowbar { get; } = new MeleeCombatSettings();
@@ -16,8 +16,8 @@ namespace BarPromenade
             float staggerSeconds = 0.45f, float attackBufferSeconds = 0.20f,
             float hitRecoverySeconds = 0.22f, float blockRecoverySeconds = 0.40f,
             float obstacleRecoverySeconds = 0.50f, float guardImpactSeconds = 0.18f,
-            float stepCost = 15f, float stepTravelSeconds = 0.24f,
-            float stepRecoverySeconds = 0.14f, float stepDistance = 0.65f,
+            float stepCost = 15f, float stepTravelSeconds = 0.36f,
+            float stepRecoverySeconds = 0.21f, float stepDistance = 0.8f,
             float animationRecoverySeconds = 0.65f, float chargeSeconds = .9f,
             float chargeDamageBonus = 15f, float chargeStaminaCost = 20f,
             float chargeBlockCostBonus = 15f, float chargedWindupSeconds = .28f,
@@ -27,7 +27,7 @@ namespace BarPromenade
             float parryMaxPower = .5f, float counterHitStaggerBonus = .30f,
             float chargeStaggerBonus = .15f, float chargeGuardImpactBonus = .10f,
             float guardBreakDamageScale = .5f, float chainWindupSeconds = .22f,
-            float stepAttackGraceSeconds = .10f, float overholdDrainPerSecond = 15f)
+            float stepAttackGraceSeconds = .10f)
         {
             MaxHealth = Positive(maxHealth, nameof(maxHealth));
             MaxStamina = Positive(maxStamina, nameof(maxStamina));
@@ -69,7 +69,6 @@ namespace BarPromenade
             GuardBreakDamageScale = Positive(guardBreakDamageScale, nameof(guardBreakDamageScale));
             ChainWindupSeconds = Math.Min(WindupSeconds, Positive(chainWindupSeconds, nameof(chainWindupSeconds)));
             StepAttackGraceSeconds = Positive(stepAttackGraceSeconds, nameof(stepAttackGraceSeconds));
-            OverholdDrainPerSecond = Positive(overholdDrainPerSecond, nameof(overholdDrainPerSecond));
             if (AttackCost > MaxStamina) throw new ArgumentOutOfRangeException(nameof(attackCost));
             if (StepCost > MaxStamina) throw new ArgumentOutOfRangeException(nameof(stepCost));
             if (ParryMaxPower > 1f) throw new ArgumentOutOfRangeException(nameof(parryMaxPower));
@@ -134,7 +133,6 @@ namespace BarPromenade
         public float GuardBreakDamageScale { get; }
         public float ChainWindupSeconds { get; }
         public float StepAttackGraceSeconds { get; }
-        public float OverholdDrainPerSecond { get; }
         public float AttackDurationSeconds => WindupSeconds + ActiveSeconds + RecoverySeconds;
         public float AnimationAttackDurationSeconds => WindupSeconds + ActiveSeconds + AnimationRecoverySeconds;
         public float StepDurationSeconds => StepTravelSeconds + StepRecoverySeconds;

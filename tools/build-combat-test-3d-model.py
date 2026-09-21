@@ -85,9 +85,9 @@ STEP_CLIPS = (("CombatStepForward", (0., -1., 0.), "L"),
               ("CombatStepBackward", (0., 1., 0.), "R"),
               ("CombatStepLeft", (1., 0., 0.), "L"),
               ("CombatStepRight", (-1., 0., 0.), "R"))
-# The .65 m gameplay step keeps its .24 s travel. The wider base needs extra
+# The .80 m step travels for .36 s, then settles for .21 s. Its wider base needs extra
 # knee flexion during its opening/closing shuffle, never a longer planted leg.
-STEP_TRAVEL_SECONDS, STEP_SETTLE_SECONDS, STEP_DISTANCE = .24, .14, .65
+STEP_TRAVEL_SECONDS, STEP_SETTLE_SECONDS, STEP_DISTANCE = .36, .21, .80
 STEP_DURATION = round(STEP_TRAVEL_SECONDS + STEP_SETTLE_SECONDS, 2)
 SUPPORT_OFFSETS = {"L": (.115, -.130, 0.), "R": (-.115, .110, 0.)}
 SUPPORT_YAW_DEGREES = {"L": 8., "R": -14.}
@@ -840,7 +840,7 @@ class CombatBuilder(dialogue.DialogueBuilder):
                 self._reset_pose(); self._apply_pose(ready)
                 pelvis = rig.pose.bones["pelvis"]
                 weighted = pelvis.matrix.copy()
-                position = weighted.translation + direction * (.02 * load) + Vector((0., 0., -.145*load - .02*settle))
+                position = weighted.translation + direction * (.02 * load) + Vector((0., 0., -.26*load - .02*settle))
                 lean = Vector((0., 0., 1.)).rotation_difference((Vector((0., 0., 1.)) + direction*(.12*load)).normalized())
                 pelvis.matrix = Matrix.Translation(position) @ lean.to_matrix().to_4x4() @ weighted.to_3x3().to_4x4()
                 bpy.context.view_layer.update()

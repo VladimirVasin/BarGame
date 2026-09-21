@@ -8,25 +8,28 @@ Earlier notes: [`release-notes-2026-09.md`](archive/release-notes-2026-09.md).
 
 ### 2026-09-21 — Драка v2 на полигоне
 
-- Шесть зон: голова ×2, затылок — поражение; руки/ноги слабее, спина уязвимее;
+- Голова ×2, затылок — поражение; руки/ноги слабее, спина уязвимее;
   защита первая (`CombatRulesTests.Anatomical*`).
-- Удары бесплатны; дыхание — блок/шаг/заряд, возврат в откате/оглушении.
-  Свежий `ПКМ` парирует лёгкий; контр-удары/буфер. Пробитие: ½ урона,
-  дыхание цело (`CombatRulesTests`, `CombatBalanceTests`).
-- Стороны: прошедший меняет, остановленный повторяет; шаг вбок/противник
-  сбоку задают её (`AreaCaptureFixture.CombatCharge`).
-- Буфер 0,20 с; шаг 0,24 с → атака; стена ловит дугу. Стоп-кадр/отбросы/
-  толчок камеры/свист; тело громче стены (`CombatTestPlayModeTests`).
+- Удары бесплатны; силы — блок/шаг/заряд, возврат в откате/стане.
+  Свежий `ПКМ` парирует лёгкий; контр/буфер. Пробитие: ½ урона,
+  силы целы (`CombatRulesTests`, `CombatBalanceTests`).
+- Стороны: прошёл — смена, остановлен — повтор; шаг вбок/враг сбоку задают
+  (`AreaCaptureFixture.CombatCharge`).
+- Буфер 0,20 с; шаг → атака; стена ловит дугу. Стоп-кадр/отбросы/камера/свист
+  (`CombatTestPlayModeTests`).
+- Space плавнее: 0,8 м/0,57 с; Hold замораживает силы.
+  Проверено: `Range_TacticalRecoveryStepsAndFairOpponent`; Hold проверен:
+  `Range_AutomaticUpdateConsumesMouseAndKeyboardWithoutGuiEvent`.
 - ИИ: блок/шаг/перехват заряда/финт/прикрытие/наказание промаха/отступление
   (`build-combat-test-3d-model.py`).
-- Камера свободна через 1,5 с после падения; `R` берёт лок
+- Камера свободна через 1,5 с; `R` берёт лок
   (`Range_TargetLockedShoulderCameraTracksOpponentAndResets`).
-- Двуручный заряд без излома (`CombatChargeArmAlignment`).
+- Победа — обычный шаг. Проверено:
+  `Range_VictoryRestoresOrdinaryWalkingAndResetRestoresCombat`.
+- Заряд без излома (`CombatChargeArmAlignment`).
 - Лужа после приземления растёт 10 с и живёт до `R`; звук тела — от пола
   (`Range_LethalContactsHandOffToRagdollPauseResetAndCleanUp`).
-- Широкая стойка; стопы от пути, опора к удару. Герой боится,
-  неумел: зажат, дышит неровно, тяжело возвращает лом; NPC спокойнее.
-  Инерция/хват/контакты на общих часах; проверено
+- Стопы от пути; герой боится, NPC спокойнее. Инерция/хват/контакты синхронны
   `Range_CombatBodyInertiaKeepsBothRigsContinuousAndClockBound`.
 
 ### 2026-09-20 — Бой на полигоне

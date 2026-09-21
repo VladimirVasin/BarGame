@@ -87,7 +87,8 @@ namespace BarPromenade.Tests.PlayMode
                     legs.AssertMoving(2f, "A short step must move both real legs.");
                     for (int frame = 0; frame < 12; frame++) yield return null;
                     Assert.That(root.Hero.State.Phase, Is.EqualTo(MeleePhase.Ready), "Holding Space cannot repeat steps.");
-                    Assert.That(root.Hero.State.Stamina, Is.EqualTo(AfterStep).Within(.001f));
+                    Assert.That(root.Hero.State.Stamina, Is.GreaterThanOrEqualTo(AfterStep - .001f),
+                        "Holding Space cannot spend again; the longer step may have reached the regeneration delay.");
                     input.Release(keyboard.spaceKey, queueEventOnly: true);
                     yield return null;
                     root.AutomaticSimulation = false;

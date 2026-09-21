@@ -3,43 +3,38 @@
 ## Current facts
 
 - **Accepted — 2026-09-21, anatomical combat damage:**
-  Six posed bone-local zones, first/sequence; no motor capsule. Head x2
+  Six posed bone-local zones, first/sequence; no capsule. Head x2
   (50/80, cap .99MaxHP), rear±45° defeats; torso1/rear1.25/arms.5/legs.75.
-  Root-bearing guard/parry first; mutual hits freeze zone/direction/power.
-  One HP/defeat/ragdoll/R; no story (§6).
-
+  Root guard/parry first; mutual freeze: zone/direction/power.
+  One HP/defeat/ragdoll/R.
 - **Accepted — 2026-09-21, combat inertia:**
-  Both: C1 body/pose/contact, duel time; inertial travel/yaw.
-
+  C1 pose/contact, duel-time travel/yaw inertia.
 - **Accepted — 2026-09-21, frightened combat stance:**
-  User: .42/.28 m stance; actual-travel feet settle in Windup. Hero afraid/
-  unskilled, NPC calmer. Duel-clock stamina breath/tremor/seen-nearby-tell flinch;
-  HP separate, same input/timing/costs. CombatTest §6/art §15a.
-
+  .42/.28m; travel feet settle in Windup. Afraid/unskilled hero, calmer NPC.
+  Duel-clock stamina breath/tremor/seen-nearby-tell flinch; separate HP.
+- **Accepted — 2026-09-21, step/Hold:**
+  .8m/.36+.21s/15; smoothstep, one travel/pose clock; same footfalls.
+  Hold freezes breath; exit: regen delay.
 - **Accepted — 2026-09-20, two-hand combat hold:**
-  Low Ready/high Block, left opposed .16→.42 m, breath4 s;
-  `NpcHandPose` blend/injury; right Rest.
-
+  Low Ready/high Block, left opposed .16→.42m/breath4s;
+  Blend/injury; NPC right Rest.
+- **Accepted — 2026-09-21, victory:** Hero swing→normal walk; combat off until R.
 - **Accepted — 2026-09-21, brawl v2:**
-  Free hits; guard20/35/step15/charge20 (+15/s held); regen30/s/.6 s
-  in stuns/own spends. Fresh≤.12 parries lights/re-arm.35; counter+.30,
-  break½ dmg/.55, backhand.22, buffer.20, heavy.28; seeded AI/free postfall camera.
-
+  Free hits; guard20/35/charge20; regen30/s/.6s in stuns/own spends.
+  Fresh≤.12 light parry/rearm.35; counter+.30/break½ dmg/.55;
+  backhand.22/buffer.20/heavy.28; seeded AI/postfall freecam.
 - **Accepted — 2026-09-21, swing sides:**
-  Both charge fore/backhand; through flips/stopped repeats. Side step/target
-  >15° overrides, never strafe; equal dmg/time/cost.
-
+  Charge fore/backhand; through flips/stopped repeats; side step/target>15°
+  wins, not strafe; equal dmg/time/cost.
 - **Accepted architecture exception — 2026-09-20, combat injury:**
-  HP/directional pose/wounds/pools; block/miss dry; R/unload clears;
-  ragdoll wins; visual.
-
+  HP/directional pose/wounds/pools; dry block/miss; clear R/unload;
+  visual, ragdoll wins.
 - **Accepted — 2026-09-21, combat aftermath:**
-  Thud; blood lobes grow 10 s, stay.
-
+  Thud; blood lobes grow 10s, stay.
 - **Accepted architecture exception — 2026-09-19, isolated combat test:**
-  §6/§16.15/art §15a: `CombatTest`, no story/speech; shared hero/input,
-  mutual hits/vulnerable steps/fall/reset/shoulder-wall lock. W/S travel,
-  A/D strafe; winner walks; `MeleeCombatSettings`; opponent last.
+  §6/§16.15/art§15a: `CombatTest`, no story/speech; one hero/input;
+  mutual hits/vulnerable steps/fall/R/shoulder-wall lock. W/S move,
+  A/D strafe; opponent last.
 
 - **Accepted — 2026-09-16, street pool is the default NPC catalog:**
   User: default-only, new models join immediately. `DefaultNpcPopulation`:
