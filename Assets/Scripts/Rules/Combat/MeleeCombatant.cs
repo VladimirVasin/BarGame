@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace BarPromenade
 {
-    public enum MeleePhase { Ready, Windup, Active, Recovery, Stagger, GuardBroken, Defeated, GuardImpact, Step, Charging }
+    public enum MeleePhase { Ready, Windup, Active, Recovery, Stagger, GuardBroken, Defeated, GuardImpact, Step, Charging, KnockedDown, Rising }
     public enum MeleeHitResult { Ignored, Hit, Blocked, GuardBroken, Parried }
     public enum MeleeAttackOutcome { None, Miss, Hit, Blocked, Obstacle, Parried }
     public enum MeleeBufferedAction { None, Attack, Charge, Step }
@@ -56,6 +56,7 @@ namespace BarPromenade
         public float Health { get; private set; }
         public float Stamina => (float)stamina;
         public bool IsDefeated => Phase == MeleePhase.Defeated;
+        public bool IsKnockedDown => Phase == MeleePhase.KnockedDown || Phase == MeleePhase.Rising;
         public bool IsCharging => Phase == MeleePhase.Charging;
         public bool IsAttacking => Phase == MeleePhase.Windup || Phase == MeleePhase.Active || Phase == MeleePhase.Recovery;
         public bool IsBlocking => blockHeld && (Phase == MeleePhase.Ready || Phase == MeleePhase.GuardImpact);
@@ -139,7 +140,7 @@ namespace BarPromenade
         public void SetBlocking(bool held)
         {
             if (held) CancelCharge();
-            bool next = held && !IsDefeated;
+            bool next = held && !IsDefeated && !IsKnockedDown;
             if (next && !blockHeld) guardPressedAt = Phase == MeleePhase.Ready ? clock : double.NegativeInfinity;
             else if (!next && blockHeld) guardReleasedAt = clock;
             blockHeld = next;
@@ -503,6 +504,7 @@ namespace BarPromenade
             NonNegative(blockCost, nameof(blockCost));
             NonNegative(power, nameof(power));
             if (IsDefeated || damage == 0f) return MeleeHitResult.Ignored;
+            MeleePhase physicalPhase = Phase;
             advancedActiveWindow = chainArmed = false;
             bufferedAction = MeleeBufferedAction.None;
             ClearCharge();
@@ -555,16 +557,43 @@ namespace BarPromenade
                     (counterHit ? Settings.CounterHitStaggerBonus : 0d);
                 stunRemaining = Math.Max(Math.Max(stunRemaining, stun), swingRemaining);
                 stunDuration = stunRemaining;
-                Phase = guardBreak || retainGuardBreak ? MeleePhase.GuardBroken : MeleePhase.Stagger;
+                Phase = physicalPhase == MeleePhase.KnockedDown || physicalPhase == MeleePhase.Rising
+                    ? physicalPhase : guardBreak || retainGuardBreak ? MeleePhase.GuardBroken : MeleePhase.Stagger;
             }
             return guardBreak ? MeleeHitResult.GuardBroken : MeleeHitResult.Hit;
         }
 
         /// <summary>Yield to another presentation owner without refunding effort or replaying
         /// a suspended swing when that owner releases the character. Pause does not call this.</summary>
+        public void BeginKnockdown()
+        {
+            if (IsDefeated) return;
+            // Already collected reciprocal contacts keep their sequence. Future
+            // windows and buffered inputs are cancelled, without restoring HP.
+            DropGuard();
+            ClearCharge();
+            bufferedAction = MeleeBufferedAction.None;
+            advancedActiveWindow = chained = chainArmed = false;
+            attackElapsed = stepElapsed = stunRemaining = stunDuration = 0d;
+            stepEndedAt = double.NegativeInfinity;
+            Phase = MeleePhase.KnockedDown;
+        }
+
+        public void BeginRise()
+        {
+            if (IsKnockedDown) Phase = MeleePhase.Rising;
+        }
+
+        public void EndKnockdown()
+        {
+            if (!IsKnockedDown) return;
+            CancelAction();
+            Phase = MeleePhase.Ready;
+        }
+
         public void CancelAction()
         {
-            if (!IsDefeated) Phase = MeleePhase.Ready;
+            if (!IsDefeated && !IsKnockedDown) Phase = MeleePhase.Ready;
             attackElapsed = stepElapsed = stunRemaining = stunDuration = 0d;
             DropGuard();
             advancedActiveWindow = registeredContactWindow = chained = chainArmed = false;

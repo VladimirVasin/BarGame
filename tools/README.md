@@ -134,9 +134,7 @@ python tools/run-blender.py tools/build-city-pedestrian-3d-model.py --expect Ass
 The launcher checks the pinned Python/Blender, resets Blender startup state,
 enables nonzero exit codes for Python exceptions, propagates failure and checks
 that each expected file was refreshed and is nonempty (JSON must parse).
-Generators supporting `--validate-only` can instead use the launcher's option
-of that name. Existing direct-generator commands now also include
-`--python-exit-code 1`.
+Generators supporting `--validate-only` can use the launcher's option of that name.
 
 For generators with output-directory flags, repeat
 `--stage-output=--model-dir=Assets/path` (and the corresponding source, texture,
@@ -158,8 +156,9 @@ in `Captures` and does not publish. See [audio-vhs/README.md](audio-vhs/README.m
 Output: `Assets/Player3D/V2/Models/PlayerCharacter3DV2.{fbx,json}`.
 
 `build-combat-{test,blood}-3d-model.py`: launcher/`--validate-only`.
-Test: arena/crowbar/HeroV2/NPC; `--actions-only`: Ready/Block/Rest 4 s,
-two-hand contacts, per-side Charge/Heavy/Recoil. Blood: `--texture-only`.
+Test: `--actions-only` builds combat/rise banks; `--reuse-unchanged-actions`
+checks curve hashes; `--resume-npc-bank <checkpoint.blend>` resumes saved
+NPC actions. Blood: `--texture-only`.
 `Assets/Resources/{Combat,CombatBlood}`.
 
 `player_jacket_cloth.py --write` derives hem/cuff metadata only; `--check` verifies it.

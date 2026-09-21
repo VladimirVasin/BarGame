@@ -816,6 +816,66 @@
       },
       "runtime_contract": "final left cylinder solve after charge blend, injury and pose recovery; same shaft axis, opposed palms"
     },
+    "recovery": {
+      "lead_foot": "Left",
+      "markers": {
+        "CombatRiseProne": {
+          "floor_hand_start": 0.0,
+          "floor_hand_release": 0.28,
+          "knee_hand_start": 0.48,
+          "both_feet": 0.72,
+          "regrip_start": 0.66,
+          "regrip_contact": 0.9,
+          "ready": 1.0
+        },
+        "CombatRiseSupine": {
+          "floor_hand_start": 0.11,
+          "floor_hand_release": 0.15,
+          "free_balance_start": 0.15,
+          "both_feet": 0.0,
+          "regrip_start": 0.66,
+          "regrip_contact": 0.9,
+          "ready": 1.0
+        }
+      },
+      "clips": [
+        {
+          "name": "CombatRiseProne",
+          "duration_seconds": 2.4,
+          "minimum_hinge_degrees": 22.305401706476708,
+          "maximum_hinge_degrees": 129.56386644158786,
+          "minimum_knee_height_m": 0.027277454733848572,
+          "maximum_knee_span_m": 0.4044092893600464,
+          "minimum_knee_separation_m": 0.23667463660240173,
+          "maximum_sample_travel_m": 0.024173048019234526,
+          "maximum_frame_travel_60hz_m": 0.04028841336539088,
+          "maximum_rotation_60hz_degrees": 7.041912227678453,
+          "maximum_length_error_m": 3.270090305207418e-07,
+          "maximum_contact_error_m": 8.728888586584198e-06,
+          "minimum_weapon_height_m": 0.32190728187561035,
+          "maximum_unsupported_transfer_seconds": 0.0
+        },
+        {
+          "name": "CombatRiseSupine",
+          "duration_seconds": 3.2,
+          "minimum_hinge_degrees": 22.99343227478148,
+          "maximum_hinge_degrees": 129.39143148580172,
+          "minimum_knee_height_m": 0.27951931953430176,
+          "maximum_knee_span_m": 0.33321478962898254,
+          "minimum_knee_separation_m": 0.2740108519792557,
+          "maximum_sample_travel_m": 0.024501990096407064,
+          "maximum_frame_travel_60hz_m": 0.04083665016067844,
+          "maximum_rotation_60hz_degrees": 12.181376291931326,
+          "maximum_length_error_m": 2.291965187639633e-07,
+          "maximum_contact_error_m": 7.351937561573196e-06,
+          "minimum_weapon_height_m": -0.006832234561443329,
+          "maximum_unsupported_transfer_seconds": 0.0
+        }
+      ],
+      "endpoint": "CombatReady",
+      "root_motion": false,
+      "hand_sequence": "prone left floor -> left knee -> shaft; supine left floor -> balance -> shaft; right retains weapon"
+    },
     "profile": "frightened_novice",
     "step_clips": [
       {
@@ -1725,6 +1785,66 @@
           "R": 49.389610152549956
         },
         "runtime_contract": "final left cylinder solve after charge blend, injury and pose recovery; same shaft axis, opposed palms"
+      },
+      "recovery": {
+        "lead_foot": "Left",
+        "markers": {
+          "CombatRiseProne": {
+            "floor_hand_start": 0.0,
+            "floor_hand_release": 0.28,
+            "knee_hand_start": 0.48,
+            "both_feet": 0.72,
+            "regrip_start": 0.66,
+            "regrip_contact": 0.9,
+            "ready": 1.0
+          },
+          "CombatRiseSupine": {
+            "floor_hand_start": 0.11,
+            "floor_hand_release": 0.15,
+            "free_balance_start": 0.15,
+            "both_feet": 0.0,
+            "regrip_start": 0.66,
+            "regrip_contact": 0.9,
+            "ready": 1.0
+          }
+        },
+        "clips": [
+          {
+            "name": "CombatRiseProne",
+            "duration_seconds": 2.4,
+            "minimum_hinge_degrees": 24.419077169670732,
+            "maximum_hinge_degrees": 129.56386644158786,
+            "minimum_knee_height_m": 0.027277454733848572,
+            "maximum_knee_span_m": 0.4044092893600464,
+            "minimum_knee_separation_m": 0.23667463660240173,
+            "maximum_sample_travel_m": 0.024173048019234526,
+            "maximum_frame_travel_60hz_m": 0.04028841336539088,
+            "maximum_rotation_60hz_degrees": 7.041912227678453,
+            "maximum_length_error_m": 2.669961470802562e-07,
+            "maximum_contact_error_m": 8.728888586584198e-06,
+            "minimum_weapon_height_m": 0.32190752029418945,
+            "maximum_unsupported_transfer_seconds": 0.0
+          },
+          {
+            "name": "CombatRiseSupine",
+            "duration_seconds": 3.2,
+            "minimum_hinge_degrees": 22.99343227478148,
+            "maximum_hinge_degrees": 129.39143148580172,
+            "minimum_knee_height_m": 0.27951931953430176,
+            "maximum_knee_span_m": 0.33321478962898254,
+            "minimum_knee_separation_m": 0.2740108519792557,
+            "maximum_sample_travel_m": 0.024549769757101207,
+            "maximum_frame_travel_60hz_m": 0.04091628292850201,
+            "maximum_rotation_60hz_degrees": 12.181376291931326,
+            "maximum_length_error_m": 2.291965187639633e-07,
+            "maximum_contact_error_m": 7.351937561573196e-06,
+            "minimum_weapon_height_m": 0.0018145069479942322,
+            "maximum_unsupported_transfer_seconds": 0.0
+          }
+        ],
+        "endpoint": "CombatReady",
+        "root_motion": false,
+        "hand_sequence": "prone left floor -> left knee -> shaft; supine left floor -> balance -> shaft; right retains weapon"
       },
       "profile": "sparring_opponent",
       "step_clips": [

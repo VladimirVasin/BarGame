@@ -15,11 +15,13 @@ namespace BarPromenade
         {
             internal readonly Vector3 Point, Normal, Direction;
             internal readonly float Fraction;
+            internal readonly Player3DAnatomicalPart Part;
+            internal readonly Vector3 LocalPoint;
             internal readonly MeleeHitLocation Location;
 
             internal Hit(Vector3 point, Vector3 normal, Vector3 direction, float fraction,
-                MeleeHitLocation location)
-            { Point = point; Normal = normal; Direction = direction; Fraction = fraction; Location = location; }
+                MeleeHitLocation location, Player3DAnatomicalPart part, Vector3 localPoint)
+            { Point = point; Normal = normal; Direction = direction; Fraction = fraction; Location = location; Part = part; LocalPoint = localPoint; }
         }
 
         internal CombatHurtboxes(Transform rigRoot, Transform actorFrame, Player3DRagdollController ragdoll)
@@ -50,13 +52,13 @@ namespace BarPromenade
                 Transform bone = collider.transform.parent;
                 if (!bindPoses.TryGetValue(bone, out Matrix4x4 bind))
                     throw new InvalidOperationException("Combat anatomy lacks a skin bind pose for " + bone.name);
-                measured.Add(new Shape(collider, bone, Region(entry.Value), bind, actorFrame));
+                measured.Add(new Shape(collider, bone, entry.Value, Region(entry.Value), bind, actorFrame));
             }
             Transform neck = FindBone("neck"), head = FindBone("head");
             Vector3 neckStart = bindPoses[neck].GetColumn(3), neckEnd = bindPoses[head].GetColumn(3);
             // Ragdoll joins head straight to chest and has no neck collision. Its exposed
             // neck remains a torso contact; this query-only capsule never enters PhysX.
-            measured.Add(new Shape(neck, MeleeBodyRegion.Torso, bindPoses[neck], actorFrame,
+            measured.Add(new Shape(neck, Player3DAnatomicalPart.Neck, MeleeBodyRegion.Torso, bindPoses[neck], actorFrame,
                 neckStart, neckEnd, Vector3.Distance(neckStart, neckEnd) * .6f));
             AddHand("hand.L", "forearm.L", MeleeBodyRegion.LeftArm);
             AddHand("hand.R", "forearm.R", MeleeBodyRegion.RightArm);
@@ -71,7 +73,7 @@ namespace BarPromenade
                 Vector3 wrist = handBind.GetColumn(3), elbow = bindPoses[forearm].GetColumn(3);
                 float radius = Vector3.Distance(wrist, elbow) * .22f;
                 Vector3 center = wrist + (wrist - elbow).normalized * (radius * .6f);
-                measured.Add(new Shape(hand, region, handBind, actorFrame, center, radius));
+                measured.Add(new Shape(hand, handName.EndsWith(".L", StringComparison.Ordinal) ? Player3DAnatomicalPart.LeftHand : Player3DAnatomicalPart.RightHand, region, handBind, actorFrame, center, radius));
             }
 
             Transform FindBone(string name)
@@ -118,7 +120,7 @@ namespace BarPromenade
                 MeleeHitLocation location = MeleeHitLocation.FromLocalSurface(shape.Region,
                     Vector3.Dot(offset, shape.Right), Vector3.Dot(offset, shape.Up), Vector3.Dot(offset, shape.Forward));
                 first = fraction;
-                hit = new Hit(point, normal, direction, fraction, location);
+                hit = new Hit(point, normal, direction, fraction, location, shape.Part, shape.WorldToBone.MultiplyPoint3x4(point));
                 found = true;
             }
             return found;
@@ -157,14 +159,15 @@ namespace BarPromenade
         {
             private readonly Transform geometry, bone;
             private readonly MeleeBodyRegion region;
+            private readonly Player3DAnatomicalPart part;
             private readonly Vector3 localForward, localUp, center, halfSize, customHalfAxis;
             private readonly float radius, halfHeight;
             private readonly int capsuleAxis;
             private readonly bool box, customCapsule;
 
-            internal Shape(Collider collider, Transform bone, MeleeBodyRegion region, Matrix4x4 bind, Transform actor)
+            internal Shape(Collider collider, Transform bone, Player3DAnatomicalPart part, MeleeBodyRegion region, Matrix4x4 bind, Transform actor)
             {
-                geometry = collider.transform; this.bone = bone; this.region = region;
+                geometry = collider.transform; this.bone = bone; this.part = part; this.region = region;
                 localForward = bind.inverse.MultiplyVector(actor.forward).normalized;
                 localUp = bind.inverse.MultiplyVector(actor.up).normalized;
                 if (collider is BoxCollider cube)
@@ -174,10 +177,10 @@ namespace BarPromenade
                 else throw new InvalidOperationException("Unsupported combat anatomical collider: " + collider.GetType().Name);
             }
 
-            internal Shape(Transform hand, MeleeBodyRegion region, Matrix4x4 bind, Transform actor,
+            internal Shape(Transform hand, Player3DAnatomicalPart part, MeleeBodyRegion region, Matrix4x4 bind, Transform actor,
                 Vector3 worldCenter, float worldRadius)
             {
-                geometry = bone = hand; this.region = region;
+                geometry = bone = hand; this.part = part; this.region = region;
                 localForward = bind.inverse.MultiplyVector(actor.forward).normalized;
                 localUp = bind.inverse.MultiplyVector(actor.up).normalized;
                 center = bind.inverse.MultiplyPoint3x4(worldCenter);
@@ -188,9 +191,9 @@ namespace BarPromenade
                 halfHeight = 0f; capsuleAxis = 1;
             }
 
-            internal Shape(Transform bone, MeleeBodyRegion region, Matrix4x4 bind, Transform actor,
+            internal Shape(Transform bone, Player3DAnatomicalPart part, MeleeBodyRegion region, Matrix4x4 bind, Transform actor,
                 Vector3 start, Vector3 end, float worldRadius)
-                : this(bone, region, bind, actor, (start + end) * .5f, worldRadius)
+                : this(bone, part, region, bind, actor, (start + end) * .5f, worldRadius)
             {
                 customCapsule = true;
                 customHalfAxis = bind.inverse.MultiplyVector((end - start) * .5f);
@@ -216,7 +219,7 @@ namespace BarPromenade
                     worldRadius = radius * Mathf.Max(scale.x, Mathf.Max(scale.y, scale.z));
                     halfSegment = Mathf.Max(0f, halfAxis.magnitude - worldRadius);
                 }
-                return new Snapshot(region, geometry.TransformPoint(center), forward, up, box,
+                return new Snapshot(part, bone.worldToLocalMatrix, region, geometry.TransformPoint(center), forward, up, box,
                     x.normalized, y.normalized, z.normalized, Vector3.Scale(halfSize, scale),
                     axis, worldRadius, halfSegment);
             }
@@ -225,16 +228,18 @@ namespace BarPromenade
         private readonly struct Snapshot
         {
             internal readonly MeleeBodyRegion Region;
+            internal readonly Player3DAnatomicalPart Part;
+            internal readonly Matrix4x4 WorldToBone;
             internal readonly Vector3 Center, Forward, Up, Right;
             internal readonly float BoundingRadius;
             private readonly bool box;
             private readonly Vector3 x, y, z, halfSize, axis;
             private readonly float radius, halfSegment;
 
-            internal Snapshot(MeleeBodyRegion region, Vector3 center, Vector3 forward, Vector3 up, bool box,
+            internal Snapshot(Player3DAnatomicalPart part, Matrix4x4 worldToBone, MeleeBodyRegion region, Vector3 center, Vector3 forward, Vector3 up, bool box,
                 Vector3 x, Vector3 y, Vector3 z, Vector3 halfSize, Vector3 axis, float radius, float halfSegment)
             {
-                Region = region; Center = center; Forward = forward; Up = up; Right = Vector3.Cross(up, forward).normalized;
+                Part = part; WorldToBone = worldToBone; Region = region; Center = center; Forward = forward; Up = up; Right = Vector3.Cross(up, forward).normalized;
                 this.box = box; this.x = x; this.y = y; this.z = z; this.halfSize = halfSize;
                 this.axis = axis; this.radius = radius; this.halfSegment = halfSegment;
                 BoundingRadius = box ? halfSize.magnitude : radius + halfSegment;

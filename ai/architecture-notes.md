@@ -2,42 +2,56 @@
 
 ## Current facts
 
+- **Accepted — 2026-09-21, impact balance and recoverable knockdown:**
+  `CombatTest`: impulse/root/bone/catch-step/left-release clock.
+  Both rigs rise→Ready; soles gate blends/regrip; one left owner.
+  Post-left body/floor/wall gates keep right attachment; 8-segment
+  `CombatWeaponGeometry`, all modes. Held mass→forearm; release restores
+  mass/inertia; hand ignores expire. Drop sweeps disabled opponent anatomy
+  beyond capsule. Forearm pronation/live elbow rebase, no bone writes:
+  combat -5..150/side±8°, later -5..120. Separate defeat; pause/hit-stop freeze;
+  R/unload clears. Banks unpublished/Unity pending.
 - **Accepted — 2026-09-21, anatomical combat damage:**
-  Six posed bone-local zones, first/sequence; no capsule. Head x2
-  (50/80, cap .99MaxHP), rear±45° defeats; torso1/rear1.25/arms.5/legs.75.
-  Root guard/parry first; mutual freeze: zone/direction/power.
-  One HP/defeat/ragdoll/R.
+  Six posed bone-local zones, first/sequence; head x2 (50/80, cap .99MaxHP),
+  rear±45° defeats; torso1/rear1.25/arms.5/legs.75. Guard/parry first;
+  mutual frozen zone/direction/power; one HP/ragdoll/R.
 - **Accepted — 2026-09-21, combat inertia:**
-  C1 pose/contact, duel-time travel/yaw inertia on one table: recovery
+  C1 pose/contact; duel-clock travel/yaw table: recovery
   .15→.75, stun .35, arc 0; AI plants charge/windup, hero .2.
 - **Accepted — 2026-09-21, frightened combat stance:**
-  .42/.28m; travel feet settle in Windup. Afraid/unskilled hero, calmer NPC.
-  Duel-clock stamina breath/tremor/seen-nearby-tell flinch; separate HP.
+  .42/.28m; feet settle in Windup. Afraid/unskilled hero, calmer NPC.
+  Duel-clock breath/tremor/seen-nearby-tell flinch.
 - **Accepted — 2026-09-21, step/Hold:**
-  .8m/.36+.21s/15; smoothstep, one travel/pose clock; same footfalls.
-  Hold freezes breath; exit: regen delay.
+  .8m/.36+.21s/15; smoothstep travel/pose clock/footfalls.
+  Hold freezes breath; exit regen delay.
 - **Accepted — 2026-09-20, two-hand combat hold:**
-  Low Ready/high Block, left opposed .16→.42m/breath4s;
-  Blend/injury; NPC right Rest.
+  `CombatReady`/`CombatBlock`/attacks/recoils support left;
+  `CombatHit`/`CombatGuardBreak`/`CombatDefeat` release. Low Ready/high Block,
+  opposed left .16→.42m/breath4s; blend/injury; NPC right Rest.
+  Bounded subdivided L fallback in authoring/runtime; same gates.
 - **Accepted — 2026-09-21, victory:** Hero swing→normal walk; combat off until R.
 - **Accepted — 2026-09-21, brawl v2:**
   Free hits; guard20/35/charge20; regen30/s/.6s in stuns/own spends.
   Fresh≤.12 light parry/rearm.35; counter+.30/break½ dmg/.55;
   backhand.22/buffer.20/heavy.28; seeded AI/postfall freecam.
 - **Accepted — 2026-09-21, swing sides:**
-  Charge fore/backhand; through flips/stopped repeats; side step/target>15°
-  wins, not strafe; equal dmg/time/cost.
+  Fore/backhand: through flips/stopped repeats; step/target>15°, not strafe.
+  Equal dmg/time/cost. Both Attack upper(t+q*.18*(1-smooth(t/.45))), lower(t),
+  charge upper(.18q); q power/duration kept; Forehand Light copy.
+  Backhand DAG: R elbow/hand roll; .56 reach≥.95, free elbow;
+  Both recoils invert .56→Ready0/.48s; C1/no dwell (WIP).
+  Ordinary: 45° shoulder search; same wrist/core/speed/clearance gates.
 - **Accepted architecture exception — 2026-09-20, combat injury:**
   HP/directional pose/wounds/pools; dry block/miss; clear R/unload;
   visual, ragdoll wins.
 - **Accepted — 2026-09-21, combat aftermath:**
   Thud; blood lobes grow 10s, stay.
 - **Accepted architecture exception — 2026-09-21, polygon taunt:** `E` over
-  the settled terminal-defeat body hosts the Home toilet first-person action
-  (view/timeline/stream/residue) through `IHomeToiletViewHost`; guided walk to
-  a body-relative dock, aim solved onto the body; marks on ragdoll bones/floor
-  until R (`HomeUrineResidue` scope); crowbar to the left grip and back; silent
-  §21-exempt prompt, no speech/reaction/reward; sixth first-person view.
+  a settled terminal-defeat body reuses Home's first-person toilet
+  view/timeline/stream/residue via `IHomeToiletViewHost`. Guided walk to a
+  body-relative dock; aim solved onto body, bone/floor marks until R
+  (`HomeUrineResidue` scope); crowbar left and back. Silent §21-exempt prompt,
+  no speech/reaction/reward; sixth first-person view.
 - **Accepted architecture exception — 2026-09-19, isolated combat test:**
   §6/§16.15/art§15a: `CombatTest`, no story/speech; one hero/input;
   mutual hits/vulnerable steps/fall/R/shoulder-wall lock. W/S move,
@@ -7914,22 +7928,9 @@
   (kept, registered, and still the path when there is no ragdoll); the shadow
   slides along the fall's own axis (`PlayerPresentationMetrics.FallAxis`).
   `Player3DCharacterPresentation.SetMotion` blends no gait under a topple's
-  root drift. (4) THE RISE: `PlayerRiseModel` is pure and seeded
-  (`EpisodeSeed ^ 0x51AE`) with every draw at construction — `Settling` (the
-  ragdoll under `0.15 m/s` for `0.25 s`, at least `0.6 s`, at most `2.5 s`),
-  `Stunned` (`0.5 → 2.0 s` by level, `±30 %`), `Stirring` (`0.6–1.0 s`: the
-  frozen body blends into the clip's brace, the hands go to the floor, the head
-  lifts), `PushingUp` (`0.8–1.2 s` to all fours with `0–2` slumps of `0.45 s`
-  that run the clip back `0.06` and dip the pelvis `6 cm`; never two under
-  level 60, never any sober), `Kneeling` (`0.6–0.9 s`: the lead boot — the
-  side he lies on — steps `0.30 m` forward, the same hand goes to the knee),
-  `Standing` (`0.8–1.2 s`: the ordinary leg solve fades in over the first
-  `40 %`, the hands let go over `0.3 s`, a `4°` wobble in the last `30 %`
-  whose last swing, halved, is the fresh balance model's first push). The
-  authored Rise clip supplies the trunk and is SCRUBBED by the model
-  (`ClipTime`); the late layer's `ApplyRise` draws the limbs on top with the
-  wall hand's two-bone solver (`ApplyArmReach`, now both hands) and the lead
-  boot to a probed floor. Root reconciliation at the first stirring frame: the
+  root drift. (4) THE RISE: the seeded `PlayerRiseModel` owns settling and
+  support stages, with the pose-dependent routes in the accepted 2026-09-06
+  recovery decision. Root reconciliation at the first stirring frame: the
   ragdoll freezes and reports the pelvis, the chest and the shoulder heights
   (the lower shoulder picks the clip side, `6 cm` dead band, the fall side on
   a tie); `Rise{Side}(0)` goes on the bones so the authored lying frame can be

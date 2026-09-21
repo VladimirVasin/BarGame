@@ -9,13 +9,14 @@ namespace BarPromenade
         private readonly SwingClips[] swings = new SwingClips[2];
         private Vector3[] npcReleasePositions;
         private Quaternion[] npcReleaseRotations;
+        private bool[] npcReleaseUpperBody;
         private SwingClips Current => swings[(int)State.Swing];
         private AnimationClip ReleaseClip => State.AttackPower > 0f ? Current.ReleaseLight : Current.Attack;
         private bool IsRecoil(AnimationClip clip) => clip != null && (clip == swings[0].Recoil || clip == swings[1].Recoil);
 
         public bool RequestCharge()
         {
-            if (roundEnded || !IsAvailable || !GameInput.CanRead(GameInputContext.Gameplay)) return false;
+            if (roundEnded || !IsAvailable || !HasTwoHandSupport || !GameInput.CanRead(GameInputContext.Gameplay)) return false;
             if (!State.RequestCharge()) return false;
             if (State.IsCharging) { reaction = null; sweepValid = false; }
             Present();
@@ -24,7 +25,7 @@ namespace BarPromenade
 
         public bool ReleaseCharge()
         {
-            if (roundEnded || !IsAvailable || !GameInput.CanRead(GameInputContext.Gameplay) || !State.ReleaseCharge()) return false;
+            if (roundEnded || !IsAvailable || !HasTwoHandSupport || !GameInput.CanRead(GameInputContext.Gameplay) || !State.ReleaseCharge()) return false;
             if (State.IsAttacking) { reaction = null; sweepValid = false; }
             Present();
             return true;
@@ -58,40 +59,47 @@ namespace BarPromenade
         {
             npcReleasePositions = new Vector3[npcPoseBones.Length];
             npcReleaseRotations = new Quaternion[npcPoseBones.Length];
+            npcReleaseUpperBody = new bool[npcPoseBones.Length];
+            Transform spine = null;
+            foreach (Transform bone in npcPoseBones)
+                if (bone.name == "spine") { spine = bone; break; }
+            for (int i = 0; i < npcPoseBones.Length; i++)
+                npcReleaseUpperBody[i] = spine != null && npcPoseBones[i].IsChildOf(spine);
         }
 
         private void SampleHeroRelease(float progress)
         {
-            if (State.AttackPower > 0f)
-                hero.SampleOwnedClipBlend(this, Current.ReleaseHeavy.name, State.AttackPower, progress);
-            else hero.SampleOwnedClip(this, progress);
+            hero.SampleOwnedClipUpperTime(this, Current.Attack.name, progress,
+                CombatAssetProvider.ReleaseSourceSeconds(progress * Current.Attack.length, State.AttackPower) / Current.Attack.length);
         }
 
         private void SampleHeroCharge()
         {
-            // The side's charge(0) is its light release's first pose. Use the
-            // same Playable blend as release: imported quaternion curves
-            // and Unity's mixer do not interpolate intermediate weights alike.
-            hero.SampleOwnedClipBlend(this, Current.ReleaseHeavy.name, State.Charge01, 0f);
+            hero.SampleOwnedClipUpperTime(this, Current.Attack.name, 0f,
+                CombatAssetProvider.ReleaseSourceSeconds(0f, State.Charge01) / Current.Attack.length);
         }
 
         private void SampleNpcRelease(float progress)
         {
-            AnimationClip release = ReleaseClip, heavy = Current.ReleaseHeavy;
-            release.SampleAnimation(npc.Animator.gameObject, progress * release.length);
-            float power = State.AttackPower;
-            if (power <= 0f) return;
+            SampleNpcReleasePose(progress * Current.Attack.length, State.AttackPower);
+        }
+
+        private void SampleNpcReleasePose(float seconds, float power)
+        {
+            AnimationClip clip = Current.Attack;
+            clip.SampleAnimation(npc.Animator.gameObject, seconds);
             for (int i = 0; i < npcPoseBones.Length; i++)
             {
+                if (npcReleaseUpperBody[i]) continue;
                 npcReleasePositions[i] = npcPoseBones[i].localPosition;
                 npcReleaseRotations[i] = npcPoseBones[i].localRotation;
             }
-            heavy.SampleAnimation(npc.Animator.gameObject, progress * heavy.length);
+            clip.SampleAnimation(npc.Animator.gameObject, CombatAssetProvider.ReleaseSourceSeconds(seconds, power));
             for (int i = 0; i < npcPoseBones.Length; i++)
             {
-                Transform bone = npcPoseBones[i];
-                bone.localPosition = Vector3.Lerp(npcReleasePositions[i], bone.localPosition, power);
-                bone.localRotation = Quaternion.Slerp(npcReleaseRotations[i], bone.localRotation, power);
+                if (npcReleaseUpperBody[i]) continue;
+                npcPoseBones[i].localPosition = npcReleasePositions[i];
+                npcPoseBones[i].localRotation = npcReleaseRotations[i];
             }
         }
     }

@@ -6,6 +6,7 @@ namespace BarPromenade
 {
     /// <summary>Round-local ownership of the existing anatomical ragdoll, on either combat rig.</summary>
     [DisallowMultipleComponent]
+    [DefaultExecutionOrder(200)]
     public sealed class CombatRagdoll : MonoBehaviour
     {
         private Player3DRagdollController physicsController;
@@ -14,14 +15,22 @@ namespace BarPromenade
         private PlayerBalanceController balance;
         private VillageResidentPresentation npc;
         private Animator npcAnimator;
+        private Player3DCharacterPresentation heroPresentation;
+        private Transform modelRoot;
         private LocalPose[] initialPose;
         private bool capsuleWasEnabled, motorWasEnabled, inputWasEnabled, balanceWasEnabled;
         private bool npcWasEnabled, animatorWasEnabled;
-        private float simulationSeconds, quietSeconds;
+        private float simulationSeconds, quietSeconds, groundSeconds;
+        private bool recoverable, hitStopFrozen;
+        private readonly Dictionary<Transform, RagdollBoneMotion> presentedMotion = new Dictionary<Transform, RagdollBoneMotion>();
+        private readonly Dictionary<Transform, WorldPose> previousWorldPose = new Dictionary<Transform, WorldPose>();
         private readonly List<CombatRagdollGroundContact> groundContacts = new List<CombatRagdollGroundContact>(4);
 
         public bool IsActive { get; private set; }
         public bool IsSettled { get; private set; }
+        public bool IsRecovering { get; private set; }
+        public bool IsRecoverable => IsActive && recoverable;
+        public float SimulationSeconds => simulationSeconds;
         public bool HasGroundContact { get; private set; }
         public Vector3 GroundContactPoint { get; private set; }
         public Vector3 GroundContactNormal { get; private set; }
@@ -40,6 +49,8 @@ namespace BarPromenade
                 !player.Ragdoll.IsInitialized)
                 throw new ArgumentException("Combat requires the production hero's initialized ragdoll.", nameof(player));
             physicsController = player.Ragdoll;
+            heroPresentation = hero;
+            modelRoot = hero.Registry.ModelRoot;
             capsule = player.GameObject.GetComponent<CharacterController>();
             motor = player.Motor;
             balance = player.Balance;
@@ -55,6 +66,7 @@ namespace BarPromenade
             if (presentation == null || presentation.ModelRoot == null || controller == null)
                 throw new ArgumentException("Combat opponent requires its authored rig and controller.");
             npc = presentation;
+            modelRoot = presentation.ModelRoot;
             npcAnimator = npc.Animator;
             capsule = controller;
             Dictionary<Player3DAnatomicalPart, Transform> anatomy = ResolveAnatomy(npc.ModelRoot);
@@ -82,15 +94,12 @@ namespace BarPromenade
             Vector3 rotation = Vector3.Cross(Vector3.up, direction) * 1.2f;
             float side = Vector3.Dot(direction, transform.right) < 0f ? -1f : 1f;
             var handoff = new PlayerRagdollHandoff(Vector3.zero, rotation, direction, transform.position, side);
-            capsuleWasEnabled = capsule != null && capsule.enabled;
-            motorWasEnabled = motor != null && motor.enabled;
-            inputWasEnabled = motor != null && motor.InputEnabled;
-            balanceWasEnabled = balance != null && balance.enabled;
-            npcWasEnabled = npc != null && npc.enabled;
-            animatorWasEnabled = npcAnimator != null && npcAnimator.enabled;
-            if (!physicsController.Begin(handoff)) return false;
+            CaptureOwners();
+            if (!physicsController.BeginCombat(handoff)) return false;
 
             IsActive = true;
+            recoverable = false;
+            IsRecovering = false;
             IsSettled = false;
             ClearGroundContact();
             simulationSeconds = quietSeconds = 0f;
@@ -104,6 +113,124 @@ namespace BarPromenade
             point = chest.worldCenterOfMass + Vector3.ClampMagnitude(point - chest.worldCenterOfMass, .3f);
             chest.AddForceAtPosition(direction * .3f, point, ForceMode.VelocityChange);
             return true;
+        }
+
+        /// <summary>Temporary knockdown, starting on the already presented hit pose. Motion
+        /// includes this hit, so activation must not apply its impulse twice.</summary>
+        internal bool BeginKnockdown(Vector3 linearVelocity, Vector3 angularVelocity)
+        {
+            if (physicsController == null || IsActive || physicsController.IsActive || !isActiveAndEnabled ||
+                !Finite(linearVelocity) || !Finite(angularVelocity)) return false;
+            CaptureOwners();
+            if (!physicsController.BeginCombatSimulation(linearVelocity, angularVelocity, presentedMotion)) return false;
+            IsActive = recoverable = true;
+            IsRecovering = IsSettled = false;
+            simulationSeconds = quietSeconds = 0f;
+            ClearGroundContact();
+            DisableOwners();
+            return true;
+        }
+
+        private void CaptureOwners()
+        {
+            capsuleWasEnabled = capsule != null && capsule.enabled;
+            motorWasEnabled = motor != null && motor.enabled;
+            inputWasEnabled = motor != null && motor.InputEnabled;
+            balanceWasEnabled = balance != null && balance.enabled;
+            npcWasEnabled = npc != null && npc.enabled;
+            animatorWasEnabled = npcAnimator != null && npcAnimator.enabled;
+        }
+
+        private void DisableOwners()
+        {
+            if (capsule != null) capsule.enabled = false;
+            if (motor != null) { motor.SetInputEnabled(false); motor.enabled = false; }
+            if (balance != null) balance.enabled = false;
+            if (npc != null) npc.enabled = false;
+            if (npcAnimator != null) npcAnimator.enabled = false;
+        }
+
+        /// <summary>A later, genuinely new contact owns a new physical impulse. A hit during
+        /// recovery takes the live rising pose back to physics before applying that impulse.</summary>
+        public void AddImpact(CombatImpact impact)
+        {
+            if (!IsActive || physicsController == null || impact.Impulse.sqrMagnitude <= .000001f) return;
+            if (IsRecovering || physicsController.IsFrozen)
+            {
+                presentedMotion.TryGetValue(PelvisBody.transform, out RagdollBoneMotion motion);
+                if (!physicsController.BeginCombatSimulation(motion.Linear, motion.Angular, presentedMotion)) return;
+                IsRecovering = IsSettled = false;
+                simulationSeconds = quietSeconds = 0f;
+                ClearGroundContact();
+                DisableOwners();
+                // Reattach the weapon's mass before hit-stop records COM velocities.
+                GetComponent<CombatActor>()?.EnableHeldWeaponPhysics();
+                if (hitStopFrozen) physicsController.SetSimulationSuspended(true);
+            }
+            IsSettled = false;
+            simulationSeconds = quietSeconds = 0f;
+            physicsController.AddCombatImpulse(impact.Part, impact.Point, impact.Impulse);
+        }
+
+        internal void SetFrozen(bool frozen)
+        {
+            hitStopFrozen = frozen;
+            physicsController?.SetSimulationSuspended(frozen);
+        }
+
+        internal bool BeginRecovery(out PlayerRagdollLyingPose lying)
+        {
+            lying = default;
+            if (!IsActive || !recoverable || IsRecovering || hitStopFrozen || !IsSettled) return false;
+            if (!physicsController.BeginRise(out lying)) return false;
+            IsRecovering = true;
+            return true;
+        }
+
+        internal void RebaseRecoveryRoot(Vector3 position, Quaternion rotation)
+        {
+            physicsController.RebaseRecoveryRoot(position, rotation);
+            if (heroPresentation != null)
+                UnityEngine.Object.FindAnyObjectByType<PlayerCameraFollow>()?.AbsorbTargetShift();
+        }
+
+        /// <summary>Defeat may replace a temporary fall without restoring a standing pose.</summary>
+        internal void MakeTerminal()
+        {
+            if (!IsActive) return;
+            recoverable = false;
+            if (!IsRecovering) return;
+            presentedMotion.TryGetValue(PelvisBody.transform, out RagdollBoneMotion motion);
+            physicsController.BeginCombatSimulation(motion.Linear, motion.Angular, presentedMotion);
+            IsRecovering = IsSettled = false;
+            simulationSeconds = quietSeconds = 0f;
+            DisableOwners();
+            if (hitStopFrozen) physicsController.SetSimulationSuspended(true);
+        }
+
+        /// <summary>Return the final visible standing pose, never the initial round pose.</summary>
+        internal void FinishRecovery()
+        {
+            if (!IsActive || !IsRecovering) return;
+            LocalPose[] finalPose = CaptureSkeleton(modelRoot, null);
+            physicsController.Cancel();
+            RestorePose(finalPose);
+            IsActive = IsSettled = IsRecovering = recoverable = hitStopFrozen = false;
+            RestoreOwners();
+        }
+
+        private void LateUpdate()
+        {
+            float dt = Time.deltaTime;
+            if (dt <= 0f || hitStopFrozen || PauseMenuController.IsAnyPaused || physicsController == null) return;
+            foreach (Rigidbody body in Bodies)
+            {
+                Transform bone = body.transform;
+                if (previousWorldPose.TryGetValue(bone, out WorldPose previous) && dt <= .1f)
+                    presentedMotion[bone] = new RagdollBoneMotion((body.worldCenterOfMass - previous.Position) / dt,
+                        Player3DCharacterPresentation.RecoveryAngularVelocity(previous.Rotation, bone.rotation, dt));
+                previousWorldPose[bone] = new WorldPose(body.worldCenterOfMass, bone.rotation);
+            }
         }
 
         private void PrepareGroundContacts(Transform head)
@@ -149,6 +276,7 @@ namespace BarPromenade
 
         private void ClearGroundContact()
         {
+            groundSeconds = 0f;
             HasGroundContact = false;
             GroundContactPoint = GroundContactNormal = Vector3.zero;
             GroundContactSurface = null;
@@ -158,7 +286,8 @@ namespace BarPromenade
         {
             // Shared pause stops PhysX. Neither the round's frozen simulation nor
             // presentation updates own this body's remaining fall time.
-            if (!IsActive || IsSettled || Time.timeScale <= 0f || PauseMenuController.IsAnyPaused) return;
+            if (!IsActive || IsRecovering || IsSettled || hitStopFrozen || Time.timeScale <= 0f || PauseMenuController.IsAnyPaused) return;
+            physicsController.AdvanceCombatAnchor();
             simulationSeconds += Time.fixedDeltaTime;
             foreach (Rigidbody body in Bodies)
             {
@@ -166,22 +295,41 @@ namespace BarPromenade
                 body.linearVelocity = Vector3.ClampMagnitude(body.linearVelocity, 8f);
                 body.angularVelocity = Vector3.ClampMagnitude(body.angularVelocity, 10f);
             }
-            quietSeconds = MaximumBodySpeed < .12f ? quietSeconds + Time.fixedDeltaTime : 0f;
-            if ((simulationSeconds >= 1f && quietSeconds >= .5f) || simulationSeconds >= 4f)
+            if (HasGroundContact) groundSeconds += Time.fixedDeltaTime;
+            // A settled torso can actively gather still-moving limbs. Waiting for the
+            // fastest fingertip/joint to stop made every temporary fall hit a 4 s timeout.
+            float speed = recoverable ? Mathf.Max(CentralSpeed(physicsController.PelvisBody),
+                CentralSpeed(physicsController.ChestBody)) : MaximumBodySpeed;
+            quietSeconds = speed < (recoverable ? .65f : .12f) ? quietSeconds + Time.fixedDeltaTime : 0f;
+            bool readyToRise = HasGroundContact && simulationSeconds >= .45f &&
+                (quietSeconds >= .18f || (groundSeconds >= 1.1f && speed < 1f));
+            bool terminalRest = (simulationSeconds >= 1f && quietSeconds >= .5f) || simulationSeconds >= 4f;
+            if (recoverable ? readyToRise : terminalRest)
             {
                 physicsController.FreezeInPlace();
                 IsSettled = true;
             }
         }
 
+        private static float CentralSpeed(Rigidbody body) => body == null ? 0f :
+            body.linearVelocity.magnitude + body.angularVelocity.magnitude * .12f;
+
         public void Cancel()
         {
             ClearGroundContact();
+            hitStopFrozen = false;
             if (!IsActive) return;
-            IsActive = IsSettled = false;
+            IsActive = IsSettled = IsRecovering = recoverable = hitStopFrozen = false;
             simulationSeconds = quietSeconds = 0f;
             if (physicsController != null) physicsController.Cancel();
             RestorePose(initialPose);
+            previousWorldPose.Clear();
+            presentedMotion.Clear();
+            RestoreOwners();
+        }
+
+        private void RestoreOwners()
+        {
             if (npcAnimator != null) npcAnimator.enabled = animatorWasEnabled;
             if (npc != null) npc.enabled = npcWasEnabled;
             if (balance != null) balance.enabled = balanceWasEnabled;
@@ -299,6 +447,13 @@ namespace BarPromenade
                 bone.SetLocalPositionAndRotation(position, rotation);
                 bone.localScale = scale;
             }
+        }
+
+        private readonly struct WorldPose
+        {
+            public readonly Vector3 Position;
+            public readonly Quaternion Rotation;
+            public WorldPose(Vector3 position, Quaternion rotation) { Position = position; Rotation = rotation; }
         }
     }
 }

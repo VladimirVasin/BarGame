@@ -749,6 +749,7 @@ namespace BarPromenade
             combatBodyMotion?.Forget();
             combatFootwork?.Forget();
             combatGrip?.Forget();
+            combatWeapon?.Forget();
             ReleaseBalanceStep();
             attentionBaseCaptured = false;
             ragdollPoseActive = true;

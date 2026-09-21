@@ -143,7 +143,9 @@ namespace BarPromenade
             footwork?.Apply();
             ApplyNpcPoseBlend();
             footwork?.ConstrainContacts();
-            supportGrip?.Apply();
+            weaponConstraint?.Apply();
+            if (weaponConstraint == null || !weaponConstraint.MotionBlocked) supportGrip?.Apply();
+            weaponConstraint?.CommitPresentedPose(supportGrip);
         }
     }
 }

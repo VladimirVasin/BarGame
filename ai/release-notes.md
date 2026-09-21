@@ -6,32 +6,37 @@ Earlier notes: [`release-notes-2026-09.md`](archive/release-notes-2026-09.md).
 
 ## Unreleased
 
-### 2026-09-21 — Драка v2 на полигоне
+### 2026-09-22 — Расчёты боя
 
-- Голова ×2, затылок — поражение; руки/ноги слабее, спина уязвимее;
-  защита первая (`CombatRulesTests.Anatomical*`).
-- Удары бесплатны; силы — блок/шаг/заряд, возврат в откате/стане.
-  Свежий `ПКМ` парирует лёгкий; контр/буфер. Пробитие: ½ урона,
-  силы целы (`CombatRulesTests`, `CombatBalanceTests`).
-- Стороны: прошёл — смена, остановлен — повтор; шаг вбок/враг сбоку задают
-  (`AreaCaptureFixture.CombatCharge`).
-- Буфер 0,20 с; шаг → атака; стена ловит дугу. Стоп-кадр/отбросы/камера/свист
-  (`CombatTestPlayModeTests`).
-- Space плавнее: 0,8 м/0,57 с; Hold замораживает силы
+- Убраны повторные расчёты поз/траектории; далёкие объекты отсекаются до
+  точной проверки столкновений. Возврат хвата пропускает заведомо худшие
+  варианты локтя. Проверка CPU: `Range_SimulationTicksStayWithinFrameBudget`;
+  частота кадров с отрисовкой ещё не измерена.
+
+### 2026-09-21 — Бой
+
+- Зоны тела/затылок, блок/парирование, расход и возврат сил
+  (`CombatRulesTests.Anatomical*`, `CombatRulesTests`, `CombatBalanceTests`).
+- Две стороны заряда, буфер/отскок и тактический ИИ
+  (`AreaCaptureFixture.CombatCharge`, `Range_TacticalRecoveryStepsAndFairOpponent`).
+- Стены, стоп-кадр, отброс и звук (`CombatTestPlayModeTests`). Hold хранит силы
   (`Range_AutomaticUpdateConsumesMouseAndKeyboardWithoutGuiEvent`).
-- ИИ: блок/шаг/перехват/финт/прикрытие/наказание промаха/отступление/доворот
-  (`Range_TacticalRecoveryStepsAndFairOpponent`).
-- Камера свободна через 1,5 с; `R` берёт лок
-  (`Range_TargetLockedShoulderCameraTracksOpponentAndResets`).
-- Победа — обычный шаг
+- Падение освобождает камеру, R возвращает цель
+  (`Range_TargetLockedShoulderCameraTracksOpponentAndResets`); победитель идёт обычно
   (`Range_VictoryRestoresOrdinaryWalkingAndResetRestoresCombat`).
+- Заряд/раны/лужа/звук падения (`CombatChargeArmAlignment`,
+  `Range_LethalContactsHandOffToRagdollPauseResetAndCleanUp`).
+- Стопы от пути, страх героя/спокойнее NPC, общие часы тела/хвата/контактов
+  (`Range_CombatBodyInertiaKeepsBothRigsContinuousAndClockBound`).
+- Импульс, падение/подъём, возврат левой. Базовые проверки:
+  `Range_ImpactRecoveryMovesBothRigsThroughSupportFallRiseAndRegrip`;
+  `LostBalance_FallsRecoversAndArmsGrace`.
 - `E` над телом — надругаться, следы до `R`
   (`Range_TauntDesecratesBodyOncePerRoundAndResets`).
-- Заряд без излома (`CombatChargeArmAlignment`).
-- Лужа растёт 10 с и живёт до `R`; звук тела — от пола
-  (`Range_LethalContactsHandOffToRagdollPauseResetAndCleanUp`).
-- Стопы от пути; герой боится, NPC спокойнее. Инерция/хват/контакты синхронны
-  `Range_CombatBodyInertiaKeepsBothRigsContinuousAndClockBound`.
+- WIP: хват/контур/масса лома, контакты с руками, физические локти;
+  заряд обеих сторон/возвраты по кривой удара. Hit/GuardBreak/Defeat освобождают
+  левую; стойка/блок/удары/возврат держат её. Банки не опубликованы,
+  расширенная проверка Unity выше ожидается.
 
 ### 2026-09-20 — Бой на полигоне
 

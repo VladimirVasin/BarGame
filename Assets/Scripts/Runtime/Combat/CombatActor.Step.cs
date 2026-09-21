@@ -28,7 +28,7 @@ namespace BarPromenade
         /// never disabled hit colliders. A press in the tail of a committed phase waits for its boundary.</summary>
         public bool TryStep(Vector2 input)
         {
-            if (stepClips == null || roundEnded || !IsAvailable ||
+            if (stepClips == null || roundEnded || !IsAvailable || IsKnockedDown ||
                 !GameInput.CanRead(GameInputContext.Gameplay) ||
                 float.IsNaN(input.x) || float.IsInfinity(input.x) ||
                 float.IsNaN(input.y) || float.IsInfinity(input.y)) return false;

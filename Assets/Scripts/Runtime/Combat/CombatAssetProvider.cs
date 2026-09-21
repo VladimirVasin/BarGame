@@ -18,8 +18,18 @@ namespace BarPromenade
             StepForwardClip = "CombatStepForward", StepBackwardClip = "CombatStepBackward",
             StepLeftClip = "CombatStepLeft", StepRightClip = "CombatStepRight",
             BackhandClip = "CombatBackhand", BackhandRecoilClip = "CombatBackhandRecoil",
-            BackhandChargeClip = "CombatBackhandCharge", BackhandHeavyClip = "CombatBackhandHeavy";
+            BackhandChargeClip = "CombatBackhandCharge", BackhandHeavyClip = "CombatBackhandHeavy",
+            RiseProneClip = "CombatRiseProne", RiseSupineClip = "CombatRiseSupine";
+        public static readonly string[] RecoveryClipNames = { RiseProneClip, RiseSupineClip };
         public const float DefeatHandoffSeconds = .16f;
+        public const float ChargePreparationAdvanceSeconds = .18f, ReleaseConvergenceSeconds = .45f;
+
+        /// <summary>Charge advances one continuous arm trajectory, converging before contact.</summary>
+        public static float ReleaseSourceSeconds(float seconds, float power)
+        {
+            float t = Mathf.Clamp01(seconds / ReleaseConvergenceSeconds);
+            return seconds + Mathf.Clamp01(power) * ChargePreparationAdvanceSeconds * (1f - t * t * (3f - 2f * t));
+        }
         public static readonly string[] ClipNames = { ReadyClip, RestClip, AttackClip, BlockClip, HitClip,
             GuardImpactClip, GuardBreakClip, RecoilClip, DefeatClip, ChargeClip, ReleaseLightClip, ReleaseHeavyClip,
             BackhandClip, BackhandRecoilClip, BackhandChargeClip, BackhandHeavyClip };
@@ -60,6 +70,8 @@ namespace BarPromenade
                 case GuardBreakClip: return .70f;
                 case RecoilClip: case BackhandRecoilClip: return .48f;
                 case DefeatClip: return .36f;
+                case RiseProneClip: return 2.4f;
+                case RiseSupineClip: return 3.2f;
                 default: throw new ArgumentOutOfRangeException(nameof(clip), clip, "Unknown combat action.");
             }
         }

@@ -5,7 +5,7 @@ using UnityEngine;
 namespace BarPromenade
 {
     [DisallowMultipleComponent]
-    public sealed class Player3DRagdollController : MonoBehaviour
+    public sealed partial class Player3DRagdollController : MonoBehaviour
     {
         public const float FallHandoffTime = 0.16f;
         public const float RecoveryBlendDuration = 0.16f;
@@ -211,6 +211,7 @@ namespace BarPromenade
         private readonly List<string> restingOverlaps = new List<string>();
         private readonly List<ConfigurableJoint> joints =
             new List<ConfigurableJoint>();
+        private Vector3 leftElbowAxisInUpperArm, rightElbowAxisInUpperArm;
         private readonly List<Transform> poseTransforms =
             new List<Transform>();
 
@@ -383,23 +384,17 @@ namespace BarPromenade
         /// </summary>
         public bool Begin(in PlayerRagdollHandoff handoff)
         {
-            if (!initialized || IsActive)
-            {
-                return false;
-            }
+            return Begin(handoff, false);
+        }
 
-            presentation?.BeginRagdollPoseFromLatePose();
-            RefreshJointAnchors();
-            SetCollidersEnabled(true);
-            Physics.SyncTransforms();
-            for (int index = 0; index < bodyList.Count; index++)
-            {
-                Rigidbody body = bodyList[index];
-                body.interpolation = RigidbodyInterpolation.Interpolate;
-                body.isKinematic = false;
-            }
+        internal bool BeginCombat(in PlayerRagdollHandoff handoff)
+        {
+            return Begin(handoff, true);
+        }
 
-            IsSimulating = true;
+        private bool Begin(in PlayerRagdollHandoff handoff, bool rebaseCombatElbows)
+        {
+            if (!ActivateFromCurrentPose(rebaseCombatElbows)) return false;
             Vector3 angular = handoff.AngularVelocity;
             for (int index = 0; index < bodyList.Count; index++)
             {
@@ -520,11 +515,12 @@ namespace BarPromenade
         public bool BeginRise(out PlayerRagdollLyingPose lying)
         {
             lying = default;
-            if (!initialized || !IsSimulating)
+            if (!initialized || (!IsSimulating && !IsFrozen))
             {
                 return false;
             }
 
+            SetSimulationSuspended(false);
             FreezeBodies();
             SetCollidersEnabled(false);
             recoveryStart = CapturePose();
@@ -553,6 +549,7 @@ namespace BarPromenade
                 seatedSupport,
                 Vector3.Dot(leftShoulder.position - rightShoulder.position, groundNormal));
             IsSimulating = false;
+            IsFrozen = false;
             IsRecovering = true;
             return true;
         }
@@ -651,6 +648,7 @@ namespace BarPromenade
                 return;
             }
 
+            ClearCombatSimulation();
             FreezeBodies();
             SetCollidersEnabled(false);
             IsSimulating = false;
@@ -1099,10 +1097,27 @@ namespace BarPromenade
                 Vector3 axisWorld = spec.Axis == JointAxis.Forward
                     ? gameplayRoot.forward
                     : gameplayRoot.right;
+                if (spec.Part == Player3DAnatomicalPart.LeftForearm ||
+                    spec.Part == Player3DAnatomicalPart.RightForearm)
+                {
+                    Player3DAnatomicalPart hand = spec.Part == Player3DAnatomicalPart.LeftForearm
+                        ? Player3DAnatomicalPart.LeftHand : Player3DAnatomicalPart.RightHand;
+                    Vector3 segment = (bones[hand].position - body.transform.position).normalized;
+                    // A-pose arms are diagonal. World-right then runs mostly along
+                    // the forearm, turning a supposed elbow hinge into axial twist.
+                    // Preserve the flexion sign while making its axis perpendicular
+                    // to this rig's actual straight reference arm.
+                    Vector3 elbowAxis = Vector3.ProjectOnPlane(axisWorld, segment);
+                    if (elbowAxis.sqrMagnitude > .0001f) axisWorld = elbowAxis.normalized;
+                    Vector3 parentAxis = parent.transform.InverseTransformDirection(axisWorld).normalized;
+                    if (spec.Part == Player3DAnatomicalPart.LeftForearm)
+                        leftElbowAxisInUpperArm = parentAxis;
+                    else rightElbowAxisInUpperArm = parentAxis;
+                }
                 joint.axis = body.transform.InverseTransformDirection(
                     axisWorld).normalized;
                 joint.secondaryAxis = body.transform.InverseTransformDirection(
-                    gameplayRoot.up).normalized;
+                    Vector3.ProjectOnPlane(gameplayRoot.up, axisWorld).normalized).normalized;
                 ConfigureJointCommon(joint);
                 joints.Add(joint);
                 if (spec.Part == Player3DAnatomicalPart.Head)

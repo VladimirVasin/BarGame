@@ -16,16 +16,19 @@ namespace BarPromenade
         private int pendingSequence;
         private bool sweepValid;
         private int sweepSequence;
+        private float lastSweepElapsed;
         private Vector3 previousBase, previousTip;
 
-        internal void SetContactTarget(CombatActor target) => contactTarget = target;
+        internal void SetContactTarget(CombatActor target)
+        { contactTarget = target; weaponConstraint?.SetOpponent(target); heldWeaponPhysics?.SetOpponent(target); }
         internal void CaptureContactPose() => Hurtboxes?.Capture();
 
-        internal void CollectContacts(List<Contact> pending)
+        internal bool CollectContacts(List<Contact> pending)
         {
-            if (!collectSweep) return;
+            if (!collectSweep) return false;
             collectSweep = false;
             SweepWeapon(sweepFrom, sweepTo, pendingSequence, pending);
+            return true;
         }
 
         /// <summary>A registered contact survives interruption of its source in the same simulation step.</summary>
@@ -37,13 +40,17 @@ namespace BarPromenade
             private readonly Vector3 point, normal, direction;
             private readonly float damage, blockCost, power;
             private readonly MeleeHitLocation location;
+            private readonly Player3DAnatomicalPart part;
+            private readonly Vector3 localPoint;
+            private readonly float weaponSpeed;
 
             public Contact(CombatActor source, CombatActor target, Vector3 point, Vector3 normal, Vector3 direction,
-                MeleeHitLocation location)
+                MeleeHitLocation location, Player3DAnatomicalPart part = Player3DAnatomicalPart.Torso,
+                Vector3 localPoint = default, float weaponSpeed = 0f)
             {
                 this.source = source; this.target = target;
                 this.point = point; this.normal = normal; this.direction = direction;
-                this.location = location;
+                this.location = location; this.part = part; this.localPoint = localPoint; this.weaponSpeed = weaponSpeed;
                 attackSequence = source.State.AttackSequence;
                 // The other actor may interrupt this source before Apply.
                 // A collected strike keeps the strength that reached its target.
@@ -58,7 +65,7 @@ namespace BarPromenade
             public void Apply()
             {
                 MeleeHitResult result = target.Receive(source, fromFront, attackSequence, point, normal, direction,
-                    damage, blockCost, power, location);
+                    damage, blockCost, power, location, part, localPoint, weaponSpeed);
                 source.State.RecordAttackOutcome(result, attackSequence);
                 if (result == MeleeHitResult.Parried) source.ShowParried(point, direction);
             }
@@ -73,7 +80,11 @@ namespace BarPromenade
             int samples = Mathf.Max(1, Mathf.CeilToInt((to - from) * 120f));
             if (sweepSequence != sequence) sweepValid = false;
             sweepSequence = sequence;
-            for (int i = 0; i <= samples; i++)
+            // Adjacent 120 Hz intervals share their boundary. Its world-space
+            // blade points are already saved below; resampling it runs the whole
+            // presentation/IK/clearance stack twice for the same attack instant.
+            int firstSample = sweepValid && Mathf.Abs(lastSweepElapsed - from) < .000001f ? 1 : 0;
+            for (int i = firstSample; i <= samples; i++)
             {
                 float elapsed = Mathf.Lerp(from, to, i / (float)samples);
                 if (!SampleAttack(State.AnimationProgressAt(elapsed))) return;
@@ -99,16 +110,25 @@ namespace BarPromenade
                 // The tell may brush a wall; only the live arc is stopped by one.
                 if (elapsed < State.AttackWindupSeconds)
                 {
-                    previousBase = currentBase; previousTip = currentTip; sweepValid = true;
+                    previousBase = currentBase; previousTip = currentTip; lastSweepElapsed = elapsed; sweepValid = true;
                     continue;
                 }
                 // A solid that meets the blade at this sample stops the swing here.
                 // Targets from earlier samples already connected; no centre-to-centre ray
                 // substitutes for the actual weapon path at corners or low cover.
+                bool worldBlocked = previewWorldBlocked;
                 foreach (Collider candidate in sampleContacts)
                 {
                     if (candidate == null || candidate.isTrigger || candidate.transform.IsChildOf(transform) ||
                         candidate.GetComponentInParent<CombatActor>() != null) continue;
+                    worldBlocked = true;
+                    break;
+                }
+                // The complete prop may already have been stopped or moved clear
+                // by its arm constraint, including the hook/handle outside the blade.
+                // Own or opposing anatomy is not a world-obstacle cancellation.
+                if (worldBlocked)
+                {
                     if (State.CancelAttackOnObstacle())
                     {
                         reaction = Current.Recoil; reactionClock = 0f;
@@ -118,18 +138,19 @@ namespace BarPromenade
                     return;
                 }
 
-                GatherAnatomicalContact(currentBase, currentTip, travel.normalized, sequence, pending);
-                previousBase = currentBase; previousTip = currentTip; sweepValid = true;
+                GatherAnatomicalContact(currentBase, currentTip, travel.normalized, sequence, pending, Mathf.Max(.0001f, (to - from) / samples));
+                previousBase = currentBase; previousTip = currentTip; lastSweepElapsed = elapsed; sweepValid = true;
             }
         }
 
         private void GatherAnatomicalContact(Vector3 currentBase, Vector3 currentTip, Vector3 direction,
-            int sequence, List<Contact> pending)
+            int sequence, List<Contact> pending, float sampleSeconds)
         {
             CombatActor target = contactTarget;
-            if (target == null || !target.IsAvailable || target.State.IsDefeated || target.Hurtboxes == null) return;
+            if (target == null || (!target.IsAvailable && !target.IsKnockedDown) || target.State.IsDefeated || target.Hurtboxes == null) return;
             // End-pose overlap is later than every swept contact. The row of moving
             // spheres retains the existing blade coverage, including translation.
+            float weaponSpeed = sweepValid ? ((currentBase - previousBase).magnitude + (currentTip - previousTip).magnitude) * .5f / sampleSeconds : 0f;
             bool found = target.Hurtboxes.SweepSphere(currentBase, currentTip, WeaponRadius, direction, out var nearest);
             float earliest = found ? 1f : float.PositiveInfinity;
             if (sweepValid)
@@ -145,11 +166,11 @@ namespace BarPromenade
                     if (travel.sqrMagnitude < .0000001f) continue;
                     if (!target.Hurtboxes.SweepSphere(start, end, WeaponRadius, travel.normalized, out var hit) ||
                         hit.Fraction >= earliest) continue;
-                    nearest = hit; earliest = hit.Fraction; found = true;
+                    nearest = hit; earliest = hit.Fraction; found = true; weaponSpeed = travel.magnitude / sampleSeconds;
                 }
             }
             if (found && State.TryRegisterHit(target.GetEntityId().GetHashCode(), sequence))
-                pending.Add(new Contact(this, target, nearest.Point, nearest.Normal, nearest.Direction, nearest.Location));
+                pending.Add(new Contact(this, target, nearest.Point, nearest.Normal, nearest.Direction, nearest.Location, nearest.Part, nearest.LocalPoint, weaponSpeed));
         }
 
         private void GatherCapsule(Vector3 a, Vector3 b)

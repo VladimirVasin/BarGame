@@ -82,6 +82,15 @@ namespace BarPromenade
             retreatSeconds = Mathf.Max(0f, retreatSeconds - seconds);
             strafeSeconds -= seconds;
             driftSeconds -= seconds;
+            if (Hero.IsKnockedDown || Opponent.IsKnockedDown)
+            {
+                // A fallen opponent is given space to plant its hand and stand.
+                // No stale tactic, held guard or buffered charge survives the recovery.
+                Opponent.SetBlock(false);
+                ResetOpponentMovement();
+                opponentDelay = Mathf.Max(opponentDelay, .4f);
+                return;
+            }
             Vector3 delta = Hero.transform.position - Opponent.transform.position;
             delta.y = 0f;
             float distance = delta.magnitude;
@@ -451,7 +460,7 @@ namespace BarPromenade
         private void AdvanceOpponentMovement(float seconds)
         {
             if (seconds <= 0f) return;
-            if (!Sparring || Opponent == null || Hero == null || !Opponent.IsAvailable || !Hero.IsAvailable ||
+            if (!Sparring || Opponent == null || Hero == null || Opponent.IsKnockedDown || Hero.IsKnockedDown || !Opponent.IsAvailable || !Hero.IsAvailable ||
                 Opponent.Body == null || !Opponent.Body.enabled)
             {
                 ResetOpponentMovement();

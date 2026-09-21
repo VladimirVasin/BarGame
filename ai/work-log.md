@@ -3,51 +3,62 @@
 Newest outcomes/checks first. Archive whole dates at budget: [policy](README.md).
 Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-2026-08.md).
 
+## 2026-09-22 — Taunt integration and combat CPU
+
+- Rebased `feat/combat-taunt` onto main and merged its commit. Reconciled
+  shared canon/CombatTest/ledger paragraphs with the unfinished local combat
+  changes; retained their unpublished-bank/Unity gap and a safety stash.
+  Checks: `check-docs.py`, `git diff --check`.
+- Combat sweep broadphase rejects distant body/world pairs before PhysX;
+  bone poses interpolate once per time sample. Reuse adjacent sweep boundaries
+  and the last substep presentation when no contact preview changed it. Support
+  elbow candidates that cannot improve the answer skip physical queries.
+  Check: `Range_SimulationTicksStayWithinFrameBudget`; imported-scene CPU
+  measurement only, rendered frame rate remains unmeasured.
+
 ## 2026-09-21 — Brawl v2
 
-- Anatomy: first/six posed bone-local zones replace capsule damage; one HP.
-  Head x2 cannot defeat full HP; rear head ends after protection.
+- Six posed zones replace capsule damage; one HP, head/rear-head and
+  arm/leg/back scales, guard first.
   Checks: `CombatRulesTests.Anatomical*`,
   `Range_AnatomicalContactsResolveHeadAndRearHeadForBothRigs`.
-- Rules: free swings; breath pays guard/step/charge, regens in stuns after
-  own spends. Fresh press parries lights; counter/whiff floor, break keeps breath,
-  buffered return/step-attack grace; regen from ActiveEnd. Check: `CombatRulesTests`.
-- Runtime: skipped 1/120 substeps own hit-stop, lethal too;
-  knockback/two-body block nudge, shoulder kick before clearance, HP .6/.5
-  recovery/guard, Windup→Active whoosh, Active-only wall cancel. Camera/target
-  free after fall; `PlaceRound` re-locks. Check: `CombatTestPlayModeTests`.
-- Seeded opponent: guard/step/charge intercept/feint/whiff punish/cover/retreat/
-  corner, probe/press moods; no accidental parry.
-  Turns on the hero's table outside charge/windup/arc; stun .35, yaw kept:
-  no free flank after a whiff. Check: `Range_TacticalRecoveryStepsAndFairOpponent`.
-- Space: .8 m/.36 s travel/.21 s settle; smoothstep replaces front-load.
-  Shared travel/clip clock; 15 breath/footfalls unchanged. Full Hold freezes breath.
-  .02m/.75° camera lag caps keep the raised arm clear. Checks:
-  `Range_AutomaticUpdateConsumesMouseAndKeyboardWithoutGuiEvent`,
-  `AreaCaptureFixture.CombatTactics`, `build-combat-test-3d-model.py`.
-- `CombatTuning`: aged guard/heavy hits, physics evasion/duel strafe; foreign
-  owner releases stance; `CombatDuelSimulator` habits. Check: `CombatBalanceTests`.
-- Charge arm: reachable docks/forearm roll stop the left hand folding the
-  raised arm. Checks: `build-combat-test-3d-model.py`,
-  `AreaCaptureFixture.CombatChargeArmAlignment`.
-- Aftermath: floor thud/wound-anchored pools; bleed once stopped early.
+- Rules: free hits, breath costs/regen, fresh light parry/counter, buffered
+  return and step-attack grace. Check: `CombatRulesTests`.
+- Hit-stop includes lethal contacts; wall cancel, recoil, HP recovery/guard,
+  sound and fall camera handoff. Check: `CombatTestPlayModeTests`.
+- Seeded AI guard/step/intercept/feint/cover/whiff punish; shared turn table.
+  Space uses one smooth travel/clip clock and ordinary footfalls.
+  Checks: `Range_TacticalRecoveryStepsAndFairOpponent`, `AreaCaptureFixture.CombatTactics`.
+- Hold freezes breath; bounded camera lag clears the raised arm.
+  Check: `Range_AutomaticUpdateConsumesMouseAndKeyboardWithoutGuiEvent`.
+- `CombatTuning`: aged guard/heavy, physics evasion/strafe; foreign owner drops
+  stance; `CombatDuelSimulator` habits. Check: `CombatBalanceTests`.
+- Charge docks/forearm roll keep both arms reachable.
+  Check: `AreaCaptureFixture.CombatChargeArmAlignment`.
+- Floor thud/wound pools, bleed once stopped early.
   Check: `Range_LethalContactsHandOffToRagdollPauseResetAndCleanUp`.
-- Winner releases combat at Ready→.35 s normal walk/right crowbar; no
-  reacquire until R. Check: `Range_VictoryRestoresOrdinaryWalkingAndResetRestoresCombat`.
-  Ready-gait probe fails in `Range_CombatWalkingUsesLiveInputAndMovingLegs`.
-- `MeleeSwing` commits charge-visible step cue/target bearing/last-fate rhythm;
-  both banks have a backhand family. Far support hand:
-  down-forward elbow pole keeps the wrist in the charge envelope. Checks:
-  `CombatRulesTests`, `AreaCaptureFixture.CombatCharge`.
-- Body: C1 velocity/atan2, travel/yaw inertia; both .42/.28 m
-  travel stances, feet settle in Windup. Hero afraid/unskilled:
-  posture, breath/tremor/tell flinch/tense face; NPC calmer, HP separate.
-  Checks: `build-combat-test-3d-model.py`,
+- Winner walks with right crowbar; combat stays off until R.
+  Check: `Range_VictoryRestoresOrdinaryWalkingAndResetRestoresCombat`.
+  Known Ready-gait failure: `Range_CombatWalkingUsesLiveInputAndMovingLegs`.
+- `MeleeSwing`: charge-visible step/bearing/last-fate cue; both banks' backhands.
+  Check: `AreaCaptureFixture.CombatCharge`.
+- C1 travel/yaw inertia, planted Windup; afraid hero, calmer NPC, separate HP.
+  Duel-clock pose/contact ownership freezes resampling and pause.
+  Body/step/charge assets: `build-combat-test-3d-model.py`;
   `Range_CombatBodyInertiaKeepsBothRigsContinuousAndClockBound`.
-- Taunt: `E` over the settled body hosts the toilet action via
-  `IHomeToiletViewHost`; body-relative dock, aim solved onto the body; marks
-  on bones/floor until R; crowbar left. Check:
-  `Range_TauntDesecratesBodyOncePerRoundAndResets`.
+- Contact inertia/catch steps, rig samplers and sole-constrained rises;
+  torso settling/regrip replace split legs, waits and stale hand caches. Checks:
+  `Range_ImpactRecoveryMovesBothRigsThroughSupportFallRiseAndRegrip`;
+  `LostBalance_FallsRecoversAndArmsGrace`.
+- Taunt: `E` over the settled body hosts the toilet action through
+  `IHomeToiletViewHost`; body dock/aim, bone/floor marks until R, crowbar left.
+  Check: `Range_TauntDesecratesBodyOncePerRoundAndResets`.
+- WIP: post-left crowbar clearance/held-drop shapes and mass; forearm pronation,
+  live elbow rebase; released/support left states, disabled-anatomy drop sweep.
+  Both swings retime Attack upper by power; lower/timing kept. Whole R chain,
+  45° shoulder search/final-pose continuation; Backhand elbow/roll/reach≥.95.
+  Both inverse recoils/banks unpublished; `build-combat-test-3d-model.py`
+  validation and expanded impact/recovery Unity check above pending.
 
 ## 2026-09-20 — Combat
 

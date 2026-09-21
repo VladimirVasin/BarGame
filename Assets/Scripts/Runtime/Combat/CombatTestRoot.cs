@@ -147,6 +147,7 @@ namespace BarPromenade
         {
             Player.Motor.SetMovementTargetFrozen(this, frozen);
             Hero.SetPresentationFrozen(frozen);
+            Opponent.SetPresentationFrozen(frozen);
         }
 
         private void RequestHitStop(int substeps)
@@ -186,6 +187,7 @@ namespace BarPromenade
             }
             pendingSeconds += seconds;
             bool advanced = false;
+            bool sampledContacts = false;
             while (pendingSeconds + .0000001d >= SimulationStep && !RoundFinished)
             {
                 pendingSeconds = Math.Max(0d, pendingSeconds - SimulationStep);
@@ -213,8 +215,7 @@ namespace BarPromenade
                 // Both final poses are frozen as anatomical query data before either
                 // weapon is sampled. Sampling the first swing cannot move its hurtboxes.
                 Hero.CaptureContactPose(); Opponent.CaptureContactPose();
-                Hero.CollectContacts(pendingContacts);
-                Opponent.CollectContacts(pendingContacts);
+                sampledContacts = Hero.CollectContacts(pendingContacts) | Opponent.CollectContacts(pendingContacts);
                 // Registration for both actors precedes ANY damage, including lethal
                 // hits. Only contacts on a later tick can be cancelled by interruption.
                 foreach (CombatActor.Contact contact in pendingContacts) contact.Apply();
@@ -227,7 +228,9 @@ namespace BarPromenade
                 hitStopSubsteps = 0;
                 AdvanceFinishedRound((float)pendingSeconds);
             }
-            else { Hero.Present(); Opponent.Present(); }
+            // Contact previews alter the sampled rig; otherwise the last substep
+            // already left both complete poses ready to render.
+            else if (!advanced || sampledContacts) { Hero.Present(); Opponent.Present(); }
             if (hitStopSubsteps > 0 || roundEndFreeze > 0d) SetDuelFrozen(true);
             else if (advanced && !RoundFinished) SetDuelFrozen(false);
         }

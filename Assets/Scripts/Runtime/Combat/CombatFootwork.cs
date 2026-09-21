@@ -23,6 +23,11 @@ namespace BarPromenade
         private float cycle, settling, settleDuration, idleSeconds;
         private int direction, swing, attackSequence = -1;
         private bool initialized, moving, applied, yielded, settlingFoot, settlingAttack;
+        private bool catching;
+        private Vector3 catchTarget;
+        private float impactPelvisFloor;
+        public CombatImpactMotion ImpactMotion { get; set; }
+        public bool TransferringFoot => moving || settlingFoot || catching;
 
         private struct PoseFrame
         {
@@ -82,7 +87,7 @@ namespace BarPromenade
 
         public void Reset()
         {
-            Restore(); initialized = false; moving = settlingFoot = yielded = settlingAttack = false;
+            Restore(); initialized = false; moving = settlingFoot = yielded = settlingAttack = catching = false;
             cycle = settling = 0f; gaitOffset = Vector3.zero; attackSequence = -1;
             idleSeconds = 0f;
             previousPosition = frame.position; previousForward = frame.forward;
@@ -103,12 +108,14 @@ namespace BarPromenade
             float turn = Vector3.Angle(previousForward, frame.forward) * Mathf.Deg2Rad;
             previousPosition = frame.position; previousForward = frame.forward;
             displacement.y = 0f;
-            bool yield = state.Phase == MeleePhase.Step || state.IsDefeated;
+            bool yield = state.Phase == MeleePhase.Step || state.IsDefeated || state.IsKnockedDown;
             if (yield)
-            { yielded = true; initialized = false; moving = settlingFoot = false; gaitOffset = Vector3.zero; return; }
+            { yielded = true; initialized = false; moving = settlingFoot = catching = false; gaitOffset = Vector3.zero; return; }
             if (!initialized || displacement.sqrMagnitude > 1f)
             { PlantReady(); moving = settlingFoot = false; gaitOffset = Vector3.zero; cycle = 0f; }
             yielded = false;
+
+            if (AdvanceCatchStep(seconds)) return;
 
             // Commit the current transfer inside the existing tell, including the short chain tell.
             // Its supporting foot stays at its actual contact; input never waits for a gait boundary.
@@ -197,6 +204,98 @@ namespace BarPromenade
             EvaluateSwing(cycle);
         }
 
+        private bool AdvanceCatchStep(float seconds)
+        {
+            if (ImpactMotion == null || (!ImpactMotion.IsActive && !catching)) return false;
+            if (!catching)
+            {
+                int displaced = FarthestFoot();
+                float error = Vector3.Distance(feet[displaced], frame.TransformPoint(restFeet[displaced]));
+                if (ImpactMotion.BalanceLoad < .42f && error < .11f) return false;
+                Vector3 capture = ImpactMotion.CaptureOffset;
+                bool alreadyTransferring = moving || settlingFoot;
+                if (!alreadyTransferring)
+                {
+                    Vector3 across = Vector3.ProjectOnPlane(feet[1] - feet[0], Vector3.up);
+                    float lateral = Vector3.Dot(capture, across.normalized);
+                    float rightLoad = across.sqrMagnitude > .001f ? Mathf.Clamp01(Vector3.Dot(
+                        ImpactMotion.CentreOfMass - feet[0], across) / across.sqrMagnitude) : .5f;
+                    // Keep the loaded boot down. A hit to that leg does not make
+                    // it instantly airborne; support loss still governs the fall.
+                    swing = Mathf.Abs(lateral) > .08f ? (lateral > 0f ? 1 : 0) :
+                        Mathf.Abs(rightLoad - .5f) > .08f ? (rightLoad > .5f ? 0 : 1) : displaced;
+                }
+                if (!TryCatchTarget(swing, capture, out Vector3 target))
+                {
+                    if (alreadyTransferring || !TryCatchTarget(1 - swing, capture, out target)) return false;
+                    swing = 1 - swing;
+                }
+                if (Vector3.ProjectOnPlane(target - feet[swing], Vector3.up).sqrMagnitude < .0025f) return false;
+                // A reachable step has an actual landing; the other boot remains planted.
+                settleStart = feet[swing]; settleRotation = rotations[swing]; catchTarget = target;
+                settling = 0f; settleDuration = .26f; catching = true;
+                moving = settlingFoot = false; gaitOffset = Vector3.zero;
+            }
+            settling += seconds;
+            float t = Mathf.Clamp01(settling / settleDuration), blend = Smooth(t);
+            float lift = Mathf.Sin(t * Mathf.PI);
+            feet[swing] = Vector3.Lerp(settleStart, catchTarget, blend) + Vector3.up * (.07f * lift * lift);
+            rotations[swing] = Quaternion.Slerp(settleRotation, frame.rotation * restRotations[swing], blend);
+            // ImpactMotion owns the buckle. A second sinusoidal pelvis drop here
+            // fought the planted-leg correction and produced a deep repeated bob.
+            gaitOffset = Vector3.zero;
+            if (t >= 1f)
+            {
+                catching = false; gaitOffset = Vector3.zero;
+                RetroAudio.PlayAt(RetroSfxId.FootstepConcrete, feet[swing], .7f);
+            }
+            return true;
+        }
+
+        private bool TryCatchTarget(int side, Vector3 capture, out Vector3 target)
+        {
+            // Account for the root travel still to come during the short catch.
+            // This landing stays fixed in world space once the boot leaves.
+            target = frame.TransformPoint(restFeet[side]) + Vector3.ClampMagnitude(
+                capture * .38f + ImpactMotion.Velocity * .04f, .32f);
+            if (!TryCatchGround(target, side, out target)) return false;
+            Vector3 outward = Vector3.ProjectOnPlane(frame.TransformVector(restFeet[side] - restFeet[1 - side]), Vector3.up).normalized;
+            float separation = Vector3.Dot(target - feet[1 - side], outward);
+            if (separation < .12f) target += outward * (.12f - separation);
+            Vector3 hip = bones[1 + side * 3].position;
+            Vector3 horizontal = Vector3.ProjectOnPlane(target - hip, Vector3.up);
+            float length = legLengths[side] * .98f;
+            float height = Mathf.Max(0f, hip.y - target.y - .10f);
+            float reach = Mathf.Sqrt(Mathf.Max(0f, length * length - height * height));
+            horizontal = Vector3.ClampMagnitude(horizontal, Mathf.Min(.44f, reach));
+            target.x = hip.x + horizontal.x; target.z = hip.z + horizontal.z;
+            if (Vector3.Dot(target - feet[1 - side], outward) < .115f ||
+                !TryCatchGround(target, side, out target)) return false;
+            // A floor beneath the destination is not evidence of an unobstructed
+            // step: keep the swinging boot out of walls and low solid furniture.
+            Vector3 start = feet[side] + Vector3.up * .045f;
+            Vector3 travel = target - feet[side];
+            float distance = travel.magnitude;
+            if (distance < .001f) return true;
+            foreach (RaycastHit hit in Physics.SphereCastAll(start, .045f, travel / distance,
+                distance, ~0, QueryTriggerInteraction.Ignore))
+                if (hit.collider.GetComponentInParent<CombatActor>() == null && hit.normal.y < .65f) return false;
+            return true;
+        }
+
+        private bool TryCatchGround(Vector3 desired, int side, out Vector3 grounded)
+        {
+            grounded = desired;
+            float nearest = float.PositiveInfinity;
+            foreach (RaycastHit hit in Physics.RaycastAll(desired + Vector3.up * .55f, Vector3.down, 1.1f, ~0, QueryTriggerInteraction.Ignore))
+            {
+                if (hit.collider.GetComponentInParent<CombatActor>() != null || hit.normal.y < .65f || hit.distance >= nearest) continue;
+                nearest = hit.distance;
+                grounded = hit.point + Vector3.up * Mathf.Max(.025f, restFeet[side].y);
+            }
+            return nearest < float.PositiveInfinity;
+        }
+
         private void BeginSwing()
         {
             PoseFrame pose = Sample(cycle);
@@ -258,6 +357,8 @@ namespace BarPromenade
         public void Apply()
         {
             Restore();
+            impactPelvisFloor = pelvis.position.y - .20f;
+            if (!yielded) ImpactMotion?.Apply();
             if (!initialized || yielded) return;
             for (int i = 0; i < bones.Length; i++) { basePositions[i] = bones[i].localPosition; baseRotations[i] = bones[i].localRotation; }
             applied = true;
@@ -279,7 +380,10 @@ namespace BarPromenade
                 float length = legLengths[side] * .997f;
                 lower = Mathf.Max(lower, delta.y - Mathf.Sqrt(Mathf.Max(.01f, length * length - horizontal)));
             }
-            pelvis.position -= Vector3.up * Mathf.Clamp(lower, 0f, .18f);
+            float correction = Mathf.Clamp(lower, 0f, .18f);
+            if (ImpactMotion != null && ImpactMotion.IsActive)
+                correction = Mathf.Min(correction, Mathf.Max(0f, pelvis.position.y - impactPelvisFloor));
+            pelvis.position -= Vector3.up * correction;
             for (int side = 0; side < 2; side++)
             {
                 int i = 1 + side * 3;
@@ -291,12 +395,13 @@ namespace BarPromenade
 
         public void Restore()
         {
-            if (!applied) return;
-            for (int i = 0; i < bones.Length; i++)
-                if (bones[i] != null) { bones[i].localPosition = basePositions[i]; bones[i].localRotation = baseRotations[i]; }
+            if (applied)
+                for (int i = 0; i < bones.Length; i++)
+                    if (bones[i] != null) { bones[i].localPosition = basePositions[i]; bones[i].localRotation = baseRotations[i]; }
             applied = false;
+            ImpactMotion?.Restore();
         }
-        public void Forget() => applied = false;
+        public void Forget() { applied = false; ImpactMotion?.Forget(); }
         private static float Smooth(float value) => value * value * (3f - 2f * value);
     }
 }

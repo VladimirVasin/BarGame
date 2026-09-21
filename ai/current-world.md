@@ -154,19 +154,17 @@ The vertical slice contains:
   pedestrian positions. Operation-scoped City/Bar markers preserve later arrivals.
   Day one raises the mother's-house quest and map marker, closed on entry
   through door/map or at once when starting inside; no village signpost;
-- Combat Test: first zone/one HP; head x2 (50/80, <HP), rear±45° defeats;
-  torso1/rear1.25/arms.5/legs.75; guard/parry first. Free hits;
-  guard/step/.9s charge cost breath; Hold freezes it; Regen delay on
-  release/interrupt; stun regen/counters/buffer. .42/.28m; travel feet settle
-  in Windup. Afraid/unskilled hero, calmer NPC. Low two-hand/high guard;
-  inertia, recovery/stun yaw; hit-stop/shoves/wounds/thud/10 s pools.
-  AI/target; camera free 1.5s. Hero win: normal walk/crowbar; `E` over the
-  settled body runs the toilet action on it: marks on bones/floor until R,
-  crowbar left.
-  W/S move, A/D strafe; Space .8m/.36+.21s/15 breath;
-  smoothstep, one travel/pose clock.
-  LMB/RT charge/release, RMB guard; pause freezes/cancels release;
-  R/unload clear; no story/speech;
+- CombatTest: six posed zones/HP; guard/parry before rear-head defeat.
+  Ready/Block/attacks/recoils support left; Hit/GuardBreak/Defeat release.
+  Impulses/catch steps; both rigs fall/rise holding right; sole-bound regrip.
+  Post-left body/floor/wall checks; forearm pronation/mass, elbow rebase.
+  Drop sweeps disabled anatomy past opponent capsule. Both retime Attack
+  upper by power, lower fixed; both recoils reverse Attack. Backhand DAG;
+  banks unpublished/Unity pending. One clock/pause/hit-stop; separate defeat.
+  Afraid hero/calmer NPC. Guard/step/charge use breath; Hold freezes it.
+  Wounds/thud/pools; defeat: free camera, winner walks. `E` over the settled
+  body hosts the toilet action: crowbar left, bone/floor marks until R.
+  R/unload clears; no story/speech;
 - the retained Home opening is reachable only by a legacy request: held bed loop,
   silent `05:59` clock with rare whole-display flicker, five-second input lock,
   then localized Wake Up/Quit. Wake sets `06:00`, runs the clock/alarm and hides

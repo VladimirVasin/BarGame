@@ -72,7 +72,9 @@ namespace BarPromenade.Editor
                 manifest.actions.attack_pelvis_travel_m < .04f || manifest.actions.attack_knee_travel_degrees < 7f ||
                 Mathf.Abs(manifest.actions.defeat_handoff_seconds - CombatAssetProvider.DefeatHandoffSeconds) > .0001f ||
                 manifest.actions.reactions == null || manifest.actions.reactions.Length != 4 ||
-                manifest.actions.minimum_reaction_tip_separation_m < .2f ||
+                manifest.actions.released_support_clips == null || manifest.actions.released_support_clips.Length != 3 ||
+                !new[] { "CombatHit", "CombatGuardBreak", "CombatDefeat" }.All(manifest.actions.released_support_clips.Contains) ||
+                manifest.actions.reaction_silhouette_contract != "tip_20cm_or_head_12cm_and_elbow_10cm" ||
                 manifest.actions.swings == null || manifest.actions.swings.Length != 2)
                 throw new InvalidOperationException("Combat manifest violated its isolated, grounded, in-place contract.");
             DefensiveStep step = manifest.actions.defensive_step;
@@ -92,6 +94,7 @@ namespace BarPromenade.Editor
                     swing.release_light != names.ReleaseLight || swing.release_heavy != names.ReleaseHeavy ||
                     swing.charge_clip != names.Charge || swing.recoil_clip != names.Recoil ||
                     swing.pelvis_travel_m < .04f || swing.knee_travel_degrees < 7f || swing.minimum_reach_m < .95f ||
+                    swing.active_tip_travel_m < (swing.name == "backhand" ? .60f : 1f) ||
                     Mathf.Abs(swing.contact_seconds - .56f) > .0001f)
                     throw new InvalidOperationException("Combat swing side lost its authored strike contract: " + swing.name);
                 Charging charging = swing.charging;
@@ -100,9 +103,15 @@ namespace BarPromenade.Editor
                     charging.maximum_light_legacy_error > .00001f || charging.maximum_support_error > .001f ||
                     charging.minimum_reach_m < .95f || Mathf.Abs(charging.release_seconds - 1.28f) > .0001f)
                     throw new InvalidOperationException("Combat charge lost its continuous, grounded release contract: " + swing.name);
+                if (charging.parameterization != "shared_light_time" || charging.source_clip != names.Attack ||
+                    Mathf.Abs(charging.preparation_advance_seconds - CombatAssetProvider.ChargePreparationAdvanceSeconds) > .00001f ||
+                    Mathf.Abs(charging.charge_source_seconds - CombatAssetProvider.ChargePreparationAdvanceSeconds) > .00001f ||
+                    Mathf.Abs(charging.convergence_seconds - CombatAssetProvider.ReleaseConvergenceSeconds) > .00001f)
+                    throw new InvalidOperationException("Charge must sample its swing's continuous light trajectory.");
             }
             foreach (Model entry in manifest.models)
             {
+                if (entry.name == "Crowbar") ValidateWeaponCollision(entry);
                 GameObject model = CombatAssetProvider.Create(entry.name, null);
                 try
                 {
@@ -115,6 +124,8 @@ namespace BarPromenade.Editor
                         foreach (Vector3 vertex in mesh.vertices)
                         {
                             Vector3 point = filter.transform.TransformPoint(vertex);
+                            if (entry.name == "Crowbar" && !InsideWeaponCollision(point))
+                                throw new InvalidOperationException("Full crowbar collision misses an imported mesh vertex: " + point);
                             low = Vector3.Min(low, point); high = Vector3.Max(high, point);
                         }
                         triangles += mesh.triangles.Length / 3;
@@ -127,7 +138,7 @@ namespace BarPromenade.Editor
             }
             foreach (bool npc in new[] { false, true })
             foreach (string name in CombatAssetProvider.ClipNames.Concat(CombatAssetProvider.LocomotionClipNames)
-                .Concat(CombatAssetProvider.StepClipNames))
+                .Concat(CombatAssetProvider.StepClipNames).Concat(CombatAssetProvider.RecoveryClipNames))
             {
                 AnimationClip clip = CombatAssetProvider.LoadClip(name, npc);
                 foreach (EditorCurveBinding binding in AnimationUtility.GetCurveBindings(clip))
@@ -173,6 +184,11 @@ namespace BarPromenade.Editor
                 Transform origin = CombatAssetProvider.FindAnchor(bar, "Grip");
                 Transform[] bones = animator.GetComponentsInChildren<Transform>(true);
                 AnimationClip ready = CombatAssetProvider.LoadClip(CombatAssetProvider.ReadyClip, npc);
+                foreach (string name in CombatAssetProvider.RecoveryClipNames)
+                {
+                    AnimationClip rise = CombatAssetProvider.LoadClip(name, npc);
+                    CompareEndpoint(rise, rise.length, ready, 0f, animator, bones, name + " supported exit");
+                }
                 foreach (MeleeSwing swing in new[] { MeleeSwing.Forehand, MeleeSwing.Backhand })
                 {
                     CombatAssetProvider.SwingClipSet names = CombatAssetProvider.SwingClips(swing);
@@ -194,7 +210,10 @@ namespace BarPromenade.Editor
                             Vector3.Distance(origin.position, tip.position) < .60f || Vector3.Distance(origin.position, tip.position) > .63f)
                             throw new InvalidOperationException("Combat crowbar grip or unit factor differs for " + (npc ? "NPC" : "hero"));
                     }
-                    if (reach < .95f || travel < 1f)
+                    // The compact backhand crosses at least one weapon length;
+                    // the forehand retains its wide arc. Both must reach the same target.
+                    float minimumTravel = swing == MeleeSwing.Backhand ? .60f : 1f;
+                    if (reach < .95f || travel < minimumTravel)
                         throw new InvalidOperationException($"Combat imported {(npc ? "NPC" : "hero")} {names.Attack} cannot reach the front target: reach={reach}, travel={travel}.");
                     ValidateChargedRelease(animator, actor.transform, handPose, bar, origin, tip, npc, names);
                 }
@@ -252,7 +271,6 @@ namespace BarPromenade.Editor
             Transform[] feet = { bones.First(bone => bone.name == "foot.L"), bones.First(bone => bone.name == "foot.R") };
             AnimationClip charge = CombatAssetProvider.LoadClip(names.Charge, npc);
             AnimationClip light = CombatAssetProvider.LoadClip(names.ReleaseLight, npc);
-            AnimationClip heavy = CombatAssetProvider.LoadClip(names.ReleaseHeavy, npc);
             AnimationClip attack = CombatAssetProvider.LoadClip(names.Attack, npc);
             // Only the forehand keeps a separate light-release copy to compare with its attack.
             bool lightCopy = names.ReleaseLight != names.Attack;
@@ -260,16 +278,19 @@ namespace BarPromenade.Editor
             var rotations = new Quaternion[bones.Length];
             var entryPositions = new Vector3[bones.Length];
             var entryRotations = new Quaternion[bones.Length];
+            Transform spine = bones.First(bone => bone.name == "spine");
+            bool[] upperBody = bones.Select(bone => bone.IsChildOf(spine)).ToArray();
             void Blend(float seconds, float q)
             {
                 light.SampleAnimation(animator.gameObject, seconds);
                 for (int i = 0; i < bones.Length; i++)
                 { positions[i] = bones[i].localPosition; rotations[i] = bones[i].localRotation; }
-                heavy.SampleAnimation(animator.gameObject, seconds);
+                light.SampleAnimation(animator.gameObject, CombatAssetProvider.ReleaseSourceSeconds(seconds, q));
                 for (int i = 0; i < bones.Length; i++)
                 {
-                    bones[i].localPosition = Vector3.Lerp(positions[i], bones[i].localPosition, q);
-                    bones[i].localRotation = Quaternion.Slerp(rotations[i], bones[i].localRotation, q);
+                    if (upperBody[i]) continue;
+                    bones[i].localPosition = positions[i];
+                    bones[i].localRotation = rotations[i];
                 }
             }
             light.SampleAnimation(animator.gameObject, 0f);
@@ -391,6 +412,12 @@ namespace BarPromenade.Editor
             Manifest manifest = JsonUtility.FromJson<Manifest>(File.ReadAllText(ManifestPath));
             Transform[] bones = animator.GetComponentsInChildren<Transform>(true);
             var peakTips = new Vector3[manifest.actions.reactions.Length];
+            var peakHeads = new Vector3[peakTips.Length];
+            var peakLeftElbows = new Vector3[peakTips.Length];
+            var peakRightElbows = new Vector3[peakTips.Length];
+            Transform head = bones.First(bone => bone.name == "head");
+            Transform leftElbow = bones.First(bone => bone.name == "forearm.L");
+            Transform rightElbow = bones.First(bone => bone.name == "forearm.R");
             for (int index = 0; index < manifest.actions.reactions.Length; index++)
             {
                 Reaction reaction = manifest.actions.reactions[index];
@@ -403,13 +430,23 @@ namespace BarPromenade.Editor
                 Vector3 start = grip.position;
                 clip.SampleAnimation(animator.gameObject, reaction.peak_seconds);
                 peakTips[index] = tip.position;
+                peakHeads[index] = head.position;
+                peakLeftElbows[index] = leftElbow.position;
+                peakRightElbows[index] = rightElbow.position;
                 if (Vector3.Distance(start, grip.position) < .08f)
                     throw new InvalidOperationException("Combat imported reaction lost its visible impact: " + reaction.name);
             }
             for (int i = 0; i < peakTips.Length; i++)
             for (int j = i + 1; j < peakTips.Length; j++)
-                if (Vector3.Distance(peakTips[i], peakTips[j]) < .19f)
+            {
+                // A released support arm and a falling head also distinguish a
+                // broken guard when the safely held weapon tips remain nearby.
+                bool bodyDistinct = Vector3.Distance(peakHeads[i], peakHeads[j]) >= .12f &&
+                    Mathf.Max(Vector3.Distance(peakLeftElbows[i], peakLeftElbows[j]),
+                        Vector3.Distance(peakRightElbows[i], peakRightElbows[j])) >= .10f;
+                if (Vector3.Distance(peakTips[i], peakTips[j]) < .20f && !bodyDistinct)
                     throw new InvalidOperationException("Combat imported reactions lost their distinct silhouettes.");
+            }
         }
 
         private static void CompareEndpoint(AnimationClip a, float timeA, AnimationClip b, float timeB,
@@ -430,27 +467,59 @@ namespace BarPromenade.Editor
             if (expected == null || expected.Length != 3 || Vector3.Distance(actual, new Vector3(expected[0], expected[1], expected[2])) > .003f)
                 throw new InvalidOperationException("Combat imported metres differ for " + label + ": " + actual);
         }
+        private static void ValidateWeaponCollision(Model model)
+        {
+            WeaponCollision data = model.collision_shapes;
+            if (data == null || data.space != "grip_local_unity_metres" || data.segments == null ||
+                data.segments.Length != CombatWeaponGeometry.Segments.Count)
+                throw new InvalidOperationException("Crowbar collision requires every authored shaft, hook and end segment.");
+            for (int i = 0; i < data.segments.Length; i++)
+            {
+                CombatWeaponGeometry.Segment runtime = CombatWeaponGeometry.Segments[i];
+                Near(runtime.A, data.segments[i].start, "weapon collision start");
+                Near(runtime.B, data.segments[i].end, "weapon collision end");
+                if (Mathf.Abs(runtime.Radius - data.segments[i].radius) > .00001f)
+                    throw new InvalidOperationException("Crowbar collision radius differs from the generated shape.");
+            }
+        }
+
+        private static bool InsideWeaponCollision(Vector3 point)
+        {
+            foreach (CombatWeaponGeometry.Segment segment in CombatWeaponGeometry.Segments)
+            {
+                Vector3 delta = segment.B - segment.A;
+                float t = delta.sqrMagnitude > .00000001f ? Mathf.Clamp01(Vector3.Dot(point - segment.A, delta) / delta.sqrMagnitude) : 0f;
+                if (Vector3.Distance(point, segment.A + delta * t) <= segment.Radius + .0002f) return true;
+            }
+            return false;
+        }
+
         [Serializable] private sealed class Manifest { public bool test_only; public Model[] models; public Actions actions; }
-        [Serializable] private sealed class Model { public string name; public float[] bounds_min, bounds_max; public int triangle_count; public Anchor[] anchors; }
+        [Serializable] private sealed class Model { public string name; public float[] bounds_min, bounds_max; public int triangle_count; public Anchor[] anchors; public WeaponCollision collision_shapes; }
+        [Serializable] private sealed class WeaponCollision { public string space; public WeaponSegment[] segments; }
+        [Serializable] private sealed class WeaponSegment { public float[] start, end; public float radius; }
         [Serializable] private sealed class Anchor { public string name; public float[] position; }
         [Serializable] private sealed class Actions
         {
             public bool root_motion; public int animation_events;
+            public string reaction_silhouette_contract;
             public float maximum_support_error, maximum_support_angle_degrees, minimum_reaction_tip_separation_m;
             public float attack_pelvis_travel_m, attack_knee_travel_degrees, defeat_handoff_seconds;
             public Reaction[] reactions;
+            public string[] released_support_clips;
             public DefensiveStep defensive_step;
             public Swing[] swings;
         }
         [Serializable] private sealed class Swing
         {
             public string name, attack_clip, release_light, release_heavy, charge_clip, recoil_clip;
-            public float contact_seconds, pelvis_travel_m, knee_travel_degrees, minimum_reach_m;
+            public float contact_seconds, pelvis_travel_m, knee_travel_degrees, minimum_reach_m, active_tip_travel_m;
             public Charging charging;
         }
         [Serializable] private sealed class Charging
         {
-            public string charge_parameter;
+            public string charge_parameter, parameterization, source_clip;
+            public float preparation_advance_seconds, convergence_seconds, charge_source_seconds;
             public float release_seconds, maximum_entry_error, maximum_lower_track_error;
             public float maximum_light_legacy_error, maximum_support_error, minimum_reach_m;
         }

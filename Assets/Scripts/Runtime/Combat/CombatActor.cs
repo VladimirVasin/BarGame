@@ -14,10 +14,14 @@ namespace BarPromenade
         private NpcHandPose handPose;
         private AnimationClip ready, rest, block, hit, guardImpact, guardBreak, reaction, defeat;
         private CombatSupportGrip supportGrip;
+        private CombatWeaponConstraint weaponConstraint;
+        public bool WeaponClearanceBlocked => weaponConstraint != null && weaponConstraint.Blocked;
+        public float WeaponPenetrationDepth => weaponConstraint?.PenetrationDepth ?? 0f;
+        public string WeaponBlockingShape => weaponConstraint?.BlockingShape;
         private Transform strikeBase, strikeTip;
         private string visibleClip;
-        private float poseClock, reactionClock, pushElapsed, pushDistance = .12f, pushDuration = .16f;
-        private Vector3 pushDirection;
+        private float poseClock, reactionClock;
+        private bool receivedDuringStep;
         private readonly List<Contact> standaloneContacts = new List<Contact>(4);
         public MeleeCombatant State { get; } = new MeleeCombatant();
         public CharacterController Body { get; private set; }
@@ -25,12 +29,13 @@ namespace BarPromenade
         public bool IsHero => hero != null;
         public Vector3 SupportGripWorldPosition => supportGrip != null ? supportGrip.Target : transform.position;
         public float SupportGripWeight => supportGrip?.Weight ?? 0f;
+        public CombatArmSupportState SupportArmState => supportGrip?.State ?? CombatArmSupportState.SupportingWeapon;
         public bool IsAvailable => isActiveAndEnabled && (hero == null ||
             (hero.CanAcquireClip(this) && !interaction.IsActive && motor.InputEnabled));
 
         // Finishing a round prevents further attacks, but the standing winner
         // still walks. Defeat/stagger and the active swing own their own stop.
-        public float MovementScale => State.Phase switch
+        public float MovementScale => IsKnockedDown || (ImpactMotion != null && ImpactMotion.Velocity.sqrMagnitude > .04f) ? 0f : State.Phase switch
         {
             MeleePhase.Charging => .22f,
             // The swing gathers itself instead of snapping from a walk to a halt.
@@ -41,7 +46,7 @@ namespace BarPromenade
             _ => 0f
         };
 
-        internal float TurnScale => State.Phase switch
+        internal float TurnScale => IsKnockedDown || (ImpactMotion != null && ImpactMotion.BalanceLoad > .45f) ? 0f : State.Phase switch
         {
             MeleePhase.Charging => .2f,
             MeleePhase.Windup => .2f,
@@ -118,12 +123,16 @@ namespace BarPromenade
             if (strikeBase == null || strikeTip == null) throw new InvalidOperationException("Crowbar needs its authored strike anchors.");
             PrepareWeaponPhysics();
             supportGrip = new CombatSupportGrip(DamageRigRoot, transform, handPose, Weapon.transform);
-            if (hero != null) hero.SetCombatSupportGrip(this, supportGrip);
+            weaponConstraint = new CombatWeaponConstraint(this);
+            supportGrip.SetArmClearance(weaponConstraint.IsSupportArmPathClear);
+            if (hero != null) hero.SetCombatSupportGrip(this, supportGrip, weaponConstraint);
         }
+
+        private bool HasTwoHandSupport => !IsKnockedDown && (supportGrip == null || supportGrip.IsSupportingWeapon);
 
         public bool TryAttack()
         {
-            if (roundEnded || !IsAvailable || !GameInput.CanRead(GameInputContext.Gameplay) || !State.TryStartAttack()) return false;
+            if (roundEnded || !IsAvailable || !HasTwoHandSupport || !GameInput.CanRead(GameInputContext.Gameplay) || !State.TryStartAttack()) return false;
             reaction = null;
             Present();
             return true;
@@ -131,7 +140,7 @@ namespace BarPromenade
 
         public bool RequestAttack()
         {
-            if (roundEnded || !IsAvailable || !GameInput.CanRead(GameInputContext.Gameplay)) return false;
+            if (roundEnded || !IsAvailable || !HasTwoHandSupport || !GameInput.CanRead(GameInputContext.Gameplay)) return false;
             int previous = State.AttackSequence;
             if (!State.RequestAttack()) return false;
             if (previous != State.AttackSequence) reaction = null;
@@ -139,7 +148,7 @@ namespace BarPromenade
             return true;
         }
 
-        public void SetBlock(bool held) => State.SetBlocking(held && !roundEnded && IsAvailable);
+        public void SetBlock(bool held) => State.SetBlocking(held && !roundEnded && IsAvailable && HasTwoHandSupport);
 
         public void Step(float seconds)
         {
@@ -167,6 +176,7 @@ namespace BarPromenade
         internal void AdvanceSimulation(float seconds)
         {
             collectSweep = false;
+            if (AdvanceKnockdown(seconds)) return;
             if (State.IsDefeated) { AdvanceDefeat(seconds); return; }
             if (!IsAvailable)
             {
@@ -174,14 +184,7 @@ namespace BarPromenade
                 ReleasePresentation(); return;
             }
             AdvanceVisualClock(seconds);
-            if (npc != null && Body.enabled)
-            {
-                float previous = Mathf.Clamp01(pushElapsed / pushDuration);
-                pushElapsed += seconds;
-                float next = Mathf.Clamp01(pushElapsed / pushDuration);
-                float distance = pushDistance * ((2f * next - next * next) - (2f * previous - previous * previous));
-                Body.Move(pushDirection * distance + Vector3.down * seconds);
-            }
+            if (AdvanceImpactMotion(seconds)) return;
             int sequence = State.AttackSequence;
             float from = State.AttackElapsed;
             MeleePhase previousPhase = State.Phase;
@@ -213,11 +216,10 @@ namespace BarPromenade
         }
 
         private MeleeHitResult Receive(CombatActor source, bool front, int sequence, Vector3 point, Vector3 normal, Vector3 direction,
-            float damage, float blockCost, float power, MeleeHitLocation location)
+            float damage, float blockCost, float power, MeleeHitLocation location,
+            Player3DAnatomicalPart part = Player3DAnatomicalPart.Torso, Vector3 localPoint = default, float weaponSpeed = 0f)
         {
-            Vector3 incoming = source.transform.position - transform.position;
-            incoming.y = 0;
-            Vector3 away = incoming.sqrMagnitude > .0001f ? -incoming.normalized : -transform.forward;
+            receivedDuringStep = State.Phase == MeleePhase.Step;
             float healthBefore = State.Health;
             MeleeHitResult result = State.ReceiveHit(damage, blockCost, front, power, location);
             if (result == MeleeHitResult.Ignored) return result;
@@ -227,20 +229,16 @@ namespace BarPromenade
             {
                 case MeleeHitResult.Hit:
                     RetroAudio.PlayAt(RetroSfxId.SpadeBite, point, Mathf.Lerp(.8f, 1f, power));
-                    Shove(away, source.State.IsChained ? .20f : Mathf.Lerp(.15f, .28f, power), Mathf.Lerp(.16f, .20f, power));
                     reaction = null;
                     break;
                 case MeleeHitResult.GuardBroken:
                     RetroAudio.PlayAt(RetroSfxId.SpadeBite, point, 1f);
                     RetroAudio.PlayAt(RetroSfxId.StoneTamp, transform.position + Vector3.up, .6f);
-                    Shove(away, .35f, .22f);
                     reaction = null;
                     break;
                 case MeleeHitResult.Blocked:
                     RetroAudio.PlayAt(RetroSfxId.SpadeGlance, point, .55f);
-                    Shove(away, .06f, .12f);
-                    source.Shove(-away, .04f, .12f);
-                    damagePose?.Hit(away, .3f);
+                    source.Shove(-direction, .04f, .12f);
                     reaction = guardImpact;
                     break;
                 case MeleeHitResult.Parried:
@@ -250,10 +248,11 @@ namespace BarPromenade
                     break;
             }
             reactionClock = 0f;
-            if (State.IsDefeated)
-                BeginDefeat(away, point);
             PublishImpact(new CombatImpact(source, this, sequence, point, normal, direction,
-                healthBefore, State.Health, result, location, power));
+                healthBefore, State.Health, result, location, power, part, localPoint, weaponSpeed,
+                CombatImpactMotion.ResolveImpulse(direction, power, weaponSpeed, result)));
+            if (State.IsDefeated) BeginDefeat(direction, point);
+            receivedDuringStep = false;
             Present();
             return result;
         }
@@ -273,19 +272,17 @@ namespace BarPromenade
             direction.y = 0f;
             if (direction.sqrMagnitude < .0001f || distance <= 0f || duration <= 0f) return;
             direction.Normalize();
-            if (motor != null) motor.TryApplyExternalPush(direction, distance, duration);
-            else if (npc != null)
-            {
-                pushDirection = direction;
-                pushDistance = distance;
-                pushDuration = duration;
-                pushElapsed = 0f;
-            }
+            ImpactMotion?.Push(direction * (distance * 4.2f * CombatImpactMotion.BodyMass));
         }
+
+        private bool previewWorldBlocked;
 
         private bool SampleAttack(float progress)
         {
+            previewWorldBlocked = false;
+            using var weaponPreview = weaponConstraint.BeginContactPreview();
             supportGrip?.Restore();
+            weaponConstraint?.Restore();
             footwork?.Restore();
             damagePose?.Restore();
             bodyMotion?.Restore();
@@ -320,6 +317,9 @@ namespace BarPromenade
                 ApplyNpcCombatPose();
             }
             handPose.SetGrip(false, 1f);
+            // Read before the preview restores persistent presentation diagnostics.
+            // Contacts still need the world obstruction that corrected this sample.
+            previewWorldBlocked = weaponConstraint.WorldBlocked;
             return true;
         }
 
@@ -327,7 +327,8 @@ namespace BarPromenade
 
         internal void SetPresentationFrozen(bool frozen)
         {
-            if (hero != null) hero.SetOwnedPresentationFrozen(this, frozen);
+            if (hero != null) hero.SetOwnedPresentationFrozen(this, frozen && !IsKnockedDown && !IsRagdollActive);
+            SetKnockdownFrozen(frozen);
         }
 
         public void SetLocomotion(Vector3 velocity)
@@ -338,11 +339,13 @@ namespace BarPromenade
 
         public void Present()
         {
-            if (ready == null || IsRagdollActive || winnerPresentationReleased) return;
+            if (ready == null || winnerPresentationReleased) return;
+            if (PresentKnockdown() || IsRagdollActive) return;
             // Pause temporarily owns input, not the combat rig. Retain the
             // sampled pose/transition so a paused read cannot release the clip.
             if (PauseMenuController.IsAnyPaused) return;
             supportGrip?.Restore();
+            weaponConstraint?.Restore();
             footwork?.Restore();
             damagePose?.Restore();
             bodyMotion?.Restore();
@@ -350,7 +353,8 @@ namespace BarPromenade
             bool stepping = State.Phase == MeleePhase.Step;
             AnimationClip chosen = stepping ? (stepBlocked ? ready : stepClip) : State.IsDefeated ? defeat : State.Phase == MeleePhase.GuardBroken ? guardBreak : stagger ? hit :
                 reaction != null ? reaction : State.IsCharging ? Current.Charge : State.IsAttacking ? ReleaseClip : roundEnded ? rest : State.IsBlocking ? block : ready;
-            supportGrip?.SetTarget(chosen == block || chosen == guardImpact, chosen != rest && !State.IsDefeated);
+            supportGrip?.SetTarget(chosen == block || chosen == guardImpact,
+                chosen != rest && chosen != hit && chosen != guardBreak && !State.IsDefeated);
             float progress = stagger ?
                 (State.IsDefeated ? Mathf.Clamp01(defeatClock / defeat.length) : State.PhaseProgress) :
                 Mathf.Repeat(poseClock, chosen.length) / chosen.length;
@@ -362,7 +366,7 @@ namespace BarPromenade
             if (hero != null)
             {
                 if (!IsAvailable) { ReleasePresentation(); return; }
-                hero.SetCombatSupportGrip(this, supportGrip);
+                hero.SetCombatSupportGrip(this, supportGrip, weaponConstraint);
                 hero.ReleaseCarryPose(this);
                 if (visibleClip != chosen.name || !hero.OwnsClip(this))
                 {
@@ -413,6 +417,7 @@ namespace BarPromenade
         private void SampleNpcAction(AnimationClip chosen, float progress)
         {
             if (State.IsAttacking && reaction == null) SampleNpcRelease(progress);
+            else if (State.IsCharging) SampleNpcReleasePose(0f, State.Charge01);
             else chosen.SampleAnimation(npc.Animator.gameObject, progress * chosen.length);
         }
 
@@ -421,6 +426,7 @@ namespace BarPromenade
 
         public void ResetActor(Vector3 position, Vector3 facing)
         {
+            ResetKnockdown();
             Ragdoll?.Cancel();
             ReturnWeaponToRightHand();
             RestoreWeapon();
@@ -428,12 +434,13 @@ namespace BarPromenade
             ResetDefeat();
             ResetDamage();
             supportGrip?.Reset();
-            if (hero != null) hero.SetCombatSupportGrip(this, supportGrip);
+            weaponConstraint?.Reset();
+            if (hero != null) hero.SetCombatSupportGrip(this, supportGrip, weaponConstraint);
             State.Reset(); poseClock = 0f;
             locomotionVelocity = Vector3.zero;
             npcPresentedPoseValid = false;
             stepClip = null; stepDirection = Vector3.zero; stepBlocked = false; pendingStepInput = Vector2.zero;
-            reaction = null; reactionClock = 0f; pushElapsed = pushDuration; pushDirection = Vector3.zero;
+            reaction = null; reactionClock = 0f; receivedDuringStep = false;
             sweepValid = false;
             if (motor != null) motor.Teleport(position);
             else
@@ -452,8 +459,9 @@ namespace BarPromenade
         {
             if (hero != null) hero.ReleaseContextualFacialExpression(this);
             if (hero != null) hero.ClearCombatSupportGrip(this);
-            if (IsRagdollActive) supportGrip?.Forget();
+            if (IsRagdollActive) { supportGrip?.Forget(); weaponConstraint?.Forget(); }
             supportGrip?.Reset();
+            weaponConstraint?.Reset();
             if (IsRagdollActive) footwork?.Forget();
             else footwork?.Restore();
             ReleaseDamagePose();
@@ -472,6 +480,7 @@ namespace BarPromenade
         private void OnDisable()
         {
             State.CancelCharge();
+            ResetKnockdown();
             Ragdoll?.Cancel();
             // Scene teardown is already deactivating the arena hierarchy;
             // Unity forbids reparenting the dropped prop during that operation.
@@ -482,10 +491,13 @@ namespace BarPromenade
 
         private void OnDestroy()
         {
+            ResetKnockdown();
             Ragdoll?.Cancel();
             if (weaponDropped && Weapon != null) Destroy(Weapon);
             ReleasePresentation();
             damagePose?.Dispose();
+            weaponConstraint?.Dispose();
+            DisposeHeldWeaponPhysics();
         }
     }
 }

@@ -10,7 +10,7 @@ namespace BarPromenade
         private float defeatClock;
         private Vector3 defeatDirection, defeatPoint;
         private Rigidbody weaponBody;
-        private CapsuleCollider weaponCollider;
+        private CombatHeldWeaponPhysics heldWeaponPhysics;
         private Transform weaponGrip;
         private Vector3 weaponPosition, weaponScale;
         private Quaternion weaponRotation;
@@ -29,6 +29,7 @@ namespace BarPromenade
             defeatClock = 0f;
             defeatDirection = direction.sqrMagnitude > .001f ? direction.normalized : -transform.forward;
             defeatPoint = point;
+            if (IsKnockedDown) PromoteKnockdownToDefeat();
             reaction = null;
             sweepValid = false;
         }
@@ -49,6 +50,8 @@ namespace BarPromenade
                 // clip with combat footwork would keep the winner shuffling.
                 bool ownedPose = hero.OwnsClip(this);
                 ReleasePresentation();
+                supportGrip?.SetTarget(false, false);
+                hero.SetCombatSupportGrip(this, supportGrip, weaponConstraint);
                 winnerPresentationReleased = true;
                 if (ownedPose) hero.BeginRecoveryPoseTransition(.35f);
                 // Keep the crowbar in the right hand without a combat torso pose.
@@ -74,6 +77,7 @@ namespace BarPromenade
             // owned clip first would replace that pose with ordinary locomotion.
             if (!Ragdoll.Begin(defeatDirection, defeatPoint))
                 throw new InvalidOperationException("The defeated combat rig could not hand its pose to physics.");
+            weaponConstraint?.Forget();
             CancelPoseBlend();
             DropWeapon();
         }
@@ -102,12 +106,35 @@ namespace BarPromenade
             weaponBody.angularDamping = .7f;
             weaponBody.maxAngularVelocity = 10f;
             weaponBody.collisionDetectionMode = CollisionDetectionMode.ContinuousSpeculative;
-            weaponCollider = Weapon.AddComponent<CapsuleCollider>();
-            weaponCollider.enabled = false;
-            weaponCollider.direction = 1;
-            weaponCollider.center = new Vector3(0f, .24f, .04f);
-            weaponCollider.height = .80f;
-            weaponCollider.radius = .04f;
+            PrepareHeldWeaponPhysics();
+        }
+
+        private void PrepareHeldWeaponPhysics()
+        {
+            if (heldWeaponPhysics != null || Weapon == null) return;
+            Transform forearm = CityPedestrianHandProps.FindSocket(DamageRigRoot, "forearm.R");
+            Rigidbody armBody = forearm != null ? forearm.GetComponent<Rigidbody>() : null;
+            if (armBody == null) throw new InvalidOperationException("Held crowbar collision requires the right forearm rigidbody.");
+            heldWeaponPhysics = gameObject.AddComponent<CombatHeldWeaponPhysics>();
+            heldWeaponPhysics.Initialize(Weapon.transform, weaponBody, armBody,
+                Ragdoll.PhysicsController.AnatomicalColliders, handPose);
+        }
+
+        internal void EnableHeldWeaponPhysics()
+        {
+            if (weaponDropped) return;
+            PrepareHeldWeaponPhysics();
+            heldWeaponPhysics?.EnableHeld();
+        }
+
+        internal void DisableHeldWeaponPhysics() => heldWeaponPhysics?.DisableHeld();
+
+        internal void DisposeHeldWeaponPhysics()
+        {
+            if (heldWeaponPhysics == null) return;
+            heldWeaponPhysics.Dispose();
+            Destroy(heldWeaponPhysics);
+            heldWeaponPhysics = null;
         }
 
         private void DropWeapon()
@@ -116,9 +143,8 @@ namespace BarPromenade
             handPose.SetGrip(false, 0f);
             handPose.SetGrip(true, 0f);
             Weapon.transform.SetParent(transform.parent, true);
-            weaponCollider.enabled = true;
-            foreach (Collider owned in GetComponentsInChildren<Collider>(true))
-                Physics.IgnoreCollision(weaponCollider, owned, true);
+            PrepareHeldWeaponPhysics();
+            heldWeaponPhysics.EnableDropped();
             weaponBody.detectCollisions = true;
             weaponBody.useGravity = true;
             weaponBody.interpolation = RigidbodyInterpolation.Interpolate;
@@ -130,6 +156,7 @@ namespace BarPromenade
 
         private void RestoreWeapon()
         {
+            heldWeaponPhysics?.ResetWeapon();
             if (!weaponDropped || Weapon == null) return;
             weaponBody.linearVelocity = Vector3.zero;
             weaponBody.angularVelocity = Vector3.zero;
@@ -137,7 +164,6 @@ namespace BarPromenade
             weaponBody.useGravity = false;
             weaponBody.detectCollisions = false;
             weaponBody.interpolation = RigidbodyInterpolation.None;
-            weaponCollider.enabled = false;
             if (weaponGrip == null) { Destroy(Weapon); weaponDropped = false; return; }
             Weapon.transform.SetParent(weaponGrip, false);
             Weapon.transform.localPosition = weaponPosition;
