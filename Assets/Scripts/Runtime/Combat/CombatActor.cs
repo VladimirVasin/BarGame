@@ -285,7 +285,9 @@ namespace BarPromenade
         {
             supportGrip?.Restore();
             damagePose?.Restore();
+            bodyMotion?.Restore();
             AnimationClip chosen = ReleaseClip;
+            supportGrip?.SetTarget(false, true);
             if (hero != null)
             {
                 if (visibleClip != chosen.name || !hero.OwnsClip(this))
@@ -295,21 +297,57 @@ namespace BarPromenade
                     if (!releasingCharge) BeginPoseBlend();
                 }
                 visibleClip = chosen.name;
-                hero.SetOwnedClipLocomotion(this, MovementScale > 0f && motor.PlanarVelocity.sqrMagnitude > .01f);
+                bool movingPose = HeroUsesGait(false);
+                if (heroMovingPose != movingPose) BeginPoseBlend();
+                heroMovingPose = movingPose;
+                hero.SetOwnedClipLocomotion(this, movingPose);
                 SampleHeroRelease(progress);
+                hero.SetCombatBodyMotion(this, bodyMotion);
+                PresentDamagePose();
+                // Contacts see the same complete pose as LateUpdate, including
+                // the externally clocked transition and the supporting palm.
+                hero.ReapplyLatePresentationPose();
             }
-            else SampleNpcRelease(progress);
+            else
+            {
+                if (visibleClip != chosen.name)
+                {
+                    if (visibleClip != Current.Charge.name) BeginPoseBlend();
+                    visibleClip = chosen.name;
+                }
+                SampleNpcAction(chosen, progress, false);
+                ApplyNpcCombatPose();
+            }
             handPose.SetGrip(false, 1f);
             return true;
         }
 
-        public void SetLocomotion(float speed) => locomotionSpeed = speed;
+        public void SetLocomotion(float speed) => SetLocomotion(transform.forward * speed);
+
+        internal void SetPresentationFrozen(bool frozen)
+        {
+            if (hero != null) hero.SetOwnedPresentationFrozen(this, frozen);
+        }
+
+        public void SetLocomotion(Vector3 velocity)
+        {
+            velocity.y = 0f;
+            locomotionVelocity = velocity;
+            locomotionSpeed = velocity.magnitude * (Vector3.Dot(velocity, transform.forward) < 0f ? -1f : 1f);
+        }
+
+        private bool HeroUsesGait(bool stepping) => !stepping && MovementScale > 0f &&
+            (motor.PlanarVelocity.sqrMagnitude > .0025f || hero.LocomotionBlend > .05f);
 
         public void Present()
         {
             if (ready == null || IsRagdollActive) return;
+            // Pause temporarily owns input, not the combat rig. Retain the
+            // sampled pose/transition so a paused read cannot release the clip.
+            if (PauseMenuController.IsAnyPaused) return;
             supportGrip?.Restore();
             damagePose?.Restore();
+            bodyMotion?.Restore();
             bool stagger = State.Phase == MeleePhase.Stagger || State.Phase == MeleePhase.GuardBroken || State.IsDefeated;
             bool stepping = State.Phase == MeleePhase.Step;
             AnimationClip chosen = stepping ? (stepBlocked ? ready : stepClip) : State.IsDefeated ? defeat : State.Phase == MeleePhase.GuardBroken ? guardBreak : stagger ? hit :
@@ -327,8 +365,7 @@ namespace BarPromenade
             {
                 if (!IsAvailable) { ReleasePresentation(); return; }
                 hero.SetCombatSupportGrip(this, supportGrip);
-                bool movingPose = !stepping && MovementScale > 0f &&
-                    (motor.PlanarVelocity.sqrMagnitude > .0025f || hero.LocomotionBlend > .05f);
+                bool movingPose = HeroUsesGait(stepping);
                 hero.ReleaseCarryPose(this);
                 if (visibleClip != chosen.name || !hero.OwnsClip(this))
                 {
@@ -351,6 +388,7 @@ namespace BarPromenade
                 if (State.IsAttacking && reaction == null && !stagger) SampleHeroRelease(progress);
                 else if (State.IsCharging) SampleHeroCharge();
                 else hero.SampleOwnedClip(this, progress);
+                hero.SetCombatBodyMotion(this, bodyMotion);
                 motor.SetOwnedMovementConstraint(this, MovementScale, TurnScale);
             }
             else
@@ -360,31 +398,40 @@ namespace BarPromenade
                     if (!(visibleClip == Current.Charge.name && State.IsAttacking && reaction == null)) BeginPoseBlend(TransitionSeconds(chosen));
                     visibleClip = chosen.name;
                 }
-                bool walking = Mathf.Abs(locomotionSpeed) > .05f && MovementScale > 0f;
-                if (walking != npcMovingPose && poseBlendRemaining <= 0f) BeginPoseBlend(.14f);
-                npcMovingPose = walking;
-                if (walking)
-                {
-                    // The walking pelvis belongs to the gait too: retaining the
-                    // lowered standing pelvis would drive both boots into the floor.
-                    walk.SampleAnimation(npc.Animator.gameObject, Mathf.Repeat(poseClock * Mathf.Sign(locomotionSpeed), walk.length));
-                    for (int i = 0; i < legs.Length; i++)
-                    { legPositions[i] = legs[i].localPosition; legRotations[i] = legs[i].localRotation; }
-                }
-                if (State.IsAttacking && reaction == null && !stagger) SampleNpcRelease(progress);
-                else chosen.SampleAnimation(npc.Animator.gameObject, progress * chosen.length);
-                if (walking)
-                    for (int i = 0; i < legs.Length; i++)
-                    { legs[i].localPosition = legPositions[i]; legs[i].localRotation = legRotations[i]; }
+                SampleNpcAction(chosen, progress, stepping);
             }
             handPose.SetGrip(false, 1f);
-            PresentDamagePose();
             if (npc != null)
             {
-                ApplyNpcPoseBlend();
-                supportGrip?.Apply();
+                ApplyNpcCombatPose();
                 RememberNpcPresentedPose();
             }
+            else
+            {
+                PresentDamagePose();
+                hero.ReapplyLatePresentationPose();
+                hero.RememberOwnedRecoveryPose(this, poseClock);
+            }
+        }
+
+        private void SampleNpcAction(AnimationClip chosen, float progress, bool stepping)
+        {
+            bool walking = !stepping && Mathf.Abs(locomotionSpeed) > .05f && MovementScale > 0f;
+            if (walking != npcMovingPose) BeginPoseBlend(.18f);
+            npcMovingPose = walking;
+            if (walking)
+            {
+                // Preserve the walking pelvis along with its legs; a lowered
+                // standing pelvis would push both soles through the ground.
+                walk.SampleAnimation(npc.Animator.gameObject, Mathf.Repeat(poseClock * Mathf.Sign(locomotionSpeed), walk.length));
+                for (int i = 0; i < legs.Length; i++)
+                { legPositions[i] = legs[i].localPosition; legRotations[i] = legs[i].localRotation; }
+            }
+            if (State.IsAttacking && reaction == null) SampleNpcRelease(progress);
+            else chosen.SampleAnimation(npc.Animator.gameObject, progress * chosen.length);
+            if (walking)
+                for (int i = 0; i < legs.Length; i++)
+                { legs[i].localPosition = legPositions[i]; legs[i].localRotation = legRotations[i]; }
         }
 
         private float TransitionSeconds(AnimationClip chosen) => chosen == rest ? .35f :
@@ -401,6 +448,8 @@ namespace BarPromenade
             if (hero != null) hero.SetCombatSupportGrip(this, supportGrip);
             heroMovingPose = npcMovingPose = false;
             State.Reset(); poseClock = locomotionSpeed = 0f;
+            locomotionVelocity = Vector3.zero;
+            npcPresentedPoseValid = false;
             stepClip = null; stepDirection = Vector3.zero; stepBlocked = false; pendingStepInput = Vector2.zero;
             reaction = null; reactionClock = 0f; pushElapsed = pushDuration; pushDirection = Vector3.zero;
             sweepValid = false;
@@ -412,6 +461,7 @@ namespace BarPromenade
                 Body.enabled = true;
             }
             transform.rotation = Quaternion.LookRotation(facing);
+            bodyMotion?.Reset();
             Present();
         }
 
@@ -421,8 +471,12 @@ namespace BarPromenade
             if (IsRagdollActive) supportGrip?.Forget();
             supportGrip?.Reset();
             ReleaseDamagePose();
+            if (IsRagdollActive) bodyMotion?.Forget();
+            if (hero != null) hero.ClearCombatBodyMotion(this);
+            bodyMotion?.Reset();
             if (handPose != null) handPose.SetGrip(false, 0f);
             CancelPoseBlend();
+            if (hero != null) hero.ClearOwnedRecoveryPoseClock(this);
             if (hero != null) { hero.ReleaseOwnedClip(this); hero.ReleaseCarryPose(this); }
             if (motor != null) motor.ReleaseMovementConstraint(this);
             visibleClip = null;

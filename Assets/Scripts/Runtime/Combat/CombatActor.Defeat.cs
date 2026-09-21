@@ -49,13 +49,13 @@ namespace BarPromenade
             defeatClock = Mathf.Min(defeatClock + seconds, CombatAssetProvider.DefeatHandoffSeconds);
             Present();
             if (defeatClock + .000001f < CombatAssetProvider.DefeatHandoffSeconds) return;
-            CancelPoseBlend();
             supportGrip?.Forget();
-            if (hero == null) damagePose?.ForgetBase();
+            if (hero == null) { damagePose?.ForgetBase(); bodyMotion?.Forget(); }
             // Begin takes the same bones in their current impact pose. Ending the
             // owned clip first would replace that pose with ordinary locomotion.
             if (!Ragdoll.Begin(defeatDirection, defeatPoint))
                 throw new InvalidOperationException("The defeated combat rig could not hand its pose to physics.");
+            CancelPoseBlend();
             DropWeapon();
         }
 

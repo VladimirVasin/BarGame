@@ -11,12 +11,17 @@ namespace BarPromenade
         private RecoverySample[] visibleRecoveryPose;
         private RecoverySample[] previousRecoveryPose;
         private RecoverySample[] transitionRecoveryPose;
+        private RecoverySample[] recoveryTargetPose;
+        private bool recoveryTargetCaptured;
         private Vector3[] transitionLinearVelocity;
         private Vector3[] transitionAngularVelocity;
         private float visibleRecoveryDelta;
         private int visibleRecoverySamples;
         private float recoveryTransitionDuration;
         private float recoveryTransitionElapsed;
+        private object recoveryClockOwner;
+        private object recoverySampleClockOwner;
+        private float recoverySampleClock;
         private Player3DRagdollController recoveryPhysics;
         private float recoveryPhysicsProgress;
         private readonly Vector3[] riseHandContacts = new Vector3[2];
@@ -58,6 +63,7 @@ namespace BarPromenade
             visibleRecoveryPose = new RecoverySample[recoveryBones.Length];
             previousRecoveryPose = new RecoverySample[recoveryBones.Length];
             transitionRecoveryPose = new RecoverySample[recoveryBones.Length];
+            recoveryTargetPose = new RecoverySample[recoveryBones.Length];
             transitionLinearVelocity = new Vector3[recoveryBones.Length];
             transitionAngularVelocity = new Vector3[recoveryBones.Length];
         }
@@ -71,6 +77,7 @@ namespace BarPromenade
 
         private void RememberRecoveryPose(float deltaTime)
         {
+            if (recoverySampleClockOwner != null && OwnsClip(recoverySampleClockOwner)) return;
             EnsureRecoveryBones();
             if (recoveryBones == null || deltaTime <= 0f) return;
             for (int i = 0; i < recoveryBones.Length; i++)
@@ -82,7 +89,38 @@ namespace BarPromenade
             visibleRecoverySamples = Mathf.Min(2, visibleRecoverySamples + 1);
         }
 
-        private static Vector3 RecoveryAngularVelocity(Quaternion from, Quaternion to, float dt)
+        internal void RememberOwnedRecoveryPose(object owner, float clock)
+        {
+            if (!OwnsClip(owner)) return;
+            EnsureRecoveryBones();
+            if (recoveryBones == null) return;
+            bool sameOwner = ReferenceEquals(recoverySampleClockOwner, owner);
+            bool advanced = sameOwner && clock > recoverySampleClock + .000001f;
+            if (!sameOwner) visibleRecoverySamples = 0;
+            for (int i = 0; i < recoveryBones.Length; i++)
+            {
+                if (advanced) previousRecoveryPose[i] = visibleRecoveryPose[i];
+                visibleRecoveryPose[i] = RecoverySample.Read(recoveryBones[i]);
+            }
+            if (advanced)
+            {
+                visibleRecoveryDelta = clock - recoverySampleClock;
+                visibleRecoverySamples = Mathf.Min(2, visibleRecoverySamples + 1);
+            }
+            else if (!sameOwner) visibleRecoverySamples = 1;
+            recoverySampleClockOwner = owner;
+            recoverySampleClock = clock;
+        }
+
+        internal void ClearOwnedRecoveryPoseClock(object owner)
+        {
+            if (!ReferenceEquals(recoverySampleClockOwner, owner)) return;
+            recoverySampleClockOwner = null;
+            recoverySampleClock = 0f;
+            visibleRecoverySamples = 0;
+        }
+
+        internal static Vector3 RecoveryAngularVelocity(Quaternion from, Quaternion to, float dt)
         {
             Quaternion delta = to * Quaternion.Inverse(from);
             if (delta.w < 0f) delta = new Quaternion(-delta.x, -delta.y, -delta.z, -delta.w);
@@ -111,6 +149,7 @@ namespace BarPromenade
 
         internal void BeginRecoveryPoseTransition(float duration = 0.32f)
         {
+            recoveryClockOwner = null;
             EnsureRecoveryBones();
             if (recoveryBones == null || visibleRecoverySamples == 0) return;
             recoveryTransitionDuration = Mathf.Max(0.08f, duration);
@@ -129,6 +168,14 @@ namespace BarPromenade
             }
         }
 
+        /// <summary>A combat transition uses the same clock for contacts and final presentation.</summary>
+        internal void SetOwnedRecoveryPoseClock(object owner, float elapsed)
+        {
+            if (!OwnsClip(owner) || recoveryTransitionDuration <= 0f) return;
+            recoveryClockOwner = owner;
+            recoveryTransitionElapsed = Mathf.Clamp(elapsed, 0f, recoveryTransitionDuration);
+        }
+
         internal void SetRecoveryPhysicsBlend(Player3DRagdollController physics, float progress)
         {
             recoveryPhysics = physics;
@@ -145,12 +192,14 @@ namespace BarPromenade
                 recoveryPhysics.ApplyRecoveryBlend(recoveryPhysicsProgress);
             }
             if (recoveryTransitionDuration <= 0f || recoveryBones == null) return;
-            float elapsed = Mathf.Min(recoveryTransitionDuration, recoveryTransitionElapsed + Mathf.Max(0f, deltaTime));
+            float elapsed = Mathf.Min(recoveryTransitionDuration, recoveryTransitionElapsed +
+                (recoveryClockOwner != null ? 0f : Mathf.Max(0f, deltaTime)));
             float t = Mathf.Clamp01(elapsed / recoveryTransitionDuration);
             float blend = t * t * t * (t * (t * 6f - 15f) + 10f);
             for (int i = 0; i < recoveryBones.Length; i++)
             {
                 Transform bone = recoveryBones[i];
+                if (recoveryClockOwner != null) recoveryTargetPose[i] = RecoverySample.Read(bone);
                 RecoverySample source = transitionRecoveryPose[i];
                 Vector3 angular = transitionAngularVelocity[i];
                 Quaternion predicted = angular.sqrMagnitude > 0.000001f
@@ -160,10 +209,23 @@ namespace BarPromenade
                     transitionLinearVelocity[i] * elapsed, bone.localPosition, blend);
                 bone.localRotation = Quaternion.Slerp(predicted, bone.localRotation, blend);
             }
+            recoveryTargetCaptured = recoveryClockOwner != null;
+        }
+
+        private void RestoreRecoveryPoseTransition()
+        {
+            if (!recoveryTargetCaptured) return;
+            for (int i = 0; i < recoveryBones.Length; i++)
+            {
+                if (recoveryBones[i] == null) continue;
+                recoveryBones[i].SetLocalPositionAndRotation(recoveryTargetPose[i].Position, recoveryTargetPose[i].Rotation);
+            }
+            recoveryTargetCaptured = false;
         }
 
         private void AdvanceRecoveryPresentationClock(float deltaTime)
         {
+            if (recoveryClockOwner != null) return;
             if (recoveryTransitionDuration <= 0f || deltaTime <= 0f) return;
             if (recoveryTransitionElapsed >= recoveryTransitionDuration)
             {
@@ -176,7 +238,10 @@ namespace BarPromenade
 
         private void ClearRecoveryPresentation()
         {
+            RestoreRecoveryPoseTransition();
+            recoveryClockOwner = null;
             recoveryPhysics = null;
+            recoverySampleClockOwner = null;
             recoveryTransitionDuration = 0f;
             visibleRecoverySamples = 0;
             ResetRiseHandContacts();
@@ -184,6 +249,8 @@ namespace BarPromenade
 
         internal void CancelRecoveryPoseTransition()
         {
+            RestoreRecoveryPoseTransition();
+            recoveryClockOwner = null;
             recoveryTransitionDuration = 0f;
             recoveryPhysics = null;
             ResetRiseHandContacts();
@@ -207,6 +274,7 @@ namespace BarPromenade
                 ApplyLatePose(deltaTime);
                 ApplyFacialPose();
                 ApplyAttentionPose(deltaTime);
+                ApplyCombatBodyMotion();
                 ApplyCombatDamagePose();
                 CompleteRecoveryPresentation(deltaTime);
                 ApplyCombatSupportGrip();

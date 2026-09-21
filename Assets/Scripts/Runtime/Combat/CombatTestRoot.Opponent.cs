@@ -22,6 +22,8 @@ namespace BarPromenade
         private bool opponentWasAttacking, retreatedOnce, corneredAnimal, feinting, postFeintLight, punishing, queueBackhand, queueBackStep;
         private MeleePhase previousOpponentPhase;
         private Vector3 previousObservedPosition, committedDirection;
+        private Vector3 opponentMoveRequest, opponentMoveVelocity;
+        private float opponentYawVelocity;
         private uint decisionSeed;
         private readonly RaycastHit[] navigationContacts = new RaycastHit[16];
         public CombatOpponentIntent OpponentIntent { get; private set; }
@@ -34,6 +36,7 @@ namespace BarPromenade
 
         private void ResetOpponentDecisions()
         {
+            ResetOpponentMovement();
             OpponentRound = roundsPlaced++;
             // Round 0 keeps the seed every capture fixture was authored against; each reset re-rolls
             // the schedule while staying reproducible from the city seed and the round index.
@@ -147,8 +150,10 @@ namespace BarPromenade
                 return;
             }
 
-            Opponent.transform.rotation = Quaternion.RotateTowards(Opponent.transform.rotation,
-                Quaternion.LookRotation(direction), 150f * Opponent.TurnScale * seconds);
+            float yaw = PlayerMotor.AdvanceInertialYaw(
+                Vector3.SignedAngle(Opponent.transform.forward, direction, Vector3.up),
+                150f * Opponent.TurnScale, seconds, ref opponentYawVelocity);
+            Opponent.transform.Rotate(0f, yaw, 0f);
             if (decisionDue) DecideOpponent(distance, direction);
             if (me.Phase != MeleePhase.Ready) return;
             switch (OpponentIntent)
@@ -374,6 +379,11 @@ namespace BarPromenade
         private void CommitOpponentDirection()
         {
             committedDirection = Opponent.transform.forward;
+            opponentYawVelocity = 0f;
+            // The foot plant commits the attack line. Previous circling may
+            // carry forward into its windup, never sideways toward a new target.
+            opponentMoveVelocity = committedDirection * Mathf.Max(0f,
+                Vector3.Dot(opponentMoveVelocity, committedDirection));
             opponentAttacks++;
             MeleeCombatant me = Opponent.State;
             bool press = OpponentMood == CombatOpponentMood.Press;
@@ -393,7 +403,7 @@ namespace BarPromenade
 
         private void MoveOpponent(Vector3 direction, float distance, float seconds, bool steerAroundObstacle = true)
         {
-            if (distance <= 0f) return;
+            if (distance <= 0f || seconds <= 0f) return;
             Vector3 before = Opponent.transform.position;
             int count = Physics.SphereCastNonAlloc(before + Vector3.up * .9f, .34f, direction,
                 navigationContacts, distance + .3f, ~0, QueryTriggerInteraction.Ignore);
@@ -412,13 +422,49 @@ namespace BarPromenade
                 if (tangent.sqrMagnitude < .01f) tangent = Vector3.Cross(Vector3.up, normal);
                 direction = tangent.normalized;
             }
-            Vector3 desired = before + direction * distance;
+            opponentMoveRequest = direction * (distance / seconds);
+        }
+
+        private void BeginOpponentMovement() => opponentMoveRequest = Vector3.zero;
+
+        private void ResetOpponentMovement()
+        {
+            opponentMoveRequest = opponentMoveVelocity = Vector3.zero;
+            opponentYawVelocity = 0f;
+            if (Opponent != null) Opponent.SetLocomotion(0f);
+        }
+
+        /// <summary>Every duel step advances both requested travel and its braking tail.</summary>
+        private void AdvanceOpponentMovement(float seconds)
+        {
+            if (seconds <= 0f) return;
+            if (!Sparring || Opponent == null || Hero == null || !Opponent.IsAvailable || !Hero.IsAvailable ||
+                Opponent.Body == null || !Opponent.Body.enabled || Opponent.MovementScale <= 0f)
+            {
+                ResetOpponentMovement();
+                return;
+            }
+            if (Opponent.State.Phase != MeleePhase.Ready) opponentYawVelocity = 0f;
+            // A reduced action allowance is a hard bound, just like the hero's
+            // committed stop; the owned step displacement remains independent.
+            float maximumSpeed = 1.8f * Opponent.MovementScale;
+            Vector3 desiredVelocity = Vector3.ClampMagnitude(opponentMoveRequest, maximumSpeed);
+            opponentMoveVelocity = Vector3.ClampMagnitude(opponentMoveVelocity, maximumSpeed);
+            bool braking = desiredVelocity.sqrMagnitude < opponentMoveVelocity.sqrMagnitude ||
+                (opponentMoveVelocity.sqrMagnitude > .0004f &&
+                    Vector3.Dot(opponentMoveVelocity, desiredVelocity) <= 0f);
+            float rate = braking ? 11f : 6.5f;
+            Vector3 velocity = Vector3.MoveTowards(opponentMoveVelocity, desiredVelocity, rate * seconds);
+            Vector3 before = Opponent.transform.position;
+            Vector3 desired = before + velocity * seconds;
             desired.x = Mathf.Clamp(desired.x, -7.3f, 7.3f);
             desired.z = Mathf.Clamp(desired.z, -7.3f, 7.3f);
             Opponent.Body.Move(desired - before);
             Vector3 moved = Opponent.transform.position - before; moved.y = 0f;
-            float signedSpeed = moved.magnitude / seconds * (Vector3.Dot(moved, Opponent.transform.forward) < 0f ? -1f : 1f);
-            Opponent.SetLocomotion(signedSpeed);
+            // Only achieved travel survives. A wall or arena edge cannot bank
+            // momentum and release it on a later unobstructed frame.
+            opponentMoveVelocity = moved / seconds;
+            Opponent.SetLocomotion(opponentMoveVelocity);
         }
     }
 }

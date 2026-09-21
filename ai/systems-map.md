@@ -50,7 +50,7 @@ A row never carries a status outside this table. Product-level scope cuts
 | PS1 presentation | Shared low-res composite. Optional 4:3, vertex jitter and Begotten keep controls; Begotten ramps `15 s` in, `3 s` out. | `Runtime/Rendering`, `IntoxicationRenderState`, `BegottenModeRamp` | Current |
 | Depth of field tiers | Exteriors keep broad Gaussian far blur; the six interior scenes cap it at radius `0.55`. | `RuntimeSceneSetup`, `DepthOfFieldSettingsBinder` | Current |
 | Runtime area composition | Ten gameplay roots; four build in frames; interior doors retain dormant City/village. | `Runtime/Core`, `Runtime/Scenes` | Current |
-| Combat test | Free swings alternating sides, breath guard/parry, seeded AI; hit-stop, landing sound, slow blood pools; R clears. | `CombatTestRoot`, `Runtime/Combat`, `Rules/Combat` | Current |
+| Combat test | Free alternating swings; guard/parry, AI, body/move inertia; shared clock, hit-stop, landing/pools; R clears. | `CombatTestRoot`, `Runtime/Combat`, `Rules/Combat` | Current |
 | New-game starting place | Eleven starts after New Game, village default; chosen root at day `1`/`07:40`, ordinary loading. | `StartMenu{Root,Model}`, `NewGame{LocationCatalog,StartService}` | Current |
 | Retained Home waking opening | Frozen `05:59`, five-second lock, Wake Up/Quit, continuous wake. Gap: no shipped path reaches it. | `MainMenuRoot`, `HomeOpening{Controller,Timeline}` | Partial |
 | Session clock and day/night rules | Persistent 48-minute day at ×1; two real seconds per game minute. Intoxication preserves its rate. | `GameTimeState`, `GameTimeRuntime` | Current |

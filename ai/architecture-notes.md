@@ -4,32 +4,35 @@
 
 ## Current facts
 
+- **Accepted — 2026-09-21, combat inertia:**
+  Both: C1 body/pose/contact on duel time; inertial travel/yaw.
+
 - **Accepted — 2026-09-20, two-hand combat hold:**
-  Low diagonal Ready/high Block; left .16→.42 m/opposed palm; Ready/Block/Rest
-  breathe 4 s; legs yield to gait; `NpcHandPose` blends/injury; right Rest at end.
+  Low Ready/high Block; opposed left .16→.42 m. Ready/Block/Rest breathe 4 s;
+  legs yield to gait; `NpcHandPose` blends/injury; end right Rest.
 
 - **Accepted — 2026-09-21, brawl v2:**
-  Free swings; guard 20/35, step 15, charge 20 (+15/s held); regen 30/s/.6 s,
-  through stuns, own spends. Fresh ≤.12 s parries lights/re-arm .35;
-  counter +.30; break ½ dmg/.55; backhand .22; buffer .20; heavy .28;
-  seeded AI; free camera after fall.
+  Free swings; guard20/35/step15/charge20 (+15/s held); regen30/s/.6 s,
+  in stuns, own spends. Fresh≤.12 parries lights/re-arm.35;
+  counter+.30; break½ dmg/.55; backhand.22; buffer.20; heavy.28;
+  seeded AI; postfall free camera.
 
 - **Accepted — 2026-09-21, swing sides:**
-  Forehand/backhand families, both banks; side fixed at commit (charge shows
-  it); through flips, stopped repeats; side step or target >15° off-line
-  outranks, strafe never; equal damage/timing/cost.
+  Both banks: committed forehand/backhand (charge shows it); through flips,
+  stopped repeats. Side step/target >15° overrides rhythm, strafe never;
+  equal dmg/time/cost.
 
 - **Accepted architecture exception — 2026-09-20, combat injury:**
-  Directional/HP pose, blood/wounds/puddles; no block/miss blood.
-  R/unload clears; ragdoll wins; visual only.
+  HP/directional pose/wounds/blood pools; block/miss dry.
+  R/unload clears; ragdoll wins; visual.
 
 - **Accepted — 2026-09-21, combat aftermath:**
-  Ground-contact thud; authored blood lobes spread for 10 s, then stay.
+  Ground thud; authored blood lobes grow 10 s, stay.
 
 - **Accepted architecture exception — 2026-09-19, isolated combat test:**
-  §6/§16.15/art §15a: `CombatTest`, no story/speech; shared hero/input, mutual
-  hits, vulnerable steps, rig fall/reset, shoulder/wall lock; W/S travel, A/D
-  strafe; winner walks. `MeleeCombatSettings`; opponent last.
+  §6/§16.15/art §15a: `CombatTest`, no story/speech; shared hero/input,
+  mutual hits/vulnerable steps/fall/reset, shoulder/wall lock; W/S travel,
+  A/D strafe; winner walks; `MeleeCombatSettings`; opponent last.
 
 - **Accepted — 2026-09-16, street pool is the default NPC catalog:**
   User: default-only; new models join at once.

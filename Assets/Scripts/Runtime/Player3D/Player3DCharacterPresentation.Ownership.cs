@@ -8,12 +8,18 @@ namespace BarPromenade
     {
         private object scopedClipOwner;
         private bool scopedClipLocomotion;
+        private bool scopedPresentationFrozen;
         private AvatarMask scopedTorsoMask, scopedFullMask;
         private AnimationMixerPlayable scopedClipBlend;
         private AnimationClipPlayable scopedSecondaryClip;
         private string scopedSecondaryClipName;
 
         public bool OwnsClip(object owner) => owner != null && ReferenceEquals(scopedClipOwner, owner);
+
+        internal void SetOwnedPresentationFrozen(object owner, bool frozen)
+        {
+            if (OwnsClip(owner)) scopedPresentationFrozen = frozen;
+        }
 
         public bool CanAcquireClip(object owner) => owner != null && isActiveAndEnabled &&
             !ragdollPoseActive && !interactionHandoffLocked && (activeClipBinding == null || OwnsClip(owner));
@@ -122,6 +128,7 @@ namespace BarPromenade
 
         private void ClearOwnedClipLocomotion()
         {
+            scopedPresentationFrozen = false;
             ClearOwnedClipBlend();
             if (!scopedClipLocomotion) return;
             scopedClipLocomotion = false;
