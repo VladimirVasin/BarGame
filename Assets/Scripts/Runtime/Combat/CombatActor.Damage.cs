@@ -19,6 +19,8 @@ namespace BarPromenade
             damagePose = new CombatDamagePose();
             damagePose.Initialize(DamageRigRoot, transform);
             bodyMotion = new CombatBodyMotion(DamageRigRoot, transform);
+            footwork = new CombatFootwork(DamageRigRoot,
+                hero != null ? hero.Registry.Animator.gameObject : npc.Animator.gameObject, transform, ready, hero == null);
             Hurtboxes = new CombatHurtboxes(DamageRigRoot, transform, Ragdoll.PhysicsController);
         }
 

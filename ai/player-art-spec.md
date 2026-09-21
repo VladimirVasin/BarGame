@@ -214,6 +214,12 @@ This opt-in applies only during the interaction handoff without an active clip.
 
 ## Animation contract
 
+- Accepted `2026-09-21`, CombatTest: .42 m wide/.28 m staggered
+  stance, soft knees/low pelvis. Feet follow actual travel, plant in Windup.
+  Hero bank: raised shoulders, tucked chin, stiff grip, awkward effort/recovery;
+  NPC calmer. Duel-clock uneven breath follows stamina; small tremor/brief
+  seen-tell flinch preserve grips; tense face/blink uses the same atlas.
+  HP separate; input/timing/costs stay. No story/speech; notes/§6.
 - The accepted `2026-09-07` exterior-AlpineVillage exception, refined by the
   user's direct request on `2026-09-08`, adds `ColdHold`
   (`4 s`), `ColdShoulderRub` (`2.5 s`) and non-looping `ColdShiver`
@@ -427,26 +433,20 @@ This opt-in applies only during the interaction handoff without an active clip.
 
 ## Source and rebuild
 
-- Rebuild production through Blender with `tools/build-player-3d-model-v2.py`;
-  `tools/player_detailed_model.py` supplies its refined anatomy, M-65,
-  independent outfit, curtain-hair geometry and manifest contracts. The generator
-  owns the V2 silhouette, atlas, garment and compatibility
-  validators and imports shared rig, action, export and bed checks from
-  `tools/player_3d_model_common.py`. Together the validators
-  own exact height, outward winding, unique mesh data, weights, triangle budget,
-  required parts/bones/sockets/actions, no root motion, signature asymmetry and
-  the bed loop's head-to-foot, face-up and closed-eye orientation. Bed support
-  validation additionally measures the supine, head and seated offsets against
-  the real posed meshes, refuses eased-curve drift on the three bed clips, and
-  proves that nothing breaks the mattress plane through the sleep loop or the
-  stretches either side of it, that the seated landmark plants both boots
-  without hovering, and that the head-side hand reaches the bed while the
-  torso lowers. Fall
-  validation also owns full-body `Down`/`Rise` seams, the two-key all-fours
-  hold, grounded hand/knee/foot contacts, every exported Rise frame's visible
-  floor boundary and the exact final `Relaxed` pose.
-  Door-use validation owns the complete action-family seams, fixed root and
-  feet, physical-right grip side, bounded forward reach and subtle chest lean.
+- Rebuild in Blender: `tools/build-player-3d-model-v2.py` owns V2 silhouette,
+  atlas, garment/compatibility validators; `tools/player_detailed_model.py`
+  supplies anatomy, M-65, outfit, curtain-hair geometry and manifest contracts.
+  Shared rig/action/export/bed checks come from `tools/player_3d_model_common.py`.
+  Checks cover exact height, outward winding, unique mesh data, weights,
+  triangle budget, required parts/bones/sockets/actions, fixed root, asymmetry,
+  and head-to-foot/face-up/closed-eye bed orientation. Posed meshes determine
+  supine/head/seated offsets; all three bed clips reject eased-curve drift,
+  mattress crossings during sleep/stretches, floating seated boots or loss of
+  the head-side hand's bed contact while lowering. Fall checks cover full-body
+  `Down`/`Rise` seams, two-key all-fours hold, grounded hands/knees/feet,
+  exported Rise frames' floor boundary and final `Relaxed`. Door-use checks
+  cover family seams, fixed root/feet, physical-right grip, bounded forward
+  reach and subtle chest lean.
 - Direct `.blend` and GLB imports are not production paths. The deterministic
   FBX, animation FBX and JSON manifest are the Unity inputs; the generated
   transparent portrait is a separate Resources asset.

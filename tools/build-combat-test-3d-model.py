@@ -5,6 +5,9 @@ the manifest and checks the published passive FBX files through a round trip.
 --actions-only publishes the banks/manifest without rewriting passive geometry.
 Two swing families share both banks: the forehand (right to left) and the
 backhand (left to right), each with its charge, heavy overlay and wall recoil.
+Both banks carry four grounded combat shuffles and the same broad ready base;
+the hero's raised shoulders, guarded head and late settling distinguish his
+frightened, untrained profile from the sparring opponent without changing clocks.
 The test arena is outside story geography. No text, injury or corpse art.
 """
 from __future__ import annotations
@@ -73,18 +76,22 @@ def family_stops(family, stops):
 
 
 DEFEAT_HANDOFF_SECONDS = .16
-STRAFE_CLIPS = (("CombatStrafeLeft", .80, True), ("CombatStrafeRight", .80, True))
-STRAFE_CYCLE_DISTANCE = .60
-STRAFE_FOOT_LIFT = .065
+LOCOMOTION_CLIPS = (("CombatAdvance", (0., -1., 0.), "L"),
+                    ("CombatRetreat", (0., 1., 0.), "R"),
+                    ("CombatStrafeLeft", (1., 0., 0.), "L"),
+                    ("CombatStrafeRight", (-1., 0., 0.), "R"))
+LOCOMOTION_DURATION, LOCOMOTION_CYCLE_DISTANCE, LOCOMOTION_FOOT_LIFT = .80, .60, .065
 STEP_CLIPS = (("CombatStepForward", (0., -1., 0.), "L"),
               ("CombatStepBackward", (0., 1., 0.), "R"),
               ("CombatStepLeft", (1., 0., 0.), "L"),
               ("CombatStepRight", (-1., 0., 0.), "R"))
-# .65 m is the longest stride the planted leg still reaches at the mid-travel pelvis dip;
-# the step got quicker (.24 s travel), not longer.
+# The .65 m gameplay step keeps its .24 s travel. The wider base needs extra
+# knee flexion during its opening/closing shuffle, never a longer planted leg.
 STEP_TRAVEL_SECONDS, STEP_SETTLE_SECONDS, STEP_DISTANCE = .24, .14, .65
 STEP_DURATION = round(STEP_TRAVEL_SECONDS + STEP_SETTLE_SECONDS, 2)
-SUPPORT_OFFSETS = {"L": (.035, -.070, 0.), "R": (-.035, .055, 0.)}
+SUPPORT_OFFSETS = {"L": (.115, -.130, 0.), "R": (-.115, .110, 0.)}
+SUPPORT_YAW_DEGREES = {"L": 8., "R": -14.}
+PELVIS_LOWERING = .075
 SUPPORT_GRIP = .16
 BLOCK_GRIP = .42
 LEFT_GRIP_AXIS = 1
@@ -245,6 +252,32 @@ COMBAT_SHIFTS = {
 
 
 class CombatBuilder(dialogue.DialogueBuilder):
+    hero_profile = False
+
+    def suspend_mesh_deformation(self):
+        # Authoring/validation reads the original skeleton and stored grip
+        # vertices, never evaluated skinned meshes. Avoid reskinning the whole
+        # dressed hero for every dense bone-only sample; restore for the source.
+        if hasattr(self, "suspended_deformation"): return
+        self.suspended_deformation = []
+        for part in self.result.parts:
+            for modifier in part.obj.modifiers:
+                if modifier.type == "ARMATURE":
+                    self.suspended_deformation.append((modifier, modifier.show_viewport))
+                    modifier.show_viewport = False
+
+    def restore_mesh_deformation(self):
+        for modifier, visible in getattr(self, "suspended_deformation", ()):
+            modifier.show_viewport = visible
+
+    def profile_stops(self, stops):
+        # The novice takes longer to arrest his follow-through, then gathers
+        # the weapon close again. Only the recovery shape changes: windup,
+        # active contact, total duration and every endpoint stay identical.
+        if not self.hero_profile: return stops
+        return tuple((.78 if second == .73 else 1.02 if second == .96 else second, pose)
+                     for second, pose in stops)
+
     def locomotion_torso(self, direction, load, settle):
         """The ribcage follows the travelling hips, then absorbs the stop."""
         for name, weight in (("spine", .45), ("chest", .55), ("head", -.55)):
@@ -342,8 +375,8 @@ class CombatBuilder(dialogue.DialogueBuilder):
                 rotation = (rest.tail_local-rest.head_local).normalized().rotation_difference((end-start).normalized()) @ rest.matrix_local.to_quaternion()
                 bone.matrix = Matrix.Translation(start) @ rotation.to_matrix().to_4x4()
                 bpy.context.view_layer.update()
-            planted = foot.bone.matrix_local.copy()
-            planted.translation = ankle
+            yaw = Quaternion(Vector((0., 0., 1.)), math.radians(SUPPORT_YAW_DEGREES[side]))
+            planted = Matrix.Translation(ankle) @ (yaw @ foot.bone.matrix_local.to_quaternion()).to_matrix().to_4x4()
             foot.matrix = planted
             bpy.context.view_layer.update()
         return self.snapshot_pose()
@@ -417,11 +450,12 @@ class CombatBuilder(dialogue.DialogueBuilder):
         delta = wrist - shoulder
         distance = delta.length
         a, b = upper.bone.length, forearm.bone.length
-        if distance > a + b - .015:
+        reach_margin = .030 if self.hero_profile else .015
+        if distance > a + b - reach_margin:
             # The former one-hand backswing can extend beyond the other arm.
             # Bring its original grip inward just enough to leave a bent left
             # elbow, preserving the bar's axis and the authored swing timing.
-            correction = delta.normalized() * (distance - (a + b - .015))
+            correction = delta.normalized() * (distance - (a + b - reach_margin))
             right = rig.pose.bones["hand.R"]
             self.solve_arm("R", right.head - correction, right.matrix.to_3x3())
             wrist -= correction
@@ -437,8 +471,8 @@ class CombatBuilder(dialogue.DialogueBuilder):
         rig = self.result.rig
         upper = {bone.name for bone in rig.pose.bones
                  if bone.name == "spine" or any(parent.name == "spine" for parent in bone.parent_recursive)}
-        light_stops = family_stops(family, ATTACK_STOPS)
-        heavy_stops = family_stops(family, HEAVY_STOPS)
+        light_stops = self.profile_stops(family_stops(family, ATTACK_STOPS))
+        heavy_stops = self.profile_stops(family_stops(family, HEAVY_STOPS))
         def at(stops, second):
             for (a, p), (b, q) in zip(stops, stops[1:]):
                 if second <= b + .00001:
@@ -537,7 +571,7 @@ class CombatBuilder(dialogue.DialogueBuilder):
             "guard_impact", "guard_break", "recoil", "defeat", "heavy_contact", "heavy_follow", "heavy_overrun", "heavy_recover") else 0.
         pose = self.merge_pose(self.relaxed_pose(), {
             "pelvis": B(rotation_degrees=(chest[0]*.12*body_weight, 0, chest[2]*.18*body_weight),
-                        armature_location_m=tuple(Vector(COMBAT_SHIFTS[kind]) + Vector((0, 0, -.040)))),
+                        armature_location_m=tuple(Vector(COMBAT_SHIFTS[kind]) + Vector((0, 0, -PELVIS_LOWERING)))),
             "spine": B(rotation_degrees=(-2 + chest[0]*.22*body_weight, 0, chest[2] * (.24+.06*body_weight))),
             "chest": B(rotation_degrees=chest),
             "head": B(rotation_degrees=(3-chest[0]*.10, 0, -chest[2] * .52)),
@@ -585,6 +619,21 @@ class CombatBuilder(dialogue.DialogueBuilder):
             pose.update({"upper_arm.L": B(armature_direction=(.07, .025, -.31)),
                          "forearm.L": B(armature_direction=(-.02, -.04, -.28)),
                          "hand.L": B(rotation_degrees=(0, 0, 0))})
+        if self.hero_profile and not kind.startswith("rest") and kind != "defeat":
+            # A frightened novice keeps his chin behind the hands and his neck
+            # rigid instead of presenting a confident fencing silhouette. The
+            # weapon/hips retain their authored landmarks and both palm solves;
+            # fear cannot delay a contact or impersonate the damage reactions.
+            guarded = kind in ("ready", "ready_breath", "block", "block_breath") or kind.endswith(("loaded", "windup"))
+            effort = kind.endswith(("overrun", "recover"))
+            amount = 1. if guarded else .7 if effort else .3
+            for side in ("L", "R"):
+                clavicle = self.result.rig.data.bones["clavicle." + side]
+                pose["clavicle." + side] = B(armature_direction=tuple(
+                    clavicle.tail_local-clavicle.head_local + Vector((0., -.018*amount, .024*amount))))
+            pose["neck"] = B(rotation_degrees=(-3.8 * amount, 0., 1.1 * amount))
+            head = pose["head"].rotation_degrees
+            pose["head"] = B(rotation_degrees=(head[0] + 5.8 * amount, head[1], head[2] - 1.8 * amount))
         self._reset_pose(); self._apply_pose(pose)
         hand = self.result.rig.pose.bones["hand.R"]
         # Specify the crowbar's grip-axis explicitly, preserving anatomical
@@ -597,9 +646,13 @@ class CombatBuilder(dialogue.DialogueBuilder):
         if kind.startswith("rest"): return result
         if kind in RAISED_WRISTS:
             wrist, grip = RAISED_WRISTS[kind]
-            return self.place_raised_grip(result, wrist, grip)
+            # These docks were measured with the old .040 m body lowering.
+            # Carry them down with the deeper stance so the local arm blend
+            # keeps its reachable quaternion branch at every charge power.
+            lowered_wrist = Vector(wrist) - Vector((0., 0., PELVIS_LOWERING-.040))
+            return self.place_raised_grip(result, lowered_wrist, grip)
         if kind in GUARD_HEIGHTS:
-            return self.place_guard_grip(result, GUARD_HEIGHTS[kind], GUARD_PALM_ROLL_DEGREES)
+            return self.place_guard_grip(result, GUARD_HEIGHTS[kind]-(PELVIS_LOWERING-.040), GUARD_PALM_ROLL_DEGREES)
         try:
             return self.pin_left_grip(result, BLOCK_GRIP if kind in ("block", "block_breath", "guard_impact") else SUPPORT_GRIP,
                                       LEFT_ELBOW_POLES.get(kind))
@@ -607,6 +660,7 @@ class CombatBuilder(dialogue.DialogueBuilder):
             raise ValueError(kind + ": " + str(error)) from error
 
     def build_actions(self):
+        self.suspend_mesh_deformation()
         poses = {n: self.combat_pose(n) for n in ("ready", "ready_breath", "rest", "rest_breath", "block", "block_breath",
                                                   "hit", "hit_settle", "guard_impact", "guard_break", "defeat")}
         # Each family's strike poses, with the inward grip correction that the
@@ -649,10 +703,12 @@ class CombatBuilder(dialogue.DialogueBuilder):
         # forehand charge trio, then the backhand family appended.
         backhand = SWING_FAMILIES[1]
         authored = CLIPS + tuple(clip for clip in BACKHAND_CLIPS if clip[0] in (backhand["attack"], backhand["recoil"]))
+        if getattr(self, "dense_charge_probe", False):
+            authored = tuple(clip for clip in authored if clip[0] in ("CombatReady", "CombatAttack", "CombatBackhand"))
         for name, duration, loop in authored:
             family = next((f for f in SWING_FAMILIES if name in (f["attack"], f["recoil"])), None)
             if family is not None:
-                stops = family_stops(family, ATTACK_STOPS if name == family["attack"] else RECOIL_STOPS)
+                stops = self.profile_stops(family_stops(family, ATTACK_STOPS if name == family["attack"] else RECOIL_STOPS))
             elif name == "CombatHit":
                 stops = ((0, "ready"), (.07, "hit"), (.18, "hit_settle"), (.36, "ready"))
             elif name == "CombatGuardImpact":
@@ -683,7 +739,8 @@ class CombatBuilder(dialogue.DialogueBuilder):
                         break
             self._create_action(name, "combat", duration, loop, count, sample_fps, keys)
             print("Authored " + name, flush=True)
-            if name == CLIPS[-1][0]: self.build_charge_actions(SWING_FAMILIES[0], poses)
+            if name == CLIPS[-1][0] or (getattr(self, "dense_charge_probe", False) and name == "CombatAttack"):
+                self.build_charge_actions(SWING_FAMILIES[0], poses)
         self.build_charge_actions(backhand, poses)
 
     def build_charge_actions(self, family, poses):
@@ -703,7 +760,7 @@ class CombatBuilder(dialogue.DialogueBuilder):
             bpy.context.scene.frame_set(frame); bpy.context.view_layer.update()
             light_poses.append(self.snapshot_pose())
         # First heavy sample is the loaded torso on the exact ready lower body.
-        stops = family_stops(family, HEAVY_STOPS)
+        stops = self.profile_stops(family_stops(family, HEAVY_STOPS))
         keys = []
         for frame in range(129):
             second = frame / FPS
@@ -724,18 +781,18 @@ class CombatBuilder(dialogue.DialogueBuilder):
         self._create_action(family["charge"], "combat", 1., False, FPS, FPS, charge_keys)
         print("Authored " + "/".join(n for n in (family["charge"], family["light"], family["heavy"]) if n), flush=True)
 
-    def build_strafe_actions(self):
+    def build_locomotion_actions(self):
         """A lead-foot opening step followed by the trailing foot closing.
 
-        Both loops start/end in Ready. The motor owns lateral translation;
+        All four loops start/end in Ready. The motor owns planar translation;
         subtract its virtual .60 m/cycle here so each loaded sole stays fixed
         in world space. Feet never cross and the upper-body guard is reused.
         """
         ready = self.combat_pose("ready")
         rig = self.result.rig
-        for name, duration, loop in STRAFE_CLIPS:
-            sign = 1. if name == "CombatStrafeLeft" else -1.
-            leading = "L" if sign > 0. else "R"
+        duration = LOCOMOTION_DURATION
+        for name, axis, leading in LOCOMOTION_CLIPS:
+            direction = Vector(axis)
             keys = []
             count = round(duration * FPS)
             for frame in range(count + 1):
@@ -745,22 +802,22 @@ class CombatBuilder(dialogue.DialogueBuilder):
                 weighted = pelvis.matrix.copy()
                 # Lower between the separated soles and shift over whichever
                 # leg currently bears weight. There is no root translation.
-                weighted.translation += Vector((-sign*.018*math.sin(t*math.tau), 0., -.065*math.sin(t*math.pi)**2))
+                weighted.translation += -direction * (.018*math.sin(t*math.tau)) + Vector((0., 0., -.105*math.sin(t*math.pi)**2))
                 pelvis.matrix = weighted
                 bpy.context.view_layer.update()
-                self.locomotion_torso(Vector((sign, 0., 0.)), math.sin(t*math.pi)**2,
+                self.locomotion_torso(direction, math.sin(t*math.pi)**2,
                                       math.sin(t*math.pi)**2*dialogue.smooth(t))
                 feet = {}
                 for side in ("L", "R"):
                     progress = min(1., max(0., 2.*t - (0. if side == leading else 1.)))
                     lift = math.sin(progress*math.pi)**2
                     ankle = self.support(side)
-                    ankle += Vector((sign*STRAFE_CYCLE_DISTANCE*(dialogue.smooth(progress)-t),
-                                     -.012*lift, STRAFE_FOOT_LIFT*lift))
+                    ankle += direction * (LOCOMOTION_CYCLE_DISTANCE*(dialogue.smooth(progress)-t))
+                    ankle.z += LOCOMOTION_FOOT_LIFT*lift
                     feet[side] = ankle
                 keys.append((t, self.pin_supports(self.snapshot_pose(), feet)))
-            self._create_action(name, "combat_locomotion", duration, loop, count, FPS, keys)
-            print("Authored hero-only " + name, flush=True)
+            self._create_action(name, "combat_locomotion", duration, True, count, FPS, keys)
+            print("Authored shared " + name, flush=True)
 
     def build_step_actions(self):
         """A grounded opening/closing shuffle over the motor's smoothstep travel.
@@ -783,7 +840,7 @@ class CombatBuilder(dialogue.DialogueBuilder):
                 self._reset_pose(); self._apply_pose(ready)
                 pelvis = rig.pose.bones["pelvis"]
                 weighted = pelvis.matrix.copy()
-                position = weighted.translation + direction * (.02 * load) + Vector((0., 0., -.11*load - .02*settle))
+                position = weighted.translation + direction * (.02 * load) + Vector((0., 0., -.145*load - .02*settle))
                 lean = Vector((0., 0., 1.)).rotation_difference((Vector((0., 0., 1.)) + direction*(.12*load)).normalized())
                 pelvis.matrix = Matrix.Translation(position) @ lean.to_matrix().to_4x4() @ weighted.to_3x3().to_4x4()
                 bpy.context.view_layer.update()
@@ -860,7 +917,7 @@ def step_payload(builder):
                 validation_hz=200, signature=checksum.hexdigest(), clips=records)
 
 
-def strafe_payload(builder):
+def locomotion_payload(builder, clips=LOCOMOTION_CLIPS):
     rig = builder.result.rig
     checksum = hashlib.sha256()
     records = []
@@ -868,14 +925,14 @@ def strafe_payload(builder):
     bpy.context.scene.frame_set(0); bpy.context.view_layer.update()
     ready = {bone.name: bone.matrix_basis.copy() for bone in rig.pose.bones}
     excluded = {"pelvis", "spine", "chest", "head", "thigh.L", "thigh.R", "shin.L", "shin.R", "foot.L", "foot.R"}
-    for name, duration, _ in STRAFE_CLIPS:
+    duration = LOCOMOTION_DURATION
+    for name, axis, leading in clips:
         action = builder.result.actions[name].action
         for curve in common.iter_action_fcurves(action):
-            if not curve.data_path.startswith('pose.bones['): raise ValueError("Strafe has object motion")
+            if not curve.data_path.startswith('pose.bones['): raise ValueError("Combat locomotion has object motion")
             checksum.update(json.dumps([name, curve.data_path, curve.array_index,
                 [[round(v, 7) for v in key.co] for key in curve.keyframe_points]], separators=(",", ":")).encode())
-        sign = 1. if name == "CombatStrafeLeft" else -1.
-        leading = "L" if sign > 0. else "R"
+        direction = Vector(axis)
         support_error = upper_error = seam_error = torso_travel = 0.
         lifts = {"L": 0., "R": 0.}
         separation = 100.
@@ -890,8 +947,8 @@ def strafe_payload(builder):
                 lifts[side] = max(lifts[side], foot.head.z-rest.z)
                 planted = (side == leading and t >= .5) or (side != leading and t <= .5)
                 if planted:
-                    expected = rest + Vector((sign*STRAFE_CYCLE_DISTANCE*(1. if side == leading else 0.), 0., 0.))
-                    virtual_world = foot.head + Vector((sign*STRAFE_CYCLE_DISTANCE*t, 0., 0.))
+                    expected = rest + direction*(LOCOMOTION_CYCLE_DISTANCE*(1. if side == leading else 0.))
+                    virtual_world = foot.head + direction*(LOCOMOTION_CYCLE_DISTANCE*t)
                     support_error = max(support_error, (virtual_world-expected).length)
             separation = min(separation, rig.pose.bones["foot.L"].head.x-rig.pose.bones["foot.R"].head.x)
             for bone in rig.pose.bones:
@@ -901,21 +958,22 @@ def strafe_payload(builder):
                     torso_travel = max(torso_travel, math.degrees(ready[bone.name].to_quaternion().rotation_difference(bone.rotation_quaternion).angle))
                 if sample == 0 or sample == round(duration*FPS)*2: seam_error = max(seam_error, error)
         if support_error > .001 or upper_error > .00001 or seam_error > .00001 or separation < .18 or min(lifts.values()) < .05 or torso_travel < 1.:
-            raise ValueError(f"Strafe support/guard/seam/foot spacing failed: {name}: {support_error}, {upper_error}, {seam_error}, {separation}, {lifts}")
-        records.append(dict(name=name, leading_foot=leading, direction_unity=[-sign,0.,0.],
+            raise ValueError(f"Combat locomotion support/guard/seam/foot spacing failed: {name}: {support_error}, {upper_error}, {seam_error}, {separation}, {lifts}")
+        records.append(dict(name=name, leading_foot=leading, direction_unity=[-direction.x,direction.z,-direction.y],
                             maximum_world_support_error_m=support_error, maximum_arm_local_error=upper_error,
                             maximum_torso_counterlean_degrees=torso_travel,
                             maximum_ready_seam_error=seam_error, minimum_foot_separation_m=separation,
                             left_foot_lift_m=lifts["L"], right_foot_lift_m=lifts["R"]))
-    return dict(duration_seconds=.80, cycle_distance_m=STRAFE_CYCLE_DISTANCE,
-                nominal_speed_m_s=round(STRAFE_CYCLE_DISTANCE/.80, 6), validation_hz=200,
-                support_contract="virtual lateral root travel cancels each planted sole; leading foot opens, trailing closes",
+    return dict(duration_seconds=duration, cycle_distance_m=LOCOMOTION_CYCLE_DISTANCE,
+                nominal_speed_m_s=round(LOCOMOTION_CYCLE_DISTANCE/duration, 6), validation_hz=200,
+                support_contract="linear virtual root travel cancels each planted sole; leading foot opens during [0,.5], trailing closes during [.5,1]",
                 signature=checksum.hexdigest(), clips=records)
 
 
 def charge_payload(builder, family):
     """One family's charge/release contract. The backhand's light release is its
     attack, so the legacy light-copy comparison is measured only where a copy exists."""
+    print("Checking continuous charge/release " + family["name"], flush=True)
     light_name = family["light"] or family["attack"]
     rig = builder.result.rig
     upper = {bone.name for bone in rig.pose.bones
@@ -1001,6 +1059,7 @@ def charge_payload(builder, family):
 
 def holding_payload(builder):
     """Measure the contacts players actually see on the shaft and planted feet."""
+    print("Checking opposed palms, guard and wide stance", flush=True)
     rig = builder.result.rig
     gap = axis_error = palm_error = guard_elevation = 0.
     ready_heights, block_heights = [], []
@@ -1043,6 +1102,15 @@ def holding_payload(builder):
         raise ValueError(f"Combat ready is too high or the breathing is frozen: {ready_heights[0]}/{loop_travel}")
     if not 1.45 < min(block_heights) <= max(block_heights) < 1.55 or guard_wrist_angle > 35.:
         raise ValueError(f"Combat high guard height or wrist alignment failed: {min(block_heights)}/{max(block_heights)}/{guard_wrist_angle}")
+    rig.animation_data.action = builder.result.actions["CombatReady"].action
+    bpy.context.scene.frame_set(0); bpy.context.view_layer.update()
+    ready_pelvis_height = rig.pose.bones["pelvis"].head.z
+    ready_knee_flexion = {side: math.degrees((rig.pose.bones["shin."+side].head-rig.pose.bones["thigh."+side].head).angle(
+        rig.pose.bones["foot."+side].head-rig.pose.bones["shin."+side].head)) for side in ("L", "R")}
+    width = builder.support("L").x-builder.support("R").x
+    stagger = builder.support("R").y-builder.support("L").y
+    if not .40 <= width <= .45 or not .25 <= stagger <= .30 or min(ready_knee_flexion.values()) < 20.:
+        raise ValueError(f"Ready needs a broad, soft-kneed base: {width}/{stagger}/{ready_knee_flexion}")
     return dict(ready_grip_offset_m=SUPPORT_GRIP, block_grip_offset_m=BLOCK_GRIP,
                 left_grip_axis_sign=LEFT_GRIP_AXIS, maximum_authored_left_contact_error_m=gap,
                 maximum_opposed_palm_error=palm_error,
@@ -1055,8 +1123,9 @@ def holding_payload(builder):
                 left_hand_shaft_extent_m=builder.closed_left_hand_shaft_extent,
                 block_hook_clearance_m=.49-BLOCK_GRIP-builder.closed_left_hand_shaft_extent,
                 foot_offsets_blender_m=SUPPORT_OFFSETS,
-                stance_width_m=builder.support("L").x-builder.support("R").x,
-                stance_stagger_m=builder.support("R").y-builder.support("L").y,
+                foot_yaw_blender_degrees=SUPPORT_YAW_DEGREES,
+                stance_width_m=width, stance_stagger_m=stagger,
+                ready_pelvis_height_m=ready_pelvis_height, ready_knee_flexion_degrees=ready_knee_flexion,
                 runtime_contract="final left cylinder solve after charge blend, injury and pose recovery; same shaft axis, opposed palms")
 
 
@@ -1077,6 +1146,7 @@ def action_payload(builder):
     contact_rotations = {name: {} for name in attack_names}
     reference = None
     for name, duration, loop in SHARED_CLIPS:
+        print("Checking bone/contact track " + name, flush=True)
         action = builder.result.actions[name].action
         for curve in common.iter_action_fcurves(action):
             if not curve.data_path.startswith('pose.bones['): raise ValueError("Combat object motion")
@@ -1203,12 +1273,29 @@ def meta(path):
         target.write_text("fileFormatVersion: 2\nguid: " + hashlib.sha256(path.relative_to(ROOT).as_posix().encode()).hexdigest()[:32] + "\n", encoding="utf8")
 
 
+def complete_bank_payload(builder):
+    builder.build_step_actions()
+    builder.build_locomotion_actions()
+    measured = action_payload(builder)
+    print("Base action/contact bank passed", flush=True)
+    measured["profile"] = "frightened_novice" if builder.hero_profile else "sparring_opponent"
+    measured["step_clips"] = [dict(name=n, duration_seconds=STEP_DURATION, loop=False) for n,_,_ in STEP_CLIPS]
+    measured["defensive_step"] = step_payload(builder)
+    measured["locomotion_clips"] = [dict(name=n, duration_seconds=LOCOMOTION_DURATION, loop=True) for n,_,_ in LOCOMOTION_CLIPS]
+    measured["locomotion"] = locomotion_payload(builder)
+    # Retain the old lateral measurement key for readers interested only in
+    # strafe contacts. These clips now belong to both banks.
+    measured["strafing"] = locomotion_payload(builder, LOCOMOTION_CLIPS[2:])
+    return measured
+
+
 def main():
     global OUT, SOURCE
     parser = argparse.ArgumentParser()
     parser.add_argument("--validate-only", action="store_true")
     parser.add_argument("--actions-only", action="store_true")
     parser.add_argument("--probe-only", action="store_true")
+    parser.add_argument("--dense-hero-probe", action="store_true")
     parser.add_argument("--output-dir", type=Path, default=OUT)
     parser.add_argument("--source-dir", type=Path, default=SOURCE)
     args = parser.parse_args(sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else [])
@@ -1218,7 +1305,7 @@ def main():
     items = make_items(); signature = kit.signature(items)
     if kit.signature(make_items()) != signature: raise ValueError("Passive geometry is nondeterministic")
     payload = kit.manifest(items, signature)
-    payload.update(generator="tools/build-combat-test-3d-model.py", generator_version="1.9.0", test_only=True)
+    payload.update(generator="tools/build-combat-test-3d-model.py", generator_version="2.0.0", test_only=True)
     OUT.mkdir(parents=True, exist_ok=True); SOURCE.mkdir(parents=True, exist_ok=True)
     if not validate_only and not actions_only:
         roots = kit.build_objects(items)
@@ -1231,32 +1318,42 @@ def main():
                                 None, None, OUT / "CombatActions.fbx", 1.75, 20260919, "apose")
     builder = CombatBuilder(config, hero.DEFAULT_FACE_ATLAS, hero.DEFAULT_CLOTHING_ATLAS)
     builder.probe_only = args.probe_only
+    builder.hero_profile = args.dense_hero_probe
+    builder.dense_charge_probe = args.dense_hero_probe
     builder.build()
-    if args.probe_only: return
-    payload["actions"] = action_payload(builder)
-    # The defensive steps belong to both fighters, so they are authored before the
-    # shared NPC bank is exported; only the strafes stay hero-only. Blender's FBX
-    # exporter scans all compatible actions, not result.actions.
-    builder.build_step_actions()
-    payload["actions"]["step_clips"] = [dict(name=n, duration_seconds=STEP_DURATION, loop=False) for n,_,_ in STEP_CLIPS]
-    payload["actions"]["defensive_step"] = step_payload(builder)
-    previous = json.loads((OUT / "CombatTest3D.json").read_text(encoding="utf8")) if (OUT / "CombatTest3D.json").exists() else {}
-    previous_actions = previous.get("actions", {})
-    same_shared_bank = (previous_actions.get("animation_signature") == payload["actions"]["animation_signature"] and
-                        previous_actions.get("defensive_step", {}).get("signature") == payload["actions"]["defensive_step"]["signature"])
-    if not validate_only and (not actions_only or not same_shared_bank or not (OUT / "CombatNpcActions.fbx").exists()):
+    if args.dense_hero_probe:
+        for family in SWING_FAMILIES:
+            print("DENSE HERO CHARGE CONTRACT OK " + json.dumps(charge_payload(builder, family)), flush=True)
+        return
+    if args.probe_only:
+        builder.build_step_actions()
+        builder.build_locomotion_actions()
+        builder.hero_profile = True
+        builder.build_actions()
+        print("Combat feet and both profile grips preflight passed", flush=True)
+        return
+    npc_payload = complete_bank_payload(builder)
+    if not validate_only:
         builder.result.root.name = "ROOT_Player"
         common.export_animation_fbx(OUT / "CombatNpcActions.fbx", builder.result)
         builder.result.root.name = "ROOT_PlayerV2"
-    builder.build_strafe_actions()
-    payload["actions"]["hero_only_clips"] = [dict(name=n, duration_seconds=d, loop=l) for n,d,l in STRAFE_CLIPS]
-    payload["actions"]["strafing"] = strafe_payload(builder)
+    # The exporter scans all compatible Actions. Remove the completed NPC
+    # library before authoring the distinct hero profile on the identical rig.
+    builder.result.rig.animation_data.action = None
+    for action in tuple(bpy.data.actions): bpy.data.actions.remove(action)
+    builder.result.actions.clear()
+    builder.maximum_grip_adjustment = 0.
+    builder.hero_profile = True
+    builder.build_actions()
+    payload["actions"] = complete_bank_payload(builder)
+    payload["actions"]["npc"] = npc_payload
     payload = json.loads(json.dumps(payload))
     if validate_only:
         if json.loads((OUT / "CombatTest3D.json").read_text(encoding="utf8")) != payload:
             raise ValueError("Combat deterministic manifest differs")
     else:
         common.export_animation_fbx(OUT / "CombatActions.fbx", builder.result)
+        builder.restore_mesh_deformation()
         common.save_blend(SOURCE / "CombatActions.blend")
         (OUT / "CombatTest3D.json").write_text(json.dumps(payload, indent=2) + "\n", encoding="utf8")
         for path in OUT.iterdir():

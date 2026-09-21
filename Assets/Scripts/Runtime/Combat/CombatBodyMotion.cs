@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace BarPromenade
 {
-    /// <summary>Combat-only weight transfer. The duel advances it; pose/contact samples only read it.</summary>
+    /// <summary>Combat weight and hero tension. The duel advances it; pose/contact samples only read it.</summary>
     internal sealed class CombatBodyMotion
     {
         private readonly Transform frame;
@@ -16,8 +16,25 @@ namespace BarPromenade
         private SecondOrderFilter turn = new SecondOrderFilter(14f, 1f);
         private SecondOrderFilter headPitch = new SecondOrderFilter(11f, .85f);
         private SecondOrderFilter headRoll = new SecondOrderFilter(11f, .85f);
+        private SecondOrderFilter fear = new SecondOrderFilter(7f, 1f);
+        private SecondOrderFilter exhaustion = new SecondOrderFilter(4f, 1f);
+        private SecondOrderFilter effort = new SecondOrderFilter(9f, 1f);
+        private SecondOrderFilter flinch = new SecondOrderFilter(25f, 1f);
+        private float fearTarget, exhaustionTarget, effortTarget, threatTarget;
+        private float breathPhase, irregularPhase, tremorPhase;
+        private float flinchClock = FlinchSeconds, flinchPeak;
+        private bool threatObserved;
         private Vector3 previousForward;
         private bool applied;
+        private const float FlinchSeconds = .36f;
+
+        public float FearAmount => Mathf.Clamp01(fear.Value);
+        public float EffortAmount => Mathf.Clamp01(effort.Value);
+        public float FlinchAmount => FearAmount * Mathf.Clamp01(flinch.Value);
+        // Degrees of chest breathing, independent of the existing HP response.
+        public float BreathAmplitude => FearAmount * (1.05f + .9f * Mathf.Clamp01(exhaustion.Value) + .25f * EffortAmount);
+        public float BreathAmount => BreathAmplitude *
+            (.8f * Mathf.Sin(breathPhase) + .2f * Mathf.Sin(2f * breathPhase + irregularPhase));
 
         public CombatBodyMotion(Transform root, Transform actorFrame)
         {
@@ -29,6 +46,20 @@ namespace BarPromenade
             foreach (Transform bone in bones)
                 if (bone == null) throw new InvalidOperationException("Combat motion needs the original torso and head chain.");
             Reset();
+        }
+
+        /// <summary>
+        /// Observations only: the caller supplies a nearby, visible opponent's
+        /// actual windup, never an AI intent or a prediction of a future hit.
+        /// Setting targets cannot move a bone or advance the emotional response.
+        /// </summary>
+        public void SetEmotionTargets(bool frightenedHero, float stamina01, float visibleWindupThreat01,
+            float effort01, bool active = true)
+        {
+            fearTarget = frightenedHero && active ? 1f : 0f;
+            exhaustionTarget = fearTarget * (1f - Unit(stamina01));
+            effortTarget = fearTarget * Unit(effort01);
+            threatTarget = fearTarget * Unit(visibleWindupThreat01);
         }
 
         public void Advance(float seconds, Vector3 velocity)
@@ -49,6 +80,47 @@ namespace BarPromenade
             turn.Advance(-yaw * .022f, seconds);
             headPitch.Advance(-pitch.Value * .45f, seconds);
             headRoll.Advance(-roll.Value * .45f, seconds);
+            AdvanceEmotion(seconds);
+        }
+
+        private void AdvanceEmotion(float seconds)
+        {
+            float remaining = Mathf.Min(seconds, SecondOrderFilter.MaximumAdvanceSeconds);
+            while (remaining > 0f)
+            {
+                float step = Mathf.Min(remaining, SecondOrderFilter.MaximumSubStepSeconds);
+                remaining -= step;
+                fear.Advance(fearTarget, step);
+                exhaustion.Advance(exhaustionTarget, step);
+                effort.Advance(effortTarget, step);
+
+                // One short protective contraction per observed tell. Holding
+                // a charge does not trap the hero in a permanent recoil pose.
+                if (threatTarget <= .01f) threatObserved = false;
+                else if (!threatObserved && threatTarget > .05f)
+                {
+                    threatObserved = true;
+                    flinchClock = 0f;
+                    flinchPeak = threatTarget;
+                }
+                float contraction = 0f;
+                if (flinchClock < FlinchSeconds)
+                {
+                    flinchPeak = Mathf.Max(flinchPeak, threatTarget);
+                    contraction = flinchPeak * (1f - Mathf.SmoothStep(0f, 1f,
+                        (flinchClock - .07f) / (FlinchSeconds - .07f)));
+                    flinchClock = Mathf.Min(FlinchSeconds, flinchClock + step);
+                }
+                flinch.Advance(contraction, step);
+
+                // The slow modulation makes successive breaths unequal without
+                // random samples, wall time, or a discontinuity at charge release.
+                irregularPhase = Mathf.Repeat(irregularPhase + step * .87f, Mathf.PI * 2f);
+                float breathRate = 3.2f + 1.7f * Mathf.Clamp01(exhaustion.Value) + .45f * EffortAmount;
+                breathPhase = Mathf.Repeat(breathPhase + step * breathRate *
+                    (1f + .13f * Mathf.Sin(irregularPhase)), Mathf.PI * 2f);
+                tremorPhase = Mathf.Repeat(tremorPhase + step * 48f, Mathf.PI * 2f);
+            }
         }
 
         public void Apply()
@@ -66,6 +138,26 @@ namespace BarPromenade
             Rotate(2, frame.right, headPitch.Value * .35f);
             Rotate(3, frame.right, headPitch.Value * .65f);
             Rotate(3, frame.forward, headRoll.Value);
+
+            float breath = BreathAmount;
+            float tense = FearAmount;
+            float shrink = FlinchAmount;
+            float brace = tense * (1f - .75f * EffortAmount);
+            float tremor = tense * (.1f + .12f * EffortAmount) *
+                Mathf.Sin(tremorPhase) * (.65f + .35f * Mathf.Sin(irregularPhase));
+            // Authored hero clips own the frightened stance and awkward strikes.
+            // These small rotations keep it alive: at most 2.2 degrees of breath,
+            // .22 degrees of tremor and a brief chin tuck. Both hands inherit the
+            // chest together; no wrist, foot, gameplay root or timing is changed.
+            // He keeps his chest away from the threat, then has to overcome
+            // that defensive brace to put his body behind the weapon.
+            Rotate(0, frame.right, breath * -.2f + shrink * .65f - brace * 2f);
+            Rotate(1, frame.right, -breath + shrink * 1.55f - brace * 2.5f);
+            Rotate(1, frame.forward, tremor);
+            Rotate(1, Vector3.up, tremor * .55f);
+            Rotate(2, frame.right, tense * .5f + shrink * .9f + breath * .12f);
+            Rotate(3, frame.right, tense * .85f + shrink * 2.3f + EffortAmount * .4f);
+            Rotate(3, frame.forward, shrink * -.8f);
         }
 
         public void Restore()
@@ -83,8 +175,15 @@ namespace BarPromenade
             Restore();
             forwardSpeed.Reset(); sideSpeed.Reset(); pitch.Reset(); roll.Reset(); turn.Reset();
             headPitch.Reset(); headRoll.Reset();
+            fear.Reset(); exhaustion.Reset(); effort.Reset(); flinch.Reset();
+            fearTarget = exhaustionTarget = effortTarget = threatTarget = 0f;
+            breathPhase = irregularPhase = tremorPhase = flinchPeak = 0f;
+            flinchClock = FlinchSeconds;
+            threatObserved = false;
             previousForward = frame.forward;
         }
+
+        private static float Unit(float value) => float.IsNaN(value) || float.IsInfinity(value) ? 0f : Mathf.Clamp01(value);
 
         private void Rotate(int index, Vector3 axis, float degrees) =>
             bones[index].rotation = Quaternion.AngleAxis(degrees, axis) * bones[index].rotation;

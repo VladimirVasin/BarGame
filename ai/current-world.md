@@ -154,15 +154,16 @@ The vertical slice contains:
   pedestrian positions. Operation-scoped City/Bar markers preserve later arrivals.
   Day one raises the mother's-house quest and map marker, closed on entry
   through door/map or at once when starting inside; no village signpost;
-- Combat Test: shared rig contacts, one HP bar; first zone wins once/swing.
-  Head x2 (50/80; capped below full HP), rear cone ±45° defeats; wounded
-  head can finish. Torso x1/rear x1.25, each arm x.5/leg x.75. Directions
-  follow posed bones; guard/parry precedes damage. Free alternating swings,
-  breath: guard/step/.9 s charge; stun regen, counters/buffer. Low two-hand/
-  high guard, inertia/hit-stop/shoves/wounds, landing thud/10 s lasting pools.
-  Seeded AI/target; camera frees after 1.5 s. W/S travel, A/D strafe,
-  Space step, LMB/RT charge/release, RMB guard; corner HUD. Pause freezes/
-  cancels release; R/unload clears; no story. Tuning: architecture notes;
+- Combat Test: first posed zone/swing, one HP. Head x2 (50/80, below full HP),
+  rear ±45° defeats; torso x1/rear x1.25, arms x.5/legs x.75;
+  guard/parry first. Free swings; breath: guard/step/.9 s charge,
+  stun regen/counters/buffer. Stance .42/.28 m; duel-clock feet follow travel,
+  settle in Windup. Hero afraid/unskilled: uneven stamina breath/tremor/
+  seen-tell flinch, hard recovery; NPC calmer.
+  Low two-hand/high guard; inertia/hit-stop/shoves/wounds/thud/10 s lasting pools.
+  Seeded AI/target; free camera at 1.5 s. W/S move, A/D strafe, Space step,
+  LMB/RT charge/release, RMB guard; corner HUD. Pause freezes/cancels release;
+  R/unload clears; no story/speech;
 - the retained Home opening is reachable only by a legacy request: held bed loop,
   silent `05:59` clock with rare whole-display flicker, five-second input lock,
   then localized Wake Up/Quit. Wake sets `06:00`, runs the clock/alarm and hides

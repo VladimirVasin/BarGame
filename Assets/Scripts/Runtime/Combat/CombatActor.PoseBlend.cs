@@ -20,6 +20,7 @@ namespace BarPromenade
         private float npcPresentedClock, npcPreviousClock;
         private bool npcPresentedPoseValid;
         private CombatBodyMotion bodyMotion;
+        private CombatFootwork footwork;
         private Vector3 locomotionVelocity;
 
         private void InitializeNpcPoseBlend()
@@ -40,6 +41,7 @@ namespace BarPromenade
         {
             damagePose?.Advance(seconds, State.Health / State.Settings.MaxHealth);
             supportGrip?.Advance(seconds);
+            UpdateCombatEmotion();
             bodyMotion?.Advance(seconds, motor != null ? motor.PlanarVelocity : locomotionVelocity);
             poseClock += seconds;
             if (poseBlendRemaining > 0f)
@@ -138,7 +140,9 @@ namespace BarPromenade
         {
             bodyMotion?.Apply();
             PresentDamagePose();
+            footwork?.Apply();
             ApplyNpcPoseBlend();
+            footwork?.ConstrainContacts();
             supportGrip?.Apply();
         }
     }

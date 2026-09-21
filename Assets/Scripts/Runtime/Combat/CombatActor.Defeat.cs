@@ -39,6 +39,7 @@ namespace BarPromenade
             // The winner finishes the visible swing without another damage window.
             AdvanceVisualClock(seconds);
             State.Advance(seconds);
+            footwork?.Advance(seconds, State);
             Present();
         }
 
@@ -46,10 +47,12 @@ namespace BarPromenade
         {
             if (IsRagdollActive) return;
             AdvanceVisualClock(seconds);
+            footwork?.Advance(seconds, State);
             defeatClock = Mathf.Min(defeatClock + seconds, CombatAssetProvider.DefeatHandoffSeconds);
             Present();
             if (defeatClock + .000001f < CombatAssetProvider.DefeatHandoffSeconds) return;
             supportGrip?.Forget();
+            footwork?.Forget();
             if (hero == null) { damagePose?.ForgetBase(); bodyMotion?.Forget(); }
             // Begin takes the same bones in their current impact pose. Ending the
             // owned clip first would replace that pose with ordinary locomotion.

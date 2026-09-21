@@ -1,0 +1,302 @@
+using System;
+using UnityEngine;
+
+namespace BarPromenade
+{
+    /// <summary>Authored shuffles, measured travel and world-space sole contacts share the duel clock.
+    /// Sampling a weapon or presenting a frame never advances a step.</summary>
+    internal sealed class CombatFootwork
+    {
+        private const int Samples = 80;
+        private readonly Transform frame, pelvis;
+        private readonly Transform[] bones = new Transform[7];
+        private readonly Vector3[] basePositions = new Vector3[7];
+        private readonly Quaternion[] baseRotations = new Quaternion[7];
+        private readonly PoseFrame[][] curves = new PoseFrame[4][];
+        private readonly Vector3[] restFeet = new Vector3[2], feet = new Vector3[2], correction = new Vector3[2];
+        private readonly Quaternion[] restRotations = new Quaternion[2], rotations = new Quaternion[2], swingRotations = new Quaternion[2];
+        private readonly float[] legLengths = new float[2];
+        private readonly Vector3 readyPelvis;
+        private Vector3 previousPosition, previousForward, gaitOffset, settleOffset, settleStart;
+        private Quaternion settleRotation;
+        private Vector3 travelDirection;
+        private float cycle, settling, settleDuration, idleSeconds;
+        private int direction, swing, attackSequence = -1;
+        private bool initialized, moving, applied, yielded, settlingFoot, settlingAttack;
+
+        private struct PoseFrame
+        {
+            public Vector3 Pelvis, Left, Right;
+            public Quaternion LeftRotation, RightRotation;
+            public Vector3 Foot(int side) => side == 0 ? Left : Right;
+            public Quaternion Rotation(int side) => side == 0 ? LeftRotation : RightRotation;
+        }
+
+        public CombatFootwork(Transform rig, GameObject animationRoot, Transform actorFrame, AnimationClip ready, bool npc)
+        {
+            frame = actorFrame;
+            string[] names = { "pelvis", "thigh.L", "shin.L", "foot.L", "thigh.R", "shin.R", "foot.R" };
+            Transform[] all = rig.GetComponentsInChildren<Transform>(true);
+            foreach (Transform bone in all)
+                for (int i = 0; i < names.Length; i++) if (bone.name == names[i]) bones[i] = bone;
+            foreach (Transform bone in bones)
+                if (bone == null) throw new InvalidOperationException("Combat footwork requires the original pelvis and both leg chains.");
+            pelvis = bones[0];
+            var positions = new Vector3[all.Length];
+            var rotationsBefore = new Quaternion[all.Length];
+            for (int i = 0; i < all.Length; i++) { positions[i] = all[i].localPosition; rotationsBefore[i] = all[i].localRotation; }
+            try
+            {
+                ready.SampleAnimation(animationRoot, 0f);
+                PoseFrame neutral = ReadPose();
+                readyPelvis = neutral.Pelvis;
+                for (int side = 0; side < 2; side++)
+                {
+                    restFeet[side] = neutral.Foot(side); restRotations[side] = neutral.Rotation(side);
+                    int i = 1 + side * 3;
+                    legLengths[side] = Vector3.Distance(bones[i].position, bones[i + 1].position) +
+                        Vector3.Distance(bones[i + 1].position, bones[i + 2].position);
+                }
+                for (int d = 0; d < curves.Length; d++)
+                {
+                    AnimationClip clip = CombatAssetProvider.LoadClip(CombatAssetProvider.LocomotionClipNames[d], npc);
+                    curves[d] = new PoseFrame[Samples + 1];
+                    for (int sample = 0; sample <= Samples; sample++)
+                    { clip.SampleAnimation(animationRoot, clip.length * sample / Samples); curves[d][sample] = ReadPose(); }
+                }
+            }
+            finally
+            {
+                for (int i = 0; i < all.Length; i++) { all[i].localPosition = positions[i]; all[i].localRotation = rotationsBefore[i]; }
+            }
+            Reset();
+        }
+
+        private PoseFrame ReadPose() => new PoseFrame
+        {
+            Pelvis = frame.InverseTransformPoint(pelvis.position),
+            Left = frame.InverseTransformPoint(bones[3].position), Right = frame.InverseTransformPoint(bones[6].position),
+            LeftRotation = Quaternion.Inverse(frame.rotation) * bones[3].rotation,
+            RightRotation = Quaternion.Inverse(frame.rotation) * bones[6].rotation
+        };
+
+        public void Reset()
+        {
+            Restore(); initialized = false; moving = settlingFoot = yielded = settlingAttack = false;
+            cycle = settling = 0f; gaitOffset = Vector3.zero; attackSequence = -1;
+            idleSeconds = 0f;
+            previousPosition = frame.position; previousForward = frame.forward;
+            PlantReady();
+        }
+
+        private void PlantReady()
+        {
+            for (int side = 0; side < 2; side++)
+            { feet[side] = frame.TransformPoint(restFeet[side]); rotations[side] = frame.rotation * restRotations[side]; }
+            initialized = true;
+        }
+
+        public void Advance(float seconds, MeleeCombatant state)
+        {
+            if (seconds <= 0f) return;
+            Vector3 displacement = frame.position - previousPosition;
+            float turn = Vector3.Angle(previousForward, frame.forward) * Mathf.Deg2Rad;
+            previousPosition = frame.position; previousForward = frame.forward;
+            displacement.y = 0f;
+            bool yield = state.Phase == MeleePhase.Step || state.IsDefeated;
+            if (yield)
+            { yielded = true; initialized = false; moving = settlingFoot = false; gaitOffset = Vector3.zero; return; }
+            if (!initialized || displacement.sqrMagnitude > 1f)
+            { PlantReady(); moving = settlingFoot = false; gaitOffset = Vector3.zero; cycle = 0f; }
+            yielded = false;
+
+            // Commit the current transfer inside the existing tell, including the short chain tell.
+            // Its supporting foot stays at its actual contact; input never waits for a gait boundary.
+            if (state.Phase == MeleePhase.Windup && attackSequence != state.AttackSequence)
+            {
+                attackSequence = state.AttackSequence;
+                float remaining = Mathf.Max(.02f, state.AttackWindupSeconds - state.AttackElapsed);
+                int side = moving || settlingFoot ? swing : FarthestFoot();
+                if (moving || settlingFoot || Vector3.Distance(feet[side], frame.TransformPoint(restFeet[side])) > .025f)
+                    BeginSettle(side, Mathf.Min(.13f, remaining * .45f), true);
+                moving = false;
+            }
+            if (state.Phase == MeleePhase.Active)
+            {
+                if (settlingFoot) FinishSettle();
+                gaitOffset = Vector3.zero; moving = false; return;
+            }
+            if (settlingFoot)
+            {
+                settling += seconds;
+                float t = Mathf.Clamp01(settling / settleDuration);
+                float blend = Smooth(t);
+                Vector3 target = frame.TransformPoint(restFeet[swing]);
+                float lift = Mathf.Sin(t * Mathf.PI);
+                feet[swing] = Vector3.Lerp(settleStart, target, blend) + Vector3.up * (.025f * lift * lift);
+                rotations[swing] = Quaternion.Slerp(settleRotation, frame.rotation * restRotations[swing], blend);
+                gaitOffset = settleOffset * (1f - blend);
+                if (t >= 1f)
+                {
+                    FinishSettle();
+                    int other = 1 - swing;
+                    float remaining = state.Phase == MeleePhase.Windup ? state.AttackWindupSeconds - state.AttackElapsed : .2f;
+                    if (remaining > .025f && Vector3.Distance(feet[other], frame.TransformPoint(restFeet[other])) > .025f)
+                        BeginSettle(other, Mathf.Min(.13f, remaining * .8f), settlingAttack);
+                }
+                return;
+            }
+            if (state.Phase == MeleePhase.Windup) return;
+            bool allowed = state.Phase == MeleePhase.Ready || state.Phase == MeleePhase.Charging || state.Phase == MeleePhase.Recovery;
+            float distance = displacement.magnitude;
+            float travel = distance;
+            // Turning on the spot lifts and replaces the more displaced boot;
+            // it does not play a lateral metre-stride while the root stands still.
+            if (allowed && distance < .00005f && turn > .00001f)
+            {
+                int side = moving ? swing : FarthestFoot();
+                if (Vector3.Distance(feet[side], frame.TransformPoint(restFeet[side])) > .035f)
+                { BeginSettle(side, .13f, false); moving = false; return; }
+            }
+            idleSeconds = travel < .00005f ? idleSeconds + seconds : 0f;
+            if (!allowed || travel < .00005f)
+            {
+                // A rendered motor update can feed several duel substeps. An empty
+                // substep is not a stop; consume each achieved displacement once.
+                if (moving && (!allowed || idleSeconds >= .075f))
+                { BeginSettle(swing, .13f, false); moving = false; }
+                return;
+            }
+            Vector3 local = frame.InverseTransformDirection(displacement.normalized);
+            local.y = 0f;
+            if (!moving)
+            {
+                // On a diagonal the nearer side opens first. A forward-right
+                // shuffle led by the left boot would cross the planted right leg.
+                direction = Mathf.Abs(local.x) > Mathf.Abs(local.z) * .2f
+                    ? (local.x < 0 ? 2 : 3) : (local.z >= 0 ? 0 : 1);
+                travelDirection = local.normalized; cycle = 0f; moving = true;
+                swing = direction == 0 || direction == 2 ? 0 : 1;
+                BeginSwing();
+            }
+            // Direction changes are resolved through a short planted settle, not a new clip's first frame.
+            else if (Vector3.Dot(local, travelDirection) < .9f)
+            { BeginSettle(swing, .10f, false); moving = false; return; }
+
+            float next = cycle + travel / CombatAssetProvider.LocomotionCycleDistance;
+            if (next >= (cycle < .5f ? .5f : 1f))
+            {
+                float boundary = cycle < .5f ? .5f : 1f;
+                EvaluateSwing(boundary);
+                cycle = boundary == 1f ? 0f : .5f;
+                swing = 1 - swing;
+                BeginSwing();
+                next = cycle + Mathf.Min(.45f, next - boundary);
+            }
+            cycle = next;
+            EvaluateSwing(cycle);
+        }
+
+        private void BeginSwing()
+        {
+            PoseFrame pose = Sample(cycle);
+            correction[swing] = feet[swing] - DesiredFoot(pose, swing);
+            swingRotations[swing] = rotations[swing];
+        }
+
+        private void EvaluateSwing(float phase)
+        {
+            PoseFrame pose = Sample(phase);
+            float half = phase <= .5f && cycle < .5f ? phase * 2f : (phase - .5f) * 2f;
+            float blend = Smooth(Mathf.Clamp01(half));
+            feet[swing] = DesiredFoot(pose, swing) + correction[swing] * (1f - blend);
+            rotations[swing] = Quaternion.Slerp(swingRotations[swing], frame.rotation * pose.Rotation(swing), blend);
+            gaitOffset = DirectionRotation() * (pose.Pelvis - readyPelvis);
+        }
+
+        private Quaternion DirectionRotation()
+        {
+            Vector3 axis = direction == 0 ? Vector3.forward : direction == 1 ? Vector3.back : direction == 2 ? Vector3.left : Vector3.right;
+            return Quaternion.FromToRotation(axis, travelDirection);
+        }
+
+        private Vector3 DesiredFoot(PoseFrame pose, int side)
+        {
+            Vector3 excursion = pose.Foot(side) - restFeet[side];
+            excursion = DirectionRotation() * excursion;
+            return frame.TransformPoint(restFeet[side] + excursion);
+        }
+
+        private PoseFrame Sample(float phase)
+        {
+            float sample = Mathf.Clamp01(phase) * Samples;
+            int index = Mathf.Min(Samples - 1, (int)sample);
+            float t = sample - index;
+            PoseFrame a = curves[direction][index], b = curves[direction][index + 1];
+            return new PoseFrame { Pelvis = Vector3.Lerp(a.Pelvis, b.Pelvis, t),
+                Left = Vector3.Lerp(a.Left, b.Left, t), Right = Vector3.Lerp(a.Right, b.Right, t),
+                LeftRotation = Quaternion.Slerp(a.LeftRotation, b.LeftRotation, t), RightRotation = Quaternion.Slerp(a.RightRotation, b.RightRotation, t) };
+        }
+
+        private int FarthestFoot() => (feet[0] - frame.TransformPoint(restFeet[0])).sqrMagnitude >=
+            (feet[1] - frame.TransformPoint(restFeet[1])).sqrMagnitude ? 0 : 1;
+
+        private void BeginSettle(int side, float duration, bool attack)
+        {
+            swing = side; settling = 0f; settleDuration = Mathf.Max(.02f, duration);
+            settleStart = feet[side]; settleRotation = rotations[side]; settleOffset = gaitOffset;
+            settlingFoot = true; settlingAttack = attack;
+        }
+
+        private void FinishSettle()
+        {
+            feet[swing] = frame.TransformPoint(restFeet[swing]);
+            rotations[swing] = frame.rotation * restRotations[swing];
+            settlingFoot = false; gaitOffset = Vector3.zero;
+        }
+
+        public void Apply()
+        {
+            Restore();
+            if (!initialized || yielded) return;
+            for (int i = 0; i < bones.Length; i++) { basePositions[i] = bones[i].localPosition; baseRotations[i] = bones[i].localRotation; }
+            applied = true;
+            pelvis.position += frame.TransformVector(gaitOffset);
+            ConstrainContacts();
+        }
+
+        // Transition source/target poses already include the weight shift. Re-close
+        // their contacts afterwards without applying that shift a second time.
+        public void ConstrainContacts()
+        {
+            if (!initialized || yielded) return;
+            // The animation owns the weight shift; only lower a hip if a planted leg would lock straight.
+            float lower = 0f;
+            for (int side = 0; side < 2; side++)
+            {
+                Vector3 delta = bones[1 + side * 3].position - feet[side];
+                float horizontal = delta.x * delta.x + delta.z * delta.z;
+                float length = legLengths[side] * .997f;
+                lower = Mathf.Max(lower, delta.y - Mathf.Sqrt(Mathf.Max(.01f, length * length - horizontal)));
+            }
+            pelvis.position -= Vector3.up * Mathf.Clamp(lower, 0f, .18f);
+            for (int side = 0; side < 2; side++)
+            {
+                int i = 1 + side * 3;
+                LimbTwoBoneIk.Solve(bones[i], bones[i + 1], bones[i + 2], feet[side], rotations[side],
+                    bones[i].position + frame.forward * .7f + (side == 0 ? -frame.right : frame.right) * .08f,
+                    1f, .999f, true);
+            }
+        }
+
+        public void Restore()
+        {
+            if (!applied) return;
+            for (int i = 0; i < bones.Length; i++)
+                if (bones[i] != null) { bones[i].localPosition = basePositions[i]; bones[i].localRotation = baseRotations[i]; }
+            applied = false;
+        }
+        public void Forget() => applied = false;
+        private static float Smooth(float value) => value * value * (3f - 2f * value);
+    }
+}

@@ -11,7 +11,7 @@ namespace BarPromenade.Editor
     {
         public const string Folder = "Assets/Resources/Combat/";
         public const string ManifestPath = Folder + "CombatTest3D.json";
-        public override uint GetVersion() => 3;
+        public override uint GetVersion() => 4;
         private bool IsCombat => assetPath.StartsWith(Folder, StringComparison.Ordinal);
         private bool IsBank => IsCombat && assetPath.EndsWith("Actions.fbx", StringComparison.Ordinal);
 
@@ -126,8 +126,8 @@ namespace BarPromenade.Editor
                 finally { UnityEngine.Object.DestroyImmediate(model); }
             }
             foreach (bool npc in new[] { false, true })
-            foreach (string name in npc ? CombatAssetProvider.ClipNames.Concat(CombatAssetProvider.StepClipNames) :
-                CombatAssetProvider.ClipNames.Concat(CombatAssetProvider.HeroLocomotionClipNames).Concat(CombatAssetProvider.StepClipNames))
+            foreach (string name in CombatAssetProvider.ClipNames.Concat(CombatAssetProvider.LocomotionClipNames)
+                .Concat(CombatAssetProvider.StepClipNames))
             {
                 AnimationClip clip = CombatAssetProvider.LoadClip(name, npc);
                 foreach (EditorCurveBinding binding in AnimationUtility.GetCurveBindings(clip))
@@ -200,11 +200,8 @@ namespace BarPromenade.Editor
                 }
                 ValidateReactions(animator, grip, tip, npc);
                 ValidateWeightAndHandoff(animator, npc);
-                if (!npc)
-                {
-                    ValidateSideSteps(animator);
-                    ValidateDefensiveSteps(animator);
-                }
+                ValidateCombatLocomotion(animator, actor.transform, npc);
+                ValidateDefensiveSteps(animator, actor.transform, npc);
             }
             finally { UnityEngine.Object.DestroyImmediate(actor); }
         }
@@ -217,6 +214,10 @@ namespace BarPromenade.Editor
             AnimationClip ready = CombatAssetProvider.LoadClip(CombatAssetProvider.ReadyClip, npc);
             ready.SampleAnimation(animator.gameObject, 0f);
             Vector3[] planted = feet.Select(foot => foot.position).ToArray();
+            Vector3 span = planted[0] - planted[1];
+            if (Mathf.Abs(span.x) < .40f || Mathf.Abs(span.x) > .45f ||
+                Mathf.Abs(span.z) < .25f || Mathf.Abs(span.z) > .30f)
+                throw new InvalidOperationException("Combat ready lost its wide, staggered support: " + (npc ? "NPC" : "hero"));
             Quaternion[] flat = feet.Select(foot => foot.rotation).ToArray();
             Vector3 initialPelvis = pelvis.position;
             var shifts = new float[2];
@@ -302,21 +303,24 @@ namespace BarPromenade.Editor
             }
         }
 
-        private static void ValidateSideSteps(Animator animator)
+        private static void ValidateCombatLocomotion(Animator animator, Transform actorFrame, bool npc)
         {
             Transform[] bones = animator.GetComponentsInChildren<Transform>(true);
             Transform[] feet = { bones.First(bone => bone.name == "foot.L"), bones.First(bone => bone.name == "foot.R") };
-            AnimationClip ready = CombatAssetProvider.LoadClip(CombatAssetProvider.ReadyClip);
-            foreach (string name in CombatAssetProvider.HeroLocomotionClipNames)
+            AnimationClip ready = CombatAssetProvider.LoadClip(CombatAssetProvider.ReadyClip, npc);
+            foreach (string name in CombatAssetProvider.LocomotionClipNames)
             {
-                AnimationClip clip = CombatAssetProvider.LoadClip(name);
-                bool left = name == CombatAssetProvider.StrafeLeftClip;
-                int leading = left ? 0 : 1;
-                Vector3 direction = left ? Vector3.left : Vector3.right;
+                AnimationClip clip = CombatAssetProvider.LoadClip(name, npc);
+                int leading = name == CombatAssetProvider.AdvanceClip || name == CombatAssetProvider.StrafeLeftClip ? 0 : 1;
+                Vector3 direction = name == CombatAssetProvider.AdvanceClip ? Vector3.forward :
+                    name == CombatAssetProvider.RetreatClip ? Vector3.back :
+                    name == CombatAssetProvider.StrafeLeftClip ? Vector3.left : Vector3.right;
                 CompareEndpoint(clip, 0f, ready, 0f, animator, bones, name + " entry");
                 CompareEndpoint(clip, clip.length, ready, 0f, animator, bones, name + " loop seam");
                 ready.SampleAnimation(animator.gameObject, 0f);
-                Vector3[] start = feet.Select(foot => foot.position).ToArray();
+                // A population prefab can carry its character's height scale.
+                // The bank contract is authored metres in the actor frame.
+                Vector3[] start = feet.Select(foot => actorFrame.InverseTransformPoint(foot.position)).ToArray();
                 var lifts = new float[2];
                 for (int frame = 0; frame <= 80; frame++)
                 {
@@ -325,25 +329,26 @@ namespace BarPromenade.Editor
                     int planted = phase < .5f ? 1 - leading : leading;
                     Vector3 virtualRoot = direction * (.60f * phase);
                     Vector3 contact = start[planted] + (phase < .5f ? Vector3.zero : direction * .60f);
-                    if (Vector3.Distance(feet[planted].position + virtualRoot, contact) > .003f)
-                        throw new InvalidOperationException("Combat side step slides its support foot: " + name);
+                    float supportError = Vector3.Distance(actorFrame.InverseTransformPoint(feet[planted].position) + virtualRoot, contact);
+                    if (supportError > .003f)
+                        throw new InvalidOperationException($"Combat locomotion slides its support foot: {(npc ? "NPC" : "hero")}/{name}, phase={phase:F4}, foot={feet[planted].name}, error={supportError:F6} m.");
                     for (int i = 0; i < feet.Length; i++)
-                        lifts[i] = Mathf.Max(lifts[i], feet[i].position.y - start[i].y);
+                        lifts[i] = Mathf.Max(lifts[i], actorFrame.InverseTransformPoint(feet[i].position).y - start[i].y);
                 }
                 if (lifts.Any(lift => lift < .05f))
-                    throw new InvalidOperationException("Combat side step must lift both feet: " + name);
+                    throw new InvalidOperationException("Combat locomotion must lift both feet: " + name);
             }
         }
 
-        private static void ValidateDefensiveSteps(Animator animator)
+        private static void ValidateDefensiveSteps(Animator animator, Transform actorFrame, bool npc)
         {
             Transform[] bones = animator.GetComponentsInChildren<Transform>(true);
             Transform[] feet = { bones.First(bone => bone.name == "foot.L"), bones.First(bone => bone.name == "foot.R") };
-            AnimationClip ready = CombatAssetProvider.LoadClip(CombatAssetProvider.ReadyClip);
+            AnimationClip ready = CombatAssetProvider.LoadClip(CombatAssetProvider.ReadyClip, npc);
             MeleeCombatSettings tuning = MeleeCombatSettings.Crowbar;
             foreach (string name in CombatAssetProvider.StepClipNames)
             {
-                AnimationClip clip = CombatAssetProvider.LoadClip(name);
+                AnimationClip clip = CombatAssetProvider.LoadClip(name, npc);
                 Vector3 direction = name == CombatAssetProvider.StepForwardClip ? Vector3.forward :
                     name == CombatAssetProvider.StepBackwardClip ? Vector3.back :
                     name == CombatAssetProvider.StepLeftClip ? Vector3.left : Vector3.right;
@@ -351,7 +356,7 @@ namespace BarPromenade.Editor
                 CompareEndpoint(clip, 0f, ready, 0f, animator, bones, name + " entry");
                 CompareEndpoint(clip, clip.length, ready, 0f, animator, bones, name + " settled exit");
                 ready.SampleAnimation(animator.gameObject, 0f);
-                Vector3[] start = feet.Select(foot => foot.position).ToArray();
+                Vector3[] start = feet.Select(foot => actorFrame.InverseTransformPoint(foot.position)).ToArray();
                 Quaternion[] flat = feet.Select(foot => foot.rotation).ToArray();
                 var lifts = new float[2];
                 for (int frame = 0; frame <= Mathf.RoundToInt(tuning.StepDurationSeconds * 200f); frame++)
@@ -365,10 +370,12 @@ namespace BarPromenade.Editor
                         bool planted = travel >= 1f || (i == leading ? travel >= .5f : travel <= .5f);
                         bool landed = travel >= 1f || i == leading;
                         Vector3 contact = start[i] + (landed ? direction * tuning.StepDistance : Vector3.zero);
-                        float rise = feet[i].position.y - start[i].y;
-                        if (planted && (Vector3.Distance(feet[i].position + virtualRoot, contact) > .003f ||
+                        Vector3 footPosition = actorFrame.InverseTransformPoint(feet[i].position);
+                        float rise = footPosition.y - start[i].y;
+                        float supportError = Vector3.Distance(footPosition + virtualRoot, contact);
+                        if (planted && (supportError > .003f ||
                             Quaternion.Angle(flat[i], feet[i].rotation) > .15f))
-                            throw new InvalidOperationException("Combat defensive step slides its loaded sole: " + name);
+                            throw new InvalidOperationException($"Combat defensive step slides its loaded sole: {(npc ? "NPC" : "hero")}/{name}, time={seconds:F4}, foot={feet[i].name}, error={supportError:F6} m.");
                         if (rise < -.002f || rise > .08f)
                             throw new InvalidOperationException("Combat defensive step lost its low grounded foot arc: " + name);
                         lifts[i] = Mathf.Max(lifts[i], rise);

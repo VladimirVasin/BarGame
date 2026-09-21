@@ -124,10 +124,12 @@ namespace BarPromenade
         {
             Quaternion delta = to * Quaternion.Inverse(from);
             if (delta.w < 0f) delta = new Quaternion(-delta.x, -delta.y, -delta.z, -delta.w);
-            delta.ToAngleAxis(out float angle, out Vector3 axis);
-            if (angle > 180f) angle -= 360f;
-            return axis.sqrMagnitude > 0.00001f && IsFinite(axis)
-                ? axis.normalized * (angle * Mathf.Deg2Rad / dt) : Vector3.zero;
+            Vector3 vector = new Vector3(delta.x, delta.y, delta.z);
+            float sine = vector.magnitude;
+            // At duel substeps a small rotation can have w rounded to exactly
+            // one. Its vector still carries the velocity that acos would lose.
+            return dt > 0f && sine > .0000001f && IsFinite(vector)
+                ? vector * (2f * Mathf.Atan2(sine, delta.w) / (sine * dt)) : Vector3.zero;
         }
 
         internal bool TryGetPresentedBoneVelocity(Transform bone, out Vector3 linear, out Vector3 angular)

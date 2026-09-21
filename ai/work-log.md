@@ -21,9 +21,8 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
   free after fall; `PlaceRound` re-locks. Check: `CombatTestPlayModeTests`.
 - Seeded opponent: guard/step/charge intercept/feint/whiff punish/cover,
   winded retreat/corner fighting, probe/press moods; no accidental parry.
-- `build_step_actions()` precedes NPC export; .65 m stride (longer leg cannot
-  reach at pelvis dip), .24/.14 travel. Check:
-  `build-combat-test-3d-model.py --actions-only`.
+- NPC export follows `build_step_actions()`; reachable .65 m stride/.24/.14
+  travel (`build-combat-test-3d-model.py --actions-only`).
 - `CombatTuning`; direct hits age guards/use heavies; evasion runs physics,
   strafe ticks duel, foreign-owner setup releases stance; named habits in
   `CombatDuelSimulator`. Check: `CombatBalanceTests`.
@@ -38,13 +37,16 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
   both banks have a backhand family. Mirrored bar's support hand is far:
   down-forward elbow pole keeps the wrist in the charge envelope. Checks:
   `CombatRulesTests`, `AreaCaptureFixture.CombatCharge`.
-- Body: C1 curves pin feet/grip; both rigs/swing sides inherit transition velocity;
-  duel time owns body/contact pose, resampling never advances it. Combat
-  travel/yaw accelerate/brake. Combined checks:
-  `build-combat-test-3d-model.py --actions-only`,
-  `Range_CombatBodyInertiaKeepsBothRigsContinuousAndClockBound`,
-  `Range_LethalContactsHandOffToRagdollPauseResetAndCleanUp`;
-  both swing sides and aftermath frames reviewed.
+- Body: C1 transitions retain velocity via atan2 at small angles;
+  travel/yaw accelerate/brake.
+  Both rigs' .42/.28 m stance plants from measured travel; a lifted foot
+  settles in Windup instead of ordinary gait replacing combat legs.
+  Hero: afraid/unskilled, raised shoulders/tucked chin, awkward effort/recovery;
+  stamina breath/tremor/visible-tell flinch/tense face. NPC calmer; HP separate,
+  input/windows/costs unchanged. One duel-clock pose serves render/contacts;
+  resampling/pausing never advances it. Art check:
+  `build-combat-test-3d-model.py` (`COMBAT TEST ART CONTRACT OK`). Check:
+  `Range_CombatBodyInertiaKeepsBothRigsContinuousAndClockBound`.
 
 ## 2026-09-20 — Combat
 

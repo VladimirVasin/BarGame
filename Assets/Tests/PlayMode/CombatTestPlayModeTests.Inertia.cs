@@ -25,6 +25,7 @@ namespace BarPromenade.Tests.PlayMode
                     (swing == MeleeSwing.Backhand ? "-backhand" : "");
                 yield return null;
                 PresentInertiaPose();
+                AssertCombatReadySupport(actor, subject);
                 var readyPose = new CombatInertiaPose(actor);
                 CaptureInertiaFrame(actor, subject, 0);
 
@@ -39,6 +40,8 @@ namespace BarPromenade.Tests.PlayMode
                     CaptureInertiaFrame(actor, subject, frame);
                 }
                 var chargedPose = new CombatInertiaPose(actor);
+                Assert.That(actor.CombatFearAmount, heroActs ? Is.GreaterThan(.8f) : Is.EqualTo(0f),
+                    subject + ": only the hero carries the frightened novice presentation.");
                 Assert.That(chargedPose.AngleFrom(readyPose, "spine"), Is.GreaterThan(1f),
                     subject + ": the spine must join the preparation, not leave the arms swinging alone.");
                 Assert.That(chargedPose.AngleFrom(readyPose, "chest"), Is.GreaterThan(3f));
@@ -94,7 +97,8 @@ namespace BarPromenade.Tests.PlayMode
                 PresentInertiaPose();
                 Vector3 continuedVelocity = new CombatInertiaPose(actor).AngularDeltaFrom(movingGuard, "chest");
                 Assert.That(Vector3.Dot(enteringVelocity, continuedVelocity), Is.GreaterThan(0f),
-                    subject + ": an interrupted guard must first carry its existing angular velocity into the new transition.");
+                    subject + ": an interrupted guard must first carry its existing angular velocity into the new transition; " +
+                    "entering=" + enteringVelocity.ToString("F6") + ", continued=" + continuedVelocity.ToString("F6"));
                 root.Tick(.3f);
                 yield return null;
                 PresentInertiaPose();
@@ -173,8 +177,133 @@ namespace BarPromenade.Tests.PlayMode
                 }
                 finally { target.ImpactReceived -= RememberContact; }
             }
+            yield return VerifyCombatFootwork();
             yield return VerifyCombatTravelInertia();
             LogAssert.NoUnexpectedReceived();
+        }
+
+        private IEnumerator VerifyCombatFootwork()
+        {
+            // Feed achieved displacement directly, identically for the two rigs.
+            // The motor's acceleration remains covered below; these cases isolate
+            // foot contacts, direction changes and entering a blow mid-stride.
+            Vector3[] directions = { Vector3.forward, Vector3.back, Vector3.left, Vector3.right,
+                new Vector3(-1f, 0f, 1f).normalized, new Vector3(1f, 0f, -1f).normalized,
+                new Vector3(1f, 0f, 1f).normalized, new Vector3(-1f, 0f, -1f).normalized };
+            string[] names = { "advance", "retreat", "left", "right", "advance-left", "retreat-right", "advance-right", "retreat-left" };
+            const float delta = 1f / 60f;
+            foreach (bool heroActs in new[] { true, false })
+            for (int directionIndex = 0; directionIndex < directions.Length; directionIndex++)
+            {
+                PlacePair(4f);
+                CombatActor actor = heroActs ? root.Hero : root.Opponent;
+                string subject = (heroActs ? "hero" : "opponent") + "-footwork-" + names[directionIndex];
+                yield return null;
+                yield return null; // Reset's one-frame handoff must finish before testing the live transition.
+                PresentInertiaPose();
+                Transform left = CombatBone(actor, "foot.L"), right = CombatBone(actor, "foot.R");
+                Vector3 readyLeft = left.position, readyRight = right.position;
+                Vector3 previousLeft = left.position, previousRight = right.position;
+                Vector3 direction = actor.transform.TransformDirection(directions[directionIndex]);
+                bool firstHalf = directionIndex % 2 == 0;
+                int travelFrames = firstHalf ? 13 : 39;
+                float maximumLift = 0f;
+                for (int frame = 0; frame < travelFrames; frame++)
+                {
+                    AdvanceAchievedCombatTravel(actor, direction * .6f, delta);
+                    AssertFootworkSupport(actor, left, right, readyLeft.y, readyRight.y,
+                        previousLeft, previousRight, subject + " travelling");
+                    maximumLift = Mathf.Max(maximumLift, left.position.y - readyLeft.y, right.position.y - readyRight.y);
+                    previousLeft = left.position; previousRight = right.position;
+                }
+                Assert.That(maximumLift, Is.GreaterThan(.015f), subject + ": a moving foot must leave the ground.");
+                AssertInertiaSamplingStable(actor, subject + " walking");
+                // The isolated simulation can advance many poses in one Unity
+                // frame. Let GPU skinning consume this pose before photographing
+                // it alongside the rigid weapon, which updates immediately.
+                yield return null;
+                PresentInertiaPose();
+                CaptureInertiaFrame(actor, subject, 0);
+
+                var enteringPose = new CombatInertiaPose(actor);
+                actor.State.ObserveLateralCue(firstHalf ? 0 : 1);
+                Assert.That(actor.TryAttack(), Is.True);
+                PresentInertiaPose();
+                enteringPose.AssertMatches(actor, .008f, .75f, subject + " immediate attack entry");
+                Assert.That(actor.State.AttackElapsed, Is.EqualTo(0f),
+                    "A moving attack must begin immediately, without waiting for the next gait boundary.");
+                bool inspectedContact = false;
+                for (int frame = 0; frame < 90 && actor.State.IsAttacking; frame++)
+                {
+                    AdvanceAchievedCombatTravel(actor, direction * (.6f * actor.MovementScale), delta);
+                    AssertFootworkSupport(actor, left, right, readyLeft.y, readyRight.y,
+                        previousLeft, previousRight, subject + " moving attack");
+                    previousLeft = left.position; previousRight = right.position;
+                    if (!inspectedContact && actor.State.Phase == MeleePhase.Active)
+                    {
+                        inspectedContact = true;
+                        Assert.That(left.position.y, Is.EqualTo(readyLeft.y).Within(.018f), subject + ": left foot at impact");
+                        Assert.That(right.position.y, Is.EqualTo(readyRight.y).Within(.018f), subject + ": right foot at impact");
+                        AssertInertiaSamplingStable(actor, subject + " planted impact");
+                        yield return null;
+                        PresentInertiaPose();
+                        CaptureInertiaFrame(actor, subject, 1);
+                    }
+                }
+                Assert.That(inspectedContact, Is.True);
+                Assert.That(actor.State.Phase, Is.EqualTo(MeleePhase.Ready));
+
+                // A held direction with no achieved travel models a wall stop:
+                // intent alone cannot keep shuffling the feet beneath the body.
+                actor.SetLocomotion(direction * .6f);
+                for (int frame = 0; frame < 24; frame++) { actor.Step(delta); PresentInertiaPose(); }
+                Vector3 stoppedLeft = left.position, stoppedRight = right.position;
+                for (int frame = 0; frame < 12; frame++) { actor.Step(delta); PresentInertiaPose(); }
+                Assert.That(Vector3.Distance(stoppedLeft, left.position), Is.LessThan(.006f), subject + ": blocked left support");
+                Assert.That(Vector3.Distance(stoppedRight, right.position), Is.LessThan(.006f), subject + ": blocked right support");
+                AssertInertiaSamplingStable(actor, subject + " stopped");
+                yield return null;
+                PresentInertiaPose();
+                CaptureInertiaFrame(actor, subject, 2);
+            }
+        }
+
+        private void AdvanceAchievedCombatTravel(CombatActor actor, Vector3 requestedVelocity, float seconds)
+        {
+            Vector3 before = actor.transform.position;
+            actor.Body.Move(requestedVelocity * seconds);
+            actor.SetLocomotion((actor.transform.position - before) / seconds);
+            actor.Step(seconds);
+            PresentInertiaPose();
+        }
+
+        private static Transform CombatBone(CombatActor actor, string name)
+        {
+            foreach (Transform bone in actor.DamageRigRoot.GetComponentsInChildren<Transform>(true))
+                if (bone.name == name) return bone;
+            Assert.Fail("The combat rig is missing its " + name + " bone.");
+            return null;
+        }
+
+        private static void AssertCombatReadySupport(CombatActor actor, string context)
+        {
+            Vector3 left = actor.transform.InverseTransformPoint(CombatBone(actor, "foot.L").position);
+            Vector3 right = actor.transform.InverseTransformPoint(CombatBone(actor, "foot.R").position);
+            Assert.That(Mathf.Abs(left.x - right.x), Is.InRange(.39f, .46f), context + ": ready stance width");
+            Assert.That(Mathf.Abs(left.z - right.z), Is.InRange(.24f, .31f), context + ": ready stagger");
+        }
+
+        private static void AssertFootworkSupport(CombatActor actor, Transform left, Transform right,
+            float leftGround, float rightGround, Vector3 previousLeft, Vector3 previousRight, string context)
+        {
+            Assert.That(left.position.y - leftGround, Is.InRange(-.012f, .12f), context + ": left sole height");
+            Assert.That(right.position.y - rightGround, Is.InRange(-.012f, .12f), context + ": right sole height");
+            Vector3 span = actor.transform.InverseTransformDirection(right.position - left.position);
+            Assert.That(span.x, Is.GreaterThan(.28f), context + ": feet must retain their sides without crossing");
+            float leftTravel = Vector3.Distance(previousLeft, left.position);
+            float rightTravel = Vector3.Distance(previousRight, right.position);
+            Assert.That(Mathf.Max(leftTravel, rightTravel), Is.LessThan(.075f), context + ": no frame-sized foot teleport");
+            Assert.That(Mathf.Min(leftTravel, rightTravel), Is.LessThan(.008f), context + ": at least one loaded support stays planted");
         }
 
         private IEnumerator VerifyCombatTravelInertia()
@@ -270,6 +399,26 @@ namespace BarPromenade.Tests.PlayMode
                 LogAssert.Expect(LogType.Log, new System.Text.RegularExpressions.Regex("^Area capture wrote "));
                 AreaCaptureFixture.CaptureCurrentCamera(camera, SceneIds.CombatTest + "/inertia/" + subject,
                     "frame-" + frame.ToString("D4"));
+                // A few complementary full-body stills keep fear/effort and
+                // fore-aft support reviewable without tripling every sequence.
+                if (frame == 0 || frame == 1 || frame == 35 || frame == 50)
+                {
+                    foreach (bool side in new[] { false, true })
+                    {
+                        eye = actor.transform.position + actor.transform.TransformDirection(
+                            side ? new Vector3(2.2f, 1.25f, .15f) : new Vector3(.15f, 1.25f, 2.2f));
+                        camera.transform.SetPositionAndRotation(eye, Quaternion.LookRotation(focus - eye));
+                        camera.fieldOfView = 50f;
+                        LogAssert.Expect(LogType.Log, new System.Text.RegularExpressions.Regex("^Area capture wrote "));
+                        AreaCaptureFixture.CaptureCurrentCamera(camera, SceneIds.CombatTest + "/inertia/" + subject,
+                            (side ? "side-" : "front-") + frame.ToString("D4"));
+                    }
+                    camera.transform.SetPositionAndRotation(previousPosition, previousRotation);
+                    camera.fieldOfView = previousFov;
+                    LogAssert.Expect(LogType.Log, new System.Text.RegularExpressions.Regex("^Area capture wrote "));
+                    AreaCaptureFixture.CaptureCurrentCamera(camera, SceneIds.CombatTest + "/inertia/" + subject,
+                        "gameplay-" + frame.ToString("D4"));
+                }
             }
             finally
             {
@@ -287,11 +436,12 @@ namespace BarPromenade.Tests.PlayMode
 
             public CombatInertiaPose(CombatActor actor)
             {
-                var torso = new List<Transform>();
+                var sampled = new List<Transform>();
                 foreach (Transform bone in actor.DamageRigRoot.GetComponentsInChildren<Transform>(true))
                     if (bone.name == "pelvis" || bone.name == "spine" || bone.name == "chest" ||
-                        bone.name == "neck" || bone.name == "head") torso.Add(bone);
-                bones = torso.ToArray();
+                        bone.name == "neck" || bone.name == "head" || bone.name.StartsWith("thigh.") ||
+                        bone.name.StartsWith("shin.") || bone.name.StartsWith("foot.")) sampled.Add(bone);
+                bones = sampled.ToArray();
                 Assert.That(bones.Length, Is.GreaterThanOrEqualTo(3));
                 positions = new Vector3[bones.Length];
                 rotations = new Quaternion[bones.Length];
@@ -318,9 +468,13 @@ namespace BarPromenade.Tests.PlayMode
                 {
                     if (bones[i].name != name) continue;
                     Quaternion delta = rotations[i] * Quaternion.Inverse(previous.rotations[i]);
-                    delta.ToAngleAxis(out float degrees, out Vector3 axis);
-                    if (degrees > 180f) degrees -= 360f;
-                    return Mathf.Abs(degrees) < .0001f ? Vector3.zero : axis * degrees;
+                    if (delta.w < 0f) delta = new Quaternion(-delta.x, -delta.y, -delta.z, -delta.w);
+                    // acos(w) loses sub-.04-degree motion when float w rounds to
+                    // one. The vector part still resolves the per-tick rotation.
+                    var vector = new Vector3(delta.x, delta.y, delta.z);
+                    float sine = vector.magnitude;
+                    return sine < .00000001f ? Vector3.zero :
+                        vector * (2f * Mathf.Atan2(sine, delta.w) * Mathf.Rad2Deg / sine);
                 }
                 Assert.Fail("The combat rig is missing its " + name + " bone.");
                 return Vector3.zero;

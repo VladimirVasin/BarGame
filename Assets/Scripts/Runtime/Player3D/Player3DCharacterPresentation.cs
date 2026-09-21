@@ -747,6 +747,7 @@ namespace BarPromenade
             layer.ForgetBase();
             ForgetCombatDamagePose();
             combatBodyMotion?.Forget();
+            combatFootwork?.Forget();
             combatGrip?.Forget();
             ReleaseBalanceStep();
             attentionBaseCaptured = false;
@@ -821,6 +822,7 @@ namespace BarPromenade
 
             RestoreCombatSupportGrip();
             RestoreRecoveryPoseTransition();
+            RestoreCombatFootwork();
             RestoreCombatDamagePose();
             RestoreCombatBodyMotion();
             layer.Restore();
@@ -1023,7 +1025,9 @@ namespace BarPromenade
                 ApplyAttentionPose(deltaTime);
                 ApplyCombatBodyMotion();
                 ApplyCombatDamagePose();
+                ApplyCombatFootwork();
                 CompleteRecoveryPresentation(deltaTime);
+                ConstrainCombatFootContacts();
                 ApplyCombatSupportGrip();
             }
 
@@ -1133,7 +1137,9 @@ namespace BarPromenade
                 ApplyAttentionPose(0f);
                 ApplyCombatBodyMotion();
                 ApplyCombatDamagePose();
+                ApplyCombatFootwork();
                 CompleteRecoveryPresentation(0f);
+                ConstrainCombatFootContacts();
                 ApplyCombatSupportGrip();
             }
         }
@@ -1143,6 +1149,7 @@ namespace BarPromenade
         {
             RestoreCombatSupportGrip();
             RestoreRecoveryPoseTransition();
+            RestoreCombatFootwork();
             RestoreCombatDamagePose();
             RestoreCombatBodyMotion();
             ReleaseColdForProtectivePose();
@@ -1172,6 +1179,7 @@ namespace BarPromenade
                 ApplyAttentionPose(0f);
                 ApplyCombatBodyMotion();
                 ApplyCombatDamagePose();
+                ApplyCombatFootwork();
                 ApplyCombatSupportGrip();
             }
         }
@@ -3105,6 +3113,7 @@ namespace BarPromenade
         {
             RestoreCombatSupportGrip();
             RestoreRecoveryPoseTransition();
+            RestoreCombatFootwork();
             // Both additive layers come off before the graph writes the
             // frame: restoring them in LateUpdate instead would roll the
             // freshly evaluated head/neck animation back to a stale base

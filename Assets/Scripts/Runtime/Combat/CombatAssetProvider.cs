@@ -14,6 +14,7 @@ namespace BarPromenade
             BlockClip = "CombatBlock", HitClip = "CombatHit", GuardImpactClip = "CombatGuardImpact",
             GuardBreakClip = "CombatGuardBreak", RecoilClip = "CombatRecoil", DefeatClip = "CombatDefeat",
             StrafeLeftClip = "CombatStrafeLeft", StrafeRightClip = "CombatStrafeRight",
+            AdvanceClip = "CombatAdvance", RetreatClip = "CombatRetreat",
             StepForwardClip = "CombatStepForward", StepBackwardClip = "CombatStepBackward",
             StepLeftClip = "CombatStepLeft", StepRightClip = "CombatStepRight",
             BackhandClip = "CombatBackhand", BackhandRecoilClip = "CombatBackhandRecoil",
@@ -34,21 +35,22 @@ namespace BarPromenade
         public static SwingClipSet SwingClips(MeleeSwing swing) => swing == MeleeSwing.Backhand
             ? new SwingClipSet(BackhandClip, BackhandClip, BackhandHeavyClip, BackhandChargeClip, BackhandRecoilClip)
             : new SwingClipSet(AttackClip, ReleaseLightClip, ReleaseHeavyClip, ChargeClip, RecoilClip);
-        public static readonly string[] HeroLocomotionClipNames = { StrafeLeftClip, StrafeRightClip };
+        public static readonly string[] LocomotionClipNames = { AdvanceClip, RetreatClip, StrafeLeftClip, StrafeRightClip };
+        public const float LocomotionCycleDistance = .60f;
         /// <summary>Both banks carry the four defensive steps; the opponent steps too.</summary>
         public static readonly string[] StepClipNames = { StepForwardClip, StepBackwardClip, StepLeftClip, StepRightClip };
         private static readonly Dictionary<string, Material> Materials = new Dictionary<string, Material>();
         private static readonly Dictionary<string, AnimationClip> Clips = new Dictionary<string, AnimationClip>();
 
         public static bool IsLoop(string clip) => clip == ReadyClip || clip == RestClip || clip == BlockClip ||
-            clip == StrafeLeftClip || clip == StrafeRightClip;
+            clip == StrafeLeftClip || clip == StrafeRightClip || clip == AdvanceClip || clip == RetreatClip;
         public static float ClipDuration(string clip)
         {
             switch (clip)
             {
                 case ReadyClip: case BlockClip: case RestClip: return 4f;
                 case ChargeClip: case BackhandChargeClip: return 1f;
-                case StrafeLeftClip: case StrafeRightClip: return .8f;
+                case StrafeLeftClip: case StrafeRightClip: case AdvanceClip: case RetreatClip: return .8f;
                 // The authored step is exactly the motor's committed travel plus settle.
                 case StepForwardClip: case StepBackwardClip: case StepLeftClip: case StepRightClip:
                     return MeleeCombatSettings.Crowbar.StepDurationSeconds;

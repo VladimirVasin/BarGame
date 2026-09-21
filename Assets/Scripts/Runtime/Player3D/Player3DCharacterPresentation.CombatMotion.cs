@@ -4,6 +4,14 @@ namespace BarPromenade
     {
         private object combatMotionOwner;
         private CombatBodyMotion combatBodyMotion;
+        private CombatFootwork combatFootwork;
+
+        internal void SetCombatFootwork(object owner, CombatFootwork motion)
+        {
+            if (!OwnsClip(owner)) return;
+            combatMotionOwner = owner;
+            combatFootwork = motion;
+        }
 
         internal void SetCombatBodyMotion(object owner, CombatBodyMotion motion)
         {
@@ -15,7 +23,9 @@ namespace BarPromenade
         internal void ClearCombatBodyMotion(object owner)
         {
             if (!ReferenceEquals(owner, combatMotionOwner)) return;
+            combatFootwork?.Restore();
             combatBodyMotion?.Restore();
+            combatFootwork = null;
             combatBodyMotion = null;
             combatMotionOwner = null;
         }
@@ -27,5 +37,14 @@ namespace BarPromenade
         }
 
         private void RestoreCombatBodyMotion() => combatBodyMotion?.Restore();
+        private void RestoreCombatFootwork() => combatFootwork?.Restore();
+        private void ApplyCombatFootwork()
+        {
+            if (!ragdollPoseActive && OwnsClip(combatMotionOwner)) combatFootwork?.Apply();
+        }
+        private void ConstrainCombatFootContacts()
+        {
+            if (!ragdollPoseActive && OwnsClip(combatMotionOwner)) combatFootwork?.ConstrainContacts();
+        }
     }
 }
