@@ -3,6 +3,26 @@
 Newest outcomes/checks first. Archive whole dates at budget: [policy](README.md).
 Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-2026-08.md).
 
+## 2026-09-23 — Alpine Village expansion
+
+- Extended the unchanged residential core with dense station-side forest,
+  an abandoned ski lodge with walk-in hall/rental fixtures, shed/stopped lift,
+  and an old-road return loop plus a blocked downhill collapse. Shared ground,
+  routes and obstacles drive movement, terrain, map, snow and weather; a joining
+  valley closes the gap found on the return road. The lodge roof clears snow
+  without heating the room. Check:
+  `AlpineVillageTests.WalkableArea_ReachesTheStationTheLaneAndEverySpur`.
+- Passive fixed-metre Blender parts preserve true openings/imported scale.
+  Terrain/forest render in spatial sectors; staged construction and local snow
+  updates bound the larger area's work. Checks: `build-village-expansion-3d-model.py`,
+  `AreaCaptureFixture.AlpineVillageExpansion` (import, floor, area and snow).
+  Forest, interior, lift, facade and road/brink frames reviewed. Thinner rubble,
+  edge-side railing and a raised lower shelf expose the broken continuation;
+  the same capture checks its sightline and the impassable edge.
+- Recorded the approved branch/forest exception in both bibles and architecture;
+  replaced old terrain/clearance facts and updated player/tool documentation.
+  Checks: `check-docs.py`, `git diff --check`.
+
 ## 2026-09-22 — Taunt integration and combat CPU
 
 - Rebased `feat/combat-taunt` onto main and merged its commit. Reconciled

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace BarPromenade
@@ -64,6 +65,10 @@ namespace BarPromenade
         private float[] depths;
         private float[] pressed;
         private float[] cleared;
+        private const float LookupCell = 2f;
+        private readonly Dictionary<Vector2Int, List<int>> vertexCells =
+            new Dictionary<Vector2Int, List<int>>();
+        private readonly List<int> activePresses = new List<int>();
         private Transform walker;
         private Func<float> snowfall;
         private float rebuildCountdown;
@@ -113,6 +118,18 @@ namespace BarPromenade
 
             pressed = new float[vertices.Length];
             cleared = new float[vertices.Length];
+            vertexCells.Clear();
+            activePresses.Clear();
+            for (int index = 0; index < vertices.Length; index++)
+            {
+                Vector2Int cell = Cell(vertices[index]);
+                if (!vertexCells.TryGetValue(cell, out List<int> indices))
+                {
+                    indices = new List<int>();
+                    vertexCells.Add(cell, indices);
+                }
+                indices.Add(index);
+            }
             walker = walkerToFollow;
             snowfall = snowfallIntensity;
         }
@@ -129,7 +146,7 @@ namespace BarPromenade
             }
 
             float radiusSquared = TreadRadius * TreadRadius;
-            for (int index = 0; index < vertices.Length; index++)
+            foreach (int index in NearbyVertices(worldPosition, TreadRadius))
             {
                 if (depths[index] <= 0f)
                 {
@@ -154,6 +171,7 @@ namespace BarPromenade
                     continue;
                 }
 
+                if (pressed[index] <= 0f) activePresses.Add(index);
                 pressed[index] = target;
                 dirty = true;
             }
@@ -245,14 +263,15 @@ namespace BarPromenade
                 return;
             }
 
-            for (int index = 0; index < pressed.Length; index++)
+            for (int active = activePresses.Count - 1; active >= 0; active--)
             {
+                int index = activePresses[active];
+                pressed[index] = Mathf.Max(0f, pressed[index] - step);
                 if (pressed[index] <= 0f)
                 {
-                    continue;
+                    activePresses[active] = activePresses[activePresses.Count - 1];
+                    activePresses.RemoveAt(activePresses.Count - 1);
                 }
-
-                pressed[index] = Mathf.Max(0f, pressed[index] - step);
                 dirty = true;
             }
         }
@@ -283,19 +302,24 @@ namespace BarPromenade
         /// </summary>
         public float SampleVisibleDepth(Vector3 position)
         {
+            if (vertices == null) return 0f;
             float bestSquared = float.PositiveInfinity;
             float depth = 0f;
-            for (int index = 0; index < vertices.Length; index++)
+            float reach = Mathf.Max(TreadRadius, AlpineVillageSnowDrift.FieldCellSize);
+            int bestIndex = int.MaxValue;
+            foreach (int index in NearbyVertices(position, reach))
             {
                 float dx = vertices[index].x - position.x;
                 float dz = vertices[index].z - position.z;
                 float distanceSquared = dx * dx + dz * dz;
-                if (distanceSquared >= bestSquared)
+                if (distanceSquared > bestSquared ||
+                    (distanceSquared == bestSquared && index >= bestIndex))
                 {
                     continue;
                 }
 
                 bestSquared = distanceSquared;
+                bestIndex = index;
                 depth = depths[index] * (1f - Mathf.Max(pressed[index], cleared[index]));
             }
 
@@ -303,10 +327,20 @@ namespace BarPromenade
             // not to the tread radius: the field sheet is on a `1 m` grid, so
             // a tread-sized window finds no vertex at all across most of the
             // bowl and every step out there would sound like bare earth.
-            float reach = Mathf.Max(
-                TreadRadius,
-                AlpineVillageSnowDrift.FieldCellSize);
             return bestSquared <= reach * reach ? depth : 0f;
+        }
+
+        private static Vector2Int Cell(Vector3 position) => new Vector2Int(
+            Mathf.FloorToInt(position.x / LookupCell), Mathf.FloorToInt(position.z / LookupCell));
+
+        private IEnumerable<int> NearbyVertices(Vector3 position, float radius)
+        {
+            Vector2Int minimum = Cell(position - new Vector3(radius, 0f, radius));
+            Vector2Int maximum = Cell(position + new Vector3(radius, 0f, radius));
+            for (int z = minimum.y; z <= maximum.y; z++)
+            for (int x = minimum.x; x <= maximum.x; x++)
+                if (vertexCells.TryGetValue(new Vector2Int(x, z), out List<int> indices))
+                    foreach (int index in indices) yield return index;
         }
     }
 }

@@ -786,8 +786,7 @@ namespace BarPromenade
             // goes out - a wall of snow in its own shadow does not - and a
             // renderer-wide block would leak this tint onto the rise, so
             // the write is indexed.
-            Renderer terrain = World.TerrainRoot.GetComponent<Renderer>();
-            if (terrain != null)
+            foreach (Renderer terrain in World.TerrainRoot.GetComponentsInChildren<Renderer>())
             {
                 ApplyWarmthColor(
                     terrain,
@@ -1233,9 +1232,8 @@ namespace BarPromenade
         }
 
         /// <summary>
-        /// The station canopy is the only roof the player can stand under in
-        /// this exterior. Entering the house changes scenes; standing at its
-        /// threshold is still standing in the village weather.
+        /// The station canopy and the abandoned lodge keep precipitation out.
+        /// Shelter does not imply that an unheated building warms the hero.
         /// </summary>
         private bool IsSheltered()
         {
@@ -1253,6 +1251,13 @@ namespace BarPromenade
             }
 
             Vector3 position = Player.GameObject.transform.position;
+            if (Plan.Expansion.IsInterior(new Vector2(position.x, position.z)) &&
+                position.y >= Plan.Expansion.LodgeFloorHeight - 0.3f &&
+                position.y <= Plan.Expansion.LodgeFloorHeight + 3.6f)
+            {
+                return true;
+            }
+
             MountainRoadTerminalRect pad = Plan.Station.PadArea;
             return pad.ContainsXZ(position, 0.2f) &&
                    position.y >= pad.Center.y - 0.3f &&

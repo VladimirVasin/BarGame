@@ -737,7 +737,7 @@ namespace BarPromenade
         /// </summary>
         private static Vector2 WallPush(AlpineVillagePlan plan, Vector2 point)
         {
-            Rect keep = Inset(plan.TerrainBounds, RidgeKeepInside);
+            Rect keep = Inset(plan.CoreTerrainBounds, RidgeKeepInside);
             var push = Vector2.zero;
 
             float west = point.x - keep.xMin;
@@ -769,7 +769,7 @@ namespace BarPromenade
             AlpineVillagePlan plan,
             Vector2 point)
         {
-            Rect keep = Inset(plan.TerrainBounds, RidgeKeepInside);
+            Rect keep = Inset(plan.CoreTerrainBounds, RidgeKeepInside);
             return new Vector2(
                 Mathf.Clamp(point.x, keep.xMin, keep.xMax),
                 Mathf.Clamp(point.y, keep.yMin, keep.yMax));

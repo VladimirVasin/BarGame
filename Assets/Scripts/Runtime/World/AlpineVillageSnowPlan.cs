@@ -315,7 +315,8 @@ namespace BarPromenade
             float rimWeight = 1f - SmoothRange(
                 0f,
                 AlpineVillageTerrainSampler.RidgeStandoff,
-                DistanceOutsideRect(plan.TerrainBounds, point));
+                Mathf.Min(DistanceOutsideRect(plan.CoreTerrainBounds, point),
+                    Mathf.Max(0f, plan.Expansion.DistanceToGround(point))));
             if (rimWeight <= 0f)
             {
                 return 0f;
@@ -359,7 +360,10 @@ namespace BarPromenade
                         plan.Brook.DistanceOutsideWetGround(point)));
             }
 
-            return weight;
+            // The lodge roof owns a dry floor; its unheated room does not
+            // alter the weather or the hero's cold exposure outside it.
+            return Mathf.Min(weight, SmoothRange(0f, FoundationClearance,
+                plan.Expansion.DistanceOutsideLodge(point)));
         }
 
         /// <summary>

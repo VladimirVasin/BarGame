@@ -317,9 +317,11 @@ namespace BarPromenade
             }
 
             height = SampleBrookSwale(plan, point, height);
+            if (plan.Expansion != null) height = plan.Expansion.ShapeGround(point, height);
 
             float enclosedHeight = height + SampleRidgeRise(plan, point);
             height = SampleCablewayBrink(plan, point, enclosedHeight);
+            if (plan.Expansion != null) height = plan.Expansion.ShapeCliff(point, height);
             // LowerTerrainBed returns `height` untouched for every plot but
             // the workroom's house, so only that one is asked - the same
             // string comparison, made once per plan instead of once per plot
@@ -762,8 +764,10 @@ namespace BarPromenade
             Vector2 point)
         {
             float outside = DistanceOutsideRect(
-                plan.TerrainBounds,
+                plan.CoreTerrainBounds,
                 point) - RidgeStandoff;
+            if (plan.Expansion != null)
+                outside = Mathf.Min(outside, plan.Expansion.DistanceToGround(point));
             if (outside <= 0f)
             {
                 return 0f;
@@ -1017,7 +1021,7 @@ namespace BarPromenade
                 outsideForward * outsideForward);
         }
 
-        private static float DistanceOutsideRect(Rect rect, Vector2 point)
+        internal static float DistanceOutsideRect(Rect rect, Vector2 point)
         {
             float x = Mathf.Max(
                 0f,

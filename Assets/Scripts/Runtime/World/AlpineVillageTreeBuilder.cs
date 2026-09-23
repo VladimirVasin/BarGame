@@ -8,7 +8,8 @@ namespace BarPromenade
     /// <summary>
     /// Builds the village's conifers out of the mountain road's own geometry:
     /// the same two-cone crown generator, the same trunk boxes, the same
-    /// foliage material and wind shader. Three renderers for the whole village.
+    /// foliage material and wind shader. Forty-eight metre groups let the
+    /// camera cull the new forest without keeping its complete stand visible.
     ///
     /// Nothing here carries a collider. The forest's trunks stop the hero, but
     /// they stop him through the walkable mask - see
@@ -65,8 +66,22 @@ namespace BarPromenade
                 crowned.Add(tree);
             }
 
-            BuildCrowns(root.transform, crowned);
-            BuildTrunks(root.transform, TrunksName, crowned, 0.32f);
+            var chunks = new SortedDictionary<Vector2Int, List<MountainRoadForestDescriptor>>(
+                Comparer<Vector2Int>.Create((a, b) => a.x != b.x ? a.x.CompareTo(b.x) : a.y.CompareTo(b.y)));
+            foreach (MountainRoadForestDescriptor tree in crowned)
+            {
+                var key = new Vector2Int(Mathf.FloorToInt(tree.Position.x / 48f), Mathf.FloorToInt(tree.Position.z / 48f));
+                if (!chunks.TryGetValue(key, out List<MountainRoadForestDescriptor> chunk))
+                { chunk = new List<MountainRoadForestDescriptor>(); chunks.Add(key, chunk); }
+                chunk.Add(tree);
+            }
+            foreach (KeyValuePair<Vector2Int, List<MountainRoadForestDescriptor>> entry in chunks)
+            {
+                var chunk = new GameObject("Forest " + entry.Key.x + " " + entry.Key.y);
+                chunk.transform.SetParent(root.transform, false);
+                BuildCrowns(chunk.transform, entry.Value);
+                BuildTrunks(chunk.transform, TrunksName, entry.Value, .32f);
+            }
             BuildTrunks(root.transform, StumpsName, trees.Stumps, 1f);
             BuildBranches(root.transform, trees.Branches);
         }

@@ -5,6 +5,18 @@ using UnityEngine;
 
 namespace BarPromenade
 {
+    public readonly struct CityMapRouteSegment
+    {
+        public CityMapRouteSegment(Vector3 start, Vector3 end)
+        {
+            Start = start;
+            End = end;
+        }
+
+        public Vector3 Start { get; }
+        public Vector3 End { get; }
+    }
+
     public readonly struct CityMapMountainHatchSegment
     {
         internal CityMapMountainHatchSegment(Vector3 start, Vector3 end)
@@ -44,7 +56,8 @@ namespace BarPromenade
             bool hasBridge,
             Vector3 bridgePosition,
             Rect plateauBounds,
-            Rect displayWorldXZBounds)
+            Rect displayWorldXZBounds,
+            IList<CityMapRouteSegment> branchRoutes = null)
         {
             RoutePoints = new ReadOnlyCollection<Vector3>(
                 new List<Vector3>(routePoints));
@@ -61,6 +74,9 @@ namespace BarPromenade
             BridgePosition = bridgePosition;
             PlateauBounds = plateauBounds;
             DisplayWorldXZBounds = displayWorldXZBounds;
+            BranchRoutes = new ReadOnlyCollection<CityMapRouteSegment>(
+                branchRoutes == null ? new List<CityMapRouteSegment>() :
+                new List<CityMapRouteSegment>(branchRoutes));
         }
 
         private CityMapMountainRoadOverlay()
@@ -73,12 +89,14 @@ namespace BarPromenade
             BridgePosition = Vector3.zero;
             PlateauBounds = Rect.zero;
             DisplayWorldXZBounds = new Rect(-1f, -1f, 2f, 2f);
+            BranchRoutes = Array.Empty<CityMapRouteSegment>();
         }
 
         public static CityMapMountainRoadOverlay Empty { get; } =
             new CityMapMountainRoadOverlay();
 
         public IReadOnlyList<Vector3> RoutePoints { get; }
+        public IReadOnlyList<CityMapRouteSegment> BranchRoutes { get; }
         public IReadOnlyList<Vector3> HairpinPositions { get; }
         public IReadOnlyList<CityMapMountainHatchSegment> MountainHatches
         {

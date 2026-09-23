@@ -155,6 +155,8 @@ namespace BarPromenade
         /// one. The scatter stops when the ground is full, not at this number.
         /// </summary>
         internal const int ForestTreeCount = 420;
+        internal const int ExpansionForestTreeCount = 900;
+        internal const float ExpansionTrailClearing = 1.2f;
 
         /// <summary>
         /// The clearing. No tree stands closer than this to the lane or to any
@@ -395,6 +397,7 @@ namespace BarPromenade
 
             AppendForest(plan, paths, storm, forest);
             AppendWallTrees(plan, paths, rock, panels, storm, wallTrees);
+            AppendExpansionForest(plan, paths, storm, wallTrees, forest);
             AppendStumps(plan, paths, storm, forest, stumps);
             AppendBranches(plan, paths, forest, stumps, branches);
 
@@ -432,7 +435,7 @@ namespace BarPromenade
             AlpineVillagePeripheralStormPlan storm,
             List<MountainRoadForestDescriptor> target)
         {
-            Rect bounds = plan.TerrainBounds;
+            Rect bounds = plan.CoreTerrainBounds;
             var accepted = new List<PlantedSeat>(ForestTreeCount);
             var landmark = new Vector2(
                 plan.MothersHouse.GroundCenter.x, plan.MothersHouse.GroundCenter.z);
@@ -517,6 +520,46 @@ namespace BarPromenade
             return true;
         }
 
+        private static void AppendExpansionForest(
+            AlpineVillagePlan plan, IReadOnlyList<AlpineVillagePathDescriptor> paths,
+            AlpineVillagePeripheralStormPlan storm, IReadOnlyList<MountainRoadForestDescriptor> wallTrees,
+            List<MountainRoadForestDescriptor> target)
+        {
+            var seats = new List<PlantedSeat>(target.Count + ExpansionForestTreeCount);
+            foreach (MountainRoadForestDescriptor tree in target)
+                seats.Add(new PlantedSeat(new Vector2(tree.Position.x, tree.Position.z), tree.CrownRadius));
+            foreach (MountainRoadForestDescriptor tree in wallTrees)
+                seats.Add(new PlantedSeat(new Vector2(tree.Position.x, tree.Position.z), tree.CrownRadius));
+            Rect bounds = plan.Expansion.LocalBounds;
+            int added = 0;
+            for (int attempt = 0; attempt < ExpansionForestTreeCount * 40 && added < ExpansionForestTreeCount; attempt++)
+            {
+                uint hash = Mix((uint)plan.Seed ^ 0x45585046u ^ (uint)attempt);
+                Vector3 position = plan.Expansion.ToWorld(new Vector2(
+                    Mathf.Lerp(bounds.xMin, bounds.xMax, Unit(hash, 0x58585858u)),
+                    Mathf.Lerp(bounds.yMin, bounds.yMax, Unit(hash, 0x5A5A5A5Au))));
+                Vector2 point = new Vector2(position.x, position.z);
+                float height = Mathf.Lerp(6.5f, 15f, Unit(hash, 0x48454947u));
+                float radius = height * .19f;
+                if (AlpineVillageTerrainSampler.DistanceOutsideRect(plan.CoreTerrainBounds, point) < radius + 2f ||
+                    !plan.Expansion.ContainsGround(point, radius + 2f) ||
+                    !plan.Expansion.ClearsFeatures(point, radius)) continue;
+                float outside = AlpineVillagePathPlanner.MeasureDistanceOutsideTrodden(plan, paths, point, out _);
+                if (outside < ExpansionTrailClearing + radius ||
+                    !ClearsTheStationAperture(storm, point, radius) || IsInsideCablewayCorridor(plan, point) ||
+                    TouchesWater(plan, point) || !ClearsEveryPlot(plan, point, radius) ||
+                    AlpineVillageTerrainSampler.DistanceOutsideStation(plan.Station, point) < StationClearance ||
+                    !HasCrownRoom(seats, point, radius, ForestSpacing)) continue;
+                seats.Add(new PlantedSeat(point, radius));
+                position.y = Mathf.Max(AlpineVillageTerrainSampler.SampleHeight(plan, point),
+                    AlpineVillageTerrainSampler.SampleMeshHeight(plan, point));
+                target.Add(new MountainRoadForestDescriptor("village-expansion-forest-" + added.ToString("000"),
+                    MountainRoadForestLayer.Mid, position, height, radius,
+                    Unit(hash, 0x59415721u) * 360f, (int)(Mix(hash ^ 0x50414C45u) % 3u), true));
+                added++;
+            }
+        }
+
         /// <summary>
         /// The along-wall centres of the authored rock panels on the west wall,
         /// read back from the rock planner itself rather than recomputed. The
@@ -585,7 +628,7 @@ namespace BarPromenade
                     float along = panelZ + lee[seat] +
                         Mathf.Lerp(-0.35f, 0.35f, Unit(hash, 0x414C4F4Eu));
                     var point = new Vector2(
-                        plan.TerrainBounds.xMin - outward[seat],
+                        plan.CoreTerrainBounds.xMin - outward[seat],
                         along);
                     float baseHeight = Mathf.Lerp(2.9f, 5.4f, Unit(hash, 0x48454947u));
                     float scale = Mathf.Lerp(
@@ -641,7 +684,7 @@ namespace BarPromenade
             IReadOnlyList<MountainRoadForestDescriptor> forest,
             List<MountainRoadForestDescriptor> target)
         {
-            Rect bounds = plan.TerrainBounds;
+            Rect bounds = plan.CoreTerrainBounds;
             var accepted = new List<PlantedSeat>(StumpCount);
             var landmark = new Vector2(
                 plan.MothersHouse.GroundCenter.x, plan.MothersHouse.GroundCenter.z);
@@ -817,7 +860,7 @@ namespace BarPromenade
         private static bool StaysOnWalkableGround(
             AlpineVillagePlan plan, Vector2 point, float reach)
         {
-            Rect bounds = plan.TerrainBounds;
+            Rect bounds = plan.CoreTerrainBounds;
             float outset = AlpineVillageWalkableArea.GroundOutset;
             return point.x >= bounds.xMin - outset + reach &&
                 point.x <= bounds.xMax + outset - reach &&
@@ -847,8 +890,8 @@ namespace BarPromenade
 
         private static bool IsPanelEligible(AlpineVillagePlan plan, float panelZ)
         {
-            return panelZ - LeeFar >= plan.TerrainBounds.yMin + SouthKeepClear &&
-                panelZ + StragglerLee <= plan.TerrainBounds.yMax - NorthKeepClear;
+            return panelZ - LeeFar >= plan.CoreTerrainBounds.yMin + SouthKeepClear &&
+                panelZ + StragglerLee <= plan.CoreTerrainBounds.yMax - NorthKeepClear;
         }
 
         /// <summary>

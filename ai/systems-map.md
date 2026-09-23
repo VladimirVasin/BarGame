@@ -25,7 +25,7 @@ A row never carries a status outside this table. Product-level scope cuts
 
 | System | Guarantee | Key files | Status |
 | --- | --- | --- | --- |
-| Village art pass | Detailed house joinery and neutral facade sheets; rock ledges and Return canopy preserve the bowl and routes. | `VillageAssetProvider`, `VillageFacadeAppearance`, `AlpineVillageRockBuilder` | Current |
+| Village art pass | House joinery, rock ledges, dense forest, open ski lodge and closed road brink retain the arrival axis. | `VillageAssetProvider`, `AlpineVillage{ExpansionBuilder,TreeBuilder,RockBuilder}` | Current |
 | Village household life | Six residents, finite household work, indoor/outdoor help and outcomes across visits. | `AlpineVillageLifeController`, `VillageOutdoorHelpController`, `VillageHouseholdProgress` | Current |
 | Independent rules assembly | Calendar/day schedule, input priorities and temporary vehicle ownership have no Unity dependencies. | `Scripts/Rules`, `BarPromenade.Rules.asmdef` | Current |
 | Shared input actions | One binding API serves common actions and preserves existing controls; pause and transitions take priority. | `GameInput`, `GameInputPolicy` | Current |
@@ -72,7 +72,7 @@ A row never carries a status outside this table. Product-level scope cuts
 | Eastern checkpoint guards | Distinct guards alternate physical patrols; shared pair/E bubbles, passive shoulder rifles, pause/cleanup. | `CityEastGuard{Duty,Plan,Controller}`, `EastGuardActor` | Current |
 | South tunnel travel stub | Walking triggers the authored refusal/return. Gap: no pedestrian transition to Mountain Road. | `CityTunnelTravel{Plan,Planner,Controller,CrossingModel}`, `InteractionPromptView` | Partial |
 | Mountain Road area | Open curved tunnel tail, ten hairpins, gorge bridge, forest, summit cafe and cableway; plans own surfaces. | `MountainRoad*`, `MountainRoadBridge*` | Current |
-| Village above the cableway | Walkable snow bowl and accessible mother's house. Gap: dinner/news/Cat content and chapel interior remain unwritten. | `AlpineVillage{SnowPlan,SnowTreading,SnowKickup,PeripheralStorm*,RidgeAppearance,WorldBuilder}` | Partial |
+| Village above the cableway | Expanded snow bowl, ski base/road loop and mother's house. Gap: dinner/news/Cat and chapel interior. | `AlpineVillage{ExpansionPlan,SnowPlan,SnowTreading,PeripheralStorm*,WorldBuilder}` | Partial |
 | Mother's house interior | Two bedrooms and a passive bathroom in a supported rear wing; shared windows, walkable stairs, five cameras. | `MothersHouseInterior*`, `MothersHouseWindowLayout`, `HomeFixedCameraController` | Current |
 | The cableway carries | Both arrivals approach aboard, dock and exit with a working safety bar; ride leases release on completion/teardown. | `AlpineCableway{RidePlan,CabinSeat,RideController,RideFactory}` | Current |
 | City river and embankments | A `10 m` north-south channel preserves all 144 lots. | `CityRiver{Definition,Plan,Planner,Resources,SurfaceAppearance,WorldBuilder}`, `CityWaterSurfaceFactory` | Current |

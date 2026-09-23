@@ -488,6 +488,7 @@ namespace BarPromenade
 
         private bool IsInsideStationShelter(Vector2 point)
         {
+            if (plan.Expansion.IsInterior(point)) return true;
             Vector3 sample = new Vector3(point.x, 0f, point.y);
             return plan.Station.PadArea.ContainsXZ(sample, -0.35f);
         }

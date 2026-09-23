@@ -275,15 +275,18 @@ namespace BarPromenade
 
             GameObject terrainRoot = BuildTerrain(root.transform, plan);
             ReportBlock("terrain", blockTimer);
+            yield return new CompositionStep("terrain", 0.12f);
             blockTimer.Restart();
             AlpineVillageRockBuilder.Build(root.transform, plan);
             ReportBlock("rock", blockTimer);
+            yield return new CompositionStep("rocks", 0.17f);
             blockTimer.Restart();
 
             // Beside the rock, because both dress the same wall from the same
             // walk along its four sides, and the trees are keyed to the panels.
             AlpineVillageTreeBuilder.Build(root.transform, plan);
             ReportBlock("trees", blockTimer);
+            yield return new CompositionStep("forest", 0.21f);
             blockTimer.Restart();
             GameObject laneSurface = BuildLane(root.transform, plan);
             BuildPathSurfaces(root.transform, plan);
@@ -335,6 +338,7 @@ namespace BarPromenade
                 kit,
                 semanticObjects,
                 houseDoors);
+            AlpineVillageExpansionBuilder.Build(root.transform, plan);
             ReportBlock(
                 "plots",
                 blockTimer,
@@ -613,6 +617,9 @@ namespace BarPromenade
 
             stageTimer.Restart();
             host.AddComponent<MeshCollider>().sharedMesh = mesh;
+            // Keep the continuous collision mesh and shared grid contract,
+            // but let distant sides of the larger valley leave the draw set.
+            AlpineVillageTerrainChunks.Create(host.transform, mesh, renderer);
             // For the residents' steps: the hero's own are claimed by the
             // snow treading, which reads the depth instead.
             FootstepGround.Stamp(host, FootstepGroundKind.Snow);
@@ -756,7 +763,8 @@ namespace BarPromenade
                         Mathf.Max((b - centre).sqrMagnitude,
                             (c - centre).sqrMagnitude)));
                     if (plan.Brook.DistanceOutsideWetGround(centre) <=
-                        radius + WetGroundMargin)
+                        radius + WetGroundMargin ||
+                        plan.Expansion.DistanceOutsideLodge(centre) <= radius + .12f)
                     {
                         continue;
                     }
@@ -768,6 +776,7 @@ namespace BarPromenade
                 triangles.RemoveRange(kept, triangles.Count - kept);
             }
 
+            CompactSnowVertices(vertices, uvs, triangles, grounds, depths);
             double cullMs = stageTimer.Elapsed.TotalMilliseconds;
             stageTimer.Restart();
             if (triangles.Count == 0)
@@ -829,6 +838,33 @@ namespace BarPromenade
                 null,
                 null);
             return treading;
+        }
+
+        private static void CompactSnowVertices(List<Vector3> vertices, List<Vector2> uvs,
+            List<int> triangles, List<float> grounds, List<float> depths)
+        {
+            // A rectangular sampling envelope includes closed ridges and the
+            // space between valleys. Unrendered points must not enlarge every
+            // subsequent footprint update or mesh upload.
+            var used = new bool[vertices.Count];
+            foreach (int index in triangles) used[index] = true;
+            var remap = new int[vertices.Count];
+            int kept = 0;
+            for (int index = 0; index < vertices.Count; index++)
+            {
+                if (!used[index]) continue;
+                remap[index] = kept;
+                vertices[kept] = vertices[index];
+                uvs[kept] = uvs[index];
+                grounds[kept] = grounds[index];
+                depths[kept++] = depths[index];
+            }
+            for (int index = 0; index < triangles.Count; index++) triangles[index] = remap[triangles[index]];
+            int removed = vertices.Count - kept;
+            vertices.RemoveRange(kept, removed);
+            uvs.RemoveRange(kept, removed);
+            grounds.RemoveRange(kept, removed);
+            depths.RemoveRange(kept, removed);
         }
 
         /// <summary>
@@ -904,6 +940,12 @@ namespace BarPromenade
                         bounds.width * ((column + 0.5f) / columns),
                         bounds.yMin +
                         bounds.height * ((row + 0.5f) / rows));
+                    if (AlpineVillageTerrainSampler.SampleRidgeRise(plan, centre) > 0f ||
+                        plan.Expansion.DistanceOutsideLodge(centre) < cell)
+                    {
+                        continue;
+                    }
+
                     float outside = AlpineVillagePathPlanner
                         .MeasureDistanceOutsideTrodden(
                             plan,

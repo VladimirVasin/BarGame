@@ -259,6 +259,31 @@ namespace BarPromenade.Tests.EditMode
                     Is.True,
                     $"'{plot.StableId}' cannot be stood in front of.");
             }
+
+            foreach (AlpineVillagePathDescriptor path in plan.Expansion.Paths)
+            {
+                Vector3 previous = path.Start;
+                int steps = Mathf.CeilToInt(Vector3.Distance(path.Start, path.End) / .5f);
+                for (int step = 0; step <= steps; step++)
+                {
+                    Vector3 point = Vector3.Lerp(path.Start, path.End, step / (float)steps);
+                    Assert.That(area.Contains(point, radius), Is.True,
+                        path.StableId + " blocked at " + plan.Expansion.ToLocal(point));
+                    Vector3 constrained = area.Constrain(previous, point, radius);
+                    Assert.That(Vector2.Distance(new Vector2(constrained.x, constrained.z),
+                        new Vector2(point.x, point.z)), Is.LessThan(.03f), path.StableId);
+                    previous = point;
+                }
+            }
+
+            Assert.That(area.Contains(plan.Expansion.LodgeCenter, radius), Is.True);
+            Assert.That(area.Contains(plan.Expansion.LodgeEntrance, radius), Is.True);
+            for (float across = -5f; across <= 5f; across += 1f)
+                Assert.That(area.Contains(plan.Expansion.CliffBarrierCenter +
+                    plan.SlopeRight * across, radius), Is.False, "The visible road barrier has a gap.");
+            Assert.That(area.Contains(plan.Expansion.CliffEdge - plan.Uphill * 4f, radius), Is.False);
+            Assert.That(CityMapAlpineVillageOverlayBuilder.Create(plan).BranchRoutes.Count,
+                Is.EqualTo(plan.Expansion.Paths.Count));
         }
 
         /// <summary>
@@ -1663,7 +1688,8 @@ namespace BarPromenade.Tests.EditMode
             var area = new AlpineVillageWalkableArea(plan);
             float radius = CityGroundTraversalPlanner.MaximumAgentRadius;
 
-            Rect bowl = plan.TerrainBounds;
+            // The inhabited core stays open; the expansion envelope also contains enclosing rock.
+            Rect bowl = plan.CoreTerrainBounds;
             int walkable = 0;
             int total = 0;
             for (float x = bowl.xMin + 0.5f; x < bowl.xMax; x += 1f)
@@ -2879,7 +2905,9 @@ namespace BarPromenade.Tests.EditMode
                         paths,
                         new Vector2(tree.Position.x, tree.Position.z),
                         out _),
-                    Is.GreaterThanOrEqualTo(AlpineVillageTreePlanner.ForestClearing),
+                    Is.GreaterThanOrEqualTo(tree.StableId.StartsWith("village-expansion-forest-")
+                        ? AlpineVillageTreePlanner.ExpansionTrailClearing + tree.CrownRadius
+                        : AlpineVillageTreePlanner.ForestClearing),
                     $"{tree.StableId} stands in the clearing the village walks.");
             }
 

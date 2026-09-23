@@ -1,0 +1,951 @@
+{
+  "generator_version": "1.0.0",
+  "design_id": "village_forest_ski_base_old_road_v1",
+  "scale_mode": "fixed_metres",
+  "uv_mode": "projected_metres",
+  "build_signature": "a73d2081e6e1acb6e09452680499f9b194bcca36e0f68dda9c070c57a833f7f2",
+  "mesh_count": 39,
+  "triangle_count": 6656,
+  "colliders": false,
+  "lights": false,
+  "cameras": false,
+  "animation_count": 0,
+  "parts": [
+    {
+      "kind": "SkiLodge",
+      "name": "Floor",
+      "mesh": "GEO_Expansion_SkiLodge_Floor",
+      "surface": "Timber",
+      "solid": true,
+      "tint": [
+        0.29,
+        0.255,
+        0.205,
+        1
+      ],
+      "bounds_min": [
+        -8.68,
+        -0.16,
+        -5.68
+      ],
+      "bounds_max": [
+        8.68,
+        0.01999999999999999,
+        5.68
+      ],
+      "triangles": 28
+    },
+    {
+      "kind": "SkiLodge",
+      "name": "Foundation",
+      "mesh": "GEO_Expansion_SkiLodge_Foundation",
+      "surface": "LayeredStone",
+      "solid": true,
+      "tint": [
+        0.32,
+        0.345,
+        0.34,
+        1
+      ],
+      "bounds_min": [
+        -9.0,
+        -0.52,
+        -6.0
+      ],
+      "bounds_max": [
+        9.0,
+        -0.16000000000000003,
+        6.0
+      ],
+      "triangles": 28
+    },
+    {
+      "kind": "SkiLodge",
+      "name": "FrontWall",
+      "mesh": "GEO_Expansion_SkiLodge_FrontWall",
+      "surface": "Masonry",
+      "solid": true,
+      "tint": [
+        0.49,
+        0.485,
+        0.445,
+        1
+      ],
+      "bounds_min": [
+        -9.0,
+        0.0,
+        -6.0
+      ],
+      "bounds_max": [
+        9.0,
+        3.6,
+        -5.68
+      ],
+      "triangles": 252
+    },
+    {
+      "kind": "SkiLodge",
+      "name": "BackWall",
+      "mesh": "GEO_Expansion_SkiLodge_BackWall",
+      "surface": "Masonry",
+      "solid": true,
+      "tint": [
+        0.49,
+        0.485,
+        0.445,
+        1
+      ],
+      "bounds_min": [
+        -9.0,
+        0.0,
+        5.68
+      ],
+      "bounds_max": [
+        9.0,
+        3.6,
+        6.0
+      ],
+      "triangles": 280
+    },
+    {
+      "kind": "SkiLodge",
+      "name": "SideWall-1",
+      "mesh": "GEO_Expansion_SkiLodge_SideWall-1",
+      "surface": "Masonry",
+      "solid": true,
+      "tint": [
+        0.49,
+        0.485,
+        0.445,
+        1
+      ],
+      "bounds_min": [
+        -9.0,
+        0.0,
+        -5.68
+      ],
+      "bounds_max": [
+        -8.68,
+        3.6,
+        5.68
+      ],
+      "triangles": 196
+    },
+    {
+      "kind": "SkiLodge",
+      "name": "Gable-1",
+      "mesh": "GEO_Expansion_SkiLodge_Gable-1",
+      "surface": "Timber",
+      "solid": true,
+      "tint": [
+        0.29,
+        0.255,
+        0.205,
+        1
+      ],
+      "bounds_min": [
+        -9.0,
+        3.6,
+        -6.0
+      ],
+      "bounds_max": [
+        -8.68,
+        5.0,
+        6.0
+      ],
+      "triangles": 8
+    },
+    {
+      "kind": "SkiLodge",
+      "name": "SideWall1",
+      "mesh": "GEO_Expansion_SkiLodge_SideWall1",
+      "surface": "Masonry",
+      "solid": true,
+      "tint": [
+        0.49,
+        0.485,
+        0.445,
+        1
+      ],
+      "bounds_min": [
+        8.68,
+        0.0,
+        -5.68
+      ],
+      "bounds_max": [
+        9.0,
+        3.6,
+        5.68
+      ],
+      "triangles": 196
+    },
+    {
+      "kind": "SkiLodge",
+      "name": "Gable1",
+      "mesh": "GEO_Expansion_SkiLodge_Gable1",
+      "surface": "Timber",
+      "solid": true,
+      "tint": [
+        0.29,
+        0.255,
+        0.205,
+        1
+      ],
+      "bounds_min": [
+        8.68,
+        3.6,
+        -6.0
+      ],
+      "bounds_max": [
+        9.0,
+        5.0,
+        6.0
+      ],
+      "triangles": 8
+    },
+    {
+      "kind": "SkiLodge",
+      "name": "Roof",
+      "mesh": "GEO_Expansion_SkiLodge_Roof",
+      "surface": "Timber",
+      "solid": true,
+      "tint": [
+        0.29,
+        0.255,
+        0.205,
+        1
+      ],
+      "bounds_min": [
+        -9.65,
+        3.366537548580874,
+        -6.673834803444288
+      ],
+      "bounds_max": [
+        9.65,
+        5.143462451419126,
+        6.673834803444288
+      ],
+      "triangles": 56
+    },
+    {
+      "kind": "SkiLodge",
+      "name": "RoofSnow",
+      "mesh": "GEO_Expansion_SkiLodge_RoofSnow",
+      "surface": "WindSnow",
+      "solid": false,
+      "tint": [
+        0.83,
+        0.85,
+        0.84,
+        1
+      ],
+      "bounds_min": [
+        -9.61,
+        3.580669293180631,
+        -6.6259810280168985
+      ],
+      "bounds_max": [
+        9.61,
+        5.28933070681937,
+        6.6259810280168985
+      ],
+      "triangles": 56
+    },
+    {
+      "kind": "SkiLodge",
+      "name": "WallAndCeilingTimbers",
+      "mesh": "GEO_Expansion_SkiLodge_WallAndCeilingTimbers",
+      "surface": "Timber",
+      "solid": true,
+      "tint": [
+        0.29,
+        0.255,
+        0.205,
+        1
+      ],
+      "bounds_min": [
+        -9.15,
+        0.0,
+        -6.0729999999999995
+      ],
+      "bounds_max": [
+        9.15,
+        3.56,
+        6.0729999999999995
+      ],
+      "triangles": 392
+    },
+    {
+      "kind": "SkiLodge",
+      "name": "WindowFrames",
+      "mesh": "GEO_Expansion_SkiLodge_WindowFrames",
+      "surface": "Timber",
+      "solid": true,
+      "tint": [
+        0.29,
+        0.255,
+        0.205,
+        1
+      ],
+      "bounds_min": [
+        -9.08,
+        0.97,
+        -6.08
+      ],
+      "bounds_max": [
+        9.08,
+        2.945,
+        6.08
+      ],
+      "triangles": 1512
+    },
+    {
+      "kind": "SkiLodge",
+      "name": "WindowGlass",
+      "mesh": "GEO_Expansion_SkiLodge_WindowGlass",
+      "surface": "Glass",
+      "solid": false,
+      "tint": [
+        0.4,
+        0.44,
+        0.43,
+        0.16
+      ],
+      "bounds_min": [
+        -8.8445,
+        1.15,
+        -5.8445
+      ],
+      "bounds_max": [
+        8.8445,
+        2.85,
+        5.8445
+      ],
+      "triangles": 252
+    },
+    {
+      "kind": "SkiLodge",
+      "name": "OpenDoorLeaves",
+      "mesh": "GEO_Expansion_SkiLodge_OpenDoorLeaves",
+      "surface": "Timber",
+      "solid": true,
+      "tint": [
+        0.29,
+        0.255,
+        0.205,
+        1
+      ],
+      "bounds_min": [
+        -2.4939999999999998,
+        0.0,
+        -6.1625
+      ],
+      "bounds_max": [
+        2.4939999999999998,
+        2.64,
+        -6.0525
+      ],
+      "triangles": 448
+    },
+    {
+      "kind": "SkiLodge",
+      "name": "Vestibule-1.72",
+      "mesh": "GEO_Expansion_SkiLodge_Vestibule-1.72",
+      "surface": "Timber",
+      "solid": true,
+      "tint": [
+        0.29,
+        0.255,
+        0.205,
+        1
+      ],
+      "bounds_min": [
+        -1.8,
+        0.0,
+        -5.85
+      ],
+      "bounds_max": [
+        -1.64,
+        2.8,
+        -3.75
+      ],
+      "triangles": 28
+    },
+    {
+      "kind": "SkiLodge",
+      "name": "Vestibule1.72",
+      "mesh": "GEO_Expansion_SkiLodge_Vestibule1.72",
+      "surface": "Timber",
+      "solid": true,
+      "tint": [
+        0.29,
+        0.255,
+        0.205,
+        1
+      ],
+      "bounds_min": [
+        1.64,
+        0.0,
+        -5.85
+      ],
+      "bounds_max": [
+        1.8,
+        2.8,
+        -3.75
+      ],
+      "triangles": 28
+    },
+    {
+      "kind": "SkiLodge",
+      "name": "Benches",
+      "mesh": "GEO_Expansion_SkiLodge_Benches",
+      "surface": "Timber",
+      "solid": true,
+      "tint": [
+        0.29,
+        0.255,
+        0.205,
+        1
+      ],
+      "bounds_min": [
+        -6.7250000000000005,
+        0.0,
+        -4.0
+      ],
+      "bounds_max": [
+        6.7250000000000005,
+        1.1199999999999999,
+        2.4000000000000004
+      ],
+      "triangles": 336
+    },
+    {
+      "kind": "SkiLodge",
+      "name": "EmptyRentalRacks",
+      "mesh": "GEO_Expansion_SkiLodge_EmptyRentalRacks",
+      "surface": "Timber",
+      "solid": true,
+      "tint": [
+        0.29,
+        0.255,
+        0.205,
+        1
+      ],
+      "bounds_min": [
+        -5.9,
+        0.020000000000000018,
+        4.35
+      ],
+      "bounds_max": [
+        5.9,
+        1.9,
+        5.15
+      ],
+      "triangles": 588
+    },
+    {
+      "kind": "SkiLodge",
+      "name": "RemainingSkis",
+      "mesh": "GEO_Expansion_SkiLodge_RemainingSkis",
+      "surface": "RustedIron",
+      "solid": true,
+      "tint": [
+        0.3,
+        0.255,
+        0.21,
+        1
+      ],
+      "bounds_min": [
+        -5.18,
+        0.20999999999999996,
+        4.555
+      ],
+      "bounds_max": [
+        -3.4199999999999995,
+        2.15,
+        4.6625
+      ],
+      "triangles": 280
+    },
+    {
+      "kind": "SkiLodge",
+      "name": "RentalCounter",
+      "mesh": "GEO_Expansion_SkiLodge_RentalCounter",
+      "surface": "Timber",
+      "solid": true,
+      "tint": [
+        0.29,
+        0.255,
+        0.205,
+        1
+      ],
+      "bounds_min": [
+        2.8000000000000003,
+        0.0,
+        0.6
+      ],
+      "bounds_max": [
+        6.6,
+        1.06,
+        1.4
+      ],
+      "triangles": 112
+    },
+    {
+      "kind": "SkiLodge",
+      "name": "OldPatches",
+      "mesh": "GEO_Expansion_SkiLodge_OldPatches",
+      "surface": "Timber",
+      "solid": true,
+      "tint": [
+        0.355,
+        0.3,
+        0.23,
+        1
+      ],
+      "bounds_min": [
+        -7.66,
+        0.22999999999999998,
+        -6.031999999999999
+      ],
+      "bounds_max": [
+        7.76,
+        0.47,
+        -5.992
+      ],
+      "triangles": 112
+    },
+    {
+      "kind": "ServiceShed",
+      "name": "Foundation",
+      "mesh": "GEO_Expansion_ServiceShed_Foundation",
+      "surface": "LayeredStone",
+      "solid": true,
+      "tint": [
+        0.32,
+        0.345,
+        0.34,
+        1
+      ],
+      "bounds_min": [
+        -4.0,
+        -0.3,
+        -3.0
+      ],
+      "bounds_max": [
+        4.0,
+        0.0,
+        3.0
+      ],
+      "triangles": 28
+    },
+    {
+      "kind": "ServiceShed",
+      "name": "Walls",
+      "mesh": "GEO_Expansion_ServiceShed_Walls",
+      "surface": "Timber",
+      "solid": true,
+      "tint": [
+        0.29,
+        0.255,
+        0.205,
+        1
+      ],
+      "bounds_min": [
+        -4.0,
+        0.0,
+        -3.0
+      ],
+      "bounds_max": [
+        4.0,
+        3.1,
+        3.0
+      ],
+      "triangles": 112
+    },
+    {
+      "kind": "ServiceShed",
+      "name": "Roof",
+      "mesh": "GEO_Expansion_ServiceShed_Roof",
+      "surface": "RustedIron",
+      "solid": true,
+      "tint": [
+        0.3,
+        0.255,
+        0.21,
+        1
+      ],
+      "bounds_min": [
+        -4.4,
+        2.9163252093624648,
+        -3.4181901718777246
+      ],
+      "bounds_max": [
+        4.4,
+        3.933674790637535,
+        3.4181901718777246
+      ],
+      "triangles": 56
+    },
+    {
+      "kind": "ServiceShed",
+      "name": "Snow",
+      "mesh": "GEO_Expansion_ServiceShed_Snow",
+      "surface": "WindSnow",
+      "solid": false,
+      "tint": [
+        0.83,
+        0.85,
+        0.84,
+        1
+      ],
+      "bounds_min": [
+        -4.38,
+        3.090922984136257,
+        -3.39463313731693
+      ],
+      "bounds_max": [
+        4.38,
+        4.079077015863743,
+        3.39463313731693
+      ],
+      "triangles": 56
+    },
+    {
+      "kind": "ServiceShed",
+      "name": "Gables",
+      "mesh": "GEO_Expansion_ServiceShed_Gables",
+      "surface": "Timber",
+      "solid": true,
+      "tint": [
+        0.29,
+        0.255,
+        0.205,
+        1
+      ],
+      "bounds_min": [
+        -4.0,
+        3.1,
+        -3.0
+      ],
+      "bounds_max": [
+        4.0,
+        3.8600000000000003,
+        3.0
+      ],
+      "triangles": 16
+    },
+    {
+      "kind": "ServiceShed",
+      "name": "Door",
+      "mesh": "GEO_Expansion_ServiceShed_Door",
+      "surface": "Timber",
+      "solid": true,
+      "tint": [
+        0.235,
+        0.24,
+        0.215,
+        1
+      ],
+      "bounds_min": [
+        -1.3,
+        0.0,
+        -3.085
+      ],
+      "bounds_max": [
+        1.3,
+        2.4,
+        -2.9749999999999996
+      ],
+      "triangles": 28
+    },
+    {
+      "kind": "LiftBase",
+      "name": "Footing",
+      "mesh": "GEO_Expansion_LiftBase_Footing",
+      "surface": "LayeredStone",
+      "solid": true,
+      "tint": [
+        0.32,
+        0.345,
+        0.34,
+        1
+      ],
+      "bounds_min": [
+        -0.35,
+        0.0,
+        -0.35
+      ],
+      "bounds_max": [
+        0.35,
+        0.4,
+        0.35
+      ],
+      "triangles": 28
+    },
+    {
+      "kind": "LiftBase",
+      "name": "Iron",
+      "mesh": "GEO_Expansion_LiftBase_Iron",
+      "surface": "RustedIron",
+      "solid": true,
+      "tint": [
+        0.3,
+        0.255,
+        0.21,
+        1
+      ],
+      "bounds_min": [
+        -1.9,
+        0.19999999999999973,
+        -0.15
+      ],
+      "bounds_max": [
+        1.9,
+        5.1,
+        0.15
+      ],
+      "triangles": 96
+    },
+    {
+      "kind": "LiftBase",
+      "name": "Wheel",
+      "mesh": "GEO_Expansion_LiftBase_Wheel",
+      "surface": "RustedIron",
+      "solid": true,
+      "tint": [
+        0.3,
+        0.255,
+        0.21,
+        1
+      ],
+      "bounds_min": [
+        -1.3,
+        4.815,
+        -1.3
+      ],
+      "bounds_max": [
+        1.3,
+        4.985,
+        1.3
+      ],
+      "triangles": 60
+    },
+    {
+      "kind": "LiftBase",
+      "name": "DriveHousing",
+      "mesh": "GEO_Expansion_LiftBase_DriveHousing",
+      "surface": "RustedIron",
+      "solid": true,
+      "tint": [
+        0.3,
+        0.255,
+        0.21,
+        1
+      ],
+      "bounds_min": [
+        -0.325,
+        0.37500000000000006,
+        -0.325
+      ],
+      "bounds_max": [
+        0.325,
+        1.225,
+        0.325
+      ],
+      "triangles": 28
+    },
+    {
+      "kind": "LiftTop",
+      "name": "Footing",
+      "mesh": "GEO_Expansion_LiftTop_Footing",
+      "surface": "LayeredStone",
+      "solid": true,
+      "tint": [
+        0.32,
+        0.345,
+        0.34,
+        1
+      ],
+      "bounds_min": [
+        -0.35,
+        0.0,
+        -0.35
+      ],
+      "bounds_max": [
+        0.35,
+        0.4,
+        0.35
+      ],
+      "triangles": 28
+    },
+    {
+      "kind": "LiftTop",
+      "name": "Iron",
+      "mesh": "GEO_Expansion_LiftTop_Iron",
+      "surface": "RustedIron",
+      "solid": true,
+      "tint": [
+        0.3,
+        0.255,
+        0.21,
+        1
+      ],
+      "bounds_min": [
+        -1.9,
+        0.19999999999999973,
+        -0.15
+      ],
+      "bounds_max": [
+        1.9,
+        5.1,
+        0.15
+      ],
+      "triangles": 96
+    },
+    {
+      "kind": "LiftTop",
+      "name": "Wheel",
+      "mesh": "GEO_Expansion_LiftTop_Wheel",
+      "surface": "RustedIron",
+      "solid": true,
+      "tint": [
+        0.3,
+        0.255,
+        0.21,
+        1
+      ],
+      "bounds_min": [
+        -1.3,
+        4.815,
+        -1.3
+      ],
+      "bounds_max": [
+        1.3,
+        4.985,
+        1.3
+      ],
+      "triangles": 60
+    },
+    {
+      "kind": "RoadBarrier",
+      "name": "StoneBlockage",
+      "mesh": "GEO_Expansion_RoadBarrier_StoneBlockage",
+      "surface": "LayeredStone",
+      "solid": true,
+      "tint": [
+        0.32,
+        0.345,
+        0.34,
+        1
+      ],
+      "bounds_min": [
+        -6.040000000000001,
+        0.0,
+        -0.225
+      ],
+      "bounds_max": [
+        6.025,
+        0.66,
+        0.225
+      ],
+      "triangles": 336
+    },
+    {
+      "kind": "RoadBarrier",
+      "name": "OldGuardrail",
+      "mesh": "GEO_Expansion_RoadBarrier_OldGuardrail",
+      "surface": "RustedIron",
+      "solid": true,
+      "tint": [
+        0.3,
+        0.255,
+        0.21,
+        1
+      ],
+      "bounds_min": [
+        -6.0,
+        0.0,
+        0.08499999999999999
+      ],
+      "bounds_max": [
+        6.0,
+        1.06,
+        0.215
+      ],
+      "triangles": 196
+    },
+    {
+      "kind": "RoadSurface",
+      "name": "Asphalt",
+      "mesh": "GEO_Expansion_RoadSurface_Asphalt",
+      "surface": "Asphalt",
+      "solid": false,
+      "tint": [
+        0.24,
+        0.255,
+        0.255,
+        1
+      ],
+      "bounds_min": [
+        -0.5,
+        -0.08,
+        -0.5
+      ],
+      "bounds_max": [
+        0.5,
+        0.0,
+        0.5
+      ],
+      "triangles": 12
+    },
+    {
+      "kind": "RoadBrokenLip",
+      "name": "Foundation",
+      "mesh": "GEO_Expansion_RoadBrokenLip_Foundation",
+      "surface": "LayeredStone",
+      "solid": false,
+      "tint": [
+        0.32,
+        0.345,
+        0.34,
+        1
+      ],
+      "bounds_min": [
+        -2.7,
+        -0.8,
+        -1.25
+      ],
+      "bounds_max": [
+        2.45,
+        0.0,
+        1.1
+      ],
+      "triangles": 112
+    },
+    {
+      "kind": "RoadBrokenLip",
+      "name": "Asphalt",
+      "mesh": "GEO_Expansion_RoadBrokenLip_Asphalt",
+      "surface": "Asphalt",
+      "solid": false,
+      "tint": [
+        0.24,
+        0.255,
+        0.255,
+        1
+      ],
+      "bounds_min": [
+        -2.7,
+        -0.045000000000000005,
+        -1.25
+      ],
+      "bounds_max": [
+        2.45,
+        0.055,
+        1.1
+      ],
+      "triangles": 112
+    }
+  ]
+}

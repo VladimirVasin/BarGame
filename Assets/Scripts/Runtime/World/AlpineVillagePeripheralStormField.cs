@@ -528,7 +528,7 @@ namespace BarPromenade
             float rearClosure = AlpineVillagePeripheralStormFieldRules
                 .EvaluateFootprintRearClosure(
                     behindRearWall,
-                    particleSize);
+                    particleSize) * SpatialPlan.CoreClosureWeight(point);
             return AlpineVillagePeripheralStormRules.ComposeStrength(
                 trailExposure,
                 apertureProtection,
@@ -551,6 +551,7 @@ namespace BarPromenade
 
         private bool IsProtectedStructure(Vector2 point)
         {
+            if (village.Expansion.DistanceOutsideLodge(point) < 1.5f) return true;
             Vector3 sample = new Vector3(point.x, 0f, point.y);
             if (village.Station.PadArea.ContainsXZ(sample, -0.8f))
             {

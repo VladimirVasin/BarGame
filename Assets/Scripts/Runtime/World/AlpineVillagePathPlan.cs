@@ -23,7 +23,10 @@ namespace BarPromenade
         SpringSpur = 7,
 
         /// <summary>Habitual foot traffic between household work supports.</summary>
-        HouseholdWork = 8
+        HouseholdWork = 8,
+        ForestTrail = 9,
+        SkiBaseAccess = 10,
+        AbandonedRoad = 11
     }
 
     /// <summary>
@@ -226,6 +229,7 @@ namespace BarPromenade
 
             AlpineVillageLifePlan.Create(plan).AppendWorkPaths(result);
             new VillageNeighbourhoodPlan(plan).AppendPaths(result);
+            if (plan.Expansion != null) result.AddRange(plan.Expansion.Paths);
             AlpineVillagePathValidator.ValidateOrThrow(plan, result);
             return result;
         }

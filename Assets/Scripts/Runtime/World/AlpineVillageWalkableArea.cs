@@ -72,6 +72,9 @@ namespace BarPromenade
         private readonly Rect ground;
         private readonly List<OrientedRect> obstacles =
             new List<OrientedRect>();
+        private const float ObstacleCell = 8f;
+        private readonly Dictionary<Vector2Int, List<int>> obstacleCells =
+            new Dictionary<Vector2Int, List<int>>();
 
         public AlpineVillageWalkableArea(AlpineVillagePlan plan)
         {
@@ -80,7 +83,9 @@ namespace BarPromenade
             ground = BuildGround(plan);
             BuildBuildings();
             BuildCablewayBrink();
+            BuildExpansionObstacles();
             BuildForestTrunks();
+            IndexObstacles();
         }
 
         public AlpineVillagePlan Plan => plan;
@@ -160,10 +165,11 @@ namespace BarPromenade
 
         private bool ContainsXZ(Vector2 point, float radius)
         {
-            if (point.x < ground.xMin + radius ||
+            bool core = !(point.x < ground.xMin + radius ||
                 point.x > ground.xMax - radius ||
                 point.y < ground.yMin + radius ||
-                point.y > ground.yMax - radius)
+                point.y > ground.yMax - radius);
+            if (!core && !plan.Expansion.ContainsGround(point, radius))
             {
                 return false;
             }
@@ -173,22 +179,48 @@ namespace BarPromenade
 
         private int FindOverlapping(Vector2 point, float radius)
         {
-            for (int index = 0; index < obstacles.Count; index++)
+            int first = int.MaxValue;
+            float reach = radius * 1.415f; // OBB tests expand along both rotated axes.
+            int minX = Mathf.FloorToInt((point.x - reach) / ObstacleCell);
+            int maxX = Mathf.FloorToInt((point.x + reach) / ObstacleCell);
+            int minZ = Mathf.FloorToInt((point.y - reach) / ObstacleCell);
+            int maxZ = Mathf.FloorToInt((point.y + reach) / ObstacleCell);
+            for (int z = minZ; z <= maxZ; z++)
+            for (int x = minX; x <= maxX; x++)
             {
-                if (obstacles[index].Overlaps(point, radius))
+                if (!obstacleCells.TryGetValue(new Vector2Int(x, z), out List<int> bucket)) continue;
+                for (int i = 0; i < bucket.Count; i++)
                 {
-                    return index;
+                    int index = bucket[i];
+                    if (index < first && obstacles[index].Overlaps(point, radius)) first = index;
                 }
             }
+            return first == int.MaxValue ? -1 : first;
+        }
 
-            return -1;
+        private void IndexObstacles()
+        {
+            for (int index = 0; index < obstacles.Count; index++)
+            {
+                Rect bounds = obstacles[index].WorldBounds;
+                for (int z = Mathf.FloorToInt(bounds.yMin / ObstacleCell); z <= Mathf.FloorToInt(bounds.yMax / ObstacleCell); z++)
+                for (int x = Mathf.FloorToInt(bounds.xMin / ObstacleCell); x <= Mathf.FloorToInt(bounds.xMax / ObstacleCell); x++)
+                {
+                    var key = new Vector2Int(x, z);
+                    if (!obstacleCells.TryGetValue(key, out List<int> bucket))
+                    { bucket = new List<int>(); obstacleCells.Add(key, bucket); }
+                    bucket.Add(index);
+                }
+            }
         }
 
         private Vector2 ClampToGround(Vector2 point, float radius)
         {
-            return new Vector2(
+            Vector2 core = new Vector2(
                 ClampAxis(point.x, ground.xMin, ground.xMax, radius),
                 ClampAxis(point.y, ground.yMin, ground.yMax, radius));
+            Vector2 extra = plan.Expansion.ClosestGround(point, radius);
+            return (point - core).sqrMagnitude <= (point - extra).sqrMagnitude ? core : extra;
         }
 
         private static float ClampAxis(
@@ -212,7 +244,7 @@ namespace BarPromenade
         /// </summary>
         private static Rect BuildGround(AlpineVillagePlan plan)
         {
-            Rect bounds = plan.TerrainBounds;
+            Rect bounds = plan.CoreTerrainBounds;
             return Rect.MinMaxRect(
                 bounds.xMin - GroundOutset,
                 bounds.yMin - GroundOutset,
@@ -323,6 +355,16 @@ namespace BarPromenade
         /// The fringe trees and the stumps are absent on purpose: they stand
         /// beyond the toe, on ground the mask never covers.
         /// </summary>
+        private void BuildExpansionObstacles()
+        {
+            foreach (Bounds block in plan.Expansion.LocalObstacles)
+            {
+                Vector3 center = plan.Expansion.ToWorld(new Vector2(block.center.x, block.center.z));
+                obstacles.Add(new OrientedRect(ToXZ(center), ToXZ(plan.SlopeRight), ToXZ(plan.Uphill),
+                    new Vector2(block.extents.x, block.extents.z)));
+            }
+        }
+
         private void BuildForestTrunks()
         {
             if (plan.Trees == null)
@@ -394,6 +436,16 @@ namespace BarPromenade
                 this.axisX = axisX.normalized;
                 this.axisY = axisY.normalized;
                 this.halfSize = halfSize;
+            }
+
+            internal Rect WorldBounds
+            {
+                get
+                {
+                    Vector2 extent = new Vector2(Mathf.Abs(axisX.x) * halfSize.x + Mathf.Abs(axisY.x) * halfSize.y,
+                        Mathf.Abs(axisX.y) * halfSize.x + Mathf.Abs(axisY.y) * halfSize.y);
+                    return Rect.MinMaxRect(center.x - extent.x, center.y - extent.y, center.x + extent.x, center.y + extent.y);
+                }
             }
 
             /// <summary>

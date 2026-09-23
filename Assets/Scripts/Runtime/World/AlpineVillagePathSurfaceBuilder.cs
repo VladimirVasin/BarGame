@@ -36,6 +36,9 @@ namespace BarPromenade
                 var chain = new List<AlpineVillagePathDescriptor> { paths[index++] };
                 while (index < paths.Count && Continues(chain[chain.Count - 1], paths[index]))
                     chain.Add(paths[index++]);
+                // The abandoned road has an authored asphalt skin; the same
+                // path still drives snow clearance, navigation and the chart.
+                if (chain[0].Kind == AlpineVillagePathKind.AbandonedRoad) continue;
                 meshTimer.Restart();
                 Mesh mesh = CreateMesh(plan, chain);
                 meshMs += meshTimer.Elapsed.TotalMilliseconds;

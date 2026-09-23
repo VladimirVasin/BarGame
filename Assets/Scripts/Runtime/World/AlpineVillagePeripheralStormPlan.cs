@@ -314,12 +314,14 @@ namespace BarPromenade
                 worldXZ - RearWallCenter,
                 RearDirection);
             float rearClosure = AlpineVillagePeripheralStormRules
-                .EvaluateRearClosure(behind);
+                .EvaluateRearClosure(behind) * CoreClosureWeight(worldXZ);
             float strength = AlpineVillagePeripheralStormRules
                 .ComposeStrength(
                     trailExposure,
                     apertureProtection,
                     rearClosure);
+
+            if (village.Expansion.IsInterior(worldXZ)) strength = 0f;
 
             return new AlpineVillagePeripheralStormSample(
                 distance,
@@ -365,6 +367,16 @@ namespace BarPromenade
                 Mathf.SmoothStep(0f, 1f, rearAmount);
             return Mathf.Clamp01(
                 sideProtection * longitudinalProtection);
+        }
+
+        internal float CoreClosureWeight(Vector2 point)
+        {
+            // The closure behind the mother's house belongs to the old bowl,
+            // not to every side valley sharing its uphill coordinate.
+            Rect core = village.CoreTerrainBounds;
+            float dx = Mathf.Max(0f, Mathf.Max(core.xMin - point.x, point.x - core.xMax));
+            float dz = Mathf.Max(0f, Mathf.Max(core.yMin - point.y, point.y - core.yMax));
+            return 1f - Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(Mathf.Sqrt(dx * dx + dz * dz) / 6f));
         }
 
         private float ResolveFarHalfWidth(IReadOnlyList<Vector2> corners)

@@ -567,8 +567,23 @@ namespace BarPromenade
                 new List<AlpineVillagePlotDescriptor>(sourcePlots));
             ridges = new ReadOnlyCollection<AlpineVillageRidgeDescriptor>(
                 new List<AlpineVillageRidgeDescriptor>(sourceRidges));
-            TerrainBounds = terrainBounds;
-            TerrainMeshBounds = terrainMeshBounds;
+            CoreTerrainBounds = terrainBounds;
+            Expansion = new AlpineVillageExpansionPlan(this);
+            Rect extra = Expansion.WorldBounds;
+            TerrainBounds = Rect.MinMaxRect(Mathf.Min(terrainBounds.xMin, extra.xMin),
+                Mathf.Min(terrainBounds.yMin, extra.yMin), Mathf.Max(terrainBounds.xMax, extra.xMax),
+                Mathf.Max(terrainBounds.yMax, extra.yMax));
+            float outset = AlpineVillageTerrainSampler.RidgeMeshOutset;
+            TerrainMeshBounds = Rect.MinMaxRect(Mathf.Min(terrainMeshBounds.xMin, extra.xMin - outset),
+                Mathf.Min(terrainMeshBounds.yMin, extra.yMin - outset - 24f),
+                Mathf.Max(terrainMeshBounds.xMax, extra.xMax + outset),
+                Mathf.Max(terrainMeshBounds.yMax, extra.yMax + outset));
+            worldBounds.Encapsulate(new Vector3(TerrainMeshBounds.xMin, worldBounds.min.y, TerrainMeshBounds.yMin));
+            worldBounds.Encapsulate(new Vector3(TerrainMeshBounds.xMax, worldBounds.max.y, TerrainMeshBounds.yMax));
+            float highGround = Expansion.ToWorld(new Vector2(0f, Expansion.LocalBounds.yMax + outset)).y;
+            worldBounds.Encapsulate(new Vector3(Expansion.LodgeCenter.x,
+                highGround + AlpineVillageTerrainSampler.RidgeMaximumRise + 18f, Expansion.LodgeCenter.z));
+            worldBounds.Encapsulate(Expansion.ToWorld(new Vector2(-130f, -100f)) - Vector3.up * 35f);
             WorldBounds = worldBounds;
             SpawnPosition = spawnPosition;
             SpawnForward = spawnForward.normalized;
@@ -607,6 +622,11 @@ namespace BarPromenade
 
         public IReadOnlyList<AlpineVillagePlotDescriptor> Plots => plots;
         public IReadOnlyList<AlpineVillageRidgeDescriptor> Ridges => ridges;
+
+        public AlpineVillageExpansionPlan Expansion { get; }
+
+        /// <summary>The original inhabited bowl; existing houses and their ridge keep this extent.</summary>
+        public Rect CoreTerrainBounds { get; }
 
         /// <summary>
         /// The spring's water, or null before it has been traced.
@@ -674,8 +694,8 @@ namespace BarPromenade
         }
 
         /// <summary>
-        /// The inhabited inner extent. Shelves, plots and the walkable mask
-        /// live inside it; the enclosing mountain starts outside it.
+        /// Drawing/snow envelope of all ground regions. This rectangle includes
+        /// intervening mountain; use the shared mask for actual walkability.
         /// </summary>
         public Rect TerrainBounds { get; }
 

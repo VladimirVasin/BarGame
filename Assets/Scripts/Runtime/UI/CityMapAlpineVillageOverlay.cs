@@ -7,12 +7,9 @@ namespace BarPromenade
     /// <summary>
     /// Chart data for the village tab.
     ///
-    /// It reuses <see cref="CityMapMountainRoadOverlay"/> rather than defining
-    /// a second type, because both tabs are the same drawing: one polyline and
-    /// one patch of ground. Here the polyline is the lane and the patch is the
-    /// walkable extent. Landmarks are deliberately left empty - the places up
-    /// there reach the chart as map POINTS, which is what the inspector and
-    /// the teleport already read.
+    /// Shares the mountain chart container: the main lane retains the travel
+    /// endpoints, secondary segments show the forest and old roads, and the
+    /// original inhabited bowl remains distinct from the full display extent.
     /// </summary>
     public static class CityMapAlpineVillageOverlayBuilder
     {
@@ -45,9 +42,18 @@ namespace BarPromenade
             }
 
             lane.Add(plan.Lane.End);
-            return CityMapMountainRoadOverlayBuilder.Create(
-                lane,
-                plan.TerrainBounds);
+            CityMapMountainRoadOverlay chart = CityMapMountainRoadOverlayBuilder.Create(
+                lane, plan.TerrainBounds);
+            var branches = new List<CityMapRouteSegment>();
+            foreach (AlpineVillagePathDescriptor path in plan.Expansion.Paths)
+            {
+                branches.Add(new CityMapRouteSegment(path.Start, path.End));
+            }
+
+            return new CityMapMountainRoadOverlay(lane, new List<Vector3>(),
+                new List<CityMapMountainHatchSegment>(),
+                new List<MountainRoadTerminalLandmark>(), false, Vector3.zero,
+                plan.CoreTerrainBounds, chart.DisplayWorldXZBounds, branches);
         }
     }
 }

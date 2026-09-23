@@ -45,7 +45,7 @@ namespace BarPromenade
             }
 
             var result = new List<AlpineVillageRockPlacement>();
-            Rect bounds = plan.TerrainBounds;
+            Rect bounds = plan.CoreTerrainBounds;
             AddSide(plan, result, new Vector2(bounds.xMin, bounds.yMin),
                 Vector2.up, Vector2.left, bounds.height, 0);
             AddSide(plan, result, new Vector2(bounds.xMax, bounds.yMax),
@@ -82,7 +82,8 @@ namespace BarPromenade
                 Vector2 point = start + tangent * along + outward *
                     (AlpineVillageTerrainSampler.RidgeStandoff + ToeInset);
                 Vector2 right = new Vector2(outward.y, -outward.x);
-                if (TouchesCableCut(plan, point, right, outward))
+                if (TouchesCableCut(plan, point, right, outward) ||
+                    TouchesExpansion(plan, point, right, outward))
                 {
                     continue;
                 }
@@ -135,6 +136,23 @@ namespace BarPromenade
 
             float halfWidth = AlpineVillageTerrainSampler.CablewayCutOuterHalfWidth + CableMargin;
             return maxAlong > 0f && minAcross <= halfWidth && maxAcross >= -halfWidth;
+        }
+
+        private static bool TouchesExpansion(AlpineVillagePlan plan,
+            Vector2 origin, Vector2 right, Vector2 outward)
+        {
+            // The old enclosing wall is opened only where a new ground lobe
+            // meets it. No authored rock may close a traversable corridor.
+            for (int depth = 0; depth <= 2; depth++)
+            for (int side = 0; side <= 4; side++)
+            {
+                Vector2 point = origin + right * Mathf.Lerp(
+                    -VillageRockAssetProvider.HalfWidth, VillageRockAssetProvider.HalfWidth,
+                    side / 4f) + outward * (depth * VillageRockAssetProvider.Depth * .5f);
+                if (plan.Expansion.DistanceToGround(point) <
+                    AlpineVillageTerrainSampler.RidgeStandoff + 1f) return true;
+            }
+            return false;
         }
 
         private static uint Mix(uint value)

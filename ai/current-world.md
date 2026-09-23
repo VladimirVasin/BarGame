@@ -247,16 +247,19 @@ The vertical slice contains:
   same plan/validator/builder shape. One crooked lane climbs `82.1 m` and
   `6.4 m` — an average `7.8%`, under the `8.3%` pedestrian ceiling, with no
   step anywhere on it — from the cableway station on the lowest terrace to the
-  house at its head, which is the highest thing in the village and the only
-  thing the composition points at. Twelve houses stand either side; the chapel
-  over the source and the head of the spring sit on side spurs; the adit and
-  the burial ground stood there until the lead took both out of the village
-  and out of the story, and the father's grave went with the cemetery. The whole bowl is walkable: the mask is `TerrainBounds` grown
-  by the sampler's own `RidgeStandoff` — the line where the `74°` rise begins,
-  so the terrain holds the perimeter — minus every plot's rotated footprint
-  (the burial ground excepted; it is ground, and the adit gained the
-  `Physical Shell` it never had) and minus the cableway cut, the one
-  `7-28°` walkable way out of the village. Each
+  mother's house, the arrival landmark. Twelve houses retain their positions;
+  chapel/source occupy side spurs. No adit or burial ground remains.
+  `CoreTerrainBounds` preserves this residential bowl; `AlpineVillageExpansionPlan`
+  adds western valleys (ground area `3.29x`): dense station-side forest, an abandoned ski
+  base and a return loop via the old road. A downhill branch ends at an old
+  collapse with visible rail/rubble; the lower road remnant disappears in haze.
+  Cableway remains the only active exit. The `18 x 12 m` main lodge has an
+  ordinary walk-in opening, vestibule, benches and rental racks; its unheated
+  roof excludes snowfall and lying snow. A shed and separate stopped lift are
+  passive scenery. No new text, NPC or story event.
+  Walkability unions the core with the expansion's measured ground and then
+  subtracts plotted walls, trees, cableway cut and authored lodge/cliff obstacles.
+  The enclosing `74°` rise and visible barriers close its edge. Each
   `AlpineVillagePathDescriptor` remains a visible compacted strip and the
   route's clearance envelope against those footprints — including each
   household threshold and the narrow turn to the chapel water outlet — but no
@@ -284,23 +287,13 @@ The vertical slice contains:
   validation, three `7.2-7.5 m` rear-row depth beats and a bounded symmetric
   local correction keep every seeded rotated footprint out of its neighbours
   and the lane without cascading the whole frontage away from the street.
-  `AlpineVillageTerrainSampler` is the one height contract shared by planning,
-  validation, the ground mesh and the map's teleport ground. Its shelves ease
-  back to the macro slope over the `3.6 m` the constant names — they ran at
-  `0.347 m` until `Mathf.SmoothStep` was found being fed a distance where it
-  wants a `0-1` fraction — so the lane reads as a worn hollow rather than a
-  ribbon on a flat field, and the ground carries no vertex colours because
-  `Ps1Lit` inherits URP Lit's `COLOR`-free `Attributes` and never read them; its enclosing
-  ridge starts `15 m` outside the top house's envelope (`TerrainMargin 12`
-  plus `RidgeStandoff 3`) and climbs at `3.6` (`74°`) to a `60 m` crest
-  `16.7 m` past the toe, steeper than the hero's own `45°` slope
-  limit — the mean silhouette from mid-lane is `34.1°` and reaches `43°` on
-  the nearest bearings. `TerrainBounds` remains the inhabited bowl
-  (and the map's chart patch, now the bowl plus `12 m`) while the larger
-  `TerrainMeshBounds` builds the complete physical rise, hidden crest and
-  sampled cableway brink, so the bowl and upper turn are closed by the
-  mountain and not only by a mask. The ground is one mesh, one collider, two
-  submeshes: the floor on the ordinary primitive material, the rise on
+  `AlpineVillageTerrainSampler` shares height between planning, validation,
+  collision and map teleport. Core shelves ease to the macro slope over `3.6 m`;
+  expansion terrain levels the lodge and shapes the old-road brink. The ridge
+  rises at `3.6` (`74°`) to `60 m`, beyond the hero's `45°` limit.
+  `TerrainBounds` charts the expanded ground; `TerrainMeshBounds` also contains
+  its physical rise, hidden crest and cableway brink. Ground uses one collision
+  mesh and `48 m` render sectors, floor on the ordinary material and rise on
   `AlpineVillageRidgeAppearance`'s `CityMountainPhysical` material (village
   haze colour, breathing density, `0.40` visibility floor and a stable opaque
   colour handoff over `96-108 m`, a dark layered-stone tint, no shadow because
@@ -310,6 +303,12 @@ The vertical slice contains:
   once under an identity `_BaseMap_ST`; neither screen-space coverage nor a
   second renderer-size scale can make the distant lower wall crawl. The
   shared shader's zero-default City path retains its existing clip dither.
+  Forest rendering also uses `48 m` sectors: core cap `420`, expansion cap `900`,
+  new heights `6.5–15 m`, crown-separated. Core route clearance remains `7 m`;
+  new routes use `1.2 m + crown radius`. Station, landmark aperture, water and
+  house access remain clear. Build stages yield between terrain, paths, trees,
+  snow and scenery. Snow footprints query spatial vertex buckets and snowfall
+  restores only changed vertices. Map and peripheral storm use all new paths.
   The accepted `2026-09-06` art pass exposes the existing layered-stone
   surface on the rise and places measured Blender rock/snow ledges beyond
   the walkable toe. The imported pieces share the rise's stable haze and

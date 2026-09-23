@@ -2,6 +2,31 @@
 
 ## Current facts
 
+- **Accepted architecture exception — 2026-09-22, expanded Alpine Village:**
+  The user approved the proposed larger area: dense conifers beside the upper
+  station, an abandoned ski base with an accessible main building, a return
+  loop via an old road and its broken downhill branch toward City. Story §6
+  records the local exception to §12/art §10g's single route, former bowl size,
+  uniform tree clearance and exhaustive list of barriers. Residential lane,
+  twelve houses, station and mother's house retain their positions; the warm
+  top house remains the arrival landmark. Trees preserve that aperture, cable
+  clearance, water and house access. The core keeps its `420` tree cap and
+  `7 m` path margin; expansion adds up to `900` trees, `6.5–15 m`, with
+  `1.2 m + crown radius` route clearance and non-overlapping crowns.
+  The base is passive old timber/stone, with rental racks, benches, shed and a
+  separate stopped lift. Its unheated main room is entered by walking in this
+  scene. A worn asphalt cut and lower road remnant show the old descent; visible
+  rail/rubble and rock close the edge. Cableway remains the sole active exit.
+  No fall/death, text, NPC, work, clue, sound or story event is added; no resort
+  meaning or panorama. Story §16/§21 and all nine art checks remain binding.
+  `AlpineVillageExpansionPlan` shares valley/route/lodge/brink bounds between
+  sampler, walkability, map, weather and snow. The Blender
+  `VillageExpansion3D` library supplies passive fixed-metre parts; imported
+  bounds and scale are measured by `VillageExpansionAssetSetup`. Ground keeps
+  one collision mesh while terrain/forest render in `48 m` sectors. Build
+  stages yield separately; footprints query spatial buckets and only changed
+  snow vertices refill. The unheated lodge excludes snowfall and lying snow.
+
 - **Accepted — 2026-09-21, impact balance and recoverable knockdown:**
   `CombatTest`: impulse/root/bone/catch-step/left-release clock.
   Both rigs rise→Ready; soles gate blends/regrip; one left owner.
@@ -1509,30 +1534,17 @@
   cafe-attendant step for handling and in-place turns, then restores the
   authored working orientation. A carried vessel target is stored in bartender
   local space so the hand and mug advance with the moving root.
-- **Accepted:** Alpine Village separates inhabited `TerrainBounds` from the
-  larger physical `TerrainMeshBounds`; only the latter may prove the enclosing
-  ridge and cable brink.
-- **Corrected — the village walkable mask is ground minus obstacles, not a
-  corridor:** it was a capsule chain over the lane plus one capsule per
-  `AlpineVillagePathDescriptor`, on the argument that an invisible branch
-  through pristine snow is not a route. Measured, that left `6.4 %` of an
-  `11 703 m²` bowl standable and an invisible wall a step off the lane in every
-  direction. The mask is now `TerrainBounds` grown by the sampler's own
-  `RidgeStandoff` — the exact line where the `74°` rise begins, so the terrain
-  holds the perimeter — minus each plot's rotated footprint (the same rectangle
-  its `Physical Shell` collider stands on, so the mask prevents wall contact
-  rather than surviving it) and minus the cableway cut, whose `7-28°` descent
-  is the only walkable way out of the village and the one boundary the mask
-  holds alone. The burial ground is deliberately not an obstacle and the adit
-  gained the shell it never had. Path descriptors keep their traversal
-  half-width as a pure collision envelope: every segment must clear every
-  rotated plot OBB, with
-  the adit using an authored outer hook around the rear-row houses rather than
-  a shortcut through them; its turn is selected from the seeded expanded OBB
-  of house 08. Rotated plot collision is OBB/SAT, never an
-  unrotated AABB;
-  explicit rear-row depth beats own the frontage layers and the seeded solver
-  may only make a bounded symmetric correction around them.
+- **Accepted:** Alpine Village retains residential `CoreTerrainBounds`;
+  expanded `TerrainBounds` charts the ground, while larger `TerrainMeshBounds`
+  includes the physical ridge and cable/old-road brinks.
+- **Corrected — village walkability is ground minus obstacles:**
+  The core extends to `RidgeStandoff`, where the physical `74°` rise starts;
+  expansion valleys join that mask (§6, `2026-09-22`). Rotated plot OBBs,
+  tree trunks, authored lodge/cliff obstacles and cableway cut are subtracted.
+  Paths show ordinary circulation without blocking free snow. Their collision
+  envelopes must clear every plot OBB; OBB/SAT handles rotated footprints.
+  Rear-row depth beats own frontage layers, with only bounded symmetric seeded
+  corrections. No adit or burial-ground geometry remains.
 - **Accepted — the adit and the burial ground are out of the village and out
   of the story:** the lead's explicit decision, taken after the adit's spoil
   heap was found to be a twelve-triangle box reading as a table above the
@@ -1960,66 +1972,32 @@
   thunder, danger beat, supernatural sign or whiteout; warm lighting, the one
   uphill axis, the top house and the independent warmth/dimming grade remain
   readable and unchanged.
-- **Accepted architecture exception — 2026-08-30, explicit user request —
-  the village's haze breathes with the gale and the bowl walls loom:** This
-  SUPERSEDES the «or whiteout» and «remain readable and unchanged» clauses of
-  the 2026-08-29 entry above, and is recorded as a new level-`0` row in the
-  story bible's §6 registry with §12 / art-bible §10g amended to match. What
-  replaces them: the village's Exp2 haze is no longer a constant but a wave
-  keyed on the RAW shared gust rhythm (`GameWeatherRules.EvaluateGust`, the
-  same `0.62 + 0.24 sin + 0.14 sin` term `EvaluateWind` already multiplies
-  in, extracted so the wind stays bit-identical). The base density is
-  `0.017`, chosen against the canon viewpoint — the station pad stands
-  `StationSetback 7 m` behind the lane foot, so the mother's door is `7 + 82
-  + 2 = 91 m` away and `9 %` of it survives; the peak is `0.045`, at which
-  `41 m` is left at `3 %`, so at a gust crest the far half of the lane closes
-  for seconds and the top house vanishes. The wave target is
-  `SmoothStep(InverseLerp(0.66, 0.86, gust))` smoothed one-pole with a
-  `0.5 s` attack and `1.0 s` release on `Time.deltaTime` (the game clock
-  advances on the same delta, so a pause freezes rhythm and haze together);
-  the trough is guaranteed by construction, and the EditMode simulation pins
-  it: every `15 s` window reaches a wave `>= 0.85` AND `<= 0.12`, the lane is
-  closed (`wave > 0.5`) for `20-55 %` of the time, and at the RUNNING trough
-  the door keeps `>= 5 %` from the platform (about `6 %` in practice). The
-  dim end of the warmth grade multiplies the breathing density by `1.55` and
-  the product is clamped at the storm peak, so the prologue can never stack a
-  second whiteout on the gale's. One writer: `AlpineVillageRoot.Update`
-  advances the wave, runs the per-minute lighting pass, then calls
-  `ApplyVisibility()` every frame — `RuntimeSceneSetup.ApplyAlpineVillageVisibility(camera,
-  warmth, wave)` followed by `AlpineVillageRidgeAppearance.SetHaze(fogColor,
-  fogDensity)`, so Scenes hands World what Core just wrote and Core stays
-  free of World. The far plane drops `140 -> 110 m`: past the house's back
-  wall from the platform (`100 m`) with margin, so the landmark is only ever
-  cut by haze, never by the plane; the cableway's hidden-run bounds still
-  hold (`157 m` and `233 m` against `120`). **The walls loom:** the current
-  oriented bowl puts the ridge toe `15 m` outside the top house's envelope
-  (`TerrainMargin 12` + `RidgeStandoff 3`), then climbs at
-  `RidgeRisePerMeter 3.6` (`74°`) to `RidgeMaximumRise 60 m`; the crest stands
-  `16.7 m` past the toe, closes a mean `34.1°` from mid-lane and reaches `43°`
-  on the nearest bearings. The rise is the second submesh of the one ground
-  mesh (one `MeshCollider`, two materials), and the cableway valley remains
-  rise material rather than a bright floor-material stripe. Its village-owned
-  `Shaders/CityMountainPhysical` material carries the breathing haze,
+- **Accepted architecture exception — 2026-08-30, breathing village haze:**
+  Story §6/§12 and art §10g permit brief gust whiteout. Exp2 haze follows raw
+  `GameWeatherRules.EvaluateGust` (`0.62 + 0.24 sin + 0.14 sin`): density
+  `0.017–0.045`, target `SmoothStep(InverseLerp(0.66, 0.86, gust))`, one-pole
+  attack/release `.5/1 s` on pause-aware delta. At the station, `7 m` behind
+  the lane foot, the mother's door is `91 m` away: visibility about `9%`
+  between gusts; at peak `3%` remains at `41 m`. Each `15 s` window reaches
+  wave `>=.85` and `<=.12`, spends `20–55%` above `.5`, and restores door
+  visibility `>=5%`. Dimming multiplies density by `1.55`, capped at the peak.
+  `AlpineVillageRoot.Update` advances weather/light and calls `ApplyVisibility`:
+  Core's `RuntimeSceneSetup.ApplyAlpineVillageVisibility` then World's
+  `AlpineVillageRidgeAppearance.SetHaze`. Far plane `110 m` clears the house's
+  rear at `100 m`; hidden cable runs remain `157/233 m` against `120 m`.
+  The enclosing ridge rises at `3.6` (`74°`) to `60 m`, with `RidgeStandoff 3`.
+  The expanded side bowl is governed by the `2026-09-22` decision. The cableway
+  cut keeps the rise material. Village `Shaders/CityMountainPhysical` carries
+  breathing haze,
   visibility floor `0.40`, native fog `9/12 m`, tinted snow-shadow
   `(0.31, 0.35, 0.41)` and a stable opaque colour handoff over `96/108 m`.
-  `_StableHazeHandoff = 1` replaces moving screen-space clip coverage only on
-  this material; the shared shader defaults it to zero, so City keeps its
-  existing ordered-dither, depth and depth-normal behaviour. The village
-  also selects `_Ps1VertexSnap = 1`, matching the floor's `Ps1Lit` projected
-  snap in every ridge pass. Floor and rise therefore share exact toe indices
-  instead of duplicating and burying a broad overlap ring. Terrain, rise and
-  lying snow all bake the `WindSnow` metre pitch once into world-planar UVs
-  and use identity `_BaseMap_ST`; applying the renderer-size transform on top
-  was the second source of distant crawl. The shader still has no
-  `ShadowCaster` pass, so the `60 m` wall cannot shade the lane. Spindrift
-  refuses to be born where the ridge rise exceeds `2 m`.
-  **What is NOT lifted:** no silhouette layer, no panorama, no peaks in frame,
-  no lightning or thunder,
-  no danger beat, no supernatural sign; the uphill axis and the nearest
-  houses' walls read at every point of the wave, and the house always comes
-  back. This stays inside the bounded-fog decision below (`Accepted — Bounded
-  local fog`): it is the per-area Exp2 haze behind the shared field that
-  breathes, not a second fog of the zone's own.
+  `_StableHazeHandoff=1` and `_Ps1VertexSnap=1` match the floor without
+  screen-space crawl. City retains zero defaults/dither/depth behavior.
+  Floor/rise share toe indices; terrain/snow bake `WindSnow` metre UVs once,
+  `_BaseMap_ST` identity. No `ShadowCaster`; spindrift excludes rise `>2 m`.
+  The shared bounded fog stays; only per-area Exp2 breathes. No panorama,
+  peaks, thunder, danger or supernatural sign; nearest walls and the main
+  uphill axis remain readable, and the top house returns after every gust.
 - **Accepted — 2026-09-01 implementation follow-up, not an architecture
   exception — the path advises through weather and never commands:**
   `AlpineVillagePeripheralStormPlan` is a pure spatial read over the complete

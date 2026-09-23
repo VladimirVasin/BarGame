@@ -1,0 +1,127 @@
+using System;
+using System.Collections.Generic;
+using UnityEngine;
+
+namespace BarPromenade
+{
+    [Serializable]
+    public sealed class VillageExpansionPart
+    {
+        public string kind, name, mesh, surface;
+        public bool solid;
+        public float[] tint, bounds_min, bounds_max;
+        public int triangles;
+    }
+
+    [Serializable]
+    public sealed class VillageExpansionManifest
+    {
+        public string generator_version, design_id, scale_mode, uv_mode, build_signature;
+        public int mesh_count, triangle_count, animation_count;
+        public bool colliders, lights, cameras;
+        public VillageExpansionPart[] parts;
+    }
+
+    /// <summary>Passive Blender geometry, retaining the measured imported metre scale.
+    /// Placement and blocking footprints belong to AlpineVillageExpansionPlan.</summary>
+    public sealed class VillageExpansionAssetProvider
+    {
+        public const string ResourcePath = "Village/Expansion/VillageExpansion3D";
+        public const string DesignId = "village_forest_ski_base_old_road_v1";
+        public const string GeneratorVersion = "1.0.0";
+        private static VillageExpansionAssetProvider instance;
+        private readonly Dictionary<string, MeshFilter> meshes;
+        public VillageExpansionManifest Manifest { get; }
+
+        private VillageExpansionAssetProvider(GameObject model, VillageExpansionManifest manifest)
+        {
+            Manifest = manifest;
+            meshes = new Dictionary<string, MeshFilter>(StringComparer.Ordinal);
+            foreach (MeshFilter filter in model.GetComponentsInChildren<MeshFilter>(true))
+                if (filter.sharedMesh == null || !meshes.TryAdd(filter.sharedMesh.name, filter))
+                    throw new InvalidOperationException("Duplicate or missing village expansion mesh.");
+            if (meshes.Count != manifest.mesh_count)
+                throw new InvalidOperationException("Village expansion mesh count differs from its manifest.");
+        }
+
+        public static VillageExpansionManifest ParseManifestOrThrow(string json)
+        {
+            var value = JsonUtility.FromJson<VillageExpansionManifest>(json);
+            if (value == null || value.generator_version != GeneratorVersion || value.design_id != DesignId ||
+                value.scale_mode != "fixed_metres" || value.uv_mode != "projected_metres" ||
+                string.IsNullOrEmpty(value.build_signature) || value.parts == null ||
+                value.parts.Length != value.mesh_count || value.mesh_count == 0 || value.colliders ||
+                value.lights || value.cameras || value.animation_count != 0)
+                throw new InvalidOperationException("Invalid or stale passive village expansion manifest.");
+            return value;
+        }
+
+        public static VillageExpansionAssetProvider LoadOrThrow()
+        {
+            if (instance != null) return instance;
+            var model = Resources.Load<GameObject>(ResourcePath);
+            var text = Resources.Load<TextAsset>(ResourcePath);
+            if (model == null || text == null)
+                throw new InvalidOperationException("Missing authored village expansion pack: " + ResourcePath);
+            return instance = new VillageExpansionAssetProvider(model, ParseManifestOrThrow(text.text));
+        }
+
+        public GameObject Create(string kind, string name, Transform parent, Vector3 position,
+            Quaternion rotation, Vector3? scale = null)
+        {
+            var root = new GameObject(name);
+            root.transform.SetParent(parent, false);
+            root.transform.SetPositionAndRotation(position, rotation);
+            Vector3 placementScale = scale ?? Vector3.one;
+            root.transform.localScale = placementScale;
+            int count = 0;
+            foreach (VillageExpansionPart part in Manifest.parts)
+            {
+                if (part.kind != kind) continue;
+                MeshFilter source = meshes[part.mesh];
+                var child = new GameObject(part.name);
+                child.transform.SetParent(root.transform, false);
+                child.transform.localPosition = source.transform.position;
+                child.transform.localRotation = source.transform.rotation;
+                child.transform.localScale = source.transform.lossyScale;
+                child.AddComponent<MeshFilter>().sharedMesh = source.sharedMesh;
+                var renderer = child.AddComponent<MeshRenderer>();
+                ApplySurface(renderer, part, placementScale);
+                if (part.solid) child.AddComponent<MeshCollider>().sharedMesh = source.sharedMesh;
+                count++;
+            }
+            if (count == 0) throw new InvalidOperationException("Missing village expansion kind " + kind);
+            return root;
+        }
+
+        private static void ApplySurface(MeshRenderer renderer, VillageExpansionPart part, Vector3 scale)
+        {
+            var tint = new Color(part.tint[0], part.tint[1], part.tint[2], part.tint[3]);
+            var block = new MaterialPropertyBlock();
+            if (part.surface == "Glass")
+            {
+                renderer.sharedMaterial = HomeBalconyResources.GlassMaterial;
+                block.SetColor("_BaseColor", tint);
+                renderer.SetPropertyBlock(block);
+                renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                return;
+            }
+            if (!Enum.TryParse(part.surface, out MountainRoadSurfaceKind surface))
+                throw new InvalidOperationException("Unknown expansion surface " + part.surface);
+            VillageFacadeAppearance.Apply(renderer, surface, tint,
+                verticalTimber: part.name != "Roof", roofTimber: part.name == "Roof");
+            renderer.GetPropertyBlock(block);
+            float pitch = surface == MountainRoadSurfaceKind.Timber ? 1.4f :
+                surface == MountainRoadSurfaceKind.Masonry || surface == MountainRoadSurfaceKind.LayeredStone ? 2.4f :
+                MountainRoadSurfaceAppearance.GetRecipe(surface).MetersPerTile;
+            // FBX vertices retain metre UVs despite the author's 100x import root.
+            // Asphalt strips alone scale in X/Z, so preserve their physical texture pitch.
+            block.SetVector("_BaseMap_ST", new Vector4(scale.x / pitch,
+                (part.kind == "RoadSurface" ? scale.z : scale.y) / pitch, 0f, 0f));
+            renderer.SetPropertyBlock(block);
+        }
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetCache() => instance = null;
+    }
+}

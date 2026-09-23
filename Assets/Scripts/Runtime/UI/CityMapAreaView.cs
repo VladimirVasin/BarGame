@@ -135,6 +135,12 @@ namespace BarPromenade
             RetroUiTheme.StrokeRect(extent, 1f, RetroUiTheme.BorderMuted);
 
             IReadOnlyList<Vector3> lane = overlay.RoutePoints;
+            foreach (CityMapRouteSegment branch in overlay.BranchRoutes)
+            {
+                DrawLine(projection.WorldToScreen(branch.Start),
+                    projection.WorldToScreen(branch.End), 2f, AlpineVillageLane);
+            }
+
             for (int index = 1; index < lane.Count; index++)
             {
                 DrawLine(

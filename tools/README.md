@@ -44,16 +44,16 @@ source `ArtSource/Vehicles/Blender/LastRouteCoin3D.blend`.
 `LastRouteCoinAssetValidation` measures import bounds at the build gate.
 
 Village generators:
-`build-village-outdoor-player-actions-3d-model.py` publishes thirteen optional
-hero clips and matching metre-space prop tracks;
-`build-village-errands-3d-model.py` publishes the household bucket and its
-resident filling/station strap actions. Both use `run-blender.py`, validate contacts and
-preserve models. The focused
-`AreaCaptureFixture.VillageOutdoorLife` imports these banks and checks their
-placed contacts, ordinary carried travel and outcomes after a scene reload.
-`AreaCaptureFixture.VillageOutdoorPartners` starts with explicitly seeded basket,
-porch and chair results to isolate the gate, station partner and remaining NPC
-errands. Its `partners-verification.json` does not claim to verify player carrying.
+`build-village-outdoor-player-actions-3d-model.py`: thirteen hero clips/prop tracks;
+`build-village-errands-3d-model.py`: bucket/filling/strap actions. Both use
+`run-blender.py`, validate contacts and preserve models. `VillageOutdoorLife`
+checks contacts, carrying and reload; `VillageOutdoorPartners` seeds completed
+basket/porch/chair outcomes to isolate partners/errands, not player carrying.
+`build-village-expansion-3d-model.py`: seven passive kinds (lodge, shed, lift
+ends, road/barrier/broken lip) in `Assets/Resources/Village/Expansion/VillageExpansion3D.{fbx,json}`.
+`run-blender.py`/`--validate-only`: bounds, signed solids, openings, determinism.
+`VillageExpansionAssetSetup` measures imports;
+`AreaCaptureFixture.AlpineVillageExpansion`: review.
 
 Keep Unity closed during generation. The default worker has an independent
 body/wardrobe generator and `DefaultNpcAssetSetup` importer. The legacy resident

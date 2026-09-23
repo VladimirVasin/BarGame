@@ -15,7 +15,7 @@ namespace BarPromenade.Tests.PlayMode
 #if UNITY_EDITOR
             foreach (string name in new[] { "VillageFacadeTextureSetup",
                          "VillageAssetSetup", "VillageRockAssetSetup",
-                         "UpperCablewayCanopyAssetSetup" })
+                         "UpperCablewayCanopyAssetSetup", "VillageExpansionAssetSetup" })
             {
                 Type setup = Type.GetType(
                     "BarPromenade.Editor." + name + ", BarPromenade.Editor", true);

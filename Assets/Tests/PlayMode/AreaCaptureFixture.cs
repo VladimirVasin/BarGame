@@ -3632,6 +3632,7 @@ namespace BarPromenade.Tests.PlayMode
             AppendAlpineVillageRoostShots(root, shots);
             AppendAlpineVillageSpringShots(root, shots);
             AppendVillageArtShots(root, shots);
+            AppendVillageExpansionShots(root, shots);
             return shots.ToArray();
         }
 
