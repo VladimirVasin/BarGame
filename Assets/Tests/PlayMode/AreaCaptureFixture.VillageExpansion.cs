@@ -143,6 +143,35 @@ namespace BarPromenade.Tests.PlayMode
             Bounds warehouseBounds = warehouse.GetComponentInChildren<Renderer>().bounds;
             foreach (Renderer renderer in warehouse.GetComponentsInChildren<Renderer>()) warehouseBounds.Encapsulate(renderer.bounds);
             Assert.That(warehouseBounds.size.y, Is.InRange(4f, 7f), "Imported warehouse metre scale.");
+            Transform wreck = root.World.Root.transform.Find("Village Expansion/Abandoned Truck Wreck");
+            Transform chairs = root.World.Root.transform.Find("Village Expansion/Discarded Wooden Chairs");
+            Assert.That(wreck, Is.Not.Null);
+            Assert.That(chairs, Is.Not.Null);
+            Bounds wreckBounds = LocalRendererBounds(wreck);
+            Bounds chairBounds = LocalRendererBounds(chairs);
+            Assert.That(wreckBounds.size.z, Is.InRange(6f, 6.8f), "Wreck retained donor metre scale.");
+            Assert.That(wreckBounds.size.y, Is.InRange(2.2f, 2.95f), "Wreck sits low without wheels.");
+            Assert.That(chairBounds.size.x, Is.InRange(4.8f, 6.2f), "Chair heap must read as a substantial pile.");
+            Assert.That(chairBounds.size.y, Is.InRange(2.7f, 2.8f), "Supported chair heap must retain its original height.");
+            foreach (string part in new[] { "CabShell", "BentNose", "BentArches", "CargoFrame", "FloorRemnants" })
+            {
+                var properties = new MaterialPropertyBlock();
+                wreck.Find(part).GetComponent<Renderer>().GetPropertyBlock(properties);
+                string resource = part == "CabShell" || part == "BentNose"
+                    ? VillageExpansionAssetProvider.WreckPaintTexturePath : VillageExpansionAssetProvider.WreckRustTexturePath;
+                Assert.That(properties.GetTexture("_BaseMap"), Is.SameAs(Resources.Load<Texture2D>(resource)),
+                    "Wreck must use its corrosion albedo, not the active truck paint.");
+                Assert.That(properties.GetFloat("_Smoothness"), Is.LessThan(.1f));
+            }
+            foreach (Vector2 local in new[] { new Vector2(-139f, -39f), new Vector2(-144f, -36.3f),
+                new Vector2(-139f, -17f), new Vector2(-144f, -19.8f) })
+            {
+                Vector3 point = expansion.ToWorld(local);
+                point.y = AlpineVillageTerrainSampler.SampleHeight(plan, new Vector2(point.x, point.z));
+                Assert.That(root.World.WalkableArea.Contains(point, .35f), Is.True, "Warehouse remnant bypass " + local);
+                Assert.That(Physics.CheckCapsule(point + Vector3.up * .5f, point + Vector3.up * 1.5f, .3f,
+                    ~0, QueryTriggerInteraction.Ignore), Is.False, "Wreck/chairs block the warehouse bypass " + local);
+            }
             Transform repair = root.World.Root.transform.Find("Village Expansion/Conserved Road Repair");
             Assert.That(repair, Is.Not.Null);
             MeshFilter anchorMesh = repair.Find("CappedAnchors").GetComponent<MeshFilter>();
@@ -181,6 +210,12 @@ namespace BarPromenade.Tests.PlayMode
             Add("51-road-city-gust", new Vector2(-128.6f, -50f), new Vector2(-130f, -67f), 60f,
                 expansion.FarRoadEdge.y + .8f - expansion.ToWorld(new Vector2(-130f, -67f)).y, true);
             Add("52-unfinished-abutments", new Vector2(-124.8f, -52.7f), new Vector2(-128f, -55.2f), 70f, -1.8f);
+            Add("53-abandoned-truck", new Vector2(-135f, -35f), new Vector2(-145f, -39f), 62f, 1.1f);
+            Add("54-open-rusted-cab", new Vector2(-139f, -40.5f), new Vector2(-142.5f, -39f), 65f, 1.2f);
+            Add("55-discarded-chair-heap", new Vector2(-136f, -12f), new Vector2(-144f, -17f), 61f, 1.35f);
+            Add("56-chair-frames-close", new Vector2(-140f, -14f), new Vector2(-144f, -17f), 65f, 1.25f);
+            Add("57-chair-supports-reverse", new Vector2(-150f, -17f), new Vector2(-144f, -17f), 65f, 1.1f);
+            Add("58-truck-chassis-rear", new Vector2(-151f, -41f), new Vector2(-145f, -39f), 68f, 1.1f);
 
             void Add(string name, Vector2 from, Vector2 toward, float fov, float targetLift = 1.8f, bool gust = false)
             {
@@ -198,9 +233,30 @@ namespace BarPromenade.Tests.PlayMode
                         root.Player.Motor.Teleport(foot + Vector3.up * PlayerFactory.GroundedRootOffset);
                         moved = true;
                     }
-                    return ++frames > 12 && (gust ? root.StormWave >= GustCrestWave : root.StormWave <= GustTroughWave);
+                    bool ready = ++frames > 12 && (gust ? root.StormWave >= GustCrestWave : root.StormWave <= GustTroughWave);
+                    // A teleport/camera mode update can restore worn renderers after
+                    // Capture's initial hide. These are world reviews, so renew it at exposure.
+                    if (ready)
+                        foreach (Renderer renderer in root.Player.GameObject.GetComponentsInChildren<Renderer>(true))
+                            renderer.enabled = false;
+                    return ready;
                 }));
             }
+        }
+
+        private static Bounds LocalRendererBounds(Transform root)
+        {
+            Bounds bounds = default;
+            bool first = true;
+            foreach (MeshFilter filter in root.GetComponentsInChildren<MeshFilter>())
+            foreach (Vector3 vertex in filter.sharedMesh.vertices)
+            {
+                Vector3 point = root.InverseTransformPoint(filter.transform.TransformPoint(vertex));
+                if (first) { bounds = new Bounds(point, Vector3.zero); first = false; }
+                else bounds.Encapsulate(point);
+            }
+            Assert.That(first, Is.False, "Placed prop has no actual mesh vertices.");
+            return bounds;
         }
     }
 }

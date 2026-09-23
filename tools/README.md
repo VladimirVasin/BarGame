@@ -49,11 +49,10 @@ Village generators:
 `run-blender.py`, validate contacts and preserve models. `VillageOutdoorLife`
 checks contacts, carrying and reload; `VillageOutdoorPartners` seeds completed
 basket/porch/chair outcomes to isolate partners/errands, not player carrying.
-`build-village-expansion-3d-model.py`: 11 passive kinds: lodge/shed/lift/road/rail,
-warehouse/yard/conserved repair; `Assets/Resources/Village/Expansion/VillageExpansion3D.{fbx,json}`.
-`run-blender.py`/`--validate-only`: bounds/solid winding/openings/determinism.
-`VillageExpansionAssetSetup` measures imports;
-`AreaCaptureFixture.AlpineVillageExpansion`: review.
+`build-village-expansion-3d-model.py`: 13 passive kinds, including warehouse,
+rusted truck/chair heap; `Assets/Resources/Village/Expansion/VillageExpansion3D.{fbx,json}`.
+`--validate-only`: bounds/winding/openings/determinism; repeat `--preview-kind` for selected views.
+`VillageExpansionAssetSetup`: import; `AreaCaptureFixture.AlpineVillageExpansion`: views.
 
 Keep Unity closed during generation. The default worker has an independent
 body/wardrobe generator and `DefaultNpcAssetSetup` importer. The legacy resident

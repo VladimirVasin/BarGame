@@ -10,12 +10,19 @@ namespace BarPromenade.Editor
     {
         public const string ModelPath = "Assets/Resources/Village/Expansion/VillageExpansion3D.fbx";
         public const string ManifestPath = "Assets/Resources/Village/Expansion/VillageExpansion3D.json";
+        public static readonly string[] WreckTexturePaths =
+        {
+            "Assets/Resources/" + VillageExpansionAssetProvider.WreckRustTexturePath + ".png",
+            "Assets/Resources/" + VillageExpansionAssetProvider.WreckPaintTexturePath + ".png"
+        };
 
         [MenuItem("Bar Promenade/Village/Import Expansion Pack")]
         public static void BuildOrThrow()
         {
             AssetDatabase.ImportAsset(ModelPath, ImportAssetOptions.ForceSynchronousImport | ImportAssetOptions.ForceUpdate);
             AssetDatabase.ImportAsset(ManifestPath, ImportAssetOptions.ForceSynchronousImport | ImportAssetOptions.ForceUpdate);
+            foreach (string path in WreckTexturePaths)
+                AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceSynchronousImport | ImportAssetOptions.ForceUpdate);
             ValidateOrThrow();
         }
 
@@ -23,6 +30,15 @@ namespace BarPromenade.Editor
         public static void ValidateOrThrow()
         {
             var manifest = VillageExpansionAssetProvider.ParseManifestOrThrow(File.ReadAllText(ManifestPath));
+            foreach (string path in WreckTexturePaths)
+            {
+                var texture = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+                var textureImporter = AssetImporter.GetAtPath(path) as TextureImporter;
+                if (texture == null || texture.width < 512 || texture.height < 512 ||
+                    textureImporter == null || !textureImporter.sRGBTexture || !textureImporter.mipmapEnabled ||
+                    textureImporter.wrapMode != TextureWrapMode.Repeat || textureImporter.alphaSource != TextureImporterAlphaSource.None)
+                    throw new InvalidOperationException("Invalid opaque repeatable truck wreck texture: " + path);
+            }
             var importer = AssetImporter.GetAtPath(ModelPath) as ModelImporter;
             if (importer == null || !Mathf.Approximately(importer.globalScale, 1f) || !importer.useFileScale ||
                 !importer.bakeAxisConversion || !importer.isReadable || importer.importAnimation ||
@@ -80,6 +96,25 @@ namespace BarPromenade.Editor
 
     public sealed class VillageExpansionModelImporter : AssetPostprocessor
     {
+        private void OnPreprocessTexture()
+        {
+            if (Array.IndexOf(VillageExpansionAssetSetup.WreckTexturePaths, assetPath) < 0 ||
+                !(assetImporter is TextureImporter importer)) return;
+            importer.textureType = TextureImporterType.Default;
+            importer.textureShape = TextureImporterShape.Texture2D;
+            importer.sRGBTexture = true;
+            importer.alphaSource = TextureImporterAlphaSource.None;
+            importer.mipmapEnabled = true;
+            importer.streamingMipmaps = false;
+            importer.isReadable = false;
+            importer.npotScale = TextureImporterNPOTScale.None;
+            importer.filterMode = FilterMode.Bilinear;
+            importer.anisoLevel = 4;
+            importer.wrapMode = TextureWrapMode.Repeat;
+            importer.textureCompression = TextureImporterCompression.Uncompressed;
+            importer.maxTextureSize = 1024;
+        }
+
         private void OnPreprocessModel()
         {
             if (assetPath != VillageExpansionAssetSetup.ModelPath || !(assetImporter is ModelImporter importer)) return;

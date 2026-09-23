@@ -244,22 +244,22 @@ The vertical slice contains:
   root may generate the pure City layout/mountain plan needed by the City map
   tab, but it never calls a City world builder or creates City GameObjects;
 - runtime-composed `AlpineVillage` follows the shared plan/validator/builder
-  pattern. Its crooked lane climbs `6.4 m` over `82.1 m` (`7.8%`, below the
-  `8.3%` ceiling), without steps, from cableway to mother's house. Twelve houses,
-  side chapel/source and the arrival landmark retain their positions; no adit
-  or graves. `CoreTerrainBounds` keeps the residential bowl;
-  `AlpineVillageExpansionPlan` adds forest, abandoned ski base and old-road loop.
-  The `18 x 12 m` walk-in lodge has a vestibule, benches/racks and an unheated
-  roof excluding snowfall/lying snow; shed/lift remain passive.
-  A closed trade warehouse has an accessible loading yard. Stored stock and
-  unfinished supports show conserved road repair; railing/rubble block a real
-  gap between close road ends, the far end inaccessible. Trade ended here.
-  `AlpineVillageDistanceWorldBuilder` reuses six checkpoint FBX meshes
-  (city/windows/glow/land/rock/vegetation) below this narrow opening. A separate
-  village material profile follows its storm dimming; the core stays enclosed.
-  Cableway remains the only exit; no new text, NPC or story event.
-  Walkability unions the core with the expansion's measured ground and then
-  subtracts plotted walls, trees, cableway cut and authored lodge/cliff obstacles.
+  pattern. Its step-free lane climbs `6.4 m` over `82.1 m` (`7.8%`, ceiling
+  `8.3%`) from cableway to mother's house. Twelve houses, chapel/source and
+  arrival landmark retain positions; no adit/graves. `CoreTerrainBounds` keeps
+  the residential bowl; `AlpineVillageExpansionPlan` adds forest, ski base and
+  old-road loop. The `18 x 12 m` walk-in lodge has vestibule/benches/racks;
+  unheated roof excludes snowfall/lying snow; shed/lift passive.
+  The closed warehouse yard holds a snow-settled rusty truck without wheels,
+  doors or glass and a dense heap of wooden chairs with chair parts inside.
+  Passive `RustedTruck`/`DiscardedChairPile` keep ramp/road access clear.
+  Stock/supports show conserved road repair; rail/rubble block the gap between
+  close road ends, the far end inaccessible. Trade ended here.
+  `AlpineVillageDistanceWorldBuilder` reuses six checkpoint meshes
+  (city/windows/glow/land/rock/vegetation) below the narrow opening; its own
+  materials follow storms. Core enclosed; cableway sole exit; no text/NPC/event.
+  Walkability unions core/expansion ground minus walls, trees, cableway cut and
+  lodge/cliff obstacles. Warehouse props use MeshColliders; gaps stay open.
   The enclosing `74°` rise and visible barriers close its edge. Each
   `AlpineVillagePathDescriptor` remains a visible compacted strip and the
   route's clearance envelope against those footprints — including each

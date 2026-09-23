@@ -26,8 +26,17 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
   road. Checks: `build-village-expansion-3d-model.py`,
   `AreaCaptureFixture.AlpineVillageExpansion`, `AreaCaptureFixture.CityEastExit`
   (panorama-only). Village frames and checkpoint day/night frames reviewed.
+- Added a stripped donor-truck wreck and discarded-chair mound beside the
+  warehouse. Separate rusty maps, open cab and settled snow show long disuse.
+  The user's denser heap keeps recognizable outer chairs and fills its centre/
+  base with donor chair parts; both source assets retain their existing uses.
+  Numerical contact alone left high chairs looking suspended; visible angled
+  chair frames/backs now support them at the original height.
+  Checks: `build-village-expansion-3d-model.py`,
+  `AreaCaptureFixture.AlpineVillageExpansion` (import, rust materials, height,
+  clear passages and views).
 - Recorded the approved branch/forest and narrow city-view exceptions in both
-  bibles/architecture; replaced old road/terrain facts and updated player/tool docs.
+  bibles/architecture, plus wreck/chair collisions; updated player/tool docs.
   Checks: `check-docs.py`, `git diff --check`.
 
 ## 2026-09-22 — Taunt integration and combat CPU

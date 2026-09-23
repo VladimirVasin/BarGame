@@ -15,14 +15,16 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tools"))
 import interior_kit as kit
 import bar_parts as bp
+from village_truck_wreck import rusted_truck
+from village_chair_pile import chair_pile
 
-VERSION = "1.1.0"
+VERSION = "1.2.0"
 DESIGN = "village_forest_ski_base_old_road_v1"
 COLORS = {"Timber": (.29,.255,.205,1), "Masonry": (.49,.485,.445,1),
           "LayeredStone": (.32,.345,.34,1), "RustedIron": (.30,.255,.21,1),
           "WindSnow": (.83,.85,.84,1), "Asphalt": (.24,.255,.255,1),
           "Concrete": (.47,.47,.43,1), "Canvas": (.39,.40,.35,1),
-          "Glass": (.40,.44,.43,.16)}
+          "Glass": (.40,.44,.43,.16), "WreckRust": (1,1,1,1), "WreckPaint": (1,1,1,1)}
 
 def box(p,s,c=.01): return bp.u_box(p,s,c)
 def merge(parts):
@@ -363,11 +365,18 @@ def create_parts():
             ((-2.15,-.08,1.1,1.5),(-.95,-.35,1.3,1.8),(.4,-.05,1.5,1.4),(1.8,.20,1.3,1.8))]),"Asphalt",False)
     trade_warehouse(add)
     trade_yard_props(add)
+    rusted_truck(add)
+    chair_pile(add)
     conserved_repair(add)
     roadside_rail(add)
     return parts
 
 def validate(parts):
+    # Albedo is a fixed authored input, with the exact image prompts and bytes retained.
+    textures=json.loads((ROOT/"ArtSource/Village/Textures/generation.json").read_text(encoding="utf-8"))
+    for texture in textures["images"]:
+        raw=(ROOT/texture["asset"]).read_bytes()
+        assert hashlib.sha256(raw).hexdigest()==texture["sha256"],"Wreck texture changed without provenance"
     # The entry and main circulation must be open in actual authored solids.
     trees=[BVHTree.FromPolygons(*p["geometry"],all_triangles=False) for p in parts
            if p["kind"]=="SkiLodge" and p["solid"]]
@@ -423,7 +432,9 @@ def build(parts):
             for i in face.loop_indices:
                 v=mesh.vertices[mesh.loops[i].vertex_index].co;uv.data[i].uv=(v[axes[0]],v[axes[1]])
         obj=bpy.data.objects.new(p["mesh"],mesh);bpy.context.scene.collection.objects.link(obj);obj.parent=root
-        mat=bpy.data.materials.new(p["mesh"]+"_Review");mat.diffuse_color=p["tint"];mesh.materials.append(mat)
+        mat=bpy.data.materials.new(p["mesh"]+"_Review")
+        mat.diffuse_color={"WreckRust":(.27,.14,.085,1),"WreckPaint":(.38,.31,.22,1)}.get(p["surface"],p["tint"])
+        mesh.materials.append(mat)
         objects.append(obj);lo,hi=kit.bounds(p["geometry"])
         row={k:v for k,v in p.items() if k!="geometry"};row.update(bounds_min=lo,bounds_max=hi,triangles=kit.triangle_count(g))
         rows.append(row)
@@ -445,6 +456,7 @@ def main():
     parser.add_argument("--model-dir",type=Path,default=ROOT/"Assets/Resources/Village/Expansion")
     parser.add_argument("--source-dir",type=Path,default=ROOT/"ArtSource/Village")
     parser.add_argument("--validate-only",action="store_true");parser.add_argument("--no-preview",action="store_true")
+    parser.add_argument("--preview-kind",action="append",help="Render only these passive kinds; repeat to select several")
     args=parser.parse_args(sys.argv[sys.argv.index("--")+1:] if "--" in sys.argv else [])
     parts=create_parts();signature=validate(parts);objects,rows=build(parts)
     data=dict(generator_version=VERSION,design_id=DESIGN,scale_mode="fixed_metres",uv_mode="projected_metres",
@@ -461,11 +473,18 @@ def main():
         target.write_text(json.dumps(data,indent=2)+"\n",encoding="utf-8")
         bpy.context.preferences.filepaths.save_version=0;bpy.ops.wm.save_as_mainfile(filepath=str(args.source_dir/"VillageExpansion3D.blend"))
         if not args.no_preview:
-            preview(args.source_dir/"VillageExpansion3D.png",objects,rows)
-            preview(args.source_dir/"VillageTradeWarehouse3D.png",objects,rows,"TradeWarehouse",(24,-24,15),(0,0,2),43)
-            preview(args.source_dir/"VillageTradeYardProps3D.png",objects,rows,"TradeYardProps",(5,-6,4.6),(0,0,.45),43)
-            preview(args.source_dir/"VillageConservedRepair3D.png",objects,rows,"ConservedRepair",(12,-17,12),(-2,3.5,-1.6),43)
-            preview(args.source_dir/"VillageRoadsideRail3D.png",objects,rows,"RoadsideRail",(5,-6,3.4),(0,0,.55),48)
+            reviews=[("SkiLodge","VillageExpansion3D.png",(25,-26,15),(0,0,2),43),
+                ("TradeWarehouse","VillageTradeWarehouse3D.png",(24,-24,15),(0,0,2),43),
+                ("TradeYardProps","VillageTradeYardProps3D.png",(5,-6,4.6),(0,0,.45),43),
+                ("ConservedRepair","VillageConservedRepair3D.png",(12,-17,12),(-2,3.5,-1.6),43),
+                ("RoadsideRail","VillageRoadsideRail3D.png",(5,-6,3.4),(0,0,.55),48),
+                ("RustedTruck","VillageTruckWreck3D.png",(8,10,6),(0,0,1),48),
+                ("DiscardedChairPile","VillageChairPile3D.png",(8,-9,6),(0,0,1.3),48),
+                ("DiscardedChairPile","VillageChairPileRear3D.png",(-8,9,6),(0,0,1.3),48)]
+            assert not args.preview_kind or set(args.preview_kind)<=set(r[0] for r in reviews),"Unknown preview kind"
+            for kind,name,location,target,lens in reviews:
+                if not args.preview_kind or kind in args.preview_kind:
+                    preview(args.source_dir/name,objects,rows,kind,location,target,lens)
     print("VILLAGE EXPANSION VALIDATION OK: outward solids, determinism, lodge aisle, closed loading facade, repair view and budgets; "+signature)
 
 if __name__=="__main__":main()

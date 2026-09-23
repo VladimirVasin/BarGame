@@ -9,6 +9,10 @@ namespace BarPromenade
     /// of the unchanged village foot; terrain, paths and movement share this plan.</summary>
     public sealed class AlpineVillageExpansionPlan
     {
+        private static readonly Vector2 TruckWreckLocalCenter = new Vector2(-145f, -39f);
+        private static readonly Vector2 ChairPileLocalCenter = new Vector2(-144f, -17f);
+        private static readonly Vector2 TruckWreckHalfSize = new Vector2(3.5f, 1.45f);
+        private static readonly Vector2 ChairPileHalfSize = new Vector2(3.1f, 2.1f);
         private readonly AlpineVillagePlan village;
         private readonly Capsule[] regions =
         {
@@ -34,6 +38,10 @@ namespace BarPromenade
             WarehouseCenter = ToWorld(new Vector2(-145f, -28f));
             YardPropsCenter = ToWorld(new Vector2(-135f, -20f));
             YardPropsCenter = new Vector3(YardPropsCenter.x, WarehouseCenter.y, YardPropsCenter.z);
+            TruckWreckCenter = ToWorld(TruckWreckLocalCenter);
+            TruckWreckCenter = new Vector3(TruckWreckCenter.x, WarehouseCenter.y, TruckWreckCenter.z);
+            ChairPileCenter = ToWorld(ChairPileLocalCenter);
+            ChairPileCenter = new Vector3(ChairPileCenter.x, WarehouseCenter.y, ChairPileCenter.z);
             FarRoadEdge = FarRoadPoint(-67f);
             ForestEntrance = ToWorld(new Vector2(-37f, -3f));
             LocalBounds = Rect.MinMaxRect(-205f, -54f, 7f, 125f);
@@ -103,6 +111,8 @@ namespace BarPromenade
         public Vector3 FarRoadEdge { get; }
         public Vector3 WarehouseCenter { get; }
         public Vector3 YardPropsCenter { get; }
+        public Vector3 TruckWreckCenter { get; }
+        public Vector3 ChairPileCenter { get; }
         public float RoadWidth => 5.4f;
         public Vector3 ForestEntrance { get; }
         public Rect LocalBounds { get; }
@@ -178,14 +188,24 @@ namespace BarPromenade
             // The exposed loading apron is wind-scoured; its low cargo wheels
             // remain visible while deeper banks return outside this small patch.
             float distance = OutsideRect(ToLocal(point), new Vector2(-135f, -20f), new Vector2(2.5f, 2f));
-            return Mathf.Lerp(Mathf.Min(depth, .12f), depth,
+            float yardDepth = Mathf.Lerp(Mathf.Min(depth, .12f), depth,
                 Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(distance / 2f)));
+            // Old drifts surround the objects, while their open frames remain legible.
+            // Geometry supplies snow caught in seats, the cab and the cargo frame.
+            Vector2 local = ToLocal(point);
+            float remnantDistance = Mathf.Min(
+                OutsideRect(local, TruckWreckLocalCenter, TruckWreckHalfSize),
+                OutsideRect(local, ChairPileLocalCenter, ChairPileHalfSize));
+            return Mathf.Lerp(Mathf.Min(yardDepth, .14f), yardDepth,
+                Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(remnantDistance / .85f)));
         }
 
         internal float ShapeGround(Vector2 point, float height)
         {
             Vector2 local = ToLocal(point);
-            float yardDistance = OutsideRect(local, new Vector2(-138f, -28f), new Vector2(16f, 12f));
+            float yardDistance = Mathf.Min(
+                OutsideRect(local, new Vector2(-138f, -28f), new Vector2(16f, 12f)),
+                OutsideRect(local, ChairPileLocalCenter, ChairPileHalfSize + Vector2.one * .1f));
             if (yardDistance < 4f)
                 height = Mathf.Lerp(height, WarehouseCenter.y,
                     1f - Mathf.SmoothStep(0f, 1f, yardDistance / 4f));
@@ -256,6 +276,7 @@ namespace BarPromenade
         {
             Vector2 local = ToLocal(point);
             if (OutsideRect(local, new Vector2(-138f, -28f), new Vector2(16f, 12f)) < radius + 2f ||
+                OutsideRect(local, ChairPileLocalCenter, ChairPileHalfSize + Vector2.one * .1f) < radius + 2f ||
                 OutsideRect(local, new Vector2(-134f, -48f), new Vector2(5f, 6f)) < radius + 2f)
                 return false;
             if (DistanceOutsideLodge(point) < radius + 4f ||

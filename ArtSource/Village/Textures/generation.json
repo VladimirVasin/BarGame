@@ -1,0 +1,27 @@
+{
+  "generator": "image_gen (built-in)",
+  "date": "2026-09-23",
+  "purpose": "Opaque truck wreck albedo; imported at 1024 with mipmaps, sRGB, bilinear repeat; no runtime generation.",
+  "images": [
+    {
+      "asset": "Assets/Resources/Village/Textures/VillageTruckRustAlbedo.png",
+      "prompt": "Use case: stylized-concept. Asset type: seamless tileable opaque game albedo texture, square 1024 x 1024, no perspective, flat orthographic entire canvas surface sample. Primary request: heavily corroded old truck bare steel abandoned for decades in snowy mountain weather. Texture only. Dense dark umber and charcoal pitting, irregular muted iron oxide brown and burnt sienna islands, a few dull ochre freckles, fine flaking scales; broad natural corrosion patches across roughly a one-metre sample. Matte, subdued, readable in a low-poly PS1 styled game, real material character without high-frequency clutter. Uniform diffuse lighting, no baked directional lighting, no shadows, no highlights, no seams, no rivets or panel lines, no objects, no truck illustration, no text or numbers or logos, no border. All four edges must seamlessly tile, balanced distribution.",
+      "sha256": "6ac98f9561c0d562e8008e9eccd11f1cac64c8873d17540226113eacf3682667",
+      "source_size": [
+        1254,
+        1254
+      ],
+      "mode": "RGB"
+    },
+    {
+      "asset": "Assets/Resources/Village/Textures/VillageTruckPaintAlbedo.png",
+      "prompt": "Use case: stylized-concept. Asset type: seamless tileable opaque game albedo texture, square 1024 x 1024, flat orthographic entire canvas surface sample. Primary request: decades-old abandoned truck painted sheet steel with most paint lost to heavy corrosion. Texture only, about a one-metre surface sample. Approximately 75 percent matte dark brown iron oxide rust with charcoal pits and restrained burnt sienna, about 25 percent irregular remnants of chalked desaturated pale grey-green paint, ragged layered peeling edges, small rain-weathered streaks. Large asymmetrical wear areas, readable in a low-poly PS1 game; subdued earth palette, not orange saturated. Uniform diffuse lighting, no baked shadows or highlights, no perspective, no panel seams, no rivets, no holes showing a background, no object, no text, no numbers, no logos, no border. All four edges must tile seamlessly.",
+      "sha256": "dbcebff68aa01795a15741252279f10ff9947e819bb87f3139649858ad9434d3",
+      "source_size": [
+        1254,
+        1254
+      ],
+      "mode": "RGB"
+    }
+  ]
+}

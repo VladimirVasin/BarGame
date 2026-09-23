@@ -30,6 +30,10 @@ namespace BarPromenade
                 expansion.WarehouseCenter, facing);
             assets.Create("TradeYardProps", "Unused Cargo Equipment", root.transform,
                 expansion.YardPropsCenter, facing);
+            assets.Create("RustedTruck", "Abandoned Truck Wreck", root.transform,
+                expansion.TruckWreckCenter, facing * Quaternion.Euler(0f, 90f, 0f));
+            assets.Create("DiscardedChairPile", "Discarded Wooden Chairs", root.transform,
+                expansion.ChairPileCenter, facing);
             assets.Create("ConservedRepair", "Conserved Road Repair", root.transform,
                 OnGround(plan, expansion.CliffEdge), facing);
 

@@ -19,6 +19,10 @@ Earlier notes: [`release-notes-2026-09.md`](archive/release-notes-2026-09.md).
   показывают продолжение полотна. Проверки: `build-village-expansion-3d-model.py`,
   `AreaCaptureFixture.AlpineVillageExpansion`, `AreaCaptureFixture.CityEastExit`
   (только панорама). Деревня просмотрена; КПП — днём/ночью.
+- У склада осел ржавый остов без колёс, дверей и стёкол. Высокий плотный навал старых
+  деревянных стульев сохраняет узнаваемые спинки/сиденья/ножки; середину
+  заполняют части стульев. Проверки: `build-village-expansion-3d-model.py`,
+  `AreaCaptureFixture.AlpineVillageExpansion` (виды, высота и проходы).
 
 ### 2026-09-22 — Расчёты боя
 

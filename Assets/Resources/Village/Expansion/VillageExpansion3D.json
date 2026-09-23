@@ -1,11 +1,11 @@
 {
-  "generator_version": "1.1.0",
+  "generator_version": "1.2.0",
   "design_id": "village_forest_ski_base_old_road_v1",
   "scale_mode": "fixed_metres",
   "uv_mode": "projected_metres",
-  "build_signature": "2886221199b7673a3ca66a78b22c4f3e555af7ceb082cbb9fae8c7002ec0d14f",
-  "mesh_count": 70,
-  "triangle_count": 15140,
+  "build_signature": "11861a05b6e00b83dda01be0891606d36f6225bc5527e5eb28ef30f05bf6e6d7",
+  "mesh_count": 129,
+  "triangle_count": 31980,
   "colliders": false,
   "lights": false,
   "cameras": false,
@@ -1450,6 +1450,1422 @@
         0.6950000000000001
       ],
       "triangles": 144
+    },
+    {
+      "kind": "RustedTruck",
+      "name": "Chassis",
+      "mesh": "GEO_Expansion_RustedTruck_Chassis",
+      "surface": "RustedIron",
+      "solid": true,
+      "tint": [
+        0.22,
+        0.195,
+        0.17,
+        1
+      ],
+      "bounds_min": [
+        -1.1425537329103927,
+        0.0,
+        -3.2093246926038987
+      ],
+      "bounds_max": [
+        1.131072686062088,
+        0.6674655166089032,
+        2.987965666854061
+      ],
+      "triangles": 660
+    },
+    {
+      "kind": "RustedTruck",
+      "name": "CabShell",
+      "mesh": "GEO_Expansion_RustedTruck_CabShell",
+      "surface": "WreckPaint",
+      "solid": true,
+      "tint": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "bounds_min": [
+        -1.1897649980960312,
+        0.4395048447977176,
+        1.0321471191169744
+      ],
+      "bounds_max": [
+        1.2457797881347568,
+        2.70566916011035,
+        3.25714736924369
+      ],
+      "triangles": 440
+    },
+    {
+      "kind": "RustedTruck",
+      "name": "BentNose",
+      "mesh": "GEO_Expansion_RustedTruck_BentNose",
+      "surface": "WreckPaint",
+      "solid": true,
+      "tint": [
+        0.96,
+        0.96,
+        0.96,
+        1
+      ],
+      "bounds_min": [
+        -1.106627276269055,
+        0.5900521829303911,
+        2.693401158829245
+      ],
+      "bounds_max": [
+        1.1681841388628815,
+        1.5389390564587686,
+        3.224983917733597
+      ],
+      "triangles": 84
+    },
+    {
+      "kind": "RustedTruck",
+      "name": "BentArches",
+      "mesh": "GEO_Expansion_RustedTruck_BentArches",
+      "surface": "WreckRust",
+      "solid": true,
+      "tint": [
+        0.98,
+        0.98,
+        0.98,
+        1
+      ],
+      "bounds_min": [
+        -1.2257843307448895,
+        0.08421278460963905,
+        -1.8045084268185294
+      ],
+      "bounds_max": [
+        1.2414009040402483,
+        0.7874225185853847,
+        2.6155658079770974
+      ],
+      "triangles": 312
+    },
+    {
+      "kind": "RustedTruck",
+      "name": "CargoFrame",
+      "mesh": "GEO_Expansion_RustedTruck_CargoFrame",
+      "surface": "WreckRust",
+      "solid": true,
+      "tint": [
+        0.9,
+        0.9,
+        0.9,
+        1
+      ],
+      "bounds_min": [
+        -1.1774329164697481,
+        0.86386000147187,
+        -3.2279303628700817
+      ],
+      "bounds_max": [
+        1.2158695961967163,
+        2.545705086772689,
+        1.0388620410482572
+      ],
+      "triangles": 312
+    },
+    {
+      "kind": "RustedTruck",
+      "name": "FloorRemnants",
+      "mesh": "GEO_Expansion_RustedTruck_FloorRemnants",
+      "surface": "WreckRust",
+      "solid": true,
+      "tint": [
+        0.95,
+        0.95,
+        0.95,
+        1
+      ],
+      "bounds_min": [
+        -1.1229341757459423,
+        0.83948119701447,
+        -3.117755648960989
+      ],
+      "bounds_max": [
+        1.165494907898617,
+        2.423124918158331,
+        1.0307406731401092
+      ],
+      "triangles": 108
+    },
+    {
+      "kind": "RustedTruck",
+      "name": "SeatRemnants",
+      "mesh": "GEO_Expansion_RustedTruck_SeatRemnants",
+      "surface": "Canvas",
+      "solid": true,
+      "tint": [
+        0.24,
+        0.24,
+        0.205,
+        1
+      ],
+      "bounds_min": [
+        -0.8245901513825833,
+        0.9863041225879747,
+        1.5296576682107925
+      ],
+      "bounds_max": [
+        0.9026571720016414,
+        1.5787706231399936,
+        2.222509152594481
+      ],
+      "triangles": 112
+    },
+    {
+      "kind": "RustedTruck",
+      "name": "Snow",
+      "mesh": "GEO_Expansion_RustedTruck_Snow",
+      "surface": "WindSnow",
+      "solid": false,
+      "tint": [
+        0.83,
+        0.85,
+        0.84,
+        1
+      ],
+      "bounds_min": [
+        -0.9107346859292593,
+        0.5699336311706861,
+        -2.837772789202438
+      ],
+      "bounds_max": [
+        1.0059820500764953,
+        2.7340529310843973,
+        2.732238812143717
+      ],
+      "triangles": 340
+    },
+    {
+      "kind": "DiscardedChairPile",
+      "name": "WeatheredChair01",
+      "mesh": "GEO_Expansion_DiscardedChairPile_WeatheredChair01",
+      "surface": "Timber",
+      "solid": true,
+      "tint": [
+        0.35,
+        0.335,
+        0.295,
+        1
+      ],
+      "bounds_min": [
+        -2.5472714549374,
+        0.0,
+        -1.5965816060130338
+      ],
+      "bounds_max": [
+        -1.52291997608246,
+        0.7959858006515277,
+        -0.44152505388641905
+      ],
+      "triangles": 396
+    },
+    {
+      "kind": "DiscardedChairPile",
+      "name": "WeatheredChair02",
+      "mesh": "GEO_Expansion_DiscardedChairPile_WeatheredChair02",
+      "surface": "Timber",
+      "solid": true,
+      "tint": [
+        0.285,
+        0.285,
+        0.255,
+        1
+      ],
+      "bounds_min": [
+        -1.5130026422903908,
+        0.0,
+        -1.7597563639888407
+      ],
+      "bounds_max": [
+        -0.7865239963782319,
+        0.6520012259997329,
+        -0.6277425482202799
+      ],
+      "triangles": 396
+    },
+    {
+      "kind": "DiscardedChairPile",
+      "name": "WeatheredChair03",
+      "mesh": "GEO_Expansion_DiscardedChairPile_WeatheredChair03",
+      "surface": "Timber",
+      "solid": true,
+      "tint": [
+        0.395,
+        0.365,
+        0.31,
+        1
+      ],
+      "bounds_min": [
+        -0.42715439715685993,
+        0.0,
+        -1.6082563855994128
+      ],
+      "bounds_max": [
+        0.41710146422935335,
+        1.1209462176222944,
+        -0.8155211955597534
+      ],
+      "triangles": 396
+    },
+    {
+      "kind": "DiscardedChairPile",
+      "name": "WeatheredChair04",
+      "mesh": "GEO_Expansion_DiscardedChairPile_WeatheredChair04",
+      "surface": "Timber",
+      "solid": true,
+      "tint": [
+        0.305,
+        0.3,
+        0.275,
+        1
+      ],
+      "bounds_min": [
+        0.4402819583812587,
+        0.0,
+        -1.7471354358483122
+      ],
+      "bounds_max": [
+        1.6587327162739212,
+        0.7414941252832252,
+        -0.4089521478976912
+      ],
+      "triangles": 396
+    },
+    {
+      "kind": "DiscardedChairPile",
+      "name": "WeatheredChair05",
+      "mesh": "GEO_Expansion_DiscardedChairPile_WeatheredChair05",
+      "surface": "Timber",
+      "solid": true,
+      "tint": [
+        0.35,
+        0.335,
+        0.295,
+        1
+      ],
+      "bounds_min": [
+        1.5455221239779442,
+        0.0,
+        -1.412780606670677
+      ],
+      "bounds_max": [
+        2.550968088273053,
+        0.820362212110404,
+        -0.33331169056573906
+      ],
+      "triangles": 396
+    },
+    {
+      "kind": "DiscardedChairPile",
+      "name": "WeatheredChair06",
+      "mesh": "GEO_Expansion_DiscardedChairPile_WeatheredChair06",
+      "surface": "Timber",
+      "solid": true,
+      "tint": [
+        0.285,
+        0.285,
+        0.255,
+        1
+      ],
+      "bounds_min": [
+        -2.5974517889515956,
+        0.0,
+        0.2992558837104725
+      ],
+      "bounds_max": [
+        -1.507998758599964,
+        0.6130836846310754,
+        1.5868982602875201
+      ],
+      "triangles": 396
+    },
+    {
+      "kind": "DiscardedChairPile",
+      "name": "WeatheredChair07",
+      "mesh": "GEO_Expansion_DiscardedChairPile_WeatheredChair07",
+      "surface": "Timber",
+      "solid": true,
+      "tint": [
+        0.395,
+        0.365,
+        0.31,
+        1
+      ],
+      "bounds_min": [
+        -1.608643133525069,
+        0.0,
+        0.5896017751472358
+      ],
+      "bounds_max": [
+        -0.34290049255042576,
+        0.8203622121104038,
+        1.4139632960987183
+      ],
+      "triangles": 396
+    },
+    {
+      "kind": "DiscardedChairPile",
+      "name": "WeatheredChair08",
+      "mesh": "GEO_Expansion_DiscardedChairPile_WeatheredChair08",
+      "surface": "Timber",
+      "solid": true,
+      "tint": [
+        0.305,
+        0.3,
+        0.275,
+        1
+      ],
+      "bounds_min": [
+        -0.3834457850998337,
+        0.0,
+        0.7695609589985274
+      ],
+      "bounds_max": [
+        0.4839574438236353,
+        1.15243666897332,
+        1.5220980628135767
+      ],
+      "triangles": 396
+    },
+    {
+      "kind": "DiscardedChairPile",
+      "name": "WeatheredChair09",
+      "mesh": "GEO_Expansion_DiscardedChairPile_WeatheredChair09",
+      "surface": "Timber",
+      "solid": true,
+      "tint": [
+        0.35,
+        0.335,
+        0.295,
+        1
+      ],
+      "bounds_min": [
+        0.5814119848450134,
+        0.0,
+        0.428615824823507
+      ],
+      "bounds_max": [
+        1.778743183234077,
+        0.8245594699441253,
+        1.659693763027604
+      ],
+      "triangles": 396
+    },
+    {
+      "kind": "DiscardedChairPile",
+      "name": "WeatheredChair10",
+      "mesh": "GEO_Expansion_DiscardedChairPile_WeatheredChair10",
+      "surface": "Timber",
+      "solid": true,
+      "tint": [
+        0.285,
+        0.285,
+        0.255,
+        1
+      ],
+      "bounds_min": [
+        1.6770016289789016,
+        0.0,
+        0.29429460231811766
+      ],
+      "bounds_max": [
+        2.7336770685552008,
+        0.8172005638014375,
+        1.4440437276577125
+      ],
+      "triangles": 396
+    },
+    {
+      "kind": "DiscardedChairPile",
+      "name": "WeatheredChair11",
+      "mesh": "GEO_Expansion_DiscardedChairPile_WeatheredChair11",
+      "surface": "Timber",
+      "solid": true,
+      "tint": [
+        0.395,
+        0.365,
+        0.31,
+        1
+      ],
+      "bounds_min": [
+        -2.584420531077989,
+        0.0,
+        -0.4998742393558496
+      ],
+      "bounds_max": [
+        -1.8537162824950264,
+        1.2139806156602664,
+        0.3848120012385454
+      ],
+      "triangles": 396
+    },
+    {
+      "kind": "DiscardedChairPile",
+      "name": "WeatheredChair12",
+      "mesh": "GEO_Expansion_DiscardedChairPile_WeatheredChair12",
+      "surface": "Timber",
+      "solid": true,
+      "tint": [
+        0.305,
+        0.3,
+        0.275,
+        1
+      ],
+      "bounds_min": [
+        1.6664819530774797,
+        0.2464974923247354,
+        -0.39923178795701897
+      ],
+      "bounds_max": [
+        2.857900084259521,
+        0.8835973060691535,
+        0.3598778035239919
+      ],
+      "triangles": 396
+    },
+    {
+      "kind": "DiscardedChairPile",
+      "name": "WeatheredChair13",
+      "mesh": "GEO_Expansion_DiscardedChairPile_WeatheredChair13",
+      "surface": "Timber",
+      "solid": true,
+      "tint": [
+        0.35,
+        0.335,
+        0.295,
+        1
+      ],
+      "bounds_min": [
+        -1.211852000940096,
+        0.0,
+        -0.9034786756272246
+      ],
+      "bounds_max": [
+        -0.059477291050981984,
+        0.6329629040508653,
+        0.41261684501331836
+      ],
+      "triangles": 396
+    },
+    {
+      "kind": "DiscardedChairPile",
+      "name": "WeatheredChair14",
+      "mesh": "GEO_Expansion_DiscardedChairPile_WeatheredChair14",
+      "surface": "Timber",
+      "solid": true,
+      "tint": [
+        0.285,
+        0.285,
+        0.255,
+        1
+      ],
+      "bounds_min": [
+        -0.10379404281983973,
+        0.3677111419418428,
+        -0.8428554433889379
+      ],
+      "bounds_max": [
+        1.197088765993911,
+        0.9883178757962525,
+        0.33671120713272074
+      ],
+      "triangles": 396
+    },
+    {
+      "kind": "DiscardedChairPile",
+      "name": "WeatheredChair15",
+      "mesh": "GEO_Expansion_DiscardedChairPile_WeatheredChair15",
+      "surface": "Timber",
+      "solid": true,
+      "tint": [
+        0.395,
+        0.365,
+        0.31,
+        1
+      ],
+      "bounds_min": [
+        -0.8380319874281958,
+        1.0740229423077572,
+        -0.187481225458634
+      ],
+      "bounds_max": [
+        -0.04434576272208557,
+        1.803696170441811,
+        1.0541286828646637
+      ],
+      "triangles": 396
+    },
+    {
+      "kind": "DiscardedChairPile",
+      "name": "WeatheredChair16",
+      "mesh": "GEO_Expansion_DiscardedChairPile_WeatheredChair16",
+      "surface": "Timber",
+      "solid": true,
+      "tint": [
+        0.305,
+        0.3,
+        0.275,
+        1
+      ],
+      "bounds_min": [
+        0.30598097951570624,
+        1.1487260195760505,
+        -0.0604832517016729
+      ],
+      "bounds_max": [
+        1.0349946488098758,
+        1.8376171307467528,
+        1.0694271464470677
+      ],
+      "triangles": 396
+    },
+    {
+      "kind": "DiscardedChairPile",
+      "name": "WeatheredChair17",
+      "mesh": "GEO_Expansion_DiscardedChairPile_WeatheredChair17",
+      "surface": "Timber",
+      "solid": true,
+      "tint": [
+        0.35,
+        0.335,
+        0.295,
+        1
+      ],
+      "bounds_min": [
+        -1.7915987857377054,
+        0.4978833771679323,
+        -0.7639588443515244
+      ],
+      "bounds_max": [
+        -0.619881313505849,
+        1.394039276037202,
+        0.06465643322076103
+      ],
+      "triangles": 396
+    },
+    {
+      "kind": "DiscardedChairPile",
+      "name": "WeatheredChair18",
+      "mesh": "GEO_Expansion_DiscardedChairPile_WeatheredChair18",
+      "surface": "Timber",
+      "solid": true,
+      "tint": [
+        0.285,
+        0.285,
+        0.255,
+        1
+      ],
+      "bounds_min": [
+        -0.8137246396236046,
+        0.722568536718297,
+        -1.050026382453394
+      ],
+      "bounds_max": [
+        0.4739239770472681,
+        1.6629645138667972,
+        -0.1217756825157078
+      ],
+      "triangles": 396
+    },
+    {
+      "kind": "DiscardedChairPile",
+      "name": "WeatheredChair19",
+      "mesh": "GEO_Expansion_DiscardedChairPile_WeatheredChair19",
+      "surface": "Timber",
+      "solid": true,
+      "tint": [
+        0.395,
+        0.365,
+        0.31,
+        1
+      ],
+      "bounds_min": [
+        0.3365883378583592,
+        1.7240370532399365,
+        -1.0459356976896885
+      ],
+      "bounds_max": [
+        1.666523963483086,
+        2.444687315335092,
+        0.20165687455911824
+      ],
+      "triangles": 396
+    },
+    {
+      "kind": "DiscardedChairPile",
+      "name": "WeatheredChair20",
+      "mesh": "GEO_Expansion_DiscardedChairPile_WeatheredChair20",
+      "surface": "Timber",
+      "solid": true,
+      "tint": [
+        0.305,
+        0.3,
+        0.275,
+        1
+      ],
+      "bounds_min": [
+        -1.7306956931765487,
+        1.1285637073527652,
+        0.10210713262417354
+      ],
+      "bounds_max": [
+        -0.5028175948930612,
+        2.018847256798943,
+        1.0215022070708881
+      ],
+      "triangles": 396
+    },
+    {
+      "kind": "DiscardedChairPile",
+      "name": "WeatheredChair21",
+      "mesh": "GEO_Expansion_DiscardedChairPile_WeatheredChair21",
+      "surface": "Timber",
+      "solid": true,
+      "tint": [
+        0.35,
+        0.335,
+        0.295,
+        1
+      ],
+      "bounds_min": [
+        -0.6416506987784723,
+        1.7759387112280498,
+        -0.2507220877134101
+      ],
+      "bounds_max": [
+        0.6016737927191536,
+        2.5167322941429564,
+        1.0535378372769557
+      ],
+      "triangles": 396
+    },
+    {
+      "kind": "DiscardedChairPile",
+      "name": "WeatheredChair22",
+      "mesh": "GEO_Expansion_DiscardedChairPile_WeatheredChair22",
+      "surface": "Timber",
+      "solid": true,
+      "tint": [
+        0.285,
+        0.285,
+        0.255,
+        1
+      ],
+      "bounds_min": [
+        0.7914628957917582,
+        1.1778318962319176,
+        0.3713008465391219
+      ],
+      "bounds_max": [
+        1.9190421823906068,
+        1.810715694566286,
+        1.6594433773955082
+      ],
+      "triangles": 396
+    },
+    {
+      "kind": "DiscardedChairPile",
+      "name": "WeatheredChair23",
+      "mesh": "GEO_Expansion_DiscardedChairPile_WeatheredChair23",
+      "surface": "Timber",
+      "solid": true,
+      "tint": [
+        0.395,
+        0.365,
+        0.31,
+        1
+      ],
+      "bounds_min": [
+        -2.182457801710774,
+        1.555843016347282,
+        -0.7164869579287473
+      ],
+      "bounds_max": [
+        -0.8820216713938805,
+        2.1941921467238585,
+        0.49327440483565577
+      ],
+      "triangles": 396
+    },
+    {
+      "kind": "DiscardedChairPile",
+      "name": "WeatheredChair24",
+      "mesh": "GEO_Expansion_DiscardedChairPile_WeatheredChair24",
+      "surface": "Timber",
+      "solid": true,
+      "tint": [
+        0.305,
+        0.3,
+        0.275,
+        1
+      ],
+      "bounds_min": [
+        -1.0075139062380718,
+        1.3876813803360573,
+        -1.8883083366596578
+      ],
+      "bounds_max": [
+        0.04286451176580286,
+        2.286775774523978,
+        -0.7172201138730169
+      ],
+      "triangles": 396
+    },
+    {
+      "kind": "DiscardedChairPile",
+      "name": "WeatheredChair25",
+      "mesh": "GEO_Expansion_DiscardedChairPile_WeatheredChair25",
+      "surface": "Timber",
+      "solid": true,
+      "tint": [
+        0.35,
+        0.335,
+        0.295,
+        1
+      ],
+      "bounds_min": [
+        -2.385902438523771,
+        1.8887681979751587,
+        0.22481625495236512
+      ],
+      "bounds_max": [
+        -1.3178983337802865,
+        2.4988481979751587,
+        1.5095493096110717
+      ],
+      "triangles": 396
+    },
+    {
+      "kind": "DiscardedChairPile",
+      "name": "WeatheredChair26",
+      "mesh": "GEO_Expansion_DiscardedChairPile_WeatheredChair26",
+      "surface": "Timber",
+      "solid": true,
+      "tint": [
+        0.285,
+        0.285,
+        0.255,
+        1
+      ],
+      "bounds_min": [
+        -0.9230965014498842,
+        2.103064404916476,
+        0.2946999080067382
+      ],
+      "bounds_max": [
+        0.22271064588450762,
+        2.74064398875465,
+        1.5806817981133356
+      ],
+      "triangles": 396
+    },
+    {
+      "kind": "DiscardedChairPile",
+      "name": "SnowInSeats",
+      "mesh": "GEO_Expansion_DiscardedChairPile_SnowInSeats",
+      "surface": "WindSnow",
+      "solid": false,
+      "tint": [
+        0.83,
+        0.85,
+        0.84,
+        1
+      ],
+      "bounds_min": [
+        -2.45044207572937,
+        0.6698637008666992,
+        -1.460196852684021
+      ],
+      "bounds_max": [
+        2.2535030841827393,
+        2.7359085083007812,
+        1.2941793203353882
+      ],
+      "triangles": 108
+    },
+    {
+      "kind": "DiscardedChairPile",
+      "name": "DiscardedSeatApron01",
+      "mesh": "GEO_Expansion_DiscardedChairPile_DiscardedSeatApron01",
+      "surface": "Timber",
+      "solid": true,
+      "tint": [
+        0.395,
+        0.365,
+        0.31,
+        1
+      ],
+      "bounds_min": [
+        -1.8165333567240838,
+        0.71886953125,
+        -1.364242902516215
+      ],
+      "bounds_max": [
+        -0.9600801567242088,
+        1.1536348332879034,
+        -0.5700328604291653
+      ],
+      "triangles": 140
+    },
+    {
+      "kind": "DiscardedChairPile",
+      "name": "DiscardedSlattedBack02",
+      "mesh": "GEO_Expansion_DiscardedChairPile_DiscardedSlattedBack02",
+      "surface": "Timber",
+      "solid": true,
+      "tint": [
+        0.305,
+        0.3,
+        0.275,
+        1
+      ],
+      "bounds_min": [
+        -1.0656231361690935,
+        1.3460570312499998,
+        -1.3722645327555187
+      ],
+      "bounds_max": [
+        -0.11365226955227492,
+        1.4706693289522452,
+        -0.46916663878602805
+      ],
+      "triangles": 160
+    },
+    {
+      "kind": "DiscardedChairPile",
+      "name": "DiscardedTwoLegFrame03",
+      "mesh": "GEO_Expansion_DiscardedChairPile_DiscardedTwoLegFrame03",
+      "surface": "Timber",
+      "solid": true,
+      "tint": [
+        0.35,
+        0.335,
+        0.295,
+        1
+      ],
+      "bounds_min": [
+        0.15903538548044627,
+        0.9462718749999999,
+        -1.1548269615989222
+      ],
+      "bounds_max": [
+        1.0560895113208861,
+        1.5731742767401047,
+        -0.291929842774575
+      ],
+      "triangles": 188
+    },
+    {
+      "kind": "DiscardedChairPile",
+      "name": "DiscardedSeatApron04",
+      "mesh": "GEO_Expansion_DiscardedChairPile_DiscardedSeatApron04",
+      "surface": "Timber",
+      "solid": true,
+      "tint": [
+        0.285,
+        0.285,
+        0.255,
+        1
+      ],
+      "bounds_min": [
+        1.0176263359308342,
+        0.704396875,
+        -1.2505139574473079
+      ],
+      "bounds_max": [
+        1.8673864101002278,
+        1.1730579601913884,
+        -0.43109188195831205
+      ],
+      "triangles": 140
+    },
+    {
+      "kind": "DiscardedChairPile",
+      "name": "DiscardedSlattedBack05",
+      "mesh": "GEO_Expansion_DiscardedChairPile_DiscardedSlattedBack05",
+      "surface": "Timber",
+      "solid": true,
+      "tint": [
+        0.395,
+        0.365,
+        0.31,
+        1
+      ],
+      "bounds_min": [
+        -1.8431673711643108,
+        0.0,
+        -0.37141912521857373
+      ],
+      "bounds_max": [
+        -1.0693797705727572,
+        0.2293896849807826,
+        0.45153405195841484
+      ],
+      "triangles": 160
+    },
+    {
+      "kind": "DiscardedChairPile",
+      "name": "DiscardedSeatApron06",
+      "mesh": "GEO_Expansion_DiscardedChairPile_DiscardedSeatApron06",
+      "surface": "Timber",
+      "solid": true,
+      "tint": [
+        0.305,
+        0.3,
+        0.275,
+        1
+      ],
+      "bounds_min": [
+        -0.9125921837652698,
+        0.48622304687499995,
+        -0.4123798585816423
+      ],
+      "bounds_max": [
+        -0.027495732917472093,
+        0.8828861326960296,
+        0.49482672370393954
+      ],
+      "triangles": 140
+    },
+    {
+      "kind": "DiscardedChairPile",
+      "name": "DiscardedSlattedBack07",
+      "mesh": "GEO_Expansion_DiscardedChairPile_DiscardedSlattedBack07",
+      "surface": "Timber",
+      "solid": true,
+      "tint": [
+        0.35,
+        0.335,
+        0.295,
+        1
+      ],
+      "bounds_min": [
+        0.055267642181223375,
+        0.0,
+        -0.48673895210903684
+      ],
+      "bounds_max": [
+        0.9491809602610813,
+        0.24419428217798625,
+        0.44911600387264744
+      ],
+      "triangles": 160
+    },
+    {
+      "kind": "DiscardedChairPile",
+      "name": "DiscardedTwoLegFrame08",
+      "mesh": "GEO_Expansion_DiscardedChairPile_DiscardedTwoLegFrame08",
+      "surface": "Timber",
+      "solid": true,
+      "tint": [
+        0.285,
+        0.285,
+        0.255,
+        1
+      ],
+      "bounds_min": [
+        1.0001759579863938,
+        0.0,
+        -0.31977951818371353
+      ],
+      "bounds_max": [
+        1.8932400871544641,
+        0.7607600247677598,
+        0.5329103928649732
+      ],
+      "triangles": 188
+    },
+    {
+      "kind": "DiscardedChairPile",
+      "name": "DiscardedSeatApron09",
+      "mesh": "GEO_Expansion_DiscardedChairPile_DiscardedSeatApron09",
+      "surface": "Timber",
+      "solid": true,
+      "tint": [
+        0.395,
+        0.365,
+        0.31,
+        1
+      ],
+      "bounds_min": [
+        -1.839177884792475,
+        0.7063890624999999,
+        0.4336021582189161
+      ],
+      "bounds_max": [
+        -1.0041158876452934,
+        1.159290717354955,
+        1.2456856553309332
+      ],
+      "triangles": 140
+    },
+    {
+      "kind": "DiscardedChairPile",
+      "name": "DiscardedSlattedBack10",
+      "mesh": "GEO_Expansion_DiscardedChairPile_DiscardedSlattedBack10",
+      "surface": "Timber",
+      "solid": true,
+      "tint": [
+        0.305,
+        0.3,
+        0.275,
+        1
+      ],
+      "bounds_min": [
+        -1.0576339197601274,
+        0.69144765625,
+        0.4382794456389184
+      ],
+      "bounds_max": [
+        -0.1593104488855609,
+        0.8457217697045328,
+        1.3838106364091098
+      ],
+      "triangles": 160
+    },
+    {
+      "kind": "DiscardedChairPile",
+      "name": "DiscardedSeatApron11",
+      "mesh": "GEO_Expansion_DiscardedChairPile_DiscardedSeatApron11",
+      "surface": "Timber",
+      "solid": true,
+      "tint": [
+        0.35,
+        0.335,
+        0.295,
+        1
+      ],
+      "bounds_min": [
+        0.054179474948460815,
+        1.076848046875,
+        0.5984124021226948
+      ],
+      "bounds_max": [
+        0.9199181992622423,
+        1.5679122429907517,
+        1.4458038537060123
+      ],
+      "triangles": 140
+    },
+    {
+      "kind": "DiscardedChairPile",
+      "name": "DiscardedSlattedBack12",
+      "mesh": "GEO_Expansion_DiscardedChairPile_DiscardedSlattedBack12",
+      "surface": "Timber",
+      "solid": true,
+      "tint": [
+        0.285,
+        0.285,
+        0.255,
+        1
+      ],
+      "bounds_min": [
+        1.076586821999422,
+        0.6455394531249998,
+        0.5168372212314001
+      ],
+      "bounds_max": [
+        1.7753794872564483,
+        0.8093596258698068,
+        1.2626371433591645
+      ],
+      "triangles": 160
+    },
+    {
+      "kind": "DiscardedChairPile",
+      "name": "DiscardedSeatApron13",
+      "mesh": "GEO_Expansion_DiscardedChairPile_DiscardedSeatApron13",
+      "surface": "Timber",
+      "solid": true,
+      "tint": [
+        0.395,
+        0.365,
+        0.31,
+        1
+      ],
+      "bounds_min": [
+        -1.475879425101923,
+        1.078957421875,
+        -0.7553841039561833
+      ],
+      "bounds_max": [
+        -0.6013286144986537,
+        1.616959123304087,
+        0.08116743593908948
+      ],
+      "triangles": 140
+    },
+    {
+      "kind": "DiscardedChairPile",
+      "name": "DiscardedSlattedBack14",
+      "mesh": "GEO_Expansion_DiscardedChairPile_DiscardedSlattedBack14",
+      "surface": "Timber",
+      "solid": true,
+      "tint": [
+        0.305,
+        0.3,
+        0.275,
+        1
+      ],
+      "bounds_min": [
+        -0.5851663435604085,
+        0.554543359375,
+        -0.8464754626973117
+      ],
+      "bounds_max": [
+        0.3471944239088775,
+        0.9182493713007669,
+        0.007103168383419345
+      ],
+      "triangles": 160
+    },
+    {
+      "kind": "DiscardedChairPile",
+      "name": "DiscardedSeatApron15",
+      "mesh": "GEO_Expansion_DiscardedChairPile_DiscardedSeatApron15",
+      "surface": "Timber",
+      "solid": true,
+      "tint": [
+        0.35,
+        0.335,
+        0.295,
+        1
+      ],
+      "bounds_min": [
+        0.5713180541731114,
+        0.9644359374999999,
+        -0.7079103829196218
+      ],
+      "bounds_max": [
+        1.4677630582805197,
+        1.4692008030098465,
+        0.15811377611998445
+      ],
+      "triangles": 140
+    },
+    {
+      "kind": "DiscardedChairPile",
+      "name": "DiscardedTwoLegFrame16",
+      "mesh": "GEO_Expansion_DiscardedChairPile_DiscardedTwoLegFrame16",
+      "surface": "Timber",
+      "solid": true,
+      "tint": [
+        0.285,
+        0.285,
+        0.255,
+        1
+      ],
+      "bounds_min": [
+        -1.4058434723331792,
+        0.145090234375,
+        0.053895131663358076
+      ],
+      "bounds_max": [
+        -0.5232466675554499,
+        0.8814059803123642,
+        0.8694343997919936
+      ],
+      "triangles": 188
+    },
+    {
+      "kind": "DiscardedChairPile",
+      "name": "DiscardedSlattedBack17",
+      "mesh": "GEO_Expansion_DiscardedChairPile_DiscardedSlattedBack17",
+      "surface": "Timber",
+      "solid": true,
+      "tint": [
+        0.395,
+        0.365,
+        0.31,
+        1
+      ],
+      "bounds_min": [
+        -0.27746465342277693,
+        0.45197499999999996,
+        -0.012503091670528932
+      ],
+      "bounds_max": [
+        0.6036030152745604,
+        0.794051106095876,
+        0.8926334852046218
+      ],
+      "triangles": 160
+    },
+    {
+      "kind": "DiscardedChairPile",
+      "name": "DiscardedSeatApron18",
+      "mesh": "GEO_Expansion_DiscardedChairPile_DiscardedSeatApron18",
+      "surface": "Timber",
+      "solid": true,
+      "tint": [
+        0.305,
+        0.3,
+        0.275,
+        1
+      ],
+      "bounds_min": [
+        0.48815937245280894,
+        0.639504296875,
+        0.04727864550113181
+      ],
+      "bounds_max": [
+        1.3603468159228793,
+        1.1530371914141329,
+        0.9109255034625234
+      ],
+      "triangles": 140
+    },
+    {
+      "kind": "DiscardedChairPile",
+      "name": "SupportingDiscardedFrame01",
+      "mesh": "GEO_Expansion_DiscardedChairPile_SupportingDiscardedFrame01",
+      "surface": "Timber",
+      "solid": true,
+      "tint": [
+        0.285,
+        0.285,
+        0.255,
+        1
+      ],
+      "bounds_min": [
+        0.5144545965482235,
+        1.026180417015394,
+        -0.7446341859260205
+      ],
+      "bounds_max": [
+        1.4896966386956456,
+        1.839002314278814,
+        0.1071778797226996
+      ],
+      "triangles": 236
+    },
+    {
+      "kind": "DiscardedChairPile",
+      "name": "SupportingDiscardedFrame02",
+      "mesh": "GEO_Expansion_DiscardedChairPile_SupportingDiscardedFrame02",
+      "surface": "Timber",
+      "solid": true,
+      "tint": [
+        0.395,
+        0.365,
+        0.31,
+        1
+      ],
+      "bounds_min": [
+        -0.46439242723587254,
+        1.1119050965262938,
+        -0.060942095532744045
+      ],
+      "bounds_max": [
+        0.4370277094484832,
+        1.8815745611852532,
+        0.8947330557795754
+      ],
+      "triangles": 236
+    },
+    {
+      "kind": "DiscardedChairPile",
+      "name": "SupportingDiscardedFrame03",
+      "mesh": "GEO_Expansion_DiscardedChairPile_SupportingDiscardedFrame03",
+      "surface": "Timber",
+      "solid": true,
+      "tint": [
+        0.305,
+        0.3,
+        0.275,
+        1
+      ],
+      "bounds_min": [
+        -2.112579814911455,
+        1.2052233069119749,
+        0.20420642434928293
+      ],
+      "bounds_max": [
+        -1.1274423237543845,
+        2.111982391321334,
+        1.0235211790635736
+      ],
+      "triangles": 236
+    },
+    {
+      "kind": "DiscardedChairPile",
+      "name": "SupportingDiscardedFrame04",
+      "mesh": "GEO_Expansion_DiscardedChairPile_SupportingDiscardedFrame04",
+      "surface": "Timber",
+      "solid": true,
+      "tint": [
+        0.35,
+        0.335,
+        0.295,
+        1
+      ],
+      "bounds_min": [
+        -0.9174094709290073,
+        1.4158984256393028,
+        0.4882711958482856
+      ],
+      "bounds_max": [
+        0.06216691933513541,
+        2.1874742473909414,
+        1.3057811878299006
+      ],
+      "triangles": 236
+    },
+    {
+      "kind": "DiscardedChairPile",
+      "name": "SupportingDiscardedFrame05",
+      "mesh": "GEO_Expansion_DiscardedChairPile_SupportingDiscardedFrame05",
+      "surface": "Timber",
+      "solid": true,
+      "tint": [
+        0.285,
+        0.285,
+        0.255,
+        1
+      ],
+      "bounds_min": [
+        0.6499018234169827,
+        0.6871205012852575,
+        -1.0516078577248733
+      ],
+      "bounds_max": [
+        1.354736710355105,
+        1.3474067063797928,
+        -0.5067352309042015
+      ],
+      "triangles": 160
+    },
+    {
+      "kind": "DiscardedChairPile",
+      "name": "SupportingDiscardedFrame06",
+      "mesh": "GEO_Expansion_DiscardedChairPile_SupportingDiscardedFrame06",
+      "surface": "Timber",
+      "solid": true,
+      "tint": [
+        0.395,
+        0.365,
+        0.31,
+        1
+      ],
+      "bounds_min": [
+        -0.8866854601247669,
+        1.4146156892499862,
+        0.45687182280192673
+      ],
+      "bounds_max": [
+        -0.1339678224641958,
+        2.3259645502673214,
+        1.0105487206269486
+      ],
+      "triangles": 160
     },
     {
       "kind": "ConservedRepair",

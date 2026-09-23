@@ -28,8 +28,11 @@ namespace BarPromenade
     {
         public const string ResourcePath = "Village/Expansion/VillageExpansion3D";
         public const string DesignId = "village_forest_ski_base_old_road_v1";
-        public const string GeneratorVersion = "1.1.0";
+        public const string GeneratorVersion = "1.2.0";
+        public const string WreckRustTexturePath = "Village/Textures/VillageTruckRustAlbedo";
+        public const string WreckPaintTexturePath = "Village/Textures/VillageTruckPaintAlbedo";
         private static VillageExpansionAssetProvider instance;
+        private static Texture2D wreckRust, wreckPaint;
         private readonly Dictionary<string, MeshFilter> meshes;
         public VillageExpansionManifest Manifest { get; }
 
@@ -98,6 +101,23 @@ namespace BarPromenade
         {
             var tint = new Color(part.tint[0], part.tint[1], part.tint[2], part.tint[3]);
             var block = new MaterialPropertyBlock();
+            if (part.surface == "WreckRust" || part.surface == "WreckPaint")
+            {
+                bool paint = part.surface == "WreckPaint";
+                if (paint && wreckPaint == null) wreckPaint = Resources.Load<Texture2D>(WreckPaintTexturePath);
+                if (!paint && wreckRust == null) wreckRust = Resources.Load<Texture2D>(WreckRustTexturePath);
+                Texture2D texture = paint ? wreckPaint : wreckRust;
+                if (texture == null) throw new InvalidOperationException("Missing truck wreck albedo: " + part.surface);
+                renderer.sharedMaterial = RuntimePrimitiveFactory.DefaultMaterial;
+                block.SetTexture("_BaseMap", texture);
+                block.SetColor("_BaseColor", tint);
+                block.SetColor("_Color", tint);
+                block.SetFloat("_Smoothness", .04f);
+                block.SetFloat("_Metallic", .02f);
+                block.SetVector("_BaseMap_ST", new Vector4(scale.x / 1.65f, scale.y / 1.65f, 0f, 0f));
+                renderer.SetPropertyBlock(block);
+                return;
+            }
             if (part.surface == "Canvas")
             {
                 renderer.sharedMaterial = RuntimePrimitiveFactory.DefaultMaterial;
@@ -128,6 +148,10 @@ namespace BarPromenade
         }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        private static void ResetCache() => instance = null;
+        private static void ResetCache()
+        {
+            instance = null;
+            wreckRust = wreckPaint = null;
+        }
     }
 }
