@@ -49,9 +49,9 @@ Village generators:
 `run-blender.py`, validate contacts and preserve models. `VillageOutdoorLife`
 checks contacts, carrying and reload; `VillageOutdoorPartners` seeds completed
 basket/porch/chair outcomes to isolate partners/errands, not player carrying.
-`build-village-expansion-3d-model.py`: seven passive kinds (lodge, shed, lift
-ends, road/barrier/broken lip) in `Assets/Resources/Village/Expansion/VillageExpansion3D.{fbx,json}`.
-`run-blender.py`/`--validate-only`: bounds, signed solids, openings, determinism.
+`build-village-expansion-3d-model.py`: 11 passive kinds: lodge/shed/lift/road/rail,
+warehouse/yard/conserved repair; `Assets/Resources/Village/Expansion/VillageExpansion3D.{fbx,json}`.
+`run-blender.py`/`--validate-only`: bounds/solid winding/openings/determinism.
 `VillageExpansionAssetSetup` measures imports;
 `AreaCaptureFixture.AlpineVillageExpansion`: review.
 

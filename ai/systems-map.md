@@ -25,7 +25,7 @@ A row never carries a status outside this table. Product-level scope cuts
 
 | System | Guarantee | Key files | Status |
 | --- | --- | --- | --- |
-| Village art pass | House joinery, rock ledges, dense forest, open ski lodge and closed road brink retain the arrival axis. | `VillageAssetProvider`, `AlpineVillage{ExpansionBuilder,TreeBuilder,RockBuilder}` | Current |
+| Village scenery | Houses/forest/lodge, warehouse/yard, conserved repair and road gap with checkpoint city retain the arrival axis. | `AlpineVillage{ExpansionPlan,ExpansionBuilder,DistanceWorldBuilder}` | Current |
 | Village household life | Six residents, finite household work, indoor/outdoor help and outcomes across visits. | `AlpineVillageLifeController`, `VillageOutdoorHelpController`, `VillageHouseholdProgress` | Current |
 | Independent rules assembly | Calendar/day schedule, input priorities and temporary vehicle ownership have no Unity dependencies. | `Scripts/Rules`, `BarPromenade.Rules.asmdef` | Current |
 | Shared input actions | One binding API serves common actions and preserves existing controls; pause and transitions take priority. | `GameInput`, `GameInputPolicy` | Current |

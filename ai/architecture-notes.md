@@ -2,10 +2,28 @@
 
 ## Current facts
 
+- **Accepted architecture exception — 2026-09-23, village trade road:**
+  The user approved the road's conserved repair, close inaccessible opposite
+  end and a narrow downward view onto the SAME large city seen beyond City's
+  eastern checkpoint. Story §6/§12 and art §10g allow this single opening
+  between rock shoulders; the residential bowl stays closed, with no peaks or
+  tourist panorama. The two road ends share one alignment across a real gap;
+  visible railing/rubble keeps the brink impassable. A small closed warehouse
+  stands on the village side, with an accessible loading yard, ramp, empty
+  cargo remnants and passive handcart. Trade through it ended after the old
+  collapse; unfinished support work, secured fittings and stored repair stock
+  show that restoration was suspended. The mine remains closed and the
+  cableway remains the only active exit. No new text, NPC, task, sound, clue,
+  date, collapse cause or story event; story §16/§21 and all nine art checks
+  remain binding. New geometry follows the deterministic Blender workflow.
+  `AlpineVillageDistanceWorldBuilder` shares six checkpoint FBX meshes:
+  city/windows/glow/land/rock/vegetation, without road/traffic. Its separate
+  material profile follows village haze and the existing storm wave.
+
 - **Accepted architecture exception — 2026-09-22, expanded Alpine Village:**
   The user approved the proposed larger area: dense conifers beside the upper
   station, an abandoned ski base with an accessible main building, a return
-  loop via an old road and its broken downhill branch toward City. Story §6
+  loop via an old road and its broken downhill branch. Story §6
   records the local exception to §12/art §10g's single route, former bowl size,
   uniform tree clearance and exhaustive list of barriers. Residential lane,
   twelve houses, station and mother's house retain their positions; the warm
@@ -15,10 +33,10 @@
   `1.2 m + crown radius` route clearance and non-overlapping crowns.
   The base is passive old timber/stone, with rental racks, benches, shed and a
   separate stopped lift. Its unheated main room is entered by walking in this
-  scene. A worn asphalt cut and lower road remnant show the old descent; visible
-  rail/rubble and rock close the edge. Cableway remains the sole active exit.
+  scene. The old-road loop has a blocked downhill branch; visible rail/rubble
+  and rock close its edge. Cableway remains the sole active exit.
   No fall/death, text, NPC, work, clue, sound or story event is added; no resort
-  meaning or panorama. Story §16/§21 and all nine art checks remain binding.
+  meaning. Story §16/§21 and all nine art checks remain binding.
   `AlpineVillageExpansionPlan` shares valley/route/lodge/brink bounds between
   sampler, walkability, map, weather and snow. The Blender
   `VillageExpansion3D` library supplies passive fixed-metre parts; imported

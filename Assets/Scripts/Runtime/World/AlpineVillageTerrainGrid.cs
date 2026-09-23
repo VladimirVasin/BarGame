@@ -56,8 +56,14 @@ namespace BarPromenade
                 roomMinZ = plot.GroundCenter.z - extentZ; roomMaxZ = plot.GroundCenter.z + extentZ;
                 break;
             }
-            XCoordinates = BuildAxis(bounds.xMin, bounds.width, minX, maxX, roomMinX, roomMaxX);
-            ZCoordinates = BuildAxis(bounds.yMin, bounds.height, minZ, maxZ, roomMinZ, roomMaxZ);
+            Vector3 cliffA = plan.Expansion.ToWorld(new Vector2(-141f, -72f));
+            Vector3 cliffB = plan.Expansion.ToWorld(new Vector2(-119f, -51f));
+            Vector3 cliffC = plan.Expansion.ToWorld(new Vector2(-141f, -51f));
+            Vector3 cliffD = plan.Expansion.ToWorld(new Vector2(-119f, -72f));
+            XCoordinates = BuildAxis(bounds.xMin, bounds.width, minX, maxX, roomMinX, roomMaxX,
+                Mathf.Min(cliffA.x, cliffB.x, cliffC.x, cliffD.x), Mathf.Max(cliffA.x, cliffB.x, cliffC.x, cliffD.x));
+            ZCoordinates = BuildAxis(bounds.yMin, bounds.height, minZ, maxZ, roomMinZ, roomMaxZ,
+                Mathf.Min(cliffA.z, cliffB.z, cliffC.z, cliffD.z), Mathf.Max(cliffA.z, cliffB.z, cliffC.z, cliffD.z));
         }
 
         internal float[] XCoordinates { get; }
@@ -89,7 +95,7 @@ namespace BarPromenade
 
         private static float[] BuildAxis(
             float minimum, float length, float fineMinimum, float fineMaximum,
-            float roomMinimum, float roomMaximum)
+            float roomMinimum, float roomMaximum, float cliffMinimum, float cliffMaximum)
         {
             int cells = Mathf.Max(1, Mathf.CeilToInt(
                 length / AlpineVillageTerrainSampler.TerrainCell));
@@ -103,7 +109,8 @@ namespace BarPromenade
                     ? Mathf.Max(1, Mathf.CeilToInt((end - start) / VillageWorkroomPlan.TerrainCell))
                     : end > fineMinimum && start < fineMaximum
                         ? Mathf.Max(1, Mathf.CeilToInt((end - start) / AlpineVillageTerrainSampler.BrookTerrainCell))
-                        : 1;
+                        : end > cliffMinimum && start < cliffMaximum
+                            ? Mathf.Max(1, Mathf.CeilToInt((end - start) / .5f)) : 1;
                 for (int step = 1; step <= subdivisions; step++)
                 {
                     axis.Add(step == subdivisions ? end :

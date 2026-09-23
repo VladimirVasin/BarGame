@@ -2,11 +2,13 @@ Shader "Bar Promenade/City East Distance"
 {
     Properties
     {
-        _HazeColor("Shared City Haze", Color) = (0.330, 0.380, 0.355, 1)
+        _HazeColor("Area Haze", Color) = (0.330, 0.380, 0.355, 1)
         _Tint("Surface", Color) = (0.12, 0.15, 0.14, 1)
         _Role("Panorama Surface Role", Float) = 0
         _DepthBandMeters("Far Depth Band (Metres)", Float) = 0.20
         _DepthWrite("Opaque Panorama Depth", Float) = 1
+        _ViewDirection("View Hemisphere", Vector) = (1, 0, 0, 0)
+        _Visibility("Area Visibility", Range(0, 1)) = 1
         _RockMap("Shared Weathered Stone", 2D) = "gray" {}
         _RoadMap("Shared Asphalt", 2D) = "gray" {}
     }
@@ -36,6 +38,8 @@ Shader "Bar Promenade/City East Distance"
                 float _Role;
                 float _DepthBandMeters;
                 float _DepthWrite;
+                float4 _ViewDirection;
+                float _Visibility;
             CBUFFER_END
 
             struct Attributes
@@ -86,7 +90,7 @@ Shader "Bar Promenade/City East Distance"
             {
                 UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input);
                 float3 ray = input.world - _WorldSpaceCameraPos;
-                clip(ray.x);
+                clip(dot(ray, _ViewDirection.xyz));
                 float d = length(ray);
                 half3 normal = normalize(input.normal);
                 if (_Role > 13.5)
@@ -99,7 +103,7 @@ Shader "Bar Promenade/City East Distance"
                     float soft = exp(-radius * 4.5) * (1.0 - smoothstep(0.55, 1.0, radius));
                     float reach = exp(-d / (_Role > 14.5 ? 1100.0 : 2400.0));
                     float alpha = soft * reach * (_Role > 14.5 ? 0.23 : 0.12);
-                    return half4(_Tint.rgb, alpha);
+                    return half4(_Tint.rgb, alpha * _Visibility);
                 }
                 if (_Role > 4.5 && _Role < 5.5)
                 {
@@ -119,7 +123,7 @@ Shader "Bar Promenade/City East Distance"
                     float grain = 0.90 + 0.065 * sin(x * 18.0 + height * 9.0) +
                         0.035 * sin(x * 31.0 - height * 16.0);
                     float density = pools * sides * rise * ceiling * grain;
-                    return half4(_Tint.rgb, saturate(density * 0.42));
+                    return half4(_Tint.rgb, saturate(density * 0.42) * _Visibility);
                 }
 
                 half3 surface = _Tint.rgb;
@@ -190,7 +194,7 @@ Shader "Bar Promenade/City East Distance"
                         surface = lerp(surface, half3(0.55, 0.54, 0.41), paint);
                     }
                 }
-                return half4(lerp(_HazeColor.rgb, surface, visibility), 1);
+                return half4(lerp(_HazeColor.rgb, surface, visibility * _Visibility), 1);
             }
             ENDHLSL
         }

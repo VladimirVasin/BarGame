@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Passive, fixed-metre remains of the village ski base and the old downhill road."""
+"""Passive, fixed-metre village ski base, severed trade road and conserved repairs."""
 from __future__ import annotations
 import argparse
 import hashlib
@@ -16,15 +16,20 @@ sys.path.insert(0, str(ROOT / "tools"))
 import interior_kit as kit
 import bar_parts as bp
 
-VERSION = "1.0.0"
+VERSION = "1.1.0"
 DESIGN = "village_forest_ski_base_old_road_v1"
 COLORS = {"Timber": (.29,.255,.205,1), "Masonry": (.49,.485,.445,1),
           "LayeredStone": (.32,.345,.34,1), "RustedIron": (.30,.255,.21,1),
           "WindSnow": (.83,.85,.84,1), "Asphalt": (.24,.255,.255,1),
+          "Concrete": (.47,.47,.43,1), "Canvas": (.39,.40,.35,1),
           "Glass": (.40,.44,.43,.16)}
 
 def box(p,s,c=.01): return bp.u_box(p,s,c)
-def merge(parts): return kit.merge_all(parts)
+def merge(parts):
+    pieces=list(parts)
+    for piece in pieces:
+        assert bp.signed_volume(piece)>1e-9,"Inward or degenerate component before merge"
+    return kit.merge_all(pieces)
 def at(g,p): return kit.translated(g,p)
 def rotate(g,e): return bp.u_rotated(g,e)
 def u(g): return bp.to_source(g)
@@ -47,6 +52,205 @@ def beam_between(a,b,width=.05):
     geometry=u(kit.beam(direction.length,width,width))
     rotation=Vector((0,0,1)).rotation_difference(direction.normalized())
     return [tuple(rotation @ Vector(v)+mid) for v in geometry[0]],geometry[1]
+
+def section(profile,depth):
+    """Closed Unity XY section, extruded in Z; all source polygons are CCW."""
+    area=sum(a[0]*b[1]-b[0]*a[1] for a,b in zip(profile,profile[1:]+profile[:1]))
+    return u(kit.prism(profile if area>0 else list(reversed(profile)),depth))
+
+def snow_patch(center,width,depth):
+    mound=u(kit.lathe([(.68,0),(.77,.026),(.58,.072),(.16,.090)],9))
+    vertices=[]
+    for i,(x,y,z) in enumerate(mound[0]):
+        irregular=1+.09*math.sin((i%9)*2.1)
+        vertices.append((center[0]+x*width*.65*irregular,center[1]+y,
+                         center[2]+z*depth*.65*irregular))
+    return vertices,mound[1]
+
+def trade_warehouse(add):
+    """10 x 14 m closed shell; the +X facade owns the loading doors and dock."""
+    kind="TradeWarehouse"
+    add(kind,"StonePlinth",box((0,.40,0),(10,.8,14),.055),"LayeredStone")
+    # A real wall opening receives the two shut leaves, instead of surface-applied doors.
+    facade=u(kit.wall_run(14,3.2,.28,[kit.Opening(0,3.6,2.76)],.015))
+    add(kind,"LoadingWall",at(rotate(facade,(0,90,0)),(4.86,.8,0)),"Timber")
+    add(kind,"ClosedWalls",merge([box((-4.86,2.4,0),(.28,3.2,14),.015)]+
+        [box((0,2.4,z),(9.44,3.2,.28),.015) for z in (-6.86,6.86)]),"Timber")
+    add(kind,"Gables",merge([at(rotate(gable(10,1.30,.28),(0,90,0)),(0,4,z))
+        for z in (-6.86,6.86)]),"Timber")
+    add(kind,"Roof",rotate(roof(15.0,10.8,3.86,1.45,.20),(0,90,0)),"Timber")
+    add(kind,"RoofSnow",rotate(roof(14.93,10.72,4.02,1.45,.13),(0,90,0)),"WindSnow",False)
+    structure=[]
+    for x in (-5.005,5.005):
+        for z in (-6.83,-3.7,3.7,6.83):
+            structure.append(box((x,2.43,z),(.16,3.3,.20),.022))
+        structure += [box((x,y,0),(.17,.18,14.15),.018) for y in (.94,3.93)]
+    for z in (-7.005,7.005):
+        structure += [box((x,2.43,z),(.20,3.3,.16),.02) for x in (-4.82,0,4.82)]
+        structure += [box((0,y,z),(10.12,.18,.16),.018) for y in (.94,3.93)]
+    # Inset plank joints and irregular repairs remain subordinate to the broad closed mass.
+    for z in (-6.45,-5.58,-4.71,-3.00,-2.13,2.13,3.00,4.71,5.58,6.45):
+        structure.append(box((5.016,2.41,z),(.035,2.68,.045),.004))
+    for z in (-7.016,7.016):
+        structure += [box((x,2.4,z),(.048,2.74,.035),.004) for x in (-4.35,-3.5,-2.65,-1.8,-.95,.9,1.8,2.7,3.6,4.45)]
+    add(kind,"StructuralTimbers",merge(structure),"Timber",True,(.22,.215,.18,1))
+    door=[];iron=[]
+    for sign in (-1,1):
+        for i in range(8):
+            door.append(box((4.98,2.15,sign*(.125+i*.218)),(.14,2.66,.209),.009))
+        for y in (1.14,3.10):
+            door.append(box((5.074,y,sign*.9),(.075,.15,1.72),.008))
+        door.append(beam_between((5.12,1.18,sign*.14),(5.12,3.06,sign*1.63),.12))
+        for y in (1.35,2.97):
+            iron += [box((5.13,y,sign*1.56),(.045,.10,.40),.006),
+                at(rotate(bp.u_cylinder((0,0,0),(.09,.12,.09),8),(0,0,0)),(5.14,y,sign*1.83))]
+    door += [box((5.07,2.23,z),(.19,2.97,.18),.018) for z in (-1.91,1.91)]
+    door += [box((5.07,3.67,0),(.19,.18,4.0),.018)]
+    door += [box((4.98,2.15,z),(.14,2.68,.07),.007) for z in (-1.765,0,1.765)]
+    iron += [box((5.20,2.03,0),(.06,.10,.66),.008),box((5.22,2.08,.26),(.075,.23,.10),.006)]
+    add(kind,"ClosedLoadingDoors",merge(door),"Timber",True,(.245,.235,.19,1))
+    add(kind,"DoorHardware",merge(iron),"RustedIron")
+    add(kind,"LoadingDock",box((5.73,.4,0),(1.54,.8,5.6),.055),"LayeredStone")
+    # Two well-supported old bumper timbers communicate repeated loading at the same height.
+    bumpers=[box((6.52,.54,z),(.16,.31,1.52),.03) for z in (-1.68,1.68)]
+    add(kind,"LoadingBumpers",merge(bumpers),"Timber",True,(.20,.205,.18,1))
+    canopy=[at(rotate(box((0,0,0),(2.7,.13,6.55),.018),(0,0,-5.0)),(5.94,3.62,0))]
+    add(kind,"LoadingCanopy",merge(canopy),"RustedIron")
+    supports=[box((7.02,1.69,z),(.18,3.38,.18),.018) for z in (-3.03,3.03)]
+    for z in (-3.03,3.03):
+        supports += [beam_between((7.02,2.58,z),(6.33,3.54,z),.12),
+                     beam_between((7.02,2.58,z),(7.02,3.43,z*.70),.12),
+                     box((5.91,3.48,z),(2.5,.16,.17),.015)]
+    add(kind,"CanopySupports",merge(supports),"Timber")
+    add(kind,"CanopyFootings",merge([box((7.02,.12,z),(.34,.24,.34),.03)
+        for z in (-3.03,3.03)]),"LayeredStone")
+    add(kind,"CanopySnow",at(rotate(box((0,0,0),(2.63,.10,6.46),.025),
+        (0,0,-5)),(5.94,3.73,0)),"WindSnow",False)
+    # Patched ends, masonry courses and bracket fixings are functional age without labels.
+    add(kind,"MendedBoards",merge([box((5.04,y,z),(.06,h,.28),.008) for y,z,h in
+        ((1.45,-5.56,.78),(1.31,-5.26,.51),(1.55,4.68,.95))]),"Timber",True,(.36,.315,.24,1))
+    courses=[]
+    for x in (-5.013,5.013):
+        for row in range(2):
+            for i in range(13):
+                z=-6.35+i*1.01+(.17 if row else 0)
+                if x>0 and abs(z)<2.9:continue
+                courses.append(box((x,.19+row*.39,z),(.035,.34,.95),.012))
+    add(kind,"PlinthCourses",merge(courses),"LayeredStone")
+
+def trade_yard_props(add):
+    kind="TradeYardProps"
+    # Three empty pallets in a small, uneven return stack; every slat has end grain and gaps.
+    wood=[]
+    for level in range(3):
+        px=.91+(level%2)*.04;pz=.28-level*.025;base=.025+level*.19
+        pallet=[]
+        for x in (-.43,0,.43):pallet.append(box((x,.07,0),(.15,.12,.91),.01))
+        for z in (-.39,0,.39):pallet.append(box((0,.015,z),(1.16,.03,.14),.005))
+        for x in (-.48,-.24,0,.24,.48):pallet.append(box((x,.157,0),(.20,.055,.91),.007))
+        wood.append(at(rotate(merge(pallet),(0,(-2 if level==1 else 0),0)),(px,base,pz)))
+    # A low empty return crate is hollow and visibly made from reused unequal boards.
+    crate=[]
+    for i in range(5):crate.append(box((-.47+i*.235,.055,0),(.215,.08,.76),.007))
+    for x in (-.54,.54):
+        for z in (-.36,.36):crate.append(box((x,.29,z),(.065,.54,.065),.006))
+    for y in (.18,.38):
+        crate += [box((0,y,z),(1.14,.135,.045),.006) for z in (-.395,.395)]
+        crate += [box((x,y,0),(.045,.135,.77),.006) for x in (-.575,.575)]
+    wood.append(at(rotate(merge(crate),(0,6,0)),(.97,0,-.91)))
+    add(kind,"EmptyPalletsAndReturnCrate",merge(wood),"Timber",True,(.33,.29,.225,1))
+    # A stationary two-wheel platform trolley, resting on its rear feet, not abandoned mid-action.
+    cart=[];frame=[];wheels=[]
+    for i in range(5):cart.append(box((-1.00+i*.145,.48,.07),(.132,.055,1.28),.007))
+    frame += [box((x,.415,.07),(.07,.10,1.37),.009) for x in (-1.09,-.30)]
+    frame += [box((-.695,.405,z),(.86,.10,.07),.009) for z in (-.48,.64)]
+    frame += [beam_between((x,.42,-.59),(x,1.20,-1.06),.055) for x in (-1.07,-.32)]
+    frame += [beam_between((-1.07,1.20,-1.06),(-.32,1.20,-1.06),.055),
+        beam_between((-1.07,.025,-.48),(-1.07,.42,-.48),.045),
+        beam_between((-.32,.025,-.48),(-.32,.42,-.48),.045),
+        box((-1.07,.015,-.48),(.09,.03,.09),.006),
+        box((-.32,.015,-.48),(.09,.03,.09),.006),
+        beam_between((-1.17,.25,.45),(-.22,.25,.45),.065)]
+    for x in (-1.17,-.22):
+        wheel=rotate(bp.u_cylinder((0,0,0),(.49,.065,.49),12),(0,0,90))
+        wheels.append(at(wheel,(x,.25,.45)))
+        wheels.append(at(rotate(bp.u_cylinder((0,0,0),(.14,.081,.14),8),(0,0,90)),(x,.25,.45)))
+    add(kind,"TrolleyPlanks",merge(cart),"Timber")
+    add(kind,"TrolleyFrame",merge(frame),"RustedIron")
+    add(kind,"TrolleyWheels",merge(wheels),"RustedIron",True,(.19,.20,.185,1))
+
+def conserved_repair(add):
+    """Local origin is the near road cut; -Z faces the gap. Nothing bridges it."""
+    kind="ConservedRepair"
+    # The short buttresses stand outside the terrain cut, beside the projecting asphalt lip.
+    # Exposed side caps rise above the asphalt, while the transverse tie remains beneath it.
+    # They belong to this bank and do not span the remaining gap to the opposite road.
+    support_offset=(0,0,-1.8)
+    piers=[]
+    profile=[(-.70,-3.2),(.70,-3.2),(.46,.60),(-.46,.60)]
+    for x in (-3.65,3.65):piers.append(at(section(profile,1.16),(x,0,.75)))
+    piers += [box((0,-1.17,.87),(8.28,.42,.91),.045),
+              box((-3.65,.68,.77),(1.15,.20,1.22),.035)]
+    add(kind,"UnfinishedButtresses",at(merge(piers),support_offset),"Concrete")
+    # Horizontal casting seams and a few protected anchor ends distinguish construction from rubble.
+    seams=[]
+    for x in (-3.65,3.65):
+        for y in (-3.38,-2.67,-1.95,-.48):
+            seams.append(box((x,y+.8,.151),(.94,.045,.035),.003))
+    add(kind,"FormworkSeams",at(merge(seams),support_offset),"LayeredStone",False)
+    anchors=[]
+    for x in (-3.95,-3.39,3.39,3.95):
+        for z in (.32,1.15):
+            anchors.append(bp.u_cylinder((x,.69,z),(.075,.10,.075),8))
+            anchors.append(bp.u_cylinder((x,.785,z),(.115,.015,.115),8))
+    add(kind,"CappedAnchors",at(merge(anchors),support_offset),"RustedIron",False)
+    # One supported side work pocket, with a packed low foot and orderly reusable forms.
+    add(kind,"WorkPocketFoot",box((-5.26,.04,4.55),(3.38,.08,4.90),.025),"LayeredStone",False)
+    lumber=[]
+    for z in (2.72,5.95):lumber.append(box((-5.24,.16,z),(2.61,.24,.20),.018))
+    for layer in range(3):
+        for i in range(4):
+            lumber.append(box((-6.13+i*.56,.34+layer*.205,4.30+((i+layer)%2)*.06),
+                (.48,.185,3.65-((i+layer)%3)*.11),.018))
+    add(kind,"StoredRepairTimbers",merge(lumber),"Timber",True,(.325,.29,.23,1))
+    # A thick folded section produces actual drape/end silhouette, not a flat floating tarp card.
+    profile=[(-1.19,.32),(-1.13,.76),(-.97,.94),(-.36,.98),(.28,.93),(.98,.97),(1.15,.76),(1.19,.32),
+             (1.22,.32),(1.18,.78),(1.00,1.00),(.28,.96),(-.36,1.01),(-.99,.97),(-1.16,.78),(-1.22,.32)]
+    add(kind,"TiedProtectiveCover",at(section(profile,3.50),(-5.27,0,4.34)),"Canvas")
+    ropes=[]
+    for z in (3.05,5.61):
+        path=[(-6.61,.18,z),(-6.48,.61,z),(-6.23,.96,z),(-5.62,1.035,z),
+              (-4.97,.985,z),(-4.28,1.02,z),(-4.02,.62,z),(-3.92,.18,z)]
+        ropes += [beam_between(a,b,.026) for a,b in zip(path,path[1:])]
+        ropes += [box((x,.17,z),(.22,.12,.15),.018) for x in (-6.61,-3.92)]
+    add(kind,"CoverTiesAndWeights",merge(ropes),"RustedIron",False)
+    snow=[snow_patch((-5.5,1.003,4.13),1.05,2.29),
+          snow_patch((-4.59,.998,4.57),.59,1.22)]
+    add(kind,"OldSnowOnStoredMaterials",merge(snow),"WindSnow",False)
+
+def roadside_rail(add):
+    """Passive four-metre continuation of the same old iron barrier along local Z."""
+    rails=[]
+    for height in (.62,.94):
+        vertices=[]
+        for x,y,z in ((-.022,height+.008,-2),(0,height,-1.56),(0,height,1.56),(.025,height-.009,2)):
+            vertices += [(x+dx,y+dy,z) for dx,dy in ((-.055,-.065),(.055,-.065),(.055,.065),(-.055,.065))]
+        faces=[(3,2,1,0),(12,13,14,15)]
+        for ring in range(3):
+            for side in range(4):
+                following=(side+1)%4
+                faces.append((ring*4+side,ring*4+following,(ring+1)*4+following,(ring+1)*4+side))
+        rails.append((vertices,faces))
+    rails += [box((0,.53,z),(.12,1.06,.13),.006) for z in (-1.56,1.56)]
+    # Joint straps and bolts join rail to post; there is no decorative warning paint.
+    joints=[]
+    for z in (-1.56,1.56):
+        for y in (.62,.94):
+            joints.append(box((.065,y,z),(.035,.15,.24),.004))
+            joints.append(at(rotate(bp.u_cylinder((0,0,0),(.035,.013,.035),6),
+                                   (0,0,90)),(.091,y,z)))
+    add("RoadsideRail","OldGuardrail",merge(rails),"RustedIron",False)
+    add("RoadsideRail","JointStraps",merge(joints),"RustedIron",False)
 
 def create_parts():
     parts=[]
@@ -157,6 +361,10 @@ def create_parts():
     add("RoadBrokenLip","Foundation",merge(rubble),"LayeredStone",False)
     add("RoadBrokenLip","Asphalt",merge([box((x,.005,z),(w,.1,d),.015) for x,z,w,d in
             ((-2.15,-.08,1.1,1.5),(-.95,-.35,1.3,1.8),(.4,-.05,1.5,1.4),(1.8,.20,1.3,1.8))]),"Asphalt",False)
+    trade_warehouse(add)
+    trade_yard_props(add)
+    conserved_repair(add)
+    roadside_rail(add)
     return parts
 
 def validate(parts):
@@ -167,6 +375,37 @@ def validate(parts):
         for y in (.2,1.1,2.3):
             start=Vector((x,y,-7));end=Vector((x,y,3.7));direction=end-start
             assert not any(t.ray_cast(start,direction.normalized(),direction.length)[0] is not None for t in trees),"Blocked lodge doorway/circulation"
+    def bounds_for(kind):
+        return kit.bounds(merge(p["geometry"] for p in parts if p["kind"]==kind))
+    warehouse_lo,warehouse_hi=bounds_for("TradeWarehouse")
+    assert warehouse_lo[1]>=0 and 5.40<=warehouse_hi[1]<=5.60,"Warehouse base/roof height"
+    assert warehouse_hi[0]<=7.31 and warehouse_hi[0]>7.2,"Warehouse +X loading facade"
+    assert warehouse_lo[0]>=-5.50 and warehouse_lo[2]>=-7.6 and warehouse_hi[2]<=7.6,"Warehouse footprint"
+    yard_lo,yard_hi=bounds_for("TradeYardProps")
+    assert yard_lo[0]>=-2 and yard_hi[0]<=2 and yard_lo[2]>=-1.5 and yard_hi[2]<=1.5,"Trade yard props escaped 4 x 3 m"
+    assert yard_lo[1]>=0,"Trade yard props below ground"
+    rail_lo,rail_hi=bounds_for("RoadsideRail")
+    assert abs(rail_lo[2]+2)<1e-8 and abs(rail_hi[2]-2)<1e-8,"Roadside rail must remain four metres along Z"
+    assert rail_lo[1]>=0 and rail_hi[1]<=1.061,"Roadside rail height"
+    assert all(not p["solid"] for p in parts if p["kind"]=="RoadsideRail"),"Distant roadside rail must remain passive"
+    for p in parts:
+        if p["kind"]=="ConservedRepair":
+            support=p["name"] in ("UnfinishedButtresses","FormworkSeams","CappedAnchors")
+            for x,y,z in p["geometry"][0]:
+                if support:
+                    assert -1.8<=z<=0 and -3.2-1e-8<=y<=.8+1e-8,"Repair support escaped the near side abutments"
+                else:
+                    assert z>=0,"Stored repair materials extend across the severed road"
+                assert not (-3<=x<=3 and y>1e-8),"Repair obscures the road's central view"
+                if y>0 and not support:
+                    assert -7<=x<=-3.5 and 2<=z<=7,"Repair materials escaped the side pocket"
+    # The closed loading facade must physically intercept a view through each leaf and its join.
+    warehouse_trees=[BVHTree.FromPolygons(*p["geometry"],all_triangles=False) for p in parts
+        if p["kind"]=="TradeWarehouse" and p["solid"]]
+    for z in (-1.4,0,1.4):
+        assert any(t.ray_cast(Vector((8,2.2,z)),Vector((-1,0,0)),4)[0] is not None
+                   for t in warehouse_trees),"Open warehouse loading door"
+    assert sum(kit.triangle_count(p["geometry"]) for p in parts)<=32000,"Expansion triangle budget"
     first=json.dumps(parts,sort_keys=True,separators=(",",":"))
     assert first==json.dumps(create_parts(),sort_keys=True,separators=(",",":")),"Non-deterministic geometry"
     return hashlib.sha256(first.encode()).hexdigest()
@@ -190,12 +429,12 @@ def build(parts):
         rows.append(row)
     return objects,rows
 
-def preview(path,objects,rows):
-    for obj,row in zip(objects,rows):obj.hide_render=row["kind"]!="SkiLodge"
+def preview(path,objects,rows,kind="SkiLodge",location=(25,-26,15),target=(0,0,2),lens=43):
+    for obj,row in zip(objects,rows):obj.hide_render=row["kind"]!=kind
     scene=bpy.context.scene
     camera=bpy.data.objects.new("ReviewCamera",bpy.data.cameras.new("ReviewCamera"));scene.collection.objects.link(camera)
-    camera.location=(25,-26,15);camera.rotation_euler=(Vector((0,0,2))-camera.location).to_track_quat("-Z","Y").to_euler()
-    camera.data.lens=43;scene.camera=camera;scene.render.engine="BLENDER_WORKBENCH"
+    camera.location=location;camera.rotation_euler=(Vector(target)-camera.location).to_track_quat("-Z","Y").to_euler()
+    camera.data.lens=lens;scene.camera=camera;scene.render.engine="BLENDER_WORKBENCH"
     scene.display.shading.light="STUDIO";scene.display.shading.color_type="MATERIAL"
     scene.display.shading.show_shadows=True;scene.display.shading.show_cavity=True;scene.world.color=(.19,.21,.23)
     scene.render.resolution_x=1400;scene.render.resolution_y=900;scene.render.resolution_percentage=100
@@ -221,7 +460,12 @@ def main():
             bake_space_transform=True,add_leaf_bones=False,bake_anim=False,mesh_smooth_type="FACE")
         target.write_text(json.dumps(data,indent=2)+"\n",encoding="utf-8")
         bpy.context.preferences.filepaths.save_version=0;bpy.ops.wm.save_as_mainfile(filepath=str(args.source_dir/"VillageExpansion3D.blend"))
-        if not args.no_preview:preview(args.source_dir/"VillageExpansion3D.png",objects,rows)
-    print("VILLAGE EXPANSION VALIDATION OK: closed outward solids, true 2.6m entrance, clear main aisle; "+signature)
+        if not args.no_preview:
+            preview(args.source_dir/"VillageExpansion3D.png",objects,rows)
+            preview(args.source_dir/"VillageTradeWarehouse3D.png",objects,rows,"TradeWarehouse",(24,-24,15),(0,0,2),43)
+            preview(args.source_dir/"VillageTradeYardProps3D.png",objects,rows,"TradeYardProps",(5,-6,4.6),(0,0,.45),43)
+            preview(args.source_dir/"VillageConservedRepair3D.png",objects,rows,"ConservedRepair",(12,-17,12),(-2,3.5,-1.6),43)
+            preview(args.source_dir/"VillageRoadsideRail3D.png",objects,rows,"RoadsideRail",(5,-6,3.4),(0,0,.55),48)
+    print("VILLAGE EXPANSION VALIDATION OK: outward solids, determinism, lodge aisle, closed loading facade, repair view and budgets; "+signature)
 
 if __name__=="__main__":main()

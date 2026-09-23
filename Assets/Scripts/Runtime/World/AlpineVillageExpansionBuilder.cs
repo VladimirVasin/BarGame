@@ -26,21 +26,45 @@ namespace BarPromenade
                 OnGround(plan, expansion.CliffBarrierCenter), facing);
             assets.Create("RoadBrokenLip", "Broken Road Edge", root.transform,
                 OnGround(plan, expansion.CliffEdge) + Vector3.up * .075f, facing);
+            assets.Create("TradeWarehouse", "Former Trade Warehouse", root.transform,
+                expansion.WarehouseCenter, facing);
+            assets.Create("TradeYardProps", "Unused Cargo Equipment", root.transform,
+                expansion.YardPropsCenter, facing);
+            assets.Create("ConservedRepair", "Conserved Road Repair", root.transform,
+                OnGround(plan, expansion.CliffEdge), facing);
 
             var road = new GameObject("Former City Road");
             road.transform.SetParent(root.transform, false);
             foreach (AlpineVillagePathDescriptor path in expansion.Paths)
                 if (path.Kind == AlpineVillagePathKind.AbandonedRoad)
                     BuildRoad(assets, road.transform, plan, path.Start, path.End, path.SurfaceHalfWidth * 2f);
-            // The old strip reaches the blocked lip. The lower continuation is visible
-            // inside the rock cut, well below the inaccessible edge.
+            // The same width and axis continue across a thirteen-metre missing
+            // shelf. The opposite road is scenery, absent from the walking graph.
             BuildRoad(assets, road.transform, plan, expansion.ToWorld(new Vector2(-130f, -52f)),
-                expansion.CliffEdge, 5.4f);
-            Vector3 lowerStart = expansion.ToWorld(new Vector2(-130f, -64f));
-            Vector3 lowerEnd = expansion.ToWorld(new Vector2(-123f, -88f));
-            BuildRoad(assets, road.transform, plan, lowerStart, lowerEnd, 5.4f);
-            assets.Create("RoadBrokenLip", "Lower Broken Road Edge", root.transform,
-                OnGround(plan, lowerStart) + Vector3.up * .075f, facing * Quaternion.Euler(0f, 180f, 0f));
+                expansion.CliffEdge, expansion.RoadWidth);
+            Vector3 previous = expansion.FarRoadEdge;
+            for (float along = -69f; along >= -107f; along -= 2f)
+            {
+                Vector3 next = expansion.FarRoadPoint(along);
+                BuildRoad(assets, road.transform, plan, previous, next, expansion.RoadWidth);
+                previous = next;
+            }
+            for (float along = -69f; along >= -89f; along -= 4f)
+            {
+                Vector3 first = expansion.FarRoadPoint(along + 2f);
+                Vector3 next = expansion.FarRoadPoint(along - 2f);
+                Vector3 direction = (next - first).normalized;
+                Vector3 side = Vector3.Cross(Vector3.up, direction).normalized;
+                foreach (float sign in new[] { -1f, 1f })
+                    assets.Create("RoadsideRail", "Opposite Road Guardrail", road.transform,
+                        (first + next) * .5f + side * (sign * 2.95f),
+                        Quaternion.LookRotation(direction, Vector3.up),
+                        new Vector3(1f, 1f, Vector3.Distance(first, next) / 4f));
+            }
+            assets.Create("RoadBrokenLip", "Opposite Broken Road Edge", root.transform,
+                OnGround(plan, expansion.FarRoadEdge) + Vector3.up * .075f,
+                facing * Quaternion.Euler(0f, 180f, 0f));
+            AlpineVillageDistanceWorldBuilder.Build(root.transform, plan);
         }
 
         private static void BuildRoad(VillageExpansionAssetProvider assets, Transform parent,

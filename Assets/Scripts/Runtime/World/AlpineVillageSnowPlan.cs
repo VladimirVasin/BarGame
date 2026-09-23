@@ -295,7 +295,8 @@ namespace BarPromenade
                 return 0f;
             }
 
-            return UntouchedDepth * profile * Variation(point) * suppression;
+            return plan.Expansion.LimitTradeYardSnow(point,
+                UntouchedDepth * profile * Variation(point) * suppression);
         }
 
         /// <summary>

@@ -39,6 +39,7 @@ namespace BarPromenade
         private static readonly int[] Queues = { 2820, 2821, 2822, 2820, 2823, 2825,
             2820, 2820, 2823, 2824, 2824, 2824, 2823, 2824, 2825, 2824 };
         private static Material[] sharedMaterials;
+        private static Material[] villageMaterials;
 
         public static GameObject Build(Transform parent, CityEastExitPlan plan)
         {
@@ -60,18 +61,7 @@ namespace BarPromenade
                 if (role < 0)
                     throw new InvalidOperationException("Unknown mainland mesh role: " + renderer.name);
                 roleCounts[role]++;
-                renderer.sharedMaterial = MaterialFor(role);
-                renderer.shadowCastingMode = ShadowCastingMode.Off;
-                renderer.receiveShadows = false;
-                renderer.lightProbeUsage = LightProbeUsage.Off;
-                renderer.reflectionProbeUsage = ReflectionProbeUsage.Off;
-                renderer.motionVectorGenerationMode = MotionVectorGenerationMode.ForceNoMotion;
-                renderer.allowOcclusionWhenDynamic = false;
-                // Shader-displaced distant geometry must not be culled by its
-                // unprojected source bounds. This is a renderer override, not
-                // a mutation or clone of the shared imported mesh asset.
-                float units = Mathf.Max(.0001f, renderer.transform.lossyScale.x);
-                renderer.localBounds = new Bounds(Vector3.zero, Vector3.one * (50000f / units));
+                ConfigureRenderer(renderer, MaterialFor(role));
             }
             for (int i = 0; i < roleCounts.Length; i++)
                 if (roleCounts[i] == 0)
@@ -84,46 +74,88 @@ namespace BarPromenade
             return instance;
         }
 
-        private static int RoleOf(string meshName)
+        internal static int RoleOf(string meshName)
         {
             for (int i = 0; i < Roles.Length; i++)
                 if (meshName.StartsWith(Roles[i], StringComparison.Ordinal)) return i;
             return -1;
         }
 
-        private static Material MaterialFor(int role)
+        internal static void ConfigureRenderer(MeshRenderer renderer, Material material)
         {
-            if (sharedMaterials == null) sharedMaterials = new Material[Roles.Length];
-            if (sharedMaterials[role] != null) return sharedMaterials[role];
+            renderer.sharedMaterial = material;
+            renderer.shadowCastingMode = ShadowCastingMode.Off;
+            renderer.receiveShadows = false;
+            renderer.lightProbeUsage = LightProbeUsage.Off;
+            renderer.reflectionProbeUsage = ReflectionProbeUsage.Off;
+            renderer.motionVectorGenerationMode = MotionVectorGenerationMode.ForceNoMotion;
+            renderer.allowOcclusionWhenDynamic = false;
+            // Shader-displaced distant geometry must not be culled by its
+            // unprojected source bounds. This is a renderer override, not
+            // a mutation or clone of the shared imported mesh asset.
+            float units = Mathf.Max(.0001f, renderer.transform.lossyScale.x);
+            renderer.localBounds = new Bounds(Vector3.zero, Vector3.one * (50000f / units));
+        }
+
+        internal static Material MaterialFor(int role, bool village = false)
+        {
+            if (village)
+            {
+                if (villageMaterials == null) villageMaterials = new Material[Roles.Length];
+            }
+            else if (sharedMaterials == null) sharedMaterials = new Material[Roles.Length];
+            Material[] materials = village ? villageMaterials : sharedMaterials;
+            if (materials[role] != null) return materials[role];
             Shader shader = Resources.Load<Shader>("Shaders/CityEastDistance");
             if (shader == null || !shader.isSupported)
                 throw new InvalidOperationException("Missing or unsupported mainland distance shader.");
             var material = new Material(shader)
             {
-                name = "East Distance " + Roles[role] + " (Shared)",
+                name = (village ? "Village Distance " : "East Distance ") + Roles[role] + " (Shared)",
                 hideFlags = HideFlags.HideAndDontSave,
                 enableInstancing = true,
                 renderQueue = Queues[role]
             };
-            material.SetColor("_HazeColor", RuntimeSceneSetup.CityFogColor);
+            material.SetColor("_HazeColor", village
+                ? RuntimeSceneSetup.AlpineVillageFogColor : RuntimeSceneSetup.CityFogColor);
             material.SetColor("_Tint", Colours[role]);
             material.SetFloat("_Role", role);
             material.SetFloat("_DepthBandMeters", DepthBandMeters);
             material.SetFloat("_DepthWrite", role == 5 || role >= 14 ? 0f : 1f);
+            material.SetVector("_ViewDirection", Vector3.right);
+            material.SetFloat("_Visibility", 1f);
             material.SetTexture("_RockMap", Resources.Load<Texture2D>(
                 CityMountainSurfaceAppearance.RockTextureResourcePath));
             material.SetTexture("_RoadMap", CityExteriorAppearance.RoadTexture);
-            sharedMaterials[role] = material;
+            materials[role] = material;
             return material;
+        }
+
+        internal static void SetVillageVisibility(Color hazeColor, float visibility)
+        {
+            if (villageMaterials == null) return;
+            foreach (Material material in villageMaterials)
+            {
+                if (material == null) continue;
+                material.SetColor("_HazeColor", hazeColor);
+                material.SetFloat("_Visibility", visibility);
+            }
         }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void Reset()
         {
-            if (sharedMaterials == null) return;
-            foreach (Material material in sharedMaterials)
-                if (material != null) UnityEngine.Object.Destroy(material);
+            DestroyMaterials(sharedMaterials);
+            DestroyMaterials(villageMaterials);
             sharedMaterials = null;
+            villageMaterials = null;
+        }
+
+        private static void DestroyMaterials(Material[] materials)
+        {
+            if (materials == null) return;
+            foreach (Material material in materials)
+                if (material != null) UnityEngine.Object.Destroy(material);
         }
     }
 }

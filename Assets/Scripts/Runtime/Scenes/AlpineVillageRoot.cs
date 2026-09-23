@@ -712,6 +712,7 @@ namespace BarPromenade
             PeripheralBlizzard?.SetVisibility(
                 RenderSettings.fogColor,
                 StormWave);
+            AlpineVillageDistanceWorldBuilder.SetVisibility(RenderSettings.fogColor, StormWave);
         }
 
         /// <summary>

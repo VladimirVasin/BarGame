@@ -16,7 +16,8 @@ namespace BarPromenade
             new Capsule(new Vector2(-137f, 54f), new Vector2(-137f, 54f), 68f),
             new Capsule(new Vector2(-155f, 86f), new Vector2(-77f, 81f), 39f),
             new Capsule(new Vector2(-70f, 65f), new Vector2(-37f, -3f), 12f),
-            new Capsule(new Vector2(-127f, -3f), new Vector2(-130f, -44f), 10f)
+            new Capsule(new Vector2(-127f, -3f), new Vector2(-130f, -44f), 10f),
+            new Capsule(new Vector2(-141f, -27f), new Vector2(-139f, -30f), 19f)
         };
         private readonly ReadOnlyCollection<AlpineVillagePathDescriptor> paths;
         private readonly ReadOnlyCollection<Bounds> obstacles;
@@ -30,6 +31,10 @@ namespace BarPromenade
             LiftTopPosition = ToWorld(new Vector2(-151f, 114f));
             CliffBarrierCenter = ToWorld(new Vector2(-130f, -53.5f));
             CliffEdge = ToWorld(new Vector2(-130f, -54f));
+            WarehouseCenter = ToWorld(new Vector2(-145f, -28f));
+            YardPropsCenter = ToWorld(new Vector2(-135f, -20f));
+            YardPropsCenter = new Vector3(YardPropsCenter.x, WarehouseCenter.y, YardPropsCenter.z);
+            FarRoadEdge = FarRoadPoint(-67f);
             ForestEntrance = ToWorld(new Vector2(-37f, -3f));
             LocalBounds = Rect.MinMaxRect(-205f, -54f, 7f, 125f);
             WorldBounds = TransformBounds(LocalBounds);
@@ -52,6 +57,8 @@ namespace BarPromenade
             AddRoute(routes, "old-city-road", AlpineVillagePathKind.AbandonedRoad, 2.7f,
                 new Vector2(-120f, 22f), new Vector2(-127f, -3f),
                 new Vector2(-130f, -27f), new Vector2(-130f, -52f));
+            AddRoute(routes, "trade-yard", AlpineVillagePathKind.AbandonedRoad, 2.7f,
+                new Vector2(-130f, -28f), new Vector2(-135f, -28f), new Vector2(-135f, -36f));
             paths = routes.AsReadOnly();
 
             // Axis-aligned in this plan's metre frame. The imported lodge uses
@@ -73,6 +80,10 @@ namespace BarPromenade
             Block(blocks, new Vector2(-154f, 86f), new Vector2(.7f, .7f));
             Block(blocks, new Vector2(-151f, 114f), new Vector2(.7f, .7f));
             Block(blocks, new Vector2(-130f, -53.5f), new Vector2(CliffBarrierWidth, .5f));
+            Block(blocks, new Vector2(-145f, -28f), new Vector2(10f, 14f));
+            Block(blocks, new Vector2(-139.25f, -28f), new Vector2(1.5f, 8f));
+            // Open equipment groups use their authored mesh colliders. A group
+            // bounding rectangle would invent invisible walls between its pieces.
             obstacles = blocks.AsReadOnly();
         }
 
@@ -89,6 +100,10 @@ namespace BarPromenade
         public Vector3 CliffBarrierCenter { get; }
         public float CliffBarrierWidth => 12f;
         public Vector3 CliffEdge { get; }
+        public Vector3 FarRoadEdge { get; }
+        public Vector3 WarehouseCenter { get; }
+        public Vector3 YardPropsCenter { get; }
+        public float RoadWidth => 5.4f;
         public Vector3 ForestEntrance { get; }
         public Rect LocalBounds { get; }
         public Rect WorldBounds { get; }
@@ -121,7 +136,7 @@ namespace BarPromenade
             // The old road ends at a narrow, visibly closed throat. Its flanks
             // rise into rock, so walking around the barrier is not an escape.
             if (local.y < -42f && Mathf.Abs(local.x + 130f) < 20f)
-                distance = Mathf.Max(distance, Mathf.Abs(local.x + 130f) - 6f);
+                distance = Mathf.Max(distance, Mathf.Abs(local.x + 130f) - ThroatHalfWidth(local.y));
             return Mathf.Max(distance, -54f - local.y);
         }
 
@@ -137,7 +152,8 @@ namespace BarPromenade
                 Vector2 candidate = region.Closest(local, radius + .002f);
                 candidate.y = Mathf.Max(candidate.y, -54f + radius + .002f);
                 if (candidate.y < -42f && Mathf.Abs(candidate.x + 130f) < 20f)
-                    candidate.x = Mathf.Clamp(candidate.x, -136f + radius + .002f, -124f - radius - .002f);
+                    candidate.x = Mathf.Clamp(candidate.x, -130f - ThroatHalfWidth(candidate.y) + radius + .002f,
+                        -130f + ThroatHalfWidth(candidate.y) - radius - .002f);
                 float distance = (candidate - local).sqrMagnitude;
                 if (distance >= best) continue;
                 closest = candidate;
@@ -157,9 +173,25 @@ namespace BarPromenade
         public bool IsInterior(Vector2 point) => DistanceOutsideLodge(point) <= .001f;
         public bool IsInterior(Vector3 point) => IsInterior(new Vector2(point.x, point.z));
 
+        internal float LimitTradeYardSnow(Vector2 point, float depth)
+        {
+            // The exposed loading apron is wind-scoured; its low cargo wheels
+            // remain visible while deeper banks return outside this small patch.
+            float distance = OutsideRect(ToLocal(point), new Vector2(-135f, -20f), new Vector2(2.5f, 2f));
+            return Mathf.Lerp(Mathf.Min(depth, .12f), depth,
+                Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(distance / 2f)));
+        }
+
         internal float ShapeGround(Vector2 point, float height)
         {
             Vector2 local = ToLocal(point);
+            float yardDistance = OutsideRect(local, new Vector2(-138f, -28f), new Vector2(16f, 12f));
+            if (yardDistance < 4f)
+                height = Mathf.Lerp(height, WarehouseCenter.y,
+                    1f - Mathf.SmoothStep(0f, 1f, yardDistance / 4f));
+            float repairDistance = OutsideRect(local, new Vector2(-135.26f, -49.45f), new Vector2(1.75f, 2.5f));
+            if (repairDistance < 1f)
+                height = Mathf.Lerp(height, CliffEdge.y, 1f - Mathf.SmoothStep(0f, 1f, repairDistance));
             float lodgeDistance = DistanceOutsideLodge(point);
             if (lodgeDistance < 6f)
             {
@@ -180,19 +212,52 @@ namespace BarPromenade
         {
             Vector2 local = ToLocal(point);
             if (local.y >= -54f) return height;
+            float along = -54f - local.y;
             float across = Mathf.Abs(local.x + 130f);
-            if (across >= 20f) return height;
-            float blend = 1f - Mathf.SmoothStep(0f, 1f, Mathf.Clamp01((across - 9f) / 11f));
-            // Keep the lower remnant within the existing storm's readable
-            // depth. A deeper cut erased the road behind the near lip and fog.
-            float drop = Mathf.Min(12f, (-54f - local.y) * 1.8f);
-            float floor = ToWorld(local).y - drop;
+            // The opening widens BELOW the old road, never into the residential
+            // skyline. Its middle is a missing shelf, not a walkable downhill ramp.
+            float inner = 9f + Mathf.Max(0f, along - 13f) * .46f;
+            if (across >= inner + 12f) return height;
+            float blend = 1f - Mathf.SmoothStep(0f, 1f, Mathf.Clamp01((across - inner) / 12f));
+            float floor;
+            if (along < 13f)
+            {
+                float drop = Mathf.Min(22f, along * 11f);
+                float farRise = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01((along - 10.5f) / 2.5f));
+                floor = CliffEdge.y - Mathf.Lerp(drop, 2f, farRise);
+            }
+            else
+            {
+                Vector3 road = FarRoadPoint(local.y);
+                float roadAcross = Mathf.Abs(local.x - FarRoadLocalX(local.y));
+                float shelf = 1f - Mathf.SmoothStep(0f, 1f, Mathf.Clamp01((roadAcross - 3.3f) / 3.5f));
+                float valley = CliffEdge.y - 23f - (along - 13f) * .8f;
+                floor = Mathf.Lerp(valley, road.y, shelf);
+            }
             return Mathf.Lerp(height, floor, blend);
         }
+
+        /// <summary>The inaccessible continuation bends away along the opposite
+        /// shelf; its height is independent of the walkable village macro grade.</summary>
+        public Vector3 FarRoadPoint(float localAlong)
+        {
+            Vector3 point = ToWorld(new Vector2(FarRoadLocalX(localAlong), localAlong));
+            point.y = CliffEdge.y - 2f - Mathf.Max(0f, -67f - localAlong) * .24f;
+            return point;
+        }
+
+        private static float FarRoadLocalX(float along) =>
+            -130f + Mathf.Max(0f, -72f - along) * .55f;
+
+        private static float ThroatHalfWidth(float along) =>
+            Mathf.Lerp(6f, 8f, Mathf.Clamp01((along + 53f) / 4f));
 
         internal bool ClearsFeatures(Vector2 point, float radius)
         {
             Vector2 local = ToLocal(point);
+            if (OutsideRect(local, new Vector2(-138f, -28f), new Vector2(16f, 12f)) < radius + 2f ||
+                OutsideRect(local, new Vector2(-134f, -48f), new Vector2(5f, 6f)) < radius + 2f)
+                return false;
             if (DistanceOutsideLodge(point) < radius + 4f ||
                 OutsideRect(local, new Vector2(-113f, 68f), new Vector2(4f, 3f)) < radius + 3f)
                 return false;

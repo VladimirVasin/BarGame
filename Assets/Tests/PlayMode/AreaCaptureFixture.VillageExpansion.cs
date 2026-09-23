@@ -110,20 +110,61 @@ namespace BarPromenade.Tests.PlayMode
 
             // A reachable eye-height view must clear both the rubble and the
             // upper road shelf, otherwise the broken descent reads as a dead end.
-            Vector3 cliffView = expansion.ToWorld(new Vector2(-128.6f, -52.85f));
+            Vector3 cliffView = expansion.ToWorld(new Vector2(-128.6f, -50f));
             cliffView.y = AlpineVillageTerrainSampler.SampleHeight(plan,
                 new Vector2(cliffView.x, cliffView.z));
             Assert.That(root.World.WalkableArea.Contains(cliffView, .35f), Is.True);
-            Vector3 lowerRoad = expansion.ToWorld(new Vector2(-128.25f, -70f));
-            lowerRoad.y = AlpineVillageTerrainSampler.SampleHeight(plan,
-                new Vector2(lowerRoad.x, lowerRoad.z)) + .2f;
-            Assert.That(Physics.Linecast(cliffView + Vector3.up * EyeHeight, lowerRoad,
+            Vector3 oppositeRoad = expansion.FarRoadEdge + Vector3.up * .2f;
+            Assert.That(Vector3.Distance(new Vector3(expansion.CliffEdge.x, 0f, expansion.CliffEdge.z),
+                new Vector3(oppositeRoad.x, 0f, oppositeRoad.z)), Is.InRange(10f, 15f));
+            Assert.That(expansion.CliffEdge.y - expansion.FarRoadEdge.y, Is.InRange(1f, 3f));
+            Vector3 gap = (expansion.CliffEdge + expansion.FarRoadEdge) * .5f;
+            Assert.That(AlpineVillageTerrainSampler.SampleHeight(plan, new Vector2(gap.x, gap.z)),
+                Is.LessThan(expansion.CliffEdge.y - 15f), "A real void must separate the two shelves.");
+            Assert.That(Physics.Linecast(cliffView + Vector3.up * EyeHeight, oppositeRoad,
                 out RaycastHit obstruction), Is.False,
-                "The lower road is hidden behind " + (obstruction.collider == null ? "terrain" : obstruction.collider.name));
+                "The opposite road is hidden behind " + (obstruction.collider == null ? "terrain" : obstruction.collider.name));
             for (float across = -5f; across <= 5f; across += 1f)
                 Assert.That(root.World.WalkableArea.Contains(expansion.CliffBarrierCenter +
                     plan.SlopeRight * across, .35f), Is.False, "The road barrier has a gap.");
             Assert.That(root.World.WalkableArea.Contains(expansion.CliffEdge - plan.Uphill * 4f, .35f), Is.False);
+            Assert.That(root.World.WalkableArea.Contains(expansion.FarRoadEdge, .35f), Is.False);
+            foreach (Vector2 local in new[] { new Vector2(-130f, -28f), new Vector2(-135f, -28f),
+                new Vector2(-135f, -36f), new Vector2(-128.6f, -52.85f) })
+            {
+                Vector3 point = expansion.ToWorld(local);
+                point.y = AlpineVillageTerrainSampler.SampleHeight(plan, new Vector2(point.x, point.z));
+                Assert.That(root.World.WalkableArea.Contains(point, .35f), Is.True, "Trade yard access " + local);
+                Assert.That(Physics.Raycast(point + Vector3.up * 1.5f, Vector3.down, out RaycastHit ground, 3f), Is.True);
+                Assert.That(ground.point.y, Is.EqualTo(point.y).Within(.25f), "Cargo blocks the intended walking route.");
+            }
+            Transform warehouse = root.World.Root.transform.Find("Village Expansion/Former Trade Warehouse");
+            Assert.That(warehouse, Is.Not.Null);
+            Bounds warehouseBounds = warehouse.GetComponentInChildren<Renderer>().bounds;
+            foreach (Renderer renderer in warehouse.GetComponentsInChildren<Renderer>()) warehouseBounds.Encapsulate(renderer.bounds);
+            Assert.That(warehouseBounds.size.y, Is.InRange(4f, 7f), "Imported warehouse metre scale.");
+            Transform repair = root.World.Root.transform.Find("Village Expansion/Conserved Road Repair");
+            Assert.That(repair, Is.Not.Null);
+            MeshFilter anchorMesh = repair.Find("CappedAnchors").GetComponent<MeshFilter>();
+            bool seesRepair = false;
+            foreach (Vector3 vertex in anchorMesh.sharedMesh.vertices)
+            {
+                Vector3 point = anchorMesh.transform.TransformPoint(vertex) + Vector3.up * .04f;
+                if (!Physics.Linecast(cliffView + Vector3.up * EyeHeight, point,
+                    ~0, QueryTriggerInteraction.Ignore)) { seesRepair = true; break; }
+            }
+            Assert.That(seesRepair, Is.True, "The conserved anchors must be visible above the old lip from safe ground.");
+            Transform distance = root.World.Root.transform.Find("Village Expansion/" + AlpineVillageDistanceWorldBuilder.ObjectName);
+            Assert.That(distance, Is.Not.Null);
+            var checkpointMeshes = new HashSet<Mesh>();
+            foreach (MeshFilter filter in Resources.Load<GameObject>(CityEastDistanceWorldBuilder.ResourcePath)
+                .GetComponentsInChildren<MeshFilter>(true)) checkpointMeshes.Add(filter.sharedMesh);
+            foreach (MeshFilter filter in distance.GetComponentsInChildren<MeshFilter>(true))
+                Assert.That(checkpointMeshes.Contains(filter.sharedMesh), Is.True,
+                    "The village must show the checkpoint's same authored city and valley.");
+            Assert.That(distance.GetComponent<CityEastDistanceTraffic>(), Is.Null);
+            Assert.That(AlpineVillageSnowDrift.SampleDepth(plan, paths,
+                new Vector2(expansion.YardPropsCenter.x, expansion.YardPropsCenter.z)), Is.LessThanOrEqualTo(.12f));
 
             Add("40-station-forest-entry", new Vector2(-12f, -2f), new Vector2(-55f, 0f), 65f);
             Add("41-deep-forest-trail", new Vector2(-78f, 6f), new Vector2(-120f, 22f), 64f);
@@ -131,11 +172,17 @@ namespace BarPromenade.Tests.PlayMode
             Add("43-ski-lodge-inside", new Vector2(-137f, 52f), new Vector2(-134f, 60f), 78f);
             Add("44-abandoned-ski-tow", new Vector2(-157f, 81f), new Vector2(-151f, 113f), 64f);
             Add("45-old-road-descent", new Vector2(-127f, -5f), new Vector2(-130f, -48f), 62f);
-            Add("46-broken-city-road", new Vector2(-128.6f, -52.85f), new Vector2(-128.25f, -70f), 72f,
-                lowerRoad.y - expansion.ToWorld(new Vector2(-128.25f, -70f)).y);
+            Add("46-broken-city-road", new Vector2(-128.6f, -50f), new Vector2(-130f, -67f), 60f,
+                expansion.FarRoadEdge.y + .8f - expansion.ToWorld(new Vector2(-130f, -67f)).y);
             Add("47-forest-return", new Vector2(-75f, 69f), new Vector2(-49f, 25f), 64f);
+            Add("48-former-trade-warehouse", new Vector2(-127f, -37f), new Vector2(-145f, -28f), 62f, 2.4f);
+            Add("49-unused-loading-yard", new Vector2(-130f, -27f), new Vector2(-136f, -20f), 62f, .8f);
+            Add("50-conserved-repair", new Vector2(-131f, -47f), new Vector2(-135f, -51f), 64f, .3f);
+            Add("51-road-city-gust", new Vector2(-128.6f, -50f), new Vector2(-130f, -67f), 60f,
+                expansion.FarRoadEdge.y + .8f - expansion.ToWorld(new Vector2(-130f, -67f)).y, true);
+            Add("52-unfinished-abutments", new Vector2(-124.8f, -52.7f), new Vector2(-128f, -55.2f), 70f, -1.8f);
 
-            void Add(string name, Vector2 from, Vector2 toward, float fov, float targetLift = 1.8f)
+            void Add(string name, Vector2 from, Vector2 toward, float fov, float targetLift = 1.8f, bool gust = false)
             {
                 Vector3 foot = expansion.ToWorld(from);
                 foot.y = AlpineVillageTerrainSampler.SampleHeight(plan, new Vector2(foot.x, foot.z));
@@ -151,7 +198,7 @@ namespace BarPromenade.Tests.PlayMode
                         root.Player.Motor.Teleport(foot + Vector3.up * PlayerFactory.GroundedRootOffset);
                         moved = true;
                     }
-                    return ++frames > 12 && root.StormWave <= GustTroughWave;
+                    return ++frames > 12 && (gust ? root.StormWave >= GustCrestWave : root.StormWave <= GustTroughWave);
                 }));
             }
         }

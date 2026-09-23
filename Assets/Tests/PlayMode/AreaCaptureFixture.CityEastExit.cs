@@ -309,6 +309,11 @@ namespace BarPromenade.Tests.PlayMode
             {
                 Assert.That(renderer.sharedMaterial, Is.Not.Null);
                 Assert.That(renderer.sharedMaterial.shader.name, Is.EqualTo("Bar Promenade/City East Distance"));
+                Assert.That(renderer.sharedMaterial.GetVector("_ViewDirection"),
+                    Is.EqualTo(new Vector4(1f, 0f, 0f, 0f)),
+                    "The village's rotated panorama must not change the checkpoint profile.");
+                Assert.That(renderer.sharedMaterial.GetFloat("_Visibility"), Is.EqualTo(1f),
+                    "Village storm waves must not dim the checkpoint's city.");
                 Assert.That(renderer.shadowCastingMode, Is.EqualTo(UnityEngine.Rendering.ShadowCastingMode.Off));
                 Assert.That(renderer.receiveShadows, Is.False);
             }

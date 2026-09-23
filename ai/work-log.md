@@ -16,11 +16,18 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
   Terrain/forest render in spatial sectors; staged construction and local snow
   updates bound the larger area's work. Checks: `build-village-expansion-3d-model.py`,
   `AreaCaptureFixture.AlpineVillageExpansion` (import, floor, area and snow).
-  Forest, interior, lift, facade and road/brink frames reviewed. Thinner rubble,
-  edge-side railing and a raised lower shelf expose the broken continuation;
-  the same capture checks its sightline and the impassable edge.
-- Recorded the approved branch/forest exception in both bibles and architecture;
-  replaced old terrain/clearance facts and updated player/tool documentation.
+  Forest, interior, lift, facade and road/brink frames reviewed.
+- The trade road now has close opposite ends across a blocked gap, a closed
+  warehouse with an accessible yard and conserved repair stock/supports.
+  `AlpineVillageDistanceWorldBuilder` shares six checkpoint city/relief meshes;
+  its own material profile follows village storms without changing the post.
+  Broken-lip geometry hid the unfinished supports; their placement now exposes
+  the anchors, thinner snow clears the handcart and paired rails reveal the far
+  road. Checks: `build-village-expansion-3d-model.py`,
+  `AreaCaptureFixture.AlpineVillageExpansion`, `AreaCaptureFixture.CityEastExit`
+  (panorama-only). Village frames and checkpoint day/night frames reviewed.
+- Recorded the approved branch/forest and narrow city-view exceptions in both
+  bibles/architecture; replaced old road/terrain facts and updated player/tool docs.
   Checks: `check-docs.py`, `git diff --check`.
 
 ## 2026-09-22 — Taunt integration and combat CPU

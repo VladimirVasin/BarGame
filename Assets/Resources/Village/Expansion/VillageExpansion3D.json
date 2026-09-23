@@ -1,11 +1,11 @@
 {
-  "generator_version": "1.0.0",
+  "generator_version": "1.1.0",
   "design_id": "village_forest_ski_base_old_road_v1",
   "scale_mode": "fixed_metres",
   "uv_mode": "projected_metres",
-  "build_signature": "a73d2081e6e1acb6e09452680499f9b194bcca36e0f68dda9c070c57a833f7f2",
-  "mesh_count": 39,
-  "triangle_count": 6656,
+  "build_signature": "2886221199b7673a3ca66a78b22c4f3e555af7ceb082cbb9fae8c7002ec0d14f",
+  "mesh_count": 70,
+  "triangle_count": 15140,
   "colliders": false,
   "lights": false,
   "cameras": false,
@@ -946,6 +946,750 @@
         1.1
       ],
       "triangles": 112
+    },
+    {
+      "kind": "TradeWarehouse",
+      "name": "StonePlinth",
+      "mesh": "GEO_Expansion_TradeWarehouse_StonePlinth",
+      "surface": "LayeredStone",
+      "solid": true,
+      "tint": [
+        0.32,
+        0.345,
+        0.34,
+        1
+      ],
+      "bounds_min": [
+        -5.0,
+        0.0,
+        -7.0
+      ],
+      "bounds_max": [
+        5.0,
+        0.8,
+        7.0
+      ],
+      "triangles": 28
+    },
+    {
+      "kind": "TradeWarehouse",
+      "name": "LoadingWall",
+      "mesh": "GEO_Expansion_TradeWarehouse_LoadingWall",
+      "surface": "Timber",
+      "solid": true,
+      "tint": [
+        0.29,
+        0.255,
+        0.205,
+        1
+      ],
+      "bounds_min": [
+        4.72,
+        0.8,
+        -7.0
+      ],
+      "bounds_max": [
+        5.000000000000001,
+        4.0,
+        7.0
+      ],
+      "triangles": 84
+    },
+    {
+      "kind": "TradeWarehouse",
+      "name": "ClosedWalls",
+      "mesh": "GEO_Expansion_TradeWarehouse_ClosedWalls",
+      "surface": "Timber",
+      "solid": true,
+      "tint": [
+        0.29,
+        0.255,
+        0.205,
+        1
+      ],
+      "bounds_min": [
+        -5.0,
+        0.7999999999999998,
+        -7.0
+      ],
+      "bounds_max": [
+        4.72,
+        4.0,
+        7.0
+      ],
+      "triangles": 84
+    },
+    {
+      "kind": "TradeWarehouse",
+      "name": "Gables",
+      "mesh": "GEO_Expansion_TradeWarehouse_Gables",
+      "surface": "Timber",
+      "solid": true,
+      "tint": [
+        0.29,
+        0.255,
+        0.205,
+        1
+      ],
+      "bounds_min": [
+        -5.0,
+        4.0,
+        -7.000000000000001
+      ],
+      "bounds_max": [
+        5.0,
+        5.3,
+        7.000000000000001
+      ],
+      "triangles": 16
+    },
+    {
+      "kind": "TradeWarehouse",
+      "name": "Roof",
+      "mesh": "GEO_Expansion_TradeWarehouse_Roof",
+      "surface": "Timber",
+      "solid": true,
+      "tint": [
+        0.29,
+        0.255,
+        0.205,
+        1
+      ],
+      "bounds_min": [
+        -5.422043222054515,
+        3.767311157567939,
+        -7.5
+      ],
+      "bounds_max": [
+        5.422043222054515,
+        5.402688842432061,
+        7.5
+      ],
+      "triangles": 56
+    },
+    {
+      "kind": "TradeWarehouse",
+      "name": "RoofSnow",
+      "mesh": "GEO_Expansion_TradeWarehouse_RoofSnow",
+      "surface": "WindSnow",
+      "solid": false,
+      "tint": [
+        0.83,
+        0.85,
+        0.84,
+        1
+      ],
+      "bounds_min": [
+        -5.373056791036265,
+        3.9611724028690256,
+        -7.465
+      ],
+      "bounds_max": [
+        5.373056791036265,
+        5.528827597130973,
+        7.465
+      ],
+      "triangles": 56
+    },
+    {
+      "kind": "TradeWarehouse",
+      "name": "StructuralTimbers",
+      "mesh": "GEO_Expansion_TradeWarehouse_StructuralTimbers",
+      "surface": "Timber",
+      "solid": true,
+      "tint": [
+        0.22,
+        0.215,
+        0.18,
+        1
+      ],
+      "bounds_min": [
+        -5.09,
+        0.7800000000000002,
+        -7.085
+      ],
+      "bounds_max": [
+        5.09,
+        4.08,
+        7.085
+      ],
+      "triangles": 1456
+    },
+    {
+      "kind": "TradeWarehouse",
+      "name": "ClosedLoadingDoors",
+      "mesh": "GEO_Expansion_TradeWarehouse_ClosedLoadingDoors",
+      "surface": "Timber",
+      "solid": true,
+      "tint": [
+        0.245,
+        0.235,
+        0.19,
+        1
+      ],
+      "bounds_min": [
+        4.91,
+        0.7449999999999999,
+        -2.0
+      ],
+      "bounds_max": [
+        5.179999828338623,
+        3.76,
+        2.0
+      ],
+      "triangles": 768
+    },
+    {
+      "kind": "TradeWarehouse",
+      "name": "DoorHardware",
+      "mesh": "GEO_Expansion_TradeWarehouse_DoorHardware",
+      "surface": "RustedIron",
+      "solid": true,
+      "tint": [
+        0.3,
+        0.255,
+        0.21,
+        1
+      ],
+      "bounds_min": [
+        5.095,
+        1.23,
+        -1.875
+      ],
+      "bounds_max": [
+        5.257499999999999,
+        3.0900000000000003,
+        1.875
+      ],
+      "triangles": 280
+    },
+    {
+      "kind": "TradeWarehouse",
+      "name": "LoadingDock",
+      "mesh": "GEO_Expansion_TradeWarehouse_LoadingDock",
+      "surface": "LayeredStone",
+      "solid": true,
+      "tint": [
+        0.32,
+        0.345,
+        0.34,
+        1
+      ],
+      "bounds_min": [
+        4.960000000000001,
+        0.0,
+        -2.8
+      ],
+      "bounds_max": [
+        6.5,
+        0.8,
+        2.8
+      ],
+      "triangles": 28
+    },
+    {
+      "kind": "TradeWarehouse",
+      "name": "LoadingBumpers",
+      "mesh": "GEO_Expansion_TradeWarehouse_LoadingBumpers",
+      "surface": "Timber",
+      "solid": true,
+      "tint": [
+        0.2,
+        0.205,
+        0.18,
+        1
+      ],
+      "bounds_min": [
+        6.4399999999999995,
+        0.385,
+        -2.44
+      ],
+      "bounds_max": [
+        6.6,
+        0.6950000000000001,
+        2.44
+      ],
+      "triangles": 56
+    },
+    {
+      "kind": "TradeWarehouse",
+      "name": "LoadingCanopy",
+      "mesh": "GEO_Expansion_TradeWarehouse_LoadingCanopy",
+      "surface": "RustedIron",
+      "solid": true,
+      "tint": [
+        0.3,
+        0.255,
+        0.21,
+        1
+      ],
+      "bounds_min": [
+        4.589472034297546,
+        3.4375870919146982,
+        -3.275
+      ],
+      "bounds_max": [
+        7.290527965702455,
+        3.802412908085302,
+        3.275
+      ],
+      "triangles": 28
+    },
+    {
+      "kind": "TradeWarehouse",
+      "name": "CanopySupports",
+      "mesh": "GEO_Expansion_TradeWarehouse_CanopySupports",
+      "surface": "Timber",
+      "solid": true,
+      "tint": [
+        0.29,
+        0.255,
+        0.205,
+        1
+      ],
+      "bounds_min": [
+        4.66,
+        0.0,
+        -3.1199999999999997
+      ],
+      "bounds_max": [
+        7.16,
+        3.5888731479644775,
+        3.1199999999999997
+      ],
+      "triangles": 192
+    },
+    {
+      "kind": "TradeWarehouse",
+      "name": "CanopyFootings",
+      "mesh": "GEO_Expansion_TradeWarehouse_CanopyFootings",
+      "surface": "LayeredStone",
+      "solid": true,
+      "tint": [
+        0.32,
+        0.345,
+        0.34,
+        1
+      ],
+      "bounds_min": [
+        6.85,
+        0.0,
+        -3.1999999999999997
+      ],
+      "bounds_max": [
+        7.1899999999999995,
+        0.24,
+        3.1999999999999997
+      ],
+      "triangles": 56
+    },
+    {
+      "kind": "TradeWarehouse",
+      "name": "CanopySnow",
+      "mesh": "GEO_Expansion_TradeWarehouse_CanopySnow",
+      "surface": "WindSnow",
+      "solid": false,
+      "tint": [
+        0.83,
+        0.85,
+        0.84,
+        1
+      ],
+      "bounds_min": [
+        4.625646184871972,
+        3.565580463382242,
+        -3.23
+      ],
+      "bounds_max": [
+        7.254353815128029,
+        3.894419536617758,
+        3.23
+      ],
+      "triangles": 28
+    },
+    {
+      "kind": "TradeWarehouse",
+      "name": "MendedBoards",
+      "mesh": "GEO_Expansion_TradeWarehouse_MendedBoards",
+      "surface": "Timber",
+      "solid": true,
+      "tint": [
+        0.36,
+        0.315,
+        0.24,
+        1
+      ],
+      "bounds_min": [
+        5.01,
+        1.0550000000000002,
+        -5.699999999999999
+      ],
+      "bounds_max": [
+        5.07,
+        2.025,
+        4.819999999999999
+      ],
+      "triangles": 84
+    },
+    {
+      "kind": "TradeWarehouse",
+      "name": "PlinthCourses",
+      "mesh": "GEO_Expansion_TradeWarehouse_PlinthCourses",
+      "surface": "LayeredStone",
+      "solid": true,
+      "tint": [
+        0.32,
+        0.345,
+        0.34,
+        1
+      ],
+      "bounds_min": [
+        -5.0305,
+        0.01999999999999999,
+        -6.824999999999999
+      ],
+      "bounds_max": [
+        5.0305,
+        0.7500000000000001,
+        6.415000000000001
+      ],
+      "triangles": 1148
+    },
+    {
+      "kind": "TradeYardProps",
+      "name": "EmptyPalletsAndReturnCrate",
+      "mesh": "GEO_Expansion_TradeYardProps_EmptyPalletsAndReturnCrate",
+      "surface": "Timber",
+      "solid": true,
+      "tint": [
+        0.33,
+        0.29,
+        0.225,
+        1
+      ],
+      "bounds_min": [
+        0.33000000000000007,
+        0.015,
+        -1.3841669445992109
+      ],
+      "bounds_max": [
+        1.603843120060984,
+        0.5895,
+        0.74
+      ],
+      "triangles": 1400
+    },
+    {
+      "kind": "TradeYardProps",
+      "name": "TrolleyPlanks",
+      "mesh": "GEO_Expansion_TradeYardProps_TrolleyPlanks",
+      "surface": "Timber",
+      "solid": true,
+      "tint": [
+        0.29,
+        0.255,
+        0.205,
+        1
+      ],
+      "bounds_min": [
+        -1.066,
+        0.45249999999999996,
+        -0.5700000000000001
+      ],
+      "bounds_max": [
+        -0.35400000000000004,
+        0.5075,
+        0.71
+      ],
+      "triangles": 140
+    },
+    {
+      "kind": "TradeYardProps",
+      "name": "TrolleyFrame",
+      "mesh": "GEO_Expansion_TradeYardProps_TrolleyFrame",
+      "surface": "RustedIron",
+      "solid": true,
+      "tint": [
+        0.3,
+        0.255,
+        0.21,
+        1
+      ],
+      "bounds_min": [
+        -1.1699999570846558,
+        0.0,
+        -1.087499976158142
+      ],
+      "bounds_max": [
+        -0.2199999988079071,
+        1.227500081062317,
+        0.7550000000000001
+      ],
+      "triangles": 288
+    },
+    {
+      "kind": "TradeYardProps",
+      "name": "TrolleyWheels",
+      "mesh": "GEO_Expansion_TradeYardProps_TrolleyWheels",
+      "surface": "RustedIron",
+      "solid": true,
+      "tint": [
+        0.19,
+        0.2,
+        0.185,
+        1
+      ],
+      "bounds_min": [
+        -1.251,
+        0.0050000000000000044,
+        0.20500000000000002
+      ],
+      "bounds_max": [
+        -0.139,
+        0.495,
+        0.6950000000000001
+      ],
+      "triangles": 144
+    },
+    {
+      "kind": "ConservedRepair",
+      "name": "UnfinishedButtresses",
+      "mesh": "GEO_Expansion_ConservedRepair_UnfinishedButtresses",
+      "surface": "Concrete",
+      "solid": true,
+      "tint": [
+        0.47,
+        0.47,
+        0.43,
+        1
+      ],
+      "bounds_min": [
+        -4.35,
+        -3.2,
+        -1.6400000000000001
+      ],
+      "bounds_max": [
+        4.35,
+        0.78,
+        -0.42000000000000015
+      ],
+      "triangles": 80
+    },
+    {
+      "kind": "ConservedRepair",
+      "name": "FormworkSeams",
+      "mesh": "GEO_Expansion_ConservedRepair_FormworkSeams",
+      "surface": "LayeredStone",
+      "solid": false,
+      "tint": [
+        0.32,
+        0.345,
+        0.34,
+        1
+      ],
+      "bounds_min": [
+        -4.12,
+        -2.6025,
+        -1.6665
+      ],
+      "bounds_max": [
+        4.12,
+        0.3425000000000001,
+        -1.6315
+      ],
+      "triangles": 224
+    },
+    {
+      "kind": "ConservedRepair",
+      "name": "CappedAnchors",
+      "mesh": "GEO_Expansion_ConservedRepair_CappedAnchors",
+      "surface": "RustedIron",
+      "solid": false,
+      "tint": [
+        0.3,
+        0.255,
+        0.21,
+        1
+      ],
+      "bounds_min": [
+        -4.0075,
+        0.59,
+        -1.5375
+      ],
+      "bounds_max": [
+        4.0075,
+        0.8,
+        -0.5925
+      ],
+      "triangles": 448
+    },
+    {
+      "kind": "ConservedRepair",
+      "name": "WorkPocketFoot",
+      "mesh": "GEO_Expansion_ConservedRepair_WorkPocketFoot",
+      "surface": "LayeredStone",
+      "solid": false,
+      "tint": [
+        0.32,
+        0.345,
+        0.34,
+        1
+      ],
+      "bounds_min": [
+        -6.949999999999999,
+        0.0,
+        2.0999999999999996
+      ],
+      "bounds_max": [
+        -3.57,
+        0.08,
+        7.0
+      ],
+      "triangles": 28
+    },
+    {
+      "kind": "ConservedRepair",
+      "name": "StoredRepairTimbers",
+      "mesh": "GEO_Expansion_ConservedRepair_StoredRepairTimbers",
+      "surface": "Timber",
+      "solid": true,
+      "tint": [
+        0.325,
+        0.29,
+        0.23,
+        1
+      ],
+      "bounds_min": [
+        -6.545,
+        0.04000000000000001,
+        2.4749999999999996
+      ],
+      "bounds_max": [
+        -3.9350000000000005,
+        0.8425,
+        6.185
+      ],
+      "triangles": 392
+    },
+    {
+      "kind": "ConservedRepair",
+      "name": "TiedProtectiveCover",
+      "mesh": "GEO_Expansion_ConservedRepair_TiedProtectiveCover",
+      "surface": "Canvas",
+      "solid": true,
+      "tint": [
+        0.39,
+        0.4,
+        0.35,
+        1
+      ],
+      "bounds_min": [
+        -6.489999999999999,
+        0.32,
+        2.59
+      ],
+      "bounds_max": [
+        -4.05,
+        1.01,
+        6.09
+      ],
+      "triangles": 60
+    },
+    {
+      "kind": "ConservedRepair",
+      "name": "CoverTiesAndWeights",
+      "mesh": "GEO_Expansion_ConservedRepair_CoverTiesAndWeights",
+      "surface": "RustedIron",
+      "solid": false,
+      "tint": [
+        0.3,
+        0.255,
+        0.21,
+        1
+      ],
+      "bounds_min": [
+        -6.720000000000001,
+        0.11000000000000001,
+        2.9749999999999996
+      ],
+      "bounds_max": [
+        -3.81,
+        1.049380898475647,
+        5.6850000000000005
+      ],
+      "triangles": 392
+    },
+    {
+      "kind": "ConservedRepair",
+      "name": "OldSnowOnStoredMaterials",
+      "mesh": "GEO_Expansion_ConservedRepair_OldSnowOnStoredMaterials",
+      "surface": "WindSnow",
+      "solid": false,
+      "tint": [
+        0.83,
+        0.85,
+        0.84,
+        1
+      ],
+      "bounds_min": [
+        -6.031814507729148,
+        0.998,
+        2.9153515451306604
+      ],
+      "bounds_max": [
+        -4.2947049999999996,
+        1.093,
+        5.170192652433931
+      ],
+      "triangles": 136
+    },
+    {
+      "kind": "RoadsideRail",
+      "name": "OldGuardrail",
+      "mesh": "GEO_Expansion_RoadsideRail_OldGuardrail",
+      "surface": "RustedIron",
+      "solid": false,
+      "tint": [
+        0.3,
+        0.255,
+        0.21,
+        1
+      ],
+      "bounds_min": [
+        -0.077,
+        0.0,
+        -2
+      ],
+      "bounds_max": [
+        0.08,
+        1.06,
+        2
+      ],
+      "triangles": 112
+    },
+    {
+      "kind": "RoadsideRail",
+      "name": "JointStraps",
+      "mesh": "GEO_Expansion_RoadsideRail_JointStraps",
+      "surface": "RustedIron",
+      "solid": false,
+      "tint": [
+        0.3,
+        0.255,
+        0.21,
+        1
+      ],
+      "bounds_min": [
+        0.0475,
+        0.545,
+        -1.6800000000000002
+      ],
+      "bounds_max": [
+        0.104,
+        1.015,
+        1.6800000000000002
+      ],
+      "triangles": 192
     }
   ]
 }

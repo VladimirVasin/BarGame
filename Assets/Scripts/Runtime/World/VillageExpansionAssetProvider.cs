@@ -28,7 +28,7 @@ namespace BarPromenade
     {
         public const string ResourcePath = "Village/Expansion/VillageExpansion3D";
         public const string DesignId = "village_forest_ski_base_old_road_v1";
-        public const string GeneratorVersion = "1.0.0";
+        public const string GeneratorVersion = "1.1.0";
         private static VillageExpansionAssetProvider instance;
         private readonly Dictionary<string, MeshFilter> meshes;
         public VillageExpansionManifest Manifest { get; }
@@ -98,6 +98,12 @@ namespace BarPromenade
         {
             var tint = new Color(part.tint[0], part.tint[1], part.tint[2], part.tint[3]);
             var block = new MaterialPropertyBlock();
+            if (part.surface == "Canvas")
+            {
+                renderer.sharedMaterial = RuntimePrimitiveFactory.DefaultMaterial;
+                CityPointOfInterestSurfaceAppearance.ApplyClothPanel(renderer, tint, 1f, 1f);
+                return;
+            }
             if (part.surface == "Glass")
             {
                 renderer.sharedMaterial = HomeBalconyResources.GlassMaterial;
