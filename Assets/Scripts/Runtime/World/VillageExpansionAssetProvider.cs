@@ -28,11 +28,12 @@ namespace BarPromenade
     {
         public const string ResourcePath = "Village/Expansion/VillageExpansion3D";
         public const string DesignId = "village_forest_ski_base_old_road_v1";
-        public const string GeneratorVersion = "1.2.0";
+        public const string GeneratorVersion = "1.3.0";
         public const string WreckRustTexturePath = "Village/Textures/VillageTruckRustAlbedo";
         public const string WreckPaintTexturePath = "Village/Textures/VillageTruckPaintAlbedo";
         private static VillageExpansionAssetProvider instance;
         private static Texture2D wreckRust, wreckPaint;
+        private static readonly Dictionary<string, Texture2D> agedTextures = new Dictionary<string, Texture2D>();
         private readonly Dictionary<string, MeshFilter> meshes;
         public VillageExpansionManifest Manifest { get; }
 
@@ -101,6 +102,30 @@ namespace BarPromenade
         {
             var tint = new Color(part.tint[0], part.tint[1], part.tint[2], part.tint[3]);
             var block = new MaterialPropertyBlock();
+            if (part.surface == "DarkWindow" || part.surface.StartsWith("Abandoned", StringComparison.Ordinal))
+            {
+                renderer.sharedMaterial = RuntimePrimitiveFactory.DefaultMaterial;
+                if (part.surface != "DarkWindow")
+                {
+                    if (!agedTextures.TryGetValue(part.surface, out Texture2D texture))
+                    {
+                        texture = Resources.Load<Texture2D>("Village/Textures/" + part.surface);
+                        if (texture == null) throw new InvalidOperationException("Missing aged village surface " + part.surface);
+                        agedTextures.Add(part.surface, texture);
+                    }
+                    block.SetTexture("_BaseMap", texture);
+                    tint = new Color(Compensate(tint.r), Compensate(tint.g), Compensate(tint.b), tint.a);
+                }
+                block.SetColor("_BaseColor", tint);
+                block.SetColor("_Color", tint);
+                block.SetColor("_EmissionColor", Color.black);
+                block.SetFloat("_Smoothness", .02f);
+                block.SetFloat("_Metallic", 0f);
+                float agedPitch = part.surface == "AbandonedWood" ? 1.4f : 2.4f;
+                block.SetVector("_BaseMap_ST", new Vector4(scale.x / agedPitch, scale.y / agedPitch, 0f, 0f));
+                renderer.SetPropertyBlock(block);
+                return;
+            }
             if (part.surface == "WreckRust" || part.surface == "WreckPaint")
             {
                 bool paint = part.surface == "WreckPaint";
@@ -152,6 +177,10 @@ namespace BarPromenade
         {
             instance = null;
             wreckRust = wreckPaint = null;
+            agedTextures.Clear();
         }
+
+        private static float Compensate(float gamma) =>
+            Mathf.LinearToGammaSpace(Mathf.Clamp01(Mathf.GammaToLinearSpace(gamma) / .58f));
     }
 }

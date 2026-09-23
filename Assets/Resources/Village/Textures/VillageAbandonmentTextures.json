@@ -1,0 +1,28 @@
+{
+  "design_id": "village_abandoned_surfaces_v1",
+  "generator_version": "1.0.0",
+  "texture_size": 1024,
+  "sheets": [
+    {
+      "name": "AbandonedWood",
+      "meters_per_tile": 1.4,
+      "mean_linear_luminance": 0.579985632742708,
+      "sha256": "819d688a83b957cf240824c93e7998c9a13e5f4facfb3929ce4b4c44fdbdb200",
+      "donor": "VillageJoineryAlbedo"
+    },
+    {
+      "name": "AbandonedPlaster",
+      "meters_per_tile": 2.4,
+      "mean_linear_luminance": 0.5799877710013173,
+      "sha256": "8a6791b84377aeba3475dad920c51fc938f5bea90410e6fc68def06e4bb9ecae",
+      "donor": "VillagePlasterAlbedo"
+    },
+    {
+      "name": "AbandonedRoof",
+      "meters_per_tile": 2.4,
+      "mean_linear_luminance": 0.5799523035583376,
+      "sha256": "9ed6d35c241e7442754ca1ea42d9ecdd7336fd9efae3fb20b3538ec81e42db62",
+      "donor": "VillageRoofAlbedo"
+    }
+  ]
+}

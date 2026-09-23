@@ -502,6 +502,8 @@ namespace BarPromenade
         private static bool ClearsEveryPlot(
             AlpineVillagePlan plan, Vector2 point, float radius)
         {
+            if (plan.Expansion != null && !plan.Expansion.Abandonment.ClearsFeatures(
+                plan.Expansion.ToLocal(point), radius)) return false;
             for (int index = 0; index < plan.Plots.Count; index++)
             {
                 AlpineVillagePlotDescriptor plot = plan.Plots[index];

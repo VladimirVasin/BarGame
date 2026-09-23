@@ -107,7 +107,7 @@ repair commands. Generation/publication: [../tools/README.md](../tools/README.md
   production/collision/traffic continue; approach restores without replay.
   Hero observes; shop stock stays. Anchored port/factory voices use local reverb via
   `CityWorkAudio`; the shared Music bus is reduced by `6 dB`.
-- Separate mountain/village areas, cableway travel and accessible interiors.
+- Mountain/village areas, cableway/interiors; abandoned village surrounds its lived-in core.
 - Six village residents perform finite household work; optional hero help and
   the resulting deliveries, repairs and snow clearing survive scene visits.
 - One shared animated hero, contextual interactions, intoxication/balance,
@@ -125,12 +125,10 @@ repair commands. Generation/publication: [../tools/README.md](../tools/README.md
 - Map, inventory, journal, pause/options and localized interaction interfaces.
 - Shared PS1 presentation, causal audio and bounded diagnostics.
 
-See [current-world.md](current-world.md) for the complete gameplay catalogue and
-[systems-map.md](systems-map.md) for the concise system index, whose Key files
-column names the owner of each system. For paths, use `git ls-files` and `rg`;
-the hand-maintained tree was retired because half its entries were wrong or
-missing. The story/art bibles define canon; these implementation documents do
-not authorize deviations.
+See [current-world.md](current-world.md) for gameplay and
+[systems-map.md](systems-map.md) for system owners. Find paths with `git ls-files`
+and `rg`. The story/art bibles define canon; implementation documents do not
+authorize deviations.
 
 ## Deferred
 

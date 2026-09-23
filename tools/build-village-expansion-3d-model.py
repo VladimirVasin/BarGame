@@ -17,14 +17,18 @@ import interior_kit as kit
 import bar_parts as bp
 from village_truck_wreck import rusted_truck
 from village_chair_pile import chair_pile
+from village_abandoned_buildings import build_all as abandoned_buildings
+from village_abandoned_yards import build_all as abandoned_yards
 
-VERSION = "1.2.0"
+VERSION = "1.3.0"
 DESIGN = "village_forest_ski_base_old_road_v1"
 COLORS = {"Timber": (.29,.255,.205,1), "Masonry": (.49,.485,.445,1),
           "LayeredStone": (.32,.345,.34,1), "RustedIron": (.30,.255,.21,1),
           "WindSnow": (.83,.85,.84,1), "Asphalt": (.24,.255,.255,1),
           "Concrete": (.47,.47,.43,1), "Canvas": (.39,.40,.35,1),
           "Glass": (.40,.44,.43,.16), "WreckRust": (1,1,1,1), "WreckPaint": (1,1,1,1)}
+COLORS.update(AbandonedWood=(.34,.305,.26,1), AbandonedPlaster=(.55,.53,.47,1),
+              AbandonedRoof=(.27,.275,.25,1), DarkWindow=(.075,.085,.08,1))
 
 def box(p,s,c=.01): return bp.u_box(p,s,c)
 def merge(parts):
@@ -369,9 +373,12 @@ def create_parts():
     chair_pile(add)
     conserved_repair(add)
     roadside_rail(add)
+    abandoned_buildings(add)
+    abandoned_yards(add)
     return parts
 
 def validate(parts):
+    assert len({p["mesh"] for p in parts}) == len(parts), "Duplicate exported part names"
     # Albedo is a fixed authored input, with the exact image prompts and bytes retained.
     textures=json.loads((ROOT/"ArtSource/Village/Textures/generation.json").read_text(encoding="utf-8"))
     for texture in textures["images"]:
@@ -414,7 +421,21 @@ def validate(parts):
     for z in (-1.4,0,1.4):
         assert any(t.ray_cast(Vector((8,2.2,z)),Vector((-1,0,0)),4)[0] is not None
                    for t in warehouse_trees),"Open warehouse loading door"
-    assert sum(kit.triangle_count(p["geometry"]) for p in parts)<=32000,"Expansion triangle budget"
+    # The expanded library is shared by all placed households; these are source
+    # triangles, not a fresh mesh/material allocation per world placement.
+    assert sum(kit.triangle_count(p["geometry"]) for p in parts)<=165000,"Expansion triangle budget"
+    for kind in ("TownHall", "School", "ShopBakery", "Workshop", "MountainRescue",
+                 "AbandonedHouseA", "AbandonedHouseB", "WornHouseA", "WornHouseB"):
+        lo,hi=bounds_for(kind)
+        assert 4.5<=hi[1]<=8.0 and lo[1]>=-1e-6, "Abandoned building metre bounds " + kind
+        solids=[BVHTree.FromPolygons(*p["geometry"],all_triangles=False) for p in parts
+                if p["kind"]==kind and p["solid"]]
+        assert any(t.ray_cast(Vector((0,1.8,hi[2]+2)),Vector((0,0,-1)),hi[2]-lo[2]+4)[0] is not None
+                   for t in solids), "Open closed facade " + kind
+    aged=json.loads((ROOT/"Assets/Resources/Village/Textures/VillageAbandonmentTextures.json").read_text(encoding="utf-8"))
+    for sheet in aged["sheets"]:
+        raw=(ROOT/"Assets/Resources/Village/Textures"/(sheet["name"]+".png")).read_bytes()
+        assert hashlib.sha256(raw).hexdigest()==sheet["sha256"],"Stale abandoned material"
     first=json.dumps(parts,sort_keys=True,separators=(",",":"))
     assert first==json.dumps(create_parts(),sort_keys=True,separators=(",",":")),"Non-deterministic geometry"
     return hashlib.sha256(first.encode()).hexdigest()

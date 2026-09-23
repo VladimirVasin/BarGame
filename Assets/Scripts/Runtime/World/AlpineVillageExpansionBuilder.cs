@@ -37,6 +37,17 @@ namespace BarPromenade
             assets.Create("ConservedRepair", "Conserved Road Repair", root.transform,
                 OnGround(plan, expansion.CliffEdge), facing);
 
+            var settlement = new GameObject(AlpineVillageAbandonmentPlan.RootName);
+            settlement.transform.SetParent(root.transform, false);
+            foreach (AlpineVillageAbandonedPlot plot in expansion.Abandonment.Plots)
+            {
+                GameObject building = assets.Create(plot.Model, plot.Id, settlement.transform,
+                    plot.GroundCenter, plot.Rotation);
+                if (!string.IsNullOrEmpty(plot.Yard))
+                    assets.Create(plot.Yard, "Former Household Yard", building.transform,
+                        plot.GroundCenter, plot.Rotation);
+            }
+
             var road = new GameObject("Former City Road");
             road.transform.SetParent(root.transform, false);
             foreach (AlpineVillagePathDescriptor path in expansion.Paths)

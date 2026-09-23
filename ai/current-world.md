@@ -244,53 +244,50 @@ The vertical slice contains:
   root may generate the pure City layout/mountain plan needed by the City map
   tab, but it never calls a City world builder or creates City GameObjects;
 - runtime-composed `AlpineVillage` follows the shared plan/validator/builder
-  pattern. Its step-free lane climbs `6.4 m` over `82.1 m` (`7.8%`, ceiling
-  `8.3%`) from cableway to mother's house. Twelve houses, chapel/source and
-  arrival landmark retain positions; no adit/graves. `CoreTerrainBounds` keeps
-  the residential bowl; `AlpineVillageExpansionPlan` adds forest, ski base and
-  old-road loop. The `18 x 12 m` walk-in lodge has vestibule/benches/racks;
-  unheated roof excludes snowfall/lying snow; shed/lift passive.
-  The closed warehouse yard holds a snow-settled rusty truck without wheels,
-  doors or glass and a dense heap of wooden chairs with chair parts inside.
-  Passive `RustedTruck`/`DiscardedChairPile` keep ramp/road access clear.
-  Stock/supports show conserved road repair; rail/rubble block the gap between
-  close road ends, the far end inaccessible. Trade ended here.
+  pattern. The step-free lane climbs `6.4 m` over `82.1 m` (`7.8%`, ceiling
+  `8.3%`) to mother's house. Twelve inhabited houses, chapel/source and arrival
+  axis retain positions; no adit/graves. `CoreTerrainBounds` keeps the core;
+  `AlpineVillageExpansionPlan` adds forest, ski base and old-road loop.
+  `AlpineVillageAbandonmentPlan` distributes eighteen former households
+  (fourteen standing, three open ruins, one foundation), eight outbuildings
+  (two ruined), and five closed civic buildings across both sides of the core
+  and the expanded bowl. Town hall has a paved square, school an empty yard,
+  shop/bakery a loading court, workshop a working yard and mountain rescue a
+  service apron/equipment canopy. Three household-yard variants reuse aged
+  everyday props. Stone bases, broad roofs and joinery retain former prosperity;
+  dark backed windows, broken shutters, worn surfaces and settled debris show
+  abandonment. No new residents, lights, text or interiors. Placement reserves
+  neighbouring-building sightlines from four sides; props/foundations do not
+  qualify. Trees respect those corridors and yards; terrain levels their shelves.
+  The `18 x 12 m` lodge remains walk-in, with vestibule/benches/racks; its
+  unheated roof excludes snowfall/lying snow. Shed/lift remain passive.
+  The closed warehouse yard retains `RustedTruck` (no wheels/doors/glass) and
+  dense `DiscardedChairPile`, clear of ramp/road. Stock/supports show conserved
+  repair; rail/rubble block the gap to the inaccessible close road end.
   `AlpineVillageDistanceWorldBuilder` reuses six checkpoint meshes
-  (city/windows/glow/land/rock/vegetation) below the narrow opening; its own
-  materials follow storms. Core enclosed; cableway sole exit; no text/NPC/event.
-  Walkability unions core/expansion ground minus walls, trees, cableway cut and
-  lodge/cliff obstacles. Warehouse props use MeshColliders; gaps stay open.
-  The enclosing `74°` rise and visible barriers close its edge. Each
-  `AlpineVillagePathDescriptor` remains a visible compacted strip and the
-  route's clearance envelope against those footprints — including each
-  household threshold and the narrow turn to the chapel water outlet — but no
-  longer decides where a person may stand. Beside each of them the snow has a
-  depth: `AlpineVillageSnowDrift` is a pure field over the shared "distance
-  outside the nearest trodden route", laid as one colliderless mesh rather
-  than as a term in the height contract; `TerrainCell` still owns the station
-  apron and the cableway cut's entrance. The field is `0.45 m` deep wherever
-  nothing has walked and zero on trodden ground, rising
-  to that depth over `1.3 m` on the face the gale loads and `3.2 m` on the face
-  it scours — a field with trenches worn into it, not the raked bank the art
-  bible refuses. Fitted ribbons carry the rise along each route and a `1 m`
-  sheet carries the saturated remainder, overlapping by a cell and drawn under
-  it so the ribbon wins the join. `AlpineVillageSnowTreading` keeps one float
-  per vertex so a boot presses the snow down and the snowfall fills it back
-  in - CPU-side, because vertex displacement would need a third verbatim
-  `Ps1Lit` clone and the snap would quantise the amplitude a print is made of.
-  `IPlayerFootstepSurface` lets the village claim each step the motor takes
-  and pick `FootstepSnow` or `FootstepSoil` by the depth it can see, which is
-  what makes a route audible. The lane skin and the path ribbons sample the
-  ground at every vertex and ride `LaneSkinLift` over it: laid flat at their
-  centreline's height they were cut open by ground that curves, which is the
-  pale wedges that were reported as snow lying on the street.
+  (city/windows/glow/land/rock/vegetation) below the opening with storm materials.
+  Cableway remains the sole exit. Walkability unions core/expansion ground
+  minus walls, trees, cableway cut and lodge/cliff obstacles. Ruins use their
+  surviving mesh walls; no invisible closed footprint. Props use MeshColliders.
+  The `74°` rise and visible barriers close the edge. Paths reserve compacted
+  strips, household thresholds and the narrow chapel-water turn; walking is
+  allowed beyond them. `AlpineVillageSnowDrift` is a colliderless pure depth
+  field outside trodden routes, separate from terrain height. `TerrainCell`
+  owns the station apron/cableway entrance. Snow rises from zero to `0.45 m`
+  over `1.3 m` on the loaded face, `3.2 m` on the scoured face. Abandoned yards
+  retain snow to doors and inside ruins, with bounded depth exposing paving.
+  Fitted path ribbons overlap the saturated `1 m` sheet by one cell and win
+  the join. `AlpineVillageSnowTreading` stores one CPU float per vertex;
+  boots press snow down, snowfall restores changed vertices via spatial buckets.
+  `IPlayerFootstepSurface` picks `FootstepSnow`/`FootstepSoil` by visible depth.
+  Lane/path vertices sample ground plus `LaneSkinLift`, avoiding terrain wedges.
   Authored distance/side/yaw beats form frontage clusters and pauses; exact OBB
   validation, three `7.2-7.5 m` rear-row depth beats and a bounded symmetric
   local correction keep every seeded rotated footprint out of its neighbours
   and the lane without cascading the whole frontage away from the street.
   `AlpineVillageTerrainSampler` shares height between planning, validation,
   collision and map teleport. Core shelves ease to the macro slope over `3.6 m`;
-  expansion terrain levels the lodge and shapes the old-road brink. The ridge
+  expansion terrain levels buildings/yards and shapes the old-road brink. The ridge
   rises at `3.6` (`74°`) to `60 m`, beyond the hero's `45°` limit.
   `TerrainBounds` charts the expanded ground; `TerrainMeshBounds` also contains
   its physical rise, hidden crest and cableway brink. Ground uses one collision
@@ -306,10 +303,10 @@ The vertical slice contains:
   shared shader's zero-default City path retains its existing clip dither.
   Forest rendering also uses `48 m` sectors: core cap `420`, expansion cap `900`,
   new heights `6.5–15 m`, crown-separated. Core route clearance remains `7 m`;
-  new routes use `1.2 m + crown radius`. Station, landmark aperture, water and
-  house access remain clear. Build stages yield between terrain, paths, trees,
-  snow and scenery. Snow footprints query spatial vertex buckets and snowfall
-  restores only changed vertices. Map and peripheral storm use all new paths.
+  new routes use `1.2 m + crown radius`; abandoned yards/sightlines add clearance.
+  Station, landmark aperture, water and house access remain clear. Build stages
+  yield between terrain, paths, trees, snow and scenery. Map and peripheral
+  storm use all new paths.
   The accepted `2026-09-06` art pass exposes the existing layered-stone
   surface on the rise and places measured Blender rock/snow ledges beyond
   the walkable toe. The imported pieces share the rise's stable haze and

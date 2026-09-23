@@ -47,6 +47,7 @@ namespace BarPromenade
             LocalBounds = Rect.MinMaxRect(-205f, -54f, 7f, 125f);
             WorldBounds = TransformBounds(LocalBounds);
             CoveredBounds = TransformBounds(new Rect(-146f, 50f, 18f, 12f));
+            Abandonment = new AlpineVillageAbandonmentPlan(this, plan);
 
             var routes = new List<AlpineVillagePathDescriptor>();
             AddRoute(routes, "forest-approach", AlpineVillagePathKind.ForestTrail, 1f,
@@ -121,6 +122,7 @@ namespace BarPromenade
         public IReadOnlyList<AlpineVillagePathDescriptor> Paths => paths;
         /// <summary>Blocking X/Z rectangles in the local metre frame.</summary>
         public IReadOnlyList<Bounds> LocalObstacles => obstacles;
+        public AlpineVillageAbandonmentPlan Abandonment { get; }
 
         public Vector3 ToWorld(Vector2 local)
         {
@@ -196,8 +198,9 @@ namespace BarPromenade
             float remnantDistance = Mathf.Min(
                 OutsideRect(local, TruckWreckLocalCenter, TruckWreckHalfSize),
                 OutsideRect(local, ChairPileLocalCenter, ChairPileHalfSize));
-            return Mathf.Lerp(Mathf.Min(yardDepth, .14f), yardDepth,
+            float legacyDepth = Mathf.Lerp(Mathf.Min(yardDepth, .14f), yardDepth,
                 Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(remnantDistance / .85f)));
+            return Abandonment.LimitSnow(local, legacyDepth);
         }
 
         internal float ShapeGround(Vector2 point, float height)
@@ -225,7 +228,7 @@ namespace BarPromenade
             if (shedDistance < 4f)
                 height = Mathf.Lerp(height, ServiceShedCenter.y,
                     1f - Mathf.SmoothStep(0f, 1f, Mathf.Clamp01((shedDistance - 1f) / 3f)));
-            return height;
+            return Abandonment != null ? Abandonment.ShapeGround(local, height) : height;
         }
 
         internal float ShapeCliff(Vector2 point, float height)
@@ -275,6 +278,7 @@ namespace BarPromenade
         internal bool ClearsFeatures(Vector2 point, float radius)
         {
             Vector2 local = ToLocal(point);
+            if (Abandonment != null && !Abandonment.ClearsFeatures(local, radius)) return false;
             if (OutsideRect(local, new Vector2(-138f, -28f), new Vector2(16f, 12f)) < radius + 2f ||
                 OutsideRect(local, ChairPileLocalCenter, ChairPileHalfSize + Vector2.one * .1f) < radius + 2f ||
                 OutsideRect(local, new Vector2(-134f, -48f), new Vector2(5f, 6f)) < radius + 2f)

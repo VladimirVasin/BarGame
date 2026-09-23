@@ -5,38 +5,36 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 
 ## 2026-09-23 — Alpine Village expansion
 
-- Extended the unchanged residential core with dense station-side forest,
-  an abandoned ski lodge with walk-in hall/rental fixtures, shed/stopped lift,
-  and an old-road return loop plus a blocked downhill collapse. Shared ground,
-  routes and obstacles drive movement, terrain, map, snow and weather; a joining
-  valley closes the gap found on the return road. The lodge roof clears snow
-  without heating the room. Check:
-  `AlpineVillageTests.WalkableArea_ReachesTheStationTheLaneAndEverySpur`.
-- Passive fixed-metre Blender parts preserve true openings/imported scale.
-  Terrain/forest render in spatial sectors; staged construction and local snow
-  updates bound the larger area's work. Checks: `build-village-expansion-3d-model.py`,
-  `AreaCaptureFixture.AlpineVillageExpansion` (import, floor, area and snow).
-  Forest, interior, lift, facade and road/brink frames reviewed.
-- The trade road now has close opposite ends across a blocked gap, a closed
-  warehouse with an accessible yard and conserved repair stock/supports.
-  `AlpineVillageDistanceWorldBuilder` shares six checkpoint city/relief meshes;
-  its own material profile follows village storms without changing the post.
-  Broken-lip geometry hid the unfinished supports; their placement now exposes
-  the anchors, thinner snow clears the handcart and paired rails reveal the far
-  road. Checks: `build-village-expansion-3d-model.py`,
-  `AreaCaptureFixture.AlpineVillageExpansion`, `AreaCaptureFixture.CityEastExit`
-  (panorama-only). Village frames and checkpoint day/night frames reviewed.
-- Added a stripped donor-truck wreck and discarded-chair mound beside the
-  warehouse. Separate rusty maps, open cab and settled snow show long disuse.
-  The user's denser heap keeps recognizable outer chairs and fills its centre/
-  base with donor chair parts; both source assets retain their existing uses.
-  Numerical contact alone left high chairs looking suspended; visible angled
-  chair frames/backs now support them at the original height.
+- Extended the residential core with station forest, a walk-in abandoned ski
+  lodge/rental hall, shed, stopped lift and old-road loop. Shared ground, routes
+  and obstacles drive movement, map, snow and weather; a joining valley closes
+  the return-road gap. The lodge roof clears snow without heating the room.
+  Check: `AlpineVillageTests.WalkableArea_ReachesTheStationTheLaneAndEverySpur`.
+- Passive Blender parts retain real openings/imported scale. Spatial terrain/
+  forest sectors, staged construction and local snow updates bound the area.
   Checks: `build-village-expansion-3d-model.py`,
-  `AreaCaptureFixture.AlpineVillageExpansion` (import, rust materials, height,
-  clear passages and views).
-- Recorded the approved branch/forest and narrow city-view exceptions in both
-  bibles/architecture, plus wreck/chair collisions; updated player/tool docs.
+  `AreaCaptureFixture.AlpineVillageExpansion`; scene frames reviewed.
+- The trade road meets a blocked gap, opposite road end, closed warehouse and
+  repair stock/supports. Village distance scenery shares checkpoint city/relief
+  meshes with its own storm materials. Exposed anchors, thinner yard snow and
+  paired rails reveal the halted work and far road. Checks:
+  `AreaCaptureFixture.AlpineVillageExpansion`, `AreaCaptureFixture.CityEastExit`
+  (panorama only); village and checkpoint day/night frames reviewed.
+- A stripped donor-truck wreck uses aged maps; a dense mound of donor chairs
+  retains recognizable outer frames. Visible angled pieces support high chairs
+  that contact numbers alone left looking suspended. Checks:
+  `build-village-expansion-3d-model.py`, `AreaCaptureFixture.AlpineVillageExpansion`.
+- Added the abandoned settlement around the retained occupied street: closed
+  town hall, school, bakery/shop, workshop and mountain-rescue depot, each with
+  its former working yard; standing households, structural ruins and sheds.
+  Shared placement shelves, forest clearances and imported collisions preserve
+  old routes. Aged shared maps, dark windows and unheated snow show long disuse.
+  Checks: `build-village-abandonment-textures.py`,
+  `build-village-expansion-3d-model.py`, `AreaCaptureFixture.AlpineVillageAbandonment`.
+  Scene checks exposed edge placements and obscured building neighbours;
+  corrected placement is reviewed in eye-height day/night/storm frames.
+- Recorded approved forest, city-view and abandonment exceptions in both
+  bibles/architecture; updated player/tool documentation.
   Checks: `check-docs.py`, `git diff --check`.
 
 ## 2026-09-22 — Taunt integration and combat CPU

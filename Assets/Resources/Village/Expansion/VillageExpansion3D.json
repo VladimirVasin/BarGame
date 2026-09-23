@@ -1,11 +1,11 @@
 {
-  "generator_version": "1.2.0",
+  "generator_version": "1.3.0",
   "design_id": "village_forest_ski_base_old_road_v1",
   "scale_mode": "fixed_metres",
   "uv_mode": "projected_metres",
-  "build_signature": "11861a05b6e00b83dda01be0891606d36f6225bc5527e5eb28ef30f05bf6e6d7",
-  "mesh_count": 129,
-  "triangle_count": 31980,
+  "build_signature": "01906b57fe13ff663651e670cdc84e407b0b7dde77ec183b3fd8fbd85a618726",
+  "mesh_count": 454,
+  "triangle_count": 144796,
   "colliders": false,
   "lights": false,
   "cameras": false,
@@ -3106,6 +3106,7806 @@
         1.6800000000000002
       ],
       "triangles": 192
+    },
+    {
+      "kind": "TownHall",
+      "name": "RootedStonePlinth",
+      "mesh": "GEO_Expansion_TownHall_RootedStonePlinth",
+      "surface": "LayeredStone",
+      "solid": true,
+      "tint": [
+        0.32,
+        0.345,
+        0.34,
+        1
+      ],
+      "bounds_min": [
+        -7.0,
+        0.0,
+        -5.0
+      ],
+      "bounds_max": [
+        7.0,
+        0.62,
+        5.0
+      ],
+      "triangles": 28
+    },
+    {
+      "kind": "TownHall",
+      "name": "PlinthStoneCourses",
+      "mesh": "GEO_Expansion_TownHall_PlinthStoneCourses",
+      "surface": "LayeredStone",
+      "solid": false,
+      "tint": [
+        0.32,
+        0.345,
+        0.34,
+        1
+      ],
+      "bounds_min": [
+        -7.0295,
+        0.015499999999999986,
+        -5.0295000000000005
+      ],
+      "bounds_max": [
+        7.0295,
+        0.5859,
+        5.0295
+      ],
+      "triangles": 2240
+    },
+    {
+      "kind": "TownHall",
+      "name": "PlasterWalls",
+      "mesh": "GEO_Expansion_TownHall_PlasterWalls",
+      "surface": "AbandonedPlaster",
+      "solid": true,
+      "tint": [
+        0.55,
+        0.53,
+        0.47,
+        1
+      ],
+      "bounds_min": [
+        -7.0,
+        0.62,
+        -5.000000000000001
+      ],
+      "bounds_max": [
+        7.0,
+        6.22,
+        5.0
+      ],
+      "triangles": 2632
+    },
+    {
+      "kind": "TownHall",
+      "name": "OpaqueWindowBacking",
+      "mesh": "GEO_Expansion_TownHall_OpaqueWindowBacking",
+      "surface": "DarkWindow",
+      "solid": true,
+      "tint": [
+        0.075,
+        0.085,
+        0.08,
+        1
+      ],
+      "bounds_min": [
+        -6.81,
+        1.2015000000000002,
+        -4.8100000000000005
+      ],
+      "bounds_max": [
+        6.81,
+        5.5065,
+        4.81
+      ],
+      "triangles": 336
+    },
+    {
+      "kind": "TownHall",
+      "name": "WindowJoinery",
+      "mesh": "GEO_Expansion_TownHall_WindowJoinery",
+      "surface": "AbandonedWood",
+      "solid": true,
+      "tint": [
+        0.34,
+        0.305,
+        0.26,
+        1
+      ],
+      "bounds_min": [
+        -7.19,
+        1.064,
+        -5.19
+      ],
+      "bounds_max": [
+        7.19,
+        5.579,
+        5.1899999999999995
+      ],
+      "triangles": 4592
+    },
+    {
+      "kind": "TownHall",
+      "name": "ShuttersAndBoards",
+      "mesh": "GEO_Expansion_TownHall_ShuttersAndBoards",
+      "surface": "AbandonedWood",
+      "solid": true,
+      "tint": [
+        0.34,
+        0.305,
+        0.26,
+        1
+      ],
+      "bounds_min": [
+        -7.234999999999999,
+        1.1711670636440141,
+        -5.235
+      ],
+      "bounds_max": [
+        7.235,
+        5.541563687688328,
+        5.234999999999999
+      ],
+      "triangles": 3040
+    },
+    {
+      "kind": "TownHall",
+      "name": "ClosedDoorLeaves",
+      "mesh": "GEO_Expansion_TownHall_ClosedDoorLeaves",
+      "surface": "AbandonedWood",
+      "solid": true,
+      "tint": [
+        0.34,
+        0.305,
+        0.26,
+        1
+      ],
+      "bounds_min": [
+        -1.085,
+        0.5599999999999999,
+        4.715
+      ],
+      "bounds_max": [
+        1.085,
+        3.1950000000000003,
+        5.1
+      ],
+      "triangles": 252
+    },
+    {
+      "kind": "TownHall",
+      "name": "IronHardware",
+      "mesh": "GEO_Expansion_TownHall_IronHardware",
+      "surface": "RustedIron",
+      "solid": false,
+      "tint": [
+        0.3,
+        0.255,
+        0.21,
+        1
+      ],
+      "bounds_min": [
+        -7.3745,
+        1.01,
+        -5.58
+      ],
+      "bounds_max": [
+        7.073500000000001,
+        6.1225000000000005,
+        5.58
+      ],
+      "triangles": 120
+    },
+    {
+      "kind": "TownHall",
+      "name": "FacadeBearingBands",
+      "mesh": "GEO_Expansion_TownHall_FacadeBearingBands",
+      "surface": "Masonry",
+      "solid": false,
+      "tint": [
+        0.49,
+        0.485,
+        0.445,
+        1
+      ],
+      "bounds_min": [
+        -7.11,
+        3.24,
+        -5.110000000000001
+      ],
+      "bounds_max": [
+        7.11,
+        6.22,
+        5.109999999999999
+      ],
+      "triangles": 224
+    },
+    {
+      "kind": "TownHall",
+      "name": "WeatherExposedMasonry",
+      "mesh": "GEO_Expansion_TownHall_WeatherExposedMasonry",
+      "surface": "Masonry",
+      "solid": false,
+      "tint": [
+        0.49,
+        0.485,
+        0.445,
+        1
+      ],
+      "bounds_min": [
+        -7.0225,
+        0.74,
+        -5.022500000000001
+      ],
+      "bounds_max": [
+        7.0225,
+        3.85,
+        5.0225
+      ],
+      "triangles": 384
+    },
+    {
+      "kind": "TownHall",
+      "name": "RoofDeck",
+      "mesh": "GEO_Expansion_TownHall_RoofDeck",
+      "surface": "AbandonedRoof",
+      "solid": true,
+      "tint": [
+        0.27,
+        0.275,
+        0.25,
+        1
+      ],
+      "bounds_min": [
+        -7.525,
+        6.036209701659418,
+        -5.520268108374061
+      ],
+      "bounds_max": [
+        7.525,
+        7.683790298340583,
+        5.520268108374061
+      ],
+      "triangles": 56
+    },
+    {
+      "kind": "TownHall",
+      "name": "RoofCovering",
+      "mesh": "GEO_Expansion_TownHall_RoofCovering",
+      "surface": "AbandonedRoof",
+      "solid": false,
+      "tint": [
+        0.27,
+        0.275,
+        0.25,
+        1
+      ],
+      "bounds_min": [
+        -7.512500000000001,
+        6.19808594247543,
+        -5.5223591788066235
+      ],
+      "bounds_max": [
+        7.512500000000001,
+        7.7247004848637975,
+        5.5223591788066235
+      ],
+      "triangles": 108
+    },
+    {
+      "kind": "TownHall",
+      "name": "RoofSnow",
+      "mesh": "GEO_Expansion_TownHall_RoofSnow",
+      "surface": "WindSnow",
+      "solid": false,
+      "tint": [
+        0.83,
+        0.85,
+        0.84,
+        1
+      ],
+      "bounds_min": [
+        -7.4990000000000006,
+        6.2800555522865675,
+        -5.444666519099368
+      ],
+      "bounds_max": [
+        7.4990000000000006,
+        7.831541718308593,
+        5.444666519099368
+      ],
+      "triangles": 252
+    },
+    {
+      "kind": "TownHall",
+      "name": "BearingTimbers",
+      "mesh": "GEO_Expansion_TownHall_BearingTimbers",
+      "surface": "AbandonedWood",
+      "solid": true,
+      "tint": [
+        0.34,
+        0.305,
+        0.26,
+        1
+      ],
+      "bounds_min": [
+        -7.1,
+        6.015,
+        -5.41
+      ],
+      "bounds_max": [
+        7.1,
+        7.654045769606798,
+        5.41
+      ],
+      "triangles": 280
+    },
+    {
+      "kind": "TownHall",
+      "name": "EavesAndGutters",
+      "mesh": "GEO_Expansion_TownHall_EavesAndGutters",
+      "surface": "AbandonedWood",
+      "solid": false,
+      "tint": [
+        0.34,
+        0.305,
+        0.26,
+        1
+      ],
+      "bounds_min": [
+        -7.495,
+        6.03,
+        -5.5
+      ],
+      "bounds_max": [
+        7.495,
+        6.21,
+        5.5
+      ],
+      "triangles": 56
+    },
+    {
+      "kind": "TownHall",
+      "name": "RidgeCap",
+      "mesh": "GEO_Expansion_TownHall_RidgeCap",
+      "surface": "AbandonedRoof",
+      "solid": false,
+      "tint": [
+        0.27,
+        0.275,
+        0.25,
+        1
+      ],
+      "bounds_min": [
+        -7.5425,
+        7.625,
+        -0.125
+      ],
+      "bounds_max": [
+        7.5425,
+        7.8149999999999995,
+        0.125
+      ],
+      "triangles": 28
+    },
+    {
+      "kind": "TownHall",
+      "name": "ClosedGables",
+      "mesh": "GEO_Expansion_TownHall_ClosedGables",
+      "surface": "AbandonedWood",
+      "solid": true,
+      "tint": [
+        0.34,
+        0.305,
+        0.26,
+        1
+      ],
+      "bounds_min": [
+        -7.0,
+        6.22,
+        -5.0
+      ],
+      "bounds_max": [
+        7.0,
+        7.58,
+        5.0
+      ],
+      "triangles": 16
+    },
+    {
+      "kind": "TownHall",
+      "name": "WornEntranceSteps",
+      "mesh": "GEO_Expansion_TownHall_WornEntranceSteps",
+      "surface": "LayeredStone",
+      "solid": true,
+      "tint": [
+        0.32,
+        0.345,
+        0.34,
+        1
+      ],
+      "bounds_min": [
+        -2.05,
+        0.0,
+        4.96
+      ],
+      "bounds_max": [
+        2.05,
+        0.48,
+        7.11
+      ],
+      "triangles": 84
+    },
+    {
+      "kind": "TownHall",
+      "name": "EntranceStoneSurround",
+      "mesh": "GEO_Expansion_TownHall_EntranceStoneSurround",
+      "surface": "Masonry",
+      "solid": true,
+      "tint": [
+        0.49,
+        0.485,
+        0.445,
+        1
+      ],
+      "bounds_min": [
+        -1.39,
+        0.5999999999999999,
+        4.92
+      ],
+      "bounds_max": [
+        1.39,
+        3.3600000000000003,
+        5.32
+      ],
+      "triangles": 84
+    },
+    {
+      "kind": "TownHall",
+      "name": "StoneCornice",
+      "mesh": "GEO_Expansion_TownHall_StoneCornice",
+      "surface": "Masonry",
+      "solid": true,
+      "tint": [
+        0.49,
+        0.485,
+        0.445,
+        1
+      ],
+      "bounds_min": [
+        -7.125,
+        6.0249999999999995,
+        -5.1899999999999995
+      ],
+      "bounds_max": [
+        7.125,
+        6.255,
+        5.1899999999999995
+      ],
+      "triangles": 56
+    },
+    {
+      "kind": "TownHall",
+      "name": "StoneCornerBlocks",
+      "mesh": "GEO_Expansion_TownHall_StoneCornerBlocks",
+      "surface": "LayeredStone",
+      "solid": false,
+      "tint": [
+        0.32,
+        0.345,
+        0.34,
+        1
+      ],
+      "bounds_min": [
+        -7.24,
+        0.7050000000000001,
+        -5.24
+      ],
+      "bounds_max": [
+        7.24,
+        5.8950000000000005,
+        5.24
+      ],
+      "triangles": 896
+    },
+    {
+      "kind": "School",
+      "name": "RootedStonePlinth",
+      "mesh": "GEO_Expansion_School_RootedStonePlinth",
+      "surface": "LayeredStone",
+      "solid": true,
+      "tint": [
+        0.32,
+        0.345,
+        0.34,
+        1
+      ],
+      "bounds_min": [
+        -7.0,
+        0.0,
+        -4.0
+      ],
+      "bounds_max": [
+        7.0,
+        0.48,
+        4.0
+      ],
+      "triangles": 28
+    },
+    {
+      "kind": "School",
+      "name": "PlinthStoneCourses",
+      "mesh": "GEO_Expansion_School_PlinthStoneCourses",
+      "surface": "LayeredStone",
+      "solid": false,
+      "tint": [
+        0.32,
+        0.345,
+        0.34,
+        1
+      ],
+      "bounds_min": [
+        -7.0295,
+        0.011999999999999997,
+        -4.0295000000000005
+      ],
+      "bounds_max": [
+        7.0295,
+        0.4536,
+        4.0295
+      ],
+      "triangles": 2072
+    },
+    {
+      "kind": "School",
+      "name": "PlasterWalls",
+      "mesh": "GEO_Expansion_School_PlasterWalls",
+      "surface": "AbandonedPlaster",
+      "solid": true,
+      "tint": [
+        0.55,
+        0.53,
+        0.47,
+        1
+      ],
+      "bounds_min": [
+        -7.0,
+        0.48,
+        -4.000000000000001
+      ],
+      "bounds_max": [
+        7.0,
+        4.24,
+        4.0
+      ],
+      "triangles": 1176
+    },
+    {
+      "kind": "School",
+      "name": "OpaqueWindowBacking",
+      "mesh": "GEO_Expansion_School_OpaqueWindowBacking",
+      "surface": "DarkWindow",
+      "solid": true,
+      "tint": [
+        0.075,
+        0.085,
+        0.08,
+        1
+      ],
+      "bounds_min": [
+        -6.81,
+        1.3405,
+        -3.8100000000000005
+      ],
+      "bounds_max": [
+        6.81,
+        3.4325,
+        3.81
+      ],
+      "triangles": 144
+    },
+    {
+      "kind": "School",
+      "name": "WindowJoinery",
+      "mesh": "GEO_Expansion_School_WindowJoinery",
+      "surface": "AbandonedWood",
+      "solid": true,
+      "tint": [
+        0.34,
+        0.305,
+        0.26,
+        1
+      ],
+      "bounds_min": [
+        -7.19,
+        1.2029999999999998,
+        -4.19
+      ],
+      "bounds_max": [
+        7.19,
+        3.5050000000000003,
+        4.1899999999999995
+      ],
+      "triangles": 1968
+    },
+    {
+      "kind": "School",
+      "name": "ShuttersAndBoards",
+      "mesh": "GEO_Expansion_School_ShuttersAndBoards",
+      "surface": "AbandonedWood",
+      "solid": true,
+      "tint": [
+        0.34,
+        0.305,
+        0.26,
+        1
+      ],
+      "bounds_min": [
+        -7.1875,
+        1.311357362080916,
+        -4.1875
+      ],
+      "bounds_max": [
+        7.235,
+        3.4674480065103173,
+        4.234999999999999
+      ],
+      "triangles": 1192
+    },
+    {
+      "kind": "School",
+      "name": "ClosedDoorLeaves",
+      "mesh": "GEO_Expansion_School_ClosedDoorLeaves",
+      "surface": "AbandonedWood",
+      "solid": true,
+      "tint": [
+        0.34,
+        0.305,
+        0.26,
+        1
+      ],
+      "bounds_min": [
+        -0.915,
+        0.41999999999999993,
+        3.715
+      ],
+      "bounds_max": [
+        0.915,
+        3.075,
+        4.1
+      ],
+      "triangles": 216
+    },
+    {
+      "kind": "School",
+      "name": "IronHardware",
+      "mesh": "GEO_Expansion_School_IronHardware",
+      "surface": "RustedIron",
+      "solid": false,
+      "tint": [
+        0.3,
+        0.255,
+        0.21,
+        1
+      ],
+      "bounds_min": [
+        -7.3745,
+        0.87,
+        -4.58
+      ],
+      "bounds_max": [
+        7.073500000000001,
+        4.142500000000001,
+        4.58
+      ],
+      "triangles": 108
+    },
+    {
+      "kind": "School",
+      "name": "FacadeBearingBands",
+      "mesh": "GEO_Expansion_School_FacadeBearingBands",
+      "surface": "Masonry",
+      "solid": false,
+      "tint": [
+        0.49,
+        0.485,
+        0.445,
+        1
+      ],
+      "bounds_min": [
+        -7.11,
+        4.0600000000000005,
+        -4.110000000000001
+      ],
+      "bounds_max": [
+        7.11,
+        4.24,
+        4.109999999999999
+      ],
+      "triangles": 112
+    },
+    {
+      "kind": "School",
+      "name": "WeatherExposedMasonry",
+      "mesh": "GEO_Expansion_School_WeatherExposedMasonry",
+      "surface": "Masonry",
+      "solid": false,
+      "tint": [
+        0.49,
+        0.485,
+        0.445,
+        1
+      ],
+      "bounds_min": [
+        -7.0225,
+        0.6,
+        -4.022500000000001
+      ],
+      "bounds_max": [
+        7.0225,
+        0.9099999999999999,
+        4.0225
+      ],
+      "triangles": 192
+    },
+    {
+      "kind": "School",
+      "name": "RoofDeck",
+      "mesh": "GEO_Expansion_School_RoofDeck",
+      "surface": "AbandonedRoof",
+      "solid": true,
+      "tint": [
+        0.27,
+        0.275,
+        0.25,
+        1
+      ],
+      "bounds_min": [
+        -7.525,
+        4.057016474466896,
+        -4.521954938300155
+      ],
+      "bounds_max": [
+        7.525,
+        5.5429835255331055,
+        4.521954938300155
+      ],
+      "triangles": 56
+    },
+    {
+      "kind": "School",
+      "name": "RoofCovering",
+      "mesh": "GEO_Expansion_School_RoofCovering",
+      "surface": "AbandonedRoof",
+      "solid": false,
+      "tint": [
+        0.27,
+        0.275,
+        0.25,
+        1
+      ],
+      "bounds_min": [
+        -7.512500000000001,
+        4.217885015677271,
+        -4.525300635482842
+      ],
+      "bounds_max": [
+        7.512500000000001,
+        5.583624470469261,
+        4.525300635482842
+      ],
+      "triangles": 108
+    },
+    {
+      "kind": "School",
+      "name": "RoofSnow",
+      "mesh": "GEO_Expansion_School_RoofSnow",
+      "surface": "WindSnow",
+      "solid": false,
+      "tint": [
+        0.83,
+        0.85,
+        0.84,
+        1
+      ],
+      "bounds_min": [
+        -7.4990000000000006,
+        2.9165570571171475,
+        -4.450435063534497
+      ],
+      "bounds_max": [
+        7.4990000000000006,
+        5.688594919935243,
+        5.301963271948399
+      ],
+      "triangles": 280
+    },
+    {
+      "kind": "School",
+      "name": "BearingTimbers",
+      "mesh": "GEO_Expansion_School_BearingTimbers",
+      "surface": "AbandonedWood",
+      "solid": true,
+      "tint": [
+        0.34,
+        0.305,
+        0.26,
+        1
+      ],
+      "bounds_min": [
+        -7.1,
+        4.035,
+        -4.41
+      ],
+      "bounds_max": [
+        7.1,
+        5.513177928190896,
+        4.41
+      ],
+      "triangles": 280
+    },
+    {
+      "kind": "School",
+      "name": "EavesAndGutters",
+      "mesh": "GEO_Expansion_School_EavesAndGutters",
+      "surface": "AbandonedWood",
+      "solid": false,
+      "tint": [
+        0.34,
+        0.305,
+        0.26,
+        1
+      ],
+      "bounds_min": [
+        -7.495,
+        4.050000000000001,
+        -4.5
+      ],
+      "bounds_max": [
+        7.495,
+        4.23,
+        4.5
+      ],
+      "triangles": 56
+    },
+    {
+      "kind": "School",
+      "name": "RidgeCap",
+      "mesh": "GEO_Expansion_School_RidgeCap",
+      "surface": "AbandonedRoof",
+      "solid": false,
+      "tint": [
+        0.27,
+        0.275,
+        0.25,
+        1
+      ],
+      "bounds_min": [
+        -7.5425,
+        5.485,
+        -0.125
+      ],
+      "bounds_max": [
+        7.5425,
+        5.675,
+        0.125
+      ],
+      "triangles": 28
+    },
+    {
+      "kind": "School",
+      "name": "ClosedGables",
+      "mesh": "GEO_Expansion_School_ClosedGables",
+      "surface": "AbandonedWood",
+      "solid": true,
+      "tint": [
+        0.34,
+        0.305,
+        0.26,
+        1
+      ],
+      "bounds_min": [
+        -7.0,
+        4.24,
+        -4.0
+      ],
+      "bounds_max": [
+        7.0,
+        5.44,
+        4.0
+      ],
+      "triangles": 16
+    },
+    {
+      "kind": "School",
+      "name": "WornEntranceSteps",
+      "mesh": "GEO_Expansion_School_WornEntranceSteps",
+      "surface": "LayeredStone",
+      "solid": true,
+      "tint": [
+        0.32,
+        0.345,
+        0.34,
+        1
+      ],
+      "bounds_min": [
+        -1.45,
+        0.0,
+        3.96
+      ],
+      "bounds_max": [
+        1.45,
+        0.48,
+        5.36
+      ],
+      "triangles": 84
+    },
+    {
+      "kind": "School",
+      "name": "EntranceCanopy",
+      "mesh": "GEO_Expansion_School_EntranceCanopy",
+      "surface": "AbandonedRoof",
+      "solid": true,
+      "tint": [
+        0.27,
+        0.275,
+        0.25,
+        1
+      ],
+      "bounds_min": [
+        -1.477165440262432,
+        2.754833135744465,
+        3.740452475526066
+      ],
+      "bounds_max": [
+        1.477165440262432,
+        3.205166864255535,
+        5.359547524473934
+      ],
+      "triangles": 28
+    },
+    {
+      "kind": "School",
+      "name": "EntrancePosts",
+      "mesh": "GEO_Expansion_School_EntrancePosts",
+      "surface": "AbandonedWood",
+      "solid": true,
+      "tint": [
+        0.34,
+        0.305,
+        0.26,
+        1
+      ],
+      "bounds_min": [
+        -1.2500000000000002,
+        0.43000000000000016,
+        5.03
+      ],
+      "bounds_max": [
+        1.2500000000000002,
+        2.927132742060861,
+        5.19
+      ],
+      "triangles": 112
+    },
+    {
+      "kind": "School",
+      "name": "GableBracing",
+      "mesh": "GEO_Expansion_School_GableBracing",
+      "surface": "AbandonedWood",
+      "solid": true,
+      "tint": [
+        0.34,
+        0.305,
+        0.26,
+        1
+      ],
+      "bounds_min": [
+        -6.82,
+        4.206322098277462,
+        -3.716528275548812
+      ],
+      "bounds_max": [
+        6.82,
+        5.433677901722539,
+        3.716528275548812
+      ],
+      "triangles": 112
+    },
+    {
+      "kind": "ShopBakery",
+      "name": "RootedStonePlinth",
+      "mesh": "GEO_Expansion_ShopBakery_RootedStonePlinth",
+      "surface": "LayeredStone",
+      "solid": true,
+      "tint": [
+        0.32,
+        0.345,
+        0.34,
+        1
+      ],
+      "bounds_min": [
+        -6.0,
+        0.0,
+        -4.5
+      ],
+      "bounds_max": [
+        6.0,
+        0.48,
+        4.5
+      ],
+      "triangles": 28
+    },
+    {
+      "kind": "ShopBakery",
+      "name": "PlinthStoneCourses",
+      "mesh": "GEO_Expansion_ShopBakery_PlinthStoneCourses",
+      "surface": "LayeredStone",
+      "solid": false,
+      "tint": [
+        0.32,
+        0.345,
+        0.34,
+        1
+      ],
+      "bounds_min": [
+        -6.0295,
+        0.011999999999999997,
+        -4.5295000000000005
+      ],
+      "bounds_max": [
+        6.0295,
+        0.4536,
+        4.5295
+      ],
+      "triangles": 1848
+    },
+    {
+      "kind": "ShopBakery",
+      "name": "PlasterWalls",
+      "mesh": "GEO_Expansion_ShopBakery_PlasterWalls",
+      "surface": "AbandonedPlaster",
+      "solid": true,
+      "tint": [
+        0.55,
+        0.53,
+        0.47,
+        1
+      ],
+      "bounds_min": [
+        -6.0,
+        0.48,
+        -4.500000000000001
+      ],
+      "bounds_max": [
+        6.0,
+        3.64,
+        4.5
+      ],
+      "triangles": 812
+    },
+    {
+      "kind": "ShopBakery",
+      "name": "OpaqueWindowBacking",
+      "mesh": "GEO_Expansion_ShopBakery_OpaqueWindowBacking",
+      "surface": "DarkWindow",
+      "solid": true,
+      "tint": [
+        0.075,
+        0.085,
+        0.08,
+        1
+      ],
+      "bounds_min": [
+        -5.81,
+        1.0775000000000001,
+        -4.31
+      ],
+      "bounds_max": [
+        5.81,
+        2.8725,
+        4.31
+      ],
+      "triangles": 84
+    },
+    {
+      "kind": "ShopBakery",
+      "name": "WindowJoinery",
+      "mesh": "GEO_Expansion_ShopBakery_WindowJoinery",
+      "surface": "AbandonedWood",
+      "solid": true,
+      "tint": [
+        0.34,
+        0.305,
+        0.26,
+        1
+      ],
+      "bounds_min": [
+        -6.19,
+        0.94,
+        -4.6899999999999995
+      ],
+      "bounds_max": [
+        6.19,
+        2.945,
+        4.6899999999999995
+      ],
+      "triangles": 1148
+    },
+    {
+      "kind": "ShopBakery",
+      "name": "ShuttersAndBoards",
+      "mesh": "GEO_Expansion_ShopBakery_ShuttersAndBoards",
+      "surface": "AbandonedWood",
+      "solid": true,
+      "tint": [
+        0.34,
+        0.305,
+        0.26,
+        1
+      ],
+      "bounds_min": [
+        -6.1875,
+        1.0481823181931362,
+        -4.687499999999999
+      ],
+      "bounds_max": [
+        6.235,
+        2.9074754046840567,
+        4.734999999999999
+      ],
+      "triangles": 712
+    },
+    {
+      "kind": "ShopBakery",
+      "name": "ClosedDoorLeaves",
+      "mesh": "GEO_Expansion_ShopBakery_ClosedDoorLeaves",
+      "surface": "AbandonedWood",
+      "solid": true,
+      "tint": [
+        0.34,
+        0.305,
+        0.26,
+        1
+      ],
+      "bounds_min": [
+        -3.3449999999999998,
+        0.41999999999999993,
+        -4.6000000000000005
+      ],
+      "bounds_max": [
+        0.8300000000000001,
+        3.135,
+        4.6
+      ],
+      "triangles": 504
+    },
+    {
+      "kind": "ShopBakery",
+      "name": "IronHardware",
+      "mesh": "GEO_Expansion_ShopBakery_IronHardware",
+      "surface": "RustedIron",
+      "solid": false,
+      "tint": [
+        0.3,
+        0.255,
+        0.21,
+        1
+      ],
+      "bounds_min": [
+        -6.394500000000001,
+        0.87,
+        -5.08
+      ],
+      "bounds_max": [
+        6.133500000000001,
+        3.5425,
+        5.08
+      ],
+      "triangles": 180
+    },
+    {
+      "kind": "ShopBakery",
+      "name": "FacadeBearingBands",
+      "mesh": "GEO_Expansion_ShopBakery_FacadeBearingBands",
+      "surface": "Masonry",
+      "solid": false,
+      "tint": [
+        0.49,
+        0.485,
+        0.445,
+        1
+      ],
+      "bounds_min": [
+        -6.11,
+        3.4600000000000004,
+        -4.61
+      ],
+      "bounds_max": [
+        6.11,
+        3.64,
+        4.609999999999999
+      ],
+      "triangles": 112
+    },
+    {
+      "kind": "ShopBakery",
+      "name": "WeatherExposedMasonry",
+      "mesh": "GEO_Expansion_ShopBakery_WeatherExposedMasonry",
+      "surface": "Masonry",
+      "solid": false,
+      "tint": [
+        0.49,
+        0.485,
+        0.445,
+        1
+      ],
+      "bounds_min": [
+        -6.0225,
+        0.6,
+        -4.522500000000001
+      ],
+      "bounds_max": [
+        6.0225,
+        0.9099999999999999,
+        4.5225
+      ],
+      "triangles": 192
+    },
+    {
+      "kind": "ShopBakery",
+      "name": "RoofDeck",
+      "mesh": "GEO_Expansion_ShopBakery_RoofDeck",
+      "surface": "AbandonedRoof",
+      "solid": true,
+      "tint": [
+        0.27,
+        0.275,
+        0.25,
+        1
+      ],
+      "bounds_min": [
+        -6.525,
+        3.4557240844941144,
+        -5.019202254554267
+      ],
+      "bounds_max": [
+        6.525,
+        4.894275915505885,
+        5.019202254554267
+      ],
+      "triangles": 56
+    },
+    {
+      "kind": "ShopBakery",
+      "name": "RoofCovering",
+      "mesh": "GEO_Expansion_ShopBakery_RoofCovering",
+      "surface": "AbandonedRoof",
+      "solid": false,
+      "tint": [
+        0.27,
+        0.275,
+        0.25,
+        1
+      ],
+      "bounds_min": [
+        -6.512500000000001,
+        3.6181921000487316,
+        -5.020503921617985
+      ],
+      "bounds_max": [
+        6.512500000000001,
+        4.935344819817814,
+        5.020503921617985
+      ],
+      "triangles": 108
+    },
+    {
+      "kind": "ShopBakery",
+      "name": "RoofSnow",
+      "mesh": "GEO_Expansion_ShopBakery_RoofSnow",
+      "surface": "WindSnow",
+      "solid": false,
+      "tint": [
+        0.83,
+        0.85,
+        0.84,
+        1
+      ],
+      "bounds_min": [
+        -6.4990000000000006,
+        3.6985416914480482,
+        -4.941053769559792
+      ],
+      "bounds_max": [
+        6.4990000000000006,
+        5.043334724935009,
+        4.941053769559792
+      ],
+      "triangles": 252
+    },
+    {
+      "kind": "ShopBakery",
+      "name": "BearingTimbers",
+      "mesh": "GEO_Expansion_ShopBakery_BearingTimbers",
+      "surface": "AbandonedWood",
+      "solid": true,
+      "tint": [
+        0.34,
+        0.305,
+        0.26,
+        1
+      ],
+      "bounds_min": [
+        -6.1,
+        3.435,
+        -4.91
+      ],
+      "bounds_max": [
+        6.1,
+        4.8645378436628475,
+        4.91
+      ],
+      "triangles": 280
+    },
+    {
+      "kind": "ShopBakery",
+      "name": "EavesAndGutters",
+      "mesh": "GEO_Expansion_ShopBakery_EavesAndGutters",
+      "surface": "AbandonedWood",
+      "solid": false,
+      "tint": [
+        0.34,
+        0.305,
+        0.26,
+        1
+      ],
+      "bounds_min": [
+        -6.495,
+        3.45,
+        -5.0
+      ],
+      "bounds_max": [
+        6.495,
+        3.63,
+        5.0
+      ],
+      "triangles": 56
+    },
+    {
+      "kind": "ShopBakery",
+      "name": "RidgeCap",
+      "mesh": "GEO_Expansion_ShopBakery_RidgeCap",
+      "surface": "AbandonedRoof",
+      "solid": false,
+      "tint": [
+        0.27,
+        0.275,
+        0.25,
+        1
+      ],
+      "bounds_min": [
+        -6.5425,
+        4.835,
+        -0.125
+      ],
+      "bounds_max": [
+        6.5425,
+        5.0249999999999995,
+        0.125
+      ],
+      "triangles": 28
+    },
+    {
+      "kind": "ShopBakery",
+      "name": "ClosedGables",
+      "mesh": "GEO_Expansion_ShopBakery_ClosedGables",
+      "surface": "AbandonedWood",
+      "solid": true,
+      "tint": [
+        0.34,
+        0.305,
+        0.26,
+        1
+      ],
+      "bounds_min": [
+        -6.0,
+        3.64,
+        -4.5
+      ],
+      "bounds_max": [
+        6.0,
+        4.79,
+        4.5
+      ],
+      "triangles": 16
+    },
+    {
+      "kind": "ShopBakery",
+      "name": "WornEntranceSteps",
+      "mesh": "GEO_Expansion_ShopBakery_WornEntranceSteps",
+      "surface": "LayeredStone",
+      "solid": true,
+      "tint": [
+        0.32,
+        0.345,
+        0.34,
+        1
+      ],
+      "bounds_min": [
+        -3.3499999999999996,
+        0.0,
+        -5.07
+      ],
+      "bounds_max": [
+        1.025,
+        0.48,
+        4.920000000000001
+      ],
+      "triangles": 168
+    },
+    {
+      "kind": "ShopBakery",
+      "name": "BakeryChimney_LayeredStone",
+      "mesh": "GEO_Expansion_ShopBakery_BakeryChimney_LayeredStone",
+      "surface": "LayeredStone",
+      "solid": true,
+      "tint": [
+        0.32,
+        0.345,
+        0.34,
+        1
+      ],
+      "bounds_min": [
+        3.6999999999999997,
+        0.48,
+        -2.54
+      ],
+      "bounds_max": [
+        4.8999999999999995,
+        6.359999999999999,
+        -1.46
+      ],
+      "triangles": 28
+    },
+    {
+      "kind": "ShopBakery",
+      "name": "BakeryChimney_Masonry",
+      "mesh": "GEO_Expansion_ShopBakery_BakeryChimney_Masonry",
+      "surface": "Masonry",
+      "solid": true,
+      "tint": [
+        0.49,
+        0.485,
+        0.445,
+        1
+      ],
+      "bounds_min": [
+        3.605,
+        6.33,
+        -2.635
+      ],
+      "bounds_max": [
+        4.995,
+        6.529999999999999,
+        -1.365
+      ],
+      "triangles": 28
+    },
+    {
+      "kind": "ShopBakery",
+      "name": "ChimneyDarkMouth",
+      "mesh": "GEO_Expansion_ShopBakery_ChimneyDarkMouth",
+      "surface": "DarkWindow",
+      "solid": false,
+      "tint": [
+        0.075,
+        0.085,
+        0.08,
+        1
+      ],
+      "bounds_min": [
+        3.855,
+        6.5245,
+        -2.365
+      ],
+      "bounds_max": [
+        4.745,
+        6.5495,
+        -1.635
+      ],
+      "triangles": 12
+    },
+    {
+      "kind": "ShopBakery",
+      "name": "OldChimneySoot",
+      "mesh": "GEO_Expansion_ShopBakery_OldChimneySoot",
+      "surface": "DarkWindow",
+      "solid": false,
+      "tint": [
+        0.23,
+        0.235,
+        0.22,
+        1
+      ],
+      "bounds_min": [
+        3.9099999999999997,
+        5.425,
+        -1.464
+      ],
+      "bounds_max": [
+        4.71,
+        6.335,
+        -1.4380000000000002
+      ],
+      "triangles": 12
+    },
+    {
+      "kind": "Workshop",
+      "name": "RootedStonePlinth",
+      "mesh": "GEO_Expansion_Workshop_RootedStonePlinth",
+      "surface": "LayeredStone",
+      "solid": true,
+      "tint": [
+        0.32,
+        0.345,
+        0.34,
+        1
+      ],
+      "bounds_min": [
+        -5.0,
+        0.0,
+        -4.0
+      ],
+      "bounds_max": [
+        5.0,
+        0.48,
+        4.0
+      ],
+      "triangles": 28
+    },
+    {
+      "kind": "Workshop",
+      "name": "PlinthStoneCourses",
+      "mesh": "GEO_Expansion_Workshop_PlinthStoneCourses",
+      "surface": "LayeredStone",
+      "solid": false,
+      "tint": [
+        0.32,
+        0.345,
+        0.34,
+        1
+      ],
+      "bounds_min": [
+        -5.0295,
+        0.011999999999999997,
+        -4.0295000000000005
+      ],
+      "bounds_max": [
+        5.0295,
+        0.4536,
+        4.0295
+      ],
+      "triangles": 1624
+    },
+    {
+      "kind": "Workshop",
+      "name": "TimberWalls",
+      "mesh": "GEO_Expansion_Workshop_TimberWalls",
+      "surface": "AbandonedWood",
+      "solid": true,
+      "tint": [
+        0.34,
+        0.305,
+        0.26,
+        1
+      ],
+      "bounds_min": [
+        -5.0,
+        0.48,
+        -4.000000000000001
+      ],
+      "bounds_max": [
+        5.0,
+        4.130000000000001,
+        4.0
+      ],
+      "triangles": 756
+    },
+    {
+      "kind": "Workshop",
+      "name": "ClosedDoorLeaves",
+      "mesh": "GEO_Expansion_Workshop_ClosedDoorLeaves",
+      "surface": "AbandonedWood",
+      "solid": true,
+      "tint": [
+        0.34,
+        0.305,
+        0.26,
+        1
+      ],
+      "bounds_min": [
+        -3.1799999999999997,
+        0.41999999999999993,
+        3.715
+      ],
+      "bounds_max": [
+        1.1799999999999997,
+        3.535,
+        4.1
+      ],
+      "triangles": 396
+    },
+    {
+      "kind": "Workshop",
+      "name": "IronHardware",
+      "mesh": "GEO_Expansion_Workshop_IronHardware",
+      "surface": "RustedIron",
+      "solid": false,
+      "tint": [
+        0.3,
+        0.255,
+        0.21,
+        1
+      ],
+      "bounds_min": [
+        -5.4145,
+        0.87,
+        -4.58
+      ],
+      "bounds_max": [
+        5.1935,
+        4.0325,
+        4.58
+      ],
+      "triangles": 120
+    },
+    {
+      "kind": "Workshop",
+      "name": "OpaqueWindowBacking",
+      "mesh": "GEO_Expansion_Workshop_OpaqueWindowBacking",
+      "surface": "DarkWindow",
+      "solid": true,
+      "tint": [
+        0.075,
+        0.085,
+        0.08,
+        1
+      ],
+      "bounds_min": [
+        -4.81,
+        1.4775,
+        -3.8100000000000005
+      ],
+      "bounds_max": [
+        4.81,
+        2.9425,
+        3.81
+      ],
+      "triangles": 84
+    },
+    {
+      "kind": "Workshop",
+      "name": "WindowJoinery",
+      "mesh": "GEO_Expansion_Workshop_WindowJoinery",
+      "surface": "AbandonedWood",
+      "solid": true,
+      "tint": [
+        0.34,
+        0.305,
+        0.26,
+        1
+      ],
+      "bounds_min": [
+        -5.19,
+        1.34,
+        -4.19
+      ],
+      "bounds_max": [
+        5.19,
+        3.015,
+        4.1899999999999995
+      ],
+      "triangles": 1148
+    },
+    {
+      "kind": "Workshop",
+      "name": "ShuttersAndBoards",
+      "mesh": "GEO_Expansion_Workshop_ShuttersAndBoards",
+      "surface": "AbandonedWood",
+      "solid": true,
+      "tint": [
+        0.34,
+        0.305,
+        0.26,
+        1
+      ],
+      "bounds_min": [
+        -5.1875,
+        1.4595193516609544,
+        -4.1875
+      ],
+      "bounds_max": [
+        5.235,
+        2.977575864654434,
+        4.1875
+      ],
+      "triangles": 716
+    },
+    {
+      "kind": "Workshop",
+      "name": "FacadeBearingBands",
+      "mesh": "GEO_Expansion_Workshop_FacadeBearingBands",
+      "surface": "AbandonedWood",
+      "solid": false,
+      "tint": [
+        0.34,
+        0.305,
+        0.26,
+        1
+      ],
+      "bounds_min": [
+        -5.115,
+        0.48,
+        -4.115
+      ],
+      "bounds_max": [
+        5.115,
+        4.13,
+        4.115
+      ],
+      "triangles": 1392
+    },
+    {
+      "kind": "Workshop",
+      "name": "RoofDeck",
+      "mesh": "GEO_Expansion_Workshop_RoofDeck",
+      "surface": "AbandonedRoof",
+      "solid": true,
+      "tint": [
+        0.27,
+        0.275,
+        0.25,
+        1
+      ],
+      "bounds_min": [
+        -5.525,
+        3.946421702777019,
+        -4.520721042006066
+      ],
+      "bounds_max": [
+        5.525,
+        5.353578297222981,
+        4.520721042006066
+      ],
+      "triangles": 56
+    },
+    {
+      "kind": "Workshop",
+      "name": "RoofCovering",
+      "mesh": "GEO_Expansion_Workshop_RoofCovering",
+      "surface": "AbandonedRoof",
+      "solid": false,
+      "tint": [
+        0.27,
+        0.275,
+        0.25,
+        1
+      ],
+      "bounds_min": [
+        -5.5125,
+        4.108035975503617,
+        -4.523148351827496
+      ],
+      "bounds_max": [
+        5.5125,
+        5.394418374121415,
+        4.523148351827496
+      ],
+      "triangles": 108
+    },
+    {
+      "kind": "Workshop",
+      "name": "RoofSnow",
+      "mesh": "GEO_Expansion_Workshop_RoofSnow",
+      "surface": "WindSnow",
+      "solid": false,
+      "tint": [
+        0.83,
+        0.85,
+        0.84,
+        1
+      ],
+      "bounds_min": [
+        -5.499,
+        4.190690909502383,
+        -4.446209271847774
+      ],
+      "bounds_max": [
+        5.499,
+        5.500763680587414,
+        4.446209271847774
+      ],
+      "triangles": 252
+    },
+    {
+      "kind": "Workshop",
+      "name": "BearingTimbers",
+      "mesh": "GEO_Expansion_Workshop_BearingTimbers",
+      "surface": "AbandonedWood",
+      "solid": true,
+      "tint": [
+        0.34,
+        0.305,
+        0.26,
+        1
+      ],
+      "bounds_min": [
+        -5.1,
+        3.925,
+        -4.41
+      ],
+      "bounds_max": [
+        5.1,
+        5.323801562470894,
+        4.41
+      ],
+      "triangles": 280
+    },
+    {
+      "kind": "Workshop",
+      "name": "EavesAndGutters",
+      "mesh": "GEO_Expansion_Workshop_EavesAndGutters",
+      "surface": "AbandonedWood",
+      "solid": false,
+      "tint": [
+        0.34,
+        0.305,
+        0.26,
+        1
+      ],
+      "bounds_min": [
+        -5.495,
+        3.9400000000000004,
+        -4.5
+      ],
+      "bounds_max": [
+        5.495,
+        4.12,
+        4.5
+      ],
+      "triangles": 56
+    },
+    {
+      "kind": "Workshop",
+      "name": "RidgeCap",
+      "mesh": "GEO_Expansion_Workshop_RidgeCap",
+      "surface": "AbandonedRoof",
+      "solid": false,
+      "tint": [
+        0.27,
+        0.275,
+        0.25,
+        1
+      ],
+      "bounds_min": [
+        -5.5425,
+        5.295,
+        -0.125
+      ],
+      "bounds_max": [
+        5.5425,
+        5.484999999999999,
+        0.125
+      ],
+      "triangles": 28
+    },
+    {
+      "kind": "Workshop",
+      "name": "ClosedGables",
+      "mesh": "GEO_Expansion_Workshop_ClosedGables",
+      "surface": "AbandonedWood",
+      "solid": true,
+      "tint": [
+        0.34,
+        0.305,
+        0.26,
+        1
+      ],
+      "bounds_min": [
+        -5.0,
+        4.13,
+        -4.0
+      ],
+      "bounds_max": [
+        5.0,
+        5.25,
+        4.0
+      ],
+      "triangles": 16
+    },
+    {
+      "kind": "Workshop",
+      "name": "WornEntranceSteps",
+      "mesh": "GEO_Expansion_Workshop_WornEntranceSteps",
+      "surface": "LayeredStone",
+      "solid": true,
+      "tint": [
+        0.32,
+        0.345,
+        0.34,
+        1
+      ],
+      "bounds_min": [
+        -3.2,
+        0.0,
+        3.96
+      ],
+      "bounds_max": [
+        1.2000000000000002,
+        0.48,
+        4.86
+      ],
+      "triangles": 84
+    },
+    {
+      "kind": "Workshop",
+      "name": "BrokenRearAnnex_LayeredStone",
+      "mesh": "GEO_Expansion_Workshop_BrokenRearAnnex_LayeredStone",
+      "surface": "LayeredStone",
+      "solid": true,
+      "tint": [
+        0.32,
+        0.345,
+        0.34,
+        1
+      ],
+      "bounds_min": [
+        -4.3,
+        0.0,
+        -6.029999999999999
+      ],
+      "bounds_max": [
+        -0.5,
+        0.36,
+        -3.9099999999999997
+      ],
+      "triangles": 28
+    },
+    {
+      "kind": "Workshop",
+      "name": "BrokenRearAnnex_AbandonedWood",
+      "mesh": "GEO_Expansion_Workshop_BrokenRearAnnex_AbandonedWood",
+      "surface": "AbandonedWood",
+      "solid": true,
+      "tint": [
+        0.34,
+        0.305,
+        0.26,
+        1
+      ],
+      "bounds_min": [
+        -4.235,
+        0.36,
+        -6.03
+      ],
+      "bounds_max": [
+        -0.575,
+        1.9700000000000002,
+        -4.03
+      ],
+      "triangles": 56
+    },
+    {
+      "kind": "Workshop",
+      "name": "CollapsedAnnexRafters",
+      "mesh": "GEO_Expansion_Workshop_CollapsedAnnexRafters",
+      "surface": "AbandonedWood",
+      "solid": true,
+      "tint": [
+        0.34,
+        0.305,
+        0.26,
+        1
+      ],
+      "bounds_min": [
+        -4.047537453169456,
+        0.3451706810004522,
+        -5.945696977687371
+      ],
+      "bounds_max": [
+        -0.902462546830545,
+        0.7443888561422882,
+        -4.1643030223126285
+      ],
+      "triangles": 56
+    },
+    {
+      "kind": "MountainRescue",
+      "name": "RootedStonePlinth",
+      "mesh": "GEO_Expansion_MountainRescue_RootedStonePlinth",
+      "surface": "LayeredStone",
+      "solid": true,
+      "tint": [
+        0.32,
+        0.345,
+        0.34,
+        1
+      ],
+      "bounds_min": [
+        -6.0,
+        0.0,
+        -4.0
+      ],
+      "bounds_max": [
+        6.0,
+        0.48,
+        4.0
+      ],
+      "triangles": 28
+    },
+    {
+      "kind": "MountainRescue",
+      "name": "PlinthStoneCourses",
+      "mesh": "GEO_Expansion_MountainRescue_PlinthStoneCourses",
+      "surface": "LayeredStone",
+      "solid": false,
+      "tint": [
+        0.32,
+        0.345,
+        0.34,
+        1
+      ],
+      "bounds_min": [
+        -6.0295,
+        0.011999999999999997,
+        -4.0295000000000005
+      ],
+      "bounds_max": [
+        6.0295,
+        0.4536,
+        4.0295
+      ],
+      "triangles": 1792
+    },
+    {
+      "kind": "MountainRescue",
+      "name": "PlasterWalls",
+      "mesh": "GEO_Expansion_MountainRescue_PlasterWalls",
+      "surface": "AbandonedPlaster",
+      "solid": true,
+      "tint": [
+        0.55,
+        0.53,
+        0.47,
+        1
+      ],
+      "bounds_min": [
+        -6.0,
+        0.48,
+        -4.000000000000001
+      ],
+      "bounds_max": [
+        6.0,
+        4.220000000000001,
+        4.0
+      ],
+      "triangles": 980
+    },
+    {
+      "kind": "MountainRescue",
+      "name": "ClosedDoorLeaves",
+      "mesh": "GEO_Expansion_MountainRescue_ClosedDoorLeaves",
+      "surface": "AbandonedWood",
+      "solid": true,
+      "tint": [
+        0.34,
+        0.305,
+        0.26,
+        1
+      ],
+      "bounds_min": [
+        -4.955,
+        0.41999999999999993,
+        3.715
+      ],
+      "bounds_max": [
+        4.745,
+        3.655,
+        4.1
+      ],
+      "triangles": 600
+    },
+    {
+      "kind": "MountainRescue",
+      "name": "IronHardware",
+      "mesh": "GEO_Expansion_MountainRescue_IronHardware",
+      "surface": "RustedIron",
+      "solid": false,
+      "tint": [
+        0.3,
+        0.255,
+        0.21,
+        1
+      ],
+      "bounds_min": [
+        -6.394500000000001,
+        0.87,
+        -4.58
+      ],
+      "bounds_max": [
+        6.133500000000001,
+        4.122500000000001,
+        4.58
+      ],
+      "triangles": 180
+    },
+    {
+      "kind": "MountainRescue",
+      "name": "OpaqueWindowBacking",
+      "mesh": "GEO_Expansion_MountainRescue_OpaqueWindowBacking",
+      "surface": "DarkWindow",
+      "solid": true,
+      "tint": [
+        0.075,
+        0.085,
+        0.08,
+        1
+      ],
+      "bounds_min": [
+        -5.81,
+        1.5875000000000001,
+        -3.8100000000000005
+      ],
+      "bounds_max": [
+        5.81,
+        2.9825000000000004,
+        3.81
+      ],
+      "triangles": 108
+    },
+    {
+      "kind": "MountainRescue",
+      "name": "WindowJoinery",
+      "mesh": "GEO_Expansion_MountainRescue_WindowJoinery",
+      "surface": "AbandonedWood",
+      "solid": true,
+      "tint": [
+        0.34,
+        0.305,
+        0.26,
+        1
+      ],
+      "bounds_min": [
+        -6.19,
+        1.45,
+        -4.19
+      ],
+      "bounds_max": [
+        6.19,
+        3.055,
+        4.1899999999999995
+      ],
+      "triangles": 1476
+    },
+    {
+      "kind": "MountainRescue",
+      "name": "ShuttersAndBoards",
+      "mesh": "GEO_Expansion_MountainRescue_ShuttersAndBoards",
+      "surface": "AbandonedWood",
+      "solid": true,
+      "tint": [
+        0.34,
+        0.305,
+        0.26,
+        1
+      ],
+      "bounds_min": [
+        -6.1875,
+        1.569274290218063,
+        -4.1875
+      ],
+      "bounds_max": [
+        6.235,
+        3.017597174345121,
+        4.1875
+      ],
+      "triangles": 896
+    },
+    {
+      "kind": "MountainRescue",
+      "name": "FacadeBearingBands",
+      "mesh": "GEO_Expansion_MountainRescue_FacadeBearingBands",
+      "surface": "Masonry",
+      "solid": false,
+      "tint": [
+        0.49,
+        0.485,
+        0.445,
+        1
+      ],
+      "bounds_min": [
+        -6.11,
+        4.040000000000001,
+        -4.11
+      ],
+      "bounds_max": [
+        6.11,
+        4.220000000000001,
+        4.109999999999999
+      ],
+      "triangles": 112
+    },
+    {
+      "kind": "MountainRescue",
+      "name": "WeatherExposedMasonry",
+      "mesh": "GEO_Expansion_MountainRescue_WeatherExposedMasonry",
+      "surface": "Masonry",
+      "solid": false,
+      "tint": [
+        0.49,
+        0.485,
+        0.445,
+        1
+      ],
+      "bounds_min": [
+        -6.0225,
+        0.6,
+        -4.022500000000001
+      ],
+      "bounds_max": [
+        6.0225,
+        0.9099999999999999,
+        4.0225
+      ],
+      "triangles": 192
+    },
+    {
+      "kind": "MountainRescue",
+      "name": "RoofDeck",
+      "mesh": "GEO_Expansion_MountainRescue_RoofDeck",
+      "surface": "AbandonedRoof",
+      "solid": true,
+      "tint": [
+        0.27,
+        0.275,
+        0.25,
+        1
+      ],
+      "bounds_min": [
+        -6.525,
+        4.0362031144085595,
+        -4.520253918413543
+      ],
+      "bounds_max": [
+        6.525,
+        5.413796885591443,
+        4.520253918413543
+      ],
+      "triangles": 56
+    },
+    {
+      "kind": "MountainRescue",
+      "name": "RoofCovering",
+      "mesh": "GEO_Expansion_MountainRescue_RoofCovering",
+      "surface": "AbandonedRoof",
+      "solid": false,
+      "tint": [
+        0.27,
+        0.275,
+        0.25,
+        1
+      ],
+      "bounds_min": [
+        -6.512500000000001,
+        4.19808746093164,
+        -4.522334462374332
+      ],
+      "bounds_max": [
+        6.512500000000001,
+        5.454709242827616,
+        4.522334462374332
+      ],
+      "triangles": 108
+    },
+    {
+      "kind": "MountainRescue",
+      "name": "RoofSnow",
+      "mesh": "GEO_Expansion_MountainRescue_RoofSnow",
+      "surface": "WindSnow",
+      "solid": false,
+      "tint": [
+        0.83,
+        0.85,
+        0.84,
+        1
+      ],
+      "bounds_min": [
+        -6.4990000000000006,
+        4.280035570223732,
+        -4.44461825890037
+      ],
+      "bounds_max": [
+        6.4990000000000006,
+        5.561565937733821,
+        4.44461825890037
+      ],
+      "triangles": 252
+    },
+    {
+      "kind": "MountainRescue",
+      "name": "BearingTimbers",
+      "mesh": "GEO_Expansion_MountainRescue_BearingTimbers",
+      "surface": "AbandonedWood",
+      "solid": true,
+      "tint": [
+        0.34,
+        0.305,
+        0.26,
+        1
+      ],
+      "bounds_min": [
+        -6.1,
+        4.015000000000001,
+        -4.41
+      ],
+      "bounds_max": [
+        6.1,
+        5.384030597343097,
+        4.41
+      ],
+      "triangles": 280
+    },
+    {
+      "kind": "MountainRescue",
+      "name": "EavesAndGutters",
+      "mesh": "GEO_Expansion_MountainRescue_EavesAndGutters",
+      "surface": "AbandonedWood",
+      "solid": false,
+      "tint": [
+        0.34,
+        0.305,
+        0.26,
+        1
+      ],
+      "bounds_min": [
+        -6.495,
+        4.030000000000001,
+        -4.5
+      ],
+      "bounds_max": [
+        6.495,
+        4.210000000000001,
+        4.5
+      ],
+      "triangles": 56
+    },
+    {
+      "kind": "MountainRescue",
+      "name": "RidgeCap",
+      "mesh": "GEO_Expansion_MountainRescue_RidgeCap",
+      "surface": "AbandonedRoof",
+      "solid": false,
+      "tint": [
+        0.27,
+        0.275,
+        0.25,
+        1
+      ],
+      "bounds_min": [
+        -6.5425,
+        5.355,
+        -0.125
+      ],
+      "bounds_max": [
+        6.5425,
+        5.545,
+        0.125
+      ],
+      "triangles": 28
+    },
+    {
+      "kind": "MountainRescue",
+      "name": "ClosedGables",
+      "mesh": "GEO_Expansion_MountainRescue_ClosedGables",
+      "surface": "AbandonedWood",
+      "solid": true,
+      "tint": [
+        0.34,
+        0.305,
+        0.26,
+        1
+      ],
+      "bounds_min": [
+        -6.0,
+        4.220000000000001,
+        -4.0
+      ],
+      "bounds_max": [
+        6.0,
+        5.3100000000000005,
+        4.0
+      ],
+      "triangles": 16
+    },
+    {
+      "kind": "MountainRescue",
+      "name": "WornEntranceSteps",
+      "mesh": "GEO_Expansion_MountainRescue_WornEntranceSteps",
+      "surface": "LayeredStone",
+      "solid": true,
+      "tint": [
+        0.32,
+        0.345,
+        0.34,
+        1
+      ],
+      "bounds_min": [
+        -4.975,
+        0.0,
+        3.9599999999999995
+      ],
+      "bounds_max": [
+        4.825,
+        0.48,
+        4.79
+      ],
+      "triangles": 168
+    },
+    {
+      "kind": "MountainRescue",
+      "name": "GaragePortalTimbers",
+      "mesh": "GEO_Expansion_MountainRescue_GaragePortalTimbers",
+      "surface": "AbandonedWood",
+      "solid": true,
+      "tint": [
+        0.34,
+        0.305,
+        0.26,
+        1
+      ],
+      "bounds_min": [
+        -5.25,
+        0.47,
+        3.9399999999999995
+      ],
+      "bounds_max": [
+        -0.15000000000000036,
+        3.835,
+        4.18
+      ],
+      "triangles": 84
+    },
+    {
+      "kind": "AbandonedHouseA",
+      "name": "RootedStonePlinth",
+      "mesh": "GEO_Expansion_AbandonedHouseA_RootedStonePlinth",
+      "surface": "LayeredStone",
+      "solid": true,
+      "tint": [
+        0.32,
+        0.345,
+        0.34,
+        1
+      ],
+      "bounds_min": [
+        -4.0,
+        0.0,
+        -3.5
+      ],
+      "bounds_max": [
+        4.0,
+        0.48,
+        3.5
+      ],
+      "triangles": 28
+    },
+    {
+      "kind": "AbandonedHouseA",
+      "name": "PlinthStoneCourses",
+      "mesh": "GEO_Expansion_AbandonedHouseA_PlinthStoneCourses",
+      "surface": "LayeredStone",
+      "solid": false,
+      "tint": [
+        0.32,
+        0.345,
+        0.34,
+        1
+      ],
+      "bounds_min": [
+        -4.0295,
+        0.011999999999999997,
+        -3.5295000000000005
+      ],
+      "bounds_max": [
+        4.0295,
+        0.4536,
+        3.5295
+      ],
+      "triangles": 1400
+    },
+    {
+      "kind": "AbandonedHouseA",
+      "name": "TimberWalls",
+      "mesh": "GEO_Expansion_AbandonedHouseA_TimberWalls",
+      "surface": "AbandonedWood",
+      "solid": true,
+      "tint": [
+        0.34,
+        0.305,
+        0.26,
+        1
+      ],
+      "bounds_min": [
+        -4.0,
+        0.48,
+        -3.5000000000000004
+      ],
+      "bounds_max": [
+        4.0,
+        3.7500000000000004,
+        3.5
+      ],
+      "triangles": 840
+    },
+    {
+      "kind": "AbandonedHouseA",
+      "name": "OpaqueWindowBacking",
+      "mesh": "GEO_Expansion_AbandonedHouseA_OpaqueWindowBacking",
+      "surface": "DarkWindow",
+      "solid": true,
+      "tint": [
+        0.075,
+        0.085,
+        0.08,
+        1
+      ],
+      "bounds_min": [
+        -3.81,
+        1.399,
+        -3.31
+      ],
+      "bounds_max": [
+        3.81,
+        2.624,
+        3.31
+      ],
+      "triangles": 96
+    },
+    {
+      "kind": "AbandonedHouseA",
+      "name": "WindowJoinery",
+      "mesh": "GEO_Expansion_AbandonedHouseA_WindowJoinery",
+      "surface": "AbandonedWood",
+      "solid": true,
+      "tint": [
+        0.34,
+        0.305,
+        0.26,
+        1
+      ],
+      "bounds_min": [
+        -4.1899999999999995,
+        1.2615,
+        -3.6900000000000004
+      ],
+      "bounds_max": [
+        4.1899999999999995,
+        2.6965,
+        3.69
+      ],
+      "triangles": 1312
+    },
+    {
+      "kind": "AbandonedHouseA",
+      "name": "ShuttersAndBoards",
+      "mesh": "GEO_Expansion_AbandonedHouseA_ShuttersAndBoards",
+      "surface": "AbandonedWood",
+      "solid": true,
+      "tint": [
+        0.34,
+        0.305,
+        0.26,
+        1
+      ],
+      "bounds_min": [
+        -4.1875,
+        1.3815,
+        -3.6875000000000004
+      ],
+      "bounds_max": [
+        4.1875,
+        2.6415,
+        3.6875
+      ],
+      "triangles": 960
+    },
+    {
+      "kind": "AbandonedHouseA",
+      "name": "ClosedDoorLeaves",
+      "mesh": "GEO_Expansion_AbandonedHouseA_ClosedDoorLeaves",
+      "surface": "AbandonedWood",
+      "solid": true,
+      "tint": [
+        0.34,
+        0.305,
+        0.26,
+        1
+      ],
+      "bounds_min": [
+        -0.795,
+        0.41999999999999993,
+        3.215
+      ],
+      "bounds_max": [
+        0.795,
+        2.805,
+        3.5999999999999996
+      ],
+      "triangles": 192
+    },
+    {
+      "kind": "AbandonedHouseA",
+      "name": "IronHardware",
+      "mesh": "GEO_Expansion_AbandonedHouseA_IronHardware",
+      "surface": "RustedIron",
+      "solid": false,
+      "tint": [
+        0.3,
+        0.255,
+        0.21,
+        1
+      ],
+      "bounds_min": [
+        -4.4350000000000005,
+        0.87,
+        -4.08
+      ],
+      "bounds_max": [
+        4.4350000000000005,
+        3.6525,
+        4.08
+      ],
+      "triangles": 84
+    },
+    {
+      "kind": "AbandonedHouseA",
+      "name": "FacadeBearingBands",
+      "mesh": "GEO_Expansion_AbandonedHouseA_FacadeBearingBands",
+      "surface": "AbandonedWood",
+      "solid": false,
+      "tint": [
+        0.34,
+        0.305,
+        0.26,
+        1
+      ],
+      "bounds_min": [
+        -4.115,
+        0.48,
+        -3.615
+      ],
+      "bounds_max": [
+        4.115,
+        3.75,
+        3.6149999999999998
+      ],
+      "triangles": 1200
+    },
+    {
+      "kind": "AbandonedHouseA",
+      "name": "RoofDeck",
+      "mesh": "GEO_Expansion_AbandonedHouseA_RoofDeck",
+      "surface": "AbandonedRoof",
+      "solid": true,
+      "tint": [
+        0.27,
+        0.275,
+        0.25,
+        1
+      ],
+      "bounds_min": [
+        -4.525,
+        3.568027405477225,
+        -4.023940794325094
+      ],
+      "bounds_max": [
+        4.525,
+        5.021972594522775,
+        4.023940794325094
+      ],
+      "triangles": 56
+    },
+    {
+      "kind": "AbandonedHouseA",
+      "name": "RoofCovering",
+      "mesh": "GEO_Expansion_AbandonedHouseA_RoofCovering",
+      "surface": "AbandonedRoof",
+      "solid": false,
+      "tint": [
+        0.27,
+        0.275,
+        0.25,
+        1
+      ],
+      "bounds_min": [
+        -4.5125,
+        3.727595821400034,
+        -4.028772019019698
+      ],
+      "bounds_max": [
+        4.5125,
+        5.062267697115961,
+        4.028772019019698
+      ],
+      "triangles": 120
+    },
+    {
+      "kind": "AbandonedHouseA",
+      "name": "RoofSnow",
+      "mesh": "GEO_Expansion_AbandonedHouseA_RoofSnow",
+      "surface": "WindSnow",
+      "solid": false,
+      "tint": [
+        0.83,
+        0.85,
+        0.84,
+        1
+      ],
+      "bounds_min": [
+        -4.4990000000000006,
+        2.9913051056613793,
+        -3.9573077248484227
+      ],
+      "bounds_max": [
+        4.4990000000000006,
+        5.164951148744955,
+        4.795476968302761
+      ],
+      "triangles": 308
+    },
+    {
+      "kind": "AbandonedHouseA",
+      "name": "BearingTimbers",
+      "mesh": "GEO_Expansion_AbandonedHouseA_BearingTimbers",
+      "surface": "AbandonedWood",
+      "solid": true,
+      "tint": [
+        0.34,
+        0.305,
+        0.26,
+        1
+      ],
+      "bounds_min": [
+        -4.1,
+        3.545,
+        -3.91
+      ],
+      "bounds_max": [
+        4.1,
+        4.992068471098697,
+        3.91
+      ],
+      "triangles": 280
+    },
+    {
+      "kind": "AbandonedHouseA",
+      "name": "EavesAndGutters",
+      "mesh": "GEO_Expansion_AbandonedHouseA_EavesAndGutters",
+      "surface": "AbandonedWood",
+      "solid": false,
+      "tint": [
+        0.34,
+        0.305,
+        0.26,
+        1
+      ],
+      "bounds_min": [
+        -4.495,
+        3.56,
+        -4.0
+      ],
+      "bounds_max": [
+        4.495,
+        3.7399999999999998,
+        4.0
+      ],
+      "triangles": 56
+    },
+    {
+      "kind": "AbandonedHouseA",
+      "name": "RidgeCap",
+      "mesh": "GEO_Expansion_AbandonedHouseA_RidgeCap",
+      "surface": "AbandonedRoof",
+      "solid": false,
+      "tint": [
+        0.27,
+        0.275,
+        0.25,
+        1
+      ],
+      "bounds_min": [
+        -4.5425,
+        4.965,
+        -0.125
+      ],
+      "bounds_max": [
+        4.5425,
+        5.154999999999999,
+        0.125
+      ],
+      "triangles": 28
+    },
+    {
+      "kind": "AbandonedHouseA",
+      "name": "ClosedGables",
+      "mesh": "GEO_Expansion_AbandonedHouseA_ClosedGables",
+      "surface": "AbandonedWood",
+      "solid": true,
+      "tint": [
+        0.34,
+        0.305,
+        0.26,
+        1
+      ],
+      "bounds_min": [
+        -4.0,
+        3.75,
+        -3.5
+      ],
+      "bounds_max": [
+        4.0,
+        4.92,
+        3.5
+      ],
+      "triangles": 16
+    },
+    {
+      "kind": "AbandonedHouseA",
+      "name": "WornEntranceSteps",
+      "mesh": "GEO_Expansion_AbandonedHouseA_WornEntranceSteps",
+      "surface": "LayeredStone",
+      "solid": true,
+      "tint": [
+        0.32,
+        0.345,
+        0.34,
+        1
+      ],
+      "bounds_min": [
+        -1.065,
+        0.0,
+        3.46
+      ],
+      "bounds_max": [
+        1.065,
+        0.48,
+        4.86
+      ],
+      "triangles": 84
+    },
+    {
+      "kind": "AbandonedHouseA",
+      "name": "EntranceCanopy",
+      "mesh": "GEO_Expansion_AbandonedHouseA_EntranceCanopy",
+      "surface": "AbandonedRoof",
+      "solid": true,
+      "tint": [
+        0.27,
+        0.275,
+        0.25,
+        1
+      ],
+      "bounds_min": [
+        -1.09,
+        2.831625698867506,
+        3.247117651019763
+      ],
+      "bounds_max": [
+        1.09,
+        3.128374301132494,
+        4.852882348980237
+      ],
+      "triangles": 28
+    },
+    {
+      "kind": "AbandonedHouseA",
+      "name": "EntrancePosts",
+      "mesh": "GEO_Expansion_AbandonedHouseA_EntrancePosts",
+      "surface": "AbandonedWood",
+      "solid": true,
+      "tint": [
+        0.34,
+        0.305,
+        0.26,
+        1
+      ],
+      "bounds_min": [
+        -0.9035,
+        0.43000000000000016,
+        4.53
+      ],
+      "bounds_max": [
+        0.9035,
+        2.921082179145116,
+        4.69
+      ],
+      "triangles": 112
+    },
+    {
+      "kind": "AbandonedHouseB",
+      "name": "RootedStonePlinth",
+      "mesh": "GEO_Expansion_AbandonedHouseB_RootedStonePlinth",
+      "surface": "LayeredStone",
+      "solid": true,
+      "tint": [
+        0.32,
+        0.345,
+        0.34,
+        1
+      ],
+      "bounds_min": [
+        -4.5,
+        0.0,
+        -4.0
+      ],
+      "bounds_max": [
+        4.5,
+        0.62,
+        4.0
+      ],
+      "triangles": 28
+    },
+    {
+      "kind": "AbandonedHouseB",
+      "name": "PlinthStoneCourses",
+      "mesh": "GEO_Expansion_AbandonedHouseB_PlinthStoneCourses",
+      "surface": "LayeredStone",
+      "solid": false,
+      "tint": [
+        0.32,
+        0.345,
+        0.34,
+        1
+      ],
+      "bounds_min": [
+        -4.5295,
+        0.015499999999999986,
+        -4.0295000000000005
+      ],
+      "bounds_max": [
+        4.5295,
+        0.5859,
+        4.0295
+      ],
+      "triangles": 1512
+    },
+    {
+      "kind": "AbandonedHouseB",
+      "name": "PlasterWalls",
+      "mesh": "GEO_Expansion_AbandonedHouseB_PlasterWalls",
+      "surface": "AbandonedPlaster",
+      "solid": true,
+      "tint": [
+        0.55,
+        0.53,
+        0.47,
+        1
+      ],
+      "bounds_min": [
+        -4.5,
+        0.62,
+        -4.0
+      ],
+      "bounds_max": [
+        4.5,
+        2.73,
+        4.0
+      ],
+      "triangles": 840
+    },
+    {
+      "kind": "AbandonedHouseB",
+      "name": "OpaqueWindowBacking",
+      "mesh": "GEO_Expansion_AbandonedHouseB_OpaqueWindowBacking",
+      "surface": "DarkWindow",
+      "solid": true,
+      "tint": [
+        0.075,
+        0.085,
+        0.08,
+        1
+      ],
+      "bounds_min": [
+        -4.31,
+        1.116,
+        -3.81
+      ],
+      "bounds_max": [
+        4.31,
+        4.231,
+        3.81
+      ],
+      "triangles": 192
+    },
+    {
+      "kind": "AbandonedHouseB",
+      "name": "WindowJoinery",
+      "mesh": "GEO_Expansion_AbandonedHouseB_WindowJoinery",
+      "surface": "AbandonedWood",
+      "solid": true,
+      "tint": [
+        0.34,
+        0.305,
+        0.26,
+        1
+      ],
+      "bounds_min": [
+        -4.69,
+        0.9784999999999999,
+        -4.19
+      ],
+      "bounds_max": [
+        4.69,
+        4.3035,
+        4.1899999999999995
+      ],
+      "triangles": 2624
+    },
+    {
+      "kind": "AbandonedHouseB",
+      "name": "ShuttersAndBoards",
+      "mesh": "GEO_Expansion_AbandonedHouseB_ShuttersAndBoards",
+      "surface": "AbandonedWood",
+      "solid": true,
+      "tint": [
+        0.34,
+        0.305,
+        0.26,
+        1
+      ],
+      "bounds_min": [
+        -4.6875,
+        1.0985,
+        -4.1875
+      ],
+      "bounds_max": [
+        4.6875,
+        4.2485,
+        4.1875
+      ],
+      "triangles": 1920
+    },
+    {
+      "kind": "AbandonedHouseB",
+      "name": "ClosedDoorLeaves",
+      "mesh": "GEO_Expansion_AbandonedHouseB_ClosedDoorLeaves",
+      "surface": "AbandonedWood",
+      "solid": true,
+      "tint": [
+        0.34,
+        0.305,
+        0.26,
+        1
+      ],
+      "bounds_min": [
+        -0.795,
+        0.5599999999999999,
+        3.715
+      ],
+      "bounds_max": [
+        0.795,
+        2.745,
+        4.1
+      ],
+      "triangles": 192
+    },
+    {
+      "kind": "AbandonedHouseB",
+      "name": "IronHardware",
+      "mesh": "GEO_Expansion_AbandonedHouseB_IronHardware",
+      "surface": "RustedIron",
+      "solid": false,
+      "tint": [
+        0.3,
+        0.255,
+        0.21,
+        1
+      ],
+      "bounds_min": [
+        -4.9350000000000005,
+        1.01,
+        -4.58
+      ],
+      "bounds_max": [
+        4.9350000000000005,
+        4.742500000000001,
+        4.58
+      ],
+      "triangles": 84
+    },
+    {
+      "kind": "AbandonedHouseB",
+      "name": "FacadeBearingBands",
+      "mesh": "GEO_Expansion_AbandonedHouseB_FacadeBearingBands",
+      "surface": "AbandonedWood",
+      "solid": false,
+      "tint": [
+        0.34,
+        0.305,
+        0.26,
+        1
+      ],
+      "bounds_min": [
+        -4.615,
+        2.55,
+        -4.115
+      ],
+      "bounds_max": [
+        4.615,
+        4.84,
+        4.115
+      ],
+      "triangles": 1024
+    },
+    {
+      "kind": "AbandonedHouseB",
+      "name": "WeatherExposedMasonry",
+      "mesh": "GEO_Expansion_AbandonedHouseB_WeatherExposedMasonry",
+      "surface": "Masonry",
+      "solid": false,
+      "tint": [
+        0.49,
+        0.485,
+        0.445,
+        1
+      ],
+      "bounds_min": [
+        -4.5225,
+        0.74,
+        -4.0225
+      ],
+      "bounds_max": [
+        4.5225,
+        1.05,
+        4.0225
+      ],
+      "triangles": 192
+    },
+    {
+      "kind": "AbandonedHouseB",
+      "name": "TimberWalls",
+      "mesh": "GEO_Expansion_AbandonedHouseB_TimberWalls",
+      "surface": "AbandonedWood",
+      "solid": true,
+      "tint": [
+        0.34,
+        0.305,
+        0.26,
+        1
+      ],
+      "bounds_min": [
+        -4.5,
+        2.73,
+        -4.0
+      ],
+      "bounds_max": [
+        4.5,
+        4.84,
+        4.0
+      ],
+      "triangles": 784
+    },
+    {
+      "kind": "AbandonedHouseB",
+      "name": "RoofDeck",
+      "mesh": "GEO_Expansion_AbandonedHouseB_RoofDeck",
+      "surface": "AbandonedRoof",
+      "solid": true,
+      "tint": [
+        0.27,
+        0.275,
+        0.25,
+        1
+      ],
+      "bounds_min": [
+        -5.025,
+        4.6573966227428985,
+        -4.522717204276544
+      ],
+      "bounds_max": [
+        5.025,
+        6.192603377257103,
+        4.522717204276544
+      ],
+      "triangles": 56
+    },
+    {
+      "kind": "AbandonedHouseB",
+      "name": "RoofCovering",
+      "mesh": "GEO_Expansion_AbandonedHouseB_RoofCovering",
+      "surface": "AbandonedRoof",
+      "solid": false,
+      "tint": [
+        0.27,
+        0.275,
+        0.25,
+        1
+      ],
+      "bounds_min": [
+        -5.012500000000001,
+        4.817780807736109,
+        -4.526632021015759
+      ],
+      "bounds_max": [
+        5.012500000000001,
+        6.233115299706659,
+        4.526632021015759
+      ],
+      "triangles": 120
+    },
+    {
+      "kind": "AbandonedHouseB",
+      "name": "RoofSnow",
+      "mesh": "GEO_Expansion_AbandonedHouseB_RoofSnow",
+      "surface": "WindSnow",
+      "solid": false,
+      "tint": [
+        0.83,
+        0.85,
+        0.84,
+        1
+      ],
+      "bounds_min": [
+        -4.9990000000000006,
+        2.9913051056613793,
+        -4.453062590939377
+      ],
+      "bounds_max": [
+        4.9990000000000006,
+        6.337218812229606,
+        5.295476968302761
+      ],
+      "triangles": 308
+    },
+    {
+      "kind": "AbandonedHouseB",
+      "name": "BearingTimbers",
+      "mesh": "GEO_Expansion_AbandonedHouseB_BearingTimbers",
+      "surface": "AbandonedWood",
+      "solid": true,
+      "tint": [
+        0.34,
+        0.305,
+        0.26,
+        1
+      ],
+      "bounds_min": [
+        -4.6,
+        4.635,
+        -4.41
+      ],
+      "bounds_max": [
+        4.6,
+        6.162779098325171,
+        4.41
+      ],
+      "triangles": 280
+    },
+    {
+      "kind": "AbandonedHouseB",
+      "name": "EavesAndGutters",
+      "mesh": "GEO_Expansion_AbandonedHouseB_EavesAndGutters",
+      "surface": "AbandonedWood",
+      "solid": false,
+      "tint": [
+        0.34,
+        0.305,
+        0.26,
+        1
+      ],
+      "bounds_min": [
+        -4.995,
+        4.65,
+        -4.5
+      ],
+      "bounds_max": [
+        4.995,
+        4.83,
+        4.5
+      ],
+      "triangles": 56
+    },
+    {
+      "kind": "AbandonedHouseB",
+      "name": "RidgeCap",
+      "mesh": "GEO_Expansion_AbandonedHouseB_RidgeCap",
+      "surface": "AbandonedRoof",
+      "solid": false,
+      "tint": [
+        0.27,
+        0.275,
+        0.25,
+        1
+      ],
+      "bounds_min": [
+        -5.0425,
+        6.135,
+        -0.125
+      ],
+      "bounds_max": [
+        5.0425,
+        6.324999999999999,
+        0.125
+      ],
+      "triangles": 28
+    },
+    {
+      "kind": "AbandonedHouseB",
+      "name": "ClosedGables",
+      "mesh": "GEO_Expansion_AbandonedHouseB_ClosedGables",
+      "surface": "AbandonedWood",
+      "solid": true,
+      "tint": [
+        0.34,
+        0.305,
+        0.26,
+        1
+      ],
+      "bounds_min": [
+        -4.5,
+        4.84,
+        -4.0
+      ],
+      "bounds_max": [
+        4.5,
+        6.09,
+        4.0
+      ],
+      "triangles": 16
+    },
+    {
+      "kind": "AbandonedHouseB",
+      "name": "WornEntranceSteps",
+      "mesh": "GEO_Expansion_AbandonedHouseB_WornEntranceSteps",
+      "surface": "LayeredStone",
+      "solid": true,
+      "tint": [
+        0.32,
+        0.345,
+        0.34,
+        1
+      ],
+      "bounds_min": [
+        -1.065,
+        0.0,
+        3.96
+      ],
+      "bounds_max": [
+        1.065,
+        0.48,
+        5.36
+      ],
+      "triangles": 84
+    },
+    {
+      "kind": "AbandonedHouseB",
+      "name": "EntranceCanopy",
+      "mesh": "GEO_Expansion_AbandonedHouseB_EntranceCanopy",
+      "surface": "AbandonedRoof",
+      "solid": true,
+      "tint": [
+        0.27,
+        0.275,
+        0.25,
+        1
+      ],
+      "bounds_min": [
+        -1.09,
+        2.831625698867506,
+        3.747117651019763
+      ],
+      "bounds_max": [
+        1.09,
+        3.128374301132494,
+        5.352882348980237
+      ],
+      "triangles": 28
+    },
+    {
+      "kind": "AbandonedHouseB",
+      "name": "EntrancePosts",
+      "mesh": "GEO_Expansion_AbandonedHouseB_EntrancePosts",
+      "surface": "AbandonedWood",
+      "solid": true,
+      "tint": [
+        0.34,
+        0.305,
+        0.26,
+        1
+      ],
+      "bounds_min": [
+        -0.9035,
+        0.43000000000000016,
+        5.03
+      ],
+      "bounds_max": [
+        0.9035,
+        2.921082179145116,
+        5.19
+      ],
+      "triangles": 112
+    },
+    {
+      "kind": "AbandonedHouseB",
+      "name": "UpperStoreyConsoles",
+      "mesh": "GEO_Expansion_AbandonedHouseB_UpperStoreyConsoles",
+      "surface": "AbandonedWood",
+      "solid": true,
+      "tint": [
+        0.34,
+        0.305,
+        0.26,
+        1
+      ],
+      "bounds_min": [
+        -3.845,
+        2.187286251833817,
+        -4.37575915637403
+      ],
+      "bounds_max": [
+        3.845,
+        2.7427137481661825,
+        4.37575915637403
+      ],
+      "triangles": 224
+    },
+    {
+      "kind": "WornHouseA",
+      "name": "RootedStonePlinth",
+      "mesh": "GEO_Expansion_WornHouseA_RootedStonePlinth",
+      "surface": "LayeredStone",
+      "solid": true,
+      "tint": [
+        0.32,
+        0.345,
+        0.34,
+        1
+      ],
+      "bounds_min": [
+        -4.0,
+        0.0,
+        -3.5
+      ],
+      "bounds_max": [
+        4.0,
+        0.48,
+        3.5
+      ],
+      "triangles": 28
+    },
+    {
+      "kind": "WornHouseA",
+      "name": "PlinthStoneCourses",
+      "mesh": "GEO_Expansion_WornHouseA_PlinthStoneCourses",
+      "surface": "LayeredStone",
+      "solid": false,
+      "tint": [
+        0.32,
+        0.345,
+        0.34,
+        1
+      ],
+      "bounds_min": [
+        -4.0295,
+        0.011999999999999997,
+        -3.5295000000000005
+      ],
+      "bounds_max": [
+        4.0295,
+        0.4536,
+        3.5295
+      ],
+      "triangles": 1400
+    },
+    {
+      "kind": "WornHouseA",
+      "name": "TimberWalls",
+      "mesh": "GEO_Expansion_WornHouseA_TimberWalls",
+      "surface": "AbandonedWood",
+      "solid": true,
+      "tint": [
+        0.34,
+        0.305,
+        0.26,
+        1
+      ],
+      "bounds_min": [
+        -4.0,
+        0.48,
+        -3.5000000000000004
+      ],
+      "bounds_max": [
+        4.0,
+        3.7500000000000004,
+        3.5
+      ],
+      "triangles": 840
+    },
+    {
+      "kind": "WornHouseA",
+      "name": "OpaqueWindowBacking",
+      "mesh": "GEO_Expansion_WornHouseA_OpaqueWindowBacking",
+      "surface": "DarkWindow",
+      "solid": true,
+      "tint": [
+        0.075,
+        0.085,
+        0.08,
+        1
+      ],
+      "bounds_min": [
+        -3.81,
+        1.399,
+        -3.31
+      ],
+      "bounds_max": [
+        3.81,
+        2.624,
+        3.31
+      ],
+      "triangles": 96
+    },
+    {
+      "kind": "WornHouseA",
+      "name": "WindowJoinery",
+      "mesh": "GEO_Expansion_WornHouseA_WindowJoinery",
+      "surface": "AbandonedWood",
+      "solid": true,
+      "tint": [
+        0.34,
+        0.305,
+        0.26,
+        1
+      ],
+      "bounds_min": [
+        -4.1899999999999995,
+        1.2615,
+        -3.6900000000000004
+      ],
+      "bounds_max": [
+        4.1899999999999995,
+        2.6965,
+        3.69
+      ],
+      "triangles": 1312
+    },
+    {
+      "kind": "WornHouseA",
+      "name": "ShuttersAndBoards",
+      "mesh": "GEO_Expansion_WornHouseA_ShuttersAndBoards",
+      "surface": "AbandonedWood",
+      "solid": true,
+      "tint": [
+        0.34,
+        0.305,
+        0.26,
+        1
+      ],
+      "bounds_min": [
+        -4.1875,
+        1.3676868178724475,
+        -3.6875000000000004
+      ],
+      "bounds_max": [
+        4.235,
+        2.659148926451073,
+        3.6875
+      ],
+      "triangles": 776
+    },
+    {
+      "kind": "WornHouseA",
+      "name": "ClosedDoorLeaves",
+      "mesh": "GEO_Expansion_WornHouseA_ClosedDoorLeaves",
+      "surface": "AbandonedWood",
+      "solid": true,
+      "tint": [
+        0.34,
+        0.305,
+        0.26,
+        1
+      ],
+      "bounds_min": [
+        -0.795,
+        0.41999999999999993,
+        3.215
+      ],
+      "bounds_max": [
+        0.795,
+        2.805,
+        3.5999999999999996
+      ],
+      "triangles": 192
+    },
+    {
+      "kind": "WornHouseA",
+      "name": "IronHardware",
+      "mesh": "GEO_Expansion_WornHouseA_IronHardware",
+      "surface": "RustedIron",
+      "solid": false,
+      "tint": [
+        0.3,
+        0.255,
+        0.21,
+        1
+      ],
+      "bounds_min": [
+        -4.4345,
+        0.87,
+        -4.08
+      ],
+      "bounds_max": [
+        4.253500000000001,
+        3.6525,
+        4.08
+      ],
+      "triangles": 108
+    },
+    {
+      "kind": "WornHouseA",
+      "name": "FacadeBearingBands",
+      "mesh": "GEO_Expansion_WornHouseA_FacadeBearingBands",
+      "surface": "AbandonedWood",
+      "solid": false,
+      "tint": [
+        0.34,
+        0.305,
+        0.26,
+        1
+      ],
+      "bounds_min": [
+        -4.115,
+        0.48,
+        -3.615
+      ],
+      "bounds_max": [
+        4.115,
+        3.75,
+        3.6149999999999998
+      ],
+      "triangles": 1200
+    },
+    {
+      "kind": "WornHouseA",
+      "name": "RoofDeck",
+      "mesh": "GEO_Expansion_WornHouseA_RoofDeck",
+      "surface": "AbandonedRoof",
+      "solid": true,
+      "tint": [
+        0.27,
+        0.275,
+        0.25,
+        1
+      ],
+      "bounds_min": [
+        -4.525,
+        3.568027405477225,
+        -4.023940794325094
+      ],
+      "bounds_max": [
+        4.525,
+        5.021972594522775,
+        4.023940794325094
+      ],
+      "triangles": 56
+    },
+    {
+      "kind": "WornHouseA",
+      "name": "RoofCovering",
+      "mesh": "GEO_Expansion_WornHouseA_RoofCovering",
+      "surface": "AbandonedRoof",
+      "solid": false,
+      "tint": [
+        0.27,
+        0.275,
+        0.25,
+        1
+      ],
+      "bounds_min": [
+        -4.5125,
+        3.727595821400034,
+        -4.028772019019698
+      ],
+      "bounds_max": [
+        4.5125,
+        5.062267697115961,
+        4.028772019019698
+      ],
+      "triangles": 108
+    },
+    {
+      "kind": "WornHouseA",
+      "name": "RoofSnow",
+      "mesh": "GEO_Expansion_WornHouseA_RoofSnow",
+      "surface": "WindSnow",
+      "solid": false,
+      "tint": [
+        0.83,
+        0.85,
+        0.84,
+        1
+      ],
+      "bounds_min": [
+        -4.4990000000000006,
+        2.9366297259367284,
+        -3.9573077248484227
+      ],
+      "bounds_max": [
+        4.4990000000000006,
+        5.164951148744955,
+        4.800207140979975
+      ],
+      "triangles": 280
+    },
+    {
+      "kind": "WornHouseA",
+      "name": "BearingTimbers",
+      "mesh": "GEO_Expansion_WornHouseA_BearingTimbers",
+      "surface": "AbandonedWood",
+      "solid": true,
+      "tint": [
+        0.34,
+        0.305,
+        0.26,
+        1
+      ],
+      "bounds_min": [
+        -4.1,
+        3.545,
+        -3.91
+      ],
+      "bounds_max": [
+        4.1,
+        4.992068471098697,
+        3.91
+      ],
+      "triangles": 280
+    },
+    {
+      "kind": "WornHouseA",
+      "name": "EavesAndGutters",
+      "mesh": "GEO_Expansion_WornHouseA_EavesAndGutters",
+      "surface": "AbandonedWood",
+      "solid": false,
+      "tint": [
+        0.34,
+        0.305,
+        0.26,
+        1
+      ],
+      "bounds_min": [
+        -4.495,
+        3.56,
+        -4.0
+      ],
+      "bounds_max": [
+        4.495,
+        3.7399999999999998,
+        4.0
+      ],
+      "triangles": 56
+    },
+    {
+      "kind": "WornHouseA",
+      "name": "RidgeCap",
+      "mesh": "GEO_Expansion_WornHouseA_RidgeCap",
+      "surface": "AbandonedRoof",
+      "solid": false,
+      "tint": [
+        0.27,
+        0.275,
+        0.25,
+        1
+      ],
+      "bounds_min": [
+        -4.5425,
+        4.965,
+        -0.125
+      ],
+      "bounds_max": [
+        4.5425,
+        5.154999999999999,
+        0.125
+      ],
+      "triangles": 28
+    },
+    {
+      "kind": "WornHouseA",
+      "name": "ClosedGables",
+      "mesh": "GEO_Expansion_WornHouseA_ClosedGables",
+      "surface": "AbandonedWood",
+      "solid": true,
+      "tint": [
+        0.34,
+        0.305,
+        0.26,
+        1
+      ],
+      "bounds_min": [
+        -4.0,
+        3.75,
+        -3.5
+      ],
+      "bounds_max": [
+        4.0,
+        4.92,
+        3.5
+      ],
+      "triangles": 16
+    },
+    {
+      "kind": "WornHouseA",
+      "name": "WornEntranceSteps",
+      "mesh": "GEO_Expansion_WornHouseA_WornEntranceSteps",
+      "surface": "LayeredStone",
+      "solid": true,
+      "tint": [
+        0.32,
+        0.345,
+        0.34,
+        1
+      ],
+      "bounds_min": [
+        -1.065,
+        0.0,
+        3.46
+      ],
+      "bounds_max": [
+        1.065,
+        0.48,
+        4.86
+      ],
+      "triangles": 84
+    },
+    {
+      "kind": "WornHouseA",
+      "name": "EntranceCanopy",
+      "mesh": "GEO_Expansion_WornHouseA_EntranceCanopy",
+      "surface": "AbandonedRoof",
+      "solid": true,
+      "tint": [
+        0.27,
+        0.275,
+        0.25,
+        1
+      ],
+      "bounds_min": [
+        -1.092693069381921,
+        2.774905804564046,
+        3.24220860649449
+      ],
+      "bounds_max": [
+        1.092693069381921,
+        3.185094195435954,
+        4.85779139350551
+      ],
+      "triangles": 28
+    },
+    {
+      "kind": "WornHouseA",
+      "name": "EntrancePosts",
+      "mesh": "GEO_Expansion_WornHouseA_EntrancePosts",
+      "surface": "AbandonedWood",
+      "solid": true,
+      "tint": [
+        0.34,
+        0.305,
+        0.26,
+        1
+      ],
+      "bounds_min": [
+        -0.9035,
+        0.43000000000000016,
+        4.53
+      ],
+      "bounds_max": [
+        0.9035,
+        2.921082179145116,
+        4.69
+      ],
+      "triangles": 112
+    },
+    {
+      "kind": "WornHouseA",
+      "name": "FallenPorchBoards",
+      "mesh": "GEO_Expansion_WornHouseA_FallenPorchBoards",
+      "surface": "AbandonedWood",
+      "solid": true,
+      "tint": [
+        0.34,
+        0.305,
+        0.26,
+        1
+      ],
+      "bounds_min": [
+        -3.4444562218197214,
+        0.05499999999999999,
+        3.5437135350769964
+      ],
+      "bounds_max": [
+        -1.3457068994827304,
+        0.265,
+        4.484449195468482
+      ],
+      "triangles": 56
+    },
+    {
+      "kind": "WornHouseB",
+      "name": "RootedStonePlinth",
+      "mesh": "GEO_Expansion_WornHouseB_RootedStonePlinth",
+      "surface": "LayeredStone",
+      "solid": true,
+      "tint": [
+        0.32,
+        0.345,
+        0.34,
+        1
+      ],
+      "bounds_min": [
+        -4.5,
+        0.0,
+        -4.0
+      ],
+      "bounds_max": [
+        4.5,
+        0.62,
+        4.0
+      ],
+      "triangles": 28
+    },
+    {
+      "kind": "WornHouseB",
+      "name": "PlinthStoneCourses",
+      "mesh": "GEO_Expansion_WornHouseB_PlinthStoneCourses",
+      "surface": "LayeredStone",
+      "solid": false,
+      "tint": [
+        0.32,
+        0.345,
+        0.34,
+        1
+      ],
+      "bounds_min": [
+        -4.5295,
+        0.015499999999999986,
+        -4.0295000000000005
+      ],
+      "bounds_max": [
+        4.5295,
+        0.5859,
+        4.0295
+      ],
+      "triangles": 1512
+    },
+    {
+      "kind": "WornHouseB",
+      "name": "PlasterWalls",
+      "mesh": "GEO_Expansion_WornHouseB_PlasterWalls",
+      "surface": "AbandonedPlaster",
+      "solid": true,
+      "tint": [
+        0.55,
+        0.53,
+        0.47,
+        1
+      ],
+      "bounds_min": [
+        -4.5,
+        0.62,
+        -4.0
+      ],
+      "bounds_max": [
+        4.5,
+        2.73,
+        4.0
+      ],
+      "triangles": 840
+    },
+    {
+      "kind": "WornHouseB",
+      "name": "OpaqueWindowBacking",
+      "mesh": "GEO_Expansion_WornHouseB_OpaqueWindowBacking",
+      "surface": "DarkWindow",
+      "solid": true,
+      "tint": [
+        0.075,
+        0.085,
+        0.08,
+        1
+      ],
+      "bounds_min": [
+        -4.31,
+        1.116,
+        -3.81
+      ],
+      "bounds_max": [
+        4.31,
+        4.231,
+        3.81
+      ],
+      "triangles": 192
+    },
+    {
+      "kind": "WornHouseB",
+      "name": "WindowJoinery",
+      "mesh": "GEO_Expansion_WornHouseB_WindowJoinery",
+      "surface": "AbandonedWood",
+      "solid": true,
+      "tint": [
+        0.34,
+        0.305,
+        0.26,
+        1
+      ],
+      "bounds_min": [
+        -4.69,
+        0.9784999999999999,
+        -4.19
+      ],
+      "bounds_max": [
+        4.69,
+        4.3035,
+        4.1899999999999995
+      ],
+      "triangles": 2624
+    },
+    {
+      "kind": "WornHouseB",
+      "name": "ShuttersAndBoards",
+      "mesh": "GEO_Expansion_WornHouseB_ShuttersAndBoards",
+      "surface": "AbandonedWood",
+      "solid": true,
+      "tint": [
+        0.34,
+        0.305,
+        0.26,
+        1
+      ],
+      "bounds_min": [
+        -4.734999999999999,
+        1.0839166247662169,
+        -4.1875
+      ],
+      "bounds_max": [
+        4.735,
+        4.266215899764658,
+        4.234999999999999
+      ],
+      "triangles": 1848
+    },
+    {
+      "kind": "WornHouseB",
+      "name": "ClosedDoorLeaves",
+      "mesh": "GEO_Expansion_WornHouseB_ClosedDoorLeaves",
+      "surface": "AbandonedWood",
+      "solid": true,
+      "tint": [
+        0.34,
+        0.305,
+        0.26,
+        1
+      ],
+      "bounds_min": [
+        -0.795,
+        0.5599999999999999,
+        3.715
+      ],
+      "bounds_max": [
+        0.795,
+        2.745,
+        4.1
+      ],
+      "triangles": 192
+    },
+    {
+      "kind": "WornHouseB",
+      "name": "IronHardware",
+      "mesh": "GEO_Expansion_WornHouseB_IronHardware",
+      "surface": "RustedIron",
+      "solid": false,
+      "tint": [
+        0.3,
+        0.255,
+        0.21,
+        1
+      ],
+      "bounds_min": [
+        -4.9245,
+        1.01,
+        -4.58
+      ],
+      "bounds_max": [
+        4.7235000000000005,
+        4.742500000000001,
+        4.58
+      ],
+      "triangles": 108
+    },
+    {
+      "kind": "WornHouseB",
+      "name": "FacadeBearingBands",
+      "mesh": "GEO_Expansion_WornHouseB_FacadeBearingBands",
+      "surface": "AbandonedWood",
+      "solid": false,
+      "tint": [
+        0.34,
+        0.305,
+        0.26,
+        1
+      ],
+      "bounds_min": [
+        -4.615,
+        2.55,
+        -4.115
+      ],
+      "bounds_max": [
+        4.615,
+        4.84,
+        4.115
+      ],
+      "triangles": 1024
+    },
+    {
+      "kind": "WornHouseB",
+      "name": "WeatherExposedMasonry",
+      "mesh": "GEO_Expansion_WornHouseB_WeatherExposedMasonry",
+      "surface": "Masonry",
+      "solid": false,
+      "tint": [
+        0.49,
+        0.485,
+        0.445,
+        1
+      ],
+      "bounds_min": [
+        -4.5225,
+        0.74,
+        -4.0225
+      ],
+      "bounds_max": [
+        4.5225,
+        1.05,
+        4.0225
+      ],
+      "triangles": 192
+    },
+    {
+      "kind": "WornHouseB",
+      "name": "TimberWalls",
+      "mesh": "GEO_Expansion_WornHouseB_TimberWalls",
+      "surface": "AbandonedWood",
+      "solid": true,
+      "tint": [
+        0.34,
+        0.305,
+        0.26,
+        1
+      ],
+      "bounds_min": [
+        -4.5,
+        2.73,
+        -4.0
+      ],
+      "bounds_max": [
+        4.5,
+        4.84,
+        4.0
+      ],
+      "triangles": 784
+    },
+    {
+      "kind": "WornHouseB",
+      "name": "RoofDeck",
+      "mesh": "GEO_Expansion_WornHouseB_RoofDeck",
+      "surface": "AbandonedRoof",
+      "solid": true,
+      "tint": [
+        0.27,
+        0.275,
+        0.25,
+        1
+      ],
+      "bounds_min": [
+        -5.025,
+        4.6573966227428985,
+        -4.522717204276544
+      ],
+      "bounds_max": [
+        5.025,
+        6.192603377257103,
+        4.522717204276544
+      ],
+      "triangles": 56
+    },
+    {
+      "kind": "WornHouseB",
+      "name": "RoofCovering",
+      "mesh": "GEO_Expansion_WornHouseB_RoofCovering",
+      "surface": "AbandonedRoof",
+      "solid": false,
+      "tint": [
+        0.27,
+        0.275,
+        0.25,
+        1
+      ],
+      "bounds_min": [
+        -5.012500000000001,
+        4.817780807736109,
+        -4.526632021015759
+      ],
+      "bounds_max": [
+        5.012500000000001,
+        6.233115299706659,
+        4.526632021015759
+      ],
+      "triangles": 108
+    },
+    {
+      "kind": "WornHouseB",
+      "name": "RoofSnow",
+      "mesh": "GEO_Expansion_WornHouseB_RoofSnow",
+      "surface": "WindSnow",
+      "solid": false,
+      "tint": [
+        0.83,
+        0.85,
+        0.84,
+        1
+      ],
+      "bounds_min": [
+        -4.9990000000000006,
+        2.9366297259367284,
+        -4.453062590939377
+      ],
+      "bounds_max": [
+        4.9990000000000006,
+        6.337218812229606,
+        5.300207140979975
+      ],
+      "triangles": 280
+    },
+    {
+      "kind": "WornHouseB",
+      "name": "BearingTimbers",
+      "mesh": "GEO_Expansion_WornHouseB_BearingTimbers",
+      "surface": "AbandonedWood",
+      "solid": true,
+      "tint": [
+        0.34,
+        0.305,
+        0.26,
+        1
+      ],
+      "bounds_min": [
+        -4.6,
+        4.635,
+        -4.41
+      ],
+      "bounds_max": [
+        4.6,
+        6.162779098325171,
+        4.41
+      ],
+      "triangles": 280
+    },
+    {
+      "kind": "WornHouseB",
+      "name": "EavesAndGutters",
+      "mesh": "GEO_Expansion_WornHouseB_EavesAndGutters",
+      "surface": "AbandonedWood",
+      "solid": false,
+      "tint": [
+        0.34,
+        0.305,
+        0.26,
+        1
+      ],
+      "bounds_min": [
+        -4.995,
+        4.65,
+        -4.5
+      ],
+      "bounds_max": [
+        4.995,
+        4.83,
+        4.5
+      ],
+      "triangles": 56
+    },
+    {
+      "kind": "WornHouseB",
+      "name": "RidgeCap",
+      "mesh": "GEO_Expansion_WornHouseB_RidgeCap",
+      "surface": "AbandonedRoof",
+      "solid": false,
+      "tint": [
+        0.27,
+        0.275,
+        0.25,
+        1
+      ],
+      "bounds_min": [
+        -5.0425,
+        6.135,
+        -0.125
+      ],
+      "bounds_max": [
+        5.0425,
+        6.324999999999999,
+        0.125
+      ],
+      "triangles": 28
+    },
+    {
+      "kind": "WornHouseB",
+      "name": "ClosedGables",
+      "mesh": "GEO_Expansion_WornHouseB_ClosedGables",
+      "surface": "AbandonedWood",
+      "solid": true,
+      "tint": [
+        0.34,
+        0.305,
+        0.26,
+        1
+      ],
+      "bounds_min": [
+        -4.5,
+        4.84,
+        -4.0
+      ],
+      "bounds_max": [
+        4.5,
+        6.09,
+        4.0
+      ],
+      "triangles": 16
+    },
+    {
+      "kind": "WornHouseB",
+      "name": "WornEntranceSteps",
+      "mesh": "GEO_Expansion_WornHouseB_WornEntranceSteps",
+      "surface": "LayeredStone",
+      "solid": true,
+      "tint": [
+        0.32,
+        0.345,
+        0.34,
+        1
+      ],
+      "bounds_min": [
+        -1.065,
+        0.0,
+        3.96
+      ],
+      "bounds_max": [
+        1.065,
+        0.48,
+        5.36
+      ],
+      "triangles": 84
+    },
+    {
+      "kind": "WornHouseB",
+      "name": "EntranceCanopy",
+      "mesh": "GEO_Expansion_WornHouseB_EntranceCanopy",
+      "surface": "AbandonedRoof",
+      "solid": true,
+      "tint": [
+        0.27,
+        0.275,
+        0.25,
+        1
+      ],
+      "bounds_min": [
+        -1.092693069381921,
+        2.774905804564046,
+        3.74220860649449
+      ],
+      "bounds_max": [
+        1.092693069381921,
+        3.185094195435954,
+        5.35779139350551
+      ],
+      "triangles": 28
+    },
+    {
+      "kind": "WornHouseB",
+      "name": "EntrancePosts",
+      "mesh": "GEO_Expansion_WornHouseB_EntrancePosts",
+      "surface": "AbandonedWood",
+      "solid": true,
+      "tint": [
+        0.34,
+        0.305,
+        0.26,
+        1
+      ],
+      "bounds_min": [
+        -0.9035,
+        0.43000000000000016,
+        5.03
+      ],
+      "bounds_max": [
+        0.9035,
+        2.921082179145116,
+        5.19
+      ],
+      "triangles": 112
+    },
+    {
+      "kind": "WornHouseB",
+      "name": "UpperStoreyConsoles",
+      "mesh": "GEO_Expansion_WornHouseB_UpperStoreyConsoles",
+      "surface": "AbandonedWood",
+      "solid": true,
+      "tint": [
+        0.34,
+        0.305,
+        0.26,
+        1
+      ],
+      "bounds_min": [
+        -3.845,
+        2.187286251833817,
+        -4.37575915637403
+      ],
+      "bounds_max": [
+        3.845,
+        2.7427137481661825,
+        4.37575915637403
+      ],
+      "triangles": 224
+    },
+    {
+      "kind": "WornHouseB",
+      "name": "FallenPorchBoards",
+      "mesh": "GEO_Expansion_WornHouseB_FallenPorchBoards",
+      "surface": "AbandonedWood",
+      "solid": true,
+      "tint": [
+        0.34,
+        0.305,
+        0.26,
+        1
+      ],
+      "bounds_min": [
+        -3.4444562218197214,
+        0.05499999999999999,
+        3.5437135350769964
+      ],
+      "bounds_max": [
+        -1.3457068994827304,
+        0.265,
+        4.484449195468482
+      ],
+      "triangles": 56
+    },
+    {
+      "kind": "RuinedHouse",
+      "name": "ExposedFloor",
+      "mesh": "GEO_Expansion_RuinedHouse_ExposedFloor",
+      "surface": "LayeredStone",
+      "solid": true,
+      "tint": [
+        0.32,
+        0.345,
+        0.34,
+        1
+      ],
+      "bounds_min": [
+        -4.0,
+        0.0,
+        -3.5
+      ],
+      "bounds_max": [
+        4.0,
+        0.2,
+        3.5
+      ],
+      "triangles": 28
+    },
+    {
+      "kind": "RuinedHouse",
+      "name": "RemainingWalls",
+      "mesh": "GEO_Expansion_RuinedHouse_RemainingWalls",
+      "surface": "LayeredStone",
+      "solid": true,
+      "tint": [
+        0.32,
+        0.345,
+        0.34,
+        1
+      ],
+      "bounds_min": [
+        -4.0,
+        0.2,
+        -3.5
+      ],
+      "bounds_max": [
+        4.0,
+        3.83,
+        3.5
+      ],
+      "triangles": 84
+    },
+    {
+      "kind": "RuinedHouse",
+      "name": "LowFrontWall",
+      "mesh": "GEO_Expansion_RuinedHouse_LowFrontWall",
+      "surface": "LayeredStone",
+      "solid": true,
+      "tint": [
+        0.32,
+        0.345,
+        0.34,
+        1
+      ],
+      "bounds_min": [
+        -3.92,
+        0.2,
+        3.1799999999999997
+      ],
+      "bounds_max": [
+        3.92,
+        0.6000000000000001,
+        3.5
+      ],
+      "triangles": 56
+    },
+    {
+      "kind": "RuinedHouse",
+      "name": "ExposedRoofRafters",
+      "mesh": "GEO_Expansion_RuinedHouse_ExposedRoofRafters",
+      "surface": "AbandonedWood",
+      "solid": true,
+      "tint": [
+        0.34,
+        0.305,
+        0.26,
+        1
+      ],
+      "bounds_min": [
+        -3.521224904308089,
+        3.698124056558337,
+        -3.3141240070593843
+      ],
+      "bounds_max": [
+        -0.7187750956919114,
+        4.959841418974325,
+        1.9142076822762553
+      ],
+      "triangles": 140
+    },
+    {
+      "kind": "RuinedHouse",
+      "name": "SurvivingRoofBay",
+      "mesh": "GEO_Expansion_RuinedHouse_SurvivingRoofBay",
+      "surface": "AbandonedRoof",
+      "solid": true,
+      "tint": [
+        0.27,
+        0.275,
+        0.25,
+        1
+      ],
+      "bounds_min": [
+        -3.76,
+        3.751222282689593,
+        -3.7293520135625116
+      ],
+      "bounds_max": [
+        -1.0399999999999998,
+        4.928777717310407,
+        0.019352013562511816
+      ],
+      "triangles": 28
+    },
+    {
+      "kind": "RuinedHouse",
+      "name": "RoofSnow",
+      "mesh": "GEO_Expansion_RuinedHouse_RoofSnow",
+      "surface": "WindSnow",
+      "solid": false,
+      "tint": [
+        0.83,
+        0.85,
+        0.84,
+        1
+      ],
+      "bounds_min": [
+        -3.6799999999999997,
+        3.920078087303666,
+        -3.7054803717989246
+      ],
+      "bounds_max": [
+        -1.1199999999999999,
+        5.020261853410382,
+        -0.07609556877474888
+      ],
+      "triangles": 28
+    },
+    {
+      "kind": "RuinedHouse",
+      "name": "CollapsedTimbers",
+      "mesh": "GEO_Expansion_RuinedHouse_CollapsedTimbers",
+      "surface": "AbandonedWood",
+      "solid": true,
+      "tint": [
+        0.34,
+        0.305,
+        0.26,
+        1
+      ],
+      "bounds_min": [
+        -2.088181665867337,
+        0.18003922190674093,
+        -0.9591587721691771
+      ],
+      "bounds_max": [
+        1.6389887660737352,
+        0.545703680367075,
+        1.8691587721691771
+      ],
+      "triangles": 140
+    },
+    {
+      "kind": "RuinedHouse",
+      "name": "SettledWallDebris",
+      "mesh": "GEO_Expansion_RuinedHouse_SettledWallDebris",
+      "surface": "LayeredStone",
+      "solid": true,
+      "tint": [
+        0.32,
+        0.345,
+        0.34,
+        1
+      ],
+      "bounds_min": [
+        -3.3583876151852277,
+        0.1509757324136898,
+        -1.9155153256834625
+      ],
+      "bounds_max": [
+        1.7566443794464934,
+        0.5490242675863102,
+        0.10337137605613156
+      ],
+      "triangles": 364
+    },
+    {
+      "kind": "RuinedHouse",
+      "name": "SnowInside",
+      "mesh": "GEO_Expansion_RuinedHouse_SnowInside",
+      "surface": "WindSnow",
+      "solid": false,
+      "tint": [
+        0.83,
+        0.85,
+        0.84,
+        1
+      ],
+      "bounds_min": [
+        -2.56,
+        0.185,
+        -2.8000000000000003
+      ],
+      "bounds_max": [
+        3.2800000000000002,
+        0.265,
+        2.3449999999999998
+      ],
+      "triangles": 56
+    },
+    {
+      "kind": "RuinedHouse",
+      "name": "SurvivingHearth",
+      "mesh": "GEO_Expansion_RuinedHouse_SurvivingHearth",
+      "surface": "Masonry",
+      "solid": true,
+      "tint": [
+        0.49,
+        0.485,
+        0.445,
+        1
+      ],
+      "bounds_min": [
+        -3.085,
+        0.19999999999999996,
+        -2.6399999999999997
+      ],
+      "bounds_max": [
+        -2.035,
+        3.3,
+        -1.7
+      ],
+      "triangles": 28
+    },
+    {
+      "kind": "RuinedHouse",
+      "name": "OldHearthMouth",
+      "mesh": "GEO_Expansion_RuinedHouse_OldHearthMouth",
+      "surface": "DarkWindow",
+      "solid": false,
+      "tint": [
+        0.075,
+        0.085,
+        0.08,
+        1
+      ],
+      "bounds_min": [
+        -2.855,
+        0.32,
+        -1.7049999999999998
+      ],
+      "bounds_max": [
+        -2.265,
+        0.98,
+        -1.675
+      ],
+      "triangles": 12
+    },
+    {
+      "kind": "HouseholdFoundation",
+      "name": "ExposedFloor",
+      "mesh": "GEO_Expansion_HouseholdFoundation_ExposedFloor",
+      "surface": "LayeredStone",
+      "solid": true,
+      "tint": [
+        0.32,
+        0.345,
+        0.34,
+        1
+      ],
+      "bounds_min": [
+        -4.0,
+        0.0,
+        -3.5
+      ],
+      "bounds_max": [
+        4.0,
+        0.2,
+        3.5
+      ],
+      "triangles": 28
+    },
+    {
+      "kind": "HouseholdFoundation",
+      "name": "RemainingWalls",
+      "mesh": "GEO_Expansion_HouseholdFoundation_RemainingWalls",
+      "surface": "LayeredStone",
+      "solid": true,
+      "tint": [
+        0.32,
+        0.345,
+        0.34,
+        1
+      ],
+      "bounds_min": [
+        -4.0,
+        0.2,
+        -3.5
+      ],
+      "bounds_max": [
+        4.0,
+        0.54,
+        3.5
+      ],
+      "triangles": 84
+    },
+    {
+      "kind": "HouseholdFoundation",
+      "name": "LowFrontWall",
+      "mesh": "GEO_Expansion_HouseholdFoundation_LowFrontWall",
+      "surface": "LayeredStone",
+      "solid": true,
+      "tint": [
+        0.32,
+        0.345,
+        0.34,
+        1
+      ],
+      "bounds_min": [
+        -3.92,
+        0.2,
+        3.1799999999999997
+      ],
+      "bounds_max": [
+        3.92,
+        0.6000000000000001,
+        3.5
+      ],
+      "triangles": 56
+    },
+    {
+      "kind": "HouseholdFoundation",
+      "name": "SettledWallDebris",
+      "mesh": "GEO_Expansion_HouseholdFoundation_SettledWallDebris",
+      "surface": "LayeredStone",
+      "solid": true,
+      "tint": [
+        0.32,
+        0.345,
+        0.34,
+        1
+      ],
+      "bounds_min": [
+        -3.3583876151852277,
+        0.1509757324136898,
+        -1.9155153256834625
+      ],
+      "bounds_max": [
+        1.7566443794464934,
+        0.5490242675863102,
+        -0.5279551284495221
+      ],
+      "triangles": 224
+    },
+    {
+      "kind": "HouseholdFoundation",
+      "name": "SnowInside",
+      "mesh": "GEO_Expansion_HouseholdFoundation_SnowInside",
+      "surface": "WindSnow",
+      "solid": false,
+      "tint": [
+        0.83,
+        0.85,
+        0.84,
+        1
+      ],
+      "bounds_min": [
+        -2.56,
+        0.185,
+        -2.8000000000000003
+      ],
+      "bounds_max": [
+        3.2800000000000002,
+        0.265,
+        2.3449999999999998
+      ],
+      "triangles": 56
+    },
+    {
+      "kind": "HouseholdFoundation",
+      "name": "SurvivingHearth",
+      "mesh": "GEO_Expansion_HouseholdFoundation_SurvivingHearth",
+      "surface": "Masonry",
+      "solid": true,
+      "tint": [
+        0.49,
+        0.485,
+        0.445,
+        1
+      ],
+      "bounds_min": [
+        -3.085,
+        0.20000000000000007,
+        -2.6399999999999997
+      ],
+      "bounds_max": [
+        -2.035,
+        1.92,
+        -1.7
+      ],
+      "triangles": 28
+    },
+    {
+      "kind": "HouseholdFoundation",
+      "name": "OldHearthMouth",
+      "mesh": "GEO_Expansion_HouseholdFoundation_OldHearthMouth",
+      "surface": "DarkWindow",
+      "solid": false,
+      "tint": [
+        0.075,
+        0.085,
+        0.08,
+        1
+      ],
+      "bounds_min": [
+        -2.855,
+        0.32,
+        -1.7049999999999998
+      ],
+      "bounds_max": [
+        -2.265,
+        0.98,
+        -1.675
+      ],
+      "triangles": 12
+    },
+    {
+      "kind": "AbandonedShed",
+      "name": "RootedStonePlinth",
+      "mesh": "GEO_Expansion_AbandonedShed_RootedStonePlinth",
+      "surface": "LayeredStone",
+      "solid": true,
+      "tint": [
+        0.32,
+        0.345,
+        0.34,
+        1
+      ],
+      "bounds_min": [
+        -3.0,
+        0.0,
+        -2.0
+      ],
+      "bounds_max": [
+        3.0,
+        0.48,
+        2.0
+      ],
+      "triangles": 28
+    },
+    {
+      "kind": "AbandonedShed",
+      "name": "PlinthStoneCourses",
+      "mesh": "GEO_Expansion_AbandonedShed_PlinthStoneCourses",
+      "surface": "LayeredStone",
+      "solid": false,
+      "tint": [
+        0.32,
+        0.345,
+        0.34,
+        1
+      ],
+      "bounds_min": [
+        -3.0295,
+        0.011999999999999997,
+        -2.0295000000000005
+      ],
+      "bounds_max": [
+        3.0295,
+        0.4536,
+        2.0295
+      ],
+      "triangles": 784
+    },
+    {
+      "kind": "AbandonedShed",
+      "name": "TimberWalls",
+      "mesh": "GEO_Expansion_AbandonedShed_TimberWalls",
+      "surface": "AbandonedWood",
+      "solid": true,
+      "tint": [
+        0.34,
+        0.305,
+        0.26,
+        1
+      ],
+      "bounds_min": [
+        -3.0,
+        0.48,
+        -2.0000000000000004
+      ],
+      "bounds_max": [
+        3.0,
+        2.64,
+        2.0
+      ],
+      "triangles": 672
+    },
+    {
+      "kind": "AbandonedShed",
+      "name": "ClosedDoorLeaves",
+      "mesh": "GEO_Expansion_AbandonedShed_ClosedDoorLeaves",
+      "surface": "AbandonedWood",
+      "solid": true,
+      "tint": [
+        0.34,
+        0.305,
+        0.26,
+        1
+      ],
+      "bounds_min": [
+        -0.93,
+        0.41999999999999993,
+        1.715
+      ],
+      "bounds_max": [
+        0.93,
+        2.545,
+        2.1
+      ],
+      "triangles": 216
+    },
+    {
+      "kind": "AbandonedShed",
+      "name": "IronHardware",
+      "mesh": "GEO_Expansion_AbandonedShed_IronHardware",
+      "surface": "RustedIron",
+      "solid": false,
+      "tint": [
+        0.3,
+        0.255,
+        0.21,
+        1
+      ],
+      "bounds_min": [
+        -3.4545,
+        0.87,
+        -2.58
+      ],
+      "bounds_max": [
+        3.3135000000000003,
+        2.5425,
+        2.58
+      ],
+      "triangles": 108
+    },
+    {
+      "kind": "AbandonedShed",
+      "name": "FacadeBearingBands",
+      "mesh": "GEO_Expansion_AbandonedShed_FacadeBearingBands",
+      "surface": "AbandonedWood",
+      "solid": false,
+      "tint": [
+        0.34,
+        0.305,
+        0.26,
+        1
+      ],
+      "bounds_min": [
+        -3.115,
+        0.48,
+        -2.115
+      ],
+      "bounds_max": [
+        3.115,
+        2.64,
+        2.115
+      ],
+      "triangles": 912
+    },
+    {
+      "kind": "AbandonedShed",
+      "name": "OpaqueWindowBacking",
+      "mesh": "GEO_Expansion_AbandonedShed_OpaqueWindowBacking",
+      "surface": "DarkWindow",
+      "solid": true,
+      "tint": [
+        0.075,
+        0.085,
+        0.08,
+        1
+      ],
+      "bounds_min": [
+        -2.81,
+        1.1560000000000001,
+        -1.8100000000000003
+      ],
+      "bounds_max": [
+        2.81,
+        1.811,
+        1.2225000000000001
+      ],
+      "triangles": 72
+    },
+    {
+      "kind": "AbandonedShed",
+      "name": "WindowJoinery",
+      "mesh": "GEO_Expansion_AbandonedShed_WindowJoinery",
+      "surface": "AbandonedWood",
+      "solid": true,
+      "tint": [
+        0.34,
+        0.305,
+        0.26,
+        1
+      ],
+      "bounds_min": [
+        -3.19,
+        1.0185000000000002,
+        -2.1900000000000004
+      ],
+      "bounds_max": [
+        3.19,
+        1.8835000000000002,
+        1.345
+      ],
+      "triangles": 984
+    },
+    {
+      "kind": "AbandonedShed",
+      "name": "ShuttersAndBoards",
+      "mesh": "GEO_Expansion_AbandonedShed_ShuttersAndBoards",
+      "surface": "AbandonedWood",
+      "solid": true,
+      "tint": [
+        0.34,
+        0.305,
+        0.26,
+        1
+      ],
+      "bounds_min": [
+        -3.1875,
+        1.125008903274965,
+        -2.1875000000000004
+      ],
+      "bounds_max": [
+        3.235,
+        1.9332791008615324,
+        1.6201564709893814
+      ],
+      "triangles": 596
+    },
+    {
+      "kind": "AbandonedShed",
+      "name": "RoofDeck",
+      "mesh": "GEO_Expansion_AbandonedShed_RoofDeck",
+      "surface": "AbandonedRoof",
+      "solid": true,
+      "tint": [
+        0.27,
+        0.275,
+        0.25,
+        1
+      ],
+      "bounds_min": [
+        -3.525,
+        2.4593847665510875,
+        -2.526420118525274
+      ],
+      "bounds_max": [
+        3.525,
+        3.520615233448913,
+        2.526420118525274
+      ],
+      "triangles": 56
+    },
+    {
+      "kind": "AbandonedShed",
+      "name": "RoofCovering",
+      "mesh": "GEO_Expansion_AbandonedShed_RoofCovering",
+      "surface": "AbandonedRoof",
+      "solid": false,
+      "tint": [
+        0.27,
+        0.275,
+        0.25,
+        1
+      ],
+      "bounds_min": [
+        -3.5124999999999997,
+        2.617152767773236,
+        -2.533119236897779
+      ],
+      "bounds_max": [
+        3.5124999999999997,
+        3.5604335887191976,
+        2.533119236897779
+      ],
+      "triangles": 108
+    },
+    {
+      "kind": "AbandonedShed",
+      "name": "RoofSnow",
+      "mesh": "GEO_Expansion_AbandonedShed_RoofSnow",
+      "surface": "WindSnow",
+      "solid": false,
+      "tint": [
+        0.83,
+        0.85,
+        0.84,
+        1
+      ],
+      "bounds_min": [
+        -3.4989999999999997,
+        2.708268304738603,
+        -2.4660151466833016
+      ],
+      "bounds_max": [
+        3.4989999999999997,
+        3.6601300188808077,
+        2.4660151466833016
+      ],
+      "triangles": 252
+    },
+    {
+      "kind": "AbandonedShed",
+      "name": "BearingTimbers",
+      "mesh": "GEO_Expansion_AbandonedShed_BearingTimbers",
+      "surface": "AbandonedWood",
+      "solid": true,
+      "tint": [
+        0.34,
+        0.305,
+        0.26,
+        1
+      ],
+      "bounds_min": [
+        -3.1,
+        2.435,
+        -2.41
+      ],
+      "bounds_max": [
+        3.1,
+        3.490172221090643,
+        2.41
+      ],
+      "triangles": 280
+    },
+    {
+      "kind": "AbandonedShed",
+      "name": "EavesAndGutters",
+      "mesh": "GEO_Expansion_AbandonedShed_EavesAndGutters",
+      "surface": "AbandonedWood",
+      "solid": false,
+      "tint": [
+        0.34,
+        0.305,
+        0.26,
+        1
+      ],
+      "bounds_min": [
+        -3.495,
+        2.45,
+        -2.5
+      ],
+      "bounds_max": [
+        3.495,
+        2.63,
+        2.5
+      ],
+      "triangles": 56
+    },
+    {
+      "kind": "AbandonedShed",
+      "name": "RidgeCap",
+      "mesh": "GEO_Expansion_AbandonedShed_RidgeCap",
+      "surface": "AbandonedRoof",
+      "solid": false,
+      "tint": [
+        0.27,
+        0.275,
+        0.25,
+        1
+      ],
+      "bounds_min": [
+        -3.5425,
+        3.465,
+        -0.125
+      ],
+      "bounds_max": [
+        3.5425,
+        3.6550000000000002,
+        0.125
+      ],
+      "triangles": 28
+    },
+    {
+      "kind": "AbandonedShed",
+      "name": "ClosedGables",
+      "mesh": "GEO_Expansion_AbandonedShed_ClosedGables",
+      "surface": "AbandonedWood",
+      "solid": true,
+      "tint": [
+        0.34,
+        0.305,
+        0.26,
+        1
+      ],
+      "bounds_min": [
+        -3.0000000000000004,
+        2.64,
+        -2.0
+      ],
+      "bounds_max": [
+        3.0000000000000004,
+        3.42,
+        2.0
+      ],
+      "triangles": 16
+    },
+    {
+      "kind": "AbandonedShed",
+      "name": "WornEntranceSteps",
+      "mesh": "GEO_Expansion_AbandonedShed_WornEntranceSteps",
+      "surface": "LayeredStone",
+      "solid": true,
+      "tint": [
+        0.32,
+        0.345,
+        0.34,
+        1
+      ],
+      "bounds_min": [
+        -0.9,
+        0.0,
+        1.96
+      ],
+      "bounds_max": [
+        0.9,
+        0.48,
+        2.74
+      ],
+      "triangles": 84
+    },
+    {
+      "kind": "RuinedShed",
+      "name": "ExposedFloor",
+      "mesh": "GEO_Expansion_RuinedShed_ExposedFloor",
+      "surface": "LayeredStone",
+      "solid": true,
+      "tint": [
+        0.32,
+        0.345,
+        0.34,
+        1
+      ],
+      "bounds_min": [
+        -3.0,
+        0.0,
+        -2.0
+      ],
+      "bounds_max": [
+        3.0,
+        0.2,
+        2.0
+      ],
+      "triangles": 28
+    },
+    {
+      "kind": "RuinedShed",
+      "name": "RemainingWalls",
+      "mesh": "GEO_Expansion_RuinedShed_RemainingWalls",
+      "surface": "LayeredStone",
+      "solid": true,
+      "tint": [
+        0.32,
+        0.345,
+        0.34,
+        1
+      ],
+      "bounds_min": [
+        -3.0,
+        0.2,
+        -2.0
+      ],
+      "bounds_max": [
+        3.0,
+        2.55,
+        2.0
+      ],
+      "triangles": 84
+    },
+    {
+      "kind": "RuinedShed",
+      "name": "LowFrontWall",
+      "mesh": "GEO_Expansion_RuinedShed_LowFrontWall",
+      "surface": "LayeredStone",
+      "solid": true,
+      "tint": [
+        0.32,
+        0.345,
+        0.34,
+        1
+      ],
+      "bounds_min": [
+        -2.94,
+        0.2,
+        1.6800000000000002
+      ],
+      "bounds_max": [
+        2.94,
+        0.6000000000000001,
+        2.0
+      ],
+      "triangles": 56
+    },
+    {
+      "kind": "RuinedShed",
+      "name": "ExposedRoofRafters",
+      "mesh": "GEO_Expansion_RuinedShed_ExposedRoofRafters",
+      "surface": "AbandonedWood",
+      "solid": true,
+      "tint": [
+        0.34,
+        0.305,
+        0.26,
+        1
+      ],
+      "bounds_min": [
+        -2.6416331065287313,
+        2.423575160882324,
+        -1.9130673282717932
+      ],
+      "bounds_max": [
+        -0.5383668934712686,
+        3.489784753176348,
+        1.109957495396578
+      ],
+      "triangles": 140
+    },
+    {
+      "kind": "RuinedShed",
+      "name": "SurvivingRoofBay",
+      "mesh": "GEO_Expansion_RuinedShed_SurvivingRoofBay",
+      "surface": "AbandonedRoof",
+      "solid": true,
+      "tint": [
+        0.27,
+        0.275,
+        0.25,
+        1
+      ],
+      "bounds_min": [
+        -2.82,
+        2.475224652885933,
+        -2.146613241785957
+      ],
+      "bounds_max": [
+        -0.7799999999999998,
+        3.4547753471140665,
+        0.02661324178595681
+      ],
+      "triangles": 28
+    },
+    {
+      "kind": "RuinedShed",
+      "name": "RoofSnow",
+      "mesh": "GEO_Expansion_RuinedShed_RoofSnow",
+      "surface": "WindSnow",
+      "solid": false,
+      "tint": [
+        0.83,
+        0.85,
+        0.84,
+        1
+      ],
+      "bounds_min": [
+        -2.76,
+        2.644264199037534,
+        -2.1355005991521114
+      ],
+      "bounds_max": [
+        -0.8399999999999999,
+        3.5371538501171402,
+        -0.08293193896033202
+      ],
+      "triangles": 28
+    },
+    {
+      "kind": "RuinedShed",
+      "name": "CollapsedTimbers",
+      "mesh": "GEO_Expansion_RuinedShed_CollapsedTimbers",
+      "surface": "AbandonedWood",
+      "solid": true,
+      "tint": [
+        0.34,
+        0.305,
+        0.26,
+        1
+      ],
+      "bounds_min": [
+        -1.773060448147295,
+        0.18005707139775848,
+        -0.5906705444705247
+      ],
+      "bounds_max": [
+        1.9247487252796676,
+        0.5455550404231113,
+        1.1106705444705247
+      ],
+      "triangles": 140
+    },
+    {
+      "kind": "RuinedShed",
+      "name": "SettledWallDebris",
+      "mesh": "GEO_Expansion_RuinedShed_SettledWallDebris",
+      "surface": "LayeredStone",
+      "solid": true,
+      "tint": [
+        0.32,
+        0.345,
+        0.34,
+        1
+      ],
+      "bounds_min": [
+        -2.598387615185228,
+        0.1509757324136898,
+        -1.2555153256834624
+      ],
+      "bounds_max": [
+        1.3966443794464931,
+        0.5490242675863102,
+        0.7633713760561316
+      ],
+      "triangles": 364
+    },
+    {
+      "kind": "RuinedShed",
+      "name": "SnowInside",
+      "mesh": "GEO_Expansion_RuinedShed_SnowInside",
+      "surface": "WindSnow",
+      "solid": false,
+      "tint": [
+        0.83,
+        0.85,
+        0.84,
+        1
+      ],
+      "bounds_min": [
+        -1.92,
+        0.185,
+        -1.6
+      ],
+      "bounds_max": [
+        2.46,
+        0.265,
+        1.3399999999999999
+      ],
+      "triangles": 56
+    },
+    {
+      "kind": "TownHallYard",
+      "name": "OldPlazaBed",
+      "mesh": "GEO_Expansion_TownHallYard_OldPlazaBed",
+      "surface": "LayeredStone",
+      "solid": false,
+      "tint": [
+        0.43,
+        0.44,
+        0.415,
+        1
+      ],
+      "bounds_min": [
+        -9.35,
+        0.0,
+        4.9
+      ],
+      "bounds_max": [
+        9.35,
+        0.09,
+        15.1
+      ],
+      "triangles": 28
+    },
+    {
+      "kind": "TownHallYard",
+      "name": "ExposedPaving",
+      "mesh": "GEO_Expansion_TownHallYard_ExposedPaving",
+      "surface": "Masonry",
+      "solid": false,
+      "tint": [
+        0.51,
+        0.505,
+        0.465,
+        1
+      ],
+      "bounds_min": [
+        -8.725925212824817,
+        0.0,
+        5.126494912019116
+      ],
+      "bounds_max": [
+        7.813439348683145,
+        0.17,
+        14.313505087980884
+      ],
+      "triangles": 2520
+    },
+    {
+      "kind": "TownHallYard",
+      "name": "RetainingEdges",
+      "mesh": "GEO_Expansion_TownHallYard_RetainingEdges",
+      "surface": "LayeredStone",
+      "solid": true,
+      "tint": [
+        0.43,
+        0.44,
+        0.415,
+        1
+      ],
+      "bounds_min": [
+        -9.73,
+        0.0,
+        5.699999999999999
+      ],
+      "bounds_max": [
+        9.73,
+        0.72,
+        15.14
+      ],
+      "triangles": 112
+    },
+    {
+      "kind": "TownHallYard",
+      "name": "BenchStoneFeet",
+      "mesh": "GEO_Expansion_TownHallYard_BenchStoneFeet",
+      "surface": "Masonry",
+      "solid": true,
+      "tint": [
+        0.51,
+        0.505,
+        0.465,
+        1
+      ],
+      "bounds_min": [
+        -8.504999999999999,
+        0.0,
+        8.178
+      ],
+      "bounds_max": [
+        8.504999999999999,
+        0.52,
+        14.205
+      ],
+      "triangles": 168
+    },
+    {
+      "kind": "TownHallYard",
+      "name": "WeatheredBenchSlats",
+      "mesh": "GEO_Expansion_TownHallYard_WeatheredBenchSlats",
+      "surface": "Timber",
+      "solid": true,
+      "tint": [
+        0.405,
+        0.385,
+        0.33,
+        1
+      ],
+      "bounds_min": [
+        -8.573145022191868,
+        0.3340915127752052,
+        7.950000000000001
+      ],
+      "bounds_max": [
+        8.573145022191868,
+        1.05,
+        14.159
+      ],
+      "triangles": 448
+    },
+    {
+      "kind": "TownHallYard",
+      "name": "DeadLanternFrames",
+      "mesh": "GEO_Expansion_TownHallYard_DeadLanternFrames",
+      "surface": "RustedIron",
+      "solid": true,
+      "tint": [
+        0.265,
+        0.245,
+        0.215,
+        1
+      ],
+      "bounds_min": [
+        -3.935,
+        0.0,
+        6.114999999999999
+      ],
+      "bounds_max": [
+        3.935,
+        3.1999999999999997,
+        6.585
+      ],
+      "triangles": 464
+    },
+    {
+      "kind": "TownHallYard",
+      "name": "UnlitLanternInsets",
+      "mesh": "GEO_Expansion_TownHallYard_UnlitLanternInsets",
+      "surface": "RustedIron",
+      "solid": false,
+      "tint": [
+        0.2,
+        0.235,
+        0.235,
+        1
+      ],
+      "bounds_min": [
+        -3.835,
+        2.7600000000000002,
+        6.215
+      ],
+      "bounds_max": [
+        3.835,
+        3.1,
+        6.484999999999999
+      ],
+      "triangles": 56
+    },
+    {
+      "kind": "TownHallYard",
+      "name": "RearAnnexFoot",
+      "mesh": "GEO_Expansion_TownHallYard_RearAnnexFoot",
+      "surface": "LayeredStone",
+      "solid": true,
+      "tint": [
+        0.43,
+        0.44,
+        0.415,
+        1
+      ],
+      "bounds_min": [
+        2.75,
+        0.0,
+        -7.65
+      ],
+      "bounds_max": [
+        6.85,
+        0.905,
+        -5.15
+      ],
+      "triangles": 56
+    },
+    {
+      "kind": "TownHallYard",
+      "name": "AnnexFallenTimbers",
+      "mesh": "GEO_Expansion_TownHallYard_AnnexFallenTimbers",
+      "surface": "Timber",
+      "solid": true,
+      "tint": [
+        0.295,
+        0.285,
+        0.25,
+        1
+      ],
+      "bounds_min": [
+        2.951692158865276,
+        0.32000000000000006,
+        -7.472557197752728
+      ],
+      "bounds_max": [
+        6.485,
+        1.82,
+        -5.29
+      ],
+      "triangles": 84
+    },
+    {
+      "kind": "TownHallYard",
+      "name": "SettledLooseBoards",
+      "mesh": "GEO_Expansion_TownHallYard_SettledLooseBoards",
+      "surface": "Timber",
+      "solid": false,
+      "tint": [
+        0.405,
+        0.385,
+        0.33,
+        1
+      ],
+      "bounds_min": [
+        3.2775026853991225,
+        0.47431120790620707,
+        -7.071316722128944
+      ],
+      "bounds_max": [
+        5.737630797243775,
+        0.6656887920937931,
+        -5.400669933031009
+      ],
+      "triangles": 168
+    },
+    {
+      "kind": "TownHallYard",
+      "name": "OldHardware",
+      "mesh": "GEO_Expansion_TownHallYard_OldHardware",
+      "surface": "RustedIron",
+      "solid": false,
+      "tint": [
+        0.265,
+        0.245,
+        0.215,
+        1
+      ],
+      "bounds_min": [
+        -8.360000000000001,
+        0.525,
+        14.9375
+      ],
+      "bounds_max": [
+        8.360000000000001,
+        0.6749999999999999,
+        14.982500000000002
+      ],
+      "triangles": 112
+    },
+    {
+      "kind": "TownHallYard",
+      "name": "SettledSnow",
+      "mesh": "GEO_Expansion_TownHallYard_SettledSnow",
+      "surface": "WindSnow",
+      "solid": false,
+      "tint": [
+        0.83,
+        0.85,
+        0.84,
+        1
+      ],
+      "bounds_min": [
+        -9.7008,
+        0.6,
+        -6.6706339097770915
+      ],
+      "bounds_max": [
+        9.709999999999999,
+        0.9,
+        14.139361904021165
+      ],
+      "triangles": 144
+    },
+    {
+      "kind": "SchoolYard",
+      "name": "LowCourtyardWalls",
+      "mesh": "GEO_Expansion_SchoolYard_LowCourtyardWalls",
+      "surface": "LayeredStone",
+      "solid": true,
+      "tint": [
+        0.43,
+        0.44,
+        0.415,
+        1
+      ],
+      "bounds_min": [
+        -9.15,
+        0.0,
+        5.8999999999999995
+      ],
+      "bounds_max": [
+        9.15,
+        0.44,
+        14.91
+      ],
+      "triangles": 112
+    },
+    {
+      "kind": "SchoolYard",
+      "name": "GateStonePiers",
+      "mesh": "GEO_Expansion_SchoolYard_GateStonePiers",
+      "surface": "Masonry",
+      "solid": true,
+      "tint": [
+        0.51,
+        0.505,
+        0.465,
+        1
+      ],
+      "bounds_min": [
+        -1.77,
+        0.0,
+        14.43
+      ],
+      "bounds_max": [
+        1.77,
+        1.56,
+        14.969999999999999
+      ],
+      "triangles": 56
+    },
+    {
+      "kind": "SchoolYard",
+      "name": "BrokenBoundaryFence",
+      "mesh": "GEO_Expansion_SchoolYard_BrokenBoundaryFence",
+      "surface": "Timber",
+      "solid": true,
+      "tint": [
+        0.295,
+        0.285,
+        0.25,
+        1
+      ],
+      "bounds_min": [
+        -9.014999999999999,
+        0.4,
+        6.14
+      ],
+      "bounds_max": [
+        9.014999999999999,
+        1.6800000000000002,
+        14.774999999999999
+      ],
+      "triangles": 1540
+    },
+    {
+      "kind": "SchoolYard",
+      "name": "CrookedOpenGate",
+      "mesh": "GEO_Expansion_SchoolYard_CrookedOpenGate",
+      "surface": "Timber",
+      "solid": true,
+      "tint": [
+        0.405,
+        0.385,
+        0.33,
+        1
+      ],
+      "bounds_min": [
+        -1.5816753630623865,
+        0.0020215161233531134,
+        12.266880892041954
+      ],
+      "bounds_max": [
+        -0.5755062716960664,
+        1.503592355686074,
+        14.493429765744937
+      ],
+      "triangles": 308
+    },
+    {
+      "kind": "SchoolYard",
+      "name": "OldSwingFrame",
+      "mesh": "GEO_Expansion_SchoolYard_OldSwingFrame",
+      "surface": "RustedIron",
+      "solid": true,
+      "tint": [
+        0.265,
+        0.245,
+        0.215,
+        1
+      ],
+      "bounds_min": [
+        -7.1393735979588016,
+        0.04544930817569881,
+        8.78
+      ],
+      "bounds_max": [
+        -3.660626402041199,
+        2.7025,
+        11.22
+      ],
+      "triangles": 196
+    },
+    {
+      "kind": "SchoolYard",
+      "name": "BrokenSwingSuspension",
+      "mesh": "GEO_Expansion_SchoolYard_BrokenSwingSuspension",
+      "surface": "RustedIron",
+      "solid": false,
+      "tint": [
+        0.265,
+        0.245,
+        0.215,
+        1
+      ],
+      "bounds_min": [
+        -5.66077506229477,
+        0.6092377124211026,
+        9.3885604715369
+      ],
+      "bounds_max": [
+        -5.338619563057197,
+        2.560762287578897,
+        10.511845812352396
+      ],
+      "triangles": 56
+    },
+    {
+      "kind": "SchoolYard",
+      "name": "TiltedSwingSeat",
+      "mesh": "GEO_Expansion_SchoolYard_TiltedSwingSeat",
+      "surface": "Timber",
+      "solid": false,
+      "tint": [
+        0.405,
+        0.385,
+        0.33,
+        1
+      ],
+      "bounds_min": [
+        -5.831929927135608,
+        0.22969019402916924,
+        9.446910626763279
+      ],
+      "bounds_max": [
+        -5.408070072864392,
+        0.6703098059708308,
+        10.193089373236722
+      ],
+      "triangles": 28
+    },
+    {
+      "kind": "SchoolYard",
+      "name": "LowExerciseBars",
+      "mesh": "GEO_Expansion_SchoolYard_LowExerciseBars",
+      "surface": "RustedIron",
+      "solid": true,
+      "tint": [
+        0.265,
+        0.245,
+        0.215,
+        1
+      ],
+      "bounds_min": [
+        3.8665,
+        0.0,
+        8.568139606704111
+      ],
+      "bounds_max": [
+        5.2335,
+        1.06,
+        11.031860393295888
+      ],
+      "triangles": 200
+    },
+    {
+      "kind": "SchoolYard",
+      "name": "LongBenchStone",
+      "mesh": "GEO_Expansion_SchoolYard_LongBenchStone",
+      "surface": "Masonry",
+      "solid": true,
+      "tint": [
+        0.43,
+        0.44,
+        0.415,
+        1
+      ],
+      "bounds_min": [
+        2.5620000000000003,
+        0.0,
+        13.095
+      ],
+      "bounds_max": [
+        5.2379999999999995,
+        0.52,
+        13.705
+      ],
+      "triangles": 56
+    },
+    {
+      "kind": "SchoolYard",
+      "name": "LongBenchTimber",
+      "mesh": "GEO_Expansion_SchoolYard_LongBenchTimber",
+      "surface": "Timber",
+      "solid": true,
+      "tint": [
+        0.405,
+        0.385,
+        0.33,
+        1
+      ],
+      "bounds_min": [
+        2.25,
+        0.3340915127752052,
+        13.026854977808132
+      ],
+      "bounds_max": [
+        5.55,
+        1.05,
+        13.659
+      ],
+      "triangles": 196
+    },
+    {
+      "kind": "SchoolYard",
+      "name": "RearShedRemains",
+      "mesh": "GEO_Expansion_SchoolYard_RearShedRemains",
+      "surface": "LayeredStone",
+      "solid": true,
+      "tint": [
+        0.43,
+        0.44,
+        0.415,
+        1
+      ],
+      "bounds_min": [
+        2.4000000000000004,
+        0.0,
+        -6.699999999999999
+      ],
+      "bounds_max": [
+        6.005,
+        1.02,
+        -4.4
+      ],
+      "triangles": 56
+    },
+    {
+      "kind": "SchoolYard",
+      "name": "ShedRoofFallen",
+      "mesh": "GEO_Expansion_SchoolYard_ShedRoofFallen",
+      "surface": "Timber",
+      "solid": false,
+      "tint": [
+        0.295,
+        0.285,
+        0.25,
+        1
+      ],
+      "bounds_min": [
+        2.7574556350467336,
+        0.49022027190820844,
+        -6.507425873569083
+      ],
+      "bounds_max": [
+        5.6559278955862595,
+        1.0036359827239933,
+        -4.492574126430917
+      ],
+      "triangles": 224
+    },
+    {
+      "kind": "SchoolYard",
+      "name": "EntrancePavingRemnants",
+      "mesh": "GEO_Expansion_SchoolYard_EntrancePavingRemnants",
+      "surface": "Masonry",
+      "solid": false,
+      "tint": [
+        0.51,
+        0.505,
+        0.465,
+        1
+      ],
+      "bounds_min": [
+        -1.358947861149628,
+        0.0,
+        5.547683662491791
+      ],
+      "bounds_max": [
+        1.578947861149628,
+        0.17,
+        9.459302947846462
+      ],
+      "triangles": 196
+    },
+    {
+      "kind": "SchoolYard",
+      "name": "SnowAtIdleFixtures",
+      "mesh": "GEO_Expansion_SchoolYard_SnowAtIdleFixtures",
+      "surface": "WindSnow",
+      "solid": false,
+      "tint": [
+        0.83,
+        0.85,
+        0.84,
+        1
+      ],
+      "bounds_min": [
+        -5.8127200000000006,
+        0.55,
+        -6.213292387221365
+      ],
+      "bounds_max": [
+        5.800000000000001,
+        0.97,
+        13.634758790482296
+      ],
+      "triangles": 108
+    },
+    {
+      "kind": "ShopBakeryYard",
+      "name": "TradingPaving",
+      "mesh": "GEO_Expansion_ShopBakeryYard_TradingPaving",
+      "surface": "Masonry",
+      "solid": false,
+      "tint": [
+        0.51,
+        0.505,
+        0.465,
+        1
+      ],
+      "bounds_min": [
+        -5.605,
+        0.0,
+        4.790313157689811
+      ],
+      "bounds_max": [
+        5.449139808381491,
+        0.17,
+        9.709494895078326
+      ],
+      "triangles": 952
+    },
+    {
+      "kind": "ShopBakeryYard",
+      "name": "RearLoadingSlab",
+      "mesh": "GEO_Expansion_ShopBakeryYard_RearLoadingSlab",
+      "surface": "LayeredStone",
+      "solid": true,
+      "tint": [
+        0.43,
+        0.44,
+        0.415,
+        1
+      ],
+      "bounds_min": [
+        -5.2,
+        0.0,
+        -7.75
+      ],
+      "bounds_max": [
+        2.8,
+        0.4,
+        -4.550000000000001
+      ],
+      "triangles": 28
+    },
+    {
+      "kind": "ShopBakeryYard",
+      "name": "SurvivingCanopyFrame",
+      "mesh": "GEO_Expansion_ShopBakeryYard_SurvivingCanopyFrame",
+      "surface": "Timber",
+      "solid": true,
+      "tint": [
+        0.295,
+        0.285,
+        0.25,
+        1
+      ],
+      "bounds_min": [
+        -5.0,
+        0.0,
+        4.595
+      ],
+      "bounds_max": [
+        5.0,
+        3.015,
+        8.65280819817052
+      ],
+      "triangles": 252
+    },
+    {
+      "kind": "ShopBakeryYard",
+      "name": "CanopyWeatheredBoards",
+      "mesh": "GEO_Expansion_ShopBakeryYard_CanopyWeatheredBoards",
+      "surface": "Timber",
+      "solid": true,
+      "tint": [
+        0.405,
+        0.385,
+        0.33,
+        1
+      ],
+      "bounds_min": [
+        -4.805000000000001,
+        2.7750836866743827,
+        4.611180390672386
+      ],
+      "bounds_max": [
+        -0.1550000000000005,
+        3.024916313325617,
+        8.708819609327614
+      ],
+      "triangles": 420
+    },
+    {
+      "kind": "ShopBakeryYard",
+      "name": "SurvivingIronBrackets",
+      "mesh": "GEO_Expansion_ShopBakeryYard_SurvivingIronBrackets",
+      "surface": "RustedIron",
+      "solid": false,
+      "tint": [
+        0.265,
+        0.245,
+        0.215,
+        1
+      ],
+      "bounds_min": [
+        -4.875,
+        2.177862065396043,
+        4.49
+      ],
+      "bounds_max": [
+        4.875,
+        2.9099999999999997,
+        5.449296521341326
+      ],
+      "triangles": 280
+    },
+    {
+      "kind": "ShopBakeryYard",
+      "name": "CollapsedCanopyEnd",
+      "mesh": "GEO_Expansion_ShopBakeryYard_CollapsedCanopyEnd",
+      "surface": "Timber",
+      "solid": false,
+      "tint": [
+        0.295,
+        0.285,
+        0.25,
+        1
+      ],
+      "bounds_min": [
+        1.9542126234366752,
+        0.03581216720191452,
+        7.2769431198504035
+      ],
+      "bounds_max": [
+        4.84494317005855,
+        1.2407751952862762,
+        8.865193679972961
+      ],
+      "triangles": 196
+    },
+    {
+      "kind": "ShopBakeryYard",
+      "name": "AbandonedBreadCartTimber",
+      "mesh": "GEO_Expansion_ShopBakeryYard_AbandonedBreadCartTimber",
+      "surface": "Timber",
+      "solid": true,
+      "tint": [
+        0.405,
+        0.385,
+        0.33,
+        1
+      ],
+      "bounds_min": [
+        -4.278945306778034,
+        0.6364085656595011,
+        -8.191283022843562
+      ],
+      "bounds_max": [
+        -2.8567803801658456,
+        1.3399999999999999,
+        -5.85977186985742
+      ],
+      "triangles": 280
+    },
+    {
+      "kind": "ShopBakeryYard",
+      "name": "CartAxleAndWheels",
+      "mesh": "GEO_Expansion_ShopBakeryYard_CartAxleAndWheels",
+      "surface": "RustedIron",
+      "solid": true,
+      "tint": [
+        0.265,
+        0.245,
+        0.215,
+        1
+      ],
+      "bounds_min": [
+        -4.364760386610866,
+        0.425,
+        -6.869844482775051
+      ],
+      "bounds_max": [
+        -2.9391954587980136,
+        1.095,
+        -5.941081716858047
+      ],
+      "triangles": 200
+    },
+    {
+      "kind": "ShopBakeryYard",
+      "name": "EmptyBreadTrays",
+      "mesh": "GEO_Expansion_ShopBakeryYard_EmptyBreadTrays",
+      "surface": "Timber",
+      "solid": false,
+      "tint": [
+        0.405,
+        0.385,
+        0.33,
+        1
+      ],
+      "bounds_min": [
+        -1.2375,
+        0.4195,
+        -6.255083116105123
+      ],
+      "bounds_max": [
+        -0.20920544871504992,
+        1.04,
+        -5.344916883894877
+      ],
+      "triangles": 756
+    },
+    {
+      "kind": "ShopBakeryYard",
+      "name": "WoodstoreFoot",
+      "mesh": "GEO_Expansion_ShopBakeryYard_WoodstoreFoot",
+      "surface": "LayeredStone",
+      "solid": true,
+      "tint": [
+        0.43,
+        0.44,
+        0.415,
+        1
+      ],
+      "bounds_min": [
+        5.85,
+        0.0,
+        -6.7
+      ],
+      "bounds_max": [
+        8.75,
+        0.36,
+        -3.2
+      ],
+      "triangles": 28
+    },
+    {
+      "kind": "ShopBakeryYard",
+      "name": "CollapsedWoodstore",
+      "mesh": "GEO_Expansion_ShopBakeryYard_CollapsedWoodstore",
+      "surface": "Timber",
+      "solid": true,
+      "tint": [
+        0.295,
+        0.285,
+        0.25,
+        1
+      ],
+      "bounds_min": [
+        5.925,
+        0.16999999999999993,
+        -6.389866959530848
+      ],
+      "bounds_max": [
+        8.675,
+        2.27,
+        -3.3249999999999997
+      ],
+      "triangles": 336
+    },
+    {
+      "kind": "ShopBakeryYard",
+      "name": "RemainingDryWood",
+      "mesh": "GEO_Expansion_ShopBakeryYard_RemainingDryWood",
+      "surface": "Timber",
+      "solid": false,
+      "tint": [
+        0.405,
+        0.385,
+        0.33,
+        1
+      ],
+      "bounds_min": [
+        6.33,
+        0.38,
+        -3.8699999999999997
+      ],
+      "bounds_max": [
+        7.49,
+        0.76,
+        -3.73
+      ],
+      "triangles": 196
+    },
+    {
+      "kind": "ShopBakeryYard",
+      "name": "CanopyAndWoodstoreSnow",
+      "mesh": "GEO_Expansion_ShopBakeryYard_CanopyAndWoodstoreSnow",
+      "surface": "WindSnow",
+      "solid": false,
+      "tint": [
+        0.83,
+        0.85,
+        0.84,
+        1
+      ],
+      "bounds_min": [
+        -4.4566,
+        0.83,
+        -7.037346931706762
+      ],
+      "bounds_max": [
+        8.3,
+        3.1964091390629066,
+        8.45635810712027
+      ],
+      "triangles": 108
+    },
+    {
+      "kind": "WorkshopYard",
+      "name": "OldWorkPaving",
+      "mesh": "GEO_Expansion_WorkshopYard_OldWorkPaving",
+      "surface": "LayeredStone",
+      "solid": false,
+      "tint": [
+        0.43,
+        0.44,
+        0.415,
+        1
+      ],
+      "bounds_min": [
+        -5.408268628119333,
+        0.0,
+        4.494482675465734
+      ],
+      "bounds_max": [
+        5.646126729167749,
+        0.2,
+        13.205517324534268
+      ],
+      "triangles": 1400
+    },
+    {
+      "kind": "WorkshopYard",
+      "name": "EntranceStonePosts",
+      "mesh": "GEO_Expansion_WorkshopYard_EntranceStonePosts",
+      "surface": "Masonry",
+      "solid": true,
+      "tint": [
+        0.51,
+        0.505,
+        0.465,
+        1
+      ],
+      "bounds_min": [
+        -5.0,
+        0.0,
+        13.24
+      ],
+      "bounds_max": [
+        5.0,
+        1.84,
+        13.860000000000001
+      ],
+      "triangles": 56
+    },
+    {
+      "kind": "WorkshopYard",
+      "name": "CrookedAndFallenGates",
+      "mesh": "GEO_Expansion_WorkshopYard_CrookedAndFallenGates",
+      "surface": "Timber",
+      "solid": true,
+      "tint": [
+        0.295,
+        0.285,
+        0.25,
+        1
+      ],
+      "bounds_min": [
+        -4.737673751676012,
+        0.05634937640342899,
+        10.0
+      ],
+      "bounds_max": [
+        4.881542963393862,
+        1.5808714208608245,
+        13.547031358041542
+      ],
+      "triangles": 616
+    },
+    {
+      "kind": "WorkshopYard",
+      "name": "HalfCanopyStructure",
+      "mesh": "GEO_Expansion_WorkshopYard_HalfCanopyStructure",
+      "surface": "Timber",
+      "solid": true,
+      "tint": [
+        0.295,
+        0.285,
+        0.25,
+        1
+      ],
+      "bounds_min": [
+        5.065891115013411,
+        0.0,
+        -1.7000000000000002
+      ],
+      "bounds_max": [
+        9.345,
+        3.0245161618323286,
+        4.525
+      ],
+      "triangles": 224
+    },
+    {
+      "kind": "WorkshopYard",
+      "name": "HalfCanopyRoof",
+      "mesh": "GEO_Expansion_WorkshopYard_HalfCanopyRoof",
+      "surface": "Timber",
+      "solid": true,
+      "tint": [
+        0.405,
+        0.385,
+        0.33,
+        1
+      ],
+      "bounds_min": [
+        4.93084905556073,
+        2.819049340279635,
+        1.29
+      ],
+      "bounds_max": [
+        9.42915094443927,
+        3.100950659720365,
+        4.35
+      ],
+      "triangles": 252
+    },
+    {
+      "kind": "WorkshopYard",
+      "name": "FallenRoofAtRear",
+      "mesh": "GEO_Expansion_WorkshopYard_FallenRoofAtRear",
+      "surface": "Timber",
+      "solid": false,
+      "tint": [
+        0.295,
+        0.285,
+        0.25,
+        1
+      ],
+      "bounds_min": [
+        5.102008161685692,
+        0.06627540891792144,
+        -2.393807168631471
+      ],
+      "bounds_max": [
+        9.224581038715172,
+        3.0014843635079815,
+        1.039416578427367
+      ],
+      "triangles": 252
+    },
+    {
+      "kind": "WorkshopYard",
+      "name": "HeavyBench",
+      "mesh": "GEO_Expansion_WorkshopYard_HeavyBench",
+      "surface": "Timber",
+      "solid": true,
+      "tint": [
+        0.405,
+        0.385,
+        0.33,
+        1
+      ],
+      "bounds_min": [
+        5.654999999999999,
+        0.06999999999999995,
+        2.4699999999999998
+      ],
+      "bounds_max": [
+        8.605,
+        1.0150000000000001,
+        3.33
+      ],
+      "triangles": 196
+    },
+    {
+      "kind": "WorkshopYard",
+      "name": "RustingBenchVise",
+      "mesh": "GEO_Expansion_WorkshopYard_RustingBenchVise",
+      "surface": "RustedIron",
+      "solid": false,
+      "tint": [
+        0.265,
+        0.245,
+        0.215,
+        1
+      ],
+      "bounds_min": [
+        5.955,
+        0.9700000000000001,
+        3.1199999999999997
+      ],
+      "bounds_max": [
+        6.404999999999999,
+        1.3900000000000001,
+        3.7565000000000004
+      ],
+      "triangles": 140
+    },
+    {
+      "kind": "WorkshopYard",
+      "name": "IdleSawhorses",
+      "mesh": "GEO_Expansion_WorkshopYard_IdleSawhorses",
+      "surface": "Timber",
+      "solid": true,
+      "tint": [
+        0.295,
+        0.285,
+        0.25,
+        1
+      ],
+      "bounds_min": [
+        6.651895808583152,
+        0.040281863089703385,
+        0.11499999999999999
+      ],
+      "bounds_max": [
+        8.948104191416848,
+        0.875,
+        1.165
+      ],
+      "triangles": 280
+    },
+    {
+      "kind": "WorkshopYard",
+      "name": "LongStockOnRack",
+      "mesh": "GEO_Expansion_WorkshopYard_LongStockOnRack",
+      "surface": "Timber",
+      "solid": true,
+      "tint": [
+        0.295,
+        0.285,
+        0.25,
+        1
+      ],
+      "bounds_min": [
+        8.6,
+        0.0,
+        1.6993147405654656
+      ],
+      "bounds_max": [
+        9.15,
+        1.36,
+        4.020685259434535
+      ],
+      "triangles": 196
+    },
+    {
+      "kind": "WorkshopYard",
+      "name": "OldSledRunners",
+      "mesh": "GEO_Expansion_WorkshopYard_OldSledRunners",
+      "surface": "RustedIron",
+      "solid": false,
+      "tint": [
+        0.265,
+        0.245,
+        0.215,
+        1
+      ],
+      "bounds_min": [
+        6.278029705594604,
+        0.02538371855680821,
+        4.0175
+      ],
+      "bounds_max": [
+        8.211992469260103,
+        0.3414327978773143,
+        4.0825
+      ],
+      "triangles": 112
+    },
+    {
+      "kind": "WorkshopYard",
+      "name": "FootingsAndGateHinges",
+      "mesh": "GEO_Expansion_WorkshopYard_FootingsAndGateHinges",
+      "surface": "LayeredStone",
+      "solid": true,
+      "tint": [
+        0.43,
+        0.44,
+        0.415,
+        1
+      ],
+      "bounds_min": [
+        9.065,
+        0.0,
+        -1.79
+      ],
+      "bounds_max": [
+        9.435,
+        0.18,
+        4.590000000000001
+      ],
+      "triangles": 84
+    },
+    {
+      "kind": "WorkshopYard",
+      "name": "CanopySnow",
+      "mesh": "GEO_Expansion_WorkshopYard_CanopySnow",
+      "surface": "WindSnow",
+      "solid": false,
+      "tint": [
+        0.83,
+        0.85,
+        0.84,
+        1
+      ],
+      "bounds_min": [
+        5.2411325501980555,
+        0.38,
+        -1.8559508646656382
+      ],
+      "bounds_max": [
+        9.282640984294186,
+        3.2258574356177836,
+        4.184902926271878
+      ],
+      "triangles": 72
+    },
+    {
+      "kind": "MountainRescueYard",
+      "name": "OldForecourt",
+      "mesh": "GEO_Expansion_MountainRescueYard_OldForecourt",
+      "surface": "LayeredStone",
+      "solid": false,
+      "tint": [
+        0.43,
+        0.44,
+        0.415,
+        1
+      ],
+      "bounds_min": [
+        -6.6,
+        0.0,
+        3.749999999999999
+      ],
+      "bounds_max": [
+        6.6,
+        0.14,
+        12.649999999999999
+      ],
+      "triangles": 28
+    },
+    {
+      "kind": "MountainRescueYard",
+      "name": "ExposedForecourtEdges",
+      "mesh": "GEO_Expansion_MountainRescueYard_ExposedForecourtEdges",
+      "surface": "Masonry",
+      "solid": false,
+      "tint": [
+        0.51,
+        0.505,
+        0.465,
+        1
+      ],
+      "bounds_min": [
+        -6.73,
+        0.0,
+        3.749999999999999
+      ],
+      "bounds_max": [
+        6.73,
+        0.32,
+        12.649999999999999
+      ],
+      "triangles": 672
+    },
+    {
+      "kind": "MountainRescueYard",
+      "name": "SledgeShelterFrame",
+      "mesh": "GEO_Expansion_MountainRescueYard_SledgeShelterFrame",
+      "surface": "Timber",
+      "solid": true,
+      "tint": [
+        0.295,
+        0.285,
+        0.25,
+        1
+      ],
+      "bounds_min": [
+        6.075975777400227,
+        0.0,
+        -3.2399999999999998
+      ],
+      "bounds_max": [
+        10.154024222599773,
+        2.984465735813745,
+        3.2399999999999998
+      ],
+      "triangles": 252
+    },
+    {
+      "kind": "MountainRescueYard",
+      "name": "SledgeShelterRoof",
+      "mesh": "GEO_Expansion_MountainRescueYard_SledgeShelterRoof",
+      "surface": "Timber",
+      "solid": true,
+      "tint": [
+        0.405,
+        0.385,
+        0.33,
+        1
+      ],
+      "bounds_min": [
+        5.861300400309588,
+        2.7729287959484292,
+        -2.9549999999999996
+      ],
+      "bounds_max": [
+        10.238699599690413,
+        3.0670712040515706,
+        2.935
+      ],
+      "triangles": 448
+    },
+    {
+      "kind": "MountainRescueYard",
+      "name": "SaggedRoofFragments",
+      "mesh": "GEO_Expansion_MountainRescueYard_SaggedRoofFragments",
+      "surface": "Timber",
+      "solid": true,
+      "tint": [
+        0.295,
+        0.285,
+        0.25,
+        1
+      ],
+      "bounds_min": [
+        6.055532937339207,
+        0.7418366463496904,
+        -2.4949999999999997
+      ],
+      "bounds_max": [
+        9.372558134700004,
+        3.051161766651343,
+        -2.05
+      ],
+      "triangles": 56
+    },
+    {
+      "kind": "MountainRescueYard",
+      "name": "WornEvacuationSledge",
+      "mesh": "GEO_Expansion_MountainRescueYard_WornEvacuationSledge",
+      "surface": "RustedIron",
+      "solid": true,
+      "tint": [
+        0.48,
+        0.36,
+        0.22,
+        1
+      ],
+      "bounds_min": [
+        7.77643420057605,
+        0.69,
+        -0.9289623316822595
+      ],
+      "bounds_max": [
+        8.915034945385589,
+        1.21,
+        1.860255563599898
+      ],
+      "triangles": 60
+    },
+    {
+      "kind": "MountainRescueYard",
+      "name": "SledgeSupportBlocks",
+      "mesh": "GEO_Expansion_MountainRescueYard_SledgeSupportBlocks",
+      "surface": "Timber",
+      "solid": true,
+      "tint": [
+        0.295,
+        0.285,
+        0.25,
+        1
+      ],
+      "bounds_min": [
+        7.779999999999999,
+        0.0,
+        -0.44000000000000006
+      ],
+      "bounds_max": [
+        8.92,
+        0.6,
+        1.33
+      ],
+      "triangles": 56
+    },
+    {
+      "kind": "MountainRescueYard",
+      "name": "DamagedSledgeRunnersAndHandles",
+      "mesh": "GEO_Expansion_MountainRescueYard_DamagedSledgeRunnersAndHandles",
+      "surface": "RustedIron",
+      "solid": false,
+      "tint": [
+        0.265,
+        0.245,
+        0.215,
+        1
+      ],
+      "bounds_min": [
+        7.97,
+        0.6,
+        -0.8017940052872989
+      ],
+      "bounds_max": [
+        8.73,
+        1.0592486333027642,
+        2.823319863349983
+      ],
+      "triangles": 280
+    },
+    {
+      "kind": "MountainRescueYard",
+      "name": "EmptyWallRack",
+      "mesh": "GEO_Expansion_MountainRescueYard_EmptyWallRack",
+      "surface": "Timber",
+      "solid": true,
+      "tint": [
+        0.295,
+        0.285,
+        0.25,
+        1
+      ],
+      "bounds_min": [
+        6.1525,
+        0.63,
+        -1.7
+      ],
+      "bounds_max": [
+        6.27,
+        1.9900000000000002,
+        2.1
+      ],
+      "triangles": 112
+    },
+    {
+      "kind": "MountainRescueYard",
+      "name": "RemainingOldSkis",
+      "mesh": "GEO_Expansion_MountainRescueYard_RemainingOldSkis",
+      "surface": "Timber",
+      "solid": false,
+      "tint": [
+        0.39,
+        0.35,
+        0.285,
+        1
+      ],
+      "bounds_min": [
+        6.30873222649228,
+        0.06311329020580037,
+        -0.915
+      ],
+      "bounds_max": [
+        6.60126777350772,
+        2.183571374662666,
+        -0.20500000000000002
+      ],
+      "triangles": 168
+    },
+    {
+      "kind": "MountainRescueYard",
+      "name": "EmptyHooksPolesAndBindings",
+      "mesh": "GEO_Expansion_MountainRescueYard_EmptyHooksPolesAndBindings",
+      "surface": "RustedIron",
+      "solid": false,
+      "tint": [
+        0.265,
+        0.245,
+        0.215,
+        1
+      ],
+      "bounds_min": [
+        6.22,
+        0.0688703935164715,
+        -1.3625
+      ],
+      "bounds_max": [
+        6.611955001950676,
+        1.99,
+        1.7825
+      ],
+      "triangles": 420
+    },
+    {
+      "kind": "MountainRescueYard",
+      "name": "RearDryingFrame",
+      "mesh": "GEO_Expansion_MountainRescueYard_RearDryingFrame",
+      "surface": "Timber",
+      "solid": true,
+      "tint": [
+        0.295,
+        0.285,
+        0.25,
+        1
+      ],
+      "bounds_min": [
+        0.04000000000000001,
+        0.0,
+        -7.274219052283909
+      ],
+      "bounds_max": [
+        4.76,
+        2.3850000000000002,
+        -6.4799999999999995
+      ],
+      "triangles": 140
+    },
+    {
+      "kind": "MountainRescueYard",
+      "name": "ShelterFootings",
+      "mesh": "GEO_Expansion_MountainRescueYard_ShelterFootings",
+      "surface": "LayeredStone",
+      "solid": true,
+      "tint": [
+        0.43,
+        0.44,
+        0.415,
+        1
+      ],
+      "bounds_min": [
+        9.865,
+        0.0,
+        -3.335
+      ],
+      "bounds_max": [
+        10.235000000000001,
+        0.21,
+        3.335
+      ],
+      "triangles": 84
+    },
+    {
+      "kind": "MountainRescueYard",
+      "name": "SnowInIdleEquipment",
+      "mesh": "GEO_Expansion_MountainRescueYard_SnowInIdleEquipment",
+      "surface": "WindSnow",
+      "solid": false,
+      "tint": [
+        0.83,
+        0.85,
+        0.84,
+        1
+      ],
+      "bounds_min": [
+        0.6823999999999999,
+        0.758,
+        -6.611818673559185
+      ],
+      "bounds_max": [
+        9.992293331140283,
+        3.2082845478851536,
+        2.49426098324176
+      ],
+      "triangles": 108
+    },
+    {
+      "kind": "HouseholdYardA",
+      "name": "OldYardStone",
+      "mesh": "GEO_Expansion_HouseholdYardA_OldYardStone",
+      "surface": "LayeredStone",
+      "solid": true,
+      "tint": [
+        0.43,
+        0.44,
+        0.415,
+        1
+      ],
+      "bounds_min": [
+        -6.199999999999999,
+        0.0,
+        3.15
+      ],
+      "bounds_max": [
+        6.38,
+        0.46,
+        8.85
+      ],
+      "triangles": 56
+    },
+    {
+      "kind": "HouseholdYardA",
+      "name": "IncompleteFence",
+      "mesh": "GEO_Expansion_HouseholdYardA_IncompleteFence",
+      "surface": "Timber",
+      "solid": true,
+      "tint": [
+        0.295,
+        0.285,
+        0.25,
+        1
+      ],
+      "bounds_min": [
+        6.125,
+        0.43,
+        3.54
+      ],
+      "bounds_max": [
+        6.275,
+        1.71,
+        8.46
+      ],
+      "triangles": 532
+    },
+    {
+      "kind": "HouseholdYardA",
+      "name": "UnkeptOpenGate",
+      "mesh": "GEO_Expansion_HouseholdYardA_UnkeptOpenGate",
+      "surface": "Timber",
+      "solid": true,
+      "tint": [
+        0.405,
+        0.385,
+        0.33,
+        1
+      ],
+      "bounds_min": [
+        -2.4,
+        0.0,
+        6.790183721194962
+      ],
+      "bounds_max": [
+        0.9,
+        1.5408714208608245,
+        8.605
+      ],
+      "triangles": 364
+    },
+    {
+      "kind": "HouseholdYardA",
+      "name": "PorchStoneRemains",
+      "mesh": "GEO_Expansion_HouseholdYardA_PorchStoneRemains",
+      "surface": "Masonry",
+      "solid": true,
+      "tint": [
+        0.51,
+        0.505,
+        0.465,
+        1
+      ],
+      "bounds_min": [
+        3.975,
+        0.0,
+        1.6999999999999997
+      ],
+      "bounds_max": [
+        5.925,
+        0.42,
+        4.375
+      ],
+      "triangles": 56
+    },
+    {
+      "kind": "HouseholdYardA",
+      "name": "FallenPorchBoards",
+      "mesh": "GEO_Expansion_HouseholdYardA_FallenPorchBoards",
+      "surface": "Timber",
+      "solid": false,
+      "tint": [
+        0.295,
+        0.285,
+        0.25,
+        1
+      ],
+      "bounds_min": [
+        4.044291269147175,
+        0.36557153876163573,
+        2.042742809458855
+      ],
+      "bounds_max": [
+        5.655708730852824,
+        0.6344284612383643,
+        3.6557087308528247
+      ],
+      "triangles": 168
+    },
+    {
+      "kind": "HouseholdYardA",
+      "name": "HouseholdEquipmentTimber",
+      "mesh": "GEO_Expansion_HouseholdYardA_HouseholdEquipmentTimber",
+      "surface": "Timber",
+      "solid": true,
+      "tint": [
+        0.405,
+        0.385,
+        0.33,
+        1
+      ],
+      "bounds_min": [
+        -6.005950199252712,
+        0.0,
+        -3.325
+      ],
+      "bounds_max": [
+        -4.57,
+        1.64,
+        5.0520932424456415
+      ],
+      "triangles": 420
+    },
+    {
+      "kind": "HouseholdYardA",
+      "name": "HouseholdEquipmentIron",
+      "mesh": "GEO_Expansion_HouseholdYardA_HouseholdEquipmentIron",
+      "surface": "RustedIron",
+      "solid": false,
+      "tint": [
+        0.265,
+        0.245,
+        0.215,
+        1
+      ],
+      "bounds_min": [
+        -5.991885867798453,
+        0.06499999999999997,
+        3.8042665839918826
+      ],
+      "bounds_max": [
+        -4.975634663965459,
+        0.2645339207526392,
+        5.116465083957065
+      ],
+      "triangles": 84
+    },
+    {
+      "kind": "HouseholdYardA",
+      "name": "EmptyBucket",
+      "mesh": "GEO_Expansion_HouseholdYardA_EmptyBucket",
+      "surface": "RustedIron",
+      "solid": false,
+      "tint": [
+        0.265,
+        0.245,
+        0.215,
+        1
+      ],
+      "bounds_min": [
+        5.005,
+        0.445,
+        3.1145439793224448
+      ],
+      "bounds_max": [
+        5.3950000000000005,
+        0.7949999999999999,
+        3.485456020677555
+      ],
+      "triangles": 96
+    },
+    {
+      "kind": "HouseholdYardA",
+      "name": "OldSnowAmongObjects",
+      "mesh": "GEO_Expansion_HouseholdYardA_OldSnowAmongObjects",
+      "surface": "WindSnow",
+      "solid": false,
+      "tint": [
+        0.83,
+        0.85,
+        0.84,
+        1
+      ],
+      "bounds_min": [
+        -5.8896,
+        0.37,
+        1.9818132644081503
+      ],
+      "bounds_max": [
+        5.725,
+        0.66,
+        8.679521428015873
+      ],
+      "triangles": 72
+    },
+    {
+      "kind": "HouseholdYardB",
+      "name": "OldYardStone",
+      "mesh": "GEO_Expansion_HouseholdYardB_OldYardStone",
+      "surface": "LayeredStone",
+      "solid": true,
+      "tint": [
+        0.43,
+        0.44,
+        0.415,
+        1
+      ],
+      "bounds_min": [
+        -6.38,
+        0.0,
+        3.15
+      ],
+      "bounds_max": [
+        6.199999999999999,
+        0.46,
+        8.85
+      ],
+      "triangles": 56
+    },
+    {
+      "kind": "HouseholdYardB",
+      "name": "IncompleteFence",
+      "mesh": "GEO_Expansion_HouseholdYardB_IncompleteFence",
+      "surface": "Timber",
+      "solid": true,
+      "tint": [
+        0.295,
+        0.285,
+        0.25,
+        1
+      ],
+      "bounds_min": [
+        -6.275,
+        0.43,
+        3.54
+      ],
+      "bounds_max": [
+        -6.125,
+        1.71,
+        8.46
+      ],
+      "triangles": 532
+    },
+    {
+      "kind": "HouseholdYardB",
+      "name": "UnkeptOpenGate",
+      "mesh": "GEO_Expansion_HouseholdYardB_UnkeptOpenGate",
+      "surface": "Timber",
+      "solid": true,
+      "tint": [
+        0.405,
+        0.385,
+        0.33,
+        1
+      ],
+      "bounds_min": [
+        -2.4,
+        0.0,
+        6.790183721194962
+      ],
+      "bounds_max": [
+        0.9,
+        1.5408714208608245,
+        8.605
+      ],
+      "triangles": 364
+    },
+    {
+      "kind": "HouseholdYardB",
+      "name": "PorchStoneRemains",
+      "mesh": "GEO_Expansion_HouseholdYardB_PorchStoneRemains",
+      "surface": "Masonry",
+      "solid": true,
+      "tint": [
+        0.51,
+        0.505,
+        0.465,
+        1
+      ],
+      "bounds_min": [
+        -5.925,
+        0.0,
+        1.6999999999999997
+      ],
+      "bounds_max": [
+        -3.975,
+        0.42,
+        4.375
+      ],
+      "triangles": 56
+    },
+    {
+      "kind": "HouseholdYardB",
+      "name": "FallenPorchBoards",
+      "mesh": "GEO_Expansion_HouseholdYardB_FallenPorchBoards",
+      "surface": "Timber",
+      "solid": false,
+      "tint": [
+        0.295,
+        0.285,
+        0.25,
+        1
+      ],
+      "bounds_min": [
+        -5.655708730852824,
+        0.36557153876163573,
+        2.042742809458855
+      ],
+      "bounds_max": [
+        -4.044291269147175,
+        0.6344284612383643,
+        3.6557087308528247
+      ],
+      "triangles": 168
+    },
+    {
+      "kind": "HouseholdYardB",
+      "name": "HouseholdEquipmentTimber",
+      "mesh": "GEO_Expansion_HouseholdYardB_HouseholdEquipmentTimber",
+      "surface": "Timber",
+      "solid": true,
+      "tint": [
+        0.405,
+        0.385,
+        0.33,
+        1
+      ],
+      "bounds_min": [
+        3.7668463551686537,
+        0.07097136411929693,
+        -3.8734368007223723
+      ],
+      "bounds_max": [
+        6.313711178776357,
+        0.97,
+        6.449170679748175
+      ],
+      "triangles": 560
+    },
+    {
+      "kind": "HouseholdYardB",
+      "name": "HouseholdEquipmentIron",
+      "mesh": "GEO_Expansion_HouseholdYardB_HouseholdEquipmentIron",
+      "surface": "RustedIron",
+      "solid": false,
+      "tint": [
+        0.265,
+        0.245,
+        0.215,
+        1
+      ],
+      "bounds_min": [
+        4.461402925400646,
+        0.054999999999999966,
+        5.25491929327804
+      ],
+      "bounds_max": [
+        5.935228753061453,
+        0.725,
+        6.401853435543259
+      ],
+      "triangles": 200
+    },
+    {
+      "kind": "HouseholdYardB",
+      "name": "EmptyBucket",
+      "mesh": "GEO_Expansion_HouseholdYardB_EmptyBucket",
+      "surface": "RustedIron",
+      "solid": false,
+      "tint": [
+        0.265,
+        0.245,
+        0.215,
+        1
+      ],
+      "bounds_min": [
+        -5.3950000000000005,
+        0.445,
+        3.1145439793224448
+      ],
+      "bounds_max": [
+        -5.005,
+        0.7949999999999999,
+        3.485456020677555
+      ],
+      "triangles": 96
+    },
+    {
+      "kind": "HouseholdYardB",
+      "name": "OldSnowAmongObjects",
+      "mesh": "GEO_Expansion_HouseholdYardB_OldSnowAmongObjects",
+      "surface": "WindSnow",
+      "solid": false,
+      "tint": [
+        0.83,
+        0.85,
+        0.84,
+        1
+      ],
+      "bounds_min": [
+        -5.6554,
+        0.37,
+        1.9818132644081503
+      ],
+      "bounds_max": [
+        6.0,
+        0.66,
+        8.679521428015873
+      ],
+      "triangles": 72
+    },
+    {
+      "kind": "HouseholdYardC",
+      "name": "OldYardStone",
+      "mesh": "GEO_Expansion_HouseholdYardC_OldYardStone",
+      "surface": "LayeredStone",
+      "solid": true,
+      "tint": [
+        0.43,
+        0.44,
+        0.415,
+        1
+      ],
+      "bounds_min": [
+        -6.199999999999999,
+        0.0,
+        3.15
+      ],
+      "bounds_max": [
+        6.38,
+        0.46,
+        8.85
+      ],
+      "triangles": 56
+    },
+    {
+      "kind": "HouseholdYardC",
+      "name": "IncompleteFence",
+      "mesh": "GEO_Expansion_HouseholdYardC_IncompleteFence",
+      "surface": "Timber",
+      "solid": true,
+      "tint": [
+        0.295,
+        0.285,
+        0.25,
+        1
+      ],
+      "bounds_min": [
+        6.125,
+        0.43,
+        3.54
+      ],
+      "bounds_max": [
+        6.275,
+        1.71,
+        8.46
+      ],
+      "triangles": 532
+    },
+    {
+      "kind": "HouseholdYardC",
+      "name": "UnkeptOpenGate",
+      "mesh": "GEO_Expansion_HouseholdYardC_UnkeptOpenGate",
+      "surface": "Timber",
+      "solid": true,
+      "tint": [
+        0.405,
+        0.385,
+        0.33,
+        1
+      ],
+      "bounds_min": [
+        -2.4,
+        0.0,
+        6.790183721194962
+      ],
+      "bounds_max": [
+        0.9,
+        1.5408714208608245,
+        8.605
+      ],
+      "triangles": 364
+    },
+    {
+      "kind": "HouseholdYardC",
+      "name": "PorchStoneRemains",
+      "mesh": "GEO_Expansion_HouseholdYardC_PorchStoneRemains",
+      "surface": "Masonry",
+      "solid": true,
+      "tint": [
+        0.51,
+        0.505,
+        0.465,
+        1
+      ],
+      "bounds_min": [
+        3.975,
+        0.0,
+        1.6999999999999997
+      ],
+      "bounds_max": [
+        5.925,
+        0.42,
+        4.375
+      ],
+      "triangles": 56
+    },
+    {
+      "kind": "HouseholdYardC",
+      "name": "FallenPorchBoards",
+      "mesh": "GEO_Expansion_HouseholdYardC_FallenPorchBoards",
+      "surface": "Timber",
+      "solid": false,
+      "tint": [
+        0.295,
+        0.285,
+        0.25,
+        1
+      ],
+      "bounds_min": [
+        4.044291269147175,
+        0.36557153876163573,
+        2.042742809458855
+      ],
+      "bounds_max": [
+        5.655708730852824,
+        0.6344284612383643,
+        3.6557087308528247
+      ],
+      "triangles": 168
+    },
+    {
+      "kind": "HouseholdYardC",
+      "name": "RemainingBenchFeet",
+      "mesh": "GEO_Expansion_HouseholdYardC_RemainingBenchFeet",
+      "surface": "Masonry",
+      "solid": true,
+      "tint": [
+        0.43,
+        0.44,
+        0.415,
+        1
+      ],
+      "bounds_min": [
+        -5.705,
+        0.04,
+        4.5840000000000005
+      ],
+      "bounds_max": [
+        -5.095000000000001,
+        0.56,
+        6.216
+      ],
+      "triangles": 56
+    },
+    {
+      "kind": "HouseholdYardC",
+      "name": "HouseholdEquipmentTimber",
+      "mesh": "GEO_Expansion_HouseholdYardC_HouseholdEquipmentTimber",
+      "surface": "Timber",
+      "solid": true,
+      "tint": [
+        0.405,
+        0.385,
+        0.33,
+        1
+      ],
+      "bounds_min": [
+        -5.75,
+        0.0,
+        -3.3600000000000003
+      ],
+      "bounds_max": [
+        -5.141,
+        1.42,
+        6.29725
+      ],
+      "triangles": 140
+    },
+    {
+      "kind": "HouseholdYardC",
+      "name": "HouseholdEquipmentIron",
+      "mesh": "GEO_Expansion_HouseholdYardC_HouseholdEquipmentIron",
+      "surface": "RustedIron",
+      "solid": false,
+      "tint": [
+        0.265,
+        0.245,
+        0.215,
+        1
+      ],
+      "bounds_min": [
+        -5.65,
+        1.3025,
+        -2.9175
+      ],
+      "bounds_max": [
+        -5.380000000000001,
+        1.3375000000000001,
+        -1.3824999999999998
+      ],
+      "triangles": 84
+    },
+    {
+      "kind": "HouseholdYardC",
+      "name": "EmptyBucket",
+      "mesh": "GEO_Expansion_HouseholdYardC_EmptyBucket",
+      "surface": "RustedIron",
+      "solid": false,
+      "tint": [
+        0.265,
+        0.245,
+        0.215,
+        1
+      ],
+      "bounds_min": [
+        5.005,
+        0.445,
+        3.1145439793224448
+      ],
+      "bounds_max": [
+        5.3950000000000005,
+        0.7949999999999999,
+        3.485456020677555
+      ],
+      "triangles": 96
+    },
+    {
+      "kind": "HouseholdYardC",
+      "name": "OldSnowAmongObjects",
+      "mesh": "GEO_Expansion_HouseholdYardC_OldSnowAmongObjects",
+      "surface": "WindSnow",
+      "solid": false,
+      "tint": [
+        0.83,
+        0.85,
+        0.84,
+        1
+      ],
+      "bounds_min": [
+        -5.8896,
+        0.37,
+        1.9818132644081503
+      ],
+      "bounds_max": [
+        5.725,
+        0.66,
+        8.679521428015873
+      ],
+      "triangles": 72
     }
   ]
 }

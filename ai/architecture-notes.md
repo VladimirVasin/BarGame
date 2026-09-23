@@ -2,52 +2,54 @@
 
 ## Current facts
 
+- **Accepted architecture exception — 2026-09-23, abandoned village settlement:**
+  Lane retained; abandoned prosperous lots map-wide, mostly standing.
+  Target 14–18 houses/6–8 outbuildings; visibility decides. Locked TownHall/plaza,
+  School/yard,
+  ShopBakery/court/oven, Workshop/court, MountainRescue/garage/sled shelter near
+  ski base. New/damaged donor misc; donors intact. §6 lifts art §10g's warm-window,
+  two-type, closed-volume/exhaustive-obstacle rules only here at level 0:
+  dark openings, structural ruins, former wealth/recreation/rescue. No active
+  resort/tourists/new NPC/action/text/sound/clue/plot. Warmth/care stay in lane,
+  doors snowed in. From each building approach/side another building
+  reads through trees/terrain/storm; misc/foundations excluded. Mother axis,
+  core/people/routes/water/station/cableway preserved; sightline clearing/level
+  pads allowed. Plan owns placement/forest/snow; Blender owns meshes/manifest.
+  §16/§21/nine checks; require `AlpineVillageAbandonment` captures.
+
 - **Accepted architecture exception — 2026-09-23, discarded warehouse props:**
-  The approved plan adds a passive truck wreck and a dense wooden-chair heap
-  beside the closed village warehouse. Story §6 extends art §10g's exhaustive
-  obstacles only by their visible mesh solids; ramp, yard and old-road access
-  remain open. The existing truck donates cab/frame/cargo remnants to a separate
-  Blender model: no wheels, cab/rear doors or glass; bent panels, dedicated rust
-  maps and low, uneven snow-settled stance show long disuse. The existing wooden
-  chair supplies a fixed 5–6 m wide heap, retaining its original ~2.7 m height; backs,
-  seats and legs remain recognizable through weathered wood and sparse snow.
-  Approved seats, backs and partial frames/legs fill its centre/base; pieces
-  rest on the ground or lower timber.
-  `tools/village_truck_wreck.py`/`tools/village_chair_pile.py` supply
-  `RustedTruck`/`DiscardedChairPile` to `VillageExpansion3D`. No physics
-  pile, seat/repair/loot action, text, sound, NPC, event or new provenance;
-  story §16/§21 and all nine art checks remain binding. Donor assets stay shared
-  by existing uses; the wreck owns its geometry and `VillageTruck{Rust,Paint}Albedo`.
+  Blender wreck/chair heap by warehouse; §6 permits
+  visible-solid collisions, leaving ramp/yard/road open. Wreck: donated cab/frame/
+  cargo, no wheels/doors/glass, bent panels, dedicated rust/paint maps, low uneven
+  snow-settled stance. Fixed heap: 5–6 m wide/~2.7 m high; recognizable weathered
+  backs/seats/legs, partial frames fill base/centre, ground/timber supports and
+  sparse snow. `tools/village_truck_wreck.py`/`tools/village_chair_pile.py` supply
+  `RustedTruck`/`DiscardedChairPile` to `VillageExpansion3D`; donors unchanged,
+  wreck owns `VillageTruck{Rust,Paint}Albedo`. No physics/seat/repair/loot, text,
+  sound, NPC, event/provenance; §16/§21/nine art checks bind.
 
 - **Accepted architecture exception — 2026-09-23, village trade road:**
-  The approved close road ends align across a real, rail/rubble-blocked gap.
-  Story §6/§12 and art §10g allow one view down between rock shoulders onto
-  City's eastern-checkpoint city; the residential bowl stays closed, without
-  peaks/tourist panorama. A closed warehouse has an accessible yard/ramp,
-  empty cargo remnants and passive handcart. Trade ended after the old collapse;
-  unfinished supports, fittings and stock show suspended repair. Mine closed,
-  cableway sole exit; no text, NPC, task, sound, clue, date, cause or event.
-  Story §16/§21/nine art checks bind the deterministic Blender geometry.
-  `AlpineVillageDistanceWorldBuilder` shares six checkpoint FBX meshes
-  (city/windows/glow/land/rock/vegetation), excluding road/traffic; its material
-  profile follows village haze/storms.
+  Aligned road ends frame rail/rubble-blocked gap; §6/§12/art §10g allow
+  checkpoint city between rock shoulders. Bowl closed, no peaks.
+  Closed warehouse/open yard/ramp, cargo remnants/handcart; collapse
+  ended trade, supports/fittings/stock show suspended repair. Mine closed,
+  cableway sole exit; no text/NPC/task/sound/clue/date/cause/event. Blender geometry
+  obeys §16/§21/nine checks.
+  `AlpineVillageDistanceWorldBuilder` shares six checkpoint meshes
+  (city/windows/glow/land/rock/vegetation), no road/traffic; village haze/storms.
 
 - **Accepted architecture exception — 2026-09-22, expanded Alpine Village:**
-  The approved station-side forest, walk-in abandoned ski base and old-road
-  loop/broken downhill branch extend §12/art §10g's route, bowl, tree clearance
-  and barriers through story §6. Lane, twelve houses, station and mother's
-  house retain positions; the warm arrival landmark, cable, water and house
-  access stay clear. Core: `420` trees/`7 m` margin; expansion: up to `900`,
-  `6.5–15 m`, `1.2 m + crown radius` route clearance, non-overlapping crowns.
-  Passive old timber/stone base: rental racks, benches, shed/stopped lift;
-  same-scene unheated room. Rail/rubble/rock block the downhill brink; cableway
-  sole exit. No fall/death, text, NPC, work, clue, sound, event or resort;
-  story §16/§21/nine art checks bind. `AlpineVillageExpansionPlan` shares
-  valley/route/lodge/brink bounds across sampler, walkability, map, weather/snow.
-  Blender `VillageExpansion3D` has passive metre-scale parts measured on import
-  by `VillageExpansionAssetSetup`. One ground collision mesh; terrain/forest
-  render in `48 m` sectors. Build stages yield; footprints query buckets and
-  only changed snow vertices refill. The lodge excludes snowfall/lying snow.
+  §6 extends §12/art §10g: station forest, walk-in abandoned ski base, old-road
+  loop/broken branch. Lane/twelve houses/station/mother retain positions; warm
+  arrival axis, cable/water/access clear. Core `420` trees/`7 m`; expansion ≤`900`,
+  `6.5–15 m`, route clearance `1.2 m + crown radius`, crowns separate. Old timber/
+  stone lodge/racks/benches/shed/stopped lift; unheated same-scene room. Rail/
+  rubble/rock close brink, cableway sole exit. No fall/death/text/NPC/work/clue/
+  sound/event/active resort; §16/§21/nine checks. `AlpineVillageExpansionPlan`
+  shares bounds with sampler/walkability/map/weather/snow. `VillageExpansion3D`
+  metre parts measured by `VillageExpansionAssetSetup`; one ground collider,
+  `48 m` terrain/forest sectors, yielding build, bucketed footprints/changed
+  snow only. Lodge excludes snowfall/lying snow.
 
 - **Accepted — 2026-09-21, impact balance and recoverable knockdown:**
   `CombatTest`: impulse/root/bone/catch-step/left-release clock.

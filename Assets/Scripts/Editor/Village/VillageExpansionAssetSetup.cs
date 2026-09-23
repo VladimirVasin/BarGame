@@ -15,6 +15,12 @@ namespace BarPromenade.Editor
             "Assets/Resources/" + VillageExpansionAssetProvider.WreckRustTexturePath + ".png",
             "Assets/Resources/" + VillageExpansionAssetProvider.WreckPaintTexturePath + ".png"
         };
+        public static readonly string[] AbandonedTexturePaths =
+        {
+            "Assets/Resources/Village/Textures/AbandonedWood.png",
+            "Assets/Resources/Village/Textures/AbandonedPlaster.png",
+            "Assets/Resources/Village/Textures/AbandonedRoof.png"
+        };
 
         [MenuItem("Bar Promenade/Village/Import Expansion Pack")]
         public static void BuildOrThrow()
@@ -23,6 +29,8 @@ namespace BarPromenade.Editor
             AssetDatabase.ImportAsset(ManifestPath, ImportAssetOptions.ForceSynchronousImport | ImportAssetOptions.ForceUpdate);
             foreach (string path in WreckTexturePaths)
                 AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceSynchronousImport | ImportAssetOptions.ForceUpdate);
+            foreach (string path in AbandonedTexturePaths)
+                AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceSynchronousImport | ImportAssetOptions.ForceUpdate);
             ValidateOrThrow();
         }
 
@@ -30,6 +38,12 @@ namespace BarPromenade.Editor
         public static void ValidateOrThrow()
         {
             var manifest = VillageExpansionAssetProvider.ParseManifestOrThrow(File.ReadAllText(ManifestPath));
+            foreach (string path in AbandonedTexturePaths)
+            {
+                var texture = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+                if (texture == null || texture.width != 1024 || texture.height != 1024)
+                    throw new InvalidOperationException("Missing measured abandoned village albedo: " + path);
+            }
             foreach (string path in WreckTexturePaths)
             {
                 var texture = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
@@ -98,7 +112,8 @@ namespace BarPromenade.Editor
     {
         private void OnPreprocessTexture()
         {
-            if (Array.IndexOf(VillageExpansionAssetSetup.WreckTexturePaths, assetPath) < 0 ||
+            if ((Array.IndexOf(VillageExpansionAssetSetup.WreckTexturePaths, assetPath) < 0 &&
+                Array.IndexOf(VillageExpansionAssetSetup.AbandonedTexturePaths, assetPath) < 0) ||
                 !(assetImporter is TextureImporter importer)) return;
             importer.textureType = TextureImporterType.Default;
             importer.textureShape = TextureImporterShape.Texture2D;

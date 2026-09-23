@@ -43,16 +43,16 @@ clearance. Outputs: `Assets/Resources/Vehicles/LastRouteCoin3D.{fbx,json}`;
 source `ArtSource/Vehicles/Blender/LastRouteCoin3D.blend`.
 `LastRouteCoinAssetValidation` measures import bounds at the build gate.
 
-Village generators:
-`build-village-outdoor-player-actions-3d-model.py`: thirteen hero clips/prop tracks;
-`build-village-errands-3d-model.py`: bucket/filling/strap actions. Both use
-`run-blender.py`, validate contacts and preserve models. `VillageOutdoorLife`
-checks contacts, carrying and reload; `VillageOutdoorPartners` seeds completed
-basket/porch/chair outcomes to isolate partners/errands, not player carrying.
-`build-village-expansion-3d-model.py`: 13 passive kinds, including warehouse,
-rusted truck/chair heap; `Assets/Resources/Village/Expansion/VillageExpansion3D.{fbx,json}`.
-`--validate-only`: bounds/winding/openings/determinism; repeat `--preview-kind` for selected views.
-`VillageExpansionAssetSetup`: import; `AreaCaptureFixture.AlpineVillageExpansion`: views.
+Village: `build-village-outdoor-player-actions-3d-model.py` authors thirteen hero
+clips/prop tracks; `build-village-errands-3d-model.py` authors bucket/filling/strap
+actions. `run-blender.py`; `VillageOutdoorLife`
+checks contacts/carrying/reload; `VillageOutdoorPartners` seeds completed work.
+`build-village-expansion-3d-model.py` includes `village_abandoned_buildings.py` and
+`village_abandoned_yards.py`: houses/ruins, civic yards, lodge/warehouse props.
+Output: `Assets/Resources/Village/Expansion/VillageExpansion3D.{fbx,json}`.
+`--validate-only`: bounds/winding/openings/determinism; `--preview-kind`: views.
+`build-village-abandonment-textures.py [--validate-only]`: 3 aged maps.
+`VillageExpansionAssetSetup`: import; `AreaCaptureFixture.AlpineVillageAbandonment`: views.
 
 Keep Unity closed during generation. The default worker has an independent
 body/wardrobe generator and `DefaultNpcAssetSetup` importer. The legacy resident

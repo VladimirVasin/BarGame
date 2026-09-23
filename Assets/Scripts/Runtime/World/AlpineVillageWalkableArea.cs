@@ -363,6 +363,15 @@ namespace BarPromenade
                 obstacles.Add(new OrientedRect(ToXZ(center), ToXZ(plan.SlopeRight), ToXZ(plan.Uphill),
                     new Vector2(block.extents.x, block.extents.z)));
             }
+            foreach (AlpineVillageAbandonedPlot plot in plan.Expansion.Abandonment.Plots)
+            {
+                // Open ruins are held by their individual authored mesh solids;
+                // masking the old footprint would wall off their open remains.
+                if (!plot.Closed) continue;
+                Vector2 forward = ToXZ(plot.Forward);
+                obstacles.Add(new OrientedRect(ToXZ(plot.GroundCenter),
+                    new Vector2(forward.y, -forward.x), forward, plot.Size * .5f));
+            }
         }
 
         private void BuildForestTrunks()
