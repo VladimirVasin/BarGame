@@ -627,6 +627,7 @@ namespace BarPromenade
         public IReadOnlyList<AlpineVillageRidgeDescriptor> Ridges => ridges;
 
         public AlpineVillageExpansionPlan Expansion { get; }
+        public AlpineVillageNarrativePlan Narrative { get; internal set; }
         public AlpineVillageWoodpilePlan LodgeWoodpile { get; }
         public AlpineVillageWoodpilePlan MothersHouseWoodpile { get; }
 

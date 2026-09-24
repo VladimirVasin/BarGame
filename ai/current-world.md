@@ -13,50 +13,43 @@ Scope: art-bible §15a and the accepted architecture exception.
 
 ## Implemented MVP
 
-A runtime-composed 3D coastal city, a separately loaded mountain road, the
-village above its cableway and the accessible interior of the house at its
-head, in which
-one modular low-poly 3D hero walks the streets, the climb and the village lane, approaches the
-interactive home-adjacent bar, a supermarket, his home and the church north of
-the cemetery,
-enters separate interiors, and returns to the matching exterior entrance.
+A runtime-composed 3D coastal city, separately loaded mountain road and village
+above the cableway, with the upper house's accessible interior. One modular
+low-poly 3D hero walks streets/climb/village lane, approaches the home-adjacent
+bar, supermarket, his home and church north of the cemetery, enters their
+separate interiors and returns to matching exterior entrances.
 
 The vertical slice contains:
 
 
 ### Areas and scenes
 
-- six ordinary winter village residents recognize him through short local
-  lines. The station worker checks his cargo lid. At `04` the woman loads six
-  logs, delivers two filled baskets to separate supports, then tends/rests.
-  Houses `08`/`11` have shovel/support, closed basket/rests and hinged gate/
-  fence returns. The shovel worker takes up, makes three strokes and returns
-  the tool; the visitor carries her basket to `08` and back through the gate.
-  Repair/sewing neighbours work in `08`'s accessible lower room and visit yards,
-  visible with their furniture through two real windows. Chair repair is
-  finite; sewing includes sit/unpack/work/fold/closed-box stow/stand.
-  `VillageNeighbourhoodPlan` owns destinations: at most four outdoor places,
-  outings start `05:00–18:30` and finish before evening returns. Moving doors
-  and solid L-shaped vestibules at `04`/`08`/`11` hide continuously active
-  actors behind walls. Shared gusts pause eligible movement/waiting for `2.2 s`
-  without losing held grips. Residents yield to hero/neighbours and sidestep;
-  world pause freezes schedule/bodies/loads/doors. `VillageLife` verifies bodies,
-  contacts, passages and evening/morning transitions.
-  The hero can open and close `08`, walk inside, sit on its bench and hold
-  the chair rail while the neighbour finishes the joint. The enclosed room
-  stops exterior cold, removes indoor snow/fog particles and muffles the same
-  outdoor sound field; its windows retain the outside storm. Room-owned fixed
-  views use the existing interior-camera API, including the private hallway,
-  so the narrow room cannot push the chase camera into the hero's shoulder.
-  Outdoor help uses the same lid, gate, baskets and shovel: the hero can hold
-  a partner's moving thing, carry a full basket freely between real supports,
-  or take the shovel, clear one of three small patches and return it. Separate
-  authored actions drive the production rig; a torso layer leaves ordinary
-  walking available while carrying. Residents also bring a bucket to the
-  spring and take the same shovel to the chapel and station edge. Finite logs,
-  deliveries, chair repair, lowered snow and completed water work survive
-  scene visits through `GameSessionState.VillageHousehold`; new game resets
-  them. There is no disk save.
+- six named winter neighbours greet the hero. `VillageHouseholdCatalog` fixes
+  31 house/family pairs: `04` Veidra, `08` Drauven, `11` Kersna and
+  mother's house are occupied; other windows stay dark. Hero/mother remain
+  unnamed.
+  The station worker checks his cargo lid. At `04` the woman loads six logs,
+  delivers two baskets to separate supports, then tends/rests. `08`/`11` have
+  shovel/support, closed basket/rests, hinged gate/fence returns. The shovel
+  worker picks up, makes three strokes and returns it; the visitor carries
+  her basket to `08` and back through the gate. Repair/sewing neighbours visit
+  yards and work in `08`'s accessible lower room, visible through two windows.
+  Chair repair is finite; sewing: sit/unpack/work/fold/closed-box stow/stand.
+  `VillageNeighbourhoodPlan`: at most four outside, outings `05:00–18:30`,
+  completed before evening return. Moving doors/L-shaped solid vestibules
+  at `04/08/11` hide active bodies. Gusts pause movement/waiting for `2.2 s`
+  without releasing grips. Neighbours yield/sidestep; pause freezes life.
+  `VillageLife` covers bodies/contacts/passages and evening/morning transitions.
+  Hero opens/closes `08`, enters, sits and holds the chair rail for the joint.
+  Indoors: no cold/snow/fog, muffled outdoor sound, storm through windows.
+  Shared room/hallway fixed views avoid shoulder close-ups. Outdoor help:
+  existing lid/gate/baskets/shovel; hold a moving
+  partner's prop, carry full baskets freely between supports, or clear one of
+  three patches and return the shovel. Production-rig torso actions retain free
+  carrying movement. Residents fetch spring water and
+  shovel the chapel/station edge. Finite logs/deliveries/repair/cleared snow/water
+  work persist in `GameSessionState.VillageHousehold` across visits, reset on
+  New Game; no disk save.
 
 - one separate `MothersHouseInterior` gameplay root entered through the
   existing summit-house exterior door and exited back to a one-shot safe
@@ -244,18 +237,17 @@ The vertical slice contains:
   including one loose bridge rail; one tunnel practical visibly flickers. Its
   root may generate the pure City layout/mountain plan needed by the City map
   tab, but it never calls a City world builder or creates City GameObjects;
-- `AlpineVillage` shares plans/validators/builders. Step-free lane: `6.4 m` over
-  `82.1 m` (`7.8%`, max `8.3%`) to mother. Twelve inhabited houses, chapel/source/
-  arrival axis stay; no adit/graves. `CoreTerrainBounds` keeps core;
+- `AlpineVillage`: shared plans/validators/builders. Step-free lane: `6.4 m` over
+  `82.1 m` (`7.8%`, max `8.3%`) to mother. Twelve lane houses, chapel/source/
+  arrival axis; no adit/graves. `CoreTerrainBounds` retains core;
   `AlpineVillageExpansionPlan` adds forest/base/old-road loop and brook bridge.
   `AlpineVillageAbandonmentPlan`: 18 households (14 standing/3 ruins/foundation),
-  eight sheds (two ruined), five closed yards: town hall/square, school,
-  shop-bakery/loading, workshop, rescue/apron;
-  Three worn yard variants: stone/joinery/dark windows/shutters/debris;
-  no new residents/lights/interiors. Four-side views/yard clearances,
-  level shelves. Dry `18 x 12 m` lodge: cot/blanket, counter kettle/lantern (§10g).
+  8 sheds (2 ruined), 5 closed yards: town hall/square, school, shop-bakery/loading,
+  workshop, rescue/apron. Three worn stone/joinery/dark-window/shutter/debris
+  variants; no new residents/lights/interiors. Clear yards, level shelves,
+  four-side views. Dry `18 x 12 m` lodge: cot/blanket, counter kettle/lantern (§10g).
   Cot/kettle E: silent, no sleep/time/tea/grant. Two replacement leaves
-  E either side: binary pose/collision; occupied closure rejected, one open passes.
+  E both sides: binary pose/collision; reject occupied closure; either opens passage.
   No auto-close/hero animation. Lantern E: warm local light, no fuel/heat.
   Session doors/light reset open/off on New Game. `VillageInteriorAcoustics`:
   hero inside, one shut softens wind, both nearly silence it over .35 s;
@@ -273,9 +265,18 @@ The vertical slice contains:
   (`AvalancheRuinedHouse`). Front ~20 m/fan 38 m; `AlpineVillageAvalanchePlan`:
   shared 14-vertex movement/forest/manifest polygon; ground-triangle-fitted
   deposit/supported debris/snow underneath.
-  Lower lift/lodge/loop/ruin accessible; no active slide, mine/trade gap unrelated.
+  Lower lift/lodge/loop/ruin accessible; no active slide. Avalanche/road collapse:
+  one past catastrophe, unrelated to the older mine.
   Warehouse yard: `RustedTruck` without wheels/doors/glass, `DiscardedChairPile`,
   clear ramp/road. Stock/supports show conserved repair; rail/rubble close gap.
+  `AlpineVillageNarrative*`: 32 points/8 sectors,
+  30 new Blender models + truck/chairs; whole bounds off-road, visible from roads.
+  Fixed roads, snow approach.
+  `NarrativeInteraction`: rig, `ContextualCameraDirector`; props side/bokeh,
+  notes close-up, no hero. Held bottom `InteractionPromptView` pages/cleanup.
+  E advances/closes; Esc always cancels. Replay, no grant/progress. RU/EN resort/avalanche/road/
+  trade thoughts; two nailed notes: three paper pages each, then a thought.
+  Paper/UI keys match.
   `AlpineVillageJunctionPlan`: ports/contours/snow; asphalt/soil node maps share
   a 2x2 atlas/material. Other paths raised; warehouse apron has no snow island.
   `AlpineVillageDistanceWorldBuilder` uses six checkpoint meshes with storm

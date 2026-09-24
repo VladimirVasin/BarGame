@@ -70,6 +70,7 @@ namespace BarPromenade.Editor
             RegisterGenerated("Mountain misc", MountainRoadMiscAssetSetup.ValidateOrThrow, "MountainRoadMiscAssetSetup");
             RegisterGenerated("Village", VillageAssetSetup.ValidateOrThrow, "VillageAssetSetup");
             RegisterGenerated("Village expansion", VillageExpansionAssetSetup.ValidateOrThrow, "VillageExpansionAssetSetup");
+            RegisterGenerated("Village narrative", VillageNarrativeAssetSetup.ValidateOrThrow, "VillageNarrativeAssetSetup");
             RegisterGenerated("Village facade textures", VillageFacadeTextureSetup.ValidateOrThrow, "VillageFacadeTextureSetup");
             RegisterGenerated("Village rocks", VillageRockAssetSetup.ValidateOrThrow, "VillageRockAssetSetup");
             RegisterGenerated("Upper cableway canopy", UpperCablewayCanopyAssetSetup.ValidateOrThrow, "UpperCablewayCanopyAssetSetup");

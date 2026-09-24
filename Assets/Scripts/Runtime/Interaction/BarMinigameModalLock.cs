@@ -174,11 +174,14 @@ namespace BarPromenade
                 return false;
             }
 
-            motor?.SetInputEnabled(previousMotorInput);
-            interactor?.SetInputEnabled(previousInteractorInput);
-            cameraFollow?.SetOrbitInputEnabled(previousOrbitInput);
-            cameraFollow?.SetCinematicMotionEnabled(
-                previousCinematicMotion);
+            // Scene teardown can destroy these Unity objects before the owner.
+            if (motor != null) motor.SetInputEnabled(previousMotorInput);
+            if (interactor != null) interactor.SetInputEnabled(previousInteractorInput);
+            if (cameraFollow != null)
+            {
+                cameraFollow.SetOrbitInputEnabled(previousOrbitInput);
+                cameraFollow.SetCinematicMotionEnabled(previousCinematicMotion);
+            }
             if (hud != null)
             {
                 hud.Visible = previousHudVisibility;

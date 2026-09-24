@@ -49,6 +49,7 @@ namespace BarPromenade
         public bool InteractKeyClaimed { get; private set; }
 
         public IInteractable ActiveInteractable => activeInteractable;
+        public InteractionPromptView PromptView => promptView;
         public static int InteractionLayerMask =>
             CityPedestrianCollision.NonPedestrianMask &
             CityBusCollision.NonBusMask;

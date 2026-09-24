@@ -20,6 +20,12 @@ namespace BarPromenade
         private float feedbackExpiresAt;
         private GUIStyle buttonStyle;
         private GUIStyle labelStyle;
+        private GUIStyle pageHeadingStyle;
+        private GUIStyle pageControlsStyle;
+        private UnityEngine.Object pageOwner;
+        private string heldPageKey, heldHeadingKey, heldControlsKey;
+        private Func<bool> heldPageAction;
+        private int heldPageFrame;
 
         // Spoken feedback keeps this facade's key and input lifecycle, but
         // its only presentation and voice live in the ordinary head bubble.
@@ -58,6 +64,31 @@ namespace BarPromenade
             IsFeedbackVisibleAt(Time.unscaledTime);
 
         public NpcSpeechBubbleView SpokenBubbles => spokenBubbles;
+        public bool HasHeldPage => pageOwner != null && !string.IsNullOrEmpty(heldPageKey);
+        public bool IsHeldBy(UnityEngine.Object owner) => owner != null && HasHeldPage && pageOwner == owner;
+
+        /// <summary>A silent, explicitly released page. Updating prompts/feedback cannot replace its owner.</summary>
+        public bool TryHoldPage(UnityEngine.Object owner, string textKey, string headingKey,
+            string controlsKey, Func<bool> advance)
+        {
+            if (!isActiveAndEnabled || owner == null || string.IsNullOrWhiteSpace(textKey) ||
+                HasHeldPage && pageOwner != owner) return false;
+            pageOwner = owner; heldPageKey = textKey; heldHeadingKey = headingKey;
+            heldControlsKey = controlsKey; heldPageAction = advance; heldPageFrame = Time.frameCount;
+            return true;
+        }
+
+        public bool ReleaseHeldPage(UnityEngine.Object owner)
+        {
+            if (ReferenceEquals(owner, null) || !ReferenceEquals(pageOwner, owner)) return false;
+            ClearHeldPage(); return true;
+        }
+
+        private void ClearHeldPage()
+        {
+            pageOwner = null; heldPageKey = heldHeadingKey = heldControlsKey = null;
+            heldPageAction = null;
+        }
 
         /// <summary>The hero, so a line can be dropped when he walks
         /// away from the man saying it. Without one nothing is ever
@@ -278,6 +309,7 @@ namespace BarPromenade
         /// </summary>
         public string GetDisplayedTextAt(float unscaledTime)
         {
+            if (HasHeldPage) return LocalizationService.Get(heldPageKey);
             string key = GetPromptKeyAt(unscaledTime);
             if (string.IsNullOrEmpty(key))
             {
@@ -297,6 +329,7 @@ namespace BarPromenade
         /// </summary>
         public string GetRevealedTextAt(float unscaledTime)
         {
+            if (HasHeldPage) return LocalizationService.Get(heldPageKey);
             if (!IsFeedbackVisibleAt(unscaledTime) ||
                 !spokenFeedback)
             {
@@ -308,6 +341,7 @@ namespace BarPromenade
 
         public string GetPromptKeyAt(float unscaledTime)
         {
+            if (HasHeldPage) return heldPageKey;
             return IsFeedbackVisibleAt(unscaledTime)
                 ? feedbackKey
                 : promptKey;
@@ -315,12 +349,14 @@ namespace BarPromenade
 
         public string GetBottomPromptKeyAt(float unscaledTime)
         {
+            if (HasHeldPage) return heldPageKey;
             return spokenFeedback && IsFeedbackVisibleAt(unscaledTime)
                 ? string.Empty : GetPromptKeyAt(unscaledTime);
         }
 
         public bool IsClickableAt(float unscaledTime)
         {
+            if (HasHeldPage) return heldPageAction != null;
             return !IsFeedbackVisibleAt(unscaledTime) &&
                    !string.IsNullOrEmpty(promptKey) &&
                    promptAction != null;
@@ -343,6 +379,8 @@ namespace BarPromenade
 
         public bool TryInvokePrompt()
         {
+            if (HasHeldPage)
+                return Time.frameCount > heldPageFrame && GameInput.CanRead(GameInputContext.Menu) && heldPageAction != null && heldPageAction();
             Func<bool> action = promptAction;
             return IsClickableAt(Time.unscaledTime) &&
                    action != null &&
@@ -407,11 +445,13 @@ namespace BarPromenade
 
         private void Update()
         {
+            if (pageOwner == null && heldPageKey != null) ClearHeldPage();
             AdvanceTo(Time.unscaledTime);
         }
 
         private void OnDisable()
         {
+            ClearHeldPage();
             ClearFeedback();
         }
 
@@ -447,6 +487,8 @@ namespace BarPromenade
         private void OnGUI()
         {
             HasRenderedLayout = false;
+            if (HasHeldPage && (PauseMenuController.IsAnyPaused || GameTimeScaleRuntime.IsPaused ||
+                !GameSessionState.IsGameTimeRunning)) return;
             float unscaledTime = Time.unscaledTime;
             string displayedPromptKey =
                 GetBottomPromptKeyAt(unscaledTime);
@@ -464,6 +506,7 @@ namespace BarPromenade
                 RetroUiTheme.BeginCanvas(canvas);
             try
             {
+                if (HasHeldPage) { DrawHeldPage(); return; }
                 // Only instant narration and action labels reach this panel.
                 string text = GetDisplayedTextAt(unscaledTime);
                 string drawn = GetRevealedTextAt(unscaledTime);
@@ -548,6 +591,42 @@ namespace BarPromenade
                 RetroUiTheme.Text,
                 false,
                 true);
+        }
+
+        private void DrawHeldPage()
+        {
+            if (pageHeadingStyle == null)
+            {
+                pageHeadingStyle = RetroUiTheme.CreateLabelStyle(10, TextAnchor.MiddleLeft, RetroUiTheme.Text);
+                pageControlsStyle = RetroUiTheme.CreateLabelStyle(10, TextAnchor.MiddleRight, RetroUiTheme.Text);
+            }
+            const float inset = 12f, headingHeight = 18f, controlsHeight = 20f;
+            string text = LocalizationService.Get(heldPageKey);
+            string heading = string.IsNullOrEmpty(heldHeadingKey) ? string.Empty : LocalizationService.Get(heldHeadingKey);
+            string controls = string.IsNullOrEmpty(heldControlsKey) ? string.Empty : LocalizationService.Get(heldControlsKey);
+            float width = MaximumPanelWidth;
+            float textWidth = width - inset * 2f;
+            measureContent.text = text;
+            float textHeight = labelStyle.CalcHeight(measureContent, textWidth);
+            float height = Mathf.Clamp(Mathf.Ceil(textHeight + headingHeight + controlsHeight + inset * 2f), 82f, 220f);
+            Rect panel = RetroUiTheme.SnapRect(new Rect((RetroUiTheme.LogicalWidth - width) * .5f,
+                RetroUiTheme.LogicalHeight - height - BottomMargin, width, height));
+            Rect textRect = new Rect(panel.x + inset, panel.y + inset + headingHeight,
+                textWidth, panel.height - inset * 2f - headingHeight - controlsHeight);
+            Rect controlsRect = new Rect(panel.x + inset, panel.yMax - inset - controlsHeight,
+                textWidth, controlsHeight);
+            RetroUiTheme.DrawPanel(panel, RetroUiTheme.PanelInset, RetroUiTheme.FrameOuter, false, 0f, 1f);
+            GUI.Label(new Rect(panel.x + inset, panel.y + inset, textWidth, headingHeight), heading, pageHeadingStyle);
+            GUI.Label(textRect, text, labelStyle);
+            GUI.Label(controlsRect, controls, pageControlsStyle);
+            LastRenderedText = LastRenderedRevealedText = text;
+            LastRenderedPanelRect = panel; LastRenderedTextRect = textRect;
+            LastRenderedTextFits = textHeight <= textRect.height + .01f &&
+                pageHeadingStyle.CalcSize(new GUIContent(heading)).x <= textWidth &&
+                pageControlsStyle.CalcSize(new GUIContent(controls)).x <= textWidth;
+            HasRenderedLayout = true;
+            if (Time.frameCount > heldPageFrame && GameInput.CanRead(GameInputContext.Menu) &&
+                GUI.Button(controlsRect, GUIContent.none, GUIStyle.none)) TryInvokePrompt();
         }
     }
 }

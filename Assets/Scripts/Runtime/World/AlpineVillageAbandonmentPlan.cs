@@ -116,7 +116,7 @@ namespace BarPromenade
             House(13, "WornHouseA", -174, 34, 90);
             House(14, "AbandonedHouseA", -168, 95, 90);
             House(15, "AvalancheRuinedHouse", -137, 106, 270);
-            House(16, "AbandonedHouseB", -112, 35, 90);
+            House(16, "AbandonedHouseB", -112, 35, 270);
             House(17, "WornHouseA", -81, 62, 180);
             House(18, "AbandonedHouseA", -96, -28, 0);
 

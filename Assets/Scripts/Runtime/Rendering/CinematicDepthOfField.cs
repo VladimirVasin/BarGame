@@ -9,9 +9,9 @@ namespace BarPromenade.Rendering
     /// shots (bar counter, fridge, graves, board games, bus seat). At
     /// priority 10 its overridden parameters win over the scene's
     /// Gaussian grade while its weight blends in, and the Gaussian
-    /// resumes when the weight fades back out. Only one modal shot
-    /// runs at a time, so a single static owner needs no tokens;
-    /// End() while inactive is a safe no-op.
+    /// resumes when the weight fades back out. Contextual camera loans use
+    /// scoped tokens so stale cleanup cannot retune or release a later shot.
+    /// Legacy modal callers retain the direct Begin/End API.
     /// </summary>
     public static class CinematicDepthOfField
     {
@@ -21,6 +21,7 @@ namespace BarPromenade.Rendering
         public const float MinimumFocusDistance = 0.1f;
 
         private static CinematicDepthOfFieldOwner owner;
+        private static object leaseOwner;
 
         public static bool IsActive =>
             owner != null && owner.IsEngaged;
@@ -30,6 +31,7 @@ namespace BarPromenade.Rendering
         private static void Reset()
         {
             owner = null;
+            leaseOwner = null;
         }
 
         public static void Begin(
@@ -37,6 +39,7 @@ namespace BarPromenade.Rendering
             float aperture = 4f,
             float focalLength = 50f)
         {
+            leaseOwner = null;
             if (!GraphicsEffectsSettings.DepthOfFieldEnabled)
             {
                 return;
@@ -56,6 +59,31 @@ namespace BarPromenade.Rendering
                 focalLength);
         }
 
+        /// <summary>Scoped contextual cameras cannot end or retune a later owner's shot.</summary>
+        internal static bool TryBeginOwned(object token, float distance, float aperture, float focalLength)
+        {
+            if (token == null || IsActive || leaseOwner != null) return false;
+            Begin(distance, aperture, focalLength);
+            leaseOwner = token;
+            return true;
+        }
+
+        internal static void SetOwnedFocusDistance(object token, float distance)
+        {
+            if (ReferenceEquals(leaseOwner, token)) SetFocusDistance(distance);
+        }
+
+        internal static void EndOwned(object token, bool immediately)
+        {
+            if (!ReferenceEquals(leaseOwner, token)) return;
+            if (immediately)
+            {
+                leaseOwner = null;
+                if (owner != null) owner.DisengageImmediately();
+            }
+            else if (owner != null) owner.Disengage();
+        }
+
         public static void SetFocusDistance(float meters)
         {
             if (owner != null && owner.IsEngaged)
@@ -66,6 +94,7 @@ namespace BarPromenade.Rendering
 
         public static void End()
         {
+            leaseOwner = null;
             if (owner != null)
             {
                 owner.Disengage();
@@ -79,6 +108,7 @@ namespace BarPromenade.Rendering
         /// </summary>
         public static void EndImmediately()
         {
+            leaseOwner = null;
             if (owner != null)
             {
                 owner.DisengageImmediately();
@@ -148,7 +178,7 @@ namespace BarPromenade.Rendering
         public void DisengageImmediately()
         {
             IsEngaged = false;
-            volume.weight = 0f;
+            if (volume != null) volume.weight = 0f;
             gameObject.SetActive(false);
         }
 
@@ -162,6 +192,8 @@ namespace BarPromenade.Rendering
             {
                 IsEngaged = false;
             }
+
+            if (PauseMenuController.IsAnyPaused || GameTimeScaleRuntime.IsPaused) return;
 
             float target = IsEngaged ? 1f : 0f;
             float seconds = IsEngaged

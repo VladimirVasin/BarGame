@@ -108,8 +108,10 @@ repair commands. Generation/publication: [../tools/README.md](../tools/README.md
   Hero observes; shop stock stays. Anchored port/factory voices use local reverb via
   `CityWorkAudio`; the shared Music bus is reduced by `6 dB`.
 - Mountain/village areas, cableway/interiors; abandoned village surrounds its lived-in core.
-- Six village residents perform finite household work; optional hero help and
-  the resulting deliveries, repairs and snow clearing survive scene visits.
+- Six named village neighbours; household help persists across visits.
+  Thirty-two repeatable RU/EN inspections: silent pages, props side/bokeh,
+  notes close-up without hero;
+  31 homes have fixed families, four occupied. Hero/mother remain unnamed.
 - One shared animated hero, contextual interactions, intoxication/balance,
   session clock, needs, inventory, purchases, dated quests and grave work.
 - A collectible scarf in the mother's upstairs bedroom has reversible inventory

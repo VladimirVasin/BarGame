@@ -3,47 +3,46 @@
 Newest outcomes/checks first. Archive whole dates at budget: [policy](README.md).
 Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-2026-08.md).
 
-## 2026-09-24 — Village surfaces, weather, avalanche and lodge
+## 2026-09-24 — Village surfaces, weather, lodge and narrative
 
-- `AlpineVillageJunctionPlan`: ground asphalt/soil masks/shared atlas, snow edges;
-  terrain-fitted faces/PS1 sampling/normals remove seams missed by vertex checks.
-  Check/frames: `AreaCaptureFixture.AlpineVillageRoadSurface`.
-- Rescue paving supports snow; abandoned trees double before clearance;
-  overcast/warm windows, full frost silent/thaw audible. Checks/frames:
+- Asphalt/soil atlas and snow edges follow terrain; PS1/normals fix seams
+  missed by vertex checks. Check/frames: `AreaCaptureFixture.AlpineVillageRoadSurface`.
+- Rescue paving holds snow; abandoned trees double; overcast/warm windows,
+  full frost silent/thaw audible. Checks/frames:
   `AreaCaptureFixture.AlpineVillagePolish`, `AreaCaptureFixture.AlpineFrostAudioScheduling`.
   Known: `AlpineVillageTests.Conifers_AreTheRoadsOwnTreesOnTheirOwnBand`
-  requires obsolete `wall trees > 0`; capture shows no western rock panels.
-- Closed conifer undersides hide sky/trunk tips, preserve size/wind.
+  expects obsolete wall trees; frames show no western rock panels.
+- Closed conifer bases hide sky/trunk tips, retaining size/wind.
   Check/frames: `AreaCaptureFixture.ConiferUndersides`.
-- Unity `6000.6.2f1` refs/.claude editor/.NET paths synchronized. Checks:
-  package/config JSON, installed paths, generated signature diff, `check-docs.py`.
-- Avalanche scar/timber/rocks/buried lift/household-15 ruin; shared movement/
-  forest, lodge/loop open. Triangulation fixes import drift; roof rests on walls.
-  Checks: `build-village-expansion-3d-model.py`,
-  `AreaCaptureFixture.AlpineVillageAvalanche`; route/ruin frames reviewed.
-- Village theme MP3 `1.00` (not LUFS): both lodge doors closed enable shared
-  fade/resume; opening either fades/pauses, position-independent. Initial
-  suppression prevents a startup burst. Import check:
-  `SceneMusicImportTests.EveryTheme_StreamsAndLoadsInTheBackground`;
-  playback: `AreaCaptureFixture.AlpineVillageLodgeShelter`.
-- Stove/flue, lodge/mother piles; shared 3D receipt grants one retakeable log.
-  Close/Escape retain it; `PlayerInteractor` rejects reused closing press.
-  Item standard owns presentation. Checks: `build-village-expansion-3d-model.py --validate-only`,
-  `InventoryTargetInteractionControllerTests.Woodpile_*`,
+- Unity refs/.claude editor/.NET paths match `6000.6.2f1`.
+  Checks: config JSON/installed paths/signature diff, `check-docs.py`.
+- Avalanche timber/rocks/buried lift/household-15 ruin share movement/forest;
+  lodge/loop stay open. Triangulation fixes import drift, roof rests on walls.
+  Checks/frames: `build-village-expansion-3d-model.py`,
+  `AreaCaptureFixture.AlpineVillageAvalanche`.
+- Stove/piles: shared 3D receipt grants one retakeable log; Close/Escape retain
+  it, closing press cannot reopen. Checks: `InventoryTargetInteractionControllerTests.Woodpile_*`,
   `AreaCaptureFixture.AlpineVillageStoveAndWoodpile`,
   `AreaCaptureFixture.AlpineVillageMothersHouseWoodpile`; frames reviewed.
-- Stove first-person grid spends log; flip-top open→two dry clicks→ignite→close,
-  no hands/visible rig; exit restores camera/door, session fire/warmth.
-  Lit E opens door. Checks: `AreaCaptureFixture.AlpineVillageStoveIgnition`
-  (frames), Runtime compilation, RU/EN JSON.
-- Shelter: dry cot/kettle stubs, gas lantern, two replacement binary doors.
-  Final closure nearly silences gusts; burning stove then warms whole interior,
-  otherwise indoor 2.5 m. Shared acoustics avoids workshop overwrites.
-  Session open/off reset. Checks: `AreaCaptureFixture.AlpineVillageLodgeShelter`
-  with DSP comparison, `build-village-expansion-3d-model.py --validate-only`, `check-docs.py`.
-  Same scenario verifies latest wind/gain/whole-room warmth and live cold/frost.
-- Retained current captures/combat authoring; motion PNGs→lossless video.
-  Checks: retention inventory/decoded frame hashes, `check-docs.py`.
+- First-person stove grid spends log; flip-top clicks ignite, then close.
+  No visible rig; exit restores camera/door; lit E opens it.
+  Check/frames: `AreaCaptureFixture.AlpineVillageStoveIgnition`; Runtime/RU/EN JSON.
+- Dry cot/kettle stubs, lantern and binary doors persist until New Game.
+  Both shut nearly silence gusts and spread stove heat across hall, else 2.5 m.
+  Shared acoustics avoids workshop overwrite. MP3 at 1.00 fades/resumes only
+  with both shut; initial suppression prevents burst. Checks:
+  `SceneMusicImportTests.EveryTheme_StreamsAndLoadsInTheBackground`,
+  `AreaCaptureFixture.AlpineVillageLodgeShelter` (DSP/warmth/cold/frost),
+  `build-village-expansion-3d-model.py --validate-only`.
+- Kept current captures/combat authoring; motion PNGs became lossless video.
+  Checks: retention inventory/decoded hashes, `check-docs.py`.
+- Narrative: 32 targets/30 new models; road-visible, mesh bounds clear of roads.
+  Shared rig/pages/modal cleanup/camera; props side, notes close-up without hero.
+  RU/EN resort/avalanche/road stories, depressive thoughts/two absurd notes;
+  literary edit. Fixed families, six named neighbours/four occupied homes;
+  hero/mother unnamed. Checks: `VillageNarrativeAssetSetup.ValidateOrThrow`,
+  `AreaCaptureFixture.AlpineVillageNarrative`: visibility/road clearance,
+  full RU/EN paper fit, close-up/pause/Escape/repeat/cleanup.
 
 ## 2026-09-23 — Alpine Village expansion
 

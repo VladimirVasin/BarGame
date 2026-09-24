@@ -372,6 +372,7 @@ namespace BarPromenade
             blockTimer.Restart();
 
             var walkableArea = new AlpineVillageWalkableArea(plan);
+            AlpineVillageNarrativeBuilder.Build(root.transform, plan, walkableArea);
             completed(new AlpineVillageWorldResult(
                 root,
                 terrainRoot,
@@ -1809,12 +1810,13 @@ namespace BarPromenade
                     chapel ? WhitewashColor : TimberColor);
             }
 
-            // Collision is the plan's, never the model's. An imported part
-            // carries no collider by importer rule, and adding one to it is
-            // how a floor once became a two-kilometre slab on its side.
+            // Ordinary houses use plan shells. Door actions and mounted
+            // inspections need the real wall face, inside the roof envelope;
+            // only the already transformed wall/plinth/timber meshes collide.
             var collider = new GameObject("Physical Shell");
             collider.transform.SetParent(parent, false);
-            if (VillageResidentDoorPlan.IsResidentHouse(plot.StableId))
+            if (VillageResidentDoorPlan.IsResidentHouse(plot.StableId) ||
+                plot.StableId == "village-house-02" || plot.StableId == "village-house-10")
             {
                 foreach (VillageMeshRole role in new[] { VillageMeshRole.Walls,
                              VillageMeshRole.Plinth, VillageMeshRole.Timber })
@@ -1858,9 +1860,7 @@ namespace BarPromenade
 
             BuildFacadeDetail(parent, plot, kit, variant, face);
             BuildLitWindows(parent, plot, tallest, variant, face, kit);
-            if (tallest ||
-                plot.StableId == "village-house-01" ||
-                plot.StableId == "village-house-07")
+            if (tallest || plot.StableId == "village-house-04" || plot.StableId == "village-house-08")
             {
                 BuildWindowSnowPool(parent, plot, tallest, face.y);
             }
@@ -2126,7 +2126,8 @@ namespace BarPromenade
 
             LockedDoorInteraction door =
                 host.AddComponent<LockedDoorInteraction>();
-            door.Configure(HouseDoorPromptKey, HouseDoorLockedKey);
+            door.Configure(HouseDoorPromptKey, VillageHouseholdCatalog.IsOccupied(plot.StableId)
+                ? HouseDoorLockedKey : "alpine_village.house_door.abandoned");
             PlayerDoorActionTarget doorAction =
                 host.AddComponent<PlayerDoorActionTarget>();
             doorAction.Configure(
@@ -2193,7 +2194,7 @@ namespace BarPromenade
                 Vector3 dimensions)
             {
                 AlpineVillageWorldBuilder.CreateWindow(
-                    windowParent, position, dimensions, kit);
+                    windowParent, position, dimensions, kit, lit: VillageHouseholdCatalog.IsOccupied(plot.StableId));
             }
 
             float half = wallFace.y;
@@ -2952,7 +2953,8 @@ namespace BarPromenade
             Vector3 size,
             VillageAssetProvider kit,
             bool exactOpening = false,
-            bool frosted = false)
+            bool frosted = false,
+            bool lit = true)
         {
             if (kit == null)
             {
@@ -2977,7 +2979,7 @@ namespace BarPromenade
                 bool shaded = role == VillageMeshRole.GlassShade;
                 var window = new GameObject(frame
                     ? "Window Frame"
-                    : shaded ? "Lit Window Shade" : "Lit Window");
+                    : lit ? (shaded ? "Lit Window Shade" : "Lit Window") : "Dark Window");
                 window.transform.SetParent(parent, false);
                 window.transform.localPosition =
                     localPosition + outward * 0.06f;
@@ -2986,7 +2988,7 @@ namespace BarPromenade
                 window.AddComponent<MeshFilter>().sharedMesh =
                     kit.GetPartOrThrow(VillageAssetKind.Window, 0, role).Mesh;
                 MeshRenderer renderer = window.AddComponent<MeshRenderer>();
-                renderer.sharedMaterial = frame
+                renderer.sharedMaterial = frame || !lit
                     ? RuntimePrimitiveFactory.DefaultMaterial
                     : CityNightResources.EmissiveMaterial;
                 renderer.shadowCastingMode = frame
@@ -3004,6 +3006,7 @@ namespace BarPromenade
                     Color tint = WindowGlowColor * (frosted
                         ? (shaded ? 0.72f : 0.78f)
                         : (shaded ? 0.58f : 1f));
+                    if (!lit) tint = new Color(.085f, .092f, .086f, 1f);
                     tint.a = 1f;
                     var properties = new MaterialPropertyBlock();
                     properties.SetColor("_BaseColor", tint);

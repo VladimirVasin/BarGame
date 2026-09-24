@@ -298,6 +298,7 @@ namespace BarPromenade
             float depth = plan.Expansion.LimitExteriorPropSnow(point,
                 UntouchedDepth * profile * Variation(point) * suppression);
             depth = plan.LodgeWoodpile.LimitSnow(point, depth);
+            if (plan.Narrative != null) depth = plan.Narrative.LimitSnow(point, depth);
             return plan.MothersHouseWoodpile.LimitSnow(point, depth);
         }
 

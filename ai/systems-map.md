@@ -20,13 +20,14 @@ Only these statuses apply. Product scope cuts are `Deferred` in
 
 | System | Guarantee | Key files | Status |
 | --- | --- | --- | --- |
-| Village scenery | 18 households/eight sheds/five yards; avalanche, two woodpiles. | `AlpineVillage{AbandonmentPlan,AvalanchePlan,ExpansionBuilder,WoodpilePlan}` | Current |
+| Village scenery | 18 households/8 sheds/5 yards; avalanche/woodpiles. | `AlpineVillage{AbandonmentPlan,AvalanchePlan,ExpansionBuilder,WoodpilePlan}` | Current |
 | Lodge stove | Session fire; both doors shut heats whole interior, else indoor 2.5 m. | `LodgeStove{Interaction,SessionState}` | Current |
 | Lodge shelter | Both doors shut nearly silence wind; lantern switches. Gap: sleep/tea are inspection stubs. | `LodgeShelter*`, `VillageInteriorAcoustics` | Partial |
 | Village paths | Ground junctions; brook bridge. | `AlpineVillage{JunctionPlan,FootbridgePlan}` | Current |
-| Village household life | Six residents, finite household work, indoor/outdoor help and outcomes across visits. | `AlpineVillageLifeController`, `VillageOutdoorHelpController`, `VillageHouseholdProgress` | Current |
+| Village life | Six named residents/31 homes; help persists. | `AlpineVillageLifeController`, `VillageOutdoorHelpController`, `VillageHousehold{Progress,Catalog}` | Current |
+| Narrative inspection | 32 RU/EN/30 new; silent/replay, props side/notes close-up. | `NarrativeInteraction*`, `AlpineVillageNarrative*` | Current |
 | Independent rules assembly | Calendar/day schedule, input priorities and temporary vehicle ownership have no Unity dependencies. | `Scripts/Rules`, `BarPromenade.Rules.asmdef` | Current |
-| Shared input actions | One binding API serves common actions and preserves existing controls; pause and transitions take priority. | `GameInput`, `GameInputPolicy` | Current |
+| Shared input actions | Shared bindings; pause/transitions take priority. | `GameInput`, `GameInputPolicy` | Current |
 | Performance capture | Opt-in CPU/GPU/frame/GC and hot-scope distributions; unavailable counters are not reported as zero. | `RuntimePerformanceCapture`, `PerformanceCaptureSamples` | Current |
 | Player build asset gate | Read-only validators block stale/missing runtime assets with explicit repair instructions. | `PlayerBuildAssetValidation` | Current |
 | Reproducible asset tooling | Pinned tools, failure propagation, output checks and staged publication preserve existing metas. | `tools/run-blender.py`, `tools/asset_pipeline.py` | Current |
@@ -101,7 +102,7 @@ Only these statuses apply. Product scope cuts are `Deferred` in
 | Port social life | Canopy breaks, paired city/weather talk in nonrepeating rounds; driver speaks only to docker. | `CityPortCrew*`, `CityPortConversation*`, `CityPortLighting` | Current |
 | Port cold store | Three warm lamps, refrigeration and passive furniture retain cargo lanes; local fan follows pause/distance. | `build-city-port-3d-model.py`, `CityPortLighting`, `CityPortSound` | Current |
 | Port foreman | Carrot custody retained; voluntary two-speaker E dialogue, no work/pay. | `CityPortForeman*`, `CityPortConversation*` | Current |
-| NPC dialogue | Shared graph, visible approach, two speaking shots and cancellation; foreman first. | `DialogueGraph`, `DialogueSessionController`, `DialogueCameraDirector` | Current |
+| NPC dialogue | Graph, visible approach, two shots/cancel; foreman. Shared inspection camera. | `DialogueGraph`, `DialogueSessionController`, `ContextualCameraDirector` | Current |
 | Dialogue faces | Expressive hero/foreman mouths, brows/blink follow reveal/pause; soil and snack state retained. | `SpeechFaceAnimation`, `SpeechFaceAtlasPresenter` | Current |
 | Sea water | Shared water drive owns sea swell, foam and uneven shore swash. | `CitySeaResources`, `CityWaterResources` | Current |
 | Beach sand | Deterministic shallow relief and compressible foot trails over a coarser fixed collider. | `CityBeachSandPlan`, `CitySandTreading` | Current |

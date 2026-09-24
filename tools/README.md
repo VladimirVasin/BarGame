@@ -49,15 +49,18 @@ Village: `build-village-outdoor-player-actions-3d-model.py`,
 `build-village-expansion-3d-model.py`: houses/yards, lodge/stove/flue, warehouse/bridge.
 `VillageExpansionAssetSetup`: `Assets/Resources/Village/Expansion/VillageExpansion3D.{fbx,json}`.
 `--validate-only`: bounds/winding/openings/determinism; `--preview-kind`: views.
+`build-village-narrative-3d-model.py`: 30 props; same launcher/`--validate-only`.
+`Assets/Resources/VillageNarrative/VillageNarrative3D.{fbx,json}`;
+source `ArtSource/VillageNarrative`. `VillageNarrativeLibrary`: IDs 1–32 except
+26/27, `Create/GetBounds/GetAnchor`; importer `VillageNarrativeAssetSetup`.
 `build-village-abandonment-textures.py [--validate-only]`: 3 aged maps.
 `Bar Promenade/Village`: `Bake Junction Textures` keeps masks;
 `Regenerate Junction Masks And Bake` resets them; both bake albedos/atlas.
 R blends asphalt; G: reference only, no mesh/snow effect.
 
-Keep Unity closed during Blender generation. The default worker has an independent
-body/wardrobe generator and `DefaultNpcAssetSetup` importer. The legacy resident
-command builds WoodWoman/shared actions; `--phase-two` builds the other four.
-`VillageLife` prebuild imports residents/props/doors through their asset setups.
+Keep Unity closed during Blender generation. Worker: independent body/wardrobe,
+`DefaultNpcAssetSetup`. Resident command: WoodWoman/shared actions;
+`--phase-two`: other four. `VillageLife` prebuild imports residents/props/doors.
 
 ```powershell
 python tools/run-blender.py tools/build-village-life-props-3d-model.py --expect Assets/Resources/VillageLife/VillageLifeProps3D.fbx --expect Assets/Resources/VillageLife/VillageLifeProps3D.json -- --no-preview
@@ -73,20 +76,18 @@ python tools/run-blender.py tools/build-village-residents-3d-model.py `
 python tools/run-blender.py tools/build-village-resident-doors-3d-model.py --expect Assets/Resources/VillageLife/VillageResidentDoors3D.fbx --expect Assets/Resources/VillageLife/VillageResidentDoors3D.json -- --no-preview
 ```
 
-Validate with `--validate-only` on both launcher and generator; retain
-`--phase-two` for that bank. The worker generator preserves the other five
-bodies/actions; the later resident bank preserves the original bodies/actions.
-Unity menu `Bar Promenade/Default NPC/Rebuild Ordinary Worker` imports only
-the worker/12 face-hair atlases; Inspector chooses faces/hair/presets/slots.
+Validate: `--validate-only` on launcher and generator; retain `--phase-two`.
+Worker preserves the other five bodies/actions; later banks preserve earlier ones.
+`Bar Promenade/Default NPC/Rebuild Ordinary Worker`: worker/12 face-hair atlases;
+Inspector selects faces/hair/presets/slots.
 Register new IDs/constraints in `DefaultNpcPopulation`, use `CreateForCharacter`;
 global assignment avoids repeats and restores the same look across loads.
-The 17-kind props retain the first eleven recipes; doors retain three exterior
-envelopes, real openings and six concealed docks behind solid vestibule turns.
+Props: 17 recipes, first eleven preserved. Doors: three envelopes, real openings,
+six concealed docks behind vestibule turns.
 
-Sources/reviews: `ArtSource/VillageLife`; household frames/reports:
-`Captures/VillageLife`. `VillageLife` checks bodies, held props, doors/clearance,
-yielding, gusts, pause and daily returns. Compare detail beside the hero at
-equal scale; geometry counts alone do not prove visible or gameplay quality.
+Sources/reviews: `ArtSource/VillageLife`; captures: `Captures/VillageLife`.
+`VillageLife`: bodies, held props, doors/clearance, yielding, gusts, pause/returns.
+Compare beside the hero at equal scale; counts do not prove quality.
 
 Part 3 uses three separate generators with Unity closed:
 

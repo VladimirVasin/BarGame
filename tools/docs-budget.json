@@ -83,6 +83,10 @@
       "type": "state",
       "budget": 12000
     },
+    "ai/village-narrative-plan.md": {
+      "type": "note",
+      "budget": 40000
+    },
     "ai/architecture-notes.md": {
       "type": "canon",
       "block_max": 8000,
@@ -320,7 +324,7 @@
         "19/Проверка": "sha256:d54d46b9986d80b0c21b1b16746b3f70",
         "20/Проверка": "sha256:3f8061e2407e46e49acbec64da581c22",
         "21/Нельзя": "sha256:b0edb982da007d3f5a9f63c2850f5713",
-        "21/Проверка": "sha256:f28b9e0ac5a97f03cbe5af4b077b0a09"
+        "21/Проверка": "sha256:fc5b2356cd82cb439677d1f8d71273bd"
       }
     },
     "ai/city-zones-art-bible.md": {

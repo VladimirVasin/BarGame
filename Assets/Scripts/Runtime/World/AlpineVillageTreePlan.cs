@@ -537,6 +537,7 @@ namespace BarPromenade
         private static bool ClearsEveryPlot(
             AlpineVillagePlan plan, Vector2 point, float radius)
         {
+            if (plan.Narrative != null && !plan.Narrative.ClearsForest(point, radius)) return false;
             if (plan.Expansion != null && plan.Expansion.Avalanche.ContainsLocal(
                 plan.Expansion.ToLocal(point), radius + 2f)) return false;
             if (plan.Expansion != null && !plan.Expansion.Abandonment.ClearsFeatures(

@@ -2,17 +2,29 @@
 
 ## Current facts
 
+- **Accepted architecture exception — 2026-09-24, village history and narrative inspection:**
+  Level 0; story §§6/12/19/21, art §10g: history/families;
+  hero/mother unnamed, mine/father stays. Current: 28 props/two nailed notes +
+  old truck/pile: whole bounds off-road, road-visible; roads fixed.
+  `NarrativeInteraction`/controller: positioned rig, repeat/cancel, no grant.
+  `ContextualCameraDirector`: camera/DOF, restores fixed pose/focus.
+  User: props side/bokeh; notes push in, sheet close-up without hero.
+  `InteractionPromptView`: held silent RU/EN pages, separate paper/thought.
+  Hero: depressive, 1–2 sentences/page; history 2–3 pages, clear without notes.
+  Absurd mundane notes (Silent Hill, §19/21); no supernatural fact. Literary edit.
+  `VillageHouseholdCatalog`: 31 homes, four occupied; names in greetings.
+  No crime/water/self-analysis; speech/contextual standards, §16/nine checks.
+  village-narrative-plan.md.
+
 - **Accepted architecture exception — 2026-09-24, habitable ski lodge:**
-  User-approved, 0; §6/§12/art §10g. Fixed cot/kettle E inspect
-  silently: no sleep/tea/grant/receipt (item-standard exception).
-  `LodgeShelter{Controller,Interaction,SessionState}`: two replacement leaves,
-  E either side, binary pose/collision; reject occupied closure, no auto-close.
-  Lantern E: local warm light, no fuel/heat. No hero/camera ownership/animation.
-  Session doors/light; New Game open/off. `VillageInteriorAcoustics` alone owns
-  workshop/lodge filtering: hero inside, .35 s blend; one shut leaks,
-  both: wind gain .025/cutoff .24. Stove/steps/outdoors stay clear.
-  Roof-volume particle culling keeps blizzard outside; fixed half-doorway targets.
-  No NPC/story; §16/§21/nine checks.
+  Level 0, §6/§12/art §10g. Cot/kettle: silent E, no sleep/tea/grant/receipt
+  (item exception). `LodgeShelter{Controller,Interaction,SessionState}`:
+  two leaves, E either side, binary pose/collision; occupied closure rejected,
+  no auto-close. Lantern: warm light, no fuel/heat or hero/camera ownership.
+  Session doors/light; New Game open/off. `VillageInteriorAcoustics` owns
+  indoor workshop/lodge filtering: .35 s; one shut leaks, both gain .025/
+  cutoff .24. Stove/steps/outdoors clear. Roof culls particles;
+  half-doorway targets fixed. No NPC; §16/§21/nine checks.
 
 - **Accepted architecture exception — 2026-09-24, ski-lodge stove and firewood:**
   Level 0, §6/§12/art §10g. Piles: receipt/one/infinite retake.
@@ -37,11 +49,10 @@
   WAV/OGG/MP3 (MP3 supplied); no story/weather/avalanche cue, causal sound stays.
 
 - **Accepted architecture exception — 2026-09-24, old ski avalanche:**
-  §6/§12/art §10g, 0: scar→full-size timber/rock/beams→buried tow/cable→
-  household-15 damage caused abandonment. Front ~20 m/high 4–6 m/fan 38 m;
-  form collision/shared forest-movement footprint. Lift/lodge/loop/ruin open;
-  mine/trade gap unrelated. No slide/hazard/death/task/NPC/text/sound/clue/event;
-  lane/mother/water/cableway, §16/§21/nine checks stay.
+  Level 0: scar→timber/rock/beams→buried tow/cable→household-15 damage.
+  Front ~20 m/high 4–6 m/fan 38 m; form collision/forest-movement footprint.
+  Lift/lodge/loop/ruin open. No live slide/hazard/death/task/NPC/sound/clue;
+  lane/mother/water/cableway stay. History above; §6/§12/art §10g/§16/§21.
 
 - **Accepted — 2026-09-24, closed conifer crowns:**
   `AppendCone`: road/village seven-face tier bases, inset `0.2 × radius`;
@@ -71,32 +82,33 @@
   Ground asphalt: no slab/lift/collider; lips/width/routes/snow/exit/story stay.
 
 - **Accepted architecture exception — 2026-09-23, abandoned village settlement:**
-  §6/art §10g, 0: former wealth/ski/rescue; 14–18 houses/6–8 sheds,
-  mostly standing; five closed civic yards. Each side sees buildings, not props.
-  `AlpineVillageAbandonment`: placement/forest/snow/pads, Blender/manifest.
-  Donors/core/people/warmth/axis/water/routes/station/cableway stay.
-  No resort/tourists/NPC/clue/plot; lodge exceptions: 2026-09-24; §16/§21/nine checks.
+  Level 0: former wealth/ski/rescue; 14–18 mostly standing houses/6–8 sheds,
+  five closed civic yards. Buildings on both sides. `AlpineVillageAbandonment`:
+  placement/forest/snow/pads, Blender/manifest. Donors/core/people/warmth/axis/
+  water/routes/station/cableway stay. No present tourists/new NPC/clue;
+  §6/art §10g/§16/§21/nine checks; lodge: 2026-09-24.
 
 - **Accepted architecture exception — 2026-09-23, discarded warehouse props:**
-  Blender `VillageExpansion3D`/§6: `RustedTruck`/`DiscardedChairPile` solids;
-  ramp/yard/road/donors stay. Low snow-settled bent cab/frame/cargo, no wheels/
-  doors/glass; `VillageTruck{Rust,Paint}Albedo`. Heap 5–6×~2.7 m: weathered
-  backs/seats/legs/base-centre frames, ground/timber supports/sparse snow.
-  No physics/seat/repair/loot/text/sound/NPC/event/provenance; §16/§21/nine checks.
+  `VillageExpansion3D`: `RustedTruck`/`DiscardedChairPile` solids; ramp/yard/
+  road/donors stay. Bent low snow-settled cab/frame/cargo, no wheels/doors/glass;
+  `VillageTruck{Rust,Paint}Albedo`. Heap 5–6×~2.7 m: weathered backs/seats/legs/
+  base-centre frames, ground/timber supports/sparse snow. No physics/seat/
+  repair/loot/sound/NPC/event; §6/§16/§21/nine checks.
 
 - **Accepted architecture exception — 2026-09-23, village trade road:**
-  §6/§12/art §10g: rail/rubble/aligned ends, checkpoint city in rock gap;
-  no peaks/traffic/road. Closed warehouse/mine, open yard/ramp/cargo/cart;
-  collapse ended trade, supports/stock show halted repair. Sole cableway exit.
-  Shared checkpoint scenery/village haze/storms; no text/NPC/task/sound/clue/
-  date/cause/event; §16/§21/nine checks.
+  Rail/rubble/aligned ends, checkpoint city through rocks; no peaks/traffic/
+  traversable road. Closed warehouse/mine; open yard/ramp/cargo/cart.
+  Supports/stock show halted repair. Sole cableway exit; shared checkpoint
+  scenery/village haze/storms. No new NPC/task/sound/clue/date/event;
+  §6/§12/art §10g/§16/§21/nine checks.
 
 - **Accepted architecture exception — 2026-09-22, expanded Alpine Village:**
-  §6/§12/art §10g: forest/walk-in lodge/old-road loop/gap; core/12 houses/
-  warm axis/cable/water/access stay. Trees: core `420`/`7 m`, expansion ≤`900`;
-  separate crowns, route gap `1.2 m + crown radius`. Rail/rubble block brink,
-  sole cableway exit. No fall/death/NPC/work/sound/clue/event/resort; lodge: 2026-09-24.
-  §16/§21/nine checks. Shared plan/sampler/bounds/metres/collider, `48 m` buckets.
+  Forest/walk-in lodge/old-road loop/gap; core/12 houses/warm axis/cable/water/
+  access stay. Trees: core `420`/`7 m`, expansion ≤`900`; separate crowns,
+  route gap `1.2 m + crown radius`. Rail/rubble block brink; sole cableway exit.
+  No fall/death/new NPC/work/sound/clue/event; lodge: 2026-09-24.
+  Shared plan/sampler/bounds/metres/collider, `48 m` buckets;
+  §6/§12/art §10g/§16/§21/nine checks.
 
 - **Accepted — 2026-09-21, impact balance and recoverable knockdown:**
   `CombatTest`: impulse/root/bone/catch-step/left-release clock.
@@ -692,31 +704,23 @@
   the existing level-`0` cold exception, with no health, speed, need or plot change.
 
 - **Accepted — 2026-09-09, complete village household help:**
-  `VillageHouseholdProgress` owns six unique loose logs, the contents and
-  destination of two baskets, repaired chair, three finite snow patches and
-  completed water visits. `GameSessionState.ResetToDefaults` resets it;
-  scene loads preserve it. In-flight possession is scene-owned; a later visit
-  restores an undelivered basket to its original support with the same contents.
-  No disk save is introduced. The woman loads the actual logs before carrying.
-  Hero and resident reservations protect the same basket, shovel, destination
-  stand and gate. A taken basket or shovel uses an owner-scoped torso layer
-  over ordinary locomotion; positioned pickups, placements, work and help use
-  the shared interaction controller with independent grounded endpoints.
-  The optional layer preserves legs and yields to full-body actions; compatible
-  interaction filtering leaves movement free while the hands carry something.
-  Actual support height corrects the transfer trajectory on sloping ground.
-  Hero docks use the physical triangulated terrain height (or the station
-  platform) and clear the full capsule and skin beyond each support. The gate
-  helper stands on the outside of the leaf, leaving the visitor's path open;
-  the station partner uses an authored bent working pose at the actual strap.
-  `VillageSnowClearing` lowers the existing snow mesh in three small patches;
-  the permanent session mask composes with temporary footsteps and snowfall.
-  Work areas use measured snow beyond the station's bare apron and the chapel's
-  wet source path. Bucket pickup/release blends the actual support offset into
-  the authored reach, so walking arrival tolerance cannot displace its resting place.
-  The same six residents perform occasional bucket and snow errands along
-  existing paths. Separate Blender banks preserve production hero/resident
-  models. This implements the accepted plan without a canon exception.
+  `VillageHouseholdProgress`: six unique logs, two baskets' contents/destinations,
+  chair repair, three finite snow patches, water visits. Scene loads preserve;
+  `GameSessionState.ResetToDefaults` resets. No disk save. Possession
+  is scene-owned; undelivered baskets return to original supports with contents.
+  Woman loads actual logs. Shared hero/resident reservations cover basket,
+  shovel, stand, gate. Carrying uses an owned torso layer preserving locomotion/
+  legs, yielding to full-body actions; filters permit compatible interactions.
+  Positioned pickups/placements/work/help use shared controller/independent
+  grounded endpoints. Transfer paths use actual sloped support height; docks
+  use triangulated terrain/station floor, clearing full capsule/skin.
+  Gate helper clears leaf/visitor path; station partner bends to strap.
+  `VillageSnowClearing` lowers three existing-mesh patches; permanent session
+  mask composes with footsteps/snowfall. Work uses measured snow beyond bare
+  station apron/wet chapel path. Bucket reach blends actual support offset,
+  keeping resting place despite arrival tolerance. Same six residents run
+  bucket/snow errands on existing paths. Separate Blender banks retain hero/
+  resident models; no canon exception.
 
 - **Accepted — 2026-09-08, third part of village household life:** House `08`
   contains one physical `4.5 × 4.8 × 2.3 m` workroom in the existing lower
