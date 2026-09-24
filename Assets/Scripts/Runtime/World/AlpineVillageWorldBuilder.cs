@@ -348,6 +348,7 @@ namespace BarPromenade
                 semanticObjects,
                 houseDoors);
             AlpineVillageExpansionBuilder.Build(root.transform, plan);
+            AlpineVillageWoodpileBuilder.Build(root.transform, plan, plan.MothersHouseWoodpile);
             ReportBlock(
                 "plots",
                 blockTimer,

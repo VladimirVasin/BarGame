@@ -3,47 +3,48 @@
 Newest outcomes/checks first. Archive whole dates at budget: [policy](README.md).
 Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-2026-08.md).
 
-## 2026-09-24 — Village surfaces, weather and avalanche
+## 2026-09-24 — Village surfaces, weather, avalanche and lodge
 
-- `AlpineVillageJunctionPlan` owns ports, contours and snow for the road/path
-  junctions and warehouse apron. Coatings partition the original ground;
-  incoming ribbons end at node rims. Snow follows the actual mesh surface.
-- Each node has an editable asphalt/soil mask and baked albedo in one shared
-  atlas, using existing texture recipes and shader. Ordinary baking preserves
-  manual masks; the warehouse apron has no internal snow island.
-- Approach faces fit terrain planes and share PS1 edge samples. Matching soil
-  beneath their mouths and blended ground normals remove pale seams/facets:
-  vertex-height checks alone missed face interiors and lighting differences.
-  Check: `AreaCaptureFixture.AlpineVillageRoadSurface`; real mesh, snow and
-  clearing verified, final walking frames reviewed.
-- Rescue-apron snow now uses the paving top during pressing/recovery;
-  terrain-only support intersected raised flagstones. Abandoned-zone trees
-  double before clearance checks; lived-in street trees retain their scale.
-  Daylight is overcast, retaining warm windows/garlands. Full frost silences
-  growth cues with a short tail; thaw and later growth still sound.
-  Checks: `AreaCaptureFixture.AlpineVillagePolish` (forest dimensions/clearances,
-  snow pressing/refill and reviewed day/night frames),
+- `AlpineVillageJunctionPlan`: ports/contours/snow, ribbons to rims; original
+  ground partitioned by editable asphalt/soil masks in a shared atlas.
+  Baking preserves masks; warehouse apron has no snow island. Terrain-fitted
+  faces/PS1 samples, matching soil and blended normals remove seams/facets
+  missed by vertex-only checks. Check/frames: `AreaCaptureFixture.AlpineVillageRoadSurface`.
+- Rescue snow follows raised paving through pressing/refill; abandoned trees
+  double before clearance, lived-in scale stays. Overcast day keeps warm
+  windows. Full frost silences growth tails, thaw/new growth sound.
+  Checks/frames: `AreaCaptureFixture.AlpineVillagePolish`,
   `AreaCaptureFixture.AlpineFrostAudioScheduling`.
   `AlpineVillageTests.Conifers_AreTheRoadsOwnTreesOnTheirOwnBand` still fails
-  its old `wall trees > 0` expectation for the removed western wall;
-  runtime capture confirms those rock panels are absent.
-- Closed both shared road/village conifer tiers below: open cones exposed sky
-  and cut trunk tips at close range. Outer size, silhouette and wind remain;
-  the repair closes the existing mesh. Check: `AreaCaptureFixture.ConiferUndersides`;
-  closed surfaces/wind UV verified and close ground frames reviewed at both scales.
-- Recorded the user's Unity `6000.6.2f1` import state and synchronized editor
-  references, including the editor/.NET paths in `.claude/settings.json`.
-  Checks: package/config JSON consistency, installed executable paths,
-  generated signature diff and `check-docs.py`.
-- Old ski avalanche: scar, fallen timber/rocks, buried lift and household-15
-  ruin. Shared forest/movement footprint; lodge/loop open. Source triangulation
-  fixes import face drift; real wall fragments support the broken roof.
-  Checks: `build-village-expansion-3d-model.py` (determinism/footprint/winding),
-  `AreaCaptureFixture.AlpineVillageAvalanche` (boundaries/access/neighbours).
-  Route and all-side ruin frames reviewed, including the previously faulty rear view.
-- Connected `AlpineVillageMusic/alpine_village_theme.mp3`; village gain `.70`
-  per user, not LUFS-calibrated. Shared fades/resume and optional build slot stay.
+  obsolete `wall trees > 0`; capture confirms western rock panels are absent.
+- Closed road/village conifer undersides hid sky/trunk tips; size/wind stay.
+  Check/ground frames: `AreaCaptureFixture.ConiferUndersides`.
+- Unity `6000.6.2f1` references synchronized, including `.claude/settings.json`
+  editor/.NET paths. Checks: package/config JSON, installed paths, generated
+  signature diff, `check-docs.py`.
+- Old ski avalanche: scar/timber/rocks/buried lift/household-15 ruin; shared
+  forest/movement footprint, lodge/loop open. Triangulation fixes import face
+  drift, wall fragments support roof. Checks: `build-village-expansion-3d-model.py`,
+  `AreaCaptureFixture.AlpineVillageAvalanche`; route/all-side ruin frames reviewed.
+- Connected `AlpineVillageMusic/alpine_village_theme.mp3`, user gain `.70`
+  (not LUFS-calibrated); shared fades/resume/optional slot.
   Check: `SceneMusicImportTests.EveryTheme_StreamsAndLoadsInTheBackground`.
+- Cold central lodge stove/flue through roof; matching outdoor woodpiles at
+  lodge/mother's entrance. Shared silent Yes/No gives `FirewoodLog`, session
+  cap one across both sources; no heat/ignition.
+  `AlpineVillageWoodpile{Plan,Builder}` share geometry/snow/collision.
+  Slotted door/dark firebox prepare future firelight; side passages open.
+  Lodge pile under eaves clears surrounding snow. Checks:
+  `build-village-expansion-3d-model.py --validate-only`,
+  `InventoryTargetInteractionControllerTests.Woodpile_*`,
+  `AreaCaptureFixture.AlpineVillageStoveAndWoodpile` (import/collision/bypass,
+  pickup/cap/retake, disable/destroy),
+  `AreaCaptureFixture.AlpineVillageMothersHouseWoodpile` (door path/E, cap from
+  either source/retake); Blender and Unity frames reviewed.
+- Removed superseded/debug captures; kept current reports/stills and unpublished
+  combat authoring. Motion PNGs became lossless video, preserving every decoded
+  frame hash. Checks: capture retention inventory, decoded frame hashes,
+  `check-docs.py`.
 
 ## 2026-09-23 — Alpine Village expansion
 

@@ -15,6 +15,7 @@ namespace BarPromenade.Tests.EditMode
         [TestCase(InventoryItemId.InstantNoodles)]
         [TestCase(InventoryItemId.DayOldLoaf)]
         [TestCase(InventoryItemId.Scarf)]
+        [TestCase(InventoryItemId.FirewoodLog)]
         public void ItemIcon_HasVisiblePointFilteredPixels(
             InventoryItemId itemId)
         {
@@ -91,6 +92,7 @@ namespace BarPromenade.Tests.EditMode
         [TestCase(InventoryItemId.InstantNoodles)]
         [TestCase(InventoryItemId.DayOldLoaf)]
         [TestCase(InventoryItemId.Scarf)]
+        [TestCase(InventoryItemId.FirewoodLog)]
         public void PreviewModel_HasFiniteGeometryAndNoColliders(
             InventoryItemId itemId)
         {

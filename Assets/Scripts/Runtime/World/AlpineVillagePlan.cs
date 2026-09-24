@@ -569,6 +569,9 @@ namespace BarPromenade
                 new List<AlpineVillageRidgeDescriptor>(sourceRidges));
             CoreTerrainBounds = terrainBounds;
             Expansion = new AlpineVillageExpansionPlan(this);
+            LodgeWoodpile = new AlpineVillageWoodpilePlan(AlpineVillageWoodpilePlan.LodgeName,
+                Expansion.LodgeWoodpileCenter, Expansion.LodgeForward);
+            MothersHouseWoodpile = AlpineVillageWoodpilePlan.AtMothersHouse(MothersHouse);
             Rect extra = Expansion.WorldBounds;
             TerrainBounds = Rect.MinMaxRect(Mathf.Min(terrainBounds.xMin, extra.xMin),
                 Mathf.Min(terrainBounds.yMin, extra.yMin), Mathf.Max(terrainBounds.xMax, extra.xMax),
@@ -624,6 +627,8 @@ namespace BarPromenade
         public IReadOnlyList<AlpineVillageRidgeDescriptor> Ridges => ridges;
 
         public AlpineVillageExpansionPlan Expansion { get; }
+        public AlpineVillageWoodpilePlan LodgeWoodpile { get; }
+        public AlpineVillageWoodpilePlan MothersHouseWoodpile { get; }
 
         /// <summary>The original inhabited bowl; existing houses and their ridge keep this extent.</summary>
         public Rect CoreTerrainBounds { get; }

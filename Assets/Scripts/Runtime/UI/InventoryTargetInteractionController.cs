@@ -127,7 +127,7 @@ namespace BarPromenade
             handler = interactionHandler;
             handlerOwnsWork = false;
             requirementTaken = false;
-            model.Open();
+            model.Open(definition.StartsWithConfirmation);
             inputUnlockFrame = Time.frameCount + 1;
             IsOpen = true;
             activeController = this;

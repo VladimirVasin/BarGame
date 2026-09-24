@@ -23,7 +23,7 @@ from village_abandoned_yards import build_all as abandoned_yards
 from village_avalanche import (ORIGIN as AVALANCHE_ORIGIN, FOOTPRINT as AVALANCHE_FOOTPRINT,
     build_avalanche, build_ruin_variant, validate_avalanche)
 
-VERSION = "1.5.0"
+VERSION = "1.6.0"
 DESIGN = "village_forest_ski_base_old_road_v1"
 COLORS = {"Timber": (.29,.255,.205,1), "Masonry": (.49,.485,.445,1),
           "LayeredStone": (.32,.345,.34,1), "RustedIron": (.30,.255,.21,1),
@@ -43,12 +43,97 @@ def at(g,p): return kit.translated(g,p)
 def rotate(g,e): return bp.u_rotated(g,e)
 def u(g): return bp.to_source(g)
 
-def roof(width,depth,wall,rise,thickness):
+def roof(width,depth,wall,rise,thickness,opening=0):
     """Two thick roof slopes: closed solids, with the ridge along X."""
     half=depth*.5; length=math.hypot(half,rise)
+    if opening:
+        # Split both slopes around the flue in authoring space. The central
+        # band's slope starts beyond the hole; neither wood nor snow caps it.
+        pieces=[]
+        for side in (-1,1):
+            angle=side*math.degrees(math.atan2(rise,half))
+            for sign in (-1,1):
+                pieces.append(at(rotate(box((0,0,0),((width-2*opening)*.5,thickness,length),.015),
+                    (angle,0,0)),(sign*(width+2*opening)*.25,wall+rise*.5,side*half*.5)))
+            pieces.append(at(rotate(box((0,0,0),(2*opening,thickness,length*(half-opening)/half),.015),
+                (angle,0,0)),(0,wall+rise*(half-opening)/(2*half),side*(half+opening)*.5)))
+        return merge(pieces)
     return merge([at(rotate(box((0,0,0),(width,thickness,length),.015),
                           (side*math.degrees(math.atan2(rise,half)),0,0)),
                      (0,wall+rise*.5,side*half*.5)) for side in (-1,1)])
+
+
+def hollow_profile(profile,segments=16):
+    """Closed wall swept about Unity Y, retaining a genuinely open centre."""
+    vertices,faces=kit.lathe(profile,segments)
+    faces=faces[:-2]
+    last=(len(profile)-1)*segments
+    for i in range(segments):
+        following=(i+1)%segments
+        faces.append((last+i,last+following,following,i))
+    return u((vertices,faces))
+
+
+def ski_lodge_stove(add):
+    """Cold cast-iron stove and continuous flue at the lodge's exact centre."""
+    kind="SkiLodge";iron=(.165,.17,.155,1);edge=(.225,.225,.20,1)
+    add(kind,"StoveHearth",box((0,.0475,0),(1.40,.055,1.36),.012),"LayeredStone",True,(.30,.315,.305,1))
+    legs=[]
+    for x in (-.335,.335):
+        for z in (-.31,.31):
+            legs += [beam_between((x*1.10,.085,z*1.10),(x,.33,z),.09),
+                     box((x*1.10,.087,z*1.10),(.14,.024,.14),.012)]
+    add(kind,"StoveLegs",merge(legs),"RustedIron",True,iron)
+    # A real empty firebox: the front throat opens behind the door grille,
+    # while thick side/back/top/bottom walls contain future firelight.
+    shell=[box((x,.705,0),(.055,.89,.85),.008) for x in (-.4225,.4225)]
+    shell += [box((0,.705,.40),(.90,.89,.05),.008),
+              box((0,.29,0),(.90,.06,.85),.008),
+              box((0,1.12,0),(.90,.06,.85),.008),
+              at(u(kit.wall_run(.90,.89,.05,[kit.Opening(0,.60,.79,.28)],.008)),(0,.26,-.40))]
+    add(kind,"StoveBody",merge(shell),"RustedIron",True,iron)
+    add(kind,"StoveTopAndBase",merge([box((0,y,0),(.95,h,.90),.024)
+        for y,h in ((.29,.075),(1.14,.07))]),"RustedIron",True,edge)
+    # The shut door has a raised rim and three genuine viewing slots with a
+    # grille crossbar. No opaque panel, glass or flame conceals the empty box.
+    rim=at(u(kit.wall_run(.71,.61,.055,[kit.Opening(0,.58,.545,.065)],.008)),(0,.45,-.431))
+    grille=at(u(kit.wall_run(.58,.48,.034,
+        [kit.Opening(x,.095,.415,.075) for x in (-.16,0,.16)],.004)),(0,.515,-.47))
+    door=[rim,grille,box((0,.76,-.47),(.52,.026,.034),.004),
+          box((0,.385,-.447),(.60,.105,.047),.013)]
+    add(kind,"StoveDoor",merge(door),"RustedIron",True,(.195,.195,.17,1))
+    hardware=[]
+    for y in (.57,.94):
+        hardware += [bp.u_cylinder((-.335,y,-.473),(.052,.065,.052),8),
+                     box((-.30,y,-.472),(.10,.038,.026),.004)]
+    hardware += [box((.245,.76,-.50),(.035,.17,.032),.008),
+                 box((.24,.68,-.507),(.09,.034,.033),.008),
+                 box((0,.385,-.488),(.14,.025,.032),.006)]
+    # Three raised vent slats leave dark recesses between them; the closed
+    # ash pan behind them keeps the inactive stove visibly sealed.
+    hardware += [box((x,.41,-.476),(.11,.012,.018),.003) for x in (-.18,0,.18)]
+    add(kind,"StoveHardware",merge(hardware),"RustedIron",True,edge)
+    # A single wall with open bore spans the entire interior and exterior.
+    pipe=hollow_profile([(.13,1.13),(.13,6.20),(.113,6.20),(.113,1.13)])
+    add(kind,"StovePipe",pipe,"RustedIron",True,iron)
+    joints=[hollow_profile([(.145,y-.03),(.145,y+.03),(.129,y+.03),(.129,y-.03)])
+            for y in (1.21,2.22,3.36,4.47,5.60)]
+    add(kind,"StovePipeJoints",merge(joints),"RustedIron",True,edge)
+    # The boot covers the square roof cut, while a raised round collar sheds
+    # weather above the snow and still has an open bore for the same flue.
+    boot=hollow_profile([(.44,5.015),(.44,5.055),(.20,5.44),(.15,5.48),
+                         (.132,5.48),(.132,5.435),(.18,5.415),(.415,5.025)])
+    add(kind,"RoofFlashing",boot,"RustedIron",True,(.245,.245,.22,1))
+    cap=[at(u(kit.lathe([(.27,6.35),(.27,6.38),(.065,6.46)],16)),(0,0,0))]
+    for angle in (0,120,240):
+        a=math.radians(angle)
+        cap.append(beam_between((.125*math.cos(a),6.10,.125*math.sin(a)),
+            (.19*math.cos(a),6.365,.19*math.sin(a)),.025))
+    add(kind,"ChimneyCap",merge(cap),"RustedIron",True,edge)
+    # Restrained worn edges and an old side repair, without decorative rust.
+    wear=[box((x,.79,-.496),(.018,.21,.008),.002) for x in (-.266,.266)]
+    wear += [box((.454,.72,.10),(.012,.15,.21),.01)]
+    add(kind,"StoveWear",merge(wear),"RustedIron",False,(.285,.25,.205,1))
 
 def gable(depth,rise,thickness):
     # Shared prism's section lies in source XZ and extrudes source Y.
@@ -352,8 +437,9 @@ def create_parts():
     for sign in (-1,1):
         add(lodge,"SideWall"+str(sign),at(rotate(u(sides),(0,90,0)),(sign*8.84,0,0)),"Masonry")
         add(lodge,"Gable"+str(sign),at(gable(12,1.4,.32),(sign*8.84,3.6,0)),"Timber")
-    add(lodge,"Roof",roof(19.3,13.3,3.48,1.55,.24),"Timber")
-    add(lodge,"RoofSnow",roof(19.22,13.22,3.66,1.55,.17),"WindSnow",False)
+    add(lodge,"Roof",roof(19.3,13.3,3.48,1.55,.24,.28),"Timber")
+    add(lodge,"RoofSnow",roof(19.22,13.22,3.66,1.55,.17,.28),"WindSnow",False)
+    ski_lodge_stove(add)
     # Continuous structural timbers and porch lintel give the long low mass its working character.
     beams=[box((0,3.41,z),(18.3,.24,.22),.025) for z in (-5.9,5.9)]
     for x in (-8.78,-2.95,2.95,8.78):
@@ -460,13 +546,67 @@ def validate(parts):
     for texture in textures["images"]:
         raw=(ROOT/texture["asset"]).read_bytes()
         assert hashlib.sha256(raw).hexdigest()==texture["sha256"],"Wreck texture changed without provenance"
-    # The entry and main circulation must be open in actual authored solids.
+    # The entry reaches the stove; two capsule-width bypasses stay connected
+    # before and behind it. The former straight centre aisle now owns a stove.
     trees=[BVHTree.FromPolygons(*p["geometry"],all_triangles=False) for p in parts
            if p["kind"]=="SkiLodge" and p["solid"]]
-    for x in (-1.1,0,1.1):
-        for y in (.2,1.1,2.3):
-            start=Vector((x,y,-7));end=Vector((x,y,3.7));direction=end-start
-            assert not any(t.ray_cast(start,direction.normalized(),direction.length)[0] is not None for t in trees),"Blocked lodge doorway/circulation"
+    def clear_segment(start,end,message):
+        start=Vector(start);direction=Vector(end)-start
+        assert not any(t.ray_cast(start,direction.normalized(),direction.length)[0] is not None
+                       for t in trees),message
+    for y in (.2,1.1,2.3):
+        for x in (-1.1,0,1.1):
+            clear_segment((x,y,-7),(x,y,-1.2),"Blocked lodge entrance to stove")
+        for sign in (-1,1):
+            for offset in (-.28,0,.28):
+                x=sign*1.25+offset
+                clear_segment((x,y,-2.9),(x,y,3.7),"Blocked lodge stove bypass")
+        for z in (-1.2,1.2):
+            clear_segment((-1.53,y,z),(1.53,y,z),"Disconnected lodge stove bypasses")
+    lodge={p["name"]:p for p in parts if p["kind"]=="SkiLodge"}
+    for name in ("StoveHearth","StoveBody","StovePipe","RoofFlashing","ChimneyCap"):
+        assert lodge[name]["solid"],"Missing stove collision silhouette: "+name
+    lo,hi=kit.bounds(lodge["StoveBody"]["geometry"])
+    assert all(abs(lo[i]+hi[i])<1e-8 for i in (0,2)),"Stove must occupy exact lodge centre"
+    assert hi[1]<=1.18 and lo[1]>=.25,"Stove body metre scale"
+    assert kit.bounds(lodge["StoveHearth"]["geometry"])[1][1]<=.08,"Hearth exceeds walking step"
+    stove_trees=[BVHTree.FromPolygons(*p["geometry"],all_triangles=False)
+                 for p in lodge.values() if p["name"].startswith("Stove") and p["solid"]]
+    def first_stove_hit(start,direction,distance):
+        hits=[t.ray_cast(Vector(start),Vector(direction),distance)[0] for t in stove_trees]
+        return min((hit for hit in hits if hit is not None),
+                   key=lambda hit:(hit-Vector(start)).length,default=None)
+    # Every viewing slot passes through door AND body to the inner rear wall;
+    # a dark painted backing, solid body or later collision proxy fails here.
+    for center in (-.16,0,.16):
+        for offset in (-.025,0,.025):
+            for y in (.64,.88):
+                hit=first_stove_hit((center+offset,y,-.8),(0,0,1),1.3)
+                assert hit is not None and abs(hit.z-.375)<1e-5,"Blocked stove viewing slot or missing firebox back"
+    for x,y in ((-.325,.755),(.325,.755),(0,.475),(0,1.025),
+                (-.08,.69),(.08,.69),(-.16,.76),(0,.76),(.16,.76)):
+        hit=first_stove_hit((x,y,-.8),(0,0,1),.42)
+        assert hit is not None and hit.z<-.40,"Missing stove door frame or grille bar"
+    for direction,distance in (((-1,0,0),.6),((1,0,0),.6),((0,-1,0),.6),
+                               ((0,1,0),.6),((0,0,1),.6)):
+        hit=first_stove_hit((0,.705,0),direction,distance)
+        assert hit is not None and (hit-Vector((0,.705,0))).length>.30,"Firebox must remain hollow and enclosed"
+    # Check the REAL roof meshes, including noncolliding snow: ray tests only
+    # against the runtime solid set would miss a snow face sealing the hole.
+    for name in ("Roof","RoofSnow"):
+        tree=BVHTree.FromPolygons(*lodge[name]["geometry"],all_triangles=False)
+        for x in (-.23,0,.23):
+            for z in (-.23,0,.23):
+                assert tree.ray_cast(Vector((x,4.7,z)),Vector((0,1,0)),1)[0] is None,"Sealed flue opening in "+name
+        for x,z in ((-.5,0),(.5,0),(0,-.5),(0,.5)):
+            assert tree.ray_cast(Vector((x,4.7,z)),Vector((0,1,0)),1)[0] is not None,"Roof removed beyond flue opening in "+name
+    pipe=BVHTree.FromPolygons(*lodge["StovePipe"]["geometry"],all_triangles=False)
+    for i in range(102):
+        y=1.14+i*.05
+        hit=pipe.ray_cast(Vector((.4,y,0)),Vector((-1,0,0)),.4)[0]
+        assert hit is not None and abs(hit.x-.13)<1e-6,"Discontinuous or displaced stove flue"
+    assert pipe.ray_cast(Vector((0,1.14,0)),Vector((0,1,0)),5.05)[0] is None,"Flue bore is capped"
+    assert kit.bounds(lodge["ChimneyCap"]["geometry"])[1][1]>6.3,"Chimney must rise above the snow ridge"
     def bounds_for(kind):
         return kit.bounds(merge(p["geometry"] for p in parts if p["kind"]==kind))
     warehouse_lo,warehouse_hi=bounds_for("TradeWarehouse")
@@ -590,6 +730,8 @@ def main():
         bpy.context.preferences.filepaths.save_version=0;bpy.ops.wm.save_as_mainfile(filepath=str(args.source_dir/"VillageExpansion3D.blend"))
         if not args.no_preview:
             reviews=[("SkiLodge","VillageExpansion3D.png",(25,-26,15),(0,0,2),43),
+                ("SkiLodge","VillageSkiLodgeStove3D.png",(2.5,-3.5,2.2),(0,0,.95),48),
+                ("SkiLodge","VillageSkiLodgeChimney3D.png",(3,-4,7),(0,0,5.6),48),
                 ("TradeWarehouse","VillageTradeWarehouse3D.png",(24,-24,15),(0,0,2),43),
                 ("TradeYardProps","VillageTradeYardProps3D.png",(5,-6,4.6),(0,0,.45),43),
                 ("ConservedRepair","VillageConservedRepair3D.png",(12,-17,12),(-2,3.5,-1.6),43),
@@ -605,6 +747,6 @@ def main():
             for kind,name,location,target,lens in reviews:
                 if not args.preview_kind or kind in args.preview_kind:
                     preview(args.source_dir/name,objects,rows,kind,location,target,lens)
-    print("VILLAGE EXPANSION VALIDATION OK: outward solids, determinism, avalanche footprint/terrain fit, lodge aisle, closed loading facade, repair view and budgets; "+signature)
+    print("VILLAGE EXPANSION VALIDATION OK: outward solids, determinism, avalanche footprint/terrain fit, lodge entry/stove bypasses/open roof/flue continuity, closed loading facade, repair view and budgets; "+signature)
 
 if __name__=="__main__":main()

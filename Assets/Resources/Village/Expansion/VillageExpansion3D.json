@@ -1,11 +1,11 @@
 {
-  "generator_version": "1.5.0",
+  "generator_version": "1.6.0",
   "design_id": "village_forest_ski_base_old_road_v1",
   "scale_mode": "fixed_metres",
   "uv_mode": "projected_metres",
-  "build_signature": "2d89683ab56e174c09d7e230de31fa4f30b76a52cd4c9afb3070fda7b9066130",
-  "mesh_count": 517,
-  "triangle_count": 160792,
+  "build_signature": "0668e09414bbffed4efda82e6e2a8cca04c0c86c4636b54f709cff1084f99635",
+  "mesh_count": 528,
+  "triangle_count": 163532,
   "avalanche_origin": [
     -158,
     110
@@ -252,14 +252,14 @@
       "bounds_min": [
         -9.65,
         3.366537548580874,
-        -6.673834803444288
+        -6.673834803444289
       ],
       "bounds_max": [
         9.65,
         5.143462451419126,
-        6.673834803444288
+        6.673834803444289
       ],
-      "triangles": 56
+      "triangles": 168
     },
     {
       "kind": "SkiLodge",
@@ -275,7 +275,7 @@
       ],
       "bounds_min": [
         -9.61,
-        3.580669293180631,
+        3.5806692931806303,
         -6.6259810280168985
       ],
       "bounds_max": [
@@ -283,7 +283,271 @@
         5.28933070681937,
         6.6259810280168985
       ],
+      "triangles": 168
+    },
+    {
+      "kind": "SkiLodge",
+      "name": "StoveHearth",
+      "mesh": "GEO_Expansion_SkiLodge_StoveHearth",
+      "surface": "LayeredStone",
+      "solid": true,
+      "tint": [
+        0.3,
+        0.315,
+        0.305,
+        1
+      ],
+      "bounds_min": [
+        -0.7,
+        0.02,
+        -0.68
+      ],
+      "bounds_max": [
+        0.7,
+        0.075,
+        0.68
+      ],
+      "triangles": 28
+    },
+    {
+      "kind": "SkiLodge",
+      "name": "StoveLegs",
+      "mesh": "GEO_Expansion_SkiLodge_StoveLegs",
+      "surface": "RustedIron",
+      "solid": true,
+      "tint": [
+        0.165,
+        0.17,
+        0.155,
+        1
+      ],
+      "bounds_min": [
+        -0.43850000000000006,
+        0.0735396146774292,
+        -0.41100000000000003
+      ],
+      "bounds_max": [
+        0.43850000000000006,
+        0.34160953760147095,
+        0.41100000000000003
+      ],
+      "triangles": 192
+    },
+    {
+      "kind": "SkiLodge",
+      "name": "StoveBody",
+      "mesh": "GEO_Expansion_SkiLodge_StoveBody",
+      "surface": "RustedIron",
+      "solid": true,
+      "tint": [
+        0.165,
+        0.17,
+        0.155,
+        1
+      ],
+      "bounds_min": [
+        -0.45,
+        0.25999999999999995,
+        -0.42500000000000004
+      ],
+      "bounds_max": [
+        0.45,
+        1.1500000000000001,
+        0.42500000000000004
+      ],
+      "triangles": 252
+    },
+    {
+      "kind": "SkiLodge",
+      "name": "StoveTopAndBase",
+      "mesh": "GEO_Expansion_SkiLodge_StoveTopAndBase",
+      "surface": "RustedIron",
+      "solid": true,
+      "tint": [
+        0.225,
+        0.225,
+        0.2,
+        1
+      ],
+      "bounds_min": [
+        -0.475,
+        0.2525,
+        -0.45
+      ],
+      "bounds_max": [
+        0.475,
+        1.1749999999999998,
+        0.45
+      ],
       "triangles": 56
+    },
+    {
+      "kind": "SkiLodge",
+      "name": "StoveDoor",
+      "mesh": "GEO_Expansion_SkiLodge_StoveDoor",
+      "surface": "RustedIron",
+      "solid": true,
+      "tint": [
+        0.195,
+        0.195,
+        0.17,
+        1
+      ],
+      "bounds_min": [
+        -0.355,
+        0.3325,
+        -0.487
+      ],
+      "bounds_max": [
+        0.355,
+        1.06,
+        -0.40349999999999997
+      ],
+      "triangles": 448
+    },
+    {
+      "kind": "SkiLodge",
+      "name": "StoveHardware",
+      "mesh": "GEO_Expansion_SkiLodge_StoveHardware",
+      "surface": "RustedIron",
+      "solid": true,
+      "tint": [
+        0.225,
+        0.225,
+        0.2,
+        1
+      ],
+      "bounds_min": [
+        -0.36100000000000004,
+        0.3725,
+        -0.5235
+      ],
+      "bounds_max": [
+        0.285,
+        1.005,
+        -0.44699999999999995
+      ],
+      "triangles": 280
+    },
+    {
+      "kind": "SkiLodge",
+      "name": "StovePipe",
+      "mesh": "GEO_Expansion_SkiLodge_StovePipe",
+      "surface": "RustedIron",
+      "solid": true,
+      "tint": [
+        0.165,
+        0.17,
+        0.155,
+        1
+      ],
+      "bounds_min": [
+        -0.13,
+        1.13,
+        -0.13
+      ],
+      "bounds_max": [
+        0.13,
+        6.2,
+        0.13
+      ],
+      "triangles": 128
+    },
+    {
+      "kind": "SkiLodge",
+      "name": "StovePipeJoints",
+      "mesh": "GEO_Expansion_SkiLodge_StovePipeJoints",
+      "surface": "RustedIron",
+      "solid": true,
+      "tint": [
+        0.225,
+        0.225,
+        0.2,
+        1
+      ],
+      "bounds_min": [
+        -0.145,
+        1.18,
+        -0.145
+      ],
+      "bounds_max": [
+        0.145,
+        5.63,
+        0.145
+      ],
+      "triangles": 640
+    },
+    {
+      "kind": "SkiLodge",
+      "name": "RoofFlashing",
+      "mesh": "GEO_Expansion_SkiLodge_RoofFlashing",
+      "surface": "RustedIron",
+      "solid": true,
+      "tint": [
+        0.245,
+        0.245,
+        0.22,
+        1
+      ],
+      "bounds_min": [
+        -0.44,
+        5.015,
+        -0.44
+      ],
+      "bounds_max": [
+        0.44,
+        5.48,
+        0.44
+      ],
+      "triangles": 256
+    },
+    {
+      "kind": "SkiLodge",
+      "name": "ChimneyCap",
+      "mesh": "GEO_Expansion_SkiLodge_ChimneyCap",
+      "surface": "RustedIron",
+      "solid": true,
+      "tint": [
+        0.225,
+        0.225,
+        0.2,
+        1
+      ],
+      "bounds_min": [
+        -0.27,
+        6.095822811126709,
+        -0.27
+      ],
+      "bounds_max": [
+        0.27,
+        6.46,
+        0.27
+      ],
+      "triangles": 152
+    },
+    {
+      "kind": "SkiLodge",
+      "name": "StoveWear",
+      "mesh": "GEO_Expansion_SkiLodge_StoveWear",
+      "surface": "RustedIron",
+      "solid": false,
+      "tint": [
+        0.285,
+        0.25,
+        0.205,
+        1
+      ],
+      "bounds_min": [
+        -0.275,
+        0.645,
+        -0.5
+      ],
+      "bounds_max": [
+        0.46,
+        0.895,
+        0.20500000000000002
+      ],
+      "triangles": 84
     },
     {
       "kind": "SkiLodge",

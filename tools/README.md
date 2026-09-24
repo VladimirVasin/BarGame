@@ -46,13 +46,13 @@ source `ArtSource/Vehicles/Blender/LastRouteCoin3D.blend`.
 Village: `build-village-outdoor-player-actions-3d-model.py`,
 `build-village-errands-3d-model.py` via `run-blender.py`. Checks:
 `VillageOutdoorLife` (contacts/carrying/reload), `VillageOutdoorPartners` (completed work).
-`build-village-expansion-3d-model.py`: houses/ruins/yards, lodge/warehouse/bridge.
-`VillageExpansionAssetSetup` imports `Assets/Resources/Village/Expansion/VillageExpansion3D.{fbx,json}`.
+`build-village-expansion-3d-model.py`: houses/yards, lodge/stove/flue, warehouse/bridge.
+`VillageExpansionAssetSetup`: `Assets/Resources/Village/Expansion/VillageExpansion3D.{fbx,json}`.
 `--validate-only`: bounds/winding/openings/determinism; `--preview-kind`: views.
 `build-village-abandonment-textures.py [--validate-only]`: 3 aged maps.
 `Bar Promenade/Village`: `Bake Junction Textures` keeps masks;
-`Regenerate Junction Masks And Bake` resets them. Both bake albedos/atlas.
-R blends asphalt; G is only a contour reference, with no mesh/snow effect.
+`Regenerate Junction Masks And Bake` resets them; both bake albedos/atlas.
+R blends asphalt; G: reference only, no mesh/snow effect.
 
 Keep Unity closed during Blender generation. The default worker has an independent
 body/wardrobe generator and `DefaultNpcAssetSetup` importer. The legacy resident

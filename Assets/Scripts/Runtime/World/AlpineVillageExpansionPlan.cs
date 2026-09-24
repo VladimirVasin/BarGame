@@ -13,6 +13,9 @@ namespace BarPromenade
         private static readonly Vector2 ChairPileLocalCenter = new Vector2(-144f, -17f);
         private static readonly Vector2 TruckWreckHalfSize = new Vector2(3.5f, 1.45f);
         private static readonly Vector2 ChairPileHalfSize = new Vector2(3.1f, 2.1f);
+        private static readonly Vector2 LodgeWoodpileLocalCenter = new Vector2(-133.2f, 49.55f);
+        public static readonly Vector2 LodgeStoveSize = new Vector2(.96f, 1.08f);
+        public static readonly Vector2 LodgeWoodpileSize = AlpineVillageWoodpilePlan.Size;
         private readonly AlpineVillagePlan village;
         private readonly Capsule[] regions =
         {
@@ -30,6 +33,8 @@ namespace BarPromenade
         {
             village = plan ?? throw new ArgumentNullException(nameof(plan));
             LodgeCenter = ToWorld(new Vector2(-137f, 56f));
+            LodgeWoodpileCenter = ToWorld(LodgeWoodpileLocalCenter);
+            LodgeWoodpileCenter = new Vector3(LodgeWoodpileCenter.x, LodgeFloorHeight, LodgeWoodpileCenter.z);
             ServiceShedCenter = ToWorld(new Vector2(-113f, 68f));
             LiftBasePosition = ToWorld(new Vector2(-154f, 86f));
             LiftTopPosition = ToWorld(new Vector2(-151f, 114f));
@@ -87,6 +92,9 @@ namespace BarPromenade
             Block(blocks, lodge + new Vector2(6.4f, -2.2f), new Vector2(.65f, 3.5f));
             Block(blocks, lodge + new Vector2(0f, 4.75f), new Vector2(11.8f, .8f));
             Block(blocks, lodge + new Vector2(4.7f, 1f), new Vector2(3.8f, .8f));
+            // The thin hearth is a walkable step; the iron stove and actual
+            // log stack are solid. Both sides of the centre remain open.
+            Block(blocks, lodge + new Vector2(0f, -.04f), LodgeStoveSize);
             Block(blocks, new Vector2(-113f, 68f), ServiceShedSize);
             Block(blocks, new Vector2(-154f, 86f), new Vector2(.7f, .7f));
             Block(blocks, new Vector2(-130f, -53.5f), new Vector2(CliffBarrierWidth, .5f));
@@ -103,6 +111,8 @@ namespace BarPromenade
         public float LodgeFloorHeight => LodgeCenter.y;
         public Vector3 LodgeEntrance => LodgeCenter - LodgeForward * 6f;
         public Vector3 LodgeApproach => LodgeCenter - LodgeForward * 9f;
+        public Vector3 LodgeWoodpileCenter { get; }
+        public Vector3 LodgeWoodpileApproach => LodgeWoodpileCenter - LodgeForward * 1.1f;
         public Vector3 ServiceShedCenter { get; }
         public Vector2 ServiceShedSize => new Vector2(8f, 6f);
         public Vector3 LiftBasePosition { get; }
@@ -188,7 +198,7 @@ namespace BarPromenade
         public bool IsInterior(Vector2 point) => DistanceOutsideLodge(point) <= .001f;
         public bool IsInterior(Vector3 point) => IsInterior(new Vector2(point.x, point.z));
 
-        internal float LimitTradeYardSnow(Vector2 point, float depth)
+        internal float LimitExteriorPropSnow(Vector2 point, float depth)
         {
             // The exposed loading apron is wind-scoured; its low cargo wheels
             // remain visible while deeper banks return outside this small patch.

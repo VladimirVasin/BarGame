@@ -295,8 +295,10 @@ namespace BarPromenade
                 return 0f;
             }
 
-            return plan.Expansion.LimitTradeYardSnow(point,
+            float depth = plan.Expansion.LimitExteriorPropSnow(point,
                 UntouchedDepth * profile * Variation(point) * suppression);
+            depth = plan.LodgeWoodpile.LimitSnow(point, depth);
+            return plan.MothersHouseWoodpile.LimitSnow(point, depth);
         }
 
         /// <summary>

@@ -14,7 +14,8 @@ namespace BarPromenade
         ClosedStewCan = 6,
         InstantNoodles = 7,
         DayOldLoaf = 8,
-        Scarf = 9
+        Scarf = 9,
+        FirewoodLog = 10
     }
 
     public enum InventoryItemCategory
@@ -118,6 +119,12 @@ namespace BarPromenade
                 InventoryItemCategory.Clothing,
                 "inventory.item.scarf.name",
                 "inventory.item.scarf.description",
+                1),
+            new InventoryItemDefinition(
+                InventoryItemId.FirewoodLog,
+                InventoryItemCategory.Tool,
+                "inventory.item.firewood_log.name",
+                "inventory.item.firewood_log.description",
                 1)
         };
 

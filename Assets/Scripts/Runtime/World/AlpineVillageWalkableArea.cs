@@ -84,6 +84,8 @@ namespace BarPromenade
             BuildBuildings();
             BuildCablewayBrink();
             BuildExpansionObstacles();
+            BuildWoodpileObstacle(plan.LodgeWoodpile);
+            BuildWoodpileObstacle(plan.MothersHouseWoodpile);
             BuildForestTrunks();
             IndexObstacles();
         }
@@ -377,6 +379,12 @@ namespace BarPromenade
                 obstacles.Add(new OrientedRect(ToXZ(plot.GroundCenter),
                     new Vector2(forward.y, -forward.x), forward, plot.Size * .5f));
             }
+        }
+
+        private void BuildWoodpileObstacle(AlpineVillageWoodpilePlan pile)
+        {
+            obstacles.Add(new OrientedRect(ToXZ(pile.Center), ToXZ(pile.Right),
+                ToXZ(pile.Forward), AlpineVillageWoodpilePlan.Size * .5f));
         }
 
         private void BuildForestTrunks()

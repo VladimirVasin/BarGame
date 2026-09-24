@@ -109,6 +109,11 @@ namespace BarPromenade
                         itemId, parent, availableSize, rootPrefix);
                 case InventoryItemId.Scarf:
                     return PlayerScarfResources.CreateFolded(parent).transform;
+                case InventoryItemId.FirewoodLog:
+                    return VillageLifePropLibrary.Create(
+                        VillageLifePropKind.Log,
+                        parent,
+                        rootPrefix + " Firewood Log").transform;
                 default:
                     throw new ArgumentOutOfRangeException(
                         nameof(itemId),

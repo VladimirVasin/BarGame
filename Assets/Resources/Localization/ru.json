@@ -1,5 +1,10 @@
 {
   "entries": [
+    { "key": "interaction.woodpile", "value": "Поленница" },
+    { "key": "woodpile.take.confirm", "value": "Взять полено?" },
+    { "key": "woodpile.take.already", "value": "Полено уже есть." },
+    { "key": "inventory.item.firewood_log.name", "value": "Полено" },
+    { "key": "inventory.item.firewood_log.description", "value": "Сухое полено с тёмной корой." },
     { "key": "combat.title", "value": "Боевой полигон" },
     { "key": "combat.target", "value": "Мишень" },
     { "key": "combat.sparring", "value": "Спарринг" },

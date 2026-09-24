@@ -25,7 +25,7 @@ A row never carries a status outside this table. Product-level scope cuts
 
 | System | Guarantee | Key files | Status |
 | --- | --- | --- | --- |
-| Village scenery | 18 empty households, eight sheds, five civic yards; old ski avalanche; connected buildings/road/city. | `AlpineVillage{AbandonmentPlan,AvalanchePlan,ExpansionBuilder,DistanceWorldBuilder}` | Current |
+| Village scenery | 18 households/eight sheds/five yards; avalanche; stove/flue, two woodpiles. | `AlpineVillage{AbandonmentPlan,AvalanchePlan,ExpansionBuilder,WoodpilePlan}` | Current |
 | Village paths | Ground junctions; brook bridge. | `AlpineVillage{JunctionPlan,FootbridgePlan}` | Current |
 | Village household life | Six residents, finite household work, indoor/outdoor help and outcomes across visits. | `AlpineVillageLifeController`, `VillageOutdoorHelpController`, `VillageHouseholdProgress` | Current |
 | Independent rules assembly | Calendar/day schedule, input priorities and temporary vehicle ownership have no Unity dependencies. | `Scripts/Rules`, `BarPromenade.Rules.asmdef` | Current |
@@ -58,7 +58,7 @@ A row never carries a status outside this table. Product-level scope cuts
 | World time and pause ownership | Intoxication/debug factors compose; pauses freeze world/calendar. Debug speed preserves the physics step. | `GameTimeScale{State,Runtime}`, `PauseMenuController` | Current |
 | Session day/time displays | Home clock, inventory and queued day announcements follow one persistent calendar. | `HomeAlarmClock`, `InventoryView` | Current |
 | Gameplay pause menu | Escape/Start owns input/time/audio; confirmed restart/quit and persistent graphics options remain shared. | `PauseMenu{Model,Controller}`, `GraphicsEffectsSettings` | Current |
-| Hero inventory | Shared modal inventory owns item actions and clothing equipment status; both persist within the session. | `Inventory{Types,State,MenuModel,Controller,View}`, `GameSessionState` | Current |
+| Hero inventory | Session actions/equipment; lodge/mother woodpiles share max-one FirewoodLog. | `Inventory{Types,State,MenuModel,Controller,View}`, `GameSessionState`, `WoodpileInteraction` | Current |
 | World item pickup and its found screen | A thing on the floor is held up, turned by hand or by itself, and only then taken; the take is recorded once. | `WorldItem{PickupPlan,Pickup,PickupModel,FoundScreen,FoundView}` | Current |
 | Hunger, stress, fatigue and consumption | Needs follow the pause-aware calendar; consumption/rest commit relief once. Gap: needs apply no gameplay debuff. | `PlayerNeedsProgressionState`, `PlayerNeedsRules` | Partial |
 | Inventory-backed target interactions | Shared item-backed target menus commit consumption once and refund failed startup. | `InventoryItemRequirement`, `InventoryTargetInteraction{Definition,Model,Controller}` | Current |

@@ -61,6 +61,7 @@ namespace BarPromenade
 
             Requirement = requirement;
             HasRequirement = true;
+            StartsWithConfirmation = false;
             TalkResponseKey = RequireKey(
                 talkResponseKey,
                 nameof(talkResponseKey));
@@ -113,18 +114,34 @@ namespace BarPromenade
                 refusalResponseKey);
         }
 
+        /// <summary>A silent object action with no preceding talk choice.</summary>
+        public static InventoryTargetInteractionDefinition ConfirmationOnly(
+            string confirmationPromptKey,
+            float feedbackDurationSeconds = DefaultFeedbackDurationSeconds)
+        {
+            return new InventoryTargetInteractionDefinition(
+                string.Empty,
+                confirmationPromptKey,
+                feedbackDurationSeconds,
+                default,
+                null,
+                true);
+        }
+
         private InventoryTargetInteractionDefinition(
             string talkResponseKey,
             string confirmationPromptKey,
             float feedbackDurationSeconds,
             NpcSpeaker speaker,
-            string refusalResponseKey)
+            string refusalResponseKey,
+            bool startsWithConfirmation = false)
         {
             Requirement = default;
             HasRequirement = false;
-            TalkResponseKey = RequireKey(
-                talkResponseKey,
-                nameof(talkResponseKey));
+            StartsWithConfirmation = startsWithConfirmation;
+            TalkResponseKey = startsWithConfirmation
+                ? string.Empty
+                : RequireKey(talkResponseKey, nameof(talkResponseKey));
             ConfirmationPromptKey = RequireKey(
                 confirmationPromptKey,
                 nameof(confirmationPromptKey));
@@ -157,6 +174,7 @@ namespace BarPromenade
         /// for.
         /// </summary>
         public bool HasRequirement { get; }
+        public bool StartsWithConfirmation { get; }
         public string TalkResponseKey { get; }
         public string ConfirmationPromptKey { get; }
         public string MissingRequirementResponseKey { get; }
@@ -203,10 +221,11 @@ namespace BarPromenade
 
         public bool IsValid =>
             (!HasRequirement || Requirement.IsValid) &&
-            !string.IsNullOrWhiteSpace(TalkResponseKey) &&
+            (StartsWithConfirmation ||
+                !string.IsNullOrWhiteSpace(TalkResponseKey)) &&
             !string.IsNullOrWhiteSpace(ConfirmationPromptKey) &&
-            !string.IsNullOrWhiteSpace(
-                MissingRequirementResponseKey) &&
+            (!HasRequirement || !string.IsNullOrWhiteSpace(
+                MissingRequirementResponseKey)) &&
             FeedbackDurationSeconds > 0f &&
             !float.IsNaN(FeedbackDurationSeconds) &&
             !float.IsInfinity(FeedbackDurationSeconds);
@@ -262,6 +281,8 @@ namespace BarPromenade
 
     public sealed class InventoryTargetInteractionModel
     {
+        private bool confirmationOnly;
+
         public InventoryTargetInteractionState State { get; private set; }
         public InventoryTargetInteractionChoice SelectedChoice
         {
@@ -270,10 +291,15 @@ namespace BarPromenade
         }
         public bool ConfirmationYesSelected { get; private set; }
 
-        public void Open()
+        public void Open(bool startsWithConfirmation = false)
         {
-            State = InventoryTargetInteractionState.Choice;
-            SelectedChoice = InventoryTargetInteractionChoice.Talk;
+            confirmationOnly = startsWithConfirmation;
+            State = confirmationOnly
+                ? InventoryTargetInteractionState.Confirmation
+                : InventoryTargetInteractionState.Choice;
+            SelectedChoice = confirmationOnly
+                ? InventoryTargetInteractionChoice.Interact
+                : InventoryTargetInteractionChoice.Talk;
             ConfirmationYesSelected = false;
         }
 
@@ -376,8 +402,7 @@ namespace BarPromenade
 
             if (!ConfirmationYesSelected)
             {
-                State = InventoryTargetInteractionState.Choice;
-                return InventoryTargetInteractionAction.None;
+                return LeaveConfirmation();
             }
 
             if (refused)
@@ -403,9 +428,7 @@ namespace BarPromenade
             if (State ==
                 InventoryTargetInteractionState.Confirmation)
             {
-                State = InventoryTargetInteractionState.Choice;
-                ConfirmationYesSelected = false;
-                return InventoryTargetInteractionAction.None;
+                return LeaveConfirmation();
             }
 
             if (State == InventoryTargetInteractionState.Choice)
@@ -415,6 +438,17 @@ namespace BarPromenade
             }
 
             return InventoryTargetInteractionAction.None;
+        }
+
+        private InventoryTargetInteractionAction LeaveConfirmation()
+        {
+            ConfirmationYesSelected = false;
+            State = confirmationOnly
+                ? InventoryTargetInteractionState.Closed
+                : InventoryTargetInteractionState.Choice;
+            return confirmationOnly
+                ? InventoryTargetInteractionAction.Close
+                : InventoryTargetInteractionAction.None;
         }
 
         public bool CompleteExecution()

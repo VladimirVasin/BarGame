@@ -784,7 +784,8 @@ namespace BarPromenade.Tests.PlayMode
                 new Vector2(expansion.LodgeCenter.x, expansion.LodgeCenter.z)), Is.Zero);
             Assert.That(root.World.TerrainRoot.GetComponentsInChildren<MeshRenderer>().Length,
                 Is.GreaterThan(2), "The expanded ground needs spatial render batches.");
-            Assert.That(root.World.WalkableArea.Contains(expansion.LodgeCenter, .35f), Is.True);
+            Assert.That(root.World.WalkableArea.Contains(expansion.LodgeCenter, .35f), Is.False,
+                "The central cold stove occupies the former straight aisle.");
 
             // Measure the actual imported building, not only its authoring anchors.
             Transform lodge = root.World.Root.transform.Find("Village Expansion/Ski Lodge");
@@ -805,7 +806,8 @@ namespace BarPromenade.Tests.PlayMode
             float previousFloor = float.NaN;
             for (float along = -10f; along <= 0f; along += .5f)
             {
-                Vector3 point = expansion.LodgeCenter + expansion.LodgeForward * along;
+                Vector3 point = expansion.LodgeCenter + expansion.LodgeForward * along +
+                    plan.SlopeRight * (along > -3.5f ? 1.25f : 0f);
                 Assert.That(Physics.Raycast(point + Vector3.up, Vector3.down,
                     out RaycastHit hit, 2f), Is.True, "The lodge entrance has no floor.");
                 if (!float.IsNaN(previousFloor))

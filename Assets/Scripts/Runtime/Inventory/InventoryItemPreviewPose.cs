@@ -80,7 +80,11 @@ namespace BarPromenade
             new InventoryItemPreviewPose(
                 InventoryItemId.Scarf,
                 Quaternion.Euler(28f, -24f, -8f),
-                1.20f)
+                1.20f),
+            new InventoryItemPreviewPose(
+                InventoryItemId.FirewoodLog,
+                Quaternion.Euler(18f, -28f, -24f),
+                1.35f)
         };
 
         private static readonly IReadOnlyList<InventoryItemPreviewPose>

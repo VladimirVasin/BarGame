@@ -276,7 +276,12 @@ namespace BarPromenade.Tests.EditMode
                 }
             }
 
-            Assert.That(area.Contains(plan.Expansion.LodgeCenter, radius), Is.True);
+            Assert.That(area.Contains(plan.Expansion.LodgeCenter, radius), Is.False, "The central stove is solid.");
+            foreach (float side in new[] { -1.25f, 1.25f })
+                Assert.That(area.Contains(plan.Expansion.LodgeCenter + plan.SlopeRight * side, radius), Is.True,
+                    "Both stove bypasses remain open.");
+            Assert.That(area.Contains(plan.Expansion.LodgeWoodpileCenter, radius), Is.False);
+            Assert.That(area.Contains(plan.Expansion.LodgeWoodpileApproach, radius), Is.True);
             Assert.That(area.Contains(plan.Expansion.LodgeEntrance, radius), Is.True);
             for (float across = -5f; across <= 5f; across += 1f)
                 Assert.That(area.Contains(plan.Expansion.CliffBarrierCenter +

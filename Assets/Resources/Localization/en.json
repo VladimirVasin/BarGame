@@ -1,5 +1,10 @@
 {
   "entries": [
+    { "key": "interaction.woodpile", "value": "Woodpile" },
+    { "key": "woodpile.take.confirm", "value": "Take a log?" },
+    { "key": "woodpile.take.already", "value": "Already carrying a log." },
+    { "key": "inventory.item.firewood_log.name", "value": "Firewood log" },
+    { "key": "inventory.item.firewood_log.description", "value": "A dry log with dark bark." },
     { "key": "combat.title", "value": "Combat Test" },
     { "key": "combat.target", "value": "Target" },
     { "key": "combat.sparring", "value": "Sparring" },

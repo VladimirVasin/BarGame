@@ -78,34 +78,39 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(state.GetCount(InventoryItemId.Scarf), Is.Zero);
         }
 
-        [Test]
-        public void InvalidOrOverflowingMutation_IsAtomic()
+        [TestCase(InventoryItemId.VodkaBottle, 9)]
+        [TestCase(InventoryItemId.FirewoodLog, 1)]
+        public void InvalidOrOverflowingMutation_IsAtomic(
+            InventoryItemId itemId, int maximumStack)
         {
             var state = new InventoryState();
 
             Assert.That(state.CanAdd(InventoryItemId.None), Is.False);
             Assert.That(state.TryAdd(InventoryItemId.None), Is.False);
             Assert.That(
-                state.CanAdd(InventoryItemId.VodkaBottle, 9),
+                state.CanAdd(itemId, maximumStack),
                 Is.True);
             Assert.That(
-                state.TryAdd(InventoryItemId.VodkaBottle, 9),
+                state.TryAdd(itemId, maximumStack),
                 Is.True);
             Assert.That(
-                state.CanAdd(InventoryItemId.VodkaBottle),
+                state.CanAdd(itemId),
                 Is.False);
             Assert.That(
-                state.TryAdd(InventoryItemId.VodkaBottle),
+                state.TryAdd(itemId),
                 Is.False);
             Assert.That(
-                state.GetCount(InventoryItemId.VodkaBottle),
-                Is.EqualTo(9));
+                state.GetCount(itemId),
+                Is.EqualTo(maximumStack));
             Assert.That(
-                state.TryRemove(InventoryItemId.VodkaBottle, 10),
+                state.TryRemove(itemId, maximumStack + 1),
                 Is.False);
             Assert.That(
-                state.GetCount(InventoryItemId.VodkaBottle),
-                Is.EqualTo(9));
+                state.GetCount(itemId),
+                Is.EqualTo(maximumStack));
+            Assert.That(state.TryRemove(itemId), Is.True);
+            Assert.That(state.TryAdd(itemId), Is.True);
+            Assert.That(state.GetCount(itemId), Is.EqualTo(maximumStack));
         }
     }
 }

@@ -93,6 +93,9 @@ namespace BarPromenade
         public CityMapController Map { get; private set; }
         public MinigameDebugWindow DebugWindow { get; private set; }
         public InventoryController Inventory { get; private set; }
+        public InventoryTargetInteractionController TargetInteraction { get; private set; }
+        public WoodpileInteraction Woodpile { get; private set; }
+        public WoodpileInteraction MothersHouseWoodpile { get; private set; }
         public JournalController Journal { get; private set; }
         public PauseMenuController PauseMenu { get; private set; }
         public AreaArrivalToken ArrivalToken { get; private set; }
@@ -1222,6 +1225,16 @@ namespace BarPromenade
                 Player,
                 CameraFollow,
                 IntoxicationHud);
+            TargetInteraction = ui.AddComponent<InventoryTargetInteractionController>();
+            TargetInteraction.Initialize(Player, CameraFollow, IntoxicationHud);
+            foreach (WoodpileInteraction pile in World.Root.GetComponentsInChildren<WoodpileInteraction>(true))
+            {
+                pile.Initialize(TargetInteraction);
+                if (pile.transform.parent.name == AlpineVillageWoodpilePlan.LodgeName) Woodpile = pile;
+                if (pile.transform.parent.name == AlpineVillageWoodpilePlan.MothersHouseName) MothersHouseWoodpile = pile;
+            }
+            if (Woodpile == null || MothersHouseWoodpile == null)
+                throw new System.InvalidOperationException("The village requires both firewood sources.");
             Journal = ui.AddComponent<JournalController>();
             Journal.Initialize(
                 Player,

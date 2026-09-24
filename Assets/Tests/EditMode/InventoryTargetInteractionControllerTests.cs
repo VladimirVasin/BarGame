@@ -92,6 +92,131 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
+        public void Woodpile_GrantsOneLogRechecksCapacityAndAllowsLaterRetake()
+        {
+            WoodpileInteraction woodpile = CreateWoodpile();
+            woodpile.Interact(interactor);
+            Assert.That(controller.State,
+                Is.EqualTo(InventoryTargetInteractionState.Confirmation));
+            Assert.That(controller.ConfirmationYesSelected, Is.False);
+            Assert.That(interactor.InputEnabled, Is.False);
+            Assert.That(GameSessionState.GetInventoryItemCount(
+                InventoryItemId.FirewoodLog), Is.Zero);
+            controller.SelectConfirmation(true);
+            Assert.That(controller.Confirm(), Is.True);
+            Assert.That(controller.Confirm(), Is.False);
+            Assert.That(controller.IsOpen, Is.False);
+            Assert.That(interactor.InputEnabled, Is.True);
+            Assert.That(woodpile.gameObject.activeSelf, Is.True);
+            Assert.That(GameSessionState.GetInventoryItemCount(
+                InventoryItemId.FirewoodLog), Is.EqualTo(1));
+
+            // Recreating the world source must not bypass the session limit.
+            Object.DestroyImmediate(woodpile.gameObject);
+            woodpile = CreateWoodpile();
+            woodpile.Interact(interactor);
+            Assert.That(controller.IsOpen, Is.False);
+            InteractionPromptView prompt = uiObject.GetComponent<InteractionPromptView>();
+            Assert.That(prompt.PromptKey,
+                Is.EqualTo(WoodpileInteraction.AlreadyCarryingFeedbackKey));
+            Assert.That(prompt.IsSpeaking, Is.False);
+
+            Assert.That(GameSessionState.TryRemoveInventoryItem(
+                InventoryItemId.FirewoodLog), Is.True);
+            woodpile.Interact(interactor);
+            Assert.That(controller.IsOpen, Is.True);
+            Assert.That(GameSessionState.TryAddInventoryItem(
+                InventoryItemId.FirewoodLog), Is.True);
+            controller.SelectConfirmation(true);
+            controller.Confirm();
+            Assert.That(GameSessionState.GetInventoryItemCount(
+                InventoryItemId.FirewoodLog), Is.EqualTo(1));
+            Assert.That(prompt.PromptKey,
+                Is.EqualTo(WoodpileInteraction.AlreadyCarryingFeedbackKey));
+            Assert.That(controller.IsOpen, Is.False);
+            Assert.That(interactor.InputEnabled, Is.True);
+
+            GameSessionState.TryRemoveInventoryItem(InventoryItemId.FirewoodLog);
+            woodpile.Interact(interactor);
+            controller.SelectConfirmation(true);
+            controller.Confirm();
+            Assert.That(GameSessionState.GetInventoryItemCount(
+                InventoryItemId.FirewoodLog), Is.EqualTo(1));
+            Assert.That(GameSessionState.CollectedWorldItemCount, Is.Zero);
+            Assert.That(woodpile.gameObject.activeSelf, Is.True);
+        }
+
+        [TestCase("no")]
+        [TestCase("cancel")]
+        public void Woodpile_AbandonedConfirmationRestoresInputWithoutGrant(string exit)
+        {
+            WoodpileInteraction woodpile = CreateWoodpile();
+            woodpile.Interact(interactor);
+            Assert.That(controller.IsOpen, Is.True);
+            switch (exit)
+            {
+                case "no": controller.Confirm(); break;
+                case "cancel": controller.Cancel(); break;
+            }
+            Assert.That(controller.IsOpen, Is.False);
+            Assert.That(interactor.InputEnabled, Is.True);
+            Assert.That(playerObject.GetComponent<PlayerMotor>().InputEnabled, Is.True);
+            Assert.That(BarMinigameModalLock.IsAnyLocked, Is.False);
+            Assert.That(GameSessionState.GetInventoryItemCount(
+                InventoryItemId.FirewoodLog), Is.Zero);
+        }
+
+        [Test]
+        public void Woodpile_WallBlocksOpeningAndConfirmedTakeButPlayerAndTriggersDoNot()
+        {
+            interactor.transform.position = new Vector3(1000f, 1000f, 1000f);
+            WoodpileInteraction woodpile = CreateWoodpile();
+            Vector3 chest = woodpile.transform.position;
+            woodpile.transform.position += Vector3.forward * 1.2f;
+            var hand = new GameObject("Player Collider");
+            hand.transform.SetParent(playerObject.transform, false);
+            hand.transform.position = chest + Vector3.forward * .3f;
+            hand.AddComponent<BoxCollider>().size = Vector3.one * .1f;
+            var obstacle = new GameObject("Wall Between Hero And Woodpile");
+            obstacle.transform.SetParent(uiObject.transform, false);
+            obstacle.transform.position = chest + Vector3.forward * .7f;
+            BoxCollider wall = obstacle.AddComponent<BoxCollider>();
+            wall.size = new Vector3(2f, 2f, .15f);
+            wall.isTrigger = true;
+            Physics.SyncTransforms();
+            Assert.That(woodpile.CanInteract(interactor), Is.True);
+
+            wall.isTrigger = false;
+            Physics.SyncTransforms();
+            Assert.That(woodpile.CanInteract(interactor), Is.False);
+            woodpile.Interact(interactor);
+            Assert.That(controller.IsOpen, Is.False);
+
+            wall.enabled = false;
+            Physics.SyncTransforms();
+            woodpile.Interact(interactor);
+            Assert.That(controller.IsOpen, Is.True);
+            wall.enabled = true;
+            Physics.SyncTransforms();
+            controller.SelectConfirmation(true);
+            controller.Confirm();
+            Assert.That(controller.IsOpen, Is.False);
+            Assert.That(interactor.InputEnabled, Is.True);
+            Assert.That(GameSessionState.GetInventoryItemCount(
+                InventoryItemId.FirewoodLog), Is.Zero);
+        }
+
+        private WoodpileInteraction CreateWoodpile()
+        {
+            var source = new GameObject("Woodpile Interaction");
+            source.transform.SetParent(uiObject.transform, false);
+            source.transform.position = interactor.transform.position + Vector3.up * .8f;
+            var woodpile = source.AddComponent<WoodpileInteraction>();
+            woodpile.Initialize(controller);
+            return woodpile;
+        }
+
+        [Test]
         public void FailedPreparation_DoesNotConsumeItem()
         {
             Assert.That(

@@ -25,6 +25,7 @@ namespace BarPromenade
             }
             Quaternion facing = Quaternion.LookRotation(expansion.LodgeForward, Vector3.up);
             assets.Create("SkiLodge", "Ski Lodge", root.transform, expansion.LodgeCenter, facing);
+            AlpineVillageWoodpileBuilder.Build(root.transform, plan, plan.LodgeWoodpile);
             assets.Create("ServiceShed", "Service Shed", root.transform, expansion.ServiceShedCenter, facing);
             assets.Create("LiftBase", "Old Tow Base", root.transform,
                 OnGround(plan, expansion.LiftBasePosition), facing);

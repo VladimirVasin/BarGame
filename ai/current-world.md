@@ -244,29 +244,30 @@ The vertical slice contains:
   including one loose bridge rail; one tunnel practical visibly flickers. Its
   root may generate the pure City layout/mountain plan needed by the City map
   tab, but it never calls a City world builder or creates City GameObjects;
-- runtime-composed `AlpineVillage` follows the shared plan/validator/builder
-  pattern. The step-free lane climbs `6.4 m` over `82.1 m` (`7.8%`, ceiling
+- `AlpineVillage` uses shared plans/validators/builders. Step-free lane climbs
+  `6.4 m` over `82.1 m` (`7.8%`, ceiling
   `8.3%`) to mother's house. Twelve inhabited houses, chapel/source and arrival
-  axis retain positions; no adit/graves. `CoreTerrainBounds` keeps the core;
+  axis stay; no adit/graves. `CoreTerrainBounds` keeps the core;
   `AlpineVillageExpansionPlan` adds forest, ski base and old-road loop.
   A plan-fitted timber bridge carries the station forest path over the brook.
-  `AlpineVillageAbandonmentPlan`: eighteen households (fourteen standing,
-  three ruins, one foundation), eight sheds (two ruined), five closed civic
-  buildings across the core/expansion. Town hall/square, school/yard,
-  shop-bakery/loading court, workshop/yard, rescue/apron-canopy; three aged
-  household-yard variants. Stone/roofs/joinery show wealth, dark windows/
-  broken shutters/debris show abandonment. No new residents/lights/text/interiors.
-  Four-side neighbouring-building sightlines exclude props/foundations;
-  forest clears them/yard footprints, terrain levels shelves.
-  The unheated `18 x 12 m` walk-in lodge has vestibule/benches/racks, no snow;
-  shed/lift passive. Upper service dead end: old avalanche, closed-ridge scar,
-  full-size fallen trees/rock/beams, buried broken tow/cable and damaged ruin
-  show ski abandonment. Front ~20 m, upper fan 38 m.
-  `AlpineVillageAvalanchePlan`: fourteen-vertex movement/forest/manifest polygon.
-  Deposit fits triangulated ground; rigid debris uses
-  support points. `AvalancheRuinedHouse` is household 15 only. Ground snow
-  stays beneath deposit; mass blocks passage. Lower lift/lodge/loop/ruin
-  accessible. No active slide; mine/trade-road gap unrelated.
+  `AlpineVillageAbandonmentPlan`: 18 households (14 standing/3 ruins/foundation),
+  eight sheds (two ruined), five closed civic
+  yards: town hall/square, school, shop-bakery/loading, workshop, rescue/apron;
+  three aged yard variants. Stone/roofs/joinery show wealth; dark windows/
+  broken shutters/debris show abandonment. No new residents/lights/interiors.
+  Four-side sightlines exclude props/foundations; forest clears these/yards,
+  terrain levels shelves.
+  Unheated `18 x 12 m` lodge: vestibule/benches/racks, no snow. Cold central
+  stove/base has open side passages; flue exits a real roof/snow opening.
+  `AlpineVillageWoodpile{Plan,Builder}`: right of lodge/mother entries.
+  Silent E “Взять полено?”: Yes adds `FirewoodLog`, No/Escape cancels. Shared
+  session cap one, icon/3D preview, duplicate feedback; infinite stock/retake
+  after removal. No ignition/heat/smoke/use/animation. Shed/lift passive. Avalanche scar,
+  full-size fallen trees/rock/beams, buried tow/cable and damaged household 15
+  (`AvalancheRuinedHouse`). Front ~20 m/fan 38 m; `AlpineVillageAvalanchePlan`
+  shares fourteen-vertex movement/forest/manifest polygon. Deposit fits ground
+  triangles, debris fits supports; ground snow stays beneath blocking mass.
+  Lower lift/lodge/loop/ruin accessible; no active slide, mine/trade gap unrelated.
   Warehouse yard: `RustedTruck` without wheels/doors/glass, `DiscardedChairPile`,
   clear ramp/road. Stock/supports show conserved repair; rail/rubble close gap.
   `AlpineVillageJunctionPlan`: ports/contours/snow; asphalt/soil node maps share

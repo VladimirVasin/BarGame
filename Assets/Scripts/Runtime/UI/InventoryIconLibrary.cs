@@ -54,6 +54,17 @@ namespace BarPromenade
             Color32 amber = new Color32(190, 121, 48, 255);
             switch (itemId)
             {
+                case InventoryItemId.FirewoodLog:
+                    Color32 bark = new Color32(111, 76, 49, 255);
+                    Color32 grain = new Color32(183, 148, 95, 255);
+                    painter.FillRect(7, 11, 19, 11, bark);
+                    painter.OutlineRect(7, 10, 20, 13, ink);
+                    painter.FillRect(11, 13, 14, 1, ink);
+                    painter.FillRect(12, 19, 12, 1, amber);
+                    painter.Ellipse(8, 16, 5, 7, grain);
+                    painter.EllipseOutline(8, 16, 5, 7, ink);
+                    painter.EllipseOutline(8, 16, 2, 4, bark);
+                    break;
                 case InventoryItemId.Scarf:
                     Color32 cloth = new Color32(224, 191, 52, 255);
                     Color32 weave = new Color32(249, 223, 113, 255);

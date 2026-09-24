@@ -82,14 +82,18 @@ namespace BarPromenade.Tests.EditMode
                 Is.EqualTo(InventoryTargetInteractionChoice.Interact));
         }
 
-        [Test]
-        public void YesConfirmation_BeginsOnceAndWaitsForCompletion()
+        [TestCase(false)]
+        [TestCase(true)]
+        public void YesConfirmation_BeginsOnceAndWaitsForCompletion(
+            bool confirmationOnly)
         {
             var model = new InventoryTargetInteractionModel();
-            model.Open();
-            model.SelectChoice(
-                InventoryTargetInteractionChoice.Interact);
-            model.Confirm(true);
+            model.Open(confirmationOnly);
+            if (!confirmationOnly)
+            {
+                model.SelectChoice(InventoryTargetInteractionChoice.Interact);
+                model.Confirm(true);
+            }
             model.SelectConfirmation(true);
 
             Assert.That(
@@ -107,6 +111,30 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 model.State,
                 Is.EqualTo(InventoryTargetInteractionState.Closed));
+        }
+
+        [TestCase(false)]
+        [TestCase(true)]
+        public void ConfirmationOnly_NoOrCancelClosesWithoutTalk(bool cancel)
+        {
+            var definition = InventoryTargetInteractionDefinition.ConfirmationOnly(
+                WoodpileInteraction.ConfirmationPromptKey);
+            Assert.That(definition.IsValid, Is.True);
+            Assert.That(definition.HasRequirement, Is.False);
+            Assert.That(definition.TalkResponseKey, Is.Empty);
+            Assert.That(definition.Speaker.IsValid, Is.False);
+            var model = new InventoryTargetInteractionModel();
+            model.Open(definition.StartsWithConfirmation);
+            Assert.That(model.State,
+                Is.EqualTo(InventoryTargetInteractionState.Confirmation));
+            Assert.That(model.ConfirmationYesSelected, Is.False);
+            Assert.That(cancel ? model.Cancel() : model.Confirm(true),
+                Is.EqualTo(InventoryTargetInteractionAction.Close));
+            Assert.That(model.State,
+                Is.EqualTo(InventoryTargetInteractionState.Closed));
+            model.Open();
+            Assert.That(model.State,
+                Is.EqualTo(InventoryTargetInteractionState.Choice));
         }
 
         [Test]
