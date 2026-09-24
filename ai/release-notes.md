@@ -23,9 +23,10 @@ Earlier notes: [`release-notes-2026-09.md`](archive/release-notes-2026-09.md).
 - Авторская тема деревни, громкость `.70`.
   Проверка: `SceneMusicImportTests.EveryTheme_StreamsAndLoadsInTheBackground`.
 - В центре базы холодная печка с прорезями, труба через крышу. Поленницы
-  у базы/дома матери: `E` → «Взять полено?» → «Да». Общее ограничение — одно
-  в инвентаре, запас бесконечен. Проверки/кадры:
-  `AreaCaptureFixture.AlpineVillageStoveAndWoodpile`,
+  у базы/матери: «E — взять полено» → Да → 3D-предмет/«Полено получено.».
+  Закрытие оставляет полено, то же нажатие не повторяет действие.
+  Можно одно, запас бесконечен. Проверки/кадры:
+  `AreaCaptureFixture.AlpineVillageStoveAndWoodpile` (кадры UI просмотрены),
   `AreaCaptureFixture.AlpineVillageMothersHouseWoodpile`.
 
 ### 2026-09-23 — Большая Альпийская деревня

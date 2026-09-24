@@ -29,6 +29,7 @@ namespace BarPromenade
         /// ones this game used to have are asserted gone by the catalog test.
         /// </summary>
         public const string TakeActionKey = "home.refrigerator.action.take";
+        public const string CloseActionKey = "world_item.action.close";
 
         /// <summary>
         /// Shown when the inventory refuses the item. Also written for a
@@ -57,6 +58,7 @@ namespace BarPromenade
         private Transform heldModel;
         private int inputUnlockFrame;
         private string feedbackKey = string.Empty;
+        private bool alreadyReceived;
 
         public bool IsInitialized { get; private set; }
         public InventoryItemId ActiveItemId { get; private set; }
@@ -68,6 +70,7 @@ namespace BarPromenade
         public bool IsShowing => pickup != null && pickup.IsShowing;
 
         public string FeedbackKey => feedbackKey;
+        public string ActionKey => alreadyReceived ? CloseActionKey : TakeActionKey;
 
         public InventoryItemDefinition ActiveDefinition =>
             InventoryItemCatalog.Get(ActiveItemId);
@@ -96,6 +99,25 @@ namespace BarPromenade
 
             view.Initialize(this);
             IsInitialized = true;
+        }
+
+        /// <summary>
+        /// Shows an item already granted by a confirmed transaction. Closing,
+        /// cancelling or tearing down this receipt never grants it again or
+        /// returns it to the source.
+        /// </summary>
+        public bool TryPresentReceived(
+            PlayerInteractor interactor,
+            InventoryItemId itemId,
+            Transform model,
+            string receivedFeedbackKey,
+            Action<bool> onFinished)
+        {
+            if (!TryPresent(interactor, itemId, model, () => true, onFinished))
+                return false;
+            alreadyReceived = true;
+            feedbackKey = receivedFeedbackKey;
+            return true;
         }
 
         /// <summary>
@@ -152,6 +174,7 @@ namespace BarPromenade
                 EnsurePresenter();
                 pickup = new WorldItemPickupModel();
                 ActiveItemId = itemId;
+                alreadyReceived = false;
                 commit = commitTake;
                 finished = onFinished;
                 feedbackKey = string.Empty;
@@ -193,8 +216,8 @@ namespace BarPromenade
         }
 
         /// <summary>
-        /// Takes the item. The inventory is credited here and nowhere else,
-        /// and a refusal keeps the object in the world with a line saying so.
+        /// Commits a pending take once, or closes an already credited receipt.
+        /// An inventory refusal keeps a normal find open with feedback.
         /// </summary>
         public bool Confirm()
         {
@@ -235,6 +258,7 @@ namespace BarPromenade
         /// </summary>
         public bool Dismiss()
         {
+            if (alreadyReceived) return Confirm();
             if (pickup == null || !pickup.Dismiss())
             {
                 return false;
@@ -252,7 +276,7 @@ namespace BarPromenade
                 return false;
             }
 
-            bool taken = pickup.IsTaken;
+            bool taken = alreadyReceived || pickup.IsTaken;
             pickup.Abandon();
             Finish(taken);
             return true;
@@ -359,6 +383,7 @@ namespace BarPromenade
             commit = null;
             finished = null;
             heldModel = null;
+            alreadyReceived = false;
             feedbackKey = string.Empty;
             ActiveItemId = InventoryItemId.None;
             modalLock.Restore();

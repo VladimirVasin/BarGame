@@ -58,7 +58,7 @@ A row never carries a status outside this table. Product-level scope cuts
 | World time and pause ownership | Intoxication/debug factors compose; pauses freeze world/calendar. Debug speed preserves the physics step. | `GameTimeScale{State,Runtime}`, `PauseMenuController` | Current |
 | Session day/time displays | Home clock, inventory and queued day announcements follow one persistent calendar. | `HomeAlarmClock`, `InventoryView` | Current |
 | Gameplay pause menu | Escape/Start owns input/time/audio; confirmed restart/quit and persistent graphics options remain shared. | `PauseMenu{Model,Controller}`, `GraphicsEffectsSettings` | Current |
-| Hero inventory | Session actions/equipment; lodge/mother woodpiles share max-one FirewoodLog. | `Inventory{Types,State,MenuModel,Controller,View}`, `GameSessionState`, `WoodpileInteraction` | Current |
+| Hero inventory | Session actions/equipment, one-log cap; mandatory shared pickup/receipt flow. | `Inventory{Types,State,MenuModel,Controller,View}`, `GameSessionState`, `WorldItemFoundScreen` | Current |
 | World item pickup and its found screen | A thing on the floor is held up, turned by hand or by itself, and only then taken; the take is recorded once. | `WorldItem{PickupPlan,Pickup,PickupModel,FoundScreen,FoundView}` | Current |
 | Hunger, stress, fatigue and consumption | Needs follow the pause-aware calendar; consumption/rest commit relief once. Gap: needs apply no gameplay debuff. | `PlayerNeedsProgressionState`, `PlayerNeedsRules` | Partial |
 | Inventory-backed target interactions | Shared item-backed target menus commit consumption once and refund failed startup. | `InventoryItemRequirement`, `InventoryTargetInteraction{Definition,Model,Controller}` | Current |

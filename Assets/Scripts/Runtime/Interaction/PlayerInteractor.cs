@@ -16,6 +16,7 @@ namespace BarPromenade
         private InteractionPromptView promptView;
         private IInteractable activeInteractable;
         private Func<bool> promptAction;
+        private int inputRestoredFrame = -1;
         private readonly Dictionary<object, Func<IInteractable, bool>> interactionFilters =
             new Dictionary<object, Func<IInteractable, bool>>();
 
@@ -66,6 +67,13 @@ namespace BarPromenade
 
         public void SetInputEnabled(bool enabled)
         {
+            if (enabled && !InputEnabled)
+            {
+                // A modal can close before this Update. Its confirmation
+                // press still belongs to that modal for the whole frame.
+                inputRestoredFrame = Time.frameCount;
+            }
+
             InputEnabled = enabled;
             if (!enabled)
             {
@@ -160,7 +168,7 @@ namespace BarPromenade
             }
 
             SetActive(FindClosestInteractable());
-            if (WasInteractPressed())
+            if (Time.frameCount != inputRestoredFrame && WasInteractPressed())
             {
                 TryInteractActive();
             }

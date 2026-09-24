@@ -65,6 +65,10 @@ repository evidence. This does not require running every test layer.
 - All future contextual player animations must follow the mandatory
   `ai/contextual-animation-standard.md`; do not add one-off teleport, root-motion
   gameplay transactions or visibility fades that conceal mismatched endpoints.
+- All new or changed item interactions must follow
+  [the item interaction standard](ai/item-interaction-standard.md): keyed prompt,
+  shared 3D pickup/receipt screen, one inventory transaction and input/cleanup
+  ownership. Reuse its components instead of copying presentation per source.
 - **Every 3D object is assembled in Blender.** New geometry is authored by a
   deterministic generator under `tools/build-*-3d-model.py`, exported and
   imported as a model asset; it is not composed at runtime out of

@@ -1,6 +1,8 @@
 using System.Collections;
+using System.IO;
 using NUnit.Framework;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.TestTools;
 
 namespace BarPromenade.Tests.PlayMode
@@ -80,6 +82,7 @@ namespace BarPromenade.Tests.PlayMode
                 menu.SelectConfirmation(true);
                 Assert.That(menu.Confirm(), Is.True);
                 Assert.That(GameSessionState.GetInventoryItemCount(InventoryItemId.FirewoodLog), Is.EqualTo(1));
+                yield return CloseWoodpileReceipt(root);
 
                 yield return ApproachWoodpile(root, secondPlan, second);
                 second.Interact(root.Player.Interactor);
@@ -92,6 +95,7 @@ namespace BarPromenade.Tests.PlayMode
                 menu.SelectConfirmation(true);
                 Assert.That(menu.Confirm(), Is.True);
                 Assert.That(GameSessionState.GetInventoryItemCount(InventoryItemId.FirewoodLog), Is.EqualTo(1));
+                yield return CloseWoodpileReceipt(root);
                 Assert.That(GameSessionState.TryRemoveInventoryItem(InventoryItemId.FirewoodLog), Is.True);
             }
             // Taking logs must not replace or claim the neighbouring door.
@@ -124,7 +128,14 @@ namespace BarPromenade.Tests.PlayMode
                 return root != null && root.IsInitialized ? root : null;
             }, () => VillageStoveShots(root));
             VerifyVillageStove(root);
-            yield return VerifyVillageWoodpileInteraction(root);
+            var input = new InputTestFixture();
+            input.Setup();
+            try
+            {
+                Keyboard keyboard = InputSystem.AddDevice<Keyboard>();
+                yield return VerifyVillageWoodpileInteraction(root, input, keyboard);
+            }
+            finally { input.TearDown(); }
         }
 
         private static Shot[] VillageStoveShots(AlpineVillageRoot root)
@@ -210,7 +221,8 @@ namespace BarPromenade.Tests.PlayMode
                 new Vector2(pile.position.x, pile.position.z)), Is.LessThan(.03f), "Snow must not bury the logs.");
         }
 
-        private static IEnumerator VerifyVillageWoodpileInteraction(AlpineVillageRoot root)
+        private static IEnumerator VerifyVillageWoodpileInteraction(AlpineVillageRoot root,
+            InputTestFixture input, Keyboard keyboard)
         {
             PlayerInteractor interactor = root.Player.Interactor;
             InventoryTargetInteractionController menu = root.TargetInteraction;
@@ -219,21 +231,45 @@ namespace BarPromenade.Tests.PlayMode
                 Vector3.up * PlayerFactory.GroundedRootOffset);
             for (int frame = 0; frame < 3; frame++) yield return null;
             Assert.That(interactor.ActiveInteractable, Is.SameAs(root.Woodpile), "The reachable pile must offer E.");
+            Assert.That(LocalizationService.Get(root.Woodpile.PromptKey), Does.StartWith("E — "));
+            yield return CaptureWoodpileScreen("woodpile-00-prompt");
             root.Woodpile.Interact(interactor);
             Assert.That(menu.State, Is.EqualTo(InventoryTargetInteractionState.Confirmation));
             Assert.That(menu.Definition.ConfirmationPromptKey, Is.EqualTo(WoodpileInteraction.ConfirmationPromptKey));
             Assert.That(menu.ConfirmationYesSelected, Is.False);
-            menu.Confirm();
+            yield return null;
+            input.Press(keyboard.eKey, queueEventOnly: true);
+            yield return null;
             Assert.That(menu.IsOpen, Is.False, "No closes directly.");
+            input.Release(keyboard.eKey, queueEventOnly: true);
             Assert.That(GameSessionState.GetInventoryItemCount(InventoryItemId.FirewoodLog), Is.Zero);
             yield return null;
 
             root.Woodpile.Interact(interactor);
             menu.SelectConfirmation(true);
-            Assert.That(menu.Confirm(), Is.True);
+            yield return null;
+            input.Press(keyboard.eKey, queueEventOnly: true);
+            yield return null;
             Assert.That(GameSessionState.GetInventoryItemCount(InventoryItemId.FirewoodLog), Is.EqualTo(1));
             Assert.That(menu.Confirm(), Is.False, "A repeated confirmation cannot duplicate the log.");
+            input.Release(keyboard.eKey, queueEventOnly: true);
+            WorldItemFoundScreen receipt = WorldItemFoundScreen.For(interactor);
+            Assert.That(receipt.IsPresenting, Is.True, "The confirmation press must leave the receipt open.");
+            Assert.That(receipt.ActiveItemId, Is.EqualTo(InventoryItemId.FirewoodLog));
+            Assert.That(receipt.FeedbackKey, Is.EqualTo(WoodpileInteraction.ReceivedFeedbackKey));
+            Assert.That(receipt.ActionKey, Is.EqualTo(WorldItemFoundScreen.CloseActionKey));
+            Assert.That(interactor.InputEnabled, Is.False);
+            yield return WaitForScarfFound(receipt, screen => screen.IsShowing);
+            yield return CaptureWoodpileScreen("woodpile-01-received");
+            input.Press(keyboard.eKey, queueEventOnly: true);
             yield return null;
+            input.Release(keyboard.eKey, queueEventOnly: true);
+            yield return WaitForScarfFound(receipt, screen => !screen.IsPresenting);
+            yield return null;
+            Assert.That(interactor.InputEnabled, Is.True);
+            Assert.That(Object.FindAnyObjectByType<InteractionPromptView>().PromptKey,
+                Is.Not.EqualTo(WoodpileInteraction.AlreadyCarryingFeedbackKey),
+                "Closing the receipt must not reuse E on the pile.");
             root.Woodpile.Interact(interactor);
             Assert.That(menu.IsOpen, Is.False, "An existing log prevents another offer.");
             Assert.That(GameSessionState.GetInventoryItemCount(InventoryItemId.FirewoodLog), Is.EqualTo(1));
@@ -244,6 +280,13 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(menu.IsOpen, Is.True, "An empty inventory may take another log from the same pile.");
             menu.SelectConfirmation(true);
             Assert.That(menu.Confirm(), Is.True);
+            Assert.That(GameSessionState.GetInventoryItemCount(InventoryItemId.FirewoodLog), Is.EqualTo(1));
+            // Escape dismisses a receipt, not the already accepted transaction.
+            yield return null;
+            input.Press(keyboard.escapeKey, queueEventOnly: true);
+            yield return null;
+            input.Release(keyboard.escapeKey, queueEventOnly: true);
+            yield return WaitForScarfFound(receipt, screen => !screen.IsPresenting);
             Assert.That(GameSessionState.GetInventoryItemCount(InventoryItemId.FirewoodLog), Is.EqualTo(1));
 
             // MonoBehaviour lifecycle is exercised in PlayMode, where Unity
@@ -259,6 +302,17 @@ namespace BarPromenade.Tests.PlayMode
             root.Woodpile.enabled = true;
             yield return null;
             root.Woodpile.Interact(interactor);
+            menu.SelectConfirmation(true);
+            menu.Confirm();
+            Assert.That(receipt.IsPresenting, Is.True);
+            root.Woodpile.enabled = false;
+            Assert.That(receipt.IsPresenting, Is.False, "Disabling the source cleans up the held receipt model.");
+            Assert.That(interactor.InputEnabled, Is.True);
+            Assert.That(GameSessionState.GetInventoryItemCount(InventoryItemId.FirewoodLog), Is.EqualTo(1));
+            GameSessionState.TryRemoveInventoryItem(InventoryItemId.FirewoodLog);
+            root.Woodpile.enabled = true;
+            yield return null;
+            root.Woodpile.Interact(interactor);
             Assert.That(menu.IsOpen, Is.True);
             Object.Destroy(root.Woodpile.gameObject);
             yield return null;
@@ -267,6 +321,32 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(root.Player.Motor.InputEnabled, Is.True);
             Assert.That(BarMinigameModalLock.IsAnyLocked, Is.False);
             Assert.That(GameSessionState.GetInventoryItemCount(InventoryItemId.FirewoodLog), Is.Zero);
+        }
+
+        private static IEnumerator CloseWoodpileReceipt(AlpineVillageRoot root)
+        {
+            WorldItemFoundScreen receipt = WorldItemFoundScreen.For(root.Player.Interactor);
+            Assert.That(receipt.IsPresenting, Is.True);
+            Assert.That(receipt.FeedbackKey, Is.EqualTo(WoodpileInteraction.ReceivedFeedbackKey));
+            Assert.That(receipt.Confirm(), Is.True);
+            Assert.That(receipt.Confirm(), Is.False);
+            yield return WaitForScarfFound(receipt, screen => !screen.IsPresenting);
+            yield return null;
+            Assert.That(GameSessionState.GetInventoryItemCount(InventoryItemId.FirewoodLog), Is.EqualTo(1));
+        }
+
+        private static IEnumerator CaptureWoodpileScreen(string name)
+        {
+            string path = Path.GetFullPath(Path.Combine(Application.dataPath, "..",
+                "Captures", SceneIds.AlpineVillage, name + ".png"));
+            Directory.CreateDirectory(Path.GetDirectoryName(path));
+            System.DateTime previous = File.Exists(path) ? File.GetLastWriteTimeUtc(path) : System.DateTime.MinValue;
+            ScreenCapture.CaptureScreenshot(path);
+            float deadline = Time.realtimeSinceStartup + 5f;
+            do { yield return null; }
+            while ((!File.Exists(path) || File.GetLastWriteTimeUtc(path) <= previous) &&
+                   Time.realtimeSinceStartup < deadline);
+            Assert.That(File.Exists(path) && File.GetLastWriteTimeUtc(path) > previous, Is.True);
         }
     }
 }

@@ -78,7 +78,7 @@ namespace BarPromenade
             if (GUI.Button(
                     take,
                     LocalizationService.Get(
-                        WorldItemFoundScreen.TakeActionKey),
+                        screen.ActionKey),
                     actionStyle))
             {
                 screen.Confirm();

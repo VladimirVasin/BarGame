@@ -3,13 +3,15 @@
 ## Current facts
 
 - **Accepted architecture exception — 2026-09-24, ski-lodge stove and firewood:**
-  User permits at 0 (§6/§12/art §10g): cold central metal stove/fireproof base,
-  flue through roof/snow, slotted door/dark firebox. Blender solids, paths open.
-  Supported VillageLife woodpiles: outside right of lodge/mother's entrances.
-  Shared silent “Взять полено?” Yes/No, No/Escape cancels. Atomic
-  session `FirewoodLog` cap one across both; repeats: “Полено уже есть.”
-  Infinite stock, retake when absent. No ignition/heat/smoke/use/animation/speech/NPC/
-  quest/clue/lore/hero-presentation ownership; §16/§21/nine checks.
+  At 0 (§6/§12/art §10g): cold stove/base/flue, Blender solids/open paths.
+  Lodge/mother VillageLife piles: E→silent Yes/No→one session `FirewoodLog`→
+  shared 3D receipt. No/Escape cancels before grant; Close/Escape keeps it.
+  Infinite stock/retake/cap one. No ignition/heat/smoke/use/animation/speech/NPC/
+  quest/clue/lore/hero ownership; §16/§21/nine checks.
+
+- **Accepted — 2026-09-24, item interaction standard:**
+  Required [shared pickup/receipt UI](item-interaction-standard.md) for
+  future items: single grant, common model/view/input/modal/lifecycle owners.
 
 - **Accepted architecture exception — 2026-09-24, village scene theme:**
   User's non-spatial AlpineVillage theme, rooms included (§6/art §10g, 0).

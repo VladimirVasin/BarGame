@@ -1,8 +1,10 @@
 {
   "entries": [
-    { "key": "interaction.woodpile", "value": "Woodpile" },
+    { "key": "interaction.woodpile", "value": "E — take a log" },
     { "key": "woodpile.take.confirm", "value": "Take a log?" },
     { "key": "woodpile.take.already", "value": "Already carrying a log." },
+    { "key": "woodpile.take.received", "value": "Log received." },
+    { "key": "world_item.action.close", "value": "Close" },
     { "key": "inventory.item.firewood_log.name", "value": "Firewood log" },
     { "key": "inventory.item.firewood_log.description", "value": "A dry log with dark bark." },
     { "key": "combat.title", "value": "Combat Test" },

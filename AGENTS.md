@@ -78,6 +78,9 @@ Rules:
 - Keep runtime, editor, and test code separated with assembly definitions as the project grows.
 - Prefer deterministic, data-first world generation and test its pure logic outside scene construction.
 - Reuse shared materials and assets; avoid per-instance material creation.
+- New/changed item interactions reuse [the standard](ai/item-interaction-standard.md):
+  keyed prompts, shared 3D pickup/receipt UI, one grant, input/cleanup.
+  Exceptions require a recorded user decision.
 - New default NPCs register a permanent character ID/model/garment constraints
   in the global `DefaultNpcPopulation`, then use
   `DefaultNpcFactory.CreateForCharacter`. Its whole-world assignment retains
@@ -197,9 +200,8 @@ default cap is one Unity invocation, or two narrowly filtered invocations for a
 shared framework.
 
 - Documentation/comments: run `python tools/check-docs.py` and review the diff;
-  also run `git diff --check`. No Unity test or build. The checker is the
-  primary check here — it holds the budgets, the ledger shape and the frozen
-  canon references, and it exits non-zero with the remedy in the message.
+  also run `git diff --check`. No Unity test or build. The checker enforces
+  budgets, ledger shape and frozen canon references, reporting remedies.
 - Deterministic tooling, data or atlas art: run the directly affected validator.
   Do not also run general Unity suites when the validator covers the contract.
 - C# runtime/editor/test code: if a suitable focused EditMode or PlayMode test
@@ -214,9 +216,8 @@ shared framework.
 
 Never run Runtime, EditModeTests and PlayModeTests builds redundantly. Never run
 complete EditMode/PlayMode suites, a Windows player build and a startup smoke in
-the same ordinary task. Existing tests remain in the repository for targeted or
-explicit release use; test count is not a reason to execute all of them.
+the same ordinary task. Use existing tests for targeted or explicit release
+checks; their count does not justify a full run.
 
-If a focused check exposes an unrelated known failure, do not start a broad
-rerun or repair it outside scope. Record it briefly and continue with the
-requested task.
+Record unrelated known failures briefly and continue the task; do not broaden
+the run or repair them outside scope.

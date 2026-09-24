@@ -1,8 +1,10 @@
 {
   "entries": [
-    { "key": "interaction.woodpile", "value": "Поленница" },
+    { "key": "interaction.woodpile", "value": "E — взять полено" },
     { "key": "woodpile.take.confirm", "value": "Взять полено?" },
     { "key": "woodpile.take.already", "value": "Полено уже есть." },
+    { "key": "woodpile.take.received", "value": "Полено получено." },
+    { "key": "world_item.action.close", "value": "Закрыть" },
     { "key": "inventory.item.firewood_log.name", "value": "Полено" },
     { "key": "inventory.item.firewood_log.description", "value": "Сухое полено с тёмной корой." },
     { "key": "combat.title", "value": "Боевой полигон" },

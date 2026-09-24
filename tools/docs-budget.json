@@ -119,6 +119,10 @@
       "type": "canon",
       "budget": 4000
     },
+    "ai/item-interaction-standard.md": {
+      "type": "canon",
+      "budget": 6000
+    },
     "ai/work-log.md": {
       "type": "ledger",
       "entry_heading": "## ",

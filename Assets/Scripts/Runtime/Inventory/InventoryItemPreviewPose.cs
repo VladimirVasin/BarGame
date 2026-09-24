@@ -35,8 +35,8 @@ namespace BarPromenade
 
         /// <summary>
         /// Multiplier on the fit-to-frame scale a full-screen examination
-        /// computes from the model's own bounds. Above one because a frame
-        /// fraction that suits a bottle leaves an egg unreadably small.
+        /// computes from the model's own bounds. Adjusts framing per item:
+        /// small items can fill more space while long objects keep margins.
         /// </summary>
         public float InspectionScale { get; }
     }
@@ -84,7 +84,7 @@ namespace BarPromenade
             new InventoryItemPreviewPose(
                 InventoryItemId.FirewoodLog,
                 Quaternion.Euler(18f, -28f, -24f),
-                1.35f)
+                0.90f)
         };
 
         private static readonly IReadOnlyList<InventoryItemPreviewPose>

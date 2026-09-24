@@ -30,17 +30,17 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
   (not LUFS-calibrated); shared fades/resume/optional slot.
   Check: `SceneMusicImportTests.EveryTheme_StreamsAndLoadsInTheBackground`.
 - Cold central lodge stove/flue through roof; matching outdoor woodpiles at
-  lodge/mother's entrance. Shared silent Yes/No gives `FirewoodLog`, session
-  cap one across both sources; no heat/ignition.
-  `AlpineVillageWoodpile{Plan,Builder}` share geometry/snow/collision.
-  Slotted door/dark firebox prepare future firelight; side passages open.
-  Lodge pile under eaves clears surrounding snow. Checks:
+  lodge/mother's entrance, shared geometry/snow/collision, open side paths,
+  slotted door/dark firebox; no heat/ignition. Silent Yes/No gives one session
+  `FirewoodLog`. Prompt names E; shared 3D receipt with smaller log framing keeps the
+  item on Close/Escape. `PlayerInteractor` blocks the modal's closing-frame
+  press, which had retriggered the pile. Shared pickup/receipt ownership is
+  mandatory in `ai/item-interaction-standard.md`. Checks:
   `build-village-expansion-3d-model.py --validate-only`,
   `InventoryTargetInteractionControllerTests.Woodpile_*`,
-  `AreaCaptureFixture.AlpineVillageStoveAndWoodpile` (import/collision/bypass,
-  pickup/cap/retake, disable/destroy),
-  `AreaCaptureFixture.AlpineVillageMothersHouseWoodpile` (door path/E, cap from
-  either source/retake); Blender and Unity frames reviewed.
+  `AreaCaptureFixture.AlpineVillageStoveAndWoodpile` (stove/cap/lifecycle,
+  receipt/input; UI frames reviewed), `AreaCaptureFixture.AlpineVillageMothersHouseWoodpile`
+  (door path/E/shared cap/retake); Blender/Unity frames reviewed.
 - Removed superseded/debug captures; kept current reports/stills and unpublished
   combat authoring. Motion PNGs became lossless video, preserving every decoded
   frame hash. Checks: capture retention inventory, decoded frame hashes,

@@ -257,12 +257,12 @@ The vertical slice contains:
   broken shutters/debris show abandonment. No new residents/lights/interiors.
   Four-side sightlines exclude props/foundations; forest clears these/yards,
   terrain levels shelves.
-  Unheated `18 x 12 m` lodge: vestibule/benches/racks, no snow. Cold central
-  stove/base has open side passages; flue exits a real roof/snow opening.
-  `AlpineVillageWoodpile{Plan,Builder}`: right of lodge/mother entries.
-  Silent E “Взять полено?”: Yes adds `FirewoodLog`, No/Escape cancels. Shared
-  session cap one, icon/3D preview, duplicate feedback; infinite stock/retake
-  after removal. No ignition/heat/smoke/use/animation. Shed/lift passive. Avalanche scar,
+  Snow-free `18 x 12 m` lodge: vestibule/benches/racks; cold central stove/base,
+  side bypasses, roof/snow flue opening. Piles right of lodge/mother: E→silent Yes/No.
+  No/Escape cancels. Yes adds `FirewoodLog`; `WorldItemFoundScreen` shows inventory
+  3D model/name/description/receipt. Close/Escape retains it, no same-frame key retry.
+  Session cap one, icon, duplicate feedback, infinite stock/retake.
+  No ignition/heat/smoke/use/animation. Shed/lift passive. Avalanche scar,
   full-size fallen trees/rock/beams, buried tow/cable and damaged household 15
   (`AvalancheRuinedHouse`). Front ~20 m/fan 38 m; `AlpineVillageAvalanchePlan`
   shares fourteen-vertex movement/forest/manifest polygon. Deposit fits ground
