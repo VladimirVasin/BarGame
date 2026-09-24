@@ -1372,7 +1372,7 @@
   minutes/day); alcohol recovery retains its unscaled rate and modal/transition
   blockers. This supersedes earlier scaled-calendar/unscaled physical
   bar/refrigerator descriptions below.
-- **Accepted:** Unity `6000.6.0f1` with URP `17.6.0` (moved from `6000.5.10f1` / URP `17.5.0` on 2026-09-04; the package set — test framework `1.8.0`, Timeline `6.6.0`, uGUI `2.6.0` — came with the editor).
+- **Accepted:** Unity `6000.6.2f1` (editor patch recorded 2026-09-24), URP `17.6.0` since 2026-09-04. Bundled packages: test framework `1.8.0`, Timeline `6.6.0`, uGUI `2.6.0`.
 - **Accepted:** New Input System is enabled.
 - **Corrected — balcony smokers are a local population, not a city-load
   tableau:** a production-seed walk exposed the failure of selecting one or two

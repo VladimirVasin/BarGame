@@ -47,7 +47,7 @@ A row never carries a status outside this table. Product-level scope cuts
 | City Blender ordinary buildings | Fixed-metre v2.1 district wrappers total `28` meshes / `4,218` triangles / `194` UV2 opening slots. | `CityBuilding*`, building generators | Current |
 | Residential balcony life | Bounded pooled smokers occupy authored Residential docks; Home reconstructs its own balcony-gated selection. | `City/Balcony/CityBalconySmoker*`, `CityPedestrianHandProps` | Current |
 | City Blender low-rise landmarks | Bar, supermarket and `player_home_exterior_v1` are complete passive semantic exteriors with inset foundations. | `CityBarFacadeWorldBuilder`, `CitySupermarketFacadeWorldBuilder` | Current |
-| Unity URP foundation | Thirteen build scenes; PC Neutral/Bloom/Vignette baseline. | `6000.6.0f1`, `17.6.0` | Current |
+| Unity URP foundation | Thirteen build scenes; PC Neutral/Bloom/Vignette baseline. | `6000.6.2f1`, `17.6.0` | Current |
 | PS1 presentation | Shared low-res composite. Optional 4:3, vertex jitter and Begotten keep controls; Begotten ramps `15 s` in, `3 s` out. | `Runtime/Rendering`, `IntoxicationRenderState`, `BegottenModeRamp` | Current |
 | Depth of field tiers | Exteriors keep broad Gaussian far blur; the six interior scenes cap it at radius `0.55`. | `RuntimeSceneSetup`, `DepthOfFieldSettingsBinder` | Current |
 | Runtime area composition | Ten gameplay roots; four build in frames; interior doors retain dormant City/village. | `Runtime/Core`, `Runtime/Scenes` | Current |

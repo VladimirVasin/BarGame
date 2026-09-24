@@ -18,6 +18,9 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
   clearing verified, final walking frames reviewed.
 - Updated current state, art canon, accepted decision and authoring instructions.
   Checks: `check-docs.py`, `git diff --check`.
+- Recorded the user's Unity `6000.6.2f1` import state and synchronized editor
+  references. Package lock JSON and the generated signature diff were inspected;
+  documentation check: `check-docs.py`.
 
 ## 2026-09-23 — Alpine Village expansion
 

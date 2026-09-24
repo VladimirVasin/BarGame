@@ -5,7 +5,7 @@
 - **Барный Променад / Bar Promenade** is a playable Windows/PC Unity vertical
   slice with a runtime-composed coastal city, mountain road, alpine village
   and their interiors. Detailed world facts live in [current-world.md](current-world.md).
-- Unity `6000.6.0f1`, URP `17.6.0`, Input System `1.20.0`. Actual versions are
+- Unity `6000.6.2f1`, URP `17.6.0`, Input System `1.20.0`. Actual versions are
   owned by `ProjectSettings/ProjectVersion.txt` and `Packages/manifest.json`.
 - One active PC quality/pipeline profile applies the PS1 composite after URP
   post-processing. Keyboard, mouse and gamepad retain their existing controls.
