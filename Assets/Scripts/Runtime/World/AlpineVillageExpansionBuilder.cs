@@ -15,6 +15,14 @@ namespace BarPromenade
             var root = new GameObject(RootName);
             root.transform.SetParent(parent, false);
             VillageExpansionAssetProvider assets = VillageExpansionAssetProvider.LoadOrThrow();
+            AlpineVillageFootbridgePlan footbridge = AlpineVillageFootbridgePlan.Create(plan);
+            if (footbridge != null)
+            {
+                GameObject bridge = assets.Create("BrookFootbridge", AlpineVillageFootbridgePlan.ObjectName, root.transform,
+                    footbridge.Position, footbridge.Rotation,
+                    new Vector3(1f, 1f, footbridge.Length / AlpineVillageFootbridgePlan.ModelLength));
+                FitFootbridgeApproaches(bridge, plan);
+            }
             Quaternion facing = Quaternion.LookRotation(expansion.LodgeForward, Vector3.up);
             assets.Create("SkiLodge", "Ski Lodge", root.transform, expansion.LodgeCenter, facing);
             assets.Create("ServiceShed", "Service Shed", root.transform, expansion.ServiceShedCenter, facing);
@@ -50,20 +58,8 @@ namespace BarPromenade
 
             var road = new GameObject("Former City Road");
             road.transform.SetParent(root.transform, false);
-            foreach (AlpineVillagePathDescriptor path in expansion.Paths)
-                if (path.Kind == AlpineVillagePathKind.AbandonedRoad)
-                    BuildRoad(assets, road.transform, plan, path.Start, path.End, path.SurfaceHalfWidth * 2f);
-            // The same width and axis continue across a thirteen-metre missing
-            // shelf. The opposite road is scenery, absent from the walking graph.
-            BuildRoad(assets, road.transform, plan, expansion.ToWorld(new Vector2(-130f, -52f)),
-                expansion.CliffEdge, expansion.RoadWidth);
-            Vector3 previous = expansion.FarRoadEdge;
-            for (float along = -69f; along >= -107f; along -= 2f)
-            {
-                Vector3 next = expansion.FarRoadPoint(along);
-                BuildRoad(assets, road.transform, plan, previous, next, expansion.RoadWidth);
-                previous = next;
-            }
+            // Asphalt belongs to the ground material partition, including the
+            // inaccessible opposite shelf. Only actual structures have volume.
             for (float along = -69f; along >= -89f; along -= 4f)
             {
                 Vector3 first = expansion.FarRoadPoint(along + 2f);
@@ -82,23 +78,37 @@ namespace BarPromenade
             AlpineVillageDistanceWorldBuilder.Build(root.transform, plan);
         }
 
-        private static void BuildRoad(VillageExpansionAssetProvider assets, Transform parent,
-            AlpineVillagePlan plan, Vector3 start, Vector3 end, float width)
+        private static void FitFootbridgeApproaches(GameObject bridge, AlpineVillagePlan plan)
         {
-            // Short rigid authored strips conform to the actual sampler, including the cliff cut.
-            // No runtime primitive geometry or new material is created.
-            int steps = Mathf.Max(1, Mathf.CeilToInt(Vector3.Distance(start, end) / 1.5f));
-            Vector3 first = OnGround(plan, start);
-            for (int i = 1; i <= steps; i++)
+            // Keep the authored topology and thick deck. Only the ends bend
+            // down to their own bank, instead of floating when the bearing
+            // height needed above the stream is higher than the path surface.
+            Transform deck = bridge.transform.Find("DeckAndApproaches");
+            MeshFilter filter = deck.GetComponent<MeshFilter>();
+            Mesh mesh = UnityEngine.Object.Instantiate(filter.sharedMesh);
+            mesh.name = "Bank-fitted Footbridge Deck";
+            Vector3[] vertices = mesh.vertices;
+            for (int index = 0; index < vertices.Length; index++)
             {
-                Vector3 next = OnGround(plan, Vector3.Lerp(start, end, i / (float)steps));
-                Vector3 direction = next - first;
-                Vector3 center = (first + next) * .5f + Vector3.up * .065f;
-                assets.Create("RoadSurface", "Old Asphalt", parent, center,
-                    Quaternion.LookRotation(direction.normalized, Vector3.up),
-                    new Vector3(width, 1f, direction.magnitude + .025f));
-                first = next;
+                Vector3 world = deck.TransformPoint(vertices[index]);
+                Vector3 local = bridge.transform.InverseTransformPoint(world);
+                float blend = Mathf.Clamp01((Mathf.Abs(local.z) - 1.8f) / .6f);
+                if (blend <= 0f) continue;
+                Vector3 toe = bridge.transform.TransformPoint(
+                    new Vector3(local.x, 0f, Mathf.Sign(local.z) * AlpineVillageFootbridgePlan.ModelLength * .5f));
+                Vector2 point = new Vector2(toe.x, toe.z);
+                float height = Mathf.Max(AlpineVillageTerrainSampler.SampleHeight(plan, point),
+                    AlpineVillageTerrainSampler.SampleMeshHeight(plan, point)) +
+                    AlpineVillageWorldBuilder.LaneSkinLift;
+                world.y += (height - toe.y) * blend;
+                vertices[index] = deck.InverseTransformPoint(world);
             }
+            mesh.vertices = vertices;
+            mesh.RecalculateNormals();
+            mesh.RecalculateBounds();
+            filter.sharedMesh = mesh;
+            deck.GetComponent<MeshCollider>().sharedMesh = mesh;
+            deck.gameObject.AddComponent<RuntimeGeneratedMeshOwner>().Initialize(mesh);
         }
 
         private static Vector3 OnGround(AlpineVillagePlan plan, Vector3 point)

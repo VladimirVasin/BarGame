@@ -3,6 +3,22 @@
 Newest outcomes/checks first. Archive whole dates at budget: [policy](README.md).
 Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-2026-08.md).
 
+## 2026-09-24 — Village junctions
+
+- `AlpineVillageJunctionPlan` owns ports, contours and snow for the road/path
+  junctions and warehouse apron. Coatings partition the original ground;
+  incoming ribbons end at node rims. Snow follows the actual mesh surface.
+- Each node has an editable asphalt/soil mask and baked albedo in one shared
+  atlas, using existing texture recipes and shader. Ordinary baking preserves
+  manual masks; the warehouse apron has no internal snow island.
+- Approach faces fit terrain planes and share PS1 edge samples. Matching soil
+  beneath their mouths and blended ground normals remove pale seams/facets:
+  vertex-height checks alone missed face interiors and lighting differences.
+  Check: `AreaCaptureFixture.AlpineVillageRoadSurface`; real mesh, snow and
+  clearing verified, final walking frames reviewed.
+- Updated current state, art canon, accepted decision and authoring instructions.
+  Checks: `check-docs.py`, `git diff --check`.
+
 ## 2026-09-23 — Alpine Village expansion
 
 - Extended the residential core with station forest, a walk-in abandoned ski
@@ -33,6 +49,15 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
   `build-village-expansion-3d-model.py`, `AreaCaptureFixture.AlpineVillageAbandonment`.
   Scene checks exposed edge placements and obscured building neighbours;
   corrected placement is reviewed in eye-height day/night/storm frames.
+- Asphalt partitions ground triangles, retaining broken lips. Rigid strips
+  missed cross-slopes; path caps overlapped asphalt, while snow rebuilds lifted
+  zero-depth edges. Paths trim/taper to asphalt; snow keeps burial below mesh
+  ground. Check: `AreaCaptureFixture.AlpineVillageRoadSurface`; real snow,
+  clearing and junctions checked; junction frames reviewed.
+- Added a Blender timber bridge on the station forest-path/brook crossing.
+  Raised ramp toes needed local fitting to terrain/path height; water stays
+  continuous. Checks: `build-village-expansion-3d-model.py`,
+  `AreaCaptureFixture.AlpineVillageFootbridge`; both-way traversal and frames reviewed.
 - Recorded approved forest, city-view and abandonment exceptions in both
   bibles/architecture; updated player/tool documentation.
   Checks: `check-docs.py`, `git diff --check`.

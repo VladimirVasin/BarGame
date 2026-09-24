@@ -280,6 +280,10 @@ namespace BarPromenade
         {
             for (int index = 0; index < vertices.Length; index++)
             {
+                // Zero-depth toes and field edges were deliberately buried
+                // beneath the ground when built. They cannot be pressed or
+                // refilled, and rebuilding must not raise them onto asphalt.
+                if (depths[index] <= 0f) continue;
                 vertices[index].y = grounds[index] +
                                     depths[index] *
                                     (1f - Mathf.Max(pressed[index], cleared[index]));

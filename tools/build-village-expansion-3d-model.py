@@ -20,7 +20,7 @@ from village_chair_pile import chair_pile
 from village_abandoned_buildings import build_all as abandoned_buildings
 from village_abandoned_yards import build_all as abandoned_yards
 
-VERSION = "1.3.0"
+VERSION = "1.4.0"
 DESIGN = "village_forest_ski_base_old_road_v1"
 COLORS = {"Timber": (.29,.255,.205,1), "Masonry": (.49,.485,.445,1),
           "LayeredStone": (.32,.345,.34,1), "RustedIron": (.30,.255,.21,1),
@@ -258,6 +258,53 @@ def roadside_rail(add):
     add("RoadsideRail","OldGuardrail",merge(rails),"RustedIron",False)
     add("RoadsideRail","JointStraps",merge(joints),"RustedIron",False)
 
+def brook_footbridge(add):
+    """4.8 m ordinary timber crossing; local +Z is the unobstructed walking axis."""
+    kind="BrookFootbridge"
+    def height(z):return .18*min(1,(2.4-abs(z))/.6)
+    # One watertight deck includes both shallow approaches. Small recessed
+    # plank seams remain actual supporting wood, never open collision gaps.
+    samples=[(-2.4,0)]
+    for i in range(1,24):
+        z=-2.4+i*.2
+        samples.extend(((z-.004,0),(z,.004),(z+.004,0)))
+    samples.append((2.4,0))
+    vertices=[]
+    for z,recess in samples:
+        top=height(z)
+        vertices.extend(((-.95,top-recess,z),(.95,top-recess,z),
+                         (.95,top-.09,z),(-.95,top-.09,z)))
+    faces=[(0,1,2,3)]
+    for i in range(len(samples)-1):
+        for side in range(4):
+            following=(side+1)%4
+            faces.append((i*4+side,(i+1)*4+side,(i+1)*4+following,i*4+following))
+    end=(len(samples)-1)*4
+    faces.append((end+3,end+2,end+1,end))
+    add(kind,"DeckAndApproaches",(vertices,faces),"Timber",True,(.355,.325,.27,1))
+    beams=[box((x,.005,0),(.18,.19,3.45),.009) for x in (-.67,.67)]
+    beams += [box((0,-.1175,z),(1.78,.085,.28),.009) for z in (-1.5,1.5)]
+    add(kind,"BearersAndBankSleepers",merge(beams),"Timber",True,(.245,.235,.20,1))
+    rails=[]
+    for sign in (-1,1):
+        x=sign*.875
+        rails += [box((x,.55,z),(.13,.94,.13),.009) for z in (-1.6,0,1.6)]
+        rails += [box((x,.975,0),(.15,.09,3.64),.008),
+                  box((x,.565,0),(.09,.09,3.36),.006)]
+        rails += [beam_between((x,.23,sign*1.51),(x,.91,sign*.10),.065)]
+    add(kind,"LowSideRails",merge(rails),"Timber",True,(.295,.28,.235,1))
+    fasteners=[]
+    for i in range(18):
+        z=-1.7+i*.2
+        for x in (-.67,.67):
+            fasteners.append(bp.u_cylinder((x,.1807,z),(.021,.0007,.021),6))
+    for x in (-.951,.951):
+        for z in (-1.6,0,1.6):
+            for y in (.565,.975):
+                fasteners.append(at(rotate(bp.u_cylinder((0,0,0),(.026,.002,.026),6),
+                                              (0,0,90)),(x,y,z)))
+    add(kind,"OldFasteners",merge(fasteners),"RustedIron",False)
+
 def create_parts():
     parts=[]
     def add(kind,name,g,surface,solid=True,tint=None):
@@ -373,6 +420,7 @@ def create_parts():
     chair_pile(add)
     conserved_repair(add)
     roadside_rail(add)
+    brook_footbridge(add)
     abandoned_buildings(add)
     abandoned_yards(add)
     return parts
@@ -404,6 +452,23 @@ def validate(parts):
     assert abs(rail_lo[2]+2)<1e-8 and abs(rail_hi[2]-2)<1e-8,"Roadside rail must remain four metres along Z"
     assert rail_lo[1]>=0 and rail_hi[1]<=1.061,"Roadside rail height"
     assert all(not p["solid"] for p in parts if p["kind"]=="RoadsideRail"),"Distant roadside rail must remain passive"
+    bridge=[p for p in parts if p["kind"]=="BrookFootbridge"]
+    bridge_lo,bridge_hi=bounds_for("BrookFootbridge")
+    assert all(abs(a-b)<1e-6 for a,b in zip(bridge_lo,(-.953,-.16,-2.4))),("Footbridge minimum metre bounds",bridge_lo)
+    assert all(abs(a-b)<1e-6 for a,b in zip(bridge_hi,(.953,1.02,2.4))),("Footbridge maximum metre bounds",bridge_hi)
+    bridge_trees=[BVHTree.FromPolygons(*p["geometry"],all_triangles=False) for p in bridge if p["solid"]]
+    for x in (-.74,0,.74):
+        for y in (.23,.6,1.2):
+            assert not any(t.ray_cast(Vector((x,y,-2.6)),Vector((0,0,1)),5.2)[0] is not None
+                           for t in bridge_trees),"Blocked footbridge passage"
+    deck=next(p for p in bridge if p["name"]=="DeckAndApproaches")
+    deck_tree=BVHTree.FromPolygons(*deck["geometry"],all_triangles=False)
+    for x in (-.78,0,.78):
+        for i in range(97):
+            z=max(-2.3999,min(2.3999,round(-2.4+i*.05,6)))
+            hit=deck_tree.ray_cast(Vector((x,.5,z)),Vector((0,-1,0)),1)[0]
+            expected=.18*min(1,(2.4-abs(z))/.6)
+            assert hit is not None and expected-.0041<=hit.y<=expected+.0001,("Discontinuous footbridge deck/ramp",x,z,expected,tuple(hit) if hit else None)
     for p in parts:
         if p["kind"]=="ConservedRepair":
             support=p["name"] in ("UnfinishedButtresses","FormworkSeams","CappedAnchors")
@@ -499,6 +564,7 @@ def main():
                 ("TradeYardProps","VillageTradeYardProps3D.png",(5,-6,4.6),(0,0,.45),43),
                 ("ConservedRepair","VillageConservedRepair3D.png",(12,-17,12),(-2,3.5,-1.6),43),
                 ("RoadsideRail","VillageRoadsideRail3D.png",(5,-6,3.4),(0,0,.55),48),
+                ("BrookFootbridge","VillageBrookFootbridge3D.png",(5,-7,3.7),(0,0,.3),48),
                 ("RustedTruck","VillageTruckWreck3D.png",(8,10,6),(0,0,1),48),
                 ("DiscardedChairPile","VillageChairPile3D.png",(8,-9,6),(0,0,1.3),48),
                 ("DiscardedChairPile","VillageChairPileRear3D.png",(-8,9,6),(0,0,1.3),48)]

@@ -824,10 +824,9 @@ namespace BarPromenade.Tests.EditMode
         }
 
         /// <summary>
-        /// The two-submesh split of the ground: floor and rise on their own
-        /// materials, the cableway cut carved into the rise, one collider on
-        /// the one mesh and shared toe vertices. The art pass exposes stone
-        /// above the snow floor without changing this physical boundary.
+        /// Floor, rise, asphalt, junction albedo and soil approaches partition the same ground, with one collider
+        /// and the original shared toe vertices. Road-edge subdivisions retain
+        /// the existing grid planes rather than adding another surface.
         /// </summary>
         private static void AssertTerrainSubmeshes(
             AlpineVillagePlan plan,
@@ -837,18 +836,24 @@ namespace BarPromenade.Tests.EditMode
         {
             Mesh mesh = filter.sharedMesh;
             Assert.That(collider.sharedMesh, Is.SameAs(mesh));
-            Assert.That(mesh.subMeshCount, Is.EqualTo(2));
+            Assert.That(mesh.subMeshCount, Is.EqualTo(5));
 
             MeshRenderer renderer =
                 world.TerrainRoot.GetComponent<MeshRenderer>();
             Material[] materials = renderer.sharedMaterials;
-            Assert.That(materials.Length, Is.EqualTo(2));
+            Assert.That(materials.Length, Is.EqualTo(5));
             Assert.That(
                 materials[AlpineVillageWorldBuilder.TerrainFloorMaterialIndex],
                 Is.SameAs(RuntimePrimitiveFactory.DefaultMaterial));
             Assert.That(
                 materials[AlpineVillageWorldBuilder.TerrainRiseMaterialIndex],
                 Is.SameAs(AlpineVillageRidgeAppearance.RidgeMaterial));
+            Assert.That(
+                materials[AlpineVillageWorldBuilder.TerrainAsphaltMaterialIndex],
+                Is.SameAs(RuntimePrimitiveFactory.DefaultMaterial));
+            Assert.That(
+                materials[AlpineVillageWorldBuilder.TerrainJunctionMaterialIndex],
+                Is.SameAs(RuntimePrimitiveFactory.DefaultMaterial));
 
             // The shared axes retain coarse vertices and refine the brook.
             AlpineVillageTerrainGrid grid = AlpineVillageTerrainGrid.Get(plan);
@@ -871,18 +876,40 @@ namespace BarPromenade.Tests.EditMode
                 AlpineVillageWorldBuilder.TerrainFloorMaterialIndex);
             int[] rise = mesh.GetTriangles(
                 AlpineVillageWorldBuilder.TerrainRiseMaterialIndex);
-            Assert.That(
-                floor.Length + rise.Length,
-                Is.EqualTo(columns * rows * 6),
-                "A terrain cell is missing or drawn in both submeshes.");
+            int[] asphalt = mesh.GetTriangles(
+                AlpineVillageWorldBuilder.TerrainAsphaltMaterialIndex);
+            int[] junctionCoating = mesh.GetTriangles(
+                AlpineVillageWorldBuilder.TerrainJunctionMaterialIndex);
+            int[] soil = mesh.GetTriangles(AlpineVillageWorldBuilder.TerrainSoilMaterialIndex);
             Assert.That(floor, Is.Not.Empty);
             Assert.That(rise, Is.Not.Empty);
+            Assert.That(asphalt, Is.Not.Empty);
+            Assert.That(junctionCoating, Is.Not.Empty);
+            Assert.That(soil, Is.Not.Empty);
 
             Vector3[] vertices = mesh.vertices;
             Assert.That(
                 vertices.Length,
-                Is.EqualTo(gridVertexCount),
-                "The old duplicated toe ring returned.");
+                Is.GreaterThanOrEqualTo(gridVertexCount),
+                "Painting the road discarded the original terrain grid.");
+            double projectedArea = 0d;
+            foreach (int[] triangles in new[] { floor, rise, asphalt, junctionCoating, soil })
+            for (int index = 0; index < triangles.Length; index += 3)
+            {
+                Vector3 a = vertices[triangles[index]], b = vertices[triangles[index + 1]], c = vertices[triangles[index + 2]];
+                projectedArea += System.Math.Abs(((double)b.x - a.x) * ((double)c.z - a.z) -
+                    ((double)b.z - a.z) * ((double)c.x - a.x)) * .5d;
+            }
+            double expectedArea = ((double)grid.XCoordinates[columns] - grid.XCoordinates[0]) *
+                ((double)grid.ZCoordinates[rows] - grid.ZCoordinates[0]);
+            Assert.That(projectedArea, Is.EqualTo(expectedArea).Within(.1d),
+                "Ground material regions overlap or leave a hole after road clipping.");
+            float maximumSubdivisionGap = 0f;
+            for (int index = gridVertexCount; index < vertices.Length; index++)
+                maximumSubdivisionGap = Mathf.Max(maximumSubdivisionGap, Mathf.Abs(vertices[index].y -
+                    AlpineVillageTerrainSampler.SampleMeshHeight(plan, new Vector2(vertices[index].x, vertices[index].z))));
+            Assert.That(maximumSubdivisionGap, Is.LessThan(.003f),
+                "A material boundary changed the original ground plane.");
 
             var sharedToeVertices = new HashSet<int>(floor);
             sharedToeVertices.IntersectWith(rise);
@@ -909,12 +936,6 @@ namespace BarPromenade.Tests.EditMode
                     Is.False,
                     $"Floor triangle at {centre} is a rise cell.");
                 Assert.That(
-                    floor[index] < gridVertexCount &&
-                    floor[index + 1] < gridVertexCount &&
-                    floor[index + 2] < gridVertexCount,
-                    Is.True,
-                    "A floor triangle leaves the one terrain grid.");
-                Assert.That(
                     AlpineVillageTerrainSampler.SampleRidgeRise(plan, centre),
                     Is.Zero,
                     $"A floor cell at {centre} stands on the rise.");
@@ -930,12 +951,6 @@ namespace BarPromenade.Tests.EditMode
                     grid);
                 Vector2 centre = CellCentre(grid, row, column);
                 Assert.That(
-                    rise[index] < gridVertexCount &&
-                    rise[index + 1] < gridVertexCount &&
-                    rise[index + 2] < gridVertexCount,
-                    Is.True,
-                    "A rise triangle leaves the one terrain grid.");
-                Assert.That(
                     riseCells[row, column],
                     Is.True,
                     $"Rise triangle at {centre} is not a rise cell.");
@@ -944,9 +959,8 @@ namespace BarPromenade.Tests.EditMode
                     Is.GreaterThan(0f));
             }
 
-            // The UVs already encode the recipe's metre pitch. The indexed
-            // material blocks must therefore stay identity; applying the
-            // primitive transform here scales the texture twice.
+            // Roads encode their metre pitch; whole junction contours encode
+            // their individual atlas region. Both material transforms are identity.
             Vector2[] uv = mesh.uv;
             Assert.That(uv.Length, Is.EqualTo(vertices.Length));
             float expectedUvScale = 1f /
@@ -956,15 +970,22 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 AlpineVillageRidgeAppearance.UvUnitsPerMeter,
                 Is.EqualTo(expectedUvScale).Within(0.000001f));
+            var asphaltVertices = new HashSet<int>(asphalt);
+            var junctionVertices = new HashSet<int>(junctionCoating);
+            float asphaltUvScale = 1f / MountainRoadSurfaceAppearance.GetRecipe(MountainRoadSurfaceKind.Asphalt).MetersPerTile;
             for (int index = 0; index < vertices.Length; index++)
             {
+                Vector2 point = new Vector2(vertices[index].x, vertices[index].z);
+                Vector2 expected = junctionVertices.Contains(index)
+                    ? AlpineVillageJunctionAppearance.Uv(plan, point)
+                    : point * (asphaltVertices.Contains(index) ? asphaltUvScale : expectedUvScale);
                 Assert.That(
                     uv[index].x,
-                    Is.EqualTo(vertices[index].x * expectedUvScale)
+                    Is.EqualTo(expected.x)
                         .Within(0.0001f));
                 Assert.That(
                     uv[index].y,
-                    Is.EqualTo(vertices[index].z * expectedUvScale)
+                    Is.EqualTo(expected.y)
                         .Within(0.0001f));
             }
 
@@ -992,6 +1013,19 @@ namespace BarPromenade.Tests.EditMode
                 floorProperties.GetTexture("_BaseMap"),
                 Is.SameAs(MountainRoadSurfaceAppearance.GetTexture(
                     AlpineVillageRidgeAppearance.Surface)));
+            var asphaltProperties = new MaterialPropertyBlock();
+            renderer.GetPropertyBlock(asphaltProperties, AlpineVillageWorldBuilder.TerrainAsphaltMaterialIndex);
+            Assert.That(asphaltProperties.GetTexture("_BaseMap"),
+                Is.SameAs(MountainRoadSurfaceAppearance.GetTexture(MountainRoadSurfaceKind.Asphalt)));
+            Assert.That(asphaltProperties.GetVector("_BaseMap_ST"),
+                Is.EqualTo(AlpineVillageRidgeAppearance.BakedUvTransform));
+            var junctionProperties = new MaterialPropertyBlock();
+            renderer.GetPropertyBlock(junctionProperties, AlpineVillageWorldBuilder.TerrainJunctionMaterialIndex);
+            Assert.That(junctionProperties.GetTexture("_BaseMap"),
+                Is.SameAs(AlpineVillageJunctionAppearance.Texture));
+            Assert.That(junctionProperties.GetColor("_BaseColor"), Is.EqualTo(Color.white));
+            Assert.That(junctionProperties.GetVector("_BaseMap_ST"),
+                Is.EqualTo(AlpineVillageRidgeAppearance.BakedUvTransform));
         }
 
         private static Vector2 CellCentre(

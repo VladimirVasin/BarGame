@@ -26,6 +26,7 @@ A row never carries a status outside this table. Product-level scope cuts
 | System | Guarantee | Key files | Status |
 | --- | --- | --- | --- |
 | Village scenery | Lived-in core; 18 empty households, eight sheds, five civic yards; neighbouring buildings visible; old road/city. | `AlpineVillage{AbandonmentPlan,ExpansionBuilder,DistanceWorldBuilder}` | Current |
+| Village paths | Ground junctions; brook bridge. | `AlpineVillage{JunctionPlan,FootbridgePlan}` | Current |
 | Village household life | Six residents, finite household work, indoor/outdoor help and outcomes across visits. | `AlpineVillageLifeController`, `VillageOutdoorHelpController`, `VillageHouseholdProgress` | Current |
 | Independent rules assembly | Calendar/day schedule, input priorities and temporary vehicle ownership have no Unity dependencies. | `Scripts/Rules`, `BarPromenade.Rules.asmdef` | Current |
 | Shared input actions | One binding API serves common actions and preserves existing controls; pause and transitions take priority. | `GameInput`, `GameInputPolicy` | Current |

@@ -248,13 +248,14 @@ The vertical slice contains:
   `8.3%`) to mother's house. Twelve inhabited houses, chapel/source and arrival
   axis retain positions; no adit/graves. `CoreTerrainBounds` keeps the core;
   `AlpineVillageExpansionPlan` adds forest, ski base and old-road loop.
+  A plan-fitted timber bridge carries the station forest path over the brook.
   `AlpineVillageAbandonmentPlan` distributes eighteen former households
   (fourteen standing, three open ruins, one foundation), eight outbuildings
   (two ruined), and five closed civic buildings across both sides of the core
   and the expanded bowl. Town hall has a paved square, school an empty yard,
   shop/bakery a loading court, workshop a working yard and mountain rescue a
   service apron/equipment canopy. Three household-yard variants reuse aged
-  everyday props. Stone bases, broad roofs and joinery retain former prosperity;
+  props. Stone bases, broad roofs and joinery show former prosperity;
   dark backed windows, broken shutters, worn surfaces and settled debris show
   abandonment. No new residents, lights, text or interiors. Placement reserves
   neighbouring-building sightlines from four sides; props/foundations do not
@@ -263,7 +264,10 @@ The vertical slice contains:
   unheated roof excludes snowfall/lying snow. Shed/lift remain passive.
   The closed warehouse yard retains `RustedTruck` (no wheels/doors/glass) and
   dense `DiscardedChairPile`, clear of ramp/road. Stock/supports show conserved
-  repair; rail/rubble block the gap to the inaccessible close road end.
+  repair; rail/rubble close the gap; broken lips stay authored.
+  `AlpineVillageJunctionPlan` owns ports/contours/snow. Node maps use
+  existing asphalt/soil; a 2x2 atlas uses one slot/material.
+  Other paths stay raised ribbons; warehouse apron has no snow island.
   `AlpineVillageDistanceWorldBuilder` reuses six checkpoint meshes
   (city/windows/glow/land/rock/vegetation) below the opening with storm materials.
   Cableway remains the sole exit. Walkability unions core/expansion ground
@@ -276,11 +280,11 @@ The vertical slice contains:
   owns the station apron/cableway entrance. Snow rises from zero to `0.45 m`
   over `1.3 m` on the loaded face, `3.2 m` on the scoured face. Abandoned yards
   retain snow to doors and inside ruins, with bounded depth exposing paving.
-  Fitted path ribbons overlap the saturated `1 m` sheet by one cell and win
-  the join. `AlpineVillageSnowTreading` stores one CPU float per vertex;
-  boots press snow down, snowfall restores changed vertices via spatial buckets.
-  `IPlayerFootstepSurface` picks `FootstepSnow`/`FootstepSoil` by visible depth.
-  Lane/path vertices sample ground plus `LaneSkinLift`, avoiding terrain wedges.
+  Paths overlap `1 m` snow by one cell. `AlpineVillageSnowTreading` updates
+  pressing/snowfall in vertex buckets; zero-depth snow stays buried.
+  Footsteps follow visible depth. Approaches fit ground planes and blend normals.
+  Soil under `2 m` mouths shares path texture/tint/UV; PS1 edges conform.
+  Ribbons end at nodes; snow follows mesh ground.
   Authored distance/side/yaw beats form frontage clusters and pauses; exact OBB
   validation, three `7.2-7.5 m` rear-row depth beats and a bounded symmetric
   local correction keep every seeded rotated footprint out of its neighbours

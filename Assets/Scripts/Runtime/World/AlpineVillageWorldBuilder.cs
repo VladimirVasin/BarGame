@@ -94,15 +94,20 @@ namespace BarPromenade
             AlpineVillageTerrainSampler.TerrainCell;
 
         /// <summary>
-        /// The ground mesh's two submeshes. Index `0` is the bowl floor on
+        /// The ground mesh's surface slots. Index `0` is the bowl floor on
         /// the ordinary shared primitive material; index `1` is the
         /// enclosing rise on <see cref="AlpineVillageRidgeAppearance"/>'s
-        /// fog-floored material. The warmth pass and the tests address the
+        /// fog-floored material; `2` is the ordinary road and `3` the baked
+        /// junction paintings. The warmth pass and the tests address the
         /// floor by this index rather than by "the first one".
         /// </summary>
         public const int TerrainFloorMaterialIndex = 0;
 
         public const int TerrainRiseMaterialIndex = 1;
+
+        public const int TerrainAsphaltMaterialIndex = 2;
+        public const int TerrainJunctionMaterialIndex = 3;
+        public const int TerrainSoilMaterialIndex = 4;
 
         /// <summary>
         /// The one object holding the lying snow. Named here because the
@@ -273,6 +278,11 @@ namespace BarPromenade
             var semanticObjects = new Dictionary<string, Transform>(
                 StringComparer.Ordinal);
 
+            // Build the incoming rims first so terrain and paths can share
+            // their boundary subdivisions before render sectors are uploaded.
+            BuildPathSurfaces(root.transform, plan);
+            ReportBlock("paths", blockTimer);
+            blockTimer.Restart();
             GameObject terrainRoot = BuildTerrain(root.transform, plan);
             ReportBlock("terrain", blockTimer);
             yield return new CompositionStep("terrain", 0.12f);
@@ -289,8 +299,7 @@ namespace BarPromenade
             yield return new CompositionStep("forest", 0.21f);
             blockTimer.Restart();
             GameObject laneSurface = BuildLane(root.transform, plan);
-            BuildPathSurfaces(root.transform, plan);
-            ReportBlock("lane_and_paths", blockTimer);
+            ReportBlock("lane", blockTimer);
             yield return new CompositionStep("terrain_and_lane", 0.25f);
             blockTimer.Restart();
 
@@ -581,6 +590,10 @@ namespace BarPromenade
             mesh.SetTriangles(riseTriangles, TerrainRiseMaterialIndex);
             mesh.RecalculateNormals();
             mesh.RecalculateBounds();
+            var paths = new List<Mesh>();
+            foreach (MeshFilter path in parent.Find("Visible Village Paths").GetComponentsInChildren<MeshFilter>())
+                paths.Add(path.sharedMesh);
+            AlpineVillageRoadSurfaceBuilder.Apply(mesh, plan, paths);
             double uploadMs = stageTimer.Elapsed.TotalMilliseconds;
 
             var host = new GameObject("Village Ground");
@@ -594,14 +607,17 @@ namespace BarPromenade
             renderer.shadowCastingMode = ShadowCastingMode.On;
             renderer.receiveShadows = true;
 
-            // Both slots exist before either indexed apply, and the array is
+            // All slots exist before any indexed apply, and the array is
             // written again after them: the indexed path never assigns
             // `sharedMaterial`, but the order is the contract and this is
             // what makes it visible.
             Material[] materials =
             {
                 RuntimePrimitiveFactory.DefaultMaterial,
-                AlpineVillageRidgeAppearance.RidgeMaterial
+                AlpineVillageRidgeAppearance.RidgeMaterial,
+                RuntimePrimitiveFactory.DefaultMaterial,
+                RuntimePrimitiveFactory.DefaultMaterial,
+                RuntimePrimitiveFactory.DefaultMaterial
             };
             renderer.sharedMaterials = materials;
             MountainRoadSurfaceAppearance.ApplyCombined(
@@ -613,6 +629,16 @@ namespace BarPromenade
             AlpineVillageRidgeAppearance.Apply(
                 renderer,
                 TerrainRiseMaterialIndex);
+            MountainRoadSurfaceAppearance.ApplyCombined(
+                renderer,
+                MountainRoadSurfaceKind.Asphalt,
+                AlpineVillageRoadSurfaceBuilder.AsphaltTint,
+                TerrainAsphaltMaterialIndex);
+            AlpineVillageJunctionAppearance.Apply(renderer, TerrainJunctionMaterialIndex);
+            MountainRoadSurfaceAppearance.ApplyCombined(renderer,
+                MountainRoadSurfaceKind.ForestFloor,
+                AlpineVillageRoadSurfaceBuilder.JunctionSoilTint,
+                TerrainSoilMaterialIndex);
             renderer.sharedMaterials = materials;
 
             stageTimer.Restart();
@@ -737,6 +763,8 @@ namespace BarPromenade
             double ribbonsMs = stageTimer.Elapsed.TotalMilliseconds;
             stageTimer.Restart();
             AppendSnowField(
+                plan, paths, vertices, uvs, triangles, grounds, depths);
+            AppendJunctionSnowPatches(
                 plan, paths, vertices, uvs, triangles, grounds, depths);
             double fieldMs = stageTimer.Elapsed.TotalMilliseconds;
             stageTimer.Restart();
@@ -867,6 +895,97 @@ namespace BarPromenade
             depths.RemoveRange(kept, removed);
         }
 
+        /// <summary>The old shoulders follow individual route ends. Replace
+        /// them around each common junction with one dense field sampling its
+        /// shared contour, including the snowy corners between the mouths.</summary>
+        private static void AppendJunctionSnowPatches(
+            AlpineVillagePlan plan,
+            IReadOnlyList<AlpineVillagePathDescriptor> paths,
+            List<Vector3> vertices,
+            List<Vector2> uvs,
+            List<int> triangles,
+            List<float> grounds,
+            List<float> depths)
+        {
+            const float cell = .35f;
+            const float edgeBlend = 1.5f;
+            float margin = AlpineVillageSnowDrift.RibbonReach + AlpineVillageSnowDrift.FieldCellSize;
+            var patches = new List<Rect>(plan.Expansion.Junctions.Count);
+            foreach (AlpineVillageJunctionPlan junction in plan.Expansion.Junctions)
+            {
+                Rect bounds = junction.Bounds;
+                Rect patch = Rect.MinMaxRect(bounds.xMin - margin, bounds.yMin - margin,
+                    bounds.xMax + margin, bounds.yMax + margin);
+                foreach (Rect previous in patches)
+                    if (previous.Overlaps(patch))
+                        throw new InvalidOperationException("Village junction snow patches overlap at " + junction.StableId);
+                patches.Add(patch);
+            }
+            if (patches.Count == 0) return;
+
+            // Preserve only triangles crossing the outer seam or lying beyond
+            // it. The interior has one mesh, rather than stacked old ribbons.
+            int kept = 0;
+            for (int index = 0; index < triangles.Count; index += 3)
+            {
+                bool replaced = false;
+                foreach (Rect patch in patches)
+                    if (Inside(patch, vertices[triangles[index]]) &&
+                        Inside(patch, vertices[triangles[index + 1]]) &&
+                        Inside(patch, vertices[triangles[index + 2]]))
+                    { replaced = true; break; }
+                if (replaced) continue;
+                triangles[kept++] = triangles[index];
+                triangles[kept++] = triangles[index + 1];
+                triangles[kept++] = triangles[index + 2];
+            }
+            triangles.RemoveRange(kept, triangles.Count - kept);
+
+            foreach (Rect patch in patches)
+            {
+                int columns = Mathf.Max(1, Mathf.CeilToInt(patch.width / cell));
+                int rows = Mathf.Max(1, Mathf.CeilToInt(patch.height / cell));
+                int origin = vertices.Count;
+                for (int row = 0; row <= rows; row++)
+                for (int column = 0; column <= columns; column++)
+                {
+                    var point = new Vector2(Mathf.Lerp(patch.xMin, patch.xMax, column / (float)columns),
+                        Mathf.Lerp(patch.yMin, patch.yMax, row / (float)rows));
+                    float depth = AlpineVillageSnowDrift.SampleDepth(plan, paths, point);
+                    bool bare = depth <= .0005f;
+                    // Positive edge samples must share the same ground too:
+                    // an analytic shelf above a coarse terrain triangle would
+                    // pull the adjoining bare snow face through the asphalt.
+                    float ground = AlpineVillageTerrainSampler.SampleMeshHeight(plan, point);
+                    float height = bare ? ground - AlpineVillageSnowDrift.ToeBurial : ground + depth;
+                    float edgeDistance = Mathf.Min(point.x - patch.xMin, patch.xMax - point.x,
+                        point.y - patch.yMin, patch.yMax - point.y);
+                    // Remaining old triangles cover this seam. Sink the new
+                    // field under them with the same burial as the outer field.
+                    height -= AlpineVillageSnowDrift.FieldBurial *
+                        (1f - Mathf.SmoothStep(0f, 1f, edgeDistance / edgeBlend));
+                    vertices.Add(new Vector3(point.x, height, point.y));
+                    uvs.Add(AlpineVillageRidgeAppearance.CreateWorldUv(point));
+                    grounds.Add(ground);
+                    depths.Add(Mathf.Max(0f, height - ground));
+                }
+                for (int row = 0; row < rows; row++)
+                for (int column = 0; column < columns; column++)
+                {
+                    int corner = origin + row * (columns + 1) + column;
+                    triangles.Add(corner);
+                    triangles.Add(corner + columns + 1);
+                    triangles.Add(corner + 1);
+                    triangles.Add(corner + 1);
+                    triangles.Add(corner + columns + 1);
+                    triangles.Add(corner + columns + 2);
+                }
+            }
+
+            bool Inside(Rect bounds, Vector3 point) => point.x >= bounds.xMin && point.x <= bounds.xMax &&
+                point.z >= bounds.yMin && point.z <= bounds.yMax;
+        }
+
         /// <summary>
         /// The lying snow everywhere the routes do not reach.
         ///
@@ -918,9 +1037,12 @@ namespace BarPromenade
                         plan,
                         paths,
                         point);
-                    float ground = AlpineVillageTerrainSampler.SampleHeight(
-                        plan,
-                        point);
+                    // A buried zero-depth field vertex must stay below the
+                    // actual ground triangle, including its road material.
+                    // The analytic height can stand above that triangle.
+                    float ground = depth <= AlpineVillageSnowDrift.FieldBurial
+                        ? AlpineVillageTerrainSampler.SampleMeshHeight(plan, point)
+                        : AlpineVillageTerrainSampler.SampleHeight(plan, point);
                     float height =
                         ground + depth - AlpineVillageSnowDrift.FieldBurial;
                     vertices.Add(new Vector3(point.x, height, point.y));
@@ -1173,9 +1295,11 @@ namespace BarPromenade
                 plan,
                 paths,
                 point);
-            float ground = AlpineVillageTerrainSampler.SampleHeight(
-                plan,
-                point);
+            // Bare toes belong below the physical/rendered ground plane,
+            // not below an independently sampled analytic height.
+            float ground = depth <= 0.0005f
+                ? AlpineVillageTerrainSampler.SampleMeshHeight(plan, point)
+                : AlpineVillageTerrainSampler.SampleHeight(plan, point);
             float height = depth <= 0.0005f
                 ? ground - AlpineVillageSnowDrift.ToeBurial
                 : ground + depth;

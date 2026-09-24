@@ -782,8 +782,8 @@ namespace BarPromenade
                 }
             }
 
-            // The ground carries two submeshes: the floor at index 0 and the
-            // enclosing rise at index 1. Only the floor dirties as the place
+            // The ground carries floor, enclosing rise and asphalt slots.
+            // Only the floor dirties as the place
             // goes out - a wall of snow in its own shadow does not - and a
             // renderer-wide block would leak this tint onto the rise, so
             // the write is indexed.

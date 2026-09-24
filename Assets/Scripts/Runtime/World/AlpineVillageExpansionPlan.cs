@@ -69,6 +69,7 @@ namespace BarPromenade
             AddRoute(routes, "trade-yard", AlpineVillagePathKind.AbandonedRoad, 2.7f,
                 new Vector2(-130f, -28f), new Vector2(-135f, -28f), new Vector2(-135f, -36f));
             paths = routes.AsReadOnly();
+            Junctions = AlpineVillageJunctionPlan.Create(this);
 
             // Axis-aligned in this plan's metre frame. The imported lodge uses
             // exactly these wall and furniture dimensions, including a real door.
@@ -120,6 +121,7 @@ namespace BarPromenade
         public Rect WorldBounds { get; }
         public Rect CoveredBounds { get; }
         public IReadOnlyList<AlpineVillagePathDescriptor> Paths => paths;
+        internal IReadOnlyList<AlpineVillageJunctionPlan> Junctions { get; }
         /// <summary>Blocking X/Z rectangles in the local metre frame.</summary>
         public IReadOnlyList<Bounds> LocalObstacles => obstacles;
         public AlpineVillageAbandonmentPlan Abandonment { get; }

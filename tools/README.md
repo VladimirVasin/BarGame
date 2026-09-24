@@ -43,18 +43,18 @@ clearance. Outputs: `Assets/Resources/Vehicles/LastRouteCoin3D.{fbx,json}`;
 source `ArtSource/Vehicles/Blender/LastRouteCoin3D.blend`.
 `LastRouteCoinAssetValidation` measures import bounds at the build gate.
 
-Village: `build-village-outdoor-player-actions-3d-model.py` authors thirteen hero
-clips/prop tracks; `build-village-errands-3d-model.py` authors bucket/filling/strap
-actions. `run-blender.py`; `VillageOutdoorLife`
-checks contacts/carrying/reload; `VillageOutdoorPartners` seeds completed work.
-`build-village-expansion-3d-model.py` includes `village_abandoned_buildings.py` and
-`village_abandoned_yards.py`: houses/ruins, civic yards, lodge/warehouse props.
-Output: `Assets/Resources/Village/Expansion/VillageExpansion3D.{fbx,json}`.
+Village: `build-village-outdoor-player-actions-3d-model.py`,
+`build-village-errands-3d-model.py` via `run-blender.py`. Checks:
+`VillageOutdoorLife` (contacts/carrying/reload), `VillageOutdoorPartners` (completed work).
+`build-village-expansion-3d-model.py`: houses/ruins/yards, lodge/warehouse/bridge.
+`VillageExpansionAssetSetup` imports `Assets/Resources/Village/Expansion/VillageExpansion3D.{fbx,json}`.
 `--validate-only`: bounds/winding/openings/determinism; `--preview-kind`: views.
 `build-village-abandonment-textures.py [--validate-only]`: 3 aged maps.
-`VillageExpansionAssetSetup`: import; `AreaCaptureFixture.AlpineVillageAbandonment`: views.
+`Bar Promenade/Village`: `Bake Junction Textures` keeps masks;
+`Regenerate Junction Masks And Bake` resets them. Both bake albedos/atlas.
+R blends asphalt; G is only a contour reference, with no mesh/snow effect.
 
-Keep Unity closed during generation. The default worker has an independent
+Keep Unity closed during Blender generation. The default worker has an independent
 body/wardrobe generator and `DefaultNpcAssetSetup` importer. The legacy resident
 command builds WoodWoman/shared actions; `--phase-two` builds the other four.
 `VillageLife` prebuild imports residents/props/doors through their asset setups.

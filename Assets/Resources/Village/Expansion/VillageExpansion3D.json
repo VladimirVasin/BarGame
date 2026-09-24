@@ -1,11 +1,11 @@
 {
-  "generator_version": "1.3.0",
+  "generator_version": "1.4.0",
   "design_id": "village_forest_ski_base_old_road_v1",
   "scale_mode": "fixed_metres",
   "uv_mode": "projected_metres",
-  "build_signature": "01906b57fe13ff663651e670cdc84e407b0b7dde77ec183b3fd8fbd85a618726",
-  "mesh_count": 454,
-  "triangle_count": 144796,
+  "build_signature": "484d190490da833dfcd32caf97f009bb661cdc051a6aab9a53336a9e85ec1558",
+  "mesh_count": 458,
+  "triangle_count": 146752,
   "colliders": false,
   "lights": false,
   "cameras": false,
@@ -3106,6 +3106,102 @@
         1.6800000000000002
       ],
       "triangles": 192
+    },
+    {
+      "kind": "BrookFootbridge",
+      "name": "DeckAndApproaches",
+      "mesh": "GEO_Expansion_BrookFootbridge_DeckAndApproaches",
+      "surface": "Timber",
+      "solid": true,
+      "tint": [
+        0.355,
+        0.325,
+        0.27,
+        1
+      ],
+      "bounds_min": [
+        -0.95,
+        -0.09,
+        -2.4
+      ],
+      "bounds_max": [
+        0.95,
+        0.18,
+        2.4
+      ],
+      "triangles": 564
+    },
+    {
+      "kind": "BrookFootbridge",
+      "name": "BearersAndBankSleepers",
+      "mesh": "GEO_Expansion_BrookFootbridge_BearersAndBankSleepers",
+      "surface": "Timber",
+      "solid": true,
+      "tint": [
+        0.245,
+        0.235,
+        0.2,
+        1
+      ],
+      "bounds_min": [
+        -0.89,
+        -0.16,
+        -1.725
+      ],
+      "bounds_max": [
+        0.89,
+        0.1,
+        1.725
+      ],
+      "triangles": 112
+    },
+    {
+      "kind": "BrookFootbridge",
+      "name": "LowSideRails",
+      "mesh": "GEO_Expansion_BrookFootbridge_LowSideRails",
+      "surface": "Timber",
+      "solid": true,
+      "tint": [
+        0.295,
+        0.28,
+        0.235,
+        1
+      ],
+      "bounds_min": [
+        -0.95,
+        0.08000000000000007,
+        -1.82
+      ],
+      "bounds_max": [
+        0.95,
+        1.02,
+        1.82
+      ],
+      "triangles": 320
+    },
+    {
+      "kind": "BrookFootbridge",
+      "name": "OldFasteners",
+      "mesh": "GEO_Expansion_BrookFootbridge_OldFasteners",
+      "surface": "RustedIron",
+      "solid": false,
+      "tint": [
+        0.3,
+        0.255,
+        0.21,
+        1
+      ],
+      "bounds_min": [
+        -0.953,
+        0.18,
+        -1.7090932667397365
+      ],
+      "bounds_max": [
+        0.953,
+        0.988,
+        1.709093266739737
+      ],
+      "triangles": 960
     },
     {
       "kind": "TownHall",

@@ -179,6 +179,13 @@ namespace BarPromenade
             {
                 AlpineVillagePathDescriptor path = paths[index];
                 Vector2 closest = ClosestPointOnPath(path, point);
+                bool owned = false;
+                if (plan.Expansion != null)
+                    foreach (AlpineVillageJunctionPlan junction in plan.Expansion.Junctions)
+                        if (junction.Owns(closest)) { owned = true; break; }
+                // Inside a junction its contour replaces the independent
+                // route caps, including the pointed corners returned to snow.
+                if (owned) continue;
                 float outside = Vector2.Distance(point, closest) -
                                 path.SurfaceHalfWidth;
                 if (outside >= best)
@@ -194,6 +201,18 @@ namespace BarPromenade
             outward = delta.sqrMagnitude <= 0.000001f
                 ? Vector2.up
                 : delta.normalized;
+            if (plan.Expansion != null)
+                foreach (AlpineVillageJunctionPlan junction in plan.Expansion.Junctions)
+                {
+                    Rect bounds = junction.Bounds;
+                    float dx = Mathf.Max(bounds.xMin - point.x, 0f, point.x - bounds.xMax);
+                    float dz = Mathf.Max(bounds.yMin - point.y, 0f, point.y - bounds.yMax);
+                    if ((dx > 0f || dz > 0f) && (best < 0f || dx * dx + dz * dz >= best * best)) continue;
+                    float outside = junction.DistanceOutside(point, out Vector2 normal);
+                    if (outside >= best) continue;
+                    best = outside;
+                    outward = normal;
+                }
             return best;
         }
 

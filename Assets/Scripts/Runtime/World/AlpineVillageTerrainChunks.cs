@@ -26,7 +26,7 @@ namespace BarPromenade
                         Mathf.FloorToInt(centre.z / ChunkSize));
                     if (!chunks.TryGetValue(key, out Chunk chunk))
                     {
-                        chunk = new Chunk();
+                        chunk = new Chunk(source.subMeshCount);
                         chunks.Add(key, chunk);
                     }
                     for (int corner = 0; corner < 3; corner++)
@@ -53,9 +53,9 @@ namespace BarPromenade
                 mesh.SetVertices(chunk.Positions);
                 mesh.SetNormals(chunk.Normals);
                 mesh.SetUVs(0, chunk.Uvs);
-                mesh.subMeshCount = 2;
-                mesh.SetTriangles(chunk.Triangles[0], 0);
-                mesh.SetTriangles(chunk.Triangles[1], 1);
+                mesh.subMeshCount = source.subMeshCount;
+                for (int material = 0; material < source.subMeshCount; material++)
+                    mesh.SetTriangles(chunk.Triangles[material], material);
                 mesh.RecalculateBounds();
                 var host = new GameObject(mesh.name);
                 host.transform.SetParent(parent, false);
@@ -68,7 +68,7 @@ namespace BarPromenade
                 var properties = new MaterialPropertyBlock();
                 sourceRenderer.GetPropertyBlock(properties);
                 renderer.SetPropertyBlock(properties);
-                for (int material = 0; material < 2; material++)
+                for (int material = 0; material < source.subMeshCount; material++)
                 {
                     properties.Clear();
                     sourceRenderer.GetPropertyBlock(properties, material);
@@ -84,7 +84,13 @@ namespace BarPromenade
             public readonly List<Vector3> Positions = new List<Vector3>();
             public readonly List<Vector3> Normals = new List<Vector3>();
             public readonly List<Vector2> Uvs = new List<Vector2>();
-            public readonly List<int>[] Triangles = { new List<int>(), new List<int>() };
+            public readonly List<int>[] Triangles;
+            public Chunk(int materialCount)
+            {
+                Triangles = new List<int>[materialCount];
+                for (int material = 0; material < materialCount; material++)
+                    Triangles[material] = new List<int>();
+            }
         }
     }
 }
