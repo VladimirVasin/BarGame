@@ -510,16 +510,16 @@ namespace BarPromenade
             float farZ = grid.ZCoordinates[row + 1];
             float u = Mathf.InverseLerp(nearX, farX, point.x);
             float v = Mathf.InverseLerp(nearZ, farZ, point.y);
-            float nearRight = SampleHeight(plan, new Vector2(farX, nearZ));
-            float farLeft = SampleHeight(plan, new Vector2(nearX, farZ));
+            float nearRight = grid.SampleHeight(column + 1, row);
+            float farLeft = grid.SampleHeight(column, row + 1);
             if (u + v <= 1f)
             {
-                float nearLeft = SampleHeight(plan, new Vector2(nearX, nearZ));
+                float nearLeft = grid.SampleHeight(column, row);
                 return nearLeft + u * (nearRight - nearLeft) +
                        v * (farLeft - nearLeft);
             }
 
-            float farRight = SampleHeight(plan, new Vector2(farX, farZ));
+            float farRight = grid.SampleHeight(column + 1, row + 1);
             return farRight + (1f - v) * (nearRight - farRight) +
                    (1f - u) * (farLeft - farRight);
         }

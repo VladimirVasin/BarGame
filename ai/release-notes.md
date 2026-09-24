@@ -6,27 +6,27 @@ Earlier notes: [`release-notes-2026-09.md`](archive/release-notes-2026-09.md).
 
 ## Unreleased
 
-### 2026-09-25 — Сугробы, осмотры и база
+### 2026-09-25 — Сугробы, осмотры, база и загрузка
 
-- В глубоких сугробах герой высоко вытаскивает ноги и идёт коротким шагом,
-  назад — осторожнее. Бег недоступен; протоптанное/расчищенное возвращает
-  обычное движение. Проверка анимаций: `player_snow_actions.validate_snow_actions`.
-  Движение: `DeepSnow_BlocksSprintPreservesSlowdownAndRestoresMovement`;
-  сцена/просмотр кадров: `AreaCaptureFixture.AlpineVillageSnowGait`.
-- Печка базы горит ровнее: треск мягче и реже, резкий верх приглушён.
-  Проверка: `InteriorSoundscapeSynthesisTests.LoopBeds_AreFiniteQuietNonSilentAndLoopSafe`.
-- Вещи у работы/хранения/лавины, лишние убраны: 24 наружных осмотра;
-  склад/обрыв сохранены, квота/видимость с дороги не определяют место.
-  Камера медленнее подходит/возвращается с мягким разгоном/торможением;
-  фокус меняется вместе с ней. Проверка/кадры: `AreaCaptureFixture.AlpineVillageNarrative`.
-- База: кровати/лежак подушками к стене, ковёр у ног; стол на шестерых,
-  фонарь с краю, чайник у стены, декор.
-  Стул по диагонали к печи оставляет подход: E — сесть/встать;
+- Сугробы: высокий короткий шаг, назад осторожнее; бега нет. Следы/расчистка
+  возвращают обычный ход. Проверки: `player_snow_actions.validate_snow_actions`,
+  `DeepSnow_BlocksSprintPreservesSlowdownAndRestoresMovement`,
+  `AreaCaptureFixture.AlpineVillageSnowGait` (кадры).
+- Печь: мягкий редкий треск, приглушённый верх. Проверка:
+  `InteriorSoundscapeSynthesisTests.LoopBeds_AreFiniteQuietNonSilentAndLoopSafe`.
+- Осмотры у работы/хранения/лавины: 24 снаружи, склад/обрыв сохранены.
+  Место важнее квот/видимости с дороги; камера/фокус подходят плавнее.
+  Проверка/кадры: `AreaCaptureFixture.AlpineVillageNarrative`.
+- База: подушки к стене, ковёр у ног; стол на шестерых, фонарь с краю,
+  чайник у стены, декор. Стул к печи оставляет подход: E — сесть/встать;
   фото/лыжи — RU/EN-осмотр. Проверки: `build-village-expansion-3d-model.py`,
   `AreaCaptureFixture.AlpineVillageLodgeFurnishings` (кадры).
-
 - «Новая игра»: старт у базы. Проверка:
   `NewGame_SelectedLocationUsesItsNormalArrivalWithoutTheHomeOpening(SkiLodge)`.
+- Генерация деревни ускорена: убраны повторные расчёты рельефа/троп/снега,
+  детализация сохранена. Проверки: `AlpineVillageTerrainCacheTests`,
+  `SnowField_SparseSamplingPreservesDenseGeometry`,
+  `TerrainMesh_BuildsTheRidgeAndTheCablewayBrink`.
 
 ### 2026-09-24 — Деревня: снег, лавина, база и осмотры
 

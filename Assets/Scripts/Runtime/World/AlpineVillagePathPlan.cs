@@ -179,6 +179,14 @@ namespace BarPromenade
             {
                 AlpineVillagePathDescriptor path = paths[index];
                 Vector2 closest = ClosestPointOnPath(path, point);
+                float outside = Vector2.Distance(point, closest) -
+                                path.SurfaceHalfWidth;
+                // Ownership can only reject this route. If it cannot replace
+                // the current nearest route, its junction contour is irrelevant.
+                if (outside >= best)
+                {
+                    continue;
+                }
                 bool owned = false;
                 if (plan.Expansion != null)
                     foreach (AlpineVillageJunctionPlan junction in plan.Expansion.Junctions)
@@ -186,12 +194,6 @@ namespace BarPromenade
                 // Inside a junction its contour replaces the independent
                 // route caps, including the pointed corners returned to snow.
                 if (owned) continue;
-                float outside = Vector2.Distance(point, closest) -
-                                path.SurfaceHalfWidth;
-                if (outside >= best)
-                {
-                    continue;
-                }
 
                 best = outside;
                 nearest = closest;

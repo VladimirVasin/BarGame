@@ -691,8 +691,12 @@ namespace BarPromenade.Tests.EditMode
             Mesh importedMesh = null;
             try
             {
+                var buildTimer = System.Diagnostics.Stopwatch.StartNew();
                 AlpineVillageWorldResult world =
                     AlpineVillageWorldBuilder.Build(host.transform, plan);
+                TestContext.WriteLine("ALPINE_VILLAGE_WORLD_BUILD_MS=" +
+                    buildTimer.Elapsed.TotalMilliseconds.ToString("F3",
+                        System.Globalization.CultureInfo.InvariantCulture));
                 foreach (MeshFilter candidate in world.Root.GetComponentsInChildren<MeshFilter>(true))
                 {
                     Mesh mesh = candidate.sharedMesh;
@@ -975,15 +979,22 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 AlpineVillageRidgeAppearance.UvUnitsPerMeter,
                 Is.EqualTo(expectedUvScale).Within(0.000001f));
-            var asphaltVertices = new HashSet<int>(asphalt);
-            var junctionVertices = new HashSet<int>(junctionCoating);
             float asphaltUvScale = 1f / MountainRoadSurfaceAppearance.GetRecipe(MountainRoadSurfaceKind.Asphalt).MetersPerTile;
-            for (int index = 0; index < vertices.Length; index++)
+            float soilUvScale = 1f / MountainRoadSurfaceAppearance.GetRecipe(MountainRoadSurfaceKind.ForestFloor).MetersPerTile;
+            // Clipping may leave unreferenced atlas vertices after discarding
+            // degenerate faces. UV ownership comes from a live material slot,
+            // not from absence in the junction's triangle list. Check each slot
+            // independently so an invalid shared UV cannot hide behind priority.
+            int[][] materialTriangles = { floor, rise, asphalt, junctionCoating, soil };
+            for (int material = 0; material < materialTriangles.Length; material++)
+            foreach (int index in new HashSet<int>(materialTriangles[material]))
             {
                 Vector2 point = new Vector2(vertices[index].x, vertices[index].z);
-                Vector2 expected = junctionVertices.Contains(index)
+                Vector2 expected = material == AlpineVillageWorldBuilder.TerrainJunctionMaterialIndex
                     ? AlpineVillageJunctionAppearance.Uv(plan, point)
-                    : point * (asphaltVertices.Contains(index) ? asphaltUvScale : expectedUvScale);
+                    : point * (material == AlpineVillageWorldBuilder.TerrainAsphaltMaterialIndex
+                        ? asphaltUvScale : material == AlpineVillageWorldBuilder.TerrainSoilMaterialIndex
+                            ? soilUvScale : expectedUvScale);
                 Assert.That(
                     uv[index].x,
                     Is.EqualTo(expected.x)
@@ -2665,6 +2676,82 @@ namespace BarPromenade.Tests.EditMode
             {
                 Object.DestroyImmediate(host);
             }
+        }
+
+        [Test]
+        [Category("AlpineVillage")]
+        public void SnowField_SparseSamplingPreservesDenseGeometry()
+        {
+            AlpineVillagePlan plan = CreatePlan();
+            IReadOnlyList<AlpineVillagePathDescriptor> paths = AlpineVillagePathPlanner.Create(plan);
+            var vertices = new List<Vector3> { Vector3.zero, Vector3.right, Vector3.forward };
+            var uvs = new List<Vector2> { Vector2.zero, Vector2.right, Vector2.up };
+            var triangles = new List<int> { 0, 1, 2 };
+            var grounds = new List<float> { 0f, 0f, 0f };
+            var depths = new List<float> { 0f, 0f, 0f };
+            var expectedVertices = new List<Vector3>(vertices);
+            var expectedUvs = new List<Vector2>(uvs);
+            var expectedTriangles = new List<int>(triangles);
+            var expectedGrounds = new List<float>(grounds);
+            var expectedDepths = new List<float>(depths);
+            const System.Reflection.BindingFlags flags =
+                System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic;
+            typeof(AlpineVillageWorldBuilder).GetMethod("AppendSnowField", flags).Invoke(null,
+                new object[] { plan, paths, vertices, uvs, triangles, grounds, depths });
+
+            // The former dense recipe samples every point before deciding
+            // which faces survive. Keep it as a reference for the sparse
+            // optimization: compare coordinates, winding, order and treading
+            // floors, including the existing ribbon's index prefix.
+            Rect bowl = plan.TerrainBounds;
+            float outset = AlpineVillageTerrainSampler.RidgeStandoff;
+            float cell = AlpineVillageSnowDrift.FieldCellSize;
+            Rect bounds = Rect.MinMaxRect(bowl.xMin - outset, bowl.yMin - outset,
+                bowl.xMax + outset, bowl.yMax + outset);
+            int columns = Mathf.Max(1, Mathf.CeilToInt(bounds.width / cell));
+            int rows = Mathf.Max(1, Mathf.CeilToInt(bounds.height / cell));
+            int origin = expectedVertices.Count;
+            for (int row = 0; row <= rows; row++)
+            for (int column = 0; column <= columns; column++)
+            {
+                var point = new Vector2(bounds.xMin + bounds.width * (column / (float)columns),
+                    bounds.yMin + bounds.height * (row / (float)rows));
+                float depth = AlpineVillageSnowDrift.SampleDepth(plan, paths, point);
+                float ground = depth <= AlpineVillageSnowDrift.FieldBurial
+                    ? AlpineVillageTerrainSampler.SampleMeshHeight(plan, point)
+                    : AlpineVillageTerrainSampler.SampleHeight(plan, point);
+                float height = ground + depth - AlpineVillageSnowDrift.FieldBurial;
+                expectedVertices.Add(new Vector3(point.x, height, point.y));
+                expectedGrounds.Add(ground);
+                expectedDepths.Add(Mathf.Max(0f, height - ground));
+                expectedUvs.Add(AlpineVillageRidgeAppearance.CreateWorldUv(point));
+            }
+            for (int row = 0; row < rows; row++)
+            for (int column = 0; column < columns; column++)
+            {
+                var centre = new Vector2(bounds.xMin + bounds.width * ((column + .5f) / columns),
+                    bounds.yMin + bounds.height * ((row + .5f) / rows));
+                if (AlpineVillageTerrainSampler.SampleRidgeRise(plan, centre) > 0f ||
+                    plan.Expansion.DistanceOutsideLodge(centre) < cell) continue;
+                if (AlpineVillagePathPlanner.MeasureDistanceOutsideTrodden(plan, paths, centre, out _) <
+                    AlpineVillageSnowDrift.RibbonReach - cell) continue;
+                int corner = origin + row * (columns + 1) + column;
+                expectedTriangles.Add(corner);
+                expectedTriangles.Add(corner + columns + 1);
+                expectedTriangles.Add(corner + 1);
+                expectedTriangles.Add(corner + 1);
+                expectedTriangles.Add(corner + columns + 1);
+                expectedTriangles.Add(corner + columns + 2);
+            }
+            int denseCount = expectedVertices.Count;
+            typeof(AlpineVillageWorldBuilder).GetMethod("CompactSnowVertices", flags).Invoke(null,
+                new object[] { expectedVertices, expectedUvs, expectedTriangles, expectedGrounds, expectedDepths });
+            Assert.That(vertices.Count, Is.LessThan(denseCount), "The expanded bowl must exercise unused points.");
+            Assert.That(vertices, Is.EqualTo(expectedVertices));
+            Assert.That(uvs, Is.EqualTo(expectedUvs));
+            Assert.That(triangles, Is.EqualTo(expectedTriangles));
+            Assert.That(grounds, Is.EqualTo(expectedGrounds));
+            Assert.That(depths, Is.EqualTo(expectedDepths));
         }
 
         /// <summary>

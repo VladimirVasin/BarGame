@@ -26,6 +26,50 @@ namespace BarPromenade.Tests.EditMode
             return plan.Brook;
         }
 
+        [Test]
+        [Category("AlpineVillage")]
+        public void ChannelIndex_PreservesLinearDistanceAndBedDepth()
+        {
+            AlpineVillageBrookPlan brook = Brook(out AlpineVillagePlan plan);
+            Rect bounds = plan.TerrainMeshBounds;
+            // Distant field points exercise chunk rejection; vertices and
+            // segment midpoints exercise endpoint ties and channel bends.
+            for (int row = 0; row <= 24; row++)
+            for (int column = 0; column <= 24; column++)
+                Verify(new Vector2(Mathf.Lerp(bounds.xMin, bounds.xMax, column / 24f),
+                    Mathf.Lerp(bounds.yMin, bounds.yMax, row / 24f)));
+            for (int index = 0; index < brook.Samples.Count; index++)
+            {
+                Vector3 at = brook.Samples[index].Position;
+                Verify(new Vector2(at.x, at.z));
+                if (index == 0) continue;
+                Vector3 middle = (at + brook.Samples[index - 1].Position) * .5f;
+                Verify(new Vector2(middle.x, middle.z));
+            }
+
+            void Verify(Vector2 point)
+            {
+                float expected = float.MaxValue, expectedDepth = 0f;
+                for (int index = 0; index < brook.Samples.Count - 1; index++)
+                {
+                    AlpineVillageBrookSample first = brook.Samples[index];
+                    AlpineVillageBrookSample second = brook.Samples[index + 1];
+                    var start = new Vector2(first.Position.x, first.Position.z);
+                    Vector2 segment = new Vector2(second.Position.x, second.Position.z) - start;
+                    float lengthSquared = segment.sqrMagnitude;
+                    float amount = lengthSquared <= .000001f ? 0f :
+                        Mathf.Clamp01(Vector2.Dot(point - start, segment) / lengthSquared);
+                    float distance = Vector2.Distance(point, start + segment * amount);
+                    if (distance >= expected) continue;
+                    expected = distance;
+                    expectedDepth = Mathf.Lerp(first.BedDepth, second.BedDepth, amount);
+                }
+                float actual = brook.DistanceToChannel(point, out float actualDepth);
+                Assert.That(actual, Is.EqualTo(expected), "Channel distance at " + point);
+                Assert.That(actualDepth, Is.EqualTo(expectedDepth), "Channel depth at " + point);
+            }
+        }
+
         /// <summary>
         /// The one thing a viewer cannot be talked out of. The surface is
         /// built as a running minimum precisely so this is true by

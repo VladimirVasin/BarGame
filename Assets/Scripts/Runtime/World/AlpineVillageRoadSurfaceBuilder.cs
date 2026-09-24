@@ -37,6 +37,10 @@ namespace BarPromenade
             Vector2[] sourceUvs = mesh.uv;
             int[] triangles = mesh.triangles;
             var positions = new List<Vector3>(source.Length);
+            // Fit already measures every original/clipped vertex. Retain its
+            // exact distance for the later triangle pass instead of scanning
+            // the same outlines again at each shared corner.
+            var taperDistances = new List<float>(source.Length);
             var uvs = new List<Vector2>(sourceUvs);
             foreach (Vector3 point in source) positions.Add(Fit(point));
             var result = new List<int>(triangles.Length);
@@ -109,6 +113,7 @@ namespace BarPromenade
             {
                 Vector2 at = XZ(point);
                 float distance = TaperDistance(at);
+                taperDistances.Add(distance);
                 if (distance < PathJoinReach)
                     point.y = Mathf.Lerp(AlpineVillageTerrainSampler.SampleMeshHeight(plan, at),
                         point.y, Mathf.SmoothStep(0f, 1f, distance / PathJoinReach));
@@ -149,8 +154,8 @@ namespace BarPromenade
                     // Outside the taper, the existing raised path is retained.
                     // Near its ground-level mouth, independently tessellated
                     // faces can cut below the terrain despite correct vertices.
-                    if (TaperDistance(XZ(a)) >= PathJoinReach && TaperDistance(XZ(b)) >= PathJoinReach &&
-                        TaperDistance(XZ(c)) >= PathJoinReach && TaperDistance(XZ((a + b + c) / 3f)) >= PathJoinReach)
+                    if (taperDistances[ia] >= PathJoinReach && taperDistances[ib] >= PathJoinReach &&
+                        taperDistances[ic] >= PathJoinReach && TaperDistance(XZ((a + b + c) / 3f)) >= PathJoinReach)
                     {
                         fitted.Add(ia); fitted.Add(ib); fitted.Add(ic);
                         continue;
@@ -250,7 +255,26 @@ namespace BarPromenade
                 groups.Add(new FootprintGroup(junction.Bounds,
                     new List<Footprint> { new Footprint(junction.OwnershipContour, -1) }));
             var road = CreateFootprints(plan.Expansion);
-            groups.Add(new FootprintGroup(plan.TerrainMeshBounds, road));
+            // Consecutive road pieces are local, but the old group covered the
+            // entire terrain. Every ground face therefore checked every road
+            // strip/bend, including the distant ridge. Tight ordered groups
+            // reject those scans without changing footprint priority.
+            const int roadGroupSize = 8;
+            for (int first = 0; first < road.Count; first += roadGroupSize)
+            {
+                List<Footprint> parts = road.GetRange(first, Math.Min(roadGroupSize, road.Count - first));
+                Vector2 min = parts[0].Bounds.min, max = parts[0].Bounds.max;
+                foreach (Footprint part in parts)
+                {
+                    min = Vector2.Min(min, part.Bounds.min);
+                    max = Vector2.Max(max, part.Bounds.max);
+                }
+                // Pad the broad phase only, including float roundoff when
+                // Rect reconstructs its maximum from minimum + size.
+                const float margin = .001f;
+                groups.Add(new FootprintGroup(Rect.MinMaxRect(min.x - margin, min.y - margin,
+                    max.x + margin, max.y + margin), parts));
+            }
             var positions = new List<Vector3>(ground.vertices);
             var normals = new List<Vector3>(ground.normals);
             var uvs = new List<Vector2>(ground.uv);

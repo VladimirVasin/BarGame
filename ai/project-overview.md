@@ -54,20 +54,19 @@ interaction and common menus. `GameInputPolicy` gives pause, transitions and
 modal ownership priority while preserving balance-recovery movement. Specific
 look/debug controls remain local; a rebinding interface is not implemented.
 
-Area travel unloads the source and loads the destination in Single mode.
-City/MountainRoad/AlpineVillage share incremental construction with their
-synchronous `Build` compatibility entry points. The loading overlay survives
-scene activation until the destination root completes: 20% represents scene
-loading and 80% construction. A best-effort 8 ms budget yields between
-indivisible stages; it is not a bound on an individual stage. World time,
-input and gameplay audio remain paused during construction. Transition owners
-release held scene activation and owned state on disable/destroy.
+Area travel loads its destination in Single mode. City/MountainRoad/AlpineVillage share
+incremental builders and synchronous `Build` entry points. The overlay stays
+until root completion: 20% scene loading, 80% construction. An 8 ms best-effort
+budget yields between indivisible stages; a stage may exceed it. World time,
+input and gameplay audio pause until ready. Owners release activation/state on teardown.
+Village terrain and surface interpolation share exact lazy grid heights, keyed
+by plan/brook identity; replacing either clears the cache. Snow evaluates only
+retained field vertices; path refinement reuses edge work.
 
-The accepted `2026-09-06` loading presentation uses one static painterly image
-per directed edge of City ↔ MountainRoad ↔ AlpineVillage and a bottom progress
-bar. Direct map transfers across the middle area use the last leg's image.
-This bounded UI exception adds no text, story fact or additional travel time;
-see art-bible §15a and the accepted architecture decision.
+The accepted `2026-09-06` loading UI uses a static painterly image per directed
+City ↔ MountainRoad ↔ AlpineVillage edge and a bottom bar; cross-area map travel
+uses its last leg. It adds no text, story fact or travel time; art-bible §15a
+and the accepted architecture decision define this bounded exception.
 
 An optional bounded performance capture reports frame intervals, main/render
 threads, available GPU timing, allocations and foot-bake/reflection scopes.

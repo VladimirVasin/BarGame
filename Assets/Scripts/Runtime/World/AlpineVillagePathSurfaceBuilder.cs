@@ -246,23 +246,21 @@ namespace BarPromenade
             for (int pass = 0; pass < 20; pass++)
             {
                 var mids = new Dictionary<ulong, int>();
-                for (int index = 0; index < triangles.Count; index += 3)
-                    for (int edge = 0; edge < 3; edge++)
-                    {
-                        int a = triangles[index + edge], b = triangles[index + (edge + 1) % 3];
-                        ulong key = Edge(a, b);
-                        if ((points[a] - points[b]).sqrMagnitude <= limit || mids.ContainsKey(key)) continue;
-                        mids.Add(key, points.Count);
-                        points.Add((points[a] + points[b]) * .5f);
-                    }
-                if (mids.Count == 0) return;
-                var next = new List<int>(triangles.Count * 2);
+                List<int> next = null;
                 for (int index = 0; index < triangles.Count; index += 3)
                 {
                     int a = triangles[index], b = triangles[index + 1], c = triangles[index + 2];
-                    int mask = mids.TryGetValue(Edge(a, b), out int ab) ? 1 : 0;
-                    if (mids.TryGetValue(Edge(b, c), out int bc)) mask |= 2;
-                    if (mids.TryGetValue(Edge(c, a), out int ca)) mask |= 4;
+                    // Edge length depends only on the original endpoints, so
+                    // resolving and emitting a triangle in the same pass
+                    // preserves midpoint discovery and triangle order.
+                    int ab = Midpoint(a, b), bc = Midpoint(b, c), ca = Midpoint(c, a);
+                    int mask = (ab >= 0 ? 1 : 0) | (bc >= 0 ? 2 : 0) | (ca >= 0 ? 4 : 0);
+                    if (next == null)
+                    {
+                        if (mask == 0) continue;
+                        next = new List<int>(triangles.Count * 2);
+                        for (int previous = 0; previous < index; previous++) next.Add(triangles[previous]);
+                    }
                     switch (mask)
                     {
                         case 0: Triangle(next, a, b, c); break;
@@ -277,7 +275,19 @@ namespace BarPromenade
                             Triangle(next, ca, bc, c); Triangle(next, ab, bc, ca); break;
                     }
                 }
+                if (next == null) return;
                 triangles = next;
+
+                int Midpoint(int a, int b)
+                {
+                    if ((points[a] - points[b]).sqrMagnitude <= limit) return -1;
+                    ulong key = Edge(a, b);
+                    if (mids.TryGetValue(key, out int midpoint)) return midpoint;
+                    midpoint = points.Count;
+                    mids.Add(key, midpoint);
+                    points.Add((points[a] + points[b]) * .5f);
+                    return midpoint;
+                }
             }
             throw new InvalidOperationException("The visible village route could not reach its terrain sampling pitch.");
         }

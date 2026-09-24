@@ -3,46 +3,46 @@
 Newest outcomes/checks first. Archive whole dates at budget: [policy](README.md).
 Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-2026-08.md).
 
-## 2026-09-25 — Village snow gait, inspections and lodge
+## 2026-09-25 — Village snow, inspections, lodge and cold loading
 
-- Deep village snow selects supported forward/backward high steps; real depth
-  includes tracks/clearing, ahead probes avoid oscillation from one's own stamp.
-  Sprint blocked; cold arms remain, torso yields to effort. Same rig/foot phase;
-  post-IK contacts drive snow sound/kickup. User-approved canon exception in §6.
-  Check: `player_snow_actions.validate_snow_actions` — supported soles, lift,
-  knees, loop closure/determinism and preservation of other hero content.
-  `DeepSnow_BlocksSprintPreservesSlowdownAndRestoresMovement` proves the motor;
-  `AreaCaptureFixture.AlpineVillageSnowGait` verifies real snow, foot lift/contact,
-  stop/backstep/exit after blending; game/side frames reviewed.
-- Enclosed stove profile: fewer, softer wood settles over steady warm air;
-  upper frequencies filtered before level matching. Open hearth retains its sound.
-  Check: `InteriorSoundscapeSynthesisTests.LoopBeds_AreFiniteQuietNonSilentAndLoopSafe`
-  measures brightness/envelope variation, audibility, repeatability and loop edges.
-- Narrative placement follows work/storage/debris owners. Remove redundant targets;
-  keep stable sparse IDs and warehouse/cliff group. User waived equal sector counts
-  and road distance/visibility: those checks did not establish a plausible place.
-  Authored side approaches clear the late-built basket stand and sledge handles.
-  Check/frames: `AreaCaptureFixture.AlpineVillageNarrative` — real yard bounds,
-  model clearance, approaches, RU/EN inspection and cleanup. `check-docs.py`.
-- Inspection camera eases in/out more slowly, with synchronized focus/bokeh;
-  its profile leaves dialogue timing unchanged. Check/frames:
-  `AreaCaptureFixture.AlpineVillageNarrative` — frame continuity, pause and cancel.
-- Lodge: bunks/cot headboards and pillows against the wall, rug at their feet;
-  wall kettle counter and oak table with benches
-  for six replace oversized benches. Edge lamp stays reachable; wall decor,
-  hooks/chest/cups complete the room. The chair faces the stove diagonally,
-  preserving the firebox approach; shared sit/stand runs in real time.
-  Photo/skis reuse RU/EN inspection; the photograph has a bounded canon exception.
-  Authored anchors keep geometry, collision, lamp and interactions together.
-  Checks: `build-village-expansion-3d-model.py` validator/export and
-  `AreaCaptureFixture.AlpineVillageLodgeFurnishings`; frames reviewed.
-  Unrelated `AlpineVillageLodgeShelter` music-pause sample assertion drifted
+- Deep snow: supported forward/backward high steps, no sprint; tracks/clearing
+  restore motion, ahead probes avoid self-stamp oscillation. Cold arms stay;
+  effort torso/same rig/foot phase, post-IK sound/kickup; §6 user exception.
+  Checks: `player_snow_actions.validate_snow_actions`,
+  `DeepSnow_BlocksSprintPreservesSlowdownAndRestoresMovement`,
+  `AreaCaptureFixture.AlpineVillageSnowGait` (game/side frames, contacts,
+  stop/backstep/exit).
+- Stove: softer/rarer settles, steady air, filtered highs before level match;
+  open hearth unchanged. Check:
+  `InteriorSoundscapeSynthesisTests.LoopBeds_AreFiniteQuietNonSilentAndLoopSafe`.
+- Narrative: work/storage/debris determine placement; sparse IDs and warehouse/
+  cliff remain. User waived sector quotas and road distance/visibility.
+  Side approaches clear basket/sledge; slower eased camera/focus leaves dialogue
+  timing intact. Check/frames: `AreaCaptureFixture.AlpineVillageNarrative`
+  (yard/model clearance, approaches, RU/EN, continuity, pause/cancel/cleanup).
+- Lodge: heads/pillows to walls, rug at feet; wall kettle, oak table/benches
+  for six, reachable edge lamp, decor/hooks/chest/cups. Diagonal stove chair
+  keeps firebox approach; shared real-time sitting. Photo/skis reuse RU/EN
+  inspection; photo has canon exception. Anchors align geometry/collision/
+  interactions. Checks: `build-village-expansion-3d-model.py` validator/export,
+  `AreaCaptureFixture.AlpineVillageLodgeFurnishings` (frames).
+  Unrelated `AlpineVillageLodgeShelter` music-pause assertion drifted
   by one DSP buffer; unchanged.
-
-- New Game adds the ski lodge, preserving village default/day `1`/`07:40`.
-  Arrival is outside facing its door; the load marker is consumed once.
-  Check: `TechnicalLifecyclePlayModeTests.NewGame_SelectedLocationUsesItsNormalArrivalWithoutTheHomeOpening(SkiLodge)`.
-  RU/EN picker frames reviewed; all choices/Back fit.
+- New Game adds lodge arrival outside facing its door; consumes marker once.
+  Village default/day `1`/`07:40` stay. Check:
+  `NewGame_SelectedLocationUsesItsNormalArrivalWithoutTheHomeOpening(SkiLodge)`;
+  RU/EN picker frames: choices/Back fit.
+- Cold village load repeated terrain sampling across paths, terrain and snow.
+  Exact lazy grid heights now serve mesh/interpolation; plan/brook replacement
+  invalidates them. Snow samples retained cells only, wet exclusion uses the
+  brook index; distant paths reject before junction work, refinement reuses
+  edges/taper distances. Bounded road groups reject distant terrain faces.
+  Geometry/detail preserved; UV assertions now follow each material's used
+  indices, excluding orphan junction vertices. Checks:
+  `AlpineVillageTests.TerrainMesh_BuildsTheRidgeAndTheCablewayBrink`,
+  `SnowField_SparseSamplingPreservesDenseGeometry`,
+  `AlpineVillageBrookTests.ChannelIndex_PreservesLinearDistanceAndBedDepth`,
+  `AlpineVillageTerrainCacheTests`, `check-docs.py`.
 
 ## 2026-09-24 — Village surfaces, weather, lodge and narrative
 

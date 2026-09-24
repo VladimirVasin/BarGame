@@ -535,9 +535,7 @@ namespace BarPromenade
                     float x = grid.XCoordinates[column];
                     float z = grid.ZCoordinates[row];
                     var point = new Vector2(x, z);
-                    float height = AlpineVillageTerrainSampler.SampleHeight(
-                        plan,
-                        point);
+                    float height = grid.SampleHeight(column, row);
                     vertices.Add(new Vector3(x, height, z));
                     uvs.Add(AlpineVillageRidgeAppearance.CreateWorldUv(point));
                 }
@@ -1037,37 +1035,12 @@ namespace BarPromenade
             int columns = Mathf.Max(1, Mathf.CeilToInt(bounds.width / cell));
             int rows = Mathf.Max(1, Mathf.CeilToInt(bounds.height / cell));
 
-            // One grid of vertices, then only the cells the ribbons leave.
-            // The unused ones cost a vertex each and no triangle, which is
-            // far cheaper than re-indexing a sparse grid.
-            int origin = vertices.Count;
-            for (int row = 0; row <= rows; row++)
-            {
-                for (int column = 0; column <= columns; column++)
-                {
-                    var point = new Vector2(
-                        bounds.xMin + bounds.width * (column / (float)columns),
-                        bounds.yMin + bounds.height * (row / (float)rows));
-                    float depth = AlpineVillageSnowDrift.SampleDepth(
-                        plan,
-                        paths,
-                        point);
-                    // A buried zero-depth field vertex must stay below the
-                    // actual ground triangle, including its road material.
-                    // The analytic height can stand above that triangle.
-                    float ground = depth <= AlpineVillageSnowDrift.FieldBurial
-                        ? AlpineVillageTerrainSampler.SampleMeshHeight(plan, point)
-                        : AlpineVillageTerrainSampler.SampleHeight(plan, point);
-                    float height =
-                        ground + depth - AlpineVillageSnowDrift.FieldBurial;
-                    vertices.Add(new Vector3(point.x, height, point.y));
-                    grounds.Add(ground);
-                    depths.Add(Mathf.Max(0f, height - ground));
-                    uvs.Add(
-                        AlpineVillageRidgeAppearance.CreateWorldUv(point));
-                }
-            }
-
+            // Select the same cells before sampling heights. The expanded
+            // bowl's rectangular envelope contains large ridges and gaps;
+            // their unused vertices used to run the complete snow/ground
+            // samplers, only to be discarded by CompactSnowVertices below.
+            var used = new bool[(rows + 1) * (columns + 1)];
+            var fieldTriangles = new List<int>();
             for (int row = 0; row < rows; row++)
             {
                 for (int column = 0; column < columns; column++)
@@ -1095,15 +1068,45 @@ namespace BarPromenade
                         continue;
                     }
 
-                    int corner = origin + row * (columns + 1) + column;
-                    triangles.Add(corner);
-                    triangles.Add(corner + columns + 1);
-                    triangles.Add(corner + 1);
-                    triangles.Add(corner + 1);
-                    triangles.Add(corner + columns + 1);
-                    triangles.Add(corner + columns + 2);
+                    int corner = row * (columns + 1) + column;
+                    used[corner] = used[corner + 1] = true;
+                    used[corner + columns + 1] = used[corner + columns + 2] = true;
+                    fieldTriangles.Add(corner);
+                    fieldTriangles.Add(corner + columns + 1);
+                    fieldTriangles.Add(corner + 1);
+                    fieldTriangles.Add(corner + 1);
+                    fieldTriangles.Add(corner + columns + 1);
+                    fieldTriangles.Add(corner + columns + 2);
                 }
             }
+
+            // Keep the original row-major order and vertex arithmetic. The
+            // final compacted mesh, including treading indices, is unchanged.
+            var remap = new int[used.Length];
+            for (int row = 0; row <= rows; row++)
+            {
+                for (int column = 0; column <= columns; column++)
+                {
+                    int index = row * (columns + 1) + column;
+                    if (!used[index]) continue;
+                    remap[index] = vertices.Count;
+                    var point = new Vector2(
+                        bounds.xMin + bounds.width * (column / (float)columns),
+                        bounds.yMin + bounds.height * (row / (float)rows));
+                    float depth = AlpineVillageSnowDrift.SampleDepth(plan, paths, point);
+                    // Buried points follow the actual triangle; the analytic
+                    // shelf can stand above the painted road surface.
+                    float ground = depth <= AlpineVillageSnowDrift.FieldBurial
+                        ? AlpineVillageTerrainSampler.SampleMeshHeight(plan, point)
+                        : AlpineVillageTerrainSampler.SampleHeight(plan, point);
+                    float height = ground + depth - AlpineVillageSnowDrift.FieldBurial;
+                    vertices.Add(new Vector3(point.x, height, point.y));
+                    grounds.Add(ground);
+                    depths.Add(Mathf.Max(0f, height - ground));
+                    uvs.Add(AlpineVillageRidgeAppearance.CreateWorldUv(point));
+                }
+            }
+            foreach (int index in fieldTriangles) triangles.Add(remap[index]);
         }
 
         /// <summary>

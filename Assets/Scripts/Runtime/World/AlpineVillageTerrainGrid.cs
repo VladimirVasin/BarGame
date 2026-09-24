@@ -15,9 +15,13 @@ namespace BarPromenade
         private static AlpineVillagePlan cachedPlan;
         private static AlpineVillageBrookPlan cachedBrook;
         private static AlpineVillageTerrainGrid cachedGrid;
+        private readonly AlpineVillagePlan plan;
+        private readonly float[] heights;
+        private readonly bool[] sampled;
 
         private AlpineVillageTerrainGrid(AlpineVillagePlan plan)
         {
+            this.plan = plan;
             Rect bounds = plan.TerrainMeshBounds;
             AlpineVillageBrookPlan brook = plan.Brook;
             float minX = float.PositiveInfinity;
@@ -64,6 +68,8 @@ namespace BarPromenade
                 Mathf.Min(cliffA.x, cliffB.x, cliffC.x, cliffD.x), Mathf.Max(cliffA.x, cliffB.x, cliffC.x, cliffD.x));
             ZCoordinates = BuildAxis(bounds.yMin, bounds.height, minZ, maxZ, roomMinZ, roomMaxZ,
                 Mathf.Min(cliffA.z, cliffB.z, cliffC.z, cliffD.z), Mathf.Max(cliffA.z, cliffB.z, cliffC.z, cliffD.z));
+            heights = new float[XCoordinates.Length * ZCoordinates.Length];
+            sampled = new bool[heights.Length];
         }
 
         internal float[] XCoordinates { get; }
@@ -78,8 +84,9 @@ namespace BarPromenade
                 throw new ArgumentNullException(nameof(plan));
             }
 
-            // Keep one small axis cache, not heights. Plans can receive their
-            // brook after initial planning, so both references own validity.
+            // The brook changes both the axes and the analytic ground. Replace
+            // the whole memo when it is attached; pre-brook heights cannot leak
+            // into the finished plan. Other height inputs are immutable.
             if (cachedGrid == null || !ReferenceEquals(cachedPlan, plan) ||
                 !ReferenceEquals(cachedBrook, plan.Brook))
             {
@@ -92,6 +99,21 @@ namespace BarPromenade
 
         internal int FindColumn(float x) => FindInterval(XCoordinates, x);
         internal int FindRow(float z) => FindInterval(ZCoordinates, z);
+
+        /// <summary>Exact analytic height at a shared grid vertex, evaluated
+        /// once. Path/snow interpolation used to resample the same three
+        /// corners for every query, even after terrain construction.</summary>
+        internal float SampleHeight(int column, int row)
+        {
+            int index = row * XCoordinates.Length + column;
+            if (!sampled[index])
+            {
+                heights[index] = AlpineVillageTerrainSampler.SampleHeight(plan,
+                    new Vector2(XCoordinates[column], ZCoordinates[row]));
+                sampled[index] = true;
+            }
+            return heights[index];
+        }
 
         private static float[] BuildAxis(
             float minimum, float length, float fineMinimum, float fineMaximum,

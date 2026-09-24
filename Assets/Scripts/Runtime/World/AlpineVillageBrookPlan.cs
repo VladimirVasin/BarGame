@@ -338,34 +338,45 @@ namespace BarPromenade
                 return float.MaxValue;
             }
 
+            // Snow asks this once per field vertex and again per triangle.
+            // Reuse the channel's terrain index while preserving scan order
+            // and the original arithmetic, including the first-segment tie.
+            AlpineVillagePolylineIndex pruning = NearestIndex;
+            int guess = pruning.GuessSegment(point);
+            float bound = guess < 0 ? float.PositiveInfinity :
+                ChannelSegmentDistance(guess, point, out _);
             float best = float.MaxValue;
-            for (int index = 0; index < samples.Count - 1; index++)
+            for (int chunk = 0; chunk < pruning.ChunkCount; chunk++)
             {
-                AlpineVillageBrookSample first = samples[index];
-                AlpineVillageBrookSample second = samples[index + 1];
-                Vector2 start = ToXZ(first.Position);
-                Vector2 segment = ToXZ(second.Position) - start;
-                float lengthSquared = segment.sqrMagnitude;
-                float amount = lengthSquared <= 0.000001f
-                    ? 0f
-                    : Mathf.Clamp01(
-                        Vector2.Dot(point - start, segment) / lengthSquared);
-                float distance = Vector2.Distance(
-                    point,
-                    start + segment * amount);
-                if (distance >= best)
+                if (pruning.ChunkCannotWin(chunk, point, bound)) continue;
+                int end = Math.Min(samples.Count - 1,
+                    (chunk + 1) * AlpineVillagePolylineIndex.ChunkSize);
+                for (int index = chunk * AlpineVillagePolylineIndex.ChunkSize; index < end; index++)
                 {
-                    continue;
+                    if (pruning.CannotWin(index, point, bound)) continue;
+                    float distance = ChannelSegmentDistance(index, point, out float amount);
+                    if (distance >= best) continue;
+                    best = distance;
+                    bedDepth = Mathf.Lerp(samples[index].BedDepth,
+                        samples[index + 1].BedDepth, amount);
+                    if (distance < bound) bound = distance;
                 }
-
-                best = distance;
-                bedDepth = Mathf.Lerp(
-                    first.BedDepth,
-                    second.BedDepth,
-                    amount);
             }
 
             return best;
+        }
+
+        private float ChannelSegmentDistance(int index, Vector2 point, out float amount)
+        {
+            AlpineVillageBrookSample first = samples[index];
+            AlpineVillageBrookSample second = samples[index + 1];
+            Vector2 start = ToXZ(first.Position);
+            Vector2 segment = ToXZ(second.Position) - start;
+            float lengthSquared = segment.sqrMagnitude;
+            amount = lengthSquared <= 0.000001f
+                ? 0f
+                : Mathf.Clamp01(Vector2.Dot(point - start, segment) / lengthSquared);
+            return Vector2.Distance(point, start + segment * amount);
         }
 
         /// <summary>
