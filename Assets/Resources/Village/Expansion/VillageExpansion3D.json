@@ -1,11 +1,11 @@
 {
-  "generator_version": "1.6.0",
+  "generator_version": "1.7.0",
   "design_id": "village_forest_ski_base_old_road_v1",
   "scale_mode": "fixed_metres",
   "uv_mode": "projected_metres",
-  "build_signature": "0668e09414bbffed4efda82e6e2a8cca04c0c86c4636b54f709cff1084f99635",
-  "mesh_count": 528,
-  "triangle_count": 163532,
+  "build_signature": "535683328f0b8a51ed03cfb2b4b7f1884bc8500c82a11b7c3b128ffcec8862d0",
+  "mesh_count": 541,
+  "triangle_count": 164900,
   "avalanche_origin": [
     -158,
     110
@@ -383,6 +383,30 @@
     },
     {
       "kind": "SkiLodge",
+      "name": "StoveGrate",
+      "mesh": "GEO_Expansion_SkiLodge_StoveGrate",
+      "surface": "RustedIron",
+      "solid": true,
+      "tint": [
+        0.165,
+        0.17,
+        0.155,
+        1
+      ],
+      "bounds_min": [
+        -0.28,
+        0.518,
+        -0.275
+      ],
+      "bounds_max": [
+        0.28,
+        0.57,
+        0.275
+      ],
+      "triangles": 112
+    },
+    {
+      "kind": "SkiLodge",
       "name": "StoveDoor",
       "mesh": "GEO_Expansion_SkiLodge_StoveDoor",
       "surface": "RustedIron",
@@ -393,6 +417,7 @@
         0.17,
         1
       ],
+      "parent": "StoveDoorHinge",
       "bounds_min": [
         -0.355,
         0.3325,
@@ -417,6 +442,7 @@
         0.2,
         1
       ],
+      "parent": "StoveDoorHinge",
       "bounds_min": [
         -0.36100000000000004,
         0.3725,
@@ -527,6 +553,31 @@
     },
     {
       "kind": "SkiLodge",
+      "name": "StoveDoorWear",
+      "mesh": "GEO_Expansion_SkiLodge_StoveDoorWear",
+      "surface": "RustedIron",
+      "solid": false,
+      "tint": [
+        0.285,
+        0.25,
+        0.205,
+        1
+      ],
+      "parent": "StoveDoorHinge",
+      "bounds_min": [
+        -0.275,
+        0.685,
+        -0.5
+      ],
+      "bounds_max": [
+        0.275,
+        0.895,
+        -0.492
+      ],
+      "triangles": 56
+    },
+    {
+      "kind": "SkiLodge",
       "name": "StoveWear",
       "mesh": "GEO_Expansion_SkiLodge_StoveWear",
       "surface": "RustedIron",
@@ -538,16 +589,16 @@
         1
       ],
       "bounds_min": [
-        -0.275,
+        0.448,
         0.645,
-        -0.5
+        -0.0049999999999999906
       ],
       "bounds_max": [
         0.46,
-        0.895,
+        0.7949999999999999,
         0.20500000000000002
       ],
-      "triangles": 84
+      "triangles": 28
     },
     {
       "kind": "SkiLodge",
@@ -12894,6 +12945,398 @@
         2.075
       ],
       "triangles": 84
+    },
+    {
+      "kind": "StoveFire",
+      "name": "FlameBack",
+      "mesh": "GEO_Expansion_StoveFire_FlameBack",
+      "surface": "Fire",
+      "solid": false,
+      "tint": [
+        1,
+        0.72,
+        0.3,
+        1
+      ],
+      "bounds_min": [
+        -0.26403433446878566,
+        0.0,
+        -0.020419102906373846
+      ],
+      "bounds_max": [
+        0.24278648531942879,
+        0.39,
+        0.1158742478725859
+      ],
+      "triangles": 372,
+      "flame_field_vertex_count": 192
+    },
+    {
+      "kind": "StoveFire",
+      "name": "FlameFront",
+      "mesh": "GEO_Expansion_StoveFire_FlameFront",
+      "surface": "Fire",
+      "solid": false,
+      "tint": [
+        1,
+        0.72,
+        0.3,
+        1
+      ],
+      "bounds_min": [
+        -0.16820507859099698,
+        0.0,
+        -0.08881513209573585
+      ],
+      "bounds_max": [
+        0.13621341068472176,
+        0.29,
+        0.01118486790426415
+      ],
+      "triangles": 248,
+      "flame_field_vertex_count": 128
+    },
+    {
+      "kind": "Lighter",
+      "name": "LighterBody",
+      "mesh": "GEO_Expansion_Lighter_LighterBody",
+      "surface": "LighterMetal",
+      "solid": false,
+      "tint": [
+        0.47,
+        0.49,
+        0.465,
+        1
+      ],
+      "bounds_min": [
+        -0.018,
+        0.0,
+        -0.007
+      ],
+      "bounds_max": [
+        0.018,
+        0.043,
+        0.007
+      ],
+      "triangles": 28
+    },
+    {
+      "kind": "Lighter",
+      "name": "LighterLid",
+      "mesh": "GEO_Expansion_Lighter_LighterLid",
+      "surface": "LighterMetal",
+      "solid": false,
+      "tint": [
+        0.5,
+        0.515,
+        0.49,
+        1
+      ],
+      "parent": "LighterLidHinge",
+      "bounds_min": [
+        -0.018,
+        0.0436,
+        -0.007
+      ],
+      "bounds_max": [
+        0.018,
+        0.065,
+        0.007
+      ],
+      "triangles": 76
+    },
+    {
+      "kind": "Lighter",
+      "name": "LidHingeLeaf",
+      "mesh": "GEO_Expansion_Lighter_LidHingeLeaf",
+      "surface": "LighterMetal",
+      "solid": false,
+      "tint": [
+        0.39,
+        0.41,
+        0.385,
+        1
+      ],
+      "parent": "LighterLidHinge",
+      "bounds_min": [
+        -0.0195,
+        0.043,
+        -0.003
+      ],
+      "bounds_max": [
+        -0.016499999999999997,
+        0.047,
+        0.003
+      ],
+      "triangles": 12
+    },
+    {
+      "kind": "Lighter",
+      "name": "HingeBarrel",
+      "mesh": "GEO_Expansion_Lighter_HingeBarrel",
+      "surface": "LighterMetal",
+      "solid": false,
+      "tint": [
+        0.4,
+        0.42,
+        0.395,
+        1
+      ],
+      "bounds_min": [
+        -0.020499999999999997,
+        0.040999999999999995,
+        -0.0036
+      ],
+      "bounds_max": [
+        -0.0165,
+        0.045,
+        0.0036
+      ],
+      "triangles": 28
+    },
+    {
+      "kind": "Lighter",
+      "name": "Chimney",
+      "mesh": "GEO_Expansion_Lighter_Chimney",
+      "surface": "LighterMetal",
+      "solid": false,
+      "tint": [
+        0.4,
+        0.425,
+        0.4,
+        1
+      ],
+      "bounds_min": [
+        -0.013500000000000002,
+        0.046,
+        -0.0052499999999999995
+      ],
+      "bounds_max": [
+        0.0025000000000000005,
+        0.0625,
+        0.0052499999999999995
+      ],
+      "triangles": 156
+    },
+    {
+      "kind": "Lighter",
+      "name": "Wick",
+      "mesh": "GEO_Expansion_Lighter_Wick",
+      "surface": "LighterMetal",
+      "solid": false,
+      "tint": [
+        0.18,
+        0.175,
+        0.155,
+        1
+      ],
+      "bounds_min": [
+        -0.0070999999999999995,
+        0.055999999999999994,
+        -0.0016
+      ],
+      "bounds_max": [
+        -0.0039,
+        0.062,
+        0.0016
+      ],
+      "triangles": 28
+    },
+    {
+      "kind": "Lighter",
+      "name": "Wheel",
+      "mesh": "GEO_Expansion_Lighter_Wheel",
+      "surface": "LighterMetal",
+      "solid": false,
+      "tint": [
+        0.31,
+        0.335,
+        0.315,
+        1
+      ],
+      "parent": "FlintWheel",
+      "bounds_min": [
+        0.0030500000000000006,
+        0.05305,
+        -0.004
+      ],
+      "bounds_max": [
+        0.01295,
+        0.06295,
+        0.004
+      ],
+      "triangles": 188
+    },
+    {
+      "kind": "Lighter",
+      "name": "Lever",
+      "mesh": "GEO_Expansion_Lighter_Lever",
+      "surface": "LighterMetal",
+      "solid": false,
+      "tint": [
+        0.25,
+        0.27,
+        0.245,
+        1
+      ],
+      "parent": "LighterLeverPivot",
+      "bounds_min": [
+        0.0055000000000000005,
+        0.0445,
+        -0.004
+      ],
+      "bounds_max": [
+        0.014499999999999999,
+        0.051500000000000004,
+        0.004
+      ],
+      "triangles": 28
+    },
+    {
+      "kind": "Lighter",
+      "name": "LighterFlame",
+      "mesh": "GEO_Expansion_Lighter_LighterFlame",
+      "surface": "Fire",
+      "solid": false,
+      "tint": [
+        1,
+        0.72,
+        0.3,
+        1
+      ],
+      "hidden": true,
+      "bounds_min": [
+        -0.007921000807849082,
+        0.063,
+        -0.001612171301303895
+      ],
+      "bounds_max": [
+        -0.001789909985771959,
+        0.082,
+        0.0018519303138338598
+      ],
+      "triangles": 92,
+      "flame_field_vertex_count": 48
+    }
+  ],
+  "anchors": [
+    {
+      "kind": "SkiLodge",
+      "name": "StoveDoorHinge",
+      "position": [
+        -0.335,
+        0.755,
+        -0.473
+      ]
+    },
+    {
+      "kind": "SkiLodge",
+      "name": "StoveHandleGrip",
+      "position": [
+        0.245,
+        0.76,
+        -0.53
+      ],
+      "parent": "StoveDoorHinge"
+    },
+    {
+      "kind": "SkiLodge",
+      "name": "StoveLogDock",
+      "position": [
+        0,
+        0.6264,
+        -0.02
+      ]
+    },
+    {
+      "kind": "SkiLodge",
+      "name": "StoveFireDock",
+      "position": [
+        0,
+        0.65,
+        -0.02
+      ]
+    },
+    {
+      "kind": "SkiLodge",
+      "name": "StoveLighterDock",
+      "position": [
+        0.1,
+        0.618,
+        -0.085
+      ]
+    },
+    {
+      "kind": "SkiLodge",
+      "name": "StoveCameraDock",
+      "position": [
+        0,
+        1.05,
+        -1.18
+      ]
+    },
+    {
+      "kind": "SkiLodge",
+      "name": "StoveEntryDock",
+      "position": [
+        0,
+        0.02,
+        -1.4
+      ]
+    },
+    {
+      "kind": "SkiLodge",
+      "name": "StoveExitDock",
+      "position": [
+        0,
+        0.02,
+        -1.4
+      ]
+    },
+    {
+      "kind": "Lighter",
+      "name": "LighterLidHinge",
+      "position": [
+        -0.0185,
+        0.043,
+        0
+      ]
+    },
+    {
+      "kind": "Lighter",
+      "name": "FlintWheel",
+      "position": [
+        0.008,
+        0.058,
+        0
+      ]
+    },
+    {
+      "kind": "Lighter",
+      "name": "LighterLeverPivot",
+      "position": [
+        0.01,
+        0.048,
+        0
+      ]
+    },
+    {
+      "kind": "Lighter",
+      "name": "FlameTip",
+      "position": [
+        -0.0055,
+        0.063,
+        0
+      ]
+    },
+    {
+      "kind": "Lighter",
+      "name": "LighterGrip",
+      "position": [
+        0,
+        0.024,
+        0
+      ]
     }
   ]
 }

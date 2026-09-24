@@ -257,12 +257,18 @@ The vertical slice contains:
   broken shutters/debris show abandonment. No new residents/lights/interiors.
   Four-side sightlines exclude props/foundations; forest clears these/yards,
   terrain levels shelves.
-  Snow-free `18 x 12 m` lodge: vestibule/benches/racks; cold central stove/base,
-  side bypasses, roof/snow flue opening. Piles right of lodge/mother: E→silent Yes/No.
-  No/Escape cancels. Yes adds `FirewoodLog`; `WorldItemFoundScreen` shows inventory
-  3D model/name/description/receipt. Close/Escape retains it, no same-frame key retry.
-  Session cap one, icon, duplicate feedback, infinite stock/retake.
-  No ignition/heat/smoke/use/animation. Shed/lift passive. Avalanche scar,
+  Snow-free `18 x 12 m` lodge: vestibule/benches/racks; central hollow stove,
+  side bypasses/flue opening. Lodge/mother piles: E→silent Yes/No→`FirewoodLog`
+  shared 3D receipt. Cancel before grant; Close/Escape keeps it without key retry.
+  Cap one, duplicate feedback, infinite retake. Stove E opens first person,
+  door/right two-column inventory. Lit E offers door opening. Silent: «Мне понадобится полено»
+  then «Теперь нужно зажечь». Placement consumes one log; reusable metal
+  flip-top lighter is shut in inventory, opens before two dry clicks, third
+  starts gradual fire/light/crackle; closes on withdrawal. Exit closes
+  door/restores camera. Empty/LogPlaced/Burning survives visits; reset:
+  New Game; no burnout. Burning warms within 2.5 m inside the lodge, never
+  through walls. Blender hinge/docks/`StoveFire`/`Lighter`; no hands, world hero visible.
+  Shed/lift passive. Avalanche scar,
   full-size fallen trees/rock/beams, buried tow/cable and damaged household 15
   (`AvalancheRuinedHouse`). Front ~20 m/fan 38 m; `AlpineVillageAvalanchePlan`
   shares fourteen-vertex movement/forest/manifest polygon. Deposit fits ground
@@ -349,25 +355,18 @@ The vertical slice contains:
   vertex deformation: both anchors remain fixed while bulbs and the two real
   lights follow each moving midpoint. The enclosing ridge closes sight and traversal rather than sheltering
   the bowl; only the station canopy and moving cabin are locally dry.
-  The exterior root also opts the existing hero rig into cold presentation:
-  a hunched self-hug during idle, walking and running, with noticeable shoulder
-  rubbing in short series and small hand movements between them. A separate
-  one-second upper-body shiver interrupts these gaps roughly every `5–9 s`,
-  keeping both palms on the opposite sleeves. Running
-  preserves both the arm pose and rub clock. The ordinary
-  leg gait, motor and speed remain shared. `PlayerColdPresentationModel`
-  synchronizes the body breath with bounded, wind-carried mouth condensation
-  from `PlayerColdBreathEffect`. The open canopy remains cold; cabin seating,
-  vehicle ownership, transitions and hidden/contextual presentation suppress
-  the profile, and the mother's-house root never enables it. Balance, falling
-  and nausea/vomiting retain their protective gestures. Pause freezes the
-  scaled-time body clock and particles; scene/presentation cleanup clears this
-  body profile.
-  An equipped inventory scarf halves only the shiver amplitude; the hug,
-  rubbing, breath cycle and locomotion remain intact. It also halves new
-  outdoor exposure, giving a fresh visit `12/86 s` to first/full frost instead
-  of the ordinary `6/43 s`. Equipping or removing it preserves accumulated ice,
-  and indoor thaw retains its ordinary rate.
+  The exterior hero self-hugs while idle/walking/running, rubs shoulders in
+  short series and moves hands between them. One-second shivers every `5–9 s`
+  keep palms on opposite sleeves; running retains pose/rub clock. Gait/motor/
+  speed stay shared. `PlayerColdPresentationModel` synchronizes breath and
+  wind-carried `PlayerColdBreathEffect`. Open canopy stays cold; cabin/vehicle/
+  transitions/hidden contextual presentation suppress the profile. Mother's
+  house and the burning lodge stove's indoor 2.5 m zone suppress cold/breath
+  immediately and thaw frost. Balance/fall/nausea gestures win; pause freezes
+  body/particles, scene/presentation cleanup clears the profile.
+  Equipped scarf halves shiver amplitude/new exposure: first/full frost at
+  `12/86 s`, normally `6/43 s`. Hug/rub/breath/gait stay; equipment changes
+  preserve accumulated ice, thaw keeps its ordinary rate.
   Session frost stays clear for `6 s` outdoors, reaching its cap at `43 s`,
   slightly after the platform-to-mother's-door walk. Thin branching grey-cream
   crystals occupy `8.5–12 %` of ordinary
@@ -381,7 +380,7 @@ The vertical slice contains:
   over `0.12 s`; partial thaw and outdoor return restart the normal cold delay.
   Thaw has its own soft ice-release sounds and tiny
   damp clicks, fading with the remaining frost; neither phase uses sharp impacts
-  or breaking glass. The open canopy stays cold. The mother's house and enclosed cabin
+  or breaking glass. Warm house/cabin/stove zones
   thaw a full layer over about `8 s`, half over `4 s`, and a light layer over
   roughly `1–2 s`, while body cold and breath are already off. Thaw duration
   follows the remaining exposure. Pausing and scene/loading transitions freeze

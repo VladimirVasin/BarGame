@@ -25,7 +25,8 @@ A row never carries a status outside this table. Product-level scope cuts
 
 | System | Guarantee | Key files | Status |
 | --- | --- | --- | --- |
-| Village scenery | 18 households/eight sheds/five yards; avalanche; stove/flue, two woodpiles. | `AlpineVillage{AbandonmentPlan,AvalanchePlan,ExpansionBuilder,WoodpilePlan}` | Current |
+| Village scenery | 18 households/eight sheds/five yards; avalanche, two woodpiles. | `AlpineVillage{AbandonmentPlan,AvalanchePlan,ExpansionBuilder,WoodpilePlan}` | Current |
+| Lodge stove | First-person inventory, log/lighter, session fire/warmth. | `LodgeStove{Interaction,SessionState}` | Current |
 | Village paths | Ground junctions; brook bridge. | `AlpineVillage{JunctionPlan,FootbridgePlan}` | Current |
 | Village household life | Six residents, finite household work, indoor/outdoor help and outcomes across visits. | `AlpineVillageLifeController`, `VillageOutdoorHelpController`, `VillageHouseholdProgress` | Current |
 | Independent rules assembly | Calendar/day schedule, input priorities and temporary vehicle ownership have no Unity dependencies. | `Scripts/Rules`, `BarPromenade.Rules.asmdef` | Current |
@@ -154,8 +155,8 @@ A row never carries a status outside this table. Product-level scope cuts
 | Hero hair | Parted curtains: bounded motion/wind/body/clothing/scarf contacts; pause freeze and copied mirror pose. | `PlayerHair`, `PlayerHairContacts` | Current |
 | Hero jacket cloth | Anchored hem/cuffs: motion/wind/body/hand contacts; pause/reset and passive mirror/arm copies. | `PlayerJacketCloth`, `PlayerJacketClothSurface` | Current |
 | Wearable scarf | Hero-only contacts; shared mouth/mirror pose. Location sets resting height after 5 s of free third-person play. | `PlayerScarf*`, `PlayerFactory`, `GameSessionState` | Current |
-| Alpine Village cold hero | Self-hug and rubs persist through running; an equipped scarf halves shiver amplitude, gait and breath keep priority. | `Player3DCharacterPresentation.Cold`, `PlayerCold{PresentationModel,BreathEffect}` | Current |
-| Alpine frost presentation | Rim frost survives travel; scarf halves new exposure. Growth audio stops at full frost; thaw remains audible. | `AlpineColdExposure{Model,Driver}`, `AlpineColdFrostPass`, `AlpineFrostAudio` | Current |
+| Alpine Village cold hero | Hug/rubs persist running; scarf halves shiver. Warmth stops cold/breath. | `Player3DCharacterPresentation.Cold`, `PlayerCold{PresentationModel,BreathEffect}` | Current |
+| Alpine frost presentation | Session frost; scarf halves growth, full frost stops cues; warm zones thaw. | `AlpineColdExposure{Model,Driver}`, `AlpineColdFrostPass`, `AlpineFrostAudio` | Current |
 | Silent Hill attention | Layered gaze reacts to nearby authored targets within rig limits and yields to contextual ownership. | `PlayerAttention{Rules,Controller,Magnet}`, `IntoxicationHeadModel` | Current |
 | Continuous 3D player interactions | Shared positioned actions preserve visible entry/exit continuity and clean up presentation/input ownership. | `PlayerAnimatedInteraction{Timeline,Controller}`, `PlayerDoorAction{Plan,Controller,Target}` | Current |
 | Bed sleep and wake | Two hand-supported pelvis steps with seated stops in both directions; a domed pillow dents and recovers. | `HomeBedInteraction{,Plan}`, `PlayerAnimatedInteractionPelvisPath` | Current |

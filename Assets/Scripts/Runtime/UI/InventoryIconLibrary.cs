@@ -84,14 +84,12 @@ namespace BarPromenade
                     painter.OutlineRect(2, 7, 27, 18, ink);
                     break;
                 case InventoryItemId.Lighter:
-                    painter.FillRect(9, 6, 14, 17, amber);
-                    painter.OutlineRect(8, 5, 16, 19, ink);
-                    painter.FillRect(10, 21, 12, 4, metal);
-                    painter.FillRect(17, 24, 5, 3, metal);
-                    painter.FillRect(13, 25, 3, 2, pale);
-                    painter.Set(15, 28, amber);
-                    painter.Set(16, 27, amber);
-                    painter.Set(16, 28, pale);
+                    // The closed metal flip-top shared with the physical stove prop.
+                    painter.FillRect(8, 5, 17, 23, metal);
+                    painter.OutlineRect(7, 4, 19, 25, ink);
+                    painter.FillRect(9, 7, 2, 18, pale);
+                    painter.FillRect(8, 20, 17, 1, ink);
+                    painter.FillRect(7, 19, 3, 3, metal);
                     break;
                 case InventoryItemId.VodkaBottle:
                     painter.FillRect(13, 22, 6, 5, metal);

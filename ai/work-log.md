@@ -29,18 +29,19 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 - Connected `AlpineVillageMusic/alpine_village_theme.mp3`, user gain `.70`
   (not LUFS-calibrated); shared fades/resume/optional slot.
   Check: `SceneMusicImportTests.EveryTheme_StreamsAndLoadsInTheBackground`.
-- Cold central lodge stove/flue through roof; matching outdoor woodpiles at
-  lodge/mother's entrance, shared geometry/snow/collision, open side paths,
-  slotted door/dark firebox; no heat/ignition. Silent Yes/No gives one session
-  `FirewoodLog`. Prompt names E; shared 3D receipt with smaller log framing keeps the
-  item on Close/Escape. `PlayerInteractor` blocks the modal's closing-frame
-  press, which had retriggered the pile. Shared pickup/receipt ownership is
-  mandatory in `ai/item-interaction-standard.md`. Checks:
+- Lodge stove/flue, matching lodge/mother piles, shared snow/collision/open paths.
+  E→Yes/No grants one retakeable `FirewoodLog`; shared 3D receipt retains it on
+  Close/Escape. `PlayerInteractor` blocks the close-frame press that retriggered
+  pickup; `ai/item-interaction-standard.md` owns shared presentation. Checks:
   `build-village-expansion-3d-model.py --validate-only`,
   `InventoryTargetInteractionControllerTests.Woodpile_*`,
-  `AreaCaptureFixture.AlpineVillageStoveAndWoodpile` (stove/cap/lifecycle,
-  receipt/input; UI frames reviewed), `AreaCaptureFixture.AlpineVillageMothersHouseWoodpile`
-  (door path/E/shared cap/retake); Blender/Unity frames reviewed.
+  `AreaCaptureFixture.AlpineVillageStoveAndWoodpile`,
+  `AreaCaptureFixture.AlpineVillageMothersHouseWoodpile`; frames reviewed.
+- Stove: first-person grid; one log spent. Inventory flip-top: open→two dry
+  clicks→ignite→close; no hands, world rig visible. Exit restores camera/door;
+  session log/fire/warmth. Lit E offers door opening. Checks:
+  `AreaCaptureFixture.AlpineVillageStoveIgnition` (frames reviewed),
+  Runtime compilation, RU/EN JSON.
 - Removed superseded/debug captures; kept current reports/stills and unpublished
   combat authoring. Motion PNGs became lossless video, preserving every decoded
   frame hash. Checks: capture retention inventory, decoded frame hashes,

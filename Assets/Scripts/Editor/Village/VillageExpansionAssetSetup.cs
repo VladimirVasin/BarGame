@@ -69,6 +69,16 @@ namespace BarPromenade.Editor
             if (found.Count != manifest.mesh_count || model.GetComponentsInChildren<Collider>(true).Length != 0 ||
                 model.GetComponentsInChildren<Light>(true).Length != 0 || model.GetComponentsInChildren<Camera>(true).Length != 0)
                 throw new InvalidOperationException("Expansion source must contain only the declared passive parts.");
+            var importedAnchors = new Dictionary<string, Transform>(StringComparer.Ordinal);
+            foreach (Transform child in model.GetComponentsInChildren<Transform>(true))
+                if (child.name.StartsWith("ANCHOR_Expansion_", StringComparison.Ordinal))
+                    importedAnchors.Add(child.name, child);
+            if (importedAnchors.Count != manifest.anchors.Length)
+                throw new InvalidOperationException("Expansion imported action anchors differ from the manifest.");
+            foreach (VillageExpansionAnchor anchor in manifest.anchors)
+                if (!importedAnchors.TryGetValue("ANCHOR_Expansion_" + anchor.kind + "_" + anchor.name, out Transform imported) ||
+                    Vector3.Distance(imported.position, V(anchor.position)) > .001f)
+                    throw new InvalidOperationException("Expansion action anchor lost its metre position: " + anchor.name);
             var names = new HashSet<string>(StringComparer.Ordinal);
             int sign = 0;
             foreach (VillageExpansionPart part in manifest.parts)
@@ -88,13 +98,18 @@ namespace BarPromenade.Editor
                     Quaternion.Angle(source.transform.rotation, Quaternion.identity) > .001f)
                     throw new InvalidOperationException("Expansion part origin or axes drifted: " + part.mesh);
                 int[] triangles = source.sharedMesh.triangles;
+                if (part.surface == "Fire" && (part.solid || part.flame_field_vertex_count <= 0 ||
+                    source.sharedMesh.uv2.Length != vertices.Length || source.sharedMesh.colors.Length != vertices.Length))
+                    throw new InvalidOperationException("Expansion thermal flame lost its UV1/colors: " + part.mesh);
                 if (triangles.Length / 3 != part.triangles)
                     throw new InvalidOperationException("Expansion triangle count drifted: " + part.mesh);
                 double volume = 0d;
                 for (int i = 0; i < triangles.Length; i += 3)
                     volume += Vector3.Dot(vertices[triangles[i]],
                         Vector3.Cross(vertices[triangles[i + 1]], vertices[triangles[i + 2]])) / 6d;
-                if (double.IsNaN(volume) || double.IsInfinity(volume) || Math.Abs(volume) < 1e-13d ||
+                Vector3 importedScale = source.transform.lossyScale;
+                double metreVolume = volume * importedScale.x * importedScale.y * importedScale.z;
+                if (double.IsNaN(volume) || double.IsInfinity(volume) || Math.Abs(metreVolume) < 1e-10d ||
                     (sign != 0 && Math.Sign(volume) != sign))
                     throw new InvalidOperationException("Expansion solid has reversed winding: " + part.mesh);
                 sign = Math.Sign(volume);

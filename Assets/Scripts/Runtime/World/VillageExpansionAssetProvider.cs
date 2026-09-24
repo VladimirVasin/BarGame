@@ -7,12 +7,20 @@ namespace BarPromenade
     [Serializable]
     public sealed class VillageExpansionPart
     {
-        public string kind, name, mesh, surface;
-        public bool solid;
+        public string kind, name, mesh, surface, parent;
+        public bool solid, hidden;
         public float[] tint, bounds_min, bounds_max;
         public string terrain_fit;
         public float[] support;
         public int triangles;
+        public int flame_field_vertex_count;
+    }
+
+    [Serializable]
+    public sealed class VillageExpansionAnchor
+    {
+        public string kind, name, parent;
+        public float[] position;
     }
 
     [Serializable]
@@ -22,6 +30,7 @@ namespace BarPromenade
         public int mesh_count, triangle_count, animation_count;
         public bool colliders, lights, cameras;
         public VillageExpansionPart[] parts;
+        public VillageExpansionAnchor[] anchors;
         public float[] avalanche_origin, avalanche_footprint;
     }
 
@@ -31,11 +40,12 @@ namespace BarPromenade
     {
         public const string ResourcePath = "Village/Expansion/VillageExpansion3D";
         public const string DesignId = "village_forest_ski_base_old_road_v1";
-        public const string GeneratorVersion = "1.6.0";
+        public const string GeneratorVersion = "1.7.0";
         public const string WreckRustTexturePath = "Village/Textures/VillageTruckRustAlbedo";
         public const string WreckPaintTexturePath = "Village/Textures/VillageTruckPaintAlbedo";
         private static VillageExpansionAssetProvider instance;
         private static Texture2D wreckRust, wreckPaint;
+        private static Material flameMaterial;
         private static readonly Dictionary<string, Texture2D> agedTextures = new Dictionary<string, Texture2D>();
         private readonly Dictionary<string, MeshFilter> meshes;
         public VillageExpansionManifest Manifest { get; }
@@ -58,7 +68,7 @@ namespace BarPromenade
                 value.scale_mode != "fixed_metres" || value.uv_mode != "projected_metres" ||
                 string.IsNullOrEmpty(value.build_signature) || value.parts == null ||
                 value.parts.Length != value.mesh_count || value.mesh_count == 0 || value.colliders ||
-                value.lights || value.cameras || value.animation_count != 0)
+                value.lights || value.cameras || value.animation_count != 0 || value.anchors == null)
                 throw new InvalidOperationException("Invalid or stale passive village expansion manifest.");
             if (value.avalanche_origin == null || value.avalanche_origin.Length != 2 ||
                 Vector2.Distance(new Vector2(value.avalanche_origin[0], value.avalanche_origin[1]),
@@ -74,6 +84,12 @@ namespace BarPromenade
                     (part.terrain_fit != "surface" && part.terrain_fit != "rigid" ||
                      part.terrain_fit == "rigid" && (part.support == null || part.support.Length != 3)))
                     throw new InvalidOperationException("Avalanche part has no terrain fitting contract.");
+            var anchors = new HashSet<string>(StringComparer.Ordinal);
+            foreach (VillageExpansionAnchor anchor in value.anchors)
+                if (string.IsNullOrEmpty(anchor.kind) || string.IsNullOrEmpty(anchor.name) ||
+                    anchor.position == null || anchor.position.Length != 3 ||
+                    !anchors.Add(anchor.kind + "/" + anchor.name))
+                    throw new InvalidOperationException("Invalid village expansion interaction anchor.");
             return value;
         }
 
@@ -109,9 +125,25 @@ namespace BarPromenade
                 var renderer = child.AddComponent<MeshRenderer>();
                 ApplySurface(renderer, part, placementScale);
                 if (part.solid) child.AddComponent<MeshCollider>().sharedMesh = source.sharedMesh;
+                renderer.enabled = !part.hidden;
                 count++;
             }
             if (count == 0) throw new InvalidOperationException("Missing village expansion kind " + kind);
+            // Both dock positions and geometry are authored in metres, independently
+            // of the imported FBX root's retained 100x scale.
+            foreach (VillageExpansionAnchor anchor in Manifest.anchors)
+            {
+                if (anchor.kind != kind) continue;
+                var child = new GameObject(anchor.name);
+                child.transform.SetParent(root.transform, false);
+                child.transform.localPosition = new Vector3(anchor.position[0], anchor.position[1], anchor.position[2]);
+            }
+            foreach (VillageExpansionPart part in Manifest.parts)
+                if (part.kind == kind && !string.IsNullOrEmpty(part.parent))
+                    root.transform.Find(part.name).SetParent(root.transform.Find(part.parent), true);
+            foreach (VillageExpansionAnchor anchor in Manifest.anchors)
+                if (anchor.kind == kind && !string.IsNullOrEmpty(anchor.parent))
+                    root.transform.Find(anchor.name).SetParent(root.transform.Find(anchor.parent), true);
             return root;
         }
 
@@ -119,6 +151,29 @@ namespace BarPromenade
         {
             var tint = new Color(part.tint[0], part.tint[1], part.tint[2], part.tint[3]);
             var block = new MaterialPropertyBlock();
+            if (part.surface == "Fire")
+            {
+                if (flameMaterial == null)
+                    flameMaterial = Resources.Load<Material>("Materials/MothersHouseFlame");
+                if (flameMaterial == null) throw new InvalidOperationException("Missing shared thermal flame material.");
+                renderer.sharedMaterial = flameMaterial;
+                renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                renderer.receiveShadows = false;
+                block.SetColor("_BaseColor", tint);
+                block.SetFloat("_FireSway", part.kind == "Lighter" ? .0015f : .018f);
+                renderer.SetPropertyBlock(block);
+                return;
+            }
+            if (part.surface == "LighterMetal")
+            {
+                renderer.sharedMaterial = RuntimePrimitiveFactory.DefaultMaterial;
+                block.SetColor("_BaseColor", tint);
+                block.SetColor("_Color", tint);
+                block.SetFloat("_Metallic", .72f);
+                block.SetFloat("_Smoothness", .32f);
+                renderer.SetPropertyBlock(block);
+                return;
+            }
             if (part.surface == "DarkWindow" || part.surface.StartsWith("Abandoned", StringComparison.Ordinal))
             {
                 renderer.sharedMaterial = RuntimePrimitiveFactory.DefaultMaterial;
@@ -194,6 +249,7 @@ namespace BarPromenade
         {
             instance = null;
             wreckRust = wreckPaint = null;
+            flameMaterial = null;
             agedTextures.Clear();
         }
 

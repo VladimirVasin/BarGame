@@ -3,32 +3,33 @@
 ## Current facts
 
 - **Accepted architecture exception — 2026-09-24, ski-lodge stove and firewood:**
-  At 0 (§6/§12/art §10g): cold stove/base/flue, Blender solids/open paths.
-  Lodge/mother VillageLife piles: E→silent Yes/No→one session `FirewoodLog`→
-  shared 3D receipt. No/Escape cancels before grant; Close/Escape keeps it.
-  Infinite stock/retake/cap one. No ignition/heat/smoke/use/animation/speech/NPC/
-  quest/clue/lore/hero ownership; §16/§21/nine checks.
+  At 0 (§6/§12/art §10g); piles: receipt/cap one/infinite retake.
+  E: shared approach/first-person/right two-column grid. User: no hands;
+  items/door animate, world rig visible. Silent §21 (user):
+  «Мне понадобится полено»/«Теперь нужно зажечь».
+  Log used; flip-top lighter: two dry clicks, third→gradual fire/light/
+  crackle. Exit closes door/restores camera; pause freezes, disable/unload release.
+  Session Empty→LogPlaced→Burning, New Game reset/no burnout. Lit indoor 2.5 m:
+  shiver/breath stop immediately, frost thaws; walls block. Pack: hinge/docks/
+  `StoveFire`; same inventory `Lighter`.
 
 - **Accepted — 2026-09-24, item interaction standard:**
-  Required [shared pickup/receipt UI](item-interaction-standard.md) for
-  future items: single grant, common model/view/input/modal/lifecycle owners.
+  [Item standard](item-interaction-standard.md): one grant;
+  shared model/view/input/modal/lifecycle.
 
 - **Accepted architecture exception — 2026-09-24, village scene theme:**
-  User's non-spatial AlpineVillage theme, rooms included (§6/art §10g, 0).
-  No story/weather/avalanche cue; causal sound stays. Root child
-  `AlpineVillageMusicPlayer` resumes after mother; MothersHouse only tail.
-  Shared `SceneMusicPlayer`/`MusicMix`: loop/Music/12 kHz/4 s out→1 s in;
-  user gain .70, not LUFS-calibrated. Optional streaming/background/stereo
-  `Audio/AlpineVillageMusic/alpine_village_theme` WAV/OGG/MP3; empty build-safe,
-  MP3 supplied.
+  Non-spatial village/rooms (§6/art §10g, 0), no story/weather/avalanche
+  cue; causal sound stays. `AlpineVillageMusicPlayer` resumes after mother
+  (tail only). `SceneMusicPlayer`/`MusicMix`: loop/Music/12 kHz/4 s out→1 s in,
+  .70 gain (not LUFS); optional stereo streaming/background
+  `Audio/AlpineVillageMusic/alpine_village_theme` WAV/OGG/MP3; optional, MP3 supplied.
 
 - **Accepted architecture exception — 2026-09-24, old ski avalanche:**
-  §6/§12/art §10g at 0: closed-ridge scar→full-size fallen forest/rock/beams→
-  buried tow/cable→household-15 flow-facing damage caused ski abandonment.
-  Dead end: ~20 m front/4–6 m high/~38 m fan; steep mass blocks.
-  Collision follows form; forest/movement share footprint. Lower
-  lift/lodge/loop/ruin open. Mine/trade gap unrelated; no active slide/
-  hazard/death/task/NPC/text/sound/clue/event; lane/mother/water/cableway and
+  §6/§12/art §10g, 0: ridge scar→full-size fallen forest/rock/beams→buried
+  tow/cable→household-15 flow damage caused abandonment. Blocked front ~20 m/
+  height 4–6 m/fan 38 m; form collision, shared forest/movement footprint.
+  Lower lift/lodge/loop/ruin open; mine/trade gap unrelated. No active slide/
+  hazard/death/task/NPC/text/sound/clue/event; lane/mother/water/cableway,
   §16/§21/nine checks stay.
 
 - **Accepted — 2026-09-24, closed conifer crowns:**
@@ -40,12 +41,12 @@
   building height stay.
 
 - **Accepted — 2026-09-24, abandoned-zone tree scale:**
-  Abandoned height/crown/trunk ×2 before clearance, including old-bowl infill;
-  lived-in scale stays. Expansion `13–30 m`; route/yard/sightline gaps fit crowns.
+  Abandoned height/crown/trunk ×2 before clearance, old-bowl infill included;
+  lived-in scale stays. Expansion `13–30 m`; route/yard/sightline crown gaps.
 
 - **Accepted — 2026-09-24, overcast village daylight:**
-  Day key/shadows/reflections reduced, neutral fill, darker grey haze/clouds; windows/
-  garlands warm. Night/story/gust stay; no clock/thunder/lightning/whiteout.
+  Day key/shadows/reflections down, neutral fill, darker grey haze/clouds;
+  warm windows/garlands. Night/story/gust stay; no clock/thunder/lightning/whiteout.
 
 - **Accepted — 2026-09-24, frost saturation silence:**
   Full frost stops growth cues with `0.12 s` fade. Thaw sounds; partial thaw/
@@ -59,37 +60,36 @@
   Ground asphalt: no slab/lift/collider; lips/width/routes/snow/exit/story stay.
 
 - **Accepted architecture exception — 2026-09-23, abandoned village settlement:**
-  §6/art §10g, 0: dark windows/ruins, wealth/ski/rescue, solid obstacles.
-  Target 14–18 houses/6–8 sheds, mostly standing; five closed civic yards.
-  All sides see another building through terrain/trees/storm, not misc/bases.
-  Plan: placement/forest/snow/pads; Blender: meshes/manifest.
-  Donors intact. Core/people/warmth/axis/water/routes/station/
-  cableway stay; no resort/tourists/new NPC/sound/clue/plot. Action/text only
-  lodge firewood (2026-09-24); §16/§21/nine checks, `AlpineVillageAbandonment`.
+  §6/art §10g, 0: wealth/ski/rescue, dark windows/ruins/solids. Target 14–18
+  houses/6–8 sheds (mostly standing), five closed civic yards; each side sees
+  another building through terrain/forest/storm, not misc/bases.
+  `AlpineVillageAbandonment`: placement/forest/snow/pads; Blender meshes/manifest.
+  Donors/core/people/warmth/axis/water/routes/station/cableway stay.
+  No resort/tourists/NPC/clue/plot; action/text/sound only stove/firewood
+  (2026-09-24); §16/§21/nine checks.
 
 - **Accepted architecture exception — 2026-09-23, discarded warehouse props:**
-  Blender `VillageExpansion3D`: `RustedTruck`/`DiscardedChairPile` by warehouse;
-  §6 solid collisions, ramp/yard/road open, donors unchanged. Wreck: cab/frame/
-  cargo, no wheels/doors/glass, bent panels, low uneven snow-settled stance;
-  `VillageTruck{Rust,Paint}Albedo`. Heap: 5–6 m wide/~2.7 m high; weathered
-  backs/seats/legs, partial frames at base/centre, ground/timber supports,
-  sparse snow. No physics/seat/repair/loot/text/sound/NPC/event/provenance;
-  §16/§21/nine checks.
+  Blender `VillageExpansion3D`: warehouse `RustedTruck`/`DiscardedChairPile`;
+  §6 solids, ramp/yard/road open, donors intact. Wreck cab/frame/cargo/bent
+  panels, low uneven snow-settled stance, no wheels/doors/glass;
+  `VillageTruck{Rust,Paint}Albedo`. Heap 5–6 m wide/~2.7 m high: weathered
+  backs/seats/legs, partial base/centre frames, ground/timber supports/sparse
+  snow. No physics/seat/repair/loot/text/sound/NPC/event/provenance; §16/§21/nine checks.
 
 - **Accepted architecture exception — 2026-09-23, village trade road:**
   §6/§12/art §10g: rail/rubble/aligned ends; checkpoint city in rock gap,
-  no peaks/traffic/road. Closed warehouse/open yard/ramp/cargo/handcart;
-  collapse ended trade, supports/stock show suspended repair. Mine closed,
-  sole cableway exit; no text/NPC/task/sound/clue/date/cause/event.
-  Shared checkpoint scenery/village haze/storms; §16/§21/nine checks.
+  no peaks/traffic/road. Warehouse closed, yard/ramp/cargo/cart open; collapse
+  ended trade, supports/stock show suspended repair. Mine closed; sole cableway
+  exit. Shared checkpoint scenery/village haze/storms; no text/NPC/task/sound/
+  clue/date/cause/event; §16/§21/nine checks.
 
 - **Accepted architecture exception — 2026-09-22, expanded Alpine Village:**
-  §6/§12/art §10g: forest, walk-in unheated ski lodge, old-road loop/gap.
-  Core/12 houses/warm axis/cable/water/access stay. Core trees `420`/`7 m`,
-  expansion ≤`900`, separate crowns, route clearance `1.2 m + crown radius`.
+  §6/§12/art §10g: forest, walk-in ski lodge, old-road loop/gap.
+  Core/12 houses/warm axis/cable/water/access stay. Trees: core `420`/`7 m`,
+  expansion ≤`900`; separate crowns, route gap `1.2 m + crown radius`.
   Rail/rubble close brink, sole cableway exit; no fall/death/NPC/work/sound/
-  clue/event/resort. Silent firewood UI: 2026-09-24; §16/§21/nine checks.
-  Shared plan/sampler/bounds, measured metres, ground collider, yielding `48 m` buckets.
+  clue/event/resort. Stove/firewood: 2026-09-24; §16/§21/nine checks.
+  Shared plan/sampler/bounds, metres/ground collider, yielding `48 m` buckets.
 
 - **Accepted — 2026-09-21, impact balance and recoverable knockdown:**
   `CombatTest`: impulse/root/bone/catch-step/left-release clock.

@@ -1,5 +1,11 @@
 {
   "entries": [
+    {"key": "interaction.light_stove", "value": "E — tend the stove"},
+    {"key": "interaction.open_stove_door", "value": "E — open the stove door"},
+    {"key": "stove.hint.log", "value": "I need a log"},
+    {"key": "stove.hint.ignite", "value": "Now to light it"},
+    {"key": "stove.hint.burning", "value": "The stove is burning."},
+    {"key": "stove.action.exit", "value": "Leave"},
     { "key": "interaction.woodpile", "value": "E — take a log" },
     { "key": "woodpile.take.confirm", "value": "Take a log?" },
     { "key": "woodpile.take.already", "value": "Already carrying a log." },

@@ -8,7 +8,7 @@ import math
 from pathlib import Path
 import sys
 import bpy
-from mathutils import Vector
+from mathutils import Vector, Matrix
 from mathutils.bvhtree import BVHTree
 from mathutils.geometry import tessellate_polygon
 
@@ -22,8 +22,9 @@ from village_abandoned_buildings import build_all as abandoned_buildings
 from village_abandoned_yards import build_all as abandoned_yards
 from village_avalanche import (ORIGIN as AVALANCHE_ORIGIN, FOOTPRINT as AVALANCHE_FOOTPRINT,
     build_avalanche, build_ruin_variant, validate_avalanche)
+from village_stove_props import ANCHORS as STOVE_ANCHORS, add_props as stove_props, validate_props
 
-VERSION = "1.6.0"
+VERSION = "1.7.0"
 DESIGN = "village_forest_ski_base_old_road_v1"
 COLORS = {"Timber": (.29,.255,.205,1), "Masonry": (.49,.485,.445,1),
           "LayeredStone": (.32,.345,.34,1), "RustedIron": (.30,.255,.21,1),
@@ -31,7 +32,8 @@ COLORS = {"Timber": (.29,.255,.205,1), "Masonry": (.49,.485,.445,1),
           "Concrete": (.47,.47,.43,1), "Canvas": (.39,.40,.35,1),
           "Glass": (.40,.44,.43,.16), "WreckRust": (1,1,1,1), "WreckPaint": (1,1,1,1)}
 COLORS.update(AbandonedWood=(.34,.305,.26,1), AbandonedPlaster=(.55,.53,.47,1),
-              AbandonedRoof=(.27,.275,.25,1), DarkWindow=(.075,.085,.08,1))
+              AbandonedRoof=(.27,.275,.25,1), DarkWindow=(.075,.085,.08,1),
+              Fire=(1,.72,.30,1), LighterMetal=(.49,.52,.48,1))
 
 def box(p,s,c=.01): return bp.u_box(p,s,c)
 def merge(parts):
@@ -75,7 +77,7 @@ def hollow_profile(profile,segments=16):
 
 
 def ski_lodge_stove(add):
-    """Cold cast-iron stove and continuous flue at the lodge's exact centre."""
+    """Hollow cast-iron stove with a single moving door and continuous flue."""
     kind="SkiLodge";iron=(.165,.17,.155,1);edge=(.225,.225,.20,1)
     add(kind,"StoveHearth",box((0,.0475,0),(1.40,.055,1.36),.012),"LayeredStone",True,(.30,.315,.305,1))
     legs=[]
@@ -94,6 +96,11 @@ def ski_lodge_stove(add):
     add(kind,"StoveBody",merge(shell),"RustedIron",True,iron)
     add(kind,"StoveTopAndBase",merge([box((0,y,0),(.95,h,.90),.024)
         for y,h in ((.29,.075),(1.14,.07))]),"RustedIron",True,edge)
+    # The log rests above the ash compartment at the throat's lower edge.
+    # Narrow rails leave a real open grate, not a solid replacement firebox.
+    grate=[box((x,.5575,0),(.028,.025,.55),.004) for x in (-.16,.16)]
+    grate += [box((0,.531,z),(.56,.026,.028),.004) for z in (-.19,.19)]
+    add(kind,"StoveGrate",merge(grate),"RustedIron",True,iron)
     # The shut door has a raised rim and three genuine viewing slots with a
     # grille crossbar. No opaque panel, glass or flame conceals the empty box.
     rim=at(u(kit.wall_run(.71,.61,.055,[kit.Opening(0,.58,.545,.065)],.008)),(0,.45,-.431))
@@ -132,8 +139,8 @@ def ski_lodge_stove(add):
     add(kind,"ChimneyCap",merge(cap),"RustedIron",True,edge)
     # Restrained worn edges and an old side repair, without decorative rust.
     wear=[box((x,.79,-.496),(.018,.21,.008),.002) for x in (-.266,.266)]
-    wear += [box((.454,.72,.10),(.012,.15,.21),.01)]
-    add(kind,"StoveWear",merge(wear),"RustedIron",False,(.285,.25,.205,1))
+    add(kind,"StoveDoorWear",merge(wear),"RustedIron",False,(.285,.25,.205,1))
+    add(kind,"StoveWear",box((.454,.72,.10),(.012,.15,.21),.01),"RustedIron",False,(.285,.25,.205,1))
 
 def gable(depth,rise,thickness):
     # Shared prism's section lies in source XZ and extrudes source Y.
@@ -536,11 +543,16 @@ def create_parts():
     abandoned_yards(add)
     build_avalanche(add)
     build_ruin_variant(add)
+    for part in parts:
+        if part["kind"]=="SkiLodge" and part["name"] in ("StoveDoor","StoveHardware","StoveDoorWear"):
+            part["parent"]="StoveDoorHinge"
+    stove_props(add,parts)
     return parts
 
 def validate(parts):
     assert len({p["mesh"] for p in parts}) == len(parts), "Duplicate exported part names"
     validate_avalanche(parts)
+    validate_props(parts)
     # Albedo is a fixed authored input, with the exact image prompts and bytes retained.
     textures=json.loads((ROOT/"ArtSource/Village/Textures/generation.json").read_text(encoding="utf-8"))
     for texture in textures["images"]:
@@ -669,8 +681,8 @@ def validate(parts):
     for sheet in aged["sheets"]:
         raw=(ROOT/"Assets/Resources/Village/Textures"/(sheet["name"]+".png")).read_bytes()
         assert hashlib.sha256(raw).hexdigest()==sheet["sha256"],"Stale abandoned material"
-    first=json.dumps(parts,sort_keys=True,separators=(",",":"))
-    assert first==json.dumps(create_parts(),sort_keys=True,separators=(",",":")),"Non-deterministic geometry"
+    first=json.dumps(dict(parts=parts,anchors=STOVE_ANCHORS),sort_keys=True,separators=(",",":"))
+    assert first==json.dumps(dict(parts=create_parts(),anchors=STOVE_ANCHORS),sort_keys=True,separators=(",",":")),"Non-deterministic geometry"
     return hashlib.sha256(first.encode()).hexdigest()
 
 def build(parts):
@@ -685,17 +697,36 @@ def build(parts):
             axes=sorted(range(3),key=lambda a:abs(face.normal[a]))[:2]
             for i in face.loop_indices:
                 v=mesh.vertices[mesh.loops[i].vertex_index].co;uv.data[i].uv=(v[axes[0]],v[axes[1]])
+        if p["surface"]=="Fire":
+            field=mesh.uv_layers.new(name="FlameField")
+            thermal=mesh.color_attributes.new(name="FlameThermal",type="FLOAT_COLOR",domain="POINT")
+            for loop in mesh.loops:field.data[loop.index].uv=p["flame_uv"][loop.vertex_index]
+            for index,color in enumerate(p["flame_colors"]):thermal.data[index].color=color
+            for face in mesh.polygons:face.use_smooth=True
         obj=bpy.data.objects.new(p["mesh"],mesh);bpy.context.scene.collection.objects.link(obj);obj.parent=root
         mat=bpy.data.materials.new(p["mesh"]+"_Review")
         mat.diffuse_color={"WreckRust":(.27,.14,.085,1),"WreckPaint":(.38,.31,.22,1)}.get(p["surface"],p["tint"])
         mesh.materials.append(mat)
         objects.append(obj);lo,hi=kit.bounds(p["geometry"])
-        row={k:v for k,v in p.items() if k!="geometry"};row.update(bounds_min=lo,bounds_max=hi,triangles=kit.triangle_count(g))
+        row={k:v for k,v in p.items() if k not in ("geometry","flame_uv","flame_colors")}
+        row.update(bounds_min=lo,bounds_max=hi,triangles=kit.triangle_count(g))
+        if p["surface"]=="Fire":row["flame_field_vertex_count"]=len(p["flame_uv"])
         rows.append(row)
+    for anchor in STOVE_ANCHORS:
+        obj=bpy.data.objects.new("ANCHOR_Expansion_"+anchor["kind"]+"_"+anchor["name"],None)
+        bpy.context.scene.collection.objects.link(obj);obj.parent=root
+        x,y,z=anchor["position"];obj.location=(x,z,y)
     return objects,rows
 
 def preview(path,objects,rows,kind="SkiLodge",location=(25,-26,15),target=(0,0,2),lens=43):
-    for obj,row in zip(objects,rows):obj.hide_render=row["kind"]!=kind
+    display_kind="Lighter" if kind=="LighterOpen" else kind
+    restored=[]
+    for obj,row in zip(objects,rows):
+        obj.hide_render=row["kind"]!=display_kind or row.get("hidden",False)
+        if kind=="LighterOpen" and row.get("parent")=="LighterLidHinge":
+            restored.append((obj,obj.matrix_basis.copy()))
+            hinge=Vector((-.0185,0,.043))
+            obj.matrix_basis=Matrix.Translation(hinge) @ Matrix.Rotation(math.radians(-110),4,"Y") @ Matrix.Translation(-hinge)
     scene=bpy.context.scene
     camera=bpy.data.objects.new("ReviewCamera",bpy.data.cameras.new("ReviewCamera"));scene.collection.objects.link(camera)
     camera.location=location;camera.rotation_euler=(Vector(target)-camera.location).to_track_quat("-Z","Y").to_euler()
@@ -704,6 +735,7 @@ def preview(path,objects,rows,kind="SkiLodge",location=(25,-26,15),target=(0,0,2
     scene.display.shading.show_shadows=True;scene.display.shading.show_cavity=True;scene.world.color=(.19,.21,.23)
     scene.render.resolution_x=1400;scene.render.resolution_y=900;scene.render.resolution_percentage=100
     scene.render.image_settings.file_format="PNG";scene.render.filepath=str(path);bpy.ops.render.render(write_still=True)
+    for obj,matrix in restored:obj.matrix_basis=matrix
 
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
@@ -717,7 +749,7 @@ def main():
               build_signature=signature,mesh_count=len(rows),triangle_count=sum(p["triangles"] for p in rows),
               avalanche_origin=AVALANCHE_ORIGIN,
               avalanche_footprint=[value for point in AVALANCHE_FOOTPRINT for value in point],
-              colliders=False,lights=False,cameras=False,animation_count=0,parts=rows)
+              colliders=False,lights=False,cameras=False,animation_count=0,parts=rows,anchors=STOVE_ANCHORS)
     target=args.model_dir/"VillageExpansion3D.json"
     if args.validate_only:assert json.loads(target.read_text())==json.loads(json.dumps(data)),"Stale expansion manifest"
     else:
@@ -732,6 +764,9 @@ def main():
             reviews=[("SkiLodge","VillageExpansion3D.png",(25,-26,15),(0,0,2),43),
                 ("SkiLodge","VillageSkiLodgeStove3D.png",(2.5,-3.5,2.2),(0,0,.95),48),
                 ("SkiLodge","VillageSkiLodgeChimney3D.png",(3,-4,7),(0,0,5.6),48),
+                ("Lighter","VillageLighter3D.png",(.14,-.18,.12),(0,0,.033),55),
+                ("LighterOpen","VillageLighterOpen3D.png",(.14,-.18,.12),(-.012,0,.038),50),
+                ("StoveFire","VillageStoveFire3D.png",(.95,-1.1,.7),(0,0,.20),55),
                 ("TradeWarehouse","VillageTradeWarehouse3D.png",(24,-24,15),(0,0,2),43),
                 ("TradeYardProps","VillageTradeYardProps3D.png",(5,-6,4.6),(0,0,.45),43),
                 ("ConservedRepair","VillageConservedRepair3D.png",(12,-17,12),(-2,3.5,-1.6),43),

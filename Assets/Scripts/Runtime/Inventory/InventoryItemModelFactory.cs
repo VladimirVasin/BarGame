@@ -8,8 +8,8 @@ namespace BarPromenade
     /// Builds the shared low-poly models used by physical world items and the
     /// inventory preview. The five stocked supermarket products and the open
     /// refrigerator stew can and folded scarf come from passive Blender-authored
-    /// Resources assets; keys and the lighter retain their compact procedural
-    /// models. Neither path creates colliders; owning systems add interaction geometry.
+    /// Resources assets. The shared lighter also comes from its authored village
+    /// pack; only keys retain their compact procedural model. Neither path creates colliders; owning systems add interaction geometry.
     /// </summary>
     public static class InventoryItemModelFactory
     {
@@ -210,47 +210,11 @@ namespace BarPromenade
             Transform parent,
             string rootPrefix)
         {
-            Transform lighter = CreateRoot(
-                rootPrefix + " Lighter",
-                parent);
-            CreateBox(
-                "Lighter Amber Body",
-                lighter,
-                new Vector3(0f, 0.16f, 0f),
-                new Vector3(0.20f, 0.32f, 0.085f),
-                new Color(0.63f, 0.31f, 0.095f));
-            CreateBox(
-                "Lighter Body Highlight",
-                lighter,
-                new Vector3(-0.055f, 0.17f, -0.045f),
-                new Vector3(0.035f, 0.27f, 0.008f),
-                new Color(0.82f, 0.48f, 0.16f));
-            CreateBox(
-                "Lighter Metal Hood",
-                lighter,
-                new Vector3(-0.035f, 0.355f, 0f),
-                new Vector3(0.13f, 0.075f, 0.085f),
-                new Color(0.51f, 0.57f, 0.56f));
-            CreateBox(
-                "Lighter Hood Opening",
-                lighter,
-                new Vector3(-0.035f, 0.374f, -0.045f),
-                new Vector3(0.062f, 0.027f, 0.008f),
-                new Color(0.10f, 0.11f, 0.10f));
-            GameObject wheel = CreateCylinder(
-                "Lighter Flint Wheel",
-                lighter,
-                new Vector3(0.065f, 0.375f, 0f),
-                new Vector3(0.075f, 0.025f, 0.075f),
-                new Color(0.34f, 0.37f, 0.36f));
-            wheel.transform.localRotation =
-                Quaternion.Euler(90f, 0f, 0f);
-            CreateBox(
-                "Lighter Spark Guard",
-                lighter,
-                new Vector3(0.072f, 0.335f, 0f),
-                new Vector3(0.050f, 0.055f, 0.080f),
-                new Color(0.43f, 0.46f, 0.44f));
+            Transform lighter = VillageExpansionAssetProvider.LoadOrThrow().Create(
+                "Lighter", rootPrefix + " Lighter", parent, parent.position, parent.rotation).transform;
+            // The camera's minimum orthographic radius assumes a display-sized prop.
+            // The world model and interaction use the measured pocket-size original.
+            if (rootPrefix == "Inventory Preview") lighter.localScale = Vector3.one * 6f;
             return lighter;
         }
 

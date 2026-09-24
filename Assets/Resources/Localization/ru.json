@@ -1,5 +1,11 @@
 {
   "entries": [
+    {"key": "interaction.light_stove", "value": "E — растопить печку"},
+    {"key": "interaction.open_stove_door", "value": "E — открыть дверцу печи"},
+    {"key": "stove.hint.log", "value": "Мне понадобится полено"},
+    {"key": "stove.hint.ignite", "value": "Теперь нужно зажечь"},
+    {"key": "stove.hint.burning", "value": "Печка горит."},
+    {"key": "stove.action.exit", "value": "Выйти"},
     { "key": "interaction.woodpile", "value": "E — взять полено" },
     { "key": "woodpile.take.confirm", "value": "Взять полено?" },
     { "key": "woodpile.take.already", "value": "Полено уже есть." },

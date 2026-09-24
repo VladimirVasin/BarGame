@@ -509,6 +509,7 @@ namespace BarPromenade
             villageHousehold.Reset();
             CityWetSurfaceRegistry.ResetForNewSession();
             ChurchGardenPotSessionState.ResetForNewSession();
+            LodgeStoveSessionState.ResetForNewSession();
             HomeUrineEffect.ResetSession();
             AlpineColdExposure.ResetSession();
             // A new game gets a new salt, so the street does not open with

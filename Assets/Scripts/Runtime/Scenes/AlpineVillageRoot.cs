@@ -96,6 +96,7 @@ namespace BarPromenade
         public InventoryTargetInteractionController TargetInteraction { get; private set; }
         public WoodpileInteraction Woodpile { get; private set; }
         public WoodpileInteraction MothersHouseWoodpile { get; private set; }
+        public LodgeStoveInteraction Stove { get; private set; }
         public JournalController Journal { get; private set; }
         public PauseMenuController PauseMenu { get; private set; }
         public AreaArrivalToken ArrivalToken { get; private set; }
@@ -357,6 +358,7 @@ namespace BarPromenade
                     () => !GameSessionState.IsRidingAVehicle &&
                           (CabinSeat == null || !CabinSeat.IsSeated) &&
                           (Workroom == null || !Workroom.Environment.IsInside) &&
+                          !IsWarmedByStove() &&
                           !SceneTransitionService.IsTransitioning &&
                           !Player.PresentationVisibility.RenderersHidden,
                     () => Weather.CurrentWind);
@@ -432,7 +434,7 @@ namespace BarPromenade
                 () => IsInitialized && !IsDormant,
                 () => GameSessionState.IsRidingAVehicle ||
                       (CabinSeat != null && CabinSeat.IsSeated) ||
-                      (Workroom != null && Workroom.Environment.IsInside));
+                      (Workroom != null && Workroom.Environment.IsInside) || IsWarmedByStove());
         }
 
         /// <summary>
@@ -1235,6 +1237,14 @@ namespace BarPromenade
             }
             if (Woodpile == null || MothersHouseWoodpile == null)
                 throw new System.InvalidOperationException("The village requires both firewood sources.");
+            foreach (Transform part in World.Root.GetComponentsInChildren<Transform>(true))
+            {
+                if (part.name != "Ski Lodge") continue;
+                Stove = part.gameObject.AddComponent<LodgeStoveInteraction>();
+                Stove.Initialize(this, part);
+                break;
+            }
+            if (Stove == null) throw new System.InvalidOperationException("Missing lodge stove.");
             Journal = ui.AddComponent<JournalController>();
             Journal.Initialize(
                 Player,
@@ -1259,6 +1269,9 @@ namespace BarPromenade
                 settings,
                 GameSessionState.CitySeed);
         }
+
+        private bool IsWarmedByStove() => Stove != null && Player.GameObject != null &&
+            Stove.ProvidesWarmth(Player.GameObject.transform.position);
 
         /// <summary>
         /// The station canopy and the abandoned lodge keep precipitation out.

@@ -180,10 +180,10 @@ namespace BarPromenade.Tests.PlayMode
                 "The indoor and rooftop pipe must share the building's centre axis.");
             Assert.That(pipe.bounds.min.y - plan.LodgeFloorHeight, Is.InRange(1f, 1.3f));
             Assert.That(pipe.bounds.max.y - plan.LodgeFloorHeight, Is.GreaterThan(6f));
-            Assert.That(lodge.GetComponentsInChildren<Light>(), Is.Empty, "The stove is cold.");
+            Assert.That(root.Stove.Fire.FireLight.enabled, Is.False, "The stove starts cold.");
 
             Physics.SyncTransforms();
-            Collider door = lodge.Find("StoveDoor").GetComponent<Collider>();
+            Collider door = lodge.Find("StoveDoorHinge/StoveDoor").GetComponent<Collider>();
             Collider firebox = lodge.Find("StoveBody").GetComponent<Collider>();
             foreach (float x in new[] { -.16f, 0f, .16f })
             foreach (float y in new[] { .64f, .88f })
