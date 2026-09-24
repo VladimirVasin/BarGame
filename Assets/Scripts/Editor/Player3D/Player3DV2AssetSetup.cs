@@ -53,6 +53,7 @@ namespace BarPromenade.Editor
         private const string RegistryScriptPath =
             "Assets/Scripts/Runtime/Player3D/Player3DAssetRegistry.cs";
         private const string ColdAuthoringPath = "tools/player_cold_actions.py";
+        private const string SnowAuthoringPath = "tools/player_snow_actions.py";
         private const float ExpectedHeight = 1.75f;
         private const int MaximumTriangleCount = 11000;
         // Eight columns: the expressions on the left, their soiled twins four
@@ -170,6 +171,8 @@ namespace BarPromenade.Editor
                 { "SmokeEnter", new ActionContract("smoking", false) },
                 { "SmokeExit", new ActionContract("smoking", false) },
                 { "SmokeLoop", new ActionContract("smoking", true) },
+                { "SnowWalk", new ActionContract("locomotion", true, 2f, 48, 24f) },
+                { "SnowWalkBackward", new ActionContract("locomotion", true, 2f, 48, 24f) },
                 { "TurnLeft", new ActionContract("locomotion", true) },
                 { "TurnRight", new ActionContract("locomotion", true) },
                 { "Walk", new ActionContract("locomotion", true) },
@@ -444,6 +447,15 @@ namespace BarPromenade.Editor
                     "tools/build-player-3d-model-v2.py before packaging.");
             }
 
+            if (!string.Equals(manifest.snow_authoring_sha256,
+                    AuthoringSignature(SnowAuthoringPath), StringComparison.Ordinal))
+            {
+                throw new InvalidOperationException(
+                    "Hero V2 snow actions do not match tools/player_snow_actions.py. " +
+                    "Regenerate them with tools/run-blender.py " +
+                    "tools/player_snow_actions.py before packaging.");
+            }
+
             if (!string.Equals(
                     manifest.pose,
                     "apose",
@@ -699,6 +711,17 @@ namespace BarPromenade.Editor
                     throw new InvalidOperationException(
                         "Hero V2 Run must keep its bone-only heavy-weary " +
                         "eight-landmark gait and short flight phase.");
+                }
+
+                if ((action.name == "SnowWalk" || action.name == "SnowWalkBackward") &&
+                    (!action.bone_only || !action.in_place ||
+                     action.gait_style != "deep_snow_supported" ||
+                     Mathf.Abs(action.cycle_distance_m - 1.1f) > 0.0001f ||
+                     Mathf.Abs(action.support_fraction - 0.6f) > 0.0001f))
+                {
+                    throw new InvalidOperationException(
+                        "Hero V2 snow gait must retain its supported short-step, " +
+                        "bone-only and in-place locomotion contract.");
                 }
 
                 ValidateFaceKeys(action);
@@ -1457,7 +1480,8 @@ namespace BarPromenade.Editor
                 DependencyStamp("Assets/Scripts/Runtime/Player3D/PlayerWardrobe.cs"),
                 DependencyStamp("Assets/Scripts/Runtime/Player3D/PlayerHair.cs"),
                 DependencyStamp("Assets/Scripts/Runtime/Player3D/PlayerJacketCloth.cs"),
-                ColdAuthoringSignature()
+                ColdAuthoringSignature(),
+                AuthoringSignature(SnowAuthoringPath)
             };
             return Hash128.Compute(string.Join("|", inputs)).ToString();
         }
@@ -1469,9 +1493,14 @@ namespace BarPromenade.Editor
 
         private static string ColdAuthoringSignature()
         {
+            return AuthoringSignature(ColdAuthoringPath);
+        }
+
+        private static string AuthoringSignature(string authoringPath)
+        {
             string path = Path.Combine(
                 Directory.GetParent(Application.dataPath).FullName,
-                ColdAuthoringPath);
+                authoringPath);
             using (var hash = System.Security.Cryptography.SHA256.Create())
             {
                 return BitConverter.ToString(hash.ComputeHash(File.ReadAllBytes(path)))
@@ -1679,6 +1708,7 @@ namespace BarPromenade.Editor
         {
             public string generator_version;
             public string cold_authoring_sha256;
+            public string snow_authoring_sha256;
             public string design_version;
             public bool runtime_integrated;
             public float height_m;
@@ -1744,6 +1774,8 @@ namespace BarPromenade.Editor
             public bool bone_only;
             public bool in_place;
             public string gait_style;
+            public float cycle_distance_m;
+            public float support_fraction;
             public int landmark_count;
             public bool short_flight;
             public Player3DV2ManifestFaceKey[] face_keys;

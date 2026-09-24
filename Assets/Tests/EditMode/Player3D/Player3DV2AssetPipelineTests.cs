@@ -382,8 +382,8 @@ namespace BarPromenade.Tests.EditMode
                 Assert.That(anchors.Spine.parent, Is.SameAs(anchors.Pelvis));
                 Assert.That(anchors.Chest.parent, Is.SameAs(anchors.Spine));
                 Assert.That(registry.AnatomicalParts.Count, Is.EqualTo(16));
-                Assert.That(registry.Animations.Count, Is.EqualTo(48));
-                Assert.That(manifest.actions, Has.Length.EqualTo(48));
+                Assert.That(registry.Animations.Count, Is.EqualTo(50));
+                Assert.That(manifest.actions, Has.Length.EqualTo(50));
 
                 SkinnedMeshRenderer renderer =
                     FindBinding(registry, meshName).Renderer as SkinnedMeshRenderer;
@@ -590,8 +590,8 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(manifest, Is.Not.Null);
             Assert.That(manifest.design_version, Is.EqualTo("HeroV2"));
             Assert.That(manifest.runtime_integrated, Is.True);
-            Assert.That(manifest.action_count, Is.EqualTo(48));
-            Assert.That(manifest.actions, Has.Length.EqualTo(48));
+            Assert.That(manifest.action_count, Is.EqualTo(50));
+            Assert.That(manifest.actions, Has.Length.EqualTo(50));
             Assert.That(manifest.face_atlas, Is.Not.Null);
             Assert.That(
                 manifest.face_atlas.texture_asset,

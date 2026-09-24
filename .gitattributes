@@ -16,6 +16,7 @@
 
 # These authoring sources are hashed by the hero asset manifest.
 tools/player_cold_actions.py text eol=lf
+tools/player_snow_actions.py text eol=lf
 tools/player_detailed_model.py text eol=lf
 tools/player_face_paint.py text eol=lf
 tools/player_hand_frames.py text eol=lf

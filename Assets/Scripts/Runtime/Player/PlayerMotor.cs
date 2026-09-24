@@ -115,6 +115,7 @@ namespace BarPromenade
 
             walkableArea = area;
             presentation = visual;
+            BindSnowFootContacts(visual);
         }
 
         public void SetInputEnabled(bool enabled)
@@ -141,6 +142,8 @@ namespace BarPromenade
         public void SetFootstepSurface(IPlayerFootstepSurface surface)
         {
             footstepSurface = surface;
+            snowSurface = surface as IPlayerSnowSurface;
+            if (snowSurface == null) ResetSnowMotion();
         }
 
         public void SetSpeedMultiplier(float multiplier)
@@ -246,6 +249,7 @@ namespace BarPromenade
             transform.position = position;
             verticalSpeed = 0f;
             groundedAfterMainMove = false;
+            ResetSnowMotion();
             ResetInteractionPoseMove();
             StopPlanarMotion();
 
@@ -431,6 +435,7 @@ namespace BarPromenade
             }
 
             Vector3 travelFacing = walkBackward ? -toTarget : toTarget;
+            UpdateSnowMotion(toTarget, deltaTime);
             Quaternion travelRotation = Quaternion.LookRotation(travelFacing.normalized, Vector3.up);
             float turn = Vector3.SignedAngle(transform.forward, travelFacing, Vector3.up);
             transform.rotation = Quaternion.RotateTowards(transform.rotation, travelRotation,
@@ -438,14 +443,14 @@ namespace BarPromenade
             if (Quaternion.Angle(transform.rotation, travelRotation) > 15f)
             {
                 StopPlanarMotion();
-                presentation?.SetMotion(new PlayerMotionSample(Vector3.zero, 0f, Mathf.Sign(turn)));
+                presentation?.SetMotion(new PlayerMotionSample(Vector3.zero, 0f, Mathf.Sign(turn), snowBlend: SnowBlend));
                 RecordInteractionPoseProgress(deltaTime);
                 return;
             }
 
             float step = Mathf.Min(
                 distance,
-                (walkBackward ? BackwardMoveSpeed : MoveSpeed) * deltaTime);
+                SnowSpeed(walkBackward ? BackwardMoveSpeed : MoveSpeed, walkBackward) * deltaTime);
             Vector3 desired =
                 current + (toTarget / distance) * step;
             desired.y = current.y;
@@ -478,7 +483,7 @@ namespace BarPromenade
             presentation?.SetMotion(new PlayerMotionSample(
                 PlanarVelocity,
                 walkBackward ? -PlanarVelocity.magnitude : PlanarVelocity.magnitude,
-                0f));
+                0f, snowBlend: SnowBlend));
             UpdateFootsteps(
                 displacement,
                 allowWhenInputDisabled: true);
@@ -505,7 +510,7 @@ namespace BarPromenade
             {
                 UpdateVerticalMotion();
                 PlanarVelocity = Vector3.zero;
-                presentation?.SetMotion(PlayerMotionSample.Stationary);
+                presentation?.SetMotion(StationaryMotion);
                 return;
             }
 
@@ -520,8 +525,18 @@ namespace BarPromenade
             Vector2 input = InputEnabled && !isTransitioning
                 ? ReadMovement()
                 : Vector2.zero;
+            Vector3 snowDirection = transform.forward * input.y;
+            if (MovementTargetActive)
+            {
+                Vector3 targetForward = movementTarget.position - transform.position;
+                targetForward.y = 0f;
+                targetForward = targetForward.sqrMagnitude > .0001f ? targetForward.normalized : transform.forward;
+                snowDirection = targetForward * input.y + Vector3.Cross(Vector3.up, targetForward) * input.x;
+            }
+            UpdateSnowMotion(snowDirection, Time.deltaTime);
             bool sprintRequested = InputEnabled &&
                                    !isTransitioning &&
+                                   !InDeepSnow && SnowBlend <= 0f &&
                                    IsSprintRequested();
             if (movementConstraintOwner is Object unityOwner && unityOwner == null)
             {
@@ -544,8 +559,8 @@ namespace BarPromenade
                     speedMultiplier * balanceYawScale * Time.deltaTime;
                 transform.Rotate(0f, yawDelta, 0f);
                 float desiredSpeed = input.y >= 0f
-                    ? input.y * (sprintRequested ? RunSpeed : MoveSpeed)
-                    : input.y * BackwardMoveSpeed;
+                    ? input.y * SnowSpeed(sprintRequested ? RunSpeed : MoveSpeed)
+                    : input.y * SnowSpeed(BackwardMoveSpeed, true);
                 Vector3 heading = Mathf.Abs(balanceHeadingWeaveDegrees) > 0.0001f
                     ? Quaternion.AngleAxis(balanceHeadingWeaveDegrees, Vector3.up) * transform.forward
                     : transform.forward;
@@ -650,7 +665,7 @@ namespace BarPromenade
                 turnInput,
                 runBlend,
                 targetRelative ? Vector3.Dot(PlanarVelocity, transform.right) : 0f,
-                targetRelative));
+                targetRelative, SnowBlend));
             UpdateFootsteps(planarVelocity, runBlend: runBlend);
         }
 
@@ -753,7 +768,7 @@ namespace BarPromenade
 
         private float CalculateRunBlend(float signedForwardSpeed)
         {
-            if (signedForwardSpeed <= 0f)
+            if (signedForwardSpeed <= 0f || InDeepSnow || SnowBlend > 0f)
             {
                 return 0f;
             }
@@ -782,13 +797,14 @@ namespace BarPromenade
             balanceDrift = Vector3.zero;
             lastContact = default;
             footstepDistance = 0f;
-            presentation?.SetMotion(PlayerMotionSample.Stationary);
+            presentation?.SetMotion(StationaryMotion);
         }
 
         private void OnDisable()
         {
             verticalSpeed = 0f;
             groundedAfterMainMove = false;
+            ResetSnowMotion();
             ResetInteractionPoseMove();
             StopPlanarMotion();
         }
@@ -859,10 +875,18 @@ namespace BarPromenade
                 FootstepStride,
                 RunFootstepStride,
                 Mathf.Clamp01(runBlend));
+            stride = Mathf.Lerp(stride, SnowFootstepStride, SnowBlend);
+            if (SnowBlend > .5f && snowFootPresentation != null)
+            {
+                // The authored snow contacts own both sound and kickup.
+                // Keep the ordinary distance clock ready for the exit.
+                footstepDistance = 0f;
+                return;
+            }
             if ((!InputEnabled && !allowWhenInputDisabled) ||
                 SceneTransitionService.IsTransitioning ||
                 PlanarVelocity.sqrMagnitude <
-                FootstepMinimumSpeedSquared)
+                Mathf.Lerp(FootstepMinimumSpeedSquared, .01f, SnowBlend))
             {
                 footstepDistance = Mathf.Min(
                     footstepDistance,
@@ -877,7 +901,11 @@ namespace BarPromenade
             }
 
             footstepDistance %= stride;
-            Vector3 at = transform.position;
+            EmitFootstep(transform.position, runBlend);
+        }
+
+        private void EmitFootstep(Vector3 at, float runBlend)
+        {
             if (footstepSurface != null &&
                 footstepSurface.TryPlayFootstep(at, runBlend))
             {

@@ -5,7 +5,7 @@ namespace BarPromenade
 {
     /// <summary>The real closed lower room muffles the same exterior weather.</summary>
     [DefaultExecutionOrder(1000)]
-    public sealed class VillageWorkroomEnvironment : MonoBehaviour, IPlayerFootstepSurface
+    public sealed class VillageWorkroomEnvironment : MonoBehaviour, IPlayerFootstepSurface, IPlayerSnowSurface
     {
         private AlpineVillageRoot village;
         private VillageWorkroomInstance room;
@@ -112,6 +112,17 @@ namespace BarPromenade
             if (interiorAcoustics != null && interiorAcoustics.TryPlayLodgeFootstep(position, runBlend)) return true;
             return village != null && village.World.SnowTreading != null &&
                 village.World.SnowTreading.TryPlayFootstep(position, runBlend);
+        }
+
+        public float SampleMovementSnowDepth(Vector3 position, Vector3 travelDirection)
+        {
+            // The same-scene interiors own their dry floor even when an
+            // exterior depth probe would reach through a wall or doorway.
+            if (room != null && room.Plan.ContainsInterior(position) ||
+                village != null && village.LodgeShelter != null && village.LodgeShelter.ContainsInterior(position))
+                return 0f;
+            return village != null && village.World.SnowTreading != null
+                ? village.World.SnowTreading.SampleMovementSnowDepth(position, travelDirection) : 0f;
         }
 
         private void OnDisable()

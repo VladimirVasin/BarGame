@@ -74,7 +74,8 @@ namespace BarPromenade
             float turnInput,
             float runBlend = 0f,
             float signedSideSpeed = 0f,
-            bool targetRelative = false)
+            bool targetRelative = false,
+            float snowBlend = 0f)
         {
             PlanarVelocity = planarVelocity;
             SignedForwardSpeed = signedForwardSpeed;
@@ -82,6 +83,7 @@ namespace BarPromenade
             RunBlend = Mathf.Clamp01(runBlend);
             SignedSideSpeed = signedSideSpeed;
             TargetRelative = targetRelative;
+            SnowBlend = Mathf.Clamp01(snowBlend);
         }
 
         /// <summary>Measured planar velocity in metres per second.</summary>
@@ -106,6 +108,9 @@ namespace BarPromenade
         /// <summary>Executed sideways speed; positive goes right while facing the movement target.</summary>
         public float SignedSideSpeed { get; }
         public bool TargetRelative { get; }
+
+        /// <summary>Deep-snow gait weight, independent of intoxication and executed speed.</summary>
+        public float SnowBlend { get; }
 
         public static PlayerMotionSample Stationary =>
             new PlayerMotionSample(Vector3.zero, 0f, 0f);

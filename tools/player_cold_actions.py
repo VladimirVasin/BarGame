@@ -462,7 +462,7 @@ if __name__ == "__main__":
             if saved_curves[name] != curve_signature(builder.result.actions[name].action):
                 raise RuntimeError(f"{name} published source curves differ; regenerate the production bank before stamping")
         manifest = json.loads(args.stamp_manifest.read_text(encoding="utf-8"))
-        if manifest.get("action_count") != 48 or {row[0] for row in COLD_TIMING} - {
+        if manifest.get("action_count") != len(module.V2_REQUIRED_ACTIONS) or {row[0] for row in COLD_TIMING} - {
                 action["name"] for action in manifest["actions"]}:
             raise RuntimeError("Cannot stamp a manifest without the complete cold action bank")
         manifest["cold_authoring_sha256"] = hashlib.sha256(Path(__file__).read_bytes()).hexdigest()

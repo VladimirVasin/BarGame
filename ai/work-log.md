@@ -3,8 +3,17 @@
 Newest outcomes/checks first. Archive whole dates at budget: [policy](README.md).
 Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-2026-08.md).
 
-## 2026-09-25 — Village placement and stove sound
+## 2026-09-25 — Village snow gait, placement and stove sound
 
+- Deep village snow selects supported forward/backward high steps; real depth
+  includes tracks/clearing, ahead probes avoid oscillation from one's own stamp.
+  Sprint blocked; cold arms remain, torso yields to effort. Same rig/foot phase;
+  post-IK contacts drive snow sound/kickup. User-approved canon exception in §6.
+  Check: `player_snow_actions.validate_snow_actions` — supported soles, lift,
+  knees, loop closure/determinism and preservation of other hero content.
+  `DeepSnow_BlocksSprintPreservesSlowdownAndRestoresMovement` proves the motor;
+  `AreaCaptureFixture.AlpineVillageSnowGait` verifies real snow, foot lift/contact,
+  stop/backstep/exit after blending; game/side frames reviewed.
 - Enclosed stove profile: fewer, softer wood settles over steady warm air;
   upper frequencies filtered before level matching. Open hearth retains its sound.
   Check: `InteriorSoundscapeSynthesisTests.LoopBeds_AreFiniteQuietNonSilentAndLoopSafe`

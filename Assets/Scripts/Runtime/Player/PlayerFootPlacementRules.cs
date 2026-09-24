@@ -120,6 +120,26 @@ namespace BarPromenade
         }
 
         /// <summary>
+        /// Snow clips retain support through sixty percent of each leg's
+        /// cycle: extract at .60, clear the drift at .73, then lower at .84.
+        /// The other leg is half a cycle away, so both never lose support.
+        /// </summary>
+        public static void SnowFootPlantAmounts(float cycle, out float left, out float right)
+        {
+            left = SnowLegPlant(Mathf.Repeat(cycle, 1f));
+            right = SnowLegPlant(Mathf.Repeat(cycle + 0.5f, 1f));
+        }
+
+        private static float SnowLegPlant(float phase)
+        {
+            if (phase <= 0.60f) return 1f;
+            if (phase < 0.73f)
+                return Mathf.Lerp(1f, 0.12f, Mathf.SmoothStep(0f, 1f, (phase - 0.60f) / 0.13f));
+            if (phase <= 0.84f) return 0.12f;
+            return Mathf.Lerp(0.12f, 1f, Mathf.SmoothStep(0f, 1f, (phase - 0.84f) / 0.16f));
+        }
+
+        /// <summary>
         /// How high the authored clip holds this sole above the clip's own
         /// ground plane: zero while planted, a few centimetres through a
         /// walk swing, more through the run flight. Preserved on top of

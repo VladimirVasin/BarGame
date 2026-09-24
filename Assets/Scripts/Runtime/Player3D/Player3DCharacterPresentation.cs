@@ -16,7 +16,9 @@ namespace BarPromenade
         TurnRight = 4,
         Run = 5,
         StrafeLeft = 6,
-        StrafeRight = 7
+        StrafeRight = 7,
+        SnowWalk = 8,
+        SnowWalkBackward = 9
     }
 
     /// <summary>
@@ -130,7 +132,7 @@ namespace BarPromenade
         private const float FullRunCycleSeconds = 0.75f;
 
         // Locomotion mixer layout: input 0 is Idle, the gaits follow.
-        private const int GaitCount = 7;
+        private const int GaitCount = 9;
         private const int WalkGait = 0;
         private const int WalkBackGait = 1;
         private const int RunGait = 2;
@@ -389,12 +391,14 @@ namespace BarPromenade
                 !TryResolveAnimation("Walk", out walkBinding) ||
                 !TryResolveAnimation("WalkBack", out walkBackBinding) ||
                 !TryResolveAnimation("Run", out runBinding) ||
+                !TryResolveAnimation("SnowWalk", out snowWalkBinding) ||
+                !TryResolveAnimation("SnowWalkBackward", out snowWalkBackwardBinding) ||
                 !TryResolveAnimation("TurnLeft", out turnLeftBinding) ||
                 !TryResolveAnimation("TurnRight", out turnRightBinding))
             {
                 throw new InvalidOperationException(
                     "The Player3D registry requires the Idle, Walk, " +
-                    "WalkBack, Run, TurnLeft and TurnRight clips.");
+                    "WalkBack, Run, SnowWalk, SnowWalkBackward, TurnLeft and TurnRight clips.");
             }
 
             hasAuthoredRunClip = true;
@@ -459,6 +463,7 @@ namespace BarPromenade
             {
                 if (motion.TargetRelative && TrySetSideStepMotion(motion, out state))
                 {
+                    ApplySnowMotion(motion, ref state);
                     CurrentLocomotionState = state;
                     return;
                 }
@@ -505,6 +510,7 @@ namespace BarPromenade
                         state = Player3DLocomotionState.WalkBack;
                     }
                 }
+                ApplySnowMotion(motion, ref state);
             }
 
             CurrentLocomotionState = state;
@@ -992,10 +998,7 @@ namespace BarPromenade
             {
                 ApplyLocomotionWeights(immediate: false);
                 UpdateForwardGaitCadence();
-                walkBackPlayable.SetSpeed((double)Mathf.Lerp(
-                    0.70f,
-                    0.90f,
-                    gaitWeights[WalkBackGait]));
+                UpdateBackwardGaitCadence();
                 UpdateSideStepCadence();
                 EvaluateGraph(deltaTime);
                 UpdateFootPlant();
@@ -1030,6 +1033,7 @@ namespace BarPromenade
                 CompleteRecoveryPresentation(deltaTime);
                 ConstrainCombatFootContacts();
                 ApplyCombatSupportGrip();
+                EmitSnowFootContacts();
             }
 
             RememberRecoveryPose(deltaTime);
@@ -1336,6 +1340,7 @@ namespace BarPromenade
                 turnLeftPlayable, 0, locomotionMixer, TurnLeftGait + 1);
             graph.Connect(
                 turnRightPlayable, 0, locomotionMixer, TurnRightGait + 1);
+            BuildSnowGaits();
             graph.Connect(locomotionMixer, 0, layerMixer, 0);
             locomotionMixer.SetInputWeight(0, 1f);
             for (int gait = 0; gait < GaitCount; gait++)
@@ -1480,6 +1485,11 @@ namespace BarPromenade
                 walkCyclesPerSecond,
                 runCyclesPerSecond,
                 visibleRunRatio);
+            float snowForwardWeight = gaitWeights[SnowWalkGait];
+            float snowRatio = snowForwardWeight /
+                Mathf.Max(0.0001f, forwardWeight + snowForwardWeight);
+            sharedCyclesPerSecond = Mathf.Lerp(sharedCyclesPerSecond,
+                planarSpeed / SnowCycleDistance, snowRatio);
             forwardGaitCyclesPerSecond = sharedCyclesPerSecond;
 
             // Both playables begin at normalized phase zero and receive the
@@ -1490,6 +1500,8 @@ namespace BarPromenade
                 sharedCyclesPerSecond * walkBinding.Clip.length));
             runPlayable.SetSpeed((double)(
                 sharedCyclesPerSecond * runBinding.Clip.length));
+            SynchronizeSnowGait(snowWalkPlayable, snowWalkBinding,
+                walkPlayable, walkBinding, sharedCyclesPerSecond);
         }
 
         private void SetFootPlant(
@@ -1505,6 +1517,12 @@ namespace BarPromenade
         }
 
         private void UpdateFootPlant()
+        {
+            UpdateOrdinaryFootPlant();
+            ApplySnowFootPlant();
+        }
+
+        private void UpdateOrdinaryFootPlant()
         {
             if (TryApplySideStepFootPlant()) return;
             float forwardWeight =
@@ -3135,6 +3153,7 @@ namespace BarPromenade
         {
             scopedClipOwner = null;
             ClearSideStepGaits();
+            ClearSnowGaits();
             DisposeOwnedClipMasks();
             DisposeCarryGraph();
             DisposeColdGraph();

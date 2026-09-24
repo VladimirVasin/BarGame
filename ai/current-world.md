@@ -284,16 +284,15 @@ The vertical slice contains:
   cut/lodge/cliff/avalanche; ruin collision follows remains, props use MeshColliders.
   The `74°` rise/visible barriers close edges. Paths reserve compacted strips,
   thresholds/chapel-water turn; walking beyond them allowed.
-  `AlpineVillageSnowDrift` is a colliderless pure depth
-  field outside trodden routes, separate from terrain height. `TerrainCell`
-  owns the station apron/cableway entrance. Snow rises from zero to `0.45 m`
-  over `1.3 m` on the loaded face, `3.2 m` on the scoured face. Abandoned yards
-  retain snow to doors and inside ruins, with bounded depth exposing paving.
-  Rescue-apron flagstones support snow during pressing and snowfall.
-  Paths overlap `1 m` snow by one cell. `AlpineVillageSnowTreading` updates
-  pressing/snowfall in vertex buckets; zero-depth snow stays buried.
-  Footsteps follow visible depth. Approaches fit ground planes and blend normals.
-  Soil under `2 m` mouths shares path texture/tint/UV; PS1 edges conform.
+  `AlpineVillageSnowDrift`: colliderless depth, separate terrain; station apron/
+  cabin entrance belong to `TerrainCell`. Snow reaches `.45 m` over `1.3/3.2 m`
+  loaded/scoured faces. Empty yards/ruins retain snow, paving exposed; rescue
+  flagstones support pressing/refill. Paths overlap `1 m` snow by one cell;
+  `AlpineVillageSnowTreading` buckets updates, buries zero-depth edges.
+  Hero samples remaining snow/current + next step: `.20/.12 m` entry/exit,
+  no sprint, `1.05/.65 m/s` forward/back; cleared paths restore ordinary motion.
+  Snow foot contacts drive sound/kickup. Approaches fit planes/blend normals;
+  soil under `2 m` mouths shares path texture/tint/UV, PS1 edges conform.
   Ribbons end at nodes; snow follows mesh ground.
   Authored distance/side/yaw beats form frontage clusters and pauses; exact OBB
   validation, three `7.2-7.5 m` rear-row depth beats and a bounded symmetric
@@ -1697,14 +1696,13 @@ The vertical slice contains:
   and passive mirror copies; arm subsets copy worn cloth. Hair also contacts
   the scarf; jacket excludes itself. Lean `40/60`; `ai/player-art-spec.md`;
 - one manual PlayableGraph presentation that damp-blends the in-place
-  four-second `Idle`, one-second `Walk` and `0.75 s`/18-frame `Run` actions
-  from actual constrained planar speed.
-  Idle alternates readable breathing and weight shifts; Walk uses full
-  contact/down/passing/up phases with independently flexing elbows, knees and
-  ankles. Run is a separate heavy, weary gait with a forward load, stronger
-  arm swing, deeper knee lift and short flight phase. Start and stop use
-  `0.14 s`/`0.20 s` smooth envelopes, and visible gait cadence follows the
-  blended weight. Root motion stays disabled while
+  `Idle` (4 s), `Walk` (1 s), `Run` (.75 s/18 frames) and snow clips from
+  actual constrained speed. Idle breathes/shifts weight; Walk articulates
+  contact/down/passing/up, elbows/knees/ankles. Heavy Run loads forward, swings
+  arms, lifts knees and briefly flies. `SnowWalk`/`SnowWalkBackward` (2 s)
+  extract bent legs high with long support, short steps and weight transfer;
+  phase persists, cadence follows `1.10 m` per cycle, cold torso blends to 25%.
+  Start/stop use `.14/.20 s` envelopes; cadence follows weight. No root motion;
   the face atlas drives neutral, half/closed blink, watchful and tense states.
   A failed balance check may temporarily suspend
   this graph while the

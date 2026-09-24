@@ -1241,6 +1241,18 @@ MonoBehaviour:
     authoredDuration: 4
     looping: 1
     facialExpressionKeys: []
+  - clipName: SnowWalk
+    category: locomotion
+    clip: {fileID: -6555554942704230208, guid: 3a54b89b52d57874aba9844b88ed6aff, type: 3}
+    authoredDuration: 2
+    looping: 1
+    facialExpressionKeys: []
+  - clipName: SnowWalkBackward
+    category: locomotion
+    clip: {fileID: -8775934139932539525, guid: 3a54b89b52d57874aba9844b88ed6aff, type: 3}
+    authoredDuration: 2
+    looping: 1
+    facialExpressionKeys: []
   - clipName: TurnLeft
     category: locomotion
     clip: {fileID: 5150705899159750486, guid: 3a54b89b52d57874aba9844b88ed6aff, type: 3}
@@ -1286,7 +1298,7 @@ MonoBehaviour:
   sourceGeneratorVersion: 2.0.0
   sourcePose: apose
   sourceTriangleCount: 8856
-  buildSignature: 878ef51d75a28f70cf18ef1f4673f88f
+  buildSignature: ec257e6f7a62dca688dd2e38d569ae57
   faceAtlas:
     renderer: {fileID: 5003129424709676154}
     texture: {fileID: 2800000, guid: d6f6d740cb0367244abd513c4b15dbea, type: 3}

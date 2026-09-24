@@ -2,7 +2,7 @@
 """Build Bar Promenade's production Hero V2 model.
 
 Hero V2 owns the adult proportions, lean low-poly body, UV-driven expression
-face and complete 48-action bank. Shared rig, action, export and validation
+face and complete 50-action bank. Shared rig, action, export and validation
 helpers live in ``player_3d_model_common.py`` so this remains the only runnable
 hero model generator.
 
@@ -42,6 +42,7 @@ import player_detailed_model  # noqa: E402
 import player_face_paint  # noqa: E402
 import player_jacket_cloth  # noqa: E402
 import player_hand_grip  # noqa: E402
+import player_snow_actions  # noqa: E402
 
 PUBLISHED_PATHS: dict[Path, Path] = {}
 
@@ -270,7 +271,7 @@ def load_common_authoring():
 common = load_common_authoring()
 V2_REQUIRED_ACTIONS = (*common.REQUIRED_ACTIONS, RUN_ACTION_NAME,
                        player_cold_actions.HOLD_NAME, player_cold_actions.RUB_NAME,
-                       player_cold_actions.SHIVER_NAME)
+                       player_cold_actions.SHIVER_NAME, *player_snow_actions.NAMES)
 
 V2_PALETTE_HEX = dict(common.PALETTE_HEX)
 V2_PALETTE_HEX.update(
@@ -1602,6 +1603,7 @@ class HeroV2Builder(common.ProductionPlayerBuilderBase):
         run_action["bp_landmark_count"] = 8
         run_action["bp_short_flight"] = True
         player_cold_actions.build_cold_actions(self, common, V2_GENERATOR_VERSION)
+        player_snow_actions.build_snow_actions(self, common, V2_GENERATOR_VERSION)
         for record in self.result.actions.values():
             record.action["bp_torso_skin"] = "pelvis_spine_chest_v1"
             record.action["bp_generator_version"] = V2_GENERATOR_VERSION
@@ -2434,6 +2436,7 @@ def validate_v2_result(
         common.validate_fall_recovery_dense(result, errors)
         common.validate_recovery_routes(result, errors)
         player_cold_actions.validate_cold_actions(result, common, errors)
+        player_snow_actions.validate_snow_actions(result, common, errors)
     records = {record.obj.name: record for record in result.parts}
     if len(records) != len(result.parts):
         errors.append("Export mesh names are not unique")
@@ -3317,6 +3320,7 @@ def write_v2_manifest(
         keys = action_face_keys(action["name"])
         if keys:
             action["face_keys"] = keys
+    player_snow_actions.attach_metadata(payload, result)
     player_jacket_cloth.attach_metadata(payload)
     temporary = path.with_suffix(path.suffix + ".tmp")
     temporary.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")

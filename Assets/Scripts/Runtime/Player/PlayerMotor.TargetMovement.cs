@@ -61,8 +61,9 @@ namespace BarPromenade
             turnInput = turnSpeed * Time.deltaTime > .0001f ? yawDelta / (turnSpeed * Time.deltaTime) : 0f;
             input = Vector2.ClampMagnitude(input, 1f);
             Vector3 right = Vector3.Cross(Vector3.up, forward);
-            float forwardSpeed = input.y >= 0f ? (sprintRequested ? RunSpeed : MoveSpeed) : BackwardMoveSpeed;
-            return (forward * (input.y * forwardSpeed) + right * (input.x * SideStepSpeed)) *
+            float forwardSpeed = input.y >= 0f
+                ? SnowSpeed(sprintRequested ? RunSpeed : MoveSpeed) : SnowSpeed(BackwardMoveSpeed, true);
+            return (forward * (input.y * forwardSpeed) + right * (input.x * SnowSpeed(SideStepSpeed, true))) *
                 (speedMultiplier * ownedMoveScale);
         }
 

@@ -2,6 +2,17 @@
 
 ## Current facts
 
+- **Accepted architecture exception — 2026-09-25, deep-snow locomotion:**
+  User accepts realistic snow walking without running, level `0`: story §6/§12,
+  art §1/§10g. Actual village depth including treading/clearing changes the gait:
+  short steps, high bent-knee extraction, long support/weight transfer, slight
+  forward load, no flight/march. Same hero rig/ground support, continuous foot
+  phase; cold/contextual priorities remain. Cleared routes run normally;
+  turn/stop/backtrack remain free. No damage/need/return/event/text/hazard;
+  §16/§21/nine checks stay.
+  `PlayerMotor.Snow`: depth `.20/.12 m` enters/exits; `1.05/.65 m/s`
+  forward/back. `SnowWalk`/`SnowWalkBackward`: `1.10 m` cycle, `.55 m` steps.
+
 - **Accepted architecture exception — 2026-09-25, village inspection placement:**
   User waives quota/road distance/visibility: 24 IDs at work/storage/debris;
   warehouse/cliff kept, roads/E clear. `village-narrative-plan.md`.
@@ -942,29 +953,17 @@
 
 - **Accepted exception — Alpine Village cold presentation (2026-09-07,
   refined 2026-09-08):**
-  Accepted: a hunched, self-hugging idle and walk, periodic shoulder rubbing,
-  restrained shivers and visible breath in the village. This narrowly
-  lifts art-bible §1's uniform-animation rule for the exterior of
-  `AlpineVillage`, from story level `0`; the dated §6 registry row and
-  art-bible §10g own the same boundary. The shared motor, leg gait, speed and
-  controls are unchanged; the self-hug and rubbing persist while running.
-  Balance, falling and contextual actions take precedence.
-  The open station canopy stays cold; the mother's house and enclosed
-  cabin suppress the body pose and breath. `2026-09-08`
-  extends the exception to short upper-body shiver bouts, gradual
-  frost at the image's edges with its sound; both thaw in the mother's house
-  and enclosed cabin. Cold is ordinary weather,
-  independent of intoxication, degradation and dimming grade.
-  Growth: quiet dry crackles and a thin icy ring in irregular swells.
-  Thaw has its own soft ice-release sound and tiny damp clicks, fading with
-  the remaining frost; no sharp impacts or breaking glass; background blur
-  only beneath already frozen patches, growing with their coverage.
-  The existing 2D source switches to three deterministic `1.2 s` thaw clips:
-  warm entry fades its old tail over `0.12 s` and schedules the first thaw cue
-  after `0.22 s`, independent of the previous cold-cue wait. Returning outdoors
-  releases the thaw tail and schedule under the same pause/reset lifecycle.
-  No new fiction text, NPC response, damage, health need or gameplay meter;
-  the village's emotionally warm light remains binding.
+  Level `0`, art §1/§10g, story §6: village exterior hunch/hug/rubs/breath,
+  including running. Cold itself leaves motor/legs/speed/controls unchanged;
+  balance/fall/contextual ownership wins. Canopy stays cold; mother's house/
+  enclosed cabin suppress pose/breath. `2026-09-08`: upper-body shivers and
+  edge frost/sound, thawing there. Ordinary weather, independent of intoxication,
+  degradation/dimming; no text/NPC response/damage/need/meter, warm light retained.
+  Growth: dry crackle/thin icy swells. Thaw: soft ice release/damp clicks,
+  fading with frost; no sharp impact/glass. Blur follows only frozen coverage.
+  Three deterministic `1.2 s` 2D thaw clips: warm entry fades tail `0.12 s`,
+  first cue `0.22 s`, independent of cold-cue wait; outdoor return releases
+  tail/schedule under shared pause/reset.
 
   `Player3DCharacterPresentation.Cold` places authored `ColdHold` (`4 s`),
   `ColdShoulderRub` (`2.5 s` per series) and non-looping `ColdShiver` (`1 s`,

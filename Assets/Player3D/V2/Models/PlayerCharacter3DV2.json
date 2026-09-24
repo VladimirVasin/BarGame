@@ -12,7 +12,7 @@
   "object_count": 91,
   "mesh_count": 83,
   "triangle_count": 8856,
-  "action_count": 48,
+  "action_count": 50,
   "socket_count": 6,
   "bounds_min": [
     -0.775209,
@@ -964,6 +964,40 @@
       "frame_end": 96.0,
       "root_motion": false,
       "event_count": 0
+    },
+    {
+      "name": "SnowWalk",
+      "category": "locomotion",
+      "duration_seconds": 2.0,
+      "loop": true,
+      "source_frame_count": 48,
+      "source_fps": 24,
+      "frame_start": 0.0,
+      "frame_end": 48.0,
+      "root_motion": false,
+      "event_count": 0,
+      "bone_only": true,
+      "in_place": true,
+      "gait_style": "deep_snow_supported",
+      "cycle_distance_m": 1.1,
+      "support_fraction": 0.6
+    },
+    {
+      "name": "SnowWalkBackward",
+      "category": "locomotion",
+      "duration_seconds": 2.0,
+      "loop": true,
+      "source_frame_count": 48,
+      "source_fps": 24,
+      "frame_start": 0.0,
+      "frame_end": 48.0,
+      "root_motion": false,
+      "event_count": 0,
+      "bone_only": true,
+      "in_place": true,
+      "gait_style": "deep_snow_supported",
+      "cycle_distance_m": 1.1,
+      "support_fraction": 0.6
     },
     {
       "name": "TurnLeft",
@@ -2096,7 +2130,7 @@
     }
   ],
   "design_version": "HeroV2",
-  "cold_authoring_sha256": "7028b5689b681d88478d99567dca6c01e0b20175b7b96fc5cb8523069fd137d8",
+  "cold_authoring_sha256": "43e4d28adc2d45c8f1e679635306b733f134e011410f875a04649d19d57d3791",
   "detail_authoring_sha256": "74614133762b9e36a5c4e4d1720c51616f3125f91b34d719417a3e83ba461d53",
   "face_paint_sha256": "3b74355582ac1095a8a6ed0a30840e53d4bd45d78e6087b7e67d4b5331189970",
   "hand_frames_sha256": "0a527fa0da29d22421d0af3d37b2825fc956f0a64f667e939eb9bb8d52b24e82",
@@ -2125,10 +2159,10 @@
       ]
     ],
     "maximum_ring_gap_m": 0.05,
-    "action_count": 48,
+    "action_count": 50,
     "preserves_authored_contacts": true
   },
-  "content_signature_sha256": "c21d5b11e8d51745aff3e5ecfdcdc2d815a027c283cb857c2ccad38e67c51fc1",
+  "content_signature_sha256": "2f926cdeb5fff5cdbb30af2f295a31dc98542337f005017e884a6c0d47133da4",
   "material_palette": {
     "MAT_FaceAtlas": "FFFFFF",
     "MAT_JacketAtlas": "FFFFFF",
@@ -3069,5 +3103,28 @@
       "wrist_unchanged": true
     }
   },
-  "hand_grip_authoring_sha256": "bd6ef66822e7db2c545564e802558f9962f53f0ed28d77a70980b27a23af2cce"
+  "hand_grip_authoring_sha256": "bd6ef66822e7db2c545564e802558f9962f53f0ed28d77a70980b27a23af2cce",
+  "snow_authoring_sha256": "8861b52e4f3018056ff4e6bd0bbf1a27e4a28e7397d784820f62f5f917a85b51",
+  "snow_locomotion": {
+    "cycle_distance_m": 1.1,
+    "support_fraction": 0.6,
+    "left_contact_phase": 0.0,
+    "right_contact_phase": 0.5,
+    "snow_depth_m": 0.45,
+    "runtime_distance_driven": true,
+    "validation": {
+      "SnowWalk": {
+        "maximum_ankle_lift_m": 0.490949,
+        "maximum_support_lift_m": 0.000221,
+        "maximum_target_error_m": 0.005059,
+        "maximum_knee_flex_degrees": 139.7135
+      },
+      "SnowWalkBackward": {
+        "maximum_ankle_lift_m": 0.490489,
+        "maximum_support_lift_m": 0.000212,
+        "maximum_target_error_m": 0.004874,
+        "maximum_knee_flex_degrees": 139.9436
+      }
+    }
+  }
 }

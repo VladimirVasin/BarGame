@@ -40,6 +40,13 @@ namespace BarPromenade.Tests.PlayMode
             }
         }
 
+        private sealed class MutableSnowSurface : IPlayerSnowSurface, IPlayerFootstepSurface
+        {
+            public float Depth;
+            public float SampleMovementSnowDepth(Vector3 position, Vector3 travelDirection) => Depth;
+            public bool TryPlayFootstep(Vector3 position, float runBlend) => true;
+        }
+
         private const float MovementTimeoutSeconds = 2f;
         private const float MinimumMovingSpeed = 0.25f;
         private const float MaximumMovingSpeed = 2.6f;
@@ -375,6 +382,98 @@ namespace BarPromenade.Tests.PlayMode
                 "The run blend must normalize against the intoxicated " +
                 "walk and run caps, not the sober constants.");
 
+            QueueKeyboardState();
+        }
+
+        [UnityTest]
+        public IEnumerator DeepSnow_BlocksSprintPreservesSlowdownAndRestoresMovement()
+        {
+            var snow = new MutableSnowSurface { Depth = .19f };
+            motor.SetFootstepSurface(snow);
+            QueueKeyboardState(Key.W, Key.LeftShift);
+            yield return WaitForSnowSpeed(MaximumRunningSpeed, false);
+
+            snow.Depth = .20f;
+            yield return WaitForSnowSpeed(1.05f, true);
+            Assert.That(presentation.LastMotion.RunBlend, Is.Zero);
+            Assert.That(presentation.LastMotion.SnowBlend, Is.EqualTo(1f));
+
+            snow.Depth = .12f;
+            yield return WaitForSnowSpeed(1.05f, true);
+            Assert.That(motor.InDeepSnow, Is.True, "The exit threshold retains an existing snow stride.");
+            snow.Depth = .119f;
+            yield return WaitForSnowSpeed(MaximumRunningSpeed, false);
+            snow.Depth = .15f;
+            yield return WaitForSnowSpeed(MaximumRunningSpeed, false);
+            Assert.That(motor.InDeepSnow, Is.False, "The hysteresis band cannot re-enter from shallow ground.");
+
+            snow.Depth = .30f;
+            QueueKeyboardState();
+            inputFixture.Set(gamepad.leftStick, Vector2.up, queueEventOnly: true);
+            inputFixture.Press(gamepad.leftStickButton, queueEventOnly: true);
+            yield return WaitForSnowSpeed(1.05f, true);
+            Assert.That(presentation.LastMotion.RunBlend, Is.Zero, "Gamepad sprint must respect the same surface.");
+            inputFixture.Release(gamepad.leftStickButton, queueEventOnly: true);
+            inputFixture.Set(gamepad.leftStick, Vector2.zero, queueEventOnly: true);
+            QueueKeyboardState(Key.S, Key.LeftShift);
+            yield return WaitForSnowSpeed(.65f, true, backward: true);
+            Assert.That(presentation.LastMotion.SignedForwardSpeed, Is.LessThan(-.60f));
+            Assert.That(presentation.LastMotion.RunBlend, Is.Zero);
+
+            motor.SetSpeedMultiplier(.7f);
+            QueueKeyboardState(Key.W, Key.LeftShift);
+            yield return WaitForSnowSpeed(1.05f * .7f, true);
+            Assert.That(presentation.LastMotion.SignedForwardSpeed, Is.GreaterThan(.68f),
+                "Snow resistance composes with intoxication instead of replacing its speed multiplier.");
+
+            pushWall = new GameObject("Snow Movement Target");
+            pushWall.transform.position = playerObject.transform.position + playerObject.transform.forward * 100f;
+            Assert.That(motor.SetMovementTarget(this, pushWall.transform), Is.True);
+            QueueKeyboardState(Key.W, Key.D, Key.LeftShift);
+            float deadline = Time.realtimeSinceStartup + .30f;
+            while (Time.realtimeSinceStartup < deadline)
+            {
+                yield return null;
+                Assert.That(motor.PlanarVelocity.magnitude, Is.LessThanOrEqualTo(1.05f * .7f + .04f));
+                Assert.That(presentation.LastMotion.RunBlend, Is.Zero,
+                    "A scoped target-relative diagonal must not bypass snow or intoxication.");
+            }
+            Assert.That(presentation.LastMotion.TargetRelative, Is.True);
+            Assert.That(presentation.LastMotion.SignedSideSpeed, Is.GreaterThan(.15f));
+            motor.ClearMovementTarget(this);
+
+            QueueKeyboardState();
+            motor.SetSpeedMultiplier(1f);
+            motor.SetInputEnabled(false);
+            Vector3 start = playerObject.transform.position;
+            Assert.That(motor.MoveTowardsInteractionPose(start + playerObject.transform.forward * 3f,
+                playerObject.transform.rotation, .1f), Is.False);
+            Assert.That(PlanarDistance(start, playerObject.transform.position),
+                Is.EqualTo(.105f).Within(.005f), "A guided approach uses the snow cap with manual input locked.");
+            Assert.That(presentation.LastMotion.SnowBlend, Is.EqualTo(1f));
+            motor.CancelInteractionPoseMove();
+            start = playerObject.transform.position;
+            motor.MoveTowardsInteractionPose(start - playerObject.transform.forward * 3f,
+                playerObject.transform.rotation, .1f, walkBackward: true);
+            Assert.That(PlanarDistance(start, playerObject.transform.position), Is.EqualTo(.065f).Within(.005f));
+            motor.SetInputEnabled(true);
+
+            motor.SetFootstepSurface(null);
+            Assert.That(motor.InDeepSnow, Is.False);
+            Assert.That(motor.SnowBlend, Is.Zero, "Removing the area provider must clear resistance immediately.");
+            QueueKeyboardState(Key.W, Key.LeftShift);
+            yield return WaitForSnowSpeed(MaximumRunningSpeed, false);
+
+            motor.SetFootstepSurface(snow);
+            yield return WaitForSnowSpeed(1.05f, true);
+            motor.enabled = false;
+            Assert.That(motor.InDeepSnow, Is.False);
+            Assert.That(motor.SnowBlend, Is.Zero);
+            Assert.That(presentation.LastMotion.SnowBlend, Is.Zero);
+            Assert.That(motor.PlanarVelocity, Is.EqualTo(Vector3.zero));
+            snow.Depth = 0f;
+            motor.enabled = true;
+            yield return WaitForSnowSpeed(MaximumRunningSpeed, false);
             QueueKeyboardState();
         }
 
@@ -1067,6 +1166,23 @@ namespace BarPromenade.Tests.PlayMode
         private IEnumerator WaitForMovement()
         {
             yield return WaitForSpeed(MinimumMovingSpeed);
+        }
+
+        private IEnumerator WaitForSnowSpeed(float expectedSpeed, bool deep, bool backward = false)
+        {
+            float expectedSignedSpeed = backward ? -expectedSpeed : expectedSpeed;
+            float deadline = Time.realtimeSinceStartup + MovementTimeoutSeconds;
+            do
+            {
+                yield return null;
+            }
+            while (Time.realtimeSinceStartup < deadline &&
+                (Mathf.Abs(presentation.LastMotion.SignedForwardSpeed - expectedSignedSpeed) > .04f ||
+                 Mathf.Abs(motor.SnowBlend - (deep ? 1f : 0f)) > .001f));
+            Assert.That(motor.PlanarVelocity.magnitude, Is.EqualTo(expectedSpeed).Within(.04f));
+            Assert.That(presentation.LastMotion.SignedForwardSpeed, Is.EqualTo(expectedSignedSpeed).Within(.04f));
+            Assert.That(motor.InDeepSnow, Is.EqualTo(deep));
+            Assert.That(motor.SnowBlend, Is.EqualTo(deep ? 1f : 0f).Within(.001f));
         }
 
         private IEnumerator GroundForExternalPush()

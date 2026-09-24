@@ -50,7 +50,7 @@ the no-variant `Player3DResources` / `PlayerFactory` path to `Player3DV2`.
   upper arms, narrow shoulders, boot uppers and soles. The oversized M-65 has
   narrower shoulders/upper sleeves, loose sides and hem, long sleeves bunching at
   the cuffs. Garment volume must not make the body itself broad. It does not make him athletic or assign
-  a new identity. The `31` core bones and `48` bone-only production actions
+  a new identity. The `31` core bones and `50` bone-only production actions
   remain compatible; `12` auxiliary hair bones extend the model hierarchy.
 - The open M-65 has four constructed pockets and flaps, a standing collar,
   plackets, cuff thickness and a lined front opening. Its faded olive fabric
@@ -237,8 +237,8 @@ This opt-in applies only during the interaction handoff without an active clip.
   arm, sleeve, cuff, palm, thumb and finger meshes every half source frame; no
   opposing palm/sleeve pair is exempt from the `2 mm` numerical tolerance.
   `Player3DCharacterPresentation.Cold` masks torso and arms separately above
-  locomotion: legs and pelvis retain the ordinary gait, running preserves
-  the cold arms and rub clock, and owned actions/falling override the profile.
+  locomotion: legs/pelvis retain their gait; snow reduces cold torso to 25%,
+  keeping arms/rub clock. Running retains cold; owned actions/falls override.
   Equipped scarf protection scales only the shiver blend to `0.5`; the authored
   hold, rub, breath and shared leg motion retain their ordinary weights and timing.
   Protective arm poses
@@ -256,28 +256,25 @@ This opt-in applies only during the interaction handoff without an active clip.
   the hero, changes his gait or drives health. Canon boundaries live in the
   story-bible §6 registry and art-bible §10g; this is ordinary rig animation
   without an atlas replacement.
-- All `48` existing actions are regenerated with the independent
+- All `50` actions carry the independent
   `pelvis -> spine -> chest` tracks on the preserved 31-bone core. Their
   timings, sockets, hand/foot contacts and contextual seams remain the same;
   the newly weighted shirt and jacket now visibly follow each spinal region.
   The ordinary additive torso bend is shared `40/60` between spine and chest
   and both local poses participate in the same capture/restore lifecycle.
-- The independent pedestrian locomotion bank remains at `37` actions; the
-  production hero's `Run` is not added to it.
-- `Relaxed`, the four-second `Idle`, the one-second `Walk` and the `0.75 s`
-  (`18` frames at `24 fps`) `Run` own ordinary in-place presentation. Idle
-  returns to the exact Relaxed seam while two
-  asymmetric breath/weight-shift phrases move the pelvis, spine, chest, head,
-  arms and softly loaded knees. Walk uses contact/down/passing/up phases for
-  both sides with independent elbow, knee and ankle articulation, opposite arm
-  swing and a closed neutral-root loop. Run is a separate heavy, weary gait:
-  forward torso load, stronger opposing arm swing, deeper knee lift and a
-  short two-foot flight phase, never an accelerated Walk. All three locomotion
-  clips and the three bed clips use auto-clamped Bezier interpolation; the
-  remaining contextual and
-  fall timing stays linear. The bed clips additionally stagger their keys, so
-  the pelvis and legs take a landmark first and the chest, head, arms and face
-  reach it a few frames later. Both endpoints still key the whole rig.
+- Pedestrians retain `37` actions, excluding hero Run/snow.
+- `Relaxed`, `Idle` (4 s), `Walk` (1 s), `Run` (.75 s/18 frames at 24 fps):
+  in-place, neutral-root closed loops. Idle returns to Relaxed; two asymmetric
+  breath/weight phrases move pelvis/spine/chest/head/arms/soft knees. Walk:
+  bilateral contact/down/passing/up, independent elbows/knees/ankles, opposing
+  arms. Heavy weary Run loads forward, stronger arms/knees, short flight.
+  `SnowWalk`/`SnowWalkBackward` (2 s/48 frames at 24 fps): high bent-knee boot
+  extraction, long support/weight transfer, short steps, no flight; `1.10 m`
+  cycle. Shared phase/ground support; slow movement keeps full pose. Post-IK
+  contacts drive snow sound/kickup. Sprint excluded by actual deep snow.
+  Idle/Walk/Run and three bed clips use auto-clamped Bezier; other contextual/
+  fall timing stays linear. Bed landmarks lead with pelvis/legs; chest/head/
+  arms/face follow a few frames later, whole rig keyed at both endpoints.
 - `Face_Neutral`, `Face_HalfBlink`, `Face_ClosedBlink`, `Face_Watchful` and
   `Face_Tense` preserve deterministic facial timing. Hero V2 resolves authored
   clip keys through its atlas. The fall's clips (`Fall`, `Down`, `Rise`) no longer own

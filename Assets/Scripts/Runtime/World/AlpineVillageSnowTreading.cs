@@ -28,7 +28,7 @@ namespace BarPromenade
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class AlpineVillageSnowTreading
-        : MonoBehaviour, IPlayerFootstepSurface
+        : MonoBehaviour, IPlayerFootstepSurface, IPlayerSnowSurface
     {
         /// <summary>
         /// How wide a pass presses the snow. Wider than a boot on purpose:
@@ -79,6 +79,19 @@ namespace BarPromenade
         /// sampled, for anything that wants to know what he is standing in.
         /// </summary>
         public float DepthUnderWalker { get; private set; }
+
+        public float SampleMovementSnowDepth(Vector3 position, Vector3 travelDirection)
+        {
+            // Look through the next step before Press flattens it. The field
+            // has one-metre cells: the farther probe clears both the .55 m
+            // stamp and the nearest-vertex half-cell, so our own current
+            // footprint cannot switch wading off on alternate updates.
+            travelDirection.y = 0f;
+            if (travelDirection.sqrMagnitude > .0001f) travelDirection.Normalize();
+            return Mathf.Max(SampleVisibleDepth(position),
+                Mathf.Max(SampleVisibleDepth(position + travelDirection * .55f),
+                    SampleVisibleDepth(position + travelDirection * 1.05f)));
+        }
 
         /// <summary>
         /// Gives the snow the hero to follow and the snowfall that fills his

@@ -6,8 +6,13 @@ Earlier notes: [`release-notes-2026-09.md`](archive/release-notes-2026-09.md).
 
 ## Unreleased
 
-### 2026-09-25 — Места осмотра и звук печки
+### 2026-09-25 — Шаг в сугробах, осмотры и печка
 
+- В глубоких сугробах герой высоко вытаскивает ноги и идёт коротким шагом,
+  назад — осторожнее. Бег недоступен; протоптанное/расчищенное возвращает
+  обычное движение. Проверка анимаций: `player_snow_actions.validate_snow_actions`.
+  Движение: `DeepSnow_BlocksSprintPreservesSlowdownAndRestoresMovement`;
+  сцена/просмотр кадров: `AreaCaptureFixture.AlpineVillageSnowGait`.
 - Печка базы горит ровнее: треск мягче и реже, резкий верх приглушён.
   Проверка: `InteriorSoundscapeSynthesisTests.LoopBeds_AreFiniteQuietNonSilentAndLoopSafe`.
 - Вещи собраны у своих рабочих мест/хранения и в следе лавины; лишние убраны.

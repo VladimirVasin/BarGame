@@ -191,7 +191,10 @@ namespace BarPromenade
             coldArms.SetInputWeight(0, 1f - coldRubWeight - shiverWeight);
             coldArms.SetInputWeight(1, coldRubWeight);
             coldArms.SetInputWeight(2, shiverWeight);
-            coldLayers.SetInputWeight(1, coldBodyWeight);
+            // The snow stride owns its forward effort through the spine;
+            // the arms can still hug the same torso for warmth. Protective
+            // reaches retain their existing priority over that self-hug.
+            coldLayers.SetInputWeight(1, coldBodyWeight * Mathf.Lerp(1f, 0.25f, SnowBlend));
             coldLayers.SetInputWeight(2, coldArmWeight);
         }
 

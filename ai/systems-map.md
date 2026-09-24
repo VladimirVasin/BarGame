@@ -143,11 +143,11 @@ Only these statuses apply. Product scope cuts are `Deferred` in
 | Causal City soundscape | Visible local sources own City sound; bounded schedules and shared routing control the mix. | `CitySound{SourceDescriptor,scapePlan,scapePlanner,SchedulePlanner,Occlusion}` | Current |
 | Home alarm clock | Bed-relative `27.6 cm` clock: frozen flickering `05:59`, solid `06:00` on Wake, then session time. | `HomeAlarmClock{Plan,Builder,Synthesis}`, `HomeAlarmClock` | Current |
 | Road, park and ground navigation | Masks follow physical bounds; exclusions retain corner overlap, safe eastern street margins stay open. | `RoadWalkableArea`, `CityGroundTraversalPlan{,ner}`, `CityRoadGroundBoundaryPlanner` | Current |
-| Player motor | Shared tank movement/run uses constrained velocity and common input; contextual approaches retain their own owner. | `PlayerMotor`, `PlayerDirectionalInput` | Current |
+| Player motor | Tank motion uses achieved speed; deep snow blocks run; contextual approaches retain ownership. | `PlayerMotor{,.Snow}`, `PlayerDirectionalInput` | Current |
 | Third-person chase camera | Shared collision-aware chase/orbit blends cinematic motion and yields to owned fixed/modal shots. | `PlayerCameraFollow`, `IntoxicationDollyZoomModel` | Current |
 | Home fixed camera | Authored fixed shots with explicit contextual ownership; the main-room shot pans up to 18/9 degrees to hold the hero. | `HomeCameraShot{,Selector}`, `HomeFixedCameraController`, `FixedCameraFocus` | Current |
 | Home player visibility | Grouped occluder dither and fixed-shot rules keep the hero visible without changing collision. | `HomeOcclusion{Registry,Resolver}`, `HomePlayerOcclusionController` | Current |
-| Modular 3D hero presentation | Refined Hero V2/M-65; 31 body bones, 12 auxiliary hair bones and 48 core actions. | `Player3D*`, `PlayerFactory` | Current |
+| Modular 3D hero presentation | Hero V2/M-65: 31 body bones, 12 hair bones, 50 actions including two snow gaits. | `Player3D*`, `PlayerFactory` | Current |
 | Hero wardrobe | Atomic slot replacement and body coverage; one authored outfit. Gap: extra outfits, UI and persistence. | `PlayerWardrobe`, `Player3DBathingAppearance` | Partial |
 | Hero hair | Parted curtains: bounded motion/wind/body/clothing/scarf contacts; pause freeze and copied mirror pose. | `PlayerHair`, `PlayerHairContacts` | Current |
 | Hero jacket cloth | Anchored hem/cuffs: motion/wind/body/hand contacts; pause/reset and passive mirror/arm copies. | `PlayerJacketCloth`, `PlayerJacketClothSurface` | Current |
@@ -256,8 +256,8 @@ blueprint ID + seed -> immutable blueprint -> validated sparse layout
   -> fence plan -> rails with clearance openings
 
 ten gameplay roots -> PlayerFactory -> Resources/Player/Player3DV2.prefab
-  -> 48 authored Actions: Idle / Walk / heavy Run + seated drink 2/3/2 + seated/fours recovery + cold hold/rub/shiver
-  -> Shift or L3 + forward -> 4.2 m/s run; backpedal and scripted approaches walk
+  -> 50 actions: Idle / Walk / Run / SnowWalk + backward / drink / recovery / cold
+  -> Shift or L3 + forward -> 4.2 m/s run except deep snow; backpedal/approaches walk
   -> actual constrained speed owns Run weight; intoxication scales it, fatigue does not
   -> contextual actions: bed, smoking, cat feeding, bus board/ride/exit
   -> continuous balance: drift / support / topple -> bounded ragdoll -> seated or all-fours rise -> stagger
