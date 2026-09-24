@@ -1,0 +1,13 @@
+{
+  "asset": "Assets/Resources/Village/Textures/LodgePictures.png",
+  "created": "2026-09-25",
+  "tool": "Built-in image_gen",
+  "prompt": "Use case: stylized-concept. Asset type: ONE square opaque 2x2 wall-art texture atlas for a worn PS1-style abandoned ski lodge game interior. Exactly four equal square quadrants with no gaps, no frames, no typography, no captions, no logos or watermarks. Each quadrant fills its square edge to edge. TOP LEFT: faded old neutral sepia monochrome archival photograph, plain low wide one-storey ski lodge, stone lower walls and weathered timber, broad shallow pitched roof with chimney, paired central entrance, broad rectangular windows, snowy ground, modest intact old rope-tow support beside it, dense conifer backdrop, no people, no jagged mountains or visible peaks, no chalet ornaments. TOP RIGHT: muted old oil painting of a few ordinary plaster-and-timber village houses on a quiet lane, grey overcast sky, worn brush texture, earthy subdued ochre/grey-green, no mountains. BOTTOM LEFT: muted old oil painting of pine forest trunks and a forest path, brown and desaturated dark green, grey diffused light, visible paint grain. BOTTOM RIGHT: plain aged neutral warm grey paper texture, no subject. The image is the artwork itself, not a photo of framed pictures or an interior. Strictly flat frontal texture sheet, no perspective skew, no cast shadows. Images should be readable in small in-game wall frames, clear large masses, aged and modest rather than fancy tourist art. No text, dates, names, people, skulls, blood, fantasy symbols, sunlight postcard mood.",
+  "layout": {
+    "top_left": "Old lodge photograph",
+    "top_right": "Village painting",
+    "bottom_left": "Forest painting",
+    "bottom_right": "Unused paper"
+  },
+  "processing": "Original image copied unchanged; Unity imports at max 1024 pixels."
+}

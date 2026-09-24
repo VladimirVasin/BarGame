@@ -10,6 +10,7 @@ namespace BarPromenade.Editor
     {
         public const string ModelPath = "Assets/Resources/Village/Expansion/VillageExpansion3D.fbx";
         public const string ManifestPath = "Assets/Resources/Village/Expansion/VillageExpansion3D.json";
+        public const string LodgePicturesPath = "Assets/Resources/" + VillageExpansionAssetProvider.LodgePicturesTexturePath + ".png";
         public static readonly string[] WreckTexturePaths =
         {
             "Assets/Resources/" + VillageExpansionAssetProvider.WreckRustTexturePath + ".png",
@@ -27,6 +28,7 @@ namespace BarPromenade.Editor
         {
             AssetDatabase.ImportAsset(ModelPath, ImportAssetOptions.ForceSynchronousImport | ImportAssetOptions.ForceUpdate);
             AssetDatabase.ImportAsset(ManifestPath, ImportAssetOptions.ForceSynchronousImport | ImportAssetOptions.ForceUpdate);
+            AssetDatabase.ImportAsset(LodgePicturesPath, ImportAssetOptions.ForceSynchronousImport | ImportAssetOptions.ForceUpdate);
             foreach (string path in WreckTexturePaths)
                 AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceSynchronousImport | ImportAssetOptions.ForceUpdate);
             foreach (string path in AbandonedTexturePaths)
@@ -38,6 +40,13 @@ namespace BarPromenade.Editor
         public static void ValidateOrThrow()
         {
             var manifest = VillageExpansionAssetProvider.ParseManifestOrThrow(File.ReadAllText(ManifestPath));
+            var pictures = AssetDatabase.LoadAssetAtPath<Texture2D>(LodgePicturesPath);
+            var pictureImporter = AssetImporter.GetAtPath(LodgePicturesPath) as TextureImporter;
+            if (pictures == null || pictures.width < 1024 || pictures.width != pictures.height ||
+                pictureImporter == null || pictureImporter.wrapMode != TextureWrapMode.Clamp ||
+                !pictureImporter.sRGBTexture || !pictureImporter.mipmapEnabled ||
+                pictureImporter.alphaSource != TextureImporterAlphaSource.None)
+                throw new InvalidOperationException("Lodge pictures require one opaque square clamped atlas.");
             foreach (string path in AbandonedTexturePaths)
             {
                 var texture = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
@@ -103,6 +112,15 @@ namespace BarPromenade.Editor
                     throw new InvalidOperationException("Expansion thermal flame lost its UV1/colors: " + part.mesh);
                 if (triangles.Length / 3 != part.triangles)
                     throw new InvalidOperationException("Expansion triangle count drifted: " + part.mesh);
+                if (part.surface == "LodgePictures")
+                {
+                    Vector2[] uv = source.sharedMesh.uv;
+                    if (uv.Length != vertices.Length)
+                        throw new InvalidOperationException("Lodge artwork lost its atlas UVs: " + part.mesh);
+                    foreach (Vector2 coordinate in uv)
+                        if (coordinate.x < .005f || coordinate.x > .995f || coordinate.y < .005f || coordinate.y > .995f)
+                            throw new InvalidOperationException("Lodge artwork escapes its padded atlas: " + part.mesh);
+                }
                 double volume = 0d;
                 for (int i = 0; i < triangles.Length; i += 3)
                     volume += Vector3.Dot(vertices[triangles[i]],
@@ -128,7 +146,8 @@ namespace BarPromenade.Editor
         private void OnPreprocessTexture()
         {
             if ((Array.IndexOf(VillageExpansionAssetSetup.WreckTexturePaths, assetPath) < 0 &&
-                Array.IndexOf(VillageExpansionAssetSetup.AbandonedTexturePaths, assetPath) < 0) ||
+                Array.IndexOf(VillageExpansionAssetSetup.AbandonedTexturePaths, assetPath) < 0 &&
+                assetPath != VillageExpansionAssetSetup.LodgePicturesPath) ||
                 !(assetImporter is TextureImporter importer)) return;
             importer.textureType = TextureImporterType.Default;
             importer.textureShape = TextureImporterShape.Texture2D;
@@ -140,7 +159,8 @@ namespace BarPromenade.Editor
             importer.npotScale = TextureImporterNPOTScale.None;
             importer.filterMode = FilterMode.Bilinear;
             importer.anisoLevel = 4;
-            importer.wrapMode = TextureWrapMode.Repeat;
+            importer.wrapMode = assetPath == VillageExpansionAssetSetup.LodgePicturesPath
+                ? TextureWrapMode.Clamp : TextureWrapMode.Repeat;
             importer.textureCompression = TextureImporterCompression.Uncompressed;
             importer.maxTextureSize = 1024;
         }

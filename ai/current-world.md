@@ -136,17 +136,16 @@ The vertical slice contains:
   answer, and there is no branch or choice. Cat, dinner and the news remain
   outside this MVP;
 - `MainMenu` is build index `0` and Editor Play's session boundary: black card,
-  New Game/Combat Test/Quit. New Game opens eleven starts: nine story scenes plus City's
-  docks/cannery; village first/default. Back returns to the card. Mouse,
-  keyboard/gamepad share selection. `NewGameStartService` confirms day `1`/`07:40`:
-  areas use `AreaLoading`, six interiors load directly without door travel;
-- starts have no prologue, ride/cabin/arrival sequence or directed travel
-  illustration. The default village uses its lane-foot spawn, two metres up
-  from the station threshold facing the mother's house. Other choices use
-  their gameplay roots; City uses home's return point, docks/cannery clear
-  pedestrian positions. Operation-scoped City/Bar markers preserve later arrivals.
-  Day one raises the mother's-house quest and map marker, closed on entry
-  through door/map or at once when starting inside; no village signpost;
+  New Game/Combat Test/Quit. Twelve starts: nine story scenes, City docks/cannery,
+  ski lodge; village first/default. Back returns; mouse/keyboard/gamepad select.
+  `NewGameStartService`: day `1`/`07:40`, areas via `AreaLoading`, six interiors
+  directly without door travel; no prologue/ride/cabin/arrival/travel illustration.
+- Default village: lane foot, 2 m above station threshold facing mother's house.
+  Ski lodge: 3 m outside its entrance facing the door. Other choices use their
+  roots; City uses home's return point, docks/cannery clear pedestrian positions.
+  City/Bar/lodge markers belong to one load, consumed once; later arrivals stay.
+  Day one raises mother's-house quest/map marker; door/map entry or starting
+  inside closes it. No village signpost;
 - CombatTest: six posed zones/HP; guard/parry before rear-head defeat.
   Ready/Block/attacks/recoils support left; Hit/GuardBreak/Defeat release.
   Impulses/catch steps; both rigs fall/rise holding right; sole-bound regrip.
@@ -245,22 +244,23 @@ The vertical slice contains:
   8 sheds (2 ruined), 5 closed yards: town hall/square, school, shop-bakery/loading,
   workshop, rescue/apron. Three worn stone/joinery/dark-window/shutter/debris
   variants; no new residents/lights/interiors. Clear yards, level shelves,
-  four-side views. Dry `18 x 12 m` lodge: cot/blanket, counter kettle/lantern (§10g).
-  Cot/kettle E: silent, no sleep/time/tea/grant. Two replacement leaves
-  E both sides: binary pose/collision; reject occupied closure; either opens passage.
-  No auto-close/hero animation. Lantern E: warm local light, no fuel/heat.
-  Session doors/light reset open/off on New Game. `VillageInteriorAcoustics`:
-  hero inside, one shut softens wind, both nearly silence it over .35 s;
-  footsteps/stove/outside clear; workshop shares owner. Lit stove: whole room
-  warm if both shut, otherwise indoor 2.5 m. Roof culls snow outside windows;
-  fixed doorway targets. Lodge/mother piles: E→Yes/No→shared `FirewoodLog`
-  receipt; one, infinite retake/duplicate refusal. Cancel before grant;
-  Close/Escape retains without retry. Stove E: first person/right two-column grid;
-  lit E opens door. Silent:
-  «Мне понадобится полено»/«Теперь нужно зажечь». Log spent; inventory flip-top
-  opens→third click ignites→closes. Soft, sparse crackle; exit restores camera/door.
-  Empty/LogPlaced/Burning until New Game, no burnout; no hands/visible rig,
-  walls block heat. Shed/lift passive.
+  four-side views. Dry `18 x 12 m` lodge (§10g): 2 bunks/4 beds/cot,
+  heads at wall; foot rug, wall kettle; oak table/two benches for six, edge lamp.
+  `LodgeInteriorInteractions`: stove-facing `CityBenchSitInteraction`,
+  E sit/stand, real time/no stats; intact-lift photo/skis: RU/EN.
+  Cot/kettle: silent E, no sleep/tea/grant. Two leaves: E both sides,
+  binary pose/collision, reject occupied closure; either opens passage,
+  no auto-close/hero animation. Lamp E: warm/no fuel/heat. Doors/light persist;
+  New Game open/off. `VillageInteriorAcoustics`: one shut softens indoor wind,
+  both nearly silence it in .35 s; stove/steps/outside clear; shared workshop.
+  Lit stove: both shut warms room, else indoor 2.5 m; walls block heat.
+  Roof culls snow, windows retain it; fixed doorway targets.
+  Lodge/mother piles: E→Yes/No→shared `FirewoodLog` receipt, one/infinite retake/
+  duplicate refusal; cancel before grant, Close/Esc retains/no retry.
+  Stove E: first person/right two-column grid; lit E opens door. Silent:
+  «Мне понадобится полено»/«Теперь нужно зажечь». Log spent; flip-top opens→third
+  click ignites→closes. Soft sparse crackle; exit restores camera/closes door.
+  Empty/LogPlaced/Burning until New Game, no burnout; shed/lift passive.
   Avalanche scar/full-size timber/rock/beams/buried tow/cable/damaged household 15
   (`AvalancheRuinedHouse`). Front ~20 m/fan 38 m; `AlpineVillageAvalanchePlan`:
   shared 14-vertex movement/forest/manifest polygon; ground-triangle-fitted
@@ -269,13 +269,13 @@ The vertical slice contains:
   one past catastrophe, unrelated to the older mine.
   Warehouse yard: `RustedTruck` without wheels/doors/glass, `DiscardedChairPile`,
   clear ramp/road. Stock/supports show conserved repair; rail/rubble close gap.
-  `AlpineVillageNarrative*`: 24 sparse IDs: 20 props/two notes + truck/chairs.
-  Work/storage/debris owns placement, no sector quota/road-view requirement.
-  Clear approaches; unused assets/text retained.
-  `NarrativeInteraction`: rig, `ContextualCameraDirector`; props side/bokeh,
-  notes close-up, no hero. `InteractionPromptView`: held bottom pages/cleanup.
-  E advances/closes; Esc cancels. Replay, no grant/progress. RU/EN resort/avalanche/road/
-  trade thoughts; two notes: three paper pages then thought; paper/UI keys match.
+  `AlpineVillageNarrative*`: 24 outdoor IDs (20 props/two notes/truck/chairs).
+  Work/storage/debris, no quota/road-view rule; clear approaches,
+  assets/text kept. `NarrativeInteraction`/rig/
+  `ContextualCameraDirector`: props side/bokeh, notes close-up/no hero.
+  `InteractionPromptView`: held bottom pages/cleanup; E next/close, Esc cancel,
+  replay/no grant/progress. RU/EN resort/avalanche/road/trade thoughts;
+  two notes: three paper pages then thought, paper/UI keys match.
   `AlpineVillageJunctionPlan`: ports/contours/snow; asphalt/soil node maps share
   a 2x2 atlas/material. Other paths raised; warehouse apron has no snow island.
   `AlpineVillageDistanceWorldBuilder` uses six checkpoint meshes with storm

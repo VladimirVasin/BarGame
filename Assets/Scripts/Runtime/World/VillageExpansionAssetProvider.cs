@@ -40,11 +40,12 @@ namespace BarPromenade
     {
         public const string ResourcePath = "Village/Expansion/VillageExpansion3D";
         public const string DesignId = "village_forest_ski_base_old_road_v1";
-        public const string GeneratorVersion = "1.8.0";
+        public const string GeneratorVersion = "1.9.0";
         public const string WreckRustTexturePath = "Village/Textures/VillageTruckRustAlbedo";
         public const string WreckPaintTexturePath = "Village/Textures/VillageTruckPaintAlbedo";
+        public const string LodgePicturesTexturePath = "Village/Textures/LodgePictures";
         private static VillageExpansionAssetProvider instance;
-        private static Texture2D wreckRust, wreckPaint;
+        private static Texture2D wreckRust, wreckPaint, lodgePictures;
         private static Material flameMaterial;
         private static readonly Dictionary<string, Texture2D> agedTextures = new Dictionary<string, Texture2D>();
         private readonly Dictionary<string, MeshFilter> meshes;
@@ -151,6 +152,20 @@ namespace BarPromenade
         {
             var tint = new Color(part.tint[0], part.tint[1], part.tint[2], part.tint[3]);
             var block = new MaterialPropertyBlock();
+            if (part.surface == "LodgePictures")
+            {
+                if (lodgePictures == null) lodgePictures = Resources.Load<Texture2D>(LodgePicturesTexturePath);
+                if (lodgePictures == null) throw new InvalidOperationException("Missing lodge wall-art atlas.");
+                renderer.sharedMaterial = RuntimePrimitiveFactory.DefaultMaterial;
+                block.SetTexture("_BaseMap", lodgePictures);
+                block.SetVector("_BaseMap_ST", new Vector4(1f, 1f, 0f, 0f));
+                block.SetColor("_BaseColor", Color.white);
+                block.SetColor("_Color", Color.white);
+                block.SetFloat("_Smoothness", 0f);
+                block.SetFloat("_Metallic", 0f);
+                renderer.SetPropertyBlock(block);
+                return;
+            }
             if (part.surface == "Fire")
             {
                 if (flameMaterial == null)
@@ -248,7 +263,7 @@ namespace BarPromenade
         private static void ResetCache()
         {
             instance = null;
-            wreckRust = wreckPaint = null;
+            wreckRust = wreckPaint = lodgePictures = null;
             flameMaterial = null;
             agedTextures.Clear();
         }

@@ -98,7 +98,8 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(GameSessionState.GameTimeOfDayMinutes, Is.InRange(460d, 480d));
         }
 
-        private static readonly NewGameLocation[] SelectedStarts = { NewGameLocation.Cannery, NewGameLocation.Home };
+        private static readonly NewGameLocation[] SelectedStarts =
+            { NewGameLocation.Cannery, NewGameLocation.Home, NewGameLocation.SkiLodge };
 
         [UnityTest]
         public IEnumerator NewGame_SelectedLocationUsesItsNormalArrivalWithoutTheHomeOpening(
@@ -107,8 +108,11 @@ namespace BarPromenade.Tests.PlayMode
             yield return SceneManager.LoadSceneAsync(SceneIds.MainMenu, LoadSceneMode.Single);
             StartMenuRoot menu = Object.FindAnyObjectByType<StartMenuRoot>();
             Assert.That(menu, Is.Not.Null);
+            if (location == NewGameLocation.SkiLodge)
+                yield return CaptureStartMenuPages(menu, location);
             Assert.That(menu.ConfirmSelection(), Is.True);
             Assert.That(menu.SelectLocation(location), Is.True);
+            Assert.That(menu.SelectedLocation, Is.EqualTo(location));
             Assert.That(menu.IsChoosingLocation, Is.True);
             Assert.That(GameSessionState.IsGameTimeRunning, Is.False);
             // A preview cannot become a continuation of state dirtied while the menu was open.
@@ -149,6 +153,41 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(local.z, Is.InRange(-9f, 9f));
                 Assert.That(CityFishSupplySession.HasStarted, Is.False, "A factory start is not a dock-entry event.");
             }
+            else if (location == NewGameLocation.SkiLodge)
+            {
+                Assert.That(sawAreaLoading, Is.True, "The lodge start uses the village composition overlay.");
+                AlpineVillageRoot village = Object.FindAnyObjectByType<AlpineVillageRoot>();
+                Assert.That(village, Is.Not.Null);
+                Assert.That(village.IsInitialized, Is.True);
+                Assert.That(village.HadAreaArrival, Is.True);
+                Assert.That(village.ArrivalToken, Is.EqualTo(AreaArrivalToken.Default));
+                Transform hero = village.Player.GameObject.transform;
+                Vector3 entrance = village.Plan.Expansion.LodgeEntrance;
+                Vector3 expected = entrance - village.Plan.Expansion.LodgeForward * 3f;
+                Vector3 offset = hero.position - expected;
+                offset.y = 0f;
+                Assert.That(offset.magnitude, Is.LessThan(.5f), "Start beside the base entrance, not at the village lane foot.");
+                Assert.That(village.LodgeShelter.ContainsInterior(hero.position), Is.False);
+                Vector3 towardsDoor = entrance - hero.position;
+                towardsDoor.y = 0f;
+                Assert.That(Vector3.Dot(hero.forward, towardsDoor.normalized), Is.GreaterThan(.99f));
+                Assert.That(village.World.WalkableArea.Contains(hero.position, .32f), Is.True);
+                float groundDeadline = Time.realtimeSinceStartup + 3f;
+                while (!village.Player.Motor.IsGrounded && Time.realtimeSinceStartup < groundDeadline)
+                    yield return null;
+                Assert.That(village.Player.Motor.IsGrounded, Is.True, "The outdoor arrival must settle onto the real ground.");
+                Assert.That(village.Player.Motor.InputEnabled && village.Player.Interactor.InputEnabled, Is.True);
+                Assert.That(GameInput.CanRead(GameInputContext.Movement), Is.True);
+                Assert.That(GameTimeScaleRuntime.IsPaused || CompositionDriver.IsComposing, Is.False);
+                Assert.That(AreaTravelService.HasPendingTravel, Is.False);
+                Assert.That(AreaTravelService.TryConsumeArrival(GameAreaId.AlpineVillage, out _), Is.False,
+                    "The initial arrival was already consumed by the village root.");
+                Assert.That(NewGameStartService.TryConsumeArrival(NewGameLocation.SkiLodge), Is.False,
+                    "The lodge selection must not survive its launch.");
+                yield return null;
+                Assert.That(Object.FindAnyObjectByType<AreaLoadingRoot>(), Is.Null);
+                if (!Application.isBatchMode) yield return CaptureStartMenuFrame("ski-lodge-start");
+            }
             else
             {
                 Assert.That(sawAreaLoading, Is.False, "Home uses its ordinary direct interior load.");
@@ -179,7 +218,8 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(GameSessionState.IsRidingAVehicle, Is.False);
         }
 
-        private static IEnumerator CaptureStartMenuPages(StartMenuRoot menu)
+        private static IEnumerator CaptureStartMenuPages(StartMenuRoot menu,
+            NewGameLocation selectedLocation = NewGameLocation.AlpineVillage)
         {
             if (Application.isBatchMode) yield break;
 #if UNITY_EDITOR
@@ -198,7 +238,11 @@ namespace BarPromenade.Tests.PlayMode
                     Assert.That(menu.IsChoosingLocation, Is.True);
                     Assert.That(menu.IsStartingNewGame, Is.False);
                     Assert.That(GameSessionState.IsGameTimeRunning, Is.False);
-                    yield return CaptureStartMenuFrame("locations-" + language);
+                    if (selectedLocation != menu.SelectedLocation)
+                        Assert.That(menu.SelectLocation(selectedLocation), Is.True);
+                    Assert.That(menu.SelectedLocation, Is.EqualTo(selectedLocation));
+                    yield return CaptureStartMenuFrame(selectedLocation == NewGameLocation.SkiLodge
+                        ? "locations-ski-lodge-" + language : "locations-" + language);
                     Assert.That(menu.ReturnToMainMenu(), Is.True);
                 }
             }

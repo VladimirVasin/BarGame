@@ -370,6 +370,10 @@ namespace BarPromenade
                 obstacles.Add(new OrientedRect(ToXZ(center), ToXZ(plan.SlopeRight), ToXZ(plan.Uphill),
                     new Vector2(block.extents.x, block.extents.z)));
             }
+            Vector2 chairForward = ToXZ(plan.Expansion.LodgeChairForward);
+            obstacles.Add(new OrientedRect(ToXZ(plan.Expansion.LodgeChairCenter),
+                new Vector2(chairForward.y, -chairForward.x), chairForward,
+                AlpineVillageExpansionPlan.LodgeChairSize * .5f));
             foreach (AlpineVillageAbandonedPlot plot in plan.Expansion.Abandonment.Plots)
             {
                 // Open ruins are held by their individual authored mesh solids;

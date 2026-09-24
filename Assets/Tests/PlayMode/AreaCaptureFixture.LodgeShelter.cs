@@ -12,7 +12,36 @@ namespace BarPromenade.Tests.PlayMode
     public sealed partial class AreaCaptureFixture
     {
         [UnityTest]
-        [Explicit("Focused lodge furnishings, two physical doors and interior wind capture.")]
+        [Explicit("Focused lodge furniture, reachable moved props, chair and two inspections.")]
+        [PrebuildSetup(typeof(VillageArtAssetsSetup))]
+        public IEnumerator AlpineVillageLodgeFurnishings()
+        {
+            Assert.That(Application.isBatchMode, Is.False, "A Game view is needed to inspect the real bottom UI.");
+#if UNITY_EDITOR
+            var gameView = UnityEditor.EditorWindow.GetWindow(typeof(UnityEditor.EditorWindow).Assembly.GetType("UnityEditor.GameView"));
+            gameView.Show(); gameView.Focus();
+#endif
+            GameSessionState.BeginNewGame();
+            GameSessionState.TryStartGameTimeFromWake();
+            Assert.That(GameSessionState.TrySetDebugGameDay(2), Is.True);
+            GameSessionState.AdvanceGameTime((float)(100f / GameTimeState.GameMinutesPerRealSecond));
+            AlpineVillageRoot root = null;
+            yield return Capture(SceneIds.AlpineVillage, () =>
+            {
+                root = Object.FindAnyObjectByType<AlpineVillageRoot>();
+                return root != null && root.IsInitialized ? root : null;
+            }, () =>
+            {
+                PlaceLodgeHero(root, new Vector3(1.1f, .02f, -2f));
+                return new[] { Shot.At("lodge-00-interior-unlit", LodgePoint(root, -.8f, 1.85f, -4.5f),
+                    LodgePoint(root, 0f, 1.05f, 2f), 94f) };
+            });
+            Assert.That(root.LodgeShelter.transform.Find("Benches"), Is.Null);
+            yield return VerifyLodgeInterior(root);
+        }
+
+        [UnityTest]
+        [Explicit("Focused furnished lodge, chair/inspections, physical doors and interior wind capture.")]
         [PrebuildSetup(typeof(VillageArtAssetsSetup))]
         public IEnumerator AlpineVillageLodgeShelter()
         {
@@ -40,6 +69,7 @@ namespace BarPromenade.Tests.PlayMode
             LodgeShelterController lodge = root.LodgeShelter;
             Assert.That(lodge, Is.Not.Null);
             Assert.That(lodge.transform.Find("OpenDoorLeaves"), Is.Null, "The old combined model must be replaced.");
+            Assert.That(lodge.transform.Find("Benches"), Is.Null, "The two oversized freestanding benches must be removed.");
             Assert.That(lodge.Hinge(0), Is.Not.SameAs(lodge.Hinge(1)));
             Assert.That(lodge.LanternLight.enabled, Is.False);
             Assert.That(root.Music.IsPlaybackSuppressed, Is.True, "The initial open doors keep the village theme silent.");
@@ -180,8 +210,8 @@ namespace BarPromenade.Tests.PlayMode
             VerifyLodgeWeatherBoundary(root);
 
             LodgeFrame(root, "lodge-02-interior-lit", new Vector3(-1.1f, 1.72f, -4.8f), new Vector3(1f, 1.25f, 1.3f), 80f);
-            LodgeFrame(root, "lodge-03-cot", new Vector3(-.9f, 1.65f, -1.1f), new Vector3(-3.2f, .55f, 1f), 60f);
-            LodgeFrame(root, "lodge-04-tea-and-lantern", new Vector3(3.45f, 1.7f, -1.35f), new Vector3(4.1f, 1.3f, 1f), 53f);
+            LodgeFrame(root, "lodge-03-cot", new Vector3(-3.7f, 1.85f, -1.4f), new Vector3(-7.2f, 1.0f, 3f), 72f);
+            LodgeFrame(root, "lodge-04-tea-and-lantern", new Vector3(1.9f, 1.7f, -2.2f), new Vector3(5.4f, 1.0f, 1f), 68f);
             LodgeFrame(root, "lodge-05-exterior-closed", new Vector3(-2f, 1.72f, -11f), new Vector3(0f, 1.5f, -5.8f), 67f);
             yield return CaptureLodgeWind(root);
 
@@ -200,6 +230,122 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(lodge.LanternLight.enabled || LodgeShelterSessionState.LanternLit, Is.False);
             Assert.That(LodgeStoveSessionState.IsBurning, Is.False);
             Assert.That(root.Stove.ProvidesWarmth(root.Stove.Plan.EntryPose.RootPosition), Is.False);
+        }
+
+        private static IEnumerator VerifyLodgeInterior(AlpineVillageRoot root)
+        {
+            LodgeInteriorInteractions room = root.LodgeInterior;
+            Assert.That(room, Is.Not.Null);
+            CityBenchSitInteraction chair = room.Chair;
+            var hero = root.Player.Interactor;
+            var session = NarrativeInteractionController.For(hero);
+            var input = new InputTestFixture();
+            float previousStep = Time.captureDeltaTime;
+            input.Setup();
+            try
+            {
+                Keyboard keyboard = InputSystem.AddDevice<Keyboard>();
+                Time.captureDeltaTime = .05f;
+                foreach (LodgeShelterInteraction stub in new[] { root.LodgeShelter.Cot, root.LodgeShelter.Kettle })
+                {
+                    root.Player.Motor.Teleport(stub.InteractionPosition);
+                    for (int frame = 0; frame < 3; frame++) yield return null;
+                    Assert.That(hero.ActiveInteractable, Is.SameAs(stub), "Moved prop remains reachable.");
+                    InventoryItemStack[] before = GameSessionState.InventoryItems.ToArray();
+                    yield return PressLodgeUse(input, keyboard);
+                    Assert.That(root.InteractionPrompt.IsFeedbackVisible, Is.True);
+                    Assert.That(GameSessionState.InventoryItems, Is.EqualTo(before));
+                    root.InteractionPrompt.ClearFeedback();
+                }
+                root.Player.Motor.Teleport(root.LodgeShelter.Lantern.InteractionPosition);
+                for (int frame = 0; frame < 3; frame++) yield return null;
+                Assert.That(hero.ActiveInteractable, Is.SameAs(root.LodgeShelter.Lantern));
+                root.LodgeShelter.SetLanternLit(false);
+                yield return PressLodgeUse(input, keyboard);
+                Assert.That(root.LodgeShelter.LanternLight.enabled, Is.True);
+                yield return PressLodgeUse(input, keyboard);
+                Assert.That(root.LodgeShelter.LanternLight.enabled, Is.False);
+                root.LodgeShelter.SetLanternLit(true);
+                // Warmth remains stove-owned, including while the seated rig
+                // is offset from its grounded interaction root.
+                PlaceLodgeHero(root, new Vector3(1.1f, .02f, -2f));
+                SetLodgeDoors(root.LodgeShelter, 0);
+                Assert.That(GameSessionState.TryAddInventoryItem(InventoryItemId.FirewoodLog), Is.True);
+                Assert.That(LodgeStoveSessionState.TryPlaceLog(), Is.True);
+                Assert.That(LodgeStoveSessionState.TryIgnite(), Is.True);
+                root.Player.Motor.Teleport(chair.Plan.EntryRootPosition);
+                hero.transform.rotation = chair.Plan.EntryRotation;
+                root.CameraFollow.ClearFixedPose(); root.CameraFollow.Snap();
+                Physics.SyncTransforms();
+                for (int frame = 0; frame < 3; frame++) yield return null;
+                Assert.That(hero.ActiveInteractable, Is.SameAs(chair));
+                Assert.That(root.World.WalkableArea.Contains(chair.Plan.EntryRootPosition, .32f), Is.True);
+                Collider[] occupied = Physics.OverlapCapsule(chair.Plan.EntryRootPosition + Vector3.up * .4f,
+                    chair.Plan.EntryRootPosition + Vector3.up * 1.4f, .30f,
+                    PlayerInteractor.InteractionLayerMask, QueryTriggerInteraction.Ignore);
+                Assert.That(occupied.Where(c => !c.transform.IsChildOf(hero.transform)).Select(c => c.name), Is.Empty,
+                    "The physical chair approach must match the walkable plan.");
+                yield return PressLodgeUse(input, keyboard);
+                for (int frame = 0; frame < 200 && !chair.IsSeated; frame++) yield return null;
+                Assert.That(chair.IsSeated, Is.True);
+                Assert.That(root.Stove.ProvidesWarmth(hero.transform.position), Is.True);
+                for (int frame = 0; frame < 12; frame++) yield return null;
+                LodgeFrame(root, "lodge-06-chair-rest", new Vector3(-3.8f, 1.6f, -2.5f),
+                    new Vector3(-1.1f, .85f, -.2f), 64f, true);
+                yield return PressLodgeUse(input, keyboard);
+                for (int frame = 0; frame < 200 && chair.OwnsActiveInteraction; frame++) yield return null;
+                Assert.That(chair.OwnsActiveInteraction, Is.False);
+                Assert.That(hero.InputEnabled && root.Player.Motor.InputEnabled, Is.True);
+
+                foreach (string language in new[] { "ru", "en" })
+                {
+                    var catalog = JsonUtility.FromJson<NameplateCatalog>(Resources.Load<TextAsset>("Localization/" + language).text);
+                    using (new NameplateLanguageScope(catalog.entries.Where(e =>
+                        e.key.StartsWith("lodge.", System.StringComparison.Ordinal) ||
+                        e.key.StartsWith("interaction.lodge", System.StringComparison.Ordinal) ||
+                        e.key.StartsWith("narrative.", System.StringComparison.Ordinal)).ToArray()))
+                    foreach (NarrativeInteraction target in new[] { room.Photograph, room.SkiEquipment })
+                    {
+                        root.CameraFollow.ClearFixedPose();
+                        root.Player.Motor.Teleport(target.Staging.Entry.RootPosition);
+                        hero.transform.rotation = target.Staging.Entry.RootRotation;
+                        Physics.SyncTransforms(); root.CameraFollow.Snap();
+                        for (int frame = 0; frame < 3; frame++) yield return null;
+                        Assert.That(hero.ActiveInteractable, Is.SameAs(target), target.Definition.Id);
+                        InventoryItemStack[] before = GameSessionState.InventoryItems.ToArray();
+                        yield return PressLodgeUse(input, keyboard);
+                        for (int frame = 0; frame < 200 && session.Phase != NarrativeInteractionPhase.Reading && session.IsActive; frame++)
+                            yield return null;
+                        Assert.That(session.Phase, Is.EqualTo(NarrativeInteractionPhase.Reading),
+                            target.Definition.Id + ": " + session.LastFailureReason + "; " + session.CameraDirector.LastRejectedShotReason);
+                        yield return null; yield return null;
+                        Assert.That(session.CameraDirector.CurrentShotIsClear, Is.True);
+                        Assert.That(root.InteractionPrompt.IsSpeaking, Is.False);
+                        Assert.That(root.InteractionPrompt.LastRenderedTextFits, Is.True, target.Definition.Id + "/" + language);
+                        if (target == room.Photograph)
+                            Assert.That(Vector3.Dot(Camera.main.transform.forward, root.LodgeShelter.transform.right), Is.GreaterThan(.95f));
+                        yield return CaptureNarrativeScreen(target.Definition.Id + "-" + language);
+                        if (language == "ru") yield return PressLodgeUse(input, keyboard);
+                        else session.Cancel();
+                        for (int frame = 0; frame < 160 && session.IsActive; frame++) yield return null;
+                        Assert.That(session.IsActive || root.InteractionPrompt.HasHeldPage || BarMinigameModalLock.IsAnyLocked, Is.False);
+                        Assert.That(hero.InputEnabled && root.Player.Motor.InputEnabled, Is.True);
+                        Assert.That(GameSessionState.InventoryItems, Is.EqualTo(before));
+                    }
+                }
+                PlaceLodgeHero(root, new Vector3(1.1f, .02f, -2f));
+                LodgeFrame(root, "lodge-07-furnished-warm", new Vector3(-.8f, 1.85f, -4.5f),
+                    new Vector3(0f, 1.05f, 2f), 94f);
+                LodgeFrame(root, "lodge-08-sleeping-corner", new Vector3(-4.4f, 2.25f, -1.75f),
+                    new Vector3(-7.45f, 1.05f, 2.4f), 78f);
+            }
+            finally
+            {
+                session.RestoreImmediate();
+                chair.Controller.CancelActiveInteraction();
+                Time.captureDeltaTime = previousStep;
+                input.TearDown();
+            }
         }
 
         private static Vector3 LodgePoint(AlpineVillageRoot root, float x, float y, float z) =>
@@ -357,7 +503,7 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(LodgeStoveSessionState.TryPlaceLog(), Is.True);
                 Assert.That(LodgeStoveSessionState.TryIgnite(), Is.True);
                 foreach (Vector3 point in new[] { new Vector3(-8.1f, .02f, -5.2f), new Vector3(8.1f, .02f, -5.2f),
-                    new Vector3(-8.1f, .02f, 5.2f), new Vector3(8.1f, .02f, 5.2f),
+                    new Vector3(-6.7f, .02f, 5.2f), new Vector3(8.1f, .02f, 5.2f),
                     new Vector3(0f, .02f, -5.3f), far })
                 {
                     PlaceLodgeHero(root, point);
@@ -389,7 +535,7 @@ namespace BarPromenade.Tests.PlayMode
             finally { LodgeStoveSessionState.ResetForNewSession(); cold.ResetSession(); }
         }
 
-        private static void LodgeFrame(AlpineVillageRoot root, string name, Vector3 from, Vector3 to, float fov)
+        private static void LodgeFrame(AlpineVillageRoot root, string name, Vector3 from, Vector3 to, float fov, bool includeHero = false)
         {
             Camera camera = Camera.main;
             Vector3 position = camera.transform.position;
@@ -398,7 +544,7 @@ namespace BarPromenade.Tests.PlayMode
             Renderer[] hero = root.Player.GameObject.GetComponentsInChildren<Renderer>(true).Where(r => r.enabled).ToArray();
             try
             {
-                foreach (Renderer renderer in hero) renderer.enabled = false;
+                if (!includeHero) foreach (Renderer renderer in hero) renderer.enabled = false;
                 Vector3 world = root.LodgeShelter.transform.TransformPoint(from);
                 camera.transform.SetPositionAndRotation(world,
                     Quaternion.LookRotation(root.LodgeShelter.transform.TransformPoint(to) - world));

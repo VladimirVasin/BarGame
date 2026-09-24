@@ -3,7 +3,7 @@
 Newest outcomes/checks first. Archive whole dates at budget: [policy](README.md).
 Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-2026-08.md).
 
-## 2026-09-25 — Village snow gait, placement and stove sound
+## 2026-09-25 — Village snow gait, inspections and lodge
 
 - Deep village snow selects supported forward/backward high steps; real depth
   includes tracks/clearing, ahead probes avoid oscillation from one's own stamp.
@@ -27,6 +27,22 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 - Inspection camera eases in/out more slowly, with synchronized focus/bokeh;
   its profile leaves dialogue timing unchanged. Check/frames:
   `AreaCaptureFixture.AlpineVillageNarrative` — frame continuity, pause and cancel.
+- Lodge: bunks/cot headboards and pillows against the wall, rug at their feet;
+  wall kettle counter and oak table with benches
+  for six replace oversized benches. Edge lamp stays reachable; wall decor,
+  hooks/chest/cups complete the room. The chair faces the stove diagonally,
+  preserving the firebox approach; shared sit/stand runs in real time.
+  Photo/skis reuse RU/EN inspection; the photograph has a bounded canon exception.
+  Authored anchors keep geometry, collision, lamp and interactions together.
+  Checks: `build-village-expansion-3d-model.py` validator/export and
+  `AreaCaptureFixture.AlpineVillageLodgeFurnishings`; frames reviewed.
+  Unrelated `AlpineVillageLodgeShelter` music-pause sample assertion drifted
+  by one DSP buffer; unchanged.
+
+- New Game adds the ski lodge, preserving village default/day `1`/`07:40`.
+  Arrival is outside facing its door; the load marker is consumed once.
+  Check: `TechnicalLifecyclePlayModeTests.NewGame_SelectedLocationUsesItsNormalArrivalWithoutTheHomeOpening(SkiLodge)`.
+  RU/EN picker frames reviewed; all choices/Back fit.
 
 ## 2026-09-24 — Village surfaces, weather, lodge and narrative
 

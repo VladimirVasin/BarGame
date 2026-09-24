@@ -174,6 +174,11 @@
     {"key": "interaction.lodge_door.close", "value": "E — close door"},
     {"key": "interaction.lodge_cot", "value": "E — inspect cot"},
     {"key": "interaction.lodge_kettle", "value": "E — inspect kettle"},
+    {"key": "interaction.lodge_chair", "value": "E — sit by the stove"},
+    {"key": "interaction.lodge_photograph", "value": "E — inspect photograph"},
+    {"key": "interaction.lodge_ski_equipment", "value": "E — inspect ski equipment"},
+    {"key": "lodge.photograph.inspect", "value": "In the picture, the cable still runs over intact towers. The paper has yellowed at the edges."},
+    {"key": "lodge.ski_equipment.inspect", "value": "The pole straps have gone stiff. Dust lies inside the boots."},
     {"key": "interaction.lodge_lantern.light", "value": "E — light lantern"},
     {"key": "interaction.lodge_lantern.extinguish", "value": "E — extinguish lantern"},
     {"key": "lodge.door.blocked", "value": "The doorway is occupied."},
@@ -323,6 +328,10 @@
     {
       "key": "opening.location.church",
       "value": "Church"
+    },
+    {
+      "key": "opening.location.ski_lodge",
+      "value": "Abandoned ski lodge"
     },
     {
       "key": "opening.wake_up",

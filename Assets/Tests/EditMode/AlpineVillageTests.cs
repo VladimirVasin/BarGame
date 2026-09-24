@@ -277,7 +277,7 @@ namespace BarPromenade.Tests.EditMode
             }
 
             Assert.That(area.Contains(plan.Expansion.LodgeCenter, radius), Is.False, "The central stove is solid.");
-            foreach (float side in new[] { -1.25f, 1.25f })
+            foreach (float side in new[] { -2.6f, 1.25f })
                 Assert.That(area.Contains(plan.Expansion.LodgeCenter + plan.SlopeRight * side, radius), Is.True,
                     "Both stove bypasses remain open.");
             Assert.That(area.Contains(plan.Expansion.LodgeWoodpileCenter, radius), Is.False);

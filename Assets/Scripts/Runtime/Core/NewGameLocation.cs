@@ -15,7 +15,8 @@ namespace BarPromenade
         Bar = 8,
         Supermarket = 9,
         Church = 10,
-        Count = 11
+        SkiLodge = 11,
+        Count = 12
     }
 
     /// <summary>Launch choices, independent of travel areas and build indices.</summary>
@@ -48,6 +49,7 @@ namespace BarPromenade
                 case NewGameLocation.Bar: return "opening.location.bar";
                 case NewGameLocation.Supermarket: return "opening.location.supermarket";
                 case NewGameLocation.Church: return "opening.location.church";
+                case NewGameLocation.SkiLodge: return "opening.location.ski_lodge";
                 default: throw new ArgumentOutOfRangeException(nameof(location));
             }
         }
@@ -56,7 +58,8 @@ namespace BarPromenade
         {
             switch (location)
             {
-                case NewGameLocation.AlpineVillage: return SceneIds.AlpineVillage;
+                case NewGameLocation.AlpineVillage:
+                case NewGameLocation.SkiLodge: return SceneIds.AlpineVillage;
                 case NewGameLocation.MothersHouse: return SceneIds.MothersHouseInterior;
                 case NewGameLocation.City:
                 case NewGameLocation.Docks:

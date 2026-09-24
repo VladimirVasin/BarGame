@@ -98,6 +98,7 @@ namespace BarPromenade
         public WoodpileInteraction MothersHouseWoodpile { get; private set; }
         public LodgeStoveInteraction Stove { get; private set; }
         public LodgeShelterController LodgeShelter { get; private set; }
+        public LodgeInteriorInteractions LodgeInterior { get; private set; }
         public VillageInteriorAcoustics InteriorAcoustics { get; private set; }
         public JournalController Journal { get; private set; }
         public PauseMenuController PauseMenu { get; private set; }
@@ -213,6 +214,7 @@ namespace BarPromenade
                 ? token
                 : AreaArrivalToken.Default;
             VillageArrival = GameSessionState.ConsumeAlpineVillageArrival();
+            bool startedAtSkiLodge = NewGameStartService.TryConsumeArrival(NewGameLocation.SkiLodge);
 
             var ui = new GameObject("Runtime UI");
             ui.transform.SetParent(transform, false);
@@ -267,6 +269,17 @@ namespace BarPromenade
                 spawnSource = "mothers_house_return";
             }
 
+            if (startedAtSkiLodge)
+            {
+                // Resolve from this world's lodge after composition; keep the
+                // fresh start outside the moving doors and grounded on its approach.
+                Vector3 approach = Plan.Expansion.LodgeEntrance - Plan.Expansion.LodgeForward * 3f;
+                if (!new CityMapAlpineVillageTeleportGround(World.WalkableArea)
+                    .TryClampArrival(approach, out spawnPosition))
+                    throw new System.InvalidOperationException("The ski lodge start needs a clear approach.");
+                spawnSource = "new_game_ski_lodge";
+            }
+
             GameLog.Info(
                 "alpine_village",
                 "spawn_selected",
@@ -306,6 +319,7 @@ namespace BarPromenade
             Vector3 facing = ArrivalToken == AreaArrivalToken.Cableway
                 ? -Plan.Station.Cableway.LineForward
                 : Plan.SpawnForward;
+            if (startedAtSkiLodge) facing = Plan.Expansion.LodgeForward;
             if (arrivedAtChartedPlace)
             {
                 Vector3 towards = arrivalPoint - spawnPosition;
@@ -1247,6 +1261,8 @@ namespace BarPromenade
                 Stove.Initialize(this, part);
                 LodgeShelter = part.gameObject.AddComponent<LodgeShelterController>();
                 LodgeShelter.Initialize(this);
+                LodgeInterior = part.gameObject.AddComponent<LodgeInteriorInteractions>();
+                LodgeInterior.Initialize(this);
                 break;
             }
             if (Stove == null) throw new System.InvalidOperationException("Missing lodge stove.");

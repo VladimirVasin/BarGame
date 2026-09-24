@@ -95,6 +95,8 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(model.SelectedLocation, Is.EqualTo(NewGameLocation.AlpineVillage));
             Assert.That(model.SelectLocation(NewGameLocation.Church), Is.True);
             Assert.That(model.MoveSelection(1), Is.True);
+            Assert.That(model.SelectedLocation, Is.EqualTo(NewGameLocation.SkiLodge));
+            Assert.That(model.MoveSelection(1), Is.True);
             Assert.That(model.IsBackSelected, Is.True);
             if (confirmBack) Assert.That(model.Confirm(), Is.EqualTo(StartMenuAction.Back));
             else Assert.That(model.ReturnToMainMenu(), Is.True);
@@ -107,9 +109,9 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
-        public void LocationCatalog_HasElevenDistinctLocalizedChoicesInGameplayScenes()
+        public void LocationCatalog_HasTwelveDistinctLocalizedChoicesInGameplayScenes()
         {
-            Assert.That(NewGameLocationCatalog.Count, Is.EqualTo(11));
+            Assert.That(NewGameLocationCatalog.Count, Is.EqualTo(12));
             Assert.That((int)NewGameLocation.Count, Is.EqualTo(NewGameLocationCatalog.Count));
             var keys = new HashSet<string>(StringComparer.Ordinal);
             var locations = new HashSet<NewGameLocation>();
@@ -137,7 +139,7 @@ namespace BarPromenade.Tests.EditMode
                 {
                     Assert.That(values.TryGetValue(key, out string label), Is.True, language + ": " + key);
                     Assert.That(label, Is.Not.Null.And.Not.Empty.And.Not.EqualTo(key));
-                    Assert.That(labels.Add(label), Is.True, language + " must distinguish all eleven destinations.");
+                    Assert.That(labels.Add(label), Is.True, language + " must distinguish all twelve destinations.");
                 }
                 foreach (string key in new[] { "opening.choose_location", "opening.back", "combat.title",
                     "combat.target", "combat.sparring", "combat.reset", "combat.menu", "combat.health",

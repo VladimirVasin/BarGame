@@ -16,6 +16,8 @@ namespace BarPromenade
         private static readonly Vector2 LodgeWoodpileLocalCenter = new Vector2(-133.2f, 49.55f);
         public static readonly Vector2 LodgeStoveSize = new Vector2(.96f, 1.08f);
         public static readonly Vector2 LodgeWoodpileSize = AlpineVillageWoodpilePlan.Size;
+        public static readonly Vector2 LodgeChairSeatLocalCenter = new Vector2(-1.50f, -1.25f);
+        public static readonly Vector2 LodgeChairSize = new Vector2(.46f, .4475f);
         private readonly AlpineVillagePlan village;
         private readonly Capsule[] regions =
         {
@@ -88,13 +90,19 @@ namespace BarPromenade
             Block(blocks, lodge + new Vector2(5.15f, -5.84f), new Vector2(7.7f, .32f));
             Block(blocks, lodge + new Vector2(-1.72f, -4.8f), new Vector2(.16f, 2.1f));
             Block(blocks, lodge + new Vector2(1.72f, -4.8f), new Vector2(.16f, 2.1f));
-            Block(blocks, lodge + new Vector2(-6.4f, -.8f), new Vector2(.65f, 6.4f));
-            Block(blocks, lodge + new Vector2(6.4f, -2.2f), new Vector2(.65f, 3.5f));
             Block(blocks, lodge + new Vector2(0f, 4.75f), new Vector2(11.8f, .8f));
-            Block(blocks, lodge + new Vector2(4.7f, 1f), new Vector2(3.8f, .8f));
-            // A low dry cot between the old left bench and the stove bypass.
-            // The moving entry leaves use their current physical colliders.
-            Block(blocks, lodge + new Vector2(-3.2f, 1f), new Vector2(1f, 2.1f));
+            Block(blocks, lodge + new Vector2(8.28f, 1f), new Vector2(.8f, 3.8f));
+            // Every bed has its head against the left wall and feet toward
+            // the room. The bunk footprints include their side ladders.
+            Block(blocks, lodge + new Vector2(-7.63f, 2.295f), new Vector2(2.1f, 1.1f));
+            Block(blocks, lodge + new Vector2(-7.63f, 4.145f), new Vector2(2.1f, 1.1f));
+            Block(blocks, lodge + new Vector2(-7.61f, .4f), new Vector2(2.1f, 1f));
+            Block(blocks, lodge + new Vector2(-6.3f, -1f), new Vector2(1.2f, .66f));
+            Block(blocks, lodge + new Vector2(4f, .8f), new Vector2(1.05f, 2.7f));
+            Block(blocks, lodge + new Vector2(3.02f, .8f), new Vector2(.4f, 2.7f));
+            Block(blocks, lodge + new Vector2(4.98f, .8f), new Vector2(.4f, 2.7f));
+            // The diagonal chair uses its own oriented footprint in the
+            // walkable area so a square envelope cannot close its front dock.
             // The thin hearth is a walkable step; the iron stove and actual
             // log stack are solid. Both sides of the centre remain open.
             Block(blocks, lodge + new Vector2(0f, -.04f), LodgeStoveSize);
@@ -110,6 +118,13 @@ namespace BarPromenade
 
         public Vector3 LodgeCenter { get; }
         public Vector3 LodgeForward => village.Uphill;
+        public Vector3 LodgeChairForward =>
+            (-village.SlopeRight * LodgeChairSeatLocalCenter.x -
+             LodgeForward * LodgeChairSeatLocalCenter.y).normalized;
+        // Measured chair bounds in its own axes: X ±.23, Z -.2275..+.22.
+        public Vector3 LodgeChairCenter => LodgeCenter +
+            village.SlopeRight * LodgeChairSeatLocalCenter.x +
+            LodgeForward * LodgeChairSeatLocalCenter.y - LodgeChairForward * .00375f;
         public Vector2 LodgeSize => new Vector2(18f, 12f);
         public float LodgeFloorHeight => LodgeCenter.y;
         public Vector3 LodgeEntrance => LodgeCenter - LodgeForward * 6f;

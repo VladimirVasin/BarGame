@@ -54,7 +54,8 @@ namespace BarPromenade
                 return false;
             }
 
-            if (scene == SceneIds.City || location == NewGameLocation.Bar)
+            if (scene == SceneIds.City || location == NewGameLocation.Bar ||
+                location == NewGameLocation.SkiLodge)
             {
                 pendingLocation = location;
                 pendingOperationId = SceneTransitionService.CurrentOperationId;

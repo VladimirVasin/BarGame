@@ -10,17 +10,30 @@ import bar_parts as bp
 
 DOOR_HINGE_Z = -6.10
 DOOR_NAMES = ("LodgeDoorLeft", "LodgeDoorRight")
-COT_CENTER = (-3.2, 1.0)
-COT_SIZE = (1.0, 2.1)
+COT_CENTER = (-7.61, .4)
+COT_SIZE = (2.1, 1.0)
+COUNTER_CENTER = (8.28, 1.0)
+LANTERN_BASE = (3.68, .78, -.32)
 ANCHORS = []
 for name, sign in zip(DOOR_NAMES, (-1, 1)):
     ANCHORS += [dict(kind="SkiLodge", name=name+"Hinge", position=(sign*1.3, 0, DOOR_HINGE_Z)),
                 dict(kind="SkiLodge", name=name+"Handle", position=(sign*.16, 1.05, -6.115), parent=name+"Hinge"),
                 dict(kind="SkiLodge", name=name+"InsideHandle", position=(sign*.16, 1.05, -5.855), parent=name+"Hinge")]
-ANCHORS += [dict(kind="SkiLodge", name="CotInteractionDock", position=(-2.1,.02,1.0)),
-            dict(kind="SkiLodge", name="KettleInteractionDock", position=(3.2,.02,-.10)),
-            dict(kind="SkiLodge", name="LanternInteractionDock", position=(4.7,.02,-.10)),
-            dict(kind="SkiLodge", name="LanternLightDock", position=(4.7,1.45,1.0))]
+ANCHORS += [dict(kind="SkiLodge", name="CotInteractionDock", position=(-5.86,.02,.4)),
+            dict(kind="SkiLodge", name="KettleInteractionDock", position=(7.18,.02,2.5)),
+            dict(kind="SkiLodge", name="LanternInteractionDock", position=(3.68,.02,-1.45)),
+            dict(kind="SkiLodge", name="LanternLightDock", position=(3.68,1.10,-.32))]
+
+
+def counter_position(position):
+    """Turn the former rental counter's contents toward the room at the wall."""
+    x,y,z=position
+    return COUNTER_CENTER[0]+z-1.0,y,COUNTER_CENTER[1]-(x-4.7)
+
+
+def counter_geometry(geometry):
+    vertices,faces=geometry
+    return [counter_position(v) for v in vertices],faces
 
 
 def merged(pieces):
@@ -129,7 +142,7 @@ def add_props(add, parts):
                               (sign*.16,1.125,face+out*.038),(sign*.16,1.152,face)],.013)]
         prop(name+"HandleMetal",merged(handles),"RustedIron",True,(.23,.225,.20,1),hinge)
 
-    # One dry bed between the old left bench and the protected stove bypass.
+    # Preserve the existing dry cot, moved into the left sleeping zone below.
     cot=[]
     for x in (-3.64,-2.76):
         cot.append(b((x,.435,1),(.095,.145,2.10),.014))
@@ -197,7 +210,15 @@ def add_props(add, parts):
     for part in parts:
         if part["kind"]=="SkiLodge" and part["name"].startswith("Lantern"):
             vertices,faces=part["geometry"]
-            part["geometry"]=([tuple(l[i]+(v[i]-l[i])*.75 for i in range(3)) for v in vertices],faces)
+            part["geometry"]=([tuple(LANTERN_BASE[i]+(v[i]-l[i])*.75 for i in range(3)) for v in vertices],faces)
+        elif part["kind"]=="SkiLodge" and part["name"].startswith("LodgeCot"):
+            # The original bed was authored with its pillow at +Z. Its HEAD,
+            # rather than its long side, now meets the left wall like the bunks.
+            centered=kit.translated(part["geometry"],(3.2,0,-1))
+            part["geometry"]=kit.translated(bp.u_rotated(centered,(0,-90,0)),
+                (COT_CENTER[0],0,COT_CENTER[1]))
+        elif part["kind"]=="SkiLodge" and part["name"].startswith(("LodgeKettle","LodgeTeaCup")):
+            part["geometry"]=counter_geometry(part["geometry"])
 
 
 def open_geometry(part):
@@ -221,8 +242,17 @@ def validate_props(parts):
         for suffix in ("Panel","Braces","Hardware","HandleMetal"):
             assert kit.bounds(open_geometry(lodge[name+suffix]))[1][2]<-6.0+1e-6,"Open door entered wall"
     lo,hi=kit.bounds(lodge["LodgeCotFrame"]["geometry"])
-    assert lo[0]>=-3.71 and hi[0]<=-2.69 and lo[2]>=-.06 and hi[2]<=2.06
-    for name in ("LodgeKettleBody","LodgeTeaCup","LanternGasTank"):
+    assert -8.68<=lo[0]<-8.64 and hi[0]<=-6.55 and lo[2]>=-.11 and hi[2]<=.91
+    pillow_lo,pillow_hi=kit.bounds(lodge["LodgeCotPillow"]["geometry"])
+    assert pillow_hi[0]<COT_CENTER[0]-.4 and 0<pillow_lo[0]-lo[0]<.25,\
+        "Cot must place its pillow/head end against the left wall"
+    assert hi[0]-lo[0]>hi[2]-lo[2],"Cot feet must point into the room"
+    for name in ("LodgeKettleBody","LodgeTeaCup"):
         assert kit.bounds(lodge[name]["geometry"])[0][1]>=1.059,"Counter prop floats through tabletop"
-    assert 1.72<kit.bounds(lodge["LanternCarryHandle"]["geometry"])[1][1]<1.74
+        low,high=kit.bounds(lodge[name]["geometry"])
+        assert 7.88<=low[0]<high[0]<=8.68 and -.9<=low[2]<high[2]<=2.9,"Kettle/cup left the wall counter"
+    low,high=kit.bounds(lodge["LanternGasTank"]["geometry"])
+    assert abs(low[1]-.78)<1e-6 and 3.475<=low[0]<high[0]<=4.525
+    assert -.55<=low[2]<high[2]<=2.15,"Lantern must rest entirely on the dining table"
+    assert 1.44<kit.bounds(lodge["LanternCarryHandle"]["geometry"])[1][1]<1.46
     assert len({a["name"] for a in ANCHORS})==len(ANCHORS)

@@ -22,10 +22,10 @@ Only these statuses apply. Product scope cuts are `Deferred` in
 | --- | --- | --- | --- |
 | Village scenery | 18 households/8 sheds/5 yards; avalanche/woodpiles. | `AlpineVillage{AbandonmentPlan,AvalanchePlan,ExpansionBuilder,WoodpilePlan}` | Current |
 | Lodge stove | Soft fire; both doors shut: whole lodge warm, else indoor 2.5 m. | `LodgeStove{Interaction,SessionState}` | Current |
-| Lodge shelter | Both doors shut nearly silence wind; lantern switches. Gap: sleep/tea are inspection stubs. | `LodgeShelter*`, `VillageInteriorAcoustics` | Partial |
+| Lodge shelter | Doors muffle wind; lamp, shared sitting/inspection. Gap: cot/tea stubs. | `LodgeShelter*`, `LodgeInteriorInteractions`, `VillageInteriorAcoustics` | Partial |
 | Village paths | Ground junctions; brook bridge. | `AlpineVillage{JunctionPlan,FootbridgePlan}` | Current |
 | Village life | Six named residents/31 homes; help persists. | `AlpineVillageLifeController`, `VillageOutdoorHelpController`, `VillageHousehold{Progress,Catalog}` | Current |
-| Narrative inspection | 24 RU/EN, by place; silent/replay, props side/notes close-up. | `NarrativeInteraction*`, `AlpineVillageNarrative*` | Current |
+| Narrative inspection | 24 outdoor + 2 lodge RU/EN; silent/replay, side/close-up. | `NarrativeInteraction*`, `AlpineVillageNarrative*` | Current |
 | Independent rules assembly | Calendar/day schedule, input priorities and temporary vehicle ownership have no Unity dependencies. | `Scripts/Rules`, `BarPromenade.Rules.asmdef` | Current |
 | Shared input actions | Shared bindings; pause/transitions take priority. | `GameInput`, `GameInputPolicy` | Current |
 | Performance capture | Opt-in CPU/GPU/frame/GC and hot-scope distributions; unavailable counters are not reported as zero. | `RuntimePerformanceCapture`, `PerformanceCaptureSamples` | Current |
@@ -50,7 +50,7 @@ Only these statuses apply. Product scope cuts are `Deferred` in
 | Depth of field tiers | Exteriors keep broad Gaussian far blur; the six interior scenes cap it at radius `0.55`. | `RuntimeSceneSetup`, `DepthOfFieldSettingsBinder` | Current |
 | Runtime area composition | Ten gameplay roots; four build in frames; interior doors retain dormant City/village. | `Runtime/Core`, `Runtime/Scenes` | Current |
 | Combat test | Impulses/rise/regrip, culled weapon sweeps, shared-time charge; E taunt. Gap: banks/animation QA. | `CombatTestRoot`, `Runtime/Combat`, `Rules/Combat` | Partial |
-| New-game starting place | Eleven starts after New Game, village default; chosen root at day `1`/`07:40`, ordinary loading. | `StartMenu{Root,Model}`, `NewGame{LocationCatalog,StartService}` | Current |
+| New-game starting place | Twelve starts incl. lodge; village default, day `1`/`07:40`, ordinary loading. | `StartMenu{Root,Model}`, `NewGame{LocationCatalog,StartService}` | Current |
 | Retained Home waking opening | Frozen `05:59`, five-second lock, Wake Up/Quit, continuous wake. Gap: no shipped path reaches it. | `MainMenuRoot`, `HomeOpening{Controller,Timeline}` | Partial |
 | Session clock and day/night rules | Persistent 48-minute day at ×1; two real seconds per game minute. Intoxication preserves its rate. | `GameTimeState`, `GameTimeRuntime` | Current |
 | World time and pause ownership | Intoxication/debug factors compose; pauses freeze world/calendar. Debug speed preserves the physics step. | `GameTimeScale{State,Runtime}`, `PauseMenuController` | Current |
@@ -221,9 +221,9 @@ rows are preserved in `ai/archive/systems-map-2026-09-06.md` as a superseded sna
 ```text
 build index 0 -> MainMenu -> New Game / Combat Test / Quit card
   -> Combat Test -> isolated crowbar target/sparring -> reset or menu
-  -> New Game -> eleven locations / Back -> confirmed choice
+  -> New Game -> twelve locations / Back -> confirmed choice
   -> BeginNewGame + day 1 clock 07:40 -> area/scene loading, no journey still
-     -> chosen gameplay root (City also offers docks/cannery)
+     -> chosen root (City: docks/cannery; village: ski lodge)
      -> village default: lane-foot, 2 m up, facing mother's house
      -> ordinary controls and existing travel routes
   retained, unreached: MainMenuRoot -> HomeInterior sleeping opening

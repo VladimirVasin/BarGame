@@ -24,16 +24,19 @@ from village_avalanche import (ORIGIN as AVALANCHE_ORIGIN, FOOTPRINT as AVALANCH
     build_avalanche, build_ruin_variant, validate_avalanche)
 from village_stove_props import ANCHORS as STOVE_ANCHORS, add_props as stove_props, validate_props
 from village_lodge_props import (ANCHORS as LODGE_ANCHORS, add_props as lodge_props,
-    open_geometry as lodge_open_geometry, validate_props as validate_lodge_props)
+    open_geometry as lodge_open_geometry, validate_props as validate_lodge_props, counter_geometry)
+from village_lodge_furniture import (ANCHORS as FURNITURE_ANCHORS,
+    add_furniture as lodge_furniture, validate_furniture)
 
-VERSION = "1.8.0"
-ANCHORS = STOVE_ANCHORS + LODGE_ANCHORS
+VERSION = "1.9.0"
+ANCHORS = STOVE_ANCHORS + LODGE_ANCHORS + FURNITURE_ANCHORS
 DESIGN = "village_forest_ski_base_old_road_v1"
 COLORS = {"Timber": (.29,.255,.205,1), "Masonry": (.49,.485,.445,1),
           "LayeredStone": (.32,.345,.34,1), "RustedIron": (.30,.255,.21,1),
           "WindSnow": (.83,.85,.84,1), "Asphalt": (.24,.255,.255,1),
           "Concrete": (.47,.47,.43,1), "Canvas": (.39,.40,.35,1),
-          "Glass": (.40,.44,.43,.16), "WreckRust": (1,1,1,1), "WreckPaint": (1,1,1,1)}
+          "Glass": (.40,.44,.43,.16), "WreckRust": (1,1,1,1), "WreckPaint": (1,1,1,1),
+          "LodgePictures": (1,1,1,1)}
 COLORS.update(AbandonedWood=(.34,.305,.26,1), AbandonedPlaster=(.55,.53,.47,1),
               AbandonedRoof=(.27,.275,.25,1), DarkWindow=(.075,.085,.08,1),
               Fire=(1,.72,.30,1), LighterMetal=(.49,.52,.48,1))
@@ -474,14 +477,7 @@ def create_parts():
     # Two new solid door leaves are authored closed, then opened independently
     # by the runtime. Frame/hinges and their two handle faces are measured props.
     for x in (-1.72,1.72):add(lodge,"Vestibule"+str(x),box((x,1.4,-4.8),(.16,2.8,2.1)),"Timber")
-    # Furniture footprints are mirrored in AlpineVillageExpansionPlan's blockers.
-    benches=[]
-    for x,z,length in ((-6.4,-.8,6.4),(6.4,-2.2,3.5)):
-        benches += [box((x,.46,z),(.65,.095,length)),box((x+(-.25 if x<0 else .25),.82,z),(.075,.6,length))]
-        for end in (-1,1):
-            benches += [box((x,.23,z+end*(length*.5-.3)),(.58,.46,.12)),
-                        box((x,.24,z),(.12,.12,length-.35))]
-    add(lodge,"Benches",merge(benches),"Timber")
+    # Measured dining/sleeping furniture replaces both oversized old benches.
     racks=[box((0,.20,4.75),(11.8,.14,.8)),box((0,1.65,4.75),(11.8,.14,.55))]
     for i in range(19):racks.append(box((-5.65+i*.625,.96,5.03),(.085,1.88,.085)))
     add(lodge,"EmptyRentalRacks",merge(racks),"Timber")
@@ -491,9 +487,10 @@ def create_parts():
         x=-5.1+i*.40
         skis += [box((x,1.18,4.64),(.12,1.94,.045),.016),box((x,.84,4.59),(.16,.16,.07),.008)]
     add(lodge,"RemainingSkis",merge(skis),"RustedIron")
+    parts[-1]["parent"]="LodgeSkiEquipment"
     counter=merge([box((4.7,1.0,1),(3.8,.12,.8),.018),box((4.7,.5,1.31),(3.6,.94,.11)),
                    box((2.89,.48,1),(.11,.96,.65)),box((6.51,.48,1),(.11,.96,.65))])
-    add(lodge,"RentalCounter",counter,"Timber")
+    add(lodge,"RentalCounter",counter_geometry(counter),"Timber")
     # Missing boards, patched skirting and exposed fastenings are passive age, not a recent event.
     patches=[box((x,.35,-6.012),(.52,.24,.04),.004) for x in (-7.4,-3.4,3.0,7.5)]
     add(lodge,"OldPatches",merge(patches),"Timber",True,(.355,.30,.23,1))
@@ -547,6 +544,7 @@ def create_parts():
             part["parent"]="StoveDoorHinge"
     stove_props(add,parts)
     lodge_props(add,parts)
+    lodge_furniture(add,parts)
     return parts
 
 def validate(parts):
@@ -554,28 +552,53 @@ def validate(parts):
     validate_avalanche(parts)
     validate_props(parts)
     validate_lodge_props(parts)
+    validate_furniture(parts)
     # Albedo is a fixed authored input, with the exact image prompts and bytes retained.
     textures=json.loads((ROOT/"ArtSource/Village/Textures/generation.json").read_text(encoding="utf-8"))
     for texture in textures["images"]:
         raw=(ROOT/texture["asset"]).read_bytes()
         assert hashlib.sha256(raw).hexdigest()==texture["sha256"],"Wreck texture changed without provenance"
     # The entry reaches the stove; two capsule-width bypasses stay connected
-    # before and behind it. The former straight centre aisle now owns a stove.
+    # before and behind it. The left path goes outside the nearer stove chair;
+    # its entrance connection stays beyond both the chair and the vestibule.
     trees=[BVHTree.FromPolygons(*lodge_open_geometry(p),all_triangles=False) for p in parts
            if p["kind"]=="SkiLodge" and p["solid"]]
-    def clear_segment(start,end,message):
+    def clear_segment(start,end,message,obstacles=trees):
         start=Vector(start);direction=Vector(end)-start
         assert not any(t.ray_cast(start,direction.normalized(),direction.length)[0] is not None
-                       for t in trees),message
+                       for t in obstacles),message
     for y in (.2,1.1,2.3):
         for x in (-1.1,0,1.1):
             clear_segment((x,y,-7),(x,y,-1.2),"Blocked lodge entrance to stove")
-        for sign in (-1,1):
+        for centre in (-.65,.65):
+            for offset in (-.30,0,.30):
+                x=centre+offset
+                clear_segment((x,y,-7),(x,y,-1.2),"Blocked lodge half-door approach")
+        for centre in (-2.6,1.25):
             for offset in (-.28,0,.28):
-                x=sign*1.25+offset
+                x=centre+offset
                 clear_segment((x,y,-2.9),(x,y,3.7),"Blocked lodge stove bypass")
-        for z in (-1.2,1.2):
-            clear_segment((-1.53,y,z),(1.53,y,z),"Disconnected lodge stove bypasses")
+        for centre in (-2.2,1.2):
+            for offset in (-.28,0,.28):
+                z=centre+offset
+                clear_segment((-2.88,y,z),(1.53,y,z),"Disconnected lodge stove bypasses")
+    # Furniture may not occupy the existing stove action dock or its 105-degree
+    # outward door swing. These probes exclude the stove itself, whose hollow
+    # body and moving door are measured separately below.
+    furniture_trees=[BVHTree.FromPolygons(*lodge_open_geometry(p),all_triangles=False)
+        for p in parts if p["kind"]=="SkiLodge" and p["solid"] and not p["name"].startswith("Stove")]
+    for i in range(9):
+        angle=i*math.tau/8
+        radius=0 if i==8 else .36
+        x,z=radius*math.cos(angle),-1.4+radius*math.sin(angle)
+        clear_segment((x,.1,z),(x,2.3,z),"Furniture occupies the stove action dock",furniture_trees)
+    for degrees in range(0,106,15):
+        a=math.radians(degrees)
+        for y in (.39,.76,1.08):
+            for depth in (-.055,.055):
+                start=(-.335+depth*math.sin(a),y,-.473+depth*math.cos(a))
+                end=(start[0]+.75*math.cos(a),y,start[2]-.75*math.sin(a))
+                clear_segment(start,end,"Furniture clips the stove door swing",furniture_trees)
     # The two independent door states are measured, not inferred from a
     # cosmetic model swap: either open half admits a capsule-width path, while
     # the closed leaf physically seals its own half of the original doorway.
@@ -687,7 +710,7 @@ def validate(parts):
                    for t in warehouse_trees),"Open warehouse loading door"
     # The expanded library is shared by all placed households; these are source
     # triangles, not a fresh mesh/material allocation per world placement.
-    assert sum(kit.triangle_count(p["geometry"]) for p in parts)<=173000,"Expansion triangle budget"
+    assert sum(kit.triangle_count(p["geometry"]) for p in parts)<=185000,"Expansion triangle budget"
     for kind in ("TownHall", "School", "ShopBakery", "Workshop", "MountainRescue",
                  "AbandonedHouseA", "AbandonedHouseB", "WornHouseA", "WornHouseB"):
         lo,hi=bounds_for(kind)
@@ -716,6 +739,8 @@ def build(parts):
             axes=sorted(range(3),key=lambda a:abs(face.normal[a]))[:2]
             for i in face.loop_indices:
                 v=mesh.vertices[mesh.loops[i].vertex_index].co;uv.data[i].uv=(v[axes[0]],v[axes[1]])
+        if p["surface"]=="LodgePictures":
+            for loop in mesh.loops:uv.data[loop.index].uv=p["picture_uv"][loop.vertex_index]
         if p["surface"]=="Fire":
             field=mesh.uv_layers.new(name="FlameField")
             thermal=mesh.color_attributes.new(name="FlameThermal",type="FLOAT_COLOR",domain="POINT")
@@ -725,9 +750,19 @@ def build(parts):
         obj=bpy.data.objects.new(p["mesh"],mesh);bpy.context.scene.collection.objects.link(obj);obj.parent=root
         mat=bpy.data.materials.new(p["mesh"]+"_Review")
         mat.diffuse_color={"WreckRust":(.27,.14,.085,1),"WreckPaint":(.38,.31,.22,1)}.get(p["surface"],p["tint"])
+        if p["surface"]=="LodgePictures":
+            mat.use_nodes=True
+            picture=mat.node_tree.nodes.new("ShaderNodeTexImage")
+            picture.image=bpy.data.images.load(str(ROOT/"Assets/Resources/Village/Textures/LodgePictures.png"),check_existing=True)
+            picture.image.pack()
+            picture.interpolation="Closest"
+            shader=mat.node_tree.nodes.get("Principled BSDF")
+            shader.inputs["Roughness"].default_value=.96
+            mat.node_tree.links.new(picture.outputs["Color"],shader.inputs["Base Color"])
+            mat.node_tree.nodes.active=picture
         mesh.materials.append(mat)
         objects.append(obj);lo,hi=kit.bounds(p["geometry"])
-        row={k:v for k,v in p.items() if k not in ("geometry","flame_uv","flame_colors")}
+        row={k:v for k,v in p.items() if k not in ("geometry","flame_uv","flame_colors","picture_uv")}
         row.update(bounds_min=lo,bounds_max=hi,triangles=kit.triangle_count(g))
         if p["surface"]=="Fire":row["flame_field_vertex_count"]=len(p["flame_uv"])
         rows.append(row)
@@ -751,7 +786,7 @@ def preview(path,objects,rows,kind="SkiLodge",location=(25,-26,15),target=(0,0,2
     camera=bpy.data.objects.new("ReviewCamera",bpy.data.cameras.new("ReviewCamera"));scene.collection.objects.link(camera)
     camera.location=location;camera.rotation_euler=(Vector(target)-camera.location).to_track_quat("-Z","Y").to_euler()
     camera.data.lens=lens;scene.camera=camera;scene.render.engine="BLENDER_WORKBENCH"
-    scene.display.shading.light="STUDIO";scene.display.shading.color_type="MATERIAL"
+    scene.display.shading.light="STUDIO";scene.display.shading.color_type="TEXTURE"
     scene.display.shading.show_shadows=True;scene.display.shading.show_cavity=True;scene.world.color=(.19,.21,.23)
     scene.render.resolution_x=1400;scene.render.resolution_y=900;scene.render.resolution_percentage=100
     scene.render.image_settings.file_format="PNG";scene.render.filepath=str(path);bpy.ops.render.render(write_still=True)

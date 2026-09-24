@@ -2,51 +2,53 @@
 
 ## Current facts
 
+- **Accepted architecture exception — 2026-09-25, furnished ski lodge:**
+  User, 0 (§6/§12/§19): intact lodge/lift photo, no faces/names/dates/clue;
+  photo/skis: `NarrativeInteraction`, short silent RU/EN. Stove chair:
+  `CityBenchSitInteraction`, real time/no new effects. Form art §10g;
+  no sleep/tea/NPC/water/plot; contextual standard/§16/§21/nine checks.
+
 - **Accepted architecture exception — 2026-09-25, deep-snow locomotion:**
-  User accepts realistic snow walking without running, level `0`: story §6/§12,
-  art §1/§10g. Actual village depth including treading/clearing changes the gait:
-  short steps, high bent-knee extraction, long support/weight transfer, slight
-  forward load, no flight/march. Same hero rig/ground support, continuous foot
-  phase; cold/contextual priorities remain. Cleared routes run normally;
-  turn/stop/backtrack remain free. No damage/need/return/event/text/hazard;
-  §16/§21/nine checks stay.
+  User, `0`, story §6/§12/art §1/§10g: depth/treading/clearing selects snow gait,
+  no running; short steps/high bent-knee extraction, long support/weight transfer,
+  slight forward load, no flight/march. Same rig/ground support/continuous foot
+  phase, cold/contextual priorities. Cleared routes run; turn/stop/backtrack free.
+  No damage/need/return/event/text/hazard;
+  §16/§21/nine checks.
   `PlayerMotor.Snow`: depth `.20/.12 m` enters/exits; `1.05/.65 m/s`
   forward/back. `SnowWalk`/`SnowWalkBackward`: `1.10 m` cycle, `.55 m` steps.
 
 - **Accepted architecture exception — 2026-09-25, village inspection placement:**
-  User waives quota/road distance/visibility: 24 IDs at work/storage/debris;
-  warehouse/cliff kept, roads/E clear. `village-narrative-plan.md`.
+  User waives quota/road distance/visibility: 24 outdoor IDs at work/storage/
+  debris; warehouse/cliff kept, roads/E clear: `village-narrative-plan.md`.
 
 - **Accepted architecture exception — 2026-09-24, village history and narrative inspection:**
-  Level 0, story §§6/12/19/21/art §10g: history/families; hero/mother unnamed,
-  mine/father stays. `NarrativeInteraction`: rig/repeat/cancel/no grant.
-  `ContextualCameraDirector`: side/bokeh or paper close-up without hero, restores
-  pose/focus. `InteractionPromptView`: held silent RU/EN paper/thought pages.
-  Depressive 1–2 sentences/page; history 2–3 pages, clear without notes.
-  Two absurd mundane notes (Silent Hill), literary edit, no supernatural fact.
-  `VillageHouseholdCatalog`: 31 homes/four occupied; named greetings.
-  No crime/water/self-analysis; speech/contextual standards, §16/nine checks.
+  0, §§6/12/19/21/art §10g: history/families, unnamed hero/mother, mine/father stay.
+  `NarrativeInteraction`: rig/repeat/cancel/no grant;
+  `ContextualCameraDirector`: side/bokeh, paper close-up/no hero, restore pose/focus.
+  `InteractionPromptView`: silent held RU/EN paper/thought, depressive 1–2
+  sentences/page; history 2–3 pages clear alone. Two mundane absurd
+  notes (Silent Hill), literary edit/no supernatural fact.
+  `VillageHouseholdCatalog`: 31 homes/four occupied/named greetings.
+  No crime/water/self-analysis; speech/contextual standards/§16/nine checks.
 
 - **Accepted architecture exception — 2026-09-24, habitable ski lodge:**
-  Level 0, §6/§12/art §10g. Cot/kettle: silent E, no sleep/tea/grant/receipt
-  (item exception). `LodgeShelter{Controller,Interaction,SessionState}`:
-  two leaves, E either side, binary pose/collision; occupied closure rejected,
-  no auto-close. Lantern: warm light, no fuel/heat or hero/camera ownership.
-  Session doors/light; New Game open/off. `VillageInteriorAcoustics` owns
-  indoor workshop/lodge filtering: .35 s; one shut leaks, both gain .025/
-  cutoff .24. Stove/steps/outdoors clear. Roof culls particles;
-  half-doorway targets fixed. No NPC; §16/§21/nine checks.
+  0, §6/§12/art §10g; cot/kettle silent E, no sleep/tea/grant/receipt
+  (item exception). `LodgeShelter*`: two leaves, E both sides,
+  binary pose/collision, reject occupied closure/no auto-close.
+  Lamp warm/no fuel/heat/hero-camera ownership. Session doors/light,
+  New Game open/off. `VillageInteriorAcoustics`: workshop/lodge .35 s;
+  one shut leaks, both gain .025/cutoff .24. Stove/steps/outdoors clear;
+  roof culls particles, fixed half-doorway targets. No NPC; §16/§21/nine checks.
 
 - **Accepted architecture exception — 2026-09-24, ski-lodge stove and firewood:**
-  Level 0, §6/§12/art §10g. Piles: receipt/one/infinite retake.
-  E: shared approach/first-person/right two-column grid; no hands, visible rig.
-  Items/door animate. User-approved silent §21:
-  «Мне понадобится полено»/«Теперь нужно зажечь».
-  Log spent; inventory flip-top `Lighter`: two dry clicks, third→fire/light/crackle.
+  0, §6/§12/art §10g; piles receipt/one/infinite retake. E shared approach/
+  first-person/right two-column grid, no hands/visible rig; items/door animate.
+  User-approved silent §21: «Мне понадобится полено»/«Теперь нужно зажечь».
+  Log spent; `Lighter`: two dry clicks, third→fire/light/crackle.
   Exit closes door/restores camera; pause freezes, disable/unload release.
-  Empty→LogPlaced→Burning until New Game, no burnout. Burning + both doors shut:
-  whole interior warm; any open: indoor 2.5 m. No shiver/breath, frost thaws;
-  outdoors cold. Pack: hinge/docks/`StoveFire`.
+  Empty→LogPlaced→Burning until New Game/no burnout; both doors shut warms room,
+  else indoor 2.5 m. No shiver/breath, frost thaws, outside cold.
 
 - **Accepted — 2026-09-24, item interaction standard:**
   [Item standard](item-interaction-standard.md): one grant;
@@ -366,17 +368,16 @@
   loading; traffic free. `CityCanneryInspectionPlan`/`CityFishSupplyCycle`.
 
 - **Accepted architecture exception — 2026-09-11, selectable new-game start:**
-  User requests a location page after New Game: nine gameplay roots plus City
-  docks/cannery; village first/default. Back returns to the main card; mouse,
-  keyboard/gamepad share selection. Confirmation resets the session and sets
-  day `1`/`07:40` without elapsed needs, then area/scene loading. No prologue,
-  ride/arrival sequence, lore or new in-world route. §6 revises the `2026-09-09`
-  fixed-village start only; §16/§21/nine art checks and retained legacy waking stay.
-  `NewGameLocationCatalog`/`NewGameStartService` own selection/bootstrap. City/Bar
-  arrival markers belong to one load operation. City uses home's return point;
-  docks/cannery use clear authored pedestrian positions. Six interiors load
-  without door travel; Home Normal/Stairwell StreetDoor, real bar context keeps
-  its exit. Starting inside Mother's house completes the reach-house quest.
+  Location page: twelve starts, nine roots + City docks/cannery + ski lodge;
+  village first/default. Back returns to card; mouse/keyboard/gamepad select.
+  Confirm resets session, day `1`/`07:40` without elapsed needs, area/scene load.
+  No prologue/ride/arrival/lore/new route. §6 revises `2026-09-09` fixed-village
+  start only; §16/§21/nine art checks/legacy waking stay.
+  `NewGameLocationCatalog`/`NewGameStartService`: selection/bootstrap; City/Bar/
+  lodge arrival markers consumed once per load. City: home's return point;
+  docks/cannery: clear pedestrian docks; lodge: 3 m outside entrance facing door.
+  Six interiors load without door travel; Home Normal/Stairwell StreetDoor,
+  real bar context keeps exit. Starting inside Mother's house closes its quest.
 
 - **Accepted architecture exception — 2026-09-11, cannery shift life:**
   §6/§21/art §8: four/shared speech/no-repeat/free gestures; no hero/job/lore/illness.
