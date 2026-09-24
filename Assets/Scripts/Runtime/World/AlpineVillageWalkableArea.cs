@@ -149,6 +149,10 @@ namespace BarPromenade
             Vector2 point = ClampToGround(ToXZ(position), radius);
             for (int pass = 0; pass < ObstacleResolutionPasses; pass++)
             {
+                Vector2 avalancheLocal = plan.Expansion.ToLocal(point);
+                if (plan.Expansion.Avalanche.ContainsLocal(avalancheLocal, radius))
+                    point = ClampToGround(ToXZ(plan.Expansion.ToWorld(
+                        plan.Expansion.Avalanche.ClosestOutside(avalancheLocal, radius))), radius);
                 int index = FindOverlapping(point, radius);
                 if (index < 0)
                 {
@@ -174,7 +178,8 @@ namespace BarPromenade
                 return false;
             }
 
-            return FindOverlapping(point, radius) < 0;
+            return !plan.Expansion.Avalanche.ContainsLocal(plan.Expansion.ToLocal(point), radius) &&
+                FindOverlapping(point, radius) < 0;
         }
 
         private int FindOverlapping(Vector2 point, float radius)

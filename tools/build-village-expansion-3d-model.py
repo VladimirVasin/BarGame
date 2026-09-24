@@ -10,6 +10,7 @@ import sys
 import bpy
 from mathutils import Vector
 from mathutils.bvhtree import BVHTree
+from mathutils.geometry import tessellate_polygon
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tools"))
@@ -19,8 +20,10 @@ from village_truck_wreck import rusted_truck
 from village_chair_pile import chair_pile
 from village_abandoned_buildings import build_all as abandoned_buildings
 from village_abandoned_yards import build_all as abandoned_yards
+from village_avalanche import (ORIGIN as AVALANCHE_ORIGIN, FOOTPRINT as AVALANCHE_FOOTPRINT,
+    build_avalanche, build_ruin_variant, validate_avalanche)
 
-VERSION = "1.4.0"
+VERSION = "1.5.0"
 DESIGN = "village_forest_ski_base_old_road_v1"
 COLORS = {"Timber": (.29,.255,.205,1), "Masonry": (.49,.485,.445,1),
           "LayeredStone": (.32,.345,.34,1), "RustedIron": (.30,.255,.21,1),
@@ -307,12 +310,34 @@ def brook_footbridge(add):
 
 def create_parts():
     parts=[]
-    def add(kind,name,g,surface,solid=True,tint=None):
+    def add(kind,name,g,surface,solid=True,tint=None,terrain_fit=None,support=None):
+        if kind in ("Avalanche", "AvalancheRuinedHouse"):
+            # Pin all new topology BEFORE measurement/export. In particular,
+            # terrain-following snow caps are nonplanar and cannot be left to
+            # independent Blender and Unity n-gon triangulators.
+            vertices, faces = g
+            triangles = []
+            for face in faces:
+                if len(face) == 3:
+                    triangles.append(face)
+                    continue
+                points = [Vector(vertices[index]) for index in face]
+                cooked = tessellate_polygon([points])
+                assert len(cooked) == len(face)-2, (kind,name,"Degenerate authored polygon")
+                triangles.extend(tuple(face[index] for index in tri) for tri in cooked)
+            for a,b,c in triangles:
+                assert (Vector(vertices[b])-Vector(vertices[a])).cross(
+                    Vector(vertices[c])-Vector(vertices[a])).length_squared>1e-16, (kind,name,"Degenerate triangle")
+            g = vertices,triangles
         # Validate EVERY component before merging; a positive total can hide an inverted piece.
         vol=bp.signed_volume(g)
         assert vol>1e-9,(kind,name,"inward or degenerate solid",vol)
         parts.append(dict(kind=kind,name=name,mesh="GEO_Expansion_"+kind+"_"+name,
                           surface=surface,solid=solid,tint=tint or COLORS[surface],geometry=g))
+        if terrain_fit:
+            parts[-1]["terrain_fit"] = terrain_fit
+        if support is not None:
+            parts[-1]["support"] = support
     lodge="SkiLodge"
     add(lodge,"Floor",box((0,-.07,0),(17.36,.18,11.36),.018),"Timber")
     add(lodge,"Foundation",box((0,-.34,0),(18,.36,12),.045),"LayeredStone")
@@ -423,10 +448,13 @@ def create_parts():
     brook_footbridge(add)
     abandoned_buildings(add)
     abandoned_yards(add)
+    build_avalanche(add)
+    build_ruin_variant(add)
     return parts
 
 def validate(parts):
     assert len({p["mesh"] for p in parts}) == len(parts), "Duplicate exported part names"
+    validate_avalanche(parts)
     # Albedo is a fixed authored input, with the exact image prompts and bytes retained.
     textures=json.loads((ROOT/"ArtSource/Village/Textures/generation.json").read_text(encoding="utf-8"))
     for texture in textures["images"]:
@@ -547,6 +575,8 @@ def main():
     parts=create_parts();signature=validate(parts);objects,rows=build(parts)
     data=dict(generator_version=VERSION,design_id=DESIGN,scale_mode="fixed_metres",uv_mode="projected_metres",
               build_signature=signature,mesh_count=len(rows),triangle_count=sum(p["triangles"] for p in rows),
+              avalanche_origin=AVALANCHE_ORIGIN,
+              avalanche_footprint=[value for point in AVALANCHE_FOOTPRINT for value in point],
               colliders=False,lights=False,cameras=False,animation_count=0,parts=rows)
     target=args.model_dir/"VillageExpansion3D.json"
     if args.validate_only:assert json.loads(target.read_text())==json.loads(json.dumps(data)),"Stale expansion manifest"
@@ -565,6 +595,9 @@ def main():
                 ("ConservedRepair","VillageConservedRepair3D.png",(12,-17,12),(-2,3.5,-1.6),43),
                 ("RoadsideRail","VillageRoadsideRail3D.png",(5,-6,3.4),(0,0,.55),48),
                 ("BrookFootbridge","VillageBrookFootbridge3D.png",(5,-7,3.7),(0,0,.3),48),
+                ("Avalanche","VillageAvalanche3D.png",(30,-34,22),(0,8,2),38),
+                ("AvalancheRuinedHouse","VillageAvalancheRuinedHouseFront3D.png",(10,12,5),(0,0,1.7),43),
+                ("AvalancheRuinedHouse","VillageAvalancheRuinedHouseBack3D.png",(-10,-12,5),(0,0,1.7),43),
                 ("RustedTruck","VillageTruckWreck3D.png",(8,10,6),(0,0,1),48),
                 ("DiscardedChairPile","VillageChairPile3D.png",(8,-9,6),(0,0,1.3),48),
                 ("DiscardedChairPile","VillageChairPileRear3D.png",(-8,9,6),(0,0,1.3),48)]
@@ -572,6 +605,6 @@ def main():
             for kind,name,location,target,lens in reviews:
                 if not args.preview_kind or kind in args.preview_kind:
                     preview(args.source_dir/name,objects,rows,kind,location,target,lens)
-    print("VILLAGE EXPANSION VALIDATION OK: outward solids, determinism, lodge aisle, closed loading facade, repair view and budgets; "+signature)
+    print("VILLAGE EXPANSION VALIDATION OK: outward solids, determinism, avalanche footprint/terrain fit, lodge aisle, closed loading facade, repair view and budgets; "+signature)
 
 if __name__=="__main__":main()

@@ -28,8 +28,9 @@ namespace BarPromenade
             assets.Create("ServiceShed", "Service Shed", root.transform, expansion.ServiceShedCenter, facing);
             assets.Create("LiftBase", "Old Tow Base", root.transform,
                 OnGround(plan, expansion.LiftBasePosition), facing);
-            assets.Create("LiftTop", "Old Tow Top", root.transform,
-                OnGround(plan, expansion.LiftTopPosition), facing);
+            GameObject avalanche = assets.Create("Avalanche", AlpineVillageAvalanchePlan.RootName, root.transform,
+                OnGround(plan, expansion.ToWorld(AlpineVillageAvalanchePlan.Origin)), facing);
+            FitAvalanche(avalanche, plan, assets.Manifest);
             assets.Create("RoadBarrier", "Old Road Blockage", root.transform,
                 OnGround(plan, expansion.CliffBarrierCenter), facing);
             assets.Create("RoadBrokenLip", "Broken Road Edge", root.transform,
@@ -109,6 +110,50 @@ namespace BarPromenade
             filter.sharedMesh = mesh;
             deck.GetComponent<MeshCollider>().sharedMesh = mesh;
             deck.gameObject.AddComponent<RuntimeGeneratedMeshOwner>().Initialize(mesh);
+        }
+
+        private static void FitAvalanche(GameObject avalanche, AlpineVillagePlan plan,
+            VillageExpansionManifest manifest)
+        {
+            // Snow/debris follows the actual triangulated bowl. Whole trees,
+            // rocks and the broken tow keep their authored rigid shapes.
+            // The FBX's 100x root factor stays on the child throughout fitting.
+            Transform root = avalanche.transform;
+            foreach (VillageExpansionPart part in manifest.parts)
+            {
+                if (part.kind != "Avalanche") continue;
+                Transform child = root.Find(part.name);
+                if (part.terrain_fit == "rigid")
+                {
+                    Vector3 support = root.TransformPoint(new Vector3(part.support[0], 0f, part.support[2]));
+                    child.position += Vector3.up * (AvalancheGround(plan, support) - root.position.y);
+                    continue;
+                }
+                MeshFilter filter = child.GetComponent<MeshFilter>();
+                Mesh mesh = UnityEngine.Object.Instantiate(filter.sharedMesh);
+                mesh.name = "Ground-fitted Avalanche " + part.name;
+                Vector3[] vertices = mesh.vertices;
+                for (int index = 0; index < vertices.Length; index++)
+                {
+                    Vector3 world = child.TransformPoint(vertices[index]);
+                    world.y += AvalancheGround(plan, world) - root.position.y;
+                    vertices[index] = child.InverseTransformPoint(world);
+                }
+                mesh.vertices = vertices;
+                mesh.RecalculateNormals();
+                mesh.RecalculateBounds();
+                filter.sharedMesh = mesh;
+                MeshCollider collider = child.GetComponent<MeshCollider>();
+                if (collider != null) collider.sharedMesh = mesh;
+                child.gameObject.AddComponent<RuntimeGeneratedMeshOwner>().Initialize(mesh);
+            }
+        }
+
+        private static float AvalancheGround(AlpineVillagePlan plan, Vector3 point)
+        {
+            Vector2 xz = new Vector2(point.x, point.z);
+            return Mathf.Max(AlpineVillageTerrainSampler.SampleHeight(plan, xz),
+                AlpineVillageTerrainSampler.SampleMeshHeight(plan, xz));
         }
 
         private static Vector3 OnGround(AlpineVillagePlan plan, Vector3 point)

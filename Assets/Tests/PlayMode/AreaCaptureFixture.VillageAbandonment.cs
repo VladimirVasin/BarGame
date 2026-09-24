@@ -447,10 +447,15 @@ namespace BarPromenade.Tests.PlayMode
                         }
                         if (columnVisible) columns++;
                     }
-                    if (rays >= 3 && columns >= 2)
+                    bool visible = rays >= 3 && columns >= 2;
+                    Vector3 targetPoint = target.Center + Vector3.up * Mathf.Min(2.5f, target.Site.Height * .5f);
+                    if (!visible && target.Site.Abandoned != null && !target.Site.Abandoned.Closed)
+                        visible = VisibleAbandonedRuinFaces(root.Plan, entry.eye, target, span,
+                            out rays, out targetPoint, out blocker);
+                    if (visible)
                     {
                         entry.visible = true; entry.target = target.Site.Id; entry.distance = distance;
-                        entry.clearRays = rays; entry.targetPoint = target.Center + Vector3.up * Mathf.Min(2.5f, target.Site.Height * .5f);
+                        entry.clearRays = rays; entry.targetPoint = targetPoint;
                         // Diagnostic only: the rendered crest/night frames judge actual contrast.
                         entry.crestFogTransmission = Mathf.Exp(-Mathf.Pow(.045f * distance, 2f));
                         break;
@@ -463,15 +468,83 @@ namespace BarPromenade.Tests.PlayMode
             }
         }
 
+        private static bool VisibleAbandonedRuinFaces(AlpineVillagePlan plan, Vector3 eye,
+            AbandonmentBuilding target, float minimumSpan, out int rays, out Vector3 targetPoint,
+            out string blocker)
+        {
+            // A ruined house has real holes: the footprint-centred grid can aim
+            // entirely through air below an intact roof quarter. Target actual
+            // substantial faces instead, retaining the grid's minimum visible
+            // width and independent rays; loose small debris cannot qualify.
+            Vector3 across = Vector3.Cross(Vector3.up, target.Center - eye).normalized;
+            var visible = new List<Vector3>();
+            float left = float.PositiveInfinity, right = float.NegativeInfinity;
+            rays = 0;
+            targetPoint = target.Center;
+            blocker = "no substantial remaining wall or roof is visible";
+            foreach (Transform part in target.Transform)
+            {
+                // Household yards are nested beneath the building and are not
+                // evidence that the building itself can be seen.
+                MeshFilter filter = part.GetComponent<MeshFilter>();
+                if (filter == null || filter.sharedMesh == null || part.GetComponent<MeshCollider>() == null) continue;
+                Mesh mesh = filter.sharedMesh;
+                Vector3[] vertices = mesh.vertices;
+                int[] indices = mesh.triangles;
+                for (int i = 0; i < vertices.Length; i++) vertices[i] = part.TransformPoint(vertices[i]);
+                for (int i = 0; i < indices.Length; i += 3)
+                {
+                    Vector3 a = vertices[indices[i]], b = vertices[indices[i + 1]], c = vertices[indices[i + 2]];
+                    Vector3 point = (a + b + c) / 3f;
+                    Vector3 areaNormal = Vector3.Cross(b - a, c - a) * .5f;
+                    if (point.y < target.Center.y + .9f || areaNormal.magnitude < .18f ||
+                        Mathf.Abs(Vector3.Dot(areaNormal, (eye - point).normalized)) < .04f) continue;
+                    bool distinct = true;
+                    foreach (Vector3 existing in visible)
+                        if (Vector3.Distance(existing, point) < .45f) { distinct = false; break; }
+                    if (!distinct) continue;
+                    Vector3 end = point + (point - eye).normalized * .06f;
+                    if (!AbandonmentVisible(plan, eye, end, target.Transform, out string obstruction,
+                        out Vector3 contact))
+                    { blocker = obstruction; continue; }
+                    // Hitting an unrelated fragment in front of the requested
+                    // face does not turn a narrow sliver into a broad facade.
+                    if (Vector3.Distance(contact, point) > .2f) continue;
+                    foreach (Vector3 existing in visible)
+                        if (Vector3.Distance(existing, contact) < .45f) { distinct = false; break; }
+                    if (!distinct) continue;
+                    visible.Add(contact);
+                    float horizontal = Vector3.Dot(contact - target.Center, across);
+                    left = Mathf.Min(left, horizontal);
+                    right = Mathf.Max(right, horizontal);
+                    rays = visible.Count;
+                    if (rays < 3 || right - left < minimumSpan) continue;
+                    targetPoint = Vector3.zero;
+                    foreach (Vector3 hit in visible) targetPoint += hit;
+                    targetPoint /= visible.Count;
+                    return true;
+                }
+            }
+            if (rays > 0)
+                blocker += $"; substantial face hits {rays}, visible width {right - left:F2}/{minimumSpan:F2} m";
+            return false;
+        }
+
         private static bool AbandonmentVisible(AlpineVillagePlan plan, Vector3 eye, Vector3 target,
             Transform targetRoot, out string blocker)
+            => AbandonmentVisible(plan, eye, target, targetRoot, out blocker, out _);
+
+        private static bool AbandonmentVisible(AlpineVillagePlan plan, Vector3 eye, Vector3 target,
+            Transform targetRoot, out string blocker, out Vector3 contact)
         {
             blocker = string.Empty;
+            contact = default;
             if (!Physics.Linecast(eye, target, out RaycastHit hit, ~0, QueryTriggerInteraction.Ignore))
             { blocker = "ray missed actual target geometry"; return false; }
             if (!hit.transform.IsChildOf(targetRoot))
             { blocker = hit.collider.name; return false; }
             Vector3 endpoint = hit.point;
+            contact = endpoint;
             Vector2 a = new Vector2(eye.x, eye.z), b = new Vector2(endpoint.x, endpoint.z);
             Vector2 delta = b - a;
             foreach (MountainRoadForestDescriptor tree in plan.Trees.CrownedTrees)

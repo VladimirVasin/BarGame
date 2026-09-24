@@ -6,7 +6,7 @@ using UnityEngine;
 namespace BarPromenade.Editor
 {
     /// <summary>
-    /// Import profile for the ten scene themes. Every one of them is a long
+    /// Import profile for scene themes. Every one of them is a long
     /// looping track that a scene root loads at Awake, so the profile is the
     /// one that never blocks the main thread: streamed from disk and opened
     /// in the background. A decompress-on-load city theme once cost the City
@@ -32,6 +32,7 @@ namespace BarPromenade.Editor
         {
             CityMusicPlayer.ResourcePath,
             HomeMusicPlayer.ResourcePath,
+            AlpineVillageMusicPlayer.ResourcePath,
             ChurchMusicPlayer.ResourcePath,
             BarMusicPlayer.ResourcePath,
             StairwellMusicPlayer.ResourcePath,
@@ -136,9 +137,9 @@ namespace BarPromenade.Editor
                 string path = FindAssetPath(resource);
                 if (path == null)
                 {
-                    // An empty station folder is allowed by its README: the
-                    // radio simply has nothing to play on that detent.
-                    if (IsMonoResource(resource)) continue;
+                    // Radio stations and the newly prepared village slot may
+                    // be empty; their players stay silent until a file arrives.
+                    if (IsMonoResource(resource) || resource == AlpineVillageMusicPlayer.ResourcePath) continue;
                     throw new InvalidOperationException($"Scene theme is missing: '{resource}'.");
                 }
 

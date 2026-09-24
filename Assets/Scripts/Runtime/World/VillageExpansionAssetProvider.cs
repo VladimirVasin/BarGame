@@ -10,6 +10,8 @@ namespace BarPromenade
         public string kind, name, mesh, surface;
         public bool solid;
         public float[] tint, bounds_min, bounds_max;
+        public string terrain_fit;
+        public float[] support;
         public int triangles;
     }
 
@@ -20,6 +22,7 @@ namespace BarPromenade
         public int mesh_count, triangle_count, animation_count;
         public bool colliders, lights, cameras;
         public VillageExpansionPart[] parts;
+        public float[] avalanche_origin, avalanche_footprint;
     }
 
     /// <summary>Passive Blender geometry, retaining the measured imported metre scale.
@@ -28,7 +31,7 @@ namespace BarPromenade
     {
         public const string ResourcePath = "Village/Expansion/VillageExpansion3D";
         public const string DesignId = "village_forest_ski_base_old_road_v1";
-        public const string GeneratorVersion = "1.4.0";
+        public const string GeneratorVersion = "1.5.0";
         public const string WreckRustTexturePath = "Village/Textures/VillageTruckRustAlbedo";
         public const string WreckPaintTexturePath = "Village/Textures/VillageTruckPaintAlbedo";
         private static VillageExpansionAssetProvider instance;
@@ -57,6 +60,20 @@ namespace BarPromenade
                 value.parts.Length != value.mesh_count || value.mesh_count == 0 || value.colliders ||
                 value.lights || value.cameras || value.animation_count != 0)
                 throw new InvalidOperationException("Invalid or stale passive village expansion manifest.");
+            if (value.avalanche_origin == null || value.avalanche_origin.Length != 2 ||
+                Vector2.Distance(new Vector2(value.avalanche_origin[0], value.avalanche_origin[1]),
+                    AlpineVillageAvalanchePlan.Origin) > .0001f || value.avalanche_footprint == null ||
+                value.avalanche_footprint.Length != AlpineVillageAvalanchePlan.Footprint.Count * 2)
+                throw new InvalidOperationException("Avalanche authoring and placement origins differ.");
+            for (int i = 0; i < AlpineVillageAvalanchePlan.Footprint.Count; i++)
+                if (Vector2.Distance(AlpineVillageAvalanchePlan.Footprint[i],
+                    new Vector2(value.avalanche_footprint[i * 2], value.avalanche_footprint[i * 2 + 1])) > .0001f)
+                    throw new InvalidOperationException("Avalanche mesh and movement outlines differ.");
+            foreach (VillageExpansionPart part in value.parts)
+                if (part.kind == "Avalanche" &&
+                    (part.terrain_fit != "surface" && part.terrain_fit != "rigid" ||
+                     part.terrain_fit == "rigid" && (part.support == null || part.support.Length != 3)))
+                    throw new InvalidOperationException("Avalanche part has no terrain fitting contract.");
             return value;
         }
 

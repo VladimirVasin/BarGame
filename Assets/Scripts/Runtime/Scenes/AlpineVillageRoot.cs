@@ -41,6 +41,7 @@ namespace BarPromenade
         public PlayerRuntime Player { get; private set; }
         public PlayerCameraFollow CameraFollow { get; private set; }
         public RetroAudioService Audio { get; private set; }
+        public AlpineVillageMusicPlayer Music { get; private set; }
         public AlpineVillageSoundscape Soundscape { get; private set; }
         public AlpineVillageLifeController Life { get; private set; }
         public VillageWorkroomController Workroom { get; private set; }
@@ -594,15 +595,21 @@ namespace BarPromenade
                     IntoxicationHud);
             }
 
-            // The village holds no scene theme, but a place theme parked
-            // under it would still carry the exit request the door put on
-            // it; withdrawn exactly as the City withdraws its own.
+            // The door's outgoing theme detaches and destroys its own carrier.
+            // Restore it on return, as City does for its resident exterior.
+            if (Music == null || Music.IsDetachedForSceneExit)
+            {
+                BuildMusic();
+            }
+
             SceneMusicPlayer[] themes =
                 GetComponentsInChildren<SceneMusicPlayer>(true);
             for (int index = 0; index < themes.Length; index++)
             {
                 themes[index].CancelSceneExitFade();
             }
+
+            Music.ResumeWithFadeIn();
 
             BindColdExposure();
             if (Map != null)
@@ -988,8 +995,16 @@ namespace BarPromenade
             CablewayRide = installation.Ride;
         }
 
+        private void BuildMusic()
+        {
+            var musicObject = new GameObject("Alpine Village Music");
+            musicObject.transform.SetParent(transform, false);
+            Music = musicObject.AddComponent<AlpineVillageMusicPlayer>();
+        }
+
         private void BuildAtmosphere()
         {
+            BuildMusic();
             Soundscape = AlpineVillageSoundscape.Create(
                 transform,
                 AlpineVillageSoundscapePlanner.Create(Plan),

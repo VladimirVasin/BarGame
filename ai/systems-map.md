@@ -25,7 +25,7 @@ A row never carries a status outside this table. Product-level scope cuts
 
 | System | Guarantee | Key files | Status |
 | --- | --- | --- | --- |
-| Village scenery | Lived-in core; 18 empty households, eight sheds, five civic yards; neighbouring buildings visible; old road/city. | `AlpineVillage{AbandonmentPlan,ExpansionBuilder,DistanceWorldBuilder}` | Current |
+| Village scenery | 18 empty households, eight sheds, five civic yards; old ski avalanche; connected buildings/road/city. | `AlpineVillage{AbandonmentPlan,AvalanchePlan,ExpansionBuilder,DistanceWorldBuilder}` | Current |
 | Village paths | Ground junctions; brook bridge. | `AlpineVillage{JunctionPlan,FootbridgePlan}` | Current |
 | Village household life | Six residents, finite household work, indoor/outdoor help and outcomes across visits. | `AlpineVillageLifeController`, `VillageOutdoorHelpController`, `VillageHouseholdProgress` | Current |
 | Independent rules assembly | Calendar/day schedule, input priorities and temporary vehicle ownership have no Unity dependencies. | `Scripts/Rules`, `BarPromenade.Rules.asmdef` | Current |
@@ -135,7 +135,7 @@ A row never carries a status outside this table. Product-level scope cuts
 | Exterior cloud ceiling | A passive shared-density shell supplies a camera-relative cloud ceiling with bounded horizon coverage. | `ExteriorCloud{AssetMetadata,Profile,MotionRules,Resources,Field,CaptureCamera}`, `ExteriorCloud.shader` | Current |
 | Runtime cloth rags | Visible cloth uses shared bounded wind response and explicit attachment constraints. | `ClothPanelFactory`, `CityClothWindRegistry` | Current |
 | City wind dressing | Shared wind drives authored trees/props/cloth while preserving causal movement limits. | `CityWindDressing{Plan,Planner,Validator,WorldBuilder}`, `CityRopeSpanGeometry` | Current |
-| Scene and place music | Guarded handoffs; radio power suppresses the city theme. Gap: cemetery and church slots are empty. | `MusicMix`, `SceneMusicPlayer`, `CityMusicPlayer` | Partial |
+| Scene and place music | Guarded handoffs; village theme; powered radio suppresses city. Gap: cemetery/church slots empty. | `MusicMix`, `SceneMusicPlayer`, `CityMusicPlayer` | Partial |
 | Common audio mix | One shared mixer routes scene themes, causal ambience, effects and reversible intoxication processing. | `GameAudioMixer`, `BarPromenadeAudio.mixer` | Current |
 | Port and cannery audio | Local machinery/fan/contact; arrival horn ×2 with longer echo/reverb. Pause/distance/seek own playback. | `CityWorkAudio`, `CityPortSound`, `CityCanneryController.{Sound,ProcessSound}` | Current |
 | Intoxication sound perception | Bounded VHS processing follows the smoothed alcohol level and returns to exact bypass when sober. | `IntoxicationPerceptionRules`, `IntoxicationAudioDriver` | Current |

@@ -537,6 +537,8 @@ namespace BarPromenade
         private static bool ClearsEveryPlot(
             AlpineVillagePlan plan, Vector2 point, float radius)
         {
+            if (plan.Expansion != null && plan.Expansion.Avalanche.ContainsLocal(
+                plan.Expansion.ToLocal(point), radius + 2f)) return false;
             if (plan.Expansion != null && !plan.Expansion.Abandonment.ClearsFeatures(
                 plan.Expansion.ToLocal(point), radius)) return false;
             for (int index = 0; index < plan.Plots.Count; index++)
@@ -955,6 +957,8 @@ namespace BarPromenade
             Vector2 point,
             float trunkRadius)
         {
+            if (plan.Expansion != null && plan.Expansion.Avalanche.ContainsLocal(
+                plan.Expansion.ToLocal(point), trunkRadius + 4f)) return false;
             // The rock is cleared by the TRUNK, not by the crown. The band is
             // only a metre inboard of the panel foot while a crown reaches
             // further, so measuring the crown would reject every seat - and a

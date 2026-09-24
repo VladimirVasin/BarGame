@@ -3,7 +3,7 @@
 Newest outcomes/checks first. Archive whole dates at budget: [policy](README.md).
 Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-2026-08.md).
 
-## 2026-09-24 — Village surfaces and weather
+## 2026-09-24 — Village surfaces, weather and avalanche
 
 - `AlpineVillageJunctionPlan` owns ports, contours and snow for the road/path
   junctions and warehouse apron. Coatings partition the original ground;
@@ -16,8 +16,6 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
   vertex-height checks alone missed face interiors and lighting differences.
   Check: `AreaCaptureFixture.AlpineVillageRoadSurface`; real mesh, snow and
   clearing verified, final walking frames reviewed.
-- Updated current state, art canon, accepted decision and authoring instructions.
-  Checks: `check-docs.py`, `git diff --check`.
 - Rescue-apron snow now uses the paving top during pressing/recovery;
   terrain-only support intersected raised flagstones. Abandoned-zone trees
   double before clearance checks; lived-in street trees retain their scale.
@@ -37,6 +35,15 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
   references, including the editor/.NET paths in `.claude/settings.json`.
   Checks: package/config JSON consistency, installed executable paths,
   generated signature diff and `check-docs.py`.
+- Old ski avalanche: scar, fallen timber/rocks, buried lift and household-15
+  ruin. Shared forest/movement footprint; lodge/loop open. Source triangulation
+  fixes import face drift; real wall fragments support the broken roof.
+  Checks: `build-village-expansion-3d-model.py` (determinism/footprint/winding),
+  `AreaCaptureFixture.AlpineVillageAvalanche` (boundaries/access/neighbours).
+  Route and all-side ruin frames reviewed, including the previously faulty rear view.
+- Connected `AlpineVillageMusic/alpine_village_theme.mp3`; village gain `.70`
+  per user, not LUFS-calibrated. Shared fades/resume and optional build slot stay.
+  Check: `SceneMusicImportTests.EveryTheme_StreamsAndLoadsInTheBackground`.
 
 ## 2026-09-23 — Alpine Village expansion
 

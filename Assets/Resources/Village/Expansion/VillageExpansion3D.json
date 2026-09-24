@@ -1,11 +1,45 @@
 {
-  "generator_version": "1.4.0",
+  "generator_version": "1.5.0",
   "design_id": "village_forest_ski_base_old_road_v1",
   "scale_mode": "fixed_metres",
   "uv_mode": "projected_metres",
-  "build_signature": "484d190490da833dfcd32caf97f009bb661cdc051a6aab9a53336a9e85ec1558",
-  "mesh_count": 458,
-  "triangle_count": 146752,
+  "build_signature": "2d89683ab56e174c09d7e230de31fa4f30b76a52cd4c9afb3070fda7b9066130",
+  "mesh_count": 517,
+  "triangle_count": 160792,
+  "avalanche_origin": [
+    -158,
+    110
+  ],
+  "avalanche_footprint": [
+    -10,
+    0,
+    -5,
+    -1,
+    1,
+    0,
+    6,
+    -0.5,
+    9.5,
+    1.5,
+    9.5,
+    5,
+    18,
+    6.5,
+    19,
+    11,
+    19,
+    17,
+    19,
+    25,
+    -19,
+    25,
+    -19,
+    14,
+    -18,
+    8,
+    -12,
+    5
+  ],
   "colliders": false,
   "lights": false,
   "cameras": false,
@@ -11002,6 +11036,1600 @@
         8.679521428015873
       ],
       "triangles": 72
+    },
+    {
+      "kind": "Avalanche",
+      "name": "CompactedSnowAndDebris",
+      "mesh": "GEO_Expansion_Avalanche_CompactedSnowAndDebris",
+      "surface": "WindSnow",
+      "solid": true,
+      "tint": [
+        0.665,
+        0.69,
+        0.665,
+        1
+      ],
+      "terrain_fit": "surface",
+      "bounds_min": [
+        -19.0,
+        -1,
+        -1.0
+      ],
+      "bounds_max": [
+        19.0,
+        5.324389556440735,
+        25.0
+      ],
+      "triangles": 1520
+    },
+    {
+      "kind": "Avalanche",
+      "name": "OldSedimentInBrokenToe",
+      "mesh": "GEO_Expansion_Avalanche_OldSedimentInBrokenToe",
+      "surface": "LayeredStone",
+      "solid": false,
+      "tint": [
+        0.515,
+        0.53,
+        0.49,
+        1
+      ],
+      "terrain_fit": "surface",
+      "bounds_min": [
+        -9.803738142407552,
+        1.4412838655512707,
+        -0.6454028859362136
+      ],
+      "bounds_max": [
+        9.30033315048331,
+        3.9789032005181735,
+        5.409725393206756
+      ],
+      "triangles": 48
+    },
+    {
+      "kind": "Avalanche",
+      "name": "WindSnowMantle00",
+      "mesh": "GEO_Expansion_Avalanche_WindSnowMantle00",
+      "surface": "WindSnow",
+      "solid": false,
+      "tint": [
+        0.825,
+        0.845,
+        0.825,
+        1
+      ],
+      "terrain_fit": "surface",
+      "bounds_min": [
+        -8.252161570658616,
+        3.726276750308776,
+        0.9394539536579276
+      ],
+      "bounds_max": [
+        -1.6,
+        5.314688925884397,
+        4.089128513114792
+      ],
+      "triangles": 48
+    },
+    {
+      "kind": "Avalanche",
+      "name": "WindSnowMantle01",
+      "mesh": "GEO_Expansion_Avalanche_WindSnowMantle01",
+      "surface": "WindSnow",
+      "solid": false,
+      "tint": [
+        0.825,
+        0.845,
+        0.825,
+        1
+      ],
+      "terrain_fit": "surface",
+      "bounds_min": [
+        -1.9822438041371937,
+        3.6240868125446735,
+        1.0588794391263217
+      ],
+      "bounds_max": [
+        6.548504034902608,
+        5.285124119192864,
+        4.978817295500289
+      ],
+      "triangles": 48
+    },
+    {
+      "kind": "Avalanche",
+      "name": "WindSnowMantle02",
+      "mesh": "GEO_Expansion_Avalanche_WindSnowMantle02",
+      "surface": "WindSnow",
+      "solid": false,
+      "tint": [
+        0.825,
+        0.845,
+        0.825,
+        1
+      ],
+      "terrain_fit": "surface",
+      "bounds_min": [
+        -12.056799018420026,
+        3.7228566603136817,
+        4.81306057486545
+      ],
+      "bounds_max": [
+        -3.3035236049531775,
+        5.005949971744088,
+        9.821291830049251
+      ],
+      "triangles": 48
+    },
+    {
+      "kind": "Avalanche",
+      "name": "WindSnowMantle03",
+      "mesh": "GEO_Expansion_Avalanche_WindSnowMantle03",
+      "surface": "WindSnow",
+      "solid": false,
+      "tint": [
+        0.825,
+        0.845,
+        0.825,
+        1
+      ],
+      "terrain_fit": "surface",
+      "bounds_min": [
+        2.143791707386946,
+        3.6945532273496013,
+        4.998852644183282
+      ],
+      "bounds_max": [
+        9.36420960366724,
+        5.265676378556683,
+        10.822355380633933
+      ],
+      "triangles": 48
+    },
+    {
+      "kind": "Avalanche",
+      "name": "WindSnowMantle04",
+      "mesh": "GEO_Expansion_Avalanche_WindSnowMantle04",
+      "surface": "WindSnow",
+      "solid": false,
+      "tint": [
+        0.825,
+        0.845,
+        0.825,
+        1
+      ],
+      "terrain_fit": "surface",
+      "bounds_min": [
+        -6.6201123359697975,
+        3.1724167322996313,
+        8.70834057245468
+      ],
+      "bounds_max": [
+        1.8997696757407905,
+        5.068046520148797,
+        13.5869235618142
+      ],
+      "triangles": 48
+    },
+    {
+      "kind": "Avalanche",
+      "name": "WindSnowMantle05",
+      "mesh": "GEO_Expansion_Avalanche_WindSnowMantle05",
+      "surface": "WindSnow",
+      "solid": false,
+      "tint": [
+        0.825,
+        0.845,
+        0.825,
+        1
+      ],
+      "terrain_fit": "surface",
+      "bounds_min": [
+        -14.495843068728888,
+        2.3897442529623896,
+        12.05058666636182
+      ],
+      "bounds_max": [
+        -7.872714729689677,
+        4.444910106502003,
+        16.752089777847342
+      ],
+      "triangles": 48
+    },
+    {
+      "kind": "Avalanche",
+      "name": "WindSnowMantle06",
+      "mesh": "GEO_Expansion_Avalanche_WindSnowMantle06",
+      "surface": "WindSnow",
+      "solid": false,
+      "tint": [
+        0.825,
+        0.845,
+        0.825,
+        1
+      ],
+      "terrain_fit": "surface",
+      "bounds_min": [
+        6.897033444843965,
+        2.0658457982065066,
+        12.264203650411368
+      ],
+      "bounds_max": [
+        13.869233546842903,
+        3.8736530099573283,
+        18.58973066161169
+      ],
+      "triangles": 48
+    },
+    {
+      "kind": "Avalanche",
+      "name": "WindSnowMantle07",
+      "mesh": "GEO_Expansion_Avalanche_WindSnowMantle07",
+      "surface": "WindSnow",
+      "solid": false,
+      "tint": [
+        0.825,
+        0.845,
+        0.825,
+        1
+      ],
+      "terrain_fit": "surface",
+      "bounds_min": [
+        -7.282559687852418,
+        1.3124893112942986,
+        14.64059913628297
+      ],
+      "bounds_max": [
+        3.8612045923005898,
+        3.525391104872638,
+        20.200490101250658
+      ],
+      "triangles": 48
+    },
+    {
+      "kind": "Avalanche",
+      "name": "WindSnowMantle08",
+      "mesh": "GEO_Expansion_Avalanche_WindSnowMantle08",
+      "surface": "WindSnow",
+      "solid": false,
+      "tint": [
+        0.825,
+        0.845,
+        0.825,
+        1
+      ],
+      "terrain_fit": "surface",
+      "bounds_min": [
+        -11.319906095206374,
+        0.45916744963738343,
+        18.85872169845534
+      ],
+      "bounds_max": [
+        -4.162703654992465,
+        2.190474248657401,
+        23.780793717838588
+      ],
+      "triangles": 48
+    },
+    {
+      "kind": "Avalanche",
+      "name": "WindSnowMantle09",
+      "mesh": "GEO_Expansion_Avalanche_WindSnowMantle09",
+      "surface": "WindSnow",
+      "solid": false,
+      "tint": [
+        0.825,
+        0.845,
+        0.825,
+        1
+      ],
+      "terrain_fit": "surface",
+      "bounds_min": [
+        0.9563147528584395,
+        0.3472543139814131,
+        19.640287254311207
+      ],
+      "bounds_max": [
+        11.26787701540714,
+        1.812490254578145,
+        24.046958925225372
+      ],
+      "triangles": 48
+    },
+    {
+      "kind": "Avalanche",
+      "name": "ExposedGravelSeam00",
+      "mesh": "GEO_Expansion_Avalanche_ExposedGravelSeam00",
+      "surface": "LayeredStone",
+      "solid": false,
+      "tint": [
+        0.43,
+        0.45,
+        0.405,
+        1
+      ],
+      "terrain_fit": "surface",
+      "bounds_min": [
+        -3.3086880289362037,
+        4.0745868017901845,
+        5.176833686894049
+      ],
+      "bounds_max": [
+        0.8,
+        5.3329670480155,
+        6.520694832262311
+      ],
+      "triangles": 48
+    },
+    {
+      "kind": "Avalanche",
+      "name": "ExposedGravelSeam01",
+      "mesh": "GEO_Expansion_Avalanche_ExposedGravelSeam01",
+      "surface": "LayeredStone",
+      "solid": false,
+      "tint": [
+        0.43,
+        0.45,
+        0.405,
+        1
+      ],
+      "terrain_fit": "surface",
+      "bounds_min": [
+        6.97180255845293,
+        3.4476274625456695,
+        9.964417471668922
+      ],
+      "bounds_max": [
+        12.173478070062567,
+        4.801400803570137,
+        11.449867606715898
+      ],
+      "triangles": 48
+    },
+    {
+      "kind": "Avalanche",
+      "name": "ExposedGravelSeam02",
+      "mesh": "GEO_Expansion_Avalanche_ExposedGravelSeam02",
+      "surface": "LayeredStone",
+      "solid": false,
+      "tint": [
+        0.43,
+        0.45,
+        0.405,
+        1
+      ],
+      "terrain_fit": "surface",
+      "bounds_min": [
+        -10.924989962029539,
+        3.5157556153601135,
+        11.250656305592484
+      ],
+      "bounds_max": [
+        -6.339940935927856,
+        4.322746750470338,
+        12.46097885892857
+      ],
+      "triangles": 48
+    },
+    {
+      "kind": "Avalanche",
+      "name": "ExposedGravelSeam03",
+      "mesh": "GEO_Expansion_Avalanche_ExposedGravelSeam03",
+      "surface": "LayeredStone",
+      "solid": false,
+      "tint": [
+        0.43,
+        0.45,
+        0.405,
+        1
+      ],
+      "terrain_fit": "surface",
+      "bounds_min": [
+        0.6330535888801201,
+        0.7033382399391312,
+        17.209607906891023
+      ],
+      "bounds_max": [
+        3.7275184015716745,
+        2.9620177610594927,
+        22.82512840275415
+      ],
+      "triangles": 48
+    },
+    {
+      "kind": "Avalanche",
+      "name": "FallenConifer00",
+      "mesh": "GEO_Expansion_Avalanche_FallenConifer00",
+      "surface": "AbandonedWood",
+      "solid": true,
+      "tint": [
+        0.255,
+        0.245,
+        0.205,
+        1
+      ],
+      "terrain_fit": "rigid",
+      "support": [
+        -0.6000000000000001,
+        0,
+        7.25
+      ],
+      "bounds_min": [
+        -8.964022426857953,
+        3.4701381792431065,
+        2.3172005806557605
+      ],
+      "bounds_max": [
+        6.8444417683396575,
+        5.52984644411874,
+        13.274868037990863
+      ],
+      "triangles": 1136
+    },
+    {
+      "kind": "Avalanche",
+      "name": "RootEarth00",
+      "mesh": "GEO_Expansion_Avalanche_RootEarth00",
+      "surface": "LayeredStone",
+      "solid": true,
+      "tint": [
+        0.255,
+        0.27,
+        0.25,
+        1
+      ],
+      "terrain_fit": "rigid",
+      "support": [
+        -0.6000000000000001,
+        0,
+        7.25
+      ],
+      "bounds_min": [
+        -8.67193266436413,
+        3.84,
+        11.508509227287528
+      ],
+      "bounds_max": [
+        -7.2678017895034825,
+        5.16,
+        12.650070135695723
+      ],
+      "triangles": 52
+    },
+    {
+      "kind": "Avalanche",
+      "name": "FallenConifer01",
+      "mesh": "GEO_Expansion_Avalanche_FallenConifer01",
+      "surface": "AbandonedWood",
+      "solid": true,
+      "tint": [
+        0.255,
+        0.245,
+        0.205,
+        1
+      ],
+      "terrain_fit": "rigid",
+      "support": [
+        -0.4500000000000002,
+        0,
+        7.7
+      ],
+      "bounds_min": [
+        -7.952822128850725,
+        3.662303811881509,
+        2.9317077029090655
+      ],
+      "bounds_max": [
+        7.9234253847119795,
+        5.637675523971675,
+        13.537609024580558
+      ],
+      "triangles": 1136
+    },
+    {
+      "kind": "Avalanche",
+      "name": "RootEarth01",
+      "mesh": "GEO_Expansion_Avalanche_RootEarth01",
+      "surface": "LayeredStone",
+      "solid": true,
+      "tint": [
+        0.255,
+        0.27,
+        0.25,
+        1
+      ],
+      "terrain_fit": "rigid",
+      "support": [
+        -0.4500000000000002,
+        0,
+        7.7
+      ],
+      "bounds_min": [
+        6.451280665273774,
+        4.08,
+        11.829214922132945
+      ],
+      "bounds_max": [
+        7.6373789393277836,
+        5.220000000000001,
+        12.938382118183537
+      ],
+      "triangles": 52
+    },
+    {
+      "kind": "Avalanche",
+      "name": "FallenConifer02",
+      "mesh": "GEO_Expansion_Avalanche_FallenConifer02",
+      "surface": "AbandonedWood",
+      "solid": true,
+      "tint": [
+        0.255,
+        0.245,
+        0.205,
+        1
+      ],
+      "terrain_fit": "rigid",
+      "support": [
+        -2.0999999999999996,
+        0,
+        9.4
+      ],
+      "bounds_min": [
+        -13.156610612831116,
+        2.7861616356254215,
+        6.5487094271168775
+      ],
+      "bounds_max": [
+        8.319527644665506,
+        4.893450021671228,
+        13.091283346841468
+      ],
+      "triangles": 1136
+    },
+    {
+      "kind": "Avalanche",
+      "name": "RootEarth02",
+      "mesh": "GEO_Expansion_Avalanche_RootEarth02",
+      "surface": "LayeredStone",
+      "solid": true,
+      "tint": [
+        0.255,
+        0.27,
+        0.25,
+        1
+      ],
+      "terrain_fit": "rigid",
+      "support": [
+        -2.0999999999999996,
+        0,
+        9.4
+      ],
+      "bounds_min": [
+        -13.128183582562217,
+        3.065,
+        11.14847516804545
+      ],
+      "bounds_max": [
+        -11.75151598322988,
+        4.535,
+        12.652501712285387
+      ],
+      "triangles": 52
+    },
+    {
+      "kind": "Avalanche",
+      "name": "FallenConifer03",
+      "mesh": "GEO_Expansion_Avalanche_FallenConifer03",
+      "surface": "AbandonedWood",
+      "solid": true,
+      "tint": [
+        0.255,
+        0.245,
+        0.205,
+        1
+      ],
+      "terrain_fit": "rigid",
+      "support": [
+        -5.1000000000000005,
+        0,
+        5.574999999999999
+      ],
+      "bounds_min": [
+        -9.473459694612691,
+        2.6762801542721584,
+        0.39756780985862994
+      ],
+      "bounds_max": [
+        -1.8300155339004842,
+        5.3460863345355,
+        11.642211395311874
+      ],
+      "triangles": 1136
+    },
+    {
+      "kind": "Avalanche",
+      "name": "RootEarth03",
+      "mesh": "GEO_Expansion_Avalanche_RootEarth03",
+      "surface": "LayeredStone",
+      "solid": true,
+      "tint": [
+        0.255,
+        0.27,
+        0.25,
+        1
+      ],
+      "terrain_fit": "rigid",
+      "support": [
+        -5.1000000000000005,
+        0,
+        5.574999999999999
+      ],
+      "bounds_min": [
+        -8.850897009627356,
+        3.13,
+        10.164137182688117
+      ],
+      "bounds_max": [
+        -7.786079064902318,
+        4.2700000000000005,
+        11.269084422155471
+      ],
+      "triangles": 52
+    },
+    {
+      "kind": "Avalanche",
+      "name": "FallenConifer04",
+      "mesh": "GEO_Expansion_Avalanche_FallenConifer04",
+      "surface": "AbandonedWood",
+      "solid": true,
+      "tint": [
+        0.255,
+        0.245,
+        0.205,
+        1
+      ],
+      "terrain_fit": "rigid",
+      "support": [
+        3.75,
+        0,
+        10.05
+      ],
+      "bounds_min": [
+        -3.127105130232817,
+        2.1347131157456145,
+        7.720782050743537
+      ],
+      "bounds_max": [
+        11.27955047680483,
+        4.785666670935283,
+        13.141640848991388
+      ],
+      "triangles": 1136
+    },
+    {
+      "kind": "Avalanche",
+      "name": "RootEarth04",
+      "mesh": "GEO_Expansion_Avalanche_RootEarth04",
+      "surface": "LayeredStone",
+      "solid": true,
+      "tint": [
+        0.255,
+        0.27,
+        0.25,
+        1
+      ],
+      "terrain_fit": "rigid",
+      "support": [
+        3.75,
+        0,
+        10.05
+      ],
+      "bounds_min": [
+        9.989161425800914,
+        2.5,
+        11.502004437619279
+      ],
+      "bounds_max": [
+        11.125203906576274,
+        3.7,
+        12.534986971579176
+      ],
+      "triangles": 52
+    },
+    {
+      "kind": "Avalanche",
+      "name": "EmbeddedBoulder00",
+      "mesh": "GEO_Expansion_Avalanche_EmbeddedBoulder00",
+      "surface": "LayeredStone",
+      "solid": true,
+      "tint": [
+        0.34,
+        0.365,
+        0.335,
+        1
+      ],
+      "terrain_fit": "rigid",
+      "support": [
+        -7.5,
+        0,
+        1.25
+      ],
+      "bounds_min": [
+        -9.332543630083991,
+        1.25,
+        0.001724018626276358
+      ],
+      "bounds_max": [
+        -5.503095789554952,
+        4.75,
+        2.4108622993578566
+      ],
+      "triangles": 52
+    },
+    {
+      "kind": "Avalanche",
+      "name": "EmbeddedBoulder01",
+      "mesh": "GEO_Expansion_Avalanche_EmbeddedBoulder01",
+      "surface": "LayeredStone",
+      "solid": true,
+      "tint": [
+        0.36300000000000004,
+        0.386,
+        0.35500000000000004,
+        1
+      ],
+      "terrain_fit": "rigid",
+      "support": [
+        -2.8,
+        0,
+        1.0
+      ],
+      "bounds_min": [
+        -4.099598424351585,
+        1.6,
+        -0.2338399239607396
+      ],
+      "bounds_max": [
+        -1.2904183015920925,
+        4.6,
+        2.1637959321636586
+      ],
+      "triangles": 52
+    },
+    {
+      "kind": "Avalanche",
+      "name": "EmbeddedBoulder02",
+      "mesh": "GEO_Expansion_Avalanche_EmbeddedBoulder02",
+      "surface": "LayeredStone",
+      "solid": true,
+      "tint": [
+        0.386,
+        0.407,
+        0.375,
+        1
+      ],
+      "terrain_fit": "rigid",
+      "support": [
+        3.4,
+        0,
+        1.7
+      ],
+      "bounds_min": [
+        2.1179926886485356,
+        1.15,
+        0.16627585315398008
+      ],
+      "bounds_max": [
+        4.927518401571674,
+        4.949999999999999,
+        3.23571778017426
+      ],
+      "triangles": 52
+    },
+    {
+      "kind": "Avalanche",
+      "name": "EmbeddedBoulder03",
+      "mesh": "GEO_Expansion_Avalanche_EmbeddedBoulder03",
+      "surface": "LayeredStone",
+      "solid": true,
+      "tint": [
+        0.34,
+        0.365,
+        0.335,
+        1
+      ],
+      "terrain_fit": "rigid",
+      "support": [
+        7.8,
+        0,
+        3.6
+      ],
+      "bounds_min": [
+        6.495243924566791,
+        1.3,
+        2.542376018463392
+      ],
+      "bounds_max": [
+        9.01718116207346,
+        4.9,
+        4.723192938464747
+      ],
+      "triangles": 52
+    },
+    {
+      "kind": "Avalanche",
+      "name": "EmbeddedBoulder04",
+      "mesh": "GEO_Expansion_Avalanche_EmbeddedBoulder04",
+      "surface": "LayeredStone",
+      "solid": true,
+      "tint": [
+        0.36300000000000004,
+        0.386,
+        0.35500000000000004,
+        1
+      ],
+      "terrain_fit": "rigid",
+      "support": [
+        -10.4,
+        0,
+        7.2
+      ],
+      "bounds_min": [
+        -12.181612508080665,
+        2.45,
+        5.777155536055082
+      ],
+      "bounds_max": [
+        -8.868155272485865,
+        4.95,
+        8.728534204511934
+      ],
+      "triangles": 52
+    },
+    {
+      "kind": "Avalanche",
+      "name": "EmbeddedBoulder05",
+      "mesh": "GEO_Expansion_Avalanche_EmbeddedBoulder05",
+      "surface": "LayeredStone",
+      "solid": true,
+      "tint": [
+        0.386,
+        0.407,
+        0.375,
+        1
+      ],
+      "terrain_fit": "rigid",
+      "support": [
+        12.6,
+        0,
+        8.8
+      ],
+      "bounds_min": [
+        10.29123454201712,
+        1.8000000000000003,
+        7.293530046027992
+      ],
+      "bounds_max": [
+        14.912822364561935,
+        4.6,
+        10.329430626735874
+      ],
+      "triangles": 52
+    },
+    {
+      "kind": "Avalanche",
+      "name": "EmbeddedBoulder06",
+      "mesh": "GEO_Expansion_Avalanche_EmbeddedBoulder06",
+      "surface": "LayeredStone",
+      "solid": true,
+      "tint": [
+        0.34,
+        0.365,
+        0.335,
+        1
+      ],
+      "terrain_fit": "rigid",
+      "support": [
+        -3.4,
+        0,
+        8.4
+      ],
+      "bounds_min": [
+        -4.5153334581416225,
+        3.65,
+        7.242969210703967
+      ],
+      "bounds_max": [
+        -2.206050916383213,
+        5.35,
+        9.48652817955047
+      ],
+      "triangles": 52
+    },
+    {
+      "kind": "Avalanche",
+      "name": "EmbeddedBoulder07",
+      "mesh": "GEO_Expansion_Avalanche_EmbeddedBoulder07",
+      "surface": "LayeredStone",
+      "solid": true,
+      "tint": [
+        0.36300000000000004,
+        0.386,
+        0.35500000000000004,
+        1
+      ],
+      "terrain_fit": "rigid",
+      "support": [
+        -12.8,
+        0,
+        9.6
+      ],
+      "bounds_min": [
+        -14.529046368011738,
+        2.3499999999999996,
+        7.925540001099755
+      ],
+      "bounds_max": [
+        -10.82492099889318,
+        4.45,
+        11.162648408968632
+      ],
+      "triangles": 52
+    },
+    {
+      "kind": "Avalanche",
+      "name": "EmbeddedBoulder08",
+      "mesh": "GEO_Expansion_Avalanche_EmbeddedBoulder08",
+      "surface": "LayeredStone",
+      "solid": true,
+      "tint": [
+        0.386,
+        0.407,
+        0.375,
+        1
+      ],
+      "terrain_fit": "rigid",
+      "support": [
+        4.2,
+        0,
+        13
+      ],
+      "bounds_min": [
+        3.141512276616386,
+        2.55,
+        11.402661377613859
+      ],
+      "bounds_max": [
+        5.464290483697714,
+        4.45,
+        14.56962479118961
+      ],
+      "triangles": 52
+    },
+    {
+      "kind": "Avalanche",
+      "name": "SnappedMarginTrunk00",
+      "mesh": "GEO_Expansion_Avalanche_SnappedMarginTrunk00",
+      "surface": "AbandonedWood",
+      "solid": true,
+      "tint": [
+        0.29,
+        0.28,
+        0.235,
+        1
+      ],
+      "terrain_fit": "rigid",
+      "support": [
+        -13.1,
+        0,
+        8.7
+      ],
+      "bounds_min": [
+        -13.510712034800177,
+        3.6312808204809204,
+        7.8354997119353005
+      ],
+      "bounds_max": [
+        -12.733028865756783,
+        6.74167348188759,
+        9.000757626879349
+      ],
+      "triangles": 176
+    },
+    {
+      "kind": "Avalanche",
+      "name": "SnappedMarginTrunk01",
+      "mesh": "GEO_Expansion_Avalanche_SnappedMarginTrunk01",
+      "surface": "AbandonedWood",
+      "solid": true,
+      "tint": [
+        0.29,
+        0.28,
+        0.235,
+        1
+      ],
+      "terrain_fit": "rigid",
+      "support": [
+        14.7,
+        0,
+        10.4
+      ],
+      "bounds_min": [
+        14.289287965199822,
+        3.6943112184345432,
+        9.534824928842328
+      ],
+      "bounds_max": [
+        15.067263998611903,
+        7.389645096966408,
+        10.703318506694261
+      ],
+      "triangles": 176
+    },
+    {
+      "kind": "Avalanche",
+      "name": "SnappedMarginTrunk02",
+      "mesh": "GEO_Expansion_Avalanche_SnappedMarginTrunk02",
+      "surface": "AbandonedWood",
+      "solid": true,
+      "tint": [
+        0.29,
+        0.28,
+        0.235,
+        1
+      ],
+      "terrain_fit": "rigid",
+      "support": [
+        -16.6,
+        0,
+        16.8
+      ],
+      "bounds_min": [
+        -17.01071203480018,
+        1.413940875114782,
+        15.93614842661443
+      ],
+      "bounds_max": [
+        -16.233348412477017,
+        4.138102913527164,
+        17.097963429861014
+      ],
+      "triangles": 176
+    },
+    {
+      "kind": "Avalanche",
+      "name": "SnappedMarginTrunk03",
+      "mesh": "GEO_Expansion_Avalanche_SnappedMarginTrunk03",
+      "surface": "AbandonedWood",
+      "solid": true,
+      "tint": [
+        0.29,
+        0.28,
+        0.235,
+        1
+      ],
+      "terrain_fit": "rigid",
+      "support": [
+        16.2,
+        0,
+        18.2
+      ],
+      "bounds_min": [
+        15.789287965199822,
+        1.216450754044758,
+        17.335643796798703
+      ],
+      "bounds_max": [
+        16.566903591889133,
+        4.229942525380686,
+        18.50016701952073
+      ],
+      "triangles": 176
+    },
+    {
+      "kind": "Avalanche",
+      "name": "SnappedMarginTrunk04",
+      "mesh": "GEO_Expansion_Avalanche_SnappedMarginTrunk04",
+      "surface": "AbandonedWood",
+      "solid": true,
+      "tint": [
+        0.29,
+        0.28,
+        0.235,
+        1
+      ],
+      "terrain_fit": "rigid",
+      "support": [
+        -11.9,
+        0,
+        22
+      ],
+      "bounds_min": [
+        -12.310712034800178,
+        0.4976220138081844,
+        21.138263881467434
+      ],
+      "bounds_max": [
+        -11.534737389050841,
+        2.466121096237208,
+        22.286345565170027
+      ],
+      "triangles": 176
+    },
+    {
+      "kind": "Avalanche",
+      "name": "BuckledUpperTowAndWheel",
+      "mesh": "GEO_Expansion_Avalanche_BuckledUpperTowAndWheel",
+      "surface": "RustedIron",
+      "solid": true,
+      "tint": [
+        0.29,
+        0.26,
+        0.215,
+        1
+      ],
+      "terrain_fit": "rigid",
+      "support": [
+        7,
+        0,
+        4
+      ],
+      "bounds_min": [
+        3.148819761614038,
+        2.5848239802691233,
+        0.7089020888627767
+      ],
+      "bounds_max": [
+        7.184464319805051,
+        6.231627768321817,
+        4.195394880048742
+      ],
+      "triangles": 1104
+    },
+    {
+      "kind": "Avalanche",
+      "name": "SeveredTowCable",
+      "mesh": "GEO_Expansion_Avalanche_SeveredTowCable",
+      "surface": "RustedIron",
+      "solid": false,
+      "tint": [
+        0.19,
+        0.2,
+        0.185,
+        1
+      ],
+      "terrain_fit": "rigid",
+      "support": [
+        7,
+        0,
+        4
+      ],
+      "bounds_min": [
+        1.9789992806241896,
+        4.075791206092908,
+        2.280908116907963
+      ],
+      "bounds_max": [
+        6.180632431415664,
+        5.85593576721307,
+        7.282671874372112
+      ],
+      "triangles": 252
+    },
+    {
+      "kind": "Avalanche",
+      "name": "BuriedRoofTimbers",
+      "mesh": "GEO_Expansion_Avalanche_BuriedRoofTimbers",
+      "surface": "AbandonedWood",
+      "solid": true,
+      "tint": [
+        0.325,
+        0.305,
+        0.245,
+        1
+      ],
+      "terrain_fit": "rigid",
+      "support": [
+        0,
+        0,
+        5
+      ],
+      "bounds_min": [
+        -7.207201969824129,
+        4.272521689207657,
+        2.5274895606557233
+      ],
+      "bounds_max": [
+        3.4408102683851194,
+        5.327478310792342,
+        7.272510439344277
+      ],
+      "triangles": 56
+    },
+    {
+      "kind": "AvalancheRuinedHouse",
+      "name": "ExposedFloor",
+      "mesh": "GEO_Expansion_AvalancheRuinedHouse_ExposedFloor",
+      "surface": "LayeredStone",
+      "solid": true,
+      "tint": [
+        0.32,
+        0.345,
+        0.34,
+        1
+      ],
+      "bounds_min": [
+        -4.0,
+        0.0,
+        -3.5
+      ],
+      "bounds_max": [
+        4.0,
+        0.18,
+        3.5
+      ],
+      "triangles": 28
+    },
+    {
+      "kind": "AvalancheRuinedHouse",
+      "name": "RearWallWithOpenWindow",
+      "mesh": "GEO_Expansion_AvalancheRuinedHouse_RearWallWithOpenWindow",
+      "surface": "LayeredStone",
+      "solid": true,
+      "tint": [
+        0.32,
+        0.345,
+        0.34,
+        1
+      ],
+      "bounds_min": [
+        -3.84,
+        0.18000000000000005,
+        -3.495
+      ],
+      "bounds_max": [
+        -0.3600000000000001,
+        3.335,
+        -3.125
+      ],
+      "triangles": 196
+    },
+    {
+      "kind": "AvalancheRuinedHouse",
+      "name": "WestWallWithOpenWindow",
+      "mesh": "GEO_Expansion_AvalancheRuinedHouse_WestWallWithOpenWindow",
+      "surface": "LayeredStone",
+      "solid": true,
+      "tint": [
+        0.32,
+        0.345,
+        0.34,
+        1
+      ],
+      "bounds_min": [
+        -4.005,
+        0.18000000000000005,
+        -3.4400000000000004
+      ],
+      "bounds_max": [
+        -3.635,
+        3.335,
+        -0.26
+      ],
+      "triangles": 196
+    },
+    {
+      "kind": "AvalancheRuinedHouse",
+      "name": "SeparateLowWallFragments",
+      "mesh": "GEO_Expansion_AvalancheRuinedHouse_SeparateLowWallFragments",
+      "surface": "LayeredStone",
+      "solid": true,
+      "tint": [
+        0.32,
+        0.345,
+        0.34,
+        1
+      ],
+      "bounds_min": [
+        -4.0,
+        0.18,
+        -3.48
+      ],
+      "bounds_max": [
+        3.99,
+        1.1600000000000001,
+        3.49
+      ],
+      "triangles": 196
+    },
+    {
+      "kind": "AvalancheRuinedHouse",
+      "name": "BrokenMasonryTops",
+      "mesh": "GEO_Expansion_AvalancheRuinedHouse_BrokenMasonryTops",
+      "surface": "Masonry",
+      "solid": true,
+      "tint": [
+        0.47,
+        0.465,
+        0.425,
+        1
+      ],
+      "bounds_min": [
+        -4.02422067489391,
+        0.7,
+        -3.507698212220241
+      ],
+      "bounds_max": [
+        4.02,
+        1.46,
+        3.526289009608833
+      ],
+      "triangles": 280
+    },
+    {
+      "kind": "AvalancheRuinedHouse",
+      "name": "OldMasonryJoints",
+      "mesh": "GEO_Expansion_AvalancheRuinedHouse_OldMasonryJoints",
+      "surface": "LayeredStone",
+      "solid": false,
+      "tint": [
+        0.255,
+        0.275,
+        0.255,
+        1
+      ],
+      "bounds_min": [
+        -4.018,
+        0.4465,
+        -3.508
+      ],
+      "bounds_max": [
+        -0.42,
+        2.6035,
+        -0.34500000000000003
+      ],
+      "triangles": 288
+    },
+    {
+      "kind": "AvalancheRuinedHouse",
+      "name": "EmptyWeatheredWindowFrames",
+      "mesh": "GEO_Expansion_AvalancheRuinedHouse_EmptyWeatheredWindowFrames",
+      "surface": "AbandonedWood",
+      "solid": true,
+      "tint": [
+        0.34,
+        0.305,
+        0.26,
+        1
+      ],
+      "bounds_min": [
+        -4.085,
+        1.1199999999999999,
+        -3.5749999999999997
+      ],
+      "bounds_max": [
+        -1.425,
+        2.68,
+        -1.175
+      ],
+      "triangles": 280
+    },
+    {
+      "kind": "AvalancheRuinedHouse",
+      "name": "SupportedRoofFrameAndPosts",
+      "mesh": "GEO_Expansion_AvalancheRuinedHouse_SupportedRoofFrameAndPosts",
+      "surface": "AbandonedWood",
+      "solid": true,
+      "tint": [
+        0.29,
+        0.275,
+        0.23,
+        1
+      ],
+      "bounds_min": [
+        -4.050000000000001,
+        0.17836267726127925,
+        -3.4250000000000003
+      ],
+      "bounds_max": [
+        -0.3900000000000001,
+        4.53026158624249,
+        3.402902000016632
+      ],
+      "triangles": 336
+    },
+    {
+      "kind": "AvalancheRuinedHouse",
+      "name": "AttachedBrokenRoofQuarter",
+      "mesh": "GEO_Expansion_AvalancheRuinedHouse_AttachedBrokenRoofQuarter",
+      "surface": "AbandonedRoof",
+      "solid": true,
+      "tint": [
+        0.27,
+        0.275,
+        0.25,
+        1
+      ],
+      "bounds_min": [
+        -4.1605,
+        3.2946003688679717,
+        -3.70421969194859
+      ],
+      "bounds_max": [
+        -0.48949999999999994,
+        4.633379631132027,
+        0.0842196919485898
+      ],
+      "triangles": 308
+    },
+    {
+      "kind": "AvalancheRuinedHouse",
+      "name": "SnowOnSupportedRoof",
+      "mesh": "GEO_Expansion_AvalancheRuinedHouse_SnowOnSupportedRoof",
+      "surface": "WindSnow",
+      "solid": false,
+      "tint": [
+        0.83,
+        0.85,
+        0.84,
+        1
+      ],
+      "bounds_min": [
+        -4.155,
+        3.509981461604589,
+        -3.3570956743465947
+      ],
+      "bounds_max": [
+        -0.8299999999999998,
+        4.28189853839541,
+        -1.162904325653406
+      ],
+      "triangles": 168
+    },
+    {
+      "kind": "AvalancheRuinedHouse",
+      "name": "BrokenHearth",
+      "mesh": "GEO_Expansion_AvalancheRuinedHouse_BrokenHearth",
+      "surface": "Masonry",
+      "solid": true,
+      "tint": [
+        0.49,
+        0.485,
+        0.445,
+        1
+      ],
+      "bounds_min": [
+        -0.97,
+        0.18000000000000005,
+        -3.19
+      ],
+      "bounds_max": [
+        0.07,
+        2.435,
+        -2.3699999999999997
+      ],
+      "triangles": 56
+    },
+    {
+      "kind": "AvalancheRuinedHouse",
+      "name": "OldHearthMouth",
+      "mesh": "GEO_Expansion_AvalancheRuinedHouse_OldHearthMouth",
+      "surface": "DarkWindow",
+      "solid": false,
+      "tint": [
+        0.075,
+        0.085,
+        0.08,
+        1
+      ],
+      "bounds_min": [
+        -0.74,
+        0.3,
+        -2.3695000000000004
+      ],
+      "bounds_max": [
+        -0.16000000000000003,
+        0.9199999999999999,
+        -2.3445
+      ],
+      "triangles": 28
+    },
+    {
+      "kind": "AvalancheRuinedHouse",
+      "name": "ImpactTreeThroughNorthWall",
+      "mesh": "GEO_Expansion_AvalancheRuinedHouse_ImpactTreeThroughNorthWall",
+      "surface": "AbandonedWood",
+      "solid": true,
+      "tint": [
+        0.34,
+        0.305,
+        0.26,
+        1
+      ],
+      "bounds_min": [
+        -3.622382914222476,
+        0.23980338205420154,
+        -1.6191119807002283
+      ],
+      "bounds_max": [
+        3.981947216149694,
+        1.1292607800651613,
+        1.6626236291337704
+      ],
+      "triangles": 156
+    },
+    {
+      "kind": "AvalancheRuinedHouse",
+      "name": "SettledImpactRubble",
+      "mesh": "GEO_Expansion_AvalancheRuinedHouse_SettledImpactRubble",
+      "surface": "LayeredStone",
+      "solid": true,
+      "tint": [
+        0.32,
+        0.345,
+        0.34,
+        1
+      ],
+      "bounds_min": [
+        -3.6252970128125606,
+        0.18999999999999997,
+        -3.2125651248144163
+      ],
+      "bounds_max": [
+        3.7106462702439877,
+        0.72,
+        2.7379014769989785
+      ],
+      "triangles": 416
+    },
+    {
+      "kind": "AvalancheRuinedHouse",
+      "name": "SettledRoofBeams",
+      "mesh": "GEO_Expansion_AvalancheRuinedHouse_SettledRoofBeams",
+      "surface": "AbandonedWood",
+      "solid": true,
+      "tint": [
+        0.34,
+        0.305,
+        0.26,
+        1
+      ],
+      "bounds_min": [
+        -2.940611607093289,
+        0.16534494163019986,
+        -2.6259306237799676
+      ],
+      "bounds_max": [
+        3.057581126972051,
+        0.4048924463037594,
+        2.9564524733673614
+      ],
+      "triangles": 84
+    },
+    {
+      "kind": "AvalancheRuinedHouse",
+      "name": "SnowInside",
+      "mesh": "GEO_Expansion_AvalancheRuinedHouse_SnowInside",
+      "surface": "WindSnow",
+      "solid": false,
+      "tint": [
+        0.83,
+        0.85,
+        0.84,
+        1
+      ],
+      "bounds_min": [
+        -3.285,
+        0.18,
+        -1.42
+      ],
+      "bounds_max": [
+        3.5250000000000004,
+        0.25,
+        2.075
+      ],
+      "triangles": 84
     }
   ]
 }

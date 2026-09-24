@@ -2,6 +2,26 @@
 
 ## Current facts
 
+- **Accepted architecture exception — 2026-09-24, village scene theme:**
+  User requests an authored AlpineVillage score. §6/art §10g permit this
+  non-spatial theme at 0; no story/weather/avalanche cue, causal sounds stay.
+  `AlpineVillageMusicPlayer` shares `SceneMusicPlayer`/`MusicMix`: loop/Music/
+  12 kHz/4 s out→1 s in; user-requested .70 gain, not LUFS-calibrated.
+  Optional `Audio/AlpineVillageMusic/alpine_village_theme`; WAV/OGG/MP3,
+  streaming/background/stereo, empty slot build-safe; user's MP3 supplied.
+  Root child restores/resumes on return from mother; only AlpineVillage,
+  including same-scene rooms. MothersHouse has no theme; departure tail stays.
+
+- **Accepted architecture exception — 2026-09-24, old ski avalanche:**
+  §6/§12/art §10g at 0: ski-abandonment cause/fixed obstacle:
+  old avalanche at service dead end. Closed-ridge scar→full-size fallen
+  forest/rock/beams→buried broken tow/cable→household 15 flow-facing damage.
+  Front ~20 m wide/4–6 m high; upper fan ~38 m. Visible steep mass/shoulders
+  block passage; Blender collision follows form, plan shares forest/movement footprint.
+  Lower lift/lodge/loop/ruin approach open. Mine/trade-road gap
+  unrelated; no active slide, hazard/death/task/NPC/text/sound/clue/event.
+  Lane/mother/water/cableway, §16/§21/nine checks stay.
+
 - **Accepted — 2026-09-24, closed conifer crowns:**
   `AppendCone` closes both road/village tiers with seven-face bases,
   recessed `0.2 × radius`; sizes/material/wind UV stay. Existing-mesh repair.
@@ -16,9 +36,9 @@
   gaps fit larger crowns.
 
 - **Accepted — 2026-09-24, overcast village daylight:**
-  Village clock filters day key/shadows, neutralizes fill, reduces reflections;
-  haze/clouds darker grey, windows/garlands warm. Night fill/story dimming/gust
-  visibility stay distinct; no new weather clock/thunder/lightning/whiteout.
+  Day key/shadows/reflections reduced, fill neutral, haze/clouds darker grey;
+  windows/garlands warm. Night/story/gust unchanged; no weather clock/thunder/
+  lightning/whiteout.
 
 - **Accepted — 2026-09-24, frost saturation silence:**
   Full outdoor frost stops growth cues with `0.12 s` tail fade. Thaw still
@@ -35,18 +55,13 @@
   exit/story stay.
 
 - **Accepted architecture exception — 2026-09-23, abandoned village settlement:**
-  Lane retained; mostly standing abandoned prosperous lots map-wide.
-  Target 14–18 houses/6–8 outbuildings; visibility decides. Closed TownHall/plaza,
-  School/yard, ShopBakery/court/oven, Workshop/court, MountainRescue/garage/
-  sled shelter near ski base. New/damaged misc, donors intact. §6 lifts art §10g's
-  warm-window/two-type/closed-volume/obstacle limits here at 0: dark openings/
-  structural ruins, former wealth/recreation/rescue. No active resort/tourists/
-  new NPC/action/text/sound/clue/plot. Lane retains warmth/care; doors snowed in.
-  From each building approach/side another reads through trees/terrain/storm;
-  misc/foundations excluded. Mother axis,
-  core/people/routes/water/station/cableway stay; sightline clearing/level pads
-  allowed. Plan: placement/forest/snow; Blender: meshes/manifest.
-  §16/§21/nine checks; `AlpineVillageAbandonment` captures.
+  §6/art §10g at 0: dark windows/ruins/visible obstacles, former wealth/ski/rescue.
+  Mostly standing, target 14–18 houses/6–8 sheds; five closed civic yards.
+  New/aged misc leave donors intact. Every building side sees another through
+  terrain/trees/storm; misc/foundations excluded. Plan owns placements/forest/
+  snow/level pads; Blender owns meshes/manifest. Core/people/warmth/axis/water/
+  routes/station/cableway stay. No active resort/tourists/new NPC/action/text/
+  sound/clue/plot; §16/§21/nine checks, `AlpineVillageAbandonment` captures.
 
 - **Accepted architecture exception — 2026-09-23, discarded warehouse props:**
   Blender wreck/chair heap by warehouse; §6 permits
@@ -59,23 +74,19 @@
   sound, NPC, event/provenance; §16/§21/nine art checks bind.
 
 - **Accepted architecture exception — 2026-09-23, village trade road:**
-  §6/§12/art §10g: rail/rubble gap, aligned ends; checkpoint city between rocks,
-  closed bowl/no peaks. Warehouse closed, yard/ramp/cargo/handcart accessible;
-  collapse ended trade, supports/fittings/stock show suspended repair. Mine
-  closed, cableway sole exit; no text/NPC/task/sound/clue/date/cause/event.
-  §16/§21/nine checks. Shared city/windows/glow/land/rock/vegetation use village
-  haze/storms; no road/traffic.
+  §6/§12/art §10g: rail/rubble gap/aligned ends; checkpoint city between rocks,
+  no peaks. Closed warehouse/open yard/ramp/cargo/handcart. Collapse ended
+  trade; supports/stock show suspended repair. Mine closed, sole cableway exit;
+  no text/NPC/task/sound/clue/date/cause/event. §16/§21/nine checks.
+  Shared checkpoint scenery uses village haze/storms, no road/traffic.
 
 - **Accepted architecture exception — 2026-09-22, expanded Alpine Village:**
-  §6/§12/art §10g: forest, walk-in abandoned ski base, old-road loop/broken branch.
-  Lane/12 houses/station/mother/warm axis stay; cable/water/access clear.
-  Core `420` trees/`7 m`; expansion ≤`900`,
-  route clearance `1.2 m + crown radius`, separate crowns. Old timber/stone
-  lodge/racks/benches/shed/stopped lift; unheated same-scene room excludes snow.
-  Rail/rubble/rock close brink; cableway sole exit. No fall/death/text/NPC/work/
-  clue/sound/event/active resort; §16/§21/nine checks. Plan shares sampler/
-  walkability/map/weather/snow bounds; imported metre parts are measured.
-  One ground collider; yielding `48 m` ground/forest sectors; bucketed footprints/changed snow.
+  §6/§12/art §10g: forest, walk-in unheated ski lodge, old-road loop/gap.
+  Core/12 houses/warm axis/cable/water/access stay. Core trees `420`/`7 m`,
+  expansion ≤`900`; crowns separate, routes clear `1.2 m + crown radius`.
+  Rail/rubble close brink; cableway sole exit. No fall/death/NPC/work/text/sound/
+  clue/event/active resort; §16/§21/nine checks. Shared plan/sampler/bounds,
+  measured model metres, one ground collider, yielding `48 m` sectors/buckets.
 
 - **Accepted — 2026-09-21, impact balance and recoverable knockdown:**
   `CombatTest`: impulse/root/bone/catch-step/left-release clock.
@@ -5818,27 +5829,16 @@
   Unity's editor API to preserve the exact graph; a missing effect, send or
   echo parameter fails authoring. EditMode coverage checks DSP routing, send
   targets and critical snapshot values.
-- **Accepted — Scene-local music with guarded fades:** `CityMusicPlayer` loads only `city_theme`
-  from `Resources/Audio/CityMusic`, while `BarMusicPlayer` loads only
-  `bar_theme` from `Resources/Audio/BarMusic` and
-  `SupermarketMusicPlayer` optionally loads only `supermarket_theme` from
-  `Resources/Audio/SupermarketMusic`;
-  `StairwellMusicPlayer` optionally loads only `stairwell_theme` from
-  `Resources/Audio/StairwellMusic`; `HomeMusicPlayer` optionally loads only
-  `home_theme` from `Resources/Audio/HomeMusic`. Each clip loads through its
-  importer mode into a looping `AudioSource` and the shared `Music` group
-  under its matching scene root. Ordinary scene themes remain non-spatial
-  behind a `12 kHz` low-pass. Bar is the deliberate diegetic exception: its
-  source sits at the visible jukebox grille, uses linear three-dimensional
-  attenuation and the cabinet's `120 Hz` high-pass, `5.6 kHz` low-pass and
-  light saturation. Six EBU-R128-measured masters span roughly `8 LUFS` raw;
-  separate source trims target `-36.5 LUFS` after Music/Master. Replacement
-  masters must be remeasured.
-  `SceneMusicPlayer` owns a smooth unscaled gain envelope, waits for clip data
-  before starting it and fails silent if loading fails. Home alone reads the
-  fixed-camera Balcony shot: it fades `home_theme` to zero, pauses while
-  preserving the sample position and resumes through the same envelope only
-  after the shot returns indoors.
+- **Accepted — Scene-local music with guarded fades:** Scene roots own
+  `{City,Bar,Supermarket,Stairwell,Home}MusicPlayer`; matching
+  `Resources/Audio/<Name>Music/<snake_name>_theme` loads only its named clip.
+  Optional slots fail silent. `SceneMusicPlayer` waits for clip data and owns
+  looping Music-bus playback/unscaled gain. Ordinary themes: non-spatial/12 kHz.
+  Bar exception: visible jukebox grille, linear 3D falloff, 120 Hz–5.6 kHz band/
+  light saturation. Six EBU-R128 masters span ~8 LUFS; source trims target
+  -36.5 LUFS after Music/Master. New/replacement masters require measurement.
+  Home's Balcony shot fades/pauses at the same sample; indoor return resumes
+  through the shared envelope.
 - **Accepted — Layered, physically owned bar soundscape:** Bar keeps one
   non-spatial room-pressure bed for ventilation, mains and occupied air. Two
   independently synthesized `8 s` mono crowd beds are fully spatial and sit

@@ -250,33 +250,34 @@ The vertical slice contains:
   axis retain positions; no adit/graves. `CoreTerrainBounds` keeps the core;
   `AlpineVillageExpansionPlan` adds forest, ski base and old-road loop.
   A plan-fitted timber bridge carries the station forest path over the brook.
-  `AlpineVillageAbandonmentPlan` distributes eighteen former households
-  (fourteen standing, three open ruins, one foundation), eight outbuildings
-  (two ruined), and five closed civic buildings across both sides of the core
-  and the expanded bowl. Town hall has a paved square, school an empty yard,
-  shop/bakery a loading court, workshop a working yard and mountain rescue a
-  service apron/equipment canopy. Three household-yard variants reuse aged
-  props. Stone bases, broad roofs and joinery show former prosperity;
-  dark backed windows, broken shutters, worn surfaces and settled debris show
-  abandonment. No new residents, lights, text or interiors. Placement reserves
-  neighbouring-building sightlines from four sides; props/foundations do not
-  qualify. Trees respect those corridors and yards; terrain levels their shelves.
-  The `18 x 12 m` lodge remains walk-in, with vestibule/benches/racks; its
-  unheated roof excludes snowfall/lying snow. Shed/lift remain passive.
-  The closed warehouse yard retains `RustedTruck` (no wheels/doors/glass) and
-  dense `DiscardedChairPile`, clear of ramp/road. Stock/supports show conserved
-  repair; rail/rubble close the gap; broken lips stay authored.
-  `AlpineVillageJunctionPlan` owns ports/contours/snow. Node maps use
-  existing asphalt/soil; a 2x2 atlas uses one slot/material.
-  Other paths stay raised ribbons; warehouse apron has no snow island.
-  `AlpineVillageDistanceWorldBuilder` reuses six checkpoint meshes
-  (city/windows/glow/land/rock/vegetation) below the opening with storm materials.
-  Cableway remains the sole exit. Walkability unions core/expansion ground
-  minus walls, trees, cableway cut and lodge/cliff obstacles. Ruins use their
-  surviving mesh walls; no invisible closed footprint. Props use MeshColliders.
-  The `74°` rise and visible barriers close the edge. Paths reserve compacted
-  strips, household thresholds and the narrow chapel-water turn; walking is
-  allowed beyond them. `AlpineVillageSnowDrift` is a colliderless pure depth
+  `AlpineVillageAbandonmentPlan`: eighteen households (fourteen standing,
+  three ruins, one foundation), eight sheds (two ruined), five closed civic
+  buildings across the core/expansion. Town hall/square, school/yard,
+  shop-bakery/loading court, workshop/yard, rescue/apron-canopy; three aged
+  household-yard variants. Stone/roofs/joinery show wealth, dark windows/
+  broken shutters/debris show abandonment. No new residents/lights/text/interiors.
+  Four-side neighbouring-building sightlines exclude props/foundations;
+  forest clears them/yard footprints, terrain levels shelves.
+  The unheated `18 x 12 m` walk-in lodge has vestibule/benches/racks, no snow;
+  shed/lift passive. Upper service dead end: old avalanche, closed-ridge scar,
+  full-size fallen trees/rock/beams, buried broken tow/cable and damaged ruin
+  show ski abandonment. Front ~20 m, upper fan 38 m.
+  `AlpineVillageAvalanchePlan`: fourteen-vertex movement/forest/manifest polygon.
+  Deposit fits triangulated ground; rigid debris uses
+  support points. `AvalancheRuinedHouse` is household 15 only. Ground snow
+  stays beneath deposit; mass blocks passage. Lower lift/lodge/loop/ruin
+  accessible. No active slide; mine/trade-road gap unrelated.
+  Warehouse yard: `RustedTruck` without wheels/doors/glass, `DiscardedChairPile`,
+  clear ramp/road. Stock/supports show conserved repair; rail/rubble close gap.
+  `AlpineVillageJunctionPlan`: ports/contours/snow; asphalt/soil node maps share
+  a 2x2 atlas/material. Other paths raised; warehouse apron has no snow island.
+  `AlpineVillageDistanceWorldBuilder` uses six checkpoint meshes with storm
+  materials below the gap: city/windows/glow/land/rock/vegetation.
+  Cableway is the sole exit. Walkability: core/expansion minus walls/trees/cable
+  cut/lodge/cliff/avalanche; ruin collision follows remains, props use MeshColliders.
+  The `74°` rise/visible barriers close edges. Paths reserve compacted strips,
+  thresholds/chapel-water turn; walking beyond them allowed.
+  `AlpineVillageSnowDrift` is a colliderless pure depth
   field outside trodden routes, separate from terrain height. `TerrainCell`
   owns the station apron/cableway entrance. Snow rises from zero to `0.45 m`
   over `1.3 m` on the loaded face, `3.2 m` on the scoured face. Abandoned yards
@@ -1035,19 +1036,17 @@ The vertical slice contains:
 - deterministic street lamps with geometry batched into `48 m` spatial
   chunks, focused lower-pole collision proxies, shadowless spot-light pools
   and slow out-of-phase amber traffic signals generated from the road graph;
-- scene-local looping music under `Resources/Audio/`: City loads
-  `CityMusic/city_theme`, BarInterior `BarMusic/bar_theme`; optional matching
-  interior slots are `SupermarketMusic/supermarket_theme`,
-  `StairwellMusic/stairwell_theme`, `ChurchMusic/church_theme` and
-  `HomeMusic/home_theme`. One mixing rule (`MusicMix`)
-  governs every music change, whether the hero loads into it or walks into
-  it: scene/place themes leave through an unscaled `4 s` fade-out, and no other
-  theme may sound a note until that tail reaches zero, after which it starts
-  from silence with an unscaled `1 s` fade-in.
-  Themes wait for imported clip data. Six independently measured masters span
-  roughly `8 LUFS` raw; unchanged source trims and the `-11.5 dB` Music bus
-  target `-36.5 LUFS` after the `-6 dB` Master. Ordinary themes use a `12 kHz`
-  low-pass, leaving upper transients to actions without losing melodic presence.
+- scene loops under `Resources/Audio/`: `{City,Bar,Supermarket,Stairwell,Church,Home}Music/`
+  with matching snake-case `_theme` names; optional slots fail silent.
+  `AlpineVillageMusicPlayer` adds `AlpineVillageMusic/alpine_village_theme`,
+  with the user's MP3, streaming/background/stereo and optional at build time.
+  Its root recreates/resumes the player after Mother's House dormancy. Only
+  AlpineVillage/same-scene rooms play it; MothersHouse hears the departure tail.
+  User-requested `.70` gain raises this theme only; no LUFS calibration yet.
+  `MusicMix`: unscaled `4 s` out, then `1 s` in after silence, no overlap;
+  players wait for clip data. Six measured masters span ~`8 LUFS` raw;
+  source trims/Music `-11.5 dB` target `-36.5 LUFS` after Master `-6 dB`.
+  Ordinary themes use a `12 kHz` low-pass, leaving transients to actions.
   The bar is diegetic: `bar_theme` sits on the visible jukebox grille with
   full linear positioning across the room, a `120 Hz–5.6 kHz` cabinet band,
   light distortion and a short-range generated motor/record texture. The

@@ -47,6 +47,7 @@ namespace BarPromenade
             LocalBounds = Rect.MinMaxRect(-205f, -54f, 7f, 125f);
             WorldBounds = TransformBounds(LocalBounds);
             CoveredBounds = TransformBounds(new Rect(-146f, 50f, 18f, 12f));
+            Avalanche = new AlpineVillageAvalanchePlan();
             Abandonment = new AlpineVillageAbandonmentPlan(this, plan);
 
             var routes = new List<AlpineVillagePathDescriptor>();
@@ -88,7 +89,6 @@ namespace BarPromenade
             Block(blocks, lodge + new Vector2(4.7f, 1f), new Vector2(3.8f, .8f));
             Block(blocks, new Vector2(-113f, 68f), ServiceShedSize);
             Block(blocks, new Vector2(-154f, 86f), new Vector2(.7f, .7f));
-            Block(blocks, new Vector2(-151f, 114f), new Vector2(.7f, .7f));
             Block(blocks, new Vector2(-130f, -53.5f), new Vector2(CliffBarrierWidth, .5f));
             Block(blocks, new Vector2(-145f, -28f), new Vector2(10f, 14f));
             Block(blocks, new Vector2(-139.25f, -28f), new Vector2(1.5f, 8f));
@@ -107,6 +107,7 @@ namespace BarPromenade
         public Vector2 ServiceShedSize => new Vector2(8f, 6f);
         public Vector3 LiftBasePosition { get; }
         public Vector3 LiftTopPosition { get; }
+        public AlpineVillageAvalanchePlan Avalanche { get; }
         public Vector3 CliffBarrierCenter { get; }
         public float CliffBarrierWidth => 12f;
         public Vector3 CliffEdge { get; }
@@ -280,6 +281,7 @@ namespace BarPromenade
         internal bool ClearsFeatures(Vector2 point, float radius)
         {
             Vector2 local = ToLocal(point);
+            if (Avalanche.ContainsLocal(local, radius + 2f)) return false;
             if (Abandonment != null && !Abandonment.ClearsFeatures(local, radius)) return false;
             if (OutsideRect(local, new Vector2(-138f, -28f), new Vector2(16f, 12f)) < radius + 2f ||
                 OutsideRect(local, ChairPileLocalCenter, ChairPileHalfSize + Vector2.one * .1f) < radius + 2f ||

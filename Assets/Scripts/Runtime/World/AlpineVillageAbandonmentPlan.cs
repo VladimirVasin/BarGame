@@ -115,7 +115,7 @@ namespace BarPromenade
             House(12, "AbandonedHouseB", -155, 10, 90);
             House(13, "WornHouseA", -174, 34, 90);
             House(14, "AbandonedHouseA", -168, 95, 90);
-            House(15, "RuinedHouse", -137, 106, 270);
+            House(15, "AvalancheRuinedHouse", -137, 106, 270);
             House(16, "AbandonedHouseB", -112, 35, 90);
             House(17, "WornHouseA", -81, 62, 180);
             House(18, "AbandonedHouseA", -96, -28, 0);
@@ -146,7 +146,7 @@ namespace BarPromenade
         private void House(int index, string model, float x, float z, float yaw)
         {
             bool wide = model.EndsWith("B", StringComparison.Ordinal);
-            bool closed = model != "RuinedHouse" && model != "HouseholdFoundation";
+            bool closed = !model.EndsWith("RuinedHouse", StringComparison.Ordinal) && model != "HouseholdFoundation";
             Add("homestead-" + index.ToString("00"), model,
                 "HouseholdYard" + (char)('A' + (index - 1) % 3), x, z, yaw,
                 wide ? 9 : 8, wide ? 8 : 7, closed ? (wide ? 6.3f : 5.4f) : 3.7f,

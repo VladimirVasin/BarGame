@@ -27,6 +27,7 @@ namespace BarPromenade.Tests.EditMode
         {
             CityMusicPlayer.ResourcePath,
             HomeMusicPlayer.ResourcePath,
+            AlpineVillageMusicPlayer.ResourcePath,
             ChurchMusicPlayer.ResourcePath,
             BarMusicPlayer.ResourcePath,
             StairwellMusicPlayer.ResourcePath,
@@ -43,6 +44,13 @@ namespace BarPromenade.Tests.EditMode
             foreach (string resource in ThemeResourcePaths)
             {
                 string path = FindAssetPath(resource);
+                if (resource == AlpineVillageMusicPlayer.ResourcePath && path == null)
+                {
+                    Assert.That(AssetDatabase.IsValidFolder(ResourcesRoot +
+                        AlpineVillageMusicPlayer.ResourceFolder), Is.True,
+                        "The optional village theme needs its drop-in folder.");
+                    continue;
+                }
                 Assert.That(path, Is.Not.Null, resource);
                 var importer = AssetImporter.GetAtPath(path) as AudioImporter;
                 Assert.That(importer, Is.Not.Null, path);
@@ -81,10 +89,16 @@ namespace BarPromenade.Tests.EditMode
             MethodInfo scope = importerType.GetMethod("IsThemePath");
             Assert.That(scope.Invoke(null, new object[] {
                 "Assets/Resources/Audio/CityMusic/city_theme.mp3" }), Is.EqualTo(true));
+            foreach (string extension in new[] { ".wav", ".ogg", ".mp3" })
+            {
+                Assert.That(scope.Invoke(null, new object[] {
+                    ResourcesRoot + AlpineVillageMusicPlayer.ResourcePath + extension }), Is.EqualTo(true));
+            }
             Assert.That(scope.Invoke(null, new object[] {
                 "Assets/Resources/Audio/LastRouteRadio/Station2/radio_theme.ogg" }), Is.EqualTo(true));
             foreach (string unrelated in new[] {
                 "Assets/Resources/Audio/CityMusic/other.mp3",
+                "Assets/Resources/Audio/AlpineVillageMusic/other.mp3",
                 "Assets/Resources/Audio/LastRouteRadio/radio_theme.mp3",
                 "Assets/Audio/CityMusic/city_theme.mp3" })
             {
