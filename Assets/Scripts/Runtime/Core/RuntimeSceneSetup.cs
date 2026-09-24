@@ -15,13 +15,12 @@ namespace BarPromenade
             new Color(0.265f, 0.315f, 0.300f);
 
         /// <summary>
-        /// The one warm haze in the game. Everywhere else the fog is the same
-        /// grey-green; up here it is pale and slightly amber, which is most of
-        /// why the village reads as a different temperature rather than a
-        /// different architecture.
+        /// Overcast village haze. Its small warm bias keeps the inhabited
+        /// windows distinct from the cold abandoned outskirts without turning
+        /// the whole snowfield into amber daylight.
         /// </summary>
         public static readonly Color AlpineVillageFogColor =
-            new Color(0.575f, 0.545f, 0.495f);
+            new Color(0.455f, 0.460f, 0.445f);
 
         /// <summary>
         /// What the village looks like once it has gone out - the ordinary
@@ -488,31 +487,36 @@ namespace BarPromenade
         {
             float dim = Mathf.Clamp01(warmthGrade);
 
-            // Warm key, lifted ambient, soft shadows: the opposite of the
-            // mountain road's cold treatment, which the dim end lerps to.
-            Color warmDirectional = sample.DirectionalLightColor *
-                new Color(1.06f, 0.97f, 0.84f);
+            // The permanent cloud cover filters daylight inside the regular
+            // clock writer. Warmth remains a separate story parameter; at
+            // night keep the established fill so paths do not disappear.
+            float daylight = 1f - sample.NightFactor;
+            Color warmDirectional = Color.Lerp(
+                sample.DirectionalLightColor * new Color(1.06f, 0.97f, 0.84f),
+                new Color(0.80f, 0.83f, 0.84f), daylight);
             Color coldDirectional = sample.DirectionalLightColor *
                 new Color(0.84f, 0.92f, 0.94f);
-            Color warmAmbient = sample.AmbientLightColor *
-                new Color(1.10f, 0.99f, 0.86f);
+            Color warmAmbient = Color.Lerp(
+                sample.AmbientLightColor * new Color(1.10f, 0.99f, 0.86f),
+                new Color(0.36f, 0.385f, 0.38f), daylight);
             Color coldAmbient = sample.AmbientLightColor *
                 new Color(0.74f, 0.86f, 0.88f);
 
             Light directional = ConfigureDirectionalLighting(
                 Color.Lerp(warmDirectional, coldDirectional, dim),
                 sample.DirectionalLightIntensity *
-                Mathf.Lerp(1.06f, 0.86f, dim),
+                Mathf.Lerp(1.06f, 0.86f, dim) * Mathf.Lerp(1f, 0.52f, daylight),
                 Color.Lerp(warmAmbient, coldAmbient, dim) *
                 Mathf.Lerp(1.22f, 0.88f, dim),
                 Mathf.Lerp(
                     Mathf.Lerp(sample.ShadowStrength, 0.44f, 0.45f),
                     Mathf.Lerp(sample.ShadowStrength, 0.55f, 0.30f),
-                    dim));
+                    dim) * Mathf.Lerp(1f, 0.65f, daylight));
             directional.transform.rotation =
                 sample.DirectionalLightRotation;
             RenderSettings.reflectionIntensity =
-                sample.ReflectionIntensity * Mathf.Lerp(0.86f, 0.64f, dim);
+                sample.ReflectionIntensity * Mathf.Lerp(0.86f, 0.64f, dim) *
+                Mathf.Lerp(1f, 0.75f, daylight);
             if (updateEnvironment)
             {
                 DynamicGI.UpdateEnvironment();

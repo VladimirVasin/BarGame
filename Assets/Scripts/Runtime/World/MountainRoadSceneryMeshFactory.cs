@@ -192,7 +192,7 @@ namespace BarPromenade
         }
 
         /// <summary>
-        /// One skirt of a crown. Its UVs unroll the cone: U is the arc the
+        /// One closed skirt of a crown. Its UVs unroll the cone: U is the arc the
         /// vertex stands at, so a metre around the crown is a metre of
         /// sheet, and V is height above THIS TREE'S OWN FOOT, so needles
         /// never lie sideways and the two stacked skirts of one tree stay in
@@ -221,6 +221,11 @@ namespace BarPromenade
             IList<int> triangles)
         {
             Vector3 apex = baseCenter + Vector3.up * height;
+            // From beside the trunk the open cones exposed the sky and the
+            // sawn-off trunk tip. Close each skirt with a shallow, faceted
+            // underside tucked inside its existing silhouette. The lower
+            // skirt meets the trunk below its tip for every crown variant.
+            Vector3 underside = baseCenter + Vector3.up * (radius * 0.2f);
             float tilesPerMeter = 1f / metersPerTile;
             for (int side = 0; side < sides; side++)
             {
@@ -238,19 +243,39 @@ namespace BarPromenade
                 vertices.Add(first);
                 vertices.Add(apex);
                 vertices.Add(second);
-                uvs.Add(new Vector2(
+                Vector2 firstUv = new Vector2(
                     (phase + firstAngle * radius) * tilesPerMeter,
-                    (first.y - treeFootY) * tilesPerMeter));
-                uvs.Add(new Vector2(
-                    (phase + (firstAngle + secondAngle) * 0.5f * radius) *
-                    tilesPerMeter,
-                    (apex.y - treeFootY) * tilesPerMeter));
-                uvs.Add(new Vector2(
+                    (first.y - treeFootY) * tilesPerMeter);
+                Vector2 secondUv = new Vector2(
                     (phase + secondAngle * radius) * tilesPerMeter,
-                    (second.y - treeFootY) * tilesPerMeter));
+                    (second.y - treeFootY) * tilesPerMeter);
+                float middleU = (phase +
+                    (firstAngle + secondAngle) * 0.5f * radius) * tilesPerMeter;
+                uvs.Add(firstUv);
+                uvs.Add(new Vector2(
+                    middleU,
+                    (apex.y - treeFootY) * tilesPerMeter));
+                uvs.Add(secondUv);
                 triangles.Add(firstIndex);
                 triangles.Add(firstIndex + 1);
                 triangles.Add(firstIndex + 2);
+
+                // Separate vertices keep the underside's hard normals. Its
+                // rim shares the side's positions and UV height, so all wind
+                // passes displace the seam identically. V must remain height
+                // above this tree's foot, including at the recessed centre.
+                int undersideIndex = vertices.Count;
+                vertices.Add(first);
+                vertices.Add(second);
+                vertices.Add(underside);
+                uvs.Add(firstUv);
+                uvs.Add(secondUv);
+                uvs.Add(new Vector2(
+                    middleU,
+                    (underside.y - treeFootY) * tilesPerMeter));
+                triangles.Add(undersideIndex);
+                triangles.Add(undersideIndex + 1);
+                triangles.Add(undersideIndex + 2);
             }
         }
 

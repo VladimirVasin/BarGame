@@ -15,8 +15,7 @@ namespace BarPromenade
         private double untilCue = 0.8d;
         private int sequence;
         private int thawSequence;
-        private bool hasThermalMode;
-        private bool wasThawing;
+        private CueKind thermalMode;
         private float modeFadeRemaining;
         private bool paused;
         public AudioSource Source { get; }
@@ -67,13 +66,15 @@ namespace BarPromenade
                 return;
             }
 
-            if (!hasThermalMode || wasThawing != thawing)
+            CueKind nextMode = thawing ? CueKind.Thawing :
+                amount < 1f ? CueKind.Freezing : CueKind.None;
+            if (thermalMode != nextMode)
             {
-                hasThermalMode = true;
-                wasThawing = thawing;
+                thermalMode = nextMode;
                 // A warm arrival must not inherit the next cold crack's long
                 // wait. The same source releases its old tail before changing
-                // clips, including when the hero immediately goes out again.
+                // clips or falling silent at maximum frost. Any later growth
+                // starts a fresh cold wait, including after a partial thaw.
                 untilCue = thawing ? 0.22d : 0.8d;
                 modeFadeRemaining = Source.isPlaying ? 0.12f : 0f;
                 if (modeFadeRemaining == 0f)
@@ -83,7 +84,8 @@ namespace BarPromenade
                     Source.volume = 0f;
                 }
             }
-            float gain = thawing ? 0.18f * Mathf.Sqrt(amount) :
+            float gain = thermalMode == CueKind.None ? 0f :
+                thawing ? 0.18f * Mathf.Sqrt(amount) :
                 Mathf.Lerp(0.045f, 0.24f, Mathf.Sqrt(amount));
             if (modeFadeRemaining > 0f)
             {
@@ -97,6 +99,7 @@ namespace BarPromenade
                 }
             }
             else Source.volume = Mathf.MoveTowards(Source.volume, gain, delta * 0.3f);
+            if (thermalMode == CueKind.None) return;
             untilCue -= delta;
             if (untilCue > 0d) return;
             uint hash;
@@ -121,7 +124,7 @@ namespace BarPromenade
             CuesPlayed++;
             float interval = CitySoundStableHash.ToUnitFloat(CitySoundStableHash.Combine(hash, 31u));
             untilCue = thawing ? Mathf.Lerp(1.5f, 2.5f, interval) :
-                (amount >= 0.999f ? 3.5f : 0f) + Mathf.Lerp(4.6f, 8.9f, interval);
+                Mathf.Lerp(4.6f, 8.9f, interval);
         }
 
         public void Reset()
@@ -132,7 +135,7 @@ namespace BarPromenade
             untilCue = 0.8d;
             sequence = thawSequence = CuesPlayed = 0;
             LastCueKind = CueKind.None;
-            hasThermalMode = wasThawing = false;
+            thermalMode = CueKind.None;
             modeFadeRemaining = 0f;
             paused = false;
         }

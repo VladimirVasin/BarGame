@@ -2870,8 +2870,9 @@ namespace BarPromenade.Tests.EditMode
                 Is.GreaterThan(0),
                 "The wall lost its lee pockets.");
             Assert.That(
-                trees.ForestTrees.Count,
-                Is.GreaterThan(AlpineVillageTreePlanner.ForestTreeCount / 4),
+                trees.ForestTrees.Sum(tree => Mathf.Pow(AlpineVillageTreePlanner.TreeScaleAt(plan,
+                    new Vector2(tree.Position.x, tree.Position.z)), 2f)),
+                Is.GreaterThanOrEqualTo(AlpineVillageTreePlanner.ForestTreeCount / 4f),
                 "The clearing rules swallowed the forest.");
             Assert.That(
                 trees.Stumps.Count,

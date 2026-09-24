@@ -157,6 +157,7 @@ namespace BarPromenade
         internal const int ForestTreeCount = 420;
         internal const int ExpansionForestTreeCount = 900;
         internal const float ExpansionTrailClearing = 1.2f;
+        internal const float PeripheralTreeScale = 2f;
 
         /// <summary>
         /// The clearing. No tree stands closer than this to the lane or to any
@@ -396,15 +397,23 @@ namespace BarPromenade
             var branches = new List<AlpineVillageBranchDescriptor>(BranchCount);
 
             AppendForest(plan, paths, storm, forest);
-            AppendWallTrees(plan, paths, rock, panels, storm, wallTrees);
+            AppendWallTrees(plan, paths, rock, panels, storm, forest, wallTrees);
             AppendExpansionForest(plan, paths, storm, wallTrees, forest);
             AppendStumps(plan, paths, storm, forest, stumps);
             AppendBranches(plan, paths, forest, stumps, branches);
 
-            if (forest.Count < ForestTreeCount / 4)
+            // A doubled crown reserves four original tree seats. Keep the
+            // forest-loss guard in covered area, not in a fixed trunk count.
+            float forestCoverage = 0f;
+            foreach (MountainRoadForestDescriptor tree in forest)
+            {
+                float scale = TreeScaleAt(plan, new Vector2(tree.Position.x, tree.Position.z));
+                forestCoverage += scale * scale;
+            }
+            if (forestCoverage < ForestTreeCount / 4f)
             {
                 throw new InvalidOperationException(
-                    $"The village bowl grew only {forest.Count} trees. The " +
+                    $"The village forest covers only {forestCoverage} original tree seats. The " +
                     "clearing rules have swallowed the forest they were meant " +
                     "to cut a hole in.");
             }
@@ -452,8 +461,11 @@ namespace BarPromenade
                     ForestMinimumHeight, ForestMaximumHeight, Unit(hash, 0x48454947u));
                 float scale = Mathf.Lerp(
                     SizeScaleMinimum, SizeScaleMaximum, Unit(hash, 0x5343414Cu));
-                float height = baseHeight * scale;
-                float radius = Mathf.Clamp(baseHeight * 0.22f, 0.9f, 2f) * scale;
+                float peripheralScale = TreeScaleAt(plan, point);
+                float height = baseHeight * scale * peripheralScale;
+                float baseRadius = Mathf.Clamp(baseHeight * 0.22f, 0.9f, 2f) * scale;
+                float radius = baseRadius * peripheralScale;
+                float trunkRadius = Mathf.Clamp(baseRadius * .16f, .18f, .46f) * peripheralScale;
 
                 // The clearing, and its soft edge. Nothing inside the walked
                 // village; full density once the ground stops being used.
@@ -495,8 +507,31 @@ namespace BarPromenade
                     radius,
                     Unit(hash, 0x59415721u) * 360f,
                     (int)(Mix(hash ^ 0x50414C45u) % 3u),
-                    true));
+                    true,
+                    trunkRadius));
             }
+        }
+
+        /// <summary>
+        /// The terrain rectangle also contains abandoned eastern households.
+        /// Within it, the nearest lived-in frontage or abandoned yard defines
+        /// which stand a tree belongs to; outside it the forest is peripheral.
+        /// </summary>
+        internal static float TreeScaleAt(AlpineVillagePlan plan, Vector2 point)
+        {
+            if (!plan.CoreTerrainBounds.Contains(point)) return PeripheralTreeScale;
+            float along = plan.Lane.FindNearest(point, out _);
+            AlpineVillageLaneSample lane = plan.Lane.Sample(along);
+            float inhabited = Vector2.Distance(point, new Vector2(lane.Position.x, lane.Position.z)) -
+                lane.Width * .5f;
+            foreach (AlpineVillagePlotDescriptor plot in plan.Plots)
+                if (plot.Kind == AlpineVillagePlotKind.House || plot.Kind == AlpineVillagePlotKind.MothersHouse)
+                    inhabited = Mathf.Min(inhabited, AlpineVillageTerrainSampler.DistanceOutsidePlot(plot, point));
+            if (plan.Expansion == null) return 1f;
+            Vector2 local = plan.Expansion.ToLocal(point);
+            foreach (AlpineVillageAbandonedPlot plot in plan.Expansion.Abandonment.Plots)
+                if (plot.OutsideYard(local) < inhabited) return PeripheralTreeScale;
+            return 1f;
         }
 
         private static bool ClearsEveryPlot(
@@ -541,8 +576,13 @@ namespace BarPromenade
                     Mathf.Lerp(bounds.xMin, bounds.xMax, Unit(hash, 0x58585858u)),
                     Mathf.Lerp(bounds.yMin, bounds.yMax, Unit(hash, 0x5A5A5A5Au))));
                 Vector2 point = new Vector2(position.x, position.z);
-                float height = Mathf.Lerp(6.5f, 15f, Unit(hash, 0x48454947u));
-                float radius = height * .19f;
+                // The entire abandoned area has larger trees, including the
+                // woods between buildings. Size precedes every clearance.
+                float baseHeight = Mathf.Lerp(6.5f, 15f, Unit(hash, 0x48454947u));
+                float baseRadius = baseHeight * .19f;
+                float height = baseHeight * PeripheralTreeScale;
+                float radius = baseRadius * PeripheralTreeScale;
+                float trunkRadius = Mathf.Clamp(baseRadius * .16f, .18f, .46f) * PeripheralTreeScale;
                 if (AlpineVillageTerrainSampler.DistanceOutsideRect(plan.CoreTerrainBounds, point) < radius + 2f ||
                     !plan.Expansion.ContainsGround(point, radius + 2f) ||
                     !plan.Expansion.ClearsFeatures(point, radius)) continue;
@@ -557,7 +597,8 @@ namespace BarPromenade
                     AlpineVillageTerrainSampler.SampleMeshHeight(plan, point));
                 target.Add(new MountainRoadForestDescriptor("village-expansion-forest-" + added.ToString("000"),
                     MountainRoadForestLayer.Mid, position, height, radius,
-                    Unit(hash, 0x59415721u) * 360f, (int)(Mix(hash ^ 0x50414C45u) % 3u), true));
+                    Unit(hash, 0x59415721u) * 360f, (int)(Mix(hash ^ 0x50414C45u) % 3u), true,
+                    trunkRadius));
                 added++;
             }
         }
@@ -593,9 +634,12 @@ namespace BarPromenade
             IReadOnlyList<AlpineVillageRockPlacement> rock,
             IReadOnlyList<float> panels,
             AlpineVillagePeripheralStormPlan storm,
+            IReadOnlyList<MountainRoadForestDescriptor> forest,
             List<MountainRoadForestDescriptor> target)
         {
-            var accepted = new List<PlantedSeat>(8);
+            var accepted = new List<PlantedSeat>(forest.Count + 8);
+            foreach (MountainRoadForestDescriptor tree in forest)
+                accepted.Add(new PlantedSeat(new Vector2(tree.Position.x, tree.Position.z), tree.CrownRadius));
             int clump = 0;
             for (int index = 0; index < panels.Count && clump < 3; index++)
             {
@@ -635,16 +679,19 @@ namespace BarPromenade
                     float baseHeight = Mathf.Lerp(2.9f, 5.4f, Unit(hash, 0x48454947u));
                     float scale = Mathf.Lerp(
                         SizeScaleMinimum, SizeScaleMaximum, Unit(hash, 0x5343414Cu));
-                    float height = baseHeight * scale;
-                    float radius =
+                    float peripheralScale = TreeScaleAt(plan, point);
+                    float height = baseHeight * scale * peripheralScale;
+                    float baseRadius =
                         Mathf.Clamp(baseHeight * 0.20f, 0.62f, 1.30f) * scale;
-                    if (!IsWallSeatFree(plan, paths, rock, point, radius) ||
+                    float radius = baseRadius * peripheralScale;
+                    float trunkRadius = Mathf.Clamp(baseRadius * .16f, .18f, .46f) * peripheralScale;
+                    if (!IsWallSeatFree(plan, paths, rock, point, trunkRadius) ||
                         !HasCrownRoom(accepted, point, radius, WallSpacing))
                     {
                         continue;
                     }
 
-                    float foot = GroundFoot(plan, point, radius);
+                    float foot = GroundFoot(plan, point, trunkRadius);
                     var world = new Vector3(point.x, foot, point.y);
                     if (!ClearsTheStationAperture(storm, point, radius) ||
                         !ClearsTheLandmark(plan, world))
@@ -661,7 +708,8 @@ namespace BarPromenade
                         radius,
                         Unit(hash, 0x59415721u) * 360f,
                         (int)(Mix(hash ^ 0x50414C45u) % 3u),
-                        false));
+                        false,
+                        trunkRadius));
                 }
 
                 clump++;
@@ -905,7 +953,7 @@ namespace BarPromenade
             IReadOnlyList<AlpineVillagePathDescriptor> paths,
             IReadOnlyList<AlpineVillageRockPlacement> rock,
             Vector2 point,
-            float radius)
+            float trunkRadius)
         {
             // The rock is cleared by the TRUNK, not by the crown. The band is
             // only a metre inboard of the panel foot while a crown reaches
@@ -913,7 +961,7 @@ namespace BarPromenade
             // crown brushing stone is what a tree on a cliff looks like. A
             // trunk inside the stone is the fault.
             if (IsInsideCablewayCorridor(plan, point) ||
-                IsInsideRock(rock, point, Mathf.Clamp(radius * 0.16f, 0.18f, 0.46f)) ||
+                IsInsideRock(rock, point, trunkRadius) ||
                 TouchesWater(plan, point) ||
                 AlpineVillageTerrainSampler.DistanceOutsideStation(
                     plan.Station, point) < StationClearance)
@@ -1063,9 +1111,8 @@ namespace BarPromenade
         /// village-facing side flush.
         /// </summary>
         private static float GroundFoot(
-            AlpineVillagePlan plan, Vector2 point, float radius)
+            AlpineVillagePlan plan, Vector2 point, float trunkRadius)
         {
-            float trunkRadius = Mathf.Clamp(radius * 0.16f, 0.18f, 0.46f);
             float lowest = float.PositiveInfinity;
             for (int sample = 0; sample < FootSamples; sample++)
             {

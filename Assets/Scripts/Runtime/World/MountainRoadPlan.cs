@@ -541,6 +541,8 @@ namespace BarPromenade
 
     public readonly struct MountainRoadForestDescriptor
     {
+        private readonly float? trunkRadiusOverride;
+
         internal MountainRoadForestDescriptor(
             string stableId,
             MountainRoadForestLayer layer,
@@ -549,7 +551,8 @@ namespace BarPromenade
             float crownRadius,
             float yawDegrees,
             int paletteIndex,
-            bool blocksMovement)
+            bool blocksMovement,
+            float? trunkRadius = null)
         {
             StableId = stableId ?? string.Empty;
             Layer = layer;
@@ -559,6 +562,7 @@ namespace BarPromenade
             YawDegrees = yawDegrees;
             PaletteIndex = paletteIndex;
             BlocksMovement = blocksMovement;
+            trunkRadiusOverride = trunkRadius;
         }
 
         public string StableId { get; }
@@ -569,7 +573,8 @@ namespace BarPromenade
         public float YawDegrees { get; }
         public int PaletteIndex { get; }
         public bool BlocksMovement { get; }
-        public float TrunkRadius => Mathf.Clamp(CrownRadius * 0.16f, 0.18f, 0.46f);
+        public float TrunkRadius => trunkRadiusOverride ??
+            Mathf.Clamp(CrownRadius * 0.16f, 0.18f, 0.46f);
     }
 
     public readonly struct MountainRoadMiscDescriptor

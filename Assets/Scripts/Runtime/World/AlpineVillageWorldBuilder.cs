@@ -805,6 +805,19 @@ namespace BarPromenade
             }
 
             CompactSnowVertices(vertices, uvs, triangles, grounds, depths);
+            // Imported paving is above the terrain shelf. Keep both the
+            // visible snow and its treading floor above that same surface;
+            // changing only initial vertex height would fail on the next stamp.
+            for (int index = 0; index < vertices.Count; index++)
+            {
+                if (depths[index] <= 0f) continue;
+                Vector3 vertex = vertices[index];
+                float support = plan.Expansion.Abandonment.SampleSnowSupport(
+                    new Vector2(vertex.x, vertex.z), grounds[index]);
+                vertex.y += support - grounds[index];
+                vertices[index] = vertex;
+                grounds[index] = support;
+            }
             double cullMs = stageTimer.Elapsed.TotalMilliseconds;
             stageTimer.Restart();
             if (triangles.Count == 0)

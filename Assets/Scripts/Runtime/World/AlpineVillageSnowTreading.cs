@@ -243,8 +243,16 @@ namespace BarPromenade
                 }
             }
 
-            Refill(Time.deltaTime);
-            rebuildCountdown -= Time.deltaTime;
+            Advance(Time.deltaTime);
+        }
+
+        // The same clock is used by a focused scene regression to exercise
+        // complete refill without waiting through a minute of weather.
+        internal void Advance(float deltaTime)
+        {
+            if (vertices == null) return;
+            Refill(deltaTime);
+            rebuildCountdown -= deltaTime;
             if (dirty && rebuildCountdown <= 0f)
             {
                 Rebuild();

@@ -2,10 +2,33 @@
 
 ## Current facts
 
+- **Accepted — 2026-09-24, closed conifer crowns:**
+  `AppendCone` closes both road/village tiers with seven-face bases,
+  recessed `0.2 × radius`; sizes/material/wind UV stay. Existing-mesh repair.
+
+- **Accepted — 2026-09-24, rescue apron snow support:**
+  Abandonment-plan paving footprint/top supports snow/treading; blend stays
+  outside flagstones. Terrain collision/building height stay.
+
+- **Accepted — 2026-09-24, abandoned-zone tree scale:**
+  Abandoned height/crown/trunk double before clearance, including old-bowl
+  infill; inhabited-street scale stays. Expansion `13–30 m`; route/yard/sightline
+  gaps fit larger crowns.
+
+- **Accepted — 2026-09-24, overcast village daylight:**
+  Village clock filters day key/shadows, neutralizes fill, reduces reflections;
+  haze/clouds darker grey, windows/garlands warm. Night fill/story dimming/gust
+  visibility stay distinct; no new weather clock/thunder/lightning/whiteout.
+
+- **Accepted — 2026-09-24, frost saturation silence:**
+  Full outdoor frost stops growth cues with `0.12 s` tail fade. Thaw still
+  sounds; partial thaw/outdoor return restores cold delay. Pause freezes
+  fade/timers; saturation keeps cue history.
+
 - **Accepted — 2026-09-24, village junctions:**
-  `AlpineVillageJunctionPlan`: ports/contours/snow, paths end at rims.
-  Node masks bake existing recipes to a 2x2 albedo atlas on one material;
-  no new shader. Three mixed nodes + asphalt apron; no overlays.
+  `AlpineVillageJunctionPlan`: ports/contours/snow, paths end at rims. Existing
+  recipes bake node masks to one 2x2 atlas/material: three mixed nodes + asphalt
+  apron; no new shader/overlays.
 
 - **Accepted — 2026-09-23, village road coating:**
   Ground asphalt has no slab/lift/collider; Blender lips/width/routes/snow/
@@ -46,7 +69,7 @@
 - **Accepted architecture exception — 2026-09-22, expanded Alpine Village:**
   §6/§12/art §10g: forest, walk-in abandoned ski base, old-road loop/broken branch.
   Lane/12 houses/station/mother/warm axis stay; cable/water/access clear.
-  Core `420` trees/`7 m`; expansion ≤`900`, `6.5–15 m`,
+  Core `420` trees/`7 m`; expansion ≤`900`,
   route clearance `1.2 m + crown radius`, separate crowns. Old timber/stone
   lodge/racks/benches/shed/stopped lift; unheated same-scene room excludes snow.
   Rail/rubble/rock close brink; cableway sole exit. No fall/death/text/NPC/work/
@@ -942,21 +965,13 @@
   ownership and lifecycle cleanup clear the profile. This is ordinary rig presentation, not a replacement
   contextual atlas; it creates no exception to `contextual-animation-standard.md`.
 
-  `AlpineColdExposureModel` owns a separate presentation clock and normalized
-  frost amount. Fresh outdoor exposure stays clear for `6 s`, then rises to a
-  bounded maximum at `43 s`. The user's final thaw refinement keeps the same
-  exposure-dependent easing but shortens full thaw to `8 s`: half frost takes
-  about `4 s`, and a light layer about `1–2 s`.
-  The user's further timing request ties that maximum to slightly longer than
-  the station-to-house walk. The current plan gives `93.9023 m` of planar
-  route from `Station.BoardingDockPosition` through the lane's four segments
-  to `MothersHouse.DoorDockPosition`: `36.1163 s` at the ordinary `2.6 m/s`
-  walk, with `43 s` about `19 %` longer. The focused CharacterController check
-  (`StationToMotherHouseFrostTiming`) confirms `93.90223694 m` in
-  `36.11631775 s`, with frost amount `0.90904` at the usable door.
-  The direct-load `SpawnPosition` already lies two metres up the lane and is
-  not the cableway starting point. The initial `6 s` delay is included in the
-  `43 s` total.
+  `AlpineColdExposureModel` owns a presentation clock and normalized frost:
+  clear for `6 s`, full at `43 s` including that delay. Exposure-dependent
+  easing gives full/half/light thaw in `8/4/1–2 s`. The four-segment lane from
+  `Station.BoardingDockPosition` to `MothersHouse.DoorDockPosition` measures
+  `93.90223694 m`/`36.11631775 s` at `2.6 m/s`, frost `0.90904` at the door
+  (`StationToMotherHouseFrostTiming`). Full frost takes about `19 %` longer.
+  Direct-load `SpawnPosition` is two metres uphill of the cableway start.
   `AlpineColdExposure` and its persistent driver preserve the amount across
   the village/house transition and closed-cabin travel. An open canopy remains
   cold. Pause and loading/transition ownership freeze the level and clock.
@@ -964,7 +979,7 @@
   delta cannot consume outdoor exposure or indoor thaw. Re-entry resumes the
   remaining amount, while a new game or unrelated gameplay
   scene resets it. This state never drives needs, speed, collision or damage.
-  Following the user's request for natural ice, `AlpineColdFrostPass` reveals
+  `AlpineColdFrostPass` reveals
   the fixed `AlpineColdFrostMask.png` bitmap after URP post-processing and before
   the existing PS1/Begotten composite. Both passes use event `600`; frost is
   enqueued first. The mask is an explicit shader texture property retained by
@@ -975,16 +990,15 @@
   patches. A coarse filtered footprint joins tiny gaps between the needles
   into a connected ice film; large clear gaps and the centre retain their
   source image. The film has a soft irregular fringe up to `0.03` beyond the
-  crystal reach, still bounded by `0.18` from the image edge. The former schematic
-  procedural branches are removed. Source prompt, SHA-256 and import settings are recorded in
+  crystal reach, still bounded by `0.18` from the image edge. Source prompt,
+  SHA-256 and import settings are recorded in
   `tools/alpine-cold-frost-mask.md`. The visible image window, including
   `4:3` and its animated crop, owns the boundary: ordinary edges reach
   `8.5–12 %`, corners at most `18 %`, and `uv[.18,.82]²` stays clear. HUD,
   black bars, menus and loading illustrations remain unaffected. The frost
   sound follows the same visibility, pause, transition and thaw lifecycle,
   leaving the existing weather and household sounds audible.
-  Following the user's further visual feedback, diffusion uses horizontal
-  and vertical 13-tap Gaussian passes
+  Diffusion uses horizontal and vertical 13-tap Gaussian passes
   at quarter resolution, with maximum sigma `0.045` image height, then a
   full-resolution composition of original scene, diffused scene and crisp ice.
   Both sigma and the maximum blend scale directly with `FrostAmount`: at 50%
@@ -992,9 +1006,8 @@
   The film footprint uses raw-mask filtering over `0.05` image height with a
   separate low-density gate; brightness of individual needles no longer
   punches sharp holes through the blurred background.
-  Focused `AlpineFrostDiffusion` passes in `3.761200 s` in
-  `TestResults/alpine-frost-diffusion.xml`. Same-frame GPU A/B comparisons in
-  the real house hold the crystal drawing fixed and switch only diffusion.
+  `AlpineFrostDiffusion` compares same-frame house GPU renders with fixed
+  crystals, switching only diffusion.
   Blur-only edge difference grows from `0.33504` at 25% to `1.65606` at 50%
   and `4.81550/255` at full frost. Clear-scene gradient contrast falls to
   `0.327` on the left window and `0.264` on the ceiling beam at full frost.
@@ -1003,13 +1016,8 @@
   unchanged and black bars black. The fixture pins ordinary presentation
   without changing saved preferences. Current A/B and staged stills are
   `Captures/MothersHouseInterior/diffusion-*.png`.
-  Earlier `AlpineFrostJourney` passed in `52.339248 s` in
-  `TestResults/mothers-hearth-frost.xml`, before this diffusion replacement.
-  That run checks the real village/house round trip, warm cue timing, pause,
-  repeat intervals and cold re-entry; timing/audio code is unchanged here.
-  `Captures/MothersHouseInterior/frost-04-house-entry.png`,
-  `frost-05-half-thawed.png` and `frost-06-thawed.png` show full, half and clear
-  states across the `8 s` thaw with the previous renderer.
+  `AlpineFrostJourney` checks the village/house round trip, warm cue timing,
+  pause, repeat intervals and cold re-entry.
 
   **Source and focused animation verification, 2026-09-08:**
   Hold makes two quiet sleeve passes per `4 s`,

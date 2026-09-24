@@ -3,7 +3,7 @@
 Newest outcomes/checks first. Archive whole dates at budget: [policy](README.md).
 Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-2026-08.md).
 
-## 2026-09-24 — Village junctions
+## 2026-09-24 — Village surfaces and weather
 
 - `AlpineVillageJunctionPlan` owns ports, contours and snow for the road/path
   junctions and warehouse apron. Coatings partition the original ground;
@@ -18,6 +18,21 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
   clearing verified, final walking frames reviewed.
 - Updated current state, art canon, accepted decision and authoring instructions.
   Checks: `check-docs.py`, `git diff --check`.
+- Rescue-apron snow now uses the paving top during pressing/recovery;
+  terrain-only support intersected raised flagstones. Abandoned-zone trees
+  double before clearance checks; lived-in street trees retain their scale.
+  Daylight is overcast, retaining warm windows/garlands. Full frost silences
+  growth cues with a short tail; thaw and later growth still sound.
+  Checks: `AreaCaptureFixture.AlpineVillagePolish` (forest dimensions/clearances,
+  snow pressing/refill and reviewed day/night frames),
+  `AreaCaptureFixture.AlpineFrostAudioScheduling`.
+  `AlpineVillageTests.Conifers_AreTheRoadsOwnTreesOnTheirOwnBand` still fails
+  its old `wall trees > 0` expectation for the removed western wall;
+  runtime capture confirms those rock panels are absent.
+- Closed both shared road/village conifer tiers below: open cones exposed sky
+  and cut trunk tips at close range. Outer size, silhouette and wind remain;
+  the repair closes the existing mesh. Check: `AreaCaptureFixture.ConiferUndersides`;
+  closed surfaces/wind UV verified and close ground frames reviewed at both scales.
 - Recorded the user's Unity `6000.6.2f1` import state and synchronized editor
   references, including the editor/.NET paths in `.claude/settings.json`.
   Checks: package/config JSON consistency, installed executable paths,

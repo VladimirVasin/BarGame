@@ -224,8 +224,9 @@ The vertical slice contains:
   Last Route car reads and drives the same route. At the cafe he waits for the
   passenger to get out, then alights and returns to the bonnet. The return leg
   is armed after the passenger's exit; a fresh boarding can then take him back
-  to the wheel. Layered forest keeps its
-  physical/mid/far budgets but now uses three deterministic crown silhouettes.
+  to the wheel. Layered forest retains physical/mid/far budgets and three crown
+  silhouettes. Shared road/village crowns close below: no sky or cut trunk tip
+  shows through at close range; outer sizes, materials and wind stay unchanged.
   It yields locally at three measured hairpins, the bridge and the terminal
   approach; surrounding far trees and both ridge rings keep those openings on
   the climbed road rather than turning them into extra vistas. Natural debris
@@ -280,6 +281,7 @@ The vertical slice contains:
   owns the station apron/cableway entrance. Snow rises from zero to `0.45 m`
   over `1.3 m` on the loaded face, `3.2 m` on the scoured face. Abandoned yards
   retain snow to doors and inside ruins, with bounded depth exposing paving.
+  Rescue-apron flagstones support snow during pressing and snowfall.
   Paths overlap `1 m` snow by one cell. `AlpineVillageSnowTreading` updates
   pressing/snowfall in vertex buckets; zero-depth snow stays buried.
   Footsteps follow visible depth. Approaches fit ground planes and blend normals.
@@ -305,21 +307,22 @@ The vertical slice contains:
   once under an identity `_BaseMap_ST`; neither screen-space coverage nor a
   second renderer-size scale can make the distant lower wall crawl. The
   shared shader's zero-default City path retains its existing clip dither.
-  Forest rendering also uses `48 m` sectors: core cap `420`, expansion cap `900`,
-  new heights `6.5–15 m`, crown-separated. Core route clearance remains `7 m`;
-  new routes use `1.2 m + crown radius`; abandoned yards/sightlines add clearance.
-  Station, landmark aperture, water and house access remain clear. Build stages
-  yield between terrain, paths, trees, snow and scenery. Map and peripheral
-  storm use all new paths.
+  Forest uses `48 m` sectors: core cap `420`, expansion `900`, heights `13–30 m`.
+  Abandoned-zone height/crown/trunk double, including old-bowl yard infill;
+  inhabited-street scale stays. Crowns separate; core routes clear `7 m`, new
+  routes `1.2 m + crown radius`, yards/sightlines add clearance. Station,
+  landmark aperture, water and house access stay clear. Construction yields
+  between terrain/paths/trees/snow/scenery; map/peripheral storm use all paths.
   The accepted `2026-09-06` art pass exposes the existing layered-stone
   surface on the rise and places measured Blender rock/snow ledges beyond
   the walkable toe. The imported pieces share the rise's stable haze and
   vertex snap; the original continuous terrain still owns collision and
   the cableway cut. Snow reaches foundations outside the clear door aprons,
   and its rise run varies along trodden edges without changing movement.
-  The cableway valley remains part of the rise rather than a floor-material
-  stripe — a pale strip in a dark wall reads as a hole, not a gorge. Warm fog and warm key light are the zone's whole
-  signature, and the fog breathes: `RuntimeSceneSetup.EvaluateAlpineVillageFogDensity`
+  The cableway valley shares the rise material. Overcast
+  daylight uses weaker neutral direct light, grey fill and darker haze/clouds;
+  windows/garlands retain the lived-in warmth. Night fill and story dimming
+  remain separate. The fog breathes: `RuntimeSceneSetup.EvaluateAlpineVillageFogDensity`
   runs `0.017` between gusts (`9 %` of the mother's door at `91 m` from the
   platform) to `0.045` at a crest (`41 m` left at `3 %` — the far half of
   the lane closes for seconds and the top house vanishes, then returns) on
@@ -363,18 +366,18 @@ The vertical slice contains:
   outdoor exposure, giving a fresh visit `12/86 s` to first/full frost instead
   of the ordinary `6/43 s`. Equipping or removing it preserves accumulated ice,
   and indoor thaw retains its ordinary rate.
-  A separate session presentation gradually freezes the game image's edges:
-  the first `6 s` outdoors stay clear, then the layer grows to its capped maximum
-  at `43 s`, slightly longer than the walk from the cableway platform to the
-  mother's door. Thin branching grey-cream crystals occupy `8.5–12 %` of ordinary
+  Session frost stays clear for `6 s` outdoors, reaching its cap at `43 s`,
+  slightly after the platform-to-mother's-door walk. Thin branching grey-cream
+  crystals occupy `8.5–12 %` of ordinary
   edges and up to `18 %` in corners; the central `64 %` rectangle remains clear.
-  A fixed bitmap supplies the natural fern-crystal pattern. Its numerical mask
-  appears in irregular patches with an uneven growth front. Background blur
-  grows only beneath the already frozen mask, leaving clear gaps and the centre
-  unaffected. The layer is applied after URP post-processing and before the shared PS1/Begotten
+  A fixed fern-crystal bitmap appears in patches with an uneven growth front.
+  Blur grows only under frozen patches; clear gaps/centre stay unaffected.
+  The layer follows URP post-processing and precedes the shared PS1/Begotten
   composite, inside its visible image window; HUD, black bars and loading art
   remain clear. Quiet dry crackles and a thin icy ring arrive in irregular
-  swells while frost grows. Thaw has its own soft ice-release sounds and tiny
+  swells while frost grows. At the cap, cues stop and the active tail fades
+  over `0.12 s`; partial thaw and outdoor return restart the normal cold delay.
+  Thaw has its own soft ice-release sounds and tiny
   damp clicks, fading with the remaining frost; neither phase uses sharp impacts
   or breaking glass. The open canopy stays cold. The mother's house and enclosed cabin
   thaw a full layer over about `8 s`, half over `4 s`, and a light layer over
@@ -382,11 +385,8 @@ The vertical slice contains:
   follows the remaining exposure. Pausing and scene/loading transitions freeze
   exposure and its clock; the first ready frame discards the loading delta.
   Re-entry resumes the remaining level. A new game or unrelated gameplay scene
-  resets it. The focused real-controller walk measures `93.9022 m` in
-  `36.1163 s`, reaching the door with frost amount `0.90904`; the separate
-  indoor render check verifies the visible full, half-thawed and clear images.
-  The later uneven-growth, masked-blur and separate thaw-sound refinement is
-  recorded independently in the work log.
+  resets it. The real-controller walk reaches the door after `93.9022 m`/
+  `36.1163 s` with frost `0.90904`; indoor renders verify full/half/clear layers.
   This is level-`0` weather, independent of the village's dimming grade; see
   the accepted `2026-09-07` exception and its explicit `2026-09-08`
   refinements in `architecture-notes.md`; it adds no health, damage or meter.

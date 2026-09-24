@@ -14,6 +14,26 @@ namespace BarPromenade.Tests.PlayMode
 {
     public sealed partial class AreaCaptureFixture
     {
+        [Test]
+        [Explicit("Focused frost audio scheduling without scene composition or captures.")]
+        public void AlpineFrostAudioScheduling()
+        {
+            var owner = new GameObject("Frost audio scheduling probe");
+            AlpineFrostAudio audio = null;
+            try
+            {
+                audio = new AlpineFrostAudio(owner);
+                AssertFrostAudioScheduling(audio);
+                Assert.That(audio.Source.outputAudioMixerGroup, Is.Not.Null);
+                Assert.That(audio.Source.spatialBlend, Is.Zero);
+            }
+            finally
+            {
+                audio?.Dispose();
+                Object.Destroy(owner);
+            }
+        }
+
         [UnityTest]
         [Explicit("Same-frame frost diffusion A/B on the actual house camera, without the journey/audio regression.")]
         public IEnumerator AlpineFrostDiffusion()
@@ -190,7 +210,9 @@ namespace BarPromenade.Tests.PlayMode
 
                 AssertFrostAudioScheduling(driver.FrostAudio);
                 driver.FrostAudio.Step(1f, 1f, false, false);
-                Assert.That(driver.FrostAudio.CuesPlayed, Is.EqualTo(1));
+                Assert.That(driver.FrostAudio.CuesPlayed, Is.Zero,
+                    "A fully frozen view no longer schedules growth sounds.");
+                Assert.That(driver.FrostAudio.Source.isPlaying, Is.False);
                 Assert.That(driver.FrostAudio.Source.outputAudioMixerGroup, Is.Not.Null);
                 Assert.That(driver.FrostAudio.Source.spatialBlend, Is.Zero);
                 driver.enabled = true;
@@ -605,12 +627,61 @@ namespace BarPromenade.Tests.PlayMode
         {
             try
             {
+                // Saturation cancels both a nearly due first cue and an
+                // already playing crack, without erasing the cue history.
+                foreach (float coldElapsed in new[] { 0.79f, 1f })
+                {
+                    audio.Reset();
+                    audio.Step(coldElapsed, 0.5f, false, false);
+                    int coldCues = audio.FreezingCuesPlayed;
+                    Assert.That(coldCues, Is.EqualTo(coldElapsed < 0.8f ? 0 : 1));
+                    Assert.That(audio.Source.isPlaying, Is.EqualTo(coldCues > 0));
+                    float growthVolume = audio.Source.volume;
+                    audio.Step(0.06f, 1f, false, false);
+                    if (coldCues > 0)
+                    {
+                        Assert.That(audio.Source.isPlaying, Is.True);
+                        Assert.That(audio.Source.volume,
+                            Is.EqualTo(growthVolume * 0.5f).Within(0.00001f),
+                            "The last growth tail fades instead of cutting off at the cap.");
+                    }
+                    audio.Step(0f, 1f, false, true);
+                    float pausedVolume = audio.Source.volume;
+                    int pausedSamples = audio.Source.timeSamples;
+                    audio.Step(100f, 1f, false, true);
+                    Assert.That(audio.Source.volume, Is.EqualTo(pausedVolume));
+                    Assert.That(audio.Source.timeSamples, Is.EqualTo(pausedSamples));
+                    Assert.That(audio.FreezingCuesPlayed, Is.EqualTo(coldCues));
+                    audio.Step(0.06f, 1f, false, false);
+                    Assert.That(audio.Source.volume, Is.Zero);
+                    Assert.That(audio.Source.isPlaying, Is.False);
+                    Assert.That(audio.Source.clip, Is.Null);
+                    audio.Step(60f, 1f, false, false);
+                    Assert.That(audio.FreezingCuesPlayed, Is.EqualTo(coldCues));
+                    Assert.That(audio.CuesPlayed, Is.EqualTo(coldCues));
+                    Assert.That(audio.Source.volume, Is.Zero);
+                    Assert.That(audio.Source.isPlaying, Is.False);
+                    Assert.That(audio.Source.clip, Is.Null);
+
+                    audio.Step(0.221f, 1f, true, false);
+                    Assert.That(audio.ThawCuesPlayed, Is.EqualTo(1),
+                        "Full frost may thaw audibly after saturation silences growth.");
+                    Assert.That(audio.LastCueKind, Is.EqualTo(AlpineFrostAudio.CueKind.Thawing));
+                    audio.Step(0.799f, 0.5f, false, false);
+                    Assert.That(audio.FreezingCuesPlayed, Is.EqualTo(coldCues));
+                    audio.Step(0.002f, 0.5f, false, false);
+                    Assert.That(audio.FreezingCuesPlayed, Is.EqualTo(coldCues + 1),
+                        "Partial thaw and outdoor return restart the ordinary growth delay.");
+                    Assert.That(audio.ThawCuesPlayed, Is.EqualTo(1));
+                    Assert.That(audio.LastCueKind, Is.EqualTo(AlpineFrostAudio.CueKind.Freezing));
+                }
+
                 // Cover both a nearly due first cold cue and the long wait
                 // after an already played crack. Warm arrival owns its delay.
                 foreach (float coldElapsed in new[] { 0.79f, 3f })
                 {
                     audio.Reset();
-                    audio.Step(coldElapsed, 1f, false, false);
+                    audio.Step(coldElapsed, 0.5f, false, false);
                     int coldCues = audio.FreezingCuesPlayed;
                     audio.Step(0.21f, 1f, true, false);
                     Assert.That(audio.ThawCuesPlayed, Is.Zero);
@@ -644,13 +715,13 @@ namespace BarPromenade.Tests.PlayMode
                         "The exported thaw WAV uses the actual maximum source gain.");
 
                     int thawCues = audio.ThawCuesPlayed;
-                    audio.Step(0.21f, 1f, false, false);
+                    audio.Step(0.21f, 0.5f, false, false);
                     Assert.That(audio.ThawCuesPlayed, Is.EqualTo(thawCues));
                     Assert.That(audio.Source.clip, Is.Null,
                         "Cold re-entry releases the old thaw tail before selecting a cold clip.");
-                    audio.Step(0.57f, 1f, false, false);
+                    audio.Step(0.57f, 0.5f, false, false);
                     Assert.That(audio.FreezingCuesPlayed, Is.EqualTo(coldCues));
-                    audio.Step(0.021f, 1f, false, false);
+                    audio.Step(0.021f, 0.5f, false, false);
                     Assert.That(audio.FreezingCuesPlayed, Is.EqualTo(coldCues + 1));
                     Assert.That(audio.ThawCuesPlayed, Is.EqualTo(thawCues));
                     Assert.That(audio.LastCueKind, Is.EqualTo(AlpineFrostAudio.CueKind.Freezing));

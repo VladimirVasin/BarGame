@@ -165,11 +165,11 @@ namespace BarPromenade
                 ExteriorCloudProfileKind.AlpineVillage,
                 109f,
                 RuntimeSceneSetup.AlpineVillageFogColor,
-                new Color(0.370f, 0.390f, 0.390f, 1f),
-                new Color(0.685f, 0.635f, 0.555f, 1f),
-                0.96f,
+                new Color(0.300f, 0.330f, 0.340f, 1f),
+                new Color(0.535f, 0.550f, 0.535f, 1f),
+                0.98f,
                 0.24f,
-                0.94f,
+                0.98f,
                 0.25f,
                 1.04f,
                 2.55f,
@@ -180,7 +180,7 @@ namespace BarPromenade
                 -0.04f,
                 0.18f,
                 0.36f,
-                0.82f,
+                0.55f,
                 false);
 
         public static ExteriorCloudProfile Resolve(

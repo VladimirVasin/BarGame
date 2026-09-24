@@ -12,6 +12,155 @@ namespace BarPromenade.Tests.PlayMode
     public sealed partial class AreaCaptureFixture
     {
         [UnityTest]
+        [Explicit("Rescue paving/snow regression and the village lighting/forest review.")]
+        [PrebuildSetup(typeof(VillageArtAssetsSetup))]
+        public IEnumerator AlpineVillagePolish()
+        {
+            GameSessionState.TryStartGameTimeFromWake();
+            Assert.That(GameSessionState.TrySetDebugGameDay(2), Is.True);
+            GameSessionState.AdvanceGameTime((float)((12d * 60d - GameSessionState.GameTimeOfDayMinutes) /
+                GameTimeState.GameMinutesPerRealSecond));
+            AlpineVillageRoot root = null;
+            try
+            {
+                yield return Capture(SceneIds.AlpineVillage, () =>
+                {
+                    root = Object.FindAnyObjectByType<AlpineVillageRoot>();
+                    return root != null && root.World != null && root.Player.GameObject != null ? root : null;
+                }, () =>
+                {
+                    AlpineVillageAbandonedPlot plot = root.Plan.Expansion.Abandonment.RescueForecourtPlot;
+                    AssertRescuePavingDimensions(root, plot);
+                    AlpineVillageSnowTreading snow = root.World.SnowTreading;
+                    snow.enabled = false;
+                    Mesh mesh = snow.GetComponent<MeshFilter>().sharedMesh;
+                    Vector3[] original = mesh.vertices;
+                    int[] apronVertices = RescueSnowVertices(root, plot, mesh);
+                    AssertRescueSnowAbovePaving(plot, mesh.vertices, apronVertices);
+                    var shots = new List<Shot>();
+                    Vector3 front = plot.World(new Vector2(0f, 15.5f));
+                    Vector3 target = plot.World(new Vector2(0f, 7f)) + Vector3.up * .9f;
+                    shots.Add(RescuePolishShot(root, "polish-00-rescue-forecourt", front, target));
+                    shots.Add(RescuePolishShot(root, "polish-01-rescue-pressed",
+                        plot.World(new Vector2(-5.7f, 13.5f)), target, () =>
+                        {
+                            foreach (int index in apronVertices) snow.Press(original[index]);
+                            snow.Advance(.11f);
+                            Vector3[] pressed = mesh.vertices;
+                            AssertRescueSnowAbovePaving(plot, pressed, apronVertices);
+                            bool lowered = false;
+                            foreach (int index in apronVertices)
+                                lowered |= pressed[index].y < original[index].y - .01f;
+                            Assert.That(lowered, Is.True, "The regression never pressed actual apron snow.");
+                        }));
+                    shots.Add(RescuePolishShot(root, "polish-02-rescue-refilled", front, target, () =>
+                    {
+                        snow.Advance(60f);
+                        Vector3[] restored = mesh.vertices;
+                        AssertRescueSnowAbovePaving(plot, restored, apronVertices);
+                        foreach (int index in apronVertices)
+                            Assert.That(restored[index].y, Is.EqualTo(original[index].y).Within(.001f),
+                                "Refilling changed the paved snow support.");
+                    }));
+                    AppendVillagePolishEnvironmentShots(root, shots);
+                    return shots.ToArray();
+                });
+            }
+            finally
+            {
+                if (root != null && root.World != null && root.World.SnowTreading != null)
+                    root.World.SnowTreading.enabled = true;
+            }
+        }
+
+        private static void AssertRescuePavingDimensions(AlpineVillageRoot root, AlpineVillageAbandonedPlot plot)
+        {
+            Transform yard = root.World.Root.transform.Find("Village Expansion/" +
+                AlpineVillageAbandonmentPlan.RootName + "/" + plot.Id + "/Former Household Yard");
+            Assert.That(yard, Is.Not.Null);
+            float baseTop = float.NegativeInfinity, pavingTop = float.NegativeInfinity;
+            Vector2 apronMin = Vector2.one * float.PositiveInfinity;
+            Vector2 apronMax = Vector2.one * float.NegativeInfinity;
+            foreach (MeshFilter filter in yard.GetComponentsInChildren<MeshFilter>())
+            {
+                bool apron = filter.name.Contains("OldForecourt");
+                bool edges = filter.name.Contains("ExposedForecourtEdges");
+                if (!apron && !edges) continue;
+                foreach (Vector3 vertex in filter.sharedMesh.vertices)
+                {
+                    Vector3 local = Quaternion.Inverse(plot.Rotation) *
+                        (filter.transform.TransformPoint(vertex) - plot.GroundCenter);
+                    if (apron)
+                    {
+                        baseTop = Mathf.Max(baseTop, local.y);
+                        apronMin = Vector2.Min(apronMin, new Vector2(local.x, local.z));
+                        apronMax = Vector2.Max(apronMax, new Vector2(local.x, local.z));
+                    }
+                    // Exclude the two taller curb runs; they frame the paving.
+                    if (edges && Mathf.Abs(local.x) < 6f) pavingTop = Mathf.Max(pavingTop, local.y);
+                }
+            }
+            Assert.That(baseTop, Is.EqualTo(.14f).Within(.005f), "Actual imported forecourt height.");
+            Rect bounds = AlpineVillageAbandonmentPlan.RescueForecourtBounds;
+            Assert.That(Vector2.Distance(apronMin, bounds.min), Is.LessThan(.01f), "Imported apron minimum.");
+            Assert.That(Vector2.Distance(apronMax, bounds.max), Is.LessThan(.01f), "Imported apron maximum.");
+            Assert.That(pavingTop, Is.EqualTo(AlpineVillageAbandonmentPlan.RescueForecourtPavingTop)
+                .Within(.005f), "The snow support no longer covers the imported flagstones.");
+        }
+
+        private static int[] RescueSnowVertices(AlpineVillageRoot root, AlpineVillageAbandonedPlot plot, Mesh mesh)
+        {
+            Vector3[] vertices = mesh.vertices;
+            var local = new Vector2[vertices.Length];
+            for (int index = 0; index < vertices.Length; index++)
+                local[index] = plot.ToPlot(root.Plan.Expansion.ToLocal(vertices[index]));
+            int[] triangles = mesh.triangles;
+            var selected = new HashSet<int>();
+            for (int index = 0; index < triangles.Length; index += 3)
+            {
+                Vector2 a = local[triangles[index]], b = local[triangles[index + 1]], c = local[triangles[index + 2]];
+                Rect extent = Rect.MinMaxRect(Mathf.Min(a.x, b.x, c.x), Mathf.Min(a.y, b.y, c.y),
+                    Mathf.Max(a.x, b.x, c.x), Mathf.Max(a.y, b.y, c.y));
+                if (!extent.Overlaps(AlpineVillageAbandonmentPlan.RescueForecourtBounds)) continue;
+                selected.Add(triangles[index]); selected.Add(triangles[index + 1]); selected.Add(triangles[index + 2]);
+            }
+            Assert.That(selected, Is.Not.Empty, "No actual snow triangle covers the rescue apron.");
+            var result = new int[selected.Count];
+            selected.CopyTo(result);
+            return result;
+        }
+
+        private static void AssertRescueSnowAbovePaving(AlpineVillageAbandonedPlot plot,
+            Vector3[] vertices, int[] apronVertices)
+        {
+            float support = plot.GroundCenter.y + AlpineVillageAbandonmentPlan.RescueForecourtPavingTop +
+                AlpineVillageAbandonmentPlan.RescueForecourtSnowClearance;
+            foreach (int index in apronVertices)
+                Assert.That(vertices[index].y, Is.GreaterThanOrEqualTo(support - .001f),
+                    "A rendered snow triangle cuts the paved apron: " + vertices[index]);
+        }
+
+        private static Shot RescuePolishShot(AlpineVillageRoot root, string name,
+            Vector3 foot, Vector3 target, Action prepare = null)
+        {
+            int frames = 0;
+            return Shot.At(name, foot + Vector3.up * EyeHeight, target, 74f, 0, () =>
+            {
+                if (frames++ == 0)
+                {
+                    root.Player.Motor.Teleport(foot + Vector3.up * PlayerFactory.GroundedRootOffset);
+                    prepare?.Invoke();
+                }
+                AlpineColdExposureDriver frost = Object.FindAnyObjectByType<AlpineColdExposureDriver>();
+                if (frost != null) frost.Model.Reset();
+                if (frames < 12) return false;
+                foreach (Renderer renderer in root.Player.GameObject.GetComponentsInChildren<Renderer>(true))
+                    renderer.enabled = false;
+                return true;
+            });
+        }
+
+        [UnityTest]
         [Explicit("Abandoned settlement: actual placement, neighbours and eye-height art review.")]
         [PrebuildSetup(typeof(VillageArtAssetsSetup))]
         public IEnumerator AlpineVillageAbandonment()

@@ -78,6 +78,12 @@ namespace BarPromenade
         private readonly List<AlpineVillageBuildingSite> buildings = new List<AlpineVillageBuildingSite>();
         private readonly List<AlpineVillageBuildingSightline> sightlines = new List<AlpineVillageBuildingSightline>();
         private readonly AlpineVillageExpansionPlan expansion;
+        internal AlpineVillageAbandonedPlot RescueForecourtPlot { get; }
+        // Measured Blender apron: OldForecourt is .14 m high; its exposed
+        // flagstones reach .20 m. The .32 m side curbs remain separate edges.
+        internal static readonly Rect RescueForecourtBounds = new Rect(-6.6f, 3.75f, 13.2f, 8.9f);
+        internal const float RescueForecourtPavingTop = .20f;
+        internal const float RescueForecourtSnowClearance = .02f;
         public IReadOnlyList<AlpineVillageAbandonedPlot> Plots => plots;
         public IReadOnlyList<AlpineVillageBuildingSite> Buildings => buildings;
         public IReadOnlyList<AlpineVillageBuildingSightline> Sightlines => sightlines;
@@ -90,6 +96,7 @@ namespace BarPromenade
             Civic("shop-bakery", "ShopBakery", -89, -6, 0, 12, 9, 6.5f, -9.5f, -10, 9.5f, 11);
             Civic("workshop", "Workshop", -114, -13, 180, 10, 8, 5.3f, -7.5f, -7, 10.5f, 15);
             Civic("mountain-rescue", "MountainRescue", -185, 62, 90, 12, 8, 5.4f, -7.5f, -8, 11, 14);
+            RescueForecourtPlot = plots[plots.Count - 1];
 
             // Eighteen former households: fourteen still standing, three open
             // structural ruins and one low foundation. Both sides of the old
@@ -250,6 +257,20 @@ namespace BarPromenade
                 depth = Mathf.Lerp(Mathf.Min(depth, limit + wind), depth, outer);
             }
             return depth;
+        }
+
+        internal float SampleSnowSupport(Vector2 world, float ground)
+        {
+            Vector2 local = RescueForecourtPlot.ToPlot(expansion.ToLocal(world));
+            float outside = AlpineVillageAbandonedPlot.OutsideRect(local, RescueForecourtBounds);
+            // Keep the full support beyond one field-cell diagonal: every
+            // vertex of a triangle crossing the apron must clear its paving,
+            // including after treading. Only the outer collar blends away.
+            float margin = AlpineVillageSnowDrift.FieldCellSize * 1.5f;
+            float weight = 1f - Mathf.SmoothStep(0f, 1f, (outside - margin) / 1.2f);
+            float support = RescueForecourtPlot.GroundCenter.y +
+                RescueForecourtPavingTop + RescueForecourtSnowClearance;
+            return Mathf.Lerp(ground, Mathf.Max(ground, support), weight);
         }
 
         internal static float DistanceToSegment(Vector2 p, Vector2 a, Vector2 b)
