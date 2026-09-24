@@ -52,7 +52,7 @@ namespace BarPromenade
                 // Notes focus only on the authored paper, never the enclosing house.
                 if (point.Document) AddPaperText(subject.transform, point.Number);
                 Physics.SyncTransforms();
-                Vector3 front = point.Existing ? point.DiscoveryPosition - point.Position : point.Rotation * Vector3.forward;
+                Vector3 front = point.Rotation * Vector3.forward;
                 front.y = 0f;
                 front.Normalize();
                 Vector3 approach = FindApproach(plan, walkable, point, bounds, front);
@@ -110,7 +110,7 @@ namespace BarPromenade
             foreach (float side in new[] { 0f, -.6f, .6f, -1.2f, 1.2f })
             {
                 Vector3 candidate = point.Position + direction * (reach + extra) +
-                    Vector3.Cross(Vector3.up, direction) * side;
+                    Vector3.Cross(Vector3.up, direction) * (side + point.PreferredApproachSide);
                 candidate = AlpineVillageNarrativePlan.Ground(plan, candidate);
                 if (!walkable.Contains(candidate, .34f)) continue;
                 // The analytical slope can differ from the final triangulated

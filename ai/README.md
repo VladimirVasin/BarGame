@@ -18,7 +18,7 @@ compares them, so this index cannot quietly drift out of date again.
 | `project-overview.md` | entry | 9000 | Concise current baseline, technical owners, capability and scope links |
 | `current-world.md` | state | 208000 | Detailed current gameplay/MVP catalogue and deferred scope |
 | `village-life-plan.md` | state | 12000 | The accepted four-part village household update; all four parts are implemented |
-| `village-narrative-plan.md` | note | 40000 | Roadside inspections, families, reusable object camera/text; acceptance contract |
+| `village-narrative-plan.md` | note | 40000 | Place-based inspections, families, reusable object camera/text; acceptance contract |
 | `systems-map.md` | index | 44000 | System index: guarantee, key files and status |
 | `architecture-notes.md` | canon | 570000 | Accepted technical decisions and the exceptions the bibles allow |
 | `debug-log.md` | state | 8000 | Structured diagnostics format, events and support workflow |

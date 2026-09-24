@@ -3,12 +3,21 @@
 Newest outcomes/checks first. Archive whole dates at budget: [policy](README.md).
 Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-2026-08.md).
 
-## 2026-09-25 — Lodge stove sound
+## 2026-09-25 — Village placement and stove sound
 
 - Enclosed stove profile: fewer, softer wood settles over steady warm air;
   upper frequencies filtered before level matching. Open hearth retains its sound.
   Check: `InteriorSoundscapeSynthesisTests.LoopBeds_AreFiniteQuietNonSilentAndLoopSafe`
   measures brightness/envelope variation, audibility, repeatability and loop edges.
+- Narrative placement follows work/storage/debris owners. Remove redundant targets;
+  keep stable sparse IDs and warehouse/cliff group. User waived equal sector counts
+  and road distance/visibility: those checks did not establish a plausible place.
+  Authored side approaches clear the late-built basket stand and sledge handles.
+  Check/frames: `AreaCaptureFixture.AlpineVillageNarrative` — real yard bounds,
+  model clearance, approaches, RU/EN inspection and cleanup. `check-docs.py`.
+- Inspection camera eases in/out more slowly, with synchronized focus/bokeh;
+  its profile leaves dialogue timing unchanged. Check/frames:
+  `AreaCaptureFixture.AlpineVillageNarrative` — frame continuity, pause and cancel.
 
 ## 2026-09-24 — Village surfaces, weather, lodge and narrative
 

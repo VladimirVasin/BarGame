@@ -11,6 +11,8 @@ namespace BarPromenade
     {
         public const float EntrySeconds = .3f;
         public const float ExitSeconds = .3f;
+        public const float InspectionEntrySeconds = 1.1f;
+        public const float InspectionExitSeconds = .8f;
         private const float FrameHeightMeters = 1.2f;
         private const float CameraClearanceMeters = .16f;
         private const float SightClearanceMeters = .035f;
@@ -129,7 +131,10 @@ namespace BarPromenade
         {
             CurrentSpeakerIsHero = false;
             if (!CinematicDepthOfField.TryBeginOwned(this, FocusDistance,
-                IsDocumentShot ? 11f : 5.6f, 45f))
+                IsDocumentShot ? 11f : 5.6f, 45f,
+                objectShot ? InspectionEntrySeconds : CinematicDepthOfField.BlendInSeconds,
+                objectShot ? InspectionExitSeconds : CinematicDepthOfField.BlendOutSeconds,
+                objectShot))
             { ClearReferences(); return false; }
             activeOwner = this;
             previousFixed = follow.FixedPoseActive;
@@ -174,9 +179,10 @@ namespace BarPromenade
                 elapsed += dt;
                 Pose destination = ResolveReturnPose();
                 float fov = previousFixed ? previousFixedFov : follow.FollowFieldOfView;
-                float t = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(elapsed / ExitSeconds));
+                float seconds = objectShot ? InspectionExitSeconds : ExitSeconds;
+                float t = TransitionProgress(elapsed / seconds);
                 Apply(Blend(blendStartPose, destination, t), Mathf.Lerp(blendStartFov, fov, t));
-                if (elapsed >= ExitSeconds) RestoreImmediate();
+                if (elapsed >= seconds) RestoreImmediate();
                 return;
             }
 
@@ -184,14 +190,15 @@ namespace BarPromenade
             if (entering)
             {
                 elapsed += dt;
-                float t = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(elapsed / EntrySeconds));
+                float seconds = objectShot ? InspectionEntrySeconds : EntrySeconds;
+                float t = TransitionProgress(elapsed / seconds);
                 Pose candidate = Blend(blendStartPose, target, t);
                 // A blend may cross a warehouse corner even though both end
                 // shots are clear. Keep its lens outside geometry while the
                 // visible hero remains at the already-reached conversation dock.
                 candidate = ConstrainBlend(candidate, target);
                 Apply(candidate, Mathf.Lerp(blendStartFov, targetFov, t));
-                if (elapsed >= EntrySeconds) entering = false;
+                if (elapsed >= seconds) entering = false;
             }
             else
             {
@@ -419,8 +426,11 @@ namespace BarPromenade
 
         private Pose ConstrainBlend(Pose candidate, Pose target)
         {
+            // An inspection may reveal its subject from behind a corner.
+            // Demanding the final sightline on every intermediate frame used
+            // to jump straight to the target even with a clear camera path.
             if (CameraPositionClear(candidate.position) &&
-                SightClear(FocusPoint, candidate.position)) return candidate;
+                (objectShot || SightClear(FocusPoint, candidate.position))) return candidate;
             Vector3 origin = FocusPoint;
             Vector3 direction = candidate.position - origin;
             float distance = direction.magnitude;
@@ -521,6 +531,13 @@ namespace BarPromenade
 
         private static Pose Blend(Pose from, Pose to, float t) => new Pose(
             Vector3.Lerp(from.position, to.position, t), Quaternion.Slerp(from.rotation, to.rotation, t));
+
+        private float TransitionProgress(float progress)
+        {
+            float t = Mathf.Clamp01(progress);
+            // Inspection starts and ends with zero velocity and acceleration.
+            return objectShot ? t * t * t * (t * (t * 6f - 15f) + 10f) : Mathf.SmoothStep(0f, 1f, t);
+        }
 
         private static string ColliderPath(Transform value)
         {

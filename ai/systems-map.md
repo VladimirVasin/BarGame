@@ -25,7 +25,7 @@ Only these statuses apply. Product scope cuts are `Deferred` in
 | Lodge shelter | Both doors shut nearly silence wind; lantern switches. Gap: sleep/tea are inspection stubs. | `LodgeShelter*`, `VillageInteriorAcoustics` | Partial |
 | Village paths | Ground junctions; brook bridge. | `AlpineVillage{JunctionPlan,FootbridgePlan}` | Current |
 | Village life | Six named residents/31 homes; help persists. | `AlpineVillageLifeController`, `VillageOutdoorHelpController`, `VillageHousehold{Progress,Catalog}` | Current |
-| Narrative inspection | 32 RU/EN/30 new; silent/replay, props side/notes close-up. | `NarrativeInteraction*`, `AlpineVillageNarrative*` | Current |
+| Narrative inspection | 24 RU/EN, by place; silent/replay, props side/notes close-up. | `NarrativeInteraction*`, `AlpineVillageNarrative*` | Current |
 | Independent rules assembly | Calendar/day schedule, input priorities and temporary vehicle ownership have no Unity dependencies. | `Scripts/Rules`, `BarPromenade.Rules.asmdef` | Current |
 | Shared input actions | Shared bindings; pause/transitions take priority. | `GameInput`, `GameInputPolicy` | Current |
 | Performance capture | Opt-in CPU/GPU/frame/GC and hot-scope distributions; unavailable counters are not reported as zero. | `RuntimePerformanceCapture`, `PerformanceCaptureSamples` | Current |

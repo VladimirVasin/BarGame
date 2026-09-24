@@ -269,14 +269,13 @@ The vertical slice contains:
   one past catastrophe, unrelated to the older mine.
   Warehouse yard: `RustedTruck` without wheels/doors/glass, `DiscardedChairPile`,
   clear ramp/road. Stock/supports show conserved repair; rail/rubble close gap.
-  `AlpineVillageNarrative*`: 32 points/8 sectors,
-  30 new Blender models + truck/chairs; whole bounds off-road, visible from roads.
-  Fixed roads, snow approach.
+  `AlpineVillageNarrative*`: 24 sparse IDs: 20 props/two notes + truck/chairs.
+  Work/storage/debris owns placement, no sector quota/road-view requirement.
+  Clear approaches; unused assets/text retained.
   `NarrativeInteraction`: rig, `ContextualCameraDirector`; props side/bokeh,
-  notes close-up, no hero. Held bottom `InteractionPromptView` pages/cleanup.
-  E advances/closes; Esc always cancels. Replay, no grant/progress. RU/EN resort/avalanche/road/
-  trade thoughts; two nailed notes: three paper pages each, then a thought.
-  Paper/UI keys match.
+  notes close-up, no hero. `InteractionPromptView`: held bottom pages/cleanup.
+  E advances/closes; Esc cancels. Replay, no grant/progress. RU/EN resort/avalanche/road/
+  trade thoughts; two notes: three paper pages then thought; paper/UI keys match.
   `AlpineVillageJunctionPlan`: ports/contours/snow; asphalt/soil node maps share
   a 2x2 atlas/material. Other paths raised; warehouse apron has no snow island.
   `AlpineVillageDistanceWorldBuilder` uses six checkpoint meshes with storm

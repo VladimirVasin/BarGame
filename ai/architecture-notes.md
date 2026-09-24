@@ -2,19 +2,19 @@
 
 ## Current facts
 
+- **Accepted architecture exception — 2026-09-25, village inspection placement:**
+  User waives quota/road distance/visibility: 24 IDs at work/storage/debris;
+  warehouse/cliff kept, roads/E clear. `village-narrative-plan.md`.
+
 - **Accepted architecture exception — 2026-09-24, village history and narrative inspection:**
-  Level 0; story §§6/12/19/21, art §10g: history/families;
-  hero/mother unnamed, mine/father stays. Current: 28 props/two nailed notes +
-  old truck/pile: whole bounds off-road, road-visible; roads fixed.
-  `NarrativeInteraction`/controller: positioned rig, repeat/cancel, no grant.
-  `ContextualCameraDirector`: camera/DOF, restores fixed pose/focus.
-  User: props side/bokeh; notes push in, sheet close-up without hero.
-  `InteractionPromptView`: held silent RU/EN pages, separate paper/thought.
-  Hero: depressive, 1–2 sentences/page; history 2–3 pages, clear without notes.
-  Absurd mundane notes (Silent Hill, §19/21); no supernatural fact. Literary edit.
-  `VillageHouseholdCatalog`: 31 homes, four occupied; names in greetings.
+  Level 0, story §§6/12/19/21/art §10g: history/families; hero/mother unnamed,
+  mine/father stays. `NarrativeInteraction`: rig/repeat/cancel/no grant.
+  `ContextualCameraDirector`: side/bokeh or paper close-up without hero, restores
+  pose/focus. `InteractionPromptView`: held silent RU/EN paper/thought pages.
+  Depressive 1–2 sentences/page; history 2–3 pages, clear without notes.
+  Two absurd mundane notes (Silent Hill), literary edit, no supernatural fact.
+  `VillageHouseholdCatalog`: 31 homes/four occupied; named greetings.
   No crime/water/self-analysis; speech/contextual standards, §16/nine checks.
-  village-narrative-plan.md.
 
 - **Accepted architecture exception — 2026-09-24, habitable ski lodge:**
   Level 0, §6/§12/art §10g. Cot/kettle: silent E, no sleep/tea/grant/receipt

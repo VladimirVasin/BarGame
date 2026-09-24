@@ -60,10 +60,12 @@ namespace BarPromenade.Rendering
         }
 
         /// <summary>Scoped contextual cameras cannot end or retune a later owner's shot.</summary>
-        internal static bool TryBeginOwned(object token, float distance, float aperture, float focalLength)
+        internal static bool TryBeginOwned(object token, float distance, float aperture, float focalLength,
+            float blendInSeconds = BlendInSeconds, float blendOutSeconds = BlendOutSeconds, bool smoothBlend = false)
         {
             if (token == null || IsActive || leaseOwner != null) return false;
             Begin(distance, aperture, focalLength);
+            if (owner != null) owner.SetBlend(blendInSeconds, blendOutSeconds, smoothBlend);
             leaseOwner = token;
             return true;
         }
@@ -121,6 +123,10 @@ namespace BarPromenade.Rendering
         private Volume volume;
         private VolumeProfile profile;
         private DepthOfField depthOfField;
+        private float blendInSeconds = CinematicDepthOfField.BlendInSeconds;
+        private float blendOutSeconds = CinematicDepthOfField.BlendOutSeconds;
+        private float blendWeight;
+        private bool smoothBlend;
 
         public bool IsEngaged { get; private set; }
 
@@ -150,6 +156,7 @@ namespace BarPromenade.Rendering
             float aperture,
             float focalLength)
         {
+            SetBlend(CinematicDepthOfField.BlendInSeconds, CinematicDepthOfField.BlendOutSeconds, false);
             gameObject.SetActive(true);
             depthOfField.focusDistance.Override(
                 Mathf.Max(
@@ -160,6 +167,14 @@ namespace BarPromenade.Rendering
             depthOfField.focalLength.Override(
                 Mathf.Clamp(focalLength, 1f, 300f));
             IsEngaged = true;
+        }
+
+        public void SetBlend(float entrySeconds, float exitSeconds, bool smooth)
+        {
+            blendInSeconds = Mathf.Max(.01f, entrySeconds);
+            blendOutSeconds = Mathf.Max(.01f, exitSeconds);
+            smoothBlend = smooth;
+            blendWeight = volume.weight;
         }
 
         public void SetFocusDistance(float meters)
@@ -178,6 +193,7 @@ namespace BarPromenade.Rendering
         public void DisengageImmediately()
         {
             IsEngaged = false;
+            blendWeight = 0f;
             if (volume != null) volume.weight = 0f;
             gameObject.SetActive(false);
         }
@@ -197,12 +213,14 @@ namespace BarPromenade.Rendering
 
             float target = IsEngaged ? 1f : 0f;
             float seconds = IsEngaged
-                ? CinematicDepthOfField.BlendInSeconds
-                : CinematicDepthOfField.BlendOutSeconds;
-            volume.weight = Mathf.MoveTowards(
-                volume.weight,
+                ? blendInSeconds
+                : blendOutSeconds;
+            blendWeight = Mathf.MoveTowards(
+                blendWeight,
                 target,
                 Time.unscaledDeltaTime / seconds);
+            float t = blendWeight;
+            volume.weight = smoothBlend ? t * t * t * (t * (t * 6f - 15f) + 10f) : t;
             if (!IsEngaged && volume.weight <= 0f)
             {
                 gameObject.SetActive(false);
