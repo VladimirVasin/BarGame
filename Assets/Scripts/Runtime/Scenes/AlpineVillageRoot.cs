@@ -1007,6 +1007,7 @@ namespace BarPromenade
             var musicObject = new GameObject("Alpine Village Music");
             musicObject.transform.SetParent(transform, false);
             Music = musicObject.AddComponent<AlpineVillageMusicPlayer>();
+            Music.Initialize(this);
         }
 
         private void BuildAtmosphere()

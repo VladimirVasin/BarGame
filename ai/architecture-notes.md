@@ -42,11 +42,11 @@
   shared model/view/input/modal/lifecycle.
 
 - **Accepted architecture exception — 2026-09-24, village scene theme:**
-  Both doors shut gate theme, any hero position (§6/art §10g, 0).
-  `AlpineVillageMusicPlayer`: suppressed before Play; open→4 s fade/pause,
-  shut→1 s resume, no restart. `MusicMix`/Music/12 kHz/1.00;
+  User: inside lodge, both doors shut (§6/art §10g, 0).
+  `AlpineVillageMusicPlayer`: open/outside→4 s fade/pause, inside/shut→1 s resume.
+  Gate before Play; no restart. `MusicMix`/Music/12 kHz/1.00;
   optional stereo streaming `AlpineVillageMusic/alpine_village_theme`
-  WAV/OGG/MP3 (MP3 supplied); no story/weather/avalanche cue, causal sound stays.
+  WAV/OGG/MP3 (ships MP3); no story/weather/avalanche cue, causal sound stays.
 
 - **Accepted architecture exception — 2026-09-24, old ski avalanche:**
   Level 0: scar→timber/rock/beams→buried tow/cable→household-15 damage.

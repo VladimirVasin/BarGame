@@ -32,7 +32,8 @@ namespace BarPromenade
             FireLight.color = new Color(1f, .43f, .13f);
             FireLight.range = 4.5f;
             FireLight.shadows = LightShadows.Soft;
-            crackleClip = MothersHouseInteriorSoundSynthesis.CreateHearthRuntimeClip(GameSessionState.CitySeed);
+            crackleClip = MothersHouseInteriorSoundSynthesis.CreateHearthRuntimeClip(
+                GameSessionState.CitySeed, enclosedStove: true);
             crackle = Source("Stove Wood Crackle", crackleClip, true);
             clickClip = MakeClick();
             clicks = Source("Stove Lighter Click", clickClip, false);

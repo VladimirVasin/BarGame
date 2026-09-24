@@ -52,6 +52,31 @@ namespace BarPromenade.Tests.EditMode
                 homeNightAir,
                 HomeSoundscapeSynthesis.SampleRate,
                 HomeSoundscapeSynthesis.LoopDuration);
+
+            float[] hearth = MothersHouseInteriorSoundSynthesis.GenerateHearthSamples(
+                GameSessionState.DefaultCitySeed);
+            float[] stove = MothersHouseInteriorSoundSynthesis.GenerateHearthSamples(
+                GameSessionState.DefaultCitySeed, enclosedStove: true);
+            AssertLoop(hearth, MothersHouseInteriorSoundSynthesis.SampleRate,
+                MothersHouseInteriorSoundSynthesis.HearthLoopDuration);
+            AssertLoop(stove, MothersHouseInteriorSoundSynthesis.SampleRate,
+                MothersHouseInteriorSoundSynthesis.HearthLoopDuration);
+            CollectionAssert.AreEqual(stove,
+                MothersHouseInteriorSoundSynthesis.GenerateHearthSamples(
+                    GameSessionState.DefaultCitySeed, enclosedStove: true));
+
+            double hearthBrightness = NormalizedDifferenceEnergy(hearth);
+            double stoveBrightness = NormalizedDifferenceEnergy(stove);
+            double hearthVariation = NormalizedEnvelopeVariation(hearth);
+            double stoveVariation = NormalizedEnvelopeVariation(stove);
+            TestContext.WriteLine($"Hearth/stove brightness: {hearthBrightness:F5}/{stoveBrightness:F5}; " +
+                $"100 ms envelope variation: {hearthVariation:F5}/{stoveVariation:F5}");
+            Assert.That(stoveBrightness, Is.LessThan(hearthBrightness * .4d),
+                "The enclosed stove must lose the open hearth's sharp high-frequency crackle.");
+            Assert.That(stoveVariation, Is.LessThan(hearthVariation),
+                "The stove's loudness must change more steadily over the duration of a wood crackle.");
+            Assert.That(Rms(stove), Is.GreaterThanOrEqualTo(Rms(hearth) * .9d),
+                "A calmer stove must retain its audible fire bed rather than merely becoming quieter.");
         }
 
         [Test]
@@ -209,6 +234,50 @@ namespace BarPromenade.Tests.EditMode
                 (float)(sumSquares / samples.Count));
             Assert.That(peak, Is.LessThanOrEqualTo(MaximumPeak));
             Assert.That(rms, Is.InRange(MinimumRms, MaximumRms));
+        }
+
+        private static double Rms(IReadOnlyList<float> samples)
+        {
+            double squares = 0d;
+            for (int i = 0; i < samples.Count; i++) squares += (double)samples[i] * samples[i];
+            return Math.Sqrt(squares / samples.Count);
+        }
+
+        private static double NormalizedDifferenceEnergy(IReadOnlyList<float> samples)
+        {
+            // Adjacent-sample changes weight the upper spectrum. Normalizing
+            // by signal energy keeps a volume reduction from passing as warmth.
+            double changes = 0d;
+            double squares = 0d;
+            for (int i = 1; i < samples.Count; i++)
+            {
+                double change = samples[i] - samples[i - 1];
+                changes += change * change;
+                squares += (double)samples[i] * samples[i];
+            }
+            return changes / squares;
+        }
+
+        private static double NormalizedEnvelopeVariation(IReadOnlyList<float> samples)
+        {
+            // A 100 ms window follows the wood crackle's envelope. At 20 ms,
+            // filtering reduces independent noise samples and can increase
+            // random RMS fluctuations despite making the fire sound calmer.
+            int window = Mathf.RoundToInt(MothersHouseInteriorSoundSynthesis.SampleRate * .1f);
+            double previous = 0d;
+            double variation = 0d;
+            double total = 0d;
+            for (int start = 0; start + window <= samples.Count; start += window)
+            {
+                double squares = 0d;
+                for (int i = start; i < start + window; i++)
+                    squares += (double)samples[i] * samples[i];
+                double level = Math.Sqrt(squares / window);
+                if (start > 0) variation += Math.Abs(level - previous);
+                total += level;
+                previous = level;
+            }
+            return variation / total;
         }
 
         private static float MeanAbsoluteDifference(

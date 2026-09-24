@@ -258,7 +258,7 @@ The vertical slice contains:
   Close/Escape retains without retry. Stove E: first person/right two-column grid;
   lit E opens door. Silent:
   «Мне понадобится полено»/«Теперь нужно зажечь». Log spent; inventory flip-top
-  opens→two dry clicks→third fire/light/crackle→closes. Exit restores camera/door.
+  opens→third click ignites→closes. Soft, sparse crackle; exit restores camera/door.
   Empty/LogPlaced/Burning until New Game, no burnout; no hands/visible rig,
   walls block heat. Shed/lift passive.
   Avalanche scar/full-size timber/rock/beams/buried tow/cable/damaged household 15
@@ -1041,8 +1041,8 @@ The vertical slice contains:
   with matching snake-case `_theme` names; optional slots fail silent.
   `AlpineVillageMusicPlayer` adds `AlpineVillageMusic/alpine_village_theme`,
   with the user's MP3, streaming/background/stereo and optional at build time.
-  Both lodge doors shut enable it anywhere in AlpineVillage. Either open:
-  4 s fade/pause; both shut: 1 s resume, no restart. Suppressed before playback;
+  Hero inside lodge, both doors shut: 1 s resume, no restart. Either open or outside:
+  4 s fade/pause. Suppressed before playback;
   normal scene exits.
   User `1.00` theme gain; no LUFS calibration.
   `MusicMix`: unscaled `4 s` out, then `1 s` in after silence, no overlap;

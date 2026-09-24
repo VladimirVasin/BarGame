@@ -68,7 +68,7 @@ namespace BarPromenade
     }
 
     /// <summary>
-    /// Asset-free mono synthesis for the mother's quiet room. Every clip is
+    /// Asset-free mono synthesis for the mother's room and sheltered stove. Every clip is
     /// built once during installation; playback and scheduling allocate
     /// nothing per frame.
     /// </summary>
@@ -97,12 +97,13 @@ namespace BarPromenade
             2389, 2729, 3083, 3469, 3877, 4339
         };
 
-        internal static AudioClip CreateHearthRuntimeClip(int seed)
+        internal static AudioClip CreateHearthRuntimeClip(int seed, bool enclosedStove = false)
         {
-            return CreateRuntimeClip("MothersHouseWarmWoodFire", GenerateHearthSamples(seed));
+            return CreateRuntimeClip(enclosedStove ? "LodgeStoveWarmWoodFire" : "MothersHouseWarmWoodFire",
+                GenerateHearthSamples(seed, enclosedStove));
         }
 
-        public static float[] GenerateHearthSamples(int seed)
+        public static float[] GenerateHearthSamples(int seed, bool enclosedStove = false)
         {
             int count = Mathf.RoundToInt(SampleRate * HearthLoopDuration);
             var samples = new float[count];
@@ -116,46 +117,59 @@ namespace BarPromenade
                 slowNoise += 0.014f * (noise - slowNoise);
                 double phase = index / (double)count * Math.PI * 2d;
                 float breath = (float)(0.76d + 0.11d * Math.Sin(phase + 0.6d) +
-                    0.06d * Math.Sin(phase * 3d + 1.2d));
+                    (enclosedStove ? 0.025d : 0.06d) * Math.Sin(phase * 3d + 1.2d));
                 // Air and embers occupy the audible low-mid band. Subtract
                 // the slow pole so the bed is not mostly inaudible sub-bass.
                 samples[index] = (warmNoise - slowNoise) * 0.25f * breath;
             }
 
-            const int crackCount = 29;
+            // A metal stove shelters the embers: fewer, longer settles above
+            // steady warm air, without the open hearth's sharp little snaps.
+            int crackCount = enclosedStove ? 10 : 29;
             for (int crack = 0; crack < crackCount; crack++)
             {
                 float jitter = (HearthNoise(ref random) + 1f) * 0.5f;
                 int start = Mathf.RoundToInt((crack + 0.16f + jitter * 0.65f) /
                     crackCount * count);
                 float variation = (HearthNoise(ref random) + 1f) * 0.5f;
-                double duration = 0.065d + variation * 0.065d;
-                double amplitude = 0.12d + variation * 0.14d;
-                double frequencyHz = 290d + jitter * 460d;
+                double duration = enclosedStove ? 0.14d + variation * 0.09d : 0.065d + variation * 0.065d;
+                double amplitude = enclosedStove ? 0.07d + variation * 0.07d : 0.12d + variation * 0.14d;
+                double frequencyHz = enclosedStove ? 190d + jitter * 260d : 290d + jitter * 460d;
                 float grain = 0f;
                 int pulseSamples = (int)(duration * SampleRate);
                 for (int offset = 0; offset < pulseSamples; offset++)
                 {
                     double seconds = offset / (double)SampleRate;
                     float noise = HearthNoise(ref random);
-                    grain += 0.42f * (noise - grain);
-                    double envelope = Math.Min(1d, seconds / 0.0018d) *
-                        Math.Exp(-seconds * (35d + jitter * 28d)) *
+                    grain += (enclosedStove ? 0.20f : 0.42f) * (noise - grain);
+                    double envelope = Math.Min(1d, seconds / (enclosedStove ? 0.012d : 0.0018d)) *
+                        Math.Exp(-seconds * (enclosedStove ? 18d + jitter * 12d : 35d + jitter * 28d)) *
                         Math.Min(1d, (duration - seconds) / 0.012d);
                     // The short woody body is measured in Hz and seconds,
                     // while noise supplies the fine, irregular crack itself.
                     double body = Math.Sin(seconds * frequencyHz * Math.PI * 2d) *
-                        Math.Exp(-seconds * 58d);
+                        Math.Exp(-seconds * (enclosedStove ? 26d : 58d));
                     samples[(start + offset) % count] += (float)(amplitude * envelope *
-                        (grain * 0.90d + noise * 0.16d + body * 0.14d));
+                        (grain * 0.90d + noise * (enclosedStove ? 0.02d : 0.16d) + body * 0.14d));
                 }
             }
 
             double squares = 0d;
             float peak = 0f;
             int edgeSamples = SampleRate / 50;
+            float stoveTone = 0f;
+            float stoveToneSecond = 0f;
+            float stoveToneStep = 1f - Mathf.Exp(-2f * Mathf.PI * 1400f / SampleRate);
             for (int index = 0; index < count; index++)
             {
+                if (enclosedStove)
+                {
+                    // Bake the gentle two-pole rolloff once, before level
+                    // matching; keep the wood's body rather than just turn it down.
+                    stoveTone += stoveToneStep * (samples[index] - stoveTone);
+                    stoveToneSecond += stoveToneStep * (stoveTone - stoveToneSecond);
+                    samples[index] = stoveToneSecond;
+                }
                 float edge = Mathf.Min(1f, Mathf.Min(index, count - 1 - index) /
                     (float)edgeSamples);
                 samples[index] *= edge;

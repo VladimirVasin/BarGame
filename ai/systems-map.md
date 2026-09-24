@@ -21,7 +21,7 @@ Only these statuses apply. Product scope cuts are `Deferred` in
 | System | Guarantee | Key files | Status |
 | --- | --- | --- | --- |
 | Village scenery | 18 households/8 sheds/5 yards; avalanche/woodpiles. | `AlpineVillage{AbandonmentPlan,AvalanchePlan,ExpansionBuilder,WoodpilePlan}` | Current |
-| Lodge stove | Session fire; both doors shut heats whole interior, else indoor 2.5 m. | `LodgeStove{Interaction,SessionState}` | Current |
+| Lodge stove | Soft fire; both doors shut: whole lodge warm, else indoor 2.5 m. | `LodgeStove{Interaction,SessionState}` | Current |
 | Lodge shelter | Both doors shut nearly silence wind; lantern switches. Gap: sleep/tea are inspection stubs. | `LodgeShelter*`, `VillageInteriorAcoustics` | Partial |
 | Village paths | Ground junctions; brook bridge. | `AlpineVillage{JunctionPlan,FootbridgePlan}` | Current |
 | Village life | Six named residents/31 homes; help persists. | `AlpineVillageLifeController`, `VillageOutdoorHelpController`, `VillageHousehold{Progress,Catalog}` | Current |
@@ -133,7 +133,7 @@ Only these statuses apply. Product scope cuts are `Deferred` in
 | Exterior cloud ceiling | A passive shared-density shell supplies a camera-relative cloud ceiling with bounded horizon coverage. | `ExteriorCloud{AssetMetadata,Profile,MotionRules,Resources,Field,CaptureCamera}`, `ExteriorCloud.shader` | Current |
 | Runtime cloth rags | Visible cloth uses shared bounded wind response and explicit attachment constraints. | `ClothPanelFactory`, `CityClothWindRegistry` | Current |
 | City wind dressing | Shared wind drives authored trees/props/cloth while preserving causal movement limits. | `CityWindDressing{Plan,Planner,Validator,WorldBuilder}`, `CityRopeSpanGeometry` | Current |
-| Scene and place music | Village theme requires both lodge doors closed; radio suppresses city. Gap: cemetery/church slots empty. | `MusicMix`, `SceneMusicPlayer`, `CityMusicPlayer` | Partial |
+| Scene and place music | Village theme requires hero inside closed lodge; radio suppresses city. Gap: cemetery/church slots empty. | `MusicMix`, `SceneMusicPlayer`, `CityMusicPlayer` | Partial |
 | Common audio mix | One shared mixer routes scene themes, causal ambience, effects and reversible intoxication processing. | `GameAudioMixer`, `BarPromenadeAudio.mixer` | Current |
 | Port and cannery audio | Local machinery/fan/contact; arrival horn ×2 with longer echo/reverb. Pause/distance/seek own playback. | `CityWorkAudio`, `CityPortSound`, `CityCanneryController.{Sound,ProcessSound}` | Current |
 | Intoxication sound perception | Bounded VHS processing follows the smoothed alcohol level and returns to exact bypass when sober. | `IntoxicationPerceptionRules`, `IntoxicationAudioDriver` | Current |

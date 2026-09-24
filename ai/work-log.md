@@ -3,6 +3,13 @@
 Newest outcomes/checks first. Archive whole dates at budget: [policy](README.md).
 Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-2026-08.md).
 
+## 2026-09-25 — Lodge stove sound
+
+- Enclosed stove profile: fewer, softer wood settles over steady warm air;
+  upper frequencies filtered before level matching. Open hearth retains its sound.
+  Check: `InteriorSoundscapeSynthesisTests.LoopBeds_AreFiniteQuietNonSilentAndLoopSafe`
+  measures brightness/envelope variation, audibility, repeatability and loop edges.
+
 ## 2026-09-24 — Village surfaces, weather, lodge and narrative
 
 - Asphalt/soil atlas and snow edges follow terrain; PS1/normals fix seams
@@ -29,8 +36,10 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
   Check/frames: `AreaCaptureFixture.AlpineVillageStoveIgnition`; Runtime/RU/EN JSON.
 - Dry cot/kettle stubs, lantern and binary doors persist until New Game.
   Both shut nearly silence gusts and spread stove heat across hall, else 2.5 m.
-  Shared acoustics avoids workshop overwrite. MP3 at 1.00 fades/resumes only
-  with both shut; initial suppression prevents burst. Checks:
+  Shared acoustics avoids workshop overwrite. MP3 at 1.00 requires the hero
+  inside and both doors shut; closing from outside cannot restart it.
+  Initial suppression prevents burst. Real-frame exits cover either open leaf
+  and re-closing behind the hero. Checks:
   `SceneMusicImportTests.EveryTheme_StreamsAndLoadsInTheBackground`,
   `AreaCaptureFixture.AlpineVillageLodgeShelter` (DSP/warmth/cold/frost),
   `build-village-expansion-3d-model.py --validate-only`.

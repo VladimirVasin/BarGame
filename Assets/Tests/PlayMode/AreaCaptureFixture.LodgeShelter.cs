@@ -286,11 +286,40 @@ namespace BarPromenade.Tests.PlayMode
                     Assert.That(music.NormalizedGain, Is.EqualTo(1f));
                 }
 
-                PlaceLodgeHero(root, new Vector3(0f, .02f, -8f));
                 music.enabled = true;
-                yield return null;
-                Assert.That(music.IsPlaybackSuppressed, Is.False,
-                    "The requested music gate depends on the doors, not the hero's position.");
+                foreach (int mask in new[] { 1, 2, 0 })
+                {
+                    PlaceLodgeHero(root, new Vector3(1.1f, .02f, -2f));
+                    SetLodgeDoors(root.LodgeShelter, 0);
+                    deadline = Time.realtimeSinceStartup + MusicMix.FadeInSeconds + 2f;
+                    while (music.PlaybackState != SceneMusicPlaybackState.Playing &&
+                           Time.realtimeSinceStartup < deadline)
+                        yield return null;
+                    Assert.That(music.PlaybackState, Is.EqualTo(SceneMusicPlaybackState.Playing));
+                    SetLodgeDoors(root.LodgeShelter, mask == 0 ? 1 : mask);
+                    yield return null;
+                    PlaceLodgeHero(root, new Vector3(0f, .02f, -8f));
+                    if (mask == 0) SetLodgeDoors(root.LodgeShelter, 0);
+                    yield return null;
+                    // Reproduce leaving the actual lodge with Update enabled:
+                    // either leaf can stay open, or both can be closed behind
+                    // the hero before the fade ends. None may restart outside.
+                    deadline = Time.realtimeSinceStartup + MusicMix.FadeOutSeconds + 2f;
+                    while (!music.IsPaused && Time.realtimeSinceStartup < deadline)
+                        yield return null;
+                    Assert.That(music.IsPlaybackSuppressed, Is.True);
+                    Assert.That(music.IsPaused, Is.True, "Leaving must finish the theme tail, door mask " + mask);
+                    Assert.That(music.Source.volume, Is.Zero.Within(.0001f));
+                    Assert.That(music.Source.isPlaying, Is.False);
+                    foreach (AudioSource source in Object.FindObjectsByType<AudioSource>())
+                        if (source.clip == clip)
+                            Assert.That(source.isPlaying, Is.False,
+                                "No duplicate village theme may continue outside: " + source.name);
+                    int pausedSample = music.Source.timeSamples;
+                    yield return null;
+                    Assert.That(music.Source.timeSamples, Is.EqualTo(pausedSample));
+                    Assert.That(music.Source.isPlaying, Is.False);
+                }
             }
             finally
             {
