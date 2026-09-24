@@ -1,5 +1,14 @@
 {
   "entries": [
+    {"key": "interaction.lodge_door.open", "value": "E — открыть дверь"},
+    {"key": "interaction.lodge_door.close", "value": "E — закрыть дверь"},
+    {"key": "interaction.lodge_cot", "value": "E — осмотреть лежак"},
+    {"key": "interaction.lodge_kettle", "value": "E — осмотреть чайник"},
+    {"key": "interaction.lodge_lantern.light", "value": "E — зажечь фонарь"},
+    {"key": "interaction.lodge_lantern.extinguish", "value": "E — погасить фонарь"},
+    {"key": "lodge.door.blocked", "value": "Проход занят."},
+    {"key": "lodge.cot.inspect", "value": "Сухое одеяло и подушка."},
+    {"key": "lodge.kettle.inspect", "value": "Чайник пуст."},
     {"key": "interaction.light_stove", "value": "E — растопить печку"},
     {"key": "interaction.open_stove_door", "value": "E — открыть дверцу печи"},
     {"key": "stove.hint.log", "value": "Мне понадобится полено"},

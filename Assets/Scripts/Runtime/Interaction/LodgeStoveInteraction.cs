@@ -303,6 +303,11 @@ namespace BarPromenade
         public bool ProvidesWarmth(Vector3 worldPosition)
         {
             if (!isActiveAndEnabled || village == null || village.IsDormant || !LodgeStoveSessionState.IsBurning) return false;
+            // A sealed, lit lodge warms the whole room. The existing local
+            // stove radius remains available when either entrance leaf is open.
+            LodgeShelterController shelter = village.LodgeShelter;
+            if (shelter != null && shelter.isActiveAndEnabled && shelter.OpenDoorCount == 0 &&
+                shelter.ContainsInterior(worldPosition)) return true;
             Vector3 local = Plan.Lodge.InverseTransformPoint(worldPosition);
             return local.y >= -.2f && local.y <= 2.5f &&
                 Mathf.Abs(local.x) < 8.5f && Mathf.Abs(local.z) < 5.7f &&

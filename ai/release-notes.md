@@ -8,27 +8,28 @@ Earlier notes: [`release-notes-2026-09.md`](archive/release-notes-2026-09.md).
 
 ### 2026-09-24 — Деревня: снег, лавина и лыжная база
 
-- Стыки грунта/асфальта без швов, снег держит край после уборки. Проверка/кадры:
+- Грунт/асфальт без швов, снег держит край. Проверка/кадры:
   `AreaCaptureFixture.AlpineVillageRoadSurface`.
-- Снег над мощением; заброшенные деревья ×2. Пасмурно, окна тёплые;
-  полный иней молчит, оттаивание звучит. Проверки/кадры:
-  `AreaCaptureFixture.AlpineVillagePolish`,
+- Снег на мощении, деревья вне жилья ×2, пасмурно/тёплые окна;
+  полный иней молчит. Проверки/кадры: `AreaCaptureFixture.AlpineVillagePolish`,
   `AreaCaptureFixture.AlpineFrostAudioScheduling`.
-- Закрытые кроны скрывают небо/обрубок ствола. Проверка/кадры:
+- Закрытые кроны. Проверка/кадры:
   `AreaCaptureFixture.ConiferUndersides`.
-- Лавина: лес/камни/подъёмник/руина; завал непроходим, корпус/круг открыты.
-  Проверки/кадры:
-  `build-village-expansion-3d-model.py`, `AreaCaptureFixture.AlpineVillageAvalanche`;
-  путь и стороны руины просмотрены.
-- Авторская тема деревни, громкость `.70`.
-  Проверка: `SceneMusicImportTests.EveryTheme_StreamsAndLoadsInTheBackground`.
-- Поленницы базы/матери: E→Да→3D-полено, закрытие сохраняет; можно одно,
-  запас бесконечен. Проверки: `AreaCaptureFixture.AlpineVillageStoveAndWoodpile`,
+- Лавинный завал закрыт, корпус/круг открыты. Проверки/кадры:
+  `build-village-expansion-3d-model.py`, `AreaCaptureFixture.AlpineVillageAvalanche`.
+- Тема громче: обе двери базы закрыты — вступает; открытие гасит.
+  Проверка: `AreaCaptureFixture.AlpineVillageLodgeShelter`.
+- Поленницы: E→Да→3D-полено, одно/запас бесконечен. Проверки:
+  `AreaCaptureFixture.AlpineVillageStoveAndWoodpile`,
   `AreaCaptureFixture.AlpineVillageMothersHouseWoodpile`.
-- Печь: первое лицо/инвентарь справа; полено→зажигалка с крышкой→третий
-  щелчок→огонь, без рук. Модель общая с инвентарём. Выход возвращает камеру;
-  рядом тепло. После розжига: «E — открыть дверцу печи».
-  Проверки: `AreaCaptureFixture.AlpineVillageStoveIgnition` (кадры), RU/EN JSON.
+- Печь: первое лицо/инвентарь; полено→третий щелчок→огонь/тепло, без рук.
+  Esc возвращает камеру, E открывает дверцу. Проверки:
+  `AreaCaptureFixture.AlpineVillageStoveIgnition` (кадры), RU/EN JSON.
+- База обживаема: лежак/чайник — заглушки E, газовый фонарь включается.
+  Двери закрыты — ветер едва слышен, горящая печь греет весь зал; иначе 2,5 м.
+  Двери/свет до новой игры. Проверка: `AreaCaptureFixture.AlpineVillageLodgeShelter`
+  со сравнением звука.
+  Проверены звук/тепло/иней.
 
 ### 2026-09-23 — Большая Альпийская деревня
 

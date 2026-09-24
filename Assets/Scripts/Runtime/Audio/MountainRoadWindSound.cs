@@ -127,6 +127,8 @@ namespace BarPromenade
         private AudioClip generatedClip;
         private float appliedStrength = -1f;
         private float enclosure;
+        private float enclosedVolumeMultiplier = EnclosedVolumeMultiplier;
+        private float enclosedCutoffMultiplier = EnclosedCutoffMultiplier;
 
         public AudioSource Source { get; private set; }
         public AudioLowPassFilter ToneFilter { get; private set; }
@@ -215,13 +217,25 @@ namespace BarPromenade
         /// </summary>
         public void SetEnclosure(float enclosure01)
         {
+            SetEnclosure(enclosure01, EnclosedVolumeMultiplier, EnclosedCutoffMultiplier);
+        }
+
+        /// <summary>Room-specific transmission without changing the exterior
+        /// wind or the existing vehicle profile.</summary>
+        public void SetEnclosure(float enclosure01, float volumeMultiplier, float cutoffMultiplier)
+        {
             float clamped = Mathf.Clamp01(enclosure01);
-            if (clamped.Equals(enclosure))
+            float volume = Mathf.Clamp01(volumeMultiplier);
+            float cutoff = Mathf.Clamp(cutoffMultiplier, .01f, 1f);
+            if (clamped.Equals(enclosure) && volume.Equals(enclosedVolumeMultiplier) &&
+                cutoff.Equals(enclosedCutoffMultiplier))
             {
                 return;
             }
 
             enclosure = clamped;
+            enclosedVolumeMultiplier = volume;
+            enclosedCutoffMultiplier = cutoff;
             Apply();
         }
 
@@ -242,13 +256,13 @@ namespace BarPromenade
             Source.volume =
                 MaximumVolume *
                 Mathf.Pow(strength, 0.85f) *
-                Mathf.Lerp(1f, EnclosedVolumeMultiplier, enclosure);
+                Mathf.Lerp(1f, enclosedVolumeMultiplier, enclosure);
             ToneFilter.cutoffFrequency =
                 Mathf.Lerp(
                     CalmCutoffFrequency,
                     GaleCutoffFrequency,
                     strength) *
-                Mathf.Lerp(1f, EnclosedCutoffMultiplier, enclosure);
+                Mathf.Lerp(1f, enclosedCutoffMultiplier, enclosure);
         }
 
         private void OnDestroy()

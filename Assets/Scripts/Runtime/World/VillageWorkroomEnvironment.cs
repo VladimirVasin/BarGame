@@ -14,6 +14,7 @@ namespace BarPromenade
         private Light[] lights;
         private float[] lightLevels;
         private VillageLifeAudio contacts;
+        private VillageInteriorAcoustics interiorAcoustics;
         public float Enclosure { get; private set; }
         public int CulledParticles { get; private set; }
         public bool IsInside => village != null && room != null && village.Player.GameObject != null &&
@@ -58,14 +59,14 @@ namespace BarPromenade
 
         private void LateUpdate() => Advance(Time.deltaTime);
 
+        public void SetInteriorAcoustics(VillageInteriorAcoustics acoustics) => interiorAcoustics = acoustics;
+
         public void Advance(float dt)
         {
             if (room == null || village == null || dt < 0f || GameTimeScaleRuntime.IsPaused) return;
             bool inside = IsInside;
             float doorOpen = village.World.ResidentDoors["village-house-08"].OpenFraction;
             Enclosure = Mathf.MoveTowards(Enclosure, inside ? Mathf.Lerp(1f, .72f, doorOpen) : 0f, dt * 1.8f);
-            if (!GameSessionState.IsRidingAVehicle) village.WindSound.SetEnclosure(Enclosure);
-            village.Soundscape.SetListenerEnclosure(Enclosure);
             contacts.SetRoomAcoustics(inside, doorOpen);
             for (int i = 0; i < lights.Length; i++)
                 lights[i].intensity = lightLevels[i] * Mathf.Lerp(1f, .4f, village.WarmthGrade);
@@ -92,7 +93,9 @@ namespace BarPromenade
                         world = system.transform.TransformPoint(world);
                     else if (main.simulationSpace == ParticleSystemSimulationSpace.Custom && main.customSimulationSpace != null)
                         world = main.customSimulationSpace.TransformPoint(world);
-                    if (room.Plan.ContainsInterior(world)) { CulledParticles++; continue; }
+                    if (room.Plan.ContainsInterior(world) ||
+                        village.LodgeShelter != null && village.LodgeShelter.ContainsWeatherShelter(world))
+                    { CulledParticles++; continue; }
                     buffer[kept++] = buffer[i];
                 }
                 if (kept != count) system.SetParticles(buffer, kept);
@@ -106,6 +109,7 @@ namespace BarPromenade
                 contacts.PlayWood(position, .20f);
                 return true;
             }
+            if (interiorAcoustics != null && interiorAcoustics.TryPlayLodgeFootstep(position, runBlend)) return true;
             return village != null && village.World.SnowTreading != null &&
                 village.World.SnowTreading.TryPlayFootstep(position, runBlend);
         }
@@ -113,8 +117,7 @@ namespace BarPromenade
         private void OnDisable()
         {
             if (village == null) return;
-            village.WindSound?.SetEnclosure(0f);
-            village.Soundscape?.SetListenerEnclosure(0f);
+            Enclosure = 0f;
             if (village.Player.Motor != null) village.Player.Motor.SetFootstepSurface(village.World.SnowTreading);
         }
     }

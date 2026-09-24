@@ -1,5 +1,14 @@
 {
   "entries": [
+    {"key": "interaction.lodge_door.open", "value": "E — open door"},
+    {"key": "interaction.lodge_door.close", "value": "E — close door"},
+    {"key": "interaction.lodge_cot", "value": "E — inspect cot"},
+    {"key": "interaction.lodge_kettle", "value": "E — inspect kettle"},
+    {"key": "interaction.lodge_lantern.light", "value": "E — light lantern"},
+    {"key": "interaction.lodge_lantern.extinguish", "value": "E — extinguish lantern"},
+    {"key": "lodge.door.blocked", "value": "The doorway is occupied."},
+    {"key": "lodge.cot.inspect", "value": "A dry blanket and pillow."},
+    {"key": "lodge.kettle.inspect", "value": "The kettle is empty."},
     {"key": "interaction.light_stove", "value": "E — tend the stove"},
     {"key": "interaction.open_stove_door", "value": "E — open the stove door"},
     {"key": "stove.hint.log", "value": "I need a log"},

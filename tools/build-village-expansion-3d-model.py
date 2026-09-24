@@ -23,8 +23,11 @@ from village_abandoned_yards import build_all as abandoned_yards
 from village_avalanche import (ORIGIN as AVALANCHE_ORIGIN, FOOTPRINT as AVALANCHE_FOOTPRINT,
     build_avalanche, build_ruin_variant, validate_avalanche)
 from village_stove_props import ANCHORS as STOVE_ANCHORS, add_props as stove_props, validate_props
+from village_lodge_props import (ANCHORS as LODGE_ANCHORS, add_props as lodge_props,
+    open_geometry as lodge_open_geometry, validate_props as validate_lodge_props)
 
-VERSION = "1.7.0"
+VERSION = "1.8.0"
+ANCHORS = STOVE_ANCHORS + LODGE_ANCHORS
 DESIGN = "village_forest_ski_base_old_road_v1"
 COLORS = {"Timber": (.29,.255,.205,1), "Masonry": (.49,.485,.445,1),
           "LayeredStone": (.32,.345,.34,1), "RustedIron": (.30,.255,.21,1),
@@ -468,12 +471,8 @@ def create_parts():
         for z in (-2.7,2.7):window((x,2.0,z),1.7,True)
     add(lodge,"WindowFrames",merge(frames),"Timber")
     add(lodge,"WindowGlass",merge(glass),"Glass",False)
-    # Doors lie open against the outside wall; no runtime hinge/action is implied.
-    doors=[]
-    for side in (-1,1):
-        for plank in range(6):doors.append(box((side*(1.40+plank*.20),1.32,-6.09),(.188,2.64,.075),.008))
-        for y in (.4,2.2):doors.append(box((side*1.9,y,-6.145),(1.18,.075,.035),.004))
-    add(lodge,"OpenDoorLeaves",merge(doors),"Timber")
+    # Two new solid door leaves are authored closed, then opened independently
+    # by the runtime. Frame/hinges and their two handle faces are measured props.
     for x in (-1.72,1.72):add(lodge,"Vestibule"+str(x),box((x,1.4,-4.8),(.16,2.8,2.1)),"Timber")
     # Furniture footprints are mirrored in AlpineVillageExpansionPlan's blockers.
     benches=[]
@@ -547,12 +546,14 @@ def create_parts():
         if part["kind"]=="SkiLodge" and part["name"] in ("StoveDoor","StoveHardware","StoveDoorWear"):
             part["parent"]="StoveDoorHinge"
     stove_props(add,parts)
+    lodge_props(add,parts)
     return parts
 
 def validate(parts):
     assert len({p["mesh"] for p in parts}) == len(parts), "Duplicate exported part names"
     validate_avalanche(parts)
     validate_props(parts)
+    validate_lodge_props(parts)
     # Albedo is a fixed authored input, with the exact image prompts and bytes retained.
     textures=json.loads((ROOT/"ArtSource/Village/Textures/generation.json").read_text(encoding="utf-8"))
     for texture in textures["images"]:
@@ -560,7 +561,7 @@ def validate(parts):
         assert hashlib.sha256(raw).hexdigest()==texture["sha256"],"Wreck texture changed without provenance"
     # The entry reaches the stove; two capsule-width bypasses stay connected
     # before and behind it. The former straight centre aisle now owns a stove.
-    trees=[BVHTree.FromPolygons(*p["geometry"],all_triangles=False) for p in parts
+    trees=[BVHTree.FromPolygons(*lodge_open_geometry(p),all_triangles=False) for p in parts
            if p["kind"]=="SkiLodge" and p["solid"]]
     def clear_segment(start,end,message):
         start=Vector(start);direction=Vector(end)-start
@@ -575,6 +576,24 @@ def validate(parts):
                 clear_segment((x,y,-2.9),(x,y,3.7),"Blocked lodge stove bypass")
         for z in (-1.2,1.2):
             clear_segment((-1.53,y,z),(1.53,y,z),"Disconnected lodge stove bypasses")
+    # The two independent door states are measured, not inferred from a
+    # cosmetic model swap: either open half admits a capsule-width path, while
+    # the closed leaf physically seals its own half of the original doorway.
+    for left_open,right_open in ((False,False),(True,False),(False,True),(True,True)):
+        door_trees=[]
+        for p in parts:
+            if p["kind"]!="SkiLodge" or not p["solid"]:continue
+            parent=p.get("parent","")
+            is_open=(left_open and parent=="LodgeDoorLeftHinge" or
+                     right_open and parent=="LodgeDoorRightHinge")
+            geometry=lodge_open_geometry(p) if is_open else p["geometry"]
+            door_trees.append(BVHTree.FromPolygons(*geometry,all_triangles=False))
+        for sign,opened in ((-1,left_open),(1,right_open)):
+            for offset in (-.30,0,.30):
+                for y in (.20,1.1,2.3):
+                    origin=Vector((sign*.65+offset,y,-6.7))
+                    hit=any(t.ray_cast(origin,Vector((0,0,1)),1.2)[0] is not None for t in door_trees)
+                    assert hit!=opened,"Door state and physical passage disagree"
     lodge={p["name"]:p for p in parts if p["kind"]=="SkiLodge"}
     for name in ("StoveHearth","StoveBody","StovePipe","RoofFlashing","ChimneyCap"):
         assert lodge[name]["solid"],"Missing stove collision silhouette: "+name
@@ -668,7 +687,7 @@ def validate(parts):
                    for t in warehouse_trees),"Open warehouse loading door"
     # The expanded library is shared by all placed households; these are source
     # triangles, not a fresh mesh/material allocation per world placement.
-    assert sum(kit.triangle_count(p["geometry"]) for p in parts)<=165000,"Expansion triangle budget"
+    assert sum(kit.triangle_count(p["geometry"]) for p in parts)<=173000,"Expansion triangle budget"
     for kind in ("TownHall", "School", "ShopBakery", "Workshop", "MountainRescue",
                  "AbandonedHouseA", "AbandonedHouseB", "WornHouseA", "WornHouseB"):
         lo,hi=bounds_for(kind)
@@ -681,8 +700,8 @@ def validate(parts):
     for sheet in aged["sheets"]:
         raw=(ROOT/"Assets/Resources/Village/Textures"/(sheet["name"]+".png")).read_bytes()
         assert hashlib.sha256(raw).hexdigest()==sheet["sha256"],"Stale abandoned material"
-    first=json.dumps(dict(parts=parts,anchors=STOVE_ANCHORS),sort_keys=True,separators=(",",":"))
-    assert first==json.dumps(dict(parts=create_parts(),anchors=STOVE_ANCHORS),sort_keys=True,separators=(",",":")),"Non-deterministic geometry"
+    first=json.dumps(dict(parts=parts,anchors=ANCHORS),sort_keys=True,separators=(",",":"))
+    assert first==json.dumps(dict(parts=create_parts(),anchors=ANCHORS),sort_keys=True,separators=(",",":")),"Non-deterministic geometry"
     return hashlib.sha256(first.encode()).hexdigest()
 
 def build(parts):
@@ -712,14 +731,15 @@ def build(parts):
         row.update(bounds_min=lo,bounds_max=hi,triangles=kit.triangle_count(g))
         if p["surface"]=="Fire":row["flame_field_vertex_count"]=len(p["flame_uv"])
         rows.append(row)
-    for anchor in STOVE_ANCHORS:
+    for anchor in ANCHORS:
         obj=bpy.data.objects.new("ANCHOR_Expansion_"+anchor["kind"]+"_"+anchor["name"],None)
         bpy.context.scene.collection.objects.link(obj);obj.parent=root
         x,y,z=anchor["position"];obj.location=(x,z,y)
     return objects,rows
 
 def preview(path,objects,rows,kind="SkiLodge",location=(25,-26,15),target=(0,0,2),lens=43):
-    display_kind="Lighter" if kind=="LighterOpen" else kind
+    display_kind=("Lighter" if kind=="LighterOpen" else
+                  "SkiLodge" if kind in ("LodgeInterior","LodgeTeaCorner","LodgeDoors") else kind)
     restored=[]
     for obj,row in zip(objects,rows):
         obj.hide_render=row["kind"]!=display_kind or row.get("hidden",False)
@@ -749,7 +769,7 @@ def main():
               build_signature=signature,mesh_count=len(rows),triangle_count=sum(p["triangles"] for p in rows),
               avalanche_origin=AVALANCHE_ORIGIN,
               avalanche_footprint=[value for point in AVALANCHE_FOOTPRINT for value in point],
-              colliders=False,lights=False,cameras=False,animation_count=0,parts=rows,anchors=STOVE_ANCHORS)
+              colliders=False,lights=False,cameras=False,animation_count=0,parts=rows,anchors=ANCHORS)
     target=args.model_dir/"VillageExpansion3D.json"
     if args.validate_only:assert json.loads(target.read_text())==json.loads(json.dumps(data)),"Stale expansion manifest"
     else:
@@ -762,6 +782,9 @@ def main():
         bpy.context.preferences.filepaths.save_version=0;bpy.ops.wm.save_as_mainfile(filepath=str(args.source_dir/"VillageExpansion3D.blend"))
         if not args.no_preview:
             reviews=[("SkiLodge","VillageExpansion3D.png",(25,-26,15),(0,0,2),43),
+                ("LodgeInterior","VillageLodgeInterior3D.png",(7.4,-4.4,2.2),(-1.3,1.1,.7),23),
+                ("LodgeTeaCorner","VillageLodgeTeaCorner3D.png",(5.65,-.4,2.08),(4.10,1,1.4),48),
+                ("LodgeDoors","VillageLodgeDoors3D.png",(4,-10.2,2.8),(0,-5.98,1.3),45),
                 ("SkiLodge","VillageSkiLodgeStove3D.png",(2.5,-3.5,2.2),(0,0,.95),48),
                 ("SkiLodge","VillageSkiLodgeChimney3D.png",(3,-4,7),(0,0,5.6),48),
                 ("Lighter","VillageLighter3D.png",(.14,-.18,.12),(0,0,.033),55),

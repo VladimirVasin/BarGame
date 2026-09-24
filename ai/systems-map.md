@@ -1,11 +1,8 @@
 # Systems map
 
-One row per system: guarantee, owner and status. Detail:
-
-- normative decisions and exact tuning values: `ai/architecture-notes.md`;
-- current end-to-end behaviour: `ai/current-world.md`;
-- file-by-file layout: `git ls-files` and `rg`, not a checked-in copy;
-- player-visible history: `ai/release-notes.md`.
+One row per system: guarantee, owner, status. Decisions: `ai/architecture-notes.md`;
+behaviour: `ai/current-world.md`; history: `ai/release-notes.md`;
+paths: `git ls-files`/`rg`.
 
 ## Status vocabulary
 
@@ -16,17 +13,16 @@ One row per system: guarantee, owner and status. Detail:
 | `Planned` | Intended; no implementation in the repository. |
 | `Deferred` | Explicitly outside the present milestone; see `ai/project-overview.md`. |
 
-A row never carries a status outside this table. Product-level scope cuts
-(save data, economy, weather extras beyond rain) are `Deferred` in
-`ai/project-overview.md` and do not make an otherwise complete system
-`Partial`.
+Only these statuses apply. Product scope cuts are `Deferred` in
+`ai/project-overview.md`; they do not make a completed system `Partial`.
 
 ## Systems
 
 | System | Guarantee | Key files | Status |
 | --- | --- | --- | --- |
 | Village scenery | 18 households/eight sheds/five yards; avalanche, two woodpiles. | `AlpineVillage{AbandonmentPlan,AvalanchePlan,ExpansionBuilder,WoodpilePlan}` | Current |
-| Lodge stove | First-person inventory, log/lighter, session fire/warmth. | `LodgeStove{Interaction,SessionState}` | Current |
+| Lodge stove | Session fire; both doors shut heats whole interior, else indoor 2.5 m. | `LodgeStove{Interaction,SessionState}` | Current |
+| Lodge shelter | Both doors shut nearly silence wind; lantern switches. Gap: sleep/tea are inspection stubs. | `LodgeShelter*`, `VillageInteriorAcoustics` | Partial |
 | Village paths | Ground junctions; brook bridge. | `AlpineVillage{JunctionPlan,FootbridgePlan}` | Current |
 | Village household life | Six residents, finite household work, indoor/outdoor help and outcomes across visits. | `AlpineVillageLifeController`, `VillageOutdoorHelpController`, `VillageHouseholdProgress` | Current |
 | Independent rules assembly | Calendar/day schedule, input priorities and temporary vehicle ownership have no Unity dependencies. | `Scripts/Rules`, `BarPromenade.Rules.asmdef` | Current |
@@ -136,7 +132,7 @@ A row never carries a status outside this table. Product-level scope cuts
 | Exterior cloud ceiling | A passive shared-density shell supplies a camera-relative cloud ceiling with bounded horizon coverage. | `ExteriorCloud{AssetMetadata,Profile,MotionRules,Resources,Field,CaptureCamera}`, `ExteriorCloud.shader` | Current |
 | Runtime cloth rags | Visible cloth uses shared bounded wind response and explicit attachment constraints. | `ClothPanelFactory`, `CityClothWindRegistry` | Current |
 | City wind dressing | Shared wind drives authored trees/props/cloth while preserving causal movement limits. | `CityWindDressing{Plan,Planner,Validator,WorldBuilder}`, `CityRopeSpanGeometry` | Current |
-| Scene and place music | Guarded handoffs; village theme; powered radio suppresses city. Gap: cemetery/church slots empty. | `MusicMix`, `SceneMusicPlayer`, `CityMusicPlayer` | Partial |
+| Scene and place music | Village theme requires both lodge doors closed; radio suppresses city. Gap: cemetery/church slots empty. | `MusicMix`, `SceneMusicPlayer`, `CityMusicPlayer` | Partial |
 | Common audio mix | One shared mixer routes scene themes, causal ambience, effects and reversible intoxication processing. | `GameAudioMixer`, `BarPromenadeAudio.mixer` | Current |
 | Port and cannery audio | Local machinery/fan/contact; arrival horn ×2 with longer echo/reverb. Pause/distance/seek own playback. | `CityWorkAudio`, `CityPortSound`, `CityCanneryController.{Sound,ProcessSound}` | Current |
 | Intoxication sound perception | Bounded VHS processing follows the smoothed alcohol level and returns to exact bypass when sober. | `IntoxicationPerceptionRules`, `IntoxicationAudioDriver` | Current |

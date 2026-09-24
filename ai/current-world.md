@@ -244,35 +244,35 @@ The vertical slice contains:
   including one loose bridge rail; one tunnel practical visibly flickers. Its
   root may generate the pure City layout/mountain plan needed by the City map
   tab, but it never calls a City world builder or creates City GameObjects;
-- `AlpineVillage` uses shared plans/validators/builders. Step-free lane climbs
-  `6.4 m` over `82.1 m` (`7.8%`, ceiling
-  `8.3%`) to mother's house. Twelve inhabited houses, chapel/source and arrival
-  axis stay; no adit/graves. `CoreTerrainBounds` keeps the core;
-  `AlpineVillageExpansionPlan` adds forest, ski base and old-road loop.
-  A plan-fitted timber bridge carries the station forest path over the brook.
+- `AlpineVillage` shares plans/validators/builders. Step-free lane: `6.4 m` over
+  `82.1 m` (`7.8%`, max `8.3%`) to mother. Twelve inhabited houses, chapel/source/
+  arrival axis stay; no adit/graves. `CoreTerrainBounds` keeps core;
+  `AlpineVillageExpansionPlan` adds forest/base/old-road loop and brook bridge.
   `AlpineVillageAbandonmentPlan`: 18 households (14 standing/3 ruins/foundation),
-  eight sheds (two ruined), five closed civic
-  yards: town hall/square, school, shop-bakery/loading, workshop, rescue/apron;
-  three aged yard variants. Stone/roofs/joinery show wealth; dark windows/
-  broken shutters/debris show abandonment. No new residents/lights/interiors.
-  Four-side sightlines exclude props/foundations; forest clears these/yards,
-  terrain levels shelves.
-  Snow-free `18 x 12 m` lodge: vestibule/benches/racks; central hollow stove,
-  side bypasses/flue opening. Lodge/mother piles: E→silent Yes/No→`FirewoodLog`
-  shared 3D receipt. Cancel before grant; Close/Escape keeps it without key retry.
-  Cap one, duplicate feedback, infinite retake. Stove E opens first person,
-  door/right two-column inventory. Lit E offers door opening. Silent: «Мне понадобится полено»
-  then «Теперь нужно зажечь». Placement consumes one log; reusable metal
-  flip-top lighter is shut in inventory, opens before two dry clicks, third
-  starts gradual fire/light/crackle; closes on withdrawal. Exit closes
-  door/restores camera. Empty/LogPlaced/Burning survives visits; reset:
-  New Game; no burnout. Burning warms within 2.5 m inside the lodge, never
-  through walls. Blender hinge/docks/`StoveFire`/`Lighter`; no hands, world hero visible.
-  Shed/lift passive. Avalanche scar,
-  full-size fallen trees/rock/beams, buried tow/cable and damaged household 15
-  (`AvalancheRuinedHouse`). Front ~20 m/fan 38 m; `AlpineVillageAvalanchePlan`
-  shares fourteen-vertex movement/forest/manifest polygon. Deposit fits ground
-  triangles, debris fits supports; ground snow stays beneath blocking mass.
+  eight sheds (two ruined), five closed yards: town hall/square, school,
+  shop-bakery/loading, workshop, rescue/apron;
+  Three worn yard variants: stone/joinery/dark windows/shutters/debris;
+  no new residents/lights/interiors. Four-side views/yard clearances,
+  level shelves. Dry `18 x 12 m` lodge: cot/blanket, counter kettle/lantern (§10g).
+  Cot/kettle E: silent, no sleep/time/tea/grant. Two replacement leaves
+  E either side: binary pose/collision; occupied closure rejected, one open passes.
+  No auto-close/hero animation. Lantern E: warm local light, no fuel/heat.
+  Session doors/light reset open/off on New Game. `VillageInteriorAcoustics`:
+  hero inside, one shut softens wind, both nearly silence it over .35 s;
+  footsteps/stove/outside clear; workshop shares owner. Lit stove: whole room
+  warm if both shut, otherwise indoor 2.5 m. Roof culls snow outside windows;
+  fixed doorway targets. Lodge/mother piles: E→Yes/No→shared `FirewoodLog`
+  receipt; one, infinite retake/duplicate refusal. Cancel before grant;
+  Close/Escape retains without retry. Stove E: first person/right two-column grid;
+  lit E opens door. Silent:
+  «Мне понадобится полено»/«Теперь нужно зажечь». Log spent; inventory flip-top
+  opens→two dry clicks→third fire/light/crackle→closes. Exit restores camera/door.
+  Empty/LogPlaced/Burning until New Game, no burnout; no hands/visible rig,
+  walls block heat. Shed/lift passive.
+  Avalanche scar/full-size timber/rock/beams/buried tow/cable/damaged household 15
+  (`AvalancheRuinedHouse`). Front ~20 m/fan 38 m; `AlpineVillageAvalanchePlan`:
+  shared 14-vertex movement/forest/manifest polygon; ground-triangle-fitted
+  deposit/supported debris/snow underneath.
   Lower lift/lodge/loop/ruin accessible; no active slide, mine/trade gap unrelated.
   Warehouse yard: `RustedTruck` without wheels/doors/glass, `DiscardedChairPile`,
   clear ramp/road. Stock/supports show conserved repair; rail/rubble close gap.
@@ -361,8 +361,8 @@ The vertical slice contains:
   speed stay shared. `PlayerColdPresentationModel` synchronizes breath and
   wind-carried `PlayerColdBreathEffect`. Open canopy stays cold; cabin/vehicle/
   transitions/hidden contextual presentation suppress the profile. Mother's
-  house and the burning lodge stove's indoor 2.5 m zone suppress cold/breath
-  immediately and thaw frost. Balance/fall/nausea gestures win; pause freezes
+  house/lit lodge suppress cold/breath and thaw frost: whole lodge with both doors
+  closed, else indoor 2.5 m. Balance/fall/nausea win; pause freezes
   body/particles, scene/presentation cleanup clears the profile.
   Equipped scarf halves shiver amplitude/new exposure: first/full frost at
   `12/86 s`, normally `6/43 s`. Hug/rub/breath/gait stay; equipment changes
@@ -1040,9 +1040,10 @@ The vertical slice contains:
   with matching snake-case `_theme` names; optional slots fail silent.
   `AlpineVillageMusicPlayer` adds `AlpineVillageMusic/alpine_village_theme`,
   with the user's MP3, streaming/background/stereo and optional at build time.
-  Its root recreates/resumes the player after Mother's House dormancy. Only
-  AlpineVillage/same-scene rooms play it; MothersHouse hears the departure tail.
-  User-requested `.70` gain raises this theme only; no LUFS calibration yet.
+  Both lodge doors shut enable it anywhere in AlpineVillage. Either open:
+  4 s fade/pause; both shut: 1 s resume, no restart. Suppressed before playback;
+  normal scene exits.
+  User `1.00` theme gain; no LUFS calibration.
   `MusicMix`: unscaled `4 s` out, then `1 s` in after silence, no overlap;
   players wait for clip data. Six measured masters span ~`8 LUFS` raw;
   source trims/Music `-11.5 dB` target `-36.5 LUFS` after Master `-6 dB`.

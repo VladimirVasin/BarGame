@@ -97,6 +97,8 @@ namespace BarPromenade
         public WoodpileInteraction Woodpile { get; private set; }
         public WoodpileInteraction MothersHouseWoodpile { get; private set; }
         public LodgeStoveInteraction Stove { get; private set; }
+        public LodgeShelterController LodgeShelter { get; private set; }
+        public VillageInteriorAcoustics InteriorAcoustics { get; private set; }
         public JournalController Journal { get; private set; }
         public PauseMenuController PauseMenu { get; private set; }
         public AreaArrivalToken ArrivalToken { get; private set; }
@@ -1242,9 +1244,13 @@ namespace BarPromenade
                 if (part.name != "Ski Lodge") continue;
                 Stove = part.gameObject.AddComponent<LodgeStoveInteraction>();
                 Stove.Initialize(this, part);
+                LodgeShelter = part.gameObject.AddComponent<LodgeShelterController>();
+                LodgeShelter.Initialize(this);
                 break;
             }
             if (Stove == null) throw new System.InvalidOperationException("Missing lodge stove.");
+            InteriorAcoustics = gameObject.AddComponent<VillageInteriorAcoustics>();
+            InteriorAcoustics.Initialize(this, LodgeShelter);
             Journal = ui.AddComponent<JournalController>();
             Journal.Initialize(
                 Player,
@@ -1274,8 +1280,8 @@ namespace BarPromenade
             Stove.ProvidesWarmth(Player.GameObject.transform.position);
 
         /// <summary>
-        /// The station canopy and the abandoned lodge keep precipitation out.
-        /// Shelter does not imply that an unheated building warms the hero.
+        /// The station/cabin use the moving shelter profile. Built rooms cull
+        /// particles in their actual volume, preserving weather outside windows.
         /// </summary>
         private bool IsSheltered()
         {
@@ -1293,13 +1299,6 @@ namespace BarPromenade
             }
 
             Vector3 position = Player.GameObject.transform.position;
-            if (Plan.Expansion.IsInterior(new Vector2(position.x, position.z)) &&
-                position.y >= Plan.Expansion.LodgeFloorHeight - 0.3f &&
-                position.y <= Plan.Expansion.LodgeFloorHeight + 3.6f)
-            {
-                return true;
-            }
-
             MountainRoadTerminalRect pad = Plan.Station.PadArea;
             return pad.ContainsXZ(position, 0.2f) &&
                    position.y >= pad.Center.y - 0.3f &&

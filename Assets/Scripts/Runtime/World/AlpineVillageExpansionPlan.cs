@@ -92,6 +92,9 @@ namespace BarPromenade
             Block(blocks, lodge + new Vector2(6.4f, -2.2f), new Vector2(.65f, 3.5f));
             Block(blocks, lodge + new Vector2(0f, 4.75f), new Vector2(11.8f, .8f));
             Block(blocks, lodge + new Vector2(4.7f, 1f), new Vector2(3.8f, .8f));
+            // A low dry cot between the old left bench and the stove bypass.
+            // The moving entry leaves use their current physical colliders.
+            Block(blocks, lodge + new Vector2(-3.2f, 1f), new Vector2(1f, 2.1f));
             // The thin hearth is a walkable step; the iron stove and actual
             // log stack are solid. Both sides of the centre remain open.
             Block(blocks, lodge + new Vector2(0f, -.04f), LodgeStoveSize);
