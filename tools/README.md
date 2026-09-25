@@ -43,13 +43,16 @@ clearance. Outputs: `Assets/Resources/Vehicles/LastRouteCoin3D.{fbx,json}`;
 source `ArtSource/Vehicles/Blender/LastRouteCoin3D.blend`.
 `LastRouteCoinAssetValidation` measures import bounds at the build gate.
 
-Village: `build-village-outdoor-player-actions-3d-model.py`,
-`build-village-errands-3d-model.py` via `run-blender.py`. Checks:
-`VillageOutdoorLife` (contacts/carrying/reload), `VillageOutdoorPartners` (completed work).
-`build-village-expansion-3d-model.py`: houses/yards, lodge/stove/flue, warehouse/bridge.
-`VillageExpansionAssetSetup`: `Assets/Resources/Village/Expansion/VillageExpansion3D.{fbx,json}`.
+Village: `build-village-{outdoor-player-actions,errands}-3d-model.py` via `run-blender.py`.
+Checks: `VillageOutdoorLife` (contacts/carry/reload), `VillageOutdoorPartners` (completion).
+`build-village-expansion-3d-model.py`: houses/yards/lodge/stove/flue/warehouse/bridge;
+`VillageExpansionAssetSetup` imports `Assets/Resources/Village/Expansion/VillageExpansion3D.{fbx,json}`.
 `--validate-only`: bounds/winding/openings/determinism; `--preview-kind`: views.
-`build-village-narrative-3d-model.py`: 30 props; same launcher/`--validate-only`.
+`build-lodge-wood-textures.py [--validate-only]`: 7 RGB ImageGen maps;
+`Assets/Resources/Village/Textures/LodgeWood`; originals/prompts/hashes:
+`ArtSource/Village/LodgeWood/generation.json`. `village_lodge_wood.py`: member
+UVs/roles; `LodgeWoodAppearance`: shared material/metre pitch.
+`build-village-narrative-3d-model.py`: 30 props; same launcher/check.
 `Assets/Resources/VillageNarrative/VillageNarrative3D.{fbx,json}`;
 source `ArtSource/VillageNarrative`. `VillageNarrativeLibrary`: IDs 1–32 except
 26/27, `Create/GetBounds/GetAnchor`; importer `VillageNarrativeAssetSetup`.
@@ -58,9 +61,9 @@ source `ArtSource/VillageNarrative`. `VillageNarrativeLibrary`: IDs 1–32 excep
 `Regenerate Junction Masks And Bake` resets them; both bake albedos/atlas.
 R blends asphalt; G: reference only, no mesh/snow effect.
 
-Keep Unity closed during Blender generation. Worker: independent body/wardrobe,
-`DefaultNpcAssetSetup`. Resident command: WoodWoman/shared actions;
-`--phase-two`: other four. `VillageLife` prebuild imports residents/props/doors.
+Close Unity for Blender. Worker: body/wardrobe, `DefaultNpcAssetSetup`.
+Residents: WoodWoman/shared actions; `--phase-two`: other four.
+`VillageLife` prebuild imports residents/props/doors.
 
 ```powershell
 python tools/run-blender.py tools/build-village-life-props-3d-model.py --expect Assets/Resources/VillageLife/VillageLifeProps3D.fbx --expect Assets/Resources/VillageLife/VillageLifeProps3D.json -- --no-preview
@@ -76,8 +79,8 @@ python tools/run-blender.py tools/build-village-residents-3d-model.py `
 python tools/run-blender.py tools/build-village-resident-doors-3d-model.py --expect Assets/Resources/VillageLife/VillageResidentDoors3D.fbx --expect Assets/Resources/VillageLife/VillageResidentDoors3D.json -- --no-preview
 ```
 
-Validate: `--validate-only` on launcher and generator; retain `--phase-two`.
-Worker preserves the other five bodies/actions; later banks preserve earlier ones.
+Validate: launcher/generator `--validate-only`, keep `--phase-two`.
+Worker retains five other bodies/actions; later banks retain earlier ones.
 `Bar Promenade/Default NPC/Rebuild Ordinary Worker`: worker/12 face-hair atlases;
 Inspector selects faces/hair/presets/slots.
 Register new IDs/constraints in `DefaultNpcPopulation`, use `CreateForCharacter`;
@@ -85,9 +88,9 @@ global assignment avoids repeats and restores the same look across loads.
 Props: 17 recipes, first eleven preserved. Doors: three envelopes, real openings,
 six concealed docks behind vestibule turns.
 
-Sources/reviews: `ArtSource/VillageLife`; captures: `Captures/VillageLife`.
+Sources: `ArtSource/VillageLife`; captures: `Captures/VillageLife`.
 `VillageLife`: bodies, held props, doors/clearance, yielding, gusts, pause/returns.
-Compare beside the hero at equal scale; counts do not prove quality.
+Compare at hero scale; counts do not prove quality.
 
 Part 3 uses three separate generators with Unity closed:
 
@@ -97,13 +100,10 @@ python tools/run-blender.py tools/build-village-residents-3d-model.py --expect A
 python tools/run-blender.py tools/build-village-workroom-player-actions.py --expect Assets/Resources/Player/VillageWorkroomPlayerActions.fbx --expect Assets/Resources/Player/VillageWorkroomPlayerActions.json -- --preview
 ```
 
-The room uses `interior_kit`, the measured house `08` envelope, two actual
-windows and finite furniture/prop hierarchies. Resident authoring preserves
-the six bodies and earlier banks and records metre poses, hand contacts and
-cloth/lid hinges beside nine new clips. Hero help has its own bone-only bank
-and preserves the production prefab. `AreaCaptureFixture.VillageWorkroom`
-imports these packs through the dedicated setups and records the focused
-room journey in `Captures/VillageWorkroom`.
+Room: `interior_kit`, measured house `08`, two windows/finite furniture/props.
+Residents: retain six bodies/earlier banks; nine clips/metre poses/hand contacts/
+cloth-lid hinges. Hero: own bone-only bank, unchanged production prefab.
+`AreaCaptureFixture.VillageWorkroom`: dedicated imports/room journey in `Captures/VillageWorkroom`.
 
 The image-generated Alpine frost texture is a fixed source asset; its final
 prompt, hash and linear-mask import settings are recorded in

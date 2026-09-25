@@ -6,8 +6,8 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 ## 2026-09-25 — Village snow, inspections, lodge and cold loading
 
 - Deep snow: supported forward/backward high steps, no sprint; tracks/clearing
-  restore motion, ahead probes avoid self-stamp oscillation. Cold arms stay;
-  effort torso/same rig/foot phase, post-IK sound/kickup; §6 user exception.
+  restore motion, ahead probes avoid self-stamp oscillation. Cold arms/effort
+  torso/same rig/foot phase/post-IK sound; §6 user exception.
   Checks: `player_snow_actions.validate_snow_actions`,
   `DeepSnow_BlocksSprintPreservesSlowdownAndRestoresMovement`,
   `AreaCaptureFixture.AlpineVillageSnowGait` (game/side frames, contacts,
@@ -15,34 +15,36 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 - Stove: softer/rarer settles, steady air, filtered highs before level match;
   open hearth unchanged. Check:
   `InteriorSoundscapeSynthesisTests.LoopBeds_AreFiniteQuietNonSilentAndLoopSafe`.
-- Narrative: work/storage/debris determine placement; sparse IDs and warehouse/
-  cliff remain. User waived sector quotas and road distance/visibility.
-  Side approaches clear basket/sledge; slower eased camera/focus leaves dialogue
-  timing intact. Check/frames: `AreaCaptureFixture.AlpineVillageNarrative`
-  (yard/model clearance, approaches, RU/EN, continuity, pause/cancel/cleanup).
+- Narrative: work/storage/debris determine placement; IDs/warehouse/cliff stay.
+  User waived sector quotas and road distance/visibility. Basket/sledge
+  approaches clear; eased camera/focus retains dialogue timing. Check/frames:
+  `AreaCaptureFixture.AlpineVillageNarrative` (clearance, RU/EN, cleanup).
   Removed obsolete object-search overloads (CS0618). Check:
   `dotnet build BarPromenade.PlayModeTests.csproj`.
-- Lodge: beds/rug/kettle, six-place oak table/benches/lamp; shared stove
-  sitting/photo/skis. Minibar/seats/PS1 photo: shared Take/Cancel, one grant,
-  persistent removal/inventory frame; real rig/input. Render review corrected
-  photo UV/text overlap. Checks: `build-village-expansion-3d-model.py`,
+- Lodge: beds/rug/kettle, oak table/benches/lamp; shared seats/photo/skis.
+  Minibar/PS1 photo: shared Take/Cancel, one grant, persistent removal/inventory
+  frame; real rig/input. Render review corrected photo UV/text overlap.
+  Checks: `build-village-expansion-3d-model.py`,
   `AreaCaptureFixture.AlpineVillageLodgeFurnishings`.
   Beam/wall coplanarity and cloth/mattress overlap removed, chest against wall:
   `AreaCaptureFixture.AlpineVillageLodgeSurfaceClearance`; frames reviewed.
-  Threshold exposed; hatch/props. User: lower/right-oblique hatch/compact choice,
-  lift/stop/shut→shared bottom reply; E/Esc/repeat. Generator passed;
-  `AlpineVillageLodgeSurfaceClearance`: traversal/sequence/cleanup; left/up orbit, centred lid.
+  Threshold/hatch/props: right-oblique centred lid/compact choice,
+  lift/stop/shut→bottom reply; E/Esc/repeat. Check:
+  `AlpineVillageLodgeSurfaceClearance` (traversal/sequence/cleanup).
+  Shared wood merged floor/hatch/chair. Seven albedos, member UVs and
+  perpendicular floor/hatch grain now separate them; frame stays dark.
+  Texture check: `build-lodge-wood-textures.py`.
+  `AlpineVillageLodgeSurfaceClearance`: cold/warm PS1 frames, applied maps,
+  grayscale contrast and hatch flow reviewed.
   Unrelated `AlpineVillageLodgeShelter` music-pause assertion drift: unchanged.
 - New Game adds lodge arrival outside facing its door; consumes marker once.
   Village default/day `1`/`07:40` stay. Check:
   `NewGame_SelectedLocationUsesItsNormalArrivalWithoutTheHomeOpening(SkiLodge)`;
   RU/EN picker frames: choices/Back fit.
-- Cold loading: lazy grid heights serve mesh/interpolation, invalidated on
-  plan/brook replacement. Snow samples retained cells only, wet exclusion uses the
-  brook index; distant paths reject before junction work, refinement reuses
-  edges/taper distances. Bounded road groups reject distant terrain faces.
-  Geometry/detail preserved; UV assertions now follow each material's used
-  indices, excluding orphan junction vertices. Checks:
+- Cold loading: lazy mesh/interpolation heights invalidate on plan/brook change.
+  Snow samples retained cells; indexed brook wet exclusion, early path rejection,
+  reused edges/tapers and bounded road groups preserve geometry/detail.
+  UV assertions follow used material indices, excluding orphan vertices. Checks:
   `AlpineVillageTests.TerrainMesh_BuildsTheRidgeAndTheCablewayBrink`,
   `SnowField_SparseSamplingPreservesDenseGeometry`,
   `AlpineVillageBrookTests.ChannelIndex_PreservesLinearDistanceAndBedDepth`,

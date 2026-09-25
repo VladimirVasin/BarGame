@@ -236,32 +236,32 @@ The vertical slice contains:
   including one loose bridge rail; one tunnel practical visibly flickers. Its
   root may generate the pure City layout/mountain plan needed by the City map
   tab, but it never calls a City world builder or creates City GameObjects;
-- `AlpineVillage`: shared plans/validators/builders. Step-free lane: `6.4 m` over
-  `82.1 m` (`7.8%`, max `8.3%`) to mother. Twelve lane houses, chapel/source/
+- `AlpineVillage`: plans/validators/builders. Step-free lane: `6.4 m` over
+  `82.1 m` (`7.8%`, max `8.3%`) to mother. 12 lane houses, chapel/source/
   arrival axis; no adit/graves. `CoreTerrainBounds` retains core;
-  `AlpineVillageExpansionPlan` adds forest/base/old-road loop and brook bridge.
+  `AlpineVillageExpansionPlan`: forest/base/old-road loop/brook bridge.
   `AlpineVillageAbandonmentPlan`: 18 households (14 standing/3 ruins/foundation),
   8 sheds (2 ruined), 5 closed yards: town hall/square, school, shop-bakery/loading,
-  workshop, rescue/apron. Three worn stone/joinery/dark-window/shutter/debris
+  workshop, rescue/apron. 3 worn stone/joinery/dark-window/shutter/debris
   variants; no new residents/lights/interiors. Clear yards, level shelves,
-  four-side views. Dry `18 x 12 m` lodge (§10g): bunks/cot heads to wall;
-  rug/kettle/table/two benches for six/lamp. Beams/cloth clear
-  masonry/mattress; wall-side chest/clear cot. Hatch/props at front-left;
-  sill/path. E: centred oblique hatch/no hero, compact Yes/No;
-  lift/stop/shut→bottom reply; E/Esc ends/repeat, No restores.
-  `LodgeInteriorInteractions`: shared E seats/photo/skis RU/EN; group photo:
-  art §10g. E close-up/text→Next→shared Take/Cancel,
-  one on Take; Esc exits. Frame gone/owned until New Game. Cot/kettle: silent
-  E stubs. Doors E both sides/binary collision; no occupied closure/auto-close/hero animation.
+  four-side views. Dry `18 x 12 m` lodge (§10g): wall-headed bunks/cot,
+  rug/kettle/table/two three-seat benches/lamp. Beams/cloth clear masonry/mattress;
+  wall chest/clear cot; front-left hatch/props, sill/path.
+  `LodgeWoodAppearance`: 7 RGB maps/member UVs/shared material.
+  Hatch E: centred/oblique/no hero, Yes/No; lift/stop/shut→bottom reply;
+  E/Esc ends/repeat, No restores. `LodgeInteriorInteractions`: shared RU/EN
+  E seats/photo/skis. Group photo: close-up/text→Next→shared Take/Cancel;
+  Take once/Esc exits; frame gone/owned until New Game. Cot/kettle: silent E stubs.
+  Doors: both-side E/binary collision, no occupied closure/auto-close/hero animation.
   Warm lamp/no fuel/heat; doors/light persist, New Game open/off.
-  `VillageInteriorAcoustics`: one shut softens wind, both nearly silence in .35 s;
-  stove/steps/outside clear. Lit stove: both shut warms room, else indoor 2.5 m;
+  `VillageInteriorAcoustics`: wind softer/near silent with one/both shut in .35 s;
+  stove/steps/outside clear. Lit stove: shut doors warm room, else indoor 2.5 m;
   walls block heat. Roof culls snow/fixed door targets. Lodge/mother piles:
   E→Yes/No→shared `FirewoodLog`, one/retake; Cancel none/Close retains.
   Stove E: first person/right two-column grid; lit opens door. Silent:
-  «Мне понадобится полено»/«Теперь нужно зажечь». Log spent; flip-top opens→third
-  click ignites→closes, soft crackle. Exit restores camera/shuts door.
-  Empty/LogPlaced/Burning until New Game/no burnout; shed/lift passive.
+  «Мне понадобится полено»/«Теперь нужно зажечь». Spent log/flip-top opens→third
+  click ignites→closes/soft crackle. Exit: camera restored/door shut.
+  Empty/LogPlaced/Burning until New Game; no burnout, passive shed/lift.
   Avalanche scar/full-size timber/rock/beams/buried tow/cable/damaged household 15
   (`AvalancheRuinedHouse`). Front ~20 m/fan 38 m; `AlpineVillageAvalanchePlan`:
   shared 14-vertex movement/forest/manifest polygon; ground-triangle-fitted

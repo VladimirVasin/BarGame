@@ -8,6 +8,8 @@ namespace BarPromenade
     public sealed class VillageExpansionPart
     {
         public string kind, name, mesh, surface, parent;
+        public string appearance, wood_uv_mode, wood_uv_signature;
+        public int wood_uv_loop_count;
         public bool solid, hidden;
         public float[] tint, bounds_min, bounds_max;
         public string terrain_fit;
@@ -40,7 +42,7 @@ namespace BarPromenade
     {
         public const string ResourcePath = "Village/Expansion/VillageExpansion3D";
         public const string DesignId = "village_forest_ski_base_old_road_v1";
-        public const string GeneratorVersion = "1.11.0";
+        public const string GeneratorVersion = "1.12.0";
         public const string WreckRustTexturePath = "Village/Textures/VillageTruckRustAlbedo";
         public const string WreckPaintTexturePath = "Village/Textures/VillageTruckPaintAlbedo";
         public const string LodgePicturesTexturePath = "Village/Textures/LodgePictures";
@@ -82,10 +84,15 @@ namespace BarPromenade
                     new Vector2(value.avalanche_footprint[i * 2], value.avalanche_footprint[i * 2 + 1])) > .0001f)
                     throw new InvalidOperationException("Avalanche mesh and movement outlines differ.");
             foreach (VillageExpansionPart part in value.parts)
+            {
                 if (part.kind == "Avalanche" &&
                     (part.terrain_fit != "surface" && part.terrain_fit != "rigid" ||
                      part.terrain_fit == "rigid" && (part.support == null || part.support.Length != 3)))
                     throw new InvalidOperationException("Avalanche part has no terrain fitting contract.");
+                bool lodgeWood = part.kind == "SkiLodge" && part.surface == "Timber";
+                if (lodgeWood ? !LodgeWoodAppearance.IsKnown(part.appearance) : !string.IsNullOrEmpty(part.appearance))
+                    throw new InvalidOperationException("Invalid lodge-only wood appearance: " + part.mesh);
+            }
             var anchors = new HashSet<string>(StringComparer.Ordinal);
             foreach (VillageExpansionAnchor anchor in value.anchors)
                 if (string.IsNullOrEmpty(anchor.kind) || string.IsNullOrEmpty(anchor.name) ||
@@ -183,6 +190,11 @@ namespace BarPromenade
 
         private static void ApplySurface(MeshRenderer renderer, VillageExpansionPart part, Vector3 scale)
         {
+            if (!string.IsNullOrEmpty(part.appearance))
+            {
+                LodgeWoodAppearance.Apply(renderer, part.appearance, scale);
+                return;
+            }
             var tint = new Color(part.tint[0], part.tint[1], part.tint[2], part.tint[3]);
             var block = new MaterialPropertyBlock();
             if (part.surface == "LodgePictures" || part.surface == "LodgeGroupPhotograph")

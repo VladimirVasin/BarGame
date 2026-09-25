@@ -1,0 +1,91 @@
+{
+  "generator": "image_gen (built-in)",
+  "date": "2026-09-25",
+  "purpose": "Seven fixed, full-colour lodge-only wood albedos; deterministic RGB downsample to 512 px. Grain V; no baked light. Source images stay immutable.",
+  "images": [
+    {
+      "name": "LodgeFloorWood",
+      "source": "ArtSource/Village/LodgeWood/LodgeFloorWood.png",
+      "prompt": "Use case: stylized-concept. Asset type: ONE seamless square game albedo texture, 1024 x 1024, opaque RGB. Flat orthographic surface sample fills the entire canvas edge to edge. Hand-painted coarse low-resolution PS1 survival game material, restrained natural palette, simple readable brush-painted fibres rather than photoreal microdetail. Uniform diffuse colour only: no baked lighting, cast shadows, ambient occlusion, highlights, vignette, perspective or 3D scene. All four edges must seamlessly tile. No text, labels, logo, watermark, borders, objects or separate swatches. Grain strictly VERTICAL. Subject: A calm old timber FLOOR: six broad vertical boards across the image, grain running vertically top to bottom, subtle thin dark joints and a few staggered end joints. Muted cool grey-brown approximately #655f54 average, dry matte worn surface. Very low contrast broad grain, gentle flattened foot wear. Darker and quieter than furniture. NO fine high frequency stripes, no dramatic knots.",
+      "grain_axis": "V",
+      "sha256": "af62c03df4e8910e40a6073fb1a92626a78612096c94f08d131221e91a7b6727",
+      "source_size": [
+        1254,
+        1254
+      ],
+      "mode": "RGB"
+    },
+    {
+      "name": "LodgeHatchWood",
+      "source": "ArtSource/Village/LodgeWood/LodgeHatchWood.png",
+      "prompt": "Use case: stylized-concept. Asset type: ONE seamless square game albedo texture, 1024 x 1024, opaque RGB. Flat orthographic surface sample fills the entire canvas edge to edge. Hand-painted coarse low-resolution PS1 survival game material, restrained natural palette, simple readable brush-painted fibres rather than photoreal microdetail. Uniform diffuse colour only: no baked lighting, cast shadows, ambient occlusion, highlights, vignette, perspective or 3D scene. All four edges must seamlessly tile. No text, labels, logo, watermark, borders, objects or separate swatches. Grain strictly VERTICAL. Subject: Pale weathered WOOD FOR A CELLAR HATCH, continuous timber grain vertically from top to bottom, about a 1.2 metre sample. Light desaturated grey ochre approximately #b1a084 average. Broader sparse raised fibres, rubbed pale ridges, a few thin dark age checks. Dry old but sound timber. No plank joints: real four boards are modeled in 3D. Clearly lighter than dark grey brown flooring, no new varnish.",
+      "grain_axis": "V",
+      "sha256": "d3a2242742386cc021e20b584c815e7c9c6b43bf71ed637f380b25799b94313a",
+      "source_size": [
+        1254,
+        1254
+      ],
+      "mode": "RGB"
+    },
+    {
+      "name": "LodgePaintedWood",
+      "source": "ArtSource/Village/LodgeWood/LodgePaintedWood.png",
+      "prompt": "Use case: stylized-concept. Asset type: ONE seamless square game albedo texture, 1024 x 1024, opaque RGB. Flat orthographic surface sample fills the entire canvas edge to edge. Hand-painted coarse low-resolution PS1 survival game material, restrained natural palette, simple readable brush-painted fibres rather than photoreal microdetail. Uniform diffuse colour only: no baked lighting, cast shadows, ambient occlusion, highlights, vignette, perspective or 3D scene. All four edges must seamlessly tile. No text, labels, logo, watermark, borders, objects or separate swatches. Grain strictly VERTICAL. Subject: Old chair wood coated in faded matte GREY GREEN PAINT approximately #969e85, with irregular narrow vertical patches rubbed through to pale warm timber #b8a381. About 75 percent old paint, 25 percent exposed wood. Both paint scratches and wood fibres run vertically top to bottom. Continuous surface without any board seams, panel frames or divisions. Quiet elongated wear, visible broad color masses rather than tiny speckles. No flaking disaster, no bare dark holes. A maintained but very old chair.",
+      "grain_axis": "V",
+      "sha256": "28b56aeef3b9c0023a6b5452eadd6f0b0088a12f384c8a46f7bd1285fb24f297",
+      "source_size": [
+        1254,
+        1254
+      ],
+      "mode": "RGB"
+    },
+    {
+      "name": "LodgeOakWood",
+      "source": "ArtSource/Village/LodgeWood/LodgeOakWood.png",
+      "prompt": "Use case: stylized-concept. Asset type: ONE seamless square game albedo texture, 1024 x 1024, opaque RGB. Flat orthographic surface sample fills the entire canvas edge to edge. Hand-painted coarse low-resolution PS1 survival game material, restrained natural palette, simple readable brush-painted fibres rather than photoreal microdetail. Uniform diffuse colour only: no baked lighting, cast shadows, ambient occlusion, highlights, vignette, perspective or 3D scene. All four edges must seamlessly tile. No text, labels, logo, watermark, borders, objects or separate swatches. Grain strictly VERTICAL. Subject: Old warm OAK DINING TABLE AND BENCH timber, continuous vertically running open grain, a few soft broad oak cathedrals and medullary flecks, worn rubbed matte finish. Medium warm honey brown about #a18459, with restrained muted warmth, not orange. Broad quiet painted grain clearly different from pale pine. No board seams, outlines, frames, nails or objects. Long use and smooth dry wear.",
+      "grain_axis": "V",
+      "sha256": "04f26cc0da3de859ba8f300f328f46e5f31a32cf29d689a9e33273b449df9cec",
+      "source_size": [
+        1254,
+        1254
+      ],
+      "mode": "RGB"
+    },
+    {
+      "name": "LodgePaleWood",
+      "source": "ArtSource/Village/LodgeWood/LodgePaleWood.png",
+      "prompt": "Use case: stylized-concept. Asset type: ONE seamless square game albedo texture, 1024 x 1024, opaque RGB. Flat orthographic surface sample fills the entire canvas edge to edge. Hand-painted coarse low-resolution PS1 survival game material, restrained natural palette, simple readable brush-painted fibres rather than photoreal microdetail. Uniform diffuse colour only: no baked lighting, cast shadows, ambient occlusion, highlights, vignette, perspective or 3D scene. All four edges must seamlessly tile. No text, labels, logo, watermark, borders, objects or separate swatches. Grain strictly VERTICAL. Subject: Old dry pale PINE timber for simple bunk beds and equipment racks. Continuous long vertical grain from top to bottom, sparse small oval knots, rubbed pale edges suggested through fibres, soft grey age streaks. Muted oatmeal tan #b5a88c average, not yellow, matte. Quiet medium width grain, no dark dramatic swirls. No board joints, outlines, frames or objects.",
+      "grain_axis": "V",
+      "sha256": "a364e041ddcd0c599451414f4899d2e76bf1fd6457003d1b4d8382bd5f4842f9",
+      "source_size": [
+        1254,
+        1254
+      ],
+      "mode": "RGB"
+    },
+    {
+      "name": "LodgeDarkWood",
+      "source": "ArtSource/Village/LodgeWood/LodgeDarkWood.png",
+      "prompt": "Use case: stylized-concept. Asset type: ONE seamless square game albedo texture, 1024 x 1024, opaque RGB. Flat orthographic surface sample fills the entire canvas edge to edge. Hand-painted coarse low-resolution PS1 survival game material, restrained natural palette, simple readable brush-painted fibres rather than photoreal microdetail. Uniform diffuse colour only: no baked lighting, cast shadows, ambient occlusion, highlights, vignette, perspective or 3D scene. All four edges must seamlessly tile. No text, labels, logo, watermark, borders, objects or separate swatches. Grain strictly VERTICAL. Subject: Old dark WALNUT stained furniture timber for a panelled minibar and curved armchairs. Continuous fine flowing grain runs vertically top to bottom. Rich but subdued dark chestnut brown #70543e average with soft lighter worn streaks #8d7054, matte aged finish. Gentle variation, readable broad masses, not black, not glossy, no orange cast. No board joints, panel outlines, hardware or objects.",
+      "grain_axis": "V",
+      "sha256": "727510d80e410a0310252cb3fb9297fcea5ebb185a66cf38253a606b5dbb1fba",
+      "source_size": [
+        1254,
+        1254
+      ],
+      "mode": "RGB"
+    },
+    {
+      "name": "LodgeRoughWood",
+      "source": "ArtSource/Village/LodgeWood/LodgeRoughWood.png",
+      "prompt": "Use case: stylized-concept. Asset type: ONE seamless square game albedo texture, 1024 x 1024, opaque RGB. Flat orthographic surface sample fills the entire canvas edge to edge. Hand-painted coarse low-resolution PS1 survival game material, restrained natural palette, simple readable brush-painted fibres rather than photoreal microdetail. Uniform diffuse colour only: no baked lighting, cast shadows, ambient occlusion, highlights, vignette, perspective or 3D scene. All four edges must seamlessly tile. No text, labels, logo, watermark, borders, objects or separate swatches. Grain strictly VERTICAL. Subject: Rough aged timber for old interior beams, doors, storage chest and utility shelves. Continuous grain vertically top to bottom, coarse straight saw marks, sparse elongated age checks and worn grey fibres. Medium desaturated smoky taupe brown #8b7d68 average. Dry sound wood aged through decades, no rot or catastrophe. Quiet irregular coarse character distinct from fine furniture. No plank seams, no panel frames, no lettering, no objects.",
+      "grain_axis": "V",
+      "sha256": "09b25fff037df81d93b37e7cd29263b62938c3c35173f89354a075a449df725b",
+      "source_size": [
+        1254,
+        1254
+      ],
+      "mode": "RGB"
+    }
+  ]
+}

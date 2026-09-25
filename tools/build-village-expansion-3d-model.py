@@ -31,8 +31,9 @@ from village_lodge_minibar import (ANCHORS as MINIBAR_ANCHORS,
     add_minibar as lodge_minibar, validate_minibar)
 from village_lodge_cellar import (ANCHORS as CELLAR_ANCHORS,
     add_cellar as lodge_cellar, floor_geometry as lodge_floor, validate_cellar)
+from village_lodge_wood import WOOD_PITCH, assign_wood, validate_wood
 
-VERSION = "1.11.0"
+VERSION = "1.12.0"
 ANCHORS = STOVE_ANCHORS + LODGE_ANCHORS + FURNITURE_ANCHORS + MINIBAR_ANCHORS + CELLAR_ANCHORS
 DESIGN = "village_forest_ski_base_old_road_v1"
 COLORS = {"Timber": (.29,.255,.205,1), "Masonry": (.49,.485,.445,1),
@@ -555,6 +556,7 @@ def create_parts():
     lodge_furniture(add,parts)
     lodge_minibar(add,parts)
     lodge_cellar(add,parts)
+    assign_wood(parts)
     return parts
 
 def validate(parts):
@@ -565,6 +567,7 @@ def validate(parts):
     validate_furniture(parts)
     validate_minibar(parts)
     validate_cellar(parts)
+    validate_wood(parts)
     # Albedo is a fixed authored input, with the exact image prompts and bytes retained.
     textures=json.loads((ROOT/"ArtSource/Village/Textures/generation.json").read_text(encoding="utf-8"))
     for texture in textures["images"]:
@@ -761,6 +764,12 @@ def build(parts):
             axes=sorted(range(3),key=lambda a:abs(face.normal[a]))[:2]
             for i in face.loop_indices:
                 v=mesh.vertices[mesh.loops[i].vertex_index].co;uv.data[i].uv=(v[axes[0]],v[axes[1]])
+        if "wood_uv" in p:
+            for face,coordinates in zip(mesh.polygons,p["wood_uv"]):
+                # to_source reflects Y/Z and reverses each original polygon.
+                assert len(face.loop_indices)==len(coordinates)
+                for index,coordinate in zip(face.loop_indices,reversed(coordinates)):
+                    uv.data[index].uv=coordinate
         if p["surface"] in ("LodgePictures","LodgeGroupPhotograph"):
             for loop in mesh.loops:uv.data[loop.index].uv=p["picture_uv"][loop.vertex_index]
         if p["surface"]=="Fire":
@@ -772,6 +781,23 @@ def build(parts):
         obj=bpy.data.objects.new(p["mesh"],mesh);bpy.context.scene.collection.objects.link(obj);obj.parent=root
         mat=bpy.data.materials.new(p["mesh"]+"_Review")
         mat.diffuse_color={"WreckRust":(.27,.14,.085,1),"WreckPaint":(.38,.31,.22,1)}.get(p["surface"],p["tint"])
+        if "appearance" in p:
+            mat.use_nodes=True
+            mat.diffuse_color=(1,1,1,1)
+            texture=mat.node_tree.nodes.new("ShaderNodeTexImage")
+            texture.image=bpy.data.images.load(str(ROOT/"Assets/Resources/Village/Textures/LodgeWood"/
+                (p["appearance"]+".png")),check_existing=True)
+            texture.image.pack()
+            texture.extension="REPEAT"
+            coordinate=mat.node_tree.nodes.new("ShaderNodeTexCoord")
+            scale=mat.node_tree.nodes.new("ShaderNodeVectorMath")
+            scale.operation="SCALE"
+            scale.inputs[3].default_value=1/WOOD_PITCH[p["appearance"]]
+            mat.node_tree.links.new(coordinate.outputs["UV"],scale.inputs[0])
+            mat.node_tree.links.new(scale.outputs["Vector"],texture.inputs["Vector"])
+            shader=mat.node_tree.nodes.get("Principled BSDF")
+            shader.inputs["Roughness"].default_value=.96
+            mat.node_tree.links.new(texture.outputs["Color"],shader.inputs["Base Color"])
         if p["surface"] in ("LodgePictures","LodgeGroupPhotograph"):
             mat.use_nodes=True
             picture=mat.node_tree.nodes.new("ShaderNodeTexImage")
@@ -784,7 +810,7 @@ def build(parts):
             mat.node_tree.nodes.active=picture
         mesh.materials.append(mat)
         objects.append(obj);lo,hi=kit.bounds(p["geometry"])
-        row={k:v for k,v in p.items() if k not in ("geometry","flame_uv","flame_colors","picture_uv")}
+        row={k:v for k,v in p.items() if k not in ("geometry","flame_uv","flame_colors","picture_uv","wood_uv")}
         row.update(bounds_min=lo,bounds_max=hi,triangles=kit.triangle_count(g))
         if p["surface"]=="Fire":row["flame_field_vertex_count"]=len(p["flame_uv"])
         rows.append(row)

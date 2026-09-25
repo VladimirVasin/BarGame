@@ -1,0 +1,58 @@
+{
+  "design_id": "lodge_wood_surfaces_v1",
+  "texture_size": 512,
+  "color_mode": "RGB",
+  "wrap_mode": "Repeat",
+  "mipmaps": true,
+  "sheets": [
+    {
+      "name": "LodgeFloorWood",
+      "meters_per_tile": 2.4,
+      "grain_axis": "V",
+      "mean_linear_luminance": 0.111902,
+      "sha256": "34d1b2b5c80542bcf7427b9c59c77a39af578f27f619e6c0fca5b63811cf44ea"
+    },
+    {
+      "name": "LodgeHatchWood",
+      "meters_per_tile": 1.2,
+      "grain_axis": "V",
+      "mean_linear_luminance": 0.3125,
+      "sha256": "53519cd97383f20218cdfa4867374baa87d51b0f4a209ce3387d205daae1fb86"
+    },
+    {
+      "name": "LodgePaintedWood",
+      "meters_per_tile": 0.6,
+      "grain_axis": "V",
+      "mean_linear_luminance": 0.293806,
+      "sha256": "732eca5b76c4c2703c6548941ae6d28000746075fd7543596a2521cca88bf50f"
+    },
+    {
+      "name": "LodgeOakWood",
+      "meters_per_tile": 1.6,
+      "grain_axis": "V",
+      "mean_linear_luminance": 0.192266,
+      "sha256": "48d2fd493f45627c58271d88d0200625a00a143dcfa98ef5d89227f45b361794"
+    },
+    {
+      "name": "LodgePaleWood",
+      "meters_per_tile": 1.6,
+      "grain_axis": "V",
+      "mean_linear_luminance": 0.374044,
+      "sha256": "8c4107033de350fd76a6352168989fcbae416a793ec8fcb56f18d6142fe64766"
+    },
+    {
+      "name": "LodgeDarkWood",
+      "meters_per_tile": 1.25,
+      "grain_axis": "V",
+      "mean_linear_luminance": 0.063656,
+      "sha256": "175f21ac5912ebb5a1bdcaec6c276c18d68eee99699da43f6b026be3de309d03"
+    },
+    {
+      "name": "LodgeRoughWood",
+      "meters_per_tile": 1.8,
+      "grain_axis": "V",
+      "mean_linear_luminance": 0.161597,
+      "sha256": "bc65ca28a0e07d4e3c8e3c988339034b36039e018921d561a74c7f91c7f70b68"
+    }
+  ]
+}

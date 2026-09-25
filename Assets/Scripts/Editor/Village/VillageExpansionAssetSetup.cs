@@ -24,6 +24,16 @@ namespace BarPromenade.Editor
             "Assets/Resources/Village/Textures/AbandonedRoof.png"
         };
 
+        public static string GetLodgeWoodTexturePath(int index) =>
+            "Assets/Resources/" + LodgeWoodAppearance.ResourceFolder + LodgeWoodAppearance.GetTextureName(index) + ".png";
+
+        public static bool IsLodgeWoodTexturePath(string path)
+        {
+            for (int i = 0; i < LodgeWoodAppearance.TextureCount; i++)
+                if (path == GetLodgeWoodTexturePath(i)) return true;
+            return false;
+        }
+
         [MenuItem("Bar Promenade/Village/Import Expansion Pack")]
         public static void BuildOrThrow()
         {
@@ -35,6 +45,8 @@ namespace BarPromenade.Editor
                 AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceSynchronousImport | ImportAssetOptions.ForceUpdate);
             foreach (string path in AbandonedTexturePaths)
                 AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceSynchronousImport | ImportAssetOptions.ForceUpdate);
+            for (int i = 0; i < LodgeWoodAppearance.TextureCount; i++)
+                AssetDatabase.ImportAsset(GetLodgeWoodTexturePath(i), ImportAssetOptions.ForceSynchronousImport | ImportAssetOptions.ForceUpdate);
             ValidateOrThrow();
         }
 
@@ -42,6 +54,7 @@ namespace BarPromenade.Editor
         public static void ValidateOrThrow()
         {
             var manifest = VillageExpansionAssetProvider.ParseManifestOrThrow(File.ReadAllText(ManifestPath));
+            ValidateLodgeWoodTextures();
             var pictures = AssetDatabase.LoadAssetAtPath<Texture2D>(LodgePicturesPath);
             var pictureImporter = AssetImporter.GetAtPath(LodgePicturesPath) as TextureImporter;
             if (pictures == null || pictures.width < 1024 || pictures.width != pictures.height ||
@@ -98,6 +111,8 @@ namespace BarPromenade.Editor
                     Vector3.Distance(imported.position, V(anchor.position)) > .001f)
                     throw new InvalidOperationException("Expansion action anchor lost its metre position: " + anchor.name);
             var names = new HashSet<string>(StringComparer.Ordinal);
+            var lodgeWoodRoles = new HashSet<string>(StringComparer.Ordinal);
+            var lodgeWoodNames = new HashSet<string>(StringComparer.Ordinal);
             int sign = 0;
             foreach (VillageExpansionPart part in manifest.parts)
             {
@@ -121,6 +136,12 @@ namespace BarPromenade.Editor
                     throw new InvalidOperationException("Expansion thermal flame lost its UV1/colors: " + part.mesh);
                 if (triangles.Length / 3 != part.triangles)
                     throw new InvalidOperationException("Expansion triangle count drifted: " + part.mesh);
+                if (part.kind == "SkiLodge" && part.surface == "Timber")
+                {
+                    ValidateLodgeWoodPart(part, source.sharedMesh);
+                    lodgeWoodRoles.Add(part.appearance);
+                    lodgeWoodNames.Add(part.name);
+                }
                 if (part.surface == "LodgePictures" || part.surface == "LodgeGroupPhotograph")
                 {
                     Vector2[] uv = source.sharedMesh.uv;
@@ -141,6 +162,57 @@ namespace BarPromenade.Editor
                     throw new InvalidOperationException("Expansion solid has reversed winding: " + part.mesh);
                 sign = Math.Sign(volume);
             }
+            if (lodgeWoodRoles.Count != LodgeWoodAppearance.TextureCount ||
+                !lodgeWoodNames.Contains("Floor") || !lodgeWoodNames.Contains("CellarHatchLid") ||
+                !lodgeWoodNames.Contains("LodgeStoveChair"))
+                throw new InvalidOperationException("The lodge must retain its floor, hatch, chair and all seven wood families.");
+        }
+
+        private static void ValidateLodgeWoodTextures()
+        {
+            var textures = new HashSet<Texture2D>();
+            for (int i = 0; i < LodgeWoodAppearance.TextureCount; i++)
+            {
+                string path = GetLodgeWoodTexturePath(i);
+                var texture = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+                var importer = AssetImporter.GetAtPath(path) as TextureImporter;
+                if (texture == null || texture.width != LodgeWoodAppearance.TextureSize ||
+                    texture.height != LodgeWoodAppearance.TextureSize || !textures.Add(texture) ||
+                    importer == null || importer.textureType != TextureImporterType.Default ||
+                    importer.textureShape != TextureImporterShape.Texture2D || !importer.sRGBTexture ||
+                    !importer.mipmapEnabled || importer.alphaSource != TextureImporterAlphaSource.None ||
+                    importer.wrapMode != TextureWrapMode.Repeat || importer.filterMode != FilterMode.Bilinear ||
+                    importer.textureCompression != TextureImporterCompression.Uncompressed ||
+                    importer.maxTextureSize != LodgeWoodAppearance.TextureSize)
+                    throw new InvalidOperationException("Lodge wood requires a distinct opaque 512px sRGB, mipmapped, bilinear repeat albedo: " + path);
+            }
+        }
+
+        private static void ValidateLodgeWoodPart(VillageExpansionPart part, Mesh mesh)
+        {
+            if (part.wood_uv_mode != "member_projected_metres" || part.wood_uv_loop_count <= 0 ||
+                part.wood_uv_signature == null || part.wood_uv_signature.Length != 64 ||
+                Array.Exists(part.wood_uv_signature.ToCharArray(), character => !Uri.IsHexDigit(character)))
+                throw new InvalidOperationException("Lodge wood lost its authored UV contract: " + part.mesh);
+            string expected = part.name == "Floor" ? "LodgeFloorWood" :
+                part.name == "CellarHatchLid" ? "LodgeHatchWood" :
+                part.name == "LodgeStoveChair" ? "LodgePaintedWood" : null;
+            if (expected != null && part.appearance != expected)
+                throw new InvalidOperationException("Lodge floor, hatch and chair require separate wood families: " + part.name);
+            Vector2[] uv = mesh.uv;
+            if (uv.Length != mesh.vertexCount || uv.Length == 0)
+                throw new InvalidOperationException("Lodge wood lost its authored metre UVs: " + part.mesh);
+            Vector2 min = Vector2.positiveInfinity, max = Vector2.negativeInfinity;
+            foreach (Vector2 coordinate in uv)
+            {
+                if (float.IsNaN(coordinate.x) || float.IsInfinity(coordinate.x) ||
+                    float.IsNaN(coordinate.y) || float.IsInfinity(coordinate.y))
+                    throw new InvalidOperationException("Lodge wood contains non-finite UVs: " + part.mesh);
+                min = Vector2.Min(min, coordinate);
+                max = Vector2.Max(max, coordinate);
+            }
+            if (max.x - min.x < .0001f || max.y - min.y < .0001f)
+                throw new InvalidOperationException("Lodge wood has collapsed UVs: " + part.mesh);
         }
 
         private static Vector3 V(float[] a)
@@ -156,6 +228,7 @@ namespace BarPromenade.Editor
         {
             if ((Array.IndexOf(VillageExpansionAssetSetup.WreckTexturePaths, assetPath) < 0 &&
                 Array.IndexOf(VillageExpansionAssetSetup.AbandonedTexturePaths, assetPath) < 0 &&
+                !VillageExpansionAssetSetup.IsLodgeWoodTexturePath(assetPath) &&
                 assetPath != VillageExpansionAssetSetup.LodgePicturesPath &&
                 assetPath != VillageExpansionAssetSetup.LodgeGroupPhotographPath) ||
                 !(assetImporter is TextureImporter importer)) return;
@@ -173,7 +246,8 @@ namespace BarPromenade.Editor
                 assetPath == VillageExpansionAssetSetup.LodgeGroupPhotographPath
                 ? TextureWrapMode.Clamp : TextureWrapMode.Repeat;
             importer.textureCompression = TextureImporterCompression.Uncompressed;
-            importer.maxTextureSize = 1024;
+            importer.maxTextureSize = VillageExpansionAssetSetup.IsLodgeWoodTexturePath(assetPath)
+                ? LodgeWoodAppearance.TextureSize : 1024;
         }
 
         private void OnPreprocessModel()

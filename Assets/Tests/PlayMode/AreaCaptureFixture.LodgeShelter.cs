@@ -12,7 +12,7 @@ namespace BarPromenade.Tests.PlayMode
     public sealed partial class AreaCaptureFixture
     {
         [UnityTest]
-        [Explicit("Lodge surfaces, real threshold traversal and the closed-cellar confirmation/outcome flow.")]
+        [Explicit("Distinct lodge wood in cold/warm light, real threshold traversal and the closed-cellar flow.")]
         [PrebuildSetup(typeof(VillageArtAssetsSetup))]
         public IEnumerator AlpineVillageLodgeSurfaceClearance()
         {
@@ -50,6 +50,8 @@ namespace BarPromenade.Tests.PlayMode
             });
 
             Transform lodge = root.LodgeShelter.transform;
+            VerifyLodgeWoodTextureRoles(lodge);
+            yield return CaptureLodgeWoodReadability(root);
             Transform chest = lodge.Find("LodgeBlanketChest");
             Assert.That(chest, Is.Not.Null);
             Vector3[] vertices = chest.GetComponent<MeshFilter>().sharedMesh.vertices
@@ -87,6 +89,85 @@ namespace BarPromenade.Tests.PlayMode
                 Time.captureDeltaTime = previousStep;
                 input.TearDown();
             }
+        }
+
+        private static void VerifyLodgeWoodTextureRoles(Transform lodge)
+        {
+            var expected = new[]
+            {
+                (Part: "Floor", Texture: "LodgeFloorWood"),
+                (Part: "CellarHatchLid", Texture: "LodgeHatchWood"),
+                (Part: "LodgeStoveChair", Texture: "LodgePaintedWood"),
+                (Part: "LodgeDiningTable", Texture: "LodgeOakWood"),
+                (Part: "LodgeBunkFrame0", Texture: "LodgePaleWood"),
+                (Part: "LodgeMinibarCabinet", Texture: "LodgeDarkWood"),
+                (Part: "LodgeBlanketChest", Texture: "LodgeRoughWood")
+            };
+            MeshRenderer[] renderers = lodge.GetComponentsInChildren<MeshRenderer>(true);
+            var applied = new HashSet<Texture>();
+            var block = new MaterialPropertyBlock();
+            foreach (var role in expected)
+            {
+                MeshRenderer renderer = renderers.Single(part => part.name == role.Part);
+                Texture2D texture = Resources.Load<Texture2D>("Village/Textures/LodgeWood/" + role.Texture);
+                Assert.That(texture, Is.Not.Null, role.Texture + " must be a published runtime asset.");
+                renderer.GetPropertyBlock(block);
+                Texture actual = block.GetTexture("_BaseMap") ?? renderer.sharedMaterial.GetTexture("_BaseMap");
+                Assert.That(actual, Is.SameAs(texture),
+                    role.Part + " must render its wood role, including the material-property override.");
+                Assert.That(applied.Add(actual), Is.True,
+                    role.Part + " must not reuse the floor, hatch, chair or another wood family's image.");
+            }
+        }
+
+        private static IEnumerator CaptureLodgeWoodReadability(AlpineVillageRoot root)
+        {
+            int previousDoors = (LodgeShelterSessionState.IsDoorOpen(0) ? 1 : 0) |
+                (LodgeShelterSessionState.IsDoorOpen(1) ? 2 : 0);
+            bool previousLantern = LodgeShelterSessionState.LanternLit;
+            float previousStep = Time.captureDeltaTime;
+            try
+            {
+                Time.captureDeltaTime = .1f;
+                SetLodgeDoors(root.LodgeShelter, 0);
+                foreach (bool warm in new[] { false, true })
+                {
+                    Assert.That(root.LodgeShelter.SetLanternLit(warm), Is.True);
+                    if (warm)
+                    {
+                        Assert.That(GameSessionState.TryAddInventoryItem(InventoryItemId.FirewoodLog), Is.True);
+                        Assert.That(LodgeStoveSessionState.TryPlaceLog(), Is.True);
+                        Assert.That(LodgeStoveSessionState.TryIgnite(), Is.True);
+                        for (int frame = 0; frame < 30 && root.Stove.Fire.Strength < 1f; frame++)
+                            yield return null;
+                        Assert.That(root.Stove.Fire.Strength, Is.EqualTo(1f),
+                            "Warm material views use the fully grown real stove light.");
+                    }
+                    // Let the actual fire/light owners observe the session state.
+                    yield return null; yield return null;
+                    string lighting = warm ? "warm" : "cold";
+                    // These retain surrounding floor at ordinary standing-eye
+                    // distance; a close-up alone can hide the original problem.
+                    LodgeFrame(root, "lodge-wood-hatch-" + lighting,
+                        new Vector3(-4.8f, 1.65f, -2.8f), new Vector3(-7.25f, .02f, -4.2f), 62f);
+                    LodgeFrame(root, "lodge-wood-chair-" + lighting,
+                        new Vector3(1.05f, 1.65f, -2.8f), new Vector3(-1.5f, .53f, -1.25f), 62f);
+                    LodgeFrame(root, "lodge-wood-hall-" + lighting,
+                        new Vector3(-.8f, 1.85f, -4.5f), new Vector3(0f, 1.05f, 2f), 94f);
+                    LodgeFrame(root, "lodge-wood-dining-" + lighting,
+                        new Vector3(1.4f, 1.65f, -1.7f), new Vector3(4f, .5f, .8f), 68f);
+                    LodgeFrame(root, "lodge-wood-minibar-" + lighting,
+                        new Vector3(4f, 1.65f, -1.1f), new Vector3(5.7f, .6f, -4.7f), 76f);
+                }
+            }
+            finally
+            {
+                Time.captureDeltaTime = previousStep;
+                LodgeStoveSessionState.ResetForNewSession();
+                root.LodgeShelter.SetLanternLit(previousLantern);
+                SetLodgeDoors(root.LodgeShelter, previousDoors);
+            }
+            yield return null;
         }
 
         private static IEnumerator VerifyLodgeThreshold(AlpineVillageRoot root, InputTestFixture input, Keyboard keyboard)

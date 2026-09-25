@@ -1,9 +1,9 @@
 {
-  "generator_version": "1.11.0",
+  "generator_version": "1.12.0",
   "design_id": "village_forest_ski_base_old_road_v1",
   "scale_mode": "fixed_metres",
   "uv_mode": "projected_metres",
-  "build_signature": "9827919be03b65161bb2e7058fe86629715fadd69f46447e9c6f1f538a848ce2",
+  "build_signature": "a6fc285d83db438a60730081bf24254685e40b7fd89c0e0a702972d5ebb89dd2",
   "mesh_count": 654,
   "triangle_count": 184816,
   "avalanche_origin": [
@@ -57,6 +57,10 @@
         0.205,
         1
       ],
+      "appearance": "LodgeFloorWood",
+      "wood_uv_mode": "member_projected_metres",
+      "wood_uv_loop_count": 96,
+      "wood_uv_signature": "2af8f2f93f88d998dea0401a66475e9f2499a429b61f741956a3752e906e2ee0",
       "bounds_min": [
         -8.68,
         -0.16,
@@ -177,6 +181,10 @@
         0.205,
         1
       ],
+      "appearance": "LodgeRoughWood",
+      "wood_uv_mode": "member_projected_metres",
+      "wood_uv_loop_count": 18,
+      "wood_uv_signature": "31182ad369abec484af4fcf0a5259bdfa3266e02b6182e56d6f32c8215a5b802",
       "bounds_min": [
         -9.0,
         3.6,
@@ -225,6 +233,10 @@
         0.205,
         1
       ],
+      "appearance": "LodgeRoughWood",
+      "wood_uv_mode": "member_projected_metres",
+      "wood_uv_loop_count": 18,
+      "wood_uv_signature": "aef033df6637a7b497f19258442fa8983196fc3ba9abaf0c42d51576e54ee156",
       "bounds_min": [
         8.68,
         3.6,
@@ -249,6 +261,10 @@
         0.205,
         1
       ],
+      "appearance": "LodgeRoughWood",
+      "wood_uv_mode": "member_projected_metres",
+      "wood_uv_loop_count": 336,
+      "wood_uv_signature": "24535af6e749c8639d1fbe1ff5fbff57c351a4deffb45887d1df412053327e3b",
       "bounds_min": [
         -9.65,
         3.366537548580874,
@@ -612,6 +628,10 @@
         0.205,
         1
       ],
+      "appearance": "LodgeRoughWood",
+      "wood_uv_mode": "member_projected_metres",
+      "wood_uv_loop_count": 784,
+      "wood_uv_signature": "a43f5f6bb39f2b2627d41a139a8b6c6bd4c10eecc67f916e965d6eb684309423",
       "bounds_min": [
         -9.15,
         0.0,
@@ -636,6 +656,10 @@
         0.205,
         1
       ],
+      "appearance": "LodgeRoughWood",
+      "wood_uv_mode": "member_projected_metres",
+      "wood_uv_loop_count": 1584,
+      "wood_uv_signature": "937f20c58dd1ca34b8d54828d99102646acf919a1cf05ed774816c92b00ce315",
       "bounds_min": [
         -9.08,
         0.97,
@@ -684,6 +708,10 @@
         0.205,
         1
       ],
+      "appearance": "LodgeRoughWood",
+      "wood_uv_mode": "member_projected_metres",
+      "wood_uv_loop_count": 56,
+      "wood_uv_signature": "d2811a6b42d52fd678edf1ce2de05d2d4daa1503ce313bb423f432db1a00a1c9",
       "bounds_min": [
         -1.8,
         0.0,
@@ -708,6 +736,10 @@
         0.205,
         1
       ],
+      "appearance": "LodgeRoughWood",
+      "wood_uv_mode": "member_projected_metres",
+      "wood_uv_loop_count": 56,
+      "wood_uv_signature": "3590e39d51b8562e9ae4f54150ae6b06f5e51bcf5301604ed17df2c213d0acb6",
       "bounds_min": [
         1.64,
         0.0,
@@ -732,6 +764,10 @@
         0.205,
         1
       ],
+      "appearance": "LodgePaleWood",
+      "wood_uv_mode": "member_projected_metres",
+      "wood_uv_loop_count": 1176,
+      "wood_uv_signature": "da43800ac0b7c8bfd3c21f81db7a7b37dd26e1d20cc4bdf77778ca9886267dea",
       "bounds_min": [
         -5.9,
         0.020000000000000018,
@@ -781,6 +817,10 @@
         0.205,
         1
       ],
+      "appearance": "LodgeRoughWood",
+      "wood_uv_mode": "member_projected_metres",
+      "wood_uv_loop_count": 224,
+      "wood_uv_signature": "40e37b2d185cea0f0dbb22a8067de5fffdadf84cb5dda28d30cd93b1e9c3a484",
       "bounds_min": [
         7.879999999999999,
         0.0,
@@ -805,6 +845,10 @@
         0.23,
         1
       ],
+      "appearance": "LodgeRoughWood",
+      "wood_uv_mode": "member_projected_metres",
+      "wood_uv_loop_count": 224,
+      "wood_uv_signature": "008c2823439773d22fe88132568a625f7f226b8fe2ef67cefccc792fd7a05ca3",
       "bounds_min": [
         -7.66,
         0.22999999999999998,
@@ -13183,6 +13227,10 @@
         0.22,
         1
       ],
+      "appearance": "LodgeRoughWood",
+      "wood_uv_mode": "member_projected_metres",
+      "wood_uv_loop_count": 224,
+      "wood_uv_signature": "69fc1df7e58f77cdcee47970eb3878f30b14d73413b44d02f4609ae596a9dd10",
       "bounds_min": [
         -1.48,
         0.0,
@@ -13207,6 +13255,10 @@
         0.26,
         1
       ],
+      "appearance": "LodgeRoughWood",
+      "wood_uv_mode": "member_projected_metres",
+      "wood_uv_loop_count": 56,
+      "wood_uv_signature": "b0aa644c9bbbcbf5bde2ce75a117df62c2fa2cf8958d9f3d2c20a182011a7bc3",
       "bounds_min": [
         -1.3,
         -0.16,
@@ -13232,6 +13284,10 @@
         1
       ],
       "parent": "LodgeDoorLeftHinge",
+      "appearance": "LodgeRoughWood",
+      "wood_uv_mode": "member_projected_metres",
+      "wood_uv_loop_count": 392,
+      "wood_uv_signature": "d9066d13825f926fd6080abdc1dc110a52dbb60ab4c03fa7af7dd69411b7a933",
       "bounds_min": [
         -1.298,
         0.08499999999999996,
@@ -13257,6 +13313,10 @@
         1
       ],
       "parent": "LodgeDoorLeftHinge",
+      "appearance": "LodgeRoughWood",
+      "wood_uv_mode": "member_projected_metres",
+      "wood_uv_loop_count": 616,
+      "wood_uv_signature": "658076638e3e94d5ead7ea29734b16f5297b4a1905bc46c38f16d47883d3f3cc",
       "bounds_min": [
         -1.2965,
         0.08499999999999996,
@@ -13332,6 +13392,10 @@
         1
       ],
       "parent": "LodgeDoorRightHinge",
+      "appearance": "LodgeRoughWood",
+      "wood_uv_mode": "member_projected_metres",
+      "wood_uv_loop_count": 392,
+      "wood_uv_signature": "570ed973c1d08bfe61c007b94e653a840dceb3311775a08aed004828fac5a10b",
       "bounds_min": [
         0.010000000000000009,
         0.08499999999999996,
@@ -13357,6 +13421,10 @@
         1
       ],
       "parent": "LodgeDoorRightHinge",
+      "appearance": "LodgeRoughWood",
+      "wood_uv_mode": "member_projected_metres",
+      "wood_uv_loop_count": 560,
+      "wood_uv_signature": "a644177e55a7442990d01df1f640d628887637d9ff0a604ed01042e4646c65a0",
       "bounds_min": [
         0.011500000000000003,
         0.08499999999999996,
@@ -13431,6 +13499,10 @@
         0.245,
         1
       ],
+      "appearance": "LodgePaleWood",
+      "wood_uv_mode": "member_projected_metres",
+      "wood_uv_loop_count": 1064,
+      "wood_uv_signature": "04668bdaebac72cef2672f436f9973552aaff58da982b2187998ad24e13b43ae",
       "bounds_min": [
         -8.66,
         0.020000000000000018,
@@ -13719,6 +13791,10 @@
         0.175,
         1
       ],
+      "appearance": "LodgeRoughWood",
+      "wood_uv_mode": "member_projected_metres",
+      "wood_uv_loop_count": 70,
+      "wood_uv_signature": "30204b038fb1b0a6998cb996e5df35b79ca590c69a9ee8ef8b0a0f2376ef350f",
       "bounds_min": [
         8.227576658019817,
         1.4660476011517996,
@@ -13983,6 +14059,10 @@
         0.205,
         1
       ],
+      "appearance": "LodgeOakWood",
+      "wood_uv_mode": "member_projected_metres",
+      "wood_uv_loop_count": 1488,
+      "wood_uv_signature": "36e5c91b26e23864eb4406d22c838e3c8251001d665ab024d6f1ed3a7a6e3281",
       "bounds_min": [
         3.4765,
         0.039999999999999994,
@@ -14007,6 +14087,10 @@
         0.135,
         1
       ],
+      "appearance": "LodgeOakWood",
+      "wood_uv_mode": "member_projected_metres",
+      "wood_uv_loop_count": 168,
+      "wood_uv_signature": "963e35f5ebd68d56af17fa881f4becdc9df3ab4a07a1a9f018327e6bb64d1449",
       "bounds_min": [
         3.6892757929660003,
         0.661,
@@ -14031,6 +14115,10 @@
         0.203,
         1
       ],
+      "appearance": "LodgeOakWood",
+      "wood_uv_mode": "member_projected_metres",
+      "wood_uv_loop_count": 1096,
+      "wood_uv_signature": "3cecc9d0dccdbb98a7f12099d25fcd4cfbd155f8b7f0aa39e1ba21575caef204",
       "bounds_min": [
         2.8205,
         0.02,
@@ -14055,6 +14143,10 @@
         0.203,
         1
       ],
+      "appearance": "LodgeOakWood",
+      "wood_uv_mode": "member_projected_metres",
+      "wood_uv_loop_count": 1096,
+      "wood_uv_signature": "c47871246e6c082447c1270ae9f70cf6f0d521dc7b01bde12354934446aa8196",
       "bounds_min": [
         4.7805,
         0.02,
@@ -14079,6 +14171,10 @@
         0.212,
         1
       ],
+      "appearance": "LodgePaleWood",
+      "wood_uv_mode": "member_projected_metres",
+      "wood_uv_loop_count": 2856,
+      "wood_uv_signature": "bb4d0ba5db0a14cbeb078dab97f55ed81d6e40be7f69686343c26dafda95bb29",
       "bounds_min": [
         -8.6645,
         0.020000000000000018,
@@ -14175,6 +14271,10 @@
         0.212,
         1
       ],
+      "appearance": "LodgePaleWood",
+      "wood_uv_mode": "member_projected_metres",
+      "wood_uv_loop_count": 2856,
+      "wood_uv_signature": "039cb0bac558524acfa80e1fb21705213b9c748ca46a8331e36b685fa2a0589d",
       "bounds_min": [
         -8.6645,
         0.020000000000000018,
@@ -14319,6 +14419,10 @@
         0.21,
         1
       ],
+      "appearance": "LodgePaintedWood",
+      "wood_uv_mode": "member_projected_metres",
+      "wood_uv_loop_count": 1744,
+      "wood_uv_signature": "8ca780d43567b03c135788a45302d05fd2ecf4ed27a24d474db6e1e212502903",
       "bounds_min": [
         -1.8085688806382794,
         0.02,
@@ -14343,6 +14447,10 @@
         0.18,
         1
       ],
+      "appearance": "LodgeRoughWood",
+      "wood_uv_mode": "member_projected_metres",
+      "wood_uv_loop_count": 448,
+      "wood_uv_signature": "1efc7540a582d3dd9ee3e3b087673f00328151af468e1efee04443af4a21994d",
       "bounds_min": [
         -8.68,
         0.030000000000000006,
@@ -14415,6 +14523,10 @@
         0.18,
         1
       ],
+      "appearance": "LodgeRoughWood",
+      "wood_uv_mode": "member_projected_metres",
+      "wood_uv_loop_count": 56,
+      "wood_uv_signature": "24d5f630c55bad6c0917c573023008fd731965ba2e8b30255ffd41888b17ed25",
       "bounds_min": [
         -3.5,
         1.68,
@@ -14463,6 +14575,10 @@
         0.18,
         1
       ],
+      "appearance": "LodgeRoughWood",
+      "wood_uv_mode": "member_projected_metres",
+      "wood_uv_loop_count": 280,
+      "wood_uv_signature": "bc88c6604a71665e15a5989affb92a3b9d6d21224d5b260cb59127ec6a8aa5be",
       "bounds_min": [
         8.31,
         1.37,
@@ -14511,6 +14627,10 @@
         0.164,
         1
       ],
+      "appearance": "LodgeRoughWood",
+      "wood_uv_mode": "member_projected_metres",
+      "wood_uv_loop_count": 280,
+      "wood_uv_signature": "7a46a9ca1e2db494a3c688639cf950e5537137108e897eaf0fa05fa1c6bed4dd",
       "bounds_min": [
         8.5305,
         1.601,
@@ -14559,6 +14679,10 @@
         0.164,
         1
       ],
+      "appearance": "LodgeRoughWood",
+      "wood_uv_mode": "member_projected_metres",
+      "wood_uv_loop_count": 280,
+      "wood_uv_signature": "2d25e1b4ee6341f929e09e3162d33858686ae835c393b65db23d16d066d92c3a",
       "bounds_min": [
         2.476,
         1.7760000000000002,
@@ -14607,6 +14731,10 @@
         0.164,
         1
       ],
+      "appearance": "LodgeRoughWood",
+      "wood_uv_mode": "member_projected_metres",
+      "wood_uv_loop_count": 280,
+      "wood_uv_signature": "c349aabaadf9da1fd8fe679b0a2d5c08b303c18ed7d04b3a0967c61e485a70ef",
       "bounds_min": [
         -3.7439999999999998,
         1.6260000000000001,
@@ -14655,6 +14783,10 @@
         0.121,
         1
       ],
+      "appearance": "LodgeRoughWood",
+      "wood_uv_mode": "member_projected_metres",
+      "wood_uv_loop_count": 420,
+      "wood_uv_signature": "dd8e07950a876d6bac82969de78d5578f2695d02ace3c56049889096490adeaf",
       "bounds_min": [
         -2.92,
         1.83,
@@ -14850,6 +14982,10 @@
         0.135,
         1
       ],
+      "appearance": "LodgeDarkWood",
+      "wood_uv_mode": "member_projected_metres",
+      "wood_uv_loop_count": 392,
+      "wood_uv_signature": "c56f9cff11aed4d1cab792a5f5d7892a368fb8748b1a486f384c9077efcdaf4a",
       "bounds_min": [
         2.1999999999999997,
         0.019999999999999997,
@@ -14874,6 +15010,10 @@
         0.103,
         1
       ],
+      "appearance": "LodgeDarkWood",
+      "wood_uv_mode": "member_projected_metres",
+      "wood_uv_loop_count": 560,
+      "wood_uv_signature": "2cd416fdac118e310e6ea5b86186851b766a9f9ef56517f104a553a9fd878aa8",
       "bounds_min": [
         2.3015,
         0.11500000000000002,
@@ -15138,6 +15278,10 @@
         0.103,
         1
       ],
+      "appearance": "LodgeDarkWood",
+      "wood_uv_mode": "member_projected_metres",
+      "wood_uv_loop_count": 56,
+      "wood_uv_signature": "a0dfecdfe968e477e7c0833b16076424a0e2435ec8cdafe33e38afb400a66481",
       "bounds_min": [
         3.55,
         0.904,
@@ -15186,6 +15330,10 @@
         0.135,
         1
       ],
+      "appearance": "LodgeDarkWood",
+      "wood_uv_mode": "member_projected_metres",
+      "wood_uv_loop_count": 764,
+      "wood_uv_signature": "f96558472267f6b0d10948617b4d908c3d763fd1db70287a61e96a04a4110e38",
       "bounds_min": [
         5.417889370457813,
         0.02400628151051025,
@@ -15258,6 +15406,10 @@
         0.135,
         1
       ],
+      "appearance": "LodgeDarkWood",
+      "wood_uv_mode": "member_projected_metres",
+      "wood_uv_loop_count": 764,
+      "wood_uv_signature": "962e8c57940f71c91700832233c93ff67898a0947be8669156a15bd1a5e4e152",
       "bounds_min": [
         7.501177543342738,
         0.02400628151051025,
@@ -15378,6 +15530,10 @@
         0.135,
         1
       ],
+      "appearance": "LodgeDarkWood",
+      "wood_uv_mode": "member_projected_metres",
+      "wood_uv_loop_count": 684,
+      "wood_uv_signature": "3c49ba9cf2875b2abf3c29348071e792394fdc42e4879f9eca69166e60747b5d",
       "bounds_min": [
         6.7,
         0.03035533350133922,
@@ -15499,6 +15655,10 @@
         1
       ],
       "parent": "LodgeGroupPhotograph",
+      "appearance": "LodgeRoughWood",
+      "wood_uv_mode": "member_projected_metres",
+      "wood_uv_loop_count": 248,
+      "wood_uv_signature": "83daf5eda314de8e8fd203422f4a060f113078807ec5ec3175f4e9ab6d3af40c",
       "bounds_min": [
         2.5050000000000003,
         0.9011722122271411,
@@ -15524,6 +15684,10 @@
         1
       ],
       "parent": "LodgeGroupPhotograph",
+      "appearance": "LodgeRoughWood",
+      "wood_uv_mode": "member_projected_metres",
+      "wood_uv_loop_count": 92,
+      "wood_uv_signature": "f71a4acc73ebfbccda506bdce37a6bfdfddad8aac39ef7221e02bafb15eeb229",
       "bounds_min": [
         2.565,
         0.9,
@@ -15574,6 +15738,10 @@
         1
       ],
       "parent": "LodgeCellarHatch",
+      "appearance": "LodgeDarkWood",
+      "wood_uv_mode": "member_projected_metres",
+      "wood_uv_loop_count": 96,
+      "wood_uv_signature": "08c5e1f94fed782d00ec7f188d2ebe9d4b1868085458318ca74250849e6e88fa",
       "bounds_min": [
         -7.8100000000000005,
         -0.075,
@@ -15599,6 +15767,10 @@
         1
       ],
       "parent": "LodgeCellarHatchHinge",
+      "appearance": "LodgeHatchWood",
+      "wood_uv_mode": "member_projected_metres",
+      "wood_uv_loop_count": 168,
+      "wood_uv_signature": "3bcef55c66d392b0533788e7cb15aacce85c32009dd693c724f35c14718647fa",
       "bounds_min": [
         -7.698,
         -0.055,
@@ -15624,6 +15796,10 @@
         1
       ],
       "parent": "LodgeCellarHatchHinge",
+      "appearance": "LodgeDarkWood",
+      "wood_uv_mode": "member_projected_metres",
+      "wood_uv_loop_count": 24,
+      "wood_uv_signature": "d4ae75bf7ad194381fc8bd0a6701ba1adca976e61a5e698d6e83a82d9547fe9c",
       "bounds_min": [
         -7.7,
         -0.075,
@@ -15771,6 +15947,10 @@
         0.19,
         1
       ],
+      "appearance": "LodgeRoughWood",
+      "wood_uv_mode": "member_projected_metres",
+      "wood_uv_loop_count": 48,
+      "wood_uv_signature": "37c57c7aee743da7b7bdf80793e384845bc4f0eebfd21daa7994371d35332020",
       "bounds_min": [
         -8.39,
         0.0765,
@@ -15819,6 +15999,10 @@
         0.175,
         1
       ],
+      "appearance": "LodgeRoughWood",
+      "wood_uv_mode": "member_projected_metres",
+      "wood_uv_loop_count": 36,
+      "wood_uv_signature": "39d889460d114c02e324444fbd34378cb9080a0dd7910cec773bb77d436b99e1",
       "bounds_min": [
         -8.545499999999999,
         0.45999999999999996,
@@ -15891,6 +16075,10 @@
         0.195,
         1
       ],
+      "appearance": "LodgeRoughWood",
+      "wood_uv_mode": "member_projected_metres",
+      "wood_uv_loop_count": 216,
+      "wood_uv_signature": "36a35cb2c46b70e77c5ea3949c353e09cf0145d100a4bd447c9e8e24004349ae",
       "bounds_min": [
         -7.4,
         0.020000000000000004,

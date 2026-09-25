@@ -8,22 +8,22 @@ Earlier notes: [`release-notes-2026-09.md`](archive/release-notes-2026-09.md).
 
 ### 2026-09-25 — Сугробы, осмотры, база и загрузка
 
-- Сугробы: высокий шаг, назад осторожнее; без бега. Следы/расчистка
-  возвращают ход. Проверки: `player_snow_actions.validate_snow_actions`,
+- Сугробы: высокий шаг без бега; следы/расчистка возвращают ход.
+  Проверки: `player_snow_actions.validate_snow_actions`,
   `DeepSnow_BlocksSprintPreservesSlowdownAndRestoresMovement`,
   `AreaCaptureFixture.AlpineVillageSnowGait` (кадры).
 - Печь: мягкий редкий треск, приглушённый верх. Проверка:
   `InteriorSoundscapeSynthesisTests.LoopBeds_AreFiniteQuietNonSilentAndLoopSafe`.
-- Осмотры: 24 снаружи у работы/хранения/лавины, склад/обрыв сохранены.
-  Место важнее квот/видимости; камера/фокус плавнее.
+- Осмотры у работы/хранения/лавины; склад/обрыв сохранены.
+  Место важнее квот; камера/фокус плавнее.
   Проверка/кадры: `AreaCaptureFixture.AlpineVillageNarrative`.
-- База: мебель/посадка/лыжи, минибар/фото PS1 в инвентарь.
+- База: мебель/посадка/лыжи, минибар/фото в инвентарь.
   Проверка: `AreaCaptureFixture.AlpineVillageLodgeFurnishings`.
-  Балки/одеяло без наложений, сундук у стены:
-  `AreaCaptureFixture.AlpineVillageLodgeSurfaceClearance` (кадры).
-  Порог виден; люк в центре кадра: упор/закрытие→ответ снизу.
+  Балки/одеяло без наложений, сундук у стены; порог виден.
+  Семь фактур дерева: светлый люк/серо-зелёный стул читаются на полу.
+  Люк в центре: упор/закрытие→ответ снизу.
   Проверки: `build-village-expansion-3d-model.py`,
-  `AlpineVillageLodgeSurfaceClearance` (проход/порядок/ракурс).
+  `AlpineVillageLodgeSurfaceClearance` (проход/люк, холодные/тёплые кадры).
 - «Новая игра»: старт у базы. Проверка:
   `NewGame_SelectedLocationUsesItsNormalArrivalWithoutTheHomeOpening(SkiLodge)`.
 - Генерация деревни ускорена: убраны повторные расчёты рельефа/троп/снега,

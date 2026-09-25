@@ -22,7 +22,7 @@ Only these statuses apply. Product scope cuts are `Deferred` in
 | --- | --- | --- | --- |
 | Village scenery | 18 households/8 sheds/5 yards; avalanche/woodpiles. | `AlpineVillage{AbandonmentPlan,AvalanchePlan,ExpansionBuilder,WoodpilePlan}` | Current |
 | Lodge stove | Soft fire; both doors shut: whole lodge warm, else indoor 2.5 m. | `LodgeStove{Interaction,SessionState}` | Current |
-| Lodge shelter | Doors/wind, lamp/minibar/seats/photo, locked hatch. Gap: cot/tea stubs. | `LodgeShelter*`, `LodgeInteriorInteractions`, `VillageInteriorAcoustics` | Partial |
+| Lodge shelter | Doors/wind/lamp/seats/photo/hatch; 7 wood maps. Gap: cot/tea stubs. | `LodgeShelter*`, `LodgeInteriorInteractions`, `LodgeWoodAppearance`, `VillageInteriorAcoustics` | Partial |
 | Village paths | Ground junctions; brook bridge. | `AlpineVillage{JunctionPlan,FootbridgePlan}` | Current |
 | Village life | Six named residents/31 homes; help persists. | `AlpineVillageLifeController`, `VillageOutdoorHelpController`, `VillageHousehold{Progress,Catalog}` | Current |
 | Narrative inspection | 24 outdoor + 4 lodge RU/EN; low/right hatch close-up, compact choice, lid attempt→bottom reply. | `NarrativeInteraction*`, `AlpineVillageNarrative*` | Current |
