@@ -10,6 +10,15 @@ import bar_parts as bp
 
 DOOR_HINGE_Z = -6.10
 DOOR_NAMES = ("LodgeDoorLeft", "LodgeDoorRight")
+# Keep these metre bounds in AlpineVillageExpansionPlan: the path terminates
+# at the outer chamfer, while the imported sill owns the doorway surface.
+THRESHOLD_OUTER_Z = -6.28
+THRESHOLD_INNER_Z = -5.66
+THRESHOLD_WIDTH = 2.60
+THRESHOLD_TOP = .07
+THRESHOLD_CHAMFER = .01
+DOOR_BOTTOM = .085
+DOOR_TOP = 2.68
 COT_CENTER = (-7.61, .4)
 COT_SIZE = (2.1, 1.0)
 COUNTER_CENTER = (8.28, 1.0)
@@ -112,27 +121,38 @@ def add_props(add, parts):
     # beyond the wall, so the 180-degree open leaves never disappear inside it.
     frame=[b((x,1.38,-5.93),(.18,2.76,.35),.015) for x in (-1.39,1.39)]
     frame += [b((0,2.81,-5.93),(2.96,.16,.35),.018),
-              b((0,2.6975,-5.8925),(2.60,.095,.075),.006),
-              b((0,.035,-5.91),(2.60,.030,.31),.006)]
+              b((0,2.6975,-5.8925),(2.60,.095,.075),.006)]
     prop("LodgeDoorFrame",merged(frame),tint=(.315,.275,.22,1))
+    # A substantial worn timber, five centimetres above the hall floor. Its
+    # ends meet the jambs and its inner edge covers the wall-to-floor reveal.
+    # One solid owns the top; no wear card competes with the wood surface.
+    threshold_bottom=-.16
+    prop("LodgeDoorThreshold",b((0,(THRESHOLD_TOP+threshold_bottom)*.5,
+        (THRESHOLD_OUTER_Z+THRESHOLD_INNER_Z)*.5),
+        (THRESHOLD_WIDTH,THRESHOLD_TOP-threshold_bottom,
+         THRESHOLD_INNER_Z-THRESHOLD_OUTER_Z),THRESHOLD_CHAMFER),
+        tint=(.39,.335,.26,1))
     for name,sign in zip(DOOR_NAMES,(-1,1)):
         x=sign*.654;hinge=name+"Hinge"
         # A thick continuous core seals the whole leaf; shallow inset planks,
         # broad end rails and wear reveal joinery without daylight between boards.
-        panel=[b((x,1.3575,-5.985),(1.288,2.645,.10),.010)]
+        # Trim the lower joinery together so either moving leaf clears the sill.
+        panel=[b((x,(DOOR_BOTTOM+DOOR_TOP)*.5,-5.985),
+                 (1.288,DOOR_TOP-DOOR_BOTTOM,.10),.010)]
         for j in range(6):
             px=sign*(.12+j*.212)
             panel.append(b((px,1.375,-6.040),(.201,2.33,.018),.004))
         prop(name+"Panel",merged(panel),tint=wood,parent=hinge)
         braces=[]
         for face in (-6.057,-5.917):
-            braces += [b((x,y,face),(1.275,.145,.04),.012) for y in (.155,2.55)]
+            braces += [b((x,y,face),(1.275,.145,.04),.012) for y in (.17,2.55)]
             braces += [b((px,1.355,face),(.105,2.54,.04),.010) for px in (sign*.064,sign*1.244)]
         # A real diagonal internal brace and an old low repair board.
         braces += [bp.u_rotated(b((0,0,0),(.095,2.42,.045),.006),(0,0,sign*24))]
         braces[-1]=kit.translated(braces[-1],(x,1.34,-5.895))
         braces.append(b((x,.48,-6.068),(1.03,.095,.026),.006))
-        if sign<0:braces.append(b((0,1.3575,-6.086),(.060,2.645,.014),.003))
+        if sign<0:braces.append(b((0,(DOOR_BOTTOM+DOOR_TOP)*.5,-6.086),
+                                (.060,DOOR_TOP-DOOR_BOTTOM,.014),.003))
         prop(name+"Braces",merged(braces),tint=(.32,.275,.215,1),parent=hinge)
         hardware=[]
         for y in (.40,2.29):
@@ -241,12 +261,23 @@ def open_geometry(part):
 def validate_props(parts):
     lodge={p["name"]:p for p in parts if p["kind"]=="SkiLodge"}
     assert "OpenDoorLeaves" not in lodge,"Legacy static doors survived"
+    threshold=lodge["LodgeDoorThreshold"]
+    threshold_lo,threshold_hi=kit.bounds(threshold["geometry"])
+    assert threshold["solid"] and threshold["surface"]=="Timber"
+    assert abs(threshold_hi[0]-threshold_lo[0]-THRESHOLD_WIDTH)<1e-6
+    assert abs(threshold_lo[2]-THRESHOLD_OUTER_Z)<1e-6 and abs(threshold_hi[2]-THRESHOLD_INNER_Z)<1e-6
+    assert abs(threshold_hi[1]-THRESHOLD_TOP)<1e-6
+    floor_top=kit.bounds(lodge["Floor"]["geometry"])[1][1]
+    assert .04-1e-6<=threshold_hi[1]-floor_top<=.05+1e-6,"Lodge sill must remain a small walking step"
     for name,sign in zip(DOOR_NAMES,(-1,1)):
         panel=lodge[name+"Panel"];lo,hi=kit.bounds(panel["geometry"])
         assert panel["solid"] and panel["parent"]==name+"Hinge"
-        assert abs((hi[0]-lo[0])-1.288)<1e-6 and .03<=lo[1]<.04 and 2.67<hi[1]<2.69
+        assert abs((hi[0]-lo[0])-1.288)<1e-6 and abs(lo[1]-DOOR_BOTTOM)<1e-6 and abs(hi[1]-DOOR_TOP)<1e-6
         for suffix in ("Panel","Braces","Hardware","HandleMetal"):
-            assert kit.bounds(open_geometry(lodge[name+suffix]))[1][2]<-6.0+1e-6,"Open door entered wall"
+            part=lodge[name+suffix]
+            assert kit.bounds(part["geometry"])[0][1]>=threshold_hi[1]+.014,\
+                "Door joinery or hardware clips the threshold throughout its swing"
+            assert kit.bounds(open_geometry(part))[1][2]<-6.0+1e-6,"Open door entered wall"
     lo,hi=kit.bounds(lodge["LodgeCotFrame"]["geometry"])
     assert -8.68<=lo[0]<-8.64 and hi[0]<=-6.55 and lo[2]>=-.11 and hi[2]<=.91
     pillow_lo,pillow_hi=kit.bounds(lodge["LodgeCotPillow"]["geometry"])

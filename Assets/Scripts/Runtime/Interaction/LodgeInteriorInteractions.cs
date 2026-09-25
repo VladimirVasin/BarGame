@@ -12,6 +12,7 @@ namespace BarPromenade
         public const string PhotographId = "lodge-photograph";
         public const string SkiEquipmentId = "lodge-ski-equipment";
         public const string GroupPhotographId = "lodge-group-photograph";
+        public const string CellarHatchId = "lodge-cellar-hatch";
         public const float FloorY = .02f;
         public const float ChairSeatWidth = .46f;
         public const float ChairSeatDepth = .44f;
@@ -22,6 +23,9 @@ namespace BarPromenade
         public NarrativeInteraction GroupPhotograph { get; private set; }
         public Transform GroupPhotographModel { get; private set; }
         public NarrativeInteraction SkiEquipment { get; private set; }
+        public NarrativeInteraction CellarHatch { get; private set; }
+        private Transform cellarHinge;
+        private Quaternion cellarClosedRotation;
         private WorldItemFoundScreen photographScreen;
         private PlayerInteractor photographInteractor;
 
@@ -48,6 +52,25 @@ namespace BarPromenade
             SkiEquipment = BuildInspection(SkiEquipmentId, "interaction.lodge_ski_equipment", "lodge.ski_equipment.inspect",
                 equipment, Require("LodgeSkiDock"), AlpineVillageNarrativeBuilder.RendererBounds(equipment),
                 transform.right, NarrativeCameraMode.ObjectSide, -transform.forward);
+
+            Transform hatch = Require("LodgeCellarHatch");
+            cellarHinge = Require("LodgeCellarHatchHinge");
+            cellarClosedRotation = cellarHinge.localRotation;
+            Transform hatchDock = Require("HatchInteractionDock");
+            Vector3 hatchApproach = Vector3.ProjectOnPlane(hatchDock.position - hatch.position, Vector3.up).normalized;
+            Vector3 hatchRight = Vector3.Cross(Vector3.up, -hatchApproach);
+            // The lodge axes keep this orbit independent of the standing dock.
+            // The lid itself is the optical centre, while its frame still fits.
+            Vector3 hatchCameraSide = transform.right * Mathf.Cos(43f * Mathf.Deg2Rad) +
+                transform.forward * Mathf.Sin(43f * Mathf.Deg2Rad);
+            Vector3 hatchCameraFront = hatchCameraSide * Mathf.Cos(30f * Mathf.Deg2Rad) +
+                Vector3.up * Mathf.Sin(30f * Mathf.Deg2Rad);
+            CellarHatch = BuildInspection(CellarHatchId, "interaction.lodge_cellar", "lodge.cellar.open_question",
+                hatch, hatchDock, AlpineVillageNarrativeBuilder.RendererBounds(Require("CellarHatchLid")),
+                hatchRight, NarrativeCameraMode.ObjectCloseUp, hatchCameraFront);
+            CellarHatch.Confirmation = new NarrativeConfirmation("narrative.answer.yes", "narrative.answer.no",
+                "lodge.cellar.locked", .95f);
+            CellarHatch.AttemptProgress += SampleCellarAttempt;
 
             GroupPhotographModel = Require("LodgeGroupPhotograph");
             Transform groupImage = Require("LodgeGroupPhotographImage");
@@ -93,6 +116,16 @@ namespace BarPromenade
             if (GroupPhotograph != null) GroupPhotograph.gameObject.SetActive(available);
         }
 
+        private void SampleCellarAttempt(float progress)
+        {
+            if (cellarHinge == null) return;
+            // Lift, meet the inside stop twice, then settle fully shut before the outcome.
+            float angle = progress < .25f ? Mathf.SmoothStep(0f, 2f, progress / .25f) :
+                progress < .58f ? 1.8f + .2f * Mathf.Cos((progress - .25f) / .33f * Mathf.PI * 4f) :
+                Mathf.SmoothStep(2f, 0f, (progress - .58f) / .42f);
+            cellarHinge.localRotation = cellarClosedRotation * Quaternion.AngleAxis(angle, Vector3.forward);
+        }
+
         private void BeginGroupPhotographPickup(PlayerInteractor interactor)
         {
             if (!isActiveAndEnabled || interactor == null || GroupPhotographModel == null ||
@@ -123,9 +156,16 @@ namespace BarPromenade
 
         private void OnDisable()
         {
+            if (CellarHatch != null) CellarHatch.enabled = false;
+            SampleCellarAttempt(0f);
             if (photographScreen != null) photographScreen.Abandon();
             photographScreen = null;
             photographInteractor = null;
+        }
+
+        private void OnEnable()
+        {
+            if (CellarHatch != null) CellarHatch.enabled = true;
         }
 
         private NarrativeInteraction BuildInspection(string id, string prompt, string text,

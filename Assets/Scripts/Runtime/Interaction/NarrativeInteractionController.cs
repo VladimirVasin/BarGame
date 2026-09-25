@@ -2,9 +2,9 @@ using UnityEngine;
 
 namespace BarPromenade
 {
-    public enum NarrativeInteractionPhase { Idle, Positioning, Framing, Reading, Exiting }
+    public enum NarrativeInteractionPhase { Idle, Positioning, Framing, Reading, Attempting, Outcome, Exiting }
 
-    /// <summary>One reusable owner of a silent inspection's rig, camera, pages and input.</summary>
+    /// <summary>One owner of an inspection's rig, camera, pages, optional reply and input.</summary>
     [DefaultExecutionOrder(310)]
     [DisallowMultipleComponent]
     public sealed class NarrativeInteractionController : MonoBehaviour
@@ -20,6 +20,8 @@ namespace BarPromenade
         private bool previousCursorVisible;
         private int pageFrame, animationFinishedFrame;
         private bool completed;
+        private float attemptElapsed;
+        public bool SelectedAnswerYes { get; private set; }
         public NarrativeInteraction Target { get; private set; }
         public NarrativeInteractionPhase Phase { get; private set; }
         public bool IsActive => Phase != NarrativeInteractionPhase.Idle;
@@ -45,13 +47,15 @@ namespace BarPromenade
             animation = interactor.GetComponent<PlayerAnimatedInteractionController>();
             follow = Camera.main != null ? Camera.main.GetComponent<PlayerCameraFollow>() : null;
             view = interactor.PromptView;
-            if (registry == null || animation == null || !animation.IsInitialized || !animation.isActiveAndEnabled ||
+            if (registry == null ||
+                animation == null || !animation.IsInitialized || !animation.isActiveAndEnabled ||
                 animation.IsActive || follow == null || view == null || !view.isActiveAndEnabled || view.HasHeldPage ||
                 !PlayerDialogueActions.TryAttach(registry))
             { LastFailureReason = "Hero, camera, animation bank or lower UI unavailable"; return false; }
             if (!modal.TryCaptureAndDisable(interactor, follow, FindAnyObjectByType<IntoxicationHudView>()))
             { LastFailureReason = "Another modal owns input"; return false; }
             listener = interactor; Target = target; PageIndex = 0;
+            attemptElapsed = 0f; SelectedAnswerYes = false;
             LastFailureReason = string.Empty;
             Phase = NarrativeInteractionPhase.Positioning;
             ownsAnimation = cameraStarted = exitingAnimation = confirmArmed = false;
@@ -79,17 +83,36 @@ namespace BarPromenade
 
         public bool Confirm()
         {
-            if (Phase != NarrativeInteractionPhase.Reading || Paused || Time.frameCount <= pageFrame ||
+            if ((Phase != NarrativeInteractionPhase.Reading && Phase != NarrativeInteractionPhase.Outcome) ||
+                Paused || Time.frameCount <= pageFrame ||
                 !GameInput.CanRead(GameInputContext.Menu)) return false;
-            if (PageIndex + 1 == Target.Definition.Pages.Count) { Cancel(); completed = true; }
+            if (Phase == NarrativeInteractionPhase.Outcome) { Cancel(); return true; }
+            if (PageIndex + 1 == Target.Definition.Pages.Count && Target.Confirmation != null)
+            {
+                if (!SelectedAnswerYes) { Cancel(); return true; }
+                view.ReleaseHeldPage(this); Cursor.visible = false;
+                Phase = NarrativeInteractionPhase.Attempting;
+                attemptElapsed = 0f; Target.SampleAttempt(0f);
+            }
+            else if (PageIndex + 1 == Target.Definition.Pages.Count) { Cancel(); completed = true; }
             else { PageIndex++; ShowPage(); }
             return true;
         }
+
+        public bool SelectAnswer(bool yes)
+        {
+            if (Paused || Phase != NarrativeInteractionPhase.Reading || Target.Confirmation == null ||
+                !view.SelectHeldAnswer(this, yes)) return false;
+            SelectedAnswerYes = yes; return true;
+        }
+
+        private bool ChooseAnswer(bool yes) => SelectAnswer(yes) && Confirm();
 
         public void Cancel()
         {
             completed = false;
             if (!IsActive || Phase == NarrativeInteractionPhase.Exiting) return;
+            if (Target != null) Target.SampleAttempt(0f);
             if (view != null) view.ReleaseHeldPage(this);
             Phase = NarrativeInteractionPhase.Exiting;
             Cursor.visible = false;
@@ -126,11 +149,26 @@ namespace BarPromenade
                     if (director.IsSettled && animation.Phase == PlayerAnimatedInteractionPhase.Looping) ShowPage();
                     break;
                 case NarrativeInteractionPhase.Reading:
+                case NarrativeInteractionPhase.Outcome:
                     if (!view.IsHeldBy(this)) { RestoreImmediate(); return; }
                     if (Time.frameCount > pageFrame)
                     {
-                        if (!confirmArmed) confirmArmed = !GameInput.IsHeld(GameInputAction.Interact, GameInputContext.Menu);
-                        if (confirmArmed && GameInput.WasPressed(GameInputAction.Interact, GameInputContext.Menu)) Confirm();
+                        bool choice = Phase == NarrativeInteractionPhase.Reading && Target.Confirmation != null &&
+                            PageIndex + 1 == Target.Definition.Pages.Count;
+                        GameInputAction confirmAction = choice ? GameInputAction.Confirm : GameInputAction.Interact;
+                        if (!confirmArmed) confirmArmed = !GameInput.IsHeld(confirmAction, GameInputContext.Menu);
+                        if (choice && GameInput.ReadMenuSelectionDelta(GameInputContext.Menu) != 0)
+                            SelectAnswer(!SelectedAnswerYes);
+                        if (confirmArmed && GameInput.WasPressed(confirmAction, GameInputContext.Menu)) Confirm();
+                    }
+                    break;
+                case NarrativeInteractionPhase.Attempting:
+                    attemptElapsed += Time.deltaTime;
+                    Target.SampleAttempt(Mathf.Clamp01(attemptElapsed / Target.Confirmation.AttemptSeconds));
+                    if (attemptElapsed >= Target.Confirmation.AttemptSeconds)
+                    {
+                        Target.SampleAttempt(0f);
+                        ShowOutcome();
                     }
                     break;
                 case NarrativeInteractionPhase.Exiting:
@@ -148,8 +186,23 @@ namespace BarPromenade
             string controls = PageIndex + 1 < Target.Definition.Pages.Count ? "narrative.controls.next" : "narrative.controls.close";
             if (PageIndex + 1 == Target.Definition.Pages.Count && !string.IsNullOrWhiteSpace(Target.CompletionActionKey))
                 controls = Target.CompletionActionKey;
-            if (!view.TryHoldPage(this, page.TextKey, heading, controls, Confirm)) { Cancel(); return; }
+            bool confirmation = PageIndex + 1 == Target.Definition.Pages.Count && Target.Confirmation != null;
+            bool held = confirmation
+                ? view.TryHoldConfirmation(this, page.TextKey, Target.Confirmation.YesKey, Target.Confirmation.NoKey, ChooseAnswer)
+                : view.TryHoldPage(this, page.TextKey, heading, controls, Confirm);
+            if (!held) { Cancel(); return; }
+            SelectedAnswerYes = false;
             Phase = NarrativeInteractionPhase.Reading; pageFrame = Time.frameCount;
+            confirmArmed = false; Cursor.visible = true;
+        }
+
+        private void ShowOutcome()
+        {
+            // An explicitly authored silent outcome uses the same lower page;
+            // the closed prop remains framed until the player dismisses it.
+            if (!view.TryHoldPage(this, Target.Confirmation.ReplyKey, null,
+                "narrative.controls.close", Confirm, compact: true)) { Cancel(); return; }
+            Phase = NarrativeInteractionPhase.Outcome; pageFrame = Time.frameCount;
             confirmArmed = false; Cursor.visible = true;
         }
 
@@ -187,6 +240,7 @@ namespace BarPromenade
             NarrativeInteraction completedTarget = allowCompletion && completed ? Target : null;
             PlayerInteractor completedListener = listener;
             completed = false;
+            if (Target != null) Target.SampleAttempt(0f);
             Phase = NarrativeInteractionPhase.Idle;
             if (view != null) view.ReleaseHeldPage(this);
             if (ownsAnimation && animation != null) animation.CancelActiveInteraction();

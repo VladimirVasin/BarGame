@@ -2,21 +2,23 @@
 
 ## Current facts
 
+- **Accepted architecture exception — 2026-09-25, lodge hatch:**
+  User, 0 (§6/§12/§21/art §10g): hatch speech-standard exception.
+  Centred oblique close-up/no hero; compact Yes/No. Lift/stop/shut→shared bottom:
+  «Заперто. Похоже... изнутри?». E/Esc closes;
+  repeat/No restores. No speech/audio/cellar/occupant fact/grant/
+  NPC/event. Rig/§16/other §21/nine checks.
+
 - **Accepted architecture exception — 2026-09-25, lodge minibar photograph:**
-  User, 0 (§6/§12/§19/art §10g): worn ornate minibar/chairs/table; eight
-  men/women, skiers/locals before intact lodge, central man raises whisky;
-  PS1 low-poly/painted faces, no photorealism.
-  Faces/tourists only in new photo; no names/dates/hero-family/crime/clue/NPC.
-  Wall photo faceless. Shared seats; E close-up/text→Next→shared Take/Cancel
-  receipt, only Take grants once; Esc exits. Frame removed; ownership/absence
-  across scenes until New Game. Bottles passive. Item/contextual/speech
-  standards/§16/§21/nine checks.
+  User, 0 (§6/§12/§19): minibar/PS1 photo: art §10g;
+  photo meaning/limits §12, faceless wall photo/passive bottles. Shared seats;
+  E close-up→Next→shared Take/Cancel (one on Take), Esc exits. Frame gone/owned
+  across scenes until New Game; shared standards/§16/§21/nine checks.
 
 - **Accepted architecture exception — 2026-09-25, furnished ski lodge:**
-  User, 0 (§6/§12/§19/art §10g): faceless lodge/lift wall photo/skis,
-  `NarrativeInteraction`, silent RU/EN. Stove chair: `CityBenchSitInteraction`,
-  real time/no effects. No names/dates/clue/sleep/tea/NPC/water/plot;
-  contextual standard/§16/§21/nine checks.
+  User, 0 (§6/§12/§19/art §10g): faceless photo/skis via silent RU/EN
+  `NarrativeInteraction`; stove chair via `CityBenchSitInteraction`, real time/
+  no effects. Scope/limits §12; shared standards/§16/§21/nine checks.
 
 - **Accepted architecture exception — 2026-09-25, deep-snow locomotion:**
   User, `0`, §6/§12/art §1/§10g: depth/treading/clearing selects short snow gait,
@@ -31,42 +33,39 @@
   debris; warehouse/cliff kept, roads/E clear: `village-narrative-plan.md`.
 
 - **Accepted architecture exception — 2026-09-24, village history and narrative inspection:**
-  0, §§6/12/19/21/art §10g: history/families, unnamed hero/mother; mine/father stay.
-  `NarrativeInteraction`: rig/replay/cancel/no grant. `ContextualCameraDirector`:
-  side/bokeh, paper close-up/no hero, restore. `InteractionPromptView`:
-  silent RU/EN, 1–2 depressive sentences/page, history 2–3 pages.
-  Two mundane absurd notes (Silent Hill), edited/no supernatural fact.
-  `VillageHouseholdCatalog`: 31 homes/four occupied/named greetings.
-  No crime/water/self-analysis; speech/contextual standards/§16/nine checks.
+  0, §§6/12/19/21/art §10g: families/history, unnamed hero/mother; mine/father stay.
+  `NarrativeInteraction`: rig/replay/cancel/no grant; `ContextualCameraDirector`:
+  side/bokeh, paper close-up/no hero/restore. `InteractionPromptView`: silent
+  RU/EN, 1–2 depressive sentences/page, history 2–3. Two edited mundane absurd
+  notes (Silent Hill), no supernatural fact. `VillageHouseholdCatalog`: 31 homes/
+  four occupied/named greetings. No crime/water/self-analysis; shared standards/§16/nine checks.
 
 - **Accepted architecture exception — 2026-09-24, habitable ski lodge:**
-  0, §6/§12/art §10g; cot/kettle silent E, no sleep/tea/grant/receipt (item exception).
-  `LodgeShelter*`: two leaves, E both sides; binary collision, occupied closure
-  refused/no auto-close. Lamp warm/no fuel/heat/hero-camera ownership.
-  Session doors/light; New Game open/off. `VillageInteriorAcoustics`:
-  workshop/lodge .35 s; one shut leaks, both gain .025/cutoff .24.
-  Stove/steps/outdoors clear; roof culls particles, fixed half-doorway targets.
-  No NPC; §16/§21/nine checks.
+  0, §6/§12/art §10g: cot/kettle silent/no receipt (item exception); limits §12.
+  `LodgeShelter*`: two leaves/E both sides/binary collision; no occupied closure/
+  auto-close. Lamp warm, no fuel/heat/hero-camera. New Game: doors open/light off.
+  `VillageInteriorAcoustics`: workshop/lodge .35 s; one leaks, both .025 gain/.24
+  cutoff. Stove/steps/outside kept; roof culls snow/fixed door targets. No NPC;
+  §16/§21/nine checks.
 
 - **Accepted architecture exception — 2026-09-24, ski-lodge stove and firewood:**
-  0, §6/§12/art §10g; piles receipt/one/infinite retake. E shared approach/
-  first-person/right two-column grid, no hands/visible rig; items/door animate.
-  User-approved silent §21: «Мне понадобится полено»/«Теперь нужно зажечь».
-  Log spent; `Lighter`: two dry clicks, third→fire/light/crackle.
-  Exit closes door/restores camera; pause freezes, disable/unload release.
-  Empty→LogPlaced→Burning until New Game/no burnout; both doors shut warms room,
-  else indoor 2.5 m. No shiver/breath, frost thaws, outside cold.
+  0, §6/§12/art §10g; piles shared receipt/one/infinite retake. E shared approach→
+  first-person/right two-column grid, no visible rig; items/door animate.
+  Silent §21: «Мне понадобится полено»/«Теперь нужно зажечь». Log spent;
+  `Lighter`: two dry clicks, third→fire/light/crackle. Exit shuts door/restores
+  camera; pause freezes, disable/unload releases. Empty→LogPlaced→Burning,
+  no burnout/until New Game. Both doors shut: room warm, else indoor 2.5 m;
+  no shiver/breath, frost thaws, outside cold.
 
 - **Accepted — 2026-09-24, item interaction standard:**
   [Item standard](item-interaction-standard.md): one grant;
   shared model/view/input/modal/lifecycle.
 
 - **Accepted architecture exception — 2026-09-24, village scene theme:**
-  User: inside lodge, both doors shut (§6/art §10g, 0).
-  `AlpineVillageMusicPlayer`: open/outside→4 s fade/pause, inside/shut→1 s resume.
-  Gate before Play; no restart. `MusicMix`/Music/12 kHz/1.00;
-  optional stereo streaming `AlpineVillageMusic/alpine_village_theme`
-  WAV/OGG/MP3 (ships MP3); no story/weather/avalanche cue, causal sound stays.
+  User, 0 (§6/art §10g): `AlpineVillageMusicPlayer`, inside/both shut→1 s resume,
+  open/outside→4 s fade/pause; gate before Play/no restart. `MusicMix`/Music/
+  12 kHz/1.00; optional streaming stereo `AlpineVillageMusic/alpine_village_theme`
+  WAV/OGG/MP3 (ships MP3). No story/weather/avalanche cue; causal sound kept.
 
 - **Accepted architecture exception — 2026-09-24, old ski avalanche:**
   Level 0: scar→timber/rock/beams→buried tow/cable→household-15 damage.

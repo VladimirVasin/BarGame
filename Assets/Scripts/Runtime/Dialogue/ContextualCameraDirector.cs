@@ -1,4 +1,5 @@
 using BarPromenade.Rendering;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace BarPromenade
@@ -21,6 +22,7 @@ namespace BarPromenade
 
         private readonly Collider[] overlaps = new Collider[48];
         private readonly RaycastHit[] hits = new RaycastHit[48];
+        private readonly Plane[] objectFrustum = new Plane[6];
         private PlayerCameraFollow follow;
         private Camera camera;
         private Transform npcRoot, npcHead, heroRoot, heroHead;
@@ -36,6 +38,8 @@ namespace BarPromenade
         private CharacterController objectShotHeroBody;
         private NarrativeCameraMode objectMode;
         private Vector3 documentFront, documentUp;
+        private Vector3 closeUpCenter, closeUpExtents, closeUpUp;
+        private readonly List<Vector3> closeUpCorners = new List<Vector3>();
         private static ContextualCameraDirector activeOwner;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
@@ -113,13 +117,14 @@ namespace BarPromenade
             documentFront = (cameraFront.sqrMagnitude > .01f ? cameraFront : subject.forward).normalized;
             documentUp = Vector3.ProjectOnPlane(Vector3.up, documentFront).normalized;
             if (documentUp.sqrMagnitude < .01f) documentUp = subject.up;
+            if (objectMode == NarrativeCameraMode.ObjectCloseUp) MeasureObjectCloseUp(subject);
             Vector3 towardHero = Vector3.ProjectOnPlane(playerRoot.position - bounds.center, Vector3.up);
             axis = towardHero.sqrMagnitude > .01f ? towardHero.normalized : -subject.forward;
             Vector3 naturalSide = Vector3.Cross(Vector3.up, axis);
             if (Vector3.Dot(naturalSide, preferredSide) < 0f) naturalSide = -naturalSide;
             bool found = false;
             for (int variant = 0; variant < ShotVariantCount && !found; variant++)
-                for (int direction = 0; direction < (objectMode == NarrativeCameraMode.DocumentCloseUp ? 1 : 2) && !found; direction++)
+                for (int direction = 0; direction < (IsCloseUpShot ? 1 : 2) && !found; direction++)
                 {
                     side = naturalSide * (direction == 0 ? 1f : -1f);
                     found = TryResolveObjectShot(variant, out _, out _);
@@ -133,7 +138,7 @@ namespace BarPromenade
         {
             CurrentSpeakerIsHero = false;
             if (!CinematicDepthOfField.TryBeginOwned(this, FocusDistance,
-                IsDocumentShot ? 11f : 5.6f, 45f,
+                IsCloseUpShot ? 11f : 5.6f, 45f,
                 objectShot ? InspectionEntrySeconds : CinematicDepthOfField.BlendInSeconds,
                 objectShot ? InspectionExitSeconds : CinematicDepthOfField.BlendOutSeconds,
                 objectShot))
@@ -299,6 +304,7 @@ namespace BarPromenade
         private bool TryResolveObjectShot(int variant, out Pose pose, out float fov)
         {
             if (objectMode == NarrativeCameraMode.DocumentCloseUp) return TryResolveDocumentShot(variant, out pose, out fov);
+            if (objectMode == NarrativeCameraMode.ObjectCloseUp) return TryResolveObjectCloseUpShot(variant, out pose, out fov);
             fov = 42f;
             // Around a small subject an over-the-shoulder angle makes the nearby
             // hero enormous. Start at fifty degrees and keep him beside the thing.
@@ -323,7 +329,141 @@ namespace BarPromenade
                 SightClear(objectBounds.center + Vector3.up * Mathf.Min(extents.y, .5f), position);
         }
 
-        private int ShotVariantCount => !objectShot || objectMode == NarrativeCameraMode.DocumentCloseUp ? 3 : ObjectVariantCount;
+        private bool TryResolveObjectCloseUpShot(int variant, out Pose pose, out float fov)
+        {
+            fov = variant == 0 ? 58f : variant == 1 ? 68f : 78f;
+            float tangent = Mathf.Tan(fov * .5f * Mathf.Deg2Rad);
+            float aspect = Mathf.Max(.5f, camera.aspect);
+            Vector3 right = Vector3.Cross(closeUpUp, documentFront).normalized;
+            float distance = .2f;
+            // Fit each real corner at its own depth. Adding the whole bounding
+            // box depth puts a low oblique floor view unnecessarily far away.
+            foreach (Vector3 corner in closeUpCorners)
+            {
+                Vector3 delta = corner - closeUpCenter;
+                float x = Vector3.Dot(delta, right), y = Vector3.Dot(delta, closeUpUp);
+                float z = Vector3.Dot(delta, documentFront);
+                distance = Mathf.Max(distance, Mathf.Max(Mathf.Abs(x) / (.90f * tangent * aspect) + z,
+                    Mathf.Max(y / (.92f * tangent) + z, -y / (.60f * tangent) + z)));
+            }
+            // The optical axis passes through the authored subject centre.
+            // Keep the lower panel clear by fitting depth, never by panning
+            // the object off-centre or translating the authored orbit sideways.
+            Vector3 position = closeUpCenter + documentFront * distance;
+            pose = new Pose(position, Quaternion.LookRotation(-documentFront, closeUpUp));
+            float capsulePlaneSupport = 0f;
+            if (!CloseUpCornersFit(pose, fov) || !HeroOutsideCloseUpFrame(pose, fov, out capsulePlaneSupport))
+            {
+                Bounds hero = HeroBounds();
+                LastRejectedShotReason = "Hero remains in the object close-up; variant=" + variant +
+                    " object=" + objectBounds.ToString("F3") + " fittedCenter=" + closeUpCenter.ToString("F3") +
+                    " fittedExtents=" + closeUpExtents.ToString("F3") + " hero=" + hero.ToString("F3") +
+                    " heroRect=" + ProjectBounds(hero, pose, fov).ToString("F3") +
+                    " dock=" + heroRoot.position.ToString("F3") + " camera=" + position.ToString("F3") +
+                    " front=" + documentFront.ToString("F3") + " up=" + closeUpUp.ToString("F3") +
+                    " fov=" + fov.ToString("F2") + " aspect=" + camera.aspect.ToString("F3") +
+                    " capsulePlaneSupport=" + capsulePlaneSupport.ToString("F3");
+                return false;
+            }
+            return CameraPositionClear(pose.position) && SightClear(closeUpCenter, pose.position) &&
+                HeroSightClear(pose.position, closeUpCenter);
+        }
+
+        private bool CloseUpCornersFit(Pose pose, float fov)
+        {
+            Quaternion inverse = Quaternion.Inverse(pose.rotation);
+            float tangent = Mathf.Tan(fov * .5f * Mathf.Deg2Rad);
+            foreach (Vector3 corner in closeUpCorners)
+            {
+                Vector3 point = inverse * (corner - pose.position);
+                if (point.z <= .1f) return false;
+                float x = .5f + point.x / (2f * tangent * camera.aspect * point.z);
+                float y = .5f + point.y / (2f * tangent * point.z);
+                if (x < .03f || x > .97f || y < .195f || y > .965f) return false;
+            }
+            return true;
+        }
+
+        private void MeasureObjectCloseUp(Transform subject)
+        {
+            // Mesh-local corners retain the real surface dimensions. Projecting
+            // an already rotated world AABB again can double a floor object's
+            // frame and accidentally admit the hero standing alongside it.
+            closeUpUp = Vector3.ProjectOnPlane(Vector3.up, documentFront).normalized;
+            if (closeUpUp.sqrMagnitude < .01f)
+            {
+                Vector3 first = Vector3.ProjectOnPlane(subject.right, documentFront).normalized;
+                if (first.sqrMagnitude < .01f)
+                    first = Vector3.ProjectOnPlane(Vector3.right, documentFront).normalized;
+                Vector3 second = Vector3.Cross(documentFront, first).normalized;
+                Vector3 towardHero = Vector3.ProjectOnPlane(heroRoot.position - objectBounds.center, documentFront);
+                closeUpUp = Mathf.Abs(Vector3.Dot(first, towardHero)) >= Mathf.Abs(Vector3.Dot(second, towardHero)) ? first : second;
+                if (Vector3.Dot(closeUpUp, towardHero) < 0f) closeUpUp = -closeUpUp;
+            }
+            Vector3 right = Vector3.Cross(closeUpUp, documentFront).normalized;
+            Vector3 minimum = Vector3.one * float.PositiveInfinity;
+            Vector3 maximum = Vector3.one * float.NegativeInfinity;
+            bool measured = false;
+            closeUpCorners.Clear();
+            foreach (MeshFilter filter in subject.GetComponentsInChildren<MeshFilter>())
+            {
+                if (filter.sharedMesh == null) continue;
+                Bounds local = filter.sharedMesh.bounds;
+                for (int index = 0; index < 8; index++)
+                {
+                    Vector3 corner = local.center + Vector3.Scale(local.extents,
+                        new Vector3((index & 1) == 0 ? -1f : 1f, (index & 2) == 0 ? -1f : 1f, (index & 4) == 0 ? -1f : 1f));
+                    Vector3 world = filter.transform.TransformPoint(corner);
+                    closeUpCorners.Add(world);
+                    Vector3 projected = new Vector3(Vector3.Dot(world, right), Vector3.Dot(world, closeUpUp), Vector3.Dot(world, documentFront));
+                    minimum = Vector3.Min(minimum, projected); maximum = Vector3.Max(maximum, projected);
+                    measured = true;
+                }
+            }
+            if (!measured)
+            {
+                closeUpCenter = objectBounds.center;
+                closeUpExtents = new Vector3(ProjectExtent(right), ProjectExtent(closeUpUp), ProjectExtent(documentFront));
+                for (int index = 0; index < 8; index++)
+                    closeUpCorners.Add(objectBounds.center + Vector3.Scale(objectBounds.extents,
+                        new Vector3((index & 1) == 0 ? -1f : 1f, (index & 2) == 0 ? -1f : 1f, (index & 4) == 0 ? -1f : 1f)));
+                return;
+            }
+            closeUpCenter = objectBounds.center;
+            closeUpExtents = (maximum - minimum) * .5f;
+        }
+
+        private bool HeroOutsideCloseUpFrame(Pose pose, float fov, out float minimumPlaneSupport)
+        {
+            minimumPlaneSupport = float.NaN;
+            if (objectShotHeroBody == null)
+            {
+                Rect visible = Intersection(ProjectBounds(HeroBounds(), pose, fov), new Rect(0f, 0f, 1f, 1f));
+                return visible.width * visible.height <= .0001f;
+            }
+            // A capsule's exact plane support avoids the phantom diagonal coat
+            // corners introduced by expanding a world AABB. Retain the same
+            // radial/vertical clothing allowance used by the ordinary shots.
+            Transform body = objectShotHeroBody.transform;
+            Vector3 scale = body.lossyScale;
+            float radius = objectShotHeroBody.radius * Mathf.Max(Mathf.Abs(scale.x), Mathf.Abs(scale.z));
+            float halfSegment = Mathf.Max(0f, objectShotHeroBody.height * Mathf.Abs(scale.y) * .5f - radius) + .06f;
+            Vector3 center = body.TransformPoint(objectShotHeroBody.center);
+            Vector3 endA = center + body.up * halfSegment, endB = center - body.up * halfSegment;
+            radius += .125f;
+            Matrix4x4 view = Matrix4x4.Scale(new Vector3(1f, 1f, -1f)) *
+                Matrix4x4.TRS(pose.position, pose.rotation, Vector3.one).inverse;
+            GeometryUtility.CalculateFrustumPlanes(Matrix4x4.Perspective(fov, camera.aspect, .01f, 1000f) * view, objectFrustum);
+            minimumPlaneSupport = float.PositiveInfinity;
+            foreach (Plane plane in objectFrustum)
+            {
+                float support = Mathf.Max(plane.GetDistanceToPoint(endA), plane.GetDistanceToPoint(endB)) + radius;
+                minimumPlaneSupport = Mathf.Min(minimumPlaneSupport, support);
+            }
+            return minimumPlaneSupport < 0f;
+        }
+
+        private int ShotVariantCount => !objectShot || IsCloseUpShot ? 3 : ObjectVariantCount;
 
         private bool TryResolveDocumentShot(int variant, out Pose pose, out float fov)
         {
@@ -514,15 +654,18 @@ namespace BarPromenade
         private void UpdateFocusDistance() => CinematicDepthOfField.SetOwnedFocusDistance(this, FocusDistance);
 
         private bool IsDocumentShot => objectShot && objectMode == NarrativeCameraMode.DocumentCloseUp;
+        private bool IsCloseUpShot => IsDocumentShot || objectShot && objectMode == NarrativeCameraMode.ObjectCloseUp;
         // URP focuses a plane at eye depth. The note sits above the optical
         // centre to leave room for the reading panel; radial distance would
         // place that plane behind the paper and blur its small lettering.
-        private float FocusDistance => IsDocumentShot
+        private float FocusDistance => IsCloseUpShot
             ? Vector3.Dot(FocusPoint - camera.transform.position, camera.transform.forward)
             : Vector3.Distance(camera.transform.position, FocusPoint);
 
         private Transform ActiveHead => CurrentSpeakerIsHero ? heroHead : npcHead;
-        private Vector3 FocusPoint => objectShot ? objectBounds.center : ActiveHead.position + Vector3.up * .1f;
+        private Vector3 FocusPoint => objectShot
+            ? objectMode == NarrativeCameraMode.ObjectCloseUp ? closeUpCenter : objectBounds.center
+            : ActiveHead.position + Vector3.up * .1f;
 
         private bool ParticipantsExist() => follow != null && camera != null &&
             npcRoot != null && heroRoot != null && (objectShot || npcHead != null && heroHead != null) &&

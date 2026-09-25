@@ -14,6 +14,14 @@ namespace BarPromenade
         private static readonly Vector2 TruckWreckHalfSize = new Vector2(3.5f, 1.45f);
         private static readonly Vector2 ChairPileHalfSize = new Vector2(3.1f, 2.1f);
         private static readonly Vector2 LodgeWoodpileLocalCenter = new Vector2(-133.2f, 49.55f);
+        // Matches the authored LodgeDoorThreshold in village_lodge_props.py.
+        // The visible approach ends at its outer chamfer, not inside the hall.
+        public const float LodgeThresholdOuterZ = -6.28f;
+        public const float LodgeThresholdInnerZ = -5.66f;
+        public const float LodgeThresholdWidth = 2.6f;
+        public const float LodgeThresholdTop = .07f;
+        public const float LodgeThresholdChamfer = .01f;
+        public const float LodgeThresholdPathBlendLength = .8f;
         public static readonly Vector2 LodgeStoveSize = new Vector2(.96f, 1.08f);
         public static readonly Vector2 LodgeWoodpileSize = AlpineVillageWoodpilePlan.Size;
         public static readonly Vector2 LodgeChairSeatLocalCenter = new Vector2(-1.50f, -1.25f);
@@ -70,7 +78,8 @@ namespace BarPromenade
                 new Vector2(-1f, 0f), new Vector2(-13f, -2f), new Vector2(-37f, -3f),
                 new Vector2(-78f, 6f), new Vector2(-120f, 22f));
             AddRoute(routes, "ski-base-approach", AlpineVillagePathKind.SkiBaseAccess, 1.25f,
-                new Vector2(-120f, 22f), new Vector2(-137f, 42f), new Vector2(-137f, 50f));
+                new Vector2(-120f, 22f), new Vector2(-137f, 42f),
+                new Vector2(-137f, 56f + LodgeThresholdOuterZ));
             AddRoute(routes, "forest-loop", AlpineVillagePathKind.ForestTrail, 1f,
                 new Vector2(-137f, 42f), new Vector2(-166f, 50f), new Vector2(-157f, 84f),
                 new Vector2(-112f, 93f));
@@ -144,6 +153,7 @@ namespace BarPromenade
         public Vector2 LodgeSize => new Vector2(18f, 12f);
         public float LodgeFloorHeight => LodgeCenter.y;
         public Vector3 LodgeEntrance => LodgeCenter - LodgeForward * 6f;
+        public Vector3 LodgeThresholdApproach => LodgeCenter + LodgeForward * LodgeThresholdOuterZ;
         public Vector3 LodgeApproach => LodgeCenter - LodgeForward * 9f;
         public Vector3 LodgeWoodpileCenter { get; }
         public Vector3 LodgeWoodpileApproach => LodgeWoodpileCenter - LodgeForward * 1.1f;

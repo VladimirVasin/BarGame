@@ -29,9 +29,11 @@ from village_lodge_furniture import (ANCHORS as FURNITURE_ANCHORS,
     add_furniture as lodge_furniture, validate_furniture)
 from village_lodge_minibar import (ANCHORS as MINIBAR_ANCHORS,
     add_minibar as lodge_minibar, validate_minibar)
+from village_lodge_cellar import (ANCHORS as CELLAR_ANCHORS,
+    add_cellar as lodge_cellar, floor_geometry as lodge_floor, validate_cellar)
 
-VERSION = "1.10.0"
-ANCHORS = STOVE_ANCHORS + LODGE_ANCHORS + FURNITURE_ANCHORS + MINIBAR_ANCHORS
+VERSION = "1.11.0"
+ANCHORS = STOVE_ANCHORS + LODGE_ANCHORS + FURNITURE_ANCHORS + MINIBAR_ANCHORS + CELLAR_ANCHORS
 DESIGN = "village_forest_ski_base_old_road_v1"
 COLORS = {"Timber": (.29,.255,.205,1), "Masonry": (.49,.485,.445,1),
           "LayeredStone": (.32,.345,.34,1), "RustedIron": (.30,.255,.21,1),
@@ -131,7 +133,7 @@ def ski_lodge_stove(add):
     # A single wall with open bore spans the entire interior and exterior.
     pipe=hollow_profile([(.13,1.13),(.13,6.20),(.113,6.20),(.113,1.13)])
     add(kind,"StovePipe",pipe,"RustedIron",True,iron)
-    joints=[hollow_profile([(.145,y-.03),(.145,y+.03),(.129,y+.03),(.129,y-.03)])
+    joints=[hollow_profile([(.145,y-.03),(.145,y+.03),(.129,y+.03),(.129,y-.03)],12)
             for y in (1.21,2.22,3.36,4.47,5.60)]
     add(kind,"StovePipeJoints",merge(joints),"RustedIron",True,edge)
     # The boot covers the square roof cut, while a raised round collar sheds
@@ -439,7 +441,7 @@ def create_parts():
         if support is not None:
             parts[-1]["support"] = support
     lodge="SkiLodge"
-    add(lodge,"Floor",box((0,-.07,0),(17.36,.18,11.36),.018),"Timber")
+    add(lodge,"Floor",lodge_floor(),"Timber")
     add(lodge,"Foundation",box((0,-.34,0),(18,.36,12),.045),"LayeredStone")
     front=kit.wall_run(18,3.6,.32,[kit.Opening(-5.4,2.3,2.85,1.15),
         kit.Opening(0,2.6,2.75),kit.Opening(5.4,2.3,2.85,1.15)],.012)
@@ -466,10 +468,12 @@ def create_parts():
     frames=[];glass=[]
     def window(center,width,side=False):
         h=1.7
-        frame=merge([box((x,0,0),(.095,h+.19,.13),.006) for x in (-width*.5-.045,width*.5+.045)]+
-                    [box((0,y,0),(width,.095,.13),.006) for y in (-h*.5-.045,h*.5+.045)]+
-                    [box((0,0,0),(.065,h,.08),.004),box((0,-h*.5-.12,0),(width+.32,.12,.48),.01)])
-        pane=box((0,0,0),(width,h,.009),.001)
+        # Keep the deep worn sill; sub-centimetre bands on thin rails/glass
+        # do not survive the game camera and fund the useful cellar detail.
+        frame=merge([box((x,0,0),(.095,h+.19,.13),0) for x in (-width*.5-.045,width*.5+.045)]+
+                    [box((0,y,0),(width,.095,.13),0) for y in (-h*.5-.045,h*.5+.045)]+
+                    [box((0,0,0),(.065,h,.08),0),box((0,-h*.5-.12,0),(width+.32,.12,.48),.01)])
+        pane=box((0,0,0),(width,h,.009),0)
         if side:frame=rotate(frame,(0,90,0));pane=rotate(pane,(0,90,0))
         frames.append(at(frame,center));glass.append(at(pane,center))
     for z in (-5.84,5.84):
@@ -550,6 +554,7 @@ def create_parts():
     lodge_props(add,parts)
     lodge_furniture(add,parts)
     lodge_minibar(add,parts)
+    lodge_cellar(add,parts)
     return parts
 
 def validate(parts):
@@ -559,6 +564,7 @@ def validate(parts):
     validate_lodge_props(parts)
     validate_furniture(parts)
     validate_minibar(parts)
+    validate_cellar(parts)
     # Albedo is a fixed authored input, with the exact image prompts and bytes retained.
     textures=json.loads((ROOT/"ArtSource/Village/Textures/generation.json").read_text(encoding="utf-8"))
     for texture in textures["images"]:
@@ -790,7 +796,7 @@ def build(parts):
 
 def preview(path,objects,rows,kind="SkiLodge",location=(25,-26,15),target=(0,0,2),lens=43):
     display_kind=("Lighter" if kind=="LighterOpen" else
-                  "SkiLodge" if kind in ("LodgeInterior","LodgeTeaCorner","LodgeDoors","LodgeMinibar","LodgeGroupPhotograph") else kind)
+                  "SkiLodge" if kind in ("LodgeInterior","LodgeTeaCorner","LodgeDoors","LodgeMinibar","LodgeGroupPhotograph","LodgeCellar") else kind)
     restored=[]
     for obj,row in zip(objects,rows):
         obj.hide_render=row["kind"]!=display_kind or row.get("hidden",False)
@@ -838,6 +844,7 @@ def main():
                 ("LodgeDoors","VillageLodgeDoors3D.png",(4,-10.2,2.8),(0,-5.98,1.3),45),
                 ("LodgeMinibar","VillageLodgeMinibar3D.png",(6.3,.4,2.0),(5.3,-4.6,.72),23),
                 ("LodgeGroupPhotograph","VillageLodgeGroupPhotograph3D.png",(2.68,-4.60,1.16),(2.68,-5.235,1.025),55),
+                ("LodgeCellar","VillageLodgeCellar3D.png",(-5.2,-2.15,2.3),(-7.3,-4.35,.25),42),
                 ("SkiLodge","VillageSkiLodgeStove3D.png",(2.5,-3.5,2.2),(0,0,.95),48),
                 ("SkiLodge","VillageSkiLodgeChimney3D.png",(3,-4,7),(0,0,5.6),48),
                 ("Lighter","VillageLighter3D.png",(.14,-.18,.12),(0,0,.033),55),

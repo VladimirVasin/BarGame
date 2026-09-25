@@ -21,6 +21,9 @@ namespace BarPromenade
         /// <summary>Optional follow-up after the final page is confirmed and all inspection owners release.</summary>
         public event Action<PlayerInteractor> Completed;
         public string CompletionActionKey { get; set; }
+        public NarrativeConfirmation Confirmation { get; set; }
+        /// <summary>Shared session time drives an optional prop-only attempt; zero restores its rest pose.</summary>
+        public event Action<float> AttemptProgress;
 
         public void Configure(NarrativeInteractionDefinition definition, Transform subjectRoot,
             NarrativeStagingPlan staging, Vector3 position, float interactionRadius = PlayerInteractor.InteractionRadius)
@@ -75,6 +78,7 @@ namespace BarPromenade
 
         internal void SetSession(NarrativeInteractionController controller) => session = controller;
         internal void Complete(PlayerInteractor interactor) => Completed?.Invoke(interactor);
+        internal void SampleAttempt(float progress) => AttemptProgress?.Invoke(progress);
 
         private void OnDisable() { if (IsPresenting) session.RestoreImmediate(); }
         private void OnDestroy() { if (IsPresenting) session.RestoreImmediate(); }

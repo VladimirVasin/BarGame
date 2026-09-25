@@ -20,26 +20,25 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
   Side approaches clear basket/sledge; slower eased camera/focus leaves dialogue
   timing intact. Check/frames: `AreaCaptureFixture.AlpineVillageNarrative`
   (yard/model clearance, approaches, RU/EN, continuity, pause/cancel/cleanup).
-- Lodge: wall-facing beds/rug/kettle, six-place oak table/benches, edge lamp;
-  shared stove sitting/photo/skis. Minibar: seven bottles, two ornate burgundy
-  seats, table/rug/blanket. Approved PS1 photo: inspect→shared Take/Cancel,
-  one source credit/persistent removal; inventory frame. Camera/seats retain
-  rig/input. Render review found mirrored UVs/text overlap.
-  Checks: `build-village-expansion-3d-model.py` validator/export,
-  `AreaCaptureFixture.AlpineVillageLodgeFurnishings` (frames).
-  Coplanar beam/wall faces and cloth crossing mattress edges caused flicker;
-  beams project, cloth drapes outside; wall-side chest frees cot approach.
-  Checks: generator validator/export,
+  Removed obsolete object-search overloads (CS0618). Check:
+  `dotnet build BarPromenade.PlayModeTests.csproj`.
+- Lodge: beds/rug/kettle, six-place oak table/benches/lamp; shared stove
+  sitting/photo/skis. Minibar/seats/PS1 photo: shared Take/Cancel, one grant,
+  persistent removal/inventory frame; real rig/input. Render review corrected
+  photo UV/text overlap. Checks: `build-village-expansion-3d-model.py`,
+  `AreaCaptureFixture.AlpineVillageLodgeFurnishings`.
+  Beam/wall coplanarity and cloth/mattress overlap removed, chest against wall:
   `AreaCaptureFixture.AlpineVillageLodgeSurfaceClearance`; frames reviewed.
-  Unrelated `AlpineVillageLodgeShelter` music-pause assertion drifted
-  by one DSP buffer; unchanged.
+  Threshold exposed; hatch/props. User: lower/right-oblique hatch/compact choice,
+  lift/stop/shut→shared bottom reply; E/Esc/repeat. Generator passed;
+  `AlpineVillageLodgeSurfaceClearance`: traversal/sequence/cleanup; left/up orbit, centred lid.
+  Unrelated `AlpineVillageLodgeShelter` music-pause assertion drift: unchanged.
 - New Game adds lodge arrival outside facing its door; consumes marker once.
   Village default/day `1`/`07:40` stay. Check:
   `NewGame_SelectedLocationUsesItsNormalArrivalWithoutTheHomeOpening(SkiLodge)`;
   RU/EN picker frames: choices/Back fit.
-- Cold village load repeated terrain sampling across paths, terrain and snow.
-  Exact lazy grid heights now serve mesh/interpolation; plan/brook replacement
-  invalidates them. Snow samples retained cells only, wet exclusion uses the
+- Cold loading: lazy grid heights serve mesh/interpolation, invalidated on
+  plan/brook replacement. Snow samples retained cells only, wet exclusion uses the
   brook index; distant paths reject before junction work, refinement reuses
   edges/taper distances. Bounded road groups reject distant terrain faces.
   Geometry/detail preserved; UV assertions now follow each material's used

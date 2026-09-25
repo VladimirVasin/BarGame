@@ -9,7 +9,8 @@ namespace BarPromenade
     /// <summary>
     /// One ground-fitted surface per consecutive route chain. A single contour
     /// contains inner offset-line corners, outer round joins and free round
-    /// ends; no cap or joint is laid over another ribbon. The terrain keeps
+    /// ends; the lodge approach instead meets its sill with a straight edge.
+    /// No cap or joint is laid over another ribbon. The terrain keeps
     /// all collision and the path descriptors keep their capsule snow mask.
     /// </summary>
     internal static class AlpineVillagePathSurfaceBuilder
@@ -90,7 +91,11 @@ namespace BarPromenade
                 throw new ArgumentException("The visible route has zero length.", nameof(chain));
             float radius = chain[0].SurfaceHalfWidth;
             if (radius <= 0f) throw new ArgumentException("The visible route has no width.", nameof(chain));
-            List<Vector2> points = Contour(centres, radius);
+            AlpineVillageExpansionPlan expansion = plan.Expansion;
+            AlpineVillagePathDescriptor terminal = chain[chain.Count - 1];
+            bool meetsLodgeThreshold = terminal.Kind == AlpineVillagePathKind.SkiBaseAccess &&
+                (XZ(terminal.End) - XZ(expansion.LodgeThresholdApproach)).sqrMagnitude < .000001f;
+            List<Vector2> points = Contour(centres, radius, !meetsLodgeThreshold);
             List<int> triangles = Triangulate(points);
             Refine(points, ref triangles);
             ValidateCoverage(points, triangles, origin, chain);
@@ -104,8 +109,20 @@ namespace BarPromenade
                 float ground = Mathf.Max(
                     AlpineVillageTerrainSampler.SampleHeight(plan, world),
                     AlpineVillageTerrainSampler.SampleMeshHeight(plan, world));
-                vertices.Add(new Vector3(world.x,
-                    ground + AlpineVillageWorldBuilder.LaneSkinLift, world.y));
+                float height = ground + AlpineVillageWorldBuilder.LaneSkinLift;
+                if (meetsLodgeThreshold)
+                {
+                    float approachDistance = -Vector2.Dot(world - XZ(expansion.LodgeThresholdApproach),
+                        XZ(expansion.LodgeForward));
+                    float blend = 1f - Mathf.SmoothStep(0f, 1f,
+                        approachDistance / AlpineVillageExpansionPlan.LodgeThresholdPathBlendLength);
+                    // The path meets the outer bevel's lower edge. Its triangles
+                    // stop there; the imported wood owns the entire doorway.
+                    float sillEdge = expansion.LodgeFloorHeight + AlpineVillageExpansionPlan.LodgeThresholdTop -
+                        AlpineVillageExpansionPlan.LodgeThresholdChamfer;
+                    height = Mathf.Lerp(height, sillEdge, blend);
+                }
+                vertices.Add(new Vector3(world.x, height, world.y));
                 uvs.Add(world / pitch);
             }
             // A positive XZ contour has its 3D normal downward.
@@ -126,7 +143,7 @@ namespace BarPromenade
             return mesh;
         }
 
-        private static List<Vector2> Contour(List<Vector2> centres, float radius)
+        private static List<Vector2> Contour(List<Vector2> centres, float radius, bool roundEnd)
         {
             var left = new List<Vector2>();
             var right = new List<Vector2>();
@@ -163,7 +180,7 @@ namespace BarPromenade
             left.Add(end + Left(last) * radius);
             right.Add(end - Left(last) * radius);
             var contour = new List<Vector2>(left);
-            Arc(contour, end, Left(last) * radius, -Mathf.PI);
+            if (roundEnd) Arc(contour, end, Left(last) * radius, -Mathf.PI);
             for (int index = right.Count - 1; index >= 0; index--) contour.Add(right[index]);
             Arc(contour, centres[0], -Left(first) * radius, -Mathf.PI);
             for (int index = contour.Count - 1; index >= 0; index--)

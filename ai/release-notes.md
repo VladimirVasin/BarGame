@@ -17,12 +17,13 @@ Earlier notes: [`release-notes-2026-09.md`](archive/release-notes-2026-09.md).
 - Осмотры: 24 снаружи у работы/хранения/лавины, склад/обрыв сохранены.
   Место важнее квот/видимости; камера/фокус плавнее.
   Проверка/кадры: `AreaCaptureFixture.AlpineVillageNarrative`.
-- База: кровати/стол на шестерых/фонарь/чайник, посадка у печи/осмотр лыж.
-  Минибар/два бордовых кресла/столик; фото PS1: осмотр→инвентарь, рамка исчезает.
+- База: мебель/посадка/лыжи, минибар/фото PS1 в инвентарь.
   Проверка: `AreaCaptureFixture.AlpineVillageLodgeFurnishings`.
-  Наложения балок/одеяла убраны; сундук у стены, проход открыт.
-  Проверки: `build-village-expansion-3d-model.py`,
+  Балки/одеяло без наложений, сундук у стены:
   `AreaCaptureFixture.AlpineVillageLodgeSurfaceClearance` (кадры).
+  Порог виден; люк в центре кадра: упор/закрытие→ответ снизу.
+  Проверки: `build-village-expansion-3d-model.py`,
+  `AlpineVillageLodgeSurfaceClearance` (проход/порядок/ракурс).
 - «Новая игра»: старт у базы. Проверка:
   `NewGame_SelectedLocationUsesItsNormalArrivalWithoutTheHomeOpening(SkiLodge)`.
 - Генерация деревни ускорена: убраны повторные расчёты рельефа/троп/снега,

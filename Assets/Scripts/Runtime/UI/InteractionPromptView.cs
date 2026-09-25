@@ -25,7 +25,11 @@ namespace BarPromenade
         private UnityEngine.Object pageOwner;
         private string heldPageKey, heldHeadingKey, heldControlsKey;
         private Func<bool> heldPageAction;
+        private bool heldPageCompact;
         private int heldPageFrame;
+        private string heldYesKey, heldNoKey;
+        public bool HeldYesSelected { get; private set; }
+        public bool HasHeldConfirmation => HasHeldPage && !string.IsNullOrEmpty(heldYesKey);
 
         // Spoken feedback keeps this facade's key and input lifecycle, but
         // its only presentation and voice live in the ordinary head bubble.
@@ -69,13 +73,30 @@ namespace BarPromenade
 
         /// <summary>A silent, explicitly released page. Updating prompts/feedback cannot replace its owner.</summary>
         public bool TryHoldPage(UnityEngine.Object owner, string textKey, string headingKey,
-            string controlsKey, Func<bool> advance)
+            string controlsKey, Func<bool> advance, bool compact = false)
         {
             if (!isActiveAndEnabled || owner == null || string.IsNullOrWhiteSpace(textKey) ||
                 HasHeldPage && pageOwner != owner) return false;
+            heldYesKey = heldNoKey = null;
+            heldPageCompact = compact;
             pageOwner = owner; heldPageKey = textKey; heldHeadingKey = headingKey;
             heldControlsKey = controlsKey; heldPageAction = advance; heldPageFrame = Time.frameCount;
             return true;
+        }
+
+        public bool TryHoldConfirmation(UnityEngine.Object owner, string questionKey, string yesKey,
+            string noKey, Func<bool, bool> choose)
+        {
+            if (string.IsNullOrWhiteSpace(yesKey) || string.IsNullOrWhiteSpace(noKey) || choose == null ||
+                !TryHoldPage(owner, questionKey, null, null, () => choose(HeldYesSelected), compact: true)) return false;
+            heldYesKey = yesKey; heldNoKey = noKey; HeldYesSelected = false;
+            return true;
+        }
+
+        public bool SelectHeldAnswer(UnityEngine.Object owner, bool yes)
+        {
+            if (!IsHeldBy(owner) || !HasHeldConfirmation) return false;
+            HeldYesSelected = yes; return true;
         }
 
         public bool ReleaseHeldPage(UnityEngine.Object owner)
@@ -88,6 +109,8 @@ namespace BarPromenade
         {
             pageOwner = null; heldPageKey = heldHeadingKey = heldControlsKey = null;
             heldPageAction = null;
+            heldPageCompact = false;
+            heldYesKey = heldNoKey = null; HeldYesSelected = false;
         }
 
         /// <summary>The hero, so a line can be dropped when he walks
@@ -600,15 +623,20 @@ namespace BarPromenade
                 pageHeadingStyle = RetroUiTheme.CreateLabelStyle(10, TextAnchor.MiddleLeft, RetroUiTheme.Text);
                 pageControlsStyle = RetroUiTheme.CreateLabelStyle(10, TextAnchor.MiddleRight, RetroUiTheme.Text);
             }
-            const float inset = 12f, headingHeight = 18f, controlsHeight = 20f;
+            float inset = heldPageCompact ? 8f : 12f;
+            float headingHeight = heldPageCompact ? 0f : 18f;
+            float controlsHeight = heldPageCompact ? 18f : 20f;
             string text = LocalizationService.Get(heldPageKey);
             string heading = string.IsNullOrEmpty(heldHeadingKey) ? string.Empty : LocalizationService.Get(heldHeadingKey);
             string controls = string.IsNullOrEmpty(heldControlsKey) ? string.Empty : LocalizationService.Get(heldControlsKey);
-            float width = MaximumPanelWidth;
+            float width = heldPageCompact
+                ? Mathf.Clamp(labelStyle.CalcSize(new GUIContent(text)).x + inset * 2f, 220f, 360f)
+                : MaximumPanelWidth;
             float textWidth = width - inset * 2f;
             measureContent.text = text;
             float textHeight = labelStyle.CalcHeight(measureContent, textWidth);
-            float height = Mathf.Clamp(Mathf.Ceil(textHeight + headingHeight + controlsHeight + inset * 2f), 82f, 220f);
+            float height = Mathf.Clamp(Mathf.Ceil(textHeight + headingHeight + controlsHeight + inset * 2f),
+                heldPageCompact ? 52f : 82f, heldPageCompact ? 140f : 220f);
             Rect panel = RetroUiTheme.SnapRect(new Rect((RetroUiTheme.LogicalWidth - width) * .5f,
                 RetroUiTheme.LogicalHeight - height - BottomMargin, width, height));
             Rect textRect = new Rect(panel.x + inset, panel.y + inset + headingHeight,
@@ -618,14 +646,28 @@ namespace BarPromenade
             RetroUiTheme.DrawPanel(panel, RetroUiTheme.PanelInset, RetroUiTheme.FrameOuter, false, 0f, 1f);
             GUI.Label(new Rect(panel.x + inset, panel.y + inset, textWidth, headingHeight), heading, pageHeadingStyle);
             GUI.Label(textRect, text, labelStyle);
-            GUI.Label(controlsRect, controls, pageControlsStyle);
+            bool confirmation = HasHeldConfirmation;
+            if (confirmation)
+            {
+                for (int index = 0; index < 2; index++)
+                {
+                    bool yes = index == 0;
+                    Rect choice = new Rect(controlsRect.x + index * (controlsRect.width + 8f) * .5f,
+                        controlsRect.y, (controlsRect.width - 8f) * .5f, controlsRect.height);
+                    RetroUiTheme.DrawSelection(choice, yes == HeldYesSelected);
+                    GUI.Label(choice, LocalizationService.Get(yes ? heldYesKey : heldNoKey), labelStyle);
+                    if (GUI.Button(choice, GUIContent.none, GUIStyle.none))
+                    { HeldYesSelected = yes; TryInvokePrompt(); break; }
+                }
+            }
+            else GUI.Label(controlsRect, controls, pageControlsStyle);
             LastRenderedText = LastRenderedRevealedText = text;
             LastRenderedPanelRect = panel; LastRenderedTextRect = textRect;
             LastRenderedTextFits = textHeight <= textRect.height + .01f &&
                 pageHeadingStyle.CalcSize(new GUIContent(heading)).x <= textWidth &&
                 pageControlsStyle.CalcSize(new GUIContent(controls)).x <= textWidth;
             HasRenderedLayout = true;
-            if (Time.frameCount > heldPageFrame && GameInput.CanRead(GameInputContext.Menu) &&
+            if (!confirmation && Time.frameCount > heldPageFrame && GameInput.CanRead(GameInputContext.Menu) &&
                 GUI.Button(controlsRect, GUIContent.none, GUIStyle.none)) TryInvokePrompt();
         }
     }

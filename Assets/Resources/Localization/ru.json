@@ -1,5 +1,10 @@
 {
   "entries": [
+    {"key":"interaction.lodge_cellar","value":"E — осмотреть люк"},
+    {"key":"lodge.cellar.open_question","value":"Открыть люк?"},
+    {"key":"lodge.cellar.locked","value":"Заперто. Похоже... изнутри?"},
+    {"key":"narrative.answer.yes","value":"Да"},
+    {"key":"narrative.answer.no","value":"Нет"},
     {"key":"narrative.page.thought","value":"Мысли"},
     {"key":"narrative.page.document","value":"Записка"},
     {"key":"narrative.controls.next","value":"E — дальше    Esc — закрыть"},

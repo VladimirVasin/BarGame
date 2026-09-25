@@ -5,7 +5,24 @@ using UnityEngine;
 namespace BarPromenade
 {
     public enum NarrativePageKind { HeroThought, DocumentText }
-    public enum NarrativeCameraMode { ObjectSide, DocumentCloseUp }
+    public enum NarrativeCameraMode { ObjectSide, DocumentCloseUp, ObjectCloseUp }
+
+    /// <summary>Optional final-page choice, passive prop attempt and held text outcome.</summary>
+    public sealed class NarrativeConfirmation
+    {
+        public NarrativeConfirmation(string yesKey, string noKey, string replyKey, float attemptSeconds)
+        {
+            if (string.IsNullOrWhiteSpace(yesKey) || string.IsNullOrWhiteSpace(noKey) ||
+                string.IsNullOrWhiteSpace(replyKey) || float.IsNaN(attemptSeconds) ||
+                float.IsInfinity(attemptSeconds) || attemptSeconds <= 0f)
+                throw new ArgumentException("An inspection confirmation needs keyed answers/reply and a finite attempt.");
+            YesKey = yesKey; NoKey = noKey; ReplyKey = replyKey; AttemptSeconds = attemptSeconds;
+        }
+        public string YesKey { get; }
+        public string NoKey { get; }
+        public string ReplyKey { get; }
+        public float AttemptSeconds { get; }
+    }
 
     public readonly struct NarrativePage
     {

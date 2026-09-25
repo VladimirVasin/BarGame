@@ -215,7 +215,7 @@ namespace BarPromenade.Tests.PlayMode
                                     Assert.That(Vector3.Dot(camera.transform.forward, -target.Subject.forward), Is.GreaterThan(.95f),
                                         "A note gets its own frontal close-up.");
                                     Assert.That(Vector3.Distance(camera.transform.position, target.FocusBounds.center), Is.LessThan(2f));
-                                    var focusVolume = Object.FindObjectsByType<UnityEngine.Rendering.Volume>(FindObjectsSortMode.None)
+                                    var focusVolume = Object.FindObjectsByType<UnityEngine.Rendering.Volume>()
                                         .Single(v => v.name == "Cinematic Depth Of Field");
                                     Assert.That(focusVolume.profile.TryGet<UnityEngine.Rendering.Universal.DepthOfField>(out var focus), Is.True);
                                     Vector3 paperCentre = target.Subject.GetComponentInChildren<TMPro.TextMeshPro>().transform.position;
@@ -254,7 +254,7 @@ namespace BarPromenade.Tests.PlayMode
                 for (int i = 0; i < 100 && session.Phase == NarrativeInteractionPhase.Positioning; i++) yield return null;
                 for (int i = 0; i < 5; i++) yield return null;
                 Assert.That(session.Phase, Is.EqualTo(NarrativeInteractionPhase.Framing));
-                var transitionVolume = Object.FindObjectsByType<UnityEngine.Rendering.Volume>(FindObjectsSortMode.None)
+                var transitionVolume = Object.FindObjectsByType<UnityEngine.Rendering.Volume>()
                     .Single(v => v.name == "Cinematic Depth Of Field");
                 using (GameTimeScaleRuntime.AcquirePause())
                 {

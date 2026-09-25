@@ -1,5 +1,10 @@
 {
   "entries": [
+    {"key":"interaction.lodge_cellar","value":"E — inspect the hatch"},
+    {"key":"lodge.cellar.open_question","value":"Open the hatch?"},
+    {"key":"lodge.cellar.locked","value":"Locked. Seems... from the inside?"},
+    {"key":"narrative.answer.yes","value":"Yes"},
+    {"key":"narrative.answer.no","value":"No"},
     {"key":"narrative.page.thought","value":"Thoughts"},
     {"key":"narrative.page.document","value":"Note"},
     {"key":"narrative.controls.next","value":"E — next    Esc — close"},

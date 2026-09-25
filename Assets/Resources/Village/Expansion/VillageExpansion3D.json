@@ -1,11 +1,11 @@
 {
-  "generator_version": "1.10.0",
+  "generator_version": "1.11.0",
   "design_id": "village_forest_ski_base_old_road_v1",
   "scale_mode": "fixed_metres",
   "uv_mode": "projected_metres",
-  "build_signature": "1d5fcf74676081e0c6f031c94c0e0dbff0db4539abad734865c1569bfff0ea02",
-  "mesh_count": 637,
-  "triangle_count": 184980,
+  "build_signature": "9827919be03b65161bb2e7058fe86629715fadd69f46447e9c6f1f538a848ce2",
+  "mesh_count": 654,
+  "triangle_count": 184816,
   "avalanche_origin": [
     -158,
     110
@@ -67,7 +67,7 @@
         0.01999999999999999,
         5.68
       ],
-      "triangles": 28
+      "triangles": 48
     },
     {
       "kind": "SkiLodge",
@@ -501,7 +501,7 @@
         5.63,
         0.145
       ],
-      "triangles": 640
+      "triangles": 480
     },
     {
       "kind": "SkiLodge",
@@ -646,7 +646,7 @@
         2.945,
         6.08
       ],
-      "triangles": 1512
+      "triangles": 792
     },
     {
       "kind": "SkiLodge",
@@ -670,7 +670,7 @@
         2.85,
         5.8445
       ],
-      "triangles": 252
+      "triangles": 108
     },
     {
       "kind": "SkiLodge",
@@ -13193,7 +13193,31 @@
         2.89,
         -5.755
       ],
-      "triangles": 140
+      "triangles": 112
+    },
+    {
+      "kind": "SkiLodge",
+      "name": "LodgeDoorThreshold",
+      "mesh": "GEO_Expansion_SkiLodge_LodgeDoorThreshold",
+      "surface": "Timber",
+      "solid": true,
+      "tint": [
+        0.39,
+        0.335,
+        0.26,
+        1
+      ],
+      "bounds_min": [
+        -1.3,
+        -0.16,
+        -6.280000000000001
+      ],
+      "bounds_max": [
+        1.3,
+        0.07,
+        -5.66
+      ],
+      "triangles": 28
     },
     {
       "kind": "SkiLodge",
@@ -13210,12 +13234,12 @@
       "parent": "LodgeDoorLeftHinge",
       "bounds_min": [
         -1.298,
-        0.03499999999999992,
+        0.08499999999999996,
         -6.049
       ],
       "bounds_max": [
         -0.010000000000000009,
-        2.6799999999999997,
+        2.68,
         -5.9350000000000005
       ],
       "triangles": 196
@@ -13235,12 +13259,12 @@
       "parent": "LodgeDoorLeftHinge",
       "bounds_min": [
         -1.2965,
-        0.03499999999999992,
+        0.08499999999999996,
         -6.093
       ],
       "bounds_max": [
         0.03,
-        2.6799999999999997,
+        2.68,
         -5.8725
       ],
       "triangles": 308
@@ -13310,12 +13334,12 @@
       "parent": "LodgeDoorRightHinge",
       "bounds_min": [
         0.010000000000000009,
-        0.03499999999999992,
+        0.08499999999999996,
         -6.049
       ],
       "bounds_max": [
         1.298,
-        2.6799999999999997,
+        2.68,
         -5.9350000000000005
       ],
       "triangles": 196
@@ -13335,7 +13359,7 @@
       "parent": "LodgeDoorRightHinge",
       "bounds_min": [
         0.011500000000000003,
-        0.0825,
+        0.08499999999999996,
         -6.0809999999999995
       ],
       "bounds_max": [
@@ -15536,6 +15560,396 @@
         -5.205967826730719
       ],
       "triangles": 12
+    },
+    {
+      "kind": "SkiLodge",
+      "name": "CellarHatchFrame",
+      "mesh": "GEO_Expansion_SkiLodge_CellarHatchFrame",
+      "surface": "Timber",
+      "solid": true,
+      "tint": [
+        0.25,
+        0.215,
+        0.17,
+        1
+      ],
+      "parent": "LodgeCellarHatch",
+      "bounds_min": [
+        -7.8100000000000005,
+        -0.075,
+        -4.91
+      ],
+      "bounds_max": [
+        -6.6899999999999995,
+        0.020000000000000004,
+        -3.49
+      ],
+      "triangles": 48
+    },
+    {
+      "kind": "SkiLodge",
+      "name": "CellarHatchLid",
+      "mesh": "GEO_Expansion_SkiLodge_CellarHatchLid",
+      "surface": "Timber",
+      "solid": true,
+      "tint": [
+        0.305,
+        0.26,
+        0.195,
+        1
+      ],
+      "parent": "LodgeCellarHatchHinge",
+      "bounds_min": [
+        -7.698,
+        -0.055,
+        -4.8
+      ],
+      "bounds_max": [
+        -6.802,
+        0.019999999999999997,
+        -3.6
+      ],
+      "triangles": 84
+    },
+    {
+      "kind": "SkiLodge",
+      "name": "CellarHatchBacking",
+      "mesh": "GEO_Expansion_SkiLodge_CellarHatchBacking",
+      "surface": "Timber",
+      "solid": true,
+      "tint": [
+        0.15,
+        0.135,
+        0.11,
+        1
+      ],
+      "parent": "LodgeCellarHatchHinge",
+      "bounds_min": [
+        -7.7,
+        -0.075,
+        -4.8
+      ],
+      "bounds_max": [
+        -6.8,
+        -0.057,
+        -3.6
+      ],
+      "triangles": 12
+    },
+    {
+      "kind": "SkiLodge",
+      "name": "CellarHatchPullWell",
+      "mesh": "GEO_Expansion_SkiLodge_CellarHatchPullWell",
+      "surface": "RustedIron",
+      "solid": false,
+      "tint": [
+        0.205,
+        0.215,
+        0.205,
+        1
+      ],
+      "parent": "LodgeCellarHatchHinge",
+      "bounds_min": [
+        -7.005000000000001,
+        -0.043000000000000003,
+        -4.2700000000000005
+      ],
+      "bounds_max": [
+        -6.875,
+        -0.025,
+        -4.13
+      ],
+      "triangles": 12
+    },
+    {
+      "kind": "SkiLodge",
+      "name": "CellarHatchIronwork",
+      "mesh": "GEO_Expansion_SkiLodge_CellarHatchIronwork",
+      "surface": "RustedIron",
+      "solid": false,
+      "tint": [
+        0.205,
+        0.215,
+        0.205,
+        1
+      ],
+      "parent": "LodgeCellarHatchHinge",
+      "bounds_min": [
+        -7.71,
+        0.003999999999999999,
+        -4.6125
+      ],
+      "bounds_max": [
+        -6.894380602337444,
+        0.036000000000000004,
+        -3.7875
+      ],
+      "triangles": 104
+    },
+    {
+      "kind": "SkiLodge",
+      "name": "CellarHatchFixedHinges",
+      "mesh": "GEO_Expansion_SkiLodge_CellarHatchFixedHinges",
+      "surface": "RustedIron",
+      "solid": false,
+      "tint": [
+        0.205,
+        0.215,
+        0.205,
+        1
+      ],
+      "parent": "LodgeCellarHatch",
+      "bounds_min": [
+        -7.8,
+        0.015277568135664537,
+        -4.626
+      ],
+      "bounds_max": [
+        -7.685,
+        0.04472243186433546,
+        -3.7740000000000005
+      ],
+      "triangles": 64
+    },
+    {
+      "kind": "SkiLodge",
+      "name": "CellarUtilityBucket",
+      "mesh": "GEO_Expansion_SkiLodge_CellarUtilityBucket",
+      "surface": "RustedIron",
+      "solid": true,
+      "tint": [
+        0.4,
+        0.415,
+        0.4,
+        1
+      ],
+      "bounds_min": [
+        -8.48,
+        0.02,
+        -3.5516796077701764
+      ],
+      "bounds_max": [
+        -8.14,
+        0.34,
+        -3.228320392229824
+      ],
+      "triangles": 136
+    },
+    {
+      "kind": "SkiLodge",
+      "name": "CellarUtilityBucketHandle",
+      "mesh": "GEO_Expansion_SkiLodge_CellarUtilityBucketHandle",
+      "surface": "RustedIron",
+      "solid": false,
+      "tint": [
+        0.205,
+        0.215,
+        0.205,
+        1
+      ],
+      "bounds_min": [
+        -8.485795554957734,
+        0.3284470857293849,
+        -3.396
+      ],
+      "bounds_max": [
+        -8.134204445042267,
+        0.506,
+        -3.3840000000000003
+      ],
+      "triangles": 52
+    },
+    {
+      "kind": "SkiLodge",
+      "name": "CellarUtilityBrush",
+      "mesh": "GEO_Expansion_SkiLodge_CellarUtilityBrush",
+      "surface": "Timber",
+      "solid": true,
+      "tint": [
+        0.36,
+        0.29,
+        0.19,
+        1
+      ],
+      "bounds_min": [
+        -8.39,
+        0.0765,
+        -3.4325
+      ],
+      "bounds_max": [
+        -8.23,
+        0.474,
+        -3.3475
+      ],
+      "triangles": 24
+    },
+    {
+      "kind": "SkiLodge",
+      "name": "CellarUtilityBrushBristles",
+      "mesh": "GEO_Expansion_SkiLodge_CellarUtilityBrushBristles",
+      "surface": "Canvas",
+      "solid": false,
+      "tint": [
+        0.24,
+        0.235,
+        0.18,
+        1
+      ],
+      "bounds_min": [
+        -8.3825,
+        0.044000000000000004,
+        -3.4290000000000003
+      ],
+      "bounds_max": [
+        -8.2375,
+        0.094,
+        -3.351
+      ],
+      "triangles": 12
+    },
+    {
+      "kind": "SkiLodge",
+      "name": "CellarUtilityBroomHandle",
+      "mesh": "GEO_Expansion_SkiLodge_CellarUtilityBroomHandle",
+      "surface": "Timber",
+      "solid": true,
+      "tint": [
+        0.36,
+        0.28,
+        0.175,
+        1
+      ],
+      "bounds_min": [
+        -8.545499999999999,
+        0.45999999999999996,
+        -4.933423393758659
+      ],
+      "bounds_max": [
+        -8.5145,
+        1.65,
+        -4.906576606241341
+      ],
+      "triangles": 20
+    },
+    {
+      "kind": "SkiLodge",
+      "name": "CellarUtilityBroomHead",
+      "mesh": "GEO_Expansion_SkiLodge_CellarUtilityBroomHead",
+      "surface": "Canvas",
+      "solid": false,
+      "tint": [
+        0.37,
+        0.34,
+        0.225,
+        1
+      ],
+      "bounds_min": [
+        -8.635,
+        0.24,
+        -4.9575
+      ],
+      "bounds_max": [
+        -8.424999999999999,
+        0.53,
+        -4.8825
+      ],
+      "triangles": 12
+    },
+    {
+      "kind": "SkiLodge",
+      "name": "CellarUtilityBroomBindingAndHook",
+      "mesh": "GEO_Expansion_SkiLodge_CellarUtilityBroomBindingAndHook",
+      "surface": "RustedIron",
+      "solid": false,
+      "tint": [
+        0.205,
+        0.215,
+        0.205,
+        1
+      ],
+      "bounds_min": [
+        -8.68,
+        0.33999999999999997,
+        -4.9615
+      ],
+      "bounds_max": [
+        -8.45,
+        1.6355470019622522,
+        -4.8785
+      ],
+      "triangles": 44
+    },
+    {
+      "kind": "SkiLodge",
+      "name": "CellarUtilityStrapCrate",
+      "mesh": "GEO_Expansion_SkiLodge_CellarUtilityStrapCrate",
+      "surface": "Timber",
+      "solid": true,
+      "tint": [
+        0.325,
+        0.27,
+        0.195,
+        1
+      ],
+      "bounds_min": [
+        -7.4,
+        0.020000000000000004,
+        -5.569
+      ],
+      "bounds_max": [
+        -6.76,
+        0.33749999999999997,
+        -5.130999999999999
+      ],
+      "triangles": 108
+    },
+    {
+      "kind": "SkiLodge",
+      "name": "CellarUtilitySpareStraps",
+      "mesh": "GEO_Expansion_SkiLodge_CellarUtilitySpareStraps",
+      "surface": "Canvas",
+      "solid": false,
+      "tint": [
+        0.235,
+        0.245,
+        0.205,
+        1
+      ],
+      "bounds_min": [
+        -7.2925,
+        0.11,
+        -5.484999999999999
+      ],
+      "bounds_max": [
+        -6.8775,
+        0.154,
+        -5.215
+      ],
+      "triangles": 72
+    },
+    {
+      "kind": "SkiLodge",
+      "name": "CellarUtilityStrapBuckles",
+      "mesh": "GEO_Expansion_SkiLodge_CellarUtilityStrapBuckles",
+      "surface": "RustedIron",
+      "solid": false,
+      "tint": [
+        0.205,
+        0.215,
+        0.205,
+        1
+      ],
+      "bounds_min": [
+        -7.300000000000001,
+        0.154,
+        -5.2924999999999995
+      ],
+      "bounds_max": [
+        -6.87,
+        0.166,
+        -5.2475
+      ],
+      "triangles": 36
     }
   ],
   "anchors": [
@@ -15885,6 +16299,52 @@
         2.0031476007338056,
         -5.44291169081776
       ]
+    },
+    {
+      "kind": "SkiLodge",
+      "name": "LodgeCellarHatch",
+      "position": [
+        -7.25,
+        0.02,
+        -4.2
+      ]
+    },
+    {
+      "kind": "SkiLodge",
+      "name": "HatchInteractionDock",
+      "position": [
+        -5.05,
+        0.02,
+        -4.7
+      ]
+    },
+    {
+      "kind": "SkiLodge",
+      "name": "HatchFocus",
+      "position": [
+        -7.25,
+        0.02,
+        -4.2
+      ]
+    },
+    {
+      "kind": "SkiLodge",
+      "name": "HatchHandleFocus",
+      "position": [
+        -6.94,
+        0.012,
+        -4.2
+      ]
+    },
+    {
+      "kind": "SkiLodge",
+      "name": "LodgeCellarHatchHinge",
+      "position": [
+        -7.7,
+        0.02,
+        -4.2
+      ],
+      "parent": "LodgeCellarHatch"
     }
   ]
 }

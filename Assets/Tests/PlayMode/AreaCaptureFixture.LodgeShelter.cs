@@ -12,11 +12,17 @@ namespace BarPromenade.Tests.PlayMode
     public sealed partial class AreaCaptureFixture
     {
         [UnityTest]
-        [Explicit("Lodge side-beam/cot surface regression and the wall chest's physical passage.")]
+        [Explicit("Lodge surfaces, real threshold traversal and the closed-cellar confirmation/outcome flow.")]
         [PrebuildSetup(typeof(VillageArtAssetsSetup))]
         public IEnumerator AlpineVillageLodgeSurfaceClearance()
         {
+            Assert.That(Application.isBatchMode, Is.False, "The compact cellar choices and outcome need a real Game view.");
+#if UNITY_EDITOR
+            var gameView = UnityEditor.EditorWindow.GetWindow(typeof(UnityEditor.EditorWindow).Assembly.GetType("UnityEditor.GameView"));
+            gameView.Show(); gameView.Focus();
+#endif
             GameSessionState.BeginNewGame();
+            GameSessionState.TryStartGameTimeFromWake();
             AlpineVillageRoot root = null;
             yield return Capture(SceneIds.AlpineVillage, () =>
             {
@@ -33,7 +39,13 @@ namespace BarPromenade.Tests.PlayMode
                     Shot.At("lodge-surfaces-right", LodgePoint(root, 3.8f, 1.8f, -.5f),
                         LodgePoint(root, 8.6f, 2.6f, 2f), 78f),
                     Shot.At("lodge-surfaces-cot", LodgePoint(root, -5.3f, 1.5f, -1.35f),
-                        LodgePoint(root, -7.55f, .55f, .15f), 66f)
+                        LodgePoint(root, -7.55f, .55f, .15f), 66f),
+                    Shot.At("lodge-threshold-outside", LodgePoint(root, -.7f, 1.35f, -8f),
+                        LodgePoint(root, 0f, .08f, -5.95f), 64f),
+                    Shot.At("lodge-threshold-inside", LodgePoint(root, 1.1f, 1.35f, -4.1f),
+                        LodgePoint(root, 0f, .08f, -6.1f), 64f),
+                    Shot.At("lodge-cellar-corner", LodgePoint(root, -4.3f, 1.85f, -2.0f),
+                        LodgePoint(root, -7.65f, .42f, -3.5f), 76f)
                 };
             });
 
@@ -56,6 +68,351 @@ namespace BarPromenade.Tests.PlayMode
                     "The pure walkable plan must release the old chest footprint.");
                 Assert.That(AbandonmentCapsuleFree(point), Is.True,
                     "The imported chest collider must leave the full cot approach open.");
+            }
+
+            var input = new InputTestFixture();
+            float previousStep = Time.captureDeltaTime;
+            input.Setup();
+            try
+            {
+                Time.captureDeltaTime = .05f;
+                Keyboard keyboard = InputSystem.AddDevice<Keyboard>();
+                yield return VerifyLodgeThreshold(root, input, keyboard);
+                yield return VerifyLodgeCellar(root, input, keyboard);
+            }
+            finally
+            {
+                NarrativeInteractionController.For(root.Player.Interactor).RestoreImmediate();
+                root.Player.Motor.CancelInteractionPoseMove();
+                Time.captureDeltaTime = previousStep;
+                input.TearDown();
+            }
+        }
+
+        private static IEnumerator VerifyLodgeThreshold(AlpineVillageRoot root, InputTestFixture input, Keyboard keyboard)
+        {
+            Transform lodge = root.LodgeShelter.transform;
+            Transform sill = lodge.Find("LodgeDoorThreshold");
+            Assert.That(sill, Is.Not.Null);
+            Vector3[] sillPoints = sill.GetComponent<MeshFilter>().sharedMesh.vertices
+                .Select(v => lodge.InverseTransformPoint(sill.TransformPoint(v))).ToArray();
+            Assert.That(sillPoints.Max(v => v.y), Is.EqualTo(AlpineVillageExpansionPlan.LodgeThresholdTop).Within(.002f));
+            Assert.That(sillPoints.Min(v => v.z), Is.EqualTo(AlpineVillageExpansionPlan.LodgeThresholdOuterZ).Within(.002f));
+            Assert.That(sillPoints.Max(v => v.z), Is.EqualTo(AlpineVillageExpansionPlan.LodgeThresholdInnerZ).Within(.002f));
+            Assert.That(sillPoints.Max(v => v.x) - sillPoints.Min(v => v.x),
+                Is.EqualTo(AlpineVillageExpansionPlan.LodgeThresholdWidth).Within(.002f));
+            Assert.That(sill.GetComponent<MeshCollider>(), Is.Not.Null, "The visible sill must carry the hero.");
+
+            MeshFilter path = root.World.Root.GetComponentsInChildren<MeshFilter>().Single(filter =>
+                filter.name == "Visible Path - village-ski-base-approach-1");
+            Vector3[] pathPoints = path.sharedMesh.vertices
+                .Select(v => lodge.InverseTransformPoint(path.transform.TransformPoint(v))).ToArray();
+            float boundary = AlpineVillageExpansionPlan.LodgeThresholdOuterZ;
+            Assert.That(pathPoints.Max(v => v.z), Is.EqualTo(boundary).Within(.002f),
+                "The path must end at the sill, without a round cap entering the hall.");
+            Vector3[] seam = pathPoints.Where(v => Mathf.Abs(v.z - boundary) < .002f).ToArray();
+            Assert.That(seam.Length, Is.GreaterThan(2));
+            Assert.That(seam.Max(v => v.x) - seam.Min(v => v.x), Is.EqualTo(2.5f).Within(.003f));
+            foreach (Vector3 point in seam)
+                Assert.That(point.y, Is.EqualTo(AlpineVillageExpansionPlan.LodgeThresholdTop -
+                    AlpineVillageExpansionPlan.LodgeThresholdChamfer).Within(.003f), "The two real surfaces must meet.");
+
+            // Walk normally through each open half, in both directions. The
+            // other leaf stays closed; a ray alone cannot prove step traversal.
+            foreach (int openLeaf in new[] { 0, 1 })
+            {
+                PlaceLodgeHero(root, new Vector3(1.1f, .02f, -2f));
+                SetLodgeDoors(root.LodgeShelter, 1 << openLeaf);
+                float x = openLeaf == 0 ? -.654f : .654f;
+                var closedRay = new Ray(LodgePoint(root, -x, 1.2f, -7f), lodge.forward);
+                Assert.That(Physics.Raycast(closedRay, out RaycastHit closedHit, 2.1f,
+                    PlayerInteractor.InteractionLayerMask, QueryTriggerInteraction.Ignore), Is.True);
+                Assert.That(closedHit.transform.IsChildOf(root.LodgeShelter.Hinge(1 - openLeaf)), Is.True);
+                for (float z = -6.8f; z <= -5.3f; z += .1f)
+                {
+                    Vector3 floorPoint = LodgePoint(root, x, 0f, z);
+                    Assert.That(root.World.WalkableArea.Contains(floorPoint, .32f), Is.True);
+                    Assert.That(Physics.Raycast(floorPoint + Vector3.up, Vector3.down, out RaycastHit support, 2f,
+                        PlayerInteractor.InteractionLayerMask, QueryTriggerInteraction.Ignore), Is.True);
+                    Assert.That(lodge.InverseTransformPoint(support.point).y, Is.InRange(-.10f, .075f),
+                        "The threshold route has no hole or oversized step.");
+                }
+                PlaceLodgeHero(root, new Vector3(x, 0f, -7f));
+                root.Player.Motor.transform.rotation = lodge.rotation;
+                root.CameraFollow.ClearFixedPose(); root.CameraFollow.Snap();
+                for (int frame = 0; frame < 4; frame++) yield return null;
+                input.Press(keyboard.wKey, queueEventOnly: true);
+                for (int frame = 0; frame < 100 && lodge.InverseTransformPoint(root.Player.Motor.transform.position).z < -5.1f; frame++)
+                    yield return null;
+                input.Release(keyboard.wKey, queueEventOnly: true);
+                yield return null;
+                Assert.That(lodge.InverseTransformPoint(root.Player.Motor.transform.position).z, Is.GreaterThanOrEqualTo(-5.1f),
+                    "Held W must carry the ordinary hero over the sill through open leaf " + openLeaf);
+                Assert.That(root.Player.Motor.InteractionPoseMoveActive, Is.False);
+                input.Press(keyboard.sKey, queueEventOnly: true);
+                for (int frame = 0; frame < 100 && lodge.InverseTransformPoint(root.Player.Motor.transform.position).z > -7f; frame++)
+                    yield return null;
+                input.Release(keyboard.sKey, queueEventOnly: true);
+                yield return null;
+                Assert.That(lodge.InverseTransformPoint(root.Player.Motor.transform.position).z, Is.LessThanOrEqualTo(-7f),
+                    "Held S must carry the ordinary hero back outside through open leaf " + openLeaf);
+            }
+            PlaceLodgeHero(root, new Vector3(1.1f, .02f, -2f));
+            SetLodgeDoors(root.LodgeShelter, 3);
+        }
+
+        private static IEnumerator VerifyLodgeCellar(AlpineVillageRoot root, InputTestFixture input, Keyboard keyboard)
+        {
+            NarrativeInteraction target = root.LodgeInterior.CellarHatch;
+            Assert.That(target, Is.Not.Null);
+            var hero = root.Player.Interactor;
+            var session = NarrativeInteractionController.For(hero);
+            InteractionPromptView view = root.InteractionPrompt;
+            Transform hinge = root.LodgeShelter.GetComponentsInChildren<Transform>(true)
+                .Single(child => child.name == "LodgeCellarHatchHinge");
+            Assert.That(hinge, Is.Not.Null);
+            Quaternion closed = hinge.localRotation;
+            InventoryItemStack[] inventory = GameSessionState.InventoryItems.ToArray();
+            Vector3 gameplayLook = Vector3.zero;
+            float gameplayCameraHeight = 0f;
+            bool capturedGameplayApproach = false;
+            Assert.That(target.Staging.CameraMode, Is.EqualTo(NarrativeCameraMode.ObjectCloseUp));
+            Assert.That(target.Confirmation.ReplyKey, Is.EqualTo("lodge.cellar.locked"));
+            Assert.That(target.Confirmation.AttemptSeconds, Is.EqualTo(.95f).Within(.001f));
+            try
+            {
+                foreach (string language in new[] { "ru", "en" })
+                {
+                    var catalog = JsonUtility.FromJson<NameplateCatalog>(Resources.Load<TextAsset>("Localization/" + language).text);
+                    string[] keys = { target.PromptKey, "lodge.cellar.open_question", target.Confirmation.YesKey,
+                        target.Confirmation.NoKey, target.Confirmation.ReplyKey };
+                    using (new NameplateLanguageScope(catalog.entries.Where(entry => keys.Contains(entry.key)).ToArray()))
+                    {
+                        foreach (string key in keys) Assert.That(LocalizationService.Get(key), Is.Not.EqualTo(key).And.Not.Empty);
+                        string reply = LocalizationService.Get(target.Confirmation.ReplyKey);
+                        if (language == "ru") Assert.That(reply, Is.EqualTo("Заперто. Похоже... изнутри?"));
+                        Assert.That(LocalizationService.Get(target.Confirmation.YesKey), Is.EqualTo(language == "ru" ? "Да" : "Yes"));
+                        Assert.That(LocalizationService.Get(target.Confirmation.NoKey), Is.EqualTo(language == "ru" ? "Нет" : "No"));
+
+                        yield return BeginReading();
+                        Assert.That(session.SelectedAnswerYes || view.HeldYesSelected, Is.False, "The question defaults to No.");
+                        yield return CaptureNarrativeScreen("lodge-cellar-question-" + language);
+                        yield return PressLodgeUse(input, keyboard);
+                        Assert.That(session.Phase, Is.EqualTo(NarrativeInteractionPhase.Exiting));
+                        Assert.That(Quaternion.Angle(hinge.localRotation, closed), Is.LessThan(.001f));
+                        Assert.That(view.IsSpeaking, Is.False, "No leaves the closed hatch without a reply.");
+                        yield return WaitForExit();
+                        AssertClean();
+
+                        yield return BeginReading();
+                        input.Press(keyboard.leftArrowKey, queueEventOnly: true);
+                        yield return null;
+                        input.Release(keyboard.leftArrowKey, queueEventOnly: true);
+                        yield return null;
+                        Assert.That(session.SelectedAnswerYes && view.HeldYesSelected, Is.True, "Keyboard changes the actual visible answer.");
+                        yield return PressLodgeUse(input, keyboard);
+                        Assert.That(session.Phase, Is.EqualTo(NarrativeInteractionPhase.Attempting));
+                        Assert.That(view.HasHeldPage || view.IsSpeaking, Is.False, "Yes releases the question before the prop moves.");
+                        for (int frame = 0; frame < 12 && Quaternion.Angle(hinge.localRotation, closed) < .5f; frame++) yield return null;
+                        Assert.That(Quaternion.Angle(hinge.localRotation, closed), Is.InRange(.5f, 2.01f));
+                        using (GameTimeScaleRuntime.AcquirePause())
+                        {
+                            Quaternion paused = hinge.localRotation;
+                            for (int frame = 0; frame < 5; frame++) yield return null;
+                            Assert.That(Quaternion.Angle(hinge.localRotation, paused), Is.LessThan(.001f));
+                            Assert.That(session.Phase, Is.EqualTo(NarrativeInteractionPhase.Attempting));
+                            Assert.That(session.Confirm() || session.SelectAnswer(false), Is.False);
+                            Assert.That(view.IsSpeaking, Is.False);
+                            if (language == "ru") yield return CaptureNarrativeScreen("lodge-cellar-lid-attempt");
+                        }
+                        for (int frame = 0; frame < 40 && session.Phase == NarrativeInteractionPhase.Attempting; frame++)
+                        {
+                            Assert.That(view.HasHeldPage || view.IsSpeaking, Is.False, "The outcome waits until the failed lid motion has ended.");
+                            Assert.That(Quaternion.Angle(hinge.localRotation, closed), Is.LessThanOrEqualTo(2.01f));
+                            yield return null;
+                        }
+                        Assert.That(session.Phase, Is.EqualTo(NarrativeInteractionPhase.Outcome));
+                        Assert.That(Quaternion.Angle(hinge.localRotation, closed), Is.LessThan(.001f), "The lid shuts before the outcome appears.");
+                        yield return null; yield return null;
+                        Assert.That(view.HasHeldPage && view.IsHeldBy(session), Is.True);
+                        Assert.That(view.HasHeldConfirmation, Is.False, "The result replaces the Yes/No choice.");
+                        Assert.That(view.IsSpeaking || view.SpokenBubbles != null && view.SpokenBubbles.IsShowing(session), Is.False);
+                        Assert.That(view.GetBottomPromptKeyAt(Time.unscaledTime), Is.EqualTo(target.Confirmation.ReplyKey));
+                        Assert.That(view.LastRenderedText, Is.EqualTo(reply));
+                        AssertCompactPanel();
+                        AssertHatchCloseUp();
+                        yield return CaptureNarrativeScreen("lodge-cellar-outcome-" + language);
+                        Assert.That(session.Phase, Is.EqualTo(NarrativeInteractionPhase.Outcome), "The silent result stays until dismissed.");
+                        yield return PressLodgeUse(input, keyboard);
+                        yield return WaitForExit();
+                        AssertClean();
+                    }
+                }
+
+                // Esc has no outcome; source/controller disable must also put
+                // a partially moved lid back without a late line or modal loan.
+                yield return BeginReading();
+                input.Press(keyboard.escapeKey, queueEventOnly: true);
+                yield return null;
+                input.Release(keyboard.escapeKey, queueEventOnly: true);
+                yield return WaitForExit();
+                AssertClean();
+                foreach (bool disableSource in new[] { true, false })
+                {
+                    yield return BeginReading();
+                    Assert.That(session.SelectAnswer(true) && session.Confirm(), Is.True);
+                    for (int frame = 0; frame < 12 && Quaternion.Angle(hinge.localRotation, closed) < .5f; frame++) yield return null;
+                    Assert.That(session.Phase, Is.EqualTo(NarrativeInteractionPhase.Attempting));
+                    if (disableSource) target.enabled = false; else session.enabled = false;
+                    AssertClean();
+                    target.enabled = true; session.enabled = true;
+                    yield return null;
+                }
+
+                NarrativeInteraction photograph = root.LodgeInterior.Photograph;
+                root.Player.Motor.Teleport(photograph.Staging.Entry.RootPosition);
+                hero.transform.rotation = photograph.Staging.Entry.RootRotation;
+                Physics.SyncTransforms(); root.CameraFollow.Snap();
+                for (int frame = 0; frame < 3; frame++) yield return null;
+                Assert.That(hero.ActiveInteractable, Is.SameAs(photograph));
+                yield return PressLodgeUse(input, keyboard);
+                for (int frame = 0; frame < 200 && session.Phase != NarrativeInteractionPhase.Reading && session.IsActive; frame++) yield return null;
+                Assert.That(session.Phase, Is.EqualTo(NarrativeInteractionPhase.Reading), session.LastFailureReason);
+                yield return null; yield return null;
+                Assert.That(view.HasHeldPage, Is.True);
+                Assert.That(view.HasHeldConfirmation, Is.False, "Existing one-page inspections retain the ordinary page controls.");
+                Assert.That(session.CurrentPage.TextKey, Is.EqualTo("lodge.photograph.inspect"));
+                Assert.That(session.Confirm(), Is.True);
+                yield return WaitForExit();
+                AssertClean();
+            }
+            finally
+            {
+                session.RestoreImmediate();
+                target.enabled = true; session.enabled = true;
+            }
+
+            IEnumerator BeginReading()
+            {
+                root.CameraFollow.ClearFixedPose();
+                root.Player.Motor.Teleport(target.Staging.Entry.RootPosition);
+                hero.transform.rotation = target.Staging.Entry.RootRotation;
+                Physics.SyncTransforms(); root.CameraFollow.Snap();
+                // Free orbit can start anywhere. Reproduce the usual approach
+                // looking with the hero, then measure the loan from that view.
+                root.CameraFollow.RotateYaw(Mathf.DeltaAngle(Camera.main.transform.eulerAngles.y,
+                    target.Staging.Entry.RootRotation.eulerAngles.y));
+                root.CameraFollow.Snap();
+                for (int frame = 0; frame < 3; frame++) yield return null;
+                Assert.That(hero.ActiveInteractable, Is.SameAs(target));
+                gameplayLook = Vector3.ProjectOnPlane(Camera.main.transform.forward, Vector3.up).normalized;
+                gameplayCameraHeight = Camera.main.transform.position.y;
+                if (!capturedGameplayApproach)
+                {
+                    yield return CaptureNarrativeScreen("lodge-cellar-gameplay-approach");
+                    capturedGameplayApproach = true;
+                }
+                Quaternion previousRotation = Camera.main.transform.rotation;
+                int framingSamples = 0;
+                input.Press(keyboard.eKey, queueEventOnly: true);
+                for (int frame = 0; frame < 200 && session.Phase != NarrativeInteractionPhase.Reading &&
+                    (session.IsActive || frame == 0); frame++)
+                {
+                    yield return null;
+                    if (frame == 0) input.Release(keyboard.eKey, queueEventOnly: true);
+                    if (session.Phase == NarrativeInteractionPhase.Framing || session.Phase == NarrativeInteractionPhase.Reading)
+                    {
+                        framingSamples++;
+                        Assert.That(Quaternion.Angle(previousRotation, Camera.main.transform.rotation), Is.LessThan(12f),
+                            "The oblique close-up must lower/approach continuously, without a camera cut.");
+                        Assert.That(Vector3.Angle(gameplayLook, Vector3.ProjectOnPlane(Camera.main.transform.forward, Vector3.up)),
+                            Is.LessThanOrEqualTo(65f), "The entry must not swing around to the far side of the hatch.");
+                        Assert.That(DownwardPitch(), Is.LessThanOrEqualTo(65f), "The entry must never pass through an overhead view.");
+                    }
+                    previousRotation = Camera.main.transform.rotation;
+                }
+                Assert.That(session.Phase, Is.EqualTo(NarrativeInteractionPhase.Reading),
+                    session.LastFailureReason + "; " + session.CameraDirector.LastRejectedShotReason);
+                Assert.That(framingSamples, Is.GreaterThan(10), "The close-up remains a visible camera move.");
+                yield return null; yield return null;
+                Assert.That(session.CurrentPage.TextKey, Is.EqualTo("lodge.cellar.open_question"));
+                Assert.That(view.HasHeldConfirmation && view.IsHeldBy(session), Is.True);
+                Assert.That(view.IsSpeaking, Is.False);
+                Assert.That(view.LastRenderedText, Is.EqualTo(LocalizationService.Get("lodge.cellar.open_question")));
+                AssertCompactPanel();
+                Assert.That(session.CameraDirector.CurrentShotIsClear, Is.True);
+                yield return CaptureNarrativeScreen("lodge-cellar-oblique-framing");
+                AssertHatchCloseUp();
+            }
+
+            IEnumerator WaitForExit()
+            {
+                float deadline = Time.realtimeSinceStartup + 12f;
+                while (session.IsActive && Time.realtimeSinceStartup < deadline) yield return null;
+                yield return null;
+            }
+
+            void AssertCompactPanel()
+            {
+                Assert.That(view.LastRenderedTextFits, Is.True);
+                Assert.That(view.LastRenderedPanelRect.width, Is.InRange(120f, RetroUiTheme.LogicalWidth * .6f));
+                Assert.That(view.LastRenderedPanelRect.height, Is.InRange(24f, 86f), "The short question/result uses a compact lower panel.");
+            }
+
+            void AssertHatchCloseUp()
+            {
+                Vector3 cameraOffset = Camera.main.transform.position - target.Staging.FocusBounds.center;
+                Vector3 heroRight = target.Staging.Entry.RootRotation * Vector3.right;
+                Assert.That(Vector3.Dot(cameraOffset, heroRight), Is.GreaterThan(.25f),
+                    "The hatch is viewed obliquely from the approaching hero's right.");
+                Vector3 lodgeOffset = root.LodgeShelter.transform.InverseTransformDirection(cameraOffset);
+                float orbitAzimuth = Mathf.Atan2(lodgeOffset.z, lodgeOffset.x) * Mathf.Rad2Deg;
+                Assert.That(orbitAzimuth, Is.InRange(38f, 47f), "The lens moves left around the hatch in the fixed lodge axes, beyond the previous 70-degree view.");
+                Assert.That(cameraOffset.y, Is.InRange(1.05f, 1.35f), "The lens rises above the previous oblique view.");
+                Assert.That(DownwardPitch(), Is.InRange(25f, 60f), "The close-up must not become a top-down view.");
+                Assert.That(Mathf.Abs(Vector3.Dot(Camera.main.transform.right, Vector3.up)), Is.LessThan(.01f),
+                    "The floor view must keep a level horizon.");
+                Assert.That(Camera.main.transform.position.y, Is.LessThan(gameplayCameraHeight + .05f),
+                    "The camera lowers from the usual gameplay view.");
+                Assert.That(Vector3.Angle(gameplayLook, Vector3.ProjectOnPlane(Camera.main.transform.forward, Vector3.up)),
+                    Is.LessThanOrEqualTo(65f));
+                MeshFilter lid = target.SubjectRoot.GetComponentsInChildren<MeshFilter>()
+                    .Single(filter => filter.name == "CellarHatchLid");
+                Vector3 lidCenter = Camera.main.WorldToViewportPoint(lid.transform.TransformPoint(lid.sharedMesh.bounds.center));
+                Assert.That(lidCenter.x, Is.InRange(.48f, .52f), "The real lid is centred horizontally.");
+                Assert.That(lidCenter.y, Is.InRange(.48f, .52f), "The real lid is centred vertically, not panned above the middle.");
+                Vector3[] projected = lid.sharedMesh.vertices
+                    .Select(vertex => Camera.main.WorldToViewportPoint(lid.transform.TransformPoint(vertex))).ToArray();
+                float panelTop = 1f - view.LastRenderedPanelRect.yMin / RetroUiTheme.LogicalHeight;
+                foreach (Vector3 viewport in projected)
+                {
+                    Assert.That(viewport.z, Is.GreaterThan(.1f));
+                    Assert.That(viewport.x, Is.InRange(.03f, .97f));
+                    Assert.That(viewport.y, Is.InRange(panelTop + .015f, .97f), "The whole real lid stays above the current panel.");
+                }
+                Assert.That(projected.Max(point => point.x) - projected.Min(point => point.x), Is.GreaterThan(.32f),
+                    "The hatch must occupy a meaningful width in its close-up.");
+                Assert.That(projected.Max(point => point.y) - projected.Min(point => point.y), Is.GreaterThan(.20f));
+                Player3DBoneAnchors body = hero.GetComponentInChildren<Player3DAssetRegistry>().Anchors;
+                foreach (Transform anchor in new[] { body.Head, body.Pelvis, body.LeftFoot, body.RightFoot })
+                {
+                    Vector3 point = Camera.main.WorldToViewportPoint(anchor.position);
+                    bool visible = point.z > 0f && point.x > 0f && point.x < 1f && point.y > 0f && point.y < 1f;
+                    Assert.That(visible, Is.False, "The hatch close-up must leave the real hero outside the frame: " + anchor.name);
+                }
+            }
+
+            float DownwardPitch() => Mathf.Asin(Mathf.Clamp(-Camera.main.transform.forward.y, -1f, 1f)) * Mathf.Rad2Deg;
+
+            void AssertClean()
+            {
+                Assert.That(session.IsActive || view.HasHeldPage || BarMinigameModalLock.IsAnyLocked ||
+                    BarPromenade.Rendering.CinematicDepthOfField.IsActive, Is.False);
+                Assert.That(view.SpokenBubbles != null && view.SpokenBubbles.IsShowing(session) || view.IsSpeaking, Is.False);
+                Assert.That(Quaternion.Angle(hinge.localRotation, closed), Is.LessThan(.001f));
+                Assert.That(hero.InputEnabled && root.Player.Motor.InputEnabled, Is.True);
+                Assert.That(GameSessionState.InventoryItems, Is.EqualTo(inventory));
+                Assert.That(root.CameraFollow.FixedPoseActive, Is.False);
             }
         }
 
