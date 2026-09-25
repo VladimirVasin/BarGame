@@ -74,15 +74,21 @@ def tube(points, radius=.012, sides=7, radii=None):
 
 def blanket():
     """Closed cloth thickness, a soft fold and two hanging long edges."""
-    nx,nz=11,14;verts=[];faces=[]
+    # Keep a support row beyond each mattress edge (.45 m). A uniform grid
+    # joined the top straight to the hem through the mattress's square sides.
+    columns=(-.5175,-.4575,-.39,-.26,-.13,0,.13,.26,.39,.4575,.5175)
+    nx,nz=len(columns),14;verts=[];faces=[]
     for bottom in (False,True):
         for z in range(nz):
             v=z/(nz-1)
             for x in range(nx):
-                u=x/(nx-1);edge=max(0,abs(u-.5)-.37)/.13
-                height=.655-.18*edge**1.5+.009*math.sin(u*math.tau*2+v*3)
+                across=columns[x];u=across/1.035+.5
+                edge=max(0,abs(across)-.45)/.0675
+                # Even the lowest ripple and the cloth underside must clear
+                # the mattress crown (.648 m); the outer edges still drape.
+                height=.685-.18*edge**1.5+.009*math.sin(u*math.tau*2+v*3)
                 height+=.035*math.exp(-((v-.90)/.085)**2)
-                verts.append((-3.2+(u-.5)*1.035,height-(.019 if bottom else 0),-.0+v*1.43))
+                verts.append((-3.2+across,height-(.019 if bottom else 0),-.0+v*1.43))
     offset=nx*nz
     for z in range(nz-1):
         for x in range(nx-1):
@@ -247,6 +253,12 @@ def validate_props(parts):
     assert pillow_hi[0]<COT_CENTER[0]-.4 and 0<pillow_lo[0]-lo[0]<.25,\
         "Cot must place its pillow/head end against the left wall"
     assert hi[0]-lo[0]>hi[2]-lo[2],"Cot feet must point into the room"
+    # Use the actual surfaces, including the chamfer and hanging cloth sides.
+    # Bounds alone cannot reveal a mattress breaking through a soft fold.
+    from mathutils.bvhtree import BVHTree
+    mattress=BVHTree.FromPolygons(*lodge["LodgeCotMattress"]["geometry"],all_triangles=False)
+    cloth=BVHTree.FromPolygons(*lodge["LodgeCotBlanket"]["geometry"],all_triangles=False)
+    assert not mattress.overlap(cloth),"Cot blanket intersects the mattress"
     for name in ("LodgeKettleBody","LodgeTeaCup"):
         assert kit.bounds(lodge[name]["geometry"])[0][1]>=1.059,"Counter prop floats through tabletop"
         low,high=kit.bounds(lodge[name]["geometry"])

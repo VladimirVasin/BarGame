@@ -8,20 +8,21 @@ Earlier notes: [`release-notes-2026-09.md`](archive/release-notes-2026-09.md).
 
 ### 2026-09-25 — Сугробы, осмотры, база и загрузка
 
-- Сугробы: высокий короткий шаг, назад осторожнее; бега нет. Следы/расчистка
-  возвращают обычный ход. Проверки: `player_snow_actions.validate_snow_actions`,
+- Сугробы: высокий шаг, назад осторожнее; без бега. Следы/расчистка
+  возвращают ход. Проверки: `player_snow_actions.validate_snow_actions`,
   `DeepSnow_BlocksSprintPreservesSlowdownAndRestoresMovement`,
   `AreaCaptureFixture.AlpineVillageSnowGait` (кадры).
 - Печь: мягкий редкий треск, приглушённый верх. Проверка:
   `InteriorSoundscapeSynthesisTests.LoopBeds_AreFiniteQuietNonSilentAndLoopSafe`.
-- Осмотры у работы/хранения/лавины: 24 снаружи, склад/обрыв сохранены.
-  Место важнее квот/видимости с дороги; камера/фокус подходят плавнее.
+- Осмотры: 24 снаружи у работы/хранения/лавины, склад/обрыв сохранены.
+  Место важнее квот/видимости; камера/фокус плавнее.
   Проверка/кадры: `AreaCaptureFixture.AlpineVillageNarrative`.
-- База: кровати, стол на шестерых/фонарь/чайник; посадка у печи, осмотр лыж.
-  Минибар, два бордовых кресла/столик. Групповое фото в стиле PS1 можно
-  осмотреть и забрать: рамка исчезает, предмет остаётся в инвентаре.
+- База: кровати/стол на шестерых/фонарь/чайник, посадка у печи/осмотр лыж.
+  Минибар/два бордовых кресла/столик; фото PS1: осмотр→инвентарь, рамка исчезает.
+  Проверка: `AreaCaptureFixture.AlpineVillageLodgeFurnishings`.
+  Наложения балок/одеяла убраны; сундук у стены, проход открыт.
   Проверки: `build-village-expansion-3d-model.py`,
-  `AreaCaptureFixture.AlpineVillageLodgeFurnishings` (кадры).
+  `AreaCaptureFixture.AlpineVillageLodgeSurfaceClearance` (кадры).
 - «Новая игра»: старт у базы. Проверка:
   `NewGame_SelectedLocationUsesItsNormalArrivalWithoutTheHomeOpening(SkiLodge)`.
 - Генерация деревни ускорена: убраны повторные расчёты рельефа/троп/снега,

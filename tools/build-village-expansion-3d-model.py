@@ -458,8 +458,10 @@ def create_parts():
     # Continuous structural timbers and porch lintel give the long low mass its working character.
     beams=[box((0,3.41,z),(18.3,.24,.22),.025) for z in (-5.9,5.9)]
     for x in (-8.78,-2.95,2.95,8.78):
-        beams.extend([box((x,1.78,-6.018),(.19,3.56,.11)),box((x,1.78,6.018),(.19,3.56,.11)),
-                      box((x,3.31,0),(.20,.22,11.6))])
+        beams.extend([box((x,1.78,-6.018),(.19,3.56,.11)),box((x,1.78,6.018),(.19,3.56,.11))])
+    # The end beams project six centimetres past the inner masonry face;
+    # embedding their visible faces in that plane caused depth fighting.
+    beams += [box((x,3.31,0),(.20,.22,11.6)) for x in (-8.72,-2.95,2.95,8.72)]
     add(lodge,"WallAndCeilingTimbers",merge(beams),"Timber")
     frames=[];glass=[]
     def window(center,width,side=False):
@@ -622,6 +624,16 @@ def validate(parts):
                     hit=any(t.ray_cast(origin,Vector((0,0,1)),1.2)[0] is not None for t in door_trees)
                     assert hit!=opened,"Door state and physical passage disagree"
     lodge={p["name"]:p for p in parts if p["kind"]=="SkiLodge"}
+    timber_tree=BVHTree.FromPolygons(*lodge["WallAndCeilingTimbers"]["geometry"],all_triangles=False)
+    for sign in (-1,1):
+        wall_tree=BVHTree.FromPolygons(*lodge["SideWall"+str(sign)]["geometry"],all_triangles=False)
+        for z in (-4.8,0,4.8):
+            origin=Vector((sign*8.2,3.31,z));direction=Vector((sign,0,0))
+            timber_hit=timber_tree.ray_cast(origin,direction,1.0)[0]
+            wall_hit=wall_tree.ray_cast(origin,direction,1.0)[0]
+            assert timber_hit is not None and wall_hit is not None,"Missing side beam or supporting wall"
+            assert .055<=sign*(wall_hit.x-timber_hit.x)<=.065,\
+                "Side ceiling beam must project visibly beyond the wall without coplanar faces"
     for name in ("StoveHearth","StoveBody","StovePipe","RoofFlashing","ChimneyCap"):
         assert lodge[name]["solid"],"Missing stove collision silhouette: "+name
     lo,hi=kit.bounds(lodge["StoveBody"]["geometry"])

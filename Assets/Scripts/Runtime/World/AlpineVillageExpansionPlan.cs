@@ -105,7 +105,7 @@ namespace BarPromenade
             Block(blocks, lodge + new Vector2(-7.63f, 2.295f), new Vector2(2.1f, 1.1f));
             Block(blocks, lodge + new Vector2(-7.63f, 4.145f), new Vector2(2.1f, 1.1f));
             Block(blocks, lodge + new Vector2(-7.61f, .4f), new Vector2(2.1f, 1f));
-            Block(blocks, lodge + new Vector2(-6.3f, -1f), new Vector2(1.2f, .66f));
+            Block(blocks, lodge + new Vector2(-8.3375f, -1f), new Vector2(.685f, 1.2f));
             Block(blocks, lodge + new Vector2(4f, .8f), new Vector2(1.05f, 2.7f));
             Block(blocks, lodge + new Vector2(3.02f, .8f), new Vector2(.4f, 2.7f));
             Block(blocks, lodge + new Vector2(4.98f, .8f), new Vector2(.4f, 2.7f));

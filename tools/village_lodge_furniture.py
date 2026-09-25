@@ -15,7 +15,7 @@ CHAIR_FACING = (CHAIR_CENTER[0]+1, CHAIR_CENTER[1],
 BUNK_CENTERS = ((-7.63,2.25),(-7.63,4.10))
 RUG_CENTER = (-5.77,2.1)
 RUG_LENGTH = 4.4
-CHEST_CENTER = (-6.3,-1.0)
+CHEST_CENTER = (-8.35,-1.0)
 ANCHORS = [dict(kind="SkiLodge", name=name, position=position) for name,position in (
     ("LodgeChairSeat", CHAIR_CENTER),
     ("LodgeChairFacing", CHAIR_FACING),
@@ -163,19 +163,22 @@ def add_furniture(add, parts):
     for x in (-.19,.19):chair.append(b((x,.605,-.185),(.043,.28,.045),.006))
     prop("LodgeStoveChair",placed(merged(chair),(CHAIR_CENTER[0],0,CHAIR_CENTER[2]),CHAIR_YAW),tint=(.345,.282,.21,1))
 
-    chest=[];cx,cz=CHEST_CENTER
+    # Back against the left wall, front/handle toward the room. The former
+    # freestanding placement obstructed the approach to the cot's foot.
+    def at_chest(geometry):return placed(geometry,(CHEST_CENTER[0],0,CHEST_CENTER[1]),-90)
+    chest=[];cx=cz=0
     for side in (-1,1):
         chest += [b((cx+side*.55,.33,cz),(.10,.56,.65),.012),
                   b((cx,.33,cz+side*.28),(1.03,.56,.08),.010)]
     chest += [b((cx,.07,cz),(1.1,.08,.61),.010),b((cx,.635,cz),(1.20,.08,.66),.016)]
     for x in (cx-.43,cx+.43):chest.append(b((x,.365,cz-.345),(.06,.57,.02),.004))
-    prop("LodgeBlanketChest",merged(chest),tint=edge)
-    prop("LodgeChestHardware",merged([b((cx,.53,cz-.36),(.07,.145,.023),.005),
-        tube([(cx-.09,.37,cz-.357),(cx-.09,.32,cz-.40),(cx+.09,.32,cz-.40),(cx+.09,.37,cz-.357)],.009,6)]),
+    prop("LodgeBlanketChest",at_chest(merged(chest)),tint=edge)
+    prop("LodgeChestHardware",at_chest(merged([b((cx,.53,cz-.36),(.07,.145,.023),.005),
+        tube([(cx-.09,.37,cz-.357),(cx-.09,.32,cz-.40),(cx+.09,.32,cz-.40),(cx+.09,.37,cz-.357)],.009,6)])),
         "RustedIron",False,iron)
     folds=[b((cx+.03,.71,cz+.01),(.79,.07,.45),.020),b((cx+.03,.78,cz+.01),(.78,.065,.44),.021),
            b((cx-.01,.85,cz+.03),(.67,.065,.40),.019)]
-    prop("LodgeFoldedBlankets",merged(folds),"Canvas",False,(.39,.405,.35,1))
+    prop("LodgeFoldedBlankets",at_chest(merged(folds)),"Canvas",False,(.39,.405,.35,1))
 
     # Entry hooks are shallow, on masonry beside the vestibule, never on a leaf.
     prop("LodgeEntryPegBoard",b((-2.85,1.77,-5.60),(1.3,.18,.12),.012),tint=edge)
@@ -268,6 +271,12 @@ def validate_furniture(parts):
     assert abs(high[0]-8.68)<1e-6 and abs(low[0]-7.88)<1e-6,"Counter must meet the right wall"
     low,high=kit.bounds(lodge["LodgeDiningTable"]["geometry"])
     assert abs(high[1]-.78)<1e-6 and abs((high[2]-low[2])-2.7)<1e-6
+    low,high=kit.bounds(lodge["LodgeBlanketChest"]["geometry"])
+    assert abs(low[0]+8.68)<1e-6,"Linen chest back must meet the left wall"
+    assert abs(high[0]-low[0]-.685)<1e-6 and abs(high[2]-low[2]-1.2)<1e-6
+    handle_low,handle_high=kit.bounds(lodge["LodgeChestHardware"]["geometry"])
+    assert handle_low[0]>CHEST_CENTER[0],"Chest handle must face the room"
+    assert high[0]<-7.9,"Chest must leave the cot foot approach open"
     for index in range(2):
         low,high=kit.bounds(lodge["LodgeBunkFrame"+str(index)]["geometry"])
         assert -8.68<=low[0]<-8.64 and -6.61<high[0]<-6.58 and high[1]<2.11

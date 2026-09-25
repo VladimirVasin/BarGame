@@ -12,6 +12,54 @@ namespace BarPromenade.Tests.PlayMode
     public sealed partial class AreaCaptureFixture
     {
         [UnityTest]
+        [Explicit("Lodge side-beam/cot surface regression and the wall chest's physical passage.")]
+        [PrebuildSetup(typeof(VillageArtAssetsSetup))]
+        public IEnumerator AlpineVillageLodgeSurfaceClearance()
+        {
+            GameSessionState.BeginNewGame();
+            AlpineVillageRoot root = null;
+            yield return Capture(SceneIds.AlpineVillage, () =>
+            {
+                root = Object.FindAnyObjectByType<AlpineVillageRoot>();
+                return root != null && root.IsInitialized ? root : null;
+            }, () =>
+            {
+                PlaceLodgeHero(root, new Vector3(1.1f, .02f, -2f));
+                root.LodgeShelter.SetLanternLit(true);
+                return new[]
+                {
+                    Shot.At("lodge-surfaces-left", LodgePoint(root, -3.8f, 1.8f, -2.7f),
+                        LodgePoint(root, -8f, 1.65f, 1.3f), 78f),
+                    Shot.At("lodge-surfaces-right", LodgePoint(root, 3.8f, 1.8f, -.5f),
+                        LodgePoint(root, 8.6f, 2.6f, 2f), 78f),
+                    Shot.At("lodge-surfaces-cot", LodgePoint(root, -5.3f, 1.5f, -1.35f),
+                        LodgePoint(root, -7.55f, .55f, .15f), 66f)
+                };
+            });
+
+            Transform lodge = root.LodgeShelter.transform;
+            Transform chest = lodge.Find("LodgeBlanketChest");
+            Assert.That(chest, Is.Not.Null);
+            Vector3[] vertices = chest.GetComponent<MeshFilter>().sharedMesh.vertices
+                .Select(v => lodge.InverseTransformPoint(chest.TransformPoint(v))).ToArray();
+            Assert.That(vertices.Min(v => v.x), Is.EqualTo(-8.68f).Within(.005f),
+                "The imported chest back must meet the wall in actual metres.");
+            Assert.That(vertices.Max(v => v.x), Is.EqualTo(-7.995f).Within(.005f));
+            Assert.That(vertices.Max(v => v.z) - vertices.Min(v => v.z), Is.EqualTo(1.2f).Within(.005f));
+
+            Physics.SyncTransforms();
+            // Follow the former obstruction from the room to the cot dock.
+            for (int step = 0; step <= 12; step++)
+            {
+                Vector3 point = LodgePoint(root, -5.86f, .02f, -2f + step * .2f);
+                Assert.That(root.World.WalkableArea.Contains(point, .32f), Is.True,
+                    "The pure walkable plan must release the old chest footprint.");
+                Assert.That(AbandonmentCapsuleFree(point), Is.True,
+                    "The imported chest collider must leave the full cot approach open.");
+            }
+        }
+
+        [UnityTest]
         [Explicit("Focused lodge furniture, three seats, inspections and collectible group photograph.")]
         [PrebuildSetup(typeof(VillageArtAssetsSetup))]
         public IEnumerator AlpineVillageLodgeFurnishings()

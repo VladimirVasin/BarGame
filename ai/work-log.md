@@ -20,15 +20,17 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
   Side approaches clear basket/sledge; slower eased camera/focus leaves dialogue
   timing intact. Check/frames: `AreaCaptureFixture.AlpineVillageNarrative`
   (yard/model clearance, approaches, RU/EN, continuity, pause/cancel/cleanup).
-- Lodge: wall-facing beds, rug, wall kettle, oak table/benches for six,
-  edge lamp/decor; shared stove sitting/photograph/skis inspection.
-  Minibar adds seven bottles, two ornate burgundy seats, table/rug/blanket.
-  User-approved group photo uses PS1 figures; inspect→shared Take/Cancel,
-  one source credit and persistent removal. Authored frame serves inventory;
-  tilted camera/seat approaches preserve real rig and input ownership.
-  Render review caught mirrored photo UV and item-frame overlap with text.
+- Lodge: wall-facing beds/rug/kettle, six-place oak table/benches, edge lamp;
+  shared stove sitting/photo/skis. Minibar: seven bottles, two ornate burgundy
+  seats, table/rug/blanket. Approved PS1 photo: inspect→shared Take/Cancel,
+  one source credit/persistent removal; inventory frame. Camera/seats retain
+  rig/input. Render review found mirrored UVs/text overlap.
   Checks: `build-village-expansion-3d-model.py` validator/export,
   `AreaCaptureFixture.AlpineVillageLodgeFurnishings` (frames).
+  Coplanar beam/wall faces and cloth crossing mattress edges caused flicker;
+  beams project, cloth drapes outside; wall-side chest frees cot approach.
+  Checks: generator validator/export,
+  `AreaCaptureFixture.AlpineVillageLodgeSurfaceClearance`; frames reviewed.
   Unrelated `AlpineVillageLodgeShelter` music-pause assertion drifted
   by one DSP buffer; unchanged.
 - New Game adds lodge arrival outside facing its door; consumes marker once.
