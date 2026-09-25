@@ -54,6 +54,21 @@ namespace BarPromenade
             Color32 amber = new Color32(190, 121, 48, 255);
             switch (itemId)
             {
+                case InventoryItemId.LodgeGroupPhotograph:
+                    // The same small framed group silhouette as the authored prop.
+                    painter.FillRect(3, 6, 26, 20, new Color32(102, 73, 48, 255));
+                    painter.OutlineRect(2, 5, 28, 22, ink);
+                    painter.FillRect(5, 8, 22, 16, pale);
+                    painter.FillRect(6, 9, 20, 7, new Color32(91, 105, 99, 255));
+                    for (int person = 0; person < 5; person++)
+                    {
+                        int x = 7 + person * 4;
+                        painter.FillRect(x, 11, 3, person == 2 ? 8 : 5, ink);
+                        painter.FillRect(x, person == 2 ? 19 : 16, 3, 3, amber);
+                    }
+                    painter.FillRect(14, 20, 2, 4, amber);
+                    painter.FillRect(14, 24, 2, 1, metal);
+                    break;
                 case InventoryItemId.FirewoodLog:
                     Color32 bark = new Color32(111, 76, 49, 255);
                     Color32 grain = new Color32(183, 148, 95, 255);

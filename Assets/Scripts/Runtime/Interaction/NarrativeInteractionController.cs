@@ -19,6 +19,7 @@ namespace BarPromenade
         private CursorLockMode previousCursorLock;
         private bool previousCursorVisible;
         private int pageFrame, animationFinishedFrame;
+        private bool completed;
         public NarrativeInteraction Target { get; private set; }
         public NarrativeInteractionPhase Phase { get; private set; }
         public bool IsActive => Phase != NarrativeInteractionPhase.Idle;
@@ -54,6 +55,7 @@ namespace BarPromenade
             LastFailureReason = string.Empty;
             Phase = NarrativeInteractionPhase.Positioning;
             ownsAnimation = cameraStarted = exitingAnimation = confirmArmed = false;
+            completed = false;
             animationFinishedFrame = -1;
             previousCursorLock = Cursor.lockState; previousCursorVisible = Cursor.visible; cursorCaptured = true;
             Cursor.lockState = CursorLockMode.None; Cursor.visible = false;
@@ -79,13 +81,14 @@ namespace BarPromenade
         {
             if (Phase != NarrativeInteractionPhase.Reading || Paused || Time.frameCount <= pageFrame ||
                 !GameInput.CanRead(GameInputContext.Menu)) return false;
-            if (PageIndex + 1 == Target.Definition.Pages.Count) Cancel();
+            if (PageIndex + 1 == Target.Definition.Pages.Count) { Cancel(); completed = true; }
             else { PageIndex++; ShowPage(); }
             return true;
         }
 
         public void Cancel()
         {
+            completed = false;
             if (!IsActive || Phase == NarrativeInteractionPhase.Exiting) return;
             if (view != null) view.ReleaseHeldPage(this);
             Phase = NarrativeInteractionPhase.Exiting;
@@ -143,6 +146,8 @@ namespace BarPromenade
             string heading = !string.IsNullOrWhiteSpace(page.AttributionKey) ? page.AttributionKey :
                 page.Kind == NarrativePageKind.DocumentText ? "narrative.page.document" : "narrative.page.thought";
             string controls = PageIndex + 1 < Target.Definition.Pages.Count ? "narrative.controls.next" : "narrative.controls.close";
+            if (PageIndex + 1 == Target.Definition.Pages.Count && !string.IsNullOrWhiteSpace(Target.CompletionActionKey))
+                controls = Target.CompletionActionKey;
             if (!view.TryHoldPage(this, page.TextKey, heading, controls, Confirm)) { Cancel(); return; }
             Phase = NarrativeInteractionPhase.Reading; pageFrame = Time.frameCount;
             confirmArmed = false; Cursor.visible = true;
@@ -171,12 +176,17 @@ namespace BarPromenade
                 { LastFailureReason = "Object shot lost: " + director.LastRejectedShotReason; Cancel(); return; }
             }
             if (Phase == NarrativeInteractionPhase.Exiting && animationFinishedFrame >= 0 &&
-                Time.frameCount > animationFinishedFrame && (!cameraStarted || director.IsFinished)) RestoreImmediate();
+                Time.frameCount > animationFinishedFrame && (!cameraStarted || director.IsFinished)) Restore(true);
         }
 
-        public void RestoreImmediate()
+        public void RestoreImmediate() => Restore(false);
+
+        private void Restore(bool allowCompletion)
         {
             if (!IsActive && !modal.IsLocked) return;
+            NarrativeInteraction completedTarget = allowCompletion && completed ? Target : null;
+            PlayerInteractor completedListener = listener;
+            completed = false;
             Phase = NarrativeInteractionPhase.Idle;
             if (view != null) view.ReleaseHeldPage(this);
             if (ownsAnimation && animation != null) animation.CancelActiveInteraction();
@@ -186,6 +196,9 @@ namespace BarPromenade
             { Cursor.lockState = previousCursorLock; Cursor.visible = previousCursorVisible; cursorCaptured = false; }
             modal.Restore();
             Target = null; listener = null; animation = null; follow = null; view = null;
+            if (completedTarget != null && completedTarget.isActiveAndEnabled &&
+                completedListener != null && completedListener.isActiveAndEnabled && !SceneTransitionService.IsTransitioning)
+                completedTarget.Complete(completedListener);
         }
 
         private static bool Paused => PauseMenuController.IsAnyPaused || GameTimeScaleRuntime.IsPaused || !GameSessionState.IsGameTimeRunning;

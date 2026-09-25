@@ -18,6 +18,9 @@ namespace BarPromenade
         public string PromptKey => Definition?.PromptKey ?? string.Empty;
         public Vector3 InteractionPosition => interactionPosition;
         public bool IsPresenting => session != null && session.IsActive && session.Target == this;
+        /// <summary>Optional follow-up after the final page is confirmed and all inspection owners release.</summary>
+        public event Action<PlayerInteractor> Completed;
+        public string CompletionActionKey { get; set; }
 
         public void Configure(NarrativeInteractionDefinition definition, Transform subjectRoot,
             NarrativeStagingPlan staging, Vector3 position, float interactionRadius = PlayerInteractor.InteractionRadius)
@@ -71,6 +74,7 @@ namespace BarPromenade
         }
 
         internal void SetSession(NarrativeInteractionController controller) => session = controller;
+        internal void Complete(PlayerInteractor interactor) => Completed?.Invoke(interactor);
 
         private void OnDisable() { if (IsPresenting) session.RestoreImmediate(); }
         private void OnDestroy() { if (IsPresenting) session.RestoreImmediate(); }

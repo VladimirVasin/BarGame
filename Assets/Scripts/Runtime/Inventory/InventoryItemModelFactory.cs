@@ -114,6 +114,10 @@ namespace BarPromenade
                         VillageLifePropKind.Log,
                         parent,
                         rootPrefix + " Firewood Log").transform;
+                case InventoryItemId.LodgeGroupPhotograph:
+                    return VillageExpansionAssetProvider.LoadOrThrow().CreateAnchoredProp(
+                        "SkiLodge", "LodgeGroupPhotograph",
+                        rootPrefix + " Lodge Group Photograph", parent).transform;
                 default:
                     throw new ArgumentOutOfRangeException(
                         nameof(itemId),

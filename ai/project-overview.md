@@ -108,8 +108,8 @@ repair commands. Generation/publication: [../tools/README.md](../tools/README.md
   `CityWorkAudio`; the shared Music bus is reduced by `6 dB`.
 - Mountain/village areas, cableway/interiors; abandoned village surrounds its lived-in core.
 - Six named village neighbours; household help persists across visits.
-  26 RU/EN inspections, including lodge photograph/skis: silent/repeatable,
-  props side/bokeh, paper close-up without hero; shared sitting by its stove.
+  27 silent RU/EN inspections: props side/bokeh, paper/photos close-up.
+  Lodge minibar/chairs; group photo inspect/pickup, shared receipt/session state.
   31 homes have fixed families, four occupied. Hero/mother remain unnamed.
 - One shared animated hero, contextual interactions, intoxication/balance,
   session clock, needs, inventory, purchases, dated quests and grave work.

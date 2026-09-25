@@ -27,16 +27,18 @@ from village_lodge_props import (ANCHORS as LODGE_ANCHORS, add_props as lodge_pr
     open_geometry as lodge_open_geometry, validate_props as validate_lodge_props, counter_geometry)
 from village_lodge_furniture import (ANCHORS as FURNITURE_ANCHORS,
     add_furniture as lodge_furniture, validate_furniture)
+from village_lodge_minibar import (ANCHORS as MINIBAR_ANCHORS,
+    add_minibar as lodge_minibar, validate_minibar)
 
-VERSION = "1.9.0"
-ANCHORS = STOVE_ANCHORS + LODGE_ANCHORS + FURNITURE_ANCHORS
+VERSION = "1.10.0"
+ANCHORS = STOVE_ANCHORS + LODGE_ANCHORS + FURNITURE_ANCHORS + MINIBAR_ANCHORS
 DESIGN = "village_forest_ski_base_old_road_v1"
 COLORS = {"Timber": (.29,.255,.205,1), "Masonry": (.49,.485,.445,1),
           "LayeredStone": (.32,.345,.34,1), "RustedIron": (.30,.255,.21,1),
           "WindSnow": (.83,.85,.84,1), "Asphalt": (.24,.255,.255,1),
           "Concrete": (.47,.47,.43,1), "Canvas": (.39,.40,.35,1),
           "Glass": (.40,.44,.43,.16), "WreckRust": (1,1,1,1), "WreckPaint": (1,1,1,1),
-          "LodgePictures": (1,1,1,1)}
+          "LodgePictures": (1,1,1,1), "LodgeGroupPhotograph": (1,1,1,1)}
 COLORS.update(AbandonedWood=(.34,.305,.26,1), AbandonedPlaster=(.55,.53,.47,1),
               AbandonedRoof=(.27,.275,.25,1), DarkWindow=(.075,.085,.08,1),
               Fire=(1,.72,.30,1), LighterMetal=(.49,.52,.48,1))
@@ -545,6 +547,7 @@ def create_parts():
     stove_props(add,parts)
     lodge_props(add,parts)
     lodge_furniture(add,parts)
+    lodge_minibar(add,parts)
     return parts
 
 def validate(parts):
@@ -553,6 +556,7 @@ def validate(parts):
     validate_props(parts)
     validate_lodge_props(parts)
     validate_furniture(parts)
+    validate_minibar(parts)
     # Albedo is a fixed authored input, with the exact image prompts and bytes retained.
     textures=json.loads((ROOT/"ArtSource/Village/Textures/generation.json").read_text(encoding="utf-8"))
     for texture in textures["images"]:
@@ -739,7 +743,7 @@ def build(parts):
             axes=sorted(range(3),key=lambda a:abs(face.normal[a]))[:2]
             for i in face.loop_indices:
                 v=mesh.vertices[mesh.loops[i].vertex_index].co;uv.data[i].uv=(v[axes[0]],v[axes[1]])
-        if p["surface"]=="LodgePictures":
+        if p["surface"] in ("LodgePictures","LodgeGroupPhotograph"):
             for loop in mesh.loops:uv.data[loop.index].uv=p["picture_uv"][loop.vertex_index]
         if p["surface"]=="Fire":
             field=mesh.uv_layers.new(name="FlameField")
@@ -750,10 +754,10 @@ def build(parts):
         obj=bpy.data.objects.new(p["mesh"],mesh);bpy.context.scene.collection.objects.link(obj);obj.parent=root
         mat=bpy.data.materials.new(p["mesh"]+"_Review")
         mat.diffuse_color={"WreckRust":(.27,.14,.085,1),"WreckPaint":(.38,.31,.22,1)}.get(p["surface"],p["tint"])
-        if p["surface"]=="LodgePictures":
+        if p["surface"] in ("LodgePictures","LodgeGroupPhotograph"):
             mat.use_nodes=True
             picture=mat.node_tree.nodes.new("ShaderNodeTexImage")
-            picture.image=bpy.data.images.load(str(ROOT/"Assets/Resources/Village/Textures/LodgePictures.png"),check_existing=True)
+            picture.image=bpy.data.images.load(str(ROOT/"Assets/Resources/Village/Textures"/(p["surface"]+".png")),check_existing=True)
             picture.image.pack()
             picture.interpolation="Closest"
             shader=mat.node_tree.nodes.get("Principled BSDF")
@@ -774,7 +778,7 @@ def build(parts):
 
 def preview(path,objects,rows,kind="SkiLodge",location=(25,-26,15),target=(0,0,2),lens=43):
     display_kind=("Lighter" if kind=="LighterOpen" else
-                  "SkiLodge" if kind in ("LodgeInterior","LodgeTeaCorner","LodgeDoors") else kind)
+                  "SkiLodge" if kind in ("LodgeInterior","LodgeTeaCorner","LodgeDoors","LodgeMinibar","LodgeGroupPhotograph") else kind)
     restored=[]
     for obj,row in zip(objects,rows):
         obj.hide_render=row["kind"]!=display_kind or row.get("hidden",False)
@@ -820,6 +824,8 @@ def main():
                 ("LodgeInterior","VillageLodgeInterior3D.png",(7.4,-4.4,2.2),(-1.3,1.1,.7),23),
                 ("LodgeTeaCorner","VillageLodgeTeaCorner3D.png",(5.65,-.4,2.08),(4.10,1,1.4),48),
                 ("LodgeDoors","VillageLodgeDoors3D.png",(4,-10.2,2.8),(0,-5.98,1.3),45),
+                ("LodgeMinibar","VillageLodgeMinibar3D.png",(6.3,.4,2.0),(5.3,-4.6,.72),23),
+                ("LodgeGroupPhotograph","VillageLodgeGroupPhotograph3D.png",(2.68,-4.60,1.16),(2.68,-5.235,1.025),55),
                 ("SkiLodge","VillageSkiLodgeStove3D.png",(2.5,-3.5,2.2),(0,0,.95),48),
                 ("SkiLodge","VillageSkiLodgeChimney3D.png",(3,-4,7),(0,0,5.6),48),
                 ("Lighter","VillageLighter3D.png",(.14,-.18,.12),(0,0,.033),55),

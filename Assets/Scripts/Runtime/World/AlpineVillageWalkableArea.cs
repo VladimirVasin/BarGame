@@ -374,6 +374,15 @@ namespace BarPromenade
             obstacles.Add(new OrientedRect(ToXZ(plan.Expansion.LodgeChairCenter),
                 new Vector2(chairForward.y, -chairForward.x), chairForward,
                 AlpineVillageExpansionPlan.LodgeChairSize * .5f));
+            for (int index = 0; index < AlpineVillageExpansionPlan.LodgeLoungeChairSeatLocalCenters.Length; index++)
+            {
+                Vector2 forward = ToXZ(plan.Expansion.LodgeLoungeChairForward(index));
+                obstacles.Add(new OrientedRect(ToXZ(plan.Expansion.LodgeLoungeChairCenter(index)),
+                    new Vector2(forward.y, -forward.x), forward,
+                    AlpineVillageExpansionPlan.LodgeLoungeChairSize * .5f));
+            }
+            obstacles.Add(OrientedRect.Circle(ToXZ(plan.Expansion.LodgeLoungeTableCenter),
+                AlpineVillageExpansionPlan.LodgeLoungeTableRadius));
             foreach (AlpineVillageAbandonedPlot plot in plan.Expansion.Abandonment.Plots)
             {
                 // Open ruins are held by their individual authored mesh solids;
@@ -451,18 +460,23 @@ namespace BarPromenade
             private readonly Vector2 axisX;
             private readonly Vector2 axisY;
             private readonly Vector2 halfSize;
+            private readonly bool circular;
 
             internal OrientedRect(
                 Vector2 center,
                 Vector2 axisX,
                 Vector2 axisY,
-                Vector2 halfSize)
+                Vector2 halfSize, bool circular = false)
             {
                 this.center = center;
                 this.axisX = axisX.normalized;
                 this.axisY = axisY.normalized;
                 this.halfSize = halfSize;
+                this.circular = circular;
             }
+
+            internal static OrientedRect Circle(Vector2 center, float radius) =>
+                new OrientedRect(center, Vector2.right, Vector2.up, Vector2.one * radius, true);
 
             internal Rect WorldBounds
             {
@@ -482,6 +496,7 @@ namespace BarPromenade
             /// </summary>
             internal bool Overlaps(Vector2 point, float radius)
             {
+                if (circular) return (point - center).sqrMagnitude < (halfSize.x + radius) * (halfSize.x + radius);
                 Vector2 local = ToLocal(point);
                 return Mathf.Abs(local.x) < halfSize.x + radius &&
                        Mathf.Abs(local.y) < halfSize.y + radius;
@@ -495,6 +510,12 @@ namespace BarPromenade
             /// </summary>
             internal Vector2 PushOut(Vector2 point, float radius)
             {
+                if (circular)
+                {
+                    Vector2 direction = point - center;
+                    return center + (direction.sqrMagnitude > .000001f ? direction.normalized : Vector2.up) *
+                        (halfSize.x + radius + BoundaryEpsilon);
+                }
                 Vector2 local = ToLocal(point);
                 float limitX = halfSize.x + radius + BoundaryEpsilon;
                 float limitY = halfSize.y + radius + BoundaryEpsilon;

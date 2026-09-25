@@ -35,7 +35,7 @@ namespace BarPromenade
         private Bounds objectBounds;
         private CharacterController objectShotHeroBody;
         private NarrativeCameraMode objectMode;
-        private Vector3 documentFront;
+        private Vector3 documentFront, documentUp;
         private static ContextualCameraDirector activeOwner;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
@@ -110,7 +110,9 @@ namespace BarPromenade
             npcRoot = subject; heroRoot = playerRoot; objectBounds = bounds; objectShot = true;
             objectShotHeroBody = playerRoot.GetComponent<CharacterController>();
             objectMode = mode;
-            documentFront = Vector3.ProjectOnPlane(cameraFront.sqrMagnitude > .01f ? cameraFront : subject.forward, Vector3.up).normalized;
+            documentFront = (cameraFront.sqrMagnitude > .01f ? cameraFront : subject.forward).normalized;
+            documentUp = Vector3.ProjectOnPlane(Vector3.up, documentFront).normalized;
+            if (documentUp.sqrMagnitude < .01f) documentUp = subject.up;
             Vector3 towardHero = Vector3.ProjectOnPlane(playerRoot.position - bounds.center, Vector3.up);
             axis = towardHero.sqrMagnitude > .01f ? towardHero.normalized : -subject.forward;
             Vector3 naturalSide = Vector3.Cross(Vector3.up, axis);
@@ -327,26 +329,30 @@ namespace BarPromenade
         {
             // A paper uses its authored front, not the hero/prop axis. The lens
             // slips in front of the hero and approaches the sheet directly.
-            Vector3 right = Vector3.Cross(Vector3.up, documentFront);
-            float width = 2f * (Mathf.Abs(right.x) * objectBounds.extents.x + Mathf.Abs(right.z) * objectBounds.extents.z);
-            float frameHeight = Mathf.Max(objectBounds.size.y * 1.85f, width * 1.4f / Mathf.Max(.75f, camera.aspect));
-            float heroFrontDistance = Vector3.Dot(heroRoot.position - objectBounds.center, documentFront);
+            Vector3 right = Vector3.Cross(documentUp, documentFront).normalized;
+            float width = ProjectExtent(right) * 2f;
+            float frameHeight = Mathf.Max(ProjectExtent(documentUp) * 3.7f, width * 1.4f / Mathf.Max(.75f, camera.aspect));
+            Vector3 heroAtSubjectHeight = new Vector3(heroRoot.position.x, objectBounds.center.y, heroRoot.position.z);
+            float heroFrontDistance = Vector3.Dot(heroAtSubjectHeight - objectBounds.center, documentFront);
             float distance = Mathf.Min(variant == 0 ? .85f : variant == 1 ? .68f : .54f,
                 Mathf.Max(.45f, heroFrontDistance - .55f));
             // Straight-on optics keep the actual written sheet flat. Moving the
             // lens slightly below its centre leaves the bottom UI its own space.
-            Vector3 aim = objectBounds.center - Vector3.up * frameHeight * .20f;
+            Vector3 aim = objectBounds.center - documentUp * frameHeight * .20f;
             Vector3 position = aim + documentFront * distance;
             fov = Mathf.Clamp(2f * Mathf.Atan(frameHeight / (2f * distance)) * Mathf.Rad2Deg, 40f, 95f);
-            pose = new Pose(position, Quaternion.LookRotation(-documentFront, Vector3.up));
+            pose = new Pose(position, Quaternion.LookRotation(-documentFront, documentUp));
             if (!CameraPositionClear(position) || !SightClear(objectBounds.center, position) ||
                 !HeroSightClear(position, objectBounds.center)) return false;
             // A world-axis bounding box overestimates a rotated body. The hero's
             // whole standing capsule/coat must be behind this frontal lens plane.
-            if (Vector3.Dot(heroRoot.position - position, documentFront) < .48f)
+            if (Vector3.Dot(heroAtSubjectHeight - position, documentFront) < .48f)
             { LastRejectedShotReason = "Hero remains in the document close-up"; return false; }
             return true;
         }
+
+        private float ProjectExtent(Vector3 axis) => Mathf.Abs(axis.x) * objectBounds.extents.x +
+            Mathf.Abs(axis.y) * objectBounds.extents.y + Mathf.Abs(axis.z) * objectBounds.extents.z;
 
         private Bounds HeroBounds()
         {

@@ -18,6 +18,14 @@ namespace BarPromenade
         public static readonly Vector2 LodgeWoodpileSize = AlpineVillageWoodpilePlan.Size;
         public static readonly Vector2 LodgeChairSeatLocalCenter = new Vector2(-1.50f, -1.25f);
         public static readonly Vector2 LodgeChairSize = new Vector2(.46f, .4475f);
+        public static readonly Vector2 LodgeMinibarLocalCenter = new Vector2(3.05f, -5.35f);
+        public static readonly Vector2 LodgeMinibarSize = new Vector2(1.70f, .45f);
+        public static readonly Vector2 LodgeLoungeTableLocalCenter = new Vector2(7.05f, -4.53f);
+        public const float LodgeLoungeTableRadius = .35f;
+        public static readonly Vector2 LodgeLoungeChairSize = new Vector2(.90f, .77f);
+        public static readonly Vector2[] LodgeLoungeChairSeatLocalCenters =
+            { new Vector2(5.95f, -4.60f), new Vector2(8f, -4.40f) };
+        private static readonly float[] LodgeLoungeChairYaws = { 28f, -32f };
         private readonly AlpineVillagePlan village;
         private readonly Capsule[] regions =
         {
@@ -101,6 +109,7 @@ namespace BarPromenade
             Block(blocks, lodge + new Vector2(4f, .8f), new Vector2(1.05f, 2.7f));
             Block(blocks, lodge + new Vector2(3.02f, .8f), new Vector2(.4f, 2.7f));
             Block(blocks, lodge + new Vector2(4.98f, .8f), new Vector2(.4f, 2.7f));
+            Block(blocks, lodge + LodgeMinibarLocalCenter, LodgeMinibarSize);
             // The diagonal chair uses its own oriented footprint in the
             // walkable area so a square envelope cannot close its front dock.
             // The thin hearth is a walkable step; the iron stove and actual
@@ -125,6 +134,13 @@ namespace BarPromenade
         public Vector3 LodgeChairCenter => LodgeCenter +
             village.SlopeRight * LodgeChairSeatLocalCenter.x +
             LodgeForward * LodgeChairSeatLocalCenter.y - LodgeChairForward * .00375f;
+        public Vector3 LodgeLoungeChairForward(int index) =>
+            Quaternion.AngleAxis(LodgeLoungeChairYaws[index], Vector3.up) * LodgeForward;
+        public Vector3 LodgeLoungeChairCenter(int index) => LodgeCenter +
+            village.SlopeRight * LodgeLoungeChairSeatLocalCenters[index].x +
+            LodgeForward * LodgeLoungeChairSeatLocalCenters[index].y - LodgeLoungeChairForward(index) * .045f;
+        public Vector3 LodgeLoungeTableCenter => LodgeCenter +
+            village.SlopeRight * LodgeLoungeTableLocalCenter.x + LodgeForward * LodgeLoungeTableLocalCenter.y;
         public Vector2 LodgeSize => new Vector2(18f, 12f);
         public float LodgeFloorHeight => LodgeCenter.y;
         public Vector3 LodgeEntrance => LodgeCenter - LodgeForward * 6f;

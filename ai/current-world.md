@@ -244,23 +244,24 @@ The vertical slice contains:
   8 sheds (2 ruined), 5 closed yards: town hall/square, school, shop-bakery/loading,
   workshop, rescue/apron. Three worn stone/joinery/dark-window/shutter/debris
   variants; no new residents/lights/interiors. Clear yards, level shelves,
-  four-side views. Dry `18 x 12 m` lodge (§10g): 2 bunks/4 beds/cot,
-  heads at wall; foot rug, wall kettle; oak table/two benches for six, edge lamp.
-  `LodgeInteriorInteractions`: stove-facing `CityBenchSitInteraction`,
-  E sit/stand, real time/no stats; intact-lift photo/skis: RU/EN.
-  Cot/kettle: silent E, no sleep/tea/grant. Two leaves: E both sides,
-  binary pose/collision, reject occupied closure; either opens passage,
-  no auto-close/hero animation. Lamp E: warm/no fuel/heat. Doors/light persist;
-  New Game open/off. `VillageInteriorAcoustics`: one shut softens indoor wind,
-  both nearly silence it in .35 s; stove/steps/outside clear; shared workshop.
+  four-side views. Dry `18 x 12 m` lodge (§10g): bunks/4 beds/cot heads to wall,
+  rug/kettle; oak table/two benches for six/edge lamp. Worn ornate minibar,
+  bottles/two burgundy chairs/round table/rug/plaid/glasses.
+  `LodgeInteriorInteractions`: shared seats, E sit/stand.
+  Wall photo/skis RU/EN; minibar: eight skiers/locals, man raising whisky;
+  E close-up/text→Next→shared Take/Cancel receipt, one grant only on Take.
+  Esc exits; frame gone/ownership across scenes until New Game.
+  Cot/kettle: silent E stubs. Doors E both sides: binary collision, occupied
+  closure refused/no auto-close/hero animation. Lamp warm/no fuel/heat.
+  Session doors/light; New Game open/off. `VillageInteriorAcoustics`:
+  one shut softens wind, both nearly silence in .35 s; stove/steps/outside clear.
   Lit stove: both shut warms room, else indoor 2.5 m; walls block heat.
-  Roof culls snow, windows retain it; fixed doorway targets.
-  Lodge/mother piles: E→Yes/No→shared `FirewoodLog` receipt, one/infinite retake/
-  duplicate refusal; cancel before grant, Close/Esc retains/no retry.
+  Roof culls snow; fixed doorway targets. Lodge/mother piles: E→Yes/No→shared
+  `FirewoodLog` receipt, one/retake after use; cancel before grant, Close retains.
   Stove E: first person/right two-column grid; lit E opens door. Silent:
   «Мне понадобится полено»/«Теперь нужно зажечь». Log spent; flip-top opens→third
-  click ignites→closes. Soft sparse crackle; exit restores camera/closes door.
-  Empty/LogPlaced/Burning until New Game, no burnout; shed/lift passive.
+  click ignites→closes, soft crackle. Exit restores camera/closes door.
+  Empty/LogPlaced/Burning until New Game/no burnout; shed/lift passive.
   Avalanche scar/full-size timber/rock/beams/buried tow/cable/damaged household 15
   (`AvalancheRuinedHouse`). Front ~20 m/fan 38 m; `AlpineVillageAvalanchePlan`:
   shared 14-vertex movement/forest/manifest polygon; ground-triangle-fitted
@@ -274,7 +275,7 @@ The vertical slice contains:
   assets/text kept. `NarrativeInteraction`/rig/
   `ContextualCameraDirector`: props side/bokeh, notes close-up/no hero.
   `InteractionPromptView`: held bottom pages/cleanup; E next/close, Esc cancel,
-  replay/no grant/progress. RU/EN resort/avalanche/road/trade thoughts;
+  replay/no progress; only minibar photo grants an item. RU/EN resort/road thoughts;
   two notes: three paper pages then thought, paper/UI keys match.
   `AlpineVillageJunctionPlan`: ports/contours/snow; asphalt/soil node maps share
   a 2x2 atlas/material. Other paths raised; warehouse apron has no snow island.

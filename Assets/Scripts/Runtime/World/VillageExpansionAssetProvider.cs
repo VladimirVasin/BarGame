@@ -40,12 +40,13 @@ namespace BarPromenade
     {
         public const string ResourcePath = "Village/Expansion/VillageExpansion3D";
         public const string DesignId = "village_forest_ski_base_old_road_v1";
-        public const string GeneratorVersion = "1.9.0";
+        public const string GeneratorVersion = "1.10.0";
         public const string WreckRustTexturePath = "Village/Textures/VillageTruckRustAlbedo";
         public const string WreckPaintTexturePath = "Village/Textures/VillageTruckPaintAlbedo";
         public const string LodgePicturesTexturePath = "Village/Textures/LodgePictures";
+        public const string LodgeGroupPhotographTexturePath = "Village/Textures/LodgeGroupPhotograph";
         private static VillageExpansionAssetProvider instance;
-        private static Texture2D wreckRust, wreckPaint, lodgePictures;
+        private static Texture2D wreckRust, wreckPaint, lodgePictures, lodgeGroupPhotograph;
         private static Material flameMaterial;
         private static readonly Dictionary<string, Texture2D> agedTextures = new Dictionary<string, Texture2D>();
         private readonly Dictionary<string, MeshFilter> meshes;
@@ -148,16 +149,53 @@ namespace BarPromenade
             return root;
         }
 
+        /// <summary>Reuses an authored detachable prop without constructing its surrounding building.</summary>
+        public GameObject CreateAnchoredProp(string kind, string anchorName, string name, Transform parent)
+        {
+            VillageExpansionAnchor anchor = Array.Find(Manifest.anchors,
+                candidate => candidate.kind == kind && candidate.name == anchorName);
+            if (anchor == null) throw new InvalidOperationException("Missing expansion prop anchor: " + anchorName);
+            var origin = new Vector3(anchor.position[0], anchor.position[1], anchor.position[2]);
+            var root = new GameObject(name);
+            root.transform.SetParent(parent, false);
+            int count = 0;
+            foreach (VillageExpansionPart part in Manifest.parts)
+            {
+                if (part.kind != kind || part.parent != anchorName) continue;
+                MeshFilter source = meshes[part.mesh];
+                var child = new GameObject(part.name);
+                child.transform.SetParent(root.transform, false);
+                child.transform.localPosition = source.transform.position - origin;
+                child.transform.localRotation = source.transform.rotation;
+                child.transform.localScale = source.transform.lossyScale;
+                child.AddComponent<MeshFilter>().sharedMesh = source.sharedMesh;
+                ApplySurface(child.AddComponent<MeshRenderer>(), part, Vector3.one);
+                count++;
+            }
+            if (count == 0)
+            {
+                if (Application.isPlaying) UnityEngine.Object.Destroy(root);
+                else UnityEngine.Object.DestroyImmediate(root);
+                throw new InvalidOperationException("Empty authored expansion prop: " + anchorName);
+            }
+            return root;
+        }
+
         private static void ApplySurface(MeshRenderer renderer, VillageExpansionPart part, Vector3 scale)
         {
             var tint = new Color(part.tint[0], part.tint[1], part.tint[2], part.tint[3]);
             var block = new MaterialPropertyBlock();
-            if (part.surface == "LodgePictures")
+            if (part.surface == "LodgePictures" || part.surface == "LodgeGroupPhotograph")
             {
-                if (lodgePictures == null) lodgePictures = Resources.Load<Texture2D>(LodgePicturesTexturePath);
-                if (lodgePictures == null) throw new InvalidOperationException("Missing lodge wall-art atlas.");
+                bool groupPhotograph = part.surface == "LodgeGroupPhotograph";
+                if (groupPhotograph && lodgeGroupPhotograph == null)
+                    lodgeGroupPhotograph = Resources.Load<Texture2D>(LodgeGroupPhotographTexturePath);
+                if (!groupPhotograph && lodgePictures == null)
+                    lodgePictures = Resources.Load<Texture2D>(LodgePicturesTexturePath);
+                Texture2D picture = groupPhotograph ? lodgeGroupPhotograph : lodgePictures;
+                if (picture == null) throw new InvalidOperationException("Missing lodge picture: " + part.surface);
                 renderer.sharedMaterial = RuntimePrimitiveFactory.DefaultMaterial;
-                block.SetTexture("_BaseMap", lodgePictures);
+                block.SetTexture("_BaseMap", picture);
                 block.SetVector("_BaseMap_ST", new Vector4(1f, 1f, 0f, 0f));
                 block.SetColor("_BaseColor", Color.white);
                 block.SetColor("_Color", Color.white);
@@ -263,7 +301,7 @@ namespace BarPromenade
         private static void ResetCache()
         {
             instance = null;
-            wreckRust = wreckPaint = lodgePictures = null;
+            wreckRust = wreckPaint = lodgePictures = lodgeGroupPhotograph = null;
             flameMaterial = null;
             agedTextures.Clear();
         }

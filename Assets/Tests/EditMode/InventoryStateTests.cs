@@ -80,6 +80,7 @@ namespace BarPromenade.Tests.EditMode
 
         [TestCase(InventoryItemId.VodkaBottle, 9)]
         [TestCase(InventoryItemId.FirewoodLog, 1)]
+        [TestCase(InventoryItemId.LodgeGroupPhotograph, 1)]
         public void InvalidOrOverflowingMutation_IsAtomic(
             InventoryItemId itemId, int maximumStack)
         {

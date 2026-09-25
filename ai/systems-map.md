@@ -22,10 +22,10 @@ Only these statuses apply. Product scope cuts are `Deferred` in
 | --- | --- | --- | --- |
 | Village scenery | 18 households/8 sheds/5 yards; avalanche/woodpiles. | `AlpineVillage{AbandonmentPlan,AvalanchePlan,ExpansionBuilder,WoodpilePlan}` | Current |
 | Lodge stove | Soft fire; both doors shut: whole lodge warm, else indoor 2.5 m. | `LodgeStove{Interaction,SessionState}` | Current |
-| Lodge shelter | Doors muffle wind; lamp, shared sitting/inspection. Gap: cot/tea stubs. | `LodgeShelter*`, `LodgeInteriorInteractions`, `VillageInteriorAcoustics` | Partial |
+| Lodge shelter | Doors muffle wind; lamp, minibar/shared seats/photo pickup. Gap: cot/tea stubs. | `LodgeShelter*`, `LodgeInteriorInteractions`, `VillageInteriorAcoustics` | Partial |
 | Village paths | Ground junctions; brook bridge. | `AlpineVillage{JunctionPlan,FootbridgePlan}` | Current |
 | Village life | Six named residents/31 homes; help persists. | `AlpineVillageLifeController`, `VillageOutdoorHelpController`, `VillageHousehold{Progress,Catalog}` | Current |
-| Narrative inspection | 24 outdoor + 2 lodge RU/EN; silent/replay, side/close-up. | `NarrativeInteraction*`, `AlpineVillageNarrative*` | Current |
+| Narrative inspection | 24 outdoor + 3 lodge RU/EN; silent/replay, side/close-up. | `NarrativeInteraction*`, `AlpineVillageNarrative*` | Current |
 | Independent rules assembly | Calendar/day schedule, input priorities and temporary vehicle ownership have no Unity dependencies. | `Scripts/Rules`, `BarPromenade.Rules.asmdef` | Current |
 | Shared input actions | Shared bindings; pause/transitions take priority. | `GameInput`, `GameInputPolicy` | Current |
 | Performance capture | Opt-in CPU/GPU/frame/GC and hot-scope distributions; unavailable counters are not reported as zero. | `RuntimePerformanceCapture`, `PerformanceCaptureSamples` | Current |

@@ -15,7 +15,8 @@ namespace BarPromenade
         InstantNoodles = 7,
         DayOldLoaf = 8,
         Scarf = 9,
-        FirewoodLog = 10
+        FirewoodLog = 10,
+        LodgeGroupPhotograph = 11
     }
 
     public enum InventoryItemCategory
@@ -125,6 +126,12 @@ namespace BarPromenade
                 InventoryItemCategory.Tool,
                 "inventory.item.firewood_log.name",
                 "inventory.item.firewood_log.description",
+                1),
+            new InventoryItemDefinition(
+                InventoryItemId.LodgeGroupPhotograph,
+                InventoryItemCategory.KeyItem,
+                "inventory.item.lodge_group_photograph.name",
+                "inventory.item.lodge_group_photograph.description",
                 1)
         };
 

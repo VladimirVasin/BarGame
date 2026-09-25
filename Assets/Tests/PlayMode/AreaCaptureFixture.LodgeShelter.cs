@@ -12,7 +12,7 @@ namespace BarPromenade.Tests.PlayMode
     public sealed partial class AreaCaptureFixture
     {
         [UnityTest]
-        [Explicit("Focused lodge furniture, reachable moved props, chair and two inspections.")]
+        [Explicit("Focused lodge furniture, three seats, inspections and collectible group photograph.")]
         [PrebuildSetup(typeof(VillageArtAssetsSetup))]
         public IEnumerator AlpineVillageLodgeFurnishings()
         {
@@ -236,7 +236,7 @@ namespace BarPromenade.Tests.PlayMode
         {
             LodgeInteriorInteractions room = root.LodgeInterior;
             Assert.That(room, Is.Not.Null);
-            CityBenchSitInteraction chair = room.Chair;
+            Assert.That(room.LoungeChairs.Count, Is.EqualTo(2));
             var hero = root.Player.Interactor;
             var session = NarrativeInteractionController.For(hero);
             var input = new InputTestFixture();
@@ -273,29 +273,39 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(GameSessionState.TryAddInventoryItem(InventoryItemId.FirewoodLog), Is.True);
                 Assert.That(LodgeStoveSessionState.TryPlaceLog(), Is.True);
                 Assert.That(LodgeStoveSessionState.TryIgnite(), Is.True);
-                root.Player.Motor.Teleport(chair.Plan.EntryRootPosition);
-                hero.transform.rotation = chair.Plan.EntryRotation;
-                root.CameraFollow.ClearFixedPose(); root.CameraFollow.Snap();
-                Physics.SyncTransforms();
-                for (int frame = 0; frame < 3; frame++) yield return null;
-                Assert.That(hero.ActiveInteractable, Is.SameAs(chair));
-                Assert.That(root.World.WalkableArea.Contains(chair.Plan.EntryRootPosition, .32f), Is.True);
-                Collider[] occupied = Physics.OverlapCapsule(chair.Plan.EntryRootPosition + Vector3.up * .4f,
-                    chair.Plan.EntryRootPosition + Vector3.up * 1.4f, .30f,
-                    PlayerInteractor.InteractionLayerMask, QueryTriggerInteraction.Ignore);
-                Assert.That(occupied.Where(c => !c.transform.IsChildOf(hero.transform)).Select(c => c.name), Is.Empty,
-                    "The physical chair approach must match the walkable plan.");
-                yield return PressLodgeUse(input, keyboard);
-                for (int frame = 0; frame < 200 && !chair.IsSeated; frame++) yield return null;
-                Assert.That(chair.IsSeated, Is.True);
-                Assert.That(root.Stove.ProvidesWarmth(hero.transform.position), Is.True);
-                for (int frame = 0; frame < 12; frame++) yield return null;
-                LodgeFrame(root, "lodge-06-chair-rest", new Vector3(-3.8f, 1.6f, -2.5f),
-                    new Vector3(-1.1f, .85f, -.2f), 64f, true);
-                yield return PressLodgeUse(input, keyboard);
-                for (int frame = 0; frame < 200 && chair.OwnsActiveInteraction; frame++) yield return null;
-                Assert.That(chair.OwnsActiveInteraction, Is.False);
-                Assert.That(hero.InputEnabled && root.Player.Motor.InputEnabled, Is.True);
+                foreach (CityBenchSitInteraction chair in new[] { room.Chair }.Concat(room.LoungeChairs))
+                {
+                    root.Player.Motor.Teleport(chair.Plan.EntryRootPosition);
+                    hero.transform.rotation = chair.Plan.EntryRotation;
+                    root.CameraFollow.ClearFixedPose(); root.CameraFollow.Snap();
+                    Physics.SyncTransforms();
+                    for (int frame = 0; frame < 3; frame++) yield return null;
+                    Assert.That(hero.ActiveInteractable, Is.SameAs(chair));
+                    Assert.That(root.World.WalkableArea.Contains(chair.Plan.EntryRootPosition, .32f), Is.True);
+                    Collider[] occupied = Physics.OverlapCapsule(chair.Plan.EntryRootPosition + Vector3.up * .4f,
+                        chair.Plan.EntryRootPosition + Vector3.up * 1.4f, .30f,
+                        PlayerInteractor.InteractionLayerMask, QueryTriggerInteraction.Ignore);
+                    Assert.That(occupied.Where(c => !c.transform.IsChildOf(hero.transform)).Select(c => c.name), Is.Empty,
+                        "The physical chair approach must match the walkable plan.");
+                    yield return PressLodgeUse(input, keyboard);
+                    for (int frame = 0; frame < 200 && !chair.IsSeated; frame++) yield return null;
+                    Assert.That(chair.IsSeated, Is.True);
+                    Assert.That(root.Stove.ProvidesWarmth(hero.transform.position), Is.True);
+                    for (int frame = 0; frame < 12; frame++) yield return null;
+                    if (chair == room.Chair)
+                        LodgeFrame(root, "lodge-06-chair-rest", new Vector3(-3.8f, 1.6f, -2.5f),
+                            new Vector3(-1.1f, .85f, -.2f), 64f, true);
+                    else
+                        LodgeFrame(root, chair.Plan.Id, new Vector3(6.7f, 1.7f, -1.4f),
+                            new Vector3(7f, .8f, -4.4f), 64f, true);
+                    yield return PressLodgeUse(input, keyboard);
+                    for (int frame = 0; frame < 200 && chair.OwnsActiveInteraction; frame++) yield return null;
+                    Assert.That(chair.OwnsActiveInteraction, Is.False);
+                    Assert.That(hero.InputEnabled && root.Player.Motor.InputEnabled, Is.True);
+                }
+
+                LodgeFrame(root, "lodge-09-minibar-corner", new Vector3(3.7f, 1.8f, -.8f),
+                    new Vector3(5.2f, .85f, -4.8f), 72f);
 
                 foreach (string language in new[] { "ru", "en" })
                 {
@@ -304,7 +314,7 @@ namespace BarPromenade.Tests.PlayMode
                         e.key.StartsWith("lodge.", System.StringComparison.Ordinal) ||
                         e.key.StartsWith("interaction.lodge", System.StringComparison.Ordinal) ||
                         e.key.StartsWith("narrative.", System.StringComparison.Ordinal)).ToArray()))
-                    foreach (NarrativeInteraction target in new[] { room.Photograph, room.SkiEquipment })
+                    foreach (NarrativeInteraction target in new[] { room.Photograph, room.SkiEquipment, room.GroupPhotograph })
                     {
                         root.CameraFollow.ClearFixedPose();
                         root.Player.Motor.Teleport(target.Staging.Entry.RootPosition);
@@ -324,15 +334,128 @@ namespace BarPromenade.Tests.PlayMode
                         Assert.That(root.InteractionPrompt.LastRenderedTextFits, Is.True, target.Definition.Id + "/" + language);
                         if (target == room.Photograph)
                             Assert.That(Vector3.Dot(Camera.main.transform.forward, root.LodgeShelter.transform.right), Is.GreaterThan(.95f));
+                        if (target == room.GroupPhotograph)
+                        {
+                            Assert.That(Vector3.Dot(Camera.main.transform.forward, -target.Staging.CameraFront), Is.GreaterThan(.995f),
+                                "The document camera follows the tabletop frame's authored tilt.");
+                            using (GameTimeScaleRuntime.AcquirePause())
+                            {
+                                Assert.That(session.Confirm(), Is.False);
+                                yield return PressLodgeUse(input, keyboard);
+                                Assert.That(session.Phase, Is.EqualTo(NarrativeInteractionPhase.Reading));
+                                Assert.That(GameSessionState.InventoryItems, Is.EqualTo(before));
+                            }
+                        }
                         yield return CaptureNarrativeScreen(target.Definition.Id + "-" + language);
                         if (language == "ru") yield return PressLodgeUse(input, keyboard);
                         else session.Cancel();
                         for (int frame = 0; frame < 160 && session.IsActive; frame++) yield return null;
+                        if (target == room.GroupPhotograph && language == "ru")
+                        {
+                            WorldItemFoundScreen found = WorldItemFoundScreen.For(hero);
+                            Assert.That(found.IsPresenting, Is.True, "Confirmed final page hands off after releasing its modal.");
+                            for (int frame = 0; frame < 120 && !found.IsShowing; frame++) yield return null;
+                            Assert.That(found.IsShowing, Is.True);
+                            yield return CaptureNarrativeScreen("lodge-group-photograph-item-leave");
+                            input.Press(keyboard.escapeKey, queueEventOnly: true);
+                            yield return null;
+                            input.Release(keyboard.escapeKey, queueEventOnly: true);
+                            for (int frame = 0; frame < 120 && found.IsPresenting; frame++) yield return null;
+                            Assert.That(room.GroupPhotographModel.gameObject.activeInHierarchy, Is.True);
+                            Assert.That(GameSessionState.IsWorldItemCollected(LodgeInteriorInteractions.GroupPhotographId), Is.False);
+                        }
                         Assert.That(session.IsActive || root.InteractionPrompt.HasHeldPage || BarMinigameModalLock.IsAnyLocked, Is.False);
                         Assert.That(hero.InputEnabled && root.Player.Motor.InputEnabled, Is.True);
                         Assert.That(GameSessionState.InventoryItems, Is.EqualTo(before));
                     }
                 }
+
+                // Source disable restores the real frame before a later deliberate take.
+                NarrativeInteraction collectible = room.GroupPhotograph;
+                for (int attempt = 0; attempt < 2; attempt++)
+                {
+                    root.CameraFollow.ClearFixedPose();
+                    root.Player.Motor.Teleport(collectible.Staging.Entry.RootPosition);
+                    hero.transform.rotation = collectible.Staging.Entry.RootRotation;
+                    Physics.SyncTransforms(); root.CameraFollow.Snap();
+                    for (int frame = 0; frame < 3; frame++) yield return null;
+                    yield return PressLodgeUse(input, keyboard);
+                    for (int frame = 0; frame < 200 && session.Phase != NarrativeInteractionPhase.Reading && session.IsActive; frame++)
+                        yield return null;
+                    Assert.That(session.Phase, Is.EqualTo(NarrativeInteractionPhase.Reading), session.LastFailureReason);
+                    yield return null;
+                    yield return PressLodgeUse(input, keyboard);
+                    for (int frame = 0; frame < 160 && session.IsActive; frame++) yield return null;
+                    WorldItemFoundScreen pickup = WorldItemFoundScreen.For(hero);
+                    for (int frame = 0; frame < 120 && !pickup.IsShowing; frame++) yield return null;
+                    Assert.That(pickup.IsShowing, Is.True);
+                    Assert.That(pickup.ActiveItemId, Is.EqualTo(InventoryItemId.LodgeGroupPhotograph));
+                    if (attempt == 0)
+                    {
+                        room.enabled = false;
+                        Assert.That(pickup.IsPresenting || BarMinigameModalLock.IsAnyLocked, Is.False);
+                        Assert.That(room.GroupPhotographModel.parent, Is.SameAs(room.transform));
+                        Assert.That(room.GroupPhotographModel.gameObject.activeInHierarchy, Is.True);
+                        Assert.That(GameSessionState.GetInventoryItemCount(InventoryItemId.LodgeGroupPhotograph), Is.Zero);
+                        room.enabled = true;
+                        continue;
+                    }
+                    yield return CaptureNarrativeScreen("lodge-group-photograph-item-take");
+                    yield return PressLodgeUse(input, keyboard);
+                    for (int frame = 0; frame < 120 && pickup.IsPresenting; frame++) yield return null;
+                    Assert.That(GameSessionState.GetInventoryItemCount(InventoryItemId.LodgeGroupPhotograph), Is.EqualTo(1));
+                    Assert.That(GameSessionState.IsWorldItemCollected(LodgeInteriorInteractions.GroupPhotographId), Is.True);
+                    Assert.That(room.GroupPhotographModel.gameObject.activeInHierarchy || collectible.gameObject.activeInHierarchy, Is.False);
+                    Assert.That(GameSessionState.TryCollectWorldItem(LodgeInteriorInteractions.GroupPhotographId,
+                        InventoryItemId.LodgeGroupPhotograph), Is.False, "A source remains consumed across visits.");
+                    room.GroupPhotographModel.gameObject.SetActive(true);
+                    collectible.gameObject.SetActive(true);
+                    room.RestoreGroupPhotographState();
+                    Assert.That(room.GroupPhotographModel.gameObject.activeInHierarchy || collectible.gameObject.activeInHierarchy, Is.False);
+                    yield return PressLodgeUse(input, keyboard);
+                    Assert.That(GameSessionState.GetInventoryItemCount(InventoryItemId.LodgeGroupPhotograph), Is.EqualTo(1));
+                    Assert.That(hero.InputEnabled && root.Player.Motor.InputEnabled, Is.True);
+                }
+                Texture2D photographIcon = InventoryIconLibrary.GetIcon(InventoryItemId.LodgeGroupPhotograph);
+                Assert.That(photographIcon, Is.Not.Null);
+                Assert.That(photographIcon.width, Is.EqualTo(32));
+                Assert.That(photographIcon.height, Is.EqualTo(32));
+                Assert.That(photographIcon.filterMode, Is.EqualTo(FilterMode.Point));
+                Assert.That(photographIcon.GetPixels32().Any(pixel => pixel.a > 0), Is.True,
+                    "The collected photograph needs a visible inventory icon.");
+
+                InventoryController inventory = root.Inventory;
+                Assert.That(inventory.Open(), Is.True);
+                int photographIndex = Enumerable.Range(0, GameSessionState.InventoryItems.Count).Single(index =>
+                    GameSessionState.InventoryItems[index].ItemId == InventoryItemId.LodgeGroupPhotograph);
+                if (inventory.SelectedItemIndex != photographIndex)
+                    Assert.That(inventory.SelectItem(photographIndex), Is.True);
+                InventoryItemPreviewRenderer preview = inventory.View.PreviewRenderer;
+                Assert.That(preview.CurrentItemId, Is.EqualTo(InventoryItemId.LodgeGroupPhotograph));
+                Assert.That(preview.IsRendering, Is.True);
+                Assert.That(preview.ModelRoot, Is.Not.Null);
+                Assert.That(preview.ModelRoot, Is.Not.SameAs(room.GroupPhotographModel),
+                    "Inventory builds its own authored model after the world frame has been collected.");
+                MeshRenderer[] previewParts = preview.ModelRoot.GetComponentsInChildren<MeshRenderer>();
+                Assert.That(previewParts.Select(part => part.name), Is.EquivalentTo(new[]
+                    { "LodgeGroupPhotographFrame", "LodgeGroupPhotographEasel", "LodgeGroupPhotographImage" }));
+                Assert.That(preview.ModelRoot.GetComponentsInChildren<Collider>(), Is.Empty);
+                MeshRenderer previewImage = previewParts.Single(part => part.name == "LodgeGroupPhotographImage");
+                var photographBlock = new MaterialPropertyBlock();
+                previewImage.GetPropertyBlock(photographBlock);
+                Assert.That(photographBlock.GetTexture("_BaseMap"), Is.SameAs(Resources.Load<Texture2D>(
+                    VillageExpansionAssetProvider.LodgeGroupPhotographTexturePath)),
+                    "The actual inventory renderer must retain the group photograph, not a blank or substitute surface.");
+                Bounds previewBounds = WorldItemInspectionPresenter.CalculateWorldBounds(preview.ModelRoot);
+                Assert.That(Mathf.Max(previewBounds.size.x, previewBounds.size.y, previewBounds.size.z),
+                    Is.InRange(.2f, .6f), "The detached imported frame retains its metre scale.");
+                yield return null; yield return null;
+                yield return CaptureNarrativeScreen("lodge-group-photograph-inventory");
+                Assert.That(inventory.ExamineSelected(), Is.True);
+                yield return null;
+                yield return CaptureNarrativeScreen("lodge-group-photograph-inventory-examine");
+                Assert.That(inventory.Close(), Is.True);
+                Assert.That(room.GroupPhotographModel.gameObject.activeInHierarchy, Is.False);
                 PlaceLodgeHero(root, new Vector3(1.1f, .02f, -2f));
                 LodgeFrame(root, "lodge-07-furnished-warm", new Vector3(-.8f, 1.85f, -4.5f),
                     new Vector3(0f, 1.05f, 2f), 94f);
@@ -342,7 +465,9 @@ namespace BarPromenade.Tests.PlayMode
             finally
             {
                 session.RestoreImmediate();
-                chair.Controller.CancelActiveInteraction();
+                root.Inventory.Close();
+                WorldItemFoundScreen.For(hero)?.Abandon();
+                room.Chair.Controller.CancelActiveInteraction();
                 Time.captureDeltaTime = previousStep;
                 input.TearDown();
             }

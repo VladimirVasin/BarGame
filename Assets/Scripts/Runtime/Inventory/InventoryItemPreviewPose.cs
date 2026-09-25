@@ -84,7 +84,11 @@ namespace BarPromenade
             new InventoryItemPreviewPose(
                 InventoryItemId.FirewoodLog,
                 Quaternion.Euler(18f, -28f, -24f),
-                0.90f)
+                0.90f),
+            new InventoryItemPreviewPose(
+                InventoryItemId.LodgeGroupPhotograph,
+                Quaternion.Euler(12f, 180f, 0f),
+                0.60f)
         };
 
         private static readonly IReadOnlyList<InventoryItemPreviewPose>

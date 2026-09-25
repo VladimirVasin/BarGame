@@ -20,11 +20,14 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
   Side approaches clear basket/sledge; slower eased camera/focus leaves dialogue
   timing intact. Check/frames: `AreaCaptureFixture.AlpineVillageNarrative`
   (yard/model clearance, approaches, RU/EN, continuity, pause/cancel/cleanup).
-- Lodge: heads/pillows to walls, rug at feet; wall kettle, oak table/benches
-  for six, reachable edge lamp, decor/hooks/chest/cups. Diagonal stove chair
-  keeps firebox approach; shared real-time sitting. Photo/skis reuse RU/EN
-  inspection; photo has canon exception. Anchors align geometry/collision/
-  interactions. Checks: `build-village-expansion-3d-model.py` validator/export,
+- Lodge: wall-facing beds, rug, wall kettle, oak table/benches for six,
+  edge lamp/decor; shared stove sitting/photograph/skis inspection.
+  Minibar adds seven bottles, two ornate burgundy seats, table/rug/blanket.
+  User-approved group photo uses PS1 figures; inspect→shared Take/Cancel,
+  one source credit and persistent removal. Authored frame serves inventory;
+  tilted camera/seat approaches preserve real rig and input ownership.
+  Render review caught mirrored photo UV and item-frame overlap with text.
+  Checks: `build-village-expansion-3d-model.py` validator/export,
   `AreaCaptureFixture.AlpineVillageLodgeFurnishings` (frames).
   Unrelated `AlpineVillageLodgeShelter` music-pause assertion drifted
   by one DSP buffer; unchanged.

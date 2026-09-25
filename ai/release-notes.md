@@ -17,9 +17,10 @@ Earlier notes: [`release-notes-2026-09.md`](archive/release-notes-2026-09.md).
 - Осмотры у работы/хранения/лавины: 24 снаружи, склад/обрыв сохранены.
   Место важнее квот/видимости с дороги; камера/фокус подходят плавнее.
   Проверка/кадры: `AreaCaptureFixture.AlpineVillageNarrative`.
-- База: подушки к стене, ковёр у ног; стол на шестерых, фонарь с краю,
-  чайник у стены, декор. Стул к печи оставляет подход: E — сесть/встать;
-  фото/лыжи — RU/EN-осмотр. Проверки: `build-village-expansion-3d-model.py`,
+- База: кровати, стол на шестерых/фонарь/чайник; посадка у печи, осмотр лыж.
+  Минибар, два бордовых кресла/столик. Групповое фото в стиле PS1 можно
+  осмотреть и забрать: рамка исчезает, предмет остаётся в инвентаре.
+  Проверки: `build-village-expansion-3d-model.py`,
   `AreaCaptureFixture.AlpineVillageLodgeFurnishings` (кадры).
 - «Новая игра»: старт у базы. Проверка:
   `NewGame_SelectedLocationUsesItsNormalArrivalWithoutTheHomeOpening(SkiLodge)`.

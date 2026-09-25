@@ -2,44 +2,51 @@
 
 ## Current facts
 
+- **Accepted architecture exception — 2026-09-25, lodge minibar photograph:**
+  User, 0 (§6/§12/§19/art §10g): worn ornate minibar/chairs/table; eight
+  men/women, skiers/locals before intact lodge, central man raises whisky;
+  PS1 low-poly/painted faces, no photorealism.
+  Faces/tourists only in new photo; no names/dates/hero-family/crime/clue/NPC.
+  Wall photo faceless. Shared seats; E close-up/text→Next→shared Take/Cancel
+  receipt, only Take grants once; Esc exits. Frame removed; ownership/absence
+  across scenes until New Game. Bottles passive. Item/contextual/speech
+  standards/§16/§21/nine checks.
+
 - **Accepted architecture exception — 2026-09-25, furnished ski lodge:**
-  User, 0 (§6/§12/§19): intact lodge/lift photo, no faces/names/dates/clue;
-  photo/skis: `NarrativeInteraction`, short silent RU/EN. Stove chair:
-  `CityBenchSitInteraction`, real time/no new effects. Form art §10g;
-  no sleep/tea/NPC/water/plot; contextual standard/§16/§21/nine checks.
+  User, 0 (§6/§12/§19/art §10g): faceless lodge/lift wall photo/skis,
+  `NarrativeInteraction`, silent RU/EN. Stove chair: `CityBenchSitInteraction`,
+  real time/no effects. No names/dates/clue/sleep/tea/NPC/water/plot;
+  contextual standard/§16/§21/nine checks.
 
 - **Accepted architecture exception — 2026-09-25, deep-snow locomotion:**
-  User, `0`, story §6/§12/art §1/§10g: depth/treading/clearing selects snow gait,
-  no running; short steps/high bent-knee extraction, long support/weight transfer,
-  slight forward load, no flight/march. Same rig/ground support/continuous foot
-  phase, cold/contextual priorities. Cleared routes run; turn/stop/backtrack free.
-  No damage/need/return/event/text/hazard;
-  §16/§21/nine checks.
-  `PlayerMotor.Snow`: depth `.20/.12 m` enters/exits; `1.05/.65 m/s`
-  forward/back. `SnowWalk`/`SnowWalkBackward`: `1.10 m` cycle, `.55 m` steps.
+  User, `0`, §6/§12/art §1/§10g: depth/treading/clearing selects short snow gait,
+  high bent-knee extraction/long support/weight transfer/slight forward load,
+  no flight/march/run. Same rig/ground/continuous feet, cold/contextual priority.
+  Cleared routes run; turn/stop/back free. No damage/need/return/event/text/hazard;
+  §16/§21/nine checks. `PlayerMotor.Snow`: `.20/.12 m` enter/exit,
+  `1.05/.65 m/s` forward/back; `SnowWalk`/`SnowWalkBackward`: cycle `1.10 m`.
 
 - **Accepted architecture exception — 2026-09-25, village inspection placement:**
   User waives quota/road distance/visibility: 24 outdoor IDs at work/storage/
   debris; warehouse/cliff kept, roads/E clear: `village-narrative-plan.md`.
 
 - **Accepted architecture exception — 2026-09-24, village history and narrative inspection:**
-  0, §§6/12/19/21/art §10g: history/families, unnamed hero/mother, mine/father stay.
-  `NarrativeInteraction`: rig/repeat/cancel/no grant;
-  `ContextualCameraDirector`: side/bokeh, paper close-up/no hero, restore pose/focus.
-  `InteractionPromptView`: silent held RU/EN paper/thought, depressive 1–2
-  sentences/page; history 2–3 pages clear alone. Two mundane absurd
-  notes (Silent Hill), literary edit/no supernatural fact.
+  0, §§6/12/19/21/art §10g: history/families, unnamed hero/mother; mine/father stay.
+  `NarrativeInteraction`: rig/replay/cancel/no grant. `ContextualCameraDirector`:
+  side/bokeh, paper close-up/no hero, restore. `InteractionPromptView`:
+  silent RU/EN, 1–2 depressive sentences/page, history 2–3 pages.
+  Two mundane absurd notes (Silent Hill), edited/no supernatural fact.
   `VillageHouseholdCatalog`: 31 homes/four occupied/named greetings.
   No crime/water/self-analysis; speech/contextual standards/§16/nine checks.
 
 - **Accepted architecture exception — 2026-09-24, habitable ski lodge:**
-  0, §6/§12/art §10g; cot/kettle silent E, no sleep/tea/grant/receipt
-  (item exception). `LodgeShelter*`: two leaves, E both sides,
-  binary pose/collision, reject occupied closure/no auto-close.
-  Lamp warm/no fuel/heat/hero-camera ownership. Session doors/light,
-  New Game open/off. `VillageInteriorAcoustics`: workshop/lodge .35 s;
-  one shut leaks, both gain .025/cutoff .24. Stove/steps/outdoors clear;
-  roof culls particles, fixed half-doorway targets. No NPC; §16/§21/nine checks.
+  0, §6/§12/art §10g; cot/kettle silent E, no sleep/tea/grant/receipt (item exception).
+  `LodgeShelter*`: two leaves, E both sides; binary collision, occupied closure
+  refused/no auto-close. Lamp warm/no fuel/heat/hero-camera ownership.
+  Session doors/light; New Game open/off. `VillageInteriorAcoustics`:
+  workshop/lodge .35 s; one shut leaks, both gain .025/cutoff .24.
+  Stove/steps/outdoors clear; roof culls particles, fixed half-doorway targets.
+  No NPC; §16/§21/nine checks.
 
 - **Accepted architecture exception — 2026-09-24, ski-lodge stove and firewood:**
   0, §6/§12/art §10g; piles receipt/one/infinite retake. E shared approach/
@@ -95,10 +102,10 @@
   Ground asphalt: no slab/lift/collider; lips/width/routes/snow/exit/story stay.
 
 - **Accepted architecture exception — 2026-09-23, abandoned village settlement:**
-  Level 0: former wealth/ski/rescue; 14–18 mostly standing houses/6–8 sheds,
-  five closed civic yards. Buildings on both sides. `AlpineVillageAbandonment`:
-  placement/forest/snow/pads, Blender/manifest. Donors/core/people/warmth/axis/
-  water/routes/station/cableway stay. No present tourists/new NPC/clue;
+  0: former wealth/ski/rescue; 14–18 mostly standing houses/6–8 sheds,
+  five closed civic yards/both sides. `AlpineVillageAbandonment`: placement/
+  forest/snow/pads/Blender/manifest. Core/people/warmth/axis/water/routes/
+  station/cableway/donors stay. No present tourists/new NPC/clue;
   §6/art §10g/§16/§21/nine checks; lodge: 2026-09-24.
 
 - **Accepted architecture exception — 2026-09-23, discarded warehouse props:**
@@ -109,10 +116,10 @@
   repair/loot/sound/NPC/event; §6/§16/§21/nine checks.
 
 - **Accepted architecture exception — 2026-09-23, village trade road:**
-  Rail/rubble/aligned ends, checkpoint city through rocks; no peaks/traffic/
-  traversable road. Closed warehouse/mine; open yard/ramp/cargo/cart.
-  Supports/stock show halted repair. Sole cableway exit; shared checkpoint
-  scenery/village haze/storms. No new NPC/task/sound/clue/date/event;
+  Rail/rubble/aligned ends; checkpoint city through rocks, no peaks/traffic/
+  road access. Closed warehouse/mine; open yard/ramp/cargo/cart, halted repair.
+  Sole cableway exit; shared checkpoint scenery/village storms.
+  No new NPC/task/sound/clue/date/event;
   §6/§12/art §10g/§16/§21/nine checks.
 
 - **Accepted architecture exception — 2026-09-22, expanded Alpine Village:**
@@ -1132,16 +1139,12 @@
   `ai/work-log.md`; no broad regression is implied.
 
 - **Accepted exception — Alpine Village material and mass pass (2026-09-06):**
-  The user accepted the implementation plan for bringing the village closer
-  to its artwork. The local `Art/Collection/16-alpine-village.png` is the
-  principal form reference, with the directed cableway loading paintings
-  grounding the upper station. This explicitly amends art-bible §10g's
-  continuous snow-only ridge surface: the same enclosing physical wall may
-  expose dark layered rock, with snow on its ledges and the bowl floor.
-  Passive deterministic Blender rock assemblies sit beyond the walkable toe;
-  the existing terrain remains the continuous collision and cableway-cut
-  authority. The shared opaque haze handoff, `0.40` wall visibility floor,
-  PS1 snap, closed bowl and absence of any panorama remain binding.
+  User-approved form: `Art/Collection/16-alpine-village.png`; cableway loading
+  paintings guide the upper station. Art §10g's snow-only ridge may expose
+  layered dark rock/snow ledges and bowl floor. Passive deterministic Blender
+  rocks stay beyond the walkable toe; terrain owns continuous collision/cableway
+  cut. Opaque haze, `0.40` wall visibility floor, PS1 snap/closed bowl/no panorama
+  remain binding.
   Two existing house archetypes gain structural timber courses, stone and
   roof detail, irregular roof snow and framed divided warm windows. A bounded
   Blender migration replaces only the Return station's passive canopy;
