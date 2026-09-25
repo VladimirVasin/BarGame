@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace BarPromenade
 {
-    public enum MeleePhase { Ready, Windup, Active, Recovery, Stagger, GuardBroken, Defeated, GuardImpact, Step, Charging, KnockedDown, Rising }
+    public enum MeleePhase { Ready, Windup, Active, Recovery, Stagger, GuardBroken, Defeated, GuardImpact, Step, Charging, KnockedDown, Rising, Shoving }
     public enum MeleeHitResult { Ignored, Hit, Blocked, GuardBroken, Parried }
     public enum MeleeAttackOutcome { None, Miss, Hit, Blocked, Obstacle, Parried }
     public enum MeleeBufferedAction { None, Attack, Charge, Step }
@@ -29,13 +29,13 @@ namespace BarPromenade
 
     /// <summary>Pure heavy-melee timing. Runtime owns input, facing and weapon collision.
     /// Advance receives only unpaused seconds; no world needs or story state are involved.
-    /// Strikes are free; the meter pays for guard, steps and growing charge, regenerates
+    /// Strikes are free; the meter pays for guard, steps, shoves and growing charge, regenerates
     /// through every stun and recovery, and is re-armed only by the actor's own spending.</summary>
     public sealed class MeleeCombatant
     {
         private readonly HashSet<int> hitTargets = new HashSet<int>();
         private double clock, regenerateAt, stamina, attackElapsed, attackStartedAt, stepElapsed, stunRemaining, stunDuration;
-        private double charge, chargeLimit;
+        private double charge, chargeLimit, shoveElapsed;
         private double guardPressedAt = double.NegativeInfinity, guardReleasedAt = double.NegativeInfinity;
         private double stepEndedAt = double.NegativeInfinity;
         private bool blockHeld, advancedActiveWindow, registeredContactWindow, bufferedChargeReleased, chained, chainArmed;
@@ -58,6 +58,7 @@ namespace BarPromenade
         public bool IsDefeated => Phase == MeleePhase.Defeated;
         public bool IsKnockedDown => Phase == MeleePhase.KnockedDown || Phase == MeleePhase.Rising;
         public bool IsCharging => Phase == MeleePhase.Charging;
+        public bool IsShoving => Phase == MeleePhase.Shoving;
         public bool IsAttacking => Phase == MeleePhase.Windup || Phase == MeleePhase.Active || Phase == MeleePhase.Recovery;
         public bool IsBlocking => blockHeld && (Phase == MeleePhase.Ready || Phase == MeleePhase.GuardImpact);
         public bool IsStunned => Phase == MeleePhase.Stagger || Phase == MeleePhase.GuardBroken || Phase == MeleePhase.GuardImpact;
@@ -92,6 +93,8 @@ namespace BarPromenade
         }) * (1f + Settings.ChargeRecoveryBonus * AttackPower);
         public float CurrentAttackDurationSeconds => (float)AttackDuration;
         public float StepElapsed => (float)stepElapsed;
+        public float ShoveElapsed => (float)shoveElapsed;
+        public float ShoveProgress => (float)Math.Min(1d, shoveElapsed / Settings.ShoveDurationSeconds);
         public float StepTravelProgress => (float)Math.Min(1d, stepElapsed / Settings.StepTravelSeconds);
         public float StepProgress => (float)(stepElapsed / StepDuration);
         public MeleeBufferedAction BufferedAction => bufferedAction;
@@ -112,9 +115,11 @@ namespace BarPromenade
             MeleePhase.GuardBroken => stunRemaining,
             MeleePhase.GuardImpact => stunRemaining,
             MeleePhase.Step => Math.Max(0d, StepDuration - stepElapsed),
+            MeleePhase.Shoving => Math.Max(0d, Settings.ShoveDurationSeconds - shoveElapsed),
             _ => double.PositiveInfinity
         };
-        private bool CanBuffer => Phase != MeleePhase.Ready && ActionRemainingSeconds <= Settings.AttackBufferSeconds;
+        private bool CanBuffer => Phase != MeleePhase.Ready && !IsShoving &&
+            ActionRemainingSeconds <= Settings.AttackBufferSeconds;
 
         public float PhaseProgress
         {
@@ -127,6 +132,7 @@ namespace BarPromenade
                     case MeleePhase.Active: return (float)((attackElapsed - AttackWindupSeconds) / Settings.ActiveSeconds);
                     case MeleePhase.Recovery: return (float)((attackElapsed - ActiveEnd) / AttackRecoverySeconds);
                     case MeleePhase.Step: return StepProgress;
+                    case MeleePhase.Shoving: return ShoveProgress;
                     case MeleePhase.GuardImpact:
                     case MeleePhase.Stagger:
                     case MeleePhase.GuardBroken: return (float)(1d - stunRemaining / stunDuration);
@@ -202,7 +208,7 @@ namespace BarPromenade
             regenerateAt = clock + Settings.RegenerationDelaySeconds;
             charge = 0d;
             chargeLimit = Math.Min(1d, stamina / Settings.ChargeStaminaCost);
-            attackElapsed = stepElapsed = 0d;
+            attackElapsed = stepElapsed = shoveElapsed = 0d;
             AttackOutcome = MeleeAttackOutcome.None;
             DropGuard();
             advancedActiveWindow = registeredContactWindow = bufferedChargeReleased = chained = chainArmed = false;
@@ -294,12 +300,35 @@ namespace BarPromenade
             attackElapsed = 0d;
             attackStartedAt = clock;
             stepElapsed = 0d;
+            shoveElapsed = 0d;
             AttackOutcome = MeleeAttackOutcome.None;
             advancedActiveWindow = registeredContactWindow = false;
             bufferedAction = MeleeBufferedAction.None;
             hitTargets.Clear();
             AttackSequence = unchecked(AttackSequence + 1);
             Phase = MeleePhase.Windup;
+            return true;
+        }
+
+        /// <summary>Replace an uncommitted swing with one short close-range push.
+        /// Runtime owns reach, the contact and physical response; a shove never opens
+        /// a weapon damage window. Effort is paid once, including a converted charge.</summary>
+        public bool TryStartShove()
+        {
+            if (!(Phase == MeleePhase.Ready || IsCharging || Phase == MeleePhase.Windup) ||
+                stamina < Settings.ShoveCost) return false;
+            Spend(Settings.ShoveCost);
+            ClearCharge();
+            DropGuard();
+            AttackPower = 0f;
+            attackElapsed = stepElapsed = shoveElapsed = 0d;
+            advancedActiveWindow = registeredContactWindow = chained = chainArmed = false;
+            bufferedAction = MeleeBufferedAction.None;
+            stepEndedAt = double.NegativeInfinity;
+            AttackOutcome = MeleeAttackOutcome.None;
+            hitTargets.Clear();
+            AttackSequence = unchecked(AttackSequence + 1);
+            Phase = MeleePhase.Shoving;
             return true;
         }
 
@@ -313,7 +342,7 @@ namespace BarPromenade
             stepCue = Math.Sign(lateralSign);
             Spend(Settings.StepCost);
             regenerateAt = clock + Settings.RegenerationDelaySeconds;
-            attackElapsed = stepElapsed = 0d;
+            attackElapsed = stepElapsed = shoveElapsed = 0d;
             DropGuard();
             advancedActiveWindow = registeredContactWindow = chained = chainArmed = false;
             bufferedAction = MeleeBufferedAction.None;
@@ -409,6 +438,11 @@ namespace BarPromenade
                     stepEndedAt = clock + (StepDuration - previous);
                 }
             }
+            else if (IsShoving)
+            {
+                shoveElapsed = Math.Min(Settings.ShoveDurationSeconds, shoveElapsed + seconds);
+                if (shoveElapsed >= Settings.ShoveDurationSeconds) Phase = MeleePhase.Ready;
+            }
             else if (IsStunned)
             {
                 stunRemaining = Math.Max(0d, stunRemaining - seconds);
@@ -491,6 +525,21 @@ namespace BarPromenade
             return accepted;
         }
 
+        /// <summary>A close-range push interrupts intent without weapon damage or guard
+        /// cost. Runtime supplies the physical impulse separately. Existing longer stun
+        /// survives, and a grounded actor cannot be pulled out of its fall or rise.</summary>
+        public bool ReceiveShove(float staggerSeconds = .16f)
+        {
+            NonNegative(staggerSeconds, nameof(staggerSeconds));
+            if (staggerSeconds == 0f) throw new ArgumentOutOfRangeException(nameof(staggerSeconds));
+            if (IsDefeated || IsKnockedDown) return false;
+            double remaining = Math.Max(stunRemaining, staggerSeconds);
+            CancelAction();
+            stunRemaining = stunDuration = remaining;
+            Phase = MeleePhase.Stagger;
+            return true;
+        }
+
         /// <summary>Front is decided geometrically by runtime. A fresh, re-armed guard press
         /// parries a light swing for free. An affordable block pays the whole cost, even
         /// down to zero. An unaffordable block breaks: half damage, a longer stun, the
@@ -505,6 +554,7 @@ namespace BarPromenade
             NonNegative(power, nameof(power));
             if (IsDefeated || damage == 0f) return MeleeHitResult.Ignored;
             MeleePhase physicalPhase = Phase;
+            shoveElapsed = 0d;
             advancedActiveWindow = chainArmed = false;
             bufferedAction = MeleeBufferedAction.None;
             ClearCharge();
@@ -540,7 +590,7 @@ namespace BarPromenade
             float resolvedDamage = MeleeDamageProfile.Crowbar.ResolveDamage(damage, Settings.MaxHealth, location);
             Health = location.IsFinisher ? 0f : Math.Max(0f,
                 Health - (guardBreak ? resolvedDamage * Settings.GuardBreakDamageScale : resolvedDamage));
-            attackElapsed = stepElapsed = 0d;
+            attackElapsed = stepElapsed = shoveElapsed = 0d;
             chained = false;
             if (Health == 0f)
             {
@@ -574,7 +624,7 @@ namespace BarPromenade
             ClearCharge();
             bufferedAction = MeleeBufferedAction.None;
             advancedActiveWindow = chained = chainArmed = false;
-            attackElapsed = stepElapsed = stunRemaining = stunDuration = 0d;
+            attackElapsed = stepElapsed = shoveElapsed = stunRemaining = stunDuration = 0d;
             stepEndedAt = double.NegativeInfinity;
             Phase = MeleePhase.KnockedDown;
         }
@@ -594,7 +644,7 @@ namespace BarPromenade
         public void CancelAction()
         {
             if (!IsDefeated && !IsKnockedDown) Phase = MeleePhase.Ready;
-            attackElapsed = stepElapsed = stunRemaining = stunDuration = 0d;
+            attackElapsed = stepElapsed = shoveElapsed = stunRemaining = stunDuration = 0d;
             DropGuard();
             advancedActiveWindow = registeredContactWindow = chained = chainArmed = false;
             bufferedAction = MeleeBufferedAction.None;
@@ -617,7 +667,7 @@ namespace BarPromenade
             bufferedAction = MeleeBufferedAction.None;
             stamina = Settings.MaxStamina;
             Phase = MeleePhase.Ready;
-            clock = regenerateAt = attackElapsed = attackStartedAt = stepElapsed = stunRemaining = stunDuration = 0d;
+            clock = regenerateAt = attackElapsed = attackStartedAt = stepElapsed = shoveElapsed = stunRemaining = stunDuration = 0d;
             guardPressedAt = guardReleasedAt = stepEndedAt = double.NegativeInfinity;
             blockHeld = advancedActiveWindow = registeredContactWindow = chained = chainArmed = false;
             AttackOutcome = MeleeAttackOutcome.None;

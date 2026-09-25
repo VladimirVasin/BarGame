@@ -74,6 +74,12 @@
       "sweep": false,
       "note": "A ring bounded to four files by GameLogSettings.cs. Deleting them costs the current session's traces."
     },
+    "CombatLogs/": {
+      "policy": "allowed",
+      "max_count": 1,
+      "sweep": false,
+      "note": "One directory, not one round. DuelJournal owns 20 MiB per round, 10 completed rounds and 100 MiB total; prunes old ordinary rounds before marked ones, never an active round. Marks are bounded, not permanent."
+    },
     "**/*.asd": {
       "policy": "declared",
       "sweep": false,

@@ -18,6 +18,7 @@ namespace BarPromenade
         private readonly List<Collider> obstacles = new List<Collider>(96);
         private readonly List<Collider> anatomy = new List<Collider>(20);
         private readonly List<Collider> otherAnatomy = new List<Collider>(20);
+        private readonly List<DepthShape> depthShapes = new List<DepthShape>(48);
         private readonly Vector3[] searchAxes = new Vector3[5];
         private Quaternion baseUpper, baseForearm, baseHand;
         private Quaternion lastUpper, lastForearm, lastHand;
@@ -44,6 +45,10 @@ namespace BarPromenade
         internal bool Blocked { get; private set; }
         internal bool WorldBlocked { get; private set; }
         internal float PenetrationDepth { get; private set; }
+        private int journalConstraintState = -1;
+        private float journalDesiredDepth;
+        private bool journalDesiredSweep;
+        private string journalConstraintReason;
 
         internal CombatWeaponConstraint(CombatActor owner)
         {
@@ -107,7 +112,7 @@ namespace BarPromenade
         }
 
         internal void Forget() { applied = fullPoseApplied = hasLast = Blocked = WorldBlocked = MotionBlocked = pendingCommit = checkingDesiredPath = false; PenetrationDepth = 0f; }
-        internal void Reset() { Restore(); Forget(); }
+        internal void Reset() { Restore(); Forget(); journalConstraintState = -1; journalConstraintReason = null; }
 
         internal void Apply()
         {
@@ -127,6 +132,7 @@ namespace BarPromenade
             Vector3 firstEscapeAxis = escapeAxis;
             float firstEscapeAngle = escapeAngle;
             bool swept = hasLast && !SweepClear(lastWeapon, WeaponPose);
+            journalDesiredDepth = depth; journalDesiredSweep = swept;
             checkingDesiredPath = false;
             Blocked = depth > 0f || swept;
             if (!Blocked) { AcceptCandidate(); return; }
@@ -215,6 +221,7 @@ namespace BarPromenade
                 PenetrationDepth = Depth();
             }
             // Do not accept an intersecting pose as the sweep's next starting point.
+            JournalConstraint("pose_rejected");
         }
 
         private Pose WeaponPose => new Pose(weapon.position, weapon.rotation);
@@ -223,6 +230,7 @@ namespace BarPromenade
         {
             PenetrationDepth = 0f;
             pendingCommit = !contactPreview;
+            JournalConstraint(Blocked ? "arm_corrected" : "clear");
         }
 
         /// <summary>Commit only after the supporting hand has made its final contact.</summary>
@@ -240,6 +248,23 @@ namespace BarPromenade
             }
             if (clear) Remember();
             else { MotionBlocked = Blocked = true; PenetrationDepth = Depth(); }
+            JournalConstraint(clear ? "committed" : "commit_rejected");
+        }
+
+        private void JournalConstraint(string reason)
+        {
+            if (contactPreview || actor.Journal == null) return;
+            int state = (Blocked ? 1 : 0) | (WorldBlocked ? 2 : 0) | (MotionBlocked ? 4 : 0);
+            // A normal acceptance/commit pair is one state, not two events on
+            // every render. Failed commits retain their distinct causal reason.
+            if (reason == "committed") reason = Blocked ? "arm_corrected" : "clear";
+            if (state == journalConstraintState && reason == journalConstraintReason) return;
+            journalConstraintState = state; journalConstraintReason = reason;
+            actor.JournalEvent("weapon_constraint", action: actor.State.AttackSequence,
+                f0: GameLog.Field("reason", reason), f1: GameLog.Field("blocked", Blocked),
+                f2: GameLog.Field("world_blocked", WorldBlocked), f3: GameLog.Field("motion_blocked", MotionBlocked),
+                f4: GameLog.Field("desired_depth", journalDesiredDepth), f5: GameLog.Field("desired_sweep_blocked", journalDesiredSweep),
+                f6: GameLog.Field("remaining_depth", PenetrationDepth), f7: GameLog.Field("shape", BlockingShape));
         }
 
         private void Remember()
@@ -260,8 +285,15 @@ namespace BarPromenade
         private void GatherObstacles()
         {
             obstacles.Clear();
+            actor.JournalPhysicsQuery();
             int count = Physics.OverlapSphereNonAlloc(upper.position, 1.7f, nearby, ~0, QueryTriggerInteraction.Ignore);
-            Collider[] found = count < nearby.Length ? nearby : Physics.OverlapSphere(upper.position, 1.7f, ~0, QueryTriggerInteraction.Ignore);
+            Collider[] found = nearby;
+            if (!(count < nearby.Length))
+            {
+                actor.JournalQueryBufferFull(3, "weapon_obstacles", nearby.Length);
+                actor.JournalPhysicsQuery();
+                found = Physics.OverlapSphere(upper.position, 1.7f, ~0, QueryTriggerInteraction.Ignore);
+            }
             if (found != nearby) count = found.Length;
             for (int i = 0; i < count; i++)
             {
@@ -300,6 +332,14 @@ namespace BarPromenade
             float maximum = 0f;
             BlockingShape = null;
             Pose pose = WeaponPose;
+            // Each shoulder candidate moves live anatomy. Snapshot it once here,
+            // not once per weapon segment, and use tight conservative AABBs even
+            // for disabled ragdoll shapes (whose Collider.bounds would be empty).
+            depthShapes.Clear();
+            foreach (Collider shape in obstacles)
+                if (shape != null) depthShapes.Add(new DepthShape(shape, checkingDesiredPath && WorldObstacle(shape)));
+            foreach (Collider shape in anatomy)
+                if (shape != null) depthShapes.Add(new DepthShape(shape, false));
             for (int index = 0; index < CombatWeaponGeometry.Segments.Count; index++)
             {
                 CombatWeaponGeometry.Segment segment = CombatWeaponGeometry.Segments[index];
@@ -316,33 +356,40 @@ namespace BarPromenade
                 }
                 probe.radius = radius; probe.height = Vector3.Distance(a, b) + radius * 2f;
                 Quaternion rotation = (b - a).sqrMagnitude > .000001f ? Quaternion.FromToRotation(Vector3.up, b - a) : Quaternion.identity;
-                foreach (Collider obstacle in obstacles) { Check(obstacle); if (maximum > 0f && !checkingDesiredPath) return maximum; }
-                foreach (Collider body in anatomy) { Check(body); if (maximum > 0f && !checkingDesiredPath) return maximum; }
-
-                void Check(Collider shape)
+                Bounds segmentBounds = new Bounds(a, Vector3.zero);
+                segmentBounds.Encapsulate(b);
+                segmentBounds.Expand(radius * 2f);
+                foreach (DepthShape shape in depthShapes)
                 {
-                    if (shape == null) return;
-                    Vector3 scale = shape.transform.lossyScale;
-                    float maximumScale = Mathf.Max(Mathf.Abs(scale.x), Mathf.Max(Mathf.Abs(scale.y), Mathf.Abs(scale.z)));
-                    Vector3 shapeCenter;
-                    float bound;
-                    if (shape is CapsuleCollider capsule)
-                    { shapeCenter = shape.transform.TransformPoint(capsule.center); bound = Mathf.Max(capsule.height * .5f, capsule.radius) * maximumScale; }
-                    else if (shape is BoxCollider box)
-                    { shapeCenter = shape.transform.TransformPoint(box.center); bound = box.size.magnitude * .5f * maximumScale; }
-                    else { shapeCenter = shape.bounds.center; bound = shape.bounds.extents.magnitude; }
-                    float reach = bound + Vector3.Distance(a, b) * .5f + radius;
-                    if ((center - shapeCenter).sqrMagnitude > reach * reach) return;
-                    if (Physics.ComputePenetration(probe, center, rotation, shape, shape.transform.position,
-                        shape.transform.rotation, out Vector3 direction, out float depth))
+                    if (!shape.Bounds.Intersects(segmentBounds)) continue;
+                    actor.JournalPhysicsQuery();
+                    if (Physics.ComputePenetration(probe, center, rotation, shape.Collider, shape.Pose.position,
+                        shape.Pose.rotation, out Vector3 direction, out float depth))
                     {
-                        if (checkingDesiredPath && WorldObstacle(shape)) WorldBlocked = true;
+                        if (shape.WorldObstacle) WorldBlocked = true;
                         if (depth > maximum)
-                        { maximum = depth; BlockingShape = shape.name; SetEscape(center, direction, depth); }
+                        { maximum = depth; BlockingShape = shape.Collider.name; SetEscape(center, direction, depth); }
+                        if (maximum > 0f && !checkingDesiredPath) return maximum;
                     }
                 }
             }
             return maximum;
+        }
+
+        private readonly struct DepthShape
+        {
+            internal readonly Collider Collider;
+            internal readonly Pose Pose;
+            internal readonly Bounds Bounds;
+            internal readonly bool WorldObstacle;
+
+            internal DepthShape(Collider shape, bool worldObstacle)
+            {
+                Collider = shape;
+                Pose = new Pose(shape.transform.position, shape.transform.rotation);
+                Bounds = new CombatWeaponGeometry.ShapeBounds(shape).At(Pose.position, Pose.rotation);
+                WorldObstacle = worldObstacle;
+            }
         }
 
         private void SetEscape(Vector3 point, Vector3 direction, float depth)
@@ -359,6 +406,7 @@ namespace BarPromenade
             Vector3 origin = new Vector3(point.x, actor.transform.position.y + .5f, point.z);
             float length = origin.y - point.y + radius + .02f;
             if (length <= 0f) return 0f;
+            actor.JournalPhysicsQuery();
             int count = Physics.RaycastNonAlloc(origin, Vector3.down, sweeps, length, ~0, QueryTriggerInteraction.Ignore);
             float depth = 0f;
             for (int i = 0; i < count; i++)
@@ -430,6 +478,7 @@ namespace BarPromenade
                     for (int body = 0; body < anatomy.Count; body++)
                     {
                         if (anatomy[body] == null || !anatomySweep[body].Bounds.Intersects(segmentBounds)) continue;
+                        actor.JournalPhysicsQuery();
                         if (Physics.ComputePenetration(probe, (a + b) * .5f, capsuleRotation,
                             anatomy[body], anatomySweep[body].Pose.position, anatomySweep[body].Pose.rotation,
                             out _, out float overlap) && overlap > .001f)
@@ -443,6 +492,7 @@ namespace BarPromenade
                         {
                             Collider shape = otherAnatomy[body];
                             if (shape == null || !otherSweep[body].Bounds.Intersects(segmentBounds)) continue;
+                            actor.JournalPhysicsQuery();
                             if (Physics.ComputePenetration(probe, (a + b) * .5f, capsuleRotation, shape,
                                 otherSweep[body].Pose.position, otherSweep[body].Pose.rotation,
                                 out _, out float overlap) && overlap > .001f)
@@ -469,10 +519,14 @@ namespace BarPromenade
                         pointTravel.Encapsulate(start + delta);
                         pointTravel.Expand((segment.Radius + Skin) * 2f);
                         if (!NearWorld(pointTravel)) continue;
+                        actor.JournalPhysicsQuery();
                         int count = Physics.SphereCastNonAlloc(start, segment.Radius + Skin, delta.normalized,
                             sweeps, delta.magnitude, ~0, QueryTriggerInteraction.Ignore);
                         if (count == sweeps.Length)
-                        { if (checkingDesiredPath) WorldBlocked = true; return false; }
+                        {
+                            actor.JournalQueryBufferFull(4, "weapon_constraint_sweep", sweeps.Length);
+                            if (checkingDesiredPath) WorldBlocked = true; return false;
+                        }
                         for (int h = 0; h < count; h++)
                             if (WorldObstacle(sweeps[h].collider))
                             { if (checkingDesiredPath) WorldBlocked = true; return false; }

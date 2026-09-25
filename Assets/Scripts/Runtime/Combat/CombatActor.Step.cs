@@ -28,18 +28,22 @@ namespace BarPromenade
         /// never disabled hit colliders. A press in the tail of a committed phase waits for its boundary.</summary>
         public bool TryStep(Vector2 input)
         {
-            if (stepClips == null || roundEnded || !IsAvailable || IsKnockedDown ||
-                !GameInput.CanRead(GameInputContext.Gameplay) ||
-                float.IsNaN(input.x) || float.IsInfinity(input.x) ||
-                float.IsNaN(input.y) || float.IsInfinity(input.y)) return false;
+            int request = JournalCommand("step");
+            if (stepClips == null) return JournalCommandResult(request, "rejected", "step_clips_missing");
+            if (roundEnded) return JournalCommandResult(request, "rejected", "round_ended");
+            if (!IsAvailable) return JournalCommandResult(request, "rejected", "actor_unavailable");
+            if (IsKnockedDown) return JournalCommandResult(request, "rejected", "knocked_down");
+            if (!GameInput.CanRead(GameInputContext.Gameplay)) return JournalCommandResult(request, "rejected", "input_gate");
+            if (float.IsNaN(input.x) || float.IsInfinity(input.x)) return JournalCommandResult(request, "rejected", "input_x_nonfinite", input.x);
+            if (float.IsNaN(input.y) || float.IsInfinity(input.y)) return JournalCommandResult(request, "rejected", "input_y_nonfinite", input.y);
             // The rules learn only the lateral sign of a side step, resolved to the
             // same dominant axis as the clip: the step attack swings with the body.
             int lateral = Mathf.Abs(input.x) > Mathf.Abs(input.y) ? (input.x < 0f ? -1 : 1) : 0;
-            if (!State.RequestStep(lateral)) return false;
+            if (!State.RequestStep(lateral)) return JournalRulesRejected(request, State.Settings.StepCost, true);
             pendingStepInput = input;
             if (State.Phase == MeleePhase.Step) BeginStepPresentation();
             Present();
-            return true;
+            return JournalCommandResult(request, State.Phase == MeleePhase.Step ? "started" : "queued", "step");
         }
 
         private void BeginStepPresentation()
@@ -86,7 +90,13 @@ namespace BarPromenade
             // The soles compensate the authored travel. Once a wall refuses it,
             // settle at the actual position instead of completing a stride into
             // the obstacle. The rules still retain the full cost and commitment.
-            if (Vector3.Dot(moved, stepDirection) + .001f < distance) stepBlocked = true;
+            if (Vector3.Dot(moved, stepDirection) + .001f < distance)
+            {
+                stepBlocked = true;
+                JournalEvent("step_blocked", action: State.AttackSequence, request: journalActionRequest,
+                    f0: GameLog.Field("requested", distance), f1: GameLog.Field("achieved", Vector3.Dot(moved, stepDirection)),
+                    f2: GameLog.Field("tolerance", .001f));
+            }
             if (!stepBlocked && from < 1f && to >= 1f)
                 RetroAudio.PlayAt(RetroSfxId.FootstepConcrete, transform.position, .75f);
         }

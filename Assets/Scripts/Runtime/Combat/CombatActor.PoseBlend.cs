@@ -144,7 +144,8 @@ namespace BarPromenade
             ApplyNpcPoseBlend();
             footwork?.ConstrainContacts();
             weaponConstraint?.Apply();
-            if (weaponConstraint == null || !weaponConstraint.MotionBlocked) supportGrip?.Apply();
+            if (weaponConstraint == null || !weaponConstraint.MotionBlocked ||
+                (supportGrip != null && (supportGrip.IsShoving || supportGrip.IsBalanceReaching))) supportGrip?.Apply();
             weaponConstraint?.CommitPresentedPose(supportGrip);
         }
     }

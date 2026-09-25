@@ -16,18 +16,37 @@ namespace BarPromenade
         private readonly Vector3[] restFeet = new Vector3[2], feet = new Vector3[2], correction = new Vector3[2];
         private readonly Quaternion[] restRotations = new Quaternion[2], rotations = new Quaternion[2], swingRotations = new Quaternion[2];
         private readonly float[] legLengths = new float[2];
+        private readonly RaycastHit[] groundHits = new RaycastHit[16], sweepHits = new RaycastHit[16];
+        private readonly Collider[] landingOverlaps = new Collider[16];
+        private readonly bool[] supportConfirmed = { true, true };
+        private readonly Vector3[] presentedFeet = new Vector3[2];
         private readonly Vector3 readyPelvis;
         private Vector3 previousPosition, previousForward, gaitOffset, settleOffset, settleStart;
-        private Quaternion settleRotation;
+        private Quaternion settleRotation, catchRotation;
         private Vector3 travelDirection;
         private float cycle, settling, settleDuration, idleSeconds;
         private int direction, swing, attackSequence = -1;
         private bool initialized, moving, applied, yielded, settlingFoot, settlingAttack;
-        private bool catching;
+        private bool catching, catchAwaitingContact, hasPresentedContacts;
         private Vector3 catchTarget;
-        private float impactPelvisFloor;
+        private float impactPelvisFloor, catchLift, catchRetry;
+        private int recoverySequence = -1, sequenceSteps;
         public CombatImpactMotion ImpactMotion { get; set; }
+        internal CombatActor JournalActor { get; set; }
         public bool TransferringFoot => moving || settlingFoot || catching;
+        internal int CatchStepCount { get; private set; }
+        internal int CatchLandingCount { get; private set; }
+        internal int BlockedCatchCount { get; private set; }
+        internal bool CatchStepActive => catching;
+        internal float CatchStepProgress => catching ? Mathf.Clamp01(settling / Mathf.Max(.001f, settleDuration)) : 0f;
+        internal Vector3 LastCatchTarget { get; private set; }
+        internal int LastCatchSide { get; private set; } = -1;
+        internal bool JournalLeftSupport => supportConfirmed[0];
+        internal bool JournalRightSupport => supportConfirmed[1];
+        internal string SupportDiagnostics => $"confirmed={supportConfirmed[0]}/{supportConfirmed[1]}, " +
+            $"presented={hasPresentedContacts}, gaps={Vector3.Distance(presentedFeet[0], feet[0]):F3}/" +
+            $"{Vector3.Distance(presentedFeet[1], feet[1]):F3}, swing={swing}, awaiting={catchAwaitingContact}, " +
+            $"feet={feet[0]:F3}/{feet[1]:F3}";
 
         private struct PoseFrame
         {
@@ -87,32 +106,80 @@ namespace BarPromenade
 
         public void Reset()
         {
+            if (catching) JournalCatch("catch_cancelled", "reset");
+            ImpactMotion?.CancelRecoveryStep();
             Restore(); initialized = false; moving = settlingFoot = yielded = settlingAttack = catching = false;
             cycle = settling = 0f; gaitOffset = Vector3.zero; attackSequence = -1;
-            idleSeconds = 0f;
+            idleSeconds = catchRetry = 0f; catchAwaitingContact = hasPresentedContacts = false;
+            recoverySequence = -1; sequenceSteps = CatchStepCount = CatchLandingCount = BlockedCatchCount = 0;
+            LastCatchTarget = Vector3.zero; LastCatchSide = -1;
             previousPosition = frame.position; previousForward = frame.forward;
             PlantReady();
         }
 
         private void PlantReady()
         {
+            hasPresentedContacts = false;
             for (int side = 0; side < 2; side++)
-            { feet[side] = frame.TransformPoint(restFeet[side]); rotations[side] = frame.rotation * restRotations[side]; }
+            { feet[side] = frame.TransformPoint(restFeet[side]); rotations[side] = frame.rotation * restRotations[side]; supportConfirmed[side] = true; }
             initialized = true;
         }
 
         public void Advance(float seconds, MeleeCombatant state)
         {
-            if (seconds <= 0f) return;
+            if (!float.IsFinite(seconds) || seconds <= 0f) return;
+            AdvanceFootwork(seconds, state);
+            // Only the duel clock reports support. Pose previews and repeated Apply
+            // calls cannot land a boot or change the outcome of a recovery.
+            ReportSupport();
+        }
+
+        private void ReportSupport()
+        {
+            bool active = initialized && !yielded;
+            bool transferring = moving || settlingFoot || catching;
+            for (int side = 0; side < 2; side++)
+                if (active && hasPresentedContacts && ImpactMotion != null && (ImpactMotion.IsActive || catching) &&
+                    supportConfirmed[side] && (!transferring || swing != side) &&
+                    Vector3.Distance(presentedFeet[side], feet[side]) > .055f)
+                    supportConfirmed[side] = false;
+            ImpactMotion?.SetFootSupport(feet[0], feet[1],
+                active && supportConfirmed[0] && (!transferring || swing != 0),
+                active && supportConfirmed[1] && (!transferring || swing != 1));
+        }
+
+        // Called only after the actor's final constrained pose. Root movement in
+        // the next simulation step moves the rig temporarily; those intermediate
+        // bone positions are not evidence that a planted foot left the floor.
+        internal void CapturePresentedContacts()
+        {
+            if (!initialized || yielded) { hasPresentedContacts = false; return; }
+            presentedFeet[0] = bones[3].position;
+            presentedFeet[1] = bones[6].position;
+            hasPresentedContacts = true;
+        }
+
+        private void AdvanceFootwork(float seconds, MeleeCombatant state)
+        {
             Vector3 displacement = frame.position - previousPosition;
             float turn = Vector3.Angle(previousForward, frame.forward) * Mathf.Deg2Rad;
             previousPosition = frame.position; previousForward = frame.forward;
             displacement.y = 0f;
             bool yield = state.Phase == MeleePhase.Step || state.IsDefeated || state.IsKnockedDown;
             if (yield)
-            { yielded = true; initialized = false; moving = settlingFoot = catching = false; gaitOffset = Vector3.zero; return; }
+            {
+                if (catching) JournalCatch("catch_cancelled", "action_owns_feet");
+                ImpactMotion?.CancelRecoveryStep();
+                yielded = true; initialized = false; moving = settlingFoot = catching = catchAwaitingContact = false;
+                gaitOffset = Vector3.zero; return;
+            }
             if (!initialized || displacement.sqrMagnitude > 1f)
-            { PlantReady(); moving = settlingFoot = false; gaitOffset = Vector3.zero; cycle = 0f; }
+            {
+                if (catching) JournalCatch("catch_cancelled", "root_discontinuity");
+                ImpactMotion?.CancelRecoveryStep();
+                PlantReady(); moving = settlingFoot = catching = catchAwaitingContact = false;
+                gaitOffset = Vector3.zero; cycle = 0f;
+            }
             yielded = false;
 
             if (AdvanceCatchStep(seconds)) return;
@@ -206,13 +273,25 @@ namespace BarPromenade
 
         private bool AdvanceCatchStep(float seconds)
         {
-            if (ImpactMotion == null || (!ImpactMotion.IsActive && !catching)) return false;
+            if (ImpactMotion == null) return false;
+            if (recoverySequence != ImpactMotion.RecoverySequence)
+            {
+                recoverySequence = ImpactMotion.RecoverySequence;
+                sequenceSteps = 0; catchRetry = 0f;
+            }
+            catchRetry = Mathf.Max(0f, catchRetry - seconds);
+            bool needsLanding = !supportConfirmed[0] || !supportConfirmed[1];
+            if (!ImpactMotion.IsActive && !catching && !needsLanding) return false;
             if (!catching)
             {
                 int displaced = FarthestFoot();
-                float error = Vector3.Distance(feet[displaced], frame.TransformPoint(restFeet[displaced]));
-                if (ImpactMotion.BalanceLoad < .42f && error < .11f) return false;
                 Vector3 capture = ImpactMotion.CaptureOffset;
+                float error = Mathf.Max(Vector3.ProjectOnPlane(feet[0] - RecoveryTarget(0, capture), Vector3.up).magnitude,
+                    Vector3.ProjectOnPlane(feet[1] - RecoveryTarget(1, capture), Vector3.up).magnitude);
+                float urgency = ImpactMotion.RecoveryUrgency;
+                if ((!needsLanding && urgency < .42f && error < .11f) || catchRetry > 0f ||
+                    sequenceSteps >= ImpactMotion.MaximumRecoverySteps)
+                    return needsLanding || sequenceSteps > 0;
                 bool alreadyTransferring = moving || settlingFoot;
                 if (!alreadyTransferring)
                 {
@@ -220,46 +299,174 @@ namespace BarPromenade
                     float lateral = Vector3.Dot(capture, across.normalized);
                     float rightLoad = across.sqrMagnitude > .001f ? Mathf.Clamp01(Vector3.Dot(
                         ImpactMotion.CentreOfMass - feet[0], across) / across.sqrMagnitude) : .5f;
-                    // Keep the loaded boot down. A hit to that leg does not make
-                    // it instantly airborne; support loss still governs the fall.
-                    swing = Mathf.Abs(lateral) > .08f ? (lateral > 0f ? 1 : 0) :
-                        Mathf.Abs(rightLoad - .5f) > .08f ? (rightLoad > .5f ? 0 : 1) : displaced;
+                    // A boot already in the air goes first. Otherwise preserve the
+                    // actually loaded boot; direction breaks only a near-even tie.
+                    swing = !supportConfirmed[0] ? 0 : !supportConfirmed[1] ? 1 :
+                        Mathf.Abs(rightLoad - .5f) > .1f ? (rightLoad > .5f ? 0 : 1) :
+                        Mathf.Abs(lateral) > .06f ? (lateral > 0f ? 1 : 0) : displaced;
                 }
-                if (!TryCatchTarget(swing, capture, out Vector3 target))
+                float skill = Mathf.Clamp01(ImpactMotion.RecoverySkill);
+                float severity = Mathf.Clamp01(urgency * .65f);
+                float duration = Mathf.Lerp(.30f, .19f, severity) + (1f - skill) * .055f;
+                catchLift = Mathf.Lerp(.045f, .105f, severity) + (1f - skill) * .015f;
+                int preferred = swing;
+                bool found = TryCatchTarget(preferred, capture, skill, out Vector3 target, out float score);
+                // Compare useful support, rather than repeatedly moving whichever
+                // foot is easiest to lift. The loaded foot wins only for a clearly
+                // better landing; an already airborne boot must land first.
+                bool canChangeSide = !alreadyTransferring && supportConfirmed[preferred];
+                if (!found && !canChangeSide) canChangeSide = ConfirmCurrentContact(preferred);
+                if (canChangeSide && TryCatchTarget(1 - preferred, capture, skill, out Vector3 alternative, out float otherScore) &&
+                    (!found || otherScore > score + .035f))
                 {
-                    if (alreadyTransferring || !TryCatchTarget(1 - swing, capture, out target)) return false;
-                    swing = 1 - swing;
+                    swing = 1 - preferred; target = alternative; found = true;
                 }
-                if (Vector3.ProjectOnPlane(target - feet[swing], Vector3.up).sqrMagnitude < .0025f) return false;
-                // A reachable step has an actual landing; the other boot remains planted.
+                if (!found)
+                {
+                    if (needsLanding || ImpactMotion.RecoveryFootError(0, feet[0]) > .025f) RejectCatchPlan("no_valid_target");
+                    return needsLanding || sequenceSteps > 0;
+                }
                 settleStart = feet[swing]; settleRotation = rotations[swing]; catchTarget = target;
-                settling = 0f; settleDuration = .26f; catching = true;
+                Vector3 plannedTravel = Vector3.ProjectOnPlane(target - settleStart, Vector3.up);
+                float pivot = Mathf.Clamp(Vector3.SignedAngle(frame.forward, plannedTravel, Vector3.up), -18f, 18f);
+                catchRotation = Quaternion.AngleAxis(pivot, Vector3.up) * frame.rotation * restRotations[swing];
+                // A short lateral save is quicker than a full emergency lunge.
+                float distance = Vector3.ProjectOnPlane(target - settleStart, Vector3.up).magnitude;
+                settleDuration = Mathf.Clamp(duration + (distance - .2f) * .18f, .16f, .36f);
+                settling = 0f; catching = true; catchAwaitingContact = false;
+                supportConfirmed[swing] = false;
+                sequenceSteps++; CatchStepCount++;
+                LastCatchTarget = target; LastCatchSide = swing;
                 moving = settlingFoot = false; gaitOffset = Vector3.zero;
+                ImpactMotion.BeginRecoveryStep(swing, target, settleDuration);
+                JournalCatch("catch_planned", "support_recovery");
+            }
+            if (catchAwaitingContact)
+            {
+                // Last presentation has now actually placed the ankle. A leg
+                // clipped by IK or a new obstruction buys no imaginary support.
+                bool reached = hasPresentedContacts && Vector3.Distance(presentedFeet[swing], catchTarget) <= .055f;
+                Vector3 grounded = default;
+                string rejection = !reached ? "presented_foot_gap" :
+                    !TryCatchGround(catchTarget, swing, out grounded) ? "ground_missing" :
+                    !(Vector3.Distance(grounded, catchTarget) <= .025f) ? "ground_target_gap" :
+                    !LandingClear(grounded) ? "landing_obstructed" :
+                    !ClearFootTravel(feet[swing], grounded) ? "foot_path_obstructed" : null;
+                if (rejection == null)
+                {
+                    feet[swing] = grounded;
+                    supportConfirmed[swing] = true;
+                    catching = catchAwaitingContact = false;
+                    ReportSupport();
+                    ImpactMotion.LandRecoveryStep(swing, grounded);
+                    CatchLandingCount++;
+                    JournalCatch("catch_landed", "presented_contact");
+                    catchRetry = .025f;
+                    RetroAudio.PlayAt(RetroSfxId.FootstepConcrete, grounded, .7f);
+                }
+                else
+                {
+                    // Continue from the foot that was really drawn, never teleport
+                    // it to the failed destination before trying a nearer target.
+                    if (hasPresentedContacts) feet[swing] = presentedFeet[swing];
+                    catching = catchAwaitingContact = false;
+                    ConfirmCurrentContact(swing);
+                    ImpactMotion.CancelRecoveryStep();
+                    RejectCatchPlan(rejection);
+                }
+                return true;
             }
             settling += seconds;
             float t = Mathf.Clamp01(settling / settleDuration), blend = Smooth(t);
             float lift = Mathf.Sin(t * Mathf.PI);
-            feet[swing] = Vector3.Lerp(settleStart, catchTarget, blend) + Vector3.up * (.07f * lift * lift);
-            rotations[swing] = Quaternion.Slerp(settleRotation, frame.rotation * restRotations[swing], blend);
+            feet[swing] = Vector3.Lerp(settleStart, catchTarget, blend) + Vector3.up * (catchLift * lift * lift);
+            rotations[swing] = Quaternion.Slerp(settleRotation, catchRotation, blend);
             // ImpactMotion owns the buckle. A second sinusoidal pelvis drop here
             // fought the planted-leg correction and produced a deep repeated bob.
             gaitOffset = Vector3.zero;
-            if (t >= 1f)
-            {
-                catching = false; gaitOffset = Vector3.zero;
-                RetroAudio.PlayAt(RetroSfxId.FootstepConcrete, feet[swing], .7f);
-            }
+            if (t >= 1f) catchAwaitingContact = true;
             return true;
         }
 
-        private bool TryCatchTarget(int side, Vector3 capture, out Vector3 target)
+        private void RejectCatchPlan(string reason)
         {
-            // Account for the root travel still to come during the short catch.
-            // This landing stays fixed in world space once the boot leaves.
-            target = frame.TransformPoint(restFeet[side]) + Vector3.ClampMagnitude(
-                capture * .38f + ImpactMotion.Velocity * .04f, .32f);
+            JournalCatch("catch_rejected", reason);
+            BlockedCatchCount++; catchRetry = .075f;
+            ImpactMotion.StepBlocked();
+        }
+
+        private void JournalCatch(string eventName, string reason)
+        {
+            if (JournalActor?.Journal == null) return;
+            JournalActor.JournalEvent(eventName,
+                f0: GameLog.Field("reason", reason), f1: GameLog.Field("recovery_sequence", recoverySequence),
+                f2: GameLog.Field("side", swing), f3: GameLog.Field("target_x", catchTarget.x),
+                f4: GameLog.Field("target_y", catchTarget.y), f5: GameLog.Field("target_z", catchTarget.z),
+                f6: GameLog.Field("presented_gap", hasPresentedContacts ? Vector3.Distance(presentedFeet[swing], catchTarget) : -1f),
+                f7: GameLog.Field("duration", settleDuration));
+        }
+
+        private bool ConfirmCurrentContact(int side)
+        {
+            if (!hasPresentedContacts || !TryCatchGround(feet[side], side, out Vector3 ground) ||
+                Vector3.Distance(ground, feet[side]) > .025f ||
+                Vector3.Distance(presentedFeet[side], ground) > .055f || !LandingClear(ground)) return false;
+            supportConfirmed[side] = true;
+            return true;
+        }
+
+        private Vector3 RecoveryTarget(int side, Vector3 capture)
+        {
+            Vector3 stance = frame.TransformVector(restFeet[side] - (restFeet[0] + restFeet[1]) * .5f);
+            Vector3 target = ImpactMotion.CentreOfMass + capture + stance;
+            target.y = feet[side].y;
+            return target;
+        }
+
+        private bool TryCatchTarget(int side, Vector3 capture, float skill, out Vector3 target, out float bestScore)
+        {
+            target = feet[side]; bestScore = float.NegativeInfinity;
+            Vector3 outward = Vector3.ProjectOnPlane(frame.right * (side == 0 ? -1f : 1f), Vector3.up).normalized;
+            // Reproducible variation belongs to the whole attempt, never the
+            // number of render/weapon samples. Lower skill adds a small aim error.
+            int variant = (recoverySequence * 31 + sequenceSteps * 17 + side * 7) & 7;
+            float aimError = (variant / 7f - .5f) * .07f * (1f - skill);
+            Vector3 desired = RecoveryTarget(side, capture);
+            Vector3 neutral = RecoveryTarget(side, Vector3.zero);
+            float previousError = ImpactMotion.RecoveryFootError(0, feet[0]);
+            float previousDistance = Vector3.ProjectOnPlane(feet[side] - desired, Vector3.up).magnitude;
+            bool found = false;
+            for (int candidate = 0; candidate < 4; candidate++)
+            {
+                Vector3 proposed = candidate switch
+                {
+                    0 => desired,
+                    1 => Vector3.Lerp(feet[side], desired, .8f) + outward * .06f,
+                    2 => desired + outward * .10f,
+                    _ => neutral
+                };
+                proposed += outward * aimError;
+                if (!ConstrainCatchTarget(side, proposed, out Vector3 grounded) ||
+                    Vector3.ProjectOnPlane(grounded - feet[side], Vector3.up).sqrMagnitude < .0025f) continue;
+                float error = ImpactMotion.RecoveryFootError(side, grounded);
+                float closure = previousDistance - Vector3.ProjectOnPlane(grounded - desired, Vector3.up).magnitude;
+                float gain = previousError - error;
+                if (supportConfirmed[side] && (error > previousError + .015f || (gain < .01f && closure < .035f))) continue;
+                float distance = Vector3.ProjectOnPlane(grounded - feet[side], Vector3.up).magnitude;
+                float score = gain * 6f + closure * .5f - distance * .03f;
+                if (score <= bestScore) continue;
+                Vector3 middle = Vector3.Lerp(feet[side], grounded, .5f) + Vector3.up * catchLift;
+                if (!LandingClear(grounded) || !ClearFootTravel(feet[side], middle) || !ClearFootTravel(middle, grounded)) continue;
+                target = grounded; bestScore = score; found = true;
+            }
+            return found;
+        }
+
+        private bool ConstrainCatchTarget(int side, Vector3 desired, out Vector3 target)
+        {
+            target = desired;
             if (!TryCatchGround(target, side, out target)) return false;
-            Vector3 outward = Vector3.ProjectOnPlane(frame.TransformVector(restFeet[side] - restFeet[1 - side]), Vector3.up).normalized;
+            Vector3 outward = Vector3.ProjectOnPlane(frame.right * (side == 0 ? -1f : 1f), Vector3.up).normalized;
             float separation = Vector3.Dot(target - feet[1 - side], outward);
             if (separation < .12f) target += outward * (.12f - separation);
             Vector3 hip = bones[1 + side * 3].position;
@@ -271,15 +478,37 @@ namespace BarPromenade
             target.x = hip.x + horizontal.x; target.z = hip.z + horizontal.z;
             if (Vector3.Dot(target - feet[1 - side], outward) < .115f ||
                 !TryCatchGround(target, side, out target)) return false;
-            // A floor beneath the destination is not evidence of an unobstructed
-            // step: keep the swinging boot out of walls and low solid furniture.
-            Vector3 start = feet[side] + Vector3.up * .045f;
-            Vector3 travel = target - feet[side];
+            return true;
+        }
+
+        private bool ClearFootTravel(Vector3 from, Vector3 to)
+        {
+            Vector3 start = from + Vector3.up * .045f;
+            Vector3 travel = to - from;
             float distance = travel.magnitude;
             if (distance < .001f) return true;
-            foreach (RaycastHit hit in Physics.SphereCastAll(start, .045f, travel / distance,
-                distance, ~0, QueryTriggerInteraction.Ignore))
-                if (hit.collider.GetComponentInParent<CombatActor>() == null && hit.normal.y < .65f) return false;
+            JournalActor?.JournalPhysicsQuery();
+            int count = Physics.SphereCastNonAlloc(start, .045f, travel / distance,
+                sweepHits, distance, ~0, QueryTriggerInteraction.Ignore);
+            if (count == sweepHits.Length)
+            { JournalActor?.JournalQueryBufferFull(10, "foot_travel", sweepHits.Length); return false; }
+            for (int i = 0; i < count; i++)
+            {
+                RaycastHit hit = sweepHits[i];
+                if (hit.collider != null && !hit.collider.transform.IsChildOf(frame) && hit.normal.y < .65f) return false;
+            }
+            return true;
+        }
+
+        private bool LandingClear(Vector3 point)
+        {
+            JournalActor?.JournalPhysicsQuery();
+            int count = Physics.OverlapSphereNonAlloc(point + Vector3.up * .025f, .04f,
+                landingOverlaps, ~0, QueryTriggerInteraction.Ignore);
+            if (count == landingOverlaps.Length)
+            { JournalActor?.JournalQueryBufferFull(11, "foot_landing", landingOverlaps.Length); return false; }
+            for (int i = 0; i < count; i++)
+                if (landingOverlaps[i] != null && !landingOverlaps[i].transform.IsChildOf(frame)) return false;
             return true;
         }
 
@@ -287,9 +516,16 @@ namespace BarPromenade
         {
             grounded = desired;
             float nearest = float.PositiveInfinity;
-            foreach (RaycastHit hit in Physics.RaycastAll(desired + Vector3.up * .55f, Vector3.down, 1.1f, ~0, QueryTriggerInteraction.Ignore))
+            JournalActor?.JournalPhysicsQuery();
+            int count = Physics.RaycastNonAlloc(desired + Vector3.up * .55f, Vector3.down,
+                groundHits, 1.1f, ~0, QueryTriggerInteraction.Ignore);
+            if (count == groundHits.Length)
+            { JournalActor?.JournalQueryBufferFull(12, "foot_ground", groundHits.Length); return false; }
+            for (int i = 0; i < count; i++)
             {
-                if (hit.collider.GetComponentInParent<CombatActor>() != null || hit.normal.y < .65f || hit.distance >= nearest) continue;
+                RaycastHit hit = groundHits[i];
+                if (hit.collider == null || hit.collider.GetComponentInParent<CombatActor>() != null ||
+                    hit.normal.y < .65f || hit.distance >= nearest) continue;
                 nearest = hit.distance;
                 grounded = hit.point + Vector3.up * Mathf.Max(.025f, restFeet[side].y);
             }
@@ -401,7 +637,11 @@ namespace BarPromenade
             applied = false;
             ImpactMotion?.Restore();
         }
-        public void Forget() { applied = false; ImpactMotion?.Forget(); }
+        public void Forget()
+        {
+            applied = false; catching = catchAwaitingContact = hasPresentedContacts = false;
+            ImpactMotion?.CancelRecoveryStep(); ImpactMotion?.Forget();
+        }
         private static float Smooth(float value) => value * value * (3f - 2f * value);
     }
 }

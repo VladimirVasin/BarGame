@@ -6,7 +6,19 @@ Earlier notes: [`release-notes-2026-09.md`](archive/release-notes-2026-09.md).
 
 ## Unreleased
 
-### 2026-09-25 — Сугробы, осмотры, база и загрузка
+### 2026-09-26 — Пробное восстановление и журнал дуэли
+
+- По умолчанию оставлены реакция и спасательные шаги; дополнительные
+  коррекции корпуса и упор рукой доступны лишь для сравнения в диагностике.
+  Проверка: `Range_MinimumShoveRecoveryComparison`.
+  Этап предварительный: просмотр ролика и одобрение движения пользователем впереди.
+- Полигон автоматически пишет отдельный CombatLogs: причины, снимки, сводка,
+  метка F8. Ограниченная асинхронная запись; старые обычные раунды очищаются
+  раньше отмеченных: 20 MiB/раунд, 10 закрытых/100 MiB.
+  Проверки: `DuelJournalTests`,
+  `Range_DuelJournalRecordsReasonsWithoutChangingCombat`.
+
+### 2026-09-25 — Сугробы, база, загрузка и бой
 
 - Сугробы: высокий шаг без бега; следы/расчистка возвращают ход.
   Проверки: `player_snow_actions.validate_snow_actions`,
@@ -14,22 +26,23 @@ Earlier notes: [`release-notes-2026-09.md`](archive/release-notes-2026-09.md).
   `AreaCaptureFixture.AlpineVillageSnowGait` (кадры).
 - Печь: мягкий редкий треск, приглушённый верх. Проверка:
   `InteriorSoundscapeSynthesisTests.LoopBeds_AreFiniteQuietNonSilentAndLoopSafe`.
-- Осмотры у работы/хранения/лавины; склад/обрыв сохранены.
-  Место важнее квот; камера/фокус плавнее.
+- Осмотры у работы/хранения/лавины; камера плавнее.
   Проверка/кадры: `AreaCaptureFixture.AlpineVillageNarrative`.
 - База: мебель/посадка/лыжи, минибар/фото в инвентарь.
   Проверка: `AreaCaptureFixture.AlpineVillageLodgeFurnishings`.
-  Балки/одеяло без наложений, сундук у стены; порог виден.
-  Семь фактур дерева: светлый люк/серо-зелёный стул читаются на полу.
+  Убраны наложения, порог виден; семь фактур различают пол/люк/стул.
   Люк в центре: упор/закрытие→ответ снизу.
   Проверки: `build-village-expansion-3d-model.py`,
   `AlpineVillageLodgeSurfaceClearance` (проход/люк, холодные/тёплые кадры).
 - «Новая игра»: старт у базы. Проверка:
   `NewGame_SelectedLocationUsesItsNormalArrivalWithoutTheHomeOpening(SkiLodge)`.
-- Генерация деревни ускорена: убраны повторные расчёты рельефа/троп/снега,
-  детализация сохранена. Проверки: `AlpineVillageTerrainCacheTests`,
+- Быстрее рельеф/тропы/снег. Проверки: `AlpineVillageTerrainCacheTests`,
   `SnowField_SparseSamplingPreservesDenseGeometry`,
   `TerrainMesh_BuildsTheRidgeAndTheCablewayBrink`.
+- Бой: меньше CPU/долга, без зависшего заряда; сильный быстрый толчок без HP,
+  баланс ногами. `CombatPerformancePlayModeTests` (CPU без FPS),
+  `Range_CloseContactUsesFastShove` (кадры); `Range_BalanceRecoveryUsesActualSupports`
+  провал: опора рукой.
 
 ### 2026-09-24 — Деревня: снег, лавина, база и осмотры
 

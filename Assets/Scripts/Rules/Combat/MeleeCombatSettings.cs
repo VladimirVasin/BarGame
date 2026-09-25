@@ -3,7 +3,7 @@ using System;
 namespace BarPromenade
 {
     /// <summary>One immutable tuning set shared by both participants on the test range.
-    /// Strikes are free; the single meter pays only for guard, steps and growing charge.</summary>
+    /// Strikes are free; the single meter pays for guard, steps, shoves and growing charge.</summary>
     public sealed class MeleeCombatSettings
     {
         public static MeleeCombatSettings Crowbar { get; } = new MeleeCombatSettings();
@@ -27,7 +27,8 @@ namespace BarPromenade
             float parryMaxPower = .5f, float counterHitStaggerBonus = .30f,
             float chargeStaggerBonus = .15f, float chargeGuardImpactBonus = .10f,
             float guardBreakDamageScale = .5f, float chainWindupSeconds = .22f,
-            float stepAttackGraceSeconds = .10f)
+            float stepAttackGraceSeconds = .10f, float shoveContactSeconds = .10f,
+            float shoveDurationSeconds = .38f, float shoveCost = 8f)
         {
             MaxHealth = Positive(maxHealth, nameof(maxHealth));
             MaxStamina = Positive(maxStamina, nameof(maxStamina));
@@ -69,6 +70,11 @@ namespace BarPromenade
             GuardBreakDamageScale = Positive(guardBreakDamageScale, nameof(guardBreakDamageScale));
             ChainWindupSeconds = Math.Min(WindupSeconds, Positive(chainWindupSeconds, nameof(chainWindupSeconds)));
             StepAttackGraceSeconds = Positive(stepAttackGraceSeconds, nameof(stepAttackGraceSeconds));
+            ShoveContactSeconds = Positive(shoveContactSeconds, nameof(shoveContactSeconds));
+            ShoveDurationSeconds = Positive(shoveDurationSeconds, nameof(shoveDurationSeconds));
+            ShoveCost = Positive(shoveCost, nameof(shoveCost));
+            if (ShoveDurationSeconds <= ShoveContactSeconds)
+                throw new ArgumentOutOfRangeException(nameof(shoveDurationSeconds));
             if (AttackCost > MaxStamina) throw new ArgumentOutOfRangeException(nameof(attackCost));
             if (StepCost > MaxStamina) throw new ArgumentOutOfRangeException(nameof(stepCost));
             if (ParryMaxPower > 1f) throw new ArgumentOutOfRangeException(nameof(parryMaxPower));
@@ -133,6 +139,9 @@ namespace BarPromenade
         public float GuardBreakDamageScale { get; }
         public float ChainWindupSeconds { get; }
         public float StepAttackGraceSeconds { get; }
+        public float ShoveContactSeconds { get; }
+        public float ShoveDurationSeconds { get; }
+        public float ShoveCost { get; }
         public float AttackDurationSeconds => WindupSeconds + ActiveSeconds + RecoverySeconds;
         public float AnimationAttackDurationSeconds => WindupSeconds + ActiveSeconds + AnimationRecoverySeconds;
         public float StepDurationSeconds => StepTravelSeconds + StepRecoverySeconds;

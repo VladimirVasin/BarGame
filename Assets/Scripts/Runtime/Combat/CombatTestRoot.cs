@@ -24,6 +24,7 @@ namespace BarPromenade
         private Vector3 heroSpawn, opponentSpawn;
         private float opponentDelay = .8f;
         public const float SimulationStep = 1f / 120f;
+        internal const int MaximumFrameSubsteps = 4;
         /// <summary>Once the round has ended and the body has settled, the shoulder lock lets go.</summary>
         public const float RoundEndCameraReleaseSeconds = 1.5f;
         private double pendingSeconds, roundEndFreeze, roundEndElapsed;
@@ -33,6 +34,7 @@ namespace BarPromenade
         private ArenaBounds arenaBounds;
         private Transform opponentChest, heroChest;
         private readonly List<CombatActor.Contact> pendingContacts = new List<CombatActor.Contact>(4);
+        private readonly List<CombatActor.ShoveContact> pendingShoves = new List<CombatActor.ShoveContact>(2);
         private GUIStyle small, button, controls;
         private static readonly Rect ToolbarRect = new Rect(386, 10, 240, 22);
         public bool IsInitialized { get; private set; }
@@ -91,6 +93,7 @@ namespace BarPromenade
             PauseMenu = ui.AddComponent<PauseMenuController>();
             PauseMenu.Initialize(Player, CameraFollow, null);
             IsInitialized = true;
+            InitializeDuelJournal();
             PlaceRound();
         }
 
@@ -109,6 +112,7 @@ namespace BarPromenade
 
         private void PlaceRound()
         {
+            EndJournalRound("reset");
             ResetChargeInput();
             BloodEffects?.ResetRound();
             Taunt?.ResetRound();
@@ -124,6 +128,7 @@ namespace BarPromenade
             LockOnOpponent();
             CameraFollow.Snap();
             SetDuelFrozen(false);
+            BeginJournalRound();
         }
 
         /// <summary>The duel owns the shoulder camera and target-facing movement; a reset takes them back.</summary>
@@ -171,11 +176,30 @@ namespace BarPromenade
 
         private void Update()
         {
+            BeginJournalFrame();
             if (!IsInitialized || !AutomaticSimulation || !UpdateCombatInput()) return;
-            Tick(Time.deltaTime);
+            TickFrame(Time.deltaTime);
+        }
+
+        /// <summary>Drop excess wall time after a hitch instead of feeding an ever
+        /// larger catch-up loop. The fractional step survives; both fighters still
+        /// share every 120 Hz step. Explicit Tick calls retain their full duration.</summary>
+        internal void TickFrame(float seconds)
+        {
+            if (duelJournal != null && seconds > MaximumFrameSubsteps * SimulationStep)
+                duelJournal.Record("time_discarded", f0: GameLog.Field("requested_seconds", seconds),
+                    f1: GameLog.Field("discarded_seconds", seconds - MaximumFrameSubsteps * SimulationStep));
+            Tick(Mathf.Min(seconds, MaximumFrameSubsteps * SimulationStep));
         }
 
         public void Tick(float seconds)
+        {
+            long stamp = JournalStamp();
+            try { TickCore(seconds); }
+            finally { JournalElapsed(stamp, ref journalSimulationTicks); }
+        }
+
+        private void TickCore(float seconds)
         {
             if (!IsInitialized || !GameInput.CanRead(GameInputContext.Gameplay)) return;
             if (float.IsNaN(seconds) || float.IsInfinity(seconds) || seconds < 0f)
@@ -191,6 +215,7 @@ namespace BarPromenade
             while (pendingSeconds + .0000001d >= SimulationStep && !RoundFinished)
             {
                 pendingSeconds = Math.Max(0d, pendingSeconds - SimulationStep);
+                AdvanceJournalClock(hitStopSubsteps > 0);
                 if (hitStopSubsteps > 0)
                 {
                     // Hit-stop: both fighters, the opponent's mind and the blood hold on
@@ -206,19 +231,30 @@ namespace BarPromenade
                 Hero.State.ObserveLateralCue(LateralBearing(Hero, Opponent));
                 Opponent.State.ObserveLateralCue(LateralBearing(Opponent, Hero));
                 if (Sparring) AdvanceOpponent(SimulationStep);
+                JournalOpponentDecision();
                 AdvanceOpponentMovement(SimulationStep);
                 Physics.SyncTransforms();
                 pendingContacts.Clear();
+                pendingShoves.Clear();
                 Hero.AdvanceSimulation(SimulationStep);
                 Opponent.AdvanceSimulation(SimulationStep);
+                JournalTransitions("simulation");
+                long poseStamp = JournalStamp();
                 Hero.Present(); Opponent.Present();
+                JournalElapsed(poseStamp, ref journalPoseTicks);
                 // Both final poses are frozen as anatomical query data before either
                 // weapon is sampled. Sampling the first swing cannot move its hurtboxes.
                 Hero.CaptureContactPose(); Opponent.CaptureContactPose();
+                long contactStamp = JournalStamp();
                 sampledContacts = Hero.CollectContacts(pendingContacts) | Opponent.CollectContacts(pendingContacts);
+                Hero.CollectShoveContacts(pendingShoves); Opponent.CollectShoveContacts(pendingShoves);
+                JournalElapsed(contactStamp, ref journalContactTicks);
+                journalPoseSamples += Hero.ContactPoseSamples + Opponent.ContactPoseSamples;
                 // Registration for both actors precedes ANY damage, including lethal
                 // hits. Only contacts on a later tick can be cancelled by interruption.
                 foreach (CombatActor.Contact contact in pendingContacts) contact.Apply();
+                foreach (CombatActor.ShoveContact contact in pendingShoves) contact.Apply();
+                JournalTransitions("contacts_applied");
                 BloodEffects.Tick(SimulationStep);
             }
             if (RoundFinished)
@@ -233,6 +269,7 @@ namespace BarPromenade
             else if (!advanced || sampledContacts) { Hero.Present(); Opponent.Present(); }
             if (hitStopSubsteps > 0 || roundEndFreeze > 0d) SetDuelFrozen(true);
             else if (advanced && !RoundFinished) SetDuelFrozen(false);
+            JournalRoundResult();
         }
 
         private void AdvanceFinishedRound(float seconds)

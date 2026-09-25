@@ -13,10 +13,18 @@ namespace BarPromenade
 
         internal bool TryBeginKnockdown(CombatImpact impact, Vector3 linearVelocity, Vector3 angularVelocity)
         {
-            if (knockedDown || State.IsDefeated || Ragdoll == null || IsRagdollActive || weaponDropped) return false;
+            if (knockedDown) return JournalKnockdownRejected("already_knocked_down");
+            if (State.IsDefeated) return JournalKnockdownRejected("defeated");
+            if (Ragdoll == null) return JournalKnockdownRejected("ragdoll_missing");
+            if (IsRagdollActive) return JournalKnockdownRejected("ragdoll_active");
+            if (weaponDropped) return JournalKnockdownRejected("weapon_dropped");
             knockdownPose ??= new CombatRecoveryPose(transform, DamageRigRoot, Body, Ragdoll, handPose, hero == null);
             hero?.SetOwnedPresentationFrozen(this, false);
-            if (!Ragdoll.BeginKnockdown(linearVelocity, angularVelocity)) return false;
+            if (!Ragdoll.BeginKnockdown(linearVelocity, angularVelocity)) return JournalKnockdownRejected("ragdoll_begin_refused");
+            journalFallReason = journalRiseReason = null;
+            JournalEvent("knockdown_started", f0: GameLog.Field("impact_seq", LastJournalImpactSequence),
+                f1: GameLog.Field("velocity_x", linearVelocity.x), f2: GameLog.Field("velocity_y", linearVelocity.y), f3: GameLog.Field("velocity_z", linearVelocity.z),
+                f4: GameLog.Field("angular_x", angularVelocity.x), f5: GameLog.Field("angular_y", angularVelocity.y), f6: GameLog.Field("angular_z", angularVelocity.z));
             weaponConstraint?.Forget();
             EnableHeldWeaponPhysics();
             // Physics has captured the final pose. No saved additive base may restore the
@@ -34,6 +42,9 @@ namespace BarPromenade
             recoveryPoseBegun = recoveryRegrip = false;
             reaction = null;
             sweepValid = collectSweep = false;
+            collectShove = false;
+            ImpactMotion.CancelRecoveryStep();
+            ImpactMotion.ClearHandSupport();
             return true;
         }
 
@@ -46,6 +57,7 @@ namespace BarPromenade
             poseClock += seconds;
             if ((recoveryPoseBegun || State.Phase == MeleePhase.Rising) && !Ragdoll.IsRecovering)
             {
+                JournalEvent("rise_interrupted", f0: GameLog.Field("reason", "ragdoll_resumed"), f1: GameLog.Field("impact_seq", LastJournalImpactSequence));
                 // AddImpact already gave the live rising pose to physics. Build the next
                 // timeline without restoring the interrupted clip or finishing an old regrip.
                 knockdownPose?.Dispose();
@@ -57,16 +69,17 @@ namespace BarPromenade
             }
             if (!Ragdoll.IsRecovering)
             {
-                if (!Ragdoll.IsSettled) return true;
-                if (!Ragdoll.BeginRecovery(out knockdownLying)) return true;
+                if (!Ragdoll.IsSettled) return JournalRiseWait("ragdoll_unsettled");
+                if (!Ragdoll.BeginRecovery(out knockdownLying)) return JournalRiseWait("ragdoll_recovery_refused");
                 DisableHeldWeaponPhysics();
                 weaponConstraint?.Forget();
                 State.BeginRise();
+                JournalEvent("rise_started", f0: GameLog.Field("impact_seq", LastJournalImpactSequence));
             }
             knockdownPose ??= new CombatRecoveryPose(transform, DamageRigRoot, Body, Ragdoll, handPose, hero == null);
             if (!recoveryPoseBegun)
             {
-                if (!knockdownPose.Begin(knockdownLying)) return true;
+                if (!knockdownPose.Begin(knockdownLying)) return JournalRiseWait("recovery_pose_begin_refused");
                 recoveryPoseBegun = true;
                 knockdownPose.Present();
             }
@@ -76,7 +89,7 @@ namespace BarPromenade
             knockdownPose.Present(recoveryRegrip);
             weaponConstraint?.Apply();
             if (weaponConstraint != null && weaponConstraint.MotionBlocked)
-            { knockdownPose.RejectAdvance(seconds); return true; }
+            { knockdownPose.RejectAdvance(seconds); return JournalRiseWait("weapon_motion_blocked"); }
             if (!recoveryRegrip && knockdownPose.HandsReleased)
             {
                 // The boots already accept the weight. Regrip overlaps the last authored
@@ -89,10 +102,12 @@ namespace BarPromenade
             if (recoveryRegrip) supportGrip?.Advance(seconds);
             PresentKnockdown();
             if (weaponConstraint != null && weaponConstraint.MotionBlocked)
-            { knockdownPose.RejectAdvance(seconds); return true; }
-            if (!knockdownPose.IsComplete || !recoveryRegrip) return true;
-            if (supportGrip != null && !supportGrip.IsSupportingWeapon) return true;
-            if (!knockdownPose.HandsReleased || !knockdownPose.HasStandingClearance()) return true;
+            { knockdownPose.RejectAdvance(seconds); return JournalRiseWait("weapon_motion_blocked"); }
+            if (!knockdownPose.IsComplete) return JournalRiseWait("pose_incomplete");
+            if (!recoveryRegrip) return JournalRiseWait("regrip_not_started");
+            if (supportGrip != null && !supportGrip.IsSupportingWeapon) return JournalRiseWait("support_grip_missing");
+            if (!knockdownPose.HandsReleased) return JournalRiseWait("hands_not_released");
+            if (!knockdownPose.HasStandingClearance()) return JournalRiseWait("standing_clearance");
             FinishKnockdown();
             return true;
         }
@@ -117,6 +132,8 @@ namespace BarPromenade
 
         private void FinishKnockdown()
         {
+            JournalEvent("rise_completed", f0: GameLog.Field("impact_seq", LastJournalImpactSequence));
+            journalRiseReason = null;
             // The final standing/regripped pose stays on screen while the ordinary combat
             // owner resumes. Its normal transition starts from this pose, with the new root.
             knockdownPose.Dispose();

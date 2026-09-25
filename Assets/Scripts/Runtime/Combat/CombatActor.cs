@@ -123,32 +123,62 @@ namespace BarPromenade
             if (strikeBase == null || strikeTip == null) throw new InvalidOperationException("Crowbar needs its authored strike anchors.");
             PrepareWeaponPhysics();
             supportGrip = new CombatSupportGrip(DamageRigRoot, transform, handPose, Weapon.transform);
+            supportGrip.JournalActor = this;
             weaponConstraint = new CombatWeaponConstraint(this);
             supportGrip.SetArmClearance(weaponConstraint.IsSupportArmPathClear);
             if (hero != null) hero.SetCombatSupportGrip(this, supportGrip, weaponConstraint);
         }
 
-        private bool HasTwoHandSupport => !IsKnockedDown && (supportGrip == null || supportGrip.IsSupportingWeapon);
+        internal bool HasTwoHandSupport => !IsKnockedDown && !(ImpactMotion?.RecoveryInProgress ?? false) &&
+            (supportGrip == null || supportGrip.IsSupportingWeapon);
+        internal CombatFootwork Footwork => footwork;
+        internal CombatSupportGrip SupportGrip => supportGrip;
 
         public bool TryAttack()
         {
-            if (roundEnded || !IsAvailable || !HasTwoHandSupport || !GameInput.CanRead(GameInputContext.Gameplay) || !State.TryStartAttack()) return false;
+            int request = JournalCommand("attack_immediate");
+            if (roundEnded) return JournalCommandResult(request, "rejected", "round_ended");
+            if (!IsAvailable) return JournalCommandResult(request, "rejected", "actor_unavailable");
+            if (!GameInput.CanRead(GameInputContext.Gameplay)) return JournalCommandResult(request, "rejected", "input_gate");
+            if (CheckShoveRange(request)) return TryBeginShove(request);
+            if (!HasTwoHandSupport) return JournalCommandResult(request, "rejected", "two_hand_support");
+            if (!State.TryStartAttack()) return JournalRulesRejected(request, State.Settings.AttackCost, false);
             reaction = null;
             Present();
-            return true;
+            return JournalCommandResult(request, "started", "attack");
         }
 
         public bool RequestAttack()
         {
-            if (roundEnded || !IsAvailable || !HasTwoHandSupport || !GameInput.CanRead(GameInputContext.Gameplay)) return false;
+            int request = JournalCommand("attack");
+            if (roundEnded) return JournalCommandResult(request, "rejected", "round_ended");
+            if (!IsAvailable) return JournalCommandResult(request, "rejected", "actor_unavailable");
+            if (!GameInput.CanRead(GameInputContext.Gameplay)) return JournalCommandResult(request, "rejected", "input_gate");
+            if (CheckShoveRange(request)) return TryBeginShove(request);
+            if (!HasTwoHandSupport) return JournalCommandResult(request, "rejected", "two_hand_support");
             int previous = State.AttackSequence;
-            if (!State.RequestAttack()) return false;
+            if (!State.RequestAttack()) return JournalRulesRejected(request, State.Settings.AttackCost, true);
             if (previous != State.AttackSequence) reaction = null;
             Present();
-            return true;
+            return JournalCommandResult(request, previous == State.AttackSequence ? "queued" : "started", "attack");
         }
 
-        public void SetBlock(bool held) => State.SetBlocking(held && !roundEnded && IsAvailable && HasTwoHandSupport);
+        public void SetBlock(bool held)
+        {
+            string reason = !held ? "released" : roundEnded ? "round_ended" : !IsAvailable ? "actor_unavailable" :
+                !HasTwoHandSupport ? "two_hand_support" : "guard";
+            bool allowed = reason == "guard";
+            bool changed = held != journalBlockHeld || allowed != journalBlockAllowed || reason != journalBlockReason;
+            int request = changed ? JournalCommand("block") : 0;
+            State.SetBlocking(allowed);
+            if (changed)
+            {
+                string result = !held ? "released" : !allowed || State.IsDefeated || State.IsKnockedDown ? "rejected" :
+                    State.IsBlocking ? "started" : "queued";
+                JournalCommandResult(request, result, allowed && (State.IsDefeated || State.IsKnockedDown) ? "rules_rejected" : reason, trackAction: false);
+                journalBlockHeld = held; journalBlockAllowed = allowed; journalBlockReason = reason;
+            }
+        }
 
         public void Step(float seconds)
         {
@@ -162,12 +192,15 @@ namespace BarPromenade
             {
                 float step = (float)Math.Min(CombatTestRoot.SimulationStep, remaining);
                 standaloneContacts.Clear();
+                standaloneShoves.Clear();
                 AdvanceSimulation(step);
                 Present();
                 CaptureContactPose();
                 contactTarget?.CaptureContactPose();
                 CollectContacts(standaloneContacts);
+                CollectShoveContacts(standaloneShoves);
                 foreach (Contact contact in standaloneContacts) contact.Apply();
+                foreach (ShoveContact contact in standaloneShoves) contact.Apply();
                 remaining -= step;
             }
             Present();
@@ -176,6 +209,7 @@ namespace BarPromenade
         internal void AdvanceSimulation(float seconds)
         {
             collectSweep = false;
+            collectShove = false;
             if (AdvanceKnockdown(seconds)) return;
             if (State.IsDefeated) { AdvanceDefeat(seconds); return; }
             if (!IsAvailable)
@@ -184,12 +218,23 @@ namespace BarPromenade
                 ReleasePresentation(); return;
             }
             AdvanceVisualClock(seconds);
-            if (AdvanceImpactMotion(seconds)) return;
+            AdvanceImpactMotion(seconds);
+            if (State.Phase == MeleePhase.Windup && InShoveRange && !TryBeginShove()) State.CancelAction();
             int sequence = State.AttackSequence;
+            float shoveFrom = State.ShoveElapsed;
+            bool wasShoving = State.IsShoving;
             float from = State.AttackElapsed;
             MeleePhase previousPhase = State.Phase;
             float previousStep = State.StepTravelProgress;
             MeleeAdvanceResult elapsed = State.Advance(seconds);
+            if (sequence != State.AttackSequence && journalQueuedRequest != 0)
+            {
+                journalActionRequest = journalQueuedRequest; journalQueuedRequest = 0;
+                JournalEvent("buffer_started", action: State.AttackSequence, request: journalActionRequest,
+                    f0: GameLog.Field("phase", (int)State.Phase));
+            }
+            collectShove = wasShoving && shoveFrom < State.Settings.ShoveContactSeconds &&
+                State.ShoveElapsed >= State.Settings.ShoveContactSeconds;
             // A queued step begins inside this advance; give it its clip and its first travel.
             if (State.Phase == MeleePhase.Step && (previousPhase != MeleePhase.Step || sequence != State.AttackSequence))
             {
@@ -213,6 +258,7 @@ namespace BarPromenade
             }
             else sweepValid = false;
             footwork?.Advance(seconds, State);
+            CompleteImpactRecoveryStep(seconds);
         }
 
         private MeleeHitResult Receive(CombatActor source, bool front, int sequence, Vector3 point, Vector3 normal, Vector3 direction,
@@ -354,7 +400,8 @@ namespace BarPromenade
             AnimationClip chosen = stepping ? (stepBlocked ? ready : stepClip) : State.IsDefeated ? defeat : State.Phase == MeleePhase.GuardBroken ? guardBreak : stagger ? hit :
                 reaction != null ? reaction : State.IsCharging ? Current.Charge : State.IsAttacking ? ReleaseClip : roundEnded ? rest : State.IsBlocking ? block : ready;
             supportGrip?.SetTarget(chosen == block || chosen == guardImpact,
-                chosen != rest && chosen != hit && chosen != guardBreak && !State.IsDefeated);
+                chosen != rest && chosen != hit && chosen != guardBreak && !State.IsDefeated && !State.IsShoving);
+            PresentShovePose();
             float progress = stagger ?
                 (State.IsDefeated ? Mathf.Clamp01(defeatClock / defeat.length) : State.PhaseProgress) :
                 Mathf.Repeat(poseClock, chosen.length) / chosen.length;
@@ -412,6 +459,8 @@ namespace BarPromenade
                 hero.ReapplyLatePresentationPose();
                 hero.RememberOwnedRecoveryPose(this, poseClock);
             }
+            footwork?.CapturePresentedContacts();
+            supportGrip?.CapturePresentedBalanceContact();
         }
 
         private void SampleNpcAction(AnimationClip chosen, float progress)
@@ -426,6 +475,12 @@ namespace BarPromenade
 
         public void ResetActor(Vector3 position, Vector3 facing)
         {
+            journalActionRequest = journalQueuedRequest = 0;
+            LastJournalImpactSequence = 0;
+            journalRiseReason = journalFallReason = journalBlockReason = null;
+            journalBlockHeld = journalBlockAllowed = journalMovementBlocked = false;
+            journalContactRejectedSequence = -1; journalContactRejectedReason = null;
+            journalSaturatedBuffers = 0u;
             ResetKnockdown();
             Ragdoll?.Cancel();
             ReturnWeaponToRightHand();
@@ -433,6 +488,7 @@ namespace BarPromenade
             ReleasePresentation();
             ResetDefeat();
             ResetDamage();
+            ResetShove();
             supportGrip?.Reset();
             weaponConstraint?.Reset();
             if (hero != null) hero.SetCombatSupportGrip(this, supportGrip, weaponConstraint);
@@ -479,6 +535,8 @@ namespace BarPromenade
 
         private void OnDisable()
         {
+            if (State.IsShoving) State.CancelAction();
+            ResetShove();
             State.CancelCharge();
             ResetKnockdown();
             Ragdoll?.Cancel();

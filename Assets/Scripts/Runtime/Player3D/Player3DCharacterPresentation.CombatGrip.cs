@@ -35,7 +35,8 @@ namespace BarPromenade
                 (!IsClipActive || OwnsClip(combatGripOwner)))
             {
                 combatWeapon?.Apply();
-                if (combatWeapon == null || !combatWeapon.MotionBlocked) combatGrip?.Apply();
+                if (combatWeapon == null || !combatWeapon.MotionBlocked ||
+                    (combatGrip != null && (combatGrip.IsShoving || combatGrip.IsBalanceReaching))) combatGrip?.Apply();
                 combatWeapon?.CommitPresentedPose(combatGrip);
             }
         }

@@ -41,9 +41,10 @@ namespace BarPromenade
             maximumRequestedSpeed = Mathf.Max(maximumRequestedSpeed, Player.Motor.PlanarVelocity.magnitude);
         }
 
-        private void OnApplicationQuit() => WriteMovementSummary();
+        private void OnApplicationQuit() { CloseDuelJournal("quit"); WriteMovementSummary(); }
         private void OnDestroy()
         {
+            CloseDuelJournal("unload");
             ReleaseDamageEffects();
             if (CameraFollow != null) CameraFollow.ClearTargetLock(this);
             if (Player.Motor != null) Player.Motor.ClearMovementTarget(this);

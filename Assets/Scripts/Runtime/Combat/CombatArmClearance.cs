@@ -9,6 +9,7 @@ namespace BarPromenade
     internal sealed class CombatArmClearance : IDisposable
     {
         private const float AllowedOverlap = .004f;
+        private readonly CombatActor actor;
         private readonly Transform upper, forearm;
         private readonly Collider forearmShape;
         private readonly Collider[] core, upperCore;
@@ -19,6 +20,7 @@ namespace BarPromenade
         {
             if (actor == null || actor.Ragdoll == null || actor.Ragdoll.PhysicsController == null)
                 throw new ArgumentException("Arm clearance requires the actor's anatomical rig.", nameof(actor));
+            this.actor = actor;
             this.upper = upper != null ? upper : throw new ArgumentNullException(nameof(upper));
             this.forearm = forearm != null ? forearm : throw new ArgumentNullException(nameof(forearm));
             var body = new List<Collider>(4);
@@ -82,9 +84,13 @@ namespace BarPromenade
                 Quaternion rotation = axis.sqrMagnitude > .000001f
                     ? Quaternion.FromToRotation(Vector3.up, axis.normalized) : Quaternion.identity;
                 foreach (Collider body in core)
-                    if (body != null && Physics.ComputePenetration(probe, (start + end) * .5f, rotation,
+                {
+                    if (body == null) continue;
+                    actor.JournalPhysicsQuery();
+                    if (Physics.ComputePenetration(probe, (start + end) * .5f, rotation,
                         body, body.transform.position, body.transform.rotation, out _, out float depth) && depth > .00001f)
                         return false;
+                }
                 return true;
             }
         }
@@ -92,6 +98,7 @@ namespace BarPromenade
         private bool Intersects(Collider arm, Vector3 position, Quaternion rotation, Collider body)
         {
             if (body == null) return false;
+            actor.JournalPhysicsQuery();
             if (!Physics.ComputePenetration(arm, position, rotation, body, body.transform.position,
                 body.transform.rotation, out _, out float depth) || depth <= AllowedOverlap) return false;
             LastBlockingShape = body.name;

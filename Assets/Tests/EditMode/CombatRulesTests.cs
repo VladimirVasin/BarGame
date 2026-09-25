@@ -1405,6 +1405,142 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(actor.AttackDamage, Is.EqualTo(S.Damage));
         }
 
+        [TestCase(MeleePhase.Ready)]
+        [TestCase(MeleePhase.Charging)]
+        [TestCase(MeleePhase.Windup)]
+        public void CloseShoveReplacesOnlyAnUncommittedSwingAndNeverOpensAWeaponWindow(MeleePhase source)
+        {
+            var actor = new MeleeCombatant();
+            if (source == MeleePhase.Charging)
+            {
+                actor.RequestCharge();
+                actor.Advance(S.ChargeSeconds * .5f);
+            }
+            else if (source == MeleePhase.Windup) actor.TryStartAttack();
+            else actor.SetBlocking(true);
+            float stamina = actor.Stamina;
+            int sequence = actor.AttackSequence;
+
+            Assert.That(actor.TryStartShove(), Is.True);
+            Assert.That(actor.IsShoving, Is.True);
+            Assert.That(actor.IsAttacking || actor.IsCharging || actor.IsBlocking, Is.False);
+            Assert.That(actor.Charge01, Is.Zero);
+            Assert.That(actor.AttackPower, Is.Zero);
+            Assert.That(actor.AttackSequence, Is.EqualTo(unchecked(sequence + 1)));
+            Assert.That(actor.Stamina, Is.EqualTo(stamina - S.ShoveCost).Within(Eps));
+            Assert.That(actor.TryStartShove(), Is.False, "Holding contact must not pay or start twice.");
+            Assert.That(actor.ReleaseCharge(), Is.False);
+
+            MeleeAdvanceResult contact = actor.Advance(S.ShoveContactSeconds);
+            Assert.That(contact.HasActiveWindow, Is.False);
+            Assert.That(actor.ShoveElapsed, Is.EqualTo(S.ShoveContactSeconds).Within(Eps));
+            Assert.That(actor.TryRegisterHit(1, actor.AttackSequence), Is.False);
+            Assert.That(actor.Health, Is.EqualTo(S.MaxHealth));
+            actor.Advance(S.ShoveDurationSeconds - S.ShoveContactSeconds - .05f);
+            Assert.That(actor.RequestAttack() || actor.RequestCharge() || actor.RequestStep(), Is.False,
+                "Even the last buffer window of a shove remains committed.");
+            Assert.That(actor.BufferedAction, Is.EqualTo(MeleeBufferedAction.None));
+            Assert.That(actor.Advance(.06f).HasActiveWindow, Is.False);
+            Assert.That(actor.Phase, Is.EqualTo(MeleePhase.Ready));
+            Assert.That(actor.ShoveProgress, Is.EqualTo(1f));
+            Assert.That(actor.Stamina, Is.EqualTo(stamina - S.ShoveCost).Within(Eps));
+
+            Assert.That(actor.TryStartAttack(), Is.True);
+            Assert.That(actor.ShoveElapsed, Is.Zero, "A later action cannot replay the old contact.");
+            actor.Advance(S.WindupSeconds + .01f);
+            Assert.That(actor.TryStartShove(), Is.False, "An already live weapon arc cannot turn into a shove.");
+        }
+
+        [TestCase("cancel")]
+        [TestCase("damage")]
+        [TestCase("knockdown")]
+        [TestCase("reset")]
+        public void InterruptedShoveCannotRetainAContactOrReturnAfterRecovery(string interruption)
+        {
+            var actor = new MeleeCombatant();
+            actor.TryStartShove();
+            actor.Advance(S.ShoveContactSeconds * .5f);
+            switch (interruption)
+            {
+                case "cancel": actor.CancelAction(); break;
+                case "damage": actor.ReceiveHit(S.Damage, S.BlockCost, false); break;
+                case "knockdown": actor.BeginKnockdown(); break;
+                case "reset": actor.Reset(); break;
+            }
+            Assert.That(actor.IsShoving, Is.False);
+            Assert.That(actor.ShoveElapsed, Is.Zero);
+            Assert.That(actor.Advance(2f).HasActiveWindow, Is.False);
+            Assert.That(actor.IsShoving, Is.False);
+            Assert.That(actor.ShoveElapsed, Is.Zero);
+        }
+
+        [Test]
+        public void ShoveContactClockSurvivesAHitchAndUnaffordableShovePreservesCharge()
+        {
+            var fine = new MeleeCombatant();
+            var hitch = new MeleeCombatant();
+            fine.TryStartShove();
+            hitch.TryStartShove();
+            for (int i = 0; i < 100; i++) Assert.That(fine.Advance(.01f).HasActiveWindow, Is.False);
+            Assert.That(hitch.Advance(1f).HasActiveWindow, Is.False);
+            Assert.That(hitch.Phase, Is.EqualTo(MeleePhase.Ready));
+            Assert.That(hitch.ShoveElapsed, Is.EqualTo(S.ShoveDurationSeconds).Within(Eps),
+                "Runtime needs the terminal contact sample even after a whole-action hitch.");
+            Assert.That(hitch.ShoveElapsed, Is.EqualTo(fine.ShoveElapsed).Within(Eps));
+            Assert.That(hitch.Stamina, Is.EqualTo(fine.Stamina).Within(Eps));
+
+            var exhausted = new MeleeCombatant(new MeleeCombatSettings(maxStamina: S.ChargeStaminaCost));
+            exhausted.RequestCharge();
+            exhausted.Advance(S.ChargeSeconds);
+            int sequence = exhausted.AttackSequence;
+            Assert.That(exhausted.TryStartShove(), Is.False);
+            Assert.That(exhausted.IsCharging, Is.True);
+            Assert.That(exhausted.Charge01, Is.EqualTo(1f).Within(Eps));
+            Assert.That(exhausted.AttackSequence, Is.EqualTo(sequence));
+        }
+
+        [TestCase(MeleePhase.Ready)]
+        [TestCase(MeleePhase.Charging)]
+        [TestCase(MeleePhase.Windup)]
+        [TestCase(MeleePhase.Shoving)]
+        public void ReceivedShoveInterruptsIntentWithoutHealthOrStaminaDamage(MeleePhase source)
+        {
+            var actor = new MeleeCombatant();
+            switch (source)
+            {
+                case MeleePhase.Ready: actor.SetBlocking(true); break;
+                case MeleePhase.Charging: actor.RequestCharge(); actor.Advance(.2f); break;
+                case MeleePhase.Windup: actor.TryStartAttack(); break;
+                case MeleePhase.Shoving: actor.TryStartShove(); actor.Advance(.04f); break;
+            }
+            float stamina = actor.Stamina;
+            int sequence = actor.AttackSequence;
+            Assert.That(actor.ReceiveShove(), Is.True);
+            Assert.That(actor.Phase, Is.EqualTo(MeleePhase.Stagger));
+            Assert.That(actor.Health, Is.EqualTo(S.MaxHealth));
+            Assert.That(actor.Stamina, Is.EqualTo(stamina));
+            Assert.That(actor.IsBlocking || actor.IsCharging || actor.IsShoving, Is.False);
+            Assert.That(actor.ShoveElapsed, Is.Zero);
+            Assert.That(actor.BufferedAction, Is.EqualTo(MeleeBufferedAction.None));
+            Assert.That(actor.TryRegisterHit(1, sequence), Is.False);
+            Assert.That(actor.ActionRemaining, Is.EqualTo(.16f).Within(Eps));
+            actor.Advance(.17f);
+            Assert.That(actor.Phase, Is.EqualTo(MeleePhase.Ready));
+
+            actor.ReceiveHit(S.Damage, S.BlockCost, false);
+            float previousStun = actor.ActionRemaining;
+            Assert.That(actor.ReceiveShove(), Is.True);
+            Assert.That(actor.ActionRemaining, Is.EqualTo(previousStun).Within(Eps),
+                "A shove cannot shorten a previous weapon stagger.");
+            actor.BeginKnockdown();
+            Assert.That(actor.ReceiveShove(), Is.False);
+            actor.BeginRise();
+            Assert.That(actor.ReceiveShove(), Is.False);
+            actor.Reset();
+            actor.ReceiveHit(S.MaxHealth, S.BlockCost, false);
+            Assert.That(actor.ReceiveShove(), Is.False);
+        }
+
         [TestCase(0f)]
         [TestCase(-1f)]
         [TestCase(float.NaN)]
@@ -1437,6 +1573,9 @@ namespace BarPromenade.Tests.EditMode
             Assert.Throws<ArgumentOutOfRangeException>(() => new MeleeCombatSettings(guardBreakDamageScale: value));
             Assert.Throws<ArgumentOutOfRangeException>(() => new MeleeCombatSettings(chainWindupSeconds: value));
             Assert.Throws<ArgumentOutOfRangeException>(() => new MeleeCombatSettings(stepAttackGraceSeconds: value));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new MeleeCombatSettings(shoveContactSeconds: value));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new MeleeCombatSettings(shoveDurationSeconds: value));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new MeleeCombatSettings(shoveCost: value));
             if (value != 0f)
                 Assert.Throws<ArgumentOutOfRangeException>(() => new MeleeCombatSettings(attackCost: value));
             else Assert.That(new MeleeCombatSettings(attackCost: 0f).AttackCost, Is.Zero, "Only the swing may be free.");
@@ -1446,6 +1585,7 @@ namespace BarPromenade.Tests.EditMode
         public void FrameTableInvariantsAreEnforcedByTheConstructor()
         {
             Assert.That(MeleeCombatSettings.Crowbar, Is.Not.Null);
+            Assert.Throws<ArgumentOutOfRangeException>(() => new MeleeCombatSettings(shoveDurationSeconds: S.ShoveContactSeconds));
             Assert.Throws<ArgumentOutOfRangeException>(() => new MeleeCombatSettings(staggerSeconds: S.HitRecoverySeconds),
                 "A landed hit must leave the attacker free before the victim.");
             Assert.Throws<ArgumentOutOfRangeException>(() => new MeleeCombatSettings(counterHitStaggerBonus: .05f),

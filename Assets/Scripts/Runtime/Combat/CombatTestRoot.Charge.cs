@@ -21,6 +21,7 @@ namespace BarPromenade
                 return false;
             }
             bool held = GameInput.IsHeld(GameInputAction.MeleeAttack, GameInputContext.Gameplay);
+            JournalAttackInput(held);
             if (inputSuspended)
             {
                 if (attackInputOwned && (releasedWhileSuspended || !held))
@@ -59,6 +60,9 @@ namespace BarPromenade
                 if (!requireAttackRelease && !PointerOverToolbar() &&
                     GameInput.WasPressed(GameInputAction.MeleeAttack, GameInputContext.Gameplay))
                     attackInputOwned = Hero.RequestCharge();
+                else if (duelJournal != null && GameInput.WasPressed(GameInputAction.MeleeAttack, GameInputContext.Gameplay))
+                    duelJournal.Record("input_rejected", actor: 1,
+                        f0: GameLog.Field("reason", requireAttackRelease ? "AwaitingRelease" : "PointerOverToolbar"));
                 if (attackInputOwned && !held)
                 {
                     Hero.ReleaseCharge();
@@ -76,6 +80,7 @@ namespace BarPromenade
 
         private void OnApplicationFocus(bool focused)
         {
+            JournalApplicationFocus(focused);
             if (focused) return;
             if (Hero != null) Hero.CancelCharge();
             attackInputOwned = false;
@@ -84,6 +89,7 @@ namespace BarPromenade
 
         private void OnDisable()
         {
+            CloseDuelJournal("disabled");
             ResetOpponentMovement();
             if (IsInitialized) SetDuelFrozen(false);
             if (Hero != null) Hero.CancelCharge();

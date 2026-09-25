@@ -3,21 +3,31 @@
 Newest outcomes/checks first. Archive whole dates at budget: [policy](README.md).
 Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-2026-08.md).
 
-## 2026-09-25 — Village snow, inspections, lodge and cold loading
+## 2026-09-26 — Provisional recovery and duel diagnostics
 
-- Deep snow: supported forward/backward high steps, no sprint; tracks/clearing
-  restore motion, ahead probes avoid self-stamp oscillation. Cold arms/effort
-  torso/same rig/foot phase/post-IK sound; §6 user exception.
+- Default keeps the existing impact response and bounded rescue steps;
+  extra flywheel/crouch/hand brace remain diagnostic comparison options.
+  Fixed-input, AI-off shove restores grip/control without HP/blood.
+  Check: `Range_MinimumShoveRecoveryComparison`.
+  Clip review and the user's visual acceptance remain pending.
+- Separate automatic CombatLogs: checked outer reasons/opaque Rules denials,
+  final snapshots/summary/F8 marks; bounded async queue/I/O failure handling
+  and priority cleanup (20 MiB/round, 10 closed/100 MiB).
+  Checks: `DuelJournalTests`,
+  `Range_DuelJournalRecordsReasonsWithoutChangingCombat` (logging preserves combat).
+
+## 2026-09-25 — Village, lodge, loading and combat CPU
+
+- Deep snow: forward/backward high steps, no sprint; tracks restore motion,
+  ahead probes avoid self-stamp oscillation. Cold arms/torso/rig/foot sound; §6.
   Checks: `player_snow_actions.validate_snow_actions`,
   `DeepSnow_BlocksSprintPreservesSlowdownAndRestoresMovement`,
   `AreaCaptureFixture.AlpineVillageSnowGait` (game/side frames, contacts,
   stop/backstep/exit).
-- Stove: softer/rarer settles, steady air, filtered highs before level match;
-  open hearth unchanged. Check:
+- Stove: softer/rarer settles, filtered highs, open hearth unchanged. Check:
   `InteriorSoundscapeSynthesisTests.LoopBeds_AreFiniteQuietNonSilentAndLoopSafe`.
-- Narrative: work/storage/debris determine placement; IDs/warehouse/cliff stay.
-  User waived sector quotas and road distance/visibility. Basket/sledge
-  approaches clear; eased camera/focus retains dialogue timing. Check/frames:
+- Narrative: work/storage/debris placement; user waived quotas/distance/visibility.
+  Basket/sledge clear; eased camera/focus retains dialogue timing. Check/frames:
   `AreaCaptureFixture.AlpineVillageNarrative` (clearance, RU/EN, cleanup).
   Removed obsolete object-search overloads (CS0618). Check:
   `dotnet build BarPromenade.PlayModeTests.csproj`.
@@ -41,14 +51,16 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
   Village default/day `1`/`07:40` stay. Check:
   `NewGame_SelectedLocationUsesItsNormalArrivalWithoutTheHomeOpening(SkiLodge)`;
   RU/EN picker frames: choices/Back fit.
-- Cold loading: lazy mesh/interpolation heights invalidate on plan/brook change.
-  Snow samples retained cells; indexed brook wet exclusion, early path rejection,
-  reused edges/tapers and bounded road groups preserve geometry/detail.
+- Cold loading: lazy heights invalidate on plan/brook change; retained snow cells,
+  indexed brook exclusion, reused edges/tapers and road groups preserve detail.
   UV assertions follow used material indices, excluding orphan vertices. Checks:
   `AlpineVillageTests.TerrainMesh_BuildsTheRidgeAndTheCablewayBrink`,
   `SnowField_SparseSamplingPreservesDenseGeometry`,
   `AlpineVillageBrookTests.ChannelIndex_PreservesLinearDistanceAndBedDepth`,
   `AlpineVillageTerrainCacheTests`, `check-docs.py`.
+- Combat: pose/query reuse, catch-up cap, charge cancel; fast strong shove, no
+  HP/blood. Foot balance. Checks: `CombatPerformancePlayModeTests`,
+  `Range_CloseContactUsesFastShove`; `Range_BalanceRecoveryUsesActualSupports`: wall fails.
 
 ## 2026-09-24 — Village surfaces, weather, lodge and narrative
 

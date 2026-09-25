@@ -16,27 +16,47 @@ namespace BarPromenade
 
         public bool RequestCharge()
         {
-            if (roundEnded || !IsAvailable || !HasTwoHandSupport || !GameInput.CanRead(GameInputContext.Gameplay)) return false;
-            if (!State.RequestCharge()) return false;
+            int request = JournalCommand("charge");
+            if (roundEnded) return JournalCommandResult(request, "rejected", "round_ended");
+            if (!IsAvailable) return JournalCommandResult(request, "rejected", "actor_unavailable");
+            if (!GameInput.CanRead(GameInputContext.Gameplay)) return JournalCommandResult(request, "rejected", "input_gate");
+            if (CheckShoveRange(request)) return TryBeginShove(request);
+            if (!HasTwoHandSupport) return JournalCommandResult(request, "rejected", "two_hand_support");
+            if (!State.RequestCharge()) return JournalRulesRejected(request, State.Settings.AttackCost, true);
             if (State.IsCharging) { reaction = null; sweepValid = false; }
             Present();
-            return true;
+            return JournalCommandResult(request, State.IsCharging ? "started" : "queued", "charge");
         }
 
         public bool ReleaseCharge()
         {
-            if (roundEnded || !IsAvailable || !HasTwoHandSupport || !GameInput.CanRead(GameInputContext.Gameplay) || !State.ReleaseCharge()) return false;
+            int request = JournalCommand("charge_release");
+            if (roundEnded) return JournalCommandResult(request, "rejected", "round_ended");
+            if (!IsAvailable) return JournalCommandResult(request, "rejected", "actor_unavailable");
+            if (!GameInput.CanRead(GameInputContext.Gameplay)) return JournalCommandResult(request, "rejected", "input_gate");
+            if (State.IsCharging && CheckShoveRange(request)) return TryBeginShove(request);
+            if (!HasTwoHandSupport)
+            {
+                // The input owner consumes the button release even when the
+                // supporting hand was displaced. Retire its held/queued charge
+                // too, so neither fighter remains charged without a way to fire.
+                CancelCharge();
+                return JournalCommandResult(request, "rejected", "two_hand_support_cancelled_charge");
+            }
+            if (!State.ReleaseCharge()) return JournalCommandResult(request, "rejected", "no_held_or_queued_charge");
             if (State.IsAttacking) { reaction = null; sweepValid = false; }
             Present();
-            return true;
+            return JournalCommandResult(request, State.IsAttacking ? "started" : "queued", "charge_release");
         }
 
         public bool CancelCharge()
         {
-            if (!State.CancelCharge()) return false;
+            int request = JournalCommand("charge_cancel");
+            if (!State.CancelCharge()) return JournalCommandResult(request, "rejected", "no_held_or_queued_charge");
+            journalQueuedRequest = 0;
             sweepValid = false;
             if (isActiveAndEnabled && gameObject.activeInHierarchy) Present();
-            return true;
+            return JournalCommandResult(request, "cancelled", "charge", trackAction: false);
         }
 
         private void LoadSwingClips(bool forNpc)

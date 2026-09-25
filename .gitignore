@@ -67,6 +67,7 @@ Desktop.ini
 
 # Session diagnostics
 /debug*.log
+/CombatLogs/
 
 # Local art collection and loading-screen reference copies
 /Art/

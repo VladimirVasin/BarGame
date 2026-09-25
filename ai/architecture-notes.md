@@ -129,33 +129,35 @@
   Shared plan/sampler/bounds/metres/collider, `48 m` buckets;
   §6/§12/art §10g/§16/§21/nine checks.
 
-- **Accepted — 2026-09-21, impact balance and recoverable knockdown:**
-  `CombatTest`: impulse/root/bone/catch-step/left-release clock.
-  Both rigs rise→Ready; soles gate blends/regrip; one left owner.
-  Post-left body/floor/wall gates keep right attachment; 8-segment
-  `CombatWeaponGeometry`, all modes. Held mass→forearm; release restores
-  mass/inertia; hand ignores expire. Drop sweeps disabled opponent anatomy
-  beyond capsule. Forearm pronation/live elbow rebase, no bone writes:
-  combat -5..150/side±8°, later -5..120. Separate defeat; pause/hit-stop freeze;
-  R/unload clears. Banks unpublished/Unity pending.
+- **Accepted — 2026-09-25, clinch shove:**
+  User: both swap close swings for faster, stronger kinetic shoves.
+- **Accepted — 2026-09-26, minimum combat recovery:**
+  User: impact +≤2 real catch steps; extra flywheel/crouch/hand brace diagnostic
+  opt-in only. One shove/AI off/same input; ≤2 implementation attempts;
+  visual acceptance before expansion. Clock/pause/hit-stop/R/unload;
+  defeat separate, rise→Ready/regrip. L owner; post-left R body/floor/wall
+  gates, 8-segment `CombatWeaponGeometry`, all modes. Held mass→forearm;
+  release→mass/inertia, hand ignores expire. Drop sweep disabled anatomy past
+  capsule. Pronation/live elbow, no bone writes: -5..150/side±8°, later -5..120.
+  Banks/QA pending.
 - **Accepted — 2026-09-21, anatomical combat damage:**
-  Six posed bone-local zones, first/sequence; head x2 (50/80, cap .99MaxHP),
-  rear±45° defeats; torso1/rear1.25/arms.5/legs.75. Guard/parry first;
-  mutual frozen zone/direction/power; one HP/ragdoll/R.
+  Six posed bone-local zones, first/sequence; head×2 (50/80, cap .99MaxHP),
+  rear±45° defeats; torso1/rear1.25/arms.5/legs.75; guard/parry first.
+  Mutual frozen zone/direction/power, one HP/ragdoll/R.
 - **Accepted — 2026-09-21, combat inertia:**
-  C1 pose/contact; duel-clock travel/yaw table: recovery
-  .15→.75, stun .35, arc 0; AI plants charge/windup, hero .2.
+  C1 pose/contact; duel-clock travel/yaw: recovery .15→.75, stun .35, arc 0;
+  AI plants charge/windup, hero .2.
 - **Accepted — 2026-09-21, frightened combat stance:**
-  .42/.28m; feet settle in Windup. Afraid/unskilled hero, calmer NPC.
-  Duel-clock breath/tremor/seen-nearby-tell flinch.
+  .42/.28m, feet settle in Windup; afraid/unskilled hero, calmer NPC.
+  Duel-clock breath/tremor/flinch at seen nearby tell.
 - **Accepted — 2026-09-21, step/Hold:**
-  .8m/.36+.21s/15; smoothstep travel/pose clock/footfalls.
-  Hold freezes breath; exit regen delay.
+  .8m/.36+.21s/15, smoothstep travel/pose/footfalls clock.
+  Hold freezes breath; exit delays regen.
 - **Accepted — 2026-09-20, two-hand combat hold:**
-  `CombatReady`/`CombatBlock`/attacks/recoils support left;
-  `CombatHit`/`CombatGuardBreak`/`CombatDefeat` release. Low Ready/high Block,
-  opposed left .16→.42m/breath4s; blend/injury; NPC right Rest.
-  Bounded subdivided L fallback in authoring/runtime; same gates.
+  `Combat{Ready,Block}`/attacks/recoils: left support;
+  `Combat{Hit,GuardBreak,Defeat}`: release. Low Ready/high Block,
+  opposed left .16→.42m/breath4s, blend/injury; NPC right Rest.
+  Bounded L subdivision fallback, authoring/runtime; same gates.
 - **Accepted — 2026-09-21, victory:** Hero swing→normal walk; combat off until R.
 - **Accepted — 2026-09-21, brawl v2:**
   Free hits; guard20/35/charge20; regen30/s/.6s in stuns/own spends.
@@ -166,23 +168,22 @@
   Equal dmg/time/cost. Both Attack upper(t+q*.18*(1-smooth(t/.45))), lower(t),
   charge upper(.18q); q power/duration kept; Forehand Light copy.
   Backhand DAG: R elbow/hand roll; .56 reach≥.95, free elbow;
-  Both recoils invert .56→Ready0/.48s; C1/no dwell (WIP).
-  Ordinary: 45° shoulder search; same wrist/core/speed/clearance gates.
+  Both recoils: .56→Ready0/.48s inverse/C1/no dwell (WIP).
+  Ordinary: 45° shoulder search, same wrist/core/speed/clearance gates.
 - **Accepted architecture exception — 2026-09-20, combat injury:**
   HP/directional pose/wounds/pools; dry block/miss; clear R/unload;
   visual, ragdoll wins.
 - **Accepted — 2026-09-21, combat aftermath:**
   Thud; blood lobes grow 10s, stay.
-- **Accepted architecture exception — 2026-09-21, polygon taunt:** `E` over
-  a settled terminal-defeat body reuses Home's first-person toilet
-  view/timeline/stream/residue via `IHomeToiletViewHost`. Guided walk to a
-  body-relative dock; aim solved onto body, bone/floor marks until R
-  (`HomeUrineResidue` scope); crowbar left and back. Silent §21-exempt prompt,
+- **Accepted architecture exception — 2026-09-21, polygon taunt:**
+  E/settled defeated body: Home toilet view/timeline/stream/residue via
+  `IHomeToiletViewHost`. Guided body-dock walk/aim; bone/floor marks until R
+  (`HomeUrineResidue`), crowbar left/return. Silent §21-exempt prompt,
   no speech/reaction/reward; sixth first-person view.
 - **Accepted architecture exception — 2026-09-19, isolated combat test:**
-  §6/§16.15/art§15a: `CombatTest`, no story/speech; one hero/input;
-  mutual hits/vulnerable steps/fall/R/shoulder-wall lock. W/S move,
-  A/D strafe; opponent last.
+  §6/§16.15/art§15a: `CombatTest`, no story/speech, one hero/input;
+  mutual hits/vulnerable steps/fall/R/shoulder-wall lock; W/S move,
+  A/D strafe, opponent last.
 
 - **Accepted — 2026-09-16, street pool is the default NPC catalog:**
   User: default-only, new models join immediately. `DefaultNpcPopulation`:
@@ -3946,14 +3947,15 @@
   `GameTimeState.Advance` also returns the actually elapsed
   game minutes so `GameSessionState` advances clock and needs from one delta;
   any owner that sets `timeScale` to zero naturally freezes both.
-- **Accepted — Bounded structured diagnostics:** Runtime support logging uses
-  one fail-safe UTF-8 NDJSON stream with a versioned envelope, monotonic
-  sequence, session/scene/seed context and explicit transition
-  correlation IDs. Only state boundaries and results are instrumented;
-  per-frame simulation and ordinary Unity log messages are excluded. Editor
-  and development runs default to verbose, release players to basic, and
-  batch/command-line tests to off. Files rotate at 5 MiB with three retained
-  archives, while `F8` writes and flushes a manual state snapshot.
+- **Accepted — Bounded structured diagnostics:**
+  Fail-safe UTF-8 NDJSON/version/monotonic sequence/session-scene-seed/transition
+  IDs. State boundaries/results only, no frames/ordinary Unity logs.
+  Editor/dev verbose, release basic, batch tests off. Rotate 5 MiB/3 archives;
+  F8 snapshot/flush.
+- **Accepted — 2026-09-26, separate duel journal:**
+  `DuelJournal`: CombatTest manual on/batch off, CLI override; round
+  NDJSON/summary, F8 mark/Shift+F8 folder. Typed reasons/20 Hz final state/frame
+  CPU; bounded async buffer, limits/priority pruning: `ai/debug-log.md`.
 - **Accepted — Separate classic door transition:** Building doors first run
   the shared source-scene `DoorUseEnter/Loop/Exit` action from an explicit
   grounded dock. Only its terminal neutral completion reserves the

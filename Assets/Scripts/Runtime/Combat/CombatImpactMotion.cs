@@ -6,16 +6,19 @@ namespace BarPromenade
 {
     /// <summary>One duel-clock momentum and support response for both rigs. Applying a pose is read-only.
     /// Momentum is in N s, velocities in metres/radians per second; HP never scales this response.</summary>
-    public sealed class CombatImpactMotion
+    public sealed partial class CombatImpactMotion
     {
         public const float BodyMass = 70f;
+        // Retain the rejected prototype for a controlled visual comparison.
+        // Configure only on an idle/reset actor; gameplay uses the minimal response.
+        internal bool ExperimentalRecovery { get; set; }
+        internal int MaximumRecoverySteps => ExperimentalRecovery ? 3 : 2;
         private readonly Transform[] bones;
         private readonly Vector3[] basePositions, localRotation, localVelocity;
         private readonly Quaternion[] baseRotations;
         private bool applied;
         private Vector3 velocity, rotation, angularVelocity;
         private float age = 10f, overload, drop, dropVelocity, legWeakness;
-        private float supportReach = .62f;
         private int struckBone = 2;
         public Vector3 Velocity => velocity;
         public Vector3 AngularVelocity => angularVelocity;
@@ -23,8 +26,9 @@ namespace BarPromenade
         public Vector3 CaptureOffset { get; private set; }
         public float BalanceLoad { get; private set; }
         public float Age => age;
-        public bool WantsKnockdown => overload >= .09f;
-        public bool IsActive => age < .9f || velocity.sqrMagnitude > .0025f || rotation.sqrMagnitude > .0001f;
+        public bool WantsKnockdown { get; private set; }
+        public bool IsActive => age < .9f || velocity.sqrMagnitude > .0025f || rotation.sqrMagnitude > .0001f ||
+            recoveryStepActive || (ExperimentalRecovery && flywheelAngle.sqrMagnitude > .0004f);
         public float ReactionAmount => Mathf.Clamp01(Mathf.Max(rotation.magnitude * 2f, velocity.magnitude / 2f));
         public MeleeBodyRegion StruckRegion { get; private set; }
         public CombatImpact LastImpact { get; private set; }
@@ -32,6 +36,7 @@ namespace BarPromenade
 
         public CombatImpactMotion(Transform rig, Transform actor)
         {
+            frame = actor;
             string[] names = { "pelvis", "spine", "chest", "neck", "head", "upper_arm.L", "forearm.L",
                 "hand.L", "upper_arm.R", "forearm.R", "hand.R", "thigh.L", "shin.L", "foot.L", "thigh.R", "shin.R", "foot.R" };
             var found = new Dictionary<string, Transform>(StringComparer.Ordinal);
@@ -59,6 +64,7 @@ namespace BarPromenade
         {
             if (!Finite(impact.Impulse) || impact.Impulse.sqrMagnitude < .0001f) return;
             bool fresh = !IsActive;
+            BeginBalanceResponse(fresh, stamina01, intoxication01);
             LastImpact = impact; age = 0f;
             StruckRegion = impact.Location.Region;
             struckBone = ResponseBone(BoneIndex(impact.Part));
@@ -86,9 +92,6 @@ namespace BarPromenade
             float struckLoad = StruckRegion == MeleeBodyRegion.LeftLeg ? 1f - rightLoad : rightLoad;
             legWeakness = Mathf.Max(legWeakness, leg ? .4f + .6f * struckLoad : 0f);
             dropVelocity += leg ? -.5f - struckLoad * .9f : Mathf.Min(0f, impact.Impulse.y / BodyMass) * .25f;
-            float stance = .13f + Mathf.Abs(Vector3.Dot(across, planar.normalized)) * .5f;
-            supportReach = stance + Mathf.Lerp(.20f, .32f, Mathf.Clamp01(stamina01)) - Mathf.Clamp01(intoxication01) * .10f
-                - (transferringFoot ? .13f : 0f) - (leg ? .07f + struckLoad * .15f : 0f);
             MeasureBalance();
         }
 
@@ -101,11 +104,17 @@ namespace BarPromenade
         public Vector3 Advance(float seconds)
         {
             if (!float.IsFinite(seconds) || seconds <= 0f) return Vector3.zero;
+            // Last tick's pressure was already integrated. A moved/removed
+            // surface must be measured again before it can supply new support.
+            ClearHandSupport();
             Vector3 displacement = Vector3.zero;
             float remaining = Mathf.Min(seconds, .25f);
             while (remaining > .000001f)
             {
                 float dt = Mathf.Min(remaining, 1f / 120f); remaining -= dt; age += dt;
+                recoveryElapsed += dt;
+                recoveryStepRemaining = Mathf.Max(0f, recoveryStepRemaining - dt);
+                if (ExperimentalRecovery) AdvanceCounterBalance(dt);
                 float decay = Mathf.Exp(-4.2f * dt);
                 displacement += velocity * ((1f - decay) / 4.2f); velocity *= decay;
                 angularVelocity += (-rotation * 58f - angularVelocity * 10f) * dt;
@@ -120,17 +129,8 @@ namespace BarPromenade
                 drop = Mathf.Clamp(drop + dropVelocity * dt, -.14f, .025f);
                 legWeakness = Mathf.MoveTowards(legWeakness, 0f, dt * 1.6f);
                 MeasureBalance();
-                overload = BalanceLoad > 1f && age < .55f ? overload + dt : Mathf.Max(0f, overload - dt * 2f);
             }
             return displacement;
-        }
-
-        private void MeasureBalance()
-        {
-            // Capture point of a roughly metre-high centre of mass. The extra reach
-            // is the available emergency step, reduced by an injured/transferring leg.
-            CaptureOffset = velocity / 3.2f + Vector3.Cross(rotation, Vector3.up) * .85f;
-            BalanceLoad = CaptureOffset.magnitude / Mathf.Max(.28f, supportReach);
         }
 
         public void AcceptDisplacement(Vector3 requested, Vector3 achieved)
@@ -162,6 +162,7 @@ namespace BarPromenade
             Rotate(4, rotation * .17f);
             for (int i = 0; i < bones.Length; i++) Rotate(i,
                 AnatomicalRotation(i, localRotation[i]) * (i <= 2 ? torsoScale : 1f));
+            if (ExperimentalRecovery) ApplyCounterBalancePose();
         }
 
         private static int ResponseBone(int contactBone) => contactBone switch
@@ -201,7 +202,8 @@ namespace BarPromenade
             Restore(); velocity = rotation = angularVelocity = Vector3.zero;
             Array.Clear(localRotation, 0, localRotation.Length); Array.Clear(localVelocity, 0, localVelocity.Length);
             age = 10f; overload = drop = dropVelocity = legWeakness = BalanceLoad = 0f; CaptureOffset = Vector3.zero;
-            LastImpact = default; StruckRegion = default; supportReach = .62f; struckBone = 2;
+            LastImpact = default; StruckRegion = default; struckBone = 2;
+            ResetBalance();
         }
         private static int BoneIndex(Player3DAnatomicalPart part) => part switch
         {

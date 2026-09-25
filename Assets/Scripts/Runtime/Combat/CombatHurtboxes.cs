@@ -126,6 +126,24 @@ namespace BarPromenade
             return found;
         }
 
+        internal bool ChestSurface(Vector3 from, Vector3 direction, out Hit hit)
+        {
+            for (int i = 0; i < snapshots.Length; i++)
+            {
+                Snapshot shape = snapshots[i];
+                if (shape.Part != Player3DAnatomicalPart.Torso) continue;
+                from.y = shape.Center.y;
+                shape.Surface(from, out Vector3 point, out Vector3 normal);
+                Vector3 offset = point - shape.Center;
+                var location = MeleeHitLocation.FromLocalSurface(shape.Region,
+                    Vector3.Dot(offset, shape.Right), Vector3.Dot(offset, shape.Up), Vector3.Dot(offset, shape.Forward));
+                hit = new Hit(point, normal, direction, 0f, location, shape.Part, shape.WorldToBone.MultiplyPoint3x4(point));
+                return true;
+            }
+            hit = default;
+            return false;
+        }
+
         private static bool FirstContact(in Snapshot shape, Vector3 from, Vector3 delta, float radius, out float fraction)
         {
             float threshold = radius * radius;

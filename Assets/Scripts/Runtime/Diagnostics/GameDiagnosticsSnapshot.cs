@@ -10,7 +10,8 @@ namespace BarPromenade
     {
         public static bool TryOpenLogDirectory()
         {
-            string directory = GameLog.CurrentDirectoryPath;
+            string directory = CombatTestRoot.JournalRoot != null
+                ? CombatTestRoot.JournalRoot.JournalDirectory : GameLog.CurrentDirectoryPath;
             if (string.IsNullOrWhiteSpace(directory) ||
                 !Directory.Exists(directory))
             {
@@ -49,9 +50,10 @@ namespace BarPromenade
 
         public static bool Capture(string reason = "manual")
         {
+            bool duelMarked = CombatTestRoot.JournalRoot != null && CombatTestRoot.JournalRoot.MarkDuelProblem(reason);
             if (GameLog.Profile == GameLogProfile.Off)
             {
-                return false;
+                return duelMarked;
             }
 
             var fields = new List<GameLogField>(35)

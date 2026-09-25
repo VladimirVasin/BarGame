@@ -2,7 +2,7 @@ using UnityEngine;
 
 namespace BarPromenade
 {
-    public enum CombatOpponentIntent { Approach, Attack, Guard, Recover, Step, Feint }
+    public enum CombatOpponentIntent { Approach, Attack, Guard, Recover, Step, Feint, Shove }
     public enum CombatOpponentMood { Probe, Press }
 
     /// <summary>The sparring partner: honest perception, a seeded schedule per round, and a
@@ -21,6 +21,7 @@ namespace BarPromenade
         private float feintSeconds, retreatSeconds, strafeSign, strafeSeconds, driftAngle, driftSeconds;
         private bool guardThisAttack, lateGuard, stepThisAttack, stepBackThisAttack, tellAnswered;
         private bool opponentWasAttacking, retreatedOnce, corneredAnimal, feinting, postFeintLight, punishing, queueBackhand, queueBackStep;
+        private bool opponentMakingSpace;
         private MeleePhase previousOpponentPhase;
         private Vector3 previousObservedPosition, committedDirection;
         private Vector3 opponentMoveRequest, opponentMoveVelocity;
@@ -49,6 +50,7 @@ namespace BarPromenade
             heroChargeAnswerAt = .5f;
             guardThisAttack = lateGuard = stepThisAttack = stepBackThisAttack = tellAnswered = false;
             opponentWasAttacking = retreatedOnce = corneredAnimal = feinting = postFeintLight = punishing = queueBackhand = queueBackStep = false;
+            opponentMakingSpace = false;
             previousOpponentPhase = MeleePhase.Ready;
             previousObservedPosition = Hero.transform.position;
             OpponentObservedVelocity = Vector3.zero;
@@ -67,6 +69,8 @@ namespace BarPromenade
             sample ^= sample >> 16;
             sample = unchecked(sample * 0x7feb352du);
             sample ^= sample >> 15;
+            duelJournal?.Record("ai_draw", actor: 2, f0: GameLog.Field("draw", draws),
+                f1: GameLog.Field("sample", (long)sample), f2: GameLog.Field("decision", OpponentDecisionSequence));
             return sample;
         }
 
@@ -102,7 +106,7 @@ namespace BarPromenade
             // Recovery duration belongs to the actual result, not a guessed
             // duration at attack start. A completed/interrupting action still
             // costs its chosen pause before another attack can be committed.
-            bool offensiveAction = me.IsCharging || me.IsAttacking;
+            bool offensiveAction = me.IsCharging || me.IsAttacking || me.IsShoving;
             if (opponentWasAttacking && !offensiveAction)
                 opponentDelay = Mathf.Max(opponentDelay, postAttackDelay);
             if (offensiveAction && !opponentWasAttacking)
@@ -141,7 +145,7 @@ namespace BarPromenade
             // own phase table, so a spent swing and a rocked body come back round. The sweep
             // is closed by then (SweepWeapon returns for from >= activeEnd), so turning in
             // recovery cannot add a contact.
-            bool committedLine = me.IsCharging || me.Phase == MeleePhase.Windup || me.Phase == MeleePhase.Active;
+            bool committedLine = me.IsCharging || me.IsShoving || me.Phase == MeleePhase.Windup || me.Phase == MeleePhase.Active;
             float yaw = PlayerMotor.AdvanceInertialYaw(bearing,
                 committedLine ? 0f : 150f * Opponent.TurnScale, seconds, ref opponentYawVelocity);
             Opponent.transform.Rotate(0f, yaw, 0f);
@@ -165,12 +169,20 @@ namespace BarPromenade
                         Opponent.RequestAttack();
                     }
                 }
+                else if (me.IsShoving) OpponentIntent = CombatOpponentIntent.Shove;
                 else if (me.Phase == MeleePhase.Step) OpponentIntent = CombatOpponentIntent.Step;
                 else OpponentIntent = me.Phase == MeleePhase.GuardImpact
                     ? CombatOpponentIntent.Guard : CombatOpponentIntent.Recover;
                 return;
             }
 
+            if (distance <= CombatActor.ShoveRange && Opponent.RequestAttack())
+            {
+                opponentMakingSpace = false;
+                OpponentIntent = CombatOpponentIntent.Shove;
+                return;
+            }
+            if (MakeRoomForGrip(distance, direction, seconds)) return;
             if (decisionDue) DecideOpponent(distance, direction);
             if (me.Phase != MeleePhase.Ready) return;
             switch (OpponentIntent)
@@ -192,6 +204,32 @@ namespace BarPromenade
                     MoveOpponent(-direction, 1.6f * seconds, seconds);
                     break;
             }
+        }
+
+        private bool MakeRoomForGrip(float distance, Vector3 direction, float seconds)
+        {
+            bool missingGrip = !Opponent.HasTwoHandSupport ||
+                (Hero.State.Phase == MeleePhase.Ready && !Hero.HasTwoHandSupport);
+            float crowdedDistance = Hero.Body.radius + Opponent.Body.radius + .12f;
+            if (!opponentMakingSpace && (distance < crowdedDistance || (distance < 1.3f && missingGrip)))
+                opponentMakingSpace = true;
+            if (!opponentMakingSpace) return false;
+            // A failed grip is not an attack decision. Back off on ordinary
+            // collision-aware footwork until the original two-hand pose fits;
+            // keep the release threshold separate so two bodies cannot chatter
+            // between a failed charge and renewed pursuit at the same distance.
+            if (distance >= 1.2f && !missingGrip)
+            {
+                opponentMakingSpace = false;
+                opponentDelay = Mathf.Max(opponentDelay, .15f);
+                return false;
+            }
+            Opponent.SetBlock(false);
+            OpponentIntent = CombatOpponentIntent.Recover;
+            float targetDistance = missingGrip ? 1.4f : 1.2f;
+            if (distance < targetDistance)
+                MoveOpponent(-direction, Mathf.Min(1.6f * seconds, targetDistance - distance), seconds);
+            return true;
         }
 
         private void OnOwnSwingResolved()
@@ -490,6 +528,8 @@ namespace BarPromenade
             desired.z = Mathf.Clamp(desired.z, -7.3f, 7.3f);
             Opponent.Body.Move(desired - before);
             Vector3 moved = Opponent.transform.position - before; moved.y = 0f;
+            journalOpponentRequested = desired - before;
+            journalOpponentAchieved = moved;
             // Only achieved travel survives. A wall or arena edge cannot bank
             // momentum and release it on a later unobstructed frame.
             opponentMoveVelocity = moved / seconds;

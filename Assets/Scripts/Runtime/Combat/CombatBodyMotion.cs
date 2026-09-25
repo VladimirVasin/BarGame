@@ -25,6 +25,8 @@ namespace BarPromenade
         private float flinchClock = FlinchSeconds, flinchPeak;
         private bool threatObserved;
         private Vector3 previousForward;
+        private Vector3 shoveAxis;
+        private float shoveReach;
         private bool applied;
         private const float FlinchSeconds = .36f;
 
@@ -60,6 +62,19 @@ namespace BarPromenade
             exhaustionTarget = fearTarget * (1f - Unit(stamina01));
             effortTarget = fearTarget * Unit(effort01);
             threatTarget = fearTarget * Unit(visibleWindupThreat01);
+        }
+
+        /// <summary>The planted body drives the open palm on the same externally sampled shove clock.</summary>
+        public void SetShovePose(bool active, Vector3 direction, float elapsed, float contactSeconds, float duration)
+        {
+            shoveReach = 0f;
+            if (!active || !float.IsFinite(elapsed) || !float.IsFinite(contactSeconds) || !float.IsFinite(duration) ||
+                contactSeconds <= 0f || duration <= contactSeconds) return;
+            Vector3 forward = Vector3.ProjectOnPlane(direction, frame.up);
+            if (!float.IsFinite(forward.x) || !float.IsFinite(forward.y) || !float.IsFinite(forward.z)) return;
+            if (forward.sqrMagnitude < .0001f) forward = frame.forward;
+            shoveAxis = Vector3.Cross(frame.up, forward.normalized).normalized;
+            shoveReach = CombatSupportGrip.ShoveReach(Mathf.Clamp(elapsed, 0f, duration), contactSeconds, duration);
         }
 
         public void Advance(float seconds, Vector3 velocity)
@@ -142,7 +157,7 @@ namespace BarPromenade
             float breath = BreathAmount;
             float tense = FearAmount;
             float shrink = FlinchAmount;
-            float brace = tense * (1f - .75f * EffortAmount);
+            float brace = tense * (1f - .75f * EffortAmount) * (1f - shoveReach);
             float tremor = tense * (.1f + .12f * EffortAmount) *
                 Mathf.Sin(tremorPhase) * (.65f + .35f * Mathf.Sin(irregularPhase));
             // Authored hero clips own the frightened stance and awkward strikes.
@@ -158,6 +173,16 @@ namespace BarPromenade
             Rotate(2, frame.right, tense * .5f + shrink * .9f + breath * .12f);
             Rotate(3, frame.right, tense * .85f + shrink * 2.3f + EffortAmount * .4f);
             Rotate(3, frame.forward, shrink * -.8f);
+            // Reach comes from leaning over the planted stance, never extending
+            // an arm bone. Concentrating the drive at the spine carries both
+            // shoulders forward before weapon clearance and left-palm IK run.
+            if (shoveReach > 0f)
+            {
+                Rotate(0, shoveAxis, 25f * shoveReach);
+                Rotate(1, shoveAxis, 5f * shoveReach);
+                Rotate(2, shoveAxis, -14f * shoveReach);
+                Rotate(3, shoveAxis, -8f * shoveReach);
+            }
         }
 
         public void Restore()
@@ -180,6 +205,7 @@ namespace BarPromenade
             breathPhase = irregularPhase = tremorPhase = flinchPeak = 0f;
             flinchClock = FlinchSeconds;
             threatObserved = false;
+            shoveReach = 0f; shoveAxis = Vector3.zero;
             previousForward = frame.forward;
         }
 
