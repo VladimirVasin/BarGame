@@ -1013,6 +1013,7 @@ namespace BarPromenade
 
         private void LateUpdate()
         {
+            using var journalTiming = CombatTestRoot.MeasureJournalLatePose(this);
             float deltaTime = scopedPresentationFrozen ? 0f : Time.deltaTime;
             if (!ragdollPoseActive)
             {

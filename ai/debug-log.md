@@ -1,16 +1,14 @@
 # Structured session diagnostics
 
-`debug.log` records session context, state-changing actions, unfinished operations
-and Unity warnings/exceptions. The independent `DuelJournal` records CombatTest
-rounds; optional area performance captures remain a third output.
+`debug.log`: session context, actions, unfinished operations, Unity warnings/exceptions.
+`DuelJournal`: CombatTest rounds. Optional area performance captures are separate.
 
 ## General log: location and profiles
 
 | Runtime | Default | Location |
 | --- | --- | --- |
 | Editor | `verbose` | repository root, `debug.log` |
-| Development Player | `verbose` | `Application.persistentDataPath/Logs/debug.log` |
-| Release Player | `basic` | `Application.persistentDataPath/Logs/debug.log` |
+| Development/Release Player | `verbose`/`basic` | `Application.persistentDataPath/Logs/debug.log` |
 | Batch/command-line tests | `off` | no file |
 
 Use `-bp-debug-log` with `off`, `basic` or `verbose`. Basic records state/results;
@@ -20,13 +18,12 @@ CombatLogs in CombatTest, otherwise the general log directory.
 
 ## General log format and boundaries
 
-Each physical line is a UTF-8 JSON object. The stable envelope contains
+UTF-8 JSON line:
 `schema_version`, `utc`, `mono_ms`, `seq`, `level`, `category`, `event`,
-`session_id`, `scene`, `city_seed` and typed `data`. UTC/monotonic time/sequence
-establish order; session/scene/seed establish reproduction context. Correlate
-transitions by `operation_id`, balance challenges by `sequence`, manual support
-snapshots by `snapshot_id`. Snapshots include hunger/stress/fatigue alongside
-intoxication, cash and drinking progress.
+`session_id`, `scene`, `city_seed`, typed `data`. UTC/mono/seq order events;
+session/scene/seed give context. Join by `operation_id` (transitions),
+`sequence` (balance), `snapshot_id` (support). Snapshots: hunger/stress/fatigue,
+intoxication/cash/drinking progress.
 
 | Category | Boundaries/results |
 | --- | --- |
@@ -38,9 +35,13 @@ intoxication, cash and drinking progress.
 | `primitive` (verbose) | `combined_mesh`: source count/vertices/combine/collider time |
 | `interaction`, `map` | entrance/exit, map lifecycle, City test-teleport mode/results |
 | `intoxication`, `balance` | stages, scheduling/start/result/fall/recovery/cancellation |
-| `combat` | exit/quit `movement_summary`: W/S/A/D seen, requested/gated frames, motor/input/capsule gates, last phase, minimum movement scale, `maximum_requested_speed`, `requested_turn_changed`. Cached aggregates; profile off disables it. |
+| `combat` | exit/quit `movement_summary`: W/S/A/D, requested/gated frames, motor/input/capsule gates, last phase, minimum scale, `maximum_requested_speed`, `requested_turn_changed`. Cached; off disables. Last-request fields/minimum scale require `has_request_sample=true` (`requestedSamples>0`). |
 | `diagnostics` | manual snapshots, support-directory commands |
 | `unity` | warnings/assertions/errors/exceptions and stacks |
+
+`session/new_game_started` keeps its name. `reason`: `menu_reset` (menu entry),
+`combat_test_start` (range), `new_game_start` (normal/legacy `BeginNewGame`),
+`new_game_start_rejected` (rejected transition rollback).
 
 The general log excludes frame updates, cursor/input motion, animation progress,
 smoothed presentation, physics substeps and ordinary `Debug.Log`. Strings cap at
@@ -52,48 +53,49 @@ per severity, so warning storms cannot consume the exception budget.
 
 ## General log retention and reporting
 
-Rotate at 5 MiB; keep `debug.1.log` through `debug.3.log`. Errors flush immediately;
-otherwise every 0.5 seconds, plus F8, pause, focus loss and clean shutdown.
-Reproduce in a fresh session, press F8 at the fault, open the folder with
-Shift+F8 and collect the active log/archives. Start with the last error or
-transition `operation_id`. In CombatTest collect its round folder as well.
-No usernames/save paths/arbitrary per-frame telemetry are deliberately recorded
-in this general log. Unity exception stacks may contain paths; review before
-public sharing.
+Rotate at 5 MiB; keep `debug.1.log`–`debug.3.log`. Flush on error, else every
+0.5 s/F8/pause/focus loss/clean shutdown. Fresh session→F8 at fault→Shift+F8;
+collect log/archives and CombatTest round. Start at last error/`operation_id`.
+No intentional usernames/save paths/frame telemetry. Unity exception stacks may
+contain paths; review before public sharing.
 
 ## DuelJournal: CombatTest rounds
 
-Manual Editor and Player sessions enable the separate journal automatically.
-Batch runs default off; a focused test must explicitly enable it, or launch with
-`-bp-duel-log on`. `-bp-duel-log off` disables it independently of `debug.log`.
+Manual Editor/Player on, batch off; tests opt in.
+`-bp-duel-log on|off` overrides independently of `debug.log`. Editor:
+repository CombatLogs; Player writes `Application.persistentDataPath/CombatLogs`.
+Each `duel_<session>_<round>` has `duel.ndjson` and `summary.txt`.
+Round: summary, then NDJSON.
 
-Editor output is the repository's CombatLogs directory; Player output is
-`Application.persistentDataPath/CombatLogs`. Each round gets
-`duel_<session>_<round>` containing `duel.ndjson` and `summary.txt`.
+`rules_rejected`: opaque Rules, `reason_checked=false`, phase/stamina/cost.
+20 Hz final root/bones/grip/support, impact links, queries, frame CPU.
+`support_pose_rejected`: `contact_*` vs `weapon_commit_depth/sweep`, shape/depth.
+`arm_snapshot`: live wrist/elbow, `shoulder_roll`/`elbow_signed`.
+`contact_metrics_current`: fresh/cached. `two_hand_support` also gates attacks;
+actual grip: state/weight/contact metrics.
+`unavailable`: code/animation; no full replay/FPS guarantee.
+End/focus: cancel held/buffered only.
+`recovery`: steps/gaps/stability. `ragdoll_snapshot`: speeds, settling,
+live rise support vs central landing.
+`suspected_stall` marks >2 s without phase/rise progress; defeated actors excluded.
+`post_round_time_discarded`: aftermath loss; snapshots to reset/exit.
 
-1. Enter CombatTest and reproduce the problem normally.
-2. Press F8 when it occurs: this marks the duel and retains the ordinary
-   diagnostic snapshot behavior.
-3. Shift+F8 opens CombatLogs. Collect the matching round folder; start with
-   `summary.txt`, then inspect the ordered records in `duel.ndjson`.
+`frame_detail`: `late_pose_ms` = hero `Player3D.LateUpdate` Stopwatch;
+`impact_apply_ms` = impact; `update_to_late_ms` = root Update→observer LateStart,
+incl. simulation/other updates. `latest_target_wait_ms` = Unity marker;
+`latest_{present_wait,cpu_main,cpu_render}_ms` = latest FrameTiming.
+`latest_timing_repeat_frames`: -1 unavailable, 0 new, >0 repeats, not age.
+Timings overlap: never sum. Unsupported=null; main/render Profiler/GPU are latest.
+Header:
+`render_interval`, `capture_delta_time`, `target_wait_marker_available`.
 
-Outer gates name checked rejection reasons; Rules denials remain opaque:
-`rules_rejected`, `reason_checked=false`, with phase/stamina/cost context.
-Final-state snapshots sample root/selected bones, grip and support at 20 Hz;
-impact links, physics-query counters and frame/CPU telemetry accompany them.
-Available GPU timing is explicitly the latest sample. Code/animation revision
-fields say `unavailable`. This is sampled evidence, not full-rig replay or an
-FPS guarantee.
-
-The fixed producer defaults to 2048 event packets, capped at 4096, plus eight
-control slots. Serialization/writing is asynchronous. Drops, I/O failures
-and reached limits are explicit rather than silently appearing as normal play.
-At most two workers may live, including stalled I/O; further starts report `worker_limit`.
-The journal caps each round at 20 MiB, retains at most ten completed rounds and
-bounds the folder to 100 MiB. Cleanup removes old ordinary rounds before
-marked/abandoned partials, never live leases or foreign contents. Marks give
-priority, not permanent retention. Runtime owns caps/pruning; workspace permits
-one CombatLogs directory without sweeping children.
+Producer: 2048/4096 default/max packets; eight control slots.
+Writer reuses chars, avoids final strings/field copies; JSON stays unchanged.
+Drops/I/O failure/limits are explicit; max two live workers, stalled I/O included.
+Extra starts: `worker_limit`; caps: 20 MiB/round, ten closed/100 MiB;
+prune old ordinary before marked/abandoned rounds, never live/foreign contents.
+Marks are bounded priority; workspace permits one CombatLogs directory, no sweep.
+Cloth/hair cache matrices; solver/120 Hz unchanged.
 
 ## Optional area performance capture
 

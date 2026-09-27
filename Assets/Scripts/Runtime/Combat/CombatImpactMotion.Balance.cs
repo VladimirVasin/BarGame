@@ -88,6 +88,19 @@ namespace BarPromenade
         public void CancelRecoveryStep()
         { recoveryStepActive = false; recoveryStepRemaining = 0f; }
 
+        internal bool HasStableRecoverySupport(Vector3 locomotionVelocity)
+        {
+            if (!Finite(locomotionVelocity) || !leftPlanted || !rightPlanted || recoveryStepActive ||
+                handSupported || WantsKnockdown || BalanceLoad >= .35f) return false;
+            // Impact velocity is only the hit response. The motor can still be
+            // carrying the torso away from the boots after the final catch lands.
+            // Use that achieved motion in the same capture-point test before
+            // giving the free hand back; do not alter the physical response.
+            float omega = Mathf.Sqrt(9.81f / Mathf.Max(.65f, 1f - crouch));
+            Vector2 capture = LocalPlanar(CaptureOffset) + LocalPlanar(locomotionVelocity) / omega;
+            return CurrentSupport().Excursion(capture) < .35f * Mathf.Lerp(.14f, .29f, RecoverySkill);
+        }
+
         public void StepBlocked()
         { BlockedRecoverySteps++; }
 

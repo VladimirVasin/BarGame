@@ -35,7 +35,8 @@ namespace BarPromenade
 
         // Finishing a round prevents further attacks, but the standing winner
         // still walks. Defeat/stagger and the active swing own their own stop.
-        public float MovementScale => IsKnockedDown || (ImpactMotion != null && ImpactMotion.Velocity.sqrMagnitude > .04f) ? 0f : State.Phase switch
+        public float MovementScale => IsKnockedDown || (footwork?.RecoveryEpisodeActive ?? false) ||
+            (ImpactMotion != null && ImpactMotion.Velocity.sqrMagnitude > .04f) ? 0f : State.Phase switch
         {
             MeleePhase.Charging => .22f,
             // The swing gathers itself instead of snapping from a walk to a halt.
@@ -46,7 +47,8 @@ namespace BarPromenade
             _ => 0f
         };
 
-        internal float TurnScale => IsKnockedDown || (ImpactMotion != null && ImpactMotion.BalanceLoad > .45f) ? 0f : State.Phase switch
+        internal float TurnScale => IsKnockedDown || (footwork?.RecoveryEpisodeActive ?? false) ||
+            (ImpactMotion != null && ImpactMotion.BalanceLoad > .45f) ? 0f : State.Phase switch
         {
             MeleePhase.Charging => .2f,
             MeleePhase.Windup => .2f,
@@ -210,19 +212,19 @@ namespace BarPromenade
         {
             collectSweep = false;
             collectShove = false;
+            CancelInterruptedShoveContact();
             if (AdvanceKnockdown(seconds)) return;
             if (State.IsDefeated) { AdvanceDefeat(seconds); return; }
             if (!IsAvailable)
             {
                 State.CancelAction(); reaction = null; sweepValid = false;
+                CancelInterruptedShoveContact();
                 ReleasePresentation(); return;
             }
             AdvanceVisualClock(seconds);
             AdvanceImpactMotion(seconds);
             if (State.Phase == MeleePhase.Windup && InShoveRange && !TryBeginShove()) State.CancelAction();
             int sequence = State.AttackSequence;
-            float shoveFrom = State.ShoveElapsed;
-            bool wasShoving = State.IsShoving;
             float from = State.AttackElapsed;
             MeleePhase previousPhase = State.Phase;
             float previousStep = State.StepTravelProgress;
@@ -233,8 +235,8 @@ namespace BarPromenade
                 JournalEvent("buffer_started", action: State.AttackSequence, request: journalActionRequest,
                     f0: GameLog.Field("phase", (int)State.Phase));
             }
-            collectShove = wasShoving && shoveFrom < State.Settings.ShoveContactSeconds &&
-                State.ShoveElapsed >= State.Settings.ShoveContactSeconds;
+            CancelInterruptedShoveContact();
+            collectShove = shoveContactPending && State.ShoveElapsed >= State.Settings.ShoveContactSeconds;
             // A queued step begins inside this advance; give it its clip and its first travel.
             if (State.Phase == MeleePhase.Step && (previousPhase != MeleePhase.Step || sequence != State.AttackSequence))
             {
@@ -268,6 +270,7 @@ namespace BarPromenade
             receivedDuringStep = State.Phase == MeleePhase.Step;
             float healthBefore = State.Health;
             MeleeHitResult result = State.ReceiveHit(damage, blockCost, front, power, location);
+            CancelInterruptedShoveContact();
             if (result == MeleeHitResult.Ignored) return result;
             // Weight lives in time and motion: the body is the loudest cue, a block
             // moves both fighters, a parry throws the attacker's weapon wide.
@@ -395,7 +398,13 @@ namespace BarPromenade
             footwork?.Restore();
             damagePose?.Restore();
             bodyMotion?.Restore();
-            bool stagger = State.Phase == MeleePhase.Stagger || State.Phase == MeleePhase.GuardBroken || State.IsDefeated;
+            // A shove's rules stagger is not an injury clip. If real contact
+            // still supports the weapon, that clip must not release the hand.
+            // Physical release, lost contact and recovery keep their own gates.
+            bool supportedShove = State.Phase == MeleePhase.Stagger && LastImpact.Result == MeleeHitResult.Hit &&
+                LastImpact.Damage <= 0f && supportGrip != null && supportGrip.IsSupportingWeapon;
+            bool stagger = (State.Phase == MeleePhase.Stagger && !supportedShove) ||
+                State.Phase == MeleePhase.GuardBroken || State.IsDefeated;
             bool stepping = State.Phase == MeleePhase.Step;
             AnimationClip chosen = stepping ? (stepBlocked ? ready : stepClip) : State.IsDefeated ? defeat : State.Phase == MeleePhase.GuardBroken ? guardBreak : stagger ? hit :
                 reaction != null ? reaction : State.IsCharging ? Current.Charge : State.IsAttacking ? ReleaseClip : roundEnded ? rest : State.IsBlocking ? block : ready;

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace BarPromenade
@@ -9,7 +10,11 @@ namespace BarPromenade
         private readonly Matrix4x4[] bindposes;
         private readonly Matrix4x4[] matrices;
         private readonly Transform[] bones;
-        private readonly BoneWeight[] weights;
+        private readonly BoneWeight[] skinWeights;
+        private readonly int[] vertexSkins;
+        private readonly Matrix4x4[] skins;
+        private readonly Matrix4x4[] inverseSkins;
+        private readonly bool[] deformSkins;
         private readonly Vector3[] original;
         private readonly Vector3[] output;
         private readonly Vector3[] world;
@@ -27,7 +32,28 @@ namespace BarPromenade
             original = source.Source.vertices;
             output = (Vector3[])original.Clone();
             world = new Vector3[original.Length];
-            weights = source.Source.boneWeights;
+            // Identical authored weights share exactly the same posed skin matrix.
+            // Cache their inverse too: every free vertex used to rebuild and invert it.
+            BoneWeight[] weights = source.Source.boneWeights;
+            vertexSkins = new int[weights.Length];
+            var weightIndices = new Dictionary<BoneWeight, int>(ExactWeights.Instance);
+            var uniqueWeights = new List<BoneWeight>();
+            for (int i = 0; i < weights.Length; i++)
+            {
+                if (!weightIndices.TryGetValue(weights[i], out int skin))
+                {
+                    skin = uniqueWeights.Count;
+                    weightIndices.Add(weights[i], skin);
+                    uniqueWeights.Add(weights[i]);
+                }
+                vertexSkins[i] = skin;
+            }
+            skinWeights = uniqueWeights.ToArray();
+            skins = new Matrix4x4[skinWeights.Length];
+            inverseSkins = new Matrix4x4[skinWeights.Length];
+            deformSkins = new bool[skinWeights.Length];
+            for (int i = 0; i < weights.Length; i++)
+                if (source.Freedom[i] > 0f) deformSkins[vertexSkins[i]] = true;
             bindposes = source.Source.bindposes;
             bones = source.Renderer.bones;
             matrices = new Matrix4x4[bindposes.Length];
@@ -42,12 +68,18 @@ namespace BarPromenade
         public void UpdatePose()
         {
             for (int i = 0; i < matrices.Length; i++) matrices[i] = bones[i].localToWorldMatrix * bindposes[i];
+            for (int i = 0; i < skins.Length; i++)
+            {
+                skins[i] = BuildSkin(skinWeights[i]);
+                if (deformSkins[i]) inverseSkins[i] = skins[i].inverse;
+            }
             for (int i = 0; i < original.Length; i++) world[i] = Skin(i).MultiplyPoint3x4(original[i]);
         }
 
-        public Matrix4x4 Skin(int vertex)
+        public Matrix4x4 Skin(int vertex) => skins[vertexSkins[vertex]];
+
+        private Matrix4x4 BuildSkin(BoneWeight weight)
         {
-            BoneWeight weight = weights[vertex];
             Matrix4x4 result = Scale(matrices[weight.boneIndex0], weight.weight0);
             Add(ref result, weight.boneIndex1, weight.weight1);
             Add(ref result, weight.boneIndex2, weight.weight2);
@@ -79,8 +111,33 @@ namespace BarPromenade
             }
             contacts.Resolve(world, binding.Freedom);
             for (int i = 0; i < output.Length; i++)
-                output[i] = binding.Freedom[i] <= 0f ? original[i] : Skin(i).inverse.MultiplyPoint3x4(world[i]);
+                output[i] = binding.Freedom[i] <= 0f ? original[i] : inverseSkins[vertexSkins[i]].MultiplyPoint3x4(world[i]);
             Write();
+        }
+
+        private sealed class ExactWeights : IEqualityComparer<BoneWeight>
+        {
+            internal static readonly ExactWeights Instance = new ExactWeights();
+            public bool Equals(BoneWeight a, BoneWeight b) =>
+                a.boneIndex0 == b.boneIndex0 && a.boneIndex1 == b.boneIndex1 &&
+                a.boneIndex2 == b.boneIndex2 && a.boneIndex3 == b.boneIndex3 &&
+                a.weight0.Equals(b.weight0) && a.weight1.Equals(b.weight1) &&
+                a.weight2.Equals(b.weight2) && a.weight3.Equals(b.weight3);
+
+            public int GetHashCode(BoneWeight weight)
+            {
+                unchecked
+                {
+                    int hash = weight.boneIndex0;
+                    hash = hash * 397 ^ weight.boneIndex1;
+                    hash = hash * 397 ^ weight.boneIndex2;
+                    hash = hash * 397 ^ weight.boneIndex3;
+                    hash = hash * 397 ^ weight.weight0.GetHashCode();
+                    hash = hash * 397 ^ weight.weight1.GetHashCode();
+                    hash = hash * 397 ^ weight.weight2.GetHashCode();
+                    return hash * 397 ^ weight.weight3.GetHashCode();
+                }
+            }
         }
 
         public void Restore()

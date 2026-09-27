@@ -187,7 +187,7 @@ namespace BarPromenade
         internal void TickFrame(float seconds)
         {
             if (duelJournal != null && seconds > MaximumFrameSubsteps * SimulationStep)
-                duelJournal.Record("time_discarded", f0: GameLog.Field("requested_seconds", seconds),
+                duelJournal.Record(RoundFinished ? "post_round_time_discarded" : "time_discarded", f0: GameLog.Field("requested_seconds", seconds),
                     f1: GameLog.Field("discarded_seconds", seconds - MaximumFrameSubsteps * SimulationStep));
             Tick(Mathf.Min(seconds, MaximumFrameSubsteps * SimulationStep));
         }
@@ -252,8 +252,10 @@ namespace BarPromenade
                 journalPoseSamples += Hero.ContactPoseSamples + Opponent.ContactPoseSamples;
                 // Registration for both actors precedes ANY damage, including lethal
                 // hits. Only contacts on a later tick can be cancelled by interruption.
+                long impactStamp = JournalStamp();
                 foreach (CombatActor.Contact contact in pendingContacts) contact.Apply();
                 foreach (CombatActor.ShoveContact contact in pendingShoves) contact.Apply();
+                JournalElapsed(impactStamp, ref journalImpactApplyTicks);
                 JournalTransitions("contacts_applied");
                 BloodEffects.Tick(SimulationStep);
             }

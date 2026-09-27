@@ -61,6 +61,7 @@ namespace BarPromenade
                 GameLog.Field("sampled_frames", movementSamples),
                 GameLog.Field("keyboard_frames", keyboardSamples),
                 GameLog.Field("requested_frames", requestedSamples),
+                GameLog.Field("has_request_sample", requestedSamples > 0),
                 GameLog.Field("w_seen", (requestedKeys & 1) != 0),
                 GameLog.Field("s_seen", (requestedKeys & 2) != 0),
                 GameLog.Field("a_seen", (requestedKeys & 4) != 0),

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Unity.Profiling;
 using UnityEngine;
 
 namespace BarPromenade
@@ -9,6 +10,11 @@ namespace BarPromenade
     /// continuous duel clock. No drunken pose, spine reach search or second arm IK.</summary>
     internal sealed class CombatRecoveryPose : IDisposable
     {
+        private static readonly ProfilerMarker PrepareMarker = new ProfilerMarker("BarPromenade.CombatRecovery.Prepare");
+        private static readonly ProfilerMarker BeginMarker = new ProfilerMarker("BarPromenade.CombatRecovery.Begin");
+        private static readonly ProfilerMarker PoseMarker = new ProfilerMarker("BarPromenade.CombatRecovery.Pose");
+        private static readonly ProfilerMarker SampleMarker = new ProfilerMarker("BarPromenade.CombatRecovery.Sample");
+        private static readonly ProfilerMarker SolesMarker = new ProfilerMarker("BarPromenade.CombatRecovery.Soles");
         private readonly Transform actor, pelvis, chest, leftFoot, rightFoot;
         private readonly Transform leftThigh, leftShin, rightThigh, rightShin;
         private readonly CharacterController capsule;
@@ -21,6 +27,8 @@ namespace BarPromenade
         private readonly RaycastHit[] floorHits = new RaycastHit[24];
         private readonly Collider[] clearanceHits = new Collider[24];
         private AnimationClip clip;
+        private AnimationClip sampledClip;
+        private float sampledTime;
         private float elapsed;
         private bool begun;
         public float ClipProgress => begun ? Mathf.Clamp01(elapsed / clip.length) : 0f;
@@ -37,6 +45,7 @@ namespace BarPromenade
         internal CombatRecoveryPose(Transform actorRoot, Transform rig, CharacterController body,
             CombatRagdoll physics, NpcHandPose handPose, bool isNpc)
         {
+            using var marker = PrepareMarker.Auto();
             actor = actorRoot; capsule = body; ragdoll = physics; hands = handPose; npc = isNpc;
             Transform Bone(string name) => CityPedestrianHandProps.FindSocket(rig, name) ??
                 throw new InvalidOperationException("Combat recovery requires " + name);
@@ -85,6 +94,7 @@ namespace BarPromenade
 
         internal bool Begin(in PlayerRagdollLyingPose lying)
         {
+            using var marker = BeginMarker.Auto();
             ClipName = lying.SelectRecoveryRoute() == PlayerRiseRoute.Seated
                 ? CombatAssetProvider.RiseSupineClip : CombatAssetProvider.RiseProneClip;
             clip = CombatAssetProvider.LoadClip(ClipName, npc);
@@ -120,32 +130,41 @@ namespace BarPromenade
         internal void Present(bool gripOwnsLeft = false)
         {
             if (!begun) return;
+            using var marker = PoseMarker.Auto();
             Sample(ClipProgress);
             ragdoll.PhysicsController.ApplyRecoveryBlend(elapsed / .32f);
-            KeepSoleAboveFloor(FootSide.Left, leftThigh, leftShin, leftFoot);
-            KeepSoleAboveFloor(FootSide.Right, rightThigh, rightShin, rightFoot);
+            bool leftUnchanged = KeepSoleAboveFloor(FootSide.Left, leftThigh, leftShin, leftFoot, out float leftSole);
+            bool rightUnchanged = KeepSoleAboveFloor(FootSide.Right, rightThigh, rightShin, rightFoot, out float rightSole);
             hands.SetGrip(false, 1f);
             if (!gripOwnsLeft) hands.SetGrip(true, 0f);
-            FeetSupported = FootSupported(FootSide.Left, leftFoot) && FootSupported(FootSide.Right, rightFoot);
+            // Reuse only within this presentation, with neither leg adjusted.
+            // Any IK makes the support check bake the final soles again.
+            bool unchangedSoles = leftUnchanged && rightUnchanged;
+            FeetSupported = FootSupported(FootSide.Left, leftFoot, unchangedSoles, leftSole) &&
+                FootSupported(FootSide.Right, rightFoot, unchangedSoles, rightSole);
         }
 
-        private void KeepSoleAboveFloor(FootSide side, Transform thigh, Transform shin, Transform foot)
+        private bool KeepSoleAboveFloor(FootSide side, Transform thigh, Transform shin, Transform foot, out float sole)
         {
+            using var marker = SolesMarker.Auto();
+            sole = 0f;
             if (footProbe == null || !FindFloor(foot.position, out Vector3 floor, out _) ||
-                !footProbe.TryGetSoleHeight(side, out float sole)) return;
+                !footProbe.TryGetSoleHeight(side, out sole)) return false;
             float lift = floor.y + .01f - sole;
-            if (lift <= 0f) return;
+            if (lift <= 0f) return true;
             // A hierarchy blend from an arbitrary lying pose can swing a boot
             // through the floor. Lift its actual sole, retaining the current knee
             // plane and authored foot pitch; rotate the leg, never stretch it.
             LimbTwoBoneIk.Solve(thigh, shin, foot, foot.position + Vector3.up * lift,
                 foot.rotation, shin.position, 1f, .995f, true);
+            return false;
         }
 
-        private bool FootSupported(FootSide side, Transform foot)
+        private bool FootSupported(FootSide side, Transform foot, bool hasSole, float sole)
         {
+            using var marker = SolesMarker.Auto();
             if (!FindFloor(foot.position, out Vector3 floor, out _)) return false;
-            float height = footProbe != null && footProbe.TryGetSoleHeight(side, out float sole)
+            float height = hasSole || (footProbe != null && footProbe.TryGetSoleHeight(side, out sole))
                 ? sole : foot.position.y - .07f;
             return height - floor.y >= -.04f && height - floor.y <= .06f;
         }
@@ -215,7 +234,16 @@ namespace BarPromenade
 
         private void Sample(float normalized)
         {
-            clip.SampleAnimation(sampler, Mathf.Clamp01(normalized) * clip.length);
+            using var marker = SampleMarker.Auto();
+            float time = Mathf.Clamp01(normalized) * clip.length;
+            // Only this method writes the private sampler. Root/world changes
+            // do not change its authored local pose; a new time/clip does.
+            if (sampledClip != clip || sampledTime != time)
+            {
+                clip.SampleAnimation(sampler, time);
+                sampledClip = clip;
+                sampledTime = time;
+            }
             ApplySample();
         }
 

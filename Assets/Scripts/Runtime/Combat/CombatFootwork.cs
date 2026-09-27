@@ -27,7 +27,8 @@ namespace BarPromenade
         private float cycle, settling, settleDuration, idleSeconds;
         private int direction, swing, attackSequence = -1;
         private bool initialized, moving, applied, yielded, settlingFoot, settlingAttack;
-        private bool catching, catchAwaitingContact, hasPresentedContacts;
+        private bool catching, catchAwaitingContact, catchDecisionPending, catchStabilityPending, hasPresentedContacts;
+        private bool recoveryGaitReleased;
         private Vector3 catchTarget;
         private float impactPelvisFloor, catchLift, catchRetry;
         private int recoverySequence = -1, sequenceSteps;
@@ -38,6 +39,9 @@ namespace BarPromenade
         internal int CatchLandingCount { get; private set; }
         internal int BlockedCatchCount { get; private set; }
         internal bool CatchStepActive => catching;
+        // Landing a boot does not yet decide whether another step or continued
+        // balance recovery is needed. The final support decision owns the hand.
+        internal bool RecoveryEpisodeActive => catching || catchDecisionPending || catchStabilityPending;
         internal float CatchStepProgress => catching ? Mathf.Clamp01(settling / Mathf.Max(.001f, settleDuration)) : 0f;
         internal Vector3 LastCatchTarget { get; private set; }
         internal int LastCatchSide { get; private set; } = -1;
@@ -110,7 +114,8 @@ namespace BarPromenade
             ImpactMotion?.CancelRecoveryStep();
             Restore(); initialized = false; moving = settlingFoot = yielded = settlingAttack = catching = false;
             cycle = settling = 0f; gaitOffset = Vector3.zero; attackSequence = -1;
-            idleSeconds = catchRetry = 0f; catchAwaitingContact = hasPresentedContacts = false;
+            idleSeconds = catchRetry = 0f; catchAwaitingContact = catchDecisionPending = catchStabilityPending = hasPresentedContacts = false;
+            recoveryGaitReleased = false;
             recoverySequence = -1; sequenceSteps = CatchStepCount = CatchLandingCount = BlockedCatchCount = 0;
             LastCatchTarget = Vector3.zero; LastCatchSide = -1;
             previousPosition = frame.position; previousForward = frame.forward;
@@ -132,6 +137,20 @@ namespace BarPromenade
             // Only the duel clock reports support. Pose previews and repeated Apply
             // calls cannot land a boot or change the outcome of a recovery.
             ReportSupport();
+        }
+
+        internal void CompleteRecoveryDecision(Vector3 locomotionVelocity)
+        {
+            // A settled episode has returned its feet to ordinary locomotion.
+            // Walking must not reopen that same impulse's recovery decision.
+            if (recoveryGaitReleased) return;
+            // The actor calls this after EvaluateSupport, including this tick's
+            // actual landing. Exhausting the step budget alone is not recovery.
+            // No extra clock: reset/yield or the physical response ending clears it.
+            catchStabilityPending = initialized && !yielded && sequenceSteps > 0 &&
+                !catching && !catchDecisionPending && ImpactMotion != null && ImpactMotion.IsActive &&
+                (!hasPresentedContacts || !ImpactMotion.HasStableRecoverySupport(locomotionVelocity));
+            if (sequenceSteps > 0 && !RecoveryEpisodeActive) recoveryGaitReleased = true;
         }
 
         private void ReportSupport()
@@ -170,14 +189,16 @@ namespace BarPromenade
             {
                 if (catching) JournalCatch("catch_cancelled", "action_owns_feet");
                 ImpactMotion?.CancelRecoveryStep();
-                yielded = true; initialized = false; moving = settlingFoot = catching = catchAwaitingContact = false;
+                yielded = true; initialized = false; moving = settlingFoot = catching = catchAwaitingContact = catchDecisionPending = catchStabilityPending = false;
+                recoveryGaitReleased = false;
                 gaitOffset = Vector3.zero; return;
             }
             if (!initialized || displacement.sqrMagnitude > 1f)
             {
                 if (catching) JournalCatch("catch_cancelled", "root_discontinuity");
                 ImpactMotion?.CancelRecoveryStep();
-                PlantReady(); moving = settlingFoot = catching = catchAwaitingContact = false;
+                PlantReady(); moving = settlingFoot = catching = catchAwaitingContact = catchDecisionPending = catchStabilityPending = false;
+                recoveryGaitReleased = false;
                 gaitOffset = Vector3.zero; cycle = 0f;
             }
             yielded = false;
@@ -273,15 +294,20 @@ namespace BarPromenade
 
         private bool AdvanceCatchStep(float seconds)
         {
-            if (ImpactMotion == null) return false;
+            if (ImpactMotion == null) { catchDecisionPending = catchStabilityPending = false; return false; }
             if (recoverySequence != ImpactMotion.RecoverySequence)
             {
                 recoverySequence = ImpactMotion.RecoverySequence;
-                sequenceSteps = 0; catchRetry = 0f;
+                sequenceSteps = 0; catchRetry = 0f; catchDecisionPending = catchStabilityPending = false;
+                recoveryGaitReleased = false;
             }
+            // Keep the step budget for this impulse, but stop owning the gait
+            // as soon as its final support decision has released the motor.
+            if (recoveryGaitReleased) return false;
             catchRetry = Mathf.Max(0f, catchRetry - seconds);
             bool needsLanding = !supportConfirmed[0] || !supportConfirmed[1];
-            if (!ImpactMotion.IsActive && !catching && !needsLanding) return false;
+            if (!ImpactMotion.IsActive && !catching && !needsLanding)
+            { catchDecisionPending = false; return false; }
             if (!catching)
             {
                 int displaced = FarthestFoot();
@@ -289,9 +315,13 @@ namespace BarPromenade
                 float error = Mathf.Max(Vector3.ProjectOnPlane(feet[0] - RecoveryTarget(0, capture), Vector3.up).magnitude,
                     Vector3.ProjectOnPlane(feet[1] - RecoveryTarget(1, capture), Vector3.up).magnitude);
                 float urgency = ImpactMotion.RecoveryUrgency;
-                if ((!needsLanding && urgency < .42f && error < .11f) || catchRetry > 0f ||
+                bool stable = !needsLanding && urgency < .42f && error < .11f;
+                if (stable || catchRetry > 0f ||
                     sequenceSteps >= ImpactMotion.MaximumRecoverySteps)
+                {
+                    if (stable || sequenceSteps >= ImpactMotion.MaximumRecoverySteps) catchDecisionPending = false;
                     return needsLanding || sequenceSteps > 0;
+                }
                 bool alreadyTransferring = moving || settlingFoot;
                 if (!alreadyTransferring)
                 {
@@ -323,6 +353,9 @@ namespace BarPromenade
                 }
                 if (!found)
                 {
+                    // A refused next step is a completed decision, not a hand
+                    // reservation that can persist while retries are impossible.
+                    catchDecisionPending = false;
                     if (needsLanding || ImpactMotion.RecoveryFootError(0, feet[0]) > .025f) RejectCatchPlan("no_valid_target");
                     return needsLanding || sequenceSteps > 0;
                 }
@@ -333,7 +366,7 @@ namespace BarPromenade
                 // A short lateral save is quicker than a full emergency lunge.
                 float distance = Vector3.ProjectOnPlane(target - settleStart, Vector3.up).magnitude;
                 settleDuration = Mathf.Clamp(duration + (distance - .2f) * .18f, .16f, .36f);
-                settling = 0f; catching = true; catchAwaitingContact = false;
+                settling = 0f; catching = true; catchAwaitingContact = catchDecisionPending = false;
                 supportConfirmed[swing] = false;
                 sequenceSteps++; CatchStepCount++;
                 LastCatchTarget = target; LastCatchSide = swing;
@@ -362,6 +395,7 @@ namespace BarPromenade
                     CatchLandingCount++;
                     JournalCatch("catch_landed", "presented_contact");
                     catchRetry = .025f;
+                    catchDecisionPending = sequenceSteps < ImpactMotion.MaximumRecoverySteps;
                     RetroAudio.PlayAt(RetroSfxId.FootstepConcrete, grounded, .7f);
                 }
                 else
@@ -370,6 +404,7 @@ namespace BarPromenade
                     // it to the failed destination before trying a nearer target.
                     if (hasPresentedContacts) feet[swing] = presentedFeet[swing];
                     catching = catchAwaitingContact = false;
+                    catchDecisionPending = false;
                     ConfirmCurrentContact(swing);
                     ImpactMotion.CancelRecoveryStep();
                     RejectCatchPlan(rejection);
@@ -639,7 +674,8 @@ namespace BarPromenade
         }
         public void Forget()
         {
-            applied = false; catching = catchAwaitingContact = hasPresentedContacts = false;
+            applied = false; catching = catchAwaitingContact = catchDecisionPending = catchStabilityPending = hasPresentedContacts = false;
+            recoveryGaitReleased = false;
             ImpactMotion?.CancelRecoveryStep(); ImpactMotion?.Forget();
         }
         private static float Smooth(float value) => value * value * (3f - 2f * value);

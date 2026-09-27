@@ -335,7 +335,7 @@ namespace BarPromenade
             ResetToDefaults();
         }
 
-        public static void BeginNewGame()
+        public static void BeginNewGame(string reason = "new_game_start")
         {
             ResetToDefaults();
             GameTimeScaleRuntime.ResetSession();
@@ -344,6 +344,7 @@ namespace BarPromenade
             GameLog.Info(
                 "session",
                 "new_game_started",
+                GameLog.Field("reason", reason),
                 GameLog.Field("city_seed", CitySeed),
                 GameLog.Field(
                     "city_blueprint_id",

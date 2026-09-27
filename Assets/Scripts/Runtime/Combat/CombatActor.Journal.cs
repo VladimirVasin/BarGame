@@ -77,6 +77,9 @@ namespace BarPromenade
             return false;
         }
 
+        internal float JournalRiseProgress => knockdownPose?.ClipProgress ?? 0f;
+        internal string JournalRiseStage => knockdownPose?.StageLabel ?? "ragdoll";
+
         private bool JournalRiseWait(string reason)
         {
             if (Journal == null) return true;
@@ -85,7 +88,9 @@ namespace BarPromenade
                 journalRiseReason = reason;
                 JournalEvent("rise_wait", action: State.AttackSequence,
                     f0: GameLog.Field("reason", reason), f1: GameLog.Field("impact_seq", LastJournalImpactSequence),
-                    f2: GameLog.Field("support_state", (int)SupportArmState), f3: GameLog.Field("grip_weight", SupportGripWeight));
+                    f2: GameLog.Field("support_state", (int)SupportArmState), f3: GameLog.Field("grip_weight", SupportGripWeight),
+                    f4: GameLog.Field("central_speed", Ragdoll.CentralBodySpeed), f5: GameLog.Field("ground_contact", Ragdoll.HasGroundContact),
+                    f6: GameLog.Field("quiet_seconds", Ragdoll.QuietSeconds), f7: GameLog.Field("ground_seconds", Ragdoll.GroundSeconds));
             }
             return true;
         }

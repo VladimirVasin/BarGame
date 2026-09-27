@@ -59,6 +59,7 @@ namespace BarPromenade
             public Matrix4x4 UnitToWorld;
             public Matrix4x4 WorldToUnit;
             public Bounds WorldBounds;
+            public Vector3 WorldMinimum, WorldMaximum;
             public Vector3 CenterEscape;
             public float MinimumWorldRadius;
             public bool Active;
@@ -176,8 +177,10 @@ namespace BarPromenade
                         proxy.Selected = envelope;
                         break;
                     }
-                proxy.UnitToWorld = proxy.Bone.localToWorldMatrix * proxy.Selected.UnitToBone;
-                proxy.WorldToUnit = proxy.Selected.BoneToUnit * proxy.Bone.worldToLocalMatrix;
+                Matrix4x4 boneToWorld = proxy.Bone.localToWorldMatrix;
+                Matrix4x4 worldToBone = proxy.Bone.worldToLocalMatrix;
+                proxy.UnitToWorld = boneToWorld * proxy.Selected.UnitToBone;
+                proxy.WorldToUnit = proxy.Selected.BoneToUnit * worldToBone;
                 Matrix4x4 matrix = proxy.UnitToWorld;
                 // The row lengths are the exact AABB extents of a transformed
                 // unit sphere, including rotated/non-uniform imported scales.
@@ -186,6 +189,8 @@ namespace BarPromenade
                     Mathf.Sqrt(matrix.m10 * matrix.m10 + matrix.m11 * matrix.m11 + matrix.m12 * matrix.m12),
                     Mathf.Sqrt(matrix.m20 * matrix.m20 + matrix.m21 * matrix.m21 + matrix.m22 * matrix.m22));
                 proxy.WorldBounds = new Bounds(matrix.MultiplyPoint3x4(Vector3.zero), extent * 2f);
+                proxy.WorldMinimum = proxy.WorldBounds.min;
+                proxy.WorldMaximum = proxy.WorldBounds.max;
                 float x = matrix.MultiplyVector(Vector3.right).magnitude;
                 float y = matrix.MultiplyVector(Vector3.up).magnitude;
                 float z = matrix.MultiplyVector(Vector3.forward).magnitude;
@@ -195,11 +200,11 @@ namespace BarPromenade
                 {
                     int count = proxy.Selected.SupportNormals.Length;
                     if (proxy.WorldPlanes == null || proxy.WorldPlanes.Length != count) proxy.WorldPlanes = new Plane[count];
-                    Matrix4x4 normalMatrix = proxy.Bone.worldToLocalMatrix.transpose;
+                    Matrix4x4 normalMatrix = worldToBone.transpose;
                     for (int i = 0; i < count; i++)
                     {
                         Vector3 normal = normalMatrix.MultiplyVector(proxy.Selected.SupportNormals[i]).normalized;
-                        Vector3 support = proxy.Bone.TransformPoint(proxy.Selected.SupportNormals[i] * proxy.Selected.SupportOffsets[i]);
+                        Vector3 support = boneToWorld.MultiplyPoint3x4(proxy.Selected.SupportNormals[i] * proxy.Selected.SupportOffsets[i]);
                         proxy.WorldPlanes[i] = new Plane(normal, support + normal * SurfacePadding);
                     }
                 }
@@ -223,7 +228,12 @@ namespace BarPromenade
                     bool moved = false;
                     foreach (Proxy proxy in proxies)
                     {
-                        if (!proxy.Active || !proxy.WorldBounds.Contains(point)) continue;
+                        // Hair/cloth ask this thousands of times per pose. The
+                        // same inclusive AABB test stays managed, with bounds
+                        // refreshed above rather than native calls per vertex.
+                        if (!proxy.Active || !(point.x >= proxy.WorldMinimum.x && point.x <= proxy.WorldMaximum.x &&
+                            point.y >= proxy.WorldMinimum.y && point.y <= proxy.WorldMaximum.y &&
+                            point.z >= proxy.WorldMinimum.z && point.z <= proxy.WorldMaximum.z)) continue;
                         if (proxy.WorldPlanes != null)
                         {
                             float escape = float.PositiveInfinity;

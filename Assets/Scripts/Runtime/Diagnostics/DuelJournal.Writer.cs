@@ -16,6 +16,7 @@ namespace BarPromenade
         private readonly Dictionary<string, (double seconds, long sequence)> longest = new Dictionary<string, (double, long)>(StringComparer.Ordinal);
         private readonly List<string> milestones = new List<string>(24);
         private readonly List<GameLogField> fields = new List<GameLogField>(48);
+        private readonly GameLogFormatter.Buffer recordBuffer = new GameLogFormatter.Buffer(16384, 16384);
         private readonly (int frame, double milliseconds)[] slowest = new (int, double)[10];
         private struct RejectionSeries
         {
@@ -165,14 +166,16 @@ namespace BarPromenade
                 foreach (GameLogField field in packet.Metadata) AddField(field);
             for (int i = 0; i < 8; i++) AddField(FieldAt(packet, i));
             double elapsed = Math.Max(0d, (packet.Stamp - started) / (double)Stopwatch.Frequency);
-            string line = GameLogFormatter.Format(new GameLogEvent(utcStarted.AddSeconds(elapsed),
+            bool formatted = GameLogFormatter.TryFormat(recordBuffer, utcStarted.AddSeconds(elapsed),
                 (long)(elapsed * 1000d), packet.Sequence, packet.Name == "file_limit" ? GameLogLevel.Warning : GameLogLevel.Info,
-                "duel", packet.Name, SessionId, "CombatTest", null, fields.ToArray()));
-            int length = Utf8.GetByteCount(line) + 1;
+                "duel", packet.Name, SessionId, "CombatTest", null, fields);
+            if (!formatted) { oversized++; return false; }
+            int length = Utf8.GetByteCount(recordBuffer.Characters, 0, recordBuffer.Count) + 1;
             long limit = maxRoundBytes - SummaryBudget - 64 - (terminal ? 0 : FooterBudget);
             if (length > 16384 || bytes + length > limit)
             { if (length > 16384) oversized++; return false; }
-            output.WriteLine(line); bytes += length; written++; seenProducerDrops = packet.Dropped;
+            output.Write(recordBuffer.Characters, 0, recordBuffer.Count); output.Write('\n');
+            bytes += length; written++; seenProducerDrops = packet.Dropped;
             return true;
         }
 
@@ -278,7 +281,7 @@ namespace BarPromenade
             if (duration > previous.seconds) longest[key] = (duration, packet.Sequence);
         }
 
-        private static bool SampleEvent(string name) => name == "frame" || name == "frame_work" || name == "snapshot" ||
+        private static bool SampleEvent(string name) => name == "frame" || name == "frame_work" || name == "frame_detail" || name == "snapshot" || name == "ragdoll_snapshot" ||
             name == "state" || name == "pose" || name == "vectors" || name == "presentation" || name == "balance" ||
             name == "impulse_movement" ||
             name.EndsWith("_snapshot", StringComparison.Ordinal) || name.EndsWith("_sample", StringComparison.Ordinal);

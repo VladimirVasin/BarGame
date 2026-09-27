@@ -91,7 +91,11 @@ namespace BarPromenade
                 IsHero ? GameSessionState.IntoxicationLevel / 100f : 0f, footwork.TransferringFoot || receivedDuringStep || State.Phase == MeleePhase.Step);
             float urgency = Mathf.Max(ImpactMotion.BalanceLoad - .28f,
                 impact.Location.Region == MeleeBodyRegion.LeftArm ? impact.Impulse.magnitude / 170f : 0f);
-            if (urgency >= .30f && impact.Result != MeleeHitResult.Blocked)
+            // A torso shove can be caught by the feet while both hands keep
+            // the bar. Balance load alone is not loss of this hand's contact;
+            // actual reach/obstruction, a brace or knockdown owns that release.
+            bool gripHit = impact.Damage > 0f || impact.Location.Region == MeleeBodyRegion.LeftArm;
+            if (gripHit && urgency >= .30f && impact.Result != MeleeHitResult.Blocked)
                 supportGrip.RequestRelease(impact.Direction, Mathf.Clamp01(urgency));
             if (supportGrip.IsReleased || !supportGrip.IsSupportingWeapon) State.SetBlocking(false);
         }
@@ -130,7 +134,10 @@ namespace BarPromenade
             if (ImpactMotion == null) return;
             supportGrip.AdvanceBalanceSupport(seconds);
             ImpactMotion.EvaluateSupport(seconds);
-            supportGrip.AllowRegrip(ImpactMotion.BalanceLoad < .35f && !ImpactMotion.HasHandSupport && !ImpactMotion.RecoveryStepActive);
+            footwork?.CompleteRecoveryDecision(motor != null ? motor.PlanarVelocity : locomotionVelocity);
+            motor?.SetOwnedMovementConstraint(this, MovementScale, TurnScale);
+            supportGrip.AllowRegrip(ImpactMotion.BalanceLoad < .35f && !ImpactMotion.HasHandSupport &&
+                !ImpactMotion.RecoveryStepActive && !(footwork?.RecoveryEpisodeActive ?? false));
             if (!State.IsDefeated && impactRecoveryGrace <= 0f && ImpactMotion.WantsKnockdown)
             {
                 // Present the complete contact/brace pose before physics takes its bones.

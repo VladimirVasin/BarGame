@@ -3,6 +3,47 @@
 Newest outcomes/checks first. Archive whole dates at budget: [policy](README.md).
 Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-2026-08.md).
 
+## 2026-09-27 — Shove, grip, recovery and CPU
+
+- A missed first palm check now keeps the shove contact window open; one real
+  contact applies one impulse. HP, kinematics, tolerance and obstacle gates stay
+  unchanged. Journal recovery spans the whole catch-step episode and its gaps.
+  Checks: `Range_ShoveWindowRequiresOneRealContact`,
+  `Range_CloseContactUsesFastShove`.
+- Cloth/hair reuse equal-weight skin matrices and per-pose bounds/bone matrices.
+  Matched CPU comparison confirms savings; differential replay preserves
+  contacts/vertices across poses, scales and pinned/free weights. Solver unchanged.
+- Last catch-step landing no longer ends recovery until actual support is stable.
+  Ragdoll diagnostics separate live anatomical support from the central landing
+  that owns the thud; expose pelvis/torso speeds and settling clocks. Rise accepts
+  quiet limb support with unchanged thresholds; central thud/blood stay separate.
+  Repeated-hit NPC rise baseline did not reproduce the manual delay. Check:
+  `Range_QuietRagdollCanRiseFromFootSupport`.
+- Removed duplicate recovery pose/sample/sole work; matched comparison confirms
+  lower tick CPU/query cost. Check: `Range_InterruptedRiseHasBoundedWorkAndRecovers`.
+  Overall FPS was not remeasured after this optimization.
+- Recoverable torso shove preserves actual grip through catch steps; balance
+  load alone does not release a non-damaging impact. Lost contact, a necessary
+  brace, knockdown or an arm hit can still release it.
+- Recovery owns motion/turn; gait and motor resume together. Arm return uses
+  prior local joints, wrist/elbow/speed checks and the authored elbow branch;
+  protective reach opposes the fall. Geometry rejection keeps valid contact
+  or opens from the prior chain. Journal separates contact/weapon rejection
+  and fresh metrics/live angles. Captured poses reviewed. Checks:
+  `Range_StrongShoveKeepsRecipientGripWhileMoving`,
+  `Range_ObstructedShoveRecipientArmRecoversWhileMoving`,
+  `Range_ShoveRecoveryKeepsHeldWalkingWithItsFeet`,
+  `Range_FinalCatchRequiresStableMovingSupportBeforeRegrip`.
+- Manual logs exposed permanent source-arm regrip after shove/swing: strict
+  intermediate rejection preserved an already invalid wrist. Each interpolated
+  wrist is now constrained; inherited violations may only decrease, within the
+  joint-speed/world-clearance gates. Shove→Free keeps the same arm owner/limits.
+  Physical contact still unlocks attack/guard.
+  Check: `Range_ShoveAndSwingRestoreAttackAndBlock`.
+- Stall marks now track absent phase/rise progress; aftermath snapshots continue
+  and discarded aftermath time is separate. Check:
+  `Range_DuelJournalRecordsReasonsWithoutChangingCombat`.
+
 ## 2026-09-26 — Provisional recovery and duel diagnostics
 
 - Default keeps the existing impact response and bounded rescue steps;
@@ -13,8 +54,17 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 - Separate automatic CombatLogs: checked outer reasons/opaque Rules denials,
   final snapshots/summary/F8 marks; bounded async queue/I/O failure handling
   and priority cleanup (20 MiB/round, 10 closed/100 MiB).
+- Regrip now waits across the whole catch-step decision gap; reset/invalid
+  target clears it. Round-end/focus only cancel held/buffered charges.
+  Duel writing reuses formatter storage without changing JSON; overlapping
+  frame scopes distinguish hero late pose, impact and latest Unity waits.
   Checks: `DuelJournalTests`,
   `Range_DuelJournalRecordsReasonsWithoutChangingCombat` (logging preserves combat).
+  `GameLogFormatterTests` verifies schema and reduced allocations with a positive-control GC profiler.
+- General diagnostics mark whether a movement request exists before interpreting
+  last-request fields/minimum scale. Compatible `new_game_started` gains a reason
+  distinguishing menu reset, range start, ordinary start and rejected-start rollback.
+  Check: `dotnet build BarPromenade.Runtime.csproj`.
 
 ## 2026-09-25 — Village, lodge, loading and combat CPU
 

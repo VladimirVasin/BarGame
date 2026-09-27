@@ -238,12 +238,14 @@ namespace BarPromenade
         {
             if (!pendingCommit || contactPreview) return;
             pendingCommit = false;
-            bool clear = Depth() <= 0f && (!hasLast || SweepClear(lastWeapon, WeaponPose));
+            float finalDepth = Depth();
+            bool finalSweepBlocked = finalDepth <= 0f && hasLast && !SweepClear(lastWeapon, WeaponPose);
+            bool clear = finalDepth <= 0f && !finalSweepBlocked;
             if (!clear && support != null)
             {
                 // A blocked supporting reach opens the hand; it cannot push its
                 // forearm through the bar merely to satisfy a two-handed socket.
-                support.RejectObstructedPose();
+                support.RejectObstructedPose(finalDepth > 0f ? "weapon_commit_depth" : "weapon_commit_sweep", BlockingShape, finalDepth);
                 clear = Depth() <= 0f && (!hasLast || SweepClear(lastWeapon, WeaponPose));
             }
             if (clear) Remember();

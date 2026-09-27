@@ -6,6 +6,27 @@ Earlier notes: [`release-notes-2026-09.md`](archive/release-notes-2026-09.md).
 
 ## Unreleased
 
+### 2026-09-27 — Толчок, хват, опора и CPU
+
+- Толчок ждёт касание; препятствия блокируют его, импульс однократный.
+  Проверки: `Range_ShoveWindowRequiresOneRealContact`,
+  `Range_CloseContactUsesFastShove`,
+  `Range_DuelJournalRecordsReasonsWithoutChangingCombat`.
+- Меньше CPU куртки/волос/подъёма; сравнение сохранило контакты/деформации.
+  Проверка: `Range_InterruptedRiseHasBoundedWorkAndRecovers`.
+  Общий FPS после оптимизации не измерялся.
+- Подъём допускает опору рук/ног без удара корпусом; задержка не воспроизведена:
+  `Range_QuietRagdollCanRiseFromFootSupport`.
+- Толчок в корпус сохраняет хват на спасательных шагах; они удерживают ход/поворот.
+  Потеря контакта/падение/опора/удар по руке допускают отпускание.
+  Проверки: `Range_StrongShoveKeepsRecipientGripWhileMoving`,
+  `Range_ObstructedShoveRecipientArmRecoversWhileMoving`,
+  `Range_ShoveRecoveryKeepsHeldWalkingWithItsFeet`,
+  `Range_FinalCatchRequiresStableMovingSupportBeforeRegrip`.
+- Возврат руки после своего толчка/удара исправляет неверную кисть постепенно,
+  вместо вечного запрета удара/блока. Контакт и коллизии обязательны.
+  Проверка: `Range_ShoveAndSwingRestoreAttackAndBlock`.
+
 ### 2026-09-26 — Пробное восстановление и журнал дуэли
 
 - По умолчанию оставлены реакция и спасательные шаги; дополнительные
@@ -15,8 +36,11 @@ Earlier notes: [`release-notes-2026-09.md`](archive/release-notes-2026-09.md).
 - Полигон автоматически пишет отдельный CombatLogs: причины, снимки, сводка,
   метка F8. Ограниченная асинхронная запись; старые обычные раунды очищаются
   раньше отмеченных: 20 MiB/раунд, 10 закрытых/100 MiB.
+- Хват ждёт всю серию спасательных шагов; пустые отмены заряда убраны.
+  Журнал переиспользует память форматирования и различает замеры позы/ожидания.
   Проверки: `DuelJournalTests`,
   `Range_DuelJournalRecordsReasonsWithoutChangingCombat`.
+  `GameLogFormatterTests`: формат сохранён, выделений памяти меньше.
 
 ### 2026-09-25 — Сугробы, база, загрузка и бой
 

@@ -7,9 +7,12 @@ namespace BarPromenade
     {
         internal const float ShoveRange = .85f;
         internal const float ShoveImpulse = 165f;
+        internal const float ShoveContactWindowSeconds = .08f;
         private readonly List<ShoveContact> standaloneShoves = new List<ShoveContact>(1);
         private readonly RaycastHit[] shoveObstacles = new RaycastHit[16];
-        private bool collectShove;
+        private bool collectShove, shoveContactPending, shoveContactApplied;
+        private int shoveContactSequence, shoveContactRequest, shoveContactToken, shoveContactAttempts;
+        private float shoveLastPalmGap, shoveLastAttemptSeconds;
         private Vector3 shoveDirection;
         internal Vector3 ShovePalmPosition => supportGrip?.ShovePalmPosition ?? transform.position;
 
@@ -40,12 +43,17 @@ namespace BarPromenade
 
         private bool TryBeginShove(int request = 0)
         {
+            CancelInterruptedShoveContact();
             if (request == 0) request = JournalCommand("windup_to_shove");
             if (!CheckShoveRange(request)) return JournalCommandResult(request, "rejected", "shove_range");
             if (ImpactMotion?.RecoveryInProgress ?? false) return JournalCommandResult(request, "rejected", "balance_recovery");
             if (!State.TryStartShove()) return JournalCommandResult(request, "rejected",
                 State.Phase == MeleePhase.Ready || State.IsCharging || State.Phase == MeleePhase.Windup ? "stamina" : "shove_phase",
                 State.Stamina, State.Settings.ShoveCost);
+            shoveContactPending = true; shoveContactApplied = false;
+            shoveContactSequence = State.AttackSequence; shoveContactRequest = request;
+            shoveContactToken = unchecked(shoveContactToken + 1); shoveContactAttempts = 0;
+            shoveLastPalmGap = shoveLastAttemptSeconds = 0f;
             shoveDirection = Vector3.ProjectOnPlane(contactTarget.transform.position - transform.position, Vector3.up).normalized;
             reaction = null; reactionClock = 0f; sweepValid = collectSweep = collectShove = false;
             Present();
@@ -75,13 +83,32 @@ namespace BarPromenade
 
         internal void CollectShoveContacts(List<ShoveContact> pending)
         {
-            if (!collectShove) return;
+            if (!collectShove || !shoveContactPending) return;
             collectShove = false;
-            if (!CheckShoveRange(journalActionRequest)) { JournalShoveRejected("range"); return; }
-            if (!ShoveSurface(out var hit)) { JournalShoveRejected("chest_surface_missing"); return; }
-            if (supportGrip == null) { JournalShoveRejected("support_arm_missing"); return; }
+            CancelInterruptedShoveContact();
+            if (!shoveContactPending) return;
+            float contactEnd = Mathf.Min(State.Settings.ShoveDurationSeconds,
+                State.Settings.ShoveContactSeconds + ShoveContactWindowSeconds);
+            // The existing palm pose holds full reach until contact + .035s;
+            // this bounded window ends during its early return, before rest.
+            if (State.ShoveElapsed > contactEnd + .000001f)
+            {
+                RejectShoveContact(shoveContactAttempts > 0 ? "palm_gap" : "contact_window_elapsed", shoveLastPalmGap, .08f);
+                return;
+            }
+            shoveContactAttempts++;
+            if (!CheckShoveRange(shoveContactAttempts == 1 ? shoveContactRequest : 0)) { RejectShoveContact("range"); return; }
+            if (!ShoveSurface(out var hit)) { RejectShoveContact("chest_surface_missing"); return; }
+            if (supportGrip == null) { RejectShoveContact("support_arm_missing"); return; }
             float palmGap = Vector3.Distance(ShovePalmPosition, hit.Point);
-            if (palmGap > .08f) { JournalShoveRejected("palm_gap", palmGap, .08f); return; }
+            shoveLastPalmGap = palmGap; shoveLastAttemptSeconds = State.ShoveElapsed;
+            if (palmGap > .08f)
+            {
+                // A near miss gets the next real simulation pose, not a larger
+                // contact tolerance or a second application of a landed shove.
+                if (State.ShoveElapsed >= contactEnd - .000001f) RejectShoveContact("palm_gap", palmGap, .08f);
+                return;
+            }
             Vector3 start = transform.position + Vector3.up * (hit.Point.y - transform.position.y);
             Vector3 travel = hit.Point - start;
             JournalPhysicsQuery();
@@ -90,28 +117,43 @@ namespace BarPromenade
             if (count == shoveObstacles.Length)
             {
                 JournalQueryBufferFull(0, "shove_obstacles", shoveObstacles.Length);
-                JournalShoveRejected("obstacle_buffer_full", count, shoveObstacles.Length); return;
+                RejectShoveContact("obstacle_buffer_full", count, shoveObstacles.Length); return;
             }
             for (int i = 0; i < count; i++)
             {
                 Transform obstacle = shoveObstacles[i].collider.transform;
                 if (!obstacle.IsChildOf(transform) && !obstacle.IsChildOf(contactTarget.transform))
-                { JournalShoveRejected("world_obstacle"); return; }
+                { RejectShoveContact("world_obstacle"); return; }
             }
+            shoveContactPending = false;
             pending.Add(new ShoveContact(this, contactTarget, hit, shoveDirection));
-            JournalEvent("shove_contact_provisional", contactTarget.JournalActorId, State.AttackSequence, journalActionRequest,
+            JournalEvent("shove_contact_provisional", contactTarget.JournalActorId, shoveContactSequence, shoveContactRequest,
                 GameLog.Field("palm_gap", palmGap), GameLog.Field("contact_seconds", State.ShoveElapsed),
-                GameLog.Field("point_x", hit.Point.x), GameLog.Field("point_y", hit.Point.y), GameLog.Field("point_z", hit.Point.z));
+                GameLog.Field("point_x", hit.Point.x), GameLog.Field("point_y", hit.Point.y), GameLog.Field("point_z", hit.Point.z),
+                GameLog.Field("attempts", shoveContactAttempts));
         }
 
-        private void JournalShoveRejected(string reason, float value = 0f, float threshold = 0f) =>
-            JournalEvent("shove_contact_rejected", contactTarget?.JournalActorId ?? 0, State.AttackSequence, journalActionRequest,
+        private void CancelInterruptedShoveContact()
+        {
+            if (shoveContactPending && (!State.IsShoving || State.AttackSequence != shoveContactSequence))
+                RejectShoveContact("interrupted");
+        }
+
+        private void RejectShoveContact(string reason, float value = 0f, float threshold = 0f)
+        {
+            shoveContactPending = collectShove = false;
+            JournalEvent("shove_contact_rejected", contactTarget?.JournalActorId ?? 0, shoveContactSequence, shoveContactRequest,
                 GameLog.Field("reason", reason), GameLog.Field("value", value), GameLog.Field("threshold", threshold),
-                GameLog.Field("contact_seconds", State.ShoveElapsed));
+                GameLog.Field("contact_seconds", State.ShoveElapsed), GameLog.Field("last_attempt_seconds", shoveLastAttemptSeconds),
+                GameLog.Field("attempts", shoveContactAttempts));
+        }
 
         private void ResetShove()
         {
-            collectShove = false; shoveDirection = Vector3.zero;
+            collectShove = shoveContactPending = shoveContactApplied = false; shoveDirection = Vector3.zero;
+            shoveContactToken = unchecked(shoveContactToken + 1);
+            shoveContactSequence = shoveContactRequest = shoveContactAttempts = 0;
+            shoveLastPalmGap = shoveLastAttemptSeconds = 0f;
             standaloneShoves.Clear();
         }
 
@@ -122,22 +164,26 @@ namespace BarPromenade
             private readonly CombatActor source, target;
             private readonly CombatHurtboxes.Hit hit;
             private readonly Vector3 direction;
-            private readonly int sequence;
+            private readonly int sequence, request, token;
 
             internal ShoveContact(CombatActor source, CombatActor target, CombatHurtboxes.Hit hit, Vector3 direction)
             {
                 this.source = source; this.target = target; this.hit = hit; this.direction = direction;
                 sequence = source.State.AttackSequence;
+                request = source.shoveContactRequest; token = source.shoveContactToken;
             }
 
             internal void Apply()
             {
+                if (source.shoveContactToken != token || source.shoveContactApplied) return;
+                source.shoveContactApplied = true;
                 if (!target.State.ReceiveShove())
                 {
-                    source.JournalEvent("shove_contact_rejected", target.JournalActorId, sequence, source.journalActionRequest,
+                    source.JournalEvent("shove_contact_rejected", target.JournalActorId, sequence, request,
                         GameLog.Field("reason", "target_rules"), GameLog.Field("target_phase", (int)target.State.Phase));
                     return;
                 }
+                target.CancelInterruptedShoveContact();
                 target.reaction = null; target.reactionClock = 0f; target.sweepValid = false;
                 float health = target.State.Health;
                 target.PublishImpact(new CombatImpact(source, target, sequence, hit.Point, hit.Normal, direction,

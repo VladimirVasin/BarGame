@@ -11,7 +11,7 @@ namespace BarPromenade
                 SceneTransitionService.IsTransitioning || !Application.CanStreamedLevelBeLoaded(SceneIds.CombatTest))
                 return false;
             // Do not start the narrative calendar or its scheduled events.
-            GameSessionState.BeginNewGame();
+            GameSessionState.BeginNewGame("combat_test_start");
             return SceneTransitionService.RequestLoad(SceneIds.CombatTest);
         }
     }

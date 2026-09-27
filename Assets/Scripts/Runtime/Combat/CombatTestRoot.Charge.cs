@@ -26,7 +26,7 @@ namespace BarPromenade
             {
                 if (attackInputOwned && (releasedWhileSuspended || !held))
                 {
-                    Hero.CancelCharge();
+                    CancelHeldHeroCharge();
                     attackInputOwned = false;
                 }
                 if (!attackInputOwned && held) requireAttackRelease = true;
@@ -44,7 +44,7 @@ namespace BarPromenade
             if (stepping) Hero.TryStep(GameInput.ReadMovement());
             if (blocking || stepping || RoundFinished)
             {
-                Hero.CancelCharge();
+                CancelHeldHeroCharge();
                 attackInputOwned = false;
                 requireAttackRelease |= held;
             }
@@ -78,11 +78,16 @@ namespace BarPromenade
             requireAttackRelease = GameInput.IsHeld(GameInputAction.MeleeAttack, GameInputContext.PauseMenu);
         }
 
+        private void CancelHeldHeroCharge()
+        {
+            if (Hero != null && (Hero.State.IsCharging || Hero.State.HasBufferedCharge)) Hero.CancelCharge();
+        }
+
         private void OnApplicationFocus(bool focused)
         {
             JournalApplicationFocus(focused);
             if (focused) return;
-            if (Hero != null) Hero.CancelCharge();
+            CancelHeldHeroCharge();
             attackInputOwned = false;
             requireAttackRelease = true;
         }
@@ -92,8 +97,8 @@ namespace BarPromenade
             CloseDuelJournal("disabled");
             ResetOpponentMovement();
             if (IsInitialized) SetDuelFrozen(false);
-            if (Hero != null) Hero.CancelCharge();
-            if (Opponent != null) Opponent.CancelCharge();
+            CancelHeldHeroCharge();
+            if (Opponent != null && (Opponent.State.IsCharging || Opponent.State.HasBufferedCharge)) Opponent.CancelCharge();
             ResetChargeInput();
         }
 

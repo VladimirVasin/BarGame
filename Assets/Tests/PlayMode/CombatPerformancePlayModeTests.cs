@@ -9,7 +9,7 @@ using Object = UnityEngine.Object;
 namespace BarPromenade.Tests.PlayMode
 {
     /// <summary>Bounds simulation CPU work against the currently imported arena assets; not rendered FPS.</summary>
-    public sealed class CombatPerformancePlayModeTests
+    public sealed partial class CombatPerformancePlayModeTests
     {
         private const float TickSeconds = 1f / 60f;
         private const int MeasuredTicks = 20;
@@ -185,7 +185,7 @@ namespace BarPromenade.Tests.PlayMode
                     Assert.That(actor.State.Stamina, Is.EqualTo(stamina - actor.State.Settings.ShoveCost).Within(.001f), context);
                     for (int step = 0; step < 10; step++) root.Tick(CombatTestRoot.SimulationStep);
                     Assert.That(contacts, Is.Zero, context + ": the palm cannot hit before the short tell.");
-                    for (int step = 0; step < 4 && contacts == 0; step++) root.Tick(CombatTestRoot.SimulationStep);
+                    for (int step = 0; step < 14 && contacts == 0; step++) root.Tick(CombatTestRoot.SimulationStep);
                     Vector3 palm = actor.ShovePalmPosition;
                     Vector3 chest = target.Ragdoll.PhysicsController.ChestBody.transform.position;
                     Vector3 axis = Vector3.ProjectOnPlane(target.transform.position - actor.transform.position, Vector3.up).normalized;
@@ -197,7 +197,7 @@ namespace BarPromenade.Tests.PlayMode
                     TestContext.Out.WriteLine(measurement);
                     Assert.That(contacts, Is.EqualTo(1), "The actual palm must reach the chest. " + measurement);
                     Assert.That(contactElapsed, Is.InRange(actor.State.Settings.ShoveContactSeconds - .00001f,
-                        actor.State.Settings.ShoveContactSeconds + CombatTestRoot.SimulationStep + .00001f), context);
+                        actor.State.Settings.ShoveContactSeconds + CombatActor.ShoveContactWindowSeconds + .00001f), context);
                     Assert.That(contactElapsed, Is.LessThan(actor.State.Settings.WindupSeconds * .3f), context);
                     Assert.That(palmError, Is.LessThanOrEqualTo(.08f), context + ": visible hand and impact agree.");
                     Assert.That(contact.Source, Is.SameAs(actor), context);
@@ -235,6 +235,75 @@ namespace BarPromenade.Tests.PlayMode
             // The same focused selection also exercises automatic decisions at the
             // closest body spacing and with the NPC's usual retreat blocked by a wall.
             yield return Range_CrowdingRestoresGripAndAttack();
+            LogAssert.NoUnexpectedReceived();
+        }
+
+        [UnityTest]
+        public IEnumerator Range_ShoveWindowRequiresOneRealContact()
+        {
+            var pending = new System.Collections.Generic.List<CombatActor.ShoveContact>();
+            for (int scenario = 0; scenario < 5; scenario++)
+            {
+                root.SetSparring(false);
+                PlacePair(.82f);
+                for (int warmup = 0; warmup < 6; warmup++) { root.Tick(TickSeconds); yield return null; }
+                CombatActor source = scenario % 2 == 0 ? root.Hero : root.Opponent;
+                CombatActor target = source == root.Hero ? root.Opponent : root.Hero;
+                Transform hand = System.Array.Find(source.DamageRigRoot.GetComponentsInChildren<Transform>(true), bone => bone.name == "hand.L");
+                Assert.That(hand, Is.Not.Null);
+                float contactAt = source.State.Settings.ShoveContactSeconds;
+                float expiresAt = contactAt + CombatActor.ShoveContactWindowSeconds;
+                float health = target.State.Health, impactAt = -1f;
+                int hits = 0;
+                bool missed = false;
+                GameObject wall = null;
+                void Hit(CombatImpact impact) { hits++; impactAt = source.State.ShoveElapsed; }
+                target.ImpactReceived += Hit;
+                try
+                {
+                    Assert.That(source.RequestAttack(), Is.True);
+                    for (int step = 0; step < 52; step++)
+                    {
+                        source.AdvanceSimulation(CombatTestRoot.SimulationStep);
+                        target.AdvanceSimulation(CombatTestRoot.SimulationStep);
+                        source.Present(); target.Present();
+                        source.CaptureContactPose(); target.CaptureContactPose();
+                        float elapsed = source.State.ShoveElapsed;
+                        bool eligible = source.State.IsShoving && elapsed >= contactAt;
+                        // Reproduce a real posed-palm miss independently of root
+                        // distance; the following presentation restores the rig.
+                        bool forceGap = scenario < 4 && eligible &&
+                            (scenario < 2 ? !missed : elapsed <= expiresAt + CombatTestRoot.SimulationStep);
+                        if (forceGap) { hand.position += Vector3.up; missed = true; }
+                        if (scenario == 4 && eligible && wall == null)
+                        {
+                            wall = new GameObject("Shove contact obstruction");
+                            wall.transform.position = (source.transform.position + target.transform.position) * .5f + Vector3.up;
+                            wall.AddComponent<BoxCollider>().size = new Vector3(2f, 2f, .03f);
+                            Physics.SyncTransforms();
+                        }
+                        pending.Clear();
+                        source.CollectShoveContacts(pending);
+                        source.CollectShoveContacts(pending);
+                        Assert.That(pending.Count, Is.LessThanOrEqualTo(1), "Repeated collection cannot duplicate an impulse.");
+                        if (forceGap) Assert.That(pending, Is.Empty, "An out-of-reach palm cannot push.");
+                        foreach (CombatActor.ShoveContact contact in pending) { contact.Apply(); contact.Apply(); }
+                        if (wall != null) { wall.GetComponent<Collider>().enabled = false; Physics.SyncTransforms(); }
+                    }
+                    Assert.That(hits, Is.EqualTo(scenario < 2 ? 1 : 0), "scenario=" + scenario);
+                    Assert.That(target.ReceivedImpactCount, Is.EqualTo(hits));
+                    Assert.That(target.State.Health, Is.EqualTo(health));
+                    Assert.That(source.State.IsShoving, Is.False);
+                    if (scenario < 2) Assert.That(impactAt, Is.InRange(contactAt + .001f, expiresAt),
+                        "A later real contact must still work after the first palm miss.");
+                }
+                finally
+                {
+                    target.ImpactReceived -= Hit;
+                    if (wall != null) Object.Destroy(wall);
+                }
+                yield return null;
+            }
             LogAssert.NoUnexpectedReceived();
         }
 
@@ -314,8 +383,9 @@ namespace BarPromenade.Tests.PlayMode
         {
             public int actor, action, request, round, frame;
             public long tick, dropped_records;
-            public double duel_seconds;
-            public string result, reason;
+            public double duel_seconds, late_pose_ms, update_to_late_ms;
+            public bool active;
+            public string result, reason, phase;
         }
 
         [UnityTest]
@@ -326,6 +396,8 @@ namespace BarPromenade.Tests.PlayMode
             int expectedSteps = 0;
             DuelJournal journal = null;
             var collector = new double[120];
+            var allocated = new long[2, 120];
+            using var gc = Unity.Profiling.ProfilerRecorder.StartNew(Unity.Profiling.ProfilerCategory.Memory, "GC Allocated In Frame", 1);
             for (int mode = 0; mode < 2; mode++)
             {
                 root.SetDuelLogging(false);
@@ -337,19 +409,35 @@ namespace BarPromenade.Tests.PlayMode
                     journal = root.JournalForDiagnostics;
                     Assert.That(journal, Is.Not.Null);
                 }
-                Assert.That(root.Hero.RequestAttack(), Is.True);
-                Assert.That(root.Hero.RequestAttack(), Is.False, "A second command during a shove is rejected in both runs.");
+                // Match the observed regression: the opponent shoves the hero,
+                // whose late presentation must not regrip between catch steps.
+                CombatActor victim = root.Hero;
+                bool pausedBetweenSteps = false;
+                Assert.That(root.Opponent.RequestAttack(), Is.True);
+                Assert.That(root.Opponent.RequestAttack(), Is.False, "A second command during a shove is rejected in both runs.");
                 for (int frame = 0; frame < collector.Length; frame++)
                 {
                     root.Tick(TickSeconds);
                     yield return null;
+                    allocated[mode, frame] = gc.Valid && gc.Count > 0 ? gc.LastValue : -1;
                     if (mode == 1) collector[frame] = root.JournalCollectorMilliseconds;
-                    if (frame == 8)
+                    if (victim.Footwork.RecoveryEpisodeActive)
                     {
+                        Assert.That(victim.SupportGrip.JournalRegripAllowed, Is.False, "Recovery owns the hand through the planning gap.");
+                        Assert.That(victim.SupportGrip.IsRegripping, Is.False);
+                    }
+                    if (!pausedBetweenSteps && victim.ImpactMotion.LandedRecoverySteps == 1 &&
+                        victim.Footwork.CatchStepCount == 1 && !victim.Footwork.CatchStepActive && victim.Footwork.RecoveryEpisodeActive)
+                    {
+                        pausedBetweenSteps = true;
                         long tick = journal?.Tick ?? 0;
                         double seconds = journal?.DuelSeconds ?? 0;
                         Assert.That(root.PauseMenu.Open(), Is.True);
                         for (int pause = 0; pause < 3; pause++) { root.Tick(TickSeconds); yield return null; }
+                        root.Tick(0f); victim.Present(); victim.Present();
+                        Assert.That(victim.Footwork.RecoveryEpisodeActive, Is.True);
+                        Assert.That(victim.Footwork.CatchStepCount, Is.EqualTo(1));
+                        Assert.That(victim.ImpactMotion.LandedRecoverySteps, Is.EqualTo(1));
                         if (mode == 1)
                         {
                             Assert.That(journal.Tick, Is.EqualTo(tick));
@@ -360,23 +448,38 @@ namespace BarPromenade.Tests.PlayMode
                         Assert.That(GameInput.CanRead(GameInputContext.Gameplay), Is.True);
                     }
                 }
-                Assert.That(root.Opponent.ReceivedImpactCount, Is.EqualTo(1));
-                Assert.That(root.Opponent.State.Health, Is.EqualTo(root.Opponent.State.Settings.MaxHealth));
-                Assert.That(root.Opponent.IsKnockedDown, Is.False);
-                Assert.That(root.Opponent.HasTwoHandSupport, Is.True);
+                Assert.That(pausedBetweenSteps, Is.True, "This regression must exercise the gap between two real landings.");
+                Assert.That(victim.ReceivedImpactCount, Is.EqualTo(1));
+                Assert.That(victim.State.Health, Is.EqualTo(victim.State.Settings.MaxHealth));
+                Assert.That(victim.IsKnockedDown, Is.False);
+                Assert.That(victim.HasTwoHandSupport, Is.True);
+                Assert.That(victim.Footwork.RecoveryEpisodeActive, Is.False);
+                Assert.That(victim.Footwork.CatchStepCount, Is.EqualTo(2));
                 if (mode == 0)
                 {
-                    expectedPosition = root.Opponent.transform.position;
-                    expectedSteps = root.Opponent.ImpactMotion.LandedRecoverySteps;
+                    expectedPosition = victim.transform.position;
+                    expectedSteps = victim.ImpactMotion.LandedRecoverySteps;
                 }
                 else
                 {
-                    Assert.That(Vector3.Distance(root.Opponent.transform.position, expectedPosition), Is.LessThan(.002f));
-                    Assert.That(root.Opponent.ImpactMotion.LandedRecoverySteps, Is.EqualTo(expectedSteps));
+                    Assert.That(Vector3.Distance(victim.transform.position, expectedPosition), Is.LessThan(.002f));
+                    Assert.That(victim.ImpactMotion.LandedRecoverySteps, Is.EqualTo(expectedSteps));
                     Assert.That(GameDiagnosticsSnapshot.Capture("journal-test"), Is.True, "F8's shared route marks the duel even with main logging off.");
                     root.TickFrame(.5f);
                     root.ResetRound();
+                    Assert.That(victim.Footwork.RecoveryEpisodeActive, Is.False);
                     yield return null;
+                    Assert.That(root.Hero.RequestCharge(), Is.True);
+                    root.Opponent.State.ReceiveHit(1000f, 0f, false);
+                    root.AutomaticSimulation = true;
+                    yield return null;
+                    Assert.That(root.RoundFinished, Is.True);
+                    Assert.That(root.Hero.State.IsCharging || root.Hero.State.HasBufferedCharge, Is.False,
+                        "Round completion still cancels a real held charge.");
+                    int request = root.Hero.JournalRequestId;
+                    for (int idle = 0; idle < 5; idle++) yield return null;
+                    Assert.That(root.Hero.JournalRequestId, Is.EqualTo(request), "Finished rounds must not emit empty charge cancellations every frame.");
+                    root.AutomaticSimulation = false;
                     root.SetDuelLogging(false);
                 }
             }
@@ -387,8 +490,9 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(journal.DroppedRecords, Is.Zero);
             string[] logs = System.IO.Directory.GetFiles(folder, "duel.ndjson", System.IO.SearchOption.AllDirectories);
             Assert.That(logs.Length, Is.EqualTo(2), "Reset closes the old round and starts a distinct journal.");
-            bool rejected = false, contact = false, paused = false, marked = false, discarded = false, state = false, frameTiming = false;
+            bool rejected = false, contact = false, paused = false, marked = false, discarded = false, state = false, frameTiming = false, latePose = false;
             long sequence = 0;
+            int recoveryStarts = 0, recoveryEnds = 0;
             System.Array.Sort(logs, System.StringComparer.Ordinal);
             foreach (string log in logs)
             {
@@ -412,14 +516,33 @@ namespace BarPromenade.Tests.PlayMode
                     discarded |= entry.@event == "time_discarded";
                     state |= entry.@event == "state";
                     frameTiming |= entry.@event == "frame";
+                    if (entry.@event == "recovery" && entry.data.actor == 1 && entry.data.round == 1)
+                    {
+                        if (entry.data.active) recoveryStarts++; else recoveryEnds++;
+                    }
+                    if (entry.@event == "frame_detail")
+                    {
+                        StringAssert.Contains("\"latest_present_wait_ms\":", line);
+                        StringAssert.Contains("\"latest_timing_repeat_frames\":", line);
+                        latePose |= entry.data.late_pose_ms > 0d && entry.data.update_to_late_ms >= entry.data.late_pose_ms;
+                    }
                 }
                 Assert.That(System.IO.File.Exists(System.IO.Path.Combine(System.IO.Path.GetDirectoryName(log), "summary.txt")), Is.True);
             }
-            Assert.That(rejected && contact && paused && marked && discarded && state && frameTiming, Is.True,
-                $"Required evidence: denied={rejected}, impact={contact}, pause={paused}, mark={marked}, discarded={discarded}, state={state}, frame={frameTiming}");
+            Assert.That(rejected && contact && paused && marked && discarded && state && frameTiming && latePose, Is.True,
+                $"Required evidence: denied={rejected}, impact={contact}, pause={paused}, mark={marked}, discarded={discarded}, state={state}, frame={frameTiming}, latePose={latePose}");
+            Assert.That(recoveryStarts, Is.EqualTo(1), "Both catch steps belong to one recovery episode.");
+            Assert.That(recoveryEnds, Is.EqualTo(1));
             System.Array.Sort(collector);
             double p95 = collector[113];
             TestContext.Out.WriteLine($"Duel journal collection p95={p95:F4}ms/frame; identical seeded shove result with logging off/on. Logs: {folder}");
+            for (int mode = 0; mode < 2; mode++)
+            {
+                var bytes = new long[allocated.GetLength(1) - 12];
+                for (int i = 0; i < bytes.Length; i++) bytes[i] = allocated[mode, i + 12];
+                System.Array.Sort(bytes);
+                TestContext.Out.WriteLine($"Journal {(mode == 0 ? "off" : "on")}: observed GC bytes/frame p50={bytes[bytes.Length / 2]}, p95={bytes[(int)(bytes.Length * .95)]}; Editor timing, not isolated worker allocations.");
+            }
             Assert.That(p95, Is.LessThanOrEqualTo(.2d), "Collector budget excludes worker serialization and disk IO.");
             LogAssert.NoUnexpectedReceived();
         }

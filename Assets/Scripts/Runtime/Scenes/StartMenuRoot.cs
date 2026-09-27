@@ -53,7 +53,7 @@ namespace BarPromenade
             GameTimeScaleRuntime.EnsureInstalled();
             // The launch scene is the session boundary: arriving here from a
             // pause-menu restart must leave no clock running behind the card.
-            GameSessionState.BeginNewGame();
+            GameSessionState.BeginNewGame("menu_reset");
             model.Open();
             // The card is now interactive and will sit idle for as long as
             // the player reads it: fetch the hero and pooled pedestrian

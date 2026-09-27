@@ -1,9 +1,14 @@
+using Unity.Profiling;
 using UnityEngine;
 
 namespace BarPromenade
 {
     public sealed partial class CombatActor
     {
+        private static readonly ProfilerMarker RecoveryAdvanceMarker = new ProfilerMarker("BarPromenade.CombatRecovery.Advance");
+        private static readonly ProfilerMarker RecoveryPresentMarker = new ProfilerMarker("BarPromenade.CombatRecovery.Present");
+        private static readonly ProfilerMarker RecoveryWeaponMarker = new ProfilerMarker("BarPromenade.CombatRecovery.WeaponApply");
+        private static readonly ProfilerMarker RecoveryCommitMarker = new ProfilerMarker("BarPromenade.CombatRecovery.WeaponCommit");
         private CombatRecoveryPose knockdownPose;
         private PlayerRagdollLyingPose knockdownLying;
         private bool knockedDown, knockdownFrozen, recoveryPoseBegun, recoveryRegrip;
@@ -51,6 +56,7 @@ namespace BarPromenade
         private bool AdvanceKnockdown(float seconds)
         {
             if (!knockedDown) return false;
+            using var marker = RecoveryAdvanceMarker.Auto();
             sweepValid = collectSweep = false;
             if (State.IsDefeated) { PromoteKnockdownToDefeat(); return true; }
             if (knockdownFrozen || PauseMenuController.IsAnyPaused || seconds <= 0f) return true;
@@ -87,7 +93,7 @@ namespace BarPromenade
             supportGrip?.Restore();
             weaponConstraint?.Restore();
             knockdownPose.Present(recoveryRegrip);
-            weaponConstraint?.Apply();
+            using (RecoveryWeaponMarker.Auto()) weaponConstraint?.Apply();
             if (weaponConstraint != null && weaponConstraint.MotionBlocked)
             { knockdownPose.RejectAdvance(seconds); return JournalRiseWait("weapon_motion_blocked"); }
             if (!recoveryRegrip && knockdownPose.HandsReleased)
@@ -100,7 +106,10 @@ namespace BarPromenade
                 recoveryRegrip = true;
             }
             if (recoveryRegrip) supportGrip?.Advance(seconds);
-            PresentKnockdown();
+            // This call still has the authored pose and constrained right arm
+            // from above. Advancing the support reach changes its state, not
+            // those bones; apply the left arm and validate the final contact.
+            PresentKnockdown(preparedForThisStep: true);
             if (weaponConstraint != null && weaponConstraint.MotionBlocked)
             { knockdownPose.RejectAdvance(seconds); return JournalRiseWait("weapon_motion_blocked"); }
             if (!knockdownPose.IsComplete) return JournalRiseWait("pose_incomplete");
@@ -112,17 +121,23 @@ namespace BarPromenade
             return true;
         }
 
-        private bool PresentKnockdown()
+        private bool PresentKnockdown(bool preparedForThisStep = false)
         {
             if (!knockedDown) return false;
+            using var marker = RecoveryPresentMarker.Auto();
             if (recoveryPoseBegun && Ragdoll.IsRecovering)
             {
-                supportGrip?.Restore();
-                weaponConstraint?.Restore();
-                knockdownPose.Present(recoveryRegrip);
-                weaponConstraint?.Apply();
+                // Only the synchronous Advance caller can reuse this work.
+                // Every external presentation rechecks the current world/pose.
+                if (!preparedForThisStep)
+                {
+                    supportGrip?.Restore();
+                    weaponConstraint?.Restore();
+                    knockdownPose.Present(recoveryRegrip);
+                    using (RecoveryWeaponMarker.Auto()) weaponConstraint?.Apply();
+                }
                 if (recoveryRegrip && (weaponConstraint == null || !weaponConstraint.MotionBlocked)) supportGrip?.Apply();
-                weaponConstraint?.CommitPresentedPose(supportGrip);
+                using (RecoveryCommitMarker.Auto()) weaponConstraint?.CommitPresentedPose(supportGrip);
                 visibleClip = knockdownPose.ClipName;
             }
             handPose?.SetGrip(false, 1f);

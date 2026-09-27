@@ -20,7 +20,7 @@ namespace BarPromenade
         private LocalPose[] initialPose;
         private bool capsuleWasEnabled, motorWasEnabled, inputWasEnabled, balanceWasEnabled;
         private bool npcWasEnabled, animatorWasEnabled;
-        private float simulationSeconds, quietSeconds, groundSeconds;
+        private float simulationSeconds, quietSeconds, groundSeconds, supportSeconds;
         private bool recoverable, hitStopFrozen;
         private readonly Dictionary<Transform, RagdollBoneMotion> presentedMotion = new Dictionary<Transform, RagdollBoneMotion>();
         private readonly Dictionary<Transform, WorldPose> previousWorldPose = new Dictionary<Transform, WorldPose>();
@@ -41,6 +41,27 @@ namespace BarPromenade
         public Rigidbody PelvisBody => physicsController != null ? physicsController.PelvisBody : null;
         public int BodyCount => physicsController != null ? physicsController.BodyCount : 0;
         public float MaximumBodySpeed => physicsController != null ? physicsController.MaximumBodySpeed : 0f;
+        internal float PelvisLinearSpeed => PelvisBody != null ? PelvisBody.linearVelocity.magnitude : 0f;
+        internal float PelvisAngularSpeed => PelvisBody != null ? PelvisBody.angularVelocity.magnitude : 0f;
+        internal float TorsoLinearSpeed => physicsController != null && physicsController.ChestBody != null
+            ? physicsController.ChestBody.linearVelocity.magnitude : 0f;
+        internal float TorsoAngularSpeed => physicsController != null && physicsController.ChestBody != null
+            ? physicsController.ChestBody.angularVelocity.magnitude : 0f;
+        internal float CentralBodySpeed => Mathf.Max(PelvisLinearSpeed + PelvisAngularSpeed * .12f,
+            TorsoLinearSpeed + TorsoAngularSpeed * .12f);
+        internal float GroundSeconds => groundSeconds;
+        internal float SupportSeconds => supportSeconds;
+        internal float QuietSeconds => quietSeconds;
+        internal bool HasSupportContact
+        {
+            get
+            {
+                if (!IsActive || IsRecovering) return false;
+                foreach (CombatRagdollGroundContact contact in groundContacts)
+                    if (contact != null && contact.HasSupportContact) return true;
+                return false;
+            }
+        }
 
         public void InitializeHero(PlayerRuntime player)
         {
@@ -183,6 +204,7 @@ namespace BarPromenade
             lying = default;
             if (!IsActive || !recoverable || IsRecovering || hitStopFrozen || !IsSettled) return false;
             if (!physicsController.BeginRise(out lying)) return false;
+            supportSeconds = 0f;
             IsRecovering = true;
             return true;
         }
@@ -235,18 +257,34 @@ namespace BarPromenade
 
         private void PrepareGroundContacts(Transform head)
         {
-            Add(physicsController.PelvisBody);
-            Add(physicsController.SpineBody);
-            Add(physicsController.ChestBody);
-            Add(head.GetComponent<Rigidbody>());
-            void Add(Rigidbody body)
+            Rigidbody headBody = head.GetComponent<Rigidbody>();
+            if (headBody == null) throw new InvalidOperationException("Combat ground contact requires its anatomical rigidbody.");
+            foreach (Rigidbody body in Bodies)
             {
                 if (body == null) throw new InvalidOperationException("Combat ground contact requires its anatomical rigidbody.");
                 CombatRagdollGroundContact contact = body.gameObject.AddComponent<CombatRagdollGroundContact>();
-                contact.Initialize(this);
+                contact.Initialize(this, body == physicsController.PelvisBody || body == physicsController.SpineBody ||
+                    body == physicsController.ChestBody || body == headBody);
                 groundContacts.Add(contact);
             }
         }
+
+        internal bool IsAnatomicalSupport(Collision collision)
+        {
+            if (!IsActive || IsRecovering || collision == null || !IsStaticSupportSurface(collision.collider)) return false;
+            for (int i = 0; i < collision.contactCount; i++)
+            {
+                ContactPoint contact = collision.GetContact(i);
+                // A held shaft shares the forearm body, but is not an anatomical support.
+                if (contact.thisCollider == null || !physicsController.AnatomicalColliders.ContainsKey(contact.thisCollider)) continue;
+                if (contact.normal.y > .65f && contact.separation <= .02f && Finite(contact.point)) return true;
+            }
+            return false;
+        }
+
+        internal static bool IsStaticSupportSurface(Collider surface) => surface != null && surface.enabled &&
+            surface.gameObject.activeInHierarchy && surface.attachedRigidbody == null &&
+            surface.GetComponentInParent<CombatActor>() == null;
 
         internal void RegisterGroundContact(Collision collision)
         {
@@ -277,9 +315,12 @@ namespace BarPromenade
         private void ClearGroundContact()
         {
             groundSeconds = 0f;
+            supportSeconds = 0f;
             HasGroundContact = false;
             GroundContactPoint = GroundContactNormal = Vector3.zero;
             GroundContactSurface = null;
+            foreach (CombatRagdollGroundContact contact in groundContacts)
+                if (contact != null) contact.ClearSupport();
         }
 
         private void FixedUpdate()
@@ -296,13 +337,15 @@ namespace BarPromenade
                 body.angularVelocity = Vector3.ClampMagnitude(body.angularVelocity, 10f);
             }
             if (HasGroundContact) groundSeconds += Time.fixedDeltaTime;
+            bool hasSupport = HasSupportContact;
+            supportSeconds = hasSupport ? supportSeconds + Time.fixedDeltaTime : 0f;
             // A settled torso can actively gather still-moving limbs. Waiting for the
             // fastest fingertip/joint to stop made every temporary fall hit a 4 s timeout.
             float speed = recoverable ? Mathf.Max(CentralSpeed(physicsController.PelvisBody),
                 CentralSpeed(physicsController.ChestBody)) : MaximumBodySpeed;
             quietSeconds = speed < (recoverable ? .65f : .12f) ? quietSeconds + Time.fixedDeltaTime : 0f;
-            bool readyToRise = HasGroundContact && simulationSeconds >= .45f &&
-                (quietSeconds >= .18f || (groundSeconds >= 1.1f && speed < 1f));
+            bool readyToRise = hasSupport && simulationSeconds >= .45f &&
+                (quietSeconds >= .18f || (supportSeconds >= 1.1f && speed < 1f));
             bool terminalRest = (simulationSeconds >= 1f && quietSeconds >= .5f) || simulationSeconds >= 4f;
             if (recoverable ? readyToRise : terminalRest)
             {

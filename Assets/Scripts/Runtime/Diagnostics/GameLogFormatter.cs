@@ -1,6 +1,6 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
-using System.Text;
 
 namespace BarPromenade
 {
@@ -9,236 +9,189 @@ namespace BarPromenade
         public const int SchemaVersion = 1;
         public const int MaxStringCharacters = 16384;
         private const string TruncationMarker = "...[truncated]";
+        private const string UtcFormat = "yyyy-MM-dd'T'HH:mm:ss.fff'Z'";
 
         public static string Format(GameLogEvent entry)
         {
-            if (entry == null)
-            {
-                return string.Empty;
-            }
-
-            StringBuilder builder = new StringBuilder(256);
-            builder.Append("{\"schema_version\":");
-            builder.Append(
-                SchemaVersion.ToString(CultureInfo.InvariantCulture));
-            builder.Append(",\"utc\":");
-            AppendEscapedString(
-                builder,
-                entry.UtcTimestamp
-                    .ToUniversalTime()
-                    .ToString(
-                        "yyyy-MM-dd'T'HH:mm:ss.fff'Z'",
-                        CultureInfo.InvariantCulture));
-            AppendNumberProperty(
-                builder,
-                "mono_ms",
-                entry.MonotonicMilliseconds);
-            AppendNumberProperty(builder, "seq", entry.Sequence);
-            AppendStringProperty(
-                builder,
-                "level",
-                FormatLevel(entry.Level));
-            AppendStringProperty(builder, "category", entry.Category);
-            AppendStringProperty(builder, "event", entry.EventName);
-            AppendStringProperty(builder, "session_id", entry.SessionId);
-            AppendStringProperty(builder, "scene", entry.SceneName);
-            if (entry.CitySeed.HasValue)
-            {
-                AppendNumberProperty(
-                    builder,
-                    "city_seed",
-                    entry.CitySeed.Value);
-            }
-
-            builder.Append(",\"data\":{");
-            for (int index = 0; index < entry.Fields.Count; index++)
-            {
-                if (index > 0)
-                {
-                    builder.Append(',');
-                }
-
-                GameLogField field = entry.Fields[index];
-                AppendEscapedString(builder, field.Name);
-                builder.Append(':');
-                AppendFieldValue(builder, field);
-            }
-
-            builder.Append("}}");
-            return builder.ToString();
+            if (entry == null) return string.Empty;
+            var buffer = new Buffer(256);
+            TryFormat(buffer, entry.UtcTimestamp, entry.MonotonicMilliseconds, entry.Sequence,
+                entry.Level, entry.Category, entry.EventName, entry.SessionId, entry.SceneName,
+                entry.CitySeed, entry.Fields);
+            return new string(buffer.Characters, 0, buffer.Count);
         }
 
-        private static void AppendFieldValue(
-            StringBuilder builder,
-            GameLogField field)
+        /// <summary>
+        /// Formats into caller-owned storage without constructing an event, field
+        /// snapshot or result string. A buffer belongs to one consumer/thread.
+        /// False means the complete record did not fit; never write its prefix.
+        /// </summary>
+        internal static bool TryFormat(Buffer buffer, DateTimeOffset utcTimestamp, long monotonicMilliseconds,
+            long sequence, GameLogLevel level, string category, string eventName, string sessionId,
+            string sceneName, int? citySeed, IReadOnlyList<GameLogField> fields)
+        {
+            buffer.Reset();
+            buffer.Append("{\"schema_version\":"); buffer.Append((long)SchemaVersion);
+            buffer.Append(",\"utc\":\""); buffer.AppendUtc(utcTimestamp); buffer.Append('"');
+            AppendNumberProperty(buffer, "mono_ms", monotonicMilliseconds);
+            AppendNumberProperty(buffer, "seq", sequence);
+            AppendStringProperty(buffer, "level", FormatLevel(level));
+            AppendStringProperty(buffer, "category", category);
+            AppendStringProperty(buffer, "event", eventName);
+            AppendStringProperty(buffer, "session_id", sessionId);
+            AppendStringProperty(buffer, "scene", sceneName);
+            if (citySeed.HasValue) AppendNumberProperty(buffer, "city_seed", citySeed.Value);
+            buffer.Append(",\"data\":{");
+            if (fields != null)
+                for (int index = 0; index < fields.Count && !buffer.Overflowed; index++)
+                {
+                    if (index > 0) buffer.Append(',');
+                    GameLogField field = fields[index];
+                    AppendEscapedString(buffer, field.Name); buffer.Append(':');
+                    AppendFieldValue(buffer, field);
+                }
+            buffer.Append("}}");
+            return !buffer.Overflowed;
+        }
+
+        /// <summary>Reusable bounded characters and numeric scratch; growth is cold, never per record.</summary>
+        internal sealed class Buffer
+        {
+            private readonly int maximumCharacters;
+            private readonly char[] scratch = new char[64];
+            internal char[] Characters { get; private set; }
+            internal int Count { get; private set; }
+            internal bool Overflowed { get; private set; }
+
+            internal Buffer(int initialCapacity, int maximumCharacters = int.MaxValue)
+            {
+                if (initialCapacity < 0 || maximumCharacters < initialCapacity)
+                    throw new ArgumentOutOfRangeException(nameof(initialCapacity));
+                Characters = new char[initialCapacity];
+                this.maximumCharacters = maximumCharacters;
+            }
+
+            internal void Reset() { Count = 0; Overflowed = false; }
+            internal void Append(char value)
+            { if (Reserve(1)) Characters[Count++] = value; }
+            internal void Append(string value) => Append(value.AsSpan());
+            private void Append(ReadOnlySpan<char> value)
+            {
+                if (!Reserve(value.Length)) return;
+                value.CopyTo(Characters.AsSpan(Count)); Count += value.Length;
+            }
+
+            internal void Append(long value)
+            {
+                value.TryFormat(scratch.AsSpan(), out int length, default, CultureInfo.InvariantCulture);
+                Append(scratch.AsSpan(0, length));
+            }
+            internal void Append(float value)
+            {
+                value.TryFormat(scratch.AsSpan(), out int length, "R".AsSpan(), CultureInfo.InvariantCulture);
+                Append(scratch.AsSpan(0, length));
+            }
+            internal void Append(double value)
+            {
+                value.TryFormat(scratch.AsSpan(), out int length, "R".AsSpan(), CultureInfo.InvariantCulture);
+                Append(scratch.AsSpan(0, length));
+            }
+            internal void AppendUtc(DateTimeOffset value)
+            {
+                value.ToUniversalTime().TryFormat(scratch.AsSpan(), out int length,
+                    UtcFormat.AsSpan(), CultureInfo.InvariantCulture);
+                Append(scratch.AsSpan(0, length));
+            }
+            private bool Reserve(int additional)
+            {
+                if (Overflowed) return false;
+                if (additional > maximumCharacters - Count) { Overflowed = true; return false; }
+                int needed = Count + additional;
+                if (needed <= Characters.Length) return true;
+                int grown = (int)Math.Min(maximumCharacters, Math.Max((long)needed, Math.Max(256L, Characters.Length * 2L)));
+                var replacement = new char[grown];
+                Array.Copy(Characters, replacement, Count); Characters = replacement;
+                return true;
+            }
+        }
+
+        private static void AppendFieldValue(Buffer buffer, GameLogField field)
         {
             switch (field.Type)
             {
                 case GameLogFieldType.String:
-                    if (field.StringValue == null)
-                    {
-                        builder.Append("null");
-                    }
-                    else
-                    {
-                        AppendEscapedString(builder, field.StringValue);
-                    }
-
+                    if (field.StringValue == null) buffer.Append("null");
+                    else AppendEscapedString(buffer, field.StringValue);
                     break;
                 case GameLogFieldType.Int32:
                 case GameLogFieldType.Int64:
-                    builder.Append(
-                        field.IntegerValue.ToString(
-                            CultureInfo.InvariantCulture));
-                    break;
+                    buffer.Append(field.IntegerValue); break;
                 case GameLogFieldType.Single:
                     float single = (float)field.NumberValue;
-                    if (float.IsNaN(single) ||
-                        float.IsInfinity(single))
-                    {
-                        builder.Append("null");
-                    }
-                    else
-                    {
-                        builder.Append(
-                            single.ToString(
-                                "R",
-                                CultureInfo.InvariantCulture));
-                    }
-
+                    if (float.IsNaN(single) || float.IsInfinity(single)) buffer.Append("null");
+                    else buffer.Append(single);
                     break;
                 case GameLogFieldType.Double:
-                    if (double.IsNaN(field.NumberValue) ||
-                        double.IsInfinity(field.NumberValue))
-                    {
-                        builder.Append("null");
-                    }
-                    else
-                    {
-                        builder.Append(
-                            field.NumberValue.ToString(
-                                "R",
-                                CultureInfo.InvariantCulture));
-                    }
-
+                    if (double.IsNaN(field.NumberValue) || double.IsInfinity(field.NumberValue)) buffer.Append("null");
+                    else buffer.Append(field.NumberValue);
                     break;
                 case GameLogFieldType.Boolean:
-                    builder.Append(
-                        field.BooleanValue ? "true" : "false");
-                    break;
+                    buffer.Append(field.BooleanValue ? "true" : "false"); break;
                 default:
-                    builder.Append("null");
-                    break;
+                    buffer.Append("null"); break;
             }
         }
 
-        private static void AppendStringProperty(
-            StringBuilder builder,
-            string name,
-            string value)
+        private static void AppendStringProperty(Buffer buffer, string name, string value)
         {
-            builder.Append(",\"");
-            builder.Append(name);
-            builder.Append("\":");
-            AppendEscapedString(builder, value ?? string.Empty);
+            buffer.Append(",\""); buffer.Append(name); buffer.Append("\":");
+            AppendEscapedString(buffer, value);
         }
 
-        private static void AppendNumberProperty(
-            StringBuilder builder,
-            string name,
-            long value)
+        private static void AppendNumberProperty(Buffer buffer, string name, long value)
         {
-            builder.Append(",\"");
-            builder.Append(name);
-            builder.Append("\":");
-            builder.Append(value.ToString(CultureInfo.InvariantCulture));
+            buffer.Append(",\""); buffer.Append(name); buffer.Append("\":"); buffer.Append(value);
         }
 
-        private static void AppendEscapedString(
-            StringBuilder builder,
-            string value)
+        private static void AppendEscapedString(Buffer buffer, string value)
         {
-            builder.Append('"');
+            buffer.Append('"');
             if (value != null)
             {
-                int characterCount = Math.Min(
-                    value.Length,
-                    MaxStringCharacters);
-                for (int index = 0;
-                     index < characterCount;
-                     index++)
+                int characterCount = Math.Min(value.Length, MaxStringCharacters);
+                for (int index = 0; index < characterCount && !buffer.Overflowed; index++)
                 {
                     char character = value[index];
                     switch (character)
                     {
-                        case '"':
-                            builder.Append("\\\"");
-                            break;
-                        case '\\':
-                            builder.Append("\\\\");
-                            break;
-                        case '\b':
-                            builder.Append("\\b");
-                            break;
-                        case '\f':
-                            builder.Append("\\f");
-                            break;
-                        case '\n':
-                            builder.Append("\\n");
-                            break;
-                        case '\r':
-                            builder.Append("\\r");
-                            break;
-                        case '\t':
-                            builder.Append("\\t");
-                            break;
+                        case '"': buffer.Append("\\\""); break;
+                        case '\\': buffer.Append("\\\\"); break;
+                        case '\b': buffer.Append("\\b"); break;
+                        case '\f': buffer.Append("\\f"); break;
+                        case '\n': buffer.Append("\\n"); break;
+                        case '\r': buffer.Append("\\r"); break;
+                        case '\t': buffer.Append("\\t"); break;
                         default:
-                            if (character < ' ' ||
-                                character == '\u2028' ||
-                                character == '\u2029' ||
-                                char.IsSurrogate(character))
+                            if (character < ' ' || character == '\u2028' || character == '\u2029' || char.IsSurrogate(character))
                             {
-                                builder.Append("\\u");
-                                builder.Append(
-                                    ((int)character).ToString(
-                                        "x4",
-                                        CultureInfo.InvariantCulture));
+                                const string hex = "0123456789abcdef";
+                                buffer.Append("\\u");
+                                buffer.Append(hex[(character >> 12) & 15]); buffer.Append(hex[(character >> 8) & 15]);
+                                buffer.Append(hex[(character >> 4) & 15]); buffer.Append(hex[character & 15]);
                             }
-                            else
-                            {
-                                builder.Append(character);
-                            }
-
+                            else buffer.Append(character);
                             break;
                     }
                 }
-
-                if (characterCount < value.Length)
-                {
-                    builder.Append(TruncationMarker);
-                }
+                if (characterCount < value.Length) buffer.Append(TruncationMarker);
             }
-
-            builder.Append('"');
+            buffer.Append('"');
         }
 
-        private static string FormatLevel(GameLogLevel level)
+        private static string FormatLevel(GameLogLevel level) => level switch
         {
-            switch (level)
-            {
-                case GameLogLevel.Debug:
-                    return "debug";
-                case GameLogLevel.Info:
-                    return "info";
-                case GameLogLevel.Warning:
-                    return "warning";
-                case GameLogLevel.Error:
-                    return "error";
-                case GameLogLevel.Fatal:
-                    return "fatal";
-                default:
-                    return "info";
-            }
-        }
+            GameLogLevel.Debug => "debug", GameLogLevel.Info => "info", GameLogLevel.Warning => "warning",
+            GameLogLevel.Error => "error", GameLogLevel.Fatal => "fatal", _ => "info"
+        };
     }
 }

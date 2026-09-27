@@ -50,7 +50,7 @@ namespace BarPromenade
             {
                 // Failed confirmation leaves the launch card with a stopped,
                 // fresh session, including any entry-dependent quest state.
-                GameSessionState.BeginNewGame();
+                GameSessionState.BeginNewGame("new_game_start_rejected");
                 return false;
             }
 
