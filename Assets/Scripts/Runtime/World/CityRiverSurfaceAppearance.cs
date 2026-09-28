@@ -191,6 +191,7 @@ namespace BarPromenade
             properties.SetFloat(SmoothnessId, recipe.Smoothness);
             properties.SetFloat(MetallicId, recipe.Metallic);
             renderer.SetPropertyBlock(properties);
+            ApplyGroundResponse(renderer, kind);
         }
 
         /// <summary>
@@ -220,6 +221,15 @@ namespace BarPromenade
             properties.SetFloat(SmoothnessId, recipe.Smoothness);
             properties.SetFloat(MetallicId, recipe.Metallic);
             renderer.SetPropertyBlock(properties);
+            ApplyGroundResponse(renderer, kind);
+        }
+
+        private static void ApplyGroundResponse(Renderer renderer, CityRiverSurfaceKind kind)
+        {
+            if (kind == CityRiverSurfaceKind.Iron) return;
+            GroundSurfaceAppearance.ApplyCity(renderer,
+                kind == CityRiverSurfaceKind.Bed ? GroundSurfaceKind.Silt : GroundSurfaceKind.Paving,
+                GetTexture(kind));
         }
 
         internal static Color CreateDisplayTint(

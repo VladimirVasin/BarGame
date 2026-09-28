@@ -170,7 +170,9 @@ namespace BarPromenade.Tests.EditMode
                     CitySeacoastSurfaceAppearance.GetRecipe(kind);
                 Assert.That(
                     renderer.sharedMaterial,
-                    Is.SameAs(RuntimePrimitiveFactory.DefaultMaterial));
+                    Is.SameAs(kind == CitySeacoastSurfaceKind.Hull
+                        ? RuntimePrimitiveFactory.DefaultMaterial
+                        : GroundSurfaceAppearance.SharedMaterial));
                 var properties = new MaterialPropertyBlock();
                 renderer.GetPropertyBlock(properties);
                 Assert.That(

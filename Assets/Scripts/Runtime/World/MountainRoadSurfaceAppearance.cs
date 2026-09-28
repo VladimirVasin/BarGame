@@ -468,6 +468,32 @@ namespace BarPromenade
             properties.SetFloat(SmoothnessId, recipe.Smoothness);
             properties.SetFloat(MetallicId, recipe.Metallic);
             SetPropertyBlock(renderer, properties, materialIndex);
+            // Wind crowns and the opaque ridge/haze shader retain their own
+            // vertex/visibility contracts. Only ordinary ground families opt in.
+            if (sharedMaterial == RuntimePrimitiveFactory.DefaultMaterial &&
+                TryGetGroundKind(kind, out GroundSurfaceKind groundKind))
+            {
+                GroundSurfaceAppearance.Apply(renderer, groundKind, GetTexture(kind), materialIndex);
+                Mesh mesh = renderer.GetComponent<MeshFilter>()?.sharedMesh;
+                if (kind == MountainRoadSurfaceKind.Asphalt && mesh != null &&
+                    mesh.HasVertexAttribute(UnityEngine.Rendering.VertexAttribute.TexCoord3))
+                    GroundSurfaceCoordinates.Enable(renderer, materialIndex);
+            }
+        }
+
+        private static bool TryGetGroundKind(MountainRoadSurfaceKind kind, out GroundSurfaceKind groundKind)
+        {
+            switch (kind)
+            {
+                case MountainRoadSurfaceKind.Asphalt: groundKind = GroundSurfaceKind.Asphalt; return true;
+                case MountainRoadSurfaceKind.ForestFloor: groundKind = GroundSurfaceKind.Soil; return true;
+                case MountainRoadSurfaceKind.WindSnow: groundKind = GroundSurfaceKind.Snow; return true;
+                case MountainRoadSurfaceKind.LayeredStone: groundKind = GroundSurfaceKind.Rock; return true;
+                case MountainRoadSurfaceKind.Concrete: groundKind = GroundSurfaceKind.Concrete; return true;
+                case MountainRoadSurfaceKind.Masonry: groundKind = GroundSurfaceKind.Paving; return true;
+                case MountainRoadSurfaceKind.Timber: groundKind = GroundSurfaceKind.Timber; return true;
+                default: groundKind = default; return false;
+            }
         }
 
         private static void GetPropertyBlock(

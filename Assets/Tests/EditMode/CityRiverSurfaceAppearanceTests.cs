@@ -244,8 +244,8 @@ namespace BarPromenade.Tests.EditMode
                     CityRiverSurfaceAppearance.GetRecipe(kind);
                 Assert.That(
                     renderer.sharedMaterial,
-                    Is.SameAs(RuntimePrimitiveFactory.DefaultMaterial),
-                    "Embankment surfaces share one material.");
+                    Is.SameAs(ExpectedMaterial(kind)),
+                    "Embankment surfaces retain the shared material for their role.");
                 var properties = new MaterialPropertyBlock();
                 renderer.GetPropertyBlock(properties);
                 Assert.That(
@@ -387,7 +387,7 @@ namespace BarPromenade.Tests.EditMode
                     Assert.That(
                         renderer.sharedMaterial,
                         Is.SameAs(
-                            RuntimePrimitiveFactory.DefaultMaterial),
+                            ExpectedMaterial(expected.Value)),
                         $"'{renderer.name}' must share one material.");
 
                     seen.Add(expected.Value);
@@ -811,6 +811,12 @@ namespace BarPromenade.Tests.EditMode
             }
 
             return Math.Pow((value + 0.055) / 1.055, 2.4);
+        }
+
+        private static Material ExpectedMaterial(CityRiverSurfaceKind kind)
+        {
+            return kind == CityRiverSurfaceKind.Iron
+                ? RuntimePrimitiveFactory.DefaultMaterial : GroundSurfaceAppearance.SharedMaterial;
         }
 
         [Serializable]

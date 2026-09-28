@@ -3,11 +3,12 @@ using UnityEngine;
 
 namespace BarPromenade
 {
-    /// <summary>One shared albedo atlas on the ground's junction material slot.
+    /// <summary>Shared albedo and response atlases on the ground's junction material slot.
     /// Each junction owns a tile; no overlay, material instance or shader pass.</summary>
     internal static class AlpineVillageJunctionAppearance
     {
         internal const string TextureResourcePath = "Village/Textures/Junctions/VillageJunctionAtlas";
+        internal const string ResponseResourcePath = "Village/Textures/Junctions/VillageJunctionResponseAtlas";
         internal const int TileSize = 1024;
         internal const int Gutter = 4;
         internal const int ContentSize = TileSize - 2 * Gutter;
@@ -19,6 +20,7 @@ namespace BarPromenade
         private static readonly int SmoothnessId = Shader.PropertyToID("_Smoothness");
         private static readonly int MetallicId = Shader.PropertyToID("_Metallic");
         private static Texture2D cachedTexture;
+        private static Texture2D cachedResponse;
 
         internal static Texture2D Texture
         {
@@ -60,12 +62,22 @@ namespace BarPromenade
             properties.SetColor(BaseColorId, Color.white);
             properties.SetColor(ColorId, Color.white);
             properties.SetVector(BaseMapTransformId, new Vector4(1f, 1f, 0f, 0f));
-            properties.SetFloat(SmoothnessId, 0f);
+            properties.SetFloat(SmoothnessId,
+                MountainRoadSurfaceAppearance.GetRecipe(MountainRoadSurfaceKind.Asphalt).Smoothness);
             properties.SetFloat(MetallicId, 0f);
             renderer.SetPropertyBlock(properties, materialIndex);
+            GroundSurfaceAppearance.Apply(renderer, GroundSurfaceKind.Asphalt, Texture, materialIndex);
+            if (cachedResponse == null) cachedResponse = Resources.Load<Texture2D>(ResponseResourcePath);
+            if (cachedResponse == null)
+                throw new InvalidOperationException("Bake the Alpine Village junction response atlas before building the world.");
+            GroundSurfaceAppearance.SetResponse(renderer, cachedResponse, materialIndex);
         }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        private static void ResetCachedResources() => cachedTexture = null;
+        private static void ResetCachedResources()
+        {
+            cachedTexture = null;
+            cachedResponse = null;
+        }
     }
 }

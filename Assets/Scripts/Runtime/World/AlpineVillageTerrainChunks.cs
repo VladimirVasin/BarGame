@@ -14,6 +14,9 @@ namespace BarPromenade
             Vector3[] positions = source.vertices;
             Vector3[] normals = source.normals;
             Vector2[] uvs = source.uv;
+            var roadCoordinates = new List<Vector4>();
+            source.GetUVs(3, roadCoordinates);
+            bool hasRoadCoordinates = roadCoordinates.Count == positions.Length;
             var chunks = new Dictionary<Vector2Int, Chunk>();
             for (int material = 0; material < source.subMeshCount; material++)
             {
@@ -39,6 +42,7 @@ namespace BarPromenade
                             chunk.Positions.Add(positions[original]);
                             chunk.Normals.Add(normals[original]);
                             chunk.Uvs.Add(uvs[original]);
+                            if (hasRoadCoordinates) chunk.RoadCoordinates.Add(roadCoordinates[original]);
                         }
                         chunk.Triangles[material].Add(local);
                     }
@@ -53,6 +57,7 @@ namespace BarPromenade
                 mesh.SetVertices(chunk.Positions);
                 mesh.SetNormals(chunk.Normals);
                 mesh.SetUVs(0, chunk.Uvs);
+                if (hasRoadCoordinates) mesh.SetUVs(3, chunk.RoadCoordinates);
                 mesh.subMeshCount = source.subMeshCount;
                 for (int material = 0; material < source.subMeshCount; material++)
                     mesh.SetTriangles(chunk.Triangles[material], material);
@@ -84,6 +89,7 @@ namespace BarPromenade
             public readonly List<Vector3> Positions = new List<Vector3>();
             public readonly List<Vector3> Normals = new List<Vector3>();
             public readonly List<Vector2> Uvs = new List<Vector2>();
+            public readonly List<Vector4> RoadCoordinates = new List<Vector4>();
             public readonly List<int>[] Triangles;
             public Chunk(int materialCount)
             {

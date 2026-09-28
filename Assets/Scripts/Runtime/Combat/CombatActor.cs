@@ -20,6 +20,8 @@ namespace BarPromenade
         public string WeaponBlockingShape => weaponConstraint?.BlockingShape;
         private Transform strikeBase, strikeTip;
         private string visibleClip;
+        private int visibleAttackSequence;
+        private bool presentationFrozen;
         private float poseClock, reactionClock;
         private bool receivedDuringStep;
         private readonly List<Contact> standaloneContacts = new List<Contact>(4);
@@ -131,7 +133,11 @@ namespace BarPromenade
             if (hero != null) hero.SetCombatSupportGrip(this, supportGrip, weaponConstraint);
         }
 
-        internal bool HasTwoHandSupport => !IsKnockedDown && !(ImpactMotion?.RecoveryInProgress ?? false) &&
+        // The right hand owns the weapon. A returning left hand affects guard,
+        // not attack readiness; only real balance recovery prevents a swing.
+        internal bool HasAttackBalance => !IsKnockedDown && !(ImpactMotion?.RecoveryInProgress ?? false);
+        private string AttackBalanceRejection => IsKnockedDown ? "knocked_down" : "balance_recovery";
+        internal bool HasTwoHandSupport => HasAttackBalance &&
             (supportGrip == null || supportGrip.IsSupportingWeapon);
         internal CombatFootwork Footwork => footwork;
         internal CombatSupportGrip SupportGrip => supportGrip;
@@ -143,7 +149,7 @@ namespace BarPromenade
             if (!IsAvailable) return JournalCommandResult(request, "rejected", "actor_unavailable");
             if (!GameInput.CanRead(GameInputContext.Gameplay)) return JournalCommandResult(request, "rejected", "input_gate");
             if (CheckShoveRange(request)) return TryBeginShove(request);
-            if (!HasTwoHandSupport) return JournalCommandResult(request, "rejected", "two_hand_support");
+            if (!HasAttackBalance) return JournalCommandResult(request, "rejected", AttackBalanceRejection);
             if (!State.TryStartAttack()) return JournalRulesRejected(request, State.Settings.AttackCost, false);
             reaction = null;
             Present();
@@ -156,10 +162,14 @@ namespace BarPromenade
             if (roundEnded) return JournalCommandResult(request, "rejected", "round_ended");
             if (!IsAvailable) return JournalCommandResult(request, "rejected", "actor_unavailable");
             if (!GameInput.CanRead(GameInputContext.Gameplay)) return JournalCommandResult(request, "rejected", "input_gate");
-            if (CheckShoveRange(request)) return TryBeginShove(request);
-            if (!HasTwoHandSupport) return JournalCommandResult(request, "rejected", "two_hand_support");
+            if (!State.IsAttacking)
+            {
+                if (CheckShoveRange(request)) return TryBeginShove(request);
+                if (!HasAttackBalance) return JournalCommandResult(request, "rejected", AttackBalanceRejection);
+            }
             int previous = State.AttackSequence;
             if (!State.RequestAttack()) return JournalRulesRejected(request, State.Settings.AttackCost, true);
+            ContinueBufferedAttackAfterContacts();
             if (previous != State.AttackSequence) reaction = null;
             Present();
             return JournalCommandResult(request, previous == State.AttackSequence ? "queued" : "started", "attack");
@@ -203,6 +213,7 @@ namespace BarPromenade
                 CollectShoveContacts(standaloneShoves);
                 foreach (Contact contact in standaloneContacts) contact.Apply();
                 foreach (ShoveContact contact in standaloneShoves) contact.Apply();
+                ContinueBufferedAttackAfterContacts();
                 remaining -= step;
             }
             Present();
@@ -228,13 +239,9 @@ namespace BarPromenade
             float from = State.AttackElapsed;
             MeleePhase previousPhase = State.Phase;
             float previousStep = State.StepTravelProgress;
-            MeleeAdvanceResult elapsed = State.Advance(seconds);
+            MeleeAdvanceResult elapsed = State.Advance(seconds, HasAttackBalance);
             if (sequence != State.AttackSequence && journalQueuedRequest != 0)
-            {
-                journalActionRequest = journalQueuedRequest; journalQueuedRequest = 0;
-                JournalEvent("buffer_started", action: State.AttackSequence, request: journalActionRequest,
-                    f0: GameLog.Field("phase", (int)State.Phase));
-            }
+                JournalBufferedActionStarted();
             CancelInterruptedShoveContact();
             collectShove = shoveContactPending && State.ShoveElapsed >= State.Settings.ShoveContactSeconds;
             // A queued step begins inside this advance; give it its clip and its first travel.
@@ -336,7 +343,7 @@ namespace BarPromenade
             damagePose?.Restore();
             bodyMotion?.Restore();
             AnimationClip chosen = ReleaseClip;
-            supportGrip?.SetTarget(false, true);
+            supportGrip?.SetTarget(false, true, State.IsContinuation);
             if (hero != null)
             {
                 if (visibleClip != chosen.name || !hero.OwnsClip(this))
@@ -376,6 +383,7 @@ namespace BarPromenade
 
         internal void SetPresentationFrozen(bool frozen)
         {
+            presentationFrozen = frozen;
             if (hero != null) hero.SetOwnedPresentationFrozen(this, frozen && !IsKnockedDown && !IsRagdollActive);
             SetKnockdownFrozen(frozen);
         }
@@ -409,7 +417,8 @@ namespace BarPromenade
             AnimationClip chosen = stepping ? (stepBlocked ? ready : stepClip) : State.IsDefeated ? defeat : State.Phase == MeleePhase.GuardBroken ? guardBreak : stagger ? hit :
                 reaction != null ? reaction : State.IsCharging ? Current.Charge : State.IsAttacking ? ReleaseClip : roundEnded ? rest : State.IsBlocking ? block : ready;
             supportGrip?.SetTarget(chosen == block || chosen == guardImpact,
-                chosen != rest && chosen != hit && chosen != guardBreak && !State.IsDefeated && !State.IsShoving);
+                chosen != rest && chosen != hit && chosen != guardBreak && !State.IsDefeated && !State.IsShoving,
+                State.IsContinuation);
             PresentShovePose();
             float progress = stagger ?
                 (State.IsDefeated ? Mathf.Clamp01(defeatClock / defeat.length) : State.PhaseProgress) :
@@ -419,14 +428,15 @@ namespace BarPromenade
             else if (State.IsAttacking) progress = State.AttackProgress;
             if (stepping) progress = stepBlocked ? 0f : State.StepProgress;
             else if (State.Phase == MeleePhase.GuardImpact) progress = State.PhaseProgress;
+            bool newSwing = (State.IsCharging || State.IsAttacking) && visibleAttackSequence != State.AttackSequence;
             if (hero != null)
             {
                 if (!IsAvailable) { ReleasePresentation(); return; }
                 hero.SetCombatSupportGrip(this, supportGrip, weaponConstraint);
                 hero.ReleaseCarryPose(this);
-                if (visibleClip != chosen.name || !hero.OwnsClip(this))
+                if (newSwing || visibleClip != chosen.name || !hero.OwnsClip(this))
                 {
-                    bool releasingCharge = visibleClip == Current.Charge.name && State.IsAttacking && reaction == null;
+                    bool releasingCharge = !newSwing && visibleClip == Current.Charge.name && State.IsAttacking && reaction == null;
                     if (!hero.TryAcquireClip(this, chosen.name, releasingCharge)) return;
                     // A stationary step starts in the exact ready pose;
                     // charge/release share their endpoint. Other changes
@@ -449,13 +459,14 @@ namespace BarPromenade
             }
             else
             {
-                if (visibleClip != chosen.name)
+                if (newSwing || visibleClip != chosen.name)
                 {
-                    if (!(visibleClip == Current.Charge.name && State.IsAttacking && reaction == null)) BeginPoseBlend(TransitionSeconds(chosen));
+                    if (newSwing || !(visibleClip == Current.Charge.name && State.IsAttacking && reaction == null)) BeginPoseBlend(TransitionSeconds(chosen));
                     visibleClip = chosen.name;
                 }
                 SampleNpcAction(chosen, progress);
             }
+            visibleAttackSequence = State.AttackSequence;
             handPose.SetGrip(false, 1f);
             if (npc != null)
             {
@@ -480,10 +491,12 @@ namespace BarPromenade
         }
 
         private float TransitionSeconds(AnimationClip chosen) => chosen == rest ? .35f :
-            chosen == block || visibleClip == block.name ? .18f : PoseBlendSeconds;
+            chosen == block || visibleClip == block.name ? .18f :
+            State.IsContinuation && (chosen == Current.Charge || chosen == ReleaseClip) ? .20f : PoseBlendSeconds;
 
         public void ResetActor(Vector3 position, Vector3 facing)
         {
+            presentationFrozen = false;
             journalActionRequest = journalQueuedRequest = 0;
             LastJournalImpactSequence = 0;
             journalRiseReason = journalFallReason = journalBlockReason = null;
@@ -540,6 +553,7 @@ namespace BarPromenade
             if (hero != null) { hero.ReleaseOwnedClip(this); hero.ReleaseCarryPose(this); }
             if (motor != null) motor.ReleaseMovementConstraint(this);
             visibleClip = null;
+            visibleAttackSequence = 0;
         }
 
         private void OnDisable()

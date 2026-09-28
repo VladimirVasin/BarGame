@@ -49,7 +49,7 @@ Only these statuses apply. Product scope cuts are `Deferred` in
 | PS1 presentation | Shared low-res composite. Optional 4:3, vertex jitter and Begotten keep controls; Begotten ramps `15 s` in, `3 s` out. | `Runtime/Rendering`, `IntoxicationRenderState`, `BegottenModeRamp` | Current |
 | Depth of field tiers | Exteriors keep broad Gaussian far blur; the six interior scenes cap it at radius `0.55`. | `RuntimeSceneSetup`, `DepthOfFieldSettingsBinder` | Current |
 | Runtime area composition | Ten gameplay roots; four build in frames; interior doors retain dormant City/village. | `Runtime/Core`, `Runtime/Scenes` | Current |
-| Combat test | ≤2 steps own gait; shove/swing regrip restores attack/guard. Gap: experimental balance/banks/QA. | `CombatTestRoot`, `Runtime/Combat`, `PlayerBalanceRules` | Partial |
+| Combat test | One-hand swings cut return; moving regrip/≤2 steps. Gap: experimental balance/banks/QA. | `CombatTestRoot`, `Runtime/Combat`, `PlayerBalanceRules` | Partial |
 | New-game starting place | Twelve starts incl. lodge; village default, day `1`/`07:40`, ordinary loading. | `StartMenu{Root,Model}`, `NewGame{LocationCatalog,StartService}` | Current |
 | Retained Home waking opening | Frozen `05:59`, five-second lock, Wake Up/Quit, continuous wake. Gap: no shipped path reaches it. | `MainMenuRoot`, `HomeOpening{Controller,Timeline}` | Partial |
 | Session clock and day/night rules | Persistent 48-minute day at ×1; two real seconds per game minute. Intoxication preserves its rate. | `GameTimeState`, `GameTimeRuntime` | Current |
@@ -88,7 +88,7 @@ Only these statuses apply. Product scope cuts are `Deferred` in
 | Cannery woman | Seamer/painted face/own actions; hair/body contacts; shared speech/pause, one outfit. | `CanneryWoman{AssetProvider,Presentation,Hair,Wardrobe}`, `CanneryWomanAssetSetup` | Current |
 | Cannery receiver | Athletic 1.96 m actor/ski hat/3D glasses/painted face; own actions, shared contacts/speech/pause. | `CanneryReceiver{AssetProvider,Presentation}`, `CanneryReceiverAssetSetup` | Current |
 | Authored NPC outfits | Fixed outfits and modular items/slots/coverage/presets; editor selection. Gameplay clothing UI/save Deferred. | `NpcWardrobe`, `CanneryWomanWardrobe`, `NpcWardrobeEditor` | Current |
-| Global default NPCs | Stable IDs; four faces/three hair colors/modular clothes, shared no-repeat allocation. | `DefaultNpcCatalog`, `DefaultNpcPopulation`, `DefaultNpcFactory`, `DefaultNpcAppearance` | Current |
+| Global default NPCs | Unique resource paths; stable IDs, four faces/three hair colors/modular clothes; no repeats. | `DefaultNpcCatalog`, `DefaultNpcPopulation`, `DefaultNpcFactory`, `DefaultNpcAppearance` | Current |
 | Hand poses | Hero/NPC authored cylindrical grip; independent weights, neutral release and surface alignment. | `NpcHandPose`, `CityCanneryController.DriverHands` | Current |
 | Cemetery mourner | The grave-side mourner uses her own authored presence, gestures and localized response. | `CemeteryMourner{Provider,Plan,Timeline,Presentation,Factory}`, `CityCemeteryMournerController` | Current |
 | Cemetery watchman and gate lodge | The watchman and lodge provide the authored grave-work offer and payment interaction. | `CemeteryWatchman{Provider,Plan,Quips,Interaction,Presentation,Factory}`, `CityCemeteryPlanner.AddLodge` | Current |
@@ -191,7 +191,7 @@ Only these statuses apply. Product scope cuts are `Deferred` in
 | City facade presentation | The legacy 4×4 path remains only for clipped Home crossings. | `CityFacade{Grid,Appearance}`, `CityBuilding{SurfaceAppearance,WindowSlotAppearance}` | Current |
 | City window presentation | Pure facade/window slots select bounded lit shares and preserve district palettes and daytime light floors. | `CityDistrict{ArtProfile,PresentationPlan,PresentationPlanner}`, `CityWindowAppearance` | Current |
 | Stairwell surface presentation | Cached textures and material property blocks apply measured stairwell surfaces without instance materials. | `StairwellSurfaceAppearance`, `SurfaceAppearanceCore` | Current |
-| Mountain Road surface presentation | Measured printed/borrowed recipes share materials and deterministic UVs; shader exclusions remain explicit. | `MountainRoadSurfaceAppearance`, `MountainRoad{Surface,Terrain,Scenery}MeshFactory` | Current |
+| Exterior ground response | Shared response maps/road masks/snow edges; ridge haze retained. | `GroundSurface{Appearance,Coordinates}`, `GroundSurfaceLit`, `*SurfaceAppearance` | Current |
 | Home surface presentation | Twelve shared apartment sheets bind authored semantic parts with their UVs; permitted hardware keeps metre fitting. | `HomeSurfaceAppearance`, `HomeAuthoredVisualFactory` | Current |
 | Stairwell cat | The perched cat supports talk/feed and the grin controller; the future story grin trigger remains unwired. | `StairwellCat*`, `StairwellCatInteraction` | Current |
 | Home exterior context | Home reconstructs a bounded same-seed street view only; Balcony gates its residents and atmosphere. | `HomeExteriorContext{Plan,Planner}`, `HomeExteriorViewBuilder` | Current |

@@ -218,7 +218,9 @@ namespace BarPromenade.Tests.EditMode
                         .CreateDisplayTint(tint, kind);
                 Assert.That(
                     renderer.sharedMaterial,
-                    Is.SameAs(RuntimePrimitiveFactory.DefaultMaterial));
+                    Is.SameAs(kind == CityPointOfInterestSurfaceKind.Paving
+                        ? GroundSurfaceAppearance.SharedMaterial
+                        : RuntimePrimitiveFactory.DefaultMaterial));
                 Assert.That(
                     properties.GetTexture(BaseMapId),
                     Is.SameAs(

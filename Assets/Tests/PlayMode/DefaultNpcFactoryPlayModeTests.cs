@@ -9,6 +9,18 @@ using Object = UnityEngine.Object;
 
 namespace BarPromenade.Tests.PlayMode
 {
+    public sealed class DefaultNpcCatalogAssetsSetup : IPrebuildSetup
+    {
+        public void Setup()
+        {
+#if UNITY_EDITOR
+            Type setup = Type.GetType("BarPromenade.Editor.DefaultNpcAssetSetup, BarPromenade.Editor", true);
+            setup.GetMethod("EnsurePrefabResourcePath", Type.EmptyTypes).Invoke(null, null);
+            setup.GetMethod("ValidateOrThrow", Type.EmptyTypes).Invoke(null, null);
+#endif
+        }
+    }
+
     public sealed class DefaultNpcFactoryPlayModeTests
     {
         // Authored colours pass through Unity's native material property block.
@@ -80,7 +92,7 @@ namespace BarPromenade.Tests.PlayMode
         }
 
         [UnityTest]
-        [PrebuildSetup(typeof(DefaultNpcWardrobeAssetsSetup))]
+        [PrebuildSetup(typeof(DefaultNpcCatalogAssetsSetup))]
         public IEnumerator OrdinaryWorker_SharesCatalogAssetAndActionsAcrossVisibilityChanges()
         {
             var library = VillageResidentLibrary.Load();
@@ -92,6 +104,11 @@ namespace BarPromenade.Tests.PlayMode
                 "The village role and shared catalog must resolve the same upgraded asset.");
             Assert.That(Resources.Load<GameObject>(DefaultNpcCatalog.GetResourcePath(DefaultNpcCatalog.OrdinaryWorker)),
                 Is.SameAs(DefaultNpcCatalog.GetPrefab()));
+            CollectionAssert.AreEqual(new[] { DefaultNpcCatalog.GetPrefab() },
+                Resources.LoadAll<GameObject>(DefaultNpcCatalog.GetResourcePath(DefaultNpcCatalog.OrdinaryWorker)),
+                "A raw FBX must never share the assembled actor's Resources address.");
+            Assert.That(DefaultNpcPopulation.GetAssignment(DefaultNpcPopulation.VillageStationWorker).ModelId,
+                Is.EqualTo(DefaultNpcCatalog.OrdinaryWorker));
             Assert.That(() => DefaultNpcCatalog.GetResourcePath(null), Throws.InstanceOf<ArgumentException>());
             Assert.That(() => DefaultNpcCatalog.GetResourcePath("missing-appearance"), Throws.InstanceOf<ArgumentException>());
 

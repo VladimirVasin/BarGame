@@ -78,7 +78,7 @@ repair commands. Generation/publication: [../tools/README.md](../tools/README.md
 
 ## Implemented capabilities
 
-- CombatTest: fall/rise/regrip, weapon sweeps, shared-time charge.
+- CombatTest: fall/rise/regrip, sweeps, .6 s charge; one-hand hits cut return.
   Partial: reverse recoil/banks/Unity pending; HP/guard/defeat separate.
 - A validated connected city with streets, river/shore, neighbourhoods,
   cemetery, church, deterministic weather, residents and Route 01 transport.

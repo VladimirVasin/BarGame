@@ -231,7 +231,9 @@ namespace BarPromenade
             BuildRoadSurfaceBoxesIfAny(
                 "Home Exterior Street Surfaces",
                 parent,
-                streets);
+                streets,
+                context,
+                plan.StreetGeometry);
             BuildParkPathBoxesIfAny(
                 "Home Exterior Park Paths",
                 parent,
@@ -1008,23 +1010,35 @@ namespace BarPromenade
         private static void BuildRoadSurfaceBoxesIfAny(
             string name,
             Transform parent,
-            IReadOnlyList<Bounds> boxes)
+            IReadOnlyList<Bounds> boxes,
+            HomeExteriorContextPlan context,
+            IReadOnlyList<RuntimeOrientedBox> cityGeometry)
         {
             if (boxes.Count == 0)
             {
                 return;
             }
 
+            var oriented = new List<RuntimeOrientedBox>(boxes.Count);
+            foreach (Bounds box in boxes)
+                oriented.Add(new RuntimeOrientedBox(box.center, Quaternion.identity, box.size));
             GameObject surface =
-                RuntimePrimitiveFactory.CreateCombinedBoxes(
+                RuntimePrimitiveFactory.CreateCombinedOrientedBoxes(
                     name,
                     parent,
-                    boxes,
+                    oriented,
                     CityExteriorAppearance.Asphalt,
                     false,
-                    CityExteriorAppearance.RoadTextureTileSize);
-            CityExteriorAppearance.ApplyRoadSurface(
-                surface.GetComponent<Renderer>());
+                    CityExteriorAppearance.RoadTextureTileSize,
+                    keepReadable: true);
+            Renderer renderer = surface.GetComponent<Renderer>();
+            CityExteriorAppearance.ApplyRoadSurface(renderer);
+            Mesh mesh = surface.GetComponent<MeshFilter>().sharedMesh;
+            GroundSurfaceCoordinates.AssignBoxes(mesh, cityGeometry,
+                CityStreetSurfacePlanner.SidewalkWidth,
+                point => PlayerHomeBalconyGeometry.ToCityWorld(context.PlayerHome, point));
+            GroundSurfaceCoordinates.Enable(renderer);
+            mesh.UploadMeshData(true);
         }
 
         private static void BuildSidewalkSurfaceBoxesIfAny(

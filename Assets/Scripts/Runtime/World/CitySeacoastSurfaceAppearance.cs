@@ -165,6 +165,14 @@ namespace BarPromenade
             properties.SetFloat(SmoothnessId, recipe.Smoothness);
             properties.SetFloat(MetallicId, recipe.Metallic);
             renderer.SetPropertyBlock(properties);
+            if (kind != CitySeacoastSurfaceKind.Hull)
+            {
+                GroundSurfaceKind groundKind = kind == CitySeacoastSurfaceKind.Sand
+                    ? GroundSurfaceKind.Sand : kind == CitySeacoastSurfaceKind.Plank
+                    ? GroundSurfaceKind.Timber : kind == CitySeacoastSurfaceKind.Concrete
+                    ? GroundSurfaceKind.Concrete : GroundSurfaceKind.Paving;
+                GroundSurfaceAppearance.ApplyCity(renderer, groundKind, GetTexture(kind));
+            }
         }
 
         private static int ValidateKind(CitySeacoastSurfaceKind kind)

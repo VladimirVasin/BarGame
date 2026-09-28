@@ -1,4 +1,5 @@
 using System.Linq;
+using System.Collections.Generic;
 using NUnit.Framework;
 using UnityEngine;
 
@@ -343,6 +344,7 @@ namespace BarPromenade.Tests.EditMode
                 "at spawn.");
             Assert.That(terrainMeshes.Soil.triangles.Length, Is.GreaterThan(0));
             Assert.That(terrainMeshes.Snow.triangles.Length, Is.GreaterThan(0));
+            AssertSnowTransitionKeepsTheGround(terrainMeshes);
             AssertRidgesGroundedAndSeparated(first);
 
             var parent = new GameObject("Mountain Road Test Parent");
@@ -606,6 +608,39 @@ namespace BarPromenade.Tests.EditMode
                 Object.DestroyImmediate(terrainMeshes.Snow);
                 Object.DestroyImmediate(roadMesh);
             }
+        }
+
+        private static void AssertSnowTransitionKeepsTheGround(MountainRoadTerrainMeshes terrain)
+        {
+            Assert.That(terrain.Snow.vertices, Is.EqualTo(terrain.Soil.vertices));
+            Assert.That(terrain.Snow.normals, Is.EqualTo(terrain.Soil.normals));
+            Assert.That(terrain.Snow.uv, Is.EqualTo(terrain.Soil.uv));
+            Color[] controls = terrain.Snow.colors;
+            Assert.That(controls, Has.Length.EqualTo(terrain.Snow.vertexCount));
+            var border = new HashSet<int>(terrain.Soil.triangles);
+            border.IntersectWith(terrain.Snow.triangles);
+            Assert.That(border, Is.Not.Empty);
+            foreach (int vertex in border)
+                Assert.That(controls[vertex], Is.EqualTo(new Color(0f, 1f, 0f, 1f)),
+                    "Both terrain renderers must show soil at their shared snow-line vertex.");
+            var snow = new HashSet<int>(terrain.Snow.triangles);
+            Assert.That(snow.Any(vertex => controls[vertex].g == 0f), Is.True);
+            Assert.That(snow.Any(vertex => controls[vertex].g > 0f && controls[vertex].g < 1f), Is.True,
+                "The snow line is still a binary whole-cell material cut.");
+            var triangles = new HashSet<(int, int, int)>();
+            foreach (int[] indices in new[] { terrain.Soil.triangles, terrain.Snow.triangles })
+            for (int index = 0; index < indices.Length; index += 3)
+                Assert.That(triangles.Add((indices[index], indices[index + 1], indices[index + 2])), Is.True,
+                    "Material blending added overlapping terrain triangles.");
+            int row = terrain.Columns + 1;
+            for (int z = 0; z < terrain.Rows; z++)
+            for (int x = 0; x < terrain.Columns; x++)
+            {
+                int a = z * row + x;
+                Assert.That(triangles.Remove((a, a + row, a + 1)), Is.True);
+                Assert.That(triangles.Remove((a + 1, a + row, a + row + 1)), Is.True);
+            }
+            Assert.That(triangles, Is.Empty, "Appearance must preserve the original collision grid topology.");
         }
 
         [Test]

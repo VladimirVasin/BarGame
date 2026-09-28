@@ -669,7 +669,7 @@ namespace BarPromenade.Tests.EditMode
                     Is.EqualTo(UnityEngine.Rendering.ShadowCastingMode.On));
                 Assert.That(
                     renderer.sharedMaterial,
-                    Is.SameAs(RuntimePrimitiveFactory.DefaultMaterial));
+                    Is.SameAs(GroundSurfaceAppearance.SharedMaterial));
                 var properties = new MaterialPropertyBlock();
                 renderer.GetPropertyBlock(properties);
                 Assert.That(
@@ -1069,7 +1069,7 @@ namespace BarPromenade.Tests.EditMode
                     "Mountain Tunnel Portal");
                 Assert.That(
                     portal.GetComponent<MeshRenderer>().sharedMaterial,
-                    Is.EqualTo(RuntimePrimitiveFactory.DefaultMaterial),
+                    Is.EqualTo(GroundSurfaceAppearance.SharedMaterial),
                     "The close tunnel portal must not dither with the ridge.");
                 CityMountainTunnelDescriptor tunnel = plan.Tunnel;
                 Vector3 tunnelAxis = tunnel.Axis.normalized;

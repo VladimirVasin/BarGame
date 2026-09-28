@@ -267,7 +267,7 @@ namespace BarPromenade.Tests.EditMode
                     CityParkSurfaceAppearance.GetRecipe(kind);
                 Assert.That(
                     renderer.sharedMaterial,
-                    Is.SameAs(RuntimePrimitiveFactory.DefaultMaterial));
+                    Is.SameAs(ExpectedMaterial(kind)));
                 var properties = new MaterialPropertyBlock();
                 renderer.GetPropertyBlock(properties);
                 Assert.That(
@@ -387,8 +387,8 @@ namespace BarPromenade.Tests.EditMode
                     Assert.That(
                         renderer.sharedMaterial,
                         Is.SameAs(
-                            RuntimePrimitiveFactory.DefaultMaterial),
-                        "Park surfaces share one material.");
+                            ExpectedMaterial(kind)),
+                        "Park surfaces retain the shared material for their role.");
                     seen.Add(kind);
                 }
 
@@ -486,7 +486,7 @@ namespace BarPromenade.Tests.EditMode
                     Assert.That(
                         renderer.sharedMaterial,
                         Is.SameAs(
-                            RuntimePrimitiveFactory.DefaultMaterial));
+                            ExpectedMaterial(parkTextures[texture])));
                     seen.Add(parkTextures[texture]);
                 }
 
@@ -732,6 +732,14 @@ namespace BarPromenade.Tests.EditMode
             }
 
             return Math.Pow((value + 0.055) / 1.055, 2.4);
+        }
+
+        private static Material ExpectedMaterial(CityParkSurfaceKind kind)
+        {
+            return kind == CityParkSurfaceKind.Lawn || kind == CityParkSurfaceKind.Path ||
+                   kind == CityParkSurfaceKind.Plaza || kind == CityParkSurfaceKind.Stone ||
+                   kind == CityParkSurfaceKind.Timber
+                ? GroundSurfaceAppearance.SharedMaterial : RuntimePrimitiveFactory.DefaultMaterial;
         }
 
         private static int ChannelDelta(

@@ -58,6 +58,9 @@ namespace BarPromenade
         /// <summary>Depth under which the ground is bare enough that a step
         /// sounds like earth rather than snow.</summary>
         public const float BareStepDepth = 0.06f;
+        /// <summary>The thin edge reveals the same substrate before the snow
+        /// reaches zero. This is appearance only; movement still samples depth.</summary>
+        internal const float ExposedEdgeDepth = 0.12f;
 
         private Mesh mesh;
         private Vector3[] vertices;
@@ -65,6 +68,7 @@ namespace BarPromenade
         private float[] depths;
         private float[] pressed;
         private float[] cleared;
+        private Color[] surfaceControls;
         private const float LookupCell = 2f;
         private readonly Dictionary<Vector2Int, List<int>> vertexCells =
             new Dictionary<Vector2Int, List<int>>();
@@ -131,6 +135,9 @@ namespace BarPromenade
 
             pressed = new float[vertices.Length];
             cleared = new float[vertices.Length];
+            surfaceControls = mesh.colors;
+            bool hasSubstrateControls = surfaceControls.Length == vertices.Length;
+            if (!hasSubstrateControls) surfaceControls = new Color[vertices.Length];
             vertexCells.Clear();
             activePresses.Clear();
             for (int index = 0; index < vertices.Length; index++)
@@ -142,7 +149,10 @@ namespace BarPromenade
                     vertexCells.Add(cell, indices);
                 }
                 indices.Add(index);
+                Color substrate = hasSubstrateControls ? surfaceControls[index] : new Color(0f, 0f, 0f, 1f);
+                surfaceControls[index] = SurfaceControl(depths[index], 0f, substrate);
             }
+            mesh.SetColors(surfaceControls);
             walker = walkerToFollow;
             snowfall = snowfallIntensity;
         }
@@ -301,19 +311,30 @@ namespace BarPromenade
         {
             for (int index = 0; index < vertices.Length; index++)
             {
+                float compaction = Mathf.Max(pressed[index], cleared[index]);
+                float remainingDepth = depths[index] * (1f - compaction);
+                surfaceControls[index] = SurfaceControl(remainingDepth, compaction, surfaceControls[index]);
                 // Zero-depth toes and field edges were deliberately buried
                 // beneath the ground when built. They cannot be pressed or
                 // refilled, and rebuilding must not raise them onto asphalt.
                 if (depths[index] <= 0f) continue;
-                vertices[index].y = grounds[index] +
-                                    depths[index] *
-                                    (1f - Mathf.Max(pressed[index], cleared[index]));
+                vertices[index].y = grounds[index] + remainingDepth;
             }
 
             mesh.SetVertices(vertices);
+            mesh.SetColors(surfaceControls);
             mesh.RecalculateNormals();
             mesh.RecalculateBounds();
             dirty = false;
+        }
+
+        private static Color SurfaceControl(float remainingDepth, float compaction, Color substrate)
+        {
+            float exposed = 1f - Mathf.SmoothStep(0f, 1f,
+                Mathf.Clamp01(remainingDepth / ExposedEdgeDepth));
+            // B is the plan's asphalt weight. A suppresses substrate reveal
+            // over authored paving; neither changes when a foot presses snow.
+            return new Color(compaction, exposed * substrate.a, substrate.b, substrate.a);
         }
 
         /// <summary>

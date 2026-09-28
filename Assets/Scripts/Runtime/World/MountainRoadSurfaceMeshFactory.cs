@@ -83,7 +83,16 @@ namespace BarPromenade
                 vertices,
                 uvs,
                 triangles);
-            return CreateMesh("Mountain Road Surface", vertices, uvs, triangles);
+            Mesh mesh = CreateMesh("Mountain Road Surface", vertices, uvs, triangles);
+            var coordinates = new List<Vector4>(vertices.Count);
+            for (int index = 0; index < vertices.Count; index++)
+            {
+                Vector2 metres = uvs[index] * MetersPerTile;
+                float halfWidth = index < rows.Count * 4 ? rows[index / 4].Width * .5f : 0f;
+                coordinates.Add(new Vector4(metres.x, metres.y, halfWidth, .37f));
+            }
+            mesh.SetUVs(GroundSurfaceCoordinates.Channel, coordinates);
+            return mesh;
         }
 
         /// <summary>
@@ -160,11 +169,16 @@ namespace BarPromenade
                 triangles.Add((index + 1) % outline.Count + 1);
             }
 
-            return CreateMesh(
+            Mesh mesh = CreateMesh(
                 "Mountain Road Terminal Apron",
                 vertices,
                 uvs,
                 triangles);
+            var coordinates = new List<Vector4>(vertices.Count);
+            foreach (Vector2 uv in uvs)
+                coordinates.Add(new Vector4(uv.x * tile, uv.y * tile, 0f, .37f));
+            mesh.SetUVs(GroundSurfaceCoordinates.Channel, coordinates);
+            return mesh;
         }
 
         private static List<Row> CreateRows(MountainRoadPlan plan)

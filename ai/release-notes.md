@@ -6,26 +6,53 @@ Earlier notes: [`release-notes-2026-09.md`](archive/release-notes-2026-09.md).
 
 ## Unreleased
 
+### 2026-09-29 — Материалы местности и загрузка NPC
+
+- City, горная дорога и альпийская деревня получили отдельный отклик материалов:
+  шероховатость, мелкий рельеф, износ асфальта, щебень у кромок. Влажность City
+  различается по поверхности; тонкий и протоптанный снег открывает грунт/асфальт.
+  Проверки: `build-ground-surface-maps.py --check`,
+  `build-ground-surface-shader.py --check`, `MaterialSurfaces`; кадры просмотрены.
+- Исправлена остановка City при создании общих NPC: загружается собранный
+  персонаж с одеждой и лицами. Проверка:
+  `OrdinaryWorker_SharesCatalogAssetAndActionsAcrossVisibilityChanges`.
+
+### 2026-09-28 — Удар одной рукой
+
+- Удар правой начинается и выпускается без ожидания левой руки, в том числе
+  на ходу. Новый клик сразу обрывает обычный возврат оружия; потеря левого
+  хвата больше не отменяет короткий клик. Блок требует обе руки;
+  потеря равновесия, падение и вынужденная отдача сохраняют ограничения.
+  Проверки: `Range_OneHandAttacksStartWithoutWaitingForSupport`,
+  `Range_AttackContinuationCancelsOnlyReturnTail`.
+
 ### 2026-09-27 — Толчок, хват, опора и CPU
 
-- Толчок ждёт касание; препятствия блокируют его, импульс однократный.
+- Клик продолжает серию без хвоста возврата; отдача остаётся.
+  Проверка: `Range_AttackContinuationCancelsOnlyReturnTail`.
+- Паузы короче; полный заряд — 0,6 с у обоих.
+  Проверки: `ContactOutcomeOwnsRecoveryButKeepsTheAuthoredAnimationEndpoint`,
+  `ChargeReleaseLatchesAffordablePowerAndTraversesTheAuthoredArc`.
+- Толчок: одно касание/импульс, препятствия блокируют.
   Проверки: `Range_ShoveWindowRequiresOneRealContact`,
   `Range_CloseContactUsesFastShove`,
   `Range_DuelJournalRecordsReasonsWithoutChangingCombat`.
-- Меньше CPU куртки/волос/подъёма; сравнение сохранило контакты/деформации.
+- Меньше CPU куртки/волос/подъёма; контакты/деформации сохранены.
   Проверка: `Range_InterruptedRiseHasBoundedWorkAndRecovers`.
-  Общий FPS после оптимизации не измерялся.
-- Подъём допускает опору рук/ног без удара корпусом; задержка не воспроизведена:
+  FPS не измерялся.
+- Подъём с опоры рук/ног; задержка не воспроизведена:
   `Range_QuietRagdollCanRiseFromFootSupport`.
-- Толчок в корпус сохраняет хват на спасательных шагах; они удерживают ход/поворот.
-  Потеря контакта/падение/опора/удар по руке допускают отпускание.
+- Толчок в корпус сохраняет хват на шагах; ход/поворот ждут опоры.
+  Потеря контакта/падение/упор/удар по руке освобождают хват.
   Проверки: `Range_StrongShoveKeepsRecipientGripWhileMoving`,
   `Range_ObstructedShoveRecipientArmRecoversWhileMoving`,
   `Range_ShoveRecoveryKeepsHeldWalkingWithItsFeet`,
   `Range_FinalCatchRequiresStableMovingSupportBeforeRegrip`.
-- Возврат руки после своего толчка/удара исправляет неверную кисть постепенно,
-  вместо вечного запрета удара/блока. Контакт и коллизии обязательны.
-  Проверка: `Range_ShoveAndSwingRestoreAttackAndBlock`.
+- После своего толчка/удара кисть плавно исправляет сгиб и следует за телом на ходу,
+  возвращая удар/блок. Контакт/коллизии обязательны.
+  Проверки: `Range_ShoveAndSwingRestoreAttackAndBlock`,
+  `Range_MovingRegripCarriesTheArmAndRestoresAttack`,
+  `Range_GripRejectionReleasesFromPresentedArm`.
 
 ### 2026-09-26 — Пробное восстановление и журнал дуэли
 

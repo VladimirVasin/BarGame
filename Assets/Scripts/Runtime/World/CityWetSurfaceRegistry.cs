@@ -267,6 +267,7 @@ namespace BarPromenade
         {
             Entries.Clear();
             currentWetness = 0f;
+            Shader.SetGlobalFloat(GroundSurfaceAppearance.CityWetnessId, 0f);
             lastAppliedWetness = -1f;
             hasWeatherState = false;
             lastAbsoluteGameMinutes = 0d;
@@ -284,6 +285,7 @@ namespace BarPromenade
         {
             float clamped = Mathf.Clamp01(wetness);
             currentWetness = clamped;
+            Shader.SetGlobalFloat(GroundSurfaceAppearance.CityWetnessId, clamped);
             bool reachedEndpoint = clamped <= 0f || clamped >= 1f;
             bool endpointNeedsApply =
                 reachedEndpoint &&
@@ -324,6 +326,7 @@ namespace BarPromenade
             Properties.SetColor(BaseColorId, displayedTint);
             Properties.SetColor(ColorId, displayedTint);
             Properties.SetFloat(SmoothnessId, sample.Smoothness);
+            Properties.SetFloat(GroundSurfaceAppearance.WetnessId, currentWetness);
             entry.Renderer.SetPropertyBlock(Properties);
         }
 

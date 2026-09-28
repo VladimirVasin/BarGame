@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using NUnit.Framework;
+using UnityEditor;
 using UnityEngine;
 
 namespace BarPromenade.Tests.EditMode
@@ -23,6 +24,110 @@ namespace BarPromenade.Tests.EditMode
         {
             return AlpineVillagePlanner.Create(
                 GameSessionState.DefaultCitySeed);
+        }
+
+        [Test]
+        [Category("AlpineVillage")]
+        public void JunctionResponse_UsesThePaintedWeightsAndMetreCoordinates()
+        {
+            const string folder = "Assets/Resources/Village/Textures/Junctions/";
+            const string responses = "Assets/Resources/Textures/SurfaceResponse/";
+            var temporary = new List<Texture2D>();
+            try
+            {
+                Texture2D atlas = ReadData(folder + "VillageJunctionResponseAtlas.png", false);
+                Texture2D asphalt = ReadData(responses + "MountainRoadAsphaltResponse.png", true);
+                Texture2D soil = ReadData(responses + "MountainRoadForestFloorResponse.png", true);
+                float asphaltPitch = MountainRoadSurfaceAppearance.GetRecipe(MountainRoadSurfaceKind.Asphalt).MetersPerTile;
+                float soilPitch = MountainRoadSurfaceAppearance.GetRecipe(MountainRoadSurfaceKind.ForestFloor).MetersPerTile;
+                float soilSmoothnessScale = MountainRoadSurfaceAppearance.GetRecipe(MountainRoadSurfaceKind.ForestFloor).Smoothness /
+                    MountainRoadSurfaceAppearance.GetRecipe(MountainRoadSurfaceKind.Asphalt).Smoothness;
+                AlpineVillagePlan plan = CreatePlan();
+                bool mixed = false;
+                for (int nodeIndex = 0; nodeIndex < plan.Expansion.Junctions.Count; nodeIndex++)
+                {
+                    AlpineVillageJunctionPlan node = plan.Expansion.Junctions[nodeIndex];
+                    Texture2D mask = ReadData(folder + node.StableId + "-Mask.png", false);
+                    Texture2D response = ReadData(folder + node.StableId + "-Response.png", false);
+                    int content = AlpineVillageJunctionAppearance.ContentSize;
+                    int gutter = AlpineVillageJunctionAppearance.Gutter;
+                    Vector2 footprint = node.Bounds.size / (content - 1);
+                    for (int y = gutter; y < response.height - gutter; y += 47)
+                    for (int x = gutter; x < response.width - gutter; x += 47)
+                    {
+                        float weight = mask.GetPixel(x, y).r;
+                        mixed |= weight > .05f && weight < .95f;
+                        Vector2 point = node.Bounds.min + Vector2.Scale(node.Bounds.size,
+                            new Vector2((x - gutter) / (float)(content - 1), (y - gutter) / (float)(content - 1)));
+                        Color a = Sample(asphalt, point, asphaltPitch, footprint);
+                        Color s = Sample(soil, point, soilPitch, footprint);
+                        s.r *= soilSmoothnessScale;
+                        Color expected = Color.Lerp(s, a, weight);
+                        Color actual = response.GetPixel(x, y);
+                        // Unity's RGBA32 mip pyramid rounds each level; the
+                        // baker retains float mips until the final PNG.
+                        const float tolerance = 3f / 255f;
+                        Assert.That(actual.r, Is.EqualTo(expected.r).Within(tolerance), node.StableId);
+                        Assert.That(actual.g, Is.EqualTo(expected.g).Within(tolerance), node.StableId);
+                        Assert.That(actual.b, Is.EqualTo(expected.b).Within(tolerance), node.StableId);
+                        Assert.That(actual.a, Is.EqualTo(mask.GetPixel(x, y).g),
+                            "Snow may use the junction atlas only within its existing fixed contour.");
+                        Assert.That(atlas.GetPixel(nodeIndex % 2 * response.width + x,
+                            nodeIndex / 2 * response.height + y), Is.EqualTo(actual),
+                            "Albedo and response must use the same junction atlas tile.");
+                    }
+                }
+                Assert.That(mixed, Is.True, "The fixture did not reach an editable asphalt/soil blend.");
+            }
+            finally
+            {
+                foreach (Texture2D texture in temporary) Object.DestroyImmediate(texture);
+            }
+
+            Texture2D ReadData(string path, bool mipmaps)
+            {
+                var importer = AssetImporter.GetAtPath(path) as TextureImporter;
+                Assert.That(importer, Is.Not.Null, path);
+                Assert.That(importer.sRGBTexture, Is.False, path + " is linear material data.");
+                Assert.That(importer.isReadable, Is.False, path);
+                Assert.That(importer.mipmapEnabled, Is.EqualTo(mipmaps), path);
+                Assert.That(importer.wrapMode, Is.EqualTo(mipmaps ? TextureWrapMode.Repeat : TextureWrapMode.Clamp), path);
+                bool junctionResponse = path.StartsWith(folder) &&
+                    (path.EndsWith("-Response.png") || path.EndsWith("JunctionResponseAtlas.png"));
+                Assert.That(importer.alphaSource, Is.EqualTo(junctionResponse || mipmaps ?
+                    TextureImporterAlphaSource.FromInput : TextureImporterAlphaSource.None), path);
+                var texture = new Texture2D(2, 2, TextureFormat.RGBA32, mipmaps, true);
+                temporary.Add(texture);
+                Assert.That(texture.LoadImage(File.ReadAllBytes(path)), Is.True, path);
+                texture.wrapMode = mipmaps ? TextureWrapMode.Repeat : TextureWrapMode.Clamp;
+                texture.Apply(mipmaps, false);
+                return texture;
+            }
+
+            static Color Sample(Texture2D texture, Vector2 world, float pitch, Vector2 footprint)
+            {
+                float lod = Mathf.Clamp(Mathf.Log(Mathf.Max(footprint.x, footprint.y) * texture.width / pitch, 2f),
+                    0f, texture.mipmapCount - 1);
+                int low = Mathf.FloorToInt(lod), high = Mathf.Min(low + 1, texture.mipmapCount - 1);
+                Vector2 uv = world / pitch;
+                return Color.LerpUnclamped(GpuBilinear(texture, uv, low),
+                    GpuBilinear(texture, uv, high), lod - low);
+            }
+
+            static Color GpuBilinear(Texture2D texture, Vector2 uv, int mip)
+            {
+                // GetPixelBilinear's CPU coordinates do not specify the GPU
+                // half-texel centre contract used by the actual ground shader.
+                int size = texture.width >> mip, mask = size - 1;
+                float x = Mathf.Repeat(uv.x, 1f) * size - .5f;
+                float y = Mathf.Repeat(uv.y, 1f) * size - .5f;
+                int ix = Mathf.FloorToInt(x), iy = Mathf.FloorToInt(y);
+                Color lower = Color.LerpUnclamped(texture.GetPixel(ix & mask, iy & mask, mip),
+                    texture.GetPixel((ix + 1) & mask, iy & mask, mip), x - ix);
+                Color upper = Color.LerpUnclamped(texture.GetPixel(ix & mask, (iy + 1) & mask, mip),
+                    texture.GetPixel((ix + 1) & mask, (iy + 1) & mask, mip), x - ix);
+                return Color.LerpUnclamped(lower, upper, y - iy);
+            }
         }
 
         /// <summary>

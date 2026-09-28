@@ -20,9 +20,15 @@ namespace BarPromenade
             if (roundEnded) return JournalCommandResult(request, "rejected", "round_ended");
             if (!IsAvailable) return JournalCommandResult(request, "rejected", "actor_unavailable");
             if (!GameInput.CanRead(GameInputContext.Gameplay)) return JournalCommandResult(request, "rejected", "input_gate");
-            if (CheckShoveRange(request)) return TryBeginShove(request);
-            if (!HasTwoHandSupport) return JournalCommandResult(request, "rejected", "two_hand_support");
+            // A following press owns one queue slot while the old swing still
+            // owns its weapon contacts. The free support hand never delays it.
+            if (!State.IsAttacking)
+            {
+                if (CheckShoveRange(request)) return TryBeginShove(request);
+                if (!HasAttackBalance) return JournalCommandResult(request, "rejected", AttackBalanceRejection);
+            }
             if (!State.RequestCharge()) return JournalRulesRejected(request, State.Settings.AttackCost, true);
+            ContinueBufferedAttackAfterContacts();
             if (State.IsCharging) { reaction = null; sweepValid = false; }
             Present();
             return JournalCommandResult(request, State.IsCharging ? "started" : "queued", "charge");
@@ -34,14 +40,21 @@ namespace BarPromenade
             if (roundEnded) return JournalCommandResult(request, "rejected", "round_ended");
             if (!IsAvailable) return JournalCommandResult(request, "rejected", "actor_unavailable");
             if (!GameInput.CanRead(GameInputContext.Gameplay)) return JournalCommandResult(request, "rejected", "input_gate");
-            if (State.IsCharging && CheckShoveRange(request)) return TryBeginShove(request);
-            if (!HasTwoHandSupport)
+            if (State.HasBufferedCharge)
             {
-                // The input owner consumes the button release even when the
-                // supporting hand was displaced. Retire its held/queued charge
-                // too, so neither fighter remains charged without a way to fire.
+                // Releasing a queued click never cancels its preceding swing,
+                // even when that swing temporarily displaced the support hand.
+                State.ReleaseCharge();
+                bool started = ContinueBufferedAttackAfterContacts();
+                return JournalCommandResult(request, started ? "started" : "queued", "charge_release");
+            }
+            if (State.IsCharging && CheckShoveRange(request)) return TryBeginShove(request);
+            if (!HasAttackBalance)
+            {
+                // A true loss of balance still interrupts the held action.
+                // Losing only the left-hand contact releases a one-handed swing.
                 CancelCharge();
-                return JournalCommandResult(request, "rejected", "two_hand_support_cancelled_charge");
+                return JournalCommandResult(request, "rejected", AttackBalanceRejection);
             }
             if (!State.ReleaseCharge()) return JournalCommandResult(request, "rejected", "no_held_or_queued_charge");
             if (State.IsAttacking) { reaction = null; sweepValid = false; }
@@ -57,6 +70,30 @@ namespace BarPromenade
             sweepValid = false;
             if (isActiveAndEnabled && gameObject.activeInHierarchy) Present();
             return JournalCommandResult(request, "cancelled", "charge", trackAction: false);
+        }
+
+        /// <summary>Run after both fighters' collected contacts have resolved.
+        /// A new action must never relabel or erase the old swing's final sweep.</summary>
+        internal bool ContinueBufferedAttackAfterContacts()
+        {
+            if (roundEnded || presentationFrozen || !IsAvailable || !HasAttackBalance ||
+                !GameInput.CanRead(GameInputContext.Gameplay) ||
+                (contactTarget != null && contactTarget.State.IsDefeated) || !State.TryContinueAttack()) return false;
+            JournalBufferedActionStarted();
+            reaction = null;
+            reactionClock = 0f;
+            sweepValid = collectSweep = false;
+            Present();
+            return true;
+        }
+
+        private void JournalBufferedActionStarted()
+        {
+            if (journalQueuedRequest == 0) return;
+            journalActionRequest = journalQueuedRequest;
+            journalQueuedRequest = 0;
+            JournalEvent("buffer_started", action: State.AttackSequence, request: journalActionRequest,
+                f0: GameLog.Field("phase", (int)State.Phase), f1: GameLog.Field("continuation", State.IsContinuation));
         }
 
         private void LoadSwingClips(bool forNpc)
@@ -90,13 +127,13 @@ namespace BarPromenade
         private void SampleHeroRelease(float progress)
         {
             hero.SampleOwnedClipUpperTime(this, Current.Attack.name, progress,
-                CombatAssetProvider.ReleaseSourceSeconds(progress * Current.Attack.length, State.AttackPower) / Current.Attack.length);
+                CombatAssetProvider.ReleaseSourceSeconds(progress * Current.Attack.length, State.AttackPower, State.IsContinuation) / Current.Attack.length);
         }
 
         private void SampleHeroCharge()
         {
             hero.SampleOwnedClipUpperTime(this, Current.Attack.name, 0f,
-                CombatAssetProvider.ReleaseSourceSeconds(0f, State.Charge01) / Current.Attack.length);
+                CombatAssetProvider.ReleaseSourceSeconds(0f, State.Charge01, State.IsContinuation) / Current.Attack.length);
         }
 
         private void SampleNpcRelease(float progress)
@@ -114,7 +151,7 @@ namespace BarPromenade
                 npcReleasePositions[i] = npcPoseBones[i].localPosition;
                 npcReleaseRotations[i] = npcPoseBones[i].localRotation;
             }
-            clip.SampleAnimation(npc.Animator.gameObject, CombatAssetProvider.ReleaseSourceSeconds(seconds, power));
+            clip.SampleAnimation(npc.Animator.gameObject, CombatAssetProvider.ReleaseSourceSeconds(seconds, power, State.IsContinuation));
             for (int i = 0; i < npcPoseBones.Length; i++)
             {
                 if (npcReleaseUpperBody[i]) continue;

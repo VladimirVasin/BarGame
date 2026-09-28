@@ -146,17 +146,17 @@ The vertical slice contains:
   City/Bar/lodge markers belong to one load, consumed once; later arrivals stay.
   Day one raises mother's-house quest/map marker; door/map entry or starting
   inside closes it. No village signpost;
-- CombatTest: six posed zones/HP; guard/parry before rear-head defeat.
-  Ready/Block/attacks/recoils support left; Hit/GuardBreak/Defeat release.
-  Impulses/catch steps; both rigs fall/rise holding right; sole-bound regrip.
-  Post-left body/floor/wall checks; forearm pronation/mass, elbow rebase.
-  Drop sweeps disabled anatomy past opponent capsule. Both retime Attack
-  upper by power, lower fixed; both recoils reverse Attack. Backhand DAG;
-  banks unpublished/Unity pending. One clock/pause/hit-stop; separate defeat.
-  Afraid hero/calmer NPC. Guard/step/charge use breath; Hold freezes it.
-  Wounds/thud/pools; defeat: free camera, winner walks. `E` over the settled
-  body hosts the toilet action: crowbar left, bone/floor marks until R.
-  R/unload clears; no story/speech;
+- CombatTest: six HP zones; guard/parry precedes rear-head defeat.
+  Impulse/steps; right-held fall/rise/moving regrip. Collision gates;
+  drop sweep disables anatomy past capsule.
+  Upper follows power/lower fixed; recoil/backhand banks/QA pending.
+  Click cuts Hit/Miss return after both contacts. Right-hand start/release/chain
+  ignores left; block needs both. Held=charge, released=tap.
+  Balance recovery/forced recoil/stun/fall stay; clock/pause/hit-stop.
+  Afraid hero/calm NPC; breath: guard/step/.6 s charge, frozen in Hold.
+  Hit/block/wall/miss recovery: .20/.28/.35/.50 s; full charge ×1.5.
+  Wounds/thud/pools; defeat: freecam, winner walks. `E`: settled-body toilet,
+  crowbar left, bone/floor marks. R/unload clears; no story/speech;
 - the retained Home opening is reachable only by a legacy request: held bed loop,
   silent `05:59` clock with rare whole-display flicker, five-second input lock,
   then localized Wake Up/Quit. Wake sets `06:00`, runs the clock/alarm and hides
@@ -277,8 +277,8 @@ The vertical slice contains:
   `InteractionPromptView`: held bottom pages/cleanup; E next/close, Esc cancel,
   replay/no progress; only minibar photo grants an item. RU/EN resort/road thoughts;
   two notes: three paper pages then thought, paper/UI keys match.
-  `AlpineVillageJunctionPlan`: ports/contours/snow; asphalt/soil node maps share
-  a 2x2 atlas/material. Other paths raised; warehouse apron has no snow island.
+  `AlpineVillageJunctionPlan`: ports/contours/snow; editable asphalt/soil masks
+  bake shared 2x2 albedo/linear-response atlases. Other paths raised; no warehouse snow island.
   `AlpineVillageDistanceWorldBuilder` uses six checkpoint meshes with storm
   materials below the gap: city/windows/glow/land/rock/vegetation.
   Cableway is the sole exit. Walkability: core/expansion minus walls/trees/cable
@@ -289,7 +289,8 @@ The vertical slice contains:
   cabin entrance belong to `TerrainCell`. Snow reaches `.45 m` over `1.3/3.2 m`
   loaded/scoured faces. Empty yards/ruins retain snow, paving exposed; rescue
   flagstones support pressing/refill. Paths overlap `1 m` snow by one cell;
-  `AlpineVillageSnowTreading` buckets updates, buries zero-depth edges.
+  `AlpineVillageSnowTreading` buckets updates, buries zero-depth edges; current
+  depth/treading/clearing also drives snow colour and exposed-substrate edges.
   Hero samples remaining snow/current + next step: `.20/.12 m` entry/exit,
   no sprint, `1.05/.65 m/s` forward/back; cleared paths restore ordinary motion.
   Snow foot contacts drive sound/kickup. Approaches fit planes/blend normals;
@@ -628,14 +629,11 @@ The vertical slice contains:
 
 ### Weather, sky and presentation
 
-- deterministic exterior weather also drives one transient surface-film state
-  shared by City and the Home balcony view. Ground, roads, sidewalks and road
-  markings darken and gain smoothness quickly under rain, then dry at a much
-  slower fixed rate; authored dry tints survive because the response is
-  multiplicative through material property blocks on the existing shared
-  material. Scene handoffs advance the film from absolute game time and a new
-  session resets it. City roads add at most `42` deterministic top-only puddle
-  quads, batched into one collider-free mesh `3 mm` above their source roads;
+- City and Home share a rain film: fast wetting, slow recession to City's
+  permanent drizzle floor; absolute game time carries it across scene handoffs,
+  New Game resets it. MPBs preserve authored tints; linear response maps vary
+  local smoothness/relief. Up to `42` deterministic top-only puddles share one
+  collider-free water mesh `3 mm` above the roads;
 - one shared generated exterior cloud ceiling in City, Mountain Road, Alpine
   Village and the active Home balcony shot. A passive `220`-triangle hemisphere
   and one packed linear density texture feed three property-block profiles;
@@ -677,31 +675,27 @@ The vertical slice contains:
 - shared 8-sided cylinder geometry, one explicitly packaged shared URP/Lit
   material for ordinary runtime primitives, hard directional shadows and
   disabled camera MSAA for a deliberate low-poly silhouette;
-- four opaque generated exterior albedos: dark compacted soil for exposed
-  ground between buildings, dark ordinary asphalt, the former light road
-  texture reassigned to sidewalks, and worn white traffic paint. They retain
-  Repeat/Bilinear/mipmap import settings and use XZ planar UVs at `12 m` for
-  soil and asphalt, `6 m` for sidewalks and `2 m` for markings through
-  material property blocks on the one shared `RuntimePrimitiveLit`, without
-  material instances. The same soil recipe covers the bounded Home exterior
-  ground reconstruction;
+- Exterior ground retains its albedos, palette and metre UVs: City's soil/asphalt
+  repeat at `12 m`, sidewalk at `6 m`, paint at `2 m`, Repeat/Bilinear/mips.
+  City, MountainRoad and AlpineVillage ground/retaining surfaces use shared
+  `GroundSurfaceLit` via `GroundSurfaceAppearance`, linear response companions
+  and per-renderer MPBs; `Ps1Lit` parity and interior materials stay separate.
+  UV4 road metres/width/seed place wear across/along actual roads; Home projects
+  back into the same City frame. Open aprons omit lane bands. Existing snow
+  state drives edge/substrate tint, without new collision or accumulation.
+  Other City ground reads registry-driven global `_CityGroundWetness` without
+  a second renderer list; MountainRoad never inherits that City flag.
+  Mountain ridge haze keeps its dedicated shader and gains rock response;
 - eight opaque generated Central Park albedos from
   `tools/build-city-park-textures.py` (trodden turf, the sand-stone walk,
   dirty plaza slabs on a `4x4` joint grid, trunk bark, leaf mass, bench
   timber, jointless park masonry and chipped municipal paint over steel)
-  applied by `CityParkSurfaceAppearance` on the shared
-  `RuntimePrimitiveLit` through material property blocks. Like the cemetery
-  set they ride UVs baked into the batched meshes rather than a per-renderer
-  UV transform, so neighbouring trees and hedge runs decorrelate by world
-  position: the lawn, paths and conforming plaza discs project down at
-  `3.0 / 2.2 / 2.8 m`, while the upright objects — trunks, canopies, hedges
-  and bench timbers at `1.2 / 1.6 / 1.4 m` — use the new
-  `RuntimeWorldUvMode.BoxProjected` baking, which picks the projection plane
-  per face so a twenty-metre hedge shows leaves along its whole length
-  instead of one stretched line of the sheet. The park's authored flat
-  colours are unchanged and brightened by the solved per-sheet compensation,
-  so the tinted sheets keep the brightness the flat surfaces had. The park
-  path recipe also covers the bounded Home exterior reconstruction. The
+  applied by `CityParkSurfaceAppearance` through MPBs; ground/stone/timber use
+  `GroundSurfaceLit`, foliage/metal retain `RuntimePrimitiveLit`. Baked world
+  UVs phase neighbours continuously: lawn/path/plaza XZ pitch `3.0/2.2/2.8 m`;
+  trunks/crowns/hedges/timber use face-normal box projection at `1.2/1.6/1.4 m`.
+  Solved compensation preserves authored palette/brightness. Home shares the
+  park path recipe. The
   stone, timber and painted-metal sheets reach the four park landmarks
   inside the otherwise flat city decoration layer: `CityDecorationWorldBuilder`
   batches on a second axis, so a park part keeps the batch colour it always

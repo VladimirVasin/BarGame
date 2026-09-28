@@ -3,25 +3,68 @@
 Newest outcomes/checks first. Archive whole dates at budget: [policy](README.md).
 Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-2026-08.md).
 
-## 2026-09-27 — Shove, grip, recovery and CPU
+## 2026-09-29 — Exterior ground layers and NPC loading
 
-- A missed first palm check now keeps the shove contact window open; one real
-  contact applies one impulse. HP, kinematics, tolerance and obstacle gates stay
-  unchanged. Journal recovery spans the whole catch-step episode and its gaps.
+- City/MountainRoad/AlpineVillage share a ground Lit variant and linear response
+  maps registered to existing albedos. Road-frame wear follows width/direction;
+  City wetness keeps the shared weather clock. Snow reveals the actual road/soil
+  and editable junction atlas while existing pressing/collision stays authoritative.
+  Deep snow skips hidden substrate reads. Materials remain shared through MPBs.
+- Checks: `build-ground-surface-maps.py --check` validates deterministic maps,
+  imports and source hashes; `build-ground-surface-shader.py --check` preserves
+  the complete upstream passes. Surface capture uses the real build stages
+  before NPC creation. `MaterialSurfaces` passed;
+  exterior frames reviewed, road/snow controls and real clearing verified.
+- Focused contracts passed: `RegisteredRoad_UsesPropertyBlocksAndRestoresDryRecipe`,
+  `SnowTreading_PressesDownWhereHeWalks`,
+  `JunctionResponse_UsesThePaintedWeightsAndMetreCoordinates`. The atlas check
+  samples GPU texel centres explicitly; Unity's CPU bilinear lookup had shifted
+  the expected cavity values. `check-docs.py` and `git diff --check` passed.
+- Fixed `ordinary-worker-v1` startup: the old Resources address resolved to the
+  raw `StationWorker.fbx`. Unity moved the assembled prefab to `OrdinaryWorker`
+  with its GUID/library reference intact; catalog and rebuild share one path.
+  The asset gate rejects ambiguous GameObject resources. Check:
+  `OrdinaryWorker_SharesCatalogAssetAndActionsAcrossVisibilityChanges` passed.
+  `CityNight_CreatesFogSharedGlowAndBudgetedFixtures` reached initialized City,
+  then hit an unrelated hero-shadow expectation (`On` versus `TwoSided`).
+
+## 2026-09-28 — One-handed attack response
+
+- Right-hand attack start, charge release and continuation no longer wait for
+  left support. The old shared grip gate discarded Ready clicks and cancelled
+  accepted short charges when a transition opened the left hand. Balance/fall
+  restrictions and two-hand guard stay; AI waits only for balance recovery.
+  No extra input queue or deferred release; old contacts still precede chaining.
+- Checks: `Range_OneHandAttacksStartWithoutWaitingForSupport` drives mouse
+  press/release while stationary/moving, cuts the tail with the hand open,
+  resolves a real weapon hit and retains interruption/guard/balance limits.
+  `Range_AttackContinuationCancelsOnlyReturnTail` preserves the series/final
+  return contract. Synthetic mouse events require explicit Input System update
+  before the manual input bridge in the coroutine fixture.
+
+## 2026-09-27 — Duel chains, grip and CPU
+
+- One press queues in swing; Hit/Miss tail yields after both contacts/grip.
+  Prepared entry/continuous elbow; recoil stays, charge starts then. Frames
+  reviewed. Checks: `AttackPressBuffersThroughoutSwingAndCutsOnlyTheReturnOnce`,
+  `Range_AttackContinuationCancelsOnlyReturnTail`.
+- Duel recovery/charge shortened. Checks: `CombatRulesTests` recovery/charge
+  selection. Unchanged `CommittedMissIsFreeAndCannotCancelIntoAttackOrBlock`
+  expects 85 breath before attacking; step-grace regeneration already gives 87.4.
+- Shove waits for real palm contact; one impulse, same HP/motion/tolerance/
+  obstacle gates. Journal recovery spans catch steps and planning gaps.
   Checks: `Range_ShoveWindowRequiresOneRealContact`,
   `Range_CloseContactUsesFastShove`.
-- Cloth/hair reuse equal-weight skin matrices and per-pose bounds/bone matrices.
-  Matched CPU comparison confirms savings; differential replay preserves
-  contacts/vertices across poses, scales and pinned/free weights. Solver unchanged.
-- Last catch-step landing no longer ends recovery until actual support is stable.
-  Ragdoll diagnostics separate live anatomical support from the central landing
-  that owns the thud; expose pelvis/torso speeds and settling clocks. Rise accepts
-  quiet limb support with unchanged thresholds; central thud/blood stay separate.
-  Repeated-hit NPC rise baseline did not reproduce the manual delay. Check:
+- Cloth/hair reuse equal-weight skin and per-pose bounds/bone matrices. Matched
+  CPU comparison confirms savings; differential replay preserves contacts/vertices
+  across poses, scales, pinned/free weights. Same solver.
+- Last catch landing waits for stable support. Ragdoll diagnostics separate
+  anatomical support/central thud; expose pelvis/torso speeds/settling clocks.
+  Rise accepts quiet limbs, same thresholds; thud/blood stay separate.
+  Repeated-hit NPC baseline did not reproduce the delay. Check:
   `Range_QuietRagdollCanRiseFromFootSupport`.
-- Removed duplicate recovery pose/sample/sole work; matched comparison confirms
-  lower tick CPU/query cost. Check: `Range_InterruptedRiseHasBoundedWorkAndRecovers`.
-  Overall FPS was not remeasured after this optimization.
+- Removed duplicate recovery pose/sample/sole work; matched CPU/queries fell.
+  Check: `Range_InterruptedRiseHasBoundedWorkAndRecovers`. FPS unmeasured.
 - Recoverable torso shove preserves actual grip through catch steps; balance
   load alone does not release a non-damaging impact. Lost contact, a necessary
   brace, knockdown or an arm hit can still release it.
@@ -34,12 +77,13 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
   `Range_ObstructedShoveRecipientArmRecoversWhileMoving`,
   `Range_ShoveRecoveryKeepsHeldWalkingWithItsFeet`,
   `Range_FinalCatchRequiresStableMovingSupportBeforeRegrip`.
-- Manual logs exposed permanent source-arm regrip after shove/swing: strict
-  intermediate rejection preserved an already invalid wrist. Each interpolated
-  wrist is now constrained; inherited violations may only decrease, within the
-  joint-speed/world-clearance gates. Shove→Free keeps the same arm owner/limits.
-  Physical contact still unlocks attack/guard.
-  Check: `Range_ShoveAndSwingRestoreAttackAndBlock`.
+- Source regrip constrains wrist interpolation; inherited violations only decrease
+  within joint-speed/world-clearance gates. Shove→Free preserves owner/limits;
+  contact unlocks attack/guard. Actor-local palm/elbow/rotation carries moving
+  return through motor travel; wall contacts stay world-space. Frames reviewed.
+  Checks: `Range_ShoveAndSwingRestoreAttackAndBlock`,
+  `Range_MovingRegripCarriesTheArmAndRestoresAttack`,
+  `Range_GripRejectionReleasesFromPresentedArm`.
 - Stall marks now track absent phase/rise progress; aftermath snapshots continue
   and discarded aftermath time is separate. Check:
   `Range_DuelJournalRecordsReasonsWithoutChangingCombat`.

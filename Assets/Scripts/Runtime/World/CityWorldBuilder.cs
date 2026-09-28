@@ -861,7 +861,14 @@ namespace BarPromenade
                 CityExteriorAppearance.Asphalt,
                 true,
                 CityExteriorAppearance.RoadTextureTileSize,
-                CityExteriorAppearance.ApplyRoadSurface,
+                renderer =>
+                {
+                    CityExteriorAppearance.ApplyRoadSurface(renderer);
+                    GroundSurfaceCoordinates.AssignBoxes(
+                        renderer.GetComponent<MeshFilter>().sharedMesh,
+                        plan.StreetGeometry, CityStreetSurfacePlanner.SidewalkWidth);
+                    GroundSurfaceCoordinates.Enable(renderer);
+                },
                 FootstepGroundKind.Concrete);
             BuildOrientedSurfaceBoxesIfAny(
                 "Park Paths",

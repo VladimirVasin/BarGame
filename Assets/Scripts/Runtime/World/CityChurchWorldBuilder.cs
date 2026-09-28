@@ -114,6 +114,11 @@ namespace BarPromenade
                 Vector3.one * CityChurchPlanner.ExteriorModelScale;
             ValidateExteriorEntranceAnchor(registry, plan);
             HideAuthoredWestDoor(registry);
+            foreach (ChurchRendererBinding binding in registry.RendererBindings)
+                if (binding.SourceName == "EXT_Foundation" &&
+                    binding.MaterialSlot == ChurchMaterialSlot.Stone)
+                    GroundAuthoredSurfaceAppearance.Apply(binding.Renderer,
+                        GroundSurfaceKind.Paving, cityClimate: true);
             Collider[] importedColliders =
                 model.GetComponentsInChildren<Collider>(true);
             for (int index = 0; index < importedColliders.Length; index++)
@@ -291,7 +296,7 @@ namespace BarPromenade
             // with the ground - anything the hero cannot stand on must
             // never be between him and the height his dock is measured
             // at.
-            RuntimePrimitiveFactory.CreateBox(
+            GameObject threshold = RuntimePrimitiveFactory.CreateBox(
                 "Church Door Threshold",
                 root,
                 door +
@@ -306,6 +311,11 @@ namespace BarPromenade
                     DoorThresholdWidth),
                 DoorTrimStone,
                 false);
+            CityPointOfInterestSurfaceAppearance.Apply(
+                threshold.GetComponent<Renderer>(),
+                CityPointOfInterestSurfaceKind.Paving,
+                SurfaceProjection.BoxXZ,
+                DoorTrimStone);
         }
 
         private static Vector3 FacadeSize(

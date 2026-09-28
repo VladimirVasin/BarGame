@@ -307,6 +307,32 @@ namespace BarPromenade
             block.SetVector("_BaseMap_ST", new Vector4(scale.x / pitch,
                 (part.kind == "RoadSurface" ? scale.z : scale.y) / pitch, 0f, 0f));
             renderer.SetPropertyBlock(block);
+            ApplyExteriorGround(renderer, part);
+        }
+
+        private static void ApplyExteriorGround(Renderer renderer, VillageExpansionPart part)
+        {
+            // The same facade sheets are also borrowed by these specific
+            // outdoor floors. Preserve their colours/UVs without changing any
+            // house wall, roof, lodge interior or piece of furniture.
+            if (part.kind == "BrookFootbridge" && part.name == "DeckAndApproaches")
+            {
+                GroundAuthoredSurfaceAppearance.Apply(renderer, GroundSurfaceKind.Timber);
+                return;
+            }
+            bool paving = part.name == "WornEntranceSteps" ||
+                ((part.kind == "RuinedHouse" || part.kind == "HouseholdFoundation" ||
+                  part.kind == "RuinedShed" || part.kind == "AvalancheRuinedHouse") &&
+                 part.name == "ExposedFloor") ||
+                (part.kind == "TownHallYard" && part.name == "ExposedPaving") ||
+                (part.kind == "SchoolYard" && part.name == "EntrancePavingRemnants") ||
+                (part.kind == "ShopBakeryYard" &&
+                 (part.name == "TradingPaving" || part.name == "RearLoadingSlab")) ||
+                (part.kind == "WorkshopYard" && part.name == "OldWorkPaving") ||
+                ((part.kind == "HouseholdYardA" || part.kind == "HouseholdYardB" ||
+                  part.kind == "HouseholdYardC") && part.name == "OldYardStone");
+            if (paving && (part.surface == "LayeredStone" || part.surface == "Masonry"))
+                GroundAuthoredSurfaceAppearance.Apply(renderer, GroundSurfaceKind.Paving);
         }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]

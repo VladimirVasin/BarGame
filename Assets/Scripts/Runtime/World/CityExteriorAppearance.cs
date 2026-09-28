@@ -260,6 +260,11 @@ namespace BarPromenade
             properties.SetFloat(SmoothnessId, smoothness);
             properties.SetFloat(MetallicId, 0f);
             renderer.SetPropertyBlock(properties);
+            GroundSurfaceKind groundKind = wetSurfaceKind == CityWetSurfaceKind.Ground
+                ? GroundSurfaceKind.Soil : wetSurfaceKind == CityWetSurfaceKind.Sidewalk
+                ? GroundSurfaceKind.Paving : wetSurfaceKind == CityWetSurfaceKind.RoadMarking
+                ? GroundSurfaceKind.Marking : GroundSurfaceKind.Asphalt;
+            GroundSurfaceAppearance.Apply(renderer, groundKind, texture);
             CityWetSurfaceRegistry.Register(
                 renderer,
                 wetSurfaceKind,

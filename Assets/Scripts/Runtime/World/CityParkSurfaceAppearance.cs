@@ -217,6 +217,19 @@ namespace BarPromenade
             properties.SetFloat(SmoothnessId, recipe.Smoothness);
             properties.SetFloat(MetallicId, recipe.Metallic);
             renderer.SetPropertyBlock(properties);
+            switch (kind)
+            {
+                case CityParkSurfaceKind.Lawn:
+                    GroundSurfaceAppearance.ApplyCity(renderer, GroundSurfaceKind.Lawn, GetTexture(kind)); break;
+                case CityParkSurfaceKind.Path:
+                    GroundSurfaceAppearance.ApplyCity(renderer, GroundSurfaceKind.Gravel, GetTexture(kind)); break;
+                case CityParkSurfaceKind.Plaza:
+                    GroundSurfaceAppearance.ApplyCity(renderer, GroundSurfaceKind.Paving, GetTexture(kind)); break;
+                case CityParkSurfaceKind.Stone:
+                    GroundSurfaceAppearance.ApplyCity(renderer, GroundSurfaceKind.Rock, GetTexture(kind)); break;
+                case CityParkSurfaceKind.Timber:
+                    GroundSurfaceAppearance.ApplyCity(renderer, GroundSurfaceKind.Timber, GetTexture(kind)); break;
+            }
         }
 
         private static int ValidateKind(CityParkSurfaceKind kind)

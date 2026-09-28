@@ -14,11 +14,24 @@ namespace BarPromenade.Editor
         public const string ModelPath = Folder + "StationWorker.fbx";
         public const string ManifestPath = Folder + "StationWorker.json";
         public const string TexturePath = Folder + "StationWorkerAtlas.png";
-        public const string PrefabPath = Folder + "StationWorker.prefab";
+        public const string PrefabPath = "Assets/Resources/" + DefaultNpcCatalog.OrdinaryWorkerResourcePath + ".prefab";
         private static bool building;
 
         [MenuItem("Bar Promenade/Default NPC/Rebuild Ordinary Worker")]
         public static void RunBatch() => BuildOrThrow();
+
+        public static void EnsurePrefabResourcePath()
+        {
+            const string legacyPath = Folder + "StationWorker.prefab";
+            if (AssetDatabase.LoadAssetAtPath<GameObject>(legacyPath) == null) return;
+            if (AssetDatabase.LoadAssetAtPath<GameObject>(PrefabPath) != null)
+                throw new InvalidOperationException("Both legacy and current default NPC prefabs exist; preserve the original GUID when migrating.");
+            Debug.Log("Default NPC legacy resource resolved to " +
+                AssetDatabase.GetAssetPath(Resources.Load<GameObject>("VillageLife/StationWorker")));
+            string error = AssetDatabase.MoveAsset(legacyPath, PrefabPath);
+            if (!string.IsNullOrEmpty(error)) throw new InvalidOperationException(error);
+            AssetDatabase.ImportAsset(PrefabPath, ImportAssetOptions.ForceSynchronousImport);
+        }
 
         public static void BuildOrThrow()
         {
@@ -27,6 +40,7 @@ namespace BarPromenade.Editor
             try
             {
                 AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
+                EnsurePrefabResourcePath();
                 Manifest manifest = ReadManifest();
                 Avatar avatar = AssetDatabase.LoadAllAssetsAtPath(CityPedestrianAssetSetup.PlayerModelPath)
                     .OfType<Avatar>().FirstOrDefault();
@@ -119,7 +133,8 @@ namespace BarPromenade.Editor
         {
             Manifest manifest = ReadManifest();
             GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(PrefabPath);
-            if (prefab == null || prefab != DefaultNpcCatalog.GetPrefab())
+            if (prefab == null || prefab != DefaultNpcCatalog.GetPrefab() ||
+                Resources.LoadAll<GameObject>(DefaultNpcCatalog.OrdinaryWorkerResourcePath).Length != 1)
                 throw new InvalidOperationException("The default catalogue must use the imported ordinary worker prefab.");
             NpcWardrobe wardrobe = prefab.GetComponent<NpcWardrobe>();
             VillageResidentPresentation actor = prefab.GetComponent<VillageResidentPresentation>();

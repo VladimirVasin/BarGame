@@ -358,8 +358,8 @@ namespace BarPromenade.Tests.EditMode
                         kind = expected;
                     }
 
-                    if (renderer.sharedMaterial !=
-                        RuntimePrimitiveFactory.DefaultMaterial)
+                    if (renderer.sharedMaterial != RuntimePrimitiveFactory.DefaultMaterial &&
+                        renderer.sharedMaterial != GroundSurfaceAppearance.SharedMaterial)
                     {
                         foreign.Add(name);
                     }
@@ -416,6 +416,14 @@ namespace BarPromenade.Tests.EditMode
                     Is.SameAs(MountainRoadSurfaceAppearance.FoliageMaterial),
                     $"'{name}' {reason}, so it must carry the one shared " +
                     "foliage material - never a per-object instance.");
+            }
+            else if (TryExpectedGroundKind(kind, out GroundSurfaceKind groundKind))
+            {
+                Assert.That(renderer.sharedMaterial, Is.SameAs(GroundSurfaceAppearance.SharedMaterial),
+                    $"'{name}' must use the shared ground response material for {kind}.");
+                Assert.That(properties.GetFloat("_GroundKind"), Is.EqualTo((float)groundKind));
+                Assert.That(properties.GetTexture("_GroundResponse"), Is.SameAs(
+                    GroundSurfaceAppearance.GetResponse(MountainRoadSurfaceAppearance.GetTexture(kind))));
             }
             else
             {
@@ -489,6 +497,21 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(float.IsNaN(transform.y), Is.False);
             Assert.That(transform.z, Is.InRange(0f, 1f));
             Assert.That(transform.w, Is.InRange(0f, 1f));
+        }
+
+        private static bool TryExpectedGroundKind(MountainRoadSurfaceKind kind, out GroundSurfaceKind ground)
+        {
+            switch (kind)
+            {
+                case MountainRoadSurfaceKind.Asphalt: ground = GroundSurfaceKind.Asphalt; return true;
+                case MountainRoadSurfaceKind.ForestFloor: ground = GroundSurfaceKind.Soil; return true;
+                case MountainRoadSurfaceKind.WindSnow: ground = GroundSurfaceKind.Snow; return true;
+                case MountainRoadSurfaceKind.LayeredStone: ground = GroundSurfaceKind.Rock; return true;
+                case MountainRoadSurfaceKind.Concrete: ground = GroundSurfaceKind.Concrete; return true;
+                case MountainRoadSurfaceKind.Masonry: ground = GroundSurfaceKind.Paving; return true;
+                case MountainRoadSurfaceKind.Timber: ground = GroundSurfaceKind.Timber; return true;
+                default: ground = default; return false;
+            }
         }
 
         private static Rect MeasureUvSpan(Vector2[] uvs)

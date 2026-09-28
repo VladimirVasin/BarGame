@@ -158,6 +158,8 @@ namespace BarPromenade
             properties.SetFloat(SmoothnessId, recipe.Smoothness);
             properties.SetFloat(MetallicId, recipe.Metallic);
             renderer.SetPropertyBlock(properties);
+            if (kind == CityPointOfInterestSurfaceKind.Paving)
+                GroundSurfaceAppearance.ApplyCity(renderer, GroundSurfaceKind.Paving, GetTexture(kind));
         }
 
         /// <summary>

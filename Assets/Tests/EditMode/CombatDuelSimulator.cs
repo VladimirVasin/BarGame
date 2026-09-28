@@ -115,6 +115,9 @@ namespace BarPromenade.Tests.EditMode
                 if (result == MeleeHitResult.GuardBroken) { GuardBreaks[contact.source]++; if (GuardBrokenAt < 0f) GuardBrokenAt = Clock; }
                 if (contact.counter && (result == MeleeHitResult.Hit)) CounterHits[contact.source]++;
             }
+            // Both old swings resolve before either fighter may skip its return.
+            for (int i = 0; i < 2; i++)
+                if (Actors[i].TryContinueAttack()) prevElapsed[i] = 0f;
             Clock += Step;
             for (int i = 0; i < 2; i++)
                 if (BreathEmptyAt < 0f && Actors[i].Stamina <= .0001f) BreathEmptyAt = Clock;

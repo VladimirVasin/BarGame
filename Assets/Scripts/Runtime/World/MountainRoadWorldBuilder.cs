@@ -423,6 +423,13 @@ namespace BarPromenade
                 null,
                 GameLog.Field("columns", meshes.Columns),
                 GameLog.Field("rows", meshes.Rows));
+            Renderer snowRenderer = snow.GetComponent<Renderer>();
+            GroundSurfaceAppearance.EnableVertexData(snowRenderer);
+            var snowProperties = new MaterialPropertyBlock();
+            snowRenderer.GetPropertyBlock(snowProperties);
+            snowProperties.SetColor("_GroundSubstrateColor", MountainRoadSurfaceAppearance.CreateDisplayTint(
+                SoilColor, MountainRoadSurfaceKind.ForestFloor));
+            snowRenderer.SetPropertyBlock(snowProperties);
             // Two colliders cut from one grid, so soil and snow are told
             // apart for free: the ray lands on one or the other.
             FootstepGround.Stamp(snow, FootstepGroundKind.Snow);

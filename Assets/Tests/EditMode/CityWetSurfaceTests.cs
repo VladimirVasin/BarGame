@@ -408,7 +408,7 @@ namespace BarPromenade.Tests.EditMode
             try
             {
                 Renderer renderer = owner.GetComponent<Renderer>();
-                Material sharedBefore = RuntimePrimitiveFactory.DefaultMaterial;
+                Material sharedBefore = GroundSurfaceAppearance.SharedMaterial;
                 CityExteriorAppearance.ApplyRoadSurface(renderer);
 
                 CityWetSurfaceRegistry.SetImmediate(1f);
@@ -418,6 +418,10 @@ namespace BarPromenade.Tests.EditMode
                 float wetSmoothness = properties.GetFloat(SmoothnessId);
 
                 Assert.That(renderer.sharedMaterial, Is.SameAs(sharedBefore));
+                Assert.That(properties.GetTexture(Shader.PropertyToID("_GroundResponse")),
+                    Is.SameAs(GroundSurfaceAppearance.GetResponse(CityExteriorAppearance.RoadTexture)));
+                Assert.That(properties.GetFloat(GroundSurfaceAppearance.WetnessId), Is.EqualTo(1f));
+                Assert.That(Shader.GetGlobalFloat(GroundSurfaceAppearance.CityWetnessId), Is.EqualTo(1f));
                 Assert.That(wetTint.grayscale, Is.LessThan(0.7f));
                 Assert.That(wetSmoothness, Is.GreaterThan(0.6f));
                 Assert.That(
@@ -426,6 +430,8 @@ namespace BarPromenade.Tests.EditMode
 
                 CityWetSurfaceRegistry.SetImmediate(0f);
                 renderer.GetPropertyBlock(properties);
+                Assert.That(properties.GetTexture(Shader.PropertyToID("_GroundResponse")), Is.Not.Null);
+                Assert.That(properties.GetFloat(GroundSurfaceAppearance.WetnessId), Is.Zero);
                 AssertTint(
                     properties.GetColor(BaseColorId),
                     Color.white);

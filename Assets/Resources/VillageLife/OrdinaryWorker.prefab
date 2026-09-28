@@ -14,7 +14,7 @@ GameObject:
   - component: {fileID: 7776169650569255523}
   - component: {fileID: 4034982923843283521}
   m_Layer: 0
-  m_Name: StationWorker
+  m_Name: OrdinaryWorker
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

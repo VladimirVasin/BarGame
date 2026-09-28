@@ -853,16 +853,18 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(materials.Length, Is.EqualTo(5));
             Assert.That(
                 materials[AlpineVillageWorldBuilder.TerrainFloorMaterialIndex],
-                Is.SameAs(RuntimePrimitiveFactory.DefaultMaterial));
+                Is.SameAs(GroundSurfaceAppearance.SharedMaterial));
             Assert.That(
                 materials[AlpineVillageWorldBuilder.TerrainRiseMaterialIndex],
                 Is.SameAs(AlpineVillageRidgeAppearance.RidgeMaterial));
             Assert.That(
                 materials[AlpineVillageWorldBuilder.TerrainAsphaltMaterialIndex],
-                Is.SameAs(RuntimePrimitiveFactory.DefaultMaterial));
+                Is.SameAs(GroundSurfaceAppearance.SharedMaterial));
             Assert.That(
                 materials[AlpineVillageWorldBuilder.TerrainJunctionMaterialIndex],
-                Is.SameAs(RuntimePrimitiveFactory.DefaultMaterial));
+                Is.SameAs(GroundSurfaceAppearance.SharedMaterial));
+            Assert.That(materials[AlpineVillageWorldBuilder.TerrainSoilMaterialIndex],
+                Is.SameAs(GroundSurfaceAppearance.SharedMaterial));
 
             // The shared axes retain coarse vertices and refine the brook.
             AlpineVillageTerrainGrid grid = AlpineVillageTerrainGrid.Get(plan);
@@ -1042,6 +1044,13 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(junctionProperties.GetColor("_BaseColor"), Is.EqualTo(Color.white));
             Assert.That(junctionProperties.GetVector("_BaseMap_ST"),
                 Is.EqualTo(AlpineVillageRidgeAppearance.BakedUvTransform));
+            Assert.That(junctionProperties.GetTexture("_GroundResponse"),
+                Is.SameAs(Resources.Load<Texture2D>(AlpineVillageJunctionAppearance.ResponseResourcePath)));
+            Assert.That(junctionProperties.GetFloat("_Smoothness"), Is.EqualTo(
+                MountainRoadSurfaceAppearance.GetRecipe(MountainRoadSurfaceKind.Asphalt).Smoothness));
+            Assert.That(junctionProperties.GetFloat("_GroundRoadCoordinates"), Is.Zero,
+                "The junction mask owns its material boundary; it must not inherit a ribbon's wear coordinates.");
+            Assert.That(asphaltProperties.GetFloat("_GroundRoadCoordinates"), Is.EqualTo(1f));
         }
 
         private static Vector2 CellCentre(
@@ -2773,6 +2782,26 @@ namespace BarPromenade.Tests.EditMode
                     treading,
                     Is.Not.Null,
                     "The village built no treadable snow.");
+                Mesh snowMesh = treading.GetComponent<MeshFilter>().sharedMesh;
+                Color[] unpressedColors = snowMesh.colors;
+                Vector3[] unpressedVertices = snowMesh.vertices;
+                int[] originalTriangles = snowMesh.triangles;
+                Vector2[] originalUvs = snowMesh.uv;
+                var originalRoadCoordinates = new List<Vector4>();
+                snowMesh.GetUVs(GroundSurfaceCoordinates.Channel, originalRoadCoordinates);
+                Assert.That(originalRoadCoordinates, Has.Count.EqualTo(snowMesh.vertexCount));
+                Assert.That(unpressedColors, Has.Length.EqualTo(snowMesh.vertexCount));
+                Assert.That(unpressedColors.All(control => control.r == 0f), Is.True);
+                Assert.That(unpressedColors.Any(control => control.a > 0f), Is.True,
+                    "Snow above a real path/junction needs its existing substrate assignment.");
+                Assert.That(unpressedColors.Any(control => control.b > .9f), Is.True,
+                    "Snow over the old road has no asphalt substrate assignment.");
+                Assert.That(unpressedColors.Any(control => control.a == 0f && control.g == 0f), Is.True,
+                    "Authored paving must not reveal the terrain's brown soil through its snow.");
+                var snowProperties = new MaterialPropertyBlock();
+                treading.GetComponent<Renderer>().GetPropertyBlock(snowProperties, 0);
+                Assert.That(snowProperties.GetFloat("_GroundVertexData"), Is.EqualTo(1f));
+                Assert.That(snowProperties.GetFloat("_GroundRoadCoordinates"), Is.EqualTo(1f));
 
                 // Open snow beside the lane, clear of every apron.
                 Vector3 spot = Vector3.zero;
@@ -2851,6 +2880,35 @@ namespace BarPromenade.Tests.EditMode
                     treading.TryPlayFootstep(spot, 0f),
                     Is.True,
                     "The snow did not claim its own footstep.");
+                treading.Advance(0f);
+                Color[] pressedColors = snowMesh.colors;
+                Vector3[] pressedVertices = snowMesh.vertices;
+                var changed = new List<int>();
+                for (int index = 0; index < pressedColors.Length; index++)
+                {
+                    if (pressedColors[index].r <= 0.05f) continue;
+                    changed.Add(index);
+                    Assert.That(pressedVertices[index].y, Is.LessThan(unpressedVertices[index].y));
+                    Assert.That(pressedColors[index].g, Is.GreaterThanOrEqualTo(unpressedColors[index].g));
+                    Assert.That(pressedColors[index].b, Is.EqualTo(unpressedColors[index].b));
+                    Assert.That(pressedColors[index].a, Is.EqualTo(unpressedColors[index].a));
+                }
+                Assert.That(changed, Is.Not.Empty, "Pressed geometry never reached the material's compaction channel.");
+                foreach (int index in changed.Where(index => unpressedColors[index].a == 0f))
+                    Assert.That(pressedColors[index].g, Is.Zero,
+                        "Pressing the snowy terrain field must not reveal a fictitious brown layer.");
+                Assert.That(snowMesh.triangles, Is.EqualTo(originalTriangles));
+                Assert.That(snowMesh.uv, Is.EqualTo(originalUvs));
+                var pressedRoadCoordinates = new List<Vector4>();
+                snowMesh.GetUVs(GroundSurfaceCoordinates.Channel, pressedRoadCoordinates);
+                Assert.That(pressedRoadCoordinates, Is.EqualTo(originalRoadCoordinates),
+                    "Pressing snow changed the asphalt patch frame beneath it.");
+                treading.Advance(1f / AlpineVillageSnowTreading.RefillPerSecond + AlpineVillageSnowTreading.RebuildInterval);
+                Assert.That(snowMesh.colors, Is.EqualTo(unpressedColors),
+                    "Refill restored geometry but left a permanent material footprint.");
+                Vector3[] refilledVertices = snowMesh.vertices;
+                foreach (int index in changed)
+                    Assert.That(refilledVertices[index].y, Is.GreaterThan(pressedVertices[index].y));
             }
             finally
             {

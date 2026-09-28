@@ -94,8 +94,8 @@ namespace BarPromenade.Tests.PlayMode
                         }
                         else victim.SetLocomotion(Vector3.zero);
                         root.Tick(TickSeconds);
-                        // HasTwoHandSupport also gates attack readiness during
-                        // recovery. Measure the actual hand contact here.
+                        // HasTwoHandSupport includes the balance gate for the
+                        // guard. Measure the actual hand contact here.
                         if (!obstructContact && !victim.SupportGrip.IsSupportingWeapon) unsupportedSamples++;
                         if (obstructContact && contacts > 0 && !obstructed)
                         {

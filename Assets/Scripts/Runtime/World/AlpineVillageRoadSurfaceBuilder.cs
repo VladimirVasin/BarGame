@@ -18,6 +18,41 @@ namespace BarPromenade
         internal static readonly Color AsphaltTint = new Color(.24f, .255f, .255f, 1f);
         internal static readonly Color JunctionSoilTint = new Color(.330f, .325f, .295f, 1f);
 
+        /// <summary>Matches ground-paint ownership for snow substrate colour.
+        /// Geometry stays authoritative; this only samples the authored road/soil mix.</summary>
+        internal static Func<Vector2, float> CreateSnowAsphaltSampler(AlpineVillagePlan plan)
+        {
+            List<Footprint> road = CreateFootprints(plan.Expansion);
+            return point =>
+            {
+                foreach (AlpineVillageJunctionPlan junction in plan.Expansion.Junctions)
+                    if (junction.Contains(point)) return junction.SampleAsphaltWeight(point);
+                foreach (AlpineVillageJunctionPlan junction in plan.Expansion.Junctions)
+                foreach (AlpineVillageJunctionPort port in junction.Ports)
+                {
+                    if (port.Kind == AlpineVillagePathKind.AbandonedRoad) continue;
+                    Vector2 delta = point - port.MouthCenter;
+                    float along = Vector2.Dot(delta, port.Direction);
+                    float across = Mathf.Abs((float)Cross(port.Direction, delta));
+                    if (along >= -.025f && along <= 2f && across <= port.HalfWidth + .025f)
+                        return 0f;
+                }
+                foreach (AlpineVillageJunctionPlan junction in plan.Expansion.Junctions)
+                    if (junction.Owns(point)) return 0f;
+                foreach (Footprint footprint in road)
+                {
+                    if (!footprint.Bounds.Contains(point)) continue;
+                    bool inside = true;
+                    for (int edge = 0; edge < footprint.Points.Count; edge++)
+                        if (Cross(footprint.Points[(edge + 1) % footprint.Points.Count] -
+                            footprint.Points[edge], point - footprint.Points[edge]) < -.00001d)
+                        { inside = false; break; }
+                    if (inside) return 1f;
+                }
+                return 0f;
+            };
+        }
+
         /// <summary>Soil ends at the asphalt outline, settling onto the same
         /// terrain plane there instead of placing its raised round cap on top.</summary>
         internal static void FitPathJunctions(Mesh mesh, AlpineVillagePlan plan)
@@ -254,7 +289,8 @@ namespace BarPromenade
             foreach (AlpineVillageJunctionPlan junction in plan.Expansion.Junctions)
                 groups.Add(new FootprintGroup(junction.Bounds,
                     new List<Footprint> { new Footprint(junction.OwnershipContour, -1) }));
-            var road = CreateFootprints(plan.Expansion);
+            var roadCoordinates = new List<GroundSurfaceCoordinates.Segment>();
+            var road = CreateFootprints(plan.Expansion, roadCoordinates);
             // Consecutive road pieces are local, but the old group covered the
             // entire terrain. Every ground face therefore checked every road
             // strip/bend, including the distant ridge. Tight ordered groups
@@ -365,6 +401,8 @@ namespace BarPromenade
             ground.subMeshCount = surfaces.Length;
             for (int material = 0; material < surfaces.Length; material++)
                 ground.SetTriangles(surfaces[material], material);
+            GroundSurfaceCoordinates.AssignSegments(ground, roadCoordinates,
+                surfaces[AlpineVillageWorldBuilder.TerrainAsphaltMaterialIndex]);
             ground.RecalculateBounds();
 
             void ReportPartition(string stage)
@@ -451,9 +489,23 @@ namespace BarPromenade
             }
         }
 
-        private static List<Footprint> CreateFootprints(AlpineVillageExpansionPlan expansion)
+        /// <summary>Snow reveals the road's exact wear frame, including its
+        /// phase through bends. Coordinates do not change the snow topology.</summary>
+        internal static void AssignSnowRoadCoordinates(Mesh mesh, AlpineVillagePlan plan)
+        {
+            var segments = new List<GroundSurfaceCoordinates.Segment>();
+            CreateFootprints(plan.Expansion, segments);
+            var indices = new int[mesh.vertexCount];
+            for (int index = 0; index < indices.Length; index++) indices[index] = index;
+            GroundSurfaceCoordinates.AssignSegments(mesh, segments, indices);
+        }
+
+        private static List<Footprint> CreateFootprints(AlpineVillageExpansionPlan expansion,
+            List<GroundSurfaceCoordinates.Segment> coordinates = null)
         {
             var result = new List<Footprint>();
+            Vector3? coordinateEnd = null;
+            float coordinateDistance = 0f, coordinateSeed = 0f;
             AlpineVillagePathDescriptor? previous = null;
             foreach (AlpineVillagePathDescriptor path in expansion.Paths)
             {
@@ -488,6 +540,16 @@ namespace BarPromenade
                 Vector2 a = XZ(start), b = XZ(end), direction = (b - a).normalized;
                 Vector2 side = new Vector2(-direction.y, direction.x) * radius;
                 result.Add(new Footprint(new List<Vector2> { a - side, b - side, b + side, a + side }));
+                if (coordinates == null) return;
+                if (!coordinateEnd.HasValue || (XZ(coordinateEnd.Value) - a).sqrMagnitude > .0001f)
+                {
+                    coordinateDistance = 0f;
+                    coordinateSeed = GroundSurfaceCoordinates.Seed(start);
+                }
+                coordinates.Add(new GroundSurfaceCoordinates.Segment(start, end, radius,
+                    coordinateDistance, coordinateSeed));
+                coordinateDistance += (b - a).magnitude;
+                coordinateEnd = end;
             }
 
             void Bend(Vector3 centre, float radius)

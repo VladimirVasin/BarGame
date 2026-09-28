@@ -39,6 +39,7 @@ namespace BarPromenade
         private double guardPressedAt = double.NegativeInfinity, guardReleasedAt = double.NegativeInfinity;
         private double stepEndedAt = double.NegativeInfinity;
         private bool blockHeld, advancedActiveWindow, registeredContactWindow, bufferedChargeReleased, chained, chainArmed;
+        private bool bufferedFromSwing, continuation;
         private MeleeBufferedAction bufferedAction;
         // The side the next swing would take on its own, and the observed cues
         // that outrank it: the target's bearing and the last step's direction.
@@ -64,6 +65,8 @@ namespace BarPromenade
         public bool IsStunned => Phase == MeleePhase.Stagger || Phase == MeleePhase.GuardBroken || Phase == MeleePhase.GuardImpact;
         /// <summary>The current swing is the one short return swing that follows a landed hit or a step.</summary>
         public bool IsChained => chained && IsAttacking;
+        /// <summary>This charge or swing entered directly from an interrupted ordinary return tail.</summary>
+        public bool IsContinuation => continuation && (IsCharging || IsAttacking);
         /// <summary>The side committed with the current or last swing. Sides alternate on their own:
         /// a swing that goes through (hit or miss) hands the next one to the other side, a stopped
         /// swing (blocked, parried, obstacle) repeats its side. A target off the facing line or a
@@ -190,13 +193,14 @@ namespace BarPromenade
             return (float)Math.Min(1d, authored / Settings.AnimationAttackDurationSeconds);
         }
 
-        /// <summary>Charge pays base effort now; a queued charge begins its hold only once ready.</summary>
+        /// <summary>Charge pays base effort on entry; a queued hold starts only after the old live arc.</summary>
         public bool RequestCharge()
         {
             if (IsCharging || bufferedAction == MeleeBufferedAction.Charge) return true;
             if (Phase == MeleePhase.Ready) return BeginCharge();
-            if (!CanBuffer || stamina < Settings.AttackCost) return false;
+            if (!(IsAttacking || CanBuffer) || stamina < Settings.AttackCost) return false;
             bufferedAction = MeleeBufferedAction.Charge;
+            bufferedFromSwing = IsAttacking;
             bufferedChargeReleased = false;
             return true;
         }
@@ -213,6 +217,7 @@ namespace BarPromenade
             DropGuard();
             advancedActiveWindow = registeredContactWindow = bufferedChargeReleased = chained = chainArmed = false;
             bufferedAction = MeleeBufferedAction.None;
+            bufferedFromSwing = continuation = false;
             hitTargets.Clear();
             // The held pose already shows the side; release keeps it.
             Swing = ChooseSwing();
@@ -244,9 +249,14 @@ namespace BarPromenade
             bool active = IsCharging;
             bool cancelled = active || bufferedAction == MeleeBufferedAction.Charge;
             ClearCharge();
-            if (bufferedAction == MeleeBufferedAction.Charge) bufferedAction = MeleeBufferedAction.None;
+            if (bufferedAction == MeleeBufferedAction.Charge)
+            {
+                bufferedAction = MeleeBufferedAction.None;
+                bufferedFromSwing = false;
+            }
             if (active)
             {
+                continuation = false;
                 Phase = MeleePhase.Ready;
                 advancedActiveWindow = registeredContactWindow = false;
                 hitTargets.Clear();
@@ -261,14 +271,35 @@ namespace BarPromenade
             bufferedChargeReleased = false;
         }
 
-        /// <summary>One press can wait in the tail of any committed phase. It reserves no
-        /// stamina and cannot create repeated attacks from one input event.</summary>
+        /// <summary>One press waits throughout a swing, or in another committed phase's final
+        /// buffer window. It reserves no stamina and cannot repeat from one input event.</summary>
         public bool RequestAttack()
         {
             if (TryStartAttack()) return true;
-            if (!CanBuffer || stamina < Settings.AttackCost) return false;
+            if (!(IsAttacking || CanBuffer) || stamina < Settings.AttackCost) return false;
             bufferedAction = MeleeBufferedAction.Attack;
+            bufferedFromSwing = IsAttacking;
             ClearCharge();
+            return true;
+        }
+
+        /// <summary>Runtime calls only after resolving every contact from the previous Advance,
+        /// and after authorizing the fighter's balance. Ordinary returns may yield immediately;
+        /// forced recoil waits until Ready. A hitch never advances the next swing or charge
+        /// with time that belonged to the previous one.</summary>
+        public bool TryContinueAttack()
+        {
+            bool cutTail = bufferedFromSwing && Phase == MeleePhase.Recovery &&
+                (AttackOutcome == MeleeAttackOutcome.Hit || AttackOutcome == MeleeAttackOutcome.Miss);
+            if (!HasBufferedAttack || (!cutTail && Phase != MeleePhase.Ready) ||
+                stamina < Settings.AttackCost) return false;
+            MeleeBufferedAction next = bufferedAction;
+            bool released = bufferedChargeReleased;
+            Phase = MeleePhase.Ready;
+            bool started = next == MeleeBufferedAction.Attack ? TryStartAttack(true) : BeginCharge();
+            if (!started) return false;
+            continuation = cutTail;
+            if (next == MeleeBufferedAction.Charge && released) ReleaseCharge();
             return true;
         }
 
@@ -280,6 +311,7 @@ namespace BarPromenade
             if (TryStartStep(pendingStepCue)) return true;
             if (!CanBuffer || stamina < Settings.StepCost) return false;
             bufferedAction = MeleeBufferedAction.Step;
+            bufferedFromSwing = false;
             ClearCharge();
             return true;
         }
@@ -304,6 +336,7 @@ namespace BarPromenade
             AttackOutcome = MeleeAttackOutcome.None;
             advancedActiveWindow = registeredContactWindow = false;
             bufferedAction = MeleeBufferedAction.None;
+            bufferedFromSwing = continuation = false;
             hitTargets.Clear();
             AttackSequence = unchecked(AttackSequence + 1);
             Phase = MeleePhase.Windup;
@@ -324,6 +357,7 @@ namespace BarPromenade
             attackElapsed = stepElapsed = shoveElapsed = 0d;
             advancedActiveWindow = registeredContactWindow = chained = chainArmed = false;
             bufferedAction = MeleeBufferedAction.None;
+            bufferedFromSwing = continuation = false;
             stepEndedAt = double.NegativeInfinity;
             AttackOutcome = MeleeAttackOutcome.None;
             hitTargets.Clear();
@@ -346,6 +380,7 @@ namespace BarPromenade
             DropGuard();
             advancedActiveWindow = registeredContactWindow = chained = chainArmed = false;
             bufferedAction = MeleeBufferedAction.None;
+            bufferedFromSwing = continuation = false;
             AttackOutcome = MeleeAttackOutcome.None;
             hitTargets.Clear();
             AttackSequence = unchecked(AttackSequence + 1);
@@ -360,17 +395,21 @@ namespace BarPromenade
             regenerateAt = clock + Settings.RegenerationDelaySeconds;
         }
 
-        public MeleeAdvanceResult Advance(float seconds)
+        public MeleeAdvanceResult Advance(float seconds, bool allowBufferedAttack = true)
         {
             NonNegative(seconds, nameof(seconds));
-            // A queued press fires exactly at the boundary of its committed phase,
-            // so the single result belongs to the new swing.
+            // A swing's queue belongs to the post-contact handoff, even if a hitch
+            // crosses its entire recovery. Other committed tails retain their boundary.
             double remaining = ActionRemainingSeconds;
-            if (bufferedAction != MeleeBufferedAction.None && Phase != MeleePhase.Ready && seconds >= remaining)
+            bool canConsume = bufferedAction == MeleeBufferedAction.Step ||
+                (allowBufferedAttack && !bufferedFromSwing);
+            if (bufferedAction != MeleeBufferedAction.None && canConsume &&
+                Phase != MeleePhase.Ready && seconds >= remaining)
             {
                 MeleeBufferedAction next = bufferedAction;
                 bool released = bufferedChargeReleased;
                 bufferedAction = MeleeBufferedAction.None;
+                bufferedFromSwing = false;
                 ClearCharge();
                 AdvanceWithoutBufferedAttack(remaining);
                 switch (next)
@@ -478,6 +517,7 @@ namespace BarPromenade
             Phase = MeleePhase.Recovery;
             advancedActiveWindow = chainArmed = false;
             bufferedAction = MeleeBufferedAction.None;
+            bufferedFromSwing = continuation = false;
             ClearCharge();
         }
 
@@ -557,6 +597,7 @@ namespace BarPromenade
             shoveElapsed = 0d;
             advancedActiveWindow = chainArmed = false;
             bufferedAction = MeleeBufferedAction.None;
+            bufferedFromSwing = continuation = false;
             ClearCharge();
             if (IsBlocking && fromFront)
             {
@@ -623,6 +664,7 @@ namespace BarPromenade
             DropGuard();
             ClearCharge();
             bufferedAction = MeleeBufferedAction.None;
+            bufferedFromSwing = continuation = false;
             advancedActiveWindow = chained = chainArmed = false;
             attackElapsed = stepElapsed = shoveElapsed = stunRemaining = stunDuration = 0d;
             stepEndedAt = double.NegativeInfinity;
@@ -648,6 +690,7 @@ namespace BarPromenade
             DropGuard();
             advancedActiveWindow = registeredContactWindow = chained = chainArmed = false;
             bufferedAction = MeleeBufferedAction.None;
+            bufferedFromSwing = continuation = false;
             stepEndedAt = double.NegativeInfinity;
             ClearCharge();
             AttackOutcome = MeleeAttackOutcome.None;
@@ -665,6 +708,7 @@ namespace BarPromenade
             Swing = rhythm = MeleeSwing.Forehand;
             lateralCue = stepCue = pendingStepCue = 0;
             bufferedAction = MeleeBufferedAction.None;
+            bufferedFromSwing = continuation = false;
             stamina = Settings.MaxStamina;
             Phase = MeleePhase.Ready;
             clock = regenerateAt = attackElapsed = attackStartedAt = stepElapsed = shoveElapsed = stunRemaining = stunDuration = 0d;

@@ -23,21 +23,21 @@ namespace BarPromenade
         private readonly Collider[] overlaps = new Collider[24];
         private Quaternion upperBase, forearmBase, handBase;
         private bool applied, initialized, wantsSupport = true, recoveryOwned, regripAllowed = true;
-        private bool protective, hasPresentedPose;
+        private bool protective, hasPresentedPose, preserveSupportBranch;
         private float distance = ReadyDistance, startDistance = ReadyDistance, targetDistance = ReadyDistance;
         private float slideElapsed = SlideSeconds, releaseHold, urgency;
         private float weight = 1f, armWeight = 1f, closeElapsed, lostSupportElapsed, presentedContactError, presentedContactAngle;
         private float reachProgress, reachDuration, reachStepSeconds;
-        private Vector3 direction, palmPosition, palmVelocity, elbowHint, presentedPalm, presentedElbow;
-        private Vector3 reachStartOffset, reachStartElbow, reachStepPalm, reachStepElbow;
-        private Quaternion palmRotation, presentedRotation;
+        private Vector3 direction, palmPosition, palmVelocity, elbowHint, presentedPalmLocal, presentedElbowLocal;
+        private Vector3 reachStartOffset, reachStartElbow, reachStepPalmLocal, reachStepElbowLocal;
+        private Quaternion palmRotation, presentedRotationLocal;
         private Quaternion presentedUpperRotation, presentedForearmRotation, presentedHandRotation;
         private Quaternion armStepUpper, armStepForearm, armStepHand;
         private float armStepSeconds;
         private bool hasArmStep;
         private Quaternion armReferenceRotation;
         private Vector3 armReferenceAxis, elbowBackInUpper;
-        private Quaternion reachStartRotation, reachStepRotation;
+        private Quaternion reachStartRotation, reachStepRotationLocal;
         private Func<Vector3, Vector3, Vector3, bool> armClearance;
         private bool shoveActive;
         private Transform shoveContactRoot;
@@ -212,8 +212,9 @@ namespace BarPromenade
         }
 
         // Presentation selects a shaft contact; it cannot cancel an explicit protective release.
-        public void SetTarget(bool blocking, bool supported)
+        public void SetTarget(bool blocking, bool supported, bool continuous = false)
         {
+            preserveSupportBranch = continuous;
             float next = blocking ? BlockDistance : ReadyDistance;
             if (!initialized)
             {
@@ -620,7 +621,12 @@ namespace BarPromenade
             // temporarily unreachable. The open hand follows the live target;
             // only real contact can finish it.
             CaptureArm(applied || !hasPresentedPose);
-            reachStepPalm = palmPosition; reachStepRotation = palmRotation; reachStepElbow = elbowHint;
+            // The motor can move/turn the actor after this duel tick and before
+            // LateUpdate reapplies the same pose. Carry the reach with the body;
+            // its speed budget is arm motion, not a chase after root translation.
+            reachStepPalmLocal = frame.InverseTransformPoint(palmPosition);
+            reachStepRotationLocal = Quaternion.Inverse(frame.rotation) * palmRotation;
+            reachStepElbowLocal = frame.InverseTransformPoint(elbowHint);
             reachStepSeconds = seconds;
             reachProgress = Mathf.Min(1f, reachProgress + seconds / reachDuration);
             string contactWait = !(reachProgress >= .8f) ? "reach_progress" : !(presentedContactError <= ContactTolerance) ? "palm_contact_gap" :
@@ -673,7 +679,8 @@ namespace BarPromenade
             Pose pose = holding && TryContact(out Pose grip) ? grip : new Pose(palmPosition, palmRotation);
             Vector3 hint = holding ? authoredGripHint : elbowHint;
             bool contactHintValid = true;
-            if (holding && !TryContactHint(pose, hint, ReachFraction, SupportReachSlack, out hint))
+            if (holding && !TryContactHint(pose, hint, ReachFraction, SupportReachSlack, out hint,
+                preserveSupportBranch && hasArmStep))
             {
                 if (TryRetainSupportingPose()) return;
                 RejectObstructedPose("contact_" + contactRejection, contactBlockingShape);
@@ -688,6 +695,9 @@ namespace BarPromenade
                 else fingers = 0f;
                 float t = Mathf.SmoothStep(0f, 1f, reachProgress);
                 Vector3 destination = live.position + frame.TransformVector(reachStartOffset) * (1f - t);
+                Vector3 reachStepPalm = frame.TransformPoint(reachStepPalmLocal);
+                Vector3 reachStepElbow = frame.TransformPoint(reachStepElbowLocal);
+                Quaternion reachStepRotation = frame.rotation * reachStepRotationLocal;
                 Vector3 next = Vector3.MoveTowards(reachStepPalm, destination, ReachSpeed * reachStepSeconds);
                 pose.position = ConstrainPalmTravel(reachStepPalm, next);
                 Quaternion rotation = live.rotation * Quaternion.Slerp(reachStartRotation, Quaternion.identity, t);
@@ -838,7 +848,9 @@ namespace BarPromenade
 
         private void RememberPresentedArm()
         {
-            presentedPalm = socket.position; presentedRotation = hand.rotation; presentedElbow = forearm.position;
+            presentedPalmLocal = frame.InverseTransformPoint(socket.position);
+            presentedRotationLocal = Quaternion.Inverse(frame.rotation) * hand.rotation;
+            presentedElbowLocal = frame.InverseTransformPoint(forearm.position);
             presentedUpperRotation = upper.localRotation;
             presentedForearmRotation = forearm.localRotation;
             presentedHandRotation = hand.localRotation;
@@ -992,9 +1004,9 @@ namespace BarPromenade
         private void CaptureArm(bool live)
         {
             bool cached = !live && hasPresentedPose;
-            palmPosition = cached ? presentedPalm : socket.position;
-            palmRotation = cached ? presentedRotation : hand.rotation;
-            elbowHint = cached ? presentedElbow : forearm.position;
+            palmPosition = cached ? frame.TransformPoint(presentedPalmLocal) : socket.position;
+            palmRotation = cached ? frame.rotation * presentedRotationLocal : hand.rotation;
+            elbowHint = cached ? frame.TransformPoint(presentedElbowLocal) : forearm.position;
         }
 
         private void JournalGripWait(string reason, float value = 0f, float threshold = 0f)
@@ -1092,7 +1104,7 @@ namespace BarPromenade
             => TryContactHint(contact, GripHint, reachFraction, reachSlack, out _);
 
         private bool TryContactHint(Pose contact, Vector3 preferredHint, float reachFraction, float reachSlack,
-            out Vector3 elbow)
+            out Vector3 elbow, bool continuous = false)
         {
             elbow = default;
             contactRejection = null; contactBlockingShape = null;
@@ -1117,6 +1129,23 @@ namespace BarPromenade
             // project the authored elbow directly onto the NEW wrist axis.
             Vector3 pole = Vector3.ProjectOnPlane(preferredHint - shoulder, axis).normalized;
             if (pole.sqrMagnitude < .5f) { contactRejection = "elbow_axis"; return false; }
+            Vector3 authoredPole = pole;
+            Vector3 previousPole = default;
+            float branchBudget = 600f * armStepSeconds;
+            if (continuous)
+            {
+                // ApplyArmStep restored this duel step's starting joints. Carry
+                // their bend plane with the new wrist axis: following a moving
+                // bar is not a change of elbow branch. Repeated presentations
+                // always measure from those same joints, never the last solve.
+                Vector3 previousAxis = hand.position - shoulder;
+                previousPole = Vector3.ProjectOnPlane(forearm.position - shoulder, previousAxis);
+                previousPole = Vector3.ProjectOnPlane(
+                    Quaternion.FromToRotation(previousAxis, axis) * previousPole, axis).normalized;
+                if (previousPole.sqrMagnitude < .5f) { contactRejection = "continuation_axis"; return false; }
+                float towardAuthored = Vector3.SignedAngle(previousPole, pole, axis);
+                pole = Quaternion.AngleAxis(Mathf.Clamp(towardAuthored, -branchBudget, branchBudget), axis) * previousPole;
+            }
 
             // Every candidate elbow lies on the upper-arm sphere. The wrist,
             // palm and both straight reach segments are inside this larger
@@ -1138,7 +1167,7 @@ namespace BarPromenade
                 { contactRejection = "palm_overlap"; contactBlockingShape = overlaps[i].name; return false; }
             }
 
-            bool wristCandidate = false, bodyCandidate = false;
+            bool wristCandidate = false, bodyCandidate = false, continuityRejected = false;
             if (Evaluate(0f, out elbow)) return true;
             Vector3 fingers = contact.rotation * fingersInHand;
             Vector3 desired = Vector3.ProjectOnPlane(-fingers, axis).normalized;
@@ -1159,7 +1188,11 @@ namespace BarPromenade
                     if ((index & 1) != 0) Consider(index * searchStep);
             }
             if (!float.IsFinite(bestScore))
-            { contactRejection = !wristCandidate ? "wrist_limit" : !bodyCandidate ? "body_clearance" : "world_path"; return false; }
+            {
+                contactRejection = continuityRejected ? "continuation_branch" :
+                    !wristCandidate ? "wrist_limit" : !bodyCandidate ? "body_clearance" : "world_path";
+                return false;
+            }
             float high = bestAngle;
             float low = high - Mathf.Sign(high) * Mathf.Min(Mathf.Abs(high), searchStep);
             for (int iteration = 0; iteration < 12; iteration++)
@@ -1174,12 +1207,19 @@ namespace BarPromenade
             bool Evaluate(float angle, out Vector3 candidate)
             {
                 candidate = centre + Quaternion.AngleAxis(angle, axis) * pole * radius;
-                if (Mathf.Abs(angle) > 65f || !WristCanHold(wrist - candidate, contact.rotation, 0f)) return false;
+                if (Mathf.Abs(angle) > 65f || (continuous &&
+                    Mathf.Abs(Vector3.SignedAngle(authoredPole, candidate - centre, axis)) > 65.001f) ||
+                    !WristCanHold(wrist - candidate, contact.rotation, 0f)) return false;
                 wristCandidate = true;
                 if (armClearance != null && !armClearance(shoulder, candidate, wrist)) return false;
                 bodyCandidate = true;
-                return !checkWorld || Vector3.Distance(ConstrainPalmTravel(shoulder, candidate), candidate) <= .005f &&
-                    Vector3.Distance(ConstrainPalmTravel(candidate, wrist), wrist) <= .005f;
+                if (checkWorld && (Vector3.Distance(ConstrainPalmTravel(shoulder, candidate), candidate) > .005f ||
+                    Vector3.Distance(ConstrainPalmTravel(candidate, wrist), wrist) > .005f)) return false;
+                // The fallback search must stay on the same continuous arc too;
+                // an independently valid distant solution cannot skip this bound.
+                if (continuous && Mathf.Abs(Vector3.SignedAngle(previousPole, candidate - centre, axis)) > branchBudget + .05f)
+                { continuityRejected = true; return false; }
+                return true;
             }
 
             void Consider(float angle)

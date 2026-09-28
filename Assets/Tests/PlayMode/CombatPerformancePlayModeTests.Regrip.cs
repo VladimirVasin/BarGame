@@ -2,12 +2,419 @@ using System.Collections;
 using System.Reflection;
 using NUnit.Framework;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.TestTools;
 
 namespace BarPromenade.Tests.PlayMode
 {
     public sealed partial class CombatPerformancePlayModeTests
     {
+        [UnityTest]
+        public IEnumerator Range_OneHandAttacksStartWithoutWaitingForSupport()
+        {
+            var input = new InputTestFixture();
+            Mouse mouse = null;
+            MethodInfo consumeInput = typeof(CombatTestRoot).GetMethod("UpdateCombatInput",
+                BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.That(consumeInput, Is.Not.Null);
+            try
+            {
+                input.Setup();
+                mouse = InputSystem.AddDevice<Mouse>();
+                RetroUiCanvas canvas = RetroUiTheme.CalculateCanvas(Screen.width, Screen.height);
+                Vector2 pointer = canvas.LogicalToScreen(new Vector2(320f, 180f));
+                pointer.y = Screen.height - pointer.y;
+                input.Set(mouse.position, pointer);
+                for (int movement = 0; movement < 2; movement++)
+                {
+                    bool moving = movement != 0;
+                    string label = moving ? "moving one-hand" : "stationary one-hand";
+                    PlacePair(4f);
+                    for (int frame = 0; frame < 6; frame++)
+                        yield return AdvanceContinuationFrame(root.Hero, moving, false, label);
+                    foreach (CombatActor fighter in new[] { root.Hero, root.Opponent })
+                    {
+                        ReleaseSupportForAttack(fighter, label);
+                        fighter.SetBlock(true);
+                        Assert.That(fighter.State.IsBlocking, Is.False, "The two-hand guard still requires contact.");
+                        fighter.SetBlock(false);
+                        int sequence = fighter.State.AttackSequence;
+                        Assert.That(moving ? fighter.RequestAttack() : fighter.TryAttack(), Is.True, label);
+                        Assert.That(fighter.State.Phase, Is.EqualTo(MeleePhase.Windup), label + ": start in this call");
+                        Assert.That(fighter.State.AttackSequence, Is.EqualTo(sequence + 1), label);
+                        Assert.That(fighter.State.HasBufferedAttack, Is.False, label + ": no waiting for the left hand");
+                    }
+
+                    PlacePair(4f);
+                    CombatActor actor = root.Hero;
+                    for (int frame = 0; frame < 6; frame++)
+                        yield return AdvanceContinuationFrame(actor, moving, false, label);
+                    ReleaseSupportForAttack(actor, label);
+                    int beforePress = actor.State.AttackSequence;
+                    float stamina = actor.State.Stamina;
+                    // Drive the real mouse-to-command bridge without advancing
+                    // simulation: same-call assertions cannot hide a regrip wait.
+                    input.Press(mouse.leftButton);
+                    ConsumeCombatMouseInput(consumeInput, true);
+                    Assert.That(actor.State.IsCharging, Is.True, label + ": a mouse press starts with one hand");
+                    Assert.That(actor.State.AttackSequence, Is.EqualTo(beforePress + 1), label);
+                    Assert.That(actor.State.HasBufferedCharge, Is.False, label);
+                    for (int frame = 0; frame < 6; frame++)
+                        yield return AdvanceContinuationFrame(actor, moving, false, label);
+                    float power = actor.State.Charge01;
+                    Assert.That(power, Is.GreaterThan(0f));
+                    Assert.That(actor.State.Stamina, Is.EqualTo(stamina - actor.State.Settings.AttackCost -
+                        power * actor.State.Settings.ChargeStaminaCost).Within(.001f), label + ": pay charge only once");
+                    ReleaseSupportForAttack(actor, label);
+                    float beforeRelease = actor.State.Stamina;
+                    input.Release(mouse.leftButton);
+                    ConsumeCombatMouseInput(consumeInput, false);
+                    Assert.That(actor.State.Phase, Is.EqualTo(MeleePhase.Windup), label + ": release must not cancel a short click");
+                    Assert.That(actor.State.AttackSequence, Is.EqualTo(beforePress + 1), label + ": release retains its action");
+                    Assert.That(actor.State.AttackPower, Is.EqualTo(power).Within(.0001f), label);
+                    Assert.That(actor.State.Stamina, Is.EqualTo(beforeRelease), label + ": no second charge cost");
+
+                    for (int frame = 0; frame < 90 && actor.State.Phase != MeleePhase.Recovery; frame++)
+                        yield return AdvanceContinuationFrame(actor, moving, false, label);
+                    Assert.That(actor.State.Phase, Is.EqualTo(MeleePhase.Recovery), label);
+                    Assert.That(actor.State.RecoveryRemaining, Is.GreaterThan(actor.State.Settings.AttackBufferSeconds), label);
+                    ReleaseSupportForAttack(actor, label);
+                    input.Press(mouse.leftButton);
+                    ConsumeCombatMouseInput(consumeInput, true);
+                    Assert.That(actor.State.IsCharging, Is.True, label + ": cut the return in the input call");
+                    Assert.That(actor.State.IsContinuation, Is.True, label);
+                    Assert.That(actor.State.AttackSequence, Is.EqualTo(beforePress + 2), label);
+                    Assert.That(actor.State.HasBufferedCharge, Is.False, label);
+                    ReleaseSupportForAttack(actor, label);
+                    input.Release(mouse.leftButton);
+                    ConsumeCombatMouseInput(consumeInput, false);
+                    Assert.That(actor.State.Phase, Is.EqualTo(MeleePhase.Windup), label);
+                    Assert.That(actor.State.AttackPower, Is.Zero, label + ": the immediate tap stays light");
+                    for (int frame = 0; frame < 6; frame++)
+                        yield return AdvanceContinuationFrame(actor, moving, true, label);
+                    Assert.That(actor.State.AttackSequence, Is.EqualTo(beforePress + 2), label + ": no duplicate click");
+                    CaptureDuelFrame("balance/one-hand", moving ? "moving-continuation" : "stationary-continuation");
+
+                    PlacePair(4f);
+                    ReleaseSupportForAttack(actor, label);
+                    input.Press(mouse.leftButton);
+                    ConsumeCombatMouseInput(consumeInput, true);
+                    Assert.That(actor.State.IsCharging, Is.True, label);
+                    Assert.That(actor.State.ReceiveShove(), Is.True);
+                    input.Release(mouse.leftButton);
+                    ConsumeCombatMouseInput(consumeInput, false);
+                    Assert.That(actor.State.Phase, Is.EqualTo(MeleePhase.Stagger), "A real interruption still cancels the held action.");
+                    Assert.That(actor.State.HasBufferedAttack, Is.False, "An interrupted click cannot fire later.");
+                }
+
+                PlacePair(1.1f);
+                for (int frame = 0; frame < 6; frame++)
+                { root.Tick(TickSeconds); yield return new WaitForEndOfFrame(); }
+                float targetHealth = root.Opponent.State.Health;
+                int targetImpacts = root.Opponent.ReceivedImpactCount;
+                ReleaseSupportForAttack(root.Hero, "one-hand contact");
+                Assert.That(root.Hero.RequestAttack(), Is.True);
+                for (int frame = 0; frame < 90 && root.Opponent.ReceivedImpactCount == targetImpacts; frame++)
+                {
+                    ReleaseSupportForAttack(root.Hero, "one-hand contact");
+                    root.Tick(TickSeconds);
+                    yield return new WaitForEndOfFrame();
+                    Assert.That(root.Hero.SupportGrip.IsSupportingWeapon, Is.False,
+                        "Keep the left hand released through the actual weapon-contact window.");
+                }
+                Assert.That(root.Opponent.ReceivedImpactCount, Is.EqualTo(targetImpacts + 1),
+                    "A one-hand attack must resolve a real weapon hit, not only enter Windup.");
+                Assert.That(root.Opponent.State.Health, Is.LessThan(targetHealth));
+                CaptureDuelFrame("balance/one-hand", "weapon-contact");
+
+                PlacePair(4f);
+                root.Hero.ImpactMotion.BeginRecoveryStep(0, root.Hero.transform.position + Vector3.forward * .2f, .2f);
+                Assert.That(root.Hero.ImpactMotion.RecoveryInProgress, Is.True);
+                Assert.That(root.Hero.TryAttack() || root.Hero.RequestAttack() || root.Hero.RequestCharge(), Is.False,
+                    "A missing support hand is allowed; an unfinished physical balance step still owns the body.");
+                PlacePair(4f);
+                root.Hero.State.BeginKnockdown();
+                Assert.That(root.Hero.TryAttack() || root.Hero.RequestAttack() || root.Hero.RequestCharge(), Is.False,
+                    "One-hand attacks cannot bypass knockdown.");
+                LogAssert.NoUnexpectedReceived();
+            }
+            finally
+            {
+                if (mouse != null && mouse.added) InputSystem.RemoveDevice(mouse);
+                input.TearDown();
+            }
+        }
+
+        private void ConsumeCombatMouseInput(MethodInfo consumeInput, bool held)
+        {
+            // InputTestFixture always queues events in a UnityTest. Process the
+            // device event explicitly so the bridge sees it without a duel tick.
+            InputSystem.Update();
+            Assert.That(GameInput.IsHeld(GameInputAction.MeleeAttack, GameInputContext.Gameplay), Is.EqualTo(held));
+            if (held) Assert.That(GameInput.WasPressed(GameInputAction.MeleeAttack, GameInputContext.Gameplay), Is.True);
+            Assert.That((bool)consumeInput.Invoke(root, null), Is.True);
+        }
+
+        private static void ReleaseSupportForAttack(CombatActor actor, string label)
+        {
+            // Use the same release path as a rejected continuation pose, rather
+            // than modifying the arm state or deleting its physical constraint.
+            actor.SupportGrip.RejectObstructedPose("contact_world_path");
+            Assert.That(actor.SupportGrip.IsSupportingWeapon, Is.False, label + ": the supporting hand is actually open");
+            Assert.That(actor.IsKnockedDown || actor.ImpactMotion.RecoveryInProgress, Is.False, label);
+        }
+
+        [UnityTest]
+        public IEnumerator Range_AttackContinuationCancelsOnlyReturnTail()
+        {
+            for (int movement = 0; movement < 2; movement++)
+                for (int scenario = 0; scenario < 3; scenario++)
+                {
+                    bool moving = movement != 0, held = scenario == 2;
+                    string label = (moving ? "moving" : "stationary") + "/" +
+                        (scenario == 0 ? "queued-tap" : held ? "held-charge" : "tail-tap");
+                    string capture = "balance/continuation/" + label;
+                    PlacePair(4f);
+                    CombatActor actor = root.Hero;
+                    if (scenario != 0)
+                    {
+                        // A persistent target bearing can select the SAME side
+                        // twice; a bridge must not assume alternating clips.
+                        // Keep that bearing: automatic facing would turn it
+                        // back into the neutral cue before the next press.
+                        root.Player.Motor.ClearMovementTarget(root);
+                        root.Opponent.ResetActor(new Vector3(-2f, PlayerFactory.GroundedRootOffset, 4f), Vector3.back);
+                        Physics.SyncTransforms();
+                    }
+                    for (int frame = 0; frame < 6; frame++)
+                        yield return AdvanceContinuationFrame(actor, moving, false, label);
+                    Assert.That(actor.HasTwoHandSupport, Is.True, label + ": initial physical grip");
+                    Assert.That(actor.RequestCharge(), Is.True, label);
+                    for (int frame = 0; frame < 6; frame++)
+                        yield return AdvanceContinuationFrame(actor, moving, false, label);
+                    Assert.That(actor.ReleaseCharge(), Is.True, label + ": first short held press");
+                    int firstSequence = actor.State.AttackSequence;
+                    MeleeSwing firstSide = actor.State.Swing;
+                    float firstDuration = actor.State.CurrentAttackDurationSeconds;
+
+                    if (scenario == 1)
+                    {
+                        for (int frame = 0; frame < 90 &&
+                            !(actor.State.Phase == MeleePhase.Recovery && actor.State.PhaseProgress >= .2f); frame++)
+                            yield return AdvanceContinuationFrame(actor, moving, false, label);
+                        Assert.That(actor.State.Phase, Is.EqualTo(MeleePhase.Recovery), label + ": visible return has begun");
+                        Assert.That(actor.State.RecoveryRemaining, Is.GreaterThan(actor.State.Settings.AttackBufferSeconds),
+                            label + ": this click is earlier than the old late buffer window");
+                    }
+                    else
+                    {
+                        for (int frame = 0; frame < 8; frame++)
+                            yield return AdvanceContinuationFrame(actor, moving, false, label);
+                        Assert.That(actor.State.Phase, Is.EqualTo(MeleePhase.Windup), label);
+                    }
+                    CaptureDuelFrame(capture, "00-before-click");
+                    float oldElapsed = actor.State.AttackElapsed;
+                    Transform[] clickBones = ContinuationArmBones(actor);
+                    var clickRotations = new Quaternion[clickBones.Length];
+                    for (int i = 0; i < clickBones.Length; i++) clickRotations[i] = clickBones[i].localRotation;
+                    Vector3 clickWeaponPosition = actor.transform.InverseTransformPoint(actor.Weapon.transform.position);
+                    Quaternion clickWeaponRotation = Quaternion.Inverse(actor.transform.rotation) * actor.Weapon.transform.rotation;
+                    Assert.That(actor.RequestCharge(), Is.True, label + ": keep one next press");
+                    if (!held) Assert.That(actor.ReleaseCharge(), Is.True, label + ": keep its release too");
+                    if (scenario != 1 || actor.State.AttackSequence == firstSequence)
+                    {
+                        Assert.That(actor.State.HasBufferedCharge, Is.True, label);
+                        Assert.That(actor.State.AttackSequence, Is.EqualTo(firstSequence),
+                            label + ": input must not replace the unresolved swing");
+                    }
+                    else
+                        AssertContinuationPoseStep(actor, clickBones, clickRotations, clickWeaponPosition, clickWeaponRotation, label);
+
+                    float untilNext = 0f;
+                    bool hadReadyGap = false;
+                    for (int frame = 0; frame < 90 && actor.State.AttackSequence == firstSequence; frame++)
+                    {
+                        bool readyToContinue = actor.State.Phase == MeleePhase.Recovery && actor.HasAttackBalance;
+                        yield return AdvanceContinuationFrame(actor, moving, true, label);
+                        untilNext += TickSeconds;
+                        hadReadyGap |= actor.State.Phase == MeleePhase.Ready;
+                        if (readyToContinue)
+                            Assert.That(actor.State.AttackSequence, Is.EqualTo(firstSequence + 1),
+                                label + ": take the next swing after contact, independently of the support hand");
+                    }
+                    Assert.That(actor.State.AttackSequence, Is.EqualTo(firstSequence + 1), label + ": exactly one continuation");
+                    Assert.That(hadReadyGap, Is.False, label + ": do not visit the idle stance between swings");
+                    Assert.That(oldElapsed + untilNext, Is.LessThan(firstDuration - TickSeconds),
+                        label + ": continuation must begin before the full return ends");
+                    Assert.That(actor.State.IsContinuation, Is.True, label);
+                    Assert.That(actor.State.HasBufferedCharge, Is.False, label + ": consume the one-slot input");
+                    if (scenario != 0)
+                        Assert.That(actor.State.Swing, Is.EqualTo(firstSide), label + ": the target cue retains the swing side");
+                    CaptureDuelFrame(capture, "01-continuation-start");
+
+                    if (held)
+                    {
+                        Assert.That(actor.State.IsCharging, Is.True, label);
+                        float initialCharge = actor.State.Charge01;
+                        Assert.That(initialCharge, Is.LessThanOrEqualTo(TickSeconds / actor.State.Settings.ChargeSeconds + .0001f),
+                            label + ": time spent waiting for the previous swing must not grow charge");
+                        Assert.That(actor.State.Settings.ChargeSeconds, Is.EqualTo(.6f).Within(.0001f));
+                        int chargeFrames = Mathf.CeilToInt(actor.State.Settings.ChargeSeconds / TickSeconds);
+                        for (int frame = 1; frame <= chargeFrames + 8; frame++)
+                        {
+                            yield return AdvanceContinuationFrame(actor, moving, true, label);
+                            Assert.That(actor.State.IsCharging, Is.True, label + ": holding full charge must not fire");
+                            Assert.That(actor.State.AttackSequence, Is.EqualTo(firstSequence + 1), label);
+                            float expected = Mathf.Min(1f, initialCharge + frame * TickSeconds / actor.State.Settings.ChargeSeconds);
+                            Assert.That(actor.State.Charge01, Is.EqualTo(expected).Within(.001f), label + ": fresh charge clock");
+                            if (frame == 6) CaptureDuelFrame(capture, "02-continuation-blend");
+                        }
+                        CaptureDuelFrame(capture, "02-full-charge");
+                        Assert.That(actor.ReleaseCharge(), Is.True, label + ": release the held continuation");
+                        Assert.That(actor.State.AttackPower, Is.EqualTo(1f).Within(.001f), label);
+                    }
+                    else
+                    {
+                        Assert.That(actor.State.Phase, Is.EqualTo(MeleePhase.Windup), label);
+                        Assert.That(actor.State.AttackPower, Is.Zero, label + ": a queued tap stays light");
+                        for (int frame = 0; frame < 6; frame++)
+                            yield return AdvanceContinuationFrame(actor, moving, true, label);
+                        CaptureDuelFrame(capture, "02-continuation-blend");
+                    }
+
+                    int recoveryFrames = 0;
+                    for (int frame = 0; frame < 180 && actor.State.Phase != MeleePhase.Ready; frame++)
+                    {
+                        yield return AdvanceContinuationFrame(actor, moving, true, label);
+                        if (actor.State.Phase == MeleePhase.Recovery) recoveryFrames++;
+                        Assert.That(actor.State.AttackSequence, Is.EqualTo(firstSequence + 1), label + ": no phantom third attack");
+                    }
+                    Assert.That(actor.State.Phase, Is.EqualTo(MeleePhase.Ready), label);
+                    Assert.That(actor.State.AttackOutcome, Is.EqualTo(MeleeAttackOutcome.Miss), label + ": clear-space swings must miss");
+                    Assert.That(recoveryFrames * TickSeconds, Is.GreaterThanOrEqualTo(actor.State.AttackRecoverySeconds - TickSeconds * 2f),
+                        label + ": without another click the complete final tail must play");
+                    for (int frame = 0; frame < 120 && !actor.HasTwoHandSupport; frame++)
+                        yield return AdvanceContinuationFrame(actor, moving, false, label);
+                    Assert.That(actor.HasTwoHandSupport, Is.True, label + ": final own-weapon contact");
+                    Assert.That(actor.SupportGrip.JournalContactError, Is.LessThanOrEqualTo(.025f), label);
+                    Assert.That(actor.SupportGrip.JournalContactAngle, Is.LessThanOrEqualTo(12f), label);
+                    Assert.That(actor.SupportGrip.JournalWristSafe, Is.True, label);
+                    Assert.That(actor.SupportGrip.LiveArmAngles.x, Is.LessThanOrEqualTo(25.1f), label);
+                    Assert.That(actor.SupportGrip.LiveArmAngles.y, Is.LessThanOrEqualTo(55.1f), label);
+                    Assert.That(root.Opponent.ReceivedImpactCount, Is.Zero, label);
+                    CaptureDuelFrame(capture, "03-final-return");
+                }
+            LogAssert.NoUnexpectedReceived();
+        }
+
+        private IEnumerator AdvanceContinuationFrame(CombatActor actor, bool moving, bool measureBridge, string label)
+        {
+            Transform[] bones = ContinuationArmBones(actor);
+            var rotations = new Quaternion[bones.Length];
+            for (int i = 0; i < bones.Length; i++) rotations[i] = bones[i].localRotation;
+            Vector3 weaponPosition = actor.transform.InverseTransformPoint(actor.Weapon.transform.position);
+            Quaternion weaponRotation = Quaternion.Inverse(actor.transform.rotation) * actor.Weapon.transform.rotation;
+            root.Tick(TickSeconds);
+            if (moving)
+            {
+                // Match live ordering: duel Update, movement/yaw, rig LateUpdate.
+                actor.Body.Move(actor.transform.right * (.6f * TickSeconds));
+                actor.transform.rotation *= Quaternion.Euler(0f, 15f * TickSeconds, 0f);
+                Physics.SyncTransforms();
+            }
+            yield return new WaitForEndOfFrame();
+            Assert.That(actor.IsKnockedDown || actor.State.IsDefeated, Is.False, label);
+            if (!measureBridge || !actor.State.IsContinuation ||
+                (actor.State.IsCharging ? actor.State.Charge01 * actor.State.Settings.ChargeSeconds >= .21f :
+                    actor.State.AttackElapsed >= .21f)) yield break;
+            AssertContinuationPoseStep(actor, bones, rotations, weaponPosition, weaponRotation, label);
+        }
+
+        private static Transform[] ContinuationArmBones(CombatActor actor) => new[]
+        {
+            ArmMotionBone(actor, "upper_arm.L"), ArmMotionBone(actor, "forearm.L"), ArmMotionBone(actor, "hand.L"),
+            ArmMotionBone(actor, "upper_arm.R"), ArmMotionBone(actor, "forearm.R"), ArmMotionBone(actor, "hand.R")
+        };
+
+        private void AssertContinuationPoseStep(CombatActor actor, Transform[] bones, Quaternion[] rotations,
+            Vector3 weaponPosition, Quaternion weaponRotation, string label)
+        {
+            var jointSteps = new float[bones.Length];
+            bool discontinuous = false;
+            for (int i = 0; i < bones.Length; i++)
+            {
+                jointSteps[i] = Quaternion.Angle(rotations[i], bones[i].localRotation);
+                discontinuous |= jointSteps[i] > 35f;
+            }
+            float weaponStep = Vector3.Distance(weaponPosition, actor.transform.InverseTransformPoint(actor.Weapon.transform.position));
+            float weaponTurn = Quaternion.Angle(weaponRotation, Quaternion.Inverse(actor.transform.rotation) * actor.Weapon.transform.rotation);
+            string diagnostic = $"{label}: phase={actor.State.Phase}, elapsed={actor.State.AttackElapsed:F5}, charge={actor.State.Charge01:F3}, " +
+                $"support={actor.SupportArmState}, grip={actor.HasTwoHandSupport}, gap={actor.SupportGrip.JournalContactError:F5}, " +
+                $"reason={actor.SupportGrip.JournalGripReason}, rejected={actor.SupportGrip.LastPoseRejection}";
+            if (discontinuous || weaponStep > .30f || weaponTurn > 35f)
+                CaptureDuelFrame("balance/continuation/" + label, "failure-discontinuity");
+            for (int i = 0; i < bones.Length; i++)
+                Assert.That(jointSteps[i], Is.LessThanOrEqualTo(35f),
+                    "Continuous continuation joint " + bones[i].name + ". " + diagnostic);
+            Assert.That(weaponStep, Is.LessThanOrEqualTo(.30f),
+                "The weapon must enter the next windup continuously. " + diagnostic);
+            Assert.That(weaponTurn, Is.LessThanOrEqualTo(35f),
+                "No weapon rotation reset to stance. " + diagnostic);
+        }
+
+        [UnityTest]
+        public IEnumerator Range_MovingRegripCarriesTheArmAndRestoresAttack()
+        {
+            PlacePair(.82f);
+            for (int frame = 0; frame < 6; frame++)
+            { root.Tick(TickSeconds); yield return new WaitForEndOfFrame(); }
+            CombatActor actor = root.Hero;
+            Assert.That(actor.RequestAttack(), Is.True, "A real shove opens the supporting hand.");
+            for (int frame = 0; frame < 90 && !actor.SupportGrip.IsRegripping; frame++)
+            { root.Tick(TickSeconds); yield return new WaitForEndOfFrame(); }
+            Assert.That(root.Opponent.ReceivedImpactCount, Is.EqualTo(1));
+            Assert.That(actor.SupportGrip.IsRegripping, Is.True);
+            // The recipient has left reach; the source keeps its actual returning arm.
+            root.Opponent.ResetActor(actor.transform.position + actor.transform.forward * 4f,
+                -actor.transform.forward);
+            Physics.SyncTransforms();
+
+            int movingReachFrames = 0;
+            bool restored = false;
+            for (int frame = 0; frame < 120 && !restored; frame++)
+            {
+                root.Tick(TickSeconds);
+                bool reaching = actor.SupportGrip.IsRegripping;
+                Vector3 palmBefore = actor.transform.InverseTransformPoint(actor.SupportGrip.ShovePalmPosition);
+                // Live ordering: duel Update, then motor translation/yaw, then
+                // LateUpdate poses the same simulation time on the moved body.
+                actor.Body.Move(actor.transform.right * (2f * TickSeconds));
+                actor.transform.rotation *= Quaternion.Euler(0f, 30f * TickSeconds, 0f);
+                Physics.SyncTransforms();
+                actor.SupportGrip.Apply();
+                if (reaching)
+                {
+                    movingReachFrames++;
+                    Vector3 palmAfter = actor.transform.InverseTransformPoint(actor.SupportGrip.ShovePalmPosition);
+                    Assert.That(Vector3.Distance(palmBefore, palmAfter), Is.LessThan(.002f),
+                        "Walking/turning at the same duel time must carry the returning arm, not pull it back to its old world point.");
+                }
+                yield return new WaitForEndOfFrame();
+                if (frame == 3) CaptureDuelFrame("balance/moving-regrip", "returning");
+                restored = actor.State.Phase == MeleePhase.Ready && actor.HasTwoHandSupport;
+            }
+            Assert.That(movingReachFrames, Is.GreaterThan(3), "Exercise the moving open hand before contact closes.");
+            Assert.That(restored, Is.True, "Walking cannot keep an otherwise ready fighter waiting for his own weapon.");
+            Assert.That(actor.SupportGrip.JournalContactError, Is.LessThanOrEqualTo(.025f));
+            Assert.That(actor.SupportGrip.JournalContactAngle, Is.LessThanOrEqualTo(12f));
+            Assert.That(actor.SupportGrip.JournalWristSafe, Is.True);
+            CaptureDuelFrame("balance/moving-regrip", "restored");
+            Assert.That(actor.RequestCharge(), Is.True, "The next attack press must work while the body is moving.");
+            Assert.That(actor.ReleaseCharge(), Is.True);
+            Assert.That(actor.State.IsAttacking, Is.True);
+            LogAssert.NoUnexpectedReceived();
+        }
+
         [UnityTest]
         public IEnumerator Range_ShoveAndSwingRestoreAttackAndBlock()
         {

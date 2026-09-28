@@ -4,6 +4,8 @@ Shader "Bar Promenade/City Mountain Physical"
     {
         _BaseMap("Rock Albedo", 2D) = "white" {}
         _BaseColor("Rock Tint", Color) = (1, 1, 1, 1)
+        _GroundResponse("Linear rock response", 2D) = "white" {}
+        _GroundRockLayers("Local rock wear", Float) = 0
         _HazeColor("City Haze Color", Color) = (0.330, 0.380, 0.355, 1)
         _FogDensity("City Fog Density", Float) = 0.070
         _VisibilityFloor("Distant Visibility Floor", Range(0, 1)) = 0.10
@@ -46,6 +48,9 @@ Shader "Bar Promenade/City Mountain Physical"
 
             TEXTURE2D(_BaseMap);
             SAMPLER(sampler_BaseMap);
+            TEXTURE2D(_GroundResponse);
+            SAMPLER(sampler_GroundResponse);
+            float _GroundRockLayers;
 
             CBUFFER_START(UnityPerMaterial)
                 float4 _BaseMap_ST;
@@ -139,6 +144,9 @@ Shader "Bar Promenade/City Mountain Physical"
                     sampler_BaseMap,
                     input.uv);
                 half3 albedo = sample.rgb * _BaseColor.rgb;
+                half3 response = SAMPLE_TEXTURE2D(_GroundResponse,
+                    sampler_GroundResponse, input.uv).rgb;
+                albedo *= lerp(1.0h, 1.015h - response.b * 0.035h, _GroundRockLayers);
                 half3 normalWS = NormalizeNormalPerPixel(input.normalWS);
                 Light mainLight = GetMainLight(input.shadowCoord);
                 half lambert = saturate(dot(

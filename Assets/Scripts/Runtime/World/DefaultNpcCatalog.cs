@@ -11,13 +11,14 @@ namespace BarPromenade
     public static class DefaultNpcCatalog
     {
         public const string OrdinaryWorker = "ordinary-worker-v1";
+        public const string OrdinaryWorkerResourcePath = "VillageLife/OrdinaryWorker";
 
-        // Keep the authored asset in place: its village name is a storage detail,
-        // not the identity callers use when selecting a general-purpose model.
+        // A prefab needs its own Resources address: the source StationWorker
+        // FBX is also a GameObject, but has no wardrobe or appearance bindings.
         private static readonly Dictionary<string, string> ResourcePaths =
             new Dictionary<string, string>(StringComparer.Ordinal)
             {
-                [OrdinaryWorker] = "VillageLife/StationWorker"
+                [OrdinaryWorker] = OrdinaryWorkerResourcePath
             };
 
         public static IReadOnlyList<string> ModelIds { get; } =

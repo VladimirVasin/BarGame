@@ -95,7 +95,7 @@ namespace BarPromenade
 
         /// <summary>
         /// The ground mesh's surface slots. Index `0` is the bowl floor on
-        /// the ordinary shared primitive material; index `1` is the
+        /// shared layered ground material; index `1` is the
         /// enclosing rise on <see cref="AlpineVillageRidgeAppearance"/>'s
         /// fog-floored material; `2` is the ordinary road and `3` the baked
         /// junction paintings. The warmth pass and the tests address the
@@ -608,9 +608,8 @@ namespace BarPromenade
             renderer.receiveShadows = true;
 
             // All slots exist before any indexed apply, and the array is
-            // written again after them: the indexed path never assigns
-            // `sharedMaterial`, but the order is the contract and this is
-            // what makes it visible.
+            // populated before the appearance owners select each shared
+            // surface shader. Preserve those selections below.
             Material[] materials =
             {
                 RuntimePrimitiveFactory.DefaultMaterial,
@@ -634,12 +633,12 @@ namespace BarPromenade
                 MountainRoadSurfaceKind.Asphalt,
                 AlpineVillageRoadSurfaceBuilder.AsphaltTint,
                 TerrainAsphaltMaterialIndex);
+            GroundSurfaceCoordinates.Enable(renderer, TerrainAsphaltMaterialIndex);
             AlpineVillageJunctionAppearance.Apply(renderer, TerrainJunctionMaterialIndex);
             MountainRoadSurfaceAppearance.ApplyCombined(renderer,
                 MountainRoadSurfaceKind.ForestFloor,
                 AlpineVillageRoadSurfaceBuilder.JunctionSoilTint,
                 TerrainSoilMaterialIndex);
-            renderer.sharedMaterials = materials;
 
             stageTimer.Restart();
             host.AddComponent<MeshCollider>().sharedMesh = mesh;
@@ -805,15 +804,33 @@ namespace BarPromenade
             }
 
             CompactSnowVertices(vertices, uvs, triangles, grounds, depths);
+            Func<Vector2, float> asphaltWeight = AlpineVillageRoadSurfaceBuilder.CreateSnowAsphaltSampler(plan);
+            var surfaceControls = new List<Color>(vertices.Count);
+            var pavedYards = new List<AlpineVillageAbandonedPlot>();
+            foreach (AlpineVillageAbandonedPlot plot in plan.Expansion.Abandonment.Plots)
+                if (plot.Yard != null && !plot.Yard.StartsWith("Household", StringComparison.Ordinal))
+                    pavedYards.Add(plot);
             // Imported paving is above the terrain shelf. Keep both the
             // visible snow and its treading floor above that same surface;
             // changing only initial vertex height would fail on the next stamp.
             for (int index = 0; index < vertices.Count; index++)
             {
-                if (depths[index] <= 0f) continue;
                 Vector3 vertex = vertices[index];
-                float support = plan.Expansion.Abandonment.SampleSnowSupport(
-                    new Vector2(vertex.x, vertex.z), grounds[index]);
+                Vector2 point = new Vector2(vertex.x, vertex.z);
+                Vector2 local = plan.Expansion.ToLocal(point);
+                float asphalt = asphaltWeight(point);
+                // Untouched field rests on the terrain's WindSnow sheet, not
+                // hidden soil. Only a real route/junction/road may reveal dirt
+                // or asphalt when its lying snow becomes thin.
+                float reveal = asphalt > 0f || AlpineVillagePathPlanner.MeasureDistanceOutsideTrodden(
+                    plan, paths, point, out _) <= 0f ? 1f : 0f;
+                foreach (AlpineVillageAbandonedPlot plot in pavedYards)
+                    reveal = Mathf.Min(reveal, Mathf.SmoothStep(0f, 1f,
+                        plot.OutsideYard(local) / (AlpineVillageSnowDrift.FieldCellSize * 1.5f)));
+                float support = plan.Expansion.Abandonment.SampleSnowSupport(point, grounds[index]);
+                if (support > grounds[index] + .001f) reveal = 0f;
+                surfaceControls.Add(new Color(0f, 0f, asphalt, reveal));
+                if (depths[index] <= 0f) continue;
                 vertex.y += support - grounds[index];
                 vertices[index] = vertex;
                 grounds[index] = support;
@@ -834,7 +851,9 @@ namespace BarPromenade
             };
             mesh.SetVertices(vertices);
             mesh.SetUVs(0, uvs);
+            mesh.SetColors(surfaceControls);
             mesh.SetTriangles(triangles, 0);
+            AlpineVillageRoadSurfaceBuilder.AssignSnowRoadCoordinates(mesh, plan);
             mesh.RecalculateNormals();
             mesh.RecalculateBounds();
             double uploadMs = stageTimer.Elapsed.TotalMilliseconds;
@@ -865,6 +884,14 @@ namespace BarPromenade
                 AlpineVillageRidgeAppearance.Surface,
                 SnowColor,
                 0);
+            GroundSurfaceAppearance.EnableVertexData(renderer, 0);
+            GroundSurfaceCoordinates.Enable(renderer, 0);
+            GroundSurfaceAppearance.SetSnowJunctions(renderer, plan, 0);
+            var snowProperties = new MaterialPropertyBlock();
+            renderer.GetPropertyBlock(snowProperties, 0);
+            snowProperties.SetColor("_GroundSubstrateColor", MountainRoadSurfaceAppearance.CreateDisplayTint(
+                LaneColor, MountainRoadSurfaceKind.ForestFloor));
+            renderer.SetPropertyBlock(snowProperties, 0);
 
             // The snow keeps its own vertices so a boot can press them. It
             // is armed here and given its walker by the scene root, because

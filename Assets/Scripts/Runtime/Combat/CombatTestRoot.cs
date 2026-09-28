@@ -224,6 +224,9 @@ namespace BarPromenade
                     HitStopSecondsConsumed += SimulationStep;
                     continue;
                 }
+                // Resume before the next live substep, so a completed hit-stop
+                // cannot postpone the post-contact continuation by a render frame.
+                SetDuelFrozen(false);
                 BeginOpponentMovement();
                 advanced = true;
                 // Each fighter's rules see only where the other stands relative to
@@ -257,6 +260,11 @@ namespace BarPromenade
                 foreach (CombatActor.ShoveContact contact in pendingShoves) contact.Apply();
                 JournalElapsed(impactStamp, ref journalImpactApplyTicks);
                 JournalTransitions("contacts_applied");
+                if (!RoundFinished && hitStopSubsteps == 0)
+                {
+                    Hero.ContinueBufferedAttackAfterContacts();
+                    Opponent.ContinueBufferedAttackAfterContacts();
+                }
                 BloodEffects.Tick(SimulationStep);
             }
             if (RoundFinished)

@@ -1,0 +1,2173 @@
+{
+  "version": 1,
+  "generator": "tools/build-ground-surface-maps.py",
+  "colourSourcesUnchanged": true,
+  "channels": {
+    "R": "smoothness multiplier",
+    "G": "gentle centred detail height",
+    "B": "cavity/dirt tendency",
+    "A": "opaque"
+  },
+  "import": {
+    "linear": true,
+    "repeat": true,
+    "bilinear": true,
+    "mipmaps": true,
+    "readable": false,
+    "compressed": false,
+    "maxSize": 512
+  },
+  "placement": "Inherit source UVs and metres-per-tile; macro use/weather remain runtime-owned.",
+  "recipes": {
+    "asphalt": {
+      "meaning": "Rough aggregate; existing dark repairs and cracks retain distinct response.",
+      "smoothness": 0.58,
+      "grain": 0.13,
+      "cavity": 0.17,
+      "broad": 0.1,
+      "height": 0.034,
+      "organic": 0.0
+    },
+    "paint": {
+      "meaning": "Intact marking paint is smoother; existing chips expose rough aggregate.",
+      "smoothness": 0.78,
+      "grain": 0.055,
+      "cavity": 0.22,
+      "broad": 0.05,
+      "height": 0.014,
+      "organic": 0.0
+    },
+    "concrete": {
+      "meaning": "Concrete pores and joints interrupt gently polished high areas.",
+      "smoothness": 0.56,
+      "grain": 0.1,
+      "cavity": 0.19,
+      "broad": 0.06,
+      "height": 0.027,
+      "organic": 0.0
+    },
+    "paving": {
+      "meaning": "Worn paving tops and recessed dirty joints use different response.",
+      "smoothness": 0.64,
+      "grain": 0.085,
+      "cavity": 0.25,
+      "broad": 0.06,
+      "height": 0.033,
+      "organic": 0.0
+    },
+    "granite": {
+      "meaning": "Fine stone grain beneath relatively smooth old granite faces.",
+      "smoothness": 0.76,
+      "grain": 0.09,
+      "cavity": 0.12,
+      "broad": 0.035,
+      "height": 0.018,
+      "organic": 0.0
+    },
+    "rock": {
+      "meaning": "Bedding and fractures remain broad; only local stone grain perturbs normals.",
+      "smoothness": 0.52,
+      "grain": 0.09,
+      "cavity": 0.19,
+      "broad": 0.075,
+      "height": 0.032,
+      "organic": 0.0
+    },
+    "soil": {
+      "meaning": "Low humus response, sparse embedded grains and darker organic hollows.",
+      "smoothness": 0.43,
+      "grain": 0.1,
+      "cavity": 0.11,
+      "broad": 0.06,
+      "height": 0.031,
+      "organic": 0.35
+    },
+    "grass": {
+      "meaning": "Matte grass and earth gaps; no shiny individual blades.",
+      "smoothness": 0.36,
+      "grain": 0.055,
+      "cavity": 0.07,
+      "broad": 0.035,
+      "height": 0.018,
+      "organic": 0.55
+    },
+    "gravel": {
+      "meaning": "Scattered stone faces over rough fines and recessed small gaps.",
+      "smoothness": 0.48,
+      "grain": 0.12,
+      "cavity": 0.16,
+      "broad": 0.065,
+      "height": 0.037,
+      "organic": 0.0
+    },
+    "sand": {
+      "meaning": "Fine sand remains matte; broad compacted regions vary gently.",
+      "smoothness": 0.43,
+      "grain": 0.065,
+      "cavity": 0.08,
+      "broad": 0.075,
+      "height": 0.017,
+      "organic": 0.0
+    },
+    "timber": {
+      "meaning": "Source-aligned fibres; worn faces smoother than old board grooves.",
+      "smoothness": 0.61,
+      "grain": 0.07,
+      "cavity": 0.25,
+      "broad": 0.04,
+      "height": 0.025,
+      "organic": 0.0
+    },
+    "snow": {
+      "meaning": "Soft wind-packed snow bands; no per-grain sparkle or invented tracks.",
+      "smoothness": 0.68,
+      "grain": 0.025,
+      "cavity": 0.07,
+      "broad": 0.055,
+      "height": 0.012,
+      "organic": 0.0
+    }
+  },
+  "maps": [
+    {
+      "source": "Assets/Resources/Textures/CityRoadAsphaltAlbedo.png",
+      "sourceSha256": "3ba93d67163c4c7666e251338160cb2b500b191d6e367702049713e6e7247964",
+      "sourceSize": [
+        1254,
+        1254
+      ],
+      "resourcePath": "Textures/SurfaceResponse/CityRoadAsphaltResponse",
+      "family": "asphalt",
+      "size": 512,
+      "sha256": "5706feeaf7936d35a0cf56265a34f81d9c8b795548817486414633648fd315c4",
+      "channelMin": [
+        81,
+        119,
+        23,
+        255
+      ],
+      "channelMax": [
+        149,
+        136,
+        170,
+        255
+      ],
+      "channelMean": [
+        123.27408,
+        127.29821,
+        58.32089,
+        255.0
+      ],
+      "channelStd": [
+        10.02039,
+        3.58705,
+        41.7856,
+        0.0
+      ],
+      "seamDelta": [
+        4.92285,
+        1.83594,
+        22.44824
+      ],
+      "seamToInteriorRatio": [
+        1.03641,
+        0.96222,
+        1.05771
+      ],
+      "seamToStrongestLineRatio": [
+        0.82743,
+        0.74334,
+        0.81245
+      ]
+    },
+    {
+      "source": "Assets/Resources/Textures/CityRoadMarkingAlbedo.png",
+      "sourceSha256": "4344f7858a4bea432867ae25beaaa997d1be5e5dd4140c01dbfa34ee4afadb13",
+      "sourceSize": [
+        1254,
+        1254
+      ],
+      "resourcePath": "Textures/SurfaceResponse/CityRoadMarkingResponse",
+      "family": "paint",
+      "size": 512,
+      "sha256": "e0ac79a4c4d3e39a9f1c46bd3d0470a602cefa1d5bba5b62d944d219559c1b48",
+      "channelMin": [
+        118,
+        126,
+        23,
+        255
+      ],
+      "channelMax": [
+        221,
+        129,
+        171,
+        255
+      ],
+      "channelMean": [
+        181.04548,
+        127.58147,
+        51.93468,
+        255.0
+      ],
+      "channelStd": [
+        20.96202,
+        0.89865,
+        45.09172,
+        0.0
+      ],
+      "seamDelta": [
+        4.05176,
+        0.47656,
+        14.36328
+      ],
+      "seamToInteriorRatio": [
+        0.88354,
+        1.09817,
+        0.90179
+      ],
+      "seamToStrongestLineRatio": [
+        0.67705,
+        0.85172,
+        0.64495
+      ]
+    },
+    {
+      "source": "Assets/Resources/Textures/CitySidewalkAlbedo.png",
+      "sourceSha256": "261c1f6b87ffa43907659a606ed11ef088fb4a39a8cc3e2f76d3909e80417e0d",
+      "sourceSize": [
+        1254,
+        1254
+      ],
+      "resourcePath": "Textures/SurfaceResponse/CitySidewalkResponse",
+      "family": "concrete",
+      "size": 512,
+      "sha256": "387f412f86b1902a7dace080e78fbf50566cdc5eff54f760554a2ab7a04215ac",
+      "channelMin": [
+        76,
+        121,
+        23,
+        255
+      ],
+      "channelMax": [
+        147,
+        134,
+        171,
+        255
+      ],
+      "channelMean": [
+        120.9227,
+        127.44631,
+        56.2326,
+        255.0
+      ],
+      "channelStd": [
+        11.35806,
+        2.94705,
+        42.46615,
+        0.0
+      ],
+      "seamDelta": [
+        4.68262,
+        1.7168,
+        18.52246
+      ],
+      "seamToInteriorRatio": [
+        0.98771,
+        1.17876,
+        0.92994
+      ],
+      "seamToStrongestLineRatio": [
+        0.78269,
+        0.95754,
+        0.70943
+      ]
+    },
+    {
+      "source": "Assets/Resources/Textures/CityGroundSoilAlbedo.png",
+      "sourceSha256": "32c24505365d74e0fbaadbc04dd65981017a0c90f041f916b8a9d35b567d6c1a",
+      "sourceSize": [
+        1254,
+        1254
+      ],
+      "resourcePath": "Textures/SurfaceResponse/CityGroundSoilResponse",
+      "family": "soil",
+      "size": 512,
+      "sha256": "05f942c940b9828dfa90b13bf7b931536addd56c056dd4604e244b032a93bdd0",
+      "channelMin": [
+        64,
+        122,
+        29,
+        255
+      ],
+      "channelMax": [
+        111,
+        133,
+        178,
+        255
+      ],
+      "channelMean": [
+        89.93838,
+        127.34821,
+        68.62518,
+        255.0
+      ],
+      "channelStd": [
+        6.74857,
+        2.24052,
+        41.24907,
+        0.0
+      ],
+      "seamDelta": [
+        3.17969,
+        1.25879,
+        21.06055
+      ],
+      "seamToInteriorRatio": [
+        1.02459,
+        1.03873,
+        1.03344
+      ],
+      "seamToStrongestLineRatio": [
+        0.8141,
+        0.82614,
+        0.72736
+      ]
+    },
+    {
+      "source": "Assets/Resources/Textures/CityParkLawnAlbedo.png",
+      "sourceSha256": "d2e0f9edd27919a823151235690c1edc58a84829273dbb75394057547e93bad2",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "resourcePath": "Textures/SurfaceResponse/CityParkLawnResponse",
+      "family": "grass",
+      "size": 512,
+      "sha256": "e2cf34d9600044c8c3d2a77a101fdbaa132145ad20c22f4a961893efda84d258",
+      "channelMin": [
+        64,
+        124,
+        33,
+        255
+      ],
+      "channelMax": [
+        96,
+        131,
+        181,
+        255
+      ],
+      "channelMean": [
+        80.09461,
+        127.50179,
+        66.47992,
+        255.0
+      ],
+      "channelStd": [
+        6.76062,
+        1.44882,
+        43.20607,
+        0.0
+      ],
+      "seamDelta": [
+        1.38477,
+        0.51074,
+        9.26758
+      ],
+      "seamToInteriorRatio": [
+        1.11918,
+        1.11634,
+        1.17811
+      ],
+      "seamToStrongestLineRatio": [
+        0.9109,
+        0.86921,
+        0.81111
+      ]
+    },
+    {
+      "source": "Assets/Resources/Textures/CityParkPathAlbedo.png",
+      "sourceSha256": "d12e2040b54a055062463574d4c05d3b3d8956132aa3038de0c65b52c0d99226",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "resourcePath": "Textures/SurfaceResponse/CityParkPathResponse",
+      "family": "gravel",
+      "size": 512,
+      "sha256": "cf7bec4ba1aad5a19d149ba0a669eac5a74077702f346186c4db436289a9b1c8",
+      "channelMin": [
+        64,
+        118,
+        23,
+        255
+      ],
+      "channelMax": [
+        132,
+        137,
+        169,
+        255
+      ],
+      "channelMean": [
+        99.60545,
+        127.47095,
+        56.26622,
+        255.0
+      ],
+      "channelStd": [
+        14.37628,
+        4.18138,
+        43.07632,
+        0.0
+      ],
+      "seamDelta": [
+        3.58789,
+        1.67188,
+        11.54297
+      ],
+      "seamToInteriorRatio": [
+        1.22453,
+        1.26444,
+        1.32412
+      ],
+      "seamToStrongestLineRatio": [
+        0.84708,
+        0.86582,
+        0.79985
+      ]
+    },
+    {
+      "source": "Assets/Resources/Textures/CityParkPlazaAlbedo.png",
+      "sourceSha256": "457dc76e7032a4914132555c4446ed1e35cbeb2d09eb252eb7ef88df1f333b73",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "resourcePath": "Textures/SurfaceResponse/CityParkPlazaResponse",
+      "family": "paving",
+      "size": 512,
+      "sha256": "653f15dae33ba2acd115358090bacd19ed2aadb553ca896a2e722bd1463a88c7",
+      "channelMin": [
+        88,
+        119,
+        23,
+        255
+      ],
+      "channelMax": [
+        169,
+        136,
+        170,
+        255
+      ],
+      "channelMean": [
+        139.71822,
+        127.52106,
+        56.0389,
+        255.0
+      ],
+      "channelStd": [
+        15.79856,
+        3.71889,
+        42.69549,
+        0.0
+      ],
+      "seamDelta": [
+        3.15625,
+        0.59082,
+        9.87305
+      ],
+      "seamToInteriorRatio": [
+        1.08418,
+        0.52378,
+        1.31867
+      ],
+      "seamToStrongestLineRatio": [
+        0.21371,
+        0.15998,
+        0.20725
+      ]
+    },
+    {
+      "source": "Assets/Resources/Textures/CityParkTimberAlbedo.png",
+      "sourceSha256": "f735131b2787a6227eb3702980220079046077bd5a38920ea7a7ef9cb75401d4",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "resourcePath": "Textures/SurfaceResponse/CityParkTimberResponse",
+      "family": "timber",
+      "size": 512,
+      "sha256": "5baf5fb18b2b61f8e379a306eea1dc52e291c5756df79041d7b01361f9e9fdaa",
+      "channelMin": [
+        88,
+        121,
+        23,
+        255
+      ],
+      "channelMax": [
+        157,
+        134,
+        170,
+        255
+      ],
+      "channelMean": [
+        133.76499,
+        127.55081,
+        55.62967,
+        255.0
+      ],
+      "channelStd": [
+        14.41474,
+        2.83846,
+        43.79126,
+        0.0
+      ],
+      "seamDelta": [
+        3.58789,
+        0.86621,
+        10.73145
+      ],
+      "seamToInteriorRatio": [
+        1.19701,
+        0.95364,
+        1.24958
+      ],
+      "seamToStrongestLineRatio": [
+        0.46714,
+        0.47041,
+        0.42941
+      ]
+    },
+    {
+      "source": "Assets/Resources/Textures/CityParkStoneAlbedo.png",
+      "sourceSha256": "f88ebd98466bf1d82f327e0c94141c1e52d748d0e85062e32f9ebfc1349b12cf",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "resourcePath": "Textures/SurfaceResponse/CityParkStoneResponse",
+      "family": "rock",
+      "size": 512,
+      "sha256": "e54bfb1dd01af7be7b559149417d6c439c0e25e7336458b51182ba5e4e23515c",
+      "channelMin": [
+        64,
+        119,
+        23,
+        255
+      ],
+      "channelMax": [
+        144,
+        135,
+        170,
+        255
+      ],
+      "channelMean": [
+        111.779,
+        127.54335,
+        55.56898,
+        255.0
+      ],
+      "channelStd": [
+        15.7872,
+        3.63453,
+        43.80446,
+        0.0
+      ],
+      "seamDelta": [
+        3.74805,
+        1.49512,
+        14.03223
+      ],
+      "seamToInteriorRatio": [
+        1.18534,
+        1.15513,
+        1.30905
+      ],
+      "seamToStrongestLineRatio": [
+        0.86237,
+        0.91548,
+        0.82394
+      ]
+    },
+    {
+      "source": "Assets/Resources/Textures/CityCemeterySoilAlbedo.png",
+      "sourceSha256": "50f72e349e47209c200c62d114650a7d2b467a0bd3dfe1fb9ae87341c0eb5a65",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "resourcePath": "Textures/SurfaceResponse/CityCemeterySoilResponse",
+      "family": "soil",
+      "size": 512,
+      "sha256": "3227de384a65ec37204523b0d9f0f81d64016de20f8ef6bd0e03806c42c78398",
+      "channelMin": [
+        64,
+        122,
+        30,
+        255
+      ],
+      "channelMax": [
+        118,
+        133,
+        176,
+        255
+      ],
+      "channelMean": [
+        90.75526,
+        127.50021,
+        64.36221,
+        255.0
+      ],
+      "channelStd": [
+        11.81562,
+        2.48742,
+        43.21267,
+        0.0
+      ],
+      "seamDelta": [
+        2.73242,
+        1.00977,
+        9.25977
+      ],
+      "seamToInteriorRatio": [
+        1.24937,
+        1.35946,
+        1.19978
+      ],
+      "seamToStrongestLineRatio": [
+        0.95047,
+        1.01593,
+        0.63781
+      ]
+    },
+    {
+      "source": "Assets/Resources/Textures/CityCemeteryGravelAlbedo.png",
+      "sourceSha256": "dee448053d7d5debf6d35a311d57784b913c8ece7fe5b3d88461fd840b32a4b3",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "resourcePath": "Textures/SurfaceResponse/CityCemeteryGravelResponse",
+      "family": "gravel",
+      "size": 512,
+      "sha256": "2554fe96768c75a68a60473680f3156268b75ebc98671c2fb299ca12767e1be6",
+      "channelMin": [
+        64,
+        118,
+        23,
+        255
+      ],
+      "channelMax": [
+        132,
+        137,
+        169,
+        255
+      ],
+      "channelMean": [
+        100.05192,
+        127.46609,
+        56.39006,
+        255.0
+      ],
+      "channelStd": [
+        13.79332,
+        4.05949,
+        42.89371,
+        0.0
+      ],
+      "seamDelta": [
+        3.57422,
+        1.70117,
+        12.52734
+      ],
+      "seamToInteriorRatio": [
+        1.08976,
+        1.19576,
+        1.10937
+      ],
+      "seamToStrongestLineRatio": [
+        0.81386,
+        0.82831,
+        0.7146
+      ]
+    },
+    {
+      "source": "Assets/Resources/Textures/CityCemeteryStoneAlbedo.png",
+      "sourceSha256": "017b419ed023850ed76c1a04fa3bc9d65a793b762f829179de3958e577a1acb1",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "resourcePath": "Textures/SurfaceResponse/CityCemeteryStoneResponse",
+      "family": "rock",
+      "size": 512,
+      "sha256": "69b24b4596566517c1063267eef0baa5796075a65155f883c7fae99b897b8d74",
+      "channelMin": [
+        65,
+        120,
+        23,
+        255
+      ],
+      "channelMax": [
+        144,
+        135,
+        168,
+        255
+      ],
+      "channelMean": [
+        111.39485,
+        127.48434,
+        56.53246,
+        255.0
+      ],
+      "channelStd": [
+        15.52227,
+        3.72352,
+        43.31402,
+        0.0
+      ],
+      "seamDelta": [
+        3.00391,
+        1.23926,
+        9.74707
+      ],
+      "seamToInteriorRatio": [
+        1.01356,
+        1.03098,
+        1.02987
+      ],
+      "seamToStrongestLineRatio": [
+        0.81031,
+        0.73831,
+        0.73699
+      ]
+    },
+    {
+      "source": "Assets/Resources/Textures/CityCemeteryGraniteAlbedo.png",
+      "sourceSha256": "b015b19d09097336e658cca3bfe116b848b90d1a50c36396254b97699e302557",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "resourcePath": "Textures/SurfaceResponse/CityCemeteryGraniteResponse",
+      "family": "granite",
+      "size": 512,
+      "sha256": "f8e94a21ce729cdc019fe0f5d6f0e0d8e596bfd75878edd536c46869e6424f8c",
+      "channelMin": [
+        147,
+        123,
+        23,
+        255
+      ],
+      "channelMax": [
+        197,
+        132,
+        169,
+        255
+      ],
+      "channelMean": [
+        176.68604,
+        127.48561,
+        56.03039,
+        255.0
+      ],
+      "channelStd": [
+        9.18675,
+        1.97527,
+        43.17655,
+        0.0
+      ],
+      "seamDelta": [
+        2.80859,
+        0.95801,
+        15.96191
+      ],
+      "seamToInteriorRatio": [
+        1.0225,
+        1.10897,
+        1.07642
+      ],
+      "seamToStrongestLineRatio": [
+        0.84637,
+        0.92096,
+        0.85924
+      ]
+    },
+    {
+      "source": "Assets/Resources/Textures/CityRiverPavingAlbedo.png",
+      "sourceSha256": "3e2cf80893374d6483f4d6dcc6a5138b010fa2d227ddc0d0c6a1648ece5fc2cc",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "resourcePath": "Textures/SurfaceResponse/CityRiverPavingResponse",
+      "family": "paving",
+      "size": 512,
+      "sha256": "8b9aa107f11a11787bcf0cbe11f6ae6f7c4da86c5a52bb2e2dfc21287ff875e1",
+      "channelMin": [
+        88,
+        119,
+        23,
+        255
+      ],
+      "channelMax": [
+        169,
+        136,
+        170,
+        255
+      ],
+      "channelMean": [
+        139.98341,
+        127.63141,
+        55.38125,
+        255.0
+      ],
+      "channelStd": [
+        16.12949,
+        3.68818,
+        43.24829,
+        0.0
+      ],
+      "seamDelta": [
+        2.91113,
+        0.57617,
+        7.73438
+      ],
+      "seamToInteriorRatio": [
+        1.00021,
+        0.51299,
+        1.00902
+      ],
+      "seamToStrongestLineRatio": [
+        0.18066,
+        0.12904,
+        0.13045
+      ]
+    },
+    {
+      "source": "Assets/Resources/Textures/CityRiverQuayAlbedo.png",
+      "sourceSha256": "f2409909175b69425eb533103efbee7fb85d2b9eb3c1117a7ecb11049b5481e9",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "resourcePath": "Textures/SurfaceResponse/CityRiverQuayResponse",
+      "family": "concrete",
+      "size": 512,
+      "sha256": "3e641f8e24838bbaf2d5ae08c876450dd14888e720745625adb9db1418807e17",
+      "channelMin": [
+        73,
+        121,
+        23,
+        255
+      ],
+      "channelMax": [
+        150,
+        134,
+        171,
+        255
+      ],
+      "channelMean": [
+        121.19879,
+        127.61161,
+        54.59071,
+        255.0
+      ],
+      "channelStd": [
+        14.36394,
+        3.01981,
+        43.36317,
+        0.0
+      ],
+      "seamDelta": [
+        2.65039,
+        0.53223,
+        8.45898
+      ],
+      "seamToInteriorRatio": [
+        1.03588,
+        0.57956,
+        1.18913
+      ],
+      "seamToStrongestLineRatio": [
+        0.2206,
+        0.17189,
+        0.1753
+      ]
+    },
+    {
+      "source": "Assets/Resources/Textures/CityRiverBedAlbedo.png",
+      "sourceSha256": "ffc5437ad0be1526c2ce9e2d1c4886bee02c25f7eea904324011094da95247ca",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "resourcePath": "Textures/SurfaceResponse/CityRiverBedResponse",
+      "family": "gravel",
+      "size": 512,
+      "sha256": "99838e6a4af35c4c33ea10e1a1d08d6c9d261973eee65ba92529369904e6dc57",
+      "channelMin": [
+        64,
+        118,
+        23,
+        255
+      ],
+      "channelMax": [
+        132,
+        137,
+        169,
+        255
+      ],
+      "channelMean": [
+        99.92073,
+        127.49281,
+        55.95639,
+        255.0
+      ],
+      "channelStd": [
+        14.18152,
+        4.17504,
+        43.23633,
+        0.0
+      ],
+      "seamDelta": [
+        3.58398,
+        1.8291,
+        11.16016
+      ],
+      "seamToInteriorRatio": [
+        1.11736,
+        1.29946,
+        1.06458
+      ],
+      "seamToStrongestLineRatio": [
+        0.88678,
+        0.94277,
+        0.68965
+      ]
+    },
+    {
+      "source": "Assets/Resources/Textures/CitySeacoastSandAlbedo.png",
+      "sourceSha256": "af5c8111d6a682e0255b6e3626a480b88cab2f0ff9d36e3ba12646924b413743",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "resourcePath": "Textures/SurfaceResponse/CitySeacoastSandResponse",
+      "family": "sand",
+      "size": 512,
+      "sha256": "07225b578be10cbfa25f560b6051914e8adfab006410cefbd0f4488e705b9ce3",
+      "channelMin": [
+        65,
+        125,
+        23,
+        255
+      ],
+      "channelMax": [
+        125,
+        130,
+        169,
+        255
+      ],
+      "channelMean": [
+        97.83493,
+        127.4934,
+        56.54611,
+        255.0
+      ],
+      "channelStd": [
+        11.70809,
+        1.36636,
+        42.72057,
+        0.0
+      ],
+      "seamDelta": [
+        1.80957,
+        0.49902,
+        11.49902
+      ],
+      "seamToInteriorRatio": [
+        1.17862,
+        1.23167,
+        1.34713
+      ],
+      "seamToStrongestLineRatio": [
+        0.8767,
+        0.84661,
+        0.77005
+      ]
+    },
+    {
+      "source": "Assets/Resources/Textures/CitySeacoastConcreteAlbedo.png",
+      "sourceSha256": "3e91f440e8d7e33be620f6bb1e76ca6d5c3456fd8bac9d636bf5cf23c48133ba",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "resourcePath": "Textures/SurfaceResponse/CitySeacoastConcreteResponse",
+      "family": "concrete",
+      "size": 512,
+      "sha256": "ab57c862561440a1a21ed3e4cee135003dda4a8c78e35c68339efb90ca64b07d",
+      "channelMin": [
+        76,
+        121,
+        23,
+        255
+      ],
+      "channelMax": [
+        150,
+        134,
+        169,
+        255
+      ],
+      "channelMean": [
+        120.87339,
+        127.48685,
+        55.94791,
+        255.0
+      ],
+      "channelStd": [
+        14.29789,
+        3.00581,
+        43.25478,
+        0.0
+      ],
+      "seamDelta": [
+        4.19531,
+        1.44629,
+        16.7832
+      ],
+      "seamToInteriorRatio": [
+        1.21077,
+        1.35109,
+        1.43925
+      ],
+      "seamToStrongestLineRatio": [
+        0.63963,
+        0.61136,
+        0.69157
+      ]
+    },
+    {
+      "source": "Assets/Resources/Textures/CitySeacoastPlankAlbedo.png",
+      "sourceSha256": "68a4734af04d675cfe56f39b180748d8ec717ebcd670089c6b8a618fbe823e1b",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "resourcePath": "Textures/SurfaceResponse/CitySeacoastPlankResponse",
+      "family": "timber",
+      "size": 512,
+      "sha256": "a99cded97422a6b77bdf78a38660f7ed34372f5c44732fcf31ebf08a11db6b55",
+      "channelMin": [
+        89,
+        121,
+        23,
+        255
+      ],
+      "channelMax": [
+        158,
+        134,
+        170,
+        255
+      ],
+      "channelMean": [
+        133.5881,
+        127.56809,
+        55.63898,
+        255.0
+      ],
+      "channelStd": [
+        13.91705,
+        2.82256,
+        43.11951,
+        0.0
+      ],
+      "seamDelta": [
+        2.19824,
+        0.49023,
+        6.30371
+      ],
+      "seamToInteriorRatio": [
+        0.82267,
+        0.58528,
+        0.85766
+      ],
+      "seamToStrongestLineRatio": [
+        0.10577,
+        0.16687,
+        0.08751
+      ]
+    },
+    {
+      "source": "Assets/Resources/Textures/CityFringeForefieldAlbedo.png",
+      "sourceSha256": "6a00c60a83fbb66b4fa27ead7235c8eb820f7c482487c7ee18fbef11eb5aaa85",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "resourcePath": "Textures/SurfaceResponse/CityFringeForefieldResponse",
+      "family": "soil",
+      "size": 512,
+      "sha256": "497497751e2827c2471ccdc9b9e0a66b6c599b40199d0deb1489b092bb2c8702",
+      "channelMin": [
+        64,
+        122,
+        24,
+        255
+      ],
+      "channelMax": [
+        117,
+        133,
+        171,
+        255
+      ],
+      "channelMean": [
+        92.10657,
+        127.50599,
+        56.68888,
+        255.0
+      ],
+      "channelStd": [
+        11.65473,
+        2.47116,
+        42.97748,
+        0.0
+      ],
+      "seamDelta": [
+        2.41211,
+        0.9502,
+        8.82129
+      ],
+      "seamToInteriorRatio": [
+        1.12445,
+        1.27229,
+        1.19377
+      ],
+      "seamToStrongestLineRatio": [
+        0.85294,
+        0.90231,
+        0.75509
+      ]
+    },
+    {
+      "source": "Assets/Resources/Textures/CityFringeServiceTrackAlbedo.png",
+      "sourceSha256": "47340534e572824d9551c1e245c4c5b07d58770fc445c8a6815abc85b61177e8",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "resourcePath": "Textures/SurfaceResponse/CityFringeServiceTrackResponse",
+      "family": "gravel",
+      "size": 512,
+      "sha256": "70b3fc1f118015ee3be65351cba409583b02d268dee588ff7d8aa05d31ffb856",
+      "channelMin": [
+        64,
+        119,
+        23,
+        255
+      ],
+      "channelMax": [
+        131,
+        137,
+        168,
+        255
+      ],
+      "channelMean": [
+        99.96414,
+        127.46609,
+        56.2149,
+        255.0
+      ],
+      "channelStd": [
+        14.0548,
+        4.13966,
+        42.65756,
+        0.0
+      ],
+      "seamDelta": [
+        3.46191,
+        1.63281,
+        12.48633
+      ],
+      "seamToInteriorRatio": [
+        1.18182,
+        1.29517,
+        1.43296
+      ],
+      "seamToStrongestLineRatio": [
+        0.8678,
+        0.85267,
+        0.88003
+      ]
+    },
+    {
+      "source": "Assets/Resources/Textures/CityFringeConcreteAlbedo.png",
+      "sourceSha256": "3b3bb9dfa005a484f76e1c35639ea25f3d16e42c42b253145ef730affa67172b",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "resourcePath": "Textures/SurfaceResponse/CityFringeConcreteResponse",
+      "family": "concrete",
+      "size": 512,
+      "sha256": "b39c4fb3a5a5b389b941b9365a0204d34d902a33abd419a3b2d24a0887f61beb",
+      "channelMin": [
+        73,
+        121,
+        23,
+        255
+      ],
+      "channelMax": [
+        149,
+        134,
+        171,
+        255
+      ],
+      "channelMean": [
+        120.85041,
+        127.55664,
+        55.77983,
+        255.0
+      ],
+      "channelStd": [
+        13.82037,
+        3.05076,
+        42.70194,
+        0.0
+      ],
+      "seamDelta": [
+        2.08496,
+        0.17676,
+        5.7002
+      ],
+      "seamToInteriorRatio": [
+        0.79783,
+        0.19516,
+        0.77643
+      ],
+      "seamToStrongestLineRatio": [
+        0.13471,
+        0.03352,
+        0.08738
+      ]
+    },
+    {
+      "source": "Assets/Resources/Textures/CityFringeMasonryAlbedo.png",
+      "sourceSha256": "5dbbba5ac2b5bb60a8ea21ec57eacf53c9394c2648dd0de7d970695300140118",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "resourcePath": "Textures/SurfaceResponse/CityFringeMasonryResponse",
+      "family": "paving",
+      "size": 512,
+      "sha256": "5aebc6fb178eb0490c136263a5ff47ca892e553d32c60c68c1e39a923b74f6ca",
+      "channelMin": [
+        87,
+        119,
+        23,
+        255
+      ],
+      "channelMax": [
+        170,
+        136,
+        171,
+        255
+      ],
+      "channelMean": [
+        140.06252,
+        127.61885,
+        54.73196,
+        255.0
+      ],
+      "channelStd": [
+        16.2168,
+        3.67486,
+        43.10598,
+        0.0
+      ],
+      "seamDelta": [
+        2.63281,
+        0.49902,
+        6.6875
+      ],
+      "seamToInteriorRatio": [
+        0.95683,
+        0.4628,
+        0.95068
+      ],
+      "seamToStrongestLineRatio": [
+        0.18079,
+        0.11913,
+        0.13968
+      ]
+    },
+    {
+      "source": "Assets/Resources/Textures/CityMountainRockAlbedo.png",
+      "sourceSha256": "c83131aa2d31f9bc3f84fed68a098e1f74458f6ec6db933f695169d9f182a72e",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "resourcePath": "Textures/SurfaceResponse/CityMountainRockResponse",
+      "family": "rock",
+      "size": 512,
+      "sha256": "caeb0f7ba3a63d32f59042a4109901467a152f86047f69257a2a182226db0d78",
+      "channelMin": [
+        65,
+        120,
+        23,
+        255
+      ],
+      "channelMax": [
+        145,
+        136,
+        169,
+        255
+      ],
+      "channelMean": [
+        111.41628,
+        127.51514,
+        56.42347,
+        255.0
+      ],
+      "channelStd": [
+        16.01597,
+        3.65056,
+        43.95734,
+        0.0
+      ],
+      "seamDelta": [
+        2.59961,
+        1.12012,
+        8.18359
+      ],
+      "seamToInteriorRatio": [
+        0.96949,
+        1.04086,
+        0.97226
+      ],
+      "seamToStrongestLineRatio": [
+        0.59661,
+        0.7021,
+        0.47153
+      ]
+    },
+    {
+      "source": "Assets/Resources/Textures/CityPoiPavingAlbedo.png",
+      "sourceSha256": "a0c20d201d6a5e6761a2ed497566f6a2c03b657489c75ea1d50b03525b74657a",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "resourcePath": "Textures/SurfaceResponse/CityPoiPavingResponse",
+      "family": "paving",
+      "size": 512,
+      "sha256": "795df02a392fe4b757cdf24322c6b6c0d89e1fb5095371e99bbf47307ca65558",
+      "channelMin": [
+        91,
+        120,
+        23,
+        255
+      ],
+      "channelMax": [
+        170,
+        136,
+        166,
+        255
+      ],
+      "channelMean": [
+        139.53791,
+        127.52683,
+        56.33461,
+        255.0
+      ],
+      "channelStd": [
+        16.41948,
+        3.83107,
+        43.79481,
+        0.0
+      ],
+      "seamDelta": [
+        6.24512,
+        0.77539,
+        16.77246
+      ],
+      "seamToInteriorRatio": [
+        1.8768,
+        0.69306,
+        1.85944
+      ],
+      "seamToStrongestLineRatio": [
+        0.34991,
+        0.16876,
+        0.30193
+      ]
+    },
+    {
+      "source": "Assets/Resources/Textures/CityPoiTimberAlbedo.png",
+      "sourceSha256": "199db79c483e37266aafbab5b9586b3e1fe828ba162c479876a3377b20bc5075",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "resourcePath": "Textures/SurfaceResponse/CityPoiTimberResponse",
+      "family": "timber",
+      "size": 512,
+      "sha256": "358cb5c3edbbc217adc60f9be624f56e10fa074bc3b47d2181453838ec2bb34f",
+      "channelMin": [
+        88,
+        121,
+        23,
+        255
+      ],
+      "channelMax": [
+        158,
+        134,
+        170,
+        255
+      ],
+      "channelMean": [
+        133.75893,
+        127.60374,
+        55.37165,
+        255.0
+      ],
+      "channelStd": [
+        13.78661,
+        2.78521,
+        42.66494,
+        0.0
+      ],
+      "seamDelta": [
+        2.98242,
+        0.52148,
+        8.61523
+      ],
+      "seamToInteriorRatio": [
+        1.10475,
+        0.63822,
+        1.12863
+      ],
+      "seamToStrongestLineRatio": [
+        0.16584,
+        0.16573,
+        0.14799
+      ]
+    },
+    {
+      "source": "Assets/Resources/Textures/MountainRoadAsphaltAlbedo.png",
+      "sourceSha256": "9ebcc26c6daa730ee7497b5c412fcb59f27e02850776d28df65ec812b89cb0fc",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "resourcePath": "Textures/SurfaceResponse/MountainRoadAsphaltResponse",
+      "family": "asphalt",
+      "size": 512,
+      "sha256": "63c0f0653676b98a6f209f4bd10ca764aa674a2b48e05e0ca8e32c8f8136e572",
+      "channelMin": [
+        66,
+        119,
+        23,
+        255
+      ],
+      "channelMax": [
+        163,
+        136,
+        169,
+        255
+      ],
+      "channelMean": [
+        123.76554,
+        127.4403,
+        56.07189,
+        255.0
+      ],
+      "channelStd": [
+        18.28637,
+        3.83954,
+        42.98291,
+        0.0
+      ],
+      "seamDelta": [
+        3.49219,
+        1.46289,
+        8.80273
+      ],
+      "seamToInteriorRatio": [
+        1.16148,
+        1.20424,
+        1.13586
+      ],
+      "seamToStrongestLineRatio": [
+        0.85648,
+        0.86536,
+        0.70232
+      ]
+    },
+    {
+      "source": "Assets/Resources/Textures/MountainRoadForestFloorAlbedo.png",
+      "sourceSha256": "7d98212afdc117215b0416a3405b370ec967a6936574a7b2397c11bfd0dd8f56",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "resourcePath": "Textures/SurfaceResponse/MountainRoadForestFloorResponse",
+      "family": "soil",
+      "size": 512,
+      "sha256": "2aab8ae9ea7615ff242a87091274100cc15fbe8e74f5e20aed7b4e7f4b9dd7d3",
+      "channelMin": [
+        64,
+        122,
+        23,
+        255
+      ],
+      "channelMax": [
+        119,
+        133,
+        171,
+        255
+      ],
+      "channelMean": [
+        92.32513,
+        127.48814,
+        56.24564,
+        255.0
+      ],
+      "channelStd": [
+        12.08174,
+        2.44388,
+        43.0637,
+        0.0
+      ],
+      "seamDelta": [
+        2.48535,
+        0.90918,
+        10.76367
+      ],
+      "seamToInteriorRatio": [
+        1.1614,
+        1.20193,
+        1.38948
+      ],
+      "seamToStrongestLineRatio": [
+        0.91541,
+        0.89649,
+        0.70608
+      ]
+    },
+    {
+      "source": "Assets/Resources/Textures/MountainRoadSnowAlbedo.png",
+      "sourceSha256": "1e46cf1b0f5f5f1eb6f67ae4bd50e1293e3efeea28f114606a7809160377a13a",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "resourcePath": "Textures/SurfaceResponse/MountainRoadSnowResponse",
+      "family": "snow",
+      "size": 512,
+      "sha256": "f29bd2d52ba809a2938be59044903d5fd193dcb8ea741fd5314a0001e7cdd586",
+      "channelMin": [
+        142,
+        126,
+        23,
+        255
+      ],
+      "channelMax": [
+        184,
+        129,
+        170,
+        255
+      ],
+      "channelMean": [
+        166.98665,
+        127.49654,
+        56.07873,
+        255.0
+      ],
+      "channelStd": [
+        8.9014,
+        1.06116,
+        42.8497,
+        0.0
+      ],
+      "seamDelta": [
+        0.98633,
+        0.15137,
+        8.44238
+      ],
+      "seamToInteriorRatio": [
+        1.17255,
+        0.60547,
+        1.15647
+      ],
+      "seamToStrongestLineRatio": [
+        0.91523,
+        0.63281,
+        0.76679
+      ]
+    },
+    {
+      "source": "Assets/Resources/Textures/MountainRoadStoneAlbedo.png",
+      "sourceSha256": "49e5f7aa205f71326ec6155ddc11c7c2098e584dac1b605e4a35c0fded5490c8",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "resourcePath": "Textures/SurfaceResponse/MountainRoadStoneResponse",
+      "family": "rock",
+      "size": 512,
+      "sha256": "dabbdb1b7e3c57026c6c6717aa8b43cc52872b320494956be883a26940869faa",
+      "channelMin": [
+        64,
+        119,
+        23,
+        255
+      ],
+      "channelMax": [
+        143,
+        135,
+        170,
+        255
+      ],
+      "channelMean": [
+        112.43094,
+        127.58078,
+        55.17128,
+        255.0
+      ],
+      "channelStd": [
+        15.73685,
+        3.56931,
+        43.47567,
+        0.0
+      ],
+      "seamDelta": [
+        5.42676,
+        3.04395,
+        21.77637
+      ],
+      "seamToInteriorRatio": [
+        2.21669,
+        2.7891,
+        3.02886
+      ],
+      "seamToStrongestLineRatio": [
+        0.6929,
+        0.88081,
+        0.66916
+      ]
+    },
+    {
+      "source": "Assets/Church/Textures/ChurchStoneAlbedo.png",
+      "sourceSha256": "a1030db9626ea154f15e0517611db324eed3eab47af3c1879e82aa3fbf7b0594",
+      "sourceSize": [
+        512,
+        512
+      ],
+      "resourcePath": "Textures/SurfaceResponse/ChurchStoneResponse",
+      "family": "rock",
+      "size": 512,
+      "sha256": "34cb2d2e1b4571c14884004cf12725114dc33f73024e43d70ecc4607154354f5",
+      "channelMin": [
+        64,
+        120,
+        23,
+        255
+      ],
+      "channelMax": [
+        146,
+        135,
+        170,
+        255
+      ],
+      "channelMean": [
+        117.00384,
+        127.86945,
+        46.61746,
+        255.0
+      ],
+      "channelStd": [
+        19.31953,
+        3.05242,
+        46.20798,
+        0.0
+      ],
+      "seamDelta": [
+        1.68945,
+        0.24805,
+        1.78027
+      ],
+      "seamToInteriorRatio": [
+        1.11743,
+        0.63775,
+        0.4383
+      ],
+      "seamToStrongestLineRatio": [
+        0.14024,
+        0.07678,
+        0.0409
+      ]
+    },
+    {
+      "source": "Assets/Church/Textures/ChurchFloorAlbedo.png",
+      "sourceSha256": "c503d8957ce7f3b3a13959e8bc2041df2a02f51f0a05ca3871220ff28b0b8815",
+      "sourceSize": [
+        512,
+        512
+      ],
+      "resourcePath": "Textures/SurfaceResponse/ChurchFloorResponse",
+      "family": "paving",
+      "size": 512,
+      "sha256": "9e4b6a637ef0971979342d049200a30a139991a2524578beb6cc6bcea1ada689",
+      "channelMin": [
+        89,
+        120,
+        23,
+        255
+      ],
+      "channelMax": [
+        172,
+        133,
+        170,
+        255
+      ],
+      "channelMean": [
+        146.0252,
+        127.80651,
+        44.95882,
+        255.0
+      ],
+      "channelStd": [
+        19.54708,
+        3.04871,
+        46.70561,
+        0.0
+      ],
+      "seamDelta": [
+        4.95801,
+        0.6582,
+        6.19434
+      ],
+      "seamToInteriorRatio": [
+        2.59401,
+        1.4716,
+        1.2437
+      ],
+      "seamToStrongestLineRatio": [
+        0.1519,
+        0.09358,
+        0.05112
+      ]
+    },
+    {
+      "source": "Assets/ChurchGarden/Textures/GardenStoneAlbedo.png",
+      "sourceSha256": "c46115a3ea3f4baeaf6698620d2efe3f4a376b60b060fd1f48f923cc1a1ebc09",
+      "sourceSize": [
+        256,
+        256
+      ],
+      "resourcePath": "Textures/SurfaceResponse/GardenStoneResponse",
+      "family": "paving",
+      "size": 256,
+      "sha256": "bcb655cfff075d9977a1a32d4d37c02c68b046119fe35f808f7b54623b066f21",
+      "channelMin": [
+        90,
+        119,
+        23,
+        255
+      ],
+      "channelMax": [
+        166,
+        136,
+        170,
+        255
+      ],
+      "channelMean": [
+        139.59459,
+        127.54309,
+        55.45963,
+        255.0
+      ],
+      "channelStd": [
+        15.82209,
+        3.47458,
+        43.12998,
+        0.0
+      ],
+      "seamDelta": [
+        6.01562,
+        2.09375,
+        21.22852
+      ],
+      "seamToInteriorRatio": [
+        0.99739,
+        1.04865,
+        0.99215
+      ],
+      "seamToStrongestLineRatio": [
+        0.76968,
+        0.85156,
+        0.78448
+      ]
+    },
+    {
+      "source": "Assets/Resources/City/Port/Textures/PortConcreteAlbedo.png",
+      "sourceSha256": "6d66a67869f69120ce322bd3e1229341b2aaf7dc502f5fa5f178827d7c007ce0",
+      "sourceSize": [
+        1254,
+        1254
+      ],
+      "resourcePath": "Textures/SurfaceResponse/PortConcreteResponse",
+      "family": "concrete",
+      "size": 512,
+      "sha256": "78767f3f1f109988151aab03d0fdc66b5832593e03095f1dd58e5b8347a67d1e",
+      "channelMin": [
+        75,
+        121,
+        23,
+        255
+      ],
+      "channelMax": [
+        150,
+        134,
+        171,
+        255
+      ],
+      "channelMean": [
+        121.38461,
+        127.50951,
+        55.36996,
+        255.0
+      ],
+      "channelStd": [
+        13.58557,
+        2.92927,
+        43.10294,
+        0.0
+      ],
+      "seamDelta": [
+        4.50391,
+        1.39844,
+        17.86719
+      ],
+      "seamToInteriorRatio": [
+        1.09162,
+        1.07239,
+        1.12108
+      ],
+      "seamToStrongestLineRatio": [
+        0.91204,
+        0.86932,
+        0.88394
+      ]
+    },
+    {
+      "source": "Assets/Resources/City/Port/Textures/PortConcreteWallAlbedo.png",
+      "sourceSha256": "e444d5fa1a80a9bdb8200c51a1828709f7dd070620b4425bec8fa982294710b7",
+      "sourceSize": [
+        1254,
+        1254
+      ],
+      "resourcePath": "Textures/SurfaceResponse/PortConcreteWallResponse",
+      "family": "concrete",
+      "size": 512,
+      "sha256": "38288c34236abba17febd79d40c663fd89e2bdee494de9ee16e4004df11b9852",
+      "channelMin": [
+        74,
+        121,
+        23,
+        255
+      ],
+      "channelMax": [
+        149,
+        134,
+        171,
+        255
+      ],
+      "channelMean": [
+        121.54941,
+        127.52839,
+        54.98431,
+        255.0
+      ],
+      "channelStd": [
+        14.14535,
+        2.93728,
+        43.19443,
+        0.0
+      ],
+      "seamDelta": [
+        3.96484,
+        1.37012,
+        15.50586
+      ],
+      "seamToInteriorRatio": [
+        1.07967,
+        1.11489,
+        1.14227
+      ],
+      "seamToStrongestLineRatio": [
+        0.72559,
+        0.79521,
+        0.69479
+      ]
+    },
+    {
+      "source": "Assets/Resources/City/Port/Textures/PortDeckAlbedo.png",
+      "sourceSha256": "bccda169a58d4da03794198973e16f4bd31d115224276ecb541ae2ea2ba9ca6a",
+      "sourceSize": [
+        1254,
+        1254
+      ],
+      "resourcePath": "Textures/SurfaceResponse/PortDeckResponse",
+      "family": "concrete",
+      "size": 512,
+      "sha256": "46bac7d6596e9bef8aa1f824dcea9c053e3791170b125c85cfab92f56946708b",
+      "channelMin": [
+        73,
+        121,
+        23,
+        255
+      ],
+      "channelMax": [
+        149,
+        134,
+        171,
+        255
+      ],
+      "channelMean": [
+        121.20033,
+        127.48424,
+        54.89802,
+        255.0
+      ],
+      "channelStd": [
+        13.08957,
+        2.90883,
+        42.1874,
+        0.0
+      ],
+      "seamDelta": [
+        3.82227,
+        1.2334,
+        14.43555
+      ],
+      "seamToInteriorRatio": [
+        0.88278,
+        0.96026,
+        0.8521
+      ],
+      "seamToStrongestLineRatio": [
+        0.75953,
+        0.75299,
+        0.63646
+      ]
+    },
+    {
+      "source": "Assets/Resources/City/Port/Textures/PortTimberAlbedo.png",
+      "sourceSha256": "43741a31e718030cd9eafa74d2830dc52a3870c62bd446dad35f0e6b095abab5",
+      "sourceSize": [
+        1254,
+        1254
+      ],
+      "resourcePath": "Textures/SurfaceResponse/PortTimberResponse",
+      "family": "timber",
+      "size": 512,
+      "sha256": "c9b7cf72e1e6d4c59dc81ffa96049beaea66d69cf4fb01ddd6aed72f92b2cdcf",
+      "channelMin": [
+        87,
+        121,
+        23,
+        255
+      ],
+      "channelMax": [
+        157,
+        134,
+        170,
+        255
+      ],
+      "channelMean": [
+        133.73107,
+        127.47168,
+        56.11324,
+        255.0
+      ],
+      "channelStd": [
+        13.37623,
+        2.74388,
+        42.60611,
+        0.0
+      ],
+      "seamDelta": [
+        4.55176,
+        1.51074,
+        14.68848
+      ],
+      "seamToInteriorRatio": [
+        1.22297,
+        1.3857,
+        1.20784
+      ],
+      "seamToStrongestLineRatio": [
+        0.7158,
+        0.91315,
+        0.63249
+      ]
+    },
+    {
+      "source": "Assets/Resources/Village/Textures/VillageJoineryAlbedo.png",
+      "sourceSha256": "07b11b058cdc5c05b0e295b0ed5208c64f24dea7b661cd490259f42a5d1d9b40",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "resourcePath": "Textures/SurfaceResponse/VillageJoineryResponse",
+      "family": "timber",
+      "size": 512,
+      "sha256": "b774d55af2a8edac225b6395fcb99947800e0cd4b958da91ecc977b96aa552c3",
+      "channelMin": [
+        89,
+        121,
+        23,
+        255
+      ],
+      "channelMax": [
+        158,
+        133,
+        167,
+        255
+      ],
+      "channelMean": [
+        133.45011,
+        127.47617,
+        58.66392,
+        255.0
+      ],
+      "channelStd": [
+        13.58665,
+        3.11037,
+        43.04687,
+        0.0
+      ],
+      "seamDelta": [
+        1.75293,
+        0.52246,
+        3.85059
+      ],
+      "seamToInteriorRatio": [
+        0.64726,
+        0.76399,
+        0.51519
+      ],
+      "seamToStrongestLineRatio": [
+        0.32384,
+        0.43373,
+        0.2026
+      ]
+    },
+    {
+      "source": "Assets/Resources/Village/Textures/VillageStoneAlbedo.png",
+      "sourceSha256": "96fabad82c837507fb44a8e6072960dfe64fd989175b34822920fe5c59390c3a",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "resourcePath": "Textures/SurfaceResponse/VillageStoneResponse",
+      "family": "paving",
+      "size": 512,
+      "sha256": "a49a3e24c68a3b11db4459eae6bb7e45551f09d28da3bcea6e39407f2349232e",
+      "channelMin": [
+        88,
+        119,
+        23,
+        255
+      ],
+      "channelMax": [
+        169,
+        136,
+        170,
+        255
+      ],
+      "channelMean": [
+        139.2531,
+        127.43512,
+        57.52739,
+        255.0
+      ],
+      "channelStd": [
+        15.17002,
+        3.93142,
+        42.31084,
+        0.0
+      ],
+      "seamDelta": [
+        1.46875,
+        0.47754,
+        3.08008
+      ],
+      "seamToInteriorRatio": [
+        0.46623,
+        0.49778,
+        0.38427
+      ],
+      "seamToStrongestLineRatio": [
+        0.2885,
+        0.30552,
+        0.23058
+      ]
+    },
+    {
+      "source": "Assets/Resources/Village/Textures/VillagePlasterAlbedo.png",
+      "sourceSha256": "62920a4037fd5a6e8744bf92e25893bf0e770d979bff9952b47849c7953f581b",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "resourcePath": "Textures/SurfaceResponse/VillagePlasterResponse",
+      "family": "paving",
+      "size": 512,
+      "sha256": "b110b281872d5ba07fe3e57668f2af5c19bd37a726aadf877d7fee6d526739f0",
+      "channelMin": [
+        90,
+        119,
+        23,
+        255
+      ],
+      "channelMax": [
+        170,
+        136,
+        169,
+        255
+      ],
+      "channelMean": [
+        139.28271,
+        127.48904,
+        56.37445,
+        255.0
+      ],
+      "channelStd": [
+        15.16899,
+        3.80031,
+        42.84554,
+        0.0
+      ],
+      "seamDelta": [
+        0.69531,
+        0.20215,
+        1.43262
+      ],
+      "seamToInteriorRatio": [
+        0.18276,
+        0.16711,
+        0.13429
+      ],
+      "seamToStrongestLineRatio": [
+        0.12686,
+        0.11511,
+        0.08365
+      ]
+    }
+  ]
+}

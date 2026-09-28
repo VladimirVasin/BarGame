@@ -75,6 +75,17 @@ namespace BarPromenade
                 renderer.lightProbeUsage = LightProbeUsage.BlendProbes;
                 renderer.reflectionProbeUsage = ReflectionProbeUsage.Off;
                 if (region == "Asphalt") CityExteriorAppearance.ApplyRoadSurface(renderer);
+                else if (name == "Dock" &&
+                         (renderer.name == "DockVisible__Concrete" ||
+                          renderer.name == "DockVisible__ConcreteWall"))
+                    GroundAuthoredSurfaceAppearance.Apply(renderer,
+                        GroundSurfaceKind.Concrete, cityClimate: true);
+                else if (name == "Trawler" && renderer.name == "TrawlerVisible__Deck")
+                    GroundAuthoredSurfaceAppearance.Apply(renderer,
+                        GroundSurfaceKind.Concrete, cityClimate: true);
+                else if (name == "AccessRoad" && region == "RoadMarking")
+                    GroundAuthoredSurfaceAppearance.Apply(renderer,
+                        GroundSurfaceKind.Marking, cityClimate: true);
             }
             if (name == "Cargo")
             {

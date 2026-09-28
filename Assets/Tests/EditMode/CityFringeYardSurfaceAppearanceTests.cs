@@ -249,7 +249,7 @@ namespace BarPromenade.Tests.EditMode
                 CityFringeYardSurfaceAppearance.GetRecipe(kind);
             Assert.That(
                 renderer.sharedMaterial,
-                Is.SameAs(RuntimePrimitiveFactory.DefaultMaterial));
+                Is.SameAs(GroundSurfaceAppearance.SharedMaterial));
             var properties = new MaterialPropertyBlock();
             renderer.GetPropertyBlock(properties);
             Assert.That(

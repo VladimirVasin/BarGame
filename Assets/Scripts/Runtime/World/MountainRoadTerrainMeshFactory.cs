@@ -162,6 +162,7 @@ namespace BarPromenade
                 vertices,
                 soilTriangles,
                 snowTriangles);
+            Color[] snowControls = CreateSnowControls(vertices.Count, row, soilTriangles, snowTriangles);
             double normalsMs = stageTimer.Elapsed.TotalMilliseconds;
             stageTimer.Restart();
             Mesh soil = CreateMesh(
@@ -169,7 +170,8 @@ namespace BarPromenade
                 vertices,
                 uvs,
                 normals,
-                soilTriangles);
+                soilTriangles,
+                null);
             double soilMeshMs = stageTimer.Elapsed.TotalMilliseconds;
             stageTimer.Restart();
             Mesh snow = CreateMesh(
@@ -177,7 +179,8 @@ namespace BarPromenade
                 vertices,
                 uvs,
                 normals,
-                snowTriangles);
+                snowTriangles,
+                snowControls);
             double snowMeshMs = stageTimer.Elapsed.TotalMilliseconds;
             return new MountainRoadTerrainMeshes(
                 soil,
@@ -277,12 +280,56 @@ namespace BarPromenade
             return center.y + brokenEdge * 0.32f > snowLine;
         }
 
+        /// <summary>The classifier still owns the two collision meshes. Fade
+        /// only the snow's material inward from their exact shared vertices,
+        /// so both renderers meet as soil with the same UVs and normals.</summary>
+        private static Color[] CreateSnowControls(int vertexCount, int row,
+            List<int> soilTriangles, List<int> snowTriangles)
+        {
+            var soil = new bool[vertexCount];
+            var snow = new bool[vertexCount];
+            foreach (int vertex in soilTriangles) soil[vertex] = true;
+            foreach (int vertex in snowTriangles) snow[vertex] = true;
+            var distance = new byte[vertexCount];
+            var frontier = new Queue<int>();
+            for (int vertex = 0; vertex < vertexCount; vertex++)
+            {
+                distance[vertex] = byte.MaxValue;
+                if (!soil[vertex] || !snow[vertex]) continue;
+                distance[vertex] = 0;
+                frontier.Enqueue(vertex);
+            }
+            const byte transitionCells = 3;
+            while (frontier.Count > 0)
+            {
+                int vertex = frontier.Dequeue();
+                if (distance[vertex] >= transitionCells) continue;
+                if (vertex % row > 0) Visit(vertex - 1, vertex);
+                if (vertex % row < row - 1) Visit(vertex + 1, vertex);
+                if (vertex >= row) Visit(vertex - row, vertex);
+                if (vertex + row < vertexCount) Visit(vertex + row, vertex);
+            }
+            var controls = new Color[vertexCount];
+            for (int vertex = 0; vertex < vertexCount; vertex++)
+                controls[vertex] = new Color(0f, 1f - Mathf.SmoothStep(0f, 1f,
+                    Mathf.Clamp01(distance[vertex] / (float)transitionCells)), 0f, 1f);
+            return controls;
+
+            void Visit(int next, int from)
+            {
+                if (!snow[next] || distance[next] != byte.MaxValue) return;
+                distance[next] = (byte)(distance[from] + 1);
+                frontier.Enqueue(next);
+            }
+        }
+
         private static Mesh CreateMesh(
             string name,
             List<Vector3> vertices,
             List<Vector2> uvs,
             List<Vector3> normals,
-            List<int> triangles)
+            List<int> triangles,
+            Color[] controls)
         {
             var mesh = new Mesh
             {
@@ -297,6 +344,7 @@ namespace BarPromenade
             mesh.SetVertices(vertices);
             mesh.SetUVs(0, uvs);
             mesh.SetNormals(normals);
+            if (controls != null) mesh.SetColors(controls);
             mesh.SetTriangles(triangles, 0, true);
             mesh.RecalculateBounds();
             return mesh;

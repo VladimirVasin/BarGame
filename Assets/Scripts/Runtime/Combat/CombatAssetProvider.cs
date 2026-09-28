@@ -25,9 +25,17 @@ namespace BarPromenade
         public const float ChargePreparationAdvanceSeconds = .18f, ReleaseConvergenceSeconds = .45f;
 
         /// <summary>Charge advances one continuous arm trajectory, converging before contact.</summary>
-        public static float ReleaseSourceSeconds(float seconds, float power)
+        public static float ReleaseSourceSeconds(float seconds, float power, bool continuation = false)
         {
             float t = Mathf.Clamp01(seconds / ReleaseConvergenceSeconds);
+            if (continuation && seconds < ReleaseConvergenceSeconds)
+            {
+                // Enter the next preparation, never through Ready0. Full charge
+                // holds the authored loaded key, before the overhead acceleration.
+                // Rejoin the original arc before any weapon contact is sampled.
+                float entry = Mathf.Lerp(.25f, .33f, Mathf.Clamp01(power));
+                return Mathf.Lerp(entry, ReleaseConvergenceSeconds, t * t * (3f - 2f * t));
+            }
             return seconds + Mathf.Clamp01(power) * ChargePreparationAdvanceSeconds * (1f - t * t * (3f - 2f * t));
         }
         public static readonly string[] ClipNames = { ReadyClip, RestClip, AttackClip, BlockClip, HitClip,

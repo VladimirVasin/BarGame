@@ -268,6 +268,10 @@ namespace BarPromenade
             properties.SetFloat(SmoothnessId, recipe.Smoothness);
             properties.SetFloat(MetallicId, recipe.Metallic);
             renderer.SetPropertyBlock(properties);
+            if (sharedMaterial == null)
+                GroundSurfaceAppearance.Apply(renderer, GroundSurfaceKind.Rock, GetTexture());
+            else
+                GroundSurfaceAppearance.ApplyRidgeResponse(renderer, GetTexture());
         }
 
         [RuntimeInitializeOnLoadMethod(

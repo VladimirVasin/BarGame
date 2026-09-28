@@ -182,7 +182,7 @@ namespace BarPromenade
                 OpponentIntent = CombatOpponentIntent.Shove;
                 return;
             }
-            if (MakeRoomForGrip(distance, direction, seconds)) return;
+            if (MakeRoomForBalance(distance, direction, seconds)) return;
             if (decisionDue) DecideOpponent(distance, direction);
             if (me.Phase != MeleePhase.Ready) return;
             switch (OpponentIntent)
@@ -206,19 +206,17 @@ namespace BarPromenade
             }
         }
 
-        private bool MakeRoomForGrip(float distance, Vector3 direction, float seconds)
+        private bool MakeRoomForBalance(float distance, Vector3 direction, float seconds)
         {
-            bool missingGrip = !Opponent.HasTwoHandSupport ||
-                (Hero.State.Phase == MeleePhase.Ready && !Hero.HasTwoHandSupport);
+            bool recoveringBalance = !Opponent.HasAttackBalance ||
+                (Hero.State.Phase == MeleePhase.Ready && !Hero.HasAttackBalance);
             float crowdedDistance = Hero.Body.radius + Opponent.Body.radius + .12f;
-            if (!opponentMakingSpace && (distance < crowdedDistance || (distance < 1.3f && missingGrip)))
+            if (!opponentMakingSpace && (distance < crowdedDistance || (distance < 1.3f && recoveringBalance)))
                 opponentMakingSpace = true;
             if (!opponentMakingSpace) return false;
-            // A failed grip is not an attack decision. Back off on ordinary
-            // collision-aware footwork until the original two-hand pose fits;
-            // keep the release threshold separate so two bodies cannot chatter
-            // between a failed charge and renewed pursuit at the same distance.
-            if (distance >= 1.2f && !missingGrip)
+            // Make space for actual balance recovery or crowded bodies. A free
+            // support hand permits a one-handed attack, not a forced retreat.
+            if (distance >= 1.2f && !recoveringBalance)
             {
                 opponentMakingSpace = false;
                 opponentDelay = Mathf.Max(opponentDelay, .15f);
@@ -226,7 +224,7 @@ namespace BarPromenade
             }
             Opponent.SetBlock(false);
             OpponentIntent = CombatOpponentIntent.Recover;
-            float targetDistance = missingGrip ? 1.4f : 1.2f;
+            float targetDistance = recoveringBalance ? 1.4f : 1.2f;
             if (distance < targetDistance)
                 MoveOpponent(-direction, Mathf.Min(1.6f * seconds, targetDistance - distance), seconds);
             return true;

@@ -2,6 +2,23 @@
 
 ## Current facts
 
+- **Accepted — 2026-09-29, exterior ground layers:**
+  User approved City/MountainRoad/AlpineVillage ground and retaining surfaces.
+  Preserve base albedos/palettes/metre UVs/weather/collision; interiors stay
+  outside this pass. `GroundSurfaceAppearance` binds one shared
+  `GroundSurfaceLit` variant, leaving `Ps1Lit`/its parity contract untouched.
+  Layer shading targets the current Forward+ path, not Deferred GBuffer.
+  Deterministic linear response companions drive local roughness/relief/wear.
+  `GroundSurfaceCoordinates`: UV4 lateral/longitudinal metres, halfwidth/seed
+  places road wear; zero width omits lane bands on aprons. Home maps to City.
+  Street MPBs retain film tint/smoothness; other City ground reads global
+  `_CityGroundWetness` from the same registry, without another renderer list.
+  Mountain recipes never opt into that City flag. Existing snow depth/treading/
+  clearing drives tint/substrate edges, without new accumulation or physics.
+  Editable village junction masks bake albedo and linear-response atlases;
+  snow samples those same painted atlases, including later artist edits.
+  Ridge response retains its dedicated haze shader. §16/§21/nine art checks.
+
 - **Accepted architecture exception — 2026-09-25, lodge hatch:**
   User, 0 (§6/§12/§21/art §10g): hatch speech-standard exception.
   Centred oblique close-up/no hero; compact Yes/No. Lift/stop/shut→shared bottom:
@@ -129,55 +146,54 @@
   Shared plan/sampler/bounds/metres/collider, `48 m` buckets;
   §6/§12/art §10g/§16/§21/nine checks.
 
-- **Accepted — 2026-09-25, clinch shove:**
-  User: both swap close swings for faster, stronger kinetic shoves.
-- **Accepted — 2026-09-26, minimum combat recovery:**
-  User: impact +≤2 real catch steps; extra flywheel/crouch/hand brace diagnostic
-  opt-in only. One shove/AI off/same input; ≤2 implementation attempts;
-  visual acceptance before expansion. Clock/pause/hit-stop/R/unload;
-  defeat separate, rise→Ready/regrip. L owner; post-left R body/floor/wall
-  gates, 8-segment `CombatWeaponGeometry`, all modes. Held mass→forearm;
-  release→mass/inertia, hand ignores expire. Drop sweep disabled anatomy past
-  capsule. Pronation/live elbow, no bone writes: -5..150/side±8°, later -5..120.
-  Banks/QA pending.
-- **Accepted — 2026-09-21, anatomical combat damage:**
-  Six posed bone-local zones, first/sequence; head×2 (50/80, cap .99MaxHP),
-  rear±45° defeats; torso1/rear1.25/arms.5/legs.75; guard/parry first.
-  Mutual frozen zone/direction/power, one HP/ragdoll/R.
+- **Accepted — 2026-09-28, one-handed attacks:**
+  Right-hand start/release/chain ignores left regrip. Click cuts Hit/Miss tail
+  after both contacts: live pose→swing/charge. Anatomy/contact/balance/fall/
+  forced recoil stay; block needs both.
+- **Accepted — 2026-09-25, clinch shove:** Both: close swing→faster/stronger shove.
+- **Accepted — 2026-09-26, minimum recovery:**
+  Impact +≤2 catch steps; flywheel/crouch/brace diagnostic opt-in.
+  1 shove/AI off/fixed input/≤2 attempts; visual approval before expansion.
+  Clock/pause/hit-stop/R/unload; defeat separate, rise→Ready/regrip.
+  L owner; post-left R body/floor/wall gates: 8-segment `CombatWeaponGeometry`.
+  Held mass→forearm; release→mass/inertia, hand ignores expire.
+  Drop sweep disables anatomy past capsule. Pronation/live elbow, no bone writes:
+  -5..120/side±8°. Banks/QA pending.
+- **Accepted — 2026-09-21, anatomical damage:**
+  Six bone-local zones, first/sequence; head×2 (50/80, cap .99MaxHP),
+  rear±45° defeat; torso1/rear1.25/arms.5/legs.75; guard/parry first.
+  Mutual frozen zone/direction/power; one HP/ragdoll/R.
 - **Accepted — 2026-09-21, combat inertia:**
   C1 pose/contact; duel-clock travel/yaw: recovery .15→.75, stun .35, arc 0;
   AI plants charge/windup, hero .2.
-- **Accepted — 2026-09-21, frightened combat stance:**
-  .42/.28m, feet settle in Windup; afraid/unskilled hero, calmer NPC.
-  Duel-clock breath/tremor/flinch at seen nearby tell.
+- **Accepted — 2026-09-21, frightened stance:**
+  .42/.28m, feet settle in Windup; afraid/unskilled hero, calm NPC.
+  Duel-clock breath/tremor/flinch at nearby visible tell.
 - **Accepted — 2026-09-21, step/Hold:**
-  .8m/.36+.21s/15, smoothstep travel/pose/footfalls clock.
-  Hold freezes breath; exit delays regen.
-- **Accepted — 2026-09-20, two-hand combat hold:**
-  `Combat{Ready,Block}`/attacks/recoils: left support;
-  `Combat{Hit,GuardBreak,Defeat}`: release. Low Ready/high Block,
-  opposed left .16→.42m/breath4s, blend/injury; NPC right Rest.
-  Bounded L subdivision fallback, authoring/runtime; same gates.
+  .8m/.36+.21s/15, smoothstep travel/pose/footfalls clock. Hold freezes breath; exit delays regen.
+- **Accepted — 2026-09-20, two-hand hold:**
+  Ready/Block/attacks/recoils target L; Hit/GuardBreak/Defeat release.
+  Low Ready/high Block, opposed L .16→.42m/breath4s, blend/injury; NPC R Rest.
+  Bounded L subdivision/asset/runtime gates.
 - **Accepted — 2026-09-21, victory:** Hero swing→normal walk; combat off until R.
 - **Accepted — 2026-09-21, brawl v2:**
   Free hits; guard20/35/charge20; regen30/s/.6s in stuns/own spends.
   Fresh≤.12 light parry/rearm.35; counter+.30/break½ dmg/.55;
-  backhand.22/buffer.20/heavy.28; seeded AI/postfall freecam.
+  backhand.22/other buffer.20/heavy.28; seeded AI/postfall freecam.
 - **Accepted — 2026-09-21, swing sides:**
-  Fore/backhand: through flips/stopped repeats; step/target>15°, not strafe.
-  Equal dmg/time/cost. Both Attack upper(t+q*.18*(1-smooth(t/.45))), lower(t),
-  charge upper(.18q); q power/duration kept; Forehand Light copy.
+  Fore/back: through flips/stopped repeats; step/target>15°, not strafe.
+  Same dmg/time/cost. Upper(t+q*.18*(1-smooth(t/.45))), lower(t),
+  charge upper(.18q); q power; Forehand Light copy.
   Backhand DAG: R elbow/hand roll; .56 reach≥.95, free elbow;
-  Both recoils: .56→Ready0/.48s inverse/C1/no dwell (WIP).
-  Ordinary: 45° shoulder search, same wrist/core/speed/clearance gates.
+  Recoils: .56→Ready0/.48s inverse/C1/no dwell (WIP).
+  45° shoulder search, wrist/core/speed/clearance gates.
 - **Accepted architecture exception — 2026-09-20, combat injury:**
   HP/directional pose/wounds/pools; dry block/miss; clear R/unload;
   visual, ragdoll wins.
-- **Accepted — 2026-09-21, combat aftermath:**
-  Thud; blood lobes grow 10s, stay.
+- **Accepted — 2026-09-21, combat aftermath:** Thud; blood lobes grow 10s, stay.
 - **Accepted architecture exception — 2026-09-21, polygon taunt:**
-  E/settled defeated body: Home toilet view/timeline/stream/residue via
-  `IHomeToiletViewHost`. Guided body-dock walk/aim; bone/floor marks until R
+  E/settled defeat: Home toilet view/timeline/stream/residue via
+  `IHomeToiletViewHost`. Guided body-dock walk/aim; bone/floor marks to R
   (`HomeUrineResidue`), crowbar left/return. Silent §21-exempt prompt,
   no speech/reaction/reward; sixth first-person view.
 - **Accepted architecture exception — 2026-09-19, isolated combat test:**
@@ -205,8 +221,9 @@
   model/face/hair/clothes until exhaustion, then balances; loads/order preserve
   looks, no local randomness. Register actors, use
   `DefaultNpcFactory.CreateForCharacter`; raw `Create`: authoring/legacy.
-  `ordinary-worker-v1` (`VillageLife/StationWorker`): four fair/five port/two
-  factory/driver/village workers. Factory sets rig/footsteps.
+  `ordinary-worker-v1` (`VillageLife/OrdinaryWorker`): four fair/five port/two
+  factory/driver/village workers. Prefab/GUID retained; resource address differs
+  from the source FBX. Factory sets rig/footsteps.
 
 - **Accepted — 2026-09-15, modular default worker:**
   Same prefab/GUID, 31 bones/grips/actions. Hero/NPC hands: +20% reach/width,
@@ -4667,46 +4684,20 @@
   other seven, and `Occluder_CrestClearsTheCableOnEverySeedResidue` walks all
   eight.
 - **Accepted — A borrowed albedo shares its bytes but not its
-  compensation:** the mountain road prints six sheets of its own (asphalt,
-  forest floor, wind snow, layered stone, conifer needles, bark) and borrows
-  nine kinds from City, Home and Supermarket families rather than reprinting
-  concrete, iron, painted metal, masonry, linoleum, timber and wall paint.
-  What a borrowed kind does not inherit is the source family's albedo
-  compensation. Compensation is fitted to the TINTS that multiply a sheet,
-  not to the sheet: the masonry serving a city retaining wall at
-  `0.335, 0.350, 0.325` cannot also serve the cafe's brick gable at
-  `0.290, 0.105, 0.065` — reusing the fringe constant there would brighten
-  the wall by more than the `8%` the linear rule allows.
-  `tools/build-mountain-road-textures.py` therefore measures each borrowed
-  PNG, re-solves the constant against the mountain's own tints, and refuses
-  the build if the result would clamp a channel or miss the limit; it records
-  the source sheet's SHA256 so a regeneration upstream is caught rather than
-  silently shifting a mountain surface. Two kinds may name one file and still
-  differ: `PaintedMetal` and `PaleEnamel` read the park's painted metal at
-  opposite ends of its tint range, as do `WallPaint` and `InteriorPaint`.
-- **Accepted — The mountain UVs were fixed before the sheets landed:** a
-  sheet on a bad unwrap only makes the unwrap visible, so the same pass
-  corrected six of them. The road's kerb continues the carriageway's unwrap
-  over its edge — its U runs on past the road half-width by the slab's own
-  thickness — instead of collapsing three metres of asphalt into two
-  centimetres of border; the vertices stay welded, so the road and plateau
-  still share one entry vertex. The plateau and the terminal apron are
-  unwrapped in the ROAD's frame, measured from the entry sample and biased by
-  the distance already travelled, so the texture crosses their shared seam
-  unbroken rather than restarting at it. Soil and snow are two cuts of one
-  vertex grid and now receive one set of normals averaged over both triangle
-  sets, because letting each mesh recalculate its own lit the snow line as a
-  seam that is not there. Ridges and boulders, which carried no UVs at all,
-  take the same faceted box projection the combined batches use, at the stone
-  recipe's pitch and off their existing normals, so nothing about the
-  lighting changes. Conifer crowns unroll by arc length against world height,
-  phased per tree from where it stands. The bridge deck moved from a scaled
-  cube onto the single-box batch its girders and piers already use, so its
-  faces tile at true metre scale; its transform stops carrying the offset and
-  its collider becomes the mesh, matching the abutments. The cafe's prism
-  splits its cap and side UVs onto separate vertices — sharing them gave every
-  side face zero vertical UV extent — which also gives the roof slab the crisp
-  arris a building edge has instead of a bevel.
+  compensation:** MountainRoad prints asphalt/forest floor/wind snow/layered
+  stone/conifer needles/bark and borrows nine City/Home/Supermarket kinds.
+  `tools/build-mountain-road-textures.py` fits compensation to the mountain's
+  own tints, rejecting channel clamp or >`8%` linear-brightness drift. Source
+  SHA256 catches upstream changes. `PaintedMetal`/`PaleEnamel` share a park
+  sheet but differ in compensation; `WallPaint`/`InteriorPaint` likewise.
+- **Accepted — The mountain UVs were fixed before the sheets landed:**
+  Kerb U continues the road halfwidth by slab thickness; welded road/plateau
+  entry remains. Plateau/apron use the entry road frame plus travelled distance
+  for continuous phase. Soil/snow share grid normals averaged over both cuts.
+  Ridges/boulders use face-normal box UVs at stone pitch, retaining normals.
+  Crowns unwrap arc length/world height with per-tree phase. Bridge deck uses
+  a single-box batch at metre pitch and a mesh collider like its abutments.
+  Cafe cap/side vertices split for nonzero side UV extent and crisp roof edges.
 - **Accepted — Cross-area map travel is a hard Single-mode scene boundary:**
   the ordinary map owns City and Mountain Road tabs, draws the hero only on the
   current area's tab and asks for confirmation before an other-area transfer.
