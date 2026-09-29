@@ -39,6 +39,7 @@ sys.path.insert(0, str(REPO_ROOT / "tools"))
 import atlas_kit  # noqa: E402  (after the sys.path fix)
 import player_cold_actions  # noqa: E402
 import player_detailed_model  # noqa: E402
+import player_body_hair_surfaces  # noqa: E402
 import player_face_paint  # noqa: E402
 import player_jacket_cloth  # noqa: E402
 import player_hand_grip  # noqa: E402
@@ -324,6 +325,8 @@ def parse_args() -> tuple[common.BuildConfig, Path, Path, Path, Path, Path, Path
                         help="Keep the existing animation FBX when only model geometry changes.")
     parser.add_argument("--hand-grip-only", action="store_true",
                         help="Refresh hand contact shapes in the verified production source without rebuilding actions.")
+    parser.add_argument("--surfaces-only", action="store_true",
+                        help="Author skin/hair UVs in the verified production source without changing geometry or actions.")
     parser.add_argument("--preview-only", action="store_true",
                         help="Validate geometry and render Relaxed studies into a review folder without publishing production assets.")
     parser.add_argument(
@@ -420,6 +423,7 @@ def parse_args() -> tuple[common.BuildConfig, Path, Path, Path, Path, Path, Path
         args.face_atlas_only,
         args.preview_only,
         args.hand_grip_only,
+        args.surfaces_only,
     )
 
 
@@ -1306,6 +1310,9 @@ class HeroV2Builder(common.ProductionPlayerBuilderBase):
         self.build_clothing()
         self.build_face_and_hair()
         player_detailed_model.refine(self, sys.modules[__name__], common)
+        player_body_hair_surfaces.author(self.result, [
+            {"renderer": renderer} for renderer in BARE_SKIN_RENDERER_REGIONS
+        ])
         appearance_errors = []
         validate_appearance_contracts(self.config, self.result, appearance_errors)
         if appearance_errors:
@@ -2883,6 +2890,7 @@ def content_signature(
     face_atlas_sha256: str,
     clothing_atlas_sha256: str,
     bare_skin_atlas_sha256: str,
+    ignored_uv_names: frozenset[str] = frozenset(),
 ) -> str:
     """Hash authored model/rig/action content, independent of FBX timestamps.
 
@@ -2929,7 +2937,7 @@ def content_signature(
                 ],
                 "uv0": (
                     [stable_vector(loop.uv) for loop in uv_layer.data]
-                    if uv_layer is not None
+                    if uv_layer is not None and obj.name not in ignored_uv_names
                     else []
                 ),
                 "weights": [
@@ -3322,6 +3330,13 @@ def write_v2_manifest(
             action["face_keys"] = keys
     player_snow_actions.attach_metadata(payload, result)
     player_jacket_cloth.attach_metadata(payload)
+    payload["surface_bindings"] = player_body_hair_surfaces.make_bindings(payload)
+    player_body_hair_surfaces.validate_uvs(result, payload["surface_bindings"])
+    payload["surface_authoring"] = {
+        "generator": "tools/player_body_hair_surfaces.py",
+        "version": player_body_hair_surfaces.VERSION,
+        "sha256": hashlib.sha256(Path(player_body_hair_surfaces.__file__).read_bytes()).hexdigest(),
+    }
     temporary = path.with_suffix(path.suffix + ".tmp")
     temporary.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
     os.replace(temporary, path)
@@ -3450,7 +3465,11 @@ def main() -> None:
         face_atlas_only,
         preview_only,
         hand_grip_only,
+        surfaces_only,
     ) = parse_args()
+    if surfaces_only:
+        player_body_hair_surfaces.refresh(sys.modules[__name__], config)
+        return
     if hand_grip_only:
         player_hand_grip.refresh(sys.modules[__name__], config)
         return

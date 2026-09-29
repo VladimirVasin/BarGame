@@ -25,7 +25,11 @@ namespace BarPromenade.Editor
                 return;
             }
 
-            if (string.Equals(
+            if (Player3DV2CharacterSurfaces.IsSource(assetPath))
+            {
+                Player3DV2CharacterSurfaces.ConfigureImport(importer);
+            }
+            else if (string.Equals(
                     assetPath,
                     Player3DV2AssetSetup.AtlasPath,
                     StringComparison.OrdinalIgnoreCase))

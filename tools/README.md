@@ -66,6 +66,9 @@ R blends asphalt, also beneath snow; G is reference-only, without geometry/depth
 recheck after upstream changes. Both checks are read-only. After map generation,
 call `VillageJunctionTextureSetup.BuildOrThrow` to rebake both atlases.
 
+`python tools/build-player-{clothing,body-hair}-surfaces.py [--check]`: UV maps/regions/hash;
+`ArtSource/Player/player-{clothing,body-hair}-surfaces.json`.
+
 Close Unity for Blender. Worker: body/wardrobe, `DefaultNpcAssetSetup`.
 Residents: WoodWoman/shared actions; `--phase-two`: other four.
 `VillageLife` prebuild imports residents/props/doors.
@@ -148,7 +151,7 @@ The native command `tools/audio-vhs/build.ps1` validates the staged DLL before
 publishing it. `-Validate` remains compatible; `-CompileOnly` leaves its output
 in `Captures` and does not publish. See [audio-vhs/README.md](audio-vhs/README.md).
 
-`build-player-3d-model-v2.py`: M-65/skin/hair; 31 body/12 hair bones.
+`build-player-3d-model-v2.py`: 31 body/12 hair bones; `--surfaces-only`: UVs.
 `--hand-grip-only --skip-animation-export --no-previews` refreshes hand shapes.
 Output: `Assets/Player3D/V2/Models/PlayerCharacter3DV2.{fbx,json}`.
 

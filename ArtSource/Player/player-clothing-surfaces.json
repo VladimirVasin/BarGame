@@ -1,0 +1,172 @@
+{
+  "generator": "tools/build-player-clothing-surfaces.py",
+  "version": "1.0.0",
+  "source_model": "Assets/Player3D/V2/Models/PlayerCharacter3DV2.json",
+  "source_clothing_binding_sha256": "d3f2a93dc434533e0e413f97e1f2fb8f83856beb21c77c836d8a620dc11f3a75",
+  "source_albedo": "Assets/Player3D/V2/Textures/PlayerClothingAtlas.png",
+  "source_albedo_sha256": "57a15642260b1fcd34e639976a9a0303e7d5faff1b0c071b883c586e7cba2c6a",
+  "size_px": [
+    256,
+    256
+  ],
+  "uv_channel": 0,
+  "uv_origin": "bottom_left",
+  "normal_neutral_gutter_px": 2,
+  "normal_fade_px": 3,
+  "recommended_bump_scale": 0.65,
+  "normal_encoding": "RGB tangent-space positive Y; A opaque",
+  "response_encoding": "linear RGBA: R=metallic zero, G=fabric, B=wear, A=absolute smoothness",
+  "smoothness_limits": {
+    "fabric": [
+      0.05,
+      0.1
+    ],
+    "leather": [
+      0.16,
+      0.25
+    ],
+    "sole": [
+      0.03,
+      0.03
+    ]
+  },
+  "forearm_maps_identical": true,
+  "regions": [
+    {
+      "name": "JacketBody",
+      "renderer": "CLO_JacketBody",
+      "x_px": 0,
+      "y_px": 128,
+      "width_px": 128,
+      "height_px": 128,
+      "smoothness_u8_min": 14,
+      "smoothness_u8_max": 23,
+      "normal_xy_u8_max_deviation": 31
+    },
+    {
+      "name": "JacketSleeveLeft",
+      "renderer": "CLO_JacketSleeve.L",
+      "x_px": 128,
+      "y_px": 192,
+      "width_px": 64,
+      "height_px": 64,
+      "smoothness_u8_min": 15,
+      "smoothness_u8_max": 23,
+      "normal_xy_u8_max_deviation": 28
+    },
+    {
+      "name": "JacketSleeveRight",
+      "renderer": "CLO_JacketSleeve.R",
+      "x_px": 192,
+      "y_px": 192,
+      "width_px": 64,
+      "height_px": 64,
+      "smoothness_u8_min": 13,
+      "smoothness_u8_max": 23,
+      "normal_xy_u8_max_deviation": 35
+    },
+    {
+      "name": "JacketForearmLeft",
+      "renderer": "CLO_JacketForearm.L",
+      "x_px": 128,
+      "y_px": 128,
+      "width_px": 64,
+      "height_px": 64,
+      "smoothness_u8_min": 14,
+      "smoothness_u8_max": 23,
+      "normal_xy_u8_max_deviation": 30
+    },
+    {
+      "name": "JeansPelvis",
+      "renderer": "CLO_TrousersPelvis",
+      "x_px": 192,
+      "y_px": 128,
+      "width_px": 64,
+      "height_px": 64,
+      "smoothness_u8_min": 15,
+      "smoothness_u8_max": 23,
+      "normal_xy_u8_max_deviation": 30
+    },
+    {
+      "name": "JeansThighLeft",
+      "renderer": "CLO_TrousersThigh.L",
+      "x_px": 0,
+      "y_px": 64,
+      "width_px": 64,
+      "height_px": 64,
+      "smoothness_u8_min": 15,
+      "smoothness_u8_max": 23,
+      "normal_xy_u8_max_deviation": 30
+    },
+    {
+      "name": "JeansThighRight",
+      "renderer": "CLO_TrousersThigh.R",
+      "x_px": 64,
+      "y_px": 64,
+      "width_px": 64,
+      "height_px": 64,
+      "smoothness_u8_min": 15,
+      "smoothness_u8_max": 23,
+      "normal_xy_u8_max_deviation": 30
+    },
+    {
+      "name": "JeansShinLeft",
+      "renderer": "CLO_TrousersShin.L",
+      "x_px": 128,
+      "y_px": 64,
+      "width_px": 64,
+      "height_px": 64,
+      "smoothness_u8_min": 15,
+      "smoothness_u8_max": 63,
+      "normal_xy_u8_max_deviation": 30
+    },
+    {
+      "name": "JeansShinRight",
+      "renderer": "CLO_TrousersShin.R",
+      "x_px": 192,
+      "y_px": 64,
+      "width_px": 64,
+      "height_px": 64,
+      "smoothness_u8_min": 15,
+      "smoothness_u8_max": 63,
+      "normal_xy_u8_max_deviation": 30
+    },
+    {
+      "name": "BootLeft",
+      "renderer": "CLO_Boot.L",
+      "x_px": 0,
+      "y_px": 0,
+      "width_px": 64,
+      "height_px": 64,
+      "smoothness_u8_min": 8,
+      "smoothness_u8_max": 63,
+      "normal_xy_u8_max_deviation": 18
+    },
+    {
+      "name": "BootRight",
+      "renderer": "CLO_Boot.R",
+      "x_px": 64,
+      "y_px": 0,
+      "width_px": 64,
+      "height_px": 64,
+      "smoothness_u8_min": 8,
+      "smoothness_u8_max": 63,
+      "normal_xy_u8_max_deviation": 18
+    },
+    {
+      "name": "JacketForearmRight",
+      "renderer": "CLO_JacketForearm.R",
+      "x_px": 128,
+      "y_px": 0,
+      "width_px": 64,
+      "height_px": 64,
+      "smoothness_u8_min": 14,
+      "smoothness_u8_max": 23,
+      "normal_xy_u8_max_deviation": 30
+    }
+  ],
+  "outputs": {
+    "Assets/Player3D/V2/Textures/PlayerClothingNormal.png": "6771dd93937bd7570aeb42814df9eb3713b2dea8e0e748ece2afae9bccc425d0",
+    "Assets/Player3D/V2/Textures/PlayerClothingResponse.png": "6dcf1a4df02a030181863586177be5c8ccf46438de56135147c2f39ea0ccc87b"
+  }
+}

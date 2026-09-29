@@ -387,6 +387,7 @@ namespace BarPromenade.Editor
                 material.SetTextureOffset("_MainTex", Vector2.zero);
             }
 
+            Player3DV2CharacterSurfaces.Apply(material);
             material.enableInstancing = true;
             EditorUtility.SetDirty(material);
             return material;
@@ -408,7 +409,8 @@ namespace BarPromenade.Editor
                    material.GetTextureScale("_BaseMap") == Vector2.one &&
                    material.GetTextureOffset("_BaseMap") == Vector2.zero &&
                    material.GetColor("_BaseColor") == Color.white &&
-                   material.enableInstancing;
+                   material.enableInstancing &&
+                   Player3DV2CharacterSurfaces.IsCanonical(material);
         }
 
         private static void ValidateMaterials(string[] materials)

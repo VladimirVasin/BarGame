@@ -72,11 +72,11 @@ the no-variant `Player3DResources` / `PlayerFactory` path to `Player3DV2`.
   preserves simulation. Pause freezes it, teleport/time gaps reset it.
   Only the live hero simulates; mirror and first-person subsets copy its
   deformed vertices. No scene-wide collision scan or per-frame body baking.
-- Geometry carries visible construction; the `256 x 256` point-filtered
-  clothing atlas carries small seams, weave and wear. The authored budget for
-  the visible dressed hero is at most `8,000` triangles. Hidden bare anatomy and
-  optional accessories are accounted for separately in the generated manifest;
-  measured counts belong to that file, not a duplicated documentation total.
+- Geometry: construction; the `256 x 256` Point clothing atlas retains
+  seams, weave and wear. Accepted `2026-09-29`: UV0 normal/response companions
+  add subtle cloth/leather, skin and directional hair relief/smoothness;
+  base pixels/palette/face stay. Dressed budget: `8,000` triangles; manifest counts
+  hidden anatomy/accessories apart.
 - `PlayerWardrobe` owns explicit `shirt/jacket/trousers/boots` slots in
   `hero_field_workwear`. Each item lists its own renderers and covered bare
   renderers. The catalog supports multiple authored items per slot; one starts
@@ -204,8 +204,10 @@ This opt-in applies only during the interaction handoff without an active clip.
   bone influences per vertex. Their registered `chest` binding is the gameplay
   anchor, not their only skin influence. Clothing follows the same torso field;
   the auxiliary hair chains own the long locks' weights.
-  Unity reuses shared PS1-lit materials and merge-safe `MaterialPropertyBlock`
-  texture transforms.
+  `CharacterSurfaceMaterialSetup` owns shared `Ps1Lit` Clothing/Skin/Hair;
+  hero: `Player3DV2CharacterSurfaces`, manifest UV0 regions/map hashes.
+  Linear mipmapped maps: normal `.65/.35/.5`; MPB colour/skin atlas stay.
+  Cloth/mirror/arm tangents follow deformation; UV-less anatomy stays flat.
 - The registry serializes mesh-to-bone bindings, the 16 anatomical bindings,
   animation bindings, source metrics and head/chest/pelvis/feet/grip/mouth
   anchors, including the explicit lower `Spine` anchor. Runtime code does not

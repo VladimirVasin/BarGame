@@ -3,7 +3,7 @@
 Newest outcomes/checks first. Archive whole dates at budget: [policy](README.md).
 Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-2026-08.md).
 
-## 2026-09-29 — Exterior ground layers and NPC loading
+## 2026-09-29 — Ground/hero surface layers and NPC loading
 
 - City/MountainRoad/AlpineVillage share a ground Lit variant and linear response
   maps registered to existing albedos. Road-frame wear follows width/direction;
@@ -27,6 +27,17 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
   `OrdinaryWorker_SharesCatalogAssetAndActionsAcrossVisibilityChanges` passed.
   `CityNight_CreatesFogSharedGlowAndBudgetedFixtures` reached initialized City,
   then hit an unrelated hero-shadow expectation (`On` versus `TwoSided`).
+- Hero uses reusable `CharacterSurfaceMaterialSetup` Clothing/Skin/Hair profiles
+  on shared `Ps1Lit`. UV0 normal/response maps and binding hashes/regions retain
+  base colours, existing atlas UVs, separate face, geometry/weights/rig/actions.
+  Skin/hair gain authored UVs. Collapsed sleeve caps gave Mikk non-orthogonal
+  fallback tangents; import repairs only invalid frames. Cloth recalculates
+  tangents; mirror/arm copies and seated trousers retain the contract, while
+  UV-less first-person anatomy stays flat. Mikk vertex splitting/reordering
+  regenerates prefab cloth bindings without changing geometry/triangle count.
+  Checks: `build-player-clothing-surfaces.py --check`,
+  `build-player-body-hair-surfaces.py --check` and `HeroCharacterSurfaces` passed.
+  Production PS1 idle/walking, body/hair/hand/boot and mirror frames reviewed.
 
 ## 2026-09-28 — One-handed attack response
 

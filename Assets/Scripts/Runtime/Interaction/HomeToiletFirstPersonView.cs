@@ -830,6 +830,10 @@ namespace BarPromenade
                 properties.Clear();
                 properties.SetColor("_BaseColor", color);
                 properties.SetColor("_Color", color);
+                // This derived module predates UV authoring. Share the skin
+                // material while retaining its neutral geometric-normal response.
+                properties.SetFloat("_BumpScale", 0f);
+                properties.SetFloat("_Smoothness", 0f);
                 target.SetPropertyBlock(properties);
             }
         }

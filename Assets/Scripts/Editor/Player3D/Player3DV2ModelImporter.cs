@@ -39,12 +39,21 @@ namespace BarPromenade.Editor
                 return;
             }
 
+            if (string.Equals(assetPath, Player3DV2CharacterSurfaces.SeatedModelPath, StringComparison.OrdinalIgnoreCase))
+            {
+                // This derived lower body borrows the selected trousers' material.
+                importer.importTangents = ModelImporterTangents.CalculateMikk;
+                return;
+            }
+
             if (string.Equals(
                     assetPath,
                     Player3DV2AssetSetup.ModelPath,
                     StringComparison.OrdinalIgnoreCase))
             {
                 ConfigureShared(importer);
+                // The UV-bound character normals need the imported tangent frame.
+                importer.importTangents = ModelImporterTangents.CalculateMikk;
                 // The coat owns runtime mesh copies and reads source skin data
                 // in player builds as well as in the Editor.
                 importer.isReadable = true;
@@ -82,6 +91,38 @@ namespace BarPromenade.Editor
                 importer.avatarSetup =
                     ModelImporterAvatarSetup.CreateFromThisModel;
                 importer.sourceAvatar = null;
+            }
+        }
+
+        private void OnPostprocessModel(GameObject model)
+        {
+            if (assetPath != Player3DV2AssetSetup.ModelPath &&
+                assetPath != Player3DV2CharacterSurfaces.SeatedModelPath) return;
+            foreach (SkinnedMeshRenderer renderer in model.GetComponentsInChildren<SkinnedMeshRenderer>(true))
+            {
+                Mesh mesh = renderer.sharedMesh;
+                Vector3[] normals = mesh.normals;
+                Vector4[] tangents = mesh.tangents;
+                bool changed = false;
+                for (int i = 0; i < tangents.Length; i++)
+                {
+                    Vector3 normal = normals[i].normalized;
+                    Vector4 source = tangents[i];
+                    Vector3 direction = new Vector3(source.x, source.y, source.z);
+                    if (float.IsFinite(direction.sqrMagnitude) && Mathf.Abs(direction.sqrMagnitude - 1f) < .001f &&
+                        Mathf.Abs(Mathf.Abs(source.w) - 1f) < .001f &&
+                        Mathf.Abs(Vector3.Dot(normal, direction)) < .001f) continue;
+                    // The original flat caps have zero-area UVs. Mikk imports
+                    // (1,0,0) there even when it is not perpendicular to normal.
+                    // Retain valid Mikk frames and orthogonalize only undefined ones.
+                    direction -= normal * Vector3.Dot(normal, direction);
+                    if (!float.IsFinite(direction.sqrMagnitude) || direction.sqrMagnitude < .000001f)
+                        direction = Vector3.Cross(normal, Mathf.Abs(normal.y) < .9f ? Vector3.up : Vector3.right);
+                    direction.Normalize();
+                    tangents[i] = new Vector4(direction.x, direction.y, direction.z, source.w < 0f ? -1f : 1f);
+                    changed = true;
+                }
+                if (changed) mesh.tangents = tangents;
             }
         }
 
@@ -140,7 +181,7 @@ namespace BarPromenade.Editor
 
         private static bool IsV2Source(string path)
         {
-            return string.Equals(
+            return Player3DV2CharacterSurfaces.IsSource(path) || string.Equals(
                        path,
                        Player3DV2AssetSetup.ModelPath,
                        StringComparison.OrdinalIgnoreCase) ||

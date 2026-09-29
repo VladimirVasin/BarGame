@@ -147,7 +147,7 @@ namespace BarPromenade
                                 throw new InvalidOperationException("Unknown production costume bone: " + bones[i].name);
                             bones[i] = actual;
                         }
-                        replacement.sharedMaterial = skin;
+                        replacement.sharedMaterial = source.Renderer.sharedMaterial;
                         block.SetTexture(BaseMap, skinAtlas);
                         block.SetTexture(MainTex, skinAtlas);
                         block.SetVector(BaseMapSt, new Vector4(1, 1, 0, 0));

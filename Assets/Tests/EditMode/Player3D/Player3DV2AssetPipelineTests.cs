@@ -22,6 +22,10 @@ namespace BarPromenade.Tests.EditMode
             "Assets/Player3D/V2/Textures/PlayerClothingAtlas.png";
         private const string V2ClothingMaterialPath =
             "Assets/Player3D/V2/Materials/Player3DV2Clothing.mat";
+        private const string V2SkinMaterialPath =
+            "Assets/Player3D/V2/Materials/Player3DV2Skin.mat";
+        private const string V2HairMaterialPath =
+            "Assets/Player3D/V2/Materials/Player3DV2Hair.mat";
         private const string ProductionMaterialPath =
             "Assets/Player3D/Materials/Player3DLit.mat";
         private const string V2PortraitPath =
@@ -929,8 +933,16 @@ namespace BarPromenade.Tests.EditMode
                     V2ClothingMaterialPath);
             Material productionMaterial =
                 AssetDatabase.LoadAssetAtPath<Material>(ProductionMaterialPath);
+            Material skinMaterial = AssetDatabase.LoadAssetAtPath<Material>(V2SkinMaterialPath);
+            Material hairMaterial = AssetDatabase.LoadAssetAtPath<Material>(V2HairMaterialPath);
             Assert.That(clothingMaterial, Is.Not.Null);
             Assert.That(productionMaterial, Is.Not.Null);
+            Assert.That(skinMaterial, Is.Not.Null);
+            Assert.That(hairMaterial, Is.Not.Null);
+            Assert.That(new HashSet<Material> { clothingMaterial, skinMaterial, hairMaterial, productionMaterial }.Count,
+                Is.EqualTo(4), "Cloth, skin, hair and expression face retain separate shared materials.");
+            Assert.That(skinMaterial.shader, Is.SameAs(productionMaterial.shader));
+            Assert.That(hairMaterial.shader, Is.SameAs(productionMaterial.shader));
             Assert.That(clothingMaterial, Is.Not.SameAs(productionMaterial));
             Assert.That(clothingMaterial.shader, Is.SameAs(productionMaterial.shader));
             Assert.That(clothingMaterial.color, Is.EqualTo(Color.white));
@@ -969,7 +981,9 @@ namespace BarPromenade.Tests.EditMode
                 bool textured = UsesClothingAtlas(part.material);
                 Material expected = textured
                     ? clothingMaterial
-                    : productionMaterial;
+                    : part.material == "MAT_Skin" || part.material == "MAT_SkinShadow" || part.material == "MAT_SkinDark"
+                        ? skinMaterial
+                        : part.role == "hair" ? hairMaterial : productionMaterial;
                 Material[] materials = meshBinding.Renderer.sharedMaterials;
                 Assert.That(materials, Is.Not.Empty);
                 for (int materialIndex = 0;

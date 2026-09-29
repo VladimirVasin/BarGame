@@ -2,6 +2,15 @@
 
 ## Current facts
 
+- **Accepted — 2026-09-29, character surfaces:**
+  User: reusable `CharacterSurfaceMaterialSetup` Clothing/Skin/Hair recipes
+  on shared `Ps1Lit`; hero adapter `Player3DV2CharacterSurfaces`. Manifest UV0
+  regions/map hashes validate imports. Skin/hair gain UVs; palette/base atlases,
+  face/geometry/rig/actions stay. Direct specular only; no weather/SSS/anisotropy.
+  Invalid Mikk frames repaired; cloth/copies follow. UV-less anatomy stays flat.
+  `tools/build-player-{clothing,body-hair}-surfaces.py`; player art spec.
+  Hero first; NPC unchanged. §16/nine checks; no §6 exception.
+
 - **Accepted — 2026-09-29, exterior ground layers:**
   User approved City/MountainRoad/AlpineVillage ground and retaining surfaces.
   Preserve base albedos/palettes/metre UVs/weather/collision; interiors stay

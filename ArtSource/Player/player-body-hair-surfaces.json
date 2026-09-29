@@ -1,0 +1,245 @@
+{
+  "generator": "tools/build-player-body-hair-surfaces.py",
+  "version": "1.0.0",
+  "source_model": "Assets/Player3D/V2/Models/PlayerCharacter3DV2.json",
+  "surface_bindings_sha256": "50f846302e22959bc5bf02a1b5496c8be63e54c7cf91e8a2907d552d186216bb",
+  "source_albedos_sha256": {
+    "Assets/Player3D/V2/Textures/PlayerFaceAtlas.png": "308ae66a0a2f01bb8705ce3dcd66e25e393b4a4c041b27ecaaaa6f6484f15bc0",
+    "Assets/Player3D/V2/Textures/PlayerClothingAtlas.png": "57a15642260b1fcd34e639976a9a0303e7d5faff1b0c071b883c586e7cba2c6a",
+    "Assets/Resources/Player/PlayerBareSkinAtlas.png": "496ddd211220f109fd5a1051d86792965d64645764dfc3f7b781e9afe6eb579c"
+  },
+  "uv_channel": 0,
+  "uv_origin": "bottom_left",
+  "normal_encoding": "RGB tangent-space positive Y; A opaque",
+  "response_encoding": "linear RGBA: R=metallic zero, G/B=reserved zero, A=absolute smoothness",
+  "normal_neutral_gutter_px": 2,
+  "normal_fade_px": 3,
+  "cap_neutral_patch_px": [
+    12,
+    12
+  ],
+  "recipes": [
+    {
+      "recipe": "Skin",
+      "normal_scale": 0.35,
+      "region_measurements": [
+        {
+          "name": "BareTorso",
+          "rect_px": [
+            0,
+            128,
+            128,
+            128
+          ],
+          "smoothness_u8_min": 28,
+          "smoothness_u8_max": 38,
+          "normal_xy_u8_max_deviation": 6
+        },
+        {
+          "name": "BarePelvis",
+          "rect_px": [
+            192,
+            128,
+            64,
+            64
+          ],
+          "smoothness_u8_min": 28,
+          "smoothness_u8_max": 38,
+          "normal_xy_u8_max_deviation": 6
+        },
+        {
+          "name": "BareThighLeft",
+          "rect_px": [
+            0,
+            64,
+            64,
+            64
+          ],
+          "smoothness_u8_min": 28,
+          "smoothness_u8_max": 38,
+          "normal_xy_u8_max_deviation": 6
+        },
+        {
+          "name": "BareThighRight",
+          "rect_px": [
+            64,
+            64,
+            64,
+            64
+          ],
+          "smoothness_u8_min": 28,
+          "smoothness_u8_max": 38,
+          "normal_xy_u8_max_deviation": 6
+        },
+        {
+          "name": "BareShinLeft",
+          "rect_px": [
+            128,
+            64,
+            64,
+            64
+          ],
+          "smoothness_u8_min": 28,
+          "smoothness_u8_max": 38,
+          "normal_xy_u8_max_deviation": 6
+        },
+        {
+          "name": "BareShinRight",
+          "rect_px": [
+            192,
+            64,
+            64,
+            64
+          ],
+          "smoothness_u8_min": 28,
+          "smoothness_u8_max": 38,
+          "normal_xy_u8_max_deviation": 6
+        },
+        {
+          "name": "BareFootLeft",
+          "rect_px": [
+            0,
+            0,
+            64,
+            64
+          ],
+          "smoothness_u8_min": 28,
+          "smoothness_u8_max": 38,
+          "normal_xy_u8_max_deviation": 6
+        },
+        {
+          "name": "BareFootRight",
+          "rect_px": [
+            64,
+            0,
+            64,
+            64
+          ],
+          "smoothness_u8_min": 28,
+          "smoothness_u8_max": 38,
+          "normal_xy_u8_max_deviation": 6
+        },
+        {
+          "name": "SkinNeck",
+          "rect_px": [
+            192,
+            0,
+            64,
+            64
+          ],
+          "smoothness_u8_min": 28,
+          "smoothness_u8_max": 38,
+          "normal_xy_u8_max_deviation": 6
+        },
+        {
+          "name": "SkinHand",
+          "rect_px": [
+            192,
+            192,
+            64,
+            64
+          ],
+          "smoothness_u8_min": 28,
+          "smoothness_u8_max": 38,
+          "normal_xy_u8_max_deviation": 6
+        },
+        {
+          "name": "SkinForearm",
+          "rect_px": [
+            128,
+            192,
+            64,
+            64
+          ],
+          "smoothness_u8_min": 28,
+          "smoothness_u8_max": 38,
+          "normal_xy_u8_max_deviation": 6
+        },
+        {
+          "name": "SkinHead",
+          "rect_px": [
+            128,
+            0,
+            64,
+            64
+          ],
+          "smoothness_u8_min": 28,
+          "smoothness_u8_max": 38,
+          "normal_xy_u8_max_deviation": 6
+        },
+        {
+          "name": "SkinUpperArm",
+          "rect_px": [
+            128,
+            128,
+            64,
+            64
+          ],
+          "smoothness_u8_min": 28,
+          "smoothness_u8_max": 38,
+          "normal_xy_u8_max_deviation": 6
+        }
+      ]
+    },
+    {
+      "recipe": "Hair",
+      "normal_scale": 0.5,
+      "region_measurements": [
+        {
+          "name": "HairNape",
+          "rect_px": [
+            128,
+            0,
+            128,
+            128
+          ],
+          "smoothness_u8_min": 37,
+          "smoothness_u8_max": 60,
+          "normal_xy_u8_max_deviation": 28
+        },
+        {
+          "name": "HairLength",
+          "rect_px": [
+            0,
+            0,
+            128,
+            128
+          ],
+          "smoothness_u8_min": 37,
+          "smoothness_u8_max": 60,
+          "normal_xy_u8_max_deviation": 28
+        },
+        {
+          "name": "HairCrown",
+          "rect_px": [
+            0,
+            128,
+            128,
+            128
+          ],
+          "smoothness_u8_min": 37,
+          "smoothness_u8_max": 60,
+          "normal_xy_u8_max_deviation": 28
+        },
+        {
+          "name": "HairCurtain",
+          "rect_px": [
+            128,
+            128,
+            128,
+            128
+          ],
+          "smoothness_u8_min": 37,
+          "smoothness_u8_max": 60,
+          "normal_xy_u8_max_deviation": 28
+        }
+      ]
+    }
+  ],
+  "outputs": {
+    "Assets/Player3D/V2/Textures/PlayerSkinNormal.png": "bacf0ed93d76e45bb53c522ec99c6770e671b72c7fbaf36044fe4b211a782df5",
+    "Assets/Player3D/V2/Textures/PlayerSkinResponse.png": "a0c4e1ffea022b6a1548e3483a22f808495921b509bbf14674fa80b91292aeb1",
+    "Assets/Player3D/V2/Textures/PlayerHairNormal.png": "fe911300cd2977299c6c6c871a9b47f19adc5fa5ea26516b8e300c9e9d3c38e4",
+    "Assets/Player3D/V2/Textures/PlayerHairResponse.png": "e260d44248bb6b18c54bfb76ee39c558de14d7a64107c3b429d7a287ef6634b9"
+  }
+}

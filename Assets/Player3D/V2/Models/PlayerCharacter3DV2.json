@@ -2162,7 +2162,7 @@
     "action_count": 50,
     "preserves_authored_contacts": true
   },
-  "content_signature_sha256": "2f926cdeb5fff5cdbb30af2f295a31dc98542337f005017e884a6c0d47133da4",
+  "content_signature_sha256": "25324f39b321cae0c6572389c2fd0d5080cef40886f5a4fe66786e729c38e2f0",
   "material_palette": {
     "MAT_FaceAtlas": "FFFFFF",
     "MAT_JacketAtlas": "FFFFFF",
@@ -3126,5 +3126,626 @@
         "maximum_knee_flex_degrees": 139.9436
       }
     }
+  },
+  "surface_bindings": [
+    {
+      "recipe": "Clothing",
+      "normal_asset": "Assets/Player3D/V2/Textures/PlayerClothingNormal.png",
+      "response_asset": "Assets/Player3D/V2/Textures/PlayerClothingResponse.png",
+      "width_px": 256,
+      "height_px": 256,
+      "uv_channel": 0,
+      "uv_origin": "bottom_left",
+      "base_color_mode": "existing_clothing_atlas",
+      "normal_scale": 0.65,
+      "regions": [
+        {
+          "name": "JacketBody",
+          "renderer": "CLO_JacketBody",
+          "x_px": 0,
+          "y_px": 128,
+          "width_px": 128,
+          "height_px": 128
+        },
+        {
+          "name": "JacketSleeveLeft",
+          "renderer": "CLO_JacketSleeve.L",
+          "x_px": 128,
+          "y_px": 192,
+          "width_px": 64,
+          "height_px": 64
+        },
+        {
+          "name": "JacketSleeveRight",
+          "renderer": "CLO_JacketSleeve.R",
+          "x_px": 192,
+          "y_px": 192,
+          "width_px": 64,
+          "height_px": 64
+        },
+        {
+          "name": "JacketForearmLeft",
+          "renderer": "CLO_JacketForearm.L",
+          "x_px": 128,
+          "y_px": 128,
+          "width_px": 64,
+          "height_px": 64
+        },
+        {
+          "name": "JeansPelvis",
+          "renderer": "CLO_TrousersPelvis",
+          "x_px": 192,
+          "y_px": 128,
+          "width_px": 64,
+          "height_px": 64
+        },
+        {
+          "name": "JeansThighLeft",
+          "renderer": "CLO_TrousersThigh.L",
+          "x_px": 0,
+          "y_px": 64,
+          "width_px": 64,
+          "height_px": 64
+        },
+        {
+          "name": "JeansThighRight",
+          "renderer": "CLO_TrousersThigh.R",
+          "x_px": 64,
+          "y_px": 64,
+          "width_px": 64,
+          "height_px": 64
+        },
+        {
+          "name": "JeansShinLeft",
+          "renderer": "CLO_TrousersShin.L",
+          "x_px": 128,
+          "y_px": 64,
+          "width_px": 64,
+          "height_px": 64
+        },
+        {
+          "name": "JeansShinRight",
+          "renderer": "CLO_TrousersShin.R",
+          "x_px": 192,
+          "y_px": 64,
+          "width_px": 64,
+          "height_px": 64
+        },
+        {
+          "name": "BootLeft",
+          "renderer": "CLO_Boot.L",
+          "x_px": 0,
+          "y_px": 0,
+          "width_px": 64,
+          "height_px": 64
+        },
+        {
+          "name": "BootRight",
+          "renderer": "CLO_Boot.R",
+          "x_px": 64,
+          "y_px": 0,
+          "width_px": 64,
+          "height_px": 64
+        },
+        {
+          "name": "JacketForearmRight",
+          "renderer": "CLO_JacketForearm.R",
+          "x_px": 128,
+          "y_px": 0,
+          "width_px": 64,
+          "height_px": 64
+        }
+      ],
+      "normal_sha256": "6771dd93937bd7570aeb42814df9eb3713b2dea8e0e748ece2afae9bccc425d0",
+      "response_sha256": "6dcf1a4df02a030181863586177be5c8ccf46438de56135147c2f39ea0ccc87b"
+    },
+    {
+      "recipe": "Skin",
+      "normal_asset": "Assets/Player3D/V2/Textures/PlayerSkinNormal.png",
+      "response_asset": "Assets/Player3D/V2/Textures/PlayerSkinResponse.png",
+      "width_px": 256,
+      "height_px": 256,
+      "uv_channel": 0,
+      "uv_origin": "bottom_left",
+      "base_color_mode": "existing_palette_or_bare_skin",
+      "normal_scale": 0.35,
+      "regions": [
+        {
+          "name": "BareTorso",
+          "renderer": "GEO_Torso",
+          "x_px": 0,
+          "y_px": 128,
+          "width_px": 128,
+          "height_px": 128
+        },
+        {
+          "name": "BarePelvis",
+          "renderer": "GEO_Pelvis",
+          "x_px": 192,
+          "y_px": 128,
+          "width_px": 64,
+          "height_px": 64
+        },
+        {
+          "name": "BareThighLeft",
+          "renderer": "GEO_Thigh.L",
+          "x_px": 0,
+          "y_px": 64,
+          "width_px": 64,
+          "height_px": 64
+        },
+        {
+          "name": "BareThighRight",
+          "renderer": "GEO_Thigh.R",
+          "x_px": 64,
+          "y_px": 64,
+          "width_px": 64,
+          "height_px": 64
+        },
+        {
+          "name": "BareShinLeft",
+          "renderer": "GEO_Shin.L",
+          "x_px": 128,
+          "y_px": 64,
+          "width_px": 64,
+          "height_px": 64
+        },
+        {
+          "name": "BareShinRight",
+          "renderer": "GEO_Shin.R",
+          "x_px": 192,
+          "y_px": 64,
+          "width_px": 64,
+          "height_px": 64
+        },
+        {
+          "name": "BareFootLeft",
+          "renderer": "GEO_Foot.L",
+          "x_px": 0,
+          "y_px": 0,
+          "width_px": 64,
+          "height_px": 64
+        },
+        {
+          "name": "BareFootRight",
+          "renderer": "GEO_Foot.R",
+          "x_px": 64,
+          "y_px": 0,
+          "width_px": 64,
+          "height_px": 64
+        },
+        {
+          "name": "SkinNeck",
+          "renderer": "GEO_Ear.L",
+          "x_px": 192,
+          "y_px": 0,
+          "width_px": 64,
+          "height_px": 64
+        },
+        {
+          "name": "SkinNeck",
+          "renderer": "GEO_Ear.R",
+          "x_px": 192,
+          "y_px": 0,
+          "width_px": 64,
+          "height_px": 64
+        },
+        {
+          "name": "SkinHand",
+          "renderer": "GEO_Finger0.L",
+          "x_px": 192,
+          "y_px": 192,
+          "width_px": 64,
+          "height_px": 64
+        },
+        {
+          "name": "SkinHand",
+          "renderer": "GEO_Finger0.R",
+          "x_px": 192,
+          "y_px": 192,
+          "width_px": 64,
+          "height_px": 64
+        },
+        {
+          "name": "SkinHand",
+          "renderer": "GEO_Finger1.L",
+          "x_px": 192,
+          "y_px": 192,
+          "width_px": 64,
+          "height_px": 64
+        },
+        {
+          "name": "SkinHand",
+          "renderer": "GEO_Finger1.R",
+          "x_px": 192,
+          "y_px": 192,
+          "width_px": 64,
+          "height_px": 64
+        },
+        {
+          "name": "SkinHand",
+          "renderer": "GEO_Finger2.L",
+          "x_px": 192,
+          "y_px": 192,
+          "width_px": 64,
+          "height_px": 64
+        },
+        {
+          "name": "SkinHand",
+          "renderer": "GEO_Finger2.R",
+          "x_px": 192,
+          "y_px": 192,
+          "width_px": 64,
+          "height_px": 64
+        },
+        {
+          "name": "SkinHand",
+          "renderer": "GEO_Finger3.L",
+          "x_px": 192,
+          "y_px": 192,
+          "width_px": 64,
+          "height_px": 64
+        },
+        {
+          "name": "SkinHand",
+          "renderer": "GEO_Finger3.R",
+          "x_px": 192,
+          "y_px": 192,
+          "width_px": 64,
+          "height_px": 64
+        },
+        {
+          "name": "SkinForearm",
+          "renderer": "GEO_Forearm.L",
+          "x_px": 128,
+          "y_px": 192,
+          "width_px": 64,
+          "height_px": 64
+        },
+        {
+          "name": "SkinForearm",
+          "renderer": "GEO_Forearm.R",
+          "x_px": 128,
+          "y_px": 192,
+          "width_px": 64,
+          "height_px": 64
+        },
+        {
+          "name": "SkinHand",
+          "renderer": "GEO_Hand.L",
+          "x_px": 192,
+          "y_px": 192,
+          "width_px": 64,
+          "height_px": 64
+        },
+        {
+          "name": "SkinHand",
+          "renderer": "GEO_Hand.R",
+          "x_px": 192,
+          "y_px": 192,
+          "width_px": 64,
+          "height_px": 64
+        },
+        {
+          "name": "SkinHead",
+          "renderer": "GEO_Head",
+          "x_px": 128,
+          "y_px": 0,
+          "width_px": 64,
+          "height_px": 64
+        },
+        {
+          "name": "SkinNeck",
+          "renderer": "GEO_Neck",
+          "x_px": 192,
+          "y_px": 0,
+          "width_px": 64,
+          "height_px": 64
+        },
+        {
+          "name": "SkinUpperArm",
+          "renderer": "GEO_Shoulder.L",
+          "x_px": 128,
+          "y_px": 128,
+          "width_px": 64,
+          "height_px": 64
+        },
+        {
+          "name": "SkinUpperArm",
+          "renderer": "GEO_Shoulder.R",
+          "x_px": 128,
+          "y_px": 128,
+          "width_px": 64,
+          "height_px": 64
+        },
+        {
+          "name": "SkinHand",
+          "renderer": "GEO_Thumb.L",
+          "x_px": 192,
+          "y_px": 192,
+          "width_px": 64,
+          "height_px": 64
+        },
+        {
+          "name": "SkinHand",
+          "renderer": "GEO_Thumb.R",
+          "x_px": 192,
+          "y_px": 192,
+          "width_px": 64,
+          "height_px": 64
+        },
+        {
+          "name": "SkinUpperArm",
+          "renderer": "GEO_UpperArm.L",
+          "x_px": 128,
+          "y_px": 128,
+          "width_px": 64,
+          "height_px": 64
+        },
+        {
+          "name": "SkinUpperArm",
+          "renderer": "GEO_UpperArm.R",
+          "x_px": 128,
+          "y_px": 128,
+          "width_px": 64,
+          "height_px": 64
+        }
+      ],
+      "normal_sha256": "bacf0ed93d76e45bb53c522ec99c6770e671b72c7fbaf36044fe4b211a782df5",
+      "response_sha256": "a0c4e1ffea022b6a1548e3483a22f808495921b509bbf14674fa80b91292aeb1"
+    },
+    {
+      "recipe": "Hair",
+      "normal_asset": "Assets/Player3D/V2/Textures/PlayerHairNormal.png",
+      "response_asset": "Assets/Player3D/V2/Textures/PlayerHairResponse.png",
+      "width_px": 256,
+      "height_px": 256,
+      "uv_channel": 0,
+      "uv_origin": "bottom_left",
+      "base_color_mode": "existing_palette",
+      "normal_scale": 0.5,
+      "regions": [
+        {
+          "name": "HairNape",
+          "renderer": "GEO_HairBack",
+          "x_px": 128,
+          "y_px": 0,
+          "width_px": 128,
+          "height_px": 128
+        },
+        {
+          "name": "HairLength",
+          "renderer": "GEO_HairBackLength",
+          "x_px": 0,
+          "y_px": 0,
+          "width_px": 128,
+          "height_px": 128
+        },
+        {
+          "name": "HairLength",
+          "renderer": "GEO_HairBackStrand0",
+          "x_px": 0,
+          "y_px": 0,
+          "width_px": 128,
+          "height_px": 128
+        },
+        {
+          "name": "HairLength",
+          "renderer": "GEO_HairBackStrand1",
+          "x_px": 0,
+          "y_px": 0,
+          "width_px": 128,
+          "height_px": 128
+        },
+        {
+          "name": "HairLength",
+          "renderer": "GEO_HairBackStrand2",
+          "x_px": 0,
+          "y_px": 0,
+          "width_px": 128,
+          "height_px": 128
+        },
+        {
+          "name": "HairCrown",
+          "renderer": "GEO_HairCap",
+          "x_px": 0,
+          "y_px": 128,
+          "width_px": 128,
+          "height_px": 128
+        },
+        {
+          "name": "HairCrown",
+          "renderer": "GEO_HairCrownStrand0.L",
+          "x_px": 0,
+          "y_px": 128,
+          "width_px": 128,
+          "height_px": 128
+        },
+        {
+          "name": "HairCrown",
+          "renderer": "GEO_HairCrownStrand0.R",
+          "x_px": 0,
+          "y_px": 128,
+          "width_px": 128,
+          "height_px": 128
+        },
+        {
+          "name": "HairCrown",
+          "renderer": "GEO_HairCrownStrand1.L",
+          "x_px": 0,
+          "y_px": 128,
+          "width_px": 128,
+          "height_px": 128
+        },
+        {
+          "name": "HairCrown",
+          "renderer": "GEO_HairCrownStrand1.R",
+          "x_px": 0,
+          "y_px": 128,
+          "width_px": 128,
+          "height_px": 128
+        },
+        {
+          "name": "HairCurtain",
+          "renderer": "GEO_HairCurtain.L",
+          "x_px": 128,
+          "y_px": 128,
+          "width_px": 128,
+          "height_px": 128
+        },
+        {
+          "name": "HairCurtain",
+          "renderer": "GEO_HairCurtain.R",
+          "x_px": 128,
+          "y_px": 128,
+          "width_px": 128,
+          "height_px": 128
+        },
+        {
+          "name": "HairLength",
+          "renderer": "GEO_HairLeftLength",
+          "x_px": 0,
+          "y_px": 0,
+          "width_px": 128,
+          "height_px": 128
+        },
+        {
+          "name": "HairLength",
+          "renderer": "GEO_HairLeftStrand0",
+          "x_px": 0,
+          "y_px": 0,
+          "width_px": 128,
+          "height_px": 128
+        },
+        {
+          "name": "HairLength",
+          "renderer": "GEO_HairLeftStrand1",
+          "x_px": 0,
+          "y_px": 0,
+          "width_px": 128,
+          "height_px": 128
+        },
+        {
+          "name": "HairLength",
+          "renderer": "GEO_HairLeftStrand2",
+          "x_px": 0,
+          "y_px": 0,
+          "width_px": 128,
+          "height_px": 128
+        },
+        {
+          "name": "HairNape",
+          "renderer": "GEO_HairNape",
+          "x_px": 128,
+          "y_px": 0,
+          "width_px": 128,
+          "height_px": 128
+        },
+        {
+          "name": "HairLength",
+          "renderer": "GEO_HairRightLength",
+          "x_px": 0,
+          "y_px": 0,
+          "width_px": 128,
+          "height_px": 128
+        },
+        {
+          "name": "HairLength",
+          "renderer": "GEO_HairRightStrand0",
+          "x_px": 0,
+          "y_px": 0,
+          "width_px": 128,
+          "height_px": 128
+        },
+        {
+          "name": "HairLength",
+          "renderer": "GEO_HairRightStrand1",
+          "x_px": 0,
+          "y_px": 0,
+          "width_px": 128,
+          "height_px": 128
+        },
+        {
+          "name": "HairLength",
+          "renderer": "GEO_HairRightStrand2",
+          "x_px": 0,
+          "y_px": 0,
+          "width_px": 128,
+          "height_px": 128
+        },
+        {
+          "name": "HairCurtain",
+          "renderer": "GEO_HairTemple.L",
+          "x_px": 128,
+          "y_px": 128,
+          "width_px": 128,
+          "height_px": 128
+        },
+        {
+          "name": "HairCurtain",
+          "renderer": "GEO_HairTemple.R",
+          "x_px": 128,
+          "y_px": 128,
+          "width_px": 128,
+          "height_px": 128
+        }
+      ],
+      "normal_sha256": "fe911300cd2977299c6c6c871a9b47f19adc5fa5ea26516b8e300c9e9d3c38e4",
+      "response_sha256": "e260d44248bb6b18c54bfb76ee39c558de14d7a64107c3b429d7a287ef6634b9"
+    }
+  ],
+  "surface_authoring": {
+    "generator": "tools/player_body_hair_surfaces.py",
+    "version": "1.0.0",
+    "sha256": "6e5bb4f46c85e07ab053cbf929576b6805ed3a75078ba51b7eb4a3daf5d8996e",
+    "geometry_rig_actions_preserved_sha256": "3dd60e21cfd059008f32ff5b70459e7fc6dd5a6899c44031e4bc0ce1edb0d963",
+    "changed_uv_renderers": [
+      "GEO_Ear.L",
+      "GEO_Ear.R",
+      "GEO_Finger0.L",
+      "GEO_Finger0.R",
+      "GEO_Finger1.L",
+      "GEO_Finger1.R",
+      "GEO_Finger2.L",
+      "GEO_Finger2.R",
+      "GEO_Finger3.L",
+      "GEO_Finger3.R",
+      "GEO_Forearm.L",
+      "GEO_Forearm.R",
+      "GEO_HairBack",
+      "GEO_HairBackLength",
+      "GEO_HairBackStrand0",
+      "GEO_HairBackStrand1",
+      "GEO_HairBackStrand2",
+      "GEO_HairCap",
+      "GEO_HairCrownStrand0.L",
+      "GEO_HairCrownStrand0.R",
+      "GEO_HairCrownStrand1.L",
+      "GEO_HairCrownStrand1.R",
+      "GEO_HairCurtain.L",
+      "GEO_HairCurtain.R",
+      "GEO_HairLeftLength",
+      "GEO_HairLeftStrand0",
+      "GEO_HairLeftStrand1",
+      "GEO_HairLeftStrand2",
+      "GEO_HairNape",
+      "GEO_HairRightLength",
+      "GEO_HairRightStrand0",
+      "GEO_HairRightStrand1",
+      "GEO_HairRightStrand2",
+      "GEO_HairTemple.L",
+      "GEO_HairTemple.R",
+      "GEO_Hand.L",
+      "GEO_Hand.R",
+      "GEO_Head",
+      "GEO_Neck",
+      "GEO_Shoulder.L",
+      "GEO_Shoulder.R",
+      "GEO_Thumb.L",
+      "GEO_Thumb.R",
+      "GEO_UpperArm.L",
+      "GEO_UpperArm.R"
+    ],
+    "original_albedos_unchanged": true
   }
 }

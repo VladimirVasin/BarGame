@@ -18,6 +18,7 @@ namespace BarPromenade
         private readonly Vector3[] original;
         private readonly Vector3[] output;
         private readonly Vector3[] world;
+        private readonly bool normalMapped;
         private readonly PlayerJacketCloth.SurfaceBinding binding;
         public Mesh Mesh { get; }
         public Mesh Source => binding.Source;
@@ -29,6 +30,8 @@ namespace BarPromenade
         public PlayerJacketClothSurface(PlayerJacketCloth.SurfaceBinding source)
         {
             binding = source;
+            Material material = source.Renderer.sharedMaterial;
+            normalMapped = material != null && material.IsKeywordEnabled("_NORMALMAP");
             original = source.Source.vertices;
             output = (Vector3[])original.Clone();
             world = new Vector3[original.Length];
@@ -157,6 +160,9 @@ namespace BarPromenade
         {
             Mesh.vertices = output;
             Mesh.RecalculateNormals();
+            // Keep the lighting basis attached to the deformed cuff/hem, also
+            // when these vertices are copied into the mirror or first person.
+            if (normalMapped) Mesh.RecalculateTangents();
             Mesh.RecalculateBounds();
             Renderer.sharedMesh = Mesh;
             // Skinned bounds are renderer-local; retain the authored animated

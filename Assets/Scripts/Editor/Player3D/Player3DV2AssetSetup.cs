@@ -258,6 +258,7 @@ namespace BarPromenade.Editor
                    File.Exists(AnimationPath) &&
                    File.Exists(AtlasPath) &&
                    File.Exists(ClothingAtlasPath) &&
+                   Player3DV2CharacterSurfaces.SourcesExist() &&
                    File.Exists(BareSkinAtlasPath) &&
                    File.Exists(PortraitPath);
         }
@@ -297,6 +298,8 @@ namespace BarPromenade.Editor
                 ImportSource(AnimationPath);
                 ImportSource(AtlasPath);
                 ImportSource(ClothingAtlasPath);
+                foreach (string path in Player3DV2CharacterSurfaces.SourcePaths) ImportSource(path);
+                ImportSource(Player3DV2CharacterSurfaces.SeatedModelPath);
                 ImportSource(BareSkinAtlasPath);
                 ImportSource(PortraitPath);
 
@@ -336,7 +339,7 @@ namespace BarPromenade.Editor
                     modelAsset,
                     manifest,
                     sharedMaterial,
-                    clothingMaterial,
+                    Player3DV2CharacterSurfaces.BuildMaterials(sharedMaterial, clothingMaterial, manifest.surface_bindings),
                     atlas,
                     animations);
                 AssetDatabase.SaveAssets();
@@ -366,6 +369,7 @@ namespace BarPromenade.Editor
             Texture2D clothingAtlas =
                 AssetDatabase.LoadAssetAtPath<Texture2D>(ClothingAtlasPath);
             if (registry == null ||
+                !Player3DV2CharacterSurfaces.PaletteMaterialsCanonical() ||
                 !Player3DV2StaticTextureContract.IsSharedMaterialCanonical(
                     clothingMaterial,
                     productionMaterial,
@@ -519,10 +523,18 @@ namespace BarPromenade.Editor
             Player3DV2StaticTextureContract.ValidateBareSkinAtlasManifest(
                 manifest.bare_skin_atlas,
                 manifest.texture_bindings[0]);
+            Player3DV2CharacterSurfaces.ValidateManifest(manifest.surface_bindings,
+                manifest.parts.Where(part => SurfaceRecipe(part) != null)
+                    .ToDictionary(part => part.name, SurfaceRecipe, StringComparer.Ordinal));
             ValidateActions(manifest.actions);
             ValidateFaceAtlas(manifest.face_atlas);
             return manifest;
         }
+
+        private static string SurfaceRecipe(Player3DV2ManifestPart part) =>
+            Player3DV2StaticTextureContract.UsesClothingAtlas(part.material) ? "Clothing" :
+            part.role == "hair" || part.material == "MAT_Hair" || part.material == "MAT_HairHighlight" ? "Hair" :
+            part.material == "MAT_Skin" || part.material == "MAT_SkinShadow" || part.material == "MAT_SkinDark" ? "Skin" : null;
 
         private static void ValidateHandGripManifest(Player3DV2Manifest manifest)
         {
@@ -1001,7 +1013,7 @@ namespace BarPromenade.Editor
             GameObject modelAsset,
             Player3DV2Manifest manifest,
             Material sharedMaterial,
-            Material clothingMaterial,
+            IReadOnlyDictionary<string, Material> surfaceMaterials,
             Texture2D atlas,
             Player3DAnimationBinding[] animations)
         {
@@ -1045,6 +1057,9 @@ namespace BarPromenade.Editor
                     manifest.bare_skin_atlas,
                     renderersByName);
 
+                foreach (CharacterSurfaceBinding binding in manifest.surface_bindings)
+                    CharacterSurfaceMaterialSetup.ValidateRendererUvs(binding, renderersByName);
+
                 List<Player3DMeshBinding> meshBindings =
                     new List<Player3DMeshBinding>(manifest.parts.Length);
                 List<Player3DAnatomicalPartBinding> anatomicalBindings =
@@ -1071,11 +1086,8 @@ namespace BarPromenade.Editor
                             $"'{source.bone}'.");
                     }
 
-                    Material partMaterial =
-                        Player3DV2StaticTextureContract.UsesClothingAtlas(
-                            source.material)
-                            ? clothingMaterial
-                            : sharedMaterial;
+                    Material partMaterial = surfaceMaterials.TryGetValue(source.name, out Material surface)
+                        ? surface : sharedMaterial;
                     renderer.sharedMaterials = Enumerable
                         .Repeat(
                             partMaterial,
@@ -1467,6 +1479,14 @@ namespace BarPromenade.Editor
                 DependencyStamp(AnimationPath),
                 DependencyStamp(AtlasPath),
                 DependencyStamp(ClothingAtlasPath),
+                DependencyStamp(Player3DV2CharacterSurfaces.NormalPath),
+                DependencyStamp(Player3DV2CharacterSurfaces.ResponsePath),
+                DependencyStamp(Player3DV2CharacterSurfaces.SkinNormalPath),
+                DependencyStamp(Player3DV2CharacterSurfaces.SkinResponsePath),
+                DependencyStamp(Player3DV2CharacterSurfaces.HairNormalPath),
+                DependencyStamp(Player3DV2CharacterSurfaces.HairResponsePath),
+                DependencyStamp("Assets/Scripts/Editor/Player3D/CharacterSurfaceMaterialSetup.cs"),
+                DependencyStamp("Assets/Scripts/Editor/Player3D/Player3DV2CharacterSurfaces.cs"),
                 DependencyStamp(BareSkinAtlasPath),
                 DependencyStamp(PortraitPath),
                 DependencyStamp(MaterialPath),
@@ -1730,6 +1750,7 @@ namespace BarPromenade.Editor
             public Player3DV2ManifestFaceAtlas face_atlas;
             public Player3DV2ManifestTextureBinding[] texture_bindings;
             public Player3DV2ManifestBareSkinAtlas bare_skin_atlas;
+            public CharacterSurfaceBinding[] surface_bindings;
         }
 
         [Serializable]

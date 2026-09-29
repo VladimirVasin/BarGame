@@ -21,6 +21,7 @@ tools/player_detailed_model.py text eol=lf
 tools/player_face_paint.py text eol=lf
 tools/player_hand_frames.py text eol=lf
 tools/player_jacket_cloth.py text eol=lf
+tools/player_body_hair_surfaces.py text eol=lf
 
 # Configure UnityYAMLMerge as the `unityyamlmerge` driver in local Git config.
 [attr]unity-yaml text eol=lf merge=unityyamlmerge
