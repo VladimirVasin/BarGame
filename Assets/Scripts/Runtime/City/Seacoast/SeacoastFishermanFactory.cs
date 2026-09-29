@@ -20,6 +20,8 @@ namespace BarPromenade
     public static class SeacoastFishermanFactory
     {
         public const string RuntimeRootName = "Seacoast Fisherman";
+        public const string PipeMountAnchorName = "ANCHOR_FishermanPipeMount";
+        public const string ExhaleAnchorName = "ANCHOR_FishermanExhale";
 
         /// <summary>Trigger box dimensions mirrored from the watchman's
         /// talk stub.</summary>
@@ -122,6 +124,11 @@ namespace BarPromenade
 
             ValidatePassivePresentation(instance);
 
+            Transform pipeMount = CityPedestrianHandProps.FindSocket(registry.ModelRoot, PipeMountAnchorName);
+            Transform exhaleAnchor = CityPedestrianHandProps.FindSocket(registry.ModelRoot, ExhaleAnchorName);
+            if (pipeMount == null || exhaleAnchor == null)
+                throw new InvalidOperationException("The fisherman prefab is missing its painted-mouth attachments.");
+
             var presentation = instance
                 .AddComponent<SeacoastFishermanPresentation>();
             presentation.Initialize(registry, stance);
@@ -140,10 +147,10 @@ namespace BarPromenade
                 CityPedestrianHandProps.Attach(
                     registry,
                     CityPedestrianHandPropId.SmokingPipe);
+            pipeProp.transform.SetParent(pipeMount, false);
 
-            // The pipe. The prefab is validated to carry no light, so
-            // the ember, its glow and the plume are raised here and
-            // driven from the loop the presentation is already running.
+            // The passive pipe contributes its coal; the shared smoking
+            // effect exhales from the live mouth after the authored draw.
             // The ember anchor and renderer come off the pipe prop. The
             // renderer is REQUIRED here even though the effect itself
             // tolerates a null: a pipe with no coal to tint is a renamed
@@ -165,7 +172,8 @@ namespace BarPromenade
                 presentation,
                 pipeProp.RequireAnchor(
                     CityPedestrianHandProps.PipeEmberAnchorName),
-                pipeEmber);
+                pipeEmber,
+                exhaleAnchor);
 
             // And the line, from the live rod tip down to the water the
             // coast plan measured. The float rides the sea's swell -

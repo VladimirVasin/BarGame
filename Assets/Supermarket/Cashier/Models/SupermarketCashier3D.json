@@ -1,6 +1,6 @@
 {
   "generator": "tools/build-supermarket-cashier-3d-model.py",
-  "generator_version": "1.0.0",
+  "generator_version": "2.0.0",
   "blender_version": "5.0.1",
   "design_id": "supermarket_cashier_v1",
   "display_name": "Supermarket Cashier",
@@ -15,21 +15,21 @@
   "forward_axis": "-Y",
   "anatomical_left_axis": "+X",
   "mesh_count": 40,
-  "triangle_count": 1244,
+  "triangle_count": 6828,
   "triangle_budget": [
-    1100,
-    2200
+    4500,
+    8000
   ],
   "pool_eligible": false,
   "pivot_names": [],
   "bounds_min": [
-    -0.804029,
-    -0.216191,
+    -0.770942,
+    -0.218566,
     0.0
   ],
   "bounds_max": [
-    0.806029,
-    0.134829,
+    0.772942,
+    0.137239,
     1.75
   ],
   "material_asset": "Assets/Player3D/Materials/Player3DLit.mat",
@@ -39,7 +39,7 @@
   "rigidbodies": false,
   "animation_count": 0,
   "animations": [],
-  "build_signature": "e478fa5c19e2a5fb6e6f2d041153c1ae445c029a4081fe83c73f28031d067678",
+  "build_signature": "2806e9e0c72938d534782d9d67a67f6dec8c1a1d6d5cf64f56786a9b32a58045",
   "neck_design": "fixed_human_v1",
   "neck_segment_count": 0,
   "neck_rest_length_m": 0.127883,
@@ -658,8 +658,8 @@
         0.032,
         1.0
       ],
-      "vertices": 8,
-      "triangles": 12
+      "vertices": 80,
+      "triangles": 156
     },
     {
       "name": "CLO_NameTag",
@@ -686,8 +686,8 @@
         0.355,
         1.0
       ],
-      "vertices": 8,
-      "triangles": 12
+      "vertices": 98,
+      "triangles": 192
     },
     {
       "name": "CLO_ShoeSole.L",
@@ -700,8 +700,8 @@
         0.017,
         1.0
       ],
-      "vertices": 8,
-      "triangles": 12
+      "vertices": 24,
+      "triangles": 44
     },
     {
       "name": "CLO_ShoeSole.R",
@@ -714,8 +714,8 @@
         0.017,
         1.0
       ],
-      "vertices": 8,
-      "triangles": 12
+      "vertices": 24,
+      "triangles": 44
     },
     {
       "name": "CLO_TightCollar",
@@ -742,8 +742,8 @@
         0.1,
         1.0
       ],
-      "vertices": 8,
-      "triangles": 12
+      "vertices": 98,
+      "triangles": 192
     },
     {
       "name": "CLO_VestButton.01",
@@ -784,8 +784,8 @@
         0.135,
         1.0
       ],
-      "vertices": 8,
-      "triangles": 12
+      "vertices": 230,
+      "triangles": 448
     },
     {
       "name": "CLO_VestFront.R",
@@ -798,8 +798,8 @@
         0.18,
         1.0
       ],
-      "vertices": 8,
-      "triangles": 12
+      "vertices": 230,
+      "triangles": 448
     },
     {
       "name": "FACE_Brow.L",
@@ -952,8 +952,8 @@
         0.032,
         1.0
       ],
-      "vertices": 8,
-      "triangles": 12
+      "vertices": 60,
+      "triangles": 108
     },
     {
       "name": "GEO_Foot.R",
@@ -966,8 +966,8 @@
         0.032,
         1.0
       ],
-      "vertices": 8,
-      "triangles": 12
+      "vertices": 60,
+      "triangles": 108
     },
     {
       "name": "GEO_Forearm.L",
@@ -980,8 +980,8 @@
         0.355,
         1.0
       ],
-      "vertices": 24,
-      "triangles": 44
+      "vertices": 144,
+      "triangles": 284
     },
     {
       "name": "GEO_Forearm.R",
@@ -994,8 +994,8 @@
         0.355,
         1.0
       ],
-      "vertices": 24,
-      "triangles": 44
+      "vertices": 144,
+      "triangles": 284
     },
     {
       "name": "GEO_Hand.L",
@@ -1008,8 +1008,8 @@
         0.415,
         1.0
       ],
-      "vertices": 8,
-      "triangles": 12
+      "vertices": 176,
+      "triangles": 332
     },
     {
       "name": "GEO_Hand.R",
@@ -1022,8 +1022,8 @@
         0.415,
         1.0
       ],
-      "vertices": 8,
-      "triangles": 12
+      "vertices": 176,
+      "triangles": 332
     },
     {
       "name": "GEO_Head",
@@ -1036,8 +1036,8 @@
         0.415,
         1.0
       ],
-      "vertices": 62,
-      "triangles": 120
+      "vertices": 200,
+      "triangles": 396
     },
     {
       "name": "GEO_Neck",
@@ -1064,8 +1064,8 @@
         0.09,
         1.0
       ],
-      "vertices": 8,
-      "triangles": 12
+      "vertices": 120,
+      "triangles": 236
     },
     {
       "name": "GEO_Shin.L",
@@ -1078,8 +1078,8 @@
         0.09,
         1.0
       ],
-      "vertices": 24,
-      "triangles": 44
+      "vertices": 144,
+      "triangles": 284
     },
     {
       "name": "GEO_Shin.R",
@@ -1092,8 +1092,8 @@
         0.09,
         1.0
       ],
-      "vertices": 24,
-      "triangles": 44
+      "vertices": 144,
+      "triangles": 284
     },
     {
       "name": "GEO_Thigh.L",
@@ -1106,8 +1106,8 @@
         0.09,
         1.0
       ],
-      "vertices": 24,
-      "triangles": 44
+      "vertices": 144,
+      "triangles": 284
     },
     {
       "name": "GEO_Thigh.R",
@@ -1120,8 +1120,8 @@
         0.09,
         1.0
       ],
-      "vertices": 24,
-      "triangles": 44
+      "vertices": 144,
+      "triangles": 284
     },
     {
       "name": "GEO_Thumb.L",
@@ -1134,8 +1134,8 @@
         0.3,
         1.0
       ],
-      "vertices": 8,
-      "triangles": 12
+      "vertices": 32,
+      "triangles": 60
     },
     {
       "name": "GEO_Thumb.R",
@@ -1148,8 +1148,8 @@
         0.3,
         1.0
       ],
-      "vertices": 8,
-      "triangles": 12
+      "vertices": 32,
+      "triangles": 60
     },
     {
       "name": "GEO_Torso",
@@ -1162,8 +1162,8 @@
         0.355,
         1.0
       ],
-      "vertices": 16,
-      "triangles": 24
+      "vertices": 304,
+      "triangles": 596
     },
     {
       "name": "GEO_UpperArm.L",
@@ -1176,8 +1176,8 @@
         0.355,
         1.0
       ],
-      "vertices": 24,
-      "triangles": 44
+      "vertices": 144,
+      "triangles": 284
     },
     {
       "name": "GEO_UpperArm.R",
@@ -1190,8 +1190,8 @@
         0.355,
         1.0
       ],
-      "vertices": 24,
-      "triangles": 44
+      "vertices": 144,
+      "triangles": 284
     },
     {
       "name": "HAIR_FlatCombover",
@@ -1204,8 +1204,8 @@
         0.085,
         1.0
       ],
-      "vertices": 8,
-      "triangles": 12
+      "vertices": 120,
+      "triangles": 236
     }
   ]
 }

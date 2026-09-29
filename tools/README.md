@@ -128,16 +128,18 @@ Install Python packages: `python -m pip install Pillow==12.3.0 numpy==2.4.4`.
 `BP_BLENDER`/`--blender` selects another installation of the same pinned build.
 The native launcher locates pinned MSVC/SDK versions.
 
-Run the common launcher from the repository root with expected outputs;
-arguments after `--` belong to the generator:
+Run from the repository root; arguments after `--` belong to the generator:
 
 ```powershell
-python tools/run-blender.py tools/build-city-pedestrian-3d-model.py --expect Assets/Pedestrians/Models/CityPedestrian3D.fbx --expect Assets/Pedestrians/Models/CityPedestrian3D.json -- --archetype lampshade --no-preview
+python tools/run-blender.py tools/build-ordinary-bartender-3d-model.py --validate-only -- --validate-only
 ```
 
-The launcher checks Python/Blender pins, resets startup, propagates exceptions
-as nonzero exits and verifies refreshed/nonempty outputs and valid JSON.
-For supported generators, pass `--validate-only` to launcher and generator.
+The launcher checks pins/startup/errors and fresh `--expect` files/JSON.
+Supported validators take `--validate-only` on launcher and generator.
+Ordinary: `principal_npc_detail.py` (fish/mother), `service_npc_detail.py`
+(cashier/driver), ordinary bartender. `npc_detail_geometry.py` shares shapes;
+`npc_detail_atlas.py` supplies neutral cloth/leather/hair. Cashier keeps his
+atlas; bizarre variants stay.
 
 For generators with output-directory flags, repeat
 `--stage-output=--model-dir=Assets/path` for model/source/texture/animation outputs.

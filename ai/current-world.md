@@ -814,8 +814,7 @@ The vertical slice contains:
   rigged design uses
   `NpcHumanV2`, the Hero V2 31-bone body core and compatible A-pose Avatar from
   `Assets/Player3D/V2/Models/PlayerCharacter3DV2.fbx`, with a common
-  `0.835 m` rest pelvis. The five pooled and nine ordinary staged model
-  manifests plus the `37`-clip `CityPedestrianLocomotion` bank use `4.0.0`.
+  `0.835 m` rest pelvis. The `53`-clip `CityPedestrianLocomotion` bank uses `4.5.2`.
   The four Mountain Road cafe models and their separate `10`-clip bank use
   `4.5.2`; the shelter trio and dedicated three-loop bank use `4.2.0`.
   Nothing an NPC holds is part of a body model. The nine hand props
@@ -829,25 +828,30 @@ The vertical slice contains:
   `SOCKET_Cigarette.R`, `SOCKET_Mouth`) only by the staged roles that need
   them; pooled walkers and bar patrons attach nothing, and the laid grave
   bouquet is the same prefab placed on the slab. The six prop-bearing
-  bodies lost their skinned prop parts (babushka `1,692`, mourner `1,712`,
-  fisherman `892`, weigher `2,160`, cafe woman `2,188`, attendant `1,972`
-  triangles) and the babushka/mourner/fisherman floors dropped to
-  `1650` / `1600` / `800` in the generator and in C# together.
-  The active bartender manifest uses `3.1.0`, while the retained six-armed
-  bartender and bus-driver manifests use `2.0.0`; the cashier generator
-  owns the active `1.0.0` normal output (`1.75 m`, `40` meshes / `1,244`
-  triangles) and the retained `2.2.0` Watcher output (`2.05 m`, `44` /
-  `1,588`) over one shared `256 px` garment-detail atlas. The generated FBXs were
-  reimported and every production prefab/provider output rebuilt; runtime
-  therefore consumes the replaced models, not legacy prefabs behind revised
-  authoring data. Every modular `SkinnedMeshRenderer` is governed by
+  bodies exclude their skinned prop parts. The accepted `2026-09-29` ordinary
+  refinement shapes anatomy, separate fingers, clothes and shoes on five models:
+  fisherman `45` meshes / `7,760` triangles; mother `49` / `7,872`;
+  bartender `75` / `7,428`; cashier `40` / `6,828`; driver `48` / `6,876`.
+  Fisherman/mother retain generator `4.5.2`; bartender uses `4.0.0`, cashier
+  `2.0.0`, driver `3.0.0`. Four share the palette-neutral `256 px`
+  `OrdinaryCharacterDetailAtlas`; the cashier retains his own garment atlas.
+  The mother's original expression grid remains, with its surface ahead of
+  the skull. Shared rig/sockets remain; both fishing clips bring the left grip closer.
+  Fisherman grips the rod with curled fingers; sleeves stay separate, the small reel sits below.
+  PNG features cover the shaped
+  head; fitted 3D moustache/beard/small hollow pipe and exhale meet the raised mouth. The closed
+  hood clears the skull. Ember/light show
+  only on inhale; shared mouth exhale follows clip phase. PNG faces are the Normal/default standard;
+  remaining solid Normal features await migration.
+  The inactive six-armed bartender (`2.0.0`) and Watcher cashier (`2.2.0`,
+  `2.05 m`, `44` meshes / `1,588` triangles) remain unchanged.
+  Every modular `SkinnedMeshRenderer` is governed by
   `NpcSkinnedMeshCullingGuard`: the seven humanoid authoring pipelines serialize
   dynamic bounds, and the six registry families reassert that contract once
   when an instance wakes. Clip-driven limbs and procedural bones therefore
   cannot be frustum-culled by the small A-pose boxes imported from the separate
-  model FBXs. The other special active models include the ordinary two-armed
-  `39`-mesh/`1,136`-triangle full-body `1.75 m` bartender and the
-  `48`-mesh/`1,496`-triangle driver. This is a shared adult anatomical substrate,
+  model FBXs. The ordinary two-armed bartender remains `1.75 m`.
+  This is a shared adult anatomical substrate,
   not a flattening of character identity: the mouthless Long-Arm, kettle and
   hopper silhouettes remain, the inactive legacy bartender alone keeps six
   arms, and the driver keeps his horizontal eyes. The active cashier keeps the same uniform, face, blink
@@ -2180,7 +2184,7 @@ The vertical slice contains:
   skirting sections bury their rear and bottom faces `3 mm` into the wall/floor
   and meet without coplanar corner overlap. Its
   decorative checkout is staffed by `supermarket_cashier_v1` — a passive
-  ordinary-proportioned `1.75 m`, `40`-mesh / `1,244`-triangle 3D clerk on the
+  ordinary-proportioned `1.75 m`, `40`-mesh / `6,828`-triangle 3D clerk on the
   shared `NpcHumanV2` 31-bone Hero V2 Avatar at a `0.835 m` rest pelvis. He keeps the former uniform, detail atlas,
   attentive face, planted hands and hunch, but his ordinary neck never scales:
   only the eyes and head follow the hero through a bounded `28°` turn while
@@ -2725,7 +2729,7 @@ The vertical slice contains:
   anchor. `BarBartenderProvider` selects the rebuilt
   `Assets/Bar/Bartender/Prefabs/BarBartenderOrdinary.prefab` and retains the
   former six-armed prefab only as an inactive legacy reference. The active
-  `1.75 m`, `39`-mesh / `1,136`-triangle ordinary two-armed publican wears a
+  `1.75 m`, `75`-mesh / `7,428`-triangle ordinary two-armed publican wears a
   dark-green waistcoat, rolled sleeves and apron. It reuses all four
   `CafeAttendant*` service clips, while counter locomotion uses a deterministic
   copy of the compatible Hero V2 `Walk` cycle with its exported root paths

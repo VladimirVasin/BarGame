@@ -88,7 +88,7 @@ WATCHER_VARIANT = CashierVariant(
 
 NORMAL_VARIANT = CashierVariant(
     key="normal",
-    generator_version="1.0.0",
+    generator_version="2.0.0",
     design_id="supermarket_cashier_v1",
     display_name="Supermarket Cashier",
     output_stem="SupermarketCashier3D",

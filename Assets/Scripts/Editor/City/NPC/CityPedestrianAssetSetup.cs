@@ -130,7 +130,8 @@ namespace BarPromenade.Editor
         /// </summary>
         public static readonly string[] DetailAtlasPaths =
         {
-            KettleHatDetailAtlasPath
+            KettleHatDetailAtlasPath,
+            OrdinaryCharacterDetailAtlas.AssetPath
         };
 
         // The detail atlas contract, mirrored from the Hero V2 clothing
@@ -461,16 +462,16 @@ namespace BarPromenade.Editor
                 "FishermanTrudge",
                 8f,
                 1.5f,
-                // 800 since 2026-09-05: rod and pipe left the body
-                // (1052 -> 892 triangles). Compared exactly against the
-                // generator's ArchetypeSpec.
-                800,
-                2000,
+                // The body retains separate hand props and now shares
+                // the principal ordinary cast's shaped garment budget.
+                4500,
+                8000,
                 isStaged: true,
                 ambientIdleClipName: "FishermanStreetIdle",
                 ambientWalkClipName: "FishermanStreetWalk",
                 ambientIdleDuration: 2f,
-                ambientWalkDuration: 1f),
+                ambientWalkDuration: 1f,
+                detailAtlasPath: OrdinaryCharacterDetailAtlas.AssetPath),
             // The park chess player: the idle slot carries the brooding
             // loop and the walk slot a park trudge kept for a later
             // pass. Staged like the fisherman — authored with the shared
@@ -1754,6 +1755,7 @@ namespace BarPromenade.Editor
             isBuilding = true;
             try
             {
+                OrdinaryCharacterDetailAtlas.Import();
                 EnsureFolderForAsset(descriptor.PrefabPath);
                 AssetDatabase.ImportAsset(
                     PlayerModelPath,
@@ -2447,6 +2449,13 @@ namespace BarPromenade.Editor
                 animationManifest);
         }
 
+        public static void ValidateLakeFishermanOrThrow()
+        {
+            PedestrianDescriptor descriptor = Descriptors.Single(candidate =>
+                candidate.DesignId == SeacoastFishermanProvider.DesignId);
+            ValidateDescriptor(descriptor, LoadAndValidateAnimationManifest());
+        }
+
         public static void ValidateOrThrow()
         {
             CityPedestrianAnimationManifest animationManifest =
@@ -2512,6 +2521,7 @@ namespace BarPromenade.Editor
             ValidateCoinRigBindings(prefab, registry, descriptor);
             ValidateKettleRigBindings(prefab, registry, descriptor);
             ValidateDetailAtlasBindings(registry, descriptor, manifest);
+            CityPedestrianFaceAtlas.Validate(registry, manifest.face_atlas);
             ValidateWheelchairBindings(prefab, registry, descriptor);
             if (descriptor.IsWheelchair)
             {
@@ -3012,11 +3022,9 @@ namespace BarPromenade.Editor
         }
 
         /// <summary>
-        /// The kettle design's two anchors, exactly as the prefab build
-        /// will make them: a pivot on the head that the lid and knob are
-        /// re-skinned to, and a spout-mouth anchor on the head oriented
-        /// along the spout. Every named part has to exist, because the
-        /// build measures them off the imported meshes.
+        /// Authored anchors are explicit: the fisherman's painted mouth,
+        /// or the kettle's lid pivot and spout. Referenced mesh parts must
+        /// exist because the kettle build measures their imported geometry.
         /// </summary>
         private static void ValidateRigAnchors(
             PedestrianDescriptor descriptor,
@@ -3026,6 +3034,14 @@ namespace BarPromenade.Editor
             CityPedestrianManifestRigAnchor[] anchors =
                 manifest.rig_anchors ??
                 Array.Empty<CityPedestrianManifestRigAnchor>();
+            if (descriptor.ModelPath == LakeFishermanModelPath)
+            {
+                if (anchors.Length != 1)
+                    throw new InvalidOperationException("The fisherman requires one authored mouth-exhale anchor.");
+                RequireRigAnchor(anchors[0], SeacoastFishermanFactory.ExhaleAnchorName,
+                    RigAnchorKindAnchor, Array.Empty<string>(), string.Empty, partNames);
+                return;
+            }
             if (!descriptor.CarriesBoilingKettle)
             {
                 if (anchors.Length != 0)
@@ -3595,12 +3611,14 @@ namespace BarPromenade.Editor
                 pedestrianTransforms,
                 "root",
                 "pedestrian");
-            if (pedestrianBoneRoot
-                    .GetComponentsInChildren<Transform>(true).Length !=
-                manifest.bones.Length)
+            var expectedRigNames = new HashSet<string>(manifest.bones.Select(bone => bone.name), StringComparer.Ordinal);
+            if (descriptor.ModelPath == LakeFishermanModelPath)
+                expectedRigNames.Add(SeacoastFishermanFactory.ExhaleAnchorName);
+            if (!expectedRigNames.SetEquals(pedestrianBoneRoot
+                    .GetComponentsInChildren<Transform>(true).Select(bone => bone.name)))
             {
                 throw new InvalidOperationException(
-                    "Pedestrian armature has added or missing Generic bones.");
+                    "Pedestrian armature has added or missing Generic bones or declared anchors.");
             }
 
             Renderer[] renderers =
@@ -3911,6 +3929,8 @@ namespace BarPromenade.Editor
                         manifest.texture_bindings[0],
                         renderersByName);
                 }
+
+                CityPedestrianFaceAtlas.Configure(registry, manifest.face_atlas);
 
                 if (descriptor.CarriesBoilingKettle)
                 {
@@ -5029,7 +5049,8 @@ namespace BarPromenade.Editor
 
         internal static bool IsVariantPalette(string paletteName)
         {
-            return !string.Equals(
+            return !paletteName.EndsWith("_face_atlas", StringComparison.Ordinal) &&
+                   !string.Equals(
                        paletteName,
                        "void",
                        StringComparison.Ordinal) &&
@@ -5274,6 +5295,7 @@ namespace BarPromenade.Editor
             public string[] signature_effects;
             public CityPedestrianManifestRigAnchor[] rig_anchors;
             public CityPedestrianManifestTextureBinding[] texture_bindings;
+            public CityPedestrianFaceAtlas.Source face_atlas;
         }
 
         [Serializable]

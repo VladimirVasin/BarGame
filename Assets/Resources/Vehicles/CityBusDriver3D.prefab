@@ -407,12 +407,13 @@ MonoBehaviour:
   rightShin: {fileID: 4237763466356760500}
   rightFoot: {fileID: 3866326308840634582}
   localBounds:
-    m_Center: {x: -0.0010001659, y: 0.8749999, z: 0.051059976}
-    m_Extent: {x: 0.7795869, y: 0.8749999, z: 0.16513124}
-  sourceTriangleCount: 1496
-  sourceGeneratorVersion: 2.0.0
+    m_Center: {x: -0.0010001659, y: 0.8749999, z: 0.044700205}
+    m_Extent: {x: 0.77194154, y: 0.8749999, z: 0.173866}
+  sourceTriangleCount: 6876
+  sourceGeneratorVersion: 3.0.0
   designId: long_eyes_driver_v1
-  buildSignature: 0a89fde1cc08b90920e5f578bf3e91aa098a98c35f2c7d89d56b0569803a68ca
+  buildSignature: 94d51ac4b1c1b634840a724cd1b310a3316c4f86e9a8132d494ba36aadba8e27
+  detailAtlas: {fileID: 2800000, guid: 2436daf1ffda4e7d9bf5f515078b37fb, type: 3}
 --- !u!1001 &4004045093963583386
 PrefabInstance:
   m_ObjectHideFlags: 0

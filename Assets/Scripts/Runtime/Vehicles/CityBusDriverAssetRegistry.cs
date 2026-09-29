@@ -48,6 +48,10 @@ namespace BarPromenade
             Shader.PropertyToID("_BaseColor");
         private static readonly int LegacyColorId =
             Shader.PropertyToID("_Color");
+        private static readonly int BaseMapId =
+            Shader.PropertyToID("_BaseMap");
+        private static readonly int LegacyMapId =
+            Shader.PropertyToID("_MainTex");
 
         [SerializeField] private Animator animator;
         [SerializeField] private Transform modelRoot;
@@ -89,6 +93,7 @@ namespace BarPromenade
         [SerializeField] private string sourceGeneratorVersion;
         [SerializeField] private string designId;
         [SerializeField] private string buildSignature;
+        [SerializeField] private Texture2D detailAtlas;
 
         public Animator Animator => animator;
         public Transform ModelRoot => modelRoot;
@@ -125,6 +130,7 @@ namespace BarPromenade
         public string SourceGeneratorVersion => sourceGeneratorVersion;
         public string DesignId => designId;
         public string BuildSignature => buildSignature;
+        public Texture2D DetailAtlas => detailAtlas;
 
         public static GameObject LoadPrefab()
         {
@@ -161,7 +167,8 @@ namespace BarPromenade
             int configuredSourceTriangleCount,
             string configuredSourceGeneratorVersion,
             string configuredDesignId,
-            string configuredBuildSignature)
+            string configuredBuildSignature,
+            Texture2D configuredDetailAtlas = null)
         {
             animator = configuredAnimator;
             modelRoot = configuredModelRoot;
@@ -195,6 +202,7 @@ namespace BarPromenade
                 string.Empty;
             designId = configuredDesignId ?? string.Empty;
             buildSignature = configuredBuildSignature ?? string.Empty;
+            detailAtlas = configuredDetailAtlas;
             NpcSkinnedMeshCullingGuard.EnableDynamicBounds(modelRoot);
             ApplyBaseColors();
         }
@@ -214,6 +222,11 @@ namespace BarPromenade
                 binding.Renderer.GetPropertyBlock(properties);
                 properties.SetColor(BaseColorId, binding.BaseColor);
                 properties.SetColor(LegacyColorId, binding.BaseColor);
+                if (detailAtlas != null)
+                {
+                    properties.SetTexture(BaseMapId, detailAtlas);
+                    properties.SetTexture(LegacyMapId, detailAtlas);
+                }
                 binding.Renderer.SetPropertyBlock(properties);
                 properties.Clear();
             }

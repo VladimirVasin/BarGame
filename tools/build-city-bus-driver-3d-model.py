@@ -24,6 +24,10 @@ import os
 from pathlib import Path
 import sys
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from service_npc_detail import geometry_for, validate_hands
+import npc_detail_atlas
+
 try:
     import bpy
     from mathutils import Vector
@@ -33,13 +37,13 @@ except ImportError as error:  # pragma: no cover - Blender-only entry point.
     ) from error
 
 
-GENERATOR_VERSION = "2.0.0"
+GENERATOR_VERSION = "3.0.0"
 DESIGN_ID = "long_eyes_driver_v1"
 DISPLAY_NAME = "Long-Eyed Route Driver"
 SEED = 241103
 CANONICAL_HEIGHT = 1.75
-MIN_TRIANGLES = 900
-MAX_TRIANGLES = 1800
+MIN_TRIANGLES = 4500
+MAX_TRIANGLES = 8000
 SHARED_MATERIAL_ASSET = "Assets/Player3D/Materials/Player3DLit.mat"
 SIGNATURE_ANATOMY = ("long_horizontal_eyes",)
 
@@ -127,6 +131,7 @@ def parse_args() -> argparse.Namespace:
         ),
     )
     parser.add_argument("--no-preview", action="store_true")
+    parser.add_argument("--validate-only", action="store_true")
     arguments = sys.argv[sys.argv.index("--") + 1 :] if "--" in sys.argv else []
     config = parser.parse_args(arguments)
     for field_name in ("output", "fbx", "manifest", "preview"):
@@ -137,6 +142,16 @@ def parse_args() -> argparse.Namespace:
 class DriverBuilder(base.PedestrianBuilder):
     def __init__(self):
         super().__init__(spec=None)
+
+    def add_part(self, name, geometry, bone_name, role, palette_name, origin=None):
+        obj = super().add_part(name, geometry_for(base, name, geometry),
+                               bone_name, role, palette_name, origin)
+        kind = ("hair" if palette_name == "hair" else
+                "leather" if palette_name in {"leather", "sole"} else
+                "skin_white" if palette_name.startswith("skin") or
+                    palette_name in {"eye", "pupil", "button"} else "cloth")
+        npc_detail_atlas.apply_uv(obj, kind)
+        return obj
 
     def build(self):
         self.reset_scene()
@@ -167,6 +182,8 @@ class DriverBuilder(base.PedestrianBuilder):
         self.build_body()
         self.build_face()
         self.build_uniform()
+        npc_detail_atlas.attach_preview(material,
+            npc_detail_atlas.publish(npc_detail_atlas.ASSET_PATH))
         self.configure_scene_metadata()
         return self.result
 
@@ -691,6 +708,7 @@ def validate_driver_result(result):
     """Standalone NpcHumanV2 contract check for the bespoke driver."""
 
     bpy.context.view_layer.update()
+    validate_hands(result)
     errors: list[str] = []
 
     bones = list(result.rig.data.bones)
@@ -900,6 +918,7 @@ def validate_driver_result(result):
         "anatomy_standard": base.NPC_ANATOMY_STANDARD,
         "rest_pelvis_height_m": base.NPC_PELVIS_HEIGHT,
         "signature_anatomy": list(SIGNATURE_ANATOMY),
+        "detail_atlas_sha256": hashlib.sha256(npc_detail_atlas.png_bytes()).hexdigest(),
         "skeleton": [
             {
                 "name": spec.name,
@@ -996,6 +1015,8 @@ def write_manifest(path: Path, result, report) -> None:
         "forward_axis": "-Y",
         "anatomical_left_axis": "+X",
         "mesh_count": report.mesh_count,
+        "texture_bindings": [npc_detail_atlas.texture_binding(
+            npc_detail_atlas.ASSET_PATH, (part.obj for part in result.parts))],
         "triangle_count": report.triangle_count,
         "bounds_min": list(report.bounds_min),
         "bounds_max": list(report.bounds_max),
@@ -1025,6 +1046,7 @@ def write_manifest(path: Path, result, report) -> None:
                 "role": part.role,
                 "bone": part.bone,
                 "palette_name": part.palette_name,
+                "atlas_region": part.obj.get("bp_atlas_region", ""),
                 "base_color": [
                     base.stable_float(component) for component in part.color
                 ],
@@ -1046,6 +1068,12 @@ def main() -> None:
     config = parse_args()
     result = DriverBuilder().build()
     report = validate_driver_result(result)
+    if config.validate_only:
+        expected = json.loads(config.manifest.read_text(encoding="utf-8"))
+        if expected["build_signature"] != report.build_signature:
+            raise RuntimeError("Driver source differs from its published manifest")
+        print(f"CITY BUS DRIVER SOURCE VALID: {report.triangle_count} triangles, {report.build_signature}")
+        return
     if not config.no_preview:
         render_preview(config.preview, result)
     base.export_fbx(config.fbx, result)

@@ -10,8 +10,8 @@
   "emissive": false,
   "colliders": false,
   "mesh_count": 33,
-  "triangle_count": 840,
-  "build_signature": "0e2e5386feba22dd92906ae5360a689a62f58f9eaed159a5822ce393cbb58ec9",
+  "triangle_count": 1318,
+  "build_signature": "1c982e335dd83843b81c1011f38d502d3d878c27738fd31df8c6d6acda1dc0fd",
   "props": [
     {
       "id": "carpet_beater",
@@ -299,11 +299,11 @@
         1.033
       ],
       "mesh_count": 5,
-      "triangle_count": 100,
+      "triangle_count": 416,
       "bounds_min": [
-        -0.772733,
+        -0.814031,
         -1.918258,
-        0.976181
+        0.983842
       ],
       "bounds_max": [
         -0.448265,
@@ -360,8 +360,8 @@
             0.13,
             1.0
           ],
-          "vertices": 8,
-          "triangles": 12
+          "vertices": 178,
+          "triangles": 328
         },
         {
           "name": "ACC_RodTip",
@@ -400,7 +400,7 @@
         1.538
       ],
       "mesh_count": 3,
-      "triangle_count": 60,
+      "triangle_count": 222,
       "bounds_min": [
         -0.004659,
         -0.250967,
@@ -409,7 +409,7 @@
       "bounds_max": [
         0.045939,
         -0.118542,
-        1.5259
+        1.522049
       ],
       "parts": [
         {
@@ -422,8 +422,8 @@
             0.055,
             1.0
           ],
-          "vertices": 16,
-          "triangles": 28
+          "vertices": 32,
+          "triangles": 60
         },
         {
           "name": "ACC_PipeEmber",
@@ -435,8 +435,8 @@
             0.075,
             1.0
           ],
-          "vertices": 8,
-          "triangles": 12
+          "vertices": 81,
+          "triangles": 142
         },
         {
           "name": "ACC_PipeStem",

@@ -42,8 +42,15 @@ namespace BarPromenade.Tests.EditMode
                 active.DesignId,
                 Is.EqualTo(BarBartenderProvider.DesignId));
             Assert.That(active.BuildSignature, Has.Length.EqualTo(64));
-            Assert.That(active.SourceTriangleCount, Is.InRange(900, 2600));
-            Assert.That(active.Renderers.Count, Is.InRange(28, 58));
+            Assert.That(active.SourceTriangleCount, Is.InRange(4500, 8000));
+            Assert.That(active.Renderers.Count, Is.InRange(60, 110));
+            Assert.That(active.DetailAtlas, Is.Not.Null);
+            Assert.That(active.DetailAtlasRenderers.Count, Is.EqualTo(active.Renderers.Count));
+            foreach (string side in new[] { "L", "R" })
+                for (int finger = 0; finger < 4; finger++)
+                    Assert.That(active.RendererBindings.Any(binding =>
+                        binding.RendererName == $"GEO_Finger{finger}.{side}" &&
+                        binding.BoneName == $"hand.{side}"), Is.True);
             Assert.That(
                 active.RendererBindings.Count,
                 Is.EqualTo(active.Renderers.Count));

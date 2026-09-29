@@ -34,6 +34,47 @@ namespace BarPromenade.Tests.EditMode
             "Assets/Resources/Player/Player3DV2.prefab";
 
         [Test]
+        public void SeatedLowerBody_ReimportPreservesMeshDataAndTangentFrames()
+        {
+            const string path = "Assets/Resources/" + HomeToiletSeatedAppearance.ModelResourcePath + ".fbx";
+            Dictionary<long, string> first = null;
+            for (int pass = 0; pass < 2; pass++)
+            {
+                AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceUpdate | ImportAssetOptions.ForceSynchronousImport);
+                var snapshot = new Dictionary<long, string>();
+                foreach (UnityEngine.Object asset in AssetDatabase.LoadAllAssetsAtPath(path))
+                {
+                    if (!(asset is Mesh mesh)) continue;
+                    Assert.That(AssetDatabase.TryGetGUIDAndLocalFileIdentifier(mesh, out string guid, out long id), Is.True);
+                    Assert.That(guid, Is.EqualTo(AssetDatabase.AssetPathToGUID(path)));
+                    // Includes topology, UVs, skin weights, bind poses and all
+                    // Lowered blendshape deltas, not just the dependency key.
+                    snapshot.Add(id, EditorJsonUtility.ToJson(mesh));
+                    Vector3[] normals = mesh.normals;
+                    Vector4[] tangents = mesh.tangents;
+                    Assert.That(tangents.Length, Is.EqualTo(mesh.vertexCount), mesh.name);
+                    for (int i = 0; i < tangents.Length; i++)
+                    {
+                        Vector4 tangent = tangents[i];
+                        Vector3 direction = new Vector3(tangent.x, tangent.y, tangent.z);
+                        Assert.That(float.IsFinite(direction.sqrMagnitude), Is.True, mesh.name);
+                        Assert.That(direction.sqrMagnitude, Is.EqualTo(1f).Within(.001f), mesh.name);
+                        Assert.That(Mathf.Abs(tangent.w), Is.EqualTo(1f).Within(.001f), mesh.name);
+                        Assert.That(Vector3.Dot(normals[i].normalized, direction), Is.EqualTo(0f).Within(.001f), mesh.name);
+                    }
+                }
+                Assert.That(snapshot, Is.Not.Empty);
+                if (first == null) first = snapshot;
+                else
+                {
+                    Assert.That(snapshot.Keys, Is.EquivalentTo(first.Keys), "FBX local IDs must survive reimport.");
+                    foreach (var pair in first)
+                        Assert.That(snapshot[pair.Key], Is.EqualTo(pair.Value), "Reimport changed mesh " + pair.Key);
+                }
+            }
+        }
+
+        [Test]
         public void ExplicitV2BuildEntryPoint_RemainsPublicAndCallable()
         {
             Type setup = Type.GetType(

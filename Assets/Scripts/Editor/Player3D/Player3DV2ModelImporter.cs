@@ -11,6 +11,10 @@ namespace BarPromenade.Editor
     /// </summary>
     public sealed class Player3DV2ModelImporter : AssetPostprocessor
     {
+        // Version the mesh postprocess as well as importer settings. Tangent
+        // repair changes the serialized FBX result without changing its .meta.
+        public override uint GetVersion() => 1;
+
         private static readonly ISet<string> LoopingClips =
             new HashSet<string>(StringComparer.Ordinal)
             {

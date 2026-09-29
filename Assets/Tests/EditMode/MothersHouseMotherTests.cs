@@ -146,30 +146,31 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
-        public void SheIsAsDetailedAsTheHeroAndCarriesNoDetailAtlas()
+        public void DetailedClothesKeepTheExpressionSurfaceIndependent()
         {
             CityPedestrianAssetRegistry registry =
                 MothersHouseMotherProvider.Load().StagedPrefab
                     .GetComponent<CityPedestrianAssetRegistry>();
 
-            // The hero is 34 meshes and 1984 triangles. "No less detailed
-            // than the hero" is the whole point of her budget.
             Assert.That(
                 registry.SourceTriangleCount,
-                Is.InRange(1700, 2500));
+                Is.InRange(4500, 8000));
             Assert.That(
                 registry.Renderers.Count,
                 Is.GreaterThanOrEqualTo(34),
                 "Fewer parts than the hero would read as a cheaper figure.");
 
-            // A face atlas and a detail atlas are opposites: full colour
-            // chosen at runtime against grey baked into the UVs. She wears
-            // the first and must not also wear the second.
-            Assert.That(registry.DetailAtlas, Is.Null);
+            Assert.That(registry.DetailAtlas, Is.Not.Null);
             Assert.That(
                 registry.RendererBindings.Any(
                     binding => binding.UsesDetailAtlas),
-                Is.False);
+                Is.True);
+            CityPedestrianRendererBinding face = registry.RendererBindings.Single(
+                binding => binding.RendererName == "GEO_FaceSurface");
+            Assert.That(face.UsesDetailAtlas, Is.False,
+                "Cloth texture must never replace or tint the expression surface.");
+            Assert.That(registry.FaceAtlas.Renderer, Is.SameAs(face.Renderer));
+            Assert.That(registry.FaceAtlas.Texture, Is.Not.SameAs(registry.DetailAtlas));
         }
 
         [Test]

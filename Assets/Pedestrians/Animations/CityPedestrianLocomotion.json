@@ -1182,16 +1182,16 @@
       "ground_min_m": 0.0,
       "ground_max_contact_gap_m": 0.0,
       "animated_local_xz_min_m": [
-        -0.31792,
-        -0.224139
+        -0.316572,
+        -0.219543
       ],
       "animated_local_xz_max_m": [
-        0.347582,
-        0.252474
+        0.358332,
+        0.181444
       ],
       "animated_local_xz_size_m": [
-        0.665502,
-        0.476613
+        0.674903,
+        0.400987
       ]
     },
     {
@@ -1215,16 +1215,16 @@
       "ground_min_m": 0.0,
       "ground_max_contact_gap_m": 0.0,
       "animated_local_xz_min_m": [
-        -0.315872,
-        -0.550093
+        -0.321445,
+        -0.546509
       ],
       "animated_local_xz_max_m": [
-        0.318534,
-        0.475377
+        0.323903,
+        0.471858
       ],
       "animated_local_xz_size_m": [
-        0.634406,
-        1.02547
+        0.645348,
+        1.018366
       ]
     },
     {
@@ -1248,16 +1248,16 @@
       "ground_min_m": 0.0,
       "ground_max_contact_gap_m": 0.0,
       "animated_local_xz_min_m": [
-        -0.362795,
-        -0.224916
+        -0.365267,
+        -0.220188
       ],
       "animated_local_xz_max_m": [
-        0.268114,
-        0.73948
+        0.298537,
+        0.589797
       ],
       "animated_local_xz_size_m": [
-        0.630909,
-        0.964396
+        0.663804,
+        0.809986
       ]
     },
     {
@@ -1281,16 +1281,16 @@
       "ground_min_m": 0.0,
       "ground_max_contact_gap_m": 0.0,
       "animated_local_xz_min_m": [
-        -0.368968,
-        -0.548359
+        -0.371489,
+        -0.546588
       ],
       "animated_local_xz_max_m": [
-        0.273379,
-        0.751827
+        0.303843,
+        0.600437
       ],
       "animated_local_xz_size_m": [
-        0.642347,
-        1.300185
+        0.675332,
+        1.147026
       ]
     },
     {
@@ -1861,5 +1861,5 @@
       ]
     }
   ],
-  "build_signature": "1178e60c84ad29cb30c57bab7fe2fc7972ddb4ed199e278b21571a1c6709ffa8"
+  "build_signature": "ac98df2854f01463e3c5a85e34a704649964ad4c2a9eed4853c594ddc9eae146"
 }

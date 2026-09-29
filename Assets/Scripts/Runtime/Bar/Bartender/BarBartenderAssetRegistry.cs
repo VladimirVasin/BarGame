@@ -123,6 +123,8 @@ namespace BarPromenade
             Shader.PropertyToID("_BaseColor");
         private static readonly int LegacyColorId =
             Shader.PropertyToID("_Color");
+        private static readonly int BaseMapId = Shader.PropertyToID("_BaseMap");
+        private static readonly int MainTexId = Shader.PropertyToID("_MainTex");
 
         [SerializeField] private Animator animator;
         [SerializeField] private Transform modelRoot;
@@ -131,6 +133,8 @@ namespace BarPromenade
         [SerializeField]
         private BarBartenderRendererBinding[] rendererBindings =
             Array.Empty<BarBartenderRendererBinding>();
+        [SerializeField] private Texture2D detailAtlas;
+        [SerializeField] private Renderer[] detailAtlasRenderers = Array.Empty<Renderer>();
 
         [Header("Torso and face")]
         [SerializeField] private Transform pelvis;
@@ -175,6 +179,8 @@ namespace BarPromenade
         public IReadOnlyList<Renderer> Renderers => renderers;
         public IReadOnlyList<BarBartenderRendererBinding>
             RendererBindings => rendererBindings;
+        public Texture2D DetailAtlas => detailAtlas;
+        public IReadOnlyList<Renderer> DetailAtlasRenderers => detailAtlasRenderers;
 
         public Transform Pelvis => pelvis;
         public Transform Spine => spine;
@@ -361,6 +367,13 @@ namespace BarPromenade
             }
         }
 
+        public void ConfigureDetailAtlas(Texture2D texture, Renderer[] surfaces)
+        {
+            detailAtlas = texture;
+            detailAtlasRenderers = surfaces ?? Array.Empty<Renderer>();
+            ApplyBaseColors();
+        }
+
         public void ApplyBaseColors()
         {
             MaterialPropertyBlock properties =
@@ -379,6 +392,12 @@ namespace BarPromenade
                 binding.Renderer.GetPropertyBlock(properties);
                 properties.SetColor(BaseColorId, binding.BaseColor);
                 properties.SetColor(LegacyColorId, binding.BaseColor);
+                if (detailAtlas != null && detailAtlasRenderers != null &&
+                    Array.IndexOf(detailAtlasRenderers, binding.Renderer) >= 0)
+                {
+                    properties.SetTexture(BaseMapId, detailAtlas);
+                    properties.SetTexture(MainTexId, detailAtlas);
+                }
                 binding.Renderer.SetPropertyBlock(properties);
                 properties.Clear();
             }

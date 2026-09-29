@@ -110,9 +110,9 @@ MonoBehaviour:
   anchors:
   - anchorName: ANCHOR_RodTip
     transform: {fileID: 8387362812564402315}
-  sourceTriangleCount: 100
+  sourceTriangleCount: 416
   sourceGeneratorVersion: 4.5.2
-  buildSignature: 0e2e5386feba22dd92906ae5360a689a62f58f9eaed159a5822ce393cbb58ec9
+  buildSignature: 1c982e335dd83843b81c1011f38d502d3d878c27738fd31df8c6d6acda1dc0fd
   paletteVariant: 0
 --- !u!1 &1483039789424296865
 GameObject:

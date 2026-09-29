@@ -30,7 +30,8 @@ namespace BarPromenade.Editor
                 return;
             }
 
-            if (!CityPedestrianAssetSetup.IsDetailAtlasPath(assetPath))
+            if (!CityPedestrianAssetSetup.IsDetailAtlasPath(assetPath) &&
+                !string.Equals(assetPath, CityPedestrianFaceAtlas.FishermanPath, StringComparison.OrdinalIgnoreCase))
             {
                 return;
             }

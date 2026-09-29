@@ -14,7 +14,10 @@ state and `BarDrinkServiceTimeline` remain the source of gameplay truth.
   signature-anatomy overlay.
 - Work clothes: dark-green waistcoat, rolled shirt sleeves, dark apron and a
   service towel. The model also carries the restrained flat cap and moustache
-  already declared by its measured parts.
+  already declared by its measured parts. The accepted `2026-09-29` refinement
+  shapes the torso, limbs and separated fingers; it constructs waistcoat sides,
+  pocket welts, collar, layered cuffs, apron/towel folds and shoe soles without
+  changing the worker's identity or service contacts.
 - Service roles: bottle drinks keep the right-hand bottle / left-hand vessel
   roles. For wine, cognac and vodka he walks to the selected live shelf bottle,
   takes it only at hand contact, carries it to the server-edge preparation
@@ -29,20 +32,23 @@ state and `BarDrinkServiceTimeline` remain the source of gameplay truth.
 ## 2. Model and asset pipeline
 
 - **Tool:** `tools/build-ordinary-bartender-3d-model.py`.
-- **Design:** `bar_bartender_v2`, generator `3.1.0`, anatomy standard
+- **Design:** `bar_bartender_v2`, generator `4.0.0`, anatomy standard
   `NpcHumanV2`, A-pose, full height `1.75 m`, rest pelvis `0.835 m`.
 - **Rig:** the exact Hero V2 Generic Avatar and 31-bone hierarchy from
   `Assets/Player3D/V2/Models/PlayerCharacter3DV2.fbx`.
-- **Measured geometry:** `39` meshes / `1,136` triangles, inside the declared
-  `900-2,600` triangle budget. The manifest declares zero extra arm pairs,
+- **Measured geometry:** `75` meshes / `7,428` triangles, inside the declared
+  `4,500-8,000` triangle budget. The manifest declares zero extra arm pairs,
   colliders, lights and rigidbodies.
 - **Outputs:**
   `Assets/Bar/Bartender/Models/BarBartenderOrdinary3D.{fbx,json}` and the
   Blender source/preview under `ArtSource/Bar/Bartender/`.
 - **Editor setup:** `BarBartenderV2AssetSetup` builds
   `Assets/Bar/Bartender/Prefabs/BarBartenderOrdinary.prefab`, binds the shared
-  `Player3DLit` material and writes its measured data into
-  `BarBartenderAssetRegistry`.
+  `Player3DLit` material and writes measured data into `BarBartenderAssetRegistry`.
+  Its optional atlas binding uses the shared `256 px`
+  `OrdinaryCharacterDetailAtlas`; plain skin/eyes keep their palette, while
+  cloth, leather and hair receive subdued detail. Manifest hashes and UV cells
+  gate import; the legacy asset has no such binding.
 - **Provider:** `Assets/Resources/Bar/BarBartenderProvider.asset` points
   `BartenderPrefab` at the ordinary prefab and retains the old prefab only in
   `LegacyBartenderPrefab`. `BarBartenderWorldBuilder` always instantiates the

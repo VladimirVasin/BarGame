@@ -32,8 +32,8 @@ namespace BarPromenade.Editor
             }
 
             importer.animationType = ModelImporterAnimationType.None;
-            importer.avatarSetup = ModelImporterAvatarSetup.NoAvatar;
-            importer.sourceAvatar = null;
+            // None enforces NoAvatar. Even assigning sourceAvatar=null tries to
+            // change avatarSetup and Unity rejects that for a static model.
             importer.importAnimation = false;
             importer.globalScale = 1f;
             importer.bakeAxisConversion = true;
@@ -51,9 +51,8 @@ namespace BarPromenade.Editor
             // filter against her lips, the attendant's pot against the
             // counter), and a non-readable mesh leaves them only its local
             // box, which for a thin cigarette tilted in its part frame is
-            // centimetres off the tube's ends. Thirty-three meshes of 840
-            // triangles in all — the CPU copy costs nothing worth the
-            // blindness.
+            // centimetres off the tube's ends. These small meshes cost little
+            // to retain on the CPU compared with losing contact validation.
             importer.isReadable = true;
             importer.weldVertices = true;
             importer.keepQuads = false;

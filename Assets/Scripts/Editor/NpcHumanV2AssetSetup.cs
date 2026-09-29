@@ -17,6 +17,7 @@ namespace BarPromenade.Editor
 
         public static bool IsAnyPipelineBuilding =>
             isBuilding ||
+            PrincipalNormalNpcAssetSetup.IsBuilding ||
             CityPedestrianAssetSetup.IsBuilding ||
             CityArchShelterResidentAssetSetup.IsBuilding ||
             MothersHouseMotherAssetSetup.IsBuilding ||

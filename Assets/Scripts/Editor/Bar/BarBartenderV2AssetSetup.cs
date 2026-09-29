@@ -54,8 +54,8 @@ namespace BarPromenade.Editor
         private const string ExpectedArmDesign =
             "ordinary_two_armed_v2";
         private const float ExpectedHeight = 1.75f;
-        private const int MinimumTriangleCount = 900;
-        private const int MaximumTriangleCount = 2600;
+        private const int MinimumTriangleCount = 4500;
+        private const int MaximumTriangleCount = 8000;
         private const string SourceWalkClipName = "Walk";
         private const string WalkClipName = "BarBartenderWalk";
         private const string SourceWalkRootPath = "ROOT_PlayerV2";
@@ -148,6 +148,7 @@ namespace BarPromenade.Editor
         {
             return File.Exists(ModelPath) &&
                 File.Exists(ManifestPath) &&
+                File.Exists(OrdinaryCharacterDetailAtlas.AssetPath) &&
                 File.Exists(LegacyPrefabPath) &&
                 File.Exists(PlayerModelPath) &&
                 File.Exists(SharedMaterialPath) &&
@@ -185,6 +186,7 @@ namespace BarPromenade.Editor
             isBuilding = true;
             try
             {
+                OrdinaryCharacterDetailAtlas.Import();
                 AssetDatabase.ImportAsset(
                     PlayerModelPath,
                     ImportAssetOptions.ForceUpdate |
@@ -282,6 +284,17 @@ namespace BarPromenade.Editor
             }
 
             ValidateServiceBindings(registry);
+            var atlasParts = manifest.parts.Where(part => !string.IsNullOrEmpty(part.atlas_region)).ToArray();
+            if (registry.DetailAtlas != OrdinaryCharacterDetailAtlas.LoadOrThrow() ||
+                registry.DetailAtlasRenderers.Count != atlasParts.Length)
+                throw new InvalidOperationException("Ordinary bartender detail atlas binding is stale.");
+            foreach (ManifestPart part in atlasParts)
+            {
+                Renderer renderer = registry.RendererBindings.Single(binding => binding.RendererName == part.name).Renderer;
+                if (!registry.DetailAtlasRenderers.Contains(renderer))
+                    throw new InvalidOperationException("Ordinary bartender detail surface is unbound: " + part.name);
+                OrdinaryCharacterDetailAtlas.ValidateUvs(renderer, part.atlas_region);
+            }
             if (Mathf.Abs(registry.LocalBounds.size.y - ExpectedHeight) >
                     0.035f ||
                 Mathf.Abs(registry.LocalBounds.min.y) > 0.025f)
@@ -401,6 +414,8 @@ namespace BarPromenade.Editor
                     {
                         skinned.updateWhenOffscreen = true;
                     }
+                    if (!string.IsNullOrEmpty(part.atlas_region))
+                        OrdinaryCharacterDetailAtlas.ValidateUvs(renderer, part.atlas_region);
 
                     rendererList.Add(renderer);
                     bindings.Add(
@@ -462,6 +477,9 @@ namespace BarPromenade.Editor
                     manifest.generator_version,
                     manifest.design_id,
                     manifest.build_signature);
+                registry.ConfigureDetailAtlas(OrdinaryCharacterDetailAtlas.LoadOrThrow(),
+                    manifest.parts.Where(part => !string.IsNullOrEmpty(part.atlas_region))
+                        .Select(part => renderersByName[part.name]).ToArray());
                 registry.ConfigureOrdinaryService(
                     BuildClipBindings(),
                     RequireTransform(transformsByName, "SOCKET_Grip.L"),
@@ -684,8 +702,8 @@ namespace BarPromenade.Editor
 
             if (Mathf.Abs(manifest.height_m - ExpectedHeight) > 0.0001f ||
                 manifest.mesh_count != manifest.parts.Length ||
-                manifest.mesh_count < 28 ||
-                manifest.mesh_count > 58 ||
+                manifest.mesh_count < 60 ||
+                manifest.mesh_count > 110 ||
                 manifest.bones.Length != 31 ||
                 manifest.triangle_count < MinimumTriangleCount ||
                 manifest.triangle_count > MaximumTriangleCount ||
@@ -710,6 +728,10 @@ namespace BarPromenade.Editor
             var parts = manifest.parts.ToDictionary(
                 part => part.name,
                 StringComparer.Ordinal);
+            if (manifest.texture_bindings == null || manifest.texture_bindings.Length != 1)
+                throw new InvalidOperationException("Ordinary bartender must declare its shared detail atlas.");
+            OrdinaryCharacterDetailAtlas.ValidateBinding(manifest.texture_bindings[0],
+                manifest.parts.ToDictionary(part => part.name, part => part.atlas_region, StringComparer.Ordinal));
             RequirePart(parts, "GEO_Head", "publican_head", "head");
             RequirePart(parts, "GEO_Hand.L", "hand_palm", "hand.L");
             RequirePart(parts, "GEO_Hand.R", "hand_palm", "hand.R");
@@ -1157,6 +1179,7 @@ namespace BarPromenade.Editor
             public int extra_arm_pairs;
             public ManifestBone[] bones;
             public ManifestPart[] parts;
+            public OrdinaryCharacterDetailAtlas.Binding[] texture_bindings;
         }
 
         [Serializable]
@@ -1173,6 +1196,7 @@ namespace BarPromenade.Editor
             public string role;
             public string bone;
             public string palette_name;
+            public string atlas_region;
             public float[] base_color;
         }
     }

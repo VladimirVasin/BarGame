@@ -1,6 +1,6 @@
 {
   "generator": "tools/build-city-pedestrian-3d-model.py",
-  "generator_version": "4.5.1",
+  "generator_version": "4.5.2",
   "blender_version": "5.0.1",
   "design_id": "mother_v1",
   "display_name": "Mother",
@@ -18,24 +18,24 @@
   "pose": "apose",
   "forward_axis": "-Y",
   "anatomical_left_axis": "+X",
-  "mesh_count": 45,
-  "triangle_count": 1892,
+  "mesh_count": 49,
+  "triangle_count": 7872,
   "triangle_budget": [
-    1700,
-    2500
+    4500,
+    8000
   ],
   "staged": true,
   "pool_eligible": false,
   "wheel_radius_m": 0.0,
   "pivot_names": [],
   "bounds_min": [
-    -0.754882,
-    -0.213303,
+    -0.753926,
+    -0.210579,
     0.0
   ],
   "bounds_max": [
-    0.756882,
-    0.210311,
+    0.755926,
+    0.205071,
     1.75
   ],
   "material_asset": "Assets/Player3D/Materials/Player3DLit.mat",
@@ -44,6 +44,8 @@
   "animation_count": 0,
   "animations": [],
   "shared_animation_source": "Assets/Pedestrians/Animations/MothersHouseMother.fbx",
+  "ambient_idle_clip": null,
+  "ambient_walk_clip": null,
   "shared_clips": [
     "MotherRock"
   ],
@@ -58,7 +60,7 @@
   "floor_seated_contact_m": null,
   "lying_height_m": null,
   "lying_support_plane_offset_m": 0.0,
-  "build_signature": "a7283405ac08d7f79fa11daf804bae1cfa94e9b2bc5b8caab10d0195aed91e46",
+  "build_signature": "caca02d80c46758cc0157b304ec1156bbcab7262414d8639cb9259552d708f91",
   "bones": [
     {
       "name": "root",
@@ -538,8 +540,9 @@
         0.192,
         1.0
       ],
-      "vertices": 8,
-      "triangles": 12
+      "vertices": 42,
+      "triangles": 80,
+      "atlas_region": "ACC_Button.01:skin_white"
     },
     {
       "name": "ACC_Button.02",
@@ -552,8 +555,9 @@
         0.192,
         1.0
       ],
-      "vertices": 8,
-      "triangles": 12
+      "vertices": 42,
+      "triangles": 80,
+      "atlas_region": "ACC_Button.02:skin_white"
     },
     {
       "name": "ACC_Button.03",
@@ -566,8 +570,9 @@
         0.192,
         1.0
       ],
-      "vertices": 8,
-      "triangles": 12
+      "vertices": 42,
+      "triangles": 80,
+      "atlas_region": "ACC_Button.03:skin_white"
     },
     {
       "name": "ACC_Thumb.L",
@@ -580,8 +585,9 @@
         0.235,
         1.0
       ],
-      "vertices": 8,
-      "triangles": 12
+      "vertices": 32,
+      "triangles": 60,
+      "atlas_region": "ACC_Thumb.L:skin_white"
     },
     {
       "name": "ACC_Thumb.R",
@@ -594,8 +600,9 @@
         0.235,
         1.0
       ],
-      "vertices": 8,
-      "triangles": 12
+      "vertices": 32,
+      "triangles": 60,
+      "atlas_region": "ACC_Thumb.R:skin_white"
     },
     {
       "name": "CLO_Blanket.L",
@@ -608,8 +615,9 @@
         0.17,
         1.0
       ],
-      "vertices": 8,
-      "triangles": 12
+      "vertices": 98,
+      "triangles": 192,
+      "atlas_region": "CLO_Blanket.L:cloth"
     },
     {
       "name": "CLO_Blanket.R",
@@ -622,8 +630,9 @@
         0.17,
         1.0
       ],
-      "vertices": 8,
-      "triangles": 12
+      "vertices": 98,
+      "triangles": 192,
+      "atlas_region": "CLO_Blanket.R:cloth"
     },
     {
       "name": "CLO_BlanketHem.L",
@@ -636,8 +645,9 @@
         0.104,
         1.0
       ],
-      "vertices": 8,
-      "triangles": 12
+      "vertices": 98,
+      "triangles": 192,
+      "atlas_region": "CLO_BlanketHem.L:cloth"
     },
     {
       "name": "CLO_BlanketHem.R",
@@ -650,8 +660,9 @@
         0.104,
         1.0
       ],
-      "vertices": 8,
-      "triangles": 12
+      "vertices": 98,
+      "triangles": 192,
+      "atlas_region": "CLO_BlanketHem.R:cloth"
     },
     {
       "name": "CLO_BlanketLap",
@@ -664,8 +675,9 @@
         0.17,
         1.0
       ],
-      "vertices": 8,
-      "triangles": 12
+      "vertices": 98,
+      "triangles": 192,
+      "atlas_region": "CLO_BlanketLap:cloth"
     },
     {
       "name": "CLO_Bodice",
@@ -678,8 +690,9 @@
         0.248,
         1.0
       ],
-      "vertices": 8,
-      "triangles": 12
+      "vertices": 98,
+      "triangles": 192,
+      "atlas_region": "CLO_Bodice:cloth"
     },
     {
       "name": "CLO_Cardigan",
@@ -692,8 +705,9 @@
         0.335,
         1.0
       ],
-      "vertices": 8,
-      "triangles": 12
+      "vertices": 170,
+      "triangles": 336,
+      "atlas_region": "CLO_Cardigan:cloth"
     },
     {
       "name": "CLO_CardiganPanel.L",
@@ -706,8 +720,9 @@
         0.302,
         1.0
       ],
-      "vertices": 8,
-      "triangles": 12
+      "vertices": 16,
+      "triangles": 28,
+      "atlas_region": "CLO_CardiganPanel.L:cloth"
     },
     {
       "name": "CLO_CardiganPanel.R",
@@ -720,8 +735,39 @@
         0.302,
         1.0
       ],
-      "vertices": 8,
-      "triangles": 12
+      "vertices": 16,
+      "triangles": 28,
+      "atlas_region": "CLO_CardiganPanel.R:cloth"
+    },
+    {
+      "name": "CLO_CardiganPocket.L",
+      "role": "clothing_detail",
+      "bone": "chest",
+      "palette_name": "mother_cardigan_panel",
+      "base_color": [
+        0.318,
+        0.328,
+        0.302,
+        1.0
+      ],
+      "vertices": 112,
+      "triangles": 220,
+      "atlas_region": "CLO_CardiganPocket.L:cloth"
+    },
+    {
+      "name": "CLO_CardiganPocket.R",
+      "role": "clothing_detail",
+      "bone": "chest",
+      "palette_name": "mother_cardigan_panel",
+      "base_color": [
+        0.318,
+        0.328,
+        0.302,
+        1.0
+      ],
+      "vertices": 112,
+      "triangles": 220,
+      "atlas_region": "CLO_CardiganPocket.R:cloth"
     },
     {
       "name": "CLO_Collar",
@@ -734,8 +780,9 @@
         0.192,
         1.0
       ],
-      "vertices": 8,
-      "triangles": 12
+      "vertices": 98,
+      "triangles": 192,
+      "atlas_region": "CLO_Collar:cloth"
     },
     {
       "name": "CLO_Cuff.L",
@@ -748,8 +795,9 @@
         0.192,
         1.0
       ],
-      "vertices": 20,
-      "triangles": 36
+      "vertices": 70,
+      "triangles": 136,
+      "atlas_region": "CLO_Cuff.L:cloth"
     },
     {
       "name": "CLO_Cuff.R",
@@ -762,8 +810,9 @@
         0.192,
         1.0
       ],
-      "vertices": 20,
-      "triangles": 36
+      "vertices": 70,
+      "triangles": 136,
+      "atlas_region": "CLO_Cuff.R:cloth"
     },
     {
       "name": "CLO_Skirt",
@@ -776,8 +825,9 @@
         0.248,
         1.0
       ],
-      "vertices": 8,
-      "triangles": 12
+      "vertices": 98,
+      "triangles": 192,
+      "atlas_region": "CLO_Skirt:cloth"
     },
     {
       "name": "CLO_SkirtDrape.L",
@@ -790,8 +840,9 @@
         0.248,
         1.0
       ],
-      "vertices": 8,
-      "triangles": 12
+      "vertices": 98,
+      "triangles": 192,
+      "atlas_region": "CLO_SkirtDrape.L:cloth"
     },
     {
       "name": "CLO_SkirtDrape.R",
@@ -804,8 +855,9 @@
         0.248,
         1.0
       ],
-      "vertices": 8,
-      "triangles": 12
+      "vertices": 98,
+      "triangles": 192,
+      "atlas_region": "CLO_SkirtDrape.R:cloth"
     },
     {
       "name": "CLO_SkirtHem.L",
@@ -818,8 +870,9 @@
         0.312,
         1.0
       ],
-      "vertices": 8,
-      "triangles": 12
+      "vertices": 98,
+      "triangles": 192,
+      "atlas_region": "CLO_SkirtHem.L:cloth"
     },
     {
       "name": "CLO_SkirtHem.R",
@@ -832,8 +885,9 @@
         0.312,
         1.0
       ],
-      "vertices": 8,
-      "triangles": 12
+      "vertices": 98,
+      "triangles": 192,
+      "atlas_region": "CLO_SkirtHem.R:cloth"
     },
     {
       "name": "CLO_Sleeve.L",
@@ -846,8 +900,9 @@
         0.335,
         1.0
       ],
-      "vertices": 28,
-      "triangles": 52
+      "vertices": 84,
+      "triangles": 164,
+      "atlas_region": "CLO_Sleeve.L:cloth"
     },
     {
       "name": "CLO_Sleeve.R",
@@ -860,8 +915,9 @@
         0.335,
         1.0
       ],
-      "vertices": 28,
-      "triangles": 52
+      "vertices": 84,
+      "triangles": 164,
+      "atlas_region": "CLO_Sleeve.R:cloth"
     },
     {
       "name": "CLO_Waist",
@@ -874,8 +930,39 @@
         0.312,
         1.0
       ],
-      "vertices": 8,
-      "triangles": 12
+      "vertices": 98,
+      "triangles": 192,
+      "atlas_region": "CLO_Waist:cloth"
+    },
+    {
+      "name": "GEO_Ear.L",
+      "role": "body_detail",
+      "bone": "head",
+      "palette_name": "mother_skin",
+      "base_color": [
+        0.52,
+        0.4,
+        0.345,
+        1.0
+      ],
+      "vertices": 52,
+      "triangles": 100,
+      "atlas_region": "GEO_Ear.L:skin_white"
+    },
+    {
+      "name": "GEO_Ear.R",
+      "role": "body_detail",
+      "bone": "head",
+      "palette_name": "mother_skin",
+      "base_color": [
+        0.52,
+        0.4,
+        0.345,
+        1.0
+      ],
+      "vertices": 52,
+      "triangles": 100,
+      "atlas_region": "GEO_Ear.R:skin_white"
     },
     {
       "name": "GEO_FaceSurface",
@@ -902,8 +989,9 @@
         0.345,
         1.0
       ],
-      "vertices": 24,
-      "triangles": 44
+      "vertices": 84,
+      "triangles": 164,
+      "atlas_region": "GEO_Forearm.L:skin_white"
     },
     {
       "name": "GEO_Forearm.R",
@@ -916,8 +1004,9 @@
         0.345,
         1.0
       ],
-      "vertices": 24,
-      "triangles": 44
+      "vertices": 84,
+      "triangles": 164,
+      "atlas_region": "GEO_Forearm.R:skin_white"
     },
     {
       "name": "GEO_Hand.L",
@@ -930,8 +1019,9 @@
         0.345,
         1.0
       ],
-      "vertices": 8,
-      "triangles": 12
+      "vertices": 176,
+      "triangles": 332,
+      "atlas_region": "GEO_Hand.L:skin_white"
     },
     {
       "name": "GEO_Hand.R",
@@ -944,8 +1034,9 @@
         0.345,
         1.0
       ],
-      "vertices": 8,
-      "triangles": 12
+      "vertices": 176,
+      "triangles": 332,
+      "atlas_region": "GEO_Hand.R:skin_white"
     },
     {
       "name": "GEO_Head",
@@ -959,7 +1050,8 @@
         1.0
       ],
       "vertices": 182,
-      "triangles": 360
+      "triangles": 360,
+      "atlas_region": "GEO_Head:skin_white"
     },
     {
       "name": "GEO_Neck",
@@ -973,7 +1065,8 @@
         1.0
       ],
       "vertices": 28,
-      "triangles": 52
+      "triangles": 52,
+      "atlas_region": "GEO_Neck:skin_white"
     },
     {
       "name": "GEO_Shin.L",
@@ -987,7 +1080,8 @@
         1.0
       ],
       "vertices": 24,
-      "triangles": 44
+      "triangles": 44,
+      "atlas_region": "GEO_Shin.L:skin_white"
     },
     {
       "name": "GEO_Shin.R",
@@ -1001,7 +1095,8 @@
         1.0
       ],
       "vertices": 24,
-      "triangles": 44
+      "triangles": 44,
+      "atlas_region": "GEO_Shin.R:skin_white"
     },
     {
       "name": "GEO_Slipper.L",
@@ -1014,8 +1109,9 @@
         0.166,
         1.0
       ],
-      "vertices": 8,
-      "triangles": 12
+      "vertices": 112,
+      "triangles": 220,
+      "atlas_region": "GEO_Slipper.L:leather"
     },
     {
       "name": "GEO_Slipper.R",
@@ -1028,8 +1124,9 @@
         0.166,
         1.0
       ],
-      "vertices": 8,
-      "triangles": 12
+      "vertices": 112,
+      "triangles": 220,
+      "atlas_region": "GEO_Slipper.R:leather"
     },
     {
       "name": "GEO_SlipperSole.L",
@@ -1042,8 +1139,9 @@
         0.017,
         1.0
       ],
-      "vertices": 8,
-      "triangles": 12
+      "vertices": 112,
+      "triangles": 220,
+      "atlas_region": "GEO_SlipperSole.L:leather"
     },
     {
       "name": "GEO_SlipperSole.R",
@@ -1056,8 +1154,9 @@
         0.017,
         1.0
       ],
-      "vertices": 8,
-      "triangles": 12
+      "vertices": 112,
+      "triangles": 220,
+      "atlas_region": "GEO_SlipperSole.R:leather"
     },
     {
       "name": "GEO_Thigh.L",
@@ -1071,7 +1170,8 @@
         1.0
       ],
       "vertices": 24,
-      "triangles": 44
+      "triangles": 44,
+      "atlas_region": "GEO_Thigh.L:skin_white"
     },
     {
       "name": "GEO_Thigh.R",
@@ -1085,7 +1185,8 @@
         1.0
       ],
       "vertices": 24,
-      "triangles": 44
+      "triangles": 44,
+      "atlas_region": "GEO_Thigh.R:skin_white"
     },
     {
       "name": "HAIR_Bun",
@@ -1099,7 +1200,8 @@
         1.0
       ],
       "vertices": 86,
-      "triangles": 168
+      "triangles": 168,
+      "atlas_region": "HAIR_Bun:hair"
     },
     {
       "name": "HAIR_BunKnot",
@@ -1112,8 +1214,9 @@
         0.33,
         1.0
       ],
-      "vertices": 8,
-      "triangles": 12
+      "vertices": 112,
+      "triangles": 220,
+      "atlas_region": "HAIR_BunKnot:hair"
     },
     {
       "name": "HAIR_Cap",
@@ -1127,7 +1230,8 @@
         1.0
       ],
       "vertices": 114,
-      "triangles": 224
+      "triangles": 224,
+      "atlas_region": "HAIR_Cap:hair"
     },
     {
       "name": "HAIR_Temple.L",
@@ -1141,7 +1245,8 @@
         1.0
       ],
       "vertices": 62,
-      "triangles": 120
+      "triangles": 120,
+      "atlas_region": "HAIR_Temple.L:hair"
     },
     {
       "name": "HAIR_Temple.R",
@@ -1155,7 +1260,8 @@
         1.0
       ],
       "vertices": 62,
-      "triangles": 120
+      "triangles": 120,
+      "atlas_region": "HAIR_Temple.R:hair"
     }
   ],
   "face_atlas": {
@@ -1203,5 +1309,412 @@
         "row": 2
       }
     ]
-  }
+  },
+  "detail_version": "1.0.0",
+  "texture_bindings": [
+    {
+      "texture_asset": "Assets/Pedestrians/Textures/OrdinaryCharacterDetailAtlas.png",
+      "sha256": "0a7274e445f2be0d0c15e3866ca2791b8c5cf4852847e8149583a561eb6a1a65",
+      "width_px": 256,
+      "height_px": 256,
+      "materials": [],
+      "shader_property": "_BaseMap",
+      "color_space": "sRGB",
+      "filter_mode": "Point",
+      "wrap_mode": "Clamp",
+      "mipmaps": false,
+      "compression": "Uncompressed",
+      "uv_channel": 0,
+      "uv_origin": "bottom_left",
+      "uv_safe_inset_px": 1,
+      "material_tint_hex": "FFFFFF",
+      "tint_source": "renderer_palette",
+      "regions": [
+        {
+          "name": "ACC_Button.01:skin_white",
+          "renderer": "ACC_Button.01",
+          "x_px": 0,
+          "y_px": 0,
+          "width_px": 128,
+          "height_px": 128
+        },
+        {
+          "name": "ACC_Button.02:skin_white",
+          "renderer": "ACC_Button.02",
+          "x_px": 0,
+          "y_px": 0,
+          "width_px": 128,
+          "height_px": 128
+        },
+        {
+          "name": "ACC_Button.03:skin_white",
+          "renderer": "ACC_Button.03",
+          "x_px": 0,
+          "y_px": 0,
+          "width_px": 128,
+          "height_px": 128
+        },
+        {
+          "name": "ACC_Thumb.L:skin_white",
+          "renderer": "ACC_Thumb.L",
+          "x_px": 0,
+          "y_px": 0,
+          "width_px": 128,
+          "height_px": 128
+        },
+        {
+          "name": "ACC_Thumb.R:skin_white",
+          "renderer": "ACC_Thumb.R",
+          "x_px": 0,
+          "y_px": 0,
+          "width_px": 128,
+          "height_px": 128
+        },
+        {
+          "name": "CLO_Blanket.L:cloth",
+          "renderer": "CLO_Blanket.L",
+          "x_px": 0,
+          "y_px": 128,
+          "width_px": 128,
+          "height_px": 128
+        },
+        {
+          "name": "CLO_Blanket.R:cloth",
+          "renderer": "CLO_Blanket.R",
+          "x_px": 0,
+          "y_px": 128,
+          "width_px": 128,
+          "height_px": 128
+        },
+        {
+          "name": "CLO_BlanketHem.L:cloth",
+          "renderer": "CLO_BlanketHem.L",
+          "x_px": 0,
+          "y_px": 128,
+          "width_px": 128,
+          "height_px": 128
+        },
+        {
+          "name": "CLO_BlanketHem.R:cloth",
+          "renderer": "CLO_BlanketHem.R",
+          "x_px": 0,
+          "y_px": 128,
+          "width_px": 128,
+          "height_px": 128
+        },
+        {
+          "name": "CLO_BlanketLap:cloth",
+          "renderer": "CLO_BlanketLap",
+          "x_px": 0,
+          "y_px": 128,
+          "width_px": 128,
+          "height_px": 128
+        },
+        {
+          "name": "CLO_Bodice:cloth",
+          "renderer": "CLO_Bodice",
+          "x_px": 0,
+          "y_px": 128,
+          "width_px": 128,
+          "height_px": 128
+        },
+        {
+          "name": "CLO_Cardigan:cloth",
+          "renderer": "CLO_Cardigan",
+          "x_px": 0,
+          "y_px": 128,
+          "width_px": 128,
+          "height_px": 128
+        },
+        {
+          "name": "CLO_CardiganPanel.L:cloth",
+          "renderer": "CLO_CardiganPanel.L",
+          "x_px": 0,
+          "y_px": 128,
+          "width_px": 128,
+          "height_px": 128
+        },
+        {
+          "name": "CLO_CardiganPanel.R:cloth",
+          "renderer": "CLO_CardiganPanel.R",
+          "x_px": 0,
+          "y_px": 128,
+          "width_px": 128,
+          "height_px": 128
+        },
+        {
+          "name": "CLO_CardiganPocket.L:cloth",
+          "renderer": "CLO_CardiganPocket.L",
+          "x_px": 0,
+          "y_px": 128,
+          "width_px": 128,
+          "height_px": 128
+        },
+        {
+          "name": "CLO_CardiganPocket.R:cloth",
+          "renderer": "CLO_CardiganPocket.R",
+          "x_px": 0,
+          "y_px": 128,
+          "width_px": 128,
+          "height_px": 128
+        },
+        {
+          "name": "CLO_Collar:cloth",
+          "renderer": "CLO_Collar",
+          "x_px": 0,
+          "y_px": 128,
+          "width_px": 128,
+          "height_px": 128
+        },
+        {
+          "name": "CLO_Cuff.L:cloth",
+          "renderer": "CLO_Cuff.L",
+          "x_px": 0,
+          "y_px": 128,
+          "width_px": 128,
+          "height_px": 128
+        },
+        {
+          "name": "CLO_Cuff.R:cloth",
+          "renderer": "CLO_Cuff.R",
+          "x_px": 0,
+          "y_px": 128,
+          "width_px": 128,
+          "height_px": 128
+        },
+        {
+          "name": "CLO_Skirt:cloth",
+          "renderer": "CLO_Skirt",
+          "x_px": 0,
+          "y_px": 128,
+          "width_px": 128,
+          "height_px": 128
+        },
+        {
+          "name": "CLO_SkirtDrape.L:cloth",
+          "renderer": "CLO_SkirtDrape.L",
+          "x_px": 0,
+          "y_px": 128,
+          "width_px": 128,
+          "height_px": 128
+        },
+        {
+          "name": "CLO_SkirtDrape.R:cloth",
+          "renderer": "CLO_SkirtDrape.R",
+          "x_px": 0,
+          "y_px": 128,
+          "width_px": 128,
+          "height_px": 128
+        },
+        {
+          "name": "CLO_SkirtHem.L:cloth",
+          "renderer": "CLO_SkirtHem.L",
+          "x_px": 0,
+          "y_px": 128,
+          "width_px": 128,
+          "height_px": 128
+        },
+        {
+          "name": "CLO_SkirtHem.R:cloth",
+          "renderer": "CLO_SkirtHem.R",
+          "x_px": 0,
+          "y_px": 128,
+          "width_px": 128,
+          "height_px": 128
+        },
+        {
+          "name": "CLO_Sleeve.L:cloth",
+          "renderer": "CLO_Sleeve.L",
+          "x_px": 0,
+          "y_px": 128,
+          "width_px": 128,
+          "height_px": 128
+        },
+        {
+          "name": "CLO_Sleeve.R:cloth",
+          "renderer": "CLO_Sleeve.R",
+          "x_px": 0,
+          "y_px": 128,
+          "width_px": 128,
+          "height_px": 128
+        },
+        {
+          "name": "CLO_Waist:cloth",
+          "renderer": "CLO_Waist",
+          "x_px": 0,
+          "y_px": 128,
+          "width_px": 128,
+          "height_px": 128
+        },
+        {
+          "name": "GEO_Ear.L:skin_white",
+          "renderer": "GEO_Ear.L",
+          "x_px": 0,
+          "y_px": 0,
+          "width_px": 128,
+          "height_px": 128
+        },
+        {
+          "name": "GEO_Ear.R:skin_white",
+          "renderer": "GEO_Ear.R",
+          "x_px": 0,
+          "y_px": 0,
+          "width_px": 128,
+          "height_px": 128
+        },
+        {
+          "name": "GEO_Forearm.L:skin_white",
+          "renderer": "GEO_Forearm.L",
+          "x_px": 0,
+          "y_px": 0,
+          "width_px": 128,
+          "height_px": 128
+        },
+        {
+          "name": "GEO_Forearm.R:skin_white",
+          "renderer": "GEO_Forearm.R",
+          "x_px": 0,
+          "y_px": 0,
+          "width_px": 128,
+          "height_px": 128
+        },
+        {
+          "name": "GEO_Hand.L:skin_white",
+          "renderer": "GEO_Hand.L",
+          "x_px": 0,
+          "y_px": 0,
+          "width_px": 128,
+          "height_px": 128
+        },
+        {
+          "name": "GEO_Hand.R:skin_white",
+          "renderer": "GEO_Hand.R",
+          "x_px": 0,
+          "y_px": 0,
+          "width_px": 128,
+          "height_px": 128
+        },
+        {
+          "name": "GEO_Head:skin_white",
+          "renderer": "GEO_Head",
+          "x_px": 0,
+          "y_px": 0,
+          "width_px": 128,
+          "height_px": 128
+        },
+        {
+          "name": "GEO_Neck:skin_white",
+          "renderer": "GEO_Neck",
+          "x_px": 0,
+          "y_px": 0,
+          "width_px": 128,
+          "height_px": 128
+        },
+        {
+          "name": "GEO_Shin.L:skin_white",
+          "renderer": "GEO_Shin.L",
+          "x_px": 0,
+          "y_px": 0,
+          "width_px": 128,
+          "height_px": 128
+        },
+        {
+          "name": "GEO_Shin.R:skin_white",
+          "renderer": "GEO_Shin.R",
+          "x_px": 0,
+          "y_px": 0,
+          "width_px": 128,
+          "height_px": 128
+        },
+        {
+          "name": "GEO_Slipper.L:leather",
+          "renderer": "GEO_Slipper.L",
+          "x_px": 128,
+          "y_px": 128,
+          "width_px": 128,
+          "height_px": 128
+        },
+        {
+          "name": "GEO_Slipper.R:leather",
+          "renderer": "GEO_Slipper.R",
+          "x_px": 128,
+          "y_px": 128,
+          "width_px": 128,
+          "height_px": 128
+        },
+        {
+          "name": "GEO_SlipperSole.L:leather",
+          "renderer": "GEO_SlipperSole.L",
+          "x_px": 128,
+          "y_px": 128,
+          "width_px": 128,
+          "height_px": 128
+        },
+        {
+          "name": "GEO_SlipperSole.R:leather",
+          "renderer": "GEO_SlipperSole.R",
+          "x_px": 128,
+          "y_px": 128,
+          "width_px": 128,
+          "height_px": 128
+        },
+        {
+          "name": "GEO_Thigh.L:skin_white",
+          "renderer": "GEO_Thigh.L",
+          "x_px": 0,
+          "y_px": 0,
+          "width_px": 128,
+          "height_px": 128
+        },
+        {
+          "name": "GEO_Thigh.R:skin_white",
+          "renderer": "GEO_Thigh.R",
+          "x_px": 0,
+          "y_px": 0,
+          "width_px": 128,
+          "height_px": 128
+        },
+        {
+          "name": "HAIR_Bun:hair",
+          "renderer": "HAIR_Bun",
+          "x_px": 128,
+          "y_px": 0,
+          "width_px": 128,
+          "height_px": 128
+        },
+        {
+          "name": "HAIR_BunKnot:hair",
+          "renderer": "HAIR_BunKnot",
+          "x_px": 128,
+          "y_px": 0,
+          "width_px": 128,
+          "height_px": 128
+        },
+        {
+          "name": "HAIR_Cap:hair",
+          "renderer": "HAIR_Cap",
+          "x_px": 128,
+          "y_px": 0,
+          "width_px": 128,
+          "height_px": 128
+        },
+        {
+          "name": "HAIR_Temple.L:hair",
+          "renderer": "HAIR_Temple.L",
+          "x_px": 128,
+          "y_px": 0,
+          "width_px": 128,
+          "height_px": 128
+        },
+        {
+          "name": "HAIR_Temple.R:hair",
+          "renderer": "HAIR_Temple.R",
+          "x_px": 128,
+          "y_px": 0,
+          "width_px": 128,
+          "height_px": 128
+        }
+      ]
+    }
+  ]
 }

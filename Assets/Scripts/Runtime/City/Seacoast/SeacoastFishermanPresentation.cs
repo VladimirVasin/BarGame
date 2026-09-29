@@ -49,9 +49,20 @@ namespace BarPromenade
         private float playbackSpeed = 1f;
         private float clipLengthSeconds = 1f;
         private bool hasGraph;
+        private readonly Player3DFaceAtlasPresenter facePresenter =
+            new Player3DFaceAtlasPresenter();
+        private readonly PlayerFacialAnimationState facialState =
+            new PlayerFacialAnimationState();
 
         public bool IsInitialized { get; private set; }
         public AnimationClip ActiveClip { get; private set; }
+        public CityPedestrianAssetRegistry Registry { get; private set; }
+        public PlayerFacialExpression Expression { get; private set; } =
+            PlayerFacialExpression.Neutral;
+
+        /// <summary>Unwrapped authored time, shared by the chest and its smoking effects.</summary>
+        public double ClipTimeSeconds => hasGraph ? playable.GetTime() : 0d;
+        public double BreathTime => ClipTimeSeconds * BreathsPerLoop / clipLengthSeconds;
 
         /// <summary>
         /// The loop's own position, in `[0, 1)`. Zero before the graph
@@ -127,9 +138,13 @@ namespace BarPromenade
             }
 
             ActiveClip = clip;
+            Registry = registry;
             clipLengthSeconds = Mathf.Max(0.0001f, clip.length);
             playbackSpeed = Mathf.Max(0.05f, stance.PlaybackSpeed);
             registry.ApplyPaletteVariant(stance.PaletteVariant);
+            facePresenter.Configure(registry.FaceAtlas);
+            facialState.Reset();
+            SetExpression(PlayerFacialExpression.Neutral);
 
             graph = PlayableGraph.Create("Seacoast Fisherman");
             graph.SetTimeUpdateMode(DirectorUpdateMode.Manual);
@@ -148,25 +163,38 @@ namespace BarPromenade
             IsInitialized = true;
         }
 
-        private void LateUpdate()
+        public void Advance(float deltaTime)
         {
-            if (!hasGraph)
+            if (!hasGraph || !isActiveAndEnabled || !float.IsFinite(deltaTime) || deltaTime <= 0f)
             {
                 return;
             }
 
-            float step = Mathf.Min(Time.deltaTime, MaximumStepSeconds);
-            graph.Evaluate(step * playbackSpeed);
+            float step = Mathf.Min(deltaTime, MaximumStepSeconds) * playbackSpeed;
+            graph.Evaluate(step);
+            SetExpression(facialState.Advance(step));
         }
+
+        public bool SetExpression(PlayerFacialExpression expression)
+        {
+            Expression = expression;
+            return facePresenter.Apply(expression);
+        }
+
+        private void LateUpdate() => Advance(Time.deltaTime);
 
         private void OnDestroy()
         {
+            facePresenter.Reset();
+            facialState.Reset();
             if (hasGraph && graph.IsValid())
             {
                 graph.Destroy();
             }
 
             hasGraph = false;
+            IsInitialized = false;
+            Registry = null;
         }
     }
 }

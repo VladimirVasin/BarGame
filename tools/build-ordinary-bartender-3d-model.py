@@ -20,6 +20,7 @@ import argparse
 import hashlib
 import importlib.util
 import json
+import math
 from pathlib import Path
 import sys
 
@@ -32,13 +33,13 @@ except ImportError as error:  # pragma: no cover - Blender-only entry.
     ) from error
 
 
-GENERATOR_VERSION = "3.1.0"
+GENERATOR_VERSION = "4.0.0"
 DESIGN_ID = "bar_bartender_v2"
 DISPLAY_NAME = "Bar Bartender"
 SEED = 460918
 TOTAL_HEIGHT = 1.75
-MIN_TRIANGLES = 900
-MAX_TRIANGLES = 2600
+MIN_TRIANGLES = 4500
+MAX_TRIANGLES = 8000
 SHARED_MATERIAL_ASSET = "Assets/Player3D/Materials/Player3DLit.mat"
 SERVICE_ANIMATION_ASSET = (
     "Assets/Pedestrians/Animations/MountainRoadCafeCast.fbx"
@@ -81,6 +82,49 @@ legacy = load_module(
     "bp_legacy_bar_bartender_build",
 )
 base = legacy.base
+detail = load_module("npc_detail_geometry.py", "bp_ordinary_bartender_detail")
+surface_atlas = load_module("npc_detail_atlas.py", "bp_ordinary_bartender_atlas")
+
+
+def outward_faces(vertices, faces):
+    return detail.outward((vertices, faces))[1]
+
+
+def merge_geometry(*geometries):
+    vertices, faces = [], []
+    for points, polygons in geometries:
+        offset = len(vertices)
+        vertices.extend(points)
+        faces.extend(tuple(index + offset for index in face) for face in polygons)
+    return vertices, faces
+
+
+def closed_panel(rows, thickness):
+    """A shaped fabric panel with two surfaces and a visible sewn edge."""
+    columns, count = len(rows[0]), sum(len(row) for row in rows)
+    points = [point for row in rows for point in row]
+    vertices = points + [point + thickness for point in points]
+    faces = []
+    for row in range(len(rows)-1):
+        for column in range(columns-1):
+            a = row * columns + column
+            quad = (a, a+1, a+1+columns, a+columns)
+            faces.extend((quad, tuple(index+count for index in reversed(quad))))
+    perimeter = (list(range(columns)) +
+                 [row*columns+columns-1 for row in range(1, len(rows))] +
+                 [count-1-column for column in range(1, columns)] +
+                 [row*columns for row in range(len(rows)-2, 0, -1)])
+    for a, b in zip(perimeter, perimeter[1:]+perimeter[:1]):
+        faces.append((a, a+count, b+count, b))
+    return detail.outward((vertices, faces))
+
+
+def sole_geometry(center_x):
+    footprint = ((-.255, .046), (-.236, .060), (-.192, .068),
+                 (-.120, .069), (-.050, .061), (.020, .053), (.036, .049))
+    outline = [(center_x-width, y*.92) for y, width in footprint]
+    outline += [(center_x+width, y*.92) for y, width in reversed(footprint)]
+    return detail.loft([[(x, y, z) for x, y in outline] for z in (0, .017, .025)])
 
 PALETTE = dict(legacy.PALETTE)
 PALETTE.update(
@@ -139,6 +183,7 @@ def parse_args() -> argparse.Namespace:
         ),
     )
     parser.add_argument("--no-preview", action="store_true")
+    parser.add_argument("--validate-only", action="store_true")
     arguments = (
         sys.argv[sys.argv.index("--") + 1 :] if "--" in sys.argv else []
     )
@@ -187,6 +232,14 @@ class OrdinaryBartenderBuilder(legacy.BartenderBuilder):
         self.build_rolled_sleeves()
         super().build_head()
         self.build_uniform()
+        self.refine_detailed_geometry()
+        for part in self.result.parts:
+            palette, name = part.palette_name, part.obj.name
+            kind = ("skin_white" if palette.startswith("skin") or palette in {"eye", "pupil", "button"}
+                    else "leather" if palette == "leather"
+                    else "hair" if palette in {"hair", "moustache"} and "Cap" not in name
+                    else "cloth")
+            surface_atlas.apply_uv(part.obj, kind)
         self.build_service_anchors()
         self.configure_scene_metadata()
         return self.result
@@ -328,6 +381,240 @@ class OrdinaryBartenderBuilder(legacy.BartenderBuilder):
             "towel",
         )
 
+    def replace_geometry(self, name, geometry, *, smooth=True):
+        """Replace the ordinary source only, retaining its renderer/rig contract."""
+        part = next(part for part in self.result.parts if part.obj.name == name)
+        obj = part.obj
+        vertices, faces = geometry
+        vertices = [self.remap_geometry_point(point, part.bone, part.role, name)
+                    - obj.location for point in vertices]
+        mesh = bpy.data.meshes.new(name + "_DetailedMesh")
+        mesh.from_pydata(vertices, [], outward_faces(vertices, faces))
+        mesh.update(calc_edges=True)
+        mesh.materials.append(self.result.material)
+        for polygon in mesh.polygons:
+            polygon.use_smooth = smooth
+        previous = obj.data
+        obj.data = mesh
+        group = obj.vertex_groups.get(part.bone) or obj.vertex_groups.new(name=part.bone)
+        group.add(range(len(vertices)), 1.0, "REPLACE")
+        if previous.users == 0:
+            bpy.data.meshes.remove(previous)
+        return obj
+
+    def detail_part(self, name, geometry, bone, role, palette, *, smooth=True):
+        vertices, faces = geometry
+        obj = self.add_part(name, (vertices, outward_faces(vertices, faces)),
+                            bone, role, palette)
+        for polygon in obj.data.polygons:
+            polygon.use_smooth = smooth
+        return obj
+
+    def refine_detailed_geometry(self):
+        """Tailored work clothes and human forms on the unchanged service rig.
+
+        Stations describe shoulder, ribcage, waist, knee, calf and wrist shape;
+        they are construction, not subdivision of the former boxes. Each part
+        retains one canonical bone so existing service/locomotion clips work.
+        """
+        torso = (
+            (.790, .154, .096, .009), (.850, .174, .105, .009),
+            (.970, .192, .115, .009), (1.090, .193, .112, .008),
+            (1.210, .191, .106, .003), (1.280, .187, .099, -.002),
+            (1.330, .158, .087, -.010), (1.375, .075, .062, -.020),
+        )
+        self.replace_geometry("GEO_Torso", base.make_vertical_shell(torso, 16))
+        self.replace_geometry("GEO_Pelvis", base.make_vertical_shell((
+            (.665, .122, .086, .010), (.715, .154, .100, .010),
+            (.765, .166, .104, .010), (.815, .159, .100, .010),
+            (.850, .150, .096, .010)), 16))
+        self.replace_geometry("GEO_NeckStub", base.make_vertical_shell((
+            (1.325, .078, .064, -.018), (1.365, .069, .061, -.022),
+            (1.410, .062, .057, -.024), (1.470, .065, .061, -.026)), 14))
+
+        for side, sign in (("L", 1), ("R", -1)):
+            shoulder = Vector((sign * .208, -.004 if sign > 0 else .004, 1.292))
+            elbow = Vector((sign * .470, -.010, 1.175))
+            wrist = Vector((sign * .680, -.018, 1.075))
+            self.replace_geometry(f"GEO_UpperArm.{side}", base.make_profiled_segment(
+                shoulder, elbow, ((0, .070, 1.0), (.16, .079, 1.04),
+                (.37, .076, 1.04), (.60, .070, 1.02), (.80, .062, 1.0),
+                (.94, .060, 1.0), (1, .061, 1.0)), 12))
+            # The cuff has real rolled layers; it no longer hides a full
+            # shirt-coloured cylinder inside the whole exposed forearm.
+            self.replace_geometry(f"GEO_Forearm.{side}", base.make_profiled_segment(
+                elbow, elbow.lerp(wrist, .19),
+                ((0, .059, 1), (.42, .062, 1.02), (.76, .064, 1.01), (1, .058, 1)), 12))
+            self.replace_geometry(f"GEO_ExposedForearm.{side}", base.make_profiled_segment(
+                elbow.lerp(wrist, .08), wrist,
+                ((0, .057, .92), (.18, .059, .94), (.38, .055, .94),
+                 (.62, .047, .92), (.85, .038, .90), (1, .034, .92)), 12))
+            self.replace_geometry(f"CLO_RolledCuff.{side}", base.make_profiled_segment(
+                elbow.lerp(wrist, -.06), elbow.lerp(wrist, .22),
+                ((0, .063, 1), (.12, .070, 1), (.28, .071, 1),
+                 (.42, .066, 1), (.57, .071, 1), (.78, .070, 1),
+                 (.94, .064, 1), (1, .060, 1)), 12))
+            hip = (sign * .083, .012 if sign > 0 else -.004, .750)
+            knee = (sign * .103, -.012 if sign > 0 else .012, .354)
+            ankle = (sign * .112, -.026 if sign > 0 else .018, .095)
+            self.replace_geometry(f"GEO_Thigh.{side}", base.make_profiled_segment(
+                hip, knee, ((0, .094, .95), (.13, .099, .96), (.30, .093, .98),
+                (.53, .081, 1), (.75, .071, 1.01), (.89, .070, 1), (1, .070, .98)), 12))
+            self.replace_geometry(f"GEO_Shin.{side}", base.make_profiled_segment(
+                knee, ankle, ((0, .070, .99), (.18, .072, 1.0), (.36, .075, 1.04),
+                (.58, .067, 1), (.80, .057, 1), (.92, .061, 1), (1, .058, 1)), 12))
+            self.replace_geometry(f"GEO_Foot.{side}", base.make_cafe_shoe(
+                sign * .112, length_scale=.92, width_scale=1.02, height_scale=.91))
+            self.detail_part(f"CLO_ShoeSole.{side}", sole_geometry(sign * .112),
+                             f"foot.{side}", "footwear_detail", "leather", smooth=False)
+            self.detail_part(f"CLO_ShoeTongue.{side}", base.make_ellipsoid(
+                (sign * .112, -.056, .121), (.041, .058, .014), 10, 4),
+                f"foot.{side}", "footwear_detail", "leather")
+            # Short stitched seams describe the shoe panels, without laces
+            # or new costume objects changing this worker's silhouette.
+            for index, z in enumerate((.116, .121)):
+                self.detail_part(f"CLO_ShoeStitch{index}.{side}", base.make_profiled_segment(
+                    (sign * .112 - .032, -.096 + index * .013, z),
+                    (sign * .112 + .032, -.096 + index * .013, z),
+                    ((0, .0015, 1), (.2, .0018, 1), (.8, .0018, 1), (1, .0015, 1)), 5),
+                    f"foot.{side}", "footwear_detail", "shirt_shadow")
+
+        self.refine_hands()
+        self.refine_head()
+        self.refine_work_clothes()
+
+    def refine_head(self):
+        self.replace_geometry("GEO_Head", base.make_vertical_shell((
+            (1.451, .041, .052, -.030), (1.474, .073, .074, -.030),
+            (1.510, .101, .089, -.030), (1.552, .115, .104, -.030),
+            (1.598, .114, .108, -.030), (1.641, .107, .102, -.025),
+            (1.677, .083, .084, -.019), (1.701, .037, .047, -.014)), 16))
+        for side, sign in (("L", 1), ("R", -1)):
+            self.replace_geometry(f"FACE_Ear.{side}", base.make_ellipsoid(
+                (sign * .112, -.030, 1.575), (.022, .019, .040), 10, 6))
+            self.detail_part(f"FACE_EarFold.{side}", base.make_ellipsoid(
+                (sign * .121, -.043, 1.577), (.009, .008, .023), 8, 5),
+                "head", "human_face", "skin_shadow")
+            self.detail_part(f"FACE_UpperLid.{side}", base.make_ellipsoid(
+                (sign * .050, -.134, 1.617), (.024, .011, .0075), 10, 4),
+                "head", "human_face", "skin")
+            self.detail_part(f"FACE_LowerLid.{side}", base.make_ellipsoid(
+                (sign * .050, -.134, 1.594), (.023, .008, .005), 10, 4),
+                "head", "human_face", "skin_shadow")
+            self.detail_part(f"FACE_Brow.{side}", base.make_profiled_segment(
+                (sign * .025, -.127, 1.638), (sign * .079, -.114, 1.632),
+                ((0, .004, .65), (.25, .007, .7), (.72, .006, .7), (1, .002, .6)), 6),
+                "head", "human_face", "hair")
+        self.replace_geometry("FACE_Nose", base.make_vertical_shell((
+            (1.547, .012, .011, -.145), (1.555, .023, .020, -.148),
+            (1.567, .024, .023, -.148), (1.584, .014, .017, -.142),
+            (1.610, .009, .011, -.132), (1.627, .007, .007, -.124)), 10))
+        moustache = []
+        for sign in (-1, 1):
+            moustache.append(base.make_profiled_segment(
+                (sign * .002, -.148, 1.540), (sign * .051, -.136, 1.530),
+                ((0, .008, 1.5), (.22, .010, 1.25), (.55, .010, 1),
+                 (.82, .007, .9), (1, .002, .7)), 8))
+        self.replace_geometry("FACE_Moustache", merge_geometry(*moustache))
+        self.detail_part("FACE_LowerLip", base.make_ellipsoid(
+            (0, -.128, 1.516), (.026, .009, .005), 10, 4),
+            "head", "human_face", "skin_shadow")
+        self.replace_geometry("HAIR_FlatCap", base.make_vertical_shell((
+            (1.686, .112, .105, -.005), (1.694, .117, .109, -.012),
+            (1.708, .119, .113, -.013), (1.730, .106, .105, -.021),
+            (1.745, .075, .081, -.025), (1.750, .035, .042, -.024)), 16))
+        self.detail_part("CLO_CapBill", closed_panel([
+            [Vector((x, y, z)) for x, y, z in row] for row in (
+                ((-.088, -.090, 1.698), (-.044, -.119, 1.698), (0, -.125, 1.698), (.044, -.119, 1.698), (.088, -.090, 1.698)),
+                ((-.085, -.115, 1.697), (-.044, -.155, 1.695), (0, -.167, 1.694), (.044, -.155, 1.695), (.085, -.115, 1.697)),
+            )], Vector((0, 0, -.005))), "head", "hair", "hair", smooth=False)
+
+    def refine_hands(self):
+        # Unlike the old inherited mitten coordinates these are already in
+        # the production skeleton's metre space: do not remap them twice.
+        bpy.context.view_layer.update()
+        for side in ("L", "R"):
+            bone = base.BONE_BY_NAME[f"hand.{side}"]
+            shapes = detail.hand(bone.head, bone.tail, side)
+            for suffix, geometry in shapes.items():
+                name = (f"GEO_Hand.{side}" if suffix == "palm" else
+                        f"GEO_Thumb.{side}" if suffix == "thumb" else
+                        f"GEO_Finger{suffix[-1]}.{side}")
+                obj = bpy.data.objects.get(name)
+                if obj is None:
+                    obj = self.add_part(name, base.make_box((0, 0, 0), (.01, .01, .01)),
+                                        f"hand.{side}", "hand_finger", "skin")
+                    bpy.context.view_layer.update()
+                detail.replace_mesh(obj, geometry)
+                for polygon in obj.data.polygons:
+                    polygon.use_smooth = True
+
+    def refine_work_clothes(self):
+        front = []
+        # Constructed front panels leave a modest V of the original shirt.
+        rows = ((.805, .157, .099, .009, .010), (.860, .178, .110, .009, .006),
+                (.970, .197, .119, .009, .006), (1.080, .198, .116, .008, .006),
+                (1.170, .196, .111, .005, .030), (1.250, .193, .106, 0, .081),
+                (1.302, .177, .095, -.006, .118))
+        for sign in (-1, 1):
+            grid = []
+            for z, rx, ry, cy, gap in rows:
+                grid.append([Vector((sign * x, cy - ry * math.sqrt(max(0, 1-(x/rx)**2)) - .003, z))
+                             for x in (gap + (.96 * rx - gap) * col / 7 for col in range(8))])
+            front.append(closed_panel(grid, Vector((0, .004, 0))))
+        self.replace_geometry("CLO_WaistcoatFront", merge_geometry(*front))
+        grid = []
+        for z, rx, ry, cy, _ in rows:
+            grid.append([Vector((x, cy + ry * math.sqrt(max(0, 1-(x/rx)**2)) + .003, z))
+                         for x in (-.96 * rx + 1.92 * rx * col / 12 for col in range(13))])
+        self.replace_geometry("CLO_WaistcoatBack", closed_panel(grid, Vector((0, -.004, 0))))
+        for side, sign in (("L", 1), ("R", -1)):
+            side_rows = [[Vector((sign * rx * math.cos(angle), cy + ry * math.sin(angle), z))
+                          for angle in (-.30 + .60*column/4 for column in range(5))]
+                         for z, rx, ry, cy, _ in rows]
+            self.detail_part(f"CLO_WaistcoatSide.{side}",
+                             closed_panel(side_rows, Vector((-sign*.004, 0, 0))),
+                             "chest", "uniform", "waistcoat_dark")
+        apron_rows = []
+        for row in range(6):
+            fraction = row / 5
+            width = .158 + .012 * (1 - fraction)
+            apron_rows.append([Vector(((-1+2*col/12)*width,
+                -.125 - .007 * math.cos(col * math.pi/2) * (1-fraction),
+                .500 + fraction * .330 + (.005 * math.cos(col*.8) if row == 0 else 0)))
+                for col in range(13)])
+        self.replace_geometry("CLO_Apron", closed_panel(apron_rows, Vector((0, .004, 0))))
+        self.replace_geometry("CLO_ApronTie", base.make_vertical_shell((
+            (.803, .175, .113, .01), (.809, .181, .116, .01),
+            (.827, .181, .116, .01), (.833, .176, .113, .01)), 16))
+        for side, sign in (("L", 1), ("R", -1)):
+            self.detail_part(f"CLO_ShirtCollar.{side}", closed_panel([
+                [Vector((sign * .018, -.090, 1.356)), Vector((sign * .065, -.080, 1.362)), Vector((sign * .082, -.061, 1.351))],
+                [Vector((sign * .052, -.115, 1.293)), Vector((sign * .093, -.103, 1.320)), Vector((sign * .113, -.080, 1.332))]
+            ], Vector((0, .005, 0))), "chest", "uniform_detail", "shirt", smooth=False)
+            pocket_x = sign * .113
+            self.detail_part(f"CLO_VestPocket.{side}", closed_panel([
+                [Vector((pocket_x + x, -.112 + abs(pocket_x+x)*.14, z))
+                 for x in (-.034, -.016, .016, .034)]
+                for z in (.950, .978, 1.001)
+            ], Vector((0, .006, 0))), "chest", "uniform_detail", "waistcoat_dark", smooth=False)
+            self.detail_part(f"CLO_VestPocketWelt.{side}", base.make_profiled_segment(
+                (pocket_x-.037, -.116 + abs(pocket_x-.037)*.14, 1.003),
+                (pocket_x+.037, -.116 + abs(pocket_x+.037)*.14, 1.003),
+                ((0, .004, .6), (.08, .005, .6), (.92, .005, .6), (1, .004, .6)), 6),
+                "chest", "uniform_detail", "waistcoat")
+            self.detail_part(f"CLO_VestEdge.{side}", base.make_profiled_segment(
+                (sign * .121, -.081, 1.303), (sign * .009, -.112, 1.105),
+                ((0, .003, 1), (.2, .004, 1), (.5, .004, 1), (.8, .004, 1), (1, .003, 1)), 6),
+                "chest", "uniform_detail", "waistcoat_dark")
+        for index in range(3):
+            self.replace_geometry(f"CLO_Button.{index+1}", base.make_ellipsoid(
+                (0, -.126, 1.080-index*.093), (.009, .004, .009), 8, 4))
+        towel_rows = [[Vector((.748 + (-.09 + .18*col/8) * (.81+.19*row/5),
+                              -.035 + .006*math.sin(col*math.pi/2), .940+.160*row/5))
+                       for col in range(9)] for row in range(6)]
+        self.replace_geometry("ACC_ServiceTowel", closed_panel(towel_rows, Vector((0, .006, 0))))
+
     def build_service_anchors(self) -> None:
         vessel = base.BONE_BY_NAME["SOCKET_Vessel.L"].head
         bottle = base.BONE_BY_NAME["SOCKET_Bottle.R"].head
@@ -364,6 +651,9 @@ def validate_result(result):
                 f"{specification.name} parent is {actual_parent!r}, "
                 f"expected {specification.parent!r}"
             )
+        if (bone.head_local - base.v(specification.head)).length > .000001 or \
+                (bone.tail_local - base.v(specification.tail)).length > .000001:
+            errors.append(f"{specification.name} rest pose diverges from NpcHumanV2")
 
     if bpy.data.actions:
         errors.append("Bartender model must contain no authored Actions")
@@ -401,6 +691,11 @@ def validate_result(result):
         errors.append(f"Missing required bartender design parts: {missing}")
     if any(name.startswith("ARM2_") or name.startswith("ARM3_") for name in parts):
         errors.append("Ordinary bartender contains a legacy extra-arm mesh")
+    for side in ("L", "R"):
+        for finger in range(4):
+            part = parts.get(f"GEO_Finger{finger}.{side}")
+            if part is None or part.bone != f"hand.{side}":
+                errors.append(f"Missing separated finger {finger} on unchanged {side} hand bone")
 
     mesh_count = len(result.parts)
     triangle_count = 0
@@ -421,14 +716,27 @@ def validate_result(result):
         for vertex in mesh.vertices:
             world_vertices.append(obj.matrix_world @ vertex.co)
         triangle_count += base.triangulated_count(mesh)
+        volume = detail.signed_volume(([vertex.co for vertex in mesh.vertices],
+                                       [tuple(polygon.vertices) for polygon in mesh.polygons]))
+        if volume <= 0:
+            errors.append(f"{obj.name} is not an outward closed volume")
+        kind = obj.get("bp_detail_kind")
+        uv = mesh.uv_layers.active
+        if kind not in surface_atlas.CELLS or uv is None or len(uv.data) != len(mesh.loops):
+            errors.append(f"{obj.name} is missing its declared surface UVs")
+        else:
+            origin = surface_atlas.CELLS[kind]
+            if any(not (origin[axis]+1)/256 - .000001 <= loop.uv[axis] <=
+                       (origin[axis]+127)/256 + .000001 for loop in uv.data for axis in (0, 1)):
+                errors.append(f"{obj.name} UVs escape the inset material cell")
 
     if not MIN_TRIANGLES <= triangle_count <= MAX_TRIANGLES:
         errors.append(
             f"Triangle budget is {triangle_count}; expected "
             f"{MIN_TRIANGLES}-{MAX_TRIANGLES}"
         )
-    if mesh_count < 28 or mesh_count > 58:
-        errors.append(f"Mesh count is {mesh_count}; expected 28-58 parts")
+    if mesh_count < 60 or mesh_count > 110:
+        errors.append(f"Mesh count is {mesh_count}; expected 60-110 parts")
 
     if world_vertices:
         bounds_min = Vector(
@@ -467,6 +775,7 @@ def validate_result(result):
         "generator_version": GENERATOR_VERSION,
         "design_id": DESIGN_ID,
         "seed": SEED,
+        "detail_atlas_sha256": hashlib.sha256(surface_atlas.png_bytes()).hexdigest(),
         "anatomy_standard": base.NPC_ANATOMY_STANDARD,
         "skeleton": [
             {
@@ -496,6 +805,10 @@ def validate_result(result):
                     for vertex in part.obj.data.vertices
                 ],
                 "triangles": base.triangulated_count(part.obj.data),
+                "faces": [list(polygon.vertices) for polygon in part.obj.data.polygons],
+                "atlas_region": part.obj.get("bp_atlas_region", ""),
+                "uvs": [[base.stable_float(value) for value in loop.uv]
+                        for loop in part.obj.data.uv_layers.active.data],
             }
             for part in sorted(result.parts, key=lambda item: item.obj.name)
         ],
@@ -542,13 +855,10 @@ def render_preview(path: Path, result) -> None:
     scene.collection.objects.link(light)
     light.rotation_euler = (0.9, 0.25, 0.6)
     scene.camera = camera
-    scene.render.engine = "BLENDER_WORKBENCH"
-    scene.display.shading.light = "STUDIO"
-    # Every runtime part shares one material and receives its authored colour
-    # through a MaterialPropertyBlock.  Workbench OBJECT colour mirrors that
-    # contract in the source preview instead of flattening the whole uniform
-    # to the shared material's neutral swatch.
-    scene.display.shading.color_type = "OBJECT"
+    scene.render.engine = "CYCLES"
+    scene.cycles.samples = 24
+    scene.cycles.use_denoising = True
+    scene.view_settings.view_transform = "Standard"
     scene.render.resolution_x = 640
     scene.render.resolution_y = 800
     scene.render.filepath = str(path)
@@ -583,6 +893,8 @@ def write_manifest(path: Path, result, report) -> None:
         "anchor_names": list(result.anchors),
         "socket_names": list(SOCKET_NAMES),
         "material_asset": SHARED_MATERIAL_ASSET,
+        "texture_bindings": [surface_atlas.texture_binding(
+            surface_atlas.ASSET_PATH, [part.obj for part in result.parts])],
         "emissive": False,
         "colliders": False,
         "lights": False,
@@ -612,6 +924,7 @@ def write_manifest(path: Path, result, report) -> None:
                 "role": part.role,
                 "bone": part.bone,
                 "palette_name": part.palette_name,
+                "atlas_region": part.obj.get("bp_atlas_region", ""),
                 "base_color": [
                     base.stable_float(component) for component in part.color
                 ],
@@ -631,8 +944,23 @@ def write_manifest(path: Path, result, report) -> None:
 
 def main() -> None:
     config = parse_args()
+    if config.validate_only:
+        atlas_path = Path(surface_atlas.ASSET_PATH)
+        if not atlas_path.is_file() or atlas_path.read_bytes() != surface_atlas.png_bytes():
+            raise RuntimeError("Ordinary character atlas differs from its deterministic source")
+    else:
+        surface_atlas.publish(surface_atlas.ASSET_PATH)
     result = OrdinaryBartenderBuilder().build()
     report = validate_result(result)
+    first_signature = report.build_signature
+    result = OrdinaryBartenderBuilder().build()
+    report = validate_result(result)
+    if first_signature != report.build_signature:
+        raise RuntimeError("Ordinary bartender geometry is not deterministic")
+    if config.validate_only:
+        print(f"ORDINARY BAR BARTENDER VALIDATION OK: {report.triangle_count} triangles; {report.build_signature}")
+        return
+    surface_atlas.attach_preview(result.material, surface_atlas.ASSET_PATH)
     if not config.no_preview:
         render_preview(config.preview, result)
     base.export_fbx(config.fbx, result)

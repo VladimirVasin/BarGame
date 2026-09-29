@@ -162,6 +162,17 @@ namespace BarPromenade.Editor
 
         public static void BuildOrThrow()
         {
+            BuildVariantsOrThrow(Variants);
+        }
+
+        /// <summary>Refresh the active clerk without republishing the retained Watcher.</summary>
+        public static void BuildNormalOrThrow()
+        {
+            BuildVariantsOrThrow(new[] { NormalVariant });
+        }
+
+        private static void BuildVariantsOrThrow(CashierVariant[] variants)
+        {
             if (isBuilding)
             {
                 return;
@@ -178,8 +189,6 @@ namespace BarPromenade.Editor
             isBuilding = true;
             try
             {
-                EnsureFolderForAsset(PrefabPath);
-                EnsureFolderForAsset(WatcherPrefabPath);
                 EnsureFolderForAsset(ProviderPath);
                 AssetDatabase.ImportAsset(
                     PlayerModelPath,
@@ -195,9 +204,10 @@ namespace BarPromenade.Editor
                         $"'{SharedMaterialPath}'.");
                 }
 
-                for (int index = 0; index < Variants.Length; index++)
+                for (int index = 0; index < variants.Length; index++)
                 {
-                    CashierVariant variant = Variants[index];
+                    CashierVariant variant = variants[index];
+                    EnsureFolderForAsset(variant.PrefabPath);
                     AssetDatabase.ImportAsset(
                         variant.ModelPath,
                         ImportAssetOptions.ForceUpdate |
@@ -228,7 +238,7 @@ namespace BarPromenade.Editor
 
                 BindProvider();
                 AssetDatabase.SaveAssets();
-                ValidateOrThrow();
+                ValidateVariantsOrThrow(variants);
             }
             finally
             {
@@ -238,14 +248,24 @@ namespace BarPromenade.Editor
 
         public static void ValidateOrThrow()
         {
+            ValidateVariantsOrThrow(Variants);
+        }
+
+        public static void ValidateNormalOrThrow()
+        {
+            ValidateVariantsOrThrow(new[] { NormalVariant });
+        }
+
+        private static void ValidateVariantsOrThrow(CashierVariant[] variants)
+        {
             Avatar playerAvatar = FindModelAvatar();
             Material expectedMaterial =
                 AssetDatabase.LoadAssetAtPath<Material>(
                     SharedMaterialPath);
-            for (int index = 0; index < Variants.Length; index++)
+            for (int index = 0; index < variants.Length; index++)
             {
                 ValidateVariantOrThrow(
-                    Variants[index],
+                    variants[index],
                     playerAvatar,
                     expectedMaterial);
             }
@@ -485,8 +505,10 @@ namespace BarPromenade.Editor
                 manifest.mesh_count < 24 ||
                 manifest.mesh_count > 56 ||
                 manifest.bones.Length != 31 ||
-                manifest.triangle_count < MinimumTriangleCount ||
-                manifest.triangle_count > MaximumTriangleCount ||
+                manifest.triangle_count < (variant.NeckMode ==
+                    SupermarketCashierNeckMode.FixedHuman ? 4500 : MinimumTriangleCount) ||
+                manifest.triangle_count > (variant.NeckMode ==
+                    SupermarketCashierNeckMode.FixedHuman ? 8000 : MaximumTriangleCount) ||
                 manifest.pool_eligible)
             {
                 throw new InvalidOperationException(

@@ -82,8 +82,12 @@ PIPEBACK_SEAT_TOP_M = 0.705
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT / "tools"))
+sys.dont_write_bytecode = True
 
 import atlas_kit  # noqa: E402  (after the sys.path fix)
+import principal_npc_detail  # noqa: E402
+import npc_detail_atlas  # noqa: E402
+import fisherman_detail  # noqa: E402
 
 # A design may dress a few of its parts with one small detail atlas. The
 # texture is pale grey-on-white detail only - seams, laces, grooves, chips -
@@ -683,7 +687,7 @@ ARCHETYPES = {
         "mother", "mother_v1", "Mother", 401882,
         "Mother3D.blend", "Mother3D",
         "Mother3D.png", "MotherRock", "MotherRock",
-        (1700, 2500),
+        (4500, 8000),
         perch_seat_height_m=(0.555, 0.585),
         staged=True,
         pool_eligible=False,
@@ -757,10 +761,10 @@ ARCHETYPES = {
         "lake_fisherman", "lake_fisherman_v1", "Lake Fisherman", 1023877,
         "LakeFisherman3D.blend", "LakeFisherman3D",
         "LakeFisherman3D.png", "FishermanLean", "FishermanTrudge",
-        # 900 -> 800 on 2026-09-05: the rod and the pipe moved into the
-        # hand-prop library (HAND_PROPS) and the pier attaches both. Same
-        # floor in C#.
-        (800, 2000),
+        # Detailed ordinary body; rod and pipe remain separate hand props.
+        (4500, 8000),
+        face_atlas=fisherman_detail.FACE_ATLAS_NAME,
+        rig_anchors=(RigAnchorSpec("ANCHOR_FishermanExhale", "head", "anchor", ()),),
         # The street pair stays authored and bound: he had them when he
         # roamed, nothing plays them now, and stripping them would move the
         # animation manifest signature for no gain.
@@ -1340,6 +1344,7 @@ PALETTE = {
     "oilskin_trousers": (0.175, 0.140, 0.055, 1.0),
     "boot_rubber": (0.055, 0.058, 0.052, 1.0),
     "fisher_skin": (0.395, 0.265, 0.190, 1.0),
+    "fisher_face_atlas": (1.0, 1.0, 1.0, 1.0),
     "fisher_grey": (0.395, 0.390, 0.372, 1.0),
     "pipe_briar": (0.165, 0.098, 0.055, 1.0),
     "pipe_briar_dark": (0.082, 0.048, 0.028, 1.0),
@@ -2212,14 +2217,7 @@ def _bouquet_greens():
 
 
 def _rod_reel():
-    return make_box(
-        (
-            _rod_along(0.128)[0],
-            _rod_along(0.128)[1],
-            _rod_along(0.128)[2] - 0.052,
-        ),
-        (0.056, 0.072, 0.072),
-    )
+    return fisherman_detail.rod_reel_geometry(sys.modules[__name__])
 
 
 def _coffee_spout_lip():
@@ -2422,11 +2420,7 @@ HAND_PROPS: tuple[HandPropSpec, ...] = (
             ),
             HandPropPartSpec(
                 "ACC_PipeBowl",
-                lambda: make_frustum_between(
-                    (0.022, -0.252, 1.428),
-                    (0.024, -0.262, 1.492),
-                    0.026, 0.030, 8, 1.0,
-                ),
+                fisherman_detail.pipe_bowl_geometry,
                 "signature_silhouette", "pipe_briar",
             ),
             # The one part the runtime drives: the shared material stays
@@ -2434,7 +2428,7 @@ HAND_PROPS: tuple[HandPropSpec, ...] = (
             # raised by the runtime against this exact part.
             HandPropPartSpec(
                 "ACC_PipeEmber",
-                lambda: make_box((0.024, -0.262, 1.496), (0.036, 0.036, 0.010)),
+                fisherman_detail.pipe_ember_geometry,
                 "signature_silhouette", "amber",
             ),
         ),
@@ -2761,6 +2755,23 @@ class PedestrianBuilder:
             )
         for builder in builders[self.spec.key]:
             builder()
+        if self.spec.key in principal_npc_detail.KEYS:
+            principal_npc_detail.add_details(self, sys.modules[__name__])
+            if self.spec.key == "lake_fisherman":
+                fisherman_detail.fit_grips(self, sys.modules[__name__])
+                mouth = Vector(fisherman_detail.mouth_position(self.result))
+                anchor=self.create_bone_anchor("ANCHOR_FishermanExhale", "head",
+                                               mouth+Vector((0,-.001,0)), (0,-1,0))
+                # The shared mouth exhale consumes Transform.up. Only this
+                # passive effect marker uses Y as its outward local axis.
+                anchor.matrix_world = (Matrix.Translation(mouth+Vector((0,-.001,0)))
+                    @ Vector((0,-1,0)).to_track_quat("Y","Z").to_matrix().to_4x4())
+                anchor["bp_outward_axis"]="Y"
+            for part in self.result.parts:
+                if part.obj.name != FACE_SURFACE_PART:
+                    npc_detail_atlas.apply_uv(part.obj, principal_npc_detail.surface_kind(part))
+            if self.atlas_path is not None:
+                npc_detail_atlas.attach_preview(self.result.material, self.atlas_path)
         # Here, and NOT on the tail of `assign_atlas_uvs`, where this used to
         # sit. That method is called only by designs that declare texture
         # regions, so a design carrying a face atlas and no detail atlas
@@ -3222,6 +3233,10 @@ class PedestrianBuilder:
         if bone_name not in BONE_BY_NAME:
             raise ValueError(f"Unknown canonical bone: {bone_name}")
         color = PALETTE[palette_name]
+        if self.spec is not None and self.spec.key in principal_npc_detail.KEYS:
+            geometry = principal_npc_detail.geometry(self.spec.key, name, geometry, sys.modules[__name__], self)
+            if name != FACE_SURFACE_PART:
+                geometry = principal_npc_detail.detail.outward(geometry)
         vertices, faces = geometry
         origin_vector = v(origin or BONE_BY_NAME[bone_name].head)
         remapped_vertices = [
@@ -3312,6 +3327,7 @@ class PedestrianBuilder:
         anchor.parent = self.result.rig
         anchor.parent_type = "BONE"
         anchor.parent_bone = bone_name
+        bpy.context.view_layer.update()
         world_rotation = direction.normalized().to_track_quat("Z", "Y")
         anchor.matrix_world = (
             Matrix.Translation(v(location))
@@ -5906,23 +5922,10 @@ class PedestrianBuilder:
             make_frustum_between((0, 0.000, 1.328), (0, -0.006, 1.424), 0.132, 0.120, 12),
             "neck", "clothing", "slicker_dark",
         )
-        # What survives the hood: narrowed weather eyes, a big nose and
-        # a grey beard. No mouth is drawn - the pipe is the mouth.
-        self.add_part(
-            "ACC_Eye.L",
-            make_box((0.044, -0.120, 1.556), (0.032, 0.018, 0.013)),
-            "head", "face_detail", "void",
-        )
-        self.add_part(
-            "ACC_Eye.R",
-            make_box((-0.044, -0.120, 1.556), (0.032, 0.018, 0.013)),
-            "head", "face_detail", "void",
-        )
-        self.add_part(
-            "ACC_Nose",
-            make_tapered_box((0, -0.144, 1.498), (0, -0.122, 1.542), (0.046, 0.054, 0), (0.032, 0.042, 0)),
-            "head", "face_detail", "fisher_skin",
-        )
+        # Features are painted on one curved skin surface, as on the default
+        # residents. Only the beard/moustache and the separate pipe stay 3D.
+        self.add_part(FACE_SURFACE_PART, fisherman_detail.face_surface(),
+                      "head", "facial_atlas", "fisher_face_atlas")
         self.add_part(
             "ACC_Beard",
             make_tapered_box((0, -0.100, 1.408), (0, -0.124, 1.480), (0.128, 0.086, 0), (0.112, 0.070, 0)),
@@ -9118,6 +9121,7 @@ def paint_detail_atlas(spec: ArchetypeSpec, path: Path) -> AtlasReport:
 
 FACE_ATLAS_PAINTERS = {
     MOTHER_FACE_ATLAS_NAME: paint_mother_face_atlas,
+    fisherman_detail.FACE_ATLAS_NAME: fisherman_detail.paint_face_atlas,
 }
 
 
@@ -9359,12 +9363,9 @@ def validate_result(
             }
         )
 
-    # No body exports an anchor Empty. Declared rig anchors (the kettle's)
-    # are materialized by their focused Unity setup, and the one exception
-    # this used to make - the cafe pot spout, which followed hand.R straight
-    # out of the staged FBX - left with the pot on 2026-09-05: the spout is
-    # now an anchor of the coffee-pot hand prop, measured by its own build.
-    expected_anchors = ()
+    # The fisherman's passive mouth origin follows the head directly. Other
+    # effects still materialize their declared anchors in focused Unity setup.
+    expected_anchors = ("ANCHOR_FishermanExhale",) if archetype.key == "lake_fisherman" else ()
     if tuple(result.anchors) != expected_anchors:
         errors.append(
             f"Rig anchors are {tuple(result.anchors)!r}; "
@@ -9438,6 +9439,14 @@ def validate_result(
                 head_vertices.append(world_vertex)
         triangles = triangulated_count(mesh)
         triangle_count += triangles
+        if archetype.key in principal_npc_detail.KEYS and obj.name != FACE_SURFACE_PART:
+            volume = principal_npc_detail.detail.signed_volume((
+                [obj.matrix_world @ vertex.co for vertex in mesh.vertices],
+                [tuple(polygon.vertices) for polygon in mesh.polygons]))
+            if volume <= 1e-10:
+                errors.append(f"{obj.name} must be a closed outward solid")
+            if obj.name.startswith("GEO_Hand.") and len(mesh.vertices) < 150:
+                errors.append(f"{obj.name} must retain its constructed palm and separated fingers")
         signature_part = {
             "name": obj.name,
             "bone": part.bone,
@@ -9563,6 +9572,8 @@ def validate_result(
         "parts": signature_parts,
         "pivots": signature_pivots,
     }
+    if archetype.key in principal_npc_detail.KEYS:
+        signature_payload["detail_version"] = principal_npc_detail.VERSION
     # Declared-only keys: absent from every design that declares nothing,
     # so the thirteen untextured signatures do not move.
     if archetype.texture_atlas is not None:
@@ -9683,6 +9694,9 @@ def render_preview(path: Path, result: BuildResult, spec: ArchetypeSpec) -> None
         preview_pose = PERCH_PREVIEW_POSES[spec.key]()
     elif spec.key == "cafe_attendant":
         preview_pose = cafe_attendant_base_pose()
+    elif spec.key == "lake_fisherman":
+        preview_pose = fisherman_base_pose()
+        fisherman_detail.add_preview_props(result, presentation, sys.modules[__name__])
     elif spec.key in SHELTER_PREVIEW_POSES:
         preview_pose = SHELTER_PREVIEW_POSES[spec.key]()
     posed_preview = preview_pose is not None
@@ -9717,7 +9731,7 @@ def render_preview(path: Path, result: BuildResult, spec: ArchetypeSpec) -> None
         # From his own right, and from lower down. The rod leaves the
         # right fist along -Y, so the library's usual left-front camera
         # would look straight down two metres of it and see a dot.
-        "lake_fisherman": (-4.30, -3.15, 1.95),
+        "lake_fisherman": (-2.60, -3.20, 2.10),
         # Lower and closer. He is seated and folded forward, so the
         # library's standing camera looks down onto a crown and misses
         # both the face in the hands and the check on the scarf.
@@ -9736,6 +9750,7 @@ def render_preview(path: Path, result: BuildResult, spec: ArchetypeSpec) -> None
         "shelter_sleeping_resident": (0.60, -4.00, 1.12),
     }.get(spec.key, (2.65, -4.40, 2.10))
     target = {
+        "lake_fisherman": Vector((0, -.30, .90)),
         "shelter_seated_resident": Vector((0, 0, 0.62)),
         "shelter_sleeping_resident": Vector((0.08, -0.12, 0.23)),
     }.get(spec.key, Vector((0, 0, 0.84 if posed_preview else 0.88)))
@@ -9768,7 +9783,30 @@ def render_preview(path: Path, result: BuildResult, spec: ArchetypeSpec) -> None
     ground.data.materials.append(ground_material)
 
     scene.render.filepath = str(path)
+    # The production face is a separate atlas. Source previews must show the
+    # same single neutral cell rather than the entire grid or a blank patch.
+    face = next((part.obj for part in result.parts if part.obj.name == FACE_SURFACE_PART), None)
+    preview_face_material = None
+    if spec.face_atlas is not None and face is not None:
+        preview_face_material = bpy.data.materials.new("MAT_CharacterFacePreview")
+        preview_face_material.use_nodes = True
+        nodes, links = preview_face_material.node_tree.nodes, preview_face_material.node_tree.links
+        shader = nodes.get("Principled BSDF")
+        shader.inputs["Roughness"].default_value = .9
+        tex = nodes.new("ShaderNodeTexImage")
+        tex.image = bpy.data.images.load(str(REPO_ROOT / "Assets/Pedestrians/Textures" / spec.face_atlas), check_existing=True)
+        tex.image.pack()
+        tex.interpolation = "Closest"
+        coord = nodes.new("ShaderNodeTexCoord")
+        mapping = nodes.new("ShaderNodeVectorMath"); mapping.operation = "MULTIPLY_ADD"
+        mapping.inputs[1].default_value = (.25,.25,1)
+        mapping.inputs[2].default_value = (0,.75,0)
+        links.new(coord.outputs["UV"],mapping.inputs[0]); links.new(mapping.outputs[0],tex.inputs["Vector"])
+        links.new(tex.outputs["Color"],shader.inputs["Base Color"])
+        face.data.materials[0] = preview_face_material
     bpy.ops.render.render(write_still=True)
+    if preview_face_material is not None:
+        face.data.materials[0] = result.material
     if posed_preview:
         if perch_drop != 0.0:
             result.rig.location.z += perch_drop
@@ -10031,8 +10069,19 @@ def write_manifest(
             "uv_origin": "bottom_left",
             "material_tint_hex": "FFFFFF",
             "uv_contract": "local_0_1_runtime_cell_scale_offset",
-            "cells": mother_face_cells(),
+            "cells": (fisherman_detail.face_cells() if spec.key == "lake_fisherman"
+                      else mother_face_cells()),
         }
+        if spec.key == "lake_fisherman":
+            payload["face_atlas"]["mouth_lift_m"] = fisherman_detail.MOUTH_RAISE
+            payload["face_atlas"]["mouth_position_m"] = fisherman_detail.mouth_position(result)
+            payload["face_atlas"]["pipe_mount_offset_m"] = fisherman_detail.pipe_mount_offset(result)
+            payload["face_atlas"]["pipe_scale"] = fisherman_detail.PIPE_SCALE
+    if spec.key in principal_npc_detail.KEYS:
+        detail_path = REPO_ROOT / "Assets/Pedestrians/Textures" / npc_detail_atlas.ATLAS_NAME
+        payload["detail_version"] = principal_npc_detail.VERSION
+        payload["texture_bindings"] = [npc_detail_atlas.texture_binding(
+            detail_path, [part.obj for part in result.parts if part.obj.name != FACE_SURFACE_PART])]
     temporary = path.with_suffix(path.suffix + ".tmp")
     temporary.write_text(
         json.dumps(payload, ensure_ascii=False, indent=2) + "\n",
@@ -11144,9 +11193,9 @@ def fisherman_base_pose() -> dict[str, BonePose]:
         "head": BonePose(rotation_degrees=(5.0, 0.0, 0.0)),
         "clavicle.L": BonePose(rotation_degrees=(2.0, -4.0, 5.0)),
         "clavicle.R": BonePose(rotation_degrees=(2.0, 4.0, -5.0)),
-        "upper_arm.L": BonePose(rotation_degrees=(-83.0, 42.8, 125.5)),
-        "forearm.L": BonePose(rotation_degrees=(-73.0, 60.5, -36.8)),
-        "hand.L": BonePose(rotation_degrees=(11.2, 21.0, -1.5)),
+        "upper_arm.L": BonePose(rotation_degrees=(-61.351710, -23.249245, -38.253287)),
+        "forearm.L": BonePose(rotation_degrees=(-65.075905, -21.194832, -32.688230)),
+        "hand.L": BonePose(rotation_degrees=(-5.443691, .196967, 4.141409)),
         "upper_arm.R": BonePose(rotation_degrees=(-47.0, 10.0, 9.0)),
         "forearm.R": BonePose(rotation_degrees=(-118.0, 32.0, -9.2)),
         "hand.R": BonePose(rotation_degrees=(31.8, 22.5, -42.0)),
@@ -17803,6 +17852,10 @@ def main() -> None:
     face_atlases: dict[str, AtlasReport] = {}
     for spec in selected:
         atlas = None
+        detail_path = None
+        if spec.key in principal_npc_detail.KEYS:
+            detail_path = REPO_ROOT / "Assets/Pedestrians/Textures" / npc_detail_atlas.ATLAS_NAME
+            npc_detail_atlas.publish(detail_path)
         if spec.texture_atlas is not None:
             # Painted before the build so the review render can sample it.
             atlas = build_detail_atlas(spec, config.texture_dir / spec.texture_atlas)
@@ -17812,7 +17865,7 @@ def main() -> None:
                 spec, config.texture_dir / spec.face_atlas
             )
         result = PedestrianBuilder(
-            spec, atlas_path=atlas.path if atlas is not None else None
+            spec, atlas_path=atlas.path if atlas is not None else detail_path
         ).build()
         report = validate_result(result, spec, atlas)
         blend_path = config.source_dir / spec.blend_name
@@ -17846,7 +17899,8 @@ def main() -> None:
         # The hand props are authored against these bodies' anatomy, so
         # they are rebuilt whenever the whole library is.
         build_hand_prop_library(config)
-    if config.cafe_cast or config.shelter_residents or config.archetype == "all":
+    if (config.cafe_cast or config.shelter_residents or config.archetype == "all"
+            or config.archetype in principal_npc_detail.KEYS):
         first_signatures = {
             spec.design_id: report.build_signature for spec, report in reports
         }

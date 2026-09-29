@@ -270,9 +270,9 @@ MonoBehaviour:
   anchors:
   - anchorName: ANCHOR_PipeEmber
     transform: {fileID: 2750287797693647641}
-  sourceTriangleCount: 60
+  sourceTriangleCount: 222
   sourceGeneratorVersion: 4.5.2
-  buildSignature: 0e2e5386feba22dd92906ae5360a689a62f58f9eaed159a5822ce393cbb58ec9
+  buildSignature: 1c982e335dd83843b81c1011f38d502d3d878c27738fd31df8c6d6acda1dc0fd
   paletteVariant: 0
 --- !u!1 &6464478269844438302
 GameObject:
@@ -334,7 +334,7 @@ Transform:
   m_GameObject: {fileID: 7117706238248721330}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0.01864, y: -0.016599894, z: -0.08323999}
+  m_LocalPosition: {x: 0.01796782, y: -0.032964706, z: -0.08124973}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []

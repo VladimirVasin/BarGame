@@ -32,8 +32,10 @@ import sys
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import atlas_kit  # noqa: E402
+from service_npc_detail import geometry_for, validate_hands  # noqa: E402
 from supermarket_cashier_detail_atlas import (  # noqa: E402
     CASHIER_ATLAS_REGIONS,
+    DetailAtlasReport,
     DETAIL_ATLAS_NAME,
     DETAIL_ATLAS_REGION_PROP,
     DETAIL_ATLAS_SIZE,
@@ -143,6 +145,7 @@ def activate_variant(variant: CashierVariant) -> None:
     global ACTIVE_VARIANT
     global GENERATOR_VERSION, DESIGN_ID, DISPLAY_NAME
     global TOTAL_HEIGHT, SIGNATURE_ANATOMY
+    global MIN_TRIANGLES, MAX_TRIANGLES
 
     ACTIVE_VARIANT = variant
     GENERATOR_VERSION = variant.generator_version
@@ -150,6 +153,8 @@ def activate_variant(variant: CashierVariant) -> None:
     DISPLAY_NAME = variant.display_name
     TOTAL_HEIGHT = variant.total_height
     SIGNATURE_ANATOMY = variant.signature_anatomy
+    MIN_TRIANGLES, MAX_TRIANGLES = ((4500, 8000)
+        if variant.key == NORMAL_VARIANT.key else (1100, 2200))
 
     base.GENERATOR_VERSION = GENERATOR_VERSION
     base.DESIGN_ID = DESIGN_ID
@@ -197,6 +202,7 @@ def parse_args() -> argparse.Namespace:
         ),
     )
     parser.add_argument("--no-preview", action="store_true")
+    parser.add_argument("--validate-only", action="store_true")
     arguments = (
         sys.argv[sys.argv.index("--") + 1 :] if "--" in sys.argv else []
     )
@@ -234,6 +240,11 @@ class CashierBuilder(base.PedestrianBuilder):
         super().__init__(spec=None)
         self.variant = variant
         self.atlas_path = atlas_path
+
+    def add_part(self, name, geometry, bone_name, role, palette_name, origin=None):
+        if self.variant.key == NORMAL_VARIANT.key:
+            geometry = geometry_for(base, name, geometry, cashier=True)
+        return super().add_part(name, geometry, bone_name, role, palette_name, origin)
 
     def attach_preview_atlas(self, material) -> None:
         """Multiply the object colour by the detail atlas in the review.
@@ -318,8 +329,12 @@ class CashierBuilder(base.PedestrianBuilder):
                 atlas_kit.assign_ring_strip_uv(
                     part.obj,
                     rect_uv,
-                    region.sides,
-                    region.rings,
+                    16 if self.variant.key == NORMAL_VARIANT.key and
+                        region.renderer.startswith(("GEO_Forearm.", "GEO_Thigh."))
+                        else region.sides,
+                    9 if self.variant.key == NORMAL_VARIANT.key and
+                        region.renderer.startswith(("GEO_Forearm.", "GEO_Thigh."))
+                        else region.rings,
                     region.name,
                     DETAIL_ATLAS_REGION_PROP,
                 )
@@ -900,6 +915,8 @@ def validate_cashier_result(result, atlas, variant: CashierVariant):
     """
 
     bpy.context.view_layer.update()
+    if variant.key == NORMAL_VARIANT.key:
+        validate_hands(result)
     errors: list[str] = []
 
     bones = list(result.rig.data.bones)
@@ -1425,9 +1442,23 @@ def main() -> None:
     activate_variant(variant)
     # Painted before the build so the Blender review render samples the
     # very file Unity imports.
-    atlas = write_detail_atlas(paint_cashier_detail_atlas(), config.atlas)
+    if config.validate_only:
+        import hashlib
+        payload = paint_cashier_detail_atlas().png_bytes()
+        if config.atlas.read_bytes() != payload:
+            raise RuntimeError("Cashier atlas differs from its deterministic source")
+        atlas = DetailAtlasReport(config.atlas, hashlib.sha256(payload).hexdigest(),
+                                  DETAIL_ATLAS_SIZE, DETAIL_ATLAS_SIZE)
+    else:
+        atlas = write_detail_atlas(paint_cashier_detail_atlas(), config.atlas)
     result = CashierBuilder(variant, atlas_path=config.atlas).build()
     report = validate_cashier_result(result, atlas, variant)
+    if config.validate_only:
+        expected = json.loads(config.manifest.read_text(encoding="utf-8"))
+        if expected["build_signature"] != report.build_signature:
+            raise RuntimeError("Cashier source differs from its published manifest")
+        print(f"CASHIER {variant.key} SOURCE VALID: {report.triangle_count} triangles, {report.build_signature}")
+        return
     if not config.no_preview:
         render_preview(config.preview, result)
     base.export_fbx(config.fbx, result)

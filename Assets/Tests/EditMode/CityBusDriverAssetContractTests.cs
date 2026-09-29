@@ -69,8 +69,12 @@ namespace BarPromenade.Tests.EditMode
                 Is.EqualTo(AnimatorCullingMode.AlwaysAnimate));
 
             Assert.That(registry.DesignId, Is.EqualTo("long_eyes_driver_v1"));
-            Assert.That(registry.SourceTriangleCount, Is.EqualTo(1496));
+            Assert.That(registry.SourceTriangleCount, Is.EqualTo(6876));
             Assert.That(registry.Renderers.Count, Is.EqualTo(48));
+            Assert.That(registry.DetailAtlas, Is.Not.Null);
+            Assert.That(registry.DetailAtlas, Is.EqualTo(
+                AssetDatabase.LoadAssetAtPath<Texture2D>(
+                    "Assets/Pedestrians/Textures/OrdinaryCharacterDetailAtlas.png")));
             Assert.That(
                 registry.LocalBounds.min.y,
                 Is.EqualTo(0f).Within(0.025f));

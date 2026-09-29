@@ -26,13 +26,10 @@ namespace BarPromenade.Editor
     /// working characters rest on. The arch-shelter residents and the
     /// mountain cafe cast stand apart for the same reason.
     ///
-    /// WHAT IS DIFFERENT ABOUT HER FACE. Every other NPC in this game wears
-    /// a detail atlas: light greys, baked into a sub-rectangle of the UVs,
-    /// multiplied by a palette tint. One drawing forever. Hers is the hero's
-    /// EXPRESSION atlas - full colour, a 4x4 grid, the cell chosen at runtime
-    /// through `_BaseMap_ST`. The two are opposites and this file keeps them
-    /// apart: a detail atlas wants a coloured tint, a face atlas demands a
-    /// white one, and <see cref="ValidateFaceAtlas"/> refuses the mistake.
+    /// Her face keeps its full-colour 4x4 expression grid selected through
+    /// `_BaseMap_ST`. Garments use the shared greyscale material atlas on
+    /// their own renderers. The face remains white-tinted and is excluded
+    /// from garment bindings, so its expression never becomes fabric detail.
     /// </summary>
     [InitializeOnLoad]
     public static class MothersHouseMotherAssetSetup
@@ -66,7 +63,7 @@ namespace BarPromenade.Editor
         private const string Anatomy = "NpcHumanV2";
         private const int BoneCount = 31, Fps = 24, AtlasSize = 256;
         private const int FaceColumns = 4, FaceRows = 4, FaceCellSize = 64;
-        private const int MinimumTriangles = 1700, MaximumTriangles = 2500;
+        private const int MinimumTriangles = 4500, MaximumTriangles = 8000;
         private const float Height = 1.75f;
         private const float RestPelvisHeight = 0.835f;
         private const float PositionTolerance = 0.0001f,
@@ -183,6 +180,7 @@ namespace BarPromenade.Editor
                 EnsureFolder(PrefabPath);
                 Import(PlayerModelPath);
                 Import(FaceAtlasPath);
+                OrdinaryCharacterDetailAtlas.Import();
                 Import(ManifestPath);
                 Import(ModelPath);
                 Import(AnimationManifestPath);
@@ -256,7 +254,7 @@ namespace BarPromenade.Editor
                 registry.PaletteVariant != 0 ||
                 registry.HeadLamp != null ||
                 registry.PreservesAirborneMotion ||
-                registry.DetailAtlas != null)
+                registry.DetailAtlas != OrdinaryCharacterDetailAtlas.LoadOrThrow())
             {
                 throw new InvalidOperationException(
                     $"{DisplayName} registry metadata is stale.");
@@ -373,7 +371,7 @@ namespace BarPromenade.Editor
                         sourcePart.palette_name,
                         renderer,
                         color, color, color, color,
-                        usesDetailAtlas: false));
+                        usesDetailAtlas: !string.IsNullOrEmpty(sourcePart.atlas_region)));
                 }
 
                 Animator animator = RequireAnimator(model);
@@ -409,6 +407,7 @@ namespace BarPromenade.Editor
                     manifest.design_id,
                     manifest.build_signature,
                     configuredPelvisAnchor: pelvis);
+                registry.ConfigureDetailAtlas(OrdinaryCharacterDetailAtlas.LoadOrThrow());
                 registry.ConfigureFaceAtlas(
                     BuildFaceAtlasBinding(manifest, atlas, renderersByName));
 
@@ -573,7 +572,7 @@ namespace BarPromenade.Editor
                     !SameColor(binding.VariantOneColor, expected) ||
                     !SameColor(binding.VariantTwoColor, expected) ||
                     !SameColor(binding.VariantThreeColor, expected) ||
-                    binding.UsesDetailAtlas ||
+                    binding.UsesDetailAtlas != !string.IsNullOrEmpty(source.atlas_region) ||
                     binding.Renderer.sharedMaterials.Length != 1 ||
                     binding.Renderer.sharedMaterial != material ||
                     binding.Renderer.shadowCastingMode !=
@@ -583,7 +582,12 @@ namespace BarPromenade.Editor
                     throw new InvalidOperationException(
                         $"{DisplayName} binding {index} is stale.");
                 }
+                if (binding.UsesDetailAtlas)
+                    OrdinaryCharacterDetailAtlas.ValidateUvs(binding.Renderer, source.atlas_region);
             }
+
+            if (registry.DetailAtlas != OrdinaryCharacterDetailAtlas.LoadOrThrow())
+                throw new InvalidOperationException("Mother garment atlas binding is stale.");
 
             if (CountTriangles(renderers) != manifest.triangle_count)
             {
@@ -748,15 +752,11 @@ namespace BarPromenade.Editor
                     $"{DisplayName} staged/source contract is invalid.");
             }
 
-            // She wears a face atlas INSTEAD of a detail atlas, never both:
-            // one is a full-colour grid selected at runtime, the other a grey
-            // mask baked into the UVs, and a mesh cannot sample two textures
-            // through one shared material.
-            if ((manifest.texture_bindings ??
-                 Array.Empty<TextureBinding>()).Length != 0)
+            // The face and garments use independent renderer property blocks.
+            if (manifest.texture_bindings == null || manifest.texture_bindings.Length != 1)
             {
                 throw new InvalidOperationException(
-                    $"{DisplayName} must carry no detail atlas.");
+                    $"{DisplayName} needs one shared garment detail atlas.");
             }
 
             HashSet<string> partNames = ValidateHierarchy(manifest);
@@ -766,6 +766,10 @@ namespace BarPromenade.Editor
                     $"{DisplayName} is missing '{FaceSurfaceName}'.");
             }
 
+            OrdinaryCharacterDetailAtlas.ValidateBinding(manifest.texture_bindings[0],
+                manifest.parts.ToDictionary(part => part.name, part => part.atlas_region, StringComparer.Ordinal));
+            if (!string.IsNullOrEmpty(manifest.parts.Single(part => part.name == FaceSurfaceName).atlas_region))
+                throw new InvalidOperationException("Mother expression surface must not sample the garment atlas.");
             ValidateFaceAtlas(manifest);
             return manifest;
         }
@@ -791,7 +795,6 @@ namespace BarPromenade.Editor
                     string.IsNullOrEmpty(part.palette_name) ||
                     part.base_color == null || part.base_color.Length != 4 ||
                     part.base_color.Any(value => value < 0f || value > 1f) ||
-                    !string.IsNullOrEmpty(part.atlas_region) ||
                     !parts.Add(part.name) || !bones.Contains(part.bone))
                 {
                     throw new InvalidOperationException(
@@ -1490,7 +1493,7 @@ namespace BarPromenade.Editor
             public Bone[] bones;
             public Part[] parts;
             public RigAnchor[] rig_anchors;
-            public TextureBinding[] texture_bindings;
+            public OrdinaryCharacterDetailAtlas.Binding[] texture_bindings;
             public FaceAtlas face_atlas;
         }
 
@@ -1512,12 +1515,6 @@ namespace BarPromenade.Editor
         {
             public string name, bone, kind, axis_from;
             public string[] parts;
-        }
-
-        [Serializable]
-        private sealed class TextureBinding
-        {
-            public string texture_asset;
         }
 
         [Serializable]

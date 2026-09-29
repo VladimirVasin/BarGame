@@ -3,41 +3,46 @@
 Newest outcomes/checks first. Archive whole dates at budget: [policy](README.md).
 Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-2026-08.md).
 
-## 2026-09-29 — Ground/hero surface layers and NPC loading
+## 2026-09-29 — Surfaces and ordinary character detail
 
-- City/MountainRoad/AlpineVillage share a ground Lit variant and linear response
-  maps registered to existing albedos. Road-frame wear follows width/direction;
-  City wetness keeps the shared weather clock. Snow reveals the actual road/soil
-  and editable junction atlas while existing pressing/collision stays authoritative.
-  Deep snow skips hidden substrate reads. Materials remain shared through MPBs.
+- City/MountainRoad/AlpineVillage share ground Lit and linear response maps.
+  Road wear follows width/direction; City wetness keeps the weather clock.
+  Snow reveals road/soil and junction atlas; pressing/collision stay authoritative.
+  Deep snow skips substrate reads; materials stay shared through MPBs.
 - Checks: `build-ground-surface-maps.py --check` validates deterministic maps,
-  imports and source hashes; `build-ground-surface-shader.py --check` preserves
-  the complete upstream passes. Surface capture uses the real build stages
-  before NPC creation. `MaterialSurfaces` passed;
-  exterior frames reviewed, road/snow controls and real clearing verified.
+  imports/hashes; `build-ground-surface-shader.py --check` preserves upstream
+  passes. `MaterialSurfaces` passed; exterior frames, road/snow controls and
+  clearing reviewed. Capture uses real build stages before NPC creation.
 - Focused contracts passed: `RegisteredRoad_UsesPropertyBlocksAndRestoresDryRecipe`,
   `SnowTreading_PressesDownWhereHeWalks`,
   `JunctionResponse_UsesThePaintedWeightsAndMetreCoordinates`. The atlas check
-  samples GPU texel centres explicitly; Unity's CPU bilinear lookup had shifted
-  the expected cavity values. `check-docs.py` and `git diff --check` passed.
+  samples GPU texel centres: CPU bilinear lookup shifted expected cavity values.
 - Fixed `ordinary-worker-v1` startup: the old Resources address resolved to the
-  raw `StationWorker.fbx`. Unity moved the assembled prefab to `OrdinaryWorker`
-  with its GUID/library reference intact; catalog and rebuild share one path.
-  The asset gate rejects ambiguous GameObject resources. Check:
+  raw `StationWorker.fbx`. The assembled prefab moved to `OrdinaryWorker`
+  with GUID/library intact; catalog/rebuild share one unambiguous path. Check:
   `OrdinaryWorker_SharesCatalogAssetAndActionsAcrossVisibilityChanges` passed.
   `CityNight_CreatesFogSharedGlowAndBudgetedFixtures` reached initialized City,
   then hit an unrelated hero-shadow expectation (`On` versus `TwoSided`).
-- Hero uses reusable `CharacterSurfaceMaterialSetup` Clothing/Skin/Hair profiles
-  on shared `Ps1Lit`. UV0 normal/response maps and binding hashes/regions retain
-  base colours, existing atlas UVs, separate face, geometry/weights/rig/actions.
-  Skin/hair gain authored UVs. Collapsed sleeve caps gave Mikk non-orthogonal
-  fallback tangents; import repairs only invalid frames. Cloth recalculates
-  tangents; mirror/arm copies and seated trousers retain the contract, while
-  UV-less first-person anatomy stays flat. Mikk vertex splitting/reordering
-  regenerates prefab cloth bindings without changing geometry/triangle count.
+- Hero uses shared `CharacterSurfaceMaterialSetup` Clothing/Skin/Hair profiles
+  on `Ps1Lit`: UV0 normal/response maps retain colours, atlas, face, geometry/rig.
+  Skin/hair gain UVs. Import repairs invalid Mikk sleeve-cap tangents; cloth
+  recalculates tangents/bindings after vertex splitting. Mirror/arm/seated copies
+  retain the contract; UV-less first-person anatomy stays flat.
   Checks: `build-player-clothing-surfaces.py --check`,
   `build-player-body-hair-surfaces.py --check` and `HeroCharacterSurfaces` passed.
   Production PS1 idle/walking, body/hair/hand/boot and mirror frames reviewed.
+- Versioned hero mesh postprocessing: seated FBX cache mixed tangent versions
+  under one dependency key. Check: `SeatedLowerBody_ReimportPreservesMeshDataAndTangentFrames`.
+- Fisherman, mother, ordinary bartender, cashier and bus driver gain shaped
+  bodies/fingers, garments/shoes and bounded detail UVs. Shared greyscale atlas
+  preserves palettes; mother's face clears the skull.
+  Checks: Blender geometry/UVs/repeat signatures, `npc_detail_atlas.py --validate-only`,
+  `PrincipalNormalNpcs`; frames reviewed. Final hair/bib corrections rendered;
+  repeat exit hit unrelated `Player3DFirstPersonSubset.RefreshAppearance` cleanup.
+- Fisherman: PNG face, fitted beard/hood. Left elbow/hand and small underslung
+  reel clear the other arm/fingers. Hollow pipe holds red coals; shared exhale/light
+  follow breath; mouth anchor uses local Y. Checks:
+  `validate-fisherman-grip.py`, `FishermanFaceGripAndSmoke`; PS1 grip views.
 
 ## 2026-09-28 — One-handed attack response
 

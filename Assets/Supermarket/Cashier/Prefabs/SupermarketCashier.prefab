@@ -386,12 +386,12 @@ MonoBehaviour:
   neckMode: 0
   neckPivots: []
   localBounds:
-    m_Center: {x: -0.0010001659, y: 0.8749999, z: 0.0406812}
-    m_Extent: {x: 0.8050294, y: 0.8749999, z: 0.17551003}
-  sourceTriangleCount: 1244
-  sourceGeneratorVersion: 1.0.0
+    m_Center: {x: -0.0010001659, y: 0.8749999, z: 0.04066342}
+    m_Extent: {x: 0.77194154, y: 0.8749999, z: 0.17790279}
+  sourceTriangleCount: 6828
+  sourceGeneratorVersion: 2.0.0
   designId: supermarket_cashier_v1
-  buildSignature: e478fa5c19e2a5fb6e6f2d041153c1ae445c029a4081fe83c73f28031d067678
+  buildSignature: 2806e9e0c72938d534782d9d67a67f6dec8c1a1d6d5cf64f56786a9b32a58045
 --- !u!1001 &236290169113557727
 PrefabInstance:
   m_ObjectHideFlags: 0

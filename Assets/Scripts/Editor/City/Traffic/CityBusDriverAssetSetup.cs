@@ -30,8 +30,8 @@ namespace BarPromenade.Editor
         private const string ExpectedEyeDesign =
             "two_long_horizontal_eyes_with_visible_pupils";
         private const float ExpectedHeight = 1.75f;
-        private const int MinimumTriangleCount = 900;
-        private const int MaximumTriangleCount = 1800;
+        private const int MinimumTriangleCount = 4500;
+        private const int MaximumTriangleCount = 8000;
         private const float TransformPositionTolerance = 0.0001f;
         private const float TransformAngleTolerance = 0.02f;
 
@@ -127,6 +127,7 @@ namespace BarPromenade.Editor
             try
             {
                 EnsureFolderForAsset(PrefabPath);
+                OrdinaryCharacterDetailAtlas.Import();
                 AssetDatabase.ImportAsset(
                     PlayerModelPath,
                     ImportAssetOptions.ForceUpdate |
@@ -265,6 +266,16 @@ namespace BarPromenade.Editor
             }
 
             ValidateEyeBindings(registry.RendererBindings);
+            if (registry.DetailAtlas != OrdinaryCharacterDetailAtlas.LoadOrThrow())
+            {
+                throw new InvalidOperationException("Driver detail atlas binding is stale.");
+            }
+            var atlasParts = manifest.parts.ToDictionary(part => part.name);
+            foreach (CityBusDriverRendererBinding binding in registry.RendererBindings)
+            {
+                OrdinaryCharacterDetailAtlas.ValidateUvs(binding.Renderer,
+                    atlasParts[binding.RendererName].atlas_region);
+            }
         }
 
         private static void ValidateDependencyStamp()
@@ -341,6 +352,11 @@ namespace BarPromenade.Editor
                 throw new InvalidOperationException(
                     "City bus driver manifest is malformed.");
             }
+
+            if (manifest.texture_bindings == null || manifest.texture_bindings.Length != 1)
+                throw new InvalidOperationException("Driver requires its shared detail atlas.");
+            OrdinaryCharacterDetailAtlas.ValidateBinding(manifest.texture_bindings[0],
+                manifest.parts.ToDictionary(part => part.name, part => part.atlas_region));
 
             if (!string.Equals(
                     manifest.design_id,
@@ -792,7 +808,8 @@ namespace BarPromenade.Editor
                     manifest.triangle_count,
                     manifest.generator_version,
                     manifest.design_id,
-                    manifest.build_signature);
+                    manifest.build_signature,
+                    OrdinaryCharacterDetailAtlas.LoadOrThrow());
 
                 GameObject saved = PrefabUtility.SaveAsPrefabAsset(
                     prefabRoot,
@@ -1095,6 +1112,7 @@ namespace BarPromenade.Editor
             public string eye_design;
             public CityBusDriverManifestBone[] bones;
             public CityBusDriverManifestPart[] parts;
+            public OrdinaryCharacterDetailAtlas.Binding[] texture_bindings;
         }
 
         [Serializable]
@@ -1111,6 +1129,7 @@ namespace BarPromenade.Editor
             public string role;
             public string bone;
             public string palette_name;
+            public string atlas_region;
             public float[] base_color;
         }
     }

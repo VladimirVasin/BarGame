@@ -2,6 +2,25 @@
 
 ## Current facts
 
+- **Accepted — 2026-09-29, Normal NPC faces and fisherman:**
+  User: Normal/default eyes/brows/nose/mouth are PNG on shaped heads, no solid
+  doubles; hair/beards/props stay 3D. Only fisherman now; other solid Normal features
+  await migration. Hero/bizarre outside scope. Fisherman's raised face reduces
+  forehead; beard wraps jaw/chin, moustache hugs upper lip, hood clears skull.
+  Hollow pipe/exhale meet lips. Hands grip 11–13 cm apart; left elbow stays left,
+  sleeves separate. `FishermanLean`/`FishermanTrudge` reuse the bank/rig.
+  Small reel clears fingers.
+  Inset red coals/light only on inhale; shared smoking exhale follows host clip phase.
+  Tobacco smoulders between draws. No new lore/lines/head turn; §16/art checks.
+
+- **Accepted — 2026-09-29, five ordinary character models:**
+  User: hero-level anatomy/fingers/clothes/shoes for fisherman, mother, ordinary
+  bartender, cashier and driver; bizarre unchanged. Shared `npc_detail_geometry`;
+  four use palette-neutral `OrdinaryCharacterDetailAtlas` cloth/leather/hair,
+  cashier his own atlas. Mother's face clears skull; expression grid stays.
+  Rigs/costumes/palettes/identities remain; fisherman contacts/pose refined above.
+  No new lore/speech/wardrobe/physics; §16/art checks, no §6 exception.
+
 - **Accepted — 2026-09-29, character surfaces:**
   User: reusable `CharacterSurfaceMaterialSetup` Clothing/Skin/Hair recipes
   on shared `Ps1Lit`; hero adapter `Player3DV2CharacterSurfaces`. Manifest UV0
@@ -1607,15 +1626,11 @@
   parts of the earlier shared-menu decision; service, payment and the fact
   that poisoned municipal water is the story's real danger remain unchanged.
 - **Accepted by explicit user decision, 2026-09-03 — the active bartender is
-  ordinary and two-armed:** `bar_bartender_v2` is a `1.75 m`, `39`-mesh /
-  `1,136`-triangle NpcHumanV2 figure in a dark-green waistcoat, rolled sleeves
-  and apron. Its registry reuses the four existing cafe-attendant clips and
-  its manual service graph follows the established
-  `BarDrinkServiceTimeline`: right hand to bottle, left hand to menu or vessel.
-  `BarBartenderProvider`
-  selects `BarBartenderOrdinary.prefab`; the former six-armed prefab remains a
-  serialized inactive legacy reference. This is a one-for-one active-cast
-  replacement and introduces no new strange body.
+  ordinary and two-armed:** `bar_bartender_v2`, `1.75 m`/NpcHumanV2, wears a
+  dark-green waistcoat, rolled sleeves and apron. Four cafe service clips follow
+  `BarDrinkServiceTimeline`: right bottle, left menu/vessel.
+  `BarBartenderProvider` selects `BarBartenderOrdinary.prefab`, retaining the
+  six-armed prefab as inactive legacy: one-for-one replacement, no new strange body.
 - **Accepted by explicit user correction, 2026-09-04 — bartender translation
   uses a complete walk:** the compatible Hero V2 `Walk` cycle is the fifth
   registry binding. Counter travel turns the root into the path before moving,
@@ -1764,23 +1779,15 @@
   replaces the static one; static residents/blanket remain compatibility and
   surface-validation assets only, never rendered.
   User decision `2026-09-04`: ordinary adults match Hero V2 anatomy, beyond
-  bone names. `PedestrianBuilder.build_ordinary_adult_body` supplies shelled
-  chest/waist/seat, ellipsoid hands/thumb, ears, profiled limbs/angular boots
-  for `yard_babushka`, `weigh_attendant`,
+  bone names. `PedestrianBuilder.build_ordinary_adult_body`: shelled trunk,
+  hands/thumb, ears, profiled limbs/boots for `yard_babushka`, `weigh_attendant`,
   `cemetery_mourner`, `cemetery_watchman`, `park_chess_player`,
-  `park_checkers_player` and `last_route_ferryman`, taking them to
-  `1,836–2,384`. Their `triangle_budget` floors are `1,800` in `ARCHETYPES` and
-  all seven `PedestrianDescriptor`s; box torsos fail Blender and Unity alike. The
-  substrate excludes footwear contact/headwear/faces/props and `GEO_FaceSurface`:
-  none of these seven declares `texture_atlas`, so authored `ACC_` faces stay.
-  `make_trunk_band` rings the shell for quilt seams/hems; `make_trunk_patch`
-  curves pockets/lapels/aprons/scarf tails to the trunk instead of floating
-  flat details above it.
-  `GENERATOR_VERSION` deliberately stayed `4.5.2`, so the fifteen untouched
-  city signatures are byte-identical. Cost on the street is roughly
-  `+7,000` triangles across the whole roaming pool. The Lake Fisherman is
-  built the same way and was left out of this pass by scope, not by
-  judgement; he is the obvious next one.
+  `park_checkers_player`, `last_route_ferryman`. Blender/Unity reject box torsos;
+  budget floor `1,800`. Footwear contacts, headwear, faces and props stay authored;
+  no `texture_atlas` on these seven. `make_trunk_band` follows the shell;
+  `make_trunk_patch` fits pockets/lapels/aprons/scarf tails to it. Generator
+  `4.5.2` preserves untouched city signatures. Fisherman's refinement is owned
+  by the separate `2026-09-29` decision.
 
 - **Accepted — the normal/bizarre verdict lives in C#, temporarily:** every
   character design now carries one of two marks,
@@ -2973,17 +2980,9 @@
   runtime and reconstructs the nearby Home stop as a static collider-free pole,
   but composes no bus actor or director.
 - **Accepted — a contextual effect reads its host clip's phase, never its own
-  timer:** the seacoast fisherman's pipe ember, its point light and its plume
-  are all functions of `SeacoastFishermanPresentation.BreathPhase`, derived from the
-  leaning clip's normalized time against a constant that mirrors the authored
-  key grid. A second free-running timer would be simpler and is wrong within a
-  second of watching him: smoke that swells while the ribs are still filling
-  reads as a particle system parented to a man rather than as smoking. The
-  same rule is why the plume's lag is expressed as a fraction of a breath
-  rather than as seconds. It also constrains what the clip may key: his breath
-  moves the spine chain only, because both clavicles hang off the chest and a
-  breath authored on them would open his two-handed grip on the rod once per
-  lap.
+  timer:** fisherman's ember/light/exhale read the leaning clip's breath phase;
+  no independent clock. Breathing moves the spine, carrying both arms and rod
+  together; separate clavicle breath keys would open the two-handed grip.
 - **Accepted — the second bench sitter duplicates his neighbour's driver
   rather than sharing one:** `ParkCheckersPlayer{Plan,Factory,Presentation}`
   is a near-copy of the chess player's quartet, and that is chosen rather than

@@ -18,24 +18,24 @@
   "pose": "apose",
   "forward_axis": "-Y",
   "anatomical_left_axis": "+X",
-  "mesh_count": 37,
-  "triangle_count": 892,
+  "mesh_count": 45,
+  "triangle_count": 7760,
   "triangle_budget": [
-    800,
-    2000
+    4500,
+    8000
   ],
   "staged": true,
   "pool_eligible": false,
   "wheel_radius_m": 0.0,
   "pivot_names": [],
   "bounds_min": [
-    -0.769306,
+    -0.766162,
     -0.21767,
     0.0
   ],
   "bounds_max": [
-    0.771306,
-    0.183748,
+    0.798174,
+    0.181111,
     1.75
   ],
   "material_asset": "Assets/Player3D/Materials/Player3DLit.mat",
@@ -60,7 +60,7 @@
   "floor_seated_contact_m": null,
   "lying_height_m": null,
   "lying_support_plane_offset_m": 0.0,
-  "build_signature": "202dc3d65190dec50f90c3e3908780b6c62ca971922cc02ea1ae30c05c3842a8",
+  "build_signature": "0ab3813a2068e37db8a0df886a8bda884b91946415ea2b84a4874597257f59d6",
   "bones": [
     {
       "name": "root",
@@ -540,36 +540,99 @@
         0.372,
         1.0
       ],
-      "vertices": 8,
-      "triangles": 12
+      "vertices": 130,
+      "triangles": 256,
+      "atlas_region": "ACC_Beard:hair"
     },
     {
-      "name": "ACC_Eye.L",
-      "role": "face_detail",
+      "name": "ACC_BeardLock0.L",
+      "role": "surface_detail",
       "bone": "head",
-      "palette_name": "void",
+      "palette_name": "fisher_grey",
       "base_color": [
-        0.008,
-        0.01,
-        0.009,
+        0.395,
+        0.39,
+        0.372,
         1.0
       ],
-      "vertices": 8,
-      "triangles": 12
+      "vertices": 28,
+      "triangles": 52,
+      "atlas_region": "ACC_BeardLock0.L:hair"
     },
     {
-      "name": "ACC_Eye.R",
-      "role": "face_detail",
+      "name": "ACC_BeardLock0.R",
+      "role": "surface_detail",
       "bone": "head",
-      "palette_name": "void",
+      "palette_name": "fisher_grey",
       "base_color": [
-        0.008,
-        0.01,
-        0.009,
+        0.395,
+        0.39,
+        0.372,
         1.0
       ],
-      "vertices": 8,
-      "triangles": 12
+      "vertices": 28,
+      "triangles": 52,
+      "atlas_region": "ACC_BeardLock0.R:hair"
+    },
+    {
+      "name": "ACC_BeardLock1.L",
+      "role": "surface_detail",
+      "bone": "head",
+      "palette_name": "fisher_grey",
+      "base_color": [
+        0.395,
+        0.39,
+        0.372,
+        1.0
+      ],
+      "vertices": 28,
+      "triangles": 52,
+      "atlas_region": "ACC_BeardLock1.L:hair"
+    },
+    {
+      "name": "ACC_BeardLock1.R",
+      "role": "surface_detail",
+      "bone": "head",
+      "palette_name": "fisher_grey",
+      "base_color": [
+        0.395,
+        0.39,
+        0.372,
+        1.0
+      ],
+      "vertices": 28,
+      "triangles": 52,
+      "atlas_region": "ACC_BeardLock1.R:hair"
+    },
+    {
+      "name": "ACC_BeardLock2.L",
+      "role": "surface_detail",
+      "bone": "head",
+      "palette_name": "fisher_grey",
+      "base_color": [
+        0.395,
+        0.39,
+        0.372,
+        1.0
+      ],
+      "vertices": 28,
+      "triangles": 52,
+      "atlas_region": "ACC_BeardLock2.L:hair"
+    },
+    {
+      "name": "ACC_BeardLock2.R",
+      "role": "surface_detail",
+      "bone": "head",
+      "palette_name": "fisher_grey",
+      "base_color": [
+        0.395,
+        0.39,
+        0.372,
+        1.0
+      ],
+      "vertices": 28,
+      "triangles": 52,
+      "atlas_region": "ACC_BeardLock2.R:hair"
     },
     {
       "name": "ACC_HoodCord",
@@ -583,7 +646,8 @@
         1.0
       ],
       "vertices": 8,
-      "triangles": 12
+      "triangles": 12,
+      "atlas_region": "ACC_HoodCord:skin_white"
     },
     {
       "name": "ACC_Moustache",
@@ -596,22 +660,9 @@
         0.372,
         1.0
       ],
-      "vertices": 8,
-      "triangles": 12
-    },
-    {
-      "name": "ACC_Nose",
-      "role": "face_detail",
-      "bone": "head",
-      "palette_name": "fisher_skin",
-      "base_color": [
-        0.395,
-        0.265,
-        0.19,
-        1.0
-      ],
-      "vertices": 8,
-      "triangles": 12
+      "vertices": 90,
+      "triangles": 172,
+      "atlas_region": "ACC_Moustache:hair"
     },
     {
       "name": "ACC_SlickerClasp.01",
@@ -625,7 +676,8 @@
         1.0
       ],
       "vertices": 8,
-      "triangles": 12
+      "triangles": 12,
+      "atlas_region": "ACC_SlickerClasp.01:skin_white"
     },
     {
       "name": "ACC_SlickerClasp.02",
@@ -639,7 +691,8 @@
         1.0
       ],
       "vertices": 8,
-      "triangles": 12
+      "triangles": 12,
+      "atlas_region": "ACC_SlickerClasp.02:skin_white"
     },
     {
       "name": "ACC_SlickerSeam.01",
@@ -652,8 +705,9 @@
         0.024,
         1.0
       ],
-      "vertices": 8,
-      "triangles": 12
+      "vertices": 120,
+      "triangles": 200,
+      "atlas_region": "ACC_SlickerSeam.01:cloth"
     },
     {
       "name": "ACC_SlickerSeam.02",
@@ -666,8 +720,9 @@
         0.024,
         1.0
       ],
-      "vertices": 8,
-      "triangles": 12
+      "vertices": 120,
+      "triangles": 200,
+      "atlas_region": "ACC_SlickerSeam.02:cloth"
     },
     {
       "name": "ACC_SlickerSeam.03",
@@ -680,8 +735,9 @@
         0.024,
         1.0
       ],
-      "vertices": 8,
-      "triangles": 12
+      "vertices": 120,
+      "triangles": 200,
+      "atlas_region": "ACC_SlickerSeam.03:cloth"
     },
     {
       "name": "CLO_BootShaft.L",
@@ -694,8 +750,9 @@
         0.052,
         1.0
       ],
-      "vertices": 16,
-      "triangles": 28
+      "vertices": 84,
+      "triangles": 164,
+      "atlas_region": "CLO_BootShaft.L:leather"
     },
     {
       "name": "CLO_BootShaft.R",
@@ -708,8 +765,9 @@
         0.052,
         1.0
       ],
-      "vertices": 16,
-      "triangles": 28
+      "vertices": 84,
+      "triangles": 164,
+      "atlas_region": "CLO_BootShaft.R:leather"
     },
     {
       "name": "CLO_HoodBrim",
@@ -722,8 +780,9 @@
         0.08,
         1.0
       ],
-      "vertices": 8,
-      "triangles": 12
+      "vertices": 96,
+      "triangles": 176,
+      "atlas_region": "CLO_HoodBrim:cloth"
     },
     {
       "name": "CLO_HoodCollar",
@@ -736,8 +795,9 @@
         0.024,
         1.0
       ],
-      "vertices": 24,
-      "triangles": 44
+      "vertices": 102,
+      "triangles": 200,
+      "atlas_region": "CLO_HoodCollar:cloth"
     },
     {
       "name": "CLO_HoodPeak",
@@ -750,8 +810,9 @@
         0.045,
         1.0
       ],
-      "vertices": 8,
-      "triangles": 12
+      "vertices": 112,
+      "triangles": 220,
+      "atlas_region": "CLO_HoodPeak:cloth"
     },
     {
       "name": "CLO_HoodShell",
@@ -764,8 +825,9 @@
         0.045,
         1.0
       ],
-      "vertices": 62,
-      "triangles": 120
+      "vertices": 294,
+      "triangles": 584,
+      "atlas_region": "CLO_HoodShell:cloth"
     },
     {
       "name": "CLO_Sleeve.L",
@@ -778,8 +840,9 @@
         0.045,
         1.0
       ],
-      "vertices": 20,
-      "triangles": 36
+      "vertices": 84,
+      "triangles": 164,
+      "atlas_region": "CLO_Sleeve.L:cloth"
     },
     {
       "name": "CLO_Sleeve.R",
@@ -792,8 +855,9 @@
         0.045,
         1.0
       ],
-      "vertices": 20,
-      "triangles": 36
+      "vertices": 84,
+      "triangles": 164,
+      "atlas_region": "CLO_Sleeve.R:cloth"
     },
     {
       "name": "CLO_SleeveCuff.L",
@@ -806,8 +870,9 @@
         0.024,
         1.0
       ],
-      "vertices": 16,
-      "triangles": 28
+      "vertices": 70,
+      "triangles": 136,
+      "atlas_region": "CLO_SleeveCuff.L:cloth"
     },
     {
       "name": "CLO_SleeveCuff.R",
@@ -820,8 +885,9 @@
         0.024,
         1.0
       ],
-      "vertices": 16,
-      "triangles": 28
+      "vertices": 70,
+      "triangles": 136,
+      "atlas_region": "CLO_SleeveCuff.R:cloth"
     },
     {
       "name": "CLO_SleeveLower.L",
@@ -834,8 +900,9 @@
         0.045,
         1.0
       ],
-      "vertices": 16,
-      "triangles": 28
+      "vertices": 84,
+      "triangles": 164,
+      "atlas_region": "CLO_SleeveLower.L:cloth"
     },
     {
       "name": "CLO_SleeveLower.R",
@@ -848,8 +915,9 @@
         0.045,
         1.0
       ],
-      "vertices": 16,
-      "triangles": 28
+      "vertices": 84,
+      "triangles": 164,
+      "atlas_region": "CLO_SleeveLower.R:cloth"
     },
     {
       "name": "CLO_SlickerChest",
@@ -862,8 +930,9 @@
         0.045,
         1.0
       ],
-      "vertices": 8,
-      "triangles": 12
+      "vertices": 112,
+      "triangles": 220,
+      "atlas_region": "CLO_SlickerChest:cloth"
     },
     {
       "name": "CLO_SlickerHem",
@@ -876,8 +945,69 @@
         0.024,
         1.0
       ],
-      "vertices": 8,
-      "triangles": 12
+      "vertices": 112,
+      "triangles": 220,
+      "atlas_region": "CLO_SlickerHem:cloth"
+    },
+    {
+      "name": "CLO_SlickerPocket.L",
+      "role": "clothing_detail",
+      "bone": "spine",
+      "palette_name": "slicker",
+      "base_color": [
+        0.455,
+        0.315,
+        0.045,
+        1.0
+      ],
+      "vertices": 112,
+      "triangles": 220,
+      "atlas_region": "CLO_SlickerPocket.L:cloth"
+    },
+    {
+      "name": "CLO_SlickerPocket.R",
+      "role": "clothing_detail",
+      "bone": "spine",
+      "palette_name": "slicker",
+      "base_color": [
+        0.455,
+        0.315,
+        0.045,
+        1.0
+      ],
+      "vertices": 112,
+      "triangles": 220,
+      "atlas_region": "CLO_SlickerPocket.R:cloth"
+    },
+    {
+      "name": "CLO_SlickerPocketFlap.L",
+      "role": "clothing_detail",
+      "bone": "spine",
+      "palette_name": "slicker_dark",
+      "base_color": [
+        0.235,
+        0.158,
+        0.024,
+        1.0
+      ],
+      "vertices": 112,
+      "triangles": 220,
+      "atlas_region": "CLO_SlickerPocketFlap.L:cloth"
+    },
+    {
+      "name": "CLO_SlickerPocketFlap.R",
+      "role": "clothing_detail",
+      "bone": "spine",
+      "palette_name": "slicker_dark",
+      "base_color": [
+        0.235,
+        0.158,
+        0.024,
+        1.0
+      ],
+      "vertices": 112,
+      "triangles": 220,
+      "atlas_region": "CLO_SlickerPocketFlap.R:cloth"
     },
     {
       "name": "CLO_SlickerWaist",
@@ -890,8 +1020,9 @@
         0.045,
         1.0
       ],
-      "vertices": 8,
-      "triangles": 12
+      "vertices": 112,
+      "triangles": 220,
+      "atlas_region": "CLO_SlickerWaist:cloth"
     },
     {
       "name": "CLO_StormYoke",
@@ -904,8 +1035,9 @@
         0.08,
         1.0
       ],
-      "vertices": 8,
-      "triangles": 12
+      "vertices": 112,
+      "triangles": 220,
+      "atlas_region": "CLO_StormYoke:cloth"
     },
     {
       "name": "CLO_TrouserUpper.L",
@@ -918,8 +1050,9 @@
         0.055,
         1.0
       ],
-      "vertices": 16,
-      "triangles": 28
+      "vertices": 70,
+      "triangles": 136,
+      "atlas_region": "CLO_TrouserUpper.L:cloth"
     },
     {
       "name": "CLO_TrouserUpper.R",
@@ -932,8 +1065,9 @@
         0.055,
         1.0
       ],
-      "vertices": 16,
-      "triangles": 28
+      "vertices": 70,
+      "triangles": 136,
+      "atlas_region": "CLO_TrouserUpper.R:cloth"
     },
     {
       "name": "GEO_Boot.L",
@@ -946,8 +1080,9 @@
         0.052,
         1.0
       ],
-      "vertices": 8,
-      "triangles": 12
+      "vertices": 112,
+      "triangles": 220,
+      "atlas_region": "GEO_Boot.L:leather"
     },
     {
       "name": "GEO_Boot.R",
@@ -960,8 +1095,9 @@
         0.052,
         1.0
       ],
-      "vertices": 8,
-      "triangles": 12
+      "vertices": 112,
+      "triangles": 220,
+      "atlas_region": "GEO_Boot.R:leather"
     },
     {
       "name": "GEO_BootSole.L",
@@ -974,8 +1110,9 @@
         0.017,
         1.0
       ],
-      "vertices": 8,
-      "triangles": 12
+      "vertices": 112,
+      "triangles": 220,
+      "atlas_region": "GEO_BootSole.L:leather"
     },
     {
       "name": "GEO_BootSole.R",
@@ -988,8 +1125,23 @@
         0.017,
         1.0
       ],
-      "vertices": 8,
-      "triangles": 12
+      "vertices": 112,
+      "triangles": 220,
+      "atlas_region": "GEO_BootSole.R:leather"
+    },
+    {
+      "name": "GEO_FaceSurface",
+      "role": "facial_atlas",
+      "bone": "head",
+      "palette_name": "fisher_face_atlas",
+      "base_color": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "vertices": 49,
+      "triangles": 72
     },
     {
       "name": "GEO_Hand.L",
@@ -1002,8 +1154,9 @@
         0.19,
         1.0
       ],
-      "vertices": 8,
-      "triangles": 12
+      "vertices": 220,
+      "triangles": 416,
+      "atlas_region": "GEO_Hand.L:skin_white"
     },
     {
       "name": "GEO_Hand.R",
@@ -1016,8 +1169,9 @@
         0.19,
         1.0
       ],
-      "vertices": 8,
-      "triangles": 12
+      "vertices": 208,
+      "triangles": 392,
+      "atlas_region": "GEO_Hand.R:skin_white"
     },
     {
       "name": "GEO_Head",
@@ -1031,7 +1185,8 @@
         1.0
       ],
       "vertices": 62,
-      "triangles": 120
+      "triangles": 120,
+      "atlas_region": "GEO_Head:skin_white"
     },
     {
       "name": "GEO_Neck",
@@ -1045,7 +1200,453 @@
         1.0
       ],
       "vertices": 20,
-      "triangles": 36
+      "triangles": 36,
+      "atlas_region": "GEO_Neck:skin_white"
+    }
+  ],
+  "anchor_names": [
+    "ANCHOR_FishermanExhale"
+  ],
+  "rig_anchors": [
+    {
+      "name": "ANCHOR_FishermanExhale",
+      "bone": "head",
+      "kind": "anchor",
+      "parts": [],
+      "axis_from": ""
+    }
+  ],
+  "face_atlas": {
+    "texture_asset": "Assets/Pedestrians/Textures/LakeFishermanFaceAtlas.png",
+    "renderer": "GEO_FaceSurface",
+    "columns": 4,
+    "rows": 4,
+    "cell_size_px": 64,
+    "width_px": 256,
+    "height_px": 256,
+    "sha256": "5467bd27851d21056666f35a4bccfdbd89fed9136432f4dc85a93b8d06e16cb8",
+    "color_space": "sRGB",
+    "filter_mode": "Point",
+    "wrap_mode": "Clamp",
+    "mipmaps": false,
+    "compression": "Uncompressed",
+    "uv_channel": 0,
+    "uv_origin": "bottom_left",
+    "material_tint_hex": "FFFFFF",
+    "uv_contract": "local_0_1_runtime_cell_scale_offset",
+    "cells": [
+      {
+        "expression": "Neutral",
+        "column": 0,
+        "row": 3
+      },
+      {
+        "expression": "HalfBlink",
+        "column": 1,
+        "row": 3
+      },
+      {
+        "expression": "ClosedBlink",
+        "column": 2,
+        "row": 3
+      },
+      {
+        "expression": "Watchful",
+        "column": 0,
+        "row": 2
+      },
+      {
+        "expression": "Tense",
+        "column": 1,
+        "row": 2
+      }
+    ],
+    "mouth_lift_m": 0.075,
+    "mouth_position_m": [
+      0.0,
+      -0.098551326,
+      1.575974107
+    ],
+    "pipe_mount_offset_m": [
+      0.0013664,
+      0.027949542,
+      0.069182038
+    ],
+    "pipe_scale": 0.72
+  },
+  "detail_version": "1.0.0",
+  "texture_bindings": [
+    {
+      "texture_asset": "Assets/Pedestrians/Textures/OrdinaryCharacterDetailAtlas.png",
+      "sha256": "0a7274e445f2be0d0c15e3866ca2791b8c5cf4852847e8149583a561eb6a1a65",
+      "width_px": 256,
+      "height_px": 256,
+      "materials": [],
+      "shader_property": "_BaseMap",
+      "color_space": "sRGB",
+      "filter_mode": "Point",
+      "wrap_mode": "Clamp",
+      "mipmaps": false,
+      "compression": "Uncompressed",
+      "uv_channel": 0,
+      "uv_origin": "bottom_left",
+      "uv_safe_inset_px": 1,
+      "material_tint_hex": "FFFFFF",
+      "tint_source": "renderer_palette",
+      "regions": [
+        {
+          "name": "ACC_Beard:hair",
+          "renderer": "ACC_Beard",
+          "x_px": 128,
+          "y_px": 0,
+          "width_px": 128,
+          "height_px": 128
+        },
+        {
+          "name": "ACC_BeardLock0.L:hair",
+          "renderer": "ACC_BeardLock0.L",
+          "x_px": 128,
+          "y_px": 0,
+          "width_px": 128,
+          "height_px": 128
+        },
+        {
+          "name": "ACC_BeardLock0.R:hair",
+          "renderer": "ACC_BeardLock0.R",
+          "x_px": 128,
+          "y_px": 0,
+          "width_px": 128,
+          "height_px": 128
+        },
+        {
+          "name": "ACC_BeardLock1.L:hair",
+          "renderer": "ACC_BeardLock1.L",
+          "x_px": 128,
+          "y_px": 0,
+          "width_px": 128,
+          "height_px": 128
+        },
+        {
+          "name": "ACC_BeardLock1.R:hair",
+          "renderer": "ACC_BeardLock1.R",
+          "x_px": 128,
+          "y_px": 0,
+          "width_px": 128,
+          "height_px": 128
+        },
+        {
+          "name": "ACC_BeardLock2.L:hair",
+          "renderer": "ACC_BeardLock2.L",
+          "x_px": 128,
+          "y_px": 0,
+          "width_px": 128,
+          "height_px": 128
+        },
+        {
+          "name": "ACC_BeardLock2.R:hair",
+          "renderer": "ACC_BeardLock2.R",
+          "x_px": 128,
+          "y_px": 0,
+          "width_px": 128,
+          "height_px": 128
+        },
+        {
+          "name": "ACC_HoodCord:skin_white",
+          "renderer": "ACC_HoodCord",
+          "x_px": 0,
+          "y_px": 0,
+          "width_px": 128,
+          "height_px": 128
+        },
+        {
+          "name": "ACC_Moustache:hair",
+          "renderer": "ACC_Moustache",
+          "x_px": 128,
+          "y_px": 0,
+          "width_px": 128,
+          "height_px": 128
+        },
+        {
+          "name": "ACC_SlickerClasp.01:skin_white",
+          "renderer": "ACC_SlickerClasp.01",
+          "x_px": 0,
+          "y_px": 0,
+          "width_px": 128,
+          "height_px": 128
+        },
+        {
+          "name": "ACC_SlickerClasp.02:skin_white",
+          "renderer": "ACC_SlickerClasp.02",
+          "x_px": 0,
+          "y_px": 0,
+          "width_px": 128,
+          "height_px": 128
+        },
+        {
+          "name": "ACC_SlickerSeam.01:cloth",
+          "renderer": "ACC_SlickerSeam.01",
+          "x_px": 0,
+          "y_px": 128,
+          "width_px": 128,
+          "height_px": 128
+        },
+        {
+          "name": "ACC_SlickerSeam.02:cloth",
+          "renderer": "ACC_SlickerSeam.02",
+          "x_px": 0,
+          "y_px": 128,
+          "width_px": 128,
+          "height_px": 128
+        },
+        {
+          "name": "ACC_SlickerSeam.03:cloth",
+          "renderer": "ACC_SlickerSeam.03",
+          "x_px": 0,
+          "y_px": 128,
+          "width_px": 128,
+          "height_px": 128
+        },
+        {
+          "name": "CLO_BootShaft.L:leather",
+          "renderer": "CLO_BootShaft.L",
+          "x_px": 128,
+          "y_px": 128,
+          "width_px": 128,
+          "height_px": 128
+        },
+        {
+          "name": "CLO_BootShaft.R:leather",
+          "renderer": "CLO_BootShaft.R",
+          "x_px": 128,
+          "y_px": 128,
+          "width_px": 128,
+          "height_px": 128
+        },
+        {
+          "name": "CLO_HoodBrim:cloth",
+          "renderer": "CLO_HoodBrim",
+          "x_px": 0,
+          "y_px": 128,
+          "width_px": 128,
+          "height_px": 128
+        },
+        {
+          "name": "CLO_HoodCollar:cloth",
+          "renderer": "CLO_HoodCollar",
+          "x_px": 0,
+          "y_px": 128,
+          "width_px": 128,
+          "height_px": 128
+        },
+        {
+          "name": "CLO_HoodPeak:cloth",
+          "renderer": "CLO_HoodPeak",
+          "x_px": 0,
+          "y_px": 128,
+          "width_px": 128,
+          "height_px": 128
+        },
+        {
+          "name": "CLO_HoodShell:cloth",
+          "renderer": "CLO_HoodShell",
+          "x_px": 0,
+          "y_px": 128,
+          "width_px": 128,
+          "height_px": 128
+        },
+        {
+          "name": "CLO_Sleeve.L:cloth",
+          "renderer": "CLO_Sleeve.L",
+          "x_px": 0,
+          "y_px": 128,
+          "width_px": 128,
+          "height_px": 128
+        },
+        {
+          "name": "CLO_Sleeve.R:cloth",
+          "renderer": "CLO_Sleeve.R",
+          "x_px": 0,
+          "y_px": 128,
+          "width_px": 128,
+          "height_px": 128
+        },
+        {
+          "name": "CLO_SleeveCuff.L:cloth",
+          "renderer": "CLO_SleeveCuff.L",
+          "x_px": 0,
+          "y_px": 128,
+          "width_px": 128,
+          "height_px": 128
+        },
+        {
+          "name": "CLO_SleeveCuff.R:cloth",
+          "renderer": "CLO_SleeveCuff.R",
+          "x_px": 0,
+          "y_px": 128,
+          "width_px": 128,
+          "height_px": 128
+        },
+        {
+          "name": "CLO_SleeveLower.L:cloth",
+          "renderer": "CLO_SleeveLower.L",
+          "x_px": 0,
+          "y_px": 128,
+          "width_px": 128,
+          "height_px": 128
+        },
+        {
+          "name": "CLO_SleeveLower.R:cloth",
+          "renderer": "CLO_SleeveLower.R",
+          "x_px": 0,
+          "y_px": 128,
+          "width_px": 128,
+          "height_px": 128
+        },
+        {
+          "name": "CLO_SlickerChest:cloth",
+          "renderer": "CLO_SlickerChest",
+          "x_px": 0,
+          "y_px": 128,
+          "width_px": 128,
+          "height_px": 128
+        },
+        {
+          "name": "CLO_SlickerHem:cloth",
+          "renderer": "CLO_SlickerHem",
+          "x_px": 0,
+          "y_px": 128,
+          "width_px": 128,
+          "height_px": 128
+        },
+        {
+          "name": "CLO_SlickerPocket.L:cloth",
+          "renderer": "CLO_SlickerPocket.L",
+          "x_px": 0,
+          "y_px": 128,
+          "width_px": 128,
+          "height_px": 128
+        },
+        {
+          "name": "CLO_SlickerPocket.R:cloth",
+          "renderer": "CLO_SlickerPocket.R",
+          "x_px": 0,
+          "y_px": 128,
+          "width_px": 128,
+          "height_px": 128
+        },
+        {
+          "name": "CLO_SlickerPocketFlap.L:cloth",
+          "renderer": "CLO_SlickerPocketFlap.L",
+          "x_px": 0,
+          "y_px": 128,
+          "width_px": 128,
+          "height_px": 128
+        },
+        {
+          "name": "CLO_SlickerPocketFlap.R:cloth",
+          "renderer": "CLO_SlickerPocketFlap.R",
+          "x_px": 0,
+          "y_px": 128,
+          "width_px": 128,
+          "height_px": 128
+        },
+        {
+          "name": "CLO_SlickerWaist:cloth",
+          "renderer": "CLO_SlickerWaist",
+          "x_px": 0,
+          "y_px": 128,
+          "width_px": 128,
+          "height_px": 128
+        },
+        {
+          "name": "CLO_StormYoke:cloth",
+          "renderer": "CLO_StormYoke",
+          "x_px": 0,
+          "y_px": 128,
+          "width_px": 128,
+          "height_px": 128
+        },
+        {
+          "name": "CLO_TrouserUpper.L:cloth",
+          "renderer": "CLO_TrouserUpper.L",
+          "x_px": 0,
+          "y_px": 128,
+          "width_px": 128,
+          "height_px": 128
+        },
+        {
+          "name": "CLO_TrouserUpper.R:cloth",
+          "renderer": "CLO_TrouserUpper.R",
+          "x_px": 0,
+          "y_px": 128,
+          "width_px": 128,
+          "height_px": 128
+        },
+        {
+          "name": "GEO_Boot.L:leather",
+          "renderer": "GEO_Boot.L",
+          "x_px": 128,
+          "y_px": 128,
+          "width_px": 128,
+          "height_px": 128
+        },
+        {
+          "name": "GEO_Boot.R:leather",
+          "renderer": "GEO_Boot.R",
+          "x_px": 128,
+          "y_px": 128,
+          "width_px": 128,
+          "height_px": 128
+        },
+        {
+          "name": "GEO_BootSole.L:leather",
+          "renderer": "GEO_BootSole.L",
+          "x_px": 128,
+          "y_px": 128,
+          "width_px": 128,
+          "height_px": 128
+        },
+        {
+          "name": "GEO_BootSole.R:leather",
+          "renderer": "GEO_BootSole.R",
+          "x_px": 128,
+          "y_px": 128,
+          "width_px": 128,
+          "height_px": 128
+        },
+        {
+          "name": "GEO_Hand.L:skin_white",
+          "renderer": "GEO_Hand.L",
+          "x_px": 0,
+          "y_px": 0,
+          "width_px": 128,
+          "height_px": 128
+        },
+        {
+          "name": "GEO_Hand.R:skin_white",
+          "renderer": "GEO_Hand.R",
+          "x_px": 0,
+          "y_px": 0,
+          "width_px": 128,
+          "height_px": 128
+        },
+        {
+          "name": "GEO_Head:skin_white",
+          "renderer": "GEO_Head",
+          "x_px": 0,
+          "y_px": 0,
+          "width_px": 128,
+          "height_px": 128
+        },
+        {
+          "name": "GEO_Neck:skin_white",
+          "renderer": "GEO_Neck",
+          "x_px": 0,
+          "y_px": 0,
+          "width_px": 128,
+          "height_px": 128
+        }
+      ]
     }
   ]
 }

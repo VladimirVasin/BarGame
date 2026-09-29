@@ -250,46 +250,23 @@ namespace BarPromenade.Tests.EditMode
                 "One lap of the loop is four draws on the pipe.");
         }
 
-        /// <summary>
-        /// The plume is the same curve, one beat late. Emitting it in
-        /// phase with the ribs is the mistake this test exists to stop:
-        /// smoke that swells while the chest is still filling reads as a
-        /// particle system, not as smoking.
-        /// </summary>
         [Test]
-        public void Plume_FollowsTheBreathButLagsBehindIt()
+        public void Pipe_DrawGlowsOnlyDuringInhaleAndExhalesOnceAfterward()
         {
-            Assert.That(
-                SeacoastFishermanPipeEffect.PlumeBreathLag,
-                Is.GreaterThan(0f));
-
-            float peakPhase = 0f;
-            float peakRate = float.MinValue;
-            for (int step = 0; step < 720; step++)
-            {
-                float phase = step / 720f;
-                float rate = SeacoastFishermanPipeEffect.PlumeRateAt(phase);
-                Assert.That(
-                    rate,
-                    Is.InRange(
-                        SeacoastFishermanPipeEffect.PlumeRestRate,
-                        SeacoastFishermanPipeEffect.PlumeDrawRate));
-                if (rate > peakRate)
-                {
-                    peakRate = rate;
-                    peakPhase = phase;
-                }
-            }
-
-            float expected =
-                SeacoastFishermanPresentation.InhalePeakPhase +
-                SeacoastFishermanPipeEffect.PlumeBreathLag;
-            Assert.That(peakPhase, Is.EqualTo(expected).Within(0.01f));
-            Assert.That(
-                SeacoastFishermanPipeEffect.PlumeRateAt(
-                    SeacoastFishermanPresentation.InhalePeakPhase),
-                Is.LessThan(peakRate),
-                "The plume must still be rising when the chest is full.");
+            Assert.That(SeacoastFishermanPipeEffect.EmberAmountAt(.3f), Is.GreaterThan(.9f));
+            for (int step = 50; step <= 100; step++)
+                Assert.That(SeacoastFishermanPipeEffect.EmberAmountAt(step / 100f), Is.Zero);
+            double exhale = SeacoastFishermanPipeEffect.ExhaleStartPhase;
+            Assert.That(exhale, Is.GreaterThan(SeacoastFishermanPresentation.InhalePeakPhase));
+            Assert.That(SeacoastFishermanPipeEffect.CrossedExhale(exhale - .01d, exhale + .01d), Is.True);
+            Assert.That(SeacoastFishermanPipeEffect.CrossedExhale(exhale + .01d, exhale + .02d), Is.False);
+            Assert.That(SeacoastFishermanPipeEffect.CrossedExhale(exhale, exhale), Is.False, "A pause cannot emit smoke.");
+            Assert.That(SeacoastFishermanPipeEffect.CrossedExhale(exhale + .1d, exhale - .1d), Is.False);
+            Assert.That(SeacoastFishermanPipeEffect.CrossedExhale(0d, 3d), Is.False, "Seeking must not release a backlog.");
+            int bursts = 0;
+            for (int step = 1; step <= 400; step++)
+                if (SeacoastFishermanPipeEffect.CrossedExhale((step - 1) / 100d, step / 100d)) bursts++;
+            Assert.That(bursts, Is.EqualTo(SeacoastFishermanPresentation.BreathsPerLoop));
         }
 
         /// <summary>
@@ -320,6 +297,15 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 registry.DesignId,
                 Is.EqualTo(SeacoastFishermanProvider.DesignId));
+            Assert.That(registry.SourceTriangleCount, Is.InRange(4500, 8000));
+            Assert.That(registry.DetailAtlas, Is.Not.Null,
+                "The shaped raincoat and boots use the shared ordinary character surface atlas.");
+            Assert.That(registry.HasFaceAtlas, Is.True);
+            Assert.That(registry.FaceAtlas.Renderer.name, Is.EqualTo("GEO_FaceSurface"));
+            Assert.That(registry.FaceAtlas.Texture.name, Is.EqualTo("LakeFishermanFaceAtlas"));
+            Assert.That(registry.FaceAtlas.Texture, Is.Not.SameAs(registry.DetailAtlas));
+            Assert.That(registry.Renderers.Any(renderer => renderer.name == "ACC_Eye.L" ||
+                renderer.name == "ACC_Eye.R" || renderer.name == "ACC_Nose"), Is.False);
             Assert.That(registry.IdleClip, Is.Not.Null);
             Assert.That(registry.IdleClip.name, Does.Contain("FishermanLean"));
             Assert.That(registry.IdleClip.isLooping, Is.True);

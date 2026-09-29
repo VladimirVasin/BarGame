@@ -107,7 +107,7 @@ Only these statuses apply. Product scope cuts are `Deferred` in
 | Sea water | Shared water drive owns sea swell, foam and uneven shore swash. | `CitySeaResources`, `CityWaterResources` | Current |
 | Beach sand | Deterministic shallow relief and compressible foot trails over a coarser fixed collider. | `CityBeachSandPlan`, `CitySandTreading` | Current |
 | Lighthouse island | One distant fog-framed island landmark owns its silhouette, beacon/beam and authored sightline. | `CityLighthouseIsland{Plan,Planner,MeshFactory,WorldBuilder,Resources}` | Current |
-| Seacoast fisherman | The boat-station fisherman uses his staged rod/line action and localized response at the real dock. | `SeacoastFisherman{Provider,Plan,Quips,Interaction,Presentation,Factory,PipeEffect,Line}` | Current |
+| Seacoast fisherman | Close two-hand grip, raised PNG face/beard volume; clip-driven ember/shared exhale. | `SeacoastFisherman*`, `HomeBalconySmokingExhaleEffect` | Current |
 | Park chess set inhabitants and wire lamp | The Central Park chess set gets its two permanent inhabitants and its one light. | `ParkChessPlayer{Provider,Plan,Presentation,Factory}` | Current |
 | Park chess-set men | Imported chess and draught pieces retain the measured table and opening-layout contracts. | `CityChessBoardGeometry`, `CityChessSetPlan` | Current |
 | Park board games | Both boards are playable. | `ChessRules`, `ChessEngine` | Current |
@@ -118,7 +118,7 @@ Only these statuses apply. Product scope cuts are `Deferred` in
 | Pedestrian personal space | Above alcohol `60`: guarding palm; above `80`: close shove. | `CityPedestrianPersonalSpace{Rules,Controller}`, `PlayerMotor` | Current |
 | Pedestrian street insults | Insult responses need the authored proximity/facing gates; the twenty-line bag deals once a round, surviving reloads. | `CityPedestrianInsult{Rules,Lines,Walk,SessionState,Controller}`, `CityPedestrianPersonalSpaceController` | Current |
 | City and Home street pedestrians | Pool = default NPC population (`city.pedestrian.NN`, any catalog model); Home reuses its first eight. | `Runtime/City/NPC`, `CityPedestrianDefaultNpcBody`, `DefaultNpcPopulation` | Current |
-| NPC Human V2 anatomy, appearance and visibility | `26` rigged humanoid designs exist on disk; the cashier swap is one-for-one and does not grow the active cast. | `NpcHumanV2AssetSetup`, `NpcDesignAppearanceCatalog` | Current |
+| NPC Human V2 anatomy, appearance and visibility | Shared rigs; five ordinary models have shaped hands/clothes and validated surface UVs. | `NpcHumanV2AssetSetup`, `NpcDesignAppearanceCatalog`, `OrdinaryCharacterDetailAtlas` | Current |
 | City Route 01 bus | One validated route and pooled bus run in City. Gap: no Home simulation or live map vehicle marker. | `Runtime/Vehicles`, `CityBus{Plan,Planner,Actor,Audio,Director,Presentation,Factory,AssetRegistry}` | Partial |
 | Pedestrian bench rests | Eligible walkers reserve benches, play owned sit/rest/stand actions and return to their route. | `CityBenchRest{Plan,Planner}`, `CityBenchNpcRestController` | Current |
 | Route 01 passengers | Hero plus two ambient passenger places. Gap: fares, destination choice, persistence and live tracking. | `CityBusRide{Plan,Controller}`, `CityBusStopWait{Plan,Planner}` | Partial |
@@ -147,7 +147,7 @@ Only these statuses apply. Product scope cuts are `Deferred` in
 | Third-person chase camera | Shared collision-aware chase/orbit blends cinematic motion and yields to owned fixed/modal shots. | `PlayerCameraFollow`, `IntoxicationDollyZoomModel` | Current |
 | Home fixed camera | Authored fixed shots with explicit contextual ownership; the main-room shot pans up to 18/9 degrees to hold the hero. | `HomeCameraShot{,Selector}`, `HomeFixedCameraController`, `FixedCameraFocus` | Current |
 | Home player visibility | Grouped occluder dither and fixed-shot rules keep the hero visible without changing collision. | `HomeOcclusion{Registry,Resolver}`, `HomePlayerOcclusionController` | Current |
-| Modular 3D hero presentation | V2: 31 body/12 hair bones, 50 actions; shared Clothing/Skin/Hair. | `Player3D*`, `PlayerFactory`, `CharacterSurfaceMaterialSetup` | Current |
+| Modular 3D hero presentation | V2: 31 body/12 hair bones, 50 actions; Clothing/Skin/Hair, versioned mesh imports. | `Player3D*`, `PlayerFactory`, `CharacterSurfaceMaterialSetup` | Current |
 | Hero wardrobe | Atomic slot replacement and body coverage; one authored outfit. Gap: extra outfits, UI and persistence. | `PlayerWardrobe`, `Player3DBathingAppearance` | Partial |
 | Hero hair | Parted curtains: bounded motion/wind/body/clothing/scarf contacts; pause freeze and copied mirror pose. | `PlayerHair`, `PlayerHairContacts` | Current |
 | Hero jacket cloth | Anchored hem/cuffs: motion/wind/body/hand contacts; pause/reset and passive mirror/arm copies. | `PlayerJacketCloth`, `PlayerJacketClothSurface` | Current |
