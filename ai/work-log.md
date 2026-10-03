@@ -5,12 +5,10 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 
 ## 2026-10-04 — OldTown road geometry
 
-- OldTown T: −12° branch (78°/102°), straight ≥6 m ends, fixed road nodes/datums.
-  Incident ribbons share paving, miter sidewalks, mesh/collision/ground/routes.
-  Four ordinary cells exclude significant places across seeds; unscaled rigid
-  house poses share model/foundation/docks/collision. Cardinal frontages name
-  existing edges. Unsafe vehicle links stay outside the existing bus loop;
-  Cannery and Last Route retain their actual routes.
+- OldTown T: −12° (78°/102°), straight ≥6 m ends, fixed road nodes/datums.
+  Ribbons, ground and model poses share render/collision/navigation; assets
+  stay unscaled. Four ordinary cells exclude significant places across seeds.
+  Frontages name existing edges; bus, Cannery and Last Route retain safe routes.
 - CourtyardBlocks reuse four L 15×14 m houses and two western compact 14×13.5 m
   rear bodies. BuildingMasses adds the latter without changing 144 semantic lots.
   Exact masses are subtracted from road ground. A bounded visibility graph fits
@@ -28,8 +26,10 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
   vertices or path/collider heights diverge. Capsule clearance uses the pavement
   union, with front/rear fitting reserves. Existing poles choose bounded clear
   stations on the same road; lights/types stay.
-  Courtyard motion budgets XZ distance, then samples ground at the constrained
-  position; a 3D step spent walking pace on the persistent ground-contact Y gap.
+  Courtyard steps budget XZ and sample ground; 3D steps had spent pace on the
+  contact Y gap. Motion also began before the body faced the new leg.
+  Now actual shoulder-adjusted XZ drives continuous turn, then aligned stepping.
+  Earlier endpoint captures stopped before node-switch, hiding that next turn.
   CharacterController collision remains authoritative.
   Compact OldTown outfalls use canonical facade mounts and ground sampling;
   generic lateral placement missed the recessed right wall and left a floating strap.
@@ -38,10 +38,11 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
   `CityElevationPlannerTests.DefaultCity_UsesOneSafeRoadGroundBoundaryContract`,
   `CityBuildingPrototypeRuntimeTests.DefaultCity_PlacesDistrictPrototypesAndClipsHomeExterior`,
   `CityDecorationPlannerTests.ShippedCity_PutsTheWaterNetworkOnTheGround`,
-  `AreaCaptureFixture.CityReplanning`. Court/passage/street/T and worker frames
-  reviewed: continuous ground and clear passages. Hero swept capsule/.35 m
-  masks/floor/map agree; an existing walker physically traverses both directions
-  through CharacterController.Move with collision/navigation/ground contact.
+  `AreaCaptureFixture.CityReplanning`. Court/street/worker frames reviewed.
+  Hero swept capsule/.35 m masks/floor/map agree. After separate initial
+  placements, each direction runs continuously from shortcut through the turn
+  to a street gate: mesh/facing, CharacterController collision/ground contact;
+  no reset within a trial.
   `python tools/check-docs.py`, `git diff --check`.
 
 ## 2026-10-03 — Combat and city replanning

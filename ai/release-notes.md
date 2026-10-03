@@ -13,6 +13,7 @@ Earlier notes: [`release-notes-2026-09.md`](archive/release-notes-2026-09.md).
 - Четыре L-дома и два задних корпуса дают обходы к прежней улице.
   Узкое горло ведёт в настоящий двор. Западные дворы соединены грунтовым
   проходом для прежних прохожих; личности и места появления сохранены.
+  Перед дворовым шагом прохожий разворачивается к пути.
   Новых входов, жителей и сюжетных деталей нет.
 - Выходы водостоков крепятся к фасаду: утопленная стена больше не оставляет
   крепление в воздухе.
@@ -21,8 +22,8 @@ Earlier notes: [`release-notes-2026-09.md`](archive/release-notes-2026-09.md).
   `CityElevationPlannerTests.DefaultCity_UsesOneSafeRoadGroundBoundaryContract`,
   `CityBuildingPrototypeRuntimeTests.DefaultCity_PlacesDistrictPrototypesAndClipsHomeExterior`,
   `CityDecorationPlannerTests.ShippedCity_PutsTheWaterNetworkOnTheGround`,
-  `AreaCaptureFixture.CityReplanning`; дворы/проходы/улицы и прохожий просмотрены.
-  Капсула героя проверена; прохожий физически проходит в обе стороны.
+  `AreaCaptureFixture.CityReplanning`; дворы/проходы/улицы и повороты просмотрены.
+  Капсула героя проверена; прохожий физически дошёл до улицы в каждом направлении.
   Пол/высоты/карта согласованы, маршрут автобуса сохранён.
 - Документация: `python tools/check-docs.py`, `git diff --check`.
 

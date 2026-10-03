@@ -86,7 +86,7 @@ namespace BarPromenade.Tests.PlayMode
                 CityRoadSample eyeSample = path.SampleDistance(path.Length * .3f);
                 Vector3 eye = ReplanningStreetEye(layout, new Vector3(eyeSample.Position.x, 0, eyeSample.Position.y));
                 CityRoadSample targetSample = path.SampleDistance(Mathf.Min(path.Length - 2f, path.Length * .3f + 16f));
-                shots.Add(Shot.At($"replanning-shortcuts-street-{index + 1:00}-curve", eye,
+                shots.Add(Shot.At($"replanning-facing-fix-street-{index + 1:00}-curve", eye,
                     new Vector3(targetSample.Position.x, eye.y - .7f, targetSample.Position.y), 78f));
             }
             foreach (CityPedestrianLink link in city.PedestrianPlan.Links.Where(link => link.Path != null))
@@ -111,12 +111,12 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(city.World.WalkableArea.Contains(releasedGround.point, .35f), Is.True);
             Vector3 junction = layout.GetNodeWorldPosition(new Vector2Int(1, 8));
             Vector3 junctionEye = ReplanningStreetEye(layout, junction + Vector3.right * 5f);
-            shots.Add(Shot.At("replanning-shortcuts-street-04-t-junction", junctionEye,
+            shots.Add(Shot.At("replanning-facing-fix-street-04-t-junction", junctionEye,
                 junction + Vector3.left * 6f + Vector3.up * (EyeHeight - .6f), 102f));
             CityRoadSample branchEye = branchPath.SampleDistance(11f);
             Vector3 obliqueEye = ReplanningStreetEye(layout,
                 new Vector3(branchEye.Position.x, 0f, branchEye.Position.y));
-            shots.Add(Shot.At("replanning-shortcuts-street-05-approach", obliqueEye,
+            shots.Add(Shot.At("replanning-facing-fix-street-05-approach", obliqueEye,
                 junction + Vector3.forward * 4f + Vector3.up * (EyeHeight - .6f), 90f));
             VerifyReplanningCourtyards(city, streetPlan, shots, issues);
             var walkerDemo = new ReplanningCourtyardWalkerDemo(city, streetPlan, issues);
@@ -157,7 +157,7 @@ namespace BarPromenade.Tests.PlayMode
                     courtEye = ReplanningCourtyardEye(layout, streetPlan, new Vector2(flank.x, flank.z));
                     courtTarget = block.CourtCenter + Vector3.up * 1.15f;
                 }
-                shots.Add(Shot.At($"replanning-shortcuts-courtyard-{block.Cell.x}-{block.Cell.y}-court", courtEye,
+                shots.Add(Shot.At($"replanning-facing-fix-courtyard-{block.Cell.x}-{block.Cell.y}-court", courtEye,
                     courtTarget, 88f));
                 if (block.RearBuilding != null)
                 {
@@ -166,14 +166,14 @@ namespace BarPromenade.Tests.PlayMode
                     CityRoadSample eye = block.Route.SampleDistance(Mathf.Max(0f, passageDistance - 2f));
                     CityRoadSample target = block.Route.SampleDistance(Mathf.Min(block.Route.Length, passageDistance + 4f));
                     Vector3 passageEye = ReplanningCourtyardEye(layout, streetPlan, eye.Position);
-                    shots.Add(Shot.At($"replanning-shortcuts-courtyard-{block.Cell.x}-{block.Cell.y}-passage", passageEye,
+                    shots.Add(Shot.At($"replanning-facing-fix-courtyard-{block.Cell.x}-{block.Cell.y}-passage", passageEye,
                         new Vector3(target.Position.x, passageEye.y - .65f, target.Position.y), 78f));
                 }
                 if (block.Cell == new Vector2Int(0, 8))
                 {
                     Vector3 entranceEye = ReplanningCourtyardEye(layout, streetPlan, block.Route.Vertices[0]);
                     CityRoadSample target = block.Route.SampleDistance(6f);
-                    shots.Add(Shot.At("replanning-shortcuts-courtyard-0-8-entrance", entranceEye,
+                    shots.Add(Shot.At("replanning-facing-fix-courtyard-0-8-entrance", entranceEye,
                         new Vector3(target.Position.x, entranceEye.y - .55f, target.Position.y), 82f));
                 }
             }
@@ -193,7 +193,7 @@ namespace BarPromenade.Tests.PlayMode
                     CityRoadSample eye = connection.Path.SampleDistance(station);
                     CityRoadSample target = connection.Path.SampleDistance(station + (reverse ? -9f : 9f));
                     Vector3 camera = ReplanningCourtyardEye(layout, streetPlan, eye.Position);
-                    shots.Add(Shot.At($"replanning-shortcuts-courtyard-connection-{(reverse ? "reverse" : "forward")}", camera,
+                    shots.Add(Shot.At($"replanning-facing-fix-courtyard-connection-{(reverse ? "reverse" : "forward")}", camera,
                         new Vector3(target.Position.x, camera.y - .65f, target.Position.y), 86f));
                 }
             }
@@ -239,21 +239,34 @@ namespace BarPromenade.Tests.PlayMode
             private readonly RoadWalkableArea area;
             private readonly int first, second;
             private readonly float[] toFirst, toSecond;
+            private readonly int firstGate, secondGate;
+            private readonly float[] toFirstGate, toSecondGate;
+            private readonly CityCourtyardBlock firstBlock, secondBlock;
             private readonly List<KeyValuePair<Behaviour, bool>> paused = new List<KeyValuePair<Behaviour, bool>>();
+            private readonly HashSet<string> capturedViews = new HashSet<string>();
+            private readonly HashSet<string> observedRenderPhases = new HashSet<string>();
+            private readonly ScarfContactProbe renderedContact = new ScarfContactProbe();
+            private readonly ScarfContactReport renderedReport = new ScarfContactReport();
+            private readonly Renderer[] buildings;
+            private Renderer[] renderedWalker;
             private CityPedestrianActor walker;
             private Vector3 originalPosition;
             private Quaternion originalRotation;
             private int originalTarget, ticks, originalDetours;
-            private bool originalCollision, reverseStarted, forwardCompleted;
+            private bool originalCollision, reverseStarted, forwardCompleted, forwardExitCompleted;
             private bool originalAutomaticUpdatesSuspended, hasManualControl;
             private string originalDesign;
             private float travelled;
+            private string stage = string.Empty;
+            private int outgoingCorner = -1;
+            private bool passedOutgoingCorner;
 
             public ReplanningCourtyardWalkerDemo(CityGameRoot city, CityStreetSurfacePlan surfaces, List<string> issues)
             {
                 this.city = city; this.surfaces = surfaces; this.issues = issues;
                 CityCourtyardConnection connection = city.Layout.CourtyardConnections.Single();
                 path = connection.Path;
+                firstBlock = connection.First; secondBlock = connection.Second;
                 CityPedestrianPlan plan = city.PedestrianPlan;
                 first = Enumerable.Range(0, plan.Nodes.Count).Single(index => plan.Nodes[index].Id ==
                     $"courtyard:{connection.FirstCell.x}:{connection.FirstCell.y}:court");
@@ -261,8 +274,17 @@ namespace BarPromenade.Tests.PlayMode
                     $"courtyard:{connection.SecondCell.x}:{connection.SecondCell.y}:court");
                 toFirst = CityBusStopWaitPlanner.CreateNodeDistances(plan, first);
                 toSecond = CityBusStopWaitPlanner.CreateNodeDistances(plan, second);
+                firstGate = Enumerable.Range(0, plan.Nodes.Count).Single(index => plan.Nodes[index].Id ==
+                    $"courtyard:{connection.FirstCell.x}:{connection.FirstCell.y}:gate");
+                secondGate = Enumerable.Range(0, plan.Nodes.Count).Single(index => plan.Nodes[index].Id ==
+                    $"courtyard:{connection.SecondCell.x}:{connection.SecondCell.y}:gate");
+                toFirstGate = CityBusStopWaitPlanner.CreateNodeDistances(plan, firstGate);
+                toSecondGate = CityBusStopWaitPlanner.CreateNodeDistances(plan, secondGate);
                 Assert.That(toSecond[first], Is.EqualTo(path.Length).Within(.01f), "The courtyard shortcut must be the actual shortest graph route.");
                 area = CityPedestrianPlanner.CreateWalkableArea(plan);
+                buildings = city.World.Root.GetComponentsInChildren<CityBuildingAssetRegistry>()
+                    .SelectMany(registry => registry.Parts).Select(part => part.Renderer)
+                    .Where(renderer => renderer != null && renderer.enabled).Distinct().ToArray();
             }
 
             public void AddShots(List<Shot> shots)
@@ -277,6 +299,7 @@ namespace BarPromenade.Tests.PlayMode
                     along += span;
                 }
                 foreach (bool reverse in new[] { false, true })
+                {
                     foreach (bool arrival in new[] { false, true })
                     {
                         float station = arrival ? (reverse ? 0f : path.Length) : middle;
@@ -285,43 +308,30 @@ namespace BarPromenade.Tests.PlayMode
                         Vector3 eye = ReplanningCourtyardEye(city.Layout, surfaces, path.SampleDistance(cameraStation).Position);
                         Vector2 target = path.SampleDistance(station).Position;
                         TryReplanningSurfaceTop(city.Layout, surfaces, target, out float top);
-                        shots.Add(Shot.At($"replanning-shortcuts-courtyard-walker-{(reverse ? "reverse" : "forward")}-{(arrival ? "arrival" : "passage")}",
+                        shots.Add(Shot.At($"replanning-facing-fix-courtyard-walker-{(reverse ? "reverse" : "forward")}-{(arrival ? "arrival" : "passage")}",
                             eye, new Vector3(target.x, top + .85f, target.y), 72f,
                             readyWhen: () => ReachCheckpoint(reverse, station, arrival)));
                     }
+                    Vector3 gate = city.PedestrianPlan.Nodes[reverse ? firstGate : secondGate].Position;
+                    Vector3 court = city.PedestrianPlan.Nodes[reverse ? first : second].Position;
+                    Vector3 outward = gate - court; outward.y = 0f; outward.Normalize();
+                    shots.Add(Shot.At($"replanning-facing-fix-courtyard-walker-{(reverse ? "reverse" : "forward")}-gate-context",
+                        gate + outward * 3f + Vector3.up * EyeHeight, gate + Vector3.up * .85f, 78f,
+                        readyWhen: () => ReachExit(reverse)));
+                }
             }
 
             private bool ReachCheckpoint(bool reverse, float station, bool arrival)
             {
-                if (walker == null)
-                {
-                    walker = city.Pedestrians.Actors.FirstOrDefault(actor => actor.IsSpawned &&
-                        actor.MotionState == CityPedestrianMotionState.Walking && !actor.IsPersonalSpaceReacting);
-                    if (walker == null) return false; // Let the existing population spawn normally.
-                    originalPosition = walker.Position; originalRotation = walker.transform.rotation;
-                    originalTarget = walker.TargetNodeIndex; originalCollision = walker.CollisionEnabled;
-                    originalDesign = walker.DesignId;
-                    originalAutomaticUpdatesSuspended = city.Pedestrians.AutomaticUpdatesSuspended;
-                    city.Pedestrians.AutomaticUpdatesSuspended = true;
-                    hasManualControl = true;
-                    Pause(city.BusPassengers); Pause(city.BenchRests);
-                    Assert.That(walker.IsSpawned, Is.True, "Manual capture must retain the existing walker presentation.");
-                    Assert.That(walker.AgentRadius, Is.EqualTo(.35f).Within(.001f));
-                    walker.CharacterController.enabled = false;
-                    // Initial fixture placement only. Both measured legs then
-                    // use ordinary graph guidance and CharacterController.Move.
-                    walker.transform.position = city.PedestrianPlan.Nodes[first].Position;
-                    walker.ResumeRoaming(first); walker.SetAvoidance(1f, 1f);
-                    originalDetours = walker.DetourCount;
-                    Physics.SyncTransforms();
-                }
+                if (!Initialize()) return false;
                 if (reverse && !reverseStarted)
                 {
-                    Assert.That(forwardCompleted, Is.True);
-                    walker.ResumeRoaming(second);
-                    walker.SetAvoidance(1f, -1f);
-                    reverseStarted = true; travelled = 0f; ticks = 0;
+                    Assert.That(forwardExitCompleted, Is.True);
+                    RestoreWalkerPose();
+                    PlaceTrialStart(true);
+                    reverseStarted = true;
                 }
+                BeginStage(reverse ? "reverse-connection" : "forward-connection");
                 int goal = reverse ? first : second;
                 Vector3 destination = city.PedestrianPlan.Nodes[goal].Position;
                 float[] distances = reverse ? toFirst : toSecond;
@@ -339,43 +349,301 @@ namespace BarPromenade.Tests.PlayMode
                             Assert.That(walker.DesignId, Is.EqualTo(originalDesign));
                             if (!reverse) forwardCompleted = true;
                             Debug.Log($"Courtyard walker {originalDesign}, {(reverse ? "reverse" : "forward")}: measured travel={travelled:F3} m.");
+                            ObserveRenderedBody(stage + "-arrival");
                         }
                         return true;
                     }
-                    CityPedestrianPlan plan = city.PedestrianPlan;
-                    int previousNode = walker.PreviousNodeIndex, targetNode = walker.TargetNodeIndex;
-                    string previousId = previousNode >= 0 ? plan.Nodes[previousNode].Id : "<none>";
-                    string targetId = targetNode >= 0 ? plan.Nodes[targetNode].Id : "<none>";
-                    Vector3 targetPosition = targetNode >= 0 ? plan.Nodes[targetNode].Position : walker.Position;
-                    Assert.That(++ticks, Is.LessThan((path.Length / walker.MovementSpeed + 20f) / Tick),
-                        $"The production pedestrian stalled on the courtyard shortcut: reverse={reverse}, arrival={arrival}, " +
-                        $"current={walker.Position:F4}, target={targetPosition:F4}, destination={destination:F4}, " +
-                        $"previousNode={previousNode}:{previousId}, targetNode={targetNode}:{targetId}, " +
-                        $"progress={progress:F4}/{path.Length:F4}, distanceGoal={Vector2.Distance(current, new Vector2(destination.x, destination.z)):F4}, " +
-                        $"lastDisplacement={walker.LastDisplacement:F5}, motionState={walker.MotionState}.");
-                    Vector3 previous = walker.Position;
-                    walker.Advance(Tick, initialApproachTarget: destination, initialApproachNodeDistances: distances);
-                    travelled += Vector2.Distance(new Vector2(previous.x, previous.z), new Vector2(walker.Position.x, walker.Position.z));
-                    Assert.That(walker.CollisionEnabled, Is.True, "The demo must retain the real pedestrian capsule.");
-                    Assert.That(walker.DetourCount, Is.EqualTo(originalDetours), "The shortcut must be traversable without a blocked escape.");
-                    current = new Vector2(walker.Position.x, walker.Position.z);
-                    float maximumOffset = CityPedestrianActor.MaximumLateralOffset + .02f;
-                    Assert.That(path.Project(current).DistanceSquared, Is.LessThan(maximumOffset * maximumOffset),
-                        "The pedestrian must stay on its authored connection with the production shoulder shift.");
-                    Assert.That(area.Contains(walker.Position, .35f), Is.True);
-                    Assert.That(city.World.WalkableArea.Contains(walker.Position, .35f), Is.True);
-                    bool hasGroundTop = TryReplanningSurfaceTop(city.Layout, surfaces, current, out float top);
-                    float verticalGap = walker.Position.y - top;
-                    float skinWidth = walker.CharacterController.skinWidth;
-                    if (!hasGroundTop || verticalGap < -.002f || verticalGap > skinWidth + .002f)
-                        issues.Add($"Courtyard walker root outside controller ground-contact band at {current:F4}, " +
-                            $"root={walker.Position.y:F4}, ground={top:F4}, gap={verticalGap:F5}, skinWidth={skinWidth:F4}.");
-                    RaycastHit[] hits = Physics.RaycastAll(new Vector3(current.x, top + .5f, current.y), Vector3.down,
-                        1f, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore);
-                    if (!hits.Any(hit => hit.collider is MeshCollider && Mathf.Abs(hit.point.y - top) < .025f))
-                        issues.Add($"Courtyard walker has no physical ground at {current:F4}, expected={top:F4}.");
+                    Step(goal, distances, reverse ? firstGate : secondGate,
+                        reverse ? toFirstGate : toSecondGate, path.Length, true);
                 }
                 return false;
+            }
+
+            private bool Initialize()
+            {
+                if (walker != null) return true;
+                walker = city.Pedestrians.Actors.FirstOrDefault(actor => actor.IsSpawned &&
+                    actor.MotionState == CityPedestrianMotionState.Walking && !actor.IsPersonalSpaceReacting);
+                if (walker == null) return false;
+                originalPosition = walker.Position; originalRotation = walker.transform.rotation;
+                originalTarget = walker.TargetNodeIndex; originalCollision = walker.CollisionEnabled;
+                originalDesign = walker.DesignId;
+                originalAutomaticUpdatesSuspended = city.Pedestrians.AutomaticUpdatesSuspended;
+                city.Pedestrians.AutomaticUpdatesSuspended = true;
+                hasManualControl = true;
+                Pause(city.BusPassengers); Pause(city.BenchRests);
+                Assert.That(walker.IsSpawned, Is.True, "Manual capture must retain the existing walker presentation.");
+                Assert.That(walker.AgentRadius, Is.EqualTo(.35f).Within(.001f));
+                renderedWalker = walker.Presentation.Registry.ModelRoot.GetComponentsInChildren<Renderer>()
+                    .Where(renderer => renderer.enabled && renderer.gameObject.activeInHierarchy &&
+                        (renderer is SkinnedMeshRenderer || renderer.GetComponent<MeshFilter>() != null)).ToArray();
+                Assert.That(renderedWalker.Length, Is.GreaterThan(0), "The proof must inspect the real visible NPC model.");
+                PlaceTrialStart(false);
+                originalDetours = walker.DetourCount;
+                return true;
+            }
+
+            private void PlaceTrialStart(bool reverse)
+            {
+                Assert.That(walker.IsSpawned, Is.True);
+                Assert.That(walker.DesignId, Is.EqualTo(originalDesign), "Both independent trials must reuse the same existing NPC.");
+                int start = reverse ? second : first;
+                // One initial fixture placement per independent direction.
+                // Every measured bridge, turn and gate then stays continuous.
+                walker.CharacterController.enabled = false;
+                walker.transform.position = city.PedestrianPlan.Nodes[start].Position;
+                walker.ResumeRoaming(start);
+                walker.SetAvoidance(1f, reverse ? -1f : 1f);
+                Physics.SyncTransforms();
+                Debug.Log($"Courtyard independent trial {(reverse ? "reverse" : "forward")}: " +
+                    $"existingWalker={originalDesign}, initialNode={city.PedestrianPlan.Nodes[start].Id}, " +
+                    $"root={walker.Position:F4}; subsequent bridge, turn and exit retain physical graph movement.");
+            }
+
+            private void BeginStage(string name)
+            {
+                if (stage == name) return;
+                stage = name; ticks = 0; travelled = 0f;
+                outgoingCorner = -1; passedOutgoingCorner = false;
+            }
+
+            private bool AtNode(int node)
+            {
+                Vector3 delta = walker.Position - city.PedestrianPlan.Nodes[node].Position;
+                delta.y = 0f;
+                return delta.magnitude < .06f;
+            }
+
+            private bool ReachExit(bool reverse)
+            {
+                Assert.That(reverse ? reverseStarted : forwardCompleted, Is.True);
+                int court = reverse ? first : second, gate = reverse ? firstGate : secondGate;
+                float[] distances = reverse ? toFirstGate : toSecondGate;
+                CityCourtyardBlock block = reverse ? firstBlock : secondBlock;
+                BeginStage(reverse ? "reverse-exit" : "forward-exit");
+                for (int batch = 0; batch < 40; batch++)
+                {
+                    if (outgoingCorner < 0 && walker.PreviousNodeIndex == court && walker.TargetNodeIndex != court)
+                    {
+                        outgoingCorner = walker.TargetNodeIndex;
+                        CityPedestrianLink outgoing = CurrentLink();
+                        Assert.That(outgoing?.Kind, Is.EqualTo(CityPedestrianLinkKind.Courtyard));
+                        Debug.Log($"Courtyard exit {stage}: link={outgoing.Id}; court={city.PedestrianPlan.Nodes[court].Id}; " +
+                            $"corner={city.PedestrianPlan.Nodes[outgoingCorner].Id}; root={walker.Position:F4}; " +
+                            $"forward={walker.transform.forward:F4}.");
+                        ObserveRenderedBody(stage + "-turn-start");
+                    }
+                    if (travelled >= 5f && FacesCurrentCourtLeg())
+                        CaptureActualViews(stage + "-after-turn");
+                    if (AtNode(gate))
+                    {
+                        Assert.That(travelled, Is.GreaterThanOrEqualTo(5f), "The arrival proof must continue through the real court to its street gate.");
+                        Assert.That(outgoingCorner, Is.GreaterThanOrEqualTo(0), "The proof must observe the actual outgoing court leg.");
+                        Assert.That(passedOutgoingCorner, Is.True, "The walker must physically continue beyond the outgoing leg's next corner.");
+                        Assert.That(capturedViews.Contains(stage + "-after-turn"), Is.True,
+                            "The proof needs a real forward step after the court turn, before the exit arrival.");
+                        CaptureActualViews(stage + "-gate");
+                        if (!reverse) forwardExitCompleted = true;
+                        Debug.Log($"Courtyard exit {stage}: reached={city.PedestrianPlan.Nodes[gate].Id}; " +
+                            $"measured travel={travelled:F3} m; root={walker.Position:F4}; " +
+                            $"previous={walker.PreviousNodeIndex}; target={walker.TargetNodeIndex}; forward={walker.transform.forward:F4}.");
+                        return true;
+                    }
+                    Step(gate, distances, reverse ? first : second, reverse ? toFirst : toSecond,
+                        block.Route.Length, false);
+                }
+                return false;
+            }
+
+            private CityPedestrianLink CurrentLink()
+            {
+                if (walker.PreviousNodeIndex < 0 || walker.TargetNodeIndex < 0) return null;
+                CityPedestrianPlan plan = city.PedestrianPlan;
+                return plan.GetLinkIndices(walker.PreviousNodeIndex).Select(index => plan.Links[index])
+                    .FirstOrDefault(link => link.Other(walker.PreviousNodeIndex) == walker.TargetNodeIndex);
+            }
+
+            private bool FacesCurrentCourtLeg()
+            {
+                CityPedestrianLink link = CurrentLink();
+                Vector3 motion = walker.LastDisplacement; motion.y = 0f;
+                if (link?.Kind != CityPedestrianLinkKind.Courtyard || link.Path == null || motion.magnitude <= .002f) return false;
+                Vector2 tangent = link.Path.SampleDistance(link.Path.Project(new Vector2(walker.Position.x, walker.Position.z)).DistanceAlong).Tangent;
+                if (walker.TargetNodeIndex == link.FirstNodeIndex) tangent = -tangent;
+                Vector3 forward = walker.transform.forward; forward.y = 0f; forward.Normalize();
+                return Vector3.Dot(forward, new Vector3(tangent.x, 0f, tangent.y)) >= .88f;
+            }
+
+            private void Step(int goal, float[] distances, int nextGoal, float[] nextDistances,
+                float lengthBudget, bool onConnection)
+            {
+                CityPedestrianPlan plan = city.PedestrianPlan;
+                Vector3 destination = plan.Nodes[goal].Position;
+                Vector2 current = new Vector2(walker.Position.x, walker.Position.z);
+                CityRoadProjection projection = path.Project(current);
+                int previousNode = walker.PreviousNodeIndex, targetNode = walker.TargetNodeIndex;
+                string previousId = previousNode >= 0 ? plan.Nodes[previousNode].Id : "<none>";
+                string targetId = targetNode >= 0 ? plan.Nodes[targetNode].Id : "<none>";
+                Vector3 targetPosition = targetNode >= 0 ? plan.Nodes[targetNode].Position : walker.Position;
+                Assert.That(++ticks, Is.LessThan((lengthBudget / walker.MovementSpeed + 20f) / Tick),
+                    $"The production pedestrian stalled: stage={stage}, current={walker.Position:F4}, " +
+                    $"target={targetPosition:F4}, destination={destination:F4}, " +
+                    $"previousNode={previousNode}:{previousId}, targetNode={targetNode}:{targetId}, " +
+                    $"progress={projection.DistanceAlong:F4}/{path.Length:F4}, " +
+                    $"distanceGoal={Vector2.Distance(current, new Vector2(destination.x, destination.z)):F4}, " +
+                    $"lastDisplacement={walker.LastDisplacement:F5}, motionState={walker.MotionState}.");
+                Vector3 previous = walker.Position;
+                Quaternion previousRotation = walker.transform.rotation;
+                CityPedestrianLink walkingLink = CurrentLink();
+                // Supply the next destination before the ordinary knot switch.
+                // Finish the current edge; never reattach or reset the actor.
+                bool nextGuidance = AtNode(goal) || Vector2.Distance(current,
+                    new Vector2(destination.x, destination.z)) < walker.MovementSpeed * Tick + .06f;
+                walker.Advance(Tick, initialApproachTarget: nextGuidance ? plan.Nodes[nextGoal].Position : destination,
+                    initialApproachNodeDistances: nextGuidance ? nextDistances : distances);
+                Vector3 displacement = walker.Position - previous; displacement.y = 0f;
+                travelled += displacement.magnitude;
+                if (outgoingCorner >= 0 && previousNode == outgoingCorner && displacement.magnitude > .002f)
+                    passedOutgoingCorner = true;
+                Assert.That(walker.CollisionEnabled, Is.True, "The demo must retain the real pedestrian capsule.");
+                Assert.That(walker.DetourCount, Is.EqualTo(originalDetours), "The court must be traversable without a blocked escape.");
+                if (walkingLink?.Kind == CityPedestrianLinkKind.Courtyard)
+                {
+                    Assert.That(Quaternion.Angle(previousRotation, walker.transform.rotation), Is.LessThanOrEqualTo(360f * Tick + .2f),
+                        "A courtyard turn must retain the production yaw rate.");
+                    if (displacement.magnitude > .002f)
+                    {
+                        Vector3 forward = walker.transform.forward; forward.y = 0f; forward.Normalize();
+                        float facing = Vector3.Dot(forward, displacement.normalized);
+                        Assert.That(facing, Is.GreaterThanOrEqualTo(.88f),
+                            $"The visible walker must face its real step: stage={stage}, link={walkingLink.Id}, " +
+                            $"root={walker.Position:F4}, displacement={displacement:F5}, forward={forward:F4}, dot={facing:F4}.");
+                    }
+                }
+                current = new Vector2(walker.Position.x, walker.Position.z);
+                float maximumOffset = CityPedestrianActor.MaximumLateralOffset + .02f;
+                float pathDistance = onConnection ? path.Project(current).DistanceSquared :
+                    city.Layout.CourtyardPaths.Min(route => route.Project(current).DistanceSquared);
+                Assert.That(pathDistance, Is.LessThan(maximumOffset * maximumOffset),
+                    "The pedestrian must stay on its authored court path with the production shoulder shift.");
+                Assert.That(area.Contains(walker.Position, .35f), Is.True);
+                Assert.That(city.World.WalkableArea.Contains(walker.Position, .35f), Is.True);
+                bool hasGroundTop = TryReplanningSurfaceTop(city.Layout, surfaces, current, out float top);
+                if (!hasGroundTop || walker.Position.y < top - .002f)
+                    issues.Add($"Courtyard walker root below ground or missing ground at {current:F4}, " +
+                        $"hasGroundTop={hasGroundTop}, root={walker.Position.y:F4}, ground={top:F4}.");
+                VerifyControllerSupport();
+                RaycastHit[] hits = Physics.RaycastAll(new Vector3(current.x, top + .5f, current.y), Vector3.down,
+                    1f, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore);
+                if (!hits.Any(hit => hit.collider is MeshCollider && Mathf.Abs(hit.point.y - top) < .025f))
+                    issues.Add($"Courtyard walker has no physical ground at {current:F4}, expected={top:F4}.");
+            }
+
+            private void VerifyControllerSupport()
+            {
+                const float lift = .5f, precision = .002f;
+                CharacterController controller = walker.CharacterController;
+                Vector3 scale = controller.transform.lossyScale;
+                float radius = controller.radius * Mathf.Max(Mathf.Abs(scale.x), Mathf.Abs(scale.z));
+                Vector3 lowerSphere = controller.transform.TransformPoint(controller.center -
+                    Vector3.up * (controller.height * .5f - controller.radius));
+                // Probe the real lower hemisphere, including lateral support
+                // from a neighbouring curb. A centre-height subtraction cannot
+                // represent this footprint on slopes or beside a raised strip.
+                RaycastHit[] supports = Physics.SphereCastAll(lowerSphere + Vector3.up * lift, radius,
+                    Vector3.down, lift + radius + controller.stepOffset + controller.skinWidth,
+                    Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore);
+                RaycastHit? support = null;
+                foreach (RaycastHit candidate in supports)
+                {
+                    if (!(candidate.collider is MeshCollider) || candidate.normal.y <= 0f ||
+                        !candidate.transform.IsChildOf(city.World.Root.transform)) continue;
+                    Vector2 contact = new Vector2(candidate.point.x, candidate.point.z);
+                    if (!TryReplanningSurfaceTop(city.Layout, surfaces, contact, out float contactTop) ||
+                        Mathf.Abs(candidate.point.y - contactTop) >= .025f) continue;
+                    // Sphere casts report the contact direction at a curb edge,
+                    // which can differ from the horizontal top's triangle normal.
+                    if (!support.HasValue || candidate.distance < support.Value.distance) support = candidate;
+                }
+                if (!support.HasValue)
+                {
+                    issues.Add($"Courtyard walker has no physical capsule support: stage={stage}, " +
+                        $"root={walker.Position:F4}, lowerSphere={lowerSphere:F4}, radius={radius:F4}.");
+                    return;
+                }
+                RaycastHit hit = support.Value;
+                float signedVerticalGap = hit.distance - lift;
+                float signedNormalGap = signedVerticalGap * hit.normal.y;
+                if (signedNormalGap < -precision || signedNormalGap > controller.skinWidth + precision)
+                    issues.Add($"Courtyard walker capsule outside controller ground-contact band: stage={stage}, " +
+                        $"root={walker.Position:F4}, lowerSphere={lowerSphere:F4}, radius={radius:F4}, " +
+                        $"collider={hit.collider.name}, contact={hit.point:F4}, normal={hit.normal:F5}, " +
+                        $"verticalGap={signedVerticalGap:F5}, normalGap={signedNormalGap:F5}, skinWidth={controller.skinWidth:F4}.");
+            }
+
+            private void ObserveRenderedBody(string phase)
+            {
+                if (!observedRenderPhases.Add(phase)) return;
+                renderedContact.Origin = walker.Position;
+                var nearby = new Dictionary<Renderer, ScarfContactSurface>();
+                foreach (Renderer renderer in renderedWalker)
+                {
+                    ScarfContactSurface body = renderedContact.Read(renderer);
+                    var worldBounds = new Bounds(body.Bounds.center + walker.Position, body.Bounds.size);
+                    foreach (Renderer building in buildings)
+                    {
+                        if (!worldBounds.Intersects(building.bounds)) continue;
+                        if (!nearby.TryGetValue(building, out ScarfContactSurface surface))
+                            nearby.Add(building, surface = renderedContact.Read(building));
+                        if (!renderedContact.Intersects(body, surface, phase, renderedReport)) continue;
+                        issues.Add($"Rendered courtyard body intersects a building: phase={phase}, " +
+                            $"body={renderer.name}, building={building.name}, root={walker.Position:F4}, " +
+                            $"reason={renderedContact.Witness.reason}.");
+                    }
+                }
+                Debug.Log($"Courtyard rendered contact proof: phase={phase}, bodyMeshes={renderedWalker.Length}, " +
+                    $"nearbyBuildingMeshes={nearby.Count}, trianglePairs={renderedReport.near_triangle_pairs}.");
+            }
+
+            private void CaptureActualViews(string name)
+            {
+                if (!capturedViews.Add(name)) return;
+                ObserveRenderedBody(name);
+                Camera camera = Camera.main;
+                Vector3 previousPosition = camera.transform.position;
+                Quaternion previousRotation = camera.transform.rotation;
+                float previousFov = camera.fieldOfView;
+                Vector3 forward = walker.transform.forward, right = walker.transform.right;
+                Debug.Log($"Courtyard actual view {name}: root={walker.Position:F4}, forward={forward:F4}, " +
+                    $"lastDisplacement={walker.LastDisplacement:F5}, link={CurrentLink()?.Id}, " +
+                    $"previous={walker.PreviousNodeIndex}, target={walker.TargetNodeIndex}, measuredTravel={travelled:F3} m.");
+                try
+                {
+                    foreach (bool heading in new[] { false, true })
+                    {
+                        Vector3 target = walker.Position + Vector3.up * (heading ? 1.3f : .9f) +
+                            (heading ? forward * 10f : Vector3.zero);
+                        Vector3 eye = walker.Position - forward * (heading ? 1.8f : 3f) +
+                            right * (heading ? .45f : 1.6f) + Vector3.up * 1.65f;
+                        Vector3 focus = walker.Position + Vector3.up * .9f;
+                        Vector3 view = eye - focus;
+                        RaycastHit[] obstructions = Physics.RaycastAll(focus, view.normalized, view.magnitude,
+                            Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore);
+                        float free = obstructions.Where(hit => !hit.transform.IsChildOf(walker.transform) &&
+                            !hit.transform.IsChildOf(city.Player.GameObject.transform)).Select(hit => hit.distance)
+                            .DefaultIfEmpty(view.magnitude + .2f).Min();
+                        eye = focus + view.normalized * Mathf.Max(.35f, Mathf.Min(view.magnitude, free - .2f));
+                        camera.transform.SetPositionAndRotation(eye, Quaternion.LookRotation(target - eye, Vector3.up));
+                        camera.fieldOfView = heading ? 86f : 72f;
+                        CaptureCurrentCamera(camera, SceneIds.City,
+                            $"replanning-facing-fix-courtyard-walker-{name}-{(heading ? "forward-view" : "body")}");
+                    }
+                }
+                finally
+                {
+                    camera.transform.SetPositionAndRotation(previousPosition, previousRotation);
+                    camera.fieldOfView = previousFov;
+                }
             }
 
             private void Pause(Behaviour behaviour)
@@ -385,7 +653,7 @@ namespace BarPromenade.Tests.PlayMode
                 behaviour.enabled = false;
             }
 
-            public void Restore()
+            private void RestoreWalkerPose()
             {
                 if (walker != null && walker.IsSpawned)
                 {
@@ -395,10 +663,16 @@ namespace BarPromenade.Tests.PlayMode
                     walker.SetAvoidance(1f, 0f);
                     walker.CharacterController.enabled = originalCollision;
                 }
+            }
+
+            public void Restore()
+            {
+                RestoreWalkerPose();
                 foreach (KeyValuePair<Behaviour, bool> entry in paused)
                     if (entry.Key != null) entry.Key.enabled = entry.Value;
                 if (hasManualControl && city != null && city.Pedestrians != null)
                     city.Pedestrians.AutomaticUpdatesSuspended = originalAutomaticUpdatesSuspended;
+                renderedContact.Dispose();
             }
         }
 

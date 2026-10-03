@@ -51,6 +51,7 @@ namespace BarPromenade
         public const float CollisionHeight = 1.7f;
         public const float CollisionCenterHeight = 0.85f;
         public const float TurnSpeedDegrees = 360f;
+        public const float CourtyardWalkingFacingAngle = 25f;
 
         /// <summary>
         /// A `1 m` sidewalk minus a `0.35 m` agent leaves this much room to
@@ -1000,7 +1001,20 @@ namespace BarPromenade
                     // Walking speed is measured on the ground plane. The
                     // controller's contact gap must not consume that budget.
                     Vector2 currentXZ = new Vector2(current.x, current.z);
-                    Vector2 moved = Vector2.MoveTowards(currentXZ, point, step);
+                    Vector2 requested = point - currentXZ;
+                    float facingScale = 0f;
+                    if (requested.sqrMagnitude > 0.0000001f)
+                    {
+                        // At a courtyard corner, turn before stepping into the
+                        // next leg. Shoulder steering is part of that direction.
+                        Vector3 facing = new Vector3(requested.x, 0f, requested.y).normalized;
+                        transform.rotation = Quaternion.RotateTowards(transform.rotation,
+                            Quaternion.LookRotation(facing, Vector3.up), TurnSpeedDegrees * deltaTime);
+                        float angle = Vector3.Angle(transform.forward, facing);
+                        facingScale = Mathf.SmoothStep(0f, 1f,
+                            Mathf.Clamp01(1f - angle / CourtyardWalkingFacingAngle));
+                    }
+                    Vector2 moved = Vector2.MoveTowards(currentXZ, point, step * facingScale);
                     desired = new Vector3(moved.x,
                         curvedLink.PathHeightSampler != null
                             ? curvedLink.PathHeightSampler(moved) : pathHeight,
@@ -1011,10 +1025,10 @@ namespace BarPromenade
                 {
                     desired = Vector3.MoveTowards(current, onPath, step);
                     intended = Mathf.Min(step, Vector3.Distance(current, onPath));
+                    steerDirection = new Vector3(tangent.x, 0f, tangent.y);
+                    transform.rotation = Quaternion.RotateTowards(transform.rotation,
+                        Quaternion.LookRotation(steerDirection, Vector3.up), TurnSpeedDegrees * deltaTime);
                 }
-                steerDirection = new Vector3(tangent.x, 0f, tangent.y);
-                transform.rotation = Quaternion.RotateTowards(transform.rotation,
-                    Quaternion.LookRotation(steerDirection, Vector3.up), TurnSpeedDegrees * deltaTime);
             }
             Vector3 constrained = walkableArea.Constrain(
                 current,
