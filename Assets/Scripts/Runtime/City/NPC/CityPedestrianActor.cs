@@ -961,15 +961,39 @@ namespace BarPromenade
             Vector3 steerDirection = steerDistance > 0.0001f
                 ? steerOffset / steerDistance
                 : direction;
-            transform.rotation = Quaternion.RotateTowards(
-                transform.rotation,
-                Quaternion.LookRotation(steerDirection, Vector3.up),
-                TurnSpeedDegrees * deltaTime);
+            CityPedestrianLink curvedLink = null;
+            bool curvedWalking = !directToWaitSlot && TryGetCurvedWalkingLink(out curvedLink);
+            if (!curvedWalking)
+                transform.rotation = Quaternion.RotateTowards(
+                    transform.rotation,
+                    Quaternion.LookRotation(steerDirection, Vector3.up),
+                    TurnSpeedDegrees * deltaTime);
             float step = speed * requestedSpeedScale * deltaTime;
             float intended = Mathf.Min(step, steerDistance);
             float heightAmount = Mathf.Min(1f, intended / distance);
             Vector3 desired = current + (steerDirection * intended);
             desired.y = Mathf.Lerp(current.y, target.y, heightAmount);
+            if (curvedWalking)
+            {
+                CityRoadPath path = curvedLink.Path;
+                bool forward = targetNodeIndex == curvedLink.SecondNodeIndex;
+                float along = path.Project(new Vector2(current.x, current.z)).DistanceAlong;
+                float next = Mathf.Clamp(along + (forward ? step : -step), 0f, path.Length);
+                CityRoadSample sample = path.SampleDistance(next);
+                Vector2 tangent = sample.Tangent * (forward ? 1f : -1f);
+                Vector2 laneRight = new Vector2(tangent.y, -tangent.x);
+                Vector2 point = sample.Position + laneRight * lateralOffset;
+                float pathHeight = curvedLink.PathHeightSampler != null
+                    ? curvedLink.PathHeightSampler(point)
+                    : Mathf.Lerp(plan.Nodes[curvedLink.FirstNodeIndex].Position.y,
+                        plan.Nodes[curvedLink.SecondNodeIndex].Position.y, next / path.Length);
+                Vector3 onPath = new Vector3(point.x, pathHeight, point.y);
+                desired = Vector3.MoveTowards(current, onPath, step);
+                steerDirection = new Vector3(tangent.x, 0f, tangent.y);
+                transform.rotation = Quaternion.RotateTowards(transform.rotation,
+                    Quaternion.LookRotation(steerDirection, Vector3.up), TurnSpeedDegrees * deltaTime);
+                intended = Mathf.Min(step, Vector3.Distance(current, onPath));
+            }
             Vector3 constrained = walkableArea.Constrain(
                 current,
                 desired,
@@ -1014,6 +1038,23 @@ namespace BarPromenade
             }
 
             return LastDisplacement.sqrMagnitude > 0.000001f;
+        }
+
+        private bool TryGetCurvedWalkingLink(out CityPedestrianLink link)
+        {
+            link = null;
+            if (previousNodeIndex < 0 || targetNodeIndex < 0) return false;
+            IReadOnlyList<int> indices = plan.GetLinkIndices(previousNodeIndex);
+            for (int i = 0; i < indices.Count; i++)
+            {
+                CityPedestrianLink candidate = plan.Links[indices[i]];
+                if (candidate.Path != null && candidate.Other(previousNodeIndex) == targetNodeIndex)
+                {
+                    link = candidate;
+                    return true;
+                }
+            }
+            return false;
         }
 
         private void ReachTargetNode()

@@ -104,6 +104,7 @@ namespace BarPromenade
                 allEdges,
                 roads);
             EnsureAuthoredStreets(snapshot, allEdges, roads);
+            CityRoadGeometryPlan.EnsurePilotRoads(snapshot, roads);
             roads.Sort(RoadEdge.Compare);
 
             Vector2 originOffset = anchorAtBlueprintCenter
@@ -113,6 +114,7 @@ namespace BarPromenade
             Vector3 origin = new Vector3(originOffset.x, 0f, originOffset.y);
             Dictionary<RoadEdge, CityPathKind> pathKinds =
                 CreatePathKinds(snapshot, roads);
+            snapshot.RoadGeometry = CityRoadGeometryPlan.Create(snapshot, origin, roads);
             CityParkPlan park =
                 CreateParkPlan(
                     snapshot,
@@ -907,7 +909,7 @@ namespace BarPromenade
                     }
 
                     frontages[lotIndex] = frontage;
-                    if (frontage != Vector2Int.zero)
+                    if (frontage != Vector2Int.zero && settings.RoadGeometry?.IsAffectedCell(cell) != true)
                     {
                         barCandidates.Add(CreateBarCandidate(
                             settings,
@@ -1097,7 +1099,7 @@ namespace BarPromenade
                     lotIndex % settings.BlocksX,
                     lotIndex / settings.BlocksX);
                 if (!settings.CreatesLot(cell) ||
-                    settings.IsParkCell(cell))
+                    settings.IsParkCell(cell) || settings.RoadGeometry?.IsAffectedCell(cell) == true)
                 {
                     continue;
                 }
@@ -1254,7 +1256,7 @@ namespace BarPromenade
                     barFrontage);
                 Vector2Int canonicalHomeFrontage = -barFrontage;
                 if (barLots.Contains(barLotIndex) &&
-                    settings.CreatesLot(canonicalHome) &&
+                    settings.CreatesLot(canonicalHome) && settings.RoadGeometry?.IsAffectedCell(canonicalHome) != true &&
                     roadSet.Contains(sharedRoad) &&
                     pathKinds[sharedRoad] == CityPathKind.Street &&
                     CanFitAuthoredPlayerHome(
@@ -1301,7 +1303,7 @@ namespace BarPromenade
                         pathKinds[sharedRoad] !=
                         CityPathKind.Street ||
                         !IsCellInsideGrid(settings, homeCell) ||
-                        settings.IsParkCell(homeCell))
+                        settings.IsParkCell(homeCell) || settings.RoadGeometry?.IsAffectedCell(homeCell) == true)
                     {
                         continue;
                     }
@@ -1392,7 +1394,7 @@ namespace BarPromenade
                     lotIndex % settings.BlocksX,
                     lotIndex / settings.BlocksX);
                 if (!settings.CreatesLot(cell) ||
-                    settings.IsParkCell(cell) ||
+                    settings.IsParkCell(cell) || settings.RoadGeometry?.IsAffectedCell(cell) == true ||
                     !CanFitAuthoredPlayerHome(
                         settings,
                         frontage))
@@ -1768,7 +1770,8 @@ namespace BarPromenade
                 settings.SpatialPlan != null && !settings.SpatialPlan.IsUniform;
             bool isAuthoredPrecinct = (cell.x == 10 && cell.y == 5) ||
                 (cell.x == 11 && (cell.y == 3 || cell.y == 4 || cell.y == 5));
-            int buildingVariant = authoredOrdinary && !isPrimaryLandmark && !isAuthoredPrecinct
+            bool curvedBlock = settings.RoadGeometry?.IsAffectedCell(cell) == true;
+            int buildingVariant = authoredOrdinary && !curvedBlock && !isPrimaryLandmark && !isAuthoredPrecinct
                 ? ResolveBuildingVariant(seed, cell, frontage, district,
                     new Vector2(maximumWidth, maximumDepth))
                 : 0;
@@ -1819,7 +1822,7 @@ namespace BarPromenade
             // The street wall belongs to the public frontage; excess land
             // stays behind the building as a yard instead of a moat on all
             // four sides. Residential setbacks deliberately remain deeper.
-            if (authoredOrdinary && frontage != Vector2Int.zero)
+            if (authoredOrdinary && !curvedBlock && frontage != Vector2Int.zero)
             {
                 float halfSpan = frontage.x != 0 ? cellSpan.x * 0.5f : cellSpan.y * 0.5f;
                 float halfBuilding = frontage.x != 0 ? size.x * 0.5f : size.y * 0.5f;
@@ -1835,6 +1838,17 @@ namespace BarPromenade
                     : cellSpan.y * 0.5f;
             Vector3 doorPosition = center + (direction * buildingHalfDistance);
             Vector3 returnPosition = GetLotCenter(settings, origin, cell) + (direction * roadDistance);
+            if (settings.RoadGeometry != null && frontage != Vector2Int.zero)
+            {
+                RoadEdge frontageEdge = RoadEdge.ForCellFrontage(cell, frontage);
+                if (settings.RoadGeometry.IsCurved(frontageEdge))
+                {
+                    CityRoadProjection projection = settings.RoadGeometry.Get(frontageEdge).Project(
+                        new Vector2(returnPosition.x, returnPosition.z));
+                    returnPosition.x = projection.Position.x;
+                    returnPosition.z = projection.Position.y;
+                }
+            }
             float sidewalkCenterOffset =
                 (settings.RoadWidth * 0.5f) -
                 (CityStreetSurfacePlanner.SidewalkWidth * 0.5f);

@@ -5,6 +5,17 @@ using UnityEngine;
 
 namespace BarPromenade
 {
+    public readonly struct CityStreetRibbonDescriptor
+    {
+        internal CityStreetRibbonDescriptor(RoadEdge edge, IReadOnlyList<Vector2[]> polygons,
+            float topOffset, float thickness)
+        { Edge = edge; Polygons = polygons; TopOffset = topOffset; Thickness = thickness; }
+        public RoadEdge Edge { get; }
+        public IReadOnlyList<Vector2[]> Polygons { get; }
+        public float TopOffset { get; }
+        public float Thickness { get; }
+    }
+
     public readonly struct CityCrosswalkDescriptor :
         IEquatable<CityCrosswalkDescriptor>
     {
@@ -77,7 +88,10 @@ namespace BarPromenade
             IList<Rect> sidewalkWalkableRectangles,
             IList<Rect> crosswalkWalkableRectangles,
             IList<Vector2Int> crosswalkNodes,
-            IList<CityCrosswalkDescriptor> crosswalks)
+            IList<CityCrosswalkDescriptor> crosswalks,
+            IList<CityStreetRibbonDescriptor> curvedStreetRibbons = null,
+            IList<CityStreetRibbonDescriptor> curvedSidewalkRibbons = null,
+            IList<CityStreetRibbonDescriptor> curvedCenterMarkingRibbons = null)
         {
             if (float.IsNaN(carriagewayWidth) ||
                 float.IsInfinity(carriagewayWidth) ||
@@ -104,6 +118,13 @@ namespace BarPromenade
                 crosswalkWalkableRectangles);
             CrosswalkNodes = Copy(crosswalkNodes);
             Crosswalks = Copy(crosswalks);
+            CurvedStreetRibbons = Copy(curvedStreetRibbons ?? new List<CityStreetRibbonDescriptor>());
+            CurvedSidewalkRibbons = Copy(curvedSidewalkRibbons ?? new List<CityStreetRibbonDescriptor>());
+            CurvedCenterMarkingRibbons = Copy(curvedCenterMarkingRibbons ?? new List<CityStreetRibbonDescriptor>());
+            var polygons = new List<Vector2[]>();
+            foreach (CityStreetRibbonDescriptor ribbon in CurvedSidewalkRibbons)
+                foreach (Vector2[] polygon in ribbon.Polygons) polygons.Add((Vector2[])polygon.Clone());
+            CurvedSidewalkPolygons = polygons.AsReadOnly();
         }
 
         public float CarriagewayWidth { get; }
@@ -127,6 +148,10 @@ namespace BarPromenade
         public IReadOnlyList<Rect> CrosswalkWalkableRectangles { get; }
         public IReadOnlyList<Vector2Int> CrosswalkNodes { get; }
         public IReadOnlyList<CityCrosswalkDescriptor> Crosswalks { get; }
+        public IReadOnlyList<CityStreetRibbonDescriptor> CurvedStreetRibbons { get; }
+        public IReadOnlyList<CityStreetRibbonDescriptor> CurvedSidewalkRibbons { get; }
+        public IReadOnlyList<CityStreetRibbonDescriptor> CurvedCenterMarkingRibbons { get; }
+        public IReadOnlyList<Vector2[]> CurvedSidewalkPolygons { get; }
 
         private static IReadOnlyList<T> Copy<T>(IList<T> source)
         {

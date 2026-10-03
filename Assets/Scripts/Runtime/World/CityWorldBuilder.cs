@@ -870,6 +870,10 @@ namespace BarPromenade
                     GroundSurfaceCoordinates.Enable(renderer);
                 },
                 FootstepGroundKind.Concrete);
+            BuildStreetRibbonMeshes("Curved Street Surfaces", roads, layout,
+                plan.CurvedStreetRibbons, CityExteriorAppearance.Asphalt, true,
+                CityExteriorAppearance.RoadTextureTileSize, CityExteriorAppearance.ApplyRoadSurface,
+                FootstepGroundKind.Concrete, true);
             BuildOrientedSurfaceBoxesIfAny(
                 "Park Paths",
                 roads,
@@ -904,6 +908,10 @@ namespace BarPromenade
                 CityExteriorAppearance.SidewalkTextureTileSize,
                 CityExteriorAppearance.ApplySidewalkSurface,
                 FootstepGroundKind.Stone);
+            BuildStreetRibbonMeshes("Curved Sidewalk Surfaces", roads, layout,
+                plan.CurvedSidewalkRibbons, Color.white, true,
+                CityExteriorAppearance.SidewalkTextureTileSize, CityExteriorAppearance.ApplySidewalkSurface,
+                FootstepGroundKind.Stone, false);
             ReportBlock(
                 "roads_and_river/sidewalks",
                 subTimer,
@@ -917,6 +925,10 @@ namespace BarPromenade
                 false,
                 CityExteriorAppearance.RoadMarkingTextureTileSize,
                 CityExteriorAppearance.ApplyRoadMarkingSurface);
+            BuildStreetRibbonMeshes("Curved Road Center Markings", roads, layout,
+                plan.CurvedCenterMarkingRibbons, Color.white, false,
+                CityExteriorAppearance.RoadMarkingTextureTileSize, CityExteriorAppearance.ApplyRoadMarkingSurface,
+                FootstepGroundKind.None, false);
             BuildOrientedSurfaceBoxesIfAny(
                 "Pedestrian Crossings",
                 roads,
@@ -2473,6 +2485,95 @@ namespace BarPromenade
             if (footstep != FootstepGroundKind.None)
             {
                 FootstepGround.Stamp(surface, footstep);
+            }
+        }
+
+        private static void BuildStreetRibbonMeshes(string name, Transform parent, CityLayout layout,
+            IReadOnlyList<CityStreetRibbonDescriptor> ribbons, Color color, bool collision,
+            float tileSize, Action<Renderer> applyAppearance, FootstepGroundKind footstep,
+            bool roadCoordinates)
+        {
+            if (ribbons.Count == 0) return;
+            var vertices = new List<Vector3>();
+            var triangles = new List<int>();
+            var uvs = new List<Vector2>();
+            var coordinates = new List<Vector4>();
+            foreach (CityStreetRibbonDescriptor ribbon in ribbons)
+            {
+                CityRoadPath path = layout.RoadGeometry.Get(ribbon.Edge);
+                var boundaryCounts = new Dictionary<(Vector2, Vector2), int>();
+                foreach (Vector2[] polygon in ribbon.Polygons)
+                    for (int i = 0; i < polygon.Length; i++)
+                    {
+                        var key = RibbonEdgeKey(polygon[i], polygon[(i + 1) % polygon.Length]);
+                        boundaryCounts.TryGetValue(key, out int count); boundaryCounts[key] = count + 1;
+                    }
+                foreach (Vector2[] polygon in ribbon.Polygons)
+                {
+                    var top = new Vector3[polygon.Length];
+                    var bottom = new Vector3[polygon.Length];
+                    for (int i = 0; i < polygon.Length; i++)
+                    {
+                        CityRoadProjection projection = path.Project(polygon[i]);
+                        float height = layout.ElevationPlan.SampleRoadDatum(ribbon.Edge,
+                            projection.DistanceAlong / path.Length) + ribbon.TopOffset;
+                        top[i] = new Vector3(polygon[i].x, height, polygon[i].y);
+                        bottom[i] = top[i] - Vector3.up * ribbon.Thickness;
+                    }
+                    AppendRibbonFace(top, true, path, layout.RoadWidth, tileSize,
+                        vertices, triangles, uvs, coordinates);
+                    AppendRibbonFace(bottom, false, path, layout.RoadWidth, tileSize,
+                        vertices, triangles, uvs, coordinates);
+                    for (int i = 0; i < polygon.Length; i++)
+                    {
+                        int next = (i + 1) % polygon.Length;
+                        if (boundaryCounts[RibbonEdgeKey(polygon[i], polygon[next])] != 1) continue;
+                        AppendRibbonFace(new[] { top[i], top[next], bottom[next], bottom[i] }, false,
+                            path, layout.RoadWidth, tileSize, vertices, triangles, uvs, coordinates);
+                    }
+                }
+            }
+            var mesh = new Mesh { name = name + " Ribbon Mesh" };
+            if (vertices.Count > ushort.MaxValue) mesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
+            mesh.SetVertices(vertices); mesh.SetUVs(0, uvs); mesh.SetTriangles(triangles, 0);
+            if (roadCoordinates) mesh.SetUVs(GroundSurfaceCoordinates.Channel, coordinates);
+            mesh.RecalculateNormals(); mesh.RecalculateBounds();
+            var result = new GameObject(name);
+            result.transform.SetParent(parent, false);
+            result.AddComponent<MeshFilter>().sharedMesh = mesh;
+            MeshRenderer renderer = result.AddComponent<MeshRenderer>();
+            renderer.sharedMaterial = RuntimePrimitiveFactory.DefaultMaterial;
+            RuntimePrimitiveFactory.SetColor(renderer, color);
+            applyAppearance(renderer);
+            if (roadCoordinates) GroundSurfaceCoordinates.Enable(renderer);
+            if (collision) result.AddComponent<MeshCollider>().sharedMesh = mesh;
+            if (footstep != FootstepGroundKind.None) FootstepGround.Stamp(result, footstep);
+            result.AddComponent<RuntimeGeneratedMeshOwner>().Initialize(mesh);
+            mesh.UploadMeshData(false);
+        }
+
+        private static (Vector2, Vector2) RibbonEdgeKey(Vector2 first, Vector2 second) =>
+            first.x < second.x || (first.x == second.x && first.y < second.y)
+                ? (first, second) : (second, first);
+
+        private static void AppendRibbonFace(IReadOnlyList<Vector3> face, bool reverse,
+            CityRoadPath path, float roadWidth, float tileSize,
+            List<Vector3> vertices, List<int> triangles, List<Vector2> uvs, List<Vector4> coordinates)
+        {
+            int start = vertices.Count;
+            float seed = GroundSurfaceCoordinates.Seed(new Vector3(path.Vertices[0].x, 0f, path.Vertices[0].y));
+            foreach (Vector3 vertex in face)
+            {
+                vertices.Add(vertex); uvs.Add(new Vector2(vertex.x, vertex.z) / tileSize);
+                CityRoadProjection projection = path.Project(new Vector2(vertex.x, vertex.z));
+                coordinates.Add(new Vector4(projection.SignedLateral, projection.DistanceAlong,
+                    roadWidth * .5f - CityStreetSurfacePlanner.SidewalkWidth, seed));
+            }
+            for (int i = 1; i < face.Count - 1; i++)
+            {
+                triangles.Add(start);
+                triangles.Add(start + (reverse ? i + 1 : i));
+                triangles.Add(start + (reverse ? i : i + 1));
             }
         }
 

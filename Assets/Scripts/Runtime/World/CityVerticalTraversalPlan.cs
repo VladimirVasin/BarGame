@@ -542,24 +542,11 @@ namespace BarPromenade
                 transitions,
             ICollection<CityVerticalTraversalDefectRecord> defects)
         {
-            Vector2 start = span.IsHorizontal
-                ? new Vector2(
-                    minimumCoordinate,
-                    span.FixedCoordinate)
-                : new Vector2(
-                    span.FixedCoordinate,
-                    minimumCoordinate);
-            Vector2 end = span.IsHorizontal
-                ? new Vector2(
-                    maximumCoordinate,
-                    span.FixedCoordinate)
-                : new Vector2(
-                    span.FixedCoordinate,
-                    maximumCoordinate);
+            Vector2 start = span.PointAtCoordinate(minimumCoordinate);
+            Vector2 end = span.PointAtCoordinate(maximumCoordinate);
             CityVerticalTraversalClassification classification;
             float delta = 0f;
-            if (maximumCoordinate - minimumCoordinate <
-                MinimumPassageWidth)
+            if (Vector2.Distance(start, end) < MinimumPassageWidth)
             {
                 classification =
                     CityVerticalTraversalClassification.Unclassified;
@@ -749,16 +736,8 @@ namespace BarPromenade
             RoadEdge edge,
             Vector2 worldXZ)
         {
-            Vector3 first = layout.GetNodeWorldPosition(edge.A);
-            Vector3 second = layout.GetNodeWorldPosition(edge.B);
-            var firstXZ = new Vector2(first.x, first.z);
-            var secondXZ = new Vector2(second.x, second.z);
-            Vector2 edgeDelta = secondXZ - firstXZ;
-            float amount = edgeDelta.sqrMagnitude > GeometryTolerance
-                ? Mathf.Clamp01(
-                    Vector2.Dot(worldXZ - firstXZ, edgeDelta) /
-                    edgeDelta.sqrMagnitude)
-                : 0f;
+            CityRoadPath path = layout.RoadGeometry.Get(edge);
+            float amount = path.Project(worldXZ).DistanceAlong / path.Length;
             float topOffset = layout.GetPathKind(edge) ==
                               CityPathKind.Street
                 ? CityStreetSurfacePlanner.SidewalkTop

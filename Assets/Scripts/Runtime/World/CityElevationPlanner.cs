@@ -151,7 +151,8 @@ namespace BarPromenade
                 transitions,
                 profiles,
                 stairs,
-                spatialPlan);
+                spatialPlan,
+                settings.RoadGeometry);
             CityElevationValidator.ValidateOrThrow(
                 plan,
                 blueprint,
@@ -321,7 +322,7 @@ namespace BarPromenade
                 RoadEdge edge = roads[index];
                 float horizontalRun = Mathf.Max(
                     0.01f,
-                    spatialPlan.GetNodeSpan(edge) - settings.RoadWidth);
+                    (settings.RoadGeometry != null ? settings.RoadGeometry.Get(edge).Length : spatialPlan.GetNodeSpan(edge)) - settings.RoadWidth);
                 float start = GetNode(nodeElevations, edge.A);
                 float end = GetNode(nodeElevations, edge.B);
                 float grade = Mathf.Abs(end - start) /

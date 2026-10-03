@@ -310,10 +310,16 @@ namespace BarPromenade.Tests.EditMode
                     Is.GreaterThanOrEqualTo(
                         CityGroundTraversalPlanner.MaximumAgentRadius *
                         2f));
-                Assert.That(
+                if (safe.UsesPhysicalGeometry)
+                {
+                    Vector2[] connector = safe.CreateConnectorPolygon(connectorReach);
+                    Assert.That(traversal.ConnectorPolygons.Any(polygon => polygon.SequenceEqual(connector)),
+                        Is.True, safe.Surface.Cell.ToString());
+                }
+                else Assert.That(
                     traversal.ConnectorRectangles,
                     Does.Contain(safe.CreateConnector(connectorReach)));
-                if (RequiresAuthoredOpenAreaAccess(safe.Surface))
+                if (RequiresAuthoredOpenAreaAccess(defaultLayout, safe.Surface, safe.Edge))
                 {
                     Assert.That(
                         defaultLayout.OpenAreaAccesses.Any(access =>
@@ -889,8 +895,17 @@ namespace BarPromenade.Tests.EditMode
         }
 
         private static bool RequiresAuthoredOpenAreaAccess(
-            CitySurfaceDescriptor surface)
+            CityLayout layout,
+            CitySurfaceDescriptor surface,
+            RoadEdge edge)
         {
+            // The default checkpoint fence is set back: its whole safe street
+            // frontage is public ground, rather than one composition opening.
+            if (surface.Kind == CitySurfaceKind.OpenGround &&
+                layout.BlueprintId == CityBlueprintCatalog.DefaultBlueprintId &&
+                layout.GetPathKind(edge) == CityPathKind.Street &&
+                (surface.AreaId == "yard-east" || surface.AreaId == "yard-north-east"))
+                return false;
             // Beach frontage opened along its whole street boundary
             // (the mountain belt's rule): safe beach spans no longer
             // need an authored access behind them.

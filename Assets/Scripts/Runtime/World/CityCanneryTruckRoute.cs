@@ -118,7 +118,11 @@ namespace BarPromenade
             AddFactoryExit(poses[6]);
             AddStreet(poses[6], poses[6][poses[6].Count-1], site.FrontageEdge, portIn, port.StreetEdge);
             foreach (RoadEdge edge in streetEdges)
+            {
+                if (layout.RoadGeometry.IsCurved(edge))
+                    throw new InvalidOperationException("Cannery truck routing requires a curved rear-axle adapter before using " + edge + ".");
                 if (busRoads.Contains(edge)) SharedBusStreetCount++;
+            }
             for(int leg=0;leg<poses.Length;leg++)
             for(int i=0;i<poses[leg].Count;i++)
                 poses[leg][i]=GroundAxles(poses[leg][i]);

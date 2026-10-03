@@ -15,6 +15,8 @@ namespace BarPromenade
         private const float SampleNormalOffset = 0.10f;
         private const float BeachTopAboveSeaWater = 0.32f;
         internal const float DistrictPointBlendDistance = 4f;
+        private static readonly Vector2Int[] RoadGradeDirections =
+        { Vector2Int.down, Vector2Int.right, Vector2Int.up, Vector2Int.left };
 
         public static bool UsesContinuousTop(
             CitySurfaceDescriptor surface)
@@ -138,6 +140,7 @@ namespace BarPromenade
                 surface,
                 worldXZ,
                 baseDatum);
+            datum = ApplyCurvedRoadGrade(layout, surface, worldXZ, datum);
             if (surface.AreaId == "yard-east" || surface.AreaId == "yard-north-east")
                 datum = CityEastExitPlanner.Create(layout).ApplyGroundTop(worldXZ,
                     datum + CityElevationPlan.GroundTopOffset) - CityElevationPlan.GroundTopOffset;
@@ -318,6 +321,14 @@ namespace BarPromenade
                     continue;
                 }
 
+                if (layout.RoadGeometry.IsAffectedCell(candidate.Cell))
+                {
+                    bool inside = false;
+                    foreach (Vector2[] polygon in layout.RoadGeometry.GetGroundPolygons(candidate.Cell))
+                        if (CityRoadPolygon.Contains(polygon, worldXZ)) { inside = true; break; }
+                    if (!inside) continue;
+                }
+
                 surface = candidate;
                 topY = SampleTop(layout, candidate, worldXZ);
                 return true;
@@ -420,6 +431,27 @@ namespace BarPromenade
             }
 
             return Mathf.Lerp(baseDatum, targetDatum, strongestWeight);
+        }
+
+        private static float ApplyCurvedRoadGrade(CityLayout layout, CitySurfaceDescriptor surface,
+            Vector2 point, float datum)
+        {
+            if (!layout.RoadGeometry.IsAffectedCell(surface.Cell)) return datum;
+            float nearest = float.PositiveInfinity;
+            float target = datum;
+            foreach (Vector2Int direction in RoadGradeDirections)
+            {
+                RoadEdge edge = RoadEdge.ForCellFrontage(surface.Cell, direction);
+                if (!layout.RoadGeometry.IsCurved(edge)) continue;
+                CityRoadPath path = layout.RoadGeometry.Get(edge);
+                CityRoadProjection projection = path.Project(point);
+                if (projection.DistanceSquared >= nearest) continue;
+                nearest = projection.DistanceSquared;
+                target = layout.ElevationPlan.SampleRoadDatum(edge, projection.DistanceAlong / path.Length);
+            }
+            float outside = Mathf.Sqrt(nearest) - layout.RoadWidth * .5f;
+            float weight = 1f - Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(outside / 4f));
+            return Mathf.Lerp(datum, target, weight);
         }
 
         private static float DistanceOutside(Rect bounds, Vector2 point)

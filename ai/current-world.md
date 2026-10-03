@@ -457,8 +457,12 @@ The vertical slice contains:
   `13 x 12` urban envelope around the river; west/north/south intervals vary
   `26–40 m`. River width, park/home/bar/fair/arch anchors and eastern widths stay fixed;
   beach/sea remain continuous, legacy/custom layouts keep uniform spacing.
-  District street priorities change the local rhythm. Streets remain
-  orthogonal; diagonal/curved streets require a future geometry contract;
+  District priorities change street rhythm. Three OldTown T approaches have
+  bends up to 2 m with straight 6 m ends and fixed nodes/datums; other streets
+  stay orthogonal. CityRoadGeometryPlan shares paths/ribbons and ground complement
+  across road/terrain mesh, collision, navigation and lanes. Four ordinary cells
+  exclude significant places; bus routes exclude bends that fail full-body
+  carriageway clearance;
 - one default-blueprint-only mountain boundary plan closes the physical west
   and south edges with deterministic flat-shaded low-poly ridge strips whose
   toes sample the authoritative terrain top. The south skyline remains closed

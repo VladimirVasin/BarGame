@@ -53,10 +53,8 @@ namespace BarPromenade
                     incoming.To,
                     outgoing.RoadEdge)
             };
-            CityBusClearanceResult clearance = ValidateSamples(
-                vehicle,
-                samples,
-                allowed);
+            CityBusClearanceResult clearance = ValidateJunctionSamples(
+                layout, vehicle, samples, incoming, outgoing, allowed);
             clearance = ValidateStaticIntersectionFixtures(
                 layout,
                 vehicle,
@@ -355,6 +353,10 @@ namespace BarPromenade
                 junction + (outgoing.Forward * halfRoad),
                 end,
                 outgoing.Forward);
+            minimumLaneShiftRadius = Mathf.Min(minimumLaneShiftRadius,
+                WarpCurvedStreetSamples(layout, incoming, result, 0, incomingEndIndex));
+            minimumLaneShiftRadius = Mathf.Min(minimumLaneShiftRadius,
+                WarpCurvedStreetSamples(layout, outgoing, result, turnEndIndex, result.Count - 1));
             RebuildSampleDistances(result);
             return result;
         }

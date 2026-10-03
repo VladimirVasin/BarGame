@@ -641,6 +641,11 @@ namespace BarPromenade
             ICollection<TemporaryLink> accepted,
             ICollection<CityBusClearanceFailure> failures)
         {
+            if (layout.RoadGeometry.IsCurved(street.RoadEdge))
+            {
+                AddCurvedRoadSegment(layout, vehicle, street, accepted, failures);
+                return;
+            }
             Vector3 start = GetDeparturePosition(layout, street);
             Vector3 end = GetArrivalPosition(layout, street);
             List<CityBusPathSample> samples = CreateLinearSamples(
@@ -684,6 +689,181 @@ namespace BarPromenade
                 samples,
                 float.PositiveInfinity,
                 clearance));
+        }
+
+        private static void AddCurvedRoadSegment(
+            CityLayout layout, CityBusDesignVehicle vehicle, DirectedStreet street,
+            ICollection<TemporaryLink> accepted, ICollection<CityBusClearanceFailure> failures)
+        {
+            CityRoadPath road = layout.RoadGeometry.Get(street.RoadEdge);
+            CityRoadPath lane = (street.From == street.RoadEdge.A ? road : road.Reversed())
+                .Offset(street.LaneCenterOffset);
+            float inset = layout.RoadWidth * .5f;
+            float run = lane.Length - 2f * inset;
+            int steps = Mathf.Max(1, Mathf.CeilToInt(run / PathSampleSpacing));
+            var samples = new List<CityBusPathSample>(steps + 1);
+            for (int i = 0; i <= steps; i++)
+            {
+                float along = inset + run * i / steps;
+                CityRoadSample sample = lane.SampleDistance(along);
+                float height = CurvedRoadHeight(layout, street.RoadEdge, road, sample.Position);
+                float before = Mathf.Max(0f, along - .05f);
+                float after = Mathf.Min(lane.Length, along + .05f);
+                float grade = (CurvedRoadHeight(layout, street.RoadEdge, road, lane.SampleDistance(after).Position) -
+                    CurvedRoadHeight(layout, street.RoadEdge, road, lane.SampleDistance(before).Position)) / (after - before);
+                AppendPoint(samples, new Vector3(sample.Position.x, height, sample.Position.y),
+                    new Vector3(sample.Tangent.x, grade, sample.Tangent.y));
+            }
+            float radius = EstimateMinimumPathRadius(lane);
+            List<Vector2[]> allowed = GetCarriagewayPolygons(layout, street.RoadEdge);
+            CityBusClearanceResult clearance = ValidatePolygonSamples(vehicle, samples, allowed);
+            if (radius + GeometryTolerance < vehicle.MinimumBodyCenterTurnRadius)
+                clearance = new CityBusClearanceResult(false,
+                    CityBusClearanceFailureKind.CurvatureTooTight, 0, samples[0].Position, 0f);
+            string id = $"bus:road:{NodeId(street.From)}:{NodeId(street.To)}";
+            if (clearance.IsClear)
+                accepted.Add(new TemporaryLink(id, street.DepartureNodeIndex,
+                    street.ArrivalNodeIndex, CityBusRouteLinkKind.Straight, street.To,
+                    samples, radius, clearance, true, street.RoadEdge));
+            else
+                failures.Add(new CityBusClearanceFailure(id, street.RoadEdge,
+                    street.RoadEdge, street.From, street.To, street.To,
+                    CityBusRouteLinkKind.Straight, samples, radius, clearance));
+        }
+
+        private static float CurvedRoadHeight(CityLayout layout, RoadEdge edge, CityRoadPath road, Vector2 point)
+        {
+            return layout.ElevationPlan.SampleRoadDatum(edge,
+                road.Project(point).DistanceAlong / road.Length) + CityStreetSurfacePlanner.RoadTop;
+        }
+
+        private static float EstimateMinimumPathRadius(CityRoadPath path)
+        {
+            float radius = float.PositiveInfinity;
+            for (int i = 1; i < path.Vertices.Count - 1; i++)
+            {
+                Vector2 before = path.Vertices[i] - path.Vertices[i - 1];
+                Vector2 after = path.Vertices[i + 1] - path.Vertices[i];
+                float angle = Vector2.Angle(before, after) * Mathf.Deg2Rad;
+                if (angle > .00001f)
+                    radius = Mathf.Min(radius, Mathf.Min(before.magnitude, after.magnitude) /
+                        (2f * Mathf.Sin(angle * .5f)));
+            }
+            return radius;
+        }
+
+        private static List<Vector2[]> GetCarriagewayPolygons(CityLayout layout, RoadEdge edge)
+        {
+            if (!layout.RoadGeometry.IsCurved(edge))
+                return new List<Vector2[]> { CityRoadPolygon.Rectangle(GetCarriagewayRect(layout, edge)) };
+            float width = layout.RoadWidth - 2f * CityStreetSurfacePlanner.SidewalkWidth;
+            var polygons = new List<Vector2[]>(layout.RoadGeometry.Get(edge).Ribbon(width));
+            // Stable cardinal node caps are the same paving used by straight streets.
+            foreach (Vector2Int node in new[] { edge.A, edge.B })
+            {
+                Vector3 point = layout.GetNodeWorldPosition(node);
+                float half = layout.RoadWidth * .5f;
+                float halfWidth = width * .5f;
+                polygons.Add(CityRoadPolygon.Rectangle(edge.IsHorizontal
+                    ? Rect.MinMaxRect(point.x - half, point.z - halfWidth, point.x + half, point.z + halfWidth)
+                    : Rect.MinMaxRect(point.x - halfWidth, point.z - half, point.x + halfWidth, point.z + half)));
+            }
+            return polygons;
+        }
+
+        private static CityBusClearanceResult ValidatePolygonSamples(CityBusDesignVehicle vehicle,
+            IList<CityBusPathSample> samples, IReadOnlyList<Vector2[]> polygons)
+        {
+            float halfLength = vehicle.InflatedLength * .5f;
+            float halfWidth = vehicle.InflatedWidth * .5f;
+            int longitudinalSteps = Mathf.Max(2, Mathf.CeilToInt(vehicle.InflatedLength / .5f));
+            for (int i = 0; i < samples.Count; i++)
+            {
+                CityBusPathSample sample = samples[i];
+                Vector2 forward = new Vector2(sample.Forward.x, sample.Forward.z).normalized;
+                Vector2 right = new Vector2(forward.y, -forward.x);
+                for (int along = 0; along <= longitudinalSteps; along++)
+                    for (int side = -1; side <= 1; side++)
+                    {
+                        Vector2 point = new Vector2(sample.Position.x, sample.Position.z) +
+                            forward * Mathf.Lerp(-halfLength, halfLength, along / (float)longitudinalSteps) +
+                            right * (halfWidth * side);
+                        bool inside = false;
+                        for (int p = 0; p < polygons.Count && !inside; p++)
+                            inside = CityRoadPolygon.Contains(polygons[p], point);
+                        if (!inside)
+                            return new CityBusClearanceResult(false, CityBusClearanceFailureKind.SidewalkOverlap,
+                                i, new Vector3(point.x, sample.Position.y, point.y), 0f);
+                    }
+            }
+            return CreateClearResult(vehicle);
+        }
+
+        private static CityBusClearanceResult ValidateJunctionSamples(CityLayout layout,
+            CityBusDesignVehicle vehicle, IList<CityBusPathSample> samples,
+            DirectedStreet incoming, DirectedStreet outgoing, IList<Rect> rectangles)
+        {
+            if (!layout.RoadGeometry.IsCurved(incoming.RoadEdge) && !layout.RoadGeometry.IsCurved(outgoing.RoadEdge))
+                return ValidateSamples(vehicle, samples, rectangles);
+            List<Vector2[]> allowed = GetCarriagewayPolygons(layout, incoming.RoadEdge);
+            allowed.AddRange(GetCarriagewayPolygons(layout, outgoing.RoadEdge));
+            // The first two rectangles were broad-phase street bounds; only authored apron extras are retained.
+            for (int i = 2; i < rectangles.Count; i++) allowed.Add(CityRoadPolygon.Rectangle(rectangles[i]));
+            return ValidatePolygonSamples(vehicle, samples, allowed);
+        }
+
+        private static float WarpCurvedStreetSamples(CityLayout layout, DirectedStreet street,
+            IList<CityBusPathSample> samples, int first, int last)
+        {
+            if (!layout.RoadGeometry.IsCurved(street.RoadEdge)) return float.PositiveInfinity;
+            CityRoadPath road = layout.RoadGeometry.Get(street.RoadEdge);
+            CityRoadPath unitOffset = road.Offset(1f);
+            Vector2 origin = road.Vertices[0];
+            Vector2 axis = (road.Vertices[road.Vertices.Count - 1] - origin).normalized;
+            Vector2 right = new Vector2(axis.y, -axis.x);
+            Vector2 Warp(Vector2 point)
+            {
+                float logical = Vector2.Dot(point - origin, axis);
+                float lateral = Vector2.Dot(point - origin, right);
+                int segment = 1;
+                while (segment < road.Vertices.Count - 1 &&
+                    Vector2.Dot(road.Vertices[segment] - origin, axis) < logical) segment++;
+                float before = Vector2.Dot(road.Vertices[segment - 1] - origin, axis);
+                float after = Vector2.Dot(road.Vertices[segment] - origin, axis);
+                float amount = Mathf.Clamp01((logical - before) / (after - before));
+                Vector2 center = Vector2.Lerp(road.Vertices[segment - 1], road.Vertices[segment], amount);
+                Vector2 normal = Vector2.Lerp(unitOffset.Vertices[segment - 1] - road.Vertices[segment - 1],
+                    unitOffset.Vertices[segment] - road.Vertices[segment], amount);
+                return center + normal * lateral;
+            }
+            for (int i = first; i <= last; i++)
+            {
+                CityBusPathSample sample = samples[i];
+                Vector2 source = new Vector2(sample.Position.x, sample.Position.z);
+                Vector2 forward = new Vector2(sample.Forward.x, sample.Forward.z).normalized;
+                Vector2 point = Warp(source);
+                Vector2 before = Warp(source - forward * .025f);
+                Vector2 after = Warp(source + forward * .025f);
+                Vector3 tangent = new Vector3(after.x - before.x,
+                    CurvedRoadHeight(layout, street.RoadEdge, road, after) -
+                    CurvedRoadHeight(layout, street.RoadEdge, road, before), after.y - before.y);
+                samples[i] = new CityBusPathSample(new Vector3(point.x,
+                    CurvedRoadHeight(layout, street.RoadEdge, road, point), point.y),
+                    tangent.normalized, sample.Distance);
+            }
+            float radius = float.PositiveInfinity;
+            // A metre window estimates authored curvature rather than the numerical
+            // tangent change at a polyline vertex; the quarter-turn core is separate.
+            for (int i = first + 10; i <= last - 10; i++)
+            {
+                Vector3 a3 = samples[i - 10].Position, b3 = samples[i].Position, c3 = samples[i + 10].Position;
+                Vector2 a = new Vector2(a3.x, a3.z), b = new Vector2(b3.x, b3.z), c = new Vector2(c3.x, c3.z);
+                float cross = Mathf.Abs(CityRoadPolygon.Cross(b - a, c - b));
+                if (cross > .00001f)
+                    radius = Mathf.Min(radius, Vector2.Distance(a, b) * Vector2.Distance(b, c) *
+                        Vector2.Distance(a, c) / (2f * cross));
+            }
+            return radius;
         }
 
         private static void AddJunctionManeuvers(
@@ -796,10 +976,8 @@ namespace BarPromenade
                 GetCarriagewayRect(layout, incoming.RoadEdge),
                 GetCarriagewayRect(layout, outgoing.RoadEdge)
             };
-            CityBusClearanceResult clearance = ValidateSamples(
-                vehicle,
-                samples,
-                allowed);
+            CityBusClearanceResult clearance = ValidateJunctionSamples(
+                layout, vehicle, samples, incoming, outgoing, allowed);
             clearance = ValidateStaticIntersectionFixtures(
                 layout,
                 vehicle,
@@ -875,10 +1053,8 @@ namespace BarPromenade
                     outgoing.RoadEdge));
             }
 
-            CityBusClearanceResult clearance = ValidateSamples(
-                vehicle,
-                samples,
-                allowed);
+            CityBusClearanceResult clearance = ValidateJunctionSamples(
+                layout, vehicle, samples, incoming, outgoing, allowed);
             clearance = ValidateStaticIntersectionFixtures(
                 layout,
                 vehicle,

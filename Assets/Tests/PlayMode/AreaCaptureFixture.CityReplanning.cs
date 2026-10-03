@@ -17,75 +17,98 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(GameSessionState.TryStartGameTimeFromWake(), Is.True);
             GameSessionState.AdvanceGameTime((float)(360d / GameTimeState.GameMinutesPerRealSecond));
             CityGameRoot city = null;
+            var issues = new List<string>();
             yield return Capture(SceneIds.City,
                 () =>
                 {
                     city = Object.FindAnyObjectByType<CityGameRoot>();
                     return city != null && city.Layout != null && city.World != null &&
                         city.BusPlan != null ? city : null;
-                }, () => CityReplanningShots(city));
+                }, () => CityReplanningShots(city, issues));
+            Assert.That(issues, Is.Empty, string.Join("\n", issues));
         }
 
-        private static Shot[] CityReplanningShots(CityGameRoot city)
+        private static Shot[] CityReplanningShots(CityGameRoot city, List<string> issues)
         {
             CityLayout layout = city.Layout;
             Assert.That(layout.SpatialPlan.IsUniform, Is.False);
             LogReplanningRouteLengths(city);
             var shots = new List<Shot>();
-            BuildingLot courtyardLot = layout.BuildingLots
-                .Where(candidate => candidate.IsOrdinaryBuilding &&
-                    candidate.District == CityDistrictKind.Residential && candidate.BuildingVariant == 2)
-                .OrderBy(candidate => (candidate.Cell - new Vector2Int(10, 10)).sqrMagnitude).First();
-            CityBuildingPrototypePose courtyardPose =
-                CityBuildingPrototypePlacement.ResolveExpectedCityPose(courtyardLot);
-            Vector3 courtyardProbe = courtyardPose.TransformPoint(new Vector3(3f, 8f, -3.5f));
-            Assert.That(Physics.Raycast(courtyardProbe, Vector3.down, out RaycastHit courtyardGround,
-                16f, ~0, QueryTriggerInteraction.Ignore), Is.True);
-            Assert.That(courtyardGround.point.y, Is.LessThan(courtyardLot.Center.y + 1f),
-                "The recessed courtyard must reach the ground rather than a filled building proxy.");
-            Vector3 courtyardEye = courtyardGround.point + Vector3.up * EyeHeight;
-            Assert.That(Physics.CheckSphere(courtyardEye, .2f, ~0, QueryTriggerInteraction.Ignore),
-                Is.False, "The standing camera must be clear of the courtyard's physical colliders.");
-            shots.Add(Shot.At("replanning-00-open-courtyard", courtyardEye,
-                courtyardPose.TransformPoint(new Vector3(-3f, 3.5f, 3f)), 82f));
-            CityDistrictKind[] districts =
+            CityStreetSurfacePlan streetPlan = CityStreetSurfacePlanner.Create(layout);
+            RoadWalkableArea pedestrianArea = CityPedestrianPlanner.CreateWalkableArea(city.PedestrianPlan);
+            for (int index = 0; index < layout.RoadGeometry.CurvedEdges.Count; index++)
             {
-                CityDistrictKind.OldTown, CityDistrictKind.Residential,
-                CityDistrictKind.Industrial, CityDistrictKind.Nightlife
-            };
-            Vector2Int[] stations =
-            {
-                new Vector2Int(2, 9), new Vector2Int(10, 10),
-                new Vector2Int(2, 2), new Vector2Int(9, 2)
-            };
-            for (int index = 0; index < districts.Length; index++)
-            {
-                CityDistrictKind district = districts[index];
-                Vector2Int station = stations[index];
-                BuildingLot lot = layout.BuildingLots
-                    .Where(candidate => candidate.IsOrdinaryBuilding && candidate.HasRoadFrontage &&
-                        candidate.District == district)
-                    .OrderByDescending(candidate => candidate.BuildingVariant > 0)
-                    .ThenBy(candidate => (candidate.Cell - station).sqrMagnitude)
-                    .ThenBy(candidate => candidate.Cell.y).ThenBy(candidate => candidate.Cell.x).First();
-                Assert.That(layout.TryGetFrontageEdge(lot, out RoadEdge edge), Is.True);
-                Vector3 start = layout.GetNodeWorldPosition(edge.A);
-                Vector3 end = layout.GetNodeWorldPosition(edge.B);
-                Vector3 tangent = end - start;
-                tangent.y = 0f;
-                tangent.Normalize();
-                Vector3 towardBuilding = new Vector3(-lot.FrontageDirection.x, 0f, -lot.FrontageDirection.y);
-                string prefix = "replanning-" + district.ToString().ToLowerInvariant();
-
-                Vector3 streetEye = ReplanningStreetEye(layout, Vector3.Lerp(start, end, .25f));
-                shots.Add(Shot.At(prefix + "-01-street",
-                    streetEye, streetEye + tangent * 22f + towardBuilding * 6f, 66f));
-                Vector3 frontEye = ReplanningStreetEye(layout,
-                    lot.ReturnPosition + tangent * Mathf.Min(4f, layout.GetRoadLength(edge) * .12f));
-                shots.Add(Shot.At(prefix + "-02-frontage",
-                    frontEye, lot.DoorPosition + Vector3.up * 4.2f, 72f));
+                RoadEdge edge = layout.RoadGeometry.CurvedEdges[index];
+                CityRoadPath path = layout.RoadGeometry.Get(edge);
+                for (float s = 6.5f; s < path.Length - 6f; s += 1f)
+                {
+                    CityRoadSample sample = path.SampleDistance(s);
+                    float datum = layout.ElevationPlan.SampleRoadDatum(edge, s / path.Length);
+                    foreach (float offset in new[] { 0f, -3.5f, 3.5f })
+                    {
+                        Vector2 point = sample.Position + sample.Right * offset;
+                        if (offset != 0 && streetPlan.CurvedSidewalkRibbons.Any(ribbon =>
+                            ribbon.Edge.Equals(edge) && NearPavementEnd(ribbon, point))) continue;
+                        Vector3 probe = new Vector3(point.x, datum + 2f, point.y);
+                        Assert.That(Physics.Raycast(probe, Vector3.down, out RaycastHit hit, 4f,
+                            ~0, QueryTriggerInteraction.Ignore), Is.True, "Curved paving must have a physical surface.");
+                        bool pavement = offset != 0 && streetPlan.CurvedSidewalkPolygons.Any(polygon =>
+                            CityRoadPolygon.Contains(polygon, point));
+                        float top = datum + (pavement ? CityStreetSurfacePlanner.SidewalkTop : CityStreetSurfacePlanner.RoadTop);
+                        if (Mathf.Abs(hit.point.y - top) > .025f)
+                            issues.Add($"Paving {edge.A}->{edge.B} s={s:F2} offset={offset:F1} point={point:F4} pavement={pavement} expected={top:F4} actual={hit.point.y:F4} collider={hit.collider.name}");
+                        if (!city.World.WalkableArea.Contains(hit.point, .35f))
+                            issues.Add($"Hero navigation at {point:F4}");
+                        if (pavement && !pedestrianArea.Contains(hit.point, .35f))
+                            issues.Add($"Pedestrian navigation at {point:F4}");
+                    }
+                }
+                CityRoadSample eyeSample = path.SampleDistance(path.Length * .3f);
+                Vector3 eye = ReplanningStreetEye(layout, new Vector3(eyeSample.Position.x, 0, eyeSample.Position.y));
+                CityRoadSample targetSample = path.SampleDistance(Mathf.Min(path.Length - 2f, path.Length * .3f + 16f));
+                shots.Add(Shot.At($"replanning-pilot-{index + 1:00}-curve", eye,
+                    new Vector3(targetSample.Position.x, eye.y - .7f, targetSample.Position.y), 78f));
             }
+            foreach (CityPedestrianLink link in city.PedestrianPlan.Links.Where(link => link.Path != null))
+                for (float distance = .5f; distance < link.Path.Length; distance += 1f)
+                {
+                    Vector2 point = link.Path.SampleDistance(distance).Position;
+                    float top = link.PathHeightSampler(point);
+                    Vector3 probe = new Vector3(point.x, top + .5f, point.y);
+                    RaycastHit[] hits = Physics.RaycastAll(probe, Vector3.down, 1f, ~0, QueryTriggerInteraction.Ignore);
+                    if (!hits.Any(hit => hit.collider is MeshCollider && Mathf.Abs(hit.point.y - top) < .025f))
+                        issues.Add($"Pedestrian height {link.Id} at {point:F4}, expected={top:F4}, hits={string.Join(",", hits.Select(hit => hit.collider.name + ":" + hit.point.y.ToString("F4")))}");
+                }
+            RoadEdge branch = new RoadEdge(new Vector2Int(1, 8), new Vector2Int(2, 8));
+            CityRoadPath branchPath = layout.RoadGeometry.Get(branch);
+            CityRoadSample middle = branchPath.SampleDistance(branchPath.Length * .5f);
+            Vector2 released = middle.Position - middle.Right * 5.2f;
+            float branchDatum = layout.ElevationPlan.SampleRoadDatum(branch, .5f);
+            Vector3 releasedProbe = new Vector3(released.x, branchDatum + 2f, released.y);
+            Assert.That(Physics.Raycast(releasedProbe, Vector3.down, out RaycastHit releasedGround, 4f,
+                ~0, QueryTriggerInteraction.Ignore), Is.True, "Released straight-road strip must be filled with ground.");
+            Assert.That(releasedGround.point.y, Is.LessThan(branchDatum + .04f), "The obsolete straight road must not survive below the new bend.");
+            Assert.That(city.World.WalkableArea.Contains(releasedGround.point, .35f), Is.True);
+            Vector3 junction = layout.GetNodeWorldPosition(new Vector2Int(1, 8));
+            Vector3 junctionEye = ReplanningStreetEye(layout, junction + Vector3.right * 5f);
+            shots.Add(Shot.At("replanning-pilot-04-t-junction", junctionEye,
+                junction + Vector3.left * 6f + Vector3.up * (EyeHeight - .6f), 102f));
+            Debug.Log($"OldTown pilot: {layout.RoadGeometry.CurvedEdges.Count} shared road paths; physical probe issues={issues.Count}.");
             return shots.ToArray();
+        }
+
+        private static bool NearPavementEnd(CityStreetRibbonDescriptor ribbon, Vector2 point)
+        {
+            foreach (Vector2[] polygon in ribbon.Polygons)
+                foreach (int side in new[] { 0, 2 })
+                {
+                    // Cross-sections are legitimate material/height boundaries;
+                    // raycasts on their millimetre tolerance band are ambiguous.
+                    Vector2 a = polygon[side], delta = polygon[(side + 1) % polygon.Length] - a;
+                    Vector2 nearest = a + delta * Mathf.Clamp01(Vector2.Dot(point - a, delta) / delta.sqrMagnitude);
+                    if ((point - nearest).sqrMagnitude < .000004f) return true;
+                }
+            return false;
         }
 
         private static void LogReplanningRouteLengths(CityGameRoot city)

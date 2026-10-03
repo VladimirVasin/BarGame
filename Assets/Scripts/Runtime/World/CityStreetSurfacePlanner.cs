@@ -136,6 +136,12 @@ namespace BarPromenade
                 centerMarkings,
                 centerMarkingGeometry);
 
+            var curvedStreets = new List<CityStreetRibbonDescriptor>();
+            var curvedSidewalks = new List<CityStreetRibbonDescriptor>();
+            var curvedMarkings = new List<CityStreetRibbonDescriptor>();
+            CreateCurvedRibbons(layout, connections, busIntersections, markingExclusions,
+                curvedStreets, curvedSidewalks, curvedMarkings);
+
             return new CityStreetSurfacePlan(
                 carriagewayWidth,
                 streetSurfaces,
@@ -151,7 +157,8 @@ namespace BarPromenade
                 sidewalkWalkableRectangles,
                 crosswalkWalkableRectangles,
                 new List<Vector2Int>(selectedNodes),
-                crosswalks);
+                crosswalks,
+                curvedStreets, curvedSidewalks, curvedMarkings);
         }
 
         private static void CreateBaseSurfaces(
@@ -167,6 +174,18 @@ namespace BarPromenade
             for (int index = 0; index < sortedEdges.Count; index++)
             {
                 RoadEdge edge = sortedEdges[index];
+                if (layout.RoadGeometry.IsCurved(edge))
+                {
+                    CityRoadPath path = layout.RoadGeometry.Get(edge);
+                    Rect bounds = path.Bounds;
+                    bounds.xMin -= layout.RoadWidth * .5f; bounds.xMax += layout.RoadWidth * .5f;
+                    bounds.yMin -= layout.RoadWidth * .5f; bounds.yMax += layout.RoadWidth * .5f;
+                    streetSurfaces.Add(new Bounds(new Vector3(bounds.center.x,
+                        (layout.GetNodeWorldPosition(edge.A).y + layout.GetNodeWorldPosition(edge.B).y) * .5f,
+                        bounds.center.y), new Vector3(bounds.width, RoadSurfaceHeight, bounds.height)));
+                    streetNodes.Add(edge.A); streetNodes.Add(edge.B);
+                    continue;
+                }
                 float surfaceWidth = layout.GetTravelWidth(edge);
                 float halfSurface = surfaceWidth * 0.5f;
                 Vector3 start = layout.GetNodeWorldPosition(edge.A);
@@ -425,6 +444,12 @@ namespace BarPromenade
                 RoadEdge edge = sortedEdges[index];
                 if (layout.GetPathKind(edge) != CityPathKind.Street)
                 {
+                    continue;
+                }
+
+                if (layout.RoadGeometry.IsCurved(edge))
+                {
+                    edgesWithSidewalks.Add(edge);
                     continue;
                 }
 
@@ -950,6 +975,7 @@ namespace BarPromenade
                  edgeIndex++)
             {
                 RoadEdge edge = sortedEdges[edgeIndex];
+                if (layout.RoadGeometry.IsCurved(edge)) continue;
                 if (layout.GetPathKind(edge) != CityPathKind.Street)
                 {
                     continue;
@@ -1007,6 +1033,60 @@ namespace BarPromenade
                     }
                 }
             }
+        }
+
+        private static void CreateCurvedRibbons(CityLayout layout,
+            IReadOnlyDictionary<Vector2Int, NodeConnections> connections,
+            ISet<Vector2Int> busIntersections, IReadOnlyList<Rect> exclusions,
+            ICollection<CityStreetRibbonDescriptor> streets,
+            ICollection<CityStreetRibbonDescriptor> sidewalks,
+            ICollection<CityStreetRibbonDescriptor> markings)
+        {
+            float halfRoad = layout.RoadWidth * .5f;
+            foreach (RoadEdge edge in layout.RoadGeometry.CurvedEdges)
+            {
+                CityRoadPath path = layout.RoadGeometry.Get(edge);
+                streets.Add(new CityStreetRibbonDescriptor(edge,
+                    path.Ribbon(layout.RoadWidth, 0f, halfRoad), RoadTop, RoadSurfaceHeight));
+                float startInset = ResolveEndpointInset(connections[edge.A], halfRoad) +
+                    (busIntersections.Contains(edge.A) ? BusApproachApronLength : 0f);
+                float endInset = ResolveEndpointInset(connections[edge.B], halfRoad) +
+                    (busIntersections.Contains(edge.B) ? BusApproachApronLength : 0f);
+                CityRoadPath pavementPath = SlicePath(path, startInset, path.Length - endInset);
+                for (int side = -1; side <= 1; side += 2)
+                    sidewalks.Add(new CityStreetRibbonDescriptor(edge,
+                        pavementPath.Ribbon(SidewalkWidth, side * (halfRoad - SidewalkWidth * .5f)),
+                        SidewalkTop, SidewalkHeight));
+                int dashCount = Mathf.Max(2, Mathf.FloorToInt(path.Length / 5f));
+                for (int dash = 0; dash < dashCount; dash++)
+                {
+                    float distance = (dash + .5f) * path.Length / dashCount;
+                    float halfLength = Mathf.Min(MaximumCenterDashLength, path.Length / dashCount * .48f) * .5f;
+                    CityRoadPath marking = SlicePath(path, distance - halfLength, distance + halfLength);
+                    bool excluded = false;
+                    foreach (Rect exclusion in exclusions)
+                        if (marking.Bounds.Overlaps(exclusion)) { excluded = true; break; }
+                    if (!excluded) markings.Add(new CityStreetRibbonDescriptor(edge,
+                        marking.Ribbon(CenterDashWidth), MarkingCenterAboveRoadBase + MarkingHeight * .5f,
+                        MarkingHeight));
+                }
+            }
+        }
+
+        private static CityRoadPath SlicePath(CityRoadPath path, float start, float end)
+        {
+            CityRoadSample first = path.SampleDistance(start), last = path.SampleDistance(end);
+            var vertices = new List<Vector2> {
+                first.Position + first.Tangent * Mathf.Min(0f, start)
+            };
+            foreach (Vector2 vertex in path.Vertices)
+            {
+                float distance = path.Project(vertex).DistanceAlong;
+                if (distance > start + .001f && distance < end - .001f) vertices.Add(vertex);
+            }
+            Vector2 finish = last.Position + last.Tangent * Mathf.Max(0f, end - path.Length);
+            if ((finish - vertices[vertices.Count - 1]).sqrMagnitude > .000001f) vertices.Add(finish);
+            return new CityRoadPath(vertices);
         }
 
         private static void AddSidewalk(

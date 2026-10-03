@@ -777,6 +777,8 @@ namespace BarPromenade
             var centres = new List<Vector3>(route.Count);
             for (int index = 0; index < route.Count; index++)
             {
+                if (index > 0 && layout.RoadGeometry.IsCurved(new RoadEdge(route[index - 1], route[index])))
+                    throw new InvalidOperationException("Last Route requires a curved lane adapter before using this road edge.");
                 centres.Add(layout.GetNodeWorldPosition(route[index]));
             }
 

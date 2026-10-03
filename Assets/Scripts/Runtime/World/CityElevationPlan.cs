@@ -182,7 +182,8 @@ namespace BarPromenade
             IDictionary<CityDistrictKind, DistrictElevationProfile>
                 sourceProfiles,
             IList<CityElevationStairDescriptor> signatureStairs,
-            CitySpatialPlan spatialPlan = null)
+            CitySpatialPlan spatialPlan = null,
+            CityRoadGeometryPlan roadGeometry = null)
         {
             BlueprintId = blueprintId ?? string.Empty;
             Seed = seed;
@@ -224,6 +225,7 @@ namespace BarPromenade
             cellSet = new HashSet<Vector2Int>(cellElevations.Keys);
             orderedEdges = new List<RoadEdge>(transitions.Keys);
             orderedEdges.Sort(RoadEdge.Compare);
+            RoadGeometry = roadGeometry ?? CityRoadGeometryPlan.Straight(SpatialPlan, worldOrigin, roadWidth, orderedEdges);
 
             MinimumElevation = float.PositiveInfinity;
             MaximumElevation = float.NegativeInfinity;
@@ -251,6 +253,7 @@ namespace BarPromenade
         public Vector3 WorldOrigin { get; }
         public Vector2 NodeSpacing { get; }
         public CitySpatialPlan SpatialPlan { get; }
+        public CityRoadGeometryPlan RoadGeometry { get; }
         public float RoadWidth { get; }
         public bool IsElevated { get; }
         public float MinimumElevation { get; private set; }
@@ -332,7 +335,7 @@ namespace BarPromenade
         public float SampleRoadDatum(RoadEdge edge, float amount)
         {
             amount = Mathf.Clamp01(amount);
-            float planarLength = SpatialPlan.GetNodeSpan(edge);
+            float planarLength = RoadGeometry.Get(edge).Length;
             float insetAmount = planarLength > 0.001f
                 ? Mathf.Clamp01((RoadWidth * 0.5f) / planarLength)
                 : 0f;
@@ -424,17 +427,11 @@ namespace BarPromenade
             for (int slot = firstSlot; slot < lastSlot; slot++)
             {
                 RoadEdge edge = orderedEdges[slots == null ? slot : slots[slot]];
-                Vector2 start = GetNodeWorldXZ(edge.A);
-                Vector2 end = GetNodeWorldXZ(edge.B);
-                Vector2 delta = end - start;
-                float denominator = delta.sqrMagnitude;
-                float amount = denominator > 0.000001f
-                    ? Mathf.Clamp01(
-                        Vector2.Dot(worldXZ - start, delta) / denominator)
-                    : 0f;
-                Vector2 projected = start + delta * amount;
-                float distance = Vector2.Distance(worldXZ, projected);
-                if (distance > halfRoad ||
+                CityRoadPath path = RoadGeometry.Get(edge);
+                CityRoadProjection projection = path.Project(worldXZ);
+                float amount = projection.DistanceAlong / path.Length;
+                float distance = Mathf.Sqrt(projection.DistanceSquared);
+                if ((distance > halfRoad && !(RoadGeometry.IsCurved(edge) && RoadGeometry.ContainsRoad(edge, worldXZ))) ||
                     distance >= bestDistance)
                 {
                     continue;
@@ -465,7 +462,7 @@ namespace BarPromenade
 
             Vector3 startWorld = GetNodeWorldPosition(bestEdge.A);
             Vector3 endWorld = GetNodeWorldPosition(bestEdge.B);
-            float planarLength = SpatialPlan.GetNodeSpan(bestEdge);
+            float planarLength = RoadGeometry.Get(bestEdge).Length;
             float insetAmount = planarLength > 0.001f
                 ? Mathf.Clamp01((RoadWidth * 0.5f) / planarLength)
                 : 0f;
@@ -473,15 +470,13 @@ namespace BarPromenade
             if (bestAmount <= insetAmount ||
                 bestAmount >= 1f - insetAmount)
             {
-                tangent = bestEdge.IsHorizontal
-                    ? Vector3.right
-                    : Vector3.forward;
+                Vector2 direction = RoadGeometry.Get(bestEdge).SampleDistance(bestAmount * planarLength).Tangent;
+                tangent = new Vector3(direction.x, 0, direction.y);
             }
             else
             {
-                Vector3 planar = endWorld - startWorld;
-                planar.y = 0f;
-                planar = planar.normalized * Mathf.Max(
+                Vector2 direction = RoadGeometry.Get(bestEdge).SampleDistance(bestAmount * planarLength).Tangent;
+                Vector3 planar = new Vector3(direction.x, 0, direction.y) * Mathf.Max(
                     0.001f,
                     planarLength - RoadWidth);
                 tangent = (planar + Vector3.up *
@@ -528,16 +523,11 @@ namespace BarPromenade
             for (int index = 0; index < edgeCount; index++)
             {
                 RoadEdge edge = orderedEdges[index];
-                Vector2 start = GetNodeWorldXZ(edge.A);
-                Vector2 end = GetNodeWorldXZ(edge.B);
-                int x0 = RoadIndexCell(
-                    Mathf.Min(start.x, end.x) - reach, WorldOrigin.x, NodeSpacing.x);
-                int x1 = RoadIndexCell(
-                    Mathf.Max(start.x, end.x) + reach, WorldOrigin.x, NodeSpacing.x);
-                int z0 = RoadIndexCell(
-                    Mathf.Min(start.y, end.y) - reach, WorldOrigin.z, NodeSpacing.y);
-                int z1 = RoadIndexCell(
-                    Mathf.Max(start.y, end.y) + reach, WorldOrigin.z, NodeSpacing.y);
+                Rect bounds = RoadGeometry.Get(edge).Bounds;
+                int x0 = RoadIndexCell(bounds.xMin - reach, WorldOrigin.x, NodeSpacing.x);
+                int x1 = RoadIndexCell(bounds.xMax + reach, WorldOrigin.x, NodeSpacing.x);
+                int z0 = RoadIndexCell(bounds.yMin - reach, WorldOrigin.z, NodeSpacing.y);
+                int z1 = RoadIndexCell(bounds.yMax + reach, WorldOrigin.z, NodeSpacing.y);
                 if (x1 < x0 || z1 < z0)
                 {
                     // Non-finite node coordinates: leave the plan on the full scan.

@@ -60,18 +60,25 @@ namespace BarPromenade
             string id,
             int firstNodeIndex,
             int secondNodeIndex,
-            CityPedestrianLinkKind kind)
+            CityPedestrianLinkKind kind,
+            CityRoadPath path = null,
+            Func<Vector2, float> pathHeightSampler = null)
         {
             Id = id ?? string.Empty;
             FirstNodeIndex = firstNodeIndex;
             SecondNodeIndex = secondNodeIndex;
             Kind = kind;
+            Path = path;
+            PathHeightSampler = pathHeightSampler;
         }
 
         public string Id { get; }
         public int FirstNodeIndex { get; }
         public int SecondNodeIndex { get; }
         public CityPedestrianLinkKind Kind { get; }
+        // Authored curved sidewalks retain graph endpoints and their stable IDs.
+        public CityRoadPath Path { get; }
+        internal Func<Vector2, float> PathHeightSampler { get; }
 
         public int Other(int nodeIndex)
         {
@@ -96,7 +103,8 @@ namespace BarPromenade
                    string.Equals(Id, other.Id, StringComparison.Ordinal) &&
                    FirstNodeIndex == other.FirstNodeIndex &&
                    SecondNodeIndex == other.SecondNodeIndex &&
-                   Kind == other.Kind;
+                   Kind == other.Kind &&
+                   PathsEqual(Path, other.Path);
         }
 
         public override bool Equals(object obj)
@@ -111,8 +119,20 @@ namespace BarPromenade
                 int hash = StringComparer.Ordinal.GetHashCode(Id);
                 hash = (hash * 397) ^ FirstNodeIndex;
                 hash = (hash * 397) ^ SecondNodeIndex;
-                return (hash * 397) ^ (int)Kind;
+                hash = (hash * 397) ^ (int)Kind;
+                if (Path != null)
+                    foreach (Vector2 point in Path.Vertices) hash = (hash * 397) ^ point.GetHashCode();
+                return hash;
             }
+        }
+
+        private static bool PathsEqual(CityRoadPath first, CityRoadPath second)
+        {
+            if (ReferenceEquals(first, second)) return true;
+            if (first == null || second == null || first.Vertices.Count != second.Vertices.Count) return false;
+            for (int i = 0; i < first.Vertices.Count; i++)
+                if (!first.Vertices[i].Equals(second.Vertices[i])) return false;
+            return true;
         }
     }
 
@@ -169,6 +189,7 @@ namespace BarPromenade
         private readonly ReadOnlyCollection<CityPedestrianSpawnAnchor>
             spawnAnchors;
         private readonly ReadOnlyCollection<Rect> navigationRectangles;
+        private readonly ReadOnlyCollection<Vector2[]> navigationPolygons;
         private readonly IReadOnlyList<int>[] linkIndicesByNode;
 
         internal CityPedestrianPlan(
@@ -179,7 +200,8 @@ namespace BarPromenade
             IList<CityPedestrianNode> sourceNodes,
             IList<CityPedestrianLink> sourceLinks,
             IList<CityPedestrianSpawnAnchor> sourceSpawnAnchors,
-            IList<Rect> sourceNavigationRectangles)
+            IList<Rect> sourceNavigationRectangles,
+            IList<Vector2[]> sourceNavigationPolygons = null)
         {
             LayoutSeed = layoutSeed;
             PopulationSeed = populationSeed;
@@ -198,6 +220,9 @@ namespace BarPromenade
             navigationRectangles = Copy(
                 sourceNavigationRectangles,
                 nameof(sourceNavigationRectangles));
+            navigationPolygons = Copy(
+                sourceNavigationPolygons ?? new List<Vector2[]>(),
+                nameof(sourceNavigationPolygons));
 
             var mutableAdjacency = new List<int>[nodes.Count];
             for (int index = 0; index < mutableAdjacency.Length; index++)
@@ -262,6 +287,7 @@ namespace BarPromenade
             spawnAnchors;
         public IReadOnlyList<Rect> NavigationRectangles =>
             navigationRectangles;
+        public IReadOnlyList<Vector2[]> NavigationPolygons => navigationPolygons;
         public int Count => spawnAnchors.Count;
 
         public IReadOnlyList<int> GetLinkIndices(int nodeIndex)

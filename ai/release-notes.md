@@ -6,6 +6,16 @@ Earlier notes: [`release-notes-2026-09.md`](archive/release-notes-2026-09.md).
 
 ## Unreleased
 
+### 2026-10-04 — Изгибы Старого города
+
+- Три подхода T в Старом городе изогнуты максимум на 2 м; концы прямые по 6 м,
+  узлы прежние. Дорога, грунт, коллизии и маршруты используют одну геометрию.
+- Проверки: `CityRoadGeometryTests`,
+  `CityElevationPlannerTests.DefaultCity_UsesOneSafeRoadGroundBoundaryContract`,
+  `AreaCaptureFixture.CityReplanning`; кадры улиц просмотрены, покрытие и проходы
+  согласованы с физикой. Безопасный маршрут автобуса сохранён.
+- Документация: `python tools/check-docs.py`, `git diff --check`.
+
 ### 2026-10-03 — Бой и кварталы города
 
 - Q/B: пинок сквозь высокий блок, 15 сил/5HP, без крови.

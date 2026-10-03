@@ -449,6 +449,13 @@ namespace BarPromenade
                     continue;
                 }
 
+                if (!seabedOnly && layout.RoadGeometry.IsAffectedCell(surface.Cell))
+                {
+                    AppendCurvedCellGround(layout, surface, excavations, tileSize,
+                        vertices, normals, uvs, triangles);
+                    continue;
+                }
+
                 List<Rect> patches = CreateSurfacePatches(
                     layout,
                     surface,
@@ -1158,6 +1165,67 @@ namespace BarPromenade
                     triangles.Add(northWest);
                     triangles.Add(northEast);
                 }
+            }
+        }
+
+        private static void AppendCurvedCellGround(CityLayout layout, CitySurfaceDescriptor surface,
+            IReadOnlyList<Rect> excavations, float tileSize, List<Vector3> vertices,
+            List<Vector3> normals, List<Vector2> uvs, List<int> triangles)
+        {
+            var pieces = new List<Vector2[]>(layout.RoadGeometry.GetGroundPolygons(surface.Cell));
+            var cuts = new List<Rect>();
+            if (excavations != null) cuts.AddRange(excavations);
+            foreach (CityElevationStairDescriptor stair in layout.ElevationPlan.SignatureStairs)
+                cuts.Add(CityElevationStairPlacementPlanner.Create(layout, stair).GroundCutFootprint);
+            foreach (CityRiverSegmentDescriptor river in layout.River.Segments) cuts.Add(river.WaterBounds);
+            foreach (Rect cut in cuts)
+            {
+                var remaining = new List<Vector2[]>();
+                Vector2[] rectangle = CityRoadPolygon.Rectangle(cut);
+                foreach (Vector2[] piece in pieces)
+                    if (CityRoadPolygon.Bounds(piece).Overlaps(cut))
+                        remaining.AddRange(CityRoadPolygon.Subtract(piece, rectangle));
+                    else remaining.Add(piece);
+                pieces = remaining;
+            }
+            CityTerrainSurfacePlan.SurfaceContext context =
+                CityTerrainSurfacePlan.ResolveSurfaceContext(layout, surface);
+            // A shared world-metre grid resolves the bounded curved grade and
+            // makes neighbouring cells sample identical points at their seams.
+            foreach (Vector2[] piece in pieces)
+            {
+                Rect bounds = CityRoadPolygon.Bounds(piece);
+                for (float z = Mathf.Floor(bounds.yMin); z < bounds.yMax; z += 1f)
+                    for (float x = Mathf.Floor(bounds.xMin); x < bounds.xMax; x += 1f)
+                    {
+                        IReadOnlyList<Vector2> polygon = piece;
+                        Vector2[] square = CityRoadPolygon.Rectangle(new Rect(x, z, 1f, 1f));
+                        for (int side = 0; side < square.Length && polygon.Count >= 3; side++)
+                            polygon = CityRoadPolygon.Clip(polygon, square[side], square[(side + 1) % square.Length]);
+                        if (polygon.Count < 3 || CityRoadPolygon.Area(polygon) < .00001f) continue;
+                        var clean = new List<Vector2>();
+                        foreach (Vector2 point in polygon)
+                            if (clean.Count == 0 || (point - clean[clean.Count - 1]).sqrMagnitude > .00000001f)
+                                clean.Add(point);
+                        if (clean.Count > 1 && (clean[0] - clean[clean.Count - 1]).sqrMagnitude < .00000001f)
+                            clean.RemoveAt(clean.Count - 1);
+                        polygon = clean;
+                        if (polygon.Count < 3) continue;
+                        int first = vertices.Count;
+                        foreach (Vector2 point in polygon)
+                        {
+                            vertices.Add(new Vector3(point.x,
+                                CityTerrainSurfacePlan.SampleTop(layout, surface, point, in context), point.y));
+                            normals.Add(CityTerrainSurfacePlan.SampleNormal(layout, surface, point, in context));
+                            uvs.Add(point / tileSize);
+                        }
+                        for (int corner = 1; corner < polygon.Count - 1; corner++)
+                        {
+                            if (Mathf.Abs(CityRoadPolygon.Cross(polygon[corner] - polygon[0],
+                                polygon[corner + 1] - polygon[0])) < .000001f) continue;
+                            triangles.Add(first); triangles.Add(first + corner + 1); triangles.Add(first + corner);
+                        }
+                    }
             }
         }
 

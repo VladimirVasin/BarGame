@@ -3,21 +3,24 @@
 ## Current facts
 
 - **Accepted — 2026-10-03, city replanning:**
-  The user approved district-specific structure instead of equal square blocks.
-  Stable blueprint cells/area and entrance IDs remain; CitySpatialPlan owns
-  physical coordinates/inverse. West/north/south intervals vary `26-40 m`;
-  Protected x4..13/z3..8 anchors stay fixed; x13..17 retains eastern widths.
-  Fringe extrapolation retains nominal depth. Legacy/custom geometry stays uniform.
-  District street priorities preserve connected routes and required approaches.
-  Streets remain orthogonal; diagonal/curved streets await a road geometry
-  contract, rather than a visual offset over the same collision/routes.
-  Twelve fixed-metre typologies supply compact, long and L footprints per
-  district. BuildingLot owns the fitting variant; visual source, envelope,
-  front/roof/facade/balcony docks, collision and bounded Home view consume it.
-  No runtime stretching; L wings leave their recessed courtyard clear.
-  Protected precincts retain compact models. Heights, fog and story meaning
-  remain; all nine art checks and story §16 bind the replanned city.
-  No new story exception or in-fiction text is introduced.
+  User-approved district structure retains blueprint/area/entrance IDs.
+  CitySpatialPlan owns metres/inverse: west/north/south spans `26-40 m`,
+  protected x4..13/z3..8 anchors/eastern widths fixed; fringe nominal.
+  Legacy/custom geometry stays uniform; street priorities retain connectivity.
+  The approved OldTown T bends only `(1,7)-(1,8)`, `(1,8)-(2,8)` and
+  `(1,8)-(1,9)`: sampled smooth bends up to 2 m, straight first/last 6 m,
+  unchanged node positions/datums. Other streets stay orthogonal.
+  CityRoadGeometryPlan owns paths, ribbons and affected-cell ground complement;
+  rendering, collision, navigation, elevation and lanes consume that geometry.
+  A bounded structural exception permits runtime mesh/collider for these road
+  ribbons and terrain complement only; reusable props remain Blender assets.
+  Four ordinary cells are reserved outside waterworks, river, landmarks/stairs;
+  significant places cannot select the patch. Geometry stays
+  stable between acts. Bus coverage/body guards remain; unsafe bends are excluded.
+  Twelve fixed-metre compact/long/L typologies share BuildingLot's variant across
+  source, envelope, docks, collision and Home view; no stretching or filled L void.
+  Protected precincts keep compact models. Heights, fog and meaning remain;
+  all nine art checks and story §16 bind the city. No new lore/text/§6 exception.
 
 - **Accepted — 2026-09-29, Normal NPC faces and fisherman:**
   User: Normal/default eyes/brows/nose/mouth are PNG on shaped heads, no solid

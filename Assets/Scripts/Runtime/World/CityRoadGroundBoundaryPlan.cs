@@ -29,6 +29,38 @@ namespace BarPromenade
             SecondGroundTopY = secondGroundTopY;
             FirstTravelTopY = firstTravelTopY;
             SecondTravelTopY = secondTravelTopY;
+            Start = isHorizontal
+                ? new Vector2(minimumCoordinate, fixedCoordinate)
+                : new Vector2(fixedCoordinate, minimumCoordinate);
+            End = isHorizontal
+                ? new Vector2(maximumCoordinate, fixedCoordinate)
+                : new Vector2(fixedCoordinate, maximumCoordinate);
+            UsesPhysicalGeometry = false;
+        }
+
+        internal CityRoadGroundBoundarySpan(
+            CitySurfaceDescriptor surface,
+            RoadEdge edge,
+            Vector2 start,
+            Vector2 end,
+            float firstGroundTopY,
+            float secondGroundTopY,
+            float firstTravelTopY,
+            float secondTravelTopY)
+        {
+            Surface = surface;
+            Edge = edge;
+            IsHorizontal = edge.IsHorizontal;
+            Start = start;
+            End = end;
+            FixedCoordinate = IsHorizontal ? (start.y + end.y) * .5f : (start.x + end.x) * .5f;
+            MinimumCoordinate = IsHorizontal ? start.x : start.y;
+            MaximumCoordinate = IsHorizontal ? end.x : end.y;
+            FirstGroundTopY = firstGroundTopY;
+            SecondGroundTopY = secondGroundTopY;
+            FirstTravelTopY = firstTravelTopY;
+            SecondTravelTopY = secondTravelTopY;
+            UsesPhysicalGeometry = true;
         }
 
         internal CitySurfaceDescriptor Surface { get; }
@@ -43,10 +75,30 @@ namespace BarPromenade
             (FirstGroundTopY + SecondGroundTopY) * 0.5f;
         internal float FirstTravelTopY { get; }
         internal float SecondTravelTopY { get; }
-        internal float Length => MaximumCoordinate - MinimumCoordinate;
+        internal Vector2 Start { get; }
+        internal Vector2 End { get; }
+        internal bool UsesPhysicalGeometry { get; }
+        internal bool IsAxisAligned => Mathf.Abs(Start.x - End.x) < .001f || Mathf.Abs(Start.y - End.y) < .001f;
+        internal float Length => Vector2.Distance(Start, End);
+
+        internal Vector2 PointAtCoordinate(float coordinate)
+        {
+            float amount = Mathf.InverseLerp(MinimumCoordinate, MaximumCoordinate, coordinate);
+            return Vector2.Lerp(Start, End, amount);
+        }
+
+        internal Vector2[] CreateConnectorPolygon(float reach)
+        {
+            Vector2 tangent = (End - Start).normalized;
+            Vector2 normal = new Vector2(tangent.y, -tangent.x) * reach;
+            return CityRoadPolygon.CounterClockwise(new[] {
+                Start - normal, Start + normal, End + normal, End - normal });
+        }
 
         internal Rect CreateConnector(float reach)
         {
+            if (!IsAxisAligned)
+                throw new InvalidOperationException("A sloped road boundary needs its exact connector polygon.");
             return IsHorizontal
                 ? Rect.MinMaxRect(
                     MinimumCoordinate,
@@ -222,6 +274,13 @@ namespace BarPromenade
             ICollection<CityRoadGroundBoundarySpan> safeConnections,
             ICollection<CityRoadGroundBoundarySpan> protectedDrops)
         {
+            if (layout.RoadGeometry.IsAffectedCell(surface.Cell))
+            {
+                CreatePhysicalBoundarySpans(layout, surface, direction, edge,
+                    safeConnections, protectedDrops);
+                return;
+            }
+
             bool horizontal = direction.y != 0;
             float fixedCoordinate = horizontal
                 ? (direction.y < 0
@@ -302,6 +361,63 @@ namespace BarPromenade
                     safeConnections,
                     protectedDrops);
             }
+        }
+
+        private static void CreatePhysicalBoundarySpans(
+            CityLayout layout,
+            CitySurfaceDescriptor surface,
+            Vector2Int direction,
+            RoadEdge edge,
+            ICollection<CityRoadGroundBoundarySpan> safeConnections,
+            ICollection<CityRoadGroundBoundarySpan> protectedDrops)
+        {
+            // Affected descriptors cover their full cell. Their old rectangular
+            // bounds are not street seams, even for a straight neighbouring road.
+            if (RequiresAuthoredAccess(layout, surface, edge))
+                throw new InvalidOperationException("The curved street patch must remain outside authored precincts.");
+            CityRoadPath path = layout.RoadGeometry.Get(edge);
+            float travelWidth = layout.GetTravelWidth(edge);
+            Vector2 intoSurface = new Vector2(-direction.x, -direction.y);
+            bool rightSide = Vector2.Dot(intoSurface, path.SampleDistance(0).Right) > 0;
+            IReadOnlyList<Vector2[]> ribbons = path.Ribbon(travelWidth, endInset: travelWidth * .5f);
+            IReadOnlyList<Vector2[]> ground = layout.RoadGeometry.GetGroundPolygons(surface.Cell);
+            foreach (Vector2[] ribbon in ribbons)
+            {
+                Vector2 start = rightSide ? ribbon[1] : ribbon[0];
+                Vector2 end = rightSide ? ribbon[2] : ribbon[3];
+                Vector2 middle = (start + end) * .5f;
+                bool touchesGround = false;
+                foreach (Vector2[] polygon in ground)
+                    if (CityRoadPolygon.Contains(polygon, middle)) { touchesGround = true; break; }
+                if (!touchesGround || Vector2.Distance(start, end) <= GeometryTolerance) continue;
+
+                float firstGround = CityTerrainSurfacePlan.SampleTop(layout, surface, start);
+                float secondGround = CityTerrainSurfacePlan.SampleTop(layout, surface, end);
+                float firstTravel = SamplePhysicalTravelTop(layout, edge, start);
+                float secondTravel = SamplePhysicalTravelTop(layout, edge, end);
+                bool safe = SupportsGroundTraversal(surface);
+                for (int sample = 0; safe && sample <= 8; sample++)
+                {
+                    Vector2 point = Vector2.Lerp(start, end, sample / 8f);
+                    float groundTop = CityTerrainSurfacePlan.SampleTop(layout, surface, point);
+                    float travelTop = SamplePhysicalTravelTop(layout, edge, point);
+                    safe = !float.IsNaN(groundTop) && !float.IsInfinity(groundTop) &&
+                           !float.IsNaN(travelTop) && !float.IsInfinity(travelTop) &&
+                           Mathf.Abs(groundTop - travelTop) <= MaximumSafeStep + GeometryTolerance;
+                }
+                var span = new CityRoadGroundBoundarySpan(surface, edge, start, end,
+                    firstGround, secondGround, firstTravel, secondTravel);
+                (safe ? safeConnections : protectedDrops).Add(span);
+            }
+        }
+
+        private static float SamplePhysicalTravelTop(CityLayout layout, RoadEdge edge, Vector2 point)
+        {
+            CityRoadPath path = layout.RoadGeometry.Get(edge);
+            float amount = path.Project(point).DistanceAlong / path.Length;
+            float topOffset = layout.GetPathKind(edge) == CityPathKind.Street
+                ? CityStreetSurfacePlanner.SidewalkTop : CityStreetSurfacePlanner.RoadTop;
+            return layout.ElevationPlan.SampleRoadDatum(edge, amount) + topOffset;
         }
 
         private static void AddAuthorizedSafeSpans(

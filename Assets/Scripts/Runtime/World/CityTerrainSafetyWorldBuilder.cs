@@ -37,6 +37,7 @@ namespace BarPromenade
             }
 
             var rails = new List<Bounds>();
+            var orientedRails = new List<RuntimeOrientedBox>();
             CityRoadGroundBoundaryPlan roadGroundBoundaries =
                 CityRoadGroundBoundaryPlanner.Create(layout);
             for (int index = 0;
@@ -56,6 +57,7 @@ namespace BarPromenade
                 AddRoadBoundaryRailSegments(
                     span,
                     rails,
+                    orientedRails,
                     railSuppressionFootprint);
             }
 
@@ -119,7 +121,7 @@ namespace BarPromenade
                     AddWithSuppression(rail, rail.size.x >= rail.size.z, cleared, eastExit.RoadBounds);
                 rails = cleared;
             }
-            if (rails.Count == 0)
+            if (rails.Count == 0 && orientedRails.Count == 0)
             {
                 return null;
             }
@@ -127,19 +129,30 @@ namespace BarPromenade
             Transform root = new GameObject(
                 "Protected Terrain Drops").transform;
             root.SetParent(parent, false);
-            return RuntimePrimitiveFactory.CreateCombinedBoxes(
-                "Terrain Guard Rails",
-                root,
-                rails,
-                RailColor,
-                true);
+            GameObject result = rails.Count > 0
+                ? RuntimePrimitiveFactory.CreateCombinedBoxes(
+                    "Terrain Guard Rails", root, rails, RailColor, true)
+                : null;
+            if (orientedRails.Count > 0)
+            {
+                GameObject oriented = RuntimePrimitiveFactory.CreateCombinedOrientedBoxes(
+                    "Curved Terrain Guard Rails", root, orientedRails, RailColor, true);
+                if (result == null) result = oriented;
+            }
+            return result;
         }
 
         private static void AddRoadBoundaryRailSegments(
             CityRoadGroundBoundarySpan span,
             ICollection<Bounds> destination,
+            ICollection<RuntimeOrientedBox> orientedDestination,
             Rect? railSuppressionFootprint)
         {
+            if (!span.IsAxisAligned)
+            {
+                AddOrientedRoadBoundaryRail(span, orientedDestination, railSuppressionFootprint);
+                return;
+            }
             int segmentCount = Mathf.Max(
                 1,
                 Mathf.CeilToInt(
@@ -211,6 +224,56 @@ namespace BarPromenade
                     destination,
                     railSuppressionFootprint);
             }
+        }
+
+        private static void AddOrientedRoadBoundaryRail(
+            CityRoadGroundBoundarySpan span,
+            ICollection<RuntimeOrientedBox> destination,
+            Rect? suppression)
+        {
+            float minimumBase = Mathf.Min(span.FirstGroundTopY, span.SecondGroundTopY,
+                span.FirstTravelTopY, span.SecondTravelTopY);
+            float maximumBase = Mathf.Max(span.FirstGroundTopY, span.SecondGroundTopY,
+                span.FirstTravelTopY, span.SecondTravelTopY);
+            float height = RailHeight + maximumBase - minimumBase;
+            Vector2 delta = span.End - span.Start;
+            Vector2 tangent = delta.normalized;
+            var intervals = new List<Vector2> { new Vector2(0, 1) };
+            if (suppression.HasValue)
+            {
+                // Clip the actual rail segment, never its world AABB.
+                Rect cut = suppression.Value;
+                cut.xMin -= RailThickness * .5f; cut.xMax += RailThickness * .5f;
+                cut.yMin -= RailThickness * .5f; cut.yMax += RailThickness * .5f;
+                float first = 0, last = 1;
+                if (ClipLineAxis(span.Start.x, delta.x, cut.xMin, cut.xMax, ref first, ref last) &&
+                    ClipLineAxis(span.Start.y, delta.y, cut.yMin, cut.yMax, ref first, ref last))
+                {
+                    intervals.Clear();
+                    if (first > .001f) intervals.Add(new Vector2(0, first));
+                    if (last < .999f) intervals.Add(new Vector2(last, 1));
+                }
+            }
+            foreach (Vector2 interval in intervals)
+            {
+                float length = delta.magnitude * (interval.y - interval.x);
+                if (length <= .001f) continue;
+                Vector2 middle = span.Start + delta * ((interval.x + interval.y) * .5f);
+                destination.Add(new RuntimeOrientedBox(
+                    new Vector3(middle.x, minimumBase + height * .5f, middle.y),
+                    Quaternion.LookRotation(new Vector3(tangent.x, 0, tangent.y), Vector3.up),
+                    new Vector3(RailThickness, height, length)));
+            }
+        }
+
+        private static bool ClipLineAxis(float start, float delta, float minimum, float maximum,
+            ref float first, ref float last)
+        {
+            if (Mathf.Abs(delta) < .0001f) return start >= minimum && start <= maximum;
+            float a = (minimum - start) / delta, b = (maximum - start) / delta;
+            if (a > b) { float swap = a; a = b; b = swap; }
+            first = Mathf.Max(first, a); last = Mathf.Min(last, b);
+            return first <= last;
         }
 
         /// <summary>

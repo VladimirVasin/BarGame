@@ -1,0 +1,311 @@
+using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using UnityEngine;
+
+namespace BarPromenade
+{
+    public readonly struct CityRoadSample
+    {
+        internal CityRoadSample(Vector2 position, Vector2 tangent, float distance)
+        { Position = position; Tangent = tangent; Distance = distance; }
+        public Vector2 Position { get; }
+        public Vector2 Tangent { get; }
+        public Vector2 Right => new Vector2(Tangent.y, -Tangent.x);
+        public float Distance { get; }
+    }
+
+    public readonly struct CityRoadProjection
+    {
+        internal CityRoadProjection(Vector2 position, float along, float lateral, float squared)
+        { Position = position; DistanceAlong = along; SignedLateral = lateral; DistanceSquared = squared; }
+        public Vector2 Position { get; }
+        public float DistanceAlong { get; }
+        public float SignedLateral { get; }
+        public float DistanceSquared { get; }
+    }
+
+    /// <summary>Immutable world-XZ path. Every offset lane owns its own metre distances.</summary>
+    public sealed class CityRoadPath
+    {
+        private readonly float[] distances;
+        public CityRoadPath(IList<Vector2> vertices)
+        {
+            if (vertices == null || vertices.Count < 2)
+                throw new ArgumentException("A road path needs two or more vertices.", nameof(vertices));
+            var copy = new List<Vector2>(vertices);
+            distances = new float[copy.Count];
+            for (int i = 1; i < copy.Count; i++)
+            {
+                float span = Vector2.Distance(copy[i - 1], copy[i]);
+                if (span < .001f) throw new ArgumentException("A road path has a zero length span.", nameof(vertices));
+                distances[i] = distances[i - 1] + span;
+            }
+            Vertices = new ReadOnlyCollection<Vector2>(copy);
+            Length = distances[distances.Length - 1];
+            Bounds = CityRoadPolygon.Bounds(copy);
+        }
+        public IReadOnlyList<Vector2> Vertices { get; }
+        public float Length { get; }
+        public Rect Bounds { get; }
+        public bool IsStraight => Vertices.Count == 2;
+        public CityRoadSample SampleDistance(float distance)
+        {
+            distance = Mathf.Clamp(distance, 0, Length);
+            int segment = 1;
+            while (segment < distances.Length - 1 && distances[segment] < distance) segment++;
+            Vector2 delta = Vertices[segment] - Vertices[segment - 1];
+            float amount = (distance - distances[segment - 1]) / (distances[segment] - distances[segment - 1]);
+            return new CityRoadSample(Vertices[segment - 1] + delta * amount, delta.normalized, distance);
+        }
+        public CityRoadProjection Project(Vector2 point)
+        {
+            float best = float.PositiveInfinity;
+            CityRoadProjection result = default;
+            for (int i = 1; i < Vertices.Count; i++)
+            {
+                Vector2 delta = Vertices[i] - Vertices[i - 1];
+                float amount = Mathf.Clamp01(Vector2.Dot(point - Vertices[i - 1], delta) / delta.sqrMagnitude);
+                Vector2 position = Vertices[i - 1] + delta * amount;
+                float squared = (point - position).sqrMagnitude;
+                if (squared >= best) continue;
+                Vector2 right = new Vector2(delta.y, -delta.x).normalized;
+                result = new CityRoadProjection(position, distances[i - 1] + delta.magnitude * amount,
+                    Vector2.Dot(point - position, right), squared);
+                best = squared;
+            }
+            return result;
+        }
+        public CityRoadPath Reversed()
+        {
+            var vertices = new List<Vector2>(Vertices); vertices.Reverse();
+            return new CityRoadPath(vertices);
+        }
+        public CityRoadPath Offset(float right)
+        {
+            var vertices = new List<Vector2>();
+            for (int i = 0; i < Vertices.Count; i++) vertices.Add(Vertices[i] + Miter(i) * right);
+            return new CityRoadPath(vertices);
+        }
+        private Vector2 Miter(int index)
+        {
+            Vector2 before = (Vertices[Mathf.Max(1, index)] - Vertices[Mathf.Max(0, index - 1)]).normalized;
+            Vector2 after = (Vertices[Mathf.Min(Vertices.Count - 1, index + 1)] - Vertices[Mathf.Min(Vertices.Count - 2, index)]).normalized;
+            Vector2 n0 = new Vector2(before.y, -before.x);
+            Vector2 n1 = new Vector2(after.y, -after.x);
+            Vector2 bisector = (n0 + n1).normalized;
+            return bisector / Mathf.Max(.5f, Vector2.Dot(bisector, n1));
+        }
+        public IReadOnlyList<Vector2[]> Ribbon(float width, float rightOffset = 0, float endInset = 0)
+        {
+            CityRoadPath path = this;
+            if (endInset > .001f)
+            {
+                float inset = Mathf.Min(endInset, Length * .45f);
+                var trimmed = new List<Vector2> { SampleDistance(inset).Position };
+                for (int i = 1; i < Vertices.Count - 1; i++)
+                    if (distances[i] > inset + .001f && distances[i] < Length - inset - .001f) trimmed.Add(Vertices[i]);
+                trimmed.Add(SampleDistance(Length - inset).Position);
+                path = new CityRoadPath(trimmed);
+            }
+            CityRoadPath left = path.Offset(rightOffset - width * .5f);
+            CityRoadPath right = path.Offset(rightOffset + width * .5f);
+            var polygons = new List<Vector2[]>();
+            for (int i = 1; i < path.Vertices.Count; i++)
+                polygons.Add(CityRoadPolygon.CounterClockwise(new[] {
+                    left.Vertices[i - 1], right.Vertices[i - 1], right.Vertices[i], left.Vertices[i] }));
+            return new ReadOnlyCollection<Vector2[]>(polygons);
+        }
+    }
+
+    /// <summary>Shared convex polygon operations for street ribbons and their ground complement.</summary>
+    public static class CityRoadPolygon
+    {
+        public static float Cross(Vector2 a, Vector2 b) => a.x * b.y - a.y * b.x;
+        public static float Area(IReadOnlyList<Vector2> vertices)
+        {
+            if (vertices.Count < 3) return 0;
+            float area = 0;
+            // Subtraction creates thin pieces. An origin-relative fan avoids
+            // cancellation between large absolute world-coordinate products.
+            for (int i = 1; i < vertices.Count - 1; i++)
+                area += Cross(vertices[i] - vertices[0], vertices[i + 1] - vertices[0]);
+            return area * .5f;
+        }
+        public static Vector2[] CounterClockwise(Vector2[] vertices)
+        { if (Area(vertices) < 0) Array.Reverse(vertices); return vertices; }
+        public static Vector2[] Rectangle(Rect rect) => new[] {
+            new Vector2(rect.xMin, rect.yMin), new Vector2(rect.xMax, rect.yMin),
+            new Vector2(rect.xMax, rect.yMax), new Vector2(rect.xMin, rect.yMax) };
+        public static Rect Bounds(IReadOnlyList<Vector2> vertices)
+        {
+            Vector2 min = vertices[0], max = min;
+            for (int i = 1; i < vertices.Count; i++) { min = Vector2.Min(min, vertices[i]); max = Vector2.Max(max, vertices[i]); }
+            return Rect.MinMaxRect(min.x, min.y, max.x, max.y);
+        }
+        public static bool Contains(IReadOnlyList<Vector2> polygon, Vector2 point)
+        {
+            if (polygon.Count < 3 || Area(polygon) <= .00001f) return false;
+            for (int i = 0; i < polygon.Count; i++)
+            {
+                Vector2 edge = polygon[(i + 1) % polygon.Count] - polygon[i];
+                if (Cross(edge, point - polygon[i]) < -.001f * edge.magnitude) return false;
+            }
+            return true;
+        }
+        public static List<Vector2> Clip(IReadOnlyList<Vector2> source, Vector2 a, Vector2 b, bool inside = true)
+        {
+            var result = new List<Vector2>();
+            if (source.Count == 0) return result;
+            Vector2 previous = source[source.Count - 1];
+            float previousDistance = Cross(b - a, previous - a) * (inside ? 1 : -1);
+            for (int i = 0; i < source.Count; i++)
+            {
+                Vector2 current = source[i];
+                float distance = Cross(b - a, current - a) * (inside ? 1 : -1);
+                if ((distance >= 0) != (previousDistance >= 0))
+                    result.Add(Vector2.Lerp(previous, current, previousDistance / (previousDistance - distance)));
+                if (distance >= 0) result.Add(current);
+                previous = current; previousDistance = distance;
+            }
+            return result;
+        }
+        public static IReadOnlyList<Vector2[]> Subtract(IReadOnlyList<Vector2> source, IReadOnlyList<Vector2> cut)
+        {
+            var pieces = new List<Vector2[]>();
+            IReadOnlyList<Vector2> remaining = source;
+            for (int i = 0; i < cut.Count && remaining.Count >= 3; i++)
+            {
+                Vector2 a = cut[i], b = cut[(i + 1) % cut.Count];
+                List<Vector2> outside = Clip(remaining, a, b, false);
+                if (outside.Count >= 3 && Area(outside) > .00001f) pieces.Add(outside.ToArray());
+                remaining = Clip(remaining, a, b);
+            }
+            return pieces;
+        }
+    }
+
+    /// <summary>The road graph retains stable IDs; all physical consumers use these world-XZ paths.</summary>
+    public sealed class CityRoadGeometryPlan
+    {
+        private readonly Dictionary<RoadEdge, CityRoadPath> paths;
+        private readonly Dictionary<RoadEdge, IReadOnlyList<Vector2[]>> corridors = new Dictionary<RoadEdge, IReadOnlyList<Vector2[]>>();
+        private readonly Dictionary<Vector2Int, IReadOnlyList<Vector2[]>> ground = new Dictionary<Vector2Int, IReadOnlyList<Vector2[]>>();
+        private readonly HashSet<Vector2Int> affected = new HashSet<Vector2Int>();
+        private readonly CitySpatialPlan spatial;
+        private readonly Vector2 origin;
+        private readonly float width;
+        private CityRoadGeometryPlan(CitySpatialPlan spatial, Vector3 origin, float width, IEnumerable<RoadEdge> roads, bool pilot)
+        {
+            this.spatial = spatial; this.origin = new Vector2(origin.x, origin.z); this.width = width;
+            paths = new Dictionary<RoadEdge, CityRoadPath>();
+            var curves = new List<RoadEdge>();
+            foreach (RoadEdge edge in roads)
+            {
+                Vector2 start = Node(edge.A), end = Node(edge.B);
+                float bulge = pilot ? PilotBulge(edge) : 0;
+                if (bulge == 0) paths.Add(edge, new CityRoadPath(new[] { start, end }));
+                else
+                {
+                    Vector2 tangent = (end - start).normalized;
+                    Vector2 right = new Vector2(tangent.y, -tangent.x);
+                    float length = Vector2.Distance(start, end);
+                    // The flat node datum ends at half a road width. Keep that
+                    // knot even inside a straight approach so every offset
+                    // pavement mesh reproduces the same height profile.
+                    var vertices = new List<Vector2> { start, start + tangent * (width * .5f), start + tangent * 6 };
+                    int steps = Mathf.CeilToInt((length - 12) / 1.5f);
+                    for (int i = 1; i < steps; i++)
+                    {
+                        float t = (float)i / steps;
+                        float wave = Mathf.Sin(Mathf.PI * t);
+                        vertices.Add(start + tangent * (6 + (length - 12) * t) + right * (bulge * wave * wave));
+                    }
+                    vertices.Add(end - tangent * 6);
+                    vertices.Add(end - tangent * (width * .5f)); vertices.Add(end);
+                    paths.Add(edge, new CityRoadPath(vertices));
+                    curves.Add(edge);
+                    if (edge.IsHorizontal) { affected.Add(edge.A); affected.Add(edge.A + Vector2Int.down); }
+                    else { affected.Add(edge.A); affected.Add(edge.A + Vector2Int.left); }
+                }
+            }
+            curves.Sort(RoadEdge.Compare);
+            CurvedEdges = new ReadOnlyCollection<RoadEdge>(curves);
+        }
+        private Vector2 Node(Vector2Int node) => origin + spatial.GetCoordinateWorldOffset(node);
+        public IReadOnlyList<RoadEdge> CurvedEdges { get; }
+        public CityRoadPath Get(RoadEdge edge) => paths[edge];
+        public IReadOnlyList<Vector2[]> GetCorridor(RoadEdge edge)
+        {
+            if (!corridors.TryGetValue(edge, out IReadOnlyList<Vector2[]> polygons))
+            { polygons = Get(edge).Ribbon(width); corridors.Add(edge, polygons); }
+            return polygons;
+        }
+        public bool ContainsRoad(RoadEdge edge, Vector2 point)
+        {
+            foreach (Vector2[] polygon in GetCorridor(edge))
+                if (CityRoadPolygon.Contains(polygon, point)) return true;
+            CityRoadPath path = Get(edge);
+            foreach (Vector2 endpoint in new[] { path.Vertices[0], path.Vertices[path.Vertices.Count - 1] })
+                if (Mathf.Abs(point.x - endpoint.x) <= width * .5f + .001f &&
+                    Mathf.Abs(point.y - endpoint.y) <= width * .5f + .001f) return true;
+            return false;
+        }
+        public bool IsCurved(RoadEdge edge) => paths.TryGetValue(edge, out CityRoadPath path) && !path.IsStraight;
+        public bool IsAffectedCell(Vector2Int cell) => affected.Contains(cell);
+        internal static bool SupportsPilot(CityGenerationSettings settings)
+        {
+            if (settings.Blueprint?.Id != CityBlueprintCatalog.DefaultBlueprintId ||
+                settings.SpatialPlan == null || settings.SpatialPlan.IsUniform ||
+                settings.Blueprint.River?.CorridorCellX != 6) return false;
+            foreach (Vector2Int cell in new[] { new Vector2Int(0, 7), new Vector2Int(1, 7),
+                new Vector2Int(0, 8), new Vector2Int(1, 8) })
+                if (!settings.CreatesLot(cell) || settings.IsParkCell(cell)) return false;
+            return true;
+        }
+        internal static void EnsurePilotRoads(CityGenerationSettings settings, List<RoadEdge> roads)
+        {
+            if (!SupportsPilot(settings)) return;
+            foreach (RoadEdge edge in PilotEdges) if (!roads.Contains(edge)) roads.Add(edge);
+        }
+        public static IReadOnlyList<RoadEdge> PilotEdges { get; } = new ReadOnlyCollection<RoadEdge>(new[] {
+            new RoadEdge(new Vector2Int(1, 7), new Vector2Int(1, 8)),
+            new RoadEdge(new Vector2Int(1, 8), new Vector2Int(2, 8)),
+            new RoadEdge(new Vector2Int(1, 8), new Vector2Int(1, 9)) });
+        private static float PilotBulge(RoadEdge edge)
+        {
+            for (int i = 0; i < PilotEdges.Count; i++) if (edge.Equals(PilotEdges[i])) return i == 1 ? 2f : i == 2 ? -.9f : .9f;
+            return 0;
+        }
+        internal static CityRoadGeometryPlan Create(CityGenerationSettings settings, Vector3 origin, IList<RoadEdge> roads) =>
+            new CityRoadGeometryPlan(settings.SpatialPlan, origin, settings.RoadWidth, roads, SupportsPilot(settings));
+        internal static CityRoadGeometryPlan Straight(CitySpatialPlan spatial, Vector3 origin, float width, IEnumerable<RoadEdge> roads) =>
+            new CityRoadGeometryPlan(spatial, origin, width, roads, false);
+        public IReadOnlyList<Vector2[]> GetGroundPolygons(Vector2Int cell)
+        {
+            if (ground.TryGetValue(cell, out IReadOnlyList<Vector2[]> cached)) return cached;
+            Rect bounds = spatial.GetCellBounds(cell); bounds.position += origin;
+            var pieces = new List<Vector2[]> { CityRoadPolygon.Rectangle(bounds) };
+            var cuts = new List<Vector2[]>();
+            foreach (CityRoadPath path in paths.Values)
+            {
+                Rect reach = path.Bounds; reach.xMin -= width * .5f; reach.xMax += width * .5f;
+                reach.yMin -= width * .5f; reach.yMax += width * .5f;
+                if (!bounds.Overlaps(reach)) continue;
+                cuts.AddRange(path.Ribbon(width));
+                foreach (Vector2 endpoint in new[] { path.Vertices[0], path.Vertices[path.Vertices.Count - 1] })
+                    cuts.Add(CityRoadPolygon.Rectangle(new Rect(endpoint - Vector2.one * width * .5f, Vector2.one * width)));
+            }
+            foreach (Vector2[] cut in cuts)
+            {
+                var remaining = new List<Vector2[]>();
+                Rect cutBounds = CityRoadPolygon.Bounds(cut);
+                foreach (Vector2[] piece in pieces)
+                    if (CityRoadPolygon.Bounds(piece).Overlaps(cutBounds)) remaining.AddRange(CityRoadPolygon.Subtract(piece, cut));
+                    else remaining.Add(piece);
+                pieces = remaining;
+            }
+            cached = new ReadOnlyCollection<Vector2[]>(pieces); ground.Add(cell, cached); return cached;
+        }
+    }
+}

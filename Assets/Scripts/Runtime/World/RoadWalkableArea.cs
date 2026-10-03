@@ -9,16 +9,24 @@ namespace BarPromenade
     {
         internal CityGroundTraversalPlan(
             IList<Rect> groundRectangles,
-            IList<Rect> connectorRectangles)
+            IList<Rect> connectorRectangles,
+            IList<Vector2[]> groundPolygons = null,
+            IList<Vector2[]> connectorPolygons = null)
         {
             GroundRectangles = new ReadOnlyCollection<Rect>(
                 new List<Rect>(groundRectangles));
             ConnectorRectangles = new ReadOnlyCollection<Rect>(
                 new List<Rect>(connectorRectangles));
+            GroundPolygons = new ReadOnlyCollection<Vector2[]>(
+                groundPolygons != null ? new List<Vector2[]>(groundPolygons) : new List<Vector2[]>());
+            ConnectorPolygons = new ReadOnlyCollection<Vector2[]>(
+                connectorPolygons != null ? new List<Vector2[]>(connectorPolygons) : new List<Vector2[]>());
         }
 
         public IReadOnlyList<Rect> GroundRectangles { get; }
         public IReadOnlyList<Rect> ConnectorRectangles { get; }
+        public IReadOnlyList<Vector2[]> GroundPolygons { get; }
+        public IReadOnlyList<Vector2[]> ConnectorPolygons { get; }
     }
 
     public static class CityGroundTraversalPlanner
@@ -40,6 +48,7 @@ namespace BarPromenade
             var eligibleByCell =
                 new Dictionary<Vector2Int, CitySurfaceDescriptor>();
             var ground = new List<Rect>();
+            var groundPolygons = new List<Vector2[]>();
             for (int index = 0; index < layout.Surfaces.Count; index++)
             {
                 CitySurfaceDescriptor surface = layout.Surfaces[index];
@@ -50,7 +59,9 @@ namespace BarPromenade
                 }
 
                 eligibleByCell.Add(surface.Cell, surface);
-                AddRiverClippedGround(layout, surface, ground);
+                if (layout.RoadGeometry.IsAffectedCell(surface.Cell))
+                    groundPolygons.AddRange(layout.RoadGeometry.GetGroundPolygons(surface.Cell));
+                else AddRiverClippedGround(layout, surface, ground);
             }
 
             // The seacoast precinct draws real walkable ground over
@@ -63,6 +74,7 @@ namespace BarPromenade
             CitySeacoastPlanner.AppendWalkableFootprints(layout, ground);
 
             var connectors = new List<Rect>();
+            var connectorPolygons = new List<Vector2[]>();
             CityRoadGroundBoundaryPlan roadGroundBoundaries =
                 CityRoadGroundBoundaryPlanner.Create(layout);
             for (int index = 0;
@@ -71,7 +83,9 @@ namespace BarPromenade
             {
                 CityRoadGroundBoundarySpan safe =
                     roadGroundBoundaries.SafeConnections[index];
-                connectors.Add(safe.CreateConnector(ConnectorReach));
+                if (safe.UsesPhysicalGeometry)
+                    connectorPolygons.Add(safe.CreateConnectorPolygon(ConnectorReach));
+                else connectors.Add(safe.CreateConnector(ConnectorReach));
                 AddParkLawnReach(layout, safe, connectors);
             }
 
@@ -94,7 +108,7 @@ namespace BarPromenade
                     connectors);
             }
 
-            return new CityGroundTraversalPlan(ground, connectors);
+            return new CityGroundTraversalPlan(ground, connectors, groundPolygons, connectorPolygons);
         }
 
         private static void AddRiverClippedGround(
@@ -338,6 +352,9 @@ namespace BarPromenade
         private readonly List<Rect> rectangles = new List<Rect>();
         private readonly List<Rect> exclusions = new List<Rect>();
         private readonly ReadOnlyCollection<Rect> readOnlyRectangles;
+        private readonly List<Vector2[]> polygons = new List<Vector2[]>();
+        private PolygonArea polygonArea;
+        private bool polygonAreaDirty = true;
         private SpatialNode[] spatialNodes = Array.Empty<SpatialNode>();
         private int spatialRoot = -1;
         private bool spatialIndexDirty = true;
@@ -384,9 +401,25 @@ namespace BarPromenade
                 throw new ArgumentNullException(nameof(mountainPlan));
             }
 
-            var area = new RoadWalkableArea(layout.CreateRoadRects());
+            var area = new RoadWalkableArea();
+            foreach (RoadEdge edge in layout.RoadEdges)
+            {
+                if (!layout.RoadGeometry.IsCurved(edge)) area.Add(layout.GetRoadRect(edge));
+                else
+                {
+                    area.AddPolygons(layout.RoadGeometry.Get(edge).Ribbon(layout.GetTravelWidth(edge)));
+                    float half = layout.GetTravelWidth(edge) * .5f;
+                    foreach (Vector2Int node in new[] { edge.A, edge.B })
+                    {
+                        Vector3 position = layout.GetNodeWorldPosition(node);
+                        area.Add(new Rect(position.x - half, position.z - half, half * 2f, half * 2f));
+                    }
+                }
+            }
             CityGroundTraversalPlan groundTraversal =
                 CityGroundTraversalPlanner.CreatePlan(layout);
+            area.AddPolygons(groundTraversal.GroundPolygons);
+            area.AddPolygons(groundTraversal.ConnectorPolygons);
             for (int index = 0;
                  index < groundTraversal.GroundRectangles.Count;
                  index++)
@@ -692,6 +725,18 @@ namespace BarPromenade
             }
             rectangles.AddRange(pieces);
             spatialIndexDirty = true;
+            polygonAreaDirty = true;
+        }
+
+        public void AddPolygons(IEnumerable<Vector2[]> footprints)
+        {
+            if (footprints == null) throw new ArgumentNullException(nameof(footprints));
+            foreach (Vector2[] polygon in footprints)
+            {
+                if (polygon == null || polygon.Length < 3) throw new ArgumentException("A walkable polygon needs three vertices.");
+                polygons.Add((Vector2[])polygon.Clone());
+            }
+            polygonAreaDirty = true;
         }
 
         internal void Exclude(Rect footprint)
@@ -703,18 +748,20 @@ namespace BarPromenade
             rectangles.Clear();
             rectangles.AddRange(pieces);
             spatialIndexDirty = true;
+            polygonAreaDirty = true;
         }
 
         public bool Contains(Vector3 position, float radius = 0f)
         {
             ValidateRadius(radius);
+            if (!IsFinite(position.x) || !IsFinite(position.z)) return false;
             EnsureSpatialIndex();
-            return spatialRoot >= 0 &&
+            return (spatialRoot >= 0 &&
                    Contains(
                        spatialRoot,
                        position.x,
                        position.z,
-                       radius);
+                       radius)) || ContainsPolygons(position, radius);
         }
 
         private bool Contains(
@@ -781,6 +828,16 @@ namespace BarPromenade
                 return zOnly;
             }
 
+            EnsurePolygonArea();
+            if (polygonArea != null && polygonArea.Contains(new Vector2(currentPosition.x, currentPosition.z), radius))
+            {
+                Vector3 projected = ClosestPoint(desiredPosition, radius, currentPosition);
+                float requested = new Vector2(desiredPosition.x - currentPosition.x,
+                    desiredPosition.z - currentPosition.z).magnitude;
+                if (Contains(projected, radius) && new Vector2(projected.x - currentPosition.x,
+                    projected.z - currentPosition.z).magnitude <= requested + BoundaryEpsilon) return projected;
+            }
+
             var stationary = new Vector3(
                 currentPosition.x,
                 desiredPosition.y,
@@ -812,16 +869,13 @@ namespace BarPromenade
             }
 
             EnsureSpatialIndex();
-            if (spatialRoot < 0)
-            {
-                return fallback;
-            }
+            EnsurePolygonArea();
 
             bool found = false;
             float bestDistance = float.PositiveInfinity;
             Vector3 best = fallback;
             int bestRectangleIndex = int.MaxValue;
-            FindClosestPoint(
+            if (spatialRoot >= 0) FindClosestPoint(
                 spatialRoot,
                 position,
                 radius,
@@ -829,7 +883,146 @@ namespace BarPromenade
                 ref bestDistance,
                 ref bestRectangleIndex,
                 ref best);
+            if (polygonArea != null && polygonArea.TryClosest(new Vector2(position.x, position.z), radius,
+                out Vector2 polygonPoint))
+            {
+                var candidate = new Vector3(polygonPoint.x, position.y, polygonPoint.y);
+                float distance = (candidate - position).sqrMagnitude;
+                if ((!found || distance < bestDistance) && ContainsPolygons(candidate, radius))
+                { found = true; best = candidate; }
+            }
             return found ? best : fallback;
+        }
+
+        private bool ContainsPolygons(Vector3 position, float radius)
+        {
+            EnsurePolygonArea();
+            if (polygonArea == null || !polygonArea.Contains(new Vector2(position.x, position.z), radius)) return false;
+            foreach (Rect exclusion in exclusions)
+            {
+                Vector2 nearest = new Vector2(Mathf.Clamp(position.x, exclusion.xMin, exclusion.xMax),
+                    Mathf.Clamp(position.z, exclusion.yMin, exclusion.yMax));
+                if (exclusion.Contains(new Vector2(position.x, position.z)) ||
+                    (nearest - new Vector2(position.x, position.z)).sqrMagnitude < radius * radius) return false;
+            }
+            return true;
+        }
+
+        private void EnsurePolygonArea()
+        {
+            if (!polygonAreaDirty) return;
+            polygonAreaDirty = false;
+            if (polygons.Count == 0) { polygonArea = null; return; }
+            var merged = new List<Vector2[]>(polygons);
+            Rect bounds = CityRoadPolygon.Bounds(polygons[0]);
+            foreach (Vector2[] polygon in polygons)
+            {
+                Rect next = CityRoadPolygon.Bounds(polygon);
+                bounds = Rect.MinMaxRect(Mathf.Min(bounds.xMin, next.xMin), Mathf.Min(bounds.yMin, next.yMin),
+                    Mathf.Max(bounds.xMax, next.xMax), Mathf.Max(bounds.yMax, next.yMax));
+            }
+            bounds.xMin -= 1f; bounds.xMax += 1f; bounds.yMin -= 1f; bounds.yMax += 1f;
+            foreach (Rect rect in rectangles) if (bounds.Overlaps(rect)) merged.Add(CityRoadPolygon.Rectangle(rect));
+            polygonArea = new PolygonArea(merged);
+        }
+
+        // Erode the union boundary, not each ribbon quad: its shared miter seams
+        // carry a whole body and must never become invisible navigation walls.
+        private sealed class PolygonArea
+        {
+            private readonly List<Vector2[]> pieces;
+            private readonly List<(Vector2 A, Vector2 B)> boundary = new List<(Vector2, Vector2)>();
+            public PolygonArea(List<Vector2[]> pieces)
+            {
+                this.pieces = pieces;
+                for (int p = 0; p < pieces.Count; p++)
+                for (int e = 0; e < pieces[p].Length; e++)
+                {
+                    Vector2 a = pieces[p][e], b = pieces[p][(e + 1) % pieces[p].Length], delta = b - a;
+                    if (delta.sqrMagnitude < .000001f) continue;
+                    var cuts = new List<float> { 0f, 1f };
+                    for (int other = 0; other < pieces.Count; other++)
+                    {
+                        if (other == p) continue;
+                        Vector2[] polygon = pieces[other];
+                        for (int q = 0; q < polygon.Length; q++)
+                        {
+                            Vector2 c = polygon[q], d = polygon[(q + 1) % polygon.Length], span = d - c;
+                            float denominator = CityRoadPolygon.Cross(delta, span);
+                            if (Mathf.Abs(denominator) > .000001f)
+                            {
+                                float t = CityRoadPolygon.Cross(c - a, span) / denominator;
+                                float u = CityRoadPolygon.Cross(c - a, delta) / denominator;
+                                if (t > 0f && t < 1f && u >= 0f && u <= 1f) cuts.Add(t);
+                            }
+                            else if (Mathf.Abs(CityRoadPolygon.Cross(delta, c - a)) < .0001f)
+                            {
+                                float t = Vector2.Dot(c - a, delta) / delta.sqrMagnitude;
+                                float u = Vector2.Dot(d - a, delta) / delta.sqrMagnitude;
+                                if (t > 0f && t < 1f) cuts.Add(t);
+                                if (u > 0f && u < 1f) cuts.Add(u);
+                            }
+                        }
+                    }
+                    cuts.Sort();
+                    Vector2 outward = new Vector2(delta.y, -delta.x).normalized;
+                    for (int i = 1; i < cuts.Count; i++)
+                    {
+                        if (cuts[i] - cuts[i - 1] < .00001f) continue;
+                        Vector2 first = a + delta * cuts[i - 1], last = a + delta * cuts[i];
+                        Vector2 probe = (first + last) * .5f + outward * .003f;
+                        bool covered = false;
+                        for (int q = 0; q < pieces.Count; q++)
+                            if (q != p && ContainsTight(pieces[q], probe)) { covered = true; break; }
+                        if (!covered) boundary.Add((first, last));
+                    }
+                }
+            }
+            private static bool ContainsTight(Vector2[] polygon, Vector2 point)
+            {
+                for (int i = 0; i < polygon.Length; i++)
+                    if (CityRoadPolygon.Cross(polygon[(i + 1) % polygon.Length] - polygon[i], point - polygon[i]) < -.000001f) return false;
+                return true;
+            }
+            public bool Contains(Vector2 point, float radius)
+            {
+                bool inside = false;
+                foreach (Vector2[] polygon in pieces) if (CityRoadPolygon.Contains(polygon, point)) { inside = true; break; }
+                if (!inside) return false;
+                float squared = Mathf.Max(0f, radius - BoundaryEpsilon); squared *= squared;
+                foreach (var edge in boundary)
+                    if ((Nearest(point, edge.A, edge.B) - point).sqrMagnitude < squared) return false;
+                return true;
+            }
+            public bool TryClosest(Vector2 position, float radius, out Vector2 result)
+            {
+                result = position;
+                if (Contains(position, radius)) return true;
+                bool found = false; float best = float.PositiveInfinity;
+                foreach (Vector2[] polygon in pieces)
+                {
+                    IReadOnlyList<Vector2> inset = polygon;
+                    for (int i = 0; i < polygon.Length && inset.Count >= 3; i++)
+                    {
+                        Vector2 a = polygon[i], b = polygon[(i + 1) % polygon.Length];
+                        Vector2 inward = new Vector2(-(b - a).y, (b - a).x).normalized * radius;
+                        inset = CityRoadPolygon.Clip(inset, a + inward, b + inward);
+                    }
+                    if (inset.Count < 3) continue;
+                    for (int i = 0; i < inset.Count; i++)
+                    {
+                        Vector2 candidate = Nearest(position, inset[i], inset[(i + 1) % inset.Count]);
+                        float distance = (candidate - position).sqrMagnitude;
+                        if (distance < best && Contains(candidate, radius)) { found = true; best = distance; result = candidate; }
+                    }
+                }
+                return found;
+            }
+            private static Vector2 Nearest(Vector2 point, Vector2 a, Vector2 b)
+            {
+                Vector2 delta = b - a;
+                return a + delta * Mathf.Clamp01(Vector2.Dot(point - a, delta) / Mathf.Max(.000001f, delta.sqrMagnitude));
+            }
         }
 
         private void FindClosestPoint(

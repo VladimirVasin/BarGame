@@ -40,6 +40,7 @@ namespace BarPromenade
 
         internal CityBlueprint Blueprint { get; set; }
         internal CitySpatialPlan SpatialPlan { get; set; }
+        internal CityRoadGeometryPlan RoadGeometry { get; set; }
 
         internal Vector2 GetCoordinateOffset(Vector2 coordinate) =>
             SpatialPlan != null

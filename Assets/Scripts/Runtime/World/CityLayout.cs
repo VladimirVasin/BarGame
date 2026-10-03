@@ -162,6 +162,7 @@ namespace BarPromenade
         public Vector2Int BlockCount { get; }
         public Vector2 NodeSpacing { get; }
         public CitySpatialPlan SpatialPlan => ElevationPlan.SpatialPlan;
+        public CityRoadGeometryPlan RoadGeometry => ElevationPlan.RoadGeometry;
         public Vector3 WorldOrigin { get; }
         public float RoadWidth { get; }
         public float MinimumBarRouteDistance { get; }
@@ -233,7 +234,7 @@ namespace BarPromenade
         }
 
         public float GetRoadLength(RoadEdge edge) =>
-            SpatialPlan.GetNodeSpan(edge);
+            RoadGeometry.Get(edge).Length;
 
         public bool HasRoad(Vector2Int first, Vector2Int second)
         {
@@ -336,14 +337,19 @@ namespace BarPromenade
                     nameof(edge));
             }
 
-            Vector3 first = GetNodeWorldPosition(edge.A);
-            Vector3 second = GetNodeWorldPosition(edge.B);
-            float halfWidth = GetTravelWidth(edge) * 0.5f;
-            return Rect.MinMaxRect(
-                Mathf.Min(first.x, second.x) - halfWidth,
-                Mathf.Min(first.z, second.z) - halfWidth,
-                Mathf.Max(first.x, second.x) + halfWidth,
-                Mathf.Max(first.z, second.z) + halfWidth);
+            // Broad phase only: curved-road containment uses RoadGeometry ribbons.
+            Rect bounds = RoadGeometry.Get(edge).Bounds;
+            float halfWidth = GetTravelWidth(edge) * .5f;
+            bounds = Rect.MinMaxRect(bounds.xMin - halfWidth, bounds.yMin - halfWidth,
+                bounds.xMax + halfWidth, bounds.yMax + halfWidth);
+            if (RoadGeometry.IsCurved(edge))
+                foreach (Vector2[] polygon in RoadGeometry.GetCorridor(edge))
+                {
+                    Rect ribbon = CityRoadPolygon.Bounds(polygon);
+                    bounds = Rect.MinMaxRect(Mathf.Min(bounds.xMin, ribbon.xMin), Mathf.Min(bounds.yMin, ribbon.yMin),
+                        Mathf.Max(bounds.xMax, ribbon.xMax), Mathf.Max(bounds.yMax, ribbon.yMax));
+                }
+            return bounds;
         }
 
         public float GetTravelWidth(RoadEdge edge)
