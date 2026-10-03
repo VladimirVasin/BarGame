@@ -766,6 +766,111 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
+        public void DefaultCoastal_ReplanningKeepsAnchorsAndFitsEveryPlacedVariant()
+        {
+            new CityBuildingAssetTests().BindAuthoredCatalog();
+            CityLayout layout = CityLayoutGenerator.Generate(
+                CityBlueprintCatalog.Default, CityGenerationSettings.Default,
+                GameSessionState.DefaultCitySeed);
+            Assert.That(layout.SpatialPlan.IsUniform, Is.False);
+            Assert.That(layout.RoadEdges.Select(layout.GetRoadLength).Distinct().Count(),
+                Is.GreaterThan(1), "The built roads must use the variable physical spans.");
+            for (int z = 3; z <= 8; z++)
+                for (int x = 4; x <= 13; x++)
+                {
+                    Vector3 anchor = layout.GetGridWorldPosition(new Vector2Int(x, z));
+                    Assert.That(anchor.x, Is.EqualTo(layout.WorldOrigin.x + x * 26f).Within(.001f));
+                    Assert.That(anchor.z, Is.EqualTo(layout.WorldOrigin.z + z * 26f).Within(.001f));
+                }
+            Assert.That(layout.PlayerHome.Cell, Is.EqualTo(new Vector2Int(12, 5)));
+            Assert.That(layout.PlayerHome.Center.x, Is.EqualTo(169f).Within(.001f));
+            Assert.That(layout.PlayerHome.Center.z, Is.EqualTo(-13f).Within(.001f));
+            BuildingLot bar = layout.BuildingLots.Single(lot => lot.IsBar);
+            Assert.That(bar.Cell, Is.EqualTo(new Vector2Int(12, 6)));
+            Assert.That(bar.ReturnPosition, Is.EqualTo(layout.PlayerHome.ReturnPosition));
+
+            CityBuildingAssetProvider provider = CityBuildingAssetProvider.LoadOrThrow();
+            var builtVariants = new HashSet<string>();
+            var testRoot = new GameObject("Replanned City Variant Contract");
+            try
+            {
+                foreach (BuildingLot lot in layout.BuildingLots.Where(candidate => candidate.IsOrdinaryBuilding))
+                {
+                    Rect cell = layout.GetCellWorldBounds(lot.Cell);
+                    Vector3 cellCenter = new Vector3(cell.center.x, lot.Center.y, cell.center.y);
+                    Vector2 inverse = layout.GetWorldGridCoordinate(cellCenter);
+                    Assert.That(inverse.x, Is.EqualTo(lot.Cell.x + .5f).Within(.001f), lot.Cell.ToString());
+                    Assert.That(inverse.y, Is.EqualTo(lot.Cell.y + .5f).Within(.001f), lot.Cell.ToString());
+
+                    CityBuildingAssetRegistry source = provider.GetPrefabOrThrow(
+                        lot.District, lot.BuildingVariant).GetComponent<CityBuildingAssetRegistry>();
+                    Assert.That(source, Is.Not.Null, lot.Cell.ToString());
+                    CityBuildingPrototypePose pose = CityBuildingPrototypePlacement.ResolveCityPose(lot, source);
+                    Bounds placedBounds = CityBuildingPrototypePlacement.TransformBounds(source.LocalBounds, pose);
+                    AssertReplannedBoundsWithinCell(cell, placedBounds, layout.RoadWidth * .5f,
+                        $"{lot.Cell}: {source.StableId} visual metres");
+                    Vector3 sourceFront = source.transform.InverseTransformPoint(source.FrontAnchor.position);
+                    Assert.That(Vector3.Distance(pose.TransformPoint(sourceFront),
+                        lot.DoorPosition + Vector3.up * CityFacadeGrid.MassBaseElevation),
+                        Is.LessThan(.003f), $"{lot.Cell}: frontage attachment");
+
+                    Assert.That(layout.TryGetFrontageEdge(lot, out RoadEdge frontage), Is.True);
+                    Vector3 start = layout.GetNodeWorldPosition(frontage.A);
+                    Vector3 end = layout.GetNodeWorldPosition(frontage.B);
+                    Vector3 segment = end - start;
+                    segment.y = 0f;
+                    Vector3 anchorDelta = lot.ReturnPosition - start;
+                    anchorDelta.y = 0f;
+                    float along = Vector3.Dot(anchorDelta, segment) / segment.sqrMagnitude;
+                    Assert.That(along, Is.InRange(0f, 1f), $"{lot.Cell}: street anchor");
+                    Assert.That((anchorDelta - segment * along).magnitude,
+                        Is.LessThan(.003f), $"{lot.Cell}: road centreline");
+                    Vector3 normal = new Vector3(lot.FrontageDirection.x, 0f, lot.FrontageDirection.y);
+                    Vector3 doorToAnchor = lot.ReturnPosition - lot.DoorPosition;
+                    doorToAnchor.y = 0f;
+                    Assert.That((doorToAnchor - normal * Vector3.Dot(doorToAnchor, normal)).magnitude,
+                        Is.LessThan(.003f), $"{lot.Cell}: uninterrupted straight approach");
+
+                    if (!builtVariants.Add(source.StableId)) continue;
+                    Transform building = new GameObject(source.StableId).transform;
+                    building.SetParent(testRoot.transform, false);
+                    CityBuildingPrototypeWorldBuilder.BuildCity(building, lot, layout.Seed,
+                        CityWorldBuilder.ResolveBuildingFoundationDepth(layout, lot));
+                    Physics.SyncTransforms();
+                    BoxCollider[] colliders = building.GetComponentsInChildren<BoxCollider>();
+                    Assert.That(colliders, Is.Not.Empty, source.StableId + " physical mass");
+                    foreach (BoxCollider collider in colliders)
+                        AssertReplannedBoundsWithinCell(cell, collider.bounds, layout.RoadWidth * .5f,
+                            $"{lot.Cell}: {collider.name} collision metres");
+                    if (lot.BuildingVariant == 2)
+                    {
+                        Vector3 courtyard = pose.TransformPoint(new Vector3(3f, 1f, -3.5f));
+                        Assert.That(colliders.Any(collider => collider.bounds.Contains(courtyard)), Is.False,
+                            source.StableId + " recessed courtyard must not inherit a rectangular solid proxy");
+                    }
+                }
+
+                foreach (CityDistrictKind district in CityLayoutGenerator.UrbanDistricts)
+                    Assert.That(layout.BuildingLots.Where(lot => lot.IsOrdinaryBuilding && lot.District == district)
+                        .Select(lot => lot.BuildingVariant).Distinct().Count(), Is.EqualTo(3),
+                        district + " must actually place all three authored typologies");
+                Assert.DoesNotThrow(layout.ValidateOrThrow);
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(testRoot);
+            }
+        }
+
+        private static void AssertReplannedBoundsWithinCell(Rect cell, Bounds bounds, float roadInset, string context)
+        {
+            Assert.That(bounds.min.x, Is.GreaterThanOrEqualTo(cell.xMin + roadInset - .05f), context);
+            Assert.That(bounds.max.x, Is.LessThanOrEqualTo(cell.xMax - roadInset + .05f), context);
+            Assert.That(bounds.min.z, Is.GreaterThanOrEqualTo(cell.yMin + roadInset - .05f), context);
+            Assert.That(bounds.max.z, Is.LessThanOrEqualTo(cell.yMax - roadInset + .05f), context);
+        }
+
+        [Test]
         public void SwappingUrbanAreas_PreservesTopologyNodesAndRoads()
         {
             CityBlueprint originalBlueprint =

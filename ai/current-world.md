@@ -452,12 +452,13 @@ The vertical slice contains:
 
 ### City generation and layout
 
-- a finite, seed-reproducible coastal city driven by one immutable blueprint:
-  the default preserves all 144 former road-and-lot cells inside a `13 x 12`
-  urban envelope, using the added central column for a north-south river and
-  shifting the eastern half one cell outward. It retains the full-width
-  northern beach and sea strip. Active cells, roads and surfaces may form a
-  connected sparse, non-rectangular footprint inside their map bounds;
+- a finite seed-reproducible coastal city separates stable blueprint cells from
+  metre coordinates through CitySpatialPlan. Its 144 lots remain in the
+  `13 x 12` urban envelope around the river; west/north/south intervals vary
+  `26–40 m`. River width, park/home/bar/fair/arch anchors and eastern widths stay fixed;
+  beach/sea remain continuous, legacy/custom layouts keep uniform spacing.
+  District street priorities change the local rhythm. Streets remain
+  orthogonal; diagonal/curved streets require a future geometry contract;
 - one default-blueprint-only mountain boundary plan closes the physical west
   and south edges with deterministic flat-shaded low-poly ridge strips whose
   toes sample the authoritative terrain top. The south skyline remains closed
@@ -563,8 +564,8 @@ The vertical slice contains:
   01 may use the road bridges but never the timber crossing. In
   `default-coastal`, water and its silt bed continue more than `48 m` behind
   the southern mountain so their end remains beyond visibility. Both
-  promenades extend walkably from world `Z=-156` to physical rock stops at
-  `Z=-182`; the cave water and space behind those stops never enter the
+  promenades extend walkably from world `Z=-182` to physical rock stops at
+  `Z=-208`; the cave water and space behind those stops never enter the
   navigation mask. Low waterside lanterns at `13 m` pitch keep their emissive
   lenses and fog halos lit around the clock; their pooled realtime spill and
   the sparse upper promenade lamps ride the §20 fixture floor — always
@@ -970,8 +971,8 @@ The vertical slice contains:
   ordinary tight `3 m` right turns remain rejected. A physical street link
   may recur in a connector, but every ordered occurrence receives a unique
   route link/node ID. Route selection has no random branch or player
-  pursuit. On the production layout the loop runs about `5.6 km` and serves
-  about twenty-eight named stops — semantic, gate and numbered street stops —
+  pursuit. On the production layout the loop runs about `6.7 km` and serves
+  `33` named stops — semantic, gate and numbered street stops —
   each with a physical blue `01` pole, served once per lap by that
   deterministic door/driver timeline with a fixed `10 s` total dwell,
   including `0.70 s` opening and `0.70 s` closing transitions for both
@@ -1266,7 +1267,7 @@ The vertical slice contains:
   Motor `.6/.24`, `48 m`; horns `20/4 s` pre-Moor/Depart. Arrival ×2,
   echo `780 ms`/reverb `6.2 s`. Pause/teardown own people/audio/wake.
   Small blueprints without room retain the nonoperational mol;
-- Cannery: `8 x 14 m` hall/`18 x 18 m` lot/bay/public bypass.
+- Cannery: `8 x 14 m` hall/`18 x 18 m` site/bay/public bypass.
   Side/public + west/staff openings; machines/glass stay.
   `CityCanneryPlan`: ten Blender parts/five maps/port surfaces, fifteen cans/
   three cartons/four workers/driver. `CanneryReceiverActor`: athletic `1.96 m`,
@@ -1383,7 +1384,7 @@ The vertical slice contains:
   pieces, including the hedge segment and shielded ground fixture. The edge
   receives the stronger wash; the statue has a gentler separate accent.
   `CityChurchGroundPlan`
-  keeps the inhabited `38 m` flat and grades the northern `14 m` into the
+  keeps the inhabited garden flat and grades its northern reserve into the
   adjoining yard. Collision and navigation retain its continuous sampled
   terrain; the grass renderer cuts out paved footprints. Imported paving
   patches partition overlapping pads and paths and yield to the flush door
@@ -1568,40 +1569,32 @@ The vertical slice contains:
   `0.070` Exp2 fog. The bar keeps its former `5–13 m` envelope, the player home
   stays `8.8 m`, and the supermarket stays `6.4 m`; public places and the park
   remain open land rather than receiving a tall mass;
-- the live ordinary-building path now instantiates one fixed-metre Blender
-  prototype for each urban district: Old Town
-  `14 x 13.5 x 42 m`, Residential `11.5 x 11.5 x 40 m`, Industrial
-  `14 x 13.5 x 36 m` and Nightlife `12.5 x 12 x 48 m`. Their four wrapper
-  prefabs expose `28` passive semantic meshes — `FacadePrimary`,
-  `FacadeSecondary`, `Plinth`, `Roof`, `Metal`, `WindowFrame` and
-  `WindowGlass` per district — plus front/roof/facade attachment
-  metadata and `194` addressable opening slots through one Resources provider.
-  Residential owns eight additional semantic balcony records: two on each of
-  four facade levels, each pairing a `2.5 x 1.2 m` deck and resident dock with
-  exactly one person-height glazed door and its adjacent apartment window.
-  Every ordinary lot selects its district wrapper, keeps authored metre scale
-  and aligns the wrapper's `+Z` front anchor to the generated door. Generator
-  `2.1.0` exports `4,218` triangles and gives the two facade roles a four-side, non-repeating height atlas,
-  every authored plinth face its own complete non-repeating `0..1` projection,
-  roof/metal/frame physically scaled repeat UVs and every glass face its own
-  `0..1` pane UV. Unity binds
-  `24` deterministic district/surface sheets to the six opaque roles through
-  one shared material plus MPBs; the UV2-slot shader separately preserves
-  deterministic warm/dark row selection and its shared §20 fixture factor
-  without making the FBX readable. Lit panes keep explicit emission at the
-  two-thirds day floor. The generator rejects positive-area, same-facing
-  exterior coplanar overlaps and broad axis-aligned opaque overlaps with less
-  than `0.03 m` relief; join faces are omitted and rail/trim layers are
-  depth-separated by `0.035–0.065 m`. Unity retains a small terrain foundation skirt inset by
-  `0.08 m` on every horizontal side and the former lot envelope as an
-  invisible collider; navigation and sound still use `BuildingLot`. A primary
-  landmark and the lot's required ordinary core always own complementary
-  surfaces: facade under the three roof landmarks, roof above Nightlife's
-  facade cinema. Roof and facade decoration anchors otherwise follow fixed
-  prototype mounts. The
-  bounded Home exterior reuses the exact pose for whole exterior models, omits
-  hidden models and keeps the old clipped silhouette only where a non-readable
-  model crosses the apartment half-space;
+- twelve fixed-metre Blender typologies, three per district, replace the
+  single repeated district wrapper. Compact footprints retain Old Town
+  `14 x 13.5 m`, Residential `11.5 x 11.5 m`, Industrial `14 x 13.5 m` and
+  Nightlife `12.5 x 12 m`; long footprints are `22 x 11.5 m` except Nightlife
+  `17 x 9.5 m`; every L footprint is `15 x 14 m`. Heights remain
+  `42/40/36/48 m`. BuildingLot selects a fitting variant/envelope; model pose,
+  front/roof/facade/balcony docks, collision and Home reconstruction use that
+  source. Long and L variants enter only lots that fit; L's two solid wings
+  leave its recessed courtyard clear. Protected small precinct lots retain
+  compact wrappers. Generator `2.2.0` publishes `84` semantic meshes,
+  `9,688` triangles and `537` UV2 opening slots through one Resources provider.
+  The seven roles remain FacadePrimary/Secondary, Plinth, Roof, Metal,
+  WindowFrame and WindowGlass. Residential variants retain authored balcony
+  docks with person-height glazed doors and adjacent windows. Source scale
+  stays fixed; the `+Z` front aligns to `DoorPosition + 0.08 m`.
+  Four-side height atlases and complete plinth-face UVs never repeat;
+  roof/metal/frame use metre-repeat UVs and each glass pane keeps `0..1` UV0.
+  Six opaque roles reuse `24` district sheets, one shared material and MPBs.
+  UV2 slot state preserves warm/dark row selection, explicit emission and the
+  two-thirds day floor without readable FBX meshes. Geometry audit rejects
+  coplanar exterior overlaps and broad opaque relief below `0.03 m`; omitted
+  join faces and `0.035–0.065 m` trim separation preserve physical depth.
+  The terrain skirt stays inset `0.08 m`. Landmarks and ordinary decoration
+  use complementary facade/roof surfaces. Whole Home exterior models retain
+  the same City pose; hidden models are omitted and half-space crossings
+  alone keep the old clipped silhouette;
 - the bar now uses the complete fixed-metre `bar_exterior_v2` from the shared
   bar Blender pipeline instead of the City misc `BarBuildingShell` and generic
   window bands. Its authored `12.2645 x 13.5237 x 9.3435 m`

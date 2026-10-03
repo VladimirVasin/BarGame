@@ -161,6 +161,7 @@ namespace BarPromenade
         public string BlueprintId => Blueprint.Id;
         public Vector2Int BlockCount { get; }
         public Vector2 NodeSpacing { get; }
+        public CitySpatialPlan SpatialPlan => ElevationPlan.SpatialPlan;
         public Vector3 WorldOrigin { get; }
         public float RoadWidth { get; }
         public float MinimumBarRouteDistance { get; }
@@ -204,10 +205,9 @@ namespace BarPromenade
                     $"Node {node} lies outside the city grid.");
             }
 
+            Vector2 offset = SpatialPlan.GetCoordinateWorldOffset(node);
             return WorldOrigin + new Vector3(
-                node.x * NodeSpacing.x,
-                ElevationPlan.GetNodeElevation(node),
-                node.y * NodeSpacing.y);
+                offset.x, ElevationPlan.GetNodeElevation(node), offset.y);
         }
 
         public Vector3 GetGridWorldPosition(Vector2Int coordinate)
@@ -217,11 +217,23 @@ namespace BarPromenade
                 out float nodeElevation)
                 ? nodeElevation
                 : 0f;
-            return WorldOrigin + new Vector3(
-                coordinate.x * NodeSpacing.x,
-                elevation,
-                coordinate.y * NodeSpacing.y);
+            Vector2 offset = SpatialPlan.GetCoordinateWorldOffset(coordinate);
+            return WorldOrigin + new Vector3(offset.x, elevation, offset.y);
         }
+
+        public Vector2 GetWorldGridCoordinate(Vector3 position) =>
+            SpatialPlan.WorldToGrid(new Vector2(
+                position.x - WorldOrigin.x, position.z - WorldOrigin.z));
+
+        public Rect GetCellWorldBounds(Vector2Int cell)
+        {
+            Rect bounds = SpatialPlan.GetCellBounds(cell);
+            bounds.position += new Vector2(WorldOrigin.x, WorldOrigin.z);
+            return bounds;
+        }
+
+        public float GetRoadLength(RoadEdge edge) =>
+            SpatialPlan.GetNodeSpan(edge);
 
         public bool HasRoad(Vector2Int first, Vector2Int second)
         {

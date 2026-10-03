@@ -118,8 +118,11 @@ namespace BarPromenade
                     cellElevations);
             }
 
+            CitySpatialPlan spatialPlan = settings.SpatialPlan ??
+                CitySpatialPlan.Uniform(settings.NodeSpacing);
             var transitions = CreateTransitions(
                 settings,
+                spatialPlan,
                 roads,
                 pathKinds,
                 nodeElevations);
@@ -147,7 +150,8 @@ namespace BarPromenade
                 cellElevations,
                 transitions,
                 profiles,
-                stairs);
+                stairs,
+                spatialPlan);
             CityElevationValidator.ValidateOrThrow(
                 plan,
                 blueprint,
@@ -305,20 +309,19 @@ namespace BarPromenade
         private static Dictionary<RoadEdge,
             CityElevationTransitionDescriptor> CreateTransitions(
             CityGenerationSettings settings,
+            CitySpatialPlan spatialPlan,
             IReadOnlyList<RoadEdge> roads,
             IReadOnlyDictionary<RoadEdge, CityPathKind> pathKinds,
             IReadOnlyDictionary<Vector2Int, float> nodeElevations)
         {
             var result = new Dictionary<RoadEdge,
                 CityElevationTransitionDescriptor>();
-            float horizontalRun = Mathf.Max(
-                0.01f,
-                Mathf.Min(
-                    settings.NodeSpacing.x,
-                    settings.NodeSpacing.y) - settings.RoadWidth);
             for (int index = 0; index < roads.Count; index++)
             {
                 RoadEdge edge = roads[index];
+                float horizontalRun = Mathf.Max(
+                    0.01f,
+                    spatialPlan.GetNodeSpan(edge) - settings.RoadWidth);
                 float start = GetNode(nodeElevations, edge.A);
                 float end = GetNode(nodeElevations, edge.B);
                 float grade = Mathf.Abs(end - start) /

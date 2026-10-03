@@ -209,13 +209,8 @@ namespace BarPromenade
                     continue;
                 }
 
-                footprints.Add(Expand(
-                    Rect.MinMaxRect(
-                        lot.Center.x - lot.Size.x * 0.5f,
-                        lot.Center.z - lot.Size.y * 0.5f,
-                        lot.Center.x + lot.Size.x * 0.5f,
-                        lot.Center.z + lot.Size.y * 0.5f),
-                    radius));
+                foreach (Rect footprint in lot.CreateCollisionFootprints())
+                    footprints.Add(Expand(footprint, radius));
             }
 
             CityChurchPlan church = CityChurchPlanner.Create(layout);

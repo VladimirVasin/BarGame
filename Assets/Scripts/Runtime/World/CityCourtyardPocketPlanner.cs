@@ -311,9 +311,10 @@ namespace BarPromenade
             float buildingHalfDepth = frontageIsX
                 ? lot.Size.x * 0.5f
                 : lot.Size.y * 0.5f;
+            Rect cellBounds = layout.GetCellWorldBounds(lot.Cell);
             float centerToRoad = frontageIsX
-                ? layout.NodeSpacing.x * 0.5f
-                : layout.NodeSpacing.y * 0.5f;
+                ? (forward.x > 0f ? cellBounds.xMax - lot.Center.x : lot.Center.x - cellBounds.xMin)
+                : (forward.z > 0f ? cellBounds.yMax - lot.Center.z : lot.Center.z - cellBounds.yMin);
             float availableDepth = centerToRoad -
                                    layout.RoadWidth * 0.5f -
                                    buildingHalfDepth;

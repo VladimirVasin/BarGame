@@ -476,6 +476,8 @@ namespace BarPromenade
                 layout,
                 beachRow.center.x,
                 waterline - 0.01f);
+            Vector3? portOrigin = CityPortAccessPlan.TryResolveOrigin(layout, out Vector3 origin)
+                ? origin : (Vector3?)null;
             frame = new CitySeacoastFrame(
                 beachRow,
                 seaRow,
@@ -493,7 +495,8 @@ namespace BarPromenade
                     centerZoneMax, seaRow.yMax),
                 Rect.MinMaxRect(
                     centerZoneMax, beachRow.yMin,
-                    beachRow.xMax, seaRow.yMax));
+                    beachRow.xMax, seaRow.yMax),
+                portOrigin);
             grounds = Union(beachRow, seaRow);
             return true;
         }

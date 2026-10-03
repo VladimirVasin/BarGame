@@ -186,6 +186,7 @@ namespace BarPromenade
             Array.Empty<CityBuildingPartBinding>();
         [SerializeField] private Bounds localBounds;
         [SerializeField] private Bounds roofAttachmentBounds;
+        [SerializeField] private Bounds[] colliderBounds = Array.Empty<Bounds>();
         [SerializeField] private CityBuildingFacadeAttachment[]
             facadeAttachments =
                 Array.Empty<CityBuildingFacadeAttachment>();
@@ -210,6 +211,7 @@ namespace BarPromenade
         public IReadOnlyList<CityBuildingPartBinding> Parts => parts;
         public Bounds LocalBounds => localBounds;
         public Bounds RoofAttachmentBounds => roofAttachmentBounds;
+        public IReadOnlyList<Bounds> ColliderBounds => colliderBounds;
         public IReadOnlyList<CityBuildingFacadeAttachment>
             FacadeAttachments => facadeAttachments;
         public IReadOnlyList<CityBuildingWindowSlot> WindowSlots =>
@@ -273,7 +275,8 @@ namespace BarPromenade
             int configuredSourceTriangleCount,
             string configuredSourceGeneratorVersion,
             string configuredDesignId,
-            string configuredBuildSignature)
+            string configuredBuildSignature,
+            Bounds[] configuredColliderBounds = null)
         {
             stableId = configuredStableId ?? string.Empty;
             district = configuredDistrict;
@@ -284,6 +287,7 @@ namespace BarPromenade
                 Array.Empty<CityBuildingPartBinding>();
             localBounds = configuredLocalBounds;
             roofAttachmentBounds = configuredRoofAttachmentBounds;
+            colliderBounds = configuredColliderBounds ?? new[] { configuredLocalBounds };
             facadeAttachments = configuredFacadeAttachments ??
                 Array.Empty<CityBuildingFacadeAttachment>();
             windowSlots = configuredWindowSlots ??
@@ -354,8 +358,30 @@ namespace BarPromenade
             }
 
             ValidateParts();
+            ValidateColliderBounds();
             ValidateAttachmentMetadata();
             ValidatePassiveHierarchy();
+        }
+
+        private void ValidateColliderBounds()
+        {
+            if (colliderBounds == null || colliderBounds.Length == 0)
+            {
+                throw new InvalidOperationException($"City building '{stableId}' has no authored collision solids.");
+            }
+
+            foreach (Bounds solid in colliderBounds)
+            {
+                Vector3 margin = Vector3.one * .003f;
+                Bounds envelope = localBounds;
+                envelope.Expand(margin * 2f);
+                if (!IsFinite(solid.center) || !IsFinite(solid.size) ||
+                    solid.size.x <= 0f || solid.size.y <= 0f || solid.size.z <= 0f ||
+                    !envelope.Contains(solid.min) || !envelope.Contains(solid.max))
+                {
+                    throw new InvalidOperationException($"City building '{stableId}' collision solid escapes its mesh.");
+                }
+            }
         }
 
         private void ValidateParts()

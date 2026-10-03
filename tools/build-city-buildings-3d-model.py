@@ -44,6 +44,7 @@ from city_building_parts import (  # noqa: E402
     PrototypeSpec,
     box,
     build_prototypes,
+    collision_bounds_for,
     combine,
     cylinder_z,
 )
@@ -54,7 +55,7 @@ from city_building_coplanarity import (  # noqa: E402
 )
 
 
-GENERATOR_VERSION = "2.1.0"
+GENERATOR_VERSION = "2.2.0"
 DESIGN_ID = "city_buildings_prototypes_v2"
 DISPLAY_NAME = "City Buildings 3D Prototype Catalog"
 FBX_ASSET_PATH = "Assets/City/Models/CityBuildings3D.fbx"
@@ -97,6 +98,14 @@ EXPECTED_PROTOTYPES = (
      14.0, 13.5, 36.0),
     ("nightlife-prototype-01", "Nightlife", "TallDense",
      12.5, 12.0, 48.0),
+    ("old-town-prototype-02", "OldTown", "LongStreetBar", 22.0, 11.5, 42.0),
+    ("residential-prototype-02", "Residential", "LongStreetBar", 22.0, 11.5, 40.0),
+    ("industrial-prototype-02", "Industrial", "LongStreetBar", 22.0, 11.5, 36.0),
+    ("nightlife-prototype-02", "Nightlife", "LongStreetBar", 17.0, 9.5, 48.0),
+    ("old-town-prototype-03", "OldTown", "CornerStreetWing", 15.0, 14.0, 42.0),
+    ("residential-prototype-03", "Residential", "CornerStreetWing", 15.0, 14.0, 40.0),
+    ("industrial-prototype-03", "Industrial", "CornerStreetWing", 15.0, 14.0, 36.0),
+    ("nightlife-prototype-03", "Nightlife", "CornerStreetWing", 15.0, 14.0, 48.0),
 )
 
 PREVIEW_PALETTE = {
@@ -541,6 +550,8 @@ def validate_prototypes(prototypes: Sequence[PrototypeSpec]) -> None:
             problems.append(f"{prototype.stable_id} front anchor moved")
 
         slot_ids = [slot.slot_id for slot in prototype.window_slots]
+        if len(slot_ids) > 63:
+            problems.append(f"{prototype.stable_id} exceeds the 63-slot shader contract")
         if slot_ids != list(range(1, len(slot_ids) + 1)):
             problems.append(
                 f"{prototype.stable_id} window slot IDs are not contiguous from 1")
@@ -680,6 +691,22 @@ def validate_prototypes(prototypes: Sequence[PrototypeSpec]) -> None:
         if any(roof_low[axis] >= roof_high[axis] for axis in range(3)):
             problems.append(
                 f"{prototype.stable_id} roof attachment bounds are invalid")
+        solids = collision_bounds_for(prototype)
+        if not solids:
+            problems.append(f"{prototype.stable_id} has no authored collision solids")
+        for minimum, maximum in solids:
+            if any(minimum[axis] >= maximum[axis] or
+                   minimum[axis] < low[axis] - ATTACHMENT_EPSILON or
+                   maximum[axis] > high[axis] + ATTACHMENT_EPSILON
+                   for axis in range(3)):
+                problems.append(f"{prototype.stable_id} collision solid escapes its source geometry")
+        if prototype.grammar == "CornerStreetWing":
+            # The rear-right cutout must remain a real empty footprint, rather
+            # than one AABB copied from the overall renderer envelope.
+            probe = (prototype.frontage_width_m * 0.25, -prototype.depth_m * 0.25, 1.0)
+            if len(solids) != 2 or any(all(minimum[axis] <= probe[axis] <= maximum[axis]
+                                         for axis in range(3)) for minimum, maximum in solids):
+                problems.append(f"{prototype.stable_id} fills its open corner with collision")
 
     if set(ids) != set(expected):
         problems.append("prototype stable-ID set differs from the contract")
@@ -701,6 +728,9 @@ def prototype_signature_record(prototype: PrototypeSpec) -> dict:
         "frontage_width_m": stable(prototype.frontage_width_m),
         "depth_m": stable(prototype.depth_m),
         "height_m": stable(prototype.height_m),
+        "collision_bounds": [{"bounds_min_source": list(minimum),
+                              "bounds_max_source": list(maximum)}
+                             for minimum, maximum in collision_bounds_for(prototype)],
         "front_anchor_source": [stable(value)
                                 for value in prototype.front_anchor_source],
         "roof_attachment_bounds_min_source": [
@@ -828,6 +858,12 @@ def manifest_for(
             "frontage_width_m": stable(prototype.frontage_width_m),
             "depth_m": stable(prototype.depth_m),
             "height_m": stable(prototype.height_m),
+            "collision_bounds": [{
+                "bounds_min_source": [stable(value) for value in minimum],
+                "bounds_max_source": [stable(value) for value in maximum],
+                "bounds_min_unity": source_to_unity(minimum),
+                "bounds_max_unity": source_to_unity(maximum),
+            } for minimum, maximum in collision_bounds_for(prototype)],
             "triangle_count": prototype_triangle_count(prototype),
             "bounds_min_source": [stable(value) for value in low],
             "bounds_max_source": [stable(value) for value in high],
@@ -1125,10 +1161,10 @@ def add_preview_stage(
         ground_shader.inputs["Roughness"].default_value = 0.88
     ground_mesh = bpy.data.meshes.new("CityBuildingsPreviewGround_Mesh")
     ground_vertices = (
-        (-42.0, -10.0, -0.24), (42.0, -10.0, -0.24),
-        (42.0, 12.0, -0.24), (-42.0, 12.0, -0.24),
-        (-42.0, -10.0, 0.0), (42.0, -10.0, 0.0),
-        (42.0, 12.0, 0.0), (-42.0, 12.0, 0.0),
+        (-50.0, -12.0, -0.24), (50.0, -12.0, -0.24),
+        (50.0, 114.0, -0.24), (-50.0, 114.0, -0.24),
+        (-50.0, -12.0, 0.0), (50.0, -12.0, 0.0),
+        (50.0, 114.0, 0.0), (-50.0, 114.0, 0.0),
     )
     ground_faces = (
         (0, 3, 2, 1), (4, 5, 6, 7), (0, 1, 5, 4),
@@ -1139,7 +1175,8 @@ def add_preview_stage(
     collection.objects.link(ground)
     ground.data.materials.append(ground_material)
 
-    placements = (-25.5, -8.5, 8.5, 25.5)
+    placements = tuple(((-33.0, -11.0, 11.0, 33.0)[index % 4],
+                        (index // 4) * 50.0) for index in range(len(prototypes)))
     scale = 0.65
     materials = {
         (prototype.district, role): preview_material(prototype.district, role)
@@ -1188,11 +1225,11 @@ def add_preview_stage(
         if strength is not None:
             strength.default_value = 0.35
 
-    for x, prototype in zip(placements, prototypes):
+    for (x, y), prototype in zip(placements, prototypes):
         placement = bpy.data.objects.new(
             f"PREVIEW_ROOT_{prototype.stable_id}", None)
         collection.objects.link(placement)
-        placement.location = (x, 0.0, 0.0)
+        placement.location = (x, y, 0.0)
         placement.scale = (scale, scale, scale)
         placement.rotation_euler[2] = math.radians(-7.0 if x < 0.0 else 7.0)
         for part in prototype.parts:
@@ -1219,7 +1256,7 @@ def add_preview_stage(
 
         text_curve = bpy.data.curves.new(
             f"PREVIEW_Label_{prototype.stable_id}_Curve", type="FONT")
-        text_curve.body = f"{prototype.district}\n{prototype.grammar}"
+        text_curve.body = f"{prototype.stable_id}\n{prototype.grammar}"
         text_curve.align_x = "CENTER"
         text_curve.align_y = "CENTER"
         text_curve.size = 0.88
@@ -1228,7 +1265,7 @@ def add_preview_stage(
         label = bpy.data.objects.new(
             f"PREVIEW_Label_{prototype.stable_id}", text_curve)
         collection.objects.link(label)
-        label.location = (x, 9.4, 3.0)
+        label.location = (x, y + 9.4, 3.0)
         label.data.materials.append(label_material)
 
     for name, location, energy, color, size in (
@@ -1238,6 +1275,8 @@ def add_preview_stage(
          (0.28, 0.42, 0.58), 16.0),
         ("Front", (0.0, 38.0, 22.0), 4300,
          (0.90, 0.55, 0.34), 20.0),
+        ("CatalogFill", (0.0, 100.0, 100.0), 32000,
+         (0.78, 0.84, 0.80), 75.0),
     ):
         light_data = bpy.data.lights.new(
             f"PREVIEW_CityBuildings_{name}", "AREA")
@@ -1250,7 +1289,7 @@ def add_preview_stage(
         collection.objects.link(light)
         light.location = location
         light.rotation_euler = (
-            Vector((0.0, 0.0, 15.0)) - light.location
+            Vector((0.0, 50.0, 15.0)) - light.location
         ).to_track_quat("-Z", "Y").to_euler()
 
 
@@ -1266,12 +1305,13 @@ def render_preview(
     camera_data = bpy.data.cameras.new("CAM_CityBuildings3D_Preview")
     camera = bpy.data.objects.new("CAM_CityBuildings3D_Preview", camera_data)
     result.presentation.objects.link(camera)
-    camera.location = (0.0, 78.0, 39.0)
-    target = Vector((0.0, 0.0, 13.5))
+    camera.location = (25.0, 210.0, 190.0)
+    target = Vector((0.0, 50.0, 13.5))
     camera.rotation_euler = (
         target - camera.location).to_track_quat("-Z", "Y").to_euler()
     camera_data.type = "ORTHO"
-    camera_data.ortho_scale = 76.0
+    camera_data.ortho_scale = 150.0
+    bpy.context.scene.render.resolution_y = 1800
     bpy.context.scene.camera = camera
     for obj in result.presentation.objects:
         if obj.name.startswith("PREVIEW_Label_"):

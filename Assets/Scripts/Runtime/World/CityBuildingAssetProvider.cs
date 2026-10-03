@@ -27,7 +27,7 @@ namespace BarPromenade
     }
 
     /// <summary>
-    /// Serialized Resources bridge to four passive wrapper prefabs. Runtime
+    /// Serialized Resources bridge to the passive district massing catalog. Runtime
     /// never loads the FBX directly; wrappers reference its imported meshes.
     /// </summary>
     [CreateAssetMenu(
@@ -39,7 +39,7 @@ namespace BarPromenade
             "City/CityBuildingAssetProvider";
         public const string ExpectedDesignId =
             "city_buildings_prototypes_v2";
-        public const int ExpectedPrototypeCount = 4;
+        public const int ExpectedPrototypeCount = 12;
 
         private static readonly PrototypeSpec[] ExpectedPrototypes =
         {
@@ -66,7 +66,15 @@ namespace BarPromenade
                 CityDistrictKind.Nightlife,
                 12.5f,
                 12f,
-                48f)
+                48f),
+            new PrototypeSpec("old-town-prototype-02", CityDistrictKind.OldTown, 22f, 11.5f, 42f),
+            new PrototypeSpec("residential-prototype-02", CityDistrictKind.Residential, 22f, 11.5f, 40f),
+            new PrototypeSpec("industrial-prototype-02", CityDistrictKind.Industrial, 22f, 11.5f, 36f),
+            new PrototypeSpec("nightlife-prototype-02", CityDistrictKind.Nightlife, 17f, 9.5f, 48f),
+            new PrototypeSpec("old-town-prototype-03", CityDistrictKind.OldTown, 15f, 14f, 42f),
+            new PrototypeSpec("residential-prototype-03", CityDistrictKind.Residential, 15f, 14f, 40f),
+            new PrototypeSpec("industrial-prototype-03", CityDistrictKind.Industrial, 15f, 14f, 36f),
+            new PrototypeSpec("nightlife-prototype-03", CityDistrictKind.Nightlife, 15f, 14f, 48f)
         };
 
         [SerializeField] private CityBuildingPrefabEntry[] entries =
@@ -153,6 +161,81 @@ namespace BarPromenade
                 "Only ordinary urban districts own prototypes.");
         }
 
+        public static int GetVariantCount(CityDistrictKind district)
+        {
+            GetExpectedEnvelope(district);
+            return 3;
+        }
+
+        public static Vector3 GetExpectedEnvelope(CityDistrictKind district, int variantIndex)
+        {
+            return GetExpectedEnvelope(GetPrototypeIndex(district, variantIndex));
+        }
+
+        public static IReadOnlyList<Bounds> GetExpectedCollisionBounds(
+            CityDistrictKind district, int variantIndex)
+        {
+            Vector3 envelope = GetExpectedEnvelope(district, variantIndex);
+            if (variantIndex == 0)
+            {
+                switch (district)
+                {
+                    case CityDistrictKind.OldTown:
+                        return new[] { Solid(-7f, 0f, -6.75f, -0.6f, 30f, 6.75f),
+                            Solid(0.8f, 0f, -6.75f, 7f, 27f, 5.15f),
+                            Solid(-1.5f, 0f, -6.71f, 1.5f, 34f, -2.21f) };
+                    case CityDistrictKind.Residential:
+                        return new[] { Solid(-5.75f, 0f, -5.75f, 5.75f, 30f, -1.55f),
+                            Solid(-5.75f, 0f, -1.55f, -2.95f, 26f, 3.65f),
+                            Solid(2.95f, 0f, -1.55f, 5.75f, 26f, 3.65f),
+                            Solid(-1.6f, 0f, -3.2f, 1.6f, 34f, 0f) };
+                    case CityDistrictKind.Industrial:
+                        return new[] { Solid(-7f, 0f, -6.75f, 7f, 24f, 6.75f),
+                            Solid(-6.6f, 0f, -5.6f, -2.4f, 30f, -1.6f),
+                            Solid(2.9f, 0f, -5.6f, 6.7f, 27f, -2.4f) };
+                    case CityDistrictKind.Nightlife:
+                        return new[] { Solid(-6.25f, 0f, -6f, 6.25f, 10f, 6f),
+                            Solid(-5.85f, 5f, -5.7f, 4.65f, 37f, 4.9f),
+                            Solid(-2.45f, 37f, -5f, 4.65f, 41f, 3f) };
+                }
+            }
+
+            float halfWidth = envelope.x * .5f;
+            float halfDepth = envelope.z * .5f;
+            float front = halfDepth - (district == CityDistrictKind.Residential ? 1.2f : 0f);
+            float bodyTop = envelope.y - (district == CityDistrictKind.OldTown ? 2.4f : .35f);
+            return variantIndex == 2
+                ? new[] { Solid(-halfWidth, 0f, 0f, halfWidth, bodyTop, front),
+                    Solid(-halfWidth, 0f, -halfDepth, -halfWidth + 5f, bodyTop, 0f) }
+                : new[] { Solid(-halfWidth, 0f, -halfDepth, halfWidth, bodyTop, front) };
+        }
+
+        private static Bounds Solid(float minX, float minY, float minZ,
+            float maxX, float maxY, float maxZ)
+        {
+            var minimum = new Vector3(minX, minY, minZ);
+            var maximum = new Vector3(maxX, maxY, maxZ);
+            return new Bounds((minimum + maximum) * .5f, maximum - minimum);
+        }
+
+        private static int GetPrototypeIndex(CityDistrictKind district, int variantIndex)
+        {
+            if (variantIndex < 0 || variantIndex >= GetVariantCount(district))
+            {
+                throw new ArgumentOutOfRangeException(nameof(variantIndex));
+            }
+
+            for (int index = 0; index < 4; index++)
+            {
+                if (ExpectedPrototypes[index].District == district)
+                {
+                    return index + variantIndex * 4;
+                }
+            }
+
+            throw new ArgumentOutOfRangeException(nameof(district));
+        }
+
         public static bool IsSha256(string value)
         {
             if (string.IsNullOrWhiteSpace(value) || value.Length != 64)
@@ -201,6 +284,34 @@ namespace BarPromenade
                     nameof(district),
                     district,
                     "No City building prototype is bound for this district.");
+            }
+
+            return prefab;
+        }
+
+        public bool TryGetPrefab(CityDistrictKind district, int variantIndex, out GameObject prefab)
+        {
+            string expectedId = GetExpectedStableId(GetPrototypeIndex(district, variantIndex));
+            for (int index = 0; index < entries.Length; index++)
+            {
+                CityBuildingPrefabEntry entry = entries[index];
+                if (entry != null && entry.District == district && entry.Prefab != null &&
+                    string.Equals(entry.StableId, expectedId, StringComparison.Ordinal))
+                {
+                    prefab = entry.Prefab;
+                    return true;
+                }
+            }
+
+            prefab = null;
+            return false;
+        }
+
+        public GameObject GetPrefabOrThrow(CityDistrictKind district, int variantIndex)
+        {
+            if (!TryGetPrefab(district, variantIndex, out GameObject prefab))
+            {
+                throw new InvalidOperationException($"Missing {district} massing variant {variantIndex}.");
             }
 
             return prefab;
@@ -266,18 +377,32 @@ namespace BarPromenade
                         registry.BuildSignature,
                         buildSignature,
                         StringComparison.Ordinal) ||
-                    Vector3.Distance(
+                    index < 4 && (Vector3.Distance(
                         registry.RoofAttachmentBounds.center,
                         expectedRoof.center) > 0.003f ||
                     Vector3.Distance(
                         registry.RoofAttachmentBounds.size,
-                        expectedRoof.size) > 0.003f)
+                        expectedRoof.size) > 0.003f))
                 {
                     throw new InvalidOperationException(
                         $"City building prefab '{entry.StableId}' is stale.");
                 }
 
                 registry.ValidateOrThrow();
+                IReadOnlyList<Bounds> collision = GetExpectedCollisionBounds(expected.District, index / 4);
+                if (registry.ColliderBounds.Count != collision.Count)
+                {
+                    throw new InvalidOperationException($"City building '{entry.StableId}' collision count drifted.");
+                }
+
+                for (int solid = 0; solid < collision.Count; solid++)
+                {
+                    if (Vector3.Distance(registry.ColliderBounds[solid].center, collision[solid].center) > .003f ||
+                        Vector3.Distance(registry.ColliderBounds[solid].size, collision[solid].size) > .003f)
+                    {
+                        throw new InvalidOperationException($"City building '{entry.StableId}' collision geometry drifted.");
+                    }
+                }
             }
         }
 

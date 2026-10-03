@@ -450,27 +450,29 @@ namespace BarPromenade
             }
 
             CityRiverDefinition definition = blueprint.River;
-            float nodeWidth = settings.NodeSpacing.x;
-            float nodeDepth = settings.NodeSpacing.y;
-            float westNodeX = origin.x + definition.CorridorCellX * nodeWidth;
-            float eastNodeX = westNodeX + nodeWidth;
+            CitySpatialPlan spatialPlan = elevationPlan.SpatialPlan;
+            Rect corridorCell = spatialPlan.GetCellBounds(
+                new Vector2Int(definition.CorridorCellX, definition.CoreMinimumZ));
+            float westNodeX = origin.x + corridorCell.xMin;
+            float eastNodeX = origin.x + corridorCell.xMax;
             float centerX = (westNodeX + eastNodeX) * 0.5f;
             float channelHalf = definition.ChannelWidth * 0.5f;
             float channelXMin = centerX - channelHalf;
             float channelXMax = centerX + channelHalf;
             float roadHalf = settings.RoadWidth * 0.5f;
-            float corridorSouth = origin.z +
-                                  definition.CoreMinimumZ * nodeDepth;
-            float corridorNorth = origin.z +
-                                  definition.CoreMaximumZExclusive *
-                                  nodeDepth;
+            float corridorSouth = origin.z + spatialPlan.GetCoordinateWorldOffset(
+                new Vector2Int(definition.CorridorCellX, definition.CoreMinimumZ)).y;
+            float corridorNorth = origin.z + spatialPlan.GetCoordinateWorldOffset(
+                new Vector2Int(definition.CorridorCellX, definition.CoreMaximumZExclusive)).y;
             var segments = new List<CityRiverSegmentDescriptor>();
             for (int z = definition.CoreMinimumZ;
                  z <= definition.CoreMaximumZExclusive;
                  z++)
             {
-                float southZ = origin.z + z * nodeDepth;
-                float northZ = southZ + nodeDepth;
+                Rect cellBounds = spatialPlan.GetCellBounds(
+                    new Vector2Int(definition.CorridorCellX, z));
+                float southZ = origin.z + cellBounds.yMin;
+                float northZ = origin.z + cellBounds.yMax;
                 segments.Add(new CityRiverSegmentDescriptor(
                     new Vector2Int(definition.CorridorCellX, z),
                     Rect.MinMaxRect(
@@ -520,7 +522,8 @@ namespace BarPromenade
             {
                 CityBridgeDefinition bridge = definition.Bridges[index];
                 int z = bridge.CrossingEdge.A.y;
-                float centerZ = origin.z + z * nodeDepth;
+                float centerZ = origin.z + spatialPlan.GetCoordinateWorldOffset(
+                    new Vector2Int(definition.CorridorCellX, z)).y;
                 float halfWidth = bridge.DeckWidth * 0.5f;
                 float westY = elevationPlan.GetNodeElevation(
                     bridge.CrossingEdge.A);

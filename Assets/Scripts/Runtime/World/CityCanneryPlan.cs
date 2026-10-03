@@ -67,8 +67,12 @@ namespace BarPromenade
             FrontageEdge = best.FrontageEdge;
             Rotation = Quaternion.LookRotation(new Vector3(best.StreetSideDirection.x, 0f,
                 best.StreetSideDirection.y));
-            Origin = new Vector3(descriptor.Center.x,
-                layout.ElevationPlan.SampleRoadDatum(FrontageEdge, .5f), descriptor.Center.z);
+            // Keep the authored 18 metre site against its actual street frontage.
+            // An expanded cell leaves space behind the yard; its one-metre
+            // driveway apron must still start at the public/street boundary.
+            Vector3 frontageOrigin = best.Center - Forward * 9f;
+            Origin = new Vector3(frontageOrigin.x,
+                layout.ElevationPlan.SampleRoadDatum(FrontageEdge, .5f), frontageOrigin.z);
             PublicRectangles = new[] {
                 World(Rect.MinMaxRect(-9,-9,9,-7)), World(Rect.MinMaxRect(-9,7,9,9)),
                 World(Rect.MinMaxRect(-9,-9,-8,9)), World(Rect.MinMaxRect(0,-9,9,9)),

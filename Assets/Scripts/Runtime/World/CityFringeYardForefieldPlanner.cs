@@ -219,8 +219,11 @@ namespace BarPromenade
                 MaximumForefieldAnchorCount);
             for (int index = 0; index < anchorCount; index++)
             {
+                // Both yard boundaries count as interval ends. Share the
+                // length across count + 1 gaps instead of leaving the inner
+                // gaps wider than 40 m when the four-anchor cap is reached.
                 float coordinate = start +
-                    length * ((index + 0.5f) / anchorCount);
+                    length * ((index + 1f) / (anchorCount + 1f));
                 float variation = HashUnit(
                     layout.Seed,
                     $"{areaId}-forefield-anchor-{index:00}");

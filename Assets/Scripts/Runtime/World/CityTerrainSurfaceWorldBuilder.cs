@@ -1003,12 +1003,9 @@ namespace BarPromenade
             bool seabedOnly = false,
             CityPortPlan port = null)
         {
-            float cellMinimumX = layout.ElevationPlan.WorldOrigin.x +
-                                 surface.Cell.x *
-                                 layout.ElevationPlan.NodeSpacing.x;
-            float cellMinimumZ = layout.ElevationPlan.WorldOrigin.z +
-                                 surface.Cell.y *
-                                 layout.ElevationPlan.NodeSpacing.y;
+            Rect cellBounds = layout.SpatialPlan.GetCellBounds(surface.Cell);
+            float cellMinimumX = layout.ElevationPlan.WorldOrigin.x + cellBounds.xMin;
+            float cellMinimumZ = layout.ElevationPlan.WorldOrigin.z + cellBounds.yMin;
             float halfRoad = layout.ElevationPlan.RoadWidth * 0.5f;
             var xAnchors = new List<float>();
             var zAnchors = new List<float>();
@@ -1030,10 +1027,8 @@ namespace BarPromenade
             }
             if (surface.Kind == CitySurfaceKind.ChurchGround)
             {
-                Rect churchGrounds = CityChurchGroundPlan.GetGrounds(
-                    layout, surface.AreaId);
-                zAnchors.Add(churchGrounds.yMin +
-                    CityChurchGroundPlan.FlatGardenDepth);
+                zAnchors.Add(CityChurchGroundPlan.GetFlatGardenNorthZ(
+                    layout, surface.AreaId));
             }
 
             AppendDistrictPointAnchors(
@@ -1100,17 +1095,13 @@ namespace BarPromenade
                 patch.xMin,
                 patch.xMax,
                 cellMinimumX + halfRoad,
-                cellMinimumX +
-                layout.ElevationPlan.NodeSpacing.x -
-                halfRoad,
+                layout.ElevationPlan.WorldOrigin.x + cellBounds.xMax - halfRoad,
                 xAnchors);
             List<float> zCoordinates = CreateAxisCoordinates(
                 patch.yMin,
                 patch.yMax,
                 cellMinimumZ + halfRoad,
-                cellMinimumZ +
-                layout.ElevationPlan.NodeSpacing.y -
-                halfRoad,
+                layout.ElevationPlan.WorldOrigin.z + cellBounds.yMax - halfRoad,
                 zAnchors);
 
             int firstVertex = vertices.Count;

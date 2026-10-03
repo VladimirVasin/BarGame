@@ -179,7 +179,7 @@ namespace BarPromenade
             }
 
             Vector3 envelope = CityBuildingAssetProvider
-                .GetExpectedEnvelope(lot.District);
+                .GetExpectedEnvelope(lot.District, lot.BuildingVariant);
             Vector3 forward = CityBuildingPrototypePlacement
                 .ResolveForward(lot);
             Vector3 right = Vector3.Cross(Vector3.up, forward).normalized;

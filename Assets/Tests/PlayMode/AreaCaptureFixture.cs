@@ -4421,7 +4421,7 @@ namespace BarPromenade.Tests.PlayMode
             {
                 CityBuildingAssetRegistry registry =
                     CityBuildingAssetProvider.LoadOrThrow()
-                        .GetPrefabOrThrow(lot.District)
+                        .GetPrefabOrThrow(lot.District, lot.BuildingVariant)
                         .GetComponent<CityBuildingAssetRegistry>();
                 Assert.That(registry, Is.Not.Null);
                 height = registry.Height;

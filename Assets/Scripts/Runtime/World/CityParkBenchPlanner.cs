@@ -296,10 +296,8 @@ namespace BarPromenade
             Vector3 origin,
             Vector2Int node)
         {
-            return origin + new Vector3(
-                node.x * settings.NodeSpacing.x,
-                0f,
-                node.y * settings.NodeSpacing.y);
+            Vector2 offset = settings.GetCoordinateOffset(node);
+            return origin + new Vector3(offset.x, 0f, offset.y);
         }
 
         private static float XzSquaredDistance(

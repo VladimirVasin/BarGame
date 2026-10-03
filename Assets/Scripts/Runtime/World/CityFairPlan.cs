@@ -285,7 +285,7 @@ namespace BarPromenade
                 .ResolveExpectedBuildingBounds(south);
             UnityEngine.Bounds northBounds = CityArchShelterPlacementResolver
                 .ResolveExpectedBuildingBounds(north);
-            float boundaryZ = layout.WorldOrigin.z + NorthCell.y * layout.NodeSpacing.y;
+            float boundaryZ = layout.GetGridWorldPosition(NorthCell).z;
             var plan = new CityFairPlan(layout, southBounds, northBounds, boundaryZ);
             ValidateOrThrow(layout, plan);
             return plan;

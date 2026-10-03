@@ -414,8 +414,8 @@ namespace BarPromenade
 
             float parallelBlockSpan =
                 (Mathf.Abs(tangent.x) > 0.5f
-                    ? layout.NodeSpacing.x
-                    : layout.NodeSpacing.y) -
+                    ? layout.SpatialPlan.GetCellSize(lot.Cell).x
+                    : layout.SpatialPlan.GetCellSize(lot.Cell).y) -
                 layout.RoadWidth;
             if (Mathf.Abs(targetLateral) +
                 CourtyardLineHalfSpan +

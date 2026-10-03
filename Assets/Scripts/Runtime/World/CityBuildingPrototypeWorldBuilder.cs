@@ -5,7 +5,7 @@ using UnityEngine;
 namespace BarPromenade
 {
     /// <summary>
-    /// Runtime bridge from pure generated lots to the four passive Blender
+    /// Runtime bridge from pure generated lots to the passive Blender
     /// prototype wrappers. The imported wrapper owns visible architecture;
     /// the generated lot remains authoritative for collision and navigation.
     /// </summary>
@@ -21,7 +21,7 @@ namespace BarPromenade
 
         private static CityBuildingAssetProvider provider;
 
-        // Every instance is a byte copy of one of four source prefabs, so the
+        // Every instance is a copy of one catalog source prefab, so the
         // registry contract is proved on the source once per prefab, not on
         // every lot: the passive-hierarchy walk alone is nine
         // GetComponentsInChildren sweeps, ~1300 per City load when run per lot.
@@ -121,7 +121,7 @@ namespace BarPromenade
             Transform parent,
             BuildingLot lot)
         {
-            GameObject source = Provider.GetPrefabOrThrow(lot.District);
+            GameObject source = Provider.GetPrefabOrThrow(lot.District, lot.BuildingVariant);
             ValidateSourceOnce(source, lot.District);
             GameObject instance = UnityEngine.Object.Instantiate(
                 source,
@@ -144,7 +144,7 @@ namespace BarPromenade
             BuildingLot lot)
         {
             return GetSourceRegistry(
-                Provider.GetPrefabOrThrow(lot.District),
+                Provider.GetPrefabOrThrow(lot.District, lot.BuildingVariant),
                 lot.District);
         }
 
@@ -287,8 +287,25 @@ namespace BarPromenade
             float foundationDepth,
             string name)
         {
+            if (lot.BuildingVariant > 0)
+            {
+                for (int index = 0; index < registry.ColliderBounds.Count; index++)
+                {
+                    Bounds solid = CityBuildingPrototypePlacement.TransformBounds(
+                        registry.ColliderBounds[index], pose);
+                    BuildFoundationBox(parent, lot, solid, foundationDepth,
+                        name + " " + index);
+                }
+                return;
+            }
             Bounds visibleBounds = CityBuildingPrototypePlacement
                 .TransformBounds(registry.LocalBounds, pose);
+            BuildFoundationBox(parent, lot, visibleBounds, foundationDepth, name);
+        }
+
+        private static void BuildFoundationBox(Transform parent, BuildingLot lot,
+            Bounds visibleBounds, float foundationDepth, string name)
+        {
             float top = visibleBounds.min.y + FoundationOverlap;
             float bottom = visibleBounds.min.y - foundationDepth;
             Color facade = CityExteriorAppearance
@@ -325,6 +342,24 @@ namespace BarPromenade
             BuildingLot lot,
             float foundationDepth)
         {
+            if (lot.BuildingVariant > 0)
+            {
+                CityBuildingPrototypePose pose =
+                    CityBuildingPrototypePlacement.ResolveExpectedCityPose(lot);
+                IReadOnlyList<Bounds> solids = CityBuildingAssetProvider
+                    .GetExpectedCollisionBounds(lot.District, lot.BuildingVariant);
+                for (int index = 0; index < solids.Count; index++)
+                {
+                    var part = new GameObject(LogicalCollisionObjectName + " " + index);
+                    part.transform.SetParent(parent, false);
+                    part.transform.localPosition = pose.TransformPoint(
+                        solids[index].center - Vector3.up * foundationDepth * 0.5f);
+                    part.transform.localRotation = pose.Rotation;
+                    BoxCollider body = part.AddComponent<BoxCollider>();
+                    body.size = solids[index].size + Vector3.up * foundationDepth;
+                }
+                return;
+            }
             var collisionObject = new GameObject(
                 LogicalCollisionObjectName);
             Transform collision = collisionObject.transform;

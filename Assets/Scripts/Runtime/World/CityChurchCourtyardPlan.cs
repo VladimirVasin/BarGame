@@ -151,12 +151,14 @@ namespace BarPromenade
             Rect gardenBounds,
             CityChurchCemeteryPassagePlan passage,
             IList<CityChurchCourtyardSurfaceDescriptor> surfaces,
-            IList<CityChurchCourtyardFixtureDescriptor> fixtures)
+            IList<CityChurchCourtyardFixtureDescriptor> fixtures,
+            Vector2 gardenOrigin)
         {
             Grounds = grounds;
             GroundTopY = groundTopY;
             ForecourtBounds = forecourtBounds;
             GardenBounds = gardenBounds;
+            GardenOrigin = gardenOrigin;
             Passage = passage;
             Surfaces = new ReadOnlyCollection<
                 CityChurchCourtyardSurfaceDescriptor>(
@@ -170,6 +172,7 @@ namespace BarPromenade
         public float GroundTopY { get; }
         public Rect ForecourtBounds { get; }
         public Rect GardenBounds { get; }
+        public Vector2 GardenOrigin { get; }
         public CityChurchCemeteryPassagePlan Passage { get; }
         public IReadOnlyList<CityChurchCourtyardSurfaceDescriptor> Surfaces
         {
@@ -249,6 +252,8 @@ namespace BarPromenade
             Vector3 door = church.DoorGroundPosition;
             float west = grounds.xMin;
             float south = grounds.yMin;
+            Vector2 gardenOrigin = CityChurchGroundPlan.GetGardenOrigin(church);
+            float gardenSouth = gardenOrigin.y;
             float groundY = church.GroundTopY;
             Rect forecourt = Rect.MinMaxRect(
                 door.x - ForecourtDepth, door.z - ForecourtWidth * 0.5f,
@@ -263,7 +268,7 @@ namespace BarPromenade
                 west + 2f,
                 church.ModelFootprint.yMax + GardenBuildingClearance,
                 eastAxis + 4f,
-                Mathf.Min(south + GardenNorthExtent,
+                Mathf.Min(gardenSouth + GardenNorthExtent,
                     grounds.yMax - GardenBoundaryInset));
             float eastPathLeft = eastAxis - LoopPathWidth * 0.5f;
             float eastPathRight = eastAxis + LoopPathWidth * 0.5f;
@@ -297,15 +302,15 @@ namespace BarPromenade
                             passage != null ? passage.FenceOpeningBounds.xMax : eastPathRight),
                         southPathTop)),
                 Surface("west-seat-pad", CityChurchCourtyardSurfaceKind.Gravel,
-                    LocalRect(grounds, 13.8f, 31.4f, 20.3f, 34.3f), false),
+                    LocalRect(gardenOrigin, 13.8f, 31.4f, 20.3f, 34.3f), false),
                 Surface("east-seat-pad", CityChurchCourtyardSurfaceKind.Gravel,
-                    LocalRect(grounds, 34f, 24f, 38.8f, 27.8f), false),
+                    LocalRect(gardenOrigin, 34f, 24f, 38.8f, 27.8f), false),
                 Surface("fountain-pad", CityChurchCourtyardSurfaceKind.Stone,
-                    LocalRect(grounds, 18f, 24.6f, 23f, 29f), false),
+                    LocalRect(gardenOrigin, 18f, 24.6f, 23f, 29f), false),
                 Surface("potting-pad", CityChurchCourtyardSurfaceKind.Gravel,
-                    LocalRect(grounds, 9f, 24.3f, 12.6f, 29f), false),
+                    LocalRect(gardenOrigin, 9f, 24.3f, 12.6f, 29f), false),
                 Surface("statue-pad", CityChurchCourtyardSurfaceKind.Stone,
-                    LocalRect(grounds, 31.4f, 31.4f, 33.4f, 33.6f), false)
+                    LocalRect(gardenOrigin, 31.4f, 31.4f, 33.4f, 33.6f), false)
             };
             // The continuous church ground owns the grass presentation.
             // This descriptor identifies its garden use without tiled slabs.
@@ -314,61 +319,61 @@ namespace BarPromenade
 
             var fixtures = new List<CityChurchCourtyardFixtureDescriptor>(17);
             AddFlowerBed(fixtures, "church-courtyard-bed-south", 0,
-                new Vector2(west + 9.2f, south + 22f), groundY, SmallBedSize);
+                new Vector2(west + 9.2f, gardenSouth + 22f), groundY, SmallBedSize);
             AddFlowerBed(fixtures, "church-courtyard-bed-north", 1,
-                new Vector2(west + 32.4f, south + 35f), groundY, LargeBedSize);
+                new Vector2(west + 32.4f, gardenSouth + 35f), groundY, LargeBedSize);
 
             // Two unequal planting groups frame the pockets. The nave
             // and the west entrance keep their unobstructed sight lines.
             AddShrub(fixtures, 0, 0,
-                new Vector2(west + 9f, south + 33.9f), groundY, RoundShrubSize);
+                new Vector2(west + 9f, gardenSouth + 33.9f), groundY, RoundShrubSize);
             AddShrub(fixtures, 1, 0,
-                new Vector2(west + 10.5f, south + 35.3f), groundY, RoundShrubSize);
+                new Vector2(west + 10.5f, gardenSouth + 35.3f), groundY, RoundShrubSize);
             AddShrub(fixtures, 2, 1,
-                new Vector2(west + 12f, south + 33.8f), groundY, HedgeShrubSize);
+                new Vector2(west + 12f, gardenSouth + 33.8f), groundY, HedgeShrubSize);
             AddShrub(fixtures, 3, 0,
-                new Vector2(west + 35.5f, south + 34.8f), groundY, RoundShrubSize);
+                new Vector2(west + 35.5f, gardenSouth + 34.8f), groundY, RoundShrubSize);
             AddShrub(fixtures, 4, 0,
-                new Vector2(west + 37.2f, south + 33.5f), groundY, RoundShrubSize);
+                new Vector2(west + 37.2f, gardenSouth + 33.5f), groundY, RoundShrubSize);
             AddShrub(fixtures, 5, 1,
-                new Vector2(west + 38.3f, south + 35.3f), groundY, HedgeShrubSize);
+                new Vector2(west + 38.3f, gardenSouth + 35.3f), groundY, HedgeShrubSize);
 
             AddFixture(fixtures, "church-courtyard-bench-west",
                 CityChurchCourtyardFixtureKind.Bench, 0,
-                new Vector2(west + 16.5f, south + 33.3f), groundY,
+                new Vector2(west + 16.5f, gardenSouth + 33.3f), groundY,
                 Quaternion.LookRotation(Vector3.back), BenchBlockerSize);
             AddFixture(fixtures, "church-courtyard-bench-east",
                 CityChurchCourtyardFixtureKind.Bench, 0,
-                new Vector2(west + 35.4f, south + 26f), groundY,
+                new Vector2(west + 35.4f, gardenSouth + 26f), groundY,
                 Quaternion.LookRotation(Vector3.left),
                 new Vector2(BenchBlockerSize.y, BenchBlockerSize.x));
             AddFixture(fixtures, "church-courtyard-tree-west",
                 CityChurchCourtyardFixtureKind.Tree, 1,
-                new Vector2(west + 12.2f, south + 36.1f), groundY,
+                new Vector2(west + 12.2f, gardenSouth + 36.1f), groundY,
                 Quaternion.identity, TreeBlockerSize);
             AddFixture(fixtures, "church-courtyard-tree-east",
                 CityChurchCourtyardFixtureKind.Tree, 3,
-                new Vector2(west + 37.7f, south + 37f), groundY,
+                new Vector2(west + 37.7f, gardenSouth + 37f), groundY,
                 Quaternion.identity, TreeBlockerSize);
             AddFixture(fixtures, "church-courtyard-fountain",
                 CityChurchCourtyardFixtureKind.Fountain, 0,
-                new Vector2(west + 20.5f, south + 26.5f), groundY,
+                new Vector2(west + 20.5f, gardenSouth + 26.5f), groundY,
                 Quaternion.identity, new Vector2(1.6f, 1.6f));
             AddFixture(fixtures, "church-courtyard-mary",
                 CityChurchCourtyardFixtureKind.Statue, 0,
-                new Vector2(west + 32.4f, south + 32.7f), groundY,
+                new Vector2(west + 32.4f, gardenSouth + 32.7f), groundY,
                 Quaternion.LookRotation(Vector3.back), new Vector2(0.72f, 0.72f));
             AddFixture(fixtures, "church-courtyard-potting-ledge",
                 CityChurchCourtyardFixtureKind.PottingLedge, 0,
-                new Vector2(west + 10.8f, south + 26f), groundY,
+                new Vector2(west + 10.8f, gardenSouth + 26f), groundY,
                 Quaternion.identity, new Vector2(1.15f, 0.52f));
             AddFixture(fixtures, "church-courtyard-pot-small",
                 CityChurchCourtyardFixtureKind.PotSmall, 0,
-                new Vector2(west + 11.65f, south + 26.25f), groundY,
+                new Vector2(west + 11.65f, gardenSouth + 26.25f), groundY,
                 Quaternion.identity, new Vector2(0.24f, 0.24f));
             AddFixture(fixtures, "church-courtyard-pot-large",
                 CityChurchCourtyardFixtureKind.PotLarge, 0,
-                new Vector2(west + 11.85f, south + 26.8f), groundY,
+                new Vector2(west + 11.85f, gardenSouth + 26.8f), groundY,
                 Quaternion.identity, new Vector2(0.46f, 0.46f));
 
             ChurchGardenBorderPlan.Append(church, fixtures);
@@ -380,7 +385,8 @@ namespace BarPromenade
                 garden,
                 passage,
                 surfaces,
-                fixtures);
+                fixtures,
+                gardenOrigin);
             ValidateOrThrow(layout, church, plan);
             return plan;
         }
@@ -401,7 +407,9 @@ namespace BarPromenade
                     church == null ? nameof(church) : nameof(plan));
             }
 
-            if (!Contains(plan.Grounds, plan.ForecourtBounds) ||
+            if (Vector2.Distance(plan.GardenOrigin,
+                    CityChurchGroundPlan.GetGardenOrigin(church)) > GeometryTolerance ||
+                !Contains(plan.Grounds, plan.ForecourtBounds) ||
                 !Contains(plan.Grounds, plan.GardenBounds) ||
                 plan.ForecourtBounds.Overlaps(church.ModelFootprint) ||
                 plan.GardenBounds.Overlaps(church.ModelFootprint) ||
@@ -546,11 +554,11 @@ namespace BarPromenade
                 "church-courtyard-" + name, kind, bounds, reservesPassage);
         }
 
-        private static Rect LocalRect(Rect grounds, float x0, float z0,
+        private static Rect LocalRect(Vector2 origin, float x0, float z0,
             float x1, float z1)
         {
-            return Rect.MinMaxRect(grounds.xMin + x0, grounds.yMin + z0,
-                grounds.xMin + x1, grounds.yMin + z1);
+            return Rect.MinMaxRect(origin.x + x0, origin.y + z0,
+                origin.x + x1, origin.y + z1);
         }
 
         private static void AddShrub(

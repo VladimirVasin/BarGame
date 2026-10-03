@@ -27,6 +27,14 @@ namespace BarPromenade
                 grounds.xMin + 23.3f + NorthOpeningWidth, grounds.yMax);
         }
 
+        private static Rect GetNorthOpeningBounds(CityChurchCourtyardPlan plan)
+        {
+            return Rect.MinMaxRect(plan.GardenOrigin.x + 23.3f,
+                plan.GardenOrigin.y + 31.4f,
+                plan.GardenOrigin.x + 23.3f + NorthOpeningWidth,
+                plan.Grounds.yMax);
+        }
+
         internal static void Append(
             CityChurchPlan church,
             ICollection<CityChurchCourtyardFixtureDescriptor> fixtures)
@@ -114,7 +122,8 @@ namespace BarPromenade
         {
             Vector2 delta = second - first;
             Vector2 direction = delta.normalized;
-            Vector2 position = church.Grounds.min + (first + second) * 0.5f;
+            Vector2 position = CityChurchGroundPlan.GetGardenOrigin(church) +
+                (first + second) * 0.5f;
             float length = delta.magnitude + HedgeTipOverlap;
             // Blender's segment runs along local X. The conservative AABB
             // rotates with that measured footprint, including curved turns.
@@ -142,7 +151,7 @@ namespace BarPromenade
             Vector2 localTarget,
             int variant = 0)
         {
-            Vector2 position = church.Grounds.min + localPosition;
+            Vector2 position = CityChurchGroundPlan.GetGardenOrigin(church) + localPosition;
             Vector2 direction = (localTarget - localPosition).normalized;
             fixtures.Add(new CityChurchCourtyardFixtureDescriptor(
                 "church-courtyard-uplight-" + name,
@@ -167,10 +176,10 @@ namespace BarPromenade
                     "The garden border lost its bounded planting and light composition.");
             }
 
-            Rect opening = GetNorthOpeningBounds(plan.Grounds);
-            Rect inhabitedGarden = Rect.MinMaxRect(plan.Grounds.xMin + 6.6f,
-                plan.Grounds.yMin + 21f, plan.Grounds.xMin + 41.2f,
-                plan.Grounds.yMin + 35.8f);
+            Rect opening = GetNorthOpeningBounds(plan);
+            Rect inhabitedGarden = Rect.MinMaxRect(plan.GardenOrigin.x + 6.6f,
+                plan.GardenOrigin.y + 21f, plan.GardenOrigin.x + 41.2f,
+                plan.GardenOrigin.y + 35.8f);
             int statueLights = 0;
             var hedgeRun = new List<CityChurchCourtyardFixtureDescriptor>(HedgeCount);
             for (int index = 0; index < plan.Fixtures.Count; index++)
@@ -194,7 +203,7 @@ namespace BarPromenade
                     hedgeRun.Add(fixture);
                 }
 
-                if (fixture.BlockerBounds.yMax > plan.Grounds.yMin +
+                if (fixture.BlockerBounds.yMax > plan.GardenOrigin.y +
                         CityChurchGroundPlan.FlatGardenDepth + Tolerance ||
                     (hedge && fixture.BlockerBounds.Overlaps(inhabitedGarden)))
                 {

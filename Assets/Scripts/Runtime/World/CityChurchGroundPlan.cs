@@ -17,6 +17,27 @@ namespace BarPromenade
         public const float MaximumFenceSpan = 2.6f;
         private const float Tolerance = 0.001f;
 
+        // The garden kit was authored against the church's north wall at
+        // 19.325 m from the southern boundary. Its measured composition
+        // follows that wall when a longer frontage moves the church axis.
+        private const float AuthoredChurchNorthOffset = 19.325f;
+
+        internal static Vector2 GetGardenOrigin(CityChurchPlan church)
+        {
+            return new Vector2(church.Grounds.xMin,
+                church.ModelFootprint.yMax - AuthoredChurchNorthOffset);
+        }
+
+        internal static float GetFlatGardenNorthZ(
+            CityLayout layout, string areaId)
+        {
+            CityChurchPlan church = CityChurchPlanner.Create(layout);
+            return church != null && string.Equals(church.AreaId, areaId,
+                StringComparison.Ordinal)
+                ? GetGardenOrigin(church).y + FlatGardenDepth
+                : GetGrounds(layout, areaId).yMin + FlatGardenDepth;
+        }
+
         public static Rect GetGrounds(CityLayout layout, string areaId)
         {
             if (layout == null)
@@ -56,8 +77,8 @@ namespace BarPromenade
             Vector2 worldXZ)
         {
             Rect grounds = GetGrounds(layout, surface.AreaId);
-            float blendStart = grounds.yMin + FlatGardenDepth;
-            if (grounds.height <= FlatGardenDepth ||
+            float blendStart = GetFlatGardenNorthZ(layout, surface.AreaId);
+            if (grounds.yMax <= blendStart ||
                 worldXZ.y <= blendStart)
             {
                 return surface.DatumY;

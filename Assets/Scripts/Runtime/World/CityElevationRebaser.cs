@@ -61,7 +61,8 @@ namespace BarPromenade
                     lot.FrontageDirection,
                     door,
                     roadAnchor,
-                    sidewalkAnchor));
+                    sidewalkAnchor,
+                    lot.BuildingVariant));
             }
 
             return result;
@@ -337,13 +338,12 @@ namespace BarPromenade
                     out _)
                 ? ground
                 : fallback;
+            Vector2 grid = elevation.SpatialPlan.WorldToGrid(
+                worldXZ - new Vector2(
+                    elevation.WorldOrigin.x, elevation.WorldOrigin.z));
             var cell = new Vector2Int(
-                Mathf.FloorToInt(
-                    (worldXZ.x - elevation.WorldOrigin.x) /
-                    elevation.NodeSpacing.x),
-                Mathf.FloorToInt(
-                    (worldXZ.y - elevation.WorldOrigin.z) /
-                    elevation.NodeSpacing.y));
+                Mathf.FloorToInt(grid.x),
+                Mathf.FloorToInt(grid.y));
             return CityTerrainSurfacePlan.SampleContinuousDatum(
                 elevation,
                 cell,
@@ -374,8 +374,8 @@ namespace BarPromenade
             Vector2Int node)
         {
             return new Vector2(
-                elevation.WorldOrigin.x + node.x * elevation.NodeSpacing.x,
-                elevation.WorldOrigin.z + node.y * elevation.NodeSpacing.y);
+                elevation.WorldOrigin.x, elevation.WorldOrigin.z) +
+                elevation.SpatialPlan.GetCoordinateWorldOffset(node);
         }
 
         private static Vector3 WithY(Vector3 value, float y)

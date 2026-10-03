@@ -74,7 +74,8 @@ namespace BarPromenade
                 applies = surface.Kind == CitySurfaceKind.Beach &&
                           surface.Feature == CityAreaFeatureKind.NorthWaterfront;
                 street = applies
-                    ? elevation.WorldOrigin.z + surface.Cell.y * elevation.NodeSpacing.y +
+                    ? elevation.WorldOrigin.z +
+                      elevation.SpatialPlan.GetCellBounds(surface.Cell).yMin +
                       elevation.RoadWidth * 0.5f
                     : 0f;
                 shoreZ = surface.WorldBounds.yMax;

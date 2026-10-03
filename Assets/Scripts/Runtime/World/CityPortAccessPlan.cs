@@ -184,18 +184,30 @@ namespace BarPromenade
         {
             if(!Supports(layout))return null;
             if(Plans.TryGetValue(layout,out CityPortAccessPlan result))return result;
+            return TryResolveOrigin(layout, out Vector3 origin)
+                ? GetOrCreate(layout, new CityPortPlan(origin)) : null;
+        }
+
+        internal static bool TryResolveOrigin(CityLayout layout, out Vector3 origin)
+        {
+            origin = default;
+            if (!Supports(layout)) return false;
             // Resolve the default frame directly from the authored frontage and
             // sea datum. Calling the seacoast planner here would recurse through
-            // its sand sampler. Terrain therefore never depends on build order.
+            // its sand sampler. A wider coastal row moves the waterline but must
+            // not detach the measured approach from its city street.
             foreach(CityOpenAreaAccessDescriptor access in layout.OpenAreaAccesses)
             {
                 if(access.Feature!=CityAreaFeatureKind.NorthWaterfront)continue;
                 foreach(CitySurfaceDescriptor surface in layout.Surfaces)
                     if(surface.Feature==CityAreaFeatureKind.NorthWaterfront && surface.Kind==CitySurfaceKind.Water)
-                        return GetOrCreate(layout,new CityPortPlan(new Vector3(
-                            access.Center.x-54f,surface.PhysicalTopY,access.Center.z+42f)));
+                    {
+                        origin = new Vector3(access.Center.x - 54f,
+                            surface.PhysicalTopY, access.Center.z + 42f);
+                        return true;
+                    }
             }
-            return null;
+            return false;
         }
 
         public float TruckRouteLength(CityPortTruckLeg leg) => truckDistances[(int)leg][truckDistances[(int)leg].Length-1];

@@ -261,11 +261,12 @@ namespace BarPromenade
                     settings,
                     origin,
                     cell);
+                Vector2 blockSize = settings.GetBlockSize(cell);
                 Rect publicBounds = Rect.MinMaxRect(
-                    center.x - (settings.BlockWidth * 0.5f),
-                    center.z - (settings.BlockDepth * 0.5f),
-                    center.x + (settings.BlockWidth * 0.5f),
-                    center.z + (settings.BlockDepth * 0.5f));
+                    center.x - (blockSize.x * 0.5f),
+                    center.z - (blockSize.y * 0.5f),
+                    center.x + (blockSize.x * 0.5f),
+                    center.z + (blockSize.y * 0.5f));
                 string id =
                     $"city-poi-{unchecked((uint)seed):x8}-" +
                     $"district-{(int)district:D2}";
@@ -290,21 +291,21 @@ namespace BarPromenade
                     }
 
                     float sideDistance = direction.x != 0
-                        ? settings.BlockWidth * 0.5f
-                        : settings.BlockDepth * 0.5f;
+                        ? blockSize.x * 0.5f
+                        : blockSize.y * 0.5f;
                     Vector3 accessCenter = center + new Vector3(
                         direction.x * sideDistance,
                         0f,
                         direction.y * sideDistance);
                     float fullOpenWidth = direction.x != 0
-                        ? settings.BlockDepth
-                        : settings.BlockWidth;
+                        ? blockSize.y
+                        : blockSize.x;
                     float approachWidth = Mathf.Min(
                         CityLayoutGenerator.DistrictPointApproachWidth,
                         fullOpenWidth);
                     float perpendicularSize = direction.x != 0
-                        ? settings.BlockWidth
-                        : settings.BlockDepth;
+                        ? blockSize.x
+                        : blockSize.y;
                     float approachDepth = Mathf.Min(
                         4f,
                         perpendicularSize);

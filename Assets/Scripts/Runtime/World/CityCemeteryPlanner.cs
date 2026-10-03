@@ -191,7 +191,10 @@ namespace BarPromenade
                 }
             }
 
-            var frame = new Frame(grounds, groundTopY, access);
+            Vector2 dressingSize = GetDressingSize(layout, grounds,
+                new Vector2Int(minimumCellX, minimumCellZ),
+                new Vector2Int(maximumCellX + 1, maximumCellZ + 1));
+            var frame = new Frame(grounds, groundTopY, access, dressingSize);
             var parts = new List<CityCemeteryPartDescriptor>(460);
             var lamps = new List<CityCemeteryLampDescriptor>(3);
 
@@ -241,6 +244,26 @@ namespace BarPromenade
                 churchPassage);
             ValidateOrThrow(layout, plan);
             return plan;
+        }
+
+        private static Vector2 GetDressingSize(
+            CityLayout layout, Rect grounds,
+            Vector2Int minimumCell, Vector2Int maximumNode)
+        {
+            if (layout.SpatialPlan.IsUniform ||
+                layout.BlueprintId != CityBlueprintCatalog.DefaultBlueprintId)
+            {
+                return grounds.size;
+            }
+
+            // Spatial replanning changes room between existing plots, not
+            // the cemetery's burial capacity. Retain its nominal cell span
+            // and the real street insets when choosing lattice density.
+            Vector2 actualSpan = layout.SpatialPlan.GetCoordinateWorldOffset(maximumNode) -
+                layout.SpatialPlan.GetCoordinateWorldOffset(minimumCell);
+            Vector2 nominalSpan = Vector2.Scale(maximumNode - minimumCell,
+                layout.NodeSpacing);
+            return Vector2.Min(grounds.size, grounds.size - actualSpan + nominalSpan);
         }
 
         public static void ValidateOrThrow(
@@ -1372,22 +1395,26 @@ namespace BarPromenade
             // Rows and columns start deep enough that the perimeter
             // tree ring (footprint half-width 1.1 m at its own inset)
             // never collides with the outermost grave envelopes.
-            for (int row = 0; ; row++)
+            float firstDepth = FenceInset + 3.4f;
+            float firstLateral = frame.LateralMin + FenceInset + 2.5f;
+            int rows = Mathf.Max(0, Mathf.FloorToInt(
+                (frame.DressingDepthExtent - FenceInset - 2.0f - firstDepth) /
+                GraveRowPitch) + 1);
+            int columns = Mathf.Max(0, Mathf.FloorToInt(
+                (frame.DressingLateralExtent - FenceInset - 1.6f -
+                    (firstLateral - frame.LateralMin)) / GraveColumnPitch) + 1);
+            float rowPitch = GraveRowPitch +
+                (frame.DepthExtent - frame.DressingDepthExtent) / Mathf.Max(1, rows - 1);
+            float columnPitch = GraveColumnPitch +
+                (frame.LateralMax - frame.LateralMin - frame.DressingLateralExtent) /
+                Mathf.Max(1, columns - 1);
+            for (int row = 0; row < rows; row++)
             {
-                float depth = FenceInset + 3.4f + row * GraveRowPitch;
-                if (depth > frame.DepthExtent - FenceInset - 2.0f)
-                {
-                    break;
-                }
+                float depth = firstDepth + row * rowPitch;
 
-                for (int column = 0; ; column++)
+                for (int column = 0; column < columns; column++)
                 {
-                    float lateral = frame.LateralMin + FenceInset +
-                                    2.5f + column * GraveColumnPitch;
-                    if (lateral > frame.LateralMax - FenceInset - 1.6f)
-                    {
-                        break;
-                    }
+                    float lateral = firstLateral + column * columnPitch;
 
                     uint detailHash = StableHash(
                         seed, column, row, GraveDetailSalt);
@@ -1908,11 +1935,13 @@ namespace BarPromenade
                 float lateral = side == 0
                     ? frame.LateralMin + 1.3f
                     : frame.LateralMax - 1.3f;
-                int step = 0;
-                for (float depth = 4.5f;
-                     depth < frame.DepthExtent - 4.5f;
-                     depth += 9f, step++)
+                int steps = Mathf.Max(0,
+                    Mathf.CeilToInt((frame.DressingDepthExtent - 9f) / 9f));
+                for (int step = 0; step < steps; step++)
                 {
+                    float depth = 4.5f + step * 9f +
+                        (frame.DepthExtent - frame.DressingDepthExtent) *
+                        step / Mathf.Max(1, steps - 1);
                     TryAddTree(
                         parts, frame, seed, alleys, reservedFootprints,
                         plots, access, ref treeIndex, side, step,
@@ -1925,11 +1954,13 @@ namespace BarPromenade
                 float depth = side == 2
                     ? 2.0f
                     : frame.DepthExtent - 2.0f;
-                int step = 0;
-                for (float lateral = frame.LateralMin + 4.5f;
-                     lateral < frame.LateralMax - 4.5f;
-                     lateral += 9f, step++)
+                int steps = Mathf.Max(0,
+                    Mathf.CeilToInt((frame.DressingLateralExtent - 9f) / 9f));
+                for (int step = 0; step < steps; step++)
                 {
+                    float lateral = frame.LateralMin + 4.5f + step * 9f +
+                        (frame.LateralMax - frame.LateralMin - frame.DressingLateralExtent) *
+                        step / Mathf.Max(1, steps - 1);
                     // The gate span on the street side stays open.
                     if (side == 2 &&
                         lateral > frame.GateLateral - 4.2f &&
@@ -2419,7 +2450,8 @@ namespace BarPromenade
             public Frame(
                 Rect grounds,
                 float groundTopY,
-                CityOpenAreaAccessDescriptor access)
+                CityOpenAreaAccessDescriptor access,
+                Vector2 dressingSize)
             {
                 Grounds = grounds;
                 GroundTopY = groundTopY;
@@ -2432,6 +2464,8 @@ namespace BarPromenade
                     : Mathf.Sign(inward.z);
                 if (AlongX)
                 {
+                    DressingDepthExtent = dressingSize.x;
+                    DressingLateralExtent = dressingSize.y;
                     GateEdge = InwardSign > 0f
                         ? grounds.xMin
                         : grounds.xMax;
@@ -2443,6 +2477,8 @@ namespace BarPromenade
                 }
                 else
                 {
+                    DressingDepthExtent = dressingSize.y;
+                    DressingLateralExtent = dressingSize.x;
                     GateEdge = InwardSign > 0f
                         ? grounds.yMin
                         : grounds.yMax;
@@ -2465,6 +2501,8 @@ namespace BarPromenade
             public float InwardSign { get; }
             public float GateEdge { get; }
             public float DepthExtent { get; }
+            public float DressingDepthExtent { get; }
+            public float DressingLateralExtent { get; }
             public float LateralMin { get; }
             public float LateralMax { get; }
             public float GateLateral { get; }

@@ -47,7 +47,8 @@ namespace BarPromenade
             // A short reclaimed quay reaches out from the toe of the beach.
             // Its rear promenade meets the low shore instead of burying the
             // fixed-height warehouse in the beach's rising street-side slope.
-            return new CityPortPlan(new Vector3(x, frame.SeaTopY, frame.WaterlineZ + 20f));
+            return new CityPortPlan(frame.PortOrigin ??
+                new Vector3(x, frame.SeaTopY, frame.WaterlineZ + 20f));
         }
 
         public Vector3 World(Vector3 local) => Origin + local;

@@ -22,7 +22,7 @@ namespace BarPromenade.Editor
             "Assets/Resources/City/Buildings";
 
         private const string CatalogRootName = "ROOT_CityBuildings3D";
-        private const string ExpectedGeneratorVersion = "2.1.0";
+        private const string ExpectedGeneratorVersion = "2.2.0";
         private const float ContractTolerance = 0.003f;
         private const float BoundsTolerance = 0.02f;
 
@@ -96,6 +96,14 @@ namespace BarPromenade.Editor
                 case "nightlife-prototype-01":
                     return PrefabFolder +
                         "/NightlifePrototype01.prefab";
+                case "old-town-prototype-02": return PrefabFolder + "/OldTownPrototype02.prefab";
+                case "residential-prototype-02": return PrefabFolder + "/ResidentialPrototype02.prefab";
+                case "industrial-prototype-02": return PrefabFolder + "/IndustrialPrototype02.prefab";
+                case "nightlife-prototype-02": return PrefabFolder + "/NightlifePrototype02.prefab";
+                case "old-town-prototype-03": return PrefabFolder + "/OldTownPrototype03.prefab";
+                case "residential-prototype-03": return PrefabFolder + "/ResidentialPrototype03.prefab";
+                case "industrial-prototype-03": return PrefabFolder + "/IndustrialPrototype03.prefab";
+                case "nightlife-prototype-03": return PrefabFolder + "/NightlifePrototype03.prefab";
                 default:
                     throw new ArgumentOutOfRangeException(
                         nameof(stableId),
@@ -324,7 +332,9 @@ namespace BarPromenade.Editor
                     prototype.triangle_count,
                     manifest.generator_version,
                     manifest.design_id,
-                    manifest.build_signature);
+                    manifest.build_signature,
+                    prototype.collision_bounds.Select(solid => ConvertSourceBoundsToUnity(
+                        solid.bounds_min_source, solid.bounds_max_source)).ToArray());
                 registry.ValidateOrThrow();
 
                 string prefabPath = GetPrefabPath(prototype.stable_id);
@@ -702,6 +712,21 @@ namespace BarPromenade.Editor
             ValidateFrontAnchor(prototype);
             ValidateAttachments(prototype);
             ValidateParts(prototype);
+            IReadOnlyList<Bounds> collision = CityBuildingAssetProvider.GetExpectedCollisionBounds(
+                ParseDistrict(prototype.district), expectedIndex / 4);
+            if (prototype.collision_bounds == null || prototype.collision_bounds.Length != collision.Count)
+            {
+                throw new InvalidOperationException($"City building '{prototype.stable_id}' collision metadata is incomplete.");
+            }
+
+            for (int index = 0; index < collision.Count; index++)
+            {
+                BuildingCollisionBounds solid = prototype.collision_bounds[index];
+                Bounds actual = ConvertSourceBoundsToUnity(solid.bounds_min_source, solid.bounds_max_source);
+                AssertBoundsNear(actual, collision[index], prototype.stable_id + " collision solid");
+                AssertBoundsNear(actual, BoundsFromArrays(solid.bounds_min_unity, solid.bounds_max_unity),
+                    prototype.stable_id + " collision axes");
+            }
         }
 
         private static void ValidatePrototypeBounds(
@@ -1779,6 +1804,16 @@ namespace BarPromenade.Editor
             public BuildingWindowSlot[] window_slots;
             public BuildingBalconySlot[] balcony_slots;
             public BuildingPart[] parts;
+            public BuildingCollisionBounds[] collision_bounds;
+        }
+
+        [Serializable]
+        private sealed class BuildingCollisionBounds
+        {
+            public float[] bounds_min_source;
+            public float[] bounds_max_source;
+            public float[] bounds_min_unity;
+            public float[] bounds_max_unity;
         }
 
         [Serializable]

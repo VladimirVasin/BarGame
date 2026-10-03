@@ -147,13 +147,9 @@ namespace BarPromenade
                         out _)
                     ? datum
                     : site.GroundY - CityElevationPlan.GroundTopOffset;
-                var cell = new Vector2Int(
-                    Mathf.FloorToInt(
-                        (probe.x - elevation.WorldOrigin.x) /
-                        elevation.NodeSpacing.x),
-                    Mathf.FloorToInt(
-                        (probe.y - elevation.WorldOrigin.z) /
-                        elevation.NodeSpacing.y));
+                Vector2 coordinate = elevation.SpatialPlan.WorldToGrid(
+                    probe - new Vector2(elevation.WorldOrigin.x, elevation.WorldOrigin.z));
+                var cell = new Vector2Int(Mathf.FloorToInt(coordinate.x), Mathf.FloorToInt(coordinate.y));
                 heights[index] =
                     CityTerrainSurfacePlan.SampleContinuousDatum(
                         elevation,

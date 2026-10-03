@@ -44,18 +44,48 @@ namespace BarPromenade.Tests.EditMode
                 CityDistrictKind.Nightlife,
                 new Vector3(12.5f, 48f, 12f),
                 "Assets/Resources/City/Buildings/" +
-                "NightlifePrototype01.prefab")
+                "NightlifePrototype01.prefab"),
+            new ExpectedPrototype("old-town-prototype-02", CityDistrictKind.OldTown,
+                new Vector3(22f, 42f, 11.5f), "Assets/Resources/City/Buildings/OldTownPrototype02.prefab"),
+            new ExpectedPrototype("residential-prototype-02", CityDistrictKind.Residential,
+                new Vector3(22f, 40f, 11.5f), "Assets/Resources/City/Buildings/ResidentialPrototype02.prefab"),
+            new ExpectedPrototype("industrial-prototype-02", CityDistrictKind.Industrial,
+                new Vector3(22f, 36f, 11.5f), "Assets/Resources/City/Buildings/IndustrialPrototype02.prefab"),
+            new ExpectedPrototype("nightlife-prototype-02", CityDistrictKind.Nightlife,
+                new Vector3(17f, 48f, 9.5f), "Assets/Resources/City/Buildings/NightlifePrototype02.prefab"),
+            new ExpectedPrototype("old-town-prototype-03", CityDistrictKind.OldTown,
+                new Vector3(15f, 42f, 14f), "Assets/Resources/City/Buildings/OldTownPrototype03.prefab"),
+            new ExpectedPrototype("residential-prototype-03", CityDistrictKind.Residential,
+                new Vector3(15f, 40f, 14f), "Assets/Resources/City/Buildings/ResidentialPrototype03.prefab"),
+            new ExpectedPrototype("industrial-prototype-03", CityDistrictKind.Industrial,
+                new Vector3(15f, 36f, 14f), "Assets/Resources/City/Buildings/IndustrialPrototype03.prefab"),
+            new ExpectedPrototype("nightlife-prototype-03", CityDistrictKind.Nightlife,
+                new Vector3(15f, 48f, 14f), "Assets/Resources/City/Buildings/NightlifePrototype03.prefab")
         };
 
+        [OneTimeSetUp]
+        public void BindAuthoredCatalog()
+        {
+            CityBuildingAssetProvider provider = CityBuildingAssetProvider.Load();
+            if (provider != null && provider.HasCompletePrefabs)
+            {
+                return;
+            }
+
+            Type setup = Type.GetType("BarPromenade.Editor.CityBuildingAssetSetup, BarPromenade.Editor", true);
+            setup.GetMethod("BuildOrThrow", System.Reflection.BindingFlags.Public |
+                System.Reflection.BindingFlags.Static).Invoke(null, null);
+        }
+
         [Test]
-        public void Manifest_DeclaresFourStableGroundedPrototypeAssemblies()
+        public void Manifest_DeclaresDistrictStraightLongAndCornerAssemblies()
         {
             ContractManifest manifest = LoadManifest();
 
             Assert.That(
                 manifest.design_id,
                 Is.EqualTo(CityBuildingAssetProvider.ExpectedDesignId));
-            Assert.That(manifest.generator_version, Is.EqualTo("2.1.0"));
+            Assert.That(manifest.generator_version, Is.EqualTo("2.2.0"));
             Assert.That(manifest.fbx_asset_path, Is.EqualTo(ModelPath));
             Assert.That(manifest.unit_factor, Is.EqualTo(1f));
             Assert.That(manifest.unity_axes, Is.Not.Null);
@@ -78,7 +108,7 @@ namespace BarPromenade.Tests.EditMode
                 Is.EqualTo(
                     CityBuildingAssetProvider.ExpectedPrototypeCount *
                     CityBuildingAssetRegistry.ExpectedRoleCount));
-            Assert.That(manifest.prototypes, Has.Length.EqualTo(4));
+            Assert.That(manifest.prototypes, Has.Length.EqualTo(12));
             Assert.That(IsSha256(manifest.build_signature), Is.True);
             Assert.That(manifest.root_contract, Is.Not.Null);
             Assert.That(
@@ -189,6 +219,24 @@ namespace BarPromenade.Tests.EditMode
                 AssertFrontAnchor(prototype, unity);
                 AssertAttachmentMetadata(prototype);
                 AssertStableParts(prototype);
+                IReadOnlyList<Bounds> solids = CityBuildingAssetProvider.GetExpectedCollisionBounds(
+                    expected.District, index / 4);
+                Assert.That(prototype.collision_bounds, Has.Length.EqualTo(solids.Count));
+                for (int solid = 0; solid < solids.Count; solid++)
+                {
+                    ContractCollisionBounds bounds = prototype.collision_bounds[solid];
+                    AssertBoundsNear(ConvertSourceBoundsToUnity(bounds.bounds_min_source,
+                        bounds.bounds_max_source), solids[solid]);
+                    AssertBoundsNear(BoundsFromArrays(bounds.bounds_min_unity,
+                        bounds.bounds_max_unity), solids[solid]);
+                }
+
+                if (index / 4 == 2)
+                {
+                    Assert.That(solids.Count, Is.EqualTo(2));
+                    Assert.That(solids.Any(solid => solid.Contains(new Vector3(3f, 1f, -3.5f))), Is.False,
+                        "The rear-right corner is an open courtyard, not one envelope collider.");
+                }
 
                 Assert.That(
                     prototype.parts.Sum(part => part.triangles),
@@ -244,7 +292,7 @@ namespace BarPromenade.Tests.EditMode
             Transform catalog = FindUnique(
                 model.transform,
                 "ROOT_CityBuildings3D");
-            Assert.That(catalog.childCount, Is.EqualTo(4));
+            Assert.That(catalog.childCount, Is.EqualTo(12));
 
             for (int index = 0; index < Expected.Length; index++)
             {
@@ -270,7 +318,7 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
-        public void Provider_BindsFourPassiveWrappersAndCurrentSignature()
+        public void Provider_BindsDistrictMassingVariantsAndCurrentSignature()
         {
             ContractManifest manifest = LoadManifest();
             CityBuildingAssetProvider provider =
@@ -281,7 +329,7 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 provider.BuildSignature,
                 Is.EqualTo(manifest.build_signature));
-            Assert.That(provider.Entries.Count, Is.EqualTo(4));
+            Assert.That(provider.Entries.Count, Is.EqualTo(12));
             Assert.DoesNotThrow(provider.ValidateOrThrow);
 
             GameObject sourceModel =
@@ -302,12 +350,23 @@ namespace BarPromenade.Tests.EditMode
                     AssetDatabase.GetAssetPath(entry.Prefab),
                     Is.EqualTo(expected.PrefabPath));
                 Assert.That(
-                    provider.GetPrefabOrThrow(expected.District),
+                    provider.GetPrefabOrThrow(expected.District, index / 4),
                     Is.SameAs(entry.Prefab));
+                if (index < 4)
+                {
+                    Assert.That(provider.GetPrefabOrThrow(expected.District), Is.SameAs(entry.Prefab));
+                }
 
                 CityBuildingAssetRegistry registry =
                     entry.Prefab.GetComponent<CityBuildingAssetRegistry>();
                 Assert.That(registry, Is.Not.Null);
+                Assert.That(registry.ColliderBounds.Count, Is.EqualTo(prototype.collision_bounds.Length));
+                for (int solid = 0; solid < registry.ColliderBounds.Count; solid++)
+                {
+                    AssertBoundsNear(registry.ColliderBounds[solid],
+                        BoundsFromArrays(prototype.collision_bounds[solid].bounds_min_unity,
+                            prototype.collision_bounds[solid].bounds_max_unity));
+                }
                 Assert.That(registry.StableId, Is.EqualTo(expected.StableId));
                 Assert.That(registry.District, Is.EqualTo(expected.District));
                 Assert.That(registry.Grammar, Is.EqualTo(prototype.grammar));
@@ -904,6 +963,16 @@ namespace BarPromenade.Tests.EditMode
             public ContractWindowSlot[] window_slots;
             public ContractBalconySlot[] balcony_slots;
             public ContractPart[] parts;
+            public ContractCollisionBounds[] collision_bounds;
+        }
+
+        [Serializable]
+        private sealed class ContractCollisionBounds
+        {
+            public float[] bounds_min_source;
+            public float[] bounds_max_source;
+            public float[] bounds_min_unity;
+            public float[] bounds_max_unity;
         }
 
         [Serializable]

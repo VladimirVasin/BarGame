@@ -172,7 +172,7 @@ namespace BarPromenade
                 throw new ArgumentNullException(nameof(layout));
             }
 
-            return Create(layout, ResolveResidentialRegistry());
+            return Create(layout, ResolveResidentialRegistry(), true);
         }
 
         /// <summary>
@@ -192,15 +192,16 @@ namespace BarPromenade
 
             return CreateCandidates(
                 layout,
-                ResolveResidentialRegistry());
+                ResolveResidentialRegistry(), true);
         }
 
         internal static CityBalconySmokerPlan Create(
             CityLayout layout,
-            CityBuildingAssetRegistry residentialRegistry)
+            CityBuildingAssetRegistry residentialRegistry,
+            bool useLotVariants = false)
         {
             IReadOnlyList<CityBalconySmokerDescriptor> candidates =
-                CreateCandidates(layout, residentialRegistry);
+                CreateCandidates(layout, residentialRegistry, useLotVariants);
             int targetCount = ResolveTargetCount(
                 layout.Seed,
                 candidates.Count);
@@ -220,7 +221,8 @@ namespace BarPromenade
         internal static IReadOnlyList<CityBalconySmokerDescriptor>
             CreateCandidates(
                 CityLayout layout,
-                CityBuildingAssetRegistry residentialRegistry)
+                CityBuildingAssetRegistry residentialRegistry,
+                bool useLotVariants = false)
         {
             if (layout == null)
             {
@@ -255,6 +257,10 @@ namespace BarPromenade
             }
 
             var candidates = new List<Candidate>();
+            var variants = new Dictionary<int, CityBuildingAssetRegistry>
+            {
+                { 0, residentialRegistry }
+            };
             for (int index = 0;
                  index < layout.BuildingLots.Count;
                  index++)
@@ -267,11 +273,23 @@ namespace BarPromenade
                     continue;
                 }
 
+                CityBuildingAssetRegistry registry = residentialRegistry;
+                IReadOnlyList<CityBuildingBalconySlot> lotSlots = slots;
+                if (useLotVariants && lot.BuildingVariant != 0)
+                {
+                    if (!variants.TryGetValue(lot.BuildingVariant, out registry))
+                    {
+                        registry = ResolveResidentialRegistry(lot.BuildingVariant);
+                        variants.Add(lot.BuildingVariant, registry);
+                    }
+                    lotSlots = ResolveReadableBalconySlots(registry.BalconySlots);
+                    if (lotSlots.Count == 0) continue;
+                }
                 candidates.Add(CreateCandidate(
                     layout.Seed,
                     lot,
-                    residentialRegistry,
-                    slots,
+                    registry,
+                    lotSlots,
                     archetypeDesignIds));
             }
 
@@ -421,12 +439,12 @@ namespace BarPromenade
         }
 
         private static CityBuildingAssetRegistry
-            ResolveResidentialRegistry()
+            ResolveResidentialRegistry(int variant = 0)
         {
             CityBuildingAssetProvider provider =
                 CityBuildingAssetProvider.LoadOrThrow();
             GameObject prefab = provider.GetPrefabOrThrow(
-                CityDistrictKind.Residential);
+                CityDistrictKind.Residential, variant);
             CityBuildingAssetRegistry registry =
                 prefab.GetComponent<CityBuildingAssetRegistry>();
             if (registry == null)

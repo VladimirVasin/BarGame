@@ -40,6 +40,9 @@ namespace BarPromenade
         public const float ExteriorBoundsPadding = 0.05f;
         public const float BoundsTolerance = 0.002f;
 
+        public static CityBuildingPrototypePose ResolveExpectedCityPose(BuildingLot lot) =>
+            ResolveCityPose(lot, ResolveExpectedFrontAnchor(lot));
+
         public static CityBuildingPrototypePose ResolveCityPose(
             BuildingLot lot,
             CityBuildingAssetRegistry registry)
@@ -128,8 +131,10 @@ namespace BarPromenade
 
             CityBuildingPrototypePose pose = ResolveCityPose(
                 lot,
-                ResolveExpectedFrontAnchor(lot.District));
-            Vector3 localAnchor = ResolveRoofMount(lot.District, kind);
+                ResolveExpectedFrontAnchor(lot));
+            Vector3 localAnchor = lot.BuildingVariant == 0
+                ? ResolveRoofMount(lot.District, kind)
+                : ResolveVariantRoofMount(lot);
             return pose.TransformPoint(localAnchor) +
                    Vector3.up * verticalClearance;
         }
@@ -147,7 +152,17 @@ namespace BarPromenade
 
             CityBuildingPrototypePose pose = ResolveCityPose(
                 lot,
-                ResolveExpectedFrontAnchor(lot.District));
+                ResolveExpectedFrontAnchor(lot));
+            if (lot.BuildingVariant > 0)
+            {
+                Vector3 envelope = CityBuildingAssetProvider.GetExpectedEnvelope(
+                    lot.District, lot.BuildingVariant);
+                float facadeDepth = envelope.z * 0.5f -
+                    (lot.District == CityDistrictKind.Residential ? 1.2f : 0f);
+                return pose.TransformPoint(new Vector3(
+                    (lateralSelector & 1u) == 0u ? -envelope.x * 0.22f : envelope.x * 0.22f,
+                    4.2f, facadeDepth + 0.04f));
+            }
             Vector3 localMount;
             switch (lot.District)
             {
@@ -274,12 +289,22 @@ namespace BarPromenade
                 : Vector3.back;
         }
 
-        private static Vector3 ResolveExpectedFrontAnchor(
-            CityDistrictKind district)
+        private static Vector3 ResolveExpectedFrontAnchor(BuildingLot lot)
         {
             Vector3 envelope = CityBuildingAssetProvider
-                .GetExpectedEnvelope(district);
+                .GetExpectedEnvelope(lot.District, lot.BuildingVariant);
             return new Vector3(0f, 0f, envelope.z * 0.5f);
+        }
+
+        private static Vector3 ResolveVariantRoofMount(BuildingLot lot)
+        {
+            Vector3 envelope = CityBuildingAssetProvider.GetExpectedEnvelope(
+                lot.District, lot.BuildingVariant);
+            // Both the long bar and the L have a solid front wing. Keep
+            // existing roof furniture on that wing, clear of the rear court.
+            return new Vector3(-envelope.x * 0.15f,
+                envelope.y - (lot.District == CityDistrictKind.OldTown ? 2.2f : 0.15f),
+                envelope.z * 0.18f);
         }
 
         private static Vector3 ResolveRoofMount(

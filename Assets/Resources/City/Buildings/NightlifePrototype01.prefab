@@ -401,6 +401,13 @@ MonoBehaviour:
   roofAttachmentBounds:
     m_Center: {x: 0, y: 42.5, z: -0.5}
     m_Extent: {x: 5, y: 5.5, z: 4.6}
+  colliderBounds:
+  - m_Center: {x: 0, y: 5, z: 0}
+    m_Extent: {x: 6.25, y: 5, z: 6}
+  - m_Center: {x: -0.5999999, y: 21, z: -0.39999986}
+    m_Extent: {x: 5.25, y: 16, z: 5.3}
+  - m_Center: {x: 1.1, y: 39, z: -1}
+    m_Extent: {x: 3.5500002, y: 2, z: 4}
   facadeAttachments:
   - side: Front
     localBounds:
@@ -857,9 +864,9 @@ MonoBehaviour:
   height: 48
   unitFactor: 1
   sourceTriangleCount: 858
-  sourceGeneratorVersion: 2.1.0
+  sourceGeneratorVersion: 2.2.0
   designId: city_buildings_prototypes_v2
-  buildSignature: 93aefc4a5c910897dafaa45e7b4ab259232369284cc91b2457fca07443cadff5
+  buildSignature: 8fe130a4bf75de6d785c6165aaa41b16aea3aaafd01a1a59d82ea0821822fc8b
 --- !u!1 &3903671697525545957
 GameObject:
   m_ObjectHideFlags: 0

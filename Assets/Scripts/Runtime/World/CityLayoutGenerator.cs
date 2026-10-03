@@ -81,6 +81,7 @@ namespace BarPromenade
             snapshot.BlocksX = blueprint.CellBounds.xMax;
             snapshot.BlocksZ = blueprint.CellBounds.yMax;
             snapshot.Validate();
+            snapshot.SpatialPlan = CitySpatialPlan.Create(blueprint, snapshot);
             if (enforceAreaRequirements)
             {
                 ValidateAreaRequirements(blueprint, snapshot);
@@ -93,6 +94,9 @@ namespace BarPromenade
                 seed,
                 nodes,
                 allEdges);
+            roads = CityStreetHierarchyPlanner.Replan(snapshot, seed,
+                nodes, allEdges, roads,
+                CreateRequiredEdges(snapshot, new HashSet<RoadEdge>(allEdges)));
             EnsureEveryBlockHasFrontage(snapshot, seed, roads);
             EnsureYardAccessEdges(snapshot, roads);
             EnsureDefaultOuterBoundaryStreets(
@@ -102,15 +106,11 @@ namespace BarPromenade
             EnsureAuthoredStreets(snapshot, allEdges, roads);
             roads.Sort(RoadEdge.Compare);
 
-            Vector3 origin = anchorAtBlueprintCenter
-                ? new Vector3(
-                    -blueprint.CenterNode.x * snapshot.NodeSpacing.x,
-                    0f,
-                    -blueprint.CenterNode.y * snapshot.NodeSpacing.y)
-                : new Vector3(
-                    -(snapshot.BlocksX * snapshot.NodeSpacing.x) * 0.5f,
-                    0f,
-                    -(snapshot.BlocksZ * snapshot.NodeSpacing.y) * 0.5f);
+            Vector2 originOffset = anchorAtBlueprintCenter
+                ? -snapshot.GetCoordinateOffset(blueprint.CenterNode)
+                : -snapshot.GetCoordinateOffset(new Vector2(
+                    snapshot.BlocksX * 0.5f, snapshot.BlocksZ * 0.5f));
+            Vector3 origin = new Vector3(originOffset.x, 0f, originOffset.y);
             Dictionary<RoadEdge, CityPathKind> pathKinds =
                 CreatePathKinds(snapshot, roads);
             CityParkPlan park =
@@ -1016,7 +1016,10 @@ namespace BarPromenade
                         isPlayerHome,
                         isSupermarket,
                         isDistrictPointOfInterest,
-                        barActivity));
+                        barActivity,
+                        primaryLandmarkCells.TryGetValue(
+                            ResolveDistrict(settings, cell),
+                            out Vector2Int landmarkCell) && landmarkCell == cell));
                 }
             }
 
@@ -1100,9 +1103,9 @@ namespace BarPromenade
                 }
 
                 float facadeWidth = frontage.x != 0
-                    ? settings.BlockDepth -
+                    ? settings.GetBlockSize(cell).y -
                       settings.BuildingInset * 2f
-                    : settings.BlockWidth -
+                    : settings.GetBlockSize(cell).x -
                       settings.BuildingInset * 2f;
                 if (facadeWidth <
                     SupermarketEntranceGeometry.CanopyWidth + 0.20f)
@@ -1487,8 +1490,8 @@ namespace BarPromenade
                 new Vector3(frontage.x, 0f, frontage.y);
             float roadDistance =
                 frontage.x != 0
-                    ? settings.NodeSpacing.x * 0.5f
-                    : settings.NodeSpacing.y * 0.5f;
+                    ? settings.GetCellSpan(cell).x * 0.5f
+                    : settings.GetCellSpan(cell).y * 0.5f;
             return new BarCandidate(
                 lotIndex,
                 cell,
@@ -1745,7 +1748,8 @@ namespace BarPromenade
             bool isPlayerHome,
             bool isSupermarket,
             bool isDistrictPointOfInterest,
-            BarActivityKind barActivity)
+            BarActivityKind barActivity,
+            bool isPrimaryLandmark)
         {
             var random = new DeterministicRandom(
                 StableHash(seed, cell.x, cell.y, 0x4C4F5453u));
@@ -1755,10 +1759,24 @@ namespace BarPromenade
                 : isDistrictPointOfInterest
                     ? CityLandUseKind.DistrictPointOfInterest
                     : CityLandUseKind.Building;
-            float maximumWidth = settings.BlockWidth - (settings.BuildingInset * 2f);
-            float maximumDepth = settings.BlockDepth - (settings.BuildingInset * 2f);
+            Vector2 blockSize = settings.GetBlockSize(cell);
+            Vector2 cellSpan = settings.GetCellSpan(cell);
+            float maximumWidth = blockSize.x - settings.BuildingInset * 2f;
+            float maximumDepth = blockSize.y - settings.BuildingInset * 2f;
+            bool authoredOrdinary = landUse == CityLandUseKind.Building &&
+                !isBar && !isPlayerHome && !isSupermarket &&
+                settings.SpatialPlan != null && !settings.SpatialPlan.IsUniform;
+            bool isAuthoredPrecinct = (cell.x == 10 && cell.y == 5) ||
+                (cell.x == 11 && (cell.y == 3 || cell.y == 4 || cell.y == 5));
+            int buildingVariant = authoredOrdinary && !isPrimaryLandmark && !isAuthoredPrecinct
+                ? ResolveBuildingVariant(seed, cell, frontage, district,
+                    new Vector2(maximumWidth, maximumDepth))
+                : 0;
+            Vector3 envelope = authoredOrdinary
+                ? CityBuildingAssetProvider.GetExpectedEnvelope(district, buildingVariant)
+                : Vector3.zero;
             Vector2 size = landUse != CityLandUseKind.Building
-                ? new Vector2(settings.BlockWidth, settings.BlockDepth)
+                ? blockSize
                 : isPlayerHome
                     ? frontage.x != 0
                         ? new Vector2(12f, 13f)
@@ -1767,6 +1785,10 @@ namespace BarPromenade
                     ? new Vector2(
                         SupermarketEntranceGeometry.ExteriorWidth,
                         SupermarketEntranceGeometry.ExteriorDepth)
+                : authoredOrdinary
+                    ? frontage.x != 0
+                        ? new Vector2(envelope.z, envelope.x)
+                        : new Vector2(envelope.x, envelope.z)
                 : CreateBuildingSize(
                     district,
                     maximumWidth,
@@ -1784,6 +1806,8 @@ namespace BarPromenade
                         settings.MaximumBuildingHeight,
                         district,
                         ref random)
+                    : authoredOrdinary
+                        ? envelope.y
                     : CreateBuildingHeight(
                         settings.MinimumOrdinaryBuildingHeight,
                         settings.MaximumOrdinaryBuildingHeight,
@@ -1792,14 +1816,25 @@ namespace BarPromenade
             Vector3 center = GetLotCenter(settings, origin, cell);
 
             Vector3 direction = new Vector3(frontage.x, 0f, frontage.y);
+            // The street wall belongs to the public frontage; excess land
+            // stays behind the building as a yard instead of a moat on all
+            // four sides. Residential setbacks deliberately remain deeper.
+            if (authoredOrdinary && frontage != Vector2Int.zero)
+            {
+                float halfSpan = frontage.x != 0 ? cellSpan.x * 0.5f : cellSpan.y * 0.5f;
+                float halfBuilding = frontage.x != 0 ? size.x * 0.5f : size.y * 0.5f;
+                float setback = district == CityDistrictKind.Residential ? 2.8f : 1.5f;
+                float shift = Mathf.Max(0f, halfSpan - settings.RoadWidth * 0.5f - halfBuilding - setback);
+                center += direction * shift;
+            }
             float buildingHalfDistance =
                 frontage.x != 0 ? size.x * 0.5f : size.y * 0.5f;
             float roadDistance =
                 frontage.x != 0
-                    ? settings.NodeSpacing.x * 0.5f
-                    : settings.NodeSpacing.y * 0.5f;
+                    ? cellSpan.x * 0.5f
+                    : cellSpan.y * 0.5f;
             Vector3 doorPosition = center + (direction * buildingHalfDistance);
-            Vector3 returnPosition = center + (direction * roadDistance);
+            Vector3 returnPosition = GetLotCenter(settings, origin, cell) + (direction * roadDistance);
             float sidewalkCenterOffset =
                 (settings.RoadWidth * 0.5f) -
                 (CityStreetSurfacePlanner.SidewalkWidth * 0.5f);
@@ -1833,7 +1868,29 @@ namespace BarPromenade
                 frontage,
                 doorPosition,
                 returnPosition,
-                sidewalkArrivalPosition);
+                sidewalkArrivalPosition,
+                buildingVariant);
+        }
+
+        private static int ResolveBuildingVariant(int seed, Vector2Int cell,
+            Vector2Int frontage, CityDistrictKind district, Vector2 available)
+        {
+            uint rank = StableHash(seed, cell.x, cell.y, 0x4D415353u);
+            // Longer frontage is preferred on the expanded outer blocks;
+            // corner bodies introduce real rear pockets on the smaller ones.
+            int preferred = (rank % 3u) == 0u ? 2 : 1;
+            for (int pass = 0; pass < 2; pass++)
+            {
+                int variant = pass == 0 ? preferred : 3 - preferred;
+                Vector3 envelope = CityBuildingAssetProvider.GetExpectedEnvelope(district, variant);
+                Vector2 footprint = frontage.x != 0
+                    ? new Vector2(envelope.z, envelope.x)
+                    : new Vector2(envelope.x, envelope.z);
+                if (footprint.x <= available.x + 0.001f &&
+                    footprint.y <= available.y + 0.001f)
+                    return variant;
+            }
+            return 0;
         }
 
         /// <summary>
@@ -1938,8 +1995,8 @@ namespace BarPromenade
                 new Vector3(frontage.x, 0f, frontage.y);
             float roadDistance =
                 frontage.x != 0
-                    ? settings.NodeSpacing.x * 0.5f
-                    : settings.NodeSpacing.y * 0.5f;
+                    ? settings.GetCellSpan(cell).x * 0.5f
+                    : settings.GetCellSpan(cell).y * 0.5f;
             return center + (direction * roadDistance);
         }
 
@@ -2024,10 +2081,8 @@ namespace BarPromenade
             Vector3 origin,
             Vector2Int cell)
         {
-            return origin + new Vector3(
-                (cell.x + 0.5f) * settings.NodeSpacing.x,
-                0f,
-                (cell.y + 0.5f) * settings.NodeSpacing.y);
+            Vector2 offset = settings.GetCoordinateOffset((Vector2)cell + Vector2.one * 0.5f);
+            return origin + new Vector3(offset.x, 0f, offset.y);
         }
 
         private static Vector3 GetNodeWorldPosition(
@@ -2035,10 +2090,8 @@ namespace BarPromenade
             Vector3 origin,
             Vector2Int node)
         {
-            return origin + new Vector3(
-                node.x * settings.NodeSpacing.x,
-                0f,
-                node.y * settings.NodeSpacing.y);
+            Vector2 offset = settings.GetCoordinateOffset(node);
+            return origin + new Vector3(offset.x, 0f, offset.y);
         }
 
         internal static CityDistrictKind ResolveDistrict(
@@ -2119,9 +2172,9 @@ namespace BarPromenade
                 var cellBounds = new Bounds(
                     lot.Center,
                     new Vector3(
-                        settings.NodeSpacing.x,
+                        settings.GetCellSpan(lot.Cell).x,
                         1f,
-                        settings.NodeSpacing.y));
+                        settings.GetCellSpan(lot.Cell).y));
                 Bounds districtBounds = boundsByArea[lot.AreaId];
                 if (districtBounds.size != Vector3.zero)
                 {
@@ -2344,9 +2397,8 @@ namespace BarPromenade
                 Mathf.Max(
                     west.WalkableBounds.yMax,
                     east.WalkableBounds.yMax));
-            float bridgeX = origin.x +
-                            (river.CorridorCellX + 0.5f) *
-                            settings.NodeSpacing.x;
+            float bridgeX = origin.x + settings.GetCoordinateOffset(
+                new Vector2(river.CorridorCellX + 0.5f, 0f)).x;
             var center = new Vector3(
                 bridgeX,
                 0f,

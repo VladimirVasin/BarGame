@@ -383,9 +383,8 @@ namespace BarPromenade
         {
             if (layout.River != null && layout.River.IsEnabled)
             {
-                return layout.WorldOrigin.x +
-                       ((layout.River.Definition.CorridorCellX + 0.5f) *
-                        layout.NodeSpacing.x);
+                return layout.WorldOrigin.x + layout.SpatialPlan.GetCoordinateWorldOffset(
+                    new Vector2(layout.River.Definition.CorridorCellX + 0.5f, 0f)).x;
             }
 
             float minimum = float.MaxValue;
@@ -656,13 +655,8 @@ namespace BarPromenade
             CityLayout layout,
             Vector3 position)
         {
-            return new Vector2Int(
-                Mathf.FloorToInt(
-                    (position.x - layout.WorldOrigin.x) /
-                    layout.NodeSpacing.x),
-                Mathf.FloorToInt(
-                    (position.z - layout.WorldOrigin.z) /
-                    layout.NodeSpacing.y));
+            Vector2 coordinate = layout.GetWorldGridCoordinate(position);
+            return new Vector2Int(Mathf.FloorToInt(coordinate.x), Mathf.FloorToInt(coordinate.y));
         }
 
         private static bool IsCoverageStopTargetKind(

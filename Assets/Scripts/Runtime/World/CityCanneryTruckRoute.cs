@@ -312,9 +312,9 @@ namespace BarPromenade
                     if(direction!=state.direction && !TurnClearsFurniture(state.node,state.direction,direction,departureCorner))continue;
                     var candidate=(node:next,direction:direction);
                     float rise=Mathf.Abs(layout.ElevationPlan.GetNodeElevation(edge.A)-layout.ElevationPlan.GetNodeElevation(edge.B));
-                    float span=(edge.IsHorizontal?layout.NodeSpacing.x:layout.NodeSpacing.y)-layout.RoadWidth;
+                    float span=layout.GetRoadLength(edge)-layout.RoadWidth;
                     if(rise/Mathf.Max(span,1f)>.16f)continue;
-                    float cost=costs[state]+(edge.IsHorizontal?layout.NodeSpacing.x:layout.NodeSpacing.y)+
+                    float cost=costs[state]+layout.GetRoadLength(edge)+
                         (direction==state.direction?0f:12f)+rise*2f;
                     if(costs.TryGetValue(candidate,out float existing)&&existing<=cost)continue;
                     costs[candidate]=cost;previous[candidate]=state;pending.Add(candidate);

@@ -318,18 +318,20 @@ namespace BarPromenade
                 List<Rect> cuts = CreateLandingCuts(
                     layout.River,
                     promenade.WestBank);
-                float segmentLength = layout.NodeSpacing.y;
-                int segmentCount = Mathf.CeilToInt(
-                    physicalBounds.height / segmentLength);
+                CityRiverDefinition definition = layout.River.Definition;
+                int segmentCount = definition.CoreMaximumZExclusive -
+                                   definition.CoreMinimumZ;
                 for (int segmentIndex = 0;
                      segmentIndex < segmentCount;
                      segmentIndex++)
                 {
-                    float zMin = physicalBounds.yMin +
-                                  segmentIndex * segmentLength;
-                    float zMax = Mathf.Min(
-                        physicalBounds.yMax,
-                        zMin + segmentLength);
+                    Rect cellBounds = layout.SpatialPlan.GetCellBounds(
+                        new Vector2Int(definition.CorridorCellX,
+                            definition.CoreMinimumZ + segmentIndex));
+                    float zMin = Mathf.Max(physicalBounds.yMin,
+                        layout.WorldOrigin.z + cellBounds.yMin);
+                    float zMax = Mathf.Min(physicalBounds.yMax,
+                        layout.WorldOrigin.z + cellBounds.yMax);
                     var patches = new List<Rect>
                     {
                         Rect.MinMaxRect(

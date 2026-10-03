@@ -171,13 +171,11 @@ namespace BarPromenade
                     BeachTopAboveSeaWater;
                 float waterlineDatum = waterlineTop -
                                        CityElevationPlan.GroundTopOffset;
-                float cellMinimumZ = elevation.WorldOrigin.z +
-                                     surface.Cell.y *
-                                     elevation.NodeSpacing.y;
+                Rect cellBounds = elevation.SpatialPlan.GetCellBounds(surface.Cell);
+                float cellMinimumZ = elevation.WorldOrigin.z + cellBounds.yMin;
                 float landwardZ = cellMinimumZ +
                                   elevation.RoadWidth * 0.5f;
-                float waterlineZ = cellMinimumZ +
-                                   elevation.NodeSpacing.y;
+                float waterlineZ = elevation.WorldOrigin.z + cellBounds.yMax;
                 float amount = Mathf.InverseLerp(
                     landwardZ,
                     waterlineZ,
@@ -255,20 +253,17 @@ namespace BarPromenade
             float northWest = context.NorthWest;
             float northEast = context.NorthEast;
 
-            float cellMinimumX = elevation.WorldOrigin.x +
-                                 cell.x *
-                                 elevation.NodeSpacing.x;
-            float cellMinimumZ = elevation.WorldOrigin.z +
-                                 cell.y *
-                                 elevation.NodeSpacing.y;
+            Rect cellBounds = elevation.SpatialPlan.GetCellBounds(cell);
+            float cellMinimumX = elevation.WorldOrigin.x + cellBounds.xMin;
+            float cellMinimumZ = elevation.WorldOrigin.z + cellBounds.yMin;
             float halfRoad = elevation.RoadWidth * 0.5f;
             float xAmount = Mathf.InverseLerp(
                 cellMinimumX + halfRoad,
-                cellMinimumX + elevation.NodeSpacing.x - halfRoad,
+                elevation.WorldOrigin.x + cellBounds.xMax - halfRoad,
                 worldXZ.x);
             float zAmount = Mathf.InverseLerp(
                 cellMinimumZ + halfRoad,
-                cellMinimumZ + elevation.NodeSpacing.y - halfRoad,
+                elevation.WorldOrigin.z + cellBounds.yMax - halfRoad,
                 worldXZ.y);
             float south = Mathf.Lerp(southWest, southEast, xAmount);
             float north = Mathf.Lerp(northWest, northEast, xAmount);

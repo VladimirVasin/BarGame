@@ -2,6 +2,23 @@
 
 ## Current facts
 
+- **Accepted — 2026-10-03, city replanning:**
+  The user approved district-specific structure instead of equal square blocks.
+  Stable blueprint cells/area and entrance IDs remain; CitySpatialPlan owns
+  physical coordinates/inverse. West/north/south intervals vary `26-40 m`;
+  Protected x4..13/z3..8 anchors stay fixed; x13..17 retains eastern widths.
+  Fringe extrapolation retains nominal depth. Legacy/custom geometry stays uniform.
+  District street priorities preserve connected routes and required approaches.
+  Streets remain orthogonal; diagonal/curved streets await a road geometry
+  contract, rather than a visual offset over the same collision/routes.
+  Twelve fixed-metre typologies supply compact, long and L footprints per
+  district. BuildingLot owns the fitting variant; visual source, envelope,
+  front/roof/facade/balcony docks, collision and bounded Home view consume it.
+  No runtime stretching; L wings leave their recessed courtyard clear.
+  Protected precincts retain compact models. Heights, fog and story meaning
+  remain; all nine art checks and story §16 bind the replanned city.
+  No new story exception or in-fiction text is introduced.
+
 - **Accepted — 2026-09-29, Normal NPC faces and fisherman:**
   User: Normal/default eyes/brows/nose/mouth are PNG on shaped heads, no solid
   doubles; hair/beards/props stay 3D. Only fisherman now; other solid Normal features
@@ -1862,7 +1879,8 @@
   deterministic optional interior loops. For `default-coastal`, every edge
   where its road-grid footprint meets non-road-grid space is appended after
   the seeded graph and access-repair passes as mandatory Street. This preserves
-  the existing interior selection while the continuous river-bank roads and
+  the protected entrance graph while district street priorities shape the
+  remaining interior selection. Continuous river-bank roads and
   two road bridges join the west/east perimeters into one outer circuit.
   A blueprint's `AuthoredStreets` (`CityBlueprintBuilder.WithAuthoredStreet`,
   validated against the road grid) are appended last under the same rule;
@@ -2469,7 +2487,7 @@
   rediscovering the corridor from coordinates. `default-coastal` extends that
   contract south of the core: water and bed continue more than `48 m` behind
   the mountain, while both `3 m` promenades remain walkable from world
-  `Z=-156` to physical rock stops at `Z=-182`. The player may walk to either
+  `Z=-182` to physical rock stops at `Z=-208`. The player may walk to either
   stop but cannot enter the cave; it owns no prompt, interaction, scene or
   transition and contributes no walkable area behind the rock.
   The existing `CityMountainRiverNotchDescriptor` type name is retained for
@@ -2688,7 +2706,8 @@
   ordinary street into a dark `6 m` carriageway and two `1 m` sidewalks raised
   from the local datum's `+0.08 m` road top to `+0.14 m`; ParkPath remains
   independent. The
-  default grid step is therefore `26 m` for an `18 m` block. The pure plan also
+  nominal step is `26 m`; CitySpatialPlan supplies each physical block span.
+  The pure plan also
   owns center dashes, an `8 x 8 m` intersection core with a clear `6 x 6 m`
   carriageway apron, intersection corner pavement, radius-query rectangles and
   four-stripe zebra approaches. One shared stable selector chooses at most six
@@ -4508,86 +4527,61 @@
   retains the pitched roof slab; collision, shelter and the exterior
   silhouette contract are unchanged.
 - **Accepted — Ordinary buildings use semantic fixed-metre district prototypes:**
-  design `city_buildings_prototypes_v2` supersedes v1 as one deterministic,
-  fixed-metre Blender source with four district grammars: Old Town's
-  `FragmentedPerimeter` at `14 x 13.5 x 42 m`, Residential's
-  `SetbackCourtyard` at `11.5 x 11.5 x 40 m`, Industrial's
-  `LowWideProcess` at `14 x 13.5 x 36 m`, and Nightlife's `TallDense` at
-  `12.5 x 12 x 48 m`. Those envelopes fit the production default's minimum
-  district footprints and current district height bands without runtime
-  scale. Every prototype owns exactly seven passive semantic meshes —
-  `FacadePrimary`, `FacadeSecondary`, `Plinth`, `Roof`, `Metal`,
-  `WindowFrame` and `WindowGlass` — for `28` meshes and `3,642` triangles in
-  total, with a hard `3,500`-triangle cap per prototype. Generator `2.0.0`
-  locks that catalog under build signature
-  `7670234e09fcc68bdebc985d04b0e74810f3e0f4e2f8ad11e840b1c75650ef53`.
-  Source `+Y` is the authored frontage and imports as Unity `+Z`; the origin
-  is the footprint centre on the ground. The FBX carries no imported material,
-  collider, light, camera or animation assets.
+  `city_buildings_prototypes_v2` is one deterministic fixed-metre Blender source
+  with three typologies per district: compact, long and L. Compact grammars are
+  Old Town `FragmentedPerimeter` (`14 x 13.5 x 42 m`), Residential
+  `SetbackCourtyard` (`11.5 x 11.5 x 40 m`), Industrial `LowWideProcess`
+  (`14 x 13.5 x 36 m`), Nightlife `TallDense` (`12.5 x 12 x 48 m`). Long footprints
+  are `22 x 11.5 m`, except Nightlife `17 x 9.5 m`; L footprints `15 x 14 m`
+  preserve their district height. A plan uses only a variant fitting its lot.
+  Generator `2.2.0` publishes twelve passive roots, `84` meshes, `9,688`
+  triangles and `537` window slots; each root has seven semantic meshes
+  and a `3,500`-triangle ceiling. Source `+Y` imports as Unity `+Z`; the origin
+  is the footprint centre on the ground. No imported material, collider,
+  light, camera or animation assets belong to the FBX.
 
-  UV0 is owned by surface meaning rather than by the whole object. The two
-  facade roles use a four-column `Front`/`Rear`/`Left`/`Right` atlas with one
-  non-repeating vertical span; every authored plinth face consumes the complete
-  non-repeating `0..1` sheet; roof, metal and frame use physically scaled metric
-  projection; each glass face remains pane-local `0..1`. The deterministic
-  surface pipeline emits exactly `24` sheets — six opaque roles per district.
-  Facade and plinth sheets clamp, metric micro-materials repeat, and no window,
-  aperture, sign, text or lore is baked into an opaque texture.
+  UV0 follows surface meaning: facade roles use four Front/Rear/Left/Right
+  atlas columns with one non-repeating height span; every plinth face consumes
+  the full `0..1` sheet. Roof/metal/frame use metric repeat projection, each
+  glass face pane-local `0..1`. The `24` opaque surface sheets retain clamp
+  for facade/plinth and repeat for micro-materials. No window, aperture, sign,
+  text or lore is baked into opaque textures.
 
-  Unity wraps the four roots in passive Resources prefabs and binds them
-  through `CityBuildingAssetProvider`. Each `CityBuildingAssetRegistry`
-  preserves the fixed envelope, front anchor, roof and four facade attachment
-  bounds, plus `194` explicit window slots. `CityWorldBuilder` now selects the
-  matching wrapper for every ordinary lot, rotates authored `+Z` to the lot's
-  frontage, aligns `FrontAnchor` to `DoorPosition + 0.08 m`, and never changes
-  scale or the imported hierarchy. A shallow Unity foundation skirt closes
-  terrain variation below the Blender shell. The old mass survives only as a
-  renderer-free BoxCollider with the exact former lot/foundation envelope, so
-  navigation, sound occlusion and special buildings keep their authority.
+  CityBuildingAssetProvider wraps all roots in passive Resources prefabs.
+  CityBuildingAssetRegistry carries measured envelope/solid wing bounds,
+  front/roof/facade attachments, slots and Residential balcony docks.
+  BuildingLot selects the variant and envelope; City and Home resolve that
+  same wrapper. Authored `+Z` rotates to frontage, FrontAnchor aligns to
+  `DoorPosition + 0.08 m`, and neither scale nor imported hierarchy changes.
+  A shallow terrain skirt closes ground variation; renderer-free collision
+  matches solid masses, leaving L's recessed courtyard clear. Navigation and
+  sound still consume BuildingLot's actual occupied envelope.
 
-  The six opaque role renderers use the one packaged shared material; texture,
-  tint, smoothness, metallic and identity texture transform are supplied by
-  MPB, so no per-building material instances exist. The combined non-readable
-  `WindowGlass` mesh decodes `(slotId + 0.5) / 256` from UV2 and indexes a
-  64-entry per-building state table produced by the district window rules.
-  Each facade row receives an exact deterministic lit share with at least one
-  warm pane and, where the row has more than one pane, at least one dark pane;
-  floor and side change the phase instead of the density. Every lit state uses
-  the street lamp's `(1, 0.72, 0.42)` colour, a four-step brightness variant,
-  the shared fixture factor and PS1 vertex snap. Generator `2.0.0` gives every
-  `WindowGlass` face its own projected `0..1` UV0 while preserving UV2, so the
-  shader selects one exact quadrant of the 2x2 curtain sheet and multiplies it
-  into both albedo and emission.
+  Six opaque renderers use one shared material and MPBs for texture/tint/
+  smoothness/metallic/identity texture transform. The non-readable WindowGlass
+  mesh decodes `(slotId + 0.5) / 256` from UV2 into a 64-entry state table.
+  Rows retain at least one warm pane and, with multiple panes, one dark pane;
+  floor/side shift phase, not density. Lit panes use lamp colour
+  `(1, 0.72, 0.42)`, four-step brightness, shared fixture factor and PS1 snap.
+  Pane-local UV0 selects one curtain-sheet quadrant for albedo/emission.
 
-  Competing exterior planes are invalid data, not a render-order workaround.
-  The pure geometry audit rejects every positive-area, same-facing exterior
-  coplanar overlap. It also rejects axis-aligned exterior opaque overlap of at
-  least `0.05 m2` when the planes are less than `0.03 m` apart; authored plinth
-  and secondary-facade relief keeps `0.035–0.065 m` of margin. Only the
-  slot-identified `0.018 m` facade-to-glass and `0.012 m` frame-to-glass
-  relationships remain under that threshold, while small interlocking metal
-  contacts remain below the area floor. Synthetic positive controls pin the
-  threshold, downward-face exclusion and those two window relationships.
-  Shared internal join faces are omitted and rail, frame and trim layers are
-  separated in depth. The Unity terrain skirt keeps its `0.04 m`
-  vertical overlap but is inset `0.08 m` from every horizontal side. Roof decorations
-  use kind-specific fixed mounts derived from the Blender generator's actual
-  gables, decks and sawtooth planes. A primary landmark and its lot's ordinary
-  core always use complementary surfaces: the Old Town, Residential and
-  Industrial roof landmarks force facade cores, while Nightlife's facade cinema
-  forces its billboard core onto the roof. Facade mounts and descriptor forward
-  share the prototype's actual frontage pose, including roadless lots.
-  `BuildingLot` remains the collision and planning envelope.
+  Geometry audit rejects positive-area same-facing coplanar exterior overlap
+  and axis-aligned opaque overlap at least `0.05 m2` with relief below `0.03 m`.
+  Plinth/secondary-facade margin is `0.035-0.065 m`; only slot-identified
+  facade/glass `0.018 m`, frame/glass `0.012 m`, and small metal contacts remain
+  below it. Positive controls pin threshold/downward-face/window exclusions.
+  Internal joins are omitted; rails/frame/trim separate in depth. The terrain
+  skirt retains `0.04 m` overlap and `0.08 m` horizontal inset.
+  Decorations use mounts on the selected gables/decks/sawtooth masses.
+  Roof landmarks force facade cores; Nightlife's facade cinema keeps its core
+  on the roof. Roadless lots share the same frontage pose.
 
-  `HomeExteriorViewBuilder` maps that exact City pose into Home-local space
-  and classifies all eight padded prototype-bound corners against the
-  apartment half-space. A wholly hidden wrapper is omitted and a wholly
-  exterior wrapper is instantiated unchanged and collider-free. A crossing
-  wrapper alone keeps the previous bounds-clipped primitive silhouette: the
-  runtime never shears, scales or cuts the deliberately non-readable Blender
-  topology. The player home follows the bounded special-shell contract above;
-  the bar and supermarket follow their separate fixed-metre complete-exterior
-  contracts.
+  HomeExteriorViewBuilder maps the exact selected City pose into Home-local
+  space and classifies all eight padded corners against its half-space.
+  Hidden wrappers are omitted; whole exterior wrappers remain unchanged and
+  collider-free. Only crossing wrappers use a bounds-clipped primitive
+  silhouette; non-readable Blender topology is never sheared/scaled/cut.
+  Hero home, bar and supermarket retain separate fixed-metre contracts.
 - **Accepted — The summit opens exactly once, and the opening is a
   terrain mask:** the terminal plateau carries a `MountainRoadBrinkDescriptor`
   on its own descriptor rather than on the terminal plan, because

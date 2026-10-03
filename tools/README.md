@@ -1,9 +1,13 @@
 # Art and native tool entry points
 
-`build-city-east-{exit,guards}-3d-model.py`; exit selectors:
-`--near-only`, `--distance-only` (`city_east_distance.py`), `--dressing-only`.
-`Assets/Resources/City/EastExit`; source `ArtSource/City/EastExit`.
+`build-city-east-{exit,guards}-3d-model.py`: `--near-only`, `--distance-only`
+(`city_east_distance.py`), `--dressing-only`; `Assets/Resources/City/EastExit`,
+source `ArtSource/City/EastExit`.
 `build-city-east-ground-texture.py --verify`: grass/soil seam.
+
+`build-city-buildings-3d-model.py` v2.2.0: 12 types, 84 meshes/9,688 triangles/
+537 slots; `Assets/City/Models/CityBuildings3D.{fbx,json}`.
+`run-blender.py`/`--validate-only`; import `CityBuildingAssetSetup.BuildOrThrow`.
 
 `build-city-litter-3d-model.py`: 36 props; `--validate-only`: geometry/determinism.
 
@@ -23,11 +27,7 @@ contacts/scale/truck/`.29 m` ordinary crew clearance/UVs/determinism.
 `Receiver/CanneryReceiver{,Actions}` FBX/JSONs, wardrobe/painted-face PNGs;
 source/reviews `ArtSource/City/Cannery{Woman,Receiver}`. Five clips/shared rig,
 mesh/atlas hashes, layered clothes; woman hair/receiver glasses contacts.
-Validate each:
-
-```powershell
-python tools/run-blender.py tools/build-cannery-receiver-3d-model.py --validate-only -- --validate-only
-```
+Validate through `run-blender.py`/`--validate-only`.
 
 `build-city-port-3d-model.py`: same launcher/`--validate-only`, nine FBXs/`CityPort3D.json` in
 `Assets/Resources/City/Port`, source `ArtSource/City/Port`, grips/store/beam/
@@ -203,9 +203,8 @@ python tools/run-blender.py tools/build-player-scarf-3d-model.py --expect Assets
 python tools/run-blender.py tools/build-player-scarf-3d-model.py --validate-only -- --validate-only --no-preview
 ```
 
-Keep Unity closed during publication. The first command also renders front,
-lowered and rear views under `ArtSource/PlayerScarf`; append `-- --no-preview`
-to skip those images. The validator checks weights, exact geometry/shape
-determinism and clearance against the real production face. In Unity,
-`PlayerScarfAssetSetup.BuildOrThrow` imports and measures the two FBXs without
-generating geometry; player builds call its read-only `ValidateOrThrow` gate.
+Close Unity to publish. Command one renders front/lowered/rear views
+under `ArtSource/PlayerScarf`; `-- --no-preview` skips them. Validation checks
+weights, geometry/shapes, determinism and face clearance.
+`PlayerScarfAssetSetup.BuildOrThrow` only imports/measures FBXs;
+player builds use its read-only `ValidateOrThrow` gate.

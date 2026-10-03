@@ -42,7 +42,7 @@ Only these statuses apply. Product scope cuts are `Deferred` in
 | Nightlife arch shelter | A traversable fixed shelter: passive residents who talk among themselves, a causal barrel fire, roof-only rain cover. | `CityArchShelter{Plan,Placement,Planner,Validator,WorldBuilder,Presentation,SurfaceAppearance,Resident*,Conversation*}` | Current |
 | City ground water network | Flush municipal ironwork on `Roadside`: a gutter grate every `~52 m`, a welded standpipe every `~150 m`. | `CityDecorationPlanner`, `CityDecorationWorldBuilder` | Current |
 | District ground | District ground meshes share cell-edge seams and use each district's authored wear palette. | `CityWorldBuilder.BuildDistrictGround`, `CityExteriorAppearance.ResolveDistrictGroundTint` | Current |
-| City Blender ordinary buildings | Fixed-metre v2.1 district wrappers total `28` meshes / `4,218` triangles / `194` UV2 opening slots. | `CityBuilding*`, building generators | Current |
+| City Blender ordinary buildings | Twelve metre typologies; plan-selected models/solid footprints, 84 meshes/9,688 triangles/537 openings. | `CityBuilding*`, building generators | Current |
 | Residential balcony life | Bounded pooled smokers occupy authored Residential docks; Home reconstructs its own balcony-gated selection. | `City/Balcony/CityBalconySmoker*`, `CityPedestrianHandProps` | Current |
 | City Blender low-rise landmarks | Bar, supermarket and `player_home_exterior_v1` are complete passive semantic exteriors with inset foundations. | `CityBarFacadeWorldBuilder`, `CitySupermarketFacadeWorldBuilder` | Current |
 | Unity URP foundation | Thirteen build scenes; PC Neutral/Bloom/Vignette baseline. | `6000.6.4f1`, `17.6.0` | Current |
@@ -63,7 +63,7 @@ Only these statuses apply. Product scope cuts are `Deferred` in
 | Quest log and journal | Day one opens the mother's house; the full-screen journal lists ticked boxes over one description panel. | `Quest{Types,LogState}`, `GameDaySchedule`, `Journal{MenuModel,View}` | Current |
 | New-quest notice | Blinking corner notebook on a child of the journal, in all nine scenes; the key shows until first open. | `JournalNoticeView`, `GameSessionState.HasUnreadQuests` | Current |
 | Stairwell quest descent gate | The active day-two cat quest gates descent and guides the hero back to the landing before restoring input. | `StairwellQuestDescentBlocker`, `PlayerMotor.MoveTowardsInteractionPose` | Current |
-| City blueprint and layout model | One immutable stable-ID blueprint per session: connected cells, typed areas, one Residential bar across from home. | `CityBlueprint`, `CityBlueprintCatalog` | Current |
+| City blueprint and layout model | Stable-ID cells, variable metre spans and district street priorities; home/bar anchors fixed. | `CityBlueprint`, `CitySpatialPlan`, `CityLayoutGenerator` | Current |
 | City elevation and exterior stairs | Validated elevation plans keep external stairs and walkable ground consistent with collision. | `CityElevation{Plan,Planner,Validator,Rebaser,StairPlacement}`, `CityTerrainSurfacePlan` | Current |
 | City mountain boundary and open tunnel | `default-coastal` closes west/south around the non-traversable river cave and one gate-free `8 x 5.5 m` portal. | `CityMountainBoundary*`, `CityMountainBackdrop*` | Current |
 | Eastern mainland view | Closed post; shared descent/lamp/traffic datum, city on valley floor. One pooled mast, passive distance. | `CityEastExit*`, `CityEastRoadProfile`, `CityEastDistance*` | Current |

@@ -284,21 +284,10 @@ namespace BarPromenade.Tests.EditMode
             Debug.Log(
                 $"City departure: {path.Length:0.0} m in {elapsed:0.0} s.");
 
-            // This is the one number a player actually feels, and on a fixed
-            // seed it is a pure function of the route and the drive profile -
-            // so it is pinned rather than left to drift. It currently runs
-            // `266 m` in about `48 s`; before the departure turned off where
-            // the forecourt actually opens it was `289 m` in `53 s`, and the
-            // band below is wide enough to hold both, so this is not what
-            // guards the routing. `CityDeparture_TurnsOffWhereTheTunnelIsAnd
-            // NotPastIt` is.
-            //
-            // The band is deliberately tight enough to have caught the reason
-            // it exists: routing the departure over `CityBusPlan` instead of
-            // the layout's own edges sent the car eighty-four per cent of the
-            // way round Route 01's one-way loop, `4.8 km` and over ten
-            // minutes, and every other assertion in this file passed while it
-            // did.
+            // Duration depends on the physical route and the drive profile.
+            // Keep the departure brief enough to watch: accidentally routing
+            // it around Route 01's bus loop makes the journey take minutes.
+            // The separate portal test checks the actual turn into the tunnel.
             Assert.That(
                 elapsed,
                 Is.InRange(35f, 75f),

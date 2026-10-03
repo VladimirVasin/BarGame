@@ -358,9 +358,10 @@ namespace BarPromenade
                 return;
             }
 
-            float centerX = origin.x +
-                            (river.CorridorCellX + 0.5f) *
-                            settings.NodeSpacing.x;
+            CitySpatialPlan spatialPlan = settings.SpatialPlan ??
+                CitySpatialPlan.Uniform(settings.NodeSpacing);
+            float centerX = origin.x + spatialPlan.GetCoordinateWorldOffset(
+                new Vector2(river.CorridorCellX + 0.5f, 0f)).x;
             float halfWidth = river.ChannelWidth * 0.5f;
             Color mapColor = new Color(0.10f, 0.29f, 0.38f, 1f);
             for (int z = river.CoreMinimumZ;
@@ -373,8 +374,9 @@ namespace BarPromenade
                     continue;
                 }
 
-                float southZ = origin.z + z * settings.NodeSpacing.y;
-                float northZ = southZ + settings.NodeSpacing.y;
+                Rect cellBounds = spatialPlan.GetCellBounds(cell);
+                float southZ = origin.z + cellBounds.yMin;
+                float northZ = origin.z + cellBounds.yMax;
                 float datum = (
                     CityRiverPlanner.ResolveWaterY(river, z) +
                     CityRiverPlanner.ResolveWaterY(river, z + 1)) * 0.5f;
@@ -857,10 +859,10 @@ namespace BarPromenade
             Vector3 origin,
             Vector2Int node)
         {
-            return origin + new Vector3(
-                node.x * settings.NodeSpacing.x,
-                0f,
-                node.y * settings.NodeSpacing.y);
+            CitySpatialPlan spatialPlan = settings.SpatialPlan ??
+                CitySpatialPlan.Uniform(settings.NodeSpacing);
+            Vector2 offset = spatialPlan.GetCoordinateWorldOffset(node);
+            return origin + new Vector3(offset.x, 0f, offset.y);
         }
 
         private static Rect Encapsulate(Rect first, Rect second)

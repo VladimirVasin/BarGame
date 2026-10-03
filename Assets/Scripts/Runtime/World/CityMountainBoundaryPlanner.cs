@@ -430,14 +430,11 @@ namespace BarPromenade
             float endCoordinate = sampleXAxis ? end.x : end.y;
             float minimum = Mathf.Min(startCoordinate, endCoordinate);
             float maximum = Mathf.Max(startCoordinate, endCoordinate);
+            Rect cellBounds = layout.SpatialPlan.GetCellBounds(surface.Cell);
             float cellMinimum = sampleXAxis
-                ? layout.ElevationPlan.WorldOrigin.x +
-                  surface.Cell.x * layout.ElevationPlan.NodeSpacing.x
-                : layout.ElevationPlan.WorldOrigin.z +
-                  surface.Cell.y * layout.ElevationPlan.NodeSpacing.y;
-            float spacing = sampleXAxis
-                ? layout.ElevationPlan.NodeSpacing.x
-                : layout.ElevationPlan.NodeSpacing.y;
+                ? layout.ElevationPlan.WorldOrigin.x + cellBounds.xMin
+                : layout.ElevationPlan.WorldOrigin.z + cellBounds.yMin;
+            float spacing = sampleXAxis ? cellBounds.width : cellBounds.height;
             float halfRoad = layout.ElevationPlan.RoadWidth * 0.5f;
             List<float> coordinates =
                 CityTerrainSurfaceWorldBuilder.CreateAxisCoordinates(

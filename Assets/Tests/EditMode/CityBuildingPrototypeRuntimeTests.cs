@@ -470,7 +470,7 @@ namespace BarPromenade.Tests.EditMode
                 Vector3.zero,
                 Vector3.zero);
             CityBuildingAssetRegistry registry = provider
-                .GetPrefabOrThrow(lot.District)
+                .GetPrefabOrThrow(lot.District, lot.BuildingVariant)
                 .GetComponent<CityBuildingAssetRegistry>();
             Assert.That(registry, Is.Not.Null);
 
@@ -633,7 +633,7 @@ namespace BarPromenade.Tests.EditMode
                 "Direct Home Prototype Test").transform;
             directParent.SetParent(parent, false);
             CityBuildingAssetRegistry sourceRegistry = provider
-                .GetPrefabOrThrow(lot.District)
+                .GetPrefabOrThrow(lot.District, lot.BuildingVariant)
                 .GetComponent<CityBuildingAssetRegistry>();
             Assert.That(sourceRegistry, Is.Not.Null);
             CityBuildingPrototypePose cityPose =
@@ -738,7 +738,7 @@ namespace BarPromenade.Tests.EditMode
                         Assert.That(
                             registries[0].StableId,
                             Is.EqualTo(
-                                provider.GetPrefabOrThrow(lot.District)
+                                provider.GetPrefabOrThrow(lot.District, lot.BuildingVariant)
                                     .GetComponent<
                                         CityBuildingAssetRegistry>()
                                     .StableId));
@@ -1511,7 +1511,7 @@ namespace BarPromenade.Tests.EditMode
             CityBuildingAssetRegistry registry)
         {
             CityBuildingAssetRegistry sourceRegistry = provider
-                .GetPrefabOrThrow(lot.District)
+                .GetPrefabOrThrow(lot.District, lot.BuildingVariant)
                 .GetComponent<CityBuildingAssetRegistry>();
             CityBuildingPrototypePose cityPose =
                 CityBuildingPrototypePlacement.ResolveCityPose(

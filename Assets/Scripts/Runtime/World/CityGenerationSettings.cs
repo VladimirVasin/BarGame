@@ -39,6 +39,18 @@ namespace BarPromenade
             DefaultMaximumOrdinaryBuildingHeight;
 
         internal CityBlueprint Blueprint { get; set; }
+        internal CitySpatialPlan SpatialPlan { get; set; }
+
+        internal Vector2 GetCoordinateOffset(Vector2 coordinate) =>
+            SpatialPlan != null
+                ? SpatialPlan.GetCoordinateWorldOffset(coordinate)
+                : Vector2.Scale(coordinate, NodeSpacing);
+
+        internal Vector2 GetCellSpan(Vector2Int cell) =>
+            SpatialPlan != null ? SpatialPlan.GetCellSize(cell) : NodeSpacing;
+
+        internal Vector2 GetBlockSize(Vector2Int cell) =>
+            GetCellSpan(cell) - Vector2.one * RoadWidth;
 
         public static CityGenerationSettings Default => new CityGenerationSettings();
 

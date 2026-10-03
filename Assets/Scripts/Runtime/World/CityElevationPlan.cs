@@ -181,12 +181,14 @@ namespace BarPromenade
                 sourceTransitions,
             IDictionary<CityDistrictKind, DistrictElevationProfile>
                 sourceProfiles,
-            IList<CityElevationStairDescriptor> signatureStairs)
+            IList<CityElevationStairDescriptor> signatureStairs,
+            CitySpatialPlan spatialPlan = null)
         {
             BlueprintId = blueprintId ?? string.Empty;
             Seed = seed;
             WorldOrigin = worldOrigin;
             NodeSpacing = nodeSpacing;
+            SpatialPlan = spatialPlan ?? CitySpatialPlan.Uniform(nodeSpacing);
             RoadWidth = roadWidth;
             IsElevated = isElevated;
             nodeElevations = new ReadOnlyDictionary<Vector2Int, float>(
@@ -248,6 +250,7 @@ namespace BarPromenade
         public int Seed { get; }
         public Vector3 WorldOrigin { get; }
         public Vector2 NodeSpacing { get; }
+        public CitySpatialPlan SpatialPlan { get; }
         public float RoadWidth { get; }
         public bool IsElevated { get; }
         public float MinimumElevation { get; private set; }
@@ -329,9 +332,7 @@ namespace BarPromenade
         public float SampleRoadDatum(RoadEdge edge, float amount)
         {
             amount = Mathf.Clamp01(amount);
-            float planarLength = edge.IsHorizontal
-                ? NodeSpacing.x
-                : NodeSpacing.y;
+            float planarLength = SpatialPlan.GetNodeSpan(edge);
             float insetAmount = planarLength > 0.001f
                 ? Mathf.Clamp01((RoadWidth * 0.5f) / planarLength)
                 : 0f;
@@ -362,10 +363,10 @@ namespace BarPromenade
                     out normal);
             }
 
-            int cellX = Mathf.FloorToInt(
-                (worldXZ.x - WorldOrigin.x) / NodeSpacing.x);
-            int cellZ = Mathf.FloorToInt(
-                (worldXZ.y - WorldOrigin.z) / NodeSpacing.y);
+            Vector2 grid = SpatialPlan.WorldToGrid(
+                worldXZ - new Vector2(WorldOrigin.x, WorldOrigin.z));
+            int cellX = Mathf.FloorToInt(grid.x);
+            int cellZ = Mathf.FloorToInt(grid.y);
             var cell = new Vector2Int(cellX, cellZ);
             if (!cellSet.Contains(cell))
             {
@@ -464,9 +465,7 @@ namespace BarPromenade
 
             Vector3 startWorld = GetNodeWorldPosition(bestEdge.A);
             Vector3 endWorld = GetNodeWorldPosition(bestEdge.B);
-            float planarLength = bestEdge.IsHorizontal
-                ? NodeSpacing.x
-                : NodeSpacing.y;
+            float planarLength = SpatialPlan.GetNodeSpan(bestEdge);
             float insetAmount = planarLength > 0.001f
                 ? Mathf.Clamp01((RoadWidth * 0.5f) / planarLength)
                 : 0f;
@@ -605,9 +604,8 @@ namespace BarPromenade
 
         private Vector2 GetNodeWorldXZ(Vector2Int node)
         {
-            return new Vector2(
-                WorldOrigin.x + node.x * NodeSpacing.x,
-                WorldOrigin.z + node.y * NodeSpacing.y);
+            return new Vector2(WorldOrigin.x, WorldOrigin.z) +
+                   SpatialPlan.GetCoordinateWorldOffset(node);
         }
 
         private Vector3 GetNodeWorldPosition(Vector2Int node)

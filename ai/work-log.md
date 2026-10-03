@@ -3,35 +3,33 @@
 Newest outcomes/checks first. Archive whole dates at budget: [policy](README.md).
 Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-2026-08.md).
 
-## 2026-10-03 — Combat spacing, kick and contracts
+## 2026-10-03 — Combat and city replanning
 
-- Hero Windup reserves 1m through travel/braking; side/back and physical motion
-  remain free. Crowding uses the dry shove. Authored shove/regrip removes the
-  inherited branch/smoothing; joint/body/world/palm and guard gates remain.
-- DuelJournal records module/bank/workspace identity, hit anatomy/pre-hit phase
-  and actor pose CPU/frame-delivery time. Overlapping scopes are not summed;
-  no FPS gain is claimed.
-- Q/B: right-foot kick, left support, 15 effort/5HP/dry 200Ns beneath face guard.
-  Tail buffer waits for return/support. Repeated constraints keep wall-contact;
-  planting keeps the measured foot. Three AI styles share stats/reaction; R
-  keeps style. Recoil holds Ready through Recovery.
-- JsonUtility's absent inline face became an empty object; normalize absence
-  and accept empty legacy bindings while keeping declared PNG validation strict.
-  Actual published charge poses differed from runtime .18q: derive only those
-  clips in both banks, preserve other motion, and restore measured manifest
-  declarations. Import retimes upper keys/tangents from Unity's source curve:
-  Blender fractional Euler poses differed from imported quaternion interpolation.
-  Standalone kick checks exposed a missing regen expectation.
-- Fresh duels exposed walking Q loss and duplicate casts. Q waits .20s for
-  support; interruption cancels. Core/cast reuse keeps thin walls and anatomy
-  live. Journal adds kick outcome/type/style/support/sweep and solver counters.
-- Nested shoulder/contact search caused stalls. Shoulder candidates now use
-  analytic reach/wrist gates; full shoulder/contact searches cap at 12/96.
-  Repeated poses reuse a shoulder choice with fresh collision gates; journal
-  counts reuse and exhausted budgets.
+- Windup reserves 1m through travel/braking; side/back/physical motion stay free.
+  Crowding uses dry shove; authored shove/regrip removes inherited branch/smoothing
+  while preserving joint/body/world/palm/guard gates.
+- DuelJournal records module/bank/workspace, hit anatomy/pre-hit phase, actor pose
+  CPU/frame delivery, kick/type/style/support/sweep/solver/reuse/exhaustion.
+  Overlapping scopes are not summed; no FPS gain is claimed.
+- Q/B: right kick/left support, 15 effort/5HP/dry 200Ns through face guard.
+  Tail waits for return/support; repeated wall constraints/planting retain contacts.
+  Three AI styles share stats/reaction; R keeps style. Recoil holds Ready.
+- JsonUtility's absent face became an empty object: accept empty legacy bindings,
+  keep PNG validation strict. Published charge poses differed from .18q; derive
+  those clips in both banks, restore measured declarations, retime upper keys/
+  tangents from imported quaternion curves. Standalone kick lacked regen expectation.
+- Walking Q waits .20s for support; interruption cancels. Core/cast reuse keeps
+  thin walls/anatomy live. Nested shoulder search uses analytic reach/wrist gates,
+  caps 12/96 and reuses choices only with fresh collision gates.
 - Grip changes remain unfinished: `Range_SupportedGripKeepsWristLimitsThroughImportedSwings`
   fails backhand elbow-branch continuity. Wrist/body/world gates remain;
   no completion is claimed.
+- City: variable metre axes, district streets and twelve fixed-metre typologies
+  share source/anchors/collision. Old uniform inverses and rectangular L proxies
+  required migration across surface/routes/Home. Checks:
+  `DefaultCoastal_ReplanningKeepsAnchorsAndFitsEveryPlacedVariant`,
+  `SemanticStops_CoverEveryPointOfInterestAndPlayerHome`,
+  `CityReplanning`; district frames reviewed.
 - Checks: `Range_KickUsesSoleContactSupportInputAndOwnedRecovery`,
   `Range_OpponentStylesObserveKickAndResetWithoutChangingCombatStats`
   (including `ValidateFaceAtlasesOrThrow` and full `BuildOrThrow`);

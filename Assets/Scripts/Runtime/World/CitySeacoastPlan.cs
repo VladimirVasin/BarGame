@@ -258,7 +258,8 @@ namespace BarPromenade
             float mouthWaterY,
             Rect westZone,
             Rect centerZone,
-            Rect eastZone)
+            Rect eastZone,
+            Vector3? portOrigin = null)
         {
             BeachRowBounds = beachRowBounds;
             SeaRowBounds = seaRowBounds;
@@ -271,6 +272,7 @@ namespace BarPromenade
             WestZone = westZone;
             CenterZone = centerZone;
             EastZone = eastZone;
+            PortOrigin = portOrigin;
         }
 
         /// <summary>The union of the waterfront's sand cells.</summary>
@@ -307,6 +309,9 @@ namespace BarPromenade
 
         /// <summary>The wild shore out to the map's east edge.</summary>
         public Rect EastZone { get; }
+
+        /// <summary>The measured port's street anchor, when this coast has one.</summary>
+        public Vector3? PortOrigin { get; }
     }
 
     public sealed class CitySeacoastPlan

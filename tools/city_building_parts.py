@@ -101,6 +101,7 @@ class PrototypeSpec:
     window_slots: tuple[WindowSlot, ...]
     parts: tuple[PartSpec, ...]
     balcony_slots: tuple[BalconySlot, ...] = ()
+    collision_bounds: tuple[tuple[Vec3, Vec3], ...] = ()
 
 
 def empty() -> Geometry:
@@ -893,10 +894,177 @@ def nightlife_prototype() -> PrototypeSpec:
         tuple(slots), parts_for(stable_id, role_geometry, 1.6))
 
 
+def prism(polygon: Sequence[Vec2], bottom: float, top: float) -> Geometry:
+    """Extrude a counterclockwise footprint without internal or doubled walls."""
+    count = len(polygon)
+    signed_area = sum(polygon[index][0] * polygon[(index + 1) % count][1] -
+                      polygon[(index + 1) % count][0] * polygon[index][1]
+                      for index in range(count)) * 0.5
+    if signed_area <= 0.0 or top <= bottom:
+        raise ValueError("Authored prism must have positive signed volume and outward winding.")
+    vertices = tuple((x, y, z) for z in (bottom, top) for x, y in polygon)
+    faces = [tuple(reversed(range(count))), tuple(range(count, count * 2))]
+    faces.extend((index, (index + 1) % count,
+                  (index + 1) % count + count, index + count)
+                 for index in range(count))
+    return Geometry(vertices, tuple(faces), (0,) * len(faces))
+
+
+def collision_bounds_for(prototype: PrototypeSpec) -> tuple[tuple[Vec3, Vec3], ...]:
+    """Use authored solids, excluding thin ground skins and the open courtyards."""
+    if prototype.collision_bounds:
+        return prototype.collision_bounds
+    geometry = next(part.geometry for part in prototype.parts
+                    if part.role == "FacadePrimary")
+    adjacency = [set() for _ in geometry.vertices]
+    for face in geometry.faces:
+        for vertex in face:
+            adjacency[vertex].update(face)
+    remaining = set(range(len(geometry.vertices)))
+    solids = []
+    while remaining:
+        pending = [min(remaining)]
+        component = set()
+        while pending:
+            vertex = pending.pop()
+            if vertex in component:
+                continue
+            component.add(vertex)
+            pending.extend(adjacency[vertex] - component)
+        remaining.difference_update(component)
+        low = tuple(min(geometry.vertices[index][axis] for index in component)
+                    for axis in range(3))
+        high = tuple(max(geometry.vertices[index][axis] for index in component)
+                     for axis in range(3))
+        if high[2] - low[2] > 0.5:
+            solids.append((low, high))
+    return tuple(solids)
+
+
+def massing_variant(district: str, variant: int) -> PrototypeSpec:
+    """Fixed-metre street bar or L-shaped frontage, never a stretched old FBX."""
+    prefixes = {"OldTown": "old-town", "Residential": "residential",
+                "Industrial": "industrial", "Nightlife": "nightlife"}
+    heights = {"OldTown": 42.0, "Residential": 40.0,
+               "Industrial": 36.0, "Nightlife": 48.0}
+    height = heights[district]
+    corner = variant == 3
+    width, depth = ((15.0, 14.0) if corner else
+                    (17.0, 9.5) if district == "Nightlife" else (22.0, 11.5))
+    stable_id = f"{prefixes[district]}-prototype-{variant:02d}"
+    half_w, half_d = width * 0.5, depth * 0.5
+    front_y = half_d - (1.2 if district == "Residential" else 0.0)
+    wing_width = 5.0
+    inner_x = -half_w + wing_width
+    body_top = height - (2.4 if district == "OldTown" else 0.35)
+    if corner:
+        polygon = ((-half_w, -half_d), (inner_x, -half_d),
+                   (inner_x, 0.0), (half_w, 0.0),
+                   (half_w, front_y), (-half_w, front_y))
+        solids = (((-half_w, 0.0, 0.0), (half_w, front_y, body_top)),
+                  ((-half_w, -half_d, 0.0), (inner_x, 0.0, body_top)))
+    else:
+        polygon = ((-half_w, -half_d), (half_w, -half_d),
+                   (half_w, front_y), (-half_w, front_y))
+        solids = (((-half_w, -half_d, 0.0),
+                   (half_w, front_y, body_top)),)
+    facade_primary = prism(polygon, 0.0, body_top)
+    roof = prism(polygon, body_top, height)
+    plinth = box((0.0, front_y - 0.085, 0.8), (width - 0.08, 0.24, 1.6))
+    secondary = [box((0.0, front_y - 0.055, 2.6),
+                     (width - 0.08, 0.24, 0.28))]
+    metal = [cylinder_z((-half_w + 0.35, -half_d + 0.4),
+                        body_top, height - 0.10, 0.14, 8)]
+    slots: list[WindowSlot] = []
+    balconies: list[BalconySlot] = []
+    if district == "Residential":
+        # Each deck is paired with its own door and neighbouring apartment pane.
+        # The front is recessed by the exact 1.2 m deck depth, so no balcony
+        # escapes the fixed envelope or consumes a pavement clearance.
+        centers = (-width * 0.28, width * 0.28)
+        for floor, deck_level in enumerate((7.0, 12.0, 17.0, 22.0), start=1):
+            for group, center_x in enumerate(centers):
+                door_x, pane_x = center_x - 0.48, center_x + 0.48
+                door_id = len(slots) + 1
+                slots.append(WindowSlot(door_id, "Front", floor, group * 2,
+                    (door_x, front_y, deck_level + 1.1), (0.82, 2.2), "BalconyDoor"))
+                slots.append(WindowSlot(len(slots) + 1, "Front", floor, group * 2 + 1,
+                    (pane_x, front_y, deck_level + 1.425), (0.72, 1.55)))
+                low = (center_x - 1.25, front_y, deck_level - 0.18)
+                high = (center_x + 1.25, half_d, deck_level)
+                balconies.append(BalconySlot(
+                    f"{stable_id}-front-{group}-floor-{floor:02d}", floor,
+                    "Front", door_id, low, high,
+                    (center_x, front_y + 0.68, deck_level), (0.0, 1.0, 0.0)))
+                secondary.append(box((center_x, front_y + 0.6, deck_level - 0.09),
+                                     (2.5, 1.2, 0.18)))
+                for rail_x in (center_x - 1.21, center_x + 1.21):
+                    metal.append(box((rail_x, half_d - 0.04, deck_level + 0.51),
+                                     (0.06, 0.06, 1.02)))
+                    metal.append(box((rail_x, front_y + 0.6, deck_level + 0.95),
+                                     (0.05, 1.12, 0.06)))
+                metal.append(box((center_x, half_d - 0.04, deck_level + 0.96),
+                                 (2.42, 0.05, 0.06)))
+        slots.extend(slots_for_grid(len(slots) + 1, "Front", front_y,
+            tuple(value for center in centers for value in (center - 0.48, center + 0.48)),
+            (3.8,), (0.72, 1.55)))
+    else:
+        floor_heights = ((4.5, 9.0, 13.5, 18.0, 22.5, 27.0) if district == "OldTown"
+                         else (12.0, 20.0, 28.0) if district == "Industrial"
+                         else (3.8, 8.4, 13.0, 17.6, 22.2, 26.8, 31.4))
+        opening = ((1.05, 1.75) if district == "OldTown" else
+                   (1.5, 1.35) if district == "Industrial" else (1.0, 1.9))
+        bays = tuple(width * fraction for fraction in (-0.36, -0.18, 0.0, 0.18, 0.36))
+        slots.extend(slots_for_grid(1, "Front", front_y, bays, floor_heights, opening))
+        # District signals stay on the facade below the fog-hidden roof.
+        if district == "OldTown":
+            for level in (10.8, 20.4):
+                secondary.append(box((0.0, front_y - 0.055, level),
+                                     (width - 0.08, 0.24, 0.24)))
+        elif district == "Industrial":
+            secondary.append(box((-width * 0.26, front_y - 0.08, 5.0),
+                                 (4.0, 0.24, 3.0)))
+            for level in (8.5, 18.5):
+                metal.append(box((0.0, front_y + 0.045, level),
+                                 (width - 0.4, 0.05, 0.09)))
+        else:
+            secondary.append(box((width * 0.25, front_y - 0.055, 5.0),
+                                 (3.0, 0.24, 1.1)))
+            for level in (9.2, 14.2, 19.2):
+                metal.append(box((half_w - 0.3, 1.2, level),
+                                 (0.12, 1.8, 0.08)))
+    rear_low, rear_high = (-half_w, inner_x) if corner else (-half_w, half_w)
+    rear_bay_count = 2 if corner else (5 if district == "Residential" else 4)
+    rear_bays = tuple(rear_low + (index + 0.5) * (rear_high - rear_low) / rear_bay_count
+                      for index in range(rear_bay_count))
+    rear_floors = ((4.2, 9.2, 14.2, 19.2, 24.2) if district == "Residential" else
+                   (5.0, 14.0, 23.0) if district != "Nightlife" else
+                   (5.0, 12.0, 19.0, 26.0))
+    slots.extend(slots_for_grid(len(slots) + 1, "Rear", -half_d,
+                               rear_bays, rear_floors, (0.85, 1.6)))
+    slots.extend(slots_for_grid(len(slots) + 1, "Left", -half_w,
+        (-half_d * 0.55, front_y * 0.55), (6.0, 16.0, 26.0), (0.8, 1.55)))
+    frame, glass = window_geometry(slots)
+    attachments = list(facade_bounds(width, depth, height))
+    if corner:
+        attachments[1] = FacadeAttachmentBounds("Rear",
+            (-half_w + 0.25, -half_d, 0.5), (inner_x - 0.25, -half_d + 0.2, body_top - 0.5))
+        attachments[3] = FacadeAttachmentBounds("Right",
+            (half_w - 0.2, 0.25, 0.5), (half_w, front_y - 0.25, body_top - 0.5))
+    attachments[0] = FacadeAttachmentBounds("Front",
+        (-half_w + 0.25, front_y - 0.2, 0.5), (half_w - 0.25, front_y, body_top - 0.5))
+    role_geometry = {"FacadePrimary": facade_primary, "FacadeSecondary": merge(secondary),
+        "Plinth": plinth, "Roof": roof, "Metal": merge(metal),
+        "WindowFrame": frame, "WindowGlass": glass}
+    return PrototypeSpec(stable_id, district, "CornerStreetWing" if corner else "LongStreetBar",
+        width, depth, height, (0.0, half_d, 0.0),
+        (-half_w + 0.4, 0.4 if corner else -half_d + 0.4, body_top),
+        (half_w - 0.4, front_y - 0.4, height), tuple(attachments), tuple(slots),
+        parts_for(stable_id, role_geometry, 1.6 if district == "OldTown" else 1.8),
+        tuple(balconies), solids)
+
+
 def build_prototypes() -> tuple[PrototypeSpec, ...]:
-    return (
-        old_town_prototype(),
-        residential_prototype(),
-        industrial_prototype(),
-        nightlife_prototype(),
-    )
+    return (old_town_prototype(), residential_prototype(), industrial_prototype(), nightlife_prototype(),
+            *(massing_variant(district, variant) for variant in (2, 3)
+              for district in ("OldTown", "Residential", "Industrial", "Nightlife")))
