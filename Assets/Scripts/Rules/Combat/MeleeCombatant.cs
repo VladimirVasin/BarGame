@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace BarPromenade
 {
-    public enum MeleePhase { Ready, Windup, Active, Recovery, Stagger, GuardBroken, Defeated, GuardImpact, Step, Charging, KnockedDown, Rising, Shoving }
+    public enum MeleePhase { Ready, Windup, Active, Recovery, Stagger, GuardBroken, Defeated, GuardImpact, Step, Charging, KnockedDown, Rising, Shoving, Kicking }
     public enum MeleeHitResult { Ignored, Hit, Blocked, GuardBroken, Parried }
     public enum MeleeAttackOutcome { None, Miss, Hit, Blocked, Obstacle, Parried }
     public enum MeleeBufferedAction { None, Attack, Charge, Step }
@@ -13,14 +13,16 @@ namespace BarPromenade
     /// <summary>The active part crossed by one advance, even if a hitch crosses the whole swing.</summary>
     public readonly struct MeleeAdvanceResult
     {
-        internal MeleeAdvanceResult(int sequence, float from, float to)
+        internal MeleeAdvanceResult(int sequence, float from, float to, bool isKick = false)
         {
             AttackSequence = sequence;
             ActiveStartNormalized = from;
             ActiveEndNormalized = to;
+            IsKick = isKick;
         }
 
         public int AttackSequence { get; }
+        public bool IsKick { get; }
         // Normalized within the active phase, rather than the complete attack clip.
         public float ActiveStartNormalized { get; }
         public float ActiveEndNormalized { get; }
@@ -29,17 +31,18 @@ namespace BarPromenade
 
     /// <summary>Pure heavy-melee timing. Runtime owns input, facing and weapon collision.
     /// Advance receives only unpaused seconds; no world needs or story state are involved.
-    /// Strikes are free; the meter pays for guard, steps, shoves and growing charge, regenerates
+    /// Strikes are free; the meter pays for guard, steps, shoves, kicks and growing charge, regenerates
     /// through every stun and recovery, and is re-armed only by the actor's own spending.</summary>
     public sealed class MeleeCombatant
     {
         private readonly HashSet<int> hitTargets = new HashSet<int>();
         private double clock, regenerateAt, stamina, attackElapsed, attackStartedAt, stepElapsed, stunRemaining, stunDuration;
-        private double charge, chargeLimit, shoveElapsed;
+        private double charge, chargeLimit, shoveElapsed, kickElapsed, kickStartedAt;
         private double guardPressedAt = double.NegativeInfinity, guardReleasedAt = double.NegativeInfinity;
         private double stepEndedAt = double.NegativeInfinity;
         private bool blockHeld, advancedActiveWindow, registeredContactWindow, bufferedChargeReleased, chained, chainArmed;
         private bool bufferedFromSwing, continuation;
+        private bool advancedKickWindow, registeredKickWindow;
         private double recoveryBufferExpiresAt = double.PositiveInfinity;
         private MeleeBufferedAction bufferedAction;
         // The side the next swing would take on its own, and the observed cues
@@ -61,6 +64,7 @@ namespace BarPromenade
         public bool IsKnockedDown => Phase == MeleePhase.KnockedDown || Phase == MeleePhase.Rising;
         public bool IsCharging => Phase == MeleePhase.Charging;
         public bool IsShoving => Phase == MeleePhase.Shoving;
+        public bool IsKicking => Phase == MeleePhase.Kicking;
         public bool IsAttacking => Phase == MeleePhase.Windup || Phase == MeleePhase.Active || Phase == MeleePhase.Recovery;
         public bool IsBlocking => blockHeld && (Phase == MeleePhase.Ready || Phase == MeleePhase.GuardImpact);
         public bool IsStunned => Phase == MeleePhase.Stagger || Phase == MeleePhase.GuardBroken || Phase == MeleePhase.GuardImpact;
@@ -99,6 +103,23 @@ namespace BarPromenade
         public float StepElapsed => (float)stepElapsed;
         public float ShoveElapsed => (float)shoveElapsed;
         public float ShoveProgress => (float)Math.Min(1d, shoveElapsed / Settings.ShoveDurationSeconds);
+        public float KickElapsed => (float)kickElapsed;
+        public float KickActiveEnd => (float)KickActiveEndSeconds;
+        public MeleeAttackOutcome KickOutcome { get; private set; }
+        public float KickRecoverySeconds => KickOutcome switch
+        {
+            MeleeAttackOutcome.Hit => Settings.KickHitRecoverySeconds,
+            MeleeAttackOutcome.Obstacle => Settings.KickObstacleRecoverySeconds,
+            _ => Settings.KickMissRecoverySeconds
+        };
+        public float CurrentKickDurationSeconds => (float)KickDuration;
+        public float KickRecoveryRemaining => IsKicking && kickElapsed >= KickActiveEndSeconds
+            ? (float)Math.Max(0d, KickDuration - kickElapsed) : 0f;
+        /// <summary>Variable gameplay recovery traverses the complete authored return once.</summary>
+        public float KickProgress => (float)Math.Min(1d,
+            (kickElapsed <= KickActiveEndSeconds ? kickElapsed : KickActiveEndSeconds +
+             (kickElapsed - KickActiveEndSeconds) / KickRecoverySeconds * Settings.KickMissRecoverySeconds) /
+            Settings.KickAnimationDurationSeconds);
         public float StepTravelProgress => (float)Math.Min(1d, stepElapsed / Settings.StepTravelSeconds);
         public float StepProgress => (float)(stepElapsed / StepDuration);
         public MeleeBufferedAction BufferedAction => bufferedAction;
@@ -112,6 +133,8 @@ namespace BarPromenade
         private double ActiveEnd => (double)AttackWindupSeconds + Settings.ActiveSeconds;
         private double AttackDuration => ActiveEnd + AttackRecoverySeconds;
         private double StepDuration => (double)Settings.StepTravelSeconds + Settings.StepRecoverySeconds;
+        private double KickActiveEndSeconds => (double)Settings.KickWindupSeconds + Settings.KickActiveSeconds;
+        private double KickDuration => KickActiveEndSeconds + KickRecoverySeconds;
         private double ActionRemainingSeconds => Phase switch
         {
             MeleePhase.Recovery => Math.Max(0d, AttackDuration - attackElapsed),
@@ -120,6 +143,7 @@ namespace BarPromenade
             MeleePhase.GuardImpact => stunRemaining,
             MeleePhase.Step => Math.Max(0d, StepDuration - stepElapsed),
             MeleePhase.Shoving => Math.Max(0d, Settings.ShoveDurationSeconds - shoveElapsed),
+            MeleePhase.Kicking => Math.Max(0d, KickDuration - kickElapsed),
             _ => double.PositiveInfinity
         };
         private bool CanBuffer => Phase != MeleePhase.Ready && !IsShoving &&
@@ -137,6 +161,7 @@ namespace BarPromenade
                     case MeleePhase.Recovery: return (float)((attackElapsed - ActiveEnd) / AttackRecoverySeconds);
                     case MeleePhase.Step: return StepProgress;
                     case MeleePhase.Shoving: return ShoveProgress;
+                    case MeleePhase.Kicking: return KickProgress;
                     case MeleePhase.GuardImpact:
                     case MeleePhase.Stagger:
                     case MeleePhase.GuardBroken: return (float)(1d - stunRemaining / stunDuration);
@@ -231,6 +256,7 @@ namespace BarPromenade
             charge = 0d;
             chargeLimit = Math.Min(1d, stamina / Settings.ChargeStaminaCost);
             attackElapsed = stepElapsed = shoveElapsed = 0d;
+            ClearKick();
             AttackOutcome = MeleeAttackOutcome.None;
             DropGuard();
             advancedActiveWindow = registeredContactWindow = bufferedChargeReleased = false;
@@ -336,6 +362,14 @@ namespace BarPromenade
             return true;
         }
 
+        /// <summary>Runtime calls after contact resolution and the sole's physical
+        /// support gate. A queued defensive step cannot bypass a kick's grounded return.</summary>
+        public bool TryContinueBufferedStep()
+        {
+            if (!HasBufferedStep || Phase != MeleePhase.Ready || stamina < Settings.StepCost) return false;
+            return TryStartStep(pendingStepCue);
+        }
+
         public bool TryStartAttack() => TryStartAttack(false);
 
         /// <summary>Runtime has observed a real whiff before requesting this ordinary
@@ -362,6 +396,7 @@ namespace BarPromenade
             attackStartedAt = clock;
             stepElapsed = 0d;
             shoveElapsed = 0d;
+            ClearKick();
             AttackOutcome = MeleeAttackOutcome.None;
             advancedActiveWindow = registeredContactWindow = false;
             bufferedAction = MeleeBufferedAction.None;
@@ -384,6 +419,7 @@ namespace BarPromenade
             DropGuard();
             AttackPower = 0f;
             attackElapsed = stepElapsed = shoveElapsed = 0d;
+            ClearKick();
             advancedActiveWindow = registeredContactWindow = chained = chainArmed = false;
             bufferedAction = MeleeBufferedAction.None;
             bufferedFromSwing = continuation = false;
@@ -406,6 +442,7 @@ namespace BarPromenade
             Spend(Settings.StepCost);
             regenerateAt = clock + Settings.RegenerationDelaySeconds;
             attackElapsed = stepElapsed = shoveElapsed = 0d;
+            ClearKick();
             DropGuard();
             advancedActiveWindow = registeredContactWindow = chained = chainArmed = false;
             bufferedAction = MeleeBufferedAction.None;
@@ -415,6 +452,37 @@ namespace BarPromenade
             AttackSequence = unchecked(AttackSequence + 1);
             Phase = MeleePhase.Step;
             return true;
+        }
+
+        /// <summary>A new press commits one sole-first kick. Unlike a clinch shove it
+        /// cannot replace a released swing. Affordability precedes charge cancellation;
+        /// a whiff still spends effort and must complete its whole grounded return.</summary>
+        public bool TryStartKick()
+        {
+            if (!(Phase == MeleePhase.Ready || IsCharging) || stamina < Settings.KickCost) return false;
+            Spend(Settings.KickCost);
+            ClearCharge();
+            DropGuard();
+            ClearKick();
+            AttackPower = 0f;
+            attackElapsed = stepElapsed = shoveElapsed = 0d;
+            kickStartedAt = clock;
+            advancedActiveWindow = registeredContactWindow = chained = chainArmed = false;
+            bufferedAction = MeleeBufferedAction.None;
+            bufferedFromSwing = continuation = false;
+            stepEndedAt = double.NegativeInfinity;
+            AttackOutcome = MeleeAttackOutcome.None;
+            hitTargets.Clear();
+            AttackSequence = unchecked(AttackSequence + 1);
+            Phase = MeleePhase.Kicking;
+            return true;
+        }
+
+        private void ClearKick()
+        {
+            kickElapsed = kickStartedAt = 0d;
+            advancedKickWindow = registeredKickWindow = false;
+            KickOutcome = MeleeAttackOutcome.None;
         }
 
         private void Spend(float cost)
@@ -431,8 +499,8 @@ namespace BarPromenade
             // A swing's queue belongs to the post-contact handoff, even if a hitch
             // crosses its entire recovery. Other committed tails retain their boundary.
             double remaining = ActionRemainingSeconds;
-            bool canConsume = bufferedAction == MeleeBufferedAction.Step ||
-                (allowBufferedAttack && !bufferedFromSwing);
+            bool canConsume = (!IsKicking || allowBufferedAttack) &&
+                (bufferedAction == MeleeBufferedAction.Step || (allowBufferedAttack && !bufferedFromSwing));
             if (bufferedAction != MeleeBufferedAction.None && canConsume &&
                 Phase != MeleePhase.Ready && seconds >= remaining)
             {
@@ -455,7 +523,7 @@ namespace BarPromenade
 
         private MeleeAdvanceResult AdvanceWithoutBufferedAttack(double seconds)
         {
-            advancedActiveWindow = registeredContactWindow = false;
+            advancedActiveWindow = registeredContactWindow = advancedKickWindow = registeredKickWindow = false;
             MeleeAdvanceResult result = default;
             if (IsDefeated || seconds == 0d) return result;
 
@@ -496,6 +564,24 @@ namespace BarPromenade
                 Phase = attackElapsed < activeStart ? MeleePhase.Windup :
                     attackElapsed < activeEnd ? MeleePhase.Active :
                     attackElapsed < AttackDuration ? MeleePhase.Recovery : MeleePhase.Ready;
+            }
+            else if (IsKicking)
+            {
+                double previous = kickElapsed;
+                regenFrom = Math.Max(regenFrom, kickStartedAt + KickActiveEndSeconds);
+                kickElapsed = Math.Min(KickDuration, previous + seconds);
+                double from = Math.Max(previous, Settings.KickWindupSeconds);
+                double to = Math.Min(kickElapsed, KickActiveEndSeconds);
+                if (to > from)
+                {
+                    result = new MeleeAdvanceResult(AttackSequence,
+                        (float)((from - Settings.KickWindupSeconds) / Settings.KickActiveSeconds),
+                        (float)((to - Settings.KickWindupSeconds) / Settings.KickActiveSeconds), true);
+                    advancedKickWindow = true;
+                }
+                if (kickElapsed >= KickActiveEndSeconds && KickOutcome == MeleeAttackOutcome.None)
+                    KickOutcome = MeleeAttackOutcome.Miss;
+                if (kickElapsed >= KickDuration) Phase = MeleePhase.Ready;
             }
             else if (Phase == MeleePhase.Step)
             {
@@ -596,6 +682,71 @@ namespace BarPromenade
             return accepted;
         }
 
+        /// <summary>The sole commits only the first real contact in this kick.
+        /// A hitch-crossed active window remains valid until the next Advance or cancellation.</summary>
+        public bool TryRegisterKickHit(int targetId, int attackSequence)
+        {
+            bool live = IsKicking && kickElapsed >= Settings.KickWindupSeconds && kickElapsed < KickActiveEndSeconds;
+            if (IsDefeated || attackSequence != AttackSequence || (!live && !advancedKickWindow) ||
+                KickOutcome == MeleeAttackOutcome.Obstacle || hitTargets.Count != 0) return false;
+            bool accepted = hitTargets.Add(targetId);
+            registeredKickWindow |= accepted;
+            return accepted;
+        }
+
+        /// <summary>Kick outcomes never settle the weapon's swing rhythm or arm a chain.
+        /// A solid obstruction stops extension and owns a full return. A hit traverses
+        /// the remaining active movement and uses the shorter grounded return.</summary>
+        public bool RecordKickOutcome(MeleeAttackOutcome outcome, int attackSequence)
+        {
+            bool live = IsKicking && kickElapsed >= Settings.KickWindupSeconds && kickElapsed < KickActiveEndSeconds;
+            if ((outcome != MeleeAttackOutcome.Hit && outcome != MeleeAttackOutcome.Miss &&
+                 outcome != MeleeAttackOutcome.Obstacle) || attackSequence != AttackSequence ||
+                (!live && !advancedKickWindow && !registeredKickWindow)) return false;
+            if (KickOutcome == MeleeAttackOutcome.Obstacle) return outcome == MeleeAttackOutcome.Obstacle;
+            if (KickOutcome == MeleeAttackOutcome.Hit) return outcome == MeleeAttackOutcome.Hit;
+            KickOutcome = outcome;
+            if (outcome == MeleeAttackOutcome.Obstacle)
+            {
+                kickElapsed = KickActiveEndSeconds;
+                kickStartedAt = clock - KickActiveEndSeconds;
+                advancedKickWindow = registeredKickWindow = false;
+                bufferedAction = MeleeBufferedAction.None;
+                bufferedFromSwing = continuation = false;
+                ClearCharge();
+                Phase = MeleePhase.Kicking;
+            }
+            else if (IsKicking || (Phase == MeleePhase.Ready && advancedKickWindow))
+            {
+                kickElapsed = Math.Min(clock - kickStartedAt, KickDuration);
+                if (kickElapsed >= KickDuration) Phase = MeleePhase.Ready;
+            }
+            return true;
+        }
+
+        /// <summary>A sole contact passes under the raised face guard. It pays flat
+        /// damage with no regional multiplier, parry or finisher, and cannot pull a
+        /// downed actor out of its fall. Runtime supplies the physical impulse.</summary>
+        public MeleeHitResult ReceiveKick(float damage = 5f, float staggerSeconds = .24f)
+        {
+            NonNegative(damage, nameof(damage));
+            NonNegative(staggerSeconds, nameof(staggerSeconds));
+            if (staggerSeconds == 0f) throw new ArgumentOutOfRangeException(nameof(staggerSeconds));
+            if (IsDefeated || IsKnockedDown || damage == 0f) return MeleeHitResult.Ignored;
+            bool guardBroken = Phase == MeleePhase.GuardBroken;
+            double remaining = Math.Max(stunRemaining, staggerSeconds);
+            Health = Math.Max(0f, Health - damage);
+            CancelAction();
+            if (Health == 0f)
+            {
+                Phase = MeleePhase.Defeated;
+                return MeleeHitResult.Hit;
+            }
+            stunRemaining = stunDuration = remaining;
+            Phase = guardBroken ? MeleePhase.GuardBroken : MeleePhase.Stagger;
+            return MeleeHitResult.Hit;
+        }
+
         /// <summary>A close-range push interrupts intent without weapon damage or guard
         /// cost. Runtime supplies the physical impulse separately. Existing longer stun
         /// survives, and a grounded actor cannot be pulled out of its fall or rise.</summary>
@@ -625,7 +776,9 @@ namespace BarPromenade
             NonNegative(power, nameof(power));
             if (IsDefeated || damage == 0f) return MeleeHitResult.Ignored;
             MeleePhase physicalPhase = Phase;
+            double kickRemaining = IsKicking ? Math.Max(0d, KickDuration - kickElapsed) : 0d;
             shoveElapsed = 0d;
+            ClearKick();
             advancedActiveWindow = chainArmed = false;
             bufferedAction = MeleeBufferedAction.None;
             bufferedFromSwing = continuation = false;
@@ -655,10 +808,11 @@ namespace BarPromenade
             bool guardBreak = IsBlocking && fromFront;
             // A committed swing or a whiff that gets punished pays extra, and being
             // punished can never end sooner than the swing would have on its own.
-            bool counterHit = Phase == MeleePhase.Charging || Phase == MeleePhase.Windup ||
+            bool counterHit = Phase == MeleePhase.Charging || Phase == MeleePhase.Windup || Phase == MeleePhase.Kicking ||
                 (Phase == MeleePhase.Recovery &&
                  (AttackOutcome == MeleeAttackOutcome.Miss || AttackOutcome == MeleeAttackOutcome.Obstacle));
-            double swingRemaining = Phase == MeleePhase.Recovery ? Math.Max(0d, AttackDuration - attackElapsed) : 0d;
+            double swingRemaining = Math.Max(kickRemaining,
+                Phase == MeleePhase.Recovery ? Math.Max(0d, AttackDuration - attackElapsed) : 0d);
             float resolvedDamage = MeleeDamageProfile.Crowbar.ResolveDamage(damage, Settings.MaxHealth, location);
             Health = location.IsFinisher ? 0f : Math.Max(0f,
                 Health - (guardBreak ? resolvedDamage * Settings.GuardBreakDamageScale : resolvedDamage));
@@ -694,6 +848,7 @@ namespace BarPromenade
             // windows and buffered inputs are cancelled, without restoring HP.
             DropGuard();
             ClearCharge();
+            ClearKick();
             bufferedAction = MeleeBufferedAction.None;
             bufferedFromSwing = continuation = false;
             advancedActiveWindow = chained = chainArmed = false;
@@ -724,6 +879,7 @@ namespace BarPromenade
             bufferedFromSwing = continuation = false;
             stepEndedAt = double.NegativeInfinity;
             ClearCharge();
+            ClearKick();
             AttackOutcome = MeleeAttackOutcome.None;
             hitTargets.Clear();
             Swing = rhythm = MeleeSwing.Forehand;
@@ -736,6 +892,7 @@ namespace BarPromenade
             Health = Settings.MaxHealth;
             AttackPower = 0f;
             ClearCharge();
+            ClearKick();
             Swing = rhythm = MeleeSwing.Forehand;
             lateralCue = stepCue = pendingStepCue = 0;
             bufferedAction = MeleeBufferedAction.None;

@@ -78,9 +78,9 @@ repair commands. Generation/publication: [../tools/README.md](../tools/README.md
 
 ## Implemented capabilities
 
-- CombatTest: .20 s buffer/.22 s chain, shield/counters/rise attacks/gaze;
-  Windup reserves 1m, continuous shove/regrip, 120 Hz/contact.
-  Partial: recoil/banks/QA; fall/rise/HP.
+- CombatTest: Q/.20s buffers/3 styles/.22 chains/shield/counters/rise/gaze/
+  1m/shove-regrip/120Hz/HP/fall-rise; bounded grip/recoil hold.
+  Partial: penetration/balance/visual QA.
 - A validated connected city with streets, river/shore, neighbourhoods,
   cemetery, church, deterministic weather, residents and Route 01 transport.
   First unpaused dock entry starts finite port→factory→shop supply once;

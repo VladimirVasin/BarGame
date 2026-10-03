@@ -2,6 +2,7 @@ using UnityEngine;
 
 namespace BarPromenade
 {
+    public enum CombatImpactKind { Weapon, Kick }
     /// <summary>One resolved contact. Presentation cannot change its damage or replay its strike.</summary>
     public readonly struct CombatImpact
     {
@@ -22,14 +23,15 @@ namespace BarPromenade
         public float WeaponSpeed { get; }
         /// <summary>World-space momentum (N s), separate from anatomical HP damage.</summary>
         public Vector3 Impulse { get; }
-        public bool IsCritical => Damage > 0f && Location.IsCritical;
-        public bool IsFinisher => Damage > 0f && Location.IsFinisher;
+        public CombatImpactKind Kind { get; }
+        public bool IsCritical => Kind == CombatImpactKind.Weapon && Damage > 0f && Location.IsCritical;
+        public bool IsFinisher => Kind == CombatImpactKind.Weapon && Damage > 0f && Location.IsFinisher;
 
         public CombatImpact(CombatActor source, CombatActor target, int sequence,
             Vector3 point, Vector3 normal, Vector3 direction, float healthBefore,
             float healthAfter, MeleeHitResult result, MeleeHitLocation location = default, float attackPower = 0f,
             Player3DAnatomicalPart part = Player3DAnatomicalPart.Torso, Vector3 localPoint = default,
-            float weaponSpeed = 0f, Vector3 impulse = default)
+            float weaponSpeed = 0f, Vector3 impulse = default, CombatImpactKind kind = CombatImpactKind.Weapon)
         {
             Source = source; Target = target; AttackSequence = sequence;
             Point = point; Normal = normal; Direction = direction;
@@ -37,6 +39,7 @@ namespace BarPromenade
             Location = location;
             AttackPower = attackPower;
             Part = part; LocalPoint = localPoint; WeaponSpeed = weaponSpeed; Impulse = impulse;
+            Kind = kind;
         }
     }
 }

@@ -3,7 +3,7 @@ using System;
 namespace BarPromenade
 {
     /// <summary>One immutable tuning set shared by both participants on the test range.
-    /// Strikes are free; the single meter pays for guard, steps, shoves and growing charge.</summary>
+    /// Strikes are free; the single meter pays for guard, steps, shoves, kicks and growing charge.</summary>
     public sealed class MeleeCombatSettings
     {
         public static MeleeCombatSettings Crowbar { get; } = new MeleeCombatSettings();
@@ -28,7 +28,11 @@ namespace BarPromenade
             float chargeStaggerBonus = .15f, float chargeGuardImpactBonus = .10f,
             float guardBreakDamageScale = .5f, float chainWindupSeconds = .22f,
             float stepAttackGraceSeconds = .10f, float shoveContactSeconds = .10f,
-            float shoveDurationSeconds = .38f, float shoveCost = 8f)
+            float shoveDurationSeconds = .38f, float shoveCost = 8f,
+            float kickWindupSeconds = .30f, float kickActiveSeconds = .10f,
+            float kickHitRecoverySeconds = .40f, float kickMissRecoverySeconds = .55f,
+            float kickObstacleRecoverySeconds = .55f, float kickCost = 15f,
+            float kickDamage = 5f, float kickStaggerSeconds = .24f)
         {
             MaxHealth = Positive(maxHealth, nameof(maxHealth));
             MaxStamina = Positive(maxStamina, nameof(maxStamina));
@@ -73,6 +77,14 @@ namespace BarPromenade
             ShoveContactSeconds = Positive(shoveContactSeconds, nameof(shoveContactSeconds));
             ShoveDurationSeconds = Positive(shoveDurationSeconds, nameof(shoveDurationSeconds));
             ShoveCost = Positive(shoveCost, nameof(shoveCost));
+            KickWindupSeconds = Positive(kickWindupSeconds, nameof(kickWindupSeconds));
+            KickActiveSeconds = Positive(kickActiveSeconds, nameof(kickActiveSeconds));
+            KickHitRecoverySeconds = Positive(kickHitRecoverySeconds, nameof(kickHitRecoverySeconds));
+            KickMissRecoverySeconds = Positive(kickMissRecoverySeconds, nameof(kickMissRecoverySeconds));
+            KickObstacleRecoverySeconds = Positive(kickObstacleRecoverySeconds, nameof(kickObstacleRecoverySeconds));
+            KickCost = Positive(kickCost, nameof(kickCost));
+            KickDamage = Positive(kickDamage, nameof(kickDamage));
+            KickStaggerSeconds = Positive(kickStaggerSeconds, nameof(kickStaggerSeconds));
             if (ShoveDurationSeconds <= ShoveContactSeconds)
                 throw new ArgumentOutOfRangeException(nameof(shoveDurationSeconds));
             if (AttackCost > MaxStamina) throw new ArgumentOutOfRangeException(nameof(attackCost));
@@ -80,6 +92,9 @@ namespace BarPromenade
             if (ParryMaxPower > 1f) throw new ArgumentOutOfRangeException(nameof(parryMaxPower));
             if (GuardBreakDamageScale > 1f) throw new ArgumentOutOfRangeException(nameof(guardBreakDamageScale));
             if (AttackBufferSeconds > ShortestRecoverySeconds)
+                throw new ArgumentOutOfRangeException(nameof(attackBufferSeconds));
+            if (AttackBufferSeconds > Math.Min(KickHitRecoverySeconds,
+                Math.Min(KickMissRecoverySeconds, KickObstacleRecoverySeconds)))
                 throw new ArgumentOutOfRangeException(nameof(attackBufferSeconds));
             // Frame-advantage invariants: a landed hit keeps the initiative, a
             // counter-hit guarantees the backhand, a parry guarantees one light.
@@ -97,6 +112,9 @@ namespace BarPromenade
             Positive(Damage + ChargeDamageBonus, nameof(chargeDamageBonus));
             Positive(AttackCost + ChargeStaminaCost, nameof(chargeStaminaCost));
             Positive(BlockCost + ChargeBlockCostBonus, nameof(chargeBlockCostBonus));
+            Positive(KickAnimationDurationSeconds, nameof(kickMissRecoverySeconds));
+            Positive(KickWindupSeconds + KickActiveSeconds + Math.Max(KickHitRecoverySeconds,
+                Math.Max(KickMissRecoverySeconds, KickObstacleRecoverySeconds)), nameof(kickHitRecoverySeconds));
             Positive(LongestRecoverySeconds * (1f + ChargeRecoveryBonus), nameof(chargeRecoveryBonus));
         }
 
@@ -142,6 +160,15 @@ namespace BarPromenade
         public float ShoveContactSeconds { get; }
         public float ShoveDurationSeconds { get; }
         public float ShoveCost { get; }
+        public float KickWindupSeconds { get; }
+        public float KickActiveSeconds { get; }
+        public float KickHitRecoverySeconds { get; }
+        public float KickMissRecoverySeconds { get; }
+        public float KickObstacleRecoverySeconds { get; }
+        public float KickCost { get; }
+        public float KickDamage { get; }
+        public float KickStaggerSeconds { get; }
+        public float KickAnimationDurationSeconds => KickWindupSeconds + KickActiveSeconds + KickMissRecoverySeconds;
         public float AttackDurationSeconds => WindupSeconds + ActiveSeconds + RecoverySeconds;
         public float AnimationAttackDurationSeconds => WindupSeconds + ActiveSeconds + AnimationRecoverySeconds;
         public float StepDurationSeconds => StepTravelSeconds + StepRecoverySeconds;

@@ -35,8 +35,9 @@ namespace BarPromenade
         private Transform opponentChest, heroChest;
         private readonly List<CombatActor.Contact> pendingContacts = new List<CombatActor.Contact>(4);
         private readonly List<CombatActor.ShoveContact> pendingShoves = new List<CombatActor.ShoveContact>(2);
+        private readonly List<CombatActor.KickContact> pendingKicks = new List<CombatActor.KickContact>(2);
         private GUIStyle small, button, controls;
-        private static readonly Rect ToolbarRect = new Rect(386, 10, 240, 22);
+        private static readonly Rect ToolbarRect = new Rect(214, 10, 412, 22);
         public bool IsInitialized { get; private set; }
         public PlayerRuntime Player { get; private set; }
         public CombatActor Hero { get; private set; }
@@ -239,6 +240,7 @@ namespace BarPromenade
                 Physics.SyncTransforms();
                 pendingContacts.Clear();
                 pendingShoves.Clear();
+                pendingKicks.Clear();
                 Hero.AdvanceSimulation(SimulationStep);
                 Opponent.AdvanceSimulation(SimulationStep);
                 JournalTransitions("simulation");
@@ -251,6 +253,8 @@ namespace BarPromenade
                 long contactStamp = JournalStamp();
                 sampledContacts = Hero.CollectContacts(pendingContacts) | Opponent.CollectContacts(pendingContacts);
                 Hero.CollectShoveContacts(pendingShoves); Opponent.CollectShoveContacts(pendingShoves);
+                sampledContacts |= Hero.State.IsKicking || Opponent.State.IsKicking;
+                Hero.CollectKickContacts(pendingKicks); Opponent.CollectKickContacts(pendingKicks);
                 JournalElapsed(contactStamp, ref journalContactTicks);
                 journalPoseSamples += Hero.ContactPoseSamples + Opponent.ContactPoseSamples;
                 // Registration for both actors precedes ANY damage, including lethal
@@ -258,6 +262,7 @@ namespace BarPromenade
                 long impactStamp = JournalStamp();
                 foreach (CombatActor.Contact contact in pendingContacts) contact.Apply();
                 foreach (CombatActor.ShoveContact contact in pendingShoves) contact.Apply();
+                foreach (CombatActor.KickContact contact in pendingKicks) contact.Apply();
                 JournalElapsed(impactStamp, ref journalImpactApplyTicks);
                 JournalTransitions("contacts_applied");
                 if (!RoundFinished && hitStopSubsteps == 0)
@@ -334,6 +339,9 @@ namespace BarPromenade
             try
             {
                 RetroUiTheme.DrawPanel(ToolbarRect, RetroUiTheme.PanelInset, RetroUiTheme.BorderMuted, false, 0f, 1f, .72f);
+                if (DrawToolbarButton(canvas, new Rect(220, 12, 166, 18), "combat-style",
+                    LocalizationService.Get("combat.style." + OpponentStyle.ToString().ToLowerInvariant())))
+                    SetOpponentStyle((CombatOpponentStyle)(((int)OpponentStyle + 1) % 3));
                 if (DrawToolbarButton(canvas, new Rect(392, 12, 102, 18), "combat-mode",
                     "Tab · " + LocalizationService.Get(Sparring ? "combat.sparring" : "combat.target"))) SetSparring(!Sparring);
                 if (DrawToolbarButton(canvas, new Rect(498, 12, 70, 18), "combat-reset",

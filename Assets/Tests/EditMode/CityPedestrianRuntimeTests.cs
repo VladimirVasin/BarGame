@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using NUnit.Framework;
 using UnityEditor;
 using UnityEngine;
@@ -9,6 +10,19 @@ namespace BarPromenade.Tests.EditMode
 {
     public sealed class CityPedestrianRuntimeTests
     {
+        [Test]
+        public void ProductionFaces_ValidateOptionalLegacyAndDeclaredPngContracts()
+        {
+            Type setup = Type.GetType("BarPromenade.Editor.CityPedestrianAssetSetup, BarPromenade.Editor", true);
+            MethodInfo validate = setup.GetMethod("ValidateFaceAtlasesOrThrow");
+            Assert.That(validate, Is.Not.Null);
+            try { validate.Invoke(null, null); }
+            catch (TargetInvocationException failure)
+            {
+                Assert.Fail((failure.InnerException ?? failure).ToString());
+            }
+        }
+
         private const string LampshadeModelPath =
             "Assets/Pedestrians/Models/CityPedestrian3D.fbx";
         private const string ChairCarrierModelPath =

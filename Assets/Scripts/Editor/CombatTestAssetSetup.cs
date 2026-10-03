@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using UnityEditor;
@@ -11,7 +12,8 @@ namespace BarPromenade.Editor
     {
         public const string Folder = "Assets/Resources/Combat/";
         public const string ManifestPath = Folder + "CombatTest3D.json";
-        public override uint GetVersion() => 4;
+        public override uint GetVersion() => 6;
+        private readonly Dictionary<string, AnimationClip> importedClips = new Dictionary<string, AnimationClip>();
         private bool IsCombat => assetPath.StartsWith(Folder, StringComparison.Ordinal);
         private bool IsBank => IsCombat && assetPath.EndsWith("Actions.fbx", StringComparison.Ordinal);
 
@@ -49,6 +51,56 @@ namespace BarPromenade.Editor
             importer.clipAnimations = clips;
         }
 
+        private void OnPostprocessAnimation(GameObject rootObject, AnimationClip clip)
+        {
+            if (!IsBank) return;
+            int separator = clip.name.LastIndexOf('|');
+            string name = separator >= 0 ? clip.name.Substring(separator + 1) : clip.name;
+            importedClips[name] = clip;
+            // FBX stores baked Euler keys, while Generic import interpolates
+            // quaternion curves. Re-baking fractional source times in Blender
+            // therefore cannot reproduce the imported curve between its keys.
+            // Derive the compatibility Charge take from that same imported
+            // source curve; scaling time and tangents preserves every pose.
+            foreach (MeleeSwing swing in new[] { MeleeSwing.Forehand, MeleeSwing.Backhand })
+            {
+                CombatAssetProvider.SwingClipSet names = CombatAssetProvider.SwingClips(swing);
+                if (name != names.Attack && name != names.Charge) continue;
+                if (importedClips.TryGetValue(names.Attack, out AnimationClip source) &&
+                    importedClips.TryGetValue(names.Charge, out AnimationClip charge))
+                    RetimedChargeCurves(rootObject, source, charge);
+            }
+        }
+
+        private static void RetimedChargeCurves(GameObject rootObject, AnimationClip source, AnimationClip charge)
+        {
+            Transform spine = rootObject.GetComponentsInChildren<Transform>(true).First(bone => bone.name == "spine");
+            var upperPaths = new HashSet<string>(spine.GetComponentsInChildren<Transform>(true)
+                .Select(bone => AnimationUtility.CalculateTransformPath(bone, rootObject.transform)));
+            float advance = CombatAssetProvider.ChargePreparationAdvanceSeconds;
+            foreach (EditorCurveBinding binding in AnimationUtility.GetCurveBindings(source))
+            {
+                if (binding.type != typeof(Transform) || !upperPaths.Contains(binding.path)) continue;
+                AnimationCurve curve = AnimationUtility.GetEditorCurve(source, binding);
+                Keyframe[] keys = curve.keys.Where(key => key.time <= advance + .000001f).ToArray();
+                bool constant = curve.keys.All(key => key.value == curve.keys[0].value && key.inTangent == 0f && key.outTangent == 0f);
+                if (constant)
+                    keys = new[] { new Keyframe(0f, curve.keys[0].value), new Keyframe(advance, curve.keys[0].value) };
+                else if (keys.Length == 0 || Mathf.Abs(keys[keys.Length - 1].time - advance) > .000001f)
+                    throw new InvalidOperationException("Shared charge source must contain its exact preparation boundary: " + binding.path + "/" + binding.propertyName);
+                for (int i = 0; i < keys.Length; i++)
+                {
+                    Keyframe key = keys[i];
+                    key.time /= advance;
+                    key.inTangent *= advance;
+                    key.outTangent *= advance;
+                    keys[i] = key;
+                }
+                var retimed = new AnimationCurve(keys) { preWrapMode = curve.preWrapMode, postWrapMode = curve.postWrapMode };
+                AnimationUtility.SetEditorCurve(charge, binding, retimed);
+            }
+        }
+
         private void OnPostprocessModel(GameObject model)
         {
             if (!IsCombat || IsBank) return;
@@ -77,6 +129,7 @@ namespace BarPromenade.Editor
                 manifest.actions.reaction_silhouette_contract != "tip_20cm_or_head_12cm_and_elbow_10cm" ||
                 manifest.actions.swings == null || manifest.actions.swings.Length != 2)
                 throw new InvalidOperationException("Combat manifest violated its isolated, grounded, in-place contract.");
+            ValidateKickManifest(manifest.actions.kick);
             DefensiveStep step = manifest.actions.defensive_step;
             MeleeCombatSettings tuning = MeleeCombatSettings.Crowbar;
             if (step == null || Mathf.Abs(step.duration_seconds - tuning.StepDurationSeconds) > .0001f ||
@@ -96,7 +149,13 @@ namespace BarPromenade.Editor
                     swing.pelvis_travel_m < .04f || swing.knee_travel_degrees < 7f || swing.minimum_reach_m < .95f ||
                     swing.active_tip_travel_m < (swing.name == "backhand" ? .60f : 1f) ||
                     Mathf.Abs(swing.contact_seconds - .56f) > .0001f)
-                    throw new InvalidOperationException("Combat swing side lost its authored strike contract: " + swing.name);
+                    throw new InvalidOperationException($"Combat swing side lost its authored strike contract: {swing.name}; " +
+                        $"attack_clip={swing.attack_clip} (expected {names.Attack}), release_light={swing.release_light} (expected {names.ReleaseLight}), " +
+                        $"release_heavy={swing.release_heavy} (expected {names.ReleaseHeavy}), charge_clip={swing.charge_clip} (expected {names.Charge}), " +
+                        $"recoil_clip={swing.recoil_clip} (expected {names.Recoil}), pelvis_travel_m={swing.pelvis_travel_m:F6} (>=0.04), " +
+                        $"knee_travel_degrees={swing.knee_travel_degrees:F6} (>=7), minimum_reach_m={swing.minimum_reach_m:F6} (>=0.95), " +
+                        $"active_tip_travel_m={swing.active_tip_travel_m:F6} (>={(swing.name == "backhand" ? .60f : 1f)}), " +
+                        $"contact_seconds={swing.contact_seconds:F6} (expected 0.56).");
                 Charging charging = swing.charging;
                 if (charging == null || charging.charge_parameter != "linear" ||
                     charging.maximum_entry_error > .00001f || charging.maximum_lower_track_error > .00001f ||
@@ -104,6 +163,7 @@ namespace BarPromenade.Editor
                     charging.minimum_reach_m < .95f || Mathf.Abs(charging.release_seconds - 1.28f) > .0001f)
                     throw new InvalidOperationException("Combat charge lost its continuous, grounded release contract: " + swing.name);
                 if (charging.parameterization != "shared_light_time" || charging.source_clip != names.Attack ||
+                    charging.imported_charge_curve != "source_upper_keys_and_tangents_retimed" ||
                     Mathf.Abs(charging.preparation_advance_seconds - CombatAssetProvider.ChargePreparationAdvanceSeconds) > .00001f ||
                     Mathf.Abs(charging.charge_source_seconds - CombatAssetProvider.ChargePreparationAdvanceSeconds) > .00001f ||
                     Mathf.Abs(charging.convergence_seconds - CombatAssetProvider.ReleaseConvergenceSeconds) > .00001f)
@@ -140,18 +200,139 @@ namespace BarPromenade.Editor
             foreach (string name in CombatAssetProvider.ClipNames.Concat(CombatAssetProvider.LocomotionClipNames)
                 .Concat(CombatAssetProvider.StepClipNames).Concat(CombatAssetProvider.RecoveryClipNames))
             {
+                if (npc && name == CombatAssetProvider.KickClip) continue;
                 AnimationClip clip = CombatAssetProvider.LoadClip(name, npc);
-                foreach (EditorCurveBinding binding in AnimationUtility.GetCurveBindings(clip))
-                {
-                    if (binding.path.Contains("/root/")) continue;
-                    AnimationCurve curve = AnimationUtility.GetEditorCurve(clip, binding);
-                    if (curve != null && curve.keys.Length > 1 && curve.keys.Max(k => k.value) - curve.keys.Min(k => k.value) > .00001f)
-                        throw new InvalidOperationException("Combat contains animated object/root motion: " + binding.path);
-                }
+                ValidateInPlaceClip(clip);
             }
             ValidateGripMotion(false);
             ValidateGripMotion(true);
             Debug.Log("COMBAT IMPORTED METRES, ANCHORS AND IN-PLACE ACTIONS OK");
+        }
+
+        [MenuItem("Bar Promenade/Combat Test/Validate Imported Kick")]
+        public static void BuildKickOrThrow()
+        {
+            // A focused action check imports only its bank and measured data.
+            // Existing production hero/prop prefabs are inspected, never rebuilt.
+            foreach (string file in new[] { "CombatActions.fbx", "CombatTest3D.json" })
+                AssetDatabase.ImportAsset(Folder + file, ImportAssetOptions.ForceSynchronousImport);
+            Manifest manifest = JsonUtility.FromJson<Manifest>(File.ReadAllText(ManifestPath));
+            if (manifest == null || !manifest.test_only || manifest.actions == null)
+                throw new InvalidOperationException("Combat kick requires its isolated action manifest.");
+            ValidateKickManifest(manifest.actions.kick);
+            AnimationClip kick = CombatAssetProvider.LoadClip(CombatAssetProvider.KickClip);
+            if (kick.isLooping || kick.events.Length != 0 ||
+                Mathf.Abs(kick.length - CombatAssetProvider.ClipDuration(CombatAssetProvider.KickClip)) > .0001f)
+                throw new InvalidOperationException("Combat imported kick changed its authored clock or added events.");
+            ValidateInPlaceClip(kick);
+            GameObject template = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Resources/Player/Player3DV2.prefab");
+            if (template == null) throw new InvalidOperationException("Combat kick requires the existing production hero.");
+            GameObject actor = UnityEngine.Object.Instantiate(template);
+            try
+            {
+                Player3DAssetRegistry registry = actor.GetComponentInChildren<Player3DAssetRegistry>();
+                if (registry == null || registry.Animator == null || registry.Anchors.RightGrip == null)
+                    throw new InvalidOperationException("Combat kick requires the registered production rig and right grip.");
+                registry.Animator.enabled = false;
+                Transform grip = registry.Anchors.RightGrip;
+                NpcHandPose handPose = grip.GetComponentInParent<NpcHandPose>();
+                GameObject bar = CombatAssetProvider.CreateCrowbar(grip, handPose);
+                handPose.SetGrip(false, 1f);
+                ValidateKick(registry.Animator, actor.transform, handPose, bar, CombatAssetProvider.FindAnchor(bar, "Grip"));
+            }
+            finally { UnityEngine.Object.DestroyImmediate(actor); }
+            Debug.Log("COMBAT IMPORTED KICK CLOCK, GRIP, SUPPORT AND READY ENDPOINTS OK");
+        }
+
+        [MenuItem("Bar Promenade/Combat Test/Diagnose Imported Charge Entries")]
+        public static void DiagnoseChargeEntriesOrThrow()
+        {
+            foreach (string file in new[] { "CombatActions.fbx", "CombatNpcActions.fbx" })
+                AssetDatabase.ImportAsset(Folder + file, ImportAssetOptions.ForceSynchronousImport);
+            bool failed = false;
+            foreach (bool npc in new[] { false, true })
+            {
+                GameObject template = npc ? DefaultNpcCatalog.GetPrefab() :
+                    AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Resources/Player/Player3DV2.prefab");
+                GameObject actor = UnityEngine.Object.Instantiate(template);
+                try
+                {
+                    Animator animator = npc ? actor.GetComponent<VillageResidentPresentation>().Animator :
+                        actor.GetComponentInChildren<Player3DAssetRegistry>().Animator;
+                    animator.enabled = false;
+                    Transform[] bones = animator.GetComponentsInChildren<Transform>(true);
+                    Transform spine = bones.First(bone => bone.name == "spine");
+                    bool[] upper = bones.Select(bone => bone.IsChildOf(spine)).ToArray();
+                    var neutralPositions = new Vector3[bones.Length];
+                    var neutralRotations = new Quaternion[bones.Length];
+                    var chargePositions = new Vector3[bones.Length];
+                    var chargeRotations = new Quaternion[bones.Length];
+                    foreach (MeleeSwing swing in new[] { MeleeSwing.Forehand, MeleeSwing.Backhand })
+                    {
+                        CombatAssetProvider.SwingClipSet names = CombatAssetProvider.SwingClips(swing);
+                        AnimationClip charge = CombatAssetProvider.LoadClip(names.Charge, npc);
+                        AnimationClip light = CombatAssetProvider.LoadClip(names.ReleaseLight, npc);
+                        light.SampleAnimation(animator.gameObject, 0f);
+                        for (int i = 0; i < bones.Length; i++)
+                        { neutralPositions[i] = bones[i].localPosition; neutralRotations[i] = bones[i].localRotation; }
+                        float maximumPosition = 0f, maximumAngle = 0f, worstPower = 0f;
+                        string worstBone = "";
+                        for (int frame = 0; frame <= 100; frame++)
+                        {
+                            float q = frame / 100f;
+                            charge.SampleAnimation(animator.gameObject, q * charge.length);
+                            for (int i = 0; i < bones.Length; i++)
+                            { chargePositions[i] = bones[i].localPosition; chargeRotations[i] = bones[i].localRotation; }
+                            light.SampleAnimation(animator.gameObject, CombatAssetProvider.ReleaseSourceSeconds(0f, q));
+                            for (int i = 0; i < bones.Length; i++)
+                            {
+                                Vector3 position = upper[i] ? bones[i].localPosition : neutralPositions[i];
+                                Quaternion rotation = upper[i] ? bones[i].localRotation : neutralRotations[i];
+                                float positionError = Vector3.Distance(chargePositions[i], position);
+                                float angleError = Quaternion.Angle(chargeRotations[i], rotation);
+                                maximumPosition = Mathf.Max(maximumPosition, positionError);
+                                if (angleError > maximumAngle)
+                                { maximumAngle = angleError; worstPower = q; worstBone = bones[i].name; }
+                                if (positionError <= .0001f && angleError <= .06f) continue;
+                                failed = true;
+                                if (frame % 25 == 0)
+                                    Debug.Log($"CHARGE ENTRY DETAIL bank={(npc ? "npc" : "hero")}, swing={names.Attack}, power={q:F2}, " +
+                                        $"bone={bones[i].name}, positionError={positionError:F9} m, angleError={angleError:F9} degrees, " +
+                                        $"sourceSeconds={CombatAssetProvider.ReleaseSourceSeconds(0f, q):F9}.");
+                            }
+                        }
+                        Debug.Log($"CHARGE ENTRY SUMMARY bank={(npc ? "npc" : "hero")}, swing={names.Attack}, " +
+                            $"maximumPositionError={maximumPosition:F9} m, maximumAngleError={maximumAngle:F9} degrees, " +
+                            $"worstPower={worstPower:F2}, worstBone={worstBone}, chargeRate={charge.frameRate:F3}, lightRate={light.frameRate:F3}.");
+                    }
+                }
+                finally { UnityEngine.Object.DestroyImmediate(actor); }
+            }
+            if (failed) throw new InvalidOperationException("Imported charge entries differ from their shared released trajectory; see CHARGE ENTRY diagnostics.");
+            Debug.Log("COMBAT IMPORTED CHARGE ENTRIES MATCH THEIR SHARED RELEASED TRAJECTORIES");
+        }
+
+        private static void ValidateKickManifest(Kick kick)
+        {
+            if (kick == null || kick.clip != CombatAssetProvider.KickClip || kick.striking_foot != "Right" ||
+                kick.support_foot != "Left" || kick.endpoint != CombatAssetProvider.ReadyClip || kick.root_motion ||
+                kick.animation_events != 0 || Mathf.Abs(kick.duration_seconds - CombatAssetProvider.ClipDuration(kick.clip)) > .0001f ||
+                Mathf.Abs(kick.windup_seconds - .30f) > .0001f || Mathf.Abs(kick.active_seconds - .10f) > .0001f ||
+                Mathf.Abs(kick.recovery_seconds - .55f) > .0001f || kick.maximum_support_error > .001f ||
+                kick.maximum_support_angle_degrees > .1f || kick.maximum_endpoint_error > .00001f ||
+                kick.maximum_ankle_height_m < .60f || kick.minimum_active_reach_m < .70f)
+                throw new InvalidOperationException("Combat kick lost its right sole, left support or exact Ready endpoints.");
+        }
+
+        private static void ValidateInPlaceClip(AnimationClip clip)
+        {
+            foreach (EditorCurveBinding binding in AnimationUtility.GetCurveBindings(clip))
+            {
+                if (binding.path.Contains("/root/")) continue;
+                AnimationCurve curve = AnimationUtility.GetEditorCurve(clip, binding);
+                if (curve != null && curve.keys.Length > 1 && curve.keys.Max(k => k.value) - curve.keys.Min(k => k.value) > .00001f)
+                    throw new InvalidOperationException("Combat contains animated object/root motion: " + binding.path);
+            }
         }
 
         private static void ValidateGripMotion(bool npc)
@@ -219,6 +400,7 @@ namespace BarPromenade.Editor
                 }
                 ValidateReactions(animator, grip, tip, npc);
                 ValidateWeightAndHandoff(animator, npc);
+                if (!npc) ValidateKick(animator, actor.transform, handPose, bar, origin);
                 ValidateCombatLocomotion(animator, actor.transform, npc);
                 ValidateDefensiveSteps(animator, actor.transform, npc);
             }
@@ -242,6 +424,7 @@ namespace BarPromenade.Editor
             var shifts = new float[2];
             foreach (string name in CombatAssetProvider.ClipNames)
             {
+                if (name == CombatAssetProvider.KickClip) continue;
                 AnimationClip clip = CombatAssetProvider.LoadClip(name, npc);
                 int count = Mathf.CeilToInt(clip.length * 100f);
                 int side = name == CombatAssetProvider.AttackClip ? 0 : name == CombatAssetProvider.BackhandClip ? 1 : -1;
@@ -262,6 +445,38 @@ namespace BarPromenade.Editor
             float drop = initialPelvis.y - pelvis.position.y;
             if (drop < .04f || drop > .13f)
                 throw new InvalidOperationException("Combat imported defeat lost balance or authored the physical fall prematurely.");
+        }
+
+        private static void ValidateKick(Animator animator, Transform actor, NpcHandPose handPose, GameObject bar, Transform origin)
+        {
+            Transform[] bones = animator.GetComponentsInChildren<Transform>(true);
+            Transform left = bones.First(bone => bone.name == "foot.L");
+            Transform right = bones.First(bone => bone.name == "foot.R");
+            Transform root = bones.First(bone => bone.name == "root");
+            AnimationClip ready = CombatAssetProvider.LoadClip(CombatAssetProvider.ReadyClip);
+            AnimationClip kick = CombatAssetProvider.LoadClip(CombatAssetProvider.KickClip);
+            CompareEndpoint(kick, 0f, ready, 0f, animator, bones, "kick entry");
+            CompareEndpoint(kick, kick.length, ready, 0f, animator, bones, "kick exit");
+            ready.SampleAnimation(animator.gameObject, 0f);
+            Vector3 planted = left.position, rootPosition = root.position;
+            Quaternion flat = left.rotation;
+            float grounded = right.position.y, maximumHeight = 0f, activeReach = 0f;
+            for (int frame = 0; frame <= 190; frame++)
+            {
+                float seconds = frame / 200f;
+                kick.SampleAnimation(animator.gameObject, seconds);
+                if (Vector3.Distance(planted, left.position) > .002f || Quaternion.Angle(flat, left.rotation) > .15f ||
+                    Vector3.Distance(rootPosition, root.position) > .001f || right.position.y < grounded - .002f)
+                    throw new InvalidOperationException("Combat imported kick lost its grounded left support.");
+                maximumHeight = Mathf.Max(maximumHeight, right.position.y - grounded);
+                if (seconds >= .30f && seconds <= .40f)
+                    activeReach = Mathf.Max(activeReach, actor.InverseTransformPoint(right.position).z);
+                if (Vector3.Distance(origin.position, handPose.CylinderCentre(false)) > .001f ||
+                    Vector3.Dot(bar.transform.up, handPose.CylinderAxis(false)) < .999f)
+                    throw new InvalidOperationException("Combat imported kick lost its retained right grip.");
+            }
+            if (maximumHeight < .60f || activeReach < .70f)
+                throw new InvalidOperationException("Combat imported kick cannot reach a torso in front.");
         }
 
         private static void ValidateChargedRelease(Animator animator, Transform actor, NpcHandPose handPose,
@@ -305,7 +520,11 @@ namespace BarPromenade.Editor
                 for (int i = 0; i < bones.Length; i++)
                     if (Vector3.Distance(entryPositions[i], bones[i].localPosition) > .0001f ||
                         Quaternion.Angle(entryRotations[i], bones[i].localRotation) > .06f)
-                        throw new InvalidOperationException("Charged entry differs from its released pose: " + q + "/" + bones[i].name);
+                        throw new InvalidOperationException($"Charged entry differs from its released pose: bank={(npc ? "npc" : "hero")}, " +
+                            $"swing={names.Attack}, power={q:F2}, bone={bones[i].name}, " +
+                            $"positionError={Vector3.Distance(entryPositions[i], bones[i].localPosition):F9} m (limit 0.0001), " +
+                            $"angleError={Quaternion.Angle(entryRotations[i], bones[i].localRotation):F9} degrees (limit 0.06), " +
+                            $"sourceSeconds={CombatAssetProvider.ReleaseSourceSeconds(0f, q):F9}.");
                 float reach = 0f;
                 for (int frame = 0; frame <= 128; frame++)
                 {
@@ -509,6 +728,16 @@ namespace BarPromenade.Editor
             public string[] released_support_clips;
             public DefensiveStep defensive_step;
             public Swing[] swings;
+            public Kick kick;
+        }
+        [Serializable] private sealed class Kick
+        {
+            public string clip, striking_foot, support_foot, endpoint;
+            public bool root_motion;
+            public int animation_events;
+            public float duration_seconds, windup_seconds, active_seconds, recovery_seconds;
+            public float maximum_support_error, maximum_support_angle_degrees, maximum_endpoint_error;
+            public float maximum_ankle_height_m, minimum_active_reach_m;
         }
         [Serializable] private sealed class Swing
         {
@@ -518,7 +747,7 @@ namespace BarPromenade.Editor
         }
         [Serializable] private sealed class Charging
         {
-            public string charge_parameter, parameterization, source_clip;
+            public string charge_parameter, parameterization, source_clip, imported_charge_curve;
             public float preparation_advance_seconds, convergence_seconds, charge_source_seconds;
             public float release_seconds, maximum_entry_error, maximum_lower_track_error;
             public float maximum_light_legacy_error, maximum_support_error, minimum_reach_m;

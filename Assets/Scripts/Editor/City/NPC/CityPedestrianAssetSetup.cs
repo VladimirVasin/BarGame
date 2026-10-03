@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using BarPromenade;
 using UnityEditor;
 using UnityEngine;
@@ -2456,6 +2457,29 @@ namespace BarPromenade.Editor
             ValidateDescriptor(descriptor, LoadAndValidateAnimationManifest());
         }
 
+        /// <summary>Read-only proof of both optional-face branches, without rebuilding
+        /// the pedestrian bank: a legacy solid face and the declared fisherman PNG.</summary>
+        public static void ValidateFaceAtlasesOrThrow()
+        {
+            foreach (PedestrianDescriptor descriptor in new[]
+            {
+                Descriptors.Single(candidate => candidate.ModelPath == ModelPath),
+                Descriptors.Single(candidate => candidate.ModelPath == LakeFishermanModelPath)
+            })
+            {
+                CityPedestrianManifest manifest = LoadAndValidateManifest(descriptor);
+                bool expectedPng = descriptor.ModelPath == LakeFishermanModelPath;
+                if ((manifest.face_atlas != null) != expectedPng)
+                    throw new InvalidOperationException($"'{descriptor.DesignId}' optional face declaration changed.");
+                GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(descriptor.PrefabPath);
+                CityPedestrianAssetRegistry registry = prefab != null
+                    ? prefab.GetComponent<CityPedestrianAssetRegistry>() : null;
+                if (registry == null)
+                    throw new InvalidOperationException($"'{descriptor.PrefabPath}' has no pedestrian registry.");
+                CityPedestrianFaceAtlas.Validate(registry, manifest.face_atlas);
+            }
+        }
+
         public static void ValidateOrThrow()
         {
             CityPedestrianAnimationManifest animationManifest =
@@ -2828,6 +2852,11 @@ namespace BarPromenade.Editor
 
             CityPedestrianManifest manifest =
                 JsonUtility.FromJson<CityPedestrianManifest>(source.text);
+            // Inline serializable classes can be materialized as empty objects
+            // even when the JSON omits them. Only an absent key means no atlas;
+            // an explicitly declared empty/broken atlas still reaches validation.
+            if (manifest != null && !Regex.IsMatch(source.text, @"""face_atlas""\s*:"))
+                manifest.face_atlas = null;
             if (manifest == null ||
                 manifest.parts == null ||
                 manifest.bones == null ||
@@ -5289,9 +5318,9 @@ namespace BarPromenade.Editor
             public CityPedestrianManifestBone[] bones;
             public CityPedestrianManifestPart[] parts;
 
-            // Written only by designs that declare them; JsonUtility
-            // leaves each null on every other manifest, and null is read
-            // as empty everywhere they are consumed.
+            // Written only by designs that declare them. The optional inline
+            // face object is normalized at the JSON boundary; absent arrays
+            // are read as empty wherever they are consumed.
             public string[] signature_effects;
             public CityPedestrianManifestRigAnchor[] rig_anchors;
             public CityPedestrianManifestTextureBinding[] texture_bindings;

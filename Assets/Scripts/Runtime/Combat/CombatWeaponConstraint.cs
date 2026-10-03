@@ -9,6 +9,14 @@ namespace BarPromenade
     internal sealed class CombatWeaponConstraint : IDisposable
     {
         private const float Skin = .004f;
+        internal const int MaximumCandidateChecksPerApply = 12;
+        private int remainingCandidateChecks;
+        private bool hasShoulderChoice;
+        private int shoulderChoiceFrame = -1;
+        private float shoulderChoiceClock;
+        private Vector3 shoulderChoiceTargetPosition, solveTargetPosition;
+        private Quaternion shoulderChoiceTargetRotation, shoulderChoiceForearm, shoulderChoiceHand, shoulderChoice;
+        private Quaternion solveTargetRotation;
         private readonly CombatActor actor;
         private readonly Transform upper, forearm, hand, weapon;
         private readonly CapsuleCollider probe;
@@ -20,6 +28,9 @@ namespace BarPromenade
         private readonly List<Collider> otherAnatomy = new List<Collider>(20);
         private readonly List<DepthShape> depthShapes = new List<DepthShape>(48);
         private readonly Vector3[] searchAxes = new Vector3[5];
+        private static readonly WorldProbeLayout WorldProbes = BuildWorldProbeLayout();
+        private readonly int[] worldProbeStamps = new int[WorldProbes.Count];
+        private int worldProbeStamp;
         private Quaternion baseUpper, baseForearm, baseHand;
         private Quaternion lastUpper, lastForearm, lastHand;
         private Pose lastWeapon;
@@ -44,7 +55,15 @@ namespace BarPromenade
         internal string BlockingShape { get; private set; }
         internal bool Blocked { get; private set; }
         internal bool WorldBlocked { get; private set; }
+        internal bool SupportBlocked { get; private set; }
         internal float PenetrationDepth { get; private set; }
+        internal long CandidateChecks { get; private set; }
+        internal long ShoulderChoicesReused { get; private set; }
+        internal long CandidateBudgetExhaustions { get; private set; }
+        internal long SweepSamples { get; private set; }
+        internal long WorldQueries { get; private set; }
+        internal long RepeatedWorldQueriesAvoided { get; private set; }
+        internal int ArmCoreSnapshots => armClearance.CoreSnapshotCount;
         private int journalConstraintState = -1;
         private float journalDesiredDepth;
         private bool journalDesiredSweep;
@@ -110,7 +129,7 @@ namespace BarPromenade
             applied = false;
         }
 
-        internal void Forget() { applied = fullPoseApplied = hasLast = Blocked = WorldBlocked = MotionBlocked = pendingCommit = checkingDesiredPath = false; PenetrationDepth = 0f; }
+        internal void Forget() { hasShoulderChoice = false; applied = fullPoseApplied = hasLast = Blocked = WorldBlocked = SupportBlocked = MotionBlocked = pendingCommit = checkingDesiredPath = false; PenetrationDepth = 0f; }
         internal void Reset() { Restore(); Forget(); journalConstraintState = -1; journalConstraintReason = null; }
 
         internal void Apply()
@@ -121,10 +140,14 @@ namespace BarPromenade
             Restore();
             pendingCommit = false;
             MotionBlocked = false;
+            SupportBlocked = false;
             baseUpper = upper.localRotation; baseForearm = forearm.localRotation; baseHand = hand.localRotation;
             Quaternion desired = upper.rotation;
+            solveTargetRotation = desired; solveTargetPosition = upper.position;
+            remainingCandidateChecks = MaximumCandidateChecksPerApply - 1;
             applied = true;
             GatherObstacles();
+            using var coreSnapshot = armClearance.BeginWeaponSolve();
             escapeAngle = 0f;
             WorldBlocked = false;
             checkingDesiredPath = true;
@@ -135,7 +158,25 @@ namespace BarPromenade
             journalDesiredDepth = depth; journalDesiredSweep = swept;
             checkingDesiredPath = false;
             Blocked = depth > 0f || swept;
-            if (!Blocked) { AcceptCandidate(); return; }
+            // A held two-handed bar has one reachable pose. Probe the frozen
+            // supporting arm after the right arm's collision gates, including
+            // contact previews, so sampled and presented weapon paths agree.
+            bool constrainSupport = actor.SupportGrip != null && actor.SupportGrip.RequiresWeaponSupportConstraint;
+            SupportBlocked = !Blocked && constrainSupport && !actor.SupportGrip.IsWeaponSupportPoseGeometricallyFeasible();
+            if (!Blocked && !SupportBlocked) { AcceptCandidate(); return; }
+
+            // Reuse only a shoulder preference for this exact authored pose.
+            // Moving anatomy and world geometry are always checked again.
+            if (!contactPreview && hasShoulderChoice && shoulderChoiceFrame == Time.frameCount &&
+                shoulderChoiceClock == actor.JournalPoseClock &&
+                shoulderChoiceTargetPosition.Equals(solveTargetPosition) &&
+                shoulderChoiceTargetRotation.Equals(solveTargetRotation) &&
+                shoulderChoiceForearm.Equals(baseForearm) && shoulderChoiceHand.Equals(baseHand))
+            {
+                upper.rotation = shoulderChoice;
+                if (TryCandidate(constrainSupport, out _))
+                { ShoulderChoicesReused++; AcceptCandidate(); return; }
+            }
 
             // A previous safe arm is a useful warm start while the torso keeps moving.
             // It does not pull a saved pre-fall arm back into a new recovery pose.
@@ -144,14 +185,14 @@ namespace BarPromenade
             if (hasLast)
             {
                 upper.rotation = lastUpper;
-                if (CandidateDepth() <= 0f && SweepClear(lastWeapon, WeaponPose))
+                if (TryCandidate(constrainSupport, out _))
                 {
                     Quaternion safe = upper.rotation;
                     // Stop at first obstruction rather than stepping across a thin wall.
                     for (int i = 1; i <= 12; i++)
                     {
                         upper.rotation = Quaternion.Slerp(safe, desired, i / 12f);
-                        if (CandidateDepth() > 0f || !SweepClear(lastWeapon, WeaponPose))
+                        if (!TryCandidate(constrainSupport, out _))
                         { upper.rotation = Quaternion.Slerp(safe, desired, (i - 1) / 12f); break; }
                     }
                     AcceptCandidate(); return;
@@ -164,7 +205,7 @@ namespace BarPromenade
                 for (int scale = 1; scale <= 4; scale *= 2)
                 {
                     upper.rotation = Quaternion.AngleAxis(Mathf.Min(36f, firstEscapeAngle * scale), firstEscapeAxis) * desired;
-                    if (CandidateDepth() <= 0f && (!hasLast || SweepClear(lastWeapon, WeaponPose)))
+                    if (TryCandidate(constrainSupport, out _))
                     { AcceptCandidate(); return; }
                 }
 
@@ -173,32 +214,37 @@ namespace BarPromenade
             searchAxes[0] = actor.transform.up; searchAxes[1] = actor.transform.right; searchAxes[2] = actor.transform.forward;
             searchAxes[3] = (searchAxes[0] + searchAxes[1]).normalized;
             searchAxes[4] = (searchAxes[0] - searchAxes[1]).normalized;
-            for (int ring = 1; ring <= 7; ring++)
+            for (int ring = 1; ring <= 7 && remainingCandidateChecks > 0; ring++)
             {
                 float angle = ring * 12f;
                 foreach (Vector3 axis in searchAxes)
                     for (int sign = -1; sign <= 1; sign += 2)
                     {
                         upper.rotation = Quaternion.AngleAxis(angle * sign, axis) * desired;
-                        float candidate = CandidateDepth();
+                        if (remainingCandidateChecks <= 0) break;
+                        bool clear = TryCandidate(constrainSupport, out float candidate);
                         if (candidate < bestDepth) { bestDepth = candidate; best = upper.rotation; }
-                        if (candidate > 0f || (hasLast && !SweepClear(lastWeapon, WeaponPose))) continue;
+                        if (!clear) continue;
                         AcceptCandidate(); return;
                     }
             }
             // A tightly obstructed action cannot be made safe by twisting the wrist.
             // Keep the last complete reachable arm while the owning action is blocked.
-            if (hasLast)
+            // The coupled shoulder search retains THIS authored elbow/wrist.
+            // The legacy complete-arm fallback remains for independent safety
+            // solves; it must not manufacture a different supporting target.
+            if (hasLast && !constrainSupport)
             {
                 upper.rotation = lastUpper;
                 forearm.localRotation = lastForearm;
                 hand.localRotation = lastHand;
-                if (CandidateDepth() <= 0f && SweepClear(lastWeapon, WeaponPose)) { AcceptCandidate(); return; }
+                if (TryCandidate(false, out _)) { AcceptCandidate(); return; }
             }
             upper.rotation = best;
             forearm.localRotation = baseForearm; hand.localRotation = baseHand;
             PenetrationDepth = Depth();
             MotionBlocked = true;
+            if (remainingCandidateChecks == 0) CandidateBudgetExhaustions++;
             if (hasLast && !contactPreview)
             {
                 for (int i = 0; i < poseBones.Length; i++)
@@ -221,16 +267,35 @@ namespace BarPromenade
                 PenetrationDepth = Depth();
             }
             // Do not accept an intersecting pose as the sweep's next starting point.
-            JournalConstraint("pose_rejected");
+            JournalConstraint(SupportBlocked ? "support_contact" : "pose_rejected");
         }
 
         private Pose WeaponPose => new Pose(weapon.position, weapon.rotation);
 
+        private bool TryCandidate(bool constrainSupport, out float depth)
+        {
+            depth = float.PositiveInfinity;
+            // A rejected wrist/reach branch does not need native penetration or
+            // a sweep. The final supporting pose still passes its full gates.
+            if (constrainSupport && !actor.SupportGrip.IsWeaponSupportPoseGeometricallyFeasible()) return false;
+            if (remainingCandidateChecks <= 0) return false;
+            remainingCandidateChecks--;
+            depth = CandidateDepth();
+            return depth <= 0f && (!hasLast || SweepClear(lastWeapon, WeaponPose));
+        }
+
         private void AcceptCandidate()
         {
+            if (!contactPreview)
+            {
+                hasShoulderChoice = true; shoulderChoiceFrame = Time.frameCount;
+                shoulderChoiceClock = actor.JournalPoseClock;
+                shoulderChoiceTargetPosition = solveTargetPosition; shoulderChoiceTargetRotation = solveTargetRotation;
+                shoulderChoiceForearm = baseForearm; shoulderChoiceHand = baseHand; shoulderChoice = upper.rotation;
+            }
             PenetrationDepth = 0f;
             pendingCommit = !contactPreview;
-            JournalConstraint(Blocked ? "arm_corrected" : "clear");
+            JournalConstraint(SupportBlocked ? "support_contact" : Blocked ? "arm_corrected" : "clear");
         }
 
         /// <summary>Commit only after the supporting hand has made its final contact.</summary>
@@ -257,10 +322,10 @@ namespace BarPromenade
         private void JournalConstraint(string reason)
         {
             if (contactPreview || actor.Journal == null) return;
-            int state = (Blocked ? 1 : 0) | (WorldBlocked ? 2 : 0) | (MotionBlocked ? 4 : 0);
+            int state = (Blocked ? 1 : 0) | (WorldBlocked ? 2 : 0) | (MotionBlocked ? 4 : 0) | (SupportBlocked ? 8 : 0);
             // A normal acceptance/commit pair is one state, not two events on
             // every render. Failed commits retain their distinct causal reason.
-            if (reason == "committed") reason = Blocked ? "arm_corrected" : "clear";
+            if (reason == "committed") reason = SupportBlocked ? "support_contact" : Blocked ? "arm_corrected" : "clear";
             if (state == journalConstraintState && reason == journalConstraintReason) return;
             journalConstraintState = state; journalConstraintReason = reason;
             actor.JournalEvent("weapon_constraint", action: actor.State.AttackSequence,
@@ -288,12 +353,14 @@ namespace BarPromenade
         private void GatherObstacles()
         {
             obstacles.Clear();
+            WorldQueries++;
             actor.JournalPhysicsQuery();
             int count = Physics.OverlapSphereNonAlloc(upper.position, 1.7f, nearby, ~0, QueryTriggerInteraction.Ignore);
             Collider[] found = nearby;
             if (!(count < nearby.Length))
             {
                 actor.JournalQueryBufferFull(3, "weapon_obstacles", nearby.Length);
+                WorldQueries++;
                 actor.JournalPhysicsQuery();
                 found = Physics.OverlapSphere(upper.position, 1.7f, ~0, QueryTriggerInteraction.Ignore);
             }
@@ -315,6 +382,7 @@ namespace BarPromenade
 
         private float CandidateDepth()
         {
+            CandidateChecks++;
             if (!armClearance.IsClear())
             {
                 // A body correction must not hide a simultaneous wall contact
@@ -409,6 +477,7 @@ namespace BarPromenade
             Vector3 origin = new Vector3(point.x, actor.transform.position.y + .5f, point.z);
             float length = origin.y - point.y + radius + .02f;
             if (length <= 0f) return 0f;
+            WorldQueries++;
             actor.JournalPhysicsQuery();
             int count = Physics.RaycastNonAlloc(origin, Vector3.down, sweeps, length, ~0, QueryTriggerInteraction.Ignore);
             float depth = 0f;
@@ -458,6 +527,12 @@ namespace BarPromenade
             bool anatomyBlocked = false;
             for (int step = 1; step <= steps; step++)
             {
+                SweepSamples++;
+                // Only identical native casts in THIS time sample are reusable.
+                // The next time/shoulder candidate/commit rereads the entire world.
+                if (worldProbeStamp == int.MaxValue)
+                { Array.Clear(worldProbeStamps, 0, worldProbeStamps.Length); worldProbeStamp = 0; }
+                int sampleStamp = ++worldProbeStamp;
                 float t = step / (float)steps;
                 Pose next = new Pose(Vector3.Lerp(from.position, to.position, t), Quaternion.Slerp(from.rotation, to.rotation, t));
                 // Interpolate each body once per time sample, not once for every
@@ -522,6 +597,11 @@ namespace BarPromenade
                         pointTravel.Encapsulate(start + delta);
                         pointTravel.Expand((segment.Radius + Skin) * 2f);
                         if (!NearWorld(pointTravel)) continue;
+                        int probeId = WorldProbes.Ids[index][i];
+                        if (worldProbeStamps[probeId] == sampleStamp)
+                        { RepeatedWorldQueriesAvoided++; continue; }
+                        worldProbeStamps[probeId] = sampleStamp;
+                        WorldQueries++;
                         actor.JournalPhysicsQuery();
                         int count = Physics.SphereCastNonAlloc(start, segment.Radius + Skin, delta.normalized,
                             sweeps, delta.magnitude, ~0, QueryTriggerInteraction.Ignore);
@@ -532,12 +612,45 @@ namespace BarPromenade
                         }
                         for (int h = 0; h < count; h++)
                             if (WorldObstacle(sweeps[h].collider))
-                            { if (checkingDesiredPath) WorldBlocked = true; return false; }
+                            { if (checkingDesiredPath) WorldBlocked = true;
+                                BlockingShape = sweeps[h].collider.name; return false; }
                     }
                 }
                 previous = next;
             }
             return !anatomyBlocked;
+        }
+
+        private sealed class WorldProbeLayout
+        {
+            internal readonly int[][] Ids;
+            internal readonly int Count;
+            internal WorldProbeLayout(int[][] ids, int count) { Ids = ids; Count = count; }
+        }
+
+        private static WorldProbeLayout BuildWorldProbeLayout()
+        {
+            var unique = new List<(Vector3 Point, float Radius)>();
+            var ids = new int[CombatWeaponGeometry.Segments.Count][];
+            for (int segmentIndex = 0; segmentIndex < ids.Length; segmentIndex++)
+            {
+                CombatWeaponGeometry.Segment segment = CombatWeaponGeometry.Segments[segmentIndex];
+                int samples = Mathf.Max(1, Mathf.CeilToInt(Vector3.Distance(segment.A, segment.B) / (segment.Radius * 1.25f)));
+                ids[segmentIndex] = new int[samples + 1];
+                for (int i = 0; i <= samples; i++)
+                {
+                    // Exact equality only: close points and different radii must
+                    // retain their independent swept collision coverage.
+                    Vector3 point = Vector3.Lerp(segment.A, segment.B, i / (float)samples);
+                    int id = -1;
+                    for (int existing = 0; existing < unique.Count; existing++)
+                        if (unique[existing].Point.Equals(point) && unique[existing].Radius.Equals(segment.Radius))
+                        { id = existing; break; }
+                    if (id < 0) { id = unique.Count; unique.Add((point, segment.Radius)); }
+                    ids[segmentIndex][i] = id;
+                }
+            }
+            return new WorldProbeLayout(ids, unique.Count);
         }
 
         private bool NearWorld(Bounds travel)
@@ -581,19 +694,21 @@ namespace BarPromenade
         internal readonly struct PreviewScope : IDisposable
         {
             private readonly CombatWeaponConstraint owner;
-            private readonly bool blocked, worldBlocked, motionBlocked;
+            private readonly bool blocked, worldBlocked, supportBlocked, motionBlocked;
             private readonly float penetration;
             private readonly string shape;
             internal PreviewScope(CombatWeaponConstraint constraint)
             {
                 owner = constraint; blocked = owner.Blocked; motionBlocked = owner.MotionBlocked;
                 worldBlocked = owner.WorldBlocked;
+                supportBlocked = owner.SupportBlocked;
                 penetration = owner.PenetrationDepth; shape = owner.BlockingShape; owner.contactPreview = true;
             }
             public void Dispose()
             {
                 owner.contactPreview = false; owner.Blocked = blocked; owner.MotionBlocked = motionBlocked;
                 owner.WorldBlocked = worldBlocked;
+                owner.SupportBlocked = supportBlocked;
                 owner.PenetrationDepth = penetration; owner.BlockingShape = shape;
             }
         }

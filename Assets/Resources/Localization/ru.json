@@ -211,6 +211,9 @@
     { "key": "combat.title", "value": "Боевой полигон" },
     { "key": "combat.target", "value": "Мишень" },
     { "key": "combat.sparring", "value": "Спарринг" },
+    { "key": "combat.style.cautious", "value": "Осторожный" },
+    { "key": "combat.style.pressuring", "value": "Напористый" },
+    { "key": "combat.style.patient", "value": "Выжидающий" },
     { "key": "combat.reset", "value": "Сброс" },
     { "key": "combat.menu", "value": "Меню" },
     { "key": "combat.health", "value": "Здоровье" },
@@ -219,7 +222,7 @@
     { "key": "combat.opponent", "value": "Противник" },
     { "key": "combat.victory", "value": "Победа" },
     { "key": "combat.defeat", "value": "Поражение" },
-    { "key": "combat.controls", "value": "WASD · ходьба   Space · шаг   ЛКМ · удержать/отпустить   ПКМ · блок" },
+    { "key": "combat.controls", "value": "WASD · ходьба   Space · шаг   Q · пинок   ЛКМ · удержать/отпустить   ПКМ · блок" },
     {
       "key": "interaction.fair_organ",
       "value": "Покрутить шарманку"

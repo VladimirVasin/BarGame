@@ -29,7 +29,7 @@ namespace BarPromenade
                     if (!State.RequestRecoveryCharge()) return JournalCommandResult(request, "rejected", AttackBalanceRejection);
                     return JournalCommandResult(request, "queued", "balance_buffer");
                 }
-                if (CheckShoveRange(request)) return TryBeginShove(request);
+                if (!State.IsKicking && CheckShoveRange(request)) return TryBeginShove(request);
             }
             if (!State.RequestCharge()) return JournalRulesRejected(request, State.Settings.AttackCost, true);
             ContinueBufferedAttackAfterContacts();
@@ -80,9 +80,12 @@ namespace BarPromenade
         /// A new action must never relabel or erase the old swing's final sweep.</summary>
         internal bool ContinueBufferedAttackAfterContacts()
         {
-            if (roundEnded || presentationFrozen || !IsAvailable || !HasAttackBalance ||
+            if (roundEnded || presentationFrozen || HasPendingKick || !IsAvailable || !HasAttackBalance ||
                 !GameInput.CanRead(GameInputContext.Gameplay) ||
-                (contactTarget != null && contactTarget.State.IsDefeated) || !State.TryContinueAttack()) return false;
+                (contactTarget != null && contactTarget.State.IsDefeated)) return false;
+            bool step = State.HasBufferedStep;
+            if (!(step ? State.TryContinueBufferedStep() : State.TryContinueAttack())) return false;
+            if (step) BeginStepPresentation();
             JournalBufferedActionStarted();
             reaction = null;
             reactionClock = 0f;

@@ -211,6 +211,9 @@
     { "key": "combat.title", "value": "Combat Test" },
     { "key": "combat.target", "value": "Target" },
     { "key": "combat.sparring", "value": "Sparring" },
+    { "key": "combat.style.cautious", "value": "Cautious" },
+    { "key": "combat.style.pressuring", "value": "Pressuring" },
+    { "key": "combat.style.patient", "value": "Patient" },
     { "key": "combat.reset", "value": "Reset" },
     { "key": "combat.menu", "value": "Menu" },
     { "key": "combat.health", "value": "Health" },
@@ -219,7 +222,7 @@
     { "key": "combat.opponent", "value": "Opponent" },
     { "key": "combat.victory", "value": "Victory" },
     { "key": "combat.defeat", "value": "Defeat" },
-    { "key": "combat.controls", "value": "WASD · move   Space · step   LMB · hold/release   RMB · block" },
+    { "key": "combat.controls", "value": "WASD · move   Space · step   Q · kick   LMB · hold/release   RMB · block" },
     {
       "key": "interaction.fair_organ",
       "value": "Turn the organ crank"

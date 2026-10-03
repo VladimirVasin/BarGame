@@ -3,10 +3,153 @@ using System.Collections.Generic;
 using System.Reflection;
 using NUnit.Framework;
 using UnityEngine;
+using UnityEngine.TestTools;
 using Object = UnityEngine.Object;
 
 namespace BarPromenade.Tests.PlayMode
 {
+    public sealed partial class CombatPerformancePlayModeTests
+    {
+        [UnityTest]
+        public IEnumerator Range_WeaponSweepReusesOnlyIdenticalQueriesAndKeepsMovingAnatomy()
+        {
+            PlacePair(4f);
+            root.Tick(TickSeconds);
+            yield return null;
+            CombatActor actor = root.Hero, other = root.Opponent;
+            Transform upper = actor.DamageRigRoot.GetComponentsInChildren<Transform>(true)[0];
+            Transform forearm = null;
+            foreach (Transform bone in actor.DamageRigRoot.GetComponentsInChildren<Transform>(true))
+            {
+                if (bone.name == "upper_arm.R") upper = bone;
+                if (bone.name == "forearm.R") forearm = bone;
+            }
+            Assert.That(forearm, Is.Not.Null);
+            using (var arm = new CombatArmClearance(actor, upper, forearm))
+            {
+                Quaternion saved = upper.localRotation;
+                float[] angles = { -24f, 0f, 24f };
+                var results = new bool[angles.Length];
+                int snapshots = arm.CoreSnapshotCount;
+                try
+                {
+                    using (arm.BeginWeaponSolve())
+                        for (int i = 0; i < angles.Length; i++)
+                        {
+                            upper.localRotation = saved * Quaternion.AngleAxis(angles[i], Vector3.up);
+                            results[i] = arm.IsClear();
+                        }
+                    Assert.That(arm.CoreSnapshotCount, Is.EqualTo(snapshots + 1),
+                        "A synchronous shoulder search snapshots its fixed core once and reads the rotating arm live.");
+                    for (int i = 0; i < angles.Length; i++)
+                    {
+                        upper.localRotation = saved * Quaternion.AngleAxis(angles[i], Vector3.up);
+                        Assert.That(arm.IsClear(), Is.EqualTo(results[i]),
+                            "Sharing the fixed core must preserve each independently checked shoulder candidate.");
+                    }
+                    Assert.That(arm.CoreSnapshotCount, Is.EqualTo(snapshots + 1 + angles.Length),
+                        "No core snapshot survives the synchronous solve.");
+                }
+                finally { upper.localRotation = saved; }
+            }
+
+            using var constraint = new CombatWeaponConstraint(actor);
+            constraint.SetOpponent(other);
+            constraint.Apply();
+            constraint.CommitPresentedPose(null);
+            var flags = BindingFlags.Instance | BindingFlags.NonPublic;
+            MethodInfo gather = typeof(CombatWeaponConstraint).GetMethod("GatherObstacles", flags);
+            MethodInfo sweep = typeof(CombatWeaponConstraint).GetMethod("SweepClear", flags);
+            CapsuleCollider nativeProbe = typeof(CombatWeaponConstraint).GetField("probe", flags)?.GetValue(constraint) as CapsuleCollider;
+            Assert.That(gather != null && sweep != null && nativeProbe != null, Is.True);
+            Vector3 origin = actor.transform.position + actor.transform.right * 1.2f + Vector3.up * 1.35f;
+            Pose from = new Pose(origin - Vector3.forward * .2f, Quaternion.identity);
+            Pose to = new Pose(origin + Vector3.forward * .2f, Quaternion.identity);
+            bool Sweep(Pose a, Pose b) => (bool)sweep.Invoke(constraint, new object[] { a, b });
+            void Gather() { Physics.SyncTransforms(); gather.Invoke(constraint, null); }
+
+            // The mesh's broad bounds span the whole prop path, but its physical
+            // aperture clears every surface. Native casts must run and miss;
+            // exact shared endpoints may reuse only that same time sample's miss.
+            var panel = new GameObject("Weapon sweep aperture fixture");
+            panel.transform.position = origin;
+            var mesh = new Mesh { name = "Weapon sweep aperture" };
+            var vertices = new List<Vector3>();
+            var triangles = new List<int>();
+            float[] xs = { -.5f, -.07f, .07f, .5f }, ys = { -.4f, -.2f, .7f, .9f };
+            for (int x = 0; x < 3; x++)
+                for (int y = 0; y < 3; y++)
+                {
+                    if (x == 1 && y == 1) continue;
+                    int first = vertices.Count;
+                    vertices.Add(new Vector3(xs[x], ys[y], 0f));
+                    vertices.Add(new Vector3(xs[x + 1], ys[y], 0f));
+                    vertices.Add(new Vector3(xs[x + 1], ys[y + 1], 0f));
+                    vertices.Add(new Vector3(xs[x], ys[y + 1], 0f));
+                    triangles.AddRange(new[] { first, first + 2, first + 1, first, first + 3, first + 2 });
+                }
+            mesh.SetVertices(vertices); mesh.SetTriangles(triangles, 0); mesh.RecalculateBounds();
+            MeshCollider aperture = panel.AddComponent<MeshCollider>();
+            aperture.sharedMesh = mesh;
+            try
+            {
+                Gather();
+                long queries = constraint.WorldQueries, avoided = constraint.RepeatedWorldQueriesAvoided;
+                Assert.That(Sweep(from, to), Is.True, "The complete prop must pass through the physical aperture.");
+                long actual = constraint.WorldQueries - queries, reused = constraint.RepeatedWorldQueriesAvoided - avoided;
+                Assert.That(actual, Is.GreaterThan(0), "This aperture exercises the native world sweeps, not only an AABB fast path.");
+                Assert.That(reused, Is.GreaterThan(0), "Shared segment ends and zero-length end envelopes must avoid identical native casts.");
+                TestContext.Out.WriteLine($"Weapon aperture sweep: {actual} native casts, {reused} identical casts avoided.");
+
+                Object.DestroyImmediate(aperture);
+                BoxCollider wall = panel.AddComponent<BoxCollider>();
+                wall.center = Vector3.up * .25f;
+                wall.size = new Vector3(.18f, .9f, .006f);
+                Gather();
+                Assert.That(Sweep(from, to), Is.False,
+                    "A new six-millimetre panel must stop the same path immediately; a previous clear sweep cannot be reused.");
+                Assert.That(constraint.BlockingShape, Is.EqualTo(panel.name));
+            }
+            finally { Object.DestroyImmediate(panel); Object.DestroyImmediate(mesh); }
+
+            CapsuleCollider moving = null;
+            foreach (var entry in other.Ragdoll.PhysicsController.AnatomicalColliders)
+                if (entry.Value == Player3DAnatomicalPart.RightForearm) moving = entry.Key as CapsuleCollider;
+            Assert.That(moving, Is.Not.Null);
+            Vector3 savedPosition = moving.transform.position;
+            bool savedEnabled = moving.enabled, probeEnabled = nativeProbe.enabled;
+            var oracleObject = new GameObject("Moving anatomy sweep positive control");
+            SphereCollider oracle = oracleObject.AddComponent<SphereCollider>();
+            oracle.radius = .019f;
+            Vector3 contact = origin + Vector3.up * .25f;
+            void MoveCentre(Vector3 point) => moving.transform.position += point - moving.transform.TransformPoint(moving.center);
+            bool IntersectsOracle() => Physics.ComputePenetration(oracle, contact, Quaternion.identity,
+                moving, moving.transform.position, moving.transform.rotation, out _, out _);
+            try
+            {
+                moving.enabled = nativeProbe.enabled = true;
+                MoveCentre(contact);
+                Assert.That(IntersectsOracle(), Is.True, "The native enabled forearm must cross a real point of the still shaft.");
+                MoveCentre(contact - Vector3.right * .45f);
+                Assert.That(IntersectsOracle(), Is.False);
+                constraint.SetOpponent(other); // Capture the real starting anatomy, not a damage snapshot.
+                MoveCentre(contact + Vector3.right * .45f);
+                Assert.That(IntersectsOracle(), Is.False, "Both endpoints clear: only relative swept motion can find the crossing.");
+                Gather();
+                Assert.That(Sweep(new Pose(origin, Quaternion.identity), new Pose(origin, Quaternion.identity)), Is.False,
+                    "Moving opposing anatomy must stop a stationary weapon, including after an earlier clear world sweep.");
+            }
+            finally
+            {
+                moving.transform.position = savedPosition;
+                moving.enabled = savedEnabled; nativeProbe.enabled = probeEnabled;
+                Object.DestroyImmediate(oracleObject);
+                constraint.Restore();
+            }
+            LogAssert.NoUnexpectedReceived();
+        }
+    }
+
     public sealed partial class CombatTestPlayModeTests
     {
         private WeaponMeshClearanceProbe weaponMeshClearance;

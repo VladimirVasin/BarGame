@@ -20,7 +20,7 @@ namespace BarPromenade
         {
             // Only a wounding contact bleeds: never a block, a parry or a miss.
             if ((impact.Result == MeleeHitResult.Hit || impact.Result == MeleeHitResult.GuardBroken) &&
-                impact.Damage > 0f && BloodEffects != null)
+                impact.Damage > 0f && impact.Kind == CombatImpactKind.Weapon && BloodEffects != null)
                 BloodEffects.Emit(impact.Target, impact.Point, impact.Direction, impact.Damage);
             // Weight is time: a few frozen substeps and a small kick on the shoulder
             // camera, graded by what happened. A killing blow holds longest.
@@ -35,6 +35,7 @@ namespace BarPromenade
                 case MeleeHitResult.Hit: substeps = heavy ? 10 : 6; kick = heavy ? .04f : .025f; break;
                 default: return;
             }
+            if (impact.Kind == CombatImpactKind.Kick) { substeps = 3; kick = .015f; }
             if (impact.Target != null && impact.Target.State.IsDefeated) { substeps = 24; kick = .05f; }
             RequestHitStop(substeps);
             Vector3 direction = impact.Direction;

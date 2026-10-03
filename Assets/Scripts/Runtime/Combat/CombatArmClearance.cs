@@ -16,7 +16,7 @@ namespace BarPromenade
         private readonly int[] upperCoreIndices;
         private readonly LiveShape[] liveCore;
         private readonly CapsuleCollider probe;
-        private int supportSolveDepth;
+        private int coreSolveDepth;
         internal int CoreSnapshotCount { get; private set; }
         internal string LastBlockingShape { get; private set; }
 
@@ -53,7 +53,7 @@ namespace BarPromenade
         {
             LastBlockingShape = null;
             if (probe == null || forearmShape == null || upper == null || forearm == null) return false;
-            SnapshotCore();
+            if (coreSolveDepth == 0) SnapshotCore();
             Vector3 forearmPosition = forearmShape.transform.position;
             Quaternion forearmRotation = forearmShape.transform.rotation;
             Bounds forearmBounds = new CombatWeaponGeometry.ShapeBounds(forearmShape).At(forearmPosition, forearmRotation);
@@ -89,7 +89,7 @@ namespace BarPromenade
             // An elbow search changes only candidate vectors, never core bones.
             // Reuse its synchronous snapshot across candidates; every standalone
             // check and the next solve rereads live pose, scale and geometry.
-            if (supportSolveDepth == 0) SnapshotCore();
+            if (coreSolveDepth == 0) SnapshotCore();
             return SegmentClear(Vector3.Lerp(shoulder, elbow, .65f), elbow) && SegmentClear(elbow, wrist);
 
             bool SegmentClear(Vector3 start, Vector3 end)
@@ -133,17 +133,22 @@ namespace BarPromenade
         /// No frame/substep cache: Dispose makes the next check live again.</summary>
         internal SupportSolveScope BeginSupportSolve() => new SupportSolveScope(this);
 
+        /// <summary>The shoulder candidate search rotates only the right arm;
+        /// its pelvis, torso and head stay fixed until this synchronous solve ends.
+        /// The arm itself is read live for every candidate.</summary>
+        internal SupportSolveScope BeginWeaponSolve() => new SupportSolveScope(this);
+
         internal readonly struct SupportSolveScope : IDisposable
         {
             private readonly CombatArmClearance owner;
             internal SupportSolveScope(CombatArmClearance clearance)
             {
                 owner = clearance;
-                if (owner != null && owner.supportSolveDepth++ == 0) owner.SnapshotCore();
+                if (owner != null && owner.coreSolveDepth++ == 0) owner.SnapshotCore();
             }
             public void Dispose()
             {
-                if (owner != null) owner.supportSolveDepth--;
+                if (owner != null) owner.coreSolveDepth--;
             }
         }
 

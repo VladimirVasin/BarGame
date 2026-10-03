@@ -52,7 +52,13 @@ namespace BarPromenade
             }
             if (reaction == null) return;
             reactionClock += seconds;
-            if (reactionClock >= reaction.length) reaction = null;
+            // A recoil reaches Ready before the rules finish their forced recovery.
+            // Keep that endpoint instead of briefly resampling the old attack tail.
+            if (reactionClock >= reaction.length)
+            {
+                if (IsRecoil(reaction) && State.Phase == MeleePhase.Recovery) reactionClock = reaction.length;
+                else reaction = null;
+            }
         }
 
         private void BeginPoseBlend(float duration = PoseBlendSeconds)

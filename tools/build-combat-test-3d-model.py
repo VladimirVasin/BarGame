@@ -3,6 +3,8 @@
 Run via tools/run-blender.py; --validate-only rebuilds measurements, compares
 the manifest and checks the published passive FBX files through a round trip.
 --actions-only publishes the banks/manifest without rewriting passive geometry.
+--kick-only appends/refreshes only the hero kick in the existing source bank, proving
+that every older action curve is unchanged before staged publication.
 Two swing families share both banks: the forehand (right to left) and the
 backhand (left to right), each with its charge, heavy overlay and wall recoil.
 Both banks carry four grounded combat shuffles and the same broad ready base;
@@ -17,6 +19,7 @@ import hashlib
 import importlib.util
 import json
 import math
+import re
 from pathlib import Path
 import sys
 
@@ -54,6 +57,9 @@ CHARGE_CLIPS = (("CombatCharge", 1., False), ("CombatReleaseLight", 1.28, False)
 BACKHAND_CLIPS = (("CombatBackhand", 1.28, False), ("CombatBackhandRecoil", .48, False),
                   ("CombatBackhandCharge", 1., False), ("CombatBackhandHeavy", 1.28, False))
 SHARED_CLIPS = CLIPS + CHARGE_CLIPS + BACKHAND_CLIPS
+KICK_CLIP, KICK_DURATION = "CombatKick", .95
+KICK_WINDUP, KICK_ACTIVE, KICK_RECOVERY = .30, .10, .55
+KICK_CLIPS = ((KICK_CLIP, KICK_DURATION, False),)
 ATTACK_STOPS = ((0, "ready"), (.10, "anticipation"), (.33, "loaded"), (.45, "windup"),
                 (.56, "contact"), (.63, "follow"), (.73, "overrun"), (.96, "recover"), (1.28, "ready"))
 HEAVY_STOPS = ((0., "windup"), (.10, "windup"), (.33, "heavy_windup"), (.45, "heavy_windup"),
@@ -147,6 +153,52 @@ SURFACES = {"Concrete": (.50, .51, .47), "ConcreteDark": (.34, .36, .33),
             "Rubber": (.13, .15, .14)}
 kit.SURFACES = SURFACES
 CROWBAR_PATH=((0.,-.11,0.),(0.,.49,0.),(0.,.55,.022),(0.,.59,.065),(0.,.605,.112),(0.,.59,.145))
+
+
+def weapon_collision_payload():
+    return dict(space="grip_local_unity_metres",segments=[
+        dict(start=a,end=b,radius=.019) for a,b in zip(CROWBAR_PATH,CROWBAR_PATH[1:])]+
+        [dict(start=(0.,-.075,0.),end=(0.,.08,0.),radius=.024),
+         dict(start=(0.,-.119,.012),end=(0.,-.119,.012),radius=.03671),
+         dict(start=(0.,.587,.152),end=(0.,.587,.152),radius=.02802)])
+
+
+def validate_published_weapon_collision(model_dir):
+    """Prove every capsule declaration matches runtime and contains published art."""
+    collision=weapon_collision_payload()
+    code=(ROOT/"Assets/Scripts/Runtime/Combat/CombatWeaponGeometry.cs").read_text(encoding="utf8")
+    entries=re.findall(r"new Segment\(new Vector3\(([^)]*)\), new Vector3\(([^)]*)\), ([^)]+)\)",code)
+    def vector(value):return tuple(float(component.strip().rstrip("f")) for component in value.split(","))
+    runtime=[dict(start=vector(a),end=vector(b),radius=float(radius.strip().rstrip("f"))) for a,b,radius in entries]
+    if len(runtime)!=len(collision["segments"]):raise ValueError("Weapon runtime/generated collision count differs")
+    for actual,expected in zip(collision["segments"],runtime):
+        for key in ("start","end"):
+            if max(abs(a-b) for a,b in zip(actual[key],expected[key]))>1.e-8:raise ValueError("Weapon runtime/generated collision endpoint differs")
+        if abs(actual["radius"]-expected["radius"])>1.e-8:raise ValueError("Weapon runtime/generated collision radius differs")
+    bpy.ops.wm.read_factory_settings(use_empty=True)
+    bpy.ops.import_scene.fbx(filepath=str(model_dir/"Crowbar.fbx"),use_anim=False)
+    points=[]
+    for obj in bpy.context.scene.objects:
+        if obj.type!="MESH":continue
+        for vertex in obj.data.vertices:
+            point=obj.matrix_world @ vertex.co
+            points.append(Vector((point.x,point.z,point.y)))
+    def violation(point,segment):
+        a,b=Vector(segment["start"]),Vector(segment["end"]);delta=b-a
+        weight=min(1.,max(0.,(point-a).dot(delta)/delta.length_squared)) if delta.length_squared else 0.
+        return (point-a-delta*weight).length-segment["radius"]
+    maximum=max(min(violation(point,segment) for segment in collision["segments"]) for point in points)
+    if maximum>.0002:raise ValueError(f"Published weapon mesh leaves full runtime collision by {maximum}m")
+    print("PUBLISHED CROWBAR COLLISION OK "+json.dumps(dict(segments=len(runtime),maximum_vertex_excess_m=maximum)),flush=True)
+    return collision
+
+
+def refresh_weapon_collision_metadata(destination):
+    payload=json.loads((OUT/"CombatTest3D.json").read_text(encoding="utf8"))
+    crowbar=next(model for model in payload["models"] if model["name"]=="Crowbar")
+    crowbar["collision_shapes"]=validate_published_weapon_collision(OUT)
+    destination.mkdir(parents=True,exist_ok=True)
+    (destination/"CombatTest3D.json").write_text(json.dumps(payload,indent=2)+"\n",encoding="utf8")
 
 
 def make_items():
@@ -2122,6 +2174,10 @@ class CombatBuilder(dialogue.DialogueBuilder):
 
     def build_actions(self):
         self.suspend_mesh_deformation()
+        if getattr(self, "kick_only", False):
+            self.load_existing_bank()
+            self.build_kick_action()
+            return
         resume=getattr(self,"resume_npc_bank",None)
         if resume is not None and not self.hero_profile:
             state=json.loads(resume.with_suffix(".json").read_text(encoding="utf8"))
@@ -2392,6 +2448,83 @@ class CombatBuilder(dialogue.DialogueBuilder):
         if not (backhand["heavy"] in getattr(self,"retimed_cleared_clips",[]) and
                 all(backhand[key] in self.result.actions for key in ("charge","heavy"))):
             self.build_charge_actions(backhand, poses)
+        if self.hero_profile: self.build_kick_action()
+
+    def load_existing_bank(self):
+        """Copy original Blender curves, never round-trip unchanged FBX animation."""
+        source = self.hero_source_bank
+        previous = self.previous_payload["actions"]
+        clips = previous["clips"] + previous["step_clips"] + previous["locomotion_clips"]
+        clips += [dict(name=name, duration_seconds=RECOVERY_DURATIONS[name], loop=False) for name in RECOVERY_CLIPS]
+        clips = [clip for clip in clips if clip["name"] != KICK_CLIP]
+        with bpy.data.libraries.load(str(source), link=False) as (available, loaded):
+            names = [clip["name"] for clip in clips]
+            if not set(names).issubset(available.actions):
+                raise ValueError(f"Source bank is missing published Actions: {source}")
+            loaded.actions = names
+        for clip, action in zip(clips, loaded.actions):
+            action.name = clip["name"]; action.use_fake_user = True
+            self.result.actions[action.name] = common.ActionRecord(action=action, category=action.get("bp_category", "combat"),
+                duration_seconds=clip["duration_seconds"], loop=clip["loop"],
+                source_frame_count=action.get("bp_source_frame_count", round(clip["duration_seconds"]*FPS)),
+                source_fps=action.get("bp_source_fps", FPS))
+        checksum = action_curve_signature(self, SHARED_CLIPS)
+        # Older source files can have a published kick; the legacy signature
+        # deliberately remains the original shared bank, independent of additions.
+        if checksum != previous["animation_signature"]:
+            raise ValueError(f"Source bank does not match published unchanged action SHA: {source}")
+        self.result.rig.animation_data_create()
+        print("Preserved published hero action curves SHA " + checksum, flush=True)
+
+    def build_kick_action(self):
+        """A right sole push from the real Ready pose, supported by the left leg."""
+        if KICK_CLIP in self.result.actions:
+            record = self.result.actions.pop(KICK_CLIP); bpy.data.actions.remove(record.action)
+        rig = self.result.rig
+        rig.animation_data.action = self.result.actions["CombatReady"].action
+        bpy.context.scene.frame_set(0); bpy.context.view_layer.update()
+        ready = self.snapshot_pose()
+        targets = {side: rig.pose.bones["foot."+side].head.copy() for side in ("L", "R")}
+        initial_rotation = rig.pose.bones["foot.R"].matrix.to_quaternion()
+        rig.animation_data.action = None
+        # Ankle landmarks use source metres. A toes-up foot presents the actual
+        # boot sole to the torso; a long straight leg never becomes an IK snap.
+        stops = ((0., targets["R"], 0.), (.08, targets["R"], 0.),
+            (.24, Vector((-.16, -.32, .57)), -36.),
+            (.30, Vector((-.14, -.70, .77)), -78.),
+            (.40, Vector((-.12, -.73, .79)), -82.),
+            (.62, Vector((-.16, -.30, .57)), -30.),
+            (.86, targets["R"], 0.), (KICK_DURATION, targets["R"], 0.))
+        keys = []; count = round(KICK_DURATION*FPS)
+        for frame in range(count+1):
+            second = frame/FPS
+            self._reset_pose(); self._apply_pose(ready)
+            load = dialogue.smooth(second/.20)*(1.-dialogue.smooth((second-.66)/.25))
+            pelvis = rig.pose.bones["pelvis"]; weighted = pelvis.matrix.copy()
+            weighted.translation += Vector((.105*load, .018*load, -.025*load))
+            pelvis.matrix = weighted
+            bpy.context.view_layer.update()
+            # The complete arm chains travel with the chest. Both palms keep
+            # their unchanged Ready grip, avoiding a new elbow branch.
+            for name, degrees in (("spine", -3.5), ("chest", -4.5), ("head", 3.)):
+                bone = rig.pose.bones[name]
+                bone.rotation_quaternion = bone.rotation_quaternion @ Quaternion(Vector((1.,0.,0.)), math.radians(degrees*load))
+            bpy.context.view_layer.update()
+            for (a, p, angle_a), (b, q, angle_b) in zip(stops, stops[1:]):
+                if second <= b+1.e-8:
+                    weight = dialogue.smooth((second-a)/(b-a))
+                    ankle = p.lerp(q, weight); angle = angle_a+(angle_b-angle_a)*weight
+                    break
+            pose = self.pin_supports(self.snapshot_pose(), {"L": targets["L"], "R": ankle})
+            foot = rig.pose.bones["foot.R"]
+            rotation = Quaternion(Vector((1.,0.,0.)), math.radians(angle)) @ initial_rotation
+            foot.matrix = Matrix.Translation(ankle) @ rotation.to_matrix().to_4x4()
+            bpy.context.view_layer.update()
+            pose = self.snapshot_pose()
+            if frame in (0, count): pose = dict(ready)
+            keys.append((frame/count, pose))
+        self._create_action(KICK_CLIP, "combat_kick", KICK_DURATION, False, count, FPS, keys)
+        print("Authored " + KICK_CLIP + " with grounded left support and continuous two-hand grip", flush=True)
 
     def build_charge_actions(self, family, poses):
         """Power changes only the upper-body track; both release feet stay identical."""
@@ -2722,7 +2855,8 @@ def charge_payload(builder, family):
     if minimum_left_reach_margin < .010:
         raise ValueError(f"{family['name']} mixed charge/release left wrist lacks10mm reach margin: {minimum_left_reach_margin:.6f}m")
     parameterization=dict(parameterization="shared_light_time",source_clip=family["attack"],
-        preparation_advance_seconds=.18,convergence_seconds=.45,charge_source_seconds=.18)
+        preparation_advance_seconds=.18,convergence_seconds=.45,charge_source_seconds=.18,
+        imported_charge_curve="source_upper_keys_and_tangents_retimed")
     return dict(charge_clip=family["charge"], release_light=light_name, release_heavy=family["heavy"], weapon_anatomy=mixed_weapon,
                 charge_parameter="linear", release_seconds=1.28, windup_seconds=.45, active_seconds=.18,
                 recovery_seconds=.65, powers=[0., .5, 1.], validation_hz=FPS * 2,
@@ -3021,6 +3155,389 @@ def action_payload(builder):
                 charging=charging["forehand"], swings=swings, holding=holding_payload(builder))
 
 
+def action_curve_signature(builder, clips):
+    checksum = hashlib.sha256()
+    for clip in clips:
+        name = clip[0] if isinstance(clip, tuple) else clip
+        for curve in common.iter_action_fcurves(builder.result.actions[name].action):
+            checksum.update(json.dumps([name, curve.data_path, curve.array_index,
+                [[round(v, 7) for v in key.co] for key in curve.keyframe_points]], separators=(",", ":")).encode())
+    return checksum.hexdigest()
+
+
+def kick_payload(builder):
+    """Bounded action-specific gate; existing shared-bank contracts stay separate."""
+    rig = builder.result.rig
+    ready = builder.result.actions["CombatReady"].action
+    rig.animation_data.action = ready
+    bpy.context.scene.frame_set(0); bpy.context.view_layer.update()
+    neutral = {bone.name: bone.matrix.copy() for bone in rig.pose.bones}
+    left = neutral["foot.L"]; root = neutral["root"]
+    maximum_support, maximum_angle, maximum_endpoint = 0., 0., 0.
+    # Compare authored endpoints before the presentation-only left palm IK.
+    # Ready itself receives that identical correction at runtime.
+    rig.animation_data.action = builder.result.actions[KICK_CLIP].action
+    for second in (0., KICK_DURATION):
+        bpy.context.scene.frame_set(round(second*FPS)); bpy.context.view_layer.update()
+        maximum_endpoint = max(maximum_endpoint, max(abs(neutral[b.name][i][j]-b.matrix[i][j])
+            for b in rig.pose.bones for i in range(4) for j in range(4)))
+    minimum_right_z, maximum_height, maximum_reach = 10., 0., 0.
+    metrics = dict(maximum_wrist_degrees=0., minimum_body_clearance_m=10., minimum_floor_clearance_m=10., maximum_elbow_speed_m_s=0.)
+    strike_samples = []
+    for frame, weapon in presented_weapon_samples(builder, KICK_CLIP, KICK_DURATION):
+        for bone_name, expected in (("root", root), ("foot.L", left)):
+            actual = rig.pose.bones[bone_name].matrix
+            maximum_support = max(maximum_support, (actual.translation-expected.translation).length)
+            maximum_angle = max(maximum_angle, math.degrees(expected.to_quaternion().rotation_difference(actual.to_quaternion()).angle))
+        foot = rig.pose.bones["foot.R"].matrix
+        minimum_right_z = min(minimum_right_z, foot.translation.z)
+        maximum_height = max(maximum_height, foot.translation.z-neutral["foot.R"].translation.z)
+        second = frame/FPS
+        if KICK_WINDUP <= second <= KICK_WINDUP+KICK_ACTIVE:
+            maximum_reach = max(maximum_reach, -foot.translation.y)
+            if frame % 2 == 0:
+                strike_samples.append(dict(seconds=second, ankle=[-foot.translation.x, foot.translation.z+.04, -foot.translation.y]))
+        metrics["maximum_wrist_degrees"] = max(metrics["maximum_wrist_degrees"], weapon["maximum_wrist_degrees"])
+        metrics["minimum_body_clearance_m"] = min(metrics["minimum_body_clearance_m"], weapon["body_gap_m"])
+        metrics["minimum_floor_clearance_m"] = min(metrics["minimum_floor_clearance_m"], weapon["floor_gap_m"])
+        metrics["maximum_elbow_speed_m_s"] = max(metrics["maximum_elbow_speed_m_s"], weapon["elbow_speed_m_s"])
+    if maximum_support > .001 or maximum_angle > .1 or maximum_endpoint > .00001:
+        raise ValueError(f"Kick lost neutral endpoints or left support: {maximum_support}, {maximum_angle}, {maximum_endpoint}")
+    if minimum_right_z < neutral["foot.R"].translation.z-.002 or maximum_height < .60 or maximum_reach < .70:
+        raise ValueError(f"Kick lost grounded entry or torso reach: {minimum_right_z}, {maximum_height}, {maximum_reach}")
+    signature = action_curve_signature(builder, KICK_CLIPS)
+    return dict(clip=KICK_CLIP, duration_seconds=KICK_DURATION, windup_seconds=KICK_WINDUP,
+        active_seconds=KICK_ACTIVE, recovery_seconds=KICK_RECOVERY, striking_foot="Right", support_foot="Left",
+        root_motion=False, animation_events=0, endpoint="CombatReady", maximum_support_error=maximum_support,
+        maximum_support_angle_degrees=maximum_angle, maximum_endpoint_error=maximum_endpoint,
+        maximum_ankle_height_m=maximum_height, minimum_active_reach_m=maximum_reach,
+        strike_samples=strike_samples, weapon_anatomy=metrics, animation_signature=signature)
+
+
+def publish_kick_only(builder, published_payload):
+    """One focused deterministic addition with unchanged original curve signatures."""
+    payload = json.loads(json.dumps(published_payload))
+    preserved = [name for name in builder.result.actions if name != KICK_CLIP]
+    signature = action_curve_signature(builder, preserved)
+    measured = kick_payload(builder)
+    builder.build_kick_action()
+    if action_curve_signature(builder, KICK_CLIPS) != measured["animation_signature"]:
+        raise ValueError("CombatKick is nondeterministic")
+    if action_curve_signature(builder, preserved) != signature:
+        raise ValueError("Kick refresh changed an unrelated Action curve")
+    target = payload["actions"]
+    target["clips"] = [clip for clip in target["clips"] if clip["name"] != KICK_CLIP]
+    target["clips"].append(dict(name=KICK_CLIP, duration_seconds=KICK_DURATION, loop=False))
+    target["kick"] = measured
+    builder.result.root.name = "ROOT_PlayerV2"
+    common.export_animation_fbx(OUT/"CombatActions.fbx", builder.result)
+    builder.restore_mesh_deformation()
+    pack_hero_atlases()
+    common.save_blend(SOURCE/"CombatActions.blend")
+    print("COMBAT KICK CONTRACT OK hero " + json.dumps(measured), flush=True)
+    (OUT/"CombatTest3D.json").write_text(json.dumps(payload, indent=2)+"\n", encoding="utf8")
+
+
+def pack_hero_atlases():
+    """Keep staged editable sources independent of their temporary save location."""
+    paths = {path.name: path for path in (hero.DEFAULT_FACE_ATLAS, hero.DEFAULT_CLOTHING_ATLAS)}
+    for image in bpy.data.images:
+        path = paths.get(Path(image.filepath).name)
+        if path is not None:
+            image.filepath = str(path.resolve()); image.reload(); image.pack()
+
+
+def probe_published_contracts(destination):
+    """Measure metadata seams on the banks that are actually published."""
+    published = json.loads((OUT/"CombatTest3D.json").read_text(encoding="utf8"))
+    results = {}
+    for profile, filename in (("hero", "CombatActions"), ("npc", "CombatNpcActions")):
+        bpy.ops.wm.read_factory_settings(use_empty=True)
+        bpy.context.scene.render.fps = FPS
+        bpy.ops.import_scene.fbx(filepath=str(OUT/(filename+".fbx")), use_anim=True, anim_offset=0.)
+        rig = next(obj for obj in bpy.data.objects if obj.type=="ARMATURE")
+        actions = {action.name.split("|")[-1]: action for action in bpy.data.actions}
+        data = published["actions"] if profile=="hero" else published["actions"]["npc"]
+        def sample(name, seconds, local=False):
+            action = actions[name]
+            duration = next((clip["duration_seconds"] for clip in data["clips"] if clip["name"]==name), None)
+            start, end = action.frame_range
+            frame = start+(end-start)*seconds/duration
+            rig.animation_data.action = action
+            bpy.context.scene.frame_set(math.floor(frame), subframe=frame%1.); bpy.context.view_layer.update()
+            return {bone.name: (bone.matrix_basis if local else bone.matrix).copy() for bone in rig.pose.bones}
+        upper = {bone.name for bone in rig.pose.bones if bone.name=="spine" or any(parent.name=="spine" for parent in bone.parent_recursive)}
+        charging = {}; strikes = {}
+        for family in SWING_FAMILIES:
+            error = 0.
+            for power in (0., .25, .5, .75, 1.):
+                actual = sample(family["charge"], power, True)
+                expected = sample(family["attack"], .18*power, True)
+                error = max(error, max(abs(actual[name][i][j]-expected[name][i][j]) for name in upper for i in range(4) for j in range(4)))
+            charging[family["name"]] = dict(shared_source_charge_error=error,
+                charge_frame_range=list(actions[family["charge"]].frame_range),attack_frame_range=list(actions[family["attack"]].frame_range))
+            scale=rig.matrix_world.to_scale().x
+            def tip(pose):return (pose["SOCKET_Grip.R"] @ Vector((0.,.595/scale,.145/scale)))*scale
+            windup=tip(sample(family["attack"],.45));travel=0.;reach=0.
+            for frame in range(90,127):
+                point=tip(sample(family["attack"],frame/(FPS*2)))
+                travel=max(travel,(point-windup).length);reach=max(reach,-point.y)
+            strikes[family["name"]]=dict(active_tip_travel_m=travel,minimum_reach_m=reach)
+        tips = []; peaks = []; seams = {}
+        for reaction in data["reactions"]:
+            start = sample(reaction["name"], 0.)
+            entry = sample(reaction["entry_clip"], reaction["entry_seconds"])
+            end = sample(reaction["name"], next(clip["duration_seconds"] for clip in data["clips"] if clip["name"]==reaction["name"]))
+            exit_pose = sample(reaction["exit_clip"], reaction["exit_seconds"])
+            seams[reaction["name"]] = dict(entry=max(abs(start[name][i][j]-entry[name][i][j]) for name in start for i in range(4) for j in range(4)),
+                exit=max(abs(end[name][i][j]-exit_pose[name][i][j]) for name in end for i in range(4) for j in range(4)))
+            peak = sample(reaction["name"], reaction["peak_seconds"]); peaks.append((reaction["name"], peak))
+            # The published socket is the same source metric transform; account
+            # for the FBX import's armature unit factor when measuring distances.
+            scale = rig.matrix_world.to_scale().x
+            tips.append((peak["SOCKET_Grip.R"] @ Vector((0., .595/scale, .145/scale))) * scale)
+        pairs = []
+        for index, (first, a) in enumerate(peaks):
+            for following, (second, b) in enumerate(peaks[index+1:], index+1):
+                scale = rig.matrix_world.to_scale().x
+                pairs.append(dict(first_clip=first,second_clip=second,tip_separation_m=(tips[index]-tips[following]).length,
+                    head_separation_m=(a["head"].translation-b["head"].translation).length*scale,
+                    left_elbow_separation_m=(a["forearm.L"].translation-b["forearm.L"].translation).length*scale,
+                    right_elbow_separation_m=(a["forearm.R"].translation-b["forearm.R"].translation).length*scale))
+        results[profile] = dict(charging=charging,strikes=strikes,reaction_seams=seams,reaction_pairs=pairs,armature_scale=list(rig.matrix_world.to_scale()))
+        print("PUBLISHED COMBAT CONTRACT PROBE " + profile + " " + json.dumps(results[profile]), flush=True)
+    destination.parent.mkdir(parents=True,exist_ok=True)
+    destination.write_text(json.dumps(results,indent=2)+"\n",encoding="utf8")
+    return results
+
+
+def refresh_published_metadata(destination):
+    """Restore missing declarations from measured published FBXs, without exporting a bank."""
+    payload=json.loads((OUT/"CombatTest3D.json").read_text(encoding="utf8"))
+    next(model for model in payload["models"] if model["name"]=="Crowbar")["collision_shapes"]=validate_published_weapon_collision(OUT)
+    measured=probe_published_contracts(ROOT/"Captures/CombatTest/published-metadata-measurements.json")
+    for profile in ("hero","npc"):
+        data=payload["actions"] if profile=="hero" else payload["actions"]["npc"]
+        for swing in data["swings"]:
+            strike=measured[profile]["strikes"][swing["name"]]
+            if strike["active_tip_travel_m"]<(1. if swing["name"]=="forehand" else .60) or strike["minimum_reach_m"]<.95:
+                raise ValueError("Published strike lost its real active travel: "+profile+"/"+swing["name"])
+            swing.update(strike)
+        pairs=measured[profile]["reaction_pairs"]
+        if any(pair["tip_separation_m"]<.20 and not (pair["head_separation_m"]>=.12 and
+            max(pair["left_elbow_separation_m"],pair["right_elbow_separation_m"])>=.10) for pair in pairs):
+            raise ValueError("Published reaction silhouettes lost their actual separation: "+profile)
+        data["reaction_silhouette_pairs"]=pairs
+        data["minimum_reaction_tip_separation_m"]=min(pair["tip_separation_m"] for pair in pairs)
+        data["reaction_silhouette_contract"]="tip_20cm_or_head_12cm_and_elbow_10cm"
+        data["released_support_clips"]=list(RELEASED_SUPPORT_CLIPS)
+        data["holding"]["released_support_clips"]=list(RELEASED_SUPPORT_CLIPS)
+        for swing in data["swings"]:
+            swing["charging"]["imported_charge_curve"]="source_upper_keys_and_tangents_retimed"
+        data["charging"]["imported_charge_curve"]="source_upper_keys_and_tangents_retimed"
+    destination.mkdir(parents=True,exist_ok=True)
+    (destination/"CombatTest3D.json").write_text(json.dumps(payload,indent=2)+"\n",encoding="utf8")
+
+
+def bank_clip_specs(data):
+    clips = data["clips"]+data["step_clips"]+data["locomotion_clips"]
+    return clips+[dict(name=name,duration_seconds=RECOVERY_DURATIONS[name],loop=False) for name in RECOVERY_CLIPS]
+
+
+def import_bank(filepath):
+    bpy.ops.wm.read_factory_settings(use_empty=True)
+    bpy.context.scene.render.fps = FPS
+    bpy.ops.import_scene.fbx(filepath=str(filepath),use_anim=True,anim_offset=0.)
+    rig = next(obj for obj in bpy.data.objects if obj.type=="ARMATURE")
+    actions = {action.name.split("|")[-1]:action for action in bpy.data.actions}
+    return rig, actions
+
+
+def bank_motion_samples(filepath, data, excluded=()):
+    rig, actions = import_bank(filepath)
+    samples = {}
+    for clip in bank_clip_specs(data):
+        name, duration = clip["name"], clip["duration_seconds"]
+        if name in excluded: continue
+        action = actions[name]; rig.animation_data.action = action
+        start, end = action.frame_range
+        track = []
+        for index in range(round(duration*FPS*2)+1):
+            seconds = index/(FPS*2)
+            frame = start+(end-start)*seconds/duration
+            bpy.context.scene.frame_set(math.floor(frame),subframe=frame%1.);bpy.context.view_layer.update()
+            track.append({bone.name:bone.matrix.copy() for bone in rig.pose.bones})
+        samples[name] = track
+        print("Sampled published pose track "+filepath.name+"/"+name,flush=True)
+    return samples
+
+
+def assert_bank_motion_parity(before, after, profile):
+    maximum = 0.; at = None; maximum_position=0.;maximum_angle=0.
+    for name, track in before.items():
+        if len(track)!=len(after[name]): raise ValueError("Changed untouched clip clock: "+name)
+        for frame,(a,b) in enumerate(zip(track,after[name])):
+            error = max(abs(a[bone][i][j]-b[bone][i][j]) for bone in a for i in range(4) for j in range(4))
+            if error>maximum: maximum,at = error,dict(clip=name,seconds=frame/(FPS*2))
+            maximum_position=max(maximum_position,max((a[bone].translation-b[bone].translation).length for bone in a))
+            for bone in a:
+                qa,qb=a[bone].to_quaternion(),b[bone].to_quaternion()
+                denominator=math.sqrt(sum(value*value for value in qa)*sum(value*value for value in qb))
+                cosine=min(1.,abs(sum(x*y for x,y in zip(qa,qb)))/denominator)
+                maximum_angle=max(maximum_angle,math.degrees(2.*math.acos(cosine)))
+    # Two independent FBX round trips can each contribute float matrix noise.
+    # This remains below the imported asset validator's 0.1 mm seam tolerance.
+    if maximum_position>.000025 or maximum_angle>.005:
+        raise ValueError(f"Untouched {profile} FBX poses changed: position={maximum_position}, rotation={maximum_angle}, matrix={maximum} at {at}")
+    measured=dict(maximum_matrix_error=maximum,maximum_position_error_m=maximum_position,maximum_rotation_error_degrees=maximum_angle,at=at,validation_hz=FPS*2)
+    print("UNCHANGED PUBLISHED BANK POSE PARITY "+profile+" "+json.dumps(measured),flush=True)
+    return measured
+
+
+def refresh_published_contracts(published_out, published_source):
+    """Repair two derived charge clips, proving every other published pose unchanged."""
+    from types import SimpleNamespace
+    payload = json.loads((published_out/"CombatTest3D.json").read_text(encoding="utf8"))
+    next(model for model in payload["models"] if model["name"]=="Crowbar")["collision_shapes"]=validate_published_weapon_collision(published_out)
+    excluded = tuple(family["charge"] for family in SWING_FAMILIES)
+    report = {}
+    for is_hero in (False,True):
+        profile,filename = ("hero","CombatActions") if is_hero else ("npc","CombatNpcActions")
+        data = payload["actions"] if is_hero else payload["actions"]["npc"]
+        before = bank_motion_samples(published_out/(filename+".fbx"),data,excluded)
+        for family in SWING_FAMILIES:
+            track=before[family["attack"]]
+            windup=track[90]["SOCKET_Grip.R"] @ Vector((0.,.595,.145))
+            tips=[pose["SOCKET_Grip.R"] @ Vector((0.,.595,.145)) for pose in track[90:127]]
+            swing=next(swing for swing in data["swings"] if swing["name"]==family["name"])
+            swing["active_tip_travel_m"]=max((point-windup).length for point in tips)
+            swing["minimum_reach_m"]=max(-point.y for point in tips)
+        if is_hero:
+            bpy.ops.wm.open_mainfile(filepath=str(published_source/"CombatActions.blend"))
+            rig = bpy.data.objects["RIG_Player"]
+            actions = {action.name:action for action in bpy.data.actions}
+        else:
+            rig,actions = import_bank(published_out/(filename+".fbx"))
+        config = common.BuildConfig(None,None,None,None,None,None,None,1.75,20260919,"apose")
+        builder = CombatBuilder(config,hero.DEFAULT_FACE_ATLAS,hero.DEFAULT_CLOTHING_ATLAS)
+        builder.hero_profile = is_hero
+        builder.result = common.BuildResult(root=rig.parent,rig=rig,collections={},materials={},
+            parts=[SimpleNamespace(obj=obj) for obj in bpy.data.objects if obj.type=="MESH"])
+        specs = bank_clip_specs(data)
+        for clip in specs:
+            action = actions[clip["name"]]
+            action.name=clip["name"]; action.use_fake_user=True
+            builder.result.actions[clip["name"]] = common.ActionRecord(action=action,category=action.get("bp_category","combat"),
+                duration_seconds=clip["duration_seconds"],loop=clip["loop"],source_frame_count=round(clip["duration_seconds"]*FPS),source_fps=FPS)
+        if not is_hero:
+            # FBX imports Euler curves. Reconstruct their exact integer-frame
+            # matrices as source quaternions before the common authoring path.
+            modes={bone.name:bone.rotation_mode for bone in rig.pose.bones}
+            for clip in specs:
+                if clip["name"] in excluded: continue
+                record=builder.result.actions[clip["name"]]; old=record.action
+                rig.animation_data.action=old
+                for bone in rig.pose.bones: bone.rotation_mode=modes[bone.name]
+                keys=[];count=round(clip["duration_seconds"]*FPS)
+                for frame in range(count+1):
+                    bpy.context.scene.frame_set(frame);bpy.context.view_layer.update()
+                    keys.append((frame/count,{bone.name:common.BonePose(rotation_degrees=tuple(math.degrees(v) for v in bone.matrix_basis.to_quaternion().to_euler("XYZ")),
+                        location_m=tuple(bone.location),scale=tuple(bone.scale)) for bone in rig.pose.bones}))
+                del builder.result.actions[clip["name"]];bpy.data.actions.remove(old)
+                builder._create_action(clip["name"],record.category,clip["duration_seconds"],clip["loop"],count,FPS,keys)
+        upper={bone.name for bone in rig.pose.bones if bone.name=="spine" or any(parent.name=="spine" for parent in bone.parent_recursive)}
+        for family in SWING_FAMILIES:
+            attack=builder.result.actions[family["attack"]].action
+            rig.animation_data.action=attack
+            bpy.context.scene.frame_set(0);bpy.context.view_layer.update()
+            neutral=builder.snapshot_pose();keys=[]
+            for frame in range(FPS+1):
+                rig.animation_data.action=attack
+                source=.18*frame
+                bpy.context.scene.frame_set(math.floor(source),subframe=source%1.);bpy.context.view_layer.update()
+                pose=builder.snapshot_pose()
+                keys.append((frame/FPS,{name:pose[name] if name in upper else value for name,value in neutral.items()}))
+            old=builder.result.actions.pop(family["charge"]);bpy.data.actions.remove(old.action)
+            builder._create_action(family["charge"],"combat",1.,False,FPS,FPS,keys)
+            maximum=0.;support_error=0.
+            def world_sample(action,seconds):
+                rig.animation_data.action=action
+                sample=seconds*FPS
+                bpy.context.scene.frame_set(math.floor(sample),subframe=sample%1.);bpy.context.view_layer.update()
+                return {bone.name:bone.matrix.copy() for bone in rig.pose.bones}
+            support=world_sample(attack,0.)
+            for power in (0.,.25,.5,.75,1.):
+                actual=world_sample(builder.result.actions[family["charge"]].action,power)
+                world_sample(attack,.18*power)
+                advanced=builder.snapshot_pose();rig.animation_data.action=None
+                builder._reset_pose();builder._apply_pose({name:advanced[name] if name in upper else value for name,value in neutral.items()})
+                expected={bone.name:bone.matrix.copy() for bone in rig.pose.bones}
+                maximum=max(maximum,max(abs(actual[name][i][j]-expected[name][i][j]) for name in actual for i in range(4) for j in range(4)))
+                support_error=max(support_error,max(abs(actual[name][i][j]-support[name][i][j]) for name in ("root","foot.L","foot.R") for i in range(4) for j in range(4)))
+            if maximum>.00001 or support_error>.001: raise ValueError("Refreshed charge source/feet mismatch: "+family["name"])
+            charging=next(swing["charging"] for swing in data["swings"] if swing["name"]==family["name"])
+            charging.update(parameterization="shared_light_time",source_clip=family["attack"],preparation_advance_seconds=.18,
+                convergence_seconds=.45,charge_source_seconds=.18,maximum_entry_error=maximum,maximum_support_error=support_error,
+                imported_charge_curve="source_upper_keys_and_tangents_retimed")
+            if family["name"]=="forehand": data["charging"]=json.loads(json.dumps(charging))
+            print("REFRESHED DERIVED CHARGE "+profile+" "+family["name"]+" "+json.dumps(dict(maximum_entry_error=maximum,maximum_support_error=support_error)),flush=True)
+        data["released_support_clips"]=list(RELEASED_SUPPORT_CLIPS)
+        data["reaction_silhouette_contract"]="tip_20cm_or_head_12cm_and_elbow_10cm"
+        data["animation_signature"]=action_curve_signature(builder,SHARED_CLIPS)
+        OUT.mkdir(parents=True,exist_ok=True);SOURCE.mkdir(parents=True,exist_ok=True)
+        common.export_animation_fbx(OUT/(filename+".fbx"),builder.result)
+        if is_hero:pack_hero_atlases()
+        common.save_blend(SOURCE/(filename+".blend"))
+        after=bank_motion_samples(OUT/(filename+".fbx"),data,excluded)
+        report[profile]=assert_bank_motion_parity(before,after,profile)
+    (OUT/"CombatTest3D.json").write_text(json.dumps(payload,indent=2)+"\n",encoding="utf8")
+    target=ROOT/"Captures/CombatTest/published-contract-repair.json"
+    target.write_text(json.dumps(report,indent=2)+"\n",encoding="utf8")
+
+
+def review_kick(destination, pack_source=False):
+    """Render the published action with the same retained two-hand presentation."""
+    from types import SimpleNamespace
+    bpy.ops.wm.open_mainfile(filepath=str(SOURCE/"CombatActions.blend"))
+    pack_hero_atlases()
+    destination.mkdir(parents=True, exist_ok=True)
+    if pack_source: common.save_blend(destination/"CombatActions.blend")
+    rig = bpy.data.objects["RIG_Player"]
+    config = common.BuildConfig(None, None, None, None, None, None, None, 1.75, 20260919, "apose")
+    builder = CombatBuilder(config, hero.DEFAULT_FACE_ATLAS, hero.DEFAULT_CLOTHING_ATLAS)
+    builder.result = SimpleNamespace(rig=rig, parts=[SimpleNamespace(obj=obj) for obj in bpy.data.objects if obj.type=="MESH"])
+    builder.points = builder.create_pose_points()
+    for part in builder.result.parts:
+        shapes = part.obj.data.shape_keys
+        if shapes is not None and "CylindricalGrip" in shapes.key_blocks:
+            shapes.key_blocks["CylindricalGrip"].value = 1.
+    existing = set(bpy.data.objects)
+    bpy.ops.import_scene.fbx(filepath=str(OUT/"Crowbar.fbx"), use_anim=False)
+    bar = next(obj for obj in bpy.data.objects if obj not in existing and obj.name.startswith("Crowbar") and obj.parent is None)
+    imported = bar.matrix_world.copy()
+    source_basis = Matrix(((1,0,0,0),(0,0,1,0),(0,1,0,0),(0,0,0,1)))
+    scene = bpy.context.scene
+    scene.render.engine = "BLENDER_EEVEE"
+    scene.render.resolution_x, scene.render.resolution_y, scene.render.resolution_percentage = 480, 480, 100
+    scene.render.image_settings.file_format = "PNG"
+    scene.camera.data.type = "ORTHO"; scene.camera.data.ortho_scale = 2.15
+    action = bpy.data.actions[KICK_CLIP]
+    for view, position in (("front", (-2.6,-3.2,1.7)), ("side", (-3.5,-.3,1.3))):
+        scene.camera.location = position
+        common.look_at(scene.camera, Vector((0.,-.2,.90)))
+        for second in (0., .20, .30, .40, .62, .95):
+            rig.animation_data.action = action
+            frame = second*FPS
+            scene.frame_set(math.floor(frame), subframe=frame%1.); bpy.context.view_layer.update()
+            pose = builder.snapshot_pose(); rig.animation_data.action = None
+            builder.pin_left_grip(pose, move_right=False, runtime_support=True)
+            origin, rotation = builder.weapon_frame()
+            bar.matrix_world = Matrix.Translation(origin) @ rotation.to_matrix().to_4x4() @ source_basis @ imported
+            scene.render.filepath = str(destination/f"kick-{view}-{round(second*100):03}.png")
+            bpy.ops.render.render(write_still=True)
+            print(f"KICK REVIEW FRAME {view} {second:.2f}", flush=True)
+
+
 def meta(path):
     target = path.with_name(path.name + ".meta")
     if not target.exists():
@@ -3072,6 +3589,10 @@ def complete_bank_payload(builder):
         clips=builder.recovery_measurements, endpoint="CombatReady", root_motion=False,
         hand_sequence="prone left floor -> left knee -> shaft; supine left floor -> balance -> shaft; right retains weapon")
     measured["profile"] = "frightened_novice" if builder.hero_profile else "sparring_opponent"
+    if builder.hero_profile:
+        measured["clips"] = [clip for clip in measured["clips"] if clip["name"] != KICK_CLIP]
+        measured["clips"].append(dict(name=KICK_CLIP, duration_seconds=KICK_DURATION, loop=False))
+        measured["kick"] = kick_payload(builder)
     measured["step_clips"] = [dict(name=n, duration_seconds=STEP_DURATION, loop=False) for n,_,_ in STEP_CLIPS]
     measured["defensive_step"] = step_payload(builder)
     measured["locomotion_clips"] = [dict(name=n, duration_seconds=LOCOMOTION_DURATION, loop=True) for n,_,_ in LOCOMOTION_CLIPS]
@@ -3092,6 +3613,13 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--validate-only", action="store_true")
     parser.add_argument("--actions-only", action="store_true")
+    parser.add_argument("--kick-only", action="store_true")
+    parser.add_argument("--review-kick", type=Path)
+    parser.add_argument("--pack-review-source", action="store_true")
+    parser.add_argument("--probe-published-contracts", type=Path)
+    parser.add_argument("--refresh-published-contracts", action="store_true")
+    parser.add_argument("--refresh-published-metadata", action="store_true")
+    parser.add_argument("--refresh-weapon-collision-metadata", action="store_true")
     parser.add_argument("--probe-only", action="store_true")
     parser.add_argument("--dense-hero-probe", action="store_true")
     parser.add_argument("--recovery-probe", nargs="?", const="all", choices=("all","prone","supine"))
@@ -3101,22 +3629,37 @@ def main():
     parser.add_argument("--output-dir", type=Path, default=OUT)
     parser.add_argument("--source-dir", type=Path, default=SOURCE)
     args = parser.parse_args(sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else [])
+    if args.probe_published_contracts:
+        probe_published_contracts(args.probe_published_contracts.resolve())
+        return
+    if args.refresh_published_contracts:
+        published_out,published_source=OUT,SOURCE
+        OUT,SOURCE=args.output_dir.resolve(),args.source_dir.resolve()
+        common.ANIMATION_FPS=FPS
+        refresh_published_contracts(published_out,published_source)
+        return
+    if args.refresh_published_metadata:
+        refresh_published_metadata(args.output_dir.resolve())
+        return
+    if args.refresh_weapon_collision_metadata:
+        refresh_weapon_collision_metadata(args.output_dir.resolve())
+        return
+    if args.review_kick:
+        review_kick(args.review_kick.resolve(), args.pack_review_source)
+        return
     if args.reuse_unchanged_actions and not args.actions_only:
         parser.error("--reuse-unchanged-actions requires --actions-only")
+    if args.kick_only and (not args.actions_only or args.validate_only or args.probe_only or args.dense_hero_probe or args.recovery_probe or args.pose_probe):
+        parser.error("--kick-only requires the ordinary --actions-only publication run")
     if args.resume_npc_bank and (not args.actions_only or args.validate_only or args.dense_hero_probe or args.recovery_probe or args.pose_probe or args.probe_only):
         parser.error("--resume-npc-bank requires the ordinary --actions-only production run")
-    published_out = OUT
+    published_out, published_source = OUT, SOURCE
     OUT, SOURCE = args.output_dir.resolve(), args.source_dir.resolve()
     validate_only, actions_only = args.validate_only, args.actions_only
     items = make_items(); signature = kit.signature(items)
     if kit.signature(make_items()) != signature: raise ValueError("Passive geometry is nondeterministic")
     payload = kit.manifest(items, signature)
-    next(model for model in payload["models"] if model["name"]=="Crowbar")["collision_shapes"] = dict(
-        space="grip_local_unity_metres", segments=[
-            dict(start=a,end=b,radius=.019) for a,b in zip(CROWBAR_PATH,CROWBAR_PATH[1:])]+
-            [dict(start=(0.,-.075,0.),end=(0.,.08,0.),radius=.024),
-             dict(start=(0.,-.119,.012),end=(0.,-.119,.012),radius=.03671),
-             dict(start=(0.,.587,.152),end=(0.,.587,.152),radius=.02802)])
+    next(model for model in payload["models"] if model["name"]=="Crowbar")["collision_shapes"] = weapon_collision_payload()
     payload.update(generator="tools/build-combat-test-3d-model.py", generator_version="2.0.0", test_only=True)
     OUT.mkdir(parents=True, exist_ok=True); SOURCE.mkdir(parents=True, exist_ok=True)
     if not validate_only and not actions_only:
@@ -3133,12 +3676,17 @@ def main():
     builder.recovery_probe = args.recovery_probe
     builder.pose_probe = args.pose_probe
     builder.reuse_unchanged_actions = args.reuse_unchanged_actions
-    if args.reuse_unchanged_actions:
+    builder.kick_only = args.kick_only
+    builder.hero_source_bank = published_source/"CombatActions.blend"
+    if args.reuse_unchanged_actions or args.kick_only:
         builder.previous_payload=json.loads((published_out/"CombatTest3D.json").read_text(encoding="utf8"))
     builder.probe_only = args.probe_only
-    builder.hero_profile = args.dense_hero_probe
+    builder.hero_profile = args.dense_hero_probe or args.kick_only
     builder.dense_charge_probe = args.dense_hero_probe
     builder.build()
+    if args.kick_only:
+        publish_kick_only(builder, builder.previous_payload)
+        return
     if args.recovery_probe or args.pose_probe: return
     if args.dense_hero_probe:
         for family in SWING_FAMILIES:

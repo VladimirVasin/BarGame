@@ -612,13 +612,16 @@ namespace BarPromenade.Tests.PlayMode
             public long tick, dropped_records;
             public double duel_seconds, late_pose_ms, update_to_late_ms;
             public double frame_ms, late_to_next_update_ms, present_ms, weapon_constraint_ms, support_grip_ms;
-            public int present_calls, weapon_constraint_calls, support_grip_calls, region, side, target_phase_after;
+            public int present_calls, weapon_constraint_calls, support_grip_calls, region, side, target_phase_after, outcome;
             public double target_phase_before;
             public long impact_seq;
+            public long candidate_checks, sweep_samples, world_queries, repeated_queries_avoided;
+            public int arm_core_snapshots;
             public bool active, late_observer_captured, is_critical, is_finisher;
             public string result, reason, phase, code_revision, animation_asset_revision;
             public string code_identity_source, animation_identity_source, workspace_state;
             public string hero_animation_revision, npc_animation_revision;
+            public string opponent_style, kind, from, to, action_kind;
         }
 
         [UnityTest]
@@ -702,6 +705,14 @@ namespace BarPromenade.Tests.PlayMode
                     root.ResetRound();
                     Assert.That(victim.Footwork.RecoveryEpisodeActive, Is.False);
                     yield return null;
+                    Vector3 kickGround = Vector3.up * PlayerFactory.GroundedRootOffset;
+                    root.Hero.ResetActor(kickGround, Vector3.forward);
+                    root.Opponent.ResetActor(kickGround + Vector3.forward * 3f, Vector3.back);
+                    Physics.SyncTransforms();
+                    Assert.That(root.Hero.TryKick(), Is.True);
+                    root.Tick(root.Hero.State.Settings.KickAnimationDurationSeconds + .1f);
+                    yield return null;
+                    Assert.That(root.Hero.State.KickOutcome, Is.EqualTo(MeleeAttackOutcome.Miss));
                     Assert.That(root.Hero.RequestCharge(), Is.True);
                     root.Opponent.State.ReceiveHit(1000f, 0f, false);
                     root.AutomaticSimulation = true;
@@ -724,7 +735,8 @@ namespace BarPromenade.Tests.PlayMode
             string[] logs = System.IO.Directory.GetFiles(folder, "duel.ndjson", System.IO.SearchOption.AllDirectories);
             Assert.That(logs.Length, Is.EqualTo(2), "Reset closes the old round and starts a distinct journal.");
             bool rejected = false, contact = false, paused = false, marked = false, discarded = false, state = false, frameTiming = false, latePose = false;
-            bool identity = false, anatomy = false, delivery = false, heroWork = false, opponentWork = false;
+            bool identity = false, anatomy = false, impactKind = false, constraintWork = false, kickOutcome = false, kickSweep = false;
+            bool delivery = false, heroWork = false, opponentWork = false;
             double frameInterval = 0d, updateToLate = 0d;
             long sequence = 0;
             int recoveryStarts = 0, recoveryEnds = 0;
@@ -740,7 +752,10 @@ namespace BarPromenade.Tests.PlayMode
                     Assert.That(entry.seq, Is.GreaterThan(sequence)); sequence = entry.seq;
                     Assert.That(entry.data, Is.Not.Null);
                     if (entry.@event == "round_begin")
+                    {
                         StringAssert.StartsWith("modules:", entry.data.code_revision);
+                        Assert.That(entry.data.opponent_style, Is.EqualTo(root.OpponentStyle.ToString()));
+                    }
                     if (entry.@event == "revision_identity")
                     {
                         identity = true;
@@ -759,6 +774,19 @@ namespace BarPromenade.Tests.PlayMode
                         Assert.That(entry.data.request, Is.GreaterThan(0));
                     }
                     contact |= entry.@event == "impact_applied";
+                    if (entry.@event == "phase" && entry.data.from == "Kicking" && entry.data.to == "Ready")
+                    {
+                        kickOutcome = true;
+                        Assert.That(entry.data.action_kind, Is.EqualTo("kick"));
+                        Assert.That(entry.data.outcome, Is.EqualTo((int)MeleeAttackOutcome.Miss));
+                    }
+                    kickSweep |= entry.@event == "kick_sweep_sample";
+                    if (entry.@event == "impact_kind")
+                    {
+                        impactKind = true;
+                        Assert.That(entry.data.impact_seq, Is.GreaterThan(0));
+                        Assert.That(entry.data.kind, Is.EqualTo("weapon"));
+                    }
                     if (entry.@event == "impact_anatomy")
                     {
                         anatomy = true;
@@ -803,6 +831,16 @@ namespace BarPromenade.Tests.PlayMode
                         heroWork |= entry.data.actor == 1 && measured;
                         opponentWork |= entry.data.actor == 2 && measured;
                     }
+                    if (entry.@event == "weapon_constraint_sample")
+                    {
+                        constraintWork = true;
+                        StringAssert.Contains("\"candidate_checks\":", line);
+                        Assert.That(entry.data.candidate_checks, Is.GreaterThanOrEqualTo(0));
+                        Assert.That(entry.data.sweep_samples, Is.GreaterThanOrEqualTo(0));
+                        Assert.That(entry.data.world_queries, Is.GreaterThanOrEqualTo(0));
+                        Assert.That(entry.data.repeated_queries_avoided, Is.GreaterThanOrEqualTo(0));
+                        Assert.That(entry.data.arm_core_snapshots, Is.GreaterThanOrEqualTo(0));
+                    }
                 }
                 string summaryPath = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(log), "summary.txt");
                 Assert.That(System.IO.File.Exists(summaryPath), Is.True);
@@ -812,11 +850,12 @@ namespace BarPromenade.Tests.PlayMode
                 string milestones = summary.Substring(milestonesAt);
                 StringAssert.DoesNotContain("frame_delivery", milestones, "Routine timing cannot replace the bounded combat milestone history.");
                 StringAssert.DoesNotContain("pose_work", milestones, "Per-actor work samples belong in NDJSON and event counts.");
+                StringAssert.DoesNotContain("weapon_constraint_sample", milestones);
             }
             Assert.That(rejected && contact && paused && marked && discarded && state && frameTiming && latePose, Is.True,
                 $"Required evidence: denied={rejected}, impact={contact}, pause={paused}, mark={marked}, discarded={discarded}, state={state}, frame={frameTiming}, latePose={latePose}");
-            Assert.That(identity && anatomy && delivery && heroWork && opponentWork, Is.True,
-                $"Extended evidence: identity={identity}, anatomy={anatomy}, delivery={delivery}, heroWork={heroWork}, opponentWork={opponentWork}");
+            Assert.That(identity && anatomy && impactKind && constraintWork && kickOutcome && kickSweep && delivery && heroWork && opponentWork, Is.True,
+                $"Extended evidence: identity={identity}, anatomy={anatomy}, kind={impactKind}, constraint={constraintWork}, kick={kickOutcome}/{kickSweep}, delivery={delivery}, heroWork={heroWork}, opponentWork={opponentWork}");
             Assert.That(recoveryStarts, Is.EqualTo(1), "Both catch steps belong to one recovery episode.");
             Assert.That(recoveryEnds, Is.EqualTo(1));
             System.Array.Sort(collector);

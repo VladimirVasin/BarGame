@@ -29,6 +29,14 @@ namespace BarPromenade
         private bool initialized, moving, applied, yielded, settlingFoot, settlingAttack;
         private bool catching, catchAwaitingContact, catchDecisionPending, catchStabilityPending, hasPresentedContacts;
         private bool recoveryGaitReleased;
+        private bool kickOwnsRightFoot, kickLandingPending;
+        internal bool KickWorldBlocked { get; private set; }
+        internal enum KickSupportFailure { None, Uninitialized, Yielded, Recovery, GroundMissing, FootGap, LandingObstructed }
+        internal KickSupportFailure LastKickSupportFailure { get; private set; }
+        internal float LastKickSupportGap { get; private set; } = -1f;
+        internal Vector3 LastKickSupportAnkle { get; private set; }
+        internal Vector3 LastKickSupportGround { get; private set; }
+        internal bool CanWaitForKickSupport { get; private set; }
         private Vector3 catchTarget;
         private float impactPelvisFloor, catchLift, catchRetry;
         private int recoverySequence = -1, sequenceSteps;
@@ -41,7 +49,7 @@ namespace BarPromenade
         internal bool CatchStepActive => catching;
         // Landing a boot does not yet decide whether another step or continued
         // balance recovery is needed. The final support decision owns the hand.
-        internal bool RecoveryEpisodeActive => catching || catchDecisionPending || catchStabilityPending;
+        internal bool RecoveryEpisodeActive => catching || catchDecisionPending || catchStabilityPending || kickLandingPending;
         internal float CatchStepProgress => catching ? Mathf.Clamp01(settling / Mathf.Max(.001f, settleDuration)) : 0f;
         internal Vector3 LastCatchTarget { get; private set; }
         internal int LastCatchSide { get; private set; } = -1;
@@ -116,6 +124,11 @@ namespace BarPromenade
             cycle = settling = 0f; gaitOffset = Vector3.zero; attackSequence = -1;
             idleSeconds = catchRetry = 0f; catchAwaitingContact = catchDecisionPending = catchStabilityPending = hasPresentedContacts = false;
             recoveryGaitReleased = false;
+            kickOwnsRightFoot = kickLandingPending = false;
+            KickWorldBlocked = false;
+            LastKickSupportFailure = KickSupportFailure.None;
+            LastKickSupportGap = -1f; CanWaitForKickSupport = false;
+            LastKickSupportAnkle = LastKickSupportGround = Vector3.zero;
             recoverySequence = -1; sequenceSteps = CatchStepCount = CatchLandingCount = BlockedCatchCount = 0;
             LastCatchTarget = Vector3.zero; LastCatchSide = -1;
             previousPosition = frame.position; previousForward = frame.forward;
@@ -128,6 +141,63 @@ namespace BarPromenade
             for (int side = 0; side < 2; side++)
             { feet[side] = frame.TransformPoint(restFeet[side]); rotations[side] = frame.rotation * restRotations[side]; supportConfirmed[side] = true; }
             initialized = true;
+        }
+
+        internal bool TryBeginKickSupport()
+        {
+            LastKickSupportFailure = KickSupportFailure.None;
+            LastKickSupportGap = -1f; CanWaitForKickSupport = false;
+            LastKickSupportGround = Vector3.zero;
+            LastKickSupportAnkle = bones[3].position;
+            if (!initialized) return RejectKickSupport(KickSupportFailure.Uninitialized);
+            if (yielded) return RejectKickSupport(KickSupportFailure.Yielded);
+            if (RecoveryEpisodeActive) return RejectKickSupport(KickSupportFailure.Recovery);
+            if (!TryCatchGround(bones[3].position, 0, out Vector3 grounded))
+                return RejectKickSupport(KickSupportFailure.GroundMissing);
+            LastKickSupportGround = grounded;
+            LastKickSupportGap = Vector3.Distance(bones[3].position, grounded);
+            if (!LandingClear(grounded)) return RejectKickSupport(KickSupportFailure.LandingObstructed);
+            if (LastKickSupportGap > .08f)
+            {
+                // Only the ordinary walking left-foot transfer may settle for a
+                // pending kick. Height changes and physical recovery never qualify.
+                CanWaitForKickSupport = (moving || settlingFoot && !settlingAttack) && swing == 0 &&
+                    bones[3].position.y > grounded.y &&
+                    Mathf.Abs(frame.TransformPoint(restFeet[0]).y - grounded.y) <= .08f;
+                return RejectKickSupport(KickSupportFailure.FootGap);
+            }
+            feet[0] = bones[3].position; rotations[0] = bones[3].rotation;
+            supportConfirmed[0] = true; supportConfirmed[1] = false;
+            moving = settlingFoot = false; gaitOffset = Vector3.zero;
+            kickOwnsRightFoot = true; kickLandingPending = false;
+            KickWorldBlocked = false;
+            return true;
+        }
+
+        private bool RejectKickSupport(KickSupportFailure failure)
+        { LastKickSupportFailure = failure; return false; }
+
+        internal void BeginKickSupportWait()
+        {
+            if (!CanWaitForKickSupport) return;
+            // Use the ordinary constrained walking settle. The actual ankle and
+            // ground gates are still rechecked before the kick can spend stamina.
+            BeginSettle(0, .13f, false);
+            moving = false;
+        }
+
+        internal void EndKickSupport()
+        {
+            if (!kickOwnsRightFoot) return;
+            kickOwnsRightFoot = false;
+            KickWorldBlocked = false;
+            kickLandingPending = !TryCatchGround(bones[6].position, 1, out Vector3 actual) ||
+                Vector3.Distance(bones[6].position, actual) > .08f || !LandingClear(actual);
+            Vector3 desired = frame.TransformPoint(restFeet[1]);
+            if (TryCatchGround(desired, 1, out Vector3 grounded))
+                feet[1] = Vector3.Distance(desired, grounded) <= .08f ? desired : grounded;
+            rotations[1] = frame.rotation * restRotations[1];
+            supportConfirmed[1] = !kickLandingPending;
         }
 
         public void Advance(float seconds, MeleeCombatant state)
@@ -164,7 +234,7 @@ namespace BarPromenade
                     supportConfirmed[side] = false;
             ImpactMotion?.SetFootSupport(feet[0], feet[1],
                 active && supportConfirmed[0] && (!transferring || swing != 0),
-                active && supportConfirmed[1] && (!transferring || swing != 1));
+                active && supportConfirmed[1] && !kickOwnsRightFoot && (!transferring || swing != 1));
         }
 
         // Called only after the actor's final constrained pose. Root movement in
@@ -184,12 +254,19 @@ namespace BarPromenade
             float turn = Vector3.Angle(previousForward, frame.forward) * Mathf.Deg2Rad;
             previousPosition = frame.position; previousForward = frame.forward;
             displacement.y = 0f;
+            if (kickOwnsRightFoot && !state.IsKicking) EndKickSupport();
+            if (state.IsKicking && kickOwnsRightFoot)
+            { moving = settlingFoot = false; gaitOffset = Vector3.zero; return; }
+            if (kickLandingPending && TryCatchGround(bones[6].position, 1, out Vector3 landing) &&
+                Vector3.Distance(bones[6].position, landing) <= .08f && LandingClear(landing))
+            { kickLandingPending = false; supportConfirmed[1] = true; }
             bool yield = state.Phase == MeleePhase.Step || state.IsDefeated || state.IsKnockedDown;
             if (yield)
             {
                 if (catching) JournalCatch("catch_cancelled", "action_owns_feet");
                 ImpactMotion?.CancelRecoveryStep();
                 yielded = true; initialized = false; moving = settlingFoot = catching = catchAwaitingContact = catchDecisionPending = catchStabilityPending = false;
+                kickOwnsRightFoot = kickLandingPending = false;
                 recoveryGaitReleased = false;
                 gaitOffset = Vector3.zero; return;
             }
@@ -642,10 +719,12 @@ namespace BarPromenade
         public void ConstrainContacts()
         {
             if (!initialized || yielded) return;
+            if (kickOwnsRightFoot) ConstrainKickWorld();
             // The animation owns the weight shift; only lower a hip if a planted leg would lock straight.
             float lower = 0f;
             for (int side = 0; side < 2; side++)
             {
+                if (kickOwnsRightFoot && side == 1) continue;
                 Vector3 delta = bones[1 + side * 3].position - feet[side];
                 float horizontal = delta.x * delta.x + delta.z * delta.z;
                 float length = legLengths[side] * .997f;
@@ -657,11 +736,35 @@ namespace BarPromenade
             pelvis.position -= Vector3.up * correction;
             for (int side = 0; side < 2; side++)
             {
+                if (kickOwnsRightFoot && side == 1) continue;
                 int i = 1 + side * 3;
                 LimbTwoBoneIk.Solve(bones[i], bones[i + 1], bones[i + 2], feet[side], rotations[side],
                     bones[i].position + frame.forward * .7f + (side == 0 ? -frame.right : frame.right) * .08f,
                     1f, .999f, true);
             }
+        }
+
+        private void ConstrainKickWorld()
+        {
+            Vector3 target = bones[6].position, origin = bones[4].position;
+            Vector3 travel = target - origin;
+            float length = travel.magnitude;
+            if (length < .00001f) return;
+            JournalActor?.JournalPhysicsQuery();
+            int count = Physics.SphereCastNonAlloc(origin, .12f, travel / length, sweepHits, length, ~0,
+                QueryTriggerInteraction.Ignore);
+            float distance = length;
+            if (count == sweepHits.Length) distance = 0f;
+            for (int i = 0; i < count; i++)
+            {
+                RaycastHit hit = sweepHits[i];
+                if (hit.collider == null || hit.collider.GetComponentInParent<CombatActor>() != null || hit.normal.y > .65f) continue;
+                distance = Mathf.Min(distance, Mathf.Max(0f, hit.distance - .04f));
+            }
+            if (distance >= length) return;
+            KickWorldBlocked = true;
+            LimbTwoBoneIk.Solve(bones[4], bones[5], bones[6], origin + travel / length * distance, bones[6].rotation,
+                bones[4].position + frame.forward * .7f + frame.right * .08f, 1f, .999f, true);
         }
 
         public void Restore()
@@ -670,11 +773,13 @@ namespace BarPromenade
                 for (int i = 0; i < bones.Length; i++)
                     if (bones[i] != null) { bones[i].localPosition = basePositions[i]; bones[i].localRotation = baseRotations[i]; }
             applied = false;
+            KickWorldBlocked = false;
             ImpactMotion?.Restore();
         }
         public void Forget()
         {
             applied = false; catching = catchAwaitingContact = catchDecisionPending = catchStabilityPending = hasPresentedContacts = false;
+            kickOwnsRightFoot = kickLandingPending = false; KickWorldBlocked = false;
             recoveryGaitReleased = false;
             ImpactMotion?.CancelRecoveryStep(); ImpactMotion?.Forget();
         }

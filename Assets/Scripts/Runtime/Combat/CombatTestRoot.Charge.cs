@@ -13,6 +13,7 @@ namespace BarPromenade
         {
             if (!GameInput.CanRead(GameInputContext.Gameplay))
             {
+                Hero?.CancelPendingKick("input_gate");
                 inputSuspended = true;
                 // Observe only the release while the menu owns input; never
                 // advance charge or produce a gameplay command from that read.
@@ -41,8 +42,14 @@ namespace BarPromenade
             bool blocking = GameInput.IsHeld(GameInputAction.MeleeBlock, GameInputContext.Gameplay);
             Hero.SetBlock(blocking);
             bool stepping = !RoundFinished && GameInput.WasPressed(GameInputAction.CombatStep, GameInputContext.Gameplay);
-            if (stepping) Hero.TryStep(GameInput.ReadMovement());
-            if (blocking || stepping || RoundFinished)
+            bool kicking = !RoundFinished && GameInput.WasPressed(GameInputAction.CombatKick, GameInputContext.Gameplay);
+            bool kickAccepted = kicking && Hero.TryKick();
+            if (stepping)
+            {
+                Hero.CancelPendingKick("step_requested");
+                Hero.TryStep(GameInput.ReadMovement());
+            }
+            if (blocking || stepping || kickAccepted || Hero.HasPendingKick || RoundFinished)
             {
                 CancelHeldHeroCharge();
                 attackInputOwned = false;
@@ -87,6 +94,7 @@ namespace BarPromenade
         {
             JournalApplicationFocus(focused);
             if (focused) return;
+            Hero?.CancelPendingKick("focus_lost");
             CancelHeldHeroCharge();
             attackInputOwned = false;
             requireAttackRelease = true;
@@ -94,6 +102,7 @@ namespace BarPromenade
 
         private void OnDisable()
         {
+            Hero?.CancelPendingKick("disabled");
             CloseDuelJournal("disabled");
             ResetOpponentMovement();
             if (IsInitialized) SetDuelFrozen(false);

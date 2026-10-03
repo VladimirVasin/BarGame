@@ -6,20 +6,27 @@ Earlier notes: [`release-notes-2026-09.md`](archive/release-notes-2026-09.md).
 
 ## Unreleased
 
-### 2026-10-03 — Замах из движения и возврат хвата
+### 2026-10-03 — Пинок и управление боем
 
-- Во время замаха движение вперёд сохраняет метр для лома, включая торможение.
-  Вбок и назад можно двигаться; реальные толчки остаются свободными.
-  Вплотную по-прежнему работает толчок без потери HP.
-- Рука толчка плавно возвращается к хвату без выворота; касание следует за
-  движущейся целью. Удерживаемый блок возвращается с обеими руками и опорой.
-  Наследуемая ветвь руки и повторное сглаживание скрывали ошибку контакта.
-- Журнал боя показывает версии кода/банка, сторону попадания и фазу цели,
-  работу позы каждого бойца и задержку доставки кадра. Рост FPS не измерен.
-- Проверки: `Range_OpponentKeepsWeaponRoomAndAnswersTheObservedWhiff`,
-  `Range_ShoveAndSwingRestoreAttackAndBlock`,
-  `Range_DuelJournalRecordsReasonsWithoutChangingCombat`,
-  `python tools/check-docs.py`, `git diff --check`; кадры хвата просмотрены.
+- Q/B — пинок: 15 сил, 5HP, отталкивание сквозь высокий блок без крови.
+  При ходьбе Q ждёт опору .20с; хвост принимает удар/отскок после приземления.
+- ИИ: осторожный, напористый, выжидающий. Смена стиля сбрасывает раунд;
+  R сохраняет выбор. Скорость реакции и характеристики общие.
+- Замах сохраняет метр для лома; вбок/назад и от толчков движение свободно.
+  Вплотную — толчок без HP; рука плавно возвращает хват.
+  Блок ждёт обе руки и опору; отдача держит стойку до конца восстановления.
+- Исправлены контракт PNG-лица и боевой манифест, зарядка обоих банков.
+  Журнал: версии/анатомия/фаза/работа позы; рост FPS не заявлен.
+- Поиск хвата ограничен; вложенный перебор рук убран.
+  Журнал различает пинок, промах, опору и препятствия.
+- Проверки: `Range_KickUsesSoleContactSupportInputAndOwnedRecovery`,
+  `Range_OpponentStylesObserveKickAndResetWithoutChangingCombatStats`,
+  `ValidateFaceAtlasesOrThrow`, `BuildOrThrow`, узкие `CombatRulesTests` вне Unity;
+  кадры просмотрены. `Range_KickWaitsForWalkingSupportAndCancelsStaleRequests`,
+  `Range_BackhandSupportSearchHasBoundedWorkAndKeepsAdmittedContactsSafe`,
+  `Range_WeaponSweepReusesOnlyIdenticalQueriesAndKeepsMovingAnatomy`,
+  `Range_DuelJournalRecordsReasonsWithoutChangingCombat`.
+  `python tools/check-docs.py`, `git diff --check`.
 
 ### 2026-10-02 — Отзывчивость боя
 

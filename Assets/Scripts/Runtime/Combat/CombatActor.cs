@@ -47,6 +47,7 @@ namespace BarPromenade
             MeleePhase.Active => 0f,
             MeleePhase.Recovery => Mathf.Lerp(.15f, .65f, State.PhaseProgress),
             MeleePhase.Ready => State.IsBlocking ? .45f : 1f,
+            MeleePhase.Kicking => 0f,
             _ => 0f
         };
 
@@ -58,6 +59,7 @@ namespace BarPromenade
             MeleePhase.Active => 0f,
             MeleePhase.Recovery => Mathf.Lerp(.15f, .75f, State.PhaseProgress),
             MeleePhase.Ready => 1f,
+            MeleePhase.Kicking => 0f,
             // A rocked body still brings its head round toward the blow at a third of
             // the free rate; the step's planted soles, the block's impact and the arc keep zero.
             MeleePhase.Stagger or MeleePhase.GuardBroken => .35f,
@@ -88,6 +90,7 @@ namespace BarPromenade
             AttachWeapon(hero.Registry.Anchors.RightGrip);
             hero.RegisterAccessoryRenderers(Weapon.GetComponentsInChildren<Renderer>());
             InitializeDamagePose();
+            LoadKickClip(false);
             InitializeCombatAttention();
             Present();
         }
@@ -138,7 +141,8 @@ namespace BarPromenade
 
         // The right hand owns the weapon. A returning left hand affects guard,
         // not attack readiness; only real balance recovery prevents a swing.
-        internal bool HasAttackBalance => !IsKnockedDown && !(ImpactMotion?.RecoveryInProgress ?? false);
+        internal bool HasAttackBalance => !IsKnockedDown && !(ImpactMotion?.RecoveryInProgress ?? false) &&
+            !(footwork?.RecoveryEpisodeActive ?? false);
         internal const float WeaponSpacing = 1f;
         internal void ApplyMotorConstraint() => motor?.SetOwnedMovementConstraint(this, MovementScale, TurnScale,
             contactTarget != null ? contactTarget.transform : null,
@@ -177,7 +181,7 @@ namespace BarPromenade
             if (!GameInput.CanRead(GameInputContext.Gameplay)) return JournalCommandResult(request, "rejected", "input_gate");
             if (!State.IsAttacking)
             {
-                if (CheckShoveRange(request)) return TryBeginShove(request);
+                if (!State.IsKicking && CheckShoveRange(request)) return TryBeginShove(request);
                 if (!HasAttackBalance) return JournalCommandResult(request, "rejected", AttackBalanceRejection);
             }
             int previous = State.AttackSequence;
@@ -239,14 +243,17 @@ namespace BarPromenade
                 float step = (float)Math.Min(CombatTestRoot.SimulationStep, remaining);
                 standaloneContacts.Clear();
                 standaloneShoves.Clear();
+                standaloneKicks.Clear();
                 AdvanceSimulation(step);
                 Present();
                 CaptureContactPose();
                 contactTarget?.CaptureContactPose();
                 CollectContacts(standaloneContacts);
                 CollectShoveContacts(standaloneShoves);
+                CollectKickContacts(standaloneKicks);
                 foreach (Contact contact in standaloneContacts) contact.Apply();
                 foreach (ShoveContact contact in standaloneShoves) contact.Apply();
+                foreach (KickContact contact in standaloneKicks) contact.Apply();
                 ContinueBufferedAttackAfterContacts();
                 remaining -= step;
             }
@@ -257,8 +264,9 @@ namespace BarPromenade
         {
             collectSweep = false;
             collectShove = false;
+            collectKick = false;
             CancelInterruptedShoveContact();
-            if (AdvanceKnockdown(seconds)) return;
+            if (AdvanceKnockdown(seconds)) { CancelPendingKick("knocked_down"); return; }
             if (State.IsDefeated) { AdvanceDefeat(seconds); return; }
             if (!IsAvailable)
             {
@@ -275,7 +283,12 @@ namespace BarPromenade
             float from = State.AttackElapsed;
             MeleePhase previousPhase = State.Phase;
             float previousStep = State.StepTravelProgress;
-            MeleeAdvanceResult elapsed = State.Advance(seconds, HasAttackBalance);
+            MeleeAdvanceResult elapsed = State.Advance(seconds, HasAttackBalance && !State.IsKicking && !HasPendingKick);
+            if (elapsed.IsKick && elapsed.HasActiveWindow)
+            {
+                collectKick = true; kickFrom = elapsed.ActiveStartNormalized; kickTo = elapsed.ActiveEndNormalized;
+                kickSequence = elapsed.AttackSequence;
+            }
             if (sequence != State.AttackSequence && journalQueuedRequest != 0)
                 JournalBufferedActionStarted();
             CancelInterruptedShoveContact();
@@ -294,7 +307,7 @@ namespace BarPromenade
             if (previousPhase == MeleePhase.Windup && State.Phase != MeleePhase.Windup && State.IsAttacking &&
                 sequence == State.AttackSequence)
                 RetroAudio.PlayAt(RetroSfxId.SpadeToss, strikeTip.position, .35f);
-            if ((State.IsAttacking && !IsRecoil(reaction)) || elapsed.HasActiveWindow)
+            if ((State.IsAttacking && !IsRecoil(reaction)) || (elapsed.HasActiveWindow && !elapsed.IsKick))
             {
                 collectSweep = true;
                 sweepFrom = from;
@@ -304,6 +317,7 @@ namespace BarPromenade
             else sweepValid = false;
             footwork?.Advance(seconds, State);
             CompleteImpactRecoveryStep(seconds);
+            AdvancePendingKick(seconds);
         }
 
         private MeleeHitResult Receive(CombatActor source, bool front, int sequence, Vector3 point, Vector3 normal, Vector3 direction,
@@ -442,6 +456,7 @@ namespace BarPromenade
             // Pause temporarily owns input, not the combat rig. Retain the
             // sampled pose/transition so a paused read cannot release the clip.
             if (PauseMenuController.IsAnyPaused) return;
+            if (!State.IsKicking) footwork?.EndKickSupport();
             RefreshCombatAttention();
             supportGrip?.Restore();
             weaponConstraint?.Restore();
@@ -457,7 +472,7 @@ namespace BarPromenade
                 State.Phase == MeleePhase.GuardBroken || State.IsDefeated;
             bool stepping = State.Phase == MeleePhase.Step;
             AnimationClip chosen = stepping ? (stepBlocked ? ready : stepClip) : State.IsDefeated ? defeat : State.Phase == MeleePhase.GuardBroken ? guardBreak : stagger ? hit :
-                reaction != null ? reaction : State.IsCharging ? Current.Charge : State.IsAttacking ? ReleaseClip : roundEnded ? rest : State.IsBlocking ? block : ready;
+                reaction != null ? reaction : State.IsKicking ? kick : State.IsCharging ? Current.Charge : State.IsAttacking ? ReleaseClip : roundEnded ? rest : State.IsBlocking ? block : ready;
             supportGrip?.SetTarget(chosen == block || chosen == guardImpact,
                 chosen != rest && chosen != hit && chosen != guardBreak && !State.IsDefeated && !State.IsShoving,
                 State.IsContinuation);
@@ -468,9 +483,10 @@ namespace BarPromenade
             if (!stagger && reaction != null) progress = Mathf.Clamp01(reactionClock / reaction.length);
             else if (State.IsCharging) progress = State.Charge01;
             else if (State.IsAttacking) progress = State.AttackProgress;
+            else if (State.IsKicking) progress = State.KickProgress;
             if (stepping) progress = stepBlocked ? 0f : State.StepProgress;
             else if (State.Phase == MeleePhase.GuardImpact) progress = State.PhaseProgress;
-            bool newSwing = (State.IsCharging || State.IsAttacking) && visibleAttackSequence != State.AttackSequence;
+            bool newSwing = (State.IsCharging || State.IsAttacking || State.IsKicking) && visibleAttackSequence != State.AttackSequence;
             if (hero != null)
             {
                 if (!IsAvailable) { ReleasePresentation(); return; }
@@ -485,7 +501,7 @@ namespace BarPromenade
                     // inherit the previously displayed pose and velocity.
                     if (!releasingCharge)
                     {
-                        if (stepping && !stepBlocked && visibleClip == ready.name && motor.PlanarVelocity.sqrMagnitude < .01f)
+                        if ((stepping && !stepBlocked || State.IsKicking) && visibleClip == ready.name && motor.PlanarVelocity.sqrMagnitude < .01f)
                             CancelPoseBlend();
                         else BeginPoseBlend(TransitionSeconds(chosen));
                     }
@@ -554,6 +570,7 @@ namespace BarPromenade
             ResetDefeat();
             ResetDamage();
             ResetShove();
+            ResetKick();
             supportGrip?.Reset();
             weaponConstraint?.Reset();
             if (hero != null) hero.SetCombatSupportGrip(this, supportGrip, weaponConstraint);
@@ -578,6 +595,7 @@ namespace BarPromenade
 
         private void ReleasePresentation()
         {
+            CancelPendingKick("presentation_released");
             ReleaseCombatAttention();
             if (hero != null) hero.ReleaseContextualFacialExpression(this);
             if (hero != null) hero.ClearCombatSupportGrip(this);
@@ -602,8 +620,9 @@ namespace BarPromenade
 
         private void OnDisable()
         {
-            if (State.IsShoving) State.CancelAction();
+            if (State.IsShoving || State.IsKicking) State.CancelAction();
             ResetShove();
+            ResetKick();
             State.CancelCharge();
             ResetKnockdown();
             Ragdoll?.Cancel();

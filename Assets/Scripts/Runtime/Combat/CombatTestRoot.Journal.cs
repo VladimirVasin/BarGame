@@ -39,6 +39,7 @@ namespace BarPromenade
         private static readonly string[] JournalPhases = Enum.GetNames(typeof(MeleePhase));
         private static readonly string[] JournalGrips = Enum.GetNames(typeof(CombatArmSupportState));
         private static readonly string[] JournalIntents = Enum.GetNames(typeof(CombatOpponentIntent));
+        private static readonly string[] JournalOpponentStyles = Enum.GetNames(typeof(CombatOpponentStyle));
         private static readonly double JournalMillisecondsPerTick = 1000d / Stopwatch.Frequency;
 
         private sealed class JournalActorState
@@ -133,7 +134,8 @@ namespace BarPromenade
                 GameLog.Field("render_interval", OnDemandRendering.renderFrameInterval),
                 GameLog.Field("capture_delta_time", Time.captureDeltaTime),
                 GameLog.Field("target_wait_marker_available", journalTargetWait.Valid),
-                GameLog.Field("code_revision", journalIdentity.Code));
+                GameLog.Field("code_revision", journalIdentity.Code),
+                GameLog.Field("opponent_style", JournalOpponentStyles[(int)OpponentStyle]));
             duelJournal.Record("revision_identity",
                 f0: GameLog.Field("code_identity_source", journalIdentity.CodeSource),
                 f1: GameLog.Field("workspace_commit", journalIdentity.WorkspaceCommit),
@@ -361,7 +363,10 @@ namespace BarPromenade
                 duelJournal.Record("phase", actor: actor.JournalActorId, action: actor.State.AttackSequence,
                     f0: GameLog.Field("from", JournalPhases[(int)saved.Phase]), f1: GameLog.Field("to", JournalPhases[(int)actor.State.Phase]),
                     f2: GameLog.Field("duration_seconds", journalSeconds - saved.PhaseStarted), f3: GameLog.Field("stage", stage),
-                    f4: GameLog.Field("outcome", (int)actor.State.AttackOutcome));
+                    f4: GameLog.Field("outcome", (int)(saved.Phase == MeleePhase.Kicking || actor.State.IsKicking
+                        ? actor.State.KickOutcome : actor.State.AttackOutcome)),
+                    f5: GameLog.Field("action_kind", saved.Phase == MeleePhase.Kicking || actor.State.IsKicking ? "kick" : "weapon"),
+                    f6: GameLog.Field("from_action", saved.Action));
                 saved.Phase = actor.State.Phase; saved.Action = actor.State.AttackSequence; saved.PhaseStarted = journalSeconds;
             }
             if (actor.SupportArmState != saved.Grip)

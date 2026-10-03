@@ -26,6 +26,7 @@ namespace BarPromenade
         private void BeginDefeat(Vector3 direction, Vector3 point)
         {
             roundEnded = true;
+            CancelPendingKick("round_ended");
             defeatClock = 0f;
             defeatDirection = direction.sqrMagnitude > .001f ? direction.normalized : -transform.forward;
             defeatPoint = point;
@@ -37,6 +38,7 @@ namespace BarPromenade
         internal void AdvanceRoundEnd(float seconds)
         {
             roundEnded = true;
+            CancelPendingKick("round_ended");
             State.CancelCharge();
             State.SetBlocking(false);
             if (State.IsDefeated) { AdvanceDefeat(seconds); return; }

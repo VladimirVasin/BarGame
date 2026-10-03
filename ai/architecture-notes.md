@@ -175,63 +175,64 @@
   §6/§12/art §10g/§16/§21/nine checks.
 
 - **Accepted — 2026-10-02, combat:**
-  R ignores L; Hit/Miss tail cuts after contacts; .22→held .28; buffer .20s,
-  hit/fall/reset clears. AI≥1m/retreat≤.6s/whiff .20→counter .22/Rising attacks.
-  Held guard≠fresh parry; shield dim/request/ready/block. Gaze: clip/physics/
+  R ignores L; Hit/Miss tail cut/.22→held .28/buffer.20s;
+  hit/fall/R clears. AI≥1m/retreat≤.6s/whiff.20→counter.22/Rising attacks.
+  Held guard≠parry; shield dim/request/ready/block; gaze clip/physics/
   pause/hit-stop/R/defeat/unload; regrip/scoped anatomy/120Hz.
 - **Accepted — 2026-10-03, combat:**
-  Hero Windup: owned motor/1m inward+braking; side/back/impulses/drift free.
-  ≤.85m/0HP shove; authored continuous arm/regrip/wrist-elbow-shoulder≤600°/s/
-  body-world-palm gates. DuelJournal identity/anatomy/CPU+wall: `ai/debug-log.md`.
+  Hero Windup: motor/1m inward+braking; side/back/impulses/drift free;
+  ≤.85m/0HP shove/continuous arm-regrip/wrist-elbow-shoulder≤600°/s/
+  body-world-palm gates; DuelJournal identity/anatomy/CPU+wall.
+- **Accepted architecture exception — 2026-10-03, kick/styles:**
+  CombatTest Q/B kick/3 styles/recoil holds Recovery; §6/§16.15/art§15a;
+  .20s walk wait/tail buffer/support≠chain; no weapons/world effects.
 - **Accepted — 2026-09-25, clinch shove:** Both: close swing→faster/stronger shove.
-- **Accepted — 2026-09-26, minimum recovery:**
-  Impact/≤2 steps; opt-in flywheel/crouch/brace; 1 shove/AI off/fixed input/
-  ≤2 attempts/visual gate for expansion. Clock/pause/hit-stop/R/unload;
-  defeat separate/rise→Ready/regrip. L owns/post-L R body-floor-wall:
-  8-segment `CombatWeaponGeometry`; held mass→forearm/free→mass-inertia/
-  expiring hand ignores. Drop anatomy off past capsule; live elbow-pronation
-  -5..120/side±8°, no writes; banks/QA pending.
-- **Accepted — 2026-09-21, anatomical damage:**
-  Six bone-local zones, first/sequence; head×2 (50/80, cap .99MaxHP),
-  rear±45° defeat; torso1/rear1.25/arms.5/legs.75; guard/parry first.
-  Frozen mutual zone/direction/power; one HP/ragdoll/R.
-- **Accepted — 2026-09-21, combat inertia:**
-  C1 pose/contact; duel-clock travel/yaw: return .15→.75/stun .35/arc 0.
-  AI plants charge/windup; hero .2.
-- **Accepted — 2026-09-21, frightened stance:**
-  .42/.28m/Windup feet settle; afraid/unskilled hero/calm NPC.
-  Duel-clock breath/tremor/flinch: nearby tell.
+- **Accepted — 2026-09-26, recovery:**
+  Impact≤2 steps/opt-in flywheel-crouch-brace; gate:1 shove/AI off/
+  fixed input/≤2 tries/visual; clock/pause/hit-stop/R/unload;
+  defeat separate/rise→Ready/regrip; L owns→R body-floor-wall;
+  `CombatWeaponGeometry`8 segments/held mass→forearm/free→mass-inertia/
+  hand-ignore expires/drop anatomy off past capsule; read-only elbow-pronation
+  -5..120/side±8°; QA pending.
+- **Accepted — 2026-09-21, anatomy:**
+  Six bone-local zones/first-sequence/head×2(50/80,cap.99MaxHP)/rear±45°
+  defeat/torso1-rear1.25/arms.5/legs.75; guard-parry first; frozen mutual
+  zone/direction/power; one HP/ragdoll/R.
+- **Accepted — 2026-09-21, inertia:**
+  C1 pose/contact; duel-clock travel/yaw:return.15→.75/stun.35/arc0;
+  AI charge/windup planted; hero.2.
+- **Accepted — 2026-09-21, stance:**
+  .42/.28m/Windup settle/afraid-unskilled hero/calm NPC;
+  duel-clock breath/tremor/flinch:nearby tell.
 - **Accepted — 2026-09-21, step/Hold:**
-  .8m/.36+.21s/15; smoothstep/pose/footfalls clock. Hold freezes breath; exit delays regen.
-- **Accepted — 2026-09-20, two-hand hold:**
-  Ready/Block/attacks/recoils→L; Hit/GuardBreak/Defeat release. Low Ready/high
-  Block, opposed L .16→.42m/breath4s/blend/injury; NPC R Rest; L subdivision/
-  asset/runtime gates.
-- **Accepted — 2026-09-21, victory:** Hero swing→normal walk; combat off until R.
+  .8m/.36+.21s/15/smoothstep-pose-footfall clock; Hold freezes breath/exit delays regen.
+- **Accepted — 2026-09-20, two hands:**
+  Ready/Block/attack/recoil→L/Hit-GuardBreak-Defeat release;
+  low Ready/high Block/opposed L.16→.42m/breath4s/blend/injury/NPC R Rest;
+  L subdivision/asset-runtime gates.
+- **Accepted — 2026-09-21, victory:** Hero swing→walk; combat off until R.
 - **Accepted — 2026-09-21, brawl v2:**
-  Free hits; guard20/35/charge20; regen30/s/.6s in stuns/own spends.
-  Fresh≤.12 light parry/rearm.35; counter+.30/break½ dmg/.55;
-  buffer.20; seeded AI/postfall freecam.
+  Free hits/guard20-35/charge20/regen30/s-.6s in stuns/own spends;
+  fresh≤.12 light parry/rearm.35/counter+.30/break½dmg-.55/buffer.20;
+  seeded AI/postfall freecam.
 - **Accepted — 2026-09-21, swing sides:**
-  Fore/back: through flips/stopped repeats; step/target>15°, not strafe.
-  Same dmg/time/cost; upper(t+q*.18*(1-smooth(t/.45)))/lower(t), charge
-  upper(.18q); q power; Forehand Light copy.
-  Backhand DAG: R elbow/hand roll; .56 reach≥.95, free elbow;
-  Recoils: .56→Ready0/.48s inverse/C1/no dwell (WIP).
-  45° shoulder search, wrist/core/speed/clearance gates.
+  Fore/back:through flips/stopped repeats; step/target>15°, not strafe;
+  same dmg-time-cost; upper(t+q*.18*(1-smooth(t/.45)))/lower(t),
+  charge upper(.18q): imported Attack retimed; neutral lower;
+  q=power/Forehand Light copy.
+  Backhand DAG:R elbow-hand roll/.56 reach≥.95/free elbow;
+  recoil .56→Ready0/.48s inverse/C1/no dwell;
+  45° shoulder scan/wrist-core-speed-clearance gates.
 - **Accepted architecture exception — 2026-09-20, combat injury:**
-  HP/directional pose/wounds/pools; dry block/miss; R/unload clears;
-  visual/ragdoll wins.
-- **Accepted — 2026-09-21, combat aftermath:** Thud; blood lobes grow 10s, stay.
-- **Accepted architecture exception — 2026-09-21, polygon taunt:**
-  E/settled defeat: Home toilet view/timeline/stream/residue via
-  `IHomeToiletViewHost`; guided body-dock walk/aim; bone/floor marks to R
-  (`HomeUrineResidue`); crowbar left/return. Silent §21-exempt prompt;
-  no speech/reaction/reward; sixth first-person view.
-- **Accepted architecture exception — 2026-09-19, isolated combat test:**
-  §6/§16.15/art§15a: `CombatTest`, no story/speech, one hero/input;
-  mutual hits/vulnerable steps/fall/R/shoulder-wall lock; W/S move,
-  A/D strafe, opponent last.
+  HP/directional pose/wounds/pools; dry block/miss; R/unload clears; visual/ragdoll wins.
+- **Accepted — 2026-09-21, aftermath:** Thud; blood lobes grow 10s, stay.
+- **Accepted architecture exception — 2026-09-21, taunt:**
+  E/settled defeat: Home toilet via `IHomeToiletViewHost` (view/timeline/stream/
+  residue); guided dock walk/aim/bone-floor marks (`HomeUrineResidue`) to R/
+  crowbar left-return/silent §21-exempt prompt/no speech-reaction-reward/sixth FP view.
+- **Accepted architecture exception — 2026-09-19, CombatTest:**
+  §6/§16.15/art§15a: `CombatTest` outside story/speech; one hero/input;
+  mutual hits/vulnerable steps/fall/R/shoulder-wall lock; W/S move/A/D strafe/opponent last.
 
 - **Accepted — 2026-09-16, street pool is the default NPC catalog:**
   User: default-only, new models join immediately. `DefaultNpcPopulation`:
@@ -3978,7 +3979,7 @@
   Fail-safe UTF-8 NDJSON/version/monotonic sequence/session-scene-seed/transition
   IDs; boundaries/results/no frames/ordinary Unity logs. Editor-dev verbose/
   release basic/batch off/5 MiB/3 archives/F8 snapshot+flush.
-- **Accepted — 2026-09-26, separate duel journal:**
+- **Accepted — 2026-09-26, duel journal:**
   `DuelJournal`: CombatTest on/batch off/CLI; round NDJSON/summary/F8 mark/
   Shift+F8 folder; typed reasons/20Hz final state/frame CPU/async bounds/
   limits/priority pruning: `ai/debug-log.md`.

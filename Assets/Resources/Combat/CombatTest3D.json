@@ -138,7 +138,116 @@
           ],
           "parent": null
         }
-      ]
+      ],
+      "collision_shapes": {
+        "space": "grip_local_unity_metres",
+        "segments": [
+          {
+            "start": [
+              0.0,
+              -0.11,
+              0.0
+            ],
+            "end": [
+              0.0,
+              0.49,
+              0.0
+            ],
+            "radius": 0.019
+          },
+          {
+            "start": [
+              0.0,
+              0.49,
+              0.0
+            ],
+            "end": [
+              0.0,
+              0.55,
+              0.022
+            ],
+            "radius": 0.019
+          },
+          {
+            "start": [
+              0.0,
+              0.55,
+              0.022
+            ],
+            "end": [
+              0.0,
+              0.59,
+              0.065
+            ],
+            "radius": 0.019
+          },
+          {
+            "start": [
+              0.0,
+              0.59,
+              0.065
+            ],
+            "end": [
+              0.0,
+              0.605,
+              0.112
+            ],
+            "radius": 0.019
+          },
+          {
+            "start": [
+              0.0,
+              0.605,
+              0.112
+            ],
+            "end": [
+              0.0,
+              0.59,
+              0.145
+            ],
+            "radius": 0.019
+          },
+          {
+            "start": [
+              0.0,
+              -0.075,
+              0.0
+            ],
+            "end": [
+              0.0,
+              0.08,
+              0.0
+            ],
+            "radius": 0.024
+          },
+          {
+            "start": [
+              0.0,
+              -0.119,
+              0.012
+            ],
+            "end": [
+              0.0,
+              -0.119,
+              0.012
+            ],
+            "radius": 0.03671
+          },
+          {
+            "start": [
+              0.0,
+              0.587,
+              0.152
+            ],
+            "end": [
+              0.0,
+              0.587,
+              0.152
+            ],
+            "radius": 0.02802
+          }
+        ]
+      }
     }
   ],
   "test_only": true,
@@ -228,6 +337,11 @@
         "name": "CombatBackhandHeavy",
         "duration_seconds": 1.28,
         "loop": false
+      },
+      {
+        "name": "CombatKick",
+        "duration_seconds": 0.95,
+        "loop": false
       }
     ],
     "windup_seconds": 0.45,
@@ -264,7 +378,7 @@
     },
     "defeat_handoff_seconds": 0.16,
     "defeat_pelvis_drop_m": 0.07199996709823608,
-    "animation_signature": "156ff8e2ef1224b9d80d74b1791470cd80caeaeeead578e4f824287aff682d11",
+    "animation_signature": "ccdb580febf1c824d7a1fbf8e132e94c4a52a0be1a29c55464100a3c6af556e8",
     "base_action_signature": "6deba1a7eedef21de27bbeb6372fe8b821d473b02f205575592178170bad7b6d",
     "strike_samples": [
       {
@@ -414,7 +528,7 @@
         "head_travel_m": 0.3015564473114845
       }
     ],
-    "minimum_reaction_tip_separation_m": 0.3334640237091854,
+    "minimum_reaction_tip_separation_m": 0.3334619734288361,
     "charging": {
       "charge_clip": "CombatCharge",
       "release_light": "CombatReleaseLight",
@@ -430,14 +544,20 @@
         1.0
       ],
       "validation_hz": 200,
-      "maximum_entry_error": 5.364418029785156e-07,
+      "maximum_entry_error": 7.748603820800781e-07,
       "maximum_lower_track_error": 5.960464477539062e-07,
       "maximum_light_legacy_error": 0.0,
-      "maximum_support_error": 4.836916923522949e-05,
+      "maximum_support_error": 2.086162567138672e-07,
       "maximum_charge_wrist_deflection_degrees": 48.29986713085276,
       "maximum_charge_elbow_flexion_degrees": 108.92364948683462,
       "minimum_reach_m": 1.0653460025787354,
-      "minimum_left_wrist_reach_margin_m": 0.022336486287828916
+      "minimum_left_wrist_reach_margin_m": 0.022336486287828916,
+      "parameterization": "shared_light_time",
+      "source_clip": "CombatAttack",
+      "preparation_advance_seconds": 0.18,
+      "convergence_seconds": 0.45,
+      "charge_source_seconds": 0.18,
+      "imported_charge_curve": "source_upper_keys_and_tangents_retimed"
     },
     "swings": [
       {
@@ -453,7 +573,7 @@
         "recovery_seconds": 0.65,
         "pelvis_travel_m": 0.10853694843129859,
         "knee_travel_degrees": 11.25794979948002,
-        "minimum_reach_m": 1.0626720190048218,
+        "minimum_reach_m": 1.0653467178344727,
         "maximum_grip_reposition_m": 0.3084140904224821,
         "strike_samples": [
           {
@@ -576,14 +696,20 @@
             1.0
           ],
           "validation_hz": 200,
-          "maximum_entry_error": 5.364418029785156e-07,
+          "maximum_entry_error": 7.748603820800781e-07,
           "maximum_lower_track_error": 5.960464477539062e-07,
           "maximum_light_legacy_error": 0.0,
-          "maximum_support_error": 4.836916923522949e-05,
+          "maximum_support_error": 2.086162567138672e-07,
           "maximum_charge_wrist_deflection_degrees": 48.29986713085276,
           "maximum_charge_elbow_flexion_degrees": 108.92364948683462,
           "minimum_reach_m": 1.0653460025787354,
-          "minimum_left_wrist_reach_margin_m": 0.022336486287828916
+          "minimum_left_wrist_reach_margin_m": 0.022336486287828916,
+          "parameterization": "shared_light_time",
+          "source_clip": "CombatAttack",
+          "preparation_advance_seconds": 0.18,
+          "convergence_seconds": 0.45,
+          "charge_source_seconds": 0.18,
+          "imported_charge_curve": "source_upper_keys_and_tangents_retimed"
         },
         "body_motion": {
           "interpolation": "C1 quaternion Bezier; monotone local translation; pinned feet and grip",
@@ -603,7 +729,8 @@
               250.42160749818322
             ]
           }
-        }
+        },
+        "active_tip_travel_m": 1.5616692289484406
       },
       {
         "name": "backhand",
@@ -618,7 +745,7 @@
         "recovery_seconds": 0.65,
         "pelvis_travel_m": 0.10853694843129859,
         "knee_travel_degrees": 13.729456311970072,
-        "minimum_reach_m": 1.064160704612732,
+        "minimum_reach_m": 1.0641599893569946,
         "maximum_grip_reposition_m": 0.42640577675502034,
         "strike_samples": [
           {
@@ -741,14 +868,20 @@
             1.0
           ],
           "validation_hz": 200,
-          "maximum_entry_error": 4.172325134277344e-07,
+          "maximum_entry_error": 3.725290298461914e-07,
           "maximum_lower_track_error": 6.258487701416016e-07,
           "maximum_light_legacy_error": 0.0,
-          "maximum_support_error": 4.443526268005371e-05,
+          "maximum_support_error": 2.086162567138672e-07,
           "maximum_charge_wrist_deflection_degrees": 47.77891835757213,
           "maximum_charge_elbow_flexion_degrees": 80.58561809218025,
           "minimum_reach_m": 1.064160704612732,
-          "minimum_left_wrist_reach_margin_m": 0.029405392959496846
+          "minimum_left_wrist_reach_margin_m": 0.029405392959496846,
+          "parameterization": "shared_light_time",
+          "source_clip": "CombatBackhand",
+          "preparation_advance_seconds": 0.18,
+          "convergence_seconds": 0.45,
+          "charge_source_seconds": 0.18,
+          "imported_charge_curve": "source_upper_keys_and_tangents_retimed"
         },
         "body_motion": {
           "interpolation": "C1 quaternion Bezier; monotone local translation; pinned feet and grip",
@@ -768,7 +901,8 @@
               71.98174682892179
             ]
           }
-        }
+        },
+        "active_tip_travel_m": 1.1968227145973152
       }
     ],
     "holding": {
@@ -814,7 +948,12 @@
         "L": 45.52091245947928,
         "R": 49.389610152549956
       },
-      "runtime_contract": "final left cylinder solve after charge blend, injury and pose recovery; same shaft axis, opposed palms"
+      "runtime_contract": "final left cylinder solve after charge blend, injury and pose recovery; same shaft axis, opposed palms",
+      "released_support_clips": [
+        "CombatHit",
+        "CombatGuardBreak",
+        "CombatDefeat"
+      ]
     },
     "recovery": {
       "lead_foot": "Left",
@@ -1234,7 +1373,7 @@
       },
       "defeat_handoff_seconds": 0.16,
       "defeat_pelvis_drop_m": 0.07199996709823608,
-      "animation_signature": "f98db63047c18980f3f60dcf9ef2db5de4f140b9913bc5b6d83e1403ea7cf0d1",
+      "animation_signature": "3dd7b0e4350bb0eab84ccae78eba26da90089b8503e9fecc5284a44dad32f5ef",
       "base_action_signature": "5c9dd1e4c8d94a8e3e72b85da91014bc033616e94412457b07125edcde20e22f",
       "strike_samples": [
         {
@@ -1384,7 +1523,7 @@
           "head_travel_m": 0.3016930217815937
         }
       ],
-      "minimum_reaction_tip_separation_m": 0.28532076897494485,
+      "minimum_reaction_tip_separation_m": 0.2853298022971038,
       "charging": {
         "charge_clip": "CombatCharge",
         "release_light": "CombatReleaseLight",
@@ -1400,14 +1539,20 @@
           1.0
         ],
         "validation_hz": 200,
-        "maximum_entry_error": 1.817941665649414e-06,
+        "maximum_entry_error": 4.172325134277344e-07,
         "maximum_lower_track_error": 6.258487701416016e-07,
         "maximum_light_legacy_error": 0.0,
-        "maximum_support_error": 4.836916923522949e-05,
+        "maximum_support_error": 0.0,
         "maximum_charge_wrist_deflection_degrees": 48.357619795379804,
         "maximum_charge_elbow_flexion_degrees": 115.81509179332404,
         "minimum_reach_m": 1.0401371717453003,
-        "minimum_left_wrist_reach_margin_m": 0.012676917452155934
+        "minimum_left_wrist_reach_margin_m": 0.012676917452155934,
+        "parameterization": "shared_light_time",
+        "source_clip": "CombatAttack",
+        "preparation_advance_seconds": 0.18,
+        "convergence_seconds": 0.45,
+        "charge_source_seconds": 0.18,
+        "imported_charge_curve": "source_upper_keys_and_tangents_retimed"
       },
       "swings": [
         {
@@ -1423,7 +1568,7 @@
           "recovery_seconds": 0.65,
           "pelvis_travel_m": 0.10853694843129859,
           "knee_travel_degrees": 11.244083661691247,
-          "minimum_reach_m": 1.0401374101638794,
+          "minimum_reach_m": 1.0401378870010376,
           "maximum_grip_reposition_m": 0.31763234636036725,
           "strike_samples": [
             {
@@ -1546,14 +1691,20 @@
               1.0
             ],
             "validation_hz": 200,
-            "maximum_entry_error": 1.817941665649414e-06,
+            "maximum_entry_error": 4.172325134277344e-07,
             "maximum_lower_track_error": 6.258487701416016e-07,
             "maximum_light_legacy_error": 0.0,
-            "maximum_support_error": 4.836916923522949e-05,
+            "maximum_support_error": 0.0,
             "maximum_charge_wrist_deflection_degrees": 48.357619795379804,
             "maximum_charge_elbow_flexion_degrees": 115.81509179332404,
             "minimum_reach_m": 1.0401371717453003,
-            "minimum_left_wrist_reach_margin_m": 0.012676917452155934
+            "minimum_left_wrist_reach_margin_m": 0.012676917452155934,
+            "parameterization": "shared_light_time",
+            "source_clip": "CombatAttack",
+            "preparation_advance_seconds": 0.18,
+            "convergence_seconds": 0.45,
+            "charge_source_seconds": 0.18,
+            "imported_charge_curve": "source_upper_keys_and_tangents_retimed"
           },
           "body_motion": {
             "interpolation": "C1 quaternion Bezier; monotone local translation; pinned feet and grip",
@@ -1573,7 +1724,8 @@
                 250.42160749818322
               ]
             }
-          }
+          },
+          "active_tip_travel_m": 1.4803657319755497
         },
         {
           "name": "backhand",
@@ -1588,7 +1740,7 @@
           "recovery_seconds": 0.65,
           "pelvis_travel_m": 0.10853694843129859,
           "knee_travel_degrees": 13.724426731420005,
-          "minimum_reach_m": 1.1099045276641846,
+          "minimum_reach_m": 1.1099066734313965,
           "maximum_grip_reposition_m": 0.24596014540064057,
           "strike_samples": [
             {
@@ -1711,14 +1863,20 @@
               1.0
             ],
             "validation_hz": 200,
-            "maximum_entry_error": 3.5762786865234375e-07,
+            "maximum_entry_error": 3.3527612686157227e-07,
             "maximum_lower_track_error": 6.258487701416016e-07,
             "maximum_light_legacy_error": 0.0,
-            "maximum_support_error": 4.443526268005371e-05,
+            "maximum_support_error": 0.0,
             "maximum_charge_wrist_deflection_degrees": 47.77890811228838,
             "maximum_charge_elbow_flexion_degrees": 84.22218839121346,
             "minimum_reach_m": 1.1099042892456055,
-            "minimum_left_wrist_reach_margin_m": 0.014240834027308358
+            "minimum_left_wrist_reach_margin_m": 0.014240834027308358,
+            "parameterization": "shared_light_time",
+            "source_clip": "CombatBackhand",
+            "preparation_advance_seconds": 0.18,
+            "convergence_seconds": 0.45,
+            "charge_source_seconds": 0.18,
+            "imported_charge_curve": "source_upper_keys_and_tangents_retimed"
           },
           "body_motion": {
             "interpolation": "C1 quaternion Bezier; monotone local translation; pinned feet and grip",
@@ -1738,7 +1896,8 @@
                 71.98174682892179
               ]
             }
-          }
+          },
+          "active_tip_travel_m": 1.2227987687772774
         }
       ],
       "holding": {
@@ -1784,7 +1943,12 @@
           "L": 45.52091245947928,
           "R": 49.389610152549956
         },
-        "runtime_contract": "final left cylinder solve after charge blend, injury and pose recovery; same shaft axis, opposed palms"
+        "runtime_contract": "final left cylinder solve after charge blend, injury and pose recovery; same shaft axis, opposed palms",
+        "released_support_clips": [
+          "CombatHit",
+          "CombatGuardBreak",
+          "CombatDefeat"
+        ]
       },
       "recovery": {
         "lead_foot": "Left",
@@ -2081,7 +2245,193 @@
             "right_foot_lift_m": 0.06500011682510376
           }
         ]
+      },
+      "released_support_clips": [
+        "CombatHit",
+        "CombatGuardBreak",
+        "CombatDefeat"
+      ],
+      "reaction_silhouette_contract": "tip_20cm_or_head_12cm_and_elbow_10cm",
+      "reaction_silhouette_pairs": [
+        {
+          "first_clip": "CombatGuardImpact",
+          "second_clip": "CombatGuardBreak",
+          "tip_separation_m": 1.295213525531693,
+          "head_separation_m": 0.15434835108058517,
+          "left_elbow_separation_m": 0.5630073841887089,
+          "right_elbow_separation_m": 0.33985340238982364
+        },
+        {
+          "first_clip": "CombatGuardImpact",
+          "second_clip": "CombatRecoil",
+          "tip_separation_m": 0.8992466102811415,
+          "head_separation_m": 0.03762112403700606,
+          "left_elbow_separation_m": 0.4822509632758511,
+          "right_elbow_separation_m": 0.23530013761177934
+        },
+        {
+          "first_clip": "CombatGuardImpact",
+          "second_clip": "CombatBackhandRecoil",
+          "tip_separation_m": 0.2853298022971038,
+          "head_separation_m": 0.1281496844339143,
+          "left_elbow_separation_m": 0.23703462830275368,
+          "right_elbow_separation_m": 0.14014831895367102
+        },
+        {
+          "first_clip": "CombatGuardBreak",
+          "second_clip": "CombatRecoil",
+          "tip_separation_m": 1.0048764518707018,
+          "head_separation_m": 0.13284966180311567,
+          "left_elbow_separation_m": 0.4071901457212791,
+          "right_elbow_separation_m": 0.18804783435152084
+        },
+        {
+          "first_clip": "CombatGuardBreak",
+          "second_clip": "CombatBackhandRecoil",
+          "tip_separation_m": 1.4454520905589985,
+          "head_separation_m": 0.1841897680824871,
+          "left_elbow_separation_m": 0.5060590438331365,
+          "right_elbow_separation_m": 0.4673982729219855
+        },
+        {
+          "first_clip": "CombatRecoil",
+          "second_clip": "CombatBackhandRecoil",
+          "tip_separation_m": 0.825086423218618,
+          "head_separation_m": 0.09996804631738283,
+          "left_elbow_separation_m": 0.4844249328998264,
+          "right_elbow_separation_m": 0.35288929185600715
+        }
+      ]
+    },
+    "kick": {
+      "clip": "CombatKick",
+      "duration_seconds": 0.95,
+      "windup_seconds": 0.3,
+      "active_seconds": 0.1,
+      "recovery_seconds": 0.55,
+      "striking_foot": "Right",
+      "support_foot": "Left",
+      "root_motion": false,
+      "animation_events": 0,
+      "endpoint": "CombatReady",
+      "maximum_support_error": 1.4873426674418881e-05,
+      "maximum_support_angle_degrees": 0.0,
+      "maximum_endpoint_error": 1.7881393432617188e-07,
+      "maximum_ankle_height_m": 0.6950002610683441,
+      "minimum_active_reach_m": 0.7300001978874207,
+      "strike_samples": [
+        {
+          "seconds": 0.3,
+          "ankle": [
+            0.14000007510185242,
+            0.8100004577636719,
+            0.699999988079071
+          ]
+        },
+        {
+          "seconds": 0.32,
+          "ankle": [
+            0.1379198133945465,
+            0.8120804214477539,
+            0.7031203508377075
+          ]
+        },
+        {
+          "seconds": 0.34,
+          "ankle": [
+            0.13295982778072357,
+            0.8170401239395142,
+            0.7105599641799927
+          ]
+        },
+        {
+          "seconds": 0.36,
+          "ankle": [
+            0.1270401030778885,
+            0.8229604744911194,
+            0.7194402813911438
+          ]
+        },
+        {
+          "seconds": 0.38,
+          "ankle": [
+            0.12207984924316406,
+            0.8279202365875244,
+            0.7268801927566528
+          ]
+        },
+        {
+          "seconds": 0.4,
+          "ankle": [
+            0.12000001221895218,
+            0.8300002598762513,
+            0.7300001978874207
+          ]
+        }
+      ],
+      "weapon_anatomy": {
+        "maximum_wrist_degrees": 47.778932017950474,
+        "minimum_body_clearance_m": 0.039711738963703155,
+        "minimum_floor_clearance_m": 0.8154251218223572,
+        "maximum_elbow_speed_m_s": 0.8400834950112894
+      },
+      "animation_signature": "4f151d33c35aa31139ea120bcc98efc5c0dd83fcd3aeaef8df48edb8caece08d"
+    },
+    "released_support_clips": [
+      "CombatHit",
+      "CombatGuardBreak",
+      "CombatDefeat"
+    ],
+    "reaction_silhouette_contract": "tip_20cm_or_head_12cm_and_elbow_10cm",
+    "reaction_silhouette_pairs": [
+      {
+        "first_clip": "CombatGuardImpact",
+        "second_clip": "CombatGuardBreak",
+        "tip_separation_m": 1.2332794240766207,
+        "head_separation_m": 0.15427014385626947,
+        "left_elbow_separation_m": 0.4975536952652668,
+        "right_elbow_separation_m": 0.3628031763630903
+      },
+      {
+        "first_clip": "CombatGuardImpact",
+        "second_clip": "CombatRecoil",
+        "tip_separation_m": 0.8953191793568764,
+        "head_separation_m": 0.03760875036616741,
+        "left_elbow_separation_m": 0.46245205701602926,
+        "right_elbow_separation_m": 0.247741729292735
+      },
+      {
+        "first_clip": "CombatGuardImpact",
+        "second_clip": "CombatBackhandRecoil",
+        "tip_separation_m": 0.3334619734288361,
+        "head_separation_m": 0.12815714206677456,
+        "left_elbow_separation_m": 0.20298688117456276,
+        "right_elbow_separation_m": 0.15657474477315225
+      },
+      {
+        "first_clip": "CombatGuardBreak",
+        "second_clip": "CombatRecoil",
+        "tip_separation_m": 0.9626994770236265,
+        "head_separation_m": 0.1328249992947255,
+        "left_elbow_separation_m": 0.3908045951927495,
+        "right_elbow_separation_m": 0.28150464242632345
+      },
+      {
+        "first_clip": "CombatGuardBreak",
+        "second_clip": "CombatBackhandRecoil",
+        "tip_separation_m": 1.419794410116111,
+        "head_separation_m": 0.18429729475468387,
+        "left_elbow_separation_m": 0.5043580151880567,
+        "right_elbow_separation_m": 0.4780513515814537
+      },
+      {
+        "first_clip": "CombatRecoil",
+        "second_clip": "CombatBackhandRecoil",
+        "tip_separation_m": 0.8247043975780403,
+        "head_separation_m": 0.09999876920926487,
+        "left_elbow_separation_m": 0.5010126716212052,
+        "right_elbow_separation_m": 0.34241373792022833
       }
-    }
+    ]
   }
 }

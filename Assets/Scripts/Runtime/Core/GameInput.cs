@@ -162,6 +162,8 @@ namespace BarPromenade
                     return Read(keyboard?.tabKey, held) || Read(gamepad?.buttonNorth, held);
                 case GameInputAction.CombatStep:
                     return Read(keyboard?.spaceKey, held) || Read(gamepad?.buttonSouth, held);
+                case GameInputAction.CombatKick:
+                    return Read(keyboard?.qKey, held) || Read(gamepad?.buttonEast, held);
                 default:
                     return false;
             }

@@ -42,6 +42,7 @@ namespace BarPromenade
                 MeleePhase.Active => 0f,
                 MeleePhase.Step => 0f,
                 MeleePhase.Shoving => 0f,
+                MeleePhase.Kicking => 0f,
                 MeleePhase.Recovery => .6f,
                 MeleePhase.GuardImpact => .5f,
                 _ => State.IsBlocking ? .5f : 1f
@@ -63,6 +64,9 @@ namespace BarPromenade
                 GameLog.Field("point_x", impact.Point.x), GameLog.Field("point_y", impact.Point.y), GameLog.Field("point_z", impact.Point.z),
                 GameLog.Field("normal_x", impact.Normal.x), GameLog.Field("normal_y", impact.Normal.y), GameLog.Field("normal_z", impact.Normal.z),
                 GameLog.Field("weapon_speed", impact.WeaponSpeed));
+            JournalEvent("impact_kind", impact.Source?.JournalActorId ?? 0, impact.AttackSequence,
+                impact.Source?.journalActionRequest ?? 0, GameLog.Field("impact_seq", LastJournalImpactSequence),
+                GameLog.Field("kind", impact.Kind == CombatImpactKind.Kick ? "kick" : "weapon"));
             JournalEvent("impact_anatomy", impact.Source?.JournalActorId ?? 0, impact.AttackSequence,
                 impact.Source?.journalActionRequest ?? 0, GameLog.Field("impact_seq", LastJournalImpactSequence),
                 GameLog.Field("region", (int)impact.Location.Region), GameLog.Field("side", (int)impact.Location.Side),

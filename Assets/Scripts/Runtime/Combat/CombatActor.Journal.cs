@@ -24,6 +24,10 @@ namespace BarPromenade
         internal enum JournalWork { Present, WeaponConstraint, SupportGrip }
         private long journalPresentTicks, journalWeaponTicks, journalSupportTicks;
         private int journalPresentCalls, journalWeaponCalls, journalSupportCalls;
+        private long journalWeaponCandidates, journalWeaponSweepSamples, journalWeaponWorldQueries, journalWeaponQueriesAvoided;
+        private int journalWeaponCoreSnapshots;
+        private long journalShoulderChoicesReused, journalCandidateBudgetExhaustions;
+        private long journalSupportCandidates, journalSupportBudgetExhaustions;
         private static readonly double JournalMillisecondsPerTick = 1000d / Stopwatch.Frequency;
 
         // Struct scopes record actual work, including calls outside the root's Tick.
@@ -66,6 +70,15 @@ namespace BarPromenade
         {
             journalPresentTicks = journalWeaponTicks = journalSupportTicks = 0;
             journalPresentCalls = journalWeaponCalls = journalSupportCalls = 0;
+            journalWeaponCandidates = weaponConstraint?.CandidateChecks ?? 0;
+            journalWeaponSweepSamples = weaponConstraint?.SweepSamples ?? 0;
+            journalWeaponWorldQueries = weaponConstraint?.WorldQueries ?? 0;
+            journalWeaponQueriesAvoided = weaponConstraint?.RepeatedWorldQueriesAvoided ?? 0;
+            journalWeaponCoreSnapshots = weaponConstraint?.ArmCoreSnapshots ?? 0;
+            journalShoulderChoicesReused = weaponConstraint?.ShoulderChoicesReused ?? 0;
+            journalCandidateBudgetExhaustions = weaponConstraint?.CandidateBudgetExhaustions ?? 0;
+            journalSupportCandidates = supportGrip?.SupportCandidateEvaluations ?? 0;
+            journalSupportBudgetExhaustions = supportGrip?.SupportBudgetExhaustions ?? 0;
         }
 
         internal void WriteJournalWorkFrame()
@@ -76,7 +89,18 @@ namespace BarPromenade
                 f2: GameLog.Field("support_grip_ms", journalSupportTicks * JournalMillisecondsPerTick),
                 f3: GameLog.Field("present_calls", journalPresentCalls),
                 f4: GameLog.Field("weapon_constraint_calls", journalWeaponCalls),
-                f5: GameLog.Field("support_grip_calls", journalSupportCalls));
+                f5: GameLog.Field("support_grip_calls", journalSupportCalls),
+                f6: GameLog.Field("support_candidate_checks", (supportGrip?.SupportCandidateEvaluations ?? 0) - journalSupportCandidates),
+                f7: GameLog.Field("support_budget_exhaustions", (supportGrip?.SupportBudgetExhaustions ?? 0) - journalSupportBudgetExhaustions));
+            if (weaponConstraint != null)
+                JournalEvent("weapon_constraint_sample",
+                    f0: GameLog.Field("candidate_checks", weaponConstraint.CandidateChecks - journalWeaponCandidates),
+                    f1: GameLog.Field("sweep_samples", weaponConstraint.SweepSamples - journalWeaponSweepSamples),
+                    f2: GameLog.Field("world_queries", weaponConstraint.WorldQueries - journalWeaponWorldQueries),
+                    f3: GameLog.Field("repeated_queries_avoided", weaponConstraint.RepeatedWorldQueriesAvoided - journalWeaponQueriesAvoided),
+                    f4: GameLog.Field("arm_core_snapshots", weaponConstraint.ArmCoreSnapshots - journalWeaponCoreSnapshots),
+                    f5: GameLog.Field("shoulder_choices_reused", weaponConstraint.ShoulderChoicesReused - journalShoulderChoicesReused),
+                    f6: GameLog.Field("candidate_budget_exhaustions", weaponConstraint.CandidateBudgetExhaustions - journalCandidateBudgetExhaustions));
         }
 
         internal long JournalEvent(string eventName, int target = 0, int action = 0, int request = 0,

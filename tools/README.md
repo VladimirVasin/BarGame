@@ -157,11 +157,11 @@ in `Captures` and does not publish. See [audio-vhs/README.md](audio-vhs/README.m
 `--hand-grip-only --skip-animation-export --no-previews` refreshes hand shapes.
 Output: `Assets/Player3D/V2/Models/PlayerCharacter3DV2.{fbx,json}`.
 
-`build-combat-{test,blood}-3d-model.py`: launcher/`--validate-only`.
-Test: `--actions-only` builds combat/rise banks; `--reuse-unchanged-actions`
-checks curve hashes; `--resume-npc-bank <checkpoint.blend>` resumes saved
-NPC actions. Blood: `--texture-only`.
-`Assets/Resources/{Combat,CombatBlood}`.
+`build-combat-{test,blood}-3d-model.py --validate-only`.
+`--actions-only` banks/`--kick-only` hero kick;
+`--refresh-published-contracts`; Unity Charge=imported Attack(.18q);
+`--reuse-unchanged-actions`; `--resume-npc-bank file.blend`.
+Blood:`--texture-only`. `Assets/Resources/{Combat,CombatBlood}`.
 
 `player_jacket_cloth.py --write` derives hem/cuff metadata only; `--check` verifies it.
 Refresh `Player3DV2` through its asset setup. Lower-body changes also require

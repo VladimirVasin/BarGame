@@ -16,12 +16,14 @@ namespace BarPromenade
         private const float LowBreath = 20f;
         private const float WeaponSpacing = CombatActor.WeaponSpacing;
         private const float MakeRoomSeconds = .6f;
-        private int observedAttackSequence, observedThreats, opponentAttacks, roundsPlaced, draws;
+        private int observedAttackSequence, observedKickSequence, observedThreats, opponentAttacks, roundsPlaced, draws;
         private float observationSeconds, guardMemorySeconds, guardArmSeconds, missObservationSeconds;
+        private float kickObservationSeconds, kickMissObservationSeconds, readyIdleSeconds;
         private float decisionElapsed, approachDistance, postAttackDelay, opponentChargeTarget;
         private float coverSeconds, holdGuardSeconds, heroChargeSeconds, heroChargeAnswerAt, heroGuardSeconds;
         private float feintSeconds, retreatSeconds, strafeSign, strafeSeconds, driftAngle, driftSeconds;
         private bool guardThisAttack, lateGuard, stepThisAttack, stepBackThisAttack, tellAnswered;
+        private bool kickAnswered;
         private bool opponentWasAttacking, retreatedOnce, corneredAnimal, feinting, postFeintLight, punishing, queueBackhand, queueBackStep;
         private bool opponentMakingSpace;
         private float opponentSpaceSeconds, opponentSpaceRearmSeconds;
@@ -35,6 +37,18 @@ namespace BarPromenade
         public int OpponentDecisionSequence { get; private set; }
         public int OpponentRound { get; private set; }
         public Vector3 OpponentObservedVelocity { get; private set; }
+        public CombatOpponentStyle OpponentStyle { get; private set; } = CombatOpponentStyle.Cautious;
+        public CombatOpponentProfile OpponentProfile => CombatOpponentProfile.For(OpponentStyle);
+
+        public bool SetOpponentStyle(CombatOpponentStyle style)
+        {
+            if (!IsInitialized || !GameInput.CanRead(GameInputContext.Gameplay)) return false;
+            CombatOpponentProfile.For(style);
+            OpponentStyle = style;
+            ResetRound();
+            return true;
+        }
+
         /// <summary>Above half health the opponent probes and circles; below it presses.</summary>
         public CombatOpponentMood OpponentMood => Opponent.State.Health > Opponent.State.Settings.MaxHealth * .5f
             ? CombatOpponentMood.Probe : CombatOpponentMood.Press;
@@ -46,9 +60,11 @@ namespace BarPromenade
             // Round 0 keeps the seed every capture fixture was authored against; each reset re-rolls
             // the schedule while staying reproducible from the city seed and the round index.
             decisionSeed = unchecked((uint)GameSessionState.CitySeed ^ 0x9e3779b9u ^ (uint)OpponentRound * 0x85ebca6bu);
-            observedAttackSequence = -1;
+            observedAttackSequence = observedKickSequence = -1;
             observedThreats = opponentAttacks = draws = OpponentDecisionSequence = 0;
             observationSeconds = guardMemorySeconds = guardArmSeconds = missObservationSeconds = decisionElapsed = 0f;
+            kickObservationSeconds = kickMissObservationSeconds = readyIdleSeconds = 0f;
+            kickAnswered = false;
             coverSeconds = holdGuardSeconds = heroChargeSeconds = heroGuardSeconds = feintSeconds = retreatSeconds = 0f;
             heroChargeAnswerAt = .5f;
             guardThisAttack = lateGuard = stepThisAttack = stepBackThisAttack = tellAnswered = false;
@@ -110,6 +126,8 @@ namespace BarPromenade
             Vector3 direction = delta / distance;
             float bearing = Vector3.SignedAngle(Opponent.transform.forward, direction, Vector3.up);
             MeleeCombatant me = Opponent.State;
+            CombatOpponentProfile profile = OpponentProfile;
+            readyIdleSeconds = me.Phase == MeleePhase.Ready ? readyIdleSeconds + seconds : 0f;
 
             // Recovery duration belongs to the actual result, not a guessed
             // duration at attack start. A completed/interrupting action still
@@ -132,7 +150,7 @@ namespace BarPromenade
                     opponentDelay = Mathf.Max(opponentDelay, me.Settings.GuardImpactSeconds + .12f);
                 }
                 // Rocked once, it covers up more often than not.
-                if ((me.Phase == MeleePhase.Stagger || me.Phase == MeleePhase.GuardBroken) && Roll(60))
+                if ((me.Phase == MeleePhase.Stagger || me.Phase == MeleePhase.GuardBroken) && Roll(profile.StaggerCoverPercent))
                     coverSeconds = .5f + me.ActionRemaining;
                 if (me.Phase == MeleePhase.Recovery) OnOwnSwingResolved();
                 previousOpponentPhase = me.Phase;
@@ -265,8 +283,12 @@ namespace BarPromenade
         private bool TryPunishObservedMiss(float distance, Vector3 direction)
         {
             MeleeCombatant hero = Hero.State;
-            if (missObservationSeconds + .000001f < ReactionSeconds ||
-                hero.RecoveryRemaining <= Opponent.State.Settings.ChainWindupSeconds + SimulationStep ||
+            bool kickMiss = hero.IsKicking && hero.KickElapsed >= hero.KickActiveEnd &&
+                (hero.KickOutcome == MeleeAttackOutcome.Miss || hero.KickOutcome == MeleeAttackOutcome.Obstacle);
+            float observedSeconds = kickMiss ? kickMissObservationSeconds : missObservationSeconds;
+            float recoveryRemaining = kickMiss ? hero.KickRecoveryRemaining : hero.RecoveryRemaining;
+            if (observedSeconds + .000001f < ReactionSeconds ||
+                recoveryRemaining <= Opponent.State.Settings.ChainWindupSeconds + SimulationStep ||
                 distance > 1.32f || Vector3.Dot(Opponent.transform.forward, direction) <= .94f ||
                 !Opponent.TryObservedCounterAttack()) return false;
             Opponent.SetBlock(false);
@@ -281,24 +303,26 @@ namespace BarPromenade
         private void OnOwnSwingResolved()
         {
             MeleeCombatant me = Opponent.State;
+            CombatOpponentProfile profile = OpponentProfile;
             punishing = postFeintLight = false;
             bool press = OpponentMood == CombatOpponentMood.Press;
             switch (me.AttackOutcome)
             {
                 case MeleeAttackOutcome.Hit:
                     postAttackDelay = .06f;
-                    queueBackhand = !me.IsChained && Roll(75);
+                    queueBackhand = !me.IsChained && Roll(profile.HitChainPercent);
                     break;
                 case MeleeAttackOutcome.Blocked:
-                    postAttackDelay = Range(.18f, .42f);
-                    // Guard 50 / back-step 20 / press on 30, decided once the swing has ended.
+                    postAttackDelay = Range(profile.ProbeDelayMinimum, profile.ProbeDelayMaximum);
+                    // Each style chooses cover, a back step or renewed pressure once per result.
                     uint answer = Draw() % 100u;
-                    if (answer < 50u) holdGuardSeconds = postAttackDelay + .5f;
-                    else if (answer < 70u) queueBackStep = true;
+                    if (answer < profile.BlockedGuardPercent) holdGuardSeconds = postAttackDelay + .5f;
+                    else if (answer < profile.BlockedGuardPercent + profile.BlockedBackStepPercent) queueBackStep = true;
                     break;
                 default:
-                    postAttackDelay = press ? Range(.10f, .30f) : Range(.18f, .42f);
-                    if (Roll(60)) holdGuardSeconds = postAttackDelay + .5f;
+                    postAttackDelay = press ? Range(profile.PressMissMinimum, profile.PressMissMaximum) :
+                        Range(profile.ProbeMissMinimum, profile.ProbeMissMaximum);
+                    if (Roll(profile.MissCoverPercent)) holdGuardSeconds = postAttackDelay + .5f;
                     break;
             }
         }
@@ -306,6 +330,7 @@ namespace BarPromenade
         private bool ObserveOpponentTarget(float seconds, float distance)
         {
             MeleeCombatant hero = Hero.State;
+            CombatOpponentProfile profile = OpponentProfile;
             // Only visible phases and measured movement enter perception: no
             // input, buffered command or future target position is available.
             heroChargeSeconds = hero.IsCharging ? heroChargeSeconds + seconds : 0f;
@@ -325,10 +350,11 @@ namespace BarPromenade
                     else
                     {
                         uint answer = Draw() % 100u;
-                        guardThisAttack = answer < 60u;
+                        guardThisAttack = answer < profile.GuardTellPercent;
                         lateGuard = guardThisAttack && Roll(15);
-                        stepThisAttack = !guardThisAttack && answer < 85u;
-                        stepBackThisAttack = stepThisAttack && answer >= 75u;
+                        stepThisAttack = !guardThisAttack && answer <
+                            profile.GuardTellPercent + profile.SideStepTellPercent + profile.BackStepTellPercent;
+                        stepBackThisAttack = stepThisAttack && answer >= profile.GuardTellPercent + profile.SideStepTellPercent;
                     }
                     // A late guard is armed just before the blow: the rare deliberate parry.
                     guardArmSeconds = lateGuard
@@ -355,6 +381,7 @@ namespace BarPromenade
             missObservationSeconds = hero.Phase == MeleePhase.Recovery &&
                 (hero.AttackOutcome == MeleeAttackOutcome.Miss || hero.AttackOutcome == MeleeAttackOutcome.Obstacle)
                 ? missObservationSeconds + seconds : 0f;
+            ObserveHeroKick(seconds, distance);
 
             decisionElapsed += seconds;
             if (decisionElapsed + .000001f < DecisionSeconds) return false;
@@ -368,10 +395,47 @@ namespace BarPromenade
             return true;
         }
 
+        private void ObserveHeroKick(float seconds, float distance)
+        {
+            MeleeCombatant hero = Hero.State;
+            if (!hero.IsKicking)
+            {
+                kickObservationSeconds = kickMissObservationSeconds = 0f;
+                return;
+            }
+            if (observedKickSequence != hero.AttackSequence)
+            {
+                observedKickSequence = hero.AttackSequence;
+                kickObservationSeconds = kickMissObservationSeconds = 0f;
+                kickAnswered = false;
+            }
+            // A torso kick is recognised from the visible lift, never from Q or
+            // a queued command. Already committed attacks keep their line.
+            kickObservationSeconds += seconds;
+            if (!kickAnswered && kickObservationSeconds + .000001f >= ReactionSeconds &&
+                hero.KickElapsed < hero.KickActiveEnd && distance < 1.5f &&
+                Opponent.State.Phase == MeleePhase.Ready)
+            {
+                kickAnswered = true;
+                guardThisAttack = false;
+                guardMemorySeconds = coverSeconds = holdGuardSeconds = 0f;
+                Opponent.SetBlock(false);
+                if (Opponent.State.Stamina >= Opponent.State.Settings.StepCost &&
+                    Opponent.TryStep(Roll(OpponentProfile.KickBackStepPercent) ? Vector2.down : new Vector2(strafeSign, 0f)))
+                    OpponentIntent = CombatOpponentIntent.Step;
+            }
+            // Contact resolution has completed before the next AI observation.
+            // A startup that has not hit yet is never reported as a whiff.
+            bool miss = hero.KickElapsed >= hero.KickActiveEnd &&
+                (hero.KickOutcome == MeleeAttackOutcome.Miss || hero.KickOutcome == MeleeAttackOutcome.Obstacle);
+            kickMissObservationSeconds = miss ? kickMissObservationSeconds + seconds : 0f;
+        }
+
         private void DecideOpponent(float distance, Vector3 direction)
         {
             MeleeCombatant me = Opponent.State;
             MeleeCombatant hero = Hero.State;
+            CombatOpponentProfile profile = OpponentProfile;
             bool facing = Vector3.Dot(Opponent.transform.forward, direction) > .94f;
             bool canGuard = me.Stamina >= me.Settings.BlockCost;
 
@@ -380,7 +444,7 @@ namespace BarPromenade
             {
                 heroChargeAnswerAt = heroChargeSeconds + .8f;
                 Opponent.SetBlock(false);
-                if (Roll(70) && facing && Opponent.RequestCharge())
+                if (Roll(profile.ChargeInterceptPercent) && facing && Opponent.RequestCharge())
                 {
                     OpponentIntent = CombatOpponentIntent.Attack;
                     CommitOpponentDirection();
@@ -397,7 +461,10 @@ namespace BarPromenade
             }
 
             bool imminent = guardMemorySeconds > 0f && distance < 1.7f;
-            if ((imminent || coverSeconds > 0f || holdGuardSeconds > 0f) && canGuard)
+            // Reserve the final decision interval, so Patient acts within one
+            // second of an empty opening without accelerating its perception.
+            bool waitedEnough = readyIdleSeconds + DecisionSeconds >= profile.IdleLimitSeconds;
+            if ((imminent || (!waitedEnough && (coverSeconds > 0f || holdGuardSeconds > 0f))) && canGuard)
             {
                 OpponentIntent = CombatOpponentIntent.Guard;
                 Opponent.SetBlock(true);
@@ -445,8 +512,10 @@ namespace BarPromenade
                 return;
             }
             OpponentIntent = CombatOpponentIntent.Attack;
-            if (opponentDelay > 0f || !facing) return;
-            if (!postFeintLight && !feinting && Roll(press ? 15 : 8) && me.Stamina >= me.Settings.ChargeStaminaCost * .3f && Opponent.RequestCharge())
+            if ((!waitedEnough && opponentDelay > 0f) || !facing) return;
+            if (!waitedEnough && !postFeintLight && !feinting &&
+                Roll(press ? profile.PressFeintPercent : profile.ProbeFeintPercent) &&
+                me.Stamina >= me.Settings.ChargeStaminaCost * .3f && Opponent.RequestCharge())
             {
                 feinting = true;
                 feintSeconds = .25f;
@@ -473,16 +542,18 @@ namespace BarPromenade
                 Vector3.Dot(opponentMoveVelocity, committedDirection));
             opponentAttacks++;
             MeleeCombatant me = Opponent.State;
+            CombatOpponentProfile profile = OpponentProfile;
             bool press = OpponentMood == CombatOpponentMood.Press;
-            postAttackDelay = press ? Range(.10f, .30f) : Range(.18f, .42f);
+            postAttackDelay = press ? Range(profile.PressDelayMinimum, profile.PressDelayMaximum) :
+                Range(profile.ProbeDelayMinimum, profile.ProbeDelayMaximum);
             float planned;
             if (postFeintLight || punishing || Hero.State.Phase == MeleePhase.Rising) planned = 0f;
             else if (heroGuardSeconds >= .2f && Roll(35)) planned = 1f;
             else
             {
                 uint sample = Draw() % 100u;
-                planned = press ? (sample < 55u ? 0f : sample < 70u ? .5f : 1f)
-                                : (sample < 75u ? 0f : sample < 90u ? .5f : 1f);
+                int lightPercent = press ? profile.PressLightPercent : profile.ProbeLightPercent;
+                planned = sample < lightPercent ? 0f : sample < lightPercent + 15 ? .5f : 1f;
             }
             postFeintLight = false;
             opponentChargeTarget = Mathf.Min(planned, me.ChargeLimit01);

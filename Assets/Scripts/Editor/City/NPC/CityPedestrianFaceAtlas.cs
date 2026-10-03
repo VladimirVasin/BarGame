@@ -15,6 +15,8 @@ namespace BarPromenade.Editor
         internal static void Configure(CityPedestrianAssetRegistry registry, Source source)
         {
             if (source == null) return;
+            if (string.IsNullOrEmpty(source.texture_asset))
+                throw new InvalidOperationException("Declared pedestrian PNG face atlas has no texture path.");
             AssetDatabase.ImportAsset(source.texture_asset,
                 ImportAssetOptions.ForceSynchronousImport | ImportAssetOptions.ForceUpdate);
             registry.ConfigureFaceAtlas(CreateBinding(registry, source));
@@ -33,7 +35,11 @@ namespace BarPromenade.Editor
         {
             if (source == null)
             {
-                if (registry.FaceAtlas != null)
+                // Unity serializes a null inline class as an empty binding;
+                // only actual renderer/texture/cell data declares a face.
+                Player3DFaceAtlasBinding binding = registry.FaceAtlas;
+                if (binding != null && (binding.Renderer != null || binding.Texture != null ||
+                    (binding.Cells != null && binding.Cells.Count != 0)))
                     throw new InvalidOperationException("An undeclared pedestrian face atlas was bound.");
                 return;
             }

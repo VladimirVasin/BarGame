@@ -146,19 +146,19 @@ The vertical slice contains:
   City/Bar/lodge markers belong to one load, consumed once; later arrivals stay.
   Day one raises mother's-house quest/map marker; door/map entry or starting
   inside closes it. No village signpost;
-- CombatTest: six zones/guard-parry before rear-head defeat/impulse/steps/
-  right-held fall/rise/regrip; backhand recoil/banks/QA pending.
-  Post-contact Hit/Miss cuts/R ignores L/
-  chain .22→held .28/charge .6s/buffer .20s (hit/fall cancels). Hero Windup:
-  1m inward/braking; side/back/impulses/drift free. ≤.85m:
-  8-breath/0HP/dry shove. Continuous authored arm/regrip: wrist/elbow/shoulder
-  ≤600°/s/body/world/palm gates. AI≥1m/retreat≤.6s/whiff .20→counter .22/Rising
-  attacks; gaze/physics/modal release. Guard: balance/both hands/restore≠fresh
-  parry; shield dim-open unavailable/amber-open request/closed ready/filled block.
-  120Hz; disabled probes miss overlap. Afraid hero/calm NPC;
-  recoil/stun/pause/hit-stop; guard/step/charge cost breath/Hold keeps it;
-  wounds/thud/pools/freecam/winner walks;
-  E: toilet/left bar/marks/R-unload clears/no story-speech;
+- CombatTest: six zones/guard-parry/rear-head defeat/HP/impulse/steps/
+  R-held fall-rise/regrip; recoil holds Ready in Recovery;
+  penetration/balance/visual QA pending.
+  Q/B kick:R foot/L support/.30+.10/.40hit-.55miss return/15breath/5HP/
+  200Ns/high-guard bypass/dry/nonfinisher;.20walk wait/tail/support≠chain.
+  AI:Cautious/Pressuring/Patient; select resets/R keeps.
+  Hit-Miss tails cut/R ignores L/.22→held.28/.6charge/.20buffer clears:hit-fall-R.
+  Windup1m/braking; side-back/impulses/drift free; ≤.85m dry shove8breath/0HP.
+  Arm≤600°/s;120Hz; shoulder/contact≤12/96; live collision gates.
+  AI≥1m/retreat≤.6s/seen whiff.20→counter.22/hits Rising.
+  Guard:balance/2hands/restore≠fresh parry; disabled probes miss overlap.
+  Pause/hit-stop; guard-step-charge-kick spend breath/Hold keeps/wounds-thud-pools/
+  E toilet-left bar-marks/R-unload clears/no story-speech;
 - the retained Home opening is reachable only by a legacy request: held bed loop,
   silent `05:59` clock with rare whole-display flicker, five-second input lock,
   then localized Wake Up/Quit. Wake sets `06:00`, runs the clock/alarm and hides

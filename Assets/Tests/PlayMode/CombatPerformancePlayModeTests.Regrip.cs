@@ -10,6 +10,241 @@ namespace BarPromenade.Tests.PlayMode
     public sealed partial class CombatPerformancePlayModeTests
     {
         private string lastSourceShoveDiagnostics;
+
+        [UnityTest]
+        public IEnumerator Range_BackhandSupportSearchHasBoundedWorkAndKeepsAdmittedContactsSafe()
+        {
+            // Fresh duel a46 had 0.2-0.5 second backhand stalls from nested
+            // shoulder/contact searches. Count work, not Editor frame timing;
+            // unreachable authored contacts may release the supporting hand.
+            long evaluatedContacts = 0, evaluatedShoulders = 0;
+            int admittedContacts = 0;
+            foreach (bool hero in new[] { true, false })
+            foreach (float power in new[] { -1f, 0f, .5f, 1f })
+            {
+                PlacePair(4f);
+                for (int frame = 0; frame < 3; frame++)
+                { root.Tick(TickSeconds); yield return null; }
+                CombatActor actor = hero ? root.Hero : root.Opponent;
+                CombatSupportGrip grip = actor.SupportGrip;
+                var constraint = (CombatWeaponConstraint)typeof(CombatActor).GetField("weaponConstraint",
+                    BindingFlags.Instance | BindingFlags.NonPublic).GetValue(actor);
+                Transform shoulder = (Transform)typeof(CombatSupportGrip).GetField("upper",
+                    BindingFlags.Instance | BindingFlags.NonPublic).GetValue(grip);
+                Transform elbow = (Transform)typeof(CombatSupportGrip).GetField("forearm",
+                    BindingFlags.Instance | BindingFlags.NonPublic).GetValue(grip);
+                Transform wrist = (Transform)typeof(CombatSupportGrip).GetField("hand",
+                    BindingFlags.Instance | BindingFlags.NonPublic).GetValue(grip);
+                NpcHandPose hands = wrist.GetComponentInParent<NpcHandPose>();
+                string label = $"{(hero ? "hero" : "opponent")}/Backhand/power={power}";
+                actor.State.ObserveLateralCue(1);
+                if (power < 0f) Assert.That(actor.TryAttack(), Is.True, label);
+                else
+                {
+                    Assert.That(actor.RequestCharge(), Is.True, label);
+                    int chargeSamples = 0;
+                    while (actor.State.Charge01 + .00001f < power && chargeSamples++ < 120)
+                    {
+                        root.Tick(CombatTestRoot.SimulationStep);
+                        CheckPresentation();
+                    }
+                    Assert.That(actor.State.Charge01, Is.EqualTo(power).Within(.015f), label);
+                    Assert.That(actor.ReleaseCharge(), Is.True, label);
+                }
+                Assert.That(actor.State.Swing, Is.EqualTo(MeleeSwing.Backhand), label);
+                int admittedBefore = admittedContacts;
+                int samples = 0;
+                while (actor.State.IsAttacking && samples++ < 360)
+                {
+                    root.Tick(CombatTestRoot.SimulationStep);
+                    CheckPresentation();
+                    // Re-enter the same pose without advancing its arm clock.
+                    // Each solve gets a fresh budget and validates live geometry.
+                    PresentBounded();
+                    PresentBounded();
+                }
+                Assert.That(actor.State.Phase, Is.EqualTo(MeleePhase.Ready), label);
+                Assert.That(actor.ReceivedImpactCount, Is.Zero, label);
+                Assert.That(admittedContacts, Is.GreaterThan(admittedBefore), label + ": some contact must be physically admitted");
+
+                void PresentBounded()
+                {
+                    long shouldersBefore = constraint.CandidateChecks;
+                    long contactsBefore = grip.SupportCandidateEvaluations;
+                    actor.Present();
+                    long shoulders = constraint.CandidateChecks - shouldersBefore;
+                    long contacts = grip.SupportCandidateEvaluations - contactsBefore;
+                    Assert.That(shoulders, Is.InRange(0L, 12L), label + ": bounded shoulder choices per presentation");
+                    Assert.That(contacts, Is.InRange(0L, 96L), label + ": one bounded final contact solve per presentation");
+                    evaluatedShoulders += shoulders; evaluatedContacts += contacts;
+                    CheckPresentation();
+                }
+
+                void CheckPresentation()
+                {
+                    string pose = $"{label}: phase={actor.State.Phase}, progress={actor.State.AttackProgress:F5}, " +
+                        $"grip={grip.State}, reject={grip.LastPoseRejection}, evaluations={grip.LastContactSolveEvaluations}";
+                    Assert.That(grip.LastContactSolveEvaluations, Is.InRange(0, 96), pose);
+                    if (!grip.IsSupportingWeapon) return;
+                    admittedContacts++;
+                    Assert.That(grip.JournalContactCurrent, Is.True, pose);
+                    Assert.That(grip.JournalContactError, Is.LessThanOrEqualTo(.025f), pose);
+                    Assert.That(grip.JournalContactAngle, Is.LessThanOrEqualTo(12f), pose);
+                    Assert.That(grip.JournalWristSafe, Is.True, pose);
+                    Assert.That(grip.LiveArmAngles.x, Is.LessThanOrEqualTo(25.1f), pose);
+                    Assert.That(grip.LiveArmAngles.y, Is.LessThanOrEqualTo(55.1f), pose);
+                    Vector3 offset = hands.CylinderCentre(true) - grip.Target;
+                    Vector3 shaft = actor.Weapon.transform.up;
+                    Assert.That(Vector3.ProjectOnPlane(offset, shaft).magnitude, Is.LessThanOrEqualTo(.001f), pose);
+                    Assert.That(Mathf.Abs(Vector3.Dot(offset, shaft)), Is.LessThanOrEqualTo(.025f), pose);
+                    Assert.That(constraint.SupportArmClearance.IsSupportPathClear(shoulder.position, elbow.position, wrist.position),
+                        Is.True, pose + ": admitted supporting arm stays clear of the body");
+                }
+            }
+            Assert.That(evaluatedShoulders, Is.GreaterThan(0L), "The test must exercise right-arm candidate selection.");
+            Assert.That(evaluatedContacts, Is.GreaterThan(0L), "The test must exercise actual contact solving.");
+            LogAssert.NoUnexpectedReceived();
+        }
+
+        [UnityTest]
+        public IEnumerator Range_SupportedGripKeepsWristLimitsThroughImportedSwings()
+        {
+            // Manual duel f524 lost contact near .42 of the forehand and .12
+            // of the backhand, on both rigs, without an incoming impact. Read
+            // every 120 Hz pose, including times between imported FBX keys.
+            bool heroCaptured = false, opponentCaptured = false;
+            foreach (bool hero in new[] { true, false })
+            foreach (MeleeSwing swing in new[] { MeleeSwing.Forehand, MeleeSwing.Backhand })
+            foreach (float power in new[] { -1f, 0f, .5f, 1f })
+            {
+                PlacePair(4f);
+                for (int frame = 0; frame < 3; frame++)
+                { root.Tick(TickSeconds); yield return null; }
+                CombatActor actor = hero ? root.Hero : root.Opponent;
+                actor.SupportGrip.CaptureContactSearchDiagnostics = true;
+                var weaponConstraint = (CombatWeaponConstraint)typeof(CombatActor).GetField("weaponConstraint",
+                    BindingFlags.Instance | BindingFlags.NonPublic).GetValue(actor);
+                Transform leftElbow = (Transform)typeof(CombatSupportGrip).GetField("forearm",
+                    BindingFlags.Instance | BindingFlags.NonPublic).GetValue(actor.SupportGrip);
+                Transform leftShoulder = (Transform)typeof(CombatSupportGrip).GetField("upper",
+                    BindingFlags.Instance | BindingFlags.NonPublic).GetValue(actor.SupportGrip);
+                Transform leftWrist = (Transform)typeof(CombatSupportGrip).GetField("hand",
+                    BindingFlags.Instance | BindingFlags.NonPublic).GetValue(actor.SupportGrip);
+                NpcHandPose hands = leftWrist.GetComponentInParent<NpcHandPose>();
+                Vector3 previousElbow = actor.transform.InverseTransformPoint(leftElbow.position);
+                Vector3 previousShoulder = actor.transform.InverseTransformPoint(leftShoulder.position);
+                Vector3 previousWrist = actor.transform.InverseTransformPoint(leftWrist.position);
+                float previousContactAngle = actor.SupportGrip.JournalContactAngle;
+                float previousStation = Vector3.Dot(hands.CylinderCentre(true) - actor.SupportGrip.Target, actor.Weapon.transform.up);
+                string label = $"{(hero ? "hero" : "opponent")}/{swing}/power={power}";
+                actor.State.ObserveLateralCue(swing == MeleeSwing.Backhand ? 1 : -1);
+                if (power < 0f) Assert.That(actor.TryAttack(), Is.True, label);
+                else
+                {
+                    Assert.That(actor.RequestCharge(), Is.True, label);
+                    int chargeSamples = 0;
+                    while (actor.State.Charge01 + .00001f < power && chargeSamples++ < 120)
+                    {
+                        root.Tick(CombatTestRoot.SimulationStep);
+                        CheckGrip();
+                    }
+                    Assert.That(actor.State.Charge01, Is.EqualTo(power).Within(.015f), label);
+                    Assert.That(actor.ReleaseCharge(), Is.True, label);
+                }
+                Assert.That(actor.State.Swing, Is.EqualTo(swing), label);
+                int samples = 0;
+                while (actor.State.IsAttacking && samples < 360)
+                {
+                    root.Tick(CombatTestRoot.SimulationStep);
+                    CheckGrip();
+                    if (power < 0f && ((hero && swing == MeleeSwing.Forehand && !heroCaptured && actor.State.AttackProgress >= .45f) ||
+                        (!hero && swing == MeleeSwing.Backhand && !opponentCaptured && actor.State.AttackProgress >= .12f)))
+                    {
+                        yield return null;
+                        CheckGrip(afterGraph: true);
+                        CaptureWrist(hero ? "wrist-boundary-hero-forehand-045" : "wrist-boundary-npc-backhand-012");
+                        if (hero) heroCaptured = true;
+                        else opponentCaptured = true;
+                    }
+                    // Repeated LateUpdate presentation must use the same
+                    // accepted branch without advancing the arm clock.
+                    if (++samples % 24 == 0)
+                    { yield return null; CheckGrip(afterGraph: true); }
+                }
+                Assert.That(actor.State.Phase, Is.EqualTo(MeleePhase.Ready), label);
+                Assert.That(actor.ReceivedImpactCount, Is.Zero, label);
+
+                void CheckGrip(bool afterGraph = false)
+                {
+                    // yield null resumes after graph sampling but before this
+                    // frame's LateUpdate. Inspect the same final composition as
+                    // rendering; the unmodified imported pose is not the live IK.
+                    // Immediate post-Tick checks stay untouched so an unsafe
+                    // runtime presentation cannot be hidden by another solve.
+                    if (afterGraph && actor.IsHero)
+                        ((Player3DCharacterPresentation)root.Player.Visual).ReapplyLatePresentationPose();
+                    CombatSupportGrip grip = actor.SupportGrip;
+                    string pose = $"{label}: phase={actor.State.Phase}, progress={actor.State.AttackProgress:F5}, " +
+                        $"reject={grip.LastPoseRejection}, wrist={grip.LiveArmAngles}, contactAngle={grip.JournalContactAngle}, previousContactAngle={previousContactAngle}, weaponBlocked={actor.WeaponClearanceBlocked}, " +
+                        $"motionBlocked={weaponConstraint.MotionBlocked}, shape={actor.WeaponBlockingShape}, search={grip.LastContactSearchDiagnostics}";
+                    Assert.That(grip.IsSupportingWeapon, Is.True, pose);
+                    Assert.That(grip.JournalContactError, Is.LessThanOrEqualTo(.025f), pose);
+                    Assert.That(grip.JournalContactAngle, Is.LessThanOrEqualTo(12f), pose);
+                    Assert.That(grip.JournalWristSafe, Is.True, pose);
+                    Assert.That(grip.LiveArmAngles.x, Is.LessThanOrEqualTo(25.1f), pose);
+                    Assert.That(grip.LiveArmAngles.y, Is.LessThanOrEqualTo(55.1f), pose);
+                    Vector3 cylinderOffset = hands.CylinderCentre(true) - grip.Target;
+                    Vector3 shaftAxis = actor.Weapon.transform.up;
+                    float currentStation = Vector3.Dot(cylinderOffset, shaftAxis);
+                    Assert.That(Vector3.ProjectOnPlane(cylinderOffset, shaftAxis).magnitude, Is.LessThanOrEqualTo(.001f), pose);
+                    Assert.That(Mathf.Abs(currentStation), Is.LessThanOrEqualTo(.025f), pose);
+                    if (!afterGraph)
+                    {
+                        Vector3 currentElbow = actor.transform.InverseTransformPoint(leftElbow.position);
+                        Vector3 currentShoulder = actor.transform.InverseTransformPoint(leftShoulder.position);
+                        Vector3 currentWrist = actor.transform.InverseTransformPoint(leftWrist.position);
+                        // The legacy nominal solve follows the authored hint.
+                        // The new bounded contact correction must preserve
+                        // the previous branch on entry, travel and return.
+                        if (grip.JournalContactAngle > .1f || previousContactAngle > .1f ||
+                            Mathf.Abs(currentStation) > .0001f || Mathf.Abs(previousStation) > .0001f)
+                        {
+                            Vector3 oldAxis = previousWrist - previousShoulder, newAxis = currentWrist - currentShoulder;
+                            Vector3 oldPole = Vector3.ProjectOnPlane(previousElbow - previousShoulder, oldAxis);
+                            Vector3 carriedPole = Quaternion.FromToRotation(oldAxis, newAxis) * oldPole;
+                            Vector3 currentPole = Vector3.ProjectOnPlane(currentElbow - currentShoulder, newAxis);
+                            float branchTurn = Mathf.Abs(Vector3.SignedAngle(carriedPole, currentPole, newAxis));
+                            Assert.That(branchTurn, Is.LessThanOrEqualTo(600f * CombatTestRoot.SimulationStep + .25f),
+                                pose + ": continuous corrected elbow branch");
+                        }
+                        previousElbow = currentElbow;
+                        previousShoulder = currentShoulder;
+                        previousWrist = currentWrist;
+                        previousContactAngle = grip.JournalContactAngle;
+                        previousStation = currentStation;
+                    }
+                }
+
+                void CaptureWrist(string name)
+                {
+                    Camera camera = Camera.main;
+                    Assert.That(camera, Is.Not.Null);
+                    Vector3 before = camera.transform.position;
+                    Quaternion rotation = camera.transform.rotation;
+                    try
+                    {
+                        camera.transform.position = actor.transform.position + actor.transform.forward * 1.8f -
+                            actor.transform.right * 1.3f + Vector3.up * 1.6f;
+                        camera.transform.LookAt(actor.transform.position + Vector3.up * 1.15f + actor.transform.forward * .15f);
+                        AreaCaptureFixture.CaptureCurrentCamera(camera, SceneIds.CombatTest, name);
+                    }
+                    finally { camera.transform.SetPositionAndRotation(before, rotation); }
+                }
+            }
+            Assert.That(heroCaptured && opponentCaptured, Is.True);
+            LogAssert.NoUnexpectedReceived();
+        }
+
         [UnityTest]
         public IEnumerator Range_OneHandAttacksStartWithoutWaitingForSupport()
         {

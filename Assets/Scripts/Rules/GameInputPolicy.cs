@@ -27,7 +27,8 @@ namespace BarPromenade
         MeleeBlock,
         CombatReset,
         CombatMode,
-        CombatStep
+        CombatStep,
+        CombatKick
     }
 
     /// <summary>Input ownership rules with no device or scene dependencies.</summary>

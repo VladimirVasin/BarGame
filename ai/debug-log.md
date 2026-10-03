@@ -1,7 +1,7 @@
 # Structured session diagnostics
 
-`debug.log`: session context, actions, unfinished operations, Unity warnings/exceptions.
-`DuelJournal`: CombatTest rounds. Optional area performance captures are separate.
+`debug.log`: context/actions/unfinished operations/Unity warnings/exceptions.
+`DuelJournal`: CombatTest rounds.
 
 ## General log: location and profiles
 
@@ -53,11 +53,10 @@ per severity, so warning storms cannot consume the exception budget.
 
 ## General log retention and reporting
 
-Rotate at 5 MiB; keep `debug.1.log`–`debug.3.log`. Flush on error, else every
-0.5 s/F8/pause/focus loss/clean shutdown. Fresh session→F8 at fault→Shift+F8;
-collect log/archives and CombatTest round. Start at last error/`operation_id`.
-No intentional usernames/save paths/frame telemetry. Unity exception stacks may
-contain paths; review before public sharing.
+Rotate 5MiB; keep `debug.1.log`–`debug.3.log`. Flush: error/.5s/F8/pause/focus/exit.
+Fresh session→fault→F8→Shift+F8; collect archives/round; start at error/`operation_id`.
+No intended usernames/save paths/frame telemetry. Exception stacks may contain
+paths; review before public sharing.
 
 ## DuelJournal: CombatTest rounds
 
@@ -66,35 +65,39 @@ Editor: repository CombatLogs; Player: `Application.persistentDataPath/CombatLog
 `duel_<session>_<round>`: `summary.txt`, then `duel.ndjson`.
 
 `rules_rejected`: opaque Rules/`reason_checked=false`/phase/stamina/cost.
-`balance_buffer`: .20s press; `observed_counter`: whiff reply. 20Hz root/bones/
-grip/support/queries/CPU. `support_pose_rejected`: `contact_*`/weapon commit
-depth/sweep/shape. `arm_snapshot`: wrist/elbow/shoulder_roll/elbow_signed.
-`contact_metrics_current`: fresh/cached. Guard: `two_hand_support` (grip) or
-`balance_recovery` (catch); attacks ignore regrip. End/focus cancels held/buffered.
-`recovery`: steps/gaps/stability; `ragdoll_snapshot`: speeds/settling/live rise
-support vs central landing. `suspected_stall`: >2s without phase/rise progress,
-excluding defeated. `post_round_time_discarded`: aftermath loss; snapshots to exit/R.
-`impact_anatomy`: links `impact_seq` to region/side/critical/finisher, target phase
-before/after and power; diagnostic pre-hit phase may be null.
-`revision_identity`: Runtime/Rules ModuleVersionIds; Editor git commit/clean-dirty
-and bank dependency hashes once/play; Player build GUID for banks. Workspace
-commit≠compiled code; missing=null/`unavailable`. No replay/FPS guarantee.
+`balance_buffer`: .20s press; `observed_counter`: whiff reply. 20Hz pose/support/CPU.
+`support_pose_rejected`: `contact_*`/weapon commit depth/sweep/shape.
+`arm_snapshot`: wrist/elbow/shoulder_roll/elbow_signed; metrics fresh/cached.
+Guard: `two_hand_support`/`balance_recovery`; attacks ignore regrip.
+End/focus cancels held/buffered. Header: `opponent_style`.
+`phase`: `action_kind`/kick `outcome`/`from_action`; `impact_kind`: impact_seq+kind.
+`kick_support`: reason/gap/wait; `kick_sweep_sample`: boot endpoints/hit/obstacle.
+`recovery`: steps/gaps/stability; `ragdoll_snapshot`: speeds/settling/rise support
+vs central landing. `suspected_stall`: >2s without phase/rise progress, except
+defeated. `post_round_time_discarded`: aftermath loss; snapshots to exit/R.
+`impact_anatomy`: `impact_seq`/region/side/critical/finisher/target phase before-after/
+power; diagnostic pre-hit phase may be null.
+`revision_identity`: compiled Runtime/Rules MVID≠Editor commit/state; bank
+dependency hashes once/play (Player build GUID). Missing=null/`unavailable`;
+no replay/FPS guarantee.
 
-`frame_detail`: `late_pose_ms`=hero LateUpdate CPU, `impact_apply_ms`=impact,
-`update_to_late_ms`=Update→observer LateStart (simulation/other updates included).
-`latest_target_wait_ms`=Unity marker; `latest_{present_wait,cpu_main,cpu_render}_ms`
-=latest FrameTiming; `latest_timing_repeat_frames`: -1 unavailable/0 new/>0 repeats,
-not age. `pose_work`: per-actor Present/WeaponConstraint/SupportGrip CPU and calls,
-including outside Tick. `frame_delivery/late_to_next_update_ms`: LateStart→next
-Update wall: rendering/editor/scheduling/waits, not proof of CPU/GPU cost.
+`frame_detail`: `late_pose_ms`=hero LateUpdate CPU, `impact_apply_ms`=impact;
+`update_to_late_ms`=Update→observer LateStart, includes simulation/updates.
+`latest_target_wait_ms`=Unity; `latest_{present_wait,cpu_main,cpu_render}_ms`
+=FrameTiming. `latest_timing_repeat_frames`:-1 unavailable/0 new/>0 repeats≠age.
+`pose_work`: Present/Weapon/Support CPU/calls, support candidates/budget; outside Tick.
+`frame_delivery/late_to_next_update_ms`: LateStart→next Update wall includes
+render/editor/scheduling/waits; not proof of CPU/GPU cost.
+`weapon_constraint_sample`: candidates/sweeps/queries/reused casts/core snapshots/
+shoulder reuse/budget; world gates live.
 Nested timings overlap: never sum. Unsupported=null; main/render
 Profiler/GPU: latest. Header: render interval/capture delta/target-wait.
 
-Producer: 2048/4096 default/max packets/eight control slots; reused chars,
-no strings/field copies. Explicit drops/I/O/limits; max two live workers
-including stalled I/O, extra starts=`worker_limit`. 20MiB/round/ten closed/100MiB;
-prune ordinary before marked/abandoned, never live/foreign. Bounded priority
-marks; one CombatLogs/no sweep. Cloth/hair cache matrices; 120Hz/4 steps.
+Producer: 2048/4096 default/max packets + eight control slots; reused chars,
+no strings/field copies. Drops/I/O/limits explicit; ≤2 live workers (stalled too),
+extra=`worker_limit`. 20MiB/round/10 closed/100MiB; prune ordinary before marked/
+abandoned, never live/foreign. Priority marks bounded; one CombatLogs/no sweep.
+Cloth/hair matrix cache;120Hz/4 steps.
 
 ## Optional area performance capture
 
