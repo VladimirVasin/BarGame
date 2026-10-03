@@ -157,11 +157,11 @@ namespace BarPromenade
 
             var lots = new List<BuildingLot>();
             for (int index = 0;
-                 index < layout.BuildingLots.Count;
+                 index < layout.BuildingMasses.Count;
                  index++)
             {
                 BuildingLot lot =
-                    layout.BuildingLots[index];
+                    layout.BuildingMasses[index];
                 if (!lot.HasBuilding)
                 {
                     continue;

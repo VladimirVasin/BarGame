@@ -452,18 +452,19 @@ The vertical slice contains:
 
 ### City generation and layout
 
-- a seeded coastal city separates blueprint IDs/metres through CitySpatialPlan:
-  144 lots in the `13 x 12` envelope, west/north/south spans `26–40 m`; river,
-  park/home/bar/fair/arch anchors and eastern widths fixed. Beach/sea stay
-  continuous; legacy/custom spacing stays uniform. District priorities vary rhythm.
-  The OldTown T branch meets north/south at `78°/102°`; nodes/datums stay fixed,
-  approach ends straight ≥6 m. CityRoadJunction unions all incident first-6-m
-  8 m ribbons, subtracts 6 m carriageway for shared miter sidewalks; grade is flat 6 m,
-  other nodes 4 m. Road/terrain mesh, collision and navigation share exact polygons.
-  Four ordinary lots fit rigid frontage poses to local tangents: model/foundation/
-  docks and CreateCollisionPolygons agree; cardinal frontages identify existing
-  graph edges, authored metres/L voids remain.
-  Significant places exclude the patch; unsafe bends stay outside bus routes;
+- CitySpatialPlan maps blueprint IDs/metres: 144 lots in `13 x 12`;
+  west/north/south 26–40 m, river/park/home/bar/fair/arch anchors and eastern widths fixed.
+  Beach/sea continuous; legacy/custom uniform. District rhythm varies.
+  The OldTown T meets north/south at 78°/102°; nodes/datums fixed, ends straight
+  ≥6 m. CityRoadJunction unions incident 8 m ribbons minus 6 m carriageway,
+  shared miter sidewalks; flat grade 6 m here/4 m elsewhere. Physical polygons
+  serve road/terrain mesh, collision/navigation. Four L 15×14 m houses use
+  rigid street poses; two western compact 14×13.5 m rear bodies join BuildingMasses
+  without new lot IDs. CourtyardBlocks subtract exact masses from road ground;
+  ≥2.2 m rear necks open into 10×7 m L courts. Capsule-safe loops pass both
+  flanks and return to the same street entrance. Model/foundation/docks and
+  oriented collision agree; assets stay unscaled. Significant places exclude
+  the patch; unsafe bends stay outside bus routes;
 - one default-blueprint-only mountain boundary plan closes the physical west
   and south edges with deterministic flat-shaded low-poly ridge strips whose
   toes sample the authoritative terrain top. The south skyline remains closed

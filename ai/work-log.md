@@ -15,18 +15,33 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
   measured assets stay unscaled. Cardinal frontages identify existing graph edges.
   Vehicle clearance excludes unsafe links; the existing bus loop stays intact.
   Cannery and Last Route guards retain their actual routes.
+- CourtyardBlocks reuse four L 15×14 m houses and two western compact 14×13.5 m
+  rear bodies. BuildingMasses adds the latter without changing 144 semantic lots.
+  Exact masses are subtracted from road ground. A bounded visibility graph fits
+  a .4 m capsule loop from the street via both flanks, the western ≥2.2 m neck
+  and the true 10×7 m L court back to the same street entrance. Assets stay
+  unscaled; there are no new entrances, NPCs, text, lights or story details.
 - Local-origin polygon area and physical edge tolerance retain the partition.
   Padded OBB fitting checks each actual road cut individually to avoid fragmented
   ground area precision errors. Node grade breakpoints must be ribbon vertices:
   without them path and collider heights diverged near street ends. Adjacent
   sampled pavement pieces prove capsule clearance through their polygon union.
+  Shared-edge classification needs metric endpoint tolerance: floating
+  collinear/intersection corners left false internal barriers in that union.
+  Front/rear fitting reserves keep the full hero capsule clear.
+  Existing street poles choose bounded clear stations on the same road when
+  courtyard routes or bodies occupy their old station; lights/types stay the same.
   The checkpoint test helper respects its open public frontage.
+  Compact OldTown outfalls use canonical facade mounts and ground sampling;
+  generic lateral placement missed the recessed right wall and left a floating strap.
 - Checks: `CityRoadGeometryTests`,
   `CityElevationPlannerTests.DefaultCity_UsesOneSafeRoadGroundBoundaryContract`,
   `CityBuildingPrototypeRuntimeTests.DefaultCity_PlacesDistrictPrototypesAndClipsHomeExterior`,
-  `AreaCaptureFixture.CityReplanning`. Street/T frames reviewed: oblique approach
-  and house poses read clearly; physical paving, hero/pedestrian navigation and
-  height probes agree. `python tools/check-docs.py`, `git diff --check`.
+  `CityDecorationPlannerTests.ShippedCity_PutsTheWaterNetworkOnTheGround`,
+  `AreaCaptureFixture.CityReplanning`. Court/passage/street/T frames reviewed:
+  court spaces and passage openings are visible; full hero capsule routes,
+  physical floor/sampler heights, navigation/map arrivals and existing pedestrian
+  probes agree. `python tools/check-docs.py`, `git diff --check`.
 
 ## 2026-10-03 — Combat and city replanning
 

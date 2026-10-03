@@ -206,6 +206,8 @@ namespace BarPromenade
                 CityDecorationKind kind = ResolveCoreKind(
                     lot.District,
                     (kindHash & 1u) != 0u);
+                if (kind == CityDecorationKind.OldTownScaffolding && IsCourtyardCell(layout, lot.Cell))
+                    kind = CityDecorationKind.OldTownChimneysAndDormers;
                 if (layout.TryGetPrimaryLandmarkCell(
                         lot.District,
                         out Vector2Int landmarkCell) &&
@@ -398,6 +400,7 @@ namespace BarPromenade
                  index++)
             {
                 BuildingLot lot = lots[index];
+                if (IsCourtyardCell(layout, lot.Cell)) continue;
                 uint selectionHash = StableHash(
                     layout.Seed,
                     lot.Cell.x,
@@ -556,6 +559,7 @@ namespace BarPromenade
                             roadworkRadius,
                             fencePlan,
                             nightPlan) ||
+                        BlocksCourtyardRoute(layout, position, roadworkRadius) ||
                         !IsSeparated(
                             position,
                             occupiedGroundPositions,
@@ -1174,6 +1178,7 @@ namespace BarPromenade
                         objectRadius,
                         fencePlan,
                         nightPlan) ||
+                    BlocksCourtyardRoute(layout, position, objectRadius) ||
                     !IsSeparated(
                         position,
                         occupiedGroundPositions,
@@ -1190,6 +1195,22 @@ namespace BarPromenade
 
             position = default;
             forward = default;
+            return false;
+        }
+
+        private static bool IsCourtyardCell(CityLayout layout, Vector2Int cell)
+        {
+            foreach (CityCourtyardBlock block in layout.CourtyardBlocks)
+                if (block.Cell == cell) return true;
+            return false;
+        }
+
+        private static bool BlocksCourtyardRoute(CityLayout layout, Vector3 position, float objectRadius)
+        {
+            float clearance = objectRadius + CityGroundTraversalPlanner.MaximumAgentRadius;
+            var point = new Vector2(position.x, position.z);
+            foreach (CityCourtyardBlock block in layout.CourtyardBlocks)
+                if (block.Route.Project(point).DistanceSquared < clearance * clearance) return true;
             return false;
         }
 
@@ -1255,6 +1276,14 @@ namespace BarPromenade
                 lot.Center +
                 (forward * (buildingHalfDepth + depth)) +
                 (right * lateral);
+            if (depthOverride >= 0f && lot.IsOrdinaryBuilding)
+            {
+                // A bolted outfall needs a real wall. The compact OldTown
+                // right wing recedes behind its overall frontage envelope;
+                // its shared facade mount instead belongs to the left wall.
+                position = CityBuildingPrototypePlacement.ResolveFacadeAnchor(
+                    lot, lateralFraction < 0f ? 0u : 1u) + forward * (depth - .04f);
+            }
             if (!CityTerrainSurfacePlan.TrySampleGroundTop(
                     layout,
                     new Vector2(position.x, position.z),

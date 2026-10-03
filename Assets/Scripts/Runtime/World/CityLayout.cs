@@ -21,6 +21,24 @@ namespace BarPromenade
         private readonly ReadOnlyDictionary<CityDistrictKind, Vector2Int>
             readOnlyPrimaryLandmarkCells;
         private bool hasValidated;
+        private IReadOnlyList<CityCourtyardBlock> courtyardBlocks;
+        private IReadOnlyList<BuildingLot> buildingMasses;
+
+        // Semantic lot identities stay stable. Physical mass consumers also
+        // see the two rear houses that enclose the OldTown pilot courts.
+        public IReadOnlyList<CityCourtyardBlock> CourtyardBlocks =>
+            courtyardBlocks ?? (courtyardBlocks = CityCourtyardBlockPlanner.Create(this));
+        public IReadOnlyList<BuildingLot> BuildingMasses
+        {
+            get
+            {
+                if (buildingMasses != null) return buildingMasses;
+                var masses = new List<BuildingLot>(BuildingLots);
+                foreach (CityCourtyardBlock block in CourtyardBlocks)
+                    if (block.RearBuilding != null) masses.Add(block.RearBuilding);
+                return buildingMasses = new ReadOnlyCollection<BuildingLot>(masses);
+            }
+        }
 
         internal CityLayout(
             int seed,

@@ -6,16 +6,23 @@ Earlier notes: [`release-notes-2026-09.md`](archive/release-notes-2026-09.md).
 
 ## Unreleased
 
-### 2026-10-04 — Косой T и фасады Старого города
+### 2026-10-04 — Косой T, фасады и дворы Старого города
 
 - T Старого города — косой, `78°/102°`; концы прямые ≥6 м, узлы прежние.
   Дома патча ориентируются вдоль улиц. Дорога, грунт, коллизии и маршруты
   используют одну геометрию, авторские размеры домов сохраняются.
+- Четыре L-дома и два задних корпуса образуют дворовые обходы. Узкое горло
+  открывается в настоящий L-двор; путь возвращается к той же улице по другому
+  флангу дома. Новых игровых входов, жителей и сюжетных деталей нет.
+- Выходы водостоков обычных домов Старого города крепятся к фасаду:
+  утопленная стена больше не оставляет крепление в воздухе.
 - Проверки: `CityRoadGeometryTests`,
   `CityElevationPlannerTests.DefaultCity_UsesOneSafeRoadGroundBoundaryContract`,
   `CityBuildingPrototypeRuntimeTests.DefaultCity_PlacesDistrictPrototypesAndClipsHomeExterior`,
-  `AreaCaptureFixture.CityReplanning`; кадры улиц просмотрены, покрытие и проходы
-  согласованы с физикой. Безопасный маршрут автобуса сохранён.
+  `CityDecorationPlannerTests.ShippedCity_PutsTheWaterNetworkOnTheGround`,
+  `AreaCaptureFixture.CityReplanning`; кадры дворов, проходов и улиц просмотрены.
+  Полная капсула героя проходит; физический пол, высоты, навигация и точки карты
+  согласованы. Безопасный маршрут автобуса сохранён.
 - Документация: `python tools/check-docs.py`, `git diff --check`.
 
 ### 2026-10-03 — Бой и кварталы города

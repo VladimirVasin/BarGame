@@ -60,7 +60,7 @@ namespace BarPromenade
                     bounds.min.z,
                     bounds.max.x,
                     bounds.max.z);
-                if (lot.HasFacadeRotation)
+                if (lot.HasFacadeRotation || lot.BuildingVariant > 0)
                 {
                     IReadOnlyList<Vector2[]> polygons = lot.CreateCollisionPolygons();
                     bool inside = false, intersects = false;

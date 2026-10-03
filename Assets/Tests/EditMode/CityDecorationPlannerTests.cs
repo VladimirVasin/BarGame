@@ -598,6 +598,7 @@ namespace BarPromenade.Tests.EditMode
 
             int drains = 0;
             int standpipes = 0;
+            int compactOldTownOutfalls = 0;
             for (int index = 0; index < plan.Descriptors.Count; index++)
             {
                 CityDecorationDescriptor descriptor =
@@ -611,6 +612,30 @@ namespace BarPromenade.Tests.EditMode
                          CityDecorationKind.RoadsideCappedStandpipe)
                 {
                     standpipes++;
+                }
+                else if (descriptor.Kind == CityDecorationKind.LotGroundDownpipeOutfall)
+                {
+                    Assert.That(descriptor.TryResolveLot(layout, out BuildingLot lot), Is.True);
+                    Assert.That(CityTerrainSurfacePlan.TrySampleGroundTop(layout,
+                        new Vector2(descriptor.Position.x, descriptor.Position.z), out float top, out _), Is.True);
+                    Assert.That(descriptor.Position.y, Is.EqualTo(top).Within(.001f),
+                        "The outfall's foot must stay on the actual ground.");
+                    if (lot.District == CityDistrictKind.OldTown && lot.BuildingVariant == 0)
+                    {
+                        compactOldTownOutfalls++;
+                        CityBuildingPrototypePose pose = CityBuildingPrototypePlacement.ResolveExpectedCityPose(lot);
+                        Quaternion inverse = Quaternion.Inverse(pose.Rotation);
+                        Vector3 local = inverse * (descriptor.Position - pose.Position);
+                        Assert.That(local.x, Is.InRange(-7f + .108f, -.6f - .108f),
+                            "The complete mounting strap must belong to the solid left wing, clear of the front void.");
+                        Assert.That(local.z, Is.EqualTo(6.85f).Within(.002f));
+                        // The imported strap's back face is 0.113 m behind
+                        // its root, slightly embedded in the actual wall.
+                        Vector3 strapBack = inverse * (descriptor.Position - descriptor.Forward * .113f - pose.Position);
+                        Assert.That(strapBack.z, Is.EqualTo(6.75f).Within(.02f),
+                            "A compact-house downpipe must touch masonry rather than its recessed right-wing air.");
+                    }
+                    continue;
                 }
                 else
                 {
@@ -635,6 +660,8 @@ namespace BarPromenade.Tests.EditMode
                 Is.GreaterThan(8),
                 "A walk should cross a drain without noticing one.");
             Assert.That(standpipes, Is.GreaterThan(0));
+            Assert.That(compactOldTownOutfalls, Is.GreaterThan(0),
+                "The shipped plan must exercise contact on an actual compact OldTown house.");
             Assert.That(
                 standpipes,
                 Is.LessThan(drains),

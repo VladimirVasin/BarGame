@@ -81,7 +81,7 @@ namespace BarPromenade.Tests.PlayMode
                 CityRoadSample eyeSample = path.SampleDistance(path.Length * .3f);
                 Vector3 eye = ReplanningStreetEye(layout, new Vector3(eyeSample.Position.x, 0, eyeSample.Position.y));
                 CityRoadSample targetSample = path.SampleDistance(Mathf.Min(path.Length - 2f, path.Length * .3f + 16f));
-                shots.Add(Shot.At($"replanning-oblique-{index + 1:00}-curve", eye,
+                shots.Add(Shot.At($"replanning-courtyard-street-{index + 1:00}-curve", eye,
                     new Vector3(targetSample.Position.x, eye.y - .7f, targetSample.Position.y), 78f));
             }
             foreach (CityPedestrianLink link in city.PedestrianPlan.Links.Where(link => link.Path != null))
@@ -106,15 +106,118 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(city.World.WalkableArea.Contains(releasedGround.point, .35f), Is.True);
             Vector3 junction = layout.GetNodeWorldPosition(new Vector2Int(1, 8));
             Vector3 junctionEye = ReplanningStreetEye(layout, junction + Vector3.right * 5f);
-            shots.Add(Shot.At("replanning-oblique-04-t-junction", junctionEye,
+            shots.Add(Shot.At("replanning-courtyard-street-04-t-junction", junctionEye,
                 junction + Vector3.left * 6f + Vector3.up * (EyeHeight - .6f), 102f));
             CityRoadSample branchEye = branchPath.SampleDistance(11f);
             Vector3 obliqueEye = ReplanningStreetEye(layout,
                 new Vector3(branchEye.Position.x, 0f, branchEye.Position.y));
-            shots.Add(Shot.At("replanning-oblique-05-approach", obliqueEye,
+            shots.Add(Shot.At("replanning-courtyard-street-05-approach", obliqueEye,
                 junction + Vector3.forward * 4f + Vector3.up * (EyeHeight - .6f), 90f));
+            VerifyReplanningCourtyards(city, streetPlan, shots, issues);
             Debug.Log($"OldTown pilot: {layout.RoadGeometry.CurvedEdges.Count} shared road paths; physical probe issues={issues.Count}.");
             return shots.ToArray();
+        }
+
+        private static void VerifyReplanningCourtyards(CityGameRoot city,
+            CityStreetSurfacePlan streetPlan, List<Shot> shots, List<string> issues)
+        {
+            CityLayout layout = city.Layout;
+            Assert.That(layout.CourtyardBlocks.Count, Is.EqualTo(4));
+            Assert.That(layout.BuildingMasses.Count, Is.EqualTo(146));
+            var mapGround = new CityMapCityTeleportGround(layout);
+            CharacterController hero = city.Player.GameObject.GetComponent<CharacterController>();
+            Physics.SyncTransforms();
+            foreach (CityCourtyardBlock block in layout.CourtyardBlocks)
+            {
+                for (float distance = 0f; distance < block.Route.Length + .5f; distance += .5f)
+                {
+                    Vector2 point = block.Route.SampleDistance(distance).Position;
+                    if (!TryReplanningSurfaceTop(layout, streetPlan, point, out float top))
+                    {
+                        issues.Add($"Courtyard {block.Cell} has no authored walking surface at {point:F4}.");
+                        continue;
+                    }
+                    Vector3 floor = new Vector3(point.x, top, point.y);
+                    if (!Physics.Raycast(floor + Vector3.up * 1.5f, Vector3.down,
+                        out RaycastHit hit, 3f, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore) ||
+                        Mathf.Abs(hit.point.y - top) > .025f || hit.normal.y < .7f)
+                        issues.Add($"Courtyard {block.Cell} physical floor at {point:F4}, expected={top:F4}, " +
+                            $"actual={hit.point.y:F4}, collider={hit.collider?.name}.");
+                    if (!city.World.WalkableArea.Contains(floor, .35f))
+                        issues.Add($"Courtyard {block.Cell} hero capsule leaves navigation at {point:F4}.");
+                    // Keep the full .35 m radius. The production step offset
+                    // permits the existing curb while testing body clearance.
+                    Collider[] obstacles = Physics.OverlapCapsule(
+                        floor + Vector3.up * (hero.stepOffset + .35f + PlayerFactory.GroundedRootOffset),
+                        floor + Vector3.up * (hero.height - .35f + PlayerFactory.GroundedRootOffset), .35f,
+                        Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore);
+                    foreach (Collider obstacle in obstacles)
+                    {
+                        if (obstacle.transform.IsChildOf(city.Player.GameObject.transform) ||
+                            obstacle.GetComponentInParent<DefaultNpcAppearance>() != null ||
+                            obstacle.GetComponentInParent<CityPedestrianActor>() != null) continue;
+                        issues.Add($"Courtyard {block.Cell} route capsule blocked at {point:F4} by {obstacle.name}.");
+                    }
+                }
+                foreach (Vector3 arrival in new[] { block.CourtCenter, block.PassageCenter })
+                {
+                    Vector2 point = new Vector2(arrival.x, arrival.z);
+                    if (!mapGround.TryResolveStandingPosition(point, out Vector3 standing) ||
+                        (new Vector2(standing.x, standing.z) - point).sqrMagnitude > .0001f ||
+                        !TryReplanningSurfaceTop(layout, streetPlan, point, out float top) ||
+                        Mathf.Abs(standing.y - top - PlayerFactory.GroundedRootOffset) > .025f)
+                        issues.Add($"Courtyard {block.Cell} map arrival moved or missed the actual ground at {point:F4}.");
+                }
+                CityBuildingPrototypePose pose = CityBuildingPrototypePlacement.ResolveExpectedCityPose(block.Primary);
+                Vector3 courtEye = ReplanningCourtyardEye(layout, streetPlan,
+                    new Vector2(block.CourtCenter.x, block.CourtCenter.z));
+                Vector3 courtTarget = pose.TransformPoint(new Vector3(9f, 1.15f, -2.5f));
+                if (block.RearBuilding != null)
+                {
+                    Vector3 flank = pose.TransformPoint(new Vector3(8.1f, 0f, -1.5f));
+                    courtEye = ReplanningCourtyardEye(layout, streetPlan, new Vector2(flank.x, flank.z));
+                    courtTarget = block.CourtCenter + Vector3.up * 1.15f;
+                }
+                shots.Add(Shot.At($"replanning-courtyard-{block.Cell.x}-{block.Cell.y}-court", courtEye,
+                    courtTarget, 88f));
+                if (block.RearBuilding != null)
+                {
+                    float passageDistance = block.Route.Project(new Vector2(block.PassageCenter.x,
+                        block.PassageCenter.z)).DistanceAlong;
+                    CityRoadSample eye = block.Route.SampleDistance(Mathf.Max(0f, passageDistance - 2f));
+                    CityRoadSample target = block.Route.SampleDistance(Mathf.Min(block.Route.Length, passageDistance + 4f));
+                    Vector3 passageEye = ReplanningCourtyardEye(layout, streetPlan, eye.Position);
+                    shots.Add(Shot.At($"replanning-courtyard-{block.Cell.x}-{block.Cell.y}-passage", passageEye,
+                        new Vector3(target.Position.x, passageEye.y - .65f, target.Position.y), 78f));
+                }
+                if (block.Cell == new Vector2Int(0, 8))
+                {
+                    Vector3 entranceEye = ReplanningCourtyardEye(layout, streetPlan, block.Route.Vertices[0]);
+                    CityRoadSample target = block.Route.SampleDistance(6f);
+                    shots.Add(Shot.At("replanning-courtyard-0-8-entrance", entranceEye,
+                        new Vector3(target.Position.x, entranceEye.y - .55f, target.Position.y), 82f));
+                }
+            }
+        }
+
+        private static bool TryReplanningSurfaceTop(CityLayout layout, CityStreetSurfacePlan streetPlan,
+            Vector2 point, out float top)
+        {
+            if (streetPlan.CurvedSidewalkPolygons.Any(polygon => CityRoadPolygon.Contains(polygon, point)) ||
+                (layout.RoadGeometry.ObliqueJunction != null && layout.RoadGeometry.ObliqueJunction.SidewalkPolygons
+                    .Any(polygon => CityRoadPolygon.Contains(polygon, point))))
+                return layout.ElevationPlan.TrySampleSurface(point, CitySurfaceRole.SidewalkTop, out top, out _);
+            var position = new Vector3(point.x, 0f, point.y);
+            foreach (RuntimeOrientedBox sidewalk in streetPlan.SidewalkGeometry)
+                if (sidewalk.TrySampleTop(position, out top)) return true;
+            if (CityTerrainSurfacePlan.TrySampleGroundTop(layout, point, out top, out _)) return true;
+            return layout.ElevationPlan.TrySampleSurface(point, CitySurfaceRole.RoadTop, out top, out _);
+        }
+
+        private static Vector3 ReplanningCourtyardEye(CityLayout layout, CityStreetSurfacePlan streetPlan, Vector2 point)
+        {
+            Assert.That(TryReplanningSurfaceTop(layout, streetPlan, point, out float top), Is.True);
+            return new Vector3(point.x, top + EyeHeight, point.y);
         }
 
         private static bool NearPavementEnd(CityStreetRibbonDescriptor ribbon, Vector2 point)

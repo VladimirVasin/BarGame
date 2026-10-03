@@ -1773,10 +1773,12 @@ namespace BarPromenade
             bool isAuthoredPrecinct = (cell.x == 10 && cell.y == 5) ||
                 (cell.x == 11 && (cell.y == 3 || cell.y == 4 || cell.y == 5));
             bool curvedBlock = settings.RoadGeometry?.IsAffectedCell(cell) == true;
-            int buildingVariant = authoredOrdinary && !curvedBlock && !isPrimaryLandmark && !isAuthoredPrecinct
-                ? ResolveBuildingVariant(seed, cell, frontage, district,
-                    new Vector2(maximumWidth, maximumDepth))
-                : 0;
+            int buildingVariant = authoredOrdinary && curvedBlock
+                ? 2
+                : authoredOrdinary && !isPrimaryLandmark && !isAuthoredPrecinct
+                    ? ResolveBuildingVariant(seed, cell, frontage, district,
+                        new Vector2(maximumWidth, maximumDepth))
+                    : 0;
             Vector3 envelope = authoredOrdinary
                 ? CityBuildingAssetProvider.GetExpectedEnvelope(district, buildingVariant)
                 : Vector3.zero;
@@ -1932,10 +1934,13 @@ namespace BarPromenade
             if (Vector2.Dot(normal, new Vector2(cardinal.x, cardinal.z)) < 0f) normal = -normal;
             Vector3 desired = new Vector3(normal.x, 0f, normal.y);
             float yaw = Mathf.Clamp(Vector3.SignedAngle(cardinal, desired, Vector3.up), -12f, 12f);
-            Vector3 original = center;
+            Vector3 cellCenter = center;
             Vector2 span = settings.GetCellSpan(cell);
-            Rect cellBounds = new Rect(original.x - span.x * .5f,
-                original.z - span.y * .5f, span.x, span.y);
+            Rect cellBounds = new Rect(cellCenter.x - span.x * .5f,
+                cellCenter.z - span.y * .5f, span.x, span.y);
+            float halfSpan = frontage.x != 0 ? span.x * .5f : span.y * .5f;
+            Vector3 original = cellCenter + cardinal * Mathf.Max(0f,
+                halfSpan - settings.RoadWidth * .5f - envelope.z * .5f - 1.4f);
             List<Vector2[]> roadCuts = CreatePilotRoadCuts(settings, cellBounds);
             Vector3 lateral = new Vector3(cardinal.z, 0f, -cardinal.x);
             var shifts = new List<Vector2>();
@@ -1959,9 +1964,21 @@ namespace BarPromenade
                 foreach (Vector2 shift in shifts)
                 {
                     Vector3 candidate = original - cardinal * shift.y + lateral * shift.x;
-                    Vector2[] footprint = PilotEnvelope(candidate, rotation,
-                        envelope.x + 1.3f, envelope.z + 1.3f);
+                    Vector2[] footprint = PilotEnvelope(candidate + candidateForward * .15f, rotation,
+                        envelope.x + 1.3f, envelope.z + 1.6f);
                     if (!FitsPilotGround(footprint, cellBounds, roadCuts)) continue;
+                    if (cell.x == 0)
+                    {
+                        // A second fixed-metre house closes the rear of the
+                        // western court. Reserve its real ground now, rather
+                        // than squeezing it into the gap after placement.
+                        Vector2[] mass = PilotEnvelope(candidate, rotation, envelope.x, envelope.z);
+                        Vector3 rear = CityCourtyardBlockPlanner.ResolveRearCenter(candidate, mass);
+                        Vector3 rearModel = CityBuildingAssetProvider.GetExpectedEnvelope(district: CityDistrictKind.OldTown, variantIndex: 0);
+                        Vector2[] rearEnvelope = PilotEnvelope(rear,
+                            Quaternion.LookRotation(Vector3.right), rearModel.x + .7f, rearModel.z + .7f);
+                        if (!FitsPilotGround(rearEnvelope, cellBounds, roadCuts)) continue;
+                    }
                     center = candidate;
                     forward = candidateForward;
                     return;

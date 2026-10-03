@@ -650,8 +650,12 @@ namespace BarPromenade
                 area.Exclude(eastExit.ClosedGroundBounds);
                 area.Exclude(eastExit.BoothBounds);
             }
-            foreach (BuildingLot lot in layout.BuildingLots)
-                if (lot.HasFacadeRotation) area.ExcludePolygons(lot.CreateCollisionPolygons());
+            var courtyardCells = new HashSet<Vector2Int>();
+            foreach (CityCourtyardBlock block in layout.CourtyardBlocks)
+                courtyardCells.Add(block.Cell);
+            foreach (BuildingLot lot in layout.BuildingMasses)
+                if (lot.HasBuilding && (lot.HasFacadeRotation || courtyardCells.Contains(lot.Cell)))
+                    area.ExcludePolygons(lot.CreateCollisionPolygons());
             return area;
         }
 
@@ -1027,6 +1031,7 @@ namespace BarPromenade
                 {
                     Vector2 a = pieces[p][e], b = pieces[p][(e + 1) % pieces[p].Length], delta = b - a;
                     if (delta.sqrMagnitude < .000001f) continue;
+                    float length = delta.magnitude;
                     var cuts = new List<float> { 0f, 1f };
                     for (int other = 0; other < pieces.Count; other++)
                     {
@@ -1035,19 +1040,27 @@ namespace BarPromenade
                         for (int q = 0; q < polygon.Length; q++)
                         {
                             Vector2 c = polygon[q], d = polygon[(q + 1) % polygon.Length], span = d - c;
+                            float spanLength = span.magnitude;
+                            if (spanLength < .001f) continue;
                             float denominator = CityRoadPolygon.Cross(delta, span);
-                            if (Mathf.Abs(denominator) > .000001f)
-                            {
-                                float t = CityRoadPolygon.Cross(c - a, span) / denominator;
-                                float u = CityRoadPolygon.Cross(c - a, delta) / denominator;
-                                if (t > 0f && t < 1f && u >= 0f && u <= 1f) cuts.Add(t);
-                            }
-                            else if (Mathf.Abs(CityRoadPolygon.Cross(delta, c - a)) < .0001f)
+                            // Cut endpoints that differ by float roundoff are
+                            // still the same physical seam. Cross products have
+                            // square-metre units, so compare line distances and
+                            // allow endpoint error in metres on both segments.
+                            if (Mathf.Abs(CityRoadPolygon.Cross(delta, c - a)) <= BoundaryEpsilon * length &&
+                                Mathf.Abs(CityRoadPolygon.Cross(delta, d - a)) <= BoundaryEpsilon * length)
                             {
                                 float t = Vector2.Dot(c - a, delta) / delta.sqrMagnitude;
                                 float u = Vector2.Dot(d - a, delta) / delta.sqrMagnitude;
                                 if (t > 0f && t < 1f) cuts.Add(t);
                                 if (u > 0f && u < 1f) cuts.Add(u);
+                            }
+                            else if (Mathf.Abs(denominator) > .000001f * length * spanLength)
+                            {
+                                float t = CityRoadPolygon.Cross(c - a, span) / denominator;
+                                float u = CityRoadPolygon.Cross(c - a, delta) / denominator;
+                                float endpointMargin = BoundaryEpsilon / spanLength;
+                                if (t > 0f && t < 1f && u >= -endpointMargin && u <= 1f + endpointMargin) cuts.Add(t);
                             }
                         }
                     }
@@ -1055,7 +1068,7 @@ namespace BarPromenade
                     Vector2 outward = new Vector2(delta.y, -delta.x).normalized;
                     for (int i = 1; i < cuts.Count; i++)
                     {
-                        if (cuts[i] - cuts[i - 1] < .00001f) continue;
+                        if ((cuts[i] - cuts[i - 1]) * length < BoundaryEpsilon) continue;
                         Vector2 first = a + delta * cuts[i - 1], last = a + delta * cuts[i];
                         Vector2 probe = (first + last) * .5f + outward * .003f;
                         bool covered = false;

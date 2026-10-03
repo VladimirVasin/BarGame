@@ -13,6 +13,11 @@ namespace BarPromenade
 
         private const float FixtureRoadClearance = 0.75f;
         private const float PublicSpaceFixtureClearance = 1.0f;
+        // The 0.42 m square lower-pole collider has a 0.297 m half diagonal.
+        // Reserve the full hero capsule and a margin beside the court route.
+        private const float CourtyardRouteFixtureClearance = 0.95f;
+        private const float CourtyardBuildingFixtureClearance = 0.55f;
+        private const float ShiftedLampMinimumSpacing = 3f;
         private const uint LampSideSalt = 0x4C414D50u;
         private const uint SignalPhaseSalt = 0x50484153u;
 
@@ -108,7 +113,21 @@ namespace BarPromenade
             if (!IsFixtureBlocked(layout, alternate.Position))
             {
                 target.Add(alternate);
+                return;
             }
+
+            if (!TouchesCourtyardEdge(layout, edge)) return;
+            // Keep the two ordinary lights when their original stations are
+            // occupied by the court's entry or flank. Both sides are tried at
+            // each bounded shift before moving farther along the same street.
+            foreach (float shift in new[] { -.08f, .08f, -.16f, .16f })
+                foreach (StreetLampSide side in new[] { preferredSide, alternateSide })
+                {
+                    StreetLampDescriptor shifted = CreateStreetLamp(layout, edge, edgeT + shift, side);
+                    if (IsFixtureBlocked(layout, shifted.Position) || !IsLampSeparated(shifted.Position, target)) continue;
+                    target.Add(shifted);
+                    return;
+                }
         }
 
         private static StreetLampDescriptor CreateStreetLamp(
@@ -125,7 +144,8 @@ namespace BarPromenade
             Vector3 outward = left * sideMultiplier;
             float offset = (layout.RoadWidth * 0.5f) + FixtureRoadClearance;
             Vector3 centerlinePosition = Vector3.Lerp(start, end, edgeT);
-            if (layout.RoadGeometry.IsCurved(edge))
+            bool courtyardEdge = TouchesCourtyardEdge(layout, edge);
+            if (layout.RoadGeometry.IsCurved(edge) || courtyardEdge)
             {
                 CityRoadPath path = layout.RoadGeometry.Get(edge);
                 CityRoadSample sample = path.SampleDistance(path.Length * edgeT);
@@ -134,11 +154,16 @@ namespace BarPromenade
                 outward = new Vector3(-sample.Right.x, 0f, -sample.Right.y) * sideMultiplier;
             }
 
+            Vector3 position = centerlinePosition + (outward * offset);
+            if (courtyardEdge && CityTerrainSurfacePlan.TrySampleGroundTop(layout,
+                    new Vector2(position.x, position.z), out float top, out _))
+                position.y = top;
+
             return new StreetLampDescriptor(
                 edge,
                 edgeT,
                 side,
-                centerlinePosition + (outward * offset),
+                position,
                 -outward);
         }
 
@@ -198,10 +223,59 @@ namespace BarPromenade
             Vector3 position)
         {
             return layout.IsWater(position) ||
+                   IntersectsCourtyardReservation(layout, position) ||
                    IntersectsRiverReservation(layout, position) ||
                    IntersectsDistrictPointOfInterestReservation(
                        layout,
                        position);
+        }
+
+        private static bool TouchesCourtyardEdge(CityLayout layout, RoadEdge edge)
+        {
+            foreach (CityCourtyardBlock block in layout.CourtyardBlocks)
+                if (edge == RoadEdge.ForCellFrontage(block.Cell, Vector2Int.left) ||
+                    edge == RoadEdge.ForCellFrontage(block.Cell, Vector2Int.right) ||
+                    edge == RoadEdge.ForCellFrontage(block.Cell, Vector2Int.down) ||
+                    edge == RoadEdge.ForCellFrontage(block.Cell, Vector2Int.up)) return true;
+            return false;
+        }
+
+        private static bool IntersectsCourtyardReservation(CityLayout layout, Vector3 position)
+        {
+            var point = new Vector2(position.x, position.z);
+            foreach (CityCourtyardBlock block in layout.CourtyardBlocks)
+            {
+                if (block.Route.Project(point).DistanceSquared <
+                    CourtyardRouteFixtureClearance * CourtyardRouteFixtureClearance) return true;
+                if (IntersectsBuilding(point, block.Primary) ||
+                    (block.RearBuilding != null && IntersectsBuilding(point, block.RearBuilding))) return true;
+            }
+            return false;
+        }
+
+        private static bool IntersectsBuilding(Vector2 point, BuildingLot building)
+        {
+            foreach (Vector2[] polygon in building.CreateCollisionPolygons())
+            {
+                if (CityRoadPolygon.Contains(polygon, point)) return true;
+                for (int i = 0; i < polygon.Length; i++)
+                {
+                    Vector2 a = polygon[i], delta = polygon[(i + 1) % polygon.Length] - a;
+                    Vector2 nearest = a + delta * Mathf.Clamp01(Vector2.Dot(point - a, delta) /
+                        Mathf.Max(.000001f, delta.sqrMagnitude));
+                    if ((point - nearest).sqrMagnitude <
+                        CourtyardBuildingFixtureClearance * CourtyardBuildingFixtureClearance) return true;
+                }
+            }
+            return false;
+        }
+
+        private static bool IsLampSeparated(Vector3 position, IEnumerable<StreetLampDescriptor> lamps)
+        {
+            foreach (StreetLampDescriptor lamp in lamps)
+                if (new Vector2(position.x - lamp.Position.x, position.z - lamp.Position.z).sqrMagnitude <
+                    ShiftedLampMinimumSpacing * ShiftedLampMinimumSpacing) return false;
+            return true;
         }
 
         private static bool IntersectsRiverReservation(

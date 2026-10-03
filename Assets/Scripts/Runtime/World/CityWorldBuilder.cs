@@ -271,7 +271,7 @@ namespace BarPromenade
                 seacoastTimer.Restart();
                 CityOffshoreBoatController.Build(world, layout.Seed,
                     seacoastPlan, lighthouseIslandPlan,
-                    layout.BuildingLots);
+                    layout.BuildingMasses);
                 ReportBlock("seacoast/offshore_boats", seacoastTimer);
             }
 
@@ -285,13 +285,14 @@ namespace BarPromenade
             double lotsMs = 0d;
             double maxLotMs = 0d;
             int builtCount = 0;
-            for (int i = 0; i < layout.BuildingLots.Count; i++)
+            IReadOnlyList<BuildingLot> buildingMasses = layout.BuildingMasses;
+            for (int i = 0; i < buildingMasses.Count; i++)
             {
                 lotTimer.Restart();
                 BuildBuilding(
                     world,
                     layout,
-                    layout.BuildingLots[i],
+                    buildingMasses[i],
                     layout.Seed,
                     emissiveMaterial,
                     walkableArea,
@@ -306,7 +307,7 @@ namespace BarPromenade
                     maxLotMs = lotMs;
                 }
 
-                if (layout.BuildingLots[i].HasBuilding)
+                if (buildingMasses[i].HasBuilding)
                 {
                     builtCount++;
                 }
@@ -316,10 +317,10 @@ namespace BarPromenade
                 // meant one rendered frame of the half-built city per lot;
                 // sixteen lots per yield keeps the bar moving on nine frames
                 // instead of ~130.
-                if ((i + 1) % 16 == 0 || i == layout.BuildingLots.Count - 1)
+                if ((i + 1) % 16 == 0 || i == buildingMasses.Count - 1)
                 {
                     yield return new CompositionStep("buildings",
-                        0.68f + 0.17f * (i + 1) / layout.BuildingLots.Count);
+                        0.68f + 0.17f * (i + 1) / buildingMasses.Count);
                     blockTimer.Restart();
                 }
             }

@@ -13,27 +13,28 @@ namespace BarPromenade
     /// the nearest legal point is used, and its height re-sampled, rather
     /// than dropping the player in.
     ///
-    /// Solid obstacle footprints are the one thing the mask does NOT exclude:
-    /// their underlying ground is walkable and a collider stands on it, which
-    /// is right for walking and wrong for arriving. The lattice would
-    /// otherwise offer buildings and courtyard fixtures as destinations, so
-    /// their footprints are subtracted here.
+    /// The mask cuts exact pilot building solids. Other obstacle footprints
+    /// are also checked here so the lattice cannot offer buildings or
+    /// courtyard fixtures as destinations.
     /// </summary>
     public sealed class CityMapCityTeleportGround : ICityMapTeleportGround
     {
         private readonly CityLayout layout;
         private readonly List<Rect> obstacleFootprints;
-        private readonly List<Vector2[]> rotatedBuildingObstacles = new List<Vector2[]>();
+        private readonly List<Vector2[]> polygonBuildingObstacles = new List<Vector2[]>();
         private RoadWalkableArea walkableArea;
 
         public CityMapCityTeleportGround(CityLayout layout)
         {
             this.layout = layout ??
                           throw new ArgumentNullException(nameof(layout));
-            obstacleFootprints = CollectObstacleFootprints(layout);
-            foreach (BuildingLot lot in layout.BuildingLots)
-                if (lot.HasBuilding && lot.HasFacadeRotation)
-                    rotatedBuildingObstacles.AddRange(lot.CreateCollisionPolygons());
+            var courtyardCells = new HashSet<Vector2Int>();
+            foreach (CityCourtyardBlock block in layout.CourtyardBlocks)
+                courtyardCells.Add(block.Cell);
+            obstacleFootprints = CollectObstacleFootprints(layout, courtyardCells);
+            foreach (BuildingLot lot in layout.BuildingMasses)
+                if (lot.HasBuilding && (lot.HasFacadeRotation || courtyardCells.Contains(lot.Cell)))
+                    polygonBuildingObstacles.AddRange(lot.CreateCollisionPolygons());
         }
 
         public GameAreaId Area => GameAreaId.City;
@@ -168,7 +169,7 @@ namespace BarPromenade
         private bool IsInsideObstacle(Vector2 worldXZ)
         {
             float radius = CityGroundTraversalPlanner.MaximumAgentRadius;
-            foreach (Vector2[] polygon in rotatedBuildingObstacles)
+            foreach (Vector2[] polygon in polygonBuildingObstacles)
             {
                 if (CityRoadPolygon.Contains(polygon, worldXZ)) return true;
                 for (int edge = 0; edge < polygon.Length; edge++)
@@ -212,15 +213,15 @@ namespace BarPromenade
         }
 
         private static List<Rect> CollectObstacleFootprints(
-            CityLayout layout)
+            CityLayout layout, ISet<Vector2Int> courtyardCells)
         {
             float radius = CityGroundTraversalPlanner.MaximumAgentRadius;
             var footprints = new List<Rect>(
-                layout.BuildingLots.Count + 8);
-            for (int index = 0; index < layout.BuildingLots.Count; index++)
+                layout.BuildingMasses.Count + 8);
+            for (int index = 0; index < layout.BuildingMasses.Count; index++)
             {
-                BuildingLot lot = layout.BuildingLots[index];
-                if (!lot.HasBuilding || lot.HasFacadeRotation)
+                BuildingLot lot = layout.BuildingMasses[index];
+                if (!lot.HasBuilding || lot.HasFacadeRotation || courtyardCells.Contains(lot.Cell))
                 {
                     continue;
                 }

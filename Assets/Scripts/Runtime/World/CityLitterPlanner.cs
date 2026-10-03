@@ -158,6 +158,7 @@ namespace BarPromenade
             private readonly Occupancy occupancy;
             private readonly Dictionary<Vector2Int, int> surfaceByCell = new Dictionary<Vector2Int, int>();
             private readonly HashSet<Vector2Int> landmarkCells = new HashSet<Vector2Int>();
+            private readonly HashSet<Vector2Int> courtyardCells = new HashSet<Vector2Int>();
             private readonly Dictionary<CityDistrictKind, int> bicyclesByDistrict = new Dictionary<CityDistrictKind, int>();
             private readonly List<KeyValuePair<CityLitterItem, float>> candidates = new List<KeyValuePair<CityLitterItem, float>>();
             private int solids, bicycles;
@@ -187,6 +188,7 @@ namespace BarPromenade
                     if (!surfaceByCell.ContainsKey(surface.Cell)) surfaceByCell.Add(surface.Cell, index);
                 }
                 foreach (Vector2Int cell in layout.PrimaryLandmarkCells.Values) landmarkCells.Add(cell);
+                foreach (CityCourtyardBlock block in layout.CourtyardBlocks) courtyardCells.Add(block.Cell);
                 field.Build(layout, streets, fence, decoration, seacoast, archShelter);
             }
 
@@ -278,6 +280,7 @@ namespace BarPromenade
                         landmarkCells.Contains(lot.Cell) || !surfaceByCell.TryGetValue(lot.Cell, out int surfaceIndex)) continue;
                     CitySurfaceDescriptor surface = layout.Surfaces[surfaceIndex];
                     if (surface.Kind != CitySurfaceKind.BuildableGround) continue;
+                    bool courtyard = courtyardCells.Contains(lot.Cell);
                     Rect container = surface.WorldBounds, building = LotRect(lot);
                     float[] table = Table(lot.District);
                     string lotId = "Litter Lot " + lot.Cell.x + " " + lot.Cell.y;
@@ -292,7 +295,7 @@ namespace BarPromenade
                         for (int attempt = 0; attempt < PointAttempts; attempt++)
                         {
                             Vector3 along = Vector3.zero;
-                            Vector2 point = Next(random) < LotWallShare
+                            Vector2 point = !courtyard && Next(random) < LotWallShare
                                 ? WallPoint(lot, building, LotWallDistanceMin, LotWallDistanceMax, random, out along)
                                 : new Vector2(Mathf.Lerp(container.xMin, container.xMax, Next(random)),
                                     Mathf.Lerp(container.yMin, container.yMax, Next(random)));
@@ -302,7 +305,7 @@ namespace BarPromenade
                     }
                     string solidId = lotId + " Solid";
                     var solidRandom = new System.Random(Seed(solidId, layout.Seed, Salt));
-                    if (solids >= CityLitterPlan.MaximumSolidCount || Next(solidRandom) >= SolidProbability(lot.District)) continue;
+                    if (courtyard || solids >= CityLitterPlan.MaximumSolidCount || Next(solidRandom) >= SolidProbability(lot.District)) continue;
                     CityLitterItem solid = Pick(table, true, XZ(lot.Center), lot.District, solidRandom);
                     if (solid == null) continue;
                     for (int attempt = 0; attempt < PointAttempts; attempt++)
@@ -619,7 +622,8 @@ namespace BarPromenade
             private readonly List<Ring> attractors = new List<Ring>();
             private readonly List<KeyValuePair<Rect, RuntimeOrientedBox>> streetBoxes = new List<KeyValuePair<Rect, RuntimeOrientedBox>>();
             private readonly List<KeyValuePair<Rect, RuntimeOrientedBox>> sidewalkBoxes = new List<KeyValuePair<Rect, RuntimeOrientedBox>>();
-            private readonly List<Vector2[]> rotatedBuildings = new List<Vector2[]>();
+            private readonly List<Vector2[]> buildingPolygons = new List<Vector2[]>();
+            private readonly List<Vector2[]> courtyardWalkLanes = new List<Vector2[]>();
             private readonly List<Vector2[]> curvedRoads = new List<Vector2[]>();
 
             internal void Build(CityLayout layout, CityStreetSurfacePlan streets, RoadFencePlan fence,
@@ -654,11 +658,17 @@ namespace BarPromenade
                     circles.Add(new Circle(XZ(stop.ShelterPosition), 5.5f));
                     circles.Add(new Circle(XZ(stop.Position), 1.5f));
                 }
-                foreach (BuildingLot lot in layout.BuildingLots)
+                var courtyardCells = new HashSet<Vector2Int>();
+                foreach (CityCourtyardBlock block in layout.CourtyardBlocks)
+                {
+                    courtyardCells.Add(block.Cell);
+                    courtyardWalkLanes.AddRange(block.Route.Ribbon(CityGroundTraversalPlanner.MaximumAgentRadius * 2f));
+                }
+                foreach (BuildingLot lot in layout.BuildingMasses)
                 {
                     if (!lot.HasBuilding) continue;
                     // A bottle may lie against a wall, never inside one; doors and the way to them stay clear.
-                    if (lot.HasFacadeRotation) rotatedBuildings.AddRange(lot.CreateCollisionPolygons());
+                    if (lot.HasFacadeRotation || courtyardCells.Contains(lot.Cell)) buildingPolygons.AddRange(lot.CreateCollisionPolygons());
                     else blocked.Add(Expand(LotRect(lot), .04f));
                     circles.Add(new Circle(XZ(lot.DoorPosition), lot.IsBar ? 2.5f : 1.8f));
                     circles.Add(new Circle(XZ(lot.SidewalkArrivalPosition), 1f));
@@ -776,7 +786,7 @@ namespace BarPromenade
 
             internal bool Blocks(Rect footprint, bool ground)
             {
-                foreach (Vector2[] polygon in rotatedBuildings)
+                foreach (Vector2[] polygon in buildingPolygons)
                     if (OverlapsPolygon(Expand(footprint, .04f), polygon)) return true;
                 if (ground) foreach (Vector2[] polygon in curvedRoads)
                     if (OverlapsPolygon(Expand(footprint, .05f), polygon)) return true;
@@ -825,6 +835,8 @@ namespace BarPromenade
             internal bool BlocksWalkLane(Rect expanded)
             {
                 foreach (Rect rect in walkLanes) if (rect.Overlaps(expanded)) return true;
+                foreach (Vector2[] polygon in courtyardWalkLanes)
+                    if (OverlapsPolygon(expanded, polygon)) return true;
                 return false;
             }
 

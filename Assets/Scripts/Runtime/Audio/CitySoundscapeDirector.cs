@@ -184,7 +184,7 @@ namespace BarPromenade
                     $"loop voices, but the pool owns {LoopVoiceCount}.");
             }
 
-            buildingLots = layout.BuildingLots;
+            buildingLots = layout.BuildingMasses;
             weighbridgeNeedle = needle;
             nightFactorProvider = nightProvider;
             previousWeighbridgeDeflection =

@@ -1085,7 +1085,7 @@ namespace BarPromenade
                     SurfSound,
                     camera.transform,
                     World.SeacoastPlan,
-                    Layout.BuildingLots);
+                    Layout.BuildingMasses);
             GameObject lightningObject =
                 new GameObject("City Lightning Flash");
             lightningObject.transform.SetParent(transform, false);
