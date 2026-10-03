@@ -291,20 +291,17 @@ namespace BarPromenade
             {
                 for (int index = 0; index < registry.ColliderBounds.Count; index++)
                 {
-                    Bounds solid = CityBuildingPrototypePlacement.TransformBounds(
-                        registry.ColliderBounds[index], pose);
-                    BuildFoundationBox(parent, lot, solid, foundationDepth,
+                    Bounds solid = registry.ColliderBounds[index];
+                    BuildFoundationBox(parent, lot, solid, pose, foundationDepth,
                         name + " " + index);
                 }
                 return;
             }
-            Bounds visibleBounds = CityBuildingPrototypePlacement
-                .TransformBounds(registry.LocalBounds, pose);
-            BuildFoundationBox(parent, lot, visibleBounds, foundationDepth, name);
+            BuildFoundationBox(parent, lot, registry.LocalBounds, pose, foundationDepth, name);
         }
 
         private static void BuildFoundationBox(Transform parent, BuildingLot lot,
-            Bounds visibleBounds, float foundationDepth, string name)
+            Bounds visibleBounds, CityBuildingPrototypePose pose, float foundationDepth, string name)
         {
             float top = visibleBounds.min.y + FoundationOverlap;
             float bottom = visibleBounds.min.y - foundationDepth;
@@ -313,10 +310,10 @@ namespace BarPromenade
             GameObject foundation = RuntimePrimitiveFactory.CreateBox(
                 name,
                 parent,
-                new Vector3(
+                pose.TransformPoint(new Vector3(
                     visibleBounds.center.x,
                     (bottom + top) * 0.5f,
-                    visibleBounds.center.z),
+                    visibleBounds.center.z)),
                 new Vector3(
                     Mathf.Max(
                         0.1f,
@@ -330,6 +327,7 @@ namespace BarPromenade
                 facade,
                 RuntimePrimitiveFactory.DefaultMaterial,
                 false);
+            foundation.transform.localRotation = pose.Rotation;
             CityBuildingSurfaceAppearance.Apply(
                 foundation.GetComponent<Renderer>(),
                 lot.District,
@@ -370,10 +368,16 @@ namespace BarPromenade
                  CityFacadeGrid.MassBaseElevation -
                  foundationDepth * 0.5f);
             BoxCollider collider = collisionObject.AddComponent<BoxCollider>();
-            collider.size = new Vector3(
-                lot.Size.x,
-                lot.Height + foundationDepth,
-                lot.Size.y);
+            if (lot.HasFacadeRotation)
+            {
+                collision.localRotation = lot.FacadeRotation;
+                collider.size = new Vector3(
+                    lot.FrontageDirection.x != 0 ? lot.Size.y : lot.Size.x,
+                    lot.Height + foundationDepth,
+                    lot.FrontageDirection.x != 0 ? lot.Size.x : lot.Size.y);
+            }
+            else collider.size = new Vector3(lot.Size.x,
+                lot.Height + foundationDepth, lot.Size.y);
         }
 
         private static void ValidateBuildArguments(

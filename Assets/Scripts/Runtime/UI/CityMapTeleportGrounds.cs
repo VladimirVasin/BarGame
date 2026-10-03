@@ -23,6 +23,7 @@ namespace BarPromenade
     {
         private readonly CityLayout layout;
         private readonly List<Rect> obstacleFootprints;
+        private readonly List<Vector2[]> rotatedBuildingObstacles = new List<Vector2[]>();
         private RoadWalkableArea walkableArea;
 
         public CityMapCityTeleportGround(CityLayout layout)
@@ -30,6 +31,9 @@ namespace BarPromenade
             this.layout = layout ??
                           throw new ArgumentNullException(nameof(layout));
             obstacleFootprints = CollectObstacleFootprints(layout);
+            foreach (BuildingLot lot in layout.BuildingLots)
+                if (lot.HasBuilding && lot.HasFacadeRotation)
+                    rotatedBuildingObstacles.AddRange(lot.CreateCollisionPolygons());
         }
 
         public GameAreaId Area => GameAreaId.City;
@@ -163,6 +167,18 @@ namespace BarPromenade
 
         private bool IsInsideObstacle(Vector2 worldXZ)
         {
+            float radius = CityGroundTraversalPlanner.MaximumAgentRadius;
+            foreach (Vector2[] polygon in rotatedBuildingObstacles)
+            {
+                if (CityRoadPolygon.Contains(polygon, worldXZ)) return true;
+                for (int edge = 0; edge < polygon.Length; edge++)
+                {
+                    Vector2 a = polygon[edge], delta = polygon[(edge + 1) % polygon.Length] - a;
+                    float along = delta.sqrMagnitude > .000001f
+                        ? Mathf.Clamp01(Vector2.Dot(worldXZ - a, delta) / delta.sqrMagnitude) : 0f;
+                    if ((worldXZ - a - delta * along).sqrMagnitude < radius * radius) return true;
+                }
+            }
             for (int index = 0; index < obstacleFootprints.Count; index++)
             {
                 if (obstacleFootprints[index].Contains(worldXZ))
@@ -204,7 +220,7 @@ namespace BarPromenade
             for (int index = 0; index < layout.BuildingLots.Count; index++)
             {
                 BuildingLot lot = layout.BuildingLots[index];
-                if (!lot.HasBuilding)
+                if (!lot.HasBuilding || lot.HasFacadeRotation)
                 {
                     continue;
                 }

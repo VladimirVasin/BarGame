@@ -127,6 +127,8 @@ namespace BarPromenade
             var parts = new List<DecorationPart>(15);
             var collisionBounds = new List<Bounds>(
                 CityStaticCollisionBuilder.MaximumDecorationProxyCount);
+            var collisionBoxes = new List<RuntimeOrientedBox>(
+                CityStaticCollisionBuilder.MaximumDecorationProxyCount);
             CityMiscAssetProvider importedProvider = null;
             for (int index = 0; index < descriptors.Count; index++)
             {
@@ -175,6 +177,15 @@ namespace BarPromenade
 
                 if (homeContext == null)
                 {
+                    if (descriptor.TryResolveLot(layout, out BuildingLot collisionLot) &&
+                        collisionLot.HasFacadeRotation)
+                    {
+                        collisionBoxes.Clear();
+                        CityStaticCollisionBuilder.AddDecorationProxyBoxes(layout, descriptor, collisionBoxes);
+                        foreach (RuntimeOrientedBox box in collisionBoxes)
+                            AddOrientedCollisionToChunk(chunks, box);
+                        continue;
+                    }
                     collisionBounds.Clear();
                     CityStaticCollisionBuilder.AddDecorationProxyBounds(
                         layout,
@@ -2232,6 +2243,20 @@ namespace BarPromenade
                 bounds.size));
         }
 
+        private static void AddOrientedCollisionToChunk(
+            IDictionary<ChunkCoordinate, ChunkGeometry> chunks, RuntimeOrientedBox box)
+        {
+            var coordinate = new ChunkCoordinate(Mathf.FloorToInt(box.Center.x / SpatialChunkSize),
+                Mathf.FloorToInt(box.Center.z / SpatialChunkSize));
+            if (!chunks.TryGetValue(coordinate, out ChunkGeometry geometry))
+            {
+                geometry = new ChunkGeometry();
+                chunks.Add(coordinate, geometry);
+            }
+            geometry.OrientedCollisionBoxes.Add(new RuntimeOrientedBox(
+                box.Center - coordinate.Origin, box.Rotation, box.Size));
+        }
+
         private static void BuildChunks(
             Transform parent,
             IDictionary<ChunkCoordinate, ChunkGeometry> chunks)
@@ -2252,6 +2277,14 @@ namespace BarPromenade
                 CityStaticCollisionBuilder.AddBoxColliders(
                     chunk,
                     geometry.CollisionBoxes);
+                foreach (RuntimeOrientedBox box in geometry.OrientedCollisionBoxes)
+                {
+                    Transform proxy = new GameObject("Attached Detail Collision").transform;
+                    proxy.SetParent(chunk, false);
+                    proxy.localPosition = box.Center;
+                    proxy.localRotation = box.Rotation;
+                    proxy.gameObject.AddComponent<BoxCollider>().size = box.Size;
+                }
                 for (int styleIndex = 0;
                      styleIndex < BatchStyleCount;
                      styleIndex++)
@@ -2611,6 +2644,8 @@ namespace BarPromenade
                 Vector3 candidate,
                 BuildingLot lot)
             {
+                if (lot != null && lot.HasFacadeRotation)
+                    return lot.FacadeForward;
                 candidate.y = 0f;
                 if (!IsFinite(candidate.x) ||
                     !IsFinite(candidate.z) ||
@@ -2681,6 +2716,8 @@ namespace BarPromenade
 
             public List<Bounds> CollisionBoxes { get; } =
                 new List<Bounds>();
+            public List<RuntimeOrientedBox> OrientedCollisionBoxes { get; } =
+                new List<RuntimeOrientedBox>();
 
             public void Add(
                 BatchStyle style,

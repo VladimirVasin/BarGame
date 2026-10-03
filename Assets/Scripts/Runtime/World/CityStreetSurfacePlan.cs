@@ -8,12 +8,13 @@ namespace BarPromenade
     public readonly struct CityStreetRibbonDescriptor
     {
         internal CityStreetRibbonDescriptor(RoadEdge edge, IReadOnlyList<Vector2[]> polygons,
-            float topOffset, float thickness)
-        { Edge = edge; Polygons = polygons; TopOffset = topOffset; Thickness = thickness; }
+            float topOffset, float thickness, Vector2Int? flatNode = null)
+        { Edge = edge; Polygons = polygons; TopOffset = topOffset; Thickness = thickness; FlatNode = flatNode; }
         public RoadEdge Edge { get; }
         public IReadOnlyList<Vector2[]> Polygons { get; }
         public float TopOffset { get; }
         public float Thickness { get; }
+        public Vector2Int? FlatNode { get; }
     }
 
     public readonly struct CityCrosswalkDescriptor :

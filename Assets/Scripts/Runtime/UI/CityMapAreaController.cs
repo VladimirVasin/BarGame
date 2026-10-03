@@ -1603,6 +1603,11 @@ namespace BarPromenade
 
         private static Rect CreateLotWorldXZBounds(BuildingLot lot)
         {
+            if (lot.HasFacadeRotation)
+            {
+                Bounds bounds = lot.WorldBounds;
+                return Rect.MinMaxRect(bounds.min.x, bounds.min.z, bounds.max.x, bounds.max.z);
+            }
             return new Rect(
                 lot.Center.x - lot.Size.x * 0.5f,
                 lot.Center.z - lot.Size.y * 0.5f,

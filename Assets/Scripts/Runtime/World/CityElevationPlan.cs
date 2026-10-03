@@ -336,12 +336,11 @@ namespace BarPromenade
         {
             amount = Mathf.Clamp01(amount);
             float planarLength = RoadGeometry.Get(edge).Length;
-            float insetAmount = planarLength > 0.001f
-                ? Mathf.Clamp01((RoadWidth * 0.5f) / planarLength)
-                : 0f;
+            float startInset = RoadGeometry.GetEndpointInset(edge, edge.A) / planarLength;
+            float endInset = RoadGeometry.GetEndpointInset(edge, edge.B) / planarLength;
             amount = Mathf.InverseLerp(
-                insetAmount,
-                1f - insetAmount,
+                startInset,
+                1f - endInset,
                 amount);
             return Mathf.Lerp(
                 GetNodeElevation(edge.A),
@@ -394,6 +393,14 @@ namespace BarPromenade
             out float height,
             out Vector3 normal)
         {
+            if (RoadGeometry.ContainsJunction(worldXZ))
+            {
+                height = GetNodeElevation(RoadGeometry.ObliqueJunction.Node);
+                if (role == CitySurfaceRole.RoadTop) height += CityStreetSurfacePlanner.RoadTop;
+                else if (role == CitySurfaceRole.SidewalkTop) height += CityStreetSurfacePlanner.SidewalkTop;
+                normal = Vector3.up;
+                return true;
+            }
             bool found = false;
             float bestDistance = float.PositiveInfinity;
             RoadEdge bestEdge = default;
@@ -463,12 +470,11 @@ namespace BarPromenade
             Vector3 startWorld = GetNodeWorldPosition(bestEdge.A);
             Vector3 endWorld = GetNodeWorldPosition(bestEdge.B);
             float planarLength = RoadGeometry.Get(bestEdge).Length;
-            float insetAmount = planarLength > 0.001f
-                ? Mathf.Clamp01((RoadWidth * 0.5f) / planarLength)
-                : 0f;
+            float startInset = RoadGeometry.GetEndpointInset(bestEdge, bestEdge.A) / planarLength;
+            float endInset = RoadGeometry.GetEndpointInset(bestEdge, bestEdge.B) / planarLength;
             Vector3 tangent;
-            if (bestAmount <= insetAmount ||
-                bestAmount >= 1f - insetAmount)
+            if (bestAmount <= startInset ||
+                bestAmount >= 1f - endInset)
             {
                 Vector2 direction = RoadGeometry.Get(bestEdge).SampleDistance(bestAmount * planarLength).Tangent;
                 tangent = new Vector3(direction.x, 0, direction.y);
@@ -478,7 +484,7 @@ namespace BarPromenade
                 Vector2 direction = RoadGeometry.Get(bestEdge).SampleDistance(bestAmount * planarLength).Tangent;
                 Vector3 planar = new Vector3(direction.x, 0, direction.y) * Mathf.Max(
                     0.001f,
-                    planarLength - RoadWidth);
+                    planarLength - (startInset + endInset) * planarLength);
                 tangent = (planar + Vector3.up *
                     (endWorld.y - startWorld.y)).normalized;
             }

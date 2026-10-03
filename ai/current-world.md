@@ -452,17 +452,18 @@ The vertical slice contains:
 
 ### City generation and layout
 
-- a finite seed-reproducible coastal city separates stable blueprint cells from
-  metre coordinates through CitySpatialPlan. Its 144 lots remain in the
-  `13 x 12` urban envelope around the river; west/north/south intervals vary
-  `26–40 m`. River width, park/home/bar/fair/arch anchors and eastern widths stay fixed;
-  beach/sea remain continuous, legacy/custom layouts keep uniform spacing.
-  District priorities change street rhythm. Three OldTown T approaches have
-  bends up to 2 m with straight 6 m ends and fixed nodes/datums; other streets
-  stay orthogonal. CityRoadGeometryPlan shares paths/ribbons and ground complement
-  across road/terrain mesh, collision, navigation and lanes. Four ordinary cells
-  exclude significant places; bus routes exclude bends that fail full-body
-  carriageway clearance;
+- a seeded coastal city separates blueprint IDs/metres through CitySpatialPlan:
+  144 lots in the `13 x 12` envelope, west/north/south spans `26–40 m`; river,
+  park/home/bar/fair/arch anchors and eastern widths fixed. Beach/sea stay
+  continuous; legacy/custom spacing stays uniform. District priorities vary rhythm.
+  The OldTown T branch meets north/south at `78°/102°`; nodes/datums stay fixed,
+  approach ends straight ≥6 m. CityRoadJunction unions all incident first-6-m
+  8 m ribbons, subtracts 6 m carriageway for shared miter sidewalks; grade is flat 6 m,
+  other nodes 4 m. Road/terrain mesh, collision and navigation share exact polygons.
+  Four ordinary lots fit rigid frontage poses to local tangents: model/foundation/
+  docks and CreateCollisionPolygons agree; cardinal frontages identify existing
+  graph edges, authored metres/L voids remain.
+  Significant places exclude the patch; unsafe bends stay outside bus routes;
 - one default-blueprint-only mountain boundary plan closes the physical west
   and south edges with deterministic flat-shaded low-poly ridge strips whose
   toes sample the authoritative terrain top. The south skyline remains closed

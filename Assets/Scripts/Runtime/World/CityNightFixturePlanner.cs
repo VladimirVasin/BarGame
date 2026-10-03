@@ -125,6 +125,14 @@ namespace BarPromenade
             Vector3 outward = left * sideMultiplier;
             float offset = (layout.RoadWidth * 0.5f) + FixtureRoadClearance;
             Vector3 centerlinePosition = Vector3.Lerp(start, end, edgeT);
+            if (layout.RoadGeometry.IsCurved(edge))
+            {
+                CityRoadPath path = layout.RoadGeometry.Get(edge);
+                CityRoadSample sample = path.SampleDistance(path.Length * edgeT);
+                centerlinePosition = new Vector3(sample.Position.x,
+                    layout.ElevationPlan.SampleRoadDatum(edge, edgeT), sample.Position.y);
+                outward = new Vector3(-sample.Right.x, 0f, -sample.Right.y) * sideMultiplier;
+            }
 
             return new StreetLampDescriptor(
                 edge,

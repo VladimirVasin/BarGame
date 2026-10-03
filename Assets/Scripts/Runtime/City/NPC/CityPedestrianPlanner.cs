@@ -106,6 +106,7 @@ namespace BarPromenade
 
             BuildJunctions(
                 layout,
+                streetSurfacePlan,
                 connections,
                 endpointsByNode,
                 busIntersections,
@@ -176,8 +177,12 @@ namespace BarPromenade
             for (int side = -1; side <= 1; side += 2)
             {
                 CityRoadPath lane = road.Offset(-GetSidewalkCenterOffset(layout) * side);
-                float firstDistance = ResolveSurfaceInset(connections[edge.A], halfRoad) + AgentRadius;
-                float lastDistance = lane.Length - ResolveSurfaceInset(connections[edge.B], halfRoad) - AgentRadius;
+                float firstDistance = (layout.RoadGeometry.ObliqueJunction?.Node == edge.A
+                    ? layout.RoadGeometry.GetEndpointInset(edge, edge.A)
+                    : ResolveSurfaceInset(connections[edge.A], halfRoad)) + AgentRadius;
+                float lastDistance = lane.Length - (layout.RoadGeometry.ObliqueJunction?.Node == edge.B
+                    ? layout.RoadGeometry.GetEndpointInset(edge, edge.B)
+                    : ResolveSurfaceInset(connections[edge.B], halfRoad)) - AgentRadius;
                 if (lastDistance <= firstDistance + GeometryTolerance) continue;
                 string laneId = $"{EdgeId(edge)}:side:{side}";
                 var points = new List<LanePoint>();
@@ -219,6 +224,14 @@ namespace BarPromenade
         private static float CurvedSidewalkHeight(CityLayout layout,
             CityStreetSurfacePlan surfaces, RoadEdge edge, Vector2 point)
         {
+            CityRoadJunction junction = layout.RoadGeometry.ObliqueJunction;
+            if (junction != null && layout.RoadGeometry.ContainsJunction(point))
+            {
+                foreach (Vector2[] polygon in junction.SidewalkPolygons)
+                    if (CityRoadPolygon.Contains(polygon, point))
+                        return layout.GetNodeWorldPosition(junction.Node).y + CityStreetSurfacePlanner.SidewalkTop;
+                return layout.GetNodeWorldPosition(junction.Node).y + CityStreetSurfacePlanner.RoadTop;
+            }
             CityRoadPath road = layout.RoadGeometry.Get(edge);
             float distance = road.Project(point).DistanceAlong;
             var position = new Vector3(point.x, 0f, point.y);
@@ -277,12 +290,12 @@ namespace BarPromenade
             Vector3 left = new Vector3(-tangent.z, 0f, tangent.x);
             float halfRoad = layout.RoadWidth * 0.5f;
             float sideOffset = GetSidewalkCenterOffset(layout);
-            float safeStart = ResolveSurfaceInset(
-                connections[edge.A],
-                halfRoad) + AgentRadius;
-            float safeEnd = length - ResolveSurfaceInset(
-                connections[edge.B],
-                halfRoad) - AgentRadius;
+            float safeStart = (layout.RoadGeometry.ObliqueJunction?.Node == edge.A
+                ? layout.RoadGeometry.GetEndpointInset(edge, edge.A)
+                : ResolveSurfaceInset(connections[edge.A], halfRoad)) + AgentRadius;
+            float safeEnd = length - (layout.RoadGeometry.ObliqueJunction?.Node == edge.B
+                ? layout.RoadGeometry.GetEndpointInset(edge, edge.B)
+                : ResolveSurfaceInset(connections[edge.B], halfRoad)) - AgentRadius;
             if (safeEnd - safeStart <= GeometryTolerance)
             {
                 return;
@@ -448,6 +461,7 @@ namespace BarPromenade
 
         private static void BuildJunctions(
             CityLayout layout,
+            CityStreetSurfacePlan surfaces,
             IReadOnlyDictionary<Vector2Int, ConnectionInfo> connections,
             IReadOnlyDictionary<Vector2Int, List<LaneEndpoint>>
                 endpointsByNode,
@@ -463,6 +477,11 @@ namespace BarPromenade
                 ConnectionInfo connection = connections[gridNode];
                 List<LaneEndpoint> endpoints = endpointsByNode[gridNode];
                 Vector3 center = layout.GetNodeWorldPosition(gridNode);
+                if (layout.RoadGeometry.ObliqueJunction?.Node == gridNode)
+                {
+                    BuildObliqueJunction(layout, surfaces, endpoints, graph);
+                    continue;
+                }
                 if (connection.IsIntersectionCore &&
                     connection.StreetCount > 0)
                 {
@@ -578,6 +597,65 @@ namespace BarPromenade
                     ConnectStraightSeams(gridNode, endpoints, graph);
                 }
             }
+        }
+
+        private static void BuildObliqueJunction(CityLayout layout,
+            CityStreetSurfacePlan surfaces, IReadOnlyList<LaneEndpoint> endpoints, GraphBuilder graph)
+        {
+            CityRoadJunction junction = layout.RoadGeometry.ObliqueJunction;
+            Func<Vector2, float> sampleHeight = point => JunctionSidewalkHeight(layout, surfaces, junction, point);
+            for (int i = 0; i < junction.SidewalkPaths.Count; i++)
+            {
+                CityRoadPath sidewalk = junction.SidewalkPaths[i];
+                int first = NearestLaneEndpoint(endpoints, sidewalk.Vertices[0]);
+                int last = NearestLaneEndpoint(endpoints, sidewalk.Vertices[sidewalk.Vertices.Count - 1]);
+                if (first == last) throw new InvalidOperationException("An oblique pavement route must join two approaches.");
+                var points = new List<Vector2>();
+                void Append(Vector2 point)
+                {
+                    if (points.Count == 0 || (points[points.Count - 1] - point).sqrMagnitude > .000001f)
+                        points.Add(point);
+                }
+                Vector3 firstPosition = endpoints[first].Position, lastPosition = endpoints[last].Position;
+                Append(new Vector2(firstPosition.x, firstPosition.z));
+                foreach (Vector2 point in sidewalk.Vertices) Append(point);
+                Append(new Vector2(lastPosition.x, lastPosition.z));
+                graph.AddLink($"turn:{junction.Node.x}:{junction.Node.y}:oblique:{i}",
+                    endpoints[first].NodeIndex, endpoints[last].NodeIndex, CityPedestrianLinkKind.Turn,
+                    false, new CityRoadPath(points), sampleHeight, junction.SidewalkPolygons);
+            }
+        }
+
+        private static int NearestLaneEndpoint(IReadOnlyList<LaneEndpoint> endpoints, Vector2 point)
+        {
+            int best = -1;
+            float squared = float.PositiveInfinity;
+            for (int i = 0; i < endpoints.Count; i++)
+            {
+                Vector3 position = endpoints[i].Position;
+                float distance = (new Vector2(position.x, position.z) - point).sqrMagnitude;
+                if (distance < squared) { best = i; squared = distance; }
+            }
+            if (best < 0 || squared > 1f)
+                throw new InvalidOperationException("The oblique junction pavement does not meet its lane mouth.");
+            return best;
+        }
+
+        private static float JunctionSidewalkHeight(CityLayout layout,
+            CityStreetSurfacePlan surfaces, CityRoadJunction junction, Vector2 point)
+        {
+            foreach (Vector2[] polygon in junction.SidewalkPolygons)
+                if (CityRoadPolygon.Contains(polygon, point))
+                    return layout.GetNodeWorldPosition(junction.Node).y + CityStreetSurfacePlanner.SidewalkTop;
+            if (!layout.ElevationPlan.TrySampleSurface(point, CitySurfaceRole.RoadDatum, out float datum, out _))
+                throw new InvalidOperationException("The oblique pavement route has no supporting road datum.");
+            float top = datum + CityStreetSurfacePlanner.RoadTop;
+            foreach (Vector2[] polygon in surfaces.CurvedSidewalkPolygons)
+                if (CityRoadPolygon.Contains(polygon, point)) top = datum + CityStreetSurfacePlanner.SidewalkTop;
+            Vector3 position = new Vector3(point.x, top, point.y);
+            foreach (RuntimeOrientedBox sidewalk in surfaces.SidewalkGeometry)
+                if (sidewalk.TrySampleTop(position, out float height)) top = Mathf.Max(top, height);
+            return top;
         }
 
         /// <summary>
@@ -1091,6 +1169,8 @@ namespace BarPromenade
                 new List<CityPedestrianSpawnAnchor>();
             private readonly List<Rect> navigationRectangles =
                 new List<Rect>();
+            private readonly List<IReadOnlyList<Vector2[]>> navigationPolygonOverrides =
+                new List<IReadOnlyList<Vector2[]>>();
             private readonly Dictionary<string, int> nodeIndices =
                 new Dictionary<string, int>(StringComparer.Ordinal);
             private readonly HashSet<LinkKey> linkKeys =
@@ -1124,7 +1204,8 @@ namespace BarPromenade
                 CityPedestrianLinkKind kind,
                 bool spawnEligible,
                 CityRoadPath path = null,
-                Func<Vector2, float> pathHeightSampler = null)
+                Func<Vector2, float> pathHeightSampler = null,
+                IReadOnlyList<Vector2[]> navigationPolygons = null)
             {
                 if (firstNode == secondNode)
                 {
@@ -1147,6 +1228,7 @@ namespace BarPromenade
                 Vector3 first = nodes[firstNode].Position;
                 Vector3 second = nodes[secondNode].Position;
                 navigationRectangles.Add(path == null ? CreateCorridor(first, second) : default);
+                navigationPolygonOverrides.Add(navigationPolygons);
                 Vector3 delta = second - first;
                 delta.y = 0f;
                 if (spawnEligible &&
@@ -1213,11 +1295,9 @@ namespace BarPromenade
                     else
                     {
                         float padding = AgentRadius + NavigationMargin;
-                        safePolygons.AddRange(link.Path.Ribbon(padding * 2f));
-                        Vector2 first = link.Path.Vertices[0];
-                        Vector2 last = link.Path.Vertices[link.Path.Vertices.Count - 1];
-                        safeRectangles.Add(new Rect(first - Vector2.one * padding, Vector2.one * padding * 2f));
-                        safeRectangles.Add(new Rect(last - Vector2.one * padding, Vector2.one * padding * 2f));
+                        safePolygons.AddRange(navigationPolygonOverrides[index] ?? link.Path.Ribbon(padding * 2f));
+                        safePolygons.Add(PathEndCap(link.Path.SampleDistance(0f), padding));
+                        safePolygons.Add(PathEndCap(link.Path.SampleDistance(link.Path.Length), padding));
                     }
                 }
 
@@ -1247,6 +1327,14 @@ namespace BarPromenade
                     safeAnchors,
                     safeRectangles,
                     safePolygons);
+            }
+
+            private static Vector2[] PathEndCap(CityRoadSample sample, float padding)
+            {
+                Vector2 along = sample.Tangent * padding, across = sample.Right * padding;
+                return CityRoadPolygon.CounterClockwise(new[] { sample.Position - along - across,
+                    sample.Position - along + across, sample.Position + along + across,
+                    sample.Position + along - across });
             }
 
             private void FindTwoCore(

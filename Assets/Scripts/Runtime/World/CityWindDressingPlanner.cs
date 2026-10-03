@@ -1254,6 +1254,11 @@ namespace BarPromenade
             origin = descriptor.Position;
             if (descriptor.TryResolveLot(layout, out BuildingLot lot))
             {
+                if (lot.HasFacadeRotation)
+                {
+                    forward = lot.FacadeForward;
+                    tangent = TangentOf(forward);
+                }
                 width = Mathf.Abs(forward.x) > 0.5f
                     ? lot.Size.y
                     : lot.Size.x;

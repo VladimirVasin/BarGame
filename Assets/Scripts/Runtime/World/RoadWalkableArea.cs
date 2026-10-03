@@ -351,6 +351,7 @@ namespace BarPromenade
 
         private readonly List<Rect> rectangles = new List<Rect>();
         private readonly List<Rect> exclusions = new List<Rect>();
+        private readonly List<Vector2[]> polygonExclusions = new List<Vector2[]>();
         private readonly ReadOnlyCollection<Rect> readOnlyRectangles;
         private readonly List<Vector2[]> polygons = new List<Vector2[]>();
         private PolygonArea polygonArea;
@@ -411,11 +412,14 @@ namespace BarPromenade
                     float half = layout.GetTravelWidth(edge) * .5f;
                     foreach (Vector2Int node in new[] { edge.A, edge.B })
                     {
+                        if (layout.RoadGeometry.ObliqueJunction?.Node == node) continue;
                         Vector3 position = layout.GetNodeWorldPosition(node);
                         area.Add(new Rect(position.x - half, position.z - half, half * 2f, half * 2f));
                     }
                 }
             }
+            if (layout.RoadGeometry.ObliqueJunction != null)
+                area.AddPolygons(layout.RoadGeometry.ObliqueJunction.RoadPolygons);
             CityGroundTraversalPlan groundTraversal =
                 CityGroundTraversalPlanner.CreatePlan(layout);
             area.AddPolygons(groundTraversal.GroundPolygons);
@@ -646,6 +650,8 @@ namespace BarPromenade
                 area.Exclude(eastExit.ClosedGroundBounds);
                 area.Exclude(eastExit.BoothBounds);
             }
+            foreach (BuildingLot lot in layout.BuildingLots)
+                if (lot.HasFacadeRotation) area.ExcludePolygons(lot.CreateCollisionPolygons());
             return area;
         }
 
@@ -723,7 +729,11 @@ namespace BarPromenade
                     CityGroundTraversalPlanner.SubtractRectangle(piece, exclusion, next, true);
                 pieces = next;
             }
-            rectangles.AddRange(pieces);
+            foreach (Rect piece in pieces)
+            {
+                if (!TouchesPolygonExclusion(piece)) rectangles.Add(piece);
+                else AddPolygonWithExclusions(CityRoadPolygon.Rectangle(piece));
+            }
             spatialIndexDirty = true;
             polygonAreaDirty = true;
         }
@@ -734,9 +744,84 @@ namespace BarPromenade
             foreach (Vector2[] polygon in footprints)
             {
                 if (polygon == null || polygon.Length < 3) throw new ArgumentException("A walkable polygon needs three vertices.");
-                polygons.Add((Vector2[])polygon.Clone());
+                AddPolygonWithExclusions((Vector2[])polygon.Clone());
             }
             polygonAreaDirty = true;
+        }
+
+        public void ExcludePolygons(IEnumerable<Vector2[]> footprints)
+        {
+            if (footprints == null) throw new ArgumentNullException(nameof(footprints));
+            foreach (Vector2[] footprint in footprints)
+            {
+                if (footprint == null || footprint.Length < 3)
+                    throw new ArgumentException("An exclusion polygon needs three vertices.", nameof(footprints));
+                Vector2[] cut = CityRoadPolygon.CounterClockwise((Vector2[])footprint.Clone());
+                foreach (Vector2 point in cut)
+                    if (!IsFinite(point.x) || !IsFinite(point.y))
+                        throw new ArgumentException("An exclusion polygon must have finite vertices.", nameof(footprints));
+                polygonExclusions.Add(cut);
+                Rect bounds = CityRoadPolygon.Bounds(cut);
+                var retainedRectangles = new List<Rect>();
+                var sourcePolygons = new List<Vector2[]>(polygons);
+                foreach (Rect rectangle in rectangles)
+                    if (bounds.Overlaps(rectangle)) sourcePolygons.Add(CityRoadPolygon.Rectangle(rectangle));
+                    else retainedRectangles.Add(rectangle);
+                rectangles.Clear(); rectangles.AddRange(retainedRectangles);
+                polygons.Clear();
+                foreach (Vector2[] polygon in sourcePolygons)
+                    if (bounds.Overlaps(CityRoadPolygon.Bounds(polygon)))
+                        polygons.AddRange(CityRoadPolygon.Subtract(polygon, cut));
+                    else polygons.Add(polygon);
+            }
+            spatialIndexDirty = true;
+            polygonAreaDirty = true;
+        }
+
+        private bool TouchesPolygonExclusion(Rect bounds)
+        {
+            foreach (Vector2[] polygon in polygonExclusions)
+                if (bounds.Overlaps(CityRoadPolygon.Bounds(polygon))) return true;
+            return false;
+        }
+
+        private void AddPolygonWithExclusions(Vector2[] polygon)
+        {
+            var pieces = new List<Vector2[]> { polygon };
+            foreach (Vector2[] cut in polygonExclusions)
+            {
+                var next = new List<Vector2[]>();
+                foreach (Vector2[] piece in pieces)
+                    if (CityRoadPolygon.Bounds(piece).Overlaps(CityRoadPolygon.Bounds(cut)))
+                        next.AddRange(CityRoadPolygon.Subtract(piece, cut));
+                    else next.Add(piece);
+                pieces = next;
+            }
+            polygons.AddRange(pieces);
+        }
+
+        private bool IsPolygonExcluded(Vector2 point, float radius)
+        {
+            float squared = Mathf.Max(0f, radius - BoundaryEpsilon);
+            squared *= squared;
+            foreach (Vector2[] polygon in polygonExclusions)
+            {
+                Rect bounds = CityRoadPolygon.Bounds(polygon);
+                bounds.xMin -= radius; bounds.xMax += radius;
+                bounds.yMin -= radius; bounds.yMax += radius;
+                if (point.x < bounds.xMin || point.x > bounds.xMax ||
+                    point.y < bounds.yMin || point.y > bounds.yMax) continue;
+                if (CityRoadPolygon.Contains(polygon, point)) return true;
+                for (int i = 0; i < polygon.Length; i++)
+                {
+                    Vector2 first = polygon[i], last = polygon[(i + 1) % polygon.Length];
+                    Vector2 delta = last - first;
+                    float amount = delta.sqrMagnitude > .000001f
+                        ? Mathf.Clamp01(Vector2.Dot(point - first, delta) / delta.sqrMagnitude) : 0f;
+                    if ((point - first - delta * amount).sqrMagnitude < squared) return true;
+                }
+            }
+            return false;
         }
 
         internal void Exclude(Rect footprint)
@@ -755,6 +840,7 @@ namespace BarPromenade
         {
             ValidateRadius(radius);
             if (!IsFinite(position.x) || !IsFinite(position.z)) return false;
+            if (IsPolygonExcluded(new Vector2(position.x, position.z), radius)) return false;
             EnsureSpatialIndex();
             return (spatialRoot >= 0 &&
                    Contains(
@@ -896,6 +982,7 @@ namespace BarPromenade
 
         private bool ContainsPolygons(Vector3 position, float radius)
         {
+            if (IsPolygonExcluded(new Vector2(position.x, position.z), radius)) return false;
             EnsurePolygonArea();
             if (polygonArea == null || !polygonArea.Contains(new Vector2(position.x, position.z), radius)) return false;
             foreach (Rect exclusion in exclusions)

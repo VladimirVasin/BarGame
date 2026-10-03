@@ -36,6 +36,21 @@ namespace BarPromenade.Tests.PlayMode
             var shots = new List<Shot>();
             CityStreetSurfacePlan streetPlan = CityStreetSurfacePlanner.Create(layout);
             RoadWalkableArea pedestrianArea = CityPedestrianPlanner.CreateWalkableArea(city.PedestrianPlan);
+            CityRoadJunction oblique = layout.RoadGeometry.ObliqueJunction;
+            Assert.That(oblique, Is.Not.Null);
+            foreach (CityRoadPath pavement in oblique.SidewalkPaths)
+                for (float distance = .1f; distance < pavement.Length; distance += .5f)
+                {
+                    Vector2 point = pavement.SampleDistance(distance).Position;
+                    float top = layout.ElevationPlan.GetNodeElevation(oblique.Node) + CityStreetSurfacePlanner.SidewalkTop;
+                    Vector3 probe = new Vector3(point.x, top + .5f, point.y);
+                    if (!Physics.Raycast(probe, Vector3.down, out RaycastHit hit, 1f, ~0, QueryTriggerInteraction.Ignore) ||
+                        Mathf.Abs(hit.point.y - top) > .025f)
+                        issues.Add($"Oblique junction pavement at {point:F4}, expected={top:F4}");
+                    Vector3 standing = new Vector3(point.x, top, point.y);
+                    if (!city.World.WalkableArea.Contains(standing, .35f)) issues.Add($"Oblique hero navigation at {point:F4}");
+                    if (!pedestrianArea.Contains(standing, .35f)) issues.Add($"Oblique pedestrian navigation at {point:F4}");
+                }
             for (int index = 0; index < layout.RoadGeometry.CurvedEdges.Count; index++)
             {
                 RoadEdge edge = layout.RoadGeometry.CurvedEdges[index];
@@ -66,7 +81,7 @@ namespace BarPromenade.Tests.PlayMode
                 CityRoadSample eyeSample = path.SampleDistance(path.Length * .3f);
                 Vector3 eye = ReplanningStreetEye(layout, new Vector3(eyeSample.Position.x, 0, eyeSample.Position.y));
                 CityRoadSample targetSample = path.SampleDistance(Mathf.Min(path.Length - 2f, path.Length * .3f + 16f));
-                shots.Add(Shot.At($"replanning-pilot-{index + 1:00}-curve", eye,
+                shots.Add(Shot.At($"replanning-oblique-{index + 1:00}-curve", eye,
                     new Vector3(targetSample.Position.x, eye.y - .7f, targetSample.Position.y), 78f));
             }
             foreach (CityPedestrianLink link in city.PedestrianPlan.Links.Where(link => link.Path != null))
@@ -91,8 +106,13 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(city.World.WalkableArea.Contains(releasedGround.point, .35f), Is.True);
             Vector3 junction = layout.GetNodeWorldPosition(new Vector2Int(1, 8));
             Vector3 junctionEye = ReplanningStreetEye(layout, junction + Vector3.right * 5f);
-            shots.Add(Shot.At("replanning-pilot-04-t-junction", junctionEye,
+            shots.Add(Shot.At("replanning-oblique-04-t-junction", junctionEye,
                 junction + Vector3.left * 6f + Vector3.up * (EyeHeight - .6f), 102f));
+            CityRoadSample branchEye = branchPath.SampleDistance(11f);
+            Vector3 obliqueEye = ReplanningStreetEye(layout,
+                new Vector3(branchEye.Position.x, 0f, branchEye.Position.y));
+            shots.Add(Shot.At("replanning-oblique-05-approach", obliqueEye,
+                junction + Vector3.forward * 4f + Vector3.up * (EyeHeight - .6f), 90f));
             Debug.Log($"OldTown pilot: {layout.RoadGeometry.CurvedEdges.Count} shared road paths; physical probe issues={issues.Count}.");
             return shots.ToArray();
         }

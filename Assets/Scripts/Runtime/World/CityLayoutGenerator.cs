@@ -1768,6 +1768,8 @@ namespace BarPromenade
             bool authoredOrdinary = landUse == CityLandUseKind.Building &&
                 !isBar && !isPlayerHome && !isSupermarket &&
                 settings.SpatialPlan != null && !settings.SpatialPlan.IsUniform;
+            if (authoredOrdinary && settings.RoadGeometry?.IsAffectedCell(cell) == true)
+                frontage = ResolvePilotFrontage(settings.RoadGeometry, cell, frontage);
             bool isAuthoredPrecinct = (cell.x == 10 && cell.y == 5) ||
                 (cell.x == 11 && (cell.y == 3 || cell.y == 4 || cell.y == 5));
             bool curvedBlock = settings.RoadGeometry?.IsAffectedCell(cell) == true;
@@ -1819,6 +1821,10 @@ namespace BarPromenade
             Vector3 center = GetLotCenter(settings, origin, cell);
 
             Vector3 direction = new Vector3(frontage.x, 0f, frontage.y);
+            Vector3 facadeForward = direction;
+            if (authoredOrdinary && curvedBlock && frontage != Vector2Int.zero)
+                ResolvePilotBuildingPose(settings, cell, envelope, frontage,
+                    ref center, out facadeForward);
             // The street wall belongs to the public frontage; excess land
             // stays behind the building as a yard instead of a moat on all
             // four sides. Residential setbacks deliberately remain deeper.
@@ -1836,7 +1842,7 @@ namespace BarPromenade
                 frontage.x != 0
                     ? cellSpan.x * 0.5f
                     : cellSpan.y * 0.5f;
-            Vector3 doorPosition = center + (direction * buildingHalfDistance);
+            Vector3 doorPosition = center + (facadeForward * buildingHalfDistance);
             Vector3 returnPosition = GetLotCenter(settings, origin, cell) + (direction * roadDistance);
             if (settings.RoadGeometry != null && frontage != Vector2Int.zero)
             {
@@ -1847,6 +1853,18 @@ namespace BarPromenade
                         new Vector2(returnPosition.x, returnPosition.z));
                     returnPosition.x = projection.Position.x;
                     returnPosition.z = projection.Position.y;
+                    if (authoredOrdinary && curvedBlock)
+                    {
+                        // Docks meet the pavement normal at the facade anchor;
+                        // graph frontage keeps its original cardinal identity.
+                        CityRoadPath path = settings.RoadGeometry.Get(frontageEdge);
+                        projection = path.Project(new Vector2(doorPosition.x, doorPosition.z));
+                        returnPosition.x = projection.Position.x;
+                        returnPosition.z = projection.Position.y;
+                        Vector2 normal = path.SampleDistance(projection.DistanceAlong).Right;
+                        if (Vector2.Dot(normal, new Vector2(direction.x, direction.z)) < 0f) normal = -normal;
+                        direction = new Vector3(normal.x, 0f, normal.y);
+                    }
                 }
             }
             float sidewalkCenterOffset =
@@ -1883,7 +1901,137 @@ namespace BarPromenade
                 doorPosition,
                 returnPosition,
                 sidewalkArrivalPosition,
-                buildingVariant);
+                buildingVariant,
+                facadeForward);
+        }
+
+        private static Vector2Int ResolvePilotFrontage(CityRoadGeometryPlan roads,
+            Vector2Int cell, Vector2Int fallback)
+        {
+            // East-side blocks face the oblique branch. West-side blocks face
+            // its north/south approaches, retaining the authored street wall.
+            Vector2Int[] candidates = cell.x == 1
+                ? new[] { Vector2Int.up, Vector2Int.down, Vector2Int.left, Vector2Int.right }
+                : new[] { Vector2Int.right, Vector2Int.left, Vector2Int.up, Vector2Int.down };
+            foreach (Vector2Int direction in candidates)
+                if (roads.IsCurved(RoadEdge.ForCellFrontage(cell, direction))) return direction;
+            return fallback;
+        }
+
+        private static void ResolvePilotBuildingPose(CityGenerationSettings settings,
+            Vector2Int cell, Vector3 envelope, Vector2Int frontage,
+            ref Vector3 center, out Vector3 forward)
+        {
+            Vector3 cardinal = new Vector3(frontage.x, 0f, frontage.y);
+            forward = cardinal;
+            CityRoadPath path = settings.RoadGeometry.Get(RoadEdge.ForCellFrontage(cell, frontage));
+            // One authored station avoids a coincidentally cardinal midpoint
+            // on a symmetric bend, and stays deterministic across city seeds.
+            CityRoadSample sample = path.SampleDistance(path.Length * .35f);
+            Vector2 normal = sample.Right;
+            if (Vector2.Dot(normal, new Vector2(cardinal.x, cardinal.z)) < 0f) normal = -normal;
+            Vector3 desired = new Vector3(normal.x, 0f, normal.y);
+            float yaw = Mathf.Clamp(Vector3.SignedAngle(cardinal, desired, Vector3.up), -12f, 12f);
+            Vector3 original = center;
+            Vector2 span = settings.GetCellSpan(cell);
+            Rect cellBounds = new Rect(original.x - span.x * .5f,
+                original.z - span.y * .5f, span.x, span.y);
+            List<Vector2[]> roadCuts = CreatePilotRoadCuts(settings, cellBounds);
+            Vector3 lateral = new Vector3(cardinal.z, 0f, -cardinal.x);
+            var shifts = new List<Vector2>();
+            for (int inwardStep = 0; inwardStep <= 12; inwardStep++)
+                for (int lateralStep = -8; lateralStep <= 8; lateralStep++)
+                    shifts.Add(new Vector2(lateralStep * .25f, inwardStep * .25f));
+            shifts.Sort((a, b) => {
+                int distance = a.sqrMagnitude.CompareTo(b.sqrMagnitude);
+                if (distance != 0) return distance;
+                int inward = a.y.CompareTo(b.y);
+                return inward != 0 ? inward : a.x.CompareTo(b.x);
+            });
+            // Keep the fixed metre mass and leave a walking clearance outside
+            // it. First try its actual tangent, then smaller bounded yaw if a
+            // narrow block cannot admit that rigid rectangle.
+            for (int angleStep = 0; angleStep <= 6; angleStep++)
+            {
+                float angle = yaw * (1f - angleStep / 6f);
+                Vector3 candidateForward = Quaternion.AngleAxis(angle, Vector3.up) * cardinal;
+                Quaternion rotation = Quaternion.LookRotation(candidateForward, Vector3.up);
+                foreach (Vector2 shift in shifts)
+                {
+                    Vector3 candidate = original - cardinal * shift.y + lateral * shift.x;
+                    Vector2[] footprint = PilotEnvelope(candidate, rotation,
+                        envelope.x + 1.3f, envelope.z + 1.3f);
+                    if (!FitsPilotGround(footprint, cellBounds, roadCuts)) continue;
+                    center = candidate;
+                    forward = candidateForward;
+                    return;
+                }
+            }
+            throw new InvalidOperationException($"Pilot building {cell} cannot fit its fixed metre envelope on actual ground.");
+        }
+
+        private static Vector2[] PilotEnvelope(Vector3 center, Quaternion rotation,
+            float width, float depth)
+        {
+            var local = new[] { new Vector3(-width * .5f, 0f, -depth * .5f),
+                new Vector3(width * .5f, 0f, -depth * .5f),
+                new Vector3(width * .5f, 0f, depth * .5f),
+                new Vector3(-width * .5f, 0f, depth * .5f) };
+            var polygon = new Vector2[local.Length];
+            for (int index = 0; index < local.Length; index++)
+            {
+                Vector3 world = center + rotation * local[index];
+                polygon[index] = new Vector2(world.x, world.z);
+            }
+            return CityRoadPolygon.CounterClockwise(polygon);
+        }
+
+        private static List<Vector2[]> CreatePilotRoadCuts(CityGenerationSettings settings,
+            Rect cellBounds)
+        {
+            var cuts = new List<Vector2[]>();
+            var nodes = new HashSet<Vector2Int>();
+            CityRoadJunction junction = settings.RoadGeometry.ObliqueJunction;
+            foreach (RoadEdge edge in settings.RoadGeometry.Edges)
+            {
+                CityRoadPath path = settings.RoadGeometry.Get(edge);
+                foreach (Vector2[] ribbon in settings.RoadGeometry.GetCorridor(edge))
+                    if (cellBounds.Overlaps(CityRoadPolygon.Bounds(ribbon))) cuts.Add(ribbon);
+                foreach (Vector2Int node in new[] { edge.A, edge.B })
+                {
+                    if (!nodes.Add(node) || (junction != null && node == junction.Node)) continue;
+                    Vector2 point = node == edge.A ? path.Vertices[0] : path.Vertices[path.Vertices.Count - 1];
+                    Rect cap = new Rect(point - Vector2.one * settings.RoadWidth * .5f,
+                        Vector2.one * settings.RoadWidth);
+                    if (cellBounds.Overlaps(cap)) cuts.Add(CityRoadPolygon.Rectangle(cap));
+                }
+            }
+            if (junction != null)
+                foreach (Vector2[] polygon in junction.RoadPolygons)
+                    if (cellBounds.Overlaps(CityRoadPolygon.Bounds(polygon))) cuts.Add(polygon);
+            return cuts;
+        }
+
+        private static bool FitsPilotGround(Vector2[] footprint, Rect cellBounds,
+            IReadOnlyList<Vector2[]> roadCuts)
+        {
+            // A padded mass fits the ground complement exactly when it stays
+            // inside its full cell and intersects no authored street/cap/core.
+            // Test each real convex cut independently, avoiding fragmentation
+            // and accumulated area errors in a triangulated ground union.
+            foreach (Vector2 point in footprint)
+                if (point.x < cellBounds.xMin || point.x > cellBounds.xMax ||
+                    point.y < cellBounds.yMin || point.y > cellBounds.yMax) return false;
+            Rect broad = CityRoadPolygon.Bounds(footprint);
+            foreach (Vector2[] cut in roadCuts)
+            {
+                if (!broad.Overlaps(CityRoadPolygon.Bounds(cut))) continue;
+                var intersection = new List<Vector2>(footprint);
+                for (int index = 0; index < cut.Length && intersection.Count >= 3; index++)
+                    intersection = CityRoadPolygon.Clip(intersection, cut[index], cut[(index + 1) % cut.Length]);
+                if (CityRoadPolygon.Area(intersection) > .001f) return false;
+            }
+            return true;
         }
 
         private static int ResolveBuildingVariant(int seed, Vector2Int cell,

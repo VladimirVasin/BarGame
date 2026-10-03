@@ -81,7 +81,7 @@ repair commands. Generation/publication: [../tools/README.md](../tools/README.md
 - CombatTest: Q/.20s buffers/3 styles/.22 chains/shield/counters/rise/gaze/
   1m/shove-regrip/120Hz/HP/fall-rise; bounded grip/recoil hold.
   Partial: penetration/balance/visual QA.
-- City: variable blocks, district streets, OldTown T bends, twelve house types;
+- City: variable blocks, oblique OldTown T/rigid frontages, twelve house types;
   river/shore, cemetery/church, seeded weather, residents and Route 01.
   First unpaused dock entry starts finite port→factory→shop supply once;
   catch-up survives scenes/reentry, excluding pre-entry time. Three units,

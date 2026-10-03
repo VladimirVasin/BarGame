@@ -32,7 +32,8 @@ namespace BarPromenade
             var candidates = new List<IntersectionCandidate>();
             foreach (KeyValuePair<Vector2Int, int> pair in degrees)
             {
-                if (pair.Value < 3 || TouchesParkPath(layout, pair.Key))
+                if (pair.Value < 3 || TouchesParkPath(layout, pair.Key) ||
+                    layout.RoadGeometry.ObliqueJunction?.Node == pair.Key)
                 {
                     continue;
                 }

@@ -293,7 +293,7 @@ namespace BarPromenade
                         {
                             Vector3 along = Vector3.zero;
                             Vector2 point = Next(random) < LotWallShare
-                                ? WallPoint(building, LotWallDistanceMin, LotWallDistanceMax, random, out along)
+                                ? WallPoint(lot, building, LotWallDistanceMin, LotWallDistanceMax, random, out along)
                                 : new Vector2(Mathf.Lerp(container.xMin, container.xMax, Next(random)),
                                     Mathf.Lerp(container.yMin, container.yMax, Next(random)));
                             if (TryPlace(id, CityLitterZone.LotGround, lot.District, lot.Cell, surfaceIndex, container,
@@ -307,7 +307,7 @@ namespace BarPromenade
                     if (solid == null) continue;
                     for (int attempt = 0; attempt < PointAttempts; attempt++)
                     {
-                        Vector2 point = WallPoint(building, LotSolidWallDistanceMin, LotSolidWallDistanceMax, solidRandom,
+                        Vector2 point = WallPoint(lot, building, LotSolidWallDistanceMin, LotSolidWallDistanceMax, solidRandom,
                             out Vector3 along);
                         if (TryPlace(solidId, CityLitterZone.LotGround, lot.District, lot.Cell, surfaceIndex, container,
                             solid, point, IsLong(solid) ? along : Vector3.zero, solidRandom)) break;
@@ -328,6 +328,18 @@ namespace BarPromenade
             }
 
             /// <summary>A point a short way out from one of the building's four walls, plus the wall's own direction.</summary>
+            private static Vector2 WallPoint(BuildingLot lot, Rect building, float near, float far,
+                System.Random random, out Vector3 along)
+            {
+                if (!lot.HasFacadeRotation) return WallPoint(building, near, far, random, out along);
+                Vector3 envelope = CityBuildingAssetProvider.GetExpectedEnvelope(lot.District, lot.BuildingVariant);
+                Vector2 local = WallPoint(new Rect(-envelope.x * .5f, -envelope.z * .5f,
+                    envelope.x, envelope.z), near, far, random, out along);
+                along = lot.FacadeRotation * along;
+                Vector3 world = lot.Center + lot.FacadeRotation * new Vector3(local.x, 0f, local.y);
+                return XZ(world);
+            }
+
             private static Vector2 WallPoint(Rect building, float near, float far, System.Random random, out Vector3 along)
             {
                 int side = Mathf.Min(3, (int)(Next(random) * 4f));
@@ -607,11 +619,18 @@ namespace BarPromenade
             private readonly List<Ring> attractors = new List<Ring>();
             private readonly List<KeyValuePair<Rect, RuntimeOrientedBox>> streetBoxes = new List<KeyValuePair<Rect, RuntimeOrientedBox>>();
             private readonly List<KeyValuePair<Rect, RuntimeOrientedBox>> sidewalkBoxes = new List<KeyValuePair<Rect, RuntimeOrientedBox>>();
+            private readonly List<Vector2[]> rotatedBuildings = new List<Vector2[]>();
+            private readonly List<Vector2[]> curvedRoads = new List<Vector2[]>();
 
             internal void Build(CityLayout layout, CityStreetSurfacePlan streets, RoadFencePlan fence,
                 CityDecorationPlan decoration, CitySeacoastPlan seacoast, CityArchShelterPlan archShelter)
             {
                 foreach (Rect road in layout.CreateRoadRects()) roads.Add(road);
+                if (layout.RoadGeometry != null)
+                    foreach (RoadEdge edge in layout.RoadGeometry.CurvedEdges)
+                        curvedRoads.AddRange(layout.RoadGeometry.Get(edge).Ribbon(layout.RoadWidth));
+                if (layout.RoadGeometry?.ObliqueJunction != null)
+                    curvedRoads.AddRange(layout.RoadGeometry.ObliqueJunction.RoadPolygons);
                 // The built boxes reach past the nominal road band: dead-end caps,
                 // corner pads and stair approaches. Ground litter keeps off them all.
                 foreach (RuntimeOrientedBox box in streets.StreetGeometry)
@@ -639,7 +658,8 @@ namespace BarPromenade
                 {
                     if (!lot.HasBuilding) continue;
                     // A bottle may lie against a wall, never inside one; doors and the way to them stay clear.
-                    blocked.Add(Expand(LotRect(lot), .04f));
+                    if (lot.HasFacadeRotation) rotatedBuildings.AddRange(lot.CreateCollisionPolygons());
+                    else blocked.Add(Expand(LotRect(lot), .04f));
                     circles.Add(new Circle(XZ(lot.DoorPosition), lot.IsBar ? 2.5f : 1.8f));
                     circles.Add(new Circle(XZ(lot.SidewalkArrivalPosition), 1f));
                 }
@@ -756,6 +776,10 @@ namespace BarPromenade
 
             internal bool Blocks(Rect footprint, bool ground)
             {
+                foreach (Vector2[] polygon in rotatedBuildings)
+                    if (OverlapsPolygon(Expand(footprint, .04f), polygon)) return true;
+                if (ground) foreach (Vector2[] polygon in curvedRoads)
+                    if (OverlapsPolygon(Expand(footprint, .05f), polygon)) return true;
                 foreach (Rect rect in blocked) if (rect.Overlaps(footprint)) return true;
                 if (ground) foreach (Rect rect in roads) if (rect.Overlaps(footprint)) return true;
                 foreach (Circle circle in circles)
@@ -765,6 +789,15 @@ namespace BarPromenade
                     if (dx * dx + dz * dz < circle.Radius * circle.Radius) return true;
                 }
                 return false;
+            }
+
+            private static bool OverlapsPolygon(Rect footprint, Vector2[] polygon)
+            {
+                if (!footprint.Overlaps(CityRoadPolygon.Bounds(polygon))) return false;
+                var intersection = new List<Vector2>(CityRoadPolygon.Rectangle(footprint));
+                for (int index = 0; index < polygon.Length && intersection.Count >= 3; index++)
+                    intersection = CityRoadPolygon.Clip(intersection, polygon[index], polygon[(index + 1) % polygon.Length]);
+                return CityRoadPolygon.Area(intersection) > .000001f;
             }
 
             /// <summary>True when another built street or pavement box rises to or above this strip under the footprint.</summary>

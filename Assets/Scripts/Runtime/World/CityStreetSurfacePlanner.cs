@@ -202,14 +202,18 @@ namespace BarPromenade
                 float insetAmount = planarLength > GeometryTolerance
                     ? Mathf.Clamp01(endInset / planarLength)
                     : 0f;
+                float startAmount = layout.RoadGeometry.ObliqueJunction?.Node == edge.A
+                    ? CityRoadJunction.MouthInset / planarLength : insetAmount;
+                float endAmount = layout.RoadGeometry.ObliqueJunction?.Node == edge.B
+                    ? CityRoadJunction.MouthInset / planarLength : insetAmount;
                 Vector3 segmentStart = Vector3.Lerp(
                     start,
                     end,
-                    insetAmount);
+                    startAmount);
                 Vector3 segmentEnd = Vector3.Lerp(
                     start,
                     end,
-                    1f - insetAmount);
+                    1f - endAmount);
                 segmentStart.y = start.y;
                 segmentEnd.y = end.y;
                 bool isStreet = layout.GetPathKind(edge) ==
@@ -263,6 +267,7 @@ namespace BarPromenade
 
             foreach (Vector2Int node in streetNodes)
             {
+                if (layout.RoadGeometry.ObliqueJunction?.Node == node) continue;
                 Vector3 center = layout.GetNodeWorldPosition(node);
                 streetGeometry.Add(new RuntimeOrientedBox(
                     center,
@@ -475,6 +480,8 @@ namespace BarPromenade
                     (busIntersections.Contains(edge.B)
                         ? BusApproachApronLength
                         : 0f);
+                if (layout.RoadGeometry.ObliqueJunction?.Node == edge.A) startInset = CityRoadJunction.MouthInset;
+                if (layout.RoadGeometry.ObliqueJunction?.Node == edge.B) endInset = CityRoadJunction.MouthInset;
                 // A NEGATIVE inset (a dead end) extends the sidewalk
                 // PAST the node so the road cap gets its wrap - clamping
                 // it to zero used to stop the pavement at the node
@@ -725,6 +732,12 @@ namespace BarPromenade
             {
                 Vector2Int node = nodes[index];
                 NodeConnections nodeConnections = connections[node];
+                if (layout.RoadGeometry.ObliqueJunction?.Node == node)
+                {
+                    foreach (Vector2[] polygon in layout.RoadGeometry.ObliqueJunction.RoadPolygons)
+                        markingExclusions.Add(CityRoadPolygon.Bounds(polygon));
+                    continue;
+                }
                 if (!nodeConnections.IsIntersectionCore)
                 {
                     continue;
@@ -1046,11 +1059,15 @@ namespace BarPromenade
             foreach (RoadEdge edge in layout.RoadGeometry.CurvedEdges)
             {
                 CityRoadPath path = layout.RoadGeometry.Get(edge);
+                float roadStart = layout.RoadGeometry.GetEndpointInset(edge, edge.A);
+                float roadEnd = layout.RoadGeometry.GetEndpointInset(edge, edge.B);
                 streets.Add(new CityStreetRibbonDescriptor(edge,
-                    path.Ribbon(layout.RoadWidth, 0f, halfRoad), RoadTop, RoadSurfaceHeight));
-                float startInset = ResolveEndpointInset(connections[edge.A], halfRoad) +
+                    SlicePath(path, roadStart, path.Length - roadEnd).Ribbon(layout.RoadWidth), RoadTop, RoadSurfaceHeight));
+                float startInset = layout.RoadGeometry.ObliqueJunction?.Node == edge.A ? roadStart :
+                    ResolveEndpointInset(connections[edge.A], halfRoad) +
                     (busIntersections.Contains(edge.A) ? BusApproachApronLength : 0f);
-                float endInset = ResolveEndpointInset(connections[edge.B], halfRoad) +
+                float endInset = layout.RoadGeometry.ObliqueJunction?.Node == edge.B ? roadEnd :
+                    ResolveEndpointInset(connections[edge.B], halfRoad) +
                     (busIntersections.Contains(edge.B) ? BusApproachApronLength : 0f);
                 CityRoadPath pavementPath = SlicePath(path, startInset, path.Length - endInset);
                 for (int side = -1; side <= 1; side += 2)
@@ -1070,6 +1087,14 @@ namespace BarPromenade
                         marking.Ribbon(CenterDashWidth), MarkingCenterAboveRoadBase + MarkingHeight * .5f,
                         MarkingHeight));
                 }
+            }
+            CityRoadJunction junction = layout.RoadGeometry.ObliqueJunction;
+            if (junction != null)
+            {
+                streets.Add(new CityStreetRibbonDescriptor(junction.OwnerEdge, junction.RoadPolygons,
+                    RoadTop, RoadSurfaceHeight, junction.Node));
+                sidewalks.Add(new CityStreetRibbonDescriptor(junction.OwnerEdge, junction.SidewalkPolygons,
+                    SidewalkTop, SidewalkHeight, junction.Node));
             }
         }
 

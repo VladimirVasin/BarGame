@@ -62,7 +62,8 @@ namespace BarPromenade
                     door,
                     roadAnchor,
                     sidewalkAnchor,
-                    lot.BuildingVariant));
+                    lot.BuildingVariant,
+                    lot.FacadeForward));
             }
 
             return result;

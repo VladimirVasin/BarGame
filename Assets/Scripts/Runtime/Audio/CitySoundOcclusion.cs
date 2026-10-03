@@ -60,7 +60,18 @@ namespace BarPromenade
                     bounds.min.z,
                     bounds.max.x,
                     bounds.max.z);
-                if (rect.Contains(start) || rect.Contains(end))
+                if (lot.HasFacadeRotation)
+                {
+                    IReadOnlyList<Vector2[]> polygons = lot.CreateCollisionPolygons();
+                    bool inside = false, intersects = false;
+                    foreach (Vector2[] polygon in polygons)
+                    {
+                        inside |= CityRoadPolygon.Contains(polygon, start) || CityRoadPolygon.Contains(polygon, end);
+                        intersects |= SegmentIntersectsPolygon(start, end, polygon);
+                    }
+                    if (inside || !intersects) continue;
+                }
+                else if (rect.Contains(start) || rect.Contains(end))
                 {
                     continue;
                 }
@@ -101,6 +112,29 @@ namespace BarPromenade
                    Clip(-delta.y, start.y - rect.yMin, ref enter, ref exit) &&
                    Clip(delta.y, rect.yMax - start.y, ref enter, ref exit) &&
                    exit >= enter;
+        }
+
+        private static bool SegmentIntersectsPolygon(Vector2 start, Vector2 end,
+            IReadOnlyList<Vector2> polygon)
+        {
+            float enter = 0f, exit = 1f;
+            Vector2 delta = end - start;
+            for (int index = 0; index < polygon.Count; index++)
+            {
+                Vector2 edge = polygon[(index + 1) % polygon.Count] - polygon[index];
+                float signed = CityRoadPolygon.Cross(edge, start - polygon[index]);
+                float direction = CityRoadPolygon.Cross(edge, delta);
+                if (Mathf.Abs(direction) < .00001f)
+                {
+                    if (signed < 0f) return false;
+                    continue;
+                }
+                float boundary = -signed / direction;
+                if (direction > 0f) enter = Mathf.Max(enter, boundary);
+                else exit = Mathf.Min(exit, boundary);
+                if (exit < enter) return false;
+            }
+            return true;
         }
 
         private static bool Clip(

@@ -1218,6 +1218,19 @@ namespace BarPromenade
                 (layout.RoadWidth * 0.5f) -
                 buildingHalfDepth;
             float parallelSpan = frontageIsX ? lot.Size.y : lot.Size.x;
+            if (lot.HasFacadeRotation)
+            {
+                Vector3 envelope = CityBuildingAssetProvider.GetExpectedEnvelope(
+                    lot.District, lot.BuildingVariant);
+                buildingHalfDepth = envelope.z * .5f;
+                parallelSpan = envelope.x;
+                CityRoadProjection projection = layout.RoadGeometry.Get(
+                    RoadEdge.ForCellFrontage(lot.Cell, lot.FrontageDirection)).Project(
+                        new Vector2(lot.Center.x, lot.Center.z));
+                clearance = Vector2.Dot(projection.Position -
+                    new Vector2(lot.Center.x, lot.Center.z), new Vector2(forward.x, forward.z)) -
+                    layout.RoadWidth * .5f - buildingHalfDepth;
+            }
             if (clearance < MinimumFrontageDepth ||
                 parallelSpan < MinimumFrontageSpan)
             {
@@ -1273,6 +1286,7 @@ namespace BarPromenade
             BuildingLot lot,
             uint fallbackSalt)
         {
+            if (lot.HasFacadeRotation) return lot.FacadeForward;
             Vector3 forward = new Vector3(
                 lot.FrontageDirection.x,
                 0f,

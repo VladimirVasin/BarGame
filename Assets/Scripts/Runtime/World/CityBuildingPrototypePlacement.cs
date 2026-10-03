@@ -280,10 +280,7 @@ namespace BarPromenade
                 throw new ArgumentNullException(nameof(lot));
             }
 
-            Vector3 direction = new Vector3(
-                lot.FrontageDirection.x,
-                0f,
-                lot.FrontageDirection.y);
+            Vector3 direction = lot.FacadeForward;
             return direction.sqrMagnitude > 0.5f
                 ? direction.normalized
                 : Vector3.back;

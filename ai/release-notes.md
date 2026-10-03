@@ -6,12 +6,14 @@ Earlier notes: [`release-notes-2026-09.md`](archive/release-notes-2026-09.md).
 
 ## Unreleased
 
-### 2026-10-04 — Изгибы Старого города
+### 2026-10-04 — Косой T и фасады Старого города
 
-- Три подхода T в Старом городе изогнуты максимум на 2 м; концы прямые по 6 м,
-  узлы прежние. Дорога, грунт, коллизии и маршруты используют одну геометрию.
+- T Старого города — косой, `78°/102°`; концы прямые ≥6 м, узлы прежние.
+  Дома патча ориентируются вдоль улиц. Дорога, грунт, коллизии и маршруты
+  используют одну геометрию, авторские размеры домов сохраняются.
 - Проверки: `CityRoadGeometryTests`,
   `CityElevationPlannerTests.DefaultCity_UsesOneSafeRoadGroundBoundaryContract`,
+  `CityBuildingPrototypeRuntimeTests.DefaultCity_PlacesDistrictPrototypesAndClipsHomeExterior`,
   `AreaCaptureFixture.CityReplanning`; кадры улиц просмотрены, покрытие и проходы
   согласованы с физикой. Безопасный маршрут автобуса сохранён.
 - Документация: `python tools/check-docs.py`, `git diff --check`.

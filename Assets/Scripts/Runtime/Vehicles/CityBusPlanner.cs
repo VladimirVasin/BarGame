@@ -1558,6 +1558,10 @@ namespace BarPromenade
             CityLayout layout,
             RoadEdge edge)
         {
+            // The pilot has an honest oblique pedestrian core, while bus turn
+            // templates still require cardinal approach frames and their aprons.
+            if (layout.RoadGeometry.ObliqueJunction != null &&
+                edge.Contains(layout.RoadGeometry.ObliqueJunction.Node)) return false;
             if (layout.GetPathKind(edge) != CityPathKind.Street)
             {
                 return false;

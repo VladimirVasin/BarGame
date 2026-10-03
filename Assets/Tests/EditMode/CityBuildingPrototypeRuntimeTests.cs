@@ -54,12 +54,15 @@ namespace BarPromenade.Tests.EditMode
                 "City Building Prototype Runtime Test");
             try
             {
-                for (int index = 0; index < Districts.Length; index++)
+                BuildingLot[] selectedLots = Districts.Select(district =>
+                        FindFrontagedOrdinaryLot(layout, district))
+                    .Concat(layout.BuildingLots.Where(lot => layout.RoadGeometry.IsAffectedCell(lot.Cell)))
+                    .Distinct().ToArray();
+                Assert.That(selectedLots.Count(lot => lot.HasFacadeRotation), Is.GreaterThanOrEqualTo(2),
+                    "The pilot must contain readable rigid facade poses.");
+                foreach (BuildingLot lot in selectedLots)
                 {
-                    CityDistrictKind district = Districts[index];
-                    BuildingLot lot = FindFrontagedOrdinaryLot(
-                        layout,
-                        district);
+                    CityDistrictKind district = lot.District;
                     Transform building = new GameObject(
                         $"City Prototype Test {district}").transform;
                     building.SetParent(testRoot.transform, false);
@@ -69,7 +72,7 @@ namespace BarPromenade.Tests.EditMode
                             layout,
                             lot);
                     CityBuildingAssetRegistry sourceRegistry = provider
-                        .GetPrefabOrThrow(district)
+                        .GetPrefabOrThrow(district, lot.BuildingVariant)
                         .GetComponent<CityBuildingAssetRegistry>();
                     Assert.That(sourceRegistry, Is.Not.Null);
                     CityBuildingPrototypePose expectedPose =
@@ -160,10 +163,7 @@ namespace BarPromenade.Tests.EditMode
             AssertVectorNear(
                 registry.FrontAnchor.position,
                 expectedFrontAnchor);
-            Vector3 expectedForward = new Vector3(
-                lot.FrontageDirection.x,
-                0f,
-                lot.FrontageDirection.y).normalized;
+            Vector3 expectedForward = lot.FacadeForward;
             Assert.That(
                 Vector3.Angle(
                     registry.FrontAnchor.forward,
@@ -193,18 +193,32 @@ namespace BarPromenade.Tests.EditMode
                 building.GetComponentsInChildren<Collider>(true),
                 Has.Length.EqualTo(1));
             AssertVectorNear(
-                collision.bounds.center,
+                collision.transform.TransformPoint(collision.center),
                 lot.Center +
                 Vector3.up *
                 (lot.Height * 0.5f +
                  CityFacadeGrid.MassBaseElevation -
                  foundationDepth * 0.5f));
-            AssertVectorNear(
-                collision.bounds.size,
-                new Vector3(
-                    lot.Size.x,
-                    lot.Height + foundationDepth,
-                    lot.Size.y));
+            if (lot.HasFacadeRotation)
+            {
+                Vector3 authored = CityBuildingAssetProvider.GetExpectedEnvelope(
+                    lot.District, lot.BuildingVariant);
+                AssertVectorNear(collision.size,
+                    new Vector3(authored.x, lot.Height + foundationDepth, authored.z));
+                Assert.That(Quaternion.Angle(collision.transform.rotation, lot.FacadeRotation),
+                    Is.LessThan(AngleTolerance));
+                Vector2[] polygon = lot.CreateCollisionPolygons()[0];
+                for (int corner = 0; corner < 4; corner++)
+                {
+                    Vector3 physical = collision.transform.TransformPoint(collision.center +
+                        new Vector3((corner & 1) == 0 ? -collision.size.x * .5f : collision.size.x * .5f,
+                            0f, (corner & 2) == 0 ? -collision.size.z * .5f : collision.size.z * .5f));
+                    Assert.That(polygon.Min(point => Vector2.Distance(point,
+                        new Vector2(physical.x, physical.z))), Is.LessThan(PositionTolerance));
+                }
+            }
+            else AssertVectorNear(collision.bounds.size,
+                new Vector3(lot.Size.x, lot.Height + foundationDepth, lot.Size.y));
 
             Transform foundation = building.Find(
                 CityBuildingPrototypeWorldBuilder.FoundationObjectName);
@@ -215,19 +229,19 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(foundation.GetComponent<Collider>(), Is.Null);
             Bounds visibleBounds = CityBuildingPrototypePlacement
                 .TransformBounds(registry.LocalBounds, expectedPose);
+            Bounds insetLocal = registry.LocalBounds;
+            insetLocal.size -= new Vector3(1f, 0f, 1f) *
+                (CityBuildingPrototypeWorldBuilder.FoundationHorizontalInset * 2f);
+            Bounds foundationFootprint = CityBuildingPrototypePlacement.TransformBounds(insetLocal, expectedPose);
             Assert.That(
                 foundationRenderer.bounds.size.x,
                 Is.EqualTo(
-                    visibleBounds.size.x -
-                    (CityBuildingPrototypeWorldBuilder
-                        .FoundationHorizontalInset * 2f))
+                    foundationFootprint.size.x)
                     .Within(PositionTolerance));
             Assert.That(
                 foundationRenderer.bounds.size.z,
                 Is.EqualTo(
-                    visibleBounds.size.z -
-                    (CityBuildingPrototypeWorldBuilder
-                        .FoundationHorizontalInset * 2f))
+                    foundationFootprint.size.z)
                     .Within(PositionTolerance));
             Assert.That(
                 foundationRenderer.bounds.max.y,
@@ -1540,6 +1554,7 @@ namespace BarPromenade.Tests.EditMode
                 candidate =>
                     candidate.IsOrdinaryBuilding &&
                     candidate.HasRoadFrontage &&
+                    candidate.BuildingVariant == 0 &&
                     candidate.District == district);
             Assert.That(
                 lot,

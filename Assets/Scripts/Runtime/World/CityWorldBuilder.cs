@@ -1462,6 +1462,8 @@ namespace BarPromenade
                     lot.Center.z + halfDepth)
             };
             float lowestTop = float.PositiveInfinity;
+            if (lot.HasFacadeRotation)
+                samples = lot.CreateCollisionPolygons()[0];
             for (int index = 0; index < samples.Length; index++)
             {
                 lowestTop = Mathf.Min(
@@ -2515,8 +2517,9 @@ namespace BarPromenade
                     for (int i = 0; i < polygon.Length; i++)
                     {
                         CityRoadProjection projection = path.Project(polygon[i]);
-                        float height = layout.ElevationPlan.SampleRoadDatum(ribbon.Edge,
-                            projection.DistanceAlong / path.Length) + ribbon.TopOffset;
+                        float height = (ribbon.FlatNode.HasValue ? layout.ElevationPlan.GetNodeElevation(ribbon.FlatNode.Value) :
+                            layout.ElevationPlan.SampleRoadDatum(ribbon.Edge,
+                                projection.DistanceAlong / path.Length)) + ribbon.TopOffset;
                         top[i] = new Vector3(polygon[i].x, height, polygon[i].y);
                         bottom[i] = top[i] - Vector3.up * ribbon.Thickness;
                     }

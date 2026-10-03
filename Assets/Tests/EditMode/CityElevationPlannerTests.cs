@@ -305,20 +305,25 @@ namespace BarPromenade.Tests.EditMode
                     Is.LessThanOrEqualTo(
                         CityRoadGroundBoundaryPlanner.MaximumSafeStep +
                         Tolerance));
-                Assert.That(
-                    safe.Length,
-                    Is.GreaterThanOrEqualTo(
-                        CityGroundTraversalPlanner.MaximumAgentRadius *
-                        2f));
                 if (safe.UsesPhysicalGeometry)
                 {
+                    // A sampled bend consists of short adjacent pieces, not
+                    // independent gates. Prove capsule clearance in their union.
+                    Vector2 middle = (safe.Start + safe.End) * .5f;
+                    Assert.That(walkable.Contains(new Vector3(middle.x, safe.GroundTopY, middle.y),
+                        CityGroundTraversalPlanner.MaximumAgentRadius), Is.True,
+                        $"Physical boundary {safe.Surface.Cell} must admit the full capsule.");
                     Vector2[] connector = safe.CreateConnectorPolygon(connectorReach);
                     Assert.That(traversal.ConnectorPolygons.Any(polygon => polygon.SequenceEqual(connector)),
                         Is.True, safe.Surface.Cell.ToString());
                 }
-                else Assert.That(
-                    traversal.ConnectorRectangles,
-                    Does.Contain(safe.CreateConnector(connectorReach)));
+                else
+                {
+                    Assert.That(safe.Length, Is.GreaterThanOrEqualTo(
+                        CityGroundTraversalPlanner.MaximumAgentRadius * 2f));
+                    Assert.That(traversal.ConnectorRectangles,
+                        Does.Contain(safe.CreateConnector(connectorReach)));
+                }
                 if (RequiresAuthoredOpenAreaAccess(defaultLayout, safe.Surface, safe.Edge))
                 {
                     Assert.That(

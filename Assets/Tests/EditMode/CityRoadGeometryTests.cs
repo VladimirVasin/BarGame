@@ -24,7 +24,9 @@ namespace BarPromenade.Tests.EditMode
                 Assert.That(path.Vertices[path.Vertices.Count - 1], Is.EqualTo(new Vector2(end.x, end.z)));
                 Assert.That(path.Length, Is.GreaterThan(Vector2.Distance(path.Vertices[0], path.Vertices[path.Vertices.Count - 1])));
                 Vector2 axis = (path.Vertices[path.Vertices.Count - 1] - path.Vertices[0]).normalized;
-                Assert.That(Vector2.Distance(path.SampleDistance(6).Position, path.Vertices[0] + axis * 6), Is.LessThan(.001f));
+                Vector2 approach = path.SampleDistance(0).Tangent;
+                Assert.That(Vector2.Distance(path.SampleDistance(6).Position, path.Vertices[0] + approach * 6), Is.LessThan(.001f));
+                Assert.That(Vector2.SignedAngle(axis, approach), Is.EqualTo(edge.Equals(CityRoadGeometryPlan.PilotEdges[1]) ? -12f : 0f).Within(.01f));
                 Assert.That(Vector2.Distance(path.SampleDistance(path.Length - 6).Position,
                     path.Vertices[path.Vertices.Count - 1] - axis * 6), Is.LessThan(.001f));
                 for (float distance = 0; distance <= path.Length; distance += .5f)
@@ -38,16 +40,27 @@ namespace BarPromenade.Tests.EditMode
             }
             if (seed == 20260727)
                 Assert.That(layout.RoadEdges.Count(edge => edge.Contains(new Vector2Int(1, 8))), Is.EqualTo(3));
+            CityRoadJunction junction = layout.RoadGeometry.ObliqueJunction;
+            Assert.That(junction.Node, Is.EqualTo(new Vector2Int(1, 8)));
+            foreach (CityRoadPath sidewalk in junction.SidewalkPaths)
+                for (float s = 0f; s <= sidewalk.Length; s += .25f)
+                {
+                    Vector2 point = sidewalk.SampleDistance(s).Position;
+                    Assert.That(junction.SidewalkPolygons.Any(polygon => CityRoadPolygon.Contains(polygon, point)), Is.True,
+                        $"Junction pavement must contain its shared walk path at {point}.");
+                    Assert.That(layout.ElevationPlan.TrySampleSurface(point, CitySurfaceRole.RoadDatum, out float height, out _), Is.True);
+                    Assert.That(height, Is.EqualTo(layout.ElevationPlan.GetNodeElevation(junction.Node)).Within(.001f));
+                }
 
             foreach (BuildingLot lot in layout.BuildingLots.Where(lot => layout.RoadGeometry.IsAffectedCell(lot.Cell)))
             {
                 Assert.That(lot.IsOrdinaryBuilding, Is.True, "The pilot must not consume a built landmark.");
                 Assert.That(layout.PrimaryLandmarkCells.Values, Has.No.Member(lot.Cell));
-                foreach (Rect building in lot.CreateCollisionFootprints())
+                foreach (Vector2[] building in lot.CreateCollisionPolygons())
                     foreach (RoadEdge edge in layout.RoadGeometry.CurvedEdges)
                         foreach (Vector2[] road in layout.RoadGeometry.Get(edge).Ribbon(layout.RoadWidth))
                         {
-                            var overlap = new System.Collections.Generic.List<Vector2>(CityRoadPolygon.Rectangle(building));
+                            var overlap = new System.Collections.Generic.List<Vector2>(building);
                             for (int i = 0; i < road.Length; i++)
                                 overlap = CityRoadPolygon.Clip(overlap, road[i], road[(i + 1) % road.Length]);
                             Assert.That(overlap.Count < 3 || Mathf.Abs(CityRoadPolygon.Area(overlap)) < .001f, Is.True,
@@ -73,6 +86,8 @@ namespace BarPromenade.Tests.EditMode
                             $"Road/ground partition failed at {point} in {lot.Cell}.");
                     }
             }
+            Assert.That(layout.BuildingLots.Count(lot => layout.RoadGeometry.IsAffectedCell(lot.Cell) && lot.HasFacadeRotation),
+                Is.GreaterThanOrEqualTo(2), "The rigid frontage poses must follow the replanned streets.");
         }
 
         private static bool NearBoundary(Vector2[] polygon, Vector2 point)

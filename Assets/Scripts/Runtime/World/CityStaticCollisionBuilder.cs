@@ -64,6 +64,41 @@ namespace BarPromenade
             CityDecorationDescriptor descriptor,
             ICollection<Bounds> target)
         {
+            if (target == null) throw new ArgumentNullException(nameof(target));
+            var boxes = new List<RuntimeOrientedBox>();
+            AddDecorationProxyBoxes(layout, descriptor, boxes);
+            foreach (RuntimeOrientedBox box in boxes)
+                target.Add(CityBuildingPrototypePlacement.TransformBounds(
+                    new Bounds(Vector3.zero, box.Size),
+                    new CityBuildingPrototypePose(box.Center, box.Rotation)));
+        }
+
+        internal static void AddDecorationProxyBoxes(CityLayout layout,
+            CityDecorationDescriptor descriptor, ICollection<RuntimeOrientedBox> target)
+        {
+            if (target == null) throw new ArgumentNullException(nameof(target));
+            var bounds = new List<Bounds>();
+            AddDecorationProxyCardinalBounds(layout, descriptor, bounds);
+            Quaternion rotation = Quaternion.identity;
+            Vector3 origin = descriptor.Position;
+            if (descriptor.TryResolveLot(layout, out BuildingLot lot) && lot.HasFacadeRotation)
+            {
+                Vector3 cardinal = Mathf.Abs(lot.FacadeForward.x) > Mathf.Abs(lot.FacadeForward.z)
+                    ? new Vector3(Mathf.Sign(lot.FacadeForward.x), 0f, 0f)
+                    : new Vector3(0f, 0f, Mathf.Sign(lot.FacadeForward.z));
+                rotation = Quaternion.FromToRotation(cardinal, lot.FacadeForward);
+                if (descriptor.AnchorKind == CityDecorationAnchorKind.BuildingFacade)
+                    origin.y = lot.Center.y;
+            }
+            foreach (Bounds box in bounds)
+                target.Add(new RuntimeOrientedBox(origin + rotation * (box.center - origin), rotation, box.size));
+        }
+
+        private static void AddDecorationProxyCardinalBounds(
+            CityLayout layout,
+            CityDecorationDescriptor descriptor,
+            ICollection<Bounds> target)
+        {
             if (layout == null)
             {
                 throw new ArgumentNullException(nameof(layout));

@@ -5,21 +5,28 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 
 ## 2026-10-04 — OldTown road geometry
 
-- The bounded OldTown T retains node positions/datums, bends its three approaches
-  by up to 2 m and keeps straight 6 m ends. Four ordinary cells exclude significant
-  places across seeds. Vehicle clearance excludes unsafe links; the existing
-  bus loop stays intact. Cannery and Last Route guards retain their actual routes.
-  Shared paths/ribbons and their ground complement replace straight
-  proxies across road/terrain mesh, collision, navigation and lanes.
-- World-coordinate polygon area lost precision; local-origin area and physical
-  edge tolerance retain the partition. The 4 m grade breakpoint must also be a
-  ribbon vertex: without it path and collider heights diverged near street ends.
-  The existing checkpoint test helper now respects its open public frontage.
+- The bounded OldTown T retains node IDs/positions/datums; its branch leaves at
+  −12° (78°/102°), with straight ≥6 m approach ends. All incident first-6-m
+  ribbons supply 8 m paving minus 6 m carriageway and shared miter sidewalks.
+  Junction grade stays flat 6 m, other nodes 4 m. Road/terrain mesh, collision,
+  ground complement, navigation and lanes share the physical polygons.
+  Four ordinary cells exclude significant places across seeds. Their houses fit
+  rigid street-facing poses across model/foundation/docks/oriented collision;
+  measured assets stay unscaled. Cardinal frontages identify existing graph edges.
+  Vehicle clearance excludes unsafe links; the existing bus loop stays intact.
+  Cannery and Last Route guards retain their actual routes.
+- Local-origin polygon area and physical edge tolerance retain the partition.
+  Padded OBB fitting checks each actual road cut individually to avoid fragmented
+  ground area precision errors. Node grade breakpoints must be ribbon vertices:
+  without them path and collider heights diverged near street ends. Adjacent
+  sampled pavement pieces prove capsule clearance through their polygon union.
+  The checkpoint test helper respects its open public frontage.
 - Checks: `CityRoadGeometryTests`,
   `CityElevationPlannerTests.DefaultCity_UsesOneSafeRoadGroundBoundaryContract`,
-  `AreaCaptureFixture.CityReplanning`; street/T frames reviewed, physical paving,
-  hero/pedestrian navigation and height probes agree.
-  `python tools/check-docs.py`, `git diff --check`.
+  `CityBuildingPrototypeRuntimeTests.DefaultCity_PlacesDistrictPrototypesAndClipsHomeExterior`,
+  `AreaCaptureFixture.CityReplanning`. Street/T frames reviewed: oblique approach
+  and house poses read clearly; physical paving, hero/pedestrian navigation and
+  height probes agree. `python tools/check-docs.py`, `git diff --check`.
 
 ## 2026-10-03 — Combat and city replanning
 

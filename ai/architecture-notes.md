@@ -2,25 +2,32 @@
 
 ## Current facts
 
+- **Accepted — 2026-10-04, OldTown oblique junction and frontage poses:**
+  Node IDs/positions/datums fixed; cardinal frontages identify existing edges.
+  Only `(1,7)-(1,8)`, `(1,8)-(1,9)`
+  and `(1,8)-(2,8)` form the pilot. The east branch leaves `(1,8)` at `-12°`,
+  meeting north/south at `78°/102°`; approach ends stay straight ≥6 m.
+  CityRoadJunction unions all incident first-6-m ribbons: 8 m paving minus 6 m
+  carriageway, shared miter sidewalk paths; no convex hull.
+  Junction grade is flat 6 m, other nodes 4 m; seam knots retain profile.
+  Rendering/collision/ground/navigation share polygons.
+  Reserved ordinary cells `(0,7),(1,7),(0,8),(1,8)` fit rigid lot poses to tangents.
+  FacadeForward/FacadeRotation drive model/foundation/docks; CreateCollisionPolygons
+  owns collision, including L voids. Metres/variants remain;
+  body/passage guards and canon apply.
+
 - **Accepted — 2026-10-03, city replanning:**
-  User-approved district structure retains blueprint/area/entrance IDs.
-  CitySpatialPlan owns metres/inverse: west/north/south spans `26-40 m`,
-  protected x4..13/z3..8 anchors/eastern widths fixed; fringe nominal.
-  Legacy/custom geometry stays uniform; street priorities retain connectivity.
-  The approved OldTown T bends only `(1,7)-(1,8)`, `(1,8)-(2,8)` and
-  `(1,8)-(1,9)`: sampled smooth bends up to 2 m, straight first/last 6 m,
-  unchanged node positions/datums. Other streets stay orthogonal.
-  CityRoadGeometryPlan owns paths, ribbons and affected-cell ground complement;
-  rendering, collision, navigation, elevation and lanes consume that geometry.
-  A bounded structural exception permits runtime mesh/collider for these road
-  ribbons and terrain complement only; reusable props remain Blender assets.
-  Four ordinary cells are reserved outside waterworks, river, landmarks/stairs;
-  significant places cannot select the patch. Geometry stays
-  stable between acts. Bus coverage/body guards remain; unsafe bends are excluded.
-  Twelve fixed-metre compact/long/L typologies share BuildingLot's variant across
-  source, envelope, docks, collision and Home view; no stretching or filled L void.
-  Protected precincts keep compact models. Heights, fog and meaning remain;
-  all nine art checks and story §16 bind the city. No new lore/text/§6 exception.
+  District structure retains blueprint/area/entrance IDs. CitySpatialPlan
+  owns metres/inverse: west/north/south `26-40 m`, protected x4..13/z3..8 anchors
+  and eastern widths fixed; fringe nominal, legacy/custom uniform.
+  District priorities keep routes connected. Twelve fixed-metre compact/long/L
+  typologies share BuildingLot variants across source, docks, collision and Home;
+  no stretching or filled L void. Protected precincts keep compact models.
+  Runtime mesh/collider exceptions cover road ribbons/terrain complement only;
+  reusable props stay Blender assets. Significant places
+  exclude the four-cell patch; unsafe bends stay outside bus routes. Heights/fog/
+  meaning and act stability remain; all nine art checks/story §16 apply, no new
+  lore/text/§6 exception.
 
 - **Accepted — 2026-09-29, Normal NPC faces and fisherman:**
   User: Normal/default eyes/brows/nose/mouth are PNG on shaped heads, no solid

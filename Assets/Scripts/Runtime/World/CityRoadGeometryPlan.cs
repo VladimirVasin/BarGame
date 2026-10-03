@@ -185,6 +185,24 @@ namespace BarPromenade
         }
     }
 
+    /// <summary>A flat junction made from its actual approach mouths, including its pavement ring.</summary>
+    public sealed class CityRoadJunction
+    {
+        internal CityRoadJunction(Vector2Int node, Vector2 center, RoadEdge ownerEdge,
+            IReadOnlyList<Vector2[]> road, IReadOnlyList<Vector2[]> sidewalk, IReadOnlyList<CityRoadPath> sidewalkPaths)
+        {
+            Node = node; Center = center; OwnerEdge = ownerEdge;
+            RoadPolygons = road; SidewalkPolygons = sidewalk; SidewalkPaths = sidewalkPaths;
+        }
+        public const float MouthInset = 6f;
+        public Vector2Int Node { get; }
+        public Vector2 Center { get; }
+        public RoadEdge OwnerEdge { get; }
+        public IReadOnlyList<Vector2[]> RoadPolygons { get; }
+        public IReadOnlyList<Vector2[]> SidewalkPolygons { get; }
+        public IReadOnlyList<CityRoadPath> SidewalkPaths { get; }
+    }
+
     /// <summary>The road graph retains stable IDs; all physical consumers use these world-XZ paths.</summary>
     public sealed class CityRoadGeometryPlan
     {
@@ -213,14 +231,23 @@ namespace BarPromenade
                     // The flat node datum ends at half a road width. Keep that
                     // knot even inside a straight approach so every offset
                     // pavement mesh reproduces the same height profile.
-                    var vertices = new List<Vector2> { start, start + tangent * (width * .5f), start + tangent * 6 };
-                    int steps = Mathf.CeilToInt((length - 12) / 1.5f);
+                    bool obliqueBranch = edge.Equals(PilotEdges[1]);
+                    if (obliqueBranch)
+                    {
+                        paths.Add(edge, CreateObliqueBranch(start, end, width));
+                        curves.Add(edge);
+                        affected.Add(edge.A); affected.Add(edge.A + Vector2Int.down);
+                        continue;
+                    }
+                    var vertices = new List<Vector2> { start, start + tangent * (width * .5f), start + tangent * 6, start + tangent * 6.5f };
+                    int steps = Mathf.CeilToInt((length - 13) / 1.5f);
                     for (int i = 1; i < steps; i++)
                     {
                         float t = (float)i / steps;
                         float wave = Mathf.Sin(Mathf.PI * t);
-                        vertices.Add(start + tangent * (6 + (length - 12) * t) + right * (bulge * wave * wave));
+                        vertices.Add(start + tangent * (6.5f + (length - 13) * t) + right * (bulge * wave * wave));
                     }
+                    vertices.Add(end - tangent * 6.5f);
                     vertices.Add(end - tangent * 6);
                     vertices.Add(end - tangent * (width * .5f)); vertices.Add(end);
                     paths.Add(edge, new CityRoadPath(vertices));
@@ -231,9 +258,87 @@ namespace BarPromenade
             }
             curves.Sort(RoadEdge.Compare);
             CurvedEdges = new ReadOnlyCollection<RoadEdge>(curves);
+            if (pilot) ObliqueJunction = CreateJunction();
+        }
+        private static CityRoadPath CreateObliqueBranch(Vector2 start, Vector2 end, float roadWidth)
+        {
+            const float angle = -12f * Mathf.Deg2Rad;
+            Vector2 axis = (end - start).normalized;
+            Vector2 left = new Vector2(-axis.y, axis.x);
+            Vector2 tangent = axis * Mathf.Cos(angle) + left * Mathf.Sin(angle);
+            float length = Vector2.Distance(start, end);
+            float firstX = 6.5f * Mathf.Cos(angle), firstY = 6.5f * Mathf.Sin(angle);
+            float span = length - 6.5f - firstX;
+            var vertices = new List<Vector2> { start, start + tangent * (roadWidth * .5f), start + tangent * 6f, start + tangent * 6.5f };
+            int steps = Mathf.CeilToInt(span / 1.5f);
+            for (int i = 1; i < steps; i++)
+            {
+                float t = (float)i / steps, t2 = t * t, t3 = t2 * t;
+                float y = (2f * t3 - 3f * t2 + 1f) * firstY +
+                    (t3 - 2f * t2 + t) * span * Mathf.Tan(angle);
+                vertices.Add(start + axis * (firstX + span * t) + left * y);
+            }
+            vertices.Add(end - axis * 6.5f); vertices.Add(end - axis * 6f);
+            vertices.Add(end - axis * (roadWidth * .5f)); vertices.Add(end);
+            return new CityRoadPath(vertices);
+        }
+        private CityRoadJunction CreateJunction()
+        {
+            Vector2Int node = new Vector2Int(1, 8);
+            var outer = new List<Vector2[]>(); var inner = new List<Vector2[]>();
+            foreach (RoadEdge edge in paths.Keys)
+            {
+                if (!edge.Contains(node)) continue;
+                CityRoadPath path = Get(edge);
+                if (edge.B == node) path = path.Reversed();
+                // The first six metres are straight at every mouth.
+                CityRoadSample sample = path.SampleDistance(CityRoadJunction.MouthInset);
+                var arm = new CityRoadPath(new[] { Node(node), sample.Position });
+                outer.AddRange(arm.Ribbon(width));
+                inner.AddRange(arm.Ribbon(width - CityStreetSurfacePlanner.SidewalkWidth * 2f));
+            }
+            var road = new List<Vector2[]>();
+            foreach (Vector2[] polygon in outer)
+            {
+                var pieces = new List<Vector2[]> { polygon };
+                foreach (Vector2[] existing in road) pieces = SubtractAll(pieces, existing);
+                road.AddRange(pieces);
+            }
+            var pavement = new List<Vector2[]>(road);
+            foreach (Vector2[] polygon in inner) pavement = SubtractAll(pavement, polygon);
+            float offset = width * .5f - CityStreetSurfacePlanner.SidewalkWidth * .5f;
+            Vector2 center = Node(node);
+            CityRoadSample branch = Get(PilotEdges[1]).SampleDistance(6f);
+            var walks = new List<CityRoadPath>();
+            if (paths.ContainsKey(new RoadEdge(node + Vector2Int.left, node)))
+                foreach (int side in new[] { -1, 1 })
+                    walks.Add(new CityRoadPath(new[] { center + new Vector2(-offset, side * 6f),
+                        center + new Vector2(-offset, side * offset), center + new Vector2(-6f, side * offset) }));
+            else walks.Add(new CityRoadPath(new[] { center + new Vector2(-offset, 6f), center + new Vector2(-offset, -6f) }));
+            foreach (int side in new[] { -1, 1 })
+            {
+                Vector2 linePoint = center + branch.Right * (side * offset);
+                float along = (center.x + offset - linePoint.x) / branch.Tangent.x;
+                Vector2 corner = linePoint + branch.Tangent * along;
+                walks.Add(new CityRoadPath(new[] { center + new Vector2(offset, side < 0 ? 6f : -6f),
+                    corner, branch.Position + branch.Right * (side * offset) }));
+            }
+            return new CityRoadJunction(node, center, PilotEdges[1],
+                new ReadOnlyCollection<Vector2[]>(road), new ReadOnlyCollection<Vector2[]>(pavement),
+                new ReadOnlyCollection<CityRoadPath>(walks));
+        }
+        private static List<Vector2[]> SubtractAll(IEnumerable<Vector2[]> pieces, Vector2[] cut)
+        {
+            var result = new List<Vector2[]>();
+            foreach (Vector2[] piece in pieces) result.AddRange(CityRoadPolygon.Subtract(piece, cut));
+            return result;
         }
         private Vector2 Node(Vector2Int node) => origin + spatial.GetCoordinateWorldOffset(node);
         public IReadOnlyList<RoadEdge> CurvedEdges { get; }
+        internal IEnumerable<RoadEdge> Edges => paths.Keys;
+        public CityRoadJunction ObliqueJunction { get; }
+        public float GetEndpointInset(RoadEdge edge, Vector2Int node) =>
+            ObliqueJunction != null && node == ObliqueJunction.Node ? CityRoadJunction.MouthInset : width * .5f;
         public CityRoadPath Get(RoadEdge edge) => paths[edge];
         public IReadOnlyList<Vector2[]> GetCorridor(RoadEdge edge)
         {
@@ -243,12 +348,21 @@ namespace BarPromenade
         }
         public bool ContainsRoad(RoadEdge edge, Vector2 point)
         {
+            if (ObliqueJunction != null && edge.Contains(ObliqueJunction.Node) &&
+                ContainsJunction(point)) return true;
             foreach (Vector2[] polygon in GetCorridor(edge))
                 if (CityRoadPolygon.Contains(polygon, point)) return true;
             CityRoadPath path = Get(edge);
             foreach (Vector2 endpoint in new[] { path.Vertices[0], path.Vertices[path.Vertices.Count - 1] })
                 if (Mathf.Abs(point.x - endpoint.x) <= width * .5f + .001f &&
                     Mathf.Abs(point.y - endpoint.y) <= width * .5f + .001f) return true;
+            return false;
+        }
+        public bool ContainsJunction(Vector2 point)
+        {
+            if (ObliqueJunction == null) return false;
+            foreach (Vector2[] polygon in ObliqueJunction.RoadPolygons)
+                if (CityRoadPolygon.Contains(polygon, point)) return true;
             return false;
         }
         public bool IsCurved(RoadEdge edge) => paths.TryGetValue(edge, out CityRoadPath path) && !path.IsStraight;
@@ -287,14 +401,16 @@ namespace BarPromenade
             Rect bounds = spatial.GetCellBounds(cell); bounds.position += origin;
             var pieces = new List<Vector2[]> { CityRoadPolygon.Rectangle(bounds) };
             var cuts = new List<Vector2[]>();
-            foreach (CityRoadPath path in paths.Values)
+            foreach (KeyValuePair<RoadEdge, CityRoadPath> entry in paths)
             {
+                CityRoadPath path = entry.Value;
                 Rect reach = path.Bounds; reach.xMin -= width * .5f; reach.xMax += width * .5f;
                 reach.yMin -= width * .5f; reach.yMax += width * .5f;
                 if (!bounds.Overlaps(reach)) continue;
                 cuts.AddRange(path.Ribbon(width));
-                foreach (Vector2 endpoint in new[] { path.Vertices[0], path.Vertices[path.Vertices.Count - 1] })
-                    cuts.Add(CityRoadPolygon.Rectangle(new Rect(endpoint - Vector2.one * width * .5f, Vector2.one * width)));
+                foreach (Vector2Int node in new[] { entry.Key.A, entry.Key.B })
+                    if (ObliqueJunction != null && node == ObliqueJunction.Node) cuts.AddRange(ObliqueJunction.RoadPolygons);
+                    else cuts.Add(CityRoadPolygon.Rectangle(new Rect(Node(node) - Vector2.one * width * .5f, Vector2.one * width)));
             }
             foreach (Vector2[] cut in cuts)
             {
