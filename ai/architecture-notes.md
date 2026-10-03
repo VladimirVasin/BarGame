@@ -174,55 +174,59 @@
   Shared plan/sampler/bounds/metres/collider, `48 m` buckets;
   §6/§12/art §10g/§16/§21/nine checks.
 
-- **Accepted — 2026-09-28, one-handed attacks:**
-  Right-hand start/release/chain ignores left regrip. Click cuts Hit/Miss tail
-  after both contacts: live pose→swing/charge. Anatomy/contact/balance/fall/
-  forced recoil stay; block needs both.
+- **Accepted — 2026-10-02, combat:**
+  R ignores L; Hit/Miss tail cuts after contacts; .22→held .28; buffer .20s,
+  hit/fall/reset clears. AI≥1m/retreat≤.6s/whiff .20→counter .22/Rising attacks.
+  Held guard≠fresh parry; shield dim/request/ready/block. Gaze: clip/physics/
+  pause/hit-stop/R/defeat/unload; regrip/scoped anatomy/120Hz.
+- **Accepted — 2026-10-03, combat:**
+  Hero Windup: owned motor/1m inward+braking; side/back/impulses/drift free.
+  ≤.85m/0HP shove; authored continuous arm/regrip/wrist-elbow-shoulder≤600°/s/
+  body-world-palm gates. DuelJournal identity/anatomy/CPU+wall: `ai/debug-log.md`.
 - **Accepted — 2026-09-25, clinch shove:** Both: close swing→faster/stronger shove.
 - **Accepted — 2026-09-26, minimum recovery:**
-  Impact +≤2 catch steps; flywheel/crouch/brace diagnostic opt-in.
-  1 shove/AI off/fixed input/≤2 attempts; visual approval before expansion.
-  Clock/pause/hit-stop/R/unload; defeat separate, rise→Ready/regrip.
-  L owner; post-left R body/floor/wall gates: 8-segment `CombatWeaponGeometry`.
-  Held mass→forearm; release→mass/inertia, hand ignores expire.
-  Drop sweep disables anatomy past capsule. Pronation/live elbow, no bone writes:
-  -5..120/side±8°. Banks/QA pending.
+  Impact/≤2 steps; opt-in flywheel/crouch/brace; 1 shove/AI off/fixed input/
+  ≤2 attempts/visual gate for expansion. Clock/pause/hit-stop/R/unload;
+  defeat separate/rise→Ready/regrip. L owns/post-L R body-floor-wall:
+  8-segment `CombatWeaponGeometry`; held mass→forearm/free→mass-inertia/
+  expiring hand ignores. Drop anatomy off past capsule; live elbow-pronation
+  -5..120/side±8°, no writes; banks/QA pending.
 - **Accepted — 2026-09-21, anatomical damage:**
   Six bone-local zones, first/sequence; head×2 (50/80, cap .99MaxHP),
   rear±45° defeat; torso1/rear1.25/arms.5/legs.75; guard/parry first.
-  Mutual frozen zone/direction/power; one HP/ragdoll/R.
+  Frozen mutual zone/direction/power; one HP/ragdoll/R.
 - **Accepted — 2026-09-21, combat inertia:**
-  C1 pose/contact; duel-clock travel/yaw: recovery .15→.75, stun .35, arc 0;
-  AI plants charge/windup, hero .2.
+  C1 pose/contact; duel-clock travel/yaw: return .15→.75/stun .35/arc 0.
+  AI plants charge/windup; hero .2.
 - **Accepted — 2026-09-21, frightened stance:**
-  .42/.28m, feet settle in Windup; afraid/unskilled hero, calm NPC.
-  Duel-clock breath/tremor/flinch at nearby visible tell.
+  .42/.28m/Windup feet settle; afraid/unskilled hero/calm NPC.
+  Duel-clock breath/tremor/flinch: nearby tell.
 - **Accepted — 2026-09-21, step/Hold:**
-  .8m/.36+.21s/15, smoothstep travel/pose/footfalls clock. Hold freezes breath; exit delays regen.
+  .8m/.36+.21s/15; smoothstep/pose/footfalls clock. Hold freezes breath; exit delays regen.
 - **Accepted — 2026-09-20, two-hand hold:**
-  Ready/Block/attacks/recoils target L; Hit/GuardBreak/Defeat release.
-  Low Ready/high Block, opposed L .16→.42m/breath4s, blend/injury; NPC R Rest.
-  Bounded L subdivision/asset/runtime gates.
+  Ready/Block/attacks/recoils→L; Hit/GuardBreak/Defeat release. Low Ready/high
+  Block, opposed L .16→.42m/breath4s/blend/injury; NPC R Rest; L subdivision/
+  asset/runtime gates.
 - **Accepted — 2026-09-21, victory:** Hero swing→normal walk; combat off until R.
 - **Accepted — 2026-09-21, brawl v2:**
   Free hits; guard20/35/charge20; regen30/s/.6s in stuns/own spends.
   Fresh≤.12 light parry/rearm.35; counter+.30/break½ dmg/.55;
-  backhand.22/other buffer.20/heavy.28; seeded AI/postfall freecam.
+  buffer.20; seeded AI/postfall freecam.
 - **Accepted — 2026-09-21, swing sides:**
   Fore/back: through flips/stopped repeats; step/target>15°, not strafe.
-  Same dmg/time/cost. Upper(t+q*.18*(1-smooth(t/.45))), lower(t),
-  charge upper(.18q); q power; Forehand Light copy.
+  Same dmg/time/cost; upper(t+q*.18*(1-smooth(t/.45)))/lower(t), charge
+  upper(.18q); q power; Forehand Light copy.
   Backhand DAG: R elbow/hand roll; .56 reach≥.95, free elbow;
   Recoils: .56→Ready0/.48s inverse/C1/no dwell (WIP).
   45° shoulder search, wrist/core/speed/clearance gates.
 - **Accepted architecture exception — 2026-09-20, combat injury:**
-  HP/directional pose/wounds/pools; dry block/miss; clear R/unload;
-  visual, ragdoll wins.
+  HP/directional pose/wounds/pools; dry block/miss; R/unload clears;
+  visual/ragdoll wins.
 - **Accepted — 2026-09-21, combat aftermath:** Thud; blood lobes grow 10s, stay.
 - **Accepted architecture exception — 2026-09-21, polygon taunt:**
   E/settled defeat: Home toilet view/timeline/stream/residue via
-  `IHomeToiletViewHost`. Guided body-dock walk/aim; bone/floor marks to R
-  (`HomeUrineResidue`), crowbar left/return. Silent §21-exempt prompt,
+  `IHomeToiletViewHost`; guided body-dock walk/aim; bone/floor marks to R
+  (`HomeUrineResidue`); crowbar left/return. Silent §21-exempt prompt;
   no speech/reaction/reward; sixth first-person view.
 - **Accepted architecture exception — 2026-09-19, isolated combat test:**
   §6/§16.15/art§15a: `CombatTest`, no story/speech, one hero/input;
@@ -1345,11 +1349,9 @@
   Generated puddle and village ground/path/snow/lane meshes use
   `RuntimeGeneratedMeshOwner`; imported and shared meshes keep their owners.
 - **Current — Opt-in performance evidence (2026-09-06):**
-  `RuntimePerformanceCapture` records bounded frame distributions and render
-  context, with named foot-sole bake and water-reflection work scopes. It
-  alters no render scale, quality, animation or post-processing. Unavailable
-  counters report zero samples, not zero cost; Editor measurements are
-  diagnostics rather than player benchmarks. See `ai/debug-log.md`.
+  `RuntimePerformanceCapture`: bounded frames/context/foot-bake/reflection;
+  rendering/animation unchanged; unavailable≠free; Editor diagnostics.
+  `ai/debug-log.md`.
 - **Current — Read-only build gate and checked authoring (2026-09-06):**
   `PlayerBuildAssetValidation` runs on all player-build paths, aggregating
   required-resource, owner-contract and Hero dependency-stamp failures with
@@ -1453,7 +1455,7 @@
   minutes/day); alcohol recovery retains its unscaled rate and modal/transition
   blockers. This supersedes earlier scaled-calendar/unscaled physical
   bar/refrigerator descriptions below.
-- **Accepted:** Unity `6000.6.2f1` (editor patch recorded 2026-09-24), URP `17.6.0` since 2026-09-04. Bundled packages: test framework `1.8.0`, Timeline `6.6.0`, uGUI `2.6.0`.
+- **Accepted:** Unity `6000.6.4f1` (editor patch recorded 2026-10-02), URP `17.6.0` since 2026-09-04. Bundled packages: test framework `1.8.0`, Timeline `6.6.0`, uGUI `2.6.0`.
 - **Accepted:** New Input System is enabled.
 - **Corrected — balcony smokers are a local population, not a city-load
   tableau:** a production-seed walk exposed the failure of selecting one or two
@@ -3974,13 +3976,12 @@
   any owner that sets `timeScale` to zero naturally freezes both.
 - **Accepted — Bounded structured diagnostics:**
   Fail-safe UTF-8 NDJSON/version/monotonic sequence/session-scene-seed/transition
-  IDs. State boundaries/results only, no frames/ordinary Unity logs.
-  Editor/dev verbose, release basic, batch tests off. Rotate 5 MiB/3 archives;
-  F8 snapshot/flush.
+  IDs; boundaries/results/no frames/ordinary Unity logs. Editor-dev verbose/
+  release basic/batch off/5 MiB/3 archives/F8 snapshot+flush.
 - **Accepted — 2026-09-26, separate duel journal:**
-  `DuelJournal`: CombatTest manual on/batch off, CLI override; round
-  NDJSON/summary, F8 mark/Shift+F8 folder. Typed reasons/20 Hz final state/frame
-  CPU; bounded async buffer, limits/priority pruning: `ai/debug-log.md`.
+  `DuelJournal`: CombatTest on/batch off/CLI; round NDJSON/summary/F8 mark/
+  Shift+F8 folder; typed reasons/20Hz final state/frame CPU/async bounds/
+  limits/priority pruning: `ai/debug-log.md`.
 - **Accepted — Separate classic door transition:** Building doors first run
   the shared source-scene `DoorUseEnter/Loop/Exit` action from an explicit
   grounded dock. Only its terminal neutral completion reserves the

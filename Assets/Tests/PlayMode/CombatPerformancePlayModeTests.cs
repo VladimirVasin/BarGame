@@ -37,6 +37,146 @@ namespace BarPromenade.Tests.PlayMode
         }
 
         [UnityTest]
+        public IEnumerator Range_OpponentKeepsWeaponRoomAndAnswersTheObservedWhiff()
+        {
+            PlacePair(1.1f);
+            foreach (CombatActor actor in new[] { root.Hero, root.Opponent })
+            {
+                actor.Body.height = 1.7f;
+                actor.Body.radius = .32f;
+                actor.Body.center = Vector3.up * .85f;
+            }
+            Physics.SyncTransforms();
+            yield return null;
+            try
+            {
+                root.AutomaticSimulation = false;
+                MeleeCombatSettings settings = root.Hero.State.Settings;
+                Vector3 ground = Vector3.up * PlayerFactory.GroundedRootOffset;
+                void SparringPair(float distance, Vector3 heroFacing)
+                {
+                    root.SetSparring(true);
+                    root.Hero.ResetActor(ground, heroFacing);
+                    root.Opponent.ResetActor(ground + Vector3.forward * distance, Vector3.back);
+                    Physics.SyncTransforms();
+                }
+
+                // A stationary target must see a weapon swing, not a clinch
+                // created by the opponent's own committed windup movement.
+                SparringPair(1.1f, Vector3.forward);
+                Assert.That(root.Opponent.TryAttack(), Is.True);
+                Quaternion committed = root.Opponent.transform.rotation;
+                for (int tick = 0; tick < Mathf.CeilToInt(settings.WindupSeconds / CombatTestRoot.SimulationStep) + 1; tick++)
+                {
+                    root.Tick(CombatTestRoot.SimulationStep);
+                    Assert.That(root.Opponent.State.IsShoving, Is.False,
+                        "The opponent's own windup cannot turn an in-range weapon attack into a shove.");
+                    Assert.That(Vector3.Distance(root.Hero.transform.position, root.Opponent.transform.position),
+                        Is.GreaterThanOrEqualTo(.99f), "The windup and its braking tail keep room for the crowbar.");
+                    Assert.That(Quaternion.Angle(committed, root.Opponent.transform.rotation), Is.LessThan(.1f));
+                }
+                Assert.That(root.Opponent.State.Phase, Is.EqualTo(MeleePhase.Active));
+
+                // The gap is a movement limit, not immunity to being crowded.
+                // A hero pressing close still converts the committed windup.
+                SparringPair(1.1f, Vector3.forward);
+                Assert.That(root.Opponent.TryAttack(), Is.True);
+                root.Tick(.05f);
+                root.Hero.ResetActor(root.Opponent.transform.position + root.Opponent.transform.forward * .8f,
+                    -root.Opponent.transform.forward);
+                Physics.SyncTransforms();
+                root.Tick(CombatTestRoot.SimulationStep);
+                Assert.That(root.Opponent.State.IsShoving, Is.True,
+                    "Actual close pressure still routes the weapon windup into its ordinary shove.");
+                int shoveSequence = root.Opponent.State.AttackSequence;
+                for (int tick = 0; tick < Mathf.CeilToInt((settings.ShoveDurationSeconds + .2f) / CombatTestRoot.SimulationStep) &&
+                    root.Opponent.State.IsShoving; tick++) root.Tick(CombatTestRoot.SimulationStep);
+                Assert.That(root.Opponent.State.Phase, Is.EqualTo(MeleePhase.Ready));
+                // Put the target back in the clinch: even a shove that failed
+                // to create physical room must be followed by making space.
+                root.Hero.ResetActor(root.Opponent.transform.position + root.Opponent.transform.forward * .8f,
+                    -root.Opponent.transform.forward);
+                Physics.SyncTransforms();
+                root.Tick(.12f);
+                Assert.That(root.Opponent.State.AttackSequence, Is.EqualTo(shoveSequence),
+                    "The next ready boundary makes space rather than repeating a close shove.");
+                Assert.That(root.OpponentIntent, Is.EqualTo(CombatOpponentIntent.Recover));
+                Assert.That(Vector3.Distance(root.Hero.transform.position, root.Opponent.transform.position), Is.GreaterThan(.82f));
+
+                // Drive W and the actual mouse bridge. Voluntary approach and
+                // its braking tail must keep room for the hero's own windup too.
+                var input = new UnityEngine.InputSystem.InputTestFixture();
+                UnityEngine.InputSystem.Keyboard keyboard = null;
+                UnityEngine.InputSystem.Mouse mouse = null;
+                try
+                {
+                    input.Setup();
+                    keyboard = UnityEngine.InputSystem.InputSystem.AddDevice<UnityEngine.InputSystem.Keyboard>();
+                    mouse = UnityEngine.InputSystem.InputSystem.AddDevice<UnityEngine.InputSystem.Mouse>();
+                    root.SetSparring(false);
+                    PlacePair(1.1f);
+                    RetroUiCanvas canvas = RetroUiTheme.CalculateCanvas(Screen.width, Screen.height);
+                    Vector2 pointer = canvas.LogicalToScreen(new Vector2(320f, 180f));
+                    pointer.y = Screen.height - pointer.y;
+                    input.Set(mouse.position, pointer);
+                    input.Press(keyboard.wKey);
+                    input.Press(mouse.leftButton);
+                    var consume = typeof(CombatTestRoot).GetMethod("UpdateCombatInput",
+                        System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+                    ConsumeCombatMouseInput(consume, true);
+                    root.Tick(TickSeconds);
+                    input.Release(mouse.leftButton);
+                    ConsumeCombatMouseInput(consume, false);
+                    Assert.That(root.Hero.State.Phase, Is.EqualTo(MeleePhase.Windup));
+                    float startZ = root.Hero.transform.position.z;
+                    for (int frame = 0; frame < 40 && root.Hero.State.Phase == MeleePhase.Windup; frame++)
+                    {
+                        yield return null; // The real PlayerMotor reads the held W.
+                        root.Tick(TickSeconds);
+                        Assert.That(root.Hero.State.IsShoving, Is.False,
+                            "W cannot replace the hero's committed weapon swing with a shove.");
+                        Assert.That(Vector3.Distance(root.Hero.transform.position, root.Opponent.transform.position),
+                            Is.GreaterThanOrEqualTo(.99f), "Voluntary travel reserves the same metre as NPC travel.");
+                    }
+                    Assert.That(root.Hero.State.Phase, Is.EqualTo(MeleePhase.Active));
+                    Assert.That(root.Hero.transform.position.z, Is.GreaterThan(startZ + .01f),
+                        "The spacing constraint limits approach instead of disabling W.");
+                }
+                finally
+                {
+                    if (keyboard != null && keyboard.added) UnityEngine.InputSystem.InputSystem.RemoveDevice(keyboard);
+                    if (mouse != null && mouse.added) UnityEngine.InputSystem.InputSystem.RemoveDevice(mouse);
+                    input.TearDown();
+                }
+
+                // Face away to produce a real light miss without harming or
+                // staggering the observer. The first visible tell gets guarded.
+                SparringPair(1.1f, Vector3.back);
+                Assert.That(root.Hero.TryAttack(), Is.True);
+                int contactTicks = Mathf.CeilToInt((settings.WindupSeconds + settings.ActiveSeconds) /
+                    CombatTestRoot.SimulationStep);
+                for (int tick = 0; tick <= contactTicks; tick++) root.Tick(CombatTestRoot.SimulationStep);
+                Assert.That(root.Hero.State.AttackOutcome, Is.EqualTo(MeleeAttackOutcome.Miss));
+                Assert.That(root.Hero.State.Phase, Is.EqualTo(MeleePhase.Recovery));
+                root.Tick(.18f);
+                Assert.That(root.Opponent.State.IsAttacking, Is.False,
+                    "Seeing a miss still costs a visible reaction delay.");
+                root.Tick(.1f);
+                Assert.That(root.Hero.State.Phase, Is.EqualTo(MeleePhase.Recovery));
+                Assert.That(root.Hero.State.RecoveryRemaining, Is.LessThan(.45f));
+                Assert.That(root.Opponent.State.Phase, Is.EqualTo(MeleePhase.Windup),
+                    "An observed light whiff must be answerable after reaction consumed part of its recovery.");
+                Assert.That(root.Opponent.State.AttackPower, Is.Zero,
+                    "The whiff answer uses an ordinary tap rather than waiting out a charge.");
+                LogAssert.NoUnexpectedReceived();
+            }
+            finally
+            {
+                if (root != null) root.AutomaticSimulation = false;
+            }
+        }
+
+        [UnityTest]
         public IEnumerator Range_SimulationTicksStayWithinFrameBudget()
         {
             var labels = new string[4];
@@ -121,6 +261,93 @@ namespace BarPromenade.Tests.PlayMode
             root.TickFrame(0f);
             Assert.That(root.Hero.State.AttackElapsed, Is.EqualTo(before + TickSeconds).Within(.000001f));
             LogAssert.NoUnexpectedReceived();
+        }
+
+        [UnityTest]
+        public IEnumerator Range_RecoveryClickKeepsOneShortLivedIntent()
+        {
+            var input = new UnityEngine.InputSystem.InputTestFixture();
+            UnityEngine.InputSystem.Mouse mouse = null;
+            var consume = typeof(CombatTestRoot).GetMethod("UpdateCombatInput",
+                System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+            try
+            {
+                input.Setup();
+                mouse = UnityEngine.InputSystem.InputSystem.AddDevice<UnityEngine.InputSystem.Mouse>();
+                RetroUiCanvas canvas = RetroUiTheme.CalculateCanvas(Screen.width, Screen.height);
+                Vector2 pointer = canvas.LogicalToScreen(new Vector2(320f, 180f));
+                pointer.y = Screen.height - pointer.y;
+                input.Set(mouse.position, pointer);
+                for (int scenario = 0; scenario < 5; scenario++)
+                {
+                    input.Release(mouse.leftButton);
+                    ConsumeCombatMouseInput(consume, false);
+                    PlacePair(scenario == 4 ? .82f : 4f);
+                    CombatActor actor = root.Hero;
+                    int sequence = actor.State.AttackSequence;
+                    // This is the real physical readiness gate, without a hit
+                    // whose random landing would obscure input-lifetime assertions.
+                    actor.ImpactMotion.BeginRecoveryStep(0, actor.transform.position, .2f);
+                    Assert.That(actor.HasAttackBalance, Is.False);
+                    input.Press(mouse.leftButton);
+                    ConsumeCombatMouseInput(consume, true);
+                    Assert.That(actor.State.HasBufferedCharge, Is.True);
+                    Assert.That(actor.State.Phase, Is.EqualTo(MeleePhase.Ready));
+                    Assert.That(actor.State.AttackSequence, Is.EqualTo(sequence));
+                    if (scenario != 1)
+                    {
+                        input.Release(mouse.leftButton);
+                        ConsumeCombatMouseInput(consume, false);
+                    }
+                    if (scenario == 2)
+                        actor.State.Advance(actor.State.Settings.AttackBufferSeconds + .01f, false);
+                    else if (scenario == 3)
+                        Assert.That(actor.State.ReceiveShove(), Is.True);
+                    else actor.State.Advance(.1f, false);
+                    // Return just the physical gate; resetting the actor would
+                    // erase the input being verified and hide a lifetime defect.
+                    actor.ImpactMotion.Reset();
+                    root.Tick(CombatTestRoot.SimulationStep);
+                    if (scenario < 2 || scenario == 4)
+                    {
+                        Assert.That(actor.State.Phase, Is.EqualTo(scenario == 1 ? MeleePhase.Charging : MeleePhase.Windup));
+                        Assert.That(actor.State.AttackSequence, Is.EqualTo(sequence + 1));
+                        Assert.That(actor.State.HasBufferedAttack, Is.False);
+                        if (scenario != 1) Assert.That(actor.State.AttackPower, Is.Zero);
+                        if (scenario == 4)
+                        {
+                            root.Tick(CombatTestRoot.SimulationStep);
+                            Assert.That(actor.State.Phase, Is.EqualTo(MeleePhase.Shoving),
+                                "A consumed balance press keeps the ordinary close-contact shove conversion.");
+                            Assert.That(actor.State.HasBufferedAttack, Is.False);
+                        }
+                        else if (scenario == 1)
+                        {
+                            root.Tick(actor.State.Settings.AttackBufferSeconds + .01f);
+                            Assert.That(actor.State.IsCharging, Is.True,
+                                "The queue deadline ends when consumed; it cannot cancel a live held charge.");
+                            Assert.That(actor.State.AttackSequence, Is.EqualTo(sequence + 1));
+                            input.Release(mouse.leftButton);
+                            ConsumeCombatMouseInput(consume, false);
+                            Assert.That(actor.State.Phase, Is.EqualTo(MeleePhase.Windup));
+                            Assert.That(actor.State.AttackSequence, Is.EqualTo(sequence + 1));
+                        }
+                    }
+                    else
+                    {
+                        Assert.That(actor.State.HasBufferedAttack, Is.False);
+                        Assert.That(actor.State.IsCharging || actor.State.IsAttacking, Is.False,
+                            "Expired or interrupted input cannot fire when physical support returns.");
+                    }
+                    yield return null;
+                }
+                LogAssert.NoUnexpectedReceived();
+            }
+            finally
+            {
+                if (mouse != null && mouse.added) UnityEngine.InputSystem.InputSystem.RemoveDevice(mouse);
+                input.TearDown();
+            }
         }
 
         private void PlacePair(float distance)
@@ -384,8 +611,14 @@ namespace BarPromenade.Tests.PlayMode
             public int actor, action, request, round, frame;
             public long tick, dropped_records;
             public double duel_seconds, late_pose_ms, update_to_late_ms;
-            public bool active;
-            public string result, reason, phase;
+            public double frame_ms, late_to_next_update_ms, present_ms, weapon_constraint_ms, support_grip_ms;
+            public int present_calls, weapon_constraint_calls, support_grip_calls, region, side, target_phase_after;
+            public double target_phase_before;
+            public long impact_seq;
+            public bool active, late_observer_captured, is_critical, is_finisher;
+            public string result, reason, phase, code_revision, animation_asset_revision;
+            public string code_identity_source, animation_identity_source, workspace_state;
+            public string hero_animation_revision, npc_animation_revision;
         }
 
         [UnityTest]
@@ -491,6 +724,8 @@ namespace BarPromenade.Tests.PlayMode
             string[] logs = System.IO.Directory.GetFiles(folder, "duel.ndjson", System.IO.SearchOption.AllDirectories);
             Assert.That(logs.Length, Is.EqualTo(2), "Reset closes the old round and starts a distinct journal.");
             bool rejected = false, contact = false, paused = false, marked = false, discarded = false, state = false, frameTiming = false, latePose = false;
+            bool identity = false, anatomy = false, delivery = false, heroWork = false, opponentWork = false;
+            double frameInterval = 0d, updateToLate = 0d;
             long sequence = 0;
             int recoveryStarts = 0, recoveryEnds = 0;
             System.Array.Sort(logs, System.StringComparer.Ordinal);
@@ -504,6 +739,19 @@ namespace BarPromenade.Tests.PlayMode
                     DuelReadRecord entry = JsonUtility.FromJson<DuelReadRecord>(line);
                     Assert.That(entry.seq, Is.GreaterThan(sequence)); sequence = entry.seq;
                     Assert.That(entry.data, Is.Not.Null);
+                    if (entry.@event == "round_begin")
+                        StringAssert.StartsWith("modules:", entry.data.code_revision);
+                    if (entry.@event == "revision_identity")
+                    {
+                        identity = true;
+                        Assert.That(entry.data.code_identity_source, Is.EqualTo("editor_compiled_modules"));
+                        Assert.That(entry.data.animation_identity_source, Is.EqualTo("editor_asset_dependency_hash"));
+                        Assert.That(entry.data.workspace_state, Is.EqualTo("clean").Or.EqualTo("dirty").Or.EqualTo("unavailable"));
+                        StringAssert.StartsWith("dependency:", entry.data.hero_animation_revision);
+                        StringAssert.StartsWith("dependency:", entry.data.npc_animation_revision);
+                    }
+                    if (entry.@event == "actor_configuration")
+                        StringAssert.StartsWith("dependency:", entry.data.animation_asset_revision);
                     if (entry.@event == "command_result" && entry.data.result == "rejected")
                     {
                         rejected = true;
@@ -511,11 +759,23 @@ namespace BarPromenade.Tests.PlayMode
                         Assert.That(entry.data.request, Is.GreaterThan(0));
                     }
                     contact |= entry.@event == "impact_applied";
+                    if (entry.@event == "impact_anatomy")
+                    {
+                        anatomy = true;
+                        Assert.That(entry.data.impact_seq, Is.GreaterThan(0));
+                        Assert.That(entry.data.region, Is.InRange((int)MeleeBodyRegion.Torso, (int)MeleeBodyRegion.RightLeg));
+                        Assert.That(entry.data.side, Is.InRange((int)MeleeHitSide.Front, (int)MeleeHitSide.Bottom));
+                        Assert.That(entry.data.is_finisher || entry.data.is_critical, Is.False, "This fixed shove does no HP damage.");
+                        StringAssert.DoesNotContain("\"target_phase_before\":null", line);
+                        Assert.That(entry.data.target_phase_before, Is.EqualTo((double)(int)MeleePhase.Ready));
+                        Assert.That(entry.data.target_phase_after, Is.EqualTo((int)MeleePhase.Stagger));
+                    }
                     paused |= entry.@event == "input_gate";
                     marked |= entry.@event == "mark";
                     discarded |= entry.@event == "time_discarded";
                     state |= entry.@event == "state";
                     frameTiming |= entry.@event == "frame";
+                    if (entry.@event == "frame") frameInterval = entry.data.frame_ms;
                     if (entry.@event == "recovery" && entry.data.actor == 1 && entry.data.round == 1)
                     {
                         if (entry.data.active) recoveryStarts++; else recoveryEnds++;
@@ -524,13 +784,39 @@ namespace BarPromenade.Tests.PlayMode
                     {
                         StringAssert.Contains("\"latest_present_wait_ms\":", line);
                         StringAssert.Contains("\"latest_timing_repeat_frames\":", line);
+                        updateToLate = entry.data.update_to_late_ms;
                         latePose |= entry.data.late_pose_ms > 0d && entry.data.update_to_late_ms >= entry.data.late_pose_ms;
                     }
+                    if (entry.@event == "frame_delivery" && entry.data.late_observer_captured)
+                    {
+                        delivery = true;
+                        Assert.That(entry.data.late_to_next_update_ms, Is.GreaterThanOrEqualTo(0d));
+                        Assert.That(updateToLate + entry.data.late_to_next_update_ms, Is.EqualTo(frameInterval).Within(.001d));
+                    }
+                    if (entry.@event == "pose_work")
+                    {
+                        Assert.That(entry.data.present_ms, Is.GreaterThanOrEqualTo(0d));
+                        Assert.That(entry.data.weapon_constraint_ms, Is.GreaterThanOrEqualTo(0d));
+                        Assert.That(entry.data.support_grip_ms, Is.GreaterThanOrEqualTo(0d));
+                        bool measured = entry.data.present_calls > 0 && entry.data.weapon_constraint_calls > 0 && entry.data.support_grip_calls > 0 &&
+                            entry.data.present_ms > 0d && entry.data.weapon_constraint_ms > 0d && entry.data.support_grip_ms > 0d;
+                        heroWork |= entry.data.actor == 1 && measured;
+                        opponentWork |= entry.data.actor == 2 && measured;
+                    }
                 }
-                Assert.That(System.IO.File.Exists(System.IO.Path.Combine(System.IO.Path.GetDirectoryName(log), "summary.txt")), Is.True);
+                string summaryPath = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(log), "summary.txt");
+                Assert.That(System.IO.File.Exists(summaryPath), Is.True);
+                string summary = System.IO.File.ReadAllText(summaryPath);
+                int milestonesAt = summary.IndexOf("Last major events:", System.StringComparison.Ordinal);
+                Assert.That(milestonesAt, Is.GreaterThanOrEqualTo(0));
+                string milestones = summary.Substring(milestonesAt);
+                StringAssert.DoesNotContain("frame_delivery", milestones, "Routine timing cannot replace the bounded combat milestone history.");
+                StringAssert.DoesNotContain("pose_work", milestones, "Per-actor work samples belong in NDJSON and event counts.");
             }
             Assert.That(rejected && contact && paused && marked && discarded && state && frameTiming && latePose, Is.True,
                 $"Required evidence: denied={rejected}, impact={contact}, pause={paused}, mark={marked}, discarded={discarded}, state={state}, frame={frameTiming}, latePose={latePose}");
+            Assert.That(identity && anatomy && delivery && heroWork && opponentWork, Is.True,
+                $"Extended evidence: identity={identity}, anatomy={anatomy}, delivery={delivery}, heroWork={heroWork}, opponentWork={opponentWork}");
             Assert.That(recoveryStarts, Is.EqualTo(1), "Both catch steps belong to one recovery episode.");
             Assert.That(recoveryEnds, Is.EqualTo(1));
             System.Array.Sort(collector);

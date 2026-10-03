@@ -40,6 +40,7 @@ namespace BarPromenade
         private double stepEndedAt = double.NegativeInfinity;
         private bool blockHeld, advancedActiveWindow, registeredContactWindow, bufferedChargeReleased, chained, chainArmed;
         private bool bufferedFromSwing, continuation;
+        private double recoveryBufferExpiresAt = double.PositiveInfinity;
         private MeleeBufferedAction bufferedAction;
         // The side the next swing would take on its own, and the observed cues
         // that outrank it: the target's bearing and the last step's direction.
@@ -80,8 +81,8 @@ namespace BarPromenade
         public float AttackPower { get; private set; }
         public float AttackDamage => Settings.Damage + Settings.ChargeDamageBonus * AttackPower;
         public float AttackBlockCost => Settings.BlockCost + Settings.ChargeBlockCostBonus * AttackPower;
-        public float AttackWindupSeconds => chained ? Settings.ChainWindupSeconds :
-            Settings.WindupSeconds * (1f - AttackPower) + Settings.ChargedWindupSeconds * AttackPower;
+        public float AttackWindupSeconds => (chained ? Settings.ChainWindupSeconds : Settings.WindupSeconds) *
+            (1f - AttackPower) + Settings.ChargedWindupSeconds * AttackPower;
         public float AttackActiveEnd => (float)ActiveEnd;
         // Gameplay windup/recovery vary; contact sampling still traverses the
         // complete authored windup, active arc and recovery exactly once.
@@ -146,11 +147,12 @@ namespace BarPromenade
 
         /// <summary>A held guard resumes after recovery; it never cancels a committed attack.
         /// Only a press made while free opens the parry window, and only after the re-arm.</summary>
-        public void SetBlocking(bool held)
+        public void SetBlocking(bool held, bool freshPress = true)
         {
             if (held) CancelCharge();
             bool next = held && !IsDefeated && !IsKnockedDown;
-            if (next && !blockHeld) guardPressedAt = Phase == MeleePhase.Ready ? clock : double.NegativeInfinity;
+            if (next && !blockHeld) guardPressedAt = Phase == MeleePhase.Ready && freshPress
+                ? clock : double.NegativeInfinity;
             else if (!next && blockHeld) guardReleasedAt = clock;
             blockHeld = next;
         }
@@ -205,19 +207,36 @@ namespace BarPromenade
             return true;
         }
 
-        private bool BeginCharge()
+        /// <summary>One short-lived press waits for runtime's physical balance gate.
+        /// It uses the ordinary single slot and starts no animation or charge yet.</summary>
+        public bool RequestRecoveryCharge()
+        {
+            if (!(Phase == MeleePhase.Ready || CanBuffer) || stamina < Settings.AttackCost) return false;
+            bufferedAction = MeleeBufferedAction.Charge;
+            bufferedFromSwing = false;
+            bufferedChargeReleased = false;
+            recoveryBufferExpiresAt = clock + Settings.AttackBufferSeconds;
+            return true;
+        }
+
+        private bool BeginCharge(bool fromBuffer = false)
         {
             if (Phase != MeleePhase.Ready || stamina < Settings.AttackCost) return false;
             Spend(Settings.AttackCost);
+            // A tap takes the same return swing as RequestAttack. Holding that press
+            // blends toward the charged windup rather than discarding its initiative.
+            chained = (fromBuffer && chainArmed) || clock - stepEndedAt <= Settings.StepAttackGraceSeconds;
+            chainArmed = false;
             regenerateAt = clock + Settings.RegenerationDelaySeconds;
             charge = 0d;
             chargeLimit = Math.Min(1d, stamina / Settings.ChargeStaminaCost);
             attackElapsed = stepElapsed = shoveElapsed = 0d;
             AttackOutcome = MeleeAttackOutcome.None;
             DropGuard();
-            advancedActiveWindow = registeredContactWindow = bufferedChargeReleased = chained = chainArmed = false;
+            advancedActiveWindow = registeredContactWindow = bufferedChargeReleased = false;
             bufferedAction = MeleeBufferedAction.None;
             bufferedFromSwing = continuation = false;
+            recoveryBufferExpiresAt = double.PositiveInfinity;
             hitTargets.Clear();
             // The held pose already shows the side; release keeps it.
             Swing = ChooseSwing();
@@ -269,6 +288,7 @@ namespace BarPromenade
         {
             charge = chargeLimit = 0d;
             bufferedChargeReleased = false;
+            recoveryBufferExpiresAt = double.PositiveInfinity;
         }
 
         /// <summary>One press waits throughout a swing, or in another committed phase's final
@@ -296,7 +316,7 @@ namespace BarPromenade
             MeleeBufferedAction next = bufferedAction;
             bool released = bufferedChargeReleased;
             Phase = MeleePhase.Ready;
-            bool started = next == MeleeBufferedAction.Attack ? TryStartAttack(true) : BeginCharge();
+            bool started = next == MeleeBufferedAction.Attack ? TryStartAttack(true) : BeginCharge(true);
             if (!started) return false;
             continuation = cutTail;
             if (next == MeleeBufferedAction.Charge && released) ReleaseCharge();
@@ -317,6 +337,15 @@ namespace BarPromenade
         }
 
         public bool TryStartAttack() => TryStartAttack(false);
+
+        /// <summary>Runtime has observed a real whiff before requesting this ordinary
+        /// short response. It reuses the return swing without damage or effort bonuses.</summary>
+        public bool TryStartObservedCounterAttack()
+        {
+            if (!TryStartAttack(false)) return false;
+            chained = true;
+            return true;
+        }
 
         private bool TryStartAttack(bool fromBuffer)
         {
@@ -398,6 +427,7 @@ namespace BarPromenade
         public MeleeAdvanceResult Advance(float seconds, bool allowBufferedAttack = true)
         {
             NonNegative(seconds, nameof(seconds));
+            if (clock >= recoveryBufferExpiresAt) CancelCharge();
             // A swing's queue belongs to the post-contact handoff, even if a hitch
             // crosses its entire recovery. Other committed tails retain their boundary.
             double remaining = ActionRemainingSeconds;
@@ -415,7 +445,7 @@ namespace BarPromenade
                 switch (next)
                 {
                     case MeleeBufferedAction.Attack: TryStartAttack(true); break;
-                    case MeleeBufferedAction.Charge: if (BeginCharge() && released) ReleaseCharge(); break;
+                    case MeleeBufferedAction.Charge: if (BeginCharge(true) && released) ReleaseCharge(); break;
                     case MeleeBufferedAction.Step: TryStartStep(pendingStepCue); break;
                 }
                 return AdvanceWithoutBufferedAttack(seconds - remaining);
@@ -494,6 +524,7 @@ namespace BarPromenade
                 stamina = Math.Min(Settings.MaxStamina, stamina + regenerationSeconds * Settings.StaminaPerSecond);
             }
             clock = end;
+            if (clock > recoveryBufferExpiresAt) CancelCharge();
             return result;
         }
 

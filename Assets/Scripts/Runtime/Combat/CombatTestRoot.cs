@@ -358,10 +358,35 @@ namespace BarPromenade
         private void DrawFighterHud(Rect rect, string healthKey, CombatActor actor)
         {
             RetroUiTheme.DrawPanel(rect, RetroUiTheme.PanelInset, RetroUiTheme.BorderMuted, false, 0f, 1f, .72f);
-            DrawMeter(new Rect(rect.x + 6f, rect.y + 3f, rect.width - 12f, 14f), healthKey,
+            DrawMeter(new Rect(rect.x + 6f, rect.y + 3f, rect.width - (actor.IsHero ? 32f : 12f), 14f), healthKey,
                 actor.State.Health, actor.State.Settings.MaxHealth, RetroUiTheme.AccentPale, 3f);
             DrawMeter(new Rect(rect.x + 6f, rect.y + 19f, rect.width - 12f, 13f), "combat.stamina",
                 actor.State.Stamina, actor.State.Settings.MaxStamina, RetroUiTheme.Muted, 2f);
+            if (actor.IsHero) DrawGuardReadiness(new Rect(rect.xMax - 22f, rect.y + 2f, 15f, 15f), actor);
+        }
+
+        private static void DrawGuardReadiness(Rect rect, CombatActor actor)
+        {
+            // A closed shield means the stance can guard; its centre lights only
+            // while the raised two-hand guard actually protects the actor.
+            bool ready = actor.GuardReady;
+            bool requested = actor.GuardRequested && !ready;
+            Color color = ready ? RetroUiTheme.Text : requested ? RetroUiTheme.Accent : RetroUiTheme.BorderMuted;
+            RetroUiTheme.FillRect(new Rect(rect.x, rect.y, 2f, 9f), color);
+            RetroUiTheme.FillRect(new Rect(rect.xMax - 2f, rect.y, 2f, 9f), color);
+            if (ready) RetroUiTheme.FillRect(new Rect(rect.x, rect.y, rect.width, 1f), color);
+            else if (requested)
+            {
+                // Two separated shoulders show a held request; the shield stays
+                // open and empty until both hands actually protect the fighter.
+                RetroUiTheme.FillRect(new Rect(rect.x + 2f, rect.y, 3f, 1f), color);
+                RetroUiTheme.FillRect(new Rect(rect.xMax - 5f, rect.y, 3f, 1f), color);
+            }
+            RetroUiTheme.FillRect(new Rect(rect.x + 2f, rect.y + 9f, rect.width - 4f, 2f), color);
+            RetroUiTheme.FillRect(new Rect(rect.x + 4f, rect.y + 11f, rect.width - 8f, 2f), color);
+            RetroUiTheme.FillRect(new Rect(rect.x + 6f, rect.y + 13f, rect.width - 12f, 2f), color);
+            if (actor.State.IsBlocking && ready)
+                RetroUiTheme.FillRect(new Rect(rect.x + 4f, rect.y + 3f, rect.width - 8f, 5f), RetroUiTheme.AccentPale);
         }
 
         private void DrawMeter(Rect rect, string key, float value, float max, Color color, float thickness)

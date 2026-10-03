@@ -177,6 +177,13 @@ namespace BarPromenade
             weight = 0f;
         }
 
+        /// <summary>Hands the current bones to physics without restoring an animation base.</summary>
+        public void Forget()
+        {
+            baseCaptured = false;
+            Clear();
+        }
+
         /// <summary>Puts the bones back to what the graph wrote.</summary>
         public void Restore()
         {

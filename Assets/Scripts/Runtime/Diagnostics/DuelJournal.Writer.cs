@@ -281,7 +281,8 @@ namespace BarPromenade
             if (duration > previous.seconds) longest[key] = (duration, packet.Sequence);
         }
 
-        private static bool SampleEvent(string name) => name == "frame" || name == "frame_work" || name == "frame_detail" || name == "snapshot" || name == "ragdoll_snapshot" ||
+        private static bool SampleEvent(string name) => name == "frame" || name == "frame_work" || name == "frame_detail" ||
+            name == "frame_delivery" || name == "pose_work" || name == "snapshot" || name == "ragdoll_snapshot" ||
             name == "state" || name == "pose" || name == "vectors" || name == "presentation" || name == "balance" ||
             name == "impulse_movement" ||
             name.EndsWith("_snapshot", StringComparison.Ordinal) || name.EndsWith("_sample", StringComparison.Ordinal);

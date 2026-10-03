@@ -1,4 +1,6 @@
+using System;
 using UnityEngine;
+using Stopwatch = System.Diagnostics.Stopwatch;
 
 namespace BarPromenade
 {
@@ -19,6 +21,63 @@ namespace BarPromenade
         private bool journalBlockHeld, journalBlockAllowed;
         private string journalBlockReason;
         private bool journalMovementBlocked;
+        internal enum JournalWork { Present, WeaponConstraint, SupportGrip }
+        private long journalPresentTicks, journalWeaponTicks, journalSupportTicks;
+        private int journalPresentCalls, journalWeaponCalls, journalSupportCalls;
+        private static readonly double JournalMillisecondsPerTick = 1000d / Stopwatch.Frequency;
+
+        // Struct scopes record actual work, including calls outside the root's Tick.
+        // Weapon/support scopes are nested inside Present or hero LateUpdate;
+        // their durations must never be added to those parent durations.
+        internal JournalWorkScope MeasureJournalWork(JournalWork work) => new JournalWorkScope(this, work);
+
+        internal readonly struct JournalWorkScope : IDisposable
+        {
+            private readonly CombatActor owner;
+            private readonly JournalWork work;
+            private readonly long started;
+            internal JournalWorkScope(CombatActor actor, JournalWork work)
+            {
+                owner = actor.Journal != null && actor.Journal.Enabled ? actor : null;
+                this.work = work;
+                started = owner != null ? Stopwatch.GetTimestamp() : 0;
+                if (owner == null) return;
+                switch (work)
+                {
+                    case JournalWork.Present: owner.journalPresentCalls++; break;
+                    case JournalWork.WeaponConstraint: owner.journalWeaponCalls++; break;
+                    case JournalWork.SupportGrip: owner.journalSupportCalls++; break;
+                }
+            }
+            public void Dispose()
+            {
+                if (owner == null) return;
+                long ticks = Stopwatch.GetTimestamp() - started;
+                switch (work)
+                {
+                    case JournalWork.Present: owner.journalPresentTicks += ticks; break;
+                    case JournalWork.WeaponConstraint: owner.journalWeaponTicks += ticks; break;
+                    case JournalWork.SupportGrip: owner.journalSupportTicks += ticks; break;
+                }
+            }
+        }
+
+        internal void BeginJournalWorkFrame()
+        {
+            journalPresentTicks = journalWeaponTicks = journalSupportTicks = 0;
+            journalPresentCalls = journalWeaponCalls = journalSupportCalls = 0;
+        }
+
+        internal void WriteJournalWorkFrame()
+        {
+            JournalEvent("pose_work",
+                f0: GameLog.Field("present_ms", journalPresentTicks * JournalMillisecondsPerTick),
+                f1: GameLog.Field("weapon_constraint_ms", journalWeaponTicks * JournalMillisecondsPerTick),
+                f2: GameLog.Field("support_grip_ms", journalSupportTicks * JournalMillisecondsPerTick),
+                f3: GameLog.Field("present_calls", journalPresentCalls),
+                f4: GameLog.Field("weapon_constraint_calls", journalWeaponCalls),
+                f5: GameLog.Field("support_grip_calls", journalSupportCalls));
+        }
 
         internal long JournalEvent(string eventName, int target = 0, int action = 0, int request = 0,
             GameLogField f0 = default, GameLogField f1 = default, GameLogField f2 = default, GameLogField f3 = default,

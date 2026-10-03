@@ -965,7 +965,7 @@ namespace BarPromenade
 
         private void Update()
         {
-            if (!graph.IsValid())
+            if (!graph.IsValid() || OwnedAttentionPresentationFrozen)
             {
                 return;
             }
@@ -1014,6 +1014,7 @@ namespace BarPromenade
         private void LateUpdate()
         {
             using var journalTiming = CombatTestRoot.MeasureJournalLatePose(this);
+            if (OwnedAttentionPresentationFrozen) return;
             float deltaTime = scopedPresentationFrozen ? 0f : Time.deltaTime;
             if (!ragdollPoseActive)
             {
@@ -1222,6 +1223,8 @@ namespace BarPromenade
             facialState.Reset();
             RestoreAttentionPoseBase();
             attentionFocus = null;
+            ownedAttentionOwner = null;
+            ownedAttentionFocus = null;
             attentionWeight = 0f;
             attentionYaw = 0f;
             attentionPitch = 0f;
@@ -1686,11 +1689,12 @@ namespace BarPromenade
             RestoreAttentionPoseBase();
             bool headFree = registry != null &&
                             headBone != null &&
-                            !IsClipActive &&
+                            (!IsClipActive || HasOwnedAttention) &&
                             !interactionHandoffLocked &&
                             !ragdollPoseActive &&
                             !risePose.Active;
-            bool allowed = headFree && attentionFocus.HasValue;
+            Vector3? focus = HasOwnedAttention ? ownedAttentionFocus : attentionFocus;
+            bool allowed = headFree && focus.HasValue;
             // The bout's head-down is deliberately NOT under headFree: a
             // modal clip, an interaction handoff and the rise all keep
             // it, because the stream keeps running through them and the
@@ -1733,7 +1737,7 @@ namespace BarPromenade
                 PlayerAttentionRules.ResolveHeadAngles(
                     headBone.position,
                     actorFacingTransform.eulerAngles.y,
-                    attentionFocus.Value,
+                    focus.Value,
                     out float targetYaw,
                     out float targetPitch);
                 if (attentionWeight <= 0.001f)

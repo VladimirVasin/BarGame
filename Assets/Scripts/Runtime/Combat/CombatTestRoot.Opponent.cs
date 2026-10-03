@@ -14,6 +14,8 @@ namespace BarPromenade
         private const float ReactionSeconds = .20f;
         private const float DecisionSeconds = .12f;
         private const float LowBreath = 20f;
+        private const float WeaponSpacing = CombatActor.WeaponSpacing;
+        private const float MakeRoomSeconds = .6f;
         private int observedAttackSequence, observedThreats, opponentAttacks, roundsPlaced, draws;
         private float observationSeconds, guardMemorySeconds, guardArmSeconds, missObservationSeconds;
         private float decisionElapsed, approachDistance, postAttackDelay, opponentChargeTarget;
@@ -22,6 +24,7 @@ namespace BarPromenade
         private bool guardThisAttack, lateGuard, stepThisAttack, stepBackThisAttack, tellAnswered;
         private bool opponentWasAttacking, retreatedOnce, corneredAnimal, feinting, postFeintLight, punishing, queueBackhand, queueBackStep;
         private bool opponentMakingSpace;
+        private float opponentSpaceSeconds, opponentSpaceRearmSeconds;
         private MeleePhase previousOpponentPhase;
         private Vector3 previousObservedPosition, committedDirection;
         private Vector3 opponentMoveRequest, opponentMoveVelocity;
@@ -51,6 +54,7 @@ namespace BarPromenade
             guardThisAttack = lateGuard = stepThisAttack = stepBackThisAttack = tellAnswered = false;
             opponentWasAttacking = retreatedOnce = corneredAnimal = feinting = postFeintLight = punishing = queueBackhand = queueBackStep = false;
             opponentMakingSpace = false;
+            opponentSpaceSeconds = opponentSpaceRearmSeconds = 0f;
             previousOpponentPhase = MeleePhase.Ready;
             previousObservedPosition = Hero.transform.position;
             OpponentObservedVelocity = Vector3.zero;
@@ -84,13 +88,17 @@ namespace BarPromenade
             coverSeconds = Mathf.Max(0f, coverSeconds - seconds);
             holdGuardSeconds = Mathf.Max(0f, holdGuardSeconds - seconds);
             retreatSeconds = Mathf.Max(0f, retreatSeconds - seconds);
+            opponentSpaceRearmSeconds = Mathf.Max(0f, opponentSpaceRearmSeconds - seconds);
             strafeSeconds -= seconds;
             driftSeconds -= seconds;
-            if (Hero.IsKnockedDown || Opponent.IsKnockedDown)
+            if (HeroIsOnGround || Opponent.IsKnockedDown)
             {
-                // A fallen opponent is given space to plant its hand and stand.
-                // No stale tactic, held guard or buffered charge survives the recovery.
+                // A body still lying on the floor gets space. The visible rise
+                // is vulnerable: the partner resumes pursuit and may swing at it.
                 Opponent.SetBlock(false);
+                if (Opponent.State.IsCharging || Opponent.State.HasBufferedCharge) Opponent.CancelCharge();
+                feinting = postFeintLight = punishing = queueBackhand = queueBackStep = false;
+                guardMemorySeconds = coverSeconds = holdGuardSeconds = 0f;
                 ResetOpponentMovement();
                 opponentDelay = Mathf.Max(opponentDelay, .4f);
                 return;
@@ -98,7 +106,7 @@ namespace BarPromenade
             Vector3 delta = Hero.transform.position - Opponent.transform.position;
             delta.y = 0f;
             float distance = delta.magnitude;
-            if (distance < .0001f || !Opponent.IsAvailable || !Hero.IsAvailable) return;
+            if (distance < .0001f || !Opponent.IsAvailable || (!Hero.IsAvailable && Hero.State.Phase != MeleePhase.Rising)) return;
             Vector3 direction = delta / distance;
             float bearing = Vector3.SignedAngle(Opponent.transform.forward, direction, Vector3.up);
             MeleeCombatant me = Opponent.State;
@@ -114,6 +122,9 @@ namespace BarPromenade
             opponentWasAttacking = offensiveAction;
             if (me.Phase != previousOpponentPhase)
             {
+                // A shove opens a way out of the clinch. Its next action uses
+                // that room instead of immediately paying for another shove.
+                if (me.IsShoving) BeginMakingRoom();
                 if (me.Phase == MeleePhase.GuardImpact)
                 {
                     guardThisAttack = false;
@@ -176,13 +187,24 @@ namespace BarPromenade
                 return;
             }
 
-            if (distance <= CombatActor.ShoveRange && Opponent.RequestAttack())
+            // Balance recovery owns the first answer to crowded bodies; an
+            // attack rejected every simulation step cannot help plant the feet.
+            if (MakeRoomForBalance(distance, direction, seconds)) return;
+            if (distance <= CombatActor.ShoveRange)
             {
-                opponentMakingSpace = false;
-                OpponentIntent = CombatOpponentIntent.Shove;
+                Opponent.SetBlock(false);
+                OpponentIntent = CombatOpponentIntent.Recover;
+                if (decisionDue && opponentDelay <= 0f && me.Stamina >= me.Settings.ShoveCost &&
+                    Vector3.Dot(Opponent.transform.forward, direction) > .35f && Opponent.RequestAttack())
+                {
+                    BeginMakingRoom();
+                    OpponentIntent = CombatOpponentIntent.Shove;
+                }
                 return;
             }
-            if (MakeRoomForBalance(distance, direction, seconds)) return;
+            // A seen miss is a brief opportunity, not a periodic tactic. Do not
+            // lose another decision interval after its honest reaction delay.
+            if (TryPunishObservedMiss(distance, direction)) return;
             if (decisionDue) DecideOpponent(distance, direction);
             if (me.Phase != MeleePhase.Ready) return;
             switch (OpponentIntent)
@@ -206,19 +228,29 @@ namespace BarPromenade
             }
         }
 
+        private bool HeroIsOnGround => Hero.IsKnockedDown && Hero.State.Phase != MeleePhase.Rising;
+
+        private void BeginMakingRoom()
+        {
+            opponentMakingSpace = true;
+            opponentSpaceSeconds = MakeRoomSeconds;
+        }
+
         private bool MakeRoomForBalance(float distance, Vector3 direction, float seconds)
         {
-            bool recoveringBalance = !Opponent.HasAttackBalance ||
-                (Hero.State.Phase == MeleePhase.Ready && !Hero.HasAttackBalance);
+            bool recoveringBalance = !Opponent.HasAttackBalance;
             float crowdedDistance = Hero.Body.radius + Opponent.Body.radius + .12f;
-            if (!opponentMakingSpace && (distance < crowdedDistance || (distance < 1.3f && recoveringBalance)))
-                opponentMakingSpace = true;
+            if (!opponentMakingSpace && (recoveringBalance ||
+                (opponentSpaceRearmSeconds <= 0f && distance < crowdedDistance))) BeginMakingRoom();
             if (!opponentMakingSpace) return false;
-            // Make space for actual balance recovery or crowded bodies. A free
-            // support hand permits a one-handed attack, not a forced retreat.
-            if (distance >= 1.2f && !recoveringBalance)
+            // Own recovery still forbids a swing. A grounded partner may regain
+            // initiative while the hero is rocking or rising; a wall cannot turn
+            // its short escape from the clinch into an indefinite shared wait.
+            if (!recoveringBalance) opponentSpaceSeconds = Mathf.Max(0f, opponentSpaceSeconds - seconds);
+            if (!recoveringBalance && (distance >= 1.2f || opponentSpaceSeconds <= 0f))
             {
                 opponentMakingSpace = false;
+                if (distance < 1.2f) opponentSpaceRearmSeconds = .5f;
                 opponentDelay = Mathf.Max(opponentDelay, .15f);
                 return false;
             }
@@ -227,6 +259,22 @@ namespace BarPromenade
             float targetDistance = recoveringBalance ? 1.4f : 1.2f;
             if (distance < targetDistance)
                 MoveOpponent(-direction, Mathf.Min(1.6f * seconds, targetDistance - distance), seconds);
+            return true;
+        }
+
+        private bool TryPunishObservedMiss(float distance, Vector3 direction)
+        {
+            MeleeCombatant hero = Hero.State;
+            if (missObservationSeconds + .000001f < ReactionSeconds ||
+                hero.RecoveryRemaining <= Opponent.State.Settings.ChainWindupSeconds + SimulationStep ||
+                distance > 1.32f || Vector3.Dot(Opponent.transform.forward, direction) <= .94f ||
+                !Opponent.TryObservedCounterAttack()) return false;
+            Opponent.SetBlock(false);
+            OpponentIntent = CombatOpponentIntent.Attack;
+            punishing = true;
+            CommitOpponentDirection();
+            opponentWasAttacking = true;
+            opponentChargeTarget = 0f;
             return true;
         }
 
@@ -348,20 +396,6 @@ namespace BarPromenade
                 }
             }
 
-            // A seen whiff in reach is punished: the counter-hit is the price of spam.
-            if (missObservationSeconds >= ReactionSeconds && hero.RecoveryRemaining >= .45f && distance <= 1.32f && facing &&
-                Opponent.RequestCharge())
-            {
-                Opponent.SetBlock(false);
-                OpponentIntent = CombatOpponentIntent.Attack;
-                punishing = true;
-                CommitOpponentDirection();
-                opponentWasAttacking = true;
-                opponentChargeTarget = 0f;
-                Opponent.ReleaseCharge();
-                return;
-            }
-
             bool imminent = guardMemorySeconds > 0f && distance < 1.7f;
             if ((imminent || coverSeconds > 0f || holdGuardSeconds > 0f) && canGuard)
             {
@@ -403,8 +437,8 @@ namespace BarPromenade
             float retreatSpeed = Mathf.Max(0f, Vector3.Dot(OpponentObservedVelocity, direction));
             bool press = OpponentMood == CombatOpponentMood.Press;
             float attackDistance = Mathf.Clamp((missObservationSeconds >= ReactionSeconds ? 1.32f : press ? 1.25f : 1.2f)
-                - retreatSpeed * .35f, .71f, 1.32f);
-            approachDistance = attackDistance - (press ? .12f : .04f);
+                - retreatSpeed * .35f, WeaponSpacing, 1.32f);
+            approachDistance = Mathf.Max(WeaponSpacing, attackDistance - (press ? .12f : .04f));
             if (distance > attackDistance)
             {
                 OpponentIntent = CombatOpponentIntent.Approach;
@@ -442,7 +476,7 @@ namespace BarPromenade
             bool press = OpponentMood == CombatOpponentMood.Press;
             postAttackDelay = press ? Range(.10f, .30f) : Range(.18f, .42f);
             float planned;
-            if (postFeintLight || punishing) planned = 0f;
+            if (postFeintLight || punishing || Hero.State.Phase == MeleePhase.Rising) planned = 0f;
             else if (heroGuardSeconds >= .2f && Roll(35)) planned = 1f;
             else
             {
@@ -496,7 +530,8 @@ namespace BarPromenade
         private void AdvanceOpponentMovement(float seconds)
         {
             if (seconds <= 0f) return;
-            if (!Sparring || Opponent == null || Hero == null || Opponent.IsKnockedDown || Hero.IsKnockedDown || !Opponent.IsAvailable || !Hero.IsAvailable ||
+            if (!Sparring || Opponent == null || Hero == null || Opponent.IsKnockedDown || HeroIsOnGround || !Opponent.IsAvailable ||
+                (!Hero.IsAvailable && Hero.State.Phase != MeleePhase.Rising) ||
                 Opponent.Body == null || !Opponent.Body.enabled)
             {
                 ResetOpponentMovement();
@@ -521,7 +556,8 @@ namespace BarPromenade
             float rate = braking ? 11f : 6.5f;
             Vector3 velocity = Vector3.MoveTowards(opponentMoveVelocity, desiredVelocity, rate * seconds);
             Vector3 before = Opponent.transform.position;
-            Vector3 desired = before + velocity * seconds;
+            Vector3 travel = LimitOpponentApproach(before, velocity * seconds);
+            Vector3 desired = before + travel;
             desired.x = Mathf.Clamp(desired.x, -7.3f, 7.3f);
             desired.z = Mathf.Clamp(desired.z, -7.3f, 7.3f);
             Opponent.Body.Move(desired - before);
@@ -532,6 +568,25 @@ namespace BarPromenade
             // momentum and release it on a later unobstructed frame.
             opponentMoveVelocity = moved / seconds;
             Opponent.SetLocomotion(opponentMoveVelocity);
+        }
+
+        private Vector3 LimitOpponentApproach(Vector3 before, Vector3 travel)
+        {
+            // Bound achieved travel, including the inertial braking tail. Keep
+            // its original line: this cannot steer a committed swing after the
+            // hero sidesteps, and a hero entering shove range still forces the
+            // ordinary windup-to-shove conversion in CombatActor.
+            float length = travel.magnitude;
+            if (length <= .000001f) return travel;
+            Vector3 toHero = Hero.transform.position - before; toHero.y = 0f;
+            float toward = Vector3.Dot(toHero, travel / length);
+            if (toward <= 0f) return travel;
+            float spacingSquared = WeaponSpacing * WeaponSpacing;
+            if (toHero.sqrMagnitude <= spacingSquared) return Vector3.zero;
+            float closestSquared = Mathf.Max(0f, toHero.sqrMagnitude - toward * toward);
+            if (closestSquared >= spacingSquared) return travel;
+            float allowed = Mathf.Max(0f, toward - Mathf.Sqrt(spacingSquared - closestSquared));
+            return travel * Mathf.Min(1f, allowed / length);
         }
     }
 }

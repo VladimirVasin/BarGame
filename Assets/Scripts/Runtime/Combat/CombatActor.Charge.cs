@@ -24,8 +24,12 @@ namespace BarPromenade
             // owns its weapon contacts. The free support hand never delays it.
             if (!State.IsAttacking)
             {
+                if (!HasAttackBalance)
+                {
+                    if (!State.RequestRecoveryCharge()) return JournalCommandResult(request, "rejected", AttackBalanceRejection);
+                    return JournalCommandResult(request, "queued", "balance_buffer");
+                }
                 if (CheckShoveRange(request)) return TryBeginShove(request);
-                if (!HasAttackBalance) return JournalCommandResult(request, "rejected", AttackBalanceRejection);
             }
             if (!State.RequestCharge()) return JournalRulesRejected(request, State.Settings.AttackCost, true);
             ContinueBufferedAttackAfterContacts();

@@ -23,6 +23,7 @@ namespace BarPromenade
         private int journalLatePoseFrame = -1, journalTimingRepeats = -1;
         private ulong journalTimingStamp;
         private double journalUpdateToLateMilliseconds;
+        private bool journalLateFrameCaptured;
         private long journalQueriesAtFrameStart, journalSaturationsAtFrameStart;
         private int journalMeasuredFrame;
         private int journalRound, journalFrameSubsteps, journalFrozenSteps, journalPoseSamples, journalDecision = -1;
@@ -81,6 +82,7 @@ namespace BarPromenade
             if (!enabled) return;
             JournalDirectory = outputDirectory ?? Path.Combine(Application.isEditor
                 ? Path.GetFullPath(Path.Combine(Application.dataPath, "..")) : Application.persistentDataPath, "CombatLogs");
+            journalIdentity = CaptureJournalIdentity();
             duelJournal = new DuelJournal(JournalDirectory);
             journalFailureReported = false;
             JournalRoot = this;
@@ -104,6 +106,8 @@ namespace BarPromenade
             journalRoundOpen = true; journalResultWritten = false;
             journalTick = 0; journalSeconds = 0d; journalLastSnapshot = -1d; journalFrameStart = 0;
             journalLatePoseFrame = -1; journalTimingStamp = 0; journalTimingRepeats = -1;
+            journalLateFrameCaptured = false;
+            Hero.BeginJournalWorkFrame(); Opponent.BeginJournalWorkFrame();
             journalDecision = -1; journalAttackHeld = journalFrozen = false;
             journalInputAllowed = GameInput.CanRead(GameInputContext.Gameplay);
             journalHero.Phase = Hero.State.Phase; journalOpponent.Phase = Opponent.State.Phase;
@@ -129,7 +133,15 @@ namespace BarPromenade
                 GameLog.Field("render_interval", OnDemandRendering.renderFrameInterval),
                 GameLog.Field("capture_delta_time", Time.captureDeltaTime),
                 GameLog.Field("target_wait_marker_available", journalTargetWait.Valid),
-                GameLog.Field("code_revision", "unavailable"));
+                GameLog.Field("code_revision", journalIdentity.Code));
+            duelJournal.Record("revision_identity",
+                f0: GameLog.Field("code_identity_source", journalIdentity.CodeSource),
+                f1: GameLog.Field("workspace_commit", journalIdentity.WorkspaceCommit),
+                f2: GameLog.Field("workspace_state", journalIdentity.WorkspaceState),
+                f3: GameLog.Field("animation_identity_source", Application.isEditor ? "editor_asset_dependency_hash" : "packaged_build_guid"),
+                f4: GameLog.Field("hero_animation_revision", journalIdentity.HeroAnimation),
+                f5: GameLog.Field("npc_animation_revision", journalIdentity.NpcAnimation),
+                f6: GameLog.Field("timing_scopes", "actor_present/weapon_constraint/support_grip"));
             Hero.JournalActorId = 1; Opponent.JournalActorId = 2;
             Hero.Journal = Opponent.Journal = duelJournal;
             Hero.ImpactReceived += RequestJournalSnapshot; Opponent.ImpactReceived += RequestJournalSnapshot;
@@ -152,7 +164,8 @@ namespace BarPromenade
                 f2: GameLog.Field("experimental_recovery", actor.ImpactMotion.ExperimentalRecovery),
                 f3: GameLog.Field("max_recovery_steps", actor.ImpactMotion.MaximumRecoverySteps),
                 f4: GameLog.Field("shove_range", CombatActor.ShoveRange), f5: GameLog.Field("shove_impulse", CombatActor.ShoveImpulse),
-                f6: GameLog.Field("animation_asset_revision", "unavailable"), f7: GameLog.Field("intoxication", actor.IsHero ? GameSessionState.IntoxicationLevel : 0));
+                f6: GameLog.Field("animation_asset_revision", actor.IsHero ? journalIdentity.HeroAnimation : journalIdentity.NpcAnimation),
+                f7: GameLog.Field("intoxication", actor.IsHero ? GameSessionState.IntoxicationLevel : 0));
             duelJournal.Record("character", actor: actor.JournalActorId,
                 f0: GameLog.Field("id", actor.IsHero ? "hero" : DefaultNpcPopulation.CombatTestOpponent));
         }
@@ -271,6 +284,13 @@ namespace BarPromenade
                     f5: GameLog.Field("latest_cpu_main_ms", timingAvailable ? journalGpu[0].cpuMainThreadFrameTime : double.NaN),
                     f6: GameLog.Field("latest_cpu_render_ms", timingAvailable ? journalGpu[0].cpuRenderThreadFrameTime : double.NaN),
                     f7: GameLog.Field("latest_timing_repeat_frames", timingAvailable ? journalTimingRepeats : -1));
+                // The unscoped remainder includes render/editor/scheduling work and
+                // waits; this interval alone cannot identify its cause as CPU or GPU.
+                duelJournal.Record("frame_delivery",
+                    f0: GameLog.Field("late_to_next_update_ms", journalLateFrameCaptured
+                        ? Math.Max(0d, journalFrameMilliseconds - journalUpdateToLateMilliseconds) : double.NaN),
+                    f1: GameLog.Field("late_observer_captured", journalLateFrameCaptured));
+                Hero.WriteJournalWorkFrame(); Opponent.WriteJournalWorkFrame();
             }
             if (journalGpuEnabled) FrameTimingManager.CaptureFrameTimings();
             journalFrameStart = now;
@@ -278,6 +298,8 @@ namespace BarPromenade
             journalSimulationTicks = journalPoseTicks = journalContactTicks = journalSnapshotTicks = 0;
             journalLatePoseTicks = journalImpactApplyTicks = 0;
             journalLatePoseFrame = -1; journalUpdateToLateMilliseconds = 0;
+            journalLateFrameCaptured = false;
+            Hero.BeginJournalWorkFrame(); Opponent.BeginJournalWorkFrame();
             journalFrameSubsteps = journalFrozenSteps = journalPoseSamples = 0;
             journalOpponentRequested = journalOpponentAchieved = Vector3.zero;
             journalQueriesAtFrameStart = Hero.JournalPhysicsQueries + Opponent.JournalPhysicsQueries;
@@ -389,6 +411,7 @@ namespace BarPromenade
             duelJournal.SetClock(Time.frameCount, journalTick, journalSeconds);
             long start = Stopwatch.GetTimestamp(), collector = duelJournal.CollectorTicks;
             journalUpdateToLateMilliseconds = journalFrameStart == 0 ? 0 : (start - journalFrameStart) * JournalMillisecondsPerTick;
+            journalLateFrameCaptured = journalFrameStart != 0;
             JournalTransitions("final_presentation");
             // Finished-round ragdolls still move while the combat clock is stopped.
             double snapshotSeconds = journalSeconds + roundEndElapsed;

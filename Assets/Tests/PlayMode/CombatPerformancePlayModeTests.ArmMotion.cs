@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Reflection;
 using System.Text;
 using NUnit.Framework;
 using UnityEngine;
@@ -13,6 +14,138 @@ namespace BarPromenade.Tests.PlayMode
 {
     public sealed partial class CombatPerformancePlayModeTests
     {
+        [UnityTest]
+        public IEnumerator Range_ArmClearanceBroadphaseKeepsLiveAnatomy()
+        {
+            PlacePair(4f);
+            root.Tick(TickSeconds);
+            yield return null;
+            root.SetDuelLogging(true, "TestResults/arm-clearance-broadphase");
+            try
+            {
+                foreach (CombatActor actor in new[] { root.Hero, root.Opponent })
+                    VerifyArmClearanceBroadphase(actor);
+            }
+            finally { root.SetDuelLogging(false); }
+            LogAssert.NoUnexpectedReceived();
+        }
+
+        private void VerifyArmClearanceBroadphase(CombatActor actor)
+        {
+            var core = new List<Collider>();
+            Collider head = null;
+            foreach (var entry in actor.Ragdoll.PhysicsController.AnatomicalColliders)
+            {
+                if (entry.Value == Player3DAnatomicalPart.Pelvis || entry.Value == Player3DAnatomicalPart.LowerTorso ||
+                    entry.Value == Player3DAnatomicalPart.Torso || entry.Value == Player3DAnatomicalPart.Head)
+                    core.Add(entry.Key);
+                if (entry.Value == Player3DAnatomicalPart.Head) head = entry.Key;
+            }
+            Assert.That(core.Count, Is.EqualTo(4));
+            Assert.That(head, Is.Not.Null);
+            Assert.That(head.enabled, Is.False, "Use the animated rig's real disabled anatomy.");
+            Vector3 shoulder = ArmMotionBone(actor, "upper_arm.L").position;
+            Vector3 elbow = ArmMotionBone(actor, "forearm.L").position;
+            Vector3 wrist = ArmMotionBone(actor, "hand.L").position;
+            var query = new GameObject("Unpruned support arm oracle");
+            CapsuleCollider probe = query.AddComponent<CapsuleCollider>();
+            probe.enabled = false; probe.direction = 1; probe.radius = .005f;
+            using var clearance = new CombatArmClearance(actor, ArmMotionBone(actor, "upper_arm.R"),
+                ArmMotionBone(actor, "forearm.R"));
+            try
+            {
+                Assert.That(ReferenceClear(out int originalQueries), Is.True, "The actual supported arm must clear the core.");
+                long before = actor.JournalPhysicsQueries;
+                Assert.That(clearance.IsSupportPathClear(shoulder, elbow, wrist), Is.True);
+                long optimizedQueries = actor.JournalPhysicsQueries - before;
+                Assert.That(optimizedQueries, Is.LessThan(originalQueries),
+                    "Disjoint live core bounds must avoid unnecessary narrow penetration queries.");
+                TestContext.Out.WriteLine($"Support arm broadphase: {(actor.IsHero ? "hero" : "opponent")}, " +
+                    $"{optimizedQueries} queries instead of {originalQueries} for the same live path.");
+
+                int snapshots = clearance.CoreSnapshotCount;
+                using (clearance.BeginSupportSolve())
+                {
+                    Assert.That(clearance.IsSupportPathClear(shoulder, elbow, wrist), Is.True);
+                    using (clearance.BeginSupportSolve())
+                        Assert.That(clearance.IsSupportPathClear(shoulder, elbow, wrist), Is.True);
+                    Assert.That(clearance.IsSupportPathClear(shoulder, elbow, wrist), Is.True);
+                    Assert.That(clearance.CoreSnapshotCount, Is.EqualTo(snapshots + 1),
+                        "One synchronous candidate search shares one live snapshot, including nested scopes.");
+                }
+                Assert.That(clearance.IsSupportPathClear(shoulder, elbow, wrist), Is.True);
+                Assert.That(clearance.CoreSnapshotCount, Is.EqualTo(snapshots + 2),
+                    "Disposal must force the next independent check to reread live anatomy.");
+
+                // Keep native disabled-shape behavior equal to the unpruned
+                // oracle while proving the broadphase sees this newly moved core.
+                Vector3 savedPosition = head.transform.position;
+                Vector3 localCentre = head is CapsuleCollider capsule ? capsule.center :
+                    head is BoxCollider box ? box.center : ((SphereCollider)head).center;
+                try
+                {
+                    Vector3 separation = Vector3.Cross(wrist - elbow, head.transform.up).normalized;
+                    if (separation.sqrMagnitude < .5f) separation = Vector3.Cross(wrist - elbow, actor.transform.forward).normalized;
+                    head.transform.position += (elbow + wrist) * .5f + separation * .02f - head.transform.TransformPoint(localCentre);
+                    Bounds headBounds = new CombatWeaponGeometry.ShapeBounds(head).At(head.transform.position, head.transform.rotation);
+                    var pathBounds = new Bounds(elbow, Vector3.zero);
+                    pathBounds.Encapsulate(wrist); pathBounds.Expand(.01f);
+                    Assert.That(headBounds.Intersects(pathBounds), Is.True, "The moved primitive bounds must cover the arm path.");
+                    bool nativeClear = ReferenceClear(out _);
+                    before = actor.JournalPhysicsQueries;
+                    Assert.That(clearance.IsSupportPathClear(shoulder, elbow, wrist), Is.EqualTo(nativeClear),
+                        "Pruning must preserve the native result for disabled anatomy.");
+                    Assert.That(actor.JournalPhysicsQueries - before, Is.GreaterThan(0),
+                        "New nearby bounds must require the exact query immediately, without a physics sync.");
+
+                    // This native setup requires enabled colliders. A
+                    // synchronous positive control proves pruning preserves real
+                    // penetration too; restore every flag before another frame.
+                    CapsuleCollider nativeProbe = typeof(CombatArmClearance).GetField("probe",
+                        BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(clearance) as CapsuleCollider;
+                    Assert.That(nativeProbe, Is.Not.Null);
+                    bool headEnabled = head.enabled, probeEnabled = probe.enabled, nativeProbeEnabled = nativeProbe.enabled;
+                    try
+                    {
+                        head.enabled = probe.enabled = nativeProbe.enabled = true;
+                        Assert.That(ReferenceClear(out _), Is.False, "The enabled moved head must intersect the same fixed arm path.");
+                        before = actor.JournalPhysicsQueries;
+                        Assert.That(clearance.IsSupportPathClear(shoulder, elbow, wrist), Is.False,
+                            "The broadphase must preserve the exact positive penetration result.");
+                        Assert.That(actor.JournalPhysicsQueries - before, Is.GreaterThan(0));
+                    }
+                    finally { head.enabled = headEnabled; probe.enabled = probeEnabled; nativeProbe.enabled = nativeProbeEnabled; }
+                }
+                finally { head.transform.position = savedPosition; }
+                Assert.That(clearance.IsSupportPathClear(shoulder, elbow, wrist), Is.True,
+                    "Restoring a live shape must restore clearance immediately.");
+            }
+            finally { Object.DestroyImmediate(query); }
+
+            bool ReferenceClear(out int queries)
+            {
+                queries = 0;
+                return SegmentClear(Vector3.Lerp(shoulder, elbow, .65f), elbow, ref queries) &&
+                    SegmentClear(elbow, wrist, ref queries);
+            }
+
+            bool SegmentClear(Vector3 start, Vector3 end, ref int queries)
+            {
+                Vector3 axis = end - start;
+                probe.height = axis.magnitude + probe.radius * 2f;
+                Quaternion rotation = axis.sqrMagnitude > .000001f
+                    ? Quaternion.FromToRotation(Vector3.up, axis.normalized) : Quaternion.identity;
+                foreach (Collider body in core)
+                {
+                    queries++;
+                    if (Physics.ComputePenetration(probe, (start + end) * .5f, rotation, body,
+                        body.transform.position, body.transform.rotation, out _, out float depth) && depth > .00001f)
+                        return false;
+                }
+                return true;
+            }
+        }
+
         [UnityTest]
         public IEnumerator Range_StrongShoveKeepsRecipientGripWhileMoving() => CheckShoveArmMotion(false);
 

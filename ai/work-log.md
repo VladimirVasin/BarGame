@@ -3,6 +3,69 @@
 Newest outcomes/checks first. Archive whole dates at budget: [policy](README.md).
 Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-2026-08.md).
 
+## 2026-10-03 — Combat spacing and arm continuity
+
+- Hero Windup reserves one metre through owned voluntary travel/braking;
+  side/back travel and physical motion remain free. Real crowding still shoves
+  without HP damage. Own forward travel had erased weapon room during windup.
+- Shove/regrip follows a continuous authored arm branch with the existing
+  joint-speed/body/world/palm gates. The inherited branch, duplicate target
+  smoothing, forearm roll and palm offset obscured real contact. Pending contact
+  tracks its live target; held guard still waits for balance and both hands.
+- DuelJournal identifies compiled modules/bank/workspace, links hit anatomy and
+  pre-hit phase, and records actor pose CPU plus frame-delivery wall time.
+  Overlapping scopes are not summed; no measured FPS gain. The 120 Hz clock stays.
+- Checks: `Range_OpponentKeepsWeaponRoomAndAnswersTheObservedWhiff`,
+  `Range_ShoveAndSwingRestoreAttackAndBlock`,
+  `Range_DuelJournalRecordsReasonsWithoutChangingCombat`; contact/Step/Ready
+  stills reviewed; `python tools/check-docs.py`, `git diff --check`.
+- Known failure: `Range_CloseContactUsesFastShove` has a nested
+  `Range_CrowdingRestoresGripAndAttack` expectation of shove before retreat.
+  The existing October 2 `MakeRoomForBalance` policy retreats first; direct
+  shove checks succeeded. This fixture/policy mismatch remains outside this fix.
+
+## 2026-10-02 — Unity baseline and combat response
+
+- Synced the active entry documents, launch instructions, system index,
+  accepted editor baseline and `.claude` editor/.NET paths to Unity
+  `6000.6.4f1`. The user's existing `ProjectVersion.txt` upgrade is
+  authoritative; historical verification
+  records retain the editor version they actually used.
+- Checks: `python tools/check-docs.py` and `git diff --check`.
+- Charge entry preserves the landed-hit/step chain: tap .22→held .28.
+  The old charge path discarded it. NPC travel reserves one metre, retreats
+  after shove and observes a whiff for .20 s; the old .45 remaining bound
+  could not coexist with a light miss's .50 s recovery.
+- Guard refusals distinguish balance from missing support. Held guard resumes
+  after support returns without a fresh parry; silent shield shows readiness.
+  Live disabled-anatomy AABBs and early branch rejection cull queries while
+  retaining the 120 Hz clock/contact contract.
+- Batch pose checks compare complete presentations across normal frame yields;
+  nested end-of-frame waits never resume in batch. The separate authoring gate
+  still rejects existing missing reaction/released-clip metadata.
+- A direct overlap control on this editor returns no penetration with disabled
+  colliders, including after prior activation. This predates culling; the
+  regression checks native-result parity and an enabled exact-blocker control.
+- Balance presses wait .20 s once; consuming retires expiry, hits/falls cancel.
+  A real observed miss gets a .22 s reply; NPC pursues and hits Rising.
+  Per-joint capped regrip frees the arm from wrist-roll lag; anatomy snapshots
+  live only inside a solve. Shared head layers track both live heads with
+  owned-clip/physics/time cleanup. Shield separates dim/request/ready/protection.
+- Checks: `Range_RecoveryClickKeepsOneShortLivedIntent`,
+  `Range_MovingRegripCarriesTheArmAndRestoresAttack`,
+  `Range_ObservedCounterAndRisingHeroReceiveRealPressure`,
+  `Range_MutualAttentionUsesLiveHeadsAndReleasesItsOwner`; pose captures reviewed.
+- Focused checks: `LandedHitKeepsInitiativeAndArmsOneBackhandOutOfTheBuffer`,
+  `AStepEndsIntoAStepAttackWithinItsGrace`,
+  `AFreshGuardPressParriesALightSwingForFreeUntilTheReArmElapses`,
+  `BufferedContinuationWaitsForOldContactsEvenWhenHitchCrossesTheWholeSwing`,
+  `Range_OpponentKeepsWeaponRoomAndAnswersTheObservedWhiff`,
+  `Range_ArmClearanceBroadphaseKeepsLiveAnatomy`,
+  `Range_FinalCatchRequiresStableMovingSupportBeforeRegrip`,
+  `Range_OneHandAttacksStartWithoutWaitingForSupport`,
+  `Range_ShoveAndSwingRestoreAttackAndBlock`,
+  `Range_SimulationTicksStayWithinFrameBudget`.
+
 ## 2026-09-29 — Surfaces and ordinary character detail
 
 - City/MountainRoad/AlpineVillage share ground Lit and linear response maps.

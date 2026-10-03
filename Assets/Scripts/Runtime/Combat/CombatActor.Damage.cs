@@ -50,7 +50,7 @@ namespace BarPromenade
             else damagePose?.Apply(weight);
         }
 
-        private void PublishImpact(CombatImpact impact)
+        private void PublishImpact(CombatImpact impact, MeleePhase? targetPhaseBefore = null)
         {
             LastJournalImpactSequence = Journal?.Record("impact_applied", impact.Source?.JournalActorId ?? 0,
                 JournalActorId, impact.AttackSequence, impact.Source?.journalActionRequest ?? 0,
@@ -63,6 +63,12 @@ namespace BarPromenade
                 GameLog.Field("point_x", impact.Point.x), GameLog.Field("point_y", impact.Point.y), GameLog.Field("point_z", impact.Point.z),
                 GameLog.Field("normal_x", impact.Normal.x), GameLog.Field("normal_y", impact.Normal.y), GameLog.Field("normal_z", impact.Normal.z),
                 GameLog.Field("weapon_speed", impact.WeaponSpeed));
+            JournalEvent("impact_anatomy", impact.Source?.JournalActorId ?? 0, impact.AttackSequence,
+                impact.Source?.journalActionRequest ?? 0, GameLog.Field("impact_seq", LastJournalImpactSequence),
+                GameLog.Field("region", (int)impact.Location.Region), GameLog.Field("side", (int)impact.Location.Side),
+                GameLog.Field("is_critical", impact.IsCritical), GameLog.Field("is_finisher", impact.IsFinisher),
+                GameLog.Field("target_phase_before", targetPhaseBefore.HasValue ? (double)(int)targetPhaseBefore.Value : double.NaN),
+                GameLog.Field("target_phase_after", (int)State.Phase), GameLog.Field("attack_power", impact.AttackPower));
             LastImpact = impact;
             ReceivedImpactCount++;
             ApplyPhysicalImpact(impact);
@@ -112,7 +118,7 @@ namespace BarPromenade
                 Vector3 before = transform.position;
                 if (motor != null)
                 {
-                    motor.SetOwnedMovementConstraint(this, MovementScale, TurnScale);
+                    ApplyMotorConstraint();
                     motor.ApplyOwnedImpulseDisplacement(this, wanted);
                 }
                 else Body.Move(wanted + Vector3.down * seconds);
@@ -135,7 +141,7 @@ namespace BarPromenade
             supportGrip.AdvanceBalanceSupport(seconds);
             ImpactMotion.EvaluateSupport(seconds);
             footwork?.CompleteRecoveryDecision(motor != null ? motor.PlanarVelocity : locomotionVelocity);
-            motor?.SetOwnedMovementConstraint(this, MovementScale, TurnScale);
+            ApplyMotorConstraint();
             supportGrip.AllowRegrip(ImpactMotion.BalanceLoad < .35f && !ImpactMotion.HasHandSupport &&
                 !ImpactMotion.RecoveryStepActive && !(footwork?.RecoveryEpisodeActive ?? false));
             if (!State.IsDefeated && impactRecoveryGrace <= 0f && ImpactMotion.WantsKnockdown)

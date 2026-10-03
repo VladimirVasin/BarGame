@@ -67,6 +67,24 @@ namespace BarPromenade
                 (speedMultiplier * ownedMoveScale);
         }
 
+        /// <summary>Reserve room only from voluntary inward travel, including its braking tail.
+        /// Tangential/backward motion and the separate physical drift/push passes stay free.</summary>
+        private Vector3 LimitOwnedApproach(Vector3 current, Vector3 travel)
+        {
+            if (ownedSpacingTarget == null || ownedMinimumSpacing <= 0f) return travel;
+            Vector3 toward = ownedSpacingTarget.position - current;
+            toward.y = 0f;
+            float distance = toward.magnitude;
+            if (distance <= .000001f) return travel;
+            toward /= distance;
+            float inward = Vector3.Dot(travel, toward);
+            if (inward <= 0f) return travel;
+            // A conservative radial bound also keeps the whole movement segment
+            // outside the reserved circle without shortening its lateral component.
+            float allowed = Mathf.Max(0f, distance - ownedMinimumSpacing);
+            return travel - toward * Mathf.Max(0f, inward - allowed);
+        }
+
         /// <summary>Bounded acceleration with a stopping-distance speed cap; no overshoot at the target.</summary>
         internal static float AdvanceInertialYaw(float angle, float maximumSpeed, float seconds, ref float velocity)
         {

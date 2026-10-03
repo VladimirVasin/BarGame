@@ -57,15 +57,20 @@ namespace BarPromenade
         public bool InputEnabled { get; private set; } = true;
         private object movementConstraintOwner;
         private float ownedMoveScale = 1f, ownedTurnScale = 1f;
+        private Transform ownedSpacingTarget;
+        private float ownedMinimumSpacing;
 
         /// <summary>Limits voluntary movement while keeping gravity and physical pushes alive.</summary>
-        public bool SetOwnedMovementConstraint(object owner, float moveScale, float turnScale)
+        public bool SetOwnedMovementConstraint(object owner, float moveScale, float turnScale,
+            Transform spacingTarget = null, float minimumSpacing = 0f)
         {
             if (owner == null || (movementConstraintOwner != null && !ReferenceEquals(owner, movementConstraintOwner)))
                 return false;
             movementConstraintOwner = owner;
             ownedMoveScale = Mathf.Clamp01(moveScale);
             ownedTurnScale = Mathf.Clamp01(turnScale);
+            ownedSpacingTarget = spacingTarget;
+            ownedMinimumSpacing = Mathf.Max(0f, minimumSpacing);
             if (ownedTurnScale == 0f) targetYawVelocity = 0f;
             if (ownedMoveScale == 0f)
             {
@@ -81,6 +86,8 @@ namespace BarPromenade
             if (owner == null || !ReferenceEquals(owner, movementConstraintOwner)) return;
             movementConstraintOwner = null;
             ownedMoveScale = ownedTurnScale = 1f;
+            ownedSpacingTarget = null;
+            ownedMinimumSpacing = 0f;
             targetYawVelocity = 0f;
         }
 
@@ -542,6 +549,8 @@ namespace BarPromenade
             {
                 movementConstraintOwner = null;
                 ownedMoveScale = ownedTurnScale = 1f;
+                ownedSpacingTarget = null;
+                ownedMinimumSpacing = 0f;
             }
             float turnInput, yawDelta;
             Vector3 desiredPlanarVelocity;
@@ -595,7 +604,7 @@ namespace BarPromenade
                 velocityChangeRate * Time.deltaTime);
             Vector3 current = transform.position;
             Vector3 desired =
-                current + (inertialPlanarVelocity * Time.deltaTime);
+                current + LimitOwnedApproach(current, inertialPlanarVelocity * Time.deltaTime);
             Vector3 constrained = walkableArea == null
                 ? desired
                 : walkableArea.Constrain(current, desired, controller.radius);

@@ -61,67 +61,61 @@ contain paths; review before public sharing.
 
 ## DuelJournal: CombatTest rounds
 
-Manual Editor/Player on, batch off; tests opt in.
-`-bp-duel-log on|off` overrides independently of `debug.log`. Editor:
-repository CombatLogs; Player writes `Application.persistentDataPath/CombatLogs`.
-Each `duel_<session>_<round>` has `duel.ndjson` and `summary.txt`.
-Round: summary, then NDJSON.
+Editor/Player on, batch off/test opt-in; `-bp-duel-log on|off` independent.
+Editor: repository CombatLogs; Player: `Application.persistentDataPath/CombatLogs`.
+`duel_<session>_<round>`: `summary.txt`, then `duel.ndjson`.
 
-`rules_rejected`: opaque Rules, `reason_checked=false`, phase/stamina/cost.
-20 Hz final root/bones/grip/support, impact links, queries, frame CPU.
-`support_pose_rejected`: `contact_*` vs `weapon_commit_depth/sweep`, shape/depth.
-`arm_snapshot`: live wrist/elbow, `shoulder_roll`/`elbow_signed`.
-`contact_metrics_current`: fresh/cached. `two_hand_support` also gates attacks;
-actual grip: state/weight/contact metrics.
-`unavailable`: code/animation; no full replay/FPS guarantee.
-End/focus: cancel held/buffered only.
-`recovery`: steps/gaps/stability. `ragdoll_snapshot`: speeds, settling,
-live rise support vs central landing.
-`suspected_stall` marks >2 s without phase/rise progress; defeated actors excluded.
-`post_round_time_discarded`: aftermath loss; snapshots to reset/exit.
+`rules_rejected`: opaque Rules/`reason_checked=false`/phase/stamina/cost.
+`balance_buffer`: .20s press; `observed_counter`: whiff reply. 20Hz root/bones/
+grip/support/queries/CPU. `support_pose_rejected`: `contact_*`/weapon commit
+depth/sweep/shape. `arm_snapshot`: wrist/elbow/shoulder_roll/elbow_signed.
+`contact_metrics_current`: fresh/cached. Guard: `two_hand_support` (grip) or
+`balance_recovery` (catch); attacks ignore regrip. End/focus cancels held/buffered.
+`recovery`: steps/gaps/stability; `ragdoll_snapshot`: speeds/settling/live rise
+support vs central landing. `suspected_stall`: >2s without phase/rise progress,
+excluding defeated. `post_round_time_discarded`: aftermath loss; snapshots to exit/R.
+`impact_anatomy`: links `impact_seq` to region/side/critical/finisher, target phase
+before/after and power; diagnostic pre-hit phase may be null.
+`revision_identity`: Runtime/Rules ModuleVersionIds; Editor git commit/clean-dirty
+and bank dependency hashes once/play; Player build GUID for banks. Workspace
+commit≠compiled code; missing=null/`unavailable`. No replay/FPS guarantee.
 
-`frame_detail`: `late_pose_ms` = hero `Player3D.LateUpdate` Stopwatch;
-`impact_apply_ms` = impact; `update_to_late_ms` = root Update→observer LateStart,
-incl. simulation/other updates. `latest_target_wait_ms` = Unity marker;
-`latest_{present_wait,cpu_main,cpu_render}_ms` = latest FrameTiming.
-`latest_timing_repeat_frames`: -1 unavailable, 0 new, >0 repeats, not age.
-Timings overlap: never sum. Unsupported=null; main/render Profiler/GPU are latest.
-Header:
-`render_interval`, `capture_delta_time`, `target_wait_marker_available`.
+`frame_detail`: `late_pose_ms`=hero LateUpdate CPU, `impact_apply_ms`=impact,
+`update_to_late_ms`=Update→observer LateStart (simulation/other updates included).
+`latest_target_wait_ms`=Unity marker; `latest_{present_wait,cpu_main,cpu_render}_ms`
+=latest FrameTiming; `latest_timing_repeat_frames`: -1 unavailable/0 new/>0 repeats,
+not age. `pose_work`: per-actor Present/WeaponConstraint/SupportGrip CPU and calls,
+including outside Tick. `frame_delivery/late_to_next_update_ms`: LateStart→next
+Update wall: rendering/editor/scheduling/waits, not proof of CPU/GPU cost.
+Nested timings overlap: never sum. Unsupported=null; main/render
+Profiler/GPU: latest. Header: render interval/capture delta/target-wait.
 
-Producer: 2048/4096 default/max packets; eight control slots.
-Writer reuses chars, avoids final strings/field copies; JSON stays unchanged.
-Drops/I/O failure/limits are explicit; max two live workers, stalled I/O included.
-Extra starts: `worker_limit`; caps: 20 MiB/round, ten closed/100 MiB;
-prune old ordinary before marked/abandoned rounds, never live/foreign contents.
-Marks are bounded priority; workspace permits one CombatLogs directory, no sweep.
-Cloth/hair cache matrices; solver/120 Hz unchanged.
+Producer: 2048/4096 default/max packets/eight control slots; reused chars,
+no strings/field copies. Explicit drops/I/O/limits; max two live workers
+including stalled I/O, extra starts=`worker_limit`. 20MiB/round/ten closed/100MiB;
+prune ordinary before marked/abandoned, never live/foreign. Bounded priority
+marks; one CombatLogs/no sweep. Cloth/hair cache matrices; 120Hz/4 steps.
 
 ## Optional area performance capture
 
-The general support log takes no frame samples. For a bounded area capture:
+General log takes no frame samples. For an area capture:
 
 ```text
 -bp-perf-scene=City -bp-perf-label=1080p-walk -bp-perf-warmup=5 -bp-perf-seconds=30 -bp-perf-target-fps=60
 ```
 
-Capture waits for the named scene/transition end; it never teleports or changes
-resolution/rendering features. Editor Play command:
-`Tools > Bar Promenade > Diagnostics > Capture Performance (30 seconds)`.
-`RuntimePerformanceCapture.StartCapture(options, outputDirectory)` permits an
-explicit automation directory.
+Capture waits for scene/transition end; no teleport/resolution/render changes.
+Editor Play: `Tools > Bar Promenade > Diagnostics > Capture Performance (30 seconds)`.
+API: `RuntimePerformanceCapture.StartCapture(options, outputDirectory)`.
 
-Default output is `Application.persistentDataPath/PerformanceCaptures`: eight
-JSON reports maximum. Each holds up to 36,000 samples, captures 1–120 seconds
-after up to 60 seconds warmup, and waits at most 300 seconds for its scene.
-Scene/render-context changes end it with a named reason.
+Default: `Application.persistentDataPath/PerformanceCaptures`, eight JSON reports,
+≤36,000 samples each; capture 1–120s/warmup≤60s/scene wait≤300s.
+Scene/render changes end capture with a named reason.
 
-Reports include resolution/quality/render scale/pacing/hardware, weather/time/
-intoxication, p50/p95/p99/max frame intervals, main/render-thread counters,
-GC bytes and foot-bake/reflection work. Profiler markers:
-`BarPromenade.FootSoleBake`, `BarPromenade.WaterReflectionCube`. GPU timing needs
-supported, enabled Frame Timing Stats; capture never enables it. A metric with
-`sampleCount = 0` is unavailable, not free. Frame intervals include pacing;
-thread counters may include waits. Editor measurements are diagnostic, not
-player benchmarks. Compare the same route/rendering context and retain
-pause/focus counts when interpreting results.
+Reports: resolution/quality/render scale/pacing/hardware/weather/time/intoxication,
+p50/p95/p99/max frame intervals, main/render counters, GC, foot-bake/reflection
+work. Markers: `BarPromenade.FootSoleBake`, `BarPromenade.WaterReflectionCube`.
+GPU needs supported/enabled Frame Timing Stats; capture never enables it.
+`sampleCount = 0` means unavailable, not free. Frames include pacing, threads
+may include waits; Editor diagnostics are not player benchmarks. Compare the
+same route/render context; retain pause/focus counts.

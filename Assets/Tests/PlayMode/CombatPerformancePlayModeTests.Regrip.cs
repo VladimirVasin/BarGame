@@ -9,6 +9,7 @@ namespace BarPromenade.Tests.PlayMode
 {
     public sealed partial class CombatPerformancePlayModeTests
     {
+        private string lastSourceShoveDiagnostics;
         [UnityTest]
         public IEnumerator Range_OneHandAttacksStartWithoutWaitingForSupport()
         {
@@ -37,6 +38,9 @@ namespace BarPromenade.Tests.PlayMode
                         ReleaseSupportForAttack(fighter, label);
                         fighter.SetBlock(true);
                         Assert.That(fighter.State.IsBlocking, Is.False, "The two-hand guard still requires contact.");
+                        Assert.That(fighter.GuardRequested, Is.True);
+                        Assert.That(fighter.GuardReady, Is.False);
+                        Assert.That(fighter.GuardSupportRejection, Is.EqualTo("two_hand_support"));
                         fighter.SetBlock(false);
                         int sequence = fighter.State.AttackSequence;
                         Assert.That(moving ? fighter.RequestAttack() : fighter.TryAttack(), Is.True, label);
@@ -109,7 +113,7 @@ namespace BarPromenade.Tests.PlayMode
 
                 PlacePair(1.1f);
                 for (int frame = 0; frame < 6; frame++)
-                { root.Tick(TickSeconds); yield return new WaitForEndOfFrame(); }
+                { root.Tick(TickSeconds); yield return null; }
                 float targetHealth = root.Opponent.State.Health;
                 int targetImpacts = root.Opponent.ReceivedImpactCount;
                 ReleaseSupportForAttack(root.Hero, "one-hand contact");
@@ -118,7 +122,7 @@ namespace BarPromenade.Tests.PlayMode
                 {
                     ReleaseSupportForAttack(root.Hero, "one-hand contact");
                     root.Tick(TickSeconds);
-                    yield return new WaitForEndOfFrame();
+                    yield return null;
                     Assert.That(root.Hero.SupportGrip.IsSupportingWeapon, Is.False,
                         "Keep the left hand released through the actual weapon-contact window.");
                 }
@@ -130,8 +134,11 @@ namespace BarPromenade.Tests.PlayMode
                 PlacePair(4f);
                 root.Hero.ImpactMotion.BeginRecoveryStep(0, root.Hero.transform.position + Vector3.forward * .2f, .2f);
                 Assert.That(root.Hero.ImpactMotion.RecoveryInProgress, Is.True);
-                Assert.That(root.Hero.TryAttack() || root.Hero.RequestAttack() || root.Hero.RequestCharge(), Is.False,
+                Assert.That(root.Hero.TryAttack() || root.Hero.RequestAttack(), Is.False,
                     "A missing support hand is allowed; an unfinished physical balance step still owns the body.");
+                Assert.That(root.Hero.RequestCharge(), Is.True, "A short charge intent may wait for the returning support.");
+                Assert.That(root.Hero.State.HasBufferedCharge, Is.True);
+                Assert.That(root.Hero.State.Phase, Is.EqualTo(MeleePhase.Ready), "The intent cannot begin an attack during the step.");
                 PlacePair(4f);
                 root.Hero.State.BeginKnockdown();
                 Assert.That(root.Hero.TryAttack() || root.Hero.RequestAttack() || root.Hero.RequestCharge(), Is.False,
@@ -309,6 +316,9 @@ namespace BarPromenade.Tests.PlayMode
 
         private IEnumerator AdvanceContinuationFrame(CombatActor actor, bool moving, bool measureBridge, string label)
         {
+            // Coroutine resumption precedes LateUpdate; compare complete combat
+            // poses on both sides of the tick, never its restored animation base.
+            actor.Present();
             Transform[] bones = ContinuationArmBones(actor);
             var rotations = new Quaternion[bones.Length];
             for (int i = 0; i < bones.Length; i++) rotations[i] = bones[i].localRotation;
@@ -322,7 +332,11 @@ namespace BarPromenade.Tests.PlayMode
                 actor.transform.rotation *= Quaternion.Euler(0f, 15f * TickSeconds, 0f);
                 Physics.SyncTransforms();
             }
-            yield return new WaitForEndOfFrame();
+            // A normal frame yield works in batch mode and crosses the previous
+            // LateUpdate. Reapply the same complete pose after moved roots, without
+            // advancing the duel clock, before reading the final limb transforms.
+            yield return null;
+            actor.Present();
             Assert.That(actor.IsKnockedDown || actor.State.IsDefeated, Is.False, label);
             if (!measureBridge || !actor.State.IsContinuation ||
                 (actor.State.IsCharging ? actor.State.Charge01 * actor.State.Settings.ChargeSeconds >= .21f :
@@ -367,23 +381,28 @@ namespace BarPromenade.Tests.PlayMode
         {
             PlacePair(.82f);
             for (int frame = 0; frame < 6; frame++)
-            { root.Tick(TickSeconds); yield return new WaitForEndOfFrame(); }
+            { root.Tick(TickSeconds); yield return Application.isBatchMode ? null : new WaitForEndOfFrame(); }
             CombatActor actor = root.Hero;
             Assert.That(actor.RequestAttack(), Is.True, "A real shove opens the supporting hand.");
             for (int frame = 0; frame < 90 && !actor.SupportGrip.IsRegripping; frame++)
-            { root.Tick(TickSeconds); yield return new WaitForEndOfFrame(); }
+            { root.Tick(TickSeconds); yield return Application.isBatchMode ? null : new WaitForEndOfFrame(); }
             Assert.That(root.Opponent.ReceivedImpactCount, Is.EqualTo(1));
             Assert.That(actor.SupportGrip.IsRegripping, Is.True);
             // The recipient has left reach; the source keeps its actual returning arm.
             root.Opponent.ResetActor(actor.transform.position + actor.transform.forward * 4f,
                 -actor.transform.forward);
             Physics.SyncTransforms();
+            actor.SetBlock(true);
+            Assert.That(actor.GuardRequested, Is.True);
+            Assert.That(actor.State.IsBlocking, Is.False, "The open returning hand cannot block yet.");
 
             int movingReachFrames = 0;
+            float returnSeconds = 0f;
             bool restored = false;
             for (int frame = 0; frame < 120 && !restored; frame++)
             {
                 root.Tick(TickSeconds);
+                returnSeconds += TickSeconds;
                 bool reaching = actor.SupportGrip.IsRegripping;
                 Vector3 palmBefore = actor.transform.InverseTransformPoint(actor.SupportGrip.ShovePalmPosition);
                 // Live ordering: duel Update, then motor translation/yaw, then
@@ -399,15 +418,22 @@ namespace BarPromenade.Tests.PlayMode
                     Assert.That(Vector3.Distance(palmBefore, palmAfter), Is.LessThan(.002f),
                         "Walking/turning at the same duel time must carry the returning arm, not pull it back to its old world point.");
                 }
-                yield return new WaitForEndOfFrame();
+                yield return Application.isBatchMode ? null : new WaitForEndOfFrame();
                 if (frame == 3) CaptureDuelFrame("balance/moving-regrip", "returning");
                 restored = actor.State.Phase == MeleePhase.Ready && actor.HasTwoHandSupport;
             }
             Assert.That(movingReachFrames, Is.GreaterThan(3), "Exercise the moving open hand before contact closes.");
             Assert.That(restored, Is.True, "Walking cannot keep an otherwise ready fighter waiting for his own weapon.");
+            Assert.That(returnSeconds, Is.LessThanOrEqualTo(.60f),
+                "An unobstructed return after a shove must restore contact promptly while walking and turning.");
             Assert.That(actor.SupportGrip.JournalContactError, Is.LessThanOrEqualTo(.025f));
             Assert.That(actor.SupportGrip.JournalContactAngle, Is.LessThanOrEqualTo(12f));
             Assert.That(actor.SupportGrip.JournalWristSafe, Is.True);
+            actor.AdvanceSimulation(CombatTestRoot.SimulationStep);
+            actor.Present();
+            Assert.That(actor.GuardReady && actor.State.IsBlocking, Is.True,
+                "The held guard must restore on the next duel step after actual palm contact.");
+            actor.SetBlock(false);
             CaptureDuelFrame("balance/moving-regrip", "restored");
             Assert.That(actor.RequestCharge(), Is.True, "The next attack press must work while the body is moving.");
             Assert.That(actor.ReleaseCharge(), Is.True);
@@ -433,7 +459,7 @@ namespace BarPromenade.Tests.PlayMode
                         Physics.SyncTransforms();
                     }
                     for (int frame = 0; frame < 6; frame++)
-                    { root.Tick(TickSeconds); yield return new WaitForEndOfFrame(); }
+                    { root.Tick(TickSeconds); yield return null; }
                     CombatActor actor = rig == 0 ? root.Hero : root.Opponent;
                     CombatActor target = rig == 0 ? root.Opponent : root.Hero;
                     string label = (actor.IsHero ? "hero" : "opponent") + (shove ? " shove source" : " swing source");
@@ -441,19 +467,35 @@ namespace BarPromenade.Tests.PlayMode
 
                     for (int repetition = 0; repetition < 2; repetition++)
                     {
+                        bool crowdedWindup = shove && rig == 1 && repetition == 1;
                         // Reposition only the recipient. Resetting the source
                         // here would erase the permanent post-action grip stall.
                         if (shove && repetition > 0)
                         {
-                            target.ResetActor(actor.transform.position + actor.transform.forward * .82f,
+                            target.ResetActor(actor.transform.position + actor.transform.forward * (crowdedWindup ? 1.1f : .82f),
                                 -actor.transform.forward);
                             Physics.SyncTransforms();
                             root.Tick(TickSeconds);
-                            yield return new WaitForEndOfFrame();
+                            yield return null;
                         }
                         int impacts = target.ReceivedImpactCount;
                         int sequence = actor.State.AttackSequence;
-                        if (shove)
+                        if (crowdedWindup)
+                        {
+                            // The recorded NPC was already returning its left
+                            // arm from a weapon windup when close pressure routed
+                            // it into the shove. Keep that actual source chain.
+                            Assert.That(actor.RequestAttack(), Is.True, label + ": start a weapon windup");
+                            for (int frame = 0; frame < 6; frame++)
+                            { root.Tick(TickSeconds); yield return null; }
+                            Assert.That(actor.State.Phase, Is.EqualTo(MeleePhase.Windup), label);
+                            target.ResetActor(actor.transform.position + actor.transform.forward * .82f, -actor.transform.forward);
+                            Physics.SyncTransforms();
+                            impacts = target.ReceivedImpactCount;
+                            root.Tick(CombatTestRoot.SimulationStep);
+                            yield return null;
+                        }
+                        else if (shove)
                             Assert.That(actor.RequestAttack(), Is.True, label + ": repeated command " + repetition);
                         else
                         {
@@ -461,25 +503,38 @@ namespace BarPromenade.Tests.PlayMode
                             // whose charge/release pose seeds the returning arm.
                             Assert.That(actor.RequestCharge(), Is.True, label + ": charge press " + repetition);
                             for (int frame = 0; frame < 6; frame++)
-                            { root.Tick(TickSeconds); yield return new WaitForEndOfFrame(); }
+                            { root.Tick(TickSeconds); yield return null; }
                             Assert.That(actor.ReleaseCharge(), Is.True, label + ": release after 0.1 seconds");
                         }
                         Assert.That(actor.State.AttackSequence, Is.Not.EqualTo(sequence), label);
                         Assert.That(shove ? actor.State.IsShoving : actor.State.IsAttacking, Is.True, label);
-                        yield return WaitForSourceRegrip(actor, label + " " + repetition);
+                        yield return WaitForSourceRegrip(actor, label + " " + repetition,
+                            stepAfterShove: shove && rig == 1);
                         Assert.That(target.ReceivedImpactCount - impacts, Is.EqualTo(shove ? 1 : 0),
-                            label + ": the shove must actually land; a separated swing must miss");
+                            label + ": the shove must actually land; a separated swing must miss. " + lastSourceShoveDiagnostics);
                     }
 
                     // Exercise the public command and its presented guard,
                     // rather than accepting a Ready enum as proof of control.
                     actor.SetBlock(true);
                     Assert.That(actor.State.IsBlocking, Is.True, label + ": block command after repeated actions");
+                    Assert.That(actor.GuardReady && actor.GuardRequested, Is.True);
                     for (int frame = 0; frame < 18; frame++)
-                    { root.Tick(TickSeconds); yield return new WaitForEndOfFrame(); }
+                    { root.Tick(TickSeconds); yield return null; }
                     Assert.That(actor.State.IsBlocking && actor.HasTwoHandSupport, Is.True,
                         label + ": the raised guard must retain actual contact");
+                    if (actor.IsHero && shove && !Application.isBatchMode)
+                    {
+                        yield return new WaitForEndOfFrame();
+                        CaptureGuardHud("raised");
+                    }
                     actor.SetBlock(false);
+                    Assert.That(actor.GuardRequested, Is.False);
+                    if (actor.IsHero && shove && !Application.isBatchMode)
+                    {
+                        yield return new WaitForEndOfFrame();
+                        CaptureGuardHud("ready");
+                    }
                     yield return WaitForSourceRegrip(actor, label + " guard release");
 
                     target.ResetActor(actor.transform.position + actor.transform.forward * 4f, -actor.transform.forward);
@@ -493,22 +548,87 @@ namespace BarPromenade.Tests.PlayMode
             LogAssert.NoUnexpectedReceived();
         }
 
-        private IEnumerator WaitForSourceRegrip(CombatActor actor, string label)
+        private IEnumerator WaitForSourceRegrip(CombatActor actor, string label, bool stepAfterShove = false)
         {
+            // A freshly resumed parent may expose Update's restored clip pose.
+            // Use the same final-pose path as the samples below for the baseline.
+            actor.Present();
             Transform upper = ArmMotionBone(actor, "upper_arm.L");
             Transform lower = ArmMotionBone(actor, "forearm.L");
             Transform hand = ArmMotionBone(actor, "hand.L");
             Quaternion previousUpper = upper.localRotation, previousLower = lower.localRotation, previousHand = hand.localRotation;
+            Quaternion entryUpper = previousUpper, entryLower = previousLower, entryHand = previousHand;
+            FieldInfo frozenShovePoint = typeof(CombatSupportGrip).GetField("shovePoint", BindingFlags.Instance | BindingFlags.NonPublic);
+            float minimumShoveGap = float.PositiveInfinity;
+            lastSourceShoveDiagnostics = string.Empty;
             float readySeconds = 0f, maxReturnJointStep = 0f;
             bool restored = false;
+            bool stepRequested = false, sawStep = false, shoveCaptured = false, stepCaptured = false;
+            float stepReadySeconds = 0f;
             for (int frame = 0; frame < 240; frame++)
             {
                 root.Tick(TickSeconds);
-                yield return new WaitForEndOfFrame();
+                yield return null;
+                actor.Present();
                 float jointStep = Mathf.Max(Quaternion.Angle(previousUpper, upper.localRotation),
                     Mathf.Max(Quaternion.Angle(previousLower, lower.localRotation), Quaternion.Angle(previousHand, hand.localRotation)));
                 previousUpper = upper.localRotation; previousLower = lower.localRotation; previousHand = hand.localRotation;
                 Assert.That(actor.IsKnockedDown || actor.State.IsDefeated, Is.False, label);
+                if (actor.State.IsShoving && actor.State.ShoveElapsed <= actor.State.Settings.ShoveContactSeconds + CombatActor.ShoveContactWindowSeconds)
+                {
+                    CombatActor recipient = actor.IsHero ? root.Opponent : root.Hero;
+                    Vector3 push = Vector3.ProjectOnPlane(recipient.transform.position - actor.transform.position, Vector3.up).normalized;
+                    if (recipient.Hurtboxes.ChestSurface(actor.transform.position - actor.transform.right * .12f, push, out var surface))
+                    {
+                        float gap = Vector3.Distance(actor.ShovePalmPosition, surface.Point);
+                        if (gap < minimumShoveGap)
+                        {
+                            minimumShoveGap = gap;
+                            Vector3 aimedPoint = (Vector3)frozenShovePoint.GetValue(actor.SupportGrip);
+                            lastSourceShoveDiagnostics = $"closest elapsed={actor.State.ShoveElapsed:F4}, gap={gap:F4}, " +
+                                $"palm={actor.ShovePalmPosition:F4}, current chest={surface.Point:F4}, aimed chest={aimedPoint:F4}, " +
+                                $"entry-to-presented joint degrees={Quaternion.Angle(entryUpper, upper.localRotation):F2}/" +
+                                $"{Quaternion.Angle(entryLower, lower.localRotation):F2}/{Quaternion.Angle(entryHand, hand.localRotation):F2}";
+                        }
+                    }
+                }
+                if (!shoveCaptured && actor.State.IsShoving && actor.State.ShoveElapsed >= actor.State.Settings.ShoveContactSeconds)
+                {
+                    CaptureDuelFrame("balance/source-regrip/" + (actor.IsHero ? "hero" : "opponent"), "01-shove-contact");
+                    shoveCaptured = true;
+                }
+                if (stepAfterShove)
+                {
+                    CombatSupportGrip liveGrip = actor.SupportGrip;
+                    string pose = $"{label}: phase={actor.State.Phase}, arm={actor.SupportArmState}, " +
+                        $"wrist={liveGrip.LiveArmAngles}, roll={liveGrip.LiveShoulderRoll:F2}, elbow={liveGrip.LiveSignedElbow:F2}";
+                    Assert.That(liveGrip.LiveArmAngles.x, Is.LessThanOrEqualTo(25.1f), pose);
+                    Assert.That(liveGrip.LiveArmAngles.y, Is.LessThanOrEqualTo(55.1f), pose);
+                    Assert.That(Mathf.Abs(liveGrip.LiveShoulderRoll), Is.LessThanOrEqualTo(90.1f), pose);
+                    Assert.That(liveGrip.LiveSignedElbow, Is.InRange(-5.1f, 120.1f), pose);
+                    if (actor.State.IsShoving)
+                    {
+                        Assert.That(jointStep, Is.LessThanOrEqualTo(600f * TickSeconds + .2f),
+                            pose + ": the shove uses the existing per-joint speed budget");
+                    }
+                    if (actor.State.Phase == MeleePhase.Step)
+                    {
+                        sawStep = true;
+                        if (!stepCaptured && actor.State.StepProgress >= .4f)
+                        { CaptureDuelFrame("balance/source-regrip/opponent", "02-step-return"); stepCaptured = true; }
+                    }
+                    if (!stepRequested && actor.State.Phase == MeleePhase.Ready)
+                    {
+                        stepReadySeconds += TickSeconds;
+                        if (stepReadySeconds >= .20f)
+                        {
+                            Assert.That(actor.TryStep(Vector2.right), Is.True, label + ": recorded shove -> right step");
+                            Assert.That(actor.State.Phase, Is.EqualTo(MeleePhase.Step), label);
+                            stepRequested = true;
+                        }
+                    }
+                    if (!stepRequested || !sawStep) continue;
+                }
                 if (actor.State.Phase != MeleePhase.Ready) continue;
                 readySeconds += TickSeconds;
                 maxReturnJointStep = Mathf.Max(maxReturnJointStep, jointStep);
@@ -527,6 +647,13 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(grip.JournalWristSafe, Is.True, diagnostic);
             Assert.That(grip.LiveArmAngles.x, Is.LessThanOrEqualTo(25.1f), diagnostic);
             Assert.That(grip.LiveArmAngles.y, Is.LessThanOrEqualTo(55.1f), diagnostic);
+            if (stepAfterShove)
+            {
+                Assert.That(stepRequested && sawStep, Is.True, label + ": exercise the actual shove -> Step -> Ready path");
+                Assert.That(readySeconds, Is.LessThanOrEqualTo(.60f),
+                    "An unobstructed NPC must restore physical grip promptly after its returning step. " + diagnostic);
+                CaptureDuelFrame("balance/source-regrip/opponent", "03-ready-grip");
+            }
         }
 
         [UnityTest]
@@ -684,6 +811,12 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(motion.LandedRecoverySteps, Is.EqualTo(1));
             Assert.That(victim.SupportGrip.IsRegripping, Is.False);
             Assert.That(victim.SupportGrip.JournalRegripAllowed, Is.False);
+            victim.SetBlock(true);
+            Assert.That(victim.GuardRequested, Is.True);
+            Assert.That(victim.GuardReady, Is.False);
+            Assert.That(victim.GuardSupportRejection, Is.EqualTo("balance_recovery"),
+                "The catch step must not masquerade as a missing two-hand grip.");
+            Assert.That(victim.State.IsBlocking, Is.False);
 
             Vector3 outward = Vector3.ProjectOnPlane(motion.CentreOfMass - motion.SupportCentre, Vector3.up);
             if (outward.sqrMagnitude < .0001f) outward = victim.transform.forward;
@@ -725,10 +858,26 @@ namespace BarPromenade.Tests.PlayMode
             for (int frame = 0; frame < 90 && !victim.HasTwoHandSupport; frame++)
             { root.Tick(TickSeconds); yield return null; }
             Assert.That(victim.HasTwoHandSupport, Is.True, "The hand must actually return to the weapon.");
+            victim.AdvanceSimulation(step);
+            victim.Present();
+            Assert.That(victim.GuardReady && victim.State.IsBlocking, Is.True,
+                "A held guard restores on the next duel step, without another input command.");
+            Assert.That(victim.State.ReceiveHit(victim.State.Settings.Damage, victim.State.Settings.BlockCost, true),
+                Is.EqualTo(MeleeHitResult.Blocked), "Restoring support is not a fresh parry press.");
             Assert.That(victim.Footwork.CatchStepCount, Is.EqualTo(2));
             Assert.That(victim.ReceivedImpactCount, Is.EqualTo(1));
             Assert.That(victim.State.Health, Is.EqualTo(victim.State.Settings.MaxHealth));
             LogAssert.NoUnexpectedReceived();
+        }
+
+        private static void CaptureGuardHud(string name)
+        {
+            string folder = System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(),
+                "Captures", SceneIds.CombatTest, "guard-readiness");
+            System.IO.Directory.CreateDirectory(folder);
+            Texture2D image = ScreenCapture.CaptureScreenshotAsTexture();
+            try { System.IO.File.WriteAllBytes(System.IO.Path.Combine(folder, name + ".png"), image.EncodeToPNG()); }
+            finally { Object.Destroy(image); }
         }
     }
 }

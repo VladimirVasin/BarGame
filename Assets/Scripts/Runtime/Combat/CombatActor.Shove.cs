@@ -78,7 +78,8 @@ namespace BarPromenade
             bodyMotion?.SetShovePose(active, shoveDirection, State.ShoveElapsed,
                 State.Settings.ShoveContactSeconds, State.Settings.ShoveDurationSeconds);
             supportGrip?.SetShovePose(active, point, shoveDirection, State.ShoveElapsed,
-                State.Settings.ShoveContactSeconds, State.Settings.ShoveDurationSeconds, contactTarget?.transform);
+                State.Settings.ShoveContactSeconds, State.Settings.ShoveDurationSeconds, contactTarget?.transform,
+                shoveContactPending);
         }
 
         internal void CollectShoveContacts(List<ShoveContact> pending)
@@ -177,6 +178,7 @@ namespace BarPromenade
             {
                 if (source.shoveContactToken != token || source.shoveContactApplied) return;
                 source.shoveContactApplied = true;
+                MeleePhase phaseBefore = target.State.Phase;
                 if (!target.State.ReceiveShove())
                 {
                     source.JournalEvent("shove_contact_rejected", target.JournalActorId, sequence, request,
@@ -188,7 +190,7 @@ namespace BarPromenade
                 float health = target.State.Health;
                 target.PublishImpact(new CombatImpact(source, target, sequence, hit.Point, hit.Normal, direction,
                     health, health, MeleeHitResult.Hit, hit.Location, 0f, hit.Part, hit.LocalPoint,
-                    impulse: direction * ShoveImpulse));
+                    impulse: direction * ShoveImpulse), phaseBefore);
                 RetroAudio.PlayAt(RetroSfxId.StoneTamp, hit.Point, .65f);
                 target.Present();
             }

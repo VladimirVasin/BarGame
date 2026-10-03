@@ -92,8 +92,7 @@ namespace BarPromenade
                 previousOtherAnatomy[i] = new Pose(otherAnatomy[i].transform.position, otherAnatomy[i].transform.rotation);
         }
 
-        internal bool IsSupportArmPathClear(Vector3 shoulder, Vector3 elbow, Vector3 wrist) =>
-            armClearance.IsSupportPathClear(shoulder, elbow, wrist);
+        internal CombatArmClearance SupportArmClearance => armClearance;
 
         internal void Restore()
         {
@@ -116,6 +115,7 @@ namespace BarPromenade
 
         internal void Apply()
         {
+            using var journalTiming = actor.MeasureJournalWork(CombatActor.JournalWork.WeaponConstraint);
             if (weapon == null || actor.IsWeaponDropped ||
                 (actor.IsRagdollActive && !actor.Ragdoll.IsRecovering)) { Forget(); return; }
             Restore();
@@ -236,6 +236,7 @@ namespace BarPromenade
         /// <summary>Commit only after the supporting hand has made its final contact.</summary>
         internal void CommitPresentedPose(CombatSupportGrip support)
         {
+            using var journalTiming = actor.MeasureJournalWork(CombatActor.JournalWork.WeaponConstraint);
             if (!pendingCommit || contactPreview) return;
             pendingCommit = false;
             float finalDepth = Depth();

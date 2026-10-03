@@ -146,17 +146,19 @@ The vertical slice contains:
   City/Bar/lodge markers belong to one load, consumed once; later arrivals stay.
   Day one raises mother's-house quest/map marker; door/map entry or starting
   inside closes it. No village signpost;
-- CombatTest: six HP zones; guard/parry precedes rear-head defeat.
-  Impulse/steps; right-held fall/rise/moving regrip. Collision gates;
-  drop sweep disables anatomy past capsule.
-  Upper follows power/lower fixed; recoil/backhand banks/QA pending.
-  Click cuts Hit/Miss return after both contacts. Right-hand start/release/chain
-  ignores left; block needs both. Held=charge, released=tap.
-  Balance recovery/forced recoil/stun/fall stay; clock/pause/hit-stop.
-  Afraid hero/calm NPC; breath: guard/step/.6 s charge, frozen in Hold.
-  Hit/block/wall/miss recovery: .20/.28/.35/.50 s; full charge ×1.5.
-  Wounds/thud/pools; defeat: freecam, winner walks. `E`: settled-body toilet,
-  crowbar left, bone/floor marks. R/unload clears; no story/speech;
+- CombatTest: six zones/guard-parry before rear-head defeat/impulse/steps/
+  right-held fall/rise/regrip; backhand recoil/banks/QA pending.
+  Post-contact Hit/Miss cuts/R ignores L/
+  chain .22→held .28/charge .6s/buffer .20s (hit/fall cancels). Hero Windup:
+  1m inward/braking; side/back/impulses/drift free. ≤.85m:
+  8-breath/0HP/dry shove. Continuous authored arm/regrip: wrist/elbow/shoulder
+  ≤600°/s/body/world/palm gates. AI≥1m/retreat≤.6s/whiff .20→counter .22/Rising
+  attacks; gaze/physics/modal release. Guard: balance/both hands/restore≠fresh
+  parry; shield dim-open unavailable/amber-open request/closed ready/filled block.
+  120Hz; disabled probes miss overlap. Afraid hero/calm NPC;
+  recoil/stun/pause/hit-stop; guard/step/charge cost breath/Hold keeps it;
+  wounds/thud/pools/freecam/winner walks;
+  E: toilet/left bar/marks/R-unload clears/no story-speech;
 - the retained Home opening is reachable only by a legacy request: held bed loop,
   silent `05:59` clock with rare whole-display flicker, five-second input lock,
   then localized Wake Up/Quit. Wake sets `06:00`, runs the clock/alarm and hides

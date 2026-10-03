@@ -141,6 +141,7 @@ namespace BarPromenade
             bodyMotion?.Apply();
             PresentDamagePose();
             footwork?.Apply();
+            ApplyCombatAttention();
             ApplyNpcPoseBlend();
             footwork?.ConstrainContacts();
             weaponConstraint?.Apply();

@@ -24,7 +24,14 @@ namespace BarPromenade
 
         internal void SetContactTarget(CombatActor target)
         { contactTarget = target; weaponConstraint?.SetOpponent(target); heldWeaponPhysics?.SetOpponent(target); }
-        internal void CaptureContactPose() => Hurtboxes?.Capture();
+        internal void CaptureContactPose()
+        {
+            // The final sampled palm can lose support after the input/clock
+            // decision. Drop its guard before either actor resolves contacts;
+            // restoring a guard still waits for the next presented duel step.
+            if (guardHeld && State.IsBlocking && GuardSupportRejection != null) RefreshBlock();
+            Hurtboxes?.Capture();
+        }
 
         internal bool CollectContacts(List<Contact> pending)
         {

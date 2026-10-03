@@ -24,6 +24,7 @@ namespace BarPromenade
         private bool presentationFrozen;
         private float poseClock, reactionClock;
         private bool receivedDuringStep;
+        private bool guardHeld;
         private readonly List<Contact> standaloneContacts = new List<Contact>(4);
         public MeleeCombatant State { get; } = new MeleeCombatant();
         public CharacterController Body { get; private set; }
@@ -87,6 +88,7 @@ namespace BarPromenade
             AttachWeapon(hero.Registry.Anchors.RightGrip);
             hero.RegisterAccessoryRenderers(Weapon.GetComponentsInChildren<Renderer>());
             InitializeDamagePose();
+            InitializeCombatAttention();
             Present();
         }
 
@@ -103,6 +105,7 @@ namespace BarPromenade
             Ragdoll.InitializeOpponent(presentation, body);
             AttachWeapon(npc.RightGrip);
             InitializeDamagePose();
+            InitializeCombatAttention();
             Present();
         }
 
@@ -129,16 +132,26 @@ namespace BarPromenade
             supportGrip = new CombatSupportGrip(DamageRigRoot, transform, handPose, Weapon.transform);
             supportGrip.JournalActor = this;
             weaponConstraint = new CombatWeaponConstraint(this);
-            supportGrip.SetArmClearance(weaponConstraint.IsSupportArmPathClear);
+            supportGrip.SetArmClearance(weaponConstraint.SupportArmClearance);
             if (hero != null) hero.SetCombatSupportGrip(this, supportGrip, weaponConstraint);
         }
 
         // The right hand owns the weapon. A returning left hand affects guard,
         // not attack readiness; only real balance recovery prevents a swing.
         internal bool HasAttackBalance => !IsKnockedDown && !(ImpactMotion?.RecoveryInProgress ?? false);
+        internal const float WeaponSpacing = 1f;
+        internal void ApplyMotorConstraint() => motor?.SetOwnedMovementConstraint(this, MovementScale, TurnScale,
+            contactTarget != null ? contactTarget.transform : null,
+            State.Phase == MeleePhase.Windup ? WeaponSpacing : 0f);
         private string AttackBalanceRejection => IsKnockedDown ? "knocked_down" : "balance_recovery";
         internal bool HasTwoHandSupport => HasAttackBalance &&
             (supportGrip == null || supportGrip.IsSupportingWeapon);
+        public bool GuardRequested => guardHeld;
+        public bool GuardReady => GuardSupportRejection == null &&
+            (State.Phase == MeleePhase.Ready || State.Phase == MeleePhase.GuardImpact);
+        internal string GuardSupportRejection => roundEnded ? "round_ended" : !IsAvailable ? "actor_unavailable" :
+            State.IsDefeated ? "defeated" : !HasAttackBalance ? AttackBalanceRejection :
+            !HasTwoHandSupport ? "two_hand_support" : null;
         internal CombatFootwork Footwork => footwork;
         internal CombatSupportGrip SupportGrip => supportGrip;
 
@@ -175,20 +188,41 @@ namespace BarPromenade
             return JournalCommandResult(request, previous == State.AttackSequence ? "queued" : "started", "attack");
         }
 
+        internal bool TryObservedCounterAttack()
+        {
+            int request = JournalCommand("observed_counter");
+            if (roundEnded || !IsAvailable || !HasAttackBalance ||
+                !GameInput.CanRead(GameInputContext.Gameplay))
+                return JournalCommandResult(request, "rejected", "counter_unavailable");
+            if (CheckShoveRange(request)) return TryBeginShove(request);
+            if (!State.TryStartObservedCounterAttack()) return JournalRulesRejected(request, State.Settings.AttackCost, false);
+            reaction = null;
+            Present();
+            return JournalCommandResult(request, "started", "observed_counter");
+        }
+
         public void SetBlock(bool held)
         {
-            string reason = !held ? "released" : roundEnded ? "round_ended" : !IsAvailable ? "actor_unavailable" :
-                !HasTwoHandSupport ? "two_hand_support" : "guard";
+            bool freshPress = held && !guardHeld;
+            guardHeld = held;
+            RefreshBlock(freshPress);
+        }
+
+        private void RefreshBlock(bool freshPress = false)
+        {
+            string reason = !guardHeld ? "released" : GuardSupportRejection ?? "guard";
             bool allowed = reason == "guard";
-            bool changed = held != journalBlockHeld || allowed != journalBlockAllowed || reason != journalBlockReason;
+            bool changed = guardHeld != journalBlockHeld || allowed != journalBlockAllowed || reason != journalBlockReason;
             int request = changed ? JournalCommand("block") : 0;
-            State.SetBlocking(allowed);
+            // Restoring support while RMB is still held raises the guard at the
+            // next duel step. It does not manufacture a fresh parry press.
+            State.SetBlocking(allowed, freshPress);
             if (changed)
             {
-                string result = !held ? "released" : !allowed || State.IsDefeated || State.IsKnockedDown ? "rejected" :
+                string result = !guardHeld ? "released" : !allowed || State.IsDefeated || State.IsKnockedDown ? "rejected" :
                     State.IsBlocking ? "started" : "queued";
                 JournalCommandResult(request, result, allowed && (State.IsDefeated || State.IsKnockedDown) ? "rules_rejected" : reason, trackAction: false);
-                journalBlockHeld = held; journalBlockAllowed = allowed; journalBlockReason = reason;
+                journalBlockHeld = guardHeld; journalBlockAllowed = allowed; journalBlockReason = reason;
             }
         }
 
@@ -232,8 +266,10 @@ namespace BarPromenade
                 CancelInterruptedShoveContact();
                 ReleasePresentation(); return;
             }
+            AdvanceCombatAttention(seconds);
             AdvanceVisualClock(seconds);
             AdvanceImpactMotion(seconds);
+            if (guardHeld) RefreshBlock();
             if (State.Phase == MeleePhase.Windup && InShoveRange && !TryBeginShove()) State.CancelAction();
             int sequence = State.AttackSequence;
             float from = State.AttackElapsed;
@@ -274,6 +310,7 @@ namespace BarPromenade
             float damage, float blockCost, float power, MeleeHitLocation location,
             Player3DAnatomicalPart part = Player3DAnatomicalPart.Torso, Vector3 localPoint = default, float weaponSpeed = 0f)
         {
+            MeleePhase phaseBefore = State.Phase;
             receivedDuringStep = State.Phase == MeleePhase.Step;
             float healthBefore = State.Health;
             MeleeHitResult result = State.ReceiveHit(damage, blockCost, front, power, location);
@@ -306,7 +343,7 @@ namespace BarPromenade
             reactionClock = 0f;
             PublishImpact(new CombatImpact(source, this, sequence, point, normal, direction,
                 healthBefore, State.Health, result, location, power, part, localPoint, weaponSpeed,
-                CombatImpactMotion.ResolveImpulse(direction, power, weaponSpeed, result)));
+                CombatImpactMotion.ResolveImpulse(direction, power, weaponSpeed, result)), phaseBefore);
             if (State.IsDefeated) BeginDefeat(direction, point);
             receivedDuringStep = false;
             Present();
@@ -335,6 +372,8 @@ namespace BarPromenade
 
         private bool SampleAttack(float progress)
         {
+            RestoreCombatAttention();
+            RefreshCombatAttention();
             previewWorldBlocked = false;
             using var weaponPreview = weaponConstraint.BeginContactPreview();
             supportGrip?.Restore();
@@ -396,11 +435,14 @@ namespace BarPromenade
 
         public void Present()
         {
+            using var journalTiming = MeasureJournalWork(JournalWork.Present);
+            RestoreCombatAttention();
             if (ready == null || winnerPresentationReleased) return;
             if (PresentKnockdown() || IsRagdollActive) return;
             // Pause temporarily owns input, not the combat rig. Retain the
             // sampled pose/transition so a paused read cannot release the clip.
             if (PauseMenuController.IsAnyPaused) return;
+            RefreshCombatAttention();
             supportGrip?.Restore();
             weaponConstraint?.Restore();
             footwork?.Restore();
@@ -455,7 +497,7 @@ namespace BarPromenade
                 else hero.SampleOwnedClip(this, progress);
                 hero.SetCombatBodyMotion(this, bodyMotion);
                 hero.SetCombatFootwork(this, footwork);
-                motor.SetOwnedMovementConstraint(this, MovementScale, TurnScale);
+                ApplyMotorConstraint();
             }
             else
             {
@@ -497,6 +539,7 @@ namespace BarPromenade
         public void ResetActor(Vector3 position, Vector3 facing)
         {
             presentationFrozen = false;
+            guardHeld = false;
             journalActionRequest = journalQueuedRequest = 0;
             LastJournalImpactSequence = 0;
             journalRiseReason = journalFallReason = journalBlockReason = null;
@@ -535,6 +578,7 @@ namespace BarPromenade
 
         private void ReleasePresentation()
         {
+            ReleaseCombatAttention();
             if (hero != null) hero.ReleaseContextualFacialExpression(this);
             if (hero != null) hero.ClearCombatSupportGrip(this);
             if (IsRagdollActive) { supportGrip?.Forget(); weaponConstraint?.Forget(); }
