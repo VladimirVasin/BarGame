@@ -243,10 +243,11 @@ namespace BarPromenade
         private static bool IntersectsCourtyardReservation(CityLayout layout, Vector3 position)
         {
             var point = new Vector2(position.x, position.z);
+            foreach (CityRoadPath path in layout.CourtyardPaths)
+                if (path.Project(point).DistanceSquared <
+                    CourtyardRouteFixtureClearance * CourtyardRouteFixtureClearance) return true;
             foreach (CityCourtyardBlock block in layout.CourtyardBlocks)
             {
-                if (block.Route.Project(point).DistanceSquared <
-                    CourtyardRouteFixtureClearance * CourtyardRouteFixtureClearance) return true;
                 if (IntersectsBuilding(point, block.Primary) ||
                     (block.RearBuilding != null && IntersectsBuilding(point, block.RearBuilding))) return true;
             }

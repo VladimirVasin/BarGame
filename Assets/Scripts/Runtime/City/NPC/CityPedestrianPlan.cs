@@ -9,7 +9,8 @@ namespace BarPromenade
     {
         Sidewalk = 0,
         Turn,
-        Crosswalk
+        Crosswalk,
+        Courtyard
     }
 
     public sealed class CityPedestrianNode :

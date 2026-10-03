@@ -128,6 +128,7 @@ namespace BarPromenade
                 layout,
                 endpointsByNode,
                 graph);
+            BuildCourtyardPaths(layout, streetSurfacePlan, graph);
             return graph.CreatePlan(
                 layout.Seed,
                 populationSeed,
@@ -1159,7 +1160,7 @@ namespace BarPromenade
             return $"{edge.A.x}:{edge.A.y}:{edge.B.x}:{edge.B.y}";
         }
 
-        private sealed class GraphBuilder
+        private sealed partial class GraphBuilder
         {
             private readonly List<CityPedestrianNode> nodes =
                 new List<CityPedestrianNode>();
@@ -1171,12 +1172,19 @@ namespace BarPromenade
                 new List<Rect>();
             private readonly List<IReadOnlyList<Vector2[]>> navigationPolygonOverrides =
                 new List<IReadOnlyList<Vector2[]>>();
+            private readonly List<Vector2[]> sharedNavigationPolygons =
+                new List<Vector2[]>();
             private readonly Dictionary<string, int> nodeIndices =
                 new Dictionary<string, int>(StringComparer.Ordinal);
             private readonly HashSet<LinkKey> linkKeys =
                 new HashSet<LinkKey>();
 
             public IReadOnlyList<CityPedestrianNode> Nodes => nodes;
+
+            public void AddNavigationPolygons(IEnumerable<Vector2[]> polygons)
+            {
+                sharedNavigationPolygons.AddRange(polygons);
+            }
 
             public int AddNode(
                 string id,
@@ -1274,7 +1282,7 @@ namespace BarPromenade
 
                 var safeLinks = new List<CityPedestrianLink>();
                 var safeRectangles = new List<Rect>();
-                var safePolygons = new List<Vector2[]>();
+                var safePolygons = new List<Vector2[]>(sharedNavigationPolygons);
                 for (int index = 0; index < links.Count; index++)
                 {
                     if (!retainedLinks[index])
@@ -1290,6 +1298,8 @@ namespace BarPromenade
                         link.Kind,
                         link.Path,
                         link.PathHeightSampler));
+                    if (link.Kind == CityPedestrianLinkKind.Courtyard)
+                        continue;
                     if (link.Path == null)
                         safeRectangles.Add(navigationRectangles[index]);
                     else

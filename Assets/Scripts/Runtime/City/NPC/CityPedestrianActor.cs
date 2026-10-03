@@ -933,7 +933,13 @@ namespace BarPromenade
             Vector3 planarOffset = target - current;
             planarOffset.y = 0f;
             float distance = planarOffset.magnitude;
-            if (distance <= ArrivalRadius)
+            CityPedestrianLink curvedLink = null;
+            bool curvedWalking = !directToWaitSlot && TryGetCurvedWalkingLink(out curvedLink);
+            // Courtyard corners can sit close to a real wall. Reach the knot
+            // before selecting the next leg instead of rounding it early.
+            float arrivalRadius = curvedLink?.Kind == CityPedestrianLinkKind.Courtyard
+                ? 0.025f : ArrivalRadius;
+            if (distance <= arrivalRadius)
             {
                 if (directToWaitSlot)
                 {
@@ -961,8 +967,6 @@ namespace BarPromenade
             Vector3 steerDirection = steerDistance > 0.0001f
                 ? steerOffset / steerDistance
                 : direction;
-            CityPedestrianLink curvedLink = null;
-            bool curvedWalking = !directToWaitSlot && TryGetCurvedWalkingLink(out curvedLink);
             if (!curvedWalking)
                 transform.rotation = Quaternion.RotateTowards(
                     transform.rotation,
@@ -982,22 +986,43 @@ namespace BarPromenade
                 CityRoadSample sample = path.SampleDistance(next);
                 Vector2 tangent = sample.Tangent * (forward ? 1f : -1f);
                 Vector2 laneRight = new Vector2(tangent.y, -tangent.x);
-                Vector2 point = sample.Position + laneRight * lateralOffset;
+                float pathLateralOffset = lateralOffset;
+                if (curvedLink.Kind == CityPedestrianLinkKind.Courtyard)
+                    pathLateralOffset *= Mathf.Clamp01(forward ? path.Length - next : next);
+                Vector2 point = sample.Position + laneRight * pathLateralOffset;
                 float pathHeight = curvedLink.PathHeightSampler != null
                     ? curvedLink.PathHeightSampler(point)
                     : Mathf.Lerp(plan.Nodes[curvedLink.FirstNodeIndex].Position.y,
                         plan.Nodes[curvedLink.SecondNodeIndex].Position.y, next / path.Length);
                 Vector3 onPath = new Vector3(point.x, pathHeight, point.y);
-                desired = Vector3.MoveTowards(current, onPath, step);
+                if (curvedLink.Kind == CityPedestrianLinkKind.Courtyard)
+                {
+                    // Walking speed is measured on the ground plane. The
+                    // controller's contact gap must not consume that budget.
+                    Vector2 currentXZ = new Vector2(current.x, current.z);
+                    Vector2 moved = Vector2.MoveTowards(currentXZ, point, step);
+                    desired = new Vector3(moved.x,
+                        curvedLink.PathHeightSampler != null
+                            ? curvedLink.PathHeightSampler(moved) : pathHeight,
+                        moved.y);
+                    intended = Vector2.Distance(currentXZ, moved);
+                }
+                else
+                {
+                    desired = Vector3.MoveTowards(current, onPath, step);
+                    intended = Mathf.Min(step, Vector3.Distance(current, onPath));
+                }
                 steerDirection = new Vector3(tangent.x, 0f, tangent.y);
                 transform.rotation = Quaternion.RotateTowards(transform.rotation,
                     Quaternion.LookRotation(steerDirection, Vector3.up), TurnSpeedDegrees * deltaTime);
-                intended = Mathf.Min(step, Vector3.Distance(current, onPath));
             }
             Vector3 constrained = walkableArea.Constrain(
                 current,
                 desired,
                 agentRadius);
+            if (curvedLink?.Kind == CityPedestrianLinkKind.Courtyard &&
+                curvedLink.PathHeightSampler != null)
+                constrained.y = curvedLink.PathHeightSampler(new Vector2(constrained.x, constrained.z));
             if (CollisionEnabled)
             {
                 characterController.Move(constrained - current);
@@ -1025,7 +1050,7 @@ namespace BarPromenade
 
             Vector3 remaining = transform.position - target;
             remaining.y = 0f;
-            if (remaining.magnitude <= ArrivalRadius)
+            if (remaining.magnitude <= arrivalRadius)
             {
                 if (directToWaitSlot)
                 {
@@ -1273,8 +1298,10 @@ namespace BarPromenade
                 float deltaZ = position.z - target.z;
                 float distance = (deltaX * deltaX) +
                                  (deltaZ * deltaZ);
+                Vector3 leg = position - plan.Nodes[targetNodeIndex].Position;
+                leg.y = 0f;
                 float graphDistance = hasGraphDistances
-                    ? nodeDistances[other]
+                    ? (link.Path?.Length ?? leg.magnitude) + nodeDistances[other]
                     : float.PositiveInfinity;
                 if (selectedLink < 0 ||
                     graphDistance < selectedGraphDistance - 0.0001f ||

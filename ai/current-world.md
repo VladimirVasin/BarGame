@@ -456,14 +456,14 @@ The vertical slice contains:
   west/north/south 26–40 m, river/park/home/bar/fair/arch anchors and eastern widths fixed.
   Beach/sea continuous; legacy/custom uniform. District rhythm varies.
   The OldTown T meets north/south at 78°/102°; nodes/datums fixed, ends straight
-  ≥6 m. CityRoadJunction unions incident 8 m ribbons minus 6 m carriageway,
-  shared miter sidewalks; flat grade 6 m here/4 m elsewhere. Physical polygons
-  serve road/terrain mesh, collision/navigation. Four L 15×14 m houses use
-  rigid street poses; two western compact 14×13.5 m rear bodies join BuildingMasses
+  ≥6 m. Junction polygons serve mesh/collision/navigation. Four L 15×14 m
+  street-facing houses; two western compact 14×13.5 m rear bodies join BuildingMasses
   without new lot IDs. CourtyardBlocks subtract exact masses from road ground;
   ≥2.2 m rear necks open into 10×7 m L courts. Capsule-safe loops pass both
-  flanks and return to the same street entrance. Model/foundation/docks and
-  oriented collision agree; assets stay unscaled. Significant places exclude
+  flanks and return to their street entrance. CourtyardConnections link
+  western `(0,7)/(0,8)` courts on road-free ground;
+  CourtyardPaths keep lamps/props/solid litter clear.
+  Model/foundation/docks/collision agree; assets unscaled. Significant places exclude
   the patch; unsafe bends stay outside bus routes;
 - one default-blueprint-only mountain boundary plan closes the physical west
   and south edges with deterministic flat-shaded low-poly ridge strips whose
@@ -773,8 +773,9 @@ The vertical slice contains:
   Moving actor/head: `6→4 m`, `.25–.5 m` gap, shared `10 px`/charcoal. Depth/actor-ID
   mask rejects colliderless occlusion; no edge clamp. Speech/pause/modal/transition
   suppress; overlap priority is active interaction→nearest;
-- one deterministic radius-safe sidewalk/crosswalk navigation graph with
-  spawn anchors on long pavement segments. At most two low-poly walkers are
+- one radius-safe sidewalk/crosswalk/Courtyard graph; courtyard knots use
+  exact free ground holes/heights and .35 m radius. Street spawn anchors stay.
+  At most two low-poly walkers are
   active near the player: one randomized runtime event activates one slot at a
   randomly ranked obstacle-safe anchor in the preferred fog-hidden `76-86 m`
   band. If that band contains no anchor in a graph component capable of reaching
@@ -784,7 +785,7 @@ The vertical slice contains:
   forward through available turns, has an independent 50% choice at a zebra,
   and is recycled only after moving beyond `88 m` from the hero. Before a fresh
   walker first reaches `24 m`, eligible non-backtracking turns follow the
-  shortest physical graph distance to the closest node in that sidewalk
+  shortest physical Path.Length graph distance to the closest node in that
   component; after that first encounter the guidance stays
   off and ordinary random roaming resumes. By day, its hidden distant
   simulation smoothly accelerates from authored pace at `32 m`

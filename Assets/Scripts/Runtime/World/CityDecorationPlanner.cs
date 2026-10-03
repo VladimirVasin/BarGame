@@ -1209,8 +1209,8 @@ namespace BarPromenade
         {
             float clearance = objectRadius + CityGroundTraversalPlanner.MaximumAgentRadius;
             var point = new Vector2(position.x, position.z);
-            foreach (CityCourtyardBlock block in layout.CourtyardBlocks)
-                if (block.Route.Project(point).DistanceSquared < clearance * clearance) return true;
+            foreach (CityRoadPath path in layout.CourtyardPaths)
+                if (path.Project(point).DistanceSquared < clearance * clearance) return true;
             return false;
         }
 

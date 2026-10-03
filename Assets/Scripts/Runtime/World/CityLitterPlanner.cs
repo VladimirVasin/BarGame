@@ -662,8 +662,9 @@ namespace BarPromenade
                 foreach (CityCourtyardBlock block in layout.CourtyardBlocks)
                 {
                     courtyardCells.Add(block.Cell);
-                    courtyardWalkLanes.AddRange(block.Route.Ribbon(CityGroundTraversalPlanner.MaximumAgentRadius * 2f));
                 }
+                foreach (CityRoadPath path in layout.CourtyardPaths)
+                    courtyardWalkLanes.AddRange(path.Ribbon(CityGroundTraversalPlanner.MaximumAgentRadius * 2f));
                 foreach (BuildingLot lot in layout.BuildingMasses)
                 {
                     if (!lot.HasBuilding) continue;

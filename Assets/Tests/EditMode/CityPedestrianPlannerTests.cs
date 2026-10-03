@@ -393,6 +393,77 @@ namespace BarPromenade.Tests.EditMode
                         .Within(PositionTolerance),
                     stair.Id);
             }
+            AssertCourtyardGraph(layout, streetSurfacePlan, plan);
+        }
+
+        private static void AssertCourtyardGraph(CityLayout layout, CityStreetSurfacePlan surfaces, CityPedestrianPlan plan)
+        {
+            RoadWalkableArea area = CityPedestrianPlanner.CreateWalkableArea(plan);
+            CityPedestrianLink[] courtLinks = plan.Links.Where(link => link.Kind == CityPedestrianLinkKind.Courtyard).ToArray();
+            Assert.That(courtLinks, Is.Not.Empty);
+            foreach (CityCourtyardBlock block in layout.CourtyardBlocks)
+            {
+                string prefix = $"courtyard:{block.Cell.x}:{block.Cell.y}:";
+                int gate = Enumerable.Range(0, plan.Nodes.Count).Single(index => plan.Nodes[index].Id == prefix + "gate");
+                int court = Enumerable.Range(0, plan.Nodes.Count).Single(index => plan.Nodes[index].Id == prefix + "court");
+                Assert.That(Vector3.Distance(plan.Nodes[court].Position, block.CourtCenter), Is.LessThan(.001f));
+                var visited = new HashSet<int> { gate };
+                var pending = new Queue<int>(); pending.Enqueue(gate);
+                while (pending.Count > 0)
+                {
+                    int node = pending.Dequeue();
+                    foreach (int link in plan.GetLinkIndices(node))
+                    {
+                        int other = plan.Links[link].Other(node);
+                        if (visited.Add(other)) pending.Enqueue(other);
+                    }
+                }
+                Assert.That(visited, Has.Member(court), "The court must be connected to its actual street gate.");
+                Assert.That(visited.Any(index => plan.Nodes[index].Id.StartsWith("lane:")), Is.True,
+                    "A courtyard component must join the production street graph.");
+                foreach (int node in Enumerable.Range(0, plan.Nodes.Count).Where(index => plan.Nodes[index].Id.StartsWith(prefix)))
+                    Assert.That(plan.GetLinkIndices(node).Count, Is.GreaterThanOrEqualTo(2),
+                        $"Courtyard graph node {plan.Nodes[node].Id} is a dead end.");
+            }
+            foreach (CityCourtyardConnection connection in layout.CourtyardConnections)
+                Assert.That(courtLinks.Any(link => link.Id.StartsWith(
+                    $"courtyard-connection:{connection.FirstCell.x}:{connection.FirstCell.y}:{connection.SecondCell.x}:{connection.SecondCell.y}:")), Is.True);
+            foreach (CityPedestrianLink link in courtLinks)
+            {
+                Assert.That(link.Path, Is.Not.Null, link.Id);
+                Assert.That(link.PathHeightSampler, Is.Not.Null, link.Id);
+                Assert.That(plan.Nodes[link.FirstNodeIndex].IsCrosswalkEntry || plan.Nodes[link.SecondNodeIndex].IsCrosswalkEntry,
+                    Is.False, "Courtyard shortcuts must not create a road crossing.");
+                for (float distance = 0f; distance < link.Path.Length + .25f; distance += .25f)
+                {
+                    Vector2 point = link.Path.SampleDistance(distance).Position;
+                    float top = SampleCourtyardNavigationTop(layout, surfaces, point);
+                    Assert.That(link.PathHeightSampler(point), Is.EqualTo(top).Within(.001f), link.Id);
+                    Assert.That(area.Contains(new Vector3(point.x, top, point.y), .35f), Is.True,
+                        $"Courtyard link {link.Id} leaves its capsule-safe free ground at {point}.");
+                }
+            }
+            foreach (CityPedestrianSpawnAnchor anchor in plan.SpawnAnchors)
+            {
+                Assert.That(anchor.Id, Does.Not.Contain("courtyard"));
+                Assert.That(plan.GetLinkIndices(anchor.FirstNodeIndex).Select(index => plan.Links[index])
+                    .Any(link => link.Other(anchor.FirstNodeIndex) == anchor.SecondNodeIndex &&
+                        link.Kind != CityPedestrianLinkKind.Courtyard), Is.True, anchor.Id);
+            }
+        }
+
+        private static float SampleCourtyardNavigationTop(CityLayout layout, CityStreetSurfacePlan surfaces, Vector2 point)
+        {
+            if (surfaces.CurvedSidewalkPolygons.Any(polygon => CityRoadPolygon.Contains(polygon, point)) ||
+                layout.RoadGeometry.ObliqueJunction.SidewalkPolygons.Any(polygon => CityRoadPolygon.Contains(polygon, point)))
+            {
+                Assert.That(layout.ElevationPlan.TrySampleSurface(point, CitySurfaceRole.SidewalkTop, out float top, out _), Is.True);
+                return top;
+            }
+            foreach (RuntimeOrientedBox box in surfaces.SidewalkGeometry)
+                if (box.TrySampleTop(new Vector3(point.x, 0f, point.y), out float top)) return top;
+            Assert.That(CityTerrainSurfacePlan.TrySampleGroundTop(layout, point, out float ground, out _), Is.True);
+            return ground;
         }
 
         [Test]
@@ -475,6 +546,11 @@ namespace BarPromenade.Tests.EditMode
                     out float height,
                     out _),
                 Is.True);
+            Vector2 point = new Vector2(position.x, position.z);
+            if (streetSurfacePlan.CurvedSidewalkPolygons.Any(polygon => CityRoadPolygon.Contains(polygon, point)) ||
+                (elevation.RoadGeometry.ObliqueJunction != null && elevation.RoadGeometry.ObliqueJunction.SidewalkPolygons
+                    .Any(polygon => CityRoadPolygon.Contains(polygon, point))))
+                Assert.That(elevation.TrySampleSurface(point, CitySurfaceRole.SidewalkTop, out height, out _), Is.True);
             for (int index = 0;
                  index < streetSurfacePlan.SidewalkGeometry.Count;
                  index++)

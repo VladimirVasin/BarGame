@@ -2,33 +2,33 @@
 
 ## Current facts
 
+- **Accepted — 2026-10-04, OldTown pedestrian shortcuts:**
+  CourtyardConnections: `(0,7)/(0,8)`, shortest court paths, no road;
+  loops stay. CourtyardPaths keep lamps/props/solid litter clear.
+  Courtyard links join street graph: .35 m radius, ground holes/heights, deduped
+  knots, Path.Length costs; worker IDs/street spawn anchors stay.
+
 - **Accepted — 2026-10-04, OldTown courtyard massing:**
-  Cells `(0,7),(1,7),(0,8),(1,8)` reuse L 15×14 m; western cells add compact
-  14×13.5 m rear houses. 144 lot IDs remain; BuildingMasses adds two houses.
-  CourtyardBlocks subtract exact masses from road ground. A .4 m capsule loop
-  passes both flanks, rear neck and L court to the
-  same street entry. Gap ≥2.2 m by fitted X support; L void 10×7 m stays open.
-  No new entrances/NPCs/text/lights/lore; canon/passage guards apply.
+  `(0,7),(1,7),(0,8),(1,8)` reuse L 15×14 m; west adds two compact 14×13.5 m
+  rear houses. 144 lot IDs; BuildingMasses adds bodies; CourtyardBlocks
+  subtract exact masses from road ground. .4 m loops use both flanks/rear neck
+  to the same street entry; gap ≥2.2 m by X support, L void 10×7 m open.
 
 - **Accepted — 2026-10-04, OldTown oblique junction and frontage poses:**
-  Node IDs/positions/datums fixed; cardinal frontages name existing graph edges.
-  Pilot `(1,7)-(1,8)`, `(1,8)-(1,9)`, `(1,8)-(2,8)`: east tangent -12°
-  gives `78°/102°`; ends straight ≥6 m. CityRoadJunction unions incident
-  first-6-m ribbons: 8 m paving minus 6 m carriageway, shared miter sidewalks.
-  Flat grade 6 m here/4 m elsewhere; seam knots retain profile.
-  FacadeRotation/CreateCollisionPolygons share unscaled model/foundation/dock
-  poses; render/collision/ground/routes share polygons.
+  Road nodes/IDs/datums fixed; cardinal frontages name existing edges.
+  Pilot `(1,7)-(1,8)-(1,9)` plus `(1,8)-(2,8)`: east -12° gives 78°/102°;
+  ends straight ≥6 m. CityRoadJunction unions first 6 m incident ribbons:
+  8 m paving minus 6 m carriageway; miter sidewalks, flat grade 6 m/4 m elsewhere.
+  Unscaled poses/polygons unify model/foundation/docks/collision/ground/routes.
 
 - **Accepted — 2026-10-03, city replanning:**
-  Blueprint/area/entrance IDs remain. CitySpatialPlan maps metres/grid:
-  west/north/south 26–40 m; x4..13/z3..8 anchors/eastern widths fixed.
-  Fringe nominal; legacy/custom uniform. District priorities connect roads.
-  12 fixed-metre compact/long/L models share BuildingLot
-  variants in source/docks/collision/Home; protected precincts compact.
-  Runtime mesh/collider: road ribbons/terrain complement only; Blender props.
-  Significant places exclude the patch;
-  unsafe curves stay outside bus routes. Heights/fog/meaning/acts, nine art
-  checks/story §16 remain; no §6 exception.
+  Blueprint/area/entrance IDs stay. CitySpatialPlan maps metres/grid:
+  west/north/south 26–40 m, x4..13/z3..8/eastern widths fixed; fringe nominal,
+  legacy/custom uniform. District roads connect; 12 fixed compact/long/L models
+  share Home variants; protected precincts compact.
+  Runtime mesh/collider only for road ribbons/terrain complement; Blender props.
+  Patch excludes significant places/unsafe bus links. Heights/fog/meaning/acts,
+  nine art checks/story §16 stay; no §6 exception.
 
 - **Accepted — 2026-09-29, Normal NPC faces and fisherman:**
   User: Normal/default eyes/brows/nose/mouth are PNG on shaped heads, no solid

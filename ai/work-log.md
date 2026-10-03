@@ -5,43 +5,44 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 
 ## 2026-10-04 — OldTown road geometry
 
-- The bounded OldTown T retains node IDs/positions/datums; its branch leaves at
-  −12° (78°/102°), with straight ≥6 m approach ends. All incident first-6-m
-  ribbons supply 8 m paving minus 6 m carriageway and shared miter sidewalks.
-  Junction grade stays flat 6 m, other nodes 4 m. Road/terrain mesh, collision,
-  ground complement, navigation and lanes share the physical polygons.
-  Four ordinary cells exclude significant places across seeds. Their houses fit
-  rigid street-facing poses across model/foundation/docks/oriented collision;
-  measured assets stay unscaled. Cardinal frontages identify existing graph edges.
-  Vehicle clearance excludes unsafe links; the existing bus loop stays intact.
-  Cannery and Last Route guards retain their actual routes.
+- OldTown T: −12° branch (78°/102°), straight ≥6 m ends, fixed road nodes/datums.
+  Incident ribbons share paving, miter sidewalks, mesh/collision/ground/routes.
+  Four ordinary cells exclude significant places across seeds; unscaled rigid
+  house poses share model/foundation/docks/collision. Cardinal frontages name
+  existing edges. Unsafe vehicle links stay outside the existing bus loop;
+  Cannery and Last Route retain their actual routes.
 - CourtyardBlocks reuse four L 15×14 m houses and two western compact 14×13.5 m
   rear bodies. BuildingMasses adds the latter without changing 144 semantic lots.
   Exact masses are subtracted from road ground. A bounded visibility graph fits
   a .4 m capsule loop from the street via both flanks, the western ≥2.2 m neck
   and the true 10×7 m L court back to the same street entrance. Assets stay
-  unscaled; there are no new entrances, NPCs, text, lights or story details.
-- Local-origin polygon area and physical edge tolerance retain the partition.
-  Padded OBB fitting checks each actual road cut individually to avoid fragmented
-  ground area precision errors. Node grade breakpoints must be ribbon vertices:
-  without them path and collider heights diverged near street ends. Adjacent
-  sampled pavement pieces prove capsule clearance through their polygon union.
-  Shared-edge classification needs metric endpoint tolerance: floating
-  collinear/intersection corners left false internal barriers in that union.
-  Front/rear fitting reserves keep the full hero capsule clear.
-  Existing street poles choose bounded clear stations on the same road when
-  courtyard routes or bodies occupy their old station; lights/types stay the same.
-  The checkpoint test helper respects its open public frontage.
+  unscaled. CourtyardConnections join western `(0,7)/(0,8)` court ends across
+  road-free ground; loops stay. Existing street workers use the common Courtyard
+  graph: exact holes/heights, .35 m radius, deduped knots, Path.Length costs.
+  Splitting street links retains all 13 identities and spawn-anchor IDs/positions.
+  CourtyardPaths reserve loops/links from lamps/props/solid litter; no new
+  entrances/NPCs/text/lights/lore.
+- Local-origin area and metric edge/endpoint tolerance avoid partition errors
+  and false internal barriers. Padded OBBs check actual road cuts individually;
+  fragmented ground area sums were unreliable. Grade breakpoints must be ribbon
+  vertices or path/collider heights diverge. Capsule clearance uses the pavement
+  union, with front/rear fitting reserves. Existing poles choose bounded clear
+  stations on the same road; lights/types stay.
+  Courtyard motion budgets XZ distance, then samples ground at the constrained
+  position; a 3D step spent walking pace on the persistent ground-contact Y gap.
+  CharacterController collision remains authoritative.
   Compact OldTown outfalls use canonical facade mounts and ground sampling;
   generic lateral placement missed the recessed right wall and left a floating strap.
 - Checks: `CityRoadGeometryTests`,
+  `CityPedestrianPlannerTests.Create_ElevatedCity_UsesLocalSurfacesAndSignatureStairs`,
   `CityElevationPlannerTests.DefaultCity_UsesOneSafeRoadGroundBoundaryContract`,
   `CityBuildingPrototypeRuntimeTests.DefaultCity_PlacesDistrictPrototypesAndClipsHomeExterior`,
   `CityDecorationPlannerTests.ShippedCity_PutsTheWaterNetworkOnTheGround`,
-  `AreaCaptureFixture.CityReplanning`. Court/passage/street/T frames reviewed:
-  court spaces and passage openings are visible; full hero capsule routes,
-  physical floor/sampler heights, navigation/map arrivals and existing pedestrian
-  probes agree. `python tools/check-docs.py`, `git diff --check`.
+  `AreaCaptureFixture.CityReplanning`. Court/passage/street/T and worker frames
+  reviewed: continuous ground and clear passages. Hero swept capsule/.35 m
+  masks/floor/map agree; an existing walker physically traverses both directions
+  through CharacterController.Move with collision/navigation/ground contact.
+  `python tools/check-docs.py`, `git diff --check`.
 
 ## 2026-10-03 — Combat and city replanning
 

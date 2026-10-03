@@ -22,12 +22,23 @@ namespace BarPromenade
             readOnlyPrimaryLandmarkCells;
         private bool hasValidated;
         private IReadOnlyList<CityCourtyardBlock> courtyardBlocks;
+        private IReadOnlyList<CityCourtyardConnection> courtyardConnections;
         private IReadOnlyList<BuildingLot> buildingMasses;
 
         // Semantic lot identities stay stable. Physical mass consumers also
         // see the two rear houses that enclose the OldTown pilot courts.
         public IReadOnlyList<CityCourtyardBlock> CourtyardBlocks =>
             courtyardBlocks ?? (courtyardBlocks = CityCourtyardBlockPlanner.Create(this));
+        public IReadOnlyList<CityCourtyardConnection> CourtyardConnections =>
+            courtyardConnections ?? (courtyardConnections = CityCourtyardBlockPlanner.CreateConnections(this));
+        public IEnumerable<CityRoadPath> CourtyardPaths
+        {
+            get
+            {
+                foreach (CityCourtyardBlock block in CourtyardBlocks) yield return block.Route;
+                foreach (CityCourtyardConnection connection in CourtyardConnections) yield return connection.Path;
+            }
+        }
         public IReadOnlyList<BuildingLot> BuildingMasses
         {
             get

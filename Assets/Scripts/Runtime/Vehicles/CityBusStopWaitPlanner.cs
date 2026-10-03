@@ -158,7 +158,7 @@ namespace BarPromenade
                     Vector3 offset = plan.Nodes[other].Position -
                                      plan.Nodes[entry.NodeIndex].Position;
                     offset.y = 0f;
-                    float candidate = entry.Distance + offset.magnitude;
+                    float candidate = entry.Distance + (link.Path?.Length ?? offset.magnitude);
                     if (candidate < distances[other] - 0.0001f)
                     {
                         distances[other] = candidate;

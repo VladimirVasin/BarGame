@@ -103,6 +103,7 @@ namespace BarPromenade
         private int approachHeapCount;
 
         public bool IsInitialized { get; private set; }
+        internal bool AutomaticUpdatesSuspended { get; set; }
         public CityPedestrianPersonalSpaceController PersonalSpace => personalSpace;
         public CityPedestrianPlan Plan => plan;
         public IReadOnlyList<CityPedestrianActor> Actors => actors;
@@ -387,7 +388,7 @@ namespace BarPromenade
 
         private void LateUpdate()
         {
-            Advance(Time.deltaTime);
+            if (!AutomaticUpdatesSuspended) Advance(Time.deltaTime);
         }
 
         private void OnDisable()
@@ -1439,8 +1440,9 @@ namespace BarPromenade
                     plan.GetLinkIndices(node);
                 for (int index = 0; index < linkIndices.Count; index++)
                 {
-                    int other = plan.Links[linkIndices[index]].Other(node);
-                    float edgeLength = Mathf.Sqrt(
+                    CityPedestrianLink link = plan.Links[linkIndices[index]];
+                    int other = link.Other(node);
+                    float edgeLength = link.Path?.Length ?? Mathf.Sqrt(
                         PlanarSquaredDistance(
                             plan.Nodes[node].Position,
                             plan.Nodes[other].Position));

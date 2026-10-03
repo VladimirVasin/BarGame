@@ -93,6 +93,7 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(layout.BuildingLots.Count(lot => layout.RoadGeometry.IsAffectedCell(lot.Cell) && lot.HasFacadeRotation),
                 Is.GreaterThanOrEqualTo(2), "The rigid frontage poses must follow the replanned streets.");
             AssertCourtyardRoutes(layout);
+            AssertCourtyardConnections(layout, streets);
         }
 
         private static void AssertCourtyardRoutes(CityLayout layout)
@@ -135,25 +136,76 @@ namespace BarPromenade.Tests.EditMode
                 Vector2 gate = new Vector2(block.Primary.SidewalkArrivalPosition.x, block.Primary.SidewalkArrivalPosition.z);
                 Assert.That(block.Route.Vertices[0], Is.EqualTo(gate));
                 Assert.That(block.Route.Vertices[block.Route.Vertices.Count - 1], Is.EqualTo(gate));
-                // Prove the swept capsule along every complete link, including
-                // corners between samples, against all actual building solids.
-                for (int link = 1; link < block.Route.Vertices.Count; link++)
-                {
-                    Vector2 a = block.Route.Vertices[link - 1], b = block.Route.Vertices[link];
-                    foreach (Vector2[] body in bodies)
-                    {
-                        Assert.That(CityRoadPolygon.Contains(body, a) || CityRoadPolygon.Contains(body, b), Is.False);
-                        for (int side = 0; side < body.Length; side++)
-                            Assert.That(SegmentDistanceSquared(a, b, body[side], body[(side + 1) % body.Length]),
-                                Is.GreaterThanOrEqualTo(.35f * .35f - .0001f),
-                                $"Hero capsule route crosses a building at {block.Cell}, link {link}.");
-                    }
-                }
+                AssertCapsulePathClear(block.Route, bodies, $"Courtyard {block.Cell}");
                 for (float distance = 0f; distance < block.Route.Length + .25f; distance += .25f)
                 {
                     Vector2 point = block.Route.SampleDistance(distance).Position;
                     Assert.That(heroArea.Contains(new Vector3(point.x, 0f, point.y), .35f), Is.True,
                         $"Courtyard {block.Cell} route leaves the actual hero mask at {point}.");
+                }
+            }
+        }
+
+        private static void AssertCourtyardConnections(CityLayout layout, IReadOnlyList<Vector2[]> streets)
+        {
+            int expectedConnections = layout.HasRoad(new RoadEdge(new Vector2Int(0, 8), new Vector2Int(1, 8))) ? 0 : 1;
+            if (layout.Seed == 20260727) Assert.That(expectedConnections, Is.EqualTo(1));
+            Assert.That(layout.CourtyardConnections.Count, Is.EqualTo(expectedConnections));
+            Assert.That(layout.CourtyardPaths.Count(), Is.EqualTo(4 + expectedConnections));
+            var bodies = layout.BuildingMasses.SelectMany(lot => lot.CreateCollisionPolygons()).ToList();
+            RoadWalkableArea heroArea = RoadWalkableArea.FromLayout(layout);
+            foreach (CityCourtyardConnection connection in layout.CourtyardConnections)
+            {
+                Assert.That(connection.FirstCell, Is.EqualTo(new Vector2Int(0, 7)));
+                Assert.That(connection.SecondCell, Is.EqualTo(new Vector2Int(0, 8)));
+                Assert.That(connection.First, Is.SameAs(layout.CourtyardBlocks.Single(block => block.Cell == connection.FirstCell)));
+                Assert.That(connection.Second, Is.SameAs(layout.CourtyardBlocks.Single(block => block.Cell == connection.SecondCell)));
+                Assert.That(connection.Path.Vertices[0], Is.EqualTo(new Vector2(connection.First.CourtCenter.x, connection.First.CourtCenter.z)));
+                Assert.That(connection.Path.Vertices[connection.Path.Vertices.Count - 1],
+                    Is.EqualTo(new Vector2(connection.Second.CourtCenter.x, connection.Second.CourtCenter.z)));
+                AssertCapsulePathClear(connection.Path, bodies, "Inter-court building clearance");
+                AssertCapsulePathClear(connection.Path, streets, "Inter-court route must stay off the street");
+                var ground = connection.First.GroundPolygons.Concat(connection.Second.GroundPolygons).ToList();
+                float maximumGrade = 0f;
+                Vector2 previousPoint = connection.Path.Vertices[0], steepestPoint = previousPoint;
+                Assert.That(CityTerrainSurfacePlan.TrySampleGroundTop(layout, previousPoint, out float previousTop, out _), Is.True);
+                for (float distance = 0f; distance < connection.Path.Length + .25f; distance += .25f)
+                {
+                    Vector2 point = connection.Path.SampleDistance(distance).Position;
+                    Assert.That(heroArea.Contains(new Vector3(point.x, 0f, point.y), .35f), Is.True,
+                        $"Inter-court capsule leaves the hero mask at {point}.");
+                    Assert.That(CityTerrainSurfacePlan.TrySampleGroundTop(layout, point, out float top, out _), Is.True);
+                    float span = Vector2.Distance(point, previousPoint);
+                    float grade = span > .001f ? Mathf.Abs(top - previousTop) / span * 100f : 0f;
+                    if (grade > maximumGrade) { maximumGrade = grade; steepestPoint = point; }
+                    previousPoint = point; previousTop = top;
+                    for (int angle = 0; angle < 16; angle++)
+                    {
+                        float radians = angle * Mathf.PI / 8f;
+                        Vector2 rim = point + new Vector2(Mathf.Cos(radians), Mathf.Sin(radians)) * .35f;
+                        Assert.That(ground.Any(polygon => CityRoadPolygon.Contains(polygon, rim)), Is.True,
+                            $"Inter-court capsule leaves continuous free ground at {rim}.");
+                    }
+                }
+                Debug.Log($"Courtyard connection {connection.FirstCell}->{connection.SecondCell}: length={connection.Path.Length:F3} m, " +
+                    $"maximum sampled terrain grade={maximumGrade:F3}% at {steepestPoint:F3}.");
+                Assert.That(maximumGrade, Is.LessThanOrEqualTo(CityElevationPlan.MaximumPedestrianGradePercent + .05f),
+                    "The shortcut must use terrain the pedestrian can traverse without a height warp.");
+            }
+        }
+
+        private static void AssertCapsulePathClear(CityRoadPath path, IReadOnlyList<Vector2[]> obstacles, string label)
+        {
+            // Complete swept segments catch a clipped corner between samples.
+            for (int link = 1; link < path.Vertices.Count; link++)
+            {
+                Vector2 a = path.Vertices[link - 1], b = path.Vertices[link];
+                foreach (Vector2[] body in obstacles)
+                {
+                    Assert.That(CityRoadPolygon.Contains(body, a) || CityRoadPolygon.Contains(body, b), Is.False, label);
+                    for (int side = 0; side < body.Length; side++)
+                        Assert.That(SegmentDistanceSquared(a, b, body[side], body[(side + 1) % body.Length]),
+                            Is.GreaterThanOrEqualTo(.35f * .35f - .0001f), $"{label}, link {link}.");
                 }
             }
         }
@@ -205,6 +257,8 @@ namespace BarPromenade.Tests.EditMode
             CityLayout layout = CityLayoutGenerator.Generate(CityGenerationSettings.Default, 17);
             Assert.That(layout.RoadGeometry.CurvedEdges, Is.Empty);
             Assert.That(layout.CourtyardBlocks, Is.Empty);
+            Assert.That(layout.CourtyardConnections, Is.Empty);
+            Assert.That(layout.CourtyardPaths, Is.Empty);
             Assert.That(layout.BuildingMasses.Count, Is.EqualTo(layout.BuildingLots.Count));
             foreach (RoadEdge edge in layout.RoadEdges)
                 Assert.That(layout.GetRoadLength(edge), Is.EqualTo(layout.SpatialPlan.GetNodeSpan(edge)).Within(.001f));
