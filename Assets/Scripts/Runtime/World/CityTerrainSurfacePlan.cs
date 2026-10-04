@@ -321,7 +321,7 @@ namespace BarPromenade
                     continue;
                 }
 
-                if (layout.RoadGeometry.IsAffectedCell(candidate.Cell))
+                if (layout.RoadGeometry.IsReplannedCell(candidate.Cell))
                 {
                     bool inside = false;
                     foreach (Vector2[] polygon in layout.RoadGeometry.GetGroundPolygons(candidate.Cell))
@@ -436,7 +436,7 @@ namespace BarPromenade
         private static float ApplyCurvedRoadGrade(CityLayout layout, CitySurfaceDescriptor surface,
             Vector2 point, float datum)
         {
-            if (!layout.RoadGeometry.IsAffectedCell(surface.Cell)) return datum;
+            if (!layout.RoadGeometry.IsReplannedCell(surface.Cell)) return datum;
             float nearest = float.PositiveInfinity;
             float target = datum;
             foreach (Vector2Int direction in RoadGradeDirections)

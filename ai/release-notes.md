@@ -6,26 +6,24 @@ Earlier notes: [`release-notes-2026-09.md`](archive/release-notes-2026-09.md).
 
 ## Unreleased
 
-### 2026-10-04 — Косой T, фасады и дворы Старого города
+### 2026-10-04 — Структура города и общее покрытие
 
-- T Старого города — `78°/102°`; прямые концы ≥6 м, узлы прежние.
-  Дома вдоль улиц без растяжки; дорога, грунт, коллизии и маршруты согласованы.
-- Четыре L-дома и два задних корпуса дают обходы к прежней улице.
-  Западные дворы связаны; личности/места появления прохожих прежние.
-  Рядом длинный/короткий дома с проходом и открытым двором.
-  Северный фронт чередует эти типы с неглубокими отступами.
-  Прохожие разворачиваются до шага; без новых входов/жителей/лора.
-- Выходы водостоков крепятся к фасаду: утопленная стена больше не оставляет
-  крепление в воздухе.
-- Проверки: `CityRoadGeometryTests`, `OldTownPilot_KeepsAnchorsAndPartitionsGroundWithoutBuildingOverlap`,
-  `Create_ElevatedCity_UsesLocalSurfacesAndSignatureStairs`,
-  `CityElevationPlannerTests.DefaultCity_UsesOneSafeRoadGroundBoundaryContract`,
-  `CityBuildingPrototypeRuntimeTests.DefaultCity_PlacesDistrictPrototypesAndClipsHomeExterior`,
-  `CityDecorationPlannerTests.ShippedCity_PutsTheWaterNetworkOnTheGround`,
-  `AreaCaptureFixture.CityReplanning`; дворы/проходы/улицы и повороты просмотрены.
-  Капсула героя проверена; прохожий физически дошёл до улицы в каждом направлении.
-  Пол/высоты/карта согласованы, маршрут автобуса сохранён.
-- Документация: `python tools/check-docs.py`, `git diff --check`.
+- Двадцать типов 3D-домов: Старый/Жилой ниже, Промзона шире и ниже,
+  Ночной выше соседей. Крыши/этажи читаются в прежнем тумане.
+  Настоящие проезды, флигели и районные дворы меняют улицу и её тыл.
+  Старые/служебные улицы изгибаются; значимые места, автобус и лестницы сохранены.
+  Грузовик выбирает прямые служебные улицы; дворовые пути — общая навигация.
+- Земля/улицы/тротуары/дорожки составляют общее покрытие; разметка следует
+  опоре, шаги и дождь сохраняют свойства участков. Раскопки/песок работают,
+  балкон повторяет слой. Покрытие строится быстрее.
+  Старые L-дворы/западные связи сохранены; водостоки на фасаде,
+  прохожие поворачивают до шага.
+- Ранее проверено: `GroundSurfacePartitionerTests`,
+  `CityGroundSurfaceSystemTests`, `AreaCaptureFixture.CityGroundSurface`,
+  `CityRoadGeometryTests`, `AreaCaptureFixture.CityReplanning`.
+  Кадры земли/дворов/улиц просмотрены; капсула, пол/карта и путь к улице согласованы.
+- Проверки: `AreaCaptureFixture.CityFabric`, `CityBuildingAssetSetup.RunValidation`,
+  Blender `--validate-only`; кадры просмотрены. `check-docs.py`/`git diff --check`.
 
 ### 2026-10-03 — Бой и кварталы города
 

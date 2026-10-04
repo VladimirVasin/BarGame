@@ -192,12 +192,17 @@ namespace BarPromenade
             Renderer renderer,
             Color sourceTint)
         {
+            ApplyCombined(renderer, sourceTint, -1);
+        }
+
+        public static void ApplyCombined(Renderer renderer, Color sourceTint, int materialIndex)
+        {
             if (renderer == null)
             {
                 return;
             }
 
-            ApplySharedProperties(renderer, sourceTint, GetRecipe());
+            ApplySharedProperties(renderer, sourceTint, GetRecipe(), null, materialIndex);
         }
 
         /// <summary>
@@ -252,13 +257,14 @@ namespace BarPromenade
             Renderer renderer,
             Color sourceTint,
             HomeSurfaceRecipe recipe,
-            Material sharedMaterial = null)
+            Material sharedMaterial = null,
+            int materialIndex = -1)
         {
-            renderer.sharedMaterial = sharedMaterial != null
+            GroundSurfaceAppearance.AssignSharedMaterial(renderer, sharedMaterial != null
                 ? sharedMaterial
-                : RuntimePrimitiveFactory.DefaultMaterial;
+                : RuntimePrimitiveFactory.DefaultMaterial, materialIndex);
             var properties = new MaterialPropertyBlock();
-            renderer.GetPropertyBlock(properties);
+            GroundSurfaceAppearance.ReadProperties(renderer, properties, materialIndex);
             properties.SetTexture(BaseMapId, GetTexture());
             Color displayTint = SurfaceAppearanceCore.CreateDisplayTint(
                 sourceTint,
@@ -267,11 +273,11 @@ namespace BarPromenade
             properties.SetColor(ColorId, displayTint);
             properties.SetFloat(SmoothnessId, recipe.Smoothness);
             properties.SetFloat(MetallicId, recipe.Metallic);
-            renderer.SetPropertyBlock(properties);
+            GroundSurfaceAppearance.WriteProperties(renderer, properties, materialIndex);
             if (sharedMaterial == null)
-                GroundSurfaceAppearance.Apply(renderer, GroundSurfaceKind.Rock, GetTexture());
+                GroundSurfaceAppearance.Apply(renderer, GroundSurfaceKind.Rock, GetTexture(), materialIndex);
             else
-                GroundSurfaceAppearance.ApplyRidgeResponse(renderer, GetTexture());
+                GroundSurfaceAppearance.ApplyRidgeResponse(renderer, GetTexture(), materialIndex);
         }
 
         [RuntimeInitializeOnLoadMethod(

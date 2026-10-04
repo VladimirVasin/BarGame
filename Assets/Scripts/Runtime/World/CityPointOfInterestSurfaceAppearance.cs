@@ -138,16 +138,21 @@ namespace BarPromenade
             SurfaceProjection projection,
             Color sourceTint)
         {
+            Apply(renderer, kind, projection, sourceTint, -1);
+        }
+
+        public static void Apply(Renderer renderer, CityPointOfInterestSurfaceKind kind,
+            SurfaceProjection projection, Color sourceTint, int materialIndex)
+        {
             if (renderer == null)
             {
                 return;
             }
 
             HomeSurfaceRecipe recipe = GetRecipe(kind);
-            renderer.sharedMaterial =
-                RuntimePrimitiveFactory.DefaultMaterial;
+            GroundSurfaceAppearance.AssignSharedMaterial(renderer, RuntimePrimitiveFactory.DefaultMaterial, materialIndex);
             var properties = new MaterialPropertyBlock();
-            renderer.GetPropertyBlock(properties);
+            GroundSurfaceAppearance.ReadProperties(renderer, properties, materialIndex);
             properties.SetTexture(BaseMapId, GetTexture(kind));
             Color displayTint = CreateDisplayTint(sourceTint, kind);
             properties.SetColor(BaseColorId, displayTint);
@@ -157,9 +162,9 @@ namespace BarPromenade
                 CreateBaseMapTransform(renderer, kind, projection));
             properties.SetFloat(SmoothnessId, recipe.Smoothness);
             properties.SetFloat(MetallicId, recipe.Metallic);
-            renderer.SetPropertyBlock(properties);
+            GroundSurfaceAppearance.WriteProperties(renderer, properties, materialIndex);
             if (kind == CityPointOfInterestSurfaceKind.Paving)
-                GroundSurfaceAppearance.ApplyCity(renderer, GroundSurfaceKind.Paving, GetTexture(kind));
+                GroundSurfaceAppearance.ApplyCity(renderer, GroundSurfaceKind.Paving, GetTexture(kind), materialIndex);
         }
 
         /// <summary>

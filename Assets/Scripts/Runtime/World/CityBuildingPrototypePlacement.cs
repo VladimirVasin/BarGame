@@ -134,7 +134,7 @@ namespace BarPromenade
                 ResolveExpectedFrontAnchor(lot));
             Vector3 localAnchor = lot.BuildingVariant == 0
                 ? ResolveRoofMount(lot.District, kind)
-                : ResolveVariantRoofMount(lot);
+                : ResolveVariantRoofMount(lot, kind);
             return pose.TransformPoint(localAnchor) +
                    Vector3.up * verticalClearance;
         }
@@ -203,26 +203,40 @@ namespace BarPromenade
             {
                 case CityDistrictKind.OldTown:
                     return CreateBounds(
-                        new Vector3(-6.6f, 27f, -6.35f),
-                        new Vector3(6.6f, 42f, 6.35f));
+                        new Vector3(-6.6f, 11.8f, -6.35f),
+                        new Vector3(6.6f, 18f, 6.35f));
                 case CityDistrictKind.Residential:
                     return CreateBounds(
-                        new Vector3(-5.35f, 26f, -5.35f),
-                        new Vector3(5.35f, 40f, 3.4f));
+                        new Vector3(-5.35f, 13.7f, -5.35f),
+                        new Vector3(5.35f, 15f, 3.4f));
                 case CityDistrictKind.Industrial:
                     return CreateBounds(
-                        new Vector3(-6.7f, 24f, -6.45f),
-                        new Vector3(6.7f, 30f, 6.45f));
+                        new Vector3(-6.7f, 6.6f, -6.45f),
+                        new Vector3(6.7f, 8.4f, 6.45f));
                 case CityDistrictKind.Nightlife:
                     return CreateBounds(
-                        new Vector3(-5f, 37f, -5.1f),
-                        new Vector3(5f, 48f, 4.1f));
+                        new Vector3(-5f, 22f, -5.1f),
+                        new Vector3(5f, 27f, 4.1f));
                 default:
                     throw new ArgumentOutOfRangeException(
                         nameof(district),
                         district,
                         "Only ordinary urban districts own prototypes.");
             }
+        }
+
+        public static Bounds GetExpectedRoofAttachmentBounds(CityDistrictKind district, int variantIndex)
+        {
+            if (variantIndex == 0) return GetExpectedRoofAttachmentBounds(district);
+            Vector3 envelope = CityBuildingAssetProvider.GetExpectedEnvelope(district, variantIndex);
+            float halfWidth = envelope.x * .5f;
+            float halfDepth = envelope.z * .5f;
+            float front = halfDepth - (district == CityDistrictKind.Residential ? 1.2f : 0f);
+            float bodyTop = envelope.y - (district == CityDistrictKind.OldTown ? 2.4f :
+                district == CityDistrictKind.Industrial ? .75f : .35f);
+            return CreateBounds(new Vector3(-halfWidth + .4f, bodyTop,
+                    variantIndex == 2 ? .4f : -halfDepth + .4f),
+                new Vector3(halfWidth - .4f, envelope.y, front - .4f));
         }
 
         public static Bounds TransformBounds(
@@ -293,15 +307,22 @@ namespace BarPromenade
             return new Vector3(0f, 0f, envelope.z * 0.5f);
         }
 
-        private static Vector3 ResolveVariantRoofMount(BuildingLot lot)
+        private static Vector3 ResolveVariantRoofMount(BuildingLot lot, CityDecorationKind kind)
         {
             Vector3 envelope = CityBuildingAssetProvider.GetExpectedEnvelope(
                 lot.District, lot.BuildingVariant);
-            // Both the long bar and the L have a solid front wing. Keep
-            // existing roof furniture on that wing, clear of the rear court.
-            return new Vector3(-envelope.x * 0.15f,
-                envelope.y - (lot.District == CityDistrictKind.OldTown ? 2.2f : 0.15f),
-                envelope.z * 0.18f);
+            // The L's front wing and the passage lintel are solid roof mounts.
+            if (lot.District == CityDistrictKind.OldTown)
+            {
+                float halfWidth = envelope.x * .5f;
+                float footSpan = kind == CityDecorationKind.OldTownClockTower ? 2f : 2.4f;
+                float roofHeight = envelope.y - 2.4f + 2.4f * (1f - footSpan / halfWidth);
+                return new Vector3(0f, roofHeight,
+                    lot.BuildingVariant == 2 ? envelope.z * .25f : 0f);
+            }
+            return new Vector3(-envelope.x * .15f,
+                envelope.y - (lot.District == CityDistrictKind.Industrial ? .5f : .15f),
+                envelope.z * .18f);
         }
 
         private static Vector3 ResolveRoofMount(
@@ -316,14 +337,14 @@ namespace BarPromenade
                     {
                         // The two chimney feet touch the left gable here;
                         // the dormer is intentionally bedded into its slope.
-                        return new Vector3(-3.8f, 31.70f, 0f);
+                        return new Vector3(-3.8f, 13.6f, 0f);
                     }
 
                     if (kind == CityDecorationKind.OldTownClockTower)
                     {
                         // The four-metre tower base intersects the gable at
                         // its edge height and reads as an integrated cupola.
-                        return new Vector3(-3.8f, 32.55f, 0f);
+                        return new Vector3(-3.8f, 13.9f, 0f);
                     }
 
                     break;
@@ -331,7 +352,7 @@ namespace BarPromenade
                     if (kind == CityDecorationKind
                             .ResidentialLaundryAndAntenna)
                     {
-                        return new Vector3(-3.6f, 30.30f, -4.0f);
+                        return new Vector3(-3.6f, 14f, -4.0f);
                     }
 
                     if (kind == CityDecorationKind
@@ -339,7 +360,7 @@ namespace BarPromenade
                     {
                         // The greenhouse is set into the rear deck and the
                         // central stair tower instead of floating above it.
-                        return new Vector3(-3.0f, 30.30f, -3.75f);
+                        return new Vector3(-3.0f, 14f, -3.75f);
                     }
 
                     break;
@@ -348,14 +369,14 @@ namespace BarPromenade
                             .IndustrialStacksAndTanks)
                     {
                         // Minimum sawtooth height under every stack foot.
-                        return new Vector3(0f, 25.25f, 0f);
+                        return new Vector3(0f, 7.2f, 0f);
                     }
 
                     if (kind == CityDecorationKind.IndustrialGantry)
                     {
                         // The gantry legs are deliberately bedded into the
                         // alternating shed planes at their shared minimum.
-                        return new Vector3(0f, 26.75f, 0f);
+                        return new Vector3(0f, 7.08f, 0f);
                     }
 
                     break;
@@ -364,7 +385,7 @@ namespace BarPromenade
                     {
                         // Exposed front strip of the lower flat roof, clear
                         // of the upper tower and its pyramid roof.
-                        return new Vector3(-0.6f, 37.30f, 4.45f);
+                        return new Vector3(-0.6f, 22.30f, 4.45f);
                     }
 
                     break;

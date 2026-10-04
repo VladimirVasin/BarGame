@@ -24,43 +24,59 @@ namespace BarPromenade.Tests.EditMode
             new ExpectedPrototype(
                 "old-town-prototype-01",
                 CityDistrictKind.OldTown,
-                new Vector3(14f, 42f, 13.5f),
+                new Vector3(14f, 18f, 13.5f),
                 "Assets/Resources/City/Buildings/" +
                 "OldTownPrototype01.prefab"),
             new ExpectedPrototype(
                 "residential-prototype-01",
                 CityDistrictKind.Residential,
-                new Vector3(11.5f, 40f, 11.5f),
+                new Vector3(11.5f, 15f, 11.5f),
                 "Assets/Resources/City/Buildings/" +
                 "ResidentialPrototype01.prefab"),
             new ExpectedPrototype(
                 "industrial-prototype-01",
                 CityDistrictKind.Industrial,
-                new Vector3(14f, 36f, 13.5f),
+                new Vector3(14f, 10f, 13.5f),
                 "Assets/Resources/City/Buildings/" +
                 "IndustrialPrototype01.prefab"),
             new ExpectedPrototype(
                 "nightlife-prototype-01",
                 CityDistrictKind.Nightlife,
-                new Vector3(12.5f, 48f, 12f),
+                new Vector3(12.5f, 27f, 12f),
                 "Assets/Resources/City/Buildings/" +
                 "NightlifePrototype01.prefab"),
             new ExpectedPrototype("old-town-prototype-02", CityDistrictKind.OldTown,
-                new Vector3(22f, 42f, 11.5f), "Assets/Resources/City/Buildings/OldTownPrototype02.prefab"),
+                new Vector3(22f, 16.2f, 11.5f), "Assets/Resources/City/Buildings/OldTownPrototype02.prefab"),
             new ExpectedPrototype("residential-prototype-02", CityDistrictKind.Residential,
-                new Vector3(22f, 40f, 11.5f), "Assets/Resources/City/Buildings/ResidentialPrototype02.prefab"),
+                new Vector3(22f, 14.4f, 11.5f), "Assets/Resources/City/Buildings/ResidentialPrototype02.prefab"),
             new ExpectedPrototype("industrial-prototype-02", CityDistrictKind.Industrial,
-                new Vector3(22f, 36f, 11.5f), "Assets/Resources/City/Buildings/IndustrialPrototype02.prefab"),
+                new Vector3(22f, 8.4f, 11.5f), "Assets/Resources/City/Buildings/IndustrialPrototype02.prefab"),
             new ExpectedPrototype("nightlife-prototype-02", CityDistrictKind.Nightlife,
-                new Vector3(17f, 48f, 9.5f), "Assets/Resources/City/Buildings/NightlifePrototype02.prefab"),
+                new Vector3(17f, 24.6f, 9.5f), "Assets/Resources/City/Buildings/NightlifePrototype02.prefab"),
             new ExpectedPrototype("old-town-prototype-03", CityDistrictKind.OldTown,
-                new Vector3(15f, 42f, 14f), "Assets/Resources/City/Buildings/OldTownPrototype03.prefab"),
+                new Vector3(15f, 17.4f, 14f), "Assets/Resources/City/Buildings/OldTownPrototype03.prefab"),
             new ExpectedPrototype("residential-prototype-03", CityDistrictKind.Residential,
-                new Vector3(15f, 40f, 14f), "Assets/Resources/City/Buildings/ResidentialPrototype03.prefab"),
+                new Vector3(15f, 15.6f, 14f), "Assets/Resources/City/Buildings/ResidentialPrototype03.prefab"),
             new ExpectedPrototype("industrial-prototype-03", CityDistrictKind.Industrial,
-                new Vector3(15f, 36f, 14f), "Assets/Resources/City/Buildings/IndustrialPrototype03.prefab"),
+                new Vector3(15f, 9.3f, 14f), "Assets/Resources/City/Buildings/IndustrialPrototype03.prefab"),
             new ExpectedPrototype("nightlife-prototype-03", CityDistrictKind.Nightlife,
-                new Vector3(15f, 48f, 14f), "Assets/Resources/City/Buildings/NightlifePrototype03.prefab")
+                new Vector3(15f, 26.4f, 14f), "Assets/Resources/City/Buildings/NightlifePrototype03.prefab"),
+            new ExpectedPrototype("old-town-prototype-04", CityDistrictKind.OldTown,
+                new Vector3(22f, 16.2f, 11.5f), "Assets/Resources/City/Buildings/OldTownPrototype04.prefab"),
+            new ExpectedPrototype("residential-prototype-04", CityDistrictKind.Residential,
+                new Vector3(22f, 14.4f, 11.5f), "Assets/Resources/City/Buildings/ResidentialPrototype04.prefab"),
+            new ExpectedPrototype("industrial-prototype-04", CityDistrictKind.Industrial,
+                new Vector3(22f, 8.4f, 11.5f), "Assets/Resources/City/Buildings/IndustrialPrototype04.prefab"),
+            new ExpectedPrototype("nightlife-prototype-04", CityDistrictKind.Nightlife,
+                new Vector3(17f, 24.6f, 9.5f), "Assets/Resources/City/Buildings/NightlifePrototype04.prefab"),
+            new ExpectedPrototype("old-town-prototype-05", CityDistrictKind.OldTown,
+                new Vector3(10f, 12.6f, 6f), "Assets/Resources/City/Buildings/OldTownPrototype05.prefab"),
+            new ExpectedPrototype("residential-prototype-05", CityDistrictKind.Residential,
+                new Vector3(10f, 11.8f, 6f), "Assets/Resources/City/Buildings/ResidentialPrototype05.prefab"),
+            new ExpectedPrototype("industrial-prototype-05", CityDistrictKind.Industrial,
+                new Vector3(10f, 6.9f, 6f), "Assets/Resources/City/Buildings/IndustrialPrototype05.prefab"),
+            new ExpectedPrototype("nightlife-prototype-05", CityDistrictKind.Nightlife,
+                new Vector3(10f, 18.6f, 6f), "Assets/Resources/City/Buildings/NightlifePrototype05.prefab")
         };
 
         [OneTimeSetUp]
@@ -78,14 +94,14 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
-        public void Manifest_DeclaresDistrictStraightLongAndCornerAssemblies()
+        public void Manifest_DeclaresDistrictMassesPassagesAndCourtyardWings()
         {
             ContractManifest manifest = LoadManifest();
 
             Assert.That(
                 manifest.design_id,
                 Is.EqualTo(CityBuildingAssetProvider.ExpectedDesignId));
-            Assert.That(manifest.generator_version, Is.EqualTo("2.2.0"));
+            Assert.That(manifest.generator_version, Is.EqualTo("3.0.0"));
             Assert.That(manifest.fbx_asset_path, Is.EqualTo(ModelPath));
             Assert.That(manifest.unit_factor, Is.EqualTo(1f));
             Assert.That(manifest.unity_axes, Is.Not.Null);
@@ -108,7 +124,7 @@ namespace BarPromenade.Tests.EditMode
                 Is.EqualTo(
                     CityBuildingAssetProvider.ExpectedPrototypeCount *
                     CityBuildingAssetRegistry.ExpectedRoleCount));
-            Assert.That(manifest.prototypes, Has.Length.EqualTo(12));
+            Assert.That(manifest.prototypes, Has.Length.EqualTo(20));
             Assert.That(IsSha256(manifest.build_signature), Is.True);
             Assert.That(manifest.root_contract, Is.Not.Null);
             Assert.That(
@@ -663,11 +679,12 @@ namespace BarPromenade.Tests.EditMode
                 StringComparison.Ordinal);
             Assert.That(
                 prototype.balcony_slots.Length,
-                Is.EqualTo(residential ? 8 : 0));
+                Is.EqualTo(residential ? (prototype.height_m < 12f ? 6 : 8) : 0));
             if (residential)
             {
-                float[] levels = { 7f, 12f, 17f, 22f };
-                for (int floor = 1; floor <= levels.Length; floor++)
+                float[] levels = { 2.8f, 5.6f, 8.4f, 11.2f };
+                int floorCount = prototype.height_m < 12f ? 3 : 4;
+                for (int floor = 1; floor <= floorCount; floor++)
                 {
                     ContractBalconySlot[] floorSlots =
                         prototype.balcony_slots

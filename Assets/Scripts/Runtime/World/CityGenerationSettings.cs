@@ -8,10 +8,8 @@ namespace BarPromenade
     {
         public const float DefaultRoadWidth = 8f;
         public const int DefaultBarCount = 1;
-        public const float DefaultMinimumOrdinaryBuildingHeight = 36f;
-        public const float DefaultMaximumOrdinaryBuildingHeight = 52f;
-        public const float FogHiddenRoofReferenceCameraHeight = 4f;
-        public const float MaximumFogHiddenRoofTransmittance = 0.01f;
+        public const float DefaultMinimumOrdinaryBuildingHeight = 8f;
+        public const float DefaultMaximumOrdinaryBuildingHeight = 28f;
 
         [Min(1)] public int BlocksX = 12;
         [Min(1)] public int BlocksZ = 12;
@@ -29,10 +27,8 @@ namespace BarPromenade
         // accommodate them.
         [Min(0.1f)] public float MinimumBuildingHeight = 5f;
         [Min(0.1f)] public float MaximumBuildingHeight = 13f;
-        // At the production City fog density, even the lowest ordinary roof
-        // retains less than one percent of its colour from the highest
-        // ordinary chase-camera position. The upper range may pass the fixed
-        // far plane, so these masses read as continuing into the fog.
+        // Ordinary roofs belong to the district silhouette. Production uses
+        // fixed-metre authored models; custom layouts keep this bounded range.
         [Min(0.1f)] public float MinimumOrdinaryBuildingHeight =
             DefaultMinimumOrdinaryBuildingHeight;
         [Min(0.1f)] public float MaximumOrdinaryBuildingHeight =

@@ -204,32 +204,37 @@ namespace BarPromenade
             CityRiverSurfaceKind kind,
             Color sourceTint)
         {
+            ApplyCombined(renderer, kind, sourceTint, -1);
+        }
+
+        public static void ApplyCombined(Renderer renderer, CityRiverSurfaceKind kind,
+            Color sourceTint, int materialIndex)
+        {
             if (renderer == null)
             {
                 return;
             }
 
             HomeSurfaceRecipe recipe = GetRecipe(kind);
-            renderer.sharedMaterial =
-                RuntimePrimitiveFactory.DefaultMaterial;
+            GroundSurfaceAppearance.AssignSharedMaterial(renderer, RuntimePrimitiveFactory.DefaultMaterial, materialIndex);
             var properties = new MaterialPropertyBlock();
-            renderer.GetPropertyBlock(properties);
+            GroundSurfaceAppearance.ReadProperties(renderer, properties, materialIndex);
             properties.SetTexture(BaseMapId, GetTexture(kind));
             Color displayTint = CreateDisplayTint(sourceTint, kind);
             properties.SetColor(BaseColorId, displayTint);
             properties.SetColor(ColorId, displayTint);
             properties.SetFloat(SmoothnessId, recipe.Smoothness);
             properties.SetFloat(MetallicId, recipe.Metallic);
-            renderer.SetPropertyBlock(properties);
-            ApplyGroundResponse(renderer, kind);
+            GroundSurfaceAppearance.WriteProperties(renderer, properties, materialIndex);
+            ApplyGroundResponse(renderer, kind, materialIndex);
         }
 
-        private static void ApplyGroundResponse(Renderer renderer, CityRiverSurfaceKind kind)
+        private static void ApplyGroundResponse(Renderer renderer, CityRiverSurfaceKind kind, int materialIndex = -1)
         {
             if (kind == CityRiverSurfaceKind.Iron) return;
             GroundSurfaceAppearance.ApplyCity(renderer,
                 kind == CityRiverSurfaceKind.Bed ? GroundSurfaceKind.Silt : GroundSurfaceKind.Paving,
-                GetTexture(kind));
+                GetTexture(kind), materialIndex);
         }
 
         internal static Color CreateDisplayTint(

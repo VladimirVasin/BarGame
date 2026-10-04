@@ -114,7 +114,7 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
-        public void DefaultSettings_HideOnlyOrdinaryBuildingRoofsInFog()
+        public void DefaultSettings_UseHumanScaleOrdinaryBuildingsAndPreserveSpecialPlaces()
         {
             CityGenerationSettings settings =
                 CityGenerationSettings.Default;
@@ -130,10 +130,10 @@ namespace BarPromenade.Tests.EditMode
 
             Assert.That(
                 settings.MinimumOrdinaryBuildingHeight,
-                Is.EqualTo(36f));
+                Is.EqualTo(8f));
             Assert.That(
                 settings.MaximumOrdinaryBuildingHeight,
-                Is.EqualTo(52f));
+                Is.EqualTo(28f));
             Assert.That(
                 settings.MinimumBuildingHeight,
                 Is.EqualTo(5f));
@@ -148,20 +148,6 @@ namespace BarPromenade.Tests.EditMode
                     lot.Height <=
                         settings.MaximumOrdinaryBuildingHeight),
                 Is.True);
-
-            float minimumRoofDepth =
-                settings.MinimumOrdinaryBuildingHeight -
-                CityGenerationSettings
-                    .FogHiddenRoofReferenceCameraHeight;
-            float fogTerm =
-                RuntimeSceneSetup.CityFogDensity * minimumRoofDepth;
-            float roofTransmittance =
-                Mathf.Exp(-(fogTerm * fogTerm));
-            Assert.That(
-                roofTransmittance,
-                Is.LessThanOrEqualTo(
-                    CityGenerationSettings
-                        .MaximumFogHiddenRoofTransmittance));
 
             Assert.That(bars, Has.Length.EqualTo(settings.BarCount));
             Assert.That(
@@ -807,7 +793,8 @@ namespace BarPromenade.Tests.EditMode
                     Assert.That(source, Is.Not.Null, lot.Cell.ToString());
                     CityBuildingPrototypePose pose = CityBuildingPrototypePlacement.ResolveCityPose(lot, source);
                     Bounds placedBounds = CityBuildingPrototypePlacement.TransformBounds(source.LocalBounds, pose);
-                    AssertReplannedBoundsWithinCell(cell, placedBounds, layout.RoadWidth * .5f,
+                    float cardinalInset = layout.RoadGeometry.IsReplannedCell(lot.Cell) ? 0f : layout.RoadWidth * .5f;
+                    AssertReplannedBoundsWithinCell(cell, placedBounds, cardinalInset,
                         $"{lot.Cell}: {source.StableId} visual metres");
                     Vector3 sourceFront = source.transform.InverseTransformPoint(source.FrontAnchor.position);
                     Assert.That(Vector3.Distance(pose.TransformPoint(sourceFront),
@@ -815,17 +802,13 @@ namespace BarPromenade.Tests.EditMode
                         Is.LessThan(.003f), $"{lot.Cell}: frontage attachment");
 
                     Assert.That(layout.TryGetFrontageEdge(lot, out RoadEdge frontage), Is.True);
-                    Vector3 start = layout.GetNodeWorldPosition(frontage.A);
-                    Vector3 end = layout.GetNodeWorldPosition(frontage.B);
-                    Vector3 segment = end - start;
-                    segment.y = 0f;
-                    Vector3 anchorDelta = lot.ReturnPosition - start;
-                    anchorDelta.y = 0f;
-                    float along = Vector3.Dot(anchorDelta, segment) / segment.sqrMagnitude;
-                    Assert.That(along, Is.InRange(0f, 1f), $"{lot.Cell}: street anchor");
-                    Assert.That((anchorDelta - segment * along).magnitude,
+                    CityRoadPath path = layout.RoadGeometry.Get(frontage);
+                    CityRoadProjection anchor = path.Project(new Vector2(lot.ReturnPosition.x, lot.ReturnPosition.z));
+                    Assert.That(anchor.DistanceAlong, Is.InRange(0f, path.Length), $"{lot.Cell}: street anchor");
+                    Assert.That(Mathf.Sqrt(anchor.DistanceSquared),
                         Is.LessThan(.003f), $"{lot.Cell}: road centreline");
-                    Vector3 normal = new Vector3(lot.FrontageDirection.x, 0f, lot.FrontageDirection.y);
+                    Vector2 planarNormal = path.SampleDistance(anchor.DistanceAlong).Right;
+                    Vector3 normal = new Vector3(planarNormal.x, 0f, planarNormal.y);
                     Vector3 doorToAnchor = lot.ReturnPosition - lot.DoorPosition;
                     doorToAnchor.y = 0f;
                     Assert.That((doorToAnchor - normal * Vector3.Dot(doorToAnchor, normal)).magnitude,
@@ -840,7 +823,7 @@ namespace BarPromenade.Tests.EditMode
                     BoxCollider[] colliders = building.GetComponentsInChildren<BoxCollider>();
                     Assert.That(colliders, Is.Not.Empty, source.StableId + " physical mass");
                     foreach (BoxCollider collider in colliders)
-                        AssertReplannedBoundsWithinCell(cell, collider.bounds, layout.RoadWidth * .5f,
+                        AssertReplannedBoundsWithinCell(cell, collider.bounds, cardinalInset,
                             $"{lot.Cell}: {collider.name} collision metres");
                     if (lot.BuildingVariant == 2)
                     {
@@ -852,8 +835,8 @@ namespace BarPromenade.Tests.EditMode
 
                 foreach (CityDistrictKind district in CityLayoutGenerator.UrbanDistricts)
                     Assert.That(layout.BuildingLots.Where(lot => lot.IsOrdinaryBuilding && lot.District == district)
-                        .Select(lot => lot.BuildingVariant).Distinct().Count(), Is.EqualTo(3),
-                        district + " must actually place all three authored typologies");
+                        .Select(lot => lot.BuildingVariant).Distinct(), Is.SupersetOf(new[] { 0, 1, 2 }),
+                        district + " must retain the original three authored typologies alongside new variants");
                 Assert.DoesNotThrow(layout.ValidateOrThrow);
             }
             finally

@@ -41,8 +41,8 @@ Only these statuses apply. Product scope cuts are `Deferred` in
 | City Blender misc catalog | CityMisc `4.10.0`: `82` kinds / `122` assemblies / `259` passive meshes; plans retain placement and collision. | `CityMiscAssetProvider{,.LateCatalog}`, `CityMiscAssetSetup` | Current |
 | Nightlife arch shelter | A traversable fixed shelter: passive residents who talk among themselves, a causal barrel fire, roof-only rain cover. | `CityArchShelter{Plan,Placement,Planner,Validator,WorldBuilder,Presentation,SurfaceAppearance,Resident*,Conversation*}` | Current |
 | City ground water network | Flush municipal ironwork on `Roadside`: a gutter grate every `~52 m`, a welded standpipe every `~150 m`. | `CityDecorationPlanner`, `CityDecorationWorldBuilder` | Current |
-| District ground | District ground meshes share cell-edge seams and use each district's authored wear palette. | `CityWorldBuilder.BuildDistrictGround`, `CityExteriorAppearance.ResolveDistrictGroundTint` | Current |
-| City Blender ordinary buildings | Twelve metre typologies; plan-selected models/solid footprints, 84 meshes/9,688 triangles/537 openings. | `CityBuilding*`, building generators | Current |
+| City ground | Priority coatings retain heights/UVs; cemetery/sand change locally. | `CityGroundSurfaceSystem`, `GroundSurfacePartitioner` | Current |
+| City Blender ordinary buildings | Twenty metre types; district heights, true passages and secondary wings share models/solid footprints. | `CityBuilding*`, building generators | Current |
 | Residential balcony life | Bounded pooled smokers occupy authored Residential docks; Home reconstructs its own balcony-gated selection. | `City/Balcony/CityBalconySmoker*`, `CityPedestrianHandProps` | Current |
 | City Blender low-rise landmarks | Bar, supermarket and `player_home_exterior_v1` are complete passive semantic exteriors with inset foundations. | `CityBarFacadeWorldBuilder`, `CitySupermarketFacadeWorldBuilder` | Current |
 | Unity URP foundation | Thirteen build scenes; PC Neutral/Bloom/Vignette baseline. | `6000.6.4f1`, `17.6.0` | Current |
@@ -63,7 +63,7 @@ Only these statuses apply. Product scope cuts are `Deferred` in
 | Quest log and journal | Day one opens the mother's house; the full-screen journal lists ticked boxes over one description panel. | `Quest{Types,LogState}`, `GameDaySchedule`, `Journal{MenuModel,View}` | Current |
 | New-quest notice | Blinking corner notebook on a child of the journal, in all nine scenes; the key shows until first open. | `JournalNoticeView`, `GameSessionState.HasUnreadQuests` | Current |
 | Stairwell quest descent gate | The active day-two cat quest gates descent and guides the hero back to the landing before restoring input. | `StairwellQuestDescentBlocker`, `PlayerMotor.MoveTowardsInteractionPose` | Current |
-| City blueprint and road geometry | Stable cells/metres; oblique T, posed masses, court loops/shortcuts share ground and the pedestrian graph. | `City{Layout,SpatialPlan,RoadGeometryPlan,CourtyardBlockPlanner}`, `BuildingLot` | Current |
+| City blueprint and road geometry | Stable IDs; curved old/service streets, district courts/wings and passage loops share ground/navigation. | `City{Layout,SpatialPlan,RoadGeometryPlan,CourtyardBlockPlanner}`, `BuildingLot` | Current |
 | City elevation and exterior stairs | Validated elevation plans keep external stairs and walkable ground consistent with collision. | `CityElevation{Plan,Planner,Validator,Rebaser,StairPlacement}`, `CityTerrainSurfacePlan` | Current |
 | City mountain boundary and open tunnel | `default-coastal` closes west/south around the non-traversable river cave and one gate-free `8 x 5.5 m` portal. | `CityMountainBoundary*`, `CityMountainBackdrop*` | Current |
 | Eastern mainland view | Closed post; shared descent/lamp/traffic datum, city on valley floor. One pooled mast, passive distance. | `CityEastExit*`, `CityEastRoadProfile`, `CityEastDistance*` | Current |
@@ -113,7 +113,7 @@ Only these statuses apply. Product scope cuts are `Deferred` in
 | Park board games | Both boards are playable. | `ChessRules`, `ChessEngine` | Current |
 | Park chess-set quarrel | The two men hate each other on the only grounds available: one plays chess and despises draughts, the other the reverse. | `CityParkQuarrelController`, `ParkQuarrelTimeline` | Current |
 | City world builder | One validated plan feeds shared staged/synchronous construction; temporary scene, input and audio ownership is explicit. | `CityWorldBuilder`, `CityTerrainSurfaceWorldBuilder` | Current |
-| City street surface presentation | Road/sidewalk/apron meshes share the deterministic street plan and measured surface recipes. | `CityGenerationSettings`, `CityStreetSurface{Plan,Planner}` | Current |
+| City street surfaces | Roads/curbs/paths share ground; paint follows exact support. | `CityStreetSurface{Plan,Planner}`, `CityGroundSurfaceSystem` | Current |
 | Central Park surfaces | The divided park uses shared gravel, paths and bridge geometry from its pure surface plan. | `CityParkSurfaceAppearance`, `CityWorldBuilder` | Current |
 | Pedestrian personal space | Above alcohol `60`: guarding palm; above `80`: close shove. | `CityPedestrianPersonalSpace{Rules,Controller}`, `PlayerMotor` | Current |
 | Pedestrian street insults | Insult responses need the authored proximity/facing gates; the twenty-line bag deals once a round, surviving reloads. | `CityPedestrianInsult{Rules,Lines,Walk,SessionState,Controller}`, `CityPedestrianPersonalSpaceController` | Current |
@@ -139,7 +139,7 @@ Only these statuses apply. Product scope cuts are `Deferred` in
 | Intoxication sound perception | Bounded VHS processing follows the smoothed alcohol level and returns to exact bypass when sober. | `IntoxicationPerceptionRules`, `IntoxicationAudioDriver` | Current |
 | Begotten sound perception | The print's optical track tears against its own mask throughout the ramp and adds surface and apparatus at 24/s. | `BegottenAudioRules`, `BegottenAudioDriver`, `OpticalProcessor.h` | Current |
 | Retro SFX and ambience | Generated retro cues and local ambience share routing, distance limits and scene-owned cleanup. | `RetroSfx`, `RetroAudioService` | Current |
-| Footstep surfaces | Stamped ground and overlays pick a per-surface cue for the hero and registered NPC rigs; three variants per cue. | `FootstepGround`, `HeroFootstepGround`, `NpcFootstepDirector` | Current |
+| Footstep surfaces | Collider triangles/stamps/overlays select hero/NPC cues; three variants each. | `FootstepGround`, `HeroFootstepGround`, `NpcFootstepDirector` | Current |
 | Causal City soundscape | Visible local sources own City sound; bounded schedules and shared routing control the mix. | `CitySound{SourceDescriptor,scapePlan,scapePlanner,SchedulePlanner,Occlusion}` | Current |
 | Home alarm clock | Bed-relative `27.6 cm` clock: frozen flickering `05:59`, solid `06:00` on Wake, then session time. | `HomeAlarmClock{Plan,Builder,Synthesis}`, `HomeAlarmClock` | Current |
 | Road, park and ground navigation | Masks follow physical bounds; exclusions retain corner overlap, safe eastern street margins stay open. | `RoadWalkableArea`, `CityGroundTraversalPlan{,ner}`, `CityRoadGroundBoundaryPlanner` | Current |
@@ -191,7 +191,7 @@ Only these statuses apply. Product scope cuts are `Deferred` in
 | City facade presentation | The legacy 4×4 path remains only for clipped Home crossings. | `CityFacade{Grid,Appearance}`, `CityBuilding{SurfaceAppearance,WindowSlotAppearance}` | Current |
 | City window presentation | Pure facade/window slots select bounded lit shares and preserve district palettes and daytime light floors. | `CityDistrict{ArtProfile,PresentationPlan,PresentationPlanner}`, `CityWindowAppearance` | Current |
 | Stairwell surface presentation | Cached textures and material property blocks apply measured stairwell surfaces without instance materials. | `StairwellSurfaceAppearance`, `SurfaceAppearanceCore` | Current |
-| Exterior ground response | Shared response maps/road masks/snow edges; ridge haze retained. | `GroundSurface{Appearance,Coordinates}`, `GroundSurfaceLit`, `*SurfaceAppearance` | Current |
+| Exterior ground response | Indexed MPBs share response maps/road masks/snow edges; ridge haze retained. | `GroundSurface{Appearance,Coordinates}`, `GroundSurfaceLit`, `*SurfaceAppearance` | Current |
 | Home surface presentation | Twelve shared apartment sheets bind authored semantic parts with their UVs; permitted hardware keeps metre fitting. | `HomeSurfaceAppearance`, `HomeAuthoredVisualFactory` | Current |
 | Stairwell cat | The perched cat supports talk/feed and the grin controller; the future story grin trigger remains unwired. | `StairwellCat*`, `StairwellCatInteraction` | Current |
 | Home exterior context | Home reconstructs a bounded same-seed street view only; Balcony gates its residents and atmosphere. | `HomeExteriorContext{Plan,Planner}`, `HomeExteriorViewBuilder` | Current |
@@ -247,7 +247,7 @@ map -> City / Mountain Road / Village tabs -> confirm other area
 blueprint ID + seed -> immutable blueprint -> validated sparse layout
   -> typed area cells -> surfaces, navigation, city map
   -> one Residential bar across from home / supermarket / district public places
-  -> street surface plan -> Road v2 carriageway + sidewalks + Road v2.1 aprons
+  -> street surface plan -> priority-partitioned City ground/paint sectors
      -> pedestrian graph -> profile-sized player-relative walker population
      -> Route 01 loop -> stops + poles -> one pooled bus actor
         -> board prompt -> seat 07 -> ride -> alight at a later stop

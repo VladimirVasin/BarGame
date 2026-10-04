@@ -96,6 +96,7 @@ namespace BarPromenade
                             block.SetVector("_BaseMap_ST", new Vector4(1f, 1f, 0f, -exit.YardBounds.yMin / pitch));
                             renderer.SetPropertyBlock(block);
                         }
+                RegisterGround(placed, part);
             }
             GameLog.Debug("city", "world_build_block",
                 GameLog.Field("block", "roads_and_river/east_exit/dressing"),
@@ -114,6 +115,24 @@ namespace BarPromenade
             CityEastLitterWorldBuilder.Build(root, exit, support.TrySample);
             CityEastTreeWorldBuilder.Build(root, exit, support.TrySample);
             return root;
+        }
+
+        private static void RegisterGround(Transform placed, CityEastExitDressingPart part)
+        {
+            bool sheet = part.Assembly == "GravelPatch" || part.Assembly == "RoadRepair" ||
+                part.Assembly == "DryDrain";
+            bool relief = part.Assembly == "EarthBank" || part.Assembly == "GroundRidge";
+            bool grassRoot = part.Assembly == "DryGrass";
+            if (!sheet && !relief && !grassRoot) return;
+            foreach (MeshRenderer renderer in placed.GetComponentsInChildren<MeshRenderer>(true))
+            {
+                if (!sheet && !renderer.name.EndsWith("_Ground", StringComparison.Ordinal)) continue;
+                FootstepGround.Stamp(renderer, part.Assembly == "RoadRepair"
+                    ? FootstepGroundKind.Concrete : FootstepGroundKind.Soil);
+                int priority = part.Assembly == "RoadRepair" && renderer.name.EndsWith("_Dark", StringComparison.Ordinal)
+                    ? 100 : 40;
+                CityGroundSurfaceSystem.Register(renderer, priority, paint: !relief);
+            }
         }
 
         private static void EmbedPostGround(Transform exitRoot, CityEastExitPlan exit,

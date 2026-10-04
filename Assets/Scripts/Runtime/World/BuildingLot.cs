@@ -112,7 +112,7 @@ namespace BarPromenade
             CityBuildingPrototypePose pose =
                 CityBuildingPrototypePlacement.ResolveExpectedCityPose(this);
             IReadOnlyList<Bounds> solids = CityBuildingAssetProvider
-                .GetExpectedCollisionBounds(District, BuildingVariant);
+                .GetExpectedGroundCollisionBounds(District, BuildingVariant);
             var footprints = new Rect[solids.Count];
             for (int index = 0; index < solids.Count; index++)
             {
@@ -135,7 +135,7 @@ namespace BarPromenade
             CityBuildingPrototypePose pose =
                 CityBuildingPrototypePlacement.ResolveExpectedCityPose(this);
             IReadOnlyList<Bounds> solids = CityBuildingAssetProvider
-                .GetExpectedCollisionBounds(District, BuildingVariant);
+                .GetExpectedGroundCollisionBounds(District, BuildingVariant);
             var polygons = new Vector2[solids.Count][];
             for (int index = 0; index < solids.Count; index++)
                 polygons[index] = TransformFootprint(solids[index], pose.Position, pose.Rotation);

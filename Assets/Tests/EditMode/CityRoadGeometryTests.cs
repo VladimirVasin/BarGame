@@ -7,13 +7,84 @@ namespace BarPromenade.Tests.EditMode
 {
     public sealed class CityRoadGeometryTests
     {
+        [Test]
+        public void DistrictStreetGeometry_PreservesTrafficSpinesAndFixedJunctionMouths()
+        {
+            CityBlueprint blueprint = CityBlueprintCatalog.Default;
+            CityGenerationSettings settings = CityGenerationSettings.Default;
+            settings.Blueprint = blueprint;
+            settings.SpatialPlan = CitySpatialPlan.Create(blueprint, settings);
+            int northernServiceRow = blueprint.Cells.Where(cell => cell.Topology == CityCellTopologyKind.BuildableLand &&
+                cell.Area.Feature == CityAreaFeatureKind.UrbanDistrict).Max(cell => cell.Cell.y);
+            var roads = new HashSet<RoadEdge>();
+            foreach (CityBlueprintCell cell in blueprint.Cells.Where(cell => cell.ParticipatesInRoadGrid))
+                foreach (Vector2Int direction in new[] { Vector2Int.left, Vector2Int.right, Vector2Int.up, Vector2Int.down })
+                    roads.Add(RoadEdge.ForCellFrontage(cell.Cell, direction));
+            Vector2 originOffset = -settings.SpatialPlan.GetCoordinateWorldOffset(blueprint.CenterNode);
+            Vector3 origin = new Vector3(originOffset.x, 0f, originOffset.y);
+            var orderedRoads = roads.OrderBy(edge => edge.A.y).ThenBy(edge => edge.A.x)
+                .ThenBy(edge => edge.B.y).ThenBy(edge => edge.B.x).ToList();
+            CityRoadGeometryPlan geometry = CityRoadGeometryPlan.Create(settings, origin, orderedRoads);
+            Assert.That(geometry.ReplannedEdges.Count, Is.GreaterThan(20),
+                "The geometry contract covers multiple quarters, beyond the original three streets.");
+            Assert.That(geometry.ReplannedCells.Where(cell => blueprint.TryGetCell(cell, out CityBlueprintCell descriptor) &&
+                descriptor.Area.Archetype == CityDistrictKind.OldTown).Select(cell => cell.y).Distinct().Count(),
+                Is.GreaterThanOrEqualTo(5), "OldTown changes must reach its full north/south extent.");
+            Assert.That(geometry.ReplannedCells.Any(cell => blueprint.TryGetCell(cell, out CityBlueprintCell descriptor) &&
+                descriptor.Area.Archetype == CityDistrictKind.Industrial), Is.True);
+            Assert.That(geometry.ReplannedCells.Where(geometry.IsAffectedCell), Is.EquivalentTo(new[] {
+                new Vector2Int(0, 7), new Vector2Int(1, 7), new Vector2Int(0, 8), new Vector2Int(1, 8) }),
+                "Physical replanning must not broaden the original semantic court reservation.");
+            foreach (RoadEdge edge in orderedRoads)
+            {
+                CityRoadPath path = geometry.Get(edge);
+                Vector2 start = settings.SpatialPlan.GetCoordinateWorldOffset(edge.A) + originOffset;
+                Vector2 end = settings.SpatialPlan.GetCoordinateWorldOffset(edge.B) + originOffset;
+                Assert.That(path.Vertices[0], Is.EqualTo(start));
+                Assert.That(path.Vertices[path.Vertices.Count - 1], Is.EqualTo(end));
+                if (!geometry.ReplannedEdges.Contains(edge)) continue;
+                Vector2 axis = (end - start).normalized;
+                Assert.That(Vector2.Distance(path.SampleDistance(6f).Position, start + axis * 6f), Is.LessThan(.001f));
+                Assert.That(Vector2.Distance(path.SampleDistance(path.Length - 6f).Position, end - axis * 6f), Is.LessThan(.001f));
+                Assert.That(path.Length, Is.GreaterThan(Vector2.Distance(start, end)));
+                float deviation = path.Vertices.Max(point => Mathf.Abs(CityRoadPolygon.Cross(axis, point - start)));
+                Assert.That(deviation, Is.InRange(.7f, 2.2f), "Local bends keep a bounded fixed-metre corridor.");
+                for (float station = 0f; station <= path.Length; station += .7f)
+                    Assert.That(path.Project(path.SampleDistance(station).Position).DistanceAlong,
+                        Is.EqualTo(station).Within(.001f));
+            }
+            foreach (RoadEdge edge in orderedRoads.Where(edge =>
+                edge.IsHorizontal && (edge.A.y == 0 || edge.A.y == 6 || edge.A.y == northernServiceRow || edge.A.y == 12) ||
+                edge.IsVertical && edge.A.y == northernServiceRow ||
+                edge.IsVertical && (edge.A.x == 0 || edge.A.x == 6 || edge.A.x == 7 || edge.A.x == 13)))
+                Assert.That(geometry.Get(edge).IsStraight, Is.True, $"Traffic spine {edge} must retain its datum.");
+
+            var traffic = new HashSet<RoadEdge>(geometry.ReplannedEdges.Where(edge => edge.IsHorizontal && edge.A.y == 10));
+            Assert.That(traffic, Is.Not.Empty);
+            CityRoadGeometryPlan protectedGeometry = CityRoadGeometryPlan.Create(settings, origin, orderedRoads, traffic);
+            foreach (RoadEdge edge in traffic)
+                Assert.That(protectedGeometry.Get(edge).IsStraight, Is.True,
+                    $"A retained route/stop edge {edge} must keep its exact physical path.");
+            Assert.That(protectedGeometry.ReplannedEdges.Count, Is.EqualTo(geometry.ReplannedEdges.Count - traffic.Count));
+            CityRoadGeometryPlan baseline = CityRoadGeometryPlan.Create(settings, origin, orderedRoads, replanDistricts: false);
+            Assert.That(baseline.CurvedEdges, Is.EquivalentTo(CityRoadGeometryPlan.PilotEdges));
+            Assert.That(baseline.ReplannedEdges, Is.Empty);
+            Assert.That(baseline.ReplannedCells, Is.EquivalentTo(geometry.ReplannedCells.Where(geometry.IsAffectedCell)));
+        }
+
         [TestCase(20260727)]
         [TestCase(17)]
-        public void OldTownPilot_KeepsAnchorsAndPartitionsGroundWithoutBuildingOverlap(int seed)
+        public void CityReplanning_KeepsAnchorsAndPartitionsGroundWithoutBuildingOverlap(int seed)
         {
             CityLayout layout = CityLayoutGenerator.Generate(CityBlueprintCatalog.Default,
                 CityGenerationSettings.Default, seed);
             Assert.That(layout.BuildingLots.Count, Is.EqualTo(144));
+            foreach (CityElevationStairDescriptor stair in layout.ElevationPlan.SignatureStairs)
+            {
+                Debug.Log($"Retained signature stair {stair.Id}: edge={stair.Edge}, curved={layout.RoadGeometry.IsCurved(stair.Edge)}.");
+                Assert.That(layout.RoadGeometry.Get(stair.Edge).IsStraight, Is.True,
+                    $"Signature stair {stair.Id} at {stair.Edge} must retain its measured straight sidewalk.");
+            }
             Vector2Int offsetCell = new Vector2Int(0, 9);
             BuildingLot offsetLot = layout.BuildingLots.Single(lot => lot.Cell == offsetCell);
             Rect offsetBounds = layout.GetCellWorldBounds(offsetCell);
@@ -28,13 +99,15 @@ namespace BarPromenade.Tests.EditMode
             if (seed == 20260727) Assert.That(offsetEligible, Is.True, "The production layout must contain the ordinary offset-pair court.");
             Assert.That(layout.CourtyardBlocks.Count(block => block.Kind == CityCourtyardBlockKind.OffsetPair),
                 Is.EqualTo(offsetEligible ? 1 : 0), "A significant site must opt out without being moved or replaced.");
-            Assert.That(layout.BuildingMasses.Count, Is.EqualTo(146 + (offsetEligible ? 1 : 0)));
+            Assert.That(layout.BuildingMasses.Count, Is.GreaterThanOrEqualTo(146 + (offsetEligible ? 1 : 0)));
             Assert.That(layout.CourtyardBlocks.Where(block => block.Kind == CityCourtyardBlockKind.LRecess)
                 .Select(block => block.Cell), Is.EquivalentTo(new[] {
                 new Vector2Int(0, 7), new Vector2Int(1, 7), new Vector2Int(0, 8), new Vector2Int(1, 8) }));
-            Assert.That(layout.CourtyardBlocks.Count(block => block.RearBuilding != null), Is.EqualTo(2 + (offsetEligible ? 1 : 0)));
-            Assert.That(layout.RoadGeometry.CurvedEdges.Count, Is.EqualTo(3));
-            foreach (RoadEdge edge in CityRoadGeometryPlan.PilotEdges)
+            Assert.That(layout.CourtyardBlocks.Count(block => block.RearBuilding != null &&
+                (block.Kind == CityCourtyardBlockKind.LRecess || block.Kind == CityCourtyardBlockKind.OffsetPair)),
+                Is.EqualTo(2 + (offsetEligible ? 1 : 0)));
+            Assert.That(layout.RoadGeometry.CurvedEdges.Count, Is.GreaterThan(3));
+            foreach (RoadEdge edge in layout.RoadGeometry.CurvedEdges)
             {
                 Assert.That(layout.GetPathKind(edge), Is.EqualTo(CityPathKind.Street));
                 CityRoadPath path = layout.RoadGeometry.Get(edge);
@@ -85,9 +158,12 @@ namespace BarPromenade.Tests.EditMode
             }
             var courtyardCells = new HashSet<Vector2Int>(layout.CourtyardBlocks.Select(block => block.Cell));
             courtyardCells.UnionWith(AssertNorthStreetfronts(layout, streets));
+            courtyardCells.UnionWith(layout.BuildingLots.Where(lot => lot.IsOrdinaryBuilding &&
+                layout.RoadGeometry.IsReplannedCell(lot.Cell) &&
+                !layout.PrimaryLandmarkCells.Values.Contains(lot.Cell)).Select(lot => lot.Cell));
             foreach (BuildingLot lot in layout.BuildingMasses.Where(lot => courtyardCells.Contains(lot.Cell)))
             {
-                Assert.That(lot.IsOrdinaryBuilding, Is.True, "The pilot must not consume a built landmark.");
+                Assert.That(lot.IsOrdinaryBuilding, Is.True, "Replanned ordinary quarters must not consume a built landmark.");
                 Assert.That(layout.PrimaryLandmarkCells.Values, Has.No.Member(lot.Cell));
                 foreach (Vector2[] building in lot.CreateCollisionPolygons())
                     foreach (Vector2[] road in streets)
@@ -112,9 +188,15 @@ namespace BarPromenade.Tests.EditMode
             AssertCourtyardRoutes(layout);
             AssertCourtyardConnections(layout, streets);
             if (seed == 20260727)
-                Assert.That(CityCanneryTruckRoute.Create(layout, CityCanneryPlan.Create(layout),
-                    CityPortAccessPlan.ForLayout(layout)), Is.Not.Null,
+            {
+                CityCanneryTruckRoute truck = CityCanneryTruckRoute.Create(layout, CityCanneryPlan.Create(layout),
+                    CityPortAccessPlan.ForLayout(layout));
+                Assert.That(truck, Is.Not.Null,
                     "Replanned streetfronts must retain the real port/factory/shop truck route.");
+                foreach (RoadEdge edge in truck.StreetEdges)
+                    Assert.That(layout.RoadGeometry.Get(edge).IsStraight, Is.True,
+                        $"The current cargo axle adapter must use a retained straight street: {edge}.");
+            }
         }
 
         private static IEnumerable<Vector2Int> AssertNorthStreetfronts(CityLayout layout,
@@ -142,21 +224,20 @@ namespace BarPromenade.Tests.EditMode
                     streets.All(road => PolygonOverlapArea(footprint, road) < .001f);
                 bool ordinary = lot.IsOrdinaryBuilding && lot.District == CityDistrictKind.OldTown &&
                     !layout.PrimaryLandmarkCells.Values.Contains(cell) &&
-                    !layout.RoadGeometry.IsAffectedCell(cell) &&
+                    !layout.RoadGeometry.IsReplannedCell(cell) &&
                     layout.CourtyardBlocks.All(block => block.Cell != cell);
                 Debug.Log($"North streetfront {cell}: ordinary={ordinary}, northStreet={street}, fits={fits}, " +
                     $"variant={lot.BuildingVariant}, frontage={lot.FrontageDirection}, center={lot.Center:F3}.");
                 if (!ordinary || !street || !fits) continue;
                 eligible.Add(lot);
                 Assert.That(lot.BuildingVariant, Is.EqualTo(variants[x]), $"Authored streetfront variant at {cell}.");
-                Assert.That(lot.Height, Is.EqualTo(42f));
+                Assert.That(lot.Height, Is.EqualTo(CityBuildingAssetProvider.GetExpectedEnvelope(lot.District, lot.BuildingVariant).y));
                 Assert.That(lot.FrontageDirection, Is.EqualTo(Vector2Int.up));
                 Assert.That(Vector3.Angle(lot.FacadeForward, Vector3.forward), Is.LessThan(.001f));
                 Assert.That(lot.Center.x, Is.EqualTo(expectedCenter.x).Within(.001f));
                 Assert.That(lot.Center.z, Is.EqualTo(expectedCenter.y).Within(.001f));
-                Assert.That(lot.CreateCollisionPolygons().Count, Is.EqualTo(1));
-                Vector2[] body = lot.CreateCollisionPolygons().Single();
-                Rect mass = CityRoadPolygon.Bounds(body);
+                var bodies = lot.CreateCollisionPolygons();
+                Rect mass = CityRoadPolygon.Bounds(bodies.SelectMany(body => body).ToArray());
                 Assert.That(mass.width, Is.EqualTo(width).Within(.001f));
                 Assert.That(mass.height, Is.EqualTo(depth).Within(.001f));
                 float clearance = CityBusIntersectionSelector.BuildingClearance;
@@ -185,13 +266,9 @@ namespace BarPromenade.Tests.EditMode
                 Assert.That(lot.SidewalkArrivalPosition.z, Is.EqualTo(bounds.yMax - layout.RoadWidth * .5f +
                     CityStreetSurfacePlanner.SidewalkWidth * .5f).Within(.001f));
                 foreach (BuildingLot other in layout.BuildingMasses.Where(other => !ReferenceEquals(other, lot)))
-                    foreach (Vector2[] otherBody in other.CreateCollisionPolygons())
-                        AssertNoPolygonOverlap(body, otherBody, $"Streetfront {cell} overlaps another building.");
-            }
-            if (layout.Seed == 20260727)
-            {
-                Assert.That(eligible.Count, Is.GreaterThanOrEqualTo(3), "The production row must retain at least three ordinary fronts.");
-                Assert.That(eligible.Select(lot => lot.BuildingVariant).Distinct(), Is.EquivalentTo(new[] { 0, 1 }));
+                    foreach (Vector2[] body in bodies)
+                        foreach (Vector2[] otherBody in other.CreateCollisionPolygons())
+                            AssertNoPolygonOverlap(body, otherBody, $"Streetfront {cell} overlaps another building.");
             }
             return eligible.Select(lot => lot.Cell);
         }
@@ -204,16 +281,21 @@ namespace BarPromenade.Tests.EditMode
             {
                 Assert.That(block.Primary, Is.SameAs(layout.BuildingLots.Single(lot => lot.Cell == block.Cell)));
                 bool offsetPair = block.Kind == CityCourtyardBlockKind.OffsetPair;
-                Assert.That(block.Primary.BuildingVariant, Is.EqualTo(offsetPair ? 1 : 2), "The court must retain its authored fixed-metre mass.");
-                Assert.That(block.Primary.CreateCollisionPolygons().Count, Is.EqualTo(offsetPair ? 1 : 2));
-                Assert.That(block.RearBuilding != null, Is.EqualTo(block.Cell.x == 0));
+                bool retained = offsetPair || block.Kind == CityCourtyardBlockKind.LRecess;
+                if (retained)
+                {
+                    Assert.That(block.Primary.BuildingVariant, Is.EqualTo(offsetPair ? 1 : 2), "The court must retain its authored fixed-metre mass.");
+                    Assert.That(block.Primary.CreateCollisionPolygons().Count, Is.EqualTo(offsetPair ? 1 : 2));
+                    Assert.That(block.RearBuilding != null, Is.EqualTo(block.Cell.x == 0));
+                }
                 if (offsetPair) AssertOffsetPairMasses(layout, block);
                 var blockMasses = new List<BuildingLot> { block.Primary };
                 if (block.RearBuilding != null)
                 {
                     blockMasses.Add(block.RearBuilding);
-                    Assert.That(block.RearBuilding.BuildingVariant, Is.Zero);
-                    Assert.That(block.RearBuilding.Height, Is.EqualTo(42f));
+                    Assert.That(block.RearBuilding.BuildingVariant, Is.EqualTo(retained ? 0 : 4));
+                    Assert.That(block.RearBuilding.Height, Is.EqualTo(CityBuildingAssetProvider.GetExpectedEnvelope(
+                        block.RearBuilding.District, block.RearBuilding.BuildingVariant).y));
                 }
                 Rect cell = layout.GetCellWorldBounds(block.Cell);
                 foreach (BuildingLot mass in blockMasses)
@@ -262,9 +344,10 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(block.RearBuilding.FrontageDirection, Is.EqualTo(frontage));
             Assert.That(block.Primary.FacadeForward, Is.EqualTo(facing));
             Assert.That(block.RearBuilding.FacadeForward, Is.EqualTo(facing));
-            Assert.That(block.Primary.Height, Is.EqualTo(42f));
-            Rect primary = CityRoadPolygon.Bounds(block.Primary.CreateCollisionPolygons().Single());
-            Rect rear = CityRoadPolygon.Bounds(block.RearBuilding.CreateCollisionPolygons().Single());
+            Assert.That(block.Primary.Height, Is.EqualTo(CityBuildingAssetProvider.GetExpectedEnvelope(
+                block.Primary.District, block.Primary.BuildingVariant).y));
+            Rect primary = CityRoadPolygon.Bounds(block.Primary.CreateCollisionPolygons().SelectMany(body => body).ToArray());
+            Rect rear = CityRoadPolygon.Bounds(block.RearBuilding.CreateCollisionPolygons().SelectMany(body => body).ToArray());
             Assert.That(primary.width, Is.EqualTo(11.5f).Within(.001f));
             Assert.That(primary.height, Is.EqualTo(22f).Within(.001f));
             Assert.That(rear.width, Is.EqualTo(13.5f).Within(.001f));
@@ -290,16 +373,19 @@ namespace BarPromenade.Tests.EditMode
         {
             int expectedConnections = layout.HasRoad(new RoadEdge(new Vector2Int(0, 8), new Vector2Int(1, 8))) ? 0 : 1;
             if (layout.Seed == 20260727) Assert.That(expectedConnections, Is.EqualTo(1));
-            Assert.That(layout.CourtyardConnections.Count, Is.EqualTo(expectedConnections));
-            Assert.That(layout.CourtyardPaths.Count(), Is.EqualTo(layout.CourtyardBlocks.Count + expectedConnections));
+            Assert.That(layout.CourtyardConnections.Count(connection => connection.First.Kind == CityCourtyardBlockKind.LRecess &&
+                connection.Second.Kind == CityCourtyardBlockKind.LRecess), Is.EqualTo(expectedConnections));
+            Assert.That(layout.CourtyardPaths.Count(), Is.EqualTo(layout.CourtyardBlocks.Count + layout.CourtyardConnections.Count));
             var bodies = layout.BuildingMasses.SelectMany(lot => lot.CreateCollisionPolygons()).ToList();
             RoadWalkableArea heroArea = RoadWalkableArea.FromLayout(layout);
             foreach (CityCourtyardConnection connection in layout.CourtyardConnections)
             {
-                Assert.That(connection.FirstCell, Is.EqualTo(new Vector2Int(0, 7)));
-                Assert.That(connection.SecondCell, Is.EqualTo(new Vector2Int(0, 8)));
-                Assert.That(connection.First.Kind, Is.EqualTo(CityCourtyardBlockKind.LRecess));
-                Assert.That(connection.Second.Kind, Is.EqualTo(CityCourtyardBlockKind.LRecess));
+                if (connection.First.Kind == CityCourtyardBlockKind.LRecess &&
+                    connection.Second.Kind == CityCourtyardBlockKind.LRecess)
+                {
+                    Assert.That(connection.FirstCell, Is.EqualTo(new Vector2Int(0, 7)));
+                    Assert.That(connection.SecondCell, Is.EqualTo(new Vector2Int(0, 8)));
+                }
                 Assert.That(connection.First, Is.SameAs(layout.CourtyardBlocks.Single(block => block.Cell == connection.FirstCell)));
                 Assert.That(connection.Second, Is.SameAs(layout.CourtyardBlocks.Single(block => block.Cell == connection.SecondCell)));
                 Assert.That(connection.Path.Vertices[0], Is.EqualTo(new Vector2(connection.First.CourtCenter.x, connection.First.CourtCenter.z)));

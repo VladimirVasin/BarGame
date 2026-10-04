@@ -291,7 +291,8 @@ namespace BarPromenade
             Transform parent,
             IReadOnlyList<Bounds> boxes,
             Color color,
-            bool collider)
+            bool collider,
+            bool keepReadable = false)
         {
             return CreateCombinedBoxes(
                 name,
@@ -299,7 +300,9 @@ namespace BarPromenade
                 boxes,
                 color,
                 null,
-                collider);
+                collider,
+                null,
+                keepReadable: keepReadable);
         }
 
         public static GameObject CreateCombinedBoxes(
@@ -324,7 +327,8 @@ namespace BarPromenade
             IReadOnlyList<Bounds> boxes,
             Color color,
             Material sharedMaterial,
-            bool collider)
+            bool collider,
+            bool keepReadable = false)
         {
             return CreateCombinedBoxes(
                 name,
@@ -333,7 +337,8 @@ namespace BarPromenade
                 color,
                 sharedMaterial,
                 collider,
-                null);
+                null,
+                keepReadable: keepReadable);
         }
 
         public static GameObject CreateCombinedBoxes(
@@ -344,7 +349,8 @@ namespace BarPromenade
             bool collider,
             float worldUvTileSize,
             RuntimeWorldUvMode uvMode = RuntimeWorldUvMode.XZPlanar,
-            Vector3 worldUvOrigin = default)
+            Vector3 worldUvOrigin = default,
+            bool keepReadable = false)
         {
             if (!IsPositiveFinite(worldUvTileSize))
             {
@@ -362,7 +368,8 @@ namespace BarPromenade
                 collider,
                 worldUvTileSize,
                 uvMode,
-                worldUvOrigin);
+                worldUvOrigin,
+                keepReadable);
         }
 
         public static GameObject CreateCombinedOrientedBoxes(
@@ -433,7 +440,8 @@ namespace BarPromenade
             bool collider = false,
             float? worldUvTileSize = null,
             RuntimeWorldUvMode uvMode = RuntimeWorldUvMode.XZPlanar,
-            Vector3 worldUvOrigin = default)
+            Vector3 worldUvOrigin = default,
+            bool keepReadable = false)
         {
             if (placements == null)
             {
@@ -537,7 +545,7 @@ namespace BarPromenade
                 combinedMesh,
                 combineEnd - combineStart,
                 colliderTicks);
-            combinedMesh.UploadMeshData(!collider);
+            combinedMesh.UploadMeshData(!collider && !keepReadable);
             return result;
         }
 
@@ -550,7 +558,8 @@ namespace BarPromenade
             bool collider,
             float? worldUvTileSize,
             RuntimeWorldUvMode uvMode = RuntimeWorldUvMode.XZPlanar,
-            Vector3 worldUvOrigin = default)
+            Vector3 worldUvOrigin = default,
+            bool keepReadable = false)
         {
             if (boxes == null)
             {
@@ -591,7 +600,8 @@ namespace BarPromenade
                 collider,
                 worldUvTileSize,
                 uvMode,
-                worldUvOrigin);
+                worldUvOrigin,
+                keepReadable);
         }
 
         private static GameObject CreateCombinedBoxTransforms(

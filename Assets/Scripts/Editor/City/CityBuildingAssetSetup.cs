@@ -22,7 +22,7 @@ namespace BarPromenade.Editor
             "Assets/Resources/City/Buildings";
 
         private const string CatalogRootName = "ROOT_CityBuildings3D";
-        private const string ExpectedGeneratorVersion = "2.2.0";
+        private const string ExpectedGeneratorVersion = "3.0.0";
         private const float ContractTolerance = 0.003f;
         private const float BoundsTolerance = 0.02f;
 
@@ -104,6 +104,14 @@ namespace BarPromenade.Editor
                 case "residential-prototype-03": return PrefabFolder + "/ResidentialPrototype03.prefab";
                 case "industrial-prototype-03": return PrefabFolder + "/IndustrialPrototype03.prefab";
                 case "nightlife-prototype-03": return PrefabFolder + "/NightlifePrototype03.prefab";
+                case "old-town-prototype-04": return PrefabFolder + "/OldTownPrototype04.prefab";
+                case "residential-prototype-04": return PrefabFolder + "/ResidentialPrototype04.prefab";
+                case "industrial-prototype-04": return PrefabFolder + "/IndustrialPrototype04.prefab";
+                case "nightlife-prototype-04": return PrefabFolder + "/NightlifePrototype04.prefab";
+                case "old-town-prototype-05": return PrefabFolder + "/OldTownPrototype05.prefab";
+                case "residential-prototype-05": return PrefabFolder + "/ResidentialPrototype05.prefab";
+                case "industrial-prototype-05": return PrefabFolder + "/IndustrialPrototype05.prefab";
+                case "nightlife-prototype-05": return PrefabFolder + "/NightlifePrototype05.prefab";
                 default:
                     throw new ArgumentOutOfRangeException(
                         nameof(stableId),
@@ -214,7 +222,7 @@ namespace BarPromenade.Editor
                     AssetDatabase.LoadAssetAtPath<GameObject>(
                         GetPrefabPath(prototype.stable_id));
                 GameObject actualPrefab = provider.GetPrefabOrThrow(
-                    ParseDistrict(prototype.district));
+                    ParseDistrict(prototype.district), index / 4);
                 if (actualPrefab != expectedPrefab)
                 {
                     throw new InvalidOperationException(
@@ -972,15 +980,16 @@ namespace BarPromenade.Editor
                     "Residential",
                     StringComparison.Ordinal))
             {
-                if (prototype.balcony_slots.Length != 8)
+                int balconyFloorCount = prototype.height_m < 12f ? 3 : 4;
+                if (prototype.balcony_slots.Length != balconyFloorCount * 2)
                 {
                     throw new InvalidOperationException(
-                        $"City building '{prototype.stable_id}' needs eight " +
+                        $"City building '{prototype.stable_id}' has incorrect " +
                         "balcony slots.");
                 }
 
-                float[] expectedLevels = { 7f, 12f, 17f, 22f };
-                for (int floor = 1; floor <= expectedLevels.Length; floor++)
+                float[] expectedLevels = { 2.8f, 5.6f, 8.4f, 11.2f };
+                for (int floor = 1; floor <= balconyFloorCount; floor++)
                 {
                     if (!balconiesPerFloor.TryGetValue(
                             floor,

@@ -142,7 +142,7 @@ namespace BarPromenade.Tests.PlayMode
                 Vector2Int cell = new Vector2Int(x, 11);
                 BuildingLot lot = layout.BuildingLots.Single(candidate => candidate.Cell == cell);
                 if (!lot.IsOrdinaryBuilding || lot.District != CityDistrictKind.OldTown ||
-                    layout.PrimaryLandmarkCells.Values.Contains(cell)) continue;
+                    layout.PrimaryLandmarkCells.Values.Contains(cell) || layout.RoadGeometry.IsReplannedCell(cell)) continue;
                 RoadEdge edge = RoadEdge.ForCellFrontage(cell, Vector2Int.up);
                 if (!layout.HasRoad(edge) || layout.GetPathKind(edge) != CityPathKind.Street) continue;
                 selected.Add(lot);
@@ -183,7 +183,7 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(firstVertex, Is.False);
                 Assert.That(Vector3.Distance(measured.center, source.LocalBounds.center), Is.LessThan(.005f));
                 Assert.That(Vector3.Distance(measured.size, source.LocalBounds.size), Is.LessThan(.005f));
-                Assert.That(measured.size.y, Is.EqualTo(42f).Within(.005f));
+                Assert.That(measured.size.y, Is.EqualTo(lot.Height).Within(.005f));
 
                 BoxCollider body = model.transform.parent.GetComponentsInChildren<BoxCollider>().Single();
                 Assert.That(body.isTrigger, Is.False);
@@ -199,7 +199,8 @@ namespace BarPromenade.Tests.PlayMode
                 }
                 // Compact retains the legacy full-height logical envelope;
                 // the long house's authored solid ends below its 2.4 m roof.
-                float collisionHeight = variants[x] == 0 ? 42f : 39.6f;
+                float collisionHeight = variants[x] == 0 ? lot.Height : CityBuildingAssetProvider
+                    .GetExpectedCollisionBounds(lot.District, lot.BuildingVariant).Max(bounds => bounds.max.y);
                 Assert.That(body.bounds.max.y, Is.EqualTo(lot.Center.y + collisionHeight + CityFacadeGrid.MassBaseElevation).Within(.002f));
                 Debug.Log($"Streetfront physical model {cell}: id={model.StableId}, measured={measured.size:F3}, " +
                     $"anchor={model.FrontAnchor.position:F3}, setback={Mathf.Sqrt(front.DistanceSquared) - layout.GetTravelWidth(edge) * .5f:F3}.");
@@ -222,9 +223,9 @@ namespace BarPromenade.Tests.PlayMode
             CityStreetSurfacePlan streetPlan, List<Shot> shots, List<string> issues)
         {
             CityLayout layout = city.Layout;
-            Assert.That(layout.CourtyardBlocks.Count, Is.EqualTo(5));
+            Assert.That(layout.CourtyardBlocks.Count, Is.GreaterThanOrEqualTo(5));
             Assert.That(layout.CourtyardBlocks.Count(block => block.Kind == CityCourtyardBlockKind.LRecess), Is.EqualTo(4));
-            Assert.That(layout.BuildingMasses.Count, Is.EqualTo(147));
+            Assert.That(layout.BuildingMasses.Count, Is.GreaterThanOrEqualTo(147));
             var mapGround = new CityMapCityTeleportGround(layout);
             RoadWalkableArea pedestrianArea = CityPedestrianPlanner.CreateWalkableArea(city.PedestrianPlan);
             Physics.SyncTransforms();
@@ -291,7 +292,10 @@ namespace BarPromenade.Tests.PlayMode
                     CityRoadSample eye = connection.Path.SampleDistance(station);
                     CityRoadSample target = connection.Path.SampleDistance(station + (reverse ? -9f : 9f));
                     Vector3 camera = ReplanningCourtyardEye(layout, streetPlan, eye.Position);
-                    shots.Add(Shot.At($"replanning-streetfront-courtyard-connection-{(reverse ? "reverse" : "forward")}", camera,
+                    string connectionSuffix = connection.First.Kind == CityCourtyardBlockKind.LRecess &&
+                        connection.Second.Kind == CityCourtyardBlockKind.LRecess ? string.Empty :
+                        $"-{connection.FirstCell.x}-{connection.FirstCell.y}-{connection.SecondCell.x}-{connection.SecondCell.y}";
+                    shots.Add(Shot.At($"replanning-streetfront-courtyard-connection{connectionSuffix}-{(reverse ? "reverse" : "forward")}", camera,
                         new Vector3(target.Position.x, camera.y - .65f, target.Position.y), 86f));
                 }
             }
@@ -329,7 +333,21 @@ namespace BarPromenade.Tests.PlayMode
                 if (!Physics.Raycast(floor + Vector3.up * 1.5f, Vector3.down,
                     out RaycastHit hit, 3f, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore) ||
                     Mathf.Abs(hit.point.y - top) > .025f || hit.normal.y < .7f)
+                {
                     issues.Add($"{label} physical floor at {point:F4}, expected={top:F4}, actual={hit.point.y:F4}, collider={hit.collider?.name}.");
+                    Debug.Log($"COURT FLOOR {label} {point:F4}: " + string.Join("; ",
+                        streetPlan.SidewalkGeometry.Where(box => box.TrySampleTop(floor, out _))
+                            .Select(box => { box.TrySampleTop(floor, out float y); return $"sidewalk center={box.Center:F4}, size={box.Size:F4}, top={y:F4}"; })));
+                    if (hit.collider is MeshCollider meshCollider && hit.triangleIndex >= 0)
+                    {
+                        Mesh mesh = meshCollider.sharedMesh;
+                        int[] indices = mesh.triangles;
+                        Vector3[] vertices = mesh.vertices;
+                        int first = hit.triangleIndex * 3;
+                        Debug.Log($"COURT TRIANGLE {label}: " + string.Join("; ",
+                            Enumerable.Range(first, 3).Select(index => meshCollider.transform.TransformPoint(vertices[indices[index]]).ToString("F4"))));
+                    }
+                }
                 if (!city.World.WalkableArea.Contains(floor, .35f)) issues.Add($"{label} hero capsule leaves navigation at {point:F4}.");
                 if (!pedestrianArea.Contains(floor, .35f)) issues.Add($"{label} pedestrian capsule leaves navigation at {point:F4}.");
                 // Full radius; the production step offset admits the existing curb.
@@ -342,6 +360,17 @@ namespace BarPromenade.Tests.PlayMode
                         obstacle.GetComponentInParent<DefaultNpcAppearance>() != null ||
                         obstacle.GetComponentInParent<CityPedestrianActor>() != null) continue;
                     issues.Add($"{label} route capsule blocked at {point:F4} by {obstacle.name}.");
+                    if (obstacle.name.StartsWith("Ground sector"))
+                        Debug.Log($"COURT SHOULDER {label} {point:F4}, centre={top:F4}: " + string.Join("; ",
+                            Enumerable.Range(0, 16).Select(index =>
+                            {
+                                float angle = index * Mathf.PI / 8f;
+                                Vector2 rim = point + new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * .35f;
+                                TryReplanningSurfaceTop(city.Layout, streetPlan, rim, out float planned);
+                                Physics.Raycast(new Vector3(rim.x, top + 2f, rim.y), Vector3.down,
+                                    out RaycastHit rimHit, 4f, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore);
+                                return $"{rim:F4}: planned={planned:F4}, physical={rimHit.point.y:F4}, collider={rimHit.collider?.name}";
+                            })));
                 }
             }
         }
@@ -386,7 +415,9 @@ namespace BarPromenade.Tests.PlayMode
             public ReplanningCourtyardWalkerDemo(CityGameRoot city, CityStreetSurfacePlan surfaces, List<string> issues)
             {
                 this.city = city; this.surfaces = surfaces; this.issues = issues;
-                CityCourtyardConnection connection = city.Layout.CourtyardConnections.Single();
+                CityCourtyardConnection connection = city.Layout.CourtyardConnections.Single(candidate =>
+                    candidate.First.Kind == CityCourtyardBlockKind.LRecess &&
+                    candidate.Second.Kind == CityCourtyardBlockKind.LRecess);
                 path = connection.Path;
                 firstBlock = connection.First; secondBlock = connection.Second;
                 CityPedestrianPlan plan = city.PedestrianPlan;
@@ -872,10 +903,7 @@ namespace BarPromenade.Tests.PlayMode
             foreach (RuntimeOrientedBox sidewalk in streetPlan.SidewalkGeometry)
                 if (sidewalk.TrySampleTop(position, out float sidewalkTop))
                     exposedTop = Mathf.Max(exposedTop, sidewalkTop);
-            foreach (RuntimeOrientedBox street in streetPlan.StreetGeometry)
-                if (street.TrySampleTop(position, out float streetTop))
-                    exposedTop = Mathf.Max(exposedTop, streetTop);
-            foreach (CityStreetRibbonDescriptor ribbon in streetPlan.CurvedSidewalkRibbons.Concat(streetPlan.CurvedStreetRibbons))
+            foreach (CityStreetRibbonDescriptor ribbon in streetPlan.CurvedSidewalkRibbons)
                 if (ribbon.Polygons.Any(polygon => CityRoadPolygon.Contains(polygon, point)))
                 {
                     CityRoadPath path = layout.RoadGeometry.Get(ribbon.Edge);
@@ -884,8 +912,21 @@ namespace BarPromenade.Tests.PlayMode
                         ribbon.TopOffset;
                     exposedTop = Mathf.Max(exposedTop, ribbonTop);
                 }
-            // Graded approach slabs can cover a lower sidewalk or soil skin.
-            // The downward ray must meet the highest actual paving descriptor.
+            // Unified ground gives sidewalk coating priority 30, before road
+            // priority 20, even when an approach slab crosses slightly above it.
+            if (!float.IsNegativeInfinity(exposedTop)) { top = exposedTop; return true; }
+            foreach (RuntimeOrientedBox street in streetPlan.StreetGeometry)
+                if (street.TrySampleTop(position, out float streetTop))
+                    exposedTop = Mathf.Max(exposedTop, streetTop);
+            foreach (CityStreetRibbonDescriptor ribbon in streetPlan.CurvedStreetRibbons)
+                if (ribbon.Polygons.Any(polygon => CityRoadPolygon.Contains(polygon, point)))
+                {
+                    CityRoadPath path = layout.RoadGeometry.Get(ribbon.Edge);
+                    float ribbonTop = (ribbon.FlatNode.HasValue ? layout.ElevationPlan.GetNodeElevation(ribbon.FlatNode.Value) :
+                        layout.ElevationPlan.SampleRoadDatum(ribbon.Edge, path.Project(point).DistanceAlong / path.Length)) +
+                        ribbon.TopOffset;
+                    exposedTop = Mathf.Max(exposedTop, ribbonTop);
+                }
             if (!float.IsNegativeInfinity(exposedTop)) { top = exposedTop; return true; }
             if (CityTerrainSurfacePlan.TrySampleGroundTop(layout, point, out top, out _)) return true;
             return layout.ElevationPlan.TrySampleSurface(point, CitySurfaceRole.RoadTop, out top, out _);

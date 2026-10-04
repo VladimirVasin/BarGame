@@ -274,7 +274,7 @@ namespace BarPromenade
             ICollection<CityRoadGroundBoundarySpan> safeConnections,
             ICollection<CityRoadGroundBoundarySpan> protectedDrops)
         {
-            if (layout.RoadGeometry.IsAffectedCell(surface.Cell))
+            if (layout.RoadGeometry.IsReplannedCell(surface.Cell))
             {
                 CreatePhysicalBoundarySpans(layout, surface, direction, edge,
                     safeConnections, protectedDrops);

@@ -127,6 +127,8 @@ namespace BarPromenade
             result.AddComponent<MeshCollider>().sharedMesh = mesh;
             result.AddComponent<RuntimeGeneratedMeshOwner>()
                 .Initialize(mesh);
+            FootstepGround.Stamp(result, FootstepGroundKind.Soil);
+            CityGroundSurfaceSystem.Register(result, 0);
             mesh.UploadMeshData(false);
             return result;
         }

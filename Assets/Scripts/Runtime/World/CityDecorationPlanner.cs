@@ -206,8 +206,10 @@ namespace BarPromenade
                 CityDecorationKind kind = ResolveCoreKind(
                     lot.District,
                     (kindHash & 1u) != 0u);
-                if (kind == CityDecorationKind.OldTownScaffolding && IsCourtyardCell(layout, lot.Cell))
-                    kind = CityDecorationKind.OldTownChimneysAndDormers;
+                if (IsCourtyardCell(layout, lot.Cell) &&
+                    ResolveCoreAnchorKind(kind) == CityDecorationAnchorKind.BuildingFacade &&
+                    CityDecorationCollisionCatalog.ResolveTier(kind) != CityDecorationCollisionTier.None)
+                    kind = ResolveRoofCoreKind(lot.District);
                 if (layout.TryGetPrimaryLandmarkCell(
                         lot.District,
                         out Vector2Int landmarkCell) &&
@@ -1212,6 +1214,53 @@ namespace BarPromenade
             foreach (CityRoadPath path in layout.CourtyardPaths)
                 if (path.Project(point).DistanceSquared < clearance * clearance) return true;
             return false;
+        }
+
+        internal static bool BlocksCourtyardRoutes(CityLayout layout, CityDecorationDescriptor descriptor)
+        {
+            if (descriptor.CollisionTier == CityDecorationCollisionTier.None)
+                return false;
+            var proxies = new List<RuntimeOrientedBox>(CityStaticCollisionBuilder.MaximumDecorationProxyCount);
+            CityStaticCollisionBuilder.AddDecorationProxyBoxes(layout, descriptor, proxies);
+            float clearance = CityGroundTraversalPlanner.MaximumAgentRadius + .05f;
+            foreach (RuntimeOrientedBox proxy in proxies)
+            {
+                Quaternion inverse = Quaternion.Inverse(proxy.Rotation);
+                Vector2 halfSize = new Vector2(proxy.Size.x, proxy.Size.z) * .5f + Vector2.one * clearance;
+                foreach (CityRoadPath path in layout.CourtyardPaths)
+                {
+                    for (int index = 1; index < path.Vertices.Count; index++)
+                    {
+                        Vector3 from = inverse * new Vector3(path.Vertices[index - 1].x - proxy.Center.x,
+                            0f, path.Vertices[index - 1].y - proxy.Center.z);
+                        Vector3 to = inverse * new Vector3(path.Vertices[index].x - proxy.Center.x,
+                            0f, path.Vertices[index].y - proxy.Center.z);
+                        if (SegmentIntersectsReservedRect(new Vector2(from.x, from.z),
+                                new Vector2(to.x, to.z), halfSize)) return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        private static bool SegmentIntersectsReservedRect(Vector2 from, Vector2 to, Vector2 halfSize)
+        {
+            Vector2 delta = to - from;
+            float enter = 0f, leave = 1f;
+            for (int axis = 0; axis < 2; axis++)
+            {
+                if (Mathf.Abs(delta[axis]) < .00001f)
+                {
+                    if (Mathf.Abs(from[axis]) > halfSize[axis]) return false;
+                    continue;
+                }
+                float first = (-halfSize[axis] - from[axis]) / delta[axis];
+                float last = (halfSize[axis] - from[axis]) / delta[axis];
+                enter = Mathf.Max(enter, Mathf.Min(first, last));
+                leave = Mathf.Min(leave, Mathf.Max(first, last));
+                if (enter > leave) return false;
+            }
+            return true;
         }
 
         private static bool TryCreateFrontageAnchor(

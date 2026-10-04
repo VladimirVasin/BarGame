@@ -55,8 +55,8 @@ from city_building_coplanarity import (  # noqa: E402
 )
 
 
-GENERATOR_VERSION = "2.2.0"
-DESIGN_ID = "city_buildings_prototypes_v2"
+GENERATOR_VERSION = "3.0.0"
+DESIGN_ID = "city_buildings_prototypes_v3"
 DISPLAY_NAME = "City Buildings 3D Prototype Catalog"
 FBX_ASSET_PATH = "Assets/City/Models/CityBuildings3D.fbx"
 
@@ -91,21 +91,29 @@ BAKE_SPACE_TRANSFORM = False
 
 EXPECTED_PROTOTYPES = (
     ("old-town-prototype-01", "OldTown", "FragmentedPerimeter",
-     14.0, 13.5, 42.0),
+     14.0, 13.5, 18.0),
     ("residential-prototype-01", "Residential", "SetbackCourtyard",
-     11.5, 11.5, 40.0),
+     11.5, 11.5, 15.0),
     ("industrial-prototype-01", "Industrial", "LowWideProcess",
-     14.0, 13.5, 36.0),
+     14.0, 13.5, 10.0),
     ("nightlife-prototype-01", "Nightlife", "TallDense",
-     12.5, 12.0, 48.0),
-    ("old-town-prototype-02", "OldTown", "LongStreetBar", 22.0, 11.5, 42.0),
-    ("residential-prototype-02", "Residential", "LongStreetBar", 22.0, 11.5, 40.0),
-    ("industrial-prototype-02", "Industrial", "LongStreetBar", 22.0, 11.5, 36.0),
-    ("nightlife-prototype-02", "Nightlife", "LongStreetBar", 17.0, 9.5, 48.0),
-    ("old-town-prototype-03", "OldTown", "CornerStreetWing", 15.0, 14.0, 42.0),
-    ("residential-prototype-03", "Residential", "CornerStreetWing", 15.0, 14.0, 40.0),
-    ("industrial-prototype-03", "Industrial", "CornerStreetWing", 15.0, 14.0, 36.0),
-    ("nightlife-prototype-03", "Nightlife", "CornerStreetWing", 15.0, 14.0, 48.0),
+     12.5, 12.0, 27.0),
+    ("old-town-prototype-02", "OldTown", "LongStreetBar", 22.0, 11.5, 16.2),
+    ("residential-prototype-02", "Residential", "LongStreetBar", 22.0, 11.5, 14.4),
+    ("industrial-prototype-02", "Industrial", "LongStreetBar", 22.0, 11.5, 8.4),
+    ("nightlife-prototype-02", "Nightlife", "LongStreetBar", 17.0, 9.5, 24.6),
+    ("old-town-prototype-03", "OldTown", "CornerStreetWing", 15.0, 14.0, 17.4),
+    ("residential-prototype-03", "Residential", "CornerStreetWing", 15.0, 14.0, 15.6),
+    ("industrial-prototype-03", "Industrial", "CornerStreetWing", 15.0, 14.0, 9.3),
+    ("nightlife-prototype-03", "Nightlife", "CornerStreetWing", 15.0, 14.0, 26.4),
+    ("old-town-prototype-04", "OldTown", "ThroughPassage", 22.0, 11.5, 16.2),
+    ("residential-prototype-04", "Residential", "ThroughPassage", 22.0, 11.5, 14.4),
+    ("industrial-prototype-04", "Industrial", "ThroughPassage", 22.0, 11.5, 8.4),
+    ("nightlife-prototype-04", "Nightlife", "ThroughPassage", 17.0, 9.5, 24.6),
+    ("old-town-prototype-05", "OldTown", "CourtyardWing", 10.0, 6.0, 12.6),
+    ("residential-prototype-05", "Residential", "CourtyardWing", 10.0, 6.0, 11.8),
+    ("industrial-prototype-05", "Industrial", "CourtyardWing", 10.0, 6.0, 6.9),
+    ("nightlife-prototype-05", "Nightlife", "CourtyardWing", 10.0, 6.0, 18.6),
 )
 
 PREVIEW_PALETTE = {
@@ -645,10 +653,12 @@ def validate_prototypes(prototypes: Sequence[PrototypeSpec]) -> None:
             problems.append(
                 f"{prototype.stable_id} balcony doors are not paired one-to-one")
         if prototype.district == "Residential":
-            expected_balcony_levels = {1: 7.0, 2: 12.0, 3: 17.0, 4: 22.0}
-            if len(prototype.balcony_slots) != 8:
+            expected_balcony_levels = {floor: level for floor, level in
+                enumerate((2.8, 5.6, 8.4, 11.2), start=1)
+                if level + 2.2 < prototype.height_m - 0.35}
+            if len(prototype.balcony_slots) != len(expected_balcony_levels) * 2:
                 problems.append(
-                    f"{prototype.stable_id} must have eight balcony slots")
+                    f"{prototype.stable_id} balcony count differs from its storeys")
             for floor, deck_level in expected_balcony_levels.items():
                 floor_balconies = [item for item in prototype.balcony_slots
                                    if item.floor == floor]
@@ -707,6 +717,18 @@ def validate_prototypes(prototypes: Sequence[PrototypeSpec]) -> None:
             if len(solids) != 2 or any(all(minimum[axis] <= probe[axis] <= maximum[axis]
                                          for axis in range(3)) for minimum, maximum in solids):
                 problems.append(f"{prototype.stable_id} fills its open corner with collision")
+        if prototype.grammar == "ThroughPassage":
+            clearance = 4.2 if prototype.district == "Industrial" else 3.2
+            for x in (-1.7, 0.0, 1.7):
+                for y in (-prototype.depth_m * 0.5 + 0.01, 0.0,
+                          prototype.depth_m * 0.5 - 1.21):
+                    probe = (x, y, clearance - 0.01)
+                    if any(all(minimum[axis] <= probe[axis] <= maximum[axis]
+                               for axis in range(3)) for minimum, maximum in solids):
+                        problems.append(f"{prototype.stable_id} passage has an obstruction")
+            if len(solids) != 3 or sum(minimum[2] >= clearance - 1e-5
+                                     for minimum, _ in solids) != 1:
+                problems.append(f"{prototype.stable_id} passage must have two piers and a lintel")
 
     if set(ids) != set(expected):
         problems.append("prototype stable-ID set differs from the contract")
@@ -1176,7 +1198,7 @@ def add_preview_stage(
     ground.data.materials.append(ground_material)
 
     placements = tuple(((-33.0, -11.0, 11.0, 33.0)[index % 4],
-                        (index // 4) * 50.0) for index in range(len(prototypes)))
+                        (index // 4) * 24.0) for index in range(len(prototypes)))
     scale = 0.65
     materials = {
         (prototype.district, role): preview_material(prototype.district, role)
@@ -1305,12 +1327,12 @@ def render_preview(
     camera_data = bpy.data.cameras.new("CAM_CityBuildings3D_Preview")
     camera = bpy.data.objects.new("CAM_CityBuildings3D_Preview", camera_data)
     result.presentation.objects.link(camera)
-    camera.location = (25.0, 210.0, 190.0)
-    target = Vector((0.0, 50.0, 13.5))
+    camera.location = (25.0, 180.0, 140.0)
+    target = Vector((0.0, 48.0, 8.5))
     camera.rotation_euler = (
         target - camera.location).to_track_quat("-Z", "Y").to_euler()
     camera_data.type = "ORTHO"
-    camera_data.ortho_scale = 150.0
+    camera_data.ortho_scale = 125.0
     bpy.context.scene.render.resolution_y = 1800
     bpy.context.scene.camera = camera
     for obj in result.presentation.objects:

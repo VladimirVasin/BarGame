@@ -81,6 +81,7 @@ namespace BarPromenade
 
             Transform world = new GameObject("Generated City").transform;
             world.SetParent(parent, false);
+            CityGroundSurfaceSystem groundSurface = CityGroundSurfaceSystem.Begin(world);
             Material emissiveMaterial = CityNightResources.EmissiveMaterial;
             RoadFencePlan fencePlan = plans.Fence;
             CityMountainBoundaryPlan mountainBoundaryPlan =
@@ -239,6 +240,7 @@ namespace BarPromenade
                         port.Plan.Access.ValidateOrThrow(layout);
                         GameObject serviceAccess = CityPortAssetProvider.Create("AccessRoad", port.transform);
                         serviceAccess.transform.position = port.Plan.Origin;
+                        CityPortAssetProvider.RegisterAccessGround(serviceAccess);
                     }
                     ReportBlock("seacoast/port_controller", seacoastTimer);
                     seacoastTimer.Restart();
@@ -401,6 +403,7 @@ namespace BarPromenade
                     world,
                     windDressingPlan);
 
+            groundSurface.FinalizeSurface();
             completed(new CityWorldResult(
                 world.gameObject,
                 walkableArea,
@@ -561,15 +564,18 @@ namespace BarPromenade
 
             BuildDistrictGround(surfaces, layout);
             parkLawn = BuildParkLawn(surfaces, layout);
-            CityFringeYardGroundWorldBuilder.Build(
+            CityFringeYardGroundWorldResult fringeGround = CityFringeYardGroundWorldBuilder.Build(
                 surfaces,
                 layout,
                 fringeYardPlan);
-            CityChurchGroundWorldBuilder.Build(
+            GameObject churchGround = CityChurchGroundWorldBuilder.Build(
                 surfaces,
                 layout,
                 precinctBoundaryApertures);
             CityEastGroundTransition.Apply(surfaces, layout);
+            CityGroundSurfaceSystem.Register(fringeGround.GenericGround, 0);
+            CityGroundSurfaceSystem.Register(fringeGround.MountainGround, 0);
+            CityGroundSurfaceSystem.Register(churchGround, 0);
             // The sand carries the seacoast's tide-banded sheet over
             // UVs baked at its metre pitch; the tint stays the flat
             // colour the map and the compensation were solved against.
@@ -608,6 +614,7 @@ namespace BarPromenade
                 // The sand claimant answers first while it is attached;
                 // the stamp is what a bare beach sounds like otherwise.
                 FootstepGround.Stamp(beach, FootstepGroundKind.Sand);
+                CityGroundSurfaceSystem.Register(beach, 0, dynamic: true);
             }
             // The cemetery slab is built apart from the other
             // surfaces because it is the one ground in the city that
@@ -785,6 +792,7 @@ namespace BarPromenade
                         CityDistrictPresentationPlanner
                             .GetProfile(district.Kind)
                             .Wear));
+                CityGroundSurfaceSystem.Register(ground, 0);
             }
 
             GameObject openLand = CityTerrainSurfaceWorldBuilder.Build(
@@ -798,6 +806,7 @@ namespace BarPromenade
                 null,
                 CityTerrainSurfaceAreaFilter.Excluding(districtAreaIds));
             FootstepGround.Stamp(openLand, FootstepGroundKind.Soil);
+            CityGroundSurfaceSystem.Register(openLand, 0);
         }
 
         internal static GameObject BuildParkLawn(
@@ -821,6 +830,7 @@ namespace BarPromenade
                     lawn.GetComponent<Renderer>(),
                     CityParkSurfaceKind.Lawn,
                     ParkGrass);
+                CityGroundSurfaceSystem.Register(lawn, 0);
             }
 
             return lawn;
@@ -1074,6 +1084,7 @@ namespace BarPromenade
                     CityParkSurfaceKind.Plaza,
                     ParkPlaza);
                 FootstepGround.Stamp(plaza, FootstepGroundKind.Stone);
+                CityGroundSurfaceSystem.Register(plaza, 40);
             }
 
             var trunks = new List<RuntimeMeshPlacement>(
@@ -2483,12 +2494,16 @@ namespace BarPromenade
                     boxes,
                     color,
                     collider,
-                    xzPlanarUvTileSize);
+                    xzPlanarUvTileSize,
+                    keepReadable: true);
             applyAppearance?.Invoke(surface.GetComponent<Renderer>());
             if (footstep != FootstepGroundKind.None)
             {
                 FootstepGround.Stamp(surface, footstep);
             }
+            CityGroundSurfaceSystem.Register(surface,
+                footstep == FootstepGroundKind.Stone ? 30 : footstep == FootstepGroundKind.None ? 100 : 20,
+                paint: footstep == FootstepGroundKind.None);
         }
 
         private static void BuildStreetRibbonMeshes(string name, Transform parent, CityLayout layout,
@@ -2552,6 +2567,8 @@ namespace BarPromenade
             if (roadCoordinates) GroundSurfaceCoordinates.Enable(renderer);
             if (collision) result.AddComponent<MeshCollider>().sharedMesh = mesh;
             if (footstep != FootstepGroundKind.None) FootstepGround.Stamp(result, footstep);
+            CityGroundSurfaceSystem.Register(result, footstep == FootstepGroundKind.Stone ? 30 :
+                footstep == FootstepGroundKind.None ? 100 : 20, paint: footstep == FootstepGroundKind.None);
             result.AddComponent<RuntimeGeneratedMeshOwner>().Initialize(mesh);
             mesh.UploadMeshData(false);
         }
@@ -2599,9 +2616,11 @@ namespace BarPromenade
                     boxes,
                     CityExteriorAppearance.Asphalt,
                     collider,
-                    CityExteriorAppearance.RoadTextureTileSize);
+                    CityExteriorAppearance.RoadTextureTileSize, keepReadable: true);
             CityExteriorAppearance.ApplyRoadSurface(
                 surface.GetComponent<Renderer>());
+            FootstepGround.Stamp(surface, FootstepGroundKind.Concrete);
+            CityGroundSurfaceSystem.Register(surface, 20);
         }
 
         private static void BuildSidewalkSurfaceBoxesIfAny(
@@ -2622,9 +2641,11 @@ namespace BarPromenade
                     boxes,
                     Color.white,
                     collider,
-                    CityExteriorAppearance.SidewalkTextureTileSize);
+                    CityExteriorAppearance.SidewalkTextureTileSize, keepReadable: true);
             CityExteriorAppearance.ApplySidewalkSurface(
                 surface.GetComponent<Renderer>());
+            FootstepGround.Stamp(surface, FootstepGroundKind.Stone);
+            CityGroundSurfaceSystem.Register(surface, 30);
         }
 
         private static void BuildRoadMarkingBoxesIfAny(
@@ -2644,9 +2665,10 @@ namespace BarPromenade
                     boxes,
                     Color.white,
                     false,
-                    CityExteriorAppearance.RoadMarkingTextureTileSize);
+                    CityExteriorAppearance.RoadMarkingTextureTileSize, keepReadable: true);
             CityExteriorAppearance.ApplyRoadMarkingSurface(
                 markings.GetComponent<Renderer>());
+            CityGroundSurfaceSystem.Register(markings, 100, paint: true);
         }
 
         private static void BuildSidewalkBox(

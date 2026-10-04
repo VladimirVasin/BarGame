@@ -292,6 +292,7 @@ namespace BarPromenade
                 for (int index = 0; index < registry.ColliderBounds.Count; index++)
                 {
                     Bounds solid = registry.ColliderBounds[index];
+                    if (lot.BuildingVariant == 3 && solid.min.y >= 2.5f) continue;
                     BuildFoundationBox(parent, lot, solid, pose, foundationDepth,
                         name + " " + index);
                 }
@@ -348,13 +349,15 @@ namespace BarPromenade
                     .GetExpectedCollisionBounds(lot.District, lot.BuildingVariant);
                 for (int index = 0; index < solids.Count; index++)
                 {
+                    float extension = lot.BuildingVariant == 3 && solids[index].min.y >= 2.5f
+                        ? 0f : foundationDepth;
                     var part = new GameObject(LogicalCollisionObjectName + " " + index);
                     part.transform.SetParent(parent, false);
                     part.transform.localPosition = pose.TransformPoint(
-                        solids[index].center - Vector3.up * foundationDepth * 0.5f);
+                        solids[index].center - Vector3.up * extension * 0.5f);
                     part.transform.localRotation = pose.Rotation;
                     BoxCollider body = part.AddComponent<BoxCollider>();
-                    body.size = solids[index].size + Vector3.up * foundationDepth;
+                    body.size = solids[index].size + Vector3.up * extension;
                 }
                 return;
             }

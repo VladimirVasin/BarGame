@@ -63,6 +63,7 @@ namespace BarPromenade
             Transform root =
                 new GameObject("Home Exterior View").transform;
             root.SetParent(parent, false);
+            CityGroundSurfaceSystem ground = CityGroundSurfaceSystem.Begin(root, collision: false);
 
             BuildTerminalEnvironment(root, balcony);
             BuildRoads(root, context);
@@ -75,6 +76,7 @@ namespace BarPromenade
                 context.NearbyDecorations);
             BuildHomeBusStop(root, context);
             night = BuildNightFixtures(root, context);
+            ground.FinalizeSurface();
             return root;
         }
 
@@ -947,9 +949,10 @@ namespace BarPromenade
                     boxes,
                     Color.white,
                     false,
-                    CityExteriorAppearance.GroundTextureTileSize);
+                    CityExteriorAppearance.GroundTextureTileSize, keepReadable: true);
             CityExteriorAppearance.ApplyGroundSurface(
                 surface.GetComponent<Renderer>());
+            CityGroundSurfaceSystem.Register(surface, 0);
         }
 
         private static void CreateExteriorBox(
@@ -1000,11 +1003,12 @@ namespace BarPromenade
                     false,
                     CityParkSurfaceAppearance
                         .GetRecipe(CityParkSurfaceKind.Path)
-                        .MetersPerTile);
+                        .MetersPerTile, keepReadable: true);
             CityParkSurfaceAppearance.ApplyCombined(
                 surface.GetComponent<Renderer>(),
                 CityParkSurfaceKind.Path,
                 CityExteriorAppearance.ParkPath);
+            CityGroundSurfaceSystem.Register(surface, 40);
         }
 
         private static void BuildRoadSurfaceBoxesIfAny(
@@ -1038,6 +1042,7 @@ namespace BarPromenade
                 CityStreetSurfacePlanner.SidewalkWidth,
                 point => PlayerHomeBalconyGeometry.ToCityWorld(context.PlayerHome, point));
             GroundSurfaceCoordinates.Enable(renderer);
+            CityGroundSurfaceSystem.Register(surface, 20);
             mesh.UploadMeshData(true);
         }
 
@@ -1058,9 +1063,10 @@ namespace BarPromenade
                     boxes,
                     Color.white,
                     false,
-                    CityExteriorAppearance.SidewalkTextureTileSize);
+                    CityExteriorAppearance.SidewalkTextureTileSize, keepReadable: true);
             CityExteriorAppearance.ApplySidewalkSurface(
                 surface.GetComponent<Renderer>());
+            CityGroundSurfaceSystem.Register(surface, 30);
         }
 
         private static void BuildRoadMarkingBoxesIfAny(
@@ -1080,9 +1086,10 @@ namespace BarPromenade
                     boxes,
                     Color.white,
                     false,
-                    CityExteriorAppearance.RoadMarkingTextureTileSize);
+                    CityExteriorAppearance.RoadMarkingTextureTileSize, keepReadable: true);
             CityExteriorAppearance.ApplyRoadMarkingSurface(
                 markings.GetComponent<Renderer>());
+            CityGroundSurfaceSystem.Register(markings, 100, paint: true);
         }
     }
 }

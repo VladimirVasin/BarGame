@@ -38,8 +38,8 @@ namespace BarPromenade
         public const string ResourcePath =
             "City/CityBuildingAssetProvider";
         public const string ExpectedDesignId =
-            "city_buildings_prototypes_v2";
-        public const int ExpectedPrototypeCount = 12;
+            "city_buildings_prototypes_v3";
+        public const int ExpectedPrototypeCount = 20;
 
         private static readonly PrototypeSpec[] ExpectedPrototypes =
         {
@@ -48,33 +48,41 @@ namespace BarPromenade
                 CityDistrictKind.OldTown,
                 14f,
                 13.5f,
-                42f),
+                18f),
             new PrototypeSpec(
                 "residential-prototype-01",
                 CityDistrictKind.Residential,
                 11.5f,
                 11.5f,
-                40f),
+                15f),
             new PrototypeSpec(
                 "industrial-prototype-01",
                 CityDistrictKind.Industrial,
                 14f,
                 13.5f,
-                36f),
+                10f),
             new PrototypeSpec(
                 "nightlife-prototype-01",
                 CityDistrictKind.Nightlife,
                 12.5f,
                 12f,
-                48f),
-            new PrototypeSpec("old-town-prototype-02", CityDistrictKind.OldTown, 22f, 11.5f, 42f),
-            new PrototypeSpec("residential-prototype-02", CityDistrictKind.Residential, 22f, 11.5f, 40f),
-            new PrototypeSpec("industrial-prototype-02", CityDistrictKind.Industrial, 22f, 11.5f, 36f),
-            new PrototypeSpec("nightlife-prototype-02", CityDistrictKind.Nightlife, 17f, 9.5f, 48f),
-            new PrototypeSpec("old-town-prototype-03", CityDistrictKind.OldTown, 15f, 14f, 42f),
-            new PrototypeSpec("residential-prototype-03", CityDistrictKind.Residential, 15f, 14f, 40f),
-            new PrototypeSpec("industrial-prototype-03", CityDistrictKind.Industrial, 15f, 14f, 36f),
-            new PrototypeSpec("nightlife-prototype-03", CityDistrictKind.Nightlife, 15f, 14f, 48f)
+                27f),
+            new PrototypeSpec("old-town-prototype-02", CityDistrictKind.OldTown, 22f, 11.5f, 16.2f),
+            new PrototypeSpec("residential-prototype-02", CityDistrictKind.Residential, 22f, 11.5f, 14.4f),
+            new PrototypeSpec("industrial-prototype-02", CityDistrictKind.Industrial, 22f, 11.5f, 8.4f),
+            new PrototypeSpec("nightlife-prototype-02", CityDistrictKind.Nightlife, 17f, 9.5f, 24.6f),
+            new PrototypeSpec("old-town-prototype-03", CityDistrictKind.OldTown, 15f, 14f, 17.4f),
+            new PrototypeSpec("residential-prototype-03", CityDistrictKind.Residential, 15f, 14f, 15.6f),
+            new PrototypeSpec("industrial-prototype-03", CityDistrictKind.Industrial, 15f, 14f, 9.3f),
+            new PrototypeSpec("nightlife-prototype-03", CityDistrictKind.Nightlife, 15f, 14f, 26.4f),
+            new PrototypeSpec("old-town-prototype-04", CityDistrictKind.OldTown, 22f, 11.5f, 16.2f),
+            new PrototypeSpec("residential-prototype-04", CityDistrictKind.Residential, 22f, 11.5f, 14.4f),
+            new PrototypeSpec("industrial-prototype-04", CityDistrictKind.Industrial, 22f, 11.5f, 8.4f),
+            new PrototypeSpec("nightlife-prototype-04", CityDistrictKind.Nightlife, 17f, 9.5f, 24.6f),
+            new PrototypeSpec("old-town-prototype-05", CityDistrictKind.OldTown, 10f, 6f, 12.6f),
+            new PrototypeSpec("residential-prototype-05", CityDistrictKind.Residential, 10f, 6f, 11.8f),
+            new PrototypeSpec("industrial-prototype-05", CityDistrictKind.Industrial, 10f, 6f, 6.9f),
+            new PrototypeSpec("nightlife-prototype-05", CityDistrictKind.Nightlife, 10f, 6f, 18.6f)
         };
 
         [SerializeField] private CityBuildingPrefabEntry[] entries =
@@ -164,7 +172,7 @@ namespace BarPromenade
         public static int GetVariantCount(CityDistrictKind district)
         {
             GetExpectedEnvelope(district);
-            return 3;
+            return 5;
         }
 
         public static Vector3 GetExpectedEnvelope(CityDistrictKind district, int variantIndex)
@@ -181,33 +189,64 @@ namespace BarPromenade
                 switch (district)
                 {
                     case CityDistrictKind.OldTown:
-                        return new[] { Solid(-7f, 0f, -6.75f, -0.6f, 30f, 6.75f),
-                            Solid(0.8f, 0f, -6.75f, 7f, 27f, 5.15f),
-                            Solid(-1.5f, 0f, -6.71f, 1.5f, 34f, -2.21f) };
+                        return new[] { Solid(-7f, 0f, -6.75f, -0.6f, 13f, 6.75f),
+                            Solid(0.8f, 0f, -6.75f, 7f, 11.8f, 5.15f),
+                            Solid(-1.5f, 0f, -6.71f, 1.5f, 15f, -2.21f) };
                     case CityDistrictKind.Residential:
-                        return new[] { Solid(-5.75f, 0f, -5.75f, 5.75f, 30f, -1.55f),
-                            Solid(-5.75f, 0f, -1.55f, -2.95f, 26f, 3.65f),
-                            Solid(2.95f, 0f, -1.55f, 5.75f, 26f, 3.65f),
-                            Solid(-1.6f, 0f, -3.2f, 1.6f, 34f, 0f) };
+                        return new[] { Solid(-5.75f, 0f, -5.75f, 5.75f, 13.7f, -1.55f),
+                            Solid(-5.75f, 0f, -1.55f, -2.95f, 13.7f, 3.65f),
+                            Solid(2.95f, 0f, -1.55f, 5.75f, 13.7f, 3.65f),
+                            Solid(-1.6f, 0f, -3.2f, 1.6f, 14.7f, 0f) };
                     case CityDistrictKind.Industrial:
-                        return new[] { Solid(-7f, 0f, -6.75f, 7f, 24f, 6.75f),
-                            Solid(-6.6f, 0f, -5.6f, -2.4f, 30f, -1.6f),
-                            Solid(2.9f, 0f, -5.6f, 6.7f, 27f, -2.4f) };
+                        return new[] { Solid(-7f, 0f, -6.75f, 7f, 6.6f, 6.75f),
+                            Solid(-6.6f, 0f, -5.6f, -2.4f, 8.1f, -1.6f),
+                            Solid(2.9f, 0f, -5.6f, 6.7f, 7.4f, -2.4f) };
                     case CityDistrictKind.Nightlife:
-                        return new[] { Solid(-6.25f, 0f, -6f, 6.25f, 10f, 6f),
-                            Solid(-5.85f, 5f, -5.7f, 4.65f, 37f, 4.9f),
-                            Solid(-2.45f, 37f, -5f, 4.65f, 41f, 3f) };
+                        return new[] { Solid(-6.25f, 0f, -6f, 6.25f, 4.8f, 6f),
+                            Solid(-5.85f, 3f, -5.7f, 4.65f, 22f, 4.9f),
+                            Solid(-2.45f, 22f, -5f, 4.65f, 24f, 3f) };
                 }
             }
 
             float halfWidth = envelope.x * .5f;
             float halfDepth = envelope.z * .5f;
             float front = halfDepth - (district == CityDistrictKind.Residential ? 1.2f : 0f);
-            float bodyTop = envelope.y - (district == CityDistrictKind.OldTown ? 2.4f : .35f);
+            float bodyTop = envelope.y - (district == CityDistrictKind.OldTown ? 2.4f :
+                district == CityDistrictKind.Industrial ? .75f : .35f);
+            if (variantIndex == 3)
+            {
+                float clearance = GetExpectedPassageBounds(district, variantIndex).size.y;
+                return new[] { Solid(-halfWidth, 0f, -halfDepth, -1.8f, clearance, front),
+                    Solid(1.8f, 0f, -halfDepth, halfWidth, clearance, front),
+                    Solid(-halfWidth, clearance, -halfDepth, halfWidth, bodyTop, front) };
+            }
             return variantIndex == 2
                 ? new[] { Solid(-halfWidth, 0f, 0f, halfWidth, bodyTop, front),
                     Solid(-halfWidth, 0f, -halfDepth, -halfWidth + 5f, bodyTop, 0f) }
                 : new[] { Solid(-halfWidth, 0f, -halfDepth, halfWidth, bodyTop, front) };
+        }
+
+        public static Bounds GetExpectedPassageBounds(CityDistrictKind district, int variantIndex)
+        {
+            Vector3 envelope = GetExpectedEnvelope(district, variantIndex);
+            if (variantIndex != 3) return new Bounds();
+            float clearance = district == CityDistrictKind.Industrial ? 4.2f : 3.2f;
+            float frontRecess = district == CityDistrictKind.Residential ? 1.2f : 0f;
+            return new Bounds(new Vector3(0f, clearance * .5f, -frontRecess * .5f),
+                new Vector3(3.6f, clearance, envelope.z - frontRecess));
+        }
+
+        public static IReadOnlyList<Bounds> GetExpectedGroundCollisionBounds(
+            CityDistrictKind district, int variantIndex)
+        {
+            IReadOnlyList<Bounds> solids = GetExpectedCollisionBounds(district, variantIndex);
+            if (variantIndex != 3) return solids;
+            var ground = new List<Bounds>(2);
+            for (int index = 0; index < solids.Count; index++)
+            {
+                if (solids[index].min.y < 2.5f) ground.Add(solids[index]);
+            }
+            return ground;
         }
 
         private static Bounds Solid(float minX, float minY, float minZ,
@@ -362,7 +401,7 @@ namespace BarPromenade
                 CityBuildingAssetRegistry registry =
                     entry.Prefab.GetComponent<CityBuildingAssetRegistry>();
                 Bounds expectedRoof = CityBuildingPrototypePlacement
-                    .GetExpectedRoofAttachmentBounds(expected.District);
+                    .GetExpectedRoofAttachmentBounds(expected.District, index / 4);
                 if (registry == null ||
                     !string.Equals(
                         registry.StableId,
@@ -377,7 +416,7 @@ namespace BarPromenade
                         registry.BuildSignature,
                         buildSignature,
                         StringComparison.Ordinal) ||
-                    index < 4 && (Vector3.Distance(
+                    (Vector3.Distance(
                         registry.RoofAttachmentBounds.center,
                         expectedRoof.center) > 0.003f ||
                     Vector3.Distance(

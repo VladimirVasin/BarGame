@@ -210,56 +210,118 @@ namespace BarPromenade
         private readonly Dictionary<RoadEdge, IReadOnlyList<Vector2[]>> corridors = new Dictionary<RoadEdge, IReadOnlyList<Vector2[]>>();
         private readonly Dictionary<Vector2Int, IReadOnlyList<Vector2[]>> ground = new Dictionary<Vector2Int, IReadOnlyList<Vector2[]>>();
         private readonly HashSet<Vector2Int> affected = new HashSet<Vector2Int>();
+        private readonly HashSet<Vector2Int> replanned = new HashSet<Vector2Int>();
         private readonly CitySpatialPlan spatial;
         private readonly Vector2 origin;
         private readonly float width;
-        private CityRoadGeometryPlan(CitySpatialPlan spatial, Vector3 origin, float width, IEnumerable<RoadEdge> roads, bool pilot)
+        private CityRoadGeometryPlan(CitySpatialPlan spatial, Vector3 origin, float width,
+            IEnumerable<RoadEdge> roads, bool pilot, CityBlueprint blueprint = null,
+            ISet<RoadEdge> preservedEdges = null)
         {
             this.spatial = spatial; this.origin = new Vector2(origin.x, origin.z); this.width = width;
             paths = new Dictionary<RoadEdge, CityRoadPath>();
             var curves = new List<RoadEdge>();
+            var districtCurves = new List<RoadEdge>();
+            int northernServiceRow = int.MinValue;
+            if (blueprint != null)
+                foreach (CityBlueprintCell cell in blueprint.Cells)
+                    if (cell.Topology == CityCellTopologyKind.BuildableLand &&
+                        cell.Area.Feature == CityAreaFeatureKind.UrbanDistrict)
+                        northernServiceRow = Mathf.Max(northernServiceRow, cell.Cell.y);
             foreach (RoadEdge edge in roads)
             {
                 Vector2 start = Node(edge.A), end = Node(edge.B);
                 float bulge = pilot ? PilotBulge(edge) : 0;
+                bool courtyardStreet = bulge != 0;
+                if (!courtyardStreet && blueprint != null && preservedEdges?.Contains(edge) != true)
+                    bulge = DistrictBulge(blueprint, edge, northernServiceRow);
                 if (bulge == 0) paths.Add(edge, new CityRoadPath(new[] { start, end }));
                 else
                 {
-                    Vector2 tangent = (end - start).normalized;
-                    Vector2 right = new Vector2(tangent.y, -tangent.x);
-                    float length = Vector2.Distance(start, end);
-                    // The flat node datum ends at half a road width. Keep that
-                    // knot even inside a straight approach so every offset
-                    // pavement mesh reproduces the same height profile.
                     bool obliqueBranch = edge.Equals(PilotEdges[1]);
                     if (obliqueBranch)
                     {
                         paths.Add(edge, CreateObliqueBranch(start, end, width));
-                        curves.Add(edge);
-                        affected.Add(edge.A); affected.Add(edge.A + Vector2Int.down);
-                        continue;
                     }
-                    var vertices = new List<Vector2> { start, start + tangent * (width * .5f), start + tangent * 6, start + tangent * 6.5f };
-                    int steps = Mathf.CeilToInt((length - 13) / 1.5f);
-                    for (int i = 1; i < steps; i++)
-                    {
-                        float t = (float)i / steps;
-                        float wave = Mathf.Sin(Mathf.PI * t);
-                        vertices.Add(start + tangent * (6.5f + (length - 13) * t) + right * (bulge * wave * wave));
-                    }
-                    vertices.Add(end - tangent * 6.5f);
-                    vertices.Add(end - tangent * 6);
-                    vertices.Add(end - tangent * (width * .5f)); vertices.Add(end);
-                    paths.Add(edge, new CityRoadPath(vertices));
+                    else paths.Add(edge, CreateBend(start, end, width, bulge));
                     curves.Add(edge);
-                    if (edge.IsHorizontal) { affected.Add(edge.A); affected.Add(edge.A + Vector2Int.down); }
-                    else { affected.Add(edge.A); affected.Add(edge.A + Vector2Int.left); }
+                    Vector2Int opposite = edge.A + (edge.IsHorizontal ? Vector2Int.down : Vector2Int.left);
+                    replanned.Add(edge.A); replanned.Add(opposite);
+                    if (courtyardStreet) { affected.Add(edge.A); affected.Add(opposite); }
+                    else districtCurves.Add(edge);
                 }
             }
             curves.Sort(RoadEdge.Compare);
             CurvedEdges = new ReadOnlyCollection<RoadEdge>(curves);
+            districtCurves.Sort(RoadEdge.Compare);
+            ReplannedEdges = new ReadOnlyCollection<RoadEdge>(districtCurves);
+            var cells = new List<Vector2Int>(replanned);
+            cells.Sort((a, b) => a.y != b.y ? a.y.CompareTo(b.y) : a.x.CompareTo(b.x));
+            ReplannedCells = new ReadOnlyCollection<Vector2Int>(cells);
             if (pilot) ObliqueJunction = CreateJunction();
         }
+        private static CityRoadPath CreateBend(Vector2 start, Vector2 end, float roadWidth, float bulge)
+        {
+            Vector2 tangent = (end - start).normalized;
+            Vector2 right = new Vector2(tangent.y, -tangent.x);
+            float length = Vector2.Distance(start, end);
+            // Keep the node datum knot and the six-metre vehicle approaches.
+            // Only the local street between those mouths changes shape.
+            var vertices = new List<Vector2> { start, start + tangent * (roadWidth * .5f),
+                start + tangent * 6f, start + tangent * 6.5f };
+            int steps = Mathf.CeilToInt((length - 13f) / 1.5f);
+            for (int i = 1; i < steps; i++)
+            {
+                float t = (float)i / steps;
+                float wave = Mathf.Sin(Mathf.PI * t);
+                vertices.Add(start + tangent * (6.5f + (length - 13f) * t) + right * (bulge * wave * wave));
+            }
+            vertices.Add(end - tangent * 6.5f); vertices.Add(end - tangent * 6f);
+            vertices.Add(end - tangent * (roadWidth * .5f)); vertices.Add(end);
+            return new CityRoadPath(vertices);
+        }
+        private static float DistrictBulge(CityBlueprint blueprint, RoadEdge edge, int northernServiceRow)
+        {
+            Vector2Int first = edge.A;
+            Vector2Int second = first + (edge.IsHorizontal ? Vector2Int.down : Vector2Int.left);
+            if (!blueprint.TryGetCell(first, out CityBlueprintCell a) ||
+                !blueprint.TryGetCell(second, out CityBlueprintCell b) ||
+                a.Topology != CityCellTopologyKind.BuildableLand ||
+                b.Topology != CityCellTopologyKind.BuildableLand ||
+                a.Area.Archetype != b.Area.Archetype) return 0f;
+            // Main avenues, river flanks, waterfront and district seams keep
+            // their transport datums. Existing courts keep their measured kit.
+            if (edge.IsHorizontal && edge.A.y == blueprint.CenterNode.y ||
+                edge.IsVertical && blueprint.River != null &&
+                (edge.A.x == blueprint.River.CorridorCellX ||
+                 edge.A.x == blueprint.River.CorridorCellX + 1) ||
+                IsRetainedCourtCell(first) || IsRetainedCourtCell(second)) return 0f;
+            // The shore access starts between nodes, with a fixed westward
+            // departure. Keep a parallel service street and its short coast
+            // connectors straight so cargo can reach a real turning apron
+            // before entering the narrower local quarter network.
+            if (first.y == northernServiceRow || second.y == northernServiceRow) return 0f;
+            switch (a.Area.Archetype)
+            {
+                case CityDistrictKind.OldTown:
+                    // Terrace streets lean uphill; transverse streets lean
+                    // towards the shore. Paired runs share a direction and
+                    // metre envelope instead of each choosing random noise.
+                    return edge.IsHorizontal ? -(1.55f + (edge.A.y % 3) * .3f)
+                        : -(1.4f + (edge.A.x % 3) * .35f);
+                case CityDistrictKind.Industrial:
+                    // The northern service quarters meet OldTown gradually;
+                    // the long southern cargo spines remain straight.
+                    if (first.y < blueprint.CenterNode.y - 3 || second.y < blueprint.CenterNode.y - 3)
+                        return 0f;
+                    return edge.IsHorizontal ? -.9f : -.75f;
+                default:
+                    return 0f;
+            }
+        }
+        private static bool IsRetainedCourtCell(Vector2Int cell) =>
+            (cell.x >= 0 && cell.x <= 1 && cell.y >= 7 && cell.y <= 8) ||
+            cell == CityCourtyardBlockPlanner.OffsetPairCell;
         private static CityRoadPath CreateObliqueBranch(Vector2 start, Vector2 end, float roadWidth)
         {
             const float angle = -12f * Mathf.Deg2Rad;
@@ -335,6 +397,10 @@ namespace BarPromenade
         }
         private Vector2 Node(Vector2Int node) => origin + spatial.GetCoordinateWorldOffset(node);
         public IReadOnlyList<RoadEdge> CurvedEdges { get; }
+        /// <summary>District streets beyond the original four-cell courtyard.</summary>
+        public IReadOnlyList<RoadEdge> ReplannedEdges { get; }
+        /// <summary>Physical street neighbours; does not reserve semantic gameplay lots.</summary>
+        public IReadOnlyList<Vector2Int> ReplannedCells { get; }
         internal IEnumerable<RoadEdge> Edges => paths.Keys;
         public CityRoadJunction ObliqueJunction { get; }
         public float GetEndpointInset(RoadEdge edge, Vector2Int node) =>
@@ -367,6 +433,7 @@ namespace BarPromenade
         }
         public bool IsCurved(RoadEdge edge) => paths.TryGetValue(edge, out CityRoadPath path) && !path.IsStraight;
         public bool IsAffectedCell(Vector2Int cell) => affected.Contains(cell);
+        public bool IsReplannedCell(Vector2Int cell) => replanned.Contains(cell);
         internal static bool SupportsPilot(CityGenerationSettings settings)
         {
             if (settings.Blueprint?.Id != CityBlueprintCatalog.DefaultBlueprintId ||
@@ -391,8 +458,10 @@ namespace BarPromenade
             for (int i = 0; i < PilotEdges.Count; i++) if (edge.Equals(PilotEdges[i])) return i == 1 ? 2f : i == 2 ? -.9f : .9f;
             return 0;
         }
-        internal static CityRoadGeometryPlan Create(CityGenerationSettings settings, Vector3 origin, IList<RoadEdge> roads) =>
-            new CityRoadGeometryPlan(settings.SpatialPlan, origin, settings.RoadWidth, roads, SupportsPilot(settings));
+        internal static CityRoadGeometryPlan Create(CityGenerationSettings settings, Vector3 origin, IList<RoadEdge> roads,
+            ISet<RoadEdge> preservedEdges = null, bool replanDistricts = true) =>
+            new CityRoadGeometryPlan(settings.SpatialPlan, origin, settings.RoadWidth, roads, SupportsPilot(settings),
+                replanDistricts && SupportsPilot(settings) ? settings.Blueprint : null, preservedEdges);
         internal static CityRoadGeometryPlan Straight(CitySpatialPlan spatial, Vector3 origin, float width, IEnumerable<RoadEdge> roads) =>
             new CityRoadGeometryPlan(spatial, origin, width, roads, false);
         public IReadOnlyList<Vector2[]> GetGroundPolygons(Vector2Int cell)

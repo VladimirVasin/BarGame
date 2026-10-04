@@ -166,6 +166,11 @@ namespace BarPromenade
             Renderer renderer,
             Color dryTint)
         {
+            ApplyGroundSurface(renderer, dryTint, -1);
+        }
+
+        public static void ApplyGroundSurface(Renderer renderer, Color dryTint, int materialIndex)
+        {
             if (renderer == null)
             {
                 return;
@@ -176,10 +181,16 @@ namespace BarPromenade
                 GroundTexture,
                 GroundSmoothness,
                 CityWetSurfaceKind.Ground,
-                dryTint);
+                dryTint,
+                materialIndex);
         }
 
         public static void ApplyRoadSurface(Renderer renderer)
+        {
+            ApplyRoadSurface(renderer, -1);
+        }
+
+        public static void ApplyRoadSurface(Renderer renderer, int materialIndex)
         {
             if (renderer == null)
             {
@@ -191,10 +202,16 @@ namespace BarPromenade
                 RoadTexture,
                 RoadSmoothness,
                 CityWetSurfaceKind.Road,
-                Color.white);
+                Color.white,
+                materialIndex);
         }
 
         public static void ApplySidewalkSurface(Renderer renderer)
+        {
+            ApplySidewalkSurface(renderer, -1);
+        }
+
+        public static void ApplySidewalkSurface(Renderer renderer, int materialIndex)
         {
             if (renderer == null)
             {
@@ -206,10 +223,16 @@ namespace BarPromenade
                 SidewalkTexture,
                 SidewalkSmoothness,
                 CityWetSurfaceKind.Sidewalk,
-                Color.white);
+                Color.white,
+                materialIndex);
         }
 
         public static void ApplyRoadMarkingSurface(Renderer renderer)
+        {
+            ApplyRoadMarkingSurface(renderer, -1);
+        }
+
+        public static void ApplyRoadMarkingSurface(Renderer renderer, int materialIndex)
         {
             if (renderer == null)
             {
@@ -221,10 +244,16 @@ namespace BarPromenade
                 RoadMarkingTexture,
                 RoadMarkingSmoothness,
                 CityWetSurfaceKind.RoadMarking,
-                Color.white);
+                Color.white,
+                materialIndex);
         }
 
         public static void ApplyPuddleSurface(Renderer renderer)
+        {
+            ApplyPuddleSurface(renderer, -1);
+        }
+
+        public static void ApplyPuddleSurface(Renderer renderer, int materialIndex)
         {
             if (renderer == null)
             {
@@ -236,7 +265,8 @@ namespace BarPromenade
                 RoadTexture,
                 RoadSmoothness,
                 CityWetSurfaceKind.Puddle,
-                Color.white);
+                Color.white,
+                materialIndex);
         }
 
         private static void ApplySurface(
@@ -244,31 +274,33 @@ namespace BarPromenade
             Texture2D texture,
             float smoothness,
             CityWetSurfaceKind wetSurfaceKind,
-            Color dryTint)
+            Color dryTint,
+            int materialIndex)
         {
             if (renderer == null)
             {
                 return;
             }
 
-            renderer.sharedMaterial = RuntimePrimitiveFactory.DefaultMaterial;
+            GroundSurfaceAppearance.AssignSharedMaterial(renderer, RuntimePrimitiveFactory.DefaultMaterial, materialIndex);
             var properties = new MaterialPropertyBlock();
-            renderer.GetPropertyBlock(properties);
+            GroundSurfaceAppearance.ReadProperties(renderer, properties, materialIndex);
             properties.SetTexture(BaseMapId, texture);
             properties.SetColor(BaseColorId, dryTint);
             properties.SetColor(ColorId, dryTint);
             properties.SetFloat(SmoothnessId, smoothness);
             properties.SetFloat(MetallicId, 0f);
-            renderer.SetPropertyBlock(properties);
+            GroundSurfaceAppearance.WriteProperties(renderer, properties, materialIndex);
             GroundSurfaceKind groundKind = wetSurfaceKind == CityWetSurfaceKind.Ground
                 ? GroundSurfaceKind.Soil : wetSurfaceKind == CityWetSurfaceKind.Sidewalk
                 ? GroundSurfaceKind.Paving : wetSurfaceKind == CityWetSurfaceKind.RoadMarking
                 ? GroundSurfaceKind.Marking : GroundSurfaceKind.Asphalt;
-            GroundSurfaceAppearance.Apply(renderer, groundKind, texture);
+            GroundSurfaceAppearance.Apply(renderer, groundKind, texture, materialIndex);
             CityWetSurfaceRegistry.Register(
                 renderer,
                 wetSurfaceKind,
-                dryTint);
+                dryTint,
+                materialIndex);
         }
 
         private static Texture2D LoadSurfaceTexture(

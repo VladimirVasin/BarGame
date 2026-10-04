@@ -114,7 +114,11 @@ namespace BarPromenade
             Vector3 origin = new Vector3(originOffset.x, 0f, originOffset.y);
             Dictionary<RoadEdge, CityPathKind> pathKinds =
                 CreatePathKinds(snapshot, roads);
-            snapshot.RoadGeometry = CityRoadGeometryPlan.Create(snapshot, origin, roads);
+            // Reserve the existing semantic places before bending ordinary
+            // neighbourhood streets; their addresses and public approaches
+            // do not depend on the physical street variations.
+            snapshot.RoadGeometry = CityRoadGeometryPlan.Create(snapshot, origin, roads,
+                replanDistricts: false);
             CityParkPlan park =
                 CreateParkPlan(
                     snapshot,
@@ -977,6 +981,28 @@ namespace BarPromenade
                 districtPointLotIndices,
                 primaryLandmarkCells);
 
+            var preservedStreets = new HashSet<RoadEdge>();
+            var reservedLots = new HashSet<int>(barLots);
+            reservedLots.UnionWith(districtPointLotIndices);
+            if (homeLotIndex >= 0) reservedLots.Add(homeLotIndex);
+            if (supermarketLotIndex >= 0) reservedLots.Add(supermarketLotIndex);
+            foreach (Vector2Int cell in primaryLandmarkCells.Values)
+                reservedLots.Add(ToLotIndex(cell.x, cell.y, settings.BlocksX));
+            foreach (int index in reservedLots)
+            {
+                var cell = new Vector2Int(index % settings.BlocksX, index / settings.BlocksX);
+                foreach (Vector2Int direction in CardinalDirections)
+                    preservedStreets.Add(RoadEdge.ForCellFrontage(cell, direction));
+            }
+            // Seeded signature stairs use an authored straight flight. Their
+            // selection depends on node heights, before lot terrace rebasing.
+            CityElevationPlan baselineElevation = CityElevationPlanner.Create(
+                settings.Blueprint, settings, seed, origin, nodes, roads, pathKinds);
+            foreach (CityElevationStairDescriptor stair in baselineElevation.SignatureStairs)
+                preservedStreets.Add(stair.Edge);
+            settings.RoadGeometry = CityRoadGeometryPlan.Create(settings, origin, roads,
+                preservedStreets);
+
             var lots = new List<BuildingLot>(lotCount);
             int barOrdinal = 0;
             for (int z = 0; z < settings.BlocksZ; z++)
@@ -1787,11 +1813,12 @@ namespace BarPromenade
             bool offsetPair = authoredOrdinary && !isPrimaryLandmark && (hasEastStreet || hasWestStreet) && district == CityDistrictKind.OldTown &&
                 CityCourtyardBlockPlanner.SupportsOffsetPair(settings, cell);
             if (offsetPair) frontage = hasEastStreet ? Vector2Int.right : Vector2Int.left;
-            if (authoredOrdinary && settings.RoadGeometry?.IsAffectedCell(cell) == true)
+            if (authoredOrdinary && settings.RoadGeometry?.IsReplannedCell(cell) == true)
                 frontage = ResolvePilotFrontage(settings.RoadGeometry, cell, frontage);
             bool isAuthoredPrecinct = (cell.x == 10 && cell.y == 5) ||
                 (cell.x == 11 && (cell.y == 3 || cell.y == 4 || cell.y == 5));
             bool curvedBlock = settings.RoadGeometry?.IsAffectedCell(cell) == true;
+            bool replannedBlock = settings.RoadGeometry?.IsReplannedCell(cell) == true;
             int buildingVariant = authoredOrdinary && curvedBlock
                 ? 2
                 : offsetPair
@@ -1847,7 +1874,7 @@ namespace BarPromenade
 
             Vector3 direction = new Vector3(frontage.x, 0f, frontage.y);
             Vector3 facadeForward = direction;
-            if (authoredOrdinary && curvedBlock && frontage != Vector2Int.zero)
+            if (authoredOrdinary && replannedBlock && frontage != Vector2Int.zero)
                 ResolvePilotBuildingPose(settings, cell, envelope, frontage,
                     ref center, out facadeForward);
             if (offsetPair)
@@ -1855,7 +1882,7 @@ namespace BarPromenade
             // The street wall belongs to the public frontage; excess land
             // stays behind the building as a yard instead of a moat on all
             // four sides. Residential setbacks deliberately remain deeper.
-            if (authoredOrdinary && !curvedBlock && !offsetPair && !streetfront && frontage != Vector2Int.zero)
+            if (authoredOrdinary && !replannedBlock && !offsetPair && !streetfront && frontage != Vector2Int.zero)
             {
                 float halfSpan = frontage.x != 0 ? cellSpan.x * 0.5f : cellSpan.y * 0.5f;
                 float halfBuilding = frontage.x != 0 ? size.x * 0.5f : size.y * 0.5f;
@@ -1880,7 +1907,7 @@ namespace BarPromenade
                         new Vector2(returnPosition.x, returnPosition.z));
                     returnPosition.x = projection.Position.x;
                     returnPosition.z = projection.Position.y;
-                    if (authoredOrdinary && curvedBlock)
+                    if (authoredOrdinary && replannedBlock)
                     {
                         // Docks meet the pavement normal at the facade anchor;
                         // graph frontage keeps its original cardinal identity.
@@ -1950,7 +1977,7 @@ namespace BarPromenade
         {
             variant = 0; center = cellCenter;
             if (cell.y != 11 || cell.x < 0 || cell.x > 3 || settings.RoadGeometry == null ||
-                settings.RoadGeometry.IsAffectedCell(cell)) return false;
+                settings.RoadGeometry.IsReplannedCell(cell)) return false;
             // A short existing street front alternates authored metre masses.
             // Small recesses break the facade line without opening a plaza.
             variant = cell.x % 2;
@@ -2048,7 +2075,7 @@ namespace BarPromenade
                     Vector2[] footprint = PilotEnvelope(candidate + candidateForward * .15f, rotation,
                         envelope.x + 1.3f, envelope.z + 1.6f);
                     if (!FitsPilotGround(footprint, cellBounds, roadCuts)) continue;
-                    if (cell.x == 0)
+                    if (cell.x == 0 && settings.RoadGeometry.IsAffectedCell(cell))
                     {
                         // A second fixed-metre house closes the rear of the
                         // western court. Reserve its real ground now, rather
@@ -2138,10 +2165,12 @@ namespace BarPromenade
             uint rank = StableHash(seed, cell.x, cell.y, 0x4D415353u);
             // Longer frontage is preferred on the expanded outer blocks;
             // corner bodies introduce real rear pockets on the smaller ones.
-            int preferred = (rank % 3u) == 0u ? 2 : 1;
-            for (int pass = 0; pass < 2; pass++)
+            int preferred = district == CityDistrictKind.Industrial ? (rank % 4u == 0u ? 3 : 1)
+                : (rank % 4u) == 0u ? 3 : (rank % 3u) == 0u ? 2 : 1;
+            int[] variants = { preferred, 2, 1, 0 };
+            for (int pass = 0; pass < variants.Length; pass++)
             {
-                int variant = pass == 0 ? preferred : 3 - preferred;
+                int variant = variants[pass];
                 Vector3 envelope = CityBuildingAssetProvider.GetExpectedEnvelope(district, variant);
                 Vector2 footprint = frontage.x != 0
                     ? new Vector2(envelope.z, envelope.x)

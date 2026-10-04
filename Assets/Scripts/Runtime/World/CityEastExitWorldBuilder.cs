@@ -112,6 +112,17 @@ namespace BarPromenade
                 if (part.name == "LightAnchor") { lightAnchor = part; break; }
             if (lightAnchor == null) throw new InvalidOperationException("Checkpoint lamp lacks its measured LightAnchor.");
             lightAnchor.rotation = Quaternion.LookRotation(new Vector3(.32f, -1f, .35f), Vector3.up);
+            // Dressing embeds gravel into these meshes after their road
+            // profile has been fitted. Snapshot their final material regions.
+            foreach (MeshRenderer renderer in root.GetComponentsInChildren<MeshRenderer>(true))
+            {
+                if (!renderer.name.StartsWith("EEX_Road_", StringComparison.Ordinal)) continue;
+                bool paint = renderer.name.EndsWith("_Paint", StringComparison.Ordinal);
+                FootstepGround.Stamp(renderer, renderer.name.EndsWith("_Ground", StringComparison.Ordinal)
+                    ? FootstepGroundKind.Soil : FootstepGroundKind.Concrete);
+                CityGroundSurfaceSystem.Register(renderer, paint ? 100 : 20, paint: paint);
+            }
+            CityGroundSurfaceSystem.ReplaceCollider(collisionRoot.GetComponent<MeshCollider>());
             // This is the fifth eligible location for the existing last
             // street Spot; it never creates another realtime Light.
             return new CityEastExitWorldResult(root.gameObject,

@@ -240,7 +240,7 @@ namespace BarPromenade
             return false;
         }
 
-        private static bool IntersectsCourtyardReservation(CityLayout layout, Vector3 position)
+        internal static bool IntersectsCourtyardReservation(CityLayout layout, Vector3 position)
         {
             var point = new Vector2(position.x, position.z);
             foreach (CityRoadPath path in layout.CourtyardPaths)

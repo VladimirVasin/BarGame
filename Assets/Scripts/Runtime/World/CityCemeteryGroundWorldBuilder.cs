@@ -114,6 +114,7 @@ namespace BarPromenade
             // A dig swaps this object's mesh and keeps the object, so the
             // stamp outlives every rebuild of the slab.
             FootstepGround.Stamp(ground, FootstepGroundKind.Soil);
+            CityGroundSurfaceSystem.Register(ground, 0, dynamic: true);
             return ground;
         }
     }

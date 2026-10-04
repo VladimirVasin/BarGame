@@ -90,8 +90,17 @@ namespace BarPromenade
                     color,
                     false,
                     ResolveTileSize(style),
-                    ResolveUvMode(style));
+                    ResolveUvMode(style),
+                    keepReadable: style == BatchStyle.Stone ||
+                        style == BatchStyle.Gravel || style == BatchStyle.Lawn);
                 ApplyAppearance(batch.GetComponent<Renderer>(), style, color);
+                if (style == BatchStyle.Stone || style == BatchStyle.Gravel ||
+                    style == BatchStyle.Lawn)
+                {
+                    FootstepGround.Stamp(batch, style == BatchStyle.Lawn
+                        ? FootstepGroundKind.Grass : FootstepGroundKind.Stone);
+                    CityGroundSurfaceSystem.Register(batch, 40, paint: true);
+                }
             }
 
             BuildGardenModels(root, plan);

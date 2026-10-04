@@ -5,8 +5,8 @@
 source `ArtSource/City/EastExit`.
 `build-city-east-ground-texture.py --verify`: grass/soil seam.
 
-`build-city-buildings-3d-model.py` v2.2.0: 12 types, 84 meshes/9,688 triangles/
-537 slots; `Assets/City/Models/CityBuildings3D.{fbx,json}`.
+`build-city-buildings-3d-model.py` v3.0.0: 20 types/140 meshes/13,480 triangles/
+719 slots; `Assets/City/Models/CityBuildings3D.{fbx,json}`.
 `run-blender.py`/`--validate-only`; import `CityBuildingAssetSetup.BuildOrThrow`.
 
 `build-city-litter-3d-model.py`: 36 props; `--validate-only`: geometry/determinism.

@@ -112,6 +112,24 @@ namespace BarPromenade
             throw new InvalidOperationException($"Port model '{model.name}' has no '{name}' part.");
         }
 
+        /// <summary>The approach joins the common land only after its metre
+        /// wrapper has been placed at the port origin.</summary>
+        internal static void RegisterAccessGround(GameObject model)
+        {
+            if (model == null) throw new ArgumentNullException(nameof(model));
+            foreach (MeshRenderer renderer in model.GetComponentsInChildren<MeshRenderer>(true))
+            {
+                if (!renderer.enabled) continue;
+                bool paint = renderer.name.EndsWith("__RoadMarking", StringComparison.Ordinal);
+                if (!paint) FootstepGround.Stamp(renderer, renderer.name.EndsWith("__Asphalt", StringComparison.Ordinal)
+                    ? FootstepGroundKind.Concrete : FootstepGroundKind.Stone);
+                CityGroundSurfaceSystem.Register(renderer, 40,
+                    paint: paint);
+            }
+            foreach (Collider collider in model.GetComponentsInChildren<Collider>(true))
+                CityGroundSurfaceSystem.ReplaceCollider(collider);
+        }
+
         /// <summary>One shared material for each authored metre-UV surface.
         /// Missing generated sheets have an explicit flat-color fallback;
         /// their absence never silently reuses the palette's point UVs.</summary>

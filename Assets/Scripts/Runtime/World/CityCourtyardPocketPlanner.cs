@@ -383,6 +383,7 @@ namespace BarPromenade
                         descriptor.Kind),
                     fencePlan,
                     nightPlan) ||
+                CityDecorationPlanner.BlocksCourtyardRoutes(layout, descriptor) ||
                 OverlapsStrict(
                     footprint,
                     CreateDoorClearance(lot)) ||

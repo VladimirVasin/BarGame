@@ -82,6 +82,7 @@ namespace BarPromenade
 
             float closest = float.PositiveInfinity;
             Collider support = null;
+            int triangleIndex = -1;
             for (int index = 0; index < count; index++)
             {
                 RaycastHit hit = Hits[index];
@@ -102,6 +103,7 @@ namespace BarPromenade
 
                 closest = hit.distance;
                 support = collider;
+                triangleIndex = hit.triangleIndex;
                 contact = hit.point;
             }
 
@@ -113,13 +115,13 @@ namespace BarPromenade
 
             FootstepGround marker =
                 support.GetComponentInParent<FootstepGround>();
-            if (marker == null || marker.Kind == FootstepGroundKind.None)
+            kind = marker != null ? marker.ResolveKind(triangleIndex) : FootstepGroundKind.None;
+            if (kind == FootstepGroundKind.None)
             {
                 contact = feet;
                 return false;
             }
 
-            kind = marker.Kind;
             return true;
         }
 

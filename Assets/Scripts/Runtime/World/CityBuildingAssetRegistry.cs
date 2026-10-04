@@ -620,15 +620,16 @@ namespace BarPromenade
 
             if (district == CityDistrictKind.Residential)
             {
-                if (balconySlots.Length != 8)
+                int balconyFloorCount = height < 12f ? 3 : 4;
+                if (balconySlots.Length != balconyFloorCount * 2)
                 {
                     throw new InvalidOperationException(
-                        $"City building '{stableId}' needs eight balcony " +
+                        $"City building '{stableId}' has incorrect balcony " +
                         "slots.");
                 }
 
-                float[] expectedLevels = { 7f, 12f, 17f, 22f };
-                for (int floor = 1; floor <= expectedLevels.Length; floor++)
+                float[] expectedLevels = { 2.8f, 5.6f, 8.4f, 11.2f };
+                for (int floor = 1; floor <= balconyFloorCount; floor++)
                 {
                     if (!balconiesPerFloor.TryGetValue(
                             floor,

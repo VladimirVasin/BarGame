@@ -127,16 +127,21 @@ namespace BarPromenade
             CityCemeterySurfaceKind kind,
             Color sourceTint)
         {
+            ApplyCombined(renderer, kind, sourceTint, -1);
+        }
+
+        public static void ApplyCombined(Renderer renderer, CityCemeterySurfaceKind kind,
+            Color sourceTint, int materialIndex)
+        {
             if (renderer == null)
             {
                 return;
             }
 
             HomeSurfaceRecipe recipe = GetRecipe(kind);
-            renderer.sharedMaterial =
-                RuntimePrimitiveFactory.DefaultMaterial;
+            GroundSurfaceAppearance.AssignSharedMaterial(renderer, RuntimePrimitiveFactory.DefaultMaterial, materialIndex);
             var properties = new MaterialPropertyBlock();
-            renderer.GetPropertyBlock(properties);
+            GroundSurfaceAppearance.ReadProperties(renderer, properties, materialIndex);
             properties.SetTexture(BaseMapId, GetTexture(kind));
             Color displayTint = SurfaceAppearanceCore.CreateDisplayTint(
                 sourceTint,
@@ -145,11 +150,11 @@ namespace BarPromenade
             properties.SetColor(ColorId, displayTint);
             properties.SetFloat(SmoothnessId, recipe.Smoothness);
             properties.SetFloat(MetallicId, recipe.Metallic);
-            renderer.SetPropertyBlock(properties);
+            GroundSurfaceAppearance.WriteProperties(renderer, properties, materialIndex);
             GroundSurfaceKind groundKind = kind == CityCemeterySurfaceKind.Soil
                 ? GroundSurfaceKind.Soil : kind == CityCemeterySurfaceKind.Gravel
                 ? GroundSurfaceKind.Gravel : GroundSurfaceKind.Rock;
-            GroundSurfaceAppearance.ApplyCity(renderer, groundKind, GetTexture(kind));
+            GroundSurfaceAppearance.ApplyCity(renderer, groundKind, GetTexture(kind), materialIndex);
         }
 
         private static int ValidateKind(CityCemeterySurfaceKind kind)

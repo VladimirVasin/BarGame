@@ -17,6 +17,10 @@ namespace BarPromenade
             Plans = new ConditionalWeakTable<CityLayout, CityStreetSurfacePlan>();
         private static readonly ConditionalWeakTable<CityLayout, CityStreetSurfacePlan>
             .CreateValueCallback CreateUncachedCallback = CreateUncached;
+        private static readonly ConditionalWeakTable<CityLayout, CityStreetSurfacePlan>
+            CourtyardPavingPlans = new ConditionalWeakTable<CityLayout, CityStreetSurfacePlan>();
+        private static readonly ConditionalWeakTable<CityLayout, CityStreetSurfacePlan>
+            .CreateValueCallback CreateCourtyardPavingCallback = CreateCourtyardPavingUncached;
 
         public const float SidewalkWidth = 1f;
         public const float RoadTop = 0.08f;
@@ -51,7 +55,21 @@ namespace BarPromenade
             return Plans.GetValue(layout, CreateUncachedCallback);
         }
 
-        private static CityStreetSurfacePlan CreateUncached(CityLayout layout)
+        // Ordinary courts use their own cell ground and frontage-side strip;
+        // connections join ordinary cells only across missing road arms.
+        // The cannery's driveway cut belongs to the protected POI's opposite
+        // strip and cannot intersect that walking ground. Omit its service
+        // selection here: like crosswalk selection, it consumes court routes.
+        internal static CityStreetSurfacePlan CreateCourtyardPaving(CityLayout layout)
+        {
+            if (layout == null) throw new ArgumentNullException(nameof(layout));
+            return CourtyardPavingPlans.GetValue(layout, CreateCourtyardPavingCallback);
+        }
+
+        private static CityStreetSurfacePlan CreateUncached(CityLayout layout) => CreateCore(layout, true);
+        private static CityStreetSurfacePlan CreateCourtyardPavingUncached(CityLayout layout) => CreateCore(layout, false);
+
+        private static CityStreetSurfacePlan CreateCore(CityLayout layout, bool includeCrosswalks)
         {
             float carriagewayWidth =
                 layout.RoadWidth - (SidewalkWidth * 2f);
@@ -104,7 +122,8 @@ namespace BarPromenade
                 sidewalks,
                 sidewalkGeometry,
                 sidewalkWalkableRectangles,
-                edgesWithSidewalks);
+                edgesWithSidewalks,
+                includeCrosswalks);
             CreateIntersectionSidewalks(
                 layout,
                 connections,
@@ -114,33 +133,34 @@ namespace BarPromenade
                 sidewalkWalkableRectangles,
                 markingExclusions);
 
-            IReadOnlyList<Vector2Int> selectedNodes =
-                CityStreetIntersectionSelector.Select(
+            IReadOnlyList<Vector2Int> selectedNodes = Array.Empty<Vector2Int>();
+            if (includeCrosswalks)
+            {
+                selectedNodes = CityStreetIntersectionSelector.Select(layout, MaximumCrosswalkIntersections);
+                CreateCrosswalks(
                     layout,
-                    MaximumCrosswalkIntersections);
-            CreateCrosswalks(
-                layout,
-                selectedNodes,
-                sortedEdges,
-                edgesWithSidewalks,
-                carriagewayWidth,
-                crosswalkMarkings,
-                crosswalkMarkingGeometry,
-                crosswalkWalkableRectangles,
-                crosswalks,
-                markingExclusions);
-            CreateCenterMarkings(
-                layout,
-                sortedEdges,
-                markingExclusions,
-                centerMarkings,
-                centerMarkingGeometry);
+                    selectedNodes,
+                    sortedEdges,
+                    edgesWithSidewalks,
+                    carriagewayWidth,
+                    crosswalkMarkings,
+                    crosswalkMarkingGeometry,
+                    crosswalkWalkableRectangles,
+                    crosswalks,
+                    markingExclusions);
+                CreateCenterMarkings(
+                    layout,
+                    sortedEdges,
+                    markingExclusions,
+                    centerMarkings,
+                    centerMarkingGeometry);
+            }
 
             var curvedStreets = new List<CityStreetRibbonDescriptor>();
             var curvedSidewalks = new List<CityStreetRibbonDescriptor>();
             var curvedMarkings = new List<CityStreetRibbonDescriptor>();
             CreateCurvedRibbons(layout, connections, busIntersections, markingExclusions,
-                curvedStreets, curvedSidewalks, curvedMarkings);
+                curvedStreets, curvedSidewalks, curvedMarkings, includeCrosswalks);
 
             return new CityStreetSurfacePlan(
                 carriagewayWidth,
@@ -434,14 +454,14 @@ namespace BarPromenade
             ICollection<Bounds> sidewalks,
             ICollection<RuntimeOrientedBox> sidewalkGeometry,
             ICollection<Rect> walkableRectangles,
-            ISet<RoadEdge> edgesWithSidewalks)
+            ISet<RoadEdge> edgesWithSidewalks, bool includeCanneryOpening)
         {
             float halfRoad = layout.RoadWidth * 0.5f;
             float sideOffset = halfRoad - (SidewalkWidth * 0.5f);
             // Both precinct plans are pure functions of the layout (and
             // memoised on it); resolved once here instead of under every
             // pavement strip.
-            CityCanneryPlan cannery = CityCanneryPlan.Create(layout);
+            CityCanneryPlan cannery = includeCanneryOpening ? CityCanneryPlan.Create(layout) : null;
             CityPortAccessPlan port = CityPortAccessPlan.ForLayout(layout);
             CityEastExitPlan eastExit = CityEastExitPlanner.Create(layout);
             for (int index = 0; index < sortedEdges.Count; index++)
@@ -1053,7 +1073,7 @@ namespace BarPromenade
             ISet<Vector2Int> busIntersections, IReadOnlyList<Rect> exclusions,
             ICollection<CityStreetRibbonDescriptor> streets,
             ICollection<CityStreetRibbonDescriptor> sidewalks,
-            ICollection<CityStreetRibbonDescriptor> markings)
+            ICollection<CityStreetRibbonDescriptor> markings, bool includeMarkings)
         {
             float halfRoad = layout.RoadWidth * .5f;
             foreach (RoadEdge edge in layout.RoadGeometry.CurvedEdges)
@@ -1074,6 +1094,7 @@ namespace BarPromenade
                     sidewalks.Add(new CityStreetRibbonDescriptor(edge,
                         pavementPath.Ribbon(SidewalkWidth, side * (halfRoad - SidewalkWidth * .5f)),
                         SidewalkTop, SidewalkHeight));
+                if (!includeMarkings) continue;
                 int dashCount = Mathf.Max(2, Mathf.FloorToInt(path.Length / 5f));
                 for (int dash = 0; dash < dashCount; dash++)
                 {

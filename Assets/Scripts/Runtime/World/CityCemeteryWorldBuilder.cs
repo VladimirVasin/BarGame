@@ -222,7 +222,8 @@ namespace BarPromenade
                         batches[key],
                         ResolveColor(key.Style),
                     CityCemeteryRules.BlocksMovement(key.Style),
-                    uvTileSize);
+                    uvTileSize,
+                    keepReadable: key.Style == CityCemeteryStyle.Gravel);
                 if (surface.HasValue)
                 {
                     CityCemeterySurfaceAppearance.ApplyCombined(
@@ -230,6 +231,7 @@ namespace BarPromenade
                         surface.Value,
                         ResolveColor(key.Style));
                 }
+                RegisterGround(chunk, key.Style);
             }
 
             keys = new List<BatchKey>(importedBatches.Keys);
@@ -252,7 +254,8 @@ namespace BarPromenade
                         ResolveColor(key.Style),
                         false,
                         uvTileSize,
-                        RuntimeWorldUvMode.XZPlanar);
+                    RuntimeWorldUvMode.XZPlanar,
+                    keepReadable: key.Style == CityCemeteryStyle.Gravel);
                 if (surface.HasValue)
                 {
                     CityCemeterySurfaceAppearance.ApplyCombined(
@@ -260,6 +263,7 @@ namespace BarPromenade
                         surface.Value,
                         ResolveColor(key.Style));
                 }
+                RegisterGround(chunk, key.Style);
             }
 
             keys = new List<BatchKey>(collisionBatches.Keys);
@@ -277,6 +281,13 @@ namespace BarPromenade
                         true);
                 proxy.GetComponent<Renderer>().enabled = false;
             }
+        }
+
+        private static void RegisterGround(GameObject chunk, CityCemeteryStyle style)
+        {
+            if (style != CityCemeteryStyle.Gravel) return;
+            FootstepGround.Stamp(chunk, FootstepGroundKind.Stone);
+            CityGroundSurfaceSystem.Register(chunk, 40, paint: true);
         }
 
         private static void TryAppendImportedGraves(

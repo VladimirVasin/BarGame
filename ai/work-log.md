@@ -3,46 +3,41 @@
 Newest outcomes/checks first. Archive whole dates at budget: [policy](README.md).
 Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-2026-08.md).
 
-## 2026-10-04 — OldTown road geometry
+## 2026-10-04 — City structure and common ground
 
-- OldTown T: −12° (78°/102°), straight ≥6 m ends, fixed nodes/datums.
-  Unscaled poses/ribbons/ground share render/collision/navigation.
-  Four pilot cells exclude significant places across seeds; frontages name edges.
-  Bus, Cannery and Last Route retain safe routes.
-- CourtyardBlocks retain four L 15×14 m houses/two west compact 14×13.5 m rears:
-  144 lot IDs; exact road ground minus masses; .4 m loops via both flanks,
-  ≥2.2 m necks/true 10×7 m L courts return to their street gate.
-  A second ordinary quarter reuses long/compact bodies with staggered setbacks,
-  a 3 m passage/open court. Default `(0,9)` mirrors to its real west street;
-  east is absent. Frontage/metre eligibility preserves special places/roads. Existing courts/western link stay.
-  Road-free CourtyardConnections join `(0,7)/(0,8)`; existing workers use
-  exact-ground .35 m Courtyard links, deduped knots/Path.Length costs.
-  Street splits retain all 13 identities/spawn IDs/positions. CourtyardPaths
-  bar lamps/props/solid litter; no new entrances/NPCs/text/lights/lore.
-- North streetfront (x0..3,z11) alternates fixed compact/long; shallow setbacks
-  vary. Ordinary/actual fit only; existing roads/IDs/courts/special sites stay.
-  Plot fit alone missed truck turns; body+0.1 m reserves 1 m ground corner pads.
-- Local-origin areas/metric endpoints avoid partition errors/internal barriers. Padded OBBs check actual cuts; fragmented ground sums were unreliable. Grade breakpoints must be ribbon
-  vertices or path/collider heights diverge. Capsule clearance uses the pavement
-  union, with front/rear fitting reserves. Existing poles choose bounded clear
-  stations on the same road; lights/types stay.
-  Courtyard steps budget XZ/sample ground; 3D steps lost pace on the contact Y gap.
-  Body turns before aligned stepping; early captures hid the post-node-switch
-  turn. CharacterController collision stays authoritative.
-  Gate splits sample CourtyardHeight, replacing straight-lane Y interpolation.
-  Compact OldTown outfalls use canonical facade mounts and ground sampling;
-  generic lateral placement missed the recessed right wall and left a floating strap.
-- Checks: `CityRoadGeometryTests`, `OldTownPilot_KeepsAnchorsAndPartitionsGroundWithoutBuildingOverlap`,
-  `Create_ElevatedCity_UsesLocalSurfacesAndSignatureStairs`,
-  `CityElevationPlannerTests.DefaultCity_UsesOneSafeRoadGroundBoundaryContract`,
-  `CityBuildingPrototypeRuntimeTests.DefaultCity_PlacesDistrictPrototypesAndClipsHomeExterior`,
-  `CityDecorationPlannerTests.ShippedCity_PutsTheWaterNetworkOnTheGround`,
-  `AreaCaptureFixture.CityReplanning`. Court/street/worker frames reviewed.
-  Hero swept capsule/.35 m masks/floor/map agree. After separate initial
-  placements, each direction runs continuously through court turns to a street
-  gate: mesh/facing, CharacterController collision/ground contact;
-  no reset within a trial.
-  `python tools/check-docs.py`, `git diff --check`.
+- City ground composes explicit terrain/street/precinct/shore/river/port/east-road
+  sources. Priority partition preserves planes/normals/metre UVs; paint follows
+  exact supports. Sectors share weather recipes and triangle footsteps.
+  Grave cuts rebuild locally; sand keeps its deformable owner; Home shares the
+  composition without collision. Disabled hosts retain semantic ownership.
+  Vertex/plane/contour/SAT/style caching and bounded grids remove repeat work.
+  Dry grave recipes and support footsteps remain; PhysX guards tiny slivers.
+- Twenty fixed-metre Blender types replace tall repeating walls: lower old/
+  residential fabric, low wide Industrial bodies, taller Nightlife. Human-scale
+  floors/roofs keep fixed fog. True passages/fitted wings shape district courts;
+  ground solids and overhead lintels are separate. OldTown/service streets bend,
+  while protected sites, IDs/nodes, river/park, bus/stops and seeded stair roads
+  stay. Cargo follows straight service streets between unchanged supply/parking
+  anchors. Court loops and road-free safe-grade links share the pedestrian graph.
+- Unscaled model/foundation/dock/collision poses and actual ribbon complements
+  prevent floating frontage; paths exclude props. Retained pilot courts stay.
+  Metric paths sample grade breaks; walkers turn before stepping.
+  Indexed mass/support/edge queries replace fragmented-ground rescans that stalled
+  planning. Scoped cached paving avoids court/cannery selection recursion without
+  changing production paving; bounded edge retries reject real walking lips.
+  Floor assertions follow material priority rather than maximum overlap height.
+  Traffic fixtures/details use actual frontage poses.
+- Earlier checks: `GroundSurfacePartitionerTests`, `CityGroundSurfaceSystemTests`,
+  `AreaCaptureFixture.CityGroundSurface`: ground/paint/seam frames reviewed;
+  grave cut/fill, sand, Home, weather/contact/sound agree.
+  `CityRoadGeometryTests`, `CityElevationPlannerTests`,
+  `CityBuildingPrototypeRuntimeTests`, `CityDecorationPlannerTests`,
+  `AreaCaptureFixture.CityReplanning`: court/street/worker frames reviewed;
+  hero capsule, ground/map and continuous street-gate walking agreed.
+- New checks: `AreaCaptureFixture.CityFabric`, `CityBuildingAssetSetup.RunValidation`,
+  `build-city-buildings-3d-model.py --validate-only`; district/wing frames reviewed,
+  passage clearance, cargo connectivity and floor contacts agree.
+  `python -B tools/check-docs.py`, `git diff --check`.
 
 ## 2026-10-03 — Combat and city replanning
 

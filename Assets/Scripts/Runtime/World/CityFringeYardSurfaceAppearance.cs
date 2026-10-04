@@ -178,6 +178,12 @@ namespace BarPromenade
             CityFringeYardSurfaceKind kind,
             Color sourceTint)
         {
+            ApplyCombined(renderer, kind, sourceTint, -1);
+        }
+
+        public static void ApplyCombined(Renderer renderer, CityFringeYardSurfaceKind kind,
+            Color sourceTint, int materialIndex)
+        {
             if (renderer == null)
             {
                 return;
@@ -187,7 +193,8 @@ namespace BarPromenade
                 renderer,
                 kind,
                 sourceTint,
-                GetRecipe(kind));
+                GetRecipe(kind),
+                materialIndex);
         }
 
         internal static Color CreateDisplayTint(
@@ -203,22 +210,23 @@ namespace BarPromenade
             Renderer renderer,
             CityFringeYardSurfaceKind kind,
             Color sourceTint,
-            HomeSurfaceRecipe recipe)
+            HomeSurfaceRecipe recipe,
+            int materialIndex = -1)
         {
-            renderer.sharedMaterial = RuntimePrimitiveFactory.DefaultMaterial;
+            GroundSurfaceAppearance.AssignSharedMaterial(renderer, RuntimePrimitiveFactory.DefaultMaterial, materialIndex);
             var properties = new MaterialPropertyBlock();
-            renderer.GetPropertyBlock(properties);
+            GroundSurfaceAppearance.ReadProperties(renderer, properties, materialIndex);
             properties.SetTexture(BaseMapId, GetTexture(kind));
             Color displayTint = CreateDisplayTint(sourceTint, kind);
             properties.SetColor(BaseColorId, displayTint);
             properties.SetColor(ColorId, displayTint);
             properties.SetFloat(SmoothnessId, recipe.Smoothness);
             properties.SetFloat(MetallicId, recipe.Metallic);
-            renderer.SetPropertyBlock(properties);
+            GroundSurfaceAppearance.WriteProperties(renderer, properties, materialIndex);
             GroundSurfaceKind groundKind = kind == CityFringeYardSurfaceKind.Concrete
                 ? GroundSurfaceKind.Concrete : kind == CityFringeYardSurfaceKind.Masonry
                 ? GroundSurfaceKind.Paving : GroundSurfaceKind.Soil;
-            GroundSurfaceAppearance.ApplyCity(renderer, groundKind, GetTexture(kind));
+            GroundSurfaceAppearance.ApplyCity(renderer, groundKind, GetTexture(kind), materialIndex);
         }
 
         private static int ValidateKind(CityFringeYardSurfaceKind kind)

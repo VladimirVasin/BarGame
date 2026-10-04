@@ -39,8 +39,23 @@ namespace BarPromenade
     public sealed class FootstepGround : MonoBehaviour
     {
         [SerializeField] private FootstepGroundKind kind;
+        [SerializeField] private FootstepGroundKind[] triangleKinds = Array.Empty<FootstepGroundKind>();
 
         public FootstepGroundKind Kind => kind;
+
+        /// <summary>The owning MeshCollider's triangle order; other contacts use the root kind.</summary>
+        public FootstepGroundKind ResolveKind(int triangleIndex)
+        {
+            return triangleIndex >= 0 && triangleIndex < triangleKinds.Length
+                ? triangleKinds[triangleIndex] : kind;
+        }
+
+        public void SetTriangleKinds(IReadOnlyList<FootstepGroundKind> kinds)
+        {
+            if (kinds == null) throw new ArgumentNullException(nameof(kinds));
+            triangleKinds = new FootstepGroundKind[kinds.Count];
+            for (int index = 0; index < kinds.Count; index++) triangleKinds[index] = kinds[index];
+        }
 
         /// <summary>
         /// Get-or-add. A null target returns null, so a builder can pass
@@ -62,6 +77,15 @@ namespace BarPromenade
             }
 
             marker.kind = kind;
+            marker.triangleKinds = Array.Empty<FootstepGroundKind>();
+            return marker;
+        }
+
+        public static FootstepGround Stamp(GameObject target, FootstepGroundKind fallbackKind,
+            IReadOnlyList<FootstepGroundKind> triangleKinds)
+        {
+            FootstepGround marker = Stamp(target, fallbackKind);
+            if (marker != null) marker.SetTriangleKinds(triangleKinds);
             return marker;
         }
 

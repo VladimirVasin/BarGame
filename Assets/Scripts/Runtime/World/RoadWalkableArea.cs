@@ -59,7 +59,7 @@ namespace BarPromenade
                 }
 
                 eligibleByCell.Add(surface.Cell, surface);
-                if (layout.RoadGeometry.IsAffectedCell(surface.Cell))
+                if (layout.RoadGeometry.IsReplannedCell(surface.Cell))
                     groundPolygons.AddRange(layout.RoadGeometry.GetGroundPolygons(surface.Cell));
                 else AddRiverClippedGround(layout, surface, ground);
             }
@@ -1023,9 +1023,18 @@ namespace BarPromenade
         {
             private readonly List<Vector2[]> pieces;
             private readonly List<(Vector2 A, Vector2 B)> boundary = new List<(Vector2, Vector2)>();
+            private readonly PolygonSpatialIndex pieceIndex;
+            private readonly PolygonSpatialIndex boundaryIndex;
+            private readonly List<int> nearbyBoundary = new List<int>();
             public PolygonArea(List<Vector2[]> pieces)
             {
                 this.pieces = pieces;
+                var pieceBounds = new Rect[pieces.Count];
+                var unboundedPieces = new bool[pieces.Count];
+                for (int p = 0; p < pieces.Count; p++)
+                    pieceBounds[p] = ConservativePieceBounds(pieces[p], out unboundedPieces[p]);
+                pieceIndex = new PolygonSpatialIndex(pieceBounds, unboundedPieces);
+                var nearbyPieces = new List<int>();
                 for (int p = 0; p < pieces.Count; p++)
                 for (int e = 0; e < pieces[p].Length; e++)
                 {
@@ -1033,7 +1042,8 @@ namespace BarPromenade
                     if (delta.sqrMagnitude < .000001f) continue;
                     float length = delta.magnitude;
                     var cuts = new List<float> { 0f, 1f };
-                    for (int other = 0; other < pieces.Count; other++)
+                    pieceIndex.Collect(SegmentBounds(a, b, BoundaryEpsilon), nearbyPieces);
+                    foreach (int other in nearbyPieces)
                     {
                         if (other == p) continue;
                         Vector2[] polygon = pieces[other];
@@ -1071,12 +1081,14 @@ namespace BarPromenade
                         if ((cuts[i] - cuts[i - 1]) * length < BoundaryEpsilon) continue;
                         Vector2 first = a + delta * cuts[i - 1], last = a + delta * cuts[i];
                         Vector2 probe = (first + last) * .5f + outward * .003f;
-                        bool covered = false;
-                        for (int q = 0; q < pieces.Count; q++)
-                            if (q != p && ContainsTight(pieces[q], probe)) { covered = true; break; }
+                        bool covered = pieceIndex.ContainsPoint(probe, pieces, p, true);
                         if (!covered) boundary.Add((first, last));
                     }
                 }
+                var boundaryBounds = new Rect[boundary.Count];
+                for (int edge = 0; edge < boundary.Count; edge++)
+                    boundaryBounds[edge] = SegmentBounds(boundary[edge].A, boundary[edge].B, 0f);
+                boundaryIndex = new PolygonSpatialIndex(boundaryBounds);
             }
             private static bool ContainsTight(Vector2[] polygon, Vector2 point)
             {
@@ -1086,12 +1098,15 @@ namespace BarPromenade
             }
             public bool Contains(Vector2 point, float radius)
             {
-                bool inside = false;
-                foreach (Vector2[] polygon in pieces) if (CityRoadPolygon.Contains(polygon, point)) { inside = true; break; }
-                if (!inside) return false;
+                if (!pieceIndex.ContainsPoint(point, pieces, -1, false)) return false;
                 float squared = Mathf.Max(0f, radius - BoundaryEpsilon); squared *= squared;
-                foreach (var edge in boundary)
+                if (squared == 0f) return true;
+                boundaryIndex.Collect(new Rect(point - Vector2.one * radius, Vector2.one * (radius * 2f)), nearbyBoundary);
+                foreach (int index in nearbyBoundary)
+                {
+                    var edge = boundary[index];
                     if ((Nearest(point, edge.A, edge.B) - point).sqrMagnitude < squared) return false;
+                }
                 return true;
             }
             public bool TryClosest(Vector2 position, float radius, out Vector2 result)
@@ -1122,6 +1137,138 @@ namespace BarPromenade
             {
                 Vector2 delta = b - a;
                 return a + delta * Mathf.Clamp01(Vector2.Dot(point - a, delta) / Mathf.Max(.000001f, delta.sqrMagnitude));
+            }
+
+            private static Rect SegmentBounds(Vector2 a, Vector2 b, float padding) =>
+                Rect.MinMaxRect(Mathf.Min(a.x, b.x) - padding, Mathf.Min(a.y, b.y) - padding,
+                    Mathf.Max(a.x, b.x) + padding, Mathf.Max(a.y, b.y) + padding);
+
+            private static Rect ConservativePieceBounds(Vector2[] polygon, out bool unbounded)
+            {
+                Rect bounds = CityRoadPolygon.Bounds(polygon);
+                unbounded = CityRoadPolygon.Area(polygon) <= .00001f;
+                if (unbounded) return bounds;
+                // Contains allows one millimetre outside every edge, while
+                // ContainsTight allows 1e-6 square metres of cross product.
+                // At an acute vertex their intersections can extend farther
+                // than one millimetre outside the raw AABB. Bound that reach
+                // conservatively; keep ill-conditioned pieces in the fallback.
+                var directions = new List<Vector2>();
+                float edgeReach = .001f;
+                for (int edge = 0; edge < polygon.Length; edge++)
+                {
+                    Vector2 delta = polygon[(edge + 1) % polygon.Length] - polygon[edge];
+                    float length = delta.magnitude;
+                    if (length == 0f) continue;
+                    directions.Add(delta / length);
+                    edgeReach = Mathf.Max(edgeReach, .000001f / length);
+                }
+                if (directions.Count < 3) { unbounded = true; return bounds; }
+                float padding = edgeReach;
+                for (int edge = 0; edge < directions.Count; edge++)
+                {
+                    float cosine = Mathf.Clamp(Vector2.Dot(directions[edge],
+                        directions[(edge + 1) % directions.Count]), -1f, 1f);
+                    float denominator = Mathf.Sqrt((1f + cosine) * .5f);
+                    if (denominator <= .000001f) { unbounded = true; return bounds; }
+                    padding = Mathf.Max(padding, edgeReach / denominator);
+                }
+                padding += .0002f;
+                if (!IsFinite(padding) || padding > PolygonSpatialIndex.CellSize)
+                { unbounded = true; return bounds; }
+                return Rect.MinMaxRect(bounds.xMin - padding, bounds.yMin - padding,
+                    bounds.xMax + padding, bounds.yMax + padding);
+            }
+
+            private sealed class PolygonSpatialIndex
+            {
+                internal const float CellSize = 16f;
+                private const int MaximumQueryCells = 256;
+                private readonly Rect[] bounds;
+                private readonly bool[] unbounded;
+                private readonly Dictionary<Vector2Int, List<int>> cells = new Dictionary<Vector2Int, List<int>>();
+                private readonly List<int> fallback = new List<int>();
+                private readonly int[] seen;
+                private int queryStamp;
+
+                internal PolygonSpatialIndex(Rect[] bounds, bool[] unbounded = null)
+                {
+                    this.bounds = bounds;
+                    this.unbounded = unbounded ?? new bool[bounds.Length];
+                    seen = new int[bounds.Length];
+                    for (int index = 0; index < bounds.Length; index++)
+                    {
+                        Rect rect = bounds[index];
+                        Vector2Int first = Cell(rect.min), last = Cell(rect.max);
+                        if (this.unbounded[index] || CellCount(first, last) > MaximumQueryCells)
+                        { fallback.Add(index); continue; }
+                        for (int x = first.x; x <= last.x; x++)
+                            for (int y = first.y; y <= last.y; y++)
+                            {
+                                var key = new Vector2Int(x, y);
+                                if (!cells.TryGetValue(key, out List<int> items))
+                                { items = new List<int>(); cells.Add(key, items); }
+                                items.Add(index);
+                            }
+                    }
+                }
+
+                internal bool ContainsPoint(Vector2 point, List<Vector2[]> polygons, int excluded, bool tight)
+                {
+                    if (cells.TryGetValue(Cell(point), out List<int> candidates))
+                        foreach (int index in candidates)
+                            if (index != excluded && ContainsInclusive(bounds[index], point) &&
+                                (tight ? ContainsTight(polygons[index], point) : CityRoadPolygon.Contains(polygons[index], point)))
+                                return true;
+                    foreach (int index in fallback)
+                        if (index != excluded && (unbounded[index] || ContainsInclusive(bounds[index], point)) &&
+                            (tight ? ContainsTight(polygons[index], point) : CityRoadPolygon.Contains(polygons[index], point)))
+                            return true;
+                    return false;
+                }
+
+                internal void Collect(Rect query, List<int> result)
+                {
+                    result.Clear();
+                    if (!IsFinite(query.xMin) || !IsFinite(query.xMax) ||
+                        !IsFinite(query.yMin) || !IsFinite(query.yMax))
+                    {
+                        for (int index = 0; index < bounds.Length; index++) result.Add(index);
+                        return;
+                    }
+                    if (queryStamp == int.MaxValue) { Array.Clear(seen, 0, seen.Length); queryStamp = 0; }
+                    int stamp = ++queryStamp;
+                    Vector2Int first = Cell(query.min), last = Cell(query.max);
+                    if (CellCount(first, last) > MaximumQueryCells)
+                    {
+                        for (int index = 0; index < bounds.Length; index++)
+                            if (unbounded[index] || OverlapsInclusive(bounds[index], query)) result.Add(index);
+                        return;
+                    }
+                    for (int x = first.x; x <= last.x; x++)
+                        for (int y = first.y; y <= last.y; y++)
+                            if (cells.TryGetValue(new Vector2Int(x, y), out List<int> candidates))
+                                foreach (int index in candidates)
+                                    if (seen[index] != stamp)
+                                    {
+                                        seen[index] = stamp;
+                                        if (OverlapsInclusive(bounds[index], query)) result.Add(index);
+                                    }
+                    foreach (int index in fallback)
+                        if (unbounded[index] || OverlapsInclusive(bounds[index], query)) result.Add(index);
+                }
+
+                private static Vector2Int Cell(Vector2 point) =>
+                    new Vector2Int(Mathf.FloorToInt(point.x / CellSize), Mathf.FloorToInt(point.y / CellSize));
+
+                private static long CellCount(Vector2Int first, Vector2Int last) =>
+                    ((long)last.x - first.x + 1) * ((long)last.y - first.y + 1);
+
+                private static bool ContainsInclusive(Rect rect, Vector2 point) =>
+                    point.x >= rect.xMin && point.x <= rect.xMax && point.y >= rect.yMin && point.y <= rect.yMax;
+
+                private static bool OverlapsInclusive(Rect a, Rect b) =>
+                    a.xMin <= b.xMax && a.xMax >= b.xMin && a.yMin <= b.yMax && a.yMax >= b.yMin;
             }
         }
 

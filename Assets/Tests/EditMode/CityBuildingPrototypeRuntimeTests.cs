@@ -7,7 +7,7 @@ using Object = UnityEngine.Object;
 namespace BarPromenade.Tests.EditMode
 {
     /// <summary>
-    /// Focused runtime-integration proof for the four passive Blender
+    /// Focused runtime-integration proof for the passive Blender
     /// building prototypes and their bounded Home reconstruction.
     /// </summary>
     public sealed class CityBuildingPrototypeRuntimeTests
@@ -173,84 +173,91 @@ namespace BarPromenade.Tests.EditMode
                 CityBuildingPrototypePlacement.ResolveForward(lot),
                 expectedForward);
 
-            Transform collisionTransform = building.Find(
-                CityBuildingPrototypeWorldBuilder
-                    .LogicalCollisionObjectName);
-            Assert.That(collisionTransform, Is.Not.Null);
-            Assert.That(
-                collisionTransform.GetComponent<Renderer>(),
-                Is.Null,
-                "The old building envelope must remain collision-only.");
-            Assert.That(
-                collisionTransform.GetComponent<MeshFilter>(),
-                Is.Null,
-                "The logical building envelope must own no primitive mesh.");
-            BoxCollider collision =
-                collisionTransform.GetComponent<BoxCollider>();
-            Assert.That(collision, Is.Not.Null);
-            Assert.That(collision.isTrigger, Is.False);
-            Assert.That(
-                building.GetComponentsInChildren<Collider>(true),
-                Has.Length.EqualTo(1));
-            AssertVectorNear(
-                collision.transform.TransformPoint(collision.center),
-                lot.Center +
-                Vector3.up *
-                (lot.Height * 0.5f +
-                 CityFacadeGrid.MassBaseElevation -
-                 foundationDepth * 0.5f));
-            if (lot.HasFacadeRotation)
+            if (lot.BuildingVariant > 0)
             {
-                Vector3 authored = CityBuildingAssetProvider.GetExpectedEnvelope(
-                    lot.District, lot.BuildingVariant);
-                AssertVectorNear(collision.size,
-                    new Vector3(authored.x, lot.Height + foundationDepth, authored.z));
-                Assert.That(Quaternion.Angle(collision.transform.rotation, lot.FacadeRotation),
-                    Is.LessThan(AngleTolerance));
-                Vector2[] polygon = lot.CreateCollisionPolygons()[0];
-                for (int corner = 0; corner < 4; corner++)
-                {
-                    Vector3 physical = collision.transform.TransformPoint(collision.center +
-                        new Vector3((corner & 1) == 0 ? -collision.size.x * .5f : collision.size.x * .5f,
-                            0f, (corner & 2) == 0 ? -collision.size.z * .5f : collision.size.z * .5f));
-                    Assert.That(polygon.Min(point => Vector2.Distance(point,
-                        new Vector2(physical.x, physical.z))), Is.LessThan(PositionTolerance));
-                }
+                AssertVariantCollisionAndFoundation(building, lot, registry, expectedPose, foundationDepth);
             }
-            else AssertVectorNear(collision.bounds.size,
-                new Vector3(lot.Size.x, lot.Height + foundationDepth, lot.Size.y));
+            else
+            {
+                Transform collisionTransform = building.Find(
+                    CityBuildingPrototypeWorldBuilder
+                        .LogicalCollisionObjectName);
+                Assert.That(collisionTransform, Is.Not.Null);
+                Assert.That(
+                    collisionTransform.GetComponent<Renderer>(),
+                    Is.Null,
+                    "The old building envelope must remain collision-only.");
+                Assert.That(
+                    collisionTransform.GetComponent<MeshFilter>(),
+                    Is.Null,
+                    "The logical building envelope must own no primitive mesh.");
+                BoxCollider collision =
+                    collisionTransform.GetComponent<BoxCollider>();
+                Assert.That(collision, Is.Not.Null);
+                Assert.That(collision.isTrigger, Is.False);
+                Assert.That(
+                    building.GetComponentsInChildren<Collider>(true),
+                    Has.Length.EqualTo(1));
+                AssertVectorNear(
+                    collision.transform.TransformPoint(collision.center),
+                    lot.Center +
+                    Vector3.up *
+                    (lot.Height * 0.5f +
+                     CityFacadeGrid.MassBaseElevation -
+                     foundationDepth * 0.5f));
+                if (lot.HasFacadeRotation)
+                {
+                    Vector3 authored = CityBuildingAssetProvider.GetExpectedEnvelope(
+                        lot.District, lot.BuildingVariant);
+                    AssertVectorNear(collision.size,
+                        new Vector3(authored.x, lot.Height + foundationDepth, authored.z));
+                    Assert.That(Quaternion.Angle(collision.transform.rotation, lot.FacadeRotation),
+                        Is.LessThan(AngleTolerance));
+                    Vector2[] polygon = lot.CreateCollisionPolygons()[0];
+                    for (int corner = 0; corner < 4; corner++)
+                    {
+                        Vector3 physical = collision.transform.TransformPoint(collision.center +
+                            new Vector3((corner & 1) == 0 ? -collision.size.x * .5f : collision.size.x * .5f,
+                                0f, (corner & 2) == 0 ? -collision.size.z * .5f : collision.size.z * .5f));
+                        Assert.That(polygon.Min(point => Vector2.Distance(point,
+                            new Vector2(physical.x, physical.z))), Is.LessThan(PositionTolerance));
+                    }
+                }
+                else AssertVectorNear(collision.bounds.size,
+                    new Vector3(lot.Size.x, lot.Height + foundationDepth, lot.Size.y));
 
-            Transform foundation = building.Find(
-                CityBuildingPrototypeWorldBuilder.FoundationObjectName);
-            Assert.That(foundation, Is.Not.Null);
-            Renderer foundationRenderer =
-                foundation.GetComponent<Renderer>();
-            Assert.That(foundationRenderer, Is.Not.Null);
-            Assert.That(foundation.GetComponent<Collider>(), Is.Null);
-            Bounds visibleBounds = CityBuildingPrototypePlacement
-                .TransformBounds(registry.LocalBounds, expectedPose);
-            Bounds insetLocal = registry.LocalBounds;
-            insetLocal.size -= new Vector3(1f, 0f, 1f) *
-                (CityBuildingPrototypeWorldBuilder.FoundationHorizontalInset * 2f);
-            Bounds foundationFootprint = CityBuildingPrototypePlacement.TransformBounds(insetLocal, expectedPose);
-            Assert.That(
-                foundationRenderer.bounds.size.x,
-                Is.EqualTo(
-                    foundationFootprint.size.x)
-                    .Within(PositionTolerance));
-            Assert.That(
-                foundationRenderer.bounds.size.z,
-                Is.EqualTo(
-                    foundationFootprint.size.z)
-                    .Within(PositionTolerance));
-            Assert.That(
-                foundationRenderer.bounds.max.y,
-                Is.EqualTo(visibleBounds.min.y + 0.04f)
-                    .Within(PositionTolerance));
-            AssertSurfaceBinding(
-                foundationRenderer,
-                lot.District,
-                CityBuildingSurfaceKind.Plinth);
+                Transform foundation = building.Find(
+                    CityBuildingPrototypeWorldBuilder.FoundationObjectName);
+                Assert.That(foundation, Is.Not.Null);
+                Renderer foundationRenderer =
+                    foundation.GetComponent<Renderer>();
+                Assert.That(foundationRenderer, Is.Not.Null);
+                Assert.That(foundation.GetComponent<Collider>(), Is.Null);
+                Bounds visibleBounds = CityBuildingPrototypePlacement
+                    .TransformBounds(registry.LocalBounds, expectedPose);
+                Bounds insetLocal = registry.LocalBounds;
+                insetLocal.size -= new Vector3(1f, 0f, 1f) *
+                    (CityBuildingPrototypeWorldBuilder.FoundationHorizontalInset * 2f);
+                Bounds foundationFootprint = CityBuildingPrototypePlacement.TransformBounds(insetLocal, expectedPose);
+                Assert.That(
+                    foundationRenderer.bounds.size.x,
+                    Is.EqualTo(
+                        foundationFootprint.size.x)
+                        .Within(PositionTolerance));
+                Assert.That(
+                    foundationRenderer.bounds.size.z,
+                    Is.EqualTo(
+                        foundationFootprint.size.z)
+                        .Within(PositionTolerance));
+                Assert.That(
+                    foundationRenderer.bounds.max.y,
+                    Is.EqualTo(visibleBounds.min.y + 0.04f)
+                        .Within(PositionTolerance));
+                AssertSurfaceBinding(
+                    foundationRenderer,
+                    lot.District,
+                    CityBuildingSurfaceKind.Plinth);
+            }
 
             int opaqueSurfaceCount = 0;
             for (int partIndex = 0;
@@ -334,6 +341,52 @@ namespace BarPromenade.Tests.EditMode
                 citySeed);
         }
 
+        private static void AssertVariantCollisionAndFoundation(Transform building, BuildingLot lot,
+            CityBuildingAssetRegistry registry, CityBuildingPrototypePose pose, float foundationDepth)
+        {
+            IReadOnlyList<Bounds> solids = registry.ColliderBounds;
+            Assert.That(building.GetComponentsInChildren<Collider>(true), Has.Length.EqualTo(solids.Count));
+            int groundCount = 0;
+            for (int index = 0; index < solids.Count; index++)
+            {
+                bool overhead = lot.BuildingVariant == 3 && solids[index].min.y >= 2.5f;
+                float extension = overhead ? 0f : foundationDepth;
+                Transform mass = building.Find(CityBuildingPrototypeWorldBuilder.LogicalCollisionObjectName + " " + index);
+                Assert.That(mass, Is.Not.Null);
+                BoxCollider collider = mass.GetComponent<BoxCollider>();
+                Assert.That(collider, Is.Not.Null);
+                Assert.That(mass.GetComponent<Renderer>(), Is.Null);
+                AssertVectorNear(mass.position, pose.TransformPoint(solids[index].center - Vector3.up * extension * .5f));
+                AssertVectorNear(collider.size, solids[index].size + Vector3.up * extension);
+                Transform foundation = building.Find(CityBuildingPrototypeWorldBuilder.FoundationObjectName + " " + index);
+                if (overhead)
+                {
+                    Assert.That(foundation, Is.Null, "A lintel must never grow a foundation through its passage.");
+                }
+                else
+                {
+                    groundCount++;
+                    Assert.That(foundation, Is.Not.Null);
+                    AssertSurfaceBinding(foundation.GetComponent<Renderer>(), lot.District, CityBuildingSurfaceKind.Plinth);
+                }
+            }
+            Assert.That(lot.CreateCollisionPolygons(), Has.Length.EqualTo(groundCount));
+            if (lot.BuildingVariant == 3)
+            {
+                Bounds passage = CityBuildingAssetProvider.GetExpectedPassageBounds(lot.District, 3);
+                foreach (float z in new[] { passage.min.z + .05f, passage.center.z, passage.max.z - .05f })
+                {
+                    Vector3 probe = pose.TransformPoint(new Vector3(0f, 1.7f, z));
+                    foreach (BoxCollider collider in building.GetComponentsInChildren<BoxCollider>())
+                    {
+                        var local = new Bounds(collider.center, collider.size);
+                        Assert.That(local.Contains(collider.transform.InverseTransformPoint(probe)), Is.False,
+                            "The complete street-to-court throat must fit a standing person.");
+                    }
+                }
+            }
+        }
+
         private static void AssertSurfaceBinding(
             Renderer renderer,
             CityDistrictKind district,
@@ -365,10 +418,19 @@ namespace BarPromenade.Tests.EditMode
             CityBuildingPrototypePose cityPose)
         {
             Bounds expectedRoof = CityBuildingPrototypePlacement
-                .GetExpectedRoofAttachmentBounds(lot.District);
+                .GetExpectedRoofAttachmentBounds(lot.District, lot.BuildingVariant);
             AssertBoundsNear(
                 sourceRegistry.RoofAttachmentBounds,
                 expectedRoof);
+
+            if (lot.BuildingVariant > 0)
+            {
+                Vector3 roofWorld = CityBuildingPrototypePlacement.ResolveRoofAnchor(lot,
+                    GetExpectedRoofDecoration(lot.District), 0f);
+                Vector3 local = Quaternion.Inverse(cityPose.Rotation) * (roofWorld - cityPose.Position);
+                Assert.That(expectedRoof.Contains(local), Is.True, "Roof furniture must sit on the authored solid wing.");
+                return;
+            }
 
             const float roofClearance = 0.18f;
             CityDecorationKind roofKind =
@@ -424,13 +486,13 @@ namespace BarPromenade.Tests.EditMode
             switch (district)
             {
                 case CityDistrictKind.OldTown:
-                    return new Vector3(-3.8f, 31.70f, 0f);
+                    return new Vector3(-3.8f, 13.6f, 0f);
                 case CityDistrictKind.Residential:
-                    return new Vector3(-3.6f, 30.30f, -4.0f);
+                    return new Vector3(-3.6f, 14f, -4.0f);
                 case CityDistrictKind.Industrial:
-                    return new Vector3(0f, 25.25f, 0f);
+                    return new Vector3(0f, 7.2f, 0f);
                 case CityDistrictKind.Nightlife:
-                    return new Vector3(-0.6f, 37.30f, 4.45f);
+                    return new Vector3(-0.6f, 22.30f, 4.45f);
                 default:
                     Assert.Fail(
                         $"District '{district}' has no roof mount.");
@@ -469,7 +531,7 @@ namespace BarPromenade.Tests.EditMode
                 new Vector2Int(101, 103),
                 new Vector3(17f, 2.25f, -31f),
                 new Vector2(14f, 13.5f),
-                42f,
+                18f,
                 Color.gray,
                 "test.no-frontage",
                 CityDistrictKind.OldTown,

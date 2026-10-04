@@ -146,16 +146,21 @@ namespace BarPromenade
             CitySeacoastSurfaceKind kind,
             Color sourceTint)
         {
+            ApplyCombined(renderer, kind, sourceTint, -1);
+        }
+
+        public static void ApplyCombined(Renderer renderer, CitySeacoastSurfaceKind kind,
+            Color sourceTint, int materialIndex)
+        {
             if (renderer == null)
             {
                 return;
             }
 
             HomeSurfaceRecipe recipe = GetRecipe(kind);
-            renderer.sharedMaterial =
-                RuntimePrimitiveFactory.DefaultMaterial;
+            GroundSurfaceAppearance.AssignSharedMaterial(renderer, RuntimePrimitiveFactory.DefaultMaterial, materialIndex);
             var properties = new MaterialPropertyBlock();
-            renderer.GetPropertyBlock(properties);
+            GroundSurfaceAppearance.ReadProperties(renderer, properties, materialIndex);
             properties.SetTexture(BaseMapId, GetTexture(kind));
             Color displayTint = SurfaceAppearanceCore.CreateDisplayTint(
                 sourceTint,
@@ -164,14 +169,14 @@ namespace BarPromenade
             properties.SetColor(ColorId, displayTint);
             properties.SetFloat(SmoothnessId, recipe.Smoothness);
             properties.SetFloat(MetallicId, recipe.Metallic);
-            renderer.SetPropertyBlock(properties);
+            GroundSurfaceAppearance.WriteProperties(renderer, properties, materialIndex);
             if (kind != CitySeacoastSurfaceKind.Hull)
             {
                 GroundSurfaceKind groundKind = kind == CitySeacoastSurfaceKind.Sand
                     ? GroundSurfaceKind.Sand : kind == CitySeacoastSurfaceKind.Plank
                     ? GroundSurfaceKind.Timber : kind == CitySeacoastSurfaceKind.Concrete
                     ? GroundSurfaceKind.Concrete : GroundSurfaceKind.Paving;
-                GroundSurfaceAppearance.ApplyCity(renderer, groundKind, GetTexture(kind));
+                GroundSurfaceAppearance.ApplyCity(renderer, groundKind, GetTexture(kind), materialIndex);
             }
         }
 

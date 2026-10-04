@@ -452,19 +452,27 @@ The vertical slice contains:
 
 ### City generation and layout
 
-- CitySpatialPlan: 144 lot IDs in `13 x 12`; west/north/south 26–40 m,
-  river/park/home/bar/fair/arch anchors/east widths fixed; beach/sea continuous.
-  Legacy/custom uniform; district rhythm varies. OldTown T: 78°/102°,
-  fixed nodes/datums, ends ≥6 m straight; shared mesh/physics/nav.
-  Four L15×14 m/two west compact14×13.5 m rears: ≥2.2 m necks, 10×7 m courts.
-  Default (0,9): long22×11.5/compact rear, setback1.4/gap3 m,
-  staggered open court; west frontage/east if present; unsupported/special skip.
-  North streetfront x0..3,z11: compact/long alternation, setbacks
-  2.4/1.15/1.7/1.2 m; fit leaves 1 m corner ground/0.1 m body clearance.
-  BuildingMasses/CourtyardBlocks: road ground minus exact bodies.
-  .4 m loops return via flanks to same gate; road-free (0,7)/(0,8) link.
-  CourtyardPaths bar lamps/props/solid litter; model/foundation/docks/physics agree,
-  unscaled; sites/unsafe bus bends outside patch;
+- CitySpatialPlan: 144 lot IDs in `13 x 12`; west/north/south 26–40 m.
+  Address/node IDs, river/park/home/bar/fair/arch/east approaches stay fixed;
+  legacy/custom uniform. OldTown inner streets bend 1.4–2.15 m towards
+  shore/terraces, upper Industrial streets 0.75–0.9 m; coast/river/park/central
+  axes, retained bus/stop paths and seeded signature stair roads stay exact.
+  The northern service row/coast connectors stay straight; cargo searches only
+  straight streets between unchanged supply/parking anchors with real turn aprons.
+  Residential stays regular, Nightlife precinct streets straight.
+  Baseline elevation selects stair edges before curves. Special sites resolve before ordinary
+  replanning; actual ribbons own ground subtraction, poses and path distances.
+  Oblique T stays 78°/102°, ends ≥6 m straight. Four L15×14 m/two west compact
+  rears and `(0,9)` offset pair remain; north setbacks apply only to straight streets.
+  Ordinary urban districts form capsule-clear court loops with a fixed 10×6 m
+  wing only where full bodies/clearance fit. Residential courts are deeper,
+  Industrial service courts horizontal, OldTown/Nightlife fronts denser.
+  Real 3.6 m through-passages keep ground walkable under separate overhead
+  collision; height 3.2 m, Industrial 4.2 m. Court ground is exact ribbon/mass
+  complement; loops join the graph, road-free adjacent courts connect only
+  through continuous ground at acceptable grade. CourtyardPaths exclude props/
+  lamps/solid litter. Unscaled poses align models/foundations/docks/collision;
+  protected special sites retain their owners;
 - one default-blueprint-only mountain boundary plan closes the physical west
   and south edges with deterministic flat-shaded low-poly ridge strips whose
   toes sample the authoritative terrain top. The south skyline remains closed
@@ -688,7 +696,7 @@ The vertical slice contains:
   repeat at `12 m`, sidewalk at `6 m`, paint at `2 m`, Repeat/Bilinear/mips.
   City, MountainRoad and AlpineVillage ground/retaining surfaces use shared
   `GroundSurfaceLit` via `GroundSurfaceAppearance`, linear response companions
-  and per-renderer MPBs; `Ps1Lit` parity and interior materials stay separate.
+  and MPBs (indexed in City); `Ps1Lit` parity and interior materials stay separate.
   UV4 road metres/width/seed place wear across/along actual roads; Home projects
   back into the same City frame. Open aprons omit lane bands. Existing snow
   state drives edge/substrate tint, without new collision or accumulation.
@@ -733,23 +741,23 @@ The vertical slice contains:
   by `1 / 0.62`, which preserves the pre-texture wall brightness through URP's
   linear multiply and never clamps the brightest lot, a bar. Whole ordinary
   Blender prototypes instead use the later 24-sheet semantic surface contract
-  described below. A
-  deterministic
-  `CityStreetSurfacePlan` applies the Road v2 `8 m` ordinary-street footprint:
-  a `6 m` carriageway plus two raised `1 m` sidewalks, with an `8 x 8 m`
-  intersection core and a clear `6 x 6 m` ordinary carriageway apron. Road
-  v2.1 deterministically reserves eligible perpendicular two-way corners and
-  three- or four-way bus nodes by moving their four `1 m` corner sidewalk pads
-  outward onto clear adjacent ground, exposing the complete `8 x 8 m` asphalt
-  apron and cutting each real raised curb back by `4.5 m`. At a selected
-  three-way node, the missing side closes outside
-  that apron with a continuous `1 x 8 m` raised sidewalk joining both corner
-  pads. It keeps park paths separate, textures the center dashes white and adds
-  zebra crossings on up to six selected ordinary intersections. A bus apron may
-  share flat zebra paint and paired signals; retained bus maneuvers sample the
-  inflated body against both actual pole positions at a conservative `0.30 m`
-  fixture radius. City colliders and the bounded Home reconstruction consume
-  the same geometry plan. Ordinary facade panes also consume the first channel
+  described below.
+  `CityStreetSurfacePlan` owns the Road v2 `8 m` footprint: `6 m` carriageway
+  (`+0.08 m` datum), two raised `1 m` sidewalks (`+0.14 m`), `8 x 8 m` node
+  cores and ordinary `6 x 6 m` clear aprons. Road v2.1 moves supported corner
+  pads outward and ends real curbs `4.5 m` short of selected two-/three-/four-way
+  nodes; a three-way node closes its missing side with `1 x 8 m` paving.
+  Dashes clear nodes/zebras; up to six crossings use the signal selector.
+  Bus bodies retain `0.30 m` pole clearance. `CityGroundSurfaceSystem` snapshots
+  explicit ground meshes/appearance.
+  `GroundSurfacePartitioner` removes lower-priority top
+  overlaps, retaining source planes, normals and metre UVs. Roads, curbs, ParkPath
+  and paving are regions of this surface; paint clips/projects onto exact support
+  faces. `48 m` render/collision sectors share indexed weather recipes and triangle
+  footstep kinds. Source hosts remain disabled for staging/semantics; structural
+  volumes stay. Cemetery coatings/excavation walls rebuild locally; beach sand
+  retains its deformable skin/fixed collider. Home uses the same owner without
+  collision. Ordinary facade panes consume the first channel
   of the pure `CityDistrictPresentationPlanner`: each district keeps its own
   lit ratio, while every authored facade row quantizes that ratio to a stable
   warm/dark selection. At least one warm street-lamp-coloured pane reaches
@@ -1393,9 +1401,9 @@ The vertical slice contains:
   `CityChurchGroundPlan`
   keeps the inhabited garden flat and grades its northern reserve into the
   adjoining yard. Collision and navigation retain its continuous sampled
-  terrain; the grass renderer cuts out paved footprints. Imported paving
-  patches partition overlapping pads and paths and yield to the flush door
-  threshold, so each paved point has one visible surface. Open iron closes
+  terrain; paving paints that substrate in the common ground composition,
+  with overlapping pads/paths partitioned and the flush door threshold retained.
+  Open iron closes
   only the existing west frontage outside its
   `8.8 m` aperture and the actual unsupported outer edges.
   `CityChurchCemeteryPassagePlan` continues the
@@ -1568,40 +1576,29 @@ The vertical slice contains:
 - rendered streets, park paths, lawn and plaza own matching static colliders,
   so the existing `0.28 m` controller step climbs their real height changes
   instead of letting the character mesh intersect raised surfaces;
-- ordinary `BuildingLot` planning and collision envelopes retain their own
-  `36–52 m` height range and the existing district bands inside it; visible
-  fixed prototype heights are described below. From the conservative
-  `4 m` maximum chase-camera height, the lowest roof is at least `32 m` deep
-  and retains only about `0.66%` of its source colour under City's fixed
-  `0.070` Exp2 fog. The bar keeps its former `5–13 m` envelope, the player home
-  stays `8.8 m`, and the supermarket stays `6.4 m`; public places and the park
-  remain open land rather than receiving a tall mass;
-- twelve fixed-metre Blender typologies, three per district, replace the
-  single repeated district wrapper. Compact footprints retain Old Town
-  `14 x 13.5 m`, Residential `11.5 x 11.5 m`, Industrial `14 x 13.5 m` and
-  Nightlife `12.5 x 12 m`; long footprints are `22 x 11.5 m` except Nightlife
-  `17 x 9.5 m`; every L footprint is `15 x 14 m`. Heights remain
-  `42/40/36/48 m`. BuildingLot selects a fitting variant/envelope; model pose,
-  front/roof/facade/balcony docks, collision and Home reconstruction use that
-  source. Long and L variants enter only lots that fit; L's two solid wings
-  leave its recessed courtyard clear. Protected small precinct lots retain
-  compact wrappers. Generator `2.2.0` publishes `84` semantic meshes,
-  `9,688` triangles and `537` UV2 opening slots through one Resources provider.
-  The seven roles remain FacadePrimary/Secondary, Plinth, Roof, Metal,
-  WindowFrame and WindowGlass. Residential variants retain authored balcony
-  docks with person-height glazed doors and adjacent windows. Source scale
-  stays fixed; the `+Z` front aligns to `DoorPosition + 0.08 m`.
-  Four-side height atlases and complete plinth-face UVs never repeat;
-  roof/metal/frame use metre-repeat UVs and each glass pane keeps `0..1` UV0.
-  Six opaque roles reuse `24` district sheets, one shared material and MPBs.
-  UV2 slot state preserves warm/dark row selection, explicit emission and the
-  two-thirds day floor without readable FBX meshes. Geometry audit rejects
-  coplanar exterior overlaps and broad opaque relief below `0.03 m`; omitted
-  join faces and `0.035–0.065 m` trim separation preserve physical depth.
-  The terrain skirt stays inset `0.08 m`. Landmarks and ordinary decoration
-  use complementary facade/roof surfaces. Whole Home exterior models retain
-  the same City pose; hidden models are omitted and half-space crossings
-  alone keep the old clipped silhouette;
+- ordinary height comes from the selected fixed-metre model: lower old/
+  residential fabric, low wide Industrial bodies and taller Nightlife.
+  Custom fallback range is `8–28 m`; fog/far plane stay fixed. Twenty Blender
+  typologies, five per district: compact, long, L, through-passage, secondary wing.
+  OldTown/Residential/Industrial/Nightlife compact heights `18/15/10/27 m`;
+  long/passage `16.2/14.4/8.4/24.6 m`, L `17.4/15.6/9.3/26.4 m`,
+  wing `12.6/11.8/6.9/18.6 m`. Compact footprints `14×13.5`, `11.5×11.5`,
+  `14×13.5`, `12.5×12 m`; long/passage `22×11.5 m`, Nightlife `17×9.5 m`;
+  L `15×14 m`, wing `10×6 m`. BuildingLot selects actual-fit body/pose.
+  Passage openings exclude ground collision/navigation, lintels retain overhead
+  collision; L recesses remain clear. Protected precincts keep compact bodies.
+  Generator `3.0.0` publishes 140 semantic meshes/13,480 triangles/719 UV2 slots;
+  seven roles, Residential balcony docks and shared Resources remain.
+  Human floor pitches: OldTown/Nightlife 3 m, Residential 2.8 m. Roofs no longer
+  must disappear. Bar 5–13 m envelope, home 8.8 m/shop 6.4 m/open public land stay.
+  Fixed-scale `+Z` front aligns to `DoorPosition + 0.08 m`. Four-side height
+  atlases/full plinth UVs never repeat; roof/metal/frame use metre repeat,
+  glass pane-local 0..1. Six opaque roles share 24 sheets, one material and MPBs.
+  Warm panes retain emission/two-thirds day floor without readable FBX meshes.
+  Audit rejects coplanar overlap/opaque relief below 0.03 m; trim 0.035–0.065 m,
+  terrain skirt inset 0.08 m. Landmarks/ordinary decor use complementary roof/
+  facade surfaces. Whole Home wrappers use City pose; hidden omitted, crossings
+  alone use clipped legacy silhouettes;
 - the bar now uses the complete fixed-metre `bar_exterior_v2` from the shared
   bar Blender pipeline instead of the City misc `BarBuildingShell` and generic
   window bands. Its authored `12.2645 x 13.5237 x 9.3435 m`
@@ -2360,9 +2357,9 @@ The vertical slice contains:
   elevation; open-looking rails retain invisible safety colliders, while the
   view rebuilds only a bounded same-blueprint-and-seed slice of the actual
   street's asphalt, sidewalks, road markings, lots, windows, lamps and
-  signals. City and Home share the exterior ground, street-surface, facade,
-  window and complete passive pub-exterior appearance
-  recipe. It also reconstructs the target-derived Home stop as the same static
+  signals. City and Home share the ground compositor, street plan, facade,
+  window and complete passive pub-exterior appearance recipe. It also
+  reconstructs the target-derived Home stop as the same static
   blue `01` pole in Home-local space, without colliders. The balcony
   shot temporarily applies City's exact exponential-squared fog, matching
   background, `48 m` visibility cap, current time-of-day lighting, grading,

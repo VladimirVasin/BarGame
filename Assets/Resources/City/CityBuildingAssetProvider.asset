@@ -49,5 +49,29 @@ MonoBehaviour:
   - stableId: nightlife-prototype-03
     district: 3
     prefab: {fileID: 2557992428165336064, guid: 78a2796df0c42be4586e7e89b367c42b, type: 3}
-  designId: city_buildings_prototypes_v2
-  buildSignature: 8fe130a4bf75de6d785c6165aaa41b16aea3aaafd01a1a59d82ea0821822fc8b
+  - stableId: old-town-prototype-04
+    district: 0
+    prefab: {fileID: 1230731745119544821, guid: f10b225715918d54b8f44b3123ddea6a, type: 3}
+  - stableId: residential-prototype-04
+    district: 1
+    prefab: {fileID: 1906751103932238525, guid: c60bb49e4d14dbc469447621e601d8a0, type: 3}
+  - stableId: industrial-prototype-04
+    district: 2
+    prefab: {fileID: 7404570833233932771, guid: 3af3dfb065d66954391757de9a09ec20, type: 3}
+  - stableId: nightlife-prototype-04
+    district: 3
+    prefab: {fileID: 5470196402787683034, guid: 78744f9f22efb2646a40e34de82404ff, type: 3}
+  - stableId: old-town-prototype-05
+    district: 0
+    prefab: {fileID: 7242120950826926702, guid: 1792e1f311e48e64bab3d17f42340558, type: 3}
+  - stableId: residential-prototype-05
+    district: 1
+    prefab: {fileID: 1754145787175607687, guid: 65b574e914fb7c74c9750dde840e9fa8, type: 3}
+  - stableId: industrial-prototype-05
+    district: 2
+    prefab: {fileID: 8374576385491775186, guid: 4ea3f7768e7c068428146c0ffddddc03, type: 3}
+  - stableId: nightlife-prototype-05
+    district: 3
+    prefab: {fileID: 2857908437403183857, guid: 97a19d4cd8d818141a23f9e27b3dc2d8, type: 3}
+  designId: city_buildings_prototypes_v3
+  buildSignature: b456238ff573c9505aef2ea27f764fb34e5b498789b3908126a273816bc1040c

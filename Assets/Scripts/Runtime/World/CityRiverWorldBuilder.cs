@@ -352,7 +352,7 @@ namespace BarPromenade
                          patchIndex++)
                     {
                         Rect patch = patches[patchIndex];
-                        CreateSlopedSurface(
+                        GameObject surface = CreateSlopedSurface(
                             $"{promenade.Id} {segmentIndex + 1}-" +
                             $"{patchIndex + 1}",
                             root,
@@ -364,6 +364,7 @@ namespace BarPromenade
                             null,
                             true,
                             CityRiverSurfaceKind.Paving);
+                        CityGroundSurfaceSystem.Register(surface, 40);
                     }
                 }
             }

@@ -159,6 +159,8 @@ namespace BarPromenade
                 forefield.GetComponent<Renderer>(),
                 CityFringeYardSurfaceKind.ForefieldGround,
                 CityExteriorAppearance.YardGround);
+            FootstepGround.Stamp(forefield, FootstepGroundKind.Soil);
+            CityGroundSurfaceSystem.Register(forefield, 0);
         }
 
         private static void AddSlopedGround(
@@ -828,6 +830,11 @@ namespace BarPromenade
                 ThroatRock);
             renderer.shadowCastingMode = ShadowCastingMode.On;
             renderer.receiveShadows = true;
+            if (collider && name == "Tunnel Floor Physical")
+            {
+                FootstepGround.Stamp(built, FootstepGroundKind.Stone);
+                CityGroundSurfaceSystem.Register(built, 20);
+            }
         }
 
         private static void BuildTunnelTechnicalDetails(

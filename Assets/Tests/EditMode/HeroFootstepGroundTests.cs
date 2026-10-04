@@ -58,6 +58,42 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
+        public void CombinedGround_ResolvesTheHitTriangleAndKeepsTheRootFallback()
+        {
+            GameObject floor = Track(new GameObject("Combined Ground"));
+            var mesh = new Mesh { name = "Two ground regions" };
+            try
+            {
+                mesh.vertices = new[]
+                {
+                    new Vector3(-1f, 0f, -1f), new Vector3(-1f, 0f, 1f),
+                    new Vector3(1f, 0f, -1f), new Vector3(1f, 0f, 1f)
+                };
+                mesh.triangles = new[] { 0, 1, 2, 2, 1, 3 };
+                floor.AddComponent<MeshCollider>().sharedMesh = mesh;
+                FootstepGround marker = FootstepGround.Stamp(floor, FootstepGroundKind.Soil,
+                    new[] { FootstepGroundKind.Stone, FootstepGroundKind.Concrete });
+
+                Assert.That(Resolve(new Vector3(-.6f, 0f, -.6f), null, out FootstepGroundKind first,
+                    out _), Is.True);
+                Assert.That(first, Is.EqualTo(FootstepGroundKind.Stone));
+                Assert.That(Resolve(new Vector3(.6f, 0f, .6f), null, out FootstepGroundKind second,
+                    out _), Is.True);
+                Assert.That(second, Is.EqualTo(FootstepGroundKind.Concrete));
+                Assert.That(marker.ResolveKind(-1), Is.EqualTo(FootstepGroundKind.Soil));
+                Assert.That(marker.ResolveKind(2), Is.EqualTo(FootstepGroundKind.Soil));
+
+                FootstepGround.Stamp(floor, FootstepGroundKind.Snow);
+                Assert.That(Resolve(new Vector3(-.6f, 0f, -.6f), null, out first, out _), Is.True);
+                Assert.That(first, Is.EqualTo(FootstepGroundKind.Snow));
+            }
+            finally
+            {
+                Object.DestroyImmediate(mesh);
+            }
+        }
+
+        [Test]
         public void TreadTrigger_ReadsTheStampedRootAboveTheFloorBeneath()
         {
             // The visible tread carries a trigger on the probe layer; the

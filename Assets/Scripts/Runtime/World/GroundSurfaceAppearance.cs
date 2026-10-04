@@ -71,15 +71,7 @@ namespace BarPromenade
             // call; all tiled surfaces use the deterministic source companion.
             Texture2D response = albedo != null && albedo.name == "VillageJunctionAtlas"
                 ? null : GetResponse(albedo);
-            if (materialIndex < 0) renderer.sharedMaterial = SharedMaterial;
-            else
-            {
-                Material[] materials = renderer.sharedMaterials;
-                if (materialIndex >= materials.Length)
-                    throw new ArgumentOutOfRangeException(nameof(materialIndex));
-                materials[materialIndex] = SharedMaterial;
-                renderer.sharedMaterials = materials;
-            }
+            AssignSharedMaterial(renderer, SharedMaterial, materialIndex);
             Read(renderer, materialIndex);
             Properties.SetFloat(KindId, (float)kind);
             if (response != null) Properties.SetTexture(ResponseId, response);
@@ -157,15 +149,38 @@ namespace BarPromenade
 
         private static void Read(Renderer renderer, int index)
         {
-            Properties.Clear();
-            if (index < 0) renderer.GetPropertyBlock(Properties);
-            else renderer.GetPropertyBlock(Properties, index);
+            ReadProperties(renderer, Properties, index);
         }
 
         private static void Write(Renderer renderer, int index)
         {
-            if (index < 0) renderer.SetPropertyBlock(Properties);
-            else renderer.SetPropertyBlock(Properties, index);
+            WriteProperties(renderer, Properties, index);
+        }
+
+        internal static void AssignSharedMaterial(Renderer renderer, Material material, int materialIndex)
+        {
+            if (materialIndex < 0) renderer.sharedMaterial = material;
+            else
+            {
+                Material[] materials = renderer.sharedMaterials;
+                if (materialIndex >= materials.Length)
+                    throw new ArgumentOutOfRangeException(nameof(materialIndex));
+                materials[materialIndex] = material;
+                renderer.sharedMaterials = materials;
+            }
+        }
+
+        internal static void ReadProperties(Renderer renderer, MaterialPropertyBlock properties, int materialIndex)
+        {
+            properties.Clear();
+            if (materialIndex < 0) renderer.GetPropertyBlock(properties);
+            else renderer.GetPropertyBlock(properties, materialIndex);
+        }
+
+        internal static void WriteProperties(Renderer renderer, MaterialPropertyBlock properties, int materialIndex)
+        {
+            if (materialIndex < 0) renderer.SetPropertyBlock(properties);
+            else renderer.SetPropertyBlock(properties, materialIndex);
         }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]

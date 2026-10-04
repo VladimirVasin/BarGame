@@ -1344,6 +1344,7 @@ namespace BarPromenade
             {
                 FootstepGround.Stamp(ground, FootstepGroundKind.Concrete);
             }
+            CityGroundSurfaceSystem.Register(ground, 40);
         }
 
         private static float ResolvePublicGroundFoundationDepth(
@@ -1507,7 +1508,8 @@ namespace BarPromenade
                                     Vector3.zero,
                                     Quaternion.identity)
                             },
-                            color);
+                            color,
+                            keepReadable: surface == CityPointOfInterestSurfaceKind.Paving);
                     ConfigureRenderer(chunk, homeExterior);
                     if (surface.HasValue)
                     {
@@ -1516,6 +1518,11 @@ namespace BarPromenade
                             surface.Value,
                             projection,
                             color);
+                    }
+                    if (surface == CityPointOfInterestSurfaceKind.Paving)
+                    {
+                        FootstepGround.Stamp(chunk, FootstepGroundKind.Stone);
+                        CityGroundSurfaceSystem.Register(chunk, 40);
                     }
                 }
 
@@ -1811,6 +1818,7 @@ namespace BarPromenade
             MeshCollider collider = surface.AddComponent<MeshCollider>();
             collider.sharedMesh =
                 surface.GetComponent<MeshFilter>().sharedMesh;
+            CityGroundSurfaceSystem.ReplaceCollider(collider);
         }
 
         private static CityMiscKind ResolveImportedPoiKind(
@@ -3502,6 +3510,11 @@ namespace BarPromenade
                     surfaceKind.Value,
                     projection,
                     color);
+            }
+            if (surfaceKind == CityPointOfInterestSurfaceKind.Paving)
+            {
+                FootstepGround.Stamp(part, FootstepGroundKind.Stone);
+                CityGroundSurfaceSystem.Register(part, collider ? 40 : 100, paint: !collider);
             }
         }
 

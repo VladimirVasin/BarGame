@@ -288,7 +288,8 @@ namespace BarPromenade
                 var key = new BatchKey(
                     Mathf.FloorToInt(part.Center.x / SpatialChunkSize),
                     Mathf.FloorToInt(part.Center.z / SpatialChunkSize),
-                    part.Style);
+                    part.Style,
+                    part.Kind == CitySeacoastPartKind.EsplanadeSlab);
                 if (importedIds.Contains(part.StableId))
                 {
                     if (part.BlocksMovement)
@@ -326,12 +327,13 @@ namespace BarPromenade
                     : (float?)null;
                 GameObject chunk =
                     RuntimePrimitiveFactory.CreateCombinedOrientedBoxes(
-                        $"Seacoast Chunk {key.X} {key.Z} {key.Style}",
+                        $"Seacoast {(key.Ground ? "Ground Chunk" : "Chunk")} {key.X} {key.Z} {key.Style}",
                         root,
                         batches[key],
                         ResolveColor(key.Style),
                         CitySeacoastRules.BlocksMovement(key.Style),
-                        uvTileSize);
+                        uvTileSize,
+                        keepReadable: key.Ground);
                 if (surface.HasValue)
                 {
                     CitySeacoastSurfaceAppearance.ApplyCombined(
@@ -345,6 +347,7 @@ namespace BarPromenade
                 {
                     FootstepGround.Stamp(chunk, footstep);
                 }
+                if (key.Ground) CityGroundSurfaceSystem.Register(chunk, 40);
             }
 
             keys = new List<BatchKey>(importedBatches.Keys);
@@ -1071,22 +1074,25 @@ namespace BarPromenade
 
         private readonly struct BatchKey : IEquatable<BatchKey>
         {
-            public BatchKey(int x, int z, CitySeacoastStyle style)
+            public BatchKey(int x, int z, CitySeacoastStyle style, bool ground = false)
             {
                 X = x;
                 Z = z;
                 Style = style;
+                Ground = ground;
             }
 
             public int X { get; }
             public int Z { get; }
             public CitySeacoastStyle Style { get; }
+            public bool Ground { get; }
 
             public bool Equals(BatchKey other)
             {
                 return X == other.X &&
                        Z == other.Z &&
-                       Style == other.Style;
+                       Style == other.Style &&
+                       Ground == other.Ground;
             }
 
             public override bool Equals(object obj)
@@ -1100,7 +1106,8 @@ namespace BarPromenade
                 {
                     int hash = X;
                     hash = (hash * 397) ^ Z;
-                    return (hash * 397) ^ (int)Style;
+                    hash = (hash * 397) ^ (int)Style;
+                    return (hash * 397) ^ Ground.GetHashCode();
                 }
             }
 
@@ -1113,7 +1120,9 @@ namespace BarPromenade
                 }
 
                 int z = left.Z.CompareTo(right.Z);
-                return z != 0 ? z : left.Style.CompareTo(right.Style);
+                if (z != 0) return z;
+                int style = left.Style.CompareTo(right.Style);
+                return style != 0 ? style : left.Ground.CompareTo(right.Ground);
             }
         }
     }

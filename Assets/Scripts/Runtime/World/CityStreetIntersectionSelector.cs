@@ -97,7 +97,8 @@ namespace BarPromenade
             CityLayout layout,
             Vector3 position)
         {
-            if (layout.IsWater(position))
+            if (layout.IsWater(position) ||
+                CityNightFixturePlanner.IntersectsCourtyardReservation(layout, position))
             {
                 return true;
             }

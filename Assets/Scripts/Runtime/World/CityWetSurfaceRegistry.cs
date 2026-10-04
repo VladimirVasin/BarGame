@@ -125,14 +125,17 @@ namespace BarPromenade
             public Entry(
                 Renderer renderer,
                 CityWetSurfaceKind kind,
-                Color dryTint)
+                Color dryTint,
+                int materialIndex)
             {
                 Renderer = renderer;
                 Kind = kind;
                 DryTint = dryTint;
+                MaterialIndex = materialIndex;
             }
 
             public Renderer Renderer { get; }
+            public int MaterialIndex { get; }
             public CityWetSurfaceKind Kind { get; set; }
             public Color DryTint { get; set; }
         }
@@ -159,7 +162,7 @@ namespace BarPromenade
             Renderer renderer,
             CityWetSurfaceKind kind)
         {
-            RegisterCore(renderer, kind, null);
+            RegisterCore(renderer, kind, null, -1);
         }
 
         public static void Register(
@@ -167,13 +170,54 @@ namespace BarPromenade
             CityWetSurfaceKind kind,
             Color dryTint)
         {
-            RegisterCore(renderer, kind, dryTint);
+            RegisterCore(renderer, kind, dryTint, -1);
+        }
+
+        public static void Register(Renderer renderer, CityWetSurfaceKind kind,
+            Color dryTint, int materialIndex)
+        {
+            RegisterCore(renderer, kind, dryTint, materialIndex);
+        }
+
+        /// <summary>Transfers an authored region's dry recipe into a combined ground slot.</summary>
+        internal static bool TryCopyRegistration(Renderer source, int sourceMaterialIndex,
+            Renderer target, int targetMaterialIndex)
+        {
+            if (target == null || !TryReadRegistration(source, sourceMaterialIndex,
+                out CityWetSurfaceKind kind, out Color dryTint)) return false;
+            RegisterCore(target, kind, dryTint, targetMaterialIndex);
+            return true;
+        }
+
+        internal static bool TryReadRegistration(Renderer source, int materialIndex,
+            out CityWetSurfaceKind kind, out Color dryTint)
+        {
+            kind = default;
+            dryTint = Color.white;
+            if (source == null) return false;
+            for (int index = Entries.Count - 1; index >= 0; index--)
+            {
+                Entry entry = Entries[index];
+                if (entry.Renderer != source || entry.MaterialIndex != materialIndex) continue;
+                kind = entry.Kind;
+                dryTint = entry.DryTint;
+                return true;
+            }
+            return false;
+        }
+
+        internal static void Unregister(Renderer renderer)
+        {
+            for (int index = Entries.Count - 1; index >= 0; index--)
+                if (Entries[index].Renderer == null || Entries[index].Renderer == renderer)
+                    Entries.RemoveAt(index);
         }
 
         private static void RegisterCore(
             Renderer renderer,
             CityWetSurfaceKind kind,
-            Color? authoredDryTint)
+            Color? authoredDryTint,
+            int materialIndex)
         {
             if (renderer == null)
             {
@@ -189,7 +233,7 @@ namespace BarPromenade
                     continue;
                 }
 
-                if (entry.Renderer == renderer)
+                if (entry.Renderer == renderer && entry.MaterialIndex == materialIndex)
                 {
                     entry.Kind = kind;
                     if (authoredDryTint.HasValue)
@@ -205,7 +249,8 @@ namespace BarPromenade
             var added = new Entry(
                 renderer,
                 kind,
-                authoredDryTint ?? ResolveDryTint(renderer));
+                authoredDryTint ?? ResolveDryTint(renderer, materialIndex),
+                materialIndex);
             Entries.Add(added);
             Apply(added);
         }
@@ -321,25 +366,25 @@ namespace BarPromenade
             CityWetSurfaceSample sample =
                 CityWetSurfaceRules.Evaluate(entry.Kind, currentWetness);
             Color displayedTint = Multiply(entry.DryTint, sample.Tint);
-            Properties.Clear();
-            entry.Renderer.GetPropertyBlock(Properties);
+            GroundSurfaceAppearance.ReadProperties(entry.Renderer, Properties, entry.MaterialIndex);
             Properties.SetColor(BaseColorId, displayedTint);
             Properties.SetColor(ColorId, displayedTint);
             Properties.SetFloat(SmoothnessId, sample.Smoothness);
             Properties.SetFloat(GroundSurfaceAppearance.WetnessId, currentWetness);
-            entry.Renderer.SetPropertyBlock(Properties);
+            GroundSurfaceAppearance.WriteProperties(entry.Renderer, Properties, entry.MaterialIndex);
         }
 
-        private static Color ResolveDryTint(Renderer renderer)
+        private static Color ResolveDryTint(Renderer renderer, int materialIndex)
         {
-            Properties.Clear();
-            renderer.GetPropertyBlock(Properties);
+            GroundSurfaceAppearance.ReadProperties(renderer, Properties, materialIndex);
             if (Properties.HasProperty(BaseColorId))
             {
                 return Properties.GetColor(BaseColorId);
             }
 
-            Material material = renderer.sharedMaterial;
+            Material[] materials = renderer.sharedMaterials;
+            Material material = materialIndex < 0 ? renderer.sharedMaterial :
+                materialIndex < materials.Length ? materials[materialIndex] : null;
             if (material != null && material.HasProperty(BaseColorId))
             {
                 return material.GetColor(BaseColorId);

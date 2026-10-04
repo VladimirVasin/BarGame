@@ -519,6 +519,57 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
+        public void IndexedGroundRegions_KeepIndependentWeatherAndCopiedDryRecipes()
+        {
+            GameObject sourceOwner = GameObject.CreatePrimitive(PrimitiveType.Quad);
+            GameObject combinedOwner = GameObject.CreatePrimitive(PrimitiveType.Quad);
+            Color dryTint = new Color(.31f, .22f, .14f, 1f);
+            try
+            {
+                Renderer source = sourceOwner.GetComponent<Renderer>();
+                Renderer combined = combinedOwner.GetComponent<Renderer>();
+                combined.sharedMaterials = new[]
+                {
+                    RuntimePrimitiveFactory.DefaultMaterial,
+                    RuntimePrimitiveFactory.DefaultMaterial
+                };
+                CityExteriorAppearance.ApplyGroundSurface(source, dryTint);
+                CityExteriorAppearance.ApplyRoadSurface(combined, 0);
+                CityExteriorAppearance.ApplySidewalkSurface(combined, 1);
+                CityWetSurfaceRegistry.SetImmediate(1f);
+
+                var properties = new MaterialPropertyBlock();
+                combined.GetPropertyBlock(properties, 0);
+                Assert.That(properties.GetFloat(SmoothnessId), Is.EqualTo(
+                    CityWetSurfaceRules.Evaluate(CityWetSurfaceKind.Road, 1f).Smoothness).Within(.0001f));
+                combined.GetPropertyBlock(properties, 1);
+                Assert.That(properties.GetFloat(SmoothnessId), Is.EqualTo(
+                    CityWetSurfaceRules.Evaluate(CityWetSurfaceKind.Sidewalk, 1f).Smoothness).Within(.0001f));
+
+                source.GetPropertyBlock(properties);
+                combined.SetPropertyBlock(properties, 1);
+                Assert.That(CityWetSurfaceRegistry.TryCopyRegistration(source, -1, combined, 1), Is.True);
+                CityWetSurfaceRegistry.Unregister(source);
+                CityWetSurfaceRegistry.SetImmediate(0f);
+                combined.GetPropertyBlock(properties, 1);
+                AssertTint(properties.GetColor(BaseColorId), dryTint);
+                Assert.That(properties.GetFloat(SmoothnessId), Is.EqualTo(
+                    CityExteriorAppearance.GroundSmoothness).Within(.0001f));
+                Assert.That(properties.GetTexture(Shader.PropertyToID("_GroundResponse")), Is.Not.Null);
+                combined.GetPropertyBlock(properties, 0);
+                AssertTint(properties.GetColor(BaseColorId), Color.white);
+                Assert.That(properties.GetFloat(SmoothnessId), Is.EqualTo(
+                    CityExteriorAppearance.RoadSmoothness).Within(.0001f));
+                Assert.That(CityWetSurfaceRegistry.RegisteredSurfaceCount, Is.EqualTo(2));
+            }
+            finally
+            {
+                Object.DestroyImmediate(combinedOwner);
+                Object.DestroyImmediate(sourceOwner);
+            }
+        }
+
+        [Test]
         public void ReRegisteringAWetSurface_DoesNotBakeWetTintIntoDryState()
         {
             GameObject owner = GameObject.CreatePrimitive(

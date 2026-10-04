@@ -116,6 +116,24 @@ namespace BarPromenade
                     collider.sharedMesh = mesh;
                 }
             }
+            // The broad yard, the fitted approach and their painted joints
+            // are ground. Other imported pieces retain their own structure.
+            foreach (MeshRenderer renderer in yard.GetComponentsInChildren<MeshRenderer>(true))
+            {
+                if (!renderer.enabled) continue;
+                bool driveway = renderer.name.StartsWith("YardDriveway__", StringComparison.Ordinal);
+                bool paving = renderer.name == "YardVisible__Concrete";
+                bool marking = renderer.name == "YardVisible__RoadMarking" ||
+                    renderer.name == "YardVisible__Plain";
+                if (!driveway && !paving && !marking) continue;
+                FootstepGround.Stamp(renderer, FootstepGroundKind.Concrete);
+                CityGroundSurfaceSystem.Register(renderer, marking ? 100 : 40, paint: marking);
+            }
+            foreach (MeshCollider collider in yard.GetComponentsInChildren<MeshCollider>(true))
+                if (collider.name == "COL_Yard0" || collider.name.StartsWith("COL_Yard9", StringComparison.Ordinal) ||
+                    collider.name.StartsWith("COL_RawThreshold", StringComparison.Ordinal) ||
+                    collider.name.StartsWith("COL_FinishedThreshold", StringComparison.Ordinal))
+                    CityGroundSurfaceSystem.ReplaceCollider(collider);
         }
 
         private static Material GlassMaterial

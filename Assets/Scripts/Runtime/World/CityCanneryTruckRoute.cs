@@ -476,7 +476,7 @@ namespace BarPromenade
             float halfLanePair = halfRoad - CityStreetSurfacePlanner.SidewalkWidth;
             foreach (RoadEdge edge in layout.RoadEdges)
             {
-                if (layout.GetPathKind(edge) != CityPathKind.Street) continue;
+                if (layout.GetPathKind(edge) != CityPathKind.Street || layout.RoadGeometry.IsCurved(edge)) continue;
                 Vector3 a = layout.GetNodeWorldPosition(edge.A), b = layout.GetNodeWorldPosition(edge.B);
                 paving.Add(Rect.MinMaxRect(Mathf.Min(a.x,b.x)-halfLanePair, Mathf.Min(a.z,b.z)-halfLanePair,
                     Mathf.Max(a.x,b.x)+halfLanePair, Mathf.Max(a.z,b.z)+halfLanePair));
@@ -494,7 +494,10 @@ namespace BarPromenade
         {
             foreach (RoadEdge edge in layout.RoadEdges)
             {
-                if (layout.GetPathKind(edge) != CityPathKind.Street) continue;
+                // The current rear-axle adapter fillets cardinal node runs.
+                // Local bent streets remain available to walkers and the bus;
+                // cargo routing searches only streets its axle path can follow.
+                if (layout.GetPathKind(edge) != CityPathKind.Street || layout.RoadGeometry.IsCurved(edge)) continue;
                 Neighbours(edge.A).Add((edge.B, edge));
                 Neighbours(edge.B).Add((edge.A, edge));
             }

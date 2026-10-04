@@ -127,9 +127,11 @@ namespace BarPromenade
                         color,
                         key.BlocksMovement,
                         ResolveTileSize(key.Style),
-                        ResolveUvMode(key.Style));
+                        ResolveUvMode(key.Style),
+                        keepReadable: IsGroundStyle(key.Style));
                 Renderer renderer = chunk.GetComponent<Renderer>();
                 ApplyAppearance(renderer, key.Style, color);
+                RegisterGround(chunk, key.Style);
                 if (!key.BlocksMovement &&
                     (key.Style == CityFringeYardStyle.ServiceGround ||
                      key.Style == CityFringeYardStyle.ServiceTrack ||
@@ -156,9 +158,11 @@ namespace BarPromenade
                         color,
                         false,
                         ResolveTileSize(key.Style),
-                        ResolveUvMode(key.Style));
+                        ResolveUvMode(key.Style),
+                        keepReadable: IsGroundStyle(key.Style));
                 Renderer renderer = chunk.GetComponent<Renderer>();
                 ApplyAppearance(renderer, key.Style, color);
+                RegisterGround(chunk, key.Style);
                 if (!key.BlocksMovement &&
                     (key.Style == CityFringeYardStyle.ServiceGround ||
                      key.Style == CityFringeYardStyle.ServiceTrack ||
@@ -188,6 +192,17 @@ namespace BarPromenade
             IList<CityFringePracticalAnchor> practicalAnchors =
                 BuildPracticalAnchors(root.transform, plan.Practicals);
             return new CityFringeYardWorldResult(root, practicalAnchors);
+        }
+
+        private static bool IsGroundStyle(CityFringeYardStyle style) =>
+            style == CityFringeYardStyle.ServiceGround ||
+            style == CityFringeYardStyle.ServiceTrack;
+
+        private static void RegisterGround(GameObject chunk, CityFringeYardStyle style)
+        {
+            if (!IsGroundStyle(style)) return;
+            FootstepGround.Stamp(chunk, FootstepGroundKind.Soil);
+            CityGroundSurfaceSystem.Register(chunk, 40, paint: true);
         }
 
         private static void TryAppendImportedYardParts(
