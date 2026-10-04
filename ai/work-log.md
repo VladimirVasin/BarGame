@@ -9,19 +9,17 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
   Ribbons, ground and model poses share render/collision/navigation; assets
   stay unscaled. Four ordinary cells exclude significant places across seeds.
   Frontages name existing edges; bus, Cannery and Last Route retain safe routes.
-- CourtyardBlocks reuse four L 15×14 m houses and two western compact 14×13.5 m
-  rear bodies. BuildingMasses adds the latter without changing 144 semantic lots.
-  Exact masses are subtracted from road ground. A bounded visibility graph fits
-  a .4 m capsule loop from the street via both flanks, the western ≥2.2 m neck
-  and the true 10×7 m L court back to the same street entrance. Assets stay
-  unscaled. CourtyardConnections join western `(0,7)/(0,8)` court ends across
-  road-free ground; loops stay. Existing street workers use the common Courtyard
-  graph: exact holes/heights, .35 m radius, deduped knots, Path.Length costs.
-  Splitting street links retains all 13 identities and spawn-anchor IDs/positions.
-  CourtyardPaths reserve loops/links from lamps/props/solid litter; no new
-  entrances/NPCs/text/lights/lore.
-- Local-origin area and metric edge/endpoint tolerance avoid partition errors
-  and false internal barriers. Padded OBBs check actual road cuts individually;
+- CourtyardBlocks retain four L 15×14 m houses/two west compact 14×13.5 m rears:
+  144 lot IDs; exact road ground minus masses; .4 m loops via both flanks,
+  ≥2.2 m necks/true 10×7 m L courts return to their street gate.
+  A second ordinary quarter reuses long/compact bodies with staggered setbacks,
+  a 3 m passage/open court. Default `(0,9)` mirrors to its real west street;
+  east is absent. Frontage/metre eligibility preserves special places/roads. Existing courts/western link stay.
+  Road-free CourtyardConnections join `(0,7)/(0,8)`; existing workers use
+  exact-ground .35 m Courtyard links, deduped knots/Path.Length costs.
+  Street splits retain all 13 identities/spawn IDs/positions. CourtyardPaths
+  bar lamps/props/solid litter; no new entrances/NPCs/text/lights/lore.
+- Local-origin areas/metric endpoints avoid partition errors/internal barriers. Padded OBBs check actual road cuts individually;
   fragmented ground area sums were unreliable. Grade breakpoints must be ribbon
   vertices or path/collider heights diverge. Capsule clearance uses the pavement
   union, with front/rear fitting reserves. Existing poles choose bounded clear
@@ -31,17 +29,18 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
   Now actual shoulder-adjusted XZ drives continuous turn, then aligned stepping.
   Earlier endpoint captures stopped before node-switch, hiding that next turn.
   CharacterController collision remains authoritative.
+  Gate splits sample CourtyardHeight; straight-lane Y interpolation missed paving.
   Compact OldTown outfalls use canonical facade mounts and ground sampling;
   generic lateral placement missed the recessed right wall and left a floating strap.
-- Checks: `CityRoadGeometryTests`,
+- Checks: `CityRoadGeometryTests`, `OldTownPilot_KeepsAnchorsAndPartitionsGroundWithoutBuildingOverlap`,
   `CityPedestrianPlannerTests.Create_ElevatedCity_UsesLocalSurfacesAndSignatureStairs`,
   `CityElevationPlannerTests.DefaultCity_UsesOneSafeRoadGroundBoundaryContract`,
   `CityBuildingPrototypeRuntimeTests.DefaultCity_PlacesDistrictPrototypesAndClipsHomeExterior`,
   `CityDecorationPlannerTests.ShippedCity_PutsTheWaterNetworkOnTheGround`,
   `AreaCaptureFixture.CityReplanning`. Court/street/worker frames reviewed.
   Hero swept capsule/.35 m masks/floor/map agree. After separate initial
-  placements, each direction runs continuously from shortcut through the turn
-  to a street gate: mesh/facing, CharacterController collision/ground contact;
+  placements, each direction runs continuously through court turns to a street
+  gate: mesh/facing, CharacterController collision/ground contact;
   no reset within a trial.
   `python tools/check-docs.py`, `git diff --check`.
 

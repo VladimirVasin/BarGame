@@ -86,7 +86,7 @@ namespace BarPromenade.Tests.PlayMode
                 CityRoadSample eyeSample = path.SampleDistance(path.Length * .3f);
                 Vector3 eye = ReplanningStreetEye(layout, new Vector3(eyeSample.Position.x, 0, eyeSample.Position.y));
                 CityRoadSample targetSample = path.SampleDistance(Mathf.Min(path.Length - 2f, path.Length * .3f + 16f));
-                shots.Add(Shot.At($"replanning-facing-fix-street-{index + 1:00}-curve", eye,
+                shots.Add(Shot.At($"replanning-offset-court-street-{index + 1:00}-curve", eye,
                     new Vector3(targetSample.Position.x, eye.y - .7f, targetSample.Position.y), 78f));
             }
             foreach (CityPedestrianLink link in city.PedestrianPlan.Links.Where(link => link.Path != null))
@@ -111,16 +111,17 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(city.World.WalkableArea.Contains(releasedGround.point, .35f), Is.True);
             Vector3 junction = layout.GetNodeWorldPosition(new Vector2Int(1, 8));
             Vector3 junctionEye = ReplanningStreetEye(layout, junction + Vector3.right * 5f);
-            shots.Add(Shot.At("replanning-facing-fix-street-04-t-junction", junctionEye,
+            shots.Add(Shot.At("replanning-offset-court-street-04-t-junction", junctionEye,
                 junction + Vector3.left * 6f + Vector3.up * (EyeHeight - .6f), 102f));
             CityRoadSample branchEye = branchPath.SampleDistance(11f);
             Vector3 obliqueEye = ReplanningStreetEye(layout,
                 new Vector3(branchEye.Position.x, 0f, branchEye.Position.y));
-            shots.Add(Shot.At("replanning-facing-fix-street-05-approach", obliqueEye,
+            shots.Add(Shot.At("replanning-offset-court-street-05-approach", obliqueEye,
                 junction + Vector3.forward * 4f + Vector3.up * (EyeHeight - .6f), 90f));
             VerifyReplanningCourtyards(city, streetPlan, shots, issues);
             var walkerDemo = new ReplanningCourtyardWalkerDemo(city, streetPlan, issues);
             walkerDemo.AddShots(shots);
+            walkerDemo.AddOffsetPairShots(shots, layout.CourtyardBlocks.Single(block => block.Kind == CityCourtyardBlockKind.OffsetPair));
             restoreWalker = walkerDemo.Restore;
             Debug.Log($"OldTown pilot: {layout.RoadGeometry.CurvedEdges.Count} shared road paths; physical probe issues={issues.Count}.");
             return shots.ToArray();
@@ -130,8 +131,9 @@ namespace BarPromenade.Tests.PlayMode
             CityStreetSurfacePlan streetPlan, List<Shot> shots, List<string> issues)
         {
             CityLayout layout = city.Layout;
-            Assert.That(layout.CourtyardBlocks.Count, Is.EqualTo(4));
-            Assert.That(layout.BuildingMasses.Count, Is.EqualTo(146));
+            Assert.That(layout.CourtyardBlocks.Count, Is.EqualTo(5));
+            Assert.That(layout.CourtyardBlocks.Count(block => block.Kind == CityCourtyardBlockKind.LRecess), Is.EqualTo(4));
+            Assert.That(layout.BuildingMasses.Count, Is.EqualTo(147));
             var mapGround = new CityMapCityTeleportGround(layout);
             RoadWalkableArea pedestrianArea = CityPedestrianPlanner.CreateWalkableArea(city.PedestrianPlan);
             Physics.SyncTransforms();
@@ -147,6 +149,11 @@ namespace BarPromenade.Tests.PlayMode
                         Mathf.Abs(standing.y - top - PlayerFactory.GroundedRootOffset) > .025f)
                         issues.Add($"Courtyard {block.Cell} map arrival moved or missed the actual ground at {point:F4}.");
                 }
+                if (block.Kind == CityCourtyardBlockKind.OffsetPair)
+                {
+                    AddOffsetPairViews(layout, streetPlan, block, shots);
+                    continue;
+                }
                 CityBuildingPrototypePose pose = CityBuildingPrototypePlacement.ResolveExpectedCityPose(block.Primary);
                 Vector3 courtEye = ReplanningCourtyardEye(layout, streetPlan,
                     new Vector2(block.CourtCenter.x, block.CourtCenter.z));
@@ -157,7 +164,7 @@ namespace BarPromenade.Tests.PlayMode
                     courtEye = ReplanningCourtyardEye(layout, streetPlan, new Vector2(flank.x, flank.z));
                     courtTarget = block.CourtCenter + Vector3.up * 1.15f;
                 }
-                shots.Add(Shot.At($"replanning-facing-fix-courtyard-{block.Cell.x}-{block.Cell.y}-court", courtEye,
+                shots.Add(Shot.At($"replanning-offset-court-courtyard-{block.Cell.x}-{block.Cell.y}-court", courtEye,
                     courtTarget, 88f));
                 if (block.RearBuilding != null)
                 {
@@ -166,14 +173,14 @@ namespace BarPromenade.Tests.PlayMode
                     CityRoadSample eye = block.Route.SampleDistance(Mathf.Max(0f, passageDistance - 2f));
                     CityRoadSample target = block.Route.SampleDistance(Mathf.Min(block.Route.Length, passageDistance + 4f));
                     Vector3 passageEye = ReplanningCourtyardEye(layout, streetPlan, eye.Position);
-                    shots.Add(Shot.At($"replanning-facing-fix-courtyard-{block.Cell.x}-{block.Cell.y}-passage", passageEye,
+                    shots.Add(Shot.At($"replanning-offset-court-courtyard-{block.Cell.x}-{block.Cell.y}-passage", passageEye,
                         new Vector3(target.Position.x, passageEye.y - .65f, target.Position.y), 78f));
                 }
                 if (block.Cell == new Vector2Int(0, 8))
                 {
                     Vector3 entranceEye = ReplanningCourtyardEye(layout, streetPlan, block.Route.Vertices[0]);
                     CityRoadSample target = block.Route.SampleDistance(6f);
-                    shots.Add(Shot.At("replanning-facing-fix-courtyard-0-8-entrance", entranceEye,
+                    shots.Add(Shot.At("replanning-offset-court-courtyard-0-8-entrance", entranceEye,
                         new Vector3(target.Position.x, entranceEye.y - .55f, target.Position.y), 82f));
                 }
             }
@@ -193,10 +200,29 @@ namespace BarPromenade.Tests.PlayMode
                     CityRoadSample eye = connection.Path.SampleDistance(station);
                     CityRoadSample target = connection.Path.SampleDistance(station + (reverse ? -9f : 9f));
                     Vector3 camera = ReplanningCourtyardEye(layout, streetPlan, eye.Position);
-                    shots.Add(Shot.At($"replanning-facing-fix-courtyard-connection-{(reverse ? "reverse" : "forward")}", camera,
+                    shots.Add(Shot.At($"replanning-offset-court-courtyard-connection-{(reverse ? "reverse" : "forward")}", camera,
                         new Vector3(target.Position.x, camera.y - .65f, target.Position.y), 86f));
                 }
             }
+        }
+
+        private static void AddOffsetPairViews(CityLayout layout, CityStreetSurfacePlan streetPlan,
+            CityCourtyardBlock block, List<Shot> shots)
+        {
+            Vector3 courtEye = ReplanningCourtyardEye(layout, streetPlan,
+                new Vector2(block.CourtCenter.x, block.CourtCenter.z));
+            shots.Add(Shot.At("replanning-offset-court-0-9-open-court", courtEye,
+                block.PassageCenter + Vector3.up * 1.05f, 88f));
+            float passage = block.Route.Project(new Vector2(block.PassageCenter.x, block.PassageCenter.z)).DistanceAlong;
+            CityRoadSample passageEye = block.Route.SampleDistance(passage - 2f);
+            CityRoadSample passageTarget = block.Route.SampleDistance(passage + 5f);
+            Vector3 eye = ReplanningCourtyardEye(layout, streetPlan, passageEye.Position);
+            shots.Add(Shot.At("replanning-offset-court-0-9-narrow-passage", eye,
+                new Vector3(passageTarget.Position.x, eye.y - .65f, passageTarget.Position.y), 78f));
+            Vector3 entranceEye = ReplanningCourtyardEye(layout, streetPlan, block.Route.Vertices[0]);
+            CityRoadSample entranceTarget = block.Route.SampleDistance(7f);
+            shots.Add(Shot.At("replanning-offset-court-0-9-street-entrance", entranceEye,
+                new Vector3(entranceTarget.Position.x, entranceEye.y - .55f, entranceTarget.Position.y), 82f));
         }
 
         private static void VerifyReplanningWalkingPath(string label, CityRoadPath path, CityGameRoot city,
@@ -260,6 +286,11 @@ namespace BarPromenade.Tests.PlayMode
             private string stage = string.Empty;
             private int outgoingCorner = -1;
             private bool passedOutgoingCorner;
+            private CityCourtyardBlock offsetBlock;
+            private int offsetGate, offsetPassage, offsetCourt;
+            private float[] toOffsetGate, toOffsetPassage, toOffsetCourt;
+            private bool offsetStarted, offsetCourtCompleted;
+            private float offsetTravelled;
 
             public ReplanningCourtyardWalkerDemo(CityGameRoot city, CityStreetSurfacePlan surfaces, List<string> issues)
             {
@@ -308,17 +339,71 @@ namespace BarPromenade.Tests.PlayMode
                         Vector3 eye = ReplanningCourtyardEye(city.Layout, surfaces, path.SampleDistance(cameraStation).Position);
                         Vector2 target = path.SampleDistance(station).Position;
                         TryReplanningSurfaceTop(city.Layout, surfaces, target, out float top);
-                        shots.Add(Shot.At($"replanning-facing-fix-courtyard-walker-{(reverse ? "reverse" : "forward")}-{(arrival ? "arrival" : "passage")}",
+                        shots.Add(Shot.At($"replanning-offset-court-courtyard-walker-{(reverse ? "reverse" : "forward")}-{(arrival ? "arrival" : "passage")}",
                             eye, new Vector3(target.x, top + .85f, target.y), 72f,
                             readyWhen: () => ReachCheckpoint(reverse, station, arrival)));
                     }
                     Vector3 gate = city.PedestrianPlan.Nodes[reverse ? firstGate : secondGate].Position;
                     Vector3 court = city.PedestrianPlan.Nodes[reverse ? first : second].Position;
                     Vector3 outward = gate - court; outward.y = 0f; outward.Normalize();
-                    shots.Add(Shot.At($"replanning-facing-fix-courtyard-walker-{(reverse ? "reverse" : "forward")}-gate-context",
+                    shots.Add(Shot.At($"replanning-offset-court-courtyard-walker-{(reverse ? "reverse" : "forward")}-gate-context",
                         gate + outward * 3f + Vector3.up * EyeHeight, gate + Vector3.up * .85f, 78f,
                         readyWhen: () => ReachExit(reverse)));
                 }
+            }
+
+            public void AddOffsetPairShots(List<Shot> shots, CityCourtyardBlock block)
+            {
+                offsetBlock = block;
+                Assert.That(block.Kind, Is.EqualTo(CityCourtyardBlockKind.OffsetPair));
+                CityPedestrianPlan plan = city.PedestrianPlan;
+                string prefix = $"courtyard:{block.Cell.x}:{block.Cell.y}";
+                offsetGate = Enumerable.Range(0, plan.Nodes.Count).Single(index => plan.Nodes[index].Id == prefix + ":gate");
+                offsetCourt = Enumerable.Range(0, plan.Nodes.Count).Single(index => plan.Nodes[index].Id == prefix + ":court");
+                Vector2 passage = new Vector2(block.PassageCenter.x, block.PassageCenter.z);
+                offsetPassage = Enumerable.Range(0, plan.Nodes.Count).Single(index =>
+                    Vector2.Distance(new Vector2(plan.Nodes[index].Position.x, plan.Nodes[index].Position.z), passage) < .001f);
+                toOffsetGate = CityBusStopWaitPlanner.CreateNodeDistances(plan, offsetGate);
+                toOffsetPassage = CityBusStopWaitPlanner.CreateNodeDistances(plan, offsetPassage);
+                toOffsetCourt = CityBusStopWaitPlanner.CreateNodeDistances(plan, offsetCourt);
+                float station = block.Route.Project(passage).DistanceAlong;
+                Vector3 eye = ReplanningCourtyardEye(city.Layout, surfaces, block.Route.SampleDistance(station - 2.5f).Position);
+                shots.Add(Shot.At("replanning-offset-court-walker-pair-passage-context", eye,
+                    block.PassageCenter + Vector3.up * .85f, 76f,
+                    readyWhen: () => ReachOffsetPairGoal(false)));
+                Vector3 gate = plan.Nodes[offsetGate].Position;
+                shots.Add(Shot.At("replanning-offset-court-walker-pair-gate-context", gate + block.Primary.FacadeForward * 2.5f + Vector3.up * EyeHeight,
+                    gate + Vector3.up * .85f, 78f,
+                    readyWhen: () => ReachOffsetPairGoal(true) && ReachExit(false, true)));
+            }
+
+            private bool ReachOffsetPairGoal(bool court)
+            {
+                if (!offsetStarted)
+                {
+                    Assert.That(reverseStarted, Is.True, "Preserve both complete bridge direction trials before the new pair.");
+                    RestoreWalkerPose();
+                    PlaceTrialStart(offsetGate, 1f, "offset-pair-loop");
+                    offsetStarted = true; offsetTravelled = 0f;
+                }
+                if (court && offsetCourtCompleted) return true;
+                BeginStage(court ? "offset-pair-court" : "offset-pair-passage");
+                int goal = court ? offsetCourt : offsetPassage;
+                for (int batch = 0; batch < 40; batch++)
+                {
+                    if (AtNode(goal))
+                    {
+                        if (court) offsetCourtCompleted = true;
+                        else CaptureActualViews("offset-pair-passage");
+                        ObserveRenderedBody(stage + "-arrival");
+                        Debug.Log($"Offset-pair walker physically reached {city.PedestrianPlan.Nodes[goal].Id}: " +
+                            $"root={walker.Position:F4}, measuredLoopTravel={offsetTravelled:F3} m.");
+                        return true;
+                    }
+                    Step(goal, court ? toOffsetCourt : toOffsetPassage, court ? offsetGate : offsetCourt,
+                        court ? toOffsetGate : toOffsetCourt, offsetBlock.Route.Length, false);
+                }
+                return false;
             }
 
             private bool ReachCheckpoint(bool reverse, float station, bool arrival)
@@ -385,17 +470,21 @@ namespace BarPromenade.Tests.PlayMode
 
             private void PlaceTrialStart(bool reverse)
             {
+                PlaceTrialStart(reverse ? second : first, reverse ? -1f : 1f, reverse ? "reverse" : "forward");
+            }
+
+            private void PlaceTrialStart(int start, float lateralBias, string label)
+            {
                 Assert.That(walker.IsSpawned, Is.True);
-                Assert.That(walker.DesignId, Is.EqualTo(originalDesign), "Both independent trials must reuse the same existing NPC.");
-                int start = reverse ? second : first;
-                // One initial fixture placement per independent direction.
+                Assert.That(walker.DesignId, Is.EqualTo(originalDesign), "All independent trials must reuse the same existing NPC.");
+                // One initial fixture placement per independent trial.
                 // Every measured bridge, turn and gate then stays continuous.
                 walker.CharacterController.enabled = false;
                 walker.transform.position = city.PedestrianPlan.Nodes[start].Position;
                 walker.ResumeRoaming(start);
-                walker.SetAvoidance(1f, reverse ? -1f : 1f);
+                walker.SetAvoidance(1f, lateralBias);
                 Physics.SyncTransforms();
-                Debug.Log($"Courtyard independent trial {(reverse ? "reverse" : "forward")}: " +
+                Debug.Log($"Courtyard independent trial {label}: " +
                     $"existingWalker={originalDesign}, initialNode={city.PedestrianPlan.Nodes[start].Id}, " +
                     $"root={walker.Position:F4}; subsequent bridge, turn and exit retain physical graph movement.");
             }
@@ -414,13 +503,14 @@ namespace BarPromenade.Tests.PlayMode
                 return delta.magnitude < .06f;
             }
 
-            private bool ReachExit(bool reverse)
+            private bool ReachExit(bool reverse, bool offsetPair = false)
             {
-                Assert.That(reverse ? reverseStarted : forwardCompleted, Is.True);
-                int court = reverse ? first : second, gate = reverse ? firstGate : secondGate;
-                float[] distances = reverse ? toFirstGate : toSecondGate;
-                CityCourtyardBlock block = reverse ? firstBlock : secondBlock;
-                BeginStage(reverse ? "reverse-exit" : "forward-exit");
+                Assert.That(offsetPair ? offsetCourtCompleted : reverse ? reverseStarted : forwardCompleted, Is.True);
+                int court = offsetPair ? offsetCourt : reverse ? first : second;
+                int gate = offsetPair ? offsetGate : reverse ? firstGate : secondGate;
+                float[] distances = offsetPair ? toOffsetGate : reverse ? toFirstGate : toSecondGate;
+                CityCourtyardBlock block = offsetPair ? offsetBlock : reverse ? firstBlock : secondBlock;
+                BeginStage(offsetPair ? "offset-pair-exit" : reverse ? "reverse-exit" : "forward-exit");
                 for (int batch = 0; batch < 40; batch++)
                 {
                     if (outgoingCorner < 0 && walker.PreviousNodeIndex == court && walker.TargetNodeIndex != court)
@@ -443,13 +533,17 @@ namespace BarPromenade.Tests.PlayMode
                         Assert.That(capturedViews.Contains(stage + "-after-turn"), Is.True,
                             "The proof needs a real forward step after the court turn, before the exit arrival.");
                         CaptureActualViews(stage + "-gate");
-                        if (!reverse) forwardExitCompleted = true;
+                        if (offsetPair)
+                            Assert.That(offsetTravelled, Is.GreaterThan(block.Route.Length * .95f),
+                                "The existing walker must physically complete the route around the two staggered houses.");
+                        else if (!reverse) forwardExitCompleted = true;
                         Debug.Log($"Courtyard exit {stage}: reached={city.PedestrianPlan.Nodes[gate].Id}; " +
                             $"measured travel={travelled:F3} m; root={walker.Position:F4}; " +
                             $"previous={walker.PreviousNodeIndex}; target={walker.TargetNodeIndex}; forward={walker.transform.forward:F4}.");
                         return true;
                     }
-                    Step(gate, distances, reverse ? first : second, reverse ? toFirst : toSecond,
+                    Step(gate, distances, offsetPair ? offsetCourt : reverse ? first : second,
+                        offsetPair ? toOffsetCourt : reverse ? toFirst : toSecond,
                         block.Route.Length, false);
                 }
                 return false;
@@ -503,6 +597,7 @@ namespace BarPromenade.Tests.PlayMode
                     initialApproachNodeDistances: nextGuidance ? nextDistances : distances);
                 Vector3 displacement = walker.Position - previous; displacement.y = 0f;
                 travelled += displacement.magnitude;
+                if (offsetStarted) offsetTravelled += displacement.magnitude;
                 if (outgoingCorner >= 0 && previousNode == outgoingCorner && displacement.magnitude > .002f)
                     passedOutgoingCorner = true;
                 Assert.That(walker.CollisionEnabled, Is.True, "The demo must retain the real pedestrian capsule.");
@@ -575,10 +670,12 @@ namespace BarPromenade.Tests.PlayMode
                 float signedVerticalGap = hit.distance - lift;
                 float signedNormalGap = signedVerticalGap * hit.normal.y;
                 if (signedNormalGap < -precision || signedNormalGap > controller.skinWidth + precision)
+                {
                     issues.Add($"Courtyard walker capsule outside controller ground-contact band: stage={stage}, " +
                         $"root={walker.Position:F4}, lowerSphere={lowerSphere:F4}, radius={radius:F4}, " +
                         $"collider={hit.collider.name}, contact={hit.point:F4}, normal={hit.normal:F5}, " +
                         $"verticalGap={signedVerticalGap:F5}, normalGap={signedNormalGap:F5}, skinWidth={controller.skinWidth:F4}.");
+                }
             }
 
             private void ObserveRenderedBody(string phase)
@@ -636,7 +733,7 @@ namespace BarPromenade.Tests.PlayMode
                         camera.transform.SetPositionAndRotation(eye, Quaternion.LookRotation(target - eye, Vector3.up));
                         camera.fieldOfView = heading ? 86f : 72f;
                         CaptureCurrentCamera(camera, SceneIds.City,
-                            $"replanning-facing-fix-courtyard-walker-{name}-{(heading ? "forward-view" : "body")}");
+                            $"replanning-offset-court-courtyard-walker-{name}-{(heading ? "forward-view" : "body")}");
                     }
                 }
                 finally
@@ -686,6 +783,19 @@ namespace BarPromenade.Tests.PlayMode
             var position = new Vector3(point.x, 0f, point.y);
             foreach (RuntimeOrientedBox sidewalk in streetPlan.SidewalkGeometry)
                 if (sidewalk.TrySampleTop(position, out top)) return true;
+            // At a curb edge, road geometry can cover active-land geometry.
+            // Compare physical support to the exposed road top, not buried soil.
+            foreach (RuntimeOrientedBox street in streetPlan.StreetGeometry)
+                if (street.TrySampleTop(position, out top)) return true;
+            foreach (CityStreetRibbonDescriptor ribbon in streetPlan.CurvedStreetRibbons)
+                if (ribbon.Polygons.Any(polygon => CityRoadPolygon.Contains(polygon, point)))
+                {
+                    CityRoadPath path = layout.RoadGeometry.Get(ribbon.Edge);
+                    top = (ribbon.FlatNode.HasValue ? layout.ElevationPlan.GetNodeElevation(ribbon.FlatNode.Value) :
+                        layout.ElevationPlan.SampleRoadDatum(ribbon.Edge, path.Project(point).DistanceAlong / path.Length)) +
+                        ribbon.TopOffset;
+                    return true;
+                }
             if (CityTerrainSurfacePlan.TrySampleGroundTop(layout, point, out top, out _)) return true;
             return layout.ElevationPlan.TrySampleSurface(point, CitySurfaceRole.RoadTop, out top, out _);
         }

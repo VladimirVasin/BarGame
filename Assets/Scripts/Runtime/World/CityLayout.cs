@@ -26,7 +26,7 @@ namespace BarPromenade
         private IReadOnlyList<BuildingLot> buildingMasses;
 
         // Semantic lot identities stay stable. Physical mass consumers also
-        // see the two rear houses that enclose the OldTown pilot courts.
+        // see the rear houses that enclose the OldTown courts.
         public IReadOnlyList<CityCourtyardBlock> CourtyardBlocks =>
             courtyardBlocks ?? (courtyardBlocks = CityCourtyardBlockPlanner.Create(this));
         public IReadOnlyList<CityCourtyardConnection> CourtyardConnections =>

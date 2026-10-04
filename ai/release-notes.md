@@ -9,15 +9,15 @@ Earlier notes: [`release-notes-2026-09.md`](archive/release-notes-2026-09.md).
 ### 2026-10-04 — Косой T, фасады и дворы Старого города
 
 - T Старого города — `78°/102°`; прямые концы ≥6 м, узлы прежние.
-  Дома вдоль улиц сохраняют размеры; дорога, грунт, коллизии и маршруты согласованы.
+  Дома вдоль улиц без растяжки; дорога, грунт, коллизии и маршруты согласованы.
 - Четыре L-дома и два задних корпуса дают обходы к прежней улице.
-  Узкое горло ведёт в настоящий двор. Западные дворы соединены грунтовым
-  проходом для прежних прохожих; личности и места появления сохранены.
-  Перед дворовым шагом прохожий разворачивается к пути.
-  Новых входов, жителей и сюжетных деталей нет.
+  Западные дворы связаны проходом для прежних прохожих; личности и места появления сохранены.
+  Рядом: длинный и короткий дома с разными отступами,
+  проходом и открытым двором.
+  Прохожие разворачиваются перед шагом. Новых входов, жителей и лора нет.
 - Выходы водостоков крепятся к фасаду: утопленная стена больше не оставляет
   крепление в воздухе.
-- Проверки: `CityRoadGeometryTests`,
+- Проверки: `CityRoadGeometryTests`, `OldTownPilot_KeepsAnchorsAndPartitionsGroundWithoutBuildingOverlap`,
   `CityPedestrianPlannerTests.Create_ElevatedCity_UsesLocalSurfacesAndSignatureStairs`,
   `CityElevationPlannerTests.DefaultCity_UsesOneSafeRoadGroundBoundaryContract`,
   `CityBuildingPrototypeRuntimeTests.DefaultCity_PlacesDistrictPrototypesAndClipsHomeExterior`,

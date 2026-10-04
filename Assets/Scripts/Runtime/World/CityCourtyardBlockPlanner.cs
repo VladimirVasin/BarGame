@@ -5,16 +5,25 @@ using UnityEngine;
 
 namespace BarPromenade
 {
+    public enum CityCourtyardBlockKind
+    {
+        LRecess,
+        OffsetPair
+    }
+
     public sealed class CityCourtyardBlock
     {
         internal CityCourtyardBlock(BuildingLot primary, BuildingLot rear,
-            IList<Vector2[]> ground, CityRoadPath route, Vector3 court, Vector3 passage)
+            IList<Vector2[]> ground, CityRoadPath route, Vector3 court, Vector3 passage,
+            CityCourtyardBlockKind kind = CityCourtyardBlockKind.LRecess)
         {
             Primary = primary; RearBuilding = rear;
             GroundPolygons = new ReadOnlyCollection<Vector2[]>(ground);
             Route = route; CourtCenter = court; PassageCenter = passage;
+            Kind = kind;
         }
         public Vector2Int Cell => Primary.Cell;
+        public CityCourtyardBlockKind Kind { get; }
         public BuildingLot Primary { get; }
         public BuildingLot RearBuilding { get; }
         public IReadOnlyList<Vector2[]> GroundPolygons { get; }
@@ -35,14 +44,37 @@ namespace BarPromenade
     }
 
     /// <summary>
-    /// Four ordinary OldTown blocks reuse authored L houses. Two western
-    /// courts have a second compact house, creating a narrow rear neck that
-    /// opens into the L's real recess. No new lot or gameplay entrance exists.
+    /// Ordinary OldTown courts reuse authored houses at fixed metre scale:
+    /// four L recesses and a staggered long/compact pair to their north.
+    /// Physical rear bodies introduce no semantic lot or gameplay entrance.
     /// </summary>
     public static class CityCourtyardBlockPlanner
     {
         public const float PassageWidth = 2.2f;
+        public const float OffsetPairPassageWidth = 3f;
+        public static Vector2Int OffsetPairCell => new Vector2Int(0, 9);
         private const float RouteRadius = .4f;
+
+        internal static bool SupportsOffsetPair(CityGenerationSettings settings, Vector2Int cell)
+        {
+            if (cell != OffsetPairCell || settings.RoadGeometry?.ObliqueJunction == null)
+                return false;
+            Vector2 span = settings.GetCellSpan(cell);
+            if (span.x < 40f || span.y < 34f) return false;
+            RoadEdge east = RoadEdge.ForCellFrontage(cell, Vector2Int.right);
+            RoadEdge west = RoadEdge.ForCellFrontage(cell, Vector2Int.left);
+            foreach (RoadEdge edge in settings.RoadGeometry.Edges)
+                if (edge.Equals(east) || edge.Equals(west)) return true;
+            return false;
+        }
+
+        internal static Vector3 ResolveOffsetRearCenter(Vector3 primary, Vector3 facing)
+        {
+            Vector3 longHouse = CityBuildingAssetProvider.GetExpectedEnvelope(CityDistrictKind.OldTown, 1);
+            Vector3 compact = CityBuildingAssetProvider.GetExpectedEnvelope(CityDistrictKind.OldTown, 0);
+            return primary - facing * (longHouse.z * .5f + OffsetPairPassageWidth + compact.z * .5f)
+                - Vector3.forward * 4.5f;
+        }
 
         internal static Vector3 ResolveRearCenter(Vector3 primary, Vector2[] envelope)
         {
@@ -55,6 +87,17 @@ namespace BarPromenade
             var result = new List<CityCourtyardBlock>();
             foreach (BuildingLot lot in layout.BuildingLots)
             {
+                if (lot.Cell == OffsetPairCell && layout.RoadGeometry.ObliqueJunction != null &&
+                    lot.District == CityDistrictKind.OldTown &&
+                    layout.GetCellWorldBounds(lot.Cell).width >= 40f && layout.GetCellWorldBounds(lot.Cell).height >= 34f &&
+                    lot.IsOrdinaryBuilding && lot.BuildingVariant == 1 && lot.FrontageDirection.x != 0 &&
+                    layout.HasRoad(RoadEdge.ForCellFrontage(lot.Cell, lot.FrontageDirection)) &&
+                    layout.GetPathKind(RoadEdge.ForCellFrontage(lot.Cell, lot.FrontageDirection)) == CityPathKind.Street &&
+                    (!layout.PrimaryLandmarkCells.TryGetValue(CityDistrictKind.OldTown, out Vector2Int landmark) || landmark != lot.Cell))
+                {
+                    result.Add(CreateOffsetPair(layout, lot));
+                    continue;
+                }
                 if (!layout.RoadGeometry.IsAffectedCell(lot.Cell)) continue;
                 if (!lot.IsOrdinaryBuilding || lot.BuildingVariant != 2)
                     throw new InvalidOperationException("An OldTown courtyard requires its authored L mass.");
@@ -79,13 +122,7 @@ namespace BarPromenade
                     passage = new Vector3(door.x + PassageWidth * .5f,
                         lot.Center.y, lot.Center.z + 4.5f);
                 }
-                var ground = new List<Vector2[]>(layout.RoadGeometry.GetGroundPolygons(lot.Cell));
-                foreach (Vector2[] body in bodies)
-                {
-                    var remaining = new List<Vector2[]>();
-                    foreach (Vector2[] piece in ground) remaining.AddRange(CityRoadPolygon.Subtract(piece, body));
-                    ground = remaining;
-                }
+                List<Vector2[]> ground = CreateGround(layout, lot.Cell, bodies);
                 Vector3 front = lot.DoorPosition + lot.FacadeForward * .5f;
                 Vector3 left = pose.TransformPoint(new Vector3(-8.1f, 0f, 1f));
                 Vector3 right = pose.TransformPoint(new Vector3(8.1f, 0f, -1.5f));
@@ -101,6 +138,45 @@ namespace BarPromenade
             return new ReadOnlyCollection<CityCourtyardBlock>(result);
         }
 
+        private static CityCourtyardBlock CreateOffsetPair(CityLayout layout, BuildingLot primary)
+        {
+            Vector3 compact = CityBuildingAssetProvider.GetExpectedEnvelope(CityDistrictKind.OldTown, 0);
+            Vector3 longHouse = CityBuildingAssetProvider.GetExpectedEnvelope(CityDistrictKind.OldTown, 1);
+            Vector3 facing = primary.FacadeForward;
+            Vector3 rearCenter = ResolveOffsetRearCenter(primary.Center, facing);
+            Vector3 rearDoor = rearCenter + facing * (compact.z * .5f);
+            var rear = new BuildingLot(primary.Cell, rearCenter, new Vector2(compact.z, compact.x), compact.y,
+                primary.Color, primary.AreaId, primary.District, CityLandUseKind.Building,
+                false, false, false, string.Empty, primary.BarActivity, primary.FrontageDirection,
+                rearDoor, primary.ReturnPosition, primary.SidewalkArrivalPosition, 0, facing);
+            var bodies = new List<Vector2[]>(primary.CreateCollisionPolygons());
+            bodies.AddRange(rear.CreateCollisionPolygons());
+            List<Vector2[]> ground = CreateGround(layout, primary.Cell, bodies);
+            Vector3 passage = rearDoor + facing * (OffsetPairPassageWidth * .5f) + Vector3.forward * 2f;
+            Vector3 court = rearCenter + facing * 2f + Vector3.forward * (compact.x * .5f + 4.5f);
+            Vector3 front = primary.DoorPosition + primary.FacadeForward * .5f;
+            Vector3 south = primary.Center - facing * (longHouse.z * .5f + .6f) - Vector3.forward * (longHouse.x * .5f + .6f);
+            Vector3 north = primary.Center + Vector3.forward * (longHouse.x * .5f + .6f);
+            var goals = new List<Vector2> { XZ(front), XZ(south), XZ(passage), XZ(court), XZ(north), XZ(front) };
+            List<Vector2> route = RouteAroundMasses(goals, ground, bodies, primary.Cell);
+            route.Insert(0, XZ(primary.SidewalkArrivalPosition));
+            route.Add(XZ(primary.SidewalkArrivalPosition));
+            return new CityCourtyardBlock(primary, rear, ground, new CityRoadPath(route),
+                Grounded(layout, court), Grounded(layout, passage), CityCourtyardBlockKind.OffsetPair);
+        }
+
+        private static List<Vector2[]> CreateGround(CityLayout layout, Vector2Int cell, IReadOnlyList<Vector2[]> bodies)
+        {
+            var ground = new List<Vector2[]>(layout.RoadGeometry.GetGroundPolygons(cell));
+            foreach (Vector2[] body in bodies)
+            {
+                var remaining = new List<Vector2[]>();
+                foreach (Vector2[] piece in ground) remaining.AddRange(CityRoadPolygon.Subtract(piece, body));
+                ground = remaining;
+            }
+            return ground;
+        }
+
         internal static IReadOnlyList<CityCourtyardConnection> CreateConnections(CityLayout layout)
         {
             var result = new List<CityCourtyardConnection>();
@@ -109,6 +185,8 @@ namespace BarPromenade
                 for (int b = a + 1; b < blocks.Count; b++)
                 {
                     CityCourtyardBlock first = blocks[a], second = blocks[b];
+                    if (first.Kind != CityCourtyardBlockKind.LRecess || second.Kind != CityCourtyardBlockKind.LRecess)
+                        continue;
                     Vector2Int direction = second.Cell - first.Cell;
                     if (Mathf.Abs(direction.x) + Mathf.Abs(direction.y) != 1 ||
                         layout.HasRoad(RoadEdge.ForCellFrontage(first.Cell, direction))) continue;

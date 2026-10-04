@@ -23,7 +23,7 @@ namespace BarPromenade
                 Func<Vector2, float> sampleHeight = point =>
                     CourtyardHeight(layout, surfaces, point, frontage);
                 int gate = graph.SplitSidewalkAt(prefix + ":gate", frontage,
-                    block.Route.Vertices[0]);
+                    block.Route.Vertices[0], sampleHeight);
                 var nodes = new CourtyardNodes(graph, prefix, sampleHeight);
                 nodes.Register(XZ(graph.Nodes[gate].Position), gate);
                 int court = graph.AddNode(prefix + ":court", block.CourtCenter, false);
@@ -133,7 +133,8 @@ namespace BarPromenade
         {
             // Splitting happens after normal street construction. Existing spawn
             // identities and positions remain; each anchor points at its real slice.
-            public int SplitSidewalkAt(string id, RoadEdge edge, Vector2 arrival)
+            public int SplitSidewalkAt(string id, RoadEdge edge, Vector2 arrival,
+                Func<Vector2, float> sampleHeight)
             {
                 string prefix = $"sidewalk:{EdgeId(edge)}:";
                 int selected = -1;
@@ -165,10 +166,10 @@ namespace BarPromenade
                 if (along <= CourtyardKnotTolerance) return original.FirstNodeIndex;
                 if (along >= selectedPath.Length - CourtyardKnotTolerance) return original.SecondNodeIndex;
                 Vector2 gatePosition = selectedPath.SampleDistance(along).Position;
-                float height = original.PathHeightSampler != null
-                    ? original.PathHeightSampler(gatePosition)
-                    : Mathf.Lerp(nodes[original.FirstNodeIndex].Position.y,
-                        nodes[original.SecondNodeIndex].Position.y, along / selectedPath.Length);
+                // A straight lane's endpoint interpolation can miss the raised
+                // pavement at an interior gate. Use the actual surface here,
+                // just as the adjoining courtyard links do.
+                float height = sampleHeight(gatePosition);
                 int gate = AddNode(id, new Vector3(gatePosition.x, height, gatePosition.y), false);
                 IReadOnlyList<Vector2[]> polygonOverride = navigationPolygonOverrides[selected];
                 links.RemoveAt(selected);

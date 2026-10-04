@@ -14,10 +14,25 @@ namespace BarPromenade.Tests.EditMode
             CityLayout layout = CityLayoutGenerator.Generate(CityBlueprintCatalog.Default,
                 CityGenerationSettings.Default, seed);
             Assert.That(layout.BuildingLots.Count, Is.EqualTo(144));
-            Assert.That(layout.BuildingMasses.Count, Is.EqualTo(146));
-            Assert.That(layout.CourtyardBlocks.Select(block => block.Cell), Is.EquivalentTo(new[] {
+            Vector2Int offsetCell = new Vector2Int(0, 9);
+            BuildingLot offsetLot = layout.BuildingLots.Single(lot => lot.Cell == offsetCell);
+            Rect offsetBounds = layout.GetCellWorldBounds(offsetCell);
+            RoadEdge offsetEast = RoadEdge.ForCellFrontage(offsetCell, Vector2Int.right);
+            RoadEdge offsetWest = RoadEdge.ForCellFrontage(offsetCell, Vector2Int.left);
+            bool eastStreet = layout.HasRoad(offsetEast) && layout.GetPathKind(offsetEast) == CityPathKind.Street;
+            bool westStreet = layout.HasRoad(offsetWest) && layout.GetPathKind(offsetWest) == CityPathKind.Street;
+            bool offsetEligible = offsetLot.IsOrdinaryBuilding && offsetLot.District == CityDistrictKind.OldTown &&
+                !layout.PrimaryLandmarkCells.Values.Contains(offsetCell) &&
+                offsetBounds.width >= 40f && offsetBounds.height >= 34f &&
+                (eastStreet || westStreet);
+            if (seed == 20260727) Assert.That(offsetEligible, Is.True, "The production layout must contain the ordinary offset-pair court.");
+            Assert.That(layout.CourtyardBlocks.Count(block => block.Kind == CityCourtyardBlockKind.OffsetPair),
+                Is.EqualTo(offsetEligible ? 1 : 0), "A significant site must opt out without being moved or replaced.");
+            Assert.That(layout.BuildingMasses.Count, Is.EqualTo(146 + (offsetEligible ? 1 : 0)));
+            Assert.That(layout.CourtyardBlocks.Where(block => block.Kind == CityCourtyardBlockKind.LRecess)
+                .Select(block => block.Cell), Is.EquivalentTo(new[] {
                 new Vector2Int(0, 7), new Vector2Int(1, 7), new Vector2Int(0, 8), new Vector2Int(1, 8) }));
-            Assert.That(layout.CourtyardBlocks.Count(block => block.RearBuilding != null), Is.EqualTo(2));
+            Assert.That(layout.CourtyardBlocks.Count(block => block.RearBuilding != null), Is.EqualTo(2 + (offsetEligible ? 1 : 0)));
             Assert.That(layout.RoadGeometry.CurvedEdges.Count, Is.EqualTo(3));
             foreach (RoadEdge edge in CityRoadGeometryPlan.PilotEdges)
             {
@@ -68,7 +83,8 @@ namespace BarPromenade.Tests.EditMode
                     new Vector2(p.x + half, p.z - half), new Vector2(p.x + half, p.z + half),
                     new Vector2(p.x - half, p.z + half) });
             }
-            foreach (BuildingLot lot in layout.BuildingMasses.Where(lot => layout.RoadGeometry.IsAffectedCell(lot.Cell)))
+            var courtyardCells = new HashSet<Vector2Int>(layout.CourtyardBlocks.Select(block => block.Cell));
+            foreach (BuildingLot lot in layout.BuildingMasses.Where(lot => courtyardCells.Contains(lot.Cell)))
             {
                 Assert.That(lot.IsOrdinaryBuilding, Is.True, "The pilot must not consume a built landmark.");
                 Assert.That(layout.PrimaryLandmarkCells.Values, Has.No.Member(lot.Cell));
@@ -103,9 +119,11 @@ namespace BarPromenade.Tests.EditMode
             foreach (CityCourtyardBlock block in layout.CourtyardBlocks)
             {
                 Assert.That(block.Primary, Is.SameAs(layout.BuildingLots.Single(lot => lot.Cell == block.Cell)));
-                Assert.That(block.Primary.BuildingVariant, Is.EqualTo(2), "A court uses the authored L house, without changing its metres.");
-                Assert.That(block.Primary.CreateCollisionPolygons().Count, Is.EqualTo(2));
+                bool offsetPair = block.Kind == CityCourtyardBlockKind.OffsetPair;
+                Assert.That(block.Primary.BuildingVariant, Is.EqualTo(offsetPair ? 1 : 2), "The court must retain its authored fixed-metre mass.");
+                Assert.That(block.Primary.CreateCollisionPolygons().Count, Is.EqualTo(offsetPair ? 1 : 2));
                 Assert.That(block.RearBuilding != null, Is.EqualTo(block.Cell.x == 0));
+                if (offsetPair) AssertOffsetPairMasses(layout, block);
                 var blockMasses = new List<BuildingLot> { block.Primary };
                 if (block.RearBuilding != null)
                 {
@@ -146,18 +164,58 @@ namespace BarPromenade.Tests.EditMode
             }
         }
 
+        private static void AssertOffsetPairMasses(CityLayout layout, CityCourtyardBlock block)
+        {
+            Assert.That(block.Cell, Is.EqualTo(new Vector2Int(0, 9)));
+            Assert.That(block.RearBuilding, Is.Not.Null);
+            Assert.That(block.Primary.IsOrdinaryBuilding && block.RearBuilding.IsOrdinaryBuilding, Is.True);
+            Assert.That(layout.PrimaryLandmarkCells.Values, Has.No.Member(block.Cell));
+            RoadEdge east = RoadEdge.ForCellFrontage(block.Cell, Vector2Int.right);
+            bool facesEast = layout.HasRoad(east) && layout.GetPathKind(east) == CityPathKind.Street;
+            Vector2Int frontage = facesEast ? Vector2Int.right : Vector2Int.left;
+            Vector3 facing = facesEast ? Vector3.right : Vector3.left;
+            Assert.That(block.Primary.FrontageDirection, Is.EqualTo(frontage));
+            Assert.That(block.RearBuilding.FrontageDirection, Is.EqualTo(frontage));
+            Assert.That(block.Primary.FacadeForward, Is.EqualTo(facing));
+            Assert.That(block.RearBuilding.FacadeForward, Is.EqualTo(facing));
+            Assert.That(block.Primary.Height, Is.EqualTo(42f));
+            Rect primary = CityRoadPolygon.Bounds(block.Primary.CreateCollisionPolygons().Single());
+            Rect rear = CityRoadPolygon.Bounds(block.RearBuilding.CreateCollisionPolygons().Single());
+            Assert.That(primary.width, Is.EqualTo(11.5f).Within(.001f));
+            Assert.That(primary.height, Is.EqualTo(22f).Within(.001f));
+            Assert.That(rear.width, Is.EqualTo(13.5f).Within(.001f));
+            Assert.That(rear.height, Is.EqualTo(14f).Within(.001f));
+            float primaryBack = facesEast ? primary.xMin : primary.xMax;
+            float rearFront = facesEast ? rear.xMax : rear.xMin;
+            Assert.That(Mathf.Abs(primaryBack - rearFront), Is.EqualTo(3f).Within(.001f), "The two imported masses leave the authored narrow passage.");
+            Rect cell = layout.GetCellWorldBounds(block.Cell);
+            float setback = facesEast ? cell.xMax - layout.RoadWidth * .5f - primary.xMax :
+                primary.xMin - cell.xMin - layout.RoadWidth * .5f;
+            Assert.That(setback, Is.EqualTo(1.4f).Within(.001f));
+            Assert.That(block.Primary.Center.z - cell.center.y, Is.EqualTo(1f).Within(.001f));
+            Assert.That(block.RearBuilding.Center.z - cell.center.y, Is.EqualTo(-3.5f).Within(.001f));
+            Assert.That(block.PassageCenter.x, Is.EqualTo((primaryBack + rearFront) * .5f).Within(.001f));
+            Assert.That(block.PassageCenter.z, Is.InRange(Mathf.Max(primary.yMin, rear.yMin), Mathf.Min(primary.yMax, rear.yMax)));
+            Assert.That(block.CourtCenter.z, Is.GreaterThan(rear.yMax), "The second court opens north of the staggered rear house.");
+            RoadEdge street = RoadEdge.ForCellFrontage(block.Cell, frontage);
+            Assert.That(layout.HasRoad(street), Is.True);
+            Assert.That(layout.GetPathKind(street), Is.EqualTo(CityPathKind.Street));
+        }
+
         private static void AssertCourtyardConnections(CityLayout layout, IReadOnlyList<Vector2[]> streets)
         {
             int expectedConnections = layout.HasRoad(new RoadEdge(new Vector2Int(0, 8), new Vector2Int(1, 8))) ? 0 : 1;
             if (layout.Seed == 20260727) Assert.That(expectedConnections, Is.EqualTo(1));
             Assert.That(layout.CourtyardConnections.Count, Is.EqualTo(expectedConnections));
-            Assert.That(layout.CourtyardPaths.Count(), Is.EqualTo(4 + expectedConnections));
+            Assert.That(layout.CourtyardPaths.Count(), Is.EqualTo(layout.CourtyardBlocks.Count + expectedConnections));
             var bodies = layout.BuildingMasses.SelectMany(lot => lot.CreateCollisionPolygons()).ToList();
             RoadWalkableArea heroArea = RoadWalkableArea.FromLayout(layout);
             foreach (CityCourtyardConnection connection in layout.CourtyardConnections)
             {
                 Assert.That(connection.FirstCell, Is.EqualTo(new Vector2Int(0, 7)));
                 Assert.That(connection.SecondCell, Is.EqualTo(new Vector2Int(0, 8)));
+                Assert.That(connection.First.Kind, Is.EqualTo(CityCourtyardBlockKind.LRecess));
+                Assert.That(connection.Second.Kind, Is.EqualTo(CityCourtyardBlockKind.LRecess));
                 Assert.That(connection.First, Is.SameAs(layout.CourtyardBlocks.Single(block => block.Cell == connection.FirstCell)));
                 Assert.That(connection.Second, Is.SameAs(layout.CourtyardBlocks.Single(block => block.Cell == connection.SecondCell)));
                 Assert.That(connection.Path.Vertices[0], Is.EqualTo(new Vector2(connection.First.CourtCenter.x, connection.First.CourtCenter.z)));

@@ -452,19 +452,19 @@ The vertical slice contains:
 
 ### City generation and layout
 
-- CitySpatialPlan maps blueprint IDs/metres: 144 lots in `13 x 12`;
-  west/north/south 26–40 m, river/park/home/bar/fair/arch anchors and eastern widths fixed.
-  Beach/sea continuous; legacy/custom uniform. District rhythm varies.
-  The OldTown T meets north/south at 78°/102°; nodes/datums fixed, ends straight
-  ≥6 m. Junction polygons serve mesh/collision/navigation. Four L 15×14 m
-  street-facing houses; two western compact 14×13.5 m rear bodies join BuildingMasses
-  without new lot IDs. CourtyardBlocks subtract exact masses from road ground;
-  ≥2.2 m rear necks open into 10×7 m L courts. Capsule-safe loops pass both
-  flanks and return to their street entrance. CourtyardConnections link
-  western `(0,7)/(0,8)` courts on road-free ground;
-  CourtyardPaths keep lamps/props/solid litter clear.
-  Model/foundation/docks/collision agree; assets unscaled. Significant places exclude
-  the patch; unsafe bends stay outside bus routes;
+- CitySpatialPlan: 144 lot IDs in `13 x 12`; west/north/south 26–40 m,
+  river/park/home/bar/fair/arch anchors/east widths fixed. Beach/sea continuous;
+  legacy/custom uniform; district rhythm varies. OldTown T: 78°/102°,
+  fixed nodes/datums, straight ends ≥6 m; shared mesh/collision/nav polygons.
+  Four L 15×14 m +two west compact 14×13.5 m rears: ≥2.2 m necks, 10×7 m courts.
+  Default `(0,9)`: long 22×11.5 m +compact rear, setback 1.4 m/gap 3 m,
+  staggered bodies/open court, west frontage (east if present);
+  unsupported/custom/special layouts skip.
+  BuildingMasses/CourtyardBlocks subtract exact bodies from road ground.
+  Capsule loops (.4 m) use both flanks/return to same gate; road-free
+  CourtyardConnections link west `(0,7)/(0,8)`; CourtyardPaths bar lamps/props/solid litter.
+  Model/foundation/docks/collision agree, unscaled; significant places outside
+  patch; unsafe bends outside bus routes;
 - one default-blueprint-only mountain boundary plan closes the physical west
   and south edges with deterministic flat-shaded low-poly ridge strips whose
   toes sample the authoritative terrain top. The south skyline remains closed
