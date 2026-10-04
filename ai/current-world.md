@@ -453,18 +453,18 @@ The vertical slice contains:
 ### City generation and layout
 
 - CitySpatialPlan: 144 lot IDs in `13 x 12`; west/north/south 26–40 m,
-  river/park/home/bar/fair/arch anchors/east widths fixed. Beach/sea continuous;
-  legacy/custom uniform; district rhythm varies. OldTown T: 78°/102°,
-  fixed nodes/datums, straight ends ≥6 m; shared mesh/collision/nav polygons.
-  Four L 15×14 m +two west compact 14×13.5 m rears: ≥2.2 m necks, 10×7 m courts.
-  Default `(0,9)`: long 22×11.5 m +compact rear, setback 1.4 m/gap 3 m,
-  staggered bodies/open court, west frontage (east if present);
-  unsupported/custom/special layouts skip.
-  BuildingMasses/CourtyardBlocks subtract exact bodies from road ground.
-  Capsule loops (.4 m) use both flanks/return to same gate; road-free
-  CourtyardConnections link west `(0,7)/(0,8)`; CourtyardPaths bar lamps/props/solid litter.
-  Model/foundation/docks/collision agree, unscaled; significant places outside
-  patch; unsafe bends outside bus routes;
+  river/park/home/bar/fair/arch anchors/east widths fixed; beach/sea continuous.
+  Legacy/custom uniform; district rhythm varies. OldTown T: 78°/102°,
+  fixed nodes/datums, ends ≥6 m straight; shared mesh/physics/nav.
+  Four L15×14 m/two west compact14×13.5 m rears: ≥2.2 m necks, 10×7 m courts.
+  Default (0,9): long22×11.5/compact rear, setback1.4/gap3 m,
+  staggered open court; west frontage/east if present; unsupported/special skip.
+  North streetfront x0..3,z11: compact/long alternation, setbacks
+  2.4/1.15/1.7/1.2 m; fit leaves 1 m corner ground/0.1 m body clearance.
+  BuildingMasses/CourtyardBlocks: road ground minus exact bodies.
+  .4 m loops return via flanks to same gate; road-free (0,7)/(0,8) link.
+  CourtyardPaths bar lamps/props/solid litter; model/foundation/docks/physics agree,
+  unscaled; sites/unsafe bus bends outside patch;
 - one default-blueprint-only mountain boundary plan closes the physical west
   and south edges with deterministic flat-shaded low-poly ridge strips whose
   toes sample the authoritative terrain top. The south skyline remains closed

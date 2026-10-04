@@ -11,14 +11,14 @@ Earlier notes: [`release-notes-2026-09.md`](archive/release-notes-2026-09.md).
 - T Старого города — `78°/102°`; прямые концы ≥6 м, узлы прежние.
   Дома вдоль улиц без растяжки; дорога, грунт, коллизии и маршруты согласованы.
 - Четыре L-дома и два задних корпуса дают обходы к прежней улице.
-  Западные дворы связаны проходом для прежних прохожих; личности и места появления сохранены.
-  Рядом: длинный и короткий дома с разными отступами,
-  проходом и открытым двором.
-  Прохожие разворачиваются перед шагом. Новых входов, жителей и лора нет.
+  Западные дворы связаны; личности/места появления прохожих прежние.
+  Рядом длинный/короткий дома с проходом и открытым двором.
+  Северный фронт чередует эти типы с неглубокими отступами.
+  Прохожие разворачиваются до шага; без новых входов/жителей/лора.
 - Выходы водостоков крепятся к фасаду: утопленная стена больше не оставляет
   крепление в воздухе.
 - Проверки: `CityRoadGeometryTests`, `OldTownPilot_KeepsAnchorsAndPartitionsGroundWithoutBuildingOverlap`,
-  `CityPedestrianPlannerTests.Create_ElevatedCity_UsesLocalSurfacesAndSignatureStairs`,
+  `Create_ElevatedCity_UsesLocalSurfacesAndSignatureStairs`,
   `CityElevationPlannerTests.DefaultCity_UsesOneSafeRoadGroundBoundaryContract`,
   `CityBuildingPrototypeRuntimeTests.DefaultCity_PlacesDistrictPrototypesAndClipsHomeExterior`,
   `CityDecorationPlannerTests.ShippedCity_PutsTheWaterNetworkOnTheGround`,

@@ -84,6 +84,7 @@ namespace BarPromenade.Tests.EditMode
                     new Vector2(p.x - half, p.z + half) });
             }
             var courtyardCells = new HashSet<Vector2Int>(layout.CourtyardBlocks.Select(block => block.Cell));
+            courtyardCells.UnionWith(AssertNorthStreetfronts(layout, streets));
             foreach (BuildingLot lot in layout.BuildingMasses.Where(lot => courtyardCells.Contains(lot.Cell)))
             {
                 Assert.That(lot.IsOrdinaryBuilding, Is.True, "The pilot must not consume a built landmark.");
@@ -110,6 +111,89 @@ namespace BarPromenade.Tests.EditMode
                 Is.GreaterThanOrEqualTo(2), "The rigid frontage poses must follow the replanned streets.");
             AssertCourtyardRoutes(layout);
             AssertCourtyardConnections(layout, streets);
+            if (seed == 20260727)
+                Assert.That(CityCanneryTruckRoute.Create(layout, CityCanneryPlan.Create(layout),
+                    CityPortAccessPlan.ForLayout(layout)), Is.Not.Null,
+                    "Replanned streetfronts must retain the real port/factory/shop truck route.");
+        }
+
+        private static IEnumerable<Vector2Int> AssertNorthStreetfronts(CityLayout layout,
+            IReadOnlyList<Vector2[]> streets)
+        {
+            int[] variants = { 0, 1, 0, 1 };
+            float[] setbacks = { 2.4f, 1.15f, 1.7f, 1.2f };
+            var eligible = new List<BuildingLot>();
+            for (int x = 0; x < variants.Length; x++)
+            {
+                Vector2Int cell = new Vector2Int(x, 11);
+                BuildingLot lot = layout.BuildingLots.Single(candidate => candidate.Cell == cell);
+                Rect bounds = layout.GetCellWorldBounds(cell);
+                RoadEdge frontage = RoadEdge.ForCellFrontage(cell, Vector2Int.up);
+                bool street = layout.HasRoad(frontage) && layout.GetPathKind(frontage) == CityPathKind.Street;
+                float width = variants[x] == 0 ? 14f : 22f;
+                float depth = variants[x] == 0 ? 13.5f : 11.5f;
+                Vector2 expectedCenter = new Vector2(bounds.center.x,
+                    bounds.yMax - layout.RoadWidth * .5f - setbacks[x] - depth * .5f);
+                Rect padded = new Rect(expectedCenter - new Vector2(width + 1.3f, depth + 1.6f) * .5f,
+                    new Vector2(width + 1.3f, depth + 1.6f));
+                Vector2[] footprint = { new Vector2(padded.xMin, padded.yMin), new Vector2(padded.xMax, padded.yMin),
+                    new Vector2(padded.xMax, padded.yMax), new Vector2(padded.xMin, padded.yMax) };
+                bool fits = footprint.All(point => bounds.Contains(point)) &&
+                    streets.All(road => PolygonOverlapArea(footprint, road) < .001f);
+                bool ordinary = lot.IsOrdinaryBuilding && lot.District == CityDistrictKind.OldTown &&
+                    !layout.PrimaryLandmarkCells.Values.Contains(cell) &&
+                    !layout.RoadGeometry.IsAffectedCell(cell) &&
+                    layout.CourtyardBlocks.All(block => block.Cell != cell);
+                Debug.Log($"North streetfront {cell}: ordinary={ordinary}, northStreet={street}, fits={fits}, " +
+                    $"variant={lot.BuildingVariant}, frontage={lot.FrontageDirection}, center={lot.Center:F3}.");
+                if (!ordinary || !street || !fits) continue;
+                eligible.Add(lot);
+                Assert.That(lot.BuildingVariant, Is.EqualTo(variants[x]), $"Authored streetfront variant at {cell}.");
+                Assert.That(lot.Height, Is.EqualTo(42f));
+                Assert.That(lot.FrontageDirection, Is.EqualTo(Vector2Int.up));
+                Assert.That(Vector3.Angle(lot.FacadeForward, Vector3.forward), Is.LessThan(.001f));
+                Assert.That(lot.Center.x, Is.EqualTo(expectedCenter.x).Within(.001f));
+                Assert.That(lot.Center.z, Is.EqualTo(expectedCenter.y).Within(.001f));
+                Assert.That(lot.CreateCollisionPolygons().Count, Is.EqualTo(1));
+                Vector2[] body = lot.CreateCollisionPolygons().Single();
+                Rect mass = CityRoadPolygon.Bounds(body);
+                Assert.That(mass.width, Is.EqualTo(width).Within(.001f));
+                Assert.That(mass.height, Is.EqualTo(depth).Within(.001f));
+                float clearance = CityBusIntersectionSelector.BuildingClearance;
+                Vector2[] busBody = { new Vector2(mass.xMin - clearance, mass.yMin - clearance),
+                    new Vector2(mass.xMax + clearance, mass.yMin - clearance),
+                    new Vector2(mass.xMax + clearance, mass.yMax + clearance),
+                    new Vector2(mass.xMin - clearance, mass.yMax + clearance) };
+                float halfRoad = layout.RoadWidth * .5f;
+                foreach (float cornerX in new[] { bounds.xMin + halfRoad, bounds.xMax - halfRoad - 1f })
+                    foreach (float cornerZ in new[] { bounds.yMin + halfRoad, bounds.yMax - halfRoad - 1f })
+                    {
+                        Vector2[] cornerPad = { new Vector2(cornerX, cornerZ), new Vector2(cornerX + 1f, cornerZ),
+                            new Vector2(cornerX + 1f, cornerZ + 1f), new Vector2(cornerX, cornerZ + 1f) };
+                        AssertNoPolygonOverlap(busBody, cornerPad,
+                            $"Streetfront {cell} consumes a bus corner pad at ({cornerX}, {cornerZ}).");
+                    }
+                CityRoadProjection front = layout.RoadGeometry.Get(frontage).Project(
+                    new Vector2(lot.DoorPosition.x, lot.DoorPosition.z));
+                Assert.That(Mathf.Sqrt(front.DistanceSquared) - layout.GetTravelWidth(frontage) * .5f,
+                    Is.EqualTo(setbacks[x]).Within(.001f), $"Measured streetfront setback at {cell}.");
+                Assert.That(lot.DoorPosition.x, Is.EqualTo(lot.Center.x).Within(.001f));
+                Assert.That(lot.DoorPosition.z, Is.EqualTo(mass.yMax).Within(.001f));
+                Assert.That(lot.ReturnPosition.x, Is.EqualTo(bounds.center.x).Within(.001f));
+                Assert.That(lot.ReturnPosition.z, Is.EqualTo(bounds.yMax).Within(.001f));
+                Assert.That(lot.SidewalkArrivalPosition.x, Is.EqualTo(bounds.center.x).Within(.001f));
+                Assert.That(lot.SidewalkArrivalPosition.z, Is.EqualTo(bounds.yMax - layout.RoadWidth * .5f +
+                    CityStreetSurfacePlanner.SidewalkWidth * .5f).Within(.001f));
+                foreach (BuildingLot other in layout.BuildingMasses.Where(other => !ReferenceEquals(other, lot)))
+                    foreach (Vector2[] otherBody in other.CreateCollisionPolygons())
+                        AssertNoPolygonOverlap(body, otherBody, $"Streetfront {cell} overlaps another building.");
+            }
+            if (layout.Seed == 20260727)
+            {
+                Assert.That(eligible.Count, Is.GreaterThanOrEqualTo(3), "The production row must retain at least three ordinary fronts.");
+                Assert.That(eligible.Select(lot => lot.BuildingVariant).Distinct(), Is.EquivalentTo(new[] { 0, 1 }));
+            }
+            return eligible.Select(lot => lot.Cell);
         }
 
         private static void AssertCourtyardRoutes(CityLayout layout)
@@ -270,10 +354,15 @@ namespace BarPromenade.Tests.EditMode
 
         private static void AssertNoPolygonOverlap(Vector2[] first, Vector2[] second, string message)
         {
+            Assert.That(PolygonOverlapArea(first, second), Is.LessThan(.001f), message);
+        }
+
+        private static float PolygonOverlapArea(Vector2[] first, Vector2[] second)
+        {
             var overlap = new List<Vector2>(first);
             for (int i = 0; i < second.Length && overlap.Count >= 3; i++)
                 overlap = CityRoadPolygon.Clip(overlap, second[i], second[(i + 1) % second.Length]);
-            Assert.That(overlap.Count < 3 || Mathf.Abs(CityRoadPolygon.Area(overlap)) < .001f, Is.True, message);
+            return overlap.Count < 3 ? 0f : Mathf.Abs(CityRoadPolygon.Area(overlap));
         }
 
         private static float SegmentDistanceSquared(Vector2 a, Vector2 b, Vector2 c, Vector2 d)

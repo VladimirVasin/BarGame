@@ -1025,7 +1025,9 @@ namespace BarPromenade
                         pathKinds.TryGetValue(RoadEdge.ForCellFrontage(cell, Vector2Int.right),
                             out CityPathKind eastKind) && eastKind == CityPathKind.Street,
                         pathKinds.TryGetValue(RoadEdge.ForCellFrontage(cell, Vector2Int.left),
-                            out CityPathKind westKind) && westKind == CityPathKind.Street));
+                            out CityPathKind westKind) && westKind == CityPathKind.Street,
+                        pathKinds.TryGetValue(RoadEdge.ForCellFrontage(cell, Vector2Int.up),
+                            out CityPathKind northKind) && northKind == CityPathKind.Street));
                 }
             }
 
@@ -1757,7 +1759,8 @@ namespace BarPromenade
             BarActivityKind barActivity,
             bool isPrimaryLandmark,
             bool hasEastStreet,
-            bool hasWestStreet)
+            bool hasWestStreet,
+            bool hasNorthStreet)
         {
             var random = new DeterministicRandom(
                 StableHash(seed, cell.x, cell.y, 0x4C4F5453u));
@@ -1774,6 +1777,13 @@ namespace BarPromenade
             bool authoredOrdinary = landUse == CityLandUseKind.Building &&
                 !isBar && !isPlayerHome && !isSupermarket &&
                 settings.SpatialPlan != null && !settings.SpatialPlan.IsUniform;
+            Vector3 center = GetLotCenter(settings, origin, cell);
+            int streetfrontVariant = 0;
+            Vector3 streetfrontCenter = center;
+            bool streetfront = authoredOrdinary && !isPrimaryLandmark && hasNorthStreet &&
+                district == CityDistrictKind.OldTown && TryResolveNorthStreetfront(settings, cell,
+                    center, out streetfrontVariant, out streetfrontCenter);
+            if (streetfront) frontage = Vector2Int.up;
             bool offsetPair = authoredOrdinary && !isPrimaryLandmark && (hasEastStreet || hasWestStreet) && district == CityDistrictKind.OldTown &&
                 CityCourtyardBlockPlanner.SupportsOffsetPair(settings, cell);
             if (offsetPair) frontage = hasEastStreet ? Vector2Int.right : Vector2Int.left;
@@ -1786,6 +1796,8 @@ namespace BarPromenade
                 ? 2
                 : offsetPair
                     ? 1
+                : streetfront
+                    ? streetfrontVariant
                 : authoredOrdinary && !isPrimaryLandmark && !isAuthoredPrecinct
                     ? ResolveBuildingVariant(seed, cell, frontage, district,
                         new Vector2(maximumWidth, maximumDepth))
@@ -1831,7 +1843,7 @@ namespace BarPromenade
                         settings.MaximumOrdinaryBuildingHeight,
                         district,
                         ref random);
-            Vector3 center = GetLotCenter(settings, origin, cell);
+            if (streetfront) center = streetfrontCenter;
 
             Vector3 direction = new Vector3(frontage.x, 0f, frontage.y);
             Vector3 facadeForward = direction;
@@ -1843,7 +1855,7 @@ namespace BarPromenade
             // The street wall belongs to the public frontage; excess land
             // stays behind the building as a yard instead of a moat on all
             // four sides. Residential setbacks deliberately remain deeper.
-            if (authoredOrdinary && !curvedBlock && !offsetPair && frontage != Vector2Int.zero)
+            if (authoredOrdinary && !curvedBlock && !offsetPair && !streetfront && frontage != Vector2Int.zero)
             {
                 float halfSpan = frontage.x != 0 ? cellSpan.x * 0.5f : cellSpan.y * 0.5f;
                 float halfBuilding = frontage.x != 0 ? size.x * 0.5f : size.y * 0.5f;
@@ -1931,6 +1943,43 @@ namespace BarPromenade
             foreach (Vector2Int direction in candidates)
                 if (roads.IsCurved(RoadEdge.ForCellFrontage(cell, direction))) return direction;
             return fallback;
+        }
+
+        private static bool TryResolveNorthStreetfront(CityGenerationSettings settings,
+            Vector2Int cell, Vector3 cellCenter, out int variant, out Vector3 center)
+        {
+            variant = 0; center = cellCenter;
+            if (cell.y != 11 || cell.x < 0 || cell.x > 3 || settings.RoadGeometry == null ||
+                settings.RoadGeometry.IsAffectedCell(cell)) return false;
+            // A short existing street front alternates authored metre masses.
+            // Small recesses break the facade line without opening a plaza.
+            variant = cell.x % 2;
+            float setback = cell.x == 0 ? 2.4f : cell.x == 1 ? 1.15f : cell.x == 2 ? 1.7f : 1.2f;
+            Vector3 envelope = CityBuildingAssetProvider.GetExpectedEnvelope(CityDistrictKind.OldTown, variant);
+            Vector2 span = settings.GetCellSpan(cell);
+            var bounds = new Rect(cellCenter.x - span.x * .5f, cellCenter.z - span.y * .5f, span.x, span.y);
+            Vector3 candidate = new Vector3(cellCenter.x, cellCenter.y,
+                bounds.yMax - settings.RoadWidth * .5f - setback - envelope.z * .5f);
+            if (!FitsPilotGround(PilotEnvelope(candidate, Quaternion.identity,
+                envelope.x + 1.3f, envelope.z + 1.6f), bounds, CreatePilotRoadCuts(settings, bounds)))
+                return false;
+            // Preserve the corner pavement used by bus and truck turns. The
+            // model's ground margin and the transport clearance are separate.
+            float halfRoad = settings.RoadWidth * .5f;
+            float sidewalk = CityStreetSurfacePlanner.SidewalkWidth;
+            var cornerPads = new List<Vector2[]>(4);
+            for (int x = 0; x < 2; x++)
+            for (int z = 0; z < 2; z++)
+                cornerPads.Add(CityRoadPolygon.Rectangle(new Rect(
+                    x == 0 ? bounds.xMin + halfRoad : bounds.xMax - halfRoad - sidewalk,
+                    z == 0 ? bounds.yMin + halfRoad : bounds.yMax - halfRoad - sidewalk,
+                    sidewalk, sidewalk)));
+            float transportPadding = 2f * CityBusIntersectionSelector.BuildingClearance;
+            if (!FitsPilotGround(PilotEnvelope(candidate, Quaternion.identity,
+                envelope.x + transportPadding, envelope.z + transportPadding), bounds, cornerPads))
+                return false;
+            center = candidate;
+            return true;
         }
 
         private static Vector3 ResolveOffsetCourtyardCenter(CityGenerationSettings settings,

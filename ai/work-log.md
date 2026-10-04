@@ -5,10 +5,10 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 
 ## 2026-10-04 — OldTown road geometry
 
-- OldTown T: −12° (78°/102°), straight ≥6 m ends, fixed road nodes/datums.
-  Ribbons, ground and model poses share render/collision/navigation; assets
-  stay unscaled. Four ordinary cells exclude significant places across seeds.
-  Frontages name existing edges; bus, Cannery and Last Route retain safe routes.
+- OldTown T: −12° (78°/102°), straight ≥6 m ends, fixed nodes/datums.
+  Unscaled poses/ribbons/ground share render/collision/navigation.
+  Four pilot cells exclude significant places across seeds; frontages name edges.
+  Bus, Cannery and Last Route retain safe routes.
 - CourtyardBlocks retain four L 15×14 m houses/two west compact 14×13.5 m rears:
   144 lot IDs; exact road ground minus masses; .4 m loops via both flanks,
   ≥2.2 m necks/true 10×7 m L courts return to their street gate.
@@ -19,21 +19,21 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
   exact-ground .35 m Courtyard links, deduped knots/Path.Length costs.
   Street splits retain all 13 identities/spawn IDs/positions. CourtyardPaths
   bar lamps/props/solid litter; no new entrances/NPCs/text/lights/lore.
-- Local-origin areas/metric endpoints avoid partition errors/internal barriers. Padded OBBs check actual road cuts individually;
-  fragmented ground area sums were unreliable. Grade breakpoints must be ribbon
+- North streetfront (x0..3,z11) alternates fixed compact/long; shallow setbacks
+  vary. Ordinary/actual fit only; existing roads/IDs/courts/special sites stay.
+  Plot fit alone missed truck turns; body+0.1 m reserves 1 m ground corner pads.
+- Local-origin areas/metric endpoints avoid partition errors/internal barriers. Padded OBBs check actual cuts; fragmented ground sums were unreliable. Grade breakpoints must be ribbon
   vertices or path/collider heights diverge. Capsule clearance uses the pavement
   union, with front/rear fitting reserves. Existing poles choose bounded clear
   stations on the same road; lights/types stay.
-  Courtyard steps budget XZ and sample ground; 3D steps had spent pace on the
-  contact Y gap. Motion also began before the body faced the new leg.
-  Now actual shoulder-adjusted XZ drives continuous turn, then aligned stepping.
-  Earlier endpoint captures stopped before node-switch, hiding that next turn.
-  CharacterController collision remains authoritative.
-  Gate splits sample CourtyardHeight; straight-lane Y interpolation missed paving.
+  Courtyard steps budget XZ/sample ground; 3D steps lost pace on the contact Y gap.
+  Body turns before aligned stepping; early captures hid the post-node-switch
+  turn. CharacterController collision stays authoritative.
+  Gate splits sample CourtyardHeight, replacing straight-lane Y interpolation.
   Compact OldTown outfalls use canonical facade mounts and ground sampling;
   generic lateral placement missed the recessed right wall and left a floating strap.
 - Checks: `CityRoadGeometryTests`, `OldTownPilot_KeepsAnchorsAndPartitionsGroundWithoutBuildingOverlap`,
-  `CityPedestrianPlannerTests.Create_ElevatedCity_UsesLocalSurfacesAndSignatureStairs`,
+  `Create_ElevatedCity_UsesLocalSurfacesAndSignatureStairs`,
   `CityElevationPlannerTests.DefaultCity_UsesOneSafeRoadGroundBoundaryContract`,
   `CityBuildingPrototypeRuntimeTests.DefaultCity_PlacesDistrictPrototypesAndClipsHomeExterior`,
   `CityDecorationPlannerTests.ShippedCity_PutsTheWaterNetworkOnTheGround`,
