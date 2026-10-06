@@ -5,6 +5,10 @@ the manifest and checks the published passive FBX files through a round trip.
 --actions-only publishes the banks/manifest without rewriting passive geometry.
 --kick-only appends/refreshes only the hero kick in the existing source bank, proving
 that every older action curve is unchanged before staged publication.
+--recovery-only replaces both rise clips in each existing bank.
+--rebase-npc-recovery original.blend restores that source rig/rest, checks its
+neighbouring original.fbx, and retains the currently published rise poses.
+--finish-recovery-banks joins the current rises to their actual Ready endpoint.
 Two swing families share both banks: the forehand (right to left) and the
 backhand (left to right), each with its charge, heavy overlay and wall recoil.
 Both banks carry four grounded combat shuffles and the same broad ready base;
@@ -331,6 +335,7 @@ class CombatBuilder(dialogue.DialogueBuilder):
     def restore_mesh_deformation(self):
         for modifier, visible in getattr(self, "suspended_deformation", ()):
             modifier.show_viewport = visible
+        if hasattr(self, "suspended_deformation"): del self.suspended_deformation
 
     def profile_stops(self, stops):
         # The novice takes longer to arrest his follow-through, then gathers
@@ -1853,6 +1858,34 @@ class CombatBuilder(dialogue.DialogueBuilder):
         foot.matrix = Matrix.Translation(ankle) @ foot_rotation.to_matrix().to_4x4()
         bpy.context.view_layer.update()
 
+    def recovery_leg_anatomy(self, side):
+        """Measure the live leg in its pelvis/rest frame, never in scene axes.
+
+        Endpoint reach and a positive knee alone allow a thigh folded almost
+        180 degrees against the pelvis. Keep that independent hip contract
+        even when an authored hinge frame changes the thigh's axial roll.
+        """
+        rig=self.result.rig
+        pelvis=rig.pose.bones["pelvis"]
+        thigh,shin,foot=(rig.pose.bones[n+"."+side] for n in ("thigh","shin","foot"))
+        pelvis_delta=pelvis.matrix.to_quaternion() @ pelvis.bone.matrix_local.to_quaternion().inverted()
+        neutral=(shin.bone.head_local-thigh.bone.head_local).normalized()
+        current=pelvis_delta.inverted() @ (shin.head-thigh.head).normalized()
+        forward=Vector((0.,-1.,0.))
+        forward=(forward-neutral*forward.dot(neutral)).normalized()
+        lateral=neutral.cross(forward).normalized()
+        flexion=math.degrees(math.atan2(current.dot(forward),current.dot(neutral)))
+        abduction=math.degrees(math.asin(max(-1.,min(1.,current.dot(lateral)))))
+        shin_delta=shin.matrix.to_quaternion() @ shin.bone.matrix_local.to_quaternion().inverted()
+        foot_delta=foot.matrix.to_quaternion() @ foot.bone.matrix_local.to_quaternion().inverted()
+        ankle_delta=shin_delta.inverted() @ foot_delta
+        toe=ankle_delta @ Vector((0.,-1.,0.))
+        ankle=math.degrees(math.atan2(-toe.z,-toe.y))
+        ankle_turn=math.degrees(ankle_delta.angle); ankle_turn=min(ankle_turn,360.-ankle_turn)
+        return dict(hip_flexion_degrees=flexion,hip_abduction_degrees=abduction,
+                    hip_swing_degrees=math.degrees(neutral.angle(current)),ankle_pitch_degrees=ankle,
+                    ankle_turn_degrees=ankle_turn)
+
     def recovery_hinge_frames(self, root_name, hinge_name, tip_name, reference):
         """Both segments share one hinge plane, including the root bone's axial roll."""
         rig=self.result.rig
@@ -1937,15 +1970,18 @@ class CombatBuilder(dialogue.DialogueBuilder):
         ready_elbow_pole=(ready_elbow-rig.pose.bones["upper_arm.R"].head).normalized()
         ready_left_elbow_pole=(rig.pose.bones["forearm.L"].head-rig.pose.bones["upper_arm.L"].head).normalized()
         ready_rotations_all={b.name:b.matrix.to_quaternion() for b in rig.pose.bones}
+        boot_points={side:[rig.matrix_world.inverted() @ part.obj.matrix_world @ vertex.co
+            for part in self.result.parts if part.obj.name=="CLO_Boot."+side for vertex in part.obj.data.vertices]
+            for side in ("L","R")}
         rest_pelvis = rig.data.bones["pelvis"].head_local.copy()
         self._reset_pose(); self._apply_pose(self.relaxed_pose())
         references = common.calibrate_hinge_references(rig)
         # Blender: front -Y, left +X, up +Z. No lateral sweep of the trailing
         # thigh: the right ankle stays in its own narrow sagittal corridor.
         common_states = (
-            (.40, (0., .04, .40), (70., 0., -8.), (.20, -.30, .115), (-.16, .57, .115), (0., -1., 0.), (0., -1., 0.)),
-            (.54, (0., .02, .44), (37., 0., -3.), tuple(ready_feet["L"]), (-.19, .43, .115), (0., -1., 0.), (0., -1., 0.)),
-            (.72, tuple(ready_pelvis + Vector((0., 0., -.17))), (26., 0., -2.), tuple(ready_feet["L"]), tuple(ready_feet["R"]), (0., -1., 0.), (0., -1., 0.)),
+            (.40, (0., .04, .54), (24., 0., -4.), (.20, .05, .115), (-.16, .57, .115), (0., -1., 0.), (0., -1., 0.)),
+            (.54, (0., .02, .50), (12., 0., -3.), tuple(ready_feet["L"]), (-.19, .43, .115), (0., -1., 0.), (0., -1., 0.)),
+            (.72, tuple(ready_pelvis + Vector((0., 0., -.17))), (12., 0., -2.), tuple(ready_feet["L"]), tuple(ready_feet["R"]), (0., -1., 0.), (0., -1., 0.)),
             (1., tuple(ready_pelvis), (0., 0., 0.), tuple(ready_feet["L"]), tuple(ready_feet["R"]), (0., -1., 0.), (0., -1., 0.)),
         )
         self.recovery_measurements = []
@@ -1960,16 +1996,19 @@ class CombatBuilder(dialogue.DialogueBuilder):
                 planted_left,planted_right=tuple(ready_feet["L"]),tuple(ready_feet["R"])
                 states = (
                     (0., (0., .46, .17), (-78., 6., -3.), planted_left, planted_right, (0., 0., 1.), (0., 0., 1.)),
-                    (.14, (0., .48, .115), (-40., 10., -2.), planted_left, planted_right, (0., 0., 1.), (0., 0., 1.)),
-                    (.34, (0., .49, .17), (75., 8., 0.), planted_left, planted_right, (0., -.4, 1.), (0., -.4, 1.)),
-                    (.46, (0., .40, .35), (70., 8., 0.), planted_left, planted_right, (0., -.7, .6), (0., -.7, .6)),
-                    (.56, (0., .24, .46), (38., 5., -2.), planted_left, planted_right, (0., -.9, .2), (0., -.9, .2)),
-                    (.64, (0., .15, .51), (26., 5., -3.), planted_left, planted_right, (0., -.8, .3), (0., -.8, .3)),
+                    (.14, (0., .48, .115), (-40., 6., -2.), planted_left, planted_right, (0., 0., 1.), (0., 0., 1.)),
+                    (.34, (0., .20, .49), (8., 4., 0.), planted_left, planted_right, (0., -.4, 1.), (0., -.4, 1.)),
+                    (.46, (0., .10, .51), (8., 4., 0.), planted_left, planted_right, (0., -.7, .6), (0., -.7, .6)),
+                    (.56, (0., .06, .54), (12., 3., -2.), planted_left, planted_right, (0., -.9, .2), (0., -.9, .2)),
+                    (.64, (0., .04, .57), (12., 2., -3.), planted_left, planted_right, (0., -.8, .3), (0., -.8, .3)),
                 ) + common_states[2:]
             else:
                 states = (
-                    (0., (0., .02, .18), (82., 0., -4.), (.15, .715, .115), (-.15, .715, .115), (0., -1., 0.), (0., -1., 0.)),
-                    (.14, (0., .14, .49), (82., 0., -8.), (.19, .60, .115), (-.16, .64, .115), (0., -1., 0.), (0., -1., 0.)),
+                    (0., (0., .02, .20), (82., 0., -4.), (.15, .715, .115), (-.15, .715, .115), (0., 0., -1.), (0., 0., -1.)),
+                    (.14, (0., .14, .41), (72., 0., -6.), (.19, .60, .115), (-.16, .64, .115), (0., 0., -1.), (0., 0., -1.)),
+                    # Keep the chest within the planted palm's reach until release;
+                    # lifting it first strands the support wrist above the floor.
+                    (.28, (0., .10, .42), (65., 0., -5.), (.20, .35, .115), (-.16, .61, .115), (0., -.8, -.6), (0., 0., -1.)),
                 ) + common_states
             def state_at(t):
                 for a,b in zip(states, states[1:]):
@@ -1984,7 +2023,12 @@ class CombatBuilder(dialogue.DialogueBuilder):
             max_rotation=0.; previous_rotation=None
             max_length_error=max_contact_error=0.
             min_weapon_height=10.; min_weapon_body=10.; max_right_wrist=0.; max_right_deviation=0.
+            minimum_hip=180.; maximum_hip=-180.; maximum_hip_abduction=0.; maximum_hip_swing=0.
+            minimum_ankle=180.; maximum_ankle=-180.; maximum_ankle_turn=0.
+            min_boot_height=10.
+            minimum_knee_hinge=180.; maximum_knee_hinge=-180.
             unsupported_seconds=max_unsupported_seconds=0.
+            previous_centre=None
             diagnostic = dict(hinges={}, maximum_delta=None, frames=[])
             count = round(duration*(30 if getattr(self,"recovery_probe",False) else FPS))
             for frame in range(count+1):
@@ -1996,10 +2040,11 @@ class CombatBuilder(dialogue.DialogueBuilder):
                 else:
                     hip, rotation, left_ankle, right_ankle, left_pole, right_pole = state_at(t)
                     B = common.BonePose
+                    knee_support = 0. if supine else dialogue.smooth(t/.14) * (1.-dialogue.smooth((t-.56)/.16))
                     body = self.merge_pose(self.relaxed_pose(), {
                         "pelvis": B(rotation_degrees=tuple(rotation), armature_location_m=tuple(hip-rest_pelvis)),
-                        "spine": B(rotation_degrees=(7.*(1-dialogue.smooth((t-.72)/.28)), 0., 0.)),
-                        "chest": B(rotation_degrees=(-4.*(1-dialogue.smooth((t-.72)/.28)), 0., 0.)),
+                        "spine": B(rotation_degrees=(7.*(1-dialogue.smooth((t-.72)/.28))+5.*knee_support, 0., 0.)),
+                        "chest": B(rotation_degrees=(-4.*(1-dialogue.smooth((t-.72)/.28))+14.*knee_support, 0., 0.)),
                         "neck": B(rotation_degrees=(-8.*(1-dialogue.smooth((t-.72)/.28)), 0., 0.)),
                         "head": B(rotation_degrees=(6.*(1-dialogue.smooth((t-.72)/.28)), 0., 0.)),
                     })
@@ -2012,12 +2057,34 @@ class CombatBuilder(dialogue.DialogueBuilder):
                         pose = self.track_pose(((0., "a"),(1., "b")), {"a": pose,"b": ready}, terminal)
                         self._reset_pose(); self._apply_pose(pose)
                     for side, ankle, pole in (("L",left_ankle,left_pole),("R",right_ankle,right_pole)):
-                        # Toe-down early feet turn onto the sole before loading; they
-                        # keep their authored ankle position instead of being extended.
+                        # Toe-down feet turn onto the sole before loading; fit the
+                        # ankle height to the actual boot envelope and calf limit.
                         toe = 0. if supine else max(0.,1.-dialogue.smooth((t-.32)/.4)) * 28.
-                        foot_rotation = Quaternion(Vector((1.,0.,0.)), math.radians(-toe)) @ ready_rotations[side]
-                        self.recovery_leg(side, ankle, pole, foot_rotation)
-                        self.recovery_hinge_frames("thigh."+side,"shin."+side,"foot."+side,references[("left" if side=="L" else "right")+" knee"])
+                        foot_rotation = Quaternion(Vector((1.,0.,0.)), math.radians(toe)) @ ready_rotations[side]
+                        for correction in range(1 if supine else 4):
+                            rest=rig.data.bones["foot."+side]
+                            delta=foot_rotation @ rest.matrix_local.to_quaternion().inverted()
+                            lowest=min((delta @ (point-rest.head_local)).z for point in boot_points[side])
+                            if not supine:
+                                ankle.z=max(ankle.z,.01-lowest)
+                                pelvis=rig.pose.bones["pelvis"]
+                                pelvis_delta=pelvis.matrix.to_quaternion() @ pelvis.bone.matrix_local.to_quaternion().inverted()
+                                axis=(ankle-rig.pose.bones["thigh."+side].head).normalized()
+                                # The knee bends in one anatomical plane through
+                                # the entire trailing-to-leading ankle passage.
+                                pole=axis.cross(pelvis_delta @ Vector((1.,0.,0.)))
+                            self.recovery_leg(side, ankle, pole, foot_rotation)
+                            self.recovery_hinge_frames("thigh."+side,"shin."+side,"foot."+side,references[("left" if side=="L" else "right")+" knee"])
+                            if supine: break
+                            shin=rig.pose.bones["shin."+side]
+                            neutral=shin.matrix.to_quaternion() @ shin.bone.matrix_local.to_quaternion().inverted() @ rest.matrix_local.to_quaternion()
+                            turn=neutral.rotation_difference(foot_rotation).angle
+                            turn=min(turn,2*math.pi-turn)
+                            if turn<=math.radians(74.): break
+                            # Fit the boot against the live calf bind frame, then
+                            # solve its new sole anchor. Each pass preserves links;
+                            # the final validator rejects a non-converged envelope.
+                            foot_rotation=neutral.slerp(foot_rotation,math.radians(74.)/turn)
                     # The carry dock lives beside/in front of the actual shoulder in
                     # actor axes. It cannot rotate behind the back with the torso.
                     shoulder=rig.pose.bones["upper_arm.R"].head.copy()
@@ -2063,10 +2130,19 @@ class CombatBuilder(dialogue.DialogueBuilder):
                         # The planted boots accept the forward rock while the free arm
                         # travels beside the torso; it does not pretend to remain loaded
                         # on an unreachable point behind the seat.
-                        free=Vector((.40,.20,.45)).lerp(rig.pose.bones["upper_arm.L"].head+Vector((.35,.05,-.24)),dialogue.smooth((t-.38)/.18))
+                        left_shoulder=rig.pose.bones["upper_arm.L"].head
+                        free=Vector((.40,.20,max(.45,left_shoulder.z-.28))).lerp(left_shoulder+Vector((.35,.05,-.24)),dialogue.smooth((t-.38)/.18))
                         floor_wrist,floor_rotation=self.recovery_palm(floor_palm,(0.,0.,-1.),(0.,-1.,0.))
                         wrist_left=floor_wrist.lerp(free,dialogue.smooth((t-.15)/.19))
                         rotation_left=floor_rotation
+                        travel=wrist_left-left_shoulder
+                        if travel.length>.57: wrist_left=left_shoulder+travel.normalized()*.57
+                    elif not supine and t > .28:
+                        # Between floor release and knee support the wrist follows a
+                        # reachable arc; the planted palm interval remains exact.
+                        left_shoulder=rig.pose.bones["upper_arm.L"].head
+                        travel=wrist_left-left_shoulder
+                        if travel.length>.57: wrist_left=left_shoulder+travel.normalized()*.57
                     grip_wrist, grip_rotation = self.left_contact_frame()
                     regrip = dialogue.smooth((t-.66)/.24)
                     wrist_left = wrist_left.lerp(grip_wrist,regrip)
@@ -2091,15 +2167,31 @@ class CombatBuilder(dialogue.DialogueBuilder):
                 for joint,value in common.measure_hinges(rig,references):
                     old=diagnostic["hinges"].get(joint,(0.,0.))
                     if abs(value)>abs(old[0]): diagnostic["hinges"][joint]=(value,t)
+                    if joint.endswith("knee"):
+                        minimum_knee_hinge=min(minimum_knee_hinge,value)
+                        maximum_knee_hinge=max(maximum_knee_hinge,value)
+                leg_anatomy={side:self.recovery_leg_anatomy(side) for side in ("L","R")}
+                for side in ("L","R"):
+                    delta=rig.pose.bones["foot."+side].matrix @ rig.data.bones["foot."+side].matrix_local.inverted()
+                    min_boot_height=min(min_boot_height,*( (delta @ point).z for point in boot_points[side]))
+                for side,metrics in leg_anatomy.items():
+                    minimum_hip=min(minimum_hip,metrics["hip_flexion_degrees"])
+                    if metrics["hip_flexion_degrees"]>maximum_hip:
+                        maximum_hip=metrics["hip_flexion_degrees"]; diagnostic["maximum_hip"]=(side,maximum_hip,t)
+                    maximum_hip_abduction=max(maximum_hip_abduction,abs(metrics["hip_abduction_degrees"]))
+                    maximum_hip_swing=max(maximum_hip_swing,metrics["hip_swing_degrees"])
+                    minimum_ankle=min(minimum_ankle,metrics["ankle_pitch_degrees"])
+                    maximum_ankle=max(maximum_ankle,metrics["ankle_pitch_degrees"])
+                    maximum_ankle_turn=max(maximum_ankle_turn,metrics["ankle_turn_degrees"])
                 hinge_values = [value for _,value in common.measure_hinges(rig,references)]
                 min_hinge = min(min_hinge,*hinge_values); max_hinge = max(max_hinge,*hinge_values)
                 min_knee = min(min_knee,rig.pose.bones["shin.L"].head.z,rig.pose.bones["shin.R"].head.z)
                 max_span = max(max_span,abs(rig.pose.bones["shin.L"].head.x-rig.pose.bones["shin.R"].head.x))
                 min_separation=min(min_separation,rig.pose.bones["shin.L"].head.x-rig.pose.bones["shin.R"].head.x)
                 if supine:
-                    # A seated rise first carries its mass over the boots. This
-                    # proxy rejects the old levitating seat-to-squat transfer;
-                    # it is a conservative contact check, not a dynamic solver.
+                    # A seated rise carries its mass onto the boots. A stationary
+                    # centre behind them cannot raise the seat; a forward rock
+                    # can transfer support through its bounded capture point.
                     point=lambda n:rig.pose.bones[n].head
                     centre=(point("pelvis")+point("neck"))*.25+point("head")*.08
                     for side in ("L","R"):
@@ -2108,7 +2200,17 @@ class CombatBuilder(dialogue.DialogueBuilder):
                         centre+=point("hand."+side)*.01+point("foot."+side)*.01
                     palm=rig.pose.bones["hand.L"].matrix @ rig.data.bones["hand.L"].matrix_local.inverted() @ self.hand_frame("L")[0]
                     behind=centre.y-max(point("foot.L").y,point("foot.R").y)-.08
-                    unloaded=point("pelvis").z>.18 and palm.z>.06 and behind>0.
+                    velocity=(centre-previous_centre)/(duration/count) if previous_centre is not None else Vector((0.,0.,0.))
+                    previous_centre=centre.copy()
+                    capture_y=centre.y+velocity.y*math.sqrt(max(.10,centre.z)/9.81)
+                    # Authoring floor is Z=0. Only the unchanged, flat Ready
+                    # support anchors admit the momentum proxy; a flying boot
+                    # or a moving target cannot masquerade as contact.
+                    planted=all((point("foot."+side)-ready_feet[side]).length<=.001 and
+                        rig.pose.bones["foot."+side].matrix.to_quaternion().rotation_difference(ready_rotations[side]).angle<=.001
+                        for side in ("L","R"))
+                    captured=planted and min(point("foot.L").y,point("foot.R").y)-.08<=capture_y<=max(point("foot.L").y,point("foot.R").y)+.08
+                    unloaded=point("pelvis").z>.18 and palm.z>.06 and behind>0. and not captured
                     unsupported_seconds=unsupported_seconds+duration/count if unloaded else 0.
                     max_unsupported_seconds=max(max_unsupported_seconds,unsupported_seconds)
                 for root,hinge,tip in (("thigh.L","shin.L","foot.L"),("thigh.R","shin.R","foot.R"),("upper_arm.L","forearm.L","hand.L"),("upper_arm.R","forearm.R","hand.R")):
@@ -2147,7 +2249,7 @@ class CombatBuilder(dialogue.DialogueBuilder):
                 diagnostic["frames"].append(dict(t=t,bones={b.name:list(b.head) for b in rig.pose.bones if b.name in
                     ("pelvis","spine","chest","neck","head","thigh.L","thigh.R","shin.L","shin.R","foot.L","foot.R","upper_arm.L","upper_arm.R","forearm.L","forearm.R","hand.L","hand.R")},
                     weapon=[list(self.weapon_frame()[0]),list(self.weapon_frame()[0]+self.weapon_frame()[1]@Vector((0.,.60,.145)))],
-                    right_wrist_deviation_degrees=right_deviation,
+                    leg_anatomy=leg_anatomy,right_wrist_deviation_degrees=right_deviation,
                     right_wrist_angle_degrees=math.degrees((rig.pose.bones["hand.R"].head-rig.pose.bones["forearm.R"].head).angle(rig.pose.bones["hand.R"].tail-rig.pose.bones["hand.R"].head))))
                 previous=current
                 keys.append((t,pose))
@@ -2161,6 +2263,12 @@ class CombatBuilder(dialogue.DialogueBuilder):
                 raise ValueError(f"Recovery contact {name}: rotation={max_rotation}, lengths={max_length_error}, contacts={max_contact_error}, weapon={min_weapon_height}")
             if min_hinge < -8. or max_hinge > 130. or min_knee < .025 or max_span > .60 or min_separation < .06 or max_frame_travel*(count/duration)/60. > .045:
                 raise ValueError(f"Recovery anatomy {name}: hinges={min_hinge:.1f}..{max_hinge:.1f}, kneeZ={min_knee:.3f}, span={max_span:.3f}, separation={min_separation:.3f}, frame={max_frame_travel:.3f}")
+            if minimum_hip< -30.01 or maximum_hip>110.01 or maximum_hip_abduction>55.01 or maximum_hip_swing>120.01:
+                raise ValueError(f"Recovery hips {name}: flexion={minimum_hip:.2f}..{maximum_hip:.2f}, abduction={maximum_hip_abduction:.2f}, swing={maximum_hip_swing:.2f}, {diagnostic.get('maximum_hip')}")
+            if maximum_ankle_turn>75.01 or min_boot_height<-.001:
+                raise ValueError(f"Recovery ankles {name}: turn={maximum_ankle_turn:.2f}, pitch={minimum_ankle:.2f}..{maximum_ankle:.2f}, bootZ={min_boot_height:.4f}")
+            if minimum_knee_hinge<-.01 or maximum_knee_hinge>130.01:
+                raise ValueError(f"Recovery knee hinge {name}: {minimum_knee_hinge:.2f}..{maximum_knee_hinge:.2f}")
             if max_unsupported_seconds>.15:
                 raise ValueError(f"Recovery raises seat before mass reaches feet: {name} {max_unsupported_seconds:.3f}s")
             self._create_action(name,"combat",duration,False,count,count/duration,keys)
@@ -2169,11 +2277,25 @@ class CombatBuilder(dialogue.DialogueBuilder):
                 maximum_knee_span_m=max_span,minimum_knee_separation_m=min_separation,maximum_sample_travel_m=max_frame_travel, maximum_frame_travel_60hz_m=max_frame_travel*(count/duration)/60.,
                 maximum_rotation_60hz_degrees=max_rotation*(count/duration)/60.,maximum_length_error_m=max_length_error,maximum_contact_error_m=max_contact_error,minimum_weapon_height_m=min_weapon_height))
             self.recovery_measurements[-1]["maximum_unsupported_transfer_seconds"]=max_unsupported_seconds
+            self.recovery_measurements[-1].update(minimum_hip_flexion_degrees=minimum_hip,maximum_hip_flexion_degrees=maximum_hip,
+                maximum_hip_abduction_degrees=maximum_hip_abduction,maximum_hip_swing_degrees=maximum_hip_swing,
+                minimum_ankle_pitch_degrees=minimum_ankle,maximum_ankle_pitch_degrees=maximum_ankle,
+                maximum_ankle_turn_degrees=maximum_ankle_turn,minimum_boot_height_m=min_boot_height)
+            self.recovery_measurements[-1].update(minimum_knee_hinge_degrees=minimum_knee_hinge,
+                maximum_knee_hinge_degrees=maximum_knee_hinge)
             self.recovery_measurements[-1].update(minimum_weapon_body_clearance_m=min_weapon_body,maximum_right_wrist_degrees=max_right_wrist,maximum_right_wrist_deviation_degrees=max_right_deviation)
             print("Authored combat recovery " + json.dumps(self.recovery_measurements[-1]),flush=True)
 
     def build_actions(self):
         self.suspend_mesh_deformation()
+        if getattr(self, "recovery_only", False):
+            self.load_existing_bank(RECOVERY_CLIPS)
+            preserved = tuple(self.result.actions)
+            signature = action_curve_signature(self, preserved)
+            self.build_recovery_actions()
+            if action_curve_signature(self, preserved) != signature:
+                raise ValueError("Recovery refresh changed an unrelated Action curve")
+            return
         if getattr(self, "kick_only", False):
             self.load_existing_bank()
             self.build_kick_action()
@@ -2450,13 +2572,14 @@ class CombatBuilder(dialogue.DialogueBuilder):
             self.build_charge_actions(backhand, poses)
         if self.hero_profile: self.build_kick_action()
 
-    def load_existing_bank(self):
+    def load_existing_bank(self, replaced=(KICK_CLIP,)):
         """Copy original Blender curves, never round-trip unchanged FBX animation."""
-        source = self.hero_source_bank
+        source = self.hero_source_bank if self.hero_profile else self.npc_source_bank
         previous = self.previous_payload["actions"]
+        if not self.hero_profile: previous = previous["npc"]
         clips = previous["clips"] + previous["step_clips"] + previous["locomotion_clips"]
         clips += [dict(name=name, duration_seconds=RECOVERY_DURATIONS[name], loop=False) for name in RECOVERY_CLIPS]
-        clips = [clip for clip in clips if clip["name"] != KICK_CLIP]
+        clips = [clip for clip in clips if clip["name"] not in replaced]
         with bpy.data.libraries.load(str(source), link=False) as (available, loaded):
             names = [clip["name"] for clip in clips]
             if not set(names).issubset(available.actions):
@@ -2474,7 +2597,7 @@ class CombatBuilder(dialogue.DialogueBuilder):
         if checksum != previous["animation_signature"]:
             raise ValueError(f"Source bank does not match published unchanged action SHA: {source}")
         self.result.rig.animation_data_create()
-        print("Preserved published hero action curves SHA " + checksum, flush=True)
+        print("Preserved published action curves SHA " + checksum, flush=True)
 
     def build_kick_action(self):
         """A right sole push from the real Ready pose, supported by the left leg."""
@@ -3355,6 +3478,10 @@ def import_bank(filepath):
 
 def bank_motion_samples(filepath, data, excluded=()):
     rig, actions = import_bank(filepath)
+    return rig_motion_samples(rig, actions, data, excluded, filepath.name)
+
+
+def rig_motion_samples(rig, actions, data, excluded=(), label="source"):
     samples = {}
     for clip in bank_clip_specs(data):
         name, duration = clip["name"], clip["duration_seconds"]
@@ -3368,19 +3495,20 @@ def bank_motion_samples(filepath, data, excluded=()):
             bpy.context.scene.frame_set(math.floor(frame),subframe=frame%1.);bpy.context.view_layer.update()
             track.append({bone.name:bone.matrix.copy() for bone in rig.pose.bones})
         samples[name] = track
-        print("Sampled published pose track "+filepath.name+"/"+name,flush=True)
+        print("Sampled published pose track "+label+"/"+name,flush=True)
     return samples
 
 
-def assert_bank_motion_parity(before, after, profile):
+def assert_bank_motion_parity(before, after, profile, ignored_bones=()):
     maximum = 0.; at = None; maximum_position=0.;maximum_angle=0.
     for name, track in before.items():
         if len(track)!=len(after[name]): raise ValueError("Changed untouched clip clock: "+name)
         for frame,(a,b) in enumerate(zip(track,after[name])):
-            error = max(abs(a[bone][i][j]-b[bone][i][j]) for bone in a for i in range(4) for j in range(4))
+            bones = tuple(bone for bone in a if bone not in ignored_bones)
+            error = max(abs(a[bone][i][j]-b[bone][i][j]) for bone in bones for i in range(4) for j in range(4))
             if error>maximum: maximum,at = error,dict(clip=name,seconds=frame/(FPS*2))
-            maximum_position=max(maximum_position,max((a[bone].translation-b[bone].translation).length for bone in a))
-            for bone in a:
+            maximum_position=max(maximum_position,max((a[bone].translation-b[bone].translation).length for bone in bones))
+            for bone in bones:
                 qa,qb=a[bone].to_quaternion(),b[bone].to_quaternion()
                 denominator=math.sqrt(sum(value*value for value in qa)*sum(value*value for value in qb))
                 cosine=min(1.,abs(sum(x*y for x,y in zip(qa,qb)))/denominator)
@@ -3608,12 +3736,125 @@ def complete_bank_payload(builder):
     return measured
 
 
+def publish_recovery_on_source(source_bank, recovery_fbx, reference_fbx, data, target_fbx, target_blend):
+    """Keep the source rest frame as well as its untouched Action curves.
+
+    The NPC source was imported from FBX: its rest frame includes Ready. Its
+    relative curves cannot be moved onto a fresh A-pose rig without retargeting.
+    Convert only the new rises through absolute imported bone matrices instead.
+    """
+    before = bank_motion_samples(reference_fbx, data, RECOVERY_CLIPS)
+    excluded = tuple(clip["name"] for clip in bank_clip_specs(data) if clip["name"] not in RECOVERY_CLIPS)
+    recovery = bank_motion_samples(recovery_fbx, data, excluded)
+    bpy.ops.wm.open_mainfile(filepath=str(source_bank))
+    rig = bpy.data.objects["RIG_Player"]
+    actions = {action.name: action for action in bpy.data.actions}
+    config = common.BuildConfig(None,None,None,None,None,None,None,1.75,20260919,"apose")
+    source = CombatBuilder(config,hero.DEFAULT_FACE_ATLAS,hero.DEFAULT_CLOTHING_ATLAS)
+    source.result = common.BuildResult(root=rig.parent,rig=rig,collections={},materials={},parts=[])
+    for clip in bank_clip_specs(data):
+        action = actions[clip["name"]]
+        source.result.actions[clip["name"]] = common.ActionRecord(action=action,category=action.get("bp_category","combat"),
+            duration_seconds=clip["duration_seconds"],loop=clip["loop"],
+            source_frame_count=round(clip["duration_seconds"]*FPS),source_fps=FPS)
+    preserved = tuple(name for name in source.result.actions if name not in RECOVERY_CLIPS)
+    signature = action_curve_signature(source, preserved)
+    rig.animation_data.action = actions["CombatReady"]
+    bpy.context.scene.frame_set(0); bpy.context.view_layer.update()
+    ready = {bone.name: bone.matrix_basis.copy() for bone in rig.pose.bones}
+    ready_world = {bone.name: bone.matrix.copy() for bone in rig.pose.bones}
+    arm_branches = {bone.name for bone in rig.pose.bones if bone.name.startswith("upper_arm.") or
+        any(parent.name.startswith("upper_arm.") for parent in bone.parent_recursive)}
+    joined_bones = set()
+    for name in RECOVERY_CLIPS:
+        old = source.result.actions.pop(name).action
+        rig.animation_data.action = None
+        bpy.data.actions.remove(old)
+        track = recovery[name][::2]
+        joining = set()
+        for bone in rig.pose.bones:
+            if bone.name not in arm_branches: continue
+            parent = dict(parent_matrix=track[-1][bone.parent.name],
+                parent_matrix_local=bone.parent.bone.matrix_local) if bone.parent else {}
+            endpoint = bone.bone.convert_local_to_pose(track[-1][bone.name],bone.bone.matrix_local,invert=True,**parent)
+            if math.degrees(endpoint.to_quaternion().rotation_difference(ready[bone.name].to_quaternion()).angle) > .1:
+                joining.add(bone.name)
+        joined_bones.update(joining)
+        keys = []
+        for frame, matrices in enumerate(track):
+            pose = {}
+            for bone in rig.pose.bones:
+                rest = bone.bone
+                parent = dict(parent_matrix=matrices[bone.parent.name],
+                    parent_matrix_local=bone.parent.bone.matrix_local) if bone.parent else {}
+                basis = rest.convert_local_to_pose(matrices[bone.name], rest.matrix_local, invert=True, **parent)
+                # The authored terminal quarter already settles the torso/legs.
+                # Join its arms to the ACTUAL retained Ready, whose wrist/elbow
+                # path includes the production grip corrections absent in raw ready.
+                join = dialogue.smooth((frame/(len(track)-1)-.72)/.28)
+                rotation = basis.to_quaternion()
+                if bone.name in joining:
+                    rotation = rotation.slerp(ready[bone.name].to_quaternion(),join)
+                pose[bone.name] = common.BonePose(
+                    rotation_degrees=tuple(math.degrees(v) for v in rotation.to_euler("XYZ")),
+                    location_m=tuple(basis.translation),scale=tuple(basis.to_scale()))
+            keys.append((frame/(len(track)-1),pose))
+        source._create_action(name,"combat",RECOVERY_DURATIONS[name],False,len(track)-1,FPS,keys)
+        rig.animation_data.action = source.result.actions[name].action
+        bpy.context.scene.frame_set(round(RECOVERY_DURATIONS[name]*FPS)); bpy.context.view_layer.update()
+        endpoint = {bone.name: bone.matrix.copy() for bone in rig.pose.bones}
+        assert_bank_motion_parity({name:[ready_world]},{name:[endpoint]},"recovery Ready endpoint")
+    if action_curve_signature(source, preserved) != signature:
+        raise ValueError("Recovery retarget changed an unrelated source Action curve")
+    common.export_animation_fbx(target_fbx,source.result)
+    common.save_blend(target_blend)
+    after = bank_motion_samples(target_fbx,data,RECOVERY_CLIPS)
+    parity = assert_bank_motion_parity(before,after,"preserved source")
+    after_recovery = bank_motion_samples(target_fbx,data,excluded)
+    parity["recovery"] = assert_bank_motion_parity(recovery,after_recovery,"recovery non-arm retarget",arm_branches)
+    prefix = {name:track[:math.floor(.72*RECOVERY_DURATIONS[name]*FPS*2)+1] for name,track in recovery.items()}
+    prefix_after = {name:after_recovery[name][:len(track)] for name,track in prefix.items()}
+    parity["brace"] = assert_bank_motion_parity(prefix,prefix_after,"recovery before terminal join")
+    if not joined_bones:
+        parity["idempotent"] = assert_bank_motion_parity(recovery,after_recovery,"already joined recovery")
+    print("RECOVERY SOURCE REST CONTRACT OK "+json.dumps(parity),flush=True)
+
+
+def publish_recovery_only(builder, published_payload):
+    """Replace only the two recovery Actions in each original source bank."""
+    payload = json.loads(json.dumps(published_payload))
+    for is_hero in (False, True):
+        if is_hero:
+            builder.result.rig.animation_data.action = None
+            for action in tuple(bpy.data.actions): bpy.data.actions.remove(action)
+            builder.result.actions.clear()
+            builder.hero_profile = True
+            builder.build_actions()
+        name = "CombatActions" if is_hero else "CombatNpcActions"
+        builder.result.root.name = "ROOT_PlayerV2" if is_hero else "ROOT_Player"
+        common.export_animation_fbx(OUT / (name + ".fbx"), builder.result)
+        builder.restore_mesh_deformation()
+        if is_hero: common.save_blend(SOURCE / (name + ".blend"))
+        target = payload["actions"] if is_hero else payload["actions"]["npc"]
+        target["recovery"]["markers"] = RECOVERY_MARKERS
+        target["recovery"]["clips"] = builder.recovery_measurements
+    publish_recovery_on_source(builder.npc_source_bank,OUT / "CombatNpcActions.fbx",builder.npc_published_bank,
+        payload["actions"]["npc"],OUT / "CombatNpcActions.fbx",SOURCE / "CombatNpcActions.blend")
+    publish_recovery_on_source(builder.hero_source_bank,OUT / "CombatActions.fbx",builder.hero_published_bank,
+        payload["actions"],OUT / "CombatActions.fbx",SOURCE / "CombatActions.blend")
+    (OUT / "CombatTest3D.json").write_text(json.dumps(payload, indent=2) + "\n", encoding="utf8")
+    print("COMBAT RECOVERY ART CONTRACT OK", flush=True)
+
+
 def main():
     global OUT, SOURCE
     parser = argparse.ArgumentParser()
     parser.add_argument("--validate-only", action="store_true")
     parser.add_argument("--actions-only", action="store_true")
     parser.add_argument("--kick-only", action="store_true")
+    parser.add_argument("--recovery-only", action="store_true")
+    parser.add_argument("--rebase-npc-recovery", type=Path)
+    parser.add_argument("--finish-recovery-banks", action="store_true")
     parser.add_argument("--review-kick", type=Path)
     parser.add_argument("--pack-review-source", action="store_true")
     parser.add_argument("--probe-published-contracts", type=Path)
@@ -3629,6 +3870,26 @@ def main():
     parser.add_argument("--output-dir", type=Path, default=OUT)
     parser.add_argument("--source-dir", type=Path, default=SOURCE)
     args = parser.parse_args(sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else [])
+    if args.finish_recovery_banks:
+        if args.actions_only or args.recovery_only or args.kick_only or args.validate_only or args.rebase_npc_recovery:
+            parser.error("--finish-recovery-banks is a standalone endpoint repair")
+        payload = json.loads((OUT / "CombatTest3D.json").read_text(encoding="utf8"))
+        common.ANIMATION_FPS = FPS
+        for is_hero in (False,True):
+            name = "CombatActions" if is_hero else "CombatNpcActions"
+            data = payload["actions"] if is_hero else payload["actions"]["npc"]
+            publish_recovery_on_source(SOURCE / (name+".blend"),OUT / (name+".fbx"),OUT / (name+".fbx"),data,
+                args.output_dir.resolve() / (name+".fbx"),args.source_dir.resolve() / (name+".blend"))
+        return
+    if args.rebase_npc_recovery:
+        if args.actions_only or args.recovery_only or args.kick_only or args.validate_only:
+            parser.error("--rebase-npc-recovery is a standalone source-bank repair")
+        original = args.rebase_npc_recovery.resolve()
+        data = json.loads((OUT / "CombatTest3D.json").read_text(encoding="utf8"))["actions"]["npc"]
+        common.ANIMATION_FPS = FPS
+        publish_recovery_on_source(original,OUT / "CombatNpcActions.fbx",original.with_suffix(".fbx"),data,
+            args.output_dir.resolve() / "CombatNpcActions.fbx",args.source_dir.resolve() / "CombatNpcActions.blend")
+        return
     if args.probe_published_contracts:
         probe_published_contracts(args.probe_published_contracts.resolve())
         return
@@ -3651,6 +3912,8 @@ def main():
         parser.error("--reuse-unchanged-actions requires --actions-only")
     if args.kick_only and (not args.actions_only or args.validate_only or args.probe_only or args.dense_hero_probe or args.recovery_probe or args.pose_probe):
         parser.error("--kick-only requires the ordinary --actions-only publication run")
+    if args.recovery_only and (not args.actions_only or args.validate_only or args.kick_only or args.probe_only or args.dense_hero_probe or args.recovery_probe or args.pose_probe or args.resume_npc_bank):
+        parser.error("--recovery-only requires the ordinary --actions-only publication run")
     if args.resume_npc_bank and (not args.actions_only or args.validate_only or args.dense_hero_probe or args.recovery_probe or args.pose_probe or args.probe_only):
         parser.error("--resume-npc-bank requires the ordinary --actions-only production run")
     published_out, published_source = OUT, SOURCE
@@ -3677,13 +3940,20 @@ def main():
     builder.pose_probe = args.pose_probe
     builder.reuse_unchanged_actions = args.reuse_unchanged_actions
     builder.kick_only = args.kick_only
+    builder.recovery_only = args.recovery_only
     builder.hero_source_bank = published_source/"CombatActions.blend"
-    if args.reuse_unchanged_actions or args.kick_only:
+    builder.npc_source_bank = published_source/"CombatNpcActions.blend"
+    builder.npc_published_bank = published_out/"CombatNpcActions.fbx"
+    builder.hero_published_bank = published_out/"CombatActions.fbx"
+    if args.reuse_unchanged_actions or args.kick_only or args.recovery_only:
         builder.previous_payload=json.loads((published_out/"CombatTest3D.json").read_text(encoding="utf8"))
     builder.probe_only = args.probe_only
     builder.hero_profile = args.dense_hero_probe or args.kick_only
     builder.dense_charge_probe = args.dense_hero_probe
     builder.build()
+    if args.recovery_only:
+        publish_recovery_only(builder, builder.previous_payload)
+        return
     if args.kick_only:
         publish_kick_only(builder, builder.previous_payload)
         return

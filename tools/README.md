@@ -158,10 +158,10 @@ in `Captures` and does not publish. See [audio-vhs/README.md](audio-vhs/README.m
 Output: `Assets/Player3D/V2/Models/PlayerCharacter3DV2.{fbx,json}`.
 
 `build-combat-{test,blood}-3d-model.py --validate-only`.
-`--actions-only` banks/`--kick-only` hero kick;
-`--refresh-published-contracts`; Unity Charge=imported Attack(.18q);
+Banks:`--actions-only`; add `--kick-only`/`--recovery-only`.
+`--refresh-published-contracts`; Charge=imported Attack(.18q);
 `--reuse-unchanged-actions`; `--resume-npc-bank file.blend`.
-Blood:`--texture-only`. `Assets/Resources/{Combat,CombatBlood}`.
+Blood:`--texture-only`; assets:`Resources/{Combat,CombatBlood}`.
 
 `player_jacket_cloth.py --write` derives hem/cuff metadata only; `--check` verifies it.
 Refresh `Player3DV2` through its asset setup. Lower-body changes also require

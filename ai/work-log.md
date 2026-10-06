@@ -3,6 +3,50 @@
 Newest outcomes/checks first. Archive whole dates at budget: [policy](README.md).
 Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-2026-08.md).
 
+## 2026-10-07 — Recovery grip endpoint
+
+- Raw Ready in the recovery-only authoring path lacked the retained bank's
+  wrist/elbow corrections. Both rises now smoothly join the actual Ready arms
+  during the terminal quarter; legs, body and the preceding brace remain.
+  Repeated finishing retains an already joined track. Source rest and all
+  unrelated Actions survive publication.
+- `bank_motion_samples` / `assert_bank_motion_parity` verify untouched motion,
+  body/brace parity, Ready endpoints and repeated finishing.
+  `Range_InterruptedRiseHasBoundedWorkAndRecovers` checks startup grip, imported
+  rise/Ready seams on a separate Transform tree, impacts, anatomy, floor and
+  supported control. Ready/brace/recovered frames reviewed.
+  `python -B tools/check-docs.py`, `git diff --check`.
+
+## 2026-10-06 — Interrupted combat rise
+
+- Manual duel journals exposed living hero/NPC rises stuck at the weapon/floor
+  gate: clock rollback repeated the first shoulder-search ring after its budget
+  ran out. Search now resumes across equivalent rejected poses and reserves the
+  last-safe-arm candidate; every candidate retains live depth/sweep/body gates
+  and the same per-apply cap. Safe rollback retains the requested obstruction
+  in diagnostics instead of replacing its name with null.
+- The reported lying pose came from a pelvis/foot trajectory with an excessive
+  hip fold, despite valid segment lengths and knee hinges. Both authored rises
+  now validate hips in pelvis/rest frames; runtime bounds hip, knee and ankle
+  angles after physics blending and floor IK. Frozen joint errors no longer
+  stretch bind links. Floor/joint fitting is bounded; infeasible landing blends
+  select the nearest checked weight toward the same clip time without advancing
+  the clock or relocating the actor. Prone toe-down sign and knee-plane
+  continuity corrected; boots fit calf limits and measured floor envelopes.
+  Grounded capture-point transfer separates a forward rock from a floating seat.
+  `--recovery-only` preserves unrelated source Actions in both banks.
+- NPC's imported source rig had Ready in its rest frame; preserving only curves
+  on a fresh neutral rig changed every old NPC pose. Recovery publication now
+  retains that source rig and retargets only new rises through absolute imported
+  matrices. `bank_motion_samples` / `assert_bank_motion_parity` prove untouched
+  published motion and the retargeted rises; startup Ready height/forward grip
+  is checked before falls in the same recovery fixture.
+- `Range_InterruptedRiseHasBoundedWorkAndRecovers` covers both rigs and forward/
+  backward falls with repeat impacts, progress, bounded candidates, full-weapon
+  floor clearance, displayed leg anatomy/soles and supported control. Body/brace/
+  recovered frames reviewed; `build-combat-test-3d-model.py --recovery-only`.
+  `python -B tools/check-docs.py`, `git diff --check`.
+
 ## 2026-10-04 — City structure and common ground
 
 - City ground composes explicit terrain/street/precinct/shore/river/port/east-road

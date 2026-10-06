@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
+using System.Reflection;
 using System.Text;
 using NUnit.Framework;
 using Unity.Profiling;
@@ -14,13 +15,33 @@ namespace BarPromenade.Tests.PlayMode
 {
     public sealed partial class CombatPerformancePlayModeTests
     {
+        private static readonly bool[] RecoveryVictims = { false, true };
+        private static readonly bool[] RecoveryDirections = { false, true };
+
         [UnityTest]
-        public IEnumerator Range_InterruptedRiseHasBoundedWorkAndRecovers()
+        public IEnumerator Range_InterruptedRiseHasBoundedWorkAndRecovers(
+            [ValueSource(nameof(RecoveryVictims))] bool hero,
+            [ValueSource(nameof(RecoveryDirections))] bool forward)
         {
             PlacePair(4f);
             for (int warm = 0; warm < 12; warm++) { root.Tick(TickSeconds); yield return null; }
-            CombatActor victim = root.Opponent;
-            string folder = Path.GetFullPath("TestResults/recovery-" + DateTime.UtcNow.ToString("yyyyMMdd-HHmmss"));
+            CombatActor victim = hero ? root.Hero : root.Opponent;
+            string subject = $"{(hero ? "hero" : "opponent")}/{(forward ? "forward" : "backward")}";
+            string captureSubject = (hero ? "hero-" : "opponent-") + (forward ? "forward-" : "backward-");
+            var constraint = (CombatWeaponConstraint)typeof(CombatActor).GetField("weaponConstraint",
+                BindingFlags.Instance | BindingFlags.NonPublic).GetValue(victim);
+            Assert.That(Physics.Raycast(victim.transform.position + Vector3.up * .5f, Vector3.down,
+                out RaycastHit floor, 1f, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore), Is.True);
+            Assert.That(floor.normal.y, Is.GreaterThan(.99f), "This recovery fixture uses the arena's level floor.");
+            AssertRecoveryReadyPose(root.Hero, true);
+            AssertRecoveryReadyPose(root.Opponent, false);
+            AssertRecoveryAnimationEndpoints(root.Hero, true);
+            AssertRecoveryAnimationEndpoints(root.Opponent, false);
+            if (!hero && !forward) CaptureDuelFrame("rise", "ready");
+            string folder = Path.GetFullPath("TestResults/recovery-" + (hero ? "hero-" : "opponent-") +
+                (forward ? "forward-" : "backward-") + DateTime.UtcNow.ToString("yyyyMMdd-HHmmss"));
+            var anatomy = new RecoveryAnatomyObservation(victim);
+            var anatomyCsv = new StringBuilder("frame,progress,side,thigh_length,shin_length,hip_flexion,hip_lateral,knee_flexion,ankle_deviation,sole_gap\n");
             root.SetDuelLogging(true, folder);
             var journal = root.JournalForDiagnostics;
             string[] names = { "Prepare", "Begin", "Advance", "Present", "Pose", "Sample", "Soles", "WeaponApply", "WeaponCommit" };
@@ -32,16 +53,19 @@ namespace BarPromenade.Tests.PlayMode
             var csv = new StringBuilder("frame,phase,progress,central_speed,ground,support,quiet_seconds,tick_ms,queries\n");
             int hits = 0, riseFrames = 0;
             long maximumQueries = 0;
-            bool recovered = false;
-            float lyingSeconds = 0f, maximumLyingSeconds = 0f;
+            bool recovered = false, capturedBrace = false;
+            float lyingSeconds = 0f, maximumLyingSeconds = 0f, stalledRiseSeconds = 0f;
+            float lastRiseProgress = -1f;
             try
             {
                 for (int i = 0; i < counters.Length; i++)
                     counters[i] = ProfilerRecorder.StartNew(ProfilerCategory.Scripts, "BarPromenade.CombatRecovery." + names[i], 1,
                         ProfilerRecorderOptions.Default | ProfilerRecorderOptions.CollectOnlyOnCurrentThread |
                         ProfilerRecorderOptions.SumAllSamplesInFrame);
-                var first = RecoveryTestImpact(victim, -victim.transform.forward * 205f, 1);
-                Assert.That(victim.TryBeginKnockdown(first, -victim.transform.forward * .8f, victim.transform.right * 1.1f), Is.True);
+                Vector3 fallDirection = victim.transform.forward * (forward ? 1f : -1f);
+                var first = RecoveryTestImpact(victim, fallDirection * 205f, 1);
+                Assert.That(victim.TryBeginKnockdown(first, fallDirection * .8f,
+                    victim.transform.right * (forward ? -1.1f : 1.1f)), Is.True);
                 for (int frame = 0; frame < 1560 && !recovered; frame++)
                 {
                     bool rising = victim.State.Phase == MeleePhase.Rising;
@@ -60,6 +84,30 @@ namespace BarPromenade.Tests.PlayMode
                     queries = victim.JournalPhysicsQueries - queries;
                     maximumQueries = Math.Max(maximumQueries, queries);
                     if (rising || victim.State.Phase == MeleePhase.Rising) { cpu.Add(milliseconds); riseFrames++; }
+                    if (victim.State.Phase == MeleePhase.Rising)
+                    {
+                        float progress = victim.JournalRiseProgress;
+                        stalledRiseSeconds = Mathf.Abs(progress - lastRiseProgress) < .00001f
+                            ? stalledRiseSeconds + TickSeconds : 0f;
+                        lastRiseProgress = progress;
+                        Assert.That(stalledRiseSeconds, Is.LessThan(2f), subject +
+                            $": the living rise stopped at {progress:F5}; shape={victim.WeaponBlockingShape}");
+                        long choices = constraint.CandidateChecks;
+                        victim.Present();
+                        Assert.That(constraint.CandidateChecks - choices,
+                            Is.InRange(0L, (long)CombatWeaponConstraint.MaximumCandidateChecksPerApply),
+                            subject + ": each recovery presentation keeps its shoulder work bounded");
+                        Assert.That(RecoveryWeaponFloorGap(victim, floor.point.y), Is.GreaterThanOrEqualTo(-.001f),
+                            subject + ": the constrained held weapon cannot pass through the floor to advance a rise");
+                        anatomy.SampleAndAssert(frame, progress, subject, floor.point.y, anatomyCsv);
+                        if (!capturedBrace && progress >= .32f)
+                        {
+                            CaptureDuelFrame("rise", captureSubject + "brace");
+                            CaptureRecoveryAnatomyFrame(victim, captureSubject + "brace-body");
+                            capturedBrace = true;
+                        }
+                    }
+                    else { stalledRiseSeconds = 0f; lastRiseProgress = -1f; }
                     lyingSeconds = victim.State.Phase == MeleePhase.KnockedDown ? lyingSeconds + TickSeconds : 0f;
                     maximumLyingSeconds = Mathf.Max(maximumLyingSeconds, lyingSeconds);
                     if (frame % 10 == 0 || rising)
@@ -87,15 +135,17 @@ namespace BarPromenade.Tests.PlayMode
                 TestContext.Out.WriteLine(report.ToString());
                 TestContext.Out.WriteLine(folder);
                 Assert.That(hits, Is.EqualTo(2));
-                Assert.That(recovered, Is.True, "The live interrupted rise must return to supported control. " + folder);
+                Assert.That(recovered, Is.True, subject + ": the live interrupted rise must return to supported control. " + folder);
                 Assert.That(victim.State.Health, Is.EqualTo(victim.State.Settings.MaxHealth), "Diagnostic impulses do not transact HP.");
-                CaptureDuelFrame("rise", "recovered");
+                CaptureDuelFrame("rise", captureSubject + "recovered");
                 victim.State.ReceiveHit(1000f, 0f, false);
                 Assert.That(root.RoundFinished, Is.True);
                 root.TickFrame(.25f);
             }
             finally
             {
+                Directory.CreateDirectory(folder);
+                File.WriteAllText(Path.Combine(folder, "anatomy.csv"), anatomyCsv.ToString());
                 for (int i = 0; i < counters.Length; i++) counters[i].Dispose();
                 root.SetDuelLogging(false);
             }
@@ -114,6 +164,222 @@ namespace BarPromenade.Tests.PlayMode
                 }
             Assert.That(postRoundDiscard && physicsSnapshot, Is.True);
             LogAssert.NoUnexpectedReceived();
+        }
+
+        private static void AssertRecoveryReadyPose(CombatActor actor, bool hero)
+        {
+            string subject = hero ? "hero" : "opponent";
+            Assert.That(actor.State.Phase, Is.EqualTo(MeleePhase.Ready), subject + ": startup stance is Ready.");
+            Assert.That(actor.ActiveClipName, Does.Contain("CombatReady"), subject + ": startup samples the published Ready clip.");
+            actor.Present();
+            Transform weapon = actor.Weapon.transform;
+            // CombatTest3D holding measurements are actor-local metres. Allow
+            // two centimetres for imported curves, breathing and runtime sole IK.
+            float minimum = hero ? .9220618f : .9388906f;
+            float maximum = hero ? .9356226f : .9500965f;
+            float height = actor.transform.InverseTransformPoint(weapon.position).y;
+            Assert.That(height, Is.InRange(minimum - .02f, maximum + .02f),
+                subject + ": the Ready grip retains its published height rather than falling to bind pose.");
+            Assert.That(Vector3.Dot(weapon.up, actor.transform.forward), Is.GreaterThan(.2f),
+                subject + ": the actual Ready shaft points forward.");
+            Transform tip = CombatAssetProvider.FindAnchor(actor.Weapon, "StrikeTip");
+            Assert.That(tip, Is.Not.Null);
+            Assert.That(Vector3.Dot(tip.position - weapon.position, actor.transform.forward), Is.GreaterThan(.2f),
+                subject + ": the actual Ready hook is presented in front of the grip.");
+        }
+
+        private static void AssertRecoveryAnimationEndpoints(CombatActor actor, bool hero)
+        {
+            Animator animator = hero
+                ? actor.DamageRigRoot.GetComponentInParent<Player3DAssetRegistry>()?.Animator
+                : actor.DamageRigRoot.GetComponentInParent<VillageResidentPresentation>()?.Animator;
+            Assert.That(animator, Is.Not.Null, "Recovery endpoints use the actor's matching Animator hierarchy.");
+            var sampler = new GameObject("Test recovery animation");
+            var copies = new List<Transform>();
+            var paths = new List<string>();
+            try
+            {
+                // Copy only local transforms. Sampling this tree cannot mutate
+                // the live actor's weapon, support or presentation caches.
+                void CopyHierarchy(Transform source, Transform parent, string path)
+                {
+                    Transform copy = parent == null ? sampler.transform : new GameObject(source.name).transform;
+                    copy.SetParent(parent, false);
+                    copy.SetLocalPositionAndRotation(source.localPosition, source.localRotation);
+                    copy.localScale = source.localScale;
+                    copies.Add(copy); paths.Add(path);
+                    for (int i = 0; i < source.childCount; i++)
+                    {
+                        Transform child = source.GetChild(i);
+                        CopyHierarchy(child, copy, path.Length == 0 ? child.name : path + "/" + child.name);
+                    }
+                }
+                CopyHierarchy(animator.transform, null, string.Empty);
+                AnimationClip ready = CombatAssetProvider.LoadClip(CombatAssetProvider.ReadyClip, !hero);
+                ready.SampleAnimation(sampler, 0f);
+                var positions = new Vector3[copies.Count];
+                var rotations = new Quaternion[copies.Count];
+                for (int i = 0; i < copies.Count; i++)
+                { positions[i] = copies[i].localPosition; rotations[i] = copies[i].localRotation; }
+                Transform pelvis = NpcAttentionHeadLayer.FindBone(sampler.transform, "pelvis");
+                Assert.That(pelvis, Is.Not.Null);
+                int pelvisIndex = copies.IndexOf(pelvis);
+                foreach (string name in CombatAssetProvider.RecoveryClipNames)
+                {
+                    AnimationClip rise = CombatAssetProvider.LoadClip(name, !hero);
+                    rise.SampleAnimation(sampler, 0f);
+                    Assert.That(Quaternion.Angle(rotations[pelvisIndex], pelvis.localRotation), Is.GreaterThan(15f),
+                        name + ": the copied paths must bind the imported fallen pose.");
+                    rise.SampleAnimation(sampler, rise.length);
+                    for (int i = 0; i < copies.Count; i++)
+                    {
+                        string context = (hero ? "hero/" : "opponent/") + name + "/" + paths[i];
+                        Assert.That(Vector3.Distance(positions[i], copies[i].localPosition), Is.LessThanOrEqualTo(.001f),
+                            context + ": the imported rise endpoint joins Ready0 within one millimetre.");
+                        Assert.That(Quaternion.Angle(rotations[i], copies[i].localRotation), Is.LessThanOrEqualTo(.1f),
+                            context + ": the imported rise endpoint joins Ready0 without an angular snap.");
+                    }
+                }
+            }
+            finally { UnityEngine.Object.Destroy(sampler); }
+        }
+
+        private void CaptureRecoveryAnatomyFrame(CombatActor actor, string label)
+        {
+            Camera camera = root.CameraFollow.Camera;
+            Vector3 position = camera.transform.position;
+            Quaternion rotation = camera.transform.rotation;
+            Transform pelvis = NpcAttentionHeadLayer.FindBone(actor.DamageRigRoot, "pelvis");
+            Vector3 focus = pelvis.position + Vector3.up * .22f;
+            try
+            {
+                camera.transform.position = focus + actor.transform.right * 2.3f + Vector3.up * .6f;
+                camera.transform.rotation = Quaternion.LookRotation(focus - camera.transform.position);
+                string folder = SceneIds.CombatTest + "/rise";
+                string path = Path.Combine(Directory.GetCurrentDirectory(), "Captures", folder, label + ".png");
+                LogAssert.Expect(LogType.Log, "Area capture wrote " + path);
+                AreaCaptureFixture.CaptureCurrentCamera(camera, folder, label);
+            }
+            finally { camera.transform.SetPositionAndRotation(position, rotation); }
+        }
+
+        /// <summary>Checks the displayed rig against its skin bind pose, independent of the Ready stance.</summary>
+        private sealed class RecoveryAnatomyObservation
+        {
+            private readonly CombatActor actor;
+            private readonly Transform pelvis;
+            private readonly Vector3 pelvisRight;
+            private readonly Leg[] legs;
+            private object observedRecovery;
+            private Player3DFootGroundProbe soleProbe;
+
+            public RecoveryAnatomyObservation(CombatActor actor)
+            {
+                this.actor = actor;
+                var rest = new Dictionary<Transform, Matrix4x4>();
+                foreach (SkinnedMeshRenderer skin in actor.DamageRigRoot.GetComponentsInChildren<SkinnedMeshRenderer>(true))
+                {
+                    if (skin.sharedMesh == null) continue;
+                    Transform[] bones = skin.bones;
+                    Matrix4x4[] bindings = skin.sharedMesh.bindposes;
+                    for (int i = 0; i < bones.Length && i < bindings.Length; i++)
+                        if (bones[i] != null && !rest.ContainsKey(bones[i]))
+                            rest.Add(bones[i], skin.localToWorldMatrix * bindings[i].inverse);
+                }
+                Transform Bone(string name) => NpcAttentionHeadLayer.FindBone(actor.DamageRigRoot, name);
+                pelvis = Bone("pelvis");
+                Assert.That(pelvis, Is.Not.Null);
+                Assert.That(rest.ContainsKey(pelvis), Is.True, "The production skin supplies the neutral pelvis frame.");
+                Quaternion restPelvis = rest[pelvis].rotation;
+                pelvisRight = Quaternion.Inverse(restPelvis) * actor.transform.right;
+                legs = new[]
+                {
+                    new Leg("left", Bone("thigh.L"), Bone("shin.L"), Bone("foot.L"), rest, restPelvis, actor.transform.forward),
+                    new Leg("right", Bone("thigh.R"), Bone("shin.R"), Bone("foot.R"), rest, restPelvis, actor.transform.forward)
+                };
+            }
+
+            public void SampleAndAssert(int frame, float progress, string subject, float floor, StringBuilder csv)
+            {
+                object recovery = typeof(CombatActor).GetField("knockdownPose", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(actor);
+                if (!ReferenceEquals(observedRecovery, recovery))
+                {
+                    Assert.That(recovery, Is.Not.Null);
+                    observedRecovery = recovery;
+                    soleProbe = (Player3DFootGroundProbe)typeof(CombatRecoveryPose).GetField("footProbe",
+                        BindingFlags.Instance | BindingFlags.NonPublic).GetValue(recovery);
+                    Assert.That(soleProbe, Is.Not.Null);
+                }
+                Vector3 right = pelvis.TransformDirection(pelvisRight).normalized;
+                foreach (Leg leg in legs)
+                {
+                    Vector3 thigh = leg.Knee.position - leg.Hip.position;
+                    Vector3 shin = leg.Ankle.position - leg.Knee.position;
+                    Vector3 neutralThigh = pelvis.TransformDirection(leg.NeutralThigh).normalized;
+                    float hip = -Vector3.SignedAngle(Vector3.ProjectOnPlane(neutralThigh, right),
+                        Vector3.ProjectOnPlane(thigh, right), right);
+                    float lateral = (Mathf.Asin(Mathf.Clamp(Vector3.Dot(thigh.normalized, right), -1f, 1f)) -
+                        Mathf.Asin(Mathf.Clamp(Vector3.Dot(neutralThigh, right), -1f, 1f))) * Mathf.Rad2Deg;
+                    // The generator's hinge measurement: the bend reference travels
+                    // in the neutral thigh frame, so a fallen/yawed body keeps its sign.
+                    Vector3 axis = (leg.Ankle.position - leg.Hip.position).normalized;
+                    Vector3 offset = Vector3.ProjectOnPlane(thigh, axis);
+                    Vector3 reference = Vector3.ProjectOnPlane(leg.Hip.TransformDirection(leg.KneeBendReference), axis);
+                    float knee = Vector3.Angle(thigh, shin);
+                    if (Vector3.Dot(offset, reference) < 0f) knee = -knee;
+                    float ankle = Quaternion.Angle(leg.NeutralAnkle,
+                        Quaternion.Inverse(leg.Knee.rotation) * leg.Ankle.rotation);
+                    bool hasSole = soleProbe.TryGetSoleHeight(leg.Side == "left" ? FootSide.Left : FootSide.Right, out float sole);
+                    csv.AppendFormat(CultureInfo.InvariantCulture, "{0},{1:F5},{2},{3:F6},{4:F6},{5:F3},{6:F3},{7:F3},{8:F3},{9:F6}\n",
+                        frame, progress, leg.Side, thigh.magnitude, shin.magnitude, hip, lateral, knee, ankle, sole - floor);
+                    string context = FormattableString.Invariant($"{subject}/{leg.Side}: frame={frame}, progress={progress:F5}, hip={hip:F2}, lateral={lateral:F2}, knee={knee:F2}, ankle={ankle:F2}");
+                    Assert.That(thigh.magnitude, Is.EqualTo(leg.ThighLength).Within(.002f), context + ": the thigh retains its bind length");
+                    Assert.That(shin.magnitude, Is.EqualTo(leg.ShinLength).Within(.002f), context + ": the shin retains its bind length");
+                    Assert.That(hip, Is.InRange(-35f, 115f), context + ": the thigh stays within its pelvis's flexion and extension limits");
+                    Assert.That(Mathf.Abs(lateral), Is.LessThanOrEqualTo(65f), context + ": hip spread remains anatomical");
+                    Assert.That(knee, Is.InRange(-8.05f, 130.05f), context + ": the knee bends toward its calibrated front");
+                    Assert.That(ankle, Is.LessThanOrEqualTo(75.05f), context + ": the boot cannot reverse or twist around the shin");
+                    Assert.That(hasSole, Is.True);
+                    Assert.That(sole - floor, Is.GreaterThanOrEqualTo(-.001f), context + ": the final constrained sole stays above the floor");
+                }
+            }
+
+            private sealed class Leg
+            {
+                public readonly string Side;
+                public readonly Transform Hip, Knee, Ankle;
+                public readonly float ThighLength, ShinLength;
+                public readonly Vector3 NeutralThigh, KneeBendReference;
+                public readonly Quaternion NeutralAnkle;
+
+                public Leg(string side, Transform hip, Transform knee, Transform ankle,
+                    Dictionary<Transform, Matrix4x4> rest, Quaternion pelvis, Vector3 forward)
+                {
+                    Side = side; Hip = hip; Knee = knee; Ankle = ankle;
+                    Assert.That(hip != null && knee != null && ankle != null, Is.True, "The production rig has the complete " + side + " leg.");
+                    Assert.That(rest.ContainsKey(hip) && rest.ContainsKey(knee) && rest.ContainsKey(ankle), Is.True,
+                        "The skin bind poses calibrate the complete " + side + " leg.");
+                    Vector3 thigh = (Vector3)rest[knee].GetColumn(3) - (Vector3)rest[hip].GetColumn(3);
+                    Vector3 shin = (Vector3)rest[ankle].GetColumn(3) - (Vector3)rest[knee].GetColumn(3);
+                    ThighLength = thigh.magnitude; ShinLength = shin.magnitude;
+                    NeutralThigh = Quaternion.Inverse(pelvis) * thigh.normalized;
+                    KneeBendReference = Quaternion.Inverse(rest[hip].rotation) * forward;
+                    NeutralAnkle = Quaternion.Inverse(rest[knee].rotation) * rest[ankle].rotation;
+                }
+            }
+        }
+
+        private static float RecoveryWeaponFloorGap(CombatActor actor, float floorHeight)
+        {
+            Transform weapon = actor.Weapon.transform;
+            float lowest = float.PositiveInfinity;
+            foreach (CombatWeaponGeometry.Segment segment in CombatWeaponGeometry.Segments)
+            {
+                float a = (weapon.position + weapon.rotation * segment.A).y;
+                float b = (weapon.position + weapon.rotation * segment.B).y;
+                lowest = Mathf.Min(lowest, Mathf.Min(a, b) - segment.Radius);
+            }
+            return lowest - floorHeight;
         }
 
         [UnityTest]

@@ -154,9 +154,10 @@ The vertical slice contains:
   AI:Cautious/Pressuring/Patient; select resets/R keeps.
   Hit-Miss tails cut/R ignores L/.22→held.28/.6charge/.20buffer clears:hit-fall-R.
   Windup1m/braking; side-back/impulses/drift free; ≤.85m dry shove8breath/0HP.
-  Arm≤600°/s;120Hz; shoulder/contact≤12/96; live collision gates.
+  Arm≤600°/s;120Hz; shoulder/contact≤12/96; live collision/anatomy gates.
+  Rise retries/bind links; hip−30..110/±60,knee0..130,ankle≤75°; safe floor/blend.
   AI≥1m/retreat≤.6s/seen whiff.20→counter.22/hits Rising.
-  Guard:balance/2hands/restore≠fresh parry; disabled probes miss overlap.
+  Guard:balance/2hands/restore≠parry; disabled probes miss overlap.
   Pause/hit-stop; guard-step-charge-kick spend breath/Hold keeps/wounds-thud-pools/
   E toilet-left bar-marks/R-unload clears/no story-speech;
 - the retained Home opening is reachable only by a legacy request: held bed loop,

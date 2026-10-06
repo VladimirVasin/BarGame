@@ -6,8 +6,8 @@ using UnityEngine;
 namespace BarPromenade
 {
     /// <summary>Authored one-hand combat recovery on the original rig. The bank owns
-    /// the joint arcs and support transfers; runtime owns landing alignment and the
-    /// continuous duel clock. No drunken pose, spine reach search or second arm IK.</summary>
+    /// the joint arcs and support transfers; runtime owns landing alignment,
+    /// anatomical limits and the continuous duel clock.</summary>
     internal sealed class CombatRecoveryPose : IDisposable
     {
         private static readonly ProfilerMarker PrepareMarker = new ProfilerMarker("BarPromenade.CombatRecovery.Prepare");
@@ -24,12 +24,16 @@ namespace BarPromenade
         private readonly bool npc;
         private readonly List<BoneBinding> bindings = new List<BoneBinding>();
         private readonly Player3DFootGroundProbe footProbe;
+        private readonly Vector3 pelvisDown, pelvisForward, pelvisRight, leftKneeForward, rightKneeForward;
+        private readonly Vector3 leftHipPosition, leftKneePosition, leftAnklePosition, rightHipPosition, rightKneePosition, rightAnklePosition;
+        private readonly Quaternion leftAnkleRest, rightAnkleRest;
         private readonly RaycastHit[] floorHits = new RaycastHit[24];
         private readonly Collider[] clearanceHits = new Collider[24];
         private AnimationClip clip;
         private AnimationClip sampledClip;
         private float sampledTime;
         private float elapsed;
+        private float minimumBlend;
         private bool begun;
         public float ClipProgress => begun ? Mathf.Clamp01(elapsed / clip.length) : 0f;
         public bool FeetSupported { get; private set; }
@@ -61,6 +65,30 @@ namespace BarPromenade
             sampler = new GameObject("Combat Recovery Bone Sampler");
             sampler.transform.SetParent(actor, false);
             var rest = RestPositions(rig);
+            leftHipPosition = rest[leftThigh]; leftKneePosition = rest[leftShin]; leftAnklePosition = rest[leftFoot];
+            rightHipPosition = rest[rightThigh]; rightKneePosition = rest[rightShin]; rightAnklePosition = rest[rightFoot];
+            // Limits use the imported bind frame, never a lying root's world axes
+            // or the already bent first animation sample.
+            Matrix4x4 BindFrame(Transform target)
+            {
+                foreach (SkinnedMeshRenderer skin in rig.GetComponentsInChildren<SkinnedMeshRenderer>(true))
+                {
+                    if (skin.sharedMesh == null) continue;
+                    Transform[] bones = skin.bones;
+                    Matrix4x4[] poses = skin.sharedMesh.bindposes;
+                    for (int i = 0; i < bones.Length && i < poses.Length; i++)
+                        if (bones[i] == target) return skin.localToWorldMatrix * poses[i].inverse;
+                }
+                throw new InvalidOperationException("Combat recovery needs the bind frame of " + target.name);
+            }
+            Matrix4x4 pelvisBind = BindFrame(pelvis).inverse;
+            pelvisDown = pelvisBind.MultiplyVector(-actor.up).normalized;
+            pelvisForward = pelvisBind.MultiplyVector(actor.forward).normalized;
+            pelvisRight = pelvisBind.MultiplyVector(actor.right).normalized;
+            leftKneeForward = BindFrame(leftThigh).inverse.MultiplyVector(actor.forward).normalized;
+            rightKneeForward = BindFrame(rightThigh).inverse.MultiplyVector(actor.forward).normalized;
+            leftAnkleRest = Quaternion.Inverse(BindFrame(leftShin).rotation) * BindFrame(leftFoot).rotation;
+            rightAnkleRest = Quaternion.Inverse(BindFrame(rightShin).rotation) * BindFrame(rightFoot).rotation;
             // Generic clips bind by the full path under their Animator. The NPC and
             // hero banks share bone names, but have different armature parent paths.
             Transform sourceRoot = CityPedestrianHandProps.FindSocket(sourceAnimator.transform, "root");
@@ -115,6 +143,7 @@ namespace BarPromenade
             ragdoll.RebaseRecoveryRoot(target, rotation);
             begun = true;
             elapsed = 0f;
+            minimumBlend = 0f;
             return true;
         }
 
@@ -131,20 +160,122 @@ namespace BarPromenade
         {
             if (!begun) return;
             using var marker = PoseMarker.Auto();
-            Sample(ClipProgress);
-            ragdoll.PhysicsController.ApplyRecoveryBlend(elapsed / .32f);
-            bool leftUnchanged = KeepSoleAboveFloor(FootSide.Left, leftThigh, leftShin, leftFoot, out float leftSole);
-            bool rightUnchanged = KeepSoleAboveFloor(FootSide.Right, rightThigh, rightShin, rightFoot, out float rightSole);
+            float blend = Mathf.Max(minimumBlend, Mathf.Clamp01(elapsed / .32f));
+            bool fitted = PoseWithBlend(blend, out float leftSole, out float rightSole);
+            if (!fitted && blend < 1f && PoseWithBlend(1f, out leftSole, out rightSole))
+            {
+                // A frozen landing can make an otherwise bounded hierarchy blend
+                // infeasible. Keep the closest checked blend toward this SAME clip
+                // time; no clock advance or root relocation bridges the bad pose.
+                float invalid = blend, valid = 1f;
+                for (int pass = 0; pass < 3; pass++)
+                {
+                    float candidate = (invalid + valid) * .5f;
+                    if (PoseWithBlend(candidate, out leftSole, out rightSole)) valid = candidate;
+                    else invalid = candidate;
+                }
+                minimumBlend = valid;
+                fitted = PoseWithBlend(valid, out leftSole, out rightSole);
+            }
             hands.SetGrip(false, 1f);
             if (!gripOwnsLeft) hands.SetGrip(true, 0f);
-            // Reuse only within this presentation, with neither leg adjusted.
-            // Any IK makes the support check bake the final soles again.
-            bool unchangedSoles = leftUnchanged && rightUnchanged;
-            FeetSupported = FootSupported(FootSide.Left, leftFoot, unchangedSoles, leftSole) &&
-                FootSupported(FootSide.Right, rightFoot, unchangedSoles, rightSole);
+            FeetSupported = fitted && FootSupported(FootSide.Left, leftFoot, true, leftSole) &&
+                FootSupported(FootSide.Right, rightFoot, true, rightSole);
         }
 
-        private bool KeepSoleAboveFloor(FootSide side, Transform thigh, Transform shin, Transform foot, out float sole)
+        private bool PoseWithBlend(float blend, out float leftSole, out float rightSole)
+        {
+            Sample(ClipProgress);
+            ragdoll.PhysicsController.ApplyRecoveryBlend(blend);
+            RestoreLegLinks(leftThigh, leftShin, leftFoot, leftHipPosition, leftKneePosition, leftAnklePosition);
+            RestoreLegLinks(rightThigh, rightShin, rightFoot, rightHipPosition, rightKneePosition, rightAnklePosition);
+            bool leftFitted = FitLeg(FootSide.Left, leftThigh, leftShin, leftFoot, leftKneeForward, leftAnkleRest, out leftSole);
+            bool rightFitted = FitLeg(FootSide.Right, rightThigh, rightShin, rightFoot, rightKneeForward, rightAnkleRest, out rightSole);
+            return leftFitted && rightFitted;
+        }
+
+        private static void RestoreLegLinks(Transform thigh, Transform shin, Transform foot,
+            Vector3 hipPosition, Vector3 kneePosition, Vector3 anklePosition)
+        {
+            // PhysX's locked joints can retain small positional errors in the
+            // frozen landing. Keep the visible segment directions while restoring
+            // their actual bind offsets, so recovery never blends a stretched leg.
+            Vector3 upper = shin.position - thigh.position;
+            Vector3 lower = foot.position - shin.position;
+            Quaternion footRotation = foot.rotation;
+            thigh.localPosition = hipPosition;
+            shin.localPosition = kneePosition;
+            thigh.rotation = Quaternion.FromToRotation(shin.position - thigh.position, upper) * thigh.rotation;
+            foot.localPosition = anklePosition;
+            shin.rotation = Quaternion.FromToRotation(foot.position - shin.position, lower) * shin.rotation;
+            foot.rotation = footRotation;
+        }
+
+        private bool ConstrainLeg(Transform thigh, Transform shin, Transform foot, Vector3 kneeForward, Quaternion ankleRest)
+        {
+            bool unchanged = true;
+            Quaternion footRotation = foot.rotation;
+            Vector3 down = pelvis.TransformDirection(pelvisDown).normalized;
+            Vector3 forward = pelvis.TransformDirection(pelvisForward).normalized;
+            Vector3 right = pelvis.TransformDirection(pelvisRight).normalized;
+            Vector3 upper = (shin.position - thigh.position).normalized;
+            float flexion = Mathf.Atan2(Vector3.Dot(upper, forward), Vector3.Dot(upper, down)) * Mathf.Rad2Deg;
+            float limited = Mathf.Clamp(flexion, -30f, 110f);
+            float lateral = Vector3.Dot(upper, right);
+            float safeLateral = Mathf.Clamp(lateral, -Mathf.Sin(60f * Mathf.Deg2Rad), Mathf.Sin(60f * Mathf.Deg2Rad));
+            if (Mathf.Abs(limited - flexion) > .001f || Mathf.Abs(lateral - safeLateral) > .00001f)
+            {
+                Vector3 desired = (down * Mathf.Cos(limited * Mathf.Deg2Rad) + forward * Mathf.Sin(limited * Mathf.Deg2Rad)) *
+                    Mathf.Sqrt(Mathf.Max(0f, 1f - safeLateral * safeLateral)) + right * safeLateral;
+                thigh.rotation = Quaternion.FromToRotation(upper, desired) * thigh.rotation;
+                unchanged = false;
+            }
+            upper = (shin.position - thigh.position).normalized;
+            Vector3 lower = (foot.position - shin.position).normalized;
+            Vector3 bend = Vector3.ProjectOnPlane(thigh.TransformDirection(kneeForward), upper).normalized;
+            Vector3 hinge = Vector3.Cross(bend, upper).normalized;
+            if (hinge.sqrMagnitude > .5f)
+            {
+                float knee = Vector3.SignedAngle(upper, lower, hinge);
+                float safeKnee = Mathf.Clamp(knee, 0f, 130f);
+                // A knee is a hinge, including during the frozen-pose blend and
+                // floor IK. Endpoint reach alone cannot authorize a side/back fold.
+                Vector3 desired = Quaternion.AngleAxis(safeKnee, hinge) * upper;
+                if (Vector3.Angle(lower, desired) > .1f)
+                {
+                    shin.rotation = Quaternion.FromToRotation(lower, desired) * shin.rotation;
+                    unchanged = false;
+                }
+            }
+            foot.rotation = footRotation;
+            Quaternion ankle = Quaternion.Inverse(shin.rotation) * foot.rotation;
+            if (Quaternion.Angle(ankleRest, ankle) > 75f)
+            {
+                foot.rotation = shin.rotation * Quaternion.RotateTowards(ankleRest, ankle, 75f);
+                unchanged = false;
+            }
+            return unchanged;
+        }
+
+        private bool FitLeg(FootSide side, Transform thigh, Transform shin, Transform foot,
+            Vector3 kneeForward, Quaternion ankleRest, out float sole)
+        {
+            ConstrainLeg(thigh, shin, foot, kneeForward, ankleRest);
+            sole = 0f;
+            // Floor IK and anatomical limits share one bounded solve. A limit
+            // applied after a single floor correction can lower the boot again.
+            for (int pass = 0; pass < 4; pass++)
+            {
+                if (KeepSoleAboveFloor(side, thigh, shin, foot, kneeForward, out sole)) return true;
+                ConstrainLeg(thigh, shin, foot, kneeForward, ankleRest);
+            }
+            // The last limit write can lower the tip. Only the FINAL sole proves
+            // the displayed pose, and that bake also serves the support decision.
+            return footProbe != null && FindFloor(foot.position, out Vector3 floor, out _) &&
+                footProbe.TryGetSoleHeight(side, out sole) && sole >= floor.y - .001f;
+        }
+
+        private bool KeepSoleAboveFloor(FootSide side, Transform thigh, Transform shin, Transform foot, Vector3 kneeForward, out float sole)
         {
             using var marker = SolesMarker.Auto();
             sole = 0f;
@@ -153,10 +284,13 @@ namespace BarPromenade
             float lift = floor.y + .01f - sole;
             if (lift <= 0f) return true;
             // A hierarchy blend from an arbitrary lying pose can swing a boot
-            // through the floor. Lift its actual sole, retaining the current knee
-            // plane and authored foot pitch; rotate the leg, never stretch it.
-            LimbTwoBoneIk.Solve(thigh, shin, foot, foot.position + Vector3.up * lift,
-                foot.rotation, shin.position, 1f, .995f, true);
+            // through the floor. Lift its actual sole toward the calibrated front
+            // of the knee, retaining foot pitch and link lengths. A straight or
+            // reversed frozen knee cannot supply its own bend hint.
+            Vector3 target = foot.position + Vector3.up * lift;
+            Vector3 bend = Vector3.ProjectOnPlane(thigh.TransformDirection(kneeForward), target - thigh.position).normalized;
+            Vector3 hint = thigh.position + bend * .4f;
+            LimbTwoBoneIk.Solve(thigh, shin, foot, target, foot.rotation, hint, 1f, .995f, true);
             return false;
         }
 

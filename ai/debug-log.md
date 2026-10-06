@@ -67,6 +67,7 @@ Editor: repository CombatLogs; Player: `Application.persistentDataPath/CombatLog
 `rules_rejected`: opaque Rules/`reason_checked=false`/phase/stamina/cost.
 `balance_buffer`: .20s press; `observed_counter`: whiff reply. 20Hz pose/support/CPU.
 `support_pose_rejected`: `contact_*`/weapon commit depth/sweep/shape.
+`weapon_constraint`: cause survives rollback; remaining depth=rendered pose.
 `arm_snapshot`: wrist/elbow/shoulder_roll/elbow_signed; metrics fresh/cached.
 Guard: `two_hand_support`/`balance_recovery`; attacks ignore regrip.
 End/focus cancels held/buffered. Header: `opponent_style`.
@@ -86,12 +87,12 @@ no replay/FPS guarantee.
 `latest_target_wait_ms`=Unity; `latest_{present_wait,cpu_main,cpu_render}_ms`
 =FrameTiming. `latest_timing_repeat_frames`:-1 unavailable/0 new/>0 repeats≠age.
 `pose_work`: Present/Weapon/Support CPU/calls, support candidates/budget; outside Tick.
-`frame_delivery/late_to_next_update_ms`: LateStart→next Update wall includes
-render/editor/scheduling/waits; not proof of CPU/GPU cost.
-`weapon_constraint_sample`: candidates/sweeps/queries/reused casts/core snapshots/
-shoulder reuse/budget; world gates live.
-Nested timings overlap: never sum. Unsupported=null; main/render
-Profiler/GPU: latest. Header: render interval/capture delta/target-wait.
+`frame_delivery/late_to_next_update_ms`: LateStart→Update wall incl.
+render/editor/scheduling/waits, not CPU/GPU cost.
+`weapon_constraint_sample`: candidates/sweeps/queries/reuse/core/shoulder/budget;
+world gates live.
+Nested timings: never sum. Unsupported=null; main/render/GPU: latest.
+Header: pacing/capture/wait.
 
 Producer: 2048/4096 default/max packets + eight control slots; reused chars,
 no strings/field copies. Drops/I/O/limits explicit; ≤2 live workers (stalled too),

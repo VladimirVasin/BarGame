@@ -17,6 +17,10 @@ namespace BarPromenade
         private Vector3 shoulderChoiceTargetPosition, solveTargetPosition;
         private Quaternion shoulderChoiceTargetRotation, shoulderChoiceForearm, shoulderChoiceHand, shoulderChoice;
         private Quaternion solveTargetRotation;
+        private bool hasRejectedSearch;
+        private Vector3 rejectedRootPosition, rejectedTargetPosition;
+        private Quaternion rejectedRootRotation, rejectedTargetRotation, rejectedForearm, rejectedHand;
+        private int rejectedSearchCursor;
         private readonly CombatActor actor;
         private readonly Transform upper, forearm, hand, weapon;
         private readonly CapsuleCollider probe;
@@ -129,7 +133,7 @@ namespace BarPromenade
             applied = false;
         }
 
-        internal void Forget() { hasShoulderChoice = false; applied = fullPoseApplied = hasLast = Blocked = WorldBlocked = SupportBlocked = MotionBlocked = pendingCommit = checkingDesiredPath = false; PenetrationDepth = 0f; }
+        internal void Forget() { hasRejectedSearch = hasShoulderChoice = false; applied = fullPoseApplied = hasLast = Blocked = WorldBlocked = SupportBlocked = MotionBlocked = pendingCommit = checkingDesiredPath = false; PenetrationDepth = 0f; }
         internal void Reset() { Restore(); Forget(); journalConstraintState = -1; journalConstraintReason = null; }
 
         internal void Apply()
@@ -156,6 +160,7 @@ namespace BarPromenade
             float firstEscapeAngle = escapeAngle;
             bool swept = hasLast && !SweepClear(lastWeapon, WeaponPose);
             journalDesiredDepth = depth; journalDesiredSweep = swept;
+            string desiredBlockingShape = BlockingShape;
             checkingDesiredPath = false;
             Blocked = depth > 0f || swept;
             // A held two-handed bar has one reachable pose. Probe the frozen
@@ -214,19 +219,31 @@ namespace BarPromenade
             searchAxes[0] = actor.transform.up; searchAxes[1] = actor.transform.right; searchAxes[2] = actor.transform.forward;
             searchAxes[3] = (searchAxes[0] + searchAxes[1]).normalized;
             searchAxes[4] = (searchAxes[0] - searchAxes[1]).normalized;
-            for (int ring = 1; ring <= 7 && remainingCandidateChecks > 0; ring++)
+            // Keep the per-apply budget, but continue an exhausted search when the
+            // owning rise retries the same rejected pose. Otherwise its clock rollback
+            // makes us test only the first 12-degree ring forever. A successful render
+            // of the previous pose must not erase that retry's search position.
+            bool sameRejectedPose = hasRejectedSearch &&
+                (rejectedRootPosition - actor.transform.position).sqrMagnitude <= .000001f &&
+                Quaternion.Angle(rejectedRootRotation, actor.transform.rotation) <= .1f &&
+                (rejectedTargetPosition - solveTargetPosition).sqrMagnitude <= .000001f &&
+                Quaternion.Angle(rejectedTargetRotation, solveTargetRotation) <= .1f &&
+                Quaternion.Angle(rejectedForearm, baseForearm) <= .1f && Quaternion.Angle(rejectedHand, baseHand) <= .1f;
+            int cursor = sameRejectedPose ? rejectedSearchCursor : 0;
+            int reservedFallback = hasLast && !constrainSupport ? 1 : 0;
+            const int searchCount = 7 * 5 * 2;
+            for (int checkedDirections = 0; checkedDirections < searchCount && remainingCandidateChecks > reservedFallback; checkedDirections++)
             {
-                float angle = ring * 12f;
-                foreach (Vector3 axis in searchAxes)
-                    for (int sign = -1; sign <= 1; sign += 2)
-                    {
-                        upper.rotation = Quaternion.AngleAxis(angle * sign, axis) * desired;
-                        if (remainingCandidateChecks <= 0) break;
-                        bool clear = TryCandidate(constrainSupport, out float candidate);
-                        if (candidate < bestDepth) { bestDepth = candidate; best = upper.rotation; }
-                        if (!clear) continue;
-                        AcceptCandidate(); return;
-                    }
+                int direction = cursor;
+                cursor = (cursor + 1) % searchCount;
+                float angle = (direction / 10 + 1) * 12f;
+                Vector3 axis = searchAxes[(direction % 10) / 2];
+                int sign = direction % 2 == 0 ? -1 : 1;
+                upper.rotation = Quaternion.AngleAxis(angle * sign, axis) * desired;
+                bool clear = TryCandidate(constrainSupport, out float candidate);
+                if (candidate < bestDepth) { bestDepth = candidate; best = upper.rotation; }
+                if (!clear) continue;
+                AcceptCandidate(); return;
             }
             // A tightly obstructed action cannot be made safe by twisting the wrist.
             // Keep the last complete reachable arm while the owning action is blocked.
@@ -245,6 +262,13 @@ namespace BarPromenade
             PenetrationDepth = Depth();
             MotionBlocked = true;
             if (remainingCandidateChecks == 0) CandidateBudgetExhaustions++;
+            if (!contactPreview)
+            {
+                hasRejectedSearch = true; rejectedSearchCursor = cursor;
+                rejectedRootPosition = actor.transform.position; rejectedRootRotation = actor.transform.rotation;
+                rejectedTargetPosition = solveTargetPosition; rejectedTargetRotation = solveTargetRotation;
+                rejectedForearm = baseForearm; rejectedHand = baseHand;
+            }
             if (hasLast && !contactPreview)
             {
                 for (int i = 0; i < poseBones.Length; i++)
@@ -266,6 +290,9 @@ namespace BarPromenade
                     poseBones[i].SetPositionAndRotation(safePositions[i] + remaining, safeRotations[i]);
                 PenetrationDepth = Depth();
             }
+            // The restored pose can be clear while the requested step was blocked.
+            // Retain its cause instead of losing the floor/wall name in Depth().
+            BlockingShape = desiredBlockingShape ?? BlockingShape;
             // Do not accept an intersecting pose as the sweep's next starting point.
             JournalConstraint(SupportBlocked ? "support_contact" : "pose_rejected");
         }
