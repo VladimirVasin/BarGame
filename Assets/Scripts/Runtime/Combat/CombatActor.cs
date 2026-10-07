@@ -22,6 +22,7 @@ namespace BarPromenade
         private string visibleClip;
         private int visibleAttackSequence;
         private bool presentationFrozen;
+        private bool simulationPosePending;
         private float poseClock, reactionClock;
         private bool receivedDuringStep;
         private bool guardHeld;
@@ -51,8 +52,10 @@ namespace BarPromenade
             _ => 0f
         };
 
+        // Before sole support is refreshed, an ordinary turn can raise the
+        // measured load. Only a live impact owns balance-related turn blocking.
         internal float TurnScale => IsKnockedDown || (footwork?.RecoveryEpisodeActive ?? false) ||
-            (ImpactMotion != null && ImpactMotion.BalanceLoad > .45f) ? 0f : State.Phase switch
+            (ImpactMotion != null && ImpactMotion.IsActive && ImpactMotion.BalanceLoad > .45f) ? 0f : State.Phase switch
         {
             MeleePhase.Charging => .2f,
             MeleePhase.Windup => .2f,
@@ -60,8 +63,8 @@ namespace BarPromenade
             MeleePhase.Recovery => Mathf.Lerp(.15f, .75f, State.PhaseProgress),
             MeleePhase.Ready => 1f,
             MeleePhase.Kicking => 0f,
-            // A rocked body still brings its head round toward the blow at a third of
-            // the free rate; the step's planted soles, the block's impact and the arc keep zero.
+            // A rocked body turns at a third of the free rate. Planted steps and
+            // block impacts hold; attack facing spends its separate supported budget.
             MeleePhase.Stagger or MeleePhase.GuardBroken => .35f,
             _ => 0f
         };
@@ -144,7 +147,7 @@ namespace BarPromenade
         internal bool HasAttackBalance => !IsKnockedDown && !(ImpactMotion?.RecoveryInProgress ?? false) &&
             !(footwork?.RecoveryEpisodeActive ?? false);
         internal const float WeaponSpacing = 1f;
-        internal void ApplyMotorConstraint() => motor?.SetOwnedMovementConstraint(this, MovementScale, TurnScale,
+        internal void ApplyMotorConstraint() => motor?.SetOwnedMovementConstraint(this, MovementScale, OwnsCombatFacing ? 0f : TurnScale,
             contactTarget != null ? contactTarget.transform : null,
             State.Phase == MeleePhase.Windup ? WeaponSpacing : 0f);
         private string AttackBalanceRejection => IsKnockedDown ? "knocked_down" : "balance_recovery";
@@ -251,7 +254,7 @@ namespace BarPromenade
                 CollectContacts(standaloneContacts);
                 CollectShoveContacts(standaloneShoves);
                 CollectKickContacts(standaloneKicks);
-                foreach (Contact contact in standaloneContacts) contact.Apply();
+                ApplyContacts(standaloneContacts);
                 foreach (ShoveContact contact in standaloneShoves) contact.Apply();
                 foreach (KickContact contact in standaloneKicks) contact.Apply();
                 ContinueBufferedAttackAfterContacts();
@@ -260,8 +263,9 @@ namespace BarPromenade
             Present();
         }
 
-        internal void AdvanceSimulation(float seconds)
+        internal void AdvanceSimulation(float seconds, bool deferPoseMotion = false)
         {
+            simulationPosePending = false;
             collectSweep = false;
             collectShove = false;
             collectKick = false;
@@ -315,6 +319,18 @@ namespace BarPromenade
                 pendingSequence = State.AttackSequence;
             }
             else sweepValid = false;
+            simulationPosePending = true;
+            if (!deferPoseMotion) CompleteSimulationPose(seconds);
+        }
+
+        // Both actors first finish their actual step/push displacement. Facing and
+        // planted feet then read those positions before either contact pose is frozen.
+        internal void CompleteSimulationPose(float seconds)
+        {
+            if (!simulationPosePending) return;
+            simulationPosePending = false;
+            if (!IsAvailable || IsKnockedDown || State.IsDefeated) return;
+            AdvanceCombatFacing(seconds);
             footwork?.Advance(seconds, State);
             CompleteImpactRecoveryStep(seconds);
             AdvancePendingKick(seconds);
@@ -322,12 +338,15 @@ namespace BarPromenade
 
         private MeleeHitResult Receive(CombatActor source, bool front, int sequence, Vector3 point, Vector3 normal, Vector3 direction,
             float damage, float blockCost, float power, MeleeHitLocation location,
-            Player3DAnatomicalPart part = Player3DAnatomicalPart.Torso, Vector3 localPoint = default, float weaponSpeed = 0f)
+            Player3DAnatomicalPart part = Player3DAnatomicalPart.Torso, Vector3 localPoint = default, float weaponSpeed = 0f,
+            bool physicalBody = false)
         {
             MeleePhase phaseBefore = State.Phase;
             receivedDuringStep = State.Phase == MeleePhase.Step;
             float healthBefore = State.Health;
-            MeleeHitResult result = State.ReceiveHit(damage, blockCost, front, power, location);
+            // Actual sweeps already tested the blocking prop before this body.
+            // A guard flag cannot intercept a blade which physically went around it.
+            MeleeHitResult result = State.ReceiveHit(damage, blockCost, front && !physicalBody, power, location);
             CancelInterruptedShoveContact();
             if (result == MeleeHitResult.Ignored) return result;
             // Weight lives in time and motion: the body is the loudest cue, a block
@@ -429,6 +448,8 @@ namespace BarPromenade
             // Read before the preview restores persistent presentation diagnostics.
             // Contacts still need the world obstruction that corrected this sample.
             previewWorldBlocked = weaponConstraint.WorldBlocked;
+            previewWorldFraction = weaponConstraint.WorldContactFraction;
+            previewWorldPoint = weaponConstraint.WorldContactPoint; previewWorldNormal = weaponConstraint.WorldContactNormal;
             return true;
         }
 
@@ -450,12 +471,13 @@ namespace BarPromenade
         public void Present()
         {
             using var journalTiming = MeasureJournalWork(JournalWork.Present);
+            // The contact has already left the complete visible pose on this rig.
+            // Re-solving against a newly injured target during hit-stop would move
+            // an NPC's weapon off that contact at the very same animation instant.
+            if (presentationFrozen || PauseMenuController.IsAnyPaused || GameTimeScaleRuntime.IsPaused) return;
             RestoreCombatAttention();
             if (ready == null || winnerPresentationReleased) return;
             if (PresentKnockdown() || IsRagdollActive) return;
-            // Pause temporarily owns input, not the combat rig. Retain the
-            // sampled pose/transition so a paused read cannot release the clip.
-            if (PauseMenuController.IsAnyPaused) return;
             if (!State.IsKicking) footwork?.EndKickSupport();
             RefreshCombatAttention();
             supportGrip?.Restore();
@@ -501,7 +523,8 @@ namespace BarPromenade
                     // inherit the previously displayed pose and velocity.
                     if (!releasingCharge)
                     {
-                        if ((stepping && !stepBlocked || State.IsKicking) && visibleClip == ready.name && motor.PlanarVelocity.sqrMagnitude < .01f)
+                        if ((stepping && !stepBlocked || State.IsKicking) && visibleClip == ready.name &&
+                            !(footwork?.RecoveryStepOwnsFeet ?? false) && motor.PlanarVelocity.sqrMagnitude < .01f)
                             CancelPoseBlend();
                         else BeginPoseBlend(TransitionSeconds(chosen));
                     }
@@ -588,6 +611,8 @@ namespace BarPromenade
                 Body.enabled = true;
             }
             transform.rotation = Quaternion.LookRotation(facing);
+            ResetWeaponContacts();
+            ResetCombatFacing();
             bodyMotion?.Reset();
             footwork?.Reset();
             Present();
@@ -595,6 +620,8 @@ namespace BarPromenade
 
         private void ReleasePresentation()
         {
+            simulationPosePending = false;
+            ResetCombatFacing();
             CancelPendingKick("presentation_released");
             ReleaseCombatAttention();
             if (hero != null) hero.ReleaseContextualFacialExpression(this);
@@ -620,7 +647,8 @@ namespace BarPromenade
 
         private void OnDisable()
         {
-            if (State.IsShoving || State.IsKicking) State.CancelAction();
+            if (State.IsShoving || State.IsKicking || State.Phase == MeleePhase.Step || State.HasBufferedStep)
+                State.CancelAction();
             ResetShove();
             ResetKick();
             State.CancelCharge();

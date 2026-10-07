@@ -52,6 +52,7 @@ namespace BarPromenade
         public bool AutomaticSimulation { get; set; } = true;
         /// <summary>Simulation seconds the duel spent frozen on contacts; tests subtract it from wall budgets.</summary>
         public float HitStopSecondsConsumed { get; private set; }
+        public CombatSparkEffects SparkEffects { get; private set; }
         public bool RoundCameraReleased => roundCameraReleased;
 
         private void Awake()
@@ -86,6 +87,8 @@ namespace BarPromenade
             Hero.SetContactTarget(Opponent);
             Opponent.SetContactTarget(Hero);
             InitializeDamageEffects();
+            SparkEffects = gameObject.AddComponent<CombatSparkEffects>();
+            SparkEffects.Initialize(transform);
             Taunt = opponentObject.AddComponent<CombatTauntInteraction>();
             Taunt.Initialize(this, arenaBounds);
             opponentChest = Opponent.Ragdoll.PhysicsController.ChestBody.transform;
@@ -116,6 +119,7 @@ namespace BarPromenade
             EndJournalRound("reset");
             ResetChargeInput();
             BloodEffects?.ResetRound();
+            SparkEffects?.ResetRound();
             Taunt?.ResetRound();
             Hero.ResetActor(heroSpawn, Vector3.forward);
             Opponent.ResetActor(opponentSpawn, Vector3.back);
@@ -207,6 +211,7 @@ namespace BarPromenade
                 throw new ArgumentOutOfRangeException(nameof(seconds));
             if (RoundFinished)
             {
+                SparkEffects.Clear();
                 AdvanceFinishedRound(seconds);
                 return;
             }
@@ -241,8 +246,10 @@ namespace BarPromenade
                 pendingContacts.Clear();
                 pendingShoves.Clear();
                 pendingKicks.Clear();
-                Hero.AdvanceSimulation(SimulationStep);
-                Opponent.AdvanceSimulation(SimulationStep);
+                Hero.AdvanceSimulation(SimulationStep, true);
+                Opponent.AdvanceSimulation(SimulationStep, true);
+                Hero.CompleteSimulationPose(SimulationStep);
+                Opponent.CompleteSimulationPose(SimulationStep);
                 JournalTransitions("simulation");
                 long poseStamp = JournalStamp();
                 Hero.Present(); Opponent.Present();
@@ -260,7 +267,7 @@ namespace BarPromenade
                 // Registration for both actors precedes ANY damage, including lethal
                 // hits. Only contacts on a later tick can be cancelled by interruption.
                 long impactStamp = JournalStamp();
-                foreach (CombatActor.Contact contact in pendingContacts) contact.Apply();
+                CombatActor.ApplyContacts(pendingContacts);
                 foreach (CombatActor.ShoveContact contact in pendingShoves) contact.Apply();
                 foreach (CombatActor.KickContact contact in pendingKicks) contact.Apply();
                 JournalElapsed(impactStamp, ref journalImpactApplyTicks);
@@ -271,10 +278,12 @@ namespace BarPromenade
                     Opponent.ContinueBufferedAttackAfterContacts();
                 }
                 BloodEffects.Tick(SimulationStep);
+                SparkEffects.Tick(SimulationStep);
             }
             if (RoundFinished)
             {
                 // The lethal contact's freeze carries into the finished round.
+                SparkEffects.Clear();
                 roundEndFreeze += hitStopSubsteps * (double)SimulationStep;
                 hitStopSubsteps = 0;
                 AdvanceFinishedRound((float)pendingSeconds);
@@ -300,6 +309,7 @@ namespace BarPromenade
             roundEndElapsed += seconds;
             Hero.AdvanceRoundEnd(seconds); Opponent.AdvanceRoundEnd(seconds);
             BloodEffects.Tick(seconds);
+            SparkEffects.Tick(seconds);
             float settle = Mathf.Clamp01((float)(roundEndElapsed / RoundEndCameraReleaseSeconds));
             CameraFollow.SetTargetLockFarDistance(this, Mathf.Lerp(1.9f, 2.1f, settle));
             if (!roundCameraReleased && settle >= 1f) ReleaseRoundCamera();

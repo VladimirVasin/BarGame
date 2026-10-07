@@ -612,12 +612,14 @@ namespace BarPromenade.Tests.PlayMode
             public long tick, dropped_records;
             public double duel_seconds, late_pose_ms, update_to_late_ms;
             public double frame_ms, late_to_next_update_ms, present_ms, weapon_constraint_ms, support_grip_ms;
+            public double late_to_render_begin_ms, render_context_span_ms, render_end_to_next_update_ms;
+            public int render_contexts;
             public int present_calls, weapon_constraint_calls, support_grip_calls, region, side, target_phase_after, outcome;
             public double target_phase_before;
             public long impact_seq;
-            public long candidate_checks, sweep_samples, world_queries, repeated_queries_avoided;
+            public long candidate_checks, sweep_samples, world_queries, repeated_queries_avoided, anatomy_queries;
             public int arm_core_snapshots;
-            public bool active, late_observer_captured, is_critical, is_finisher;
+            public bool active, late_observer_captured, render_context_captured, is_critical, is_finisher;
             public string result, reason, phase, code_revision, animation_asset_revision;
             public string code_identity_source, animation_identity_source, workspace_state;
             public string hero_animation_revision, npc_animation_revision;
@@ -631,6 +633,7 @@ namespace BarPromenade.Tests.PlayMode
             Vector3 expectedPosition = default;
             int expectedSteps = 0;
             DuelJournal journal = null;
+            TestDuelJournalRender renderProbe = null;
             var collector = new double[120];
             var allocated = new long[2, 120];
             using var gc = Unity.Profiling.ProfilerRecorder.StartNew(Unity.Profiling.ProfilerCategory.Memory, "GC Allocated In Frame", 1);
@@ -644,6 +647,14 @@ namespace BarPromenade.Tests.PlayMode
                     root.SetDuelLogging(true, folder);
                     journal = root.JournalForDiagnostics;
                     Assert.That(journal, Is.Not.Null);
+                    // Batch PlayMode does not draw a Game View. Render the actual
+                    // game camera once after the final observer, so the positive
+                    // submission interval is verified as well as missing data.
+                    var renderObserver = new GameObject("Test duel render observer");
+                    renderObserver.transform.SetParent(root.transform);
+                    renderProbe = renderObserver.AddComponent<TestDuelJournalRender>();
+                    renderProbe.Camera = root.CameraFollow.Camera;
+                    renderProbe.Root = root;
                 }
                 // Match the observed regression: the opponent shoves the hero,
                 // whose late presentation must not regrip between catch steps.
@@ -736,7 +747,7 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(logs.Length, Is.EqualTo(2), "Reset closes the old round and starts a distinct journal.");
             bool rejected = false, contact = false, paused = false, marked = false, discarded = false, state = false, frameTiming = false, latePose = false;
             bool identity = false, anatomy = false, impactKind = false, constraintWork = false, kickOutcome = false, kickSweep = false;
-            bool delivery = false, heroWork = false, opponentWork = false;
+            bool delivery = false, renderedDelivery = false, heroWork = false, opponentWork = false;
             double frameInterval = 0d, updateToLate = 0d;
             long sequence = 0;
             int recoveryStarts = 0, recoveryEnds = 0;
@@ -820,6 +831,24 @@ namespace BarPromenade.Tests.PlayMode
                         delivery = true;
                         Assert.That(entry.data.late_to_next_update_ms, Is.GreaterThanOrEqualTo(0d));
                         Assert.That(updateToLate + entry.data.late_to_next_update_ms, Is.EqualTo(frameInterval).Within(.001d));
+                        if (entry.data.render_context_captured)
+                        {
+                            renderedDelivery = true;
+                            Assert.That(entry.data.render_contexts, Is.GreaterThan(0));
+                            Assert.That(entry.data.late_to_render_begin_ms, Is.GreaterThanOrEqualTo(0d));
+                            Assert.That(entry.data.render_context_span_ms, Is.GreaterThanOrEqualTo(0d));
+                            Assert.That(entry.data.render_end_to_next_update_ms, Is.GreaterThanOrEqualTo(0d));
+                            Assert.That(entry.data.late_to_render_begin_ms + entry.data.render_context_span_ms +
+                                entry.data.render_end_to_next_update_ms,
+                                Is.EqualTo(entry.data.late_to_next_update_ms).Within(.001d),
+                                "Same-frame camera submission and delivery intervals must partition the measured remainder.");
+                        }
+                        else
+                        {
+                            StringAssert.Contains("\"late_to_render_begin_ms\":null", line);
+                            StringAssert.Contains("\"render_context_span_ms\":null", line);
+                            StringAssert.Contains("\"render_end_to_next_update_ms\":null", line);
+                        }
                     }
                     if (entry.@event == "pose_work")
                     {
@@ -839,6 +868,8 @@ namespace BarPromenade.Tests.PlayMode
                         Assert.That(entry.data.sweep_samples, Is.GreaterThanOrEqualTo(0));
                         Assert.That(entry.data.world_queries, Is.GreaterThanOrEqualTo(0));
                         Assert.That(entry.data.repeated_queries_avoided, Is.GreaterThanOrEqualTo(0));
+                        StringAssert.Contains("\"anatomy_queries\":", line);
+                        Assert.That(entry.data.anatomy_queries, Is.GreaterThanOrEqualTo(0));
                         Assert.That(entry.data.arm_core_snapshots, Is.GreaterThanOrEqualTo(0));
                     }
                 }
@@ -857,6 +888,9 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(identity && anatomy && impactKind && constraintWork && kickOutcome && kickSweep && delivery && heroWork && opponentWork, Is.True,
                 $"Extended evidence: identity={identity}, anatomy={anatomy}, kind={impactKind}, constraint={constraintWork}, kick={kickOutcome}/{kickSweep}, delivery={delivery}, heroWork={heroWork}, opponentWork={opponentWork}");
             Assert.That(recoveryStarts, Is.EqualTo(1), "Both catch steps belong to one recovery episode.");
+            Assert.That(renderedDelivery, Is.True,
+                $"A real game-camera submission must reach the measured delivery partition; " +
+                $"rendered={renderProbe.Rendered}, afterObserver={renderProbe.AfterObserver}, matchedFrame={renderProbe.MatchedFrame}.");
             Assert.That(recoveryEnds, Is.EqualTo(1));
             System.Array.Sort(collector);
             double p95 = collector[113];
@@ -1275,6 +1309,41 @@ namespace BarPromenade.Tests.PlayMode
             foreach (AudioListener listener in Object.FindObjectsByType<AudioListener>())
                 if (listener.isActiveAndEnabled) return;
             new GameObject("Combat Performance Audio Listener").AddComponent<AudioListener>();
+        }
+    }
+
+    [DefaultExecutionOrder(32001)]
+    internal sealed class TestDuelJournalRender : MonoBehaviour
+    {
+        internal Camera Camera;
+        internal CombatTestRoot Root;
+        internal bool Rendered, AfterObserver, MatchedFrame;
+        private bool waitForFirstUpdate = true;
+        private void LateUpdate()
+        {
+            // Logging was enabled by the test coroutine after this frame's
+            // Update. Its first full measured frame begins at the next Update.
+            if (waitForFirstUpdate) { waitForFirstUpdate = false; return; }
+            enabled = false;
+            const System.Reflection.BindingFlags flags = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic;
+            AfterObserver = (bool)typeof(CombatTestRoot).GetField("journalLateFrameCaptured", flags).GetValue(Root);
+            MatchedFrame = (int)typeof(CombatTestRoot).GetField("journalMeasuredFrame", flags).GetValue(Root) == Time.frameCount;
+            var target = new RenderTexture(64, 36, 24);
+            RenderTexture previous = Camera.targetTexture;
+            try
+            {
+                Camera.targetTexture = target;
+                UnityEngine.Rendering.RenderPipeline.SubmitRenderRequest(Camera,
+                    new UnityEngine.Rendering.RenderPipeline.StandardRequest { destination = target });
+                Rendered = true;
+            }
+            finally
+            {
+                Camera.targetTexture = previous;
+                target.Release();
+                Destroy(target);
+                Destroy(gameObject);
+            }
         }
     }
 }

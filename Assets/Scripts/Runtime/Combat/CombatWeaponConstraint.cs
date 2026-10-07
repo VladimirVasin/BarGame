@@ -50,6 +50,15 @@ namespace BarPromenade
         private readonly BodySweep[] anatomySweep;
         private BodySweep[] otherSweep = Array.Empty<BodySweep>();
         private readonly List<Bounds> worldSweepBounds = new List<Bounds>(96);
+        private readonly Bounds[] segmentSweepBounds = new Bounds[CombatWeaponGeometry.Segments.Count];
+        private bool anatomyReuseActive, hasClearAnatomySweep;
+        private Pose clearAnatomyFrom, clearAnatomyTo;
+        private bool clearAnatomyProbeEnabled;
+        private bool clearAnatomyProbeActive, clearAnatomyProbeTrigger;
+        private Vector3 clearAnatomyProbeScale, clearAnatomyProbeCenter;
+        private int clearAnatomyProbeDirection;
+        private readonly AnatomyStamp[] clearAnatomy;
+        private AnatomyStamp[] clearOtherAnatomy = Array.Empty<AnatomyStamp>();
         private readonly Vector3[] fallbackBasePositions;
         private readonly Quaternion[] fallbackBaseRotations;
         private bool fullPoseApplied, contactPreview, pendingCommit, checkingDesiredPath;
@@ -59,6 +68,9 @@ namespace BarPromenade
         internal string BlockingShape { get; private set; }
         internal bool Blocked { get; private set; }
         internal bool WorldBlocked { get; private set; }
+        internal float WorldContactFraction { get; private set; } = float.PositiveInfinity;
+        internal Vector3 WorldContactPoint { get; private set; }
+        internal Vector3 WorldContactNormal { get; private set; }
         internal bool SupportBlocked { get; private set; }
         internal float PenetrationDepth { get; private set; }
         internal long CandidateChecks { get; private set; }
@@ -67,6 +79,8 @@ namespace BarPromenade
         internal long SweepSamples { get; private set; }
         internal long WorldQueries { get; private set; }
         internal long RepeatedWorldQueriesAvoided { get; private set; }
+        internal long AnatomySweepQueries { get; private set; }
+        internal long RepeatedAnatomySweepsAvoided { get; private set; }
         internal int ArmCoreSnapshots => armClearance.CoreSnapshotCount;
         private int journalConstraintState = -1;
         private float journalDesiredDepth;
@@ -98,6 +112,7 @@ namespace BarPromenade
                 anatomy.Add(entry.Key);
             previousAnatomy = new Pose[anatomy.Count];
             anatomySweep = new BodySweep[anatomy.Count];
+            clearAnatomy = new AnatomyStamp[anatomy.Count];
             var query = new GameObject("Combat weapon clearance query") { hideFlags = HideFlags.HideAndDontSave };
             probe = query.AddComponent<CapsuleCollider>();
             probe.enabled = false; probe.direction = 1;
@@ -111,6 +126,8 @@ namespace BarPromenade
                 foreach (var entry in other.Ragdoll.PhysicsController.AnatomicalColliders) otherAnatomy.Add(entry.Key);
             previousOtherAnatomy = new Pose[otherAnatomy.Count];
             otherSweep = new BodySweep[otherAnatomy.Count];
+            clearOtherAnatomy = new AnatomyStamp[otherAnatomy.Count];
+            ClearAnatomyReuse();
             for (int i = 0; i < otherAnatomy.Count; i++)
                 previousOtherAnatomy[i] = new Pose(otherAnatomy[i].transform.position, otherAnatomy[i].transform.rotation);
         }
@@ -133,12 +150,14 @@ namespace BarPromenade
             applied = false;
         }
 
-        internal void Forget() { hasRejectedSearch = hasShoulderChoice = false; applied = fullPoseApplied = hasLast = Blocked = WorldBlocked = SupportBlocked = MotionBlocked = pendingCommit = checkingDesiredPath = false; PenetrationDepth = 0f; }
+        internal void Forget() { ClearAnatomyReuse(); hasRejectedSearch = hasShoulderChoice = false; applied = fullPoseApplied = hasLast = Blocked = WorldBlocked = SupportBlocked = MotionBlocked = pendingCommit = checkingDesiredPath = false; PenetrationDepth = 0f; }
         internal void Reset() { Restore(); Forget(); journalConstraintState = -1; journalConstraintReason = null; }
 
         internal void Apply()
         {
             using var journalTiming = actor.MeasureJournalWork(CombatActor.JournalWork.WeaponConstraint);
+            ClearAnatomyReuse();
+            anatomyReuseActive = !contactPreview;
             if (weapon == null || actor.IsWeaponDropped ||
                 (actor.IsRagdollActive && !actor.Ragdoll.IsRecovering)) { Forget(); return; }
             Restore();
@@ -154,6 +173,7 @@ namespace BarPromenade
             using var coreSnapshot = armClearance.BeginWeaponSolve();
             escapeAngle = 0f;
             WorldBlocked = false;
+            WorldContactFraction = float.PositiveInfinity;
             checkingDesiredPath = true;
             float depth = CandidateDepth();
             Vector3 firstEscapeAxis = escapeAxis;
@@ -168,6 +188,18 @@ namespace BarPromenade
             // contact previews, so sampled and presented weapon paths agree.
             bool constrainSupport = actor.SupportGrip != null && actor.SupportGrip.RequiresWeaponSupportConstraint;
             SupportBlocked = !Blocked && constrainSupport && !actor.SupportGrip.IsWeaponSupportPoseGeometricallyFeasible();
+            if (SupportBlocked)
+            {
+                // A proven unreachable second hand yields through its normal
+                // release; it does not freeze an otherwise clear right arm.
+                actor.SupportGrip.RejectObstructedPose("weapon_support_motion");
+                hasClearAnatomySweep = false;
+                depth = CandidateDepth();
+                swept = hasLast && !SweepClear(lastWeapon, WeaponPose);
+                Blocked = depth > 0f || swept;
+                constrainSupport = actor.SupportGrip.RequiresWeaponSupportConstraint;
+                if (!Blocked) { AcceptCandidate(); return; }
+            }
             if (!Blocked && !SupportBlocked) { AcceptCandidate(); return; }
 
             // Reuse only a shoulder preference for this exact authored pose.
@@ -183,13 +215,14 @@ namespace BarPromenade
                 { ShoulderChoicesReused++; AcceptCandidate(); return; }
             }
 
-            // A previous safe arm is a useful warm start while the torso keeps moving.
-            // It does not pull a saved pre-fall arm back into a new recovery pose.
+            // Carry the previous safe shoulder with the actor's accepted root yaw.
+            // Its local supporting chain follows that same frame; a saved world
+            // rotation would leave the right arm behind as the body turns.
             Quaternion best = desired;
             float bestDepth = depth;
             if (hasLast)
             {
-                upper.rotation = lastUpper;
+                upper.rotation = actor.transform.rotation * lastUpper;
                 if (TryCandidate(constrainSupport, out _))
                 {
                     Quaternion safe = upper.rotation;
@@ -252,7 +285,7 @@ namespace BarPromenade
             // solves; it must not manufacture a different supporting target.
             if (hasLast && !constrainSupport)
             {
-                upper.rotation = lastUpper;
+                upper.rotation = actor.transform.rotation * lastUpper;
                 forearm.localRotation = lastForearm;
                 hand.localRotation = lastHand;
                 if (TryCandidate(false, out _)) { AcceptCandidate(); return; }
@@ -269,25 +302,9 @@ namespace BarPromenade
                 rejectedTargetPosition = solveTargetPosition; rejectedTargetRotation = solveTargetRotation;
                 rejectedForearm = baseForearm; rejectedHand = baseHand;
             }
-            if (hasLast && !contactPreview)
+            if (hasLast)
             {
-                for (int i = 0; i < poseBones.Length; i++)
-                {
-                    fallbackBasePositions[i] = actor.transform.InverseTransformPoint(poseBones[i].position);
-                    fallbackBaseRotations[i] = Quaternion.Inverse(actor.transform.rotation) * poseBones[i].rotation;
-                }
-                fullPoseApplied = true;
-                // Reject the complete obstructed step, including its body/root motion.
-                // A free hand pose alone cannot repair a torso that carried it through a wall.
-                if (actor.Body != null && actor.Body.enabled)
-                    actor.Body.Move(safeRootPosition - actor.transform.position);
-                else actor.transform.position = safeRootPosition;
-                actor.transform.rotation = safeRootRotation;
-                // Move can be clipped by a newly arrived obstacle. Keep the rig
-                // attached to the root that actually moved, not the requested root.
-                Vector3 remaining = actor.transform.position - safeRootPosition;
-                for (int i = 0; i < poseBones.Length; i++)
-                    poseBones[i].SetPositionAndRotation(safePositions[i] + remaining, safeRotations[i]);
+                RestoreLastSafePose();
                 PenetrationDepth = Depth();
             }
             // The restored pose can be clear while the requested step was blocked.
@@ -295,6 +312,7 @@ namespace BarPromenade
             BlockingShape = desiredBlockingShape ?? BlockingShape;
             // Do not accept an intersecting pose as the sweep's next starting point.
             JournalConstraint(SupportBlocked ? "support_contact" : "pose_rejected");
+            ClearAnatomyReuse();
         }
 
         private Pose WeaponPose => new Pose(weapon.position, weapon.rotation);
@@ -321,7 +339,7 @@ namespace BarPromenade
                 shoulderChoiceForearm = baseForearm; shoulderChoiceHand = baseHand; shoulderChoice = upper.rotation;
             }
             PenetrationDepth = 0f;
-            pendingCommit = !contactPreview;
+            pendingCommit = true;
             JournalConstraint(SupportBlocked ? "support_contact" : Blocked ? "arm_corrected" : "clear");
         }
 
@@ -329,21 +347,61 @@ namespace BarPromenade
         internal void CommitPresentedPose(CombatSupportGrip support)
         {
             using var journalTiming = actor.MeasureJournalWork(CombatActor.JournalWork.WeaponConstraint);
-            if (!pendingCommit || contactPreview) return;
-            pendingCommit = false;
-            float finalDepth = Depth();
-            bool finalSweepBlocked = finalDepth <= 0f && hasLast && !SweepClear(lastWeapon, WeaponPose);
-            bool clear = finalDepth <= 0f && !finalSweepBlocked;
-            if (!clear && support != null)
+            try
             {
-                // A blocked supporting reach opens the hand; it cannot push its
-                // forearm through the bar merely to satisfy a two-handed socket.
-                support.RejectObstructedPose(finalDepth > 0f ? "weapon_commit_depth" : "weapon_commit_sweep", BlockingShape, finalDepth);
-                clear = Depth() <= 0f && (!hasLast || SweepClear(lastWeapon, WeaponPose));
+                if (!pendingCommit)
+                {
+                    if (!contactPreview) support?.CommitPresentedContact(false);
+                    return;
+                }
+                pendingCommit = false;
+                // Supporting presentation can run between Apply and Commit.
+                // An arriving/moved wall must be visible even at the same clock.
+                GatherObstacles();
+                float finalDepth = Depth();
+                bool finalSweepBlocked = finalDepth <= 0f && hasLast && !SweepClear(lastWeapon, WeaponPose);
+                bool clear = finalDepth <= 0f && !finalSweepBlocked;
+                if (!clear && support != null)
+                {
+                    // A blocked supporting reach opens the hand; it cannot push its
+                    // forearm through the bar merely to satisfy a two-handed socket.
+                    support.RejectObstructedPose(finalDepth > 0f ? "weapon_commit_depth" : "weapon_commit_sweep", BlockingShape, finalDepth);
+                    clear = Depth() <= 0f && (!hasLast || SweepClear(lastWeapon, WeaponPose));
+                }
+                if (clear && !contactPreview) Remember();
+                else if (!clear)
+                {
+                    MotionBlocked = Blocked = true;
+                    string rejectedShape = BlockingShape;
+                    RestoreLastSafePose();
+                    PenetrationDepth = Depth();
+                    BlockingShape = rejectedShape ?? BlockingShape;
+                }
+                if (!contactPreview) support?.CommitPresentedContact(clear);
+                JournalConstraint(clear ? "committed" : "commit_rejected");
             }
-            if (clear) Remember();
-            else { MotionBlocked = Blocked = true; PenetrationDepth = Depth(); }
-            JournalConstraint(clear ? "committed" : "commit_rejected");
+            finally { ClearAnatomyReuse(); }
+        }
+
+        private void RestoreLastSafePose()
+        {
+            ClearAnatomyReuse();
+            if (!hasLast) return;
+            for (int i = 0; i < poseBones.Length; i++)
+            {
+                fallbackBasePositions[i] = actor.transform.InverseTransformPoint(poseBones[i].position);
+                fallbackBaseRotations[i] = Quaternion.Inverse(actor.transform.rotation) * poseBones[i].rotation;
+            }
+            fullPoseApplied = true;
+            // Reject the complete obstructed step, including its body/root motion.
+            if (actor.Body != null && actor.Body.enabled)
+                actor.Body.Move(safeRootPosition - actor.transform.position);
+            else actor.transform.position = safeRootPosition;
+            actor.transform.rotation = safeRootRotation;
+            // A new obstacle can clip Move. Keep the rig attached to its achieved root.
+            Vector3 remaining = actor.transform.position - safeRootPosition;
+            for (int i = 0; i < poseBones.Length; i++)
+                poseBones[i].SetPositionAndRotation(safePositions[i] + remaining, safeRotations[i]);
         }
 
         private void JournalConstraint(string reason)
@@ -365,7 +423,8 @@ namespace BarPromenade
         private void Remember()
         {
             if (contactPreview) return;
-            lastUpper = upper.rotation; lastForearm = forearm.localRotation; lastHand = hand.localRotation;
+            lastUpper = Quaternion.Inverse(actor.transform.rotation) * upper.rotation;
+            lastForearm = forearm.localRotation; lastHand = hand.localRotation;
             lastWeapon = WeaponPose; hasLast = true; PenetrationDepth = 0f;
             safeRootPosition = actor.transform.position; safeRootRotation = actor.transform.rotation;
             for (int i = 0; i < poseBones.Length; i++)
@@ -449,7 +508,7 @@ namespace BarPromenade
                 {
                     float floorDepth = Mathf.Max(BelowFloor(a, radius), BelowFloor(b, radius));
                     if (floorDepth > 0f)
-                    { if (checkingDesiredPath) WorldBlocked = true;
+                    { if (checkingDesiredPath) RecordWorldContact(1f, a.y < b.y ? a : b, Vector3.up);
                         BlockingShape = "supporting floor"; SetEscape(a.y < b.y ? a : b, Vector3.up, floorDepth); return floorDepth; }
                 }
                 probe.radius = radius; probe.height = Vector3.Distance(a, b) + radius * 2f;
@@ -464,7 +523,7 @@ namespace BarPromenade
                     if (Physics.ComputePenetration(probe, center, rotation, shape.Collider, shape.Pose.position,
                         shape.Pose.rotation, out Vector3 direction, out float depth))
                     {
-                        if (shape.WorldObstacle) WorldBlocked = true;
+                        if (shape.WorldObstacle) RecordWorldContact(1f, center - direction * radius, direction);
                         if (depth > maximum)
                         { maximum = depth; BlockingShape = shape.Collider.name; SetEscape(center, direction, depth); }
                         if (maximum > 0f && !checkingDesiredPath) return maximum;
@@ -521,14 +580,16 @@ namespace BarPromenade
         {
             float angle = Quaternion.Angle(from.rotation, to.rotation);
             float weaponTravel = Vector3.Distance(from.position, to.position) + angle * Mathf.Deg2Rad * .7f;
-            Bounds travelBounds = new Bounds((from.position + to.position) * .5f,
-                Vector3.one * (1.4f + Vector3.Distance(from.position, to.position)));
+            Bounds travelBounds = BuildSegmentSweepBounds(from, to, angle);
+            bool reuseAnatomy = CanReuseAnatomySweep(from, to);
+            if (reuseAnatomy) RepeatedAnatomySweepsAvoided++;
             float bodyTravel = 0f;
             for (int i = 0; i < anatomy.Count; i++)
                 if (anatomy[i] != null)
                 {
                     anatomySweep[i] = new BodySweep(anatomy[i], previousAnatomy[i]);
-                    bodyTravel = Mathf.Max(bodyTravel, anatomySweep[i].Travel);
+                    anatomySweep[i].SegmentMask = SweptPairs(anatomySweep[i].TravelBounds);
+                    if (anatomySweep[i].SegmentMask != 0) bodyTravel = Mathf.Max(bodyTravel, anatomySweep[i].Travel);
                 }
             bool nearOther = false;
             for (int i = 0; i < otherAnatomy.Count; i++)
@@ -536,7 +597,8 @@ namespace BarPromenade
                 Collider shape = otherAnatomy[i];
                 if (shape == null) continue;
                 otherSweep[i] = new BodySweep(shape, previousOtherAnatomy[i]);
-                if (!otherSweep[i].TravelBounds.Intersects(travelBounds)) continue;
+                otherSweep[i].SegmentMask = SweptPairs(otherSweep[i].TravelBounds);
+                if (otherSweep[i].SegmentMask == 0) continue;
                 nearOther = true;
                 bodyTravel = Mathf.Max(bodyTravel, otherSweep[i].Travel);
             }
@@ -554,6 +616,7 @@ namespace BarPromenade
             bool anatomyBlocked = false;
             for (int step = 1; step <= steps; step++)
             {
+                bool sampleWorldBlocked = false;
                 SweepSamples++;
                 // Only identical native casts in THIS time sample are reusable.
                 // The next time/shoulder candidate/commit rereads the entire world.
@@ -564,11 +627,14 @@ namespace BarPromenade
                 Pose next = new Pose(Vector3.Lerp(from.position, to.position, t), Quaternion.Slerp(from.rotation, to.rotation, t));
                 // Interpolate each body once per time sample, not once for every
                 // weapon segment. The disabled rig shapes still use their live poses.
-                for (int body = 0; body < anatomy.Count; body++)
-                    if (anatomy[body] != null) anatomySweep[body].Sample(t);
-                if (nearOther)
-                    for (int body = 0; body < otherAnatomy.Count; body++)
-                        if (otherAnatomy[body] != null) otherSweep[body].Sample(t);
+                if (!reuseAnatomy)
+                {
+                    for (int body = 0; body < anatomy.Count; body++)
+                        if (anatomy[body] != null && anatomySweep[body].SegmentMask != 0) anatomySweep[body].Sample(t);
+                    if (nearOther)
+                        for (int body = 0; body < otherAnatomy.Count; body++)
+                            if (otherAnatomy[body] != null && otherSweep[body].SegmentMask != 0) otherSweep[body].Sample(t);
+                }
                 for (int index = 0; index < CombatWeaponGeometry.Segments.Count; index++)
                 {
                     CombatWeaponGeometry.Segment segment = CombatWeaponGeometry.Segments[index];
@@ -580,28 +646,34 @@ namespace BarPromenade
                     probe.radius = segment.Radius;
                     probe.height = Vector3.Distance(a, b) + segment.Radius * 2f;
                     Quaternion capsuleRotation = (b - a).sqrMagnitude > .000001f ? Quaternion.FromToRotation(Vector3.up, b - a) : Quaternion.identity;
-                    for (int body = 0; body < anatomy.Count; body++)
+                    for (int body = 0; !reuseAnatomy && body < anatomy.Count; body++)
                     {
-                        if (anatomy[body] == null || !anatomySweep[body].Bounds.Intersects(segmentBounds)) continue;
+                        if (anatomy[body] == null || (anatomySweep[body].SegmentMask & (1u << index)) == 0 ||
+                            !anatomySweep[body].Bounds.Intersects(segmentBounds)) continue;
+                        AnatomySweepQueries++;
                         actor.JournalPhysicsQuery();
                         if (Physics.ComputePenetration(probe, (a + b) * .5f, capsuleRotation,
                             anatomy[body], anatomySweep[body].Pose.position, anatomySweep[body].Pose.rotation,
                             out _, out float overlap) && overlap > .001f)
                         {
+                            BlockingShape = anatomy[body].name;
                             if (!checkingDesiredPath || !nearWorld) return false;
                             anatomyBlocked = true;
                         }
                     }
-                    if (nearOther)
+                    if (nearOther && !reuseAnatomy)
                         for (int body = 0; body < otherAnatomy.Count; body++)
                         {
                             Collider shape = otherAnatomy[body];
-                            if (shape == null || !otherSweep[body].Bounds.Intersects(segmentBounds)) continue;
+                            if (shape == null || (otherSweep[body].SegmentMask & (1u << index)) == 0 ||
+                                !otherSweep[body].Bounds.Intersects(segmentBounds)) continue;
+                            AnatomySweepQueries++;
                             actor.JournalPhysicsQuery();
                             if (Physics.ComputePenetration(probe, (a + b) * .5f, capsuleRotation, shape,
                                 otherSweep[body].Pose.position, otherSweep[body].Pose.rotation,
                                 out _, out float overlap) && overlap > .001f)
                             {
+                                BlockingShape = shape.name;
                                 if (!checkingDesiredPath || !nearWorld) return false;
                                 anatomyBlocked = true;
                             }
@@ -635,17 +707,126 @@ namespace BarPromenade
                         if (count == sweeps.Length)
                         {
                             actor.JournalQueryBufferFull(4, "weapon_constraint_sweep", sweeps.Length);
-                            if (checkingDesiredPath) WorldBlocked = true; return false;
+                            if (checkingDesiredPath) RecordWorldContact((step - 1f) / steps, start, -delta.normalized); return false;
                         }
                         for (int h = 0; h < count; h++)
                             if (WorldObstacle(sweeps[h].collider))
-                            { if (checkingDesiredPath) WorldBlocked = true;
-                                BlockingShape = sweeps[h].collider.name; return false; }
+                            {
+                                BlockingShape = sweeps[h].collider.name;
+                                if (!checkingDesiredPath) return false;
+                                RecordWorldContact((step - 1f + sweeps[h].distance / delta.magnitude) / steps,
+                                    sweeps[h].point, sweeps[h].normal);
+                                sampleWorldBlocked = true;
+                            }
                     }
                 }
+                if (sampleWorldBlocked) return false;
                 previous = next;
             }
+            if (!anatomyBlocked && !reuseAnatomy) RememberClearAnatomySweep(from, to);
             return !anatomyBlocked;
+        }
+
+        private Bounds BuildSegmentSweepBounds(Pose from, Pose to, float angle)
+        {
+            // A slerped endpoint can bow outside its endpoint AABB. The arc's
+            // sagitta bounds that bow even when translation is added linearly.
+            float bow = 1f - Mathf.Cos(angle * Mathf.Deg2Rad * .5f);
+            Bounds all = default;
+            for (int i = 0; i < segmentSweepBounds.Length; i++)
+            {
+                CombatWeaponGeometry.Segment segment = CombatWeaponGeometry.Segments[i];
+                Bounds bounds = new Bounds(from.position + from.rotation * segment.A, Vector3.zero);
+                bounds.Encapsulate(from.position + from.rotation * segment.B);
+                bounds.Encapsulate(to.position + to.rotation * segment.A);
+                bounds.Encapsulate(to.position + to.rotation * segment.B);
+                float radius = segment.Radius + Skin + bow * Mathf.Max(segment.A.magnitude, segment.B.magnitude);
+                bounds.Expand(radius * 2f);
+                segmentSweepBounds[i] = bounds;
+                if (i == 0) all = bounds;
+                else all.Encapsulate(bounds);
+            }
+            return all;
+        }
+
+        private uint SweptPairs(Bounds body)
+        {
+            uint mask = 0;
+            for (int i = 0; i < segmentSweepBounds.Length; i++)
+                if (body.Intersects(segmentSweepBounds[i])) mask |= 1u << i;
+            return mask;
+        }
+
+        private void ClearAnatomyReuse()
+        { anatomyReuseActive = hasClearAnatomySweep = false; }
+
+        private static bool SamePose(Pose a, Pose b) => a.position.Equals(b.position) && a.rotation.Equals(b.rotation);
+
+        private bool CanReuseAnatomySweep(Pose from, Pose to)
+        {
+            if (!anatomyReuseActive || contactPreview || !hasClearAnatomySweep ||
+                !SamePose(from, clearAnatomyFrom) || !SamePose(to, clearAnatomyTo) ||
+                probe.enabled != clearAnatomyProbeEnabled || probe.gameObject.activeInHierarchy != clearAnatomyProbeActive ||
+                probe.isTrigger != clearAnatomyProbeTrigger || probe.direction != clearAnatomyProbeDirection ||
+                !probe.transform.lossyScale.Equals(clearAnatomyProbeScale) || !probe.center.Equals(clearAnatomyProbeCenter)) return false;
+            for (int i = 0; i < anatomy.Count; i++)
+                if (!clearAnatomy[i].Matches(anatomy[i], previousAnatomy[i])) return false;
+            for (int i = 0; i < otherAnatomy.Count; i++)
+                if (!clearOtherAnatomy[i].Matches(otherAnatomy[i], previousOtherAnatomy[i])) return false;
+            return true;
+        }
+
+        private void RememberClearAnatomySweep(Pose from, Pose to)
+        {
+            if (!anatomyReuseActive || contactPreview) return;
+            clearAnatomyFrom = from; clearAnatomyTo = to; clearAnatomyProbeEnabled = probe.enabled;
+            clearAnatomyProbeActive = probe.gameObject.activeInHierarchy; clearAnatomyProbeTrigger = probe.isTrigger;
+            clearAnatomyProbeDirection = probe.direction; clearAnatomyProbeScale = probe.transform.lossyScale;
+            clearAnatomyProbeCenter = probe.center;
+            for (int i = 0; i < anatomy.Count; i++) clearAnatomy[i] = new AnatomyStamp(anatomy[i], previousAnatomy[i]);
+            for (int i = 0; i < otherAnatomy.Count; i++) clearOtherAnatomy[i] = new AnatomyStamp(otherAnatomy[i], previousOtherAnatomy[i]);
+            hasClearAnatomySweep = true;
+        }
+
+        // Only clear anatomical sweeps survive until this Apply's final Commit.
+        // The supporting arm can move between them: exact LIVE primitive inputs,
+        // not a pose clock/frame or approximate hash, determine whether reuse is safe.
+        private readonly struct AnatomyStamp
+        {
+            private readonly Collider shape;
+            private readonly Pose previous, current;
+            private readonly Vector3 scale, center, size;
+            private readonly float radius, height;
+            private readonly int direction;
+            private readonly bool enabled, active, trigger, supported;
+
+            internal AnatomyStamp(Collider value, Pose prior)
+            {
+                shape = value; previous = prior;
+                current = value != null ? new Pose(value.transform.position, value.transform.rotation) : default;
+                scale = value != null ? value.transform.lossyScale : default;
+                center = size = default; radius = height = 0f; direction = 0;
+                enabled = value != null && value.enabled;
+                active = value != null && value.gameObject.activeInHierarchy;
+                trigger = value != null && value.isTrigger;
+                supported = value == null;
+                if (value is CapsuleCollider capsule)
+                { center = capsule.center; radius = capsule.radius; height = capsule.height; direction = capsule.direction; supported = true; }
+                else if (value is BoxCollider box)
+                { center = box.center; size = box.size; supported = true; }
+                else if (value is SphereCollider sphere)
+                { center = sphere.center; radius = sphere.radius; supported = true; }
+            }
+
+            internal bool Matches(Collider value, Pose prior)
+            {
+                AnatomyStamp next = new AnatomyStamp(value, prior);
+                return supported && next.supported && ReferenceEquals(shape, next.shape) &&
+                    SamePose(previous, next.previous) && SamePose(current, next.current) &&
+                    scale.Equals(next.scale) && center.Equals(next.center) && size.Equals(next.size) &&
+                    radius.Equals(next.radius) && height.Equals(next.height) && direction == next.direction &&
+                    enabled == next.enabled && active == next.active && trigger == next.trigger;
+            }
         }
 
         private sealed class WorldProbeLayout
@@ -693,6 +874,7 @@ namespace BarPromenade
             private readonly CombatWeaponGeometry.ShapeBounds geometry;
             internal readonly float Travel;
             internal readonly Bounds TravelBounds;
+            internal uint SegmentMask;
             internal Pose Pose;
             internal Bounds Bounds;
 
@@ -707,6 +889,7 @@ namespace BarPromenade
                 TravelBounds.Encapsulate(to.position);
                 TravelBounds.Expand(radius * 2f);
                 Pose = default; Bounds = default;
+                SegmentMask = 0;
             }
 
             internal void Sample(float t)
@@ -718,25 +901,41 @@ namespace BarPromenade
 
         internal PreviewScope BeginContactPreview() => new PreviewScope(this);
 
+        private void RecordWorldContact(float fraction, Vector3 point, Vector3 normal)
+        {
+            WorldBlocked = true;
+            if (fraction >= WorldContactFraction) return;
+            WorldContactFraction = fraction; WorldContactPoint = point; WorldContactNormal = normal;
+        }
+
         internal readonly struct PreviewScope : IDisposable
         {
             private readonly CombatWeaponConstraint owner;
             private readonly bool blocked, worldBlocked, supportBlocked, motionBlocked;
             private readonly float penetration;
+            private readonly float worldFraction;
+            private readonly Vector3 worldPoint, worldNormal;
             private readonly string shape;
+            private readonly CombatSupportGrip.ContactPreviewScope supportPreview;
             internal PreviewScope(CombatWeaponConstraint constraint)
             {
                 owner = constraint; blocked = owner.Blocked; motionBlocked = owner.MotionBlocked;
+                supportPreview = owner.actor.SupportGrip != null ? owner.actor.SupportGrip.BeginContactPreview() : default;
+                owner.ClearAnatomyReuse();
                 worldBlocked = owner.WorldBlocked;
+                worldFraction = owner.WorldContactFraction; worldPoint = owner.WorldContactPoint; worldNormal = owner.WorldContactNormal;
                 supportBlocked = owner.SupportBlocked;
                 penetration = owner.PenetrationDepth; shape = owner.BlockingShape; owner.contactPreview = true;
             }
             public void Dispose()
             {
+                owner.ClearAnatomyReuse();
                 owner.contactPreview = false; owner.Blocked = blocked; owner.MotionBlocked = motionBlocked;
                 owner.WorldBlocked = worldBlocked;
+                owner.WorldContactFraction = worldFraction; owner.WorldContactPoint = worldPoint; owner.WorldContactNormal = worldNormal;
                 owner.SupportBlocked = supportBlocked;
                 owner.PenetrationDepth = penetration; owner.BlockingShape = shape;
+                supportPreview.Dispose();
             }
         }
 

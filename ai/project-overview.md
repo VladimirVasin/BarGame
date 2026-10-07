@@ -78,8 +78,8 @@ repair commands. Generation/publication: [../tools/README.md](../tools/README.md
 
 ## Implemented capabilities
 
-- CombatTest: Q/.20s buffers/3 styles/.22 chains/shield/counters/rise/gaze/
-  1m/shove-regrip/120Hz/HP/fall-rise; bounded grip/recoil/rise retries.
+- CombatTest:120Hz early aim/two-foot Q/queue/3 styles/chains/shield/counters/
+  1m recovery Step/metal sparks/HP/fall-rise; live pose/sweep gates.
   Partial: penetration/balance/visual QA.
 - City: 20 metre types; district heights, curved old/service streets,
   courts/passages/wings, unified ground; river/shore, church and Route 01.

@@ -12,6 +12,10 @@ namespace BarPromenade
         private CombatRecoveryPose knockdownPose;
         private PlayerRagdollLyingPose knockdownLying;
         private bool knockedDown, knockdownFrozen, recoveryPoseBegun, recoveryRegrip;
+        private string journalClearanceReason, journalClearanceStage;
+        private Collider journalClearanceObstacle;
+        private int journalClearanceCount;
+        private float journalClearanceNext;
 
         /// <summary>Includes physical fall, lying, recovery and the actual supporting regrip.</summary>
         public bool IsKnockedDown => knockedDown;
@@ -27,6 +31,7 @@ namespace BarPromenade
             hero?.SetOwnedPresentationFrozen(this, false);
             if (!Ragdoll.BeginKnockdown(linearVelocity, angularVelocity)) return JournalKnockdownRejected("ragdoll_begin_refused");
             journalFallReason = journalRiseReason = null;
+            ResetRiseClearanceJournal();
             JournalEvent("knockdown_started", f0: GameLog.Field("impact_seq", LastJournalImpactSequence),
                 f1: GameLog.Field("velocity_x", linearVelocity.x), f2: GameLog.Field("velocity_y", linearVelocity.y), f3: GameLog.Field("velocity_z", linearVelocity.z),
                 f4: GameLog.Field("angular_x", angularVelocity.x), f5: GameLog.Field("angular_y", angularVelocity.y), f6: GameLog.Field("angular_z", angularVelocity.z));
@@ -85,7 +90,8 @@ namespace BarPromenade
             knockdownPose ??= new CombatRecoveryPose(transform, DamageRigRoot, Body, Ragdoll, handPose, hero == null);
             if (!recoveryPoseBegun)
             {
-                if (!knockdownPose.Begin(knockdownLying)) return JournalRiseWait("recovery_pose_begin_refused");
+                if (!knockdownPose.Begin(knockdownLying))
+                { JournalRiseClearance("begin"); return JournalRiseWait("recovery_pose_begin_refused"); }
                 recoveryPoseBegun = true;
                 knockdownPose.Present();
             }
@@ -116,7 +122,8 @@ namespace BarPromenade
             if (!recoveryRegrip) return JournalRiseWait("regrip_not_started");
             if (supportGrip != null && !supportGrip.IsSupportingWeapon) return JournalRiseWait("support_grip_missing");
             if (!knockdownPose.HandsReleased) return JournalRiseWait("hands_not_released");
-            if (!knockdownPose.HasStandingClearance()) return JournalRiseWait("standing_clearance");
+            if (!knockdownPose.HasStandingClearance())
+            { JournalRiseClearance("finish"); return JournalRiseWait("standing_clearance"); }
             FinishKnockdown();
             return true;
         }
@@ -149,6 +156,7 @@ namespace BarPromenade
         {
             JournalEvent("rise_completed", f0: GameLog.Field("impact_seq", LastJournalImpactSequence));
             journalRiseReason = null;
+            ResetRiseClearanceJournal();
             // The final standing/regripped pose stays on screen while the ordinary combat
             // owner resumes. Its normal transition starts from this pose, with the new root.
             knockdownPose.Dispose();
@@ -178,6 +186,7 @@ namespace BarPromenade
 
         private void ResetKnockdown()
         {
+            ResetRiseClearanceJournal();
             DisableHeldWeaponPhysics();
             weaponConstraint?.Forget();
             knockdownPose?.Dispose();
@@ -192,6 +201,77 @@ namespace BarPromenade
         {
             knockdownFrozen = frozen;
             Ragdoll?.SetFrozen(frozen);
+        }
+
+        private void ResetRiseClearanceJournal()
+        {
+            journalClearanceReason = journalClearanceStage = null;
+            journalClearanceObstacle = null; journalClearanceCount = 0; journalClearanceNext = 0f;
+        }
+
+        private void JournalRiseClearance(string stage)
+        {
+            if (Journal == null || knockdownPose == null || knockdownPose.ClearanceRefusalCount == 0) return;
+            CombatRecoveryPose.ClearanceRefusal refusal = knockdownPose.GetClearanceRefusal(0);
+            if (journalClearanceStage == stage && journalClearanceReason == refusal.Reason &&
+                journalClearanceObstacle == refusal.Obstacle && journalClearanceCount == knockdownPose.ClearanceRefusalCount &&
+                poseClock < journalClearanceNext) return;
+            journalClearanceStage = stage; journalClearanceReason = refusal.Reason;
+            journalClearanceObstacle = refusal.Obstacle; journalClearanceCount = knockdownPose.ClearanceRefusalCount;
+            journalClearanceNext = poseClock + 1f;
+            // The desired support is the first refusal; the bounded alternatives
+            // remain available as exact diagnostic records without per-tick output.
+            Collider obstacle = refusal.Obstacle;
+            string category = obstacle != null ? obstacle.GetComponentInParent<CombatActor>() != null ? "combat_actor" :
+                obstacle.attachedRigidbody != null ? "dynamic_body" : "world" :
+                refusal.Reason.EndsWith("buffer_full", System.StringComparison.Ordinal) ? "query_capacity" : "floor";
+            long sequence = JournalEvent("rise_clearance_blocked", action: State.AttackSequence,
+                f0: GameLog.Field("stage", stage), f1: GameLog.Field("reason", refusal.Reason),
+                f2: GameLog.Field("category", category), f3: GameLog.Field("collider_path", RecoveryColliderPath(obstacle)),
+                f4: GameLog.Field("collider_type", obstacle != null ? obstacle.GetType().Name : null),
+                f5: GameLog.Field("collider_id", obstacle != null ? obstacle.GetEntityId().GetHashCode() : 0),
+                f6: GameLog.Field("candidate_index", refusal.CandidateIndex), f7: GameLog.Field("candidates_checked", journalClearanceCount));
+            int capsuleRefusals = 0, pathRefusals = 0, floorRefusals = 0, capacityRefusals = 0;
+            for (int i = 0; i < journalClearanceCount; i++)
+            {
+                string reason = knockdownPose.GetClearanceRefusal(i).Reason;
+                if (reason.EndsWith("buffer_full", System.StringComparison.Ordinal)) capacityRefusals++;
+                else if (reason.StartsWith("capsule", System.StringComparison.Ordinal)) capsuleRefusals++;
+                else if (reason.StartsWith("path", System.StringComparison.Ordinal)) pathRefusals++;
+                else floorRefusals++;
+            }
+            CombatRecoveryPose.ClearanceRefusal last = knockdownPose.GetClearanceRefusal(journalClearanceCount - 1);
+            JournalEvent("rise_clearance_search", action: State.AttackSequence,
+                f0: GameLog.Field("refusal_seq", sequence), f1: GameLog.Field("capsule_rejections", capsuleRefusals),
+                f2: GameLog.Field("path_rejections", pathRefusals), f3: GameLog.Field("floor_rejections", floorRefusals),
+                f4: GameLog.Field("capacity_rejections", capacityRefusals), f5: GameLog.Field("last_candidate", last.CandidateIndex),
+                f6: GameLog.Field("last_reason", last.Reason), f7: GameLog.Field("last_collider_path", RecoveryColliderPath(last.Obstacle)));
+            JournalEvent("rise_clearance_candidate", action: State.AttackSequence,
+                f0: GameLog.Field("refusal_seq", sequence), f1: GameLog.Field("x", refusal.Candidate.x),
+                f2: GameLog.Field("y", refusal.Candidate.y), f3: GameLog.Field("z", refusal.Candidate.z));
+            JournalEvent("rise_clearance_path", action: State.AttackSequence,
+                f0: GameLog.Field("refusal_seq", sequence), f1: GameLog.Field("tested", refusal.PathTested),
+                f2: GameLog.Field("from_x", refusal.PathFrom.x), f3: GameLog.Field("from_y", refusal.PathFrom.y), f4: GameLog.Field("from_z", refusal.PathFrom.z),
+                f5: GameLog.Field("to_x", refusal.PathTo.x), f6: GameLog.Field("to_y", refusal.PathTo.y), f7: GameLog.Field("to_z", refusal.PathTo.z));
+            JournalEvent("rise_clearance_capsule", action: State.AttackSequence,
+                f0: GameLog.Field("refusal_seq", sequence), f1: GameLog.Field("top_x", refusal.CapsuleTop.x),
+                f2: GameLog.Field("top_y", refusal.CapsuleTop.y), f3: GameLog.Field("top_z", refusal.CapsuleTop.z),
+                f4: GameLog.Field("bottom_x", refusal.CapsuleBottom.x), f5: GameLog.Field("bottom_y", refusal.CapsuleBottom.y),
+                f6: GameLog.Field("bottom_z", refusal.CapsuleBottom.z), f7: GameLog.Field("radius", refusal.CapsuleRadius));
+            JournalEvent("rise_clearance_floor", action: State.AttackSequence,
+                f0: GameLog.Field("refusal_seq", sequence), f1: GameLog.Field("tested", refusal.FloorTested),
+                f2: GameLog.Field("collider_path", RecoveryColliderPath(refusal.Floor)), f3: GameLog.Field("x", refusal.FloorPoint.x),
+                f4: GameLog.Field("y", refusal.FloorPoint.y), f5: GameLog.Field("z", refusal.FloorPoint.z),
+                f6: GameLog.Field("normal_y", refusal.FloorNormal.y), f7: GameLog.Field("capsule_tested", refusal.CapsuleTested));
+        }
+
+        private static string RecoveryColliderPath(Collider collider)
+        {
+            if (collider == null) return null;
+            string path = collider.name;
+            for (Transform parent = collider.transform.parent; parent != null; parent = parent.parent)
+                path = parent.name + "/" + path;
+            return path;
         }
     }
 }

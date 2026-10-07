@@ -257,18 +257,24 @@
   Shared plan/sampler/bounds/metres/collider, `48 m` buckets;
   §6/§12/art §10g/§16/§21/nine checks.
 
+- **Accepted — 2026-10-07, combat:**
+  Both:first¼Windup yaw→fixed Active/Recovery;Charge free;motor yields.
+  1m Step/.36+.21/15; immediate real-sole/catch handoff before fall,
+  impact/overload retained;catch→finite gait/Step landing. Q:free leg/load/two clips/R hand.
+  Bar/world/body TOI;bar→wall Obstacle/recoil/recovery;
+  both active stop; guard effort/break,0HP/parry. Pooled sparks/sound.
+  Scope:§6/§16.15/art§15a.
 - **Accepted — 2026-10-02, combat:**
   R ignores L; Hit/Miss tail cut/.22→held .28/buffer.20s;
   hit/fall/R clears. AI≥1m/retreat≤.6s/whiff.20→counter.22/Rising attacks.
   Held guard≠parry; shield dim/request/ready/block; gaze clip/physics/
   pause/hit-stop/R/defeat/unload; regrip/scoped anatomy/120Hz.
 - **Accepted — 2026-10-03, combat:**
-  Hero Windup: motor/1m inward+braking; side/back/impulses/drift free;
+  Hero Windup:motor/1m+braking; side/back/impulses/drift free;
   ≤.85m/0HP shove/continuous arm-regrip/wrist-elbow-shoulder≤600°/s/
   body-world-palm gates; DuelJournal identity/anatomy/CPU+wall.
-- **Accepted architecture exception — 2026-10-03, kick/styles:**
-  CombatTest Q/B kick/3 styles/recoil holds Recovery; §6/§16.15/art§15a;
-  .20s walk wait/tail buffer/support≠chain; no weapons/world effects.
+- **Accepted exception — 2026-10-03, kick/styles:** Q/B/3 styles/recoil hold;
+  §6/§16.15/art§15a; .20s walk wait/tail buffer/support≠chain.
 - **Accepted — 2026-09-25, clinch shove:** Both: close swing→faster/stronger shove.
 - **Accepted — 2026-09-26, recovery:**
   Impact≤2 steps/opt-in flywheel-crouch-brace; gate:1 shove/AI off/
@@ -279,16 +285,15 @@
   -5..120/side±8°; QA pending.
 - **Accepted — 2026-09-21, anatomy:**
   Six bone-local zones/first-sequence/head×2(50/80,cap.99MaxHP)/rear±45°
-  defeat/torso1-rear1.25/arms.5/legs.75; guard-parry first; frozen mutual
+  defeat/torso1-rear1.25/arms.5/legs.75; frozen mutual
   zone/direction/power; one HP/ragdoll/R.
 - **Accepted — 2026-09-21, inertia:**
-  C1 pose/contact; duel-clock travel/yaw:return.15→.75/stun.35/arc0;
-  AI charge/windup planted; hero.2.
+  C1 pose/contact; duel-clock travel/yaw:return.15→.75/stun.35.
 - **Accepted — 2026-09-21, stance:**
   .42/.28m/Windup settle/afraid-unskilled hero/calm NPC;
   duel-clock breath/tremor/flinch:nearby tell.
 - **Accepted — 2026-09-21, step/Hold:**
-  .8m/.36+.21s/15/smoothstep-pose-footfall clock; Hold freezes breath/exit delays regen.
+  1m/.36+.21s/15/smoothstep-pose-footfall clock; Hold freezes breath/exit delays regen.
 - **Accepted — 2026-09-20, two hands:**
   Ready/Block/attack/recoil→L/Hit-GuardBreak-Defeat release;
   low Ready/high Block/opposed L.16→.42m/breath4s/blend/injury/NPC R Rest;
@@ -296,8 +301,7 @@
 - **Accepted — 2026-09-21, victory:** Hero swing→walk; combat off until R.
 - **Accepted — 2026-09-21, brawl v2:**
   Free hits/guard20-35/charge20/regen30/s-.6s in stuns/own spends;
-  fresh≤.12 light parry/rearm.35/counter+.30/break½dmg-.55/buffer.20;
-  seeded AI/postfall freecam.
+  seeded AI/postfall freecam/buffer.20.
 - **Accepted — 2026-09-21, swing sides:**
   Fore/back:through flips/stopped repeats; step/target>15°, not strafe;
   same dmg-time-cost; upper(t+q*.18*(1-smooth(t/.45)))/lower(t),

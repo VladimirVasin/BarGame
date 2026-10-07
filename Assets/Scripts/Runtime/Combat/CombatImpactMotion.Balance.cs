@@ -7,6 +7,14 @@ namespace BarPromenade
         private readonly Transform frame;
         private Vector3 leftSupport, rightSupport, recoveryTarget, handPoint, handNormal;
         private bool hasFootSupport, leftPlanted = true, rightPlanted = true, recoveryStepActive, handSupported;
+        private bool authoredRecoveryStep;
+        private Vector3 authoredRecoveryRootDisplacement;
+        private bool movementLandingActive;
+        private int movementLandingId = -1, movementLandingSide;
+        private Vector3 movementLandingTarget, movementLandingRootDisplacement;
+        private float movementLandingRemaining;
+        internal bool MovementLandingActive => movementLandingActive && movementLandingRemaining > 0f;
+        internal Vector3 MovementLandingTarget => movementLandingTarget;
         private float stamina = 1f, intoxication, baseSkill = .9f, recoveryElapsed, recoveryStepRemaining;
         private float handStrength, crouch;
         private Vector2 flywheelAngle, flywheelVelocity;
@@ -63,16 +71,51 @@ namespace BarPromenade
         {
             if (!Finite(target) || !float.IsFinite(duration) || duration <= 0f) return;
             recoveryStepActive = true; recoveryTarget = target; recoveryStepSide = side;
+            authoredRecoveryStep = false;
             recoveryStepRemaining = duration + .075f;
             if (side == 0) leftPlanted = false; else rightPlanted = false;
         }
+
+        internal void BeginAuthoredRecoveryStep(int side, Vector3 target, float duration, Vector3 remainingRootDisplacement)
+        {
+            BeginRecoveryStep(side, target, duration);
+            authoredRecoveryStep = true;
+            authoredRecoveryRootDisplacement = remainingRootDisplacement;
+        }
+
+        internal void UpdateAuthoredRecoveryProjection(Vector3 remainingRootDisplacement)
+        {
+            if (authoredRecoveryStep && Finite(remainingRootDisplacement))
+                authoredRecoveryRootDisplacement = remainingRootDisplacement;
+        }
+
+        internal Vector3 PredictRecoveryDisplacement(float seconds) =>
+            velocity * ((1f - Mathf.Exp(-4.2f * Mathf.Max(0f, seconds))) / 4.2f);
+
+        // Ordinary locomotion supplies a finite physical landing, not a recovery
+        // action. It cannot reserve the hand, reset overload or buy another catch.
+        internal void ReportMovementLanding(int id, int side, Vector3 target, float seconds, Vector3 rootDisplacement)
+        {
+            if (!IsActive || WantsKnockdown || side < 0 || side > 1 || !Finite(target) ||
+                !Finite(rootDisplacement) || !float.IsFinite(seconds) || seconds <= 0f)
+            { CancelMovementLanding(); return; }
+            float remaining = seconds + .075f;
+            if (movementLandingId != id)
+            { movementLandingId = id; movementLandingRemaining = remaining; }
+            else movementLandingRemaining = Mathf.Min(movementLandingRemaining, remaining);
+            movementLandingSide = side; movementLandingTarget = target;
+            movementLandingRootDisplacement = rootDisplacement;
+            movementLandingActive = movementLandingRemaining > 0f;
+        }
+
+        internal void CancelMovementLanding() => movementLandingActive = false;
 
         public void LandRecoveryStep(int side, Vector3 point)
         {
             if (!recoveryStepActive || side != recoveryStepSide || !Finite(point)) return;
             if (side == 0) { leftSupport = point; leftPlanted = true; }
             else { rightSupport = point; rightPlanted = true; }
-            recoveryStepActive = false; recoveryStepRemaining = 0f;
+            recoveryStepActive = authoredRecoveryStep = false; recoveryStepRemaining = 0f;
             LastLandingSpeedBefore = velocity.magnitude;
             // The shared walking balance model's landing rule: a real contact
             // transfers support and absorbs momentum. An injured/tired leg yields.
@@ -86,7 +129,7 @@ namespace BarPromenade
         }
 
         public void CancelRecoveryStep()
-        { recoveryStepActive = false; recoveryStepRemaining = 0f; }
+        { recoveryStepActive = authoredRecoveryStep = false; recoveryStepRemaining = 0f; }
 
         internal bool HasStableRecoverySupport(Vector3 locomotionVelocity)
         {
@@ -138,8 +181,10 @@ namespace BarPromenade
         private Vector3 WorldPlanar(Vector2 local) => frame.right * local.x + frame.forward * local.y;
 
         public float RecoveryFootError(int side, Vector3 target)
+            => RecoveryFootError(side, target, CentreOfMass);
+
+        private float RecoveryFootError(int side, Vector3 target, Vector3 centre)
         {
-            Vector3 centre = CentreOfMass;
             Vector2 left = LocalPlanar((side == 0 ? target : leftSupport) - centre);
             Vector2 right = LocalPlanar((side == 1 ? target : rightSupport) - centre);
             return FootPolygon(left, right).Excursion(LocalPlanar(CaptureOffset));
@@ -221,13 +266,23 @@ namespace BarPromenade
             if (!float.IsFinite(seconds) || seconds <= 0f) return;
             if (!IsActive) { overload = BalanceLoad = 0f; WantsKnockdown = false; return; }
             MeasureBalance();
-            bool reachableLanding = recoveryStepActive && recoveryStepRemaining > 0f && (leftPlanted || rightPlanted) &&
-                Vector3.ProjectOnPlane(CentreOfMass + CaptureOffset - recoveryTarget, Vector3.up).magnitude < .62f;
+            // A directed recovery shuffle moves the torso as well as its foot.
+            // Judge the next finite landing at its planned root, without changing
+            // current support, momentum, overload or the existing fall deadlines.
+            bool recoveryLanding = recoveryStepActive && recoveryStepRemaining > 0f;
+            bool ordinaryLanding = !recoveryLanding && MovementLandingActive;
+            Vector3 target = ordinaryLanding ? movementLandingTarget : recoveryTarget;
+            int side = ordinaryLanding ? movementLandingSide : recoveryStepSide;
+            Vector3 projection = ordinaryLanding ? movementLandingRootDisplacement :
+                authoredRecoveryStep ? authoredRecoveryRootDisplacement : Vector3.zero;
+            Vector3 landingCentre = CentreOfMass + projection;
+            bool reachableLanding = (recoveryLanding || ordinaryLanding) && (leftPlanted || rightPlanted) &&
+                Vector3.ProjectOnPlane(landingCentre + CaptureOffset - target, Vector3.up).magnitude < .62f;
             // A side step deliberately leaves the far boot carrying the body.
             // Judge its finite chance against the planned support, otherwise
             // lifting the needed foot itself looks like an immediate catastrophe.
             float prospectiveLoad = reachableLanding
-                ? RecoveryFootError(recoveryStepSide, recoveryTarget) / Mathf.Lerp(.14f, .29f, RecoverySkill)
+                ? RecoveryFootError(side, target, landingCentre) / Mathf.Lerp(.14f, .29f, RecoverySkill)
                 : BalanceLoad;
             bool catastrophic = prospectiveLoad > 3.2f || rotation.magnitude > .68f;
             bool lost = BalanceLoad > 1f && (!reachableLanding || catastrophic);
@@ -236,11 +291,16 @@ namespace BarPromenade
             // per-hit reset. A reachable moving foot gets its bounded chance.
             WantsKnockdown = overload >= (catastrophic ? .10f : .18f) ||
                 (recoveryElapsed > 1.4f && BalanceLoad > 1.3f && !reachableLanding);
+            movementLandingRemaining = Mathf.Max(0f, movementLandingRemaining - seconds);
+            if (movementLandingRemaining <= 0f) movementLandingActive = false;
         }
 
         private void ResetBalance()
         {
             hasFootSupport = recoveryStepActive = handSupported = flywheelSpent = false;
+            authoredRecoveryStep = false; authoredRecoveryRootDisplacement = Vector3.zero;
+            movementLandingActive = false; movementLandingId = -1; movementLandingRemaining = 0f;
+            movementLandingTarget = movementLandingRootDisplacement = Vector3.zero;
             leftPlanted = rightPlanted = true;
             recoveryElapsed = recoveryStepRemaining = handStrength = crouch = 0f;
             flywheelAngle = flywheelVelocity = Vector2.zero;

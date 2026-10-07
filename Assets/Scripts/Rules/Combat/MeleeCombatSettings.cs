@@ -17,7 +17,7 @@ namespace BarPromenade
             float hitRecoverySeconds = 0.20f, float blockRecoverySeconds = 0.28f,
             float obstacleRecoverySeconds = 0.35f, float guardImpactSeconds = 0.18f,
             float stepCost = 15f, float stepTravelSeconds = 0.36f,
-            float stepRecoverySeconds = 0.21f, float stepDistance = 0.8f,
+            float stepRecoverySeconds = 0.21f, float stepDistance = 1f,
             float animationRecoverySeconds = 0.65f, float chargeSeconds = .6f,
             float chargeDamageBonus = 15f, float chargeStaminaCost = 20f,
             float chargeBlockCostBonus = 15f, float chargedWindupSeconds = .28f,

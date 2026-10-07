@@ -48,6 +48,62 @@ namespace BarPromenade
         private Quaternion armReferenceRotation;
         private Vector3 armReferenceAxis, elbowBackInUpper;
         private Quaternion reachStartRotation, reachStepRotationLocal;
+        private bool contactPreview, hasRegripTarget, regripClosing, regripWaiting, regripProbePending;
+        private bool regripProposalValid, regripCommittedThisStep;
+        private Vector3 regripTargetLocal, regripElbowLocal;
+        private Quaternion regripRotationLocal, completedRegripUpper, completedRegripForearm, completedRegripHand;
+        private Pose regripProposal;
+        private Vector3 regripProposalElbow;
+        private string regripProposalReason;
+        private float regripCommitSeconds, regripRetrySeconds, regripNoProgressSeconds, regripPreviousError;
+
+        internal ContactPreviewScope BeginContactPreview() => new ContactPreviewScope(this);
+
+        // Sampling may temporarily release or solve L, without replacing the
+        // accepted target/arm from which the actual substep must advance.
+        internal readonly struct ContactPreviewScope : IDisposable
+        {
+            private readonly CombatSupportGrip owner;
+            private readonly CombatArmSupportState state;
+            private readonly bool protective, wantsSupport, branch, target, closing, waiting, probe, proposal, completed, wrist;
+            private readonly float weight, close, lost, hold, urgency, distance, start, destination, slide, error, angle, station;
+            private readonly Vector3 palm, elbow, direction;
+            private readonly Quaternion rotation;
+            private readonly Pose proposed;
+            private readonly Vector3 proposedElbow;
+            private readonly string proposedReason, rejection;
+            internal ContactPreviewScope(CombatSupportGrip grip)
+            {
+                owner = grip; state = grip.State; protective = grip.protective; wantsSupport = grip.wantsSupport;
+                branch = grip.preserveSupportBranch; target = grip.hasRegripTarget; closing = grip.regripClosing;
+                waiting = grip.regripWaiting; probe = grip.regripProbePending; proposal = grip.regripProposalValid;
+                completed = grip.regripCommittedThisStep; wrist = grip.presentedWristSafe;
+                weight = grip.weight; close = grip.closeElapsed; lost = grip.lostSupportElapsed;
+                hold = grip.releaseHold; urgency = grip.urgency; distance = grip.distance;
+                start = grip.startDistance; destination = grip.targetDistance; slide = grip.slideElapsed;
+                error = grip.presentedContactError; angle = grip.presentedContactAngle; station = grip.presentedContactStation;
+                palm = grip.palmPosition; elbow = grip.elbowHint; direction = grip.direction; rotation = grip.palmRotation;
+                proposed = grip.regripProposal; proposedElbow = grip.regripProposalElbow;
+                proposedReason = grip.regripProposalReason; rejection = grip.LastPoseRejection;
+                grip.contactPreview = true;
+            }
+            public void Dispose()
+            {
+                if (owner == null) return;
+                owner.State = state; owner.protective = protective; owner.wantsSupport = wantsSupport;
+                owner.preserveSupportBranch = branch; owner.hasRegripTarget = target; owner.regripClosing = closing;
+                owner.regripWaiting = waiting; owner.regripProbePending = probe; owner.regripProposalValid = proposal;
+                owner.regripCommittedThisStep = completed; owner.presentedWristSafe = wrist;
+                owner.weight = weight; owner.closeElapsed = close; owner.lostSupportElapsed = lost;
+                owner.releaseHold = hold; owner.urgency = urgency; owner.distance = distance;
+                owner.startDistance = start; owner.targetDistance = destination; owner.slideElapsed = slide;
+                owner.presentedContactError = error; owner.presentedContactAngle = angle; owner.presentedContactStation = station;
+                owner.palmPosition = palm; owner.elbowHint = elbow; owner.direction = direction; owner.palmRotation = rotation;
+                owner.regripProposal = proposed; owner.regripProposalElbow = proposedElbow;
+                owner.regripProposalReason = proposedReason; owner.LastPoseRejection = rejection;
+                owner.contactPreview = false;
+            }
+        }
         private CombatArmClearance armClearance;
         private bool shoveActive;
         private Transform shoveContactRoot;
@@ -115,16 +171,20 @@ namespace BarPromenade
         internal bool IsWeaponSupportPoseFeasible() => IsWeaponSupportPoseFeasible(out _);
 
         internal bool IsWeaponSupportPoseFeasible(out string reason)
-            => IsWeaponSupportPoseFeasible(false, out reason);
+            => IsWeaponSupportPoseFeasible(false, out reason, out _);
 
-        // A shoulder-search filter only: exact contact or the already accepted
-        // bounded adjustment. It never performs physics or a tilt/slide search.
+        // A conservative shoulder-search filter, never a final contact verdict.
+        // New bounded contact corrections belong to the one full solve in Apply.
         internal bool IsWeaponSupportPoseGeometricallyFeasible()
-            => IsWeaponSupportPoseFeasible(true, out _);
+            => IsWeaponSupportPoseGeometricallyFeasible(out _);
 
-        private bool IsWeaponSupportPoseFeasible(bool geometryOnly, out string reason)
+        internal bool IsWeaponSupportPoseGeometricallyFeasible(out bool exactContactFeasible)
+            => IsWeaponSupportPoseFeasible(true, out _, out exactContactFeasible);
+
+        private bool IsWeaponSupportPoseFeasible(bool geometryOnly, out string reason, out bool exactContactFeasible)
         {
             reason = null;
+            exactContactFeasible = true;
             if (!RequiresWeaponSupportConstraint) return true;
             // The right-arm owner proposes its live weapon pose. Read the
             // authored destination before temporarily restoring the last
@@ -140,7 +200,7 @@ namespace BarPromenade
                 }
                 Vector3 authoredHint = GripHint;
                 if (hasArmStep) ApplyArmStep();
-                if (!TryContact(out Pose contact)) { reason = "contact_frame"; return false; }
+                if (!TryContact(out Pose contact)) { exactContactFeasible = false; reason = "contact_frame"; return false; }
                 bool continuous = preserveSupportBranch && hasArmStep;
                 bool feasible;
                 if (geometryOnly)
@@ -156,6 +216,8 @@ namespace BarPromenade
                             Quaternion.Angle(previous.rotation, contact.rotation) <= ContactSolveAngleLimit &&
                             TryContactHint(previous, authoredHint, ReachFraction, SupportReachSlack, out _, true, true);
                     }
+                    exactContactFeasible = feasible;
+                    if (!feasible) feasible = ContactAdjustmentMayBeReachable(contact);
                 }
                 else feasible = TrySupportedContactHint(ref contact, authoredHint, ReachFraction, SupportReachSlack,
                     out _, continuous);
@@ -168,6 +230,22 @@ namespace BarPromenade
                 contactRejection = savedRejection; contactBlockingShape = savedShape;
                 LastContactSearchDiagnostics = savedDiagnostics;
             }
+        }
+
+        private bool ContactAdjustmentMayBeReachable(Pose nominal)
+        {
+            Vector3 offset = Quaternion.Inverse(hand.rotation) * (socket.position - hand.position);
+            Vector3 nominalWrist = nominal.position - nominal.rotation * offset;
+            float upperLength = Vector3.Distance(upper.position, forearm.position);
+            float lowerLength = Vector3.Distance(forearm.position, hand.position);
+            // Sliding on the bar and rotating the palm can move the wrist by
+            // at most this amount. Reject only a span outside that envelope;
+            // wrist, elbow-branch, body and world clearance still require Apply.
+            float wristTravel = ContactTolerance +
+                2f * offset.magnitude * Mathf.Sin(ContactSolveAngleLimit * .5f * Mathf.Deg2Rad);
+            float span = Vector3.Distance(upper.position, nominalWrist);
+            return span <= (upperLength + lowerLength) * ReachFraction + SupportReachSlack + wristTravel &&
+                span + wristTravel > Mathf.Abs(upperLength - lowerLength) + .0001f;
         }
         internal Vector3 LiveArmAngles
         {
@@ -330,6 +408,8 @@ namespace BarPromenade
             if (recoveryOwned == owned) return;
             if (owned) { ClearBalanceHand(); shoveActive = false; shoveContactRoot = null; }
             recoveryOwned = owned;
+            hasRegripTarget = regripClosing = regripWaiting = regripCommittedThisStep = false;
+            regripCommitSeconds = 0f;
             // Do not restore an old pre-IK pose over the body captured by the fall/recovery owner.
             Forget(); CaptureArm(true);
             // The last combat sample may predate the entire physical fall.
@@ -631,6 +711,9 @@ namespace BarPromenade
         public void Advance(float seconds)
         {
             if (!initialized || !Finite(seconds) || seconds <= 0f) return;
+            regripCommittedThisStep = false;
+            regripCommitSeconds = 0f;
+            regripProposalValid = regripProbePending = false;
             // Every presentation of this duel step starts at the same last
             // visible joint chain, never at a freshly sampled hit/ready clip.
             armStepUpper = hasPresentedPose ? presentedUpperRotation : upper.localRotation;
@@ -675,6 +758,17 @@ namespace BarPromenade
                 string wait = balanceCollider != null ? "balance_hand_owns_arm" : !(balanceSeekSeconds <= 0f) ? "balance_seek" :
                     !wantsSupport ? "support_not_requested" : !regripAllowed ? "regrip_gate" :
                     !(releaseHold <= 0f) ? "release_hold" : !TryContact(out contact) ? "weapon_contact_unavailable" : null;
+                if (wait == null && regripWaiting)
+                {
+                    // An obstructed or faster-than-the-hand target does not own
+                    // an endless reach. Recheck the live geometry without moving
+                    // the open arm until a new feasible contact is available.
+                    regripRetrySeconds = Mathf.Max(0f, regripRetrySeconds - seconds);
+                    regripProbePending = regripRetrySeconds <= 0f;
+                    regripCommitSeconds = regripProbePending ? seconds : 0f;
+                    CaptureArm(true);
+                    return;
+                }
                 if (wait == null)
                     BeginRegrip(contact);
                 else
@@ -705,17 +799,147 @@ namespace BarPromenade
             reachStepRotationLocal = Quaternion.Inverse(frame.rotation) * palmRotation;
             reachStepElbowLocal = frame.InverseTransformPoint(elbowHint);
             reachStepSeconds = seconds;
+            regripCommitSeconds = seconds;
             reachProgress = Mathf.Min(1f, reachProgress + seconds / reachDuration);
-            string contactWait = !(reachProgress >= .8f) ? "reach_progress" : !(presentedContactError <= ContactTolerance) ? "palm_contact_gap" :
-                !(presentedContactAngle <= 12f) ? "palm_contact_angle" : !CanReach(grip) ? "arm_reach_or_clearance" : null;
-            bool touching = contactWait == null;
-            JournalGripWait(contactWait ?? "contact_closing", presentedContactError, ContactTolerance);
+        }
+
+        // Called after the weapon owner has accepted or rolled back the complete
+        // pose. Preview and repeated presentation never spend this step twice.
+        internal void CommitPresentedContact(bool accepted)
+        {
+            if (contactPreview) return;
+            float seconds = regripCommitSeconds;
+            regripCommitSeconds = 0f;
+            if (seconds <= 0f) return;
+            if (TryContact(out Pose nominal))
+            {
+                presentedContactError = Vector3.Distance(socket.position, nominal.position);
+                presentedContactAngle = Quaternion.Angle(hand.rotation, nominal.rotation);
+                presentedWristSafe = accepted && WristCanHold(hand.position - forearm.position, hand.rotation);
+                presentedContactStation = Vector3.Dot(hands.CylinderCentre(true) - Target, weapon.up);
+            }
+            RememberPresentedArm();
+            if (IsRegripping || (State == CombatArmSupportState.Free && regripWaiting))
+            {
+                regripCommittedThisStep = true;
+                completedRegripUpper = upper.localRotation;
+                completedRegripForearm = forearm.localRotation;
+                completedRegripHand = hand.localRotation;
+            }
+            if (!accepted)
+            {
+                if (IsRegripping) WaitForRegripContact("contact_pose_rejected");
+                return;
+            }
+            if (regripProbePending && State == CombatArmSupportState.Free && regripWaiting)
+            {
+                regripProbePending = false;
+                regripRetrySeconds = .08f;
+                if (regripProposalValid)
+                {
+                    BeginRegrip(regripProposal);
+                    RememberRegripTarget();
+                }
+                else JournalGripWait(regripProposalReason ?? "contact_path_wait");
+                return;
+            }
+            if (!IsRegripping) return;
+            if (!regripProposalValid)
+            {
+                WaitForRegripContact(regripProposalReason ?? "contact_path_wait");
+                return;
+            }
+            RememberRegripTarget();
+            float cylinderGap = Vector3.ProjectOnPlane(hands.CylinderCentre(true) - Target, weapon.up).magnitude;
+            bool touching = reachProgress >= .8f && presentedContactError <= ContactTolerance &&
+                presentedContactAngle <= ContactAngleLimit && cylinderGap <= .001f && presentedWristSafe && ArmPoseClear();
+            string wait = reachProgress < .8f ? "reach_progress" : presentedContactError > ContactTolerance ? "palm_contact_gap" :
+                presentedContactAngle > ContactAngleLimit ? "palm_contact_angle" : cylinderGap > .001f ? "palm_cylinder_gap" :
+                !touching ? "arm_reach_or_clearance" : "contact_closing";
+            JournalGripWait(wait, cylinderGap > .001f ? cylinderGap : presentedContactError,
+                cylinderGap > .001f ? .001f : ContactTolerance);
             closeElapsed = touching ? closeElapsed + seconds : 0f;
-            weight = Mathf.MoveTowards(weight, touching ? 1f : 0f, seconds / (touching ? CloseSeconds : .06f));
+            weight = touching ? Mathf.MoveTowards(weight, 1f, seconds / CloseSeconds) : 0f;
+            regripClosing = touching;
+            hands.SetGrip(true, touching ? weight : 0f);
+            if (touching) regripElbowLocal = frame.InverseTransformPoint(forearm.position);
+            float error = presentedContactError + presentedContactAngle * Mathf.Deg2Rad * .1f;
+            regripNoProgressSeconds = reachProgress < 1f || touching || error < regripPreviousError - .0001f
+                ? 0f : regripNoProgressSeconds + seconds;
+            regripPreviousError = error;
+            if (!touching && regripNoProgressSeconds >= .20f)
+            {
+                WaitForRegripContact("contact_path_not_converging");
+                return;
+            }
             if (weight < .999f || reachProgress < 1f) return;
             State = CombatArmSupportState.SupportingWeapon;
+            regripCommittedThisStep = true;
+            completedRegripUpper = upper.localRotation;
+            completedRegripForearm = forearm.localRotation;
+            completedRegripHand = hand.localRotation;
             JournalGripWait("support_restored", presentedContactError, ContactTolerance);
             protective = false; urgency = lostSupportElapsed = 0f; armWeight = 1f;
+        }
+
+        private void RememberRegripTarget()
+        {
+            regripTargetLocal = weapon.InverseTransformPoint(regripProposal.position);
+            regripRotationLocal = Quaternion.Inverse(weapon.rotation) * regripProposal.rotation;
+            regripElbowLocal = frame.InverseTransformPoint(regripProposalElbow);
+            hasRegripTarget = true;
+        }
+
+        private void WaitForRegripContact(string reason)
+        {
+            JournalGripWait(reason, presentedContactError, ContactTolerance);
+            State = CombatArmSupportState.Free;
+            regripWaiting = true; regripClosing = hasRegripTarget = false;
+            regripRetrySeconds = .08f;
+            weight = closeElapsed = regripNoProgressSeconds = 0f;
+            hands.SetGrip(true, 0f);
+            CaptureArm(true);
+        }
+
+        private bool TryRegripContact(Vector3 authoredHint, out Pose contact, out Vector3 hint)
+        {
+            // Retention and the fallback share one final-solve budget. A failed
+            // retained endpoint cannot multiply the work of an open-hand retry.
+            contactSolveRemaining = MaxContactSolveEvaluations;
+            LastContactSolveBudgetExhausted = false;
+            try { return TryRegripContactCore(authoredHint, out contact, out hint); }
+            finally
+            {
+                LastContactSolveEvaluations = MaxContactSolveEvaluations - contactSolveRemaining;
+                if (LastContactSolveBudgetExhausted) SupportBudgetExhaustions++;
+            }
+        }
+
+        private bool TryRegripContactCore(Vector3 authoredHint, out Pose contact, out Vector3 hint)
+        {
+            contact = default; hint = default;
+            if (!TryContact(out Pose nominal)) { regripProposalReason = "weapon_contact_unavailable"; return false; }
+            if (hasRegripTarget)
+            {
+                contact = new Pose(weapon.TransformPoint(regripTargetLocal), weapon.rotation * regripRotationLocal);
+                hint = frame.TransformPoint(regripElbowLocal);
+                if (Vector3.Distance(contact.position, nominal.position) <= ContactTolerance &&
+                    Quaternion.Angle(contact.rotation, nominal.rotation) <= ContactSolveAngleLimit)
+                {
+                    bool retained = TryContactHint(contact, hint, ReachFraction, .002f, out Vector3 elbow, regripClosing);
+                    if (retained) { hint = elbow; return true; }
+                }
+                // While closing, changing the branch merely to claim a new
+                // target would conceal a real separation. Release and retry.
+                if (regripClosing) { regripProposalReason = "contact_capture_lost"; return false; }
+            }
+            contact = nominal;
+            // Apply captured the live authored elbow BEFORE restoring the open
+            // arm. The released elbow is a travel start, not a Ready grip hint.
+            if (TrySupportedContactHintCore(ref contact, authoredHint,
+                ReachFraction, .002f, out hint, false)) return true;
+            regripProposalReason = "contact_" + contactRejection;
+            return false;
         }
 
         public void Apply()
@@ -737,6 +961,18 @@ namespace BarPromenade
             }
             upperBase = upper.localRotation; forearmBase = forearm.localRotation; handBase = hand.localRotation;
             applied = true;
+            if (regripCommittedThisStep && (State == CombatArmSupportState.SupportingWeapon || IsRegripping ||
+                (State == CombatArmSupportState.Free && regripWaiting)))
+            {
+                // Every render of a committed substep keeps its actual accepted
+                // arm; reaching/closing cannot choose a new branch at this clock.
+                upper.localRotation = completedRegripUpper;
+                forearm.localRotation = completedRegripForearm;
+                hand.localRotation = completedRegripHand;
+                hands.SetGrip(true, (State == CombatArmSupportState.SupportingWeapon || regripClosing) ? weight : 0f);
+                RememberPresentedArm();
+                return;
+            }
             bool holding = State == CombatArmSupportState.SupportingWeapon;
             // Shove ends in Free before the next simulation step can begin
             // regrip. That handoff still owns the previous visible arm; it
@@ -752,6 +988,17 @@ namespace BarPromenade
             Quaternion authoredHandRotation = hand.rotation;
             CaptureArmReference();
             if ((travelling || holding) && hasArmStep) ApplyArmStep();
+            if (State == CombatArmSupportState.Free && regripWaiting)
+            {
+                // Waiting remains visibly open. A successful live probe only
+                // starts the next reach after the final owner accepts this pose.
+                if (hasArmStep) ApplyArmStep();
+                if (regripProbePending)
+                    regripProposalValid = TryRegripContact(authoredGripHint, out regripProposal, out regripProposalElbow);
+                hands.SetGrip(true, 0f);
+                RememberPresentedArm();
+                return;
+            }
             Pose pose = holding && TryContact(out Pose grip) ? grip : new Pose(palmPosition, palmRotation);
             Vector3 hint = holding ? authoredGripHint : elbowHint;
             bool contactHintValid = true;
@@ -771,12 +1018,20 @@ authoredWristAngles=({radial:F9},{flexion:F9}); authoredContactError={Vector3.Di
                 RememberPresentedArm();
                 return;
             }
-            if (IsRegripping && TryContact(out Pose live))
+            if (IsRegripping)
             {
-                Vector3 contactHint = authoredGripHint;
-                contactHintValid = TrySupportedContactHint(ref live, contactHint, ReachFraction, .002f, out Vector3 solvedHint);
-                if (contactHintValid) contactHint = solvedHint;
-                else fingers = 0f;
+                regripProposalValid = contactHintValid = TryRegripContact(authoredGripHint, out Pose live, out Vector3 contactHint);
+                if (!contactHintValid)
+                {
+                    // No safe end contact means no reason to chase it through
+                    // an obstacle or twist towards a different elbow branch.
+                    if (hasArmStep) ApplyArmStep();
+                    hands.SetGrip(true, 0f);
+                    RememberPresentedArm();
+                    return;
+                }
+                regripProposal = live;
+                regripProposalElbow = contactHint;
                 float t = Mathf.SmoothStep(0f, 1f, reachProgress);
                 Vector3 destination = live.position + frame.TransformVector(reachStartOffset) * (1f - t);
                 Vector3 reachStepPalm = frame.TransformPoint(reachStepPalmLocal);
@@ -1006,6 +1261,7 @@ authoredWristAngles=({radial:F9},{flexion:F9}); authoredContactError={Vector3.Di
 
         private void RememberPresentedArm()
         {
+            if (contactPreview) return;
             presentedPalmLocal = frame.InverseTransformPoint(socket.position);
             presentedRotationLocal = Quaternion.Inverse(frame.rotation) * hand.rotation;
             presentedElbowLocal = frame.InverseTransformPoint(forearm.position);
@@ -1127,8 +1383,9 @@ authoredWristAngles=({radial:F9},{flexion:F9}); authoredContactError={Vector3.Di
 
         internal void RejectObstructedPose(string reason, string shape = null, float depth = 0f)
         {
+            regripCommittedThisStep = regripClosing = hasRegripTarget = false;
             LastPoseRejection = reason;
-            if (journalGripReason != reason)
+            if (!contactPreview && journalGripReason != reason)
                 JournalActor?.JournalEvent("support_pose_rejected",
                     f0: GameLog.Field("reason", reason), f1: GameLog.Field("shape", shape),
                     f2: GameLog.Field("depth", depth), f3: GameLog.Field("state", (int)State),
@@ -1156,6 +1413,7 @@ authoredWristAngles=({radial:F9},{flexion:F9}); authoredContactError={Vector3.Di
         private void BeginRelease(bool balance)
         {
             CaptureArm(false); protective |= balance;
+            regripCommittedThisStep = regripClosing = hasRegripTarget = regripWaiting = false;
             State = CombatArmSupportState.Releasing; closeElapsed = lostSupportElapsed = 0f;
         }
 
@@ -1165,6 +1423,8 @@ authoredWristAngles=({radial:F9},{flexion:F9}); authoredContactError={Vector3.Di
             ClearBalanceHand();
             CaptureArm(applied || !hasPresentedPose);
             State = CombatArmSupportState.Regripping; closeElapsed = reachProgress = 0f;
+            hasRegripTarget = regripWaiting = regripClosing = false;
+            regripNoProgressSeconds = 0f; regripPreviousError = float.PositiveInfinity;
             reachStartOffset = frame.InverseTransformVector(palmPosition - contact.position);
             reachStartRotation = Quaternion.Inverse(contact.rotation) * palmRotation;
             reachStartElbow = frame.InverseTransformPoint(elbowHint);
@@ -1183,6 +1443,7 @@ authoredWristAngles=({radial:F9},{flexion:F9}); authoredContactError={Vector3.Di
 
         private void JournalGripWait(string reason, float value = 0f, float threshold = 0f)
         {
+            if (contactPreview) return;
             if (journalGripReason == reason) return;
             journalGripReason = reason;
             if (JournalActor?.Journal == null) return;
@@ -1312,7 +1573,11 @@ authoredWristAngles=({radial:F9},{flexion:F9}); authoredContactError={Vector3.Di
             Pose nominal = contact;
             string rejection = contactRejection, blockingShape = contactBlockingShape;
             string diagnostics = LastContactSearchDiagnostics;
-            bool keepBranch = continuous || hasArmStep;
+            // A free hand may plan a future contact on another branch. Its
+            // actual approach still obeys BlendTravellingArm's joint/path caps.
+            // Held or closing contact must preserve the current branch now.
+            bool keepBranch = continuous || (hasArmStep &&
+                (State == CombatArmSupportState.SupportingWeapon || regripClosing));
             Pose previous = nominal;
             bool previousAvailable = false;
             if (hasArmStep && Quaternion.Angle(hand.rotation, nominal.rotation) <= ContactSolveAngleLimit)
@@ -1728,6 +1993,10 @@ closestAngle={closestWristAngle:F9}; closestWrist={closestWristAngles:F9}; close
             shoveActive = false; shoveContactRoot = null;
             recoveryOwned = protective = hasPresentedPose = false;
             hasArmStep = armStepHadContactAdjustment = false; armStepSeconds = 0f;
+            hasRegripTarget = regripClosing = regripWaiting = regripProbePending = false;
+            regripProposalValid = regripCommittedThisStep = false;
+            regripCommitSeconds = regripRetrySeconds = regripNoProgressSeconds = 0f;
+            regripPreviousError = float.PositiveInfinity;
             presentedContactStation = armStepContactStation = 0f;
             distance = startDistance = targetDistance = ReadyDistance;
             slideElapsed = SlideSeconds; releaseHold = closeElapsed = urgency = 0f;

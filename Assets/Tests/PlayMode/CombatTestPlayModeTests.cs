@@ -177,6 +177,10 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(root.Opponent.State.Stamina, Is.EqualTo(AfterBlock), "Frontal guard pays exactly one contact.");
             Assert.That(root.Opponent.LastImpact.Result, Is.EqualTo(MeleeHitResult.Blocked));
             Assert.That(root.Opponent.LastImpact.Damage, Is.Zero);
+            Assert.That(root.Hero.State.AttackOutcome, Is.EqualTo(MeleeAttackOutcome.Obstacle),
+                "The guard pays its cost, but its actual crowbar stops the outgoing strike exactly like a wall.");
+            Assert.That(root.Hero.WeaponClashCount, Is.EqualTo(1));
+            Assert.That(root.SparkEffects.EmissionCount, Is.EqualTo(1), "One metal contact has one shared burst.");
             Assert.That(root.BloodEffects.EmissionCount, Is.Zero, "Guard contact cannot bleed without health loss.");
             // Exercise the other authored rig too, with the hero receiving the same frontal rules.
             PlacePair(1.1f);
@@ -186,6 +190,8 @@ namespace BarPromenade.Tests.PlayMode
             root.Opponent.Step(2f);
             Assert.That(root.Hero.State.Health, Is.EqualTo(S.MaxHealth));
             Assert.That(root.Hero.State.Stamina, Is.EqualTo(AfterBlock));
+            Assert.That(root.Opponent.State.AttackOutcome, Is.EqualTo(MeleeAttackOutcome.Obstacle));
+            Assert.That(root.Opponent.WeaponClashCount, Is.EqualTo(1));
 
             PlacePair(4f);
             var presentation = (Player3DCharacterPresentation)root.Player.Visual;
@@ -1500,6 +1506,9 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(root.Opponent.State.Health, Is.EqualTo(S.MaxHealth),
                     "A reaction started during windup must guard the actual weapon contact.");
                 Assert.That(root.Opponent.State.Stamina, Is.EqualTo(AfterBlock));
+                Assert.That(root.Hero.State.AttackOutcome, Is.EqualTo(MeleeAttackOutcome.Obstacle),
+                    "The opponent's supported guard physically intercepts the outgoing crowbar.");
+                Assert.That(root.Hero.WeaponClashCount, Is.EqualTo(1));
 
                 root.SetSparring(true);
                 // Setup only: one costly guard against a heavy (which cannot be parried)

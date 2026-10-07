@@ -7,8 +7,8 @@ namespace BarPromenade
 
     /// <summary>The sparring partner: honest perception, a seeded schedule per round, and a
     /// vocabulary of answers (guard, late guard, side step, back step, intercept, feint,
-    /// backhand, cover) chosen by rolls so no two rounds read the same. It turns on the
-    /// hero's own phase table everywhere outside its committed line.</summary>
+    /// backhand, cover) chosen by rolls so no two rounds read the same. Both fighters
+    /// share bounded target-facing on the duel clock.</summary>
     public sealed partial class CombatTestRoot
     {
         private const float ReactionSeconds = .20f;
@@ -30,7 +30,6 @@ namespace BarPromenade
         private MeleePhase previousOpponentPhase;
         private Vector3 previousObservedPosition, committedDirection;
         private Vector3 opponentMoveRequest, opponentMoveVelocity;
-        private float opponentYawVelocity;
         private uint decisionSeed;
         private readonly RaycastHit[] navigationContacts = new RaycastHit[16];
         public CombatOpponentIntent OpponentIntent { get; private set; }
@@ -124,7 +123,6 @@ namespace BarPromenade
             float distance = delta.magnitude;
             if (distance < .0001f || !Opponent.IsAvailable || (!Hero.IsAvailable && Hero.State.Phase != MeleePhase.Rising)) return;
             Vector3 direction = delta / distance;
-            float bearing = Vector3.SignedAngle(Opponent.transform.forward, direction, Vector3.up);
             MeleeCombatant me = Opponent.State;
             CombatOpponentProfile profile = OpponentProfile;
             readyIdleSeconds = me.Phase == MeleePhase.Ready ? readyIdleSeconds + seconds : 0f;
@@ -169,16 +167,6 @@ namespace BarPromenade
             }
             bool decisionDue = ObserveOpponentTarget(seconds, distance);
 
-            // The charge, the windup and the arc keep their committed line: a swing never
-            // homes onto a sidestep. Every other phase turns toward the target on the hero's
-            // own phase table, so a spent swing and a rocked body come back round. The sweep
-            // is closed by then (SweepWeapon returns for from >= activeEnd), so turning in
-            // recovery cannot add a contact.
-            bool committedLine = me.IsCharging || me.IsShoving || me.Phase == MeleePhase.Windup || me.Phase == MeleePhase.Active;
-            float yaw = PlayerMotor.AdvanceInertialYaw(bearing,
-                committedLine ? 0f : 150f * Opponent.TurnScale, seconds, ref opponentYawVelocity);
-            Opponent.transform.Rotate(0f, yaw, 0f);
-
             if (me.Phase != MeleePhase.Ready)
             {
                 if (me.IsCharging || me.IsAttacking)
@@ -186,8 +174,8 @@ namespace BarPromenade
                     OpponentIntent = feinting ? CombatOpponentIntent.Feint : CombatOpponentIntent.Attack;
                     if (me.IsCharging && !feinting && me.Charge01 + .00001f >= opponentChargeTarget)
                         Opponent.ReleaseCharge();
-                    // The visible windup commits one line. Its small ordinary
-                    // movement never steers toward a dodging target.
+                    // Facing follows the live target, but voluntary travel retains
+                    // its starting line instead of chasing a dodge sideways.
                     if (me.Phase == MeleePhase.Windup)
                         MoveOpponent(committedDirection, 1.8f * Opponent.MovementScale * seconds, seconds, false);
                     // A landed hit may take the backhand straight out of the buffer.
@@ -506,7 +494,12 @@ namespace BarPromenade
             float attackDistance = Mathf.Clamp((missObservationSeconds >= ReactionSeconds ? 1.32f : press ? 1.25f : 1.2f)
                 - retreatSpeed * .35f, WeaponSpacing, 1.32f);
             approachDistance = Mathf.Max(WeaponSpacing, attackDistance - (press ? .12f : .04f));
-            if (distance > attackDistance)
+            // The spacing floor and the decision must meet despite interleaved
+            // motor/duel ticks. A retreat can move one render frame away before
+            // this step's pursuit has run; never wait for it to stop at a wall.
+            float spacingTolerance = attackDistance <= WeaponSpacing + .0001f
+                ? 1.8f * SimulationStep * 2f : 0f;
+            if (distance > attackDistance + spacingTolerance)
             {
                 OpponentIntent = CombatOpponentIntent.Approach;
                 return;
@@ -535,9 +528,7 @@ namespace BarPromenade
         private void CommitOpponentDirection()
         {
             committedDirection = Opponent.transform.forward;
-            opponentYawVelocity = 0f;
-            // The foot plant commits the attack line. Previous circling may
-            // carry forward into its windup, never sideways toward a new target.
+            // Commit only voluntary travel; the actor owns bounded live facing.
             opponentMoveVelocity = committedDirection * Mathf.Max(0f,
                 Vector3.Dot(opponentMoveVelocity, committedDirection));
             opponentAttacks++;
@@ -594,7 +585,6 @@ namespace BarPromenade
         private void ResetOpponentMovement()
         {
             ResetOpponentTravel();
-            opponentYawVelocity = 0f;
         }
 
         /// <summary>Every duel step advances both requested travel and its braking tail.</summary>
@@ -608,9 +598,8 @@ namespace BarPromenade
                 ResetOpponentMovement();
                 return;
             }
-            // A committed stop or a stun plants the feet, never the head: only the travel
-            // is dropped, the turn keeps its momentum on the shared table (a zero turn
-            // allowance zeroes it itself inside AdvanceInertialYaw).
+            // A committed stop or stun drops only travel. The actor separately
+            // advances supported facing on the shared duel clock.
             if (Opponent.MovementScale <= 0f)
             {
                 ResetOpponentTravel();

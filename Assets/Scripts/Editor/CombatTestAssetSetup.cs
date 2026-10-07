@@ -129,7 +129,7 @@ namespace BarPromenade.Editor
                 manifest.actions.reaction_silhouette_contract != "tip_20cm_or_head_12cm_and_elbow_10cm" ||
                 manifest.actions.swings == null || manifest.actions.swings.Length != 2)
                 throw new InvalidOperationException("Combat manifest violated its isolated, grounded, in-place contract.");
-            ValidateKickManifest(manifest.actions.kick);
+            ValidateKickManifests(manifest.actions);
             DefensiveStep step = manifest.actions.defensive_step;
             MeleeCombatSettings tuning = MeleeCombatSettings.Crowbar;
             if (step == null || Mathf.Abs(step.duration_seconds - tuning.StepDurationSeconds) > .0001f ||
@@ -200,7 +200,7 @@ namespace BarPromenade.Editor
             foreach (string name in CombatAssetProvider.ClipNames.Concat(CombatAssetProvider.LocomotionClipNames)
                 .Concat(CombatAssetProvider.StepClipNames).Concat(CombatAssetProvider.RecoveryClipNames))
             {
-                if (npc && name == CombatAssetProvider.KickClip) continue;
+                if (npc && CombatAssetProvider.IsKickClip(name)) continue;
                 AnimationClip clip = CombatAssetProvider.LoadClip(name, npc);
                 ValidateInPlaceClip(clip);
             }
@@ -219,12 +219,15 @@ namespace BarPromenade.Editor
             Manifest manifest = JsonUtility.FromJson<Manifest>(File.ReadAllText(ManifestPath));
             if (manifest == null || !manifest.test_only || manifest.actions == null)
                 throw new InvalidOperationException("Combat kick requires its isolated action manifest.");
-            ValidateKickManifest(manifest.actions.kick);
-            AnimationClip kick = CombatAssetProvider.LoadClip(CombatAssetProvider.KickClip);
-            if (kick.isLooping || kick.events.Length != 0 ||
-                Mathf.Abs(kick.length - CombatAssetProvider.ClipDuration(CombatAssetProvider.KickClip)) > .0001f)
-                throw new InvalidOperationException("Combat imported kick changed its authored clock or added events.");
-            ValidateInPlaceClip(kick);
+            ValidateKickManifests(manifest.actions);
+            foreach (string name in CombatAssetProvider.KickClipNames)
+            {
+                AnimationClip kick = CombatAssetProvider.LoadClip(name);
+                if (kick.isLooping || kick.events.Length != 0 ||
+                    Mathf.Abs(kick.length - CombatAssetProvider.ClipDuration(name)) > .0001f)
+                    throw new InvalidOperationException("Combat imported kick changed its authored clock or added events.");
+                ValidateInPlaceClip(kick);
+            }
             GameObject template = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Resources/Player/Player3DV2.prefab");
             if (template == null) throw new InvalidOperationException("Combat kick requires the existing production hero.");
             GameObject actor = UnityEngine.Object.Instantiate(template);
@@ -312,16 +315,25 @@ namespace BarPromenade.Editor
             Debug.Log("COMBAT IMPORTED CHARGE ENTRIES MATCH THEIR SHARED RELEASED TRAJECTORIES");
         }
 
-        private static void ValidateKickManifest(Kick kick)
+        private static void ValidateKickManifests(Actions actions)
         {
-            if (kick == null || kick.clip != CombatAssetProvider.KickClip || kick.striking_foot != "Right" ||
-                kick.support_foot != "Left" || kick.endpoint != CombatAssetProvider.ReadyClip || kick.root_motion ||
+            if (actions.kicks == null || actions.kicks.Length != 2)
+                throw new InvalidOperationException("Combat requires independently authored kicks for both feet.");
+            for (int side = 0; side < 2; side++)
+                ValidateKickManifest(actions.kicks.FirstOrDefault(kick => kick.clip == CombatAssetProvider.KickClipNames[side]), side);
+        }
+
+        private static void ValidateKickManifest(Kick kick, int side)
+        {
+            if (kick == null || kick.clip != CombatAssetProvider.KickClipNames[side] ||
+                kick.striking_foot != (side == 0 ? "Left" : "Right") || kick.support_foot != (side == 0 ? "Right" : "Left") ||
+                kick.endpoint != CombatAssetProvider.ReadyClip || kick.root_motion ||
                 kick.animation_events != 0 || Mathf.Abs(kick.duration_seconds - CombatAssetProvider.ClipDuration(kick.clip)) > .0001f ||
                 Mathf.Abs(kick.windup_seconds - .30f) > .0001f || Mathf.Abs(kick.active_seconds - .10f) > .0001f ||
                 Mathf.Abs(kick.recovery_seconds - .55f) > .0001f || kick.maximum_support_error > .001f ||
                 kick.maximum_support_angle_degrees > .1f || kick.maximum_endpoint_error > .00001f ||
                 kick.maximum_ankle_height_m < .60f || kick.minimum_active_reach_m < .70f)
-                throw new InvalidOperationException("Combat kick lost its right sole, left support or exact Ready endpoints.");
+                throw new InvalidOperationException("Combat kick lost its opposite support sole or exact Ready endpoints.");
         }
 
         private static void ValidateInPlaceClip(AnimationClip clip)
@@ -424,7 +436,7 @@ namespace BarPromenade.Editor
             var shifts = new float[2];
             foreach (string name in CombatAssetProvider.ClipNames)
             {
-                if (name == CombatAssetProvider.KickClip) continue;
+                if (CombatAssetProvider.IsKickClip(name)) continue;
                 AnimationClip clip = CombatAssetProvider.LoadClip(name, npc);
                 int count = Mathf.CeilToInt(clip.length * 100f);
                 int side = name == CombatAssetProvider.AttackClip ? 0 : name == CombatAssetProvider.BackhandClip ? 1 : -1;
@@ -450,33 +462,36 @@ namespace BarPromenade.Editor
         private static void ValidateKick(Animator animator, Transform actor, NpcHandPose handPose, GameObject bar, Transform origin)
         {
             Transform[] bones = animator.GetComponentsInChildren<Transform>(true);
-            Transform left = bones.First(bone => bone.name == "foot.L");
-            Transform right = bones.First(bone => bone.name == "foot.R");
+            Transform[] feet = { bones.First(bone => bone.name == "foot.L"), bones.First(bone => bone.name == "foot.R") };
             Transform root = bones.First(bone => bone.name == "root");
             AnimationClip ready = CombatAssetProvider.LoadClip(CombatAssetProvider.ReadyClip);
-            AnimationClip kick = CombatAssetProvider.LoadClip(CombatAssetProvider.KickClip);
-            CompareEndpoint(kick, 0f, ready, 0f, animator, bones, "kick entry");
-            CompareEndpoint(kick, kick.length, ready, 0f, animator, bones, "kick exit");
-            ready.SampleAnimation(animator.gameObject, 0f);
-            Vector3 planted = left.position, rootPosition = root.position;
-            Quaternion flat = left.rotation;
-            float grounded = right.position.y, maximumHeight = 0f, activeReach = 0f;
-            for (int frame = 0; frame <= 190; frame++)
+            for (int side = 0; side < 2; side++)
             {
-                float seconds = frame / 200f;
-                kick.SampleAnimation(animator.gameObject, seconds);
-                if (Vector3.Distance(planted, left.position) > .002f || Quaternion.Angle(flat, left.rotation) > .15f ||
-                    Vector3.Distance(rootPosition, root.position) > .001f || right.position.y < grounded - .002f)
-                    throw new InvalidOperationException("Combat imported kick lost its grounded left support.");
-                maximumHeight = Mathf.Max(maximumHeight, right.position.y - grounded);
-                if (seconds >= .30f && seconds <= .40f)
-                    activeReach = Mathf.Max(activeReach, actor.InverseTransformPoint(right.position).z);
-                if (Vector3.Distance(origin.position, handPose.CylinderCentre(false)) > .001f ||
-                    Vector3.Dot(bar.transform.up, handPose.CylinderAxis(false)) < .999f)
-                    throw new InvalidOperationException("Combat imported kick lost its retained right grip.");
+                Transform support = feet[1 - side], striking = feet[side];
+                AnimationClip kick = CombatAssetProvider.LoadClip(CombatAssetProvider.KickClipNames[side]);
+                CompareEndpoint(kick, 0f, ready, 0f, animator, bones, "kick entry");
+                CompareEndpoint(kick, kick.length, ready, 0f, animator, bones, "kick exit");
+                ready.SampleAnimation(animator.gameObject, 0f);
+                Vector3 planted = support.position, rootPosition = root.position;
+                Quaternion flat = support.rotation;
+                float grounded = striking.position.y, maximumHeight = 0f, activeReach = 0f;
+                for (int frame = 0; frame <= 190; frame++)
+                {
+                    float seconds = frame / 200f;
+                    kick.SampleAnimation(animator.gameObject, seconds);
+                    if (Vector3.Distance(planted, support.position) > .002f || Quaternion.Angle(flat, support.rotation) > .15f ||
+                        Vector3.Distance(rootPosition, root.position) > .001f || striking.position.y < grounded - .002f)
+                        throw new InvalidOperationException("Combat imported kick lost its grounded opposite support.");
+                    maximumHeight = Mathf.Max(maximumHeight, striking.position.y - grounded);
+                    if (seconds >= .30f && seconds <= .40f)
+                        activeReach = Mathf.Max(activeReach, actor.InverseTransformPoint(striking.position).z);
+                    if (Vector3.Distance(origin.position, handPose.CylinderCentre(false)) > .001f ||
+                        Vector3.Dot(bar.transform.up, handPose.CylinderAxis(false)) < .999f)
+                        throw new InvalidOperationException("Combat imported kick lost its retained right grip.");
+                }
+                if (maximumHeight < .60f || activeReach < .70f)
+                    throw new InvalidOperationException("Combat imported kick cannot reach a torso in front.");
             }
-            if (maximumHeight < .60f || activeReach < .70f)
-                throw new InvalidOperationException("Combat imported kick cannot reach a torso in front.");
         }
 
         private static void ValidateChargedRelease(Animator animator, Transform actor, NpcHandPose handPose,
@@ -729,6 +744,7 @@ namespace BarPromenade.Editor
             public DefensiveStep defensive_step;
             public Swing[] swings;
             public Kick kick;
+            public Kick[] kicks;
         }
         [Serializable] private sealed class Kick
         {

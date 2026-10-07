@@ -62,8 +62,9 @@ BACKHAND_CLIPS = (("CombatBackhand", 1.28, False), ("CombatBackhandRecoil", .48,
                   ("CombatBackhandCharge", 1., False), ("CombatBackhandHeavy", 1.28, False))
 SHARED_CLIPS = CLIPS + CHARGE_CLIPS + BACKHAND_CLIPS
 KICK_CLIP, KICK_DURATION = "CombatKick", .95
+KICK_LEFT_CLIP = "CombatKickLeft"
 KICK_WINDUP, KICK_ACTIVE, KICK_RECOVERY = .30, .10, .55
-KICK_CLIPS = ((KICK_CLIP, KICK_DURATION, False),)
+KICK_CLIPS = ((KICK_CLIP, KICK_DURATION, False), (KICK_LEFT_CLIP, KICK_DURATION, False))
 ATTACK_STOPS = ((0, "ready"), (.10, "anticipation"), (.33, "loaded"), (.45, "windup"),
                 (.56, "contact"), (.63, "follow"), (.73, "overrun"), (.96, "recover"), (1.28, "ready"))
 HEAVY_STOPS = ((0., "windup"), (.10, "windup"), (.33, "heavy_windup"), (.45, "heavy_windup"),
@@ -95,9 +96,9 @@ STEP_CLIPS = (("CombatStepForward", (0., -1., 0.), "L"),
               ("CombatStepBackward", (0., 1., 0.), "R"),
               ("CombatStepLeft", (1., 0., 0.), "L"),
               ("CombatStepRight", (-1., 0., 0.), "R"))
-# The .80 m step travels for .36 s, then settles for .21 s. Its wider base needs extra
+# The 1 m step travels for .36 s, then settles for .21 s. Its wider base needs extra
 # knee flexion during its opening/closing shuffle, never a longer planted leg.
-STEP_TRAVEL_SECONDS, STEP_SETTLE_SECONDS, STEP_DISTANCE = .36, .21, .80
+STEP_TRAVEL_SECONDS, STEP_SETTLE_SECONDS, STEP_DISTANCE = .36, .21, 1.
 STEP_DURATION = round(STEP_TRAVEL_SECONDS + STEP_SETTLE_SECONDS, 2)
 SUPPORT_OFFSETS = {"L": (.115, -.130, 0.), "R": (-.115, .110, 0.)}
 SUPPORT_YAW_DEGREES = {"L": 8., "R": -14.}
@@ -436,11 +437,14 @@ class CombatBuilder(dialogue.DialogueBuilder):
         return self.snapshot_pose()
 
     def support(self, side):
+        if hasattr(self, "footwork_support_targets"):
+            return self.footwork_support_targets[side].copy()
         return self.result.rig.data.bones["foot." + side].head_local + Vector(SUPPORT_OFFSETS[side])
 
     def snapshot_pose(self):
         return {bone.name: common.BonePose(
-                rotation_degrees=tuple(math.degrees(v) for v in bone.rotation_quaternion.to_euler("XYZ")),
+                rotation_degrees=tuple(math.degrees(v) for v in (bone.matrix_basis.to_quaternion()
+                    if hasattr(self, "footwork_support_targets") else bone.rotation_quaternion).to_euler("XYZ")),
                 location_m=tuple(bone.location / self.scale), scale=tuple(bone.scale))
                 for bone in self.result.rig.pose.bones}
 
@@ -472,7 +476,8 @@ class CombatBuilder(dialogue.DialogueBuilder):
                 bone.matrix = Matrix.Translation(start) @ rotation.to_matrix().to_4x4()
                 bpy.context.view_layer.update()
             yaw = Quaternion(Vector((0., 0., 1.)), math.radians(SUPPORT_YAW_DEGREES[side]))
-            planted = Matrix.Translation(ankle) @ (yaw @ foot.bone.matrix_local.to_quaternion()).to_matrix().to_4x4()
+            rotation = self.footwork_support_rotations[side] if hasattr(self, "footwork_support_rotations") else yaw @ foot.bone.matrix_local.to_quaternion()
+            planted = Matrix.Translation(ankle) @ rotation.to_matrix().to_4x4()
             foot.matrix = planted
             bpy.context.view_layer.update()
         return self.snapshot_pose()
@@ -2572,7 +2577,7 @@ class CombatBuilder(dialogue.DialogueBuilder):
             self.build_charge_actions(backhand, poses)
         if self.hero_profile: self.build_kick_action()
 
-    def load_existing_bank(self, replaced=(KICK_CLIP,)):
+    def load_existing_bank(self, replaced=tuple(name for name, _, _ in KICK_CLIPS)):
         """Copy original Blender curves, never round-trip unchanged FBX animation."""
         source = self.hero_source_bank if self.hero_profile else self.npc_source_bank
         previous = self.previous_payload["actions"]
@@ -2600,37 +2605,46 @@ class CombatBuilder(dialogue.DialogueBuilder):
         print("Preserved published action curves SHA " + checksum, flush=True)
 
     def build_kick_action(self):
-        """A right sole push from the real Ready pose, supported by the left leg."""
-        if KICK_CLIP in self.result.actions:
-            record = self.result.actions.pop(KICK_CLIP); bpy.data.actions.remove(record.action)
+        """Author each leg independently, retaining the asymmetric Ready arm grip."""
+        for name, _, _ in KICK_CLIPS:
+            self.build_kick_side(name, "R" if name == KICK_CLIP else "L")
+
+    def build_kick_side(self, name, side):
+        if name in self.result.actions:
+            record = self.result.actions.pop(name); bpy.data.actions.remove(record.action)
         rig = self.result.rig
         rig.animation_data.action = self.result.actions["CombatReady"].action
         bpy.context.scene.frame_set(0); bpy.context.view_layer.update()
         ready = self.snapshot_pose()
         targets = {side: rig.pose.bones["foot."+side].head.copy() for side in ("L", "R")}
-        initial_rotation = rig.pose.bones["foot.R"].matrix.to_quaternion()
+        initial_rotation = rig.pose.bones["foot."+side].matrix.to_quaternion()
         rig.animation_data.action = None
         # Ankle landmarks use source metres. A toes-up foot presents the actual
         # boot sole to the torso; a long straight leg never becomes an IK snap.
-        stops = ((0., targets["R"], 0.), (.08, targets["R"], 0.),
+        stops = ((0., targets[side], 0.), (.08, targets[side], 0.),
             (.24, Vector((-.16, -.32, .57)), -36.),
             (.30, Vector((-.14, -.70, .77)), -78.),
             (.40, Vector((-.12, -.73, .79)), -82.),
             (.62, Vector((-.16, -.30, .57)), -30.),
-            (.86, targets["R"], 0.), (KICK_DURATION, targets["R"], 0.))
+            (.86, targets[side], 0.), (KICK_DURATION, targets[side], 0.))
+        sign = 1. if side == "R" else -1.
+        # Reflect only lower-body landmarks. Never mirror the skeleton, hands,
+        # sockets or the asymmetric right-hand weapon mount.
+        if side == "L":
+            stops = tuple((t, Vector((-p.x, p.y, p.z)) if .24 <= t <= .62 else p, angle) for t, p, angle in stops)
         keys = []; count = round(KICK_DURATION*FPS)
         for frame in range(count+1):
             second = frame/FPS
             self._reset_pose(); self._apply_pose(ready)
             load = dialogue.smooth(second/.20)*(1.-dialogue.smooth((second-.66)/.25))
             pelvis = rig.pose.bones["pelvis"]; weighted = pelvis.matrix.copy()
-            weighted.translation += Vector((.105*load, .018*load, -.025*load))
+            weighted.translation += Vector((sign*.105*load, .018*load, -.025*load))
             pelvis.matrix = weighted
             bpy.context.view_layer.update()
             # The complete arm chains travel with the chest. Both palms keep
             # their unchanged Ready grip, avoiding a new elbow branch.
-            for name, degrees in (("spine", -3.5), ("chest", -4.5), ("head", 3.)):
-                bone = rig.pose.bones[name]
+            for bone_name, degrees in (("spine", -3.5), ("chest", -4.5), ("head", 3.)):
+                bone = rig.pose.bones[bone_name]
                 bone.rotation_quaternion = bone.rotation_quaternion @ Quaternion(Vector((1.,0.,0.)), math.radians(degrees*load))
             bpy.context.view_layer.update()
             for (a, p, angle_a), (b, q, angle_b) in zip(stops, stops[1:]):
@@ -2638,16 +2652,16 @@ class CombatBuilder(dialogue.DialogueBuilder):
                     weight = dialogue.smooth((second-a)/(b-a))
                     ankle = p.lerp(q, weight); angle = angle_a+(angle_b-angle_a)*weight
                     break
-            pose = self.pin_supports(self.snapshot_pose(), {"L": targets["L"], "R": ankle})
-            foot = rig.pose.bones["foot.R"]
+            pose = self.pin_supports(self.snapshot_pose(), {**targets, side: ankle})
+            foot = rig.pose.bones["foot."+side]
             rotation = Quaternion(Vector((1.,0.,0.)), math.radians(angle)) @ initial_rotation
             foot.matrix = Matrix.Translation(ankle) @ rotation.to_matrix().to_4x4()
             bpy.context.view_layer.update()
             pose = self.snapshot_pose()
             if frame in (0, count): pose = dict(ready)
             keys.append((frame/count, pose))
-        self._create_action(KICK_CLIP, "combat_kick", KICK_DURATION, False, count, FPS, keys)
-        print("Authored " + KICK_CLIP + " with grounded left support and continuous two-hand grip", flush=True)
+        self._create_action(name, "combat_kick", KICK_DURATION, False, count, FPS, keys)
+        print("Authored " + name + " with grounded opposite support and unchanged two-hand grip", flush=True)
 
     def build_charge_actions(self, family, poses):
         """Power changes only the upper-body track; both release feet stay identical."""
@@ -2744,10 +2758,16 @@ class CombatBuilder(dialogue.DialogueBuilder):
         One sole remains loaded throughout. The upper-body guard follows the
         pelvis lean, then the knees settle after the root has stopped moving.
         """
-        ready = self.combat_pose("ready")
         rig = self.result.rig
+        # Start from the retained production Ready, including its exact arm
+        # branch. A focused refresh must not re-author any shared action.
+        rig.animation_data.action = self.result.actions["CombatReady"].action
+        bpy.context.scene.frame_set(0); bpy.context.view_layer.update()
+        ready = self.snapshot_pose(); rig.animation_data.action = None
         count = round(STEP_DURATION * FPS)
         for name, axis, leading in STEP_CLIPS:
+            if name in self.result.actions:
+                old = self.result.actions.pop(name); bpy.data.actions.remove(old.action)
             direction = Vector(axis)
             keys = []
             for frame in range(count + 1):
@@ -2773,6 +2793,27 @@ class CombatBuilder(dialogue.DialogueBuilder):
                     ankle += direction * (STEP_DISTANCE * dialogue.smooth(progress) - root_distance)
                     ankle.z += .06 * lift
                     feet[side] = ankle
+                # Follow the centre of the opening/closing base. During its
+                # second half the root has advanced farther than the trailing
+                # sole, so a root-centred pelvis would overextend that leg.
+                centre_shift = (feet["L"]+feet["R"]-self.support("L")-self.support("R"))*.5
+                centre_shift.z = 0.
+                weighted = pelvis.matrix.copy(); weighted.translation += centre_shift
+                pelvis.matrix = weighted; bpy.context.view_layer.update()
+                # The metre shuffle has a wider temporary span. Lower the
+                # authored hips only as far as the actual leg lengths require;
+                # never stretch a planted knee to manufacture that distance.
+                lower = 0.
+                for side in ("L", "R"):
+                    thigh, shin = (rig.pose.bones[n+"."+side] for n in ("thigh", "shin"))
+                    delta = thigh.head-feet[side]
+                    reach = (thigh.bone.length+shin.bone.length)*.985
+                    horizontal = delta.x*delta.x+delta.y*delta.y
+                    lower = max(lower,delta.z-math.sqrt(max(.0001,reach*reach-horizontal)))
+                if lower > 0.:
+                    weighted = pelvis.matrix.copy()
+                    weighted.translation.z -= min(lower,.18)
+                    pelvis.matrix = weighted; bpy.context.view_layer.update()
                 try:
                     stepped = self.pin_supports(self.snapshot_pose(), feet)
                 except ValueError as error:
@@ -3288,33 +3329,36 @@ def action_curve_signature(builder, clips):
     return checksum.hexdigest()
 
 
-def kick_payload(builder):
+def kick_payload(builder, side="R"):
     """Bounded action-specific gate; existing shared-bank contracts stay separate."""
     rig = builder.result.rig
     ready = builder.result.actions["CombatReady"].action
     rig.animation_data.action = ready
     bpy.context.scene.frame_set(0); bpy.context.view_layer.update()
     neutral = {bone.name: bone.matrix.copy() for bone in rig.pose.bones}
-    left = neutral["foot.L"]; root = neutral["root"]
+    name = KICK_CLIP if side == "R" else KICK_LEFT_CLIP
+    support_name = "foot.L" if side == "R" else "foot.R"
+    striking_name = "foot."+side
+    support = neutral[support_name]; root = neutral["root"]
     maximum_support, maximum_angle, maximum_endpoint = 0., 0., 0.
     # Compare authored endpoints before the presentation-only left palm IK.
     # Ready itself receives that identical correction at runtime.
-    rig.animation_data.action = builder.result.actions[KICK_CLIP].action
+    rig.animation_data.action = builder.result.actions[name].action
     for second in (0., KICK_DURATION):
         bpy.context.scene.frame_set(round(second*FPS)); bpy.context.view_layer.update()
         maximum_endpoint = max(maximum_endpoint, max(abs(neutral[b.name][i][j]-b.matrix[i][j])
             for b in rig.pose.bones for i in range(4) for j in range(4)))
-    minimum_right_z, maximum_height, maximum_reach = 10., 0., 0.
+    minimum_foot_z, maximum_height, maximum_reach = 10., 0., 0.
     metrics = dict(maximum_wrist_degrees=0., minimum_body_clearance_m=10., minimum_floor_clearance_m=10., maximum_elbow_speed_m_s=0.)
     strike_samples = []
-    for frame, weapon in presented_weapon_samples(builder, KICK_CLIP, KICK_DURATION):
-        for bone_name, expected in (("root", root), ("foot.L", left)):
+    for frame, weapon in presented_weapon_samples(builder, name, KICK_DURATION):
+        for bone_name, expected in (("root", root), (support_name, support)):
             actual = rig.pose.bones[bone_name].matrix
             maximum_support = max(maximum_support, (actual.translation-expected.translation).length)
             maximum_angle = max(maximum_angle, math.degrees(expected.to_quaternion().rotation_difference(actual.to_quaternion()).angle))
-        foot = rig.pose.bones["foot.R"].matrix
-        minimum_right_z = min(minimum_right_z, foot.translation.z)
-        maximum_height = max(maximum_height, foot.translation.z-neutral["foot.R"].translation.z)
+        foot = rig.pose.bones[striking_name].matrix
+        minimum_foot_z = min(minimum_foot_z, foot.translation.z)
+        maximum_height = max(maximum_height, foot.translation.z-neutral[striking_name].translation.z)
         second = frame/FPS
         if KICK_WINDUP <= second <= KICK_WINDUP+KICK_ACTIVE:
             maximum_reach = max(maximum_reach, -foot.translation.y)
@@ -3325,12 +3369,13 @@ def kick_payload(builder):
         metrics["minimum_floor_clearance_m"] = min(metrics["minimum_floor_clearance_m"], weapon["floor_gap_m"])
         metrics["maximum_elbow_speed_m_s"] = max(metrics["maximum_elbow_speed_m_s"], weapon["elbow_speed_m_s"])
     if maximum_support > .001 or maximum_angle > .1 or maximum_endpoint > .00001:
-        raise ValueError(f"Kick lost neutral endpoints or left support: {maximum_support}, {maximum_angle}, {maximum_endpoint}")
-    if minimum_right_z < neutral["foot.R"].translation.z-.002 or maximum_height < .60 or maximum_reach < .70:
-        raise ValueError(f"Kick lost grounded entry or torso reach: {minimum_right_z}, {maximum_height}, {maximum_reach}")
-    signature = action_curve_signature(builder, KICK_CLIPS)
-    return dict(clip=KICK_CLIP, duration_seconds=KICK_DURATION, windup_seconds=KICK_WINDUP,
-        active_seconds=KICK_ACTIVE, recovery_seconds=KICK_RECOVERY, striking_foot="Right", support_foot="Left",
+        raise ValueError(f"{name} lost neutral endpoints or opposite support: {maximum_support}, {maximum_angle}, {maximum_endpoint}")
+    if minimum_foot_z < neutral[striking_name].translation.z-.002 or maximum_height < .60 or maximum_reach < .70:
+        raise ValueError(f"{name} lost grounded entry or torso reach: {minimum_foot_z}, {maximum_height}, {maximum_reach}")
+    signature = action_curve_signature(builder, (name,))
+    return dict(clip=name, duration_seconds=KICK_DURATION, windup_seconds=KICK_WINDUP,
+        active_seconds=KICK_ACTIVE, recovery_seconds=KICK_RECOVERY,
+        striking_foot="Right" if side == "R" else "Left", support_foot="Left" if side == "R" else "Right",
         root_motion=False, animation_events=0, endpoint="CombatReady", maximum_support_error=maximum_support,
         maximum_support_angle_degrees=maximum_angle, maximum_endpoint_error=maximum_endpoint,
         maximum_ankle_height_m=maximum_height, minimum_active_reach_m=maximum_reach,
@@ -3340,18 +3385,19 @@ def kick_payload(builder):
 def publish_kick_only(builder, published_payload):
     """One focused deterministic addition with unchanged original curve signatures."""
     payload = json.loads(json.dumps(published_payload))
-    preserved = [name for name in builder.result.actions if name != KICK_CLIP]
+    preserved = [name for name in builder.result.actions if name not in {n for n, _, _ in KICK_CLIPS}]
     signature = action_curve_signature(builder, preserved)
-    measured = kick_payload(builder)
+    measured = [kick_payload(builder, side) for side in ("R", "L")]
+    kick_signature = action_curve_signature(builder, KICK_CLIPS)
     builder.build_kick_action()
-    if action_curve_signature(builder, KICK_CLIPS) != measured["animation_signature"]:
-        raise ValueError("CombatKick is nondeterministic")
+    if action_curve_signature(builder, KICK_CLIPS) != kick_signature:
+        raise ValueError("Combat kicks are nondeterministic")
     if action_curve_signature(builder, preserved) != signature:
         raise ValueError("Kick refresh changed an unrelated Action curve")
     target = payload["actions"]
-    target["clips"] = [clip for clip in target["clips"] if clip["name"] != KICK_CLIP]
-    target["clips"].append(dict(name=KICK_CLIP, duration_seconds=KICK_DURATION, loop=False))
-    target["kick"] = measured
+    target["clips"] = [clip for clip in target["clips"] if clip["name"] not in {n for n, _, _ in KICK_CLIPS}]
+    target["clips"].extend(dict(name=n, duration_seconds=d, loop=l) for n, d, l in KICK_CLIPS)
+    target["kick"] = measured[0]; target["kicks"] = measured
     builder.result.root.name = "ROOT_PlayerV2"
     common.export_animation_fbx(OUT/"CombatActions.fbx", builder.result)
     builder.restore_mesh_deformation()
@@ -3359,6 +3405,63 @@ def publish_kick_only(builder, published_payload):
     common.save_blend(SOURCE/"CombatActions.blend")
     print("COMBAT KICK CONTRACT OK hero " + json.dumps(measured), flush=True)
     (OUT/"CombatTest3D.json").write_text(json.dumps(payload, indent=2)+"\n", encoding="utf8")
+
+
+def publish_footwork_only(published_out, published_source, output, source_output):
+    """Refresh original source rigs: NPC rest includes Ready, unlike the hero.
+
+    Keep every unrelated curve and prove unchanged published FBX poses. A
+    copied NPC curve on a fresh A-pose rig is not the same animation.
+    """
+    payload = json.loads((published_out/"CombatTest3D.json").read_text(encoding="utf8"))
+    output.mkdir(parents=True, exist_ok=True); source_output.mkdir(parents=True, exist_ok=True)
+    for is_hero in (False, True):
+        bank = "CombatActions" if is_hero else "CombatNpcActions"
+        target = payload["actions"] if is_hero else payload["actions"]["npc"]
+        replaced = tuple(n for n, _, _ in STEP_CLIPS + (KICK_CLIPS if is_hero else ()))
+        before = bank_motion_samples(published_out/(bank+".fbx"), target, replaced)
+        bpy.ops.wm.open_mainfile(filepath=str(published_source/(bank+".blend")))
+        rig = bpy.data.objects["RIG_Player"]
+        config = common.BuildConfig(None,None,None,None,None,None,None,1.75,20260919,"apose")
+        builder = CombatBuilder(config,hero.DEFAULT_FACE_ATLAS,hero.DEFAULT_CLOTHING_ATLAS)
+        builder.hero_profile = is_hero
+        builder.result = common.BuildResult(root=rig.parent, rig=rig, collections={}, materials={}, parts=[])
+        builder.points = builder.create_pose_points()
+        for clip in bank_clip_specs(target):
+            action = bpy.data.actions[clip["name"]]
+            builder.result.actions[clip["name"]] = common.ActionRecord(action=action,
+                category=action.get("bp_category", "combat"), duration_seconds=clip["duration_seconds"],
+                loop=clip["loop"], source_frame_count=round(clip["duration_seconds"]*FPS), source_fps=FPS)
+        preserved = tuple(n for n in builder.result.actions if n not in replaced)
+        signature = action_curve_signature(builder, preserved)
+        rig.animation_data.action = builder.result.actions["CombatReady"].action
+        bpy.context.scene.frame_set(0); bpy.context.view_layer.update()
+        builder.footwork_support_targets = {s: rig.pose.bones["foot."+s].head.copy() for s in ("L", "R")}
+        builder.footwork_support_rotations = {s: rig.pose.bones["foot."+s].matrix.to_quaternion() for s in ("L", "R")}
+        builder.build_step_actions()
+        if is_hero: builder.build_kick_action()
+        measured_step = step_payload(builder)
+        measured_kicks = [kick_payload(builder, s) for s in ("R", "L")] if is_hero else []
+        generated = action_curve_signature(builder, replaced)
+        builder.build_step_actions()
+        if is_hero: builder.build_kick_action()
+        if generated != action_curve_signature(builder, replaced):
+            raise ValueError("Footwork refresh is nondeterministic: "+bank)
+        if signature != action_curve_signature(builder, preserved):
+            raise ValueError("Footwork refresh changed an unrelated source curve: "+bank)
+        target["defensive_step"] = measured_step
+        if is_hero:
+            target["clips"] = [c for c in target["clips"] if c["name"] not in {n for n, _, _ in KICK_CLIPS}]
+            target["clips"].extend(dict(name=n,duration_seconds=d,loop=l) for n,d,l in KICK_CLIPS)
+            target["kick"] = measured_kicks[0]; target["kicks"] = measured_kicks
+        builder.result.root.name = "ROOT_PlayerV2" if is_hero else "ROOT_Player"
+        common.export_animation_fbx(output/(bank+".fbx"), builder.result)
+        if is_hero: pack_hero_atlases()
+        common.save_blend(source_output/(bank+".blend"))
+        after = bank_motion_samples(output/(bank+".fbx"), target, replaced)
+        assert_bank_motion_parity(before, after, bank+" untouched footwork refresh")
+        print("COMBAT FOOTWORK CONTRACT OK "+bank+" "+json.dumps(dict(step=measured_step,kicks=measured_kicks)),flush=True)
+    (output/"CombatTest3D.json").write_text(json.dumps(payload,indent=2)+"\n",encoding="utf8")
 
 
 def pack_hero_atlases():
@@ -3718,9 +3821,10 @@ def complete_bank_payload(builder):
         hand_sequence="prone left floor -> left knee -> shaft; supine left floor -> balance -> shaft; right retains weapon")
     measured["profile"] = "frightened_novice" if builder.hero_profile else "sparring_opponent"
     if builder.hero_profile:
-        measured["clips"] = [clip for clip in measured["clips"] if clip["name"] != KICK_CLIP]
-        measured["clips"].append(dict(name=KICK_CLIP, duration_seconds=KICK_DURATION, loop=False))
-        measured["kick"] = kick_payload(builder)
+        measured["clips"] = [clip for clip in measured["clips"] if clip["name"] not in {n for n, _, _ in KICK_CLIPS}]
+        measured["clips"].extend(dict(name=n, duration_seconds=d, loop=l) for n, d, l in KICK_CLIPS)
+        measured["kicks"] = [kick_payload(builder, side) for side in ("R", "L")]
+        measured["kick"] = measured["kicks"][0]
     measured["step_clips"] = [dict(name=n, duration_seconds=STEP_DURATION, loop=False) for n,_,_ in STEP_CLIPS]
     measured["defensive_step"] = step_payload(builder)
     measured["locomotion_clips"] = [dict(name=n, duration_seconds=LOCOMOTION_DURATION, loop=True) for n,_,_ in LOCOMOTION_CLIPS]
@@ -3852,6 +3956,7 @@ def main():
     parser.add_argument("--validate-only", action="store_true")
     parser.add_argument("--actions-only", action="store_true")
     parser.add_argument("--kick-only", action="store_true")
+    parser.add_argument("--footwork-only", action="store_true")
     parser.add_argument("--recovery-only", action="store_true")
     parser.add_argument("--rebase-npc-recovery", type=Path)
     parser.add_argument("--finish-recovery-banks", action="store_true")
@@ -3870,6 +3975,13 @@ def main():
     parser.add_argument("--output-dir", type=Path, default=OUT)
     parser.add_argument("--source-dir", type=Path, default=SOURCE)
     args = parser.parse_args(sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else [])
+    if args.footwork_only:
+        if not args.actions_only or any((args.kick_only,args.recovery_only,args.validate_only,args.probe_only,
+                args.dense_hero_probe,args.recovery_probe,args.pose_probe,args.resume_npc_bank)):
+            parser.error("--footwork-only requires the ordinary --actions-only publication run")
+        common.ANIMATION_FPS = FPS
+        publish_footwork_only(OUT,SOURCE,args.output_dir.resolve(),args.source_dir.resolve())
+        return
     if args.finish_recovery_banks:
         if args.actions_only or args.recovery_only or args.kick_only or args.validate_only or args.rebase_npc_recovery:
             parser.error("--finish-recovery-banks is a standalone endpoint repair")

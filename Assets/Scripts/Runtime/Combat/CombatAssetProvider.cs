@@ -19,7 +19,10 @@ namespace BarPromenade
             StepLeftClip = "CombatStepLeft", StepRightClip = "CombatStepRight",
             BackhandClip = "CombatBackhand", BackhandRecoilClip = "CombatBackhandRecoil",
             BackhandChargeClip = "CombatBackhandCharge", BackhandHeavyClip = "CombatBackhandHeavy",
-            RiseProneClip = "CombatRiseProne", RiseSupineClip = "CombatRiseSupine", KickClip = "CombatKick";
+            RiseProneClip = "CombatRiseProne", RiseSupineClip = "CombatRiseSupine", KickClip = "CombatKick",
+            KickLeftClip = "CombatKickLeft";
+        public static readonly string[] KickClipNames = { KickLeftClip, KickClip };
+        public static bool IsKickClip(string name) => name == KickClip || name == KickLeftClip;
         public static readonly string[] RecoveryClipNames = { RiseProneClip, RiseSupineClip };
         public const float DefeatHandoffSeconds = .16f;
         public const float ChargePreparationAdvanceSeconds = .18f, ReleaseConvergenceSeconds = .45f;
@@ -40,7 +43,7 @@ namespace BarPromenade
         }
         public static readonly string[] ClipNames = { ReadyClip, RestClip, AttackClip, BlockClip, HitClip,
             GuardImpactClip, GuardBreakClip, RecoilClip, DefeatClip, ChargeClip, ReleaseLightClip, ReleaseHeavyClip,
-            BackhandClip, BackhandRecoilClip, BackhandChargeClip, BackhandHeavyClip, KickClip };
+            BackhandClip, BackhandRecoilClip, BackhandChargeClip, BackhandHeavyClip, KickClip, KickLeftClip };
 
         /// <summary>The five clips of one swing side. The backhand has no light-release copy: its attack is the light release.</summary>
         public readonly struct SwingClipSet
@@ -74,7 +77,7 @@ namespace BarPromenade
                     return MeleeCombatSettings.Crowbar.StepDurationSeconds;
                 case AttackClip: case ReleaseLightClip: case ReleaseHeavyClip: case BackhandClip: case BackhandHeavyClip: return 1.28f;
                 case HitClip: return .36f;
-                case KickClip: return .95f;
+                case KickClip: case KickLeftClip: return .95f;
                 case GuardImpactClip: return .28f;
                 case GuardBreakClip: return .70f;
                 case RecoilClip: case BackhandRecoilClip: return .48f;

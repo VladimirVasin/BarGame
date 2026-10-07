@@ -11,10 +11,9 @@
 | Development/Release Player | `verbose`/`basic` | `Application.persistentDataPath/Logs/debug.log` |
 | Batch/command-line tests | `off` | no file |
 
-Use `-bp-debug-log` with `off`, `basic` or `verbose`. Basic records state/results;
-verbose adds phase timings/build sizes. F8 writes and flushes a
-`diagnostics/snapshot`; in CombatTest it also marks the duel. Shift+F8 opens
-CombatLogs in CombatTest, otherwise the general log directory.
+`-bp-debug-log off|basic|verbose`: state/results; verbose adds timings/build sizes.
+F8 flushes `diagnostics/snapshot` and marks CombatTest; Shift+F8 opens its
+CombatLogs, otherwise the general log directory.
 
 ## General log format and boundaries
 
@@ -43,13 +42,11 @@ intoxication/cash/drinking progress.
 `combat_test_start` (range), `new_game_start` (normal/legacy `BeginNewGame`),
 `new_game_start_rejected` (rejected transition rollback).
 
-The general log excludes frame updates, cursor/input motion, animation progress,
-smoothed presentation, physics substeps and ordinary `Debug.Log`. Strings cap at
-16,384 characters. `needs/passive_progressed` logs visible integer changes, not fractions.
-Identical Unity messages emit three full records then sparse summaries within
-a 10-second burst. Separate 10-second budgets then admit 32 warnings and
-64 errors/assertions/exceptions; `messages_rate_limited` reports dropped counts
-per severity, so warning storms cannot consume the exception budget.
+No frame/input-motion/animation/physics samples or ordinary `Debug.Log`.
+Strings≤16,384 characters; `needs/passive_progressed` records visible integers.
+Identical Unity messages: three full records then sparse summaries per10s.
+Separate10s budgets:32 warnings/64 errors-assertions-exceptions;
+`messages_rate_limited` gives drops per severity, preserving the exception budget.
 
 ## General log retention and reporting
 
@@ -60,22 +57,27 @@ paths; review before public sharing.
 
 ## DuelJournal: CombatTest rounds
 
-Editor/Player on, batch off/test opt-in; `-bp-duel-log on|off` independent.
-Editor: repository CombatLogs; Player: `Application.persistentDataPath/CombatLogs`.
-`duel_<session>_<round>`: `summary.txt`, then `duel.ndjson`.
+Editor/Player on; batch opt-in; `-bp-duel-log on|off`.
+Editor: repo CombatLogs; Player: `Application.persistentDataPath/CombatLogs`.
+`duel_<session>_<round>`: `summary.txt`/`duel.ndjson`.
 
-`rules_rejected`: opaque Rules/`reason_checked=false`/phase/stamina/cost.
-`balance_buffer`: .20s press; `observed_counter`: whiff reply. 20Hz pose/support/CPU.
-`support_pose_rejected`: `contact_*`/weapon commit depth/sweep/shape.
-`weapon_constraint`: cause survives rollback; remaining depth=rendered pose.
-`arm_snapshot`: wrist/elbow/shoulder_roll/elbow_signed; metrics fresh/cached.
+`rules_rejected`: Rules/`reason_checked=false`/phase/stamina/cost.
+`recovery_step`: rescue; `fall_committed`: refusal; `observed_counter`: whiff.
+20Hz pose/support/CPU.
+`aim_locked`: kind/yaw/open seconds; no late re-aim.
+`support_pose_rejected`: `contact_*`/depth/sweep/shape.
+`weapon_constraint`: cause persists; depth=rendered pose.
+`arm_snapshot`: wrist/elbow/shoulder_roll/elbow_signed; fresh/cached.
 Guard: `two_hand_support`/`balance_recovery`; attacks ignore regrip.
-End/focus cancels held/buffered. Header: `opponent_style`.
+End/focus clears input. Header: `opponent_style`.
 `phase`: `action_kind`/kick `outcome`/`from_action`; `impact_kind`: impact_seq+kind.
-`kick_support`: reason/gap/wait; `kick_sweep_sample`: boot endpoints/hit/obstacle.
+`kick_support`: reason/gap/wait/support+strike side.
+`kick_surface_contact`: sole/toe<=64.
+`kick_sweep_sample`: boot/hit/world; `weapon_blocked`: metal stop/point.
 `recovery`: steps/gaps/stability; `ragdoll_snapshot`: speeds/settling/rise support
-vs central landing. `suspected_stall`: >2s without phase/rise progress, except
-defeated. `post_round_time_discarded`: aftermath loss; snapshots to exit/R.
+vs central landing. `rise_clearance_*`: blocker/candidate/path/capsule/floor;
+changes or 1s summary. `suspected_stall`: >2s no phase/rise progress, living.
+`post_round_time_discarded`: aftermath loss; snapshots to exit/R.
 `impact_anatomy`: `impact_seq`/region/side/critical/finisher/target phase before-after/
 power; diagnostic pre-hit phase may be null.
 `revision_identity`: compiled Runtime/Rules MVID≠Editor commit/state; bank
@@ -88,10 +90,12 @@ no replay/FPS guarantee.
 =FrameTiming. `latest_timing_repeat_frames`:-1 unavailable/0 new/>0 repeats≠age.
 `pose_work`: Present/Weapon/Support CPU/calls, support candidates/budget; outside Tick.
 `frame_delivery/late_to_next_update_ms`: LateStart→Update wall incl.
-render/editor/scheduling/waits, not CPU/GPU cost.
-`weapon_constraint_sample`: candidates/sweeps/queries/reuse/core/shoulder/budget;
-world gates live.
-Nested timings: never sum. Unsupported=null; main/render/GPU: latest.
+render/editor/scheduling/waits≠CPU/GPU.
+`render_context_captured`: game-camera SRP/same-frame split:
+`late_to_render_begin_ms`/`render_context_span_ms`/`render_end_to_next_update_ms`.
+`render_contexts`: count; submission≠GPU finish. No callbacks=null.
+`weapon_constraint_sample`: candidates/sweeps/world+`anatomy_queries`/reuse/core/shoulder/budget; live world gates.
+Nested timings: no sum. Unsupported=null; main/render/GPU: latest.
 Header: pacing/capture/wait.
 
 Producer: 2048/4096 default/max packets + eight control slots; reused chars,
@@ -102,7 +106,7 @@ Cloth/hair matrix cache;120Hz/4 steps.
 
 ## Optional area performance capture
 
-General log takes no frame samples. For an area capture:
+Area frame samples:
 
 ```text
 -bp-perf-scene=City -bp-perf-label=1080p-walk -bp-perf-warmup=5 -bp-perf-seconds=30 -bp-perf-target-fps=60
@@ -114,12 +118,11 @@ API: `RuntimePerformanceCapture.StartCapture(options, outputDirectory)`.
 
 Default: `Application.persistentDataPath/PerformanceCaptures`, eight JSON reports,
 ≤36,000 samples each; capture 1–120s/warmup≤60s/scene wait≤300s.
-Scene/render changes end capture with a named reason.
+Scene/render changes end capture with a reason.
 
 Reports: resolution/quality/render scale/pacing/hardware/weather/time/intoxication,
 p50/p95/p99/max frame intervals, main/render counters, GC, foot-bake/reflection
 work. Markers: `BarPromenade.FootSoleBake`, `BarPromenade.WaterReflectionCube`.
-GPU needs supported/enabled Frame Timing Stats; capture never enables it.
-`sampleCount = 0` means unavailable, not free. Frames include pacing, threads
-may include waits; Editor diagnostics are not player benchmarks. Compare the
-same route/render context; retain pause/focus counts.
+GPU needs supported/enabled Frame Timing Stats; capture leaves it unchanged.
+`sampleCount = 0` means unavailable. Frames include pacing/threads/waits;
+Editor≠player benchmark. Compare identical routes/render; retain pause/focus counts.

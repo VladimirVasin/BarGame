@@ -383,6 +383,119 @@ namespace BarPromenade.Tests.PlayMode
         }
 
         [UnityTest]
+        public IEnumerator Range_RiseWaitsForNearbyCharacterAndResumesAfterRealStep()
+        {
+            PlacePair(4f);
+            for (int warm = 0; warm < 12; warm++) { root.Tick(TickSeconds); yield return null; }
+            CombatActor victim = root.Opponent;
+            string folder = Path.GetFullPath(Path.Combine("TestResults", "rise-nearby-character-" + Guid.NewGuid().ToString("N")));
+            root.SetDuelLogging(true, folder);
+            var journal = root.JournalForDiagnostics;
+            var poseField = typeof(CombatActor).GetField("knockdownPose", BindingFlags.Instance | BindingFlags.NonPublic);
+            bool blocked = false, completed = false;
+            Vector3 heldRoot = default;
+            try
+            {
+                Assert.That(victim.TryBeginKnockdown(RecoveryTestImpact(victim, Vector3.down, 1),
+                    -victim.transform.forward * .8f, victim.transform.right * 1.1f), Is.True);
+                for (int frame = 0; frame < 900; frame++)
+                {
+                    root.Tick(TickSeconds);
+                    yield return null;
+                    if (victim.State.Phase == MeleePhase.Rising && victim.JournalRiseProgress >= .93f) break;
+                }
+                Assert.That(victim.IsKnockedDown && victim.State.Phase == MeleePhase.Rising, Is.True,
+                    "The real ragdoll first reaches its authored standing/regrip arc.");
+                CombatRecoveryPose pose = (CombatRecoveryPose)poseField.GetValue(victim);
+                Assert.That(pose, Is.Not.Null);
+                heldRoot = victim.transform.position;
+                // A real standing hero crowds the capsule from behind, leaving
+                // the NPC's forward crowbar arc clear. No fake enlarged blocker,
+                // disabled collision or forced recovery clock supplies the gate.
+                root.Hero.ResetActor(heldRoot - victim.transform.forward * .25f, victim.transform.forward);
+                Physics.SyncTransforms();
+                Assert.That(pose.HasStandingClearance(), Is.False);
+                Assert.That(pose.ClearanceRefusalCount, Is.EqualTo(1));
+                CombatRecoveryPose.ClearanceRefusal refusal = pose.GetClearanceRefusal(0);
+                Assert.That(refusal.Reason, Is.EqualTo("capsule_overlap"));
+                Assert.That(refusal.Obstacle, Is.SameAs(root.Hero.Body));
+                Assert.That(refusal.CapsuleTested, Is.True);
+                Assert.That(refusal.CandidateIndex, Is.Zero);
+                Assert.That(Vector3.Distance(refusal.Candidate, heldRoot), Is.LessThan(.00001f));
+                Assert.That(refusal.CapsuleRadius, Is.EqualTo(Mathf.Max(.08f,
+                    victim.Body.radius - victim.Body.skinWidth)).Within(.00001f));
+                for (int frame = 0; frame < 30; frame++)
+                {
+                    root.Tick(TickSeconds);
+                    Assert.That(victim.IsKnockedDown, Is.True, "The obstructed standing capsule cannot finish the rise.");
+                    Assert.That(Vector3.Distance(heldRoot, victim.transform.position), Is.LessThan(.002f),
+                        "Waiting cannot relocate the NPC through the nearby hero.");
+                    yield return null;
+                }
+                blocked = true;
+                CaptureDuelFrame("rise-nearby-character", "blocked");
+                Vector3 heroStart = root.Hero.transform.position;
+                Assert.That(root.Hero.TryStep(Vector2.down), Is.True, "The blocking hero leaves through the actual supported Step.");
+                // The NPC may safely finish as soon as the capsule is clear,
+                // before the hero has completed the whole one-metre Step.
+                for (int frame = 0; frame < 300 && (!completed || root.Hero.State.Phase == MeleePhase.Step); frame++)
+                {
+                    Vector3 before = victim.transform.position;
+                    root.Tick(TickSeconds);
+                    Assert.That(Vector3.Distance(before, victim.transform.position), Is.LessThan(.01f),
+                        "Resuming the same rise cannot hide a root teleport.");
+                    yield return null;
+                    completed |= !victim.IsKnockedDown && victim.HasTwoHandSupport;
+                }
+                Assert.That(root.Hero.State.Phase, Is.Not.EqualTo(MeleePhase.Step));
+                Assert.That(root.Hero.StepTravelBlocked, Is.False);
+                Assert.That(Vector3.Distance(heroStart, root.Hero.transform.position),
+                    Is.EqualTo(root.Hero.State.Settings.StepDistance).Within(.025f),
+                    "The blocking capsule completes its actual Step; it was not ignored or disabled.");
+                Assert.That(root.Hero.Body.enabled, Is.True);
+                Assert.That(completed, Is.True, "Clearing the real obstacle resumes the same supported/regripped rise.");
+                Assert.That(victim.State.Health, Is.EqualTo(victim.State.Settings.MaxHealth));
+                CaptureDuelFrame("rise-nearby-character", "resumed");
+            }
+            finally { root.SetDuelLogging(false); }
+            for (int wait = 0; wait < 90 && !journal.Completion.IsCompleted; wait++) yield return null;
+            Assert.That(journal.Completion.IsCompleted, Is.True);
+            Assert.That(journal.DroppedRecords, Is.Zero);
+            int clearanceLogs = 0;
+            foreach (string file in Directory.GetFiles(folder, "duel.ndjson", SearchOption.AllDirectories))
+                foreach (string line in File.ReadLines(file))
+                {
+                    var record = JsonUtility.FromJson<RiseClearanceReadRecord>(line);
+                    if (record.@event != "rise_clearance_blocked" || record.data.stage != "finish") continue;
+                    clearanceLogs++;
+                    Assert.That(record.data.reason, Is.EqualTo("capsule_overlap"));
+                    Assert.That(record.data.category, Is.EqualTo("combat_actor"));
+                    Assert.That(record.data.collider_type, Is.EqualTo(nameof(CharacterController)));
+                    Assert.That(record.data.collider_id, Is.EqualTo(root.Hero.Body.GetEntityId().GetHashCode()));
+                    Assert.That(record.data.collider_path, Does.Contain(root.Hero.name));
+                    Assert.That(record.data.candidates_checked, Is.EqualTo(1));
+                }
+            Assert.That(blocked && completed, Is.True);
+            Assert.That(clearanceLogs, Is.InRange(1, 3), "The stable obstruction is logged on change/sparse intervals, never each simulation tick.");
+            LogAssert.NoUnexpectedReceived();
+        }
+
+        [Serializable]
+        private sealed class RiseClearanceReadRecord
+        {
+            public string @event;
+            public RiseClearanceReadData data;
+        }
+
+        [Serializable]
+        private sealed class RiseClearanceReadData
+        {
+            public string stage, reason, category, collider_type, collider_path;
+            public int collider_id, candidates_checked;
+        }
+
+
+        [UnityTest]
         public IEnumerator Range_QuietRagdollCanRiseFromFootSupport()
         {
             PlacePair(4f);

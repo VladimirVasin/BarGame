@@ -1133,6 +1133,9 @@ namespace BarPromenade
 
         internal void ReapplyLatePresentationPose()
         {
+            // Match the real late pass: a contact freeze retains its completed
+            // rig, including a blended continuation and its planted soles.
+            if (OwnedAttentionPresentationFrozen) return;
             // A deterministic seam for checks that run in batch mode, where
             // WaitForEndOfFrame is not dispatched. It reapplies the current
             // visible pose after the manual graph has evaluated without

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using Unity.Profiling;
 using UnityEngine;
@@ -24,6 +25,8 @@ namespace BarPromenade
         private ulong journalTimingStamp;
         private double journalUpdateToLateMilliseconds;
         private bool journalLateFrameCaptured;
+        private long journalRenderBegin, journalRenderEnd;
+        private int journalRenderContexts;
         private long journalQueriesAtFrameStart, journalSaturationsAtFrameStart;
         private int journalMeasuredFrame;
         private int journalRound, journalFrameSubsteps, journalFrozenSteps, journalPoseSamples, journalDecision = -1;
@@ -94,6 +97,8 @@ namespace BarPromenade
             journalRender = StartJournalRecorder(ProfilerCategory.Internal, "Render Thread");
             journalGc = StartJournalRecorder(ProfilerCategory.Memory, "GC Allocated In Frame");
             journalTargetWait = StartJournalRecorder(ProfilerCategory.Internal, "WaitForTargetFPS");
+            RenderPipelineManager.beginContextRendering += JournalRenderBegin;
+            RenderPipelineManager.endContextRendering += JournalRenderEnd;
             journalGpuEnabled = FrameTimingManager.IsFeatureEnabled();
             if (journalGpuEnabled) FrameTimingManager.CaptureFrameTimings();
             // Initial Awake starts the round after placement; explicit runtime/test
@@ -108,6 +113,7 @@ namespace BarPromenade
             journalTick = 0; journalSeconds = 0d; journalLastSnapshot = -1d; journalFrameStart = 0;
             journalLatePoseFrame = -1; journalTimingStamp = 0; journalTimingRepeats = -1;
             journalLateFrameCaptured = false;
+            journalRenderBegin = journalRenderEnd = 0; journalRenderContexts = 0;
             Hero.BeginJournalWorkFrame(); Opponent.BeginJournalWorkFrame();
             journalDecision = -1; journalAttackHeld = journalFrozen = false;
             journalInputAllowed = GameInput.CanRead(GameInputContext.Gameplay);
@@ -194,6 +200,8 @@ namespace BarPromenade
             journalRender.Dispose();
             journalGc.Dispose();
             journalTargetWait.Dispose();
+            RenderPipelineManager.beginContextRendering -= JournalRenderBegin;
+            RenderPipelineManager.endContextRendering -= JournalRenderEnd;
             if (JournalRoot == this) JournalRoot = null;
         }
 
@@ -291,7 +299,15 @@ namespace BarPromenade
                 duelJournal.Record("frame_delivery",
                     f0: GameLog.Field("late_to_next_update_ms", journalLateFrameCaptured
                         ? Math.Max(0d, journalFrameMilliseconds - journalUpdateToLateMilliseconds) : double.NaN),
-                    f1: GameLog.Field("late_observer_captured", journalLateFrameCaptured));
+                    f1: GameLog.Field("late_observer_captured", journalLateFrameCaptured),
+                    f2: GameLog.Field("render_context_captured", journalRenderContexts > 0),
+                    f3: GameLog.Field("late_to_render_begin_ms", journalRenderContexts > 0
+                        ? (journalRenderBegin - journalFrameStart) * JournalMillisecondsPerTick - journalUpdateToLateMilliseconds : double.NaN),
+                    f4: GameLog.Field("render_context_span_ms", journalRenderContexts > 0
+                        ? (journalRenderEnd - journalRenderBegin) * JournalMillisecondsPerTick : double.NaN),
+                    f5: GameLog.Field("render_end_to_next_update_ms", journalRenderContexts > 0
+                        ? (now - journalRenderEnd) * JournalMillisecondsPerTick : double.NaN),
+                    f6: GameLog.Field("render_contexts", journalRenderContexts));
                 Hero.WriteJournalWorkFrame(); Opponent.WriteJournalWorkFrame();
             }
             if (journalGpuEnabled) FrameTimingManager.CaptureFrameTimings();
@@ -301,6 +317,7 @@ namespace BarPromenade
             journalLatePoseTicks = journalImpactApplyTicks = 0;
             journalLatePoseFrame = -1; journalUpdateToLateMilliseconds = 0;
             journalLateFrameCaptured = false;
+            journalRenderBegin = journalRenderEnd = 0; journalRenderContexts = 0;
             Hero.BeginJournalWorkFrame(); Opponent.BeginJournalWorkFrame();
             journalFrameSubsteps = journalFrozenSteps = journalPoseSamples = 0;
             journalOpponentRequested = journalOpponentAchieved = Vector3.zero;
@@ -314,6 +331,30 @@ namespace BarPromenade
                 duelJournal.Record("input_gate", f0: GameLog.Field("allowed", allowed),
                     f1: GameLog.Field("paused", PauseMenuController.IsAnyPaused), f2: GameLog.Field("transitioning", SceneTransitionService.IsTransitioning));
             }
+        }
+
+        private bool IsJournalRenderContext(List<Camera> cameras)
+        {
+            if (duelJournal == null || !journalRoundOpen || !journalLateFrameCaptured ||
+                journalMeasuredFrame != Time.frameCount || CameraFollow == null) return false;
+            Camera camera = CameraFollow.Camera;
+            if (camera == null) return false;
+            for (int i = 0; i < cameras.Count; i++) if (cameras[i] == camera) return true;
+            return false;
+        }
+
+        private void JournalRenderBegin(ScriptableRenderContext context, List<Camera> cameras)
+        {
+            if (IsJournalRenderContext(cameras) && journalRenderBegin == 0)
+                journalRenderBegin = Stopwatch.GetTimestamp();
+        }
+
+        private void JournalRenderEnd(ScriptableRenderContext context, List<Camera> cameras)
+        {
+            if (!IsJournalRenderContext(cameras) || journalRenderBegin == 0) return;
+            // These callbacks delimit CPU submission, not GPU completion or
+            // presentation. Scene-view contexts never stand in for the game camera.
+            journalRenderEnd = Stopwatch.GetTimestamp(); journalRenderContexts++;
         }
 
         private void AdvanceJournalClock(bool frozen)

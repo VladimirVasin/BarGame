@@ -126,6 +126,50 @@ namespace BarPromenade
             return found;
         }
 
+        internal readonly struct SweepSurfaceGap
+        {
+            internal readonly Player3DAnatomicalPart Part;
+            internal readonly float Gap, Fraction;
+            internal readonly Vector3 Centre, Surface;
+            internal SweepSurfaceGap(Player3DAnatomicalPart part, float gap, float fraction, Vector3 centre, Vector3 surface)
+            { Part = part; Gap = gap; Fraction = fraction; Centre = centre; Surface = surface; }
+        }
+
+        /// <summary>Read-only diagnostic against the SAME frozen contact anatomy.
+        /// Positive means separated; zero/negative means the sphere reaches it.
+        /// No broadphase pruning or live bone/PhysX read can hide a missed shape.
+        /// Called only by focused geometry checks, never by the contact hot path.</summary>
+        internal bool MeasureSweepSurfaceGap(Vector3 from, Vector3 to, float sphereRadius, out SweepSurfaceGap result)
+        {
+            result = default;
+            if (!Finite(from) || !Finite(to) || !float.IsFinite(sphereRadius) || sphereRadius < 0f) return false;
+            float best = float.PositiveInfinity;
+            Vector3 delta = to - from;
+            foreach (Snapshot shape in snapshots)
+            {
+                float low = 0f, high = 1f;
+                // Static baked-vertex probes need no line minimization.
+                for (int pass = 0; delta.sqrMagnitude > .0000000001f && pass < 24; pass++)
+                {
+                    float left = (2f * low + high) / 3f, right = (low + 2f * high) / 3f;
+                    if (shape.DistanceSquared(from + delta * left) <= shape.DistanceSquared(from + delta * right)) high = right;
+                    else low = left;
+                }
+                float fraction = (low + high) * .5f;
+                float square = shape.DistanceSquared(from + delta * fraction);
+                float first = shape.DistanceSquared(from), last = shape.DistanceSquared(to);
+                if (first < square) { fraction = 0f; square = first; }
+                if (last < square) { fraction = 1f; square = last; }
+                float gap = Mathf.Sqrt(square) - sphereRadius;
+                if (gap >= best) continue;
+                best = gap;
+                Vector3 centre = from + delta * fraction;
+                shape.Surface(centre, out Vector3 surface, out _);
+                result = new SweepSurfaceGap(shape.Part, gap, fraction, centre, surface);
+            }
+            return float.IsFinite(best);
+        }
+
         internal bool ChestSurface(Vector3 from, Vector3 direction, out Hit hit)
         {
             for (int i = 0; i < snapshots.Length; i++)

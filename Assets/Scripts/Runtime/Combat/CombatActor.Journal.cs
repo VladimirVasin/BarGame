@@ -25,6 +25,7 @@ namespace BarPromenade
         private long journalPresentTicks, journalWeaponTicks, journalSupportTicks;
         private int journalPresentCalls, journalWeaponCalls, journalSupportCalls;
         private long journalWeaponCandidates, journalWeaponSweepSamples, journalWeaponWorldQueries, journalWeaponQueriesAvoided;
+        private long journalWeaponAnatomyQueries;
         private int journalWeaponCoreSnapshots;
         private long journalShoulderChoicesReused, journalCandidateBudgetExhaustions;
         private long journalSupportCandidates, journalSupportBudgetExhaustions;
@@ -74,6 +75,7 @@ namespace BarPromenade
             journalWeaponSweepSamples = weaponConstraint?.SweepSamples ?? 0;
             journalWeaponWorldQueries = weaponConstraint?.WorldQueries ?? 0;
             journalWeaponQueriesAvoided = weaponConstraint?.RepeatedWorldQueriesAvoided ?? 0;
+            journalWeaponAnatomyQueries = weaponConstraint?.AnatomySweepQueries ?? 0;
             journalWeaponCoreSnapshots = weaponConstraint?.ArmCoreSnapshots ?? 0;
             journalShoulderChoicesReused = weaponConstraint?.ShoulderChoicesReused ?? 0;
             journalCandidateBudgetExhaustions = weaponConstraint?.CandidateBudgetExhaustions ?? 0;
@@ -100,7 +102,8 @@ namespace BarPromenade
                     f3: GameLog.Field("repeated_queries_avoided", weaponConstraint.RepeatedWorldQueriesAvoided - journalWeaponQueriesAvoided),
                     f4: GameLog.Field("arm_core_snapshots", weaponConstraint.ArmCoreSnapshots - journalWeaponCoreSnapshots),
                     f5: GameLog.Field("shoulder_choices_reused", weaponConstraint.ShoulderChoicesReused - journalShoulderChoicesReused),
-                    f6: GameLog.Field("candidate_budget_exhaustions", weaponConstraint.CandidateBudgetExhaustions - journalCandidateBudgetExhaustions));
+                    f6: GameLog.Field("candidate_budget_exhaustions", weaponConstraint.CandidateBudgetExhaustions - journalCandidateBudgetExhaustions),
+                    f7: GameLog.Field("anatomy_queries", weaponConstraint.AnatomySweepQueries - journalWeaponAnatomyQueries));
         }
 
         internal long JournalEvent(string eventName, int target = 0, int action = 0, int request = 0,

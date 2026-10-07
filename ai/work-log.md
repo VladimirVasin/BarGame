@@ -3,19 +3,45 @@
 Newest outcomes/checks first. Archive whole dates at budget: [policy](README.md).
 Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-2026-08.md).
 
-## 2026-10-07 — Recovery grip endpoint
+## 2026-10-07 — Combat openings, support handoff and physical regrip
 
-- Raw Ready in the recovery-only authoring path lacked the retained bank's
-  wrist/elbow corrections. Both rises now smoothly join the actual Ready arms
-  during the terminal quarter; legs, body and the preceding brace remain.
-  Repeated finishing retains an already joined track. Source rest and all
-  unrelated Actions survive publication.
-- `bank_motion_samples` / `assert_bank_motion_parity` verify untouched motion,
-  body/brace parity, Ready endpoints and repeated finishing.
-  `Range_InterruptedRiseHasBoundedWorkAndRecovers` checks startup grip, imported
-  rise/Ready seams on a separate Transform tree, impacts, anatomy, floor and
-  supported control. Ready/brace/recovered frames reviewed.
-  `python -B tools/check-docs.py`, `git diff --check`.
+- Recovery publication joins retained Ready arms; body/brace tracks remain.
+  `assert_bank_motion_parity` and
+  `Range_InterruptedRiseHasBoundedWorkAndRecovers` cover imported seams.
+- Hero/NPC strikes and hero kicks aim at actual opponent body position only
+  during the first quarter of preparation, then keep their world heading.
+  `Range_StrikesAimOnlyAtTheOpeningAndPreservePhysicalEvasion`.
+- One-metre rescue steps start from an available real sole during stagger/catch;
+  momentum, overload and committed falls still win. Ordinary Step/gait inherit
+  actual soles plus a finite checked landing; blocked/stopped transfers withdraw
+  the forecast without renewing catch budgets or deadlines.
+  `Range_RecoveryStepsStartImmediatelyAndPreserveLiveSupport`,
+  `Range_PostCatchStepAndRetreatKeepFinitePhysicalLandings`.
+- Both authored kicks select the free leg from actual weight and preserve the
+  right weapon hand. Metre steps/kicks use `--footwork-only` authoring gates.
+  `Range_KickSelectsWalkingSupportAndCancelsStaleRequests`.
+  `Range_CloseKicksAgreeWithPresentedBootAndFrozenAnatomy` finds matching
+  a close-range boot-surface miss; bounded sole/toe points cover it without
+  enlarging the sphere radius or claiming full triangle coverage.
+- Bar/world/body share earliest contact; metal gives wall recoil, stops active
+  weapons, charges/breaks guard without HP leakage and drives pooled sparks.
+  `Range_MetalContactsStopAtTheFirstSurfaceAndShareOnePausedSparkPool`.
+- Regrip closes only on the accepted final contact, holds its station/branch
+  and reuses the accepted arm within one substep. Open endpoint search uses
+  the authored elbow before restoring the free pose. Unreachable paths wait open;
+  preview/repeated Present do not advance closure or disable right-hand attacks.
+  `Range_MovingRegripCarriesTheArmAndRestoresAttack`.
+  Earlier bounded contact search/rollback remain covered by
+  `Range_BackhandSupportSearchHasBoundedWorkAndKeepsAdmittedContactsSafe`,
+  `Range_HitContinuationKeepsSupportSolveAndVisibleContactConsistent` and
+  `Range_WeaponSweepReusesOnlyIdenticalQueriesAndKeepsMovingAnatomy`.
+- Rise refusals report bounded collider/path/floor/capsule/search reasons.
+  `Range_RiseWaitsForNearbyCharacterAndResumesAfterRealStep`.
+- Rendered Timeline joins exact duel frames and separates nested Editor/player
+  work, pose spikes and Swap. The old long post-render gap was not reproduced;
+  its cause remains open. `Range_RenderedDeliverySeparatesEditorWaitFromCombatWork`
+  and `Range_DuelJournalRecordsReasonsWithoutChangingCombat`; no FPS claim.
+- Combat frames reviewed. Docs: `python -B tools/check-docs.py`, `git diff --check`.
 
 ## 2026-10-06 — Interrupted combat rise
 

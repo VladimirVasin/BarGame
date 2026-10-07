@@ -126,6 +126,9 @@ namespace BarPromenade
         public bool HasBufferedAttack => bufferedAction == MeleeBufferedAction.Attack || bufferedAction == MeleeBufferedAction.Charge;
         public bool HasBufferedCharge => bufferedAction == MeleeBufferedAction.Charge;
         public bool HasBufferedStep => bufferedAction == MeleeBufferedAction.Step;
+        // Runtime separately authorizes an actual supporting foot before this
+        // escape from physical recovery. A committed swing/kick keeps its clock.
+        public bool CanStartRecoveryStep => Phase == MeleePhase.Ready || IsCharging || IsStunned;
         public float RecoveryRemaining => Phase == MeleePhase.Recovery
             ? (float)Math.Max(0d, AttackDuration - attackElapsed) : 0f;
         /// <summary>Seconds until the current committed phase hands control back; infinite while free or mid-swing.</summary>
@@ -229,6 +232,7 @@ namespace BarPromenade
             bufferedAction = MeleeBufferedAction.Charge;
             bufferedFromSwing = IsAttacking;
             bufferedChargeReleased = false;
+            recoveryBufferExpiresAt = double.PositiveInfinity;
             return true;
         }
 
@@ -293,6 +297,9 @@ namespace BarPromenade
         {
             bool active = IsCharging;
             bool cancelled = active || bufferedAction == MeleeBufferedAction.Charge;
+            // Guard refreshes call this even when no charge exists. They must
+            // not discard the deadline of a step waiting for physical support.
+            if (!cancelled) return false;
             ClearCharge();
             if (bufferedAction == MeleeBufferedAction.Charge)
             {
@@ -353,12 +360,25 @@ namespace BarPromenade
         /// reports only its lateral sign, which the step attack in the grace reads.</summary>
         public bool RequestStep(int lateralSign = 0)
         {
-            pendingStepCue = Math.Sign(lateralSign);
-            if (TryStartStep(pendingStepCue)) return true;
+            if (TryStartStep(lateralSign)) return true;
             if (!CanBuffer || stamina < Settings.StepCost) return false;
+            pendingStepCue = Math.Sign(lateralSign);
             bufferedAction = MeleeBufferedAction.Step;
             bufferedFromSwing = false;
             ClearCharge();
+            return true;
+        }
+
+        /// <summary>The same short-lived intent as a recovery charge, without
+        /// spending effort or taking a catching foot away from runtime.</summary>
+        public bool RequestRecoveryStep(int lateralSign = 0)
+        {
+            if (!(Phase == MeleePhase.Ready || CanBuffer) || stamina < Settings.StepCost) return false;
+            pendingStepCue = Math.Sign(lateralSign);
+            bufferedAction = MeleeBufferedAction.Step;
+            bufferedFromSwing = false;
+            ClearCharge();
+            recoveryBufferExpiresAt = clock + Settings.AttackBufferSeconds;
             return true;
         }
 
@@ -437,11 +457,26 @@ namespace BarPromenade
         public bool TryStartStep(int lateralSign = 0)
         {
             if (!(Phase == MeleePhase.Ready || IsCharging) || stamina < Settings.StepCost) return false;
+            StartStep(lateralSign);
+            return true;
+        }
+
+        public bool TryStartRecoveryStep(int lateralSign = 0)
+        {
+            if (!CanStartRecoveryStep || stamina < Settings.StepCost) return false;
+            StartStep(lateralSign);
+            return true;
+        }
+
+        private void StartStep(int lateralSign)
+        {
             CancelCharge();
+            recoveryBufferExpiresAt = double.PositiveInfinity;
             stepCue = Math.Sign(lateralSign);
             Spend(Settings.StepCost);
             regenerateAt = clock + Settings.RegenerationDelaySeconds;
             attackElapsed = stepElapsed = shoveElapsed = 0d;
+            stunRemaining = stunDuration = 0d;
             ClearKick();
             DropGuard();
             advancedActiveWindow = registeredContactWindow = chained = chainArmed = false;
@@ -451,7 +486,6 @@ namespace BarPromenade
             hitTargets.Clear();
             AttackSequence = unchecked(AttackSequence + 1);
             Phase = MeleePhase.Step;
-            return true;
         }
 
         /// <summary>A new press commits one sole-first kick. Unlike a clinch shove it
@@ -495,12 +529,13 @@ namespace BarPromenade
         public MeleeAdvanceResult Advance(float seconds, bool allowBufferedAttack = true)
         {
             NonNegative(seconds, nameof(seconds));
-            if (clock >= recoveryBufferExpiresAt) CancelCharge();
+            ExpireRecoveryIntent();
             // A swing's queue belongs to the post-contact handoff, even if a hitch
             // crosses its entire recovery. Other committed tails retain their boundary.
             double remaining = ActionRemainingSeconds;
-            bool canConsume = (!IsKicking || allowBufferedAttack) &&
-                (bufferedAction == MeleeBufferedAction.Step || (allowBufferedAttack && !bufferedFromSwing));
+            bool canConsume = allowBufferedAttack &&
+                (bufferedAction == MeleeBufferedAction.Step || !bufferedFromSwing) &&
+                clock + remaining < recoveryBufferExpiresAt;
             if (bufferedAction != MeleeBufferedAction.None && canConsume &&
                 Phase != MeleePhase.Ready && seconds >= remaining)
             {
@@ -610,8 +645,20 @@ namespace BarPromenade
                 stamina = Math.Min(Settings.MaxStamina, stamina + regenerationSeconds * Settings.StaminaPerSecond);
             }
             clock = end;
-            if (clock > recoveryBufferExpiresAt) CancelCharge();
+            ExpireRecoveryIntent();
             return result;
+        }
+
+        private void ExpireRecoveryIntent()
+        {
+            if (clock < recoveryBufferExpiresAt) return;
+            if (bufferedAction == MeleeBufferedAction.Charge) CancelCharge();
+            else if (bufferedAction == MeleeBufferedAction.Step)
+            {
+                bufferedAction = MeleeBufferedAction.None;
+                bufferedFromSwing = false;
+                recoveryBufferExpiresAt = double.PositiveInfinity;
+            }
         }
 
         /// <summary>A solid weapon contact ends the live swing into a full recovery.
@@ -760,6 +807,32 @@ namespace BarPromenade
             stunRemaining = stunDuration = remaining;
             Phase = MeleePhase.Stagger;
             return true;
+        }
+
+        /// <summary>A physical bar interception already stopped the incoming swing.
+        /// A supported held guard still pays effort and may break, without body
+        /// damage or a second outcome/recoil for the attacking weapon.</summary>
+        public MeleeHitResult ReceiveWeaponObstacle(float blockCost, float power = 0f)
+        {
+            NonNegative(blockCost, nameof(blockCost));
+            NonNegative(power, nameof(power));
+            if (!IsBlocking || IsDefeated || IsKnockedDown) return MeleeHitResult.Ignored;
+            bufferedAction = MeleeBufferedAction.None;
+            bufferedFromSwing = continuation = false;
+            advancedActiveWindow = chainArmed = false;
+            ClearCharge();
+            guardPressedAt = double.NegativeInfinity;
+            bool affordable = stamina >= blockCost;
+            if (affordable) Spend(blockCost);
+            else DropGuard();
+            // As with a body-hit guard break, insufficient effort does not
+            // consume the remainder or postpone its existing regeneration.
+            stunRemaining = Math.Max(stunRemaining, affordable
+                ? Settings.GuardImpactSeconds + Settings.ChargeGuardImpactBonus * power
+                : Settings.GuardBreakSeconds);
+            stunDuration = stunRemaining;
+            Phase = affordable ? MeleePhase.GuardImpact : MeleePhase.GuardBroken;
+            return affordable ? MeleeHitResult.Blocked : MeleeHitResult.GuardBroken;
         }
 
         /// <summary>Front is decided geometrically by runtime. A fresh, re-armed guard press

@@ -9,6 +9,8 @@ namespace BarPromenade
         private Vector3 stepDirection;
         private Vector2 pendingStepInput;
         private bool stepBlocked;
+        internal Vector3 StepDirection => stepDirection;
+        internal bool StepTravelBlocked => stepBlocked;
 
         private void LoadStepClips(bool forNpc)
         {
@@ -32,37 +34,61 @@ namespace BarPromenade
             if (stepClips == null) return JournalCommandResult(request, "rejected", "step_clips_missing");
             if (roundEnded) return JournalCommandResult(request, "rejected", "round_ended");
             if (!IsAvailable) return JournalCommandResult(request, "rejected", "actor_unavailable");
-            if (IsKnockedDown) return JournalCommandResult(request, "rejected", "knocked_down");
+            if (IsKnockedDown || State.IsKnockedDown || IsRagdollActive)
+                return JournalCommandResult(request, "rejected", "knocked_down");
+            if (ImpactMotion != null && ImpactMotion.WantsKnockdown)
+                return JournalCommandResult(request, "rejected", "fall_committed");
             if (!GameInput.CanRead(GameInputContext.Gameplay)) return JournalCommandResult(request, "rejected", "input_gate");
             if (float.IsNaN(input.x) || float.IsInfinity(input.x)) return JournalCommandResult(request, "rejected", "input_x_nonfinite", input.x);
             if (float.IsNaN(input.y) || float.IsInfinity(input.y)) return JournalCommandResult(request, "rejected", "input_y_nonfinite", input.y);
             // The rules learn only the lateral sign of a side step, resolved to the
             // same dominant axis as the clip: the step attack swings with the body.
             int lateral = Mathf.Abs(input.x) > Mathf.Abs(input.y) ? (input.x < 0f ? -1 : 1) : 0;
-            if (!State.RequestStep(lateral)) return JournalRulesRejected(request, State.Settings.StepCost, true);
+            bool recovering = !HasAttackBalance || State.IsStunned;
+            if (recovering && State.CanStartRecoveryStep)
+            {
+                if (State.Stamina < State.Settings.StepCost)
+                    return JournalRulesRejected(request, State.Settings.StepCost, true);
+                if (!PrepareRecoveryStep(input))
+                    return JournalCommandResult(request, "rejected", "recovery_support_missing");
+                if (!State.TryStartRecoveryStep(lateral))
+                    return JournalRulesRejected(request, State.Settings.StepCost, true);
+            }
+            else if (!State.RequestStep(lateral)) return JournalRulesRejected(request, State.Settings.StepCost, true);
             pendingStepInput = input;
-            if (State.Phase == MeleePhase.Step) BeginStepPresentation();
+            if (State.Phase == MeleePhase.Step) BeginStepPresentation(recovering);
             Present();
-            return JournalCommandResult(request, State.Phase == MeleePhase.Step ? "started" : "queued", "step");
+            return JournalCommandResult(request, State.Phase == MeleePhase.Step ? "started" : "queued",
+                recovering && State.Phase == MeleePhase.Step ? "recovery_step" : "step");
         }
 
-        private void BeginStepPresentation()
+        private Vector3 StepWorldDirection(Vector2 input)
+        {
+            bool side = Mathf.Abs(input.x) > Mathf.Abs(input.y);
+            Vector3 localDirection = side ? (input.x < 0f ? Vector3.left : Vector3.right) :
+                input.y > .01f ? Vector3.forward : Vector3.back;
+            Vector3 world = transform.TransformDirection(localDirection);
+            world.y = 0f;
+            return world.normalized;
+        }
+
+        private bool PrepareRecoveryStep(Vector2 input) => footwork != null &&
+            footwork.PrepareRecoveryStep(StepWorldDirection(input), State.Settings.StepDistance);
+
+        private void BeginStepPresentation(bool recovering = false)
         {
             Vector2 input = pendingStepInput;
             // Cardinal clips have authored sole contacts. Resolve diagonals to
             // their dominant direction instead of sliding that pose sideways.
             bool side = Mathf.Abs(input.x) > Mathf.Abs(input.y);
-            Vector3 localDirection = side ? (input.x < 0f ? Vector3.left : Vector3.right) :
-                input.y > .01f ? Vector3.forward : Vector3.back;
             string name = side ? (input.x < 0f ? "CombatStepLeft" : "CombatStepRight") :
                 input.y > .01f ? "CombatStepForward" : "CombatStepBackward";
             stepClip = null;
             if (stepClips != null)
                 foreach (AnimationClip clip in stepClips)
                     if (clip.name == name) { stepClip = clip; break; }
-            stepDirection = transform.TransformDirection(localDirection);
-            stepDirection.y = 0f;
-            stepDirection.Normalize();
+            stepDirection = StepWorldDirection(input);
+            if (recovering) footwork?.BeginPreparedRecoveryStep(State.Settings);
             stepBlocked = false;
             reaction = null; sweepValid = false;
             RetroAudio.PlayAt(RetroSfxId.FootstepConcrete, transform.position, .6f);

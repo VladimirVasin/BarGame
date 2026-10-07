@@ -29,6 +29,21 @@ namespace BarPromenade
         private readonly Quaternion leftAnkleRest, rightAnkleRest;
         private readonly RaycastHit[] floorHits = new RaycastHit[24];
         private readonly Collider[] clearanceHits = new Collider[24];
+        private readonly ClearanceRefusal[] clearanceRefusals = new ClearanceRefusal[17];
+        private ClearanceRefusal clearanceCandidate;
+        private Collider floorSurface;
+        internal int ClearanceRefusalCount { get; private set; }
+        internal ClearanceRefusal GetClearanceRefusal(int index) => clearanceRefusals[index];
+
+        internal struct ClearanceRefusal
+        {
+            internal string Reason;
+            internal Collider Obstacle, Floor;
+            internal int CandidateIndex;
+            internal Vector3 Candidate, PathFrom, PathTo, CapsuleTop, CapsuleBottom, FloorPoint, FloorNormal;
+            internal float CapsuleRadius;
+            internal bool PathTested, CapsuleTested, FloorTested;
+        }
         private AnimationClip clip;
         private AnimationClip sampledClip;
         private float sampledTime;
@@ -132,10 +147,12 @@ namespace BarPromenade
                 ? Vector3.SignedAngle(authoredAxis, lying.LyingAxis, Vector3.up) : 0f;
             Quaternion turn = Quaternion.AngleAxis(yaw, Vector3.up);
             Vector3 target = lying.PelvisWorld - turn * (pelvis.position - actor.position);
-            if (FindFloor(lying.PelvisWorld, out Vector3 floor, out _)) target.y = floor.y + .02f;
+            bool hasFloor = FindFloor(lying.PelvisWorld, out Vector3 floor, out Vector3 floorNormal);
+            Collider landingFloor = floorSurface;
+            if (hasFloor) target.y = floor.y + .02f;
             else target.y = actor.position.y;
             Quaternion rotation = turn * actor.rotation;
-            if (!TryRecoveryRoot(target, rotation, lying.PelvisWorld, out target))
+            if (!TryRecoveryRoot(target, rotation, lying.PelvisWorld, hasFloor, floor, floorNormal, landingFloor, out target))
             {
                 ragdoll.PhysicsController.ApplyRecoveryBlend(0f);
                 return false;
@@ -303,11 +320,22 @@ namespace BarPromenade
             return height - floor.y >= -.04f && height - floor.y <= .06f;
         }
 
-        internal bool HasStandingClearance() => HasStandingClearance(actor.position, actor.rotation);
+        internal bool HasStandingClearance()
+        {
+            ClearanceRefusalCount = 0;
+            PrepareClearanceCandidate(0, actor.position, actor.rotation, actor.position);
+            return HasStandingClearance(actor.position, actor.rotation);
+        }
 
-        private bool TryRecoveryRoot(Vector3 desired, Quaternion rotation, Vector3 lyingPelvis, out Vector3 result)
+        private bool TryRecoveryRoot(Vector3 desired, Quaternion rotation, Vector3 lyingPelvis,
+            bool hasFloor, Vector3 floorPoint, Vector3 floorNormal, Collider landingFloor, out Vector3 result)
         {
             result = desired;
+            ClearanceRefusalCount = 0;
+            PrepareClearanceCandidate(0, desired, rotation, lyingPelvis + Vector3.up * .12f);
+            clearanceCandidate.FloorTested = true;
+            clearanceCandidate.FloorPoint = floorPoint; clearanceCandidate.FloorNormal = floorNormal;
+            clearanceCandidate.Floor = hasFloor ? landingFloor : null;
             if (HasStandingClearance(desired, rotation)) return true;
             // A nearby blocked capsule is not a reason to snap upright or give up. Search
             // a small, deterministic support neighbourhood; rebasing preserves the frozen
@@ -320,17 +348,34 @@ namespace BarPromenade
                     float angle = i * Mathf.PI * .25f;
                     Vector3 delta = new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle)) * radius;
                     Vector3 candidate = desired + rotation * delta;
-                    if (!FindFloor(candidate + Vector3.up * .3f, out Vector3 floor, out _) ||
-                        Mathf.Abs(floor.y + .02f - desired.y) > .12f) continue;
+                    PrepareClearanceCandidate(1 + (ring - 1) * 8 + i, candidate, rotation, lyingPelvis + Vector3.up * .12f);
+                    bool foundFloor = FindFloor(candidate + Vector3.up * .3f, out Vector3 floor, out Vector3 normal);
+                    clearanceCandidate.FloorTested = true; clearanceCandidate.Floor = floorSurface;
+                    clearanceCandidate.FloorPoint = floor; clearanceCandidate.FloorNormal = normal;
+                    if (!foundFloor) { RejectClearance("floor_missing"); continue; }
+                    if (Mathf.Abs(floor.y + .02f - desired.y) > .12f)
+                    { RejectClearance("floor_height"); continue; }
                     candidate.y = floor.y + .02f;
+                    clearanceCandidate.Candidate = candidate;
+                    SetClearanceCapsule(candidate, rotation);
                     Vector3 travel = candidate - desired;
+                    clearanceCandidate.PathTested = true;
+                    clearanceCandidate.PathTo = clearanceCandidate.PathFrom + travel;
                     int hits = Physics.RaycastNonAlloc(lyingPelvis + Vector3.up * .12f, travel.normalized,
                         floorHits, travel.magnitude, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore);
                     bool crossed = hits == floorHits.Length;
+                    Collider pathObstacle = null; float nearest = float.PositiveInfinity;
                     for (int h = 0; h < hits; h++)
-                        if (floorHits[h].collider != null && !floorHits[h].collider.transform.IsChildOf(actor)) crossed = true;
-                    if (crossed || !HasStandingClearance(candidate, rotation)) continue;
+                        if (floorHits[h].collider != null && !floorHits[h].collider.transform.IsChildOf(actor))
+                        {
+                            crossed = true;
+                            if (floorHits[h].distance < nearest) { nearest = floorHits[h].distance; pathObstacle = floorHits[h].collider; }
+                        }
+                    if (crossed)
+                    { RejectClearance(hits == floorHits.Length ? "path_buffer_full" : "path_obstacle", pathObstacle); continue; }
+                    if (!HasStandingClearance(candidate, rotation)) continue;
                     result = candidate;
+                    ClearanceRefusalCount = 0;
                     return true;
                 }
             }
@@ -339,20 +384,48 @@ namespace BarPromenade
 
         private bool HasStandingClearance(Vector3 position, Quaternion rotation)
         {
+            clearanceCandidate.CapsuleTested = true;
             float radius = Mathf.Max(.08f, capsule.radius - capsule.skinWidth);
             Vector3 centre = position + rotation * capsule.center;
             float half = Mathf.Max(0f, capsule.height * .5f - radius);
             int count = Physics.OverlapCapsuleNonAlloc(centre + Vector3.up * half,
                 centre - Vector3.up * half, radius, clearanceHits, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore);
-            if (count == clearanceHits.Length) return false;
+            if (count == clearanceHits.Length) return RejectClearance("capsule_buffer_full");
             for (int i = 0; i < count; i++)
-                if (clearanceHits[i] != null && !clearanceHits[i].transform.IsChildOf(actor)) return false;
+                if (clearanceHits[i] != null && !clearanceHits[i].transform.IsChildOf(actor))
+                    return RejectClearance("capsule_overlap", clearanceHits[i]);
             return true;
+        }
+
+        private void PrepareClearanceCandidate(int index, Vector3 candidate, Quaternion rotation, Vector3 pathFrom)
+        {
+            clearanceCandidate = new ClearanceRefusal { CandidateIndex = index, Candidate = candidate,
+                PathFrom = pathFrom, PathTo = pathFrom };
+            SetClearanceCapsule(candidate, rotation);
+        }
+
+        private void SetClearanceCapsule(Vector3 position, Quaternion rotation)
+        {
+            float radius = Mathf.Max(.08f, capsule.radius - capsule.skinWidth);
+            Vector3 centre = position + rotation * capsule.center;
+            float half = Mathf.Max(0f, capsule.height * .5f - radius);
+            clearanceCandidate.CapsuleTop = centre + Vector3.up * half;
+            clearanceCandidate.CapsuleBottom = centre - Vector3.up * half;
+            clearanceCandidate.CapsuleRadius = radius;
+        }
+
+        private bool RejectClearance(string reason, Collider obstacle = null)
+        {
+            clearanceCandidate.Reason = reason; clearanceCandidate.Obstacle = obstacle;
+            if (ClearanceRefusalCount < clearanceRefusals.Length)
+                clearanceRefusals[ClearanceRefusalCount++] = clearanceCandidate;
+            return false;
         }
 
         private bool FindFloor(Vector3 point, out Vector3 contact, out Vector3 normal)
         {
             contact = point; normal = Vector3.up;
+            floorSurface = null;
             float closest = float.PositiveInfinity;
             int count = Physics.RaycastNonAlloc(point + Vector3.up * .65f, Vector3.down,
                 floorHits, 2f, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore);
@@ -361,7 +434,7 @@ namespace BarPromenade
                 RaycastHit hit = floorHits[i];
                 if (hit.collider == null || hit.collider.transform.IsChildOf(actor) ||
                     hit.collider.GetComponentInParent<CombatActor>() != null || hit.normal.y < .65f || hit.distance >= closest) continue;
-                closest = hit.distance; contact = hit.point; normal = hit.normal;
+                closest = hit.distance; contact = hit.point; normal = hit.normal; floorSurface = hit.collider;
             }
             return !float.IsPositiveInfinity(closest);
         }

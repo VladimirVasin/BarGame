@@ -86,16 +86,19 @@ namespace BarPromenade
         }
 
         /// <summary>Bounded acceleration with a stopping-distance speed cap; no overshoot at the target.</summary>
-        internal static float AdvanceInertialYaw(float angle, float maximumSpeed, float seconds, ref float velocity)
+        internal static float AdvanceInertialYaw(float angle, float maximumSpeed, float seconds, ref float velocity,
+            bool retainSpeedWhileBraking = false, float braking = 900f)
         {
-            const float acceleration = 600f, braking = 900f;
-            if (maximumSpeed <= 0f) { velocity = 0f; return 0f; }
+            const float acceleration = 600f;
+            if (maximumSpeed <= 0f && !retainSpeedWhileBraking) { velocity = 0f; return 0f; }
             if (seconds <= 0f) return 0f;
             float desiredSpeed = Mathf.Sign(angle) * Mathf.Min(maximumSpeed,
                 Mathf.Sqrt(2f * braking * Mathf.Abs(angle)));
             float rate = velocity * desiredSpeed < 0f || Mathf.Abs(desiredSpeed) < Mathf.Abs(velocity)
                 ? braking : acceleration;
-            float previous = Mathf.Clamp(velocity, -maximumSpeed, maximumSpeed);
+            // A combat phase may lower its requested rate while the planted body
+            // is still turning. Brake that earned velocity instead of clipping it.
+            float previous = retainSpeedWhileBraking ? velocity : Mathf.Clamp(velocity, -maximumSpeed, maximumSpeed);
             velocity = Mathf.MoveTowards(previous, desiredSpeed, rate * seconds);
             float delta = (previous + velocity) * .5f * seconds;
             if (Mathf.Abs(angle) <= .001f || (delta * angle >= 0f && Mathf.Abs(delta) >= Mathf.Abs(angle)))

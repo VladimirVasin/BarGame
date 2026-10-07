@@ -80,12 +80,19 @@ namespace BarPromenade
         /// A new action must never relabel or erase the old swing's final sweep.</summary>
         internal bool ContinueBufferedAttackAfterContacts()
         {
-            if (roundEnded || presentationFrozen || HasPendingKick || !IsAvailable || !HasAttackBalance ||
+            if (roundEnded || presentationFrozen || HasPendingKick || !IsAvailable ||
                 !GameInput.CanRead(GameInputContext.Gameplay) ||
                 (contactTarget != null && contactTarget.State.IsDefeated)) return false;
             bool step = State.HasBufferedStep;
+            bool recoveringStep = step && !HasAttackBalance;
+            if (recoveringStep)
+            {
+                if (State.Phase != MeleePhase.Ready || IsKnockedDown || State.IsKnockedDown || IsRagdollActive ||
+                    (ImpactMotion?.WantsKnockdown ?? false) || !PrepareRecoveryStep(pendingStepInput)) return false;
+            }
+            else if (!HasAttackBalance) return false;
             if (!(step ? State.TryContinueBufferedStep() : State.TryContinueAttack())) return false;
-            if (step) BeginStepPresentation();
+            if (step) BeginStepPresentation(recoveringStep);
             JournalBufferedActionStarted();
             reaction = null;
             reactionClock = 0f;

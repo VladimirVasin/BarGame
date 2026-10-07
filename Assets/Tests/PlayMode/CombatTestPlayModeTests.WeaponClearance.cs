@@ -67,6 +67,12 @@ namespace BarPromenade.Tests.PlayMode
             Pose to = new Pose(origin + Vector3.forward * .2f, Quaternion.identity);
             bool Sweep(Pose a, Pose b) => (bool)sweep.Invoke(constraint, new object[] { a, b });
             void Gather() { Physics.SyncTransforms(); gather.Invoke(constraint, null); }
+            CapsuleCollider moving = null, supporting = null;
+            foreach (var entry in other.Ragdoll.PhysicsController.AnatomicalColliders)
+                if (entry.Value == Player3DAnatomicalPart.RightForearm) moving = entry.Key as CapsuleCollider;
+            foreach (var entry in actor.Ragdoll.PhysicsController.AnatomicalColliders)
+                if (entry.Value == Player3DAnatomicalPart.LeftForearm) supporting = entry.Key as CapsuleCollider;
+            Assert.That(moving != null && supporting != null, Is.True);
 
             // The mesh's broad bounds span the whole prop path, but its physical
             // aperture clears every surface. Native casts must run and miss;
@@ -93,13 +99,65 @@ namespace BarPromenade.Tests.PlayMode
             aperture.sharedMesh = mesh;
             try
             {
+                constraint.Apply();
                 Gather();
                 long queries = constraint.WorldQueries, avoided = constraint.RepeatedWorldQueriesAvoided;
+                long sampleCount = constraint.SweepSamples;
                 Assert.That(Sweep(from, to), Is.True, "The complete prop must pass through the physical aperture.");
                 long actual = constraint.WorldQueries - queries, reused = constraint.RepeatedWorldQueriesAvoided - avoided;
+                long baselineSamples = constraint.SweepSamples - sampleCount;
+                Assert.That(baselineSamples, Is.LessThan(48L), "The unchanged short path must leave room to detect the old remote-body 48-sample regression.");
                 Assert.That(actual, Is.GreaterThan(0), "This aperture exercises the native world sweeps, not only an AABB fast path.");
                 Assert.That(reused, Is.GreaterThan(0), "Shared segment ends and zero-length end envelopes must avoid identical native casts.");
                 TestContext.Out.WriteLine($"Weapon aperture sweep: {actual} native casts, {reused} identical casts avoided.");
+
+                long anatomyReuse = constraint.RepeatedAnatomySweepsAvoided;
+                queries = constraint.WorldQueries;
+                Assert.That(Sweep(from, to), Is.True);
+                Assert.That(constraint.RepeatedAnatomySweepsAvoided, Is.EqualTo(anatomyReuse + 1),
+                    "Exact anatomical inputs can share their clear sweep only until final commit.");
+                Assert.That(constraint.WorldQueries - queries, Is.GreaterThan(0),
+                    "Anatomical reuse cannot suppress the live aperture's native world casts.");
+
+                // An unrelated moving body used to force all native world casts
+                // to the 48-sample cap, even though its swept bounds miss the prop.
+                Vector3 distantPosition = moving.transform.position;
+                try
+                {
+                    moving.transform.position = origin + Vector3.right * 6f;
+                    constraint.SetOpponent(other);
+                    moving.transform.position += Vector3.right * 5f;
+                    Gather();
+                    queries = constraint.WorldQueries; sampleCount = constraint.SweepSamples;
+                    Assert.That(Sweep(from, to), Is.True);
+                    long prunedQueries = constraint.WorldQueries - queries;
+                    Assert.That(constraint.SweepSamples - sampleCount, Is.EqualTo(baselineSamples),
+                        "A disjoint body cannot increase interpolation density for potentially colliding pairs.");
+                    Assert.That(prunedQueries, Is.LessThanOrEqualTo(actual),
+                        "Disjoint movement must not multiply native casts along the unchanged aperture path.");
+                    TestContext.Out.WriteLine($"Swept pair pruning: {baselineSamples} samples/{prunedQueries} native world casts; " +
+                        "unpruned five-metre body travel would require the 48-sample cap.");
+                }
+                finally { moving.transform.position = distantPosition; constraint.SetOpponent(other); }
+
+                constraint.Apply(); Gather();
+                Assert.That(Sweep(from, to), Is.True);
+                Vector3 supportingPosition = supporting.transform.position;
+                float supportingRadius = supporting.radius;
+                try
+                {
+                    anatomyReuse = constraint.RepeatedAnatomySweepsAvoided;
+                    supporting.transform.position += Vector3.up * .002f;
+                    Assert.That(Sweep(from, to), Is.True);
+                    Assert.That(constraint.RepeatedAnatomySweepsAvoided, Is.EqualTo(anatomyReuse),
+                        "Even sub-centimetre supporting-arm motion invalidates the exact anatomical result at the same clock.");
+                    supporting.radius += .001f;
+                    Assert.That(Sweep(from, to), Is.True);
+                    Assert.That(constraint.RepeatedAnatomySweepsAvoided, Is.EqualTo(anatomyReuse),
+                        "Primitive shape changes invalidate reuse independently of bone pose/clock.");
+                }
+                finally { supporting.transform.position = supportingPosition; supporting.radius = supportingRadius; }
+                Assert.That(Sweep(from, to), Is.True);
 
                 Object.DestroyImmediate(aperture);
                 BoxCollider wall = panel.AddComponent<BoxCollider>();
@@ -110,12 +168,8 @@ namespace BarPromenade.Tests.PlayMode
                     "A new six-millimetre panel must stop the same path immediately; a previous clear sweep cannot be reused.");
                 Assert.That(constraint.BlockingShape, Is.EqualTo(panel.name));
             }
-            finally { Object.DestroyImmediate(panel); Object.DestroyImmediate(mesh); }
+            finally { Object.DestroyImmediate(panel); Object.DestroyImmediate(mesh); constraint.CommitPresentedPose(null); }
 
-            CapsuleCollider moving = null;
-            foreach (var entry in other.Ragdoll.PhysicsController.AnatomicalColliders)
-                if (entry.Value == Player3DAnatomicalPart.RightForearm) moving = entry.Key as CapsuleCollider;
-            Assert.That(moving, Is.Not.Null);
             Vector3 savedPosition = moving.transform.position;
             bool savedEnabled = moving.enabled, probeEnabled = nativeProbe.enabled;
             var oracleObject = new GameObject("Moving anatomy sweep positive control");
@@ -133,11 +187,18 @@ namespace BarPromenade.Tests.PlayMode
                 MoveCentre(contact - Vector3.right * .45f);
                 Assert.That(IntersectsOracle(), Is.False);
                 constraint.SetOpponent(other); // Capture the real starting anatomy, not a damage snapshot.
+                constraint.Apply();
+                long anatomyReuse = constraint.RepeatedAnatomySweepsAvoided;
+                Assert.That(Sweep(from, to), Is.True);
                 MoveCentre(contact + Vector3.right * .45f);
                 Assert.That(IntersectsOracle(), Is.False, "Both endpoints clear: only relative swept motion can find the crossing.");
                 Gather();
+                Assert.That(Sweep(from, to), Is.False,
+                    "The same previously clear path must reread the moved opposing arm without a clock advance.");
                 Assert.That(Sweep(new Pose(origin, Quaternion.identity), new Pose(origin, Quaternion.identity)), Is.False,
                     "Moving opposing anatomy must stop a stationary weapon, including after an earlier clear world sweep.");
+                Assert.That(constraint.RepeatedAnatomySweepsAvoided, Is.EqualTo(anatomyReuse),
+                    "A moved opposing collider must not reuse the previously clear anatomical input.");
             }
             finally
             {
@@ -146,7 +207,82 @@ namespace BarPromenade.Tests.PlayMode
                 Object.DestroyImmediate(oracleObject);
                 constraint.Restore();
             }
+            VerifyFinalWeaponCommitRollback(actor, other, upper, supporting);
             LogAssert.NoUnexpectedReceived();
+        }
+
+        private static void VerifyFinalWeaponCommitRollback(CombatActor actor, CombatActor other, Transform upper, CapsuleCollider supporting)
+        {
+            Transform supportingBone = supporting.transform.parent;
+            Assert.That(supportingBone.name, Is.EqualTo("forearm.L"),
+                "The physical forearm proxy follows the actual supporting animation bone.");
+            using var constraint = new CombatWeaponConstraint(actor);
+            constraint.SetOpponent(other);
+            constraint.Apply(); constraint.CommitPresentedPose(null);
+            var flags = BindingFlags.Instance | BindingFlags.NonPublic;
+            var probe = (CapsuleCollider)typeof(CombatWeaponConstraint).GetField("probe", flags).GetValue(constraint);
+            bool enabled = probe.enabled;
+            foreach (bool preview in new[] { false, true })
+            foreach (bool leftCollision in new[] { false, true })
+            {
+                Vector3 original = upper.localPosition;
+                Vector3 originalSupport = supportingBone.localPosition;
+                Vector3 safeSupport = supporting.transform.position;
+                bool supportEnabled = supporting.enabled;
+                Pose safeWeapon = new Pose(actor.Weapon.transform.position, actor.Weapon.transform.rotation);
+                var obstacle = new GameObject("Test weapon commit obstacle");
+                BoxCollider wall = obstacle.AddComponent<BoxCollider>();
+                wall.size = Vector3.one * .08f;
+                wall.enabled = false;
+                CombatWeaponConstraint.PreviewScope previewScope = default;
+                try
+                {
+                    if (preview) previewScope = constraint.BeginContactPreview();
+                    probe.enabled = true;
+                    constraint.Apply();
+                    Assert.That(constraint.MotionBlocked, Is.False, "Begin from an admitted safe weapon pose.");
+                    if (!leftCollision) upper.position += actor.transform.right * .6f;
+                    Vector3 shaft = actor.Weapon.transform.position + actor.Weapon.transform.up * .25f;
+                    Collider blocking;
+                    if (leftCollision)
+                    {
+                        // Move the animation bone, as final support presentation
+                        // does. Moving its collider child would alter authored
+                        // shape geometry, which rig rollback must not overwrite.
+                        supportingBone.position += shaft - supporting.transform.TransformPoint(supporting.center);
+                        supporting.enabled = true;
+                        blocking = supporting;
+                    }
+                    else
+                    {
+                        wall.transform.position = shaft;
+                        wall.enabled = true;
+                        blocking = wall;
+                    }
+                    Physics.SyncTransforms();
+                    Assert.That(Physics.ComputePenetration(probe, shaft, Quaternion.identity, blocking,
+                        blocking.transform.position, blocking.transform.rotation, out _, out _), Is.True,
+                        "The arriving wall or final supporting arm must physically intersect the shaft before commit.");
+                    constraint.CommitPresentedPose(null);
+                    Assert.That(constraint.MotionBlocked, Is.True, "The final live-world gate must reject this admitted-then-obstructed pose.");
+                    Assert.That(constraint.BlockingShape, Is.EqualTo(blocking.name), "Rollback retains the physical rejection cause.");
+                    Assert.That(Vector3.Distance(actor.Weapon.transform.position, safeWeapon.position), Is.LessThan(.001f),
+                        "Both contact preview and visible commit restore the last safe full rig.");
+                    Assert.That(Quaternion.Angle(actor.Weapon.transform.rotation, safeWeapon.rotation), Is.LessThan(.1f));
+                    Assert.That(Vector3.Distance(supporting.transform.position, safeSupport), Is.LessThan(.001f),
+                        $"A physically obstructing final supporting arm returns with the last safe rig too: preview={preview}, leftCollision={leftCollision}.");
+                    Assert.That(constraint.PenetrationDepth, Is.LessThanOrEqualTo(.0001f), "The rejected final shaft cannot remain displayed inside the wall.");
+                }
+                finally
+                {
+                    if (preview) previewScope.Dispose();
+                    constraint.Restore(); upper.localPosition = original;
+                    supportingBone.localPosition = originalSupport; supporting.enabled = supportEnabled;
+                    probe.enabled = enabled;
+                    Object.DestroyImmediate(obstacle);
+                    constraint.Reset(); constraint.Apply(); constraint.CommitPresentedPose(null);
+                }
+            }
         }
     }
 

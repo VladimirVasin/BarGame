@@ -18,6 +18,7 @@ namespace BarPromenade
 
         private void ShowImpact(CombatImpact impact)
         {
+            if (impact.Target != null && impact.Target.State.IsDefeated) SparkEffects?.Clear();
             // Only a wounding contact bleeds: never a block, a parry or a miss.
             if ((impact.Result == MeleeHitResult.Hit || impact.Result == MeleeHitResult.GuardBroken) &&
                 impact.Damage > 0f && impact.Kind == CombatImpactKind.Weapon && BloodEffects != null)
@@ -47,6 +48,7 @@ namespace BarPromenade
         private void ResetActorDamage(CombatActor actor)
         {
             if (BloodEffects != null) BloodEffects.ResetActor(actor);
+            SparkEffects?.Clear();
         }
 
         private void ReleaseDamageEffects()

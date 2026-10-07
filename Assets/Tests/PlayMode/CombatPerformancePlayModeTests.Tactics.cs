@@ -42,9 +42,11 @@ namespace BarPromenade.Tests.PlayMode
                 {
                     Assert.That(root.Opponent.State.AttackPower, Is.Zero);
                     Assert.That(root.Opponent.State.AttackWindupSeconds, Is.EqualTo(S.ChainWindupSeconds).Within(.00001f));
-                    Assert.That(Quaternion.Angle(counterDirection, root.Opponent.transform.rotation), Is.LessThan(.1f),
-                        "The observed counter uses a committed line, not tracking through its short windup.");
+                    Assert.That(Quaternion.Angle(counterDirection, root.Opponent.transform.rotation),
+                        Is.LessThanOrEqualTo(CombatActor.MaximumFacingSpeed * CombatTestRoot.SimulationStep + .05f),
+                        "The short observed counter follows its target with the same bounded simulation turn.");
                 }
+                counterDirection = root.Opponent.transform.rotation;
                 if (root.Hero.State.Health >= heroHealth) continue;
                 struckBeforeReady = stillRecovering;
                 break;
