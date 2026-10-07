@@ -17,12 +17,11 @@ CombatLogs, otherwise the general log directory.
 
 ## General log format and boundaries
 
-UTF-8 JSON line:
+UTF-8 NDJSON:
 `schema_version`, `utc`, `mono_ms`, `seq`, `level`, `category`, `event`,
-`session_id`, `scene`, `city_seed`, typed `data`. UTC/mono/seq order events;
-session/scene/seed give context. Join by `operation_id` (transitions),
-`sequence` (balance), `snapshot_id` (support). Snapshots: hunger/stress/fatigue,
-intoxication/cash/drinking progress.
+`session_id`, `scene`, `city_seed`, typed `data`. Order:utc/mono/seq;
+context:session/scene/seed. Join:operation_id=transition/sequence=balance/snapshot_id=support.
+Snapshots:hunger/stress/fatigue/intoxication/cash/drinking.
 
 | Category | Boundaries/results |
 | --- | --- |
@@ -34,19 +33,18 @@ intoxication/cash/drinking progress.
 | `primitive` (verbose) | `combined_mesh`: source count/vertices/combine/collider time |
 | `interaction`, `map` | entrance/exit, map lifecycle, City test-teleport mode/results |
 | `intoxication`, `balance` | stages, scheduling/start/result/fall/recovery/cancellation |
-| `combat` | exit/quit `movement_summary`: W/S/A/D, requested/gated frames, motor/input/capsule gates, last phase, minimum scale, `maximum_requested_speed`, `requested_turn_changed`. Cached; off disables. Last-request fields/minimum scale require `has_request_sample=true` (`requestedSamples>0`). |
+| `combat` | exit/quit cached `movement_summary`: WASD/request/gate counts, motor/input/capsule, phase/scale/speed/turn. Off disables. Request fields/minimum scale require `has_request_sample=true`. |
 | `diagnostics` | manual snapshots, support-directory commands |
 | `unity` | warnings/assertions/errors/exceptions and stacks |
 
-`session/new_game_started` keeps its name. `reason`: `menu_reset` (menu entry),
-`combat_test_start` (range), `new_game_start` (normal/legacy `BeginNewGame`),
-`new_game_start_rejected` (rejected transition rollback).
+`session/new_game_started`: `menu_reset`=menu; `combat_test_start`=range;
+`new_game_start`=normal/legacy; `new_game_start_rejected`=transition rollback.
 
-No frame/input-motion/animation/physics samples or ordinary `Debug.Log`.
-Strings≤16,384 characters; `needs/passive_progressed` records visible integers.
-Identical Unity messages: three full records then sparse summaries per10s.
-Separate10s budgets:32 warnings/64 errors-assertions-exceptions;
-`messages_rate_limited` gives drops per severity, preserving the exception budget.
+No frame/motion/animation/physics samples or ordinary `Debug.Log`.
+Strings≤16,384; `needs/passive_progressed`: visible integers.
+Identical Unity messages: three full, then sparse10s summaries.
+Per10s:32 warnings/64 errors-assertions-exceptions;
+`messages_rate_limited`: drops/severity; exceptions retain their own budget.
 
 ## General log retention and reporting
 
@@ -61,7 +59,8 @@ Editor/Player on; batch opt-in; `-bp-duel-log on|off`.
 Editor: repo CombatLogs; Player: `Application.persistentDataPath/CombatLogs`.
 `duel_<session>_<round>`: `summary.txt`/`duel.ndjson`.
 
-`rules_rejected`: Rules/`reason_checked=false`/phase/stamina/cost.
+Rules refusals: `phase/cooldown/stamina/buffer_window/defeated/knocked_down/guard_broken`;
+`reason_checked`/phase/stamina/cost/remaining/`cooldown_seconds`.
 `recovery_step`: rescue; `fall_committed`: refusal; `observed_counter`: whiff.
 20Hz pose/support/CPU.
 `aim_locked`: kind/yaw/open seconds; no late re-aim.
@@ -78,33 +77,36 @@ End/focus clears input. Header: `opponent_style`.
 vs central landing. `rise_clearance_*`: blocker/candidate/path/capsule/floor;
 changes or 1s summary. `suspected_stall`: >2s no phase/rise progress, living.
 `post_round_time_discarded`: aftermath loss; snapshots to exit/R.
-`impact_anatomy`: `impact_seq`/region/side/critical/finisher/target phase before-after/
-power; diagnostic pre-hit phase may be null.
-`revision_identity`: compiled Runtime/Rules MVID≠Editor commit/state; bank
-dependency hashes once/play (Player build GUID). Missing=null/`unavailable`;
-no replay/FPS guarantee.
+Impact/applied/geometry/kind/anatomy/impulse: actor=source,target=victim;
+join `impact_seq`; kind=weapon/kick/shove. Anatomy:region/side/critical/finisher/
+phase before-after/power; diagnostic pre-hit phase may be null.
+`revision_identity`: Runtime/Rules MVID≠Editor commit/state; bank hashes once/play
+(Player build GUID). Missing=null/`unavailable`; no replay/FPS guarantee.
 
-`frame_detail`: `late_pose_ms`=hero LateUpdate CPU, `impact_apply_ms`=impact;
-`update_to_late_ms`=Update→observer LateStart, includes simulation/updates.
+`frame_detail`: `late_pose_ms`=hero LateUpdate, `impact_apply_ms`=impact;
+`update_to_late_ms`=Update→observer LateStart, incl. simulation/updates.
 `latest_target_wait_ms`=Unity; `latest_{present_wait,cpu_main,cpu_render}_ms`
 =FrameTiming. `latest_timing_repeat_frames`:-1 unavailable/0 new/>0 repeats≠age.
 `pose_work`: Present/Weapon/Support CPU/calls, support candidates/budget; outside Tick.
 `frame_delivery/late_to_next_update_ms`: LateStart→Update wall incl.
 render/editor/scheduling/waits≠CPU/GPU.
-`render_context_captured`: game-camera SRP/same-frame split:
+`render_context_captured`: same-frame game-camera SRP split:
 `late_to_render_begin_ms`/`render_context_span_ms`/`render_end_to_next_update_ms`.
 `render_contexts`: count; submission≠GPU finish. No callbacks=null.
 `weapon_constraint_sample`: candidates/sweeps/world+`anatomy_queries`/reuse/core/shoulder/budget; live world gates.
-Nested timings: no sum. Unsupported=null; main/render/GPU: latest.
+Nested timings: no sum; unsupported=null; main/render/GPU:latest.
 Header: pacing/capture/wait.
 
-Producer: 2048/4096 default/max packets + eight control slots; reused chars,
-no strings/field copies. Drops/I/O/limits explicit; ≤2 live workers (stalled too),
-extra=`worker_limit`. 20MiB/round/10 closed/100MiB; prune ordinary before marked/
-abandoned, never live/foreign. Priority marks bounded; one CombatLogs/no sweep.
-Cloth/hair matrix cache;120Hz/4 steps.
+Editor Play/CombatTest: `Tools/Bar Promenade/Diagnostics/Capture Combat CPU Timeline (15 seconds)`.
+CPU trace+manifest/`Time.frameCount` metadata: `TestResults/Test duel diagnostics`.
+Timeout/scene/Play/reload→restore Profiler; active recording→refuse; profiling adds overhead.
 
-## Optional area performance capture
+Producer:2048/4096 default/max packets+8 control slots; reused chars, no string/field copies.
+Drops/I/O/limits explicit;≤2 live/stalled workers, extra=`worker_limit`.
+20MiB/round/10 closed/100MiB; prune ordinary before marked/abandoned; never live/foreign.
+Bounded marks; one CombatLogs/no sweep. Cloth/hair matrix cache;120Hz/4 steps.
+
+## Area performance capture
 
 Area frame samples:
 
@@ -112,17 +114,15 @@ Area frame samples:
 -bp-perf-scene=City -bp-perf-label=1080p-walk -bp-perf-warmup=5 -bp-perf-seconds=30 -bp-perf-target-fps=60
 ```
 
-Capture waits for scene/transition end; no teleport/resolution/render changes.
-Editor Play: `Tools > Bar Promenade > Diagnostics > Capture Performance (30 seconds)`.
+Waits for scene/transition; preserves position/render settings.
+Editor: `Tools > Bar Promenade > Diagnostics > Capture Performance (30 seconds)`.
 API: `RuntimePerformanceCapture.StartCapture(options, outputDirectory)`.
 
-Default: `Application.persistentDataPath/PerformanceCaptures`, eight JSON reports,
-≤36,000 samples each; capture 1–120s/warmup≤60s/scene wait≤300s.
-Scene/render changes end capture with a reason.
+Default:`Application.persistentDataPath/PerformanceCaptures`;8 JSON/≤36,000 samples.
+Capture1–120s/warmup≤60s/wait≤300s; scene/render changes end with a reason.
 
-Reports: resolution/quality/render scale/pacing/hardware/weather/time/intoxication,
-p50/p95/p99/max frame intervals, main/render counters, GC, foot-bake/reflection
-work. Markers: `BarPromenade.FootSoleBake`, `BarPromenade.WaterReflectionCube`.
-GPU needs supported/enabled Frame Timing Stats; capture leaves it unchanged.
-`sampleCount = 0` means unavailable. Frames include pacing/threads/waits;
-Editor≠player benchmark. Compare identical routes/render; retain pause/focus counts.
+Reports: render/pacing/hardware/world settings, frame p50/p95/p99/max,
+main/render/GC/foot-bake/reflection work. Markers: `BarPromenade.FootSoleBake`,
+`BarPromenade.WaterReflectionCube`. GPU requires supported/enabled Frame Timing Stats,
+left unchanged. `sampleCount=0`: unavailable. Frames include waits/threads/pacing;
+Editor≠player. Compare same route/render; retain pause/focus counts.

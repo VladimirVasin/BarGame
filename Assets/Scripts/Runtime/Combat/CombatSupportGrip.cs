@@ -1762,6 +1762,13 @@ authoredWristAngles=({radial:F9},{flexion:F9}); authoredContactError={Vector3.Di
             bool wristCandidate = false, bodyCandidate = false, continuityRejected = false;
             float closestWristViolation = float.PositiveInfinity, closestWristAngle = 0f;
             Vector3 closestWristAngles = default;
+            float minimumAngle = -65f, maximumAngle = 65f;
+            if (continuous)
+            {
+                float previousAngle = Vector3.SignedAngle(previousPole, pole, axis);
+                minimumAngle = Mathf.Max(minimumAngle, -branchBudget - previousAngle);
+                maximumAngle = Mathf.Min(maximumAngle, branchBudget - previousAngle);
+            }
             if (Evaluate(0f, out elbow)) return true;
             Vector3 fingers = contact.rotation * fingersInHand;
             Vector3 desired = Vector3.ProjectOnPlane(-fingers, axis).normalized;
@@ -1775,13 +1782,6 @@ authoredWristAngles=({radial:F9},{flexion:F9}); authoredContactError={Vector3.Di
             // circle. Check those exact intervals before the clearance search;
             // Evaluate still enforces the unchanged wrist/body/world/branch gates.
             int boundaryCount = 0;
-            float minimumAngle = -65f, maximumAngle = 65f;
-            if (continuous)
-            {
-                float previousAngle = Vector3.SignedAngle(previousPole, pole, axis);
-                minimumAngle = Mathf.Max(minimumAngle, -branchBudget - previousAngle);
-                maximumAngle = Mathf.Min(maximumAngle, branchBudget - previousAngle);
-            }
             AddBoundary(minimumAngle); AddBoundary(maximumAngle);
             Vector3 palm = contact.rotation * palmInHand;
             Vector3 across = Vector3.Cross(palm, fingers).normalized;
@@ -1810,8 +1810,9 @@ authoredWristAngles=({radial:F9},{flexion:F9}); authoredContactError={Vector3.Di
             for (int level = 0; wristCandidate && level < 4 && !float.IsFinite(bestScore) && !LastContactSolveBudgetExhausted; level++)
             {
                 searchStep *= .5f;
-                int extent = Mathf.FloorToInt(65f / searchStep);
-                for (int index = -extent; index <= extent && !LastContactSolveBudgetExhausted; index++)
+                int first = Mathf.CeilToInt(minimumAngle / searchStep);
+                int last = Mathf.FloorToInt(maximumAngle / searchStep);
+                for (int index = first; index <= last && !LastContactSolveBudgetExhausted; index++)
                     if ((index & 1) != 0) Consider(index * searchStep);
             }
             if (!float.IsFinite(bestScore))
@@ -1848,15 +1849,26 @@ closestAngle={closestWristAngle:F9}; closestWrist={closestWristAngles:F9}; close
 
             bool Evaluate(float angle, out Vector3 candidate)
             {
+                candidate = centre + Quaternion.AngleAxis(angle, axis) * pole * radius;
+                if (Mathf.Abs(angle) > 65f || (continuous &&
+                    Mathf.Abs(Vector3.SignedAngle(authoredPole, candidate - centre, axis)) > 65.001f)) return false;
+                // A 120 Hz held contact can turn its branch by only five
+                // degrees. Impossible branches cannot consume the shared
+                // final-solve budget before another allowed hand frame is tried.
+                if (continuous && Mathf.Abs(Vector3.SignedAngle(previousPole, candidate - centre, axis)) > branchBudget + .05f)
+                {
+                    // Keep the diagnostic distinction: a branch is the limiting
+                    // gate only when its wrist would otherwise be admissible.
+                    if (WristCanHold(wrist - candidate, contact.rotation, -ContactWristReserve))
+                    { wristCandidate = true; continuityRejected = true; }
+                    return false;
+                }
                 if (!geometryOnly)
                 {
                     if (contactSolveRemaining <= 0)
                     { LastContactSolveBudgetExhausted = true; candidate = default; return false; }
                     contactSolveRemaining--; SupportCandidateEvaluations++;
                 }
-                candidate = centre + Quaternion.AngleAxis(angle, axis) * pole * radius;
-                if (Mathf.Abs(angle) > 65f || (continuous &&
-                    Mathf.Abs(Vector3.SignedAngle(authoredPole, candidate - centre, axis)) > 65.001f)) return false;
                 if (CaptureContactSearchDiagnostics)
                 {
                     WristAngles(wrist - candidate, contact.rotation, out float deviation, out float flexion);
@@ -1870,12 +1882,6 @@ closestAngle={closestWristAngle:F9}; closestWrist={closestWristAngles:F9}; close
                 // rounding cannot turn a boundary goal into an unsafe wrist.
                 if (!WristCanHold(wrist - candidate, contact.rotation, -ContactWristReserve)) return false;
                 wristCandidate = true;
-                // The fallback search explores the full authored arc, but a
-                // continuous contact can move only within this duel step's
-                // branch budget. Reject impossible branches before querying
-                // anatomy or casting both reach segments through the world.
-                if (continuous && Mathf.Abs(Vector3.SignedAngle(previousPole, candidate - centre, axis)) > branchBudget + .05f)
-                { continuityRejected = true; return false; }
                 if (geometryOnly) return true;
                 if (armClearance != null && !armClearance.IsSupportPathClear(shoulder, candidate, wrist)) return false;
                 bodyCandidate = true;

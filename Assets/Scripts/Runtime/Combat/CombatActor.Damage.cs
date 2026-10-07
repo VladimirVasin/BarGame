@@ -53,22 +53,19 @@ namespace BarPromenade
 
         private void PublishImpact(CombatImpact impact, MeleePhase? targetPhaseBefore = null)
         {
-            LastJournalImpactSequence = Journal?.Record("impact_applied", impact.Source?.JournalActorId ?? 0,
-                JournalActorId, impact.AttackSequence, impact.Source?.journalActionRequest ?? 0,
+            LastJournalImpactSequence = JournalImpactEvent("impact_applied", impact,
                 GameLog.Field("health_before", impact.HealthBefore), GameLog.Field("health_after", impact.HealthAfter),
                 GameLog.Field("damage", impact.Damage), GameLog.Field("result", (int)impact.Result),
                 GameLog.Field("part", (int)impact.Part), GameLog.Field("impulse_x", impact.Impulse.x),
-                GameLog.Field("impulse_y", impact.Impulse.y), GameLog.Field("impulse_z", impact.Impulse.z)) ?? 0L;
-            JournalEvent("impact_geometry", impact.Source?.JournalActorId ?? 0, impact.AttackSequence,
-                impact.Source?.journalActionRequest ?? 0, GameLog.Field("impact_seq", LastJournalImpactSequence),
+                GameLog.Field("impulse_y", impact.Impulse.y), GameLog.Field("impulse_z", impact.Impulse.z));
+            JournalImpactEvent("impact_geometry", impact, GameLog.Field("impact_seq", LastJournalImpactSequence),
                 GameLog.Field("point_x", impact.Point.x), GameLog.Field("point_y", impact.Point.y), GameLog.Field("point_z", impact.Point.z),
                 GameLog.Field("normal_x", impact.Normal.x), GameLog.Field("normal_y", impact.Normal.y), GameLog.Field("normal_z", impact.Normal.z),
                 GameLog.Field("weapon_speed", impact.WeaponSpeed));
-            JournalEvent("impact_kind", impact.Source?.JournalActorId ?? 0, impact.AttackSequence,
-                impact.Source?.journalActionRequest ?? 0, GameLog.Field("impact_seq", LastJournalImpactSequence),
-                GameLog.Field("kind", impact.Kind == CombatImpactKind.Kick ? "kick" : "weapon"));
-            JournalEvent("impact_anatomy", impact.Source?.JournalActorId ?? 0, impact.AttackSequence,
-                impact.Source?.journalActionRequest ?? 0, GameLog.Field("impact_seq", LastJournalImpactSequence),
+            JournalImpactEvent("impact_kind", impact, GameLog.Field("impact_seq", LastJournalImpactSequence),
+                GameLog.Field("kind", impact.Kind switch
+                { CombatImpactKind.Kick => "kick", CombatImpactKind.Shove => "shove", _ => "weapon" }));
+            JournalImpactEvent("impact_anatomy", impact, GameLog.Field("impact_seq", LastJournalImpactSequence),
                 GameLog.Field("region", (int)impact.Location.Region), GameLog.Field("side", (int)impact.Location.Side),
                 GameLog.Field("is_critical", impact.IsCritical), GameLog.Field("is_finisher", impact.IsFinisher),
                 GameLog.Field("target_phase_before", targetPhaseBefore.HasValue ? (double)(int)targetPhaseBefore.Value : double.NaN),
@@ -84,8 +81,7 @@ namespace BarPromenade
 
         private void ApplyPhysicalImpact(CombatImpact impact)
         {
-            JournalEvent("impulse_requested", impact.Source?.JournalActorId ?? 0, impact.AttackSequence,
-                impact.Source?.journalActionRequest ?? 0, GameLog.Field("impact_seq", LastJournalImpactSequence),
+            JournalImpactEvent("impulse_requested", impact, GameLog.Field("impact_seq", LastJournalImpactSequence),
                 GameLog.Field("impulse_x", impact.Impulse.x), GameLog.Field("impulse_y", impact.Impulse.y), GameLog.Field("impulse_z", impact.Impulse.z),
                 GameLog.Field("knocked_down", IsKnockedDown));
             if (impact.Impulse.sqrMagnitude < .0001f) return;
@@ -109,6 +105,14 @@ namespace BarPromenade
                 supportGrip.RequestRelease(impact.Direction, Mathf.Clamp01(urgency));
             if (supportGrip.IsReleased || !supportGrip.IsSupportingWeapon) State.SetBlocking(false);
         }
+
+        // Resolved-contact records all use source -> victim, even though the
+        // victim owns this journal call and subsequent physical response.
+        private long JournalImpactEvent(string eventName, CombatImpact impact,
+            GameLogField f0 = default, GameLogField f1 = default, GameLogField f2 = default, GameLogField f3 = default,
+            GameLogField f4 = default, GameLogField f5 = default, GameLogField f6 = default, GameLogField f7 = default) =>
+            Journal?.Record(eventName, impact.Source?.JournalActorId ?? 0, JournalActorId,
+                impact.AttackSequence, impact.Source?.journalActionRequest ?? 0, f0, f1, f2, f3, f4, f5, f6, f7) ?? 0L;
 
         private void AdvanceImpactMotion(float seconds)
         {

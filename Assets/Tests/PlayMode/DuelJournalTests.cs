@@ -77,6 +77,49 @@ namespace BarPromenade.Tests.PlayMode
         }
 
         [Test]
+        public void RuleRequestReasonsKeepTheirActionClockAndClearFailedStartWhenQueued()
+        {
+            var state = new MeleeCombatant(new MeleeCombatSettings(maxStamina: 15f));
+            Assert.That(state.TryStartStep(), Is.True);
+            state.CancelAction();
+            Assert.That(state.RequestKick(), Is.False);
+            Assert.That(state.LastCommandAction, Is.EqualTo(MeleeBufferedAction.Kick));
+            Assert.That(state.LastCommandRejection, Is.EqualTo(MeleeCommandRejection.Stamina));
+            Assert.That(state.CooldownRemaining(state.LastCommandAction), Is.Zero,
+                "An unaffordable kick cannot inherit the interrupted step's cooldown.");
+
+            state.Reset();
+            Assert.That(state.TryStartAttack(), Is.True);
+            Assert.That(state.RequestStep(), Is.False);
+            Assert.That(state.LastCommandRejection, Is.EqualTo(MeleeCommandRejection.Phase));
+            Assert.That(state.RequestCharge(), Is.True);
+            Assert.That(state.HasBufferedCharge, Is.True);
+            Assert.That(state.LastCommandRejection, Is.EqualTo(MeleeCommandRejection.None));
+
+            state.Reset();
+            Assert.That(state.TryStartAttack(), Is.True);
+            state.CancelAction();
+            Assert.That(state.RequestAttack(), Is.False);
+            Assert.That(state.LastCommandAction, Is.EqualTo(MeleeBufferedAction.Attack));
+            Assert.That(state.LastCommandRejection, Is.EqualTo(MeleeCommandRejection.Cooldown));
+            Assert.That(state.CooldownRemaining(state.LastCommandAction), Is.GreaterThan(state.Settings.AttackBufferSeconds));
+            state.Advance(state.CooldownRemaining(MeleeBufferedAction.Charge) - state.Settings.AttackBufferSeconds * .5f);
+            Assert.That(state.RequestCharge(), Is.True, "A later press can queue inside the same cooldown's buffer window.");
+            Assert.That(state.HasBufferedCharge, Is.True);
+            Assert.That(state.LastCommandRejection, Is.EqualTo(MeleeCommandRejection.None),
+                "A failed immediate charge start must not remain the reason of an accepted queue.");
+
+            state.Reset();
+            Assert.That(state.ReceiveShove(.7f), Is.True);
+            Assert.That(state.RequestStep(), Is.False);
+            Assert.That(state.LastCommandRejection, Is.EqualTo(MeleeCommandRejection.BufferWindow));
+            state.Reset();
+            state.BeginKnockdown();
+            Assert.That(state.RequestAttack(), Is.False);
+            Assert.That(state.LastCommandRejection, Is.EqualTo(MeleeCommandRejection.KnockedDown));
+        }
+
+        [Test]
         public void QueueAndFileLimitsReportLossesAndStillFinishTheRound()
         {
             using var journal = new DuelJournal(directory, "bounded", capacity: 8, maxRoundBytes: 4096);

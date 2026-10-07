@@ -608,7 +608,7 @@ namespace BarPromenade.Tests.PlayMode
         [System.Serializable]
         private sealed class DuelReadData
         {
-            public int actor, action, request, round, frame;
+            public int actor, target, action, request, round, frame;
             public long tick, dropped_records;
             public double duel_seconds, late_pose_ms, update_to_late_ms;
             public double frame_ms, late_to_next_update_ms, present_ms, weapon_constraint_ms, support_grip_ms;
@@ -616,10 +616,11 @@ namespace BarPromenade.Tests.PlayMode
             public int render_contexts;
             public int present_calls, weapon_constraint_calls, support_grip_calls, region, side, target_phase_after, outcome;
             public double target_phase_before;
+            public double cooldown_seconds;
             public long impact_seq;
             public long candidate_checks, sweep_samples, world_queries, repeated_queries_avoided, anatomy_queries;
             public int arm_core_snapshots;
-            public bool active, late_observer_captured, render_context_captured, is_critical, is_finisher;
+            public bool active, late_observer_captured, render_context_captured, is_critical, is_finisher, reason_checked;
             public string result, reason, phase, code_revision, animation_asset_revision;
             public string code_identity_source, animation_identity_source, workspace_state;
             public string hero_animation_revision, npc_animation_revision;
@@ -697,6 +698,7 @@ namespace BarPromenade.Tests.PlayMode
                 }
                 Assert.That(pausedBetweenSteps, Is.True, "This regression must exercise the gap between two real landings.");
                 Assert.That(victim.ReceivedImpactCount, Is.EqualTo(1));
+                Assert.That(victim.LastImpact.Kind, Is.EqualTo(CombatImpactKind.Shove));
                 Assert.That(victim.State.Health, Is.EqualTo(victim.State.Settings.MaxHealth));
                 Assert.That(victim.IsKnockedDown, Is.False);
                 Assert.That(victim.HasTwoHandSupport, Is.True);
@@ -745,12 +747,14 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(journal.DroppedRecords, Is.Zero);
             string[] logs = System.IO.Directory.GetFiles(folder, "duel.ndjson", System.IO.SearchOption.AllDirectories);
             Assert.That(logs.Length, Is.EqualTo(2), "Reset closes the old round and starts a distinct journal.");
-            bool rejected = false, contact = false, paused = false, marked = false, discarded = false, state = false, frameTiming = false, latePose = false;
+            bool rejected = false, ruleRejected = false, contact = false, paused = false, marked = false, discarded = false, state = false, frameTiming = false, latePose = false;
             bool identity = false, anatomy = false, impactKind = false, constraintWork = false, kickOutcome = false, kickSweep = false;
             bool delivery = false, renderedDelivery = false, heroWork = false, opponentWork = false;
             double frameInterval = 0d, updateToLate = 0d;
             long sequence = 0;
             int recoveryStarts = 0, recoveryEnds = 0;
+            long impactSequence = 0;
+            int impactAction = 0, impactRequest = 0, impactCompanions = 0;
             System.Array.Sort(logs, System.StringComparer.Ordinal);
             foreach (string log in logs)
             {
@@ -783,8 +787,32 @@ namespace BarPromenade.Tests.PlayMode
                         rejected = true;
                         Assert.That(entry.data.reason, Is.Not.Null.And.Not.Empty);
                         Assert.That(entry.data.request, Is.GreaterThan(0));
+                        Assert.That(entry.data.reason, Is.Not.EqualTo("rules_rejected").And.Not.EqualTo("rules_unknown"));
+                        if (entry.data.reason == "phase")
+                        {
+                            ruleRejected = true;
+                            Assert.That(entry.data.reason_checked, Is.True);
+                            Assert.That(entry.data.cooldown_seconds, Is.GreaterThan(0d),
+                                "The repeated shove records its own still-running action clock.");
+                        }
                     }
-                    contact |= entry.@event == "impact_applied";
+                    if (entry.@event == "impact_applied")
+                    {
+                        contact = true; impactSequence = entry.seq;
+                        impactAction = entry.data.action; impactRequest = entry.data.request;
+                        Assert.That(entry.data.actor, Is.EqualTo(2));
+                        Assert.That(entry.data.target, Is.EqualTo(1));
+                    }
+                    if (entry.@event == "impact_geometry" || entry.@event == "impact_kind" ||
+                        entry.@event == "impact_anatomy" || entry.@event == "impulse_requested")
+                    {
+                        impactCompanions++;
+                        Assert.That(entry.data.impact_seq, Is.EqualTo(impactSequence).And.GreaterThan(0));
+                        Assert.That(entry.data.actor, Is.EqualTo(2), "Every contact record identifies the source as actor.");
+                        Assert.That(entry.data.target, Is.EqualTo(1), "Every contact record identifies the victim as target.");
+                        Assert.That(entry.data.action, Is.EqualTo(impactAction));
+                        Assert.That(entry.data.request, Is.EqualTo(impactRequest));
+                    }
                     if (entry.@event == "phase" && entry.data.from == "Kicking" && entry.data.to == "Ready")
                     {
                         kickOutcome = true;
@@ -796,7 +824,7 @@ namespace BarPromenade.Tests.PlayMode
                     {
                         impactKind = true;
                         Assert.That(entry.data.impact_seq, Is.GreaterThan(0));
-                        Assert.That(entry.data.kind, Is.EqualTo("weapon"));
+                        Assert.That(entry.data.kind, Is.EqualTo("shove"));
                     }
                     if (entry.@event == "impact_anatomy")
                     {
@@ -883,8 +911,9 @@ namespace BarPromenade.Tests.PlayMode
                 StringAssert.DoesNotContain("pose_work", milestones, "Per-actor work samples belong in NDJSON and event counts.");
                 StringAssert.DoesNotContain("weapon_constraint_sample", milestones);
             }
-            Assert.That(rejected && contact && paused && marked && discarded && state && frameTiming && latePose, Is.True,
-                $"Required evidence: denied={rejected}, impact={contact}, pause={paused}, mark={marked}, discarded={discarded}, state={state}, frame={frameTiming}, latePose={latePose}");
+            Assert.That(rejected && ruleRejected && contact && paused && marked && discarded && state && frameTiming && latePose, Is.True,
+                $"Required evidence: denied={rejected}, rule={ruleRejected}, impact={contact}, pause={paused}, mark={marked}, discarded={discarded}, state={state}, frame={frameTiming}, latePose={latePose}");
+            Assert.That(impactCompanions, Is.EqualTo(4), "The one shove retains all four correlated companion records.");
             Assert.That(identity && anatomy && impactKind && constraintWork && kickOutcome && kickSweep && delivery && heroWork && opponentWork, Is.True,
                 $"Extended evidence: identity={identity}, anatomy={anatomy}, kind={impactKind}, constraint={constraintWork}, kick={kickOutcome}/{kickSweep}, delivery={delivery}, heroWork={heroWork}, opponentWork={opponentWork}");
             Assert.That(recoveryStarts, Is.EqualTo(1), "Both catch steps belong to one recovery episode.");

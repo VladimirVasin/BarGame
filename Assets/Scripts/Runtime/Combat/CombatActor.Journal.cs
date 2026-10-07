@@ -152,14 +152,29 @@ namespace BarPromenade
             return accepted;
         }
 
-        private bool JournalRulesRejected(int request, float cost, bool bufferAllowed)
+        private bool JournalRulesRejected(int request, float cost, MeleeBufferedAction action = MeleeBufferedAction.None,
+            MeleeCommandRejection rejection = MeleeCommandRejection.None)
         {
             if (Journal == null) return false;
+            if (action == MeleeBufferedAction.None) action = State.LastCommandAction;
+            if (rejection == MeleeCommandRejection.None) rejection = State.LastCommandRejection;
+            string reason = rejection switch
+            {
+                MeleeCommandRejection.Defeated => "defeated",
+                MeleeCommandRejection.KnockedDown => "knocked_down",
+                MeleeCommandRejection.GuardBroken => "guard_broken",
+                MeleeCommandRejection.Phase => "phase",
+                MeleeCommandRejection.Cooldown => "cooldown",
+                MeleeCommandRejection.Stamina => "stamina",
+                MeleeCommandRejection.BufferWindow => "buffer_window",
+                _ => "rules_unknown"
+            };
             JournalEvent("command_result", contactTarget?.JournalActorId ?? 0, State.AttackSequence, request,
-                GameLog.Field("result", "rejected"), GameLog.Field("reason", "rules_rejected"),
+                GameLog.Field("result", "rejected"), GameLog.Field("reason", reason),
                 GameLog.Field("phase", (int)State.Phase), GameLog.Field("stamina", State.Stamina),
                 GameLog.Field("cost", cost), GameLog.Field("remaining", State.ActionRemaining),
-                GameLog.Field("buffer_window", bufferAllowed ? State.Settings.AttackBufferSeconds : 0f), GameLog.Field("reason_checked", false));
+                GameLog.Field("cooldown_seconds", State.CooldownRemaining(action)),
+                GameLog.Field("reason_checked", rejection != MeleeCommandRejection.None));
             return false;
         }
 

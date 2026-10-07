@@ -22,7 +22,7 @@ namespace BarPromenade
             if (!GameInput.CanRead(GameInputContext.Gameplay)) return JournalCommandResult(request, "rejected", "input_gate");
             if (!CanAttemptUpperBodyAttack) return JournalCommandResult(request, "rejected", UpperBodyAttackRejection);
             if (!State.IsAttacking && CheckShoveRange(request)) return TryBeginShove(request);
-            if (!State.RequestCharge(true)) return JournalRulesRejected(request, State.Settings.AttackCost, true);
+            if (!State.RequestCharge(true)) return JournalRulesRejected(request, State.Settings.AttackCost);
             CancelPendingKick("replaced");
             ContinueBufferedAttackAfterContacts();
             if (State.IsCharging) { reaction = null; sweepValid = false; }

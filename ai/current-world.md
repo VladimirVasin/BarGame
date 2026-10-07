@@ -156,7 +156,7 @@ The vertical slice contains:
   Step:1m/<fall/15;.36→attack/.57repeat;catch→finite gait-Step landing.
   Windup1m/brake/side-back/impulse/drift;≤.85m dry shove8breath/0HP.
   120Hz aim¼→fixed/boot-bar sweeps;first bar/world/body;metal=wall/sparks/L release.
-  Regrip:pose-branch/rollback/speed/contact;rise:retry/bind/clearance/joints.
+  Regrip:96 feasible branches/live gates;rise:retry/bind/clearance/joints.
   Guard:2hands/metal cost-break/noHP. Pause/hit-stop/Hold/wounds-thud-pools;
   guard-step-charge-kick cost;E toilet/L bar-marks/R-unload clear/no story-speech;
 - the retained Home opening is reachable only by a legacy request: held bed loop,

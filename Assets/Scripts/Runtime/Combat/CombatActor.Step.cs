@@ -48,13 +48,13 @@ namespace BarPromenade
             if (recovering && State.CanStartRecoveryStep)
             {
                 if (State.Stamina < State.Settings.StepCost)
-                    return JournalRulesRejected(request, State.Settings.StepCost, true);
+                    return JournalRulesRejected(request, State.Settings.StepCost, MeleeBufferedAction.Step, MeleeCommandRejection.Stamina);
                 if (!PrepareRecoveryStep(input))
                     return JournalCommandResult(request, "rejected", "recovery_support_missing");
                 if (!State.TryStartRecoveryStep(lateral))
-                    return JournalRulesRejected(request, State.Settings.StepCost, true);
+                    return JournalRulesRejected(request, State.Settings.StepCost);
             }
-            else if (!State.RequestStep(lateral)) return JournalRulesRejected(request, State.Settings.StepCost, true);
+            else if (!State.RequestStep(lateral)) return JournalRulesRejected(request, State.Settings.StepCost);
             pendingStepInput = input;
             if (State.Phase == MeleePhase.Step) BeginStepPresentation(recovering);
             Present();

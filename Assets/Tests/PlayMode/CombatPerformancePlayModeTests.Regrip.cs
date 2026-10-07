@@ -12,6 +12,112 @@ namespace BarPromenade.Tests.PlayMode
         private string lastSourceShoveDiagnostics;
 
         [UnityTest]
+        public IEnumerator Range_ContinuousSupportSearchSkipsUnreachableBranchesAndRejectsObstacles()
+        {
+            // A continuous held solve could spend its 96-candidate budget on
+            // elbow branches that cannot move during this duel step.
+            // An obstructed five-degree branch must leave work for the existing
+            // bounded hand-frame alternatives, without accepting that obstacle.
+            root.SetDuelLogging(true, System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(),
+                "TestResults", "Test duel diagnostics", "Support search"));
+            try
+            {
+                foreach (bool hero in new[] { true, false })
+                {
+                    PlacePair(4f);
+                    for (int frame = 0; frame < 3; frame++) { root.Tick(TickSeconds); yield return null; }
+                    CombatActor actor = hero ? root.Hero : root.Opponent;
+                    CombatActor target = hero ? root.Opponent : root.Hero;
+                    CombatSupportGrip grip = actor.SupportGrip;
+                    Transform upper = ArmMotionBone(actor, "upper_arm.L");
+                    Transform lower = ArmMotionBone(actor, "forearm.L");
+                    Transform hand = ArmMotionBone(actor, "hand.L");
+                    var constraint = (CombatWeaponConstraint)typeof(CombatActor).GetField("weaponConstraint",
+                        BindingFlags.Instance | BindingFlags.NonPublic).GetValue(actor);
+                    var obstacle = new GameObject("Test support path obstruction");
+                    try
+                    {
+                        actor.Present();
+                        Assert.That(grip.IsSupportingWeapon && grip.JournalWristSafe, Is.True);
+                        // Cover the middle of the forearm across the tiny allowed
+                        // branch, while leaving the distinct palm contact clear.
+                        obstacle.transform.position = (lower.position + hand.position) * .5f;
+                        SphereCollider solid = obstacle.AddComponent<SphereCollider>();
+                        solid.radius = .045f;
+                        Physics.SyncTransforms();
+                        Pose contact = ReturningGripContact(grip);
+                        Assert.That(Vector3.Distance(solid.ClosestPoint(contact.position), contact.position), Is.GreaterThan(.035f));
+                        Vector3 hint = (Vector3)typeof(CombatSupportGrip).GetProperty("GripHint",
+                            BindingFlags.Instance | BindingFlags.NonPublic).GetValue(grip);
+                        typeof(CombatSupportGrip).GetField("contactSolveRemaining", BindingFlags.Instance | BindingFlags.NonPublic)
+                            .SetValue(grip, CombatSupportGrip.MaxContactSolveEvaluations);
+                        typeof(CombatSupportGrip).GetProperty("LastContactSolveBudgetExhausted",
+                            BindingFlags.Instance | BindingFlags.NonPublic).SetValue(grip, false);
+                        long before = grip.SupportCandidateEvaluations;
+                        object[] arguments = { contact, hint, .999f, .02f, default(Vector3), true, false };
+                        bool accepted = (bool)typeof(CombatSupportGrip).GetMethod("TryContactHint",
+                            BindingFlags.Instance | BindingFlags.NonPublic).Invoke(grip, arguments);
+                        Assert.That(accepted, Is.False, "A changed live world path must still reject the contact.");
+                        Assert.That(grip.LastContactSolveBudgetExhausted, Is.False,
+                            "Branches outside this duel step cannot exhaust the budget for alternative contact frames.");
+                        Assert.That(grip.SupportCandidateEvaluations - before,
+                            Is.InRange(1L, (long)CombatSupportGrip.MaxContactSolveEvaluations - 1L));
+                    }
+                    finally { Object.DestroyImmediate(obstacle); Physics.SyncTransforms(); }
+
+                    // Use the actual raised guard and swept interception; a fabricated
+                    // metal stop with bars four metres apart has no physical TOI.
+                    PlacePair(1.1f);
+                    target.SetBlock(true);
+                    for (int tick = 0; tick < 24; tick++) root.Tick(CombatTestRoot.SimulationStep);
+                    Assert.That(target.State.IsBlocking, Is.True);
+                    Assert.That(actor.TryAttack(), Is.True);
+                    for (int tick = 0; tick < 90 && actor.WeaponClashCount == 0 && target.State.Health == target.State.Settings.MaxHealth; tick++)
+                        root.Tick(CombatTestRoot.SimulationStep);
+                    Assert.That(actor.WeaponClashCount, Is.EqualTo(1), "The raised bar must physically intercept the frontal swing.");
+                    Assert.That(actor.State.AttackOutcome, Is.EqualTo(MeleeAttackOutcome.Obstacle));
+                    long recoilBudgetExhaustions = grip.SupportBudgetExhaustions;
+                    string ContactState() => $"{(hero ? "hero" : "opponent")}: phase={actor.State.Phase}, arm={grip.State}, " +
+                        $"wait={grip.JournalGripReason}, rejection={grip.LastPoseRejection}, gap={grip.JournalContactError:F5}, " +
+                        $"angle={grip.JournalContactAngle:F3}, wrist={grip.LiveArmAngles}, regrip={grip.IsRegripping}, " +
+                        $"allowed={grip.JournalRegripAllowed}, searches={grip.LastContactSolveEvaluations}";
+                    bool returned = false, captured = false;
+                    for (int tick = 0; tick < 90; tick++)
+                    {
+                        root.Tick(CombatTestRoot.SimulationStep);
+                        // A fresh recoil may require the full authored branch
+                        // search. Exhausting its unchanged cap must release an
+                        // unsafe contact; it is not the narrow-branch regression.
+                        Assert.That(grip.LastContactSolveEvaluations, Is.InRange(0, CombatSupportGrip.MaxContactSolveEvaluations));
+                        if (grip.IsSupportingWeapon)
+                        {
+                            Assert.That(grip.JournalContactError, Is.LessThanOrEqualTo(.025f));
+                            Assert.That(grip.JournalContactAngle, Is.LessThanOrEqualTo(12f));
+                            Assert.That(grip.JournalWristSafe, Is.True);
+                            Assert.That(grip.LiveArmAngles.x, Is.LessThanOrEqualTo(25.1f));
+                            Assert.That(grip.LiveArmAngles.y, Is.LessThanOrEqualTo(55.1f));
+                            Assert.That(constraint.SupportArmClearance.IsSupportPathClear(upper.position, lower.position, hand.position),
+                                Is.True, "A corrected contact must still keep the admitted arm clear of the body.");
+                        }
+                        if (!captured && tick >= 10)
+                        {
+                            yield return null;
+                            actor.Present();
+                            CaptureDuelFrame("balance/support-search/" + (hero ? "hero" : "opponent"), "metal-recoil");
+                            captured = true;
+                        }
+                        returned |= actor.State.Phase == MeleePhase.Ready;
+                    }
+                    Assert.That(returned, Is.True, "The physical weapon recoil must finish its own phase. " + ContactState());
+                    TestContext.Out.WriteLine("Physical recoil endpoint: " + ContactState() +
+                        "; budget exhaustions=" + (grip.SupportBudgetExhaustions - recoilBudgetExhaustions));
+                }
+            }
+            finally { root.SetDuelLogging(false); }
+            LogAssert.NoUnexpectedReceived();
+        }
+
+        [UnityTest]
         public IEnumerator Range_BackhandSupportSearchHasBoundedWorkAndKeepsAdmittedContactsSafe()
         {
             // Fresh duel a46 had 0.2-0.5 second backhand stalls from nested

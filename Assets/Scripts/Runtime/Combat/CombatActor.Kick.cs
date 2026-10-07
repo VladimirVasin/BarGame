@@ -141,7 +141,7 @@ namespace BarPromenade
             if (kickSupportPending)
                 return JournalCommandResult(request, "queued", "kick_support_wait", kickSupportRemaining,
                     KickSupportWaitSeconds, trackAction: false);
-            if (!State.RequestKick()) return JournalRulesRejected(request, State.Settings.KickCost, true);
+            if (!State.RequestKick()) return JournalRulesRejected(request, State.Settings.KickCost);
             bool started = ContinueBufferedAttackAfterContacts();
             if (!started && State.BufferedAction != MeleeBufferedAction.Kick)
                 return JournalCommandResult(request, "rejected", "kick_support", footwork.LastKickSupportGap, .08f);

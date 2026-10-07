@@ -177,7 +177,7 @@ namespace BarPromenade
             if (State.Phase == MeleePhase.Step && State.CanTransitionTo(MeleeBufferedAction.Attack, true) &&
                 !(footwork?.PrepareStepAttackHandoff() ?? false))
                 return JournalCommandResult(request, "rejected", "step_support_missing");
-            if (!State.TryStartRecoveryAttack()) return JournalRulesRejected(request, State.Settings.AttackCost, false);
+            if (!State.TryStartRecoveryAttack()) return JournalRulesRejected(request, State.Settings.AttackCost);
             CancelPendingKick("replaced");
             reaction = null;
             Present();
@@ -193,7 +193,7 @@ namespace BarPromenade
             if (!CanAttemptUpperBodyAttack) return JournalCommandResult(request, "rejected", UpperBodyAttackRejection);
             if (!State.IsAttacking && CheckShoveRange(request)) return TryBeginShove(request);
             int previous = State.AttackSequence;
-            if (!State.RequestAttack(true)) return JournalRulesRejected(request, State.Settings.AttackCost, true);
+            if (!State.RequestAttack(true)) return JournalRulesRejected(request, State.Settings.AttackCost);
             CancelPendingKick("replaced");
             ContinueBufferedAttackAfterContacts();
             if (previous != State.AttackSequence) reaction = null;
@@ -208,7 +208,7 @@ namespace BarPromenade
                 !GameInput.CanRead(GameInputContext.Gameplay))
                 return JournalCommandResult(request, "rejected", "counter_unavailable");
             if (CheckShoveRange(request)) return TryBeginShove(request);
-            if (!State.TryStartObservedCounterAttack()) return JournalRulesRejected(request, State.Settings.AttackCost, false);
+            if (!State.TryStartObservedCounterAttack()) return JournalRulesRejected(request, State.Settings.AttackCost);
             reaction = null;
             Present();
             return JournalCommandResult(request, "started", "observed_counter");
@@ -234,7 +234,8 @@ namespace BarPromenade
             {
                 string result = !guardHeld ? "released" : !allowed || State.IsDefeated || State.IsKnockedDown ? "rejected" :
                     State.IsBlocking ? "started" : "queued";
-                JournalCommandResult(request, result, allowed && (State.IsDefeated || State.IsKnockedDown) ? "rules_rejected" : reason, trackAction: false);
+                JournalCommandResult(request, result, allowed && (State.IsDefeated || State.IsKnockedDown)
+                    ? State.IsDefeated ? "defeated" : "knocked_down" : reason, trackAction: false);
                 journalBlockHeld = guardHeld; journalBlockAllowed = allowed; journalBlockReason = reason;
             }
         }

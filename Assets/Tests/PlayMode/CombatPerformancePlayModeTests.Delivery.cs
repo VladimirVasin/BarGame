@@ -4,8 +4,10 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Reflection;
 using System.Text;
 using NUnit.Framework;
+using UnityEditor;
 using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.Profiling;
@@ -15,13 +17,90 @@ namespace BarPromenade.Tests.PlayMode
 {
     public sealed partial class CombatPerformancePlayModeTests
     {
+        [UnityTest]
+        public IEnumerator Range_ManualCpuTimelineStopsAndRestoresProfiler()
+        {
+            Type captureType = null;
+            foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+                captureType ??= assembly.GetType("BarPromenade.Editor.CombatCpuTimelineCapture");
+            Assert.That(captureType, Is.Not.Null);
+            const BindingFlags flags = BindingFlags.Static | BindingFlags.NonPublic;
+            var start = captureType.GetMethod("StartCapture", flags);
+            var stop = captureType.GetMethod("StopCapture", flags);
+            var running = captureType.GetProperty("IsRunning", flags);
+            bool wasDriver = ProfilerDriver.enabled, wasProfiler = Profiler.enabled;
+            bool wasBinary = Profiler.enableBinaryLog, wasEditor = ProfilerDriver.profileEditor;
+            bool wasDeep = ProfilerDriver.deepProfiling, wasCpu = ProfilerDriver.IsAreaEnabled(ProfilerArea.CPU);
+            string wasLogFile = Profiler.logFile;
+            try
+            {
+                root.SetDuelLogging(false);
+                ProfilerDriver.enabled = false;
+                Profiler.enabled = false;
+                Profiler.enableBinaryLog = false;
+                ProfilerDriver.enabled = true;
+                LogAssert.Expect(LogType.Warning,
+                    "Combat CPU Timeline was not started: the Profiler is already recording. Stop its recording first.");
+                Assert.That(start.Invoke(null, new object[] { null }), Is.False);
+                Assert.That(ProfilerDriver.enabled, Is.True, "An existing recording belongs to its caller.");
+                ProfilerDriver.enabled = false;
+                Profiler.enabled = false;
+                foreach (bool timeout in new[] { true, false })
+                {
+                    LogAssert.Expect(LogType.Log, new System.Text.RegularExpressions.Regex("^Combat CPU Timeline recording for 15 seconds: "));
+                    Assert.That(start.Invoke(null, new object[] { Path.GetFullPath("TestResults/Test duel diagnostics/Lifecycle") }), Is.True);
+                    Assert.That(running.GetValue(null), Is.True);
+                    for (int frame = 0; frame < 4; frame++) yield return null;
+                    string reason = timeout ? "duration_reached" : "play_mode_ended";
+                    LogAssert.Expect(LogType.Log, new System.Text.RegularExpressions.Regex("^Combat CPU Timeline saved \\(" + reason + "\\): "));
+                    if (timeout)
+                    {
+                        object active = captureType.GetField("active", flags).GetValue(null);
+                        active.GetType().GetField("Started", BindingFlags.Instance | BindingFlags.NonPublic)
+                            .SetValue(active, EditorApplication.timeSinceStartup - 16d);
+                        captureType.GetMethod("Update", flags).Invoke(null, null);
+                    }
+                    else captureType.GetMethod("PlayModeChanged", flags)
+                        .Invoke(null, new object[] { PlayModeStateChange.ExitingPlayMode });
+                    Assert.That(running.GetValue(null), Is.False);
+                    Assert.That(ProfilerDriver.enabled || Profiler.enabled || Profiler.enableBinaryLog, Is.False);
+                    Assert.That(ProfilerDriver.profileEditor, Is.EqualTo(wasEditor));
+                    Assert.That(ProfilerDriver.deepProfiling, Is.EqualTo(wasDeep));
+                    Assert.That(ProfilerDriver.IsAreaEnabled(ProfilerArea.CPU), Is.EqualTo(wasCpu));
+                    Assert.That(Profiler.logFile, Is.EqualTo(wasLogFile));
+                    string folder = (string)captureType.GetProperty("LastCaptureDirectory", flags).GetValue(null);
+                    Assert.That(new FileInfo(Path.Combine(folder, "CPU Timeline.raw")).Length, Is.GreaterThan(0));
+                    string manifest = File.ReadAllText(Path.Combine(folder, "Capture.json"));
+                    StringAssert.Contains("\"stopReason\": \"" + reason + "\"", manifest);
+                    StringAssert.DoesNotContain("\"firstMarkedUnityFrame\": -1", manifest);
+                    stop.Invoke(null, new object[] { "already_stopped" });
+                    Assert.That(File.ReadAllText(Path.Combine(folder, "Capture.json")), Is.EqualTo(manifest));
+                }
+                LogAssert.NoUnexpectedReceived();
+            }
+            finally
+            {
+                stop.Invoke(null, new object[] { "test_cleanup" });
+                ProfilerDriver.enabled = false;
+                Profiler.enabled = false;
+                Profiler.enableBinaryLog = false;
+                ProfilerDriver.deepProfiling = wasDeep;
+                ProfilerDriver.profileEditor = wasEditor;
+                ProfilerDriver.SetAreaEnabled(ProfilerArea.CPU, wasCpu);
+                Profiler.logFile = wasLogFile;
+                Profiler.enableBinaryLog = wasBinary;
+                ProfilerDriver.enabled = wasDriver;
+                Profiler.enabled = wasProfiler;
+            }
+        }
+
         // Keep the normal Editor and render loop: a manually ticked/headless
         // simulation cannot attribute the recorded post-render delivery gaps.
         [UnityTest, Explicit("Short rendered CPU Timeline with Editor work and exact duel-frame correlation.")]
         public IEnumerator Range_RenderedDeliverySeparatesEditorWaitFromCombatWork()
         {
             Assert.That(Application.isBatchMode, Is.False, "Use the rendered Editor, without -batchmode/-nographics.");
-            string folder = Path.GetFullPath("TestResults/Test combat delivery");
+            string folder = Path.GetFullPath("TestResults/Test duel diagnostics/Rendered delivery");
             Directory.CreateDirectory(folder);
             bool wasEnabled = ProfilerDriver.enabled, wasEditor = ProfilerDriver.profileEditor;
             bool wasDeep = ProfilerDriver.deepProfiling;

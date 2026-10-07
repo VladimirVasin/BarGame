@@ -5,43 +5,42 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 
 ## 2026-10-07 — Combat openings, support handoff and physical regrip
 
-- Recovery publication joins retained Ready arms; body/brace tracks remain.
+- Recovery joins retained Ready arms; body/brace remain.
   `assert_bank_motion_parity`, `Range_InterruptedRiseHasBoundedWorkAndRecovers`.
-- Hero/NPC strikes and hero kicks aim at the opponent in the first quarter,
-  then keep their world heading.
+- Strikes/Q aim in the first quarter, then keep world heading.
   `Range_StrikesAimOnlyAtTheOpeningAndPreservePhysicalEvasion`.
-- Metre rescue steps start from a real sole during stagger/catch;
-  momentum/overload/falls win. Step/gait inherit soles and finite landings;
-  blocked transfers withdraw forecasts without renewing catch budgets.
+- Metre rescue/gait steps inherit soles/finite landings; impulse/falls win.
+  Blocked transfers withdraw forecasts without renewing catch budgets.
   `Range_RecoveryStepsStartImmediatelyAndPreserveLiveSupport`,
   `Range_PostCatchStepAndRetreatKeepFinitePhysicalLandings`.
-- Both kicks select the free leg by weight and preserve the right weapon hand.
-  Metre steps/kicks use `--footwork-only` authoring gates.
+- Q selects the free leg by load, keeps R; step/Q: `--footwork-only` gates.
   `Range_KickSelectsWalkingSupportAndCancelsStaleRequests`.
   `Range_CloseKicksAgreeWithPresentedBootAndFrozenAnatomy`: bounded sole/toe
   points fix a close boot-surface miss; radius unchanged, no triangle claim.
-- Bar/world/body share first contact; metal gives wall recoil/stops weapons/
-  guard effort-break without HP leakage/pooled sparks.
+- Bar/world/body share first contact; metal:recoil/stop/guard-cost-break/0HP/sparks.
   `Range_MetalContactsStopAtTheFirstSurfaceAndShareOnePausedSparkPool`.
-- Regrip closes on final accepted contact, holds station/branch and reuses the
-  accepted arm within one substep. Open search uses the authored elbow before
-  free pose. Unreachable paths wait open; preview/Present cannot advance closure
-  or disable right-hand attacks.
+- Regrip closes on admitted contact; station/branch cached within a substep.
+  Authored elbow first; unreachable waits open; preview keeps clock/R attacks.
   `Range_MovingRegripCarriesTheArmAndRestoresAttack`.
   Bounded search/rollback:
   `Range_BackhandSupportSearchHasBoundedWorkAndKeepsAdmittedContactsSafe`,
   `Range_HitContinuationKeepsSupportSolveAndVisibleContactConsistent` and
   `Range_WeaponSweepReusesOnlyIdenticalQueriesAndKeepsMovingAnatomy`.
+- Continuity search skips unreachable branches before its unchanged budget;
+  live wrist/world gates remain.
+  `Range_ContinuousSupportSearchSkipsUnreachableBranchesAndRejectsObstacles`.
 - Rise refusals report bounded collider/path/floor/capsule/search reasons.
   `Range_RiseWaitsForNearbyCharacterAndResumesAfterRealStep`.
-- Timeline joins duel frames and separates Editor/player work, pose and Swap.
-  The old post-render gap was not reproduced; cause open.
+- Timeline joins duel frames; post-render hitches remain unreproduced.
+  Manual 15s streaming/frame metadata restores Profiler:
+  `Range_ManualCpuTimelineStopsAndRestoresProfiler`.
+  Impacts:source→victim/shove; Rules:reason/cooldown; no FPS claim.
   `Range_RenderedDeliverySeparatesEditorWaitFromCombatWork`,
-  `Range_DuelJournalRecordsReasonsWithoutChangingCombat`; no FPS claim.
-- Bar/kick/shove readiness survives switches; cross-type after live contacts.
-  Fresh LMB replaces a waiting Q.
-  Step opens attacks at .36s, repeats at .57s. Nonfall bar/shove preserve
-  impulse/feet/early aim; Q/guard stay strict, committed falls veto attacks.
+  `Range_DuelJournalRecordsReasonsWithoutChangingCombat`.
+  `RuleRequestReasonsKeepTheirActionClockAndClearFailedStartWhenQueued`.
+- Bar/Q/palm clocks survive switches after contact; fresh LMB replaces Q.
+  Step:.36s→attack/.57s→repeat; bar/palm keep impulse/feet/aim before fall.
+  Q/guard strict; committed falls veto attacks.
   Focused `CombatRulesTests` readiness/continuation checks.
   Step→attack keeps the current knee direction through final support closure.
   `Range_AttackTypesSwitchAfterContactAndActDuringRecovery`.

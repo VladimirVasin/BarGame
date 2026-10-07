@@ -48,7 +48,7 @@ namespace BarPromenade
             if (!CheckShoveRange(request)) return JournalCommandResult(request, "rejected", "shove_range");
             if (!CanAttemptUpperBodyAttack) return JournalCommandResult(request, "rejected", UpperBodyAttackRejection);
             int previous = State.AttackSequence;
-            if (!State.RequestShove(true)) return JournalRulesRejected(request, State.Settings.ShoveCost, true);
+            if (!State.RequestShove(true)) return JournalRulesRejected(request, State.Settings.ShoveCost);
             CancelPendingKick("replaced");
             if (previous == State.AttackSequence)
             {
@@ -199,7 +199,7 @@ namespace BarPromenade
                 float health = target.State.Health;
                 target.PublishImpact(new CombatImpact(source, target, sequence, hit.Point, hit.Normal, direction,
                     health, health, MeleeHitResult.Hit, hit.Location, 0f, hit.Part, hit.LocalPoint,
-                    impulse: direction * ShoveImpulse), phaseBefore);
+                    impulse: direction * ShoveImpulse, kind: CombatImpactKind.Shove), phaseBefore);
                 RetroAudio.PlayAt(RetroSfxId.StoneTamp, hit.Point, .65f);
                 target.Present();
             }
