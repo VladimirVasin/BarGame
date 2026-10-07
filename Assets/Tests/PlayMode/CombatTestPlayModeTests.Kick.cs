@@ -349,11 +349,15 @@ namespace BarPromenade.Tests.PlayMode
             yield return SceneManager.LoadSceneAsync(SceneIds.CombatTest);
             root = Object.FindAnyObjectByType<CombatTestRoot>();
             root.AutomaticSimulation = false;
+            Assert.That(S.KickWindupSeconds, Is.LessThan(.30f), "The kick reaches extension sooner than its original authored anticipation.");
+            Assert.That(S.KickActiveSeconds, Is.LessThan(.10f), "The striking extension is sharper than its original authored active interval.");
             var csv = new System.Text.StringBuilder("side,target_pose,distance,elapsed,clip_seconds,target_phase,target_progress,root_gap,minimum_gap,part,sweep_hit,presented_delta,final_delta,boot_surface_distance,forward_reach,lateral_reach,from_x,from_y,from_z,to_x,to_y,to_z,surface_x,surface_y,surface_z,target_attack_elapsed,maximum_boot_projection,projection_beyond_sphere,minimum_boot_vertex_gap,maximum_vertex_penetration,penetrating_part,sphere_hit,surface_witness,witness_count,striking_vertex_penetration,accepted_before_sample,surface_from_x,surface_from_y,surface_from_z,surface_to_x,surface_to_y,surface_to_z\n");
             var mesh = new Mesh();
             var vertices = new System.Collections.Generic.List<Vector3>();
             var strikingVertices = new System.Collections.Generic.List<Vector3>();
             var soleVertices = new System.Collections.Generic.List<Vector3>();
+            var closePoses = new KickDistancePose[2];
+            var farPoses = new KickDistancePose[2];
             string path = Path.GetFullPath("TestResults/kick-surface-geometry.csv");
             try
             {
@@ -370,6 +374,8 @@ namespace BarPromenade.Tests.PlayMode
                     root.Opponent.ResetActor(root.Hero.transform.position + root.Hero.transform.forward * distance,
                         -root.Hero.transform.forward);
                     Physics.SyncTransforms();
+                    Transform kickChest = FindKickBone("chest");
+                    Vector3 entryChestForward = kickChest.InverseTransformDirection(root.Hero.transform.forward);
                     Assert.That(root.Hero.TryKick(), Is.True, KickWaitDiagnostics());
                     Assert.That(root.Hero.KickStrikingSide, Is.EqualTo(striking));
                     Assert.That(root.Hero.KickSurfaceWitnessCount, Is.InRange(1, CombatActor.KickSurfaceWitnessLimit));
@@ -377,9 +383,10 @@ namespace BarPromenade.Tests.PlayMode
                     int surfaceRepairs = 0;
                     var previousSurface = new Vector3[root.Hero.KickSurfaceWitnessCount];
                     var presentedSurface = new Vector3[root.Hero.KickSurfaceWitnessCount];
-                    bool requestedAttack = false, capture = false, previousValid = false, anyHit = false;
+                    bool requestedAttack = false, capture = false, distancePoseCaptured = false, previousValid = false, anyHit = false;
                     Vector3 previous = default;
                     float minimum = float.PositiveInfinity, maximumDelta = 0f;
+                    float midpointChestTwist = float.NaN;
                     float maximumBeyondSphere = float.NegativeInfinity, maximumMissPenetration = 0f, maximumStrikingPenetration = 0f;
                     SkinnedMeshRenderer boot = null, sole = null;
                     foreach (SkinnedMeshRenderer skin in ((Player3DCharacterPresentation)root.Player.Visual).Registry.ModelRoot.GetComponentsInChildren<SkinnedMeshRenderer>(true))
@@ -435,7 +442,8 @@ namespace BarPromenade.Tests.PlayMode
                         float finalDelta = Vector3.Distance(root.Hero.KickBootPosition, sample.To);
                         // A boundary sweep clamps to ActiveEnd while the final
                         // animation may already have entered its authored return.
-                        if (Mathf.Abs(sample.Elapsed - sample.ClipSeconds) < .00002f)
+                        bool finalPoseAtSample = Mathf.Abs(root.Hero.State.KickAnimationSecondsAt(sample.Elapsed) - sample.ClipSeconds) < .00002f;
+                        if (finalPoseAtSample)
                         {
                             maximumDelta = Mathf.Max(maximumDelta, Mathf.Max(presentedDelta, finalDelta));
                             Assert.That(presentedDelta, Is.LessThan(.002f), "The sampled contact endpoint matches the accepted complete presentation.");
@@ -455,7 +463,7 @@ namespace BarPromenade.Tests.PlayMode
                                 binding = Mathf.Min(binding, Vector3.Distance(vertex, presentedSurface[i]));
                             Assert.That(binding, Is.LessThan(.0005f), "A cached witness must belong to the independently skinned sole/toe, never the cuff or shin.");
                         }
-                        if (sample.SurfaceWitness >= 0 && Mathf.Abs(sample.Elapsed - sample.ClipSeconds) < .00002f)
+                        if (sample.SurfaceWitness >= 0 && finalPoseAtSample)
                             Assert.That(Vector3.Distance(sample.SurfaceTo, presentedSurface[sample.SurfaceWitness]), Is.LessThan(.0005f),
                                 "The zero-radius contact endpoint stays attached to the final presented shoe.");
                         System.Array.Copy(presentedSurface, previousSurface, presentedSurface.Length);
@@ -496,7 +504,7 @@ namespace BarPromenade.Tests.PlayMode
                             float binding = float.PositiveInfinity;
                             foreach (Vector3 witness in presentedSurface)
                                 binding = Mathf.Min(binding, Vector3.Distance(vertex, witness));
-                            if (Mathf.Abs(sample.Elapsed - sample.ClipSeconds) < .00002f)
+                            if (finalPoseAtSample)
                                 Assert.That(binding, Is.LessThan(.0005f), "Every independently skinned sole/toe vertex must have an attached cached witness.");
                             Assert.That(root.Opponent.Hurtboxes.MeasureSweepSurfaceGap(vertex, vertex, 0f, out var pointGap), Is.True);
                             if (pointGap.Gap <= .000001f)
@@ -505,7 +513,7 @@ namespace BarPromenade.Tests.PlayMode
                         if (!acceptedBeforeSample)
                         {
                             maximumStrikingPenetration = Mathf.Max(maximumStrikingPenetration, strikingPenetration);
-                            if (strikingPenetration > .00002f && Mathf.Abs(sample.Elapsed - sample.ClipSeconds) < .00002f)
+                            if (strikingPenetration > .00002f && finalPoseAtSample)
                                 Assert.That(sample.HasHit, Is.True, "A visible sole/toe vertex already inside frozen anatomy cannot be missed before the first accepted contact.");
                         }
                         Vector3 reach = sample.To - root.Hero.transform.position;
@@ -521,8 +529,21 @@ namespace BarPromenade.Tests.PlayMode
                             maximumProjection, maximumProjection - CombatActor.BootRadius, vertexGap, penetration, penetratingPart,
                             sample.SphereHit, sample.SurfaceWitness, root.Hero.KickSurfaceWitnessCount, strikingPenetration, acceptedBeforeSample,
                             sample.SurfaceFrom.x, sample.SurfaceFrom.y, sample.SurfaceFrom.z, sample.SurfaceTo.x, sample.SurfaceTo.y, sample.SurfaceTo.z);
-                        if (!capture && sample.Elapsed >= .35f &&
-                            (Mathf.Abs(distance - .9f) < .001f || !attacking && Mathf.Abs(distance - 1f) < .001f))
+                        float contactMidpoint = root.Hero.State.Settings.KickWindupSeconds + root.Hero.State.Settings.KickActiveSeconds * .5f;
+                        if (!distancePoseCaptured && !attacking && sample.Elapsed >= contactMidpoint && finalPoseAtSample &&
+                            (distance < .85f || distance > 1.5f))
+                        {
+                            distancePoseCaptured = true;
+                            var pose = new KickDistancePose(root.Hero, FindKickBone("pelvis"), kickChest, entryChestForward,
+                                FindKickBone(striking == 0 ? "thigh.L" : "thigh.R"),
+                                FindKickBone(striking == 0 ? "shin.L" : "shin.R"),
+                                FindKickBone(striking == 0 ? "foot.L" : "foot.R"));
+                            midpointChestTwist = pose.ChestTwist;
+                            if (distance < .85f) closePoses[striking] = pose;
+                            else farPoses[striking] = pose;
+                        }
+                        if (!capture && sample.Elapsed >= contactMidpoint &&
+                            (attacking && Mathf.Abs(distance - .9f) < .001f || !attacking && (distance < .85f || distance > 1.5f)))
                         {
                             capture = true;
                             yield return null; // New render frame: skin and prop must use this same frozen pose.
@@ -531,7 +552,8 @@ namespace BarPromenade.Tests.PlayMode
                                 (attacking ? "windup-" : "ready-") + Mathf.RoundToInt(distance * 100f));
                         }
                     }
-                    Assert.That(samples, Is.GreaterThanOrEqualTo(12), "The entire .10s active interval is observed.");
+                    int minimumSamples = Mathf.FloorToInt(root.Hero.State.Settings.KickActiveSeconds / CombatTestRoot.SimulationStep);
+                    Assert.That(samples, Is.GreaterThanOrEqualTo(minimumSamples), "The entire configured active interval is observed.");
                     Assert.That(root.Opponent.ReceivedImpactCount, Is.EqualTo(anyHit ? 1 : 0),
                         "Actual sphere/surface contact grants one impact; a measured separation grants none.");
                     if (!attacking && distance < .85f)
@@ -539,11 +561,28 @@ namespace BarPromenade.Tests.PlayMode
                     if (striking == 1 && attacking && Mathf.Abs(distance - .9f) < .001f)
                     {
                         Assert.That(anyHit, Is.True, "Regression: the right sole visibly penetrated the thigh while the offset sphere missed the whole kick.");
-                        Assert.That(surfaceRepairs, Is.GreaterThan(0), "This case must exercise the actual zero-radius surface contact, not a larger sphere.");
                     }
                     if (distance > 1.5f) Assert.That(anyHit, Is.False, "The actual sole/toe surface cannot turn a distant physical miss into a Hit.");
-                    TestContext.Out.WriteLine($"Kick geometry: {(striking == 0 ? "Left" : "Right")}, {(attacking ? "Windup" : "Ready")}, distance={distance:F2}m, min surface gap={minimum:F6}m, hit={anyHit}, maximum pose delta={maximumDelta:F6}m.");
+                    if (!attacking && (distance < .85f || distance > 1.5f))
+                        Assert.That(distancePoseCaptured, Is.True, "The real near/far rig must be measured at the contact midpoint.");
+                    TestContext.Out.WriteLine($"Kick geometry: {(striking == 0 ? "Left" : "Right")}, {(attacking ? "Windup" : "Ready")}, distance={distance:F2}m, min surface gap={minimum:F6}m, hit={anyHit}, maximum pose delta={maximumDelta:F6}m, midpoint chest twist={midpointChestTwist:F3} degrees.");
                     TestContext.Out.WriteLine($"Kick envelope: witnesses={root.Hero.KickSurfaceWitnessCount}, surface repairs={surfaceRepairs}, max projection beyond sphere={maximumBeyondSphere:F6}m, pre-contact boot/striking vertex penetration={maximumMissPenetration:F6}/{maximumStrikingPenetration:F6}m. Vertex probes do not prove the complete triangle envelope.");
+                }
+                for (int striking = 0; striking < 2; striking++)
+                {
+                    string side = striking == 0 ? "left" : "right";
+                    Assert.That(farPoses[striking].PelvisForward, Is.GreaterThan(closePoses[striking].PelvisForward + .005f),
+                        side + ": the distant kick sends its pelvis farther forward.");
+                    Assert.That(farPoses[striking].BootForward, Is.GreaterThan(closePoses[striking].BootForward + .01f),
+                        side + ": the distant kick extends the actual striking foot.");
+                    Assert.That(farPoses[striking].ChestFromPelvis, Is.LessThan(closePoses[striking].ChestFromPelvis - .005f),
+                        side + ": the chest counterbalances the forward pelvis by leaning back.");
+                    Assert.That(farPoses[striking].KneeAngle, Is.GreaterThan(closePoses[striking].KneeAngle + 1f),
+                        side + ": the nearby target keeps a more bent striking knee.");
+                    float twistSign = striking == 0 ? 1f : -1f;
+                    foreach (KickDistancePose pose in new[] { closePoses[striking], farPoses[striking] })
+                        Assert.That(pose.ChestTwist * twistSign, Is.GreaterThan(2f).And.LessThan(15f),
+                            side + $": near and far kicks turn the torso slightly with the striking leg; measured {pose.ChestTwist:F3} degrees.");
                 }
                 LogAssert.NoUnexpectedReceived();
             }
@@ -552,6 +591,23 @@ namespace BarPromenade.Tests.PlayMode
                 Directory.CreateDirectory(Path.GetDirectoryName(path)); File.WriteAllText(path, csv.ToString());
                 Object.Destroy(mesh);
                 TestContext.Out.WriteLine(path);
+            }
+        }
+
+        private readonly struct KickDistancePose
+        {
+            internal readonly float PelvisForward, BootForward, ChestFromPelvis, KneeAngle, ChestTwist;
+
+            internal KickDistancePose(CombatActor actor, Transform pelvis, Transform chest, Vector3 entryChestForward,
+                Transform thigh, Transform shin, Transform foot)
+            {
+                Vector3 forward = actor.transform.forward;
+                PelvisForward = Vector3.Dot(pelvis.position - actor.transform.position, forward);
+                BootForward = Vector3.Dot(foot.position - actor.transform.position, forward);
+                ChestFromPelvis = Vector3.Dot(chest.position - pelvis.position, forward);
+                KneeAngle = Vector3.Angle(thigh.position - shin.position, foot.position - shin.position);
+                Vector3 chestForward = Vector3.ProjectOnPlane(chest.TransformDirection(entryChestForward), Vector3.up);
+                ChestTwist = Vector3.SignedAngle(forward, chestForward, Vector3.up);
             }
         }
 

@@ -1743,6 +1743,12 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(actor.Advance(S.KickWindupSeconds - .01f).HasActiveWindow, Is.False);
             Assert.That(actor.TryRegisterKickHit(1, actor.AttackSequence), Is.False);
             Assert.That(actor.KickProgress, Is.EqualTo(actor.KickElapsed / S.KickAnimationDurationSeconds).Within(Eps));
+            Assert.That(actor.KickAnimationSecondsAt(0f), Is.Zero);
+            Assert.That(actor.KickAnimationSecondsAt(S.KickWindupSeconds * .5f), Is.EqualTo(.15f).Within(Eps));
+            Assert.That(actor.KickAnimationSecondsAt(S.KickWindupSeconds), Is.EqualTo(.30f).Within(Eps));
+            Assert.That(actor.KickAnimationSecondsAt(actor.KickActiveEnd), Is.EqualTo(.40f).Within(Eps));
+            Assert.That(actor.KickAnimationSecondsAt(actor.CurrentKickDurationSeconds), Is.EqualTo(.95f).Within(Eps));
+            Assert.That(actor.KickAnimationSecondsAt(actor.CurrentKickDurationSeconds + 1f), Is.EqualTo(.95f).Within(Eps));
 
             var exhausted = new MeleeCombatant(new MeleeCombatSettings(maxStamina: S.ChargeStaminaCost));
             exhausted.RequestCharge();
@@ -1755,14 +1761,15 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(exhausted.Stamina, Is.Zero);
         }
 
-        [TestCase(.35f, .5f)]
-        [TestCase(.95f, 1f)]
-        [TestCase(2f, 1f)]
-        public void KickContactWindowSurvivesHitchesAndAcceptsOnlyItsFirstTarget(float seconds, float activeEnd)
+        [TestCase(.5f, 0f)]
+        [TestCase(1f, 1f)]
+        [TestCase(1f, 2f)]
+        public void KickContactWindowSurvivesHitchesAndAcceptsOnlyItsFirstTarget(float activeEnd, float recoveryFraction)
         {
             var actor = new MeleeCombatant();
             actor.TryStartKick();
             int sequence = actor.AttackSequence;
+            float seconds = S.KickWindupSeconds + S.KickActiveSeconds * activeEnd + S.KickMissRecoverySeconds * recoveryFraction;
             MeleeAdvanceResult contact = actor.Advance(seconds);
             Assert.That(contact.IsKick && contact.HasActiveWindow, Is.True);
             Assert.That(contact.AttackSequence, Is.EqualTo(sequence));
@@ -1795,9 +1802,12 @@ namespace BarPromenade.Tests.EditMode
             actor.Advance(S.AttackDurationSeconds + .01f);
             Assert.That(actor.Swing, Is.EqualTo(MeleeSwing.Forehand));
             actor.TryStartKick();
-            actor.Advance(S.KickWindupSeconds + .05f);
+            actor.Advance(S.KickWindupSeconds + S.KickActiveSeconds * .5f);
             int sequence = actor.AttackSequence;
             Assert.That(actor.RecordKickOutcome(outcome, sequence), Is.True);
+            Assert.That(actor.KickAnimationSecondsAt(actor.KickActiveEnd + actor.KickRecoverySeconds * .5f),
+                Is.EqualTo(.675f).Within(Eps), "Every outcome traverses the same authored return at its own gameplay speed.");
+            Assert.That(actor.KickAnimationSecondsAt(actor.CurrentKickDurationSeconds), Is.EqualTo(.95f).Within(Eps));
             actor.Advance(actor.KickActiveEnd - actor.KickElapsed + .01f, allowBufferedAttack: false);
             Assert.That(Request(actor, next), Is.True);
             if (next == MeleeBufferedAction.Charge) actor.ReleaseCharge();

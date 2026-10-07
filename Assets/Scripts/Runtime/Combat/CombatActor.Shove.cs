@@ -99,8 +99,8 @@ namespace BarPromenade
             CancelInterruptedShoveContact();
             if (!shoveContactPending) return;
             float contactEnd = State.Settings.ShoveActiveEndSeconds;
-            // The existing palm pose holds full reach until contact + .035s;
-            // this bounded window ends during its early return, before rest.
+            // The palm keeps its real chest target while this bounded window
+            // is pending; timing does not grant contact without the visible hand.
             if (State.ShoveElapsed > contactEnd + .000001f)
             {
                 RejectShoveContact(shoveContactAttempts > 0 ? "palm_gap" : "contact_window_elapsed", shoveLastPalmGap, .08f);

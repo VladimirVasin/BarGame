@@ -105,7 +105,7 @@ namespace BarPromenade
             }
         }
         private CombatArmClearance armClearance;
-        private bool shoveActive;
+        private bool shoveActive, shoveContactPending;
         private Transform shoveContactRoot;
         private Vector3 shoveStartPalm, shovePoint, shoveDirection;
         private Quaternion shoveStartRotation;
@@ -282,9 +282,16 @@ namespace BarPromenade
         internal static float ShoveReach(float elapsed, float contactSeconds, float duration)
         {
             float returnAt = Mathf.Min(contactSeconds + .035f, duration);
-            return elapsed <= contactSeconds
-                ? Mathf.SmoothStep(0f, 1f, elapsed / contactSeconds)
-                : 1f - Mathf.SmoothStep(0f, 1f, (elapsed - returnAt) / Mathf.Max(.001f, duration - returnAt));
+            if (elapsed <= contactSeconds)
+            {
+                // Put the body behind the palm early, with no velocity jump at
+                // either endpoint. The arm still obeys its ordinary joint cap.
+                float progress = Mathf.Clamp01(elapsed / contactSeconds);
+                float remaining = 1f - progress;
+                return 1f - remaining * remaining * remaining * (1f + 3f * progress);
+            }
+            return 1f - Mathf.SmoothStep(0f, 1f,
+                (elapsed - returnAt) / Mathf.Max(.001f, duration - returnAt));
         }
 
         /// <summary>The duel supplies time and the near-side chest surface; Apply only poses the original arm.</summary>
@@ -298,7 +305,7 @@ namespace BarPromenade
                 if (!shoveActive) return;
                 // Keep the last actual palm as the source of normal reacquisition.
                 CaptureArm(false);
-                shoveActive = false; shoveContactRoot = null;
+                shoveActive = shoveContactPending = false; shoveContactRoot = null;
                 State = CombatArmSupportState.Free;
                 protective = false; weight = closeElapsed = lostSupportElapsed = 0f;
                 releaseHold = 0f;
@@ -321,6 +328,7 @@ namespace BarPromenade
             // approaching. The collector bounds that opportunity; afterwards
             // the open hand withdraws instead of following a moving recipient.
             if (contactPending || shoveElapsed < contactSeconds) shovePoint = point;
+            shoveContactPending = contactPending;
             shoveElapsed = Mathf.Clamp(elapsed, 0f, duration);
             shoveContactSeconds = contactSeconds; shoveDuration = duration;
             shoveDirection = Vector3.ProjectOnPlane(worldDirection, frame.up).normalized;
@@ -406,7 +414,7 @@ namespace BarPromenade
         public void SetRecoveryOwned(bool owned)
         {
             if (recoveryOwned == owned) return;
-            if (owned) { ClearBalanceHand(); shoveActive = false; shoveContactRoot = null; }
+            if (owned) { ClearBalanceHand(); shoveActive = shoveContactPending = false; shoveContactRoot = null; }
             recoveryOwned = owned;
             hasRegripTarget = regripClosing = regripWaiting = regripCommittedThisStep = false;
             regripCommitSeconds = 0f;
@@ -1113,8 +1121,10 @@ authoredWristAngles=({radial:F9},{flexion:F9}); authoredContactError={Vector3.Di
             // The joint-speed budget owns the visible thrust. Easing a second
             // Cartesian target first makes a high windup hand chase the chest
             // after its real contact window has already ended. Retraction still
-            // follows the existing timed return toward the entry palm.
-            float armReach = shoveElapsed <= shoveContactSeconds + .035f ? 1f : reach;
+            // follows the existing timed return toward the entry palm. An
+            // uncollected palm keeps approaching the chest for the collector's
+            // bounded window instead of retreating before a real contact.
+            float armReach = shoveContactPending || shoveElapsed <= shoveContactSeconds + .035f ? 1f : reach;
             // A shove needs the palm toward the chest, not a forced fingers-up
             // roll. Take the shortest turn from the actual entry hand so a
             // safe arm does not spend its contact window pronating needlessly.
@@ -1990,7 +2000,7 @@ closestAngle={closestWristAngle:F9}; closestWrist={closestWristAngles:F9}; close
             LastPoseRejection = contactRejection = contactBlockingShape = null;
             ClearBalanceHand();
             Restore(); initialized = false; wantsSupport = regripAllowed = true;
-            shoveActive = false; shoveContactRoot = null;
+            shoveActive = shoveContactPending = false; shoveContactRoot = null;
             recoveryOwned = protective = hasPresentedPose = false;
             hasArmStep = armStepHadContactAdjustment = false; armStepSeconds = 0f;
             hasRegripTarget = regripClosing = regripWaiting = regripProbePending = false;

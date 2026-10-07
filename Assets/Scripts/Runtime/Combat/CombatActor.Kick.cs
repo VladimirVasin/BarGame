@@ -35,6 +35,7 @@ namespace BarPromenade
         internal bool HasPendingKick => kickSupportPending;
         internal float PendingKickSeconds => kickSupportRemaining;
         internal Vector3 KickBootPosition => kickFoot != null ? kickFoot.TransformPoint(kickBootLocal) : transform.position;
+        internal float KickAnimationProgress => kick != null ? State.KickAnimationSecondsAt(State.KickElapsed) / kick.length : 0f;
         internal int KickStrikingSide { get; private set; } = 1;
         internal int KickSurfaceWitnessCount => kickSurfaceLocal[KickStrikingSide]?.Length ?? 0;
         internal Vector3 KickSurfacePosition(int witness) => kickFoot.TransformPoint(kickSurfaceLocal[KickStrikingSide][witness]);
@@ -246,11 +247,13 @@ namespace BarPromenade
             SelectKickFoot(1);
         }
 
-        private bool SampleKick(float normalized)
+        private bool SampleKick(float elapsed)
         {
             if (hero == null || kick == null || !hero.OwnsClip(this)) return false;
             supportGrip?.Restore(); weaponConstraint?.Restore(); footwork?.Restore();
             damagePose?.Restore(); bodyMotion?.Restore();
+            float normalized = State.KickAnimationSecondsAt(elapsed) / kick.length;
+            ConfigureAttackReachPose(MeleeBufferedAction.Kick, normalized);
             hero.SampleOwnedClip(this, normalized);
             hero.SetCombatBodyMotion(this, bodyMotion);
             hero.SetCombatFootwork(this, footwork);
@@ -279,7 +282,7 @@ namespace BarPromenade
             }
             float start = State.Settings.KickWindupSeconds;
             float active = State.Settings.KickActiveSeconds;
-            float authoredDuration = kick.length;
+            float clipSeconds = State.KickAnimationSecondsAt(start + kickTo * active);
             Vector3 presentedBoot = KickBootPosition;
             bool worldBlocked = footwork.KickWorldBlocked;
             bool continuous = kickSweepValid && kickSweepSequence == kickSequence &&
@@ -292,13 +295,13 @@ namespace BarPromenade
             }
             else
             {
-                if (!SampleKick((start + kickFrom * active) / authoredDuration))
+                if (!SampleKick(start + kickFrom * active))
                 { kickSweepValid = false; return; }
                 worldBlocked |= footwork.KickWorldBlocked;
                 from = KickBootPosition;
                 for (int i = 0; i < KickSurfaceWitnessCount; i++) kickSurfaceFrom[i] = KickSurfacePosition(i);
             }
-            if (!SampleKick((start + kickTo * active) / authoredDuration))
+            if (!SampleKick(start + kickTo * active))
             { kickSweepValid = false; return; }
             worldBlocked |= footwork.KickWorldBlocked;
             Vector3 to = KickBootPosition;
@@ -363,7 +366,7 @@ namespace BarPromenade
                     obstacleDistance = Mathf.Min(obstacleDistance, surfaceObstacleFraction * length);
             }
             LastKickSweep = new KickSweepObservation(kickSequence, LastKickSweep.Sample + 1, from, to, presentedBoot,
-                start + kickTo * active, State.KickElapsed, hasHit, sphereHit, surfaceWitness,
+                clipSeconds, State.KickElapsed, hasHit, sphereHit, surfaceWitness,
                 surfaceFrom, surfaceTo, obstacleDistance, contactTarget.State);
             if (Journal != null)
                 JournalEvent("kick_sweep_sample", contactTarget.JournalActorId, kickSequence, journalActionRequest,
@@ -375,7 +378,7 @@ namespace BarPromenade
                     GameLog.Field("witness", surfaceWitness), GameLog.Field("witness_count", KickSurfaceWitnessCount),
                     GameLog.Field("fraction", hit.Fraction), GameLog.Field("part", hit.Part.ToString()),
                     GameLog.Field("to_x", surfaceTo.x), GameLog.Field("to_y", surfaceTo.y), GameLog.Field("to_z", surfaceTo.z),
-                    GameLog.Field("clip_seconds", start + kickTo * active));
+                    GameLog.Field("clip_seconds", clipSeconds));
             if (obstacleFraction < float.PositiveInfinity && (!hasHit || obstacleFraction <= hit.Fraction))
             {
                 RejectBlockedKick();

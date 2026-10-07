@@ -7,6 +7,7 @@ namespace BarPromenade
     internal sealed class CombatBodyMotion
     {
         private readonly Transform frame;
+        private readonly CombatAttackReachPose attackReach;
         private readonly Transform[] bones = new Transform[4];
         private readonly Quaternion[] baseRotations = new Quaternion[4];
         private SecondOrderFilter forwardSpeed = new SecondOrderFilter(12f, 1f);
@@ -41,6 +42,7 @@ namespace BarPromenade
         public CombatBodyMotion(Transform root, Transform actorFrame)
         {
             frame = actorFrame;
+            attackReach = new CombatAttackReachPose(root, actorFrame);
             string[] names = { "spine", "chest", "neck", "head" };
             foreach (Transform bone in root.GetComponentsInChildren<Transform>(true))
                 for (int i = 0; i < names.Length; i++)
@@ -49,6 +51,9 @@ namespace BarPromenade
                 if (bone == null) throw new InvalidOperationException("Combat motion needs the original torso and head chain.");
             Reset();
         }
+
+        public void SetAttackReachPose(MeleeBufferedAction action, float distance01, float weight, float turnWeight, int side, MeleeSwing swing) =>
+            attackReach.SetPose(action, distance01, weight, turnWeight, side, swing);
 
         /// <summary>
         /// Observations only: the caller supplies a nearby, visible opponent's
@@ -178,26 +183,30 @@ namespace BarPromenade
             // shoulders forward before weapon clearance and left-palm IK run.
             if (shoveReach > 0f)
             {
-                Rotate(0, shoveAxis, 25f * shoveReach);
-                Rotate(1, shoveAxis, 5f * shoveReach);
-                Rotate(2, shoveAxis, -14f * shoveReach);
-                Rotate(3, shoveAxis, -8f * shoveReach);
+                float drive = Mathf.Lerp(.48f, 1f, attackReach.Distance01) * shoveReach;
+                Rotate(0, shoveAxis, 25f * drive);
+                Rotate(1, shoveAxis, 5f * drive);
+                Rotate(2, shoveAxis, -14f * drive);
+                Rotate(3, shoveAxis, -8f * drive);
             }
+            attackReach.Apply();
         }
 
         public void Restore()
         {
+            attackReach.Restore();
             if (!applied) return;
             for (int i = 0; i < bones.Length; i++)
                 if (bones[i] != null) bones[i].localRotation = baseRotations[i];
             applied = false;
         }
 
-        public void Forget() => applied = false;
+        public void Forget() { applied = false; attackReach.Forget(); }
 
         public void Reset()
         {
             Restore();
+            attackReach.Reset();
             forwardSpeed.Reset(); sideSpeed.Reset(); pitch.Reset(); roll.Reset(); turn.Reset();
             headPitch.Reset(); headRoll.Reset();
             fear.Reset(); exhaustion.Reset(); effort.Reset(); flinch.Reset();

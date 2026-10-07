@@ -339,6 +339,7 @@ namespace BarPromenade
             simulationPosePending = false;
             if (!IsAvailable || IsKnockedDown || State.IsDefeated) return;
             AdvanceCombatFacing(seconds);
+            UpdateAttackReach(true);
             footwork?.Advance(seconds, State);
             CompleteImpactRecoveryStep(seconds);
             AdvancePendingKick(seconds);
@@ -423,6 +424,7 @@ namespace BarPromenade
             damagePose?.Restore();
             bodyMotion?.Restore();
             AnimationClip chosen = ReleaseClip;
+            ConfigureAttackReachPose(MeleeBufferedAction.Attack, progress);
             supportGrip?.SetTarget(false, true, State.IsContinuation);
             if (hero != null)
             {
@@ -488,6 +490,7 @@ namespace BarPromenade
             if (PresentKnockdown() || IsRagdollActive) return;
             if (!State.IsKicking) footwork?.EndKickSupport();
             RefreshCombatAttention();
+            UpdateAttackReach(false);
             supportGrip?.Restore();
             weaponConstraint?.Restore();
             footwork?.Restore();
@@ -507,13 +510,14 @@ namespace BarPromenade
                 chosen != rest && chosen != hit && chosen != guardBreak && !State.IsDefeated && !State.IsShoving,
                 State.IsContinuation);
             PresentShovePose();
+            ConfigureAttackReachPose(ReachAction);
             float progress = stagger ?
                 (State.IsDefeated ? Mathf.Clamp01(defeatClock / defeat.length) : State.PhaseProgress) :
                 Mathf.Repeat(poseClock, chosen.length) / chosen.length;
             if (!stagger && reaction != null) progress = Mathf.Clamp01(reactionClock / reaction.length);
             else if (State.IsCharging) progress = State.Charge01;
             else if (State.IsAttacking) progress = State.AttackProgress;
-            else if (State.IsKicking) progress = State.KickProgress;
+            else if (State.IsKicking) progress = KickAnimationProgress;
             if (stepping) progress = stepBlocked ? 0f : State.StepProgress;
             else if (State.Phase == MeleePhase.GuardImpact) progress = State.PhaseProgress;
             bool newSwing = (State.IsCharging || State.IsAttacking || State.IsKicking) && visibleAttackSequence != State.AttackSequence;
@@ -602,6 +606,7 @@ namespace BarPromenade
             ResetDamage();
             ResetShove();
             ResetKick();
+            ResetAttackReach();
             supportGrip?.Reset();
             weaponConstraint?.Reset();
             if (hero != null) hero.SetCombatSupportGrip(this, supportGrip, weaponConstraint);

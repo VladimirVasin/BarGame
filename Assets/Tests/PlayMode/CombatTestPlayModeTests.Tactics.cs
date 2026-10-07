@@ -13,6 +13,156 @@ namespace BarPromenade.Tests.PlayMode
     public sealed partial class CombatTestPlayModeTests
     {
         [UnityTest]
+        public IEnumerator Range_DistanceChangesUpperBodyPoseWithoutChangingWeaponTiming()
+        {
+            yield return SceneManager.LoadSceneAsync(SceneIds.MainMenu);
+            yield return EnterRange();
+            CombatActor actor = root.Hero;
+            Assert.That(S.ShoveContactSeconds, Is.LessThan(.10f), "The palm arrives sooner than its original contact time.");
+            Assert.That(CombatSupportGrip.ShoveReach(S.ShoveContactSeconds * .5f, S.ShoveContactSeconds, S.ShoveDurationSeconds),
+                Is.GreaterThan(.6f), "The sharper palm has already covered most of its extension halfway to contact.");
+            foreach (bool shove in new[] { true, false })
+            foreach (MeleeSwing side in new[] { MeleeSwing.Forehand, MeleeSwing.Backhand })
+            {
+                if (shove && side == MeleeSwing.Backhand) continue;
+                var poses = new UpperBodyDistancePose[2];
+                float[] distances = shove ? new[] { .70f, .84f } : new[] { 1.1f, 1.45f };
+                for (int spacing = 0; spacing < distances.Length; spacing++)
+                {
+                    PlacePair(distances[spacing]);
+                    for (int frame = 0; frame < 6; frame++)
+                    { root.Tick(1f / 60f); yield return null; }
+                    actor.State.ObserveLateralCue(side == MeleeSwing.Forehand ? -1 : 1);
+                    Transform actionChest = FindAnatomicalBone(actor, "chest");
+                    Vector3 entryChestForward = actionChest.InverseTransformDirection(actor.transform.forward);
+                    Quaternion entryFacing = actor.transform.rotation;
+                    Assert.That(actor.RequestAttack(), Is.True);
+                    Assert.That(actor.State.Phase, Is.EqualTo(shove ? MeleePhase.Shoving : MeleePhase.Windup));
+                    if (!shove)
+                    {
+                        Assert.That(actor.State.Swing, Is.EqualTo(side));
+                        Assert.That(actor.State.AttackWindupSeconds, Is.EqualTo(.45f).Within(.00001f),
+                            "Distance changes the crowbar pose while preserving its existing anticipation.");
+                        Assert.That(actor.State.Settings.ActiveSeconds, Is.EqualTo(.18f).Within(.00001f));
+                        Assert.That(actor.State.Settings.RecoverySeconds, Is.EqualTo(.50f).Within(.00001f));
+                        Assert.That(actor.State.Settings.AnimationRecoverySeconds, Is.EqualTo(.65f).Within(.00001f));
+                    }
+                    string subject = (shove ? "shove" : side.ToString().ToLowerInvariant()) +
+                        (spacing == 0 ? "-near" : "-far");
+                    yield return null;
+                    actor.Present(); root.Opponent.Present();
+                    CaptureInertiaFrame(actor, subject, 0);
+                    // Sample the weapon just before contact can interrupt it
+                    // into recoil; both distances must show the same swing phase.
+                    float checkpoint = shove ? S.ShoveContactSeconds : actor.State.AttackWindupSeconds - CombatTestRoot.SimulationStep * 2f;
+                    for (int tick = 0; tick < 180 &&
+                        (shove ? actor.State.ShoveElapsed : actor.State.AttackElapsed) < checkpoint; tick++)
+                        root.Tick(CombatTestRoot.SimulationStep);
+                    Assert.That(shove ? actor.State.ShoveElapsed : actor.State.AttackElapsed,
+                        Is.GreaterThanOrEqualTo(checkpoint), subject + ": the real action clock reaches its full extension pose.");
+                    yield return null;
+                    actor.Present(); root.Opponent.Present();
+                    poses[spacing] = new UpperBodyDistancePose(actor, FindAnatomicalBone(actor, "pelvis"),
+                        actionChest, entryChestForward);
+                    TestContext.Out.WriteLine($"Distance pose {subject}: reach={actor.AttackReach01:F3}, pelvis={poses[spacing].PelvisForward:F4}, chest={poses[spacing].ChestFromPelvis:F4}, twist={poses[spacing].ChestTwist:F3}.");
+                    if (shove)
+                        Assert.That(poses[spacing].ChestTwist, Is.GreaterThan(2f).And.LessThan(20f),
+                            subject + ": the torso turns moderately with the striking shoulder.");
+                    Assert.That(Quaternion.Angle(entryFacing, actor.transform.rotation), Is.LessThan(2f),
+                        subject + ": torso rotation stays on the rig while the aligned actor keeps its heading.");
+                    CaptureInertiaFrame(actor, subject, 1);
+                    for (int tick = 0; tick < 240 && actor.State.Phase != MeleePhase.Ready; tick++)
+                        root.Tick(CombatTestRoot.SimulationStep);
+                    Assert.That(actor.State.Phase, Is.EqualTo(MeleePhase.Ready), subject + ": ordinary return completes.");
+                    Assert.That(root.Opponent.ReceivedImpactCount, Is.LessThanOrEqualTo(1),
+                        subject + ": changing reach cannot duplicate a real contact.");
+                    if (shove || spacing == 0)
+                        Assert.That(root.Opponent.ReceivedImpactCount, Is.EqualTo(1),
+                            subject + ": the nearby control reaches actual posed anatomy once.");
+                    if (shove)
+                        Assert.That(root.Opponent.State.Health, Is.EqualTo(S.MaxHealth), "The sharper palm is still a zero-damage shove.");
+                    yield return null;
+                    actor.Present(); root.Opponent.Present();
+                    CaptureInertiaFrame(actor, subject, 2);
+                }
+                Assert.That(poses[1].PelvisForward, Is.GreaterThan(poses[0].PelvisForward + .003f),
+                    "A farther " + (shove ? "palm" : "crowbar") + " uses the pelvis to reach without moving the actor root.");
+                Assert.That(poses[1].ChestFromPelvis, Is.GreaterThan(poses[0].ChestFromPelvis + .003f),
+                    "A farther target draws more forward torso extension from the same action phase.");
+                if (shove)
+                    Assert.That(poses[1].PalmForward, Is.GreaterThan(poses[0].PalmForward + .01f),
+                        "The rendered palm adapts to the farther chest surface.");
+            }
+
+            // Let a real target leave during anticipation. The pose selected at
+            // admission stays fixed, and it cannot grant a hit across the new gap.
+            foreach (MeleeSwing side in new[] { MeleeSwing.Forehand, MeleeSwing.Backhand })
+            {
+                PlacePair(1.1f);
+                for (int frame = 0; frame < 6; frame++)
+                { root.Tick(1f / 60f); yield return null; }
+                actor.State.ObserveLateralCue(side == MeleeSwing.Forehand ? -1 : 1);
+                Transform actionChest = FindAnatomicalBone(actor, "chest");
+                Vector3 entryChestForward = actionChest.InverseTransformDirection(actor.transform.forward);
+                Quaternion entryFacing = actor.transform.rotation;
+                Assert.That(actor.RequestAttack(), Is.True);
+                Assert.That(actor.State.Swing, Is.EqualTo(side));
+                root.Tick(actor.State.AttackWindupSeconds * .25f + CombatTestRoot.SimulationStep);
+                float admittedReach = actor.AttackReach01;
+                root.Opponent.Body.Move(actor.transform.forward * 2f);
+                Physics.SyncTransforms();
+                root.Tick(CombatTestRoot.SimulationStep);
+                Assert.That(actor.AttackReach01, Is.EqualTo(admittedReach).Within(.00001f),
+                    "The admitted posture cannot chase a target by extending during the same attack.");
+                foreach (float activeFraction in new[] { 0f, .5f, 1f })
+                {
+                    float checkpoint = actor.State.AttackWindupSeconds + S.ActiveSeconds * activeFraction;
+                    for (int tick = 0; tick < 180 && actor.State.AttackElapsed < checkpoint; tick++)
+                        root.Tick(CombatTestRoot.SimulationStep);
+                    Assert.That(actor.State.AttackElapsed, Is.GreaterThanOrEqualTo(checkpoint));
+                    if (activeFraction == .5f)
+                    {
+                        yield return null;
+                        actor.Present(); root.Opponent.Present();
+                    }
+                    var pose = new UpperBodyDistancePose(actor, FindAnatomicalBone(actor, "pelvis"),
+                        actionChest, entryChestForward);
+                    TestContext.Out.WriteLine($"Weapon arc {side}: active fraction={activeFraction:F1}, elapsed={actor.State.AttackElapsed:F3}, chest twist={pose.ChestTwist:F3} degrees.");
+                    if (activeFraction == .5f)
+                    {
+                        float twistSign = side == MeleeSwing.Backhand ? 1f : -1f;
+                        Assert.That(pose.ChestTwist * twistSign, Is.GreaterThan(2f).And.LessThan(45f),
+                            side + ": the visible torso turns with the weapon during the active arc.");
+                        Assert.That(Quaternion.Angle(entryFacing, actor.transform.rotation), Is.LessThan(2f),
+                            side + ": the torso turns on the rig without steering the committed actor root.");
+                        CaptureInertiaFrame(actor, side.ToString().ToLowerInvariant() + "-active-miss", 1);
+                    }
+                }
+                for (int tick = 0; tick < 240 && actor.State.Phase != MeleePhase.Ready; tick++)
+                    root.Tick(CombatTestRoot.SimulationStep);
+                Assert.That(actor.State.Phase, Is.EqualTo(MeleePhase.Ready));
+                Assert.That(root.Opponent.ReceivedImpactCount, Is.Zero, "Distance-based posture cannot turn an outside physical miss into damage.");
+                Assert.That(actor.State.AttackOutcome, Is.EqualTo(MeleeAttackOutcome.Miss));
+            }
+            LogAssert.NoUnexpectedReceived();
+        }
+
+        private readonly struct UpperBodyDistancePose
+        {
+            internal readonly float PelvisForward, ChestFromPelvis, PalmForward, ChestTwist;
+
+            internal UpperBodyDistancePose(CombatActor actor, Transform pelvis, Transform chest, Vector3 entryChestForward)
+            {
+                Vector3 forward = actor.transform.forward;
+                PelvisForward = Vector3.Dot(pelvis.position - actor.transform.position, forward);
+                ChestFromPelvis = Vector3.Dot(chest.position - pelvis.position, forward);
+                PalmForward = Vector3.Dot(actor.ShovePalmPosition - actor.transform.position, forward);
+                Vector3 chestForward = Vector3.ProjectOnPlane(chest.TransformDirection(entryChestForward), Vector3.up);
+                ChestTwist = Vector3.SignedAngle(forward, chestForward, Vector3.up);
+            }
+        }
+
+        [UnityTest]
         public IEnumerator Range_AttackTypesSwitchAfterContactAndActDuringRecovery()
         {
             yield return SceneManager.LoadSceneAsync(SceneIds.MainMenu);

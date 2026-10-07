@@ -279,6 +279,20 @@ namespace BarPromenade
             return (float)Math.Min(1d, authored / Settings.AnimationAttackDurationSeconds);
         }
 
+        /// <summary>Gameplay kick phases traverse the fixed production clip's .30/.40/.95s anchors.</summary>
+        public float KickAnimationSecondsAt(float elapsed)
+        {
+            NonNegative(elapsed, nameof(elapsed));
+            const double authoredWindup = .30d, authoredActive = .10d, authoredRecovery = .55d;
+            double authored = elapsed < Settings.KickWindupSeconds
+                ? elapsed / Settings.KickWindupSeconds * authoredWindup
+                : authoredWindup + Math.Min(((double)elapsed - Settings.KickWindupSeconds) /
+                    Settings.KickActiveSeconds, 1d) * authoredActive;
+            if (elapsed > KickActiveEndSeconds)
+                authored += (elapsed - KickActiveEndSeconds) / KickRecoverySeconds * authoredRecovery;
+            return (float)Math.Min(authoredWindup + authoredActive + authoredRecovery, authored);
+        }
+
         /// <summary>Charge pays base effort on entry; a queued hold starts only after the old live arc.</summary>
         public bool RequestCharge(bool allowRecoveryAttack = false)
         {

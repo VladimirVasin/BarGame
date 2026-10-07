@@ -78,9 +78,9 @@ repair commands. Generation/publication: [../tools/README.md](../tools/README.md
 
 ## Implemented capabilities
 
-- CombatTest:120Hz/aim/Q/queue/3 styles/chains/shield/HP/fall-rise;
-  separate clocks/post-Step .36s/nonfall bar-shove/1m Step/metal/pose gates.
-  Partial: penetration/balance/visual QA.
+- CombatTest:120Hz/3AI;aim-queue-chain-shield-metal-pose gates;
+  own clocks/Step1m/.36→attack/nonfall bar-palm/distance poses/faster Q-palm/contact.
+  Partial:penetration/balance/visual.
 - City: 20 metre types; district heights, curved old/service streets,
   courts/passages/wings, unified ground; river/shore, church and Route 01.
   First unpaused dock entry starts finite port→factory→shop supply once;

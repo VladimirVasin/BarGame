@@ -257,71 +257,74 @@
   Shared plan/sampler/bounds/metres/collider, `48 m` buckets;
   §6/§12/art §10g/§16/§21/nine checks.
 
-- **Accepted — 2026-10-07, combat:**
-  ¼Windup aim→fixed;Charge free/motor yields.
-  Bar/kick/shove clocks persist;switch after contacts.
-  Step:1m/15/.36→attack/.57repeat(.21visual);
-  sole/catch→finite gait-Step landing;impulse/overload.
-  Bar/shove:nonfall stagger/catch;feet/impulse/early aim kept;
+- **Accepted 2026-10-07, strikes:**
+  Chest-gap/early lock/rig-contact;Q far:pelvis-foot→/chest←,near:knee flex.
+  Faster Q/palm;bar tempo kept/turn=active arc.
+  All3:torso follows/mirrored/root fixed;old gates/stats/story/§6/§16.15/art§15a/9.
+- **Accepted 2026-10-07, combat:**
+  Aim locks at ¼Windup;Charge free/yields motor.
+  Bar/Q/palm:own clocks;switch after contacts.
+  Step:1m/15/.36attack/.57repeat/.21visual;
+  sole/catch→finite gait-Step landing/impulse-overload.
+  Bar/palm:nonfall stagger/catch/feet/impulse/early aim;
   Q:free leg/load/R hand;Q-guard strict/fall veto.
-  Bar/world/body TOI;metal:wall/recoil/stop/guard effort-break/0HP/parry;
-  pooled sparks/sound;§6/§16.15/art§15a.
-- **Accepted — 2026-10-02, combat:**
+  Bar-world-body TOI;metal:wall/recoil/stop/guard-cost-break/0HP/parry;
+  pooled sparks/sound.
+- **Accepted 2026-10-02, combat:**
   R ignores L; Hit/Miss tail cut/.22→held .28/buffer.20s;
   hit/fall/R clears. AI≥1m/retreat≤.6s/whiff.20→counter.22/Rising attacks.
-  Held guard≠parry; shield dim/request/ready/block; gaze clip/physics/
-  pause/hit-stop/R/defeat/unload; regrip/scoped anatomy/120Hz.
-- **Accepted — 2026-10-03, combat:**
+  Guard hold≠parry;shield dim/request/ready/block;gaze clip-physics/
+  pause-hit-stop-R-defeat-unload;regrip/scoped anatomy/120Hz.
+- **Accepted 2026-10-03, combat:**
   Hero Windup:1m/brake;side-back/impulse/drift;
   ≤.85m/0HP shove/continuous arm-regrip/wrist-elbow-shoulder≤600°/s/
   body-world-palm gates; DuelJournal identity/anatomy/CPU+wall.
-- **Accepted exception — 2026-10-03, kick/styles:** Q/B/3 styles/recoil hold;
-  §6/§16.15/art§15a; .20s walk wait/tail buffer/support≠chain.
-- **Accepted — 2026-09-25, clinch shove:** Both: close swing→faster/stronger shove.
-- **Accepted — 2026-09-26, recovery:**
-  Impact≤2 steps/opt-in flywheel-crouch-brace; gate:1 shove/AI off/
-  fixed input/≤2 tries/visual; clock/pause/hit-stop/R/unload;
-  defeat separate/rise→Ready/regrip; L owns→R body-floor-wall;
-  `CombatWeaponGeometry`8 segments/held mass→forearm/free→mass-inertia/
-  hand-ignore expires/drop anatomy off past capsule; read-only elbow-pronation
-  -5..120/side±8°; QA pending.
-- **Accepted — 2026-09-21, anatomy:**
-  Six bone-local zones/first-sequence/head×2(50/80,cap.99MaxHP)/rear±45°
+- **Accepted exception 2026-10-03, kick/styles:** Q/B/3 styles/recoil hold;
+  .20s walk wait/tail buffer/support≠chain.
+- **Accepted 2026-09-25, clinch shove:** Both:close swing→faster/stronger palm.
+- **Accepted 2026-09-26, recovery:**
+  Impact≤2steps/flywheel-crouch-brace opt-in;gate:1shove/AIoff/
+  fixed input/≤2tries/visual;clock-pause-hit-stop-R-unload;
+  defeat separate/rise→Ready/regrip;L owns→R body-floor-wall;
+  `CombatWeaponGeometry`:8seg/held mass→forearm/free→mass-inertia/
+  hand-ignore expiry/drop past capsule→anatomy off;read-only elbow-pronation
+  -5..120/side±8°;QA pending.
+- **Accepted 2026-09-21, anatomy:**
+  6 bone-local zones/first-sequence/head×2(50/80,cap.99MaxHP)/rear±45°
   defeat/torso1-rear1.25/arms.5/legs.75; frozen mutual
   zone/direction/power; one HP/ragdoll/R.
-- **Accepted — 2026-09-21, inertia:**
+- **Accepted 2026-09-21, inertia:**
   C1 pose/contact; duel-clock travel/yaw:return.15→.75/stun.35.
-- **Accepted — 2026-09-21, stance:**
-  .42/.28m/Windup settle/afraid-unskilled hero/calm NPC;
+- **Accepted 2026-09-21, stance:**
+  .42/.28m/hero afraid-unskilled/NPC calm;
   duel-clock breath/tremor/flinch:nearby tell.
-- **Accepted — 2026-09-21, step/Hold:**
-  Smoothstep-pose-footfall clock; Hold freezes breath/exit delays regen.
-- **Accepted — 2026-09-20, two hands:**
-  Ready/Block/attack/recoil→L/Hit-GuardBreak-Defeat release;
-  low Ready/high Block/opposed L.16→.42m/breath4s/blend/injury/NPC R Rest;
-  L subdivision/asset-runtime gates.
-- **Accepted — 2026-09-21, victory:** Hero swing→walk; combat off until R.
-- **Accepted — 2026-09-21, brawl v2:**
-  Free hits/guard20-35/charge20/regen30/s-.6s in stuns/own spends;
+- **Accepted 2026-09-21, step/Hold:**
+  Smoothstep pose-footfall clock;Hold freezes breath/exit delays regen.
+- **Accepted 2026-09-20, two hands:**
+  Ready-Block-attack-recoil→L;Hit-GuardBreak-Defeat release;
+  Ready low/Block high/L opposed .16→.42m/breath4s/blend/injury/NPC R Rest;
+  L subdiv/asset-runtime gates.
+- **Accepted 2026-09-21, victory:** Hero swing→walk;off until R.
+- **Accepted 2026-09-21, brawl v2:**
+  Hits free/guard20-35/charge20/regen30/s-.6s in stuns/own spends;
   seeded AI/fall freecam.
-- **Accepted — 2026-09-21, swing sides:**
-  Fore/back:through flips/stopped repeats; step/target>15°, not strafe;
-  same dmg-time-cost; upper(t+q*.18*(1-smooth(t/.45)))/lower(t),
-  charge upper(.18q): imported Attack retimed; neutral lower;
-  q=power/Forehand Light copy.
-  Backhand DAG:R elbow-hand roll/.56 reach≥.95/free elbow;
+- **Accepted 2026-09-21, swing sides:**
+  Fore/back:through flips/stopped repeats;step/target>15°≠strafe;
+  same dmg-time-cost;upper(t+q*.18*(1-smooth(t/.45)))/lower(t);
+  charge upper(.18q):retimed imported Attack/neutral lower;
+  q=power/Forehand Light copy;Backhand DAG:R elbow-hand roll/.56reach≥.95/free elbow;
   recoil .56→Ready0/.48s inverse/C1/no dwell;
   45° shoulder scan/wrist-core-speed-clearance gates.
-- **Accepted architecture exception — 2026-09-20, combat injury:**
-  HP/directional pose/wounds/pools; dry block/miss; R/unload clears; visual/ragdoll wins.
-- **Accepted — 2026-09-21, aftermath:** Thud; blood lobes grow 10s, stay.
-- **Accepted architecture exception — 2026-09-21, taunt:**
-  E/settled defeat: Home toilet via `IHomeToiletViewHost` (view/timeline/stream/
-  residue); guided dock walk/aim/bone-floor marks (`HomeUrineResidue`) to R/
-  crowbar left-return/silent §21-exempt prompt/no speech-reaction-reward/sixth FP view.
-- **Accepted architecture exception — 2026-09-19, CombatTest:**
+- **Accepted exception 2026-09-20, combat injury:**
+  HP/directional pose/wounds/pools;block-miss dry;R-unload clear;visual-ragdoll wins.
+- **Accepted 2026-09-21, aftermath:** Thud;blood lobes grow 10s,stay.
+- **Accepted exception 2026-09-21, taunt:**
+  E/settled defeat:Home toilet/`IHomeToiletViewHost`:view-timeline-stream-residue;
+  guided dock walk/aim/bone-floor marks (`HomeUrineResidue`)→R/
+  crowbar L-return/silent §21-exempt prompt/no speech-reaction-reward/6th FP view.
+- **Accepted exception 2026-09-19, CombatTest:**
   §6/§16.15/art§15a: `CombatTest` outside story/speech; one hero/input;
-  mutual hits/vulnerable steps/fall/R/shoulder-wall lock; W/S move/A/D strafe/opponent last.
+  mutual hits/vulnerable steps/fall/R/shoulder-wall lock;W-S move/A-D strafe/opponent last.
 
 - **Accepted — 2026-09-16, street pool is the default NPC catalog:**
   User: default-only, new models join immediately. `DefaultNpcPopulation`:

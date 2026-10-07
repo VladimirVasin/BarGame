@@ -45,6 +45,8 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
   Focused `CombatRulesTests` readiness/continuation checks.
   Step→attack keeps the current knee direction through final support closure.
   `Range_AttackTypesSwitchAfterContactAndActDuringRecovery`.
+- Distance poses/faster Q-palm/shared contact;all3 torso follows/mirrors,root heading kept.
+  `Range_DistanceChangesUpperBodyPoseWithoutChangingWeaponTiming`.
 - Combat frames reviewed. Docs: `python -B tools/check-docs.py`, `git diff --check`.
 
 ## 2026-10-06 — Interrupted combat rise
