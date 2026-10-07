@@ -66,6 +66,9 @@ namespace BarPromenade
         FootstepCarpet,
         FootstepTile,
         FootstepPuddle,
+        PistolFire,
+        PistolEmpty,
+        PistolReload,
         Count
     }
 
@@ -807,7 +810,13 @@ namespace BarPromenade
                 5200f,
                 0.12f,
                 131,
-                3)
+                3),
+            new RetroSfxDefinition(RetroSfxId.PistolFire, RetroSfxCategory.World,
+                .32f, .75f, 1f, 3, .08f, 1, 2048, 9000f, .025f, 28),
+            new RetroSfxDefinition(RetroSfxId.PistolEmpty, RetroSfxCategory.World,
+                .08f, .35f, 1f, 1, .15f, 1, 2048, 6200f, .01f, 82),
+            new RetroSfxDefinition(RetroSfxId.PistolReload, RetroSfxCategory.World,
+                .16f, .35f, 1f, 1, .25f, 1, 2048, 7200f, 0f, 84)
         };
 
         public static int Count => definitions.Length - 1;
@@ -1095,6 +1104,16 @@ namespace BarPromenade
                         duration,
                         ref noiseState,
                         detune);
+                case RetroSfxId.PistolFire:
+                    return (NextNoise(ref noiseState) * .85f + GlideSine(time, duration, 180f, 55f) * .5f) *
+                        Envelope(time, duration, .0005f, 5f) + NextNoise(ref noiseState) * .12f *
+                        Envelope(time, duration, .003f, 1.8f);
+                case RetroSfxId.PistolEmpty:
+                    return (NextNoise(ref noiseState) * .5f + Mathf.Sin(time * 9200f) * .25f) *
+                        Envelope(time, duration, .0005f, 4f);
+                case RetroSfxId.PistolReload:
+                    return (NextNoise(ref noiseState) * .5f + Mathf.Sin(time * 6500f) * .2f) *
+                        Envelope(time, duration, .001f, 3f);
                 case RetroSfxId.Door:
                     return GenerateDoor(
                         time,

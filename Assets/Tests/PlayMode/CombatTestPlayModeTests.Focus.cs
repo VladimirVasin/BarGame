@@ -202,9 +202,8 @@ namespace BarPromenade.Tests.PlayMode
                 input.Release(mouse.middleButton, queueEventOnly: true);
                 yield return null;
                 Assert.That(root.SetOpponentFocus(false), Is.True);
-                input.Press(keyboard.rKey, queueEventOnly: true);
+                root.ResetRound();
                 yield return null;
-                input.Release(keyboard.rKey, queueEventOnly: true);
                 yield return null;
                 AssertFocusState(true);
                 Assert.That(root.Hero.State.Health, Is.EqualTo(S.MaxHealth));
@@ -260,6 +259,8 @@ namespace BarPromenade.Tests.PlayMode
             // Batchmode has no Game view to capture; projection assertions above cover its UI contract.
             if (Application.isBatchMode)
             {
+                string capturePath = Path.Combine(Directory.GetCurrentDirectory(), "Captures", SceneIds.CombatTest, shot + ".png");
+                LogAssert.Expect(LogType.Log, "Area capture wrote " + capturePath);
                 AreaCaptureFixture.CaptureCurrentCamera(root.CameraFollow.Camera, SceneIds.CombatTest, shot);
                 yield break;
             }

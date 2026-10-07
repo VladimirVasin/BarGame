@@ -6,28 +6,32 @@ Earlier notes: [`release-notes-2026-09.md`](archive/release-notes-2026-09.md).
 
 ## Unreleased
 
-### 2026-10-07 — Начало удара, отскок и хват
+### 2026-10-07 — Оружие, удар и хват
 
-- Доворот:первая ¼;поздний уход спасает;отскок/шаг/отход:метр/опора/инерция до падения.
-- Q:свободная нога/опора/лом R;ближний промах исправлен;
-  вблизи сгиб колена,вдали таз→/корпус←;корпус за ударом/Q-толчок быстрее-резче/лом прежний.
-- Ломы:искры/отдача стены/стоп до тела;блок:силы/оба остановлены.
-- Хват:преграда→ладонь открыта/правая атакует;подъём ждёт места/журнал преграды.
-- Лом-толчок-Q:таймеры/смена после контакта;отскок .36→атака/.57→шаг.
-  Лом-толчок:инерция до падения/Q-блок:опора.
-  `CombatRulesTests`;отскок→атака:колено плавно:
-  `Range_AttackTypesSwitchAfterContactAndActDuringRecovery`.
-- `СКМ`:точка-фокус↔ход/камера;NPC бьёт;вход/`R`:фокус.
-  Захват без сброса;вне фокуса боевых нет.
-  `Range_MiddleMouseToggleRestoresWalkingWithoutEndingHostility`.
-- Подъём≠хват;лом освобождается/выпадает;`E`:подобрать.
-  `Range_LivingRecoveryEscapesBlockedWeaponAndSupportsUnarmedActions`.
-- Окно:ввод с фокусом;возврат — отпустить WASD/стик;толчки прежние.
-  `Range_ReleasedWalkStopsAfterCatchAndLostApplicationFocus`.
-- Проверки: `Range_ContinuousSupportSearchSkipsUnreachableBranchesAndRejectsObstacles`,
+- Полигон:лом/пистолет;NPC-лом;«Оружие»→выбор.
+  Журнал:NRE/отказы.
+  Пистолет:8/∞;ПКМ/ЛКМ/R и после победы;сброс UI.
+  Близко/вниз:прицел исправлен;хват ниже/впереди корпуса.
+  Пуля:падает/стены/сквозь блок;пауза стоп/конец clear1x.
+  E:своё/патроны,общий экран;надругательство:лом.
+- Доворот¼;поздний уход спасает;отскок/шаг/отход:метр/опора/инерция до падения.
+  Q:свободная нога/колено вблизи/таз вдаль;промах исправлен;корпус зеркалит.
+- Лом:искры/стена/отдача/стоп до тела;блок тратит силы.
+  Хват:преграда→ладонь открыта/правая бьёт.
+  Лом-толчок-Q:смена после контакта;отскок .36→атака/.57→шаг;инерция/опора.
+- СКМ:фокус↔ход/камера;NPC бьёт;лом/Q/шаг:фокус.
+  Подъём≠хват/drop;фокус окна:отпустить WASD/стик.
+- Проверки: `CombatRulesTests`,
+  `Range_AttackTypesSwitchAfterContactAndActDuringRecovery`,
+  `Range_MiddleMouseToggleRestoresWalkingWithoutEndingHostility`,
+  `Range_LivingRecoveryEscapesBlockedWeaponAndSupportsUnarmedActions`,
+  `Range_ReleasedWalkStopsAfterCatchAndLostApplicationFocus`,
+  `Range_ContinuousSupportSearchSkipsUnreachableBranchesAndRejectsObstacles`,
   `Range_PostCatchStepAndRetreatKeepFinitePhysicalLandings`,
   `Range_CloseKicksAgreeWithPresentedBootAndFrozenAnatomy`.
-  Кадры:наведение/металл/подъём;`check-docs.py`.
+  `Range_PistolSelectionProjectileFlightReloadAndResetUseTheLiveDuel`,
+  `PistolRulesTests`, `StartMenuModelTests`.
+  Проверены кисти/рукава; `check-docs.py`.
 
 ### 2026-10-06 — Подъём после удара
 

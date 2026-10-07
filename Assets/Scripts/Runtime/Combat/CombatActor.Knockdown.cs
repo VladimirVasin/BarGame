@@ -29,6 +29,7 @@ namespace BarPromenade
             knockdownPose ??= new CombatRecoveryPose(transform, DamageRigRoot, Body, Ragdoll, handPose, hero == null, Weapon.transform);
             hero?.SetOwnedPresentationFrozen(this, false);
             if (!Ragdoll.BeginKnockdown(linearVelocity, angularVelocity)) return JournalKnockdownRejected("ragdoll_begin_refused");
+            ForgetPistolAimPose();
             journalFallReason = journalRiseReason = null;
             ResetRecoveryEscape();
             ResetRiseClearanceJournal();
@@ -48,6 +49,7 @@ namespace BarPromenade
             supportGrip?.SetRecoveryOwned(true);
             supportGrip?.AllowRegrip(false);
             State.BeginKnockdown();
+            if (IsPistol) ReleaseWeapon(linearVelocity * .25f, angularVelocity * .25f);
             knockedDown = true;
             recoveryPoseBegun = recoveryRegrip = false;
             reaction = null;

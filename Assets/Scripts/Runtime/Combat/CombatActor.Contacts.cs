@@ -272,7 +272,7 @@ namespace BarPromenade
                 }
                 bool metal = false;
                 CombatActor target = contactTarget;
-                if (target != null && target.frozenWeaponValid && target.Weapon.activeInHierarchy &&
+                if (target != null && !target.IsPistol && !target.weaponDropped && target.frozenWeaponValid && target.Weapon.activeInHierarchy &&
                     CombatWeaponGeometry.Sweep(sweepValid ? previousWeapon : currentWeapon, currentWeapon,
                         CombatWeaponGeometry.At(target.frozenWeaponFrom, target.frozenWeaponTo, sampleStart),
                         CombatWeaponGeometry.At(target.frozenWeaponFrom, target.frozenWeaponTo, sampleEnd),

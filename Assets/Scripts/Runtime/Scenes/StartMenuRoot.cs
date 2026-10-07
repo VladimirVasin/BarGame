@@ -3,8 +3,8 @@ using UnityEngine;
 namespace BarPromenade
 {
     /// <summary>
-    /// The launch card and a second screen choosing where the fresh session
-    /// starts. Only confirming a destination starts the clock and loading.
+    /// The launch card, narrative destination picker and isolated duel preparation.
+    /// Each flow loads its scene only after the player's explicit confirmation.
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class StartMenuRoot : MonoBehaviour
@@ -28,12 +28,15 @@ namespace BarPromenade
             new Rect(218f, 195f, 204f, 22f);
         internal static Rect LocationPanelRect => new Rect(166f, 18f, 308f, 324f);
         internal static Rect LocationOptionRect(int index) => new Rect(178f, 54f + index * 22f, 284f, 20f);
+        internal static Rect CombatPanelRect => new Rect(206f, 94f, 228f, 172f);
+        internal static Rect CombatOptionRect(int index) => new Rect(218f, 134f + index * 28f, 204f, 22f);
 
         private readonly StartMenuModel model = new StartMenuModel();
 
         private GUIStyle selectedStyle;
         private GUIStyle optionStyle;
         private GUIStyle titleStyle;
+        private GUIStyle descriptionStyle;
 
         public Camera BackdropCamera { get; private set; }
         public bool IsStartingNewGame { get; private set; }
@@ -41,7 +44,10 @@ namespace BarPromenade
         public bool QuitRequested { get; private set; }
         public StartMenuOption SelectedOption => model.SelectedOption;
         public bool IsChoosingLocation => model.IsChoosingLocation;
+        public bool IsChoosingCombatWeapon => model.IsChoosingCombatWeapon;
         public NewGameLocation SelectedLocation => model.SelectedLocation;
+        public CombatWeaponId SelectedCombatWeapon => model.SelectedCombatWeapon;
+        public CombatPreparationOption SelectedCombatOption => model.SelectedCombatOption;
         public bool IsBackSelected => model.IsBackSelected;
 
         private bool IsBusy => IsStartingNewGame || IsStartingCombatTest || QuitRequested;
@@ -55,6 +61,8 @@ namespace BarPromenade
             // pause-menu restart must leave no clock running behind the card.
             GameSessionState.BeginNewGame("menu_reset");
             model.Open();
+            if (CombatTestStartService.TryConsumePreparation(out CombatWeaponId weapon))
+                model.OpenCombatPreparation(weapon);
             // The card is now interactive and will sit idle for as long as
             // the player reads it: fetch the hero and pooled pedestrian
             // prefabs in the background so the first composition finds them
@@ -96,6 +104,7 @@ namespace BarPromenade
             switch (action)
             {
                 case StartMenuAction.ChooseLocation:
+                case StartMenuAction.ChooseCombatWeapon:
                     RetroAudio.Play(RetroSfxId.UiConfirm);
                     return true;
                 case StartMenuAction.Back:
@@ -127,6 +136,13 @@ namespace BarPromenade
         public bool SelectBack()
         {
             if (IsBusy || !model.SelectBack()) return false;
+            RetroAudio.Play(RetroSfxId.UiMove);
+            return true;
+        }
+
+        public bool SelectCombatOption(CombatPreparationOption option)
+        {
+            if (IsBusy || !model.SelectCombatOption(option)) return false;
             RetroAudio.Play(RetroSfxId.UiMove);
             return true;
         }
@@ -164,11 +180,12 @@ namespace BarPromenade
         private bool BeginCombatTest()
         {
             IsStartingCombatTest = true;
-            if (CombatTestStartService.TryStart()) return true;
+            CombatWeaponId weapon = model.SelectedCombatWeapon;
+            if (CombatTestStartService.TryStart(weapon)) return true;
 
             IsStartingCombatTest = false;
-            model.Open();
-            model.SelectOption(StartMenuOption.CombatTest);
+            model.OpenCombatPreparation(weapon);
+            model.SelectCombatOption(CombatPreparationOption.Start);
             GameLog.Warning("menu", "combat_test_travel_refused");
             return false;
         }
@@ -191,7 +208,7 @@ namespace BarPromenade
                     GameInputAction.Cancel,
                     GameInputContext.Menu))
             {
-                if (model.IsChoosingLocation) ReturnToMainMenu();
+                if (model.IsChoosingLocation || model.IsChoosingCombatWeapon) ReturnToMainMenu();
                 else SelectOption(StartMenuOption.Quit);
                 return;
             }
@@ -223,6 +240,11 @@ namespace BarPromenade
                 if (model.IsChoosingLocation)
                 {
                     DrawLocations(canvas);
+                    return;
+                }
+                if (model.IsChoosingCombatWeapon)
+                {
+                    DrawCombatPreparation(canvas);
                     return;
                 }
                 RetroUiTheme.DrawPanel(
@@ -282,6 +304,40 @@ namespace BarPromenade
             }
         }
 
+        private void DrawCombatPreparation(RetroUiCanvas canvas)
+        {
+            RetroUiTheme.DrawPanel(CombatPanelRect, RetroUiTheme.PanelInset, RetroUiTheme.FrameOuter,
+                false, 0f, 1f);
+            GUI.Label(new Rect(218f, 102f, 204f, 22f), LocalizationService.Get("combat.choose_weapon"), titleStyle);
+            Vector2 mouse = RetroUiTheme.LogicalMousePosition(canvas);
+            for (int index = 0; index < (int)CombatPreparationOption.Count; index++)
+            {
+                var option = (CombatPreparationOption)index;
+                Rect rect = CombatOptionRect(index);
+                if (rect.Contains(mouse) && Event.current.type == EventType.MouseMove) SelectCombatOption(option);
+                bool selected = model.SelectedCombatOption == option;
+                if (selected) RetroUiTheme.DrawSelection(rect, true);
+                string key = option switch
+                {
+                    CombatPreparationOption.Crowbar => "combat.weapon.crowbar",
+                    CombatPreparationOption.Pistol => "combat.weapon.pistol",
+                    CombatPreparationOption.Start => "combat.start",
+                    _ => "opening.back"
+                };
+                string mark = option == CombatPreparationOption.Crowbar || option == CombatPreparationOption.Pistol
+                    ? ((int)model.SelectedCombatWeapon == index ? "[x] " : "[ ] ") : string.Empty;
+                if (GUI.Button(rect, (selected ? "> " : "  ") + mark + LocalizationService.Get(key),
+                    selected ? selectedStyle : optionStyle))
+                {
+                    SelectCombatOption(option);
+                    ConfirmSelection();
+                    break;
+                }
+            }
+            GUI.Label(new Rect(218f, 246f, 204f, 14f), LocalizationService.Get(model.SelectedCombatWeapon == CombatWeaponId.Pistol
+                ? "combat.weapon.pistol.description" : "combat.weapon.crowbar.description"), descriptionStyle);
+        }
+
         private void DrawOption(
             RetroUiCanvas canvas,
             Rect rect,
@@ -334,6 +390,7 @@ namespace BarPromenade
                 RetroUiTheme.Muted,
                 false);
             titleStyle = RetroUiTheme.CreateLabelStyle(13, TextAnchor.MiddleCenter, RetroUiTheme.Text, true);
+            descriptionStyle = RetroUiTheme.CreateLabelStyle(9, TextAnchor.MiddleCenter, RetroUiTheme.Muted);
         }
     }
 }

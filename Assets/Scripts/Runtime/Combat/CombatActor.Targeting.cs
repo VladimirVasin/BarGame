@@ -16,7 +16,8 @@ namespace BarPromenade
 
         // The duel owns yaw, while the motor retains target-relative translation.
         // Presentation and contact previews only read this accepted world frame.
-        private bool OwnsCombatFacing => CombatFocused && contactTarget != null && !roundEnded && !winnerPresentationReleased;
+        private bool OwnsCombatFacing => (CombatFocused && contactTarget != null || IsFreePistolAiming) &&
+            (IsFreePistolAiming || !roundEnded && !winnerPresentationReleased);
 
         private void ResetCombatFacing()
         {
@@ -34,7 +35,7 @@ namespace BarPromenade
             bool recovering = (footwork?.RecoveryEpisodeActive ?? false) ||
                 (ImpactMotion != null && ImpactMotion.IsActive && ImpactMotion.BalanceLoad > .45f);
             bool upperBodyAttempt = State.IsAttacking || State.IsCharging || State.IsShoving;
-            if (!OwnsCombatFacing || !contactTarget.isActiveAndEnabled || contactTarget.State.IsDefeated ||
+            if (!OwnsCombatFacing || (!IsFreePistolAiming && (!contactTarget.isActiveAndEnabled || contactTarget.State.IsDefeated)) ||
                 !IsAvailable || !CanAttemptBodyAction || recovering && !upperBodyAttempt)
             { facingVelocity = 0f; return; }
 
@@ -80,7 +81,8 @@ namespace BarPromenade
             }
             // Aim at the actual rig, including its body lean, rather than a
             // controller centre that can stay behind the visible opponent.
-            Vector3 direction = (contactTarget.ImpactMotion?.CentreOfMass ?? contactTarget.transform.position) -
+            Vector3 direction = (IsFreePistolAiming ? PistolAimPoint :
+                contactTarget.ImpactMotion?.CentreOfMass ?? contactTarget.transform.position) -
                 (ImpactMotion?.CentreOfMass ?? transform.position);
             direction.y = 0f;
             if (direction.sqrMagnitude < .0004f) { facingVelocity = 0f; return; }

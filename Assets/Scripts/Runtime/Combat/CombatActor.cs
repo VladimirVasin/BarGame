@@ -30,6 +30,8 @@ namespace BarPromenade
         public MeleeCombatant State { get; } = new MeleeCombatant();
         public CharacterController Body { get; private set; }
         public GameObject Weapon { get; private set; }
+        public CombatWeaponId WeaponId { get; private set; }
+        public bool IsPistol => WeaponId == CombatWeaponId.Pistol;
         public bool IsHero => hero != null;
         public Vector3 SupportGripWorldPosition => supportGrip != null ? supportGrip.Target : transform.position;
         public float SupportGripWeight => supportGrip?.Weight ?? 0f;
@@ -47,7 +49,7 @@ namespace BarPromenade
             MeleePhase.Windup => Mathf.Lerp(.55f, .2f, State.PhaseProgress),
             MeleePhase.Active => 0f,
             MeleePhase.Recovery => Mathf.Lerp(.15f, .65f, State.PhaseProgress),
-            MeleePhase.Ready => State.IsBlocking ? .45f : 1f,
+            MeleePhase.Ready => IsPistol && Pistol != null && (Pistol.AimRequested || Pistol.IsReloading) ? .55f : State.IsBlocking ? .45f : 1f,
             MeleePhase.Kicking => 0f,
             _ => 0f
         };
@@ -69,8 +71,9 @@ namespace BarPromenade
             _ => 0f
         };
 
-        public void InitializeHero(PlayerRuntime player)
+        public void InitializeHero(PlayerRuntime player, CombatWeaponId weapon = CombatWeaponId.Crowbar)
         {
+            WeaponId = weapon;
             hero = (Player3DCharacterPresentation)player.Visual;
             motor = player.Motor;
             interaction = GetComponent<PlayerAnimatedInteractionController>();
@@ -91,6 +94,7 @@ namespace BarPromenade
             Ragdoll = gameObject.AddComponent<CombatRagdoll>();
             Ragdoll.InitializeHero(player);
             AttachWeapon(hero.Registry.Anchors.RightGrip);
+            if (IsPistol) InitializePistol();
             hero.RegisterAccessoryRenderers(Weapon.GetComponentsInChildren<Renderer>());
             InitializeDamagePose();
             LoadKickClip(false);
@@ -130,6 +134,12 @@ namespace BarPromenade
         private void AttachWeapon(Transform grip)
         {
             handPose = grip.GetComponentInParent<NpcHandPose>();
+            if (IsPistol)
+            {
+                Weapon = CombatPistolAssetProvider.CreatePistol(grip, handPose);
+                PrepareWeaponPhysics();
+                return;
+            }
             Weapon = CombatAssetProvider.CreateCrowbar(grip, handPose);
             strikeBase = CombatAssetProvider.FindAnchor(Weapon, "StrikeBase");
             strikeTip = CombatAssetProvider.FindAnchor(Weapon, "StrikeTip");
@@ -167,7 +177,7 @@ namespace BarPromenade
         public bool GuardRequested => guardHeld;
         public bool GuardReady => GuardSupportRejection == null &&
             (State.Phase == MeleePhase.Ready || State.Phase == MeleePhase.GuardImpact);
-        internal string GuardSupportRejection => !CombatFocused ? "unfocused" : weaponDropped ? "weapon_missing" : roundEnded ? "round_ended" : !IsAvailable ? "actor_unavailable" :
+        internal string GuardSupportRejection => IsPistol ? "firearm" : !CombatFocused ? "unfocused" : weaponDropped ? "weapon_missing" : roundEnded ? "round_ended" : !IsAvailable ? "actor_unavailable" :
             State.IsDefeated ? "defeated" : !HasAttackBalance ? AttackBalanceRejection :
             !HasTwoHandSupport ? "two_hand_support" : null;
         internal CombatFootwork Footwork => footwork;
@@ -175,6 +185,7 @@ namespace BarPromenade
 
         public bool TryAttack()
         {
+            if (IsPistol) return false;
             int request = JournalCommand("attack_immediate");
             if (!CombatFocused) return JournalCommandResult(request, "rejected", "unfocused");
             if (roundEnded) return JournalCommandResult(request, "rejected", "round_ended");
@@ -194,6 +205,7 @@ namespace BarPromenade
 
         public bool RequestAttack()
         {
+            if (IsPistol) return false;
             int request = JournalCommand("attack");
             if (!CombatFocused) return JournalCommandResult(request, "rejected", "unfocused");
             if (roundEnded) return JournalCommandResult(request, "rejected", "round_ended");
@@ -225,6 +237,7 @@ namespace BarPromenade
 
         public void SetBlock(bool held)
         {
+            if (IsPistol) held = false;
             bool freshPress = held && !guardHeld;
             guardHeld = held && CombatFocused;
             RefreshBlock(freshPress);
@@ -281,6 +294,7 @@ namespace BarPromenade
 
         internal void AdvanceSimulation(float seconds, bool deferPoseMotion = false)
         {
+            AdvancePistol(seconds);
             simulationPosePending = false;
             collectSweep = false;
             collectShove = false;
@@ -497,6 +511,7 @@ namespace BarPromenade
             // Re-solving against a newly injured target during hit-stop would move
             // an NPC's weapon off that contact at the very same animation instant.
             if (presentationFrozen || PauseMenuController.IsAnyPaused || GameTimeScaleRuntime.IsPaused) return;
+            if (!IsRagdollActive) RestorePistolAimPose();
             RestoreCombatAttention();
             if (ready == null || winnerPresentationReleased) return;
             if (!NeedsCombatPresentation) { ReleaseFreeLocomotion(); return; }
@@ -520,6 +535,8 @@ namespace BarPromenade
             bool stepping = State.Phase == MeleePhase.Step;
             AnimationClip chosen = stepping ? (stepBlocked ? ready : stepClip) : State.IsDefeated ? defeat : State.Phase == MeleePhase.GuardBroken ? guardBreak : stagger ? hit :
                 reaction != null ? reaction : State.IsKicking ? kick : State.IsCharging ? Current.Charge : State.IsAttacking ? ReleaseClip : roundEnded || weaponDropped ? rest : State.IsBlocking ? block : ready;
+            bool pistolPose = IsPistol && !State.IsDefeated && !stepping && !stagger && reaction == null && !State.IsKicking;
+            if (pistolPose) chosen = ChoosePistolClip();
             supportGrip?.SetTarget(chosen == block || chosen == guardImpact,
                 !weaponDropped && chosen != rest && chosen != hit && chosen != guardBreak && !State.IsDefeated && !State.IsShoving,
                 State.IsContinuation);
@@ -534,6 +551,7 @@ namespace BarPromenade
             else if (State.IsKicking) progress = KickAnimationProgress;
             if (stepping) progress = stepBlocked ? 0f : State.StepProgress;
             else if (State.Phase == MeleePhase.GuardImpact) progress = State.PhaseProgress;
+            if (pistolPose) progress = PistolClipProgress(chosen);
             bool newSwing = (State.IsCharging || State.IsAttacking || State.IsKicking) && visibleAttackSequence != State.AttackSequence;
             if (hero != null)
             {
@@ -562,6 +580,7 @@ namespace BarPromenade
                 else hero.SampleOwnedClip(this, progress);
                 hero.SetCombatBodyMotion(this, bodyMotion);
                 hero.SetCombatFootwork(this, footwork);
+                hero.SetCombatFirearm(this, IsPistol ? this : null);
                 ApplyMotorConstraint();
             }
             else
@@ -575,6 +594,11 @@ namespace BarPromenade
             }
             visibleAttackSequence = State.AttackSequence;
             handPose.SetGrip(false, weaponDropped ? 0f : 1f);
+            if (IsPistol)
+            {
+                pistolLeftClosure = pistolPose && !weaponDropped ? PistolSupportClosure(chosen) : 0f;
+                handPose.SetGrip(true, pistolLeftClosure);
+            }
             if (npc != null)
             {
                 ApplyNpcCombatPose();
@@ -628,6 +652,7 @@ namespace BarPromenade
             weaponConstraint?.Reset();
             if (hero != null) hero.SetCombatSupportGrip(this, supportGrip, weaponConstraint);
             State.Reset(); poseClock = 0f;
+            ResetPistol();
             locomotionVelocity = Vector3.zero;
             npcPresentedPoseValid = false;
             stepClip = null; stepDirection = Vector3.zero; stepBlocked = false; pendingStepInput = Vector2.zero;
@@ -656,6 +681,7 @@ namespace BarPromenade
             ReleaseCombatAttention();
             if (hero != null) hero.ReleaseContextualFacialExpression(this);
             if (hero != null) hero.ClearCombatSupportGrip(this);
+            hero?.ClearCombatFirearm(this);
             if (IsRagdollActive) { supportGrip?.Forget(); weaponConstraint?.Forget(); }
             supportGrip?.Reset();
             weaponConstraint?.Reset();
@@ -678,6 +704,8 @@ namespace BarPromenade
 
         private void OnDisable()
         {
+            CancelPendingPistolShot("disabled");
+            Pistol?.CancelAction();
             if (State.IsShoving || State.IsKicking || State.Phase == MeleePhase.Step || State.HasBufferedStep)
                 State.CancelAction();
             ResetShove();

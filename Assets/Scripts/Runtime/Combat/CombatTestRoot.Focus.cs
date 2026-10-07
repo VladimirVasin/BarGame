@@ -30,6 +30,7 @@ namespace BarPromenade
 
         private bool TryFocusOpponent()
         {
+            ReleaseFreePistolAim();
             if (!CameraFollow.SetTargetLock(this, opponentObject.transform, opponentChest, heroChest)) return false;
             if (!Player.Motor.SetMovementTarget(this, opponentChest, true))
             {

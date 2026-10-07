@@ -17,11 +17,14 @@ namespace BarPromenade
         Quit = 2,
         ChooseLocation = 3,
         Back = 4,
-        CombatTest = 5
+        CombatTest = 5,
+        ChooseCombatWeapon = 6
     }
 
+    public enum CombatPreparationOption { Crowbar, Pistol, Start, Back, Count }
+
     /// <summary>
-    /// The launch card and its location picker. Committing is one-shot: the
+    /// The launch card and its location and weapon pickers. Committing is one-shot: the
     /// shared input reader goes quiet the moment a scene load starts, but an
     /// IMGUI button does not consult that policy, so the latch is what keeps a
     /// second click from asking for a second new game.
@@ -31,15 +34,34 @@ namespace BarPromenade
         public StartMenuOption SelectedOption { get; private set; }
         public bool IsCommitted { get; private set; }
         public bool IsChoosingLocation { get; private set; }
+        public bool IsChoosingCombatWeapon { get; private set; }
         public NewGameLocation SelectedLocation { get; private set; }
-        public bool IsBackSelected => IsChoosingLocation && SelectedLocation == NewGameLocation.Count;
+        public CombatWeaponId SelectedCombatWeapon { get; private set; }
+        public CombatPreparationOption SelectedCombatOption { get; private set; }
+        public bool IsBackSelected => IsChoosingLocation && SelectedLocation == NewGameLocation.Count ||
+            IsChoosingCombatWeapon && SelectedCombatOption == CombatPreparationOption.Back;
 
         public void Open()
         {
             SelectedOption = StartMenuOption.NewGame;
             IsCommitted = false;
             IsChoosingLocation = false;
+            IsChoosingCombatWeapon = false;
             SelectedLocation = NewGameLocation.AlpineVillage;
+            SelectedCombatWeapon = CombatWeaponId.Crowbar;
+            SelectedCombatOption = CombatPreparationOption.Crowbar;
+        }
+
+        public void OpenCombatPreparation(CombatWeaponId weapon)
+        {
+            if (weapon != CombatWeaponId.Crowbar && weapon != CombatWeaponId.Pistol)
+                throw new ArgumentOutOfRangeException(nameof(weapon));
+            Open();
+            SelectedOption = StartMenuOption.CombatTest;
+            IsChoosingCombatWeapon = true;
+            SelectedCombatWeapon = weapon;
+            SelectedCombatOption = weapon == CombatWeaponId.Pistol
+                ? CombatPreparationOption.Pistol : CombatPreparationOption.Crowbar;
         }
 
         public bool MoveSelection(int delta)
@@ -49,8 +71,10 @@ namespace BarPromenade
                 return false;
             }
 
-            int count = IsChoosingLocation ? (int)NewGameLocation.Count + 1 : (int)StartMenuOption.Count;
-            int selected = IsChoosingLocation ? (int)SelectedLocation : (int)SelectedOption;
+            int count = IsChoosingLocation ? (int)NewGameLocation.Count + 1 :
+                IsChoosingCombatWeapon ? (int)CombatPreparationOption.Count : (int)StartMenuOption.Count;
+            int selected = IsChoosingLocation ? (int)SelectedLocation :
+                IsChoosingCombatWeapon ? (int)SelectedCombatOption : (int)SelectedOption;
             int next = (selected + Math.Sign(delta)) % count;
             if (next < 0)
             {
@@ -58,13 +82,14 @@ namespace BarPromenade
             }
 
             if (IsChoosingLocation) SelectedLocation = (NewGameLocation)next;
+            else if (IsChoosingCombatWeapon) SelectCombatOption((CombatPreparationOption)next);
             else SelectedOption = (StartMenuOption)next;
             return true;
         }
 
         public bool SelectOption(StartMenuOption option)
         {
-            if (IsCommitted || IsChoosingLocation ||
+            if (IsCommitted || IsChoosingLocation || IsChoosingCombatWeapon ||
                 option < StartMenuOption.NewGame ||
                 option >= StartMenuOption.Count ||
                 SelectedOption == option)
@@ -86,16 +111,28 @@ namespace BarPromenade
 
         public bool SelectBack()
         {
+            if (IsChoosingCombatWeapon) return SelectCombatOption(CombatPreparationOption.Back);
             if (IsCommitted || !IsChoosingLocation || IsBackSelected) return false;
             SelectedLocation = NewGameLocation.Count;
             return true;
         }
 
+        public bool SelectCombatOption(CombatPreparationOption option)
+        {
+            if (IsCommitted || !IsChoosingCombatWeapon || option < CombatPreparationOption.Crowbar ||
+                option >= CombatPreparationOption.Count || option == SelectedCombatOption) return false;
+            SelectedCombatOption = option;
+            if (option == CombatPreparationOption.Crowbar) SelectedCombatWeapon = CombatWeaponId.Crowbar;
+            else if (option == CombatPreparationOption.Pistol) SelectedCombatWeapon = CombatWeaponId.Pistol;
+            return true;
+        }
+
         public bool ReturnToMainMenu()
         {
-            if (IsCommitted || !IsChoosingLocation) return false;
+            if (IsCommitted || (!IsChoosingLocation && !IsChoosingCombatWeapon)) return false;
+            SelectedOption = IsChoosingCombatWeapon ? StartMenuOption.CombatTest : StartMenuOption.NewGame;
             IsChoosingLocation = false;
-            SelectedOption = StartMenuOption.NewGame;
+            IsChoosingCombatWeapon = false;
             SelectedLocation = NewGameLocation.AlpineVillage;
             return true;
         }
@@ -118,6 +155,19 @@ namespace BarPromenade
                 return StartMenuAction.NewGame;
             }
 
+            if (IsChoosingCombatWeapon)
+            {
+                if (IsBackSelected)
+                {
+                    ReturnToMainMenu();
+                    return StartMenuAction.Back;
+                }
+                if (SelectedCombatOption != CombatPreparationOption.Start)
+                    return StartMenuAction.ChooseCombatWeapon;
+                IsCommitted = true;
+                return StartMenuAction.CombatTest;
+            }
+
             switch (SelectedOption)
             {
                 case StartMenuOption.NewGame:
@@ -125,8 +175,8 @@ namespace BarPromenade
                     SelectedLocation = NewGameLocation.AlpineVillage;
                     return StartMenuAction.ChooseLocation;
                 case StartMenuOption.CombatTest:
-                    IsCommitted = true;
-                    return StartMenuAction.CombatTest;
+                    OpenCombatPreparation(SelectedCombatWeapon);
+                    return StartMenuAction.ChooseCombatWeapon;
                 case StartMenuOption.Quit:
                     IsCommitted = true;
                     return StartMenuAction.Quit;

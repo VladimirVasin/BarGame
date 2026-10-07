@@ -13,6 +13,7 @@ namespace BarPromenade
         private AvatarMask carryMask;
         private float carryTime, carryWeight;
         public bool HasCarryPose => carryPoseOwner != null;
+        internal bool OwnsCarryPose(object owner) => owner != null && ReferenceEquals(carryPoseOwner, owner);
 
         /// <summary>Owns only the torso above ordinary gait; full-body actions still take precedence.</summary>
         public bool TryAcquireCarryPose(object owner, string clipName)

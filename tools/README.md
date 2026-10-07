@@ -134,16 +134,15 @@ Run from the repository root; arguments after `--` belong to the generator:
 python tools/run-blender.py tools/build-ordinary-bartender-3d-model.py --validate-only -- --validate-only
 ```
 
-The launcher checks pins/startup/errors and fresh `--expect` files/JSON.
-Supported validators take `--validate-only` on launcher and generator.
+Launcher: pins/startup/errors/fresh `--expect` files/JSON;
+validators: `--validate-only` on launcher/generator.
 Ordinary: `principal_npc_detail.py` (fish/mother), `service_npc_detail.py`
 (cashier/driver), ordinary bartender. `npc_detail_geometry.py` shares shapes;
 `npc_detail_atlas.py` supplies neutral cloth/leather/hair. Cashier keeps his
 atlas; bizarre variants stay.
 
-For generators with output-directory flags, repeat
-`--stage-output=--model-dir=Assets/path` for model/source/texture/animation outputs.
-Redirect **every output directory**; other arguments/defaults stay. Each maps
+Repeat `--stage-output=--model-dir=Assets/path` for model/source/texture/animation
+directory flags. Redirect **every output directory**; other arguments stay. Each maps
 to empty staging under `Captures/Tooling`; every `--expect` must belong to a
 mapped destination. Publish only after generation/output checks pass, preserve
 `.meta`, roll back replaced files on failure. This is not an atomic importer
@@ -158,10 +157,10 @@ in `Captures` and does not publish. See [audio-vhs/README.md](audio-vhs/README.m
 Output: `Assets/Player3D/V2/Models/PlayerCharacter3DV2.{fbx,json}`.
 
 `build-combat-{test,blood}-3d-model.py --validate-only`.
-Bank:`--actions-only`+`--kick-only|--recovery-only|--footwork-only`.
-`--refresh-published-contracts`; Charge=imported Attack(.18q);
-`--reuse-unchanged-actions`; `--resume-npc-bank file.blend`.
-Blood:`--texture-only`; `Resources/{Combat,CombatBlood}`.
+Test:`--actions-only --kick-only|--recovery-only|--footwork-only`;
+`--refresh-published-contracts --reuse-unchanged-actions --resume-npc-bank file.blend`.
+Charge=Attack(.18q);blood:`--texture-only`.
+`python tools/run-blender.py tools/build-combat-pistol-3d-model.py --expect Assets/Resources/CombatPistol/CombatPistol3D.json`.
 
 `player_jacket_cloth.py --write` derives hem/cuff metadata only; `--check` verifies it.
 Refresh `Player3DV2` through its asset setup. Lower-body changes also require

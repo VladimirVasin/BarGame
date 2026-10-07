@@ -140,6 +140,7 @@ namespace BarPromenade
         private void OnApplicationQuit() { CloseDuelJournal("quit"); WriteMovementSummary(); }
         private void OnDestroy()
         {
+            ReleaseFreePistolAim();
             CloseDuelJournal("unload");
             ReleaseDamageEffects();
             if (CameraFollow != null) CameraFollow.ClearTargetLock(this);

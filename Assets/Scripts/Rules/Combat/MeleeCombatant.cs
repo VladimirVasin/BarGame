@@ -1140,6 +1140,33 @@ namespace BarPromenade
             return guardBreak ? MeleeHitResult.GuardBroken : MeleeHitResult.Hit;
         }
 
+        /// <summary>One projectile wound bypasses melee guard/parry and the crowbar damage table.
+        /// Runtime owns the projectile's first contact and supplies its separate physical impulse.</summary>
+        public MeleeHitResult ReceiveProjectileHit(float damage, MeleeHitLocation location = default,
+            float staggerSeconds = .14f)
+        {
+            NonNegative(staggerSeconds, nameof(staggerSeconds));
+            if (staggerSeconds == 0f) throw new ArgumentOutOfRangeException(nameof(staggerSeconds));
+            float resolvedDamage = ProjectileDamageProfile.Pistol.ResolveDamage(damage, location);
+            if (IsDefeated || resolvedDamage == 0f) return MeleeHitResult.Ignored;
+            MeleePhase physicalPhase = Phase;
+            bool retainGuardBreak = Phase == MeleePhase.GuardBroken;
+            double previousStun = stunRemaining;
+            double committedReturn = IsKicking ? Math.Max(0d, KickDuration - kickElapsed) :
+                Phase == MeleePhase.Recovery ? Math.Max(0d, AttackDuration - attackElapsed) : 0d;
+            Health = Math.Max(0f, Health - resolvedDamage);
+            CancelAction();
+            if (Health == 0f)
+            {
+                Phase = MeleePhase.Defeated;
+                return MeleeHitResult.Hit;
+            }
+            stunRemaining = stunDuration = Math.Max(Math.Max(previousStun, staggerSeconds), committedReturn);
+            Phase = physicalPhase == MeleePhase.KnockedDown || physicalPhase == MeleePhase.Rising
+                ? physicalPhase : retainGuardBreak ? MeleePhase.GuardBroken : MeleePhase.Stagger;
+            return MeleeHitResult.Hit;
+        }
+
         /// <summary>Yield to another presentation owner without refunding effort or replaying
         /// a suspended swing when that owner releases the character. Pause does not call this.</summary>
         public void BeginKnockdown()

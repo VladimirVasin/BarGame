@@ -1,0 +1,250 @@
+{
+  "generator": "tools/build-combat-pistol-3d-model.py",
+  "generator_version": "1.0.0",
+  "blender_version": "5.0.1",
+  "build_signature": "79eab10acb45ad16fc0ff33ba91b217405192fbbad8f704c9a8fd79888cb74d0",
+  "units": "metres",
+  "unity_forward": "+Z",
+  "unity_up": "+Y",
+  "passive": true,
+  "fbx_bake_space_transform": false,
+  "exported_fbx_validation": "mesh and anchor world metres after FBX round trip",
+  "signed_volumes": "every solid positive before and after axis swap",
+  "determinism": "two independent geometry builds match",
+  "triangle_count": 1040,
+  "materials": {
+    "Steel": [
+      0.24,
+      0.265,
+      0.25
+    ],
+    "WornSteel": [
+      0.47,
+      0.49,
+      0.44
+    ],
+    "Rubber": [
+      0.115,
+      0.125,
+      0.105
+    ],
+    "Brass": [
+      0.56,
+      0.43,
+      0.23
+    ],
+    "Flash": [
+      1.0,
+      0.64,
+      0.22
+    ]
+  },
+  "models": [
+    {
+      "name": "Pistol",
+      "bounds_min": [
+        -0.026,
+        -0.05677,
+        -0.0365
+      ],
+      "bounds_max": [
+        0.026,
+        0.1115,
+        0.214
+      ],
+      "triangle_count": 936,
+      "solid_count": 34,
+      "mesh_count": 4,
+      "anchors": [
+        {
+          "name": "Grip",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "parent": null
+        },
+        {
+          "name": "Muzzle",
+          "position": [
+            0.0,
+            0.088,
+            0.197
+          ],
+          "parent": null
+        },
+        {
+          "name": "SupportGrip",
+          "position": [
+            -0.02,
+            -0.025,
+            0.0
+          ],
+          "parent": null
+        },
+        {
+          "name": "Magazine",
+          "position": [
+            0.0,
+            -0.055,
+            -0.007
+          ],
+          "parent": null
+        },
+        {
+          "name": "MuzzleFlash",
+          "position": [
+            0.0,
+            0.088,
+            0.213
+          ],
+          "parent": null
+        }
+      ],
+      "collision_shapes": {
+        "space": "grip_local_unity_metres",
+        "boxes": [
+          {
+            "center": [
+              0.0,
+              0.079,
+              0.08
+            ],
+            "size": [
+              0.044,
+              0.068,
+              0.236
+            ]
+          },
+          {
+            "center": [
+              0.0,
+              0.005,
+              0.003
+            ],
+            "size": [
+              0.044,
+              0.124,
+              0.08
+            ]
+          },
+          {
+            "center": [
+              0.0,
+              0.013,
+              0.064
+            ],
+            "size": [
+              0.04,
+              0.067,
+              0.065
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "Bullet",
+      "bounds_min": [
+        -0.0045,
+        -0.0045,
+        -0.006
+      ],
+      "bounds_max": [
+        0.0045,
+        0.0045,
+        0.0085
+      ],
+      "triangle_count": 104,
+      "solid_count": 2,
+      "mesh_count": 2,
+      "anchors": [
+        {
+          "name": "Centre",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "parent": null
+        }
+      ]
+    }
+  ],
+  "test_only": true,
+  "actions": {
+    "source": "ArtSource/Combat/CombatActions.blend",
+    "root_motion": false,
+    "animation_events": 0,
+    "fps": 100,
+    "bone_only": true,
+    "clips": [
+      {
+        "name": "PistolRest",
+        "duration_seconds": 4.0,
+        "loop": true
+      },
+      {
+        "name": "PistolRaise",
+        "duration_seconds": 0.25,
+        "loop": false
+      },
+      {
+        "name": "PistolAim",
+        "duration_seconds": 4.0,
+        "loop": true
+      },
+      {
+        "name": "PistolFire",
+        "duration_seconds": 0.4,
+        "loop": false
+      },
+      {
+        "name": "PistolReload",
+        "duration_seconds": 1.8,
+        "loop": false
+      },
+      {
+        "name": "PistolLower",
+        "duration_seconds": 0.25,
+        "loop": false
+      }
+    ],
+    "endpoints": "Raise Rest\u2192Aim; Lower Aim\u2192Rest; Fire/Reload Aim\u2192Aim",
+    "hand_frame": "right CylinderAxis=up; distal hand direction=barrel forward; Grip at handle/CylinderCentre; left palm cups right from the side",
+    "support_grip_weight": 0.75,
+    "support_grip": [
+      -0.02,
+      -0.025,
+      0.0
+    ],
+    "support_yaw_degrees": 90.0,
+    "animation_signature": "9e8f3961a475fef53bdc5218972046e17be5d13ab314002323e391b2183d18cc",
+    "hand_mesh_validation": {
+      "right_grip_weight": 1.0,
+      "left_grip_weight": 0.75,
+      "cross_hand_triangle_intersections": 0,
+      "minimum_surface_gap_m": 0.002335,
+      "containment": false,
+      "maximum_right_wrist_bend_degrees": 33.1071,
+      "right_wrist_bend_degrees": {
+        "PistolRest": 29.4617,
+        "PistolRaise": 31.3241,
+        "PistolAim": 31.3241,
+        "PistolFire": 33.1071,
+        "PistolReload": 31.3241,
+        "PistolLower": 31.3241
+      },
+      "maximum_left_wrist_bend_degrees": 40.5497,
+      "left_wrist_bend_degrees": {
+        "PistolAim": 39.8139,
+        "PistolFire": 40.5497
+      },
+      "minimum_left_distal_barrel_dot": 0.9999999,
+      "minimum_distal_barrel_dot": 0.9999999,
+      "rest_upper_arm_angle_from_down_degrees": 40.866,
+      "rest_elbow_drop_m": 0.2274642
+    }
+  }
+}

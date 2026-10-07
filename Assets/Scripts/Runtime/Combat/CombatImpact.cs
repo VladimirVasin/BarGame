@@ -2,7 +2,7 @@ using UnityEngine;
 
 namespace BarPromenade
 {
-    public enum CombatImpactKind { Weapon, Kick, Shove }
+    public enum CombatImpactKind { Weapon, Kick, Shove, Projectile }
     /// <summary>One resolved contact. Presentation cannot change its damage or replay its strike.</summary>
     public readonly struct CombatImpact
     {
@@ -24,7 +24,7 @@ namespace BarPromenade
         /// <summary>World-space momentum (N s), separate from anatomical HP damage.</summary>
         public Vector3 Impulse { get; }
         public CombatImpactKind Kind { get; }
-        public bool IsCritical => Kind == CombatImpactKind.Weapon && Damage > 0f && Location.IsCritical;
+        public bool IsCritical => (Kind == CombatImpactKind.Weapon || Kind == CombatImpactKind.Projectile) && Damage > 0f && Location.IsCritical;
         public bool IsFinisher => Kind == CombatImpactKind.Weapon && Damage > 0f && Location.IsFinisher;
 
         public CombatImpact(CombatActor source, CombatActor target, int sequence,

@@ -189,6 +189,8 @@ namespace BarPromenade
                 case GameInputAction.MeleeBlock:
                     return Read(Mouse.current?.rightButton, held) || Read(gamepad?.leftTrigger, held);
                 case GameInputAction.CombatReset:
+                    return false; // Round reset is an explicit toolbar action; R/X belongs to reload.
+                case GameInputAction.CombatReload:
                     return Read(keyboard?.rKey, held) || Read(gamepad?.buttonWest, held);
                 case GameInputAction.CombatMode:
                     return Read(keyboard?.tabKey, held) || Read(gamepad?.buttonNorth, held);

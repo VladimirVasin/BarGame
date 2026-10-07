@@ -215,7 +215,7 @@ namespace BarPromenade
             duelJournal.Record("open_phase_interval", actor: saved.Actor.JournalActorId,
                 f0: GameLog.Field("label", JournalPhases[(int)saved.Phase]),
                 f1: GameLog.Field("duration_seconds", journalSeconds - saved.PhaseStarted));
-            duelJournal.Record("open_grip_interval", actor: saved.Actor.JournalActorId,
+            if (saved.Actor.SupportGrip != null) duelJournal.Record("open_grip_interval", actor: saved.Actor.JournalActorId,
                 f0: GameLog.Field("label", JournalGrips[(int)saved.Grip]),
                 f1: GameLog.Field("duration_seconds", journalSeconds - saved.GripStarted));
         }
@@ -439,7 +439,7 @@ namespace BarPromenade
                     f6: GameLog.Field("from_action", saved.Action));
                 saved.Phase = actor.State.Phase; saved.Action = actor.State.AttackSequence; saved.PhaseStarted = journalSeconds;
             }
-            if (actor.SupportArmState != saved.Grip)
+            if (actor.SupportGrip != null && actor.SupportArmState != saved.Grip)
             {
                 duelJournal.Record("grip", actor: actor.JournalActorId, action: actor.State.AttackSequence,
                     f0: GameLog.Field("from", JournalGrips[(int)saved.Grip]), f1: GameLog.Field("to", JournalGrips[(int)actor.SupportArmState]),
@@ -511,35 +511,52 @@ namespace BarPromenade
         private void WriteJournalSnapshot(JournalActorState saved)
         {
             CombatActor actor = saved.Actor;
+            var grip = actor.SupportGrip;
             int id = actor.JournalActorId;
             var state = actor.State;
             duelJournal.Record("state", actor: id, action: state.AttackSequence, request: actor.JournalRequestId,
                 f0: GameLog.Field("phase", JournalPhases[(int)state.Phase]), f1: GameLog.Field("health", state.Health),
                 f2: GameLog.Field("stamina", state.Stamina), f3: GameLog.Field("charge", state.Charge01),
                 f4: GameLog.Field("action_remaining", state.ActionRemaining), f5: GameLog.Field("buffered_action", (int)state.BufferedAction),
-                f6: GameLog.Field("two_hand_support", actor.HasTwoHandSupport), f7: GameLog.Field("movement_scale", actor.MovementScale));
+                f6: GameLog.Field("two_hand_support", grip != null && actor.HasTwoHandSupport), f7: GameLog.Field("movement_scale", actor.MovementScale));
             duelJournal.Record("presentation", actor: id, action: state.AttackSequence,
                 f0: GameLog.Field("clip", actor.JournalClip), f1: GameLog.Field("pose_clock", actor.JournalPoseClock),
-                f2: GameLog.Field("attack_progress", state.AttackProgress), f3: GameLog.Field("grip", JournalGrips[(int)actor.SupportArmState]),
+                f2: GameLog.Field("attack_progress", state.AttackProgress), f3: GameLog.Field("grip", grip != null ? JournalGrips[(int)actor.SupportArmState] : "None"),
                 f4: GameLog.Field("weapon_blocked", actor.WeaponClearanceBlocked), f5: GameLog.Field("blocking_shape", actor.WeaponBlockingShape),
                 f6: GameLog.Field("penetration", actor.WeaponPenetrationDepth), f7: GameLog.Field("ragdoll", actor.IsRagdollActive));
+            if (actor.Pistol != null)
+            {
+                var pistol = actor.Pistol;
+                duelJournal.Record("pistol_state", actor: id, action: pistol.ShotSequence,
+                    f0: GameLog.Field("rounds", pistol.Rounds), f1: GameLog.Field("aim_requested", pistol.AimRequested),
+                    f2: GameLog.Field("aim_progress", pistol.AimProgress), f3: GameLog.Field("reloading", pistol.IsReloading),
+                    f4: GameLog.Field("reload_progress", pistol.ReloadProgress), f5: GameLog.Field("cooldown_seconds", pistol.CooldownRemaining),
+                    f6: GameLog.Field("aim_error_degrees", actor.PistolAimErrorDegrees), f7: GameLog.Field("body_available", actor.PistolBodyAvailable));
+                WriteJournalVectors(id, "pistol_muzzle_and_target", actor.PistolMuzzle.position, actor.PistolAimPoint);
+                WriteJournalVectors(id, "pistol_forward_and_support_error", actor.PistolMuzzle.forward,
+                    new Vector3(actor.PistolSupportError, 0f, 0f));
+            }
             var impact = actor.ImpactMotion;
             duelJournal.Record("balance", actor: id,
                 f0: GameLog.Field("load", impact.BalanceLoad), f1: GameLog.Field("speed", impact.Velocity.magnitude),
                 f2: GameLog.Field("angular_speed", impact.AngularVelocity.magnitude), f3: GameLog.Field("catch_active", actor.Footwork.CatchStepActive),
                 f4: GameLog.Field("catch_progress", actor.Footwork.CatchStepProgress), f5: GameLog.Field("landed", impact.LandedRecoverySteps),
                 f6: GameLog.Field("knockdown_requested", impact.WantsKnockdown), f7: GameLog.Field("impact_event", actor.LastJournalImpactSequence));
-            var grip = actor.SupportGrip;
-            Vector3 armAngles = grip.LiveArmAngles;
-            duelJournal.Record("arm_snapshot", actor: id,
-                f0: GameLog.Field("wrist_deviation", armAngles.x), f1: GameLog.Field("wrist_flexion", armAngles.y),
-                f2: GameLog.Field("elbow_bend", armAngles.z), f3: GameLog.Field("contact_metrics_current", grip.JournalContactCurrent),
-                f4: GameLog.Field("shoulder_roll", grip.LiveShoulderRoll), f5: GameLog.Field("elbow_signed", grip.LiveSignedElbow));
-            duelJournal.Record("grip_snapshot", actor: id,
-                f0: GameLog.Field("contact_error", grip.JournalContactError), f1: GameLog.Field("contact_angle", grip.JournalContactAngle),
-                f2: GameLog.Field("wrist_safe", grip.JournalWristSafe), f3: GameLog.Field("regrip_allowed", grip.JournalRegripAllowed),
-                f4: GameLog.Field("release_hold", grip.JournalReleaseHold), f5: GameLog.Field("shoving", grip.IsShoving),
-                f6: GameLog.Field("balance_reaching", grip.IsBalanceReaching), f7: GameLog.Field("catch_step", actor.Footwork.CatchStepActive));
+            // The crowbar support solver is absent for a pistol. Its measurements
+            // are unavailable, rather than zero-valued or a successful grip.
+            if (grip != null)
+            {
+                Vector3 armAngles = grip.LiveArmAngles;
+                duelJournal.Record("arm_snapshot", actor: id,
+                    f0: GameLog.Field("wrist_deviation", armAngles.x), f1: GameLog.Field("wrist_flexion", armAngles.y),
+                    f2: GameLog.Field("elbow_bend", armAngles.z), f3: GameLog.Field("contact_metrics_current", grip.JournalContactCurrent),
+                    f4: GameLog.Field("shoulder_roll", grip.LiveShoulderRoll), f5: GameLog.Field("elbow_signed", grip.LiveSignedElbow));
+                duelJournal.Record("grip_snapshot", actor: id,
+                    f0: GameLog.Field("contact_error", grip.JournalContactError), f1: GameLog.Field("contact_angle", grip.JournalContactAngle),
+                    f2: GameLog.Field("wrist_safe", grip.JournalWristSafe), f3: GameLog.Field("regrip_allowed", grip.JournalRegripAllowed),
+                    f4: GameLog.Field("release_hold", grip.JournalReleaseHold), f5: GameLog.Field("shoving", grip.IsShoving),
+                    f6: GameLog.Field("balance_reaching", grip.IsBalanceReaching), f7: GameLog.Field("catch_step", actor.Footwork.CatchStepActive));
+            }
             duelJournal.Record("support_snapshot", actor: id,
                 f0: GameLog.Field("left_confirmed", actor.Footwork.JournalLeftSupport),
                 f1: GameLog.Field("right_confirmed", actor.Footwork.JournalRightSupport),
@@ -560,7 +577,7 @@ namespace BarPromenade
             WriteJournalPose(id, "weapon", actor.Weapon != null ? actor.Weapon.transform : null);
             WriteJournalVectors(id, "mass_and_capture", impact.CentreOfMass, impact.CaptureOffset);
             WriteJournalVectors(id, "support_and_target", impact.SupportCentre, actor.Footwork.LastCatchTarget);
-            WriteJournalVectors(id, "hand_and_grip_target", actor.ShovePalmPosition, actor.SupportGripWorldPosition);
+            if (grip != null) WriteJournalVectors(id, "hand_and_grip_target", actor.ShovePalmPosition, actor.SupportGripWorldPosition);
             if (id == 2) WriteJournalVectors(id, "requested_and_achieved_move", journalOpponentRequested, journalOpponentAchieved);
             else
             {

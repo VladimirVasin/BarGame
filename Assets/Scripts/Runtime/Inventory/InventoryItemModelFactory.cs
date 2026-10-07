@@ -120,6 +120,8 @@ namespace BarPromenade
                         rootPrefix + " Lodge Group Photograph", parent).transform;
                 case InventoryItemId.CombatCrowbar:
                     return CombatAssetProvider.Create("Crowbar", parent).transform;
+                case InventoryItemId.CombatPistol:
+                    return CombatPistolAssetProvider.CreatePistol(parent).transform;
                 default:
                     throw new ArgumentOutOfRangeException(
                         nameof(itemId),

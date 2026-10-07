@@ -102,9 +102,8 @@ namespace BarPromenade.Tests.PlayMode
             root.CameraFollow.Snap();
             yield return null;
 
-            input.Press(keyboard.rKey, queueEventOnly: true);
+            root.ResetRound();
             yield return null;
-            input.Release(keyboard.rKey, queueEventOnly: true);
             for (int frame = 0; frame < 30; frame++) yield return null;
             Assert.That(root.RoundFinished, Is.False);
             CaptureCurrentCamera(camera, SceneIds.CombatTest, "taunt-10-after-reset");

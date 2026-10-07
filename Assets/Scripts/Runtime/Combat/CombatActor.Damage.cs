@@ -27,7 +27,7 @@ namespace BarPromenade
             ImpactMotion = new CombatImpactMotion(DamageRigRoot, transform);
             ImpactMotion.ConfigureRecovery(IsHero, GameSessionState.CitySeed ^ (IsHero ? 193 : 997));
             footwork.ImpactMotion = ImpactMotion;
-            supportGrip.ImpactMotion = ImpactMotion;
+            if (supportGrip != null) supportGrip.ImpactMotion = ImpactMotion;
             Hurtboxes = new CombatHurtboxes(DamageRigRoot, transform, Ragdoll.PhysicsController);
         }
 
@@ -64,7 +64,7 @@ namespace BarPromenade
                 GameLog.Field("weapon_speed", impact.WeaponSpeed));
             JournalImpactEvent("impact_kind", impact, GameLog.Field("impact_seq", LastJournalImpactSequence),
                 GameLog.Field("kind", impact.Kind switch
-                { CombatImpactKind.Kick => "kick", CombatImpactKind.Shove => "shove", _ => "weapon" }));
+                { CombatImpactKind.Kick => "kick", CombatImpactKind.Shove => "shove", CombatImpactKind.Projectile => "projectile", _ => "weapon" }));
             JournalImpactEvent("impact_anatomy", impact, GameLog.Field("impact_seq", LastJournalImpactSequence),
                 GameLog.Field("region", (int)impact.Location.Region), GameLog.Field("side", (int)impact.Location.Side),
                 GameLog.Field("is_critical", impact.IsCritical), GameLog.Field("is_finisher", impact.IsFinisher),
@@ -102,8 +102,8 @@ namespace BarPromenade
             // actual reach/obstruction, a brace or knockdown owns that release.
             bool gripHit = impact.Damage > 0f || impact.Location.Region == MeleeBodyRegion.LeftArm;
             if (gripHit && urgency >= .30f && impact.Result != MeleeHitResult.Blocked)
-                supportGrip.RequestRelease(impact.Direction, Mathf.Clamp01(urgency));
-            if (supportGrip.IsReleased || !supportGrip.IsSupportingWeapon) State.SetBlocking(false);
+                supportGrip?.RequestRelease(impact.Direction, Mathf.Clamp01(urgency));
+            if (supportGrip == null || supportGrip.IsReleased || !supportGrip.IsSupportingWeapon) State.SetBlocking(false);
         }
 
         // Resolved-contact records all use source -> victim, even though the
@@ -146,11 +146,11 @@ namespace BarPromenade
         private void CompleteImpactRecoveryStep(float seconds)
         {
             if (ImpactMotion == null) return;
-            supportGrip.AdvanceBalanceSupport(seconds);
+            supportGrip?.AdvanceBalanceSupport(seconds);
             ImpactMotion.EvaluateSupport(seconds);
             footwork?.CompleteRecoveryDecision(motor != null ? motor.PlanarVelocity : locomotionVelocity);
             ApplyMotorConstraint();
-            supportGrip.AllowRegrip(!weaponDropped && ImpactMotion.BalanceLoad < .35f && !ImpactMotion.HasHandSupport &&
+            supportGrip?.AllowRegrip(!weaponDropped && ImpactMotion.BalanceLoad < .35f && !ImpactMotion.HasHandSupport &&
                 !ImpactMotion.RecoveryStepActive && !(footwork?.RecoveryEpisodeActive ?? false));
             if (!State.IsDefeated && impactRecoveryGrace <= 0f && ImpactMotion.WantsKnockdown)
             {

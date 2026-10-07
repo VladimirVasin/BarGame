@@ -184,6 +184,7 @@ namespace BarPromenade
 
         public void Initialize(Camera camera, Transform target, bool interior)
         {
+            ClearFreeAim(freeAimOwner);
             ResetTargetLockState();
             controlledCamera = camera != null ? camera : GetComponent<Camera>();
             followTarget = target;
@@ -601,6 +602,12 @@ namespace BarPromenade
                 return;
             }
 
+            if (FreeAimActive)
+            {
+                UpdateFreeAimPose();
+                return;
+            }
+
             if (followTarget == null)
             {
                 return;
@@ -647,6 +654,16 @@ namespace BarPromenade
             {
                 if (!GameTimeScaleRuntime.IsPaused && !PauseMenuController.IsAnyPaused)
                     UpdateTargetLock(Time.deltaTime, false);
+                return;
+            }
+
+            if (FreeAimActive)
+            {
+                if (!GameTimeScaleRuntime.IsPaused && !PauseMenuController.IsAnyPaused)
+                {
+                    PrepareFreeAimFrame(freeAimOwner);
+                    UpdateFreeAimPose();
+                }
                 return;
             }
 

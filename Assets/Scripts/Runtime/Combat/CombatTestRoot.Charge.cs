@@ -11,8 +11,12 @@ namespace BarPromenade
 
         private bool UpdateCombatInput()
         {
-            if (!GameInput.CanRead(GameInputContext.Gameplay))
+            if (Hero.IsPistol && !pistolApplicationFocused || !GameInput.CanRead(GameInputContext.Gameplay))
             {
+                if (Hero.IsPistol && GameInput.WasPressed(GameInputAction.MeleeAttack, GameInputContext.PauseMenu))
+                    Hero.RejectPistolInput(pistolApplicationFocused ? "input_gate" : "application_focus");
+                ReleaseFreePistolAim();
+                Hero?.SuspendPistolInput();
                 Hero?.CancelPendingKick("input_gate");
                 inputSuspended = true;
                 // Observe only the release while the menu owns input; never
@@ -34,12 +38,11 @@ namespace BarPromenade
                 inputSuspended = releasedWhileSuspended = false;
             }
             if (!held) requireAttackRelease = false;
-            if (GameInput.WasPressed(GameInputAction.CombatReset, GameInputContext.Gameplay))
-            { ResetRound(); return false; }
             if (GameInput.WasPressed(GameInputAction.CombatMode, GameInputContext.Gameplay))
             { SetSparring(!Sparring); return false; }
             if (GameInput.WasPressed(GameInputAction.CombatFocus, GameInputContext.Gameplay))
                 SetOpponentFocus(!IsOpponentFocused);
+            if (Hero.IsPistol) return UpdatePistolInput(held);
             if (!IsOpponentFocused)
             {
                 // Free movement leaves the same live duel clock and vulnerable body running.
@@ -103,9 +106,13 @@ namespace BarPromenade
 
         private void OnApplicationFocus(bool focused)
         {
+            pistolApplicationFocused = focused;
             JournalApplicationFocus(focused);
             if (focused) return;
+            requirePistolAimRelease = true;
+            ReleaseFreePistolAim();
             Hero?.CancelPendingKick("focus_lost");
+            Hero?.SuspendPistolInput();
             CancelHeldHeroCharge();
             attackInputOwned = false;
             requireAttackRelease = true;
@@ -113,6 +120,9 @@ namespace BarPromenade
 
         private void OnDisable()
         {
+            ReleaseFreePistolAim();
+            Projectiles?.Clear();
+            Hero?.SuspendPistolInput();
             Hero?.CancelPendingKick("disabled");
             CloseDuelJournal("disabled");
             ResetOpponentMovement();

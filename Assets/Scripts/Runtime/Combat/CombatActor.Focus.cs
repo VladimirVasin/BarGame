@@ -7,7 +7,8 @@ namespace BarPromenade
         /// <summary>The hero's voluntary combat stance; the opponent remains engaged independently.</summary>
         public bool CombatFocused { get; private set; } = true;
 
-        private bool NeedsCombatPresentation => CombatFocused || State.Phase != MeleePhase.Ready ||
+        private bool NeedsCombatPresentation => CombatFocused || (Pistol?.IsReloading ?? false) ||
+            (Pistol?.AimRequested ?? false) || (IsPistol && pistolLowerProgress < 1f) || State.Phase != MeleePhase.Ready ||
             collectSweep || collectShove || collectKick || IsKnockedDown || IsRagdollActive ||
             reaction != null || (ImpactMotion?.IsActive ?? false) || (footwork?.RecoveryEpisodeActive ?? false);
 
@@ -19,6 +20,7 @@ namespace BarPromenade
         {
             if (hero == null || CombatFocused == focused) return;
             CombatFocused = focused;
+            if (!focused) Pistol?.SetAim(false);
             // A rapid off/on toggle cannot grant another aim envelope to an existing swing.
             if (!CommittedActionOwnsFacing) ResetCombatFacing();
             if (!focused)
@@ -54,6 +56,13 @@ namespace BarPromenade
             if (ownedPose) hero.BeginRecoveryPoseTransition(.35f);
             // The same right-hand carry as the standing winner, without a combat torso or left support.
             handPose.SetGrip(false, weaponDropped ? 0f : 1f);
+            if (IsPistol)
+            {
+                pistolLeftClosure = 0f;
+                handPose.SetGrip(true, 0f);
+                if (!weaponDropped && hero.TryAcquireCarryPose(this, CombatPistolAssetProvider.RestClip))
+                    hero.SetCombatFirearm(this, this);
+            }
         }
     }
 }

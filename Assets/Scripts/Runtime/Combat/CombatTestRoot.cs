@@ -30,6 +30,7 @@ namespace BarPromenade
         private double pendingSeconds, roundEndFreeze, roundEndElapsed;
         private int hitStopSubsteps;
         private bool roundCameraReleased;
+        private bool finishedRoundInitialized;
         private GameObject opponentObject;
         private ArenaBounds arenaBounds;
         private Transform opponentChest, heroChest;
@@ -37,11 +38,13 @@ namespace BarPromenade
         private readonly List<CombatActor.ShoveContact> pendingShoves = new List<CombatActor.ShoveContact>(2);
         private readonly List<CombatActor.KickContact> pendingKicks = new List<CombatActor.KickContact>(2);
         private GUIStyle small, button, controls;
-        private static readonly Rect ToolbarRect = new Rect(214, 10, 412, 22);
+        private static readonly Rect ToolbarRect = new Rect(150, 10, 476, 22);
         public bool IsInitialized { get; private set; }
         public PlayerRuntime Player { get; private set; }
         public CombatActor Hero { get; private set; }
         public CombatActor Opponent { get; private set; }
+        public CombatWeaponId HeroWeapon { get; private set; }
+        public CombatProjectilePool Projectiles { get; private set; }
         public PlayerCameraFollow CameraFollow { get; private set; }
         public PauseMenuController PauseMenu { get; private set; }
         public InteractionPromptView Prompt { get; private set; }
@@ -72,7 +75,9 @@ namespace BarPromenade
             arenaBounds = new ArenaBounds();
             Player = PlayerFactory.Create(transform, heroSpawn, camera, arenaBounds, Prompt);
             Hero = Player.GameObject.AddComponent<CombatActor>();
-            Hero.InitializeHero(Player);
+            HeroWeapon = CombatTestStartService.ConsumeWeapon();
+            Hero.InitializeHero(Player, HeroWeapon);
+            if (HeroWeapon == CombatWeaponId.Pistol) Projectiles = new CombatProjectilePool(transform);
             CameraFollow = camera.GetComponent<PlayerCameraFollow>() ?? camera.gameObject.AddComponent<PlayerCameraFollow>();
             CameraFollow.Initialize(camera, Player.GameObject.transform, false);
             opponentObject = new GameObject("Combat Opponent"); opponentObject.transform.SetParent(transform, false);
@@ -116,8 +121,11 @@ namespace BarPromenade
 
         private void PlaceRound()
         {
+            ReleaseFreePistolAim();
+            Hero.CancelPendingPistolShot("reset");
             EndJournalRound("reset");
             ResetChargeInput();
+            Projectiles?.ResetRound();
             BloodEffects?.ResetRound();
             SparkEffects?.ResetRound();
             Taunt?.ResetRound();
@@ -129,6 +137,7 @@ namespace BarPromenade
             hitStopSubsteps = 0;
             HitStopSecondsConsumed = 0f;
             roundCameraReleased = false;
+            finishedRoundInitialized = false;
             ResetOpponentDecisions();
             LockOnOpponent();
             CameraFollow.Snap();
@@ -143,7 +152,7 @@ namespace BarPromenade
                 throw new InvalidOperationException("Combat requires its shoulder camera and target-facing movement.");
         }
 
-        /// <summary>After the fall the player may look around freely; R locks on again.</summary>
+        /// <summary>After the fall the camera returns to free look.</summary>
         private void ReleaseRoundCamera()
         {
             roundCameraReleased = true;
@@ -182,6 +191,7 @@ namespace BarPromenade
             BeginJournalFrame();
             if (!IsInitialized || !AutomaticSimulation || !UpdateCombatInput()) return;
             TickFrame(Time.deltaTime);
+            if (Hero.IsPistol && !Hero.Pistol.AimRequested) ReleaseFreePistolAim();
         }
 
         /// <summary>Drop excess wall time after a hitch instead of feeding an ever
@@ -209,6 +219,7 @@ namespace BarPromenade
                 throw new ArgumentOutOfRangeException(nameof(seconds));
             if (RoundFinished)
             {
+                BeginFinishedRound();
                 SparkEffects.Clear();
                 AdvanceFinishedRound(seconds);
                 return;
@@ -222,6 +233,7 @@ namespace BarPromenade
                 AdvanceJournalClock(hitStopSubsteps > 0);
                 if (hitStopSubsteps > 0)
                 {
+                    Hero.CancelPendingPistolShot("hit_stop");
                     // Hit-stop: both fighters, the opponent's mind and the blood hold on
                     // the frame of contact. Presentation keeps running, so the pose is seen.
                     hitStopSubsteps--;
@@ -255,6 +267,8 @@ namespace BarPromenade
                 // Both final poses are frozen as anatomical query data before either
                 // weapon is sampled. Sampling the first swing cannot move its hurtboxes.
                 Hero.CaptureContactPose(); Opponent.CaptureContactPose();
+                Projectiles?.Advance(SimulationStep, Hero, Opponent);
+                Hero.CommitPistolShot(Projectiles);
                 long contactStamp = JournalStamp();
                 sampledContacts = Hero.CollectContacts(pendingContacts) | Opponent.CollectContacts(pendingContacts);
                 Hero.CollectShoveContacts(pendingShoves); Opponent.CollectShoveContacts(pendingShoves);
@@ -268,6 +282,7 @@ namespace BarPromenade
                 CombatActor.ApplyContacts(pendingContacts);
                 foreach (CombatActor.ShoveContact contact in pendingShoves) contact.Apply();
                 foreach (CombatActor.KickContact contact in pendingKicks) contact.Apply();
+                Projectiles?.ApplyContacts();
                 JournalElapsed(impactStamp, ref journalImpactApplyTicks);
                 JournalTransitions("contacts_applied");
                 if (!RoundFinished && hitStopSubsteps == 0)
@@ -280,11 +295,14 @@ namespace BarPromenade
             }
             if (RoundFinished)
             {
+                BeginFinishedRound();
                 // The lethal contact's freeze carries into the finished round.
                 SparkEffects.Clear();
                 roundEndFreeze += hitStopSubsteps * (double)SimulationStep;
                 hitStopSubsteps = 0;
-                AdvanceFinishedRound((float)pendingSeconds);
+                float remaining = (float)pendingSeconds;
+                pendingSeconds = 0d;
+                AdvanceFinishedRound(remaining);
             }
             // Contact previews alter the sampled rig; otherwise the last substep
             // already left both complete poses ready to render.
@@ -294,10 +312,24 @@ namespace BarPromenade
             JournalRoundResult();
         }
 
+        private void BeginFinishedRound()
+        {
+            if (finishedRoundInitialized) return;
+            finishedRoundInitialized = true;
+            Projectiles?.Clear();
+            if (!Hero.IsPistol || Hero.State.IsDefeated) return;
+            // A defeated target relinquishes focus once; the winner keeps his
+            // ammunition, wounds and ordinary walk, and can aim freely again.
+            ClearFocusTracking();
+            Hero.SetCombatFocused(false);
+            Hero.SuspendPistolInput();
+            ResetChargeInput();
+            roundCameraReleased = true;
+        }
+
         private void AdvanceFinishedRound(float seconds)
         {
             ResetOpponentMovement();
-            pendingSeconds = 0d;
             float frozen = (float)Math.Min(seconds, roundEndFreeze);
             roundEndFreeze = Math.Max(0d, roundEndFreeze - frozen);
             HitStopSecondsConsumed += frozen;
@@ -305,9 +337,28 @@ namespace BarPromenade
             if (seconds <= 0f) return;
             SetDuelFrozen(false);
             roundEndElapsed += seconds;
-            Hero.AdvanceRoundEnd(seconds); Opponent.AdvanceRoundEnd(seconds);
-            BloodEffects.Tick(seconds);
-            SparkEffects.Tick(seconds);
+            if (Hero.IsPistol && !Hero.State.IsDefeated)
+            {
+                pendingSeconds += seconds;
+                while (pendingSeconds + .0000001d >= SimulationStep)
+                {
+                    pendingSeconds = Math.Max(0d, pendingSeconds - SimulationStep);
+                    Hero.AdvanceRoundEnd(SimulationStep); Opponent.AdvanceRoundEnd(SimulationStep);
+                    Hero.CaptureContactPose(); Opponent.CaptureContactPose();
+                    Projectiles.Advance(SimulationStep, Hero, Opponent);
+                    Hero.CommitPistolShot(Projectiles);
+                    Projectiles.ApplyContacts();
+                    BloodEffects.Tick(SimulationStep);
+                    SparkEffects.Tick(SimulationStep);
+                }
+            }
+            else
+            {
+                pendingSeconds = 0d;
+                Hero.AdvanceRoundEnd(seconds); Opponent.AdvanceRoundEnd(seconds);
+                BloodEffects.Tick(seconds);
+                SparkEffects.Tick(seconds);
+            }
             float settle = Mathf.Clamp01((float)(roundEndElapsed / RoundEndCameraReleaseSeconds));
             CameraFollow.SetTargetLockFarDistance(this, Mathf.Lerp(1.9f, 2.1f, settle));
             if (!roundCameraReleased && settle >= 1f) ReleaseRoundCamera();
@@ -347,20 +398,23 @@ namespace BarPromenade
             try
             {
                 RetroUiTheme.DrawPanel(ToolbarRect, RetroUiTheme.PanelInset, RetroUiTheme.BorderMuted, false, 0f, 1f, .72f);
+                if (DrawToolbarButton(canvas, new Rect(156, 12, 58, 18), "combat-weapons",
+                    LocalizationService.Get("combat.weapons"))) ReturnToWeapons();
                 if (DrawToolbarButton(canvas, new Rect(220, 12, 166, 18), "combat-style",
                     LocalizationService.Get("combat.style." + OpponentStyle.ToString().ToLowerInvariant())))
                     SetOpponentStyle((CombatOpponentStyle)(((int)OpponentStyle + 1) % 3));
                 if (DrawToolbarButton(canvas, new Rect(392, 12, 102, 18), "combat-mode",
                     "Tab · " + LocalizationService.Get(Sparring ? "combat.sparring" : "combat.target"))) SetSparring(!Sparring);
                 if (DrawToolbarButton(canvas, new Rect(498, 12, 70, 18), "combat-reset",
-                    "R · " + LocalizationService.Get("combat.reset"))) ResetRound();
+                    LocalizationService.Get("combat.reset"))) ResetRound();
                 if (DrawToolbarButton(canvas, new Rect(572, 12, 48, 18), "combat-menu",
                     LocalizationService.Get("combat.menu"))) ReturnToMenu();
                 DrawFighterHud(new Rect(14, 302, 138, 37), "combat.health", Hero);
                 DrawFighterHud(new Rect(488, 302, 138, 37), "combat.opponent", Opponent);
                 DrawChargeMeter();
+                DrawPistolHud(canvas);
                 DrawFocusMarker(canvas);
-                GUI.Label(new Rect(14, 342, 612, 14), LocalizationService.Get("combat.controls"), controls);
+                GUI.Label(new Rect(14, 342, 612, 14), LocalizationService.Get(Hero.IsPistol ? "combat.controls.pistol" : "combat.controls"), controls);
             }
             finally { RetroUiTheme.EndCanvas(matrix); }
         }

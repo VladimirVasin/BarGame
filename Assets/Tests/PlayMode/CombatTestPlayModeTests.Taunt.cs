@@ -131,15 +131,14 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(interactor.ActiveInteractable, Is.Null);
                 Assert.That(root.RoundFinished, Is.True);
 
-                input.Press(keyboard.rKey, queueEventOnly: true);
+                root.ResetRound();
                 yield return null;
-                input.Release(keyboard.rKey, queueEventOnly: true);
                 yield return null;
                 Assert.That(root.RoundFinished, Is.False);
-                Assert.That(taunt.Urine.ScopedResidueCount, Is.Zero, "R clears the round's marks with its blood.");
+                Assert.That(taunt.Urine.ScopedResidueCount, Is.Zero, "Reset clears the round's marks with its blood.");
                 Assert.That(EnabledStainCount(root.transform), Is.Zero);
                 Assert.That(root.Hero.IsWeaponInLeftHand, Is.False);
-                Assert.That(root.Hero.RequestCharge(), Is.True, "R reopens attacks after the taunt.");
+                Assert.That(root.Hero.RequestCharge(), Is.True, "Reset reopens attacks after the taunt.");
                 LogAssert.NoUnexpectedReceived();
             }
             finally

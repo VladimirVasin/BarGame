@@ -781,9 +781,8 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(root.Hero.State.StepElapsed, Is.EqualTo(elapsed));
                 Assert.That(root.PauseMenu.Cancel(), Is.True);
                 yield return WaitFor(() => GameInput.CanRead(GameInputContext.Gameplay), "Pause did not release the step.");
-                input.Press(keyboard.rKey, queueEventOnly: true);
+                root.ResetRound();
                 yield return null;
-                input.Release(keyboard.rKey, queueEventOnly: true);
                 Assert.That(root.Hero.State.Phase, Is.EqualTo(MeleePhase.Ready));
                 Assert.That(root.Hero.State.StepElapsed, Is.Zero);
                 Assert.That(root.Hero.State.Stamina, Is.EqualTo(S.MaxStamina));

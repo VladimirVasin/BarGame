@@ -146,20 +146,22 @@ The vertical slice contains:
   City/Bar/lodge markers belong to one load, consumed once; later arrivals stay.
   Day one raises mother's-house quest/map marker; door/map entry or starting
   inside closes it. No village signpost;
-- CombatTest:MMB:chest dot/focus↔walk/freecam;off:no attack-guard-Q-Step.
-  NPC hits/fall-rise;no reset/refocus;entry-R focus.
-  6zones/rear-head end/HP/impulse;
-  QA:penetration-balance-visual/distance poses/faster Q-palm/clocks/contact switch;
-  bar-palm:nonfall stagger-catch-feet-impulse-aim/Q-guard strict/fall veto.
-  Q/B:free leg/load/15stam/5HP/high-guard bypass/dry-no finish/.20walk wait-tail/support≠chain.
-  AI:Cautious/Pressuring/Patient;R keep/≥1m/retreat≤.6s/whiff.20→counter.22/Rising.
-  Hit-Miss cut/R>L/.22→held.28/.6charge/.20buffer/hit-fall-R clear.
-  Step:1m/<fall/15/.36→attack/.57repeat;catch→finite landing.
-  Windup1m/brake/side-back/impulse/≤.85m dry shove8breath/0HP.
-  120Hz aim¼→fixed/boot-bar sweep/first bar-world-body/metal-wall-sparks/L release.
-  Rise:escape/drop;E:own bar/shared UI;no grant.
-  Guard2hands/metal cost-break/noHP/pause-hitstop-Hold/wounds-thud-pools;
-  cost:guard-Step-charge-Q/E toilet/L bar-marks/R-unload clear;
+- CombatTest:bar/pistol→Start;NPC bar;Weapons→picker.
+  MMB:focus↔freecam;NPC hits;bar/Q/Step:focus.
+  Entry/reset:on;UIreset:kit/style;R/Xreload.
+  Pistol:8/∞;.25up/.4fire/1.8reload;RMBhold/LMBfresh;PistolRest/gait.
+  Off:mouse/Rstick→cam-centre,no lock;win:aim/fire/reload,result HP kept.
+  Bullet:250m/s-g9.81-40m/1s;120Hz sweep1/no pierce-ricochet.
+  25HP:torso1/head2/arms.5/legs.75;no guard-parry-rearfinish;low impulse.
+  Pause freezes;end:shots clear1x;reset/unload:all clear.
+  Knockdown drops;E same gun/ammo/shared UI/no grant.
+  Crowbar:6zones/rear-head end;aim¼→fixed;first bar-world-body/metal sparks/recoil/L release.
+  Q/B:free leg/15stam/5HP/high-guard bypass/dry-no finish.
+  AI:3styles/counter/rising;timing: `ai/architecture-notes.md`.
+  Windup1m/brake/side-back/impulse/≤.85m shove;finite catch landings.
+  Rise≠grip:escape/drop;bar-palm impulse;Q-guard support/fall veto.
+  2hand guard/wounds/pools;crowbar-only E toilet.
+  Gap:penetration/balance;
 - the retained Home opening is reachable only by a legacy request: held bed loop,
   silent `05:59` clock with rare whole-display flicker, five-second input lock,
   then localized Wake Up/Quit. Wake sets `06:00`, runs the clock/alarm and hides

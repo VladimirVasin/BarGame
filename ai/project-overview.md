@@ -25,7 +25,7 @@
 | 9 | `ChurchInterior` | Gameplay |
 | 10 | `AlpineVillage` | Gameplay |
 | 11 | `MothersHouseInterior` | Gameplay |
-| 12 | `CombatTest` | Isolated melee test |
+| 12 | `CombatTest` | Isolated weapon test |
 
 All ten gameplay roots use `PlayerFactory`/`Resources/Player/Player3DV2.prefab`:
 one rig, `PlayerWardrobe` slots/coverage and bounded hair/jacket physics.
@@ -78,9 +78,9 @@ repair commands. Generation/publication: [../tools/README.md](../tools/README.md
 
 ## Implemented capabilities
 
-- CombatTest:120Hz/3AI;MMB:dot-focus↔walk/NPC hostile. Rise≠grip;
-  checked floor escape→arm→living drop;E shared screen reclaims own bar.
-  Partial:penetration/balance/visual.
+- CombatTest:menu crowbar/pistol;NPC crowbar/3AI;120Hz;MMB focus↔walk;bar/Q/Step:focus.
+  Pistol:8/∞;Rest carry/gait;free shoulder aim/fire/reload after win;UI reset;E same weapon.
+  Rise≠grip. Partial:penetration/balance.
 - City: 20 metre types; district heights, curved old/service streets,
   courts/passages/wings, unified ground; river/shore, church and Route 01.
   First unpaused dock entry starts finite port→factory→shop supply once;

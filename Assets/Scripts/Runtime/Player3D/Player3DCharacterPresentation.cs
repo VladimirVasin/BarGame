@@ -1015,6 +1015,7 @@ namespace BarPromenade
         {
             using var journalTiming = CombatTestRoot.MeasureJournalLatePose(this);
             if (OwnedAttentionPresentationFrozen) return;
+            RestoreCombatFirearm();
             float deltaTime = scopedPresentationFrozen ? 0f : Time.deltaTime;
             if (!ragdollPoseActive)
             {
@@ -1035,6 +1036,7 @@ namespace BarPromenade
                 CompleteRecoveryPresentation(deltaTime);
                 ConstrainCombatFootContacts();
                 ApplyCombatSupportGrip();
+                ApplyCombatFirearm();
                 EmitSnowFootContacts();
             }
 
@@ -1136,6 +1138,7 @@ namespace BarPromenade
             // Match the real late pass: a contact freeze retains its completed
             // rig, including a blended continuation and its planted soles.
             if (OwnedAttentionPresentationFrozen) return;
+            RestoreCombatFirearm();
             // A deterministic seam for checks that run in batch mode, where
             // WaitForEndOfFrame is not dispatched. It reapplies the current
             // visible pose after the manual graph has evaluated without
@@ -1151,6 +1154,7 @@ namespace BarPromenade
                 CompleteRecoveryPresentation(0f);
                 ConstrainCombatFootContacts();
                 ApplyCombatSupportGrip();
+                ApplyCombatFirearm();
             }
         }
 
@@ -1182,6 +1186,7 @@ namespace BarPromenade
         /// </summary>
         internal void SettleLatePresentationPose(float seconds)
         {
+            RestoreCombatFirearm();
             if (!ragdollPoseActive)
             {
                 ApplyLatePose(Mathf.Max(0f, seconds));
@@ -1191,6 +1196,7 @@ namespace BarPromenade
                 ApplyCombatDamagePose();
                 ApplyCombatFootwork();
                 ApplyCombatSupportGrip();
+                ApplyCombatFirearm();
             }
         }
 
@@ -3138,6 +3144,7 @@ namespace BarPromenade
 
         private void EvaluateGraph(float deltaTime)
         {
+            RestoreCombatFirearm();
             RestoreCombatSupportGrip();
             RestoreRecoveryPoseTransition();
             RestoreCombatFootwork();

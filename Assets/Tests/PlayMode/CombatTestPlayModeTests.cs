@@ -338,12 +338,11 @@ namespace BarPromenade.Tests.PlayMode
                     "The contact must retain the tap's committed strength independently of the region it reaches.");
                 Assert.That(root.Opponent.ReceivedImpactCount, Is.EqualTo(1));
 
-                input.Press(keyboard.rKey, queueEventOnly: true);
+                root.ResetRound();
                 yield return null;
                 Assert.That(root.Hero.State.Phase, Is.EqualTo(MeleePhase.Ready));
                 Assert.That(root.Hero.State.Stamina, Is.EqualTo(S.MaxStamina));
-                Assert.That(root.Opponent.State.Health, Is.EqualTo(S.MaxHealth), "R resets the damaged target.");
-                input.Release(keyboard.rKey, queueEventOnly: true);
+                Assert.That(root.Opponent.State.Health, Is.EqualTo(S.MaxHealth), "Reset restores the damaged target.");
                 yield return null;
 
                 // The left toolbar margin belongs to the toolbar but no button: a GUI reset cannot mask a swing.
@@ -443,12 +442,11 @@ namespace BarPromenade.Tests.PlayMode
                 PlacePair(4f);
                 input.Press(mouse.leftButton, queueEventOnly: true);
                 for (int frame = 0; frame < 3; frame++) yield return null;
-                input.Press(keyboard.rKey, queueEventOnly: true);
+                root.ResetRound();
                 yield return null;
-                Assert.That(root.Hero.State.IsCharging, Is.False, "R releases the old held charge.");
+                Assert.That(root.Hero.State.IsCharging, Is.False, "Reset releases the old held charge.");
                 Assert.That(root.Hero.State.Stamina, Is.EqualTo(S.MaxStamina));
                 int resetSequence = root.Hero.State.AttackSequence;
-                input.Release(keyboard.rKey, queueEventOnly: true);
                 input.Release(mouse.leftButton, queueEventOnly: true);
                 yield return null;
                 Assert.That(root.Hero.State.AttackSequence, Is.EqualTo(resetSequence), "The pre-reset release cannot start a new attack.");
@@ -682,11 +680,10 @@ namespace BarPromenade.Tests.PlayMode
                 yield return WaitFor(() => root.RoundCameraReleased, "The finished round never freed the camera.");
                 Assert.That(follow.TargetLockActive, Is.False, "After the round the player may look around freely.");
                 Assert.That(root.Player.Motor.MovementTargetActive, Is.False);
-                input.Press(keyboard.rKey, queueEventOnly: true);
+                root.ResetRound();
                 yield return null;
-                input.Release(keyboard.rKey, queueEventOnly: true);
                 Assert.That(root.RoundFinished, Is.False);
-                Assert.That(follow.TargetLockActive, Is.True, "R locks on again.");
+                Assert.That(follow.TargetLockActive, Is.True, "Reset locks on again.");
                 AssertOpponentFramed(camera);
                 AssertRightShoulder(camera);
                 yield return null;
@@ -803,18 +800,17 @@ namespace BarPromenade.Tests.PlayMode
                 CaptureInertiaFrame(root.Hero, "winner-walk", 0);
                 input.Release(keyboard.sKey, queueEventOnly: true);
 
-                input.Press(keyboard.rKey, queueEventOnly: true);
+                root.ResetRound();
                 yield return null;
-                input.Release(keyboard.rKey, queueEventOnly: true);
                 yield return null;
                 Assert.That(root.RoundFinished, Is.False);
                 Assert.That(presentation.OwnsClip(root.Hero), Is.True,
-                    "R must restore combat presentation after the winner returned to ordinary walking.");
+                    "Reset must restore combat presentation after the winner returned to ordinary walking.");
                 Assert.That(root.Hero.ActiveClipName, Does.Contain("CombatReady"));
                 Assert.That(root.Hero.SupportGripWeight, Is.GreaterThan(0f),
                     "A new round must restore the combat support grip as well as the clip.");
                 Assert.That(root.Hero.RequestCharge(), Is.True,
-                    "R must reopen attacks as well as restore combat presentation.");
+                    "Reset must reopen attacks as well as restore combat presentation.");
                 Assert.That(root.Hero.State.IsCharging, Is.True);
                 LogAssert.NoUnexpectedReceived();
             }
@@ -963,25 +959,23 @@ namespace BarPromenade.Tests.PlayMode
                     WalkingDiagnostic("D strafe after victory", start));
                 input.Release(keyboard.dKey, queueEventOnly: true);
 
-                input.Press(keyboard.rKey, queueEventOnly: true);
+                root.ResetRound();
                 yield return null;
-                input.Release(keyboard.rKey, queueEventOnly: true);
                 yield return null;
                 Assert.That(root.RoundFinished, Is.False);
                 yield return StrikeToDefeat(root.Opponent, root.Hero);
                 yield return WaitFor(() => root.Hero.IsRagdollActive,
-                    "The defeated hero never entered the physical pose needed to test R cleanup.");
+                    "The defeated hero never entered the physical pose needed to test reset cleanup.");
                 for (int frame = 0; frame < 12; frame++) yield return null;
-                input.Press(keyboard.rKey, queueEventOnly: true);
+                root.ResetRound();
                 yield return null;
-                input.Release(keyboard.rKey, queueEventOnly: true);
                 yield return null;
                 Assert.That(root.Hero.IsRagdollActive, Is.False);
                 Assert.That(root.Hero.Body.enabled, Is.True);
                 Assert.That(root.Player.Motor.InputEnabled, Is.True);
                 Assert.That(root.Hero.State.Phase, Is.EqualTo(MeleePhase.Ready));
-                // No helper reset or reposition after R: the real input path must
-                // restore both root motion and the skinned model's world motion.
+                // No later reposition: the reset path must restore both root
+                // motion and the skinned model's world motion.
                 input.Press(keyboard.wKey, queueEventOnly: true);
                 for (int frame = 0; frame < 8; frame++) yield return null;
                 start = root.Hero.transform.position;
@@ -992,7 +986,7 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(Vector3.Dot(root.Hero.transform.position - start, forward), Is.GreaterThan(.45f),
                     WalkingDiagnostic("W after ragdoll reset", start));
                 Assert.That(Vector3.Dot(pelvis.position - pelvisStart, forward), Is.GreaterThan(.4f),
-                    "R must release the ragdoll's pinned world pose as well as enable the motor.");
+                    "Reset must release the ragdoll's pinned world pose as well as enable the motor.");
                 Assert.That(Vector3.ProjectOnPlane((pelvis.position - pelvisStart) -
                     (root.Hero.transform.position - start), Vector3.up).magnitude, Is.LessThan(.2f));
                 resetWalk.AssertMoving(2f, "The reset hero must resume walking with both legs.");
@@ -1075,12 +1069,11 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(Vector3.Distance(root.Hero.transform.position, root.Opponent.transform.position),
                     Is.LessThan(initialDistance - .5f), "An active opponent must close the authored starting gap.");
 
-                input.Press(keyboard.rKey, queueEventOnly: true);
+                root.ResetRound();
                 yield return null;
-                Assert.That(root.Sparring, Is.True, "R must retain the selected active mode.");
+                Assert.That(root.Sparring, Is.True, "Reset must retain the selected active mode.");
                 Assert.That(root.Hero.State.Health, Is.EqualTo(S.MaxHealth));
                 Assert.That(root.Opponent.State.Health, Is.EqualTo(S.MaxHealth));
-                input.Release(keyboard.rKey, queueEventOnly: true);
                 input.Press(mouse.rightButton, queueEventOnly: true);
                 yield return WaitFor(() => root.Hero.State.Stamina < S.MaxStamina,
                     "The opponent never attacked the hero's held RMB guard.");
@@ -1104,10 +1097,9 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(Vector2.Distance(new Vector2(passivePosition.x, passivePosition.z),
                     new Vector2(root.Opponent.transform.position.x, root.Opponent.transform.position.z)), Is.LessThan(.001f),
                     "Target mode must remain stationary beyond the AI's ordinary attack cooldown.");
-                input.Press(keyboard.rKey, queueEventOnly: true);
+                root.ResetRound();
                 yield return null;
                 Assert.That(root.Sparring, Is.False, "Reset must retain passive mode when explicitly selected.");
-                input.Release(keyboard.rKey, queueEventOnly: true);
                 yield return null;
 
                 input.Press(keyboard.tabKey, queueEventOnly: true);
@@ -1287,13 +1279,12 @@ namespace BarPromenade.Tests.PlayMode
                     Assert.That(Vector3.Distance(root.BloodEffects.DefeatPoolPositionFor(victim), poolPosition), Is.LessThan(.001f));
 
                     root.AutomaticSimulation = true;
-                    input.Press(keyboard.rKey, queueEventOnly: true);
+                    root.ResetRound();
                     yield return null;
-                    input.Release(keyboard.rKey, queueEventOnly: true);
                     yield return null;
                     Assert.That(victim.IsRagdollActive, Is.False);
                     Assert.That(victim.Ragdoll.HasGroundContact, Is.False,
-                        "R must clear the previous round's landing latch.");
+                        "Reset must clear the previous round's landing latch.");
                     Assert.That(victim.IsWeaponDropped, Is.False);
                     Assert.That(weaponBody.isKinematic, Is.True);
                     Assert.That(root.RoundFinished, Is.False);
@@ -1308,7 +1299,7 @@ namespace BarPromenade.Tests.PlayMode
                     Assert.That(root.Player.Motor.InputEnabled, Is.True);
                     foreach (Rigidbody body in bodies) Assert.That(body.isKinematic, Is.True);
                     Assert.That(AverageBodyHeight(bodies), Is.GreaterThan(settledHeight + .25f),
-                        "R must restore the standing skeleton as well as the health counter.");
+                        "Reset must restore the standing skeleton as well as the health counter.");
                     Assert.That(victim.Weapon.activeInHierarchy, Is.True);
                     Assert.That(victim.Weapon.transform.parent, Is.SameAs(grip));
                     Assert.That(Vector3.Distance(victim.Weapon.transform.localPosition, gripPosition), Is.LessThan(.001f));

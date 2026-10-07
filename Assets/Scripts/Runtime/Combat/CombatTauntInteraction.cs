@@ -9,7 +9,7 @@ namespace BarPromenade
     /// body with the ordinary constrained motor, then hosts the Home toilet's
     /// eye-level urination there, solved onto the body. The crowbar waits in
     /// the closed left hand. Nothing is said and nothing is rewarded: the wet
-    /// marks stay on the ragdoll's bones and the floor until R clears the round.
+    /// marks stay on the ragdoll's bones and the floor until the round resets.
     /// </summary>
     [DisallowMultipleComponent]
     [DefaultExecutionOrder(260)]
@@ -112,7 +112,7 @@ namespace BarPromenade
 
         public bool CanInteract(PlayerInteractor interactor)
         {
-            if (root == null || !root.IsInitialized || IsActive || usedThisRound) return false;
+            if (root == null || !root.IsInitialized || root.Hero.IsPistol || IsActive || usedThisRound) return false;
             if (interactor == null || !interactor.InputEnabled) return false;
             CombatActor opponent = root.Opponent;
             if (opponent == null || !opponent.State.IsDefeated || root.Hero == null || root.Hero.State.IsDefeated) return false;
@@ -398,7 +398,7 @@ namespace BarPromenade
             }
         }
 
-        /// <summary>R: the action is offered again, and the round's marks go with the blood.</summary>
+        /// <summary>Reset offers the action again and clears the round's marks with its blood.</summary>
         public void ResetRound()
         {
             Cancel();

@@ -20,6 +20,8 @@ namespace BarPromenade.Tests.EditMode
                 Is.EqualTo(StartMenuOption.NewGame));
             Assert.That(model.IsCommitted, Is.False);
             Assert.That(model.IsChoosingLocation, Is.False);
+            Assert.That(model.IsChoosingCombatWeapon, Is.False);
+            Assert.That(model.SelectedCombatWeapon, Is.EqualTo(CombatWeaponId.Crowbar));
             Assert.That(model.SelectedLocation, Is.EqualTo(NewGameLocation.AlpineVillage));
             Assert.That(model.IsBackSelected, Is.False);
         }
@@ -143,13 +145,13 @@ namespace BarPromenade.Tests.EditMode
                 }
                 foreach (string key in new[] { "opening.choose_location", "opening.back", "combat.title",
                     "combat.target", "combat.sparring", "combat.reset", "combat.menu", "combat.health",
-                    "combat.stamina", "combat.opponent", "combat.victory", "combat.defeat", "combat.controls" })
+                    "combat.stamina", "combat.opponent", "combat.victory", "combat.defeat", "combat.controls",
+                    "combat.choose_weapon", "combat.weapon.crowbar", "combat.weapon.pistol", "combat.start" })
                     Assert.That(values.TryGetValue(key, out string value) && !string.IsNullOrWhiteSpace(value), Is.True, key);
             }
         }
 
         [TestCase(StartMenuOption.Quit, StartMenuAction.Quit)]
-        [TestCase(StartMenuOption.CombatTest, StartMenuAction.CombatTest)]
         public void Confirm_DirectActionCommitsOnceWithoutChoosingALocation(
             StartMenuOption option, StartMenuAction action)
         {
@@ -166,6 +168,69 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(model.IsCommitted, Is.True);
             Assert.That(model.Confirm(), Is.EqualTo(StartMenuAction.None));
             Assert.That(model.MoveSelection(1), Is.False);
+        }
+
+        [TestCase(CombatWeaponId.Crowbar)]
+        [TestCase(CombatWeaponId.Pistol)]
+        public void CombatPreparation_WeaponChoiceRequiresExplicitStartAndCommitsOnce(CombatWeaponId weapon)
+        {
+            var model = new StartMenuModel();
+            model.Open();
+            model.SelectOption(StartMenuOption.CombatTest);
+            Assert.That(model.Confirm(), Is.EqualTo(StartMenuAction.ChooseCombatWeapon));
+            Assert.That(model.IsChoosingCombatWeapon, Is.True);
+            Assert.That(model.IsChoosingLocation, Is.False);
+            Assert.That(model.IsCommitted, Is.False);
+            Assert.That(model.SelectedCombatWeapon, Is.EqualTo(CombatWeaponId.Crowbar));
+            model.SelectCombatOption(weapon == CombatWeaponId.Pistol
+                ? CombatPreparationOption.Pistol : CombatPreparationOption.Crowbar);
+            Assert.That(model.Confirm(), Is.EqualTo(StartMenuAction.ChooseCombatWeapon),
+                "Confirming the weapon row must not launch a duel.");
+            Assert.That(model.IsCommitted, Is.False);
+            Assert.That(model.SelectOption(StartMenuOption.Quit), Is.False);
+            Assert.That(model.SelectLocation(NewGameLocation.Home), Is.False);
+            Assert.That(model.SelectCombatOption(CombatPreparationOption.Start), Is.True);
+            Assert.That(model.SelectedCombatWeapon, Is.EqualTo(weapon));
+            Assert.That(model.Confirm(), Is.EqualTo(StartMenuAction.CombatTest));
+            Assert.That(model.IsCommitted, Is.True);
+            Assert.That(model.Confirm(), Is.EqualTo(StartMenuAction.None));
+            Assert.That(model.MoveSelection(1), Is.False);
+            Assert.That(model.SelectBack(), Is.False);
+            Assert.That(model.ReturnToMainMenu(), Is.False);
+        }
+
+        [TestCase(false)]
+        [TestCase(true)]
+        public void CombatPreparation_NavigationAndBackKeepTheWeaponWithoutStarting(bool confirmBack)
+        {
+            var model = new StartMenuModel();
+            model.OpenCombatPreparation(CombatWeaponId.Crowbar);
+            Assert.That(model.MoveSelection(-1), Is.True);
+            Assert.That(model.IsBackSelected, Is.True);
+            Assert.That(model.MoveSelection(1), Is.True);
+            Assert.That(model.SelectedCombatOption, Is.EqualTo(CombatPreparationOption.Crowbar));
+            Assert.That(model.MoveSelection(1), Is.True);
+            Assert.That(model.SelectedCombatWeapon, Is.EqualTo(CombatWeaponId.Pistol));
+            Assert.That(model.MoveSelection(1), Is.True);
+            Assert.That(model.SelectedCombatOption, Is.EqualTo(CombatPreparationOption.Start));
+            if (confirmBack)
+            {
+                Assert.That(model.SelectBack(), Is.True);
+                Assert.That(model.Confirm(), Is.EqualTo(StartMenuAction.Back));
+            }
+            else Assert.That(model.ReturnToMainMenu(), Is.True);
+            Assert.That(model.IsChoosingCombatWeapon, Is.False);
+            Assert.That(model.SelectedOption, Is.EqualTo(StartMenuOption.CombatTest));
+            Assert.That(model.IsCommitted, Is.False);
+            Assert.That(model.Confirm(), Is.EqualTo(StartMenuAction.ChooseCombatWeapon));
+            Assert.That(model.SelectedCombatWeapon, Is.EqualTo(CombatWeaponId.Pistol));
+            Assert.That(model.SelectedCombatOption, Is.EqualTo(CombatPreparationOption.Pistol));
+
+            model.SelectCombatOption(CombatPreparationOption.Start);
+            model.Confirm();
+            model.OpenCombatPreparation(CombatWeaponId.Pistol);
+            Assert.That(model.IsCommitted, Is.False, "A refused trip must return to an interactive preparation screen.");
+            Assert.That(model.SelectedCombatWeapon, Is.EqualTo(CombatWeaponId.Pistol));
         }
 
         [Test]
