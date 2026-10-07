@@ -142,10 +142,14 @@ namespace BarPromenade
             if (hero != null) hero.SetCombatSupportGrip(this, supportGrip, weaponConstraint);
         }
 
-        // The right hand owns the weapon. A returning left hand affects guard,
-        // not attack readiness; only real balance recovery prevents a swing.
+        // Guard and kicks need stable support. An upper-body attempt may share
+        // a catching step, but can never cancel an already committed fall.
         internal bool HasAttackBalance => !IsKnockedDown && !(ImpactMotion?.RecoveryInProgress ?? false) &&
             !(footwork?.RecoveryEpisodeActive ?? false);
+        internal bool CanAttemptUpperBodyAttack => !IsKnockedDown && !State.IsKnockedDown &&
+            !IsRagdollActive && !State.IsDefeated && !(ImpactMotion?.WantsKnockdown ?? false);
+        private string UpperBodyAttackRejection => IsKnockedDown || State.IsKnockedDown || IsRagdollActive
+            ? "knocked_down" : State.IsDefeated ? "defeated" : "fall_committed";
         internal const float WeaponSpacing = 1f;
         internal void ApplyMotorConstraint() => motor?.SetOwnedMovementConstraint(this, MovementScale, OwnsCombatFacing ? 0f : TurnScale,
             contactTarget != null ? contactTarget.transform : null,
@@ -169,8 +173,12 @@ namespace BarPromenade
             if (!IsAvailable) return JournalCommandResult(request, "rejected", "actor_unavailable");
             if (!GameInput.CanRead(GameInputContext.Gameplay)) return JournalCommandResult(request, "rejected", "input_gate");
             if (CheckShoveRange(request)) return TryBeginShove(request);
-            if (!HasAttackBalance) return JournalCommandResult(request, "rejected", AttackBalanceRejection);
-            if (!State.TryStartAttack()) return JournalRulesRejected(request, State.Settings.AttackCost, false);
+            if (!CanAttemptUpperBodyAttack) return JournalCommandResult(request, "rejected", UpperBodyAttackRejection);
+            if (State.Phase == MeleePhase.Step && State.CanTransitionTo(MeleeBufferedAction.Attack, true) &&
+                !(footwork?.PrepareStepAttackHandoff() ?? false))
+                return JournalCommandResult(request, "rejected", "step_support_missing");
+            if (!State.TryStartRecoveryAttack()) return JournalRulesRejected(request, State.Settings.AttackCost, false);
+            CancelPendingKick("replaced");
             reaction = null;
             Present();
             return JournalCommandResult(request, "started", "attack");
@@ -182,13 +190,11 @@ namespace BarPromenade
             if (roundEnded) return JournalCommandResult(request, "rejected", "round_ended");
             if (!IsAvailable) return JournalCommandResult(request, "rejected", "actor_unavailable");
             if (!GameInput.CanRead(GameInputContext.Gameplay)) return JournalCommandResult(request, "rejected", "input_gate");
-            if (!State.IsAttacking)
-            {
-                if (!State.IsKicking && CheckShoveRange(request)) return TryBeginShove(request);
-                if (!HasAttackBalance) return JournalCommandResult(request, "rejected", AttackBalanceRejection);
-            }
+            if (!CanAttemptUpperBodyAttack) return JournalCommandResult(request, "rejected", UpperBodyAttackRejection);
+            if (!State.IsAttacking && CheckShoveRange(request)) return TryBeginShove(request);
             int previous = State.AttackSequence;
-            if (!State.RequestAttack()) return JournalRulesRejected(request, State.Settings.AttackCost, true);
+            if (!State.RequestAttack(true)) return JournalRulesRejected(request, State.Settings.AttackCost, true);
+            CancelPendingKick("replaced");
             ContinueBufferedAttackAfterContacts();
             if (previous != State.AttackSequence) reaction = null;
             Present();
@@ -198,7 +204,7 @@ namespace BarPromenade
         internal bool TryObservedCounterAttack()
         {
             int request = JournalCommand("observed_counter");
-            if (roundEnded || !IsAvailable || !HasAttackBalance ||
+            if (roundEnded || !IsAvailable || !CanAttemptUpperBodyAttack ||
                 !GameInput.CanRead(GameInputContext.Gameplay))
                 return JournalCommandResult(request, "rejected", "counter_unavailable");
             if (CheckShoveRange(request)) return TryBeginShove(request);
@@ -287,7 +293,9 @@ namespace BarPromenade
             float from = State.AttackElapsed;
             MeleePhase previousPhase = State.Phase;
             float previousStep = State.StepTravelProgress;
-            MeleeAdvanceResult elapsed = State.Advance(seconds, HasAttackBalance && !State.IsKicking && !HasPendingKick);
+            // All queued actions cross their boundary after both fighters'
+            // contacts and this tick's final step displacement have resolved.
+            MeleeAdvanceResult elapsed = State.Advance(seconds, false);
             if (elapsed.IsKick && elapsed.HasActiveWindow)
             {
                 collectKick = true; kickFrom = elapsed.ActiveStartNormalized; kickTo = elapsed.ActiveEndNormalized;

@@ -20,18 +20,10 @@ namespace BarPromenade
             if (roundEnded) return JournalCommandResult(request, "rejected", "round_ended");
             if (!IsAvailable) return JournalCommandResult(request, "rejected", "actor_unavailable");
             if (!GameInput.CanRead(GameInputContext.Gameplay)) return JournalCommandResult(request, "rejected", "input_gate");
-            // A following press owns one queue slot while the old swing still
-            // owns its weapon contacts. The free support hand never delays it.
-            if (!State.IsAttacking)
-            {
-                if (!HasAttackBalance)
-                {
-                    if (!State.RequestRecoveryCharge()) return JournalCommandResult(request, "rejected", AttackBalanceRejection);
-                    return JournalCommandResult(request, "queued", "balance_buffer");
-                }
-                if (!State.IsKicking && CheckShoveRange(request)) return TryBeginShove(request);
-            }
-            if (!State.RequestCharge()) return JournalRulesRejected(request, State.Settings.AttackCost, true);
+            if (!CanAttemptUpperBodyAttack) return JournalCommandResult(request, "rejected", UpperBodyAttackRejection);
+            if (!State.IsAttacking && CheckShoveRange(request)) return TryBeginShove(request);
+            if (!State.RequestCharge(true)) return JournalRulesRejected(request, State.Settings.AttackCost, true);
+            CancelPendingKick("replaced");
             ContinueBufferedAttackAfterContacts();
             if (State.IsCharging) { reaction = null; sweepValid = false; }
             Present();
@@ -53,12 +45,10 @@ namespace BarPromenade
                 return JournalCommandResult(request, started ? "started" : "queued", "charge_release");
             }
             if (State.IsCharging && CheckShoveRange(request)) return TryBeginShove(request);
-            if (!HasAttackBalance)
+            if (!CanAttemptUpperBodyAttack)
             {
-                // A true loss of balance still interrupts the held action.
-                // Losing only the left-hand contact releases a one-handed swing.
                 CancelCharge();
-                return JournalCommandResult(request, "rejected", AttackBalanceRejection);
+                return JournalCommandResult(request, "rejected", UpperBodyAttackRejection);
             }
             if (!State.ReleaseCharge()) return JournalCommandResult(request, "rejected", "no_held_or_queued_charge");
             if (State.IsAttacking) { reaction = null; sweepValid = false; }
@@ -80,19 +70,36 @@ namespace BarPromenade
         /// A new action must never relabel or erase the old swing's final sweep.</summary>
         internal bool ContinueBufferedAttackAfterContacts()
         {
-            if (roundEnded || presentationFrozen || HasPendingKick || !IsAvailable ||
+            if (roundEnded || presentationFrozen || !IsAvailable ||
                 !GameInput.CanRead(GameInputContext.Gameplay) ||
                 (contactTarget != null && contactTarget.State.IsDefeated)) return false;
-            bool step = State.HasBufferedStep;
+            MeleeBufferedAction action = State.BufferedAction;
+            if (action == MeleeBufferedAction.None) return false;
+            if (action != MeleeBufferedAction.Kick) CancelPendingKick("replaced");
+            bool upperBody = action is MeleeBufferedAction.Attack or MeleeBufferedAction.Charge or MeleeBufferedAction.Shove;
+            if (upperBody && !CanAttemptUpperBodyAttack) return false;
+            if (!State.CanTransitionTo(action, upperBody)) return false;
+            if (State.IsShoving && shoveContactPending) return false;
+            if (State.Phase == MeleePhase.Step && action != MeleeBufferedAction.Step &&
+                !(footwork?.PrepareStepAttackHandoff() ?? false)) return false;
+            if (action == MeleeBufferedAction.Kick) return ContinueBufferedKickAfterContacts();
+            if (action == MeleeBufferedAction.Shove && !CheckShoveRange())
+            {
+                State.CancelBufferedAction(action);
+                return false;
+            }
+            bool step = action == MeleeBufferedAction.Step;
             bool recoveringStep = step && !HasAttackBalance;
             if (recoveringStep)
             {
-                if (State.Phase != MeleePhase.Ready || IsKnockedDown || State.IsKnockedDown || IsRagdollActive ||
+                if (IsKnockedDown || State.IsKnockedDown || IsRagdollActive ||
                     (ImpactMotion?.WantsKnockdown ?? false) || !PrepareRecoveryStep(pendingStepInput)) return false;
             }
-            else if (!HasAttackBalance) return false;
-            if (!(step ? State.TryContinueBufferedStep() : State.TryContinueAttack())) return false;
+            else if (!upperBody && !HasAttackBalance) return false;
+            int request = journalQueuedRequest;
+            if (!State.TryContinueBufferedAction(upperBody)) return false;
             if (step) BeginStepPresentation(recoveringStep);
+            if (action == MeleeBufferedAction.Shove) BeginShovePresentation(request);
             JournalBufferedActionStarted();
             reaction = null;
             reactionClock = 0f;

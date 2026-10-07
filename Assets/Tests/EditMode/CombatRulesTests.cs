@@ -785,6 +785,8 @@ namespace BarPromenade.Tests.EditMode
         {
             MeleeBufferedAction.Attack => actor.RequestAttack(),
             MeleeBufferedAction.Charge => actor.RequestCharge(),
+            MeleeBufferedAction.Kick => actor.RequestKick(),
+            MeleeBufferedAction.Shove => actor.RequestShove(),
             _ => actor.RequestStep()
         };
 
@@ -1241,7 +1243,8 @@ namespace BarPromenade.Tests.EditMode
             actor.SetBlocking(true);
             Assert.That(actor.IsBlocking, Is.False);
             Assert.That(actor.TryStartAttack(), Is.False);
-            Assert.That(actor.RequestAttack(), Is.False, "The travel itself accepts no queued strike.");
+            Assert.That(actor.RequestAttack(), Is.True, "A press during travel waits for its contact-safe handoff.");
+            Assert.That(actor.CancelBufferedAction(MeleeBufferedAction.Attack), Is.True);
             Assert.That(actor.TryStartStep(), Is.False);
             Assert.That(actor.HasBufferedAttack, Is.False);
             actor.Advance(S.StepTravelSeconds * .5f);
@@ -1601,14 +1604,19 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(actor.TryRegisterHit(1, actor.AttackSequence), Is.False);
             Assert.That(actor.Health, Is.EqualTo(S.MaxHealth));
             actor.Advance(S.ShoveDurationSeconds - S.ShoveContactSeconds - .05f);
-            Assert.That(actor.RequestAttack() || actor.RequestCharge() || actor.RequestStep(), Is.False,
-                "Even the last buffer window of a shove remains committed.");
+            Assert.That(actor.RequestAttack(), Is.True, "The other type can wait in the shared slot.");
+            Assert.That(actor.CancelBufferedAction(MeleeBufferedAction.Attack), Is.True);
             Assert.That(actor.BufferedAction, Is.EqualTo(MeleeBufferedAction.None));
             Assert.That(actor.Advance(.06f).HasActiveWindow, Is.False);
             Assert.That(actor.Phase, Is.EqualTo(MeleePhase.Ready));
             Assert.That(actor.ShoveProgress, Is.EqualTo(1f));
             Assert.That(actor.Stamina, Is.EqualTo(stamina - S.ShoveCost).Within(Eps));
 
+            if (source == MeleePhase.Windup)
+            {
+                Assert.That(actor.TryStartAttack(), Is.False, "Converting the windup cannot erase its weapon clock.");
+                actor.Advance(actor.CooldownRemaining(MeleeBufferedAction.Attack) + .01f);
+            }
             Assert.That(actor.TryStartAttack(), Is.True);
             Assert.That(actor.ShoveElapsed, Is.Zero, "A later action cannot replay the old contact.");
             actor.Advance(S.WindupSeconds + .01f);
@@ -1730,7 +1738,7 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(actor.Charge01, Is.Zero);
             Assert.That(actor.ReleaseCharge(), Is.False);
             Assert.That(actor.TryStartKick() || actor.TryStartShove() || actor.TryStartStep(), Is.False);
-            Assert.That(actor.RequestAttack() || actor.RequestCharge(), Is.False);
+            Assert.That(actor.RequestAttack(), Is.True, "The weapon press waits until the kick's active contact is resolved.");
             Assert.That(actor.Stamina, Is.EqualTo(stamina - S.KickCost).Within(Eps));
             Assert.That(actor.Advance(S.KickWindupSeconds - .01f).HasActiveWindow, Is.False);
             Assert.That(actor.TryRegisterKickHit(1, actor.AttackSequence), Is.False);
@@ -1779,7 +1787,7 @@ namespace BarPromenade.Tests.EditMode
         [TestCase(MeleeAttackOutcome.Hit, MeleeBufferedAction.Charge)]
         [TestCase(MeleeAttackOutcome.Miss, MeleeBufferedAction.Attack)]
         [TestCase(MeleeAttackOutcome.Obstacle, MeleeBufferedAction.Charge)]
-        public void KickReturnKeepsWeaponRhythmAndBufferedStrikeWaitsForFullRecovery(
+        public void KickReturnKeepsWeaponRhythmAndYieldsAfterItsResolvedContact(
             MeleeAttackOutcome outcome, MeleeBufferedAction next)
         {
             var actor = new MeleeCombatant();
@@ -1790,19 +1798,11 @@ namespace BarPromenade.Tests.EditMode
             actor.Advance(S.KickWindupSeconds + .05f);
             int sequence = actor.AttackSequence;
             Assert.That(actor.RecordKickOutcome(outcome, sequence), Is.True);
-            actor.Advance(actor.CurrentKickDurationSeconds - actor.KickElapsed - .25f, allowBufferedAttack: false);
-            Assert.That(Request(actor, next), Is.False, "Only the last .20 seconds accepts a kick continuation.");
-            actor.Advance(.10f, allowBufferedAttack: false);
-            Assert.That(actor.KickRecoveryRemaining, Is.EqualTo(.15f).Within(Eps));
+            actor.Advance(actor.KickActiveEnd - actor.KickElapsed + .01f, allowBufferedAttack: false);
             Assert.That(Request(actor, next), Is.True);
             if (next == MeleeBufferedAction.Charge) actor.ReleaseCharge();
-            Assert.That(actor.TryContinueAttack(), Is.False, "Even a landed kick cannot cut the return tail.");
-            actor.Advance(.14f, allowBufferedAttack: false);
-            Assert.That(actor.TryContinueAttack(), Is.False);
-            actor.Advance(.02f, allowBufferedAttack: false);
-            Assert.That(actor.Phase, Is.EqualTo(MeleePhase.Ready));
-            Assert.That(actor.KickProgress, Is.EqualTo(1f).Within(Eps));
-            Assert.That(actor.AttackSequence, Is.EqualTo(sequence), "Runtime owns the final balance gate.");
+            Assert.That(actor.CooldownRemaining(MeleeBufferedAction.Kick), Is.GreaterThan(0f));
+            Assert.That(actor.AttackSequence, Is.EqualTo(sequence), "Runtime owns the actual support gate.");
             Assert.That(actor.HasBufferedAttack, Is.True);
             Assert.That(actor.TryContinueAttack(), Is.True);
             Assert.That(actor.Swing, Is.EqualTo(MeleeSwing.Backhand), "A kick must not overwrite the weapon's previous rhythm.");
@@ -1862,7 +1862,7 @@ namespace BarPromenade.Tests.EditMode
             actor.Advance(actor.CurrentKickDurationSeconds - .1f, allowBufferedAttack: false);
             int sequence = actor.AttackSequence;
             Assert.That(Request(actor, action), Is.True);
-            Assert.That(actor.TryContinueAttack() || actor.TryContinueBufferedStep(), Is.False);
+            Assert.That(actor.BufferedAction, Is.EqualTo(action), "No Advance may consume an intent while runtime withholds support.");
             actor.Advance(.2f, allowBufferedAttack: false);
             Assert.That(actor.Phase, Is.EqualTo(MeleePhase.Ready));
             Assert.That(actor.BufferedAction, Is.EqualTo(action));
@@ -1921,6 +1921,185 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(actor.ReceiveKick(), Is.EqualTo(MeleeHitResult.Ignored));
         }
 
+        [TestCase(MeleeBufferedAction.Attack, MeleeBufferedAction.Kick)]
+        [TestCase(MeleeBufferedAction.Attack, MeleeBufferedAction.Shove)]
+        [TestCase(MeleeBufferedAction.Kick, MeleeBufferedAction.Attack)]
+        [TestCase(MeleeBufferedAction.Kick, MeleeBufferedAction.Shove)]
+        [TestCase(MeleeBufferedAction.Shove, MeleeBufferedAction.Attack)]
+        [TestCase(MeleeBufferedAction.Shove, MeleeBufferedAction.Kick)]
+        [TestCase(MeleeBufferedAction.Step, MeleeBufferedAction.Attack)]
+        [TestCase(MeleeBufferedAction.Step, MeleeBufferedAction.Kick)]
+        [TestCase(MeleeBufferedAction.Step, MeleeBufferedAction.Shove)]
+        public void IndependentActionClocksYieldOnlyAfterResolvedContactAndSurviveSwitching(
+            MeleeBufferedAction source, MeleeBufferedAction next)
+        {
+            var actor = new MeleeCombatant();
+            bool started = source switch
+            {
+                MeleeBufferedAction.Attack => actor.TryStartAttack(),
+                MeleeBufferedAction.Kick => actor.TryStartKick(),
+                MeleeBufferedAction.Shove => actor.TryStartShove(),
+                _ => actor.TryStartStep()
+            };
+            Assert.That(started, Is.True);
+            int previousSequence = actor.AttackSequence;
+            float contactEnd = source switch
+            {
+                MeleeBufferedAction.Attack => actor.AttackActiveEnd,
+                MeleeBufferedAction.Kick => actor.KickActiveEnd,
+                MeleeBufferedAction.Shove => S.ShoveActiveEndSeconds,
+                _ => S.StepTravelSeconds
+            };
+            // A close shove intentionally replaces an uncommitted weapon
+            // windup. Exercise the cross-type queue after that windup instead.
+            float sourceElapsed = 0f;
+            if (source == MeleeBufferedAction.Attack && next == MeleeBufferedAction.Shove)
+            {
+                sourceElapsed = S.WindupSeconds + .01f;
+                actor.Advance(sourceElapsed, allowBufferedAttack: false);
+            }
+            Assert.That(Request(actor, next), Is.True);
+            actor.Advance(contactEnd - sourceElapsed - .01f, allowBufferedAttack: false);
+            Assert.That(actor.CanTransitionTo(next), Is.False);
+            Assert.That(actor.TryContinueBufferedAction(), Is.False);
+            MeleeAdvanceResult previousWindow = actor.Advance(.01f + Eps, allowBufferedAttack: false);
+            Assert.That(actor.AttackSequence, Is.EqualTo(previousSequence), "Only runtime may release the contact boundary.");
+            if (source == MeleeBufferedAction.Attack || source == MeleeBufferedAction.Kick)
+                Assert.That(previousWindow.AttackSequence, Is.EqualTo(previousSequence));
+            float previousCooldown = actor.CooldownRemaining(source);
+            Assert.That(previousCooldown, Is.GreaterThan(0f), "The old return is still cooling down.");
+            Assert.That(actor.CanTransitionTo(next), Is.True);
+            Assert.That(actor.TryContinueBufferedAction(), Is.True);
+            Assert.That(actor.AttackSequence, Is.EqualTo(previousSequence + 1));
+            Assert.That(actor.BufferedAction, Is.EqualTo(MeleeBufferedAction.None));
+            Assert.That(actor.CooldownRemaining(source), Is.EqualTo(previousCooldown).Within(Eps));
+            Assert.That(actor.TryRegisterHit(1, previousSequence), Is.False);
+            Assert.That(actor.TryRegisterKickHit(1, previousSequence), Is.False);
+            actor.Advance(.025f, allowBufferedAttack: false);
+            Assert.That(actor.CooldownRemaining(source), Is.EqualTo(previousCooldown - .025f).Within(Eps));
+            Assert.That(actor.TryContinueBufferedAction(), Is.False, "One press cannot repeat itself.");
+            if (source == MeleeBufferedAction.Step)
+            {
+                Assert.That(actor.CooldownRemaining(MeleeBufferedAction.Step), Is.GreaterThan(0f));
+                Assert.That(actor.TryStartStep(), Is.False, "An early attack does not rearm the defensive step.");
+            }
+        }
+
+        [TestCase(MeleeAttackOutcome.Hit)]
+        [TestCase(MeleeAttackOutcome.Miss)]
+        [TestCase(MeleeAttackOutcome.Blocked)]
+        [TestCase(MeleeAttackOutcome.Obstacle)]
+        [TestCase(MeleeAttackOutcome.Parried)]
+        public void IndependentWeaponOutcomeClockCannotBeResetByAnotherTypeOrCancellation(MeleeAttackOutcome outcome)
+        {
+            var actor = new MeleeCombatant(new MeleeCombatSettings(kickWindupSeconds: .02f, kickActiveSeconds: .02f));
+            actor.TryStartAttack();
+            actor.Advance(actor.AttackActiveEnd + Eps, allowBufferedAttack: false);
+            if (outcome == MeleeAttackOutcome.Obstacle) actor.CancelAttackOnObstacle();
+            else if (outcome != MeleeAttackOutcome.Miss)
+                actor.RecordAttackOutcome(outcome == MeleeAttackOutcome.Parried ? MeleeHitResult.Parried :
+                    outcome == MeleeAttackOutcome.Blocked ? MeleeHitResult.Blocked : MeleeHitResult.Hit, actor.AttackSequence);
+            Assert.That(actor.RequestKick(), Is.True);
+            Assert.That(actor.TryContinueBufferedAction(), Is.True, "A weapon recoil owns only its own type's clock.");
+            actor.Advance(actor.KickActiveEnd + Eps, allowBufferedAttack: false);
+            float weaponRemaining = actor.CooldownRemaining(MeleeBufferedAction.Attack);
+            Assert.That(weaponRemaining, Is.GreaterThan(0f));
+            Assert.That(actor.RequestAttack(), Is.True);
+            Assert.That(actor.CanTransitionTo(MeleeBufferedAction.Attack), Is.False);
+            Assert.That(actor.TryContinueBufferedAction(), Is.False);
+            actor.CancelAction();
+            Assert.That(actor.CooldownRemaining(MeleeBufferedAction.Attack), Is.EqualTo(weaponRemaining).Within(Eps));
+            Assert.That(actor.TryStartAttack(), Is.False);
+            actor.Advance(weaponRemaining + Eps, allowBufferedAttack: false);
+            Assert.That(actor.TryStartAttack(), Is.True);
+            actor.Reset();
+            foreach (MeleeBufferedAction action in new[] { MeleeBufferedAction.Attack, MeleeBufferedAction.Kick,
+                MeleeBufferedAction.Shove, MeleeBufferedAction.Step })
+                Assert.That(actor.CooldownRemaining(action), Is.Zero);
+        }
+
+        [TestCase(MeleeBufferedAction.Kick, false)]
+        [TestCase(MeleeBufferedAction.Shove, false)]
+        [TestCase(MeleeBufferedAction.Kick, true)]
+        [TestCase(MeleeBufferedAction.Shove, true)]
+        public void IndependentCrossTypeIntentSurvivesTheWeaponsOwnForcedRecoil(MeleeBufferedAction next, bool parried)
+        {
+            var actor = new MeleeCombatant();
+            actor.TryStartAttack();
+            actor.Advance(S.WindupSeconds + .03f, allowBufferedAttack: false);
+            Assert.That(Request(actor, next), Is.True);
+            Assert.That(parried ? actor.RecordAttackOutcome(MeleeHitResult.Parried, actor.AttackSequence) :
+                actor.CancelAttackOnObstacle(), Is.True);
+            Assert.That(actor.BufferedAction, Is.EqualTo(next));
+            Assert.That(actor.CooldownRemaining(MeleeBufferedAction.Attack), Is.GreaterThan(0f));
+            Assert.That(actor.TryContinueBufferedAction(), Is.True,
+                "Runtime has resolved the stopped weapon and may authorize another type.");
+        }
+
+        [TestCase(MeleePhase.Stagger, MeleeBufferedAction.Attack, true)]
+        [TestCase(MeleePhase.Stagger, MeleeBufferedAction.Charge, true)]
+        [TestCase(MeleePhase.Stagger, MeleeBufferedAction.Shove, true)]
+        [TestCase(MeleePhase.GuardImpact, MeleeBufferedAction.Attack, true)]
+        [TestCase(MeleePhase.GuardImpact, MeleeBufferedAction.Charge, true)]
+        [TestCase(MeleePhase.GuardImpact, MeleeBufferedAction.Shove, true)]
+        [TestCase(MeleePhase.GuardBroken, MeleeBufferedAction.Attack, false)]
+        [TestCase(MeleePhase.GuardBroken, MeleeBufferedAction.Shove, false)]
+        [TestCase(MeleePhase.KnockedDown, MeleeBufferedAction.Attack, false)]
+        [TestCase(MeleePhase.Rising, MeleeBufferedAction.Shove, false)]
+        [TestCase(MeleePhase.Defeated, MeleeBufferedAction.Charge, false)]
+        public void IndependentUpperBodyAttemptCanUseRecoveryWithoutRelaxingKickOrFallGates(
+            MeleePhase phase, MeleeBufferedAction action, bool allowed)
+        {
+            var actor = new MeleeCombatant();
+            switch (phase)
+            {
+                case MeleePhase.Stagger: actor.ReceiveShove(.7f); break;
+                case MeleePhase.GuardImpact:
+                    actor.SetBlocking(true); actor.ReceiveWeaponObstacle(1f); break;
+                case MeleePhase.GuardBroken:
+                    actor.SetBlocking(true); actor.ReceiveWeaponObstacle(S.MaxStamina + 1f); break;
+                case MeleePhase.KnockedDown: actor.BeginKnockdown(); break;
+                case MeleePhase.Rising: actor.BeginKnockdown(); actor.BeginRise(); break;
+                case MeleePhase.Defeated: actor.ReceiveHit(S.MaxHealth, S.BlockCost, false); break;
+            }
+            Assert.That(actor.Phase, Is.EqualTo(phase));
+            Assert.That(actor.CanTransitionTo(action), Is.False);
+            Assert.That(actor.CanTransitionTo(action, allowRecoveryAttack: true), Is.EqualTo(allowed));
+            Assert.That(actor.TryStartKick(), Is.False, "Recovery permission belongs only to the upper body.");
+            int sequence = actor.AttackSequence;
+            bool started = action switch
+            {
+                MeleeBufferedAction.Attack => actor.TryStartRecoveryAttack(),
+                MeleeBufferedAction.Charge => actor.TryStartRecoveryCharge(),
+                _ => actor.TryStartRecoveryShove()
+            };
+            Assert.That(started, Is.EqualTo(allowed));
+            Assert.That(actor.AttackSequence, Is.EqualTo(sequence + (allowed ? 1 : 0)));
+            if (!allowed) Assert.That(actor.Phase, Is.EqualTo(phase));
+        }
+
+        [Test]
+        public void IndependentUpperBodyAttemptRetainsTheUnfinishedStunAndSingleKickIntent()
+        {
+            var actor = new MeleeCombatant();
+            actor.ReceiveShove(1.4f);
+            Assert.That(actor.TryStartRecoveryShove(), Is.True);
+            actor.Advance(S.ShoveDurationSeconds + Eps, allowBufferedAttack: false);
+            Assert.That(actor.Phase, Is.EqualTo(MeleePhase.Stagger));
+            Assert.That(actor.ActionRemaining, Is.EqualTo(1.4f - S.ShoveDurationSeconds - Eps).Within(Eps));
+            actor.Reset();
+            int sequence = actor.AttackSequence;
+            float stamina = actor.Stamina;
+            Assert.That(actor.RequestKick(), Is.True);
+            Assert.That(actor.RequestKick(), Is.True);
+            actor.Advance(.3f);
+            Assert.That(actor.AttackSequence, Is.EqualTo(sequence), "Only measured runtime support may start the queued kick.");
+            Assert.That(actor.Stamina, Is.EqualTo(stamina));
+            Assert.That(actor.CancelBufferedAction(MeleeBufferedAction.Shove), Is.False);
+            Assert.That(actor.CancelBufferedAction(MeleeBufferedAction.Kick), Is.True);
+            Assert.That(actor.TryContinueBufferedAction(), Is.False);
+        }
+
         [TestCase(0f)]
         [TestCase(-1f)]
         [TestCase(float.NaN)]
@@ -1956,6 +2135,7 @@ namespace BarPromenade.Tests.EditMode
             Assert.Throws<ArgumentOutOfRangeException>(() => new MeleeCombatSettings(shoveContactSeconds: value));
             Assert.Throws<ArgumentOutOfRangeException>(() => new MeleeCombatSettings(shoveDurationSeconds: value));
             Assert.Throws<ArgumentOutOfRangeException>(() => new MeleeCombatSettings(shoveCost: value));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new MeleeCombatSettings(shoveContactWindowSeconds: value));
             Assert.Throws<ArgumentOutOfRangeException>(() => new MeleeCombatSettings(kickWindupSeconds: value));
             Assert.Throws<ArgumentOutOfRangeException>(() => new MeleeCombatSettings(kickActiveSeconds: value));
             Assert.Throws<ArgumentOutOfRangeException>(() => new MeleeCombatSettings(kickHitRecoverySeconds: value));
@@ -1974,6 +2154,7 @@ namespace BarPromenade.Tests.EditMode
         {
             Assert.That(MeleeCombatSettings.Crowbar, Is.Not.Null);
             Assert.Throws<ArgumentOutOfRangeException>(() => new MeleeCombatSettings(shoveDurationSeconds: S.ShoveContactSeconds));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new MeleeCombatSettings(shoveContactWindowSeconds: S.ShoveDurationSeconds));
             Assert.Throws<ArgumentOutOfRangeException>(() => new MeleeCombatSettings(staggerSeconds: S.HitRecoverySeconds),
                 "A landed hit must leave the attacker free before the victim.");
             Assert.Throws<ArgumentOutOfRangeException>(() => new MeleeCombatSettings(counterHitStaggerBonus: .05f),

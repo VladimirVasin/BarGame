@@ -7,6 +7,7 @@ namespace BarPromenade
         internal const float MaximumFacingSpeed = 150f;
         internal const float WindupFacingDegrees = 50f;
         internal const float KickFacingDegrees = 30f;
+        internal const float RecoveryFacingDegrees = 30f;
         internal const float EarlyFacingFraction = .25f;
         private float facingVelocity, plantedFacing;
         private MeleePhase facingPhase = MeleePhase.Ready;
@@ -30,22 +31,23 @@ namespace BarPromenade
         {
             if (presentationFrozen || PauseMenuController.IsAnyPaused || GameTimeScaleRuntime.IsPaused || seconds <= 0f)
                 return;
+            bool recovering = (footwork?.RecoveryEpisodeActive ?? false) ||
+                (ImpactMotion != null && ImpactMotion.IsActive && ImpactMotion.BalanceLoad > .45f);
+            bool upperBodyAttempt = State.IsAttacking || State.IsCharging || State.IsShoving;
             if (!OwnsCombatFacing || !contactTarget.isActiveAndEnabled || contactTarget.State.IsDefeated ||
-                !IsAvailable || IsKnockedDown || State.IsDefeated ||
-                (footwork?.RecoveryEpisodeActive ?? false) ||
-                (ImpactMotion != null && ImpactMotion.IsActive && ImpactMotion.BalanceLoad > .45f))
+                !IsAvailable || !CanAttemptUpperBodyAttack || recovering && !upperBodyAttempt)
             { facingVelocity = 0f; return; }
 
             // A rules tick can end the arc while still owing its last contact
             // interval. Recovery must not turn that final sample toward a new line.
             if ((collectSweep && sweepFrom < State.AttackActiveEnd && sweepTo >= State.AttackActiveEnd) ||
-                State.Phase is MeleePhase.Step or MeleePhase.Shoving or MeleePhase.GuardImpact)
+                State.Phase is MeleePhase.Step or MeleePhase.GuardImpact)
             { facingVelocity = 0f; return; }
 
             // A release gets one early aim window. Active and Recovery keep the
             // same planted frame; phase changes cannot grant another correction.
             if (facingSequence != State.AttackSequence ||
-                !State.IsAttacking && !State.IsKicking ||
+                !State.IsAttacking && !State.IsKicking && !State.IsShoving && !(State.IsCharging && recovering) ||
                 facingPhase == MeleePhase.Charging && State.Phase == MeleePhase.Windup)
             {
                 plantedFacing = transform.eulerAngles.y;
@@ -55,12 +57,13 @@ namespace BarPromenade
             facingPhase = State.Phase;
             float aimProgress = 0f;
             float aimRemaining = 0f;
-            if (State.IsAttacking || State.IsKicking)
+            if (State.IsAttacking || State.IsKicking || State.IsShoving)
             {
-                float elapsed = State.IsKicking ? State.KickElapsed : State.AttackElapsed;
-                float windup = State.IsKicking ? State.Settings.KickWindupSeconds : State.AttackWindupSeconds;
-                aimProgress = elapsed / (windup * EarlyFacingFraction);
-                aimRemaining = windup * EarlyFacingFraction - elapsed;
+                float elapsed = State.IsShoving ? State.ShoveElapsed : State.IsKicking ? State.KickElapsed : State.AttackElapsed;
+                float opening = State.IsShoving ? State.Settings.ShoveContactSeconds :
+                    (State.IsKicking ? State.Settings.KickWindupSeconds : State.AttackWindupSeconds) * EarlyFacingFraction;
+                aimProgress = elapsed / opening;
+                aimRemaining = opening - elapsed;
                 if (aimProgress >= 1f)
                 {
                     facingVelocity = 0f;
@@ -69,8 +72,8 @@ namespace BarPromenade
                         facingLocked = true;
                         JournalEvent("aim_locked", contactTarget.JournalActorId, State.AttackSequence, journalActionRequest,
                             GameLog.Field("yaw", transform.eulerAngles.y),
-                            GameLog.Field("opening_seconds", windup * EarlyFacingFraction),
-                            GameLog.Field("action_kind", State.IsKicking ? "kick" : "weapon"));
+                            GameLog.Field("opening_seconds", opening),
+                            GameLog.Field("action_kind", State.IsShoving ? "shove" : State.IsKicking ? "kick" : "weapon"));
                     }
                     return;
                 }
@@ -95,13 +98,23 @@ namespace BarPromenade
                 speed = MaximumFacingSpeed * (1f - Mathf.SmoothStep(0f, 1f, aimProgress));
                 limit = KickFacingDegrees;
             }
+            else if (State.IsShoving)
+            {
+                speed = MaximumFacingSpeed * (1f - Mathf.SmoothStep(0f, 1f, aimProgress));
+                limit = RecoveryFacingDegrees;
+            }
+            if (recovering && upperBodyAttempt)
+            {
+                speed = Mathf.Min(speed, MaximumFacingSpeed * .35f);
+                limit = Mathf.Min(limit, RecoveryFacingDegrees);
+            }
             if (limit < 180f)
                 desiredYaw = plantedFacing + Mathf.Clamp(Mathf.DeltaAngle(plantedFacing, desiredYaw), -limit, limit);
             float bearing = Mathf.DeltaAngle(transform.eulerAngles.y, desiredYaw);
             // Release may inherit charge rotation. Spend that velocity through
             // finite braking inside the opening, rather than clipping it to a
             // shrinking speed cap or carrying it into the committed strike.
-            float braking = State.IsAttacking || State.IsKicking
+            float braking = State.IsAttacking || State.IsKicking || State.IsShoving
                 ? Mathf.Max(900f, Mathf.Abs(facingVelocity) * 2f / Mathf.Max(seconds, aimRemaining)) : 900f;
             float yaw = PlayerMotor.AdvanceInertialYaw(bearing, speed, seconds, ref facingVelocity, true, braking);
             if (limit < 180f)

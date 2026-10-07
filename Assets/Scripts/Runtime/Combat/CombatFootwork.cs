@@ -366,6 +366,32 @@ namespace BarPromenade
                 Vector3.Distance(presentedFeet[side], ground) <= .055f && LandingClear(ground);
         }
 
+        // A step's travel ends before its authored visual return. Adopt only
+        // the soles actually presented at that boundary, never a fresh stance.
+        internal bool PrepareStepAttackHandoff()
+        {
+            if (JournalActor == null || JournalActor.State.Phase != MeleePhase.Step) return true;
+            if (JournalActor.State.StepTravelProgress < 1f) return false;
+            bool left = PresentedGrounded(0, out _), right = PresentedGrounded(1, out _);
+            if (!left && !right) return false;
+            if (recoveryStepOwned)
+            {
+                AdvanceAuthoredRecoveryStep(JournalActor.State);
+                if (!recoveryStepSecondLanded) return true;
+                ReleaseAuthoredRecoveryStep();
+            }
+            ordinaryStepTracked = false;
+            initialized = true; yielded = false; moving = settlingFoot = false;
+            gaitOffset = Vector3.zero;
+            for (int side = 0; side < 2; side++)
+            {
+                feet[side] = presentedFeet[side];
+                rotations[side] = bones[3 + side * 3].rotation;
+                supportConfirmed[side] = side == 0 ? left : right;
+            }
+            return true;
+        }
+
         private void AdvanceAuthoredRecoveryStep(MeleeCombatant state)
         {
             float travel = state.StepTravelProgress;
@@ -639,7 +665,12 @@ namespace BarPromenade
             { moving = settlingFoot = false; gaitOffset = Vector3.zero; return; }
             if (kickLandingPending && TryCatchGround(bones[3 + KickFootSide * 3].position, KickFootSide, out Vector3 landing) &&
                 Vector3.Distance(bones[3 + KickFootSide * 3].position, landing) <= .08f && LandingClear(landing))
-            { kickLandingPending = false; supportConfirmed[KickFootSide] = true; }
+            {
+                kickLandingPending = false;
+                feet[KickFootSide] = landing;
+                rotations[KickFootSide] = bones[3 + KickFootSide * 3].rotation;
+                supportConfirmed[KickFootSide] = true;
+            }
             if (state.Phase == MeleePhase.Step && ImpactMotion != null && ImpactMotion.IsActive)
             {
                 if (!ordinaryStepTracked)
@@ -1121,12 +1152,14 @@ namespace BarPromenade
             for (int i = 0; i < bones.Length; i++) { basePositions[i] = bones[i].localPosition; baseRotations[i] = bones[i].localRotation; }
             applied = true;
             pelvis.position += frame.TransformVector(gaitOffset);
-            ConstrainContacts();
+            ConstrainContacts(false);
         }
 
         // Transition source/target poses already include the weight shift. Re-close
         // their contacts afterwards without applying that shift a second time.
-        public void ConstrainContacts()
+        public void ConstrainContacts() => ConstrainContacts(true);
+
+        private void ConstrainContacts(bool preserveBend)
         {
             bool authoredStep = NeedsAuthoredStepContacts;
             if (authoredStep)
@@ -1140,12 +1173,13 @@ namespace BarPromenade
                 }
             }
             else if (!initialized || yielded) return;
-            if (kickOwnsFoot) ConstrainKickWorld();
+            if (kickOwnsFoot || kickLandingPending) ConstrainKickWorld();
             // The animation owns the weight shift; only lower a hip if a planted leg would lock straight.
             float lower = 0f;
             for (int side = 0; side < 2; side++)
             {
-                if (authoredStep ? !recoveryStepOwned && !authoredStepContacts[side] : kickOwnsFoot && side == KickFootSide) continue;
+                if (authoredStep ? !recoveryStepOwned && !authoredStepContacts[side] :
+                    (kickOwnsFoot || kickLandingPending) && side == KickFootSide) continue;
                 Vector3 delta = bones[1 + side * 3].position - (authoredStep && !recoveryStepOwned ? authoredStepFeet[side] : feet[side]);
                 float horizontal = delta.x * delta.x + delta.z * delta.z;
                 float length = legLengths[side] * .997f;
@@ -1157,12 +1191,18 @@ namespace BarPromenade
             pelvis.position -= Vector3.up * correction;
             for (int side = 0; side < 2; side++)
             {
-                if (authoredStep ? !recoveryStepOwned && !authoredStepContacts[side] : kickOwnsFoot && side == KickFootSide) continue;
+                if (authoredStep ? !recoveryStepOwned && !authoredStepContacts[side] :
+                    (kickOwnsFoot || kickLandingPending) && side == KickFootSide) continue;
                 int i = 1 + side * 3;
+                // The sampled target uses the ordinary knee pole. After the
+                // final pose blend, keep its inherited bend plane while closing
+                // the same sole: replacing that plane would snap a step's knee.
+                Vector3 hint = preserveBend && !authoredStep ? bones[i + 1].position :
+                    bones[i].position + frame.forward * .7f + (side == 0 ? -frame.right : frame.right) * .08f;
                 LimbTwoBoneIk.Solve(bones[i], bones[i + 1], bones[i + 2],
                     authoredStep && !recoveryStepOwned ? authoredStepFeet[side] : feet[side],
                     authoredStep && !recoveryStepOwned ? authoredStepRotations[side] : rotations[side],
-                    bones[i].position + frame.forward * .7f + (side == 0 ? -frame.right : frame.right) * .08f,
+                    hint,
                     1f, .999f, true);
             }
         }

@@ -109,11 +109,12 @@ namespace BarPromenade.Tests.PlayMode
                     root.Hero.State.KickElapsed < root.Hero.State.KickActiveEnd); i++)
                     root.Tick(CombatTestRoot.SimulationStep);
                 Assert.That(root.Opponent.ReceivedImpactCount, Is.EqualTo(1), "One foot sweep grants one impact.");
+                int kickSequence = root.Hero.State.AttackSequence;
                 Assert.That(root.Hero.RequestCharge(), Is.True);
                 root.Hero.ReleaseCharge();
-                Assert.That(root.Hero.State.IsKicking, Is.True, "A queued tap preserves the whole kick return.");
-                for (int i = 0; i < 40 && root.Hero.State.IsKicking; i++) root.Tick(CombatTestRoot.SimulationStep);
-                for (int i = 0; i < 12 && !root.Hero.State.IsAttacking; i++) root.Tick(CombatTestRoot.SimulationStep);
+                Assert.That(root.Hero.State.IsKicking, Is.False, "The completed kick contact does not block a weapon tap through its whole return.");
+                Assert.That(root.Hero.State.AttackSequence, Is.EqualTo(kickSequence + 1));
+                Assert.That(root.Hero.State.CooldownRemaining(MeleeBufferedAction.Kick), Is.GreaterThan(0f));
                 Assert.That(root.Hero.State.Phase, Is.EqualTo(MeleePhase.Windup));
                 Assert.That(root.Hero.State.IsChained, Is.False);
                 CaptureKick("kick-return-attack");
@@ -187,12 +188,22 @@ namespace BarPromenade.Tests.PlayMode
         [UnityTest]
         public IEnumerator Range_KickSelectsWalkingSupportAndCancelsStaleRequests()
         {
-            yield return SceneManager.LoadSceneAsync(SceneIds.CombatTest);
-            root = Object.FindAnyObjectByType<CombatTestRoot>();
-            root.AutomaticSimulation = false;
+            var input = new InputTestFixture();
             GameObject obstruction = null;
             try
             {
+                input.Setup();
+                yield return SceneManager.LoadSceneAsync(SceneIds.CombatTest);
+                root = Object.FindAnyObjectByType<CombatTestRoot>();
+                root.AutomaticSimulation = false;
+                Mouse mouse = InputSystem.AddDevice<Mouse>();
+                RetroUiCanvas canvas = RetroUiTheme.CalculateCanvas(Screen.width, Screen.height);
+                Vector2 actionPointer = canvas.LogicalToScreen(new Vector2(320f, 180f));
+                actionPointer.y = Screen.height - actionPointer.y;
+                input.Set(mouse.position, actionPointer);
+                var consume = typeof(CombatTestRoot).GetMethod("UpdateCombatInput",
+                    System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+                Assert.That(consume, Is.Not.Null);
                 for (int striking = 0; striking < 2; striking++)
                 {
                     PlacePair(3f);
@@ -264,6 +275,30 @@ namespace BarPromenade.Tests.PlayMode
                 WalkToFootLift(0);
                 obstruction = BlockRightKickSupport();
                 Assert.That(root.Hero.TryKick(), Is.True);
+                Assert.That(root.Hero.HasPendingKick, Is.True, KickWaitDiagnostics());
+                int sequence = root.Hero.State.AttackSequence;
+                input.Press(mouse.leftButton);
+                InputSystem.Update();
+                Assert.That(GameInput.WasPressed(GameInputAction.MeleeAttack, GameInputContext.Gameplay), Is.True);
+                Assert.That((bool)consume.Invoke(root, null), Is.True);
+                Assert.That(root.Hero.HasPendingKick, Is.False, "A fresh LMB replaces the waiting Q in the one action slot.");
+                Assert.That(root.Hero.State.IsCharging, Is.True, "Waiting for a sole cannot block a new weapon press.");
+                Assert.That(root.Hero.State.AttackSequence, Is.EqualTo(sequence + 1));
+                Assert.That(root.Hero.State.BufferedAction, Is.EqualTo(MeleeBufferedAction.None));
+                input.Release(mouse.leftButton);
+                InputSystem.Update();
+                Assert.That((bool)consume.Invoke(root, null), Is.True);
+                Assert.That(root.Hero.State.Phase, Is.EqualTo(MeleePhase.Windup));
+                root.Tick(.25f);
+                Assert.That(root.Hero.State.IsKicking, Is.False, "The replaced Q cannot fire after its former support wait.");
+                Assert.That(root.Hero.State.AttackSequence, Is.EqualTo(sequence + 1));
+                Object.Destroy(obstruction); obstruction = null;
+
+                PlacePair(3f);
+                yield return null;
+                WalkToFootLift(0);
+                obstruction = BlockRightKickSupport();
+                Assert.That(root.Hero.TryKick(), Is.True);
                 Assert.That(root.Hero.HasPendingKick, Is.True);
                 root.ResetRound();
                 Assert.That(root.Hero.HasPendingKick, Is.False);
@@ -304,6 +339,7 @@ namespace BarPromenade.Tests.PlayMode
             {
                 if (root != null) root.AutomaticSimulation = false;
                 if (obstruction != null) Object.Destroy(obstruction);
+                input.TearDown();
             }
         }
 

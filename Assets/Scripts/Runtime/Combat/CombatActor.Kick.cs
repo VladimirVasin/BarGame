@@ -32,7 +32,6 @@ namespace BarPromenade
         private bool kickSupportPending;
         private int kickSupportRequest, kickSupportAttackSequence;
         private float kickSupportRemaining;
-        private CombatFootwork.KickSupportFailure journalKickSupportFailure;
         internal bool HasPendingKick => kickSupportPending;
         internal float PendingKickSeconds => kickSupportRemaining;
         internal Vector3 KickBootPosition => kickFoot != null ? kickFoot.TransformPoint(kickBootLocal) : transform.position;
@@ -136,35 +135,53 @@ namespace BarPromenade
             int request = JournalCommand("kick");
             string unavailable = KickUnavailableReason;
             if (unavailable != null) return JournalCommandResult(request, "rejected", unavailable);
-            if (!(State.Phase == MeleePhase.Ready || State.IsCharging) || State.Stamina < State.Settings.KickCost)
-                return JournalRulesRejected(request, State.Settings.KickCost, false);
+            if (!HasAttackBalance && State.Phase != MeleePhase.Step && !State.IsAttacking && !State.IsShoving)
+                return JournalCommandResult(request, "rejected", AttackBalanceRejection);
             if (kickSupportPending)
                 return JournalCommandResult(request, "queued", "kick_support_wait", kickSupportRemaining,
                     KickSupportWaitSeconds, trackAction: false);
+            if (!State.RequestKick()) return JournalRulesRejected(request, State.Settings.KickCost, true);
+            bool started = ContinueBufferedAttackAfterContacts();
+            if (!started && State.BufferedAction != MeleeBufferedAction.Kick)
+                return JournalCommandResult(request, "rejected", "kick_support", footwork.LastKickSupportGap, .08f);
+            return JournalCommandResult(request, started ? "started" : "queued", started ? "kick" : "kick_buffer");
+        }
+
+        private bool ContinueBufferedKickAfterContacts()
+        {
+            if (!HasAttackBalance || KickUnavailableReason != null) return false;
             if (!footwork.TryBeginKickSupport())
             {
-                JournalKickSupport(request);
+                JournalKickSupport(journalQueuedRequest);
                 if (!footwork.CanWaitForKickSupport)
-                    return JournalCommandResult(request, "rejected", "kick_support",
-                        footwork.LastKickSupportGap, .08f);
-                kickSupportPending = true; kickSupportRequest = request;
-                kickSupportAttackSequence = State.AttackSequence;
-                kickSupportRemaining = KickSupportWaitSeconds;
-                journalKickSupportFailure = footwork.LastKickSupportFailure;
-                footwork.BeginKickSupportWait();
-                return JournalCommandResult(request, "queued", "kick_support_wait",
-                    footwork.LastKickSupportGap, .08f, trackAction: false);
+                {
+                    State.CancelBufferedAction(MeleeBufferedAction.Kick);
+                    CancelPendingKick("support_changed");
+                    return false;
+                }
+                if (!kickSupportPending)
+                {
+                    kickSupportPending = true; kickSupportRequest = journalQueuedRequest;
+                    kickSupportAttackSequence = State.AttackSequence;
+                    kickSupportRemaining = KickSupportWaitSeconds;
+                    footwork.BeginKickSupportWait();
+                }
+                return false;
             }
-            return StartSupportedKick(request);
+            if (!State.TryContinueBufferedAction()) { footwork.EndKickSupport(); return false; }
+            int request = kickSupportPending ? kickSupportRequest : journalQueuedRequest;
+            ClearPendingKick();
+            BeginKickPresentation(request);
+            JournalBufferedActionStarted();
+            return true;
         }
 
         private string KickUnavailableReason => roundEnded ? "round_ended" : !IsAvailable ? "actor_unavailable" :
             !GameInput.CanRead(GameInputContext.Gameplay) ? "input_gate" : kick == null ? "kick_unavailable" :
-            !HasAttackBalance ? AttackBalanceRejection : null;
+            !CanAttemptUpperBodyAttack ? UpperBodyAttackRejection : null;
 
-        private bool StartSupportedKick(int request)
+        private void BeginKickPresentation(int request)
         {
-            if (!State.TryStartKick()) { footwork.EndKickSupport(); return JournalRulesRejected(request, State.Settings.KickCost, false); }
             SelectKickFoot(1 - footwork.SelectedSupportSide);
             JournalKickSupport(request);
             kickSequence = State.AttackSequence;
@@ -172,7 +189,6 @@ namespace BarPromenade
             collectKick = sweepValid = collectSweep = false;
             reaction = null; reactionClock = 0f;
             Present();
-            return JournalCommandResult(request, "started", "kick");
         }
 
         private void AdvancePendingKick(float seconds)
@@ -180,25 +196,13 @@ namespace BarPromenade
             if (!kickSupportPending) return;
             string rejected = KickUnavailableReason;
             if (rejected == null && (State.AttackSequence != kickSupportAttackSequence ||
-                !(State.Phase == MeleePhase.Ready || State.IsCharging))) rejected = "action_changed";
+                State.BufferedAction != MeleeBufferedAction.Kick)) rejected = "action_changed";
             if (rejected == null && State.Stamina < State.Settings.KickCost) rejected = "stamina";
             if (rejected != null) { CancelPendingKick(rejected); return; }
             kickSupportRemaining = Mathf.Max(0f, kickSupportRemaining - seconds);
-            if (footwork.TryBeginKickSupport())
-            {
-                int request = kickSupportRequest;
-                ClearPendingKick();
-                StartSupportedKick(request);
-                return;
-            }
-            if (footwork.LastKickSupportFailure != journalKickSupportFailure)
-            {
-                JournalKickSupport(kickSupportRequest);
-                journalKickSupportFailure = footwork.LastKickSupportFailure;
-            }
-            if (!footwork.CanWaitForKickSupport)
-                CancelPendingKick("support_changed");
-            else if (kickSupportRemaining <= 0f) CancelPendingKick("expired");
+            // Support is measured and the action starts only in the common
+            // post-contact handoff, never while this tick still owes a sweep.
+            if (kickSupportRemaining <= 0f) CancelPendingKick("expired");
         }
 
         internal void CancelPendingKick(string reason)
@@ -209,6 +213,7 @@ namespace BarPromenade
                     f0: GameLog.Field("reason", reason), f1: GameLog.Field("remaining", kickSupportRemaining),
                     f2: GameLog.Field("support_reason", footwork.LastKickSupportFailure.ToString()),
                     f3: GameLog.Field("ankle_ground_gap", footwork.LastKickSupportGap));
+            State.CancelBufferedAction(MeleeBufferedAction.Kick);
             ClearPendingKick();
         }
 

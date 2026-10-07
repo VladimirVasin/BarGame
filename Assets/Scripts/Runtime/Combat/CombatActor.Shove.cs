@@ -46,18 +46,28 @@ namespace BarPromenade
             CancelInterruptedShoveContact();
             if (request == 0) request = JournalCommand("windup_to_shove");
             if (!CheckShoveRange(request)) return JournalCommandResult(request, "rejected", "shove_range");
-            if (ImpactMotion?.RecoveryInProgress ?? false) return JournalCommandResult(request, "rejected", "balance_recovery");
-            if (!State.TryStartShove()) return JournalCommandResult(request, "rejected",
-                State.Phase == MeleePhase.Ready || State.IsCharging || State.Phase == MeleePhase.Windup ? "stamina" : "shove_phase",
-                State.Stamina, State.Settings.ShoveCost);
+            if (!CanAttemptUpperBodyAttack) return JournalCommandResult(request, "rejected", UpperBodyAttackRejection);
+            int previous = State.AttackSequence;
+            if (!State.RequestShove(true)) return JournalRulesRejected(request, State.Settings.ShoveCost, true);
+            CancelPendingKick("replaced");
+            if (previous == State.AttackSequence)
+            {
+                ContinueBufferedAttackAfterContacts();
+                return JournalCommandResult(request, previous == State.AttackSequence ? "queued" : "routed_shove", "close_contact");
+            }
+            BeginShovePresentation(request);
+            Present();
+            return JournalCommandResult(request, "routed_shove", "close_contact");
+        }
+
+        private void BeginShovePresentation(int request)
+        {
             shoveContactPending = true; shoveContactApplied = false;
             shoveContactSequence = State.AttackSequence; shoveContactRequest = request;
             shoveContactToken = unchecked(shoveContactToken + 1); shoveContactAttempts = 0;
             shoveLastPalmGap = shoveLastAttemptSeconds = 0f;
             shoveDirection = Vector3.ProjectOnPlane(contactTarget.transform.position - transform.position, Vector3.up).normalized;
             reaction = null; reactionClock = 0f; sweepValid = collectSweep = collectShove = false;
-            Present();
-            return JournalCommandResult(request, "routed_shove", "close_contact");
         }
 
         private bool ShoveSurface(out CombatHurtboxes.Hit hit)
@@ -88,8 +98,7 @@ namespace BarPromenade
             collectShove = false;
             CancelInterruptedShoveContact();
             if (!shoveContactPending) return;
-            float contactEnd = Mathf.Min(State.Settings.ShoveDurationSeconds,
-                State.Settings.ShoveContactSeconds + ShoveContactWindowSeconds);
+            float contactEnd = State.Settings.ShoveActiveEndSeconds;
             // The existing palm pose holds full reach until contact + .035s;
             // this bounded window ends during its early return, before rest.
             if (State.ShoveElapsed > contactEnd + .000001f)

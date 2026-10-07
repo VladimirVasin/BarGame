@@ -32,7 +32,8 @@ namespace BarPromenade
             float kickWindupSeconds = .30f, float kickActiveSeconds = .10f,
             float kickHitRecoverySeconds = .40f, float kickMissRecoverySeconds = .55f,
             float kickObstacleRecoverySeconds = .55f, float kickCost = 15f,
-            float kickDamage = 5f, float kickStaggerSeconds = .24f)
+            float kickDamage = 5f, float kickStaggerSeconds = .24f,
+            float shoveContactWindowSeconds = .08f)
         {
             MaxHealth = Positive(maxHealth, nameof(maxHealth));
             MaxStamina = Positive(maxStamina, nameof(maxStamina));
@@ -85,8 +86,11 @@ namespace BarPromenade
             KickCost = Positive(kickCost, nameof(kickCost));
             KickDamage = Positive(kickDamage, nameof(kickDamage));
             KickStaggerSeconds = Positive(kickStaggerSeconds, nameof(kickStaggerSeconds));
+            ShoveContactWindowSeconds = Positive(shoveContactWindowSeconds, nameof(shoveContactWindowSeconds));
             if (ShoveDurationSeconds <= ShoveContactSeconds)
                 throw new ArgumentOutOfRangeException(nameof(shoveDurationSeconds));
+            if (ShoveActiveEndSeconds > ShoveDurationSeconds)
+                throw new ArgumentOutOfRangeException(nameof(shoveContactWindowSeconds));
             if (AttackCost > MaxStamina) throw new ArgumentOutOfRangeException(nameof(attackCost));
             if (StepCost > MaxStamina) throw new ArgumentOutOfRangeException(nameof(stepCost));
             if (ParryMaxPower > 1f) throw new ArgumentOutOfRangeException(nameof(parryMaxPower));
@@ -160,6 +164,8 @@ namespace BarPromenade
         public float ShoveContactSeconds { get; }
         public float ShoveDurationSeconds { get; }
         public float ShoveCost { get; }
+        public float ShoveContactWindowSeconds { get; }
+        public float ShoveActiveEndSeconds => ShoveContactSeconds + ShoveContactWindowSeconds;
         public float KickWindupSeconds { get; }
         public float KickActiveSeconds { get; }
         public float KickHitRecoverySeconds { get; }

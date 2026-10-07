@@ -78,8 +78,8 @@ repair commands. Generation/publication: [../tools/README.md](../tools/README.md
 
 ## Implemented capabilities
 
-- CombatTest:120Hz early aim/two-foot Q/queue/3 styles/chains/shield/counters/
-  1m recovery Step/metal sparks/HP/fall-rise; live pose/sweep gates.
+- CombatTest:120Hz/aim/Q/queue/3 styles/chains/shield/HP/fall-rise;
+  separate clocks/post-Step .36s/nonfall bar-shove/1m Step/metal/pose gates.
   Partial: penetration/balance/visual QA.
 - City: 20 metre types; district heights, curved old/service streets,
   courts/passages/wings, unified ground; river/shore, church and Route 01.

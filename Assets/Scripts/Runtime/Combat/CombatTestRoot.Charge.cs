@@ -49,7 +49,7 @@ namespace BarPromenade
                 Hero.CancelPendingKick("step_requested");
                 Hero.TryStep(GameInput.ReadMovement());
             }
-            if (blocking || stepping || kickAccepted || Hero.HasPendingKick || RoundFinished)
+            if (blocking || stepping || kickAccepted || RoundFinished)
             {
                 CancelHeldHeroCharge();
                 attackInputOwned = false;

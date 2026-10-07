@@ -13,6 +13,203 @@ namespace BarPromenade.Tests.PlayMode
     public sealed partial class CombatTestPlayModeTests
     {
         [UnityTest]
+        public IEnumerator Range_AttackTypesSwitchAfterContactAndActDuringRecovery()
+        {
+            yield return SceneManager.LoadSceneAsync(SceneIds.MainMenu);
+            yield return EnterRange();
+            CombatActor actor = root.Hero;
+
+            // A queued Q must preserve the last crowbar contact, then take over
+            // while that crowbar still has its own recovery time outstanding.
+            PlacePair(1.1f);
+            for (int frame = 0; frame < 6; frame++)
+            { root.Tick(1f / 60f); yield return null; }
+            Assert.That(actor.RequestAttack(), Is.True);
+            root.Tick(S.WindupSeconds + S.ActiveSeconds - .05f);
+            int sequence = actor.State.AttackSequence;
+            Assert.That(actor.TryKick(), Is.True);
+            Assert.That(actor.State.BufferedAction, Is.EqualTo(MeleeBufferedAction.Kick));
+            Assert.That(actor.State.AttackSequence, Is.EqualTo(sequence));
+            CaptureInertiaFrame(actor, "weapon-to-kick", 0);
+            for (int tick = 0; tick < 12 && !actor.State.IsKicking; tick++)
+                root.Tick(CombatTestRoot.SimulationStep);
+            Assert.That(actor.State.IsKicking, Is.True, "Q takes over just after the complete weapon contact interval.");
+            Assert.That(actor.State.AttackSequence, Is.EqualTo(sequence + 1));
+            Assert.That(actor.State.BufferedAction, Is.EqualTo(MeleeBufferedAction.None));
+            Assert.That(actor.State.CooldownRemaining(MeleeBufferedAction.Attack), Is.GreaterThan(0f));
+            Assert.That(root.Opponent.ReceivedImpactCount, Is.EqualTo(1), "Changing type cannot drop or duplicate the old crowbar contact.");
+            CaptureInertiaFrame(actor, "weapon-to-kick", 1);
+            root.Tick(.08f);
+            Assert.That(actor.State.AttackSequence, Is.EqualTo(sequence + 1), "The buffered press is consumed once.");
+
+            // Kick recovery and shove recovery likewise do not own another
+            // type. Move only the target after the old contact window is over.
+            foreach (bool fromKick in new[] { true, false })
+            {
+                PlacePair(fromKick ? 3f : .80f);
+                for (int frame = 0; frame < 6; frame++)
+                { root.Tick(1f / 60f); yield return null; }
+                Assert.That(fromKick ? actor.TryKick() : actor.RequestAttack(), Is.True);
+                float handoffAt = (fromKick ? actor.State.KickActiveEnd : S.ShoveActiveEndSeconds) + .01f;
+                // A landed palm adds hit-stop to the root clock. Admission is
+                // measured against the action clock after that pause is spent.
+                for (int tick = 0; tick < 90 &&
+                    (fromKick ? actor.State.KickElapsed : actor.State.ShoveElapsed) < handoffAt; tick++)
+                    root.Tick(CombatTestRoot.SimulationStep);
+                Assert.That(fromKick ? actor.State.KickElapsed : actor.State.ShoveElapsed, Is.GreaterThanOrEqualTo(handoffAt));
+                Assert.That(fromKick ? actor.State.IsKicking : actor.State.IsShoving, Is.True);
+                if (!fromKick)
+                    Assert.That(root.Opponent.ReceivedImpactCount, Is.EqualTo(1), "The palm has delivered its one real contact before switching.");
+                root.Opponent.Body.Move(actor.transform.position + actor.transform.forward * (fromKick ? .80f : 3f) -
+                    root.Opponent.transform.position);
+                Physics.SyncTransforms();
+                string subject = fromKick ? "kick-to-shove" : "shove-to-weapon";
+                CaptureInertiaFrame(actor, subject, 0);
+                var pose = new CombatInertiaPose(actor);
+                Vector3 position = actor.transform.position;
+                sequence = actor.State.AttackSequence;
+                Assert.That(actor.RequestAttack(), Is.True);
+                Assert.That(actor.State.Phase, Is.EqualTo(fromKick ? MeleePhase.Shoving : MeleePhase.Windup));
+                Assert.That(actor.State.AttackSequence, Is.EqualTo(sequence + 1));
+                Assert.That(actor.State.CooldownRemaining(fromKick ? MeleeBufferedAction.Kick : MeleeBufferedAction.Shove),
+                    Is.GreaterThan(0f), "Changing type leaves the previous type's recovery running.");
+                Assert.That(actor.transform.position, Is.EqualTo(position));
+                pose.AssertMatches(actor, .003f, .1f, "An admitted transition starts from the visible pose");
+                CaptureInertiaFrame(actor, subject, 1);
+                root.Tick(.06f);
+                CaptureInertiaFrame(actor, subject, 2);
+            }
+
+            foreach (MeleeBufferedAction attack in new[]
+                { MeleeBufferedAction.Attack, MeleeBufferedAction.Shove, MeleeBufferedAction.Kick })
+            {
+                PlacePair(4f);
+                for (int frame = 0; frame < 6; frame++)
+                { root.Tick(1f / 60f); yield return null; }
+                Vector3 start = actor.transform.position;
+                Assert.That(actor.TryStep(Vector2.down), Is.True);
+                for (int tick = 0; tick < 60 && actor.State.StepElapsed < S.StepTravelSeconds; tick++)
+                    root.Tick(CombatTestRoot.SimulationStep);
+                float stepHandoffElapsed = actor.State.StepElapsed, stepHandoffTravel = actor.State.StepTravelProgress;
+                string stepDiagnostic = $"elapsed={stepHandoffElapsed:F5}, travel={stepHandoffTravel:F5}, " +
+                    actor.Footwork.SupportDiagnostics;
+                Assert.That(stepHandoffElapsed, Is.GreaterThanOrEqualTo(S.StepTravelSeconds), stepDiagnostic);
+                Assert.That(stepHandoffElapsed, Is.LessThan(S.StepDurationSeconds), "Admission is checked during the step return. " + stepDiagnostic);
+                Assert.That(actor.State.Phase, Is.EqualTo(MeleePhase.Step), stepDiagnostic);
+                Assert.That(Vector3.Dot(actor.transform.position - start, Vector3.back),
+                    Is.EqualTo(S.StepDistance).Within(.015f), "All travel is applied before its return can be replaced.");
+                Assert.That(actor.TryStep(Vector2.right), Is.False, "The same step still owns its complete recovery.");
+                if (attack == MeleeBufferedAction.Shove)
+                {
+                    root.Opponent.ResetActor(actor.transform.position + actor.transform.forward * .80f, -actor.transform.forward);
+                    Physics.SyncTransforms();
+                }
+                sequence = actor.State.AttackSequence;
+                var pose = new CombatInertiaPose(actor);
+                Assert.That(attack == MeleeBufferedAction.Kick ? actor.TryKick() : actor.RequestAttack(), Is.True);
+                Assert.That(actor.State.Phase, Is.EqualTo(attack == MeleeBufferedAction.Kick ? MeleePhase.Kicking :
+                    attack == MeleeBufferedAction.Shove ? MeleePhase.Shoving : MeleePhase.Windup),
+                    "Every attack type can begin at the end of travel, before the .21s step return. " +
+                    stepDiagnostic + ", current support: " + actor.Footwork.SupportDiagnostics);
+                Assert.That(actor.State.AttackSequence, Is.EqualTo(sequence + 1));
+                Assert.That(actor.State.CooldownRemaining(MeleeBufferedAction.Step), Is.GreaterThan(.2f));
+                pose.AssertMatches(actor, .003f, .1f, "The step hands its real final pose to the next action");
+                string subject = "step-to-" + attack.ToString().ToLowerInvariant();
+                CaptureInertiaFrame(actor, subject, 0);
+                root.Tick(.05f);
+                CaptureInertiaFrame(actor, subject, 1);
+            }
+
+            // Use the same real palm/catch setup as the recovery-step regression.
+            // The three entry paths must not secretly restore physical balance.
+            foreach (int action in new[] { 0, 1, 2 })
+            {
+                PlacePair(.82f);
+                for (int frame = 0; frame < 6; frame++)
+                { root.Tick(1f / 60f); yield return null; }
+                Assert.That(root.Opponent.RequestAttack(), Is.True);
+                bool caught = false;
+                for (int tick = 0; tick < 180 && !caught; tick++)
+                {
+                    root.Tick(CombatTestRoot.SimulationStep);
+                    yield return null;
+                    Assert.That(actor.IsKnockedDown, Is.False, actor.Footwork.SupportDiagnostics);
+                    caught = actor.Footwork.CatchStepActive && actor.Footwork.CatchStepCount == 1 &&
+                        actor.Footwork.CatchStepProgress > 0f && actor.Footwork.CatchStepProgress < .5f;
+                }
+                Assert.That(caught, Is.True, "A live shove creates a supported, unfinished balance recovery.");
+                Assert.That(actor.State.ReceiveShove(.7f), Is.True);
+                actor.Present();
+                Assert.That(actor.HasAttackBalance, Is.False);
+                Assert.That(actor.ImpactMotion.WantsKnockdown, Is.False);
+                Assert.That(actor.TryKick(), Is.False, "A kick still requires balance and a usable support leg.");
+                Assert.That(actor.HasPendingKick, Is.False);
+                float bearing = action == 2 ? 18f : 35f;
+                Vector3 direction = Quaternion.AngleAxis(bearing, Vector3.up) * actor.transform.forward;
+                root.Opponent.ResetActor(actor.transform.position + direction * (action == 2 ? .80f : 1.4f), -direction);
+                Physics.SyncTransforms();
+                string subject = action == 0 ? "recovery-weapon-tap" : action == 1 ? "recovery-weapon-release" : "recovery-shove";
+                CaptureInertiaFrame(actor, subject, 0);
+                Vector3 position = actor.transform.position, velocity = actor.ImpactMotion.Velocity,
+                    rotation = actor.ImpactMotion.Rotation;
+                Quaternion facing = actor.transform.rotation;
+                int recovery = actor.ImpactMotion.RecoverySequence, landings = actor.ImpactMotion.LandedRecoverySteps;
+                float stamina = actor.State.Stamina;
+                sequence = actor.State.AttackSequence;
+                Assert.That(action == 1 ? actor.RequestCharge() : actor.RequestAttack(), Is.True);
+                Assert.That(actor.State.Phase, Is.EqualTo(action == 1 ? MeleePhase.Charging :
+                    action == 2 ? MeleePhase.Shoving : MeleePhase.Windup));
+                Assert.That(actor.transform.position, Is.EqualTo(position), "An attack attempt cannot teleport away from the incoming impulse.");
+                Assert.That(actor.transform.rotation, Is.EqualTo(facing), "Aiming begins with finite world yaw, not a snap toward the enemy.");
+                Assert.That(actor.ImpactMotion.Velocity, Is.EqualTo(velocity));
+                Assert.That(actor.ImpactMotion.Rotation, Is.EqualTo(rotation), "A hand or crowbar attempt retains the visible lean.");
+                Assert.That(actor.ImpactMotion.RecoverySequence, Is.EqualTo(recovery));
+                Assert.That(actor.ImpactMotion.LandedRecoverySteps, Is.EqualTo(landings), "Starting an attempt cannot invent a support landing.");
+                Assert.That(actor.State.Stamina, Is.EqualTo(stamina - (action == 2 ? S.ShoveCost : S.AttackCost)).Within(.001f));
+                if (action == 1)
+                {
+                    root.Tick(.025f);
+                    Assert.That(actor.HasAttackBalance, Is.False, "Release is exercised before the catch has restored balance.");
+                    velocity = actor.ImpactMotion.Velocity; rotation = actor.ImpactMotion.Rotation;
+                    Assert.That(actor.ReleaseCharge(), Is.True);
+                    Assert.That(actor.State.Phase, Is.EqualTo(MeleePhase.Windup));
+                    Assert.That(actor.ImpactMotion.Velocity, Is.EqualTo(velocity));
+                    Assert.That(actor.ImpactMotion.Rotation, Is.EqualTo(rotation));
+                    facing = actor.transform.rotation;
+                }
+                CaptureInertiaFrame(actor, subject, 1);
+                root.Tick(.04f);
+                float yaw = Quaternion.Angle(facing, actor.transform.rotation);
+                Assert.That(yaw, Is.GreaterThan(.001f), "An unfinished catch still permits the bounded early attempt toward the enemy.");
+                Assert.That(yaw, Is.LessThanOrEqualTo(CombatActor.MaximumFacingSpeed * .04f + .1f));
+                Assert.That(Vector3.Dot(actor.transform.forward, direction), Is.GreaterThan(Vector3.Dot(facing * Vector3.forward, direction)),
+                    "The admitted turn must actually move the attempt toward the enemy.");
+                Assert.That(actor.State.AttackSequence, Is.EqualTo(sequence + 1));
+                Assert.That(actor.ImpactMotion.RecoverySequence, Is.EqualTo(recovery));
+                CaptureInertiaFrame(actor, subject, 2);
+            }
+
+            PlacePair(4f);
+            for (int frame = 0; frame < 6; frame++)
+            { root.Tick(1f / 60f); yield return null; }
+            for (int tick = 0; tick < 120 && !actor.IsKnockedDown; tick++)
+            {
+                ApplyControlledImpact(actor, actor.transform.forward, 500f);
+                root.Tick(CombatTestRoot.SimulationStep);
+                yield return null;
+            }
+            Assert.That(actor.IsKnockedDown, Is.True, "The relaxed balance gate retains a real catastrophic fall.");
+            Assert.That(actor.RequestAttack(), Is.False);
+            Assert.That(actor.RequestCharge(), Is.False);
+            Assert.That(actor.TryKick(), Is.False);
+            root.Opponent.ResetActor(actor.transform.position + actor.transform.forward * .80f, -actor.transform.forward);
+            Physics.SyncTransforms();
+            Assert.That(actor.RequestAttack(), Is.False, "The close shove route cannot bypass a committed fall.");
+            Assert.That(actor.State.BufferedAction, Is.EqualTo(MeleeBufferedAction.None));
+            LogAssert.NoUnexpectedReceived();
+        }
+
+        [UnityTest]
         public IEnumerator Range_RecoveryStepsStartImmediatelyAndPreserveLiveSupport()
         {
             var input = new InputTestFixture();
@@ -356,7 +553,8 @@ namespace BarPromenade.Tests.PlayMode
                             contactTicks < ContactTicks(1f / CombatTestRoot.SimulationStep) + 4)
                         { root.Tick(CombatTestRoot.SimulationStep); contactTicks++; }
                         Assert.That(root.Opponent.State.Phase, Is.EqualTo(MeleePhase.GuardImpact));
-                        Assert.That(root.Opponent.TryAttack(), Is.False, "A normal block does not grant an immediate counter.");
+                        Assert.That(root.Opponent.State.CanTransitionTo(MeleeBufferedAction.Attack, true), Is.True,
+                            "A nonfall guard reaction permits a weapon attempt without granting a counter-hit bonus.");
                         Assert.That(root.Hero.WeaponClashCount, Is.EqualTo(1), "Recovery follows a real metal interception.");
                         Assert.That(root.Hero.State.RecoveryRemaining, Is.EqualTo(S.ObstacleRecoverySeconds).Within(.0001f),
                             "The first physical block starts one complete wall recoil immediately.");
