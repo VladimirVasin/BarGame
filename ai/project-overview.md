@@ -49,10 +49,10 @@ returns ride leases that cannot affect a later session. Persistent journey
 progression is distinct from this temporary ownership. Disk save/load is not
 implemented.
 
-`GameInput` centralizes shared action aliases and device reads used by movement,
-interaction and common menus. `GameInputPolicy` gives pause, transitions and
-modal ownership priority while preserving balance-recovery movement. Specific
-look/debug controls remain local; a rebinding interface is not implemented.
+`GameInput`: shared bindings/device reads; `GameInputPolicy`: pause/transition/
+modal priority, balance recovery stays live. Unfocused movement input=0;
+return waits for neutral WASD+left stick. Impulses remain. Look/debug stay local;
+rebinding UI is not implemented.
 
 Area travel loads its destination in Single mode. City/MountainRoad/AlpineVillage share
 incremental builders and synchronous `Build` entry points. The overlay stays
@@ -78,8 +78,8 @@ repair commands. Generation/publication: [../tools/README.md](../tools/README.md
 
 ## Implemented capabilities
 
-- CombatTest:120Hz/3AI;aim-queue-chain-shield-metal-pose gates;
-  own clocks/Step1m/.36→attack/nonfall bar-palm/distance poses/faster Q-palm/contact.
+- CombatTest:120Hz/3AI;MMB:dot-focus↔walk/NPC hostile. Rise≠grip;
+  checked floor escape→arm→living drop;E shared screen reclaims own bar.
   Partial:penetration/balance/visual.
 - City: 20 metre types; district heights, curved old/service streets,
   courts/passages/wings, unified ground; river/shore, church and Route 01.

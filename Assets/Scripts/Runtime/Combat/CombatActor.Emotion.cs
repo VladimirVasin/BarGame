@@ -10,7 +10,7 @@ namespace BarPromenade
         {
             if (hero != null)
             {
-                if (roundEnded || State.IsDefeated) hero.ReleaseContextualFacialExpression(this);
+                if (!CombatFocused || roundEnded || State.IsDefeated) hero.ReleaseContextualFacialExpression(this);
                 else
                 {
                     float blink = Mathf.Repeat(poseClock + 1f, 3.1f);
@@ -40,7 +40,7 @@ namespace BarPromenade
             float effort = State.Phase == MeleePhase.Recovery ? 1f - State.PhaseProgress :
                 State.IsAttacking || State.IsShoving ? 1f : State.IsCharging ? .35f + .65f * State.Charge01 : 0f;
             bodyMotion?.SetEmotionTargets(hero != null, State.Stamina / State.Settings.MaxStamina,
-                threat, effort, !roundEnded && !State.IsDefeated);
+                threat, effort, CombatFocused && !roundEnded && !State.IsDefeated);
         }
     }
 }

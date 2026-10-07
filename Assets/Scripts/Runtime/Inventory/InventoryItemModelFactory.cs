@@ -118,6 +118,8 @@ namespace BarPromenade
                     return VillageExpansionAssetProvider.LoadOrThrow().CreateAnchoredProp(
                         "SkiLodge", "LodgeGroupPhotograph",
                         rootPrefix + " Lodge Group Photograph", parent).transform;
+                case InventoryItemId.CombatCrowbar:
+                    return CombatAssetProvider.Create("Crowbar", parent).transform;
                 default:
                     throw new ArgumentOutOfRangeException(
                         nameof(itemId),

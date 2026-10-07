@@ -5,47 +5,48 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 
 ## 2026-10-07 — Combat openings, support handoff and physical regrip
 
-- Recovery joins retained Ready arms; body/brace remain.
+- Rise:Ready arms/body/brace.
   `assert_bank_motion_parity`, `Range_InterruptedRiseHasBoundedWorkAndRecovers`.
-- Strikes/Q aim in the first quarter, then keep world heading.
+- Strike/Q aim¼→fixed world heading.
   `Range_StrikesAimOnlyAtTheOpeningAndPreservePhysicalEvasion`.
-- Metre rescue/gait steps inherit soles/finite landings; impulse/falls win.
-  Blocked transfers withdraw forecasts without renewing catch budgets.
+- Metre rescue:gait soles/finite landings;impulse-fall wins;blocked forecast drops/catch budget kept.
   `Range_RecoveryStepsStartImmediatelyAndPreserveLiveSupport`,
   `Range_PostCatchStepAndRetreatKeepFinitePhysicalLandings`.
-- Q selects the free leg by load, keeps R; step/Q: `--footwork-only` gates.
+- Q:free leg/load/R; `--footwork-only`.
   `Range_KickSelectsWalkingSupportAndCancelsStaleRequests`.
-  `Range_CloseKicksAgreeWithPresentedBootAndFrozenAnatomy`: bounded sole/toe
-  points fix a close boot-surface miss; radius unchanged, no triangle claim.
+  `Range_CloseKicksAgreeWithPresentedBootAndFrozenAnatomy`:sole/toe fix close boot miss;same radius/no triangles.
 - Bar/world/body share first contact; metal:recoil/stop/guard-cost-break/0HP/sparks.
   `Range_MetalContactsStopAtTheFirstSurfaceAndShareOnePausedSparkPool`.
-- Regrip closes on admitted contact; station/branch cached within a substep.
-  Authored elbow first; unreachable waits open; preview keeps clock/R attacks.
+- Regrip:admitted contact/cache/authored elbow;unreachable opens;preview keeps R clock.
   `Range_MovingRegripCarriesTheArmAndRestoresAttack`.
   Bounded search/rollback:
   `Range_BackhandSupportSearchHasBoundedWorkAndKeepsAdmittedContactsSafe`,
   `Range_HitContinuationKeepsSupportSolveAndVisibleContactConsistent` and
   `Range_WeaponSweepReusesOnlyIdenticalQueriesAndKeepsMovingAnatomy`.
-- Continuity search skips unreachable branches before its unchanged budget;
-  live wrist/world gates remain.
+- Continuity:skip unreachable branches;wrist/world/budget gates.
   `Range_ContinuousSupportSearchSkipsUnreachableBranchesAndRejectsObstacles`.
-- Rise refusals report bounded collider/path/floor/capsule/search reasons.
+- Rise refusals:collider/path/floor/capsule/search.
   `Range_RiseWaitsForNearbyCharacterAndResumesAfterRealStep`.
-- Timeline joins duel frames; post-render hitches remain unreproduced.
-  Manual 15s streaming/frame metadata restores Profiler:
+- Timeline:duel frames/hitches unreproduced/streaming-metadata/Profiler restore:
   `Range_ManualCpuTimelineStopsAndRestoresProfiler`.
-  Impacts:source→victim/shove; Rules:reason/cooldown; no FPS claim.
+  Impact:source→victim/shove;Rules:reason/cooldown;no FPS claim.
   `Range_RenderedDeliverySeparatesEditorWaitFromCombatWork`,
   `Range_DuelJournalRecordsReasonsWithoutChangingCombat`.
   `RuleRequestReasonsKeepTheirActionClockAndClearFailedStartWhenQueued`.
-- Bar/Q/palm clocks survive switches after contact; fresh LMB replaces Q.
-  Step:.36s→attack/.57s→repeat; bar/palm keep impulse/feet/aim before fall.
-  Q/guard strict; committed falls veto attacks.
-  Focused `CombatRulesTests` readiness/continuation checks.
-  Step→attack keeps the current knee direction through final support closure.
+- Bar-Q-palm:clocks/contact switch/LMB replaces Q.
+  Step:.36→attack/.57repeat;bar-palm keep impulse-feet-aim before fall.
+  Q-guard strict/fall veto. `CombatRulesTests` readiness/continuation.
+  Step→attack keeps knee direction to final support closure.
   `Range_AttackTypesSwitchAfterContactAndActDuringRecovery`.
-- Distance poses/faster Q-palm/shared contact;all3 torso follows/mirrors,root heading kept.
+- Distance poses/faster Q-palm;shared contact/3 mirrored torsos/root heading.
   `Range_DistanceChangesUpperBodyPoseWithoutChangingWeaponTiming`.
+- MMB:focus↔walk;NPC hostile/no reset/refocus.
+  `Range_MiddleMouseToggleRestoresWalkingWithoutEndingHostility`.
+- Rise:4mm skin≠metal;enabled native probes;own dropped bar excluded;
+  checked exit→arm→drop/stand≠regrip/E reclaim;preview interpolation restored.
+  `Range_LivingRecoveryEscapesBlockedWeaponAndSupportsUnarmedActions`.
+- Walk:manual cause unproven;app-focus neutral latch/impulses kept;input/drive traces.
+  `Range_ReleasedWalkStopsAfterCatchAndLostApplicationFocus`.
 - Combat frames reviewed. Docs: `python -B tools/check-docs.py`, `git diff --check`.
 
 ## 2026-10-06 — Interrupted combat rise

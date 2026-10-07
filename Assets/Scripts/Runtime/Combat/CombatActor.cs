@@ -146,21 +146,28 @@ namespace BarPromenade
         // a catching step, but can never cancel an already committed fall.
         internal bool HasAttackBalance => !IsKnockedDown && !(ImpactMotion?.RecoveryInProgress ?? false) &&
             !(footwork?.RecoveryEpisodeActive ?? false);
-        internal bool CanAttemptUpperBodyAttack => !IsKnockedDown && !State.IsKnockedDown &&
+        private bool CanAttemptBodyAction => !IsKnockedDown && !State.IsKnockedDown &&
             !IsRagdollActive && !State.IsDefeated && !(ImpactMotion?.WantsKnockdown ?? false);
-        private string UpperBodyAttackRejection => IsKnockedDown || State.IsKnockedDown || IsRagdollActive
+        internal bool CanAttemptUpperBodyAttack => !weaponDropped && CanAttemptBodyAction;
+        private string UpperBodyAttackRejection => weaponDropped ? "weapon_missing" : IsKnockedDown || State.IsKnockedDown || IsRagdollActive
             ? "knocked_down" : State.IsDefeated ? "defeated" : "fall_committed";
         internal const float WeaponSpacing = 1f;
-        internal void ApplyMotorConstraint() => motor?.SetOwnedMovementConstraint(this, MovementScale, OwnsCombatFacing ? 0f : TurnScale,
-            contactTarget != null ? contactTarget.transform : null,
-            State.Phase == MeleePhase.Windup ? WeaponSpacing : 0f);
+        internal void ApplyMotorConstraint()
+        {
+            if (motor == null) return;
+            if (!NeedsCombatPresentation) { motor.ReleaseMovementConstraint(this); return; }
+            motor.SetOwnedMovementConstraint(this, MovementScale,
+                OwnsCombatFacing || (!CombatFocused && CommittedActionOwnsFacing) ? 0f : TurnScale,
+                contactTarget != null ? contactTarget.transform : null,
+                CombatFocused && State.Phase == MeleePhase.Windup ? WeaponSpacing : 0f);
+        }
         private string AttackBalanceRejection => IsKnockedDown ? "knocked_down" : "balance_recovery";
-        internal bool HasTwoHandSupport => HasAttackBalance &&
+        internal bool HasTwoHandSupport => !weaponDropped && HasAttackBalance &&
             (supportGrip == null || supportGrip.IsSupportingWeapon);
         public bool GuardRequested => guardHeld;
         public bool GuardReady => GuardSupportRejection == null &&
             (State.Phase == MeleePhase.Ready || State.Phase == MeleePhase.GuardImpact);
-        internal string GuardSupportRejection => roundEnded ? "round_ended" : !IsAvailable ? "actor_unavailable" :
+        internal string GuardSupportRejection => !CombatFocused ? "unfocused" : weaponDropped ? "weapon_missing" : roundEnded ? "round_ended" : !IsAvailable ? "actor_unavailable" :
             State.IsDefeated ? "defeated" : !HasAttackBalance ? AttackBalanceRejection :
             !HasTwoHandSupport ? "two_hand_support" : null;
         internal CombatFootwork Footwork => footwork;
@@ -169,6 +176,7 @@ namespace BarPromenade
         public bool TryAttack()
         {
             int request = JournalCommand("attack_immediate");
+            if (!CombatFocused) return JournalCommandResult(request, "rejected", "unfocused");
             if (roundEnded) return JournalCommandResult(request, "rejected", "round_ended");
             if (!IsAvailable) return JournalCommandResult(request, "rejected", "actor_unavailable");
             if (!GameInput.CanRead(GameInputContext.Gameplay)) return JournalCommandResult(request, "rejected", "input_gate");
@@ -187,6 +195,7 @@ namespace BarPromenade
         public bool RequestAttack()
         {
             int request = JournalCommand("attack");
+            if (!CombatFocused) return JournalCommandResult(request, "rejected", "unfocused");
             if (roundEnded) return JournalCommandResult(request, "rejected", "round_ended");
             if (!IsAvailable) return JournalCommandResult(request, "rejected", "actor_unavailable");
             if (!GameInput.CanRead(GameInputContext.Gameplay)) return JournalCommandResult(request, "rejected", "input_gate");
@@ -204,7 +213,7 @@ namespace BarPromenade
         internal bool TryObservedCounterAttack()
         {
             int request = JournalCommand("observed_counter");
-            if (roundEnded || !IsAvailable || !CanAttemptUpperBodyAttack ||
+            if (!CombatFocused || roundEnded || !IsAvailable || !CanAttemptUpperBodyAttack ||
                 !GameInput.CanRead(GameInputContext.Gameplay))
                 return JournalCommandResult(request, "rejected", "counter_unavailable");
             if (CheckShoveRange(request)) return TryBeginShove(request);
@@ -217,7 +226,7 @@ namespace BarPromenade
         public void SetBlock(bool held)
         {
             bool freshPress = held && !guardHeld;
-            guardHeld = held;
+            guardHeld = held && CombatFocused;
             RefreshBlock(freshPress);
         }
 
@@ -289,7 +298,7 @@ namespace BarPromenade
             AdvanceVisualClock(seconds);
             AdvanceImpactMotion(seconds);
             if (guardHeld) RefreshBlock();
-            if (State.Phase == MeleePhase.Windup && InShoveRange && !TryBeginShove()) State.CancelAction();
+            if (CombatFocused && !weaponDropped && State.Phase == MeleePhase.Windup && InShoveRange && !TryBeginShove()) State.CancelAction();
             int sequence = State.AttackSequence;
             float from = State.AttackElapsed;
             MeleePhase previousPhase = State.Phase;
@@ -339,6 +348,7 @@ namespace BarPromenade
             if (!simulationPosePending) return;
             simulationPosePending = false;
             if (!IsAvailable || IsKnockedDown || State.IsDefeated) return;
+            if (!NeedsCombatPresentation) { ReleaseFreeLocomotion(); return; }
             AdvanceCombatFacing(seconds);
             UpdateAttackReach(true);
             footwork?.Advance(seconds, State);
@@ -469,6 +479,7 @@ namespace BarPromenade
         internal void SetPresentationFrozen(bool frozen)
         {
             presentationFrozen = frozen;
+            motor?.SetOwnedMovementFrozen(this, frozen);
             if (hero != null) hero.SetOwnedPresentationFrozen(this, frozen && !IsKnockedDown && !IsRagdollActive);
             SetKnockdownFrozen(frozen);
         }
@@ -488,6 +499,8 @@ namespace BarPromenade
             if (presentationFrozen || PauseMenuController.IsAnyPaused || GameTimeScaleRuntime.IsPaused) return;
             RestoreCombatAttention();
             if (ready == null || winnerPresentationReleased) return;
+            if (!NeedsCombatPresentation) { ReleaseFreeLocomotion(); return; }
+            freeLocomotionReleased = false;
             if (PresentKnockdown() || IsRagdollActive) return;
             if (!State.IsKicking) footwork?.EndKickSupport();
             RefreshCombatAttention();
@@ -506,9 +519,9 @@ namespace BarPromenade
                 State.Phase == MeleePhase.GuardBroken || State.IsDefeated;
             bool stepping = State.Phase == MeleePhase.Step;
             AnimationClip chosen = stepping ? (stepBlocked ? ready : stepClip) : State.IsDefeated ? defeat : State.Phase == MeleePhase.GuardBroken ? guardBreak : stagger ? hit :
-                reaction != null ? reaction : State.IsKicking ? kick : State.IsCharging ? Current.Charge : State.IsAttacking ? ReleaseClip : roundEnded ? rest : State.IsBlocking ? block : ready;
+                reaction != null ? reaction : State.IsKicking ? kick : State.IsCharging ? Current.Charge : State.IsAttacking ? ReleaseClip : roundEnded || weaponDropped ? rest : State.IsBlocking ? block : ready;
             supportGrip?.SetTarget(chosen == block || chosen == guardImpact,
-                chosen != rest && chosen != hit && chosen != guardBreak && !State.IsDefeated && !State.IsShoving,
+                !weaponDropped && chosen != rest && chosen != hit && chosen != guardBreak && !State.IsDefeated && !State.IsShoving,
                 State.IsContinuation);
             PresentShovePose();
             ConfigureAttackReachPose(ReachAction);
@@ -561,7 +574,7 @@ namespace BarPromenade
                 SampleNpcAction(chosen, progress);
             }
             visibleAttackSequence = State.AttackSequence;
-            handPose.SetGrip(false, 1f);
+            handPose.SetGrip(false, weaponDropped ? 0f : 1f);
             if (npc != null)
             {
                 ApplyNpcCombatPose();
@@ -575,6 +588,7 @@ namespace BarPromenade
             }
             footwork?.CapturePresentedContacts();
             supportGrip?.CapturePresentedBalanceContact();
+            if (weaponDropped) { handPose.SetGrip(false, 0f); handPose.SetGrip(true, 0f); }
         }
 
         private void SampleNpcAction(AnimationClip chosen, float progress)
@@ -590,6 +604,8 @@ namespace BarPromenade
 
         public void ResetActor(Vector3 position, Vector3 facing)
         {
+            CombatFocused = true;
+            freeLocomotionReleased = false;
             presentationFrozen = false;
             guardHeld = false;
             journalActionRequest = journalQueuedRequest = 0;
@@ -655,6 +671,7 @@ namespace BarPromenade
             if (hero != null) hero.ClearOwnedRecoveryPoseClock(this);
             if (hero != null) { hero.ReleaseOwnedClip(this); hero.ReleaseCarryPose(this); }
             if (motor != null) motor.ReleaseMovementConstraint(this);
+            motor?.SetOwnedMovementFrozen(this, false);
             visibleClip = null;
             visibleAttackSequence = 0;
         }

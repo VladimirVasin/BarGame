@@ -86,6 +86,10 @@ namespace BarPromenade
                 Quaternion.Euler(18f, -28f, -24f),
                 0.90f),
             new InventoryItemPreviewPose(
+                InventoryItemId.CombatCrowbar,
+                Quaternion.Euler(5f, -18f, -30f),
+                .85f),
+            new InventoryItemPreviewPose(
                 InventoryItemId.LodgeGroupPhotograph,
                 Quaternion.Euler(12f, 180f, 0f),
                 0.60f)

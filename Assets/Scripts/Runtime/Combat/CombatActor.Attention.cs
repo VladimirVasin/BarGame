@@ -19,7 +19,7 @@ namespace BarPromenade
             combatAttentionNotice.Reset();
         }
 
-        private bool CanAttendCombat => isActiveAndEnabled && IsAvailable && !roundEnded &&
+        private bool CanAttendCombat => CombatFocused && isActiveAndEnabled && IsAvailable && !roundEnded &&
             !winnerPresentationReleased && !State.IsDefeated && !IsKnockedDown && !IsRagdollActive;
 
         private void RefreshCombatAttention()

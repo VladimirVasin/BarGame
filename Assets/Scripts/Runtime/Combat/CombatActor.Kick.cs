@@ -177,9 +177,9 @@ namespace BarPromenade
             return true;
         }
 
-        private string KickUnavailableReason => roundEnded ? "round_ended" : !IsAvailable ? "actor_unavailable" :
+        private string KickUnavailableReason => !CombatFocused ? "unfocused" : roundEnded ? "round_ended" : !IsAvailable ? "actor_unavailable" :
             !GameInput.CanRead(GameInputContext.Gameplay) ? "input_gate" : kick == null ? "kick_unavailable" :
-            !CanAttemptUpperBodyAttack ? UpperBodyAttackRejection : null;
+            !CanAttemptBodyAction ? UpperBodyAttackRejection : null;
 
         private void BeginKickPresentation(int request)
         {

@@ -15,7 +15,7 @@ namespace BarPromenade
         private static readonly ProfilerMarker PoseMarker = new ProfilerMarker("BarPromenade.CombatRecovery.Pose");
         private static readonly ProfilerMarker SampleMarker = new ProfilerMarker("BarPromenade.CombatRecovery.Sample");
         private static readonly ProfilerMarker SolesMarker = new ProfilerMarker("BarPromenade.CombatRecovery.Soles");
-        private readonly Transform actor, pelvis, chest, leftFoot, rightFoot;
+        private readonly Transform actor, ownedWeapon, pelvis, chest, leftFoot, rightFoot;
         private readonly Transform leftThigh, leftShin, rightThigh, rightShin;
         private readonly CharacterController capsule;
         private readonly CombatRagdoll ragdoll;
@@ -62,10 +62,10 @@ namespace BarPromenade
         public string SupportReason => FeetSupported ? "boots" : StageLabel;
 
         internal CombatRecoveryPose(Transform actorRoot, Transform rig, CharacterController body,
-            CombatRagdoll physics, NpcHandPose handPose, bool isNpc)
+            CombatRagdoll physics, NpcHandPose handPose, bool isNpc, Transform weapon)
         {
             using var marker = PrepareMarker.Auto();
-            actor = actorRoot; capsule = body; ragdoll = physics; hands = handPose; npc = isNpc;
+            actor = actorRoot; ownedWeapon = weapon; capsule = body; ragdoll = physics; hands = handPose; npc = isNpc;
             Transform Bone(string name) => CityPedestrianHandProps.FindSocket(rig, name) ??
                 throw new InvalidOperationException("Combat recovery requires " + name);
             pelvis = Bone("pelvis"); chest = Bone("chest");
@@ -366,7 +366,7 @@ namespace BarPromenade
                     bool crossed = hits == floorHits.Length;
                     Collider pathObstacle = null; float nearest = float.PositiveInfinity;
                     for (int h = 0; h < hits; h++)
-                        if (floorHits[h].collider != null && !floorHits[h].collider.transform.IsChildOf(actor))
+                        if (floorHits[h].collider != null && !OwnsCollider(floorHits[h].collider))
                         {
                             crossed = true;
                             if (floorHits[h].distance < nearest) { nearest = floorHits[h].distance; pathObstacle = floorHits[h].collider; }
@@ -392,10 +392,16 @@ namespace BarPromenade
                 centre - Vector3.up * half, radius, clearanceHits, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore);
             if (count == clearanceHits.Length) return RejectClearance("capsule_buffer_full");
             for (int i = 0; i < count; i++)
-                if (clearanceHits[i] != null && !clearanceHits[i].transform.IsChildOf(actor))
+                if (clearanceHits[i] != null && !OwnsCollider(clearanceHits[i]))
                     return RejectClearance("capsule_overlap", clearanceHits[i]);
             return true;
         }
+
+        // The standing capsule reserves room for the body, not its own loose
+        // equipment. Detaching the bar must preserve this ownership exclusion;
+        // the actual prop retains its physical world and anatomy collisions.
+        private bool OwnsCollider(Collider shape) => shape.transform.IsChildOf(actor) ||
+            (ownedWeapon != null && shape.transform.IsChildOf(ownedWeapon));
 
         private void PrepareClearanceCandidate(int index, Vector3 candidate, Quaternion rotation, Vector3 pathFrom)
         {
@@ -432,7 +438,7 @@ namespace BarPromenade
             for (int i = 0; i < count; i++)
             {
                 RaycastHit hit = floorHits[i];
-                if (hit.collider == null || hit.collider.transform.IsChildOf(actor) ||
+                if (hit.collider == null || OwnsCollider(hit.collider) ||
                     hit.collider.GetComponentInParent<CombatActor>() != null || hit.normal.y < .65f || hit.distance >= closest) continue;
                 closest = hit.distance; contact = hit.point; normal = hit.normal; floorSurface = hit.collider;
             }

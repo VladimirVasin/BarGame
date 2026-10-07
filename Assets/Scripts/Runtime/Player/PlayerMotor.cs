@@ -104,6 +104,8 @@ namespace BarPromenade
         private bool groundedAfterMainMove;
         public float SpeedMultiplier => speedMultiplier;
         public Vector3 PlanarVelocity { get; private set; }
+        internal Vector3 RequestedPlanarVelocity { get; private set; }
+        internal Vector3 BalanceDriftVelocity { get; private set; }
         public bool InteractionPoseMoveActive =>
             interactionPoseMoveActive;
         public bool InteractionPoseMoveStalled { get; private set; }
@@ -499,6 +501,7 @@ namespace BarPromenade
 
         private void Update()
         {
+            RequestedPlanarVelocity = BalanceDriftVelocity = Vector3.zero;
             if (controller == null || !controller.enabled)
             {
                 StopPlanarMotion();
@@ -523,8 +526,8 @@ namespace BarPromenade
 
             // Combat owns this short freeze; retain the earned momentum without
             // advancing locomotion, pushes or turning during hit-stop or pause.
-            if (MovementTargetActive && inertialTargetMovement &&
-                (movementTargetFrozen || GameTimeScaleRuntime.IsPaused)) return;
+            if (OwnedMovementFrozen || (MovementTargetActive && inertialTargetMovement &&
+                (movementTargetFrozen || GameTimeScaleRuntime.IsPaused))) return;
 
             // Tank controls: A/D yaw the hero on the spot, W walks along
             // the hero's own forward axis and S backs up along it at a
@@ -595,6 +598,7 @@ namespace BarPromenade
                     RemoveMotionAgainstPush(steeredPlanarVelocity);
             }
 
+            RequestedPlanarVelocity = desiredPlanarVelocity;
             float velocityChangeRate = GetVelocityChangeRate(
                 steeredPlanarVelocity,
                 desiredPlanarVelocity);
@@ -638,6 +642,7 @@ namespace BarPromenade
             }
 
             Vector3 pushDisplacement = Vector3.zero;
+            BalanceDriftVelocity = driftDisplacement * inverseDelta;
             if (ExternalPushActive && Time.deltaTime > 0f)
             {
                 Vector3 pushDirection = externalPushDirection;
@@ -798,6 +803,7 @@ namespace BarPromenade
         private void StopPlanarMotion()
         {
             ClearExternalPush();
+            RequestedPlanarVelocity = BalanceDriftVelocity = Vector3.zero;
             PlanarVelocity = Vector3.zero;
             momentumVelocity = Vector3.zero;
             targetYawVelocity = 0f;

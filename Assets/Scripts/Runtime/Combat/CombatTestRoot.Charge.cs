@@ -6,7 +6,7 @@ namespace BarPromenade
     {
         private bool attackInputOwned, requireAttackRelease, inputSuspended, releasedWhileSuspended;
 
-        public bool ChargeMeterVisible => IsInitialized && Hero.State.IsCharging && !RoundFinished &&
+        public bool ChargeMeterVisible => IsOpponentFocused && Hero.State.IsCharging &&
             !PauseMenuController.IsAnyPaused && !SceneTransitionService.IsTransitioning;
 
         private bool UpdateCombatInput()
@@ -38,6 +38,17 @@ namespace BarPromenade
             { ResetRound(); return false; }
             if (GameInput.WasPressed(GameInputAction.CombatMode, GameInputContext.Gameplay))
             { SetSparring(!Sparring); return false; }
+            if (GameInput.WasPressed(GameInputAction.CombatFocus, GameInputContext.Gameplay))
+                SetOpponentFocus(!IsOpponentFocused);
+            if (!IsOpponentFocused)
+            {
+                // Free movement leaves the same live duel clock and vulnerable body running.
+                Hero.SetBlock(false);
+                CancelHeldHeroCharge();
+                attackInputOwned = false;
+                requireAttackRelease |= held;
+                return true;
+            }
 
             bool blocking = GameInput.IsHeld(GameInputAction.MeleeBlock, GameInputContext.Gameplay);
             Hero.SetBlock(blocking);
@@ -109,6 +120,7 @@ namespace BarPromenade
             CancelHeldHeroCharge();
             if (Opponent != null && (Opponent.State.IsCharging || Opponent.State.HasBufferedCharge)) Opponent.CancelCharge();
             ResetChargeInput();
+            ClearFocusTracking();
         }
 
         private void DrawChargeMeter()

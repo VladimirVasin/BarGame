@@ -150,7 +150,7 @@ namespace BarPromenade
             ImpactMotion.EvaluateSupport(seconds);
             footwork?.CompleteRecoveryDecision(motor != null ? motor.PlanarVelocity : locomotionVelocity);
             ApplyMotorConstraint();
-            supportGrip.AllowRegrip(ImpactMotion.BalanceLoad < .35f && !ImpactMotion.HasHandSupport &&
+            supportGrip.AllowRegrip(!weaponDropped && ImpactMotion.BalanceLoad < .35f && !ImpactMotion.HasHandSupport &&
                 !ImpactMotion.RecoveryStepActive && !(footwork?.RecoveryEpisodeActive ?? false));
             if (!State.IsDefeated && impactRecoveryGrace <= 0f && ImpactMotion.WantsKnockdown)
             {

@@ -50,14 +50,8 @@ namespace BarPromenade
             {
                 // Hand the whole rig back to ordinary locomotion once. A Rest
                 // clip with combat footwork would keep the winner shuffling.
-                bool ownedPose = hero.OwnsClip(this);
-                ReleasePresentation();
-                supportGrip?.SetTarget(false, false);
-                hero.SetCombatSupportGrip(this, supportGrip, weaponConstraint);
+                ReleaseStandingPresentation();
                 winnerPresentationReleased = true;
-                if (ownedPose) hero.BeginRecoveryPoseTransition(.35f);
-                // Keep the crowbar in the right hand without a combat torso pose.
-                handPose.SetGrip(false, 1f);
                 return;
             }
             footwork?.Advance(seconds, State);
@@ -141,7 +135,14 @@ namespace BarPromenade
 
         private void DropWeapon()
         {
+            ReleaseWeapon(defeatDirection * .8f + Vector3.up * .15f,
+                Vector3.Cross(Vector3.up, defeatDirection) * 2f);
+        }
+
+        private void ReleaseWeapon(Vector3 linearVelocity, Vector3 angularVelocity)
+        {
             if (weaponDropped || Weapon == null) return;
+            weaponConstraint?.EndRecoveryContact();
             handPose.SetGrip(false, 0f);
             handPose.SetGrip(true, 0f);
             Weapon.transform.SetParent(transform.parent, true);
@@ -151,13 +152,20 @@ namespace BarPromenade
             weaponBody.useGravity = true;
             weaponBody.interpolation = RigidbodyInterpolation.Interpolate;
             weaponBody.isKinematic = false;
-            weaponBody.linearVelocity = defeatDirection * .8f + Vector3.up * .15f;
-            weaponBody.angularVelocity = Vector3.Cross(Vector3.up, defeatDirection) * 2f;
+            weaponBody.linearVelocity = linearVelocity;
+            weaponBody.angularVelocity = angularVelocity;
             weaponDropped = true;
+            if (hero != null)
+            {
+                var pickup = Weapon.GetComponent<CombatDroppedWeaponPickup>();
+                if (pickup == null) pickup = Weapon.AddComponent<CombatDroppedWeaponPickup>();
+                pickup.Initialize(this);
+            }
         }
 
         private void RestoreWeapon()
         {
+            Weapon?.GetComponent<CombatDroppedWeaponPickup>()?.CancelPickup();
             heldWeaponPhysics?.ResetWeapon();
             if (!weaponDropped || Weapon == null) return;
             weaponBody.linearVelocity = Vector3.zero;

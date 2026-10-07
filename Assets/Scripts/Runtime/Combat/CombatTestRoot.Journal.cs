@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using Unity.Profiling;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
 using Stopwatch = System.Diagnostics.Stopwatch;
@@ -34,6 +35,9 @@ namespace BarPromenade
         private bool journalRoundOpen, journalResultWritten, journalInputAllowed, journalAttackHeld, journalFrozen;
         private bool journalForceSnapshot, journalFocus = true;
         private bool journalFailureReported;
+        private bool journalMovementCaptured, journalMovementFocused, journalMovementAwaitingNeutral, journalTargetFocused;
+        private int journalMovementKeys;
+        private Vector2 journalMovementStick, journalMovementInput;
         private CombatOpponentIntent journalIntent;
         private Vector3 journalOpponentRequested, journalOpponentAchieved;
         private ProfilerRecorder journalMain, journalRender, journalGc, journalTargetWait;
@@ -117,6 +121,7 @@ namespace BarPromenade
             Hero.BeginJournalWorkFrame(); Opponent.BeginJournalWorkFrame();
             journalDecision = -1; journalAttackHeld = journalFrozen = false;
             journalInputAllowed = GameInput.CanRead(GameInputContext.Gameplay);
+            journalMovementCaptured = false;
             journalHero.Phase = Hero.State.Phase; journalOpponent.Phase = Opponent.State.Phase;
             journalHero.Action = Hero.State.AttackSequence; journalOpponent.Action = Opponent.State.AttackSequence;
             journalHero.Grip = Hero.SupportArmState; journalOpponent.Grip = Opponent.SupportArmState;
@@ -378,6 +383,30 @@ namespace BarPromenade
                 f2: GameLog.Field("owned", attackInputOwned), f3: GameLog.Field("require_release", requireAttackRelease));
         }
 
+        private void JournalMovementInput()
+        {
+            Keyboard keyboard = Keyboard.current;
+            int keys = keyboard == null ? 0 :
+                (keyboard.wKey.isPressed ? 1 : 0) | (keyboard.sKey.isPressed ? 2 : 0) |
+                (keyboard.aKey.isPressed ? 4 : 0) | (keyboard.dKey.isPressed ? 8 : 0);
+            Vector2 stick = Gamepad.current != null ? Gamepad.current.leftStick.ReadValue() : Vector2.zero;
+            Vector2 input = GameInput.ReadMovement();
+            bool focused = GameInput.MovementFocused, awaitingNeutral = GameInput.MovementAwaitingNeutral;
+            bool targetFocused = Hero.CombatFocused;
+            if (journalMovementCaptured && keys == journalMovementKeys && stick == journalMovementStick &&
+                input == journalMovementInput && focused == journalMovementFocused &&
+                awaitingNeutral == journalMovementAwaitingNeutral && targetFocused == journalTargetFocused) return;
+            journalMovementCaptured = true;
+            journalMovementKeys = keys; journalMovementStick = stick; journalMovementInput = input;
+            journalMovementFocused = focused; journalMovementAwaitingNeutral = awaitingNeutral;
+            journalTargetFocused = targetFocused;
+            duelJournal.Record("movement_input", actor: 1,
+                f0: GameLog.Field("keys", keys), f1: GameLog.Field("stick_x", stick.x), f2: GameLog.Field("stick_y", stick.y),
+                f3: GameLog.Field("x", input.x), f4: GameLog.Field("y", input.y),
+                f5: GameLog.Field("focused", focused), f6: GameLog.Field("awaiting_neutral", awaitingNeutral),
+                f7: GameLog.Field("target_focused", targetFocused));
+        }
+
         private void JournalOpponentDecision()
         {
             if (duelJournal == null || (journalDecision == OpponentDecisionSequence && journalIntent == OpponentIntent)) return;
@@ -458,6 +487,7 @@ namespace BarPromenade
             long start = Stopwatch.GetTimestamp(), collector = duelJournal.CollectorTicks;
             journalUpdateToLateMilliseconds = journalFrameStart == 0 ? 0 : (start - journalFrameStart) * JournalMillisecondsPerTick;
             journalLateFrameCaptured = journalFrameStart != 0;
+            JournalMovementInput();
             JournalTransitions("final_presentation");
             // Finished-round ragdolls still move while the combat clock is stopped.
             double snapshotSeconds = journalSeconds + roundEndElapsed;
@@ -532,7 +562,11 @@ namespace BarPromenade
             WriteJournalVectors(id, "support_and_target", impact.SupportCentre, actor.Footwork.LastCatchTarget);
             WriteJournalVectors(id, "hand_and_grip_target", actor.ShovePalmPosition, actor.SupportGripWorldPosition);
             if (id == 2) WriteJournalVectors(id, "requested_and_achieved_move", journalOpponentRequested, journalOpponentAchieved);
-            else WriteJournalVectors(id, "movement", Player.Motor.PlanarVelocity, actor.Body != null ? actor.Body.velocity : Vector3.zero);
+            else
+            {
+                WriteJournalVectors(id, "movement", Player.Motor.PlanarVelocity, actor.Body != null ? actor.Body.velocity : Vector3.zero);
+                WriteJournalVectors(id, "movement_drive", Player.Motor.RequestedPlanarVelocity, Player.Motor.BalanceDriftVelocity);
+            }
         }
 
         private void WriteJournalPose(int actor, string bone, Transform value)

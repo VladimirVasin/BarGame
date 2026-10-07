@@ -146,19 +146,20 @@ The vertical slice contains:
   City/Bar/lodge markers belong to one load, consumed once; later arrivals stay.
   Day one raises mother's-house quest/map marker; door/map entry or starting
   inside closes it. No village signpost;
-- CombatTest:6zones/rear-head end/HP/impulse/R fall-rise/regrip/recoil=Ready;
-  QA:penetration/balance/visual. Distance poses/faster Q-palm;
-  own clocks/switch after contacts;
-  bar-palm:nonfall stagger/catch/feet-impulse-aim;Q-guard strict/fall veto.
-  Q/B:free leg/load/15stam/5HP/high-guard bypass/dry/no finish/.20walk wait-tail/support≠chain.
+- CombatTest:MMB:chest dot/focus↔walk/freecam;off:no attack-guard-Q-Step.
+  NPC hits/fall-rise;no reset/refocus;entry-R focus.
+  6zones/rear-head end/HP/impulse;
+  QA:penetration-balance-visual/distance poses/faster Q-palm/clocks/contact switch;
+  bar-palm:nonfall stagger-catch-feet-impulse-aim/Q-guard strict/fall veto.
+  Q/B:free leg/load/15stam/5HP/high-guard bypass/dry-no finish/.20walk wait-tail/support≠chain.
   AI:Cautious/Pressuring/Patient;R keep/≥1m/retreat≤.6s/whiff.20→counter.22/Rising.
-  Hit-Miss cut/R>L/.22→held.28/.6charge/.20buffer:hit-fall-R clear.
-  Step:1m/<fall/15;.36→attack/.57repeat;catch→finite gait-Step landing.
-  Windup1m/brake/side-back/impulse/drift;≤.85m dry shove8breath/0HP.
-  120Hz aim¼→fixed/boot-bar sweeps;first bar/world/body;metal=wall/sparks/L release.
-  Regrip:96 feasible branches/live gates;rise:retry/bind/clearance/joints.
-  Guard:2hands/metal cost-break/noHP. Pause/hit-stop/Hold/wounds-thud-pools;
-  guard-step-charge-kick cost;E toilet/L bar-marks/R-unload clear/no story-speech;
+  Hit-Miss cut/R>L/.22→held.28/.6charge/.20buffer/hit-fall-R clear.
+  Step:1m/<fall/15/.36→attack/.57repeat;catch→finite landing.
+  Windup1m/brake/side-back/impulse/≤.85m dry shove8breath/0HP.
+  120Hz aim¼→fixed/boot-bar sweep/first bar-world-body/metal-wall-sparks/L release.
+  Rise:escape/drop;E:own bar/shared UI;no grant.
+  Guard2hands/metal cost-break/noHP/pause-hitstop-Hold/wounds-thud-pools;
+  cost:guard-Step-charge-Q/E toilet/L bar-marks/R-unload clear;
 - the retained Home opening is reachable only by a legacy request: held bed loop,
   silent `05:59` clock with rare whole-display flicker, five-second input lock,
   then localized Wake Up/Quit. Wake sets `06:00`, runs the clock/alarm and hides

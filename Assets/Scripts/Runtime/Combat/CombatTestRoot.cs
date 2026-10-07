@@ -45,7 +45,7 @@ namespace BarPromenade
         public PlayerCameraFollow CameraFollow { get; private set; }
         public PauseMenuController PauseMenu { get; private set; }
         public InteractionPromptView Prompt { get; private set; }
-        /// <summary>The finished round's `E` over the settled body; the only interactable in the arena.</summary>
+        /// <summary>The finished round's `E` interaction over the settled body.</summary>
         public CombatTauntInteraction Taunt { get; private set; }
         public bool Sparring { get; private set; } = true;
         public bool RoundFinished => Hero.State.IsDefeated || Opponent.State.IsDefeated;
@@ -139,8 +139,7 @@ namespace BarPromenade
         /// <summary>The duel owns the shoulder camera and target-facing movement; a reset takes them back.</summary>
         private void LockOnOpponent()
         {
-            if (!CameraFollow.SetTargetLock(this, opponentObject.transform, opponentChest, heroChest) ||
-                !Player.Motor.SetMovementTarget(this, opponentChest, true))
+            if (!TryFocusOpponent())
                 throw new InvalidOperationException("Combat requires its shoulder camera and target-facing movement.");
         }
 
@@ -148,8 +147,7 @@ namespace BarPromenade
         private void ReleaseRoundCamera()
         {
             roundCameraReleased = true;
-            CameraFollow.ClearTargetLock(this);
-            Player.Motor.ClearMovementTarget(this);
+            ClearFocusTracking();
         }
 
         /// <summary>Hold both fighters on the frame of contact for a few simulation substeps.</summary>
@@ -361,6 +359,7 @@ namespace BarPromenade
                 DrawFighterHud(new Rect(14, 302, 138, 37), "combat.health", Hero);
                 DrawFighterHud(new Rect(488, 302, 138, 37), "combat.opponent", Opponent);
                 DrawChargeMeter();
+                DrawFocusMarker(canvas);
                 GUI.Label(new Rect(14, 342, 612, 14), LocalizationService.Get("combat.controls"), controls);
             }
             finally { RetroUiTheme.EndCanvas(matrix); }

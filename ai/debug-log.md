@@ -1,6 +1,6 @@
 # Structured session diagnostics
 
-`debug.log`: context/actions/unfinished operations/Unity warnings/exceptions.
+`debug.log`:context/actions/pending operations/Unity warnings/exceptions.
 `DuelJournal`: CombatTest rounds.
 
 ## General log: location and profiles
@@ -12,8 +12,7 @@
 | Batch/command-line tests | `off` | no file |
 
 `-bp-debug-log off|basic|verbose`: state/results; verbose adds timings/build sizes.
-F8 flushes `diagnostics/snapshot` and marks CombatTest; Shift+F8 opens its
-CombatLogs, otherwise the general log directory.
+`F8`:`diagnostics/snapshot`+CombatTest mark;`Shift+F8`:CombatLogs or general log directory.
 
 ## General log format and boundaries
 
@@ -33,55 +32,58 @@ Snapshots:hunger/stress/fatigue/intoxication/cash/drinking.
 | `primitive` (verbose) | `combined_mesh`: source count/vertices/combine/collider time |
 | `interaction`, `map` | entrance/exit, map lifecycle, City test-teleport mode/results |
 | `intoxication`, `balance` | stages, scheduling/start/result/fall/recovery/cancellation |
-| `combat` | exit/quit cached `movement_summary`: WASD/request/gate counts, motor/input/capsule, phase/scale/speed/turn. Off disables. Request fields/minimum scale require `has_request_sample=true`. |
-| `diagnostics` | manual snapshots, support-directory commands |
+| `combat` | Cached exit/quit `movement_summary`: WASD/request/app-focus-neutral gates,motor/input/capsule/phase/scale/speed/turn;request/min-scale require `has_request_sample=true`;off disables. |
+| `diagnostics` | manual snapshots/directory commands |
 | `unity` | warnings/assertions/errors/exceptions and stacks |
 
 `session/new_game_started`: `menu_reset`=menu; `combat_test_start`=range;
 `new_game_start`=normal/legacy; `new_game_start_rejected`=transition rollback.
 
-No frame/motion/animation/physics samples or ordinary `Debug.Log`.
+No frame/motion/animation/physics samples or `Debug.Log`.
 Strings≤16,384; `needs/passive_progressed`: visible integers.
-Identical Unity messages: three full, then sparse10s summaries.
+Identical Unity messages:three full,then10s summaries.
 Per10s:32 warnings/64 errors-assertions-exceptions;
 `messages_rate_limited`: drops/severity; exceptions retain their own budget.
 
 ## General log retention and reporting
 
 Rotate 5MiB; keep `debug.1.log`–`debug.3.log`. Flush: error/.5s/F8/pause/focus/exit.
-Fresh session→fault→F8→Shift+F8; collect archives/round; start at error/`operation_id`.
-No intended usernames/save paths/frame telemetry. Exception stacks may contain
-paths; review before public sharing.
+Fresh session→fault→F8→Shift+F8;collect archives/round;read error/`operation_id`.
+No intended usernames/save paths/frame telemetry;stacks may expose paths;review before sharing.
 
 ## DuelJournal: CombatTest rounds
 
-Editor/Player on; batch opt-in; `-bp-duel-log on|off`.
-Editor: repo CombatLogs; Player: `Application.persistentDataPath/CombatLogs`.
+`-bp-duel-log on|off`:Editor/Player on,batch off.
+Editor:CombatLogs;Player:`Application.persistentDataPath/CombatLogs`.
 `duel_<session>_<round>`: `summary.txt`/`duel.ndjson`.
 
-Rules refusals: `phase/cooldown/stamina/buffer_window/defeated/knocked_down/guard_broken`;
-`reason_checked`/phase/stamina/cost/remaining/`cooldown_seconds`.
+Refusals: `phase/cooldown/stamina/buffer_window/defeated/knocked_down/guard_broken`;
+`reason_checked`/cost/remaining/`cooldown_seconds`;phase/stamina.
 `recovery_step`: rescue; `fall_committed`: refusal; `observed_counter`: whiff.
 20Hz pose/support/CPU.
-`aim_locked`: kind/yaw/open seconds; no late re-aim.
+`movement_input`:changes;keys=W1/S2/A4/D8,stick_x/y,effective x/y,
+focused=app/awaiting_neutral/target_focused=enemy.
+`vectors`/`movement_drive`:a=walk request,b=balance drift.
+`aim_locked`:kind/yaw/open s.
 `support_pose_rejected`: `contact_*`/depth/sweep/shape.
-`weapon_constraint`: cause persists; depth=rendered pose.
+`weapon_constraint`:cause/depth of rendered pose.
 `arm_snapshot`: wrist/elbow/shoulder_roll/elbow_signed; fresh/cached.
-Guard: `two_hand_support`/`balance_recovery`; attacks ignore regrip.
-End/focus clears input. Header: `opponent_style`.
+Guard:`two_hand_support`/`balance_recovery`;attacks≠regrip.
+End/focus clears input;`opponent_style` header.
 `phase`: `action_kind`/kick `outcome`/`from_action`; `impact_kind`: impact_seq+kind.
 `kick_support`: reason/gap/wait/support+strike side.
 `kick_surface_contact`: sole/toe<=64.
 `kick_sweep_sample`: boot/hit/world; `weapon_blocked`: metal stop/point.
-`recovery`: steps/gaps/stability; `ragdoll_snapshot`: speeds/settling/rise support
-vs central landing. `rise_clearance_*`: blocker/candidate/path/capsule/floor;
-changes or 1s summary. `suspected_stall`: >2s no phase/rise progress, living.
+`recovery`: steps/gaps/stability; `ragdoll_snapshot`: speed/settle/support≠landing.
+`rise_clearance_*`: blocker/path/capsule/floor;change/1s.
+`suspected_stall`: living no progress>2s.
+`rise_escape_started`→`rise_weapon_released`;`weapon_recovered`:equipped.
 `post_round_time_discarded`: aftermath loss; snapshots to exit/R.
-Impact/applied/geometry/kind/anatomy/impulse: actor=source,target=victim;
-join `impact_seq`; kind=weapon/kick/shove. Anatomy:region/side/critical/finisher/
-phase before-after/power; diagnostic pre-hit phase may be null.
-`revision_identity`: Runtime/Rules MVID≠Editor commit/state; bank hashes once/play
-(Player build GUID). Missing=null/`unavailable`; no replay/FPS guarantee.
+Impact/applied/geometry/kind/anatomy/impulse:source→victim;join `impact_seq`;
+kind=weapon/kick/shove;region/side/critical/finisher/pre-post phase/power.
+Diagnostic pre-hit phase may be null.
+`revision_identity`:Runtime/Rules MVID≠Editor commit/state;bank hashes once/play
+(Player GUID);missing=null/`unavailable`;no replay/FPS guarantee.
 
 `frame_detail`: `late_pose_ms`=hero LateUpdate, `impact_apply_ms`=impact;
 `update_to_late_ms`=Update→observer LateStart, incl. simulation/updates.
@@ -94,7 +96,7 @@ render/editor/scheduling/waits≠CPU/GPU.
 `late_to_render_begin_ms`/`render_context_span_ms`/`render_end_to_next_update_ms`.
 `render_contexts`: count; submission≠GPU finish. No callbacks=null.
 `weapon_constraint_sample`: candidates/sweeps/world+`anatomy_queries`/reuse/core/shoulder/budget; live world gates.
-Nested timings: no sum; unsupported=null; main/render/GPU:latest.
+Nested times:no sum;unsupported=null;main/render/GPU:latest.
 Header: pacing/capture/wait.
 
 Editor Play/CombatTest: `Tools/Bar Promenade/Diagnostics/Capture Combat CPU Timeline (15 seconds)`.

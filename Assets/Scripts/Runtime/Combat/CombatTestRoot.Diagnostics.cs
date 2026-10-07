@@ -121,7 +121,8 @@ namespace BarPromenade
             if (keys == 0) return;
             requestedSamples++; requestedKeys |= keys;
             requestedTurnChanged |= (keys & 12) != 0 && turned;
-            lastMovementAllowed = GameInput.CanRead(GameInputContext.Movement);
+            lastMovementAllowed = GameInput.CanRead(GameInputContext.Movement) &&
+                GameInput.MovementFocused && !GameInput.MovementAwaitingNeutral;
             lastMotorEnabled = Player.Motor.enabled;
             lastInputEnabled = Player.Motor.InputEnabled;
             lastCapsuleEnabled = Hero.Body != null && Hero.Body.enabled;

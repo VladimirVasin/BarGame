@@ -219,10 +219,13 @@
     { "key": "combat.health", "value": "Здоровье" },
     { "key": "combat.stamina", "value": "Выносливость" },
     { "key": "combat.charge", "value": "Сила" },
+    { "key": "combat.weapon.pickup", "value": "E — поднять лом" },
+    { "key": "inventory.item.combat_crowbar.name", "value": "Лом" },
+    { "key": "inventory.item.combat_crowbar.description", "value": "Стальной лом с изогнутым концом." },
     { "key": "combat.opponent", "value": "Противник" },
     { "key": "combat.victory", "value": "Победа" },
     { "key": "combat.defeat", "value": "Поражение" },
-    { "key": "combat.controls", "value": "WASD · ходьба   Space · шаг   Q · пинок   ЛКМ · удержать/отпустить   ПКМ · блок" },
+    { "key": "combat.controls", "value": "WASD · ход   СКМ · фокус   Space · шаг   Q · пинок   ЛКМ · заряд/удар   ПКМ · блок" },
     {
       "key": "interaction.fair_organ",
       "value": "Покрутить шарманку"

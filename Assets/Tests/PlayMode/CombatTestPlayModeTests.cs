@@ -618,7 +618,6 @@ namespace BarPromenade.Tests.PlayMode
 
                 Vector3 cameraPosition = camera.transform.position;
                 Quaternion cameraRotation = camera.transform.rotation;
-                input.Press(mouse.middleButton, queueEventOnly: true);
                 input.Press(keyboard.rightArrowKey, queueEventOnly: true);
                 input.Press(keyboard.upArrowKey, queueEventOnly: true);
                 input.Set(gamepad.rightStick, new Vector2(1f, .7f), queueEventOnly: true);
@@ -628,9 +627,8 @@ namespace BarPromenade.Tests.PlayMode
                     yield return null;
                 }
                 Assert.That(Vector3.Distance(camera.transform.position, cameraPosition), Is.LessThan(.05f),
-                    "MMB, arrows and right stick must not orbit a target-locked camera.");
+                    "Arrows and right stick must not orbit a target-locked camera.");
                 Assert.That(Quaternion.Angle(camera.transform.rotation, cameraRotation), Is.LessThan(1f));
-                input.Release(mouse.middleButton, queueEventOnly: true);
                 input.Release(keyboard.rightArrowKey, queueEventOnly: true);
                 input.Release(keyboard.upArrowKey, queueEventOnly: true);
                 input.Set(gamepad.rightStick, Vector2.zero, queueEventOnly: true);

@@ -33,6 +33,7 @@ This screen moves an item model; it does not authorize a new hero animation.
 | A single collectible in the world | `WorldItemPickup` + `WorldItemPickupPlan` | `WorldItemFoundScreen.TryPresent`; Take calls `GameSessionState.TryCollectWorldItem` once. Source ID survives scene visits. |
 | An already confirmed grant, including woodpiles | `InventoryTargetInteractionController` for Yes/No, then `WorldItemFoundScreen.TryPresentReceived` | Source calls `TryAddInventoryItem` once after rechecking capacity. Screen shows success and Close; closing/Escape cannot grant or refund. |
 | Inspection inside an existing modal interaction | `HomeRefrigeratorItemInspectionController` pattern | Reuse `WorldItemInspectionPresenter`, `WorldItemInspectionTimeline` and `RetroItemPanel`; retain the outer owner, do not acquire a competing lock. |
+| Reclaim existing CombatTest equipment | `WorldItemFoundScreen` with registered `CombatCrowbar` | Take authorizes one equip of the same dropped weapon after the shared return; no inventory grant. Cancel leaves it on the floor. |
 
 `WorldItemFoundScreen` is installed once on the hero by `PlayerFactory`, resolved
 through `WorldItemFoundScreen.For(interactor)`. `InventoryItemModelFactory` and
@@ -62,9 +63,10 @@ a new deliberate interaction. Never emulate a grant by a success label alone.
   Close cannot interact with the world again in that frame. Programmatic
   handoff between controllers remains available.
 - The shared presenter restores the model's parent/pose before the completion
-  callback; the source then removes a collected unique object or destroys its
-  temporary receipt model. Disable, destroy and scene unload must release the
-  screen, model, locks and callbacks. No camera child may survive its owner.
+  callback; the source then removes a collected unique object, re-equips retained
+  round equipment or destroys its temporary receipt model. Disable, destroy and
+  scene unload must release the screen, model, locks and callbacks. No camera
+  child may survive its owner.
 
 ## Focused acceptance
 

@@ -17,6 +17,7 @@ namespace BarPromenade
         public bool RequestCharge()
         {
             int request = JournalCommand("charge");
+            if (!CombatFocused) return JournalCommandResult(request, "rejected", "unfocused");
             if (roundEnded) return JournalCommandResult(request, "rejected", "round_ended");
             if (!IsAvailable) return JournalCommandResult(request, "rejected", "actor_unavailable");
             if (!GameInput.CanRead(GameInputContext.Gameplay)) return JournalCommandResult(request, "rejected", "input_gate");
@@ -33,9 +34,11 @@ namespace BarPromenade
         public bool ReleaseCharge()
         {
             int request = JournalCommand("charge_release");
+            if (!CombatFocused) return JournalCommandResult(request, "rejected", "unfocused");
             if (roundEnded) return JournalCommandResult(request, "rejected", "round_ended");
             if (!IsAvailable) return JournalCommandResult(request, "rejected", "actor_unavailable");
             if (!GameInput.CanRead(GameInputContext.Gameplay)) return JournalCommandResult(request, "rejected", "input_gate");
+            if (weaponDropped) return JournalCommandResult(request, "rejected", "weapon_missing");
             if (State.HasBufferedCharge)
             {
                 // Releasing a queued click never cancels its preceding swing,
@@ -70,7 +73,7 @@ namespace BarPromenade
         /// A new action must never relabel or erase the old swing's final sweep.</summary>
         internal bool ContinueBufferedAttackAfterContacts()
         {
-            if (roundEnded || presentationFrozen || !IsAvailable ||
+            if (!CombatFocused || roundEnded || presentationFrozen || !IsAvailable ||
                 !GameInput.CanRead(GameInputContext.Gameplay) ||
                 (contactTarget != null && contactTarget.State.IsDefeated)) return false;
             MeleeBufferedAction action = State.BufferedAction;

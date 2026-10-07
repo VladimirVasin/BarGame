@@ -6,7 +6,7 @@ namespace BarPromenade
 {
     /// <summary>Constrains the complete held prop by moving its arm, never its grip socket.
     /// The authored elbow/wrist angles survive shoulder correction unchanged.</summary>
-    internal sealed class CombatWeaponConstraint : IDisposable
+    internal sealed partial class CombatWeaponConstraint : IDisposable
     {
         private const float Skin = .004f;
         internal const int MaximumCandidateChecksPerApply = 12;
@@ -114,8 +114,14 @@ namespace BarPromenade
             anatomySweep = new BodySweep[anatomy.Count];
             clearAnatomy = new AnatomyStamp[anatomy.Count];
             var query = new GameObject("Combat weapon clearance query") { hideFlags = HideFlags.HideAndDontSave };
+            // ComputePenetration needs a native shape on the pinned Unity/PhysX
+            // backend. An immediately disabled fresh collider reports no contact.
+            // Keep this geometry-only query as a remote trigger; world casts ignore
+            // triggers and no simulation body can meet it during play.
+            query.transform.position = Vector3.up * 10000f;
             probe = query.AddComponent<CapsuleCollider>();
-            probe.enabled = false; probe.direction = 1;
+            probe.isTrigger = true; probe.direction = 1; probe.enabled = true;
+            Physics.SyncTransforms();
             armClearance = new CombatArmClearance(owner, upper, forearm);
         }
 
@@ -150,7 +156,7 @@ namespace BarPromenade
             applied = false;
         }
 
-        internal void Forget() { ClearAnatomyReuse(); hasRejectedSearch = hasShoulderChoice = false; applied = fullPoseApplied = hasLast = Blocked = WorldBlocked = SupportBlocked = MotionBlocked = pendingCommit = checkingDesiredPath = false; PenetrationDepth = 0f; }
+        internal void Forget() { EndRecoveryContact(); ClearAnatomyReuse(); hasRejectedSearch = hasShoulderChoice = false; applied = fullPoseApplied = hasLast = Blocked = WorldBlocked = SupportBlocked = MotionBlocked = pendingCommit = checkingDesiredPath = false; PenetrationDepth = 0f; }
         internal void Reset() { Restore(); Forget(); journalConstraintState = -1; journalConstraintReason = null; }
 
         internal void Apply()
@@ -201,6 +207,11 @@ namespace BarPromenade
                 if (!Blocked) { AcceptCandidate(); return; }
             }
             if (!Blocked && !SupportBlocked) { AcceptCandidate(); return; }
+
+            // A stalled rise may explore a small, progressively widening shoulder
+            // arc. It uses the same anatomy/depth/sweep gates as every other pose.
+            if (RecoveryEscapeActive && TryRecoveryShoulderEscape(constrainSupport, desired))
+            { AcceptCandidate(); return; }
 
             // Reuse only a shoulder preference for this exact authored pose.
             // Moving anatomy and world geometry are always checked again.
@@ -434,6 +445,7 @@ namespace BarPromenade
             for (int i = 0; i < otherAnatomy.Count; i++)
                 if (otherAnatomy[i] != null)
                     previousOtherAnatomy[i] = new Pose(otherAnatomy[i].transform.position, otherAnatomy[i].transform.rotation);
+            RememberRecoveryFloorContacts();
         }
 
         private void GatherObstacles()
@@ -506,7 +518,7 @@ namespace BarPromenade
                 float radius = segment.Radius + Skin;
                 if (Mathf.Min(a.y, b.y) - radius < actor.transform.position.y + .06f)
                 {
-                    float floorDepth = Mathf.Max(BelowFloor(a, radius), BelowFloor(b, radius));
+                    float floorDepth = Mathf.Max(BelowFloor(a, radius, index), BelowFloor(b, radius, index));
                     if (floorDepth > 0f)
                     { if (checkingDesiredPath) RecordWorldContact(1f, a.y < b.y ? a : b, Vector3.up);
                         BlockingShape = "supporting floor"; SetEscape(a.y < b.y ? a : b, Vector3.up, floorDepth); return floorDepth; }
@@ -523,6 +535,8 @@ namespace BarPromenade
                     if (Physics.ComputePenetration(probe, center, rotation, shape.Collider, shape.Pose.position,
                         shape.Pose.rotation, out Vector3 direction, out float depth))
                     {
+                        if (AllowsRecoveryFloorContact(index, shape.Collider, depth) &&
+                            RecoveryCoreClear(segment, a, b, shape.Collider)) continue;
                         if (shape.WorldObstacle) RecordWorldContact(1f, center - direction * radius, direction);
                         if (depth > maximum)
                         { maximum = depth; BlockingShape = shape.Collider.name; SetEscape(center, direction, depth); }
@@ -558,7 +572,7 @@ namespace BarPromenade
             escapeAxis.Normalize();
         }
 
-        private float BelowFloor(Vector3 point, float radius)
+        private float BelowFloor(Vector3 point, float radius, int segmentIndex)
         {
             Vector3 origin = new Vector3(point.x, actor.transform.position.y + .5f, point.z);
             float length = origin.y - point.y + radius + .02f;
@@ -571,13 +585,17 @@ namespace BarPromenade
             {
                 RaycastHit hit = sweeps[i];
                 if (!WorldObstacle(hit.collider) || hit.normal.y < .65f || hit.point.y > actor.transform.position.y + .06f) continue;
-                depth = Mathf.Max(depth, hit.point.y - (point.y - radius));
+                float contactDepth = hit.point.y - (point.y - radius);
+                if (contactDepth <= Skin + RecoveryContactTolerance &&
+                    AllowsRecoveryFloorContact(segmentIndex, hit.collider, contactDepth)) continue;
+                depth = Mathf.Max(depth, contactDepth);
             }
             return depth;
         }
 
         private bool SweepClear(Pose from, Pose to)
         {
+            if (!RecoveryFloorPathClear(from, to)) return false;
             float angle = Quaternion.Angle(from.rotation, to.rotation);
             float weaponTravel = Vector3.Distance(from.position, to.position) + angle * Mathf.Deg2Rad * .7f;
             Bounds travelBounds = BuildSegmentSweepBounds(from, to, angle);
@@ -712,6 +730,9 @@ namespace BarPromenade
                         for (int h = 0; h < count; h++)
                             if (WorldObstacle(sweeps[h].collider))
                             {
+                                // The complete floor-contact path was checked above,
+                                // including exact shaft clearance and monotone release.
+                                if (HasRecoveryFloorContact(index, sweeps[h].collider)) continue;
                                 BlockingShape = sweeps[h].collider.name;
                                 if (!checkingDesiredPath) return false;
                                 RecordWorldContact((step - 1f + sweeps[h].distance / delta.magnitude) / steps,

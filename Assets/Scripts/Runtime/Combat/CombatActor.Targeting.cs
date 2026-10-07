@@ -16,7 +16,7 @@ namespace BarPromenade
 
         // The duel owns yaw, while the motor retains target-relative translation.
         // Presentation and contact previews only read this accepted world frame.
-        private bool OwnsCombatFacing => contactTarget != null && !roundEnded && !winnerPresentationReleased;
+        private bool OwnsCombatFacing => CombatFocused && contactTarget != null && !roundEnded && !winnerPresentationReleased;
 
         private void ResetCombatFacing()
         {
@@ -35,7 +35,7 @@ namespace BarPromenade
                 (ImpactMotion != null && ImpactMotion.IsActive && ImpactMotion.BalanceLoad > .45f);
             bool upperBodyAttempt = State.IsAttacking || State.IsCharging || State.IsShoving;
             if (!OwnsCombatFacing || !contactTarget.isActiveAndEnabled || contactTarget.State.IsDefeated ||
-                !IsAvailable || !CanAttemptUpperBodyAttack || recovering && !upperBodyAttempt)
+                !IsAvailable || !CanAttemptBodyAction || recovering && !upperBodyAttempt)
             { facingVelocity = 0f; return; }
 
             // A rules tick can end the arc while still owing its last contact

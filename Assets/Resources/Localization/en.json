@@ -219,10 +219,13 @@
     { "key": "combat.health", "value": "Health" },
     { "key": "combat.stamina", "value": "Stamina" },
     { "key": "combat.charge", "value": "Power" },
+    { "key": "combat.weapon.pickup", "value": "E — pick up crowbar" },
+    { "key": "inventory.item.combat_crowbar.name", "value": "Crowbar" },
+    { "key": "inventory.item.combat_crowbar.description", "value": "A steel crowbar with a bent end." },
     { "key": "combat.opponent", "value": "Opponent" },
     { "key": "combat.victory", "value": "Victory" },
     { "key": "combat.defeat", "value": "Defeat" },
-    { "key": "combat.controls", "value": "WASD · move   Space · step   Q · kick   LMB · hold/release   RMB · block" },
+    { "key": "combat.controls", "value": "WASD · move   MMB · focus   Space · step   Q · kick   LMB · hold/release   RMB · block" },
     {
       "key": "interaction.fair_organ",
       "value": "Turn the organ crank"

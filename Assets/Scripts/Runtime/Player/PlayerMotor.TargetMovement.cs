@@ -6,12 +6,25 @@ namespace BarPromenade
     {
         private const float SideStepSpeed = 1.5f;
         private object movementTargetOwner;
+        private object movementFreezeOwner;
         private Transform movementTarget;
         private bool inertialTargetMovement, movementTargetFrozen;
         private float targetYawVelocity;
 
         public bool MovementTargetActive => movementTargetOwner != null && movementTarget != null &&
             (!(movementTargetOwner is Object unityOwner) || unityOwner != null);
+
+        public bool OwnedMovementFrozen => movementFreezeOwner != null &&
+            (!(movementFreezeOwner is Object unityOwner) || unityOwner != null);
+
+        /// <summary>A contact freeze survives releasing target-facing controls and retains earned momentum.</summary>
+        public bool SetOwnedMovementFrozen(object owner, bool frozen)
+        {
+            if (owner == null || (OwnedMovementFrozen && !ReferenceEquals(owner, movementFreezeOwner))) return false;
+            if (frozen) movementFreezeOwner = owner;
+            else if (ReferenceEquals(owner, movementFreezeOwner)) movementFreezeOwner = null;
+            return true;
+        }
 
         /// <summary>Optional target-facing movement; ordinary actors retain tank controls.</summary>
         public bool SetMovementTarget(object owner, Transform target, bool useInertia = false)

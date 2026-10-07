@@ -10,6 +10,24 @@ namespace BarPromenade
     /// </summary>
     public static class GameInput
     {
+        internal static bool MovementFocused { get; private set; } = true;
+        internal static bool MovementAwaitingNeutral { get; private set; }
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetMovementFocus()
+        {
+            MovementFocused = true;
+            MovementAwaitingNeutral = false;
+            Application.focusChanged -= HandleApplicationFocus;
+            Application.focusChanged += HandleApplicationFocus;
+        }
+
+        internal static void HandleApplicationFocus(bool focused)
+        {
+            MovementFocused = focused;
+            if (!focused) MovementAwaitingNeutral = true;
+        }
+
         public static bool CanRead(GameInputContext context)
         {
             bool modalLocked = BarMinigameModalLock.IsAnyLocked;
@@ -38,6 +56,20 @@ namespace BarPromenade
 
         public static Vector2 ReadMovement()
         {
+            // A key-up can arrive while the window no longer receives input.
+            // Require a neutral device state before accepting another walk;
+            // CanRead stays independent so physical impulses still move him.
+            if (!MovementFocused) return Vector2.zero;
+            if (MovementAwaitingNeutral)
+            {
+                Keyboard keys = Keyboard.current;
+                bool keyHeld = keys != null && (keys.wKey.isPressed || keys.sKey.isPressed ||
+                    keys.aKey.isPressed || keys.dKey.isPressed);
+                bool stickHeld = Gamepad.current != null &&
+                    Gamepad.current.leftStick.ReadValue().sqrMagnitude > .0001f;
+                if (!keyHeld && !stickHeld) MovementAwaitingNeutral = false;
+                return Vector2.zero;
+            }
             if (!CanRead(GameInputContext.Movement))
             {
                 return Vector2.zero;
@@ -164,6 +196,8 @@ namespace BarPromenade
                     return Read(keyboard?.spaceKey, held) || Read(gamepad?.buttonSouth, held);
                 case GameInputAction.CombatKick:
                     return Read(keyboard?.qKey, held) || Read(gamepad?.buttonEast, held);
+                case GameInputAction.CombatFocus:
+                    return Read(Mouse.current?.middleButton, held);
                 default:
                     return false;
             }

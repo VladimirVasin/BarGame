@@ -167,6 +167,22 @@ namespace BarPromenade
             }
             bool decisionDue = ObserveOpponentTarget(seconds, distance);
 
+            if (Opponent.IsWeaponDropped)
+            {
+                // Losing the prop cannot turn a living hostile NPC into a passive
+                // target. It still closes distance and uses its existing grounded kick.
+                Opponent.SetBlock(false);
+                OpponentIntent = me.Phase == MeleePhase.Ready ? CombatOpponentIntent.Approach : CombatOpponentIntent.Recover;
+                if (me.Phase != MeleePhase.Ready) return;
+                if (distance > .9f) MoveOpponent(direction, Mathf.Min(1.8f * seconds, distance - .9f), seconds);
+                else if (decisionDue && opponentDelay <= 0f && Opponent.TryKick())
+                {
+                    opponentDelay = 1f;
+                    OpponentIntent = CombatOpponentIntent.Attack;
+                }
+                return;
+            }
+
             if (me.Phase != MeleePhase.Ready)
             {
                 if (me.IsCharging || me.IsAttacking)
