@@ -22,6 +22,15 @@ namespace BarPromenade
         private RaycastHit[] casts = new RaycastHit[32];
         private Collider[] overlaps = new Collider[32];
 
+        private readonly struct WorldHit
+        {
+            internal readonly Collider Surface;
+            internal readonly float Fraction;
+            internal readonly Vector3 Point, Normal;
+            internal WorldHit(Collider surface, float fraction, Vector3 point, Vector3 normal)
+            { Surface = surface; Fraction = fraction; Point = point; Normal = normal; }
+        }
+
         private sealed class Projectile
         {
             internal GameObject Model;
@@ -50,6 +59,7 @@ namespace BarPromenade
         public int ImpactCount { get; private set; }
         public Vector3 LastPosition { get; private set; }
         public Vector3 LastImpactPoint { get; private set; }
+        public CombatSurfaceImpactEffects SurfaceEffects { get; }
         public bool HasCapacity => ActiveCount < Capacity;
         internal int VisibleTrailCount
         {
@@ -62,6 +72,8 @@ namespace BarPromenade
         {
             var holder = new GameObject("Combat Projectiles");
             holder.transform.SetParent(parent, false);
+            SurfaceEffects = holder.AddComponent<CombatSurfaceImpactEffects>();
+            SurfaceEffects.Initialize();
             for (int i = 0; i < slots.Length; i++)
             {
                 GameObject model = CombatPistolAssetProvider.CreateBullet(holder.transform);
@@ -105,8 +117,8 @@ namespace BarPromenade
         internal bool MuzzleIsClear(CombatActor source, Vector3 muzzle)
         {
             Vector3 from = source.Weapon.transform.position;
-            return !WorldOverlap(source, muzzle) && !WorldSegment(source, from, muzzle, out _, out _) &&
-                !WorldSegment(source, source.Ragdoll.PhysicsController.ChestBody.position, muzzle, out _, out _);
+            return WorldOverlap(source, muzzle) == null && !WorldSegment(source, from, muzzle, out _) &&
+                !WorldSegment(source, source.Ragdoll.PhysicsController.ChestBody.position, muzzle, out _);
         }
 
         internal void Advance(float seconds, CombatActor hero, CombatActor opponent)
@@ -115,6 +127,7 @@ namespace BarPromenade
                 throw new ArgumentOutOfRangeException(nameof(seconds));
             contacts.Clear();
             if (seconds == 0f) return;
+            SurfaceEffects.Tick(seconds);
             foreach (Projectile p in slots)
             {
                 if (!p.Active) continue;
@@ -131,12 +144,12 @@ namespace BarPromenade
                     travel = Vector3.Distance(from, to);
                 }
                 p.Velocity += acceleration * dt;
-                bool world = WorldSegment(p.Source, from, to, out float worldFraction, out Vector3 worldPoint);
+                bool world = WorldSegment(p.Source, from, to, out WorldHit worldHit);
                 CombatActor target = p.Source == hero ? opponent : hero;
                 CombatHurtboxes.Hit hit = default;
                 bool body = target != null && target.Hurtboxes != null &&
                     target.Hurtboxes.SweepSphere(from, to, Radius, p.Velocity.normalized, out hit);
-                if (body && (!world || hit.Fraction < worldFraction))
+                if (body && (!world || hit.Fraction < worldHit.Fraction))
                 {
                     p.Position = hit.Point;
                     contacts.Add(new Impact(p, target, hit));
@@ -145,8 +158,9 @@ namespace BarPromenade
                 }
                 else if (world)
                 {
-                    p.Position = worldPoint;
-                    ImpactCount++; LastImpactPoint = worldPoint;
+                    p.Position = worldHit.Point;
+                    ImpactCount++; LastImpactPoint = worldHit.Point;
+                    SurfaceEffects.Emit(worldHit.Surface, worldHit.Point, worldHit.Normal, p.Velocity);
                     Retire(p);
                 }
                 else
@@ -206,6 +220,7 @@ namespace BarPromenade
         public void Clear()
         {
             ClearFlights();
+            if (SurfaceEffects != null) SurfaceEffects.Clear();
             foreach (Projectile p in slots) if (p.Trail != null) p.Trail.enabled = false;
         }
 
@@ -226,23 +241,40 @@ namespace BarPromenade
             ActiveCount--;
         }
 
-        private bool WorldOverlap(CombatActor source, Vector3 point)
+        private Collider WorldOverlap(CombatActor source, Vector3 point)
         {
             int count;
             while ((count = Physics.OverlapSphereNonAlloc(point, Radius, overlaps, Physics.DefaultRaycastLayers,
                 QueryTriggerInteraction.Ignore)) == overlaps.Length) Array.Resize(ref overlaps, overlaps.Length * 2);
             for (int i = 0; i < count; i++)
-                if (IsWorld(overlaps[i], source)) return true;
-            return false;
+                if (IsWorld(overlaps[i], source)) return overlaps[i];
+            return null;
         }
 
-        private bool WorldSegment(CombatActor source, Vector3 from, Vector3 to, out float fraction, out Vector3 point)
+        private bool WorldSegment(CombatActor source, Vector3 from, Vector3 to, out WorldHit contact)
         {
-            fraction = float.PositiveInfinity; point = to;
-            if (WorldOverlap(source, from)) { fraction = 0f; point = from; return true; }
+            contact = default;
             Vector3 delta = to - from;
             float length = delta.magnitude;
+            Collider overlap = WorldOverlap(source, from);
+            if (overlap != null)
+            {
+                Vector3 direction = length > .000001f ? delta / length : Vector3.forward;
+                float reach = overlap.bounds.size.magnitude + Radius * 2f;
+                // An overlapping start still stops immediately, but presentation
+                // needs the actual entry surface rather than an interior point.
+                if (overlap.Raycast(new Ray(from - direction * reach, direction), out RaycastHit entry, reach * 2f))
+                    contact = new WorldHit(overlap, 0f, entry.point, entry.normal);
+                else
+                {
+                    Vector3 point = overlap.ClosestPoint(from);
+                    Vector3 normal = from - point;
+                    contact = new WorldHit(overlap, 0f, point, normal.sqrMagnitude > .000001f ? normal.normalized : -direction);
+                }
+                return true;
+            }
             if (length < .000001f) return false;
+            float fraction = float.PositiveInfinity;
             int count;
             while ((count = Physics.SphereCastNonAlloc(from, Radius, delta / length, casts, length,
                 Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore)) == casts.Length)
@@ -252,7 +284,8 @@ namespace BarPromenade
                 RaycastHit hit = casts[i];
                 float t = hit.distance / length;
                 if (!IsWorld(hit.collider, source) || t >= fraction) continue;
-                fraction = t; point = hit.point;
+                fraction = t;
+                contact = new WorldHit(hit.collider, t, hit.point, hit.normal);
             }
             return fraction <= 1f;
         }

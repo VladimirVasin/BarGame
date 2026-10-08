@@ -258,22 +258,23 @@
   §6/§12/art §10g/§16/§21/nine checks.
 
 - **Accepted — 2026-10-08, pistol aimed movement:**
-  User:CombatTest held gun aim:camera-planar WASD/stick strafe/diagonal clamp.
-  Space:shared grounded Step1m/15,dominant hero-facing cardinal/noinput back;
-  Step yaw/travel fixed;camera/upper aim kept;wall/impact/pause gates.
-  `SetMovementBasis`:translation;`CombatActor`:yaw;`CombatFootwork`:legs.
-  Speed/inertia/focus;release:tank/momentum;hard handoffs clear.
-  Unaimed freewalk:noStep.
+  User:CombatTest aim:cam-planar WASD/stick/strafe/diagonal clamp.
+  Space:grounded shared Step1m/15;dominant facing axis/noinput back;
+  fixed yaw/travel;cam/upper aim kept;wall/impact/pause gated.
+  `SetMovementBasis`/`CombatActor`/`CombatFootwork`:translation/yaw/legs.
+  Speed/inertia/focus;release:tank/momentum;handoff clear;unaimed:noStep.
 - **Accepted exception 2026-10-08, pistol:**
   §6/art§15a;dummy/freecam;bar-Q:focus;Step:focus/aim.
-  Recoil/streak/zone-dir impact-SFX-dark blood;head→0HP/live ragdoll.
-  Stablecam;hit kick/manual/motor kept.
-  Shot→delayed port case/bounded g-bounce/SFX;slide return/emptylock.
-  Handmag-seat/rack1.8s/SFX/ammo last;interrupt→hold/Rresume.
-  Drop/E keepsstage-ammo;pause-hitstop0/reset-exit clear.
-  No lock-pierce-ricochet-guard-parry-taunt-reward;win fire-reload/HP-result kept.
-  Holes/bleed:rig-ragdoll→reset-exit/capped;
-  corpse:impulse/wounds-blood/HP-result-pose kept.
+  Recoil/streak/zone-dir impulse-SFX-darkblood;head0HP→live ragdoll.
+  Stablecam/hitkick/manual/motor;delayed port case/g-bounce-cap/SFX;
+  slide:return/emptylock;handmag-seat/rack1.8s/SFX/ammo last.
+  Interrupt:hold/Rresume;drop/E:stage-ammo;pause-hitstop0/reset-exit clear.
+  No lock/pierce/ricochet/guard/parry/taunt/reward;win fire-reload/HP-result kept.
+  Rig-ragdoll:holes/bleed capped→reset-exit;corpse impulse/wounds-blood/HP-result-pose kept.
+- **Accepted exception — 2026-10-08, world bullet impacts:**
+  User/§6/art§15a:CombatTest world firsthit→chips/sparks+dark surface hole.
+  128holes/oldest reuse,192particles;authored plane/shared shader;no damage/pierce.
+  Pause-hitstop0;ClearFlights keeps;reset-exit0.
 - **Accepted 2026-10-07, combat:**
   Nondeeper floor;.75s stall→arm/.5s→drop;rise≠grip;HP-focus-AI kept.
   Pause-hitstop0;no bar:walk-Q-Step/hits-falls;charge-palm-guard off.
@@ -5465,19 +5466,17 @@
   restart and quit require explicit default-No confirmation, while save/load,
   settings and a visible main-menu destination remain unimplemented.
 - **Accepted — Tank-control player heading (supersedes independent heading):**
-  Ordinary A/D yaw `150°/s` × intoxication speed multiplier, never face velocity.
-  W uses own-forward; S backpedals `1.4 m/s`; W±A/D arcs at walk/run speed.
-  Shift/L3 requests Run only with positive forward input; alone/back never sprint.
-  Chase orbits independently, without player yaw. Combat target/held pistol aim
-  lease directional translation; actor owns facing. `WalkPlanarStep` faces travel.
-  `PlayerMotionSample`: planar velocity/signed forward speed/turn input select
-  `Walk`/`Run`/`WalkBack`/`TurnLeft`/`TurnRight` in the six-input locomotion mixer.
+  Ordinary A/D:yaw `150°/s` × intoxication, never velocity-facing.
+  W:own-forward;S:backpedal `1.4 m/s`;W±A/D:walk/run arcs.
+  Shift/L3:Run only with positive forward;alone/back no sprint.
+  Chase:independent orbit/no player yaw;Combat target/held aim lease translation;
+  actor:facing;`WalkPlanarStep`:travel-facing. `PlayerMotionSample`:planar velocity/
+  signed forward speed/turn→`Walk`/`Run`/`WalkBack`/`TurnLeft`/`TurnRight`,six-input mixer.
 - **Accepted — Bounded inertial walk/run locomotion:** Character-relative
-  input targets a `2.6 m/s` forward walk, `4.2 m/s` forward run or `1.4 m/s`
-  backward maximum through the unchanged `6.5 m/s²`
-  acceleration and `11 m/s²` braking. The motor feeds actual constrained
-  displacement back into its next velocity step, so road edges and collisions
-  cannot store a hidden impulse. Normal input release coasts, while modal
+  input targets `2.6/4.2 m/s` forward walk/run or `1.4 m/s` backward;
+  acceleration `6.5 m/s²`, braking `11 m/s²`. Actual constrained displacement
+  feeds next-step velocity, so road edges/collisions store no hidden impulse.
+  Normal input release coasts, while modal
   ownership, scene transitions, input disable and teleport still stop planar
   motion immediately. The existing intoxication multiplier scales both
   forward targets and the turn rate; fatigue has no movement debuff. Scripted

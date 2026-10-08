@@ -407,6 +407,7 @@ namespace BarPromenade
                 pendingSeconds = 0d;
                 Hero.AdvanceRoundEnd(seconds); Opponent.AdvanceRoundEnd(seconds);
                 Casings?.Tick(seconds);
+                Projectiles?.SurfaceEffects.Tick(seconds);
                 BloodEffects.Tick(seconds);
                 SparkEffects.Tick(seconds);
             }

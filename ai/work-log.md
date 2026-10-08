@@ -6,34 +6,31 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 ## 2026-10-08 — Pistol aim, mechanics and wounds
 
 - CombatTest: grip kick/torso catch survive aim IK; upward aim clears elbows.
-  Flight survives contact. Zone impulse/dark blood/audio share owners;
-  headshots hand the live standing/fallen zero-HP pose to physics. Bounded
-  holes/bleeding follow rig/ragdoll until reset/exit; corpse hits wake bodies
-  without changing pose, HP or result.
-- Root camera retains pose/FOV/aim through winning focus→free and corpse-hit
-  freeze; both previously flickered to chase. Frozen triggers cancel; wall
-  sweeps/manual look/motor/incoming-hit kick remain.
+  Flight survives contact; zone impulse/dark blood/audio share owners. Headshots
+  hand live standing/fallen zero-HP pose to physics. Bounded rig/ragdoll
+  holes/bleeding last to reset/exit; corpse hits wake bodies, preserving pose/HP/result.
+- World hits:chips/sparks/surface-bound holes until reset/exit.
+  Shared pool/no world damage; local depth-fade keeps wall chips visible.
+  Pause/hitstop freeze; round-end flight cleanup keeps marks.
+- Root camera keeps pose/FOV/aim through winning focus→free/corpse-hit freeze,
+  removing chase flicker. Frozen triggers cancel; wall/manual/motor/hit-kick remain.
 - Port cases bounce/sound; slide returns/locks empty. Original hand swaps/racks
-  magazine, ammo last. Interrupt/drop/E retain props/clock; R resumes after
-  settle without replaying sounds. Pause freezes; reset/exit clear.
-- Unaimed/unfocused pistol uses ordinary idle/gait/right palm with zero-weight
-  carry for late attachment; old speed yield restored the wrong stopped hold.
-  Aim/reload/injury retain priority. Entry passive/unfocused; MMB focuses;
-  Tab:bar focused/gun free; explicit reset keeps mode/focuses.
-- Idle↔aim: reversible .25s camera/FOV/rig/grip, separate firing clock; shared
-  recovery blends late IK. `BlendRecoveryRotation` keeps its half-turn arc;
-  pistol IK keeps clearance continuity. Reacquisition adopts visible soles,
-  avoiding stale anchors pulling pelvis down. Centre ray follows shown camera.
-  Accepted shot expands fixed-centre cross; pause holds, hide/reset clears.
-- Held pistol aim leases horizontal camera-relative translation: A/D strafe,
-  WASD diagonals clamp; actor keeps yaw and existing CombatFootwork owns legs.
-  Previously free aim left the motor in its tank branch. Release restores axes
-  without discarding momentum; hard handoffs release ownership.
-  Duel logs exposed airborne walk→aim starting hit recovery without a hit;
-  ordinary settle now lands that boot without activating impact/fall.
-  Space in held aim reuses grounded Step/15:dominant facing axis/back without
-  input;feet/yaw commit, aim remains; final arm IK closes blended grip.
-  Free carry stays gated.
+  magazine, ammo last. Interrupt/drop/E keep props/clock; R resumes settled without
+  replaying sounds. Pause freezes; reset/exit clear.
+- Unaimed/unfocused: ordinary idle/gait/right palm, zero-weight late carry;
+  old speed yield restored stopped hold. Aim/reload/injury keep priority.
+  Entry passive/unfocused; MMB focuses; Tab:bar focused/gun free; reset keeps mode/focuses.
+- Idle↔aim: reversible .25s camera/FOV/rig/grip, separate fire clock; recovery
+  blends late IK. `BlendRecoveryRotation` keeps half-turn arc; pistol IK keeps
+  clearance. Reacquisition uses visible soles instead of stale pelvis-pulling
+  anchors. Centre ray follows visible camera; shot expands fixed-centre cross;
+  pause holds, hide/reset clears.
+- Held aim: horizontal camera-relative A/D strafe/clamped WASD diagonals;
+  actor owns yaw, CombatFootwork legs. Free aim had retained tank movement.
+  Release restores axes/momentum; hard handoffs clear. Duel logs exposed airborne
+  walk→aim invoking hit recovery without a hit; ordinary settle now lands it.
+  Space reuses grounded Step/15:dominant facing axis/noinput back;feet/yaw commit,
+  aim remains; final IK closes blended grip. Free carry stays gated.
 - Checks: embedded `build-combat-pistol-3d-model.py` validator;
   `Range_PistolSelectionProjectileFlightReloadAndResetUseTheLiveDuel`,
   `Range_PistolWinningAndCorpseShotsKeepTheLiveFreeAimCamera`,
@@ -41,6 +38,8 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
   `RecoveryPoseTransition_PreservesRotationAcrossHalfTurn`,
   `Range_DefaultTargetStartsUnfocusedAndModeChangesThroughLiveInput`.
   Fire/reload/rack/wound/fallen-head/idle/aim/step frames inspected.
+  `Range_PistolSurfaceImpactsStayOnTheHitObjectUntilReset`: passed; frames inspected.
+  Composite:floor-aim camera check failed.
   `Range_PistolAimMovesInAllDirectionsWithoutChangingAim`: travel/gait/grip/
   mouse/shot, tank return/pause/reset, airborne entry/toggles/strafe.
   `Range_FinalCatchRequiresStableMovingSupportBeforeRegrip`: real-hit catch.

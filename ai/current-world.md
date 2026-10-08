@@ -151,16 +151,17 @@ The vertical slice contains:
   8/∞:RMBfreeaim+cross/LMBedge/R-Xreload1.8;idle-gait/Rpalm.
   Freeaim:cam-planar WASD/stick/strafe/diagonal clamp;actor yaw/legs.
   Release:tank;Space:focus/aim;shared facing-cardinal/back Step;cam/aim kept.
-  Idle↔aim:cam-FOV .25s/reversible grip/IK;cam ray;ready≠visual.
+  Idle↔aim:cam-FOV .25s/reversible grip-IK;cam ray;ready≠visual.
   Recoil/streak/stablecam/hit kick;shot cross:.035s out/.165s in;
   sim/pause hold/hide0;port case/g-bounce/SFX;slide return/emptylock.
   Handmag-rack/SFX/ammo last;interrupt→hold/Rresume;drop/E keepsstage-ammo.
   Pause-hitstop0/reset-exit clear;win aim-fire-reload/HP-result kept.
   Bullet:g/sweep1/no pierce-ricochet-guard-parry;head0HP/live ragdoll.
   Hit/SFX;rig-ragdoll holes/bleed→reset-exit/capped.
+  World:chips/sparks/holes128FIFO/particles192→reset-exit;no damage.
   Corpse:impulse/wounds-blood/HP-result-pose kept;end clear1x.
-  Bar:6zones/rear-head end/aim¼lock/firsthit/metal sparks-recoil/L release.
-  Q:free leg/dry/high guard bypass;Windup1m/finite shove-catch/support;
+  Bar:6zones/rear-head end/aim¼lock/firsthit/metal sparks-recoil/Lrelease.
+  Q:free leg/dry/highguard bypass;Windup1m/finite shove-catch/support;
   rise≠grip/drop;E own-ammo/sharedUI/0grant/toilet:bar.
   Gap:pierce/balance;
 - the retained Home opening is reachable only by a legacy request: held bed loop,
@@ -1737,10 +1738,9 @@ The vertical slice contains:
   positive forward input raises it to `4.2 m/s`. `S`: dedicated backpedal
   at `1.4 m/s`; `A`/`D` yaw in place at `150°/s` with
   step-turn clips/arcs, `6.5 m/s²` acceleration/`11 m/s²` braking.
-  Release coasts; modal/transition/teleport stops immediately; constrained
-  displacement stores no momentum. Camera basis belongs only to CombatTest aim.
-  Intoxication scales walk/run speed, fatigue adds no movement debuff, and
-  scripted interaction approaches remain at walking pace;
+  Release coasts; modal/transition/teleport stops immediately; constraints store
+  no momentum. Camera basis:CombatTest aim only. Intoxication scales walk/run;
+  fatigue:no debuff;scripted approaches walk;
 - in City, BarInterior and ordinary Supermarket play, a very close freely
   orbiting perspective third-person chase camera with
   `2.6 m / 53°` exterior and `2.2 m / 57°` interior framing,

@@ -1027,13 +1027,38 @@ namespace BarPromenade.Tests.PlayMode
         }
 
         [UnityTest]
+        public IEnumerator Range_PistolSurfaceImpactsStayOnTheHitObjectUntilReset()
+        {
+            var input = new InputTestFixture();
+            Keyboard keyboard = null;
+            Mouse mouse = null;
+            try
+            {
+                input.Setup();
+                keyboard = InputSystem.AddDevice<Keyboard>();
+                mouse = InputSystem.AddDevice<Mouse>();
+                yield return SceneManager.LoadSceneAsync(SceneIds.MainMenu, LoadSceneMode.Single);
+                Assert.That(CombatTestStartService.TryStart(CombatWeaponId.Pistol), Is.True);
+                yield return AwaitSelectedCombatRange();
+                yield return VerifyPistolSurfaceImpacts();
+                LogAssert.NoUnexpectedReceived();
+            }
+            finally
+            {
+                if (root != null) root.AutomaticSimulation = false;
+                if (keyboard != null && keyboard.added) InputSystem.RemoveDevice(keyboard);
+                if (mouse != null && mouse.added) InputSystem.RemoveDevice(mouse);
+                input.TearDown();
+            }
+        }
+
+        [UnityTest]
         public IEnumerator Range_PistolSelectionProjectileFlightReloadAndResetUseTheLiveDuel()
         {
             pistolGeometryIssues.Clear();
             var input = new InputTestFixture();
             Keyboard keyboard = null;
             Mouse mouse = null;
-            GameObject obstacle = null;
             try
             {
                 input.Setup();
@@ -1136,6 +1161,9 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(root.Opponent.LastImpact.Impulse.magnitude, Is.GreaterThanOrEqualTo(18f));
                 Assert.That(root.BloodEffects.ProjectileWoundCountFor(root.Opponent), Is.EqualTo(1),
                     "The actual body contact leaves a persistent hole on the original skin.");
+                Assert.That(root.Projectiles.SurfaceEffects.EmissionCount, Is.Zero,
+                    "An anatomical contact must retain its blood response without adding a world-surface effect.");
+                Assert.That(root.Projectiles.SurfaceEffects.HoleCount, Is.Zero);
                 Assert.That(root.Projectiles.VisibleTrailCount, Is.GreaterThan(0),
                     "The swept flight must remain visible after the tiny physical bullet is retired.");
                 yield return CaptureFocusGameView("pistol-impact-contact");
@@ -1159,39 +1187,8 @@ namespace BarPromenade.Tests.PlayMode
                     "A living bullet wound keeps bleeding after the former finite impact tail.");
                 yield return CapturePistolWoundNearView(root.Opponent, "pistol-npc-torso-wound-persistent");
 
-                // A 15 mm collider is crossed within a single 120 Hz step. A sampled
-                // end-position overlap would miss it; the projectile must sweep its path.
-                root.ResetRound();
-                AssertPistolWoundsReset();
-                PlacePair(6f);
-                obstacle = new GameObject("Test bullet obstacle");
-                var wall = obstacle.AddComponent<BoxCollider>();
-                wall.size = new Vector3(.015f, 1f, 1f);
-                obstacle.transform.position = new Vector3(0f, 1.1f, -2f);
-                Physics.SyncTransforms();
-                Assert.That(root.Projectiles.TrySpawn(root.Hero, new Vector3(-2f, 1.1f, -2f),
-                    Vector3.right * 250f, root.Hero.Pistol.ShotSequence), Is.True);
-                root.Tick(CombatTestRoot.SimulationStep);
-                Assert.That(root.Projectiles.ImpactCount, Is.EqualTo(1));
-                Assert.That(root.Projectiles.ActiveCount, Is.Zero);
-                Assert.That(Mathf.Abs(root.Projectiles.LastImpactPoint.x), Is.LessThan(.025f));
-                Assert.That(root.Opponent.ReceivedImpactCount, Is.Zero, "A world contact cannot damage the unrelated opponent.");
-                Assert.That(root.Projectiles.VisibleTrailCount, Is.EqualTo(1));
-                Assert.That(Vector3.Distance(root.Projectiles.LastTrailEnd, root.Projectiles.LastImpactPoint), Is.LessThan(.001f),
-                    "The visible streak ends at the first actual surface rather than crossing the wall.");
-                int pausedTrails = root.Projectiles.VisibleTrailCount;
-                Assert.That(root.PauseMenu.Open(), Is.True);
-                root.Tick(.2f);
-                for (int frame = 0; frame < 8; frame++) yield return null;
-                Assert.That(root.Projectiles.VisibleTrailCount, Is.EqualTo(pausedTrails), "Pause freezes retained flight streaks.");
-                Assert.That(root.PauseMenu.Cancel(), Is.True);
-                yield return WaitFor(() => GameInput.CanRead(GameInputContext.Gameplay), "Pause did not release the bullet trail.");
-                for (int frame = 0; frame < 10; frame++) yield return null;
-                Assert.That(root.Projectiles.VisibleTrailCount, Is.Zero, "The completed streak must fade without another simulation tick.");
-                Object.DestroyImmediate(obstacle);
-                obstacle = null;
+                yield return VerifyPistolSurfaceImpacts();
 
-                root.ResetRound();
                 PlacePair(6f);
                 Vector3 ballisticOrigin = new Vector3(-2f, 2f, -2f);
                 Assert.That(root.Projectiles.TrySpawn(root.Hero, ballisticOrigin,
@@ -1404,7 +1401,6 @@ namespace BarPromenade.Tests.PlayMode
                     root.AutomaticSimulation = false;
                     root.SetDuelLogging(false);
                 }
-                if (obstacle != null) Object.DestroyImmediate(obstacle);
                 if (keyboard != null && keyboard.added) InputSystem.RemoveDevice(keyboard);
                 if (mouse != null && mouse.added) InputSystem.RemoveDevice(mouse);
                 input.TearDown();
@@ -2507,6 +2503,149 @@ namespace BarPromenade.Tests.PlayMode
             LogAssert.Expect(LogType.Log, "Area capture wrote " + path);
             AreaCaptureFixture.CaptureCurrentCamera(camera, SceneIds.CombatTest, name);
             Assert.That(Vector3.Distance(grip.position, hands.CylinderCentre(false)), Is.LessThan(.001f));
+        }
+
+        private IEnumerator VerifyPistolSurfaceImpacts()
+        {
+            GameObject obstacle = null;
+            try
+            {
+                // A 15 mm collider is crossed within a single 120 Hz step. A sampled
+                // end-position overlap would miss it; the projectile must sweep its path.
+                root.ResetRound();
+                AssertPistolWoundsReset();
+                PlacePair(6f);
+                obstacle = CreatePistolSurfaceObstacle();
+                var surfaceEffects = root.Projectiles.SurfaceEffects;
+                Assert.That(surfaceEffects.HoleCount + surfaceEffects.ActiveParticleCount + surfaceEffects.EmissionCount, Is.Zero,
+                    "Round reset removes the previous surface presentation.");
+                Physics.SyncTransforms();
+                Assert.That(root.Projectiles.TrySpawn(root.Hero, new Vector3(-2f, 1.1f, -2f),
+                    Vector3.right * 250f, root.Hero.Pistol.ShotSequence), Is.True);
+                root.Tick(CombatTestRoot.SimulationStep);
+                Assert.That(root.Projectiles.ImpactCount, Is.EqualTo(1));
+                Assert.That(root.Projectiles.ActiveCount, Is.Zero);
+                Assert.That(Mathf.Abs(root.Projectiles.LastImpactPoint.x), Is.LessThan(.025f));
+                Assert.That(root.Opponent.ReceivedImpactCount, Is.Zero, "A world contact cannot damage the unrelated opponent.");
+                Assert.That(root.Projectiles.VisibleTrailCount, Is.EqualTo(1));
+                Assert.That(Vector3.Distance(root.Projectiles.LastTrailEnd, root.Projectiles.LastImpactPoint), Is.LessThan(.001f),
+                    "The visible streak ends at the first actual surface rather than crossing the wall.");
+                Assert.That(surfaceEffects.EmissionCount, Is.EqualTo(1), "One swept contact emits one world impact.");
+                Assert.That(surfaceEffects.ActiveParticleCount, Is.GreaterThan(0), "The contact must have a visible impact burst.");
+                Assert.That(surfaceEffects.HoleCount, Is.EqualTo(1), "The contacted concrete keeps a bullet hole.");
+                Assert.That(surfaceEffects.TryGetHole(0, out Vector3 wallHolePoint, out Vector3 wallHoleNormal), Is.True);
+                Assert.That(Vector3.Distance(wallHolePoint, root.Projectiles.LastImpactPoint), Is.LessThan(.02f));
+                Assert.That(Vector3.Dot(wallHoleNormal, Vector3.left), Is.GreaterThan(.99f),
+                    "The wall hole must face the struck left surface rather than the camera or world up.");
+                root.Tick(.04f);
+                CapturePistolSurfaceImpact("pistol-world-wall-contact", wallHolePoint, wallHoleNormal);
+                int pausedTrails = root.Projectiles.VisibleTrailCount;
+                int pausedParticles = surfaceEffects.ActiveParticleCount;
+                float pausedSurfaceSeconds = surfaceEffects.SimulationSeconds;
+                Assert.That(root.PauseMenu.Open(), Is.True);
+                root.Tick(.2f);
+                for (int frame = 0; frame < 8; frame++) yield return null;
+                Assert.That(root.Projectiles.VisibleTrailCount, Is.EqualTo(pausedTrails), "Pause freezes retained flight streaks.");
+                Assert.That(surfaceEffects.ActiveParticleCount, Is.EqualTo(pausedParticles), "Pause freezes the world impact burst.");
+                Assert.That(surfaceEffects.SimulationSeconds, Is.EqualTo(pausedSurfaceSeconds).Within(.0001f));
+                Assert.That(surfaceEffects.HoleCount, Is.EqualTo(1), "Pause must retain the surface hole.");
+                Assert.That(root.PauseMenu.Cancel(), Is.True);
+                yield return WaitFor(() => GameInput.CanRead(GameInputContext.Gameplay), "Pause did not release the bullet trail.");
+                for (int frame = 0; frame < 10; frame++) yield return null;
+                Assert.That(root.Projectiles.VisibleTrailCount, Is.Zero, "The completed streak must fade without another simulation tick.");
+                root.Tick(.5f);
+                Assert.That(surfaceEffects.ActiveParticleCount, Is.Zero, "The brief contact burst expires on the live simulation clock.");
+                Assert.That(surfaceEffects.HoleCount, Is.EqualTo(1), "The bullet hole persists after its contact burst has gone.");
+                CapturePistolSurfaceImpact("pistol-world-wall-persistent", wallHolePoint, wallHoleNormal);
+                Vector3 localHolePoint = obstacle.transform.InverseTransformPoint(wallHolePoint);
+                Vector3 localHoleNormal = obstacle.transform.InverseTransformDirection(wallHoleNormal);
+                obstacle.transform.position += new Vector3(.35f, .15f, .2f);
+                obstacle.transform.rotation = Quaternion.Euler(0f, 45f, 0f);
+                Physics.SyncTransforms();
+                root.Tick(CombatTestRoot.SimulationStep);
+                Assert.That(surfaceEffects.TryGetHole(0, out Vector3 movedHolePoint, out Vector3 movedHoleNormal), Is.True);
+                Assert.That(Vector3.Distance(movedHolePoint, obstacle.transform.TransformPoint(localHolePoint)), Is.LessThan(.001f),
+                    "The hole follows the same contacted object when it moves.");
+                Assert.That(Vector3.Dot(movedHoleNormal, obstacle.transform.TransformDirection(localHoleNormal)), Is.GreaterThan(.999f),
+                    "The hole's surface direction follows the object's rotation.");
+                Assert.That(surfaceEffects.EmissionCount, Is.EqualTo(1), "Presentation updates cannot emit another impact.");
+                Object.DestroyImmediate(obstacle);
+                obstacle = null;
+                root.Tick(CombatTestRoot.SimulationStep);
+                Assert.That(surfaceEffects.HoleCount, Is.Zero, "Removing the contacted object also removes its retained hole.");
+
+                Assert.That(root.Projectiles.TrySpawn(root.Hero, new Vector3(-2.35f, .8f, -2.35f),
+                    Vector3.down * CombatProjectilePool.MuzzleSpeed, root.Hero.Pistol.ShotSequence), Is.True);
+                root.Tick(CombatTestRoot.SimulationStep);
+                Assert.That(surfaceEffects.EmissionCount, Is.EqualTo(2));
+                Assert.That(surfaceEffects.HoleCount, Is.EqualTo(1));
+                Assert.That(surfaceEffects.ActiveParticleCount, Is.GreaterThan(0));
+                Assert.That(surfaceEffects.TryGetHole(0, out Vector3 floorHolePoint, out Vector3 floorHoleNormal), Is.True);
+                Assert.That(Mathf.Abs(floorHolePoint.y), Is.LessThan(.02f));
+                Assert.That(Vector3.Dot(floorHoleNormal, Vector3.up), Is.GreaterThan(.99f),
+                    "The authored floor uses its own upward contact normal.");
+                Assert.That(root.Opponent.ReceivedImpactCount, Is.Zero);
+                root.Tick(.04f);
+                CapturePistolSurfaceImpact("pistol-world-floor-contact", floorHolePoint, floorHoleNormal);
+
+                root.ResetRound();
+                Assert.That(surfaceEffects.HoleCount + surfaceEffects.ActiveParticleCount + surfaceEffects.EmissionCount, Is.Zero,
+                    "Round reset clears both persistent holes and any live surface impact burst.");
+            }
+            finally
+            {
+                if (obstacle != null) Object.DestroyImmediate(obstacle);
+            }
+        }
+
+        private GameObject CreatePistolSurfaceObstacle()
+        {
+            MeshFilter floor = null;
+            foreach (MeshFilter mesh in root.GetComponentsInChildren<MeshFilter>())
+                if (mesh.name.StartsWith("Collision_Floor", System.StringComparison.Ordinal)) { floor = mesh; break; }
+            Assert.That(floor, Is.Not.Null, "The test reuses the arena's authored concrete mesh.");
+            var obstacle = new GameObject("Test bullet obstacle");
+            obstacle.transform.position = new Vector3(0f, 1.1f, -2f);
+            Vector3 size = new Vector3(.015f, 1f, 1f);
+            obstacle.AddComponent<BoxCollider>().size = size;
+            var surface = new GameObject("Test concrete surface");
+            surface.transform.SetParent(obstacle.transform, false);
+            surface.AddComponent<MeshFilter>().sharedMesh = floor.sharedMesh;
+            surface.AddComponent<MeshRenderer>().sharedMaterial = floor.GetComponent<MeshRenderer>().sharedMaterial;
+            Bounds bounds = floor.sharedMesh.bounds;
+            Vector3 scale = new Vector3(size.x / bounds.size.x, size.y / bounds.size.y, size.z / bounds.size.z);
+            surface.transform.localScale = scale;
+            surface.transform.localPosition = -Vector3.Scale(bounds.center, scale);
+            return obstacle;
+        }
+
+        private void CapturePistolSurfaceImpact(string name, Vector3 point, Vector3 normal)
+        {
+            Camera camera = root.CameraFollow.Camera;
+            Vector3 originalPosition = camera.transform.position;
+            Quaternion originalRotation = camera.transform.rotation;
+            float originalFieldOfView = camera.fieldOfView, originalNearPlane = camera.nearClipPlane;
+            bool followEnabled = root.CameraFollow.enabled;
+            try
+            {
+                root.CameraFollow.enabled = false;
+                Vector3 up = Vector3.ProjectOnPlane(Mathf.Abs(normal.y) > .9f ? Vector3.forward : Vector3.up, normal).normalized;
+                Vector3 side = Vector3.Cross(normal, up).normalized;
+                Vector3 eye = point + normal * .48f + side * .07f;
+                camera.fieldOfView = 42f;
+                camera.nearClipPlane = .015f;
+                camera.transform.SetPositionAndRotation(eye, Quaternion.LookRotation(point - eye, up));
+                string path = Path.Combine(Directory.GetCurrentDirectory(), "Captures", SceneIds.CombatTest, name + ".png");
+                LogAssert.Expect(LogType.Log, "Area capture wrote " + path);
+                AreaCaptureFixture.CaptureCurrentCamera(camera, SceneIds.CombatTest, name);
+            }
+            finally
+            {
+                root.CameraFollow.enabled = followEnabled;
+                camera.fieldOfView = originalFieldOfView;
+                camera.nearClipPlane = originalNearPlane;
+                camera.transform.SetPositionAndRotation(originalPosition, originalRotation);
+            }
         }
 
         private IEnumerator CapturePistolWoundNearView(CombatActor actor, string name, int index = 0)
