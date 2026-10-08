@@ -192,6 +192,20 @@ namespace BarPromenade
             suspendedImpulses.Add(new PendingCombatImpulse(body, point, impulse));
         }
 
+        /// <summary>One conserved volley budget moves the complete body; a small contact share retains its rotation.</summary>
+        internal void AddCombatVolleyImpulse(Player3DAnatomicalPart part, Vector3 point, Vector3 impulse)
+        {
+            if (!IsSimulating || !FiniteCombatVector(point) || !FiniteCombatVector(impulse)) return;
+            impulse = Vector3.ClampMagnitude(impulse, 260f);
+            float mass = 0f;
+            foreach (Rigidbody body in bodyList) mass += body.mass;
+            if (mass <= 0f) return;
+            foreach (Rigidbody body in bodyList)
+                suspendedImpulses.Add(new PendingCombatImpulse(body, body.worldCenterOfMass,
+                    impulse * (.8f * body.mass / mass)));
+            AddCombatImpulse(part, point, impulse * .2f);
+        }
+
         /// <summary>Contraction of a live anatomical joint. Matching opposite angular
         /// impulses do not add a launch impulse to the complete body.</summary>
         internal void AddCombatContraction(Player3DAnatomicalPart part, float angularImpulse)

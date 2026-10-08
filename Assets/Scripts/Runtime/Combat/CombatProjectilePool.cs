@@ -28,7 +28,7 @@ namespace BarPromenade
         {
             internal CombatActor Source, Target;
             internal int Sequence, Remaining;
-            internal bool Active, ResponseApplied, HeadFeedbackApplied;
+            internal bool Active, ResponseApplied;
             internal readonly List<PelletHit> Contacts = new List<PelletHit>(12);
         }
 
@@ -36,10 +36,15 @@ namespace BarPromenade
         {
             internal readonly CombatHurtboxes.Hit Hit;
             internal readonly Vector3 Velocity;
-            internal readonly float Damage;
+            internal readonly float Damage, Momentum, HeadTrauma;
             internal readonly int Index;
-            internal PelletHit(CombatHurtboxes.Hit hit, Vector3 velocity, float damage, int index)
-            { Hit = hit; Velocity = velocity; Damage = damage; Index = index; }
+            internal PelletHit(CombatHurtboxes.Hit hit, Vector3 velocity, float distance, int index, ShotgunSettings settings)
+            {
+                Hit = hit; Velocity = velocity; Index = index;
+                Damage = settings.ResolvePelletDamage(distance);
+                Momentum = settings.ResolvePelletMomentum(distance);
+                HeadTrauma = settings.ResolvePelletHeadTrauma(distance);
+            }
         }
 
         private readonly struct WorldHit
@@ -164,7 +169,7 @@ namespace BarPromenade
             if (volley == null) return false;
             volley.Source = source; volley.Target = null; volley.Sequence = sequence;
             volley.Remaining = settings.PelletCount;
-            volley.ResponseApplied = volley.HeadFeedbackApplied = false;
+            volley.ResponseApplied = false;
             volley.Contacts.Clear(); volley.Active = true;
             int pellet = 0;
             foreach (Projectile p in slots)
@@ -254,7 +259,7 @@ namespace BarPromenade
                     {
                         p.Volley.Target = target;
                         p.Volley.Contacts.Add(new PelletHit(hit, p.Velocity,
-                            p.Shotgun.ResolvePelletDamage(p.Distance + Vector3.Distance(from, hit.Point)), p.PelletIndex));
+                            p.Distance + Vector3.Distance(from, hit.Point), p.PelletIndex, p.Shotgun));
                     }
                     ImpactCount++; LastImpactPoint = hit.Point;
                     Retire(p);
@@ -288,10 +293,9 @@ namespace BarPromenade
                 if (!volley.Active) continue;
                 if (volley.Target != null && volley.Contacts.Count > 0)
                 {
-                    bool head = volley.Target.ReceiveShotgunVolley(volley.Source, volley.Sequence,
-                        volley.Contacts, !volley.ResponseApplied, !volley.HeadFeedbackApplied);
+                    volley.Target.ReceiveShotgunVolley(volley.Source, volley.Sequence,
+                        volley.Contacts, !volley.ResponseApplied);
                     volley.ResponseApplied = true;
-                    volley.HeadFeedbackApplied |= head;
                 }
                 volley.Contacts.Clear();
                 if (volley.Remaining == 0) { volley.Active = false; volley.Source = volley.Target = null; }

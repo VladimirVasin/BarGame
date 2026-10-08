@@ -11,11 +11,11 @@ namespace BarPromenade
             : base(2, fireCooldownSeconds, raiseSeconds, reloadSeconds) { }
 
         public int PelletCount => 12;
-        public float PelletDamage => 15f;
+        public float PelletDamage => 26f;
         public float SpreadHalfAngleDegrees => 3f;
-        public float FullDamageRange => 8f;
-        public float MinimumDamageRange => 25f;
-        public float MinimumDamageMultiplier => .25f;
+        private static readonly float[] Ranges = { 0f, 1f, 3f, 8f, 15f, 25f, 40f };
+        private static readonly float[] Damage = { 26f, 24f, 20f, 10f, 4f, 1.5f, 0f };
+        private static readonly float[] Momentum = { 260f, 240f, 180f, 90f, 30f, 8f, 0f };
         public ProjectileDamageProfile DamageProfile => ProjectileDamageProfile.Shotgun;
         public float OpenSeconds => ReloadSeconds * (.4f / 2.8f);
         public float EjectSpentSeconds => ReloadSeconds * (.65f / 2.8f);
@@ -23,13 +23,25 @@ namespace BarPromenade
         public float LoadSecondSeconds => ReloadSeconds * (2.2f / 2.8f);
         public float CloseStartSeconds => ReloadSeconds * (2.4f / 2.8f);
 
-        public float ResolvePelletDamage(float distance)
+        public float ResolvePelletDamage(float distance) => ResolveDistance(distance, Damage);
+
+        /// <summary>Each actual pellet contributes its share; missed pellets add no launch force.</summary>
+        public float ResolvePelletMomentum(float distance) => ResolveDistance(distance, Momentum) / PelletCount;
+
+        /// <summary>A complete close head volley can remove fourteen of the sixteen authored sectors.</summary>
+        public float ResolvePelletHeadTrauma(float distance) => ResolvePelletDamage(distance) / 24f * 14f / PelletCount;
+
+        private static float ResolveDistance(float distance, float[] values)
         {
             if (float.IsNaN(distance) || float.IsInfinity(distance) || distance < 0f)
                 throw new ArgumentOutOfRangeException(nameof(distance));
-            float falloff = Math.Max(0f, Math.Min(1f,
-                (distance - FullDamageRange) / (MinimumDamageRange - FullDamageRange)));
-            return PelletDamage * (1f + (MinimumDamageMultiplier - 1f) * falloff);
+            for (int i = 1; i < Ranges.Length; i++)
+                if (distance < Ranges[i])
+                {
+                    float t = (distance - Ranges[i - 1]) / (Ranges[i] - Ranges[i - 1]);
+                    return values[i - 1] + (values[i] - values[i - 1]) * t;
+                }
+            return values[values.Length - 1];
         }
 
         /// <summary>Even disk coverage with a deterministic per-shot rotation; no global random state.</summary>

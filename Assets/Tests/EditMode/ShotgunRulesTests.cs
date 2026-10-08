@@ -148,20 +148,32 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(shotgun.ShotSequence, Is.Not.EqualTo(sequence));
         }
 
-        [TestCase(0f, 15f)]
-        [TestCase(8f, 15f)]
-        [TestCase(16.5f, 9.375f)]
-        [TestCase(25f, 3.75f)]
-        [TestCase(100f, 3.75f)]
-        public void DistanceScalesEveryPelletBeforeRegionalDamage(float distance, float expected)
+        [TestCase(0f, 26f, 260f)]
+        [TestCase(1f, 24f, 240f)]
+        [TestCase(2f, 22f, 210f)]
+        [TestCase(3f, 20f, 180f)]
+        [TestCase(8f, 10f, 90f)]
+        [TestCase(15f, 4f, 30f)]
+        [TestCase(25f, 1.5f, 8f)]
+        [TestCase(40f, 0f, 0f)]
+        [TestCase(100f, 0f, 0f)]
+        public void DistanceScalesEveryPelletBeforeRegionalDamage(float distance, float expected, float momentum)
         {
             var settings = ShotgunSettings.Prototype;
             Assert.That(settings.PelletCount, Is.EqualTo(12));
             Assert.That(settings.ResolvePelletDamage(distance), Is.EqualTo(expected).Within(Eps));
+            Assert.That(settings.ResolvePelletMomentum(distance) * settings.PelletCount, Is.EqualTo(momentum).Within(Eps));
+            if (distance < 40f)
+            {
+                Assert.That(settings.ResolvePelletDamage(distance + .01f), Is.LessThan(expected));
+                Assert.That(settings.ResolvePelletMomentum(distance + .01f), Is.LessThan(momentum / settings.PelletCount));
+            }
             var torso = new MeleeCombatant();
             for (int pellet = 0; pellet < settings.PelletCount; pellet++)
                 torso.ReceiveProjectileHit(settings.ResolvePelletDamage(distance), profile: settings.DamageProfile);
             Assert.That(torso.Health, Is.EqualTo(Math.Max(0f, 100f - settings.PelletCount * expected)).Within(Eps));
+            Assert.That(settings.ResolvePelletHeadTrauma(distance) * settings.PelletCount,
+                Is.EqualTo(expected / 24f * 14f).Within(Eps));
         }
 
         [TestCase(MeleeBodyRegion.Head, 30f)]

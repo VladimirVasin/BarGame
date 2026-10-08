@@ -258,28 +258,26 @@
   `CombatFootwork`:legyaw/speed-inertia/release tank/handoff0/noaim:noStep.
 - **Accepted exception 2026-10-08, pistol:**
   §6/art§15a:dummy/freecam;Q/Step focus-aim;recoil-streak;
-  freeaim nearest world/anatomy/0motor-sway/zone-dir SFX-impulse;
-  head0HP/ragdoll/stablecam/hitkick/motor. Cases:port-delay/g-bounce-cap/SFX;
-  slide return-emptylock;handmag-seat/rack1.8/SFX/ammo-last;
-  interrupt/dropE stage-ammo/Rresume;0lock-pierce-ricochet-guard-parry-taunt-reward;
-  win fire-reload/HP-result;
-  corpse impulse-pose;pause-hitstop/reset-exit0.
-- **Accepted architecture exception — 2026-10-08, double-barrel shotgun:**
-  CombatTest2/∞;one barrel/click;12×15/.55s/head×2/spread-falloff.
-  Blender dark steel/wood/paired barrels;hero shoulder-stock/Lforeend/
-  heavy recoil/flash-smoke/deep SFX.
-  Break/eject spent/load missing/close2.8;barrel ammo/stage survive interrupt-drop;
-  Eshared0grant. Atomic volley→spend;pellet hits/aggregate reaction-terminal cap/
-  flights finish. Shared aim/move/camera/lifecycle;
+  nearest world/anatomy/0motor-sway/regional SFX-impulse;
+  head0HP/ragdoll/stablecam/hitkick;port-delay/g-bounce-cap/SFX;
+  slide-emptylock/handmag-seat-rack1.8/ammo-last;
+  interrupt-dropE:stage-ammo/Rresume;0lock-pierce-ricochet-guard-parry-taunt-reward;
+  win fire-reload/HP-result/corpse impulse-pose;pause-hitstop/reset-exit0.
+- **Accepted exception 2026-10-09, shotgun power:**
+  Closer=stronger/launch/head loss;2∞/barrel-click/12pellets/.55/head×2/3°.
+  `ShotgunSettings`:linear falloff;1m24HP/pellet/240Ns full→25m1.5/8→40m0.
+  Hits sum→body/contact torque;one sound-hitstop/terminal.
+  Head-only trauma≤14/shot;prelethal kept/8ledgers/unique pellets/fast debris-blood.
+  Break2.8/eject spent/load missing/close;interrupt-drop keeps barrel-stage-ammo;
+  Eshared0grant/atomic spend/flights finish/shared firearm lifecycle;
   §6/art§15a/§16/§21/nine checks.
 - **Accepted exception 2026-10-08, headshots:**
-  Head16:3-5;brain8:full/wet jelly/squash/loss1x;
-  bone-tissue/cam-hide;low eject/blood56;finite pulse/terminal fade/corpse impulse;
+  Pistol head16:3-5/low eject/blood56;brain8:full/wet jelly/squash/loss1x;
+  bone-tissue/cam-hide/finite pulse-terminal fade/corpse impulse;
   pause-hitstop0/reset-exit restore.
 - **Accepted exception — 2026-10-08, world bullets:**
-  Firstworldhit→chips/sparks/dark hole;
-  128FIFOholes/192particles/shared shader/0damage-pierce;
-  pause-hitstop0/ClearFlights keeps/reset-exit0.
+  Firstworldhit:chips/sparks/dark hole;128FIFOholes/192particles/shared shader;
+  0damage-pierce/pause-hitstop0/ClearFlights keeps/reset-exit0.
 - **Accepted — 2026-10-08, regional pistol hits:**
   User:cinematic;rig chest/abdomen/arm/forearm/hand/leg-catch;
   skin/fabric/glove-boot entry/wet/repeat;HP/physics/camera/parts stay.

@@ -213,7 +213,8 @@ namespace BarPromenade
             }
             IsSettled = false;
             simulationSeconds = quietSeconds = 0f;
-            physicsController.AddCombatImpulse(impact.Part, impact.Point, impact.Impulse);
+            if (impact.IsPellet) physicsController.AddCombatVolleyImpulse(impact.Part, impact.Point, impact.Impulse);
+            else physicsController.AddCombatImpulse(impact.Part, impact.Point, impact.Impulse);
         }
 
         private bool ResumeHeldSimulation()

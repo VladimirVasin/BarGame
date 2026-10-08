@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using NUnit.Framework;
@@ -12,6 +13,182 @@ namespace BarPromenade.Tests.PlayMode
 {
     public sealed partial class CombatTestPlayModeTests
     {
+        [UnityTest]
+        public IEnumerator Range_ShotgunDistanceControlsLaunchAndHeadBreakup()
+        {
+            yield return SceneManager.LoadSceneAsync(SceneIds.MainMenu, LoadSceneMode.Single);
+            yield return EnterRange(false, CombatWeaponId.Shotgun);
+            root.ResetRound();
+            PlacePair(6f);
+            Vector3 start = root.Opponent.Ragdoll.PelvisBody.position;
+            List<CombatImpact> near = FireShotgunAtRegion(MeleeBodyRegion.Torso, 1f, 1);
+            Assert.That(root.Opponent.State.IsDefeated, Is.True);
+            Vector3 nearImpulse = ShotgunImpulse(near);
+            Assert.That(nearImpulse.magnitude, Is.GreaterThan(180f),
+                "A close real volley must impart several times the pistol's 32 N s torso impulse.");
+            Assert.That(root.Opponent.ShotgunVolleyResponseCount, Is.EqualTo(1));
+            Assert.That(root.HeadEffects.DetachedSectorCountFor(root.Opponent), Is.Zero);
+            // Consume the single hitstop before observing real fixed-step physics.
+            root.Tick(.2f);
+            float travel = 0f;
+            for (int frame = 0; frame < 60; frame++)
+            {
+                root.Tick(Time.fixedDeltaTime);
+                yield return new WaitForFixedUpdate();
+                Vector3 displacement = root.Opponent.Ragdoll.PelvisBody.position - start;
+                travel = Mathf.Max(travel, Vector3.ProjectOnPlane(displacement, Vector3.up).magnitude);
+                if (frame == 10 || frame == 30) CaptureShotgunImpactView(start, "shotgun-close-body-" + frame);
+            }
+            Assert.That(travel, Is.GreaterThan(1.5f), "The whole corpse must leave its original position, not merely flex one joint.");
+
+            root.ResetRound();
+            PlacePair(6f);
+            List<CombatImpact> far = FireShotgunAtRegion(MeleeBodyRegion.Torso, 15f, 2);
+            Assert.That(far.Count, Is.GreaterThan(0), "The distant comparison must actually contact the target.");
+            Assert.That(root.Opponent.State.Health, Is.GreaterThan(0f));
+            Assert.That(ShotgunImpulse(far).magnitude, Is.LessThan(35f));
+            Assert.That(ShotgunImpulse(far).magnitude, Is.LessThan(nearImpulse.magnitude / 5f));
+            CaptureShotgunImpactView(root.Opponent.Ragdoll.PelvisBody.position, "shotgun-far-body");
+
+            root.ResetRound();
+            PlacePair(6f);
+            List<CombatImpact> head = FireShotgunAtRegion(MeleeBodyRegion.Head, 1f, 3);
+            Assert.That(head.Count, Is.GreaterThan(0));
+            Assert.That(root.Opponent.State.IsDefeated, Is.True);
+            Assert.That(root.HeadEffects.DetachedSectorCountFor(root.Opponent), Is.InRange(10, 14));
+            Assert.That(root.HeadEffects.BrainFragmentCountFor(root.Opponent), Is.GreaterThanOrEqualTo(5));
+            AssertBrainPieceConservation(root.Opponent);
+            float fragmentSpeed = 0f;
+            foreach (Rigidbody body in root.HeadEffects.GetComponentsInChildren<Rigidbody>())
+                fragmentSpeed = Mathf.Max(fragmentSpeed, body.linearVelocity.magnitude);
+            // Hitstop stores fragment velocities; resume before measuring their actual flight.
+            root.Tick(.2f);
+            yield return new WaitForFixedUpdate();
+            foreach (Rigidbody body in root.HeadEffects.GetComponentsInChildren<Rigidbody>())
+                fragmentSpeed = Mathf.Max(fragmentSpeed, body.linearVelocity.magnitude);
+            Assert.That(fragmentSpeed, Is.GreaterThan(4f), "Close buckshot must eject fragments faster than the pistol fracture.");
+            CaptureGoreNearView(root.Opponent, Vector3.back, "shotgun-close-head", true, true);
+
+            float debrisAge = root.HeadEffects.DebrisAgeFor(root.Opponent);
+            Assert.That(root.PauseMenu.Open(), Is.True);
+            root.Tick(.4f);
+            yield return null;
+            Assert.That(root.HeadEffects.DebrisAgeFor(root.Opponent), Is.EqualTo(debrisAge));
+            Assert.That(root.PauseMenu.Cancel(), Is.True);
+            yield return WaitFor(() => GameInput.CanRead(GameInputContext.Gameplay), "Pause did not release shotgun gameplay.");
+
+            // The same frozen real head contact, split across contact batches,
+            // must consume the same finite trauma and momentum budget.
+            int wholeMask = 0;
+            Vector3 wholeImpulse = Vector3.zero;
+            foreach (bool split in new[] { false, true })
+            {
+                root.ResetRound();
+                PlacePair(6f);
+                Assert.That(root.HeadEffects.DetachedSectorCountFor(root.Opponent), Is.Zero);
+                List<CombatImpact> impacts = ApplyPreparedShotgunHead(12, split, 4);
+                Assert.That(root.Opponent.State.Health, Is.Zero);
+                Assert.That(root.Opponent.ShotgunVolleyResponseCount, Is.EqualTo(1));
+                Assert.That(root.HeadEffects.DetachedSectorCountFor(root.Opponent), Is.EqualTo(14));
+                if (!split)
+                {
+                    wholeMask = root.HeadEffects.DestroyedMaskFor(root.Opponent);
+                    wholeImpulse = ShotgunImpulse(impacts);
+                }
+                else
+                {
+                    Assert.That(root.HeadEffects.DestroyedMaskFor(root.Opponent), Is.EqualTo(wholeMask));
+                    Assert.That(Vector3.Distance(ShotgunImpulse(impacts), wholeImpulse), Is.LessThan(.001f));
+                }
+            }
+            root.ResetRound();
+            PlacePair(6f);
+            FireShotgunAtRegion(MeleeBodyRegion.Torso, 1f, 5);
+            ApplyPreparedShotgunHead(1, false, 6);
+            Assert.That(root.HeadEffects.DetachedSectorCountFor(root.Opponent), Is.EqualTo(1),
+                "A single close pellet grazing a defeated head cannot inherit a full shell's destruction.");
+            root.ResetRound();
+            Assert.That(root.HeadEffects.DetachedSectorCountFor(root.Opponent), Is.Zero);
+            Assert.That(root.HeadEffects.RetainedBrainCountFor(root.Opponent), Is.EqualTo(8));
+            LogAssert.NoUnexpectedReceived();
+        }
+
+        private List<CombatImpact> FireShotgunAtRegion(MeleeBodyRegion region, float distance, int sequence)
+        {
+            CombatActor target = root.Opponent;
+            target.CaptureContactPose();
+            Assert.That(target.Hurtboxes.GetRegionFrame(region, out Vector3 point, out _, out _), Is.True);
+            if (region == MeleeBodyRegion.Torso) point = target.Ragdoll.PhysicsController.ChestBody.worldCenterOfMass;
+            Vector3 outward = target.transform.forward;
+            var impacts = new List<CombatImpact>();
+            target.ImpactReceived += impacts.Add;
+            try
+            {
+                Assert.That(root.Projectiles.TrySpawnVolley(root.Hero, point + outward * distance,
+                    Quaternion.LookRotation(-outward), sequence, root.Hero.Shotgun.Settings), Is.True);
+                for (int step = 0; step < 60 && root.Projectiles.ActiveCount > 0; step++)
+                {
+                    target.CaptureContactPose();
+                    root.Projectiles.Advance(CombatTestRoot.SimulationStep, root.Hero, target);
+                    root.Projectiles.ApplyContacts();
+                }
+                Assert.That(root.Projectiles.ActiveCount, Is.Zero);
+            }
+            finally { target.ImpactReceived -= impacts.Add; }
+            return impacts;
+        }
+
+        private List<CombatImpact> ApplyPreparedShotgunHead(int count, bool split, int sequence)
+        {
+            CombatActor target = root.Opponent;
+            target.CaptureContactPose();
+            Assert.That(target.Hurtboxes.GetRegionFrame(MeleeBodyRegion.Head,
+                out Vector3 point, out Vector3 outward, out _), Is.True);
+            Assert.That(target.Hurtboxes.SweepProjectile(point + outward * .75f, point - outward * .75f,
+                CombatProjectilePool.Radius, -outward, out CombatHurtboxes.Hit hit), Is.True);
+            Assert.That(hit.Location.Region, Is.EqualTo(MeleeBodyRegion.Head));
+            var hits = new List<CombatProjectilePool.PelletHit>();
+            for (int i = 0; i < count; i++) hits.Add(new CombatProjectilePool.PelletHit(hit,
+                -outward * CombatProjectilePool.MuzzleSpeed, 1f, i, root.Hero.Shotgun.Settings));
+            var impacts = new List<CombatImpact>();
+            target.ImpactReceived += impacts.Add;
+            try
+            {
+                if (split)
+                    for (int i = 0; i < hits.Count; i++) target.ReceiveShotgunVolley(root.Hero, sequence,
+                        new List<CombatProjectilePool.PelletHit> { hits[i] }, i == 0);
+                else target.ReceiveShotgunVolley(root.Hero, sequence, hits, true);
+            }
+            finally { target.ImpactReceived -= impacts.Add; }
+            return impacts;
+        }
+
+        private static Vector3 ShotgunImpulse(List<CombatImpact> impacts)
+        {
+            Vector3 impulse = Vector3.zero;
+            foreach (CombatImpact impact in impacts) impulse += impact.Impulse;
+            return impulse;
+        }
+
+        private void CaptureShotgunImpactView(Vector3 start, string name)
+        {
+            Camera camera = root.CameraFollow.Camera;
+            Vector3 position = camera.transform.position;
+            Quaternion rotation = camera.transform.rotation;
+            float fov = camera.fieldOfView;
+            try
+            {
+                Vector3 subject = Vector3.Lerp(start, root.Opponent.Ragdoll.PelvisBody.position, .5f) + Vector3.up * .2f;
+                camera.fieldOfView = 58f;
+                Vector3 eye = subject + Vector3.right * 4f + Vector3.up * 1.6f - Vector3.forward * 1.2f;
+                camera.transform.SetPositionAndRotation(eye, Quaternion.LookRotation(subject - eye));
+                string path = Path.Combine(Directory.GetCurrentDirectory(), "Captures", SceneIds.CombatTest, name + ".png");
+                LogAssert.Expect(LogType.Log, "Area capture wrote " + path);
+                AreaCaptureFixture.CaptureCurrentCamera(camera, SceneIds.CombatTest, name);
+            }
+            finally { camera.transform.SetPositionAndRotation(position, rotation); camera.fieldOfView = fov; }
+        }
+
         [UnityTest]
         public IEnumerator Range_ShotgunTwoBarrelsVolleyReloadAndResetUseTheLiveDuel()
         {

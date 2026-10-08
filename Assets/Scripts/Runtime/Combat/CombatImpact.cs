@@ -30,6 +30,7 @@ namespace BarPromenade
         public bool PrimaryResponse { get; }
         public bool HeadFeedback { get; }
         public float WoundDamage { get; }
+        public float HeadTrauma { get; }
         public bool IsCritical => (Kind == CombatImpactKind.Weapon || Kind == CombatImpactKind.Projectile) && Damage > 0f && Location.IsCritical;
         public bool IsFinisher => Kind == CombatImpactKind.Weapon && Damage > 0f && Location.IsFinisher;
 
@@ -39,7 +40,7 @@ namespace BarPromenade
             Player3DAnatomicalPart part = Player3DAnatomicalPart.Torso, Vector3 localPoint = default,
             float weaponSpeed = 0f, Vector3 impulse = default, CombatImpactKind kind = CombatImpactKind.Weapon,
             Vector3 localDirection = default, int pelletIndex = -1, bool primaryResponse = true,
-            bool headFeedback = true, float woundDamage = 0f)
+            bool headFeedback = true, float woundDamage = 0f, float headTrauma = 0f)
         {
             Source = source; Target = target; AttackSequence = sequence;
             Point = point; Normal = normal; Direction = direction;
@@ -50,6 +51,7 @@ namespace BarPromenade
             Kind = kind;
             LocalDirection = localDirection;
             PelletIndex = pelletIndex; PrimaryResponse = primaryResponse; HeadFeedback = headFeedback; WoundDamage = woundDamage;
+            HeadTrauma = headTrauma;
         }
     }
 }

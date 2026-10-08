@@ -48,9 +48,19 @@ namespace BarPromenade
             internal readonly List<bool> OriginalVisibility = new List<bool>();
             internal readonly List<Fragment> Fragments = new List<Fragment>();
             internal readonly List<GameObject> Hosts = new List<GameObject>();
+            internal readonly List<ShotgunFracture> Volleys = new List<ShotgunFracture>(8);
             internal int BrainCount;
             internal bool Active;
             internal Vector3 PreviousPosition, PreviousVelocity;
+        }
+
+        private sealed class ShotgunFracture
+        {
+            internal CombatActor Source;
+            internal int Sequence, Released;
+            internal uint Pellets;
+            internal float Trauma;
+            internal CombatImpact Contact;
         }
 
         private static readonly HashSet<Renderer> suppressed = new HashSet<Renderer>();
@@ -117,9 +127,39 @@ namespace BarPromenade
 
         internal void Apply(CombatImpact impact, CombatBloodEffects blood)
         {
-            if (impact.Kind != CombatImpactKind.Projectile || impact.Location.Region != MeleeBodyRegion.Head ||
-                impact.Target == null || !impact.Target.State.IsDefeated) return;
+            if (impact.Kind != CombatImpactKind.Projectile || impact.Target == null) return;
             Head head = RequireHead(impact.Target);
+            ShotgunFracture volley = null;
+            float ejection = 1f;
+            if (impact.IsPellet)
+            {
+                foreach (ShotgunFracture candidate in head.Volleys)
+                    if (candidate.Source == impact.Source && candidate.Sequence == impact.AttackSequence)
+                    { volley = candidate; break; }
+                if (volley == null)
+                {
+                    // Matches the projectile pool's bounded concurrent volley capacity.
+                    if (head.Volleys.Count == 8) head.Volleys.RemoveAt(0);
+                    volley = new ShotgunFracture { Source = impact.Source, Sequence = impact.AttackSequence };
+                    head.Volleys.Add(volley);
+                }
+                if (impact.Location.Region == MeleeBodyRegion.Head && impact.HeadTrauma > 0f)
+                {
+                    uint pellet = 1u << impact.PelletIndex;
+                    if ((volley.Pellets & pellet) == 0)
+                    {
+                        if (volley.Trauma == 0f) volley.Contact = impact;
+                        volley.Pellets |= pellet;
+                        volley.Trauma += impact.HeadTrauma;
+                    }
+                }
+                // A nonlethal head contact can precede the lethal torso batch.
+                // Retain its actual geometry and apply the same accumulated loss then.
+                if (!impact.Target.State.IsDefeated || volley.Trauma <= 0f) return;
+                impact = volley.Contact;
+                ejection = Mathf.Lerp(.65f, 3.4f, Mathf.Clamp01(volley.Trauma / 14f));
+            }
+            else if (impact.Location.Region != MeleeBodyRegion.Head || !impact.Target.State.IsDefeated) return;
             if (!head.Active) Activate(head);
             Vector3 localPoint = impact.LocalPoint;
             Vector3 localDirection = impact.LocalDirection.sqrMagnitude > .0001f ? impact.LocalDirection :
@@ -134,7 +174,11 @@ namespace BarPromenade
             // wider exit-side breakup. This is independent of actor/world yaw.
             available.Sort((a, b) => Score(a).CompareTo(Score(b)));
             float offset = Vector3.ProjectOnPlane(point, direction).magnitude;
-            int amount = Mathf.Min(available.Count, Mathf.RoundToInt(Mathf.Lerp(5f, 3f, Mathf.Clamp01(offset))));
+            int amount = volley == null ? Mathf.RoundToInt(Mathf.Lerp(5f, 3f, Mathf.Clamp01(offset))) :
+                Mathf.Clamp(Mathf.RoundToInt(volley.Trauma), 1, 14) - volley.Released;
+            amount = Mathf.Min(available.Count, amount);
+            if (amount <= 0) return;
+            if (volley != null) volley.Released += amount;
             for (int i = 0; i < amount; i++)
             {
                 Sector sector = available[i];
@@ -142,7 +186,9 @@ namespace BarPromenade
                 sector.Proxy.enabled = false;
                 Vector3 origin = head.Bone.TransformPoint(sector.Bounds.center);
                 Vector3 outward = (origin - head.Bone.TransformPoint(head.Bounds.center)).normalized;
-                Release(head, sector.Pieces, origin, impact.Direction * (1.4f + i * .12f) + outward * .7f + Vector3.up * .35f, false, sector.Index);
+                Release(head, sector.Pieces, origin,
+                    (impact.Direction * (1.4f + i * .12f) + outward * .7f + Vector3.up * .35f) * ejection,
+                    false, sector.Index);
             }
             var retainedBrains = new List<Piece>(8);
             foreach (Piece piece in head.Brains) if (!piece.Detached) retainedBrains.Add(piece);
@@ -161,7 +207,7 @@ namespace BarPromenade
                     if (side.sqrMagnitude < .1f) side = head.Bone.right;
                     float spread = (i - (releaseBrains - 1) * .5f) * .16f;
                     Release(head, new List<Piece> { piece }, origin,
-                        impact.Direction * (1.7f + i * .16f) + side * spread + Vector3.up * (.6f + i * .05f), true, i);
+                        (impact.Direction * (1.7f + i * .16f) + side * spread + Vector3.up * (.6f + i * .05f)) * ejection, true, i);
                     piece.Detached = true;
                     head.BrainCount++;
                 }
@@ -471,7 +517,7 @@ namespace BarPromenade
                 // the bounded physical hosts own their released surfaces.
                 Destroy(fragment.Body.gameObject);
             }
-            head.Fragments.Clear(); head.BrainCount = 0; head.Active = false;
+            head.Fragments.Clear(); head.Volleys.Clear(); head.BrainCount = 0; head.Active = false;
             foreach (Sector sector in head.Sectors) foreach (Piece piece in sector.Pieces)
                 piece.Released = null;
             foreach (Piece piece in head.Brains)

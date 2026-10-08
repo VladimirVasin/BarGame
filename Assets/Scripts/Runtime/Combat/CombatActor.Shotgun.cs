@@ -113,17 +113,20 @@ namespace BarPromenade
         }
 
         // A batch resolves regional damage once, then publishes each physical entry wound.
-        // The retained volley token permits only one body response and one head breakup across later flight steps.
-        internal bool ReceiveShotgunVolley(CombatActor source, int sequence, List<CombatProjectilePool.PelletHit> hits,
-            bool firstResponse, bool allowHeadFeedback)
+        // Each later batch contributes only its new momentum/trauma; sound and hitstop start once per volley.
+        internal void ReceiveShotgunVolley(CombatActor source, int sequence, List<CombatProjectilePool.PelletHit> hits,
+            bool firstResponse)
         {
-            if (hits.Count == 0) return false;
+            if (hits.Count == 0) return;
             float damage = 0f, strongest = -1f;
+            Vector3 impulse = Vector3.zero;
             int primary = 0, headIndex = -1;
             for (int i = 0; i < hits.Count; i++)
             {
                 float regional = ProjectileDamageProfile.Shotgun.ResolveDamage(hits[i].Damage, hits[i].Hit.Location);
                 damage += regional;
+                Vector3 launch = (hits[i].Velocity.normalized + Vector3.up * .35f).normalized;
+                impulse += launch * hits[i].Momentum;
                 if (regional > strongest) { strongest = regional; primary = i; }
                 if (headIndex < 0 && hits[i].Hit.Location.Region == MeleeBodyRegion.Head) headIndex = i;
             }
@@ -132,13 +135,10 @@ namespace BarPromenade
             bool wasDefeated = State.IsDefeated;
             MeleeHitResult result = wasDefeated ? MeleeHitResult.Hit :
                 State.ReceiveProjectileHit(damage, default, .42f, ProjectileDamageProfile.Shotgun);
-            if (result == MeleeHitResult.Ignored) return false;
+            if (result == MeleeHitResult.Ignored) return;
             bool terminal = !wasDefeated && State.IsDefeated;
-            bool headFeedback = allowHeadFeedback && headIndex >= 0 && State.IsDefeated;
-            if (headFeedback) primary = headIndex;
+            if (headIndex >= 0 && State.IsDefeated) primary = headIndex;
             var representative = hits[primary];
-            float momentum = Mathf.Min(64f, 24f + hits.Count * 3.3f);
-            Vector3 impulse = firstResponse ? representative.Velocity.normalized * momentum : Vector3.zero;
             var summary = new CombatImpact(source, this, sequence, representative.Hit.Point, representative.Hit.Normal,
                 representative.Velocity.normalized, health, State.Health, result, representative.Hit.Location, 0f,
                 representative.Hit.Part, representative.Hit.LocalPoint, representative.Velocity.magnitude,
@@ -160,13 +160,12 @@ namespace BarPromenade
                     pellet.Velocity.normalized, allocatedHealth, nextHealth, result, pellet.Hit.Location, 0f,
                     pellet.Hit.Part, pellet.Hit.LocalPoint, pellet.Velocity.magnitude,
                     n == 0 ? impulse : Vector3.zero, CombatImpactKind.Projectile, pellet.Hit.LocalDirection,
-                    pellet.Index, n == 0 && firstResponse, headFeedback && i == headIndex, pellet.Damage);
+                    pellet.Index, n == 0 && firstResponse, true, pellet.Damage, pellet.HeadTrauma);
                 PublishImpact(impact, before);
                 allocatedHealth = nextHealth;
             }
             if (terminal) Ragdoll.BeginTerminalConvulsions();
             Present();
-            return headFeedback;
         }
     }
 }

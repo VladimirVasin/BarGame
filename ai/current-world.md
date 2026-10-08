@@ -147,22 +147,22 @@ The vertical slice contains:
   Day one raises mother's-house quest/map marker; door/map entry or starting
   inside closes it. No village signpost;
 - CombatTest:bar/pistol/shotgun→Start;NPCbar/3AI;dummy/freecam;
-  MMBfocus/TabAIreset;reset:AI/focus;bar-Q:focus.
-  Guns:RMBaim/LMBedge/R-Xreload/Rpalm gait;FOV-IK.25/reversible;
-  cam-plane clamped strafe/yaw/release tank;Space:cardinal/back/fixed upper.
+  MMBfocus/TabAIreset/resetAI-focus/bar-Qfocus;
+  guns:RMBaim/LMBedge/R-Xreload/Rpalm gait/reversible FOV-IK.25;
+  cam-plane clamped strafe/yaw/release tank/Space:cardinal-back/fixed upper.
   Pistol8/∞:reload1.8;head0HP;slide-empty/mag-rack/cases g-bounce/SFX.
-  Shotgun2/∞:barrel/click;12×15/.55/head×2/spread-falloff;
-  break2.8/eject spent/hands load spent only/close;barrels kept.
-  Atomic volleys/pellet hits/aggregate reaction-terminal/flights finish;
+  Shotgun2∞/12pellets/.55/head×2;damage-momentum fade0→40m;
+  1m:24HP/pellet/240Ns full;hits sum/one reaction/launch/head≤14.
+  Break2.8/eject spent/load missing/close;atomic spend/flights finish;
   Rresume/dropE stage-ammo/win fire-reload.
   Ray:world/anatomy;recoil/streak/stablecam/cross/hitkick;
   gravity/sweep1/0pierce-ricochet-guard-parry.
   Rig:chest-abdomen/arm-forearm-hand/leg-drop/catch.
-  Wounds:skin/fabric/glove-boot;dir entry/wet-dry24s/repeat≤4/64/0sever.
-  Head16:loss3-5/brain8:full jelly/squash/gaps/cam-hide.
-  Blood56head/800/pulse→24s0/rig cut/stains/pool/debris;convulsions2.35s;
+  Wounds:skin-fabric-glove-boot/dir/wet-dry24s/repeat≤4/64/0sever.
+  Pistol head3-5/16;brain8:jelly/squash/gaps/cam-hide.
+  Blood:pistol head56/800/pulse→24s0/rig cut/stains-pool-debris/convulsions2.35;
   corpse impulse/HP-result-pose;pause-hitstop/reset-exit0/end1x.
-  World:chips-sparks/holes128FIFO/particles192/0dmg.
+  World:chips-sparks/holes128FIFO/particles192/0dmg;
   Bar:6zones/rearhead-end/firsthit/metalrecoil/Qsupport/drop/toilet;
   Eown-ammo/sharedUI/0grant;gap:pierce/balance;
 - the retained Home opening is reachable only by a legacy request: held bed loop,
