@@ -31,7 +31,7 @@ namespace BarPromenade
         public bool TryStep(Vector2 input)
         {
             int request = JournalCommand("step");
-            if (!CombatFocused) return JournalCommandResult(request, "rejected", "unfocused");
+            if (!CombatFocused && !IsFreePistolAiming) return JournalCommandResult(request, "rejected", "unfocused");
             if (stepClips == null) return JournalCommandResult(request, "rejected", "step_clips_missing");
             if (roundEnded) return JournalCommandResult(request, "rejected", "round_ended");
             if (!IsAvailable) return JournalCommandResult(request, "rejected", "actor_unavailable");

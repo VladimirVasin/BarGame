@@ -4,6 +4,7 @@ using System.IO;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.InputSystem.LowLevel;
 using UnityEngine.SceneManagement;
 using UnityEngine.TestTools;
 using Object = UnityEngine.Object;
@@ -310,6 +311,556 @@ namespace BarPromenade.Tests.PlayMode
             public float Seconds, LeftGrip, VisualAim, PalmError, CentreRayError;
             public Quaternion[] ArmRotations;
             public Vector3 LeftHand, RightHand;
+        }
+
+        [UnityTest]
+        public IEnumerator Range_PistolAimMovesInAllDirectionsWithoutChangingAim()
+        {
+            var input = new InputTestFixture();
+            Keyboard keyboard = null;
+            Mouse mouse = null;
+            PistolCameraContinuityProbe probe = null;
+            try
+            {
+                input.Setup();
+                keyboard = InputSystem.AddDevice<Keyboard>();
+                mouse = InputSystem.AddDevice<Mouse>();
+                yield return SceneManager.LoadSceneAsync(SceneIds.MainMenu, LoadSceneMode.Single);
+                Assert.That(CombatTestStartService.TryStart(CombatWeaponId.Pistol), Is.True);
+                yield return AwaitSelectedCombatRange();
+                PlacePair(8f);
+                root.SendMessage("OnApplicationFocus", true);
+                GameInput.HandleApplicationFocus(true);
+                Assert.That(root.SetOpponentFocus(false), Is.True);
+                root.AutomaticSimulation = true;
+                for (int frame = 0; frame < 12; frame++) yield return null;
+                Assert.That(root.Player.Motor.MovementBasisActive, Is.False);
+                yield return VerifyPistolWalkingAimHandoffs(input, keyboard, mouse);
+
+                input.Press(mouse.rightButton, queueEventOnly: true);
+                for (int frame = 0; frame < 40; frame++) yield return null;
+                Camera camera = root.CameraFollow.Camera;
+                // Look into the open western sector, away from the passive opponent
+                // and eastern obstacle. Close-surface reach limits are a separate contract.
+                // A world-axis implementation or accidental opponent lock must fail this route.
+                float pitch = Mathf.DeltaAngle(0f, camera.transform.eulerAngles.x);
+                input.Set(mouse.delta, new Vector2(-300f, pitch / .14f), queueEventOnly: true);
+                yield return null;
+                input.Set(mouse.delta, Vector2.zero, queueEventOnly: true);
+                for (int frame = 0; frame < 40; frame++) yield return null;
+                AssertPistolCameraShotReady("Moving aim entry");
+                Assert.That(root.CameraFollow.FreeAimActive && root.Player.Motor.MovementBasisActive, Is.True);
+                Assert.That(root.IsOpponentFocused || root.Player.Motor.MovementTargetActive, Is.False);
+
+                probe = root.gameObject.AddComponent<PistolCameraContinuityProbe>();
+                Key[][] directions =
+                {
+                    new[] { Key.W }, new[] { Key.S }, new[] { Key.A }, new[] { Key.D },
+                    new[] { Key.W, Key.D }
+                };
+                Vector2[] axes = { Vector2.up, Vector2.down, Vector2.left, Vector2.right, Vector2.one };
+                string[] labels = { "forward", "backward", "left", "right", "diagonal" };
+                float forwardSpeed = 0f;
+                for (int direction = 0; direction < directions.Length; direction++)
+                {
+                    InputSystem.QueueStateEvent(keyboard, new KeyboardState(directions[direction]));
+                    for (int frame = 0; frame < 8; frame++) yield return null;
+                    Vector3 start = root.Hero.transform.position;
+                    Quaternion view = camera.transform.rotation;
+                    Vector3 forward = Vector3.ProjectOnPlane(camera.transform.forward, Vector3.up).normalized;
+                    Vector3 right = Vector3.Cross(Vector3.up, forward);
+                    var legs = new WalkingLegProbe(root.Hero);
+                    float viewDrift = 0f, aimError = 0f, supportError = 0f;
+                    bool keptAim = true;
+                    int samples = 0;
+                    probe.Sample = () =>
+                    {
+                        samples++;
+                        legs.Sample();
+                        viewDrift = Mathf.Max(viewDrift, Quaternion.Angle(view, camera.transform.rotation));
+                        aimError = Mathf.Max(aimError, root.Hero.PistolAimErrorDegrees);
+                        supportError = Mathf.Max(supportError, root.Hero.PistolSupportError);
+                        keptAim &= root.Hero.Pistol.IsAiming && root.Hero.PistolAimAligned &&
+                            root.CameraFollow.FreeAimActive && root.Player.Motor.MovementBasisActive;
+                    };
+                    for (int frame = 0; frame < 24; frame++)
+                    {
+                        yield return null;
+                        if (frame == 12 && direction >= 2)
+                            yield return CaptureFocusGameView("pistol-aim-move-" + labels[direction]);
+                    }
+                    probe.Sample = null;
+                    Vector3 travel = root.Hero.transform.position - start;
+                    string context = "Pistol aim " + labels[direction];
+                    Assert.That(samples, Is.GreaterThanOrEqualTo(20), context);
+                    if (axes[direction].y != 0f)
+                        Assert.That(Vector3.Dot(travel, forward) * axes[direction].y, Is.GreaterThan(.2f),
+                            WalkingDiagnostic(context, start));
+                    if (axes[direction].x != 0f)
+                        Assert.That(Vector3.Dot(travel, right) * axes[direction].x, Is.GreaterThan(.2f),
+                            WalkingDiagnostic(context, start));
+                    if (axes[direction].y == 0f)
+                        Assert.That(Mathf.Abs(Vector3.Dot(travel, forward)), Is.LessThan(.08f),
+                            context + ": A/D must strafe rather than walk an arc.");
+                    if (axes[direction].x == 0f)
+                        Assert.That(Mathf.Abs(Vector3.Dot(travel, right)), Is.LessThan(.08f),
+                            context + ": W/S must use the accepted horizontal camera direction.");
+                    Assert.That(viewDrift, Is.LessThan(.03f), context + ": WASD cannot change camera yaw or pitch.");
+                    Assert.That(keptAim, Is.True, context + ": every completed frame must keep a usable aim.");
+                    Assert.That(aimError, Is.LessThanOrEqualTo(CombatActor.MaximumPistolAimErrorDegrees), context);
+                    Assert.That(supportError, Is.LessThan(.02f), context + ": the left palm must support the pistol.");
+                    legs.AssertMoving(2f, context + ": both legs must step beneath the aimed pistol.");
+                    if (direction == 0) forwardSpeed = root.Player.Motor.RequestedPlanarVelocity.magnitude;
+                    if (direction == 4)
+                        Assert.That(root.Player.Motor.RequestedPlanarVelocity.magnitude, Is.LessThanOrEqualTo(forwardSpeed + .01f),
+                            "Diagonal input must not add speed beyond the forward aim pace.");
+                    InputSystem.QueueStateEvent(keyboard, new KeyboardState());
+                    for (int frame = 0; frame < 24; frame++) yield return null;
+                }
+
+                // A short directional sample missed the reported fall after two
+                // seconds. Cross that deadline in both directions without hits.
+                Quaternion sustainedView = camera.transform.rotation;
+                foreach (Key side in new[] { Key.A, Key.D })
+                {
+                    InputSystem.QueueStateEvent(keyboard, new KeyboardState(side));
+                    Vector3 start = root.Hero.transform.position;
+                    for (int frame = 0; frame < 132; frame++)
+                    {
+                        yield return null;
+                        AssertPistolMovementHasNoImpactRecovery("Sustained aimed " + side);
+                        Assert.That(root.CameraFollow.FreeAimActive && root.Player.Motor.MovementBasisActive, Is.True);
+                        Assert.That(Quaternion.Angle(sustainedView, camera.transform.rotation), Is.LessThan(.03f));
+                    }
+                    Assert.That(Vector3.Distance(start, root.Hero.transform.position), Is.GreaterThan(1f));
+                }
+                foreach (Key direction in new[] { Key.A, Key.D, Key.W, Key.S, Key.A, Key.D })
+                {
+                    InputSystem.QueueStateEvent(keyboard, new KeyboardState(direction));
+                    for (int frame = 0; frame < 6; frame++)
+                    {
+                        yield return null;
+                        AssertPistolMovementHasNoImpactRecovery("Rapid aimed direction " + direction);
+                        Assert.That(Quaternion.Angle(sustainedView, camera.transform.rotation), Is.LessThan(.03f));
+                    }
+                }
+                InputSystem.QueueStateEvent(keyboard, new KeyboardState());
+                for (int frame = 0; frame < 24; frame++) yield return null;
+
+                InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.D));
+                for (int frame = 0; frame < 8; frame++) yield return null;
+                PistolCameraFrame beforeLook = ReadPistolCameraFrame();
+                input.Set(mouse.delta, new Vector2(80f, -10f), queueEventOnly: true);
+                yield return null;
+                input.Set(mouse.delta, Vector2.zero, queueEventOnly: true);
+                for (int frame = 0; frame < 32; frame++) yield return null;
+                PistolCameraFrame afterLook = ReadPistolCameraFrame();
+                Assert.That(Mathf.DeltaAngle(beforeLook.Rotation.eulerAngles.y, afterLook.Rotation.eulerAngles.y),
+                    Is.EqualTo(12.8f).Within(.1f), "Mouse yaw must remain live and be consumed once while strafing.");
+                Assert.That(Mathf.DeltaAngle(beforeLook.Rotation.eulerAngles.x, afterLook.Rotation.eulerAngles.x),
+                    Is.EqualTo(1.4f).Within(.1f), "Mouse pitch must remain live while strafing.");
+                Assert.That(Vector3.Distance(beforeLook.HeroPosition, afterLook.HeroPosition), Is.GreaterThan(.25f));
+                AssertPistolCameraShotReady("Mouse look during pistol sidestep");
+                Assert.That(root.Hero.PistolSupportError, Is.LessThan(.02f));
+                yield return CaptureFocusGameView("pistol-aim-move-mouse-look");
+                int shots = root.Hero.Pistol.ShotSequence;
+                int triggerFrame = Time.frameCount;
+                input.Press(mouse.leftButton, queueEventOnly: true);
+                yield return WaitFor(() => probe.CompletedFrame > triggerFrame, "The moving trigger needs a completed frame.");
+                input.Release(mouse.leftButton, queueEventOnly: true);
+                Assert.That(root.Hero.Pistol.ShotSequence, Is.EqualTo(shots + 1), "The hero must be able to fire while strafing.");
+                InputSystem.QueueStateEvent(keyboard, new KeyboardState());
+                input.Release(mouse.rightButton, queueEventOnly: true);
+                for (int frame = 0; frame < 40; frame++) yield return null;
+                Assert.That(root.CameraFollow.FreeAimActive || root.Player.Motor.MovementBasisActive, Is.False);
+                Vector3 turnStart = root.Hero.transform.position;
+                Quaternion facing = root.Hero.transform.rotation;
+                InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.D));
+                for (int frame = 0; frame < 16; frame++) yield return null;
+                Assert.That(Quaternion.Angle(facing, root.Hero.transform.rotation), Is.GreaterThan(20f),
+                    "Releasing RMB must restore the ordinary D turn.");
+                Assert.That(Vector3.Distance(turnStart, root.Hero.transform.position), Is.LessThan(.02f),
+                    "The restored ordinary D turn must not retain aim strafing.");
+                InputSystem.QueueStateEvent(keyboard, new KeyboardState());
+                yield return null;
+
+                input.Press(mouse.rightButton, queueEventOnly: true);
+                for (int frame = 0; frame < 40; frame++) yield return null;
+                Assert.That(root.Player.Motor.MovementBasisActive, Is.True);
+                Assert.That(root.PauseMenu.Open(), Is.True);
+                for (int frame = 0; frame < 3; frame++) yield return null;
+                Assert.That(root.Player.Motor.MovementBasisActive || root.CameraFollow.FreeAimActive ||
+                    root.Hero.Pistol.AimRequested, Is.False, "Pause must release the aim movement owner.");
+                input.Release(mouse.rightButton, queueEventOnly: true);
+                yield return null;
+                Assert.That(root.PauseMenu.Cancel(), Is.True);
+                yield return WaitFor(() => GameInput.CanRead(GameInputContext.Gameplay), "Pause did not release aiming input.");
+                input.Press(mouse.rightButton, queueEventOnly: true);
+                for (int frame = 0; frame < 40; frame++) yield return null;
+                Assert.That(root.Player.Motor.MovementBasisActive, Is.True);
+                root.ResetRound();
+                Assert.That(root.Player.Motor.MovementBasisActive || root.CameraFollow.FreeAimActive ||
+                    root.Hero.Pistol.AimRequested, Is.False, "Round reset must clear the previous aim movement owner immediately.");
+                input.Release(mouse.rightButton, queueEventOnly: true);
+                yield return null;
+                LogAssert.NoUnexpectedReceived();
+            }
+            finally
+            {
+                if (root != null) root.AutomaticSimulation = false;
+                if (probe != null) Object.DestroyImmediate(probe);
+                if (mouse != null && mouse.added) InputSystem.RemoveDevice(mouse);
+                if (keyboard != null && keyboard.added) InputSystem.RemoveDevice(keyboard);
+                GameInput.HandleApplicationFocus(true);
+                input.TearDown();
+            }
+        }
+
+        private IEnumerator VerifyPistolWalkingAimHandoffs(InputTestFixture input, Keyboard keyboard, Mouse mouse)
+        {
+            Transform left = FindAnatomicalBone(root.Hero, "foot.L");
+            Transform right = FindAnatomicalBone(root.Hero, "foot.R");
+            float leftGrounded = left.position.y, rightGrounded = right.position.y;
+            var visual = (Player3DCharacterPresentation)root.Player.Visual;
+            for (int handoff = 0; handoff < 2; handoff++)
+            {
+                InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.W, Key.A));
+                float lift = 0f;
+                for (int frame = 0; frame < 90; frame++)
+                {
+                    yield return null;
+                    AssertPistolMovementHasNoImpactRecovery("Ordinary walking before aim handoff");
+                    lift = Mathf.Max(left.position.y - leftGrounded, right.position.y - rightGrounded);
+                    if (!visual.OwnsClip(root.Hero) && lift > .065f) break;
+                }
+                Assert.That(visual.OwnsClip(root.Hero), Is.False, "RMB must interrupt the ordinary walking rig.");
+                Assert.That(lift, Is.GreaterThan(.065f),
+                    "The actual presented ankle must be above the .055 m support tolerance before RMB.");
+                Assert.That(root.Player.Motor.PlanarVelocity.magnitude, Is.GreaterThan(.1f));
+                input.Press(mouse.rightButton, queueEventOnly: true);
+                for (int frame = 0; frame < 40; frame++)
+                {
+                    yield return null;
+                    AssertPistolMovementHasNoImpactRecovery("Walking/turning into aimed movement");
+                }
+                Assert.That(root.CameraFollow.FreeAimActive && root.Player.Motor.MovementBasisActive, Is.True);
+                if (handoff == 0)
+                {
+                    // A raised incoming ankle also needs to land when input stops;
+                    // ordinary settling must not open a physical recovery episode.
+                    InputSystem.QueueStateEvent(keyboard, new KeyboardState());
+                    for (int frame = 0; frame < 32; frame++)
+                    {
+                        yield return null;
+                        AssertPistolMovementHasNoImpactRecovery("Aim handoff ordinary foot settle");
+                    }
+                    Assert.That(root.Hero.Footwork.JournalLeftSupport && root.Hero.Footwork.JournalRightSupport, Is.True,
+                        "Both presented feet must regain support without an impact recovery. " + root.Hero.Footwork.SupportDiagnostics);
+                    InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.W, Key.A));
+                    for (int frame = 0; frame < 12; frame++) yield return null;
+                }
+                input.Release(mouse.rightButton, queueEventOnly: true);
+                // Keep W+A held through lowering and the next raised-ankle entry.
+                for (int frame = 0; frame < 40; frame++)
+                {
+                    yield return null;
+                    AssertPistolMovementHasNoImpactRecovery("Lower pistol while walking/turning");
+                }
+                Assert.That(root.Player.Motor.MovementBasisActive, Is.False);
+            }
+            InputSystem.QueueStateEvent(keyboard, new KeyboardState());
+            for (int frame = 0; frame < 24; frame++) yield return null;
+        }
+
+        private void AssertPistolMovementHasNoImpactRecovery(string context)
+        {
+            CombatActor hero = root.Hero;
+            Assert.That(hero.ReceivedImpactCount, Is.Zero, context + ": the passive opponent has not hit the hero.");
+            Assert.That(hero.State.Phase, Is.EqualTo(MeleePhase.Ready), context);
+            Assert.That(hero.IsKnockedDown || hero.IsRagdollActive || hero.IsWeaponDropped || hero.ImpactMotion.IsActive ||
+                hero.ImpactMotion.WantsKnockdown || hero.Footwork.CatchStepActive || hero.Footwork.RecoveryEpisodeActive,
+                Is.False, context + ": ordinary foot transfer cannot invent an impact recovery. " + DescribeImpactRecoveryGate(hero));
+            Assert.That(hero.ImpactMotion.RecoverySequence, Is.Zero, context);
+            Assert.That(hero.Footwork.CatchStepCount, Is.Zero, context);
+        }
+
+        [UnityTest]
+        public IEnumerator Range_PistolAimedStepUsesLiveInputAndKeepsFreeAim()
+        {
+            var input = new InputTestFixture();
+            Keyboard keyboard = null;
+            Mouse mouse = null;
+            PistolCameraContinuityProbe probe = null;
+            var captureOwners = new Dictionary<Behaviour, bool>();
+            try
+            {
+                input.Setup();
+                keyboard = InputSystem.AddDevice<Keyboard>();
+                mouse = InputSystem.AddDevice<Mouse>();
+                yield return SceneManager.LoadSceneAsync(SceneIds.MainMenu, LoadSceneMode.Single);
+                Assert.That(CombatTestStartService.TryStart(CombatWeaponId.Pistol), Is.True);
+                yield return AwaitSelectedCombatRange();
+                PlacePair(8f);
+                root.SendMessage("OnApplicationFocus", true);
+                GameInput.HandleApplicationFocus(true);
+                Assert.That(root.SetOpponentFocus(false), Is.True);
+                root.AutomaticSimulation = true;
+                for (int frame = 0; frame < 12; frame++) yield return null;
+
+                // Free carry remains ordinary walking: Space alone does not acquire
+                // the combat stance, spend breath or start a hidden step.
+                int carrySequence = root.Hero.State.AttackSequence;
+                float carryStamina = root.Hero.State.Stamina;
+                InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.Space));
+                for (int frame = 0; frame < 6; frame++) yield return null;
+                Assert.That(root.Hero.State.Phase, Is.EqualTo(MeleePhase.Ready));
+                Assert.That(root.Hero.State.AttackSequence, Is.EqualTo(carrySequence));
+                Assert.That(root.Hero.State.Stamina, Is.EqualTo(carryStamina).Within(.001f));
+                InputSystem.QueueStateEvent(keyboard, new KeyboardState());
+                yield return null;
+
+                input.Press(mouse.rightButton, queueEventOnly: true);
+                for (int frame = 0; frame < 40; frame++) yield return null;
+                Camera camera = root.CameraFollow.Camera;
+                float pitch = Mathf.DeltaAngle(0f, camera.transform.eulerAngles.x);
+                input.Set(mouse.delta, new Vector2(-300f, pitch / .14f), queueEventOnly: true);
+                yield return null;
+                input.Set(mouse.delta, Vector2.zero, queueEventOnly: true);
+                for (int frame = 0; frame < 40; frame++) yield return null;
+                AssertPistolCameraShotReady("Aimed step entry");
+                int shots = root.Hero.Pistol.ShotSequence;
+                int rounds = root.Hero.Pistol.Rounds;
+                var settings = root.Hero.State.Settings;
+                var hands = root.Hero.GetComponentInChildren<NpcHandPose>();
+                Transform leftUpper = FindAnatomicalBone(root.Hero, "upper_arm.L");
+                Transform leftForearm = FindAnatomicalBone(root.Hero, "forearm.L");
+                Transform leftHand = FindAnatomicalBone(root.Hero, "hand.L");
+                Transform leftGrip = ((Player3DCharacterPresentation)root.Player.Visual).Registry.Anchors.LeftGrip;
+                Transform pistolSupport = CombatPistolAssetProvider.FindAnchor(root.Hero.Weapon, "SupportGrip");
+                Key[][] steps =
+                {
+                    new[] { Key.Space }, new[] { Key.Space, Key.W },
+                    new[] { Key.Space, Key.A }, new[] { Key.Space, Key.D },
+                    new[] { Key.Space, Key.S }, new[] { Key.Space, Key.W, Key.D }
+                };
+                Vector2[] axes = { Vector2.down, Vector2.up, Vector2.left, Vector2.right, Vector2.down, Vector2.up };
+                var capturePoses = new PistolStepCapturePose[2];
+                probe = root.gameObject.AddComponent<PistolCameraContinuityProbe>();
+                for (int step = 0; step < steps.Length; step++)
+                {
+                    Vector3 start = root.Hero.transform.position;
+                    Quaternion acceptedView = camera.transform.rotation;
+                    Vector3 cameraForward = Vector3.ProjectOnPlane(camera.transform.forward, Vector3.up).normalized;
+                    Vector3 forward = Vector3.ProjectOnPlane(root.Hero.transform.forward, Vector3.up).normalized;
+                    Assert.That(Vector3.Angle(forward, cameraForward), Is.LessThan(10f),
+                        "Before Space, the settled hero must face the camera aim, allowing shoulder parallax.");
+                    Vector3 right = Vector3.Cross(Vector3.up, forward);
+                    Vector3 expectedDirection = forward * axes[step].y + right * axes[step].x;
+                    float stamina = root.Hero.State.Stamina;
+                    int sequence = root.Hero.State.AttackSequence;
+                    var legs = new WalkingLegProbe(root.Hero);
+                    int samples = 0;
+                    float viewDrift = 0f, aimError = 0f, supportError = 0f, visualAimDeviation = 0f;
+                    bool keptAim = true, aligned = true;
+                    string rejectedFrame = null;
+                    // The graph restores its authored pose during Update; only
+                    // the completed LateUpdate pose includes the firearm IK.
+                    probe.Sample = () =>
+                    {
+                        if (root.Hero.State.Phase != MeleePhase.Step) return;
+                        samples++;
+                        legs.Sample();
+                        float frameViewDrift = Quaternion.Angle(acceptedView, camera.transform.rotation);
+                        float frameAimError = root.Hero.PistolAimErrorDegrees;
+                        float frameSupportError = root.Hero.PistolSupportError;
+                        float frameVisualDeviation = Mathf.Abs(root.Hero.PistolVisualAimProgress - 1f);
+                        bool frameKeptAim = root.CameraFollow.FreeAimActive && root.Hero.Pistol.AimRequested;
+                        bool frameAligned = root.Hero.PistolAimAligned;
+                        viewDrift = Mathf.Max(viewDrift, frameViewDrift);
+                        aimError = Mathf.Max(aimError, frameAimError);
+                        supportError = Mathf.Max(supportError, frameSupportError);
+                        visualAimDeviation = Mathf.Max(visualAimDeviation, frameVisualDeviation);
+                        keptAim &= frameKeptAim;
+                        aligned &= frameAligned;
+                        if (rejectedFrame == null && (!frameKeptAim || !frameAligned || frameViewDrift >= .03f ||
+                            frameAimError > CombatActor.MaximumPistolAimErrorDegrees || frameSupportError >= .02f ||
+                            frameVisualDeviation > .001f))
+                        {
+                            Pose socket = hands.GetSocketPose(true, pistolSupport.position, pistolSupport.up, pistolSupport.forward);
+                            Vector3 gripOffset = Quaternion.Inverse(leftHand.rotation) * (leftGrip.position - leftHand.position);
+                            Vector3 wrist = socket.position - socket.rotation * gripOffset;
+                            Vector3 offset = wrist - leftUpper.position;
+                            float chainLength = Vector3.Distance(leftUpper.position, leftForearm.position) +
+                                Vector3.Distance(leftForearm.position, leftHand.position);
+                            float horizontal = Vector3.ProjectOnPlane(offset, root.Hero.transform.up).magnitude;
+                            float vertical = Vector3.Dot(offset, root.Hero.transform.up);
+                            rejectedFrame = $"Step={step}, frame={Time.frameCount}, sample={samples}, error={frameAimError}, " +
+                                $"support={frameSupportError}, target={root.Hero.PistolAimPoint}, " +
+                                $"muzzle={root.Hero.PistolMuzzle.position}, forward={root.Hero.PistolMuzzle.forward}, " +
+                                $"view={camera.transform.eulerAngles}, drift={frameViewDrift}, " +
+                                $"visualAim={root.Hero.PistolVisualAimProgress}, keptAim={frameKeptAim}, aligned={frameAligned}, " +
+                                $"leftWrist={wrist.ToString("F6")}, leftShoulder={leftUpper.position.ToString("F6")}, " +
+                                $"leftDistance={offset.magnitude:F6}, leftChainLength={chainLength:F6}, " +
+                                $"leftReach98={chainLength * .98f:F6}, leftReach999={chainLength * .999f:F6}, " +
+                                $"leftHorizontal={horizontal:F6}, leftVertical={vertical:F6}. ";
+                        }
+                        if (samples == 10 && (step == 0 || step == 2))
+                            capturePoses[step == 0 ? 0 : 1] = new PistolStepCapturePose(root.Hero);
+                    };
+                    InputSystem.QueueStateEvent(keyboard, new KeyboardState(steps[step]));
+                    yield return null;
+                    Assert.That(root.Hero.State.Phase, Is.EqualTo(MeleePhase.Step), "A fresh aimed Space must start one step.");
+                    Assert.That(root.Hero.State.AttackSequence, Is.EqualTo(sequence + 1));
+                    Assert.That(root.Hero.State.Stamina, Is.EqualTo(stamina - settings.StepCost).Within(.001f));
+                    Assert.That(root.Hero.Body.enabled, Is.True, "A pistol step uses the same capsule as the crowbar step.");
+                    Assert.That(Vector3.Angle(root.Hero.StepDirection, expectedDirection), Is.LessThan(.05f),
+                        "Space/W/S/A/D and the diagonal tie must use the settled hero's aim heading.");
+                    // Retain Space, release only the directional key: the committed
+                    // metre must belong to the step rather than ordinary WASD travel.
+                    InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.Space));
+                    int frames = 1;
+                    float acceptedYaw = camera.transform.eulerAngles.y, acceptedPitch = camera.transform.eulerAngles.x;
+                    while (root.Hero.State.Phase == MeleePhase.Step && frames < 60)
+                    {
+                        if (step == steps.Length - 1 && frames == 6)
+                            input.Set(mouse.delta, new Vector2(80f, -10f), queueEventOnly: true);
+                        yield return null;
+                        frames++;
+                        if (step == steps.Length - 1 && frames == 7)
+                        {
+                            input.Set(mouse.delta, Vector2.zero, queueEventOnly: true);
+                            Assert.That(Mathf.DeltaAngle(acceptedYaw, camera.transform.eulerAngles.y),
+                                Is.EqualTo(12.8f).Within(.1f), "Mouse yaw must remain live during committed step travel.");
+                            Assert.That(Mathf.DeltaAngle(acceptedPitch, camera.transform.eulerAngles.x),
+                                Is.EqualTo(1.4f).Within(.1f), "Mouse pitch must remain live during committed step travel.");
+                            acceptedView = camera.transform.rotation;
+                        }
+                        Assert.That(root.Hero.IsKnockedDown || root.Hero.IsRagdollActive || root.Hero.IsWeaponDropped ||
+                            root.Hero.ImpactMotion.IsActive, Is.False, "An unhit aimed step cannot invent a fall or lose the pistol.");
+                        Assert.That(root.Hero.State.IsAttacking || root.Hero.State.IsCharging || root.Hero.State.HasBufferedAttack,
+                            Is.False, "Space cannot start or buffer a melee attack with the pistol.");
+                        Assert.That(root.Hero.Pistol.ShotSequence, Is.EqualTo(shots));
+                        Assert.That(root.Hero.Pistol.Rounds, Is.EqualTo(rounds));
+                        Assert.That(root.Hero.ReceivedImpactCount, Is.Zero);
+                        Assert.That(Vector3.Angle(root.Hero.StepDirection, expectedDirection), Is.LessThan(.05f),
+                            "Mouse look cannot redirect already committed step travel.");
+                    }
+                    probe.Sample = null;
+                    string context = rejectedFrame ?? $"Step={step}. ";
+                    Assert.That(samples, Is.GreaterThanOrEqualTo(20), context + "Sample the whole completed step.");
+                    Assert.That(viewDrift, Is.LessThan(.03f), context +
+                        "A step keeps camera yaw/pitch unless the player supplies mouse look.");
+                    Assert.That(keptAim, Is.True, context + "Held RMB keeps free aim through every completed step frame.");
+                    Assert.That(visualAimDeviation, Is.LessThanOrEqualTo(.001f), context +
+                        "Stepping cannot lower and raise the pistol again.");
+                    Assert.That(aligned, Is.True, context + "The completed pistol pose must follow the live camera during stepping.");
+                    Assert.That(aimError, Is.LessThanOrEqualTo(CombatActor.MaximumPistolAimErrorDegrees), context);
+                    Assert.That(supportError, Is.LessThan(.02f), context + "The left palm must keep supporting the pistol.");
+                    Assert.That(root.Hero.State.Phase, Is.EqualTo(MeleePhase.Ready));
+                    Assert.That(root.Hero.State.StepElapsed, Is.EqualTo(settings.StepDurationSeconds).Within(.001f));
+                    Assert.That(frames / 60f, Is.EqualTo(settings.StepDurationSeconds).Within(2f / 60f),
+                        "The live pistol step must use the existing crowbar step clock.");
+                    Vector3 travel = root.Hero.transform.position - start;
+                    Assert.That(Vector3.Dot(travel, expectedDirection), Is.EqualTo(settings.StepDistance).Within(.045f));
+                    Assert.That(Vector3.ProjectOnPlane(travel, expectedDirection).magnitude, Is.LessThan(.045f));
+                    Assert.That(root.Hero.StepTravelBlocked, Is.False, "This route stays in the open western sector.");
+                    legs.AssertMoving(2f, "The pistol step must move both legs on the production rig.");
+                    for (int frame = 0; frame < 18; frame++) yield return null;
+                    Assert.That(root.Hero.State.Phase, Is.EqualTo(MeleePhase.Ready), "Holding Space cannot repeat the step.");
+                    Assert.That(root.Hero.State.AttackSequence, Is.EqualTo(sequence + 1));
+                    Assert.That(root.Hero.State.Stamina, Is.GreaterThanOrEqualTo(stamina - settings.StepCost - .001f));
+                    InputSystem.QueueStateEvent(keyboard, new KeyboardState());
+                    yield return null;
+                }
+                AssertPistolCameraShotReady("Aimed step exit");
+                Assert.That(root.Projectiles.SpawnCount, Is.Zero);
+                input.Release(mouse.rightButton, queueEventOnly: true);
+                yield return null;
+                LogAssert.NoUnexpectedReceived();
+
+                // All live input/clock/contact checks have finished. Replay only
+                // their recorded render poses, allowing a real skinning frame.
+                root.AutomaticSimulation = false;
+                foreach (Behaviour owner in new Behaviour[]
+                    { root.Player.Motor, (Player3DCharacterPresentation)root.Player.Visual, root.CameraFollow })
+                {
+                    captureOwners.Add(owner, owner.enabled);
+                    owner.enabled = false;
+                }
+                using (GameTimeScaleRuntime.AcquirePause())
+                {
+                    for (int pose = 0; pose < capturePoses.Length; pose++)
+                    {
+                        capturePoses[pose].Restore();
+                        Physics.SyncTransforms();
+                        yield return null;
+                        CaptureInertiaFrame(root.Hero, pose == 0 ? "pistol-aim-step-back" : "pistol-aim-step-left", 10);
+                    }
+                }
+            }
+            finally
+            {
+                if (root != null) root.AutomaticSimulation = false;
+                if (probe != null) Object.DestroyImmediate(probe);
+                foreach (var owner in captureOwners)
+                    if (owner.Key != null) owner.Key.enabled = owner.Value;
+                if (mouse != null && mouse.added) InputSystem.RemoveDevice(mouse);
+                if (keyboard != null && keyboard.added) InputSystem.RemoveDevice(keyboard);
+                GameInput.HandleApplicationFocus(true);
+                input.TearDown();
+            }
+        }
+
+        private sealed class PistolStepCapturePose
+        {
+            private readonly Transform actorRoot;
+            private readonly Pose rootPose;
+            private readonly Transform[] transforms;
+            private readonly Vector3[] positions, scales;
+            private readonly Quaternion[] rotations;
+            private readonly SkinnedMeshRenderer[] skins;
+            private readonly float[][] shapeWeights;
+            private readonly Rigidbody weaponBody;
+
+            public PistolStepCapturePose(CombatActor actor)
+            {
+                actorRoot = actor.transform;
+                rootPose = new Pose(actorRoot.position, actorRoot.rotation);
+                transforms = actor.DamageRigRoot.GetComponentsInChildren<Transform>(true);
+                positions = new Vector3[transforms.Length];
+                rotations = new Quaternion[transforms.Length];
+                scales = new Vector3[transforms.Length];
+                for (int i = 0; i < transforms.Length; i++)
+                {
+                    positions[i] = transforms[i].localPosition;
+                    rotations[i] = transforms[i].localRotation;
+                    scales[i] = transforms[i].localScale;
+                }
+                skins = actor.GetComponentsInChildren<SkinnedMeshRenderer>(true);
+                shapeWeights = new float[skins.Length][];
+                for (int i = 0; i < skins.Length; i++)
+                {
+                    shapeWeights[i] = new float[skins[i].sharedMesh.blendShapeCount];
+                    for (int shape = 0; shape < shapeWeights[i].Length; shape++)
+                        shapeWeights[i][shape] = skins[i].GetBlendShapeWeight(shape);
+                }
+                weaponBody = actor.Weapon.GetComponent<Rigidbody>();
+            }
+
+            public void Restore()
+            {
+                actorRoot.SetPositionAndRotation(rootPose.position, rootPose.rotation);
+                for (int i = 0; i < transforms.Length; i++)
+                {
+                    transforms[i].SetLocalPositionAndRotation(positions[i], rotations[i]);
+                    transforms[i].localScale = scales[i];
+                }
+                for (int i = 0; i < skins.Length; i++)
+                    for (int shape = 0; shape < shapeWeights[i].Length; shape++)
+                        skins[i].SetBlendShapeWeight(shape, shapeWeights[i][shape]);
+                weaponBody.position = weaponBody.transform.position;
+                weaponBody.rotation = weaponBody.transform.rotation;
+            }
         }
 
         [UnityTest]

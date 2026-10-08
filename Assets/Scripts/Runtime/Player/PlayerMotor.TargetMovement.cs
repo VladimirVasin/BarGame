@@ -10,12 +10,37 @@ namespace BarPromenade
         private Transform movementTarget;
         private bool inertialTargetMovement, movementTargetFrozen;
         private float targetYawVelocity;
+        private object movementBasisOwner;
+        private Vector3 movementBasisForward;
 
         public bool MovementTargetActive => movementTargetOwner != null && movementTarget != null &&
             (!(movementTargetOwner is Object unityOwner) || unityOwner != null);
 
         public bool OwnedMovementFrozen => movementFreezeOwner != null &&
             (!(movementFreezeOwner is Object unityOwner) || unityOwner != null);
+
+        public bool MovementBasisActive => movementBasisOwner != null &&
+            (!(movementBasisOwner is Object unityOwner) || unityOwner != null);
+
+        /// <summary>Translate relative to an accepted aim heading; the aiming actor owns yaw.</summary>
+        public bool SetMovementBasis(object owner, Vector3 forward)
+        {
+            forward.y = 0f;
+            if (owner == null || !IsFinite(forward) || forward.sqrMagnitude < .0001f ||
+                MovementTargetActive || (MovementBasisActive && !ReferenceEquals(owner, movementBasisOwner))) return false;
+            movementBasisOwner = owner;
+            movementBasisForward = forward.normalized;
+            return true;
+        }
+
+        public void ClearMovementBasis(object owner)
+        {
+            if (owner == null || !ReferenceEquals(owner, movementBasisOwner)) return;
+            movementBasisOwner = null;
+            movementBasisForward = Vector3.zero;
+            // Changing input axes does not discard earned world momentum.
+            // Modal, disable and teleport owners still perform their hard stop.
+        }
 
         /// <summary>A contact freeze survives releasing target-facing controls and retains earned momentum.</summary>
         public bool SetOwnedMovementFrozen(object owner, bool frozen)
@@ -30,6 +55,7 @@ namespace BarPromenade
         public bool SetMovementTarget(object owner, Transform target, bool useInertia = false)
         {
             if (owner == null || target == null || target == transform || target.IsChildOf(transform) ||
+                MovementBasisActive ||
                 (MovementTargetActive && !ReferenceEquals(owner, movementTargetOwner))) return false;
             if (!ReferenceEquals(owner, movementTargetOwner) || movementTarget != target ||
                 inertialTargetMovement != useInertia)
@@ -60,9 +86,7 @@ namespace BarPromenade
         private Vector3 ResolveTargetMovement(Vector2 input, bool sprintRequested, bool canFace,
             out float yawDelta, out float turnInput)
         {
-            Vector3 forward = movementTarget.position - transform.position;
-            forward.y = 0f;
-            forward = forward.sqrMagnitude > .0004f ? forward.normalized : transform.forward;
+            Vector3 forward = MovementTargetForward();
             float turnSpeed = TurnSpeedDegreesPerSecond * speedMultiplier * balanceYawScale;
             float maximumTurn = canFace ? turnSpeed * ownedTurnScale * Time.deltaTime : 0f;
             float remainingYaw = Vector3.SignedAngle(transform.forward, forward, Vector3.up);
@@ -72,6 +96,18 @@ namespace BarPromenade
                 : Mathf.Clamp(remainingYaw, -maximumTurn, maximumTurn);
             transform.Rotate(0f, yawDelta, 0f);
             turnInput = turnSpeed * Time.deltaTime > .0001f ? yawDelta / (turnSpeed * Time.deltaTime) : 0f;
+            return ResolveDirectionalMovement(input, forward, sprintRequested);
+        }
+
+        private Vector3 MovementTargetForward()
+        {
+            Vector3 forward = movementTarget.position - transform.position;
+            forward.y = 0f;
+            return forward.sqrMagnitude > .0004f ? forward.normalized : transform.forward;
+        }
+
+        private Vector3 ResolveDirectionalMovement(Vector2 input, Vector3 forward, bool sprintRequested)
+        {
             input = Vector2.ClampMagnitude(input, 1f);
             Vector3 right = Vector3.Cross(Vector3.up, forward);
             float forwardSpeed = input.y >= 0f

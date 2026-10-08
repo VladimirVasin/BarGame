@@ -529,19 +529,19 @@ namespace BarPromenade
             if (OwnedMovementFrozen || (MovementTargetActive && inertialTargetMovement &&
                 (movementTargetFrozen || GameTimeScaleRuntime.IsPaused))) return;
 
-            // Tank controls: A/D yaw the hero on the spot, W walks along
-            // the hero's own forward axis and S backs up along it at a
-            // reduced pace. The camera no longer steers locomotion.
+            // Ordinary movement retains tank controls. Combat can instead own
+            // a target-facing or free-aim translation basis without A/D yaw.
             Vector2 input = InputEnabled && !isTransitioning
                 ? ReadMovement()
                 : Vector2.zero;
+            bool targetRelative = MovementTargetActive;
+            bool basisRelative = !targetRelative && MovementBasisActive;
+            bool directionalMovement = targetRelative || basisRelative;
             Vector3 snowDirection = transform.forward * input.y;
-            if (MovementTargetActive)
+            if (directionalMovement)
             {
-                Vector3 targetForward = movementTarget.position - transform.position;
-                targetForward.y = 0f;
-                targetForward = targetForward.sqrMagnitude > .0001f ? targetForward.normalized : transform.forward;
-                snowDirection = targetForward * input.y + Vector3.Cross(Vector3.up, targetForward) * input.x;
+                Vector3 forward = targetRelative ? MovementTargetForward() : movementBasisForward;
+                snowDirection = forward * input.y + Vector3.Cross(Vector3.up, forward) * input.x;
             }
             UpdateSnowMotion(snowDirection, Time.deltaTime);
             bool sprintRequested = InputEnabled &&
@@ -557,11 +557,17 @@ namespace BarPromenade
             }
             float turnInput, yawDelta;
             Vector3 desiredPlanarVelocity;
-            bool targetRelative = MovementTargetActive;
             if (targetRelative)
                 desiredPlanarVelocity = ResolveTargetMovement(input, sprintRequested,
                     InputEnabled && !isTransitioning && GameInput.CanRead(GameInputContext.Movement),
                     out yawDelta, out turnInput);
+            else if (basisRelative)
+            {
+                targetYawVelocity = 0f;
+                movementTargetFrozen = false;
+                yawDelta = turnInput = 0f;
+                desiredPlanarVelocity = ResolveDirectionalMovement(input, movementBasisForward, sprintRequested);
+            }
             else
             {
                 targetYawVelocity = 0f;
@@ -587,7 +593,7 @@ namespace BarPromenade
             // momentum is the player's own achieved motion; the balance
             // drift moves the capsule in a second, separate move below and
             // is never re-integrated here.
-            Vector3 steeredPlanarVelocity = targetRelative && inertialTargetMovement
+            Vector3 steeredPlanarVelocity = basisRelative || targetRelative && inertialTargetMovement
                 ? momentumVelocity
                 : Quaternion.AngleAxis(yawDelta, Vector3.up) * momentumVelocity;
             if (ExternalPushActive)
@@ -678,8 +684,8 @@ namespace BarPromenade
                 signedForwardSpeed,
                 turnInput,
                 runBlend,
-                targetRelative ? Vector3.Dot(PlanarVelocity, transform.right) : 0f,
-                targetRelative, SnowBlend));
+                directionalMovement ? Vector3.Dot(PlanarVelocity, transform.right) : 0f,
+                directionalMovement, SnowBlend));
             UpdateFootsteps(planarVelocity, runBlend: runBlend);
         }
 

@@ -45,6 +45,7 @@ namespace BarPromenade
             // discard the impulse so a new aim lease cannot resurrect it.
             if (!GameTimeScaleRuntime.IsPaused && !PauseMenuController.IsAnyPaused) ResetPistolCrosshair();
             if (CameraFollow != null) CameraFollow.ClearFreeAim(this);
+            if (Player.Motor != null) Player.Motor.ClearMovementBasis(this);
             if (!pistolCursorOwned) return;
             Cursor.lockState = pistolCursorLock;
             Cursor.visible = pistolCursorVisible;
@@ -54,6 +55,7 @@ namespace BarPromenade
         private Vector3 PrepareFreePistolAim()
         {
             CameraFollow.PrepareFreeAimFrame(this);
+            Player.Motor.SetMovementBasis(this, CameraFollow.Camera.transform.forward);
             if (!pistolCursorOwned)
             {
                 pistolCursorLock = Cursor.lockState;
@@ -93,7 +95,7 @@ namespace BarPromenade
             bool aimHeld = GameInput.IsHeld(GameInputAction.MeleeBlock, GameInputContext.Gameplay);
             if (!aimHeld) requirePistolAimRelease = false;
             bool aim = aimHeld && !requirePistolAimRelease;
-            bool freeAim = aim && !IsOpponentFocused && Hero.PistolBodyAvailable && CameraFollow.SetFreeAim(this, heroChest);
+            bool freeAim = aim && !IsOpponentFocused && Hero.PistolAimBodyAvailable && CameraFollow.SetFreeAim(this, heroChest);
             if (freeAim) Hero.SetPistolAim(true, PrepareFreePistolAim());
             else
             {
@@ -111,14 +113,22 @@ namespace BarPromenade
                 return true;
             }
             if (GameInput.WasPressed(GameInputAction.CombatReload, GameInputContext.Gameplay)) Hero.TryReloadPistol();
-            bool step = IsOpponentFocused && GameInput.WasPressed(GameInputAction.CombatStep, GameInputContext.Gameplay);
+            bool step = (IsOpponentFocused || freeAim) && GameInput.WasPressed(GameInputAction.CombatStep, GameInputContext.Gameplay);
             bool kick = IsOpponentFocused && GameInput.WasPressed(GameInputAction.CombatKick, GameInputContext.Gameplay);
             if (step || kick)
             {
                 if (trigger) Hero.RejectPistolInput(step ? "step_requested" : "kick_requested");
-                Hero.Pistol.CancelAction();
-                if (step) Hero.TryStep(GameInput.ReadMovement());
-                else Hero.TryKick();
+                Hero.CancelPendingPistolShot(step ? "step_requested" : "kick_requested");
+                if (step)
+                {
+                    Hero.Pistol.CancelReload();
+                    Hero.TryStep(GameInput.ReadMovement());
+                }
+                else
+                {
+                    Hero.Pistol.CancelAction();
+                    Hero.TryKick();
+                }
                 requireAttackRelease |= held;
             }
             else if (trigger)
@@ -137,7 +147,7 @@ namespace BarPromenade
             {
                 Vector3 centre = CameraFollow.Camera.ViewportToScreenPoint(new Vector3(.5f, .5f, 0f));
                 Vector2 point = canvas.ScreenToLogical(new Vector2(centre.x, Screen.height - centre.y));
-                Color colour = Hero.Pistol.CanFire && Hero.PistolAimAligned ? RetroUiTheme.Text : RetroUiTheme.Muted;
+                Color colour = Hero.PistolBodyAvailable && Hero.Pistol.CanFire && Hero.PistolAimAligned ? RetroUiTheme.Text : RetroUiTheme.Muted;
                 float spread = Mathf.Round(PistolCrosshairExpansion);
                 RetroUiTheme.FillRect(new Rect(point.x - 1f, point.y - 1f, 3f, 3f), RetroUiTheme.Ink);
                 DrawPistolCrosshairArms(point, spread, RetroUiTheme.Ink, 1f);

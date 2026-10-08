@@ -257,16 +257,23 @@
   Shared plan/sampler/bounds/metres/collider, `48 m` buckets;
   §6/§12/art §10g/§16/§21/nine checks.
 
+- **Accepted — 2026-10-08, pistol aimed movement:**
+  User:CombatTest held gun aim:camera-planar WASD/stick strafe/diagonal clamp.
+  Space:shared grounded Step1m/15,dominant hero-facing cardinal/noinput back;
+  Step yaw/travel fixed;camera/upper aim kept;wall/impact/pause gates.
+  `SetMovementBasis`:translation;`CombatActor`:yaw;`CombatFootwork`:legs.
+  Speed/inertia/focus;release:tank/momentum;hard handoffs clear.
+  Unaimed freewalk:noStep.
 - **Accepted exception 2026-10-08, pistol:**
-  CombatTest:story§6 `2026-10-07`/art§15a;entry:dummy/freecam;bar-Q-Step:focus.
-  Rig recoil/path streak/zone-dir impact-audio-dark blood;head→0HP/live ragdoll.
-  Root-stable camera;hero-hit kick/manual/motor kept.
-  Accepted shot→delayed port case/bounded gravity-bounce/audio;slide return/emptylock.
-  Handmag-seat/rack1.8s/audio/ammo last;handoff interrupt→hold/Rresume.
-  Drop/E keepsstage-ammo;pause-hitstop freeze/reset-exit clear.
+  §6/art§15a;dummy/freecam;bar-Q:focus;Step:focus/aim.
+  Recoil/streak/zone-dir impact-SFX-dark blood;head→0HP/live ragdoll.
+  Stablecam;hit kick/manual/motor kept.
+  Shot→delayed port case/bounded g-bounce/SFX;slide return/emptylock.
+  Handmag-seat/rack1.8s/SFX/ammo last;interrupt→hold/Rresume.
+  Drop/E keepsstage-ammo;pause-hitstop0/reset-exit clear.
   No lock-pierce-ricochet-guard-parry-taunt-reward;win fire-reload/HP-result kept.
-  Holes/bleed→reset-exit/rig-ragdoll/bounded pools;
-  corpse hits:impulse/new wounds-blood/HP-result-pose kept.
+  Holes/bleed:rig-ragdoll→reset-exit/capped;
+  corpse:impulse/wounds-blood/HP-result-pose kept.
 - **Accepted 2026-10-07, combat:**
   Nondeeper floor;.75s stall→arm/.5s→drop;rise≠grip;HP-focus-AI kept.
   Pause-hitstop0;no bar:walk-Q-Step/hits-falls;charge-palm-guard off.
@@ -5458,18 +5465,13 @@
   restart and quit require explicit default-No confirmation, while save/load,
   settings and a visible main-menu destination remain unimplemented.
 - **Accepted — Tank-control player heading (supersedes independent heading):**
-  A/D yaw the player root directly at `150°/s` (scaled by the intoxication
-  speed multiplier); the root never rotates toward velocity during input
-  locomotion. W walks along the hero's own forward axis, S backs him up at a
-  reduced `1.4 m/s`, and W±A/D follows an arc at the active walk/run speed.
-  Holding either Shift or gamepad L3 requests Run only while forward input is
-  positive; neither Shift alone nor a backward input becomes a sprint. The
-  camera-relative steering basis and its camera-cut latch are gone — the chase camera orbits
-  independently and never writes player yaw. Scripted interaction approaches
-  (`WalkPlanarStep`) still face along their travel. The motor reports a
-  `PlayerMotionSample` (planar velocity, signed forward speed, turn input) so
-  the presentation can select `Walk`, `Run`, `WalkBack` or the `TurnLeft`/
-  `TurnRight` in-place clips on its six-input locomotion mixer.
+  Ordinary A/D yaw `150°/s` × intoxication speed multiplier, never face velocity.
+  W uses own-forward; S backpedals `1.4 m/s`; W±A/D arcs at walk/run speed.
+  Shift/L3 requests Run only with positive forward input; alone/back never sprint.
+  Chase orbits independently, without player yaw. Combat target/held pistol aim
+  lease directional translation; actor owns facing. `WalkPlanarStep` faces travel.
+  `PlayerMotionSample`: planar velocity/signed forward speed/turn input select
+  `Walk`/`Run`/`WalkBack`/`TurnLeft`/`TurnRight` in the six-input locomotion mixer.
 - **Accepted — Bounded inertial walk/run locomotion:** Character-relative
   input targets a `2.6 m/s` forward walk, `4.2 m/s` forward run or `1.4 m/s`
   backward maximum through the unchanged `6.5 m/s²`

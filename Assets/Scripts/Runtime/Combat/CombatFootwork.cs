@@ -833,8 +833,18 @@ namespace BarPromenade
             if (recoveryGaitReleased) return false;
             catchRetry = Mathf.Max(0f, catchRetry - seconds);
             bool needsLanding = !supportConfirmed[0] || !supportConfirmed[1];
-            if (!ImpactMotion.IsActive && !catching && !needsLanding)
-            { catchDecisionPending = false; return false; }
+            // Reacquiring the combat stance can inherit an ordinary walking
+            // boot in the air. Its gait/settle must land it; missing contact
+            // alone cannot create an impact-recovery episode (and a fall).
+            if (!ImpactMotion.IsActive && !catching)
+            {
+                catchDecisionPending = false;
+                if (needsLanding && !moving && !settlingFoot && !kickLandingPending)
+                    for (int side = 0; side < 2; side++)
+                        if (!supportConfirmed[side] && !ConfirmCurrentContact(side, .055f))
+                        { BeginSettle(side, .13f, false); break; }
+                return false;
+            }
             if (!catching)
             {
                 int displaced = FarthestFoot();
@@ -968,10 +978,10 @@ namespace BarPromenade
                 f7: GameLog.Field("duration", settleDuration));
         }
 
-        private bool ConfirmCurrentContact(int side)
+        private bool ConfirmCurrentContact(int side, float groundTolerance = .025f)
         {
             if (!hasPresentedContacts || !TryCatchGround(feet[side], side, out Vector3 ground) ||
-                Vector3.Distance(ground, feet[side]) > .025f ||
+                Vector3.Distance(ground, feet[side]) > groundTolerance ||
                 Vector3.Distance(presentedFeet[side], ground) > .055f || !LandingClear(ground)) return false;
             supportConfirmed[side] = true;
             return true;

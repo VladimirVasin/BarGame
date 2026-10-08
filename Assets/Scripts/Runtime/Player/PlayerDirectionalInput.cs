@@ -4,9 +4,9 @@ namespace BarPromenade
 {
     /// <summary>
     /// The one place WASD and the left stick are read. The motor reads
-    /// them as tank controls (x yaws, y walks); a body on the floor has
-    /// no meaningful forward of its own, so the fall reads the same keys
-    /// relative to the camera instead.
+    /// them as tank controls unless combat owns a target/aim basis.
+    /// A body on the floor has no meaningful forward of its own, so
+    /// the fall reads the same keys relative to the camera instead.
     /// </summary>
     public static class PlayerDirectionalInput
     {

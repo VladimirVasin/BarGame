@@ -541,6 +541,7 @@ namespace BarPromenade
                 reaction != null ? reaction : State.IsKicking ? kick : State.IsCharging ? Current.Charge : State.IsAttacking ? ReleaseClip : roundEnded || weaponDropped ? rest : State.IsBlocking ? block : ready;
             bool pistolPose = IsPistol && !State.IsDefeated && !stepping && !stagger && reaction == null && !State.IsKicking;
             if (pistolPose) chosen = ChoosePistolClip();
+            AnimationClip pistolStepUpper = IsPistol && stepping && Pistol.AimRequested ? ChoosePistolClip() : null;
             supportGrip?.SetTarget(chosen == block || chosen == guardImpact,
                 !weaponDropped && chosen != rest && chosen != hit && chosen != guardBreak && !State.IsDefeated && !State.IsShoving,
                 State.IsContinuation);
@@ -581,6 +582,8 @@ namespace BarPromenade
                 hero.SetOwnedClipLocomotion(this, false);
                 if (State.IsAttacking && reaction == null && !stagger) SampleHeroRelease(progress);
                 else if (State.IsCharging) SampleHeroCharge();
+                else if (pistolStepUpper != null)
+                    hero.SampleOwnedClipUpperTime(this, pistolStepUpper.name, progress, PistolClipProgress(pistolStepUpper));
                 else hero.SampleOwnedClip(this, progress);
                 hero.SetCombatBodyMotion(this, bodyMotion);
                 hero.SetCombatFootwork(this, footwork);
@@ -600,7 +603,8 @@ namespace BarPromenade
             handPose.SetGrip(false, weaponDropped ? 0f : 1f);
             if (IsPistol)
             {
-                pistolLeftClosure = pistolPose && !weaponDropped ? BlendPistolClosure(PistolSupportClosure(chosen)) : 0f;
+                pistolLeftClosure = (pistolPose || pistolStepUpper != null) && !weaponDropped
+                    ? BlendPistolClosure(PistolSupportClosure(pistolStepUpper != null ? pistolStepUpper : chosen)) : 0f;
                 handPose.SetGrip(true, pistolLeftClosure);
             }
             if (npc != null)
