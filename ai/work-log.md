@@ -3,13 +3,15 @@
 Newest outcomes/checks first. Archive whole dates at budget: [policy](README.md).
 Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-2026-08.md).
 
-## 2026-10-08 — Pistol wounds, regional reactions and Editor input
+## 2026-10-08 — Pistol wounds, jelly brain and Editor input
 
-- CombatTest:recoil/freeaim/aim-strafe/Step;actual head-face-ear/remnant
-  mesh catches edges the capsule missed. Head16/brains8:local chord,
-  finite pulse24s/terminal convulsions/corpse HP-result-pose;bounded
-  world chips/sparks/holes. Imported100x is baked before world space;
-  hidden head emits0;camera freeze retains pose/FOV/aim.
+- CombatTest:brain8 fills skull;old first shot emptied the remnant.
+  Local loss3-5/16 retains wet spring jelly/exact
+  tissue contacts/floor squash/freeze/reset. User reduced eject/blood56/
+  narrow-slow fan;exit bias .45 keeps front/rear distinct.
+  Finite blood24s/convulsions/corpse HP-result-pose/world effects.
+  Imported100x baked before world space;hidden head emits0;
+  camera freeze keeps pose/FOV/aim.
 - Regional bullets:sharp same-rig chest/abdomen/upperarm/forearm/hand
   response;injured-leg transfer/foot-owner catch. Ordinary stance replaces
   generic hit clip;HP/stagger/momentum/camera kept. Skin/fabric/glove-boot
@@ -39,7 +41,8 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
   `Range_FinalCatchRequiresStableMovingSupportBeforeRegrip`,
   `Range_PistolAimedStepUsesLiveInputAndKeepsFreeAim`,
   `Range_HeadFractureBleedingAndConvulsionsFollowContactPauseAndReset`
-  (frames inspected), `Range_ProjectileHeadEdgesMatchVisibleFrozenAndRetainedSurfaces`,
+  (head/airborne/aftermath frames reviewed),
+  `Range_ProjectileHeadEdgesMatchVisibleFrozenAndRetainedSurfaces`,
   `Range_FreePistolCentreAimHitsVisibleHeadEdgesFromActualMuzzle`.
   `Range_PistolRegionalReactionsAndWoundsStayContinuousThroughPauseAndReset`
   proved original posed skin/morph attachment, reaction/aftermath/pause/reset;

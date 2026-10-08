@@ -326,11 +326,12 @@ namespace BarPromenade.Tests.PlayMode
                     string name = skin.name;
                     if (retained)
                     {
-                        if (!name.StartsWith("Fracture Sector", StringComparison.Ordinal)) continue;
+                        bool brain = name.StartsWith("Fracture Brain", StringComparison.Ordinal);
+                        if (!brain && !name.StartsWith("Fracture Sector", StringComparison.Ordinal)) continue;
                         int separator = name.IndexOf("__", StringComparison.Ordinal);
                         if (separator < 0) continue;
                         name = name.Substring(separator + 2);
-                        if (name != "Interior" && !IsIndependentHeadFlesh(name)) continue;
+                        if (!brain && name != "Interior" && !IsIndependentHeadFlesh(name)) continue;
                     }
                     else if (!IsIndependentHeadFlesh(name)) continue;
                     skin.BakeMesh(scratch, true);

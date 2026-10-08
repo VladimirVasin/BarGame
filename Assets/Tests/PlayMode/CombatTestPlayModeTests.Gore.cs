@@ -29,6 +29,10 @@ namespace BarPromenade.Tests.PlayMode
                     Assert.That(root.SetOpponentFocus(false), Is.True);
                     CombatActor target = heroVictim ? root.Hero : root.Opponent;
                     CombatActor source = heroVictim ? root.Opponent : root.Hero;
+                    Assert.That(root.HeadEffects.RetainedBrainCountFor(target), Is.EqualTo(8),
+                        "The intact skull already contains its authored brain volume before an impact.");
+                    Assert.That(CaptureBrainMeshVertices(target, false).Count, Is.EqualTo(8));
+                    Assert.That(root.HeadEffects.BrainDeformationFor(target), Is.Zero);
                     Renderer[] originals = target.DamageRigRoot.GetComponentsInChildren<Renderer>(true);
                     var originalVisibility = new bool[originals.Length];
                     for (int i = 0; i < originals.Length; i++) originalVisibility[i] = originals[i].enabled;
@@ -53,16 +57,29 @@ namespace BarPromenade.Tests.PlayMode
 
                     Player3DHeadVisibility hiddenHead = heroVictim
                         ? Player3DHeadVisibility.Hide(((Player3DCharacterPresentation)root.Player.Visual).Registry) : null;
-                    try { FireGoreProjectile(source, target, centre, outward); }
+                    try
+                    {
+                        if (hiddenHead != null)
+                            Assert.That(CaptureBrainMeshVertices(target, false), Is.Empty,
+                                "The first-person head hide also owns the derived brain surfaces.");
+                        FireGoreProjectile(source, target, centre, outward);
+                    }
                     finally { hiddenHead?.Restore(); }
                     Assert.That(target.State.Health, Is.Zero);
                     Assert.That(target.IsRagdollActive && target.Ragdoll.IsConvulsing, Is.True);
                     Assert.That(target.Ragdoll.BeginTerminalConvulsions(), Is.False,
                         "The lethal contact owns one contraction episode.");
-                    Assert.That(root.HeadEffects.DetachedSectorCountFor(target), Is.GreaterThan(1));
+                    Assert.That(root.HeadEffects.DetachedSectorCountFor(target), Is.InRange(3, 5),
+                        "One headshot removes a local portion of the skull rather than most of the head.");
                     Assert.That(root.HeadEffects.RetainedSectorCountFor(target), Is.GreaterThan(0),
                         "The first fracture must leave an actual surviving silhouette for later contacts.");
                     Assert.That(root.HeadEffects.BrainFragmentCountFor(target), Is.GreaterThan(0));
+                    Assert.That(root.HeadEffects.RetainedBrainCountFor(target), Is.GreaterThanOrEqualTo(5),
+                        "A partial skull fracture keeps most brain tissue inside the surviving head.");
+                    AssertBrainPieceConservation(target);
+                    Assert.That(CaptureBrainMeshVertices(target, false).Count,
+                        Is.EqualTo(root.HeadEffects.RetainedBrainCountFor(target)));
+                    AssertExposedBrainContact(target);
                     foreach (Rigidbody fragment in root.HeadEffects.GetComponentsInChildren<Rigidbody>(true))
                         if (fragment.gameObject.activeInHierarchy && fragment.name.EndsWith("Fragment", StringComparison.Ordinal))
                             Assert.That(fragment.GetComponent<Collider>().bounds.size.magnitude, Is.LessThan(.8f),
@@ -81,8 +98,8 @@ namespace BarPromenade.Tests.PlayMode
                                 "Retained skull surfaces need anatomical scale: " + skin.name);
                         }
                     Assert.That(Vector3.Dot(root.HeadEffects.LastEjectionDirection, -outward), Is.GreaterThan(.99f));
-                    Assert.That(root.BloodEffects.ActiveDropCount, Is.GreaterThan(80),
-                        "The head impact needs an abundant initial burst.");
+                    Assert.That(root.BloodEffects.ActiveDropCount, Is.InRange(31, 80),
+                        "The local head impact has a visible, bounded blood burst.");
                     int suppressedCount = 0;
                     foreach (Renderer original in originals)
                         if (CombatHeadDestruction.IsSuppressed(original))
@@ -108,6 +125,10 @@ namespace BarPromenade.Tests.PlayMode
                     Assert.That(root.HeadEffects.DestroyedMaskFor(target), Is.Zero);
                     Assert.That(root.HeadEffects.DetachedSectorCountFor(target), Is.Zero);
                     Assert.That(root.HeadEffects.BrainFragmentCountFor(target), Is.Zero);
+                    Assert.That(root.HeadEffects.RetainedBrainCountFor(target), Is.EqualTo(8));
+                    Assert.That(root.HeadEffects.BrainDeformationFor(target), Is.Zero);
+                    Assert.That(CaptureBrainMeshVertices(target, false).Count, Is.EqualTo(8),
+                        "Round reset restores the filled intact skull, including the brain renderers.");
                     Assert.That(root.HeadEffects.DebrisAgeFor(target), Is.Zero);
                     Assert.That(target.Ragdoll.IsConvulsing, Is.False);
                     Assert.That(target.Ragdoll.ConvulsionSeconds, Is.Zero);
@@ -157,6 +178,13 @@ namespace BarPromenade.Tests.PlayMode
             float convulsionAge = target.Ragdoll.ConvulsionSeconds;
             float bleedAge = root.BloodEffects.BleedingAgeFor(target);
             float debrisAge = root.HeadEffects.DebrisAgeFor(target);
+            float brainDeformation = root.HeadEffects.BrainDeformationFor(target);
+            Dictionary<Mesh, Vector3[]> brainVertices = CaptureBrainMeshVertices(target, true);
+            Dictionary<Mesh, Vector3[]> retainedBrainVertices = CaptureBrainMeshVertices(target, false);
+            var releasedBrainVertices = new Dictionary<Mesh, Vector3[]>(brainVertices);
+            foreach (Mesh mesh in retainedBrainVertices.Keys) releasedBrainVertices.Remove(mesh);
+            Assert.That(retainedBrainVertices, Is.Not.Empty);
+            Assert.That(releasedBrainVertices, Is.Not.Empty);
             Vector3 pelvis = target.Ragdoll.PelvisBody.position;
             root.Tick(CombatTestRoot.SimulationStep * 2f);
             yield return new WaitForFixedUpdate();
@@ -164,6 +192,8 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(target.Ragdoll.ConvulsionSeconds, Is.EqualTo(convulsionAge));
             Assert.That(root.BloodEffects.BleedingAgeFor(target), Is.EqualTo(bleedAge));
             Assert.That(root.HeadEffects.DebrisAgeFor(target), Is.EqualTo(debrisAge));
+            Assert.That(root.HeadEffects.BrainDeformationFor(target), Is.EqualTo(brainDeformation));
+            AssertBrainMeshesUnchanged(brainVertices, CaptureBrainMeshVertices(target, true), "Hitstop");
             Assert.That(Vector3.Distance(target.Ragdoll.PelvisBody.position, pelvis), Is.LessThan(.0001f));
 
             root.Tick(.15f);
@@ -172,6 +202,13 @@ namespace BarPromenade.Tests.PlayMode
                 root.Tick(Time.fixedDeltaTime);
                 yield return new WaitForFixedUpdate();
             }
+            Assert.That(root.HeadEffects.BrainDeformationFor(target), Is.GreaterThan(0f),
+                "The tissue responds to the impact and moving head with a finite jelly deformation.");
+            Assert.That(BrainMeshMovement(retainedBrainVertices, CaptureBrainMeshVertices(target, false)), Is.GreaterThan(.0000001f),
+                "The remaining tissue deforms its mesh while following the world head rig.");
+            Assert.That(BrainMeshMovement(releasedBrainVertices, CaptureBrainMeshVertices(target, true)), Is.GreaterThan(.0000001f),
+                "Flying tissue also changes actual vertices, rather than only a diagnostic value or a rigid transform.");
+            AssertExposedBrainContact(target);
             CaptureGoreNearView(target, outward, "head-fracture-" + view + "-airborne", true, true);
             Assert.That(root.PauseMenu.Open(), Is.True);
             var bodies = new List<Rigidbody>(target.Ragdoll.Bodies);
@@ -184,6 +221,8 @@ namespace BarPromenade.Tests.PlayMode
             convulsionAge = target.Ragdoll.ConvulsionSeconds;
             bleedAge = root.BloodEffects.BleedingAgeFor(target);
             debrisAge = root.HeadEffects.DebrisAgeFor(target);
+            brainDeformation = root.HeadEffects.BrainDeformationFor(target);
+            brainVertices = CaptureBrainMeshVertices(target, true);
             int drops = root.BloodEffects.BleedingDropCountFor(target);
             root.Tick(.8f);
             for (int frame = 0; frame < 6; frame++) yield return null;
@@ -195,6 +234,8 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(target.Ragdoll.ConvulsionSeconds, Is.EqualTo(convulsionAge));
             Assert.That(root.BloodEffects.BleedingAgeFor(target), Is.EqualTo(bleedAge));
             Assert.That(root.HeadEffects.DebrisAgeFor(target), Is.EqualTo(debrisAge));
+            Assert.That(root.HeadEffects.BrainDeformationFor(target), Is.EqualTo(brainDeformation));
+            AssertBrainMeshesUnchanged(brainVertices, CaptureBrainMeshVertices(target, true), "Pause");
             Assert.That(root.BloodEffects.BleedingDropCountFor(target), Is.EqualTo(drops));
             Assert.That(root.PauseMenu.Cancel(), Is.True);
             yield return WaitFor(() => GameInput.CanRead(GameInputContext.Gameplay), "Pause did not release the fractured body.");
@@ -224,6 +265,7 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(root.HeadEffects.DestroyedMaskFor(target), Is.EqualTo(initialMask));
             Assert.That(root.HeadEffects.BrainFragmentCountFor(target), Is.EqualTo(brainFragments),
                 "Advancing a corpse cannot replay its fragments.");
+            AssertBrainPieceConservation(target);
             for (int step = 0; step < 110 && !target.Ragdoll.IsSettled; step++)
             {
                 root.Tick(Time.fixedDeltaTime);
@@ -240,21 +282,35 @@ namespace BarPromenade.Tests.PlayMode
             drops = root.BloodEffects.BleedingDropCountFor(target);
             root.Tick(.8f);
             Assert.That(root.BloodEffects.BleedingDropCountFor(target), Is.EqualTo(drops), "Bleeding eventually stops.");
-            Assert.That(root.HeadEffects.TryGetRetainedTarget(target, out Vector3 retained), Is.True);
-            float supplyBeforeRepeat = root.BloodEffects.RemainingBloodFractionFor(target);
-            int detachedBeforeRepeat = root.HeadEffects.DetachedSectorCountFor(target);
-            Assert.That(TryFindGoreHeadApproach(source, target, retained, out Vector3 repeatOutward), Is.True,
-                "A visible remaining head sector needs an unobstructed anatomical projectile approach.");
-            FireGoreProjectile(source, target, retained, repeatOutward);
-            Assert.That(root.HeadEffects.DetachedSectorCountFor(target), Is.GreaterThan(detachedBeforeRepeat));
-            Assert.That(root.HeadEffects.BrainFragmentCountFor(target), Is.EqualTo(brainFragments), "The same brain fragments cannot be released twice.");
-            Assert.That(target.State.Health, Is.Zero);
-            Assert.That(target.Ragdoll.IsConvulsing, Is.False, "A later corpse shot cannot restart the terminal episode.");
-            Assert.That(root.BloodEffects.RemainingBloodFractionFor(target), Is.LessThanOrEqualTo(supplyBeforeRepeat));
-            Assert.That(root.BloodEffects.BleedingAgeFor(target), Is.EqualTo(CombatBloodEffects.ProjectileBleedLifetimeSeconds).Within(.001f));
-            AssertIntactHeadColliderDisabled(target);
+            for (int repeat = 0; repeat < 8 && root.HeadEffects.RetainedSectorCountFor(target) > 0; repeat++)
+            {
+                Assert.That(root.HeadEffects.TryGetRetainedTarget(target, out Vector3 retained), Is.True);
+                float supplyBeforeRepeat = root.BloodEffects.RemainingBloodFractionFor(target);
+                int detachedBeforeRepeat = root.HeadEffects.DetachedSectorCountFor(target);
+                int brainsBeforeRepeat = root.HeadEffects.BrainFragmentCountFor(target);
+                Assert.That(TryFindGoreHeadApproach(source, target, retained, out Vector3 repeatOutward), Is.True,
+                    "A visible remaining head sector needs an unobstructed anatomical projectile approach.");
+                FireGoreProjectile(source, target, retained, repeatOutward);
+                Assert.That(root.HeadEffects.DetachedSectorCountFor(target), Is.GreaterThan(detachedBeforeRepeat));
+                Assert.That(root.HeadEffects.BrainFragmentCountFor(target), Is.GreaterThanOrEqualTo(brainsBeforeRepeat),
+                    "Later shots only release tissue that remains attached, without replaying earlier fragments.");
+                AssertBrainPieceConservation(target);
+                Assert.That(target.State.Health, Is.Zero);
+                Assert.That(target.Ragdoll.IsConvulsing, Is.False, "A later corpse shot cannot restart the terminal episode.");
+                Assert.That(root.BloodEffects.RemainingBloodFractionFor(target), Is.LessThanOrEqualTo(supplyBeforeRepeat));
+                Assert.That(root.BloodEffects.BleedingAgeFor(target), Is.EqualTo(CombatBloodEffects.ProjectileBleedLifetimeSeconds).Within(.001f));
+                AssertIntactHeadColliderDisabled(target);
+                target.CaptureContactPose();
+                if (root.HeadEffects.RetainedSectorCountFor(target) > 0)
+                    Assert.That(target.Hurtboxes.GetRegionFrame(MeleeBodyRegion.Head, out _, out _, out _), Is.True,
+                        "The surviving head stays targetable until the last local fracture.");
+            }
             target.CaptureContactPose();
             Assert.That(root.HeadEffects.RetainedSectorCountFor(target), Is.Zero);
+            Assert.That(root.HeadEffects.RetainedBrainCountFor(target), Is.Zero);
+            Assert.That(root.HeadEffects.BrainFragmentCountFor(target), Is.EqualTo(8),
+                "Complete destruction releases each authored brain piece exactly once.");
+            Assert.That(CaptureBrainMeshVertices(target, false), Is.Empty);
             Assert.That(target.Hurtboxes.GetRegionFrame(MeleeBodyRegion.Head, out _, out _, out _), Is.False,
                 "The fully destroyed head must not leave an invisible projectile target.");
             root.Tick(.2f);
@@ -262,6 +318,89 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(target.Ragdoll.IsSettled, Is.False, "The new contact wakes the existing settled corpse.");
             Assert.That(target.Ragdoll.ConvulsionPulseCount, Is.EqualTo(7));
             AssertIntactHeadColliderDisabled(target);
+        }
+
+        private void AssertBrainPieceConservation(CombatActor target) =>
+            Assert.That(root.HeadEffects.RetainedBrainCountFor(target) + root.HeadEffects.BrainFragmentCountFor(target),
+                Is.EqualTo(8), "A brain piece is either retained or released, never duplicated or silently lost.");
+
+        private Dictionary<Mesh, Vector3[]> CaptureBrainMeshVertices(CombatActor target, bool includeDetached)
+        {
+            var result = new Dictionary<Mesh, Vector3[]>();
+            Add(target.DamageRigRoot.GetComponentsInChildren<Renderer>(true));
+            if (includeDetached) Add(root.HeadEffects.GetComponentsInChildren<Renderer>(true));
+            return result;
+
+            void Add(Renderer[] surfaces)
+            {
+                foreach (Renderer surface in surfaces)
+                {
+                    if (!surface.enabled || !surface.gameObject.activeInHierarchy ||
+                        !surface.name.Contains("Brain")) continue;
+                    Mesh mesh = surface is SkinnedMeshRenderer skin ? skin.sharedMesh :
+                        surface.GetComponent<MeshFilter>()?.sharedMesh;
+                    if (mesh != null) result[mesh] = mesh.vertices;
+                }
+            }
+        }
+
+        private static float BrainMeshMovement(Dictionary<Mesh, Vector3[]> before, Dictionary<Mesh, Vector3[]> after)
+        {
+            float maximum = 0f;
+            foreach (KeyValuePair<Mesh, Vector3[]> surface in before)
+            {
+                Assert.That(after.TryGetValue(surface.Key, out Vector3[] vertices), Is.True,
+                    "Advancing or freezing tissue must preserve its mesh ownership.");
+                Assert.That(vertices.Length, Is.EqualTo(surface.Value.Length));
+                for (int i = 0; i < vertices.Length; i++)
+                    maximum = Mathf.Max(maximum, Vector3.Distance(vertices[i], surface.Value[i]));
+            }
+            return maximum;
+        }
+
+        private static void AssertBrainMeshesUnchanged(Dictionary<Mesh, Vector3[]> before,
+            Dictionary<Mesh, Vector3[]> after, string context)
+        {
+            Assert.That(after.Count, Is.EqualTo(before.Count), context + " cannot detach or hide a tissue piece.");
+            Assert.That(BrainMeshMovement(before, after), Is.Zero, context + " freezes the actual tissue vertices.");
+        }
+
+        private static void AssertExposedBrainContact(CombatActor target)
+        {
+            target.CaptureContactPose();
+            List<HeadContactSurface> surfaces = BakeHeadContactSurfaces(target, true);
+            var brains = surfaces.FindAll(surface => surface.Name.StartsWith("Fracture Brain", StringComparison.Ordinal));
+            Assert.That(brains, Is.Not.Empty);
+            foreach (HeadContactSurface brain in brains)
+            {
+                int stride = Mathf.Max(3, brain.Triangles.Length / 24 / 3 * 3);
+                for (int triangle = 0; triangle < brain.Triangles.Length; triangle += stride)
+                {
+                    Vector3 a = brain.Vertices[brain.Triangles[triangle]];
+                    Vector3 b = brain.Vertices[brain.Triangles[triangle + 1]];
+                    Vector3 c = brain.Vertices[brain.Triangles[triangle + 2]];
+                    Vector3 centre = (a + b + c) / 3f;
+                    Vector3 normal = Vector3.Cross((b - a).normalized, (c - a).normalized).normalized;
+                    if (normal.sqrMagnitude < .9f) continue;
+                    // A normal probe keeps the solver's conservative distance
+                    // tolerance from being magnified along a grazing ray.
+                    foreach (Vector3 outward in new[] { normal, -normal })
+                    {
+                        var ray = new Ray(centre + outward * .3f, -outward);
+                        if (!IndependentHeadRaycast(surfaces, ray, out Vector3 visible) ||
+                            !IndependentHeadRaycast(brains, ray, out Vector3 tissue) ||
+                            Vector3.Distance(visible, centre) > .00001f ||
+                            Vector3.Distance(tissue, centre) > .00001f) continue;
+                        Assert.That(target.Hurtboxes.SweepProjectile(tissue + outward * .015f, tissue - outward * .015f, 0f,
+                            ray.direction, out var hit), Is.True, "Exposed brain triangles remain a real projectile target.");
+                        Assert.That(hit.Location.Region, Is.EqualTo(MeleeBodyRegion.Head));
+                        Assert.That(Vector3.Distance(hit.Point, tissue), Is.LessThan(.0005f),
+                            "The contact must follow the rendered, currently deformed brain surface.");
+                        return;
+                    }
+                }
+            }
+            Assert.Fail("The partial fracture must expose an independently visible brain surface.");
         }
 
         private static void AssertIntactHeadColliderDisabled(CombatActor target)

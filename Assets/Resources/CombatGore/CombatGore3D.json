@@ -1,6 +1,6 @@
 {
   "generator": "tools/build-combat-gore-3d-model.py",
-  "version": 1,
+  "version": 2,
   "test_only": true,
   "angle_count": 8,
   "band_count": 2,
@@ -704,198 +704,241 @@
         "14": 9.37252e-05,
         "15": 0.0001336493
       },
+      "brain": {
+        "partition": "eight matching closed octants of one filled cranial hull",
+        "octant_bits_unity": "bit0=+X, bit1=+Z, bit2=+Y relative to brain center",
+        "center_unity_m": [
+          0.0,
+          1.642176,
+          -0.029
+        ],
+        "bounds_unity_m": {
+          "min": [
+            -0.062762,
+            1.590784,
+            -0.086848
+          ],
+          "max": [
+            0.062762,
+            1.692471,
+            0.031013
+          ],
+          "size": [
+            0.125524,
+            0.101687,
+            0.117861
+          ]
+        },
+        "volume_m3": 0.0007547374,
+        "piece_volumes_m3": {
+          "0": 9.87458e-05,
+          "1": 9.9028e-05,
+          "2": 9.94731e-05,
+          "3": 9.91288e-05,
+          "4": 8.22046e-05,
+          "5": 8.18833e-05,
+          "6": 9.70017e-05,
+          "7": 9.72721e-05
+        },
+        "shared_cap_triangle_pairs": 96,
+        "partition_volume_error_m3": 1.3e-11,
+        "minimum_skull_clearance_m": 0.003293,
+        "source_end_rings_closed_for_containment": 0,
+        "submillimetre_source_seams_closed_for_containment": 0,
+        "containment": "vertices, edge midpoints and triangle centers inside actual inward source skull"
+      },
       "meshes": [
         {
           "name": "Brain00__GEO_Head",
-          "vertices": 42,
-          "polygons": 50,
-          "triangles": 80,
+          "vertices": 74,
+          "polygons": 144,
+          "triangles": 144,
           "bounds_unity_m": {
             "min": [
-              -0.060511,
-              1.580272,
-              -0.078579
+              -0.062762,
+              1.590784,
+              -0.086848
             ],
             "max": [
-              0.001881,
-              1.636336,
-              -0.02054
+              0.0,
+              1.642176,
+              -0.029
             ],
             "size": [
-              0.062392,
-              0.056064,
-              0.058039
+              0.062762,
+              0.051392,
+              0.057848
             ]
           },
-          "semantic_sha256": "233030b38c22aeda17b2b98a199eb3bd81e5fc0a0bb4c9925249c4ace574c5a0"
+          "semantic_sha256": "e330e664e5f56d5bf30f2d3f834b82ecc954376336f80a949fdca335c13858df"
         },
         {
           "name": "Brain01__GEO_Head",
-          "vertices": 42,
-          "polygons": 50,
-          "triangles": 80,
+          "vertices": 74,
+          "polygons": 144,
+          "triangles": 144,
           "bounds_unity_m": {
             "min": [
-              -0.004882,
-              1.580272,
-              -0.079199
+              0.0,
+              1.590784,
+              -0.086848
             ],
             "max": [
-              0.055708,
-              1.636336,
-              -0.01992
+              0.062762,
+              1.642176,
+              -0.029
             ],
             "size": [
-              0.06059,
-              0.056064,
-              0.059279
+              0.062762,
+              0.051392,
+              0.057848
             ]
           },
-          "semantic_sha256": "3d3981c1d01bd1bd65929a30b567d2ac81bb3a821bd7dfe9fb6eeb026cd474d6"
+          "semantic_sha256": "aec96270bd925dce1b810736662475ae5820d6005a28ca4b7ecedf582f62d4d3"
         },
         {
           "name": "Brain02__GEO_Head",
-          "vertices": 42,
-          "polygons": 50,
-          "triangles": 80,
+          "vertices": 74,
+          "polygons": 144,
+          "triangles": 144,
           "bounds_unity_m": {
             "min": [
-              -0.060991,
-              1.580272,
-              -0.02589
+              -0.062762,
+              1.590784,
+              -0.029
             ],
             "max": [
-              0.001043,
-              1.636336,
-              0.033011
+              0.0,
+              1.642176,
+              0.031013
             ],
             "size": [
-              0.062034,
-              0.056064,
-              0.058901
+              0.062762,
+              0.051392,
+              0.060013
             ]
           },
-          "semantic_sha256": "36450f6bfc4995819463198e0165a7f8f9fbf5e3b901d093258bff4b67daf9a2"
+          "semantic_sha256": "c2922efa7e3f377cf0b198ceaeae7461080d3aa5b689102d8ae50de5dfcfe8ce"
         },
         {
           "name": "Brain03__GEO_Head",
-          "vertices": 42,
-          "polygons": 50,
-          "triangles": 80,
+          "vertices": 74,
+          "polygons": 144,
+          "triangles": 144,
           "bounds_unity_m": {
             "min": [
-              -0.002307,
-              1.580272,
-              -0.025182
+              0.0,
+              1.590784,
+              -0.029
             ],
             "max": [
-              0.060202,
-              1.636336,
-              0.032302
+              0.062762,
+              1.642176,
+              0.031013
             ],
             "size": [
-              0.062509,
-              0.056064,
-              0.057484
+              0.062762,
+              0.051392,
+              0.060013
             ]
           },
-          "semantic_sha256": "e78c7bc4131998e7c9f6f134cb9a7a97f05e908c43fa74462fecd54abda500f0"
+          "semantic_sha256": "8c2983b6e81d736b0b8f8839e97a0b4881061b68d62d85a4792b4b4aded9ae71"
         },
         {
           "name": "Brain04__GEO_Head",
-          "vertices": 42,
-          "polygons": 50,
-          "triangles": 80,
+          "vertices": 74,
+          "polygons": 144,
+          "triangles": 144,
           "bounds_unity_m": {
             "min": [
-              -0.055953,
-              1.624656,
-              -0.079271
+              -0.059971,
+              1.642176,
+              -0.086455
             ],
             "max": [
-              0.004962,
-              1.68072,
-              -0.019849
+              0.0,
+              1.692404,
+              -0.029
             ],
             "size": [
-              0.060915,
-              0.056064,
-              0.059422
+              0.059971,
+              0.050228,
+              0.057455
             ]
           },
-          "semantic_sha256": "7a7788e19e83e6f1362fc404590bbd26b1e0c8c29ba2f6803904e5b457a67d3b"
+          "semantic_sha256": "c3fd1657e71d39438e72ce6d3c90cded383b4c2c8aa8f216067c1f05a2c38189"
         },
         {
           "name": "Brain05__GEO_Head",
-          "vertices": 42,
-          "polygons": 50,
-          "triangles": 80,
+          "vertices": 74,
+          "polygons": 144,
+          "triangles": 144,
           "bounds_unity_m": {
             "min": [
-              -0.000648,
-              1.624656,
-              -0.079155
+              0.0,
+              1.642176,
+              -0.086455
             ],
             "max": [
-              0.061152,
-              1.68072,
-              -0.019965
+              0.059971,
+              1.692404,
+              -0.029
             ],
             "size": [
-              0.0618,
-              0.056064,
-              0.05919
+              0.059971,
+              0.050228,
+              0.057455
             ]
           },
-          "semantic_sha256": "6e1744224c5d8d0904fc68704996deae13692d138e876b7cde2b505fd09eb1a6"
+          "semantic_sha256": "ed86b1167bccbaaf9788442ac9513874a278ae75f3470b057fcf7ee1a4da9908"
         },
         {
           "name": "Brain06__GEO_Head",
-          "vertices": 42,
-          "polygons": 50,
-          "triangles": 80,
+          "vertices": 74,
+          "polygons": 144,
+          "triangles": 144,
           "bounds_unity_m": {
             "min": [
-              -0.059854,
-              1.624656,
-              -0.02487
+              -0.059971,
+              1.642176,
+              -0.029
             ],
             "max": [
-              0.002727,
-              1.68072,
-              0.03199
+              0.0,
+              1.692459,
+              0.031013
             ],
             "size": [
-              0.062581,
-              0.056064,
-              0.05686
+              0.059971,
+              0.050283,
+              0.060013
             ]
           },
-          "semantic_sha256": "1fb15959ee9e715c4359f6fceed9aae380d851cd9d04c3ec6b17477a1baa0a7b"
+          "semantic_sha256": "ec44416649f2a49cb8f6ed2a7571c84af431e68e829fd11a9dd01a8196a082f1"
         },
         {
           "name": "Brain07__GEO_Head",
-          "vertices": 42,
-          "polygons": 50,
-          "triangles": 80,
+          "vertices": 74,
+          "polygons": 144,
+          "triangles": 144,
           "bounds_unity_m": {
             "min": [
-              -0.004981,
-              1.624656,
-              -0.026168
+              0.0,
+              1.642176,
+              -0.029
             ],
             "max": [
-              0.056245,
-              1.68072,
-              0.033289
+              0.059971,
+              1.692471,
+              0.031013
             ],
             "size": [
-              0.061226,
-              0.056064,
-              0.059457
+              0.059971,
+              0.050295,
+              0.060013
             ]
           },
-          "semantic_sha256": "8bd1660f2a5c1aea2c056c7184ae35ccd0e6821b51c022b6bd6158617b914519"
+          "semantic_sha256": "d866c347f0bc7f56b35a880ddb405e70bc79f3ae02de35bffa571c3dfba475f3"
         },
         {
           "name": "Sector00__GEO_Ear.L",
@@ -3994,7 +4037,7 @@
           "semantic_sha256": "7456c06d2fa4e99c45c65128d8bd57308769b21aebcf063db4b5954a948b0491"
         }
       ],
-      "semantic_sha256": "91fee8e2f47a7b99a94bca0b1a42bb17062610eb1552e9654f8cd9ac59d14c02"
+      "semantic_sha256": "9e815d28ff18fcf0d8afe1217aeca2f16a17e87474a8697589f0e104fd2dfe45"
     },
     "Npc": {
       "source_renderers": [
@@ -4414,198 +4457,241 @@
         "14": 0.0001178603,
         "15": 0.0001573217
       },
+      "brain": {
+        "partition": "eight matching closed octants of one filled cranial hull",
+        "octant_bits_unity": "bit0=+X, bit1=+Z, bit2=+Y relative to brain center",
+        "center_unity_m": [
+          0.0,
+          1.6432,
+          -0.035519
+        ],
+        "bounds_unity_m": {
+          "min": [
+            -0.075467,
+            1.5838,
+            -0.098077
+          ],
+          "max": [
+            0.073466,
+            1.700181,
+            0.047894
+          ],
+          "size": [
+            0.148933,
+            0.116381,
+            0.145971
+          ]
+        },
+        "volume_m3": 0.0011771,
+        "piece_volumes_m3": {
+          "0": 0.0001439885,
+          "1": 0.0001433729,
+          "2": 0.0001925597,
+          "3": 0.0001914654,
+          "4": 7.06531e-05,
+          "5": 7.01478e-05,
+          "6": 0.0001822021,
+          "7": 0.0001827096
+        },
+        "shared_cap_triangle_pairs": 96,
+        "partition_volume_error_m3": 8.63e-10,
+        "minimum_skull_clearance_m": 0.002373,
+        "source_end_rings_closed_for_containment": 2,
+        "submillimetre_source_seams_closed_for_containment": 2,
+        "containment": "vertices, edge midpoints and triangle centers inside actual inward source skull"
+      },
       "meshes": [
         {
           "name": "Brain00__GEO_Head",
-          "vertices": 42,
-          "polygons": 50,
-          "triangles": 80,
+          "vertices": 74,
+          "polygons": 144,
+          "triangles": 144,
           "bounds_unity_m": {
             "min": [
-              -0.072128,
-              1.57165,
-              -0.104197
+              -0.072908,
+              1.5838,
+              -0.098077
             ],
             "max": [
-              0.002243,
-              1.63645,
-              -0.026215
+              0.0,
+              1.6432,
+              -0.035519
             ],
             "size": [
-              0.074371,
-              0.0648,
-              0.077982
+              0.072908,
+              0.0594,
+              0.062558
             ]
           },
-          "semantic_sha256": "5801c5d08b8643a9237b3e5997d18652182ca4d9176c9e1e4f8e3303b2c15795"
+          "semantic_sha256": "120b481ddc2cca28b07046d653c593387579fb7d0e615077e8dfaaebf7f64353"
         },
         {
           "name": "Brain01__GEO_Head",
-          "vertices": 42,
-          "polygons": 50,
-          "triangles": 80,
+          "vertices": 74,
+          "polygons": 144,
+          "triangles": 144,
           "bounds_unity_m": {
             "min": [
-              -0.00582,
-              1.57165,
-              -0.10503
+              0.0,
+              1.5838,
+              -0.098077
             ],
             "max": [
-              0.066402,
-              1.63645,
-              -0.025382
+              0.072904,
+              1.6432,
+              -0.035519
             ],
             "size": [
-              0.072222,
-              0.0648,
-              0.079648
+              0.072904,
+              0.0594,
+              0.062558
             ]
           },
-          "semantic_sha256": "0aadd6b5a34b7ce4c64d8b14bfe273014c4330f639ab159f2a98c9c5f3a78eaf"
+          "semantic_sha256": "bf69e09f3d7a788000a255c7ca92f693e2d972e3668cbb7dfb0d82c44e7ee7d3"
         },
         {
           "name": "Brain02__GEO_Head",
-          "vertices": 42,
-          "polygons": 50,
-          "triangles": 80,
+          "vertices": 74,
+          "polygons": 144,
+          "triangles": 144,
           "bounds_unity_m": {
             "min": [
-              -0.072701,
-              1.57165,
-              -0.033403
+              -0.075467,
+              1.5838,
+              -0.035519
             ],
             "max": [
-              0.001244,
-              1.63645,
-              0.045737
+              0.0,
+              1.6432,
+              0.047894
             ],
             "size": [
-              0.073945,
-              0.0648,
-              0.07914
+              0.075467,
+              0.0594,
+              0.083413
             ]
           },
-          "semantic_sha256": "68a85e35d0037c563d554a95d45973d7209d72e69f4d535e0646d3d206d7fd89"
+          "semantic_sha256": "af7061c81f5f5ca28dcaec7c6f56c298a083a8c27f6d06f1a4f21cb52155c995"
         },
         {
           "name": "Brain03__GEO_Head",
-          "vertices": 42,
-          "polygons": 50,
-          "triangles": 80,
+          "vertices": 74,
+          "polygons": 144,
+          "triangles": 144,
           "bounds_unity_m": {
             "min": [
-              -0.00275,
-              1.57165,
-              -0.032451
+              0.0,
+              1.5838,
+              -0.035519
             ],
             "max": [
-              0.071759,
-              1.63645,
-              0.044785
+              0.073466,
+              1.6432,
+              0.047894
             ],
             "size": [
-              0.074509,
-              0.0648,
-              0.077236
+              0.073466,
+              0.0594,
+              0.083413
             ]
           },
-          "semantic_sha256": "e30b7ffcb4c3d95cac2f78a5aea642eb12b265c3d65366a62046555f17481e4b"
+          "semantic_sha256": "dd7a162668e6c146a27185bf871cf2978166d43a3d50f8af6731c61de4984fe5"
         },
         {
           "name": "Brain04__GEO_Head",
-          "vertices": 42,
-          "polygons": 50,
-          "triangles": 80,
+          "vertices": 74,
+          "polygons": 144,
+          "triangles": 144,
           "bounds_unity_m": {
             "min": [
-              -0.066695,
-              1.62295,
-              -0.105126
+              -0.068302,
+              1.6432,
+              -0.086418
             ],
             "max": [
-              0.005914,
-              1.68775,
-              -0.025286
+              0.0,
+              1.696415,
+              -0.035519
             ],
             "size": [
-              0.072609,
-              0.0648,
-              0.07984
+              0.068302,
+              0.053215,
+              0.050899
             ]
           },
-          "semantic_sha256": "e2187f9e53e81ec4ea6819a7b3b6fde9c4164db18c7e2d41debe04a626f7f51d"
+          "semantic_sha256": "5c4c07b58373873e04625c1de1eedc11049f7fddd70de719eb702986231988a9"
         },
         {
           "name": "Brain05__GEO_Head",
-          "vertices": 42,
-          "polygons": 50,
-          "triangles": 80,
+          "vertices": 74,
+          "polygons": 144,
+          "triangles": 144,
           "bounds_unity_m": {
             "min": [
-              -0.000773,
-              1.62295,
-              -0.10497
+              0.0,
+              1.6432,
+              -0.086418
             ],
             "max": [
-              0.072893,
-              1.68775,
-              -0.025442
+              0.068298,
+              1.696415,
+              -0.035519
             ],
             "size": [
-              0.073666,
-              0.0648,
-              0.079528
+              0.068298,
+              0.053215,
+              0.050899
             ]
           },
-          "semantic_sha256": "0bae99ec3f70f5991958046fd7acf12528d1b4eeb182ca48e3de7da3227823a0"
+          "semantic_sha256": "2f22346b678e4fd3b67ae38349e023337ad8e5776e55e4c3cbae643195ec7b7a"
         },
         {
           "name": "Brain06__GEO_Head",
-          "vertices": 42,
-          "polygons": 50,
-          "triangles": 80,
+          "vertices": 74,
+          "polygons": 144,
+          "triangles": 144,
           "bounds_unity_m": {
             "min": [
-              -0.071345,
-              1.62295,
-              -0.032032
+              -0.073464,
+              1.6432,
+              -0.035519
             ],
             "max": [
-              0.00325,
-              1.68775,
-              0.044366
+              0.0,
+              1.700083,
+              0.047894
             ],
             "size": [
-              0.074595,
-              0.0648,
-              0.076398
+              0.073464,
+              0.056883,
+              0.083413
             ]
           },
-          "semantic_sha256": "c17c776b6dc89096c0d791cf55744bd8f82724552324c06afdbad8e8f7087f46"
+          "semantic_sha256": "17f85722188204a9a45b9b20fa2461beea6a19bef4351ecc4eab494430ce44ac"
         },
         {
           "name": "Brain07__GEO_Head",
-          "vertices": 42,
-          "polygons": 50,
-          "triangles": 80,
+          "vertices": 74,
+          "polygons": 144,
+          "triangles": 144,
           "bounds_unity_m": {
             "min": [
-              -0.005938,
-              1.62295,
-              -0.033777
+              0.0,
+              1.6432,
+              -0.035519
             ],
             "max": [
-              0.067042,
-              1.68775,
-              0.04611
+              0.073466,
+              1.700181,
+              0.047894
             ],
             "size": [
-              0.07298,
-              0.0648,
-              0.079887
+              0.073466,
+              0.056981,
+              0.083413
             ]
           },
-          "semantic_sha256": "54a3595aae1681e02ceac8a7490176afee5c13c05cfef04af771328676458fb5"
+          "semantic_sha256": "7e2a3e62b65e09cb6735835fd13003aba5d2f3bdd937656b0b27e1493fe60bf1"
         },
         {
           "name": "Sector00__CLO_Hat_warmEarFlap.L",
@@ -7512,12 +7598,12 @@
           "semantic_sha256": "c2b06d00234cbc848566584f80665247c336f204c94ba0646955d3b4870bf8df"
         }
       ],
-      "semantic_sha256": "ed6d935ca2ed72e71f2ed4530d26c81cc308079f665d075ff8c5e4cb1a82a169"
+      "semantic_sha256": "1d65635e538c08c6c85c0e8304e8d9c902d0ba43be748c64df52e8de66ecb246"
     }
   },
   "files": {
-    "HeadHero.fbx": "64c6bcabb7dbe1a97e27602df65810e6a29324a45ce0cfe601d075993441fa55",
-    "HeadNpc.fbx": "7c0175276b5322c3b8a1009abb65f83439450ffafbea4afb8da9ab4fa41eed67",
+    "HeadHero.fbx": "3d03cf8a8f2c8279e1c20052d14fd683468a1bd1a481464a48621143dfd9ba96",
+    "HeadNpc.fbx": "7fd685f18a13a3c4465fecdfa73c77ddb1bb902f81be72b79688417ca188a0e1",
     "FleshSurface.png": "11d604f03ee50cc95d82731ef81b95b9bba688b5b62d96418b133020736f1bd0",
     "BrainSurface.png": "2c2168ef409cde0259e4aa27c3f318ff778870b01f5b56ef376ba464849f61d7"
   }

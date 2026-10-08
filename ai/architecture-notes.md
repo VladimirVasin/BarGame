@@ -270,9 +270,9 @@
   0lock-pierce-ricochet-guard-parry-taunt-reward;win fire-reload/HP-result;
   corpse impulse-pose;pause-hitstop/reset-exit0.
 - **Accepted exception 2026-10-08, headshots:**
-  Head-skull-brain/localchord;remnant
-  collision/cam-hide/repeat-loss;finite pulse-blood/fading terminal
-  convulsions/corpse impulse;pause-hitstop0/reset-exit restore.
+  Head16:3-5;brain8:full/wet jelly/squash/loss1x;
+  bone-tissue/cam-hide;low eject/blood56;finite pulse/terminal fade/corpse impulse;
+  pause-hitstop0/reset-exit restore.
 - **Accepted exception — 2026-10-08, world bullets:**
   Firstworldhit→chips/sparks/dark hole;
   128FIFOholes/192particles/shared shader/0damage-pierce;

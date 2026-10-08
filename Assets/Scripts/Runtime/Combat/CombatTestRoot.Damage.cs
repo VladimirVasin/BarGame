@@ -12,6 +12,8 @@ namespace BarPromenade
             BloodEffects = gameObject.AddComponent<CombatBloodEffects>();
             BloodEffects.Initialize(transform);
             HeadEffects = gameObject.AddComponent<CombatHeadDestruction>();
+            HeadEffects.PrepareActor(Hero);
+            HeadEffects.PrepareActor(Opponent);
             Hero.ImpactReceived += ShowImpact;
             Opponent.ImpactReceived += ShowImpact;
             Hero.DamageReset += ResetActorDamage;

@@ -19,6 +19,7 @@ import zlib
 
 import bpy
 from mathutils import Vector
+from mathutils.bvhtree import BVHTree
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCES = {"Hero": "Assets/Player3D/V2/Models/PlayerCharacter3DV2.fbx",
@@ -27,6 +28,9 @@ ANGLE_COUNT = 8
 BAND_COUNT = 2
 SECTOR_COUNT = ANGLE_COUNT * BAND_COUNT
 BRAIN_COUNT = 8
+BRAIN_RINGS = 16
+BRAIN_SIDES = 32
+BRAIN_CLEARANCE_M = .0035
 
 
 def digest(data):
@@ -181,52 +185,209 @@ def interior(source, selected_faces, sector, centre):
     return result, round(volume * abs(source.matrix_world.determinant()), 10)
 
 
-def brain(source, centre, half_extent):
-    pieces = []
+def closed_edges(faces, label):
+    edges = {}
+    for face in faces:
+        for a, b in zip(face, face[1:] + face[:1]):
+            edges.setdefault(tuple(sorted((a, b))), []).append((a, b))
+    if any(len(pair) != 2 or pair[0] != tuple(reversed(pair[1])) for pair in edges.values()):
+        raise RuntimeError("Brain solid is not closed and consistently wound: " + label)
+
+
+def brain(source, skull_sources, centre, half_extent):
+    # Fit ONE filled star-shaped cranial volume against the actual inward skull,
+    # then partition it. Separate overlapping ellipsoids leave both voids and
+    # duplicated tissue; shared vertices/caps make the union exact instead.
+    inner_vertices, inner_faces, welded = [], [], {}
+    for skull in skull_sources:
+        mapping = {}
+        for vertex in skull.data.vertices:
+            position = centre + (skull.matrix_world @ vertex.co - centre) * .78
+            key = tuple(round(value, 8) for value in position)
+            if key not in welded:
+                welded[key] = len(inner_vertices)
+                inner_vertices.append(position)
+            mapping[vertex.index] = welded[key]
+        inner_faces.extend(tuple(mapping[index] for index in polygon.vertices)
+                           for polygon in skull.data.polygons)
+    # Production heads may end in an open neck or a tiny crown ring. Close
+    # those horizontal end rings only, leaving their measured silhouette intact.
+    edges = {}
+    for face in inner_faces:
+        for a, b in zip(face, face[1:] + face[:1]):
+            edges.setdefault(tuple(sorted((a, b))), []).append((a, b))
+    boundary = [pair[0] for pair in edges.values() if len(pair) == 1]
+    end_caps, source_seams = 0, 0
+    while boundary:
+        component = [boundary.pop()]
+        connected = set(component[0])
+        changed = True
+        while changed:
+            changed = False
+            for edge in list(boundary):
+                if connected.intersection(edge):
+                    component.append(edge)
+                    connected.update(edge)
+                    boundary.remove(edge)
+                    changed = True
+        points = [inner_vertices[index] for index in sorted(connected)]
+        low, high = min(point.z for point in points), max(point.z for point in points)
+        is_end = high - low <= 1e-5 and (high < centre.z - half_extent.z * .15 or
+                                       low > centre.z + half_extent.z * .72)
+        rows = {}
+        for point in points:
+            rows.setdefault(round(point.z, 6), []).append(point)
+        # The worker's cheek paint surface has a sub-millimetre mismatch to the
+        # rear head along two source seam strips. Close only that measured narrow
+        # slit in the containment surface; production exterior polygons stay exact.
+        is_seam = all(len(row) <= 2 and (len(row) == 1 or (row[0] - row[1]).length <= .001)
+                      for row in rows.values())
+        if not is_end and not is_seam:
+            raise RuntimeError("Skull has an unsupported source opening: " + str((low, high)))
+        cap = len(inner_vertices)
+        inner_vertices.append(sum(points, Vector()) / len(points))
+        inner_faces.extend((b, a, cap) for a, b in component)
+        end_caps += int(is_end)
+        source_seams += int(not is_end)
+    closed_edges(inner_faces, "source cranial containment surface")
+    cavity = BVHTree.FromPolygons(inner_vertices, inner_faces, all_triangles=False)
+    origin = centre + Vector((0, 0, half_extent.z * .32))
+    nearest, normal, _, _ = cavity.find_nearest(origin)
+    if nearest is None or normal.dot(origin - nearest) >= 0:
+        raise RuntimeError("Filled brain origin is not inside its source cranial surface")
+    radii = Vector((half_extent.x * .76, half_extent.y * .76, half_extent.z * .44))
+    outer = []
+
+    def point(latitude, angle):
+        direction = Vector((math.sin(latitude) * math.cos(angle),
+                            math.sin(latitude) * math.sin(angle), math.cos(latitude)))
+        # Exact partition planes, including pole/equator, avoid hairline cracks.
+        for axis in range(3):
+            if abs(direction[axis]) < 1e-10:
+                direction[axis] = 0
+        direction.normalize()
+        hit, _, _, exit_distance = cavity.ray_cast(origin, direction, .5)
+        if hit is None or exit_distance <= BRAIN_CLEARANCE_M:
+            raise RuntimeError("Brain ray is outside the cranial cavity: " +
+                               str((unity(origin), rounded(direction), exit_distance, source.name)))
+        ellipse_distance = 1 / math.sqrt(sum((direction[axis] / radii[axis]) ** 2
+                                             for axis in range(3)))
+        # Shallow winding sulci affect the shared outer hull, never individual
+        # pieces. Muted tissue colour/flat facets preserve the PS1 vocabulary.
+        ridge = .5 + .5 * math.cos(angle * 10 + math.sin(latitude * 6) * 1.8)
+        fold = 1 - .055 * ridge * math.sin(latitude) ** 2
+        radius = min(ellipse_distance, exit_distance - BRAIN_CLEARANCE_M) * fold
+        return origin + direction * radius
+
+    outer.append(point(0, 0))
+    for ring in range(1, BRAIN_RINGS):
+        for side in range(BRAIN_SIDES):
+            outer.append(point(math.pi * ring / BRAIN_RINGS, 2 * math.pi * side / BRAIN_SIDES))
+    bottom = len(outer)
+    outer.append(point(math.pi, 0))
+
+    def vertex(ring, side):
+        if ring == 0:
+            return 0
+        if ring == BRAIN_RINGS:
+            return bottom
+        return 1 + (ring - 1) * BRAIN_SIDES + side % BRAIN_SIDES
+
+    hull_faces = []
+    for ring in range(BRAIN_RINGS):
+        for side in range(BRAIN_SIDES):
+            if ring == 0:
+                hull_faces.append((0, vertex(1, side), vertex(1, side + 1)))
+            elif ring == BRAIN_RINGS - 1:
+                hull_faces.append((vertex(ring, side), bottom, vertex(ring, side + 1)))
+            else:
+                a, b = vertex(ring, side), vertex(ring, side + 1)
+                c, d = vertex(ring + 1, side + 1), vertex(ring + 1, side)
+                hull_faces.extend(((a, d, c), (a, c, b)))
+    if signed_volume(outer, hull_faces) < 0:
+        hull_faces = [tuple(reversed(face)) for face in hull_faces]
+    closed_edges(hull_faces, "whole volume")
+    hull_volume = signed_volume(outer, hull_faces)
+    if hull_volume <= 1e-8:
+        raise RuntimeError("Filled brain volume is not a positive solid")
+    if min(point.z for point in outer) < centre.z - half_extent.z * .13:
+        raise RuntimeError("Brain extends into the lower face instead of the upper cranium")
+
+    # Test the source surface itself, not a head bounding box. Edge midpoints
+    # and face centres catch triangles crossing a concave skull between rays.
+    samples = list(outer)
+    for face in hull_faces:
+        a, b, c = (outer[index] for index in face)
+        samples.extend(((a + b + c) / 3, (a + b) / 2, (b + c) / 2, (c + a) / 2))
+    clearance = math.inf
+    for sample in samples:
+        radial = sample - origin
+        _, _, _, distance = cavity.ray_cast(origin, radial.normalized(), .5)
+        if distance is None or distance < radial.length - 1e-7:
+            raise RuntimeError("Brain surface crosses the actual inward skull")
+        nearest, _, _, nearest_distance = cavity.find_nearest(sample)
+        if nearest is None:
+            raise RuntimeError("Cannot measure brain/skull clearance")
+        clearance = min(clearance, nearest_distance)
+    if clearance < .002:
+        raise RuntimeError("Brain has insufficient clearance for bounded soft deformation: " + str(clearance))
+
+    selections = [[] for _ in range(BRAIN_COUNT)]
+    for face in hull_faces:
+        middle = sum((outer[index] for index in face), Vector()) / len(face) - origin
+        octant = (1 if middle.x > 0 else 0) | (2 if middle.y > 0 else 0) | (4 if middle.z > 0 else 0)
+        selections[octant].append(face)
     inverse = source.matrix_world.inverted()
-    # Eight closed lobulated chunks fill the cranium, above the lower face.
-    origin = centre + Vector((0, .006, half_extent.z * .22))
-    for index in range(BRAIN_COUNT):
-        signs = Vector((1 if index & 1 else -1, 1 if index & 2 else -1, 1 if index & 4 else -1))
-        offset = Vector((signs.x * half_extent.x * .32,
-                         signs.y * half_extent.y * .32,
-                         signs.z * half_extent.z * .19))
-        radii = Vector((half_extent.x * .36, half_extent.y * .36, half_extent.z * .24))
-        vertices = [inverse @ (origin + offset + Vector((0, 0, radii.z)))]
-        rings, sides = 5, 10
-        for ring in range(1, rings):
-            latitude = math.pi * ring / rings
-            for side in range(sides):
-                angle = 2 * math.pi * side / sides
-                # Alternating shallow ridges read as tissue at the project's
-                # low-poly scale without an unrelated stock sphere silhouette.
-                groove = 1 + .10 * math.cos(side * math.pi + ring * .8 + index)
-                point = origin + offset + Vector((
-                    radii.x * math.sin(latitude) * math.cos(angle) * groove,
-                    radii.y * math.sin(latitude) * math.sin(angle) * groove,
-                    radii.z * math.cos(latitude)))
-                vertices.append(inverse @ point)
-        bottom = len(vertices)
-        vertices.append(inverse @ (origin + offset - Vector((0, 0, radii.z))))
-        faces = [(0, 1 + side, 1 + (side + 1) % sides) for side in range(sides)]
-        for ring in range(rings - 2):
-            for side in range(sides):
-                a = 1 + ring * sides + side
-                b = 1 + ring * sides + (side + 1) % sides
-                c = 1 + (ring + 1) * sides + (side + 1) % sides
-                d = 1 + (ring + 1) * sides + side
-                faces.append((a, d, c, b))
-        final_ring = 1 + (rings - 2) * sides
-        faces.extend((final_ring + side, bottom, final_ring + (side + 1) % sides)
-                     for side in range(sides))
-        # Ring order starts at the top; reverse only if the measured volume
-        # says it is inward. Assert, rather than guessing exporter handedness.
-        if signed_volume(vertices, faces) < 0:
-            faces = [tuple(reversed(face)) for face in faces]
-        if signed_volume(vertices, faces) <= 1e-10:
-            raise RuntimeError("Brain piece is not a positive solid")
-        pieces.append(make_mesh(f"Brain{index:02d}__GEO_Head", source, vertices, faces))
-    return pieces
+    pieces, volumes, partition_caps = [], {}, {}
+    core = len(outer)
+    whole = outer + [origin]
+    for index, exterior_faces in enumerate(selections):
+        edge_counts = {}
+        for face in exterior_faces:
+            for a, b in zip(face, face[1:] + face[:1]):
+                edge_counts.setdefault(tuple(sorted((a, b))), []).append((a, b))
+        cap_faces = [(pair[0][1], pair[0][0], core) for pair in edge_counts.values() if len(pair) == 1]
+        for face in cap_faces:
+            partition_caps.setdefault(tuple(sorted(face)), []).append(face)
+        faces = exterior_faces + cap_faces
+        closed_edges(faces, str(index))
+        volume = signed_volume(whole, faces)
+        if volume <= 1e-8:
+            raise RuntimeError("Brain partition is not a positive solid: " + str(index))
+        volumes[str(index)] = round(volume, 10)
+        used = sorted({vertex for face in faces for vertex in face})
+        mapping = {old: new for new, old in enumerate(used)}
+        vertices = [inverse @ whole[old] for old in used]
+        local_faces = [tuple(mapping[old] for old in face) for face in faces]
+        obj = make_mesh(f"Brain{index:02d}__GEO_Head", source, vertices, local_faces)
+        # Tissue unfolds across the common cranial volume, including the exposed
+        # cut faces, rather than projecting a postage-stamp UV from world origin.
+        uv = obj.data.uv_layers.active
+        for loop in obj.data.loops:
+            position = whole[used[loop.vertex_index]] - origin
+            uv.data[loop.index].uv = (.5 + position.x / (2 * radii.x),
+                                     .5 + (position.z + position.y * .45) / (2 * radii.z))
+        pieces.append(obj)
+    # Each internal triangle occurs twice with opposite winding. Combined with
+    # the closed hull/positive octant solids this proves there are no holes,
+    # interpenetrating chunks or hidden duplicated tissue in the resting brain.
+    for pair in partition_caps.values():
+        if len(pair) != 2 or set((pair[0][i], pair[0][(i + 1) % 3]) for i in range(3)) != set(
+                (pair[1][(i + 1) % 3], pair[1][i]) for i in range(3)):
+            raise RuntimeError("Brain partition boundaries do not match with opposite winding")
+    volume_error = abs(sum(volumes.values()) - hull_volume)
+    if volume_error > 1e-8:
+        raise RuntimeError("Brain chunks do not fill their one common hull")
+    return pieces, {"partition": "eight matching closed octants of one filled cranial hull",
+        "octant_bits_unity": "bit0=+X, bit1=+Z, bit2=+Y relative to brain center",
+        "center_unity_m": unity(origin), "bounds_unity_m": bounds(outer),
+        "volume_m3": round(hull_volume, 10), "piece_volumes_m3": volumes,
+        "shared_cap_triangle_pairs": len(partition_caps),
+        "partition_volume_error_m3": round(volume_error, 12),
+        "minimum_skull_clearance_m": round(clearance, 6),
+        "source_end_rings_closed_for_containment": end_caps,
+        "submillimetre_source_seams_closed_for_containment": source_seams,
+        "containment": "vertices, edge midpoints and triangle centers inside actual inward source skull"}
 
 
 def export(path):
@@ -288,7 +449,8 @@ def build(kind, out, publish=False):
     if len(sector_shell_volumes) != SECTOR_COUNT:
         raise RuntimeError("Every skull sector must contain an authored closed shell: " + kind + "; " +
                            str(next(entry for entry in renderers if entry["name"] == "GEO_Head")))
-    outputs.extend(brain(skull, centre, half_extent))
+    brain_pieces, brain_contract = brain(skull, skull_sources, centre, half_extent)
+    outputs.extend(brain_pieces)
     measurements = [measure(obj) for obj in sorted(outputs, key=lambda obj: obj.name)]
     for obj in originals:
         bpy.data.objects.remove(obj, do_unlink=True)
@@ -301,7 +463,7 @@ def build(kind, out, publish=False):
     return {"source_renderers": renderers, "head_center_unity_m": unity(centre),
             "head_bounds_unity_m": bounds(skull_world),
             "band_height_unity_m": round(band_height, 6),
-            "shell_volumes_m3": sector_shell_volumes, "meshes": measurements,
+            "shell_volumes_m3": sector_shell_volumes, "brain": brain_contract, "meshes": measurements,
             "semantic_sha256": digest(json.dumps(measurements, sort_keys=True, separators=(",", ":")).encode())}
 
 
@@ -349,7 +511,7 @@ def main():
                 raise RuntimeError("Gore texture differs from deterministic generator: " + name)
         else:
             (out / name).write_bytes(data)
-    manifest = {"generator": "tools/build-combat-gore-3d-model.py", "version": 1,
+    manifest = {"generator": "tools/build-combat-gore-3d-model.py", "version": 2,
         "test_only": True, "angle_count": ANGLE_COUNT, "band_count": BAND_COUNT,
         "sector_count": SECTOR_COUNT, "brain_count": BRAIN_COUNT,
         "sector_angle_axes": "atan2(Unity Z, Unity X), positive around model up",
@@ -362,7 +524,8 @@ def main():
     if args.validate_only:
         if manifest != previous:
             raise RuntimeError("Head source signatures, exterior coverage, UV, skin or semantic geometry changed")
-        print("COMBAT GORE SOURCE COVERAGE, UV, SKIN, CLOSED SHELLS, SCALE AND DETERMINISM OK", flush=True)
+        print("COMBAT GORE SOURCE COVERAGE, UV, SKIN, CLOSED SHELLS, FILLED MATCHING BRAIN PARTITIONS, "
+              "ACTUAL SKULL CONTAINMENT, SCALE AND DETERMINISM OK", flush=True)
     else:
         (out / "CombatGore3D.json").write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
         print("COMBAT GORE GENERATED", {kind: len(model["meshes"]) for kind, model in models.items()}, flush=True)

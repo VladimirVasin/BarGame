@@ -6,7 +6,7 @@ Earlier notes: [`release-notes-2026-09.md`](archive/release-notes-2026-09.md).
 
 ## Unreleased
 
-### 2026-10-08 — Пистолет: реакция тела и раны
+### 2026-10-08 — Пистолет: раны и желеобразный мозг
 
 - Попадания в разные части тела срывают позу; шаг возвращает опору.
   Ткань рвётся и промокает; кожа и обувь имеют свои раны.
@@ -14,20 +14,16 @@ Earlier notes: [`release-notes-2026-09.md`](archive/release-notes-2026-09.md).
 - Прицел: ход во все стороны, наведение без дрейфа по краям головы;
   Space — 1 м, без ввода назад. Камера/прицел сохраняются.
   Переход к прицелу обратим; без него пистолет справа при ходьбе.
-- Голова разрушается по попаданию; остатки ловят пули, пустоты пропускают.
-  Кровь пульсирует и затухает; после конца раунда — краткие конвульсии.
-  Труп реагирует; следы остаются до сброса. Гильзы, затвор и магазин
-  двигаются со звуком; после срыва/подбора R продолжает перезарядку.
-- Проверки: `build-combat-pistol-3d-model.py`;
-  `Range_PistolSelectionProjectileFlightReloadAndResetUseTheLiveDuel`,
-  `Range_PistolWinningAndCorpseShotsKeepTheLiveFreeAimCamera`,
-  `Range_PistolAimMovesInAllDirectionsWithoutChangingAim`,
-  `Range_PistolAimedStepUsesLiveInputAndKeepsFreeAim`.
+- За попадание отлетает малая часть черепа: разлёт слабее, крови меньше.
+  Внутри остаётся желеобразный мозг, куски мнутся при падении.
+  Остатки ловят пули, пустоты пропускают; сброс восстанавливает голову.
+  Кровь затухает; после раунда — краткие конвульсии. Труп реагирует,
+  следы остаются до сброса. Гильзы, затвор и магазин двигаются со звуком;
+  после срыва/подбора R продолжает перезарядку.
+- Проверки: `build-combat-pistol-3d-model.py`,
   `build-combat-gore-3d-model.py`, `build-combat-blood-3d-model.py`;
-  `Range_HeadFractureBleedingAndConvulsionsFollowContactPauseAndReset`:OK.
-  `Range_ProjectileHeadEdgesMatchVisibleFrozenAndRetainedSurfaces`:OK.
-  `Range_FreePistolCentreAimHitsVisibleHeadEdgesFromActualMuzzle`:passed.
-  `Range_PistolRegionalReactionsAndWoundsStayContinuousThroughPauseAndReset`:passed.
+  `Range_HeadFractureBleedingAndConvulsionsFollowContactPauseAndReset`,
+  `Range_PistolRegionalReactionsAndWoundsStayContinuousThroughPauseAndReset`;
   `check-docs.py`, `git diff --check`.
 
 ### 2026-10-07 — Оружие, удар и хват

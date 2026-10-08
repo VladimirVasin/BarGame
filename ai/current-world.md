@@ -157,9 +157,10 @@ The vertical slice contains:
   Rig:chest-abdomen/upperarm-forearm-hand/leg shift-drop/foot-owner catch;
   HP-stagger-momentum kept. Wounds:skin/fabric/glove-boot;directional
   irregular entry/wet-dry24s/repeat≤4/64persistent;surface-only/0extra severing.
-  Head16/skull/brains8/chord-exitfan;head-face-ear/remnant mesh/gaps miss/cam-hide.
-  Blood144head/800budget/pulse→24s0;rig cut/stains/pool/marks/debris.
-  Terminal:convulsions2.35s;corpse:impulse/HP-result-pose;
+  Head16:local3-5/brain8:filled/jelly kept/squash;
+  face-ear/bone-tissue mesh/gaps/cam-hide.
+  Blood56head/800budget/pulse→24s0;rig cut/stains/pool/marks/debris.
+  Convulsions2.35s;corpse:impulse/HP-result-pose;
   pause-hitstop0/reset-exit0/end clear1x.
   World:chips-sparks/holes128FIFO/particles192/0damage.
   Bar:6zones/rearhead-end/firsthit/metal recoil/Qsupport/drop-recovery/toilet;

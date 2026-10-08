@@ -125,6 +125,7 @@ namespace BarPromenade
         {
             private readonly SkinnedMeshRenderer source;
             private readonly Vector3[] vertices;
+            private readonly List<Vector3> deformed;
             private readonly BoneWeight[] weights;
             private readonly Matrix4x4[] bind, posedBones;
             private readonly Transform[] bones;
@@ -139,6 +140,7 @@ namespace BarPromenade
                 this.source = source;
                 Mesh mesh = source.sharedMesh;
                 vertices = mesh.vertices; weights = mesh.boneWeights; bind = mesh.bindposes;
+                if (source.GetComponent<CombatBrainTissue>() != null) deformed = new List<Vector3>(vertices.Length);
                 bones = source.bones; posedBones = new Matrix4x4[bones.Length]; indices = mesh.triangles;
                 Points = new Vector3[vertices.Length]; Triangles = new HeadTriangle[indices.Length / 3];
                 if (weights.Length != vertices.Length || bind.Length != bones.Length)
@@ -150,10 +152,12 @@ namespace BarPromenade
                 Active = source != null && source.gameObject.activeInHierarchy &&
                     (source.enabled || Player3DHeadVisibility.IsTemporarilyHidden(source));
                 if (!Active) return;
+                // Only tissue owns a mutable mesh. Capture exactly the vertices the renderer uses.
+                if (deformed != null) source.sharedMesh.GetVertices(deformed);
                 for (int i = 0; i < bones.Length; i++) posedBones[i] = bones[i].localToWorldMatrix * bind[i];
                 for (int i = 0; i < vertices.Length; i++)
                 {
-                    BoneWeight weight = weights[i]; Vector3 vertex = vertices[i];
+                    BoneWeight weight = weights[i]; Vector3 vertex = deformed != null ? deformed[i] : vertices[i];
                     Vector3 point = posedBones[weight.boneIndex0].MultiplyPoint3x4(vertex) * weight.weight0;
                     if (weight.weight1 > 0f) point += posedBones[weight.boneIndex1].MultiplyPoint3x4(vertex) * weight.weight1;
                     if (weight.weight2 > 0f) point += posedBones[weight.boneIndex2].MultiplyPoint3x4(vertex) * weight.weight2;

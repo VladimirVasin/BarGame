@@ -192,7 +192,7 @@ namespace BarPromenade
             Vector3 origin = projectile ? point : injury.Marks.Count > 0 ? injury.Marks.BleedPosition : point;
             Vector3 outward = injury.Marks.Count > 0 ? injury.Marks.BleedDirection : -incoming;
             int amount = Mathf.Clamp(12 + Mathf.RoundToInt(damage * .24f), 12, 26);
-            if (projectile) amount = head ? 144 : 56;
+            if (projectile) amount = 56;
             amount = SpendBlood(injury, amount);
             for (int i = 0; i < amount; i++)
             {
@@ -202,12 +202,12 @@ namespace BarPromenade
                 if (projectile)
                     velocity = outward * Range(2.2f, head ? 4.8f : 4f) + incoming * Range(.1f, .35f) +
                         scatter * Range(.65f, 1.4f) + Vector3.up * Range(.4f, 1.3f);
-                // Most of a destructive head impact follows the bullet through
-                // the head; a smaller fan returns from the entry side.
+                // A short local fan follows the bullet; a smaller part returns
+                // from the entry. The head remains mostly intact after one hit.
                 if (projectile && head)
-                    velocity = (i < amount * .7f ? incoming : outward) * Range(3.2f, 7.2f) +
-                        scatter * Range(.9f, 2.8f) + Vector3.up * Range(.3f, 1.8f);
-                SpawnDrop(origin + outward * .022f, velocity, Range(.021f, head ? .065f : projectile ? .05f : .039f));
+                    velocity = (i < amount * .7f ? incoming : outward) * Range(1.4f, 3.2f) +
+                        scatter * Range(.3f, .9f) + Vector3.up * Range(.15f, .65f);
+                SpawnDrop(origin + outward * .022f, velocity, Range(.021f, head ? .04f : projectile ? .05f : .039f));
             }
             // All wounds share the actor's remaining supply. Another impact
             // adds a source and burst, but never rewinds the actor's bleed clock.

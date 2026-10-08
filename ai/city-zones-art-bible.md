@@ -4247,18 +4247,19 @@ OS dynamic fonts в IMGUI запрещены; Unity legacy — аварийны�
 §6:PS1-полигон вне сюжета.
 `2026-10-07`:лом/пистолет→Начать/Назад;NPCлом;Оружие→выбор;сброс/Rreload.
 Gun:worn dark unbranded metal/Rpalm gait/2hand aim/cross-flash.
-Aim:strafe/diagonal;Space:1m cardinal/back;cam-upper aim kept.
-Idle↔aim:reversible cam-FOV/grip;centred cross expand-return.
+Aim:strafe;Space1m cardinal/back;cam-upper kept.
+Idle↔aim:cam-FOV/grip;cross expand-return.
 `2026-10-08`:recoil/stablecam/streak/impulse-SFX/head0HP→ragdoll.
 Rig:chest-abdomen/arm-forearm-hand/leg-catch;skin/fabric/glove-boot:
 irregular hit-entry/wet-dry/repeat/surface-only;0extra severing.
-Head-hair-face/skull/brain:chord-exit/remnant collision/cam-hide/
-repeat-loss;muted. Dark blood144head/800budget/pulse→24s0;
-rig cut/stains/flow-pool/debris;terminal convulsions fade≤2.35s;corpse HP-pose-impulse.
+Head16:local3-5/shot/low eject;brain8:filled/retained wet-muted PS1 jelly/
+ground squash/bone-tissue contact/cam-hide/repeat-loss.
+Dark blood56/800/small-narrow-slow fan/pulse→24s0;
+rig cut/stains/pool/debris;convulsions fade≤2.35s;corpse HP-pose-impulse.
 Case/slide-emptylock/mag stash-seat-rack/SFX;
 interrupt/dropE:stage-ammo/Rresume/sharedUI/0gun-taunt.
-World:chips/sparks/holes bounded;g/1surface/end1x.
-Pause-hitstop0;reset-exit:traces0/head-collision-clocks restored.
+World:chips/sparks/holes cap;g/1surface/end1x.
+Pause-hitstop0+jelly;reset-exit:traces0/filled head restored.
 HP pose/bar pools10s/thud/6zones/rear-head=end.
 Shoulders↑/chin in/breath=stamina/tremor/tight swing/awkward return;NPC calm.
 Soft knees/pelvis-grip-elbows↓/step-swing support/face block-flex.

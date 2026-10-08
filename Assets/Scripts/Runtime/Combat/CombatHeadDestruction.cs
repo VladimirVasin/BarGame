@@ -12,9 +12,12 @@ namespace BarPromenade
         private sealed class Piece
         {
             internal SkinnedMeshRenderer Skin;
+            internal SkinnedMeshRenderer Source;
             internal MeshRenderer Released;
-            internal Mesh Baked;
-            internal bool Visible, Anatomical;
+            internal Mesh Baked, SoftMesh;
+            internal CombatBrainTissue Tissue;
+            internal Bounds Bounds;
+            internal bool Visible, Anatomical, Detached;
         }
         private sealed class Sector
         {
@@ -32,6 +35,7 @@ namespace BarPromenade
             internal Vector3 Velocity, Spin;
             internal bool Frozen, Settled;
             internal float Age;
+            internal CombatBrainTissue Tissue;
         }
         private sealed class Head
         {
@@ -46,6 +50,7 @@ namespace BarPromenade
             internal readonly List<GameObject> Hosts = new List<GameObject>();
             internal int BrainCount;
             internal bool Active;
+            internal Vector3 PreviousPosition, PreviousVelocity;
         }
 
         private static readonly HashSet<Renderer> suppressed = new HashSet<Renderer>();
@@ -71,6 +76,18 @@ namespace BarPromenade
             return count;
         }
         public int BrainFragmentCountFor(CombatActor actor) => actor != null && heads.TryGetValue(actor, out Head head) ? head.BrainCount : 0;
+        public int RetainedBrainCountFor(CombatActor actor) => actor != null && heads.TryGetValue(actor, out Head head) ? head.Brains.Count - head.BrainCount : 0;
+        public float BrainDeformationFor(CombatActor actor)
+        {
+            float amount = 0f;
+            if (actor != null && heads.TryGetValue(actor, out Head head))
+            {
+                foreach (Piece piece in head.Brains) if (!piece.Detached) amount = Mathf.Max(amount, piece.Tissue.Deformation);
+                foreach (Fragment fragment in head.Fragments) if (fragment.Tissue != null) amount = Mathf.Max(amount, fragment.Tissue.Deformation);
+            }
+            return amount;
+        }
+        internal void PrepareActor(CombatActor actor) => RequireHead(actor);
         public int DestroyedMaskFor(CombatActor actor)
         {
             int mask = 0;
@@ -117,7 +134,7 @@ namespace BarPromenade
             // wider exit-side breakup. This is independent of actor/world yaw.
             available.Sort((a, b) => Score(a).CompareTo(Score(b)));
             float offset = Vector3.ProjectOnPlane(point, direction).magnitude;
-            int amount = Mathf.Min(available.Count, Mathf.RoundToInt(Mathf.Lerp(12f, 6f, Mathf.Clamp01(offset))));
+            int amount = Mathf.Min(available.Count, Mathf.RoundToInt(Mathf.Lerp(5f, 3f, Mathf.Clamp01(offset))));
             for (int i = 0; i < amount; i++)
             {
                 Sector sector = available[i];
@@ -125,20 +142,31 @@ namespace BarPromenade
                 sector.Proxy.enabled = false;
                 Vector3 origin = head.Bone.TransformPoint(sector.Bounds.center);
                 Vector3 outward = (origin - head.Bone.TransformPoint(head.Bounds.center)).normalized;
-                Release(head, sector.Pieces, origin, impact.Direction * (3.4f + i * .17f) + outward * 1.7f + Vector3.up * .8f, false, sector.Index);
+                Release(head, sector.Pieces, origin, impact.Direction * (1.4f + i * .12f) + outward * .7f + Vector3.up * .35f, false, sector.Index);
             }
-            if (head.BrainCount == 0)
-                for (int i = 0; i < head.Brains.Count; i++)
+            var retainedBrains = new List<Piece>(8);
+            foreach (Piece piece in head.Brains) if (!piece.Detached) retainedBrains.Add(piece);
+            retainedBrains.Sort((a, b) => BrainScore(a).CompareTo(BrainScore(b)));
+            int lostSectors = DetachedSectorCountFor(head.Actor);
+            int targetBrainCount = lostSectors == head.Sectors.Length ? head.Brains.Count :
+                Mathf.Clamp(Mathf.RoundToInt(head.Brains.Count * lostSectors / (float)head.Sectors.Length), 1, head.Brains.Count - 1);
+            int releaseBrains = Mathf.Min(retainedBrains.Count, targetBrainCount - head.BrainCount);
+            for (int i = 0; i < retainedBrains.Count; i++)
+            {
+                Piece piece = retainedBrains[i];
+                if (i < releaseBrains)
                 {
-                    Piece piece = head.Brains[i];
-                    Vector3 origin = head.Bone.TransformPoint(head.Bounds.center);
+                    Vector3 origin = head.Bone.TransformPoint(piece.Bounds.center);
                     Vector3 side = Vector3.Cross(impact.Direction, Vector3.up).normalized;
                     if (side.sqrMagnitude < .1f) side = head.Bone.right;
-                    float spread = (i - (head.Brains.Count - 1) * .5f) * .23f;
+                    float spread = (i - (releaseBrains - 1) * .5f) * .16f;
                     Release(head, new List<Piece> { piece }, origin,
-                        impact.Direction * (3.8f + i * .31f) + side * spread + Vector3.up * (1.2f + i * .08f), true, i);
+                        impact.Direction * (1.7f + i * .16f) + side * spread + Vector3.up * (.6f + i * .05f), true, i);
+                    piece.Detached = true;
                     head.BrainCount++;
                 }
+                else piece.Tissue.Impulse(localDirection, .65f);
+            }
             LastEjectionDirection = impact.Direction;
             var proxies = new List<BoxCollider>(16);
             var surfaces = new List<SkinnedMeshRenderer>();
@@ -149,6 +177,7 @@ namespace BarPromenade
                     foreach (Piece piece in sector.Pieces)
                         if (piece.Visible && piece.Anatomical) surfaces.Add(piece.Skin);
                 }
+            foreach (Piece piece in head.Brains) if (!piece.Detached) surfaces.Add(piece.Skin);
             head.Actor.Hurtboxes.SetHeadShapes(proxies, surfaces);
             head.Actor.Ragdoll.PhysicsController.SetCombatHeadCollisionEnabled(false);
             blood?.SetHeadBleedSource(head.Actor, proxies.Count > 0 ? head.Bone : head.Neck,
@@ -159,7 +188,12 @@ namespace BarPromenade
             {
                 Vector3 centre = Divide(sector.Bounds.center - head.Bounds.center, extent);
                 Vector3 delta = centre - point;
-                return Vector3.ProjectOnPlane(delta, direction).sqrMagnitude - Vector3.Dot(delta, direction) * .12f;
+                return Vector3.ProjectOnPlane(delta, direction).sqrMagnitude - Vector3.Dot(delta, direction) * .45f;
+            }
+            float BrainScore(Piece piece)
+            {
+                Vector3 delta = Divide(piece.Bounds.center - head.Bounds.center, extent) - point;
+                return Vector3.ProjectOnPlane(delta, direction).sqrMagnitude - Vector3.Dot(delta, direction) * .45f;
             }
         }
 
@@ -200,10 +234,19 @@ namespace BarPromenade
                 if (!interior && !isBrain) { source.GetPropertyBlock(properties); skin.SetPropertyBlock(properties); properties.Clear(); }
                 skin.shadowCastingMode = ShadowCastingMode.On; skin.receiveShadows = true;
                 bool sourceVisible = source.enabled || Player3DHeadVisibility.IsTemporarilyHidden(source);
-                var piece = new Piece { Skin = skin, Visible = interior || isBrain || sourceVisible && source.gameObject.activeInHierarchy,
+                var piece = new Piece { Skin = skin, Source = source, Visible = interior || isBrain || sourceVisible && source.gameObject.activeInHierarchy,
                     Anatomical = interior || CombatHurtboxes.IsHeadFlesh(sourceName) };
                 skin.enabled = false;
-                if (isBrain) { head.Brains.Add(piece); continue; }
+                Player3DHeadVisibility.RegisterDerived(source, skin);
+                if (isBrain)
+                {
+                    piece.Bounds = MeasureInHead(head, skin);
+                    piece.SoftMesh = Instantiate(template.sharedMesh);
+                    piece.SoftMesh.name = "Soft " + template.name;
+                    skin.sharedMesh = piece.SoftMesh;
+                    piece.Tissue = host.AddComponent<CombatBrainTissue>();
+                    head.Brains.Add(piece); continue;
+                }
                 if (!int.TryParse(names[0].Substring(6), out int index) || index < 0 || index >= head.Sectors.Length)
                     throw new InvalidOperationException("Invalid fracture sector: " + template.name);
                 Sector sector = head.Sectors[index] ?? (head.Sectors[index] = new Sector { Index = index });
@@ -223,6 +266,13 @@ namespace BarPromenade
                 sector.Pieces.Add(piece);
                 if (!interior && included.Add(source)) { head.Originals.Add(source); head.OriginalVisibility.Add(sourceVisible); }
             }
+            Bounds brainBounds = head.Brains[0].SoftMesh.bounds;
+            foreach (Piece piece in head.Brains) brainBounds.Encapsulate(piece.SoftMesh.bounds);
+            foreach (Piece piece in head.Brains)
+            {
+                piece.Tissue.Initialize(piece.SoftMesh, piece.Skin.transform, brainBounds, false);
+                Player3DHeadVisibility.SetDerivedEnabled(piece.Source, piece.Skin, true);
+            }
             foreach (Sector sector in head.Sectors)
             {
                 if (sector == null) throw new InvalidOperationException("Fracture must contain every authored sector.");
@@ -235,6 +285,7 @@ namespace BarPromenade
                 sector.Proxy.enabled = false;
             }
             heads.Add(actor, head);
+            head.PreviousPosition = head.Bone.position;
             return head;
         }
 
@@ -259,7 +310,7 @@ namespace BarPromenade
             foreach (Sector sector in head.Sectors)
             {
                 sector.Proxy.enabled = true;
-                foreach (Piece piece in sector.Pieces) piece.Skin.enabled = piece.Visible;
+                foreach (Piece piece in sector.Pieces) Player3DHeadVisibility.SetDerivedEnabled(piece.Source, piece.Skin, piece.Visible);
                 foreach (var anatomical in head.Actor.Ragdoll.PhysicsController.AnatomicalColliders)
                     Physics.IgnoreCollision(sector.Proxy, anatomical.Key, true);
                 foreach (Sector other in head.Sectors)
@@ -273,7 +324,7 @@ namespace BarPromenade
             host.transform.SetParent(transform, false);
             host.transform.SetPositionAndRotation(origin, head.Bone.rotation);
             var body = host.AddComponent<Rigidbody>();
-            body.mass = soft ? .035f : .09f; body.linearDamping = .35f; body.angularDamping = .8f;
+            body.mass = soft ? .035f : .09f; body.linearDamping = soft ? .75f : .35f; body.angularDamping = soft ? 2.2f : .8f;
             body.collisionDetectionMode = CollisionDetectionMode.ContinuousSpeculative;
             body.maxAngularVelocity = 20f;
             bool measured = false;
@@ -283,7 +334,8 @@ namespace BarPromenade
                 if (!piece.Visible) continue;
                 if (piece.Baked == null) { piece.Baked = new Mesh { name = "Fractured Head Skin" }; piece.Baked.MarkDynamic(); }
                 piece.Skin.BakeMesh(piece.Baked, true);
-                piece.Skin.enabled = false;
+                Player3DHeadVisibility.SetDerivedEnabled(piece.Source, piece.Skin, false);
+                suppressed.Add(piece.Skin);
                 if (piece.Released == null)
                 {
                     var surface = new GameObject("Detached " + piece.Skin.name);
@@ -316,23 +368,55 @@ namespace BarPromenade
             foreach (Sector sector in head.Sectors) Physics.IgnoreCollision(collider, sector.Proxy, true);
             foreach (Fragment other in head.Fragments) Physics.IgnoreCollision(collider, other.Collider, true);
             var fragment = new Fragment { Body = body, Collider = collider };
+            if (soft)
+            {
+                Piece piece = pieces[0];
+                fragment.Tissue = host.AddComponent<CombatBrainTissue>();
+                fragment.Tissue.Initialize(piece.Baked, piece.Released.transform, piece.Baked.bounds, true);
+                fragment.Tissue.Impulse(piece.Released.transform.InverseTransformDirection(velocity), 2f);
+            }
             head.Fragments.Add(fragment);
             Freeze(fragment, frozen);
         }
 
         internal void Tick(float seconds)
         {
-            if (seconds <= 0f) return;
+            if (seconds <= 0f || frozen) return;
             foreach (Head head in heads.Values)
+            {
+                Vector3 displacement = head.Bone.position - head.PreviousPosition;
+                Vector3 movement = displacement / seconds;
+                Vector3 inertia = displacement.sqrMagnitude < .25f ?
+                    Vector3.ClampMagnitude(head.Bone.InverseTransformDirection((head.PreviousVelocity - movement) / seconds) * .002f, .3f) : Vector3.zero;
+                head.PreviousPosition = head.Bone.position; head.PreviousVelocity = movement;
+                if (head.Active) foreach (Piece piece in head.Brains) if (!piece.Detached) piece.Tissue.Tick(seconds, inertia);
                 foreach (Fragment fragment in head.Fragments)
                 {
                     fragment.Age += seconds;
-                    if (fragment.Age >= 5f && !fragment.Settled && !fragment.Frozen)
+                    if (fragment.Tissue != null)
+                    {
+                        fragment.Tissue.Tick(seconds, Vector3.zero);
+                        UpdateSoftCollider(fragment);
+                    }
+                    if (fragment.Age >= 5f && !fragment.Settled && !fragment.Frozen &&
+                        (fragment.Tissue == null || fragment.Tissue.HasSupport || fragment.Body.IsSleeping()))
                     {
                         fragment.Body.linearVelocity = fragment.Body.angularVelocity = Vector3.zero;
                         fragment.Body.isKinematic = true; fragment.Settled = true;
                     }
                 }
+            }
+        }
+        private static void UpdateSoftCollider(Fragment fragment)
+        {
+            MeshFilter filter = fragment.Body.GetComponentInChildren<MeshFilter>();
+            Bounds source = filter.sharedMesh.bounds;
+            Matrix4x4 toBody = fragment.Body.transform.worldToLocalMatrix * filter.transform.localToWorldMatrix;
+            Bounds bounds = new Bounds(toBody.MultiplyPoint3x4(source.center), Vector3.zero);
+            for (int i = 0; i < 8; i++) bounds.Encapsulate(toBody.MultiplyPoint3x4(source.center +
+                Vector3.Scale(source.extents, new Vector3((i & 1) == 0 ? -1f : 1f, (i & 2) == 0 ? -1f : 1f, (i & 4) == 0 ? -1f : 1f))));
+            var collider = (BoxCollider)fragment.Collider;
+            collider.center = bounds.center; collider.size = Vector3.Max(bounds.size, Vector3.one * .008f);
         }
         internal void SetFrozen(bool value)
         {
@@ -371,7 +455,11 @@ namespace BarPromenade
             foreach (Sector sector in head.Sectors)
             {
                 sector.Detached = false; sector.Proxy.enabled = false;
-                foreach (Piece piece in sector.Pieces) piece.Skin.enabled = false;
+                foreach (Piece piece in sector.Pieces)
+                {
+                    suppressed.Remove(piece.Skin);
+                    Player3DHeadVisibility.SetDerivedEnabled(piece.Source, piece.Skin, false);
+                }
             }
             actor.Hurtboxes.SetHeadShapes(null);
             foreach (Fragment fragment in head.Fragments)
@@ -386,7 +474,13 @@ namespace BarPromenade
             head.Fragments.Clear(); head.BrainCount = 0; head.Active = false;
             foreach (Sector sector in head.Sectors) foreach (Piece piece in sector.Pieces)
                 piece.Released = null;
-            foreach (Piece piece in head.Brains) piece.Released = null;
+            foreach (Piece piece in head.Brains)
+            {
+                piece.Released = null; piece.Detached = false;
+                suppressed.Remove(piece.Skin); piece.Tissue.ResetShape();
+                Player3DHeadVisibility.SetDerivedEnabled(piece.Source, piece.Skin, true);
+            }
+            head.PreviousPosition = head.Bone.position; head.PreviousVelocity = Vector3.zero;
         }
         public void ResetRound()
         {
@@ -406,7 +500,13 @@ namespace BarPromenade
             if (brain != null) Destroy(brain);
             heads.Clear();
         }
-        private static void Dispose(Piece piece) { if (piece.Baked != null) Destroy(piece.Baked); }
+        private static void Dispose(Piece piece)
+        {
+            suppressed.Remove(piece.Skin);
+            Player3DHeadVisibility.UnregisterDerived(piece.Source, piece.Skin);
+            if (piece.Baked != null) Destroy(piece.Baked);
+            if (piece.SoftMesh != null) Destroy(piece.SoftMesh);
+        }
         private Material RequireMaterial(bool forBrain)
         {
             Material material = forBrain ? brain : flesh;
@@ -416,7 +516,7 @@ namespace BarPromenade
             if (shader == null || texture == null) throw new InvalidOperationException("Combat fracture requires its authored shared surfaces.");
             material = new Material(shader) { name = forBrain ? "Combat Brain Shared" : "Combat Flesh Shared" };
             material.SetTexture("_BaseMap", texture); material.SetColor("_BaseColor", Color.white);
-            material.SetFloat("_Smoothness", .12f); material.SetFloat("_Cull", 2f);
+            material.SetFloat("_Smoothness", forBrain ? .58f : .12f); material.SetFloat("_Cull", 2f);
             if (forBrain) brain = material; else flesh = material;
             return material;
         }

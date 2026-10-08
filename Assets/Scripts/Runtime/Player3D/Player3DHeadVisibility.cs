@@ -28,8 +28,44 @@ namespace BarPromenade
         public const string FaceBonePrefix = "face.";
 
         private readonly List<Renderer> hidden = new List<Renderer>(24);
+        private readonly List<Renderer> ownedSources = new List<Renderer>();
         private static readonly HashSet<Renderer> temporarilyHidden = new HashSet<Renderer>();
+        private static readonly Dictionary<Renderer, List<Renderer>> derived = new Dictionary<Renderer, List<Renderer>>();
+        private static readonly Dictionary<Renderer, bool> derivedVisibility = new Dictionary<Renderer, bool>();
+        private static readonly Dictionary<Renderer, Player3DHeadVisibility> hideOwners = new Dictionary<Renderer, Player3DHeadVisibility>();
         internal static bool IsTemporarilyHidden(Renderer renderer) => temporarilyHidden.Contains(renderer);
+
+        internal static void RegisterDerived(Renderer source, Renderer renderer)
+        {
+            if (!derived.TryGetValue(source, out List<Renderer> surfaces)) derived.Add(source, surfaces = new List<Renderer>());
+            surfaces.Add(renderer);
+            derivedVisibility.Add(renderer, renderer.enabled);
+        }
+
+        internal static void UnregisterDerived(Renderer source, Renderer renderer)
+        {
+            if (derived.TryGetValue(source, out List<Renderer> surfaces))
+            {
+                surfaces.Remove(renderer);
+                if (surfaces.Count == 0) derived.Remove(source);
+            }
+            temporarilyHidden.Remove(renderer); hideOwners.Remove(renderer);
+            derivedVisibility.Remove(renderer);
+        }
+
+        internal static void SetDerivedEnabled(Renderer source, Renderer renderer, bool enabled)
+        {
+            renderer.enabled = enabled;
+            derivedVisibility[renderer] = enabled;
+            if (enabled && hideOwners.TryGetValue(source, out Player3DHeadVisibility owner)) owner.HideRenderer(renderer);
+        }
+
+        private void HideRenderer(Renderer renderer)
+        {
+            if (temporarilyHidden.Contains(renderer)) { renderer.enabled = false; return; }
+            if (!renderer.enabled) return;
+            renderer.enabled = false; hidden.Add(renderer); temporarilyHidden.Add(renderer); hideOwners[renderer] = this;
+        }
 
         private Player3DHeadVisibility()
         {
@@ -123,15 +159,19 @@ namespace BarPromenade
                 Player3DMeshBinding binding = bindings[index];
                 if (binding == null ||
                     binding.Renderer == null ||
-                    !binding.Renderer.enabled ||
                     !IsHeadGeometry(binding.BoneName))
                 {
                     continue;
                 }
 
-                binding.Renderer.enabled = false;
-                visibility.hidden.Add(binding.Renderer);
-                temporarilyHidden.Add(binding.Renderer);
+                if (!hideOwners.ContainsKey(binding.Renderer))
+                {
+                    hideOwners.Add(binding.Renderer, visibility);
+                    visibility.ownedSources.Add(binding.Renderer);
+                }
+                visibility.HideRenderer(binding.Renderer);
+                if (derived.TryGetValue(binding.Renderer, out List<Renderer> surfaces))
+                    foreach (Renderer renderer in surfaces) if (renderer != null) visibility.HideRenderer(renderer);
             }
 
             return visibility;
@@ -143,13 +183,18 @@ namespace BarPromenade
             {
                 Renderer renderer = hidden[index];
                 temporarilyHidden.Remove(renderer);
-                if (renderer != null && !CombatHeadDestruction.IsSuppressed(renderer))
+                hideOwners.Remove(renderer);
+                if (renderer != null && !CombatHeadDestruction.IsSuppressed(renderer) &&
+                    (!derivedVisibility.TryGetValue(renderer, out bool enabled) || enabled))
                 {
                     renderer.enabled = true;
                 }
             }
 
             hidden.Clear();
+            foreach (Renderer source in ownedSources)
+                if (hideOwners.TryGetValue(source, out Player3DHeadVisibility owner) && owner == this) hideOwners.Remove(source);
+            ownedSources.Clear();
         }
     }
 }

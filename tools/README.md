@@ -160,8 +160,8 @@ Combat: `build-combat-{test,blood,pistol,gore}-3d-model.py`.
 Test: `--actions-only --kick-only|--recovery-only|--footwork-only`;
 `--refresh-published-contracts --reuse-unchanged-actions --resume-npc-bank file.blend`.
 Charge=Attack(.18q);blood:`--texture-only`.
-Gore: `--validate-only`;source UV/skin/shell/scale/determinism;
-16sectors/8brains: `Assets/Resources/CombatGore`.
+Gore: `--validate-only`;UV/skin/shell/scale/brain fill/determinism;
+16sectors/8brain solids: `Assets/Resources/CombatGore`.
 
 `player_jacket_cloth.py --write` derives hem/cuff metadata only; `--check` verifies it.
 Refresh `Player3DV2` through its asset setup. Lower-body changes also require
