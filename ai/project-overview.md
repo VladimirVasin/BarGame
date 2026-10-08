@@ -78,9 +78,9 @@ repair commands. Generation/publication: [../tools/README.md](../tools/README.md
 
 ## Implemented capabilities
 
-- CombatTest:menu crowbar/pistol;NPC crowbar/3AI;120Hz;MMB focus↔walk;bar/Q/Step:focus.
-  Pistol:8/∞;Rest carry/gait;free shoulder aim/fire/reload after win;UI reset;E same weapon.
-  Rise≠grip. Partial:penetration/balance.
+- CombatTest:bar/pistol;NPC bar/3AI;fresh:dummy/freecam;bar-Q-Step:focus.
+  Gun8/∞:stablecam/recoil/streak/cases/slide/handmag-rack/audio/resume/E own;
+  head0HP/holes/bleed/corpse hits;rise≠grip;gap:penetration/balance.
 - City: 20 metre types; district heights, curved old/service streets,
   courts/passages/wings, unified ground; river/shore, church and Route 01.
   First unpaused dock entry starts finite port→factory→shop supply once;

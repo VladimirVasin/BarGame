@@ -38,6 +38,22 @@ namespace BarPromenade
             return result;
         }
         public static GameObject CreateBullet(Transform parent) => Create("Bullet", parent);
+        public static GameObject CreateCasing(Transform parent) => Create("Casing", parent);
+        public static GameObject CreateMagazine(Transform parent) => Create("Magazine", parent);
+
+        /// <summary>One authored magazine, aligned by its original contact frame in metres.</summary>
+        public static void PlaceMagazineInHand(GameObject magazine, Transform grip, NpcHandPose hands)
+        {
+            Transform model = magazine.transform;
+            Transform anchor = FindAnchor(magazine, "Grip");
+            Vector3 offset = model.InverseTransformPoint(anchor.position);
+            Quaternion frame = Quaternion.Inverse(model.rotation) * anchor.rotation;
+            model.SetParent(grip, true);
+            Vector3 scale = grip.lossyScale;
+            model.localScale = new Vector3(1f / scale.x, 1f / scale.y, 1f / scale.z);
+            Quaternion rotation = Quaternion.LookRotation(hands.PalmNormal(true), hands.CylinderAxis(true)) * Quaternion.Inverse(frame);
+            model.SetPositionAndRotation(hands.CylinderCentre(true) - rotation * offset, rotation);
+        }
 
         /// <summary>The handle follows the right grip cylinder; the barrel follows the hand's length.</summary>
         public static void PlacePistol(GameObject pistol, Transform grip, NpcHandPose handPose)
@@ -57,7 +73,7 @@ namespace BarPromenade
         public static void AddDropColliders(GameObject pistol)
         {
             AddBox(pistol, new Vector3(0f, .079f, .080f), new Vector3(.044f, .068f, .236f));
-            AddBox(pistol, new Vector3(0f, .005f, .003f), new Vector3(.044f, .124f, .08f));
+            AddBox(pistol, new Vector3(0f, .003f, .003f), new Vector3(.044f, .142f, .086f));
             AddBox(pistol, new Vector3(0f, .013f, .064f), new Vector3(.04f, .067f, .065f));
         }
 
@@ -89,15 +105,38 @@ namespace BarPromenade
                 // FBX empties retain their source-axis basis even when baked
                 // meshes measure correctly. These contact/shot axes belong to
                 // the metric wrapper, not the imported empty's local rotation.
-                foreach (string anchor in new[] { "Grip", "Muzzle", "SupportGrip", "Magazine" })
-                    FindAnchor(wrapper, anchor).rotation = wrapper.transform.rotation;
+                foreach (string anchor in new[] { "Grip", "Muzzle", "SupportGrip", "MagazineSeat", "EjectionPort" })
+                    SetAnchorRotation(FindAnchor(wrapper, anchor), wrapper.transform.rotation);
                 // The supporting palm wraps the outside of the firing hand;
                 // sharing its forward normal would interleave both sets of fingers.
-                FindAnchor(wrapper, "SupportGrip").rotation = wrapper.transform.rotation *
-                    Quaternion.AngleAxis(SupportGripYawDegrees, Vector3.up);
+                SetAnchorRotation(FindAnchor(wrapper, "SupportGrip"), wrapper.transform.rotation *
+                    Quaternion.AngleAxis(SupportGripYawDegrees, Vector3.up));
+                SetAnchorRotation(FindAnchor(wrapper, "SlidePull"), wrapper.transform.rotation *
+                    Quaternion.AngleAxis(SupportGripYawDegrees, Vector3.up));
                 FindAnchor(wrapper, "MuzzleFlash").gameObject.SetActive(false);
             }
+            else if (name == "Magazine")
+            {
+                SetAnchorRotation(FindAnchor(wrapper, "Seat"), wrapper.transform.rotation);
+                SetAnchorRotation(FindAnchor(wrapper, "Grip"), wrapper.transform.rotation *
+                    Quaternion.AngleAxis(12f, Vector3.right) * Quaternion.AngleAxis(90f, Vector3.up));
+            }
+            else if (name == "Casing") SetAnchorRotation(FindAnchor(wrapper, "Centre"), wrapper.transform.rotation);
             return wrapper;
+        }
+
+        private static void SetAnchorRotation(Transform anchor, Quaternion rotation)
+        {
+            // A semantic contact can also parent authored geometry. Preserve
+            // that geometry's world TRS, including the imported FBX unit scale.
+            var children = new Transform[anchor.childCount];
+            for (int i = 0; i < children.Length; i++)
+            {
+                children[i] = anchor.GetChild(0);
+                children[i].SetParent(anchor.parent, true);
+            }
+            anchor.rotation = rotation;
+            foreach (Transform child in children) child.SetParent(anchor, true);
         }
 
         public static Transform FindAnchor(GameObject model, string name)

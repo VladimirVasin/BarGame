@@ -120,8 +120,9 @@ namespace BarPromenade
 
         private void OnDisable()
         {
-            ReleaseFreePistolAim();
             Projectiles?.Clear();
+            Casings?.Clear();
+            ReleaseFreePistolAim();
             Hero?.SuspendPistolInput();
             Hero?.CancelPendingKick("disabled");
             CloseDuelJournal("disabled");

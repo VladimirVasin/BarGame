@@ -83,6 +83,15 @@ namespace BarPromenade
             {
                 Vector3 localAxis = Vector3.Cross(Vector3.up, impact.Impulse.normalized);
                 Vector3 kick = localAxis * Mathf.Clamp(impact.Impulse.magnitude / 38f, .3f, 4.5f) + torque * .20f;
+                if (impact.Kind == CombatImpactKind.Projectile)
+                {
+                    // The abrupt local flinch is stronger than the bullet's whole-body
+                    // momentum; the short hit transition exposes it after contact.
+                    kick *= 2.6f;
+                    float accent = struckBone == 5 || struckBone == 8 ? .18f : .12f;
+                    localRotation[struckBone] = Vector3.ClampMagnitude(localRotation[struckBone] +
+                        AnatomicalRotation(struckBone, localAxis * accent), .20f);
+                }
                 localVelocity[struckBone] = Vector3.ClampMagnitude(localVelocity[struckBone] + AnatomicalRotation(struckBone, kick), 6f);
             }
             bool leg = StruckRegion == MeleeBodyRegion.LeftLeg || StruckRegion == MeleeBodyRegion.RightLeg;
@@ -91,6 +100,7 @@ namespace BarPromenade
             float rightLoad = across.sqrMagnitude > .001f ? Mathf.Clamp01(Vector3.Dot(massOffset, across) / across.sqrMagnitude) : .5f;
             float struckLoad = StruckRegion == MeleeBodyRegion.LeftLeg ? 1f - rightLoad : rightLoad;
             legWeakness = Mathf.Max(legWeakness, leg ? .4f + .6f * struckLoad : 0f);
+            if (leg && impact.Kind == CombatImpactKind.Projectile) drop = Mathf.Max(-.14f, drop - .045f);
             dropVelocity += leg ? -.5f - struckLoad * .9f : Mathf.Min(0f, impact.Impulse.y / BodyMass) * .25f;
             MeasureBalance();
         }

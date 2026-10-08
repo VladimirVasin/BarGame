@@ -36,6 +36,29 @@ namespace BarPromenade
             sweepValid = false;
         }
 
+        private void BeginProjectileDefeat(CombatImpact impact)
+        {
+            BeginDefeat(impact.Direction, impact.Point);
+            // A lying or rising target already owns the same rig in physics.
+            // BeginDefeat promotes that fall without replaying a standing clip.
+            if (IsRagdollActive) return;
+            hero?.SetOwnedPresentationFrozen(this, false);
+            Vector3 carry = motor != null ? motor.PlanarVelocity : locomotionVelocity;
+            carry += ImpactMotion?.Velocity ?? Vector3.zero;
+            Vector3 angular = ImpactMotion?.AngularVelocity ?? Vector3.zero;
+            if (!Ragdoll.BeginTerminal(carry, angular))
+                throw new InvalidOperationException("The projectile-defeated combat rig could not hand its live pose to physics.");
+            ForgetPistolAimPose();
+            supportGrip?.Forget();
+            weaponConstraint?.Forget();
+            footwork?.Forget();
+            damagePose?.ForgetBase();
+            bodyMotion?.Forget();
+            ImpactMotion?.Forget();
+            CancelPoseBlend();
+            DropWeapon();
+        }
+
         internal void AdvanceRoundEnd(float seconds)
         {
             roundEnded = true;

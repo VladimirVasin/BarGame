@@ -1,8 +1,8 @@
 {
   "generator": "tools/build-combat-pistol-3d-model.py",
-  "generator_version": "1.0.0",
+  "generator_version": "1.2.0",
   "blender_version": "5.0.1",
-  "build_signature": "79eab10acb45ad16fc0ff33ba91b217405192fbbad8f704c9a8fd79888cb74d0",
+  "build_signature": "07cf2ca9a5292836b1aa76d3fedaf7152cc79c426b8591b5bed601f7d25e2179",
   "units": "metres",
   "unity_forward": "+Z",
   "unity_up": "+Y",
@@ -11,7 +11,7 @@
   "exported_fbx_validation": "mesh and anchor world metres after FBX round trip",
   "signed_volumes": "every solid positive before and after axis swap",
   "determinism": "two independent geometry builds match",
-  "triangle_count": 1040,
+  "triangle_count": 1740,
   "materials": {
     "Steel": [
       0.24,
@@ -44,17 +44,17 @@
       "name": "Pistol",
       "bounds_min": [
         -0.026,
-        -0.05677,
-        -0.0365
+        -0.066455,
+        -0.037526
       ],
       "bounds_max": [
         0.026,
         0.1115,
         0.214
       ],
-      "triangle_count": 936,
-      "solid_count": 34,
-      "mesh_count": 4,
+      "triangle_count": 1244,
+      "solid_count": 45,
+      "mesh_count": 11,
       "anchors": [
         {
           "name": "Grip",
@@ -84,13 +84,58 @@
           "parent": null
         },
         {
+          "name": "MagazineSeat",
+          "position": [
+            0.0,
+            0.044,
+            0.009
+          ],
+          "parent": null
+        },
+        {
+          "name": "Slide",
+          "position": [
+            0.0,
+            0.084,
+            0.08
+          ],
+          "parent": null
+        },
+        {
+          "name": "Barrel",
+          "position": [
+            0.0,
+            0.088,
+            0.175
+          ],
+          "parent": null
+        },
+        {
+          "name": "EjectionPort",
+          "position": [
+            0.02,
+            0.091,
+            0.061
+          ],
+          "parent": "Slide"
+        },
+        {
+          "name": "SlidePull",
+          "position": [
+            -0.027,
+            0.092,
+            -0.008
+          ],
+          "parent": "Slide"
+        },
+        {
           "name": "Magazine",
           "position": [
             0.0,
-            -0.055,
-            -0.007
+            0.044,
+            0.009
           ],
-          "parent": null
+          "parent": "MagazineSeat"
         },
         {
           "name": "MuzzleFlash",
@@ -120,13 +165,13 @@
           {
             "center": [
               0.0,
-              0.005,
+              0.003,
               0.003
             ],
             "size": [
               0.044,
-              0.124,
-              0.08
+              0.142,
+              0.086
             ]
           },
           {
@@ -170,9 +215,138 @@
           "parent": null
         }
       ]
+    },
+    {
+      "name": "Magazine",
+      "bounds_min": [
+        -0.019,
+        -0.110455,
+        -0.046526
+      ],
+      "bounds_max": [
+        0.019,
+        0.002911,
+        0.016005
+      ],
+      "triangle_count": 280,
+      "solid_count": 10,
+      "mesh_count": 3,
+      "anchors": [
+        {
+          "name": "Seat",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "parent": null
+        },
+        {
+          "name": "Grip",
+          "position": [
+            -0.026,
+            -0.08216439846163968,
+            -0.017464582028691784
+          ],
+          "parent": null
+        }
+      ]
+    },
+    {
+      "name": "Casing",
+      "bounds_min": [
+        -0.0048,
+        -0.004565,
+        -0.0093
+      ],
+      "bounds_max": [
+        0.0048,
+        0.004565,
+        0.009
+      ],
+      "triangle_count": 112,
+      "solid_count": 2,
+      "mesh_count": 2,
+      "anchors": [
+        {
+          "name": "Centre",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "parent": null
+        }
+      ]
     }
   ],
   "test_only": true,
+  "mechanism": {
+    "slide": "Slide",
+    "barrel": "Barrel",
+    "slide_back_axis": [
+      0.0,
+      0.0,
+      -1.0
+    ],
+    "slide_travel_m": 0.038,
+    "magazine": "Magazine",
+    "magazine_seat": "MagazineSeat",
+    "magazine_grip": [
+      -0.026,
+      -0.08216439846163968,
+      -0.017464582028691784
+    ],
+    "magazine_tilt_degrees": 12.0,
+    "ejection_port": "EjectionPort",
+    "slide_contact": "SlidePull",
+    "reload_stops": [
+      {
+        "seconds": 0.0,
+        "phase": "aim"
+      },
+      {
+        "seconds": 0.25,
+        "phase": "reload_grab"
+      },
+      {
+        "seconds": 0.55,
+        "phase": "reload_extract"
+      },
+      {
+        "seconds": 0.75,
+        "phase": "reload_stash"
+      },
+      {
+        "seconds": 0.9,
+        "phase": "reload_stash"
+      },
+      {
+        "seconds": 1.15,
+        "phase": "reload_align"
+      },
+      {
+        "seconds": 1.3,
+        "phase": "reload_grab"
+      },
+      {
+        "seconds": 1.42,
+        "phase": "reload_rack"
+      },
+      {
+        "seconds": 1.5,
+        "phase": "reload_pull"
+      },
+      {
+        "seconds": 1.58,
+        "phase": "reload_release"
+      },
+      {
+        "seconds": 1.8,
+        "phase": "aim"
+      }
+    ]
+  },
   "actions": {
     "source": "ArtSource/Combat/CombatActions.blend",
     "root_motion": false,
@@ -220,31 +394,184 @@
       0.0
     ],
     "support_yaw_degrees": 90.0,
-    "animation_signature": "9e8f3961a475fef53bdc5218972046e17be5d13ab314002323e391b2183d18cc",
+    "fire_recoil": {
+      "interpolation": "smoothstep",
+      "stops": [
+        {
+          "seconds": 0.0,
+          "barrel_rise_degrees": 0.0,
+          "grip_back_m": 0.0,
+          "grip_up_m": 0.0,
+          "spine_degrees": 0.0,
+          "chest_degrees": 0.0
+        },
+        {
+          "seconds": 0.04,
+          "barrel_rise_degrees": 20.0,
+          "grip_back_m": 0.045,
+          "grip_up_m": 0.065,
+          "spine_degrees": -1.2,
+          "chest_degrees": -2.0
+        },
+        {
+          "seconds": 0.09,
+          "barrel_rise_degrees": 12.0,
+          "grip_back_m": 0.065,
+          "grip_up_m": 0.04,
+          "spine_degrees": -3.0,
+          "chest_degrees": -4.5
+        },
+        {
+          "seconds": 0.17,
+          "barrel_rise_degrees": 3.0,
+          "grip_back_m": 0.025,
+          "grip_up_m": 0.012,
+          "spine_degrees": -1.8,
+          "chest_degrees": -2.0
+        },
+        {
+          "seconds": 0.27,
+          "barrel_rise_degrees": -1.5,
+          "grip_back_m": -0.006,
+          "grip_up_m": -0.004,
+          "spine_degrees": 0.5,
+          "chest_degrees": 0.7
+        },
+        {
+          "seconds": 0.4,
+          "barrel_rise_degrees": 0.0,
+          "grip_back_m": 0.0,
+          "grip_up_m": 0.0,
+          "spine_degrees": 0.0,
+          "chest_degrees": 0.0
+        }
+      ]
+    },
+    "animation_signature": "d86dcf4a3522b1fb55a997d5515566b79185071f66db3c8fca2af01d62cb2556",
     "hand_mesh_validation": {
       "right_grip_weight": 1.0,
       "left_grip_weight": 0.75,
       "cross_hand_triangle_intersections": 0,
       "minimum_surface_gap_m": 0.002335,
       "containment": false,
-      "maximum_right_wrist_bend_degrees": 33.1071,
+      "maximum_right_wrist_bend_degrees": 31.3241,
       "right_wrist_bend_degrees": {
         "PistolRest": 29.4617,
         "PistolRaise": 31.3241,
         "PistolAim": 31.3241,
-        "PistolFire": 33.1071,
+        "PistolFire": 31.3241,
         "PistolReload": 31.3241,
         "PistolLower": 31.3241
       },
-      "maximum_left_wrist_bend_degrees": 40.5497,
+      "maximum_left_wrist_bend_degrees": 39.8138,
       "left_wrist_bend_degrees": {
-        "PistolAim": 39.8139,
-        "PistolFire": 40.5497
+        "PistolAim": 39.8138,
+        "PistolFire": 39.8138
       },
       "minimum_left_distal_barrel_dot": 0.9999999,
       "minimum_distal_barrel_dot": 0.9999999,
       "rest_upper_arm_angle_from_down_degrees": 40.866,
       "rest_elbow_drop_m": 0.2274642
+    },
+    "fire_motion_validation": [
+      {
+        "seconds": 0.0,
+        "barrel_rise_degrees": -0.0,
+        "grip_back_m": 0.0,
+        "grip_up_m": 0.0,
+        "spine_rotation_degrees": 0.0,
+        "chest_rotation_degrees": 0.0
+      },
+      {
+        "seconds": 0.04,
+        "barrel_rise_degrees": 20.0,
+        "grip_back_m": 0.0449999,
+        "grip_up_m": 0.0650001,
+        "spine_rotation_degrees": 1.2001,
+        "chest_rotation_degrees": 1.9999
+      },
+      {
+        "seconds": 0.09,
+        "barrel_rise_degrees": 12.0,
+        "grip_back_m": 0.065,
+        "grip_up_m": 0.0400003,
+        "spine_rotation_degrees": 3.0,
+        "chest_rotation_degrees": 4.4999
+      },
+      {
+        "seconds": 0.17,
+        "barrel_rise_degrees": 3.0,
+        "grip_back_m": 0.0249999,
+        "grip_up_m": 0.0119998,
+        "spine_rotation_degrees": 1.7997,
+        "chest_rotation_degrees": 1.9999
+      },
+      {
+        "seconds": 0.27,
+        "barrel_rise_degrees": -1.5,
+        "grip_back_m": -0.0060002,
+        "grip_up_m": -0.0039998,
+        "spine_rotation_degrees": 0.4989,
+        "chest_rotation_degrees": 0.6989
+      },
+      {
+        "seconds": 0.4,
+        "barrel_rise_degrees": -0.0,
+        "grip_back_m": -1e-07,
+        "grip_up_m": 1e-07,
+        "spine_rotation_degrees": 0.0,
+        "chest_rotation_degrees": 0.0
+      }
+    ],
+    "reload_contact_validation": {
+      "maximum_left_wrist_bend_degrees": 39.8139,
+      "contacts": [
+        {
+          "seconds": 0.25,
+          "phase": "reload_grab",
+          "grip_error_m": 5e-07
+        },
+        {
+          "seconds": 0.55,
+          "phase": "reload_extract",
+          "grip_error_m": 4e-07
+        },
+        {
+          "seconds": 0.75,
+          "phase": "reload_stash",
+          "grip_error_m": 2e-07
+        },
+        {
+          "seconds": 0.9,
+          "phase": "reload_stash",
+          "grip_error_m": 2e-07
+        },
+        {
+          "seconds": 1.15,
+          "phase": "reload_align",
+          "grip_error_m": 7e-07
+        },
+        {
+          "seconds": 1.3,
+          "phase": "reload_grab",
+          "grip_error_m": 4e-07
+        },
+        {
+          "seconds": 1.42,
+          "phase": "reload_rack",
+          "grip_error_m": 7e-07
+        },
+        {
+          "seconds": 1.5,
+          "phase": "reload_pull",
+          "grip_error_m": 5e-07
+        },
+        {
+          "seconds": 1.58,
+          "phase": "reload_release",
+          "grip_error_m": 5e-07
+        }
+      ]
     }
   }
 }

@@ -644,6 +644,8 @@ namespace BarPromenade
             }
 
             float deltaTime = Time.unscaledDeltaTime;
+            if (!GameTimeScaleRuntime.IsPaused && !PauseMenuController.IsAnyPaused)
+                AdvanceFreeAimHitKick(Time.deltaTime);
             if (fixedPoseActive)
             {
                 UpdateFixedPose(deltaTime);

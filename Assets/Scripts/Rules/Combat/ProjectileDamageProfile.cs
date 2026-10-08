@@ -2,7 +2,7 @@ using System;
 
 namespace BarPromenade
 {
-    /// <summary>Pistol wounds have anatomical multipliers, without a rear-head finishing rule.</summary>
+    /// <summary>Scales ordinary pistol wounds. MeleeCombatant makes every positive head contact terminal.</summary>
     public sealed class ProjectileDamageProfile
     {
         public static ProjectileDamageProfile Pistol { get; } = new ProjectileDamageProfile();

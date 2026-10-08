@@ -739,14 +739,16 @@ namespace BarPromenade
         /// the clip back, and the ragdoll flag goes up without the
         /// restore <see cref="SetRagdollPoseActive"/> would do.
         /// </summary>
-        internal void BeginRagdollPoseFromLatePose()
+        internal void BeginRagdollPoseFromLatePose(bool preservePresentedPose = false)
         {
             if (ragdollPoseActive)
             {
                 return;
             }
 
-            ReapplyLatePresentationPose();
+            // A firearm contact has already frozen the posed anatomy. Its newly
+            // terminal rules must not resample away the hands/aim before physics.
+            if (!preservePresentedPose) ReapplyLatePresentationPose();
             recoveryTargetCaptured = false;
             recoveryTransitionDuration = 0f;
             recoveryPhysics = null;

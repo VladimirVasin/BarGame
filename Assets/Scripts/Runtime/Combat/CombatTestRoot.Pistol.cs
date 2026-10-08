@@ -48,9 +48,9 @@ namespace BarPromenade
         {
             Hero.SetBlock(false);
             bool trigger = GameInput.WasPressed(GameInputAction.MeleeAttack, GameInputContext.Gameplay);
-            if (RoundFinished && (Hero.State.IsDefeated || roundEndFreeze > 0d))
+            if (RoundFinished && Hero.State.IsDefeated)
             {
-                if (trigger) Hero.RejectPistolInput(Hero.State.IsDefeated ? "defeated" : "round_freeze");
+                if (trigger) Hero.RejectPistolInput("defeated");
                 ReleaseFreePistolAim();
                 Hero.SuspendPistolInput();
                 requireAttackRelease |= held;
@@ -65,6 +65,16 @@ namespace BarPromenade
             {
                 ReleaseFreePistolAim();
                 Hero.SetPistolAim(aim && IsOpponentFocused);
+            }
+            if (RoundFinished && roundEndFreeze > 0d)
+            {
+                // Contact freezes the bodies and trigger, not the winner's
+                // held aim lease. Releasing it here switched the live camera
+                // to chase for one frame on every later corpse impact.
+                if (trigger) Hero.RejectPistolInput("round_freeze");
+                Hero.CancelPendingPistolShot("round_freeze");
+                requireAttackRelease |= held;
+                return true;
             }
             if (GameInput.WasPressed(GameInputAction.CombatReload, GameInputContext.Gameplay)) Hero.TryReloadPistol();
             bool step = IsOpponentFocused && GameInput.WasPressed(GameInputAction.CombatStep, GameInputContext.Gameplay);

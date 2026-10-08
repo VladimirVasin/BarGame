@@ -45,12 +45,13 @@ namespace BarPromenade
         public CombatActor Opponent { get; private set; }
         public CombatWeaponId HeroWeapon { get; private set; }
         public CombatProjectilePool Projectiles { get; private set; }
+        public CombatCasingPool Casings { get; private set; }
         public PlayerCameraFollow CameraFollow { get; private set; }
         public PauseMenuController PauseMenu { get; private set; }
         public InteractionPromptView Prompt { get; private set; }
         /// <summary>The finished round's `E` interaction over the settled body.</summary>
         public CombatTauntInteraction Taunt { get; private set; }
-        public bool Sparring { get; private set; } = true;
+        public bool Sparring { get; private set; }
         public bool RoundFinished => Hero.State.IsDefeated || Opponent.State.IsDefeated;
         public bool AutomaticSimulation { get; set; } = true;
         /// <summary>Simulation seconds the duel spent frozen on contacts; tests subtract it from wall budgets.</summary>
@@ -77,7 +78,11 @@ namespace BarPromenade
             Hero = Player.GameObject.AddComponent<CombatActor>();
             HeroWeapon = CombatTestStartService.ConsumeWeapon();
             Hero.InitializeHero(Player, HeroWeapon);
-            if (HeroWeapon == CombatWeaponId.Pistol) Projectiles = new CombatProjectilePool(transform);
+            if (HeroWeapon == CombatWeaponId.Pistol)
+            {
+                Projectiles = new CombatProjectilePool(transform);
+                Casings = new CombatCasingPool(transform);
+            }
             CameraFollow = camera.GetComponent<PlayerCameraFollow>() ?? camera.gameObject.AddComponent<PlayerCameraFollow>();
             CameraFollow.Initialize(camera, Player.GameObject.transform, false);
             opponentObject = new GameObject("Combat Opponent"); opponentObject.transform.SetParent(transform, false);
@@ -98,12 +103,11 @@ namespace BarPromenade
             Taunt.Initialize(this, arenaBounds);
             opponentChest = Opponent.Ragdoll.PhysicsController.ChestBody.transform;
             heroChest = Hero.Ragdoll.PhysicsController.ChestBody.transform;
-            LockOnOpponent();
             PauseMenu = ui.AddComponent<PauseMenuController>();
             PauseMenu.Initialize(Player, CameraFollow, null);
             IsInitialized = true;
             InitializeDuelJournal();
-            PlaceRound();
+            PlaceRound(focusOpponent: false);
         }
 
         public void SetSparring(bool enabled)
@@ -116,16 +120,17 @@ namespace BarPromenade
         public void ResetRound()
         {
             if (!IsInitialized || !GameInput.CanRead(GameInputContext.Gameplay)) return;
-            PlaceRound();
+            PlaceRound(focusOpponent: true);
         }
 
-        private void PlaceRound()
+        private void PlaceRound(bool focusOpponent)
         {
             ReleaseFreePistolAim();
             Hero.CancelPendingPistolShot("reset");
             EndJournalRound("reset");
             ResetChargeInput();
             Projectiles?.ResetRound();
+            Casings?.ResetRound();
             BloodEffects?.ResetRound();
             SparkEffects?.ResetRound();
             Taunt?.ResetRound();
@@ -139,7 +144,12 @@ namespace BarPromenade
             roundCameraReleased = false;
             finishedRoundInitialized = false;
             ResetOpponentDecisions();
-            LockOnOpponent();
+            if (focusOpponent) LockOnOpponent();
+            else
+            {
+                ClearFocusTracking();
+                Hero.SetCombatFocused(false);
+            }
             CameraFollow.Snap();
             SetDuelFrozen(false);
             BeginJournalRound();
@@ -169,6 +179,15 @@ namespace BarPromenade
 
         private void RequestHitStop(int substeps)
         {
+            if (RoundFinished)
+            {
+                // Later shots can strike the same terminal body. Their contact
+                // pause belongs to the finished-round clock as well.
+                roundEndFreeze = Math.Max(roundEndFreeze, Math.Max(hitStopSubsteps, substeps) * (double)SimulationStep);
+                hitStopSubsteps = 0;
+                SetDuelFrozen(roundEndFreeze > 0d);
+                return;
+            }
             hitStopSubsteps = Math.Max(hitStopSubsteps, substeps);
             SetDuelFrozen(hitStopSubsteps > 0);
         }
@@ -268,7 +287,8 @@ namespace BarPromenade
                 // weapon is sampled. Sampling the first swing cannot move its hurtboxes.
                 Hero.CaptureContactPose(); Opponent.CaptureContactPose();
                 Projectiles?.Advance(SimulationStep, Hero, Opponent);
-                Hero.CommitPistolShot(Projectiles);
+                Casings?.Tick(SimulationStep);
+                if (Hero.CommitPistolShot(Projectiles)) Casings.BeginShot(Hero);
                 long contactStamp = JournalStamp();
                 sampledContacts = Hero.CollectContacts(pendingContacts) | Opponent.CollectContacts(pendingContacts);
                 Hero.CollectShoveContacts(pendingShoves); Opponent.CollectShoveContacts(pendingShoves);
@@ -316,13 +336,23 @@ namespace BarPromenade
         {
             if (finishedRoundInitialized) return;
             finishedRoundInitialized = true;
-            Projectiles?.Clear();
+            Projectiles?.ClearFlights();
             if (!Hero.IsPistol || Hero.State.IsDefeated) return;
-            // A defeated target relinquishes focus once; the winner keeps his
-            // ammunition, wounds and ordinary walk, and can aim freely again.
-            ClearFocusTracking();
-            Hero.SetCombatFocused(false);
-            Hero.SuspendPistolInput();
+            // Relinquish the defeated target without revoking a held aim.
+            // Focus-to-free aim must inherit the exact accepted camera pose;
+            // snapping through chase here made the winning shot jump sideways.
+            bool keepAim = Hero.Pistol.AimRequested && pistolApplicationFocused && !requirePistolAimRelease &&
+                GameInput.CanRead(GameInputContext.Gameplay) &&
+                GameInput.IsHeld(GameInputAction.MeleeBlock, GameInputContext.Gameplay);
+            ClearFocusTracking(keepAim);
+            Hero.SetCombatFocused(false, keepAim);
+            if (keepAim && CameraFollow.SetFreeAim(this, heroChest, preserveCurrentPose: true))
+                Hero.SetPistolAim(true, PrepareFreePistolAim());
+            else
+            {
+                ReleaseFreePistolAim();
+                Hero.SuspendPistolInput();
+            }
             ResetChargeInput();
             roundCameraReleased = true;
         }
@@ -342,11 +372,21 @@ namespace BarPromenade
                 pendingSeconds += seconds;
                 while (pendingSeconds + .0000001d >= SimulationStep)
                 {
+                    if (roundEndFreeze > 0d)
+                    {
+                        double held = Math.Min(pendingSeconds, roundEndFreeze);
+                        pendingSeconds -= held;
+                        roundEndFreeze -= held;
+                        HitStopSecondsConsumed += (float)held;
+                        if (roundEndFreeze > .0000001d || pendingSeconds + .0000001d < SimulationStep) break;
+                        SetDuelFrozen(false);
+                    }
                     pendingSeconds = Math.Max(0d, pendingSeconds - SimulationStep);
                     Hero.AdvanceRoundEnd(SimulationStep); Opponent.AdvanceRoundEnd(SimulationStep);
                     Hero.CaptureContactPose(); Opponent.CaptureContactPose();
                     Projectiles.Advance(SimulationStep, Hero, Opponent);
-                    Hero.CommitPistolShot(Projectiles);
+                    Casings.Tick(SimulationStep);
+                    if (Hero.CommitPistolShot(Projectiles)) Casings.BeginShot(Hero);
                     Projectiles.ApplyContacts();
                     BloodEffects.Tick(SimulationStep);
                     SparkEffects.Tick(SimulationStep);
@@ -356,6 +396,7 @@ namespace BarPromenade
             {
                 pendingSeconds = 0d;
                 Hero.AdvanceRoundEnd(seconds); Opponent.AdvanceRoundEnd(seconds);
+                Casings?.Tick(seconds);
                 BloodEffects.Tick(seconds);
                 SparkEffects.Tick(seconds);
             }

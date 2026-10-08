@@ -1140,7 +1140,8 @@ namespace BarPromenade
             return guardBreak ? MeleeHitResult.GuardBroken : MeleeHitResult.Hit;
         }
 
-        /// <summary>One projectile wound bypasses melee guard/parry and the crowbar damage table.
+        /// <summary>One projectile wound bypasses melee guard/parry and the crowbar damage table;
+        /// every positive head wound defeats immediately.
         /// Runtime owns the projectile's first contact and supplies its separate physical impulse.</summary>
         public MeleeHitResult ReceiveProjectileHit(float damage, MeleeHitLocation location = default,
             float staggerSeconds = .14f)
@@ -1154,7 +1155,9 @@ namespace BarPromenade
             double previousStun = stunRemaining;
             double committedReturn = IsKicking ? Math.Max(0d, KickDuration - kickElapsed) :
                 Phase == MeleePhase.Recovery ? Math.Max(0d, AttackDuration - attackElapsed) : 0d;
-            Health = Math.Max(0f, Health - resolvedDamage);
+            // A positive pistol wound to the head is terminal at contact, regardless
+            // of the target's health pool or its standing/fallen presentation.
+            Health = location.Region == MeleeBodyRegion.Head ? 0f : Math.Max(0f, Health - resolvedDamage);
             CancelAction();
             if (Health == 0f)
             {

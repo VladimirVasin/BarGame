@@ -146,22 +146,20 @@ The vertical slice contains:
   City/Bar/lodge markers belong to one load, consumed once; later arrivals stay.
   Day one raises mother's-house quest/map marker; door/map entry or starting
   inside closes it. No village signpost;
-- CombatTest:bar/pistol→Start;NPC bar;Weapons→picker.
-  MMB:focus↔freecam;NPC hits;bar/Q/Step:focus.
-  Entry/reset:on;UIreset:kit/style;R/Xreload.
-  Pistol:8/∞;.25up/.4fire/1.8reload;RMBhold/LMBfresh;PistolRest/gait.
-  Off:mouse/Rstick→cam-centre,no lock;win:aim/fire/reload,result HP kept.
-  Bullet:250m/s-g9.81-40m/1s;120Hz sweep1/no pierce-ricochet.
-  25HP:torso1/head2/arms.5/legs.75;no guard-parry-rearfinish;low impulse.
-  Pause freezes;end:shots clear1x;reset/unload:all clear.
-  Knockdown drops;E same gun/ammo/shared UI/no grant.
-  Crowbar:6zones/rear-head end;aim¼→fixed;first bar-world-body/metal sparks/recoil/L release.
-  Q/B:free leg/15stam/5HP/high-guard bypass/dry-no finish.
-  AI:3styles/counter/rising;timing: `ai/architecture-notes.md`.
-  Windup1m/brake/side-back/impulse/≤.85m shove;finite catch landings.
-  Rise≠grip:escape/drop;bar-palm impulse;Q-guard support/fall veto.
-  2hand guard/wounds/pools;crowbar-only E toilet.
-  Gap:penetration/balance;
+- CombatTest:bar/pistol→Start;NPC bar/3AI;fresh:dummy/freecam.
+  MMB↔focus;Tab↔AI;reset:mode kept/focus;bar-Q-Step:focus.
+  Gun8/∞:RMBaim/LMBfresh/R-Xreload1.8;idle-gait/Rpalm/recoil/streak/free centre aim.
+  Root-stable camera;hero-hit kick kept;accepted shot→port case/gravity-bounce/audio;
+  slide return/emptylock. Handmag exchange/rack/audio;ammo last.
+  Handoff interruption→hold/Rresume;drop/E keepsstage-ammo.
+  Pause-hitstop freeze;reset-exit clear;win aim-fire-reload/HP-result kept.
+  Bullet:g/sweep1/no pierce-ricochet-guard-parry;head0HP/live ragdoll.
+  Hit/audio;rig-ragdoll holes/bleed→reset-exit/bounded pools.
+  Corpse hits:impulse/new wounds-blood/HP-result-pose kept;end shots clear1x.
+  Bar:6zones/rear-head end/aim¼lock/first contact/metal sparks-recoil/L release.
+  Q:free leg/dry/high guard bypass;Windup1m/finite shove-catch/support;
+  rise≠grip/drop;E own-ammo/sharedUI/0grant/toilet:bar.
+  Gap:penetration/balance;`ai/architecture-notes.md`;
 - the retained Home opening is reachable only by a legacy request: held bed loop,
   silent `05:59` clock with rare whole-display flicker, five-second input lock,
   then localized Wake Up/Quit. Wake sets `06:00`, runs the clock/alarm and hides

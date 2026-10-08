@@ -20,13 +20,30 @@ namespace BarPromenade
         public int ShotSequence { get; private set; }
         public bool AimRequested { get; private set; }
         public bool IsReloading => reloading;
-        public bool IsRaising => AimRequested && !reloading && !IsAiming;
-        public bool IsAiming => AimRequested && !reloading && aimElapsed + .000001d >= Settings.RaiseSeconds;
-        public bool CanFire => IsAiming && Rounds > 0 && cooldownRemaining <= .000001d;
+        public bool ReloadPending => reloading || reloadElapsed > 0d;
+        public bool MagazineAttached => !ReloadPending || reloadElapsed + .000001d < Settings.MagazineHandoffSeconds ||
+            reloadElapsed + .000001d >= Settings.MagazineInsertSeconds;
+        public bool IsRaising => AimRequested && !ReloadPending && !IsAiming;
+        public bool IsAiming => AimRequested && !ReloadPending && aimElapsed + .000001d >= Settings.RaiseSeconds;
+        public bool CanFire => IsAiming && !ReloadPending && MagazineAttached && Rounds > 0 && cooldownRemaining <= .000001d;
         public float AimProgress => (float)Math.Min(1d, aimElapsed / Settings.RaiseSeconds);
-        public float ReloadProgress => reloading ? (float)Math.Min(1d, reloadElapsed / Settings.ReloadSeconds) : 0f;
+        public float ReloadProgress => (float)Math.Min(1d, reloadElapsed / Settings.ReloadSeconds);
+        public float ReloadElapsed => (float)reloadElapsed;
         public float CooldownRemaining => (float)Math.Max(0d, cooldownRemaining);
         public float ShotElapsed => Settings.FireCooldownSeconds - CooldownRemaining;
+        public float SlideBack
+        {
+            get
+            {
+                float reload = ReloadProgress * 1.8f;
+                if (ReloadPending && reload >= 1.42f)
+                    return reload < 1.5f ? Lerp(Rounds == 0 ? 1f : 0f, 1f, (reload - 1.42f) / .08f) :
+                        Lerp(1f, 0f, (reload - 1.5f) / .08f);
+                if (cooldownRemaining > 0d && ShotElapsed < .035f) return Lerp(0f, 1f, ShotElapsed / .035f);
+                if (Rounds == 0) return 1f;
+                return cooldownRemaining > 0d ? Lerp(1f, 0f, (ShotElapsed - .035f) / .06f) : 0f;
+            }
+        }
 
         public void SetAim(bool requested)
         {
@@ -48,9 +65,9 @@ namespace BarPromenade
         /// <summary>The infinite reserve is committed only at the reload's completed boundary.</summary>
         public bool TryReload()
         {
-            if (reloading || Rounds == Settings.MagazineCapacity) return false;
+            if (reloading || !ReloadPending && Rounds == Settings.MagazineCapacity) return false;
             reloading = true;
-            reloadElapsed = aimElapsed = 0d;
+            aimElapsed = 0d;
             return true;
         }
 
@@ -58,7 +75,10 @@ namespace BarPromenade
         {
             if (!reloading) return;
             reloading = false;
-            reloadElapsed = aimElapsed = 0d;
+            // Once the magazine has reached the hand, it remains in that real
+            // stage. Resuming finishes the exchange rather than snapping it back.
+            if (reloadElapsed + .000001d < Settings.MagazineHandoffSeconds) reloadElapsed = 0d;
+            aimElapsed = 0d;
         }
 
         /// <summary>Focus, injury or ownership loss cancels intent without refunding a fired round or cooldown.</summary>
@@ -88,7 +108,7 @@ namespace BarPromenade
                 reloading = false;
                 reloadElapsed = aimElapsed = 0d;
             }
-            if (AimRequested) aimElapsed = Math.Min(Settings.RaiseSeconds, aimElapsed + remaining);
+            if (AimRequested && !ReloadPending) aimElapsed = Math.Min(Settings.RaiseSeconds, aimElapsed + remaining);
         }
 
         public void Reset()
@@ -97,6 +117,12 @@ namespace BarPromenade
             ShotSequence = unchecked(ShotSequence + 1);
             AimRequested = reloading = false;
             aimElapsed = reloadElapsed = cooldownRemaining = 0d;
+        }
+
+        private static float Lerp(float from, float to, float amount)
+        {
+            amount = Math.Max(0f, Math.Min(1f, amount));
+            return from + (to - from) * amount;
         }
     }
 }

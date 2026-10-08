@@ -257,25 +257,23 @@
   Shared plan/sampler/bounds/metres/collider, `48 m` buckets;
   §6/§12/art §10g/§16/§21/nine checks.
 
-- **Accepted exception 2026-10-07, pistol:**
-  CombatTest:bar/pistol→Start/Back;NPC bar.
-  R/Xreload/UIreset kit-style;PistolRest/gait.
-  Free shoulder-cam aim/fresh fire;no lock;bar/Q/Step:focus.
-  g/sweep1/no pierce-ricochet-guard-parry-rearfinish.
-  E:own+ammo/sharedUI/0grant;pause frozen.
-  Win:aim/fire/reload,result kept;shots clear1x;reset/exit clear.
-  No taunt/story/reward/speech;§6/§16.15/art§15a/§21/9.
-- **Accepted 2026-10-07, rise:**
-  Nondeeper floor;.75s stall→arm/.5s→drop;rise≠grip;HP-focus-AI kept.
-  Pause-hitstop0;no bar:walk-Q-Step/hits-falls,charge-palm-guard off.
-  E:shared/no grant/cancel=floor;NPC approach-Q.
-  Rise ignores own drop.
-- **Accepted 2026-10-07, combat focus:**
-  MMB:dot↔walk/freecam;NPC hostile;entry/reset focus;hitstop≠lock/no reset-refocus.
-- **Accepted 2026-10-07, strikes:**
-  Chest-gap/early lock;Q far:pelvis-foot→/chest←,near:knee flex.
-  Fast Q-palm/bar kept/turn=arc;3torsos follow/mirror/fixed root.
+- **Accepted exception 2026-10-08, pistol:**
+  CombatTest:story§6 `2026-10-07`/art§15a;entry:dummy/freecam;bar-Q-Step:focus.
+  Rig recoil/path streak/zone-dir impact-audio-dark blood;head→0HP/live ragdoll.
+  Root-stable camera;hero-hit kick/manual/motor kept.
+  Accepted shot→delayed port case/bounded gravity-bounce/audio;slide return/emptylock.
+  Handmag-seat/rack1.8s/audio/ammo last;handoff interrupt→hold/Rresume.
+  Drop/E keepsstage-ammo;pause-hitstop freeze/reset-exit clear.
+  No lock-pierce-ricochet-guard-parry-taunt-reward;win fire-reload/HP-result kept.
+  Holes/bleed→reset-exit/rig-ragdoll/bounded pools;
+  corpse hits:impulse/new wounds-blood/HP-result-pose kept.
 - **Accepted 2026-10-07, combat:**
+  Nondeeper floor;.75s stall→arm/.5s→drop;rise≠grip;HP-focus-AI kept.
+  Pause-hitstop0;no bar:walk-Q-Step/hits-falls;charge-palm-guard off.
+  E:shared/no grant/cancel=floor;NPC approach-Q;rise ignores own drop.
+  MMB↔focus;AI hits;reset:mode kept/focus;hitstop≠lock/reset.
+  Chest-gap/early lock;Q far:pelvis-foot→/chest←,near:knee flex.
+  Fast Q-palm/bar kept/turn=arc;3torsos follow-mirror/fixed root.
   Aim¼Windup lock/Charge free/yields motor;bar-Q-palm clocks/contact switch.
   Step1m/15/.36attack/.57repeat/.21visual/sole-catch→finite landing/impulse-overload.
   Bar-palm:nonfall stagger-catch-feet-impulse-aim;Q:free leg/load/R;guard support/fall veto.
@@ -295,15 +293,17 @@
   L owns→R body-floor-wall;`CombatWeaponGeometry`:8seg/held mass→forearm/free→mass-inertia;
   hand-ignore expires/drop past capsule→anatomy off;RO elbow-pronation -5..120/side±8°/QA pending.
 - **Accepted 2026-09-21, body:**
-  6bone-local zones/first sequence/head×2(50/80,cap.99MaxHP)/rear±45°defeat;
+  6bone-local zones/first sequence;bar:head×2(50/80,cap.99MaxHP)/rear±45°defeat;
   torso1-rear1.25/arms.5/legs.75;frozen mutual zone-dir-power/1HP-ragdoll.
-  Duel clock:C1 pose-contact/travel-yaw:return.15→.75/stun.35;
-  stance.42/.28m/afraid hero/calm NPC;breath-tremor-flinch tell/Smoothstep feet.
+  C1 pose-contact/travel-yaw:return.15→.75/stun.35;
+  stance.42/.28m/art§15a;Smoothstep feet.
   Hold freezes breath/delays regen.
+  Aftermath:thud;blood lobes grow10s,stay.
 - **Accepted 2026-09-20, two hands:**
   Ready-Block-attack-recoil→L;Hit-GuardBreak-Defeat release;
   Ready low/Block high/L opposed .16→.42m/breath4s/blend/injury/NPC R Rest;
   L subdiv/gates.
+  Injury:HP/dir-pose/wounds/pools;dry:block-miss;ragdoll wins.
 - **Accepted 2026-09-21, duel:**
   Bar win:swing→walk/off→reset.
   Costs:free hits/guard20-35/charge20/regen30/s-.6s stuns/own spends;
@@ -312,9 +312,6 @@
   charge upper(.18q):retimed Attack/neutral lower;q=power/Forehand Light;
   Backhand DAG:R elbow-hand roll/.56reach≥.95/free elbow;
   recoil .56→Ready0/.48s inverse/C1/no dwell/wrist-core-speed-clearance gates.
-- **Accepted exception 2026-09-20, combat injury:**
-  HP/directional pose/wounds/pools;block-miss dry;visual-ragdoll wins.
-- **Accepted 2026-09-21, aftermath:** Thud;blood lobes grow 10s,stay.
 - **Accepted exception 2026-09-21, taunt:**
   E/settled defeat:Home toilet/view-timeline-stream-residue;
   Guided dock/aim/bone-floor marks;bar L-return/§21-exempt silent/no speech-reaction-reward/6th FP.

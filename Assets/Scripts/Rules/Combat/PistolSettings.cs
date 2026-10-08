@@ -21,6 +21,9 @@ namespace BarPromenade
         public float FireCooldownSeconds { get; }
         public float RaiseSeconds { get; }
         public float ReloadSeconds { get; }
+        // The authored 1.8-second exchange scales with the configured clock.
+        public float MagazineHandoffSeconds => ReloadSeconds * (.25f / 1.8f);
+        public float MagazineInsertSeconds => ReloadSeconds * (1.3f / 1.8f);
 
         private static float Positive(float value, string name)
         {

@@ -14,7 +14,7 @@ namespace BarPromenade.Editor
         public const string Folder = "Assets/Resources/CombatPistol/";
         public const string ManifestPath = Folder + "CombatPistol3D.json";
         public int callbackOrder => 0;
-        public override uint GetVersion() => 1;
+        public override uint GetVersion() => 2;
         private bool IsPistol => assetPath.StartsWith(Folder, StringComparison.Ordinal);
         private bool IsBank => assetPath == Folder + "PistolActions.fbx";
         private static bool validationQueued;
@@ -88,7 +88,8 @@ namespace BarPromenade.Editor
         {
             if (!File.Exists(ManifestPath)) throw new InvalidOperationException("Missing authored pistol manifest.");
             Manifest manifest = JsonUtility.FromJson<Manifest>(File.ReadAllText(ManifestPath));
-            if (manifest == null || !manifest.test_only || manifest.models == null || manifest.models.Length != 2 ||
+            if (manifest == null || !manifest.test_only || manifest.models == null || manifest.models.Length != 4 ||
+                !new[] { "Pistol", "Bullet", "Magazine", "Casing" }.All(name => manifest.models.Count(model => model.name == name) == 1) ||
                 manifest.actions == null || manifest.actions.root_motion || manifest.actions.animation_events != 0 || !manifest.actions.bone_only)
                 throw new InvalidOperationException("Pistol manifest lost the isolated bone-only contract.");
             if (Mathf.Abs(manifest.actions.support_grip_weight - CombatPistolAssetProvider.SupportGripWeight) > .0001f ||
@@ -96,7 +97,14 @@ namespace BarPromenade.Editor
                 throw new InvalidOperationException("Pistol imported support frame differs from the authored hand fit.");
             foreach (Model entry in manifest.models)
             {
-                GameObject model = entry.name == "Pistol" ? CombatPistolAssetProvider.CreatePistol(null) : CombatPistolAssetProvider.CreateBullet(null);
+                GameObject model = entry.name switch
+                {
+                    "Pistol" => CombatPistolAssetProvider.CreatePistol(null),
+                    "Bullet" => CombatPistolAssetProvider.CreateBullet(null),
+                    "Magazine" => CombatPistolAssetProvider.CreateMagazine(null),
+                    "Casing" => CombatPistolAssetProvider.CreateCasing(null),
+                    _ => throw new InvalidOperationException("Unknown pistol model " + entry.name)
+                };
                 try
                 {
                     Vector3 low = Vector3.positiveInfinity, high = Vector3.negativeInfinity;
@@ -115,7 +123,18 @@ namespace BarPromenade.Editor
                     if (triangles != entry.triangle_count) throw new InvalidOperationException("Pistol triangle count differs after import.");
                     foreach (Anchor anchor in entry.anchors)
                         Near(CombatPistolAssetProvider.FindAnchor(model, anchor.name).position, anchor.position, anchor.name);
-                    if (entry.name == "Pistol") ValidateCollision(model, entry);
+                    if (entry.name == "Pistol")
+                    {
+                        ValidateCollision(model, entry);
+                        foreach (string name in new[] { "MagazineSeat", "EjectionPort" })
+                            if (Quaternion.Angle(CombatPistolAssetProvider.FindAnchor(model, name).rotation, model.transform.rotation) > .01f)
+                                throw new InvalidOperationException("Pistol mechanic axis differs after import: " + name);
+                        if (Quaternion.Angle(CombatPistolAssetProvider.FindAnchor(model, "SlidePull").rotation,
+                            model.transform.rotation * Quaternion.AngleAxis(90f, Vector3.up)) > .01f)
+                            throw new InvalidOperationException("Pistol slide hand contact axis differs after import.");
+                        if (!CombatPistolAssetProvider.FindAnchor(model, "EjectionPort").IsChildOf(CombatPistolAssetProvider.FindAnchor(model, "Slide")))
+                            throw new InvalidOperationException("Pistol ejection port must follow the authored slide.");
+                    }
                 }
                 finally { UnityEngine.Object.DestroyImmediate(model); }
             }
@@ -151,6 +170,9 @@ namespace BarPromenade.Editor
                 Transform grip = CombatPistolAssetProvider.FindAnchor(pistol, "Grip");
                 Transform support = CombatPistolAssetProvider.FindAnchor(pistol, "SupportGrip");
                 Transform muzzle = CombatPistolAssetProvider.FindAnchor(pistol, "Muzzle");
+                GameObject magazine = CombatPistolAssetProvider.CreateMagazine(actor.transform);
+                Transform magazineSeat = CombatPistolAssetProvider.FindAnchor(magazine, "Seat");
+                Transform slot = CombatPistolAssetProvider.FindAnchor(pistol, "MagazineSeat");
                 foreach (string name in CombatPistolAssetProvider.ClipNames)
                 {
                     AnimationClip clip = CombatPistolAssetProvider.LoadClip(name);
@@ -170,6 +192,13 @@ namespace BarPromenade.Editor
                         if (name == CombatPistolAssetProvider.AimClip &&
                             Vector3.Dot(muzzle.forward, actor.transform.forward) < .999f)
                             throw new InvalidOperationException("Pistol imported aim must face the hero's forward direction.");
+                        if (name == CombatPistolAssetProvider.ReloadClip && (frame == 25 || frame == 130))
+                        {
+                            CombatPistolAssetProvider.PlaceMagazineInHand(magazine, registry.Anchors.LeftGrip, hands);
+                            if (Vector3.Distance(magazineSeat.position, slot.position) > .004f ||
+                                Quaternion.Angle(magazineSeat.rotation, slot.rotation) > 1f)
+                                throw new InvalidOperationException("Pistol reload magazine handoff does not meet the physical seat: " + frame);
+                        }
                     }
                 }
             }

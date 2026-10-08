@@ -3,6 +3,47 @@
 Newest outcomes/checks first. Archive whole dates at budget: [policy](README.md).
 Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-2026-08.md).
 
+## 2026-10-08 — Pistol recoil, mechanics and wounds
+
+- Isolated CombatTest: authored grip kick and delayed torso catch survive aim
+  IK; upward aim keeps hands lower and elbows clear. Flight remains visible
+  after contact. Regional impulse, dark blood and contact audio share owners.
+  Headshots set zero HP and hand the live standing/fallen pose to terminal physics.
+- Bounded skin holes follow the rig/ragdoll and bleed until reset/exit. Later
+  bullets wake a settled body without changing its pose, HP or round result.
+- Pistol camera uses stable root anchors. Winning with held aim retains the
+  camera pose/FOV and aim progress when focus becomes free aim. Corpse-hit
+  freezes preserve that lease while cancelling new/buffered shots; releasing aim
+  still exits it. Previously both paths briefly returned to chase. Wall sweeps,
+  manual look, motor motion and incoming hero-hit kick remain.
+- Accepted shots queue physical port casings with shared bounce audio. The slide
+  returns or locks empty; the original hand exchanges the magazine and racks it.
+  Ammo commits at completion. Interrupted exchange retains props/clock through
+  drop/reclaim; R resumes after pose settle. Phase sounds do not replay. Pause
+  freezes these owners; reset/exit clear their bounded state.
+- Unfocused, unaimed pistol now uses ordinary idle and gait with the weapon in
+  the right palm. Its zero-weight carry lease retains late attachment without
+  bending the arms at rest. The previous speed-based yield fixed walking but
+  restored the wrong low hold when stopped. Aim, reload and injury keep priority.
+- Fresh entry for either weapon now starts passive and unfocused with ordinary
+  camera/walking. MMB opts into focus; Tab enables AI. Reset retains the selected
+  AI mode and restores focus, so fresh entry no longer shares that reset default.
+- Checks: embedded `build-combat-pistol-3d-model.py` validator;
+  `Range_PistolSelectionProjectileFlightReloadAndResetUseTheLiveDuel` covers
+  flight/contact, accepted/empty cases, slide/magazine contacts, phase sound PCM,
+  pause/resume/reset, standing/fallen/hero headshots, arm geometry, wounds/bleeding
+  and settled-body wake. Firing, reload/rack, wound and fallen-head frames inspected.
+  `Range_PistolWinningAndCorpseShotsKeepTheLiveFreeAimCamera` covers live
+  Update/LateUpdate through a winning trigger and physical corpse contact with
+  held aim, unchanged camera pose/FOV and no restarted raise.
+  `Range_UnfocusedPistolCarryKeepsBothArmsWalkingAndCanAim` compares ordinary
+  idle torso/arms before walking, after stopping and after aim. Live W retains
+  arm/leg swing and palm contact; RMB aim works. Front/side frames inspected.
+  `Range_DefaultTargetStartsUnfocusedAndModeChangesThroughLiveInput` covers both
+  weapons' passive/free-camera entry, live MMB/Tab, mode-retaining focused reset
+  and fresh reentry.
+  Documentation: `check-docs.py`, `git diff --check`.
+
 ## 2026-10-07 — Combat openings, regrip and pistol
 
 - Ready rise parity: `assert_bank_motion_parity`,

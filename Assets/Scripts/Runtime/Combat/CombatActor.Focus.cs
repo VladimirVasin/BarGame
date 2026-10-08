@@ -7,7 +7,7 @@ namespace BarPromenade
         /// <summary>The hero's voluntary combat stance; the opponent remains engaged independently.</summary>
         public bool CombatFocused { get; private set; } = true;
 
-        private bool NeedsCombatPresentation => CombatFocused || (Pistol?.IsReloading ?? false) ||
+        private bool NeedsCombatPresentation => CombatFocused || (Pistol?.ReloadPending ?? false) ||
             (Pistol?.AimRequested ?? false) || (IsPistol && pistolLowerProgress < 1f) || State.Phase != MeleePhase.Ready ||
             collectSweep || collectShove || collectKick || IsKnockedDown || IsRagdollActive ||
             reaction != null || (ImpactMotion?.IsActive ?? false) || (footwork?.RecoveryEpisodeActive ?? false);
@@ -16,11 +16,11 @@ namespace BarPromenade
             State.Phase is MeleePhase.Step or MeleePhase.Recovery;
 
         /// <summary>Changes only voluntary participation: committed actions, injuries and HP survive.</summary>
-        public void SetCombatFocused(bool focused)
+        public void SetCombatFocused(bool focused, bool preservePistolAim = false)
         {
             if (hero == null || CombatFocused == focused) return;
             CombatFocused = focused;
-            if (!focused) Pistol?.SetAim(false);
+            if (!focused && !preservePistolAim) Pistol?.SetAim(false);
             // A rapid off/on toggle cannot grant another aim envelope to an existing swing.
             if (!CommittedActionOwnsFacing) ResetCombatFacing();
             if (!focused)
@@ -54,14 +54,19 @@ namespace BarPromenade
             supportGrip?.SetTarget(false, false);
             hero.SetCombatSupportGrip(this, supportGrip, weaponConstraint);
             if (ownedPose) hero.BeginRecoveryPoseTransition(.35f);
-            // The same right-hand carry as the standing winner, without a combat torso or left support.
+            // Keep the weapon in the right palm while ordinary idle and gait own the body.
             handPose.SetGrip(false, weaponDropped ? 0f : 1f);
             if (IsPistol)
             {
                 pistolLeftClosure = 0f;
                 handPose.SetGrip(true, 0f);
                 if (!weaponDropped && hero.TryAcquireCarryPose(this, CombatPistolAssetProvider.RestClip))
+                {
+                    // Retain the lease for the late palm attachment, without
+                    // masking ordinary idle or gait with the bent-arm Rest pose.
+                    hero.UpdateCarryPose(this, 0f, 0f);
                     hero.SetCombatFirearm(this, this);
+                }
             }
         }
     }

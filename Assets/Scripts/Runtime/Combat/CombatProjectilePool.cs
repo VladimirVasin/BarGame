@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 namespace BarPromenade
 {
@@ -13,6 +14,8 @@ namespace BarPromenade
         public const float MaximumDistance = 40f;
         public const float MaximumLifetime = 1f;
         public const float Radius = .004f;
+        internal const float TrailLifetime = .075f;
+        private const float TrailLength = 1.8f;
         private const int Capacity = 16;
         private readonly Projectile[] slots = new Projectile[Capacity];
         private readonly List<Impact> contacts = new List<Impact>(Capacity);
@@ -22,6 +25,9 @@ namespace BarPromenade
         private sealed class Projectile
         {
             internal GameObject Model;
+            internal LineRenderer Trail;
+            internal float TrailAge;
+            internal int TrailFrame;
             internal CombatActor Source;
             internal Vector3 Position, Velocity;
             internal float Age, Distance;
@@ -45,6 +51,12 @@ namespace BarPromenade
         public Vector3 LastPosition { get; private set; }
         public Vector3 LastImpactPoint { get; private set; }
         public bool HasCapacity => ActiveCount < Capacity;
+        internal int VisibleTrailCount
+        {
+            get { int count = 0; foreach (Projectile p in slots) if (p.Trail.enabled) count++; return count; }
+        }
+        internal Vector3 LastTrailStart { get; private set; }
+        internal Vector3 LastTrailEnd { get; private set; }
 
         public CombatProjectilePool(Transform parent)
         {
@@ -54,7 +66,22 @@ namespace BarPromenade
             {
                 GameObject model = CombatPistolAssetProvider.CreateBullet(holder.transform);
                 model.SetActive(false);
-                slots[i] = new Projectile { Model = model };
+                var trace = new GameObject("Bullet flight streak");
+                trace.transform.SetParent(holder.transform, false);
+                LineRenderer trail = trace.AddComponent<LineRenderer>();
+                trail.sharedMaterial = CityNightResources.AtmosphereMaterial;
+                trail.useWorldSpace = true; trail.positionCount = 2;
+                trail.startWidth = .025f; trail.endWidth = .065f;
+                trail.startColor = new Color(2.4f, 1.3f, .36f, .8f);
+                trail.endColor = new Color(4f, 3.1f, 1.4f, 1f);
+                trail.alignment = LineAlignment.View;
+                trail.textureMode = LineTextureMode.Stretch;
+                trail.shadowCastingMode = ShadowCastingMode.Off; trail.receiveShadows = false;
+                trail.lightProbeUsage = LightProbeUsage.Off;
+                trail.reflectionProbeUsage = ReflectionProbeUsage.Off;
+                trail.motionVectorGenerationMode = MotionVectorGenerationMode.ForceNoMotion;
+                trail.enabled = false;
+                slots[i] = new Projectile { Model = model, Trail = trail };
             }
         }
 
@@ -66,6 +93,7 @@ namespace BarPromenade
                 if (p.Active) continue;
                 p.Source = source; p.Position = origin; p.Velocity = velocity; p.Sequence = sequence;
                 p.Age = p.Distance = 0f; p.Active = true;
+                p.Trail.enabled = false;
                 p.Model.transform.SetPositionAndRotation(origin, Quaternion.LookRotation(velocity));
                 p.Model.SetActive(true);
                 ActiveCount++; SpawnCount++; LastPosition = origin;
@@ -127,6 +155,7 @@ namespace BarPromenade
                     p.Model.transform.SetPositionAndRotation(to, Quaternion.LookRotation(p.Velocity));
                     if (p.Age + .000001f >= MaximumLifetime || p.Distance + .00001f >= MaximumDistance) Retire(p);
                 }
+                ShowFlightSegment(p, from, p.Position);
                 LastPosition = p.Position;
             }
         }
@@ -139,10 +168,45 @@ namespace BarPromenade
             contacts.Clear();
         }
 
-        public void Clear()
+        private void ShowFlightSegment(Projectile p, Vector3 from, Vector3 to)
+        {
+            Vector3 travel = to - from;
+            if (travel.sqrMagnitude < .000001f) return;
+            Vector3 start = to - Vector3.ClampMagnitude(travel, TrailLength);
+            p.Trail.SetPosition(0, start); p.Trail.SetPosition(1, to);
+            p.Trail.startColor = new Color(2.4f, 1.3f, .36f, .8f);
+            p.Trail.endColor = new Color(4f, 3.1f, 1.4f, 1f);
+            p.TrailAge = 0f; p.TrailFrame = Time.frameCount;
+            p.Trail.enabled = true;
+            LastTrailStart = start; LastTrailEnd = to;
+        }
+
+        // Render lifetime is independent of flight lifetime: a close hit can
+        // spawn and retire between two frames. Only actual swept travel is shown.
+        internal void AdvancePresentation(float seconds)
+        {
+            if (seconds <= 0f) return;
+            foreach (Projectile p in slots)
+            {
+                if (!p.Trail.enabled || Time.frameCount <= p.TrailFrame + 1) continue;
+                p.TrailAge += seconds;
+                float alpha = Mathf.Clamp01(1f - p.TrailAge / TrailLifetime);
+                p.Trail.startColor = new Color(2.4f, 1.3f, .36f, .8f * alpha);
+                p.Trail.endColor = new Color(4f, 3.1f, 1.4f, alpha);
+                if (p.TrailAge >= TrailLifetime) p.Trail.enabled = false;
+            }
+        }
+
+        internal void ClearFlights()
         {
             foreach (Projectile p in slots) Retire(p);
             contacts.Clear();
+        }
+
+        public void Clear()
+        {
+            ClearFlights();
+            foreach (Projectile p in slots) if (p.Trail != null) p.Trail.enabled = false;
         }
 
         public void ResetRound()
@@ -150,6 +214,7 @@ namespace BarPromenade
             Clear();
             SpawnCount = ImpactCount = 0;
             LastPosition = LastImpactPoint = Vector3.zero;
+            LastTrailStart = LastTrailEnd = Vector3.zero;
         }
 
         private void Retire(Projectile p)

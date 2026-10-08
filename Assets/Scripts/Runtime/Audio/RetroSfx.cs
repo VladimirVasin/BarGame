@@ -69,6 +69,17 @@ namespace BarPromenade
         PistolFire,
         PistolEmpty,
         PistolReload,
+        PistolMagazineLatch,
+        PistolMagazineRemove,
+        PistolMagazineStow,
+        PistolMagazineDraw,
+        PistolMagazineInsert,
+        PistolMagazineSeat,
+        PistolSlidePull,
+        PistolSlideRelease,
+        PistolReady,
+        PistolCasingEject,
+        PistolCasingBounce,
         Count
     }
 
@@ -816,7 +827,29 @@ namespace BarPromenade
             new RetroSfxDefinition(RetroSfxId.PistolEmpty, RetroSfxCategory.World,
                 .08f, .35f, 1f, 1, .15f, 1, 2048, 6200f, .01f, 82),
             new RetroSfxDefinition(RetroSfxId.PistolReload, RetroSfxCategory.World,
-                .16f, .35f, 1f, 1, .25f, 1, 2048, 7200f, 0f, 84)
+                .16f, .35f, 1f, 1, .25f, 1, 2048, 7200f, 0f, 84),
+            new RetroSfxDefinition(RetroSfxId.PistolMagazineLatch, RetroSfxCategory.World,
+                .055f, .34f, 1f, 1, .02f, 1, 2048, 7200f, .015f, 84),
+            new RetroSfxDefinition(RetroSfxId.PistolMagazineRemove, RetroSfxCategory.World,
+                .17f, .30f, 1f, 1, .02f, 2, 2048, 5100f, .02f, 86),
+            new RetroSfxDefinition(RetroSfxId.PistolMagazineStow, RetroSfxCategory.World,
+                .11f, .24f, 1f, 1, .02f, 2, 1024, 1900f, .03f, 92),
+            new RetroSfxDefinition(RetroSfxId.PistolMagazineDraw, RetroSfxCategory.World,
+                .12f, .27f, 1f, 1, .02f, 2, 1024, 2600f, .03f, 90),
+            new RetroSfxDefinition(RetroSfxId.PistolMagazineInsert, RetroSfxCategory.World,
+                .13f, .28f, 1f, 1, .02f, 1, 2048, 5300f, .02f, 86),
+            new RetroSfxDefinition(RetroSfxId.PistolMagazineSeat, RetroSfxCategory.World,
+                .075f, .42f, 1f, 1, .02f, 1, 2048, 7400f, .015f, 80),
+            new RetroSfxDefinition(RetroSfxId.PistolSlidePull, RetroSfxCategory.World,
+                .085f, .36f, 1f, 1, .02f, 1, 2048, 6800f, .015f, 82),
+            new RetroSfxDefinition(RetroSfxId.PistolSlideRelease, RetroSfxCategory.World,
+                .09f, .45f, 1f, 1, .02f, 1, 2048, 8100f, .015f, 78),
+            new RetroSfxDefinition(RetroSfxId.PistolReady, RetroSfxCategory.World,
+                .06f, .21f, 1f, 1, .02f, 2, 1024, 2300f, .02f, 94),
+            new RetroSfxDefinition(RetroSfxId.PistolCasingEject, RetroSfxCategory.World,
+                .055f, .23f, 1f, 3, .025f, 1, 2048, 8500f, .035f, 92),
+            new RetroSfxDefinition(RetroSfxId.PistolCasingBounce, RetroSfxCategory.World,
+                .12f, .26f, 1f, 3, .025f, 1, 2048, 9000f, .045f, 96, 3)
         };
 
         public static int Count => definitions.Length - 1;
@@ -1114,6 +1147,18 @@ namespace BarPromenade
                 case RetroSfxId.PistolReload:
                     return (NextNoise(ref noiseState) * .5f + Mathf.Sin(time * 6500f) * .2f) *
                         Envelope(time, duration, .001f, 3f);
+                case RetroSfxId.PistolMagazineLatch:
+                case RetroSfxId.PistolMagazineRemove:
+                case RetroSfxId.PistolMagazineStow:
+                case RetroSfxId.PistolMagazineDraw:
+                case RetroSfxId.PistolMagazineInsert:
+                case RetroSfxId.PistolMagazineSeat:
+                case RetroSfxId.PistolSlidePull:
+                case RetroSfxId.PistolSlideRelease:
+                case RetroSfxId.PistolReady:
+                case RetroSfxId.PistolCasingEject:
+                case RetroSfxId.PistolCasingBounce:
+                    return GeneratePistolMechanic(id, time, duration, ref noiseState, detune);
                 case RetroSfxId.Door:
                     return GenerateDoor(
                         time,
@@ -1270,6 +1315,51 @@ namespace BarPromenade
                    envelope *
                    0.48f;
         }
+
+        private static float GeneratePistolMechanic(RetroSfxId id, float time, float duration, ref uint noiseState, float detune)
+        {
+            float noise = NextNoise(ref noiseState);
+            float envelope = Envelope(time, duration, .0008f, 3f);
+            switch (id)
+            {
+                case RetroSfxId.PistolMagazineLatch:
+                    return (noise * .45f + MetalModes(time, 2130f, detune) * .35f) * envelope;
+                case RetroSfxId.PistolMagazineRemove:
+                    return noise * (.32f + .18f * Mathf.Abs(Mathf.Sin(time * 370f))) *
+                        Envelope(time, duration, .003f, 1.5f);
+                case RetroSfxId.PistolMagazineStow:
+                    return noise * .58f * Envelope(time, duration, .006f, 2f);
+                case RetroSfxId.PistolMagazineDraw:
+                    return (noise * .5f + MetalModes(time, 780f, detune) * .08f) *
+                        Envelope(time, duration, .004f, 1.8f);
+                case RetroSfxId.PistolMagazineInsert:
+                    return noise * (.34f + .14f * Mathf.Abs(Mathf.Sin(time * 590f))) *
+                        Envelope(time, duration, .002f, 1.5f);
+                case RetroSfxId.PistolMagazineSeat:
+                    return (noise * .48f + MetalModes(time, 980f, detune) * .45f) * envelope;
+                case RetroSfxId.PistolSlidePull:
+                    return (noise * .45f + MetalModes(time, 1630f, detune) * .18f) *
+                        Envelope(time, duration, .002f, 1.6f);
+                case RetroSfxId.PistolSlideRelease:
+                    return (noise * .55f + MetalModes(time, 2470f, detune) * .38f) * envelope;
+                case RetroSfxId.PistolReady:
+                    return noise * .48f * Envelope(time, duration, .004f, 2.3f);
+                case RetroSfxId.PistolCasingEject:
+                    return (noise * .28f + MetalModes(time, 2760f, detune) * .5f) * envelope;
+                case RetroSfxId.PistolCasingBounce:
+                    // A tiny brass shell rings at fixed inharmonic modes;
+                    // it has neither a glass chord nor a pitched downward glide.
+                    return MetalModes(time, 2890f, detune) * .58f * Mathf.Exp(-38f * time) *
+                        Envelope(time, duration, .0003f, 1f) + noise * .4f *
+                        Envelope(time, .018f, .0003f, 4f);
+                default: return 0f;
+            }
+        }
+
+        private static float MetalModes(float time, float frequency, float detune) =>
+            Mathf.Sin(2f * Mathf.PI * frequency * detune * time) * .65f +
+            Mathf.Sin(2f * Mathf.PI * frequency * 1.731f * detune * time) * .25f +
+            Mathf.Sin(2f * Mathf.PI * frequency * 2.417f * detune * time) * .1f;
 
         private static float GenerateUiCancel(float time, float duration)
         {

@@ -47,6 +47,7 @@ namespace BarPromenade
             string[] names = { "upper_arm.R", "forearm.R", "hand.R", "upper_arm.L", "forearm.L", "hand.L" };
             for (int i = 0; i < names.Length; i++)
                 pistolArmBones[i] = CityPedestrianHandProps.FindSocket(DamageRigRoot, names[i]);
+            InitializePistolMechanics();
         }
 
         internal bool PistolBodyAvailable => IsPistol && Pistol != null && !weaponDropped && (!roundEnded || hero != null) &&
@@ -115,10 +116,12 @@ namespace BarPromenade
 
         public bool TryReloadPistol()
         {
+            bool resuming = Pistol?.ReloadPending ?? false;
             if (!PistolBodyAvailable || !GameInput.CanRead(GameInputContext.Gameplay) || !Pistol.TryReload()) return false;
+            pistolReloadSettleRemaining = resuming ? PoseBlendSeconds : 0f;
+            BeginPistolReloadAudio(resuming);
             CancelPendingPistolShot("reload_started");
             JournalEvent("pistol_reload_started", f0: GameLog.Field("rounds", Pistol.Rounds));
-            RetroAudio.PlayAt(RetroSfxId.PistolReload, Weapon.transform.position, .65f);
             Present();
             return true;
         }
@@ -131,6 +134,8 @@ namespace BarPromenade
             if (!GameInput.CanRead(GameInputContext.Gameplay)) return RejectPistolShot(request, "input_gate", "commit");
             if (!PistolBodyAvailable) return RejectPistolShot(request, PistolBodyRejection, "commit");
             if (Pistol.IsReloading) return RejectPistolShot(request, "reloading", "commit");
+            if (Pistol.ReloadPending) return RejectPistolShot(request,
+                Pistol.MagazineAttached ? "reload_incomplete" : "magazine_missing", "commit");
             if (!Pistol.AimRequested) return RejectPistolShot(request, "not_aiming", "commit");
             if (!Pistol.IsAiming) return RejectPistolShot(request, "raising", "commit");
             if (Pistol.Rounds == 0)
@@ -154,6 +159,8 @@ namespace BarPromenade
             if (!projectiles.TrySpawn(this, position, velocity, unchecked(Pistol.ShotSequence + 1)))
                 return RejectPistolShot(request, "projectile_spawn", "commit");
             Pistol.TryFire();
+            UpdatePistolMechanics();
+            if (pistolFlash != null) pistolFlash.gameObject.SetActive(true);
             RetroAudio.PlayAt(RetroSfxId.PistolFire, position, 1f);
             JournalEvent("pistol_fired", action: Pistol.ShotSequence, request: request, f0: GameLog.Field("rounds", Pistol.Rounds),
                 f1: GameLog.Field("x", position.x), f2: GameLog.Field("y", position.y), f3: GameLog.Field("z", position.z),
@@ -167,15 +174,27 @@ namespace BarPromenade
             if (Pistol == null) return;
             if (!PistolBodyAvailable) { CancelPendingPistolShot(PistolBodyRejection); Pistol.CancelAction(); }
             bool reloading = Pistol.IsReloading;
-            Pistol.Advance(seconds);
+            float reloadBefore = Pistol.ReloadProgress * 1.8f;
+            float pistolSeconds = seconds;
+            if (reloading && pistolReloadSettleRemaining > 0f)
+            {
+                // Restore the retained hand/contact pose before crossing the
+                // next physical handoff after an injury, kick or pickup.
+                float settling = Mathf.Min(pistolSeconds, pistolReloadSettleRemaining);
+                pistolReloadSettleRemaining -= settling;
+                pistolSeconds -= settling;
+            }
+            else if (!reloading) pistolReloadSettleRemaining = 0f;
+            Pistol.Advance(pistolSeconds);
+            AdvancePistolReloadAudio(reloading, reloadBefore);
             pistolLowerProgress = Mathf.Min(1f, pistolLowerProgress + seconds / Mathf.Max(.001f, pistolLower.length));
             if (reloading && !Pistol.IsReloading)
             {
                 JournalEvent("pistol_reload_completed", f0: GameLog.Field("rounds", Pistol.Rounds));
-                RetroAudio.PlayAt(RetroSfxId.PistolReload, Weapon.transform.position, .75f);
             }
             if (pistolFlash != null) pistolFlash.gameObject.SetActive(!weaponDropped &&
-                Pistol.CooldownRemaining > 0f && Pistol.ShotElapsed < .025f);
+                Pistol.CooldownRemaining > 0f && Pistol.ShotElapsed < .05f);
+            UpdatePistolMechanics();
         }
 
         internal void SuspendPistolInput()
@@ -188,6 +207,8 @@ namespace BarPromenade
         {
             CancelPendingPistolShot("action_ended");
             Pistol?.CancelAction();
+            pistolReloadSettleRemaining = 0f;
+            UpdatePistolMechanics();
             if (pistolFlash != null) pistolFlash.gameObject.SetActive(false);
         }
 
@@ -195,11 +216,14 @@ namespace BarPromenade
         {
             CancelPendingPistolShot("reset");
             Pistol?.Reset();
+            ResetPistolReloadAudio();
+            pistolReloadSettleRemaining = 0f;
+            UpdatePistolMechanics();
             pistolLowerProgress = 1f;
             if (pistolFlash != null) pistolFlash.gameObject.SetActive(false);
         }
 
-        private AnimationClip ChoosePistolClip() => weaponDropped || State.IsDefeated ? pistolRest : Pistol.IsReloading ? pistolReload :
+        private AnimationClip ChoosePistolClip() => weaponDropped || State.IsDefeated ? pistolRest : Pistol.ReloadPending ? pistolReload :
             Pistol.IsRaising ? pistolRaise : Pistol.IsAiming ?
             (Pistol.CooldownRemaining > 0f && Pistol.ShotElapsed < pistolFire.length ? pistolFire : pistolAim) :
             pistolLowerProgress < 1f ? pistolLower : pistolRest;
@@ -208,7 +232,7 @@ namespace BarPromenade
             clip == pistolRaise ? Pistol.AimProgress : clip == pistolFire ? Mathf.Clamp01(Pistol.ShotElapsed / clip.length) :
             clip == pistolLower ? pistolLowerProgress : Mathf.Repeat(poseClock, clip.length) / clip.length;
 
-        private float PistolSupportClosure(AnimationClip clip) => clip == pistolRaise
+        private float PistolSupportClosure(AnimationClip clip) => clip == pistolReload ? PistolReloadGripWeight : clip == pistolRaise
             ? CombatPistolAssetProvider.SupportGripWeight * Mathf.SmoothStep(0f, 1f, Pistol.AimProgress)
             : clip == pistolAim || clip == pistolFire ? CombatPistolAssetProvider.SupportGripWeight
             : clip == pistolLower ? CombatPistolAssetProvider.SupportGripWeight * (1f - Mathf.SmoothStep(0f, 1f, pistolLowerProgress)) : 0f;
@@ -234,7 +258,7 @@ namespace BarPromenade
             CombatPistolAssetProvider.PlacePistol(Weapon, weaponGrip, handPose);
             handPose.SetGrip(false, 1f);
             handPose.SetGrip(true, pistolLeftClosure);
-            if (!PistolBodyAvailable || !Pistol.AimRequested || Pistol.IsReloading ||
+            if (!PistolBodyAvailable || !Pistol.AimRequested || Pistol.ReloadPending ||
                 pistolArmBones[0] == null || pistolArmBones[1] == null || pistolArmBones[2] == null ||
                 pistolArmBones[3] == null || pistolArmBones[4] == null || pistolArmBones[5] == null)
             { CommitHeldPistolPose(); return; }
@@ -247,8 +271,8 @@ namespace BarPromenade
             shoulderToTarget = Quaternion.AngleAxis(Mathf.Sin(poseClock * 8.3f) * sway, transform.up) * shoulderToTarget;
             shoulderToTarget = Quaternion.AngleAxis(Mathf.Sin(poseClock * 6.1f) * sway * .6f, transform.right) * shoulderToTarget;
             // Keep the authored firing kick visible instead of correcting it back to the target.
-            float recoil = Pistol.CooldownRemaining > 0f ? Mathf.Max(0f, 1f - Pistol.ShotElapsed / .16f) : 0f;
-            shoulderToTarget = Quaternion.AngleAxis(-recoil * 6f, transform.right) * shoulderToTarget;
+            float recoil = Pistol.CooldownRemaining > 0f ? PistolRecoilDegrees(Pistol.ShotElapsed) : 0f;
+            shoulderToTarget = Quaternion.AngleAxis(-recoil, transform.right) * shoulderToTarget;
             pistolAimReachable = TrySolvePistolAim(pistolArmBones[0].position, PistolMuzzle.position,
                 PistolMuzzle.forward, pistolArmBones[0].position + shoulderToTarget, out Quaternion solved);
             Quaternion delta = Quaternion.RotateTowards(Quaternion.identity, solved,
@@ -259,13 +283,27 @@ namespace BarPromenade
             float downward = -Vector3.Dot(delta * PistolMuzzle.forward, transform.up);
             float minimumForward = Mathf.Lerp(.48f, .40f, Mathf.Clamp01(downward / .5f));
             bool lowAim = downward > .35f;
+            bool highAim = downward < -.35f;
             bool keepGripForward = forward < minimumForward;
-            if (keepGripForward)
+            if (keepGripForward) aimedGrip += transform.forward * (minimumForward - forward);
+            if (highAim)
             {
-                // A low aim cannot fold the whole arm back into the coat. Keep
-                // the lowered grip in front, then solve the barrel and arm from
-                // that contact point rather than rotating through the torso.
-                aimedGrip += transform.forward * (minimumForward - forward);
+                // A raised barrel with the wrist below its shoulder forces the
+                // elbow into the coat. Lift the hold along with the muzzle before
+                // solving both arms; the recoil angle itself stays unchanged.
+                Vector3 wrist = aimedGrip + delta * (pistolArmBones[2].position - grip);
+                float forearm = Vector3.Distance(pistolArmBones[1].position, pistolArmBones[2].position);
+                float height = Vector3.Dot(pistolArmBones[0].position, transform.up) - downward * forearm * .6f;
+                float weight = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(.35f, .60f, -downward));
+                float lift = Mathf.Max(0f, height - Vector3.Dot(wrist, transform.up)) * weight;
+                lift = Mathf.Min(lift, Mathf.Min(PistolMaximumLift(0, wrist), PistolMaximumLift(3,
+                    PistolSupportWrist(aimedGrip, grip, delta))));
+                aimedGrip += transform.up * lift;
+            }
+            if (keepGripForward || highAim)
+            {
+                // Solve from the cleared grip rather than rigidly rotating a
+                // bent arm through the torso. Re-aim from the translated hold.
                 Transform hand = pistolArmBones[2];
                 for (int pass = 0; pass < 4; pass++)
                 {
@@ -290,7 +328,8 @@ namespace BarPromenade
                 Vector3 wrist = aimedGrip + delta * (hand.position - grip);
                 Quaternion rotation = delta * hand.rotation;
                 Vector3 shoulder = pistolArmBones[0].position;
-                Vector3 hint = lowAim ? PistolLowElbowHint(0, wrist, delta * PistolMuzzle.forward)
+                Vector3 hint = highAim ? PistolUpperElbowHint(0, wrist, delta * PistolMuzzle.forward) :
+                    lowAim ? PistolLowElbowHint(0, wrist, delta * PistolMuzzle.forward)
                     : shoulder + Quaternion.FromToRotation(hand.position - shoulder, wrist - shoulder) *
                         (pistolArmBones[1].position - shoulder) + transform.right * .03f;
                 LimbTwoBoneIk.Solve(pistolArmBones[0], pistolArmBones[1], hand, wrist, rotation,
@@ -306,7 +345,7 @@ namespace BarPromenade
                 Vector3 socketOffset = Quaternion.Inverse(leftHand.rotation) * (hero.Registry.Anchors.LeftGrip.position - leftHand.position);
                 Vector3 wrist = support.position - support.rotation * socketOffset;
                 Vector3 shoulder = pistolArmBones[3].position;
-                Vector3 hint = keepGripForward && lowAim
+                Vector3 hint = highAim ? PistolUpperElbowHint(3, wrist, PistolMuzzle.forward) : keepGripForward && lowAim
                     ? PistolLowElbowHint(3, wrist, PistolMuzzle.forward)
                     : shoulder + Quaternion.FromToRotation(leftHand.position - shoulder, wrist - shoulder) *
                         (pistolArmBones[4].position - shoulder);
@@ -324,6 +363,39 @@ namespace BarPromenade
                     pistolAimReachable &= PistolSupportError <= .003f;
             }
             CommitHeldPistolPose();
+        }
+
+        private Vector3 PistolSupportWrist(Vector3 aimedGrip, Vector3 grip, Quaternion delta)
+        {
+            Quaternion rotation = delta * pistolSupport.rotation;
+            Pose socket = handPose.GetSocketPose(true, aimedGrip + delta * (pistolSupport.position - grip),
+                rotation * Vector3.up, rotation * Vector3.forward);
+            Transform hand = pistolArmBones[5];
+            Vector3 offset = Quaternion.Inverse(hand.rotation) * (hero.Registry.Anchors.LeftGrip.position - hand.position);
+            return socket.position - socket.rotation * offset;
+        }
+
+        private float PistolMaximumLift(int root, Vector3 wrist)
+        {
+            Vector3 offset = wrist - pistolArmBones[root].position;
+            float reach = (Vector3.Distance(pistolArmBones[root].position, pistolArmBones[root + 1].position) +
+                Vector3.Distance(pistolArmBones[root + 1].position, pistolArmBones[root + 2].position)) * .98f;
+            float horizontal = Vector3.ProjectOnPlane(offset, transform.up).sqrMagnitude;
+            if (horizontal >= reach * reach) { pistolAimReachable = false; return 0f; }
+            return Mathf.Max(0f, Mathf.Sqrt(reach * reach - horizontal) - Vector3.Dot(offset, transform.up));
+        }
+
+        private Vector3 PistolUpperElbowHint(int root, Vector3 wrist, Vector3 distal)
+        {
+            Vector3 shoulder = pistolArmBones[root].position;
+            float forearm = Vector3.Distance(pistolArmBones[root + 1].position, pistolArmBones[root + 2].position);
+            Vector3 offset = wrist - distal * forearm - shoulder;
+            float lateral = Vector3.Dot(offset, transform.right);
+            // Leave the right elbow outside its sleeve seam. The supporting arm
+            // reaches across in front of the chest, with its forearm following
+            // the barrel instead of hinging all of the kick at the wrist.
+            offset += transform.right * (root == 0 ? Mathf.Max(0f, .08f - lateral) : -Mathf.Max(0f, lateral - .12f));
+            return shoulder + offset + transform.forward * .06f;
         }
 
         private Vector3 PistolLowElbowHint(int root, Vector3 wrist, Vector3 distal)
@@ -376,24 +448,55 @@ namespace BarPromenade
 
         private void CommitHeldPistolPose()
         {
+            UpdatePistolMechanics();
             // A parented kinematic body must publish the same completed palm pose
             // as its rendered transform, including between physical steps.
             weaponBody.position = Weapon.transform.position;
             weaponBody.rotation = Weapon.transform.rotation;
         }
 
+        // Matches the authored PistolFire keys. Aim IK must keep its sharp rise
+        // and slower return rather than solving the firing clip back onto target.
+        private static float PistolRecoilDegrees(float seconds)
+        {
+            if (seconds < .04f) return Mathf.Lerp(0f, 20f, Mathf.SmoothStep(0f, 1f, seconds / .04f));
+            if (seconds < .09f) return Mathf.Lerp(20f, 12f, Mathf.SmoothStep(0f, 1f, (seconds - .04f) / .05f));
+            if (seconds < .17f) return Mathf.Lerp(12f, 3f, Mathf.SmoothStep(0f, 1f, (seconds - .09f) / .08f));
+            if (seconds < .27f) return Mathf.Lerp(3f, -1.5f, Mathf.SmoothStep(0f, 1f, (seconds - .17f) / .10f));
+            return Mathf.Lerp(-1.5f, 0f, Mathf.SmoothStep(0f, 1f, (seconds - .27f) / .13f));
+        }
+
         internal void ReceiveProjectile(CombatActor source, int sequence, CombatHurtboxes.Hit hit, Vector3 velocity)
         {
             MeleePhase phaseBefore = State.Phase;
             float health = State.Health;
-            MeleeHitResult result = State.ReceiveProjectileHit(25f, hit.Location);
+            float stagger = hit.Location.Region switch
+            {
+                MeleeBodyRegion.LeftArm or MeleeBodyRegion.RightArm => .26f,
+                MeleeBodyRegion.LeftLeg or MeleeBodyRegion.RightLeg => .36f,
+                _ => .32f
+            };
+            bool postmortem = State.IsDefeated && IsRagdollActive;
+            MeleeHitResult result = postmortem ? MeleeHitResult.Hit : State.ReceiveProjectileHit(25f, hit.Location, stagger);
             if (result == MeleeHitResult.Ignored) return;
             reaction = null;
             reactionClock = 0f;
-            PublishImpact(new CombatImpact(source, this, sequence, hit.Point, hit.Normal, velocity.normalized,
+            float momentum = hit.Location.Region switch
+            {
+                MeleeBodyRegion.Head => 14f,
+                MeleeBodyRegion.LeftArm or MeleeBodyRegion.RightArm => 18f,
+                MeleeBodyRegion.LeftLeg or MeleeBodyRegion.RightLeg => 22f,
+                _ => 32f
+            };
+            var impact = new CombatImpact(source, this, sequence, hit.Point, hit.Normal, velocity.normalized,
                 health, State.Health, result, hit.Location, 0f, hit.Part, hit.LocalPoint, velocity.magnitude,
-                velocity.normalized * 4f, CombatImpactKind.Projectile), phaseBefore);
-            if (State.IsDefeated) BeginDefeat(velocity.normalized, hit.Point);
+                velocity.normalized * momentum, CombatImpactKind.Projectile);
+            // Physics takes the already visible pose before impact publication freezes
+            // it. The shared impact path then applies this anatomical impulse once.
+            if (State.IsDefeated && !postmortem) BeginProjectileDefeat(impact);
+            RetroAudio.PlayAt(RetroSfxId.SpadeBite, hit.Point, 1f);
+            RetroAudio.PlayAt(RetroSfxId.StoneTamp, hit.Point, hit.Location.Region == MeleeBodyRegion.Head ? .65f : .45f);
+            PublishImpact(impact, phaseBefore);
             Present();
         }
 

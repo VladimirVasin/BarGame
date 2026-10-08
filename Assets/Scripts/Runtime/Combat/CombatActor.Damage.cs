@@ -85,7 +85,7 @@ namespace BarPromenade
                 GameLog.Field("impulse_x", impact.Impulse.x), GameLog.Field("impulse_y", impact.Impulse.y), GameLog.Field("impulse_z", impact.Impulse.z),
                 GameLog.Field("knocked_down", IsKnockedDown));
             if (impact.Impulse.sqrMagnitude < .0001f) return;
-            if (IsKnockedDown)
+            if (IsKnockedDown || IsRagdollActive)
             {
                 Ragdoll.AddImpact(impact);
                 if (!Ragdoll.IsRecovering)

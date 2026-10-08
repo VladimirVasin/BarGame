@@ -28,7 +28,8 @@ namespace BarPromenade
         private sealed class Injury
         {
             public CombatDamageMarks Marks;
-            public float BleedSeconds, Remainder;
+            public float BleedSeconds, Remainder, ProjectileRemainder;
+            public int BleedingDrops;
             public float GroundSeconds;
             public DefeatPool Pool;
         }
@@ -65,13 +66,22 @@ namespace BarPromenade
         }
         public int BleedCount
         {
-            get { int count = 0; foreach (Injury injury in injuries.Values) if (injury.BleedSeconds > 0f) count++; return count; }
+            get { int count = 0; foreach (Injury injury in injuries.Values)
+                if (injury.BleedSeconds > 0f || injury.Marks.ProjectileCount > 0) count++; return count; }
         }
         public float TotalStainArea
         {
             get { float area = 0f; foreach (Stain stain in stains) if (stain != null && stain.Active) area += Mathf.PI * stain.TargetDiameter * stain.TargetDiameter * .25f; return area; }
         }
         public int WoundCountFor(CombatActor actor) => actor != null && injuries.TryGetValue(actor, out Injury injury) ? injury.Marks.Count : 0;
+        public int ProjectileWoundCountFor(CombatActor actor) => actor != null && injuries.TryGetValue(actor, out Injury injury) ? injury.Marks.ProjectileCount : 0;
+        public int BleedingDropCountFor(CombatActor actor) => actor != null && injuries.TryGetValue(actor, out Injury injury) ? injury.BleedingDrops : 0;
+        internal bool TryGetProjectileWound(CombatActor actor, int index, out Vector3 point, out Vector3 direction)
+        {
+            point = direction = Vector3.zero;
+            return actor != null && injuries.TryGetValue(actor, out Injury injury) &&
+                injury.Marks.TryGetProjectileBleed(index, out point, out direction);
+        }
 
         public void Initialize(Transform sceneRoot)
         {
@@ -117,7 +127,15 @@ namespace BarPromenade
             IsInitialized = true;
         }
 
-        public void Emit(CombatActor actor, Vector3 point, Vector3 direction, float damage)
+        // A new bullet contact wounds a corpse without inventing another HP transaction.
+        public void Emit(CombatImpact impact) => Emit(impact.Target, impact.Point, impact.Direction,
+            impact.Kind == CombatImpactKind.Projectile ? Mathf.Max(25f, impact.Damage) : impact.Damage,
+            impact.Kind == CombatImpactKind.Projectile, impact.Location.Region == MeleeBodyRegion.Head);
+
+        public void Emit(CombatActor actor, Vector3 point, Vector3 direction, float damage) =>
+            Emit(actor, point, direction, damage, false, false);
+
+        private void Emit(CombatActor actor, Vector3 point, Vector3 direction, float damage, bool projectile, bool head)
         {
             if (!IsInitialized || actor == null || damage <= 0f || float.IsNaN(damage) || float.IsInfinity(damage) || !Finite(point) || !Finite(direction)) return;
             if (!injuries.TryGetValue(actor, out Injury injury))
@@ -126,21 +144,28 @@ namespace BarPromenade
                 injuries.Add(actor, injury);
             }
             Vector3 incoming = direction.sqrMagnitude > .0001f ? direction.normalized : actor.transform.forward;
-            injury.Marks.Add(point, incoming);
+            injury.Marks.Add(point, incoming, projectile);
             Vector3 origin = injury.Marks.Count > 0 ? injury.Marks.BleedPosition : point;
             Vector3 outward = injury.Marks.Count > 0 ? injury.Marks.BleedDirection : -incoming;
             int amount = Mathf.Clamp(12 + Mathf.RoundToInt(damage * .24f), 12, 26);
+            if (projectile) amount = head ? 46 : 32;
             for (int i = 0; i < amount; i++)
             {
                 Vector3 scatter = new Vector3(Range(-1f, 1f), Range(-.25f, 1f), Range(-1f, 1f));
                 Vector3 velocity = incoming * Range(.7f, 2.2f) + outward * Range(.4f, 1.3f) +
                     scatter * Range(.25f, .95f) + Vector3.up * Range(.3f, 1.1f);
-                SpawnDrop(origin + outward * .022f, velocity, Range(.021f, .039f));
+                if (projectile)
+                    velocity = outward * Range(2.2f, head ? 4.8f : 4f) + incoming * Range(.1f, .35f) +
+                        scatter * Range(.65f, 1.4f) + Vector3.up * Range(.4f, 1.3f);
+                SpawnDrop(origin + outward * .022f, velocity, Range(.021f, projectile ? .045f : .039f));
             }
-            // Finite visual bleeding follows the original skin through ragdoll;
-            // it does not alter health or perpetually enlarge the arena puddle.
-            injury.BleedSeconds = Mathf.Clamp(.35f + damage * .026f, .6f, 1.4f);
-            injury.Remainder = 0f;
+            // Bullet wounds remain emitters until reset, including after defeat.
+            // Ordinary melee wounds keep their existing finite bleed.
+            if (!projectile)
+            {
+                injury.BleedSeconds = Mathf.Clamp(.35f + damage * .026f, .6f, 1.4f);
+                injury.Remainder = 0f;
+            }
             EmissionCount++;
         }
 
@@ -153,15 +178,27 @@ namespace BarPromenade
                 Injury injury = pair.Value;
                 injury.Marks.RefreshVisibility();
                 AdvanceDefeatPool(pair.Key, injury, seconds);
-                if (pair.Key == null || !pair.Key.isActiveAndEnabled || injury.BleedSeconds <= 0f) continue;
-                float time = Mathf.Min(injury.BleedSeconds, seconds);
-                injury.BleedSeconds = Mathf.Max(0f, injury.BleedSeconds - seconds);
-                injury.Remainder += time * 8f;
-                int count = Mathf.FloorToInt(injury.Remainder);
-                injury.Remainder -= count;
-                for (int i = 0; i < count; i++)
-                    SpawnDrop(injury.Marks.BleedPosition + injury.Marks.BleedDirection * .015f,
-                        injury.Marks.BleedDirection * Range(.1f, .3f) + Vector3.down * Range(.15f, .35f), Range(.018f, .03f));
+                if (pair.Key == null || !pair.Key.isActiveAndEnabled) continue;
+                if (injury.BleedSeconds > 0f)
+                {
+                    float time = Mathf.Min(injury.BleedSeconds, seconds);
+                    injury.BleedSeconds = Mathf.Max(0f, injury.BleedSeconds - seconds);
+                    injury.Remainder += time * 8f;
+                    int count = Mathf.FloorToInt(injury.Remainder);
+                    injury.Remainder -= count;
+                    SpawnBleedingDrops(injury, injury.Marks.BleedPosition, injury.Marks.BleedDirection, count);
+                }
+                int wounds = injury.Marks.ProjectileCount;
+                if (wounds == 0) continue;
+                // Every hole keeps flowing; a heavily shot body shares a bounded
+                // drop budget instead of allocating more particles each second.
+                injury.ProjectileRemainder += seconds * Mathf.Min(8f, 64f / wounds);
+                int projectileDrops = Mathf.FloorToInt(injury.ProjectileRemainder);
+                injury.ProjectileRemainder -= projectileDrops;
+                if (projectileDrops == 0) continue;
+                for (int wound = 0; wound < wounds; wound++)
+                    if (injury.Marks.TryGetProjectileBleed(wound, out Vector3 point, out Vector3 direction))
+                        SpawnBleedingDrops(injury, point, direction, projectileDrops);
             }
             // Sweeps use the complete travelled segment, so a hitch cannot
             // teleport a drop through the floor or the arena's low obstacles.
@@ -203,6 +240,14 @@ namespace BarPromenade
                 stain.Diameter = Mathf.MoveTowards(stain.Diameter, stain.TargetDiameter, seconds * 1.35f);
                 stain.Transform.localScale = Vector3.one * (stain.Diameter / stain.MeshUnit);
             }
+        }
+
+        private void SpawnBleedingDrops(Injury injury, Vector3 point, Vector3 direction, int count)
+        {
+            for (int i = 0; i < count; i++)
+                SpawnDrop(point + direction * .015f,
+                    direction * Range(.1f, .3f) + Vector3.down * Range(.15f, .35f), Range(.018f, .03f));
+            injury.BleedingDrops += count;
         }
 
         private void SpawnDrop(Vector3 point, Vector3 velocity, float size)
@@ -273,7 +318,8 @@ namespace BarPromenade
         public void ResetActor(CombatActor actor)
         {
             if (actor == null || !injuries.TryGetValue(actor, out Injury injury)) return;
-            injury.Marks.Reset(); injury.BleedSeconds = injury.Remainder = 0f;
+            injury.Marks.Reset(); injury.BleedSeconds = injury.Remainder = injury.ProjectileRemainder = 0f;
+            injury.BleedingDrops = 0;
             ResetDefeatPool(injury);
         }
 
@@ -281,7 +327,8 @@ namespace BarPromenade
         {
             foreach (Injury injury in injuries.Values)
             {
-                injury.Marks.Reset(); injury.BleedSeconds = injury.Remainder = 0f;
+                injury.Marks.Reset(); injury.BleedSeconds = injury.Remainder = injury.ProjectileRemainder = 0f;
+                injury.BleedingDrops = 0;
                 ResetDefeatPool(injury);
             }
             foreach (Drop drop in drops)

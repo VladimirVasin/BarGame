@@ -622,7 +622,8 @@ namespace BarPromenade
             else chosen.SampleAnimation(npc.Animator.gameObject, progress * chosen.length);
         }
 
-        private float TransitionSeconds(AnimationClip chosen) => chosen == rest ? .35f :
+        private float TransitionSeconds(AnimationClip chosen) => chosen == hit && State.Phase == MeleePhase.Stagger &&
+            LastImpact.Kind == CombatImpactKind.Projectile && ImpactMotion != null && ImpactMotion.Age < .05f ? .045f : chosen == rest ? .35f :
             chosen == block || visibleClip == block.name ? .18f :
             State.IsContinuation && (chosen == Current.Charge || chosen == ReleaseClip) ? .20f : PoseBlendSeconds;
 

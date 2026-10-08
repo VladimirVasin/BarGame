@@ -17,10 +17,10 @@ namespace BarPromenade
 
         public bool IsSimulationSuspended => simulationSuspended;
 
-        private bool ActivateFromCurrentPose(bool rebaseCombatElbows = false)
+        private bool ActivateFromCurrentPose(bool rebaseCombatElbows = false, bool preservePresentedPose = false)
         {
             if (!initialized || IsActive) return false;
-            presentation?.BeginRagdollPoseFromLatePose();
+            presentation?.BeginRagdollPoseFromLatePose(preservePresentedPose);
             RefreshJointAnchors();
             SetCollidersEnabled(true);
             Physics.SyncTransforms();
@@ -122,16 +122,17 @@ namespace BarPromenade
             }
         }
 
-        /// <summary>The supplied whole-body motion already includes the resolved hit impulse.
-        /// Preserve limb motion relative to the pelvis, without applying the hit a second time.</summary>
+        /// <summary>Starts with caller-owned whole-body motion and preserves relative limb motion.
+        /// A temporary fall already includes its hit; a terminal contact can instead retain the
+        /// exact presented pose and publish its anatomical impulse once after activation.</summary>
         internal bool BeginCombatSimulation(Vector3 linear, Vector3 angular,
-            IReadOnlyDictionary<Transform, RagdollBoneMotion> recordedMotion)
+            IReadOnlyDictionary<Transform, RagdollBoneMotion> recordedMotion, bool preservePresentedPose = false)
         {
             if (!initialized || IsSimulating) return false;
             // A new hit may interrupt the frozen rise; its visible pose is the new source.
             IsRecovering = IsFrozen = false;
             recoveryStart = null;
-            if (!ActivateFromCurrentPose(true)) return false;
+            if (!ActivateFromCurrentPose(true, preservePresentedPose)) return false;
             Vector3 centre = PelvisBody.worldCenterOfMass;
             RagdollBoneMotion pelvisMotion = default;
             bool hasPelvis = recordedMotion != null && recordedMotion.TryGetValue(PelvisBody.transform, out pelvisMotion);

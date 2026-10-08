@@ -92,6 +92,19 @@ namespace BarPromenade.Tests.EditMode
         [TestCase(RetroSfxId.VomitGush)]
         [TestCase(RetroSfxId.VomitSplat)]
         [TestCase(RetroSfxId.VomitCough)]
+        [TestCase(RetroSfxId.PistolFire)]
+        [TestCase(RetroSfxId.PistolEmpty)]
+        [TestCase(RetroSfxId.PistolMagazineLatch)]
+        [TestCase(RetroSfxId.PistolMagazineRemove)]
+        [TestCase(RetroSfxId.PistolMagazineStow)]
+        [TestCase(RetroSfxId.PistolMagazineDraw)]
+        [TestCase(RetroSfxId.PistolMagazineInsert)]
+        [TestCase(RetroSfxId.PistolMagazineSeat)]
+        [TestCase(RetroSfxId.PistolSlidePull)]
+        [TestCase(RetroSfxId.PistolSlideRelease)]
+        [TestCase(RetroSfxId.PistolReady)]
+        [TestCase(RetroSfxId.PistolCasingEject)]
+        [TestCase(RetroSfxId.PistolCasingBounce)]
         public void GenerateSamples_IsDeterministicFiniteAndAudible(
             RetroSfxId id)
         {

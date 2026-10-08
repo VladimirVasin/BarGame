@@ -15,12 +15,19 @@ namespace BarPromenade
         private float targetLockYaw, targetLockYawVelocity, targetLockDistance, targetLockDistanceVelocity;
         private float targetLockFarDistance = TargetLockDistance;
         private bool targetLockInitialized;
+        private bool targetLockStableFraming;
+        private Vector3 targetLockShoulderLocal, targetLockAimLocal;
 
         /// <summary>A bounded impact kick on the shoulder anchor. It is added before the
         /// smoothing and every clearance sweep, so the lock itself absorbs and bounds it.</summary>
         public void Nudge(Vector3 impulse)
         {
-            if (!TargetLockActive || !IsFinite(impulse)) return;
+            if (!IsFinite(impulse)) return;
+            if (!TargetLockActive)
+            {
+                if (FreeAimActive) freeAimHitKick = Mathf.Min(2f, freeAimHitKick + impulse.magnitude * 30f);
+                return;
+            }
             impulse.y = 0f;
             targetLockKick = Vector3.ClampMagnitude(targetLockKick + impulse, .05f);
         }
@@ -37,7 +44,8 @@ namespace BarPromenade
             followTarget != null && targetLockRoot != null && targetLockAim != null && targetLockShoulder != null;
 
         /// <summary>Owns a right-shoulder view aimed at a second actor's live pose.</summary>
-        public bool SetTargetLock(object owner, Transform opponentRoot, Transform opponentAim, Transform shoulderAnchor)
+        public bool SetTargetLock(object owner, Transform opponentRoot, Transform opponentAim, Transform shoulderAnchor,
+            bool stableFraming = false)
         {
             if (owner == null || controlledCamera == null || followTarget == null ||
                 opponentRoot == null || opponentAim == null || shoulderAnchor == null ||
@@ -45,9 +53,13 @@ namespace BarPromenade
                 opponentRoot == followTarget || (TargetLockActive && !ReferenceEquals(owner, targetLockOwner)))
                 return false;
             if (ReferenceEquals(owner, targetLockOwner) && targetLockRoot == opponentRoot &&
-                targetLockAim == opponentAim && targetLockShoulder == shoulderAnchor) return true;
+                targetLockAim == opponentAim && targetLockShoulder == shoulderAnchor &&
+                targetLockStableFraming == stableFraming) return true;
             targetLockOwner = owner;
             targetLockRoot = opponentRoot; targetLockAim = opponentAim; targetLockShoulder = shoulderAnchor;
+            targetLockStableFraming = stableFraming;
+            targetLockShoulderLocal = followTarget.InverseTransformPoint(shoulderAnchor.position);
+            targetLockAimLocal = opponentRoot.InverseTransformPoint(opponentAim.position);
             targetLockInitialized = false;
             targetLockKick = Vector3.zero;
             targetLockFarDistance = TargetLockDistance;
@@ -55,7 +67,7 @@ namespace BarPromenade
             return true;
         }
 
-        public void ClearTargetLock(object owner)
+        public void ClearTargetLock(object owner, bool preservePose = false)
         {
             if (owner == null || !ReferenceEquals(owner, targetLockOwner)) return;
             ResetTargetLockState();
@@ -64,7 +76,7 @@ namespace BarPromenade
                 targetYaw = controlledCamera.transform.eulerAngles.y;
                 targetPitch = ClampOrbitPitch(Mathf.DeltaAngle(0f, controlledCamera.transform.eulerAngles.x));
             }
-            Snap();
+            if (!preservePose) Snap();
         }
 
         private void ResetTargetLockState()
@@ -72,6 +84,7 @@ namespace BarPromenade
             targetLockOwner = null;
             targetLockRoot = targetLockAim = targetLockShoulder = null;
             targetLockInitialized = false;
+            targetLockStableFraming = false;
             targetLockAnchorVelocity = targetLockKick = Vector3.zero;
             targetLockYawVelocity = targetLockDistanceVelocity = 0f;
             targetLockFarDistance = TargetLockDistance;
@@ -79,8 +92,9 @@ namespace BarPromenade
 
         private void UpdateTargetLock(float deltaTime, bool snap)
         {
-            Vector3 aim = targetLockAim.position;
-            Vector3 anchor = targetLockShoulder.position + Vector3.up * TargetLockHeightOffset + targetLockKick;
+            Vector3 aim = targetLockStableFraming ? targetLockRoot.TransformPoint(targetLockAimLocal) : targetLockAim.position;
+            Vector3 shoulder = targetLockStableFraming ? followTarget.TransformPoint(targetLockShoulderLocal) : targetLockShoulder.position;
+            Vector3 anchor = shoulder + Vector3.up * TargetLockHeightOffset + targetLockKick;
             if (!IsFinite(aim) || !IsFinite(anchor)) return;
             // The kick decays on its own clock; a frozen simulation still lets the camera settle.
             targetLockKick *= Mathf.Exp(-16f * Mathf.Max(0f, deltaTime));
@@ -89,7 +103,7 @@ namespace BarPromenade
             // visible shoulder drops with a physical body while its root stays put.
             anchor.y = Mathf.Max(anchor.y, followTarget.position.y + collisionRadius + collisionPadding);
             snap |= !targetLockInitialized || ShouldSnapForTeleport();
-            Vector3 axis = aim - targetLockShoulder.position;
+            Vector3 axis = aim - shoulder;
             axis.y = 0f;
             float desiredYaw = axis.sqrMagnitude > .04f ? Mathf.Atan2(axis.x, axis.z) * Mathf.Rad2Deg :
                 targetLockInitialized ? targetLockYaw : followTarget.eulerAngles.y;

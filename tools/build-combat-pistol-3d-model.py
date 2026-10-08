@@ -39,6 +39,17 @@ FPS = 100
 CLIPS = (("PistolRest", 4., True), ("PistolRaise", .25, False),
          ("PistolAim", 4., True), ("PistolFire", .4, False),
          ("PistolReload", 1.8, False), ("PistolLower", .25, False))
+# Seconds, barrel rise, rearward/upward grip travel, spine/chest counter-pitch.
+# Runtime shoulder aim keeps this same angular envelope instead of cancelling
+# the authored firing motion back onto the crosshair each rendered frame.
+FIRE_STOPS = ((0., "aim", 0., 0., 0., 0., 0.),
+              (.04, "kick", 20., .045, .065, -1.2, -2.),
+              (.09, "absorb", 12., .065, .040, -3., -4.5),
+              (.17, "return", 3., .025, .012, -1.8, -2.),
+              (.27, "settle", -1.5, -.006, -.004, .5, .7),
+              (.4, "aim", 0., 0., 0., 0., 0.))
+FIRE_POSES = {name: (pitch, back, up, spine, chest)
+              for _, name, pitch, back, up, spine, chest in FIRE_STOPS}
 ART_SHIFT = (0., .011, .035)
 SUPPORT = (-.020, -.025, 0.)
 SUPPORT_YAW_DEGREES = 90.
@@ -46,40 +57,84 @@ SUPPORT_WEIGHT = .75
 AIM_RIGHT_POLE = (-.69976, .29116, -.65235)
 AIM_LEFT_POLE = (.34942, .45092, -.82133)
 COLLISION = [dict(center=[0., .079, .080], size=[.044, .068, .236]),
-             dict(center=[0., .005, .003], size=[.044, .124, .08]),
+             dict(center=[0., .003, .003], size=[.044, .142, .086]),
              dict(center=[0., .013, .064], size=[.04, .067, .065])]
 ANCHORS = {"Grip": (0., 0., 0.), "Muzzle": (0., .088, .197),
-           "SupportGrip": SUPPORT, "Magazine": (0., -.055, -.007)}
+           "SupportGrip": SUPPORT, "MagazineSeat": (0., .044, .009),
+           "Slide": (0., .084, .080), "Barrel": (0., .088, .175),
+           "EjectionPort": (.020, .091, .061), "SlidePull": (-.027, .092, -.008)}
+SLIDE_TRAVEL = .038
+MAGAZINE_TILT = math.radians(12.)
+MAGAZINE_GRIP = (-.026, -.084 * math.cos(MAGAZINE_TILT), -.084 * math.sin(MAGAZINE_TILT))
+RELOAD_STOPS = ((0., "aim"), (.25, "reload_grab"), (.55, "reload_extract"),
+                (.75, "reload_stash"), (.9, "reload_stash"), (1.15, "reload_align"),
+                (1.3, "reload_grab"), (1.42, "reload_rack"), (1.5, "reload_pull"),
+                (1.58, "reload_release"), (1.8, "aim"))
+
+
+def make_magazine():
+    magazine = kit.Item("Magazine")
+    magazine.box("Steel", (0., -.050, 0.), (.026, .100, .034), chamfer=.003)
+    magazine.box("WornSteel", (0., -.104, 0.), (.038, .008, .050), chamfer=.002)
+    for x in (-.0132, .0132):
+        for y in (-.020, -.040, -.060, -.080):
+            magazine.box("Rubber", (x, y, 0.), (.001, .006, .012), chamfer=.0002)
+    magazine.parts = {key: [kit.bp.u_rotated(solid, (12., 0., 0.)) for solid in solids]
+                      for key, solids in magazine.parts.items()}
+    magazine.anchor("Seat", (0., 0., 0.))
+    magazine.anchor("Grip", MAGAZINE_GRIP)
+    return magazine
+
+
+def make_casing():
+    casing = kit.Item("Casing")
+    sides = 10
+    vertices = [(radius * math.cos(i * math.tau / sides), radius * math.sin(i * math.tau / sides), z)
+                for radius, z in ((.0048, -.009), (.0048, .009), (.0036, .009), (.0036, -.007))
+                for i in range(sides)]
+    faces = []
+    for ring in range(3):
+        for i in range(sides):
+            j = (i + 1) % sides
+            faces.append((ring*sides+i, ring*sides+j, (ring+1)*sides+j, (ring+1)*sides+i))
+    faces.extend((tuple(reversed(range(sides))), tuple(range(3*sides, 4*sides))))
+    casing.add("Brass", (vertices, faces))
+    casing.rod("WornSteel", (0., 0., -.0093), (0., 0., -.009), .0021, sides=10)
+    casing.anchor("Centre", (0., 0., 0.))
+    return casing
 
 
 def make_items():
     p = kit.Item("Pistol")
     # Honest compact silhouette: slide, barrel, frame, sloping grip and open
     # trigger guard. Wear is sparse edge geometry, never a brand or inscription.
-    p.box("Steel", (0., .073, .045), (.037, .038, .224), chamfer=.006)
-    p.box("WornSteel", (0., .052, .042), (.04, .014, .21), chamfer=.003)
+    # Real slide opening: rear/front masses and a continuous left rail leave
+    # the chamber's right/top window open for the spent casing to leave.
+    p.box("Steel", (-.014, .073, .045), (.009, .038, .224), "Slide", chamfer=.003)
+    p.box("Steel", (.004, .073, -.033), (.029, .038, .068), "Slide", chamfer=.004)
+    p.box("Steel", (.004, .073, .096), (.029, .038, .122), "Slide", chamfer=.004)
+    p.box("WornSteel", (0., .052, .042), (.04, .014, .21), "Slide", chamfer=.003)
     p.box("Steel", (0., .032, -.007), (.034, .028, .116), chamfer=.004)
-    p.rod("Steel", (0., .077, .12), (0., .077, .162), .009, sides=10)
+    p.rod("Steel", (0., .077, .008), (0., .077, .162), .009, "Barrel", sides=10)
     # Dark bore ends slightly ahead of the surrounding steel end cap.
-    p.rod("Rubber", (0., .077, .162), (0., .077, .1625), .0055, sides=10)
+    p.rod("Rubber", (0., .077, .162), (0., .077, .1625), .0055, "Barrel", sides=10)
     grip = kit.bp.u_rotated(kit.bp.u_box((0., 0., 0.), (.036, .108, .048), .005), (12., 0., 0.))
     p.add("Rubber", kit.translated(grip, (0., -.011, -.035)))
-    p.box("Steel", (0., -.063, -.044), (.04, .008, .055), chamfer=.002)
     for x in (-.0185, .0185):
         for y in (-.041, -.024, -.007, .01):
             p.box("Steel", (x, y, -.035), (.0015, .003, .031), chamfer=.0002)
         for z in (-.052, -.042, -.032, -.022):
-            p.box("Rubber", (x, .074, z), (.0015, .027, .003), chamfer=.0002)
-        p.box("WornSteel", (x, .087, .04), (.0015, .002, .146), chamfer=.0002)
+            p.box("Rubber", (x, .074, z), (.0015, .027, .003), "Slide", chamfer=.0002)
+        p.box("WornSteel", (x, .087, .094), (.0015, .002, .112), "Slide", chamfer=.0002)
     # An open ring avoids the opaque block that would swallow the trigger finger.
     for a, b in (((-.0, .023, .019), (0., .016, .058)),
                  ((0., .016, .058), (0., -.019, .052)),
                  ((0., -.019, .052), (0., -.026, .013))):
         p.rod("Steel", a, b, .0035, sides=6)
     p.rod("Steel", (0., .022, .024), (0., -.003, .032), .0028, sides=6)
-    p.box("Steel", (0., .096, .143), (.008, .009, .009), chamfer=.001)
+    p.box("Steel", (0., .096, .143), (.008, .009, .009), "Slide", chamfer=.001)
     for x in (-.011, .011):
-        p.box("Steel", (x, .096, -.051), (.006, .009, .012), chamfer=.001)
+        p.box("Steel", (x, .096, -.051), (.006, .009, .012), "Slide", chamfer=.001)
     for angle in (0., 45.):
         flash = kit.bp.u_rotated(kit.bp.u_box((0., 0., 0.), (.052, .011, .002), .001), (0., 0., angle))
         p.add("Flash", kit.translated(flash, (0., .077, .178)), "MuzzleFlash")
@@ -87,13 +142,18 @@ def make_items():
     # hand-contact origin. Shift the complete passive geometry together.
     p.parts = {key: [kit.translated(solid, ART_SHIFT) for solid in solids] for key, solids in p.parts.items()}
     for name, point in ANCHORS.items():
-        p.anchor(name, point)
+        p.anchor(name, point, "Slide" if name in ("EjectionPort", "SlidePull") else None)
+    magazine = make_magazine()
+    p.anchor("Magazine", ANCHORS["MagazineSeat"], "MagazineSeat")
+    for (_, role), solids in magazine.parts.items():
+        for solid in solids:
+            p.add(role, kit.translated(solid, ANCHORS["MagazineSeat"]), "Magazine")
     p.anchor("MuzzleFlash", (0., .088, .213))
     bullet = kit.Item("Bullet")
     bullet.rod("Brass", (0., 0., -.006), (0., 0., .003), .0045, sides=8)
     bullet.add("WornSteel", kit.ellipsoid((0., 0., .003), (.009, .009, .011), 8, 4))
     bullet.anchor("Centre", (0., 0., 0.))
-    return [p, bullet]
+    return [p, bullet, magazine, make_casing()]
 
 
 def geometry_signature(items):
@@ -107,15 +167,25 @@ def payload(items):
     if signature != geometry_signature(make_items()):
         raise ValueError("Pistol geometry is not deterministic")
     data = kit.manifest(items, signature)
-    data.update(generator="tools/build-combat-pistol-3d-model.py", generator_version="1.0.0", test_only=True)
+    data.update(generator="tools/build-combat-pistol-3d-model.py", generator_version="1.2.0", test_only=True)
     data["models"][0]["collision_shapes"] = dict(space="grip_local_unity_metres", boxes=COLLISION)
+    data["mechanism"] = dict(slide="Slide", barrel="Barrel", slide_back_axis=[0., 0., -1.],
+                             slide_travel_m=SLIDE_TRAVEL, magazine="Magazine", magazine_seat="MagazineSeat",
+                             magazine_grip=list(MAGAZINE_GRIP), magazine_tilt_degrees=12.,
+                             ejection_port="EjectionPort", slide_contact="SlidePull",
+                             reload_stops=[dict(seconds=second, phase=name) for second, name in RELOAD_STOPS])
     data["actions"] = dict(source="ArtSource/Combat/CombatActions.blend", root_motion=False,
                            animation_events=0, fps=FPS, bone_only=True,
                            clips=[dict(name=name, duration_seconds=duration, loop=loop) for name, duration, loop in CLIPS],
                            endpoints="Raise Rest→Aim; Lower Aim→Rest; Fire/Reload Aim→Aim",
                            hand_frame="right CylinderAxis=up; distal hand direction=barrel forward; Grip at handle/CylinderCentre; left palm cups right from the side",
                            support_grip_weight=SUPPORT_WEIGHT, support_grip=SUPPORT,
-                           support_yaw_degrees=SUPPORT_YAW_DEGREES)
+                           support_yaw_degrees=SUPPORT_YAW_DEGREES,
+                           fire_recoil=dict(interpolation="smoothstep",
+                               stops=[dict(seconds=t, barrel_rise_degrees=pitch,
+                                           grip_back_m=back, grip_up_m=up,
+                                           spine_degrees=spine, chest_degrees=chest)
+                                      for t, _, pitch, back, up, spine, chest in FIRE_STOPS]))
     for (_, role), solids in items[0].parts.items():
         if role == "Flash":
             continue
@@ -250,7 +320,17 @@ def author_actions():
     def pose(kind):
         builder._reset_pose()
         builder._apply_pose(base)
-        if kind in ("aim", "recoil"):
+        two_handed = kind in FIRE_POSES
+        if two_handed:
+            # The hands catch the kick before the torso absorbs it. The pelvis
+            # and both planted legs keep their unchanged production Ready pose.
+            _, _, _, spine, chest = FIRE_POSES[kind]
+            for name, degrees in (("spine", spine), ("chest", chest),
+                                  ("head", -(spine + chest) * .45)):
+                bone = rig.pose.bones[name]
+                bone.rotation_quaternion = bone.rotation_quaternion @ Quaternion(
+                    Vector((1., 0., 0.)), math.radians(degrees))
+            bpy.context.view_layer.update()
             # Bring the supporting shoulder forward instead of reaching its
             # upper arm through the chest inherited from the crowbar stance.
             clavicle = rig.pose.bones["clavicle.L"]
@@ -268,41 +348,70 @@ def author_actions():
             axis = Vector((0., -.96, .28)).normalized()
             centre = Vector((-.23, -.22, .85))
             left = Vector((.23, -.16, .98))
-        elif kind == "recoil":
-            recoil = Quaternion(Vector((1., 0., 0.)), math.radians(-11.))
+        elif two_handed:
+            pitch, back, up, _, _ = FIRE_POSES[kind]
+            recoil = Quaternion(Vector((1., 0., 0.)), math.radians(-pitch))
             axis, forward = recoil @ axis, recoil @ forward
-            centre += Vector((0., 0., .02))
+            centre += Vector((0., back, up))
             left = centre + Vector((-SUPPORT[0], -SUPPORT[2], SUPPORT[1]))
-        elif kind == "reload_low":
+        elif kind.startswith("reload_"):
             turn = Quaternion(Vector((1., 0., 0.)), math.radians(-24.))
             axis, forward = turn @ axis, turn @ forward
             centre = Vector((-.075, -.30, 1.22))
-            left = Vector((.12, -.22, .85))
-        elif kind == "reload_magazine":
-            turn = Quaternion(Vector((1., 0., 0.)), math.radians(-24.))
-            axis, forward = turn @ axis, turn @ forward
-            centre = Vector((-.075, -.30, 1.22))
-            left = centre + axis * -.064 + forward * -.007
-        if kind in ("aim", "recoil"):
+            right = forward.cross(axis)
+            def point(local):
+                return centre + right * local[0] + axis * local[1] + forward * local[2]
+            magazine_axis = axis * math.cos(MAGAZINE_TILT) + forward * math.sin(MAGAZINE_TILT)
+            left = point(Vector(ANCHORS["MagazineSeat"]) + Vector(MAGAZINE_GRIP))
+            if kind == "reload_extract": left -= magazine_axis * .12
+            elif kind == "reload_align": left -= magazine_axis * .04
+            elif kind == "reload_stash": left = Vector((.25, -.15, .92))
+            elif kind in ("reload_rack", "reload_pull", "reload_release"):
+                left = point(ANCHORS["SlidePull"])
+                if kind == "reload_pull": left -= forward * SLIDE_TRAVEL
+                if kind == "reload_release": left += right * -.045
+        if two_handed:
             left = centre + forward.cross(axis) * SUPPORT[0] + axis * SUPPORT[1] + forward * SUPPORT[2]
         right_palm = axis.cross(forward).normalized()
-        left_palm = support_palm(axis, forward) if kind in ("aim", "recoil") else forward
-        right_pole = (-.3, -.4, -1.) if kind == "rest" else (AIM_RIGHT_POLE if kind in ("aim", "recoil") else (-.1, .2, -1.))
-        left_pole = AIM_LEFT_POLE if kind in ("aim", "recoil") else (.7, .25, -.7)
+        left_axis = axis
+        left_palm = support_palm(axis, forward) if two_handed else forward
+        if kind.startswith("reload_"):
+            left_axis = magazine_axis if kind in ("reload_grab", "reload_extract", "reload_align") else axis
+            left_palm = forward.cross(axis)
+            if kind == "reload_stash":
+                # Carry the magazine toward the hip with the elbow lowered,
+                # rather than keeping its forearm vertical beside the chest.
+                left_axis = Vector((0., -1., 1.)).normalized()
+        right_pole = (-.3, -.4, -1.) if kind == "rest" else (AIM_RIGHT_POLE if two_handed else (-.1, .2, -1.))
+        left_pole = AIM_LEFT_POLE if two_handed else (.7, .25, -.7)
         for side, target, palm, pole in (("R", centre, right_palm, right_pole),
                                          ("L", left, left_palm, left_pole)):
-            rotation = hand_rotation(builder, side, axis, palm)
+            target_axis = left_axis if side == "L" else axis
+            rotation = hand_rotation(builder, side, target_axis, palm)
             rest = rig.data.bones["hand." + side]
             grip_offset = builder.hand_frame(side)[0] - rest.head_local
             delta = rotation @ rest.matrix_local.to_3x3().inverted()
             wrist = target - delta @ grip_offset
+            if two_handed and kind != "aim":
+                # The elbow follows the raised barrel so the kick is caught by
+                # the whole arm, rather than hinging an unsafe amount at the wrist.
+                shoulder = rig.pose.bones["upper_arm." + side].head
+                forearm = rig.data.bones["forearm." + side].length
+                aligned_pole = (wrist - forward * forearm - shoulder).normalized()
+                pole = Vector(pole).lerp(aligned_pole, min(1., abs(FIRE_POSES[kind][0]) / 20.))
+            elif kind.startswith("reload_") and side == "L":
+                shoulder = rig.pose.bones["upper_arm.L"].head
+                forearm = rig.data.bones["forearm.L"].length
+                distal = left_axis.cross(palm).normalized()
+                pole = (wrist - distal * forearm - shoulder).normalized()
             try:
                 builder.solve_arm(side, wrist, rotation, pole)
             except ValueError as error:
                 raise ValueError(f"Pistol {kind}/{side}: {error}") from error
         return builder.snapshot_pose()
 
-    poses = {name: pose(name) for name in ("rest", "aim", "recoil", "reload_low", "reload_magazine")}
+    poses = {name: pose(name) for name in dict.fromkeys(("rest", *FIRE_POSES,
+                                                       *(name for _, name in RELOAD_STOPS)))}
     transition = []
     for name in ("rest", "aim"):
         builder._reset_pose()
@@ -339,13 +448,15 @@ def author_actions():
         rest = rig.data.bones["hand.L"]
         left_delta = rotation @ rest.matrix_local.to_3x3().inverted()
         wrist = target - left_delta @ (builder.hand_frame("L")[0] - rest.head_local)
-        builder.solve_arm("L", wrist, rotation, AIM_LEFT_POLE)
+        # Preserve the authored elbow response while correcting the grip after
+        # bone interpolation; a fixed aim pole would erase that firing motion.
+        elbow_pole = rig.pose.bones["forearm.L"].head - rig.pose.bones["upper_arm.L"].head
+        builder.solve_arm("L", wrist, rotation, elbow_pole)
         return builder.snapshot_pose()
     tracks = {"PistolRaise": ((0., "rest"), (.25, "aim")),
               "PistolLower": ((0., "aim"), (.25, "rest")),
-              "PistolFire": ((0., "aim"), (.06, "recoil"), (.14, "recoil"), (.4, "aim")),
-              "PistolReload": ((0., "aim"), (.3, "reload_low"), (.68, "reload_low"),
-                               (1.08, "reload_magazine"), (1.35, "reload_magazine"), (1.8, "aim"))}
+              "PistolFire": tuple((seconds, name) for seconds, name, *_ in FIRE_STOPS),
+              "PistolReload": RELOAD_STOPS}
     for name, duration, loop in CLIPS:
         keys = []
         for frame in range(round(duration * FPS) + 1):
@@ -489,6 +600,86 @@ def motion_samples(rig, actions):
     return result
 
 
+def validate_fire_motion(builder):
+    """Measure the published firing contract, including the delayed body catch."""
+    rig = builder.result.rig
+    rig.animation_data.action = builder.result.actions["PistolAim"].action
+    bpy.context.scene.frame_set(0)
+    bpy.context.view_layer.update()
+    reference = {name: rig.pose.bones[name].rotation_quaternion.copy()
+                 for name in ("spine", "chest")}
+    reference_grip = rig.pose.bones["hand.R"].matrix @ rig.data.bones["hand.R"].matrix_local.inverted() @ builder.hand_frame("R")[0]
+    measured = []
+    rig.animation_data.action = builder.result.actions["PistolFire"].action
+    for second, _, pitch, back, up, spine, chest in FIRE_STOPS:
+        bpy.context.scene.frame_set(round(second * FPS))
+        bpy.context.view_layer.update()
+        hand = rig.pose.bones["hand.R"]
+        delta = hand.matrix @ hand.bone.matrix_local.inverted()
+        centre, axis, palm = builder.hand_frame("R")
+        forward = (delta.to_3x3() @ palm).cross(delta.to_3x3() @ axis).normalized()
+        actual_pitch = math.degrees(math.atan2(forward.z, -forward.y))
+        travel = delta @ centre - reference_grip
+        if abs(actual_pitch-pitch) > .001 or (travel-Vector((0., back, up))).length > .00001:
+            raise ValueError(f"Pistol firing kick differs at {second}: {actual_pitch}deg/{tuple(travel)}m")
+        body = {}
+        for name, expected in (("spine", spine), ("chest", chest)):
+            change = reference[name].rotation_difference(rig.pose.bones[name].rotation_quaternion)
+            angle = math.degrees(change.angle)
+            if abs(angle-abs(expected)) > .02:
+                raise ValueError(f"Pistol firing body response differs: {second}/{name}={angle}deg")
+            body[name + "_rotation_degrees"] = round(angle, 4)
+        measured.append(dict(seconds=second, barrel_rise_degrees=round(actual_pitch, 4),
+                             grip_back_m=round(travel.y, 7), grip_up_m=round(travel.z, 7), **body))
+    print("PISTOL FIRING KICK / ARM TRAVEL / DELAYED TORSO RETURN OK " + json.dumps(measured), flush=True)
+    return measured
+
+
+def validate_reload_contacts(builder):
+    rig = builder.result.rig
+    rig.animation_data.action = builder.result.actions["PistolReload"].action
+    maximum_wrist = 0.
+    measured = []
+    for frame in range(181):
+        bpy.context.scene.frame_set(frame)
+        bpy.context.view_layer.update()
+        hand, forearm = rig.pose.bones["hand.L"], rig.pose.bones["forearm.L"]
+        bend = math.degrees((hand.head-forearm.head).angle(hand.tail-hand.head))
+        maximum_wrist = max(maximum_wrist, bend)
+        if bend > 45.:
+            raise ValueError(f"Pistol reload left wrist bends beyond45deg: {frame}={bend:.4f}")
+    for second, kind in RELOAD_STOPS[1:-1]:
+        bpy.context.scene.frame_set(round(second * FPS))
+        bpy.context.view_layer.update()
+        right = rig.pose.bones["hand.R"]
+        delta = right.matrix @ right.bone.matrix_local.inverted()
+        centre, rest_axis, rest_palm = builder.hand_frame("R")
+        centre = delta @ centre
+        axis, palm = (delta.to_3x3() @ rest_axis).normalized(), (delta.to_3x3() @ rest_palm).normalized()
+        forward = palm.cross(axis).normalized()
+        lateral = forward.cross(axis)
+        def point(local):
+            return centre + lateral * local[0] + axis * local[1] + forward * local[2]
+        left = rig.pose.bones["hand.L"]
+        left_delta = left.matrix @ left.bone.matrix_local.inverted()
+        actual = left_delta @ builder.hand_frame("L")[0]
+        expected = point(Vector(ANCHORS["MagazineSeat"]) + Vector(MAGAZINE_GRIP))
+        magazine_axis = axis * math.cos(MAGAZINE_TILT) + forward * math.sin(MAGAZINE_TILT)
+        if kind == "reload_extract": expected -= magazine_axis * .12
+        elif kind == "reload_align": expected -= magazine_axis * .04
+        elif kind == "reload_stash": expected = Vector((.25, -.15, .92))
+        elif kind in ("reload_rack", "reload_pull", "reload_release"):
+            expected = point(ANCHORS["SlidePull"])
+            if kind == "reload_pull": expected -= forward * SLIDE_TRAVEL
+            if kind == "reload_release": expected -= lateral * .045
+        error = (expected-actual).length
+        if error > .00001:
+            raise ValueError(f"Pistol reload left grip misses authored contact: {second}/{kind}={error:.7f}m")
+        measured.append(dict(seconds=second, phase=kind, grip_error_m=round(error, 7)))
+    print("PISTOL RELOAD MAGAZINE / SLIDE CONTACTS / LEFT WRIST OK " + json.dumps(measured), flush=True)
+    return dict(maximum_left_wrist_bend_degrees=round(maximum_wrist, 4), contacts=measured)
+
+
 def verify_bank(path, reference):
     rig, actions = combat.import_bank(path)
     if set(actions) != {name for name, _, _ in CLIPS}:
@@ -506,6 +697,34 @@ def verify_bank(path, reference):
     if maximum_position > .0002 or maximum_angle > .08:
         raise ValueError(f"Published pistol motion differs: {maximum_position}m / {maximum_angle}deg")
     print(f"PISTOL PUBLISHED MOTION ROUND TRIP OK position={maximum_position:.7f}m angle={maximum_angle:.5f}deg", flush=True)
+
+
+def verify_mechanism(model_dir):
+    """Exercise the exported hierarchy, including the reflected metric axes."""
+    bpy.ops.wm.read_factory_settings(use_empty=True)
+    bpy.ops.import_scene.fbx(filepath=str(model_dir / "Pistol.fbx"), use_anim=False)
+    parts = {obj.name.split(".")[0]: obj for obj in bpy.data.objects if obj.type == "EMPTY"}
+    required = ("Slide", "Barrel", "MagazineSeat", "Magazine", "EjectionPort", "SlidePull", "Muzzle")
+    if any(name not in parts for name in required):
+        raise ValueError("Pistol exported mechanism is missing a named part")
+    for name in ("EjectionPort", "SlidePull"):
+        if parts[name].parent != parts["Slide"]:
+            raise ValueError("Pistol sliding anchor is detached from its slide: " + name)
+    if parts["Magazine"].parent != parts["MagazineSeat"]:
+        raise ValueError("Pistol seated magazine has the wrong dock")
+    before = {name: parts[name].matrix_world.translation.copy() for name in required}
+    expected = Vector((0., -SLIDE_TRAVEL, 0.))
+    slide = parts["Slide"].matrix_world.copy()
+    slide.translation += expected
+    parts["Slide"].matrix_world = slide
+    bpy.context.view_layer.update()
+    for name in ("Slide", "EjectionPort", "SlidePull"):
+        if (parts[name].matrix_world.translation-before[name]-expected).length > .00001:
+            raise ValueError("Pistol exported slide has the wrong metric travel: " + name)
+    for name in ("Barrel", "Muzzle", "MagazineSeat", "Magazine"):
+        if (parts[name].matrix_world.translation-before[name]).length > .00001:
+            raise ValueError("Pistol slide moved a fixed contact: " + name)
+    print("PISTOL EXPORTED SLIDE / FIXED BARREL / MAGAZINE DOCK / EJECTION AXES OK", flush=True)
 
 
 def preview(model_dir, source_dir, destination):
@@ -529,6 +748,14 @@ def preview(model_dir, source_dir, destination):
     bpy.ops.import_scene.fbx(filepath=str(model_dir / "Pistol.fbx"), use_anim=False)
     model = next(obj for obj in bpy.data.objects if obj not in before and obj.parent is None)
     imported = model.matrix_world.copy()
+    mounted = next(obj for obj in model.children_recursive if obj.name.split(".")[0] == "Magazine")
+    slide = next(obj for obj in model.children_recursive if obj.name.split(".")[0] == "Slide")
+    slide_rest = slide.matrix_basis.copy()
+    before = set(bpy.data.objects)
+    bpy.ops.import_scene.fbx(filepath=str(model_dir / "Magazine.fbx"), use_anim=False)
+    magazine = next(obj for obj in bpy.data.objects if obj not in before and obj.parent is None)
+    magazine_imported = magazine.matrix_world.copy()
+    magazine_grip = next(obj for obj in magazine.children_recursive if obj.name.split(".")[0] == "Grip").matrix_world.translation.copy()
     for obj in model.children_recursive:
         if obj.name.startswith("MuzzleFlash"):
             obj.hide_render = True
@@ -540,14 +767,19 @@ def preview(model_dir, source_dir, destination):
     scene.camera.data.type = "ORTHO"
     scene.camera.data.ortho_scale = 2.1
     destination.mkdir(parents=True, exist_ok=True)
-    for name, second in (("PistolRest", 0.), ("PistolAim", 0.), ("PistolFire", .06), ("PistolReload", 1.08)):
+    samples = (("PistolRest", 0., "PistolRest"), ("PistolAim", 0., "PistolAim"),
+               *(("PistolFire", second, "PistolFire-" + phase)
+                 for second, phase, *_ in FIRE_STOPS[1:-1]),
+               *(("PistolReload", second, "PistolReload-" + phase.removeprefix("reload_") + "-" + str(round(second * FPS)))
+                 for second, phase in RELOAD_STOPS[1:-1]))
+    for name, second, label in samples:
         rig.animation_data.action = actions[name]
         scene.frame_set(round(second * FPS))
         for obj in bpy.data.objects:
             if obj.type == "MESH" and obj.name.endswith(".L") and obj.data.shape_keys is not None:
                 shape = obj.data.shape_keys.key_blocks.get("CylindricalGrip")
                 if shape is not None:
-                    shape.value = SUPPORT_WEIGHT if name in ("PistolAim", "PistolFire") else 0.
+                    shape.value = SUPPORT_WEIGHT if name in ("PistolAim", "PistolFire") else .8 if name == "PistolReload" and second < 1.58 else 0.
         bpy.context.view_layer.update()
         hand = rig.pose.bones["hand.R"]
         delta = hand.matrix @ hand.bone.matrix_local.inverted()
@@ -557,10 +789,35 @@ def preview(model_dir, source_dir, destination):
         forward = palm.cross(up).normalized()
         rotation = Matrix((forward.cross(up), forward, up)).transposed().to_4x4()
         model.matrix_world = Matrix.Translation(delta @ centre) @ rotation @ imported
+        holding = name == "PistolReload" and (.25 <= second < .75 or .9 <= second < 1.3)
+        for obj in mounted.children_recursive:
+            obj.hide_render = name == "PistolReload" and .25 <= second < 1.3
+        for obj in magazine.children_recursive:
+            obj.hide_render = not holding
+        slide.matrix_basis = slide_rest.copy()
+        bpy.context.view_layer.update()
+        slide_back = .8 if name == "PistolFire" and second == .04 else 0.
+        if name == "PistolReload" and second == 1.5:
+            slide_back = 1.
+        if slide_back:
+            matrix = slide.matrix_world.copy()
+            matrix.translation -= forward * SLIDE_TRAVEL * slide_back
+            slide.matrix_world = matrix
+        if holding:
+            hand = rig.pose.bones["hand.L"]
+            delta_left = hand.matrix @ hand.bone.matrix_local.inverted()
+            contact, rest_axis, rest_palm = builder.hand_frame("L")
+            left_axis = (delta_left.to_3x3() @ rest_axis).normalized()
+            left_palm = (delta_left.to_3x3() @ rest_palm).normalized()
+            distal = left_axis.cross(left_palm).normalized()
+            mag_up = left_axis * math.cos(MAGAZINE_TILT) - distal * math.sin(MAGAZINE_TILT)
+            mag_forward = distal * math.cos(MAGAZINE_TILT) + left_axis * math.sin(MAGAZINE_TILT)
+            mag_rotation = Matrix((left_palm, mag_forward, mag_up)).transposed().to_4x4()
+            magazine.matrix_world = Matrix.Translation(delta_left @ contact) @ mag_rotation @ Matrix.Translation(-magazine_grip) @ magazine_imported
         for view, position in (("front", (-2.6, -3.2, 1.65)), ("side", (-3.5, -.25, 1.45))):
             scene.camera.location = position
             common.look_at(scene.camera, Vector((0., -.16, .9)))
-            scene.render.filepath = str(destination / (name + "-" + view + ".png"))
+            scene.render.filepath = str(destination / (label + "-" + view + ".png"))
             bpy.ops.render.render(write_still=True)
             print("PISTOL REVIEW FRAME " + name + "/" + view, flush=True)
 
@@ -579,12 +836,15 @@ def main():
     builder = author_actions()
     data["actions"]["animation_signature"] = action_signature(builder)
     data["actions"]["hand_mesh_validation"] = validate_actions(builder)
+    data["actions"]["fire_motion_validation"] = validate_fire_motion(builder)
+    data["actions"]["reload_contact_validation"] = validate_reload_contacts(builder)
     reference = motion_samples(builder.result.rig, {name: record.action for name, record in builder.result.actions.items()})
     manifest = args.model_dir / "CombatPistol3D.json"
     if args.validate_only:
         if json.loads(manifest.read_text(encoding="utf8")) != json.loads(json.dumps(data)):
             raise ValueError("Published pistol manifest differs from deterministic authoring")
         kit.verify_fbx(args.model_dir, data)
+        verify_mechanism(args.model_dir)
         verify_bank(args.model_dir / "PistolActions.fbx", reference)
         if args.preview_dir:
             preview(args.model_dir, args.source_dir, args.preview_dir)
@@ -595,10 +855,11 @@ def main():
     common.save_blend(args.source_dir / "PistolActions.blend")
     roots = kit.build_objects(items)
     common.save_blend(args.source_dir / "CombatPistol.blend")
-    for root in roots:
-        kit.export(root, args.model_dir / (root.name + ".fbx"))
+    for item, root in zip(items, roots):
+        kit.export(root, args.model_dir / (item.name + ".fbx"))
     manifest.write_text(json.dumps(data, indent=2) + "\n", encoding="utf8")
     kit.verify_fbx(args.model_dir, data)
+    verify_mechanism(args.model_dir)
     verify_bank(args.model_dir / "PistolActions.fbx", reference)
     if args.preview_dir:
         preview(args.model_dir, args.source_dir, args.preview_dir)

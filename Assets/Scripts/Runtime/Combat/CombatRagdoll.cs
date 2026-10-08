@@ -138,19 +138,28 @@ namespace BarPromenade
 
         /// <summary>Temporary knockdown, starting on the already presented hit pose. Motion
         /// includes this hit, so activation must not apply its impulse twice.</summary>
-        internal bool BeginKnockdown(Vector3 linearVelocity, Vector3 angularVelocity)
+        internal bool BeginKnockdown(Vector3 linearVelocity, Vector3 angularVelocity) =>
+            BeginLiveSimulation(linearVelocity, angularVelocity, false);
+
+        private bool BeginLiveSimulation(Vector3 linearVelocity, Vector3 angularVelocity, bool terminal)
         {
             if (physicsController == null || IsActive || physicsController.IsActive || !isActiveAndEnabled ||
                 !Finite(linearVelocity) || !Finite(angularVelocity)) return false;
             CaptureOwners();
-            if (!physicsController.BeginCombatSimulation(linearVelocity, angularVelocity, presentedMotion)) return false;
-            IsActive = recoverable = true;
+            if (!physicsController.BeginCombatSimulation(linearVelocity, angularVelocity, presentedMotion, terminal)) return false;
+            IsActive = true;
+            recoverable = !terminal;
             IsRecovering = IsSettled = false;
             simulationSeconds = quietSeconds = 0f;
             ClearGroundContact();
             DisableOwners();
             return true;
         }
+
+        /// <summary>Terminal firearm handoff from the current visible pose. Supplied
+        /// motion precedes this hit; its anatomical impulse is published once afterward.</summary>
+        internal bool BeginTerminal(Vector3 linearVelocity, Vector3 angularVelocity) =>
+            BeginLiveSimulation(linearVelocity, angularVelocity, true);
 
         private void CaptureOwners()
         {
@@ -179,7 +188,7 @@ namespace BarPromenade
             if (IsRecovering || physicsController.IsFrozen)
             {
                 presentedMotion.TryGetValue(PelvisBody.transform, out RagdollBoneMotion motion);
-                if (!physicsController.BeginCombatSimulation(motion.Linear, motion.Angular, presentedMotion)) return;
+                if (!physicsController.BeginCombatSimulation(motion.Linear, motion.Angular, presentedMotion, !recoverable)) return;
                 IsRecovering = IsSettled = false;
                 simulationSeconds = quietSeconds = 0f;
                 ClearGroundContact();
@@ -223,7 +232,7 @@ namespace BarPromenade
             recoverable = false;
             if (!IsRecovering) return;
             presentedMotion.TryGetValue(PelvisBody.transform, out RagdollBoneMotion motion);
-            physicsController.BeginCombatSimulation(motion.Linear, motion.Angular, presentedMotion);
+            physicsController.BeginCombatSimulation(motion.Linear, motion.Angular, presentedMotion, true);
             IsRecovering = IsSettled = false;
             simulationSeconds = quietSeconds = 0f;
             DisableOwners();

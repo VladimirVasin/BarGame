@@ -21,8 +21,8 @@ namespace BarPromenade
             if (impact.Target != null && impact.Target.State.IsDefeated) SparkEffects?.Clear();
             // Only a wounding contact bleeds: never a block, a parry or a miss.
             if ((impact.Result == MeleeHitResult.Hit || impact.Result == MeleeHitResult.GuardBroken) &&
-                impact.Damage > 0f && (impact.Kind == CombatImpactKind.Weapon || impact.Kind == CombatImpactKind.Projectile) && BloodEffects != null)
-                BloodEffects.Emit(impact.Target, impact.Point, impact.Direction, impact.Damage);
+                (impact.Kind == CombatImpactKind.Projectile || impact.Kind == CombatImpactKind.Weapon && impact.Damage > 0f) && BloodEffects != null)
+                BloodEffects.Emit(impact);
             // Weight is time: a few frozen substeps and a small kick on the shoulder
             // camera, graded by what happened. A killing blow holds longest.
             bool heavy = impact.AttackPower >= .5f;
@@ -37,12 +37,22 @@ namespace BarPromenade
                 default: return;
             }
             if (impact.Kind == CombatImpactKind.Kick) { substeps = 3; kick = .015f; }
-            if (impact.Kind == CombatImpactKind.Projectile) { substeps = 0; kick = .006f; }
-            if (impact.Target != null && impact.Target.State.IsDefeated) { substeps = 24; kick = .05f; }
+            if (impact.Kind == CombatImpactKind.Projectile)
+            {
+                bool head = impact.Location.Region == MeleeBodyRegion.Head;
+                bool arm = impact.Location.Region == MeleeBodyRegion.LeftArm || impact.Location.Region == MeleeBodyRegion.RightArm;
+                substeps = head ? 12 : arm ? 4 : 6;
+                kick = head ? .09f : arm ? .04f : .06f;
+                // PublishImpact already resolved motion. Freeze its transition source;
+                // terminal hits have already handed their live pose to physics.
+                impact.Target?.Present();
+            }
+            else if (impact.Target != null && impact.Target.State.IsDefeated) { substeps = 24; kick = .05f; }
             RequestHitStop(substeps);
             Vector3 direction = impact.Direction;
             direction.y = 0f;
-            if (direction.sqrMagnitude > .0001f && CameraFollow != null)
+            if ((impact.Kind != CombatImpactKind.Projectile || impact.Target == Hero) &&
+                direction.sqrMagnitude > .0001f && CameraFollow != null)
                 CameraFollow.Nudge(direction.normalized * kick);
         }
 

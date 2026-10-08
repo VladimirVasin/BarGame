@@ -1047,7 +1047,7 @@ namespace BarPromenade.Tests.PlayMode
         }
 
         [UnityTest]
-        public IEnumerator Range_DefaultAiAttacksBlocksAndModeChangesThroughLiveInput()
+        public IEnumerator Range_DefaultTargetStartsUnfocusedAndModeChangesThroughLiveInput()
         {
             var input = new InputTestFixture();
             Mouse mouse = null;
@@ -1058,71 +1058,81 @@ namespace BarPromenade.Tests.PlayMode
                 mouse = InputSystem.AddDevice<Mouse>();
                 keyboard = InputSystem.AddDevice<Keyboard>();
                 yield return SceneManager.LoadSceneAsync(SceneIds.MainMenu, LoadSceneMode.Single);
-                yield return EnterRange();
-                Assert.That(root.Sparring, Is.True, "Entering Combat Test must immediately select an active opponent.");
-                float initialDistance = Vector3.Distance(root.Hero.transform.position, root.Opponent.transform.position);
-                int initialSequence = root.Opponent.State.AttackSequence;
-                root.AutomaticSimulation = true;
-                yield return WaitFor(() => root.Hero.State.Health < S.MaxHealth,
-                    "The default opponent never approached and hit the idle hero through ordinary Update.");
-                Assert.That(root.Opponent.State.AttackSequence, Is.GreaterThan(initialSequence));
-                Assert.That(Vector3.Distance(root.Hero.transform.position, root.Opponent.transform.position),
-                    Is.LessThan(initialDistance - .5f), "An active opponent must close the authored starting gap.");
+                foreach (CombatWeaponId weapon in new[] { CombatWeaponId.Crowbar, CombatWeaponId.Pistol })
+                {
+                    // Deliberately bypass the fixture's combat preparation:
+                    // this is the actual new-entry state, including reentry
+                    // after the previous loadout left active AI selected.
+                    yield return EnterRange(prepareCombat: false, weapon: weapon);
+                    root.SendMessage("OnApplicationFocus", true);
+                    GameInput.HandleApplicationFocus(true);
+                    Assert.That(root.HeroWeapon, Is.EqualTo(weapon));
+                    Assert.That(root.Sparring, Is.False, "A fresh loadout starts with a passive target.");
+                    AssertFocusState(false);
+                    Assert.That(root.Player.Motor.MovementTargetActive, Is.False);
+                    Assert.That(root.CameraFollow.FreeAimActive, Is.False);
+                    if (root.Hero.IsPistol) Assert.That(root.Hero.Pistol.AimRequested, Is.False);
+                    Vector3 heroStart = root.Hero.transform.position, targetStart = root.Opponent.transform.position;
+                    int sequence = root.Opponent.State.AttackSequence, decisions = root.OpponentDecisionSequence;
+                    root.AutomaticSimulation = true;
+                    for (int frame = 0; frame < 90; frame++) yield return null;
+                    AssertFocusState(false);
+                    Assert.That(root.Sparring, Is.False);
+                    Assert.That(root.Opponent.State.AttackSequence, Is.EqualTo(sequence));
+                    Assert.That(root.OpponentDecisionSequence, Is.EqualTo(decisions), "Passive entry cannot schedule AI actions.");
+                    Assert.That(Vector3.Distance(root.Hero.transform.position, heroStart), Is.LessThan(.001f));
+                    Assert.That(Vector3.Distance(root.Opponent.transform.position, targetStart), Is.LessThan(.001f));
+                    Assert.That(root.Hero.State.Health, Is.EqualTo(S.MaxHealth));
+                    Assert.That(root.Opponent.State.Health, Is.EqualTo(S.MaxHealth));
+                    yield return CaptureFocusGameView(weapon == CombatWeaponId.Pistol ? "pistol-default-target" : "crowbar-default-target");
 
-                root.ResetRound();
-                yield return null;
-                Assert.That(root.Sparring, Is.True, "Reset must retain the selected active mode.");
-                Assert.That(root.Hero.State.Health, Is.EqualTo(S.MaxHealth));
-                Assert.That(root.Opponent.State.Health, Is.EqualTo(S.MaxHealth));
-                input.Press(mouse.rightButton, queueEventOnly: true);
-                yield return WaitFor(() => root.Hero.State.Stamina < S.MaxStamina,
-                    "The opponent never attacked the hero's held RMB guard.");
-                Assert.That(root.Hero.State.IsBlocking, Is.True);
-                Assert.That(root.Hero.State.Health, Is.EqualTo(S.MaxHealth),
-                    "The live opponent's frontal strike must be stopped by a held guard.");
-                int blockedSequence = root.Opponent.State.AttackSequence;
-                input.Release(mouse.rightButton, queueEventOnly: true);
-                yield return WaitFor(() => root.Opponent.State.AttackSequence > blockedSequence && root.Hero.State.Health < S.MaxHealth,
-                    "After the blocked strike and cooldown, the opponent must launch another real attack.");
+                    input.Press(mouse.middleButton, queueEventOnly: true);
+                    yield return null;
+                    AssertFocusState(true);
+                    Assert.That(root.Sparring, Is.False, "MMB changes focus without enabling AI.");
+                    input.Release(mouse.middleButton, queueEventOnly: true);
+                    yield return null;
+                    input.Press(mouse.middleButton, queueEventOnly: true);
+                    yield return null;
+                    AssertFocusState(false);
+                    input.Release(mouse.middleButton, queueEventOnly: true);
+                    yield return null;
 
-                input.Press(keyboard.tabKey, queueEventOnly: true);
-                yield return null;
-                Assert.That(root.Sparring, Is.False, "Tab switches the running fight to a passive target.");
-                input.Release(keyboard.tabKey, queueEventOnly: true);
-                Vector3 passivePosition = root.Opponent.transform.position;
-                int passiveSequence = root.Opponent.State.AttackSequence;
-                for (int frame = 0; frame < 240; frame++) yield return null;
-                Assert.That(root.Hero.State.Health, Is.EqualTo(S.MaxHealth));
-                Assert.That(root.Opponent.State.AttackSequence, Is.EqualTo(passiveSequence));
-                Assert.That(Vector2.Distance(new Vector2(passivePosition.x, passivePosition.z),
-                    new Vector2(root.Opponent.transform.position.x, root.Opponent.transform.position.z)), Is.LessThan(.001f),
-                    "Target mode must remain stationary beyond the AI's ordinary attack cooldown.");
-                root.ResetRound();
-                yield return null;
-                Assert.That(root.Sparring, Is.False, "Reset must retain passive mode when explicitly selected.");
-                yield return null;
+                    input.Press(keyboard.tabKey, queueEventOnly: true);
+                    yield return null;
+                    Assert.That(root.Sparring, Is.True, "Tab explicitly enables the active opponent.");
+                    AssertFocusState(true);
+                    input.Release(keyboard.tabKey, queueEventOnly: true);
+                    for (int frame = 0; frame < 90; frame++) yield return null;
+                    Assert.That(root.OpponentDecisionSequence, Is.GreaterThan(0));
+                    Assert.That(Vector3.Distance(root.Opponent.transform.position, targetStart), Is.GreaterThan(.1f),
+                        "Selected active mode must resume autonomous pursuit.");
+                    root.ResetRound();
+                    yield return null;
+                    Assert.That(root.Sparring, Is.True, "Reset retains the explicitly selected active mode.");
+                    AssertFocusState(true);
 
-                input.Press(keyboard.tabKey, queueEventOnly: true);
-                yield return null;
-                Assert.That(root.Sparring, Is.True);
-                input.Release(keyboard.tabKey, queueEventOnly: true);
-                yield return WaitFor(() => root.Hero.State.Health < S.MaxHealth,
-                    "Switching back to AI must restart autonomous pursuit and attacks.");
+                    input.Press(keyboard.tabKey, queueEventOnly: true);
+                    yield return null;
+                    Assert.That(root.Sparring, Is.False);
+                    input.Release(keyboard.tabKey, queueEventOnly: true);
+                    yield return null;
+                    root.ResetRound();
+                    yield return null;
+                    Assert.That(root.Sparring, Is.False, "Reset retains the explicitly selected passive mode.");
+                    AssertFocusState(true);
 
-                input.Press(keyboard.tabKey, queueEventOnly: true);
-                yield return null;
-                Assert.That(root.Sparring, Is.False);
-                input.Release(keyboard.tabKey, queueEventOnly: true);
-                yield return null;
-                Assert.That(root.ReturnToMenu(), Is.True);
-                yield return WaitFor(() => SceneManager.GetActiveScene().name == SceneIds.MainMenu &&
-                    !SceneTransitionService.IsTransitioning, "The default-AI regression could not return to the menu.");
-                yield return EnterRange();
-                Assert.That(root.Sparring, Is.True, "A fresh entry must use active AI even after leaving passive mode.");
-                Assert.That(root.Hero.State.Health, Is.EqualTo(S.MaxHealth));
-                root.AutomaticSimulation = true;
-                yield return WaitFor(() => root.Hero.State.Health < S.MaxHealth,
-                    "The opponent must actively fight again after a fresh entry.");
+                    // Leave a different mode selected to prove that the next
+                    // scene entry takes its own passive/unfocused defaults.
+                    input.Press(keyboard.tabKey, queueEventOnly: true);
+                    yield return null;
+                    Assert.That(root.Sparring, Is.True);
+                    input.Release(keyboard.tabKey, queueEventOnly: true);
+                    yield return null;
+                    Assert.That(root.ReturnToMenu(), Is.True);
+                    yield return WaitFor(() => SceneManager.GetActiveScene().name == SceneIds.MainMenu &&
+                        !SceneTransitionService.IsTransitioning, "The default-target regression could not return to the menu.");
+                }
                 LogAssert.NoUnexpectedReceived();
             }
             finally
@@ -1130,6 +1140,7 @@ namespace BarPromenade.Tests.PlayMode
                 if (root != null) root.AutomaticSimulation = false;
                 if (mouse != null && mouse.added) InputSystem.RemoveDevice(mouse);
                 if (keyboard != null && keyboard.added) InputSystem.RemoveDevice(keyboard);
+                GameInput.HandleApplicationFocus(true);
                 input.TearDown();
             }
         }
@@ -1561,9 +1572,9 @@ namespace BarPromenade.Tests.PlayMode
             }
         }
 
-        private IEnumerator EnterRange()
+        private IEnumerator EnterRange(bool prepareCombat = true, CombatWeaponId weapon = CombatWeaponId.Crowbar)
         {
-            Assert.That(CombatTestStartService.TryStart(), Is.True);
+            Assert.That(CombatTestStartService.TryStart(weapon), Is.True);
             yield return WaitFor(() =>
             {
                 root = Object.FindAnyObjectByType<CombatTestRoot>();
@@ -1571,6 +1582,9 @@ namespace BarPromenade.Tests.PlayMode
                     GameInput.CanRead(GameInputContext.Gameplay);
             }, "Combat range did not initialize and release its entry transition.");
             root.AutomaticSimulation = false;
+            // Most fixtures exercise a prepared fight. Startup-default
+            // coverage opts out and observes the untouched scene entry.
+            if (prepareCombat) root.SetSparring(true);
         }
 
         private void PlacePair(float distance)
