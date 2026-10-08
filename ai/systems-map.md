@@ -49,7 +49,7 @@ Only these statuses apply. Product scope cuts are `Deferred` in
 | PS1 presentation | Shared low-res composite. Optional 4:3, vertex jitter and Begotten keep controls; Begotten ramps `15 s` in, `3 s` out. | `Runtime/Rendering`, `IntoxicationRenderState`, `BegottenModeRamp` | Current |
 | Depth of field tiers | Exteriors keep broad Gaussian far blur; the six interior scenes cap it at radius `0.55`. | `RuntimeSceneSetup`, `DepthOfFieldSettingsBinder` | Current |
 | Runtime area composition | Ten gameplay roots; four build in frames; interior doors retain dormant City/village. | `Runtime/Core`, `Runtime/Scenes` | Current |
-| Combat test | Bar/gun:aim/Step;regional wounds;local head/retained jelly brain/blood/corpse. Gap:penetration/balance. | `CombatTestRoot`, `Runtime/Combat` | Partial |
+| Combat test | Bar/pistol/shotgun:aim/Step/volleys/reload;wounds/head/jelly/corpse. Gap:penetration/balance. | `CombatTestRoot`, `Runtime/Combat` | Partial |
 | New-game starting place | Twelve starts incl. lodge; village default, day `1`/`07:40`, ordinary loading. | `StartMenu{Root,Model}`, `NewGame{LocationCatalog,StartService}` | Current |
 | Retained Home waking opening | Frozen `05:59`, five-second lock, Wake Up/Quit, continuous wake. Gap: no shipped path reaches it. | `MainMenuRoot`, `HomeOpening{Controller,Timeline}` | Partial |
 | Session clock and day/night rules | Persistent 48-minute day at ×1; two real seconds per game minute. Intoxication preserves its rate. | `GameTimeState`, `GameTimeRuntime` | Current |
@@ -220,7 +220,7 @@ rows are preserved in `ai/archive/systems-map-2026-09-06.md` as a superseded sna
 
 ```text
 build index 0 -> MainMenu -> New Game / Combat Test / Quit card
-  -> Combat Test -> crowbar/pistol picker -> Start -> duel -> reset/weapons/menu
+  -> Combat Test -> crowbar/pistol/shotgun picker -> Start -> duel -> reset/weapons/menu
   -> New Game -> twelve locations / Back -> confirmed choice
   -> BeginNewGame + day 1 clock 07:40 -> area/scene loading, no journey still
      -> chosen root (City: docks/cannery; village: ski lodge)

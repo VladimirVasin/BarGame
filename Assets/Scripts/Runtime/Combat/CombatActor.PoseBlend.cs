@@ -66,7 +66,7 @@ namespace BarPromenade
             if ((hero == null && visibleClip == null) || Time.frameCount <= poseBlendAfterFrame) return;
             poseBlendDuration = duration;
             poseBlendRemaining = duration;
-            if (IsPistol) pistolBlendClosure = pistolLeftClosure;
+            if (IsFirearm) pistolBlendClosure = pistolLeftClosure;
             if (hero != null)
             {
                 // The shared final-pose blend preserves the last visible velocity,

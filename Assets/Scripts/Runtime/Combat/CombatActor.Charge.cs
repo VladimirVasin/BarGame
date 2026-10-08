@@ -16,7 +16,7 @@ namespace BarPromenade
 
         public bool RequestCharge()
         {
-            if (IsPistol) return false;
+            if (IsFirearm) return false;
             int request = JournalCommand("charge");
             if (!CombatFocused) return JournalCommandResult(request, "rejected", "unfocused");
             if (roundEnded) return JournalCommandResult(request, "rejected", "round_ended");
@@ -34,7 +34,7 @@ namespace BarPromenade
 
         public bool ReleaseCharge()
         {
-            if (IsPistol) return false;
+            if (IsFirearm) return false;
             int request = JournalCommand("charge_release");
             if (!CombatFocused) return JournalCommandResult(request, "rejected", "unfocused");
             if (roundEnded) return JournalCommandResult(request, "rejected", "round_ended");

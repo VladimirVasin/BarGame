@@ -1,0 +1,555 @@
+{
+  "generator": "tools/build-combat-shotgun-3d-model.py",
+  "generator_version": "1.0.0",
+  "blender_version": "5.0.1",
+  "build_signature": "275cc356db322db672b82033f44c7f02f57a4b80f7e725fd19987b424aa6e9dc",
+  "units": "metres",
+  "unity_forward": "+Z",
+  "unity_up": "+Y",
+  "passive": true,
+  "fbx_bake_space_transform": false,
+  "exported_fbx_validation": "mesh and anchor world metres after FBX round trip",
+  "signed_volumes": "every solid positive before and after axis swap",
+  "determinism": "two independent geometry builds match",
+  "triangle_count": 1984,
+  "materials": {
+    "Steel": [
+      0.19,
+      0.215,
+      0.205
+    ],
+    "WornSteel": [
+      0.39,
+      0.405,
+      0.36
+    ],
+    "Wood": [
+      0.31,
+      0.225,
+      0.15
+    ],
+    "WoodWear": [
+      0.43,
+      0.33,
+      0.225
+    ],
+    "Rubber": [
+      0.095,
+      0.105,
+      0.085
+    ],
+    "Brass": [
+      0.56,
+      0.43,
+      0.23
+    ],
+    "Shell": [
+      0.36,
+      0.15,
+      0.115
+    ],
+    "Lead": [
+      0.37,
+      0.39,
+      0.36
+    ],
+    "Flash": [
+      1.0,
+      0.64,
+      0.22
+    ]
+  },
+  "models": [
+    {
+      "name": "Shotgun",
+      "bounds_min": [
+        -0.0475,
+        -0.050788,
+        -0.3545
+      ],
+      "bounds_max": [
+        0.0475,
+        0.15278,
+        0.761
+      ],
+      "triangle_count": 1532,
+      "solid_count": 51,
+      "mesh_count": 19,
+      "anchors": [
+        {
+          "name": "Grip",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "parent": null
+        },
+        {
+          "name": "Hinge",
+          "position": [
+            0.0,
+            0.09,
+            0.11
+          ],
+          "parent": null
+        },
+        {
+          "name": "SupportGrip",
+          "position": [
+            -0.012,
+            0.043,
+            0.22
+          ],
+          "parent": "Hinge"
+        },
+        {
+          "name": "Muzzle",
+          "position": [
+            0.0,
+            0.11,
+            0.71
+          ],
+          "parent": "Hinge"
+        },
+        {
+          "name": "MuzzleLeft",
+          "position": [
+            -0.019,
+            0.11,
+            0.71
+          ],
+          "parent": "Hinge"
+        },
+        {
+          "name": "MuzzleRight",
+          "position": [
+            0.019,
+            0.11,
+            0.71
+          ],
+          "parent": "Hinge"
+        },
+        {
+          "name": "ChamberLeft",
+          "position": [
+            -0.019,
+            0.11,
+            0.115
+          ],
+          "parent": "Hinge"
+        },
+        {
+          "name": "ChamberRight",
+          "position": [
+            0.019,
+            0.11,
+            0.115
+          ],
+          "parent": "Hinge"
+        },
+        {
+          "name": "ShellLeft",
+          "position": [
+            -0.019,
+            0.11,
+            0.115
+          ],
+          "parent": "Hinge"
+        },
+        {
+          "name": "ShellRight",
+          "position": [
+            0.019,
+            0.11,
+            0.115
+          ],
+          "parent": "Hinge"
+        },
+        {
+          "name": "StockContact",
+          "position": [
+            0.0,
+            0.07,
+            -0.29
+          ],
+          "parent": null
+        },
+        {
+          "name": "MuzzleFlash",
+          "position": [
+            0.0,
+            0.11,
+            0.76
+          ],
+          "parent": "Hinge"
+        }
+      ],
+      "collision_shapes": {
+        "space": "grip_local_unity_metres",
+        "boxes": [
+          {
+            "center": [
+              0.0,
+              0.087,
+              0.41
+            ],
+            "size": [
+              0.078,
+              0.1,
+              0.62
+            ]
+          },
+          {
+            "center": [
+              0.0,
+              0.04,
+              -0.025
+            ],
+            "size": [
+              0.084,
+              0.18,
+              0.27
+            ]
+          },
+          {
+            "center": [
+              0.0,
+              0.062,
+              -0.22
+            ],
+            "size": [
+              0.063,
+              0.158,
+              0.27
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "Shell",
+      "bounds_min": [
+        -0.0102,
+        -0.0102,
+        -0.0063
+      ],
+      "bounds_max": [
+        0.0102,
+        0.0102,
+        0.0597
+      ],
+      "triangle_count": 160,
+      "solid_count": 6,
+      "mesh_count": 4,
+      "anchors": [
+        {
+          "name": "Seat",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "parent": null
+        },
+        {
+          "name": "Grip",
+          "position": [
+            0.0,
+            0.0,
+            -0.03
+          ],
+          "parent": null
+        },
+        {
+          "name": "Centre",
+          "position": [
+            0.0,
+            0.0,
+            0.027
+          ],
+          "parent": null
+        }
+      ]
+    },
+    {
+      "name": "SpentShell",
+      "bounds_min": [
+        -0.0102,
+        -0.0102,
+        -0.0063
+      ],
+      "bounds_max": [
+        0.0102,
+        0.0102,
+        0.059
+      ],
+      "triangle_count": 216,
+      "solid_count": 4,
+      "mesh_count": 4,
+      "anchors": [
+        {
+          "name": "Seat",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "parent": null
+        },
+        {
+          "name": "Grip",
+          "position": [
+            0.0,
+            0.0,
+            -0.03
+          ],
+          "parent": null
+        },
+        {
+          "name": "Centre",
+          "position": [
+            0.0,
+            0.0,
+            0.027
+          ],
+          "parent": null
+        }
+      ]
+    },
+    {
+      "name": "Pellet",
+      "bounds_min": [
+        -0.0042,
+        -0.004199,
+        -0.0042
+      ],
+      "bounds_max": [
+        0.0042,
+        0.004199,
+        0.0042
+      ],
+      "triangle_count": 76,
+      "solid_count": 1,
+      "mesh_count": 1,
+      "anchors": [
+        {
+          "name": "Centre",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "parent": null
+        }
+      ]
+    }
+  ],
+  "test_only": true,
+  "mechanism": {
+    "hinge": "Hinge",
+    "hinge_axis": [
+      1.0,
+      0.0,
+      0.0
+    ],
+    "break_degrees": 48.0,
+    "chambers": [
+      "ChamberLeft",
+      "ChamberRight"
+    ],
+    "seated_shells": [
+      "ShellLeft",
+      "ShellRight"
+    ],
+    "shell_grip": [
+      0.0,
+      0.0,
+      -0.03
+    ],
+    "reload_stops": [
+      {
+        "seconds": 0.0,
+        "phase": "aim"
+      },
+      {
+        "seconds": 0.4,
+        "phase": "open"
+      },
+      {
+        "seconds": 0.65,
+        "phase": "eject"
+      },
+      {
+        "seconds": 0.95,
+        "phase": "pouch"
+      },
+      {
+        "seconds": 1.3,
+        "phase": "left_align"
+      },
+      {
+        "seconds": 1.6,
+        "phase": "left_seat"
+      },
+      {
+        "seconds": 1.8,
+        "phase": "pouch"
+      },
+      {
+        "seconds": 2.0,
+        "phase": "right_align"
+      },
+      {
+        "seconds": 2.2,
+        "phase": "right_seat"
+      },
+      {
+        "seconds": 2.4,
+        "phase": "close"
+      },
+      {
+        "seconds": 2.8,
+        "phase": "aim"
+      }
+    ],
+    "open_seconds": 0.4,
+    "eject_seconds": 0.65,
+    "left_seat_seconds": 1.6,
+    "right_seat_seconds": 2.2,
+    "close_seconds": 2.4
+  },
+  "actions": {
+    "source": "ArtSource/Combat/CombatActions.blend",
+    "root_motion": false,
+    "animation_events": 0,
+    "fps": 100,
+    "bone_only": true,
+    "support_grip_weight": 0.9,
+    "support_grip": [
+      -0.012,
+      0.043,
+      0.22
+    ],
+    "support_forward": [
+      0.0,
+      1.0,
+      0.0
+    ],
+    "support_up": [
+      -1.0,
+      0.0,
+      0.0
+    ],
+    "clips": [
+      {
+        "name": "ShotgunRest",
+        "duration_seconds": 4.0,
+        "loop": true
+      },
+      {
+        "name": "ShotgunRaise",
+        "duration_seconds": 0.35,
+        "loop": false
+      },
+      {
+        "name": "ShotgunAim",
+        "duration_seconds": 4.0,
+        "loop": true
+      },
+      {
+        "name": "ShotgunFire",
+        "duration_seconds": 0.55,
+        "loop": false
+      },
+      {
+        "name": "ShotgunReload",
+        "duration_seconds": 2.8,
+        "loop": false
+      },
+      {
+        "name": "ShotgunLower",
+        "duration_seconds": 0.35,
+        "loop": false
+      }
+    ],
+    "endpoints": "Raise Rest\u2192Aim; Lower Aim\u2192Rest; Fire/Reload Aim\u2192Aim",
+    "fire_recoil": {
+      "interpolation": "smoothstep",
+      "stops": [
+        {
+          "seconds": 0.0,
+          "barrel_rise_degrees": 0.0,
+          "grip_back_m": 0.0,
+          "grip_up_m": 0.0,
+          "spine_degrees": 0.0,
+          "chest_degrees": 0.0
+        },
+        {
+          "seconds": 0.04,
+          "barrel_rise_degrees": 19.0,
+          "grip_back_m": 0.045,
+          "grip_up_m": 0.055,
+          "spine_degrees": -1.0,
+          "chest_degrees": -2.0
+        },
+        {
+          "seconds": 0.1,
+          "barrel_rise_degrees": 14.0,
+          "grip_back_m": 0.075,
+          "grip_up_m": 0.035,
+          "spine_degrees": -4.0,
+          "chest_degrees": -6.0
+        },
+        {
+          "seconds": 0.23,
+          "barrel_rise_degrees": 5.0,
+          "grip_back_m": 0.034,
+          "grip_up_m": 0.012,
+          "spine_degrees": -2.5,
+          "chest_degrees": -3.5
+        },
+        {
+          "seconds": 0.39,
+          "barrel_rise_degrees": -1.5,
+          "grip_back_m": -0.006,
+          "grip_up_m": -0.003,
+          "spine_degrees": 0.6,
+          "chest_degrees": 0.8
+        },
+        {
+          "seconds": 0.55,
+          "barrel_rise_degrees": 0.0,
+          "grip_back_m": 0.0,
+          "grip_up_m": 0.0,
+          "spine_degrees": 0.0,
+          "chest_degrees": 0.0
+        }
+      ]
+    },
+    "animation_signature": "02fd01c46b83e90b2f1503889d19bae02dd036c26804ccdcd1aed64231a41bef",
+    "contact_validation": {
+      "maximum_wrist_degrees": {
+        "ShotgunRest": 29.2383,
+        "ShotgunRaise": 43.4376,
+        "ShotgunAim": 43.4376,
+        "ShotgunFire": 44.7477,
+        "ShotgunReload": 43.4376,
+        "ShotgunLower": 43.4376
+      },
+      "maximum_support_error_m": 1.1e-06,
+      "shell_seats": [
+        {
+          "seconds": 1.6,
+          "phase": "left_seat",
+          "contact_error_m": 5e-07
+        },
+        {
+          "seconds": 2.2,
+          "phase": "right_seat",
+          "contact_error_m": 4e-07
+        }
+      ]
+    }
+  }
+}

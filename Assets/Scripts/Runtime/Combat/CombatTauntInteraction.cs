@@ -112,7 +112,7 @@ namespace BarPromenade
 
         public bool CanInteract(PlayerInteractor interactor)
         {
-            if (root == null || !root.IsInitialized || root.Hero.IsPistol || IsActive || usedThisRound) return false;
+            if (root == null || !root.IsInitialized || root.Hero.IsFirearm || IsActive || usedThisRound) return false;
             if (interactor == null || !interactor.InputEnabled) return false;
             CombatActor opponent = root.Opponent;
             if (opponent == null || !opponent.State.IsDefeated || root.Hero == null || root.Hero.State.IsDefeated) return false;

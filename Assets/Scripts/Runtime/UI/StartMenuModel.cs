@@ -21,7 +21,7 @@ namespace BarPromenade
         ChooseCombatWeapon = 6
     }
 
-    public enum CombatPreparationOption { Crowbar, Pistol, Start, Back, Count }
+    public enum CombatPreparationOption { Crowbar, Pistol, Shotgun, Start, Back, Count }
 
     /// <summary>
     /// The launch card and its location and weapon pickers. Committing is one-shot: the
@@ -54,14 +54,18 @@ namespace BarPromenade
 
         public void OpenCombatPreparation(CombatWeaponId weapon)
         {
-            if (weapon != CombatWeaponId.Crowbar && weapon != CombatWeaponId.Pistol)
+            if (weapon != CombatWeaponId.Crowbar && weapon != CombatWeaponId.Pistol && weapon != CombatWeaponId.Shotgun)
                 throw new ArgumentOutOfRangeException(nameof(weapon));
             Open();
             SelectedOption = StartMenuOption.CombatTest;
             IsChoosingCombatWeapon = true;
             SelectedCombatWeapon = weapon;
-            SelectedCombatOption = weapon == CombatWeaponId.Pistol
-                ? CombatPreparationOption.Pistol : CombatPreparationOption.Crowbar;
+            SelectedCombatOption = weapon switch
+            {
+                CombatWeaponId.Pistol => CombatPreparationOption.Pistol,
+                CombatWeaponId.Shotgun => CombatPreparationOption.Shotgun,
+                _ => CombatPreparationOption.Crowbar
+            };
         }
 
         public bool MoveSelection(int delta)
@@ -124,6 +128,7 @@ namespace BarPromenade
             SelectedCombatOption = option;
             if (option == CombatPreparationOption.Crowbar) SelectedCombatWeapon = CombatWeaponId.Crowbar;
             else if (option == CombatPreparationOption.Pistol) SelectedCombatWeapon = CombatWeaponId.Pistol;
+            else if (option == CombatPreparationOption.Shotgun) SelectedCombatWeapon = CombatWeaponId.Shotgun;
             return true;
         }
 

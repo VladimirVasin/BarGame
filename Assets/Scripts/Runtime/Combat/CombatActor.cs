@@ -32,6 +32,8 @@ namespace BarPromenade
         public GameObject Weapon { get; private set; }
         public CombatWeaponId WeaponId { get; private set; }
         public bool IsPistol => WeaponId == CombatWeaponId.Pistol;
+        public bool IsShotgun => WeaponId == CombatWeaponId.Shotgun;
+        public bool IsFirearm => IsPistol || IsShotgun;
         public bool IsHero => hero != null;
         public Vector3 SupportGripWorldPosition => supportGrip != null ? supportGrip.Target : transform.position;
         public float SupportGripWeight => supportGrip?.Weight ?? 0f;
@@ -49,7 +51,7 @@ namespace BarPromenade
             MeleePhase.Windup => Mathf.Lerp(.55f, .2f, State.PhaseProgress),
             MeleePhase.Active => 0f,
             MeleePhase.Recovery => Mathf.Lerp(.15f, .65f, State.PhaseProgress),
-            MeleePhase.Ready => IsPistol && Pistol != null && (Pistol.AimRequested || Pistol.IsReloading) ? .55f : State.IsBlocking ? .45f : 1f,
+            MeleePhase.Ready => IsFirearm && Firearm != null && (Firearm.AimRequested || Firearm.IsReloading) ? .55f : State.IsBlocking ? .45f : 1f,
             MeleePhase.Kicking => 0f,
             _ => 0f
         };
@@ -94,7 +96,7 @@ namespace BarPromenade
             Ragdoll = gameObject.AddComponent<CombatRagdoll>();
             Ragdoll.InitializeHero(player);
             AttachWeapon(hero.Registry.Anchors.RightGrip);
-            if (IsPistol) InitializePistol();
+            if (IsFirearm) InitializePistol();
             hero.RegisterAccessoryRenderers(Weapon.GetComponentsInChildren<Renderer>());
             InitializeDamagePose();
             LoadKickClip(false);
@@ -134,9 +136,10 @@ namespace BarPromenade
         private void AttachWeapon(Transform grip)
         {
             handPose = grip.GetComponentInParent<NpcHandPose>();
-            if (IsPistol)
+            if (IsFirearm)
             {
-                Weapon = CombatPistolAssetProvider.CreatePistol(grip, handPose);
+                Weapon = IsShotgun ? CombatShotgunAssetProvider.CreateShotgun(grip, handPose) :
+                    CombatPistolAssetProvider.CreatePistol(grip, handPose);
                 PrepareWeaponPhysics();
                 return;
             }
@@ -177,7 +180,7 @@ namespace BarPromenade
         public bool GuardRequested => guardHeld;
         public bool GuardReady => GuardSupportRejection == null &&
             (State.Phase == MeleePhase.Ready || State.Phase == MeleePhase.GuardImpact);
-        internal string GuardSupportRejection => IsPistol ? "firearm" : !CombatFocused ? "unfocused" : weaponDropped ? "weapon_missing" : roundEnded ? "round_ended" : !IsAvailable ? "actor_unavailable" :
+        internal string GuardSupportRejection => IsFirearm ? "firearm" : !CombatFocused ? "unfocused" : weaponDropped ? "weapon_missing" : roundEnded ? "round_ended" : !IsAvailable ? "actor_unavailable" :
             State.IsDefeated ? "defeated" : !HasAttackBalance ? AttackBalanceRejection :
             !HasTwoHandSupport ? "two_hand_support" : null;
         internal CombatFootwork Footwork => footwork;
@@ -185,7 +188,7 @@ namespace BarPromenade
 
         public bool TryAttack()
         {
-            if (IsPistol) return false;
+            if (IsFirearm) return false;
             int request = JournalCommand("attack_immediate");
             if (!CombatFocused) return JournalCommandResult(request, "rejected", "unfocused");
             if (roundEnded) return JournalCommandResult(request, "rejected", "round_ended");
@@ -205,7 +208,7 @@ namespace BarPromenade
 
         public bool RequestAttack()
         {
-            if (IsPistol) return false;
+            if (IsFirearm) return false;
             int request = JournalCommand("attack");
             if (!CombatFocused) return JournalCommandResult(request, "rejected", "unfocused");
             if (roundEnded) return JournalCommandResult(request, "rejected", "round_ended");
@@ -237,7 +240,7 @@ namespace BarPromenade
 
         public void SetBlock(bool held)
         {
-            if (IsPistol) held = false;
+            if (IsFirearm) held = false;
             bool freshPress = held && !guardHeld;
             guardHeld = held && CombatFocused;
             RefreshBlock(freshPress);
@@ -515,7 +518,7 @@ namespace BarPromenade
             RestoreCombatAttention();
             if (ready == null || winnerPresentationReleased) return;
             if (!NeedsCombatPresentation) { ReleaseFreeLocomotion(); return; }
-            if (freeLocomotionReleased && IsPistol && hero != null &&
+            if (freeLocomotionReleased && IsFirearm && hero != null &&
                 hero.TryGetPresentedBonePose(hero.Registry.Anchors.LeftFoot, out Pose leftSole) &&
                 hero.TryGetPresentedBonePose(hero.Registry.Anchors.RightFoot, out Pose rightSole))
                 footwork?.AdoptPresentedStance(leftSole, rightSole);
@@ -542,10 +545,10 @@ namespace BarPromenade
                 reaction != null ? reaction : State.IsKicking ? kick : State.IsCharging ? Current.Charge : State.IsAttacking ? ReleaseClip : roundEnded || weaponDropped ? rest : State.IsBlocking ? block : ready;
             // Exact-part projectile reactions own the additive pose. The shared
             // melee hit clip would otherwise bend every wounded limb identically.
-            if (projectileStagger) chosen = IsPistol ? ChoosePistolClip() : weaponDropped ? rest : ready;
-            bool pistolPose = IsPistol && !State.IsDefeated && !stepping && !stagger && reaction == null && !State.IsKicking;
+            if (projectileStagger) chosen = IsFirearm ? ChoosePistolClip() : weaponDropped ? rest : ready;
+            bool pistolPose = IsFirearm && !State.IsDefeated && !stepping && !stagger && reaction == null && !State.IsKicking;
             if (pistolPose) chosen = ChoosePistolClip();
-            AnimationClip pistolStepUpper = IsPistol && stepping && Pistol.AimRequested ? ChoosePistolClip() : null;
+            AnimationClip pistolStepUpper = IsFirearm && stepping && Firearm.AimRequested ? ChoosePistolClip() : null;
             supportGrip?.SetTarget(chosen == block || chosen == guardImpact,
                 !weaponDropped && !projectileStagger && chosen != rest && chosen != hit && chosen != guardBreak && !State.IsDefeated && !State.IsShoving,
                 State.IsContinuation);
@@ -561,7 +564,7 @@ namespace BarPromenade
             if (stepping) progress = stepBlocked ? 0f : State.StepProgress;
             else if (State.Phase == MeleePhase.GuardImpact) progress = State.PhaseProgress;
             if (pistolPose) progress = PistolClipProgress(chosen);
-            else if (projectileStagger) progress = IsPistol ? PistolClipProgress(chosen) : 0f;
+            else if (projectileStagger) progress = IsFirearm ? PistolClipProgress(chosen) : 0f;
             bool newSwing = (State.IsCharging || State.IsAttacking || State.IsKicking) && visibleAttackSequence != State.AttackSequence;
             if (hero != null)
             {
@@ -592,7 +595,7 @@ namespace BarPromenade
                 else hero.SampleOwnedClip(this, progress);
                 hero.SetCombatBodyMotion(this, bodyMotion);
                 hero.SetCombatFootwork(this, footwork);
-                hero.SetCombatFirearm(this, IsPistol ? this : null);
+                hero.SetCombatFirearm(this, IsFirearm ? this : null);
                 ApplyMotorConstraint();
             }
             else
@@ -606,7 +609,7 @@ namespace BarPromenade
             }
             visibleAttackSequence = State.AttackSequence;
             handPose.SetGrip(false, weaponDropped ? 0f : 1f);
-            if (IsPistol)
+            if (IsFirearm)
             {
                 pistolLeftClosure = (pistolPose || pistolStepUpper != null) && !weaponDropped
                     ? BlendPistolClosure(PistolSupportClosure(pistolStepUpper != null ? pistolStepUpper : chosen)) : 0f;
@@ -635,7 +638,7 @@ namespace BarPromenade
             else chosen.SampleAnimation(npc.Animator.gameObject, progress * chosen.length);
         }
 
-        private float TransitionSeconds(AnimationClip chosen) => IsPistol && (chosen == pistolRaise || chosen == pistolLower)
+        private float TransitionSeconds(AnimationClip chosen) => IsFirearm && (chosen == pistolRaise || chosen == pistolLower)
             ? pistolRaise.length : State.Phase == MeleePhase.Stagger &&
             LastImpact.Kind == CombatImpactKind.Projectile && ImpactMotion != null && ImpactMotion.Age < .05f ? .045f : chosen == rest ? .35f :
             chosen == block || visibleClip == block.name ? .18f :
@@ -720,7 +723,7 @@ namespace BarPromenade
         private void OnDisable()
         {
             CancelPendingPistolShot("disabled");
-            Pistol?.CancelAction();
+            Firearm?.CancelAction();
             pistolVisualAimProgress = 0f;
             pistolLeftClosure = pistolBlendClosure = 0f;
             if (State.IsShoving || State.IsKicking || State.Phase == MeleePhase.Step || State.HasBufferedStep)

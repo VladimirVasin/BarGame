@@ -78,10 +78,11 @@ namespace BarPromenade
             Hero = Player.GameObject.AddComponent<CombatActor>();
             HeroWeapon = CombatTestStartService.ConsumeWeapon();
             Hero.InitializeHero(Player, HeroWeapon);
-            if (HeroWeapon == CombatWeaponId.Pistol)
+            if (Hero.IsFirearm)
             {
-                Projectiles = new CombatProjectilePool(transform);
-                Casings = new CombatCasingPool(transform);
+                Projectiles = new CombatProjectilePool(transform, Hero.IsShotgun);
+                Casings = new CombatCasingPool(transform, Hero.IsShotgun);
+                Hero.ShotgunCasings = Casings;
             }
             CameraFollow = camera.GetComponent<PlayerCameraFollow>() ?? camera.gameObject.AddComponent<PlayerCameraFollow>();
             CameraFollow.Initialize(camera, Player.GameObject.transform, false);
@@ -114,7 +115,7 @@ namespace BarPromenade
         {
             if (!IsInitialized || !GameInput.CanRead(GameInputContext.Gameplay)) return;
             Sparring = enabled;
-            PlaceRound(focusOpponent: !Hero.IsPistol);
+            PlaceRound(focusOpponent: !Hero.IsFirearm);
         }
 
         public void ResetRound()
@@ -212,7 +213,7 @@ namespace BarPromenade
             BeginJournalFrame();
             if (!IsInitialized || !AutomaticSimulation || !UpdateCombatInput()) return;
             TickFrame(Time.deltaTime);
-            if (Hero.IsPistol && !Hero.Pistol.AimRequested) ReleaseFreePistolAim();
+            if (Hero.IsFirearm && !Hero.Firearm.AimRequested) ReleaseFreePistolAim();
         }
 
         /// <summary>Drop excess wall time after a hitch instead of feeding an ever
@@ -302,7 +303,7 @@ namespace BarPromenade
                 AdvancePistolCrosshair(SimulationStep);
                 if (Hero.CommitPistolShot(Projectiles))
                 {
-                    Casings.BeginShot(Hero);
+                    if (Hero.IsPistol) Casings.BeginShot(Hero);
                     PulsePistolCrosshair();
                 }
                 long contactStamp = JournalStamp();
@@ -353,12 +354,12 @@ namespace BarPromenade
         {
             if (finishedRoundInitialized) return;
             finishedRoundInitialized = true;
-            Projectiles?.ClearFlights();
-            if (!Hero.IsPistol || Hero.State.IsDefeated) return;
+            if (!Hero.IsShotgun) Projectiles?.ClearFlights();
+            if (!Hero.IsFirearm || Hero.State.IsDefeated) return;
             // Relinquish the defeated target without revoking a held aim.
             // Focus-to-free aim must inherit the exact accepted camera pose;
             // snapping through chase here made the winning shot jump sideways.
-            bool keepAim = Hero.Pistol.AimRequested && pistolApplicationFocused && !requirePistolAimRelease &&
+            bool keepAim = Hero.Firearm.AimRequested && pistolApplicationFocused && !requirePistolAimRelease &&
                 GameInput.CanRead(GameInputContext.Gameplay) &&
                 GameInput.IsHeld(GameInputAction.MeleeBlock, GameInputContext.Gameplay);
             ClearFocusTracking(keepAim);
@@ -384,7 +385,7 @@ namespace BarPromenade
             if (seconds <= 0f) return;
             SetDuelFrozen(false);
             roundEndElapsed += seconds;
-            if (Hero.IsPistol && !Hero.State.IsDefeated)
+            if (Hero.IsFirearm && !Hero.State.IsDefeated)
             {
                 pendingSeconds += seconds;
                 while (pendingSeconds + .0000001d >= SimulationStep)
@@ -406,7 +407,7 @@ namespace BarPromenade
                     AdvancePistolCrosshair(SimulationStep);
                     if (Hero.CommitPistolShot(Projectiles))
                     {
-                        Casings.BeginShot(Hero);
+                        if (Hero.IsPistol) Casings.BeginShot(Hero);
                         PulsePistolCrosshair();
                     }
                     Projectiles.ApplyContacts();
@@ -480,7 +481,8 @@ namespace BarPromenade
                 DrawChargeMeter();
                 DrawPistolHud(canvas);
                 DrawFocusMarker(canvas);
-                GUI.Label(new Rect(14, 342, 612, 14), LocalizationService.Get(Hero.IsPistol ? "combat.controls.pistol" : "combat.controls"), controls);
+                GUI.Label(new Rect(14, 342, 612, 14), LocalizationService.Get(Hero.IsShotgun ? "combat.controls.shotgun" :
+                    Hero.IsPistol ? "combat.controls.pistol" : "combat.controls"), controls);
             }
             finally { RetroUiTheme.EndCanvas(matrix); }
         }

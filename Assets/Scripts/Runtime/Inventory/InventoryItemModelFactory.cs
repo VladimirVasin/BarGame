@@ -122,6 +122,8 @@ namespace BarPromenade
                     return CombatAssetProvider.Create("Crowbar", parent).transform;
                 case InventoryItemId.CombatPistol:
                     return CombatPistolAssetProvider.CreatePistol(parent).transform;
+                case InventoryItemId.CombatShotgun:
+                    return CombatShotgunAssetProvider.CreateShotgun(parent).transform;
                 default:
                     throw new ArgumentOutOfRangeException(
                         nameof(itemId),

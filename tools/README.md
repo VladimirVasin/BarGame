@@ -156,15 +156,15 @@ in `Captures` and does not publish. See [audio-vhs/README.md](audio-vhs/README.m
 `--hand-grip-only --skip-animation-export --no-previews` refreshes hand shapes.
 Output: `Assets/Player3D/V2/Models/PlayerCharacter3DV2.{fbx,json}`.
 
-Combat: `build-combat-{test,blood,pistol,gore}-3d-model.py`.
+`build-combat-{test,blood,pistol,shotgun,gore}-3d-model.py`.
 Test: `--actions-only --kick-only|--recovery-only|--footwork-only`;
 `--refresh-published-contracts --reuse-unchanged-actions --resume-npc-bank file.blend`.
-Charge=Attack(.18q);blood:`--texture-only`.
-Gore: `--validate-only`;UV/skin/shell/scale/brain fill/determinism;
-16sectors/8brain solids: `Assets/Resources/CombatGore`.
+Charge=Attack(.18q);blood:`--texture-only`;gore:`--validate-only`:
+UV/skin/scale/16sectors/8brain. Shotgun:`--validate-only`:
+rig/reload/determinism;`Resources/CombatShotgun`.
 
 `player_jacket_cloth.py --write` derives hem/cuff metadata only; `--check` verifies it.
-Refresh `Player3DV2` through its asset setup. Lower-body changes also require
+Refresh `Player3DV2` via asset setup. Lower-body changes require
 `build-home-toilet-seated-3d-model.py`: trousers supply fabric, anatomy skin.
 `player_cold_actions.py --refresh-actions --stage-dir
 Captures/Tooling/cold-actions` stages an isolated cold refresh through the same

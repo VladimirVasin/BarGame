@@ -31,7 +31,7 @@ namespace BarPromenade
         private bool TryFocusOpponent()
         {
             ReleaseFreePistolAim();
-            if (!CameraFollow.SetTargetLock(this, opponentObject.transform, opponentChest, heroChest, Hero.IsPistol)) return false;
+            if (!CameraFollow.SetTargetLock(this, opponentObject.transform, opponentChest, heroChest, Hero.IsFirearm)) return false;
             if (!Player.Motor.SetMovementTarget(this, opponentChest, true))
             {
                 CameraFollow.ClearTargetLock(this);

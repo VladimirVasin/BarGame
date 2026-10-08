@@ -18,7 +18,8 @@ namespace BarPromenade
         FirewoodLog = 10,
         LodgeGroupPhotograph = 11,
         CombatCrowbar = 12,
-        CombatPistol = 13
+        CombatPistol = 13,
+        CombatShotgun = 14
     }
 
     public enum InventoryItemCategory
@@ -140,6 +141,12 @@ namespace BarPromenade
                 InventoryItemCategory.Tool,
                 "inventory.item.combat_pistol.name",
                 "inventory.item.combat_pistol.description",
+                1),
+            new InventoryItemDefinition(
+                InventoryItemId.CombatShotgun,
+                InventoryItemCategory.Tool,
+                "inventory.item.combat_shotgun.name",
+                "inventory.item.combat_shotgun.description",
                 1),
             new InventoryItemDefinition(
                 InventoryItemId.LodgeGroupPhotograph,

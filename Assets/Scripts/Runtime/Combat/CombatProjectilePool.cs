@@ -16,11 +16,31 @@ namespace BarPromenade
         public const float Radius = .004f;
         internal const float TrailLifetime = .075f;
         private const float TrailLength = 1.8f;
-        private const int Capacity = 16;
-        private readonly Projectile[] slots = new Projectile[Capacity];
+        private const int Capacity = 64;
+        private readonly Projectile[] slots;
         private readonly List<Impact> contacts = new List<Impact>(Capacity);
         private RaycastHit[] casts = new RaycastHit[32];
         private Collider[] overlaps = new Collider[32];
+        private readonly Volley[] volleys = new Volley[8];
+        private ParticleSystem muzzleSmoke;
+
+        private sealed class Volley
+        {
+            internal CombatActor Source, Target;
+            internal int Sequence, Remaining;
+            internal bool Active, ResponseApplied, HeadFeedbackApplied;
+            internal readonly List<PelletHit> Contacts = new List<PelletHit>(12);
+        }
+
+        internal readonly struct PelletHit
+        {
+            internal readonly CombatHurtboxes.Hit Hit;
+            internal readonly Vector3 Velocity;
+            internal readonly float Damage;
+            internal readonly int Index;
+            internal PelletHit(CombatHurtboxes.Hit hit, Vector3 velocity, float damage, int index)
+            { Hit = hit; Velocity = velocity; Damage = damage; Index = index; }
+        }
 
         private readonly struct WorldHit
         {
@@ -42,6 +62,9 @@ namespace BarPromenade
             internal float Age, Distance;
             internal int Sequence;
             internal bool Active;
+            internal Volley Volley;
+            internal ShotgunSettings Shotgun;
+            internal int PelletIndex;
         }
 
         private readonly struct Impact
@@ -60,7 +83,8 @@ namespace BarPromenade
         public Vector3 LastPosition { get; private set; }
         public Vector3 LastImpactPoint { get; private set; }
         public CombatSurfaceImpactEffects SurfaceEffects { get; }
-        public bool HasCapacity => ActiveCount < Capacity;
+        public bool HasCapacity => ActiveCount < slots.Length;
+        internal bool HasCapacityFor(int count) => count > 0 && ActiveCount + count <= slots.Length;
         internal int VisibleTrailCount
         {
             get { int count = 0; foreach (Projectile p in slots) if (p.Trail.enabled) count++; return count; }
@@ -68,15 +92,17 @@ namespace BarPromenade
         internal Vector3 LastTrailStart { get; private set; }
         internal Vector3 LastTrailEnd { get; private set; }
 
-        public CombatProjectilePool(Transform parent)
+        public CombatProjectilePool(Transform parent, bool shotgun = false)
         {
+            slots = new Projectile[shotgun ? Capacity : 16];
             var holder = new GameObject("Combat Projectiles");
             holder.transform.SetParent(parent, false);
             SurfaceEffects = holder.AddComponent<CombatSurfaceImpactEffects>();
             SurfaceEffects.Initialize();
             for (int i = 0; i < slots.Length; i++)
             {
-                GameObject model = CombatPistolAssetProvider.CreateBullet(holder.transform);
+                GameObject model = shotgun ? CombatShotgunAssetProvider.CreatePellet(holder.transform) :
+                    CombatPistolAssetProvider.CreateBullet(holder.transform);
                 model.SetActive(false);
                 var trace = new GameObject("Bullet flight streak");
                 trace.transform.SetParent(holder.transform, false);
@@ -95,6 +121,71 @@ namespace BarPromenade
                 trail.enabled = false;
                 slots[i] = new Projectile { Model = model, Trail = trail };
             }
+            for (int i = 0; i < volleys.Length; i++) volleys[i] = new Volley();
+            if (shotgun) InitializeSmoke(holder.transform);
+        }
+
+        private void InitializeSmoke(Transform parent)
+        {
+            var cloud = new GameObject("Shotgun muzzle smoke"); cloud.transform.SetParent(parent, false);
+            muzzleSmoke = cloud.AddComponent<ParticleSystem>();
+            muzzleSmoke.Stop(false, ParticleSystemStopBehavior.StopEmittingAndClear);
+            muzzleSmoke.useAutoRandomSeed = false; muzzleSmoke.randomSeed = 193u;
+            var main = muzzleSmoke.main;
+            main.playOnAwake = main.loop = false; main.maxParticles = 32;
+            main.simulationSpace = ParticleSystemSimulationSpace.World;
+            main.startSpeed = 0f; main.startLifetime = .45f; main.startSize = .06f;
+            main.cullingMode = ParticleSystemCullingMode.AlwaysSimulate;
+            var emission = muzzleSmoke.emission; emission.enabled = false;
+            var shape = muzzleSmoke.shape; shape.enabled = false;
+            var size = muzzleSmoke.sizeOverLifetime; size.enabled = true;
+            size.size = new ParticleSystem.MinMaxCurve(1f, AnimationCurve.Linear(0f, 1f, 1f, 3f));
+            var colour = muzzleSmoke.colorOverLifetime; colour.enabled = true;
+            var gradient = new Gradient();
+            gradient.SetKeys(new[] { new GradientColorKey(new Color(.38f, .39f, .36f), 0f),
+                new GradientColorKey(new Color(.28f, .29f, .27f), 1f) },
+                new[] { new GradientAlphaKey(.22f, 0f), new GradientAlphaKey(0f, 1f) });
+            colour.color = gradient;
+            var renderer = cloud.GetComponent<ParticleSystemRenderer>();
+            renderer.sharedMaterial = CityNightResources.AtmosphereMaterial;
+            renderer.renderMode = ParticleSystemRenderMode.Billboard;
+            renderer.shadowCastingMode = ShadowCastingMode.Off; renderer.receiveShadows = false;
+            renderer.lightProbeUsage = LightProbeUsage.Off; renderer.reflectionProbeUsage = ReflectionProbeUsage.Off;
+            muzzleSmoke.Pause(false);
+        }
+
+        internal bool TrySpawnVolley(CombatActor source, Vector3 origin, Quaternion rotation, int sequence, ShotgunSettings settings)
+        {
+            if (source == null || settings == null || !Finite(origin) || !HasCapacityFor(settings.PelletCount)) return false;
+            Vector3 forward = rotation * Vector3.forward;
+            if (!Finite(forward) || forward.sqrMagnitude < .0001f) return false;
+            Volley volley = null;
+            foreach (Volley candidate in volleys) if (!candidate.Active) { volley = candidate; break; }
+            if (volley == null) return false;
+            volley.Source = source; volley.Target = null; volley.Sequence = sequence;
+            volley.Remaining = settings.PelletCount;
+            volley.ResponseApplied = volley.HeadFeedbackApplied = false;
+            volley.Contacts.Clear(); volley.Active = true;
+            int pellet = 0;
+            foreach (Projectile p in slots)
+            {
+                if (p.Active) continue;
+                var spread = settings.PelletSpread(pellet, sequence);
+                Vector3 direction = rotation * new Vector3(spread.x, spread.y, 1f).normalized;
+                Activate(p, source, origin, direction * MuzzleSpeed, sequence);
+                p.Volley = volley; p.Shotgun = settings; p.PelletIndex = pellet;
+                if (++pellet == settings.PelletCount) break;
+            }
+            if (muzzleSmoke != null)
+            {
+                for (int i = 0; i < 6; i++)
+                    muzzleSmoke.Emit(new ParticleSystem.EmitParams { position = origin + forward * .03f,
+                        velocity = forward * (.32f + i * .05f) + Vector3.up * (.2f + i * .015f),
+                        startSize = .035f + i * .008f, startLifetime = .3f + i * .03f,
+                        startColor = Color.white, applyShapeToPosition = false }, 1);
+                muzzleSmoke.Pause(false);
+            }
+            return true;
         }
 
         internal bool TrySpawn(CombatActor source, Vector3 origin, Vector3 velocity, int sequence)
@@ -103,15 +194,19 @@ namespace BarPromenade
             foreach (Projectile p in slots)
             {
                 if (p.Active) continue;
-                p.Source = source; p.Position = origin; p.Velocity = velocity; p.Sequence = sequence;
-                p.Age = p.Distance = 0f; p.Active = true;
-                p.Trail.enabled = false;
-                p.Model.transform.SetPositionAndRotation(origin, Quaternion.LookRotation(velocity));
-                p.Model.SetActive(true);
-                ActiveCount++; SpawnCount++; LastPosition = origin;
+                Activate(p, source, origin, velocity, sequence);
                 return true;
             }
             return false;
+        }
+
+        private void Activate(Projectile p, CombatActor source, Vector3 origin, Vector3 velocity, int sequence)
+        {
+            p.Source = source; p.Position = origin; p.Velocity = velocity; p.Sequence = sequence;
+            p.Volley = null; p.Shotgun = null; p.PelletIndex = -1;
+            p.Age = p.Distance = 0f; p.Active = true; p.Trail.enabled = false;
+            p.Model.transform.SetPositionAndRotation(origin, Quaternion.LookRotation(velocity)); p.Model.SetActive(true);
+            ActiveCount++; SpawnCount++; LastPosition = origin;
         }
 
         internal bool MuzzleIsClear(CombatActor source, Vector3 muzzle)
@@ -128,6 +223,8 @@ namespace BarPromenade
             contacts.Clear();
             if (seconds == 0f) return;
             SurfaceEffects.Tick(seconds);
+            if (muzzleSmoke != null && muzzleSmoke.particleCount > 0)
+            { muzzleSmoke.Simulate(seconds, false, false, false); muzzleSmoke.Pause(false); }
             foreach (Projectile p in slots)
             {
                 if (!p.Active) continue;
@@ -152,7 +249,13 @@ namespace BarPromenade
                 if (body && (!world || hit.Fraction < worldHit.Fraction))
                 {
                     p.Position = hit.Point;
-                    contacts.Add(new Impact(p, target, hit));
+                    if (p.Volley == null) contacts.Add(new Impact(p, target, hit));
+                    else
+                    {
+                        p.Volley.Target = target;
+                        p.Volley.Contacts.Add(new PelletHit(hit, p.Velocity,
+                            p.Shotgun.ResolvePelletDamage(p.Distance + Vector3.Distance(from, hit.Point)), p.PelletIndex));
+                    }
                     ImpactCount++; LastImpactPoint = hit.Point;
                     Retire(p);
                 }
@@ -180,6 +283,19 @@ namespace BarPromenade
                 if (impact.Target != null)
                     impact.Target.ReceiveProjectile(impact.Source, impact.Sequence, impact.Hit, impact.Velocity);
             contacts.Clear();
+            foreach (Volley volley in volleys)
+            {
+                if (!volley.Active) continue;
+                if (volley.Target != null && volley.Contacts.Count > 0)
+                {
+                    bool head = volley.Target.ReceiveShotgunVolley(volley.Source, volley.Sequence,
+                        volley.Contacts, !volley.ResponseApplied, !volley.HeadFeedbackApplied);
+                    volley.ResponseApplied = true;
+                    volley.HeadFeedbackApplied |= head;
+                }
+                volley.Contacts.Clear();
+                if (volley.Remaining == 0) { volley.Active = false; volley.Source = volley.Target = null; }
+            }
         }
 
         private void ShowFlightSegment(Projectile p, Vector3 from, Vector3 to)
@@ -215,11 +331,14 @@ namespace BarPromenade
         {
             foreach (Projectile p in slots) Retire(p);
             contacts.Clear();
+            foreach (Volley volley in volleys)
+            { volley.Active = false; volley.Source = volley.Target = null; volley.Contacts.Clear(); volley.Remaining = 0; }
         }
 
         public void Clear()
         {
             ClearFlights();
+            if (muzzleSmoke != null) muzzleSmoke.Stop(false, ParticleSystemStopBehavior.StopEmittingAndClear);
             if (SurfaceEffects != null) SurfaceEffects.Clear();
             foreach (Projectile p in slots) if (p.Trail != null) p.Trail.enabled = false;
         }
@@ -236,6 +355,8 @@ namespace BarPromenade
         {
             if (!p.Active) return;
             p.Active = false;
+            if (p.Volley != null) p.Volley.Remaining--;
+            p.Volley = null; p.Shotgun = null;
             p.Source = null;
             if (p.Model != null) p.Model.SetActive(false);
             ActiveCount--;

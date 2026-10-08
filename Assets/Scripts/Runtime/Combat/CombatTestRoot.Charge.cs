@@ -11,9 +11,9 @@ namespace BarPromenade
 
         private bool UpdateCombatInput()
         {
-            if (Hero.IsPistol && !pistolApplicationFocused || !GameInput.CanRead(GameInputContext.Gameplay))
+            if (Hero.IsFirearm && !pistolApplicationFocused || !GameInput.CanRead(GameInputContext.Gameplay))
             {
-                if (Hero.IsPistol && GameInput.WasPressed(GameInputAction.MeleeAttack, GameInputContext.PauseMenu))
+                if (Hero.IsFirearm && GameInput.WasPressed(GameInputAction.MeleeAttack, GameInputContext.PauseMenu))
                     Hero.RejectPistolInput(pistolApplicationFocused ? "input_gate" : "application_focus");
                 ReleaseFreePistolAim();
                 Hero?.SuspendPistolInput();
@@ -42,7 +42,7 @@ namespace BarPromenade
             { SetSparring(!Sparring); return false; }
             if (GameInput.WasPressed(GameInputAction.CombatFocus, GameInputContext.Gameplay))
                 SetOpponentFocus(!IsOpponentFocused);
-            if (Hero.IsPistol) return UpdatePistolInput(held);
+            if (Hero.IsFirearm) return UpdatePistolInput(held);
             if (!IsOpponentFocused)
             {
                 // Free movement leaves the same live duel clock and vulnerable body running.

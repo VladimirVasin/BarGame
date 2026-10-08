@@ -146,25 +146,25 @@ The vertical slice contains:
   City/Bar/lodge markers belong to one load, consumed once; later arrivals stay.
   Day one raises mother's-house quest/map marker; door/map entry or starting
   inside closes it. No village signpost;
-- CombatTest:bar/gun→Start;NPCbar/3AI;dummy/freecam;MMBfocus/
-  TabAIreset:barfocus;reset:AI/focus;bar-Q:focus.
-  Gun8/∞:RMBaim/LMBedge/R-Xreload1.8/Rpalm gait;aim:cam-planar
-  WASD-stick strafe/clamp/yaw/release tank;Space:focus-aim/cardinal-back/cam.
-  FOV-IK:.25s/reversible;ray:world/anatomy/0motor-sway;
-  recoil/streak/stablecam/hitkick/cross;cases:g-bounce/SFX;
-  slide-emptylock/mag-rack/Rresume/dropE stage-ammo/win fire-reload.
-  Bullet:g/sweep1/0pierce-ricochet-guard-parry;head0HP/ragdoll.
-  Rig:chest-abdomen/upperarm-forearm-hand/leg shift-drop/foot-owner catch;
-  HP-stagger-momentum kept. Wounds:skin/fabric/glove-boot;directional
-  irregular entry/wet-dry24s/repeat≤4/64persistent;surface-only/0extra severing.
-  Head16:local3-5/brain8:filled/jelly kept/squash;
-  face-ear/bone-tissue mesh/gaps/cam-hide.
-  Blood56head/800budget/pulse→24s0;rig cut/stains/pool/marks/debris.
-  Convulsions2.35s;corpse:impulse/HP-result-pose;
-  pause-hitstop0/reset-exit0/end clear1x.
-  World:chips-sparks/holes128FIFO/particles192/0damage.
-  Bar:6zones/rearhead-end/firsthit/metal recoil/Qsupport/drop-recovery/toilet;
-  Eown-ammo/sharedUI/0grant. Gap:pierce/balance;
+- CombatTest:bar/pistol/shotgun→Start;NPCbar/3AI;dummy/freecam;
+  MMBfocus/TabAIreset;reset:AI/focus;bar-Q:focus.
+  Guns:RMBaim/LMBedge/R-Xreload/Rpalm gait;FOV-IK.25/reversible;
+  cam-plane clamped strafe/yaw/release tank;Space:cardinal/back/fixed upper.
+  Pistol8/∞:reload1.8;head0HP;slide-empty/mag-rack/cases g-bounce/SFX.
+  Shotgun2/∞:barrel/click;12×15/.55/head×2/spread-falloff;
+  break2.8/eject spent/hands load spent only/close;barrels kept.
+  Atomic volleys/pellet hits/aggregate reaction-terminal/flights finish;
+  Rresume/dropE stage-ammo/win fire-reload.
+  Ray:world/anatomy;recoil/streak/stablecam/cross/hitkick;
+  gravity/sweep1/0pierce-ricochet-guard-parry.
+  Rig:chest-abdomen/arm-forearm-hand/leg-drop/catch.
+  Wounds:skin/fabric/glove-boot;dir entry/wet-dry24s/repeat≤4/64/0sever.
+  Head16:loss3-5/brain8:full jelly/squash/gaps/cam-hide.
+  Blood56head/800/pulse→24s0/rig cut/stains/pool/debris;convulsions2.35s;
+  corpse impulse/HP-result-pose;pause-hitstop/reset-exit0/end1x.
+  World:chips-sparks/holes128FIFO/particles192/0dmg.
+  Bar:6zones/rearhead-end/firsthit/metalrecoil/Qsupport/drop/toilet;
+  Eown-ammo/sharedUI/0grant;gap:pierce/balance;
 - the retained Home opening is reachable only by a legacy request: held bed loop,
   silent `05:59` clock with rare whole-display flicker, five-second input lock,
   then localized Wake Up/Quit. Wake sets `06:00`, runs the clock/alarm and hides

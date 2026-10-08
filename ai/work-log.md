@@ -3,34 +3,32 @@
 Newest outcomes/checks first. Archive whole dates at budget: [policy](README.md).
 Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-2026-08.md).
 
-## 2026-10-08 — Pistol wounds, jelly brain and Editor input
+## 2026-10-08 — Shotgun, pistol wounds and Editor input
 
-- CombatTest:brain8 fills skull;old first shot emptied the remnant.
-  Local loss3-5/16 retains wet spring jelly/exact
-  tissue contacts/floor squash/freeze/reset. User reduced eject/blood56/
-  narrow-slow fan;exit bias .45 keeps front/rear distinct.
-  Finite blood24s/convulsions/corpse HP-result-pose/world effects.
-  Imported100x baked before world space;hidden head emits0;
-  camera freeze keeps pose/FOV/aim.
-- Regional bullets:sharp same-rig chest/abdomen/upperarm/forearm/hand
-  response;injured-leg transfer/foot-owner catch. Ordinary stance replaces
-  generic hit clip;HP/stagger/momentum/camera kept. Skin/fabric/glove-boot
-  entries follow shot direction, soak/dry and strengthen on nearby repeats;
-  surface relief adds no severing. Hand/boot/foot patches follow production skin;
-  obsolete palm names had omitted hero hands, now guarded by the generator.
-  Patches copy source HandGrip deltas and sync weights: skinning alone left wounds
-  on the hidden open-hand base.
-  Repeat entry drift came from the coarse hurtbox point; marks now choose the
-  first posed skin-triangle intersection along the shot before nearest fallback.
-- Carry/aim:FOV-grip reversible/free gait;cases/slide/mag clock-ammo survive
-  interrupt/drop;R resumes without replay. Grounded Step uses input/fixed
-  yaw/final grip;airborne aim keeps normal landing. Half-turn recovery arc,
-  IK clearance and visible soles avoid pelvis-pulling anchors.
-- Editor:MainMenu native assertion;old mode unreproduced/cause unproven;
-  domain-scene reload0 workaround. MothersHouse Awake rebuild precedes
-  Configure;queued build guards Play. `Input startup verification` passed.
+- CombatTest:brain8 fixes first-shot emptied skull;loss3-5/16 keeps wet spring
+  jelly/tissue contacts/floor squash/freeze-reset. Reduced eject/blood56/
+  narrow-slow fan;exit bias.45 separates front/rear. Blood24s/convulsions/corpse
+  HP-result-pose/world effects;100x baked before world space/hidden head0/
+  camera freeze pose-FOV-aim.
+- Regional:same-rig sharp chest/abdomen/upperarm/forearm/hand;injured-leg
+  transfer/foot-owner catch;stance replaces generic hit;HP/stagger/momentum/camera kept.
+  Skin/fabric/glove-boot:directional/soak-dry/nearby repeat depth/0sever.
+  Patches:production hand-boot-foot skin,guard formerly omitted hero palms;
+  HandGrip deltas/weight sync fix hidden open-hand-base wounds.
+  Posed skin ray first-triangle, then nearest fallback, fixes coarse-hurtbox drift.
+- Carry/aim:reversible FOV-grip/free gait;case-slide-mag clocks/ammo survive
+  drop-interrupt;Rresume without replay. Grounded Step input/fixedyaw/finalgrip;
+  airborne normal landing. Half-turn arc/IK/visible soles avoid pelvis-pulled anchors.
+- Shotgun2/∞:12×15/.55s/head×2/falloff;atomic volleys share rig/aim/lifecycle.
+  Break-open2.8:barrel ammo/stage kept/interrupt-drop;hands load spent only/Eshared0grant;
+  flights finish after defeat,aggregate reaction/terminal cap.
+  Grip -12cm/elbows out-down;aim/fire/reload frames inspected.
+- Editor:MainMenu native assertion/old mode unreproduced/cause unproven;
+  domain-scene reload0 workaround;MothersHouse Awake rebuild before Configure/
+  queued build guards Play. `Input startup verification` passed.
 - Checks: `build-combat-pistol-3d-model.py`,
-  `build-combat-gore-3d-model.py`, `build-combat-blood-3d-model.py` validators;
+  `build-combat-gore-3d-model.py`, `build-combat-blood-3d-model.py`,
+  `build-combat-shotgun-3d-model.py` validators;
   `Range_PistolSelectionProjectileFlightReloadAndResetUseTheLiveDuel`,
   `Range_PistolWinningAndCorpseShotsKeepTheLiveFreeAimCamera`,
   `Range_UnfocusedPistolCarryKeepsBothArmsWalkingAndCanAim`,
@@ -44,9 +42,11 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
   (head/airborne/aftermath frames reviewed),
   `Range_ProjectileHeadEdgesMatchVisibleFrozenAndRetainedSurfaces`,
   `Range_FreePistolCentreAimHitsVisibleHeadEdgesFromActualMuzzle`.
+  `Range_ShotgunTwoBarrelsVolleyReloadAndResetUseTheLiveDuel`;
+  `ShotgunRulesTests`, `PistolRulesTests`, `StartMenuModelTests`;
   `Range_PistolRegionalReactionsAndWoundsStayContinuousThroughPauseAndReset`
-  proved original posed skin/morph attachment, reaction/aftermath/pause/reset;
-  representative reaction/material frames inspected.
+  proved posed skin/morph attachment/reaction/aftermath/pause/reset;
+  reaction/material frames inspected.
   Prior composite floor-aim camera check failed.
   `check-docs.py`, `git diff --check`.
 

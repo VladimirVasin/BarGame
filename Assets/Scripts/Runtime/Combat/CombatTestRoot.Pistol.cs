@@ -135,12 +135,12 @@ namespace BarPromenade
                 Hero.CancelPendingPistolShot(step ? "step_requested" : "kick_requested");
                 if (step)
                 {
-                    Hero.Pistol.CancelReload();
+                    Hero.Firearm.CancelReload();
                     Hero.TryStep(GameInput.ReadMovement());
                 }
                 else
                 {
-                    Hero.Pistol.CancelAction();
+                    Hero.Firearm.CancelAction();
                     Hero.TryKick();
                 }
                 requireAttackRelease |= held;
@@ -156,13 +156,13 @@ namespace BarPromenade
 
         private void DrawPistolHud(RetroUiCanvas canvas)
         {
-            if (!Hero.IsPistol || Hero.Pistol == null) return;
+            if (!Hero.IsFirearm || Hero.Firearm == null) return;
             if (Hero.IsFreePistolAiming && CameraFollow.FreeAimActive && GameInput.CanRead(GameInputContext.Gameplay))
             {
                 Vector3 centre = CameraFollow.Camera.ViewportToScreenPoint(new Vector3(.5f, .5f, 0f));
                 Vector2 point = canvas.ScreenToLogical(new Vector2(centre.x, Screen.height - centre.y));
-                Color colour = Hero.PistolBodyAvailable && Hero.Pistol.CanFire && Hero.PistolAimAligned ? RetroUiTheme.Text : RetroUiTheme.Muted;
-                float spread = Mathf.Round(PistolCrosshairExpansion);
+                Color colour = Hero.PistolBodyAvailable && Hero.Firearm.CanFire && Hero.PistolAimAligned ? RetroUiTheme.Text : RetroUiTheme.Muted;
+                float spread = Mathf.Round(PistolCrosshairExpansion) + (Hero.IsShotgun ? 5f : 0f);
                 RetroUiTheme.FillRect(new Rect(point.x - 1f, point.y - 1f, 3f, 3f), RetroUiTheme.Ink);
                 DrawPistolCrosshairArms(point, spread, RetroUiTheme.Ink, 1f);
                 DrawPistolCrosshairArms(point, spread, colour, 0f);
@@ -170,15 +170,16 @@ namespace BarPromenade
             }
             var rect = new Rect(14, 273, 170, 25);
             RetroUiTheme.DrawPanel(rect, RetroUiTheme.PanelInset, RetroUiTheme.BorderMuted, false, 0f, 1f, .72f);
-            string ammunition = LocalizationService.Get("combat.pistol.ammo") + " " + Hero.Pistol.Rounds + "/" +
-                Hero.Pistol.Settings.MagazineCapacity;
+            string prefix = Hero.IsShotgun ? "combat.shotgun." : "combat.pistol.";
+            string ammunition = LocalizationService.Get(prefix + "ammo") + " " + Hero.Firearm.Rounds + "/" +
+                Hero.Firearm.Settings.MagazineCapacity;
             GUI.Label(new Rect(rect.x + 6f, rect.y + 1f, rect.width - 12f, 12f), ammunition, small);
-            string status = Hero.Pistol.IsReloading ? LocalizationService.Get("combat.pistol.reloading") :
-                Hero.Pistol.Rounds == 0 ? LocalizationService.Get("combat.pistol.empty") : LocalizationService.Get("combat.pistol.reload");
+            string status = Hero.Firearm.ReloadPending ? LocalizationService.Get(prefix + "reloading") :
+                Hero.Firearm.Rounds == 0 ? LocalizationService.Get(prefix + "empty") : LocalizationService.Get(prefix + "reload");
             GUI.Label(new Rect(rect.x + 6f, rect.y + 12f, rect.width - 12f, 12f), status, controls);
-            if (Hero.Pistol.IsReloading)
+            if (Hero.Firearm.IsReloading)
                 RetroUiTheme.FillRect(new Rect(rect.x + 6f, rect.y + rect.height - 2f,
-                    (rect.width - 12f) * Hero.Pistol.ReloadProgress, 1f), RetroUiTheme.Text);
+                    (rect.width - 12f) * Hero.Firearm.ReloadProgress, 1f), RetroUiTheme.Text);
         }
 
         private static void DrawPistolCrosshairArms(Vector2 point, float spread, Color colour, float rim)

@@ -33,7 +33,7 @@ This screen moves an item model; it does not authorize a new hero animation.
 | A single collectible in the world | `WorldItemPickup` + `WorldItemPickupPlan` | `WorldItemFoundScreen.TryPresent`; Take calls `GameSessionState.TryCollectWorldItem` once. Source ID survives scene visits. |
 | An already confirmed grant, including woodpiles | `InventoryTargetInteractionController` for Yes/No, then `WorldItemFoundScreen.TryPresentReceived` | Source calls `TryAddInventoryItem` once after rechecking capacity. Screen shows success and Close; closing/Escape cannot grant or refund. |
 | Inspection inside an existing modal interaction | `HomeRefrigeratorItemInspectionController` pattern | Reuse `WorldItemInspectionPresenter`, `WorldItemInspectionTimeline` and `RetroItemPanel`; retain the outer owner, do not acquire a competing lock. |
-| Reclaim existing CombatTest equipment | `WorldItemFoundScreen` with registered `CombatCrowbar`/`CombatPistol` | Take equips the same dropped weapon after the shared return; pistol ammo stays. No inventory grant; Cancel leaves it on the floor. |
+| Reclaim CombatTest equipment | `WorldItemFoundScreen`: `CombatCrowbar`/`CombatPistol`/`CombatShotgun` | Take re-equips the same weapon after return, preserving ammo/reload. No grant; Cancel leaves it on the floor. |
 
 `WorldItemFoundScreen` is installed once on the hero by `PlayerFactory`, resolved
 through `WorldItemFoundScreen.For(interactor)`. `InventoryItemModelFactory` and

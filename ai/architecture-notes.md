@@ -11,46 +11,41 @@
   home/shop/bar heights, meaning and nine art checks remain.
 
 - **Accepted — 2026-10-04, district street structure:**
-  Stable address/node IDs, `8 m` road/`6 m` carriageway; coast/river/park,
-  central/bus spines, seeded stair roads and special-site approaches keep datums.
-  Baseline elevation selects stair edges before curves. Streets touching the
-  highest buildable row and its coast connectors stay straight as a service band.
-  Cargo search/paving admits straight streets only, retaining supply/parking
-  anchors and turn aprons rather than requiring one historical edge sequence.
-  Ordinary inner OldTown bends `1.4–2.15 m` towards terraces/shore, upper
-  Industrial `0.75–0.9 m`; Residential regular, Nightlife precincts straight.
-  Special sites resolve against pilot geometry before ordinary replanning;
-  legacy/custom uniform stays straight. Actual ribbons own ground subtraction,
-  body poses and path distances; no new exits or changes to story §16.
+  Stable address/node IDs; `8 m` roads/`6 m` carriageways. Coast/river/park,
+  central/bus spines, seeded stairs and special approaches retain datums.
+  Baseline elevation picks stair edges before curves; highest buildable row
+  and coast connectors form a straight service band. Cargo search/paving:
+  straight streets, retained supply/parking anchors and turn aprons, no fixed route.
+  Inner OldTown bends `1.4–2.15 m` terrace/shore; upper Industrial `0.75–0.9 m`;
+  Residential regular/Nightlife precincts straight. Special sites use pilot
+  geometry before ordinary replanning; legacy/custom uniform straight.
+  Ribbons own ground subtraction/body poses/distances; exits/story §16 unchanged.
 
 - **Accepted — 2026-10-04, district block ensembles:**
-  User authorizes whole-city structural replanning and new Blender objects.
-  Ordinary urban districts compose front/rear court loops with a `10×6 m` wing
-  only where full bodies/clearance fit. Dense old/night fronts, deeper residential
-  courts and low service courts keep dominant district mass. A true `3.6 m`
-  passage is `3.2 m` high (Industrial `4.2 m`); ground/overhead physical and
-  navigation contracts remain separate. Loops join shared paths; adjacent courts
-  connect only on continuous, safe-grade ground without a declared road.
-  Indexed boundary queries use scoped cached paving: omitting the POI-side
-  cannery cut breaks route/driveway-selection recursion without changing production
-  paving. Edge-clearance retries are bounded.
-  Retained west connections/offset court stay. No semantic lot/entrance/NPC/text/
-  water added; protected sites, open park, one-block transitions, story §16 and
-  nine art checks remain.
+  User:whole-city structural replanning/new Blender objects. District front/rear
+  court loops admit `10×6 m` wings only with full-body clearance. Dense old/night
+  fronts, deeper residential and low service courts retain district mass.
+  True passages: `3.6 m` wide/`3.2 m` high (Industrial `4.2 m`);
+  separate ground/overhead physics/navigation. Loops join shared paths;
+  adjacent courts require continuous safe-grade ground without a declared road.
+  Scoped cached paving indexes boundaries; omit the POI-side cannery cut to
+  break route/driveway recursion without changing production paving;
+  bounded edge-clearance retries.
+  West connections/offset court stay. No semantic lot/entrance/NPC/text/water;
+  protected sites/open park/one-block transitions/story §16/nine checks remain.
 
 - **Accepted — 2026-10-04, unified City ground:**
-  User: streets/paths and all City ground share one surface composition.
-  `CityGroundSurfaceSystem` snapshots explicit sources; priority XZ partitioning
-  retains their planes/normals/metre UVs. `48 m` render/collision sectors bind
-  indexed weather recipes and triangle footstep kinds. Markings clip/project
-  onto exact support, including grade breaks. Disabled source hosts retain
-  staging/semantic ownership; bridges/piers/stairs remain structural volumes.
-  Cemetery excavation rebuilds local coatings/walls; sand retains its deformable
-  skin/fixed collider. Home uses the same compositor without collision.
-  Final composition remains one synchronous construction stage.
+  User:all City ground/streets/paths share one composition.
+  `CityGroundSurfaceSystem` snapshots sources; priority XZ partitions retain
+  planes/normals/metre UVs. `48 m` render/collision sectors bind indexed weather
+  recipes/triangle footsteps. Markings clip/project exact support, including
+  grade breaks. Disabled hosts keep staging/semantics; bridges/piers/stairs
+  remain structural. Cemetery excavation rebuilds coatings/walls; sand keeps
+  deformable skin/fixed collision. Home uses the compositor without collision.
+  Composition:one synchronous stage.
   Vertex/plane/contour/SAT/style caching avoids repeat work; bounded grids:
   partition `2 m`, supports `1 m`, edges `.5 m`. Geometry remains exact.
-  Routes/anchors/palettes/story §16 and all nine art checks stay.
+  Routes/anchors/palettes/story §16/nine checks stay.
 
 - **Accepted — 2026-10-04, OldTown north street frontage:**
   Straight, nonreplanned x0..3,z11: N compact/long, fixed14×13.5/22×11.5 m;
@@ -258,17 +253,25 @@
   §6/§12/art §10g/§16/§21/nine checks.
 
 - **Accepted — 2026-10-08, pistol aimed movement:**
-  CombatTest:cam-planar/clamped WASD-stick strafe;ground Space1m/15:
-  facing-axis/noinput-back/fixed yaw-upperaim/wall-pause.
-  `CombatFootwork`:move-yaw-legs/speed-inertia/release tank/handoff0/noaim:noStep.
+  CombatTest:clamped cam-plane WASD-stick strafe;ground Space1m/15:
+  facing-axis/noinput-back/fixed upperyaw/wall-pause.
+  `CombatFootwork`:legyaw/speed-inertia/release tank/handoff0/noaim:noStep.
 - **Accepted exception 2026-10-08, pistol:**
-  §6/art§15a:dummy/freecam;bar-Q/Step focus-aim;recoil-streak.
-  Freeaim:nearest world/anatomy/0motor-sway;zone-dir SFX/impulse;
-  head0HP/ragdoll/stablecam/hitkick/motor.
-  Cases:port-delay/g-bounce-cap/SFX;slide return-emptylock;
-  handmag-seat/rack1.8/SFX/ammo-last/interrupt hold/Rresume/dropE stage-ammo.
-  0lock-pierce-ricochet-guard-parry-taunt-reward;win fire-reload/HP-result;
+  §6/art§15a:dummy/freecam;Q/Step focus-aim;recoil-streak;
+  freeaim nearest world/anatomy/0motor-sway/zone-dir SFX-impulse;
+  head0HP/ragdoll/stablecam/hitkick/motor. Cases:port-delay/g-bounce-cap/SFX;
+  slide return-emptylock;handmag-seat/rack1.8/SFX/ammo-last;
+  interrupt/dropE stage-ammo/Rresume;0lock-pierce-ricochet-guard-parry-taunt-reward;
+  win fire-reload/HP-result;
   corpse impulse-pose;pause-hitstop/reset-exit0.
+- **Accepted architecture exception — 2026-10-08, double-barrel shotgun:**
+  CombatTest2/∞;one barrel/click;12×15/.55s/head×2/spread-falloff.
+  Blender dark steel/wood/paired barrels;hero shoulder-stock/Lforeend/
+  heavy recoil/flash-smoke/deep SFX.
+  Break/eject spent/load missing/close2.8;barrel ammo/stage survive interrupt-drop;
+  Eshared0grant. Atomic volley→spend;pellet hits/aggregate reaction-terminal cap/
+  flights finish. Shared aim/move/camera/lifecycle;
+  §6/art§15a/§16/§21/nine checks.
 - **Accepted exception 2026-10-08, headshots:**
   Head16:3-5;brain8:full/wet jelly/squash/loss1x;
   bone-tissue/cam-hide;low eject/blood56;finite pulse/terminal fade/corpse impulse;
@@ -278,48 +281,45 @@
   128FIFOholes/192particles/shared shader/0damage-pierce;
   pause-hitstop0/ClearFlights keeps/reset-exit0.
 - **Accepted — 2026-10-08, regional pistol hits:**
-  User:cinematic;rig chest/abdomen/arm/forearm/hand/leg-catch.
-  Skin/fabric/glove-boot:entry/wet/repeat;HP/physics/camera/parts stay.
+  User:cinematic;rig chest/abdomen/arm/forearm/hand/leg-catch;
+  skin/fabric/glove-boot entry/wet/repeat;HP/physics/camera/parts stay.
 - **Accepted 2026-10-07, combat:**
-  Floor no deeper;stall arm→drop/rise≠grip/HP-focus-AI.
-  Pause-hitstop0;no bar:walk-Q-Step/hits-falls only.
-  E:shared/0grant/cancel floor;NPC approach-Q;rise ignores own drop.
-  MMBfocus/AIhits/reset mode-focus;hitstop≠lock-reset.
+  Floor kept;stall arm→drop/rise≠grip/HP-focus-AI;pause-hitstop0.
+  No bar:walk-Q-Step/hits-falls. Eshared/0grant/cancel floor;
+  NPC approach-Q/rise ignores own drop;MMBfocus/AIhits/reset mode-focus;
+  hitstop≠lock-reset.
   Q:chest-gap/earlylock;far pelvis-foot→/chest←,near knee;
   fast palm/bar kept/arc turn/3mirrored torsos/fixedroot.
-  Aim¼Windup lock/Charge free/motor yield;bar-Q-palm clocks/contact switch.
-  Step1m/sole-catch/finite landing-overload.
-  Bar-palm:nonfall stagger/feet-impulse-aim;Q:freeleg/loadR;guard support/fall veto.
+  Aim¼Windup lock/Charge free/motor yield;bar-Q-palm clocks/contact;
+  Step1m/sole-catch/finite landing-overload;bar-palm:nonfall stagger/feet-impulse-aim;
+  Qfreeleg/loadR;guard support/fall veto.
   First bar-world-body;metal-wall recoil-stop/guard-break/0HPparry/pooled sparks-SFX.
 - **Accepted 2026-10-02, combat:**
-  R>L/Hit-Miss cut/.22→held.28/buffer.20/hit-fall-reset clear;
+  R>L/Hit-Miss cut/.22→held.28/buffer.20/hit-fall-reset0;
   AI≥1m/retreat≤.6s/whiff.20→counter.22/Rising hits.
   Hold≠parry;shield:art§15a;gaze clip-physics;pause-hitstop-defeat/regrip.
 - **Accepted 2026-10-03, combat:**
-  Hero Windup1m/brake/side-back/drift/≤.85m 0HP shove.
-  Regrip≤600°/s wrist-elbow-shoulder/body-world-palm;
-  DuelJournal identity/anatomy/CPU-wall;Q/B/3AI/recoil hold;
+  Hero Windup1m/brake/side-back/drift/≤.85m 0HPshove;
+  regrip≤600°/s wrist-elbow-shoulder/body-world-palm;
+  DuelJournal identity/anatomy/CPU-wall/Q/B/3AI/recoil hold;
   .20s walk wait/tail buffer/support≠chain.
 - **Accepted 2026-09-25, clinch shove:** Both:close swing→faster/stronger palm.
 - **Accepted 2026-09-26, recovery:**
-  Impact≤2steps;flywheel-crouch-brace opt-in;pause-hitstop/defeat separate.
-  L owns→R body-floor-wall;`CombatWeaponGeometry`:8seg/held mass→forearm/free→mass-inertia;
-  hand-ignore expires/drop past capsule→anatomy off;RO elbow-pronation -5..120/side±8°/QA pending.
+  Impact≤2steps;optional flywheel-crouch-brace;pause-hitstop/defeat separate.
+  Lowns→Rbody-floor-wall;`CombatWeaponGeometry`:8seg/heldmass→forearm/free→inertia;
+  hand-ignore expires/drop past capsule→anatomy0;ROelbow-pronation-5..120/side±8°/QA pending.
 - **Accepted 2026-09-21, body:**
-  6bone-local zones/first sequence;bar:head×2(50/80,cap.99MaxHP)/rear±45°defeat;
+  6bone-local zones/first sequence;bar head×2(50/80,cap.99MaxHP)/rear±45°defeat;
   torso1-rear1.25/arms.5/legs.75;frozen mutual zone-dir-power/1HP-ragdoll.
-  C1 pose-contact/travel-yaw:return.15→.75/stun.35;
-  stance.42/.28m/art§15a;Smoothstep feet.
-  Hold freezes breath/delays regen.
-  Aftermath:thud;bar pool grows10s,stays.
+  C1pose-contact/travel-yaw:return.15→.75/stun.35;
+  stance.42/.28m/art§15a/Smoothstep feet;Hold:breath0/regen delay;
+  aftermath:thud/bar pool grows10s,stays.
 - **Accepted 2026-09-20, two hands:**
-  Ready-Block-attack-recoil→L;Hit-GuardBreak-Defeat release;
-  Ready low/Block high/L opposed .16→.42m/breath4s/blend/injury/NPC R Rest;
-  L subdiv/gates.
-  Injury:HP/dir-pose/wounds/pools;dry:block-miss;ragdoll wins.
+  Ready-Block-attack-recoil→L/Hit-GuardBreak-Defeat release;
+  Ready low/Block high/L opposed.16→.42m/breath4s/blend/injury/NPC RRest/Lsubdiv-gates;
+  injury HP/dir-pose/wounds/pools;dry:block-miss;ragdoll wins.
 - **Accepted 2026-09-21, duel:**
-  Bar win:swing→walk/off→reset.
-  Costs:free hits/guard20-35/charge20/regen30/s-.6s stuns/own spends;
+  Barwin:swing→walk/off→reset;costs:free hits/guard20-35/charge20/regen30/s-.6s stuns/own spends;
   Seeded AI/fall freecam;fore/back:through flips/stop repeats;step/target>15°≠strafe;
   same dmg-time-cost;upper(t+q*.18*(1-smooth(t/.45)))/lower(t);
   charge upper(.18q):retimed Attack/neutral lower;q=power/Forehand Light;
@@ -329,8 +329,8 @@
   E/settled defeat:Home toilet/view-timeline-stream-residue;
   Guided dock/aim/bone-floor marks;bar L-return/§21-exempt silent/no speech-reaction-reward/6th FP.
 - **Accepted exception 2026-09-19, CombatTest:**
-  §6/§16.15/art§15a:`CombatTest` one hero-input;
-  Hits/steps vulnerable/fall/reset/shoulder-wall;W-S walk/A-D strafe/opponent last.
+  §6/§16.15/art§15a:one hero-input;hits/steps vulnerable/fall/reset/shoulder-wall;
+  W-Swalk/A-Dstrafe/opponent last.
 
 - **Accepted — 2026-09-16, street pool is the default NPC catalog:**
   User: default-only, new models join immediately. `DefaultNpcPopulation`:

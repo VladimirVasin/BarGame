@@ -152,8 +152,8 @@ namespace BarPromenade
 
         // A new bullet contact wounds a corpse without inventing another HP transaction.
         public void Emit(CombatImpact impact) => Emit(impact.Target, impact.Point, impact.Direction,
-            impact.Kind == CombatImpactKind.Projectile ? Mathf.Max(25f, impact.Damage) : impact.Damage,
-            impact.Kind == CombatImpactKind.Projectile, impact.Location.Region == MeleeBodyRegion.Head, impact.Part);
+            impact.Kind == CombatImpactKind.Projectile ? (impact.IsPellet ? impact.WoundDamage : Mathf.Max(25f, impact.Damage)) : impact.Damage,
+            impact.Kind == CombatImpactKind.Projectile, impact.Location.Region == MeleeBodyRegion.Head, impact.Part, impact.IsPellet);
 
         public void Emit(CombatActor actor, Vector3 point, Vector3 direction, float damage) =>
             Emit(actor, point, direction, damage, false, false);
@@ -172,7 +172,7 @@ namespace BarPromenade
         }
 
         private void Emit(CombatActor actor, Vector3 point, Vector3 direction, float damage, bool projectile, bool head,
-            Player3DAnatomicalPart? part = null)
+            Player3DAnatomicalPart? part = null, bool pellet = false)
         {
             if (!IsInitialized || actor == null || damage <= 0f || float.IsNaN(damage) || float.IsInfinity(damage) || !Finite(point) || !Finite(direction)) return;
             if (!injuries.TryGetValue(actor, out Injury injury))
@@ -192,7 +192,7 @@ namespace BarPromenade
             Vector3 origin = projectile ? point : injury.Marks.Count > 0 ? injury.Marks.BleedPosition : point;
             Vector3 outward = injury.Marks.Count > 0 ? injury.Marks.BleedDirection : -incoming;
             int amount = Mathf.Clamp(12 + Mathf.RoundToInt(damage * .24f), 12, 26);
-            if (projectile) amount = 56;
+            if (projectile) amount = pellet ? 5 : 56;
             amount = SpendBlood(injury, amount);
             for (int i = 0; i < amount; i++)
             {

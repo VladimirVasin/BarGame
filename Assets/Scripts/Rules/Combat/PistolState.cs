@@ -4,7 +4,7 @@ namespace BarPromenade
 {
     /// <summary>One semi-automatic shot per explicit request; no buffered or automatic fire.
     /// Runtime supplies only live duel seconds and owns physical aim, body availability and input edges.</summary>
-    public sealed class PistolState
+    public sealed class PistolState : IFirearmState
     {
         private double aimElapsed, reloadElapsed, cooldownRemaining;
         private bool reloading;
@@ -16,6 +16,7 @@ namespace BarPromenade
         }
 
         public PistolSettings Settings { get; }
+        FirearmSettings IFirearmState.Settings => Settings;
         public int Rounds { get; private set; }
         public int ShotSequence { get; private set; }
         public bool AimRequested { get; private set; }

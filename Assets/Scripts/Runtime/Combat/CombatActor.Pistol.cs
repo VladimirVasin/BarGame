@@ -4,9 +4,11 @@ namespace BarPromenade
 {
     public sealed partial class CombatActor
     {
-        public PistolState Pistol { get; private set; }
+        public IFirearmState Firearm { get; private set; }
+        public PistolState Pistol => Firearm as PistolState;
+        public ShotgunState Shotgun => Firearm as ShotgunState;
         public Transform PistolMuzzle { get; private set; }
-        internal float PistolSupportError => IsPistol && pistolSupport != null
+        internal float PistolSupportError => IsFirearm && pistolSupport != null
             ? Vector3.Distance(handPose.CylinderCentre(true), pistolSupport.position) : 0f;
         private AnimationClip pistolRest, pistolRaise, pistolAim, pistolFire, pistolReload, pistolLower;
         private bool pistolShotRequested;
@@ -24,7 +26,7 @@ namespace BarPromenade
         private Vector3 pistolFreeAimPoint;
         private bool pistolAimReachable;
         internal const float MaximumPistolAimErrorDegrees = 5f;
-        internal bool IsFreePistolAiming => !CombatFocused && (Pistol?.AimRequested ?? false);
+        internal bool IsFreePistolAiming => !CombatFocused && (Firearm?.AimRequested ?? false);
         internal Vector3 PistolAimPoint => CombatFocused && contactTarget != null
             ? contactTarget.Ragdoll.PhysicsController.ChestBody.position : pistolFreeAimPoint;
         internal float PistolAimErrorDegrees => PistolMuzzle != null && FinitePistolVector(PistolAimPoint)
@@ -33,13 +35,11 @@ namespace BarPromenade
 
         private void InitializePistol()
         {
-            Pistol = new PistolState();
-            pistolRest = CombatPistolAssetProvider.LoadClip("PistolRest");
-            pistolRaise = CombatPistolAssetProvider.LoadClip("PistolRaise");
-            pistolAim = CombatPistolAssetProvider.LoadClip("PistolAim");
-            pistolFire = CombatPistolAssetProvider.LoadClip("PistolFire");
-            pistolReload = CombatPistolAssetProvider.LoadClip("PistolReload");
-            pistolLower = CombatPistolAssetProvider.LoadClip("PistolLower");
+            Firearm = IsShotgun ? new ShotgunState() : new PistolState();
+            AnimationClip Load(string action) => IsShotgun ? CombatShotgunAssetProvider.LoadClip("Shotgun" + action) :
+                CombatPistolAssetProvider.LoadClip("Pistol" + action);
+            pistolRest = Load("Rest"); pistolRaise = Load("Raise"); pistolAim = Load("Aim");
+            pistolFire = Load("Fire"); pistolReload = Load("Reload"); pistolLower = Load("Lower");
             foreach (AnimationClip clip in new[] { pistolRest, pistolRaise, pistolAim, pistolFire, pistolReload, pistolLower })
                 hero.Registry.RegisterRuntimeAnimation(new Player3DAnimationBinding(clip.name, "Combat", clip, clip.length, clip.isLooping));
             PistolMuzzle = CombatPistolAssetProvider.FindAnchor(Weapon, "Muzzle");
@@ -51,11 +51,12 @@ namespace BarPromenade
             string[] names = { "upper_arm.R", "forearm.R", "hand.R", "upper_arm.L", "forearm.L", "hand.L" };
             for (int i = 0; i < names.Length; i++)
                 pistolArmBones[i] = CityPedestrianHandProps.FindSocket(DamageRigRoot, names[i]);
-            InitializePistolMechanics();
+            if (IsShotgun) InitializeShotgunMechanics();
+            else InitializePistolMechanics();
         }
 
         // A committed step keeps the upper-body aim; firing/reloading still wait for Ready.
-        internal bool PistolAimBodyAvailable => IsPistol && Pistol != null && !weaponDropped && (!roundEnded || hero != null) &&
+        internal bool PistolAimBodyAvailable => IsFirearm && Firearm != null && !weaponDropped && (!roundEnded || hero != null) &&
             CanAttemptBodyAction && IsAvailable && (State.Phase is MeleePhase.Ready or MeleePhase.Step) &&
             !(footwork?.RecoveryEpisodeActive ?? false);
 
@@ -63,18 +64,18 @@ namespace BarPromenade
 
         public void SetPistolAim(bool held, Vector3? worldAimPoint = null)
         {
-            if (Pistol == null) return;
+            if (Firearm == null) return;
             if (!CombatFocused && (held || worldAimPoint.HasValue))
                 pistolFreeAimPoint = worldAimPoint ?? (transform.position + Vector3.up * 1.4f + transform.forward * 40f);
             bool requested = held && PistolAimBodyAvailable && GameInput.CanRead(GameInputContext.Gameplay);
-            Pistol.SetAim(requested);
+            Firearm.SetAim(requested);
         }
 
         /// <summary>Queue one trigger edge for a single attempt on the next live step; true does not promise a shot.</summary>
         public bool RequestPistolShot()
         {
             int request = BeginPistolShotRequest();
-            if (!IsPistol || Pistol == null) return RejectPistolShot(request, "no_pistol", "input");
+            if (!IsFirearm || Firearm == null) return RejectPistolShot(request, "no_pistol", "input");
             if (!GameInput.CanRead(GameInputContext.Gameplay)) return RejectPistolShot(request, "input_gate", "input");
             if (pistolShotRequested) return RejectPistolShot(request, "already_requested", "input");
             // This is an input edge, not a promise to fire. The first live step
@@ -87,9 +88,9 @@ namespace BarPromenade
         private int BeginPistolShotRequest()
         {
             int request = ++JournalRequestId;
-            JournalEvent("pistol_shot_requested", request: request,
-                f0: GameLog.Field("rounds", Pistol?.Rounds ?? 0),
-                f1: GameLog.Field("aim_requested", Pistol?.AimRequested ?? false));
+            JournalEvent(IsShotgun ? "shotgun_shot_requested" : "pistol_shot_requested", request: request,
+                f0: GameLog.Field("rounds", Firearm?.Rounds ?? 0),
+                f1: GameLog.Field("aim_requested", Firearm?.AimRequested ?? false));
             return request;
         }
 
@@ -97,11 +98,11 @@ namespace BarPromenade
 
         private bool RejectPistolShot(int request, string reason, string stage)
         {
-            JournalEvent("pistol_shot_rejected", request: request,
+            JournalEvent(IsShotgun ? "shotgun_shot_rejected" : "pistol_shot_rejected", request: request,
                 f0: GameLog.Field("reason", reason), f1: GameLog.Field("stage", stage),
-                f2: GameLog.Field("rounds", Pistol?.Rounds ?? 0),
-                f3: GameLog.Field("cooldown_seconds", Pistol?.CooldownRemaining ?? 0f),
-                f4: GameLog.Field("aim_progress", Pistol?.AimProgress ?? 0f),
+                f2: GameLog.Field("rounds", Firearm?.Rounds ?? 0),
+                f3: GameLog.Field("cooldown_seconds", Firearm?.CooldownRemaining ?? 0f),
+                f4: GameLog.Field("aim_progress", Firearm?.AimProgress ?? 0f),
                 f5: GameLog.Field("aim_error_degrees", PistolAimErrorDegrees),
                 f6: GameLog.Field("phase", (int)State.Phase), f7: GameLog.Field("body_available", PistolBodyAvailable));
             return false;
@@ -114,7 +115,7 @@ namespace BarPromenade
             RejectPistolShot(pistolShotRequest, reason, "cancel");
         }
 
-        private string PistolBodyRejection => !IsPistol || Pistol == null ? "no_pistol" :
+        private string PistolBodyRejection => !IsFirearm || Firearm == null ? "no_pistol" :
             weaponDropped ? "weapon_dropped" : State.IsDefeated ? "defeated" :
             IsKnockedDown || State.IsKnockedDown || IsRagdollActive ? "knocked_down" :
             !CanAttemptBodyAction || !IsAvailable ? "body_unavailable" :
@@ -122,12 +123,12 @@ namespace BarPromenade
 
         public bool TryReloadPistol()
         {
-            bool resuming = Pistol?.ReloadPending ?? false;
-            if (!PistolBodyAvailable || !GameInput.CanRead(GameInputContext.Gameplay) || !Pistol.TryReload()) return false;
+            bool resuming = Firearm?.ReloadPending ?? false;
+            if (!PistolBodyAvailable || !GameInput.CanRead(GameInputContext.Gameplay) || !Firearm.TryReload()) return false;
             pistolReloadSettleRemaining = resuming ? PoseBlendSeconds : 0f;
-            BeginPistolReloadAudio(resuming);
+            if (!IsShotgun) BeginPistolReloadAudio(resuming);
             CancelPendingPistolShot("reload_started");
-            JournalEvent("pistol_reload_started", f0: GameLog.Field("rounds", Pistol.Rounds));
+            JournalEvent(IsShotgun ? "shotgun_reload_started" : "pistol_reload_started", f0: GameLog.Field("rounds", Firearm.Rounds));
             Present();
             return true;
         }
@@ -139,36 +140,41 @@ namespace BarPromenade
             int request = pistolShotRequest;
             if (!GameInput.CanRead(GameInputContext.Gameplay)) return RejectPistolShot(request, "input_gate", "commit");
             if (!PistolBodyAvailable) return RejectPistolShot(request, PistolBodyRejection, "commit");
-            if (Pistol.IsReloading) return RejectPistolShot(request, "reloading", "commit");
-            if (Pistol.ReloadPending) return RejectPistolShot(request,
-                Pistol.MagazineAttached ? "reload_incomplete" : "magazine_missing", "commit");
-            if (!Pistol.AimRequested) return RejectPistolShot(request, "not_aiming", "commit");
-            if (!Pistol.IsAiming) return RejectPistolShot(request, "raising", "commit");
-            if (Pistol.Rounds == 0)
+            if (Firearm.IsReloading) return RejectPistolShot(request, "reloading", "commit");
+            if (Firearm.ReloadPending) return RejectPistolShot(request,
+                Firearm.MagazineAttached ? "reload_incomplete" : "magazine_missing", "commit");
+            if (!Firearm.AimRequested) return RejectPistolShot(request, "not_aiming", "commit");
+            if (!Firearm.IsAiming) return RejectPistolShot(request, "raising", "commit");
+            if (Firearm.Rounds == 0)
             {
                 RetroAudio.PlayAt(RetroSfxId.PistolEmpty, PistolMuzzle.position, .65f);
                 return RejectPistolShot(request, "empty", "commit");
             }
-            if (!Pistol.CanFire) return RejectPistolShot(request, "cooldown", "commit");
+            if (!Firearm.CanFire) return RejectPistolShot(request, "cooldown", "commit");
             Vector3 target = PistolAimPoint, muzzle = PistolMuzzle.position;
-            JournalEvent("pistol_shot_pose", request: request,
+            JournalEvent(IsShotgun ? "shotgun_shot_pose" : "pistol_shot_pose", request: request,
                 f0: GameLog.Field("x", muzzle.x), f1: GameLog.Field("y", muzzle.y), f2: GameLog.Field("z", muzzle.z),
                 f3: GameLog.Field("target_x", target.x), f4: GameLog.Field("target_y", target.y), f5: GameLog.Field("target_z", target.z),
                 f6: GameLog.Field("aim_error_degrees", PistolAimErrorDegrees), f7: GameLog.Field("reachable", pistolAimReachable));
             if (!pistolAimReachable) return RejectPistolShot(request, "aim_unreachable", "commit");
             if (!PistolAimAligned) return RejectPistolShot(request, "aim_unaligned", "commit");
-            if (projectiles == null || !projectiles.HasCapacity) return RejectPistolShot(request, "projectile_capacity", "commit");
+            int count = IsShotgun ? Shotgun.Settings.PelletCount : 1;
+            if (projectiles == null || !projectiles.HasCapacityFor(count)) return RejectPistolShot(request, "projectile_capacity", "commit");
+            if (IsShotgun) muzzle = ShotgunMuzzle(Shotgun.NextBarrel).position;
             if (!projectiles.MuzzleIsClear(this, muzzle)) return RejectPistolShot(request, "muzzle_blocked", "commit");
-            Vector3 position = PistolMuzzle.position, velocity = PistolMuzzle.forward * CombatProjectilePool.MuzzleSpeed;
+            Transform firingMuzzle = IsShotgun ? ShotgunMuzzle(Shotgun.NextBarrel) : PistolMuzzle;
+            Vector3 position = firingMuzzle.position, velocity = firingMuzzle.forward * CombatProjectilePool.MuzzleSpeed;
             // Both operations run synchronously after CanFire; spawn failure
             // must not consume ammunition or start the firing cooldown.
-            if (!projectiles.TrySpawn(this, position, velocity, unchecked(Pistol.ShotSequence + 1)))
+            if (!(IsShotgun ? projectiles.TrySpawnVolley(this, position, firingMuzzle.rotation,
+                unchecked(Firearm.ShotSequence + 1), Shotgun.Settings) :
+                projectiles.TrySpawn(this, position, velocity, unchecked(Firearm.ShotSequence + 1))))
                 return RejectPistolShot(request, "projectile_spawn", "commit");
-            Pistol.TryFire();
+            Firearm.TryFire();
             UpdatePistolMechanics();
             if (pistolFlash != null) pistolFlash.gameObject.SetActive(true);
-            RetroAudio.PlayAt(RetroSfxId.PistolFire, position, 1f);
-            JournalEvent("pistol_fired", action: Pistol.ShotSequence, request: request, f0: GameLog.Field("rounds", Pistol.Rounds),
+            RetroAudio.PlayAt(IsShotgun ? RetroSfxId.ShotgunFire : RetroSfxId.PistolFire, position, 1f);
+            JournalEvent(IsShotgun ? "shotgun_fired" : "pistol_fired", action: Firearm.ShotSequence, request: request, f0: GameLog.Field("rounds", Firearm.Rounds),
                 f1: GameLog.Field("x", position.x), f2: GameLog.Field("y", position.y), f3: GameLog.Field("z", position.z),
                 f4: GameLog.Field("dx", velocity.x), f5: GameLog.Field("dy", velocity.y), f6: GameLog.Field("dz", velocity.z),
                 f7: GameLog.Field("aim_error_degrees", PistolAimErrorDegrees));
@@ -177,11 +183,12 @@ namespace BarPromenade
 
         private void AdvancePistol(float seconds)
         {
-            if (Pistol == null) return;
-            if (!PistolAimBodyAvailable) { CancelPendingPistolShot(PistolBodyRejection); Pistol.CancelAction(); }
-            else if (!PistolBodyAvailable) { CancelPendingPistolShot(PistolBodyRejection); Pistol.CancelReload(); }
-            bool reloading = Pistol.IsReloading;
-            float reloadBefore = Pistol.ReloadProgress * 1.8f;
+            if (Firearm == null) return;
+            if (!PistolAimBodyAvailable) { CancelPendingPistolShot(PistolBodyRejection); Firearm.CancelAction(); }
+            else if (!PistolBodyAvailable) { CancelPendingPistolShot(PistolBodyRejection); Firearm.CancelReload(); }
+            bool reloading = Firearm.IsReloading;
+            int spentBefore = IsShotgun ? ShotgunSpentMask : 0;
+            float reloadBefore = Firearm.ReloadProgress * 1.8f;
             float pistolSeconds = seconds;
             if (reloading && pistolReloadSettleRemaining > 0f)
             {
@@ -192,18 +199,19 @@ namespace BarPromenade
                 pistolSeconds -= settling;
             }
             else if (!reloading) pistolReloadSettleRemaining = 0f;
-            Pistol.Advance(pistolSeconds);
-            AdvancePistolReloadAudio(reloading, reloadBefore);
-            bool visuallyAiming = Pistol.AimRequested && !Pistol.ReloadPending && PistolAimBodyAvailable;
+            Firearm.Advance(pistolSeconds);
+            if (IsShotgun) AdvanceShotgunReload(spentBefore, reloading);
+            else AdvancePistolReloadAudio(reloading, reloadBefore);
+            bool visuallyAiming = Firearm.AimRequested && !Firearm.ReloadPending && PistolAimBodyAvailable;
             float travelSeconds = visuallyAiming ? pistolRaise.length : pistolLower.length;
             pistolVisualAimProgress = Mathf.MoveTowards(pistolVisualAimProgress, visuallyAiming ? 1f : 0f,
                 seconds / Mathf.Max(.001f, travelSeconds));
-            if (reloading && !Pistol.IsReloading)
+            if (reloading && !Firearm.IsReloading)
             {
-                JournalEvent("pistol_reload_completed", f0: GameLog.Field("rounds", Pistol.Rounds));
+                JournalEvent(IsShotgun ? "shotgun_reload_completed" : "pistol_reload_completed", f0: GameLog.Field("rounds", Firearm.Rounds));
             }
             if (pistolFlash != null) pistolFlash.gameObject.SetActive(!weaponDropped &&
-                Pistol.CooldownRemaining > 0f && Pistol.ShotElapsed < .05f);
+                Firearm.CooldownRemaining > 0f && Firearm.ShotElapsed < .05f);
             UpdatePistolMechanics();
         }
 
@@ -216,7 +224,7 @@ namespace BarPromenade
         private void EndPistolAction()
         {
             CancelPendingPistolShot("action_ended");
-            Pistol?.CancelAction();
+            Firearm?.CancelAction();
             pistolVisualAimProgress = 0f;
             pistolLeftClosure = pistolBlendClosure = 0f;
             pistolReloadSettleRemaining = 0f;
@@ -227,8 +235,9 @@ namespace BarPromenade
         private void ResetPistol()
         {
             CancelPendingPistolShot("reset");
-            Pistol?.Reset();
+            Firearm?.Reset();
             ResetPistolReloadAudio();
+            shotgunReloadCue = ShotgunVolleyResponseCount = 0;
             pistolReloadSettleRemaining = 0f;
             UpdatePistolMechanics();
             pistolVisualAimProgress = 0f;
@@ -236,19 +245,22 @@ namespace BarPromenade
             if (pistolFlash != null) pistolFlash.gameObject.SetActive(false);
         }
 
-        private AnimationClip ChoosePistolClip() => weaponDropped || State.IsDefeated ? pistolRest : Pistol.ReloadPending ? pistolReload :
-            Pistol.AimRequested && pistolVisualAimProgress < 1f ? pistolRaise : Pistol.AimRequested ?
-            (Pistol.CooldownRemaining > 0f && Pistol.ShotElapsed < pistolFire.length ? pistolFire : pistolAim) :
+        private AnimationClip ChoosePistolClip() => weaponDropped || State.IsDefeated ? pistolRest : Firearm.ReloadPending ? pistolReload :
+            Firearm.AimRequested && pistolVisualAimProgress < 1f ? pistolRaise : Firearm.AimRequested ?
+            (Firearm.CooldownRemaining > 0f && Firearm.ShotElapsed < pistolFire.length ? pistolFire : pistolAim) :
             pistolVisualAimProgress > 0f ? pistolLower : pistolRest;
 
-        private float PistolClipProgress(AnimationClip clip) => clip == pistolReload ? Pistol.ReloadProgress :
-            clip == pistolRaise ? pistolVisualAimProgress : clip == pistolFire ? Mathf.Clamp01(Pistol.ShotElapsed / clip.length) :
+        private float PistolClipProgress(AnimationClip clip) => clip == pistolReload ?
+            (IsShotgun ? ShotgunReloadAnimationSeconds / pistolReload.length : Firearm.ReloadProgress) :
+            clip == pistolRaise ? pistolVisualAimProgress : clip == pistolFire ? Mathf.Clamp01(Firearm.ShotElapsed / clip.length) :
             clip == pistolLower ? 1f - pistolVisualAimProgress : Mathf.Repeat(poseClock, clip.length) / clip.length;
 
-        private float PistolSupportClosure(AnimationClip clip) => clip == pistolReload ? PistolReloadGripWeight : clip == pistolRaise
-            ? CombatPistolAssetProvider.SupportGripWeight * Mathf.SmoothStep(0f, 1f, pistolVisualAimProgress)
-            : clip == pistolAim || clip == pistolFire ? CombatPistolAssetProvider.SupportGripWeight
-            : clip == pistolLower ? CombatPistolAssetProvider.SupportGripWeight * Mathf.SmoothStep(0f, 1f, pistolVisualAimProgress) : 0f;
+        private float FirearmSupportGripWeight => IsShotgun ? CombatShotgunAssetProvider.SupportGripWeight : CombatPistolAssetProvider.SupportGripWeight;
+        private float PistolSupportClosure(AnimationClip clip) => clip == pistolReload ?
+            (IsShotgun ? ShotgunReloadGripWeight : PistolReloadGripWeight) : clip == pistolRaise
+            ? FirearmSupportGripWeight * Mathf.SmoothStep(0f, 1f, pistolVisualAimProgress)
+            : clip == pistolAim || clip == pistolFire ? FirearmSupportGripWeight
+            : clip == pistolLower ? FirearmSupportGripWeight * Mathf.SmoothStep(0f, 1f, pistolVisualAimProgress) : 0f;
 
         private float BlendPistolClosure(float target)
         {
@@ -276,12 +288,12 @@ namespace BarPromenade
         {
             if (!finalStep) RestorePistolAimPose();
             pistolAimReachable = false;
-            if (!IsPistol || weaponDropped || IsRagdollActive || Weapon == null) return;
+            if (!IsFirearm || weaponDropped || IsRagdollActive || Weapon == null) return;
             // Reassert the live palm contact after graph and physics transform updates.
-            CombatPistolAssetProvider.PlacePistol(Weapon, weaponGrip, handPose);
+            PlaceHeldFirearm();
             handPose.SetGrip(false, 1f);
             handPose.SetGrip(true, pistolLeftClosure);
-            if (!PistolAimBodyAvailable || pistolVisualAimProgress <= 0f || Pistol.ReloadPending ||
+            if (!PistolAimBodyAvailable || pistolVisualAimProgress <= 0f || Firearm.ReloadPending ||
                 pistolArmBones[0] == null || pistolArmBones[1] == null || pistolArmBones[2] == null ||
                 pistolArmBones[3] == null || pistolArmBones[4] == null || pistolArmBones[5] == null)
             { CommitHeldPistolPose(); return; }
@@ -301,7 +313,8 @@ namespace BarPromenade
                 shoulderToTarget = Quaternion.AngleAxis(Mathf.Sin(poseClock * 6.1f) * sway * .6f, transform.right) * shoulderToTarget;
             }
             // Keep the authored firing kick visible instead of correcting it back to the target.
-            float recoil = Pistol.CooldownRemaining > 0f ? PistolRecoilDegrees(Pistol.ShotElapsed) : 0f;
+            float recoil = Firearm.CooldownRemaining > 0f ?
+                (IsShotgun ? ShotgunRecoilDegrees(Firearm.ShotElapsed) : PistolRecoilDegrees(Firearm.ShotElapsed)) : 0f;
             shoulderToTarget = Quaternion.AngleAxis(-recoil, transform.right) * shoulderToTarget;
             pistolAimReachable = TrySolvePistolAim(pistolArmBones[0].position, PistolMuzzle.position,
                 PistolMuzzle.forward, pistolArmBones[0].position + shoulderToTarget, out Quaternion solved);
@@ -311,11 +324,14 @@ namespace BarPromenade
             Vector3 aimedGrip = pistolArmBones[0].position + delta * (grip - pistolArmBones[0].position);
             float forward = Vector3.Dot(aimedGrip - transform.position, transform.forward);
             float downward = -Vector3.Dot(delta * PistolMuzzle.forward, transform.up);
-            float minimumForward = Mathf.Lerp(.48f, .40f, Mathf.Clamp01(downward / .5f));
+            // A shouldered long gun keeps its trigger hand near the chest;
+            // the pistol's extended hold would push the foreend beyond the supporting arm.
+            float minimumForward = IsShotgun ? .18f : Mathf.Lerp(.48f, .40f, Mathf.Clamp01(downward / .5f));
             bool lowAim = downward > .35f;
             bool highAim = downward < -.35f;
             bool keepGripForward = forward < minimumForward;
             float visualWeight = Mathf.SmoothStep(0f, 1f, pistolVisualAimProgress);
+            if (IsShotgun && !finalStep) aimedGrip -= transform.up * (.12f * visualWeight);
             float forwardClearance = Mathf.Max(0f, minimumForward - forward);
             float highAimWeight = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(.35f, .60f, -downward));
             if (keepGripForward) aimedGrip += transform.forward * (forwardClearance * visualWeight);
@@ -332,7 +348,7 @@ namespace BarPromenade
                     PistolSupportWrist(aimedGrip, grip, delta))));
                 aimedGrip += transform.up * lift;
             }
-            if (keepGripForward || highAim || finalStep)
+            if (keepGripForward || highAim || finalStep || IsShotgun)
             {
                 // Solve from the cleared grip rather than rigidly rotating a
                 // bent arm through the torso. Re-aim from the translated hold.
@@ -376,10 +392,10 @@ namespace BarPromenade
                 Vector3 rotatedWrist = shoulder + delta * (hand.position - shoulder);
                 Vector3 inheritedHint = shoulder + Quaternion.FromToRotation(rotatedWrist - shoulder, wrist - shoulder) *
                     (delta * (pistolArmBones[1].position - shoulder));
-                Vector3 clearanceHint = highAim ? PistolUpperElbowHint(0, wrist, delta * PistolMuzzle.forward) :
+                Vector3 clearanceHint = IsShotgun ? ShotgunElbowHint(0) : highAim ? PistolUpperElbowHint(0, wrist, delta * PistolMuzzle.forward) :
                     lowAim ? PistolLowElbowHint(0, wrist, delta * PistolMuzzle.forward)
                     : inheritedHint + transform.right * .03f;
-                float hintWeight = visualWeight * Mathf.Max(highAimWeight, Mathf.Clamp01(forwardClearance / .12f));
+                float hintWeight = IsShotgun ? visualWeight : visualWeight * Mathf.Max(highAimWeight, Mathf.Clamp01(forwardClearance / .12f));
                 Vector3 hint = Vector3.Lerp(inheritedHint, clearanceHint, hintWeight);
                 // The wrist already carries the visual aim weight. Applying it
                 // again only on the clearance branch changes the arm abruptly
@@ -405,7 +421,7 @@ namespace BarPromenade
                 Vector3 socketOffset = Quaternion.Inverse(leftHand.rotation) * (hero.Registry.Anchors.LeftGrip.position - leftHand.position);
                 Vector3 wrist = support.position - support.rotation * socketOffset;
                 Vector3 shoulder = pistolArmBones[3].position;
-                Vector3 hint = highAim ? PistolUpperElbowHint(3, wrist, PistolMuzzle.forward) : keepGripForward && lowAim
+                Vector3 hint = IsShotgun ? ShotgunElbowHint(3) : highAim ? PistolUpperElbowHint(3, wrist, PistolMuzzle.forward) : keepGripForward && lowAim
                     ? PistolLowElbowHint(3, wrist, PistolMuzzle.forward)
                     : shoulder + Quaternion.FromToRotation(leftHand.position - shoulder, wrist - shoulder) *
                         (pistolArmBones[4].position - shoulder);
@@ -427,10 +443,10 @@ namespace BarPromenade
 
         internal void CompletePistolPresentation()
         {
-            if (!IsPistol || weaponDropped || IsRagdollActive || Weapon == null) return;
+            if (!IsFirearm || weaponDropped || IsRagdollActive || Weapon == null) return;
             // Shared recovery has blended the complete posed arms. Reattach the
             // prop to that final palm, then retain this actual rendered source.
-            CombatPistolAssetProvider.PlacePistol(Weapon, weaponGrip, handPose);
+            PlaceHeldFirearm();
             if (State.Phase == MeleePhase.Step && pistolAimApplied && pistolVisualAimProgress >= .999f)
             {
                 // Constrain the actual blended chest without unwinding it or

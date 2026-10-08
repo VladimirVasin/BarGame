@@ -49,7 +49,7 @@ namespace BarPromenade
             supportGrip?.SetRecoveryOwned(true);
             supportGrip?.AllowRegrip(false);
             State.BeginKnockdown();
-            if (IsPistol) ReleaseWeapon(linearVelocity * .25f, angularVelocity * .25f);
+            if (IsFirearm) ReleaseWeapon(linearVelocity * .25f, angularVelocity * .25f);
             knockedDown = true;
             recoveryPoseBegun = recoveryRegrip = false;
             reaction = null;

@@ -65,7 +65,7 @@ namespace BarPromenade
             CancelPendingKick("round_ended");
             State.CancelCharge();
             State.SetBlocking(false);
-            if (IsPistol && hero != null && !State.IsDefeated)
+            if (IsFirearm && hero != null && !State.IsDefeated)
             {
                 // The duel result stops hostile actions, not the winner's firearm.
                 winnerPresentationReleased = false;
@@ -134,12 +134,13 @@ namespace BarPromenade
             weaponPosition = Weapon.transform.localPosition;
             weaponRotation = Weapon.transform.localRotation;
             weaponScale = Weapon.transform.localScale;
-            if (IsPistol) CombatPistolAssetProvider.AddDropColliders(Weapon);
+            if (IsShotgun) CombatShotgunAssetProvider.AddDropColliders(Weapon);
+            else if (IsPistol) CombatPistolAssetProvider.AddDropColliders(Weapon);
             weaponBody = Weapon.AddComponent<Rigidbody>();
             weaponBody.isKinematic = true;
             weaponBody.useGravity = false;
             weaponBody.detectCollisions = false;
-            weaponBody.mass = IsPistol ? .8f : 1.1f;
+            weaponBody.mass = IsShotgun ? 3.2f : IsPistol ? .8f : 1.1f;
             weaponBody.linearDamping = .4f;
             weaponBody.angularDamping = .7f;
             weaponBody.maxAngularVelocity = 10f;
@@ -149,7 +150,7 @@ namespace BarPromenade
 
         private void PrepareHeldWeaponPhysics()
         {
-            if (IsPistol || heldWeaponPhysics != null || Weapon == null) return;
+            if (IsFirearm || heldWeaponPhysics != null || Weapon == null) return;
             Transform forearm = CityPedestrianHandProps.FindSocket(DamageRigRoot, "forearm.R");
             Rigidbody armBody = forearm != null ? forearm.GetComponent<Rigidbody>() : null;
             if (armBody == null) throw new InvalidOperationException("Held crowbar collision requires the right forearm rigidbody.");
@@ -191,7 +192,7 @@ namespace BarPromenade
             Weapon.transform.SetParent(transform.parent, true);
             PrepareHeldWeaponPhysics();
             heldWeaponPhysics?.EnableDropped();
-            if (IsPistol) IgnorePistolBodyCollisions(true);
+            if (IsFirearm) IgnorePistolBodyCollisions(true);
             weaponBody.detectCollisions = true;
             weaponBody.useGravity = true;
             weaponBody.interpolation = RigidbodyInterpolation.Interpolate;
@@ -212,7 +213,7 @@ namespace BarPromenade
             Weapon?.GetComponent<CombatDroppedWeaponPickup>()?.CancelPickup();
             heldWeaponPhysics?.ResetWeapon();
             if (!weaponDropped || Weapon == null) return;
-            if (IsPistol) IgnorePistolBodyCollisions(false);
+            if (IsFirearm) IgnorePistolBodyCollisions(false);
             weaponBody.linearVelocity = Vector3.zero;
             weaponBody.angularVelocity = Vector3.zero;
             weaponBody.isKinematic = true;
@@ -234,7 +235,7 @@ namespace BarPromenade
         /// </summary>
         internal bool TryHoldWeaponInLeftHand()
         {
-            if (IsPistol) return false;
+            if (IsFirearm) return false;
             if (IsWeaponInLeftHand) return true;
             if (Weapon == null || hero == null || weaponDropped || IsRagdollActive || !winnerPresentationReleased) return false;
             Transform leftGrip = hero.Registry.Anchors.LeftGrip;

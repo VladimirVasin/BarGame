@@ -28,8 +28,8 @@ namespace BarPromenade
             new Rect(218f, 195f, 204f, 22f);
         internal static Rect LocationPanelRect => new Rect(166f, 18f, 308f, 324f);
         internal static Rect LocationOptionRect(int index) => new Rect(178f, 54f + index * 22f, 284f, 20f);
-        internal static Rect CombatPanelRect => new Rect(206f, 94f, 228f, 172f);
-        internal static Rect CombatOptionRect(int index) => new Rect(218f, 134f + index * 28f, 204f, 22f);
+        internal static Rect CombatPanelRect => new Rect(166f, 80f, 308f, 200f);
+        internal static Rect CombatOptionRect(int index) => new Rect(178f, 120f + index * 28f, 284f, 22f);
 
         private readonly StartMenuModel model = new StartMenuModel();
 
@@ -308,7 +308,7 @@ namespace BarPromenade
         {
             RetroUiTheme.DrawPanel(CombatPanelRect, RetroUiTheme.PanelInset, RetroUiTheme.FrameOuter,
                 false, 0f, 1f);
-            GUI.Label(new Rect(218f, 102f, 204f, 22f), LocalizationService.Get("combat.choose_weapon"), titleStyle);
+            GUI.Label(new Rect(178f, 88f, 284f, 22f), LocalizationService.Get("combat.choose_weapon"), titleStyle);
             Vector2 mouse = RetroUiTheme.LogicalMousePosition(canvas);
             for (int index = 0; index < (int)CombatPreparationOption.Count; index++)
             {
@@ -321,10 +321,12 @@ namespace BarPromenade
                 {
                     CombatPreparationOption.Crowbar => "combat.weapon.crowbar",
                     CombatPreparationOption.Pistol => "combat.weapon.pistol",
+                    CombatPreparationOption.Shotgun => "combat.weapon.shotgun",
                     CombatPreparationOption.Start => "combat.start",
                     _ => "opening.back"
                 };
-                string mark = option == CombatPreparationOption.Crowbar || option == CombatPreparationOption.Pistol
+                string mark = option == CombatPreparationOption.Crowbar || option == CombatPreparationOption.Pistol ||
+                    option == CombatPreparationOption.Shotgun
                     ? ((int)model.SelectedCombatWeapon == index ? "[x] " : "[ ] ") : string.Empty;
                 if (GUI.Button(rect, (selected ? "> " : "  ") + mark + LocalizationService.Get(key),
                     selected ? selectedStyle : optionStyle))
@@ -334,8 +336,13 @@ namespace BarPromenade
                     break;
                 }
             }
-            GUI.Label(new Rect(218f, 246f, 204f, 14f), LocalizationService.Get(model.SelectedCombatWeapon == CombatWeaponId.Pistol
-                ? "combat.weapon.pistol.description" : "combat.weapon.crowbar.description"), descriptionStyle);
+            string descriptionKey = model.SelectedCombatWeapon switch
+            {
+                CombatWeaponId.Pistol => "combat.weapon.pistol.description",
+                CombatWeaponId.Shotgun => "combat.weapon.shotgun.description",
+                _ => "combat.weapon.crowbar.description"
+            };
+            GUI.Label(new Rect(178f, 262f, 284f, 14f), LocalizationService.Get(descriptionKey), descriptionStyle);
         }
 
         private void DrawOption(

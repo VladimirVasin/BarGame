@@ -57,7 +57,7 @@ namespace BarPromenade
 
         private static void ValidateWeapon(CombatWeaponId weapon)
         {
-            if (weapon != CombatWeaponId.Crowbar && weapon != CombatWeaponId.Pistol)
+            if (weapon != CombatWeaponId.Crowbar && weapon != CombatWeaponId.Pistol && weapon != CombatWeaponId.Shotgun)
                 throw new ArgumentOutOfRangeException(nameof(weapon));
         }
 

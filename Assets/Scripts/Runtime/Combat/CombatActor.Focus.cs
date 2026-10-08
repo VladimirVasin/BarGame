@@ -7,8 +7,8 @@ namespace BarPromenade
         /// <summary>The hero's voluntary combat stance; the opponent remains engaged independently.</summary>
         public bool CombatFocused { get; private set; } = true;
 
-        private bool NeedsCombatPresentation => CombatFocused || (Pistol?.ReloadPending ?? false) ||
-            (Pistol?.AimRequested ?? false) || (IsPistol && pistolVisualAimProgress > 0f) || State.Phase != MeleePhase.Ready ||
+        private bool NeedsCombatPresentation => CombatFocused || (Firearm?.ReloadPending ?? false) ||
+            (Firearm?.AimRequested ?? false) || (IsFirearm && pistolVisualAimProgress > 0f) || State.Phase != MeleePhase.Ready ||
             collectSweep || collectShove || collectKick || IsKnockedDown || IsRagdollActive ||
             reaction != null || (ImpactMotion?.IsActive ?? false) || (footwork?.RecoveryEpisodeActive ?? false);
 
@@ -19,7 +19,7 @@ namespace BarPromenade
         public void SetCombatFocused(bool focused, bool preservePistolAim = false)
         {
             if (hero == null || CombatFocused == focused) return;
-            if (IsPistol && CombatFocused && !focused) pistolFreeAimPoint = PistolAimPoint;
+            if (IsFirearm && CombatFocused && !focused) pistolFreeAimPoint = PistolAimPoint;
             CombatFocused = focused;
             if (!focused && !preservePistolAim) SetPistolAim(false);
             // A rapid off/on toggle cannot grant another aim envelope to an existing swing.
@@ -57,11 +57,11 @@ namespace BarPromenade
             if (ownedPose) hero.BeginRecoveryPoseTransition(.35f);
             // Keep the weapon in the right palm while ordinary idle and gait own the body.
             handPose.SetGrip(false, weaponDropped ? 0f : 1f);
-            if (IsPistol)
+            if (IsFirearm)
             {
                 pistolLeftClosure = 0f;
                 handPose.SetGrip(true, 0f);
-                if (!weaponDropped && hero.TryAcquireCarryPose(this, CombatPistolAssetProvider.RestClip))
+                if (!weaponDropped && hero.TryAcquireCarryPose(this, pistolRest.name))
                 {
                     // Retain the lease for the late palm attachment, without
                     // masking ordinary idle or gait with the bent-arm Rest pose.

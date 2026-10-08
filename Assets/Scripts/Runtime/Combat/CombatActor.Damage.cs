@@ -71,6 +71,10 @@ namespace BarPromenade
                 GameLog.Field("target_phase_before", targetPhaseBefore.HasValue ? (double)(int)targetPhaseBefore.Value : double.NaN),
                 GameLog.Field("target_phase_after", (int)State.Phase), GameLog.Field("attack_power", impact.AttackPower));
             LastImpact = impact;
+            if (impact.IsPellet)
+                JournalImpactEvent("impact_pellet", impact, GameLog.Field("impact_seq", LastJournalImpactSequence),
+                    GameLog.Field("pellet_index", impact.PelletIndex), GameLog.Field("primary_response", impact.PrimaryResponse),
+                    GameLog.Field("head_feedback", impact.HeadFeedback), GameLog.Field("wound_damage", impact.WoundDamage));
             ReceivedImpactCount++;
             ApplyPhysicalImpact(impact);
             ImpactReceived?.Invoke(impact);

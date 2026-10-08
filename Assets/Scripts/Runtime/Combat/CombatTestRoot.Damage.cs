@@ -27,7 +27,8 @@ namespace BarPromenade
             if ((impact.Result == MeleeHitResult.Hit || impact.Result == MeleeHitResult.GuardBroken) &&
                 (impact.Kind == CombatImpactKind.Projectile || impact.Kind == CombatImpactKind.Weapon && impact.Damage > 0f) && BloodEffects != null)
                 BloodEffects.Emit(impact);
-            HeadEffects?.Apply(impact, BloodEffects);
+            if (impact.HeadFeedback) HeadEffects?.Apply(impact, BloodEffects);
+            if (!impact.PrimaryResponse) return;
             // Weight is time: a few frozen substeps and a small kick on the shoulder
             // camera, graded by what happened. A killing blow holds longest.
             bool heavy = impact.AttackPower >= .5f;

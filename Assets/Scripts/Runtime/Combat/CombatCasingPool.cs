@@ -24,6 +24,7 @@ namespace BarPromenade
         private readonly RaycastHit[] hits = new RaycastHit[32];
         private Casing lastEjected;
         private int cursor;
+        private readonly bool shotgun;
         public int EjectionCount { get; private set; }
         // Count clocked cue requests; the shared mixer still owns voice limits.
         internal int EjectionSoundCount { get; private set; }
@@ -41,16 +42,27 @@ namespace BarPromenade
             get { int count = 0; foreach (Casing casing in slots) if (casing.Pending) count++; return count; }
         }
 
-        public CombatCasingPool(Transform parent)
+        public CombatCasingPool(Transform parent, bool shotgun = false)
         {
-            var holder = new GameObject("Spent Pistol Cases");
+            this.shotgun = shotgun;
+            var holder = new GameObject(shotgun ? "Spent Shotgun Shells" : "Spent Pistol Cases");
             holder.transform.SetParent(parent, false);
             for (int i = 0; i < slots.Length; i++)
             {
-                GameObject model = CombatPistolAssetProvider.CreateCasing(holder.transform);
+                GameObject model = shotgun ? CombatShotgunAssetProvider.CreateSpentShell(holder.transform) :
+                    CombatPistolAssetProvider.CreateCasing(holder.transform);
                 model.SetActive(false);
                 slots[i] = new Casing { Model = model };
             }
+        }
+
+        internal void EjectShell(CombatActor actor, Transform chamber, int barrel)
+        {
+            Casing casing = slots[cursor++ % Capacity];
+            casing.Port = chamber; casing.Sequence = actor.Firearm.ShotSequence * 2 + barrel;
+            casing.Age = casing.ContactSoundCooldown = 0f;
+            casing.Pending = casing.Active = casing.Resting = false;
+            Eject(casing);
         }
 
         internal void BeginShot(CombatActor actor)
@@ -138,8 +150,9 @@ namespace BarPromenade
             Transform port = casing.Port;
             // Sequence-derived variations are reproducible and allocate no per-shot objects.
             float variation = (uint)casing.Sequence % 7 / 6f;
-            casing.Position = port.position + port.right * .006f;
-            casing.Velocity = port.right * Mathf.Lerp(3.8f, 5f, variation) + port.up * 2.1f - port.forward * .7f;
+            casing.Position = port.position + (shotgun ? -port.forward * .035f : port.right * .006f);
+            casing.Velocity = shotgun ? -port.forward * 1.8f + port.up * .9f + port.right * (variation - .5f) * .5f :
+                port.right * Mathf.Lerp(3.8f, 5f, variation) + port.up * 2.1f - port.forward * .7f;
             casing.Spin = port.forward * 720f + port.up * Mathf.Lerp(430f, 850f, variation);
             casing.Rotation = port.rotation;
             casing.Age = 0f;

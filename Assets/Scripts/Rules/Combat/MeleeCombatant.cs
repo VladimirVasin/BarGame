@@ -1141,14 +1141,15 @@ namespace BarPromenade
         }
 
         /// <summary>One projectile wound bypasses melee guard/parry and the crowbar damage table;
-        /// every positive head wound defeats immediately.
+        /// the supplied profile decides whether a head wound defeats immediately.
         /// Runtime owns the projectile's first contact and supplies its separate physical impulse.</summary>
         public MeleeHitResult ReceiveProjectileHit(float damage, MeleeHitLocation location = default,
-            float staggerSeconds = .14f)
+            float staggerSeconds = .14f, ProjectileDamageProfile profile = null)
         {
             NonNegative(staggerSeconds, nameof(staggerSeconds));
             if (staggerSeconds == 0f) throw new ArgumentOutOfRangeException(nameof(staggerSeconds));
-            float resolvedDamage = ProjectileDamageProfile.Pistol.ResolveDamage(damage, location);
+            profile ??= ProjectileDamageProfile.Pistol;
+            float resolvedDamage = profile.ResolveDamage(damage, location);
             if (IsDefeated || resolvedDamage == 0f) return MeleeHitResult.Ignored;
             MeleePhase physicalPhase = Phase;
             bool retainGuardBreak = Phase == MeleePhase.GuardBroken;
@@ -1157,7 +1158,7 @@ namespace BarPromenade
                 Phase == MeleePhase.Recovery ? Math.Max(0d, AttackDuration - attackElapsed) : 0d;
             // A positive pistol wound to the head is terminal at contact, regardless
             // of the target's health pool or its standing/fallen presentation.
-            Health = location.Region == MeleeBodyRegion.Head ? 0f : Math.Max(0f, Health - resolvedDamage);
+            Health = profile.TerminalHeadHit && location.Region == MeleeBodyRegion.Head ? 0f : Math.Max(0f, Health - resolvedDamage);
             CancelAction();
             if (Health == 0f)
             {

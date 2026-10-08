@@ -80,6 +80,10 @@ namespace BarPromenade
         PistolReady,
         PistolCasingEject,
         PistolCasingBounce,
+        ShotgunFire,
+        ShotgunOpen,
+        ShotgunShellInsert,
+        ShotgunClose,
         Count
     }
 
@@ -849,7 +853,15 @@ namespace BarPromenade
             new RetroSfxDefinition(RetroSfxId.PistolCasingEject, RetroSfxCategory.World,
                 .055f, .23f, 1f, 3, .025f, 1, 2048, 8500f, .035f, 92),
             new RetroSfxDefinition(RetroSfxId.PistolCasingBounce, RetroSfxCategory.World,
-                .12f, .26f, 1f, 3, .025f, 1, 2048, 9000f, .045f, 96, 3)
+                .12f, .26f, 1f, 3, .025f, 1, 2048, 9000f, .045f, 96, 3),
+            new RetroSfxDefinition(RetroSfxId.ShotgunFire, RetroSfxCategory.World,
+                .5f, .88f, 1f, 3, .1f, 1, 2048, 8700f, .025f, 24),
+            new RetroSfxDefinition(RetroSfxId.ShotgunOpen, RetroSfxCategory.World,
+                .16f, .35f, 1f, 2, .02f, 1, 2048, 5100f, .02f, 85),
+            new RetroSfxDefinition(RetroSfxId.ShotgunShellInsert, RetroSfxCategory.World,
+                .14f, .38f, 1f, 2, .02f, 1, 2048, 4800f, .02f, 88),
+            new RetroSfxDefinition(RetroSfxId.ShotgunClose, RetroSfxCategory.World,
+                .12f, .52f, 1f, 2, .02f, 1, 2048, 6800f, .015f, 80)
         };
 
         public static int Count => definitions.Length - 1;
@@ -1141,6 +1153,19 @@ namespace BarPromenade
                     return (NextNoise(ref noiseState) * .85f + GlideSine(time, duration, 180f, 55f) * .5f) *
                         Envelope(time, duration, .0005f, 5f) + NextNoise(ref noiseState) * .12f *
                         Envelope(time, duration, .003f, 1.8f);
+                case RetroSfxId.ShotgunFire:
+                    return (NextNoise(ref noiseState) * .85f + GlideSine(time, duration, 125f, 38f) * .65f) *
+                        Envelope(time, duration, .0005f, 4.2f) + NextNoise(ref noiseState) * .2f *
+                        Envelope(time, duration, .005f, 1.7f);
+                case RetroSfxId.ShotgunOpen:
+                    return (NextNoise(ref noiseState) * .45f + MetalModes(time, 970f, detune) * .25f) *
+                        Envelope(time, duration, .001f, 2.4f);
+                case RetroSfxId.ShotgunShellInsert:
+                    return (NextNoise(ref noiseState) * .35f + MetalModes(time, 640f, detune) * .2f) *
+                        Envelope(time, duration, .002f, 2.1f);
+                case RetroSfxId.ShotgunClose:
+                    return (NextNoise(ref noiseState) * .6f + MetalModes(time, 1140f, detune) * .4f) *
+                        Envelope(time, duration, .0008f, 3.2f);
                 case RetroSfxId.PistolEmpty:
                     return (NextNoise(ref noiseState) * .5f + Mathf.Sin(time * 9200f) * .25f) *
                         Envelope(time, duration, .0005f, 4f);

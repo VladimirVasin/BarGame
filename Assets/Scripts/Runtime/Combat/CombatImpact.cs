@@ -25,6 +25,11 @@ namespace BarPromenade
         /// <summary>World-space momentum (N s), separate from anatomical HP damage.</summary>
         public Vector3 Impulse { get; }
         public CombatImpactKind Kind { get; }
+        public int PelletIndex { get; }
+        public bool IsPellet => PelletIndex >= 0;
+        public bool PrimaryResponse { get; }
+        public bool HeadFeedback { get; }
+        public float WoundDamage { get; }
         public bool IsCritical => (Kind == CombatImpactKind.Weapon || Kind == CombatImpactKind.Projectile) && Damage > 0f && Location.IsCritical;
         public bool IsFinisher => Kind == CombatImpactKind.Weapon && Damage > 0f && Location.IsFinisher;
 
@@ -33,7 +38,8 @@ namespace BarPromenade
             float healthAfter, MeleeHitResult result, MeleeHitLocation location = default, float attackPower = 0f,
             Player3DAnatomicalPart part = Player3DAnatomicalPart.Torso, Vector3 localPoint = default,
             float weaponSpeed = 0f, Vector3 impulse = default, CombatImpactKind kind = CombatImpactKind.Weapon,
-            Vector3 localDirection = default)
+            Vector3 localDirection = default, int pelletIndex = -1, bool primaryResponse = true,
+            bool headFeedback = true, float woundDamage = 0f)
         {
             Source = source; Target = target; AttackSequence = sequence;
             Point = point; Normal = normal; Direction = direction;
@@ -43,6 +49,7 @@ namespace BarPromenade
             Part = part; LocalPoint = localPoint; WeaponSpeed = weaponSpeed; Impulse = impulse;
             Kind = kind;
             LocalDirection = localDirection;
+            PelletIndex = pelletIndex; PrimaryResponse = primaryResponse; HeadFeedback = headFeedback; WoundDamage = woundDamage;
         }
     }
 }

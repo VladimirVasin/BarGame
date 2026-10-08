@@ -2,12 +2,15 @@ using System;
 
 namespace BarPromenade
 {
-    /// <summary>Scales ordinary pistol wounds. MeleeCombatant makes every positive head contact terminal.</summary>
+    /// <summary>Regional projectile wounds and the weapon's explicit terminal-head policy.</summary>
     public sealed class ProjectileDamageProfile
     {
-        public static ProjectileDamageProfile Pistol { get; } = new ProjectileDamageProfile();
+        public static ProjectileDamageProfile Pistol { get; } = new ProjectileDamageProfile(true);
+        public static ProjectileDamageProfile Shotgun { get; } = new ProjectileDamageProfile(false);
 
-        private ProjectileDamageProfile() { }
+        private ProjectileDamageProfile(bool terminalHeadHit) => TerminalHeadHit = terminalHeadHit;
+
+        public bool TerminalHeadHit { get; }
 
         public float ResolveDamage(float baseDamage, MeleeHitLocation location)
         {

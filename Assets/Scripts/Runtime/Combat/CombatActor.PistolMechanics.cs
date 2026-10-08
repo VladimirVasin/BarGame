@@ -45,6 +45,7 @@ namespace BarPromenade
 
         private void UpdatePistolMechanics()
         {
+            if (IsShotgun) { UpdateShotgunMechanics(); return; }
             if (Pistol == null || pistolSlide == null || Weapon == null) return;
             // The FBX root retains its unit factor. Move through the metric
             // wrapper instead of treating an imported localPosition as metres.

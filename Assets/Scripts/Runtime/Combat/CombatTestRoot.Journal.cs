@@ -524,10 +524,10 @@ namespace BarPromenade
                 f2: GameLog.Field("attack_progress", state.AttackProgress), f3: GameLog.Field("grip", grip != null ? JournalGrips[(int)actor.SupportArmState] : "None"),
                 f4: GameLog.Field("weapon_blocked", actor.WeaponClearanceBlocked), f5: GameLog.Field("blocking_shape", actor.WeaponBlockingShape),
                 f6: GameLog.Field("penetration", actor.WeaponPenetrationDepth), f7: GameLog.Field("ragdoll", actor.IsRagdollActive));
-            if (actor.Pistol != null)
+            if (actor.Firearm != null)
             {
-                var pistol = actor.Pistol;
-                duelJournal.Record("pistol_state", actor: id, action: pistol.ShotSequence,
+                var pistol = actor.Firearm;
+                duelJournal.Record(actor.IsShotgun ? "shotgun_state" : "pistol_state", actor: id, action: pistol.ShotSequence,
                     f0: GameLog.Field("rounds", pistol.Rounds), f1: GameLog.Field("aim_requested", pistol.AimRequested),
                     f2: GameLog.Field("aim_progress", pistol.AimProgress), f3: GameLog.Field("reloading", pistol.IsReloading),
                     f4: GameLog.Field("reload_progress", pistol.ReloadProgress), f5: GameLog.Field("cooldown_seconds", pistol.CooldownRemaining),

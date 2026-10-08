@@ -1,35 +1,18 @@
-using System;
-
 namespace BarPromenade
 {
     /// <summary>The isolated prototype's magazine and unpaused action timings.</summary>
-    public sealed class PistolSettings
+    public sealed class PistolSettings : FirearmSettings
     {
         public static PistolSettings Prototype { get; } = new PistolSettings();
 
         public PistolSettings(int magazineCapacity = 8, float fireCooldownSeconds = .4f,
             float raiseSeconds = .25f, float reloadSeconds = 1.8f)
+            : base(magazineCapacity, fireCooldownSeconds, raiseSeconds, reloadSeconds)
         {
-            if (magazineCapacity <= 0) throw new ArgumentOutOfRangeException(nameof(magazineCapacity));
-            MagazineCapacity = magazineCapacity;
-            FireCooldownSeconds = Positive(fireCooldownSeconds, nameof(fireCooldownSeconds));
-            RaiseSeconds = Positive(raiseSeconds, nameof(raiseSeconds));
-            ReloadSeconds = Positive(reloadSeconds, nameof(reloadSeconds));
         }
 
-        public int MagazineCapacity { get; }
-        public float FireCooldownSeconds { get; }
-        public float RaiseSeconds { get; }
-        public float ReloadSeconds { get; }
         // The authored 1.8-second exchange scales with the configured clock.
         public float MagazineHandoffSeconds => ReloadSeconds * (.25f / 1.8f);
         public float MagazineInsertSeconds => ReloadSeconds * (1.3f / 1.8f);
-
-        private static float Positive(float value, string name)
-        {
-            if (float.IsNaN(value) || float.IsInfinity(value) || value <= 0f)
-                throw new ArgumentOutOfRangeException(name);
-            return value;
-        }
     }
 }

@@ -23,6 +23,8 @@ namespace BarPromenade.Tests.PlayMode
                 .GetMethod("BuildOrThrow", Type.EmptyTypes).Invoke(null, null);
             Type.GetType("BarPromenade.Editor.CombatPistolAssetSetup, BarPromenade.Editor", true)
                 .GetMethod("BuildOrThrow", Type.EmptyTypes).Invoke(null, null);
+            Type.GetType("BarPromenade.Editor.CombatShotgunAssetSetup, BarPromenade.Editor", true)
+                .GetMethod("BuildOrThrow", Type.EmptyTypes).Invoke(null, null);
 #endif
         }
     }

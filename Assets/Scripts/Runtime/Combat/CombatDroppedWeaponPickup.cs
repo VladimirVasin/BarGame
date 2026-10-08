@@ -14,7 +14,8 @@ namespace BarPromenade
         private RigidbodyInterpolation interpolation;
         private bool inspecting, accepted, cancelling, disabling;
 
-        public string PromptKey => owner != null && owner.IsPistol ? "combat.weapon.pickup_pistol" : "combat.weapon.pickup";
+        public string PromptKey => owner != null && owner.IsShotgun ? "combat.weapon.pickup_shotgun" :
+            owner != null && owner.IsPistol ? "combat.weapon.pickup_pistol" : "combat.weapon.pickup";
         public Vector3 InteractionPosition => transform.position;
         public bool IsPresenting => inspecting;
 
@@ -64,7 +65,8 @@ namespace BarPromenade
             owner.SetDroppedWeaponInspected(true);
             inspecting = true;
             accepted = false;
-            InventoryItemId item = owner.IsPistol ? InventoryItemId.CombatPistol : InventoryItemId.CombatCrowbar;
+            InventoryItemId item = owner.IsShotgun ? InventoryItemId.CombatShotgun :
+                owner.IsPistol ? InventoryItemId.CombatPistol : InventoryItemId.CombatCrowbar;
             if (screen.TryPresent(interactor, item, transform, Commit, Finish)) return true;
             if (inspecting) Finish(false);
             return false;
