@@ -258,34 +258,38 @@
   §6/§12/art §10g/§16/§21/nine checks.
 
 - **Accepted — 2026-10-08, pistol aimed movement:**
-  User:CombatTest aim:cam-planar WASD/stick/strafe/diagonal clamp.
-  Space:grounded shared Step1m/15;dominant facing axis/noinput back;
-  fixed yaw/travel;cam/upper aim kept;wall/impact/pause gated.
-  `SetMovementBasis`/`CombatActor`/`CombatFootwork`:translation/yaw/legs.
-  Speed/inertia/focus;release:tank/momentum;handoff clear;unaimed:noStep.
+  CombatTest:cam-planar WASD/stick/strafe/clamp;ground Space Step1m/15:
+  Facing axis/noinput back/fixed yaw/cam-upper aim;wall-impact-pause.
+  `CombatFootwork`:move-yaw-legs;
+  Speed-inertia-focus/release tank-momentum/handoff0/noaim:noStep.
 - **Accepted exception 2026-10-08, pistol:**
-  §6/art§15a;dummy/freecam;bar-Q:focus;Step:focus/aim.
-  Recoil/streak/zone-dir impulse-SFX-darkblood;head0HP→live ragdoll.
-  Stablecam/hitkick/manual/motor;delayed port case/g-bounce-cap/SFX;
-  slide:return/emptylock;handmag-seat/rack1.8s/SFX/ammo last.
-  Interrupt:hold/Rresume;drop/E:stage-ammo;pause-hitstop0/reset-exit clear.
-  No lock/pierce/ricochet/guard/parry/taunt/reward;win fire-reload/HP-result kept.
-  Rig-ragdoll:holes/bleed capped→reset-exit;corpse impulse/wounds-blood/HP-result-pose kept.
+  §6/art§15a;dummy/freecam;bar-Qfocus/Stepfocus-aim;recoil-streak.
+  Freeaim:live nearest world/anatomy/0motor capsule/0sway.
+  Zone-dir impulse-SFX/head0HP/ragdoll/stablecam/hitkick/manual-motor.
+  Port case delay/g-bounce-cap/SFX/slide-return-emptylock;
+  handmag-seat/rack1.8/SFX/ammo last/interrupt hold/Rresume/dropE:stage-ammo.
+  0lock/pierce/ricochet/guard/parry/taunt/reward;win fire-reload/HP-result.
+  Holes/corpse impulse-HP-result-pose/pause-hitstop0/reset-exit0.
+- **Accepted exception 2026-10-08, headshots:**
+  User/§6/art§15a:CombatTest head-skull-brain/local chord;
+  remnant collision/cam hide/repeat loss;finite pulse blood/
+  terminal convulsions fade/corpse impulse;pause-hitstop0/
+  reset-exit restore;0story/speech/reward;§16/§21/9checks.
 - **Accepted exception — 2026-10-08, world bullet impacts:**
-  User/§6/art§15a:CombatTest world firsthit→chips/sparks+dark surface hole.
-  128holes/oldest reuse,192particles;authored plane/shared shader;no damage/pierce.
+  §6/art§15a:CombatTest firstworldhit→chips/sparks/dark hole.
+  128FIFOholes/192particles;authored/shared shader;0damage/pierce.
   Pause-hitstop0;ClearFlights keeps;reset-exit0.
 - **Accepted 2026-10-07, combat:**
-  Nondeeper floor;.75s stall→arm/.5s→drop;rise≠grip;HP-focus-AI kept.
-  Pause-hitstop0;no bar:walk-Q-Step/hits-falls;charge-palm-guard off.
-  E:shared/no grant/cancel=floor;NPC approach-Q;rise ignores own drop.
-  MMB↔focus;AI hits;reset:mode kept/focus;hitstop≠lock/reset.
-  Chest-gap/early lock;Q far:pelvis-foot→/chest←,near:knee flex.
-  Fast Q-palm/bar kept/turn=arc;3torsos follow-mirror/fixed root.
-  Aim¼Windup lock/Charge free/yields motor;bar-Q-palm clocks/contact switch.
-  Step1m/15/.36attack/.57repeat/.21visual/sole-catch→finite landing/impulse-overload.
-  Bar-palm:nonfall stagger-catch-feet-impulse-aim;Q:free leg/load/R;guard support/fall veto.
-  First bar-world-body;metal-wall:recoil-stop/guard-cost-break/0HP-parry/pooled sparks-sound.
+  Floor no deeper;stall arm→drop/rise≠grip/HP-focus-AI.
+  Pause-hitstop0;no bar:walk-Q-Step/hits-falls only.
+  E:shared/0grant/cancel floor;NPC approach-Q;rise ignores own drop.
+  MMBfocus/AIhits/reset mode-focus;hitstop≠lock-reset.
+  Q:chest-gap/earlylock;far pelvis-foot→/chest←,near knee;
+  fast palm/bar kept/arc turn/3mirrored torsos/fixedroot.
+  Aim¼Windup lock/Charge free/motor yield;bar-Q-palm clocks/contact switch.
+  Step1m/sole-catch/finite landing-overload.
+  Bar-palm:nonfall stagger/feet-impulse-aim;Q:freeleg/loadR;guard support/fall veto.
+  First bar-world-body;metal-wall recoil-stop/guard-break/0HPparry/pooled sparks-SFX.
 - **Accepted 2026-10-02, combat:**
   R>L/Hit-Miss cut/.22→held.28/buffer.20/hit-fall-reset clear;
   AI≥1m/retreat≤.6s/whiff.20→counter.22/Rising hits.
@@ -306,7 +310,7 @@
   C1 pose-contact/travel-yaw:return.15→.75/stun.35;
   stance.42/.28m/art§15a;Smoothstep feet.
   Hold freezes breath/delays regen.
-  Aftermath:thud;blood lobes grow10s,stay.
+  Aftermath:thud;bar pool grows10s,stays.
 - **Accepted 2026-09-20, two hands:**
   Ready-Block-attack-recoil→L;Hit-GuardBreak-Defeat release;
   Ready low/Block high/L opposed .16→.42m/breath4s/blend/injury/NPC R Rest;

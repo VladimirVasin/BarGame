@@ -148,18 +148,21 @@ The vertical slice contains:
   inside closes it. No village signpost;
 - CombatTest:bar/gun→Start;NPCbar/3AI;dummy/freecam.
   MMBfocus/TabAIreset:barfocus;reset:AI/focus;bar-Q:focus.
-  8/∞:RMBfreeaim+cross/LMBedge/R-Xreload1.8;idle-gait/Rpalm.
-  Freeaim:cam-planar WASD/stick/strafe/diagonal clamp;actor yaw/legs.
-  Release:tank;Space:focus/aim;shared facing-cardinal/back Step;cam/aim kept.
-  Idle↔aim:cam-FOV .25s/reversible grip-IK;cam ray;ready≠visual.
-  Recoil/streak/stablecam/hit kick;shot cross:.035s out/.165s in;
-  sim/pause hold/hide0;port case/g-bounce/SFX;slide return/emptylock.
-  Handmag-rack/SFX/ammo last;interrupt→hold/Rresume;drop/E keepsstage-ammo.
-  Pause-hitstop0/reset-exit clear;win aim-fire-reload/HP-result kept.
-  Bullet:g/sweep1/no pierce-ricochet-guard-parry;head0HP/live ragdoll.
-  Hit/SFX;rig-ragdoll holes/bleed→reset-exit/capped.
-  World:chips/sparks/holes128FIFO/particles192→reset-exit;no damage.
-  Corpse:impulse/wounds-blood/HP-result-pose kept;end clear1x.
+  Gun8/∞:RMBaim/LMBedge/R-Xreload1.8;Rpalm gait.
+  Aim:cam-planar WASD/stick/strafe/clamp/yaw;release tank.
+  Space:focus/aim/cardinal-back Step/cam-aim.
+  FOV-IK:.25s/reversible/ready;ray:world/anatomy/0motor/0sway.
+  Recoil/streak/stablecam/hitkick/cross;case/g-bounce/SFX;
+  slide-emptylock/handmag-rack/ammo last.
+  Interrupt hold/Rresume;drop/E:stage-ammo;win fire-reload/HP-result.
+  Bullet:g/sweep1/no pierce-ricochet-guard-parry;head0HP/ragdoll.
+  Head16/skull/brains8;chord/exitfan;
+  Bullet:skinned head-face-ear/remnant triangles;gaps miss;camera suppression.
+  Blood144head/800budget/shared pulse→24s0;
+  Rig cut/wall-floor stains/pool/marks/debris→reset-exit0.
+  Terminal:convulsions2.35s;corpse:impulse/HP-result-pose.
+  Pause-hitstop0/reset all/end clear1x.
+  World:chips/sparks/holes128FIFO/particles192;no damage.
   Bar:6zones/rear-head end/aim¼lock/firsthit/metal sparks-recoil/Lrelease.
   Q:free leg/dry/highguard bypass;Windup1m/finite shove-catch/support;
   rise≠grip/drop;E own-ammo/sharedUI/0grant/toilet:bar.

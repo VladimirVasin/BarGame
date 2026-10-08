@@ -361,7 +361,7 @@ namespace BarPromenade
                 Renderer renderer = capturedRenderers[index];
                 if (renderer != null)
                 {
-                    renderer.enabled = capturedRendererStates[index];
+                    renderer.enabled = capturedRendererStates[index] && !CombatHeadDestruction.IsSuppressed(renderer);
                 }
             }
 

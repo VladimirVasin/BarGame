@@ -252,7 +252,7 @@ namespace BarPromenade.Editor
 
         public static void QueueBuildWhenSourcesExist()
         {
-            if (buildQueued || !SourcesExist())
+            if (buildQueued || !SourcesExist() || EditorApplication.isPlayingOrWillChangePlaymode)
             {
                 return;
             }
@@ -543,7 +543,9 @@ namespace BarPromenade.Editor
         private static void RunQueuedBuild()
         {
             buildQueued = false;
-            if (IsBuilding || !SourcesExist())
+            // Domain reload on Play entry also reruns InitializeOnLoad. Authoring
+            // an active prefab here invokes Awake before its registry is configured.
+            if (IsBuilding || !SourcesExist() || EditorApplication.isPlayingOrWillChangePlaymode)
             {
                 return;
             }

@@ -17,7 +17,7 @@ namespace BarPromenade
         {
             public readonly PoolLobe[] Lobes = new PoolLobe[PoolLobes];
             public Vector3 Position;
-            public float Age;
+            public float Age, FlowProgress;
             public bool Active;
         }
 
@@ -66,19 +66,27 @@ namespace BarPromenade
                 // Feet touching while standing are not a fall. Wait for the
                 // contacted body to slow before fixing the wound's floor source.
                 if (injury.GroundSeconds < .35f || (!ragdoll.IsSettled && ragdoll.MaximumBodySpeed > .8f)) return;
-                if (!FindPoolSupport(injury.Marks.BleedPosition + Vector3.up * .1f, 2f, out RaycastHit support)) return;
+                Vector3 source = injury.HeadSource != null ? injury.HeadSource.TransformPoint(injury.HeadLocalPoint) : injury.Marks.BleedPosition;
+                if (!FindPoolSupport(source + Vector3.up * .1f, 2f, out RaycastHit support)) return;
                 pool = injury.Pool ?? (injury.Pool = new DefeatPool());
-                StartDefeatPool(pool, support, actor.IsHero ? 1 : 0);
+                StartDefeatPool(pool, support, actor.IsHero ? 1 : 0, injury.HeadTrauma);
                 if (!pool.Active) return;
                 // Start from a pinprick even if the caller advances a long step.
                 return;
             }
 
-            pool.Age = Mathf.Min(DefeatPoolGrowthSeconds, pool.Age + seconds);
+            pool.Age = Mathf.Min(injury.HasProjectileBleed ? ProjectileBleedLifetimeSeconds : DefeatPoolGrowthSeconds, pool.Age + seconds);
+            // Projectile pools are fed by the same declining pressure as the
+            // wounds. A late fall or an emptied body cannot start a fresh full
+            // ten-second supply. Ordinary bar wounds retain their finite pool.
+            pool.FlowProgress = Mathf.Min(1f, pool.FlowProgress + (injury.HasProjectileBleed ?
+                injury.PoolFlowStep :
+                seconds / DefeatPoolGrowthSeconds));
             foreach (PoolLobe lobe in pool.Lobes)
             {
                 if (lobe == null || lobe.Transform == null || !lobe.Transform.gameObject.activeSelf) continue;
-                float progress = Mathf.Clamp01((pool.Age - lobe.Delay) / (DefeatPoolGrowthSeconds - lobe.Delay));
+                float delay = lobe.Delay / DefeatPoolGrowthSeconds;
+                float progress = Mathf.Clamp01((pool.FlowProgress - delay) / (1f - delay));
                 // Each lobe opens at its own time; the edge decelerates into a
                 // finite outline instead of the entire stain pulsing in unison.
                 float spread = 1f - Mathf.Pow(1f - progress, 2f);
@@ -87,10 +95,10 @@ namespace BarPromenade
             }
         }
 
-        private void StartDefeatPool(DefeatPool pool, RaycastHit support, int variantOffset)
+        private void StartDefeatPool(DefeatPool pool, RaycastHit support, int variantOffset, bool headTrauma)
         {
             pool.Position = support.point;
-            pool.Age = 0f;
+            pool.Age = pool.FlowProgress = 0f;
             Vector3 normal = support.normal.normalized;
             Vector3 tangent = Vector3.ProjectOnPlane(Vector3.right, normal).normalized;
             tangent = Quaternion.AngleAxis(Range(0f, 360f), normal) * tangent;
@@ -99,7 +107,7 @@ namespace BarPromenade
             {
                 Vector3 offset = i == 0 ? Vector3.zero : i == 1 ? tangent * .17f : -tangent * .12f + across * .12f;
                 Vector3 point = support.point + offset;
-                float diameter = i == 0 ? .68f : i == 1 ? .47f : .36f;
+                float diameter = (i == 0 ? .68f : i == 1 ? .47f : .36f) * (headTrauma ? 1.5f : 1f);
                 // Check a conservative footprint against the real collider and
                 // nearby walls. Near an edge, a lobe stops short of the edge.
                 while (diameter >= .065f && !PoolFootprintFits(point, normal, support.collider, diameter * .72f)) diameter *= .72f;
@@ -188,7 +196,7 @@ namespace BarPromenade
             injury.GroundSeconds = 0f;
             DefeatPool pool = injury.Pool;
             if (pool == null) return;
-            pool.Active = false; pool.Age = 0f; pool.Position = Vector3.zero;
+            pool.Active = false; pool.Age = pool.FlowProgress = 0f; pool.Position = Vector3.zero;
             foreach (PoolLobe lobe in pool.Lobes)
                 if (lobe != null)
                 {

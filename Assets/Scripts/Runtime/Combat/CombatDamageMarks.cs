@@ -125,13 +125,15 @@ namespace BarPromenade
             }
         }
 
-        public void Add(Vector3 point, Vector3 incoming, bool projectile = false)
+        public void Add(Vector3 point, Vector3 incoming, bool projectile = false, bool head = false)
         {
             Patch nearest = null;
             float best = float.PositiveInfinity;
             foreach (Patch patch in patches)
             {
-                if (patch.Source == null || !patch.Source.enabled || !patch.Source.gameObject.activeInHierarchy) continue;
+                if (patch.Source == null || (!patch.Source.enabled && !Player3DHeadVisibility.IsTemporarilyHidden(patch.Source)) ||
+                    !patch.Source.gameObject.activeInHierarchy) continue;
+                if (projectile && head && patch.Source.name != "GEO_Head" && patch.Source.name != "GEO_FaceSurface") continue;
                 float distance = (patch.Position - point).sqrMagnitude;
                 float score = distance + Mathf.Max(0f, Vector3.Dot(patch.Direction, incoming)) * .15f;
                 if (patch.Active && !projectile) score += .045f;

@@ -14,6 +14,8 @@ namespace BarPromenade
         private bool movingCombatAnchor, simulationSuspended, hasCombatElbowFrames;
         private Vector3[] suspendedLinear, suspendedAngular;
         private readonly List<PendingCombatImpulse> suspendedImpulses = new List<PendingCombatImpulse>(4);
+        private readonly List<PendingCombatTorque> suspendedTorques = new List<PendingCombatTorque>(8);
+        private bool combatHeadCollisionEnabled = true;
 
         public bool IsSimulationSuspended => simulationSuspended;
 
@@ -23,6 +25,7 @@ namespace BarPromenade
             presentation?.BeginRagdollPoseFromLatePose(preservePresentedPose);
             RefreshJointAnchors();
             SetCollidersEnabled(true);
+            if (!combatHeadCollisionEnabled) ApplyCombatHeadCollision();
             Physics.SyncTransforms();
             // A reused hero may leave combat before an ordinary fall. Once its
             // elbow frames follow live pronation, every later handoff must do so.
@@ -164,6 +167,9 @@ namespace BarPromenade
             foreach (PendingCombatImpulse impulse in suspendedImpulses)
                 if (impulse.Body != null) impulse.Body.AddForceAtPosition(impulse.Impulse, impulse.Point, ForceMode.Impulse);
             suspendedImpulses.Clear();
+            foreach (PendingCombatTorque torque in suspendedTorques)
+                if (torque.Body != null) torque.Body.AddTorque(torque.Impulse, ForceMode.Impulse);
+            suspendedTorques.Clear();
             // Follow vertically too: an upright impact begins higher than an intoxication
             // topple. Keeping its original anchor height would suspend the pelvis above ground.
             rootAnchorBody.MovePosition(PelvisBody.position);
@@ -184,6 +190,39 @@ namespace BarPromenade
             point = body.worldCenterOfMass + Vector3.ClampMagnitude(point - body.worldCenterOfMass, .45f);
             impulse = Vector3.ClampMagnitude(impulse, 260f);
             suspendedImpulses.Add(new PendingCombatImpulse(body, point, impulse));
+        }
+
+        /// <summary>Contraction of a live anatomical joint. Matching opposite angular
+        /// impulses do not add a launch impulse to the complete body.</summary>
+        internal void AddCombatContraction(Player3DAnatomicalPart part, float angularImpulse)
+        {
+            if (!IsSimulating || float.IsNaN(angularImpulse) || float.IsInfinity(angularImpulse)) return;
+            Rigidbody body = GetBody(part);
+            if (body == null) return;
+            foreach (ConfigurableJoint joint in joints)
+            {
+                if (joint == null || joint.transform != body.transform || joint.connectedBody == null) continue;
+                Vector3 impulse = joint.transform.TransformDirection(joint.axis).normalized *
+                    Mathf.Clamp(angularImpulse, -.4f, .4f);
+                suspendedTorques.Add(new PendingCombatTorque(body, impulse));
+                suspendedTorques.Add(new PendingCombatTorque(joint.connectedBody, -impulse));
+                return;
+            }
+        }
+
+        /// <summary>The damaged-head owner supplies its remaining collision proxies.
+        /// Keep the intact shape disabled even when a later corpse shot wakes physics.</summary>
+        internal void SetCombatHeadCollisionEnabled(bool enabled)
+        {
+            combatHeadCollisionEnabled = enabled;
+            ApplyCombatHeadCollision();
+        }
+
+        private void ApplyCombatHeadCollision()
+        {
+            foreach (KeyValuePair<Collider, Player3DAnatomicalPart> pair in partByCollider)
+                if (pair.Value == Player3DAnatomicalPart.Head && pair.Key != null)
+                    pair.Key.enabled = combatHeadCollisionEnabled && (IsSimulating || IsFrozen);
         }
 
         internal void SetSimulationSuspended(bool suspended)
@@ -232,6 +271,8 @@ namespace BarPromenade
             simulationSuspended = false;
             movingCombatAnchor = false;
             suspendedImpulses.Clear();
+            suspendedTorques.Clear();
+            combatHeadCollisionEnabled = true;
         }
 
         private static bool FiniteCombatVector(Vector3 value) =>
@@ -244,6 +285,14 @@ namespace BarPromenade
             public readonly Vector3 Point, Impulse;
             public PendingCombatImpulse(Rigidbody body, Vector3 point, Vector3 impulse)
             { Body = body; Point = point; Impulse = impulse; }
+        }
+
+        private readonly struct PendingCombatTorque
+        {
+            public readonly Rigidbody Body;
+            public readonly Vector3 Impulse;
+            public PendingCombatTorque(Rigidbody body, Vector3 impulse)
+            { Body = body; Impulse = impulse; }
         }
     }
 }

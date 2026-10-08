@@ -65,12 +65,26 @@ namespace BarPromenade
                 Cursor.visible = false;
             }
             Ray ray = CameraFollow.Camera.ViewportPointToRay(new Vector3(.5f, .5f, 0f));
+            return ResolveFreePistolAim(ray);
+        }
+
+        private Vector3 ResolveFreePistolAim(Ray ray)
+        {
             float distance = CombatProjectilePool.MaximumDistance;
             int count = Physics.RaycastNonAlloc(ray, pistolAimHits, distance,
                 Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore);
             for (int i = 0; i < count; i++)
-                if (pistolAimHits[i].transform != null && !pistolAimHits[i].transform.IsChildOf(Hero.transform))
+                if (CombatProjectilePool.IsWorld(pistolAimHits[i].collider, Hero))
                     distance = Mathf.Min(distance, pistolAimHits[i].distance);
+            // A standing motor capsule is not the surface visible under the
+            // crosshair. Converge the actual muzzle on the same anatomy that
+            // bullets hit, while allowing nearer world geometry to occlude it.
+            if (Opponent?.Hurtboxes != null)
+            {
+                Opponent.Hurtboxes.Capture();
+                if (Opponent.Hurtboxes.SweepProjectile(ray.origin, ray.GetPoint(distance), 0f, ray.direction, out var hit))
+                    distance *= hit.Fraction;
+            }
             return ray.GetPoint(Mathf.Max(distance, Vector3.Dot(heroChest.position - ray.origin, ray.direction) + .5f));
         }
 

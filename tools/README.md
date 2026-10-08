@@ -156,11 +156,12 @@ in `Captures` and does not publish. See [audio-vhs/README.md](audio-vhs/README.m
 `--hand-grip-only --skip-animation-export --no-previews` refreshes hand shapes.
 Output: `Assets/Player3D/V2/Models/PlayerCharacter3DV2.{fbx,json}`.
 
-`build-combat-{test,blood}-3d-model.py --validate-only`.
-Test:`--actions-only --kick-only|--recovery-only|--footwork-only`;
+Combat: `build-combat-{test,blood,pistol,gore}-3d-model.py`.
+Test: `--actions-only --kick-only|--recovery-only|--footwork-only`;
 `--refresh-published-contracts --reuse-unchanged-actions --resume-npc-bank file.blend`.
 Charge=Attack(.18q);blood:`--texture-only`.
-`python tools/run-blender.py tools/build-combat-pistol-3d-model.py --expect Assets/Resources/CombatPistol/CombatPistol3D.json`.
+Gore: `--validate-only`;source UV/skin/shell/scale/determinism;
+16sectors/8brains: `Assets/Resources/CombatGore`.
 
 `player_jacket_cloth.py --write` derives hem/cuff metadata only; `--check` verifies it.
 Refresh `Player3DV2` through its asset setup. Lower-body changes also require

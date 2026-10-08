@@ -291,9 +291,15 @@ namespace BarPromenade
             pistolAimApplied = true;
             Vector3 target = PistolAimPoint;
             Vector3 shoulderToTarget = target - pistolArmBones[0].position;
-            float sway = .25f + (motor != null ? motor.PlanarVelocity.magnitude * .3f : 0f);
-            shoulderToTarget = Quaternion.AngleAxis(Mathf.Sin(poseClock * 8.3f) * sway, transform.up) * shoulderToTarget;
-            shoulderToTarget = Quaternion.AngleAxis(Mathf.Sin(poseClock * 6.1f) * sway * .6f, transform.right) * shoulderToTarget;
+            // The free-aim crosshair is fixed on the camera ray. Angular sway
+            // would move a real muzzle shot off that visible point, especially
+            // at head edges. Keep the authored motion and firing kick below.
+            if (CombatFocused)
+            {
+                float sway = .25f + (motor != null ? motor.PlanarVelocity.magnitude * .3f : 0f);
+                shoulderToTarget = Quaternion.AngleAxis(Mathf.Sin(poseClock * 8.3f) * sway, transform.up) * shoulderToTarget;
+                shoulderToTarget = Quaternion.AngleAxis(Mathf.Sin(poseClock * 6.1f) * sway * .6f, transform.right) * shoulderToTarget;
+            }
             // Keep the authored firing kick visible instead of correcting it back to the target.
             float recoil = Pistol.CooldownRemaining > 0f ? PistolRecoilDegrees(Pistol.ShotElapsed) : 0f;
             shoulderToTarget = Quaternion.AngleAxis(-recoil, transform.right) * shoulderToTarget;
@@ -568,13 +574,14 @@ namespace BarPromenade
             };
             var impact = new CombatImpact(source, this, sequence, hit.Point, hit.Normal, velocity.normalized,
                 health, State.Health, result, hit.Location, 0f, hit.Part, hit.LocalPoint, velocity.magnitude,
-                velocity.normalized * momentum, CombatImpactKind.Projectile);
+                velocity.normalized * momentum, CombatImpactKind.Projectile, hit.LocalDirection);
             // Physics takes the already visible pose before impact publication freezes
             // it. The shared impact path then applies this anatomical impulse once.
             if (State.IsDefeated && !postmortem) BeginProjectileDefeat(impact);
             RetroAudio.PlayAt(RetroSfxId.SpadeBite, hit.Point, 1f);
             RetroAudio.PlayAt(RetroSfxId.StoneTamp, hit.Point, hit.Location.Region == MeleeBodyRegion.Head ? .65f : .45f);
             PublishImpact(impact, phaseBefore);
+            if (State.IsDefeated && !postmortem) Ragdoll.BeginTerminalConvulsions();
             Present();
         }
 

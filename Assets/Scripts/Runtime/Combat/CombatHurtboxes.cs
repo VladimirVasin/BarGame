@@ -6,10 +6,13 @@ namespace BarPromenade
 {
     /// <summary>Queries a frozen copy of the posed anatomy without enabling ragdoll collision.
     /// Capture both fighters before sampling either weapon: their contact order cannot change anatomy.</summary>
-    internal sealed class CombatHurtboxes
+    internal sealed partial class CombatHurtboxes
     {
         private readonly Shape[] shapes;
-        private readonly Snapshot[] snapshots;
+        private Snapshot[] snapshots;
+        private Shape[] activeShapes;
+        private readonly Transform headBone, actorFrame;
+        private readonly Matrix4x4 headBind;
 
         internal readonly struct Hit
         {
@@ -17,11 +20,12 @@ namespace BarPromenade
             internal readonly float Fraction;
             internal readonly Player3DAnatomicalPart Part;
             internal readonly Vector3 LocalPoint;
+            internal readonly Vector3 LocalDirection;
             internal readonly MeleeHitLocation Location;
 
             internal Hit(Vector3 point, Vector3 normal, Vector3 direction, float fraction,
-                MeleeHitLocation location, Player3DAnatomicalPart part, Vector3 localPoint)
-            { Point = point; Normal = normal; Direction = direction; Fraction = fraction; Location = location; Part = part; LocalPoint = localPoint; }
+                MeleeHitLocation location, Player3DAnatomicalPart part, Vector3 localPoint, Vector3 localDirection = default)
+            { Point = point; Normal = normal; Direction = direction; Fraction = fraction; Location = location; Part = part; LocalPoint = localPoint; LocalDirection = localDirection; }
         }
 
         internal CombatHurtboxes(Transform rigRoot, Transform actorFrame, Player3DRagdollController ragdoll)
@@ -55,6 +59,8 @@ namespace BarPromenade
                 measured.Add(new Shape(collider, bone, entry.Value, Region(entry.Value), bind, actorFrame));
             }
             Transform neck = FindBone("neck"), head = FindBone("head");
+            headBone = head; headBind = bindPoses[head]; this.actorFrame = actorFrame;
+            InitializeHeadSurfaces(rigRoot);
             Vector3 neckStart = bindPoses[neck].GetColumn(3), neckEnd = bindPoses[head].GetColumn(3);
             // Ragdoll joins head straight to chest and has no neck collision. Its exposed
             // neck remains a torso contact; this query-only capsule never enters PhysX.
@@ -63,6 +69,7 @@ namespace BarPromenade
             AddHand("hand.L", "forearm.L", MeleeBodyRegion.LeftArm);
             AddHand("hand.R", "forearm.R", MeleeBodyRegion.RightArm);
             shapes = measured.ToArray();
+            activeShapes = shapes;
             snapshots = new Snapshot[shapes.Length];
             Capture();
 
@@ -86,7 +93,27 @@ namespace BarPromenade
 
         internal void Capture()
         {
-            for (int i = 0; i < shapes.Length; i++) snapshots[i] = shapes[i].Capture();
+            for (int i = 0; i < activeShapes.Length; i++) snapshots[i] = activeShapes[i].Capture();
+            CaptureHeadSurfaces();
+        }
+
+        // Rebuild only on a fracture/reset, never in the contact sampling loop.
+        internal void SetHeadShapes(IReadOnlyList<BoxCollider> retained, IReadOnlyList<SkinnedMeshRenderer> surfaces = null)
+        {
+            SetHeadSurfaces(retained == null ? null : surfaces ?? throw new ArgumentNullException(nameof(surfaces)));
+            if (retained == null) activeShapes = shapes;
+            else
+            {
+                var replacement = new List<Shape>(shapes.Length + retained.Count);
+                foreach (Shape shape in shapes)
+                    if (shape.Part != Player3DAnatomicalPart.Head) replacement.Add(shape);
+                foreach (BoxCollider collider in retained)
+                    replacement.Add(new Shape(collider, headBone, Player3DAnatomicalPart.Head,
+                        MeleeBodyRegion.Head, headBind, actorFrame));
+                activeShapes = replacement.ToArray();
+            }
+            snapshots = new Snapshot[activeShapes.Length];
+            Capture();
         }
 
         internal bool GetRegionFrame(MeleeBodyRegion region, out Vector3 center, out Vector3 forward, out Vector3 up)
@@ -99,6 +126,9 @@ namespace BarPromenade
         }
 
         internal bool SweepSphere(Vector3 from, Vector3 to, float radius, Vector3 direction, out Hit hit)
+            => SweepSphere(from, to, radius, direction, true, out hit);
+
+        private bool SweepSphere(Vector3 from, Vector3 to, float radius, Vector3 direction, bool includeHead, out Hit hit)
         {
             hit = default;
             if (!Finite(from) || !Finite(to) || !Finite(direction) || !float.IsFinite(radius) || radius < 0f)
@@ -111,6 +141,7 @@ namespace BarPromenade
             for (int i = 0; i < snapshots.Length; i++)
             {
                 Snapshot shape = snapshots[i];
+                if (!includeHead && shape.Part == Player3DAnatomicalPart.Head) continue;
                 float reach = shape.BoundingRadius + radius;
                 if ((ClosestOnSegment(from, to, shape.Center) - shape.Center).sqrMagnitude > reach * reach)
                     continue;
@@ -120,7 +151,8 @@ namespace BarPromenade
                 MeleeHitLocation location = MeleeHitLocation.FromLocalSurface(shape.Region,
                     Vector3.Dot(offset, shape.Right), Vector3.Dot(offset, shape.Up), Vector3.Dot(offset, shape.Forward));
                 first = fraction;
-                hit = new Hit(point, normal, direction, fraction, location, shape.Part, shape.WorldToBone.MultiplyPoint3x4(point));
+                hit = new Hit(point, normal, direction, fraction, location, shape.Part, shape.WorldToBone.MultiplyPoint3x4(point),
+                    shape.WorldToBone.MultiplyVector(direction).normalized);
                 found = true;
             }
             return found;
@@ -219,6 +251,7 @@ namespace BarPromenade
 
         private sealed class Shape
         {
+            internal Player3DAnatomicalPart Part => part;
             private readonly Transform geometry, bone;
             private readonly MeleeBodyRegion region;
             private readonly Player3DAnatomicalPart part;

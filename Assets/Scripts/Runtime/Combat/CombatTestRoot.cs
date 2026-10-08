@@ -132,6 +132,7 @@ namespace BarPromenade
             Projectiles?.ResetRound();
             Casings?.ResetRound();
             BloodEffects?.ResetRound();
+            HeadEffects?.ResetRound();
             SparkEffects?.ResetRound();
             Taunt?.ResetRound();
             Hero.ResetActor(heroSpawn, Vector3.forward);
@@ -175,6 +176,7 @@ namespace BarPromenade
             Player.Motor.SetMovementTargetFrozen(this, frozen);
             Hero.SetPresentationFrozen(frozen);
             Opponent.SetPresentationFrozen(frozen);
+            HeadEffects?.SetFrozen(frozen);
         }
 
         private void RequestHitStop(int substeps)
@@ -281,7 +283,16 @@ namespace BarPromenade
                 Opponent.CompleteSimulationPose(SimulationStep);
                 JournalTransitions("simulation");
                 long poseStamp = JournalStamp();
-                Hero.Present(); Opponent.Present();
+                if (Hero.IsFreePistolAiming && CameraFollow.FreeAimActive)
+                {
+                    // Resolve against this step's completed target pose before
+                    // the hero aligns the muzzle, including a moving head.
+                    Opponent.Present();
+                    Hero.SetPistolAim(true, ResolveFreePistolAim(
+                        CameraFollow.Camera.ViewportPointToRay(new Vector3(.5f, .5f, 0f))));
+                    Hero.Present();
+                }
+                else { Hero.Present(); Opponent.Present(); }
                 JournalElapsed(poseStamp, ref journalPoseTicks);
                 // Both final poses are frozen as anatomical query data before either
                 // weapon is sampled. Sampling the first swing cannot move its hurtboxes.
@@ -316,6 +327,7 @@ namespace BarPromenade
                     Opponent.ContinueBufferedAttackAfterContacts();
                 }
                 BloodEffects.Tick(SimulationStep);
+                HeadEffects.Tick(SimulationStep);
                 SparkEffects.Tick(SimulationStep);
             }
             if (RoundFinished)
@@ -399,6 +411,7 @@ namespace BarPromenade
                     }
                     Projectiles.ApplyContacts();
                     BloodEffects.Tick(SimulationStep);
+                    HeadEffects.Tick(SimulationStep);
                     SparkEffects.Tick(SimulationStep);
                 }
             }
@@ -409,6 +422,7 @@ namespace BarPromenade
                 Casings?.Tick(seconds);
                 Projectiles?.SurfaceEffects.Tick(seconds);
                 BloodEffects.Tick(seconds);
+                HeadEffects.Tick(seconds);
                 SparkEffects.Tick(seconds);
             }
             float settle = Mathf.Clamp01((float)(roundEndElapsed / RoundEndCameraReleaseSeconds));

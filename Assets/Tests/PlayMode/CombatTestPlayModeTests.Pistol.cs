@@ -1462,6 +1462,8 @@ namespace BarPromenade.Tests.PlayMode
                     "Round completion clears flight, but the killing shot still gets rendered.");
                 Assert.That(root.BloodEffects.ActiveDropCount, Is.GreaterThan(26));
                 Assert.That(root.BloodEffects.ProjectileWoundCountFor(root.Opponent), Is.EqualTo(1));
+                Assert.That(root.HeadEffects.DetachedSectorCountFor(root.Opponent), Is.GreaterThan(0));
+                Assert.That(root.HeadEffects.RetainedSectorCountFor(root.Opponent), Is.GreaterThan(0));
                 yield return CaptureFocusGameView(rear ? "pistol-headshot-rear-contact" : "pistol-headshot-front-contact");
                 if (!rear) yield return CapturePistolWoundNearView(root.Opponent, "pistol-npc-head-wound-contact");
                 root.Tick(.35f);
@@ -1469,7 +1471,8 @@ namespace BarPromenade.Tests.PlayMode
                 yield return CaptureFocusGameView(rear ? "pistol-headshot-rear-fall" : "pistol-headshot-front-fall");
                 Assert.That(root.Opponent.ReceivedImpactCount, Is.EqualTo(1), "The visual tail cannot repeat damage.");
                 Assert.That(root.BloodEffects.ProjectileWoundCountFor(root.Opponent), Is.EqualTo(1),
-                    "The hole follows the same skinned head after the animation-to-ragdoll handoff.");
+                    "The original wound stays recorded while the surviving head cut owns its bleeding source.");
+                Assert.That(root.HeadEffects.DetachedSectorCountFor(root.Opponent), Is.GreaterThan(0));
                 if (!rear) yield return VerifyPersistentPistolAftermath();
                 root.ResetRound();
                 AssertPistolWoundsReset();
@@ -1501,8 +1504,9 @@ namespace BarPromenade.Tests.PlayMode
             root.Tick(.3f);
             Assert.That(root.Hero.IsRagdollActive, Is.True);
             Assert.That(root.BloodEffects.ProjectileWoundCountFor(root.Hero), Is.EqualTo(1));
-            Assert.That(root.BloodEffects.BleedingDropCountFor(root.Hero), Is.GreaterThan(heroBleedTail),
-                "The defeated hero's hole remains an active emitter after its former finite headshot tail.");
+            Assert.That(root.BloodEffects.BleedingDropCountFor(root.Hero), Is.GreaterThanOrEqualTo(heroBleedTail));
+            Assert.That(root.BloodEffects.BleedingPressureFor(root.Hero), Is.GreaterThan(0f),
+                "The hero's open head cut retains finite pulsating flow after its initial burst.");
 
             root.ResetRound();
             AssertPistolWoundsReset();
@@ -1533,10 +1537,13 @@ namespace BarPromenade.Tests.PlayMode
             root.Tick(10.1f);
             Assert.That(root.RoundFinished && root.Opponent.IsRagdollActive, Is.True);
             int beyondOldPool = root.BloodEffects.BleedingDropCountFor(root.Opponent);
+            float initialAge = root.BloodEffects.BleedingAgeFor(root.Opponent);
+            float initialPressure = root.BloodEffects.BleedingPressureFor(root.Opponent);
             root.Tick(.5f);
-            int singleWoundDrops = root.BloodEffects.BleedingDropCountFor(root.Opponent) - beyondOldPool;
-            Assert.That(singleWoundDrops, Is.GreaterThan(0),
-                "A finished round keeps emitting from the wound after the former ten-second pool growth window.");
+            Assert.That(root.BloodEffects.BleedingDropCountFor(root.Opponent), Is.GreaterThanOrEqualTo(beyondOldPool));
+            Assert.That(root.BloodEffects.BleedingAgeFor(root.Opponent), Is.GreaterThan(initialAge));
+            Assert.That(root.BloodEffects.BleedingPressureFor(root.Opponent), Is.GreaterThan(0f).And.LessThanOrEqualTo(initialPressure),
+                "The finite bleed clock continues after the result while pressure gradually falls; a pulse trough may emit no drops.");
             Assert.That(root.BloodEffects.ProjectileWoundCountFor(root.Opponent), Is.EqualTo(1));
             Assert.That(root.BloodEffects.BleedCount, Is.GreaterThan(0));
             int pausedDrops = root.BloodEffects.BleedingDropCountFor(root.Opponent);
@@ -1564,6 +1571,8 @@ namespace BarPromenade.Tests.PlayMode
             Vector3 pelvis = root.Opponent.Ragdoll.PelvisBody.position;
             float heroHealth = root.Hero.State.Health;
             int impacts = root.Opponent.ReceivedImpactCount;
+            float ageBeforeShot = root.BloodEffects.BleedingAgeFor(root.Opponent);
+            float supplyBeforeShot = root.BloodEffects.RemainingBloodFractionFor(root.Opponent);
             Assert.That(root.Projectiles.TrySpawn(root.Hero, torso.bounds.center + Vector3.up * .6f,
                 Vector3.down * CombatProjectilePool.MuzzleSpeed, root.Hero.Pistol.ShotSequence + 1), Is.True);
             root.Tick(CombatTestRoot.SimulationStep);
@@ -1578,16 +1587,22 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(Vector3.Distance(pelvis, root.Opponent.Ragdoll.PelvisBody.position), Is.LessThan(.025f),
                 "A corpse receives the new impulse from its live pose without snapping to Ready or defeat entry.");
             Assert.That(root.BloodEffects.ProjectileWoundCountFor(root.Opponent), Is.EqualTo(2),
-                "A distinct corpse contact adds a second hole while keeping the original head wound.");
+                "A distinct corpse contact adds a torso hole while retaining the head injury record.");
+            Assert.That(root.BloodEffects.BleedingAgeFor(root.Opponent), Is.InRange(ageBeforeShot, ageBeforeShot + .025f),
+                "A new wound cannot restart the body's bleed clock.");
+            Assert.That(root.BloodEffects.RemainingBloodFractionFor(root.Opponent), Is.LessThanOrEqualTo(supplyBeforeShot),
+                "The contact burst spends the same remaining supply.");
             root.Tick(.2f);
             yield return new WaitForFixedUpdate();
             yield return null;
             Assert.That(root.Opponent.Ragdoll.MaximumBodySpeed, Is.GreaterThan(.05f),
                 "The postmortem shot wakes the existing ragdoll and imparts physical movement.");
-            int multipleWounds = root.BloodEffects.BleedingDropCountFor(root.Opponent);
+            float ageWithBothWounds = root.BloodEffects.BleedingAgeFor(root.Opponent);
+            float supplyWithBothWounds = root.BloodEffects.RemainingBloodFractionFor(root.Opponent);
             root.Tick(.5f);
-            Assert.That(root.BloodEffects.BleedingDropCountFor(root.Opponent) - multipleWounds,
-                Is.GreaterThan(singleWoundDrops), "Both separate holes continue emitting rather than only the newest contact.");
+            Assert.That(root.BloodEffects.BleedingAgeFor(root.Opponent), Is.GreaterThan(ageWithBothWounds));
+            Assert.That(root.BloodEffects.RemainingBloodFractionFor(root.Opponent), Is.LessThanOrEqualTo(supplyWithBothWounds),
+                "Both wounds share the pulse and remaining supply rather than multiplying or renewing it.");
             Assert.That(root.Opponent.State.Health, Is.Zero);
             yield return CapturePistolWoundNearView(root.Opponent, "pistol-npc-postmortem-torso-wound", 1);
         }
@@ -2659,22 +2674,39 @@ namespace BarPromenade.Tests.PlayMode
             {
                 root.CameraFollow.enabled = false;
                 yield return null;
-                Assert.That(root.BloodEffects.TryGetProjectileWound(actor, index, out Vector3 point, out Vector3 direction), Is.True,
-                    "The close view uses the wound's current skinned surface after any ragdoll movement.");
-                Assert.That(direction.sqrMagnitude, Is.GreaterThan(.9f));
-                bool visibleSkin = false;
-                foreach (SkinnedMeshRenderer skin in actor.DamageRigRoot.GetComponentsInChildren<SkinnedMeshRenderer>(true))
+                Vector3 point, direction;
+                bool fracturedHead = index == 0 && root.HeadEffects.DetachedSectorCountFor(actor) > 0;
+                if (fracturedHead)
                 {
-                    if (!skin.name.StartsWith("Projectile Wounds__", System.StringComparison.Ordinal) || !skin.enabled) continue;
-                    visibleSkin = true;
-                    Assert.That(skin.sharedMesh, Is.Not.Null);
-                    Assert.That(skin.sharedMesh.vertexCount, Is.GreaterThan(0));
-                    Assert.That(skin.bones, Is.Not.Empty);
-                    foreach (Transform bone in skin.bones)
-                        Assert.That(bone != null && bone.IsChildOf(actor.DamageRigRoot), Is.True,
-                            "The hole must deform with the original actor rather than a detached proxy.");
+                    Transform head = root.HeadEffects.HeadFrameFor(actor);
+                    Assert.That(head, Is.Not.Null, "The surviving cut follows the original physical head bone.");
+                    if (!root.HeadEffects.TryGetRetainedTarget(actor, out point)) point = head.position;
+                    direction = (point - head.position).normalized;
+                    if (direction.sqrMagnitude < .9f) direction = Vector3.up;
+                    Assert.That(root.HeadEffects.BrainFragmentCountFor(actor), Is.GreaterThan(0));
+                    foreach (SkinnedMeshRenderer skin in actor.DamageRigRoot.GetComponentsInChildren<SkinnedMeshRenderer>(true))
+                        if (CombatHeadDestruction.IsSuppressed(skin))
+                            Assert.That(skin.enabled, Is.False, "The destroyed original head does not draw over its surviving cut.");
                 }
-                Assert.That(visibleSkin, Is.True, "The persistent wound has a live visible skinned overlay.");
+                else
+                {
+                    Assert.That(root.BloodEffects.TryGetProjectileWound(actor, index, out point, out direction), Is.True,
+                        "The close view uses the wound's current skinned surface after any ragdoll movement.");
+                    bool visibleSkin = false;
+                    foreach (SkinnedMeshRenderer skin in actor.DamageRigRoot.GetComponentsInChildren<SkinnedMeshRenderer>(true))
+                    {
+                        if (!skin.name.StartsWith("Projectile Wounds__", System.StringComparison.Ordinal) || !skin.enabled) continue;
+                        visibleSkin = true;
+                        Assert.That(skin.sharedMesh, Is.Not.Null);
+                        Assert.That(skin.sharedMesh.vertexCount, Is.GreaterThan(0));
+                        Assert.That(skin.bones, Is.Not.Empty);
+                        foreach (Transform bone in skin.bones)
+                            Assert.That(bone != null && bone.IsChildOf(actor.DamageRigRoot), Is.True,
+                                "The hole must deform with the original actor rather than a detached proxy.");
+                    }
+                    Assert.That(visibleSkin, Is.True, "The persistent wound has a live visible skinned overlay.");
+                }
+                Assert.That(direction.sqrMagnitude, Is.GreaterThan(.9f));
                 Vector3 normal = direction.normalized;
                 Vector3 side = Vector3.Cross(normal, Mathf.Abs(normal.y) > .9f ? Vector3.forward : Vector3.up).normalized;
                 Vector3 eye = point + normal * .42f + side * .07f;

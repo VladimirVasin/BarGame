@@ -22,6 +22,11 @@ namespace BarPromenade
         private bool npcWasEnabled, animatorWasEnabled;
         private float simulationSeconds, quietSeconds, groundSeconds, supportSeconds;
         private bool recoverable, hitStopFrozen;
+        private const float ConvulsionDuration = 2.35f;
+        private static readonly float[] ConvulsionPulseTimes = { .06f, .19f, .44f, .79f, 1.21f, 1.64f, 2.05f };
+        private bool terminalConvulsionsStarted;
+        private float convulsionSeconds;
+        private int convulsionPulseCount;
         private readonly Dictionary<Transform, RagdollBoneMotion> presentedMotion = new Dictionary<Transform, RagdollBoneMotion>();
         private readonly Dictionary<Transform, WorldPose> previousWorldPose = new Dictionary<Transform, WorldPose>();
         private readonly List<CombatRagdollGroundContact> groundContacts = new List<CombatRagdollGroundContact>(4);
@@ -31,6 +36,9 @@ namespace BarPromenade
         public bool IsRecovering { get; private set; }
         public bool IsRecoverable => IsActive && recoverable;
         public float SimulationSeconds => simulationSeconds;
+        public bool IsConvulsing => IsActive && terminalConvulsionsStarted && convulsionSeconds < ConvulsionDuration;
+        public float ConvulsionSeconds => convulsionSeconds;
+        public int ConvulsionPulseCount => convulsionPulseCount;
         public bool HasGroundContact { get; private set; }
         public Vector3 GroundContactPoint { get; private set; }
         public Vector3 GroundContactNormal { get; private set; }
@@ -161,6 +169,20 @@ namespace BarPromenade
         internal bool BeginTerminal(Vector3 linearVelocity, Vector3 angularVelocity) =>
             BeginLiveSimulation(linearVelocity, angularVelocity, true);
 
+        /// <summary>One short physical episode for the first lethal projectile. A later
+        /// corpse impact can wake the body, but cannot start this episode again.</summary>
+        public bool BeginTerminalConvulsions()
+        {
+            if (!IsActive || recoverable || terminalConvulsionsStarted || physicsController == null) return false;
+            if ((IsRecovering || physicsController.IsFrozen) && !ResumeHeldSimulation()) return false;
+            terminalConvulsionsStarted = true;
+            convulsionSeconds = 0f;
+            convulsionPulseCount = 0;
+            IsSettled = false;
+            quietSeconds = 0f;
+            return true;
+        }
+
         private void CaptureOwners()
         {
             capsuleWasEnabled = capsule != null && capsule.enabled;
@@ -187,19 +209,25 @@ namespace BarPromenade
             if (!IsActive || physicsController == null || impact.Impulse.sqrMagnitude <= .000001f) return;
             if (IsRecovering || physicsController.IsFrozen)
             {
-                presentedMotion.TryGetValue(PelvisBody.transform, out RagdollBoneMotion motion);
-                if (!physicsController.BeginCombatSimulation(motion.Linear, motion.Angular, presentedMotion, !recoverable)) return;
-                IsRecovering = IsSettled = false;
-                simulationSeconds = quietSeconds = 0f;
-                ClearGroundContact();
-                DisableOwners();
-                // Reattach the weapon's mass before hit-stop records COM velocities.
-                GetComponent<CombatActor>()?.EnableHeldWeaponPhysics();
-                if (hitStopFrozen) physicsController.SetSimulationSuspended(true);
+                if (!ResumeHeldSimulation()) return;
             }
             IsSettled = false;
             simulationSeconds = quietSeconds = 0f;
             physicsController.AddCombatImpulse(impact.Part, impact.Point, impact.Impulse);
+        }
+
+        private bool ResumeHeldSimulation()
+        {
+            presentedMotion.TryGetValue(PelvisBody.transform, out RagdollBoneMotion motion);
+            if (!physicsController.BeginCombatSimulation(motion.Linear, motion.Angular, presentedMotion, !recoverable)) return false;
+            IsRecovering = IsSettled = false;
+            simulationSeconds = quietSeconds = 0f;
+            ClearGroundContact();
+            DisableOwners();
+            // Reattach the weapon's mass before hit-stop records COM velocities.
+            GetComponent<CombatActor>()?.EnableHeldWeaponPhysics();
+            if (hitStopFrozen) physicsController.SetSimulationSuspended(true);
+            return true;
         }
 
         internal void SetFrozen(bool frozen)
@@ -337,6 +365,7 @@ namespace BarPromenade
             // Shared pause stops PhysX. Neither the round's frozen simulation nor
             // presentation updates own this body's remaining fall time.
             if (!IsActive || IsRecovering || IsSettled || hitStopFrozen || Time.timeScale <= 0f || PauseMenuController.IsAnyPaused) return;
+            AdvanceTerminalConvulsions(Time.fixedDeltaTime);
             physicsController.AdvanceCombatAnchor();
             simulationSeconds += Time.fixedDeltaTime;
             foreach (Rigidbody body in Bodies)
@@ -352,10 +381,10 @@ namespace BarPromenade
             // fastest fingertip/joint to stop made every temporary fall hit a 4 s timeout.
             float speed = recoverable ? Mathf.Max(CentralSpeed(physicsController.PelvisBody),
                 CentralSpeed(physicsController.ChestBody)) : MaximumBodySpeed;
-            quietSeconds = speed < (recoverable ? .65f : .12f) ? quietSeconds + Time.fixedDeltaTime : 0f;
+            quietSeconds = !IsConvulsing && speed < (recoverable ? .65f : .12f) ? quietSeconds + Time.fixedDeltaTime : 0f;
             bool readyToRise = hasSupport && simulationSeconds >= .45f &&
                 (quietSeconds >= .18f || (supportSeconds >= 1.1f && speed < 1f));
-            bool terminalRest = (simulationSeconds >= 1f && quietSeconds >= .5f) || simulationSeconds >= 4f;
+            bool terminalRest = !IsConvulsing && ((simulationSeconds >= 1f && quietSeconds >= .5f) || simulationSeconds >= 4f);
             if (recoverable ? readyToRise : terminalRest)
             {
                 physicsController.FreezeInPlace();
@@ -366,10 +395,40 @@ namespace BarPromenade
         private static float CentralSpeed(Rigidbody body) => body == null ? 0f :
             body.linearVelocity.magnitude + body.angularVelocity.magnitude * .12f;
 
+        private void AdvanceTerminalConvulsions(float seconds)
+        {
+            if (!IsConvulsing) return;
+            convulsionSeconds = Mathf.Min(ConvulsionDuration, convulsionSeconds + seconds);
+            while (convulsionPulseCount < ConvulsionPulseTimes.Length &&
+                convulsionSeconds >= ConvulsionPulseTimes[convulsionPulseCount])
+            {
+                int pulse = convulsionPulseCount++;
+                // The irregular contractions act through the current physical joints.
+                // Equal and opposite torques keep them internal to the body, while the
+                // envelope loses strength independently of later bullet impulses.
+                float envelope = Mathf.Pow(1f - ConvulsionPulseTimes[pulse] / ConvulsionDuration, 1.45f);
+                float direction = (pulse & 1) == 0 ? -1f : 1f;
+                float strength = envelope * direction;
+                bool left = pulse % 3 != 1;
+                physicsController.AddCombatContraction(Player3DAnatomicalPart.Torso, strength * .30f);
+                physicsController.AddCombatContraction(left ? Player3DAnatomicalPart.LeftForearm :
+                    Player3DAnatomicalPart.RightForearm, strength * .085f);
+                physicsController.AddCombatContraction(left ? Player3DAnatomicalPart.RightShin :
+                    Player3DAnatomicalPart.LeftShin, -strength * .23f);
+                physicsController.AddCombatContraction(left ? Player3DAnatomicalPart.RightUpperArm :
+                    Player3DAnatomicalPart.LeftUpperArm, strength * .11f);
+                physicsController.AddCombatContraction(left ? Player3DAnatomicalPart.LeftThigh :
+                    Player3DAnatomicalPart.RightThigh, strength * .29f);
+            }
+        }
+
         public void Cancel()
         {
             ClearGroundContact();
             hitStopFrozen = false;
+            terminalConvulsionsStarted = false;
+            convulsionSeconds = 0f;
+            convulsionPulseCount = 0;
             if (!IsActive) return;
             IsActive = IsSettled = IsRecovering = recoverable = hitStopFrozen = false;
             simulationSeconds = quietSeconds = 0f;

@@ -5,8 +5,9 @@
 - **Барный Променад / Bar Promenade** is a playable Windows/PC Unity vertical
   slice with a runtime-composed coastal city, mountain road, alpine village
   and their interiors. Detailed world facts live in [current-world.md](current-world.md).
-- Unity `6000.6.4f1`, URP `17.6.0`, Input System `1.20.0`. Actual versions are
-  owned by `ProjectSettings/ProjectVersion.txt` and `Packages/manifest.json`.
+- Unity `6000.6.4f1`, URP `17.6.0`, Input System `1.20.0`;versions:
+  `ProjectSettings/ProjectVersion.txt`, `Packages/manifest.json`.
+  Editor Play reloads domain+scene (`m_EnterPlayModeOptions=0`).
 - One active PC quality/pipeline profile applies the PS1 composite after URP
   post-processing. Keyboard, mouse and gamepad retain their existing controls.
 - Thirteen scenes are enabled in `ProjectSettings/EditorBuildSettings.asset`:
@@ -78,9 +79,9 @@ repair commands. Generation/publication: [../tools/README.md](../tools/README.md
 
 ## Implemented capabilities
 
-- CombatTest:bar/pistol;NPC bar/3AI;fresh:dummy/freecam;bar-Q-Step:focus.
-  Gun8/∞:recoil/stablecam/streak/cases/slide/handmag-rack/SFX/resume/E own;
-  head0HP/wounds/bleed/corpse;world:chips/holes;rise≠grip;gap:pierce/balance.
+- CombatTest:bar/gun8∞;NPCbar/3AI;aim-strafe/Step/recoil/reload.
+  Head sectors/brains;blood fades24s;terminal convulsions;corpse hits.
+  World chips/holes;gap:pierce/balance.
 - City: 20 metre types; district heights, curved old/service streets,
   courts/passages/wings, unified ground; river/shore, church and Route 01.
   First unpaused dock entry starts finite port→factory→shop supply once;

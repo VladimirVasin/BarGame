@@ -10,6 +10,8 @@ namespace BarPromenade
     public sealed partial class CombatBloodEffects : MonoBehaviour
     {
         public const int MaximumDrops = 256, MaximumStains = 48;
+        public const float ProjectileBleedLifetimeSeconds = 24f;
+        private const float ActorBloodBudget = 800f;
         private sealed class Drop
         {
             public Transform Transform;
@@ -28,7 +30,14 @@ namespace BarPromenade
         private sealed class Injury
         {
             public CombatDamageMarks Marks;
-            public float BleedSeconds, Remainder, ProjectileRemainder;
+            public float BleedSeconds, Remainder, BloodAge, PulsePhase;
+            public float RemainingBlood = ActorBloodBudget;
+            public bool HasProjectileBleed, HeadTrauma;
+            public readonly float[] WoundBirth = new float[CombatDamageMarks.MaximumProjectileWounds];
+            public readonly float[] WoundRemainder = new float[CombatDamageMarks.MaximumProjectileWounds];
+            public Transform HeadSource;
+            public Vector3 HeadLocalPoint, HeadLocalDirection;
+            public float HeadRemainder, PoolFlowStep;
             public int BleedingDrops;
             public float GroundSeconds;
             public DefeatPool Pool;
@@ -67,7 +76,8 @@ namespace BarPromenade
         public int BleedCount
         {
             get { int count = 0; foreach (Injury injury in injuries.Values)
-                if (injury.BleedSeconds > 0f || injury.Marks.ProjectileCount > 0) count++; return count; }
+                if (injury.BleedSeconds > 0f && injury.RemainingBlood >= 1f ||
+                    ProjectilePressure(injury) > 0f && HasProjectileSource(injury)) count++; return count; }
         }
         public float TotalStainArea
         {
@@ -76,6 +86,10 @@ namespace BarPromenade
         public int WoundCountFor(CombatActor actor) => actor != null && injuries.TryGetValue(actor, out Injury injury) ? injury.Marks.Count : 0;
         public int ProjectileWoundCountFor(CombatActor actor) => actor != null && injuries.TryGetValue(actor, out Injury injury) ? injury.Marks.ProjectileCount : 0;
         public int BleedingDropCountFor(CombatActor actor) => actor != null && injuries.TryGetValue(actor, out Injury injury) ? injury.BleedingDrops : 0;
+        public float BleedingPressureFor(CombatActor actor) => actor != null && injuries.TryGetValue(actor, out Injury injury) ? ProjectilePressure(injury) : 0f;
+        public float BleedingPulseFor(CombatActor actor) => actor != null && injuries.TryGetValue(actor, out Injury injury) ? Pulse(injury) : 0f;
+        public float BleedingAgeFor(CombatActor actor) => actor != null && injuries.TryGetValue(actor, out Injury injury) ? injury.BloodAge : 0f;
+        public float RemainingBloodFractionFor(CombatActor actor) => actor != null && injuries.TryGetValue(actor, out Injury injury) ? injury.RemainingBlood / ActorBloodBudget : 1f;
         internal bool TryGetProjectileWound(CombatActor actor, int index, out Vector3 point, out Vector3 direction)
         {
             point = direction = Vector3.zero;
@@ -135,6 +149,19 @@ namespace BarPromenade
         public void Emit(CombatActor actor, Vector3 point, Vector3 direction, float damage) =>
             Emit(actor, point, direction, damage, false, false);
 
+        // The destroyed head's original skin is hidden. Keep its open cut on the
+        // surviving world rig instead of sampling that now-invisible wound.
+        public void SetHeadBleedSource(CombatActor actor, Transform retainedRigSource, Vector3 worldPoint, Vector3 worldOutward)
+        {
+            if (actor == null || !injuries.TryGetValue(actor, out Injury injury)) return;
+            injury.HeadSource = retainedRigSource;
+            injury.HeadRemainder = 0f;
+            if (retainedRigSource == null || !Finite(worldPoint) || !Finite(worldOutward))
+            { injury.HeadSource = null; return; }
+            injury.HeadLocalPoint = retainedRigSource.InverseTransformPoint(worldPoint);
+            injury.HeadLocalDirection = retainedRigSource.InverseTransformDirection(worldOutward.normalized);
+        }
+
         private void Emit(CombatActor actor, Vector3 point, Vector3 direction, float damage, bool projectile, bool head)
         {
             if (!IsInitialized || actor == null || damage <= 0f || float.IsNaN(damage) || float.IsInfinity(damage) || !Finite(point) || !Finite(direction)) return;
@@ -144,11 +171,19 @@ namespace BarPromenade
                 injuries.Add(actor, injury);
             }
             Vector3 incoming = direction.sqrMagnitude > .0001f ? direction.normalized : actor.transform.forward;
-            injury.Marks.Add(point, incoming, projectile);
-            Vector3 origin = injury.Marks.Count > 0 ? injury.Marks.BleedPosition : point;
+            int oldWounds = injury.Marks.ProjectileCount;
+            injury.Marks.Add(point, incoming, projectile, head);
+            if (projectile)
+            {
+                injury.HasProjectileBleed = true;
+                injury.HeadTrauma |= head;
+                for (int i = oldWounds; i < injury.Marks.ProjectileCount; i++) injury.WoundBirth[i] = injury.BloodAge;
+            }
+            Vector3 origin = projectile ? point : injury.Marks.Count > 0 ? injury.Marks.BleedPosition : point;
             Vector3 outward = injury.Marks.Count > 0 ? injury.Marks.BleedDirection : -incoming;
             int amount = Mathf.Clamp(12 + Mathf.RoundToInt(damage * .24f), 12, 26);
-            if (projectile) amount = head ? 46 : 32;
+            if (projectile) amount = head ? 144 : 56;
+            amount = SpendBlood(injury, amount);
             for (int i = 0; i < amount; i++)
             {
                 Vector3 scatter = new Vector3(Range(-1f, 1f), Range(-.25f, 1f), Range(-1f, 1f));
@@ -157,10 +192,15 @@ namespace BarPromenade
                 if (projectile)
                     velocity = outward * Range(2.2f, head ? 4.8f : 4f) + incoming * Range(.1f, .35f) +
                         scatter * Range(.65f, 1.4f) + Vector3.up * Range(.4f, 1.3f);
-                SpawnDrop(origin + outward * .022f, velocity, Range(.021f, projectile ? .045f : .039f));
+                // Most of a destructive head impact follows the bullet through
+                // the head; a smaller fan returns from the entry side.
+                if (projectile && head)
+                    velocity = (i < amount * .7f ? incoming : outward) * Range(3.2f, 7.2f) +
+                        scatter * Range(.9f, 2.8f) + Vector3.up * Range(.3f, 1.8f);
+                SpawnDrop(origin + outward * .022f, velocity, Range(.021f, head ? .065f : projectile ? .05f : .039f));
             }
-            // Bullet wounds remain emitters until reset, including after defeat.
-            // Ordinary melee wounds keep their existing finite bleed.
+            // All wounds share the actor's remaining supply. Another impact
+            // adds a source and burst, but never rewinds the actor's bleed clock.
             if (!projectile)
             {
                 injury.BleedSeconds = Mathf.Clamp(.35f + damage * .026f, .6f, 1.4f);
@@ -177,8 +217,7 @@ namespace BarPromenade
             {
                 Injury injury = pair.Value;
                 injury.Marks.RefreshVisibility();
-                AdvanceDefeatPool(pair.Key, injury, seconds);
-                if (pair.Key == null || !pair.Key.isActiveAndEnabled) continue;
+                if (pair.Key == null || !pair.Key.isActiveAndEnabled) { ResetDefeatPool(injury); continue; }
                 if (injury.BleedSeconds > 0f)
                 {
                     float time = Mathf.Min(injury.BleedSeconds, seconds);
@@ -186,19 +225,10 @@ namespace BarPromenade
                     injury.Remainder += time * 8f;
                     int count = Mathf.FloorToInt(injury.Remainder);
                     injury.Remainder -= count;
-                    SpawnBleedingDrops(injury, injury.Marks.BleedPosition, injury.Marks.BleedDirection, count);
+                    SpawnBleedingDrops(injury, injury.Marks.BleedPosition, injury.Marks.BleedDirection, count, 0f, 0f);
                 }
-                int wounds = injury.Marks.ProjectileCount;
-                if (wounds == 0) continue;
-                // Every hole keeps flowing; a heavily shot body shares a bounded
-                // drop budget instead of allocating more particles each second.
-                injury.ProjectileRemainder += seconds * Mathf.Min(8f, 64f / wounds);
-                int projectileDrops = Mathf.FloorToInt(injury.ProjectileRemainder);
-                injury.ProjectileRemainder -= projectileDrops;
-                if (projectileDrops == 0) continue;
-                for (int wound = 0; wound < wounds; wound++)
-                    if (injury.Marks.TryGetProjectileBleed(wound, out Vector3 point, out Vector3 direction))
-                        SpawnBleedingDrops(injury, point, direction, projectileDrops);
+                AdvanceProjectileBleeding(injury, seconds);
+                AdvanceDefeatPool(pair.Key, injury, seconds);
             }
             // Sweeps use the complete travelled segment, so a hitch cannot
             // teleport a drop through the floor or the arena's low obstacles.
@@ -223,7 +253,7 @@ namespace BarPromenade
                     }
                     if (!float.IsPositiveInfinity(nearest))
                     {
-                        if (contact.normal.y > .65f) Deposit(contact.point, contact.normal, contact.collider, drop.Size);
+                        Deposit(contact.point, contact.normal, contact.collider, drop.Size);
                         collided = true;
                     }
                 }
@@ -242,11 +272,89 @@ namespace BarPromenade
             }
         }
 
-        private void SpawnBleedingDrops(Injury injury, Vector3 point, Vector3 direction, int count)
+        private void AdvanceProjectileBleeding(Injury injury, float seconds)
         {
+            injury.PoolFlowStep = 0f;
+            if (!injury.HasProjectileBleed || injury.BloodAge >= ProjectileBleedLifetimeSeconds) return;
+            float endAge = Mathf.Min(ProjectileBleedLifetimeSeconds, injury.BloodAge + seconds);
+            float remaining = endAge - injury.BloodAge;
+            // Sample the shared pulse in bounded small slices. Large caller
+            // steps must not accidentally sample only a trough or a peak.
+            while (remaining > .00001f)
+            {
+                float step = Mathf.Min(remaining, 1f / 30f);
+                injury.BloodAge = Mathf.Min(ProjectileBleedLifetimeSeconds, injury.BloodAge + step);
+                injury.PulsePhase = Mathf.Repeat(injury.PulsePhase + step /
+                    Mathf.Lerp(.68f, 1.55f, injury.BloodAge / ProjectileBleedLifetimeSeconds), 1f);
+                float pressure = ProjectilePressure(injury), pulse = Pulse(injury);
+                if (pressure > 0f)
+                {
+                    int wounds = injury.Marks.ProjectileCount;
+                    float sourceWeight = injury.HeadSource != null ? 2.4f : 0f;
+                    for (int i = 0; i < wounds; i++)
+                        if (injury.Marks.TryGetProjectileBleed(i, out _, out _)) sourceWeight += WoundStrength(injury, i);
+                    if (sourceWeight > 0f) injury.PoolFlowStep += step * pressure * (.35f + .65f * pulse) / 2.8f;
+                    // Many injuries divide one bounded rate and one blood supply.
+                    float rateScale = sourceWeight > 0f ? Mathf.Min(1f, 3.5f / sourceWeight) : 0f;
+                    for (int i = 0; i < wounds; i++)
+                    {
+                        if (!injury.Marks.TryGetProjectileBleed(i, out Vector3 point, out Vector3 direction)) continue;
+                        injury.WoundRemainder[i] += step * (2.5f + 46f * pulse) * pressure * WoundStrength(injury, i) * rateScale;
+                        int count = Mathf.FloorToInt(injury.WoundRemainder[i]);
+                        injury.WoundRemainder[i] -= count;
+                        SpawnBleedingDrops(injury, point, direction, count, pressure, pulse);
+                    }
+                    if (injury.HeadSource != null)
+                    {
+                        injury.HeadRemainder += step * (5f + 110f * pulse) * pressure * rateScale;
+                        int count = Mathf.FloorToInt(injury.HeadRemainder);
+                        injury.HeadRemainder -= count;
+                        SpawnBleedingDrops(injury, injury.HeadSource.TransformPoint(injury.HeadLocalPoint),
+                            injury.HeadSource.TransformDirection(injury.HeadLocalDirection), count, pressure, pulse);
+                    }
+                }
+                remaining -= step;
+            }
+            injury.BloodAge = endAge;
+        }
+
+        private static bool HasProjectileSource(Injury injury)
+        {
+            if (injury.HeadSource != null) return true;
+            for (int i = 0; i < injury.Marks.ProjectileCount; i++)
+                if (injury.Marks.TryGetProjectileBleed(i, out _, out _)) return true;
+            return false;
+        }
+
+        private static float WoundStrength(Injury injury, int index) =>
+            Mathf.Clamp01(1f - (injury.BloodAge - injury.WoundBirth[index]) / ProjectileBleedLifetimeSeconds);
+
+        private static float ProjectilePressure(Injury injury) => !injury.HasProjectileBleed || injury.RemainingBlood < 1f ? 0f :
+            Mathf.Pow(Mathf.Clamp01(1f - injury.BloodAge / ProjectileBleedLifetimeSeconds), 1.15f) *
+            Mathf.Sqrt(injury.RemainingBlood / ActorBloodBudget);
+
+        private static float Pulse(Injury injury) =>
+            Mathf.Clamp01(Mathf.Pow(Mathf.Max(0f, Mathf.Cos(injury.PulsePhase * Mathf.PI * 2f)), 8f) +
+                .18f * Mathf.Pow(Mathf.Max(0f, Mathf.Cos((injury.PulsePhase - .16f) * Mathf.PI * 2f)), 12f));
+
+        private static int SpendBlood(Injury injury, int requested)
+        {
+            int count = Mathf.Min(requested, Mathf.FloorToInt(injury.RemainingBlood));
+            injury.RemainingBlood = Mathf.Max(0f, injury.RemainingBlood - count);
+            return count;
+        }
+
+        private void SpawnBleedingDrops(Injury injury, Vector3 point, Vector3 direction, int count, float pressure, float pulse)
+        {
+            count = SpendBlood(injury, count);
             for (int i = 0; i < count; i++)
-                SpawnDrop(point + direction * .015f,
-                    direction * Range(.1f, .3f) + Vector3.down * Range(.15f, .35f), Range(.018f, .03f));
+            {
+                float force = pressure * pulse;
+                Vector3 scatter = new Vector3(Range(-.16f, .16f), Range(-.1f, .18f), Range(-.16f, .16f));
+                SpawnDrop(point + direction * .018f, direction * Range(.1f, .3f + force * 2.4f) +
+                    Vector3.down * Range(.12f, .28f) + scatter * force,
+                    Range(.014f, .024f + pressure * .017f));
+            }
             injury.BleedingDrops += count;
         }
 
@@ -260,7 +368,7 @@ namespace BarPromenade
                 drops[index] = drop;
             }
             if (!drop.Active) ActiveDropCount++;
-            drop.Active = true; drop.Position = point; drop.Velocity = velocity; drop.Life = 1.7f; drop.Size = size;
+            drop.Active = true; drop.Position = point; drop.Velocity = velocity; drop.Life = 2.4f; drop.Size = size;
             drop.Transform.gameObject.SetActive(true); drop.Transform.position = point;
             if (velocity.sqrMagnitude > .001f) drop.Transform.rotation = Quaternion.FromToRotation(dropAxis, velocity.normalized);
             drop.Transform.localScale = dropScale * (size / dropUnit);
@@ -272,7 +380,9 @@ namespace BarPromenade
             float best = float.PositiveInfinity;
             foreach (Stain stain in stains)
             {
-                if (stain == null || !stain.Active || stain.Surface != surface) continue;
+                if (stain == null || !stain.Active || stain.Surface != surface ||
+                    Vector3.Dot(stain.SurfaceNormal, normal) < .98f ||
+                    Mathf.Abs(Vector3.Dot(stain.Position - point, normal)) > .025f) continue;
                 float distance = Vector3.Distance(stain.Position, point);
                 if (distance > .16f + stain.TargetDiameter * .4f || distance >= best) continue;
                 best = distance; closest = stain;
@@ -281,7 +391,8 @@ namespace BarPromenade
             {
                 // Add a drop-sized area rather than a linear radius term, so
                 // repeated hits leave a local puddle instead of flooding the floor.
-                closest.TargetDiameter = Mathf.Min(.65f, Mathf.Sqrt(closest.TargetDiameter * closest.TargetDiameter + size * size * 9f));
+                closest.TargetDiameter = Mathf.Min(normal.y > .65f ? .9f : .46f,
+                    Mathf.Sqrt(closest.TargetDiameter * closest.TargetDiameter + size * size * 9f));
                 return;
             }
             int index = stainCursor++ % MaximumStains;
@@ -318,18 +429,14 @@ namespace BarPromenade
         public void ResetActor(CombatActor actor)
         {
             if (actor == null || !injuries.TryGetValue(actor, out Injury injury)) return;
-            injury.Marks.Reset(); injury.BleedSeconds = injury.Remainder = injury.ProjectileRemainder = 0f;
-            injury.BleedingDrops = 0;
-            ResetDefeatPool(injury);
+            ResetInjury(injury);
         }
 
         public void ResetRound()
         {
             foreach (Injury injury in injuries.Values)
             {
-                injury.Marks.Reset(); injury.BleedSeconds = injury.Remainder = injury.ProjectileRemainder = 0f;
-                injury.BleedingDrops = 0;
-                ResetDefeatPool(injury);
+                ResetInjury(injury);
             }
             foreach (Drop drop in drops)
                 if (drop != null) { drop.Active = false; if (drop.Transform != null) drop.Transform.gameObject.SetActive(false); }
@@ -337,6 +444,17 @@ namespace BarPromenade
                 if (stain != null) { stain.Active = false; if (stain.Transform != null) stain.Transform.gameObject.SetActive(false); }
             ActiveDropCount = StainCount = EmissionCount = dropCursor = stainCursor = 0;
             randomState = 0x63BA74D1u;
+        }
+
+        private static void ResetInjury(Injury injury)
+        {
+            injury.Marks.Reset(); injury.BleedSeconds = injury.Remainder = injury.BloodAge = injury.PulsePhase = 0f;
+            injury.RemainingBlood = ActorBloodBudget; injury.HasProjectileBleed = injury.HeadTrauma = false;
+            injury.HeadSource = null; injury.HeadLocalPoint = injury.HeadLocalDirection = Vector3.zero;
+            injury.HeadRemainder = injury.PoolFlowStep = 0f; injury.BleedingDrops = 0;
+            Array.Clear(injury.WoundBirth, 0, injury.WoundBirth.Length);
+            Array.Clear(injury.WoundRemainder, 0, injury.WoundRemainder.Length);
+            ResetDefeatPool(injury);
         }
 
         private void OnDisable() => ResetRound();

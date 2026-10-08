@@ -5,11 +5,13 @@ namespace BarPromenade
     public sealed partial class CombatTestRoot
     {
         public CombatBloodEffects BloodEffects { get; private set; }
+        public CombatHeadDestruction HeadEffects { get; private set; }
 
         private void InitializeDamageEffects()
         {
             BloodEffects = gameObject.AddComponent<CombatBloodEffects>();
             BloodEffects.Initialize(transform);
+            HeadEffects = gameObject.AddComponent<CombatHeadDestruction>();
             Hero.ImpactReceived += ShowImpact;
             Opponent.ImpactReceived += ShowImpact;
             Hero.DamageReset += ResetActorDamage;
@@ -23,6 +25,7 @@ namespace BarPromenade
             if ((impact.Result == MeleeHitResult.Hit || impact.Result == MeleeHitResult.GuardBroken) &&
                 (impact.Kind == CombatImpactKind.Projectile || impact.Kind == CombatImpactKind.Weapon && impact.Damage > 0f) && BloodEffects != null)
                 BloodEffects.Emit(impact);
+            HeadEffects?.Apply(impact, BloodEffects);
             // Weight is time: a few frozen substeps and a small kick on the shoulder
             // camera, graded by what happened. A killing blow holds longest.
             bool heavy = impact.AttackPower >= .5f;
@@ -59,6 +62,7 @@ namespace BarPromenade
         private void ResetActorDamage(CombatActor actor)
         {
             if (BloodEffects != null) BloodEffects.ResetActor(actor);
+            HeadEffects?.ResetActor(actor);
             SparkEffects?.Clear();
         }
 

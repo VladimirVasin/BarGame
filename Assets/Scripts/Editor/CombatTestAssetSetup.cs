@@ -115,6 +115,7 @@ namespace BarPromenade.Editor
         public static void BuildOrThrow()
         {
             CombatBloodAssetSetup.BuildOrThrow();
+            CombatGoreAssetSetup.BuildOrThrow();
             foreach (string file in new[] { "Arena.fbx", "Crowbar.fbx", "CombatActions.fbx", "CombatNpcActions.fbx", "CombatTest3D.json" })
                 AssetDatabase.ImportAsset(Folder + file, ImportAssetOptions.ForceSynchronousImport);
             Manifest manifest = JsonUtility.FromJson<Manifest>(File.ReadAllText(ManifestPath));

@@ -148,7 +148,7 @@ namespace BarPromenade
                 CombatActor target = p.Source == hero ? opponent : hero;
                 CombatHurtboxes.Hit hit = default;
                 bool body = target != null && target.Hurtboxes != null &&
-                    target.Hurtboxes.SweepSphere(from, to, Radius, p.Velocity.normalized, out hit);
+                    target.Hurtboxes.SweepProjectile(from, to, Radius, p.Velocity.normalized, out hit);
                 if (body && (!world || hit.Fraction < worldHit.Fraction))
                 {
                     p.Position = hit.Point;
@@ -290,7 +290,7 @@ namespace BarPromenade
             return fraction <= 1f;
         }
 
-        private static bool IsWorld(Collider shape, CombatActor source) => shape != null &&
+        internal static bool IsWorld(Collider shape, CombatActor source) => shape != null &&
             !shape.isTrigger && (source == null || !shape.transform.IsChildOf(source.transform)) &&
             shape.GetComponentInParent<CombatActor>() == null;
         private static bool Finite(Vector3 value) => !float.IsNaN(value.x) && !float.IsInfinity(value.x) &&

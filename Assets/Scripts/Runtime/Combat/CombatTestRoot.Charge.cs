@@ -124,6 +124,7 @@ namespace BarPromenade
             ResetPistolCrosshair();
             Projectiles?.Clear();
             Casings?.Clear();
+            HeadEffects?.ResetRound();
             ReleaseFreePistolAim();
             Hero?.SuspendPistolInput();
             Hero?.CancelPendingKick("disabled");

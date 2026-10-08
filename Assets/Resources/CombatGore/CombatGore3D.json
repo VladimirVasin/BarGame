@@ -1,0 +1,7524 @@
+{
+  "generator": "tools/build-combat-gore-3d-model.py",
+  "version": 1,
+  "test_only": true,
+  "angle_count": 8,
+  "band_count": 2,
+  "sector_count": 16,
+  "brain_count": 8,
+  "sector_angle_axes": "atan2(Unity Z, Unity X), positive around model up",
+  "sources": {
+    "Hero": {
+      "path": "Assets/Player3D/V2/Models/PlayerCharacter3DV2.fbx",
+      "sha256": "7506bfec3effbcdeed55e25d5ae98ff0ea5ea998cef1b2b3391d25a47e7f9533",
+      "renderers": [
+        "GEO_Ear.L",
+        "GEO_Ear.R",
+        "GEO_FaceSurface",
+        "GEO_HairBack",
+        "GEO_HairBackLength",
+        "GEO_HairBackStrand0",
+        "GEO_HairBackStrand1",
+        "GEO_HairBackStrand2",
+        "GEO_HairCap",
+        "GEO_HairCrownStrand0.L",
+        "GEO_HairCrownStrand0.R",
+        "GEO_HairCrownStrand1.L",
+        "GEO_HairCrownStrand1.R",
+        "GEO_HairCurtain.L",
+        "GEO_HairCurtain.R",
+        "GEO_HairLeftLength",
+        "GEO_HairLeftStrand0",
+        "GEO_HairLeftStrand1",
+        "GEO_HairLeftStrand2",
+        "GEO_HairNape",
+        "GEO_HairRightLength",
+        "GEO_HairRightStrand0",
+        "GEO_HairRightStrand1",
+        "GEO_HairRightStrand2",
+        "GEO_HairTemple.L",
+        "GEO_HairTemple.R",
+        "GEO_Head"
+      ]
+    },
+    "Npc": {
+      "path": "Assets/Resources/VillageLife/StationWorker.fbx",
+      "sha256": "30e52d740e2c690fe5c7ffefca945fc0689dd41da0977f4cdf05fbb002ddc4d7",
+      "renderers": [
+        "CLO_Hat_everydayBand",
+        "CLO_Hat_everydayCrown",
+        "CLO_Hat_everydayPeak",
+        "CLO_Hat_warmCrown",
+        "CLO_Hat_warmEarFlap.L",
+        "CLO_Hat_warmEarFlap.R",
+        "CLO_Hat_warmFrontFold",
+        "CLO_Hat_workCrown",
+        "CLO_Hat_workFold",
+        "GEO_Ear.L",
+        "GEO_Ear.R",
+        "GEO_EarFold.L",
+        "GEO_EarFold.R",
+        "GEO_FaceSurface",
+        "GEO_Head",
+        "HAIR_Crown",
+        "HAIR_Sides"
+      ]
+    }
+  },
+  "models": {
+    "Hero": {
+      "source_renderers": [
+        {
+          "name": "GEO_Ear.L",
+          "polygons": 24,
+          "sector_polygons": [
+            12,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            12,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "GEO_Ear.R",
+          "polygons": 24,
+          "sector_polygons": [
+            0,
+            0,
+            0,
+            12,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            12,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "GEO_FaceSurface",
+          "polygons": 72,
+          "sector_polygons": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            24,
+            24,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            12,
+            12,
+            0
+          ]
+        },
+        {
+          "name": "GEO_HairBack",
+          "polygons": 60,
+          "sector_polygons": [
+            0,
+            6,
+            4,
+            0,
+            0,
+            0,
+            0,
+            0,
+            8,
+            18,
+            16,
+            8,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "GEO_HairBackLength",
+          "polygons": 276,
+          "sector_polygons": [
+            21,
+            68,
+            79,
+            10,
+            0,
+            0,
+            0,
+            0,
+            13,
+            36,
+            36,
+            13,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "GEO_HairBackStrand0",
+          "polygons": 28,
+          "sector_polygons": [
+            0,
+            18,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            10,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "GEO_HairBackStrand1",
+          "polygons": 28,
+          "sector_polygons": [
+            0,
+            10,
+            8,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            10,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "GEO_HairBackStrand2",
+          "polygons": 28,
+          "sector_polygons": [
+            0,
+            0,
+            18,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            10,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "GEO_HairCap",
+          "polygons": 120,
+          "sector_polygons": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            14,
+            16,
+            16,
+            14,
+            16,
+            14,
+            15,
+            15
+          ]
+        },
+        {
+          "name": "GEO_HairCrownStrand0.L",
+          "polygons": 44,
+          "sector_polygons": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            2,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            38,
+            4
+          ]
+        },
+        {
+          "name": "GEO_HairCrownStrand0.R",
+          "polygons": 44,
+          "sector_polygons": [
+            0,
+            0,
+            0,
+            0,
+            2,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            4,
+            38,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "GEO_HairCrownStrand1.L",
+          "polygons": 44,
+          "sector_polygons": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            2,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            34,
+            8
+          ]
+        },
+        {
+          "name": "GEO_HairCrownStrand1.R",
+          "polygons": 44,
+          "sector_polygons": [
+            0,
+            0,
+            0,
+            0,
+            2,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            8,
+            34,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "GEO_HairCurtain.L",
+          "polygons": 140,
+          "sector_polygons": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            10,
+            0,
+            0,
+            0,
+            0,
+            0,
+            9,
+            94,
+            27
+          ]
+        },
+        {
+          "name": "GEO_HairCurtain.R",
+          "polygons": 140,
+          "sector_polygons": [
+            0,
+            0,
+            0,
+            0,
+            10,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            27,
+            94,
+            9,
+            0
+          ]
+        },
+        {
+          "name": "GEO_HairLeftLength",
+          "polygons": 360,
+          "sector_polygons": [
+            113,
+            40,
+            0,
+            0,
+            0,
+            0,
+            0,
+            79,
+            51,
+            28,
+            0,
+            0,
+            0,
+            0,
+            2,
+            47
+          ]
+        },
+        {
+          "name": "GEO_HairLeftStrand0",
+          "polygons": 28,
+          "sector_polygons": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            18,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            10
+          ]
+        },
+        {
+          "name": "GEO_HairLeftStrand1",
+          "polygons": 28,
+          "sector_polygons": [
+            18,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            10,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "GEO_HairLeftStrand2",
+          "polygons": 28,
+          "sector_polygons": [
+            18,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            10,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "GEO_HairNape",
+          "polygons": 496,
+          "sector_polygons": [
+            40,
+            32,
+            32,
+            40,
+            27,
+            0,
+            0,
+            27,
+            54,
+            53,
+            53,
+            54,
+            42,
+            0,
+            0,
+            42
+          ]
+        },
+        {
+          "name": "GEO_HairRightLength",
+          "polygons": 360,
+          "sector_polygons": [
+            0,
+            0,
+            37,
+            109,
+            74,
+            0,
+            0,
+            0,
+            0,
+            0,
+            31,
+            55,
+            52,
+            2,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "GEO_HairRightStrand0",
+          "polygons": 28,
+          "sector_polygons": [
+            0,
+            0,
+            0,
+            0,
+            18,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            10,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "GEO_HairRightStrand1",
+          "polygons": 28,
+          "sector_polygons": [
+            0,
+            0,
+            0,
+            18,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            10,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "GEO_HairRightStrand2",
+          "polygons": 28,
+          "sector_polygons": [
+            0,
+            0,
+            0,
+            18,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            10,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "GEO_HairTemple.L",
+          "polygons": 32,
+          "sector_polygons": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            32,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "GEO_HairTemple.R",
+          "polygons": 32,
+          "sector_polygons": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            32,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "GEO_Head",
+          "polygons": 192,
+          "sector_polygons": [
+            14,
+            15,
+            15,
+            14,
+            12,
+            13,
+            13,
+            12,
+            12,
+            13,
+            13,
+            12,
+            10,
+            7,
+            7,
+            10
+          ]
+        }
+      ],
+      "head_center_unity_m": [
+        0.0,
+        1.6048,
+        -0.029
+      ],
+      "head_bounds_unity_m": {
+        "min": [
+          -0.088,
+          1.488,
+          -0.112
+        ],
+        "max": [
+          0.088,
+          1.7216,
+          0.054
+        ],
+        "size": [
+          0.176,
+          0.2336,
+          0.166
+        ]
+      },
+      "band_height_unity_m": 1.614144,
+      "shell_volumes_m3": {
+        "0": 0.0001360327,
+        "1": 0.0001269983,
+        "2": 0.0001269983,
+        "3": 0.0001360327,
+        "4": 0.0001304897,
+        "5": 0.0001355351,
+        "6": 0.0001355351,
+        "7": 0.0001304897,
+        "8": 0.0001132497,
+        "9": 0.0001172916,
+        "10": 0.0001172917,
+        "11": 0.0001132497,
+        "12": 0.0001336493,
+        "13": 9.37252e-05,
+        "14": 9.37252e-05,
+        "15": 0.0001336493
+      },
+      "meshes": [
+        {
+          "name": "Brain00__GEO_Head",
+          "vertices": 42,
+          "polygons": 50,
+          "triangles": 80,
+          "bounds_unity_m": {
+            "min": [
+              -0.060511,
+              1.580272,
+              -0.078579
+            ],
+            "max": [
+              0.001881,
+              1.636336,
+              -0.02054
+            ],
+            "size": [
+              0.062392,
+              0.056064,
+              0.058039
+            ]
+          },
+          "semantic_sha256": "233030b38c22aeda17b2b98a199eb3bd81e5fc0a0bb4c9925249c4ace574c5a0"
+        },
+        {
+          "name": "Brain01__GEO_Head",
+          "vertices": 42,
+          "polygons": 50,
+          "triangles": 80,
+          "bounds_unity_m": {
+            "min": [
+              -0.004882,
+              1.580272,
+              -0.079199
+            ],
+            "max": [
+              0.055708,
+              1.636336,
+              -0.01992
+            ],
+            "size": [
+              0.06059,
+              0.056064,
+              0.059279
+            ]
+          },
+          "semantic_sha256": "3d3981c1d01bd1bd65929a30b567d2ac81bb3a821bd7dfe9fb6eeb026cd474d6"
+        },
+        {
+          "name": "Brain02__GEO_Head",
+          "vertices": 42,
+          "polygons": 50,
+          "triangles": 80,
+          "bounds_unity_m": {
+            "min": [
+              -0.060991,
+              1.580272,
+              -0.02589
+            ],
+            "max": [
+              0.001043,
+              1.636336,
+              0.033011
+            ],
+            "size": [
+              0.062034,
+              0.056064,
+              0.058901
+            ]
+          },
+          "semantic_sha256": "36450f6bfc4995819463198e0165a7f8f9fbf5e3b901d093258bff4b67daf9a2"
+        },
+        {
+          "name": "Brain03__GEO_Head",
+          "vertices": 42,
+          "polygons": 50,
+          "triangles": 80,
+          "bounds_unity_m": {
+            "min": [
+              -0.002307,
+              1.580272,
+              -0.025182
+            ],
+            "max": [
+              0.060202,
+              1.636336,
+              0.032302
+            ],
+            "size": [
+              0.062509,
+              0.056064,
+              0.057484
+            ]
+          },
+          "semantic_sha256": "e78c7bc4131998e7c9f6f134cb9a7a97f05e908c43fa74462fecd54abda500f0"
+        },
+        {
+          "name": "Brain04__GEO_Head",
+          "vertices": 42,
+          "polygons": 50,
+          "triangles": 80,
+          "bounds_unity_m": {
+            "min": [
+              -0.055953,
+              1.624656,
+              -0.079271
+            ],
+            "max": [
+              0.004962,
+              1.68072,
+              -0.019849
+            ],
+            "size": [
+              0.060915,
+              0.056064,
+              0.059422
+            ]
+          },
+          "semantic_sha256": "7a7788e19e83e6f1362fc404590bbd26b1e0c8c29ba2f6803904e5b457a67d3b"
+        },
+        {
+          "name": "Brain05__GEO_Head",
+          "vertices": 42,
+          "polygons": 50,
+          "triangles": 80,
+          "bounds_unity_m": {
+            "min": [
+              -0.000648,
+              1.624656,
+              -0.079155
+            ],
+            "max": [
+              0.061152,
+              1.68072,
+              -0.019965
+            ],
+            "size": [
+              0.0618,
+              0.056064,
+              0.05919
+            ]
+          },
+          "semantic_sha256": "6e1744224c5d8d0904fc68704996deae13692d138e876b7cde2b505fd09eb1a6"
+        },
+        {
+          "name": "Brain06__GEO_Head",
+          "vertices": 42,
+          "polygons": 50,
+          "triangles": 80,
+          "bounds_unity_m": {
+            "min": [
+              -0.059854,
+              1.624656,
+              -0.02487
+            ],
+            "max": [
+              0.002727,
+              1.68072,
+              0.03199
+            ],
+            "size": [
+              0.062581,
+              0.056064,
+              0.05686
+            ]
+          },
+          "semantic_sha256": "1fb15959ee9e715c4359f6fceed9aae380d851cd9d04c3ec6b17477a1baa0a7b"
+        },
+        {
+          "name": "Brain07__GEO_Head",
+          "vertices": 42,
+          "polygons": 50,
+          "triangles": 80,
+          "bounds_unity_m": {
+            "min": [
+              -0.004981,
+              1.624656,
+              -0.026168
+            ],
+            "max": [
+              0.056245,
+              1.68072,
+              0.033289
+            ],
+            "size": [
+              0.061226,
+              0.056064,
+              0.059457
+            ]
+          },
+          "semantic_sha256": "8bd1660f2a5c1aea2c056c7184ae35ccd0e6821b51c022b6bd6158617b914519"
+        },
+        {
+          "name": "Sector00__GEO_Ear.L",
+          "vertices": 13,
+          "polygons": 12,
+          "triangles": 12,
+          "bounds_unity_m": {
+            "min": [
+              0.078742,
+              1.585,
+              -0.02825
+            ],
+            "max": [
+              0.101258,
+              1.63,
+              -0.01175
+            ],
+            "size": [
+              0.022516,
+              0.045,
+              0.0165
+            ]
+          },
+          "semantic_sha256": "0e12b87877140ab96b315961e906745ff27169af0df2529ed398d52334eebe2e"
+        },
+        {
+          "name": "Sector00__GEO_HairBackLength",
+          "vertices": 19,
+          "polygons": 21,
+          "triangles": 21,
+          "bounds_unity_m": {
+            "min": [
+              0.063719,
+              1.522336,
+              0.037411
+            ],
+            "max": [
+              0.083313,
+              1.609076,
+              0.04989
+            ],
+            "size": [
+              0.019594,
+              0.08674,
+              0.012479
+            ]
+          },
+          "semantic_sha256": "67035ac2952efd6687b828e0aca8acada9d5a949387a7524763fd18bb006bdc8"
+        },
+        {
+          "name": "Sector00__GEO_HairLeftLength",
+          "vertices": 72,
+          "polygons": 113,
+          "triangles": 113,
+          "bounds_unity_m": {
+            "min": [
+              0.063902,
+              1.519693,
+              -0.036126
+            ],
+            "max": [
+              0.11464,
+              1.623625,
+              0.05162
+            ],
+            "size": [
+              0.050738,
+              0.103932,
+              0.087746
+            ]
+          },
+          "semantic_sha256": "88f2a123f037f8b1ea288c5751ab207339699412654b9f92c1351a7a476730a2"
+        },
+        {
+          "name": "Sector00__GEO_HairLeftStrand1",
+          "vertices": 12,
+          "polygons": 18,
+          "triangles": 18,
+          "bounds_unity_m": {
+            "min": [
+              0.094049,
+              1.533044,
+              -0.023878
+            ],
+            "max": [
+              0.111354,
+              1.626764,
+              -0.017219
+            ],
+            "size": [
+              0.017305,
+              0.09372,
+              0.006659
+            ]
+          },
+          "semantic_sha256": "791c892ea9cbacdee8d012ba09b5a18c873dd001788b665921a5860ea848ba96"
+        },
+        {
+          "name": "Sector00__GEO_HairLeftStrand2",
+          "vertices": 12,
+          "polygons": 18,
+          "triangles": 18,
+          "bounds_unity_m": {
+            "min": [
+              0.086961,
+              1.541915,
+              0.025934
+            ],
+            "max": [
+              0.099237,
+              1.627047,
+              0.033368
+            ],
+            "size": [
+              0.012276,
+              0.085132,
+              0.007434
+            ]
+          },
+          "semantic_sha256": "0d40f4b1fa4098736b851fd5dec39c8281d21a4c5facf1e238184ded13c05bce"
+        },
+        {
+          "name": "Sector00__GEO_HairNape",
+          "vertices": 32,
+          "polygons": 40,
+          "triangles": 40,
+          "bounds_unity_m": {
+            "min": [
+              0.055154,
+              1.557107,
+              -0.033412
+            ],
+            "max": [
+              0.095,
+              1.64,
+              0.037862
+            ],
+            "size": [
+              0.039846,
+              0.082893,
+              0.071274
+            ]
+          },
+          "semantic_sha256": "c819f47e2ad8efd8f1d9b824a683185dc517acf0950c68e5b0821dfb1c544da3"
+        },
+        {
+          "name": "Sector00__GEO_Head",
+          "vertices": 14,
+          "polygons": 14,
+          "triangles": 14,
+          "bounds_unity_m": {
+            "min": [
+              0.0,
+              1.488,
+              -0.039
+            ],
+            "max": [
+              0.088,
+              1.623,
+              0.035416
+            ],
+            "size": [
+              0.088,
+              0.135,
+              0.074416
+            ]
+          },
+          "semantic_sha256": "3f014ce9ded7fad26eb3a52c8982c6e08c0d02121a41cdb9b2733f54e71e0734"
+        },
+        {
+          "name": "Sector00__Interior",
+          "vertices": 28,
+          "polygons": 26,
+          "triangles": 38,
+          "bounds_unity_m": {
+            "min": [
+              0.0,
+              1.488,
+              -0.039
+            ],
+            "max": [
+              0.088,
+              1.623,
+              0.035416
+            ],
+            "size": [
+              0.088,
+              0.135,
+              0.074416
+            ]
+          },
+          "semantic_sha256": "da486caf01497aaa0b6f62988f27bcd3bfaa8a67b59fa902ac53b8db08d57cc7"
+        },
+        {
+          "name": "Sector01__GEO_HairBack",
+          "vertices": 8,
+          "polygons": 6,
+          "triangles": 6,
+          "bounds_unity_m": {
+            "min": [
+              -0.018355,
+              1.582,
+              0.00103
+            ],
+            "max": [
+              0.059397,
+              1.603381,
+              0.07097
+            ],
+            "size": [
+              0.077752,
+              0.021381,
+              0.06994
+            ]
+          },
+          "semantic_sha256": "e47f572eb80334350312e82f9ea112b4ff62f7f5e71ee944267f32c730874a1e"
+        },
+        {
+          "name": "Sector01__GEO_HairBackLength",
+          "vertices": 49,
+          "polygons": 68,
+          "triangles": 68,
+          "bounds_unity_m": {
+            "min": [
+              -0.0,
+              1.521572,
+              0.037411
+            ],
+            "max": [
+              0.076421,
+              1.609091,
+              0.086021
+            ],
+            "size": [
+              0.076421,
+              0.087519,
+              0.04861
+            ]
+          },
+          "semantic_sha256": "8575b6e17d5372f3108560f44ecfde289a37e42f1b280612478e34905b5ef441"
+        },
+        {
+          "name": "Sector01__GEO_HairBackStrand0",
+          "vertices": 12,
+          "polygons": 18,
+          "triangles": 18,
+          "bounds_unity_m": {
+            "min": [
+              0.05759,
+              1.543949,
+              0.057577
+            ],
+            "max": [
+              0.065285,
+              1.611534,
+              0.065339
+            ],
+            "size": [
+              0.007695,
+              0.067585,
+              0.007762
+            ]
+          },
+          "semantic_sha256": "382cf7feeec2343c9f2a214997133c2f6ca840a2f1c83c27c2adcf5703d9e600"
+        },
+        {
+          "name": "Sector01__GEO_HairBackStrand1",
+          "vertices": 8,
+          "polygons": 10,
+          "triangles": 10,
+          "bounds_unity_m": {
+            "min": [
+              -0.00305,
+              1.532802,
+              0.081757
+            ],
+            "max": [
+              0.008167,
+              1.572217,
+              0.086759
+            ],
+            "size": [
+              0.011217,
+              0.039415,
+              0.005002
+            ]
+          },
+          "semantic_sha256": "4584b0db834816f56260e5153c945642f5679e2ae74d9018b9df5e762797616e"
+        },
+        {
+          "name": "Sector01__GEO_HairLeftLength",
+          "vertices": 28,
+          "polygons": 40,
+          "triangles": 40,
+          "bounds_unity_m": {
+            "min": [
+              0.045407,
+              1.525687,
+              0.034448
+            ],
+            "max": [
+              0.08066,
+              1.623638,
+              0.063724
+            ],
+            "size": [
+              0.035253,
+              0.097951,
+              0.029276
+            ]
+          },
+          "semantic_sha256": "0075b07035c073fea13e8abca276f3f75d7197cdef1b8c4ae3653c5ace5e51d2"
+        },
+        {
+          "name": "Sector01__GEO_HairNape",
+          "vertices": 28,
+          "polygons": 32,
+          "triangles": 32,
+          "bounds_unity_m": {
+            "min": [
+              0.0,
+              1.558788,
+              0.028669
+            ],
+            "max": [
+              0.067175,
+              1.64,
+              0.065367
+            ],
+            "size": [
+              0.067175,
+              0.081212,
+              0.036698
+            ]
+          },
+          "semantic_sha256": "12ecf8e895af2053956750792676385565c19aaac91bd331f6565e7a26c2bc56"
+        },
+        {
+          "name": "Sector01__GEO_Head",
+          "vertices": 15,
+          "polygons": 15,
+          "triangles": 15,
+          "bounds_unity_m": {
+            "min": [
+              0.0,
+              1.488,
+              -0.02
+            ],
+            "max": [
+              0.07621,
+              1.623,
+              0.05
+            ],
+            "size": [
+              0.07621,
+              0.135,
+              0.07
+            ]
+          },
+          "semantic_sha256": "d55db61284302042f1e57b100f567205cbe1eb4776cfeca067b91989b3d5d4ee"
+        },
+        {
+          "name": "Sector01__Interior",
+          "vertices": 30,
+          "polygons": 28,
+          "triangles": 41,
+          "bounds_unity_m": {
+            "min": [
+              0.0,
+              1.488,
+              -0.02198
+            ],
+            "max": [
+              0.07621,
+              1.623,
+              0.05
+            ],
+            "size": [
+              0.07621,
+              0.135,
+              0.07198
+            ]
+          },
+          "semantic_sha256": "1412bae23c1bdd9c5469f594d7032583c351edc6fd7a6367d3591de6a2509543"
+        },
+        {
+          "name": "Sector02__GEO_HairBack",
+          "vertices": 6,
+          "polygons": 4,
+          "triangles": 4,
+          "bounds_unity_m": {
+            "min": [
+              -0.059397,
+              1.582,
+              0.00103
+            ],
+            "max": [
+              0.0,
+              1.603381,
+              0.07097
+            ],
+            "size": [
+              0.059397,
+              0.021381,
+              0.06994
+            ]
+          },
+          "semantic_sha256": "4fa29e35b7fa6291659f7de7f1485d9aa96298a2f5a7ab8d9e53f1a61702df96"
+        },
+        {
+          "name": "Sector02__GEO_HairBackLength",
+          "vertices": 53,
+          "polygons": 79,
+          "triangles": 79,
+          "bounds_unity_m": {
+            "min": [
+              -0.079953,
+              1.521572,
+              0.037411
+            ],
+            "max": [
+              0.004,
+              1.609091,
+              0.086021
+            ],
+            "size": [
+              0.083953,
+              0.087519,
+              0.04861
+            ]
+          },
+          "semantic_sha256": "346509a1d1923bc2bd64453a0d30d9b0efb96d7b929a6a7c515ee8bcefb6f4ea"
+        },
+        {
+          "name": "Sector02__GEO_HairBackStrand1",
+          "vertices": 8,
+          "polygons": 8,
+          "triangles": 8,
+          "bounds_unity_m": {
+            "min": [
+              -0.011551,
+              1.571269,
+              0.085359
+            ],
+            "max": [
+              0.001451,
+              1.61144,
+              0.087228
+            ],
+            "size": [
+              0.013002,
+              0.040171,
+              0.001869
+            ]
+          },
+          "semantic_sha256": "4515260f3a4b343e4923e5ea4f06f41c4e68253f0fd7415d5ec41874fc8a83a9"
+        },
+        {
+          "name": "Sector02__GEO_HairBackStrand2",
+          "vertices": 12,
+          "polygons": 18,
+          "triangles": 18,
+          "bounds_unity_m": {
+            "min": [
+              -0.071558,
+              1.545411,
+              0.059662
+            ],
+            "max": [
+              -0.051225,
+              1.611861,
+              0.06419
+            ],
+            "size": [
+              0.020333,
+              0.06645,
+              0.004528
+            ]
+          },
+          "semantic_sha256": "aad6b078c79a09fffa58e484ec9e2db28362e2c3e20c3f7079aa33a1ec958d23"
+        },
+        {
+          "name": "Sector02__GEO_HairNape",
+          "vertices": 28,
+          "polygons": 32,
+          "triangles": 32,
+          "bounds_unity_m": {
+            "min": [
+              -0.067175,
+              1.557,
+              0.028669
+            ],
+            "max": [
+              0.0,
+              1.64,
+              0.065367
+            ],
+            "size": [
+              0.067175,
+              0.083,
+              0.036698
+            ]
+          },
+          "semantic_sha256": "863506c740fca0cee1285a7ec0a5d84a71de5ab8e1a03aac3fca4f76ac2975e1"
+        },
+        {
+          "name": "Sector02__GEO_HairRightLength",
+          "vertices": 27,
+          "polygons": 37,
+          "triangles": 37,
+          "bounds_unity_m": {
+            "min": [
+              -0.08066,
+              1.527687,
+              0.034448
+            ],
+            "max": [
+              -0.045407,
+              1.623638,
+              0.062138
+            ],
+            "size": [
+              0.035253,
+              0.095951,
+              0.02769
+            ]
+          },
+          "semantic_sha256": "31d8fa380844d0ca91dce59dc408fc8a47d313ede0c45206ce9d006e21d7389d"
+        },
+        {
+          "name": "Sector02__GEO_Head",
+          "vertices": 15,
+          "polygons": 15,
+          "triangles": 15,
+          "bounds_unity_m": {
+            "min": [
+              -0.07621,
+              1.488,
+              -0.02
+            ],
+            "max": [
+              0.0,
+              1.623,
+              0.05
+            ],
+            "size": [
+              0.07621,
+              0.135,
+              0.07
+            ]
+          },
+          "semantic_sha256": "30d67673487676f6e55dcebd4055f6c7c587aa43ecac89c6a194aeb89aa04450"
+        },
+        {
+          "name": "Sector02__Interior",
+          "vertices": 30,
+          "polygons": 28,
+          "triangles": 41,
+          "bounds_unity_m": {
+            "min": [
+              -0.07621,
+              1.488,
+              -0.02198
+            ],
+            "max": [
+              0.0,
+              1.623,
+              0.05
+            ],
+            "size": [
+              0.07621,
+              0.135,
+              0.07198
+            ]
+          },
+          "semantic_sha256": "957b1b81e4ca70d2c05e0ff92756b8eea60f6a8296cbcbdfaa5f72164a617fd3"
+        },
+        {
+          "name": "Sector03__GEO_Ear.R",
+          "vertices": 13,
+          "polygons": 12,
+          "triangles": 12,
+          "bounds_unity_m": {
+            "min": [
+              -0.101258,
+              1.585,
+              -0.02825
+            ],
+            "max": [
+              -0.078742,
+              1.63,
+              -0.01175
+            ],
+            "size": [
+              0.022516,
+              0.045,
+              0.0165
+            ]
+          },
+          "semantic_sha256": "8f53120bfae5e62023c718f4650e926f91d5f7ddd30b9c8e51aefadf6dc5bd6a"
+        },
+        {
+          "name": "Sector03__GEO_HairBackLength",
+          "vertices": 12,
+          "polygons": 10,
+          "triangles": 10,
+          "bounds_unity_m": {
+            "min": [
+              -0.083313,
+              1.540428,
+              0.039
+            ],
+            "max": [
+              -0.066866,
+              1.609076,
+              0.04989
+            ],
+            "size": [
+              0.016447,
+              0.068648,
+              0.01089
+            ]
+          },
+          "semantic_sha256": "3bb339800f6ca374c4cb7d4d62e3a159c41cb83f1344ce38f46400fd6882f1c0"
+        },
+        {
+          "name": "Sector03__GEO_HairNape",
+          "vertices": 32,
+          "polygons": 40,
+          "triangles": 40,
+          "bounds_unity_m": {
+            "min": [
+              -0.095,
+              1.557124,
+              -0.033412
+            ],
+            "max": [
+              -0.055154,
+              1.64,
+              0.037862
+            ],
+            "size": [
+              0.039846,
+              0.082876,
+              0.071274
+            ]
+          },
+          "semantic_sha256": "e78db59d73397998e8be403ff38a9664b92bc780089872d390e6409ced8c88cb"
+        },
+        {
+          "name": "Sector03__GEO_HairRightLength",
+          "vertices": 72,
+          "polygons": 109,
+          "triangles": 109,
+          "bounds_unity_m": {
+            "min": [
+              -0.11464,
+              1.521693,
+              -0.036126
+            ],
+            "max": [
+              -0.063902,
+              1.623625,
+              0.05162
+            ],
+            "size": [
+              0.050738,
+              0.101932,
+              0.087746
+            ]
+          },
+          "semantic_sha256": "d1a1cfb804fa14ee098f9f1e184f2b6b5795e56d27552e3337c7fb5b02feb6ce"
+        },
+        {
+          "name": "Sector03__GEO_HairRightStrand1",
+          "vertices": 12,
+          "polygons": 18,
+          "triangles": 18,
+          "bounds_unity_m": {
+            "min": [
+              -0.111354,
+              1.535044,
+              -0.023878
+            ],
+            "max": [
+              -0.094049,
+              1.626668,
+              -0.017219
+            ],
+            "size": [
+              0.017305,
+              0.091624,
+              0.006659
+            ]
+          },
+          "semantic_sha256": "2764d17b5ad1ff92410fd7c67db34d6bfa5798f3cc3cb07d245453dbbd1e42b1"
+        },
+        {
+          "name": "Sector03__GEO_HairRightStrand2",
+          "vertices": 12,
+          "polygons": 18,
+          "triangles": 18,
+          "bounds_unity_m": {
+            "min": [
+              -0.099236,
+              1.543915,
+              0.025934
+            ],
+            "max": [
+              -0.086961,
+              1.626959,
+              0.033367
+            ],
+            "size": [
+              0.012275,
+              0.083044,
+              0.007433
+            ]
+          },
+          "semantic_sha256": "2a8d9677884b816e19ed00f7e89794f33432f70c754b95fe4b81f081ccc24bee"
+        },
+        {
+          "name": "Sector03__GEO_Head",
+          "vertices": 14,
+          "polygons": 14,
+          "triangles": 14,
+          "bounds_unity_m": {
+            "min": [
+              -0.088,
+              1.488,
+              -0.039
+            ],
+            "max": [
+              0.0,
+              1.623,
+              0.035416
+            ],
+            "size": [
+              0.088,
+              0.135,
+              0.074416
+            ]
+          },
+          "semantic_sha256": "160f935b79bab6ac70825997e5c542e322875303aaf79dd18fe245364147ceae"
+        },
+        {
+          "name": "Sector03__Interior",
+          "vertices": 28,
+          "polygons": 26,
+          "triangles": 38,
+          "bounds_unity_m": {
+            "min": [
+              -0.088,
+              1.488,
+              -0.039
+            ],
+            "max": [
+              0.0,
+              1.623,
+              0.035416
+            ],
+            "size": [
+              0.088,
+              0.135,
+              0.074416
+            ]
+          },
+          "semantic_sha256": "fdaf717da9ddaf32b99ded05e54cf4776f7295d9ad91d0a00c59f52c19115279"
+        },
+        {
+          "name": "Sector04__GEO_HairCrownStrand0.R",
+          "vertices": 4,
+          "polygons": 2,
+          "triangles": 2,
+          "bounds_unity_m": {
+            "min": [
+              -0.093268,
+              1.606838,
+              -0.067
+            ],
+            "max": [
+              -0.092886,
+              1.607162,
+              -0.0656
+            ],
+            "size": [
+              0.000382,
+              0.000324,
+              0.0014
+            ]
+          },
+          "semantic_sha256": "afec1ee187d9eb375ff8d1e93427dfb6d74cd5da227ac57e6353df64dfee5969"
+        },
+        {
+          "name": "Sector04__GEO_HairCrownStrand1.R",
+          "vertices": 4,
+          "polygons": 2,
+          "triangles": 2,
+          "bounds_unity_m": {
+            "min": [
+              -0.097536,
+              1.606897,
+              -0.067
+            ],
+            "max": [
+              -0.09708,
+              1.607102,
+              -0.0656
+            ],
+            "size": [
+              0.000456,
+              0.000205,
+              0.0014
+            ]
+          },
+          "semantic_sha256": "260a33d9934b3ec8a9139389f09be6b8aea2d478c5d5b35304a37ba6bccee8b1"
+        },
+        {
+          "name": "Sector04__GEO_HairCurtain.R",
+          "vertices": 12,
+          "polygons": 10,
+          "triangles": 10,
+          "bounds_unity_m": {
+            "min": [
+              -0.1,
+              1.606,
+              -0.066
+            ],
+            "max": [
+              -0.09,
+              1.606,
+              -0.058
+            ],
+            "size": [
+              0.01,
+              0.0,
+              0.008
+            ]
+          },
+          "semantic_sha256": "eadb3f27d7c2781cc66ea55d3e17f7ed04e069beed745b4487a8d652c52147f4"
+        },
+        {
+          "name": "Sector04__GEO_HairNape",
+          "vertices": 23,
+          "polygons": 27,
+          "triangles": 27,
+          "bounds_unity_m": {
+            "min": [
+              -0.093175,
+              1.557124,
+              -0.074568
+            ],
+            "max": [
+              -0.055154,
+              1.64,
+              -0.030876
+            ],
+            "size": [
+              0.038021,
+              0.082876,
+              0.043692
+            ]
+          },
+          "semantic_sha256": "dfb1da5b88b616bb165eddb742530374cfbc92588007367dcb8484d3f1d521a7"
+        },
+        {
+          "name": "Sector04__GEO_HairRightLength",
+          "vertices": 49,
+          "polygons": 74,
+          "triangles": 74,
+          "bounds_unity_m": {
+            "min": [
+              -0.110534,
+              1.521693,
+              -0.080946
+            ],
+            "max": [
+              -0.064682,
+              1.623635,
+              -0.020674
+            ],
+            "size": [
+              0.045852,
+              0.101942,
+              0.060272
+            ]
+          },
+          "semantic_sha256": "1267e4432c2f3d504b008ab8954b3e7714aca594a1a8b557273507959d3d754c"
+        },
+        {
+          "name": "Sector04__GEO_HairRightStrand0",
+          "vertices": 12,
+          "polygons": 18,
+          "triangles": 18,
+          "bounds_unity_m": {
+            "min": [
+              -0.089589,
+              1.530895,
+              -0.072279
+            ],
+            "max": [
+              -0.077965,
+              1.627144,
+              -0.056734
+            ],
+            "size": [
+              0.011624,
+              0.096249,
+              0.015545
+            ]
+          },
+          "semantic_sha256": "cc281b65b570c89fe71f88072ebf38b1bcd72f766b09e9c8c7d2355e0fc8d1fb"
+        },
+        {
+          "name": "Sector04__GEO_Head",
+          "vertices": 13,
+          "polygons": 12,
+          "triangles": 12,
+          "bounds_unity_m": {
+            "min": [
+              -0.088,
+              1.488,
+              -0.101148
+            ],
+            "max": [
+              0.0,
+              1.623,
+              -0.02
+            ],
+            "size": [
+              0.088,
+              0.135,
+              0.081148
+            ]
+          },
+          "semantic_sha256": "b493a7fa4a8ae9839778cbfe795d5e6ffd2f03ba13eee7e035b5f94b35aa11c1"
+        },
+        {
+          "name": "Sector04__Interior",
+          "vertices": 26,
+          "polygons": 24,
+          "triangles": 36,
+          "bounds_unity_m": {
+            "min": [
+              -0.088,
+              1.488,
+              -0.101148
+            ],
+            "max": [
+              0.0,
+              1.623,
+              -0.02
+            ],
+            "size": [
+              0.088,
+              0.135,
+              0.081148
+            ]
+          },
+          "semantic_sha256": "a46e0f10bf6255aacde975c38aebd1563ac574d56e177f1763ce75bf2b1c8c78"
+        },
+        {
+          "name": "Sector05__GEO_FaceSurface",
+          "vertices": 20,
+          "polygons": 24,
+          "triangles": 24,
+          "bounds_unity_m": {
+            "min": [
+              -0.07912,
+              1.49,
+              -0.1338
+            ],
+            "max": [
+              0.0,
+              1.624,
+              -0.05844
+            ],
+            "size": [
+              0.07912,
+              0.134,
+              0.07536
+            ]
+          },
+          "semantic_sha256": "f6555abdf2a5be5ce6a4e50c77b5acc948fdcfc527561763d02118162610535a"
+        },
+        {
+          "name": "Sector05__GEO_Head",
+          "vertices": 13,
+          "polygons": 13,
+          "triangles": 13,
+          "bounds_unity_m": {
+            "min": [
+              -0.074478,
+              1.488,
+              -0.112
+            ],
+            "max": [
+              0.0,
+              1.623,
+              -0.02
+            ],
+            "size": [
+              0.074478,
+              0.135,
+              0.092
+            ]
+          },
+          "semantic_sha256": "f4395ee46d31332a204e82ab5f06f6c4f8f26e32368833e9f40dea935570facd"
+        },
+        {
+          "name": "Sector05__Interior",
+          "vertices": 26,
+          "polygons": 24,
+          "triangles": 35,
+          "bounds_unity_m": {
+            "min": [
+              -0.074478,
+              1.488,
+              -0.112
+            ],
+            "max": [
+              0.0,
+              1.623,
+              -0.02
+            ],
+            "size": [
+              0.074478,
+              0.135,
+              0.092
+            ]
+          },
+          "semantic_sha256": "eabd760e3504623360ff182c64fcd72d949831555bfb705c779b0446a2bd2f0e"
+        },
+        {
+          "name": "Sector06__GEO_FaceSurface",
+          "vertices": 20,
+          "polygons": 24,
+          "triangles": 24,
+          "bounds_unity_m": {
+            "min": [
+              0.0,
+              1.49,
+              -0.1338
+            ],
+            "max": [
+              0.07912,
+              1.624,
+              -0.05844
+            ],
+            "size": [
+              0.07912,
+              0.134,
+              0.07536
+            ]
+          },
+          "semantic_sha256": "b5728db0c6d89d54184d02d5245f57d89bff06d478dbd40f2c20d846d0aefe8e"
+        },
+        {
+          "name": "Sector06__GEO_Head",
+          "vertices": 13,
+          "polygons": 13,
+          "triangles": 13,
+          "bounds_unity_m": {
+            "min": [
+              0.0,
+              1.488,
+              -0.112
+            ],
+            "max": [
+              0.074478,
+              1.623,
+              -0.02
+            ],
+            "size": [
+              0.074478,
+              0.135,
+              0.092
+            ]
+          },
+          "semantic_sha256": "a307ce800ed83eee296d1463b666eb38725c3382f4c66e1fac0a1ec7d2713917"
+        },
+        {
+          "name": "Sector06__Interior",
+          "vertices": 26,
+          "polygons": 24,
+          "triangles": 35,
+          "bounds_unity_m": {
+            "min": [
+              0.0,
+              1.488,
+              -0.112
+            ],
+            "max": [
+              0.074478,
+              1.623,
+              -0.02
+            ],
+            "size": [
+              0.074478,
+              0.135,
+              0.092
+            ]
+          },
+          "semantic_sha256": "428cd77d1e77762e29d44179fbabf499882d0642127ceac5e7a1c9c5510731ce"
+        },
+        {
+          "name": "Sector07__GEO_HairCrownStrand0.L",
+          "vertices": 4,
+          "polygons": 2,
+          "triangles": 2,
+          "bounds_unity_m": {
+            "min": [
+              0.092886,
+              1.606838,
+              -0.067
+            ],
+            "max": [
+              0.093268,
+              1.607162,
+              -0.0656
+            ],
+            "size": [
+              0.000382,
+              0.000324,
+              0.0014
+            ]
+          },
+          "semantic_sha256": "4a72607dfdbbc9f5fde8d95f9db177a47c0007d2ef155853bf3893a1b52aec05"
+        },
+        {
+          "name": "Sector07__GEO_HairCrownStrand1.L",
+          "vertices": 4,
+          "polygons": 2,
+          "triangles": 2,
+          "bounds_unity_m": {
+            "min": [
+              0.09708,
+              1.606897,
+              -0.067
+            ],
+            "max": [
+              0.097536,
+              1.607102,
+              -0.0656
+            ],
+            "size": [
+              0.000456,
+              0.000205,
+              0.0014
+            ]
+          },
+          "semantic_sha256": "6595e056938b8c98c13bc1e3ecc6a5457fbc5fcea1a0282f8b612b788b885b91"
+        },
+        {
+          "name": "Sector07__GEO_HairCurtain.L",
+          "vertices": 12,
+          "polygons": 10,
+          "triangles": 10,
+          "bounds_unity_m": {
+            "min": [
+              0.09,
+              1.606,
+              -0.066
+            ],
+            "max": [
+              0.1,
+              1.606,
+              -0.058
+            ],
+            "size": [
+              0.01,
+              0.0,
+              0.008
+            ]
+          },
+          "semantic_sha256": "297d210349078a1da5f24bb654a5b6f35c5deda89d85cc57b5bbf00ebb05b2d7"
+        },
+        {
+          "name": "Sector07__GEO_HairLeftLength",
+          "vertices": 50,
+          "polygons": 79,
+          "triangles": 79,
+          "bounds_unity_m": {
+            "min": [
+              0.064682,
+              1.519693,
+              -0.084844
+            ],
+            "max": [
+              0.110534,
+              1.623635,
+              -0.020674
+            ],
+            "size": [
+              0.045852,
+              0.103942,
+              0.06417
+            ]
+          },
+          "semantic_sha256": "95b1958a8a342707c3fd022b45d0ba50ac218013ac26cfa80bca33f572128934"
+        },
+        {
+          "name": "Sector07__GEO_HairLeftStrand0",
+          "vertices": 12,
+          "polygons": 18,
+          "triangles": 18,
+          "bounds_unity_m": {
+            "min": [
+              0.077965,
+              1.528895,
+              -0.072282
+            ],
+            "max": [
+              0.089591,
+              1.627225,
+              -0.056734
+            ],
+            "size": [
+              0.011626,
+              0.09833,
+              0.015548
+            ]
+          },
+          "semantic_sha256": "331a6116894ce14b3544818aa7c7dde62e0bbc95b32873d3e47599e4556b3935"
+        },
+        {
+          "name": "Sector07__GEO_HairNape",
+          "vertices": 23,
+          "polygons": 27,
+          "triangles": 27,
+          "bounds_unity_m": {
+            "min": [
+              0.055154,
+              1.55744,
+              -0.074568
+            ],
+            "max": [
+              0.093175,
+              1.64,
+              -0.030876
+            ],
+            "size": [
+              0.038021,
+              0.08256,
+              0.043692
+            ]
+          },
+          "semantic_sha256": "47f910914db65734fa3e56483701f951236a85541a4353c62313c5e3c5d4a722"
+        },
+        {
+          "name": "Sector07__GEO_Head",
+          "vertices": 13,
+          "polygons": 12,
+          "triangles": 12,
+          "bounds_unity_m": {
+            "min": [
+              0.0,
+              1.488,
+              -0.101148
+            ],
+            "max": [
+              0.088,
+              1.623,
+              -0.02
+            ],
+            "size": [
+              0.088,
+              0.135,
+              0.081148
+            ]
+          },
+          "semantic_sha256": "d49d9e545be123d8975df2ac23ab55f735329078c089e3c968a77f3d2b6adbc8"
+        },
+        {
+          "name": "Sector07__Interior",
+          "vertices": 26,
+          "polygons": 24,
+          "triangles": 36,
+          "bounds_unity_m": {
+            "min": [
+              0.0,
+              1.488,
+              -0.101148
+            ],
+            "max": [
+              0.088,
+              1.623,
+              -0.02
+            ],
+            "size": [
+              0.088,
+              0.135,
+              0.081148
+            ]
+          },
+          "semantic_sha256": "05fe3e51f68aacc04a9bbc37cb408a024e4c16a9c5ee3bf601119b1ff21139ef"
+        },
+        {
+          "name": "Sector08__GEO_Ear.L",
+          "vertices": 13,
+          "polygons": 12,
+          "triangles": 12,
+          "bounds_unity_m": {
+            "min": [
+              0.078742,
+              1.6,
+              -0.02825
+            ],
+            "max": [
+              0.101258,
+              1.645,
+              -0.01175
+            ],
+            "size": [
+              0.022516,
+              0.045,
+              0.0165
+            ]
+          },
+          "semantic_sha256": "007c1e1ac58404c8f365ffa73a614a7401e43422c6cc58cca1dc74e7cda4a2ec"
+        },
+        {
+          "name": "Sector08__GEO_HairBack",
+          "vertices": 9,
+          "polygons": 8,
+          "triangles": 8,
+          "bounds_unity_m": {
+            "min": [
+              0.018355,
+              1.603381,
+              -0.013455
+            ],
+            "max": [
+              0.084,
+              1.706619,
+              0.036
+            ],
+            "size": [
+              0.065645,
+              0.103238,
+              0.049455
+            ]
+          },
+          "semantic_sha256": "b2039fe7230f5cfd47b2a1a3ef7a75edf676cf5a77dc384e89d6361c59aa59d5"
+        },
+        {
+          "name": "Sector08__GEO_HairBackLength",
+          "vertices": 11,
+          "polygons": 13,
+          "triangles": 13,
+          "bounds_unity_m": {
+            "min": [
+              0.069302,
+              1.609001,
+              0.039467
+            ],
+            "max": [
+              0.088,
+              1.65,
+              0.04989
+            ],
+            "size": [
+              0.018698,
+              0.040999,
+              0.010423
+            ]
+          },
+          "semantic_sha256": "6903ba29171404aac6539e39a9871f2740834f3f312b6099f2d3a6456a01cd37"
+        },
+        {
+          "name": "Sector08__GEO_HairCap",
+          "vertices": 16,
+          "polygons": 14,
+          "triangles": 14,
+          "bounds_unity_m": {
+            "min": [
+              -0.005222,
+              1.63,
+              -0.035666
+            ],
+            "max": [
+              0.090234,
+              1.751787,
+              0.057136
+            ],
+            "size": [
+              0.095456,
+              0.121787,
+              0.092802
+            ]
+          },
+          "semantic_sha256": "8095667d4f493d07da1a5f16df26544911d3dd511cd78c7af2063451ebfb50a1"
+        },
+        {
+          "name": "Sector08__GEO_HairLeftLength",
+          "vertices": 39,
+          "polygons": 51,
+          "triangles": 51,
+          "bounds_unity_m": {
+            "min": [
+              0.066518,
+              1.623531,
+              -0.038107
+            ],
+            "max": [
+              0.113393,
+              1.696,
+              0.044523
+            ],
+            "size": [
+              0.046875,
+              0.072469,
+              0.08263
+            ]
+          },
+          "semantic_sha256": "e928580436bc6728bb3a1e5733e5d9454d67080b1109face11f1fa7bb0a36afe"
+        },
+        {
+          "name": "Sector08__GEO_HairLeftStrand1",
+          "vertices": 8,
+          "polygons": 10,
+          "triangles": 10,
+          "bounds_unity_m": {
+            "min": [
+              0.091885,
+              1.626489,
+              -0.024394
+            ],
+            "max": [
+              0.111354,
+              1.675345,
+              -0.017892
+            ],
+            "size": [
+              0.019469,
+              0.048856,
+              0.006502
+            ]
+          },
+          "semantic_sha256": "36fc7cd480f337d45272981ce00cefc06dcadf6b854f7165ec9155a792ad88c2"
+        },
+        {
+          "name": "Sector08__GEO_HairLeftStrand2",
+          "vertices": 8,
+          "polygons": 10,
+          "triangles": 10,
+          "bounds_unity_m": {
+            "min": [
+              0.080478,
+              1.626308,
+              0.028259
+            ],
+            "max": [
+              0.099237,
+              1.675484,
+              0.033787
+            ],
+            "size": [
+              0.018759,
+              0.049176,
+              0.005528
+            ]
+          },
+          "semantic_sha256": "0f8769f78c6f136a401b9c6faae831eb28b623ae1dd38093fa2dd4fad4c1eb6f"
+        },
+        {
+          "name": "Sector08__GEO_HairNape",
+          "vertices": 44,
+          "polygons": 54,
+          "triangles": 54,
+          "bounds_unity_m": {
+            "min": [
+              0.045731,
+              1.598,
+              -0.034582
+            ],
+            "max": [
+              0.095,
+              1.713,
+              0.042104
+            ],
+            "size": [
+              0.049269,
+              0.115,
+              0.076686
+            ]
+          },
+          "semantic_sha256": "e98655f69d451097d384f5301a968929f0c6ba76d669cb8b2bc7c276a31ed4b0"
+        },
+        {
+          "name": "Sector08__GEO_HairTemple.L",
+          "vertices": 18,
+          "polygons": 32,
+          "triangles": 32,
+          "bounds_unity_m": {
+            "min": [
+              0.061876,
+              1.597,
+              -0.02565
+            ],
+            "max": [
+              0.086124,
+              1.713,
+              0.017651
+            ],
+            "size": [
+              0.024248,
+              0.116,
+              0.043301
+            ]
+          },
+          "semantic_sha256": "f44a1e90805528db05565a4f43222801733f2a44705cf7bc2218c00aa5134ee6"
+        },
+        {
+          "name": "Sector08__GEO_Head",
+          "vertices": 14,
+          "polygons": 12,
+          "triangles": 12,
+          "bounds_unity_m": {
+            "min": [
+              0.0,
+              1.623,
+              -0.034
+            ],
+            "max": [
+              0.088,
+              1.7216,
+              0.043416
+            ],
+            "size": [
+              0.088,
+              0.0986,
+              0.077416
+            ]
+          },
+          "semantic_sha256": "9aaae11a10e28b42cc4be9c64a5d7f03396c90a47f7e299a9d384b4a83221a08"
+        },
+        {
+          "name": "Sector08__Interior",
+          "vertices": 28,
+          "polygons": 26,
+          "triangles": 40,
+          "bounds_unity_m": {
+            "min": [
+              0.0,
+              1.618996,
+              -0.034
+            ],
+            "max": [
+              0.088,
+              1.7216,
+              0.043416
+            ],
+            "size": [
+              0.088,
+              0.102604,
+              0.077416
+            ]
+          },
+          "semantic_sha256": "4c36ca9e37c3d190de5650cc3e16ecaf1960dd913707e144d6b877355796d8de"
+        },
+        {
+          "name": "Sector09__GEO_HairBack",
+          "vertices": 19,
+          "polygons": 18,
+          "triangles": 18,
+          "bounds_unity_m": {
+            "min": [
+              -0.025957,
+              1.603381,
+              -0.013455
+            ],
+            "max": [
+              0.084,
+              1.728,
+              0.085455
+            ],
+            "size": [
+              0.109957,
+              0.124619,
+              0.09891
+            ]
+          },
+          "semantic_sha256": "c2147dd60ab3015bd0ecff200bb13664ce52f8905df2cf63446a8f75849d8674"
+        },
+        {
+          "name": "Sector09__GEO_HairBackLength",
+          "vertices": 28,
+          "polygons": 36,
+          "triangles": 36,
+          "bounds_unity_m": {
+            "min": [
+              -0.0,
+              1.608998,
+              0.040353
+            ],
+            "max": [
+              0.08084,
+              1.65,
+              0.086021
+            ],
+            "size": [
+              0.08084,
+              0.041002,
+              0.045668
+            ]
+          },
+          "semantic_sha256": "b37e6ae525496f969b4c29fcfb82dca2780ae7e8e99cecba47e3090054729940"
+        },
+        {
+          "name": "Sector09__GEO_HairBackStrand0",
+          "vertices": 8,
+          "polygons": 10,
+          "triangles": 10,
+          "bounds_unity_m": {
+            "min": [
+              0.05963,
+              1.610659,
+              0.059795
+            ],
+            "max": [
+              0.069916,
+              1.640004,
+              0.065339
+            ],
+            "size": [
+              0.010286,
+              0.029345,
+              0.005544
+            ]
+          },
+          "semantic_sha256": "ebe8656f19d289b1a3d1c1f763dbcec962ee55dc866f2aaa73cd9286a6a7b9d0"
+        },
+        {
+          "name": "Sector09__GEO_HairCap",
+          "vertices": 17,
+          "polygons": 16,
+          "triangles": 16,
+          "bounds_unity_m": {
+            "min": [
+              -0.005222,
+              1.63,
+              -0.035666
+            ],
+            "max": [
+              0.078028,
+              1.751787,
+              0.071177
+            ],
+            "size": [
+              0.08325,
+              0.121787,
+              0.106843
+            ]
+          },
+          "semantic_sha256": "8dda36293b9b039afccba8c9353bffca8cfda7af2c84c32e37524e45d4064c43"
+        },
+        {
+          "name": "Sector09__GEO_HairLeftLength",
+          "vertices": 20,
+          "polygons": 28,
+          "triangles": 28,
+          "bounds_unity_m": {
+            "min": [
+              0.037558,
+              1.623554,
+              0.032002
+            ],
+            "max": [
+              0.08066,
+              1.696,
+              0.066763
+            ],
+            "size": [
+              0.043102,
+              0.072446,
+              0.034761
+            ]
+          },
+          "semantic_sha256": "f2591d1f0bdb945fce568a6ad8ad56f16fe1a95fdb39c257b5d6af6a8cb8309f"
+        },
+        {
+          "name": "Sector09__GEO_HairNape",
+          "vertices": 41,
+          "polygons": 53,
+          "triangles": 53,
+          "bounds_unity_m": {
+            "min": [
+              0.0,
+              1.598,
+              0.013668
+            ],
+            "max": [
+              0.068181,
+              1.713,
+              0.067
+            ],
+            "size": [
+              0.068181,
+              0.115,
+              0.053332
+            ]
+          },
+          "semantic_sha256": "23cf53de2482a8b9a29e8d051d82ad71d4dc6e31204c273f367c7275e5663445"
+        },
+        {
+          "name": "Sector09__GEO_Head",
+          "vertices": 13,
+          "polygons": 13,
+          "triangles": 13,
+          "bounds_unity_m": {
+            "min": [
+              0.0,
+              1.623,
+              -0.018
+            ],
+            "max": [
+              0.072746,
+              1.7216,
+              0.054
+            ],
+            "size": [
+              0.072746,
+              0.0986,
+              0.072
+            ]
+          },
+          "semantic_sha256": "22bdd0a68e2e49da63e0383b1d8eabef1e01767625c04c551a91e046e20af403"
+        },
+        {
+          "name": "Sector09__Interior",
+          "vertices": 26,
+          "polygons": 24,
+          "triangles": 35,
+          "bounds_unity_m": {
+            "min": [
+              0.0,
+              1.618996,
+              -0.02042
+            ],
+            "max": [
+              0.072746,
+              1.7216,
+              0.054
+            ],
+            "size": [
+              0.072746,
+              0.102604,
+              0.07442
+            ]
+          },
+          "semantic_sha256": "fa70981620a761e95b71ce5df2653bd36a168d6fb2e430db5a9b9fa58b5415e8"
+        },
+        {
+          "name": "Sector10__GEO_HairBack",
+          "vertices": 18,
+          "polygons": 16,
+          "triangles": 16,
+          "bounds_unity_m": {
+            "min": [
+              -0.084,
+              1.603381,
+              -0.013455
+            ],
+            "max": [
+              0.025957,
+              1.728,
+              0.085455
+            ],
+            "size": [
+              0.109957,
+              0.124619,
+              0.09891
+            ]
+          },
+          "semantic_sha256": "b3c02982ab42ef8a195bd1f18c270ef0bbcacad098500a0be12a008c3529afbe"
+        },
+        {
+          "name": "Sector10__GEO_HairBackLength",
+          "vertices": 28,
+          "polygons": 36,
+          "triangles": 36,
+          "bounds_unity_m": {
+            "min": [
+              -0.08084,
+              1.608998,
+              0.040353
+            ],
+            "max": [
+              -0.0,
+              1.65,
+              0.086021
+            ],
+            "size": [
+              0.08084,
+              0.041002,
+              0.045668
+            ]
+          },
+          "semantic_sha256": "dcae086ccdff9a6432385fc2e8fd1379be6cabd6f09701555c81e4901d1d6eac"
+        },
+        {
+          "name": "Sector10__GEO_HairBackStrand1",
+          "vertices": 8,
+          "polygons": 10,
+          "triangles": 10,
+          "bounds_unity_m": {
+            "min": [
+              -0.011551,
+              1.61071,
+              0.083564
+            ],
+            "max": [
+              -0.005598,
+              1.63977,
+              0.087228
+            ],
+            "size": [
+              0.005953,
+              0.02906,
+              0.003664
+            ]
+          },
+          "semantic_sha256": "a1f929c3a1378619c93526a3f99a126bce4ba070cd3ee9498e51f581127e0cec"
+        },
+        {
+          "name": "Sector10__GEO_HairBackStrand2",
+          "vertices": 8,
+          "polygons": 10,
+          "triangles": 10,
+          "bounds_unity_m": {
+            "min": [
+              -0.075174,
+              1.610373,
+              0.055428
+            ],
+            "max": [
+              -0.066168,
+              1.639984,
+              0.061837
+            ],
+            "size": [
+              0.009006,
+              0.029611,
+              0.006409
+            ]
+          },
+          "semantic_sha256": "194392cd50a576bfcbf00ef8adf235566ade09c3cec2ded37fe4b8fbf658ff2a"
+        },
+        {
+          "name": "Sector10__GEO_HairCap",
+          "vertices": 16,
+          "polygons": 16,
+          "triangles": 16,
+          "bounds_unity_m": {
+            "min": [
+              -0.079881,
+              1.63,
+              -0.035666
+            ],
+            "max": [
+              0.0,
+              1.751787,
+              0.071177
+            ],
+            "size": [
+              0.079881,
+              0.121787,
+              0.106843
+            ]
+          },
+          "semantic_sha256": "ec5829bc7795faa42b7910eaeb8e35c5e114462a08da8b9b75d561a63f135742"
+        },
+        {
+          "name": "Sector10__GEO_HairNape",
+          "vertices": 41,
+          "polygons": 53,
+          "triangles": 53,
+          "bounds_unity_m": {
+            "min": [
+              -0.068181,
+              1.598,
+              0.013668
+            ],
+            "max": [
+              0.0,
+              1.713,
+              0.067
+            ],
+            "size": [
+              0.068181,
+              0.115,
+              0.053332
+            ]
+          },
+          "semantic_sha256": "94e985a8a9b74b7ff3dc0a3ff9aae9dda82e3d9184a19acd1c2c282f6691605d"
+        },
+        {
+          "name": "Sector10__GEO_HairRightLength",
+          "vertices": 22,
+          "polygons": 31,
+          "triangles": 31,
+          "bounds_unity_m": {
+            "min": [
+              -0.08066,
+              1.595566,
+              0.032002
+            ],
+            "max": [
+              -0.037558,
+              1.694,
+              0.066763
+            ],
+            "size": [
+              0.043102,
+              0.098434,
+              0.034761
+            ]
+          },
+          "semantic_sha256": "e6bea2db25e858eefcbcd1a635ce41e7559d95102427d9021dfbf72d1d20e555"
+        },
+        {
+          "name": "Sector10__GEO_Head",
+          "vertices": 13,
+          "polygons": 13,
+          "triangles": 13,
+          "bounds_unity_m": {
+            "min": [
+              -0.072746,
+              1.623,
+              -0.018
+            ],
+            "max": [
+              0.0,
+              1.7216,
+              0.054
+            ],
+            "size": [
+              0.072746,
+              0.0986,
+              0.072
+            ]
+          },
+          "semantic_sha256": "08c0eacfd0dfd68da94b854610cfd7a3dff1745e6b11c002ecdff30cc3229e69"
+        },
+        {
+          "name": "Sector10__Interior",
+          "vertices": 26,
+          "polygons": 24,
+          "triangles": 35,
+          "bounds_unity_m": {
+            "min": [
+              -0.072746,
+              1.618996,
+              -0.02042
+            ],
+            "max": [
+              0.0,
+              1.7216,
+              0.054
+            ],
+            "size": [
+              0.072746,
+              0.102604,
+              0.07442
+            ]
+          },
+          "semantic_sha256": "6e2952975121aecc0d31b0081da0fb9714b045c3877024a9e418eecd0ba654b6"
+        },
+        {
+          "name": "Sector11__GEO_Ear.R",
+          "vertices": 13,
+          "polygons": 12,
+          "triangles": 12,
+          "bounds_unity_m": {
+            "min": [
+              -0.101258,
+              1.6,
+              -0.02825
+            ],
+            "max": [
+              -0.078742,
+              1.645,
+              -0.01175
+            ],
+            "size": [
+              0.022516,
+              0.045,
+              0.0165
+            ]
+          },
+          "semantic_sha256": "a37e1532d74a303b1ab72fba7f5e09d02e2060e377be32d0027e15b674529606"
+        },
+        {
+          "name": "Sector11__GEO_HairBack",
+          "vertices": 9,
+          "polygons": 8,
+          "triangles": 8,
+          "bounds_unity_m": {
+            "min": [
+              -0.084,
+              1.603381,
+              -0.013455
+            ],
+            "max": [
+              -0.018355,
+              1.706619,
+              0.036
+            ],
+            "size": [
+              0.065645,
+              0.103238,
+              0.049455
+            ]
+          },
+          "semantic_sha256": "9cb04573a900f0c7710ca46951868a86802935de8e815835d11837df00417747"
+        },
+        {
+          "name": "Sector11__GEO_HairBackLength",
+          "vertices": 11,
+          "polygons": 13,
+          "triangles": 13,
+          "bounds_unity_m": {
+            "min": [
+              -0.088,
+              1.609001,
+              0.039467
+            ],
+            "max": [
+              -0.069302,
+              1.65,
+              0.04989
+            ],
+            "size": [
+              0.018698,
+              0.040999,
+              0.010423
+            ]
+          },
+          "semantic_sha256": "7fe401048f14d7808104818fe036bc97d4c857bec3487c68ca22eb04d0dd36ed"
+        },
+        {
+          "name": "Sector11__GEO_HairCap",
+          "vertices": 15,
+          "polygons": 14,
+          "triangles": 14,
+          "bounds_unity_m": {
+            "min": [
+              -0.089039,
+              1.63,
+              -0.035666
+            ],
+            "max": [
+              0.0,
+              1.751787,
+              0.053477
+            ],
+            "size": [
+              0.089039,
+              0.121787,
+              0.089143
+            ]
+          },
+          "semantic_sha256": "470bacf13840813833ae514a954c989de8b4ec4e4dc9359708d2690c313f146e"
+        },
+        {
+          "name": "Sector11__GEO_HairNape",
+          "vertices": 44,
+          "polygons": 54,
+          "triangles": 54,
+          "bounds_unity_m": {
+            "min": [
+              -0.095,
+              1.598,
+              -0.034582
+            ],
+            "max": [
+              -0.045731,
+              1.713,
+              0.042104
+            ],
+            "size": [
+              0.049269,
+              0.115,
+              0.076686
+            ]
+          },
+          "semantic_sha256": "26d45bb5da9f8bc4c2542e293e368c6fdf16e9b8ae7abdcb63eba82475a498d0"
+        },
+        {
+          "name": "Sector11__GEO_HairRightLength",
+          "vertices": 43,
+          "polygons": 55,
+          "triangles": 55,
+          "bounds_unity_m": {
+            "min": [
+              -0.11464,
+              1.595324,
+              -0.038107
+            ],
+            "max": [
+              -0.066518,
+              1.694,
+              0.044523
+            ],
+            "size": [
+              0.048122,
+              0.098676,
+              0.08263
+            ]
+          },
+          "semantic_sha256": "d44966c911e4e65d2d5dfd7e58573de7bc403bacb4baabb2c3905bccca68ce39"
+        },
+        {
+          "name": "Sector11__GEO_HairRightStrand1",
+          "vertices": 8,
+          "polygons": 10,
+          "triangles": 10,
+          "bounds_unity_m": {
+            "min": [
+              -0.111354,
+              1.626384,
+              -0.024394
+            ],
+            "max": [
+              -0.091885,
+              1.673847,
+              -0.017892
+            ],
+            "size": [
+              0.019469,
+              0.047463,
+              0.006502
+            ]
+          },
+          "semantic_sha256": "0536b136b0099ef4ac4f05e0fc8df3072f44a460b6865eb1f4d43c1f3db4da4f"
+        },
+        {
+          "name": "Sector11__GEO_HairRightStrand2",
+          "vertices": 8,
+          "polygons": 10,
+          "triangles": 10,
+          "bounds_unity_m": {
+            "min": [
+              -0.099236,
+              1.626196,
+              0.02826
+            ],
+            "max": [
+              -0.080478,
+              1.67399,
+              0.033786
+            ],
+            "size": [
+              0.018758,
+              0.047794,
+              0.005526
+            ]
+          },
+          "semantic_sha256": "550a6be585c749f9ee680bd1639a9225d3c3f13ff1eddec110dd4db7c64ef376"
+        },
+        {
+          "name": "Sector11__GEO_HairTemple.R",
+          "vertices": 18,
+          "polygons": 32,
+          "triangles": 32,
+          "bounds_unity_m": {
+            "min": [
+              -0.086124,
+              1.597,
+              -0.02565
+            ],
+            "max": [
+              -0.061876,
+              1.713,
+              0.017651
+            ],
+            "size": [
+              0.024248,
+              0.116,
+              0.043301
+            ]
+          },
+          "semantic_sha256": "b9cfc6bc8403bc6b8d82c5e286d5f8440326bda147f00b56eb05a879648332c9"
+        },
+        {
+          "name": "Sector11__GEO_Head",
+          "vertices": 14,
+          "polygons": 12,
+          "triangles": 12,
+          "bounds_unity_m": {
+            "min": [
+              -0.088,
+              1.623,
+              -0.034
+            ],
+            "max": [
+              0.0,
+              1.7216,
+              0.043416
+            ],
+            "size": [
+              0.088,
+              0.0986,
+              0.077416
+            ]
+          },
+          "semantic_sha256": "740ab659dde8024e398addf199448692d8d3a33180bf663649ccb6d976afbffc"
+        },
+        {
+          "name": "Sector11__Interior",
+          "vertices": 28,
+          "polygons": 26,
+          "triangles": 40,
+          "bounds_unity_m": {
+            "min": [
+              -0.088,
+              1.618996,
+              -0.034
+            ],
+            "max": [
+              0.0,
+              1.7216,
+              0.043416
+            ],
+            "size": [
+              0.088,
+              0.102604,
+              0.077416
+            ]
+          },
+          "semantic_sha256": "26d8eb73c8fddb887c56f4c654b23b9f25dee409bf5a8c993d7e412562ac0cb0"
+        },
+        {
+          "name": "Sector12__GEO_HairCap",
+          "vertices": 16,
+          "polygons": 16,
+          "triangles": 16,
+          "bounds_unity_m": {
+            "min": [
+              -0.089039,
+              1.63,
+              -0.102677
+            ],
+            "max": [
+              0.0,
+              1.751787,
+              -0.02
+            ],
+            "size": [
+              0.089039,
+              0.121787,
+              0.082677
+            ]
+          },
+          "semantic_sha256": "00a003bafdc9b54fec75621446be09cc7566d92d297b63fef003453937109d50"
+        },
+        {
+          "name": "Sector12__GEO_HairCrownStrand0.R",
+          "vertices": 7,
+          "polygons": 4,
+          "triangles": 4,
+          "bounds_unity_m": {
+            "min": [
+              -0.093268,
+              1.606838,
+              -0.1233
+            ],
+            "max": [
+              -0.06146,
+              1.644013,
+              -0.0656
+            ],
+            "size": [
+              0.031808,
+              0.037175,
+              0.0577
+            ]
+          },
+          "semantic_sha256": "dfd4b35aea0f42bab011329a8abfd63871f57d6e49db0784a65bf682b411beab"
+        },
+        {
+          "name": "Sector12__GEO_HairCrownStrand1.R",
+          "vertices": 8,
+          "polygons": 8,
+          "triangles": 8,
+          "bounds_unity_m": {
+            "min": [
+              -0.097536,
+              1.606897,
+              -0.124
+            ],
+            "max": [
+              -0.079933,
+              1.643837,
+              -0.0656
+            ],
+            "size": [
+              0.017603,
+              0.03694,
+              0.0584
+            ]
+          },
+          "semantic_sha256": "eea7995a4c3d4b721bf8b5bacf0e97232c9f03ce7bedb0a51a382ed81808a6be"
+        },
+        {
+          "name": "Sector12__GEO_HairCurtain.R",
+          "vertices": 27,
+          "polygons": 27,
+          "triangles": 27,
+          "bounds_unity_m": {
+            "min": [
+              -0.1,
+              1.606,
+              -0.128
+            ],
+            "max": [
+              -0.049,
+              1.663,
+              -0.058
+            ],
+            "size": [
+              0.051,
+              0.057,
+              0.07
+            ]
+          },
+          "semantic_sha256": "2358962399dae7f5cbb6e40079865af1f95e98cb48d3d806be596456fa2d9549"
+        },
+        {
+          "name": "Sector12__GEO_HairNape",
+          "vertices": 31,
+          "polygons": 42,
+          "triangles": 42,
+          "bounds_unity_m": {
+            "min": [
+              -0.093175,
+              1.598,
+              -0.078104
+            ],
+            "max": [
+              -0.038891,
+              1.713,
+              -0.018
+            ],
+            "size": [
+              0.054284,
+              0.115,
+              0.060104
+            ]
+          },
+          "semantic_sha256": "948fd438817a3639c8c6b6432bc0f6e669660f589f67c49032c020c9d4e0e5ac"
+        },
+        {
+          "name": "Sector12__GEO_HairRightLength",
+          "vertices": 38,
+          "polygons": 52,
+          "triangles": 52,
+          "bounds_unity_m": {
+            "min": [
+              -0.108218,
+              1.595381,
+              -0.092606
+            ],
+            "max": [
+              -0.050346,
+              1.694,
+              -0.02214
+            ],
+            "size": [
+              0.057872,
+              0.098619,
+              0.070466
+            ]
+          },
+          "semantic_sha256": "8b3c1995cf9c5d4199c2d3048b98b80288d0827324ac8762f662a73d63784d52"
+        },
+        {
+          "name": "Sector12__GEO_HairRightStrand0",
+          "vertices": 8,
+          "polygons": 10,
+          "triangles": 10,
+          "bounds_unity_m": {
+            "min": [
+              -0.089589,
+              1.625882,
+              -0.077495
+            ],
+            "max": [
+              -0.070493,
+              1.674089,
+              -0.06761
+            ],
+            "size": [
+              0.019096,
+              0.048207,
+              0.009885
+            ]
+          },
+          "semantic_sha256": "280334385263383b9874abaeaa3a2803c051a300392d9ac32186d755299ae3a8"
+        },
+        {
+          "name": "Sector12__GEO_Head",
+          "vertices": 10,
+          "polygons": 10,
+          "triangles": 10,
+          "bounds_unity_m": {
+            "min": [
+              -0.088,
+              1.623,
+              -0.093416
+            ],
+            "max": [
+              -0.008,
+              1.7216,
+              -0.021
+            ],
+            "size": [
+              0.08,
+              0.0986,
+              0.072416
+            ]
+          },
+          "semantic_sha256": "aae7c7940e6f48736150b31b9906317f420c0344b8e7bef8c30d8b3d35031f1a"
+        },
+        {
+          "name": "Sector12__Interior",
+          "vertices": 20,
+          "polygons": 18,
+          "triangles": 26,
+          "bounds_unity_m": {
+            "min": [
+              -0.088,
+              1.618996,
+              -0.093416
+            ],
+            "max": [
+              -0.00624,
+              1.7216,
+              -0.021
+            ],
+            "size": [
+              0.08176,
+              0.102604,
+              0.072416
+            ]
+          },
+          "semantic_sha256": "c69426e48f4c277d7899c5a15023fe2453047cfa2bed6d25fde46f4e3a16ec6c"
+        },
+        {
+          "name": "Sector13__GEO_FaceSurface",
+          "vertices": 12,
+          "polygons": 12,
+          "triangles": 12,
+          "bounds_unity_m": {
+            "min": [
+              -0.07912,
+              1.624,
+              -0.1308
+            ],
+            "max": [
+              0.0,
+              1.694,
+              -0.076958
+            ],
+            "size": [
+              0.07912,
+              0.07,
+              0.053842
+            ]
+          },
+          "semantic_sha256": "37f627386b2ff82b9641bcb9afa7675ec792a381bc99466b34b7642af84cec02"
+        },
+        {
+          "name": "Sector13__GEO_HairCap",
+          "vertices": 15,
+          "polygons": 14,
+          "triangles": 14,
+          "bounds_unity_m": {
+            "min": [
+              -0.078275,
+              1.63,
+              -0.114823
+            ],
+            "max": [
+              0.0,
+              1.751787,
+              -0.021823
+            ],
+            "size": [
+              0.078275,
+              0.121787,
+              0.093
+            ]
+          },
+          "semantic_sha256": "5e44153cc5794c368eb158226a028b596842dbe32df2d7887b033694965f8b1f"
+        },
+        {
+          "name": "Sector13__GEO_HairCrownStrand0.R",
+          "vertices": 23,
+          "polygons": 38,
+          "triangles": 38,
+          "bounds_unity_m": {
+            "min": [
+              -0.093268,
+              1.606838,
+              -0.144
+            ],
+            "max": [
+              -0.003654,
+              1.732275,
+              -0.0663
+            ],
+            "size": [
+              0.089614,
+              0.125437,
+              0.0777
+            ]
+          },
+          "semantic_sha256": "7fae078d831ec5717fefcc066a93c1d79499f0f1f0f2f4f7041a7a9ff427fe0c"
+        },
+        {
+          "name": "Sector13__GEO_HairCrownStrand1.R",
+          "vertices": 20,
+          "polygons": 34,
+          "triangles": 34,
+          "bounds_unity_m": {
+            "min": [
+              -0.082374,
+              1.642162,
+              -0.144
+            ],
+            "max": [
+              -0.015594,
+              1.732497,
+              -0.0926
+            ],
+            "size": [
+              0.06678,
+              0.090335,
+              0.0514
+            ]
+          },
+          "semantic_sha256": "fc62b0c6fd9848a81cbe48e8588e086094acdd7a63d3982c8f8ac645f6f84d35"
+        },
+        {
+          "name": "Sector13__GEO_HairCurtain.L",
+          "vertices": 10,
+          "polygons": 9,
+          "triangles": 9,
+          "bounds_unity_m": {
+            "min": [
+              -0.006,
+              1.685,
+              -0.127
+            ],
+            "max": [
+              0.005153,
+              1.731,
+              -0.074339
+            ],
+            "size": [
+              0.011153,
+              0.046,
+              0.052661
+            ]
+          },
+          "semantic_sha256": "c1a9b87b9c8c678e55c6fdca88781b8cdacfa93b1f3cd7280dc39049adbaf3f9"
+        },
+        {
+          "name": "Sector13__GEO_HairCurtain.R",
+          "vertices": 59,
+          "polygons": 94,
+          "triangles": 94,
+          "bounds_unity_m": {
+            "min": [
+              -0.095249,
+              1.606,
+              -0.143
+            ],
+            "max": [
+              0.006,
+              1.731,
+              -0.064
+            ],
+            "size": [
+              0.101249,
+              0.125,
+              0.079
+            ]
+          },
+          "semantic_sha256": "42ea6b370e9eeda9c3add411ef6e290c572478f2d1ac874303e92e9c65f372ab"
+        },
+        {
+          "name": "Sector13__GEO_HairRightLength",
+          "vertices": 4,
+          "polygons": 2,
+          "triangles": 2,
+          "bounds_unity_m": {
+            "min": [
+              -0.062624,
+              1.655506,
+              -0.092606
+            ],
+            "max": [
+              -0.050346,
+              1.694,
+              -0.079849
+            ],
+            "size": [
+              0.012278,
+              0.038494,
+              0.012757
+            ]
+          },
+          "semantic_sha256": "704d961adc3ce35310b51675cfc5b6410daee80c2e18a0696b395011348085a9"
+        },
+        {
+          "name": "Sector13__GEO_Head",
+          "vertices": 9,
+          "polygons": 7,
+          "triangles": 7,
+          "bounds_unity_m": {
+            "min": [
+              -0.07621,
+              1.623,
+              -0.112
+            ],
+            "max": [
+              0.0,
+              1.7216,
+              -0.031856
+            ],
+            "size": [
+              0.07621,
+              0.0986,
+              0.080144
+            ]
+          },
+          "semantic_sha256": "8d75adc2645f05a5caf85c3c7656ca21dd20e5fb0e4cead967eb4d8f535eec46"
+        },
+        {
+          "name": "Sector13__Interior",
+          "vertices": 18,
+          "polygons": 16,
+          "triangles": 25,
+          "bounds_unity_m": {
+            "min": [
+              -0.07621,
+              1.618996,
+              -0.112
+            ],
+            "max": [
+              0.0,
+              1.7216,
+              -0.031228
+            ],
+            "size": [
+              0.07621,
+              0.102604,
+              0.080772
+            ]
+          },
+          "semantic_sha256": "267d49a78d50590dc1f0b005906627c1c8729f180afbc6dfdd0b06499421265e"
+        },
+        {
+          "name": "Sector14__GEO_FaceSurface",
+          "vertices": 12,
+          "polygons": 12,
+          "triangles": 12,
+          "bounds_unity_m": {
+            "min": [
+              0.0,
+              1.624,
+              -0.1308
+            ],
+            "max": [
+              0.07912,
+              1.694,
+              -0.076958
+            ],
+            "size": [
+              0.07912,
+              0.07,
+              0.053842
+            ]
+          },
+          "semantic_sha256": "efbbc4bdfdc1f7b30335f9da5ed70a2b055d21717a74363be9a2e891a5fbc5e4"
+        },
+        {
+          "name": "Sector14__GEO_HairCap",
+          "vertices": 16,
+          "polygons": 15,
+          "triangles": 15,
+          "bounds_unity_m": {
+            "min": [
+              -0.005222,
+              1.63,
+              -0.114823
+            ],
+            "max": [
+              0.075531,
+              1.751787,
+              -0.021823
+            ],
+            "size": [
+              0.080753,
+              0.121787,
+              0.093
+            ]
+          },
+          "semantic_sha256": "86821981b8880a980f807330718b8f14929f725d032fc28093ac6d771c60afba"
+        },
+        {
+          "name": "Sector14__GEO_HairCrownStrand0.L",
+          "vertices": 23,
+          "polygons": 38,
+          "triangles": 38,
+          "bounds_unity_m": {
+            "min": [
+              0.003654,
+              1.606838,
+              -0.144
+            ],
+            "max": [
+              0.093268,
+              1.732275,
+              -0.0663
+            ],
+            "size": [
+              0.089614,
+              0.125437,
+              0.0777
+            ]
+          },
+          "semantic_sha256": "09294a74ee21d1dcf5b4444e685841b0609438f133ae4e68ee848a7faa636514"
+        },
+        {
+          "name": "Sector14__GEO_HairCrownStrand1.L",
+          "vertices": 20,
+          "polygons": 34,
+          "triangles": 34,
+          "bounds_unity_m": {
+            "min": [
+              0.015594,
+              1.642162,
+              -0.144
+            ],
+            "max": [
+              0.082374,
+              1.732497,
+              -0.0926
+            ],
+            "size": [
+              0.06678,
+              0.090335,
+              0.0514
+            ]
+          },
+          "semantic_sha256": "6ea1679123048810fff437acd20a899b3e43bce5f4fd4e762d9ee4cac9eb8c23"
+        },
+        {
+          "name": "Sector14__GEO_HairCurtain.L",
+          "vertices": 59,
+          "polygons": 94,
+          "triangles": 94,
+          "bounds_unity_m": {
+            "min": [
+              -0.006,
+              1.606,
+              -0.143
+            ],
+            "max": [
+              0.095249,
+              1.731,
+              -0.064
+            ],
+            "size": [
+              0.101249,
+              0.125,
+              0.079
+            ]
+          },
+          "semantic_sha256": "f2eb732ce8b7d978c00839631baa8b96a390c3bc7769d8c0ad6b0a93d8137a13"
+        },
+        {
+          "name": "Sector14__GEO_HairCurtain.R",
+          "vertices": 10,
+          "polygons": 9,
+          "triangles": 9,
+          "bounds_unity_m": {
+            "min": [
+              -0.005153,
+              1.685,
+              -0.127
+            ],
+            "max": [
+              0.006,
+              1.731,
+              -0.074339
+            ],
+            "size": [
+              0.011153,
+              0.046,
+              0.052661
+            ]
+          },
+          "semantic_sha256": "8c6e23d616b116e8da189a12c9ecd665a67510235e82bad479306155b78b9834"
+        },
+        {
+          "name": "Sector14__GEO_HairLeftLength",
+          "vertices": 4,
+          "polygons": 2,
+          "triangles": 2,
+          "bounds_unity_m": {
+            "min": [
+              0.050346,
+              1.656506,
+              -0.092606
+            ],
+            "max": [
+              0.062624,
+              1.696,
+              -0.079849
+            ],
+            "size": [
+              0.012278,
+              0.039494,
+              0.012757
+            ]
+          },
+          "semantic_sha256": "90c9698aec98d9599d7a92d9798b8d4261904cf8f220fc23fa18c5df825adcb5"
+        },
+        {
+          "name": "Sector14__GEO_Head",
+          "vertices": 9,
+          "polygons": 7,
+          "triangles": 7,
+          "bounds_unity_m": {
+            "min": [
+              0.0,
+              1.623,
+              -0.112
+            ],
+            "max": [
+              0.07621,
+              1.7216,
+              -0.031856
+            ],
+            "size": [
+              0.07621,
+              0.0986,
+              0.080144
+            ]
+          },
+          "semantic_sha256": "415339b0d0e84ba722eee004084d53318ea520a26a38eea969b649bfa6bd85b2"
+        },
+        {
+          "name": "Sector14__Interior",
+          "vertices": 18,
+          "polygons": 16,
+          "triangles": 25,
+          "bounds_unity_m": {
+            "min": [
+              0.0,
+              1.618996,
+              -0.112
+            ],
+            "max": [
+              0.07621,
+              1.7216,
+              -0.031228
+            ],
+            "size": [
+              0.07621,
+              0.102604,
+              0.080772
+            ]
+          },
+          "semantic_sha256": "9466895c72afe5b31838ba6d7b4b062c0c6e68639c1d210bb4a09726c33b060b"
+        },
+        {
+          "name": "Sector15__GEO_HairCap",
+          "vertices": 16,
+          "polygons": 15,
+          "triangles": 15,
+          "bounds_unity_m": {
+            "min": [
+              -0.005222,
+              1.63,
+              -0.106975
+            ],
+            "max": [
+              0.090234,
+              1.751787,
+              -0.02
+            ],
+            "size": [
+              0.095456,
+              0.121787,
+              0.086975
+            ]
+          },
+          "semantic_sha256": "8765f2315ef811dd7cc04f27de300e40a3a0f1811c14559870cd478941f391e3"
+        },
+        {
+          "name": "Sector15__GEO_HairCrownStrand0.L",
+          "vertices": 7,
+          "polygons": 4,
+          "triangles": 4,
+          "bounds_unity_m": {
+            "min": [
+              0.06146,
+              1.606838,
+              -0.1233
+            ],
+            "max": [
+              0.093268,
+              1.644013,
+              -0.0656
+            ],
+            "size": [
+              0.031808,
+              0.037175,
+              0.0577
+            ]
+          },
+          "semantic_sha256": "bc86e2d6382709f270d5e84f879463bcef23a6fa23ebb9d109aa20c7654a937d"
+        },
+        {
+          "name": "Sector15__GEO_HairCrownStrand1.L",
+          "vertices": 8,
+          "polygons": 8,
+          "triangles": 8,
+          "bounds_unity_m": {
+            "min": [
+              0.079933,
+              1.606897,
+              -0.124
+            ],
+            "max": [
+              0.097536,
+              1.643837,
+              -0.0656
+            ],
+            "size": [
+              0.017603,
+              0.03694,
+              0.0584
+            ]
+          },
+          "semantic_sha256": "383e115e4d8b1c2fd6f49744b82e377bdb0c585132c87f0f1ea36e0c079644fd"
+        },
+        {
+          "name": "Sector15__GEO_HairCurtain.L",
+          "vertices": 27,
+          "polygons": 27,
+          "triangles": 27,
+          "bounds_unity_m": {
+            "min": [
+              0.049,
+              1.606,
+              -0.128
+            ],
+            "max": [
+              0.1,
+              1.663,
+              -0.058
+            ],
+            "size": [
+              0.051,
+              0.057,
+              0.07
+            ]
+          },
+          "semantic_sha256": "5ce9dee4f4fe35ce874dda9e7a4bb8ef9b20629dcef72d251ed76c14a67b9f1a"
+        },
+        {
+          "name": "Sector15__GEO_HairLeftLength",
+          "vertices": 34,
+          "polygons": 47,
+          "triangles": 47,
+          "bounds_unity_m": {
+            "min": [
+              0.050346,
+              1.623531,
+              -0.092606
+            ],
+            "max": [
+              0.107878,
+              1.696,
+              -0.02214
+            ],
+            "size": [
+              0.057532,
+              0.072469,
+              0.070466
+            ]
+          },
+          "semantic_sha256": "c856909331a5ba04cbc022fee2bc33578fb162986c10928aa393f34992672517"
+        },
+        {
+          "name": "Sector15__GEO_HairLeftStrand0",
+          "vertices": 8,
+          "polygons": 10,
+          "triangles": 10,
+          "bounds_unity_m": {
+            "min": [
+              0.070491,
+              1.626001,
+              -0.077497
+            ],
+            "max": [
+              0.089591,
+              1.675581,
+              -0.067607
+            ],
+            "size": [
+              0.0191,
+              0.04958,
+              0.00989
+            ]
+          },
+          "semantic_sha256": "b576c07cdf351cda8b7e149e52946d88501350696fef516f47a5ca2e21cb77a4"
+        },
+        {
+          "name": "Sector15__GEO_HairNape",
+          "vertices": 31,
+          "polygons": 42,
+          "triangles": 42,
+          "bounds_unity_m": {
+            "min": [
+              0.038891,
+              1.598,
+              -0.078104
+            ],
+            "max": [
+              0.093175,
+              1.713,
+              -0.018
+            ],
+            "size": [
+              0.054284,
+              0.115,
+              0.060104
+            ]
+          },
+          "semantic_sha256": "d9feaed1538e8bb4918b910170f467cfacd26627a1875c30a9ccfe8eddacb290"
+        },
+        {
+          "name": "Sector15__GEO_Head",
+          "vertices": 10,
+          "polygons": 10,
+          "triangles": 10,
+          "bounds_unity_m": {
+            "min": [
+              0.008,
+              1.623,
+              -0.093416
+            ],
+            "max": [
+              0.088,
+              1.7216,
+              -0.021
+            ],
+            "size": [
+              0.08,
+              0.0986,
+              0.072416
+            ]
+          },
+          "semantic_sha256": "5ba43f7d1bb8ec9c14d43fd711d14f2ab37b7b63500ef7ee61a7fc510f79a2e7"
+        },
+        {
+          "name": "Sector15__Interior",
+          "vertices": 20,
+          "polygons": 18,
+          "triangles": 26,
+          "bounds_unity_m": {
+            "min": [
+              0.00624,
+              1.618996,
+              -0.093416
+            ],
+            "max": [
+              0.088,
+              1.7216,
+              -0.021
+            ],
+            "size": [
+              0.08176,
+              0.102604,
+              0.072416
+            ]
+          },
+          "semantic_sha256": "7456c06d2fa4e99c45c65128d8bd57308769b21aebcf063db4b5954a948b0491"
+        }
+      ],
+      "semantic_sha256": "91fee8e2f47a7b99a94bca0b1a42bb17062610eb1552e9654f8cd9ac59d14c02"
+    },
+    "Npc": {
+      "source_renderers": [
+        {
+          "name": "CLO_Hat_everydayBand",
+          "polygons": 18,
+          "sector_polygons": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            3,
+            2,
+            4,
+            3,
+            1,
+            2,
+            2,
+            1
+          ]
+        },
+        {
+          "name": "CLO_Hat_everydayCrown",
+          "polygons": 96,
+          "sector_polygons": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            12,
+            14,
+            14,
+            12,
+            10,
+            12,
+            12,
+            10
+          ]
+        },
+        {
+          "name": "CLO_Hat_everydayPeak",
+          "polygons": 48,
+          "sector_polygons": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            11,
+            13,
+            13,
+            11
+          ]
+        },
+        {
+          "name": "CLO_Hat_warmCrown",
+          "polygons": 112,
+          "sector_polygons": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            18,
+            23,
+            23,
+            18,
+            10,
+            5,
+            5,
+            10
+          ]
+        },
+        {
+          "name": "CLO_Hat_warmEarFlap.L",
+          "polygons": 72,
+          "sector_polygons": [
+            30,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            6,
+            30,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            6
+          ]
+        },
+        {
+          "name": "CLO_Hat_warmEarFlap.R",
+          "polygons": 72,
+          "sector_polygons": [
+            0,
+            0,
+            0,
+            30,
+            6,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            30,
+            6,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "CLO_Hat_warmFrontFold",
+          "polygons": 6,
+          "sector_polygons": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            4,
+            1
+          ]
+        },
+        {
+          "name": "CLO_Hat_workCrown",
+          "polygons": 112,
+          "sector_polygons": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            16,
+            27,
+            27,
+            16,
+            8,
+            5,
+            5,
+            8
+          ]
+        },
+        {
+          "name": "CLO_Hat_workFold",
+          "polygons": 34,
+          "sector_polygons": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            4,
+            7,
+            7,
+            4,
+            4,
+            2,
+            2,
+            4
+          ]
+        },
+        {
+          "name": "GEO_Ear.L",
+          "polygons": 60,
+          "sector_polygons": [
+            40,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            20,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "GEO_Ear.R",
+          "polygons": 60,
+          "sector_polygons": [
+            0,
+            0,
+            0,
+            40,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            20,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "GEO_EarFold.L",
+          "polygons": 14,
+          "sector_polygons": [
+            7,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            7,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "GEO_EarFold.R",
+          "polygons": 14,
+          "sector_polygons": [
+            0,
+            0,
+            0,
+            7,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            7,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "GEO_FaceSurface",
+          "polygons": 132,
+          "sector_polygons": [
+            0,
+            0,
+            0,
+            0,
+            15,
+            15,
+            15,
+            15,
+            3,
+            6,
+            6,
+            3,
+            15,
+            12,
+            12,
+            15
+          ]
+        },
+        {
+          "name": "GEO_Head",
+          "polygons": 154,
+          "sector_polygons": [
+            15,
+            16,
+            16,
+            15,
+            4,
+            0,
+            0,
+            4,
+            16,
+            25,
+            25,
+            16,
+            1,
+            0,
+            0,
+            1
+          ]
+        },
+        {
+          "name": "HAIR_Crown",
+          "polygons": 80,
+          "sector_polygons": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            9,
+            27,
+            27,
+            9,
+            3,
+            1,
+            1,
+            3
+          ]
+        },
+        {
+          "name": "HAIR_Sides",
+          "polygons": 72,
+          "sector_polygons": [
+            4,
+            0,
+            0,
+            4,
+            1,
+            0,
+            0,
+            1,
+            13,
+            17,
+            17,
+            13,
+            1,
+            0,
+            0,
+            1
+          ]
+        }
+      ],
+      "head_center_unity_m": [
+        0.0,
+        1.6,
+        -0.035519
+      ],
+      "head_bounds_unity_m": {
+        "min": [
+          -0.104894,
+          1.465,
+          -0.147039
+        ],
+        "max": [
+          0.104894,
+          1.735,
+          0.076
+        ],
+        "size": [
+          0.209788,
+          0.27,
+          0.223039
+        ]
+      },
+      "band_height_unity_m": 1.6108,
+      "shell_volumes_m3": {
+        "0": 0.000182383,
+        "1": 0.0001856992,
+        "2": 0.0001863411,
+        "3": 0.0001828205,
+        "4": 0.0001852982,
+        "5": 0.000135719,
+        "6": 0.0001354509,
+        "7": 0.0001859912,
+        "8": 0.0002453424,
+        "9": 0.0003080041,
+        "10": 0.0003079652,
+        "11": 0.0002454392,
+        "12": 0.000157307,
+        "13": 0.0001153956,
+        "14": 0.0001178603,
+        "15": 0.0001573217
+      },
+      "meshes": [
+        {
+          "name": "Brain00__GEO_Head",
+          "vertices": 42,
+          "polygons": 50,
+          "triangles": 80,
+          "bounds_unity_m": {
+            "min": [
+              -0.072128,
+              1.57165,
+              -0.104197
+            ],
+            "max": [
+              0.002243,
+              1.63645,
+              -0.026215
+            ],
+            "size": [
+              0.074371,
+              0.0648,
+              0.077982
+            ]
+          },
+          "semantic_sha256": "5801c5d08b8643a9237b3e5997d18652182ca4d9176c9e1e4f8e3303b2c15795"
+        },
+        {
+          "name": "Brain01__GEO_Head",
+          "vertices": 42,
+          "polygons": 50,
+          "triangles": 80,
+          "bounds_unity_m": {
+            "min": [
+              -0.00582,
+              1.57165,
+              -0.10503
+            ],
+            "max": [
+              0.066402,
+              1.63645,
+              -0.025382
+            ],
+            "size": [
+              0.072222,
+              0.0648,
+              0.079648
+            ]
+          },
+          "semantic_sha256": "0aadd6b5a34b7ce4c64d8b14bfe273014c4330f639ab159f2a98c9c5f3a78eaf"
+        },
+        {
+          "name": "Brain02__GEO_Head",
+          "vertices": 42,
+          "polygons": 50,
+          "triangles": 80,
+          "bounds_unity_m": {
+            "min": [
+              -0.072701,
+              1.57165,
+              -0.033403
+            ],
+            "max": [
+              0.001244,
+              1.63645,
+              0.045737
+            ],
+            "size": [
+              0.073945,
+              0.0648,
+              0.07914
+            ]
+          },
+          "semantic_sha256": "68a85e35d0037c563d554a95d45973d7209d72e69f4d535e0646d3d206d7fd89"
+        },
+        {
+          "name": "Brain03__GEO_Head",
+          "vertices": 42,
+          "polygons": 50,
+          "triangles": 80,
+          "bounds_unity_m": {
+            "min": [
+              -0.00275,
+              1.57165,
+              -0.032451
+            ],
+            "max": [
+              0.071759,
+              1.63645,
+              0.044785
+            ],
+            "size": [
+              0.074509,
+              0.0648,
+              0.077236
+            ]
+          },
+          "semantic_sha256": "e30b7ffcb4c3d95cac2f78a5aea642eb12b265c3d65366a62046555f17481e4b"
+        },
+        {
+          "name": "Brain04__GEO_Head",
+          "vertices": 42,
+          "polygons": 50,
+          "triangles": 80,
+          "bounds_unity_m": {
+            "min": [
+              -0.066695,
+              1.62295,
+              -0.105126
+            ],
+            "max": [
+              0.005914,
+              1.68775,
+              -0.025286
+            ],
+            "size": [
+              0.072609,
+              0.0648,
+              0.07984
+            ]
+          },
+          "semantic_sha256": "e2187f9e53e81ec4ea6819a7b3b6fde9c4164db18c7e2d41debe04a626f7f51d"
+        },
+        {
+          "name": "Brain05__GEO_Head",
+          "vertices": 42,
+          "polygons": 50,
+          "triangles": 80,
+          "bounds_unity_m": {
+            "min": [
+              -0.000773,
+              1.62295,
+              -0.10497
+            ],
+            "max": [
+              0.072893,
+              1.68775,
+              -0.025442
+            ],
+            "size": [
+              0.073666,
+              0.0648,
+              0.079528
+            ]
+          },
+          "semantic_sha256": "0bae99ec3f70f5991958046fd7acf12528d1b4eeb182ca48e3de7da3227823a0"
+        },
+        {
+          "name": "Brain06__GEO_Head",
+          "vertices": 42,
+          "polygons": 50,
+          "triangles": 80,
+          "bounds_unity_m": {
+            "min": [
+              -0.071345,
+              1.62295,
+              -0.032032
+            ],
+            "max": [
+              0.00325,
+              1.68775,
+              0.044366
+            ],
+            "size": [
+              0.074595,
+              0.0648,
+              0.076398
+            ]
+          },
+          "semantic_sha256": "c17c776b6dc89096c0d791cf55744bd8f82724552324c06afdbad8e8f7087f46"
+        },
+        {
+          "name": "Brain07__GEO_Head",
+          "vertices": 42,
+          "polygons": 50,
+          "triangles": 80,
+          "bounds_unity_m": {
+            "min": [
+              -0.005938,
+              1.62295,
+              -0.033777
+            ],
+            "max": [
+              0.067042,
+              1.68775,
+              0.04611
+            ],
+            "size": [
+              0.07298,
+              0.0648,
+              0.079887
+            ]
+          },
+          "semantic_sha256": "54a3595aae1681e02ceac8a7490176afee5c13c05cfef04af771328676458fb5"
+        },
+        {
+          "name": "Sector00__CLO_Hat_warmEarFlap.L",
+          "vertices": 33,
+          "polygons": 30,
+          "triangles": 48,
+          "bounds_unity_m": {
+            "min": [
+              0.088,
+              1.533,
+              -0.04475
+            ],
+            "max": [
+              0.138,
+              1.601,
+              0.062
+            ],
+            "size": [
+              0.05,
+              0.068,
+              0.10675
+            ]
+          },
+          "semantic_sha256": "fa3580f0d6f9c7217e57104b874918f457a4ea4478adba85b4909eb4fd4f8f57"
+        },
+        {
+          "name": "Sector00__GEO_Ear.L",
+          "vertices": 41,
+          "polygons": 40,
+          "triangles": 70,
+          "bounds_unity_m": {
+            "min": [
+              0.085,
+              1.561,
+              -0.021923
+            ],
+            "max": [
+              0.125,
+              1.6165,
+              0.019924
+            ],
+            "size": [
+              0.04,
+              0.0555,
+              0.041847
+            ]
+          },
+          "semantic_sha256": "ea91edc3c0d299a1048f9e9c9098dc1925c7e7d668682c82135eb122b5ed6bd8"
+        },
+        {
+          "name": "Sector00__GEO_EarFold.L",
+          "vertices": 12,
+          "polygons": 7,
+          "triangles": 16,
+          "bounds_unity_m": {
+            "min": [
+              0.115667,
+              1.58767,
+              -0.027975
+            ],
+            "max": [
+              0.124333,
+              1.606677,
+              -0.018018
+            ],
+            "size": [
+              0.008666,
+              0.019007,
+              0.009957
+            ]
+          },
+          "semantic_sha256": "6b1913f69c4dba5db6858cefeb52279af5ee4447ac104227efd81445e93f2666"
+        },
+        {
+          "name": "Sector00__GEO_Head",
+          "vertices": 25,
+          "polygons": 15,
+          "triangles": 30,
+          "bounds_unity_m": {
+            "min": [
+              0.030821,
+              1.465,
+              -0.042541
+            ],
+            "max": [
+              0.104894,
+              1.598,
+              0.042651
+            ],
+            "size": [
+              0.074073,
+              0.133,
+              0.085192
+            ]
+          },
+          "semantic_sha256": "d14652febf2e88636c183e1d65315ce71ce46f94644ce432910e1fe16c54c9b7"
+        },
+        {
+          "name": "Sector00__HAIR_Sides",
+          "vertices": 10,
+          "polygons": 4,
+          "triangles": 8,
+          "bounds_unity_m": {
+            "min": [
+              0.082014,
+              1.567621,
+              -0.040886
+            ],
+            "max": [
+              0.108511,
+              1.630684,
+              0.043885
+            ],
+            "size": [
+              0.026497,
+              0.063063,
+              0.084771
+            ]
+          },
+          "semantic_sha256": "3b88ff8bedba7bd736bd028f78368b9dfab988df7664dcf2268e77e614efd6bf"
+        },
+        {
+          "name": "Sector00__Interior",
+          "vertices": 50,
+          "polygons": 33,
+          "triangles": 66,
+          "bounds_unity_m": {
+            "min": [
+              0.02404,
+              1.465,
+              -0.042541
+            ],
+            "max": [
+              0.104894,
+              1.59844,
+              0.042651
+            ],
+            "size": [
+              0.080854,
+              0.13344,
+              0.085192
+            ]
+          },
+          "semantic_sha256": "0773f277301ada3589fe0b2714849c33d6229dacf61e56cfe425c955be8138c5"
+        },
+        {
+          "name": "Sector01__GEO_Head",
+          "vertices": 26,
+          "polygons": 16,
+          "triangles": 32,
+          "bounds_unity_m": {
+            "min": [
+              0.0,
+              1.465,
+              -0.00015
+            ],
+            "max": [
+              0.075893,
+              1.598,
+              0.072
+            ],
+            "size": [
+              0.075893,
+              0.133,
+              0.07215
+            ]
+          },
+          "semantic_sha256": "e250174fa7997bcf61c0891dae6ceb5c5ea82b88d1c43dc585b3f6676bfb79ec"
+        },
+        {
+          "name": "Sector01__Interior",
+          "vertices": 52,
+          "polygons": 34,
+          "triangles": 68,
+          "bounds_unity_m": {
+            "min": [
+              0.0,
+              1.465,
+              -0.007931
+            ],
+            "max": [
+              0.075893,
+              1.59844,
+              0.072
+            ],
+            "size": [
+              0.075893,
+              0.13344,
+              0.079931
+            ]
+          },
+          "semantic_sha256": "7b7cac04fd5f4a82340b6324d137daafda57e829d69d0dcf5774a163ff5f2c61"
+        },
+        {
+          "name": "Sector02__GEO_Head",
+          "vertices": 26,
+          "polygons": 16,
+          "triangles": 32,
+          "bounds_unity_m": {
+            "min": [
+              -0.075893,
+              1.465,
+              -0.00015
+            ],
+            "max": [
+              0.0,
+              1.598,
+              0.072
+            ],
+            "size": [
+              0.075893,
+              0.133,
+              0.07215
+            ]
+          },
+          "semantic_sha256": "ea8f27e2841639e46cec28b3f26b92a50552ad81ef2c615dd887b3265efe174c"
+        },
+        {
+          "name": "Sector02__Interior",
+          "vertices": 52,
+          "polygons": 34,
+          "triangles": 68,
+          "bounds_unity_m": {
+            "min": [
+              -0.075893,
+              1.465,
+              -0.007931
+            ],
+            "max": [
+              0.0,
+              1.59844,
+              0.072
+            ],
+            "size": [
+              0.075893,
+              0.13344,
+              0.079931
+            ]
+          },
+          "semantic_sha256": "47274ad4894fb4c7df5db2df94da607e240c9e4392d5446f95b37ce23a70497a"
+        },
+        {
+          "name": "Sector03__CLO_Hat_warmEarFlap.R",
+          "vertices": 33,
+          "polygons": 30,
+          "triangles": 48,
+          "bounds_unity_m": {
+            "min": [
+              -0.138,
+              1.533,
+              -0.04475
+            ],
+            "max": [
+              -0.088,
+              1.601,
+              0.062
+            ],
+            "size": [
+              0.05,
+              0.068,
+              0.10675
+            ]
+          },
+          "semantic_sha256": "361157b3bd1d0a81505152caa4ca461667969b8674077faa109286de3df1f6b0"
+        },
+        {
+          "name": "Sector03__GEO_Ear.R",
+          "vertices": 41,
+          "polygons": 40,
+          "triangles": 70,
+          "bounds_unity_m": {
+            "min": [
+              -0.125,
+              1.561,
+              -0.021923
+            ],
+            "max": [
+              -0.085,
+              1.6165,
+              0.019924
+            ],
+            "size": [
+              0.04,
+              0.0555,
+              0.041847
+            ]
+          },
+          "semantic_sha256": "91f367a98709b9bbed7d56b170e70c915e720f8fce31e08298a8797bc3ea764b"
+        },
+        {
+          "name": "Sector03__GEO_EarFold.R",
+          "vertices": 12,
+          "polygons": 7,
+          "triangles": 16,
+          "bounds_unity_m": {
+            "min": [
+              -0.124333,
+              1.58767,
+              -0.027975
+            ],
+            "max": [
+              -0.115667,
+              1.606677,
+              -0.018018
+            ],
+            "size": [
+              0.008666,
+              0.019007,
+              0.009957
+            ]
+          },
+          "semantic_sha256": "633be2b564c305799cdad722ead965906c325be2e71d2a451260bde60d752d84"
+        },
+        {
+          "name": "Sector03__GEO_Head",
+          "vertices": 25,
+          "polygons": 15,
+          "triangles": 30,
+          "bounds_unity_m": {
+            "min": [
+              -0.104894,
+              1.465,
+              -0.042541
+            ],
+            "max": [
+              -0.030821,
+              1.598,
+              0.042651
+            ],
+            "size": [
+              0.074073,
+              0.133,
+              0.085192
+            ]
+          },
+          "semantic_sha256": "dc7172e0d1687ea8484c9c5de3b45724e62c0c2490d46b87ba4fcfc459ff3a2b"
+        },
+        {
+          "name": "Sector03__HAIR_Sides",
+          "vertices": 10,
+          "polygons": 4,
+          "triangles": 8,
+          "bounds_unity_m": {
+            "min": [
+              -0.108511,
+              1.567621,
+              -0.040886
+            ],
+            "max": [
+              -0.082014,
+              1.630684,
+              0.043885
+            ],
+            "size": [
+              0.026497,
+              0.063063,
+              0.084771
+            ]
+          },
+          "semantic_sha256": "92e7f3084a31c163d226abdf6fd452087af338d33402602b7a2c134299103927"
+        },
+        {
+          "name": "Sector03__Interior",
+          "vertices": 50,
+          "polygons": 33,
+          "triangles": 66,
+          "bounds_unity_m": {
+            "min": [
+              -0.104894,
+              1.465,
+              -0.042541
+            ],
+            "max": [
+              -0.02404,
+              1.59844,
+              0.042651
+            ],
+            "size": [
+              0.080854,
+              0.13344,
+              0.085192
+            ]
+          },
+          "semantic_sha256": "d7f3b5f12bb76cb783969b1b02b99ce6e3af34ffdadd6b6ae2ed8650b57cada9"
+        },
+        {
+          "name": "Sector04__CLO_Hat_warmEarFlap.R",
+          "vertices": 13,
+          "polygons": 6,
+          "triangles": 12,
+          "bounds_unity_m": {
+            "min": [
+              -0.134651,
+              1.54211,
+              -0.06
+            ],
+            "max": [
+              -0.091349,
+              1.601,
+              -0.025413
+            ],
+            "size": [
+              0.043302,
+              0.05889,
+              0.034587
+            ]
+          },
+          "semantic_sha256": "c6cf5f7bac75feba1bfa763c596c6a1ea723a4c051f0c5569c886d5cd8304e6f"
+        },
+        {
+          "name": "Sector04__GEO_FaceSurface",
+          "vertices": 24,
+          "polygons": 15,
+          "triangles": 30,
+          "bounds_unity_m": {
+            "min": [
+              -0.099861,
+              1.465,
+              -0.105046
+            ],
+            "max": [
+              -0.020572,
+              1.598,
+              -0.034596
+            ],
+            "size": [
+              0.079289,
+              0.133,
+              0.07045
+            ]
+          },
+          "semantic_sha256": "a569cfc1279920afb1d57977dd591d681d5713a247d69a461780f5e5c9ad0ded"
+        },
+        {
+          "name": "Sector04__GEO_Head",
+          "vertices": 10,
+          "polygons": 4,
+          "triangles": 8,
+          "bounds_unity_m": {
+            "min": [
+              -0.104894,
+              1.486,
+              -0.053738
+            ],
+            "max": [
+              -0.053259,
+              1.598,
+              -0.026692
+            ],
+            "size": [
+              0.051635,
+              0.112,
+              0.027046
+            ]
+          },
+          "semantic_sha256": "b39f089cc70fcfbe91c021a448ad4947293b83b6b857ac65d62f8c1504d52202"
+        },
+        {
+          "name": "Sector04__HAIR_Sides",
+          "vertices": 4,
+          "polygons": 1,
+          "triangles": 2,
+          "bounds_unity_m": {
+            "min": [
+              -0.106977,
+              1.573632,
+              -0.06069
+            ],
+            "max": [
+              -0.09972,
+              1.62011,
+              -0.037795
+            ],
+            "size": [
+              0.007257,
+              0.046478,
+              0.022895
+            ]
+          },
+          "semantic_sha256": "199aad63460b2fddc97c3cb99293f9f67e260f237471f16e23cdd8900621136a"
+        },
+        {
+          "name": "Sector04__Interior",
+          "vertices": 62,
+          "polygons": 43,
+          "triangles": 86,
+          "bounds_unity_m": {
+            "min": [
+              -0.104894,
+              1.465,
+              -0.105046
+            ],
+            "max": [
+              -0.016047,
+              1.59844,
+              -0.026692
+            ],
+            "size": [
+              0.088847,
+              0.13344,
+              0.078354
+            ]
+          },
+          "semantic_sha256": "0a9e361b0350c4f35181ab9f375e8fb7b5c3b2a70d22c6f260286bbb9303664c"
+        },
+        {
+          "name": "Sector05__GEO_FaceSurface",
+          "vertices": 24,
+          "polygons": 15,
+          "triangles": 30,
+          "bounds_unity_m": {
+            "min": [
+              -0.061717,
+              1.465,
+              -0.147039
+            ],
+            "max": [
+              0.0,
+              1.598,
+              -0.056596
+            ],
+            "size": [
+              0.061717,
+              0.133,
+              0.090443
+            ]
+          },
+          "semantic_sha256": "a10c0352d52e05437a4d1f7583ea097cc5b88d7aae8189e3ce40ed9dadf4ec3d"
+        },
+        {
+          "name": "Sector05__Interior",
+          "vertices": 48,
+          "polygons": 31,
+          "triangles": 62,
+          "bounds_unity_m": {
+            "min": [
+              -0.061717,
+              1.465,
+              -0.147039
+            ],
+            "max": [
+              0.0,
+              1.59844,
+              -0.05196
+            ],
+            "size": [
+              0.061717,
+              0.13344,
+              0.095079
+            ]
+          },
+          "semantic_sha256": "8ce5e57fc898eb065f40c211c9fa6e3d4f66f2800ff95318f6599cba5d5caee6"
+        },
+        {
+          "name": "Sector06__GEO_FaceSurface",
+          "vertices": 24,
+          "polygons": 15,
+          "triangles": 30,
+          "bounds_unity_m": {
+            "min": [
+              0.0,
+              1.465,
+              -0.147039
+            ],
+            "max": [
+              0.061717,
+              1.598,
+              -0.056596
+            ],
+            "size": [
+              0.061717,
+              0.133,
+              0.090443
+            ]
+          },
+          "semantic_sha256": "23431df1f01382db8719ceedade740ffedd7c0901b550bea303dd214fc71d8ad"
+        },
+        {
+          "name": "Sector06__Interior",
+          "vertices": 48,
+          "polygons": 31,
+          "triangles": 62,
+          "bounds_unity_m": {
+            "min": [
+              0.0,
+              1.465,
+              -0.147039
+            ],
+            "max": [
+              0.061717,
+              1.59844,
+              -0.05196
+            ],
+            "size": [
+              0.061717,
+              0.13344,
+              0.095079
+            ]
+          },
+          "semantic_sha256": "57991ce511a904a727ad276492b86ba11e070339f6748ca88e6ef7bf0ea4b96e"
+        },
+        {
+          "name": "Sector07__CLO_Hat_warmEarFlap.L",
+          "vertices": 13,
+          "polygons": 6,
+          "triangles": 12,
+          "bounds_unity_m": {
+            "min": [
+              0.091349,
+              1.54211,
+              -0.06
+            ],
+            "max": [
+              0.134651,
+              1.601,
+              -0.025413
+            ],
+            "size": [
+              0.043302,
+              0.05889,
+              0.034587
+            ]
+          },
+          "semantic_sha256": "0c937e0fb6144d042038397c8004be4382cfa387b08f4c3ef4c0d25d98629b38"
+        },
+        {
+          "name": "Sector07__GEO_FaceSurface",
+          "vertices": 24,
+          "polygons": 15,
+          "triangles": 30,
+          "bounds_unity_m": {
+            "min": [
+              0.020572,
+              1.465,
+              -0.105046
+            ],
+            "max": [
+              0.099861,
+              1.598,
+              -0.034596
+            ],
+            "size": [
+              0.079289,
+              0.133,
+              0.07045
+            ]
+          },
+          "semantic_sha256": "a303f41167599f8596d7b7d3b0c30f837d49ca098c9dab51e269833536a0d30d"
+        },
+        {
+          "name": "Sector07__GEO_Head",
+          "vertices": 10,
+          "polygons": 4,
+          "triangles": 8,
+          "bounds_unity_m": {
+            "min": [
+              0.053259,
+              1.486,
+              -0.053738
+            ],
+            "max": [
+              0.104894,
+              1.598,
+              -0.026692
+            ],
+            "size": [
+              0.051635,
+              0.112,
+              0.027046
+            ]
+          },
+          "semantic_sha256": "da283d0b78eaeafe9252a7d2014ab7450aa1ebbaa8ea6bd4a630c0d14a104856"
+        },
+        {
+          "name": "Sector07__HAIR_Sides",
+          "vertices": 4,
+          "polygons": 1,
+          "triangles": 2,
+          "bounds_unity_m": {
+            "min": [
+              0.09972,
+              1.573632,
+              -0.06069
+            ],
+            "max": [
+              0.106977,
+              1.62011,
+              -0.037795
+            ],
+            "size": [
+              0.007257,
+              0.046478,
+              0.022895
+            ]
+          },
+          "semantic_sha256": "7631374cd9f306414bb92bb9aca49c34550871e10f26de6f0597f444503d55fe"
+        },
+        {
+          "name": "Sector07__Interior",
+          "vertices": 62,
+          "polygons": 43,
+          "triangles": 86,
+          "bounds_unity_m": {
+            "min": [
+              0.016047,
+              1.465,
+              -0.105046
+            ],
+            "max": [
+              0.104894,
+              1.59844,
+              -0.026692
+            ],
+            "size": [
+              0.088847,
+              0.13344,
+              0.078354
+            ]
+          },
+          "semantic_sha256": "d8fa8a1522d0c7d8fd55cacd0d6237718041eac34452f5768ebbea4741ed1748"
+        },
+        {
+          "name": "Sector08__CLO_Hat_everydayBand",
+          "vertices": 8,
+          "polygons": 3,
+          "triangles": 6,
+          "bounds_unity_m": {
+            "min": [
+              0.077075,
+              1.674,
+              -0.057156
+            ],
+            "max": [
+              0.113,
+              1.698,
+              0.071439
+            ],
+            "size": [
+              0.035925,
+              0.024,
+              0.128595
+            ]
+          },
+          "semantic_sha256": "3e556c8aed43415c56e016f0f7b0390c44a021cf53f4b3e0b73b62276e586ffe"
+        },
+        {
+          "name": "Sector08__CLO_Hat_everydayCrown",
+          "vertices": 19,
+          "polygons": 12,
+          "triangles": 20,
+          "bounds_unity_m": {
+            "min": [
+              0.0,
+              1.662,
+              -0.046257
+            ],
+            "max": [
+              0.116,
+              1.76,
+              0.072338
+            ],
+            "size": [
+              0.116,
+              0.098,
+              0.118595
+            ]
+          },
+          "semantic_sha256": "8e9c99abf3a16fa6381067f8d2c1caba4f2d2fa76feda54a7c0a9b710da75aa6"
+        },
+        {
+          "name": "Sector08__CLO_Hat_warmCrown",
+          "vertices": 26,
+          "polygons": 18,
+          "triangles": 28,
+          "bounds_unity_m": {
+            "min": [
+              0.0,
+              1.646,
+              -0.050066
+            ],
+            "max": [
+              0.113092,
+              1.776,
+              0.046771
+            ],
+            "size": [
+              0.113092,
+              0.13,
+              0.096837
+            ]
+          },
+          "semantic_sha256": "5adf5cfda3aeb685652b449f15b04b1571b2c9d39abae8b072f9a953b65a23ae"
+        },
+        {
+          "name": "Sector08__CLO_Hat_warmEarFlap.L",
+          "vertices": 33,
+          "polygons": 30,
+          "triangles": 48,
+          "bounds_unity_m": {
+            "min": [
+              0.088,
+              1.601,
+              -0.04475
+            ],
+            "max": [
+              0.138,
+              1.669,
+              0.062
+            ],
+            "size": [
+              0.05,
+              0.068,
+              0.10675
+            ]
+          },
+          "semantic_sha256": "1603ee152cc36aca1ba8e114994baab51cf19ec7fa35674db69c63ffae05c36e"
+        },
+        {
+          "name": "Sector08__CLO_Hat_workCrown",
+          "vertices": 26,
+          "polygons": 16,
+          "triangles": 28,
+          "bounds_unity_m": {
+            "min": [
+              0.0,
+              1.644,
+              -0.056918
+            ],
+            "max": [
+              0.107242,
+              1.776,
+              0.046786
+            ],
+            "size": [
+              0.107242,
+              0.132,
+              0.103704
+            ]
+          },
+          "semantic_sha256": "2c60033e842fc9f0d18fedc5c46ddae9f199a61dcf199edcc0c72900a6acf910"
+        },
+        {
+          "name": "Sector08__CLO_Hat_workFold",
+          "vertices": 9,
+          "polygons": 4,
+          "triangles": 8,
+          "bounds_unity_m": {
+            "min": [
+              0.103475,
+              1.66,
+              -0.044243
+            ],
+            "max": [
+              0.117,
+              1.706,
+              0.043244
+            ],
+            "size": [
+              0.013525,
+              0.046,
+              0.087487
+            ]
+          },
+          "semantic_sha256": "65b33e84fb397ffaf2ae48dcf2a68199ea37d5b38177b5772a611581a299e356"
+        },
+        {
+          "name": "Sector08__GEO_Ear.L",
+          "vertices": 21,
+          "polygons": 20,
+          "triangles": 30,
+          "bounds_unity_m": {
+            "min": [
+              0.087679,
+              1.6165,
+              -0.01912
+            ],
+            "max": [
+              0.122321,
+              1.635,
+              0.01712
+            ],
+            "size": [
+              0.034642,
+              0.0185,
+              0.03624
+            ]
+          },
+          "semantic_sha256": "f756a2b86c5540dd893d5a34b86f4ad29918449fbcbf5d94efaec3a3ab55427e"
+        },
+        {
+          "name": "Sector08__GEO_EarFold.L",
+          "vertices": 12,
+          "polygons": 7,
+          "triangles": 16,
+          "bounds_unity_m": {
+            "min": [
+              0.113361,
+              1.605323,
+              -0.027975
+            ],
+            "max": [
+              0.124333,
+              1.619345,
+              -0.01521
+            ],
+            "size": [
+              0.010972,
+              0.014022,
+              0.012765
+            ]
+          },
+          "semantic_sha256": "273a2842ec919848619a875feb34431fe331067460c0db13e032fe0986e18571"
+        },
+        {
+          "name": "Sector08__GEO_FaceSurface",
+          "vertices": 8,
+          "polygons": 3,
+          "triangles": 6,
+          "bounds_unity_m": {
+            "min": [
+              0.031212,
+              1.684,
+              -0.049
+            ],
+            "max": [
+              0.088448,
+              1.728,
+              -0.009051
+            ],
+            "size": [
+              0.057236,
+              0.044,
+              0.039949
+            ]
+          },
+          "semantic_sha256": "7085507a94f6a7b6fc571e906b1dc153789fb280e7e140d184582a15584416f4"
+        },
+        {
+          "name": "Sector08__GEO_Head",
+          "vertices": 26,
+          "polygons": 16,
+          "triangles": 32,
+          "bounds_unity_m": {
+            "min": [
+              0.039944,
+              1.598,
+              -0.049047
+            ],
+            "max": [
+              0.104894,
+              1.728,
+              0.048667
+            ],
+            "size": [
+              0.06495,
+              0.13,
+              0.097714
+            ]
+          },
+          "semantic_sha256": "19f50387a571094e385677cd2d49007e9710e3c92ecc0047e97265002d636d3a"
+        },
+        {
+          "name": "Sector08__HAIR_Crown",
+          "vertices": 18,
+          "polygons": 9,
+          "triangles": 18,
+          "bounds_unity_m": {
+            "min": [
+              0.018445,
+              1.676493,
+              -0.054414
+            ],
+            "max": [
+              0.077987,
+              1.731507,
+              0.043753
+            ],
+            "size": [
+              0.059542,
+              0.055014,
+              0.098167
+            ]
+          },
+          "semantic_sha256": "20dd1d53314b9552a5d1623f27524562566fe697eb7ebbaa41181f898301c70b"
+        },
+        {
+          "name": "Sector08__HAIR_Sides",
+          "vertices": 22,
+          "polygons": 13,
+          "triangles": 26,
+          "bounds_unity_m": {
+            "min": [
+              0.042272,
+              1.607466,
+              -0.049986
+            ],
+            "max": [
+              0.108511,
+              1.727,
+              0.046695
+            ],
+            "size": [
+              0.066239,
+              0.119534,
+              0.096681
+            ]
+          },
+          "semantic_sha256": "d138be9d64994e4f24e8f9746c6a2b3b506e0d6e45c058b4e4906bbc1236c355"
+        },
+        {
+          "name": "Sector08__Interior",
+          "vertices": 62,
+          "polygons": 41,
+          "triangles": 82,
+          "bounds_unity_m": {
+            "min": [
+              0.024345,
+              1.598,
+              -0.049047
+            ],
+            "max": [
+              0.104894,
+              1.728,
+              0.048667
+            ],
+            "size": [
+              0.080549,
+              0.13,
+              0.097714
+            ]
+          },
+          "semantic_sha256": "6ebf7079690725879e7b68ea66ad37cb5bbfeeb776616eaaf48504b0b4973d3c"
+        },
+        {
+          "name": "Sector09__CLO_Hat_everydayBand",
+          "vertices": 6,
+          "polygons": 2,
+          "triangles": 4,
+          "bounds_unity_m": {
+            "min": [
+              0.0,
+              1.674,
+              0.068075
+            ],
+            "max": [
+              0.079903,
+              1.698,
+              0.106
+            ],
+            "size": [
+              0.079903,
+              0.024,
+              0.037925
+            ]
+          },
+          "semantic_sha256": "bfd0e8dd0234c95778402ec024195b8c474d7fd0fc91bef422683f292363ff9f"
+        },
+        {
+          "name": "Sector09__CLO_Hat_everydayCrown",
+          "vertices": 19,
+          "polygons": 14,
+          "triangles": 22,
+          "bounds_unity_m": {
+            "min": [
+              0.0,
+              1.662,
+              -0.021
+            ],
+            "max": [
+              0.082024,
+              1.76,
+              0.111
+            ],
+            "size": [
+              0.082024,
+              0.098,
+              0.132
+            ]
+          },
+          "semantic_sha256": "d1f8bbaa25861488e35d38286459f8f052b3f1fca21600cc34f98eab3e2dc044"
+        },
+        {
+          "name": "Sector09__CLO_Hat_warmCrown",
+          "vertices": 28,
+          "polygons": 23,
+          "triangles": 38,
+          "bounds_unity_m": {
+            "min": [
+              0.0,
+              1.646,
+              0.002
+            ],
+            "max": [
+              0.104483,
+              1.776,
+              0.118992
+            ],
+            "size": [
+              0.104483,
+              0.13,
+              0.116992
+            ]
+          },
+          "semantic_sha256": "05bba5443fd3b27313aeff4b1a7fffbd1fded5c2c63366b11257d4e1c417a480"
+        },
+        {
+          "name": "Sector09__CLO_Hat_workCrown",
+          "vertices": 34,
+          "polygons": 27,
+          "triangles": 42,
+          "bounds_unity_m": {
+            "min": [
+              0.0,
+              1.644,
+              -0.043595
+            ],
+            "max": [
+              0.099079,
+              1.776,
+              0.114192
+            ],
+            "size": [
+              0.099079,
+              0.132,
+              0.157787
+            ]
+          },
+          "semantic_sha256": "5a17e14acc06cb1bf713f2ad69696042becf3309a881f65913342d29dde70d72"
+        },
+        {
+          "name": "Sector09__CLO_Hat_workFold",
+          "vertices": 24,
+          "polygons": 7,
+          "triangles": 26,
+          "bounds_unity_m": {
+            "min": [
+              -0.112,
+              1.66,
+              -0.108
+            ],
+            "max": [
+              0.112,
+              1.706,
+              0.113
+            ],
+            "size": [
+              0.224,
+              0.046,
+              0.221
+            ]
+          },
+          "semantic_sha256": "120a93f8415d890659609401badf7a0db0d00e34b07c64d8a06189205a4a98ad"
+        },
+        {
+          "name": "Sector09__GEO_FaceSurface",
+          "vertices": 14,
+          "polygons": 6,
+          "triangles": 12,
+          "bounds_unity_m": {
+            "min": [
+              0.0,
+              1.728,
+              -0.036
+            ],
+            "max": [
+              0.039944,
+              1.735,
+              0.003146
+            ],
+            "size": [
+              0.039944,
+              0.007,
+              0.039146
+            ]
+          },
+          "semantic_sha256": "18dd5e4a9c1ff284bca7e08ee9de57c78fe3b6606946a45823f498893efd33f1"
+        },
+        {
+          "name": "Sector09__GEO_Head",
+          "vertices": 39,
+          "polygons": 25,
+          "triangles": 50,
+          "bounds_unity_m": {
+            "min": [
+              0.0,
+              1.598,
+              -0.009051
+            ],
+            "max": [
+              0.081895,
+              1.735,
+              0.076
+            ],
+            "size": [
+              0.081895,
+              0.137,
+              0.085051
+            ]
+          },
+          "semantic_sha256": "b7c99650d77065b9ab4b5880aadb26007a670b6ae4e3979942d26e4ca2f679a3"
+        },
+        {
+          "name": "Sector09__HAIR_Crown",
+          "vertices": 30,
+          "polygons": 27,
+          "triangles": 38,
+          "bounds_unity_m": {
+            "min": [
+              0.0,
+              1.67,
+              -0.031435
+            ],
+            "max": [
+              0.077987,
+              1.738,
+              0.090134
+            ],
+            "size": [
+              0.077987,
+              0.068,
+              0.121569
+            ]
+          },
+          "semantic_sha256": "aaef490a1814be4c36732cc6e5cdb19bae0933a3f2e6360f64aaa13a8641f106"
+        },
+        {
+          "name": "Sector09__HAIR_Sides",
+          "vertices": 27,
+          "polygons": 17,
+          "triangles": 34,
+          "bounds_unity_m": {
+            "min": [
+              0.0,
+              1.598579,
+              0.023543
+            ],
+            "max": [
+              0.08321,
+              1.727,
+              0.079345
+            ],
+            "size": [
+              0.08321,
+              0.128421,
+              0.055802
+            ]
+          },
+          "semantic_sha256": "996cd45206ccf984f81da036ce2b3847c278ba911b64e5743de875c71ca9a3b2"
+        },
+        {
+          "name": "Sector09__Interior",
+          "vertices": 102,
+          "polygons": 69,
+          "triangles": 138,
+          "bounds_unity_m": {
+            "min": [
+              0.0,
+              1.598,
+              -0.036
+            ],
+            "max": [
+              0.081895,
+              1.735,
+              0.076
+            ],
+            "size": [
+              0.081895,
+              0.137,
+              0.112
+            ]
+          },
+          "semantic_sha256": "a790f31df540bdac6b36062cb27f2afdfbef4148bd8bcb362d321413d099ea2d"
+        },
+        {
+          "name": "Sector10__CLO_Hat_everydayBand",
+          "vertices": 32,
+          "polygons": 4,
+          "triangles": 32,
+          "bounds_unity_m": {
+            "min": [
+              -0.113,
+              1.674,
+              -0.13
+            ],
+            "max": [
+              0.113,
+              1.698,
+              0.106
+            ],
+            "size": [
+              0.226,
+              0.024,
+              0.236
+            ]
+          },
+          "semantic_sha256": "babcfa7316c133e952005bf2ed1dfa2b22d2bfa8cf8aedbce974928c88942875"
+        },
+        {
+          "name": "Sector10__CLO_Hat_everydayCrown",
+          "vertices": 19,
+          "polygons": 14,
+          "triangles": 22,
+          "bounds_unity_m": {
+            "min": [
+              -0.082024,
+              1.662,
+              -0.021
+            ],
+            "max": [
+              0.0,
+              1.76,
+              0.111
+            ],
+            "size": [
+              0.082024,
+              0.098,
+              0.132
+            ]
+          },
+          "semantic_sha256": "a054a9d13ccc6ec87759c186078b3c605efe5c70f7c7b580962410991eb689b6"
+        },
+        {
+          "name": "Sector10__CLO_Hat_warmCrown",
+          "vertices": 28,
+          "polygons": 23,
+          "triangles": 38,
+          "bounds_unity_m": {
+            "min": [
+              -0.104483,
+              1.646,
+              0.002
+            ],
+            "max": [
+              0.0,
+              1.776,
+              0.118992
+            ],
+            "size": [
+              0.104483,
+              0.13,
+              0.116992
+            ]
+          },
+          "semantic_sha256": "cfff58fcd3aeff9a4a8760127467f398f6238460cc095e8219a94e6b95b1983b"
+        },
+        {
+          "name": "Sector10__CLO_Hat_workCrown",
+          "vertices": 34,
+          "polygons": 27,
+          "triangles": 42,
+          "bounds_unity_m": {
+            "min": [
+              -0.099079,
+              1.644,
+              -0.043595
+            ],
+            "max": [
+              0.0,
+              1.776,
+              0.114192
+            ],
+            "size": [
+              0.099079,
+              0.132,
+              0.157787
+            ]
+          },
+          "semantic_sha256": "144edf7864b6600bd083bebf781b315c56175102b67901a711279f001bcfa139"
+        },
+        {
+          "name": "Sector10__CLO_Hat_workFold",
+          "vertices": 24,
+          "polygons": 7,
+          "triangles": 26,
+          "bounds_unity_m": {
+            "min": [
+              -0.116,
+              1.66,
+              -0.113
+            ],
+            "max": [
+              0.116,
+              1.706,
+              0.113
+            ],
+            "size": [
+              0.232,
+              0.046,
+              0.226
+            ]
+          },
+          "semantic_sha256": "7c1c73c0c734f39756afd0baab9ca997379c23c2d2850d67a8e845e1e668b8ef"
+        },
+        {
+          "name": "Sector10__GEO_FaceSurface",
+          "vertices": 14,
+          "polygons": 6,
+          "triangles": 12,
+          "bounds_unity_m": {
+            "min": [
+              -0.039944,
+              1.728,
+              -0.036
+            ],
+            "max": [
+              0.0,
+              1.735,
+              0.003146
+            ],
+            "size": [
+              0.039944,
+              0.007,
+              0.039146
+            ]
+          },
+          "semantic_sha256": "1019a84c1e0849116bba49cc4c8e9a97c77b28946b0df4f00964e400d2874296"
+        },
+        {
+          "name": "Sector10__GEO_Head",
+          "vertices": 39,
+          "polygons": 25,
+          "triangles": 50,
+          "bounds_unity_m": {
+            "min": [
+              -0.081895,
+              1.598,
+              -0.009051
+            ],
+            "max": [
+              0.0,
+              1.735,
+              0.076
+            ],
+            "size": [
+              0.081895,
+              0.137,
+              0.085051
+            ]
+          },
+          "semantic_sha256": "3eb7e7a6bfa831fc774aa368bffa21670c2a3f5efacf162babbfa9f4d9629c61"
+        },
+        {
+          "name": "Sector10__HAIR_Crown",
+          "vertices": 30,
+          "polygons": 27,
+          "triangles": 38,
+          "bounds_unity_m": {
+            "min": [
+              -0.077987,
+              1.67,
+              -0.031435
+            ],
+            "max": [
+              0.0,
+              1.738,
+              0.090134
+            ],
+            "size": [
+              0.077987,
+              0.068,
+              0.121569
+            ]
+          },
+          "semantic_sha256": "d0723108bee7337c77da5fcb0899d188488e7b9decb3faa2f71e28227b658c2a"
+        },
+        {
+          "name": "Sector10__HAIR_Sides",
+          "vertices": 27,
+          "polygons": 17,
+          "triangles": 34,
+          "bounds_unity_m": {
+            "min": [
+              -0.08321,
+              1.598579,
+              0.023543
+            ],
+            "max": [
+              0.0,
+              1.727,
+              0.079345
+            ],
+            "size": [
+              0.08321,
+              0.128421,
+              0.055802
+            ]
+          },
+          "semantic_sha256": "41a6acf8cbf320a83538f51d5dcbf2e6662fd9158ce3b14c2b2e360cec8c685e"
+        },
+        {
+          "name": "Sector10__Interior",
+          "vertices": 102,
+          "polygons": 69,
+          "triangles": 138,
+          "bounds_unity_m": {
+            "min": [
+              -0.081895,
+              1.598,
+              -0.036
+            ],
+            "max": [
+              0.0,
+              1.735,
+              0.076
+            ],
+            "size": [
+              0.081895,
+              0.137,
+              0.112
+            ]
+          },
+          "semantic_sha256": "96c092ec2627484d3976333cf6abbd3bf911b4a4435e80bc1f2fd5c65e932947"
+        },
+        {
+          "name": "Sector11__CLO_Hat_everydayBand",
+          "vertices": 8,
+          "polygons": 3,
+          "triangles": 6,
+          "bounds_unity_m": {
+            "min": [
+              -0.113,
+              1.674,
+              -0.057156
+            ],
+            "max": [
+              -0.077075,
+              1.698,
+              0.071439
+            ],
+            "size": [
+              0.035925,
+              0.024,
+              0.128595
+            ]
+          },
+          "semantic_sha256": "4a4f31163387ed2e8418da9b84826e5f352c8fd2407e4ceee4d4d76581ce919e"
+        },
+        {
+          "name": "Sector11__CLO_Hat_everydayCrown",
+          "vertices": 19,
+          "polygons": 12,
+          "triangles": 20,
+          "bounds_unity_m": {
+            "min": [
+              -0.116,
+              1.662,
+              -0.046257
+            ],
+            "max": [
+              0.0,
+              1.76,
+              0.072338
+            ],
+            "size": [
+              0.116,
+              0.098,
+              0.118595
+            ]
+          },
+          "semantic_sha256": "6095958cbc9274bffb9534136f06645d670e2275b2cf68e53611dd0ca7fb9550"
+        },
+        {
+          "name": "Sector11__CLO_Hat_warmCrown",
+          "vertices": 26,
+          "polygons": 18,
+          "triangles": 28,
+          "bounds_unity_m": {
+            "min": [
+              -0.113092,
+              1.646,
+              -0.050066
+            ],
+            "max": [
+              0.0,
+              1.776,
+              0.046771
+            ],
+            "size": [
+              0.113092,
+              0.13,
+              0.096837
+            ]
+          },
+          "semantic_sha256": "5f8424b838a3e28ad14000bf8001d903ea570210da902c7e96459af9a80106f3"
+        },
+        {
+          "name": "Sector11__CLO_Hat_warmEarFlap.R",
+          "vertices": 33,
+          "polygons": 30,
+          "triangles": 48,
+          "bounds_unity_m": {
+            "min": [
+              -0.138,
+              1.601,
+              -0.04475
+            ],
+            "max": [
+              -0.088,
+              1.669,
+              0.062
+            ],
+            "size": [
+              0.05,
+              0.068,
+              0.10675
+            ]
+          },
+          "semantic_sha256": "43d082e25b4f070fc467169cf77bc770f1bf4c0abc1b10c715f65b191a60d6de"
+        },
+        {
+          "name": "Sector11__CLO_Hat_workCrown",
+          "vertices": 26,
+          "polygons": 16,
+          "triangles": 28,
+          "bounds_unity_m": {
+            "min": [
+              -0.107242,
+              1.644,
+              -0.056918
+            ],
+            "max": [
+              0.0,
+              1.776,
+              0.046786
+            ],
+            "size": [
+              0.107242,
+              0.132,
+              0.103704
+            ]
+          },
+          "semantic_sha256": "acca3b40e0ad2648ab2aaee6fa38a614dfaf5c681bf23cb61b177f6883e09dd3"
+        },
+        {
+          "name": "Sector11__CLO_Hat_workFold",
+          "vertices": 9,
+          "polygons": 4,
+          "triangles": 8,
+          "bounds_unity_m": {
+            "min": [
+              -0.117,
+              1.66,
+              -0.044243
+            ],
+            "max": [
+              -0.103475,
+              1.706,
+              0.043244
+            ],
+            "size": [
+              0.013525,
+              0.046,
+              0.087487
+            ]
+          },
+          "semantic_sha256": "6b9631824458aab15da567a4085f555c9b26ed3d0f99c5a713d32e33b2ddac42"
+        },
+        {
+          "name": "Sector11__GEO_Ear.R",
+          "vertices": 21,
+          "polygons": 20,
+          "triangles": 30,
+          "bounds_unity_m": {
+            "min": [
+              -0.122321,
+              1.6165,
+              -0.01912
+            ],
+            "max": [
+              -0.087679,
+              1.635,
+              0.01712
+            ],
+            "size": [
+              0.034642,
+              0.0185,
+              0.03624
+            ]
+          },
+          "semantic_sha256": "23babb07718ddcebfcf2cda9e5800cfdc0421766aa5638f7cb9d562acfc428da"
+        },
+        {
+          "name": "Sector11__GEO_EarFold.R",
+          "vertices": 12,
+          "polygons": 7,
+          "triangles": 16,
+          "bounds_unity_m": {
+            "min": [
+              -0.124333,
+              1.605323,
+              -0.027975
+            ],
+            "max": [
+              -0.113361,
+              1.619345,
+              -0.01521
+            ],
+            "size": [
+              0.010972,
+              0.014022,
+              0.012765
+            ]
+          },
+          "semantic_sha256": "f58b36229ef6c3575b1a46af5b0ed9cc563724c2877fd7bae15193ff015dcabe"
+        },
+        {
+          "name": "Sector11__GEO_FaceSurface",
+          "vertices": 8,
+          "polygons": 3,
+          "triangles": 6,
+          "bounds_unity_m": {
+            "min": [
+              -0.088448,
+              1.684,
+              -0.049
+            ],
+            "max": [
+              -0.031212,
+              1.728,
+              -0.009051
+            ],
+            "size": [
+              0.057236,
+              0.044,
+              0.039949
+            ]
+          },
+          "semantic_sha256": "a02e3be4418cd0c04cb435c16883178bee585e21397f93955252a6878bdbeb2e"
+        },
+        {
+          "name": "Sector11__GEO_Head",
+          "vertices": 26,
+          "polygons": 16,
+          "triangles": 32,
+          "bounds_unity_m": {
+            "min": [
+              -0.104894,
+              1.598,
+              -0.049047
+            ],
+            "max": [
+              -0.039944,
+              1.728,
+              0.048667
+            ],
+            "size": [
+              0.06495,
+              0.13,
+              0.097714
+            ]
+          },
+          "semantic_sha256": "65e3aa5599b223066156b86f01aafd8ffbe0a873b402e2d8c15c5382296c7c2e"
+        },
+        {
+          "name": "Sector11__HAIR_Crown",
+          "vertices": 18,
+          "polygons": 9,
+          "triangles": 18,
+          "bounds_unity_m": {
+            "min": [
+              -0.077987,
+              1.676493,
+              -0.054414
+            ],
+            "max": [
+              -0.018445,
+              1.731507,
+              0.043753
+            ],
+            "size": [
+              0.059542,
+              0.055014,
+              0.098167
+            ]
+          },
+          "semantic_sha256": "02966a4b093287232e61f85729484e979f271477b4b625f0e48bfaf53579c199"
+        },
+        {
+          "name": "Sector11__HAIR_Sides",
+          "vertices": 22,
+          "polygons": 13,
+          "triangles": 26,
+          "bounds_unity_m": {
+            "min": [
+              -0.108511,
+              1.607466,
+              -0.049986
+            ],
+            "max": [
+              -0.042272,
+              1.727,
+              0.046695
+            ],
+            "size": [
+              0.066239,
+              0.119534,
+              0.096681
+            ]
+          },
+          "semantic_sha256": "1a7be2c039fe65cbbd17107287af4c8aaf9a20fe866cd17ca093de6eb69ddbc3"
+        },
+        {
+          "name": "Sector11__Interior",
+          "vertices": 62,
+          "polygons": 41,
+          "triangles": 82,
+          "bounds_unity_m": {
+            "min": [
+              -0.104894,
+              1.598,
+              -0.049047
+            ],
+            "max": [
+              -0.024345,
+              1.728,
+              0.048667
+            ],
+            "size": [
+              0.080549,
+              0.13,
+              0.097714
+            ]
+          },
+          "semantic_sha256": "c603fae1e92e23c6faa399eb747b579f62e0fd2b84beefe735baa2037dd602a9"
+        },
+        {
+          "name": "Sector12__CLO_Hat_everydayBand",
+          "vertices": 4,
+          "polygons": 1,
+          "triangles": 2,
+          "bounds_unity_m": {
+            "min": [
+              -0.104398,
+              1.674,
+              -0.095438
+            ],
+            "max": [
+              -0.077075,
+              1.698,
+              -0.050712
+            ],
+            "size": [
+              0.027323,
+              0.024,
+              0.044726
+            ]
+          },
+          "semantic_sha256": "af1b6021d3eb2af71bb7ecfd4023da315917d696401143bbeda96af976463930"
+        },
+        {
+          "name": "Sector12__CLO_Hat_everydayCrown",
+          "vertices": 17,
+          "polygons": 10,
+          "triangles": 18,
+          "bounds_unity_m": {
+            "min": [
+              -0.116,
+              1.662,
+              -0.114338
+            ],
+            "max": [
+              0.0,
+              1.76,
+              -0.021
+            ],
+            "size": [
+              0.116,
+              0.098,
+              0.093338
+            ]
+          },
+          "semantic_sha256": "99f1836ff97911dfc71019a1bc4dadea2f00d555a8a79a149c47fbd38e29b830"
+        },
+        {
+          "name": "Sector12__CLO_Hat_everydayPeak",
+          "vertices": 14,
+          "polygons": 11,
+          "triangles": 16,
+          "bounds_unity_m": {
+            "min": [
+              -0.088335,
+              1.669,
+              -0.124193
+            ],
+            "max": [
+              0.0,
+              1.685,
+              -0.03678
+            ],
+            "size": [
+              0.088335,
+              0.016,
+              0.087413
+            ]
+          },
+          "semantic_sha256": "0b3ca0bfdd2937807b6a57a041c9c83388cf13a5cb2320a06dc2ba7bd223a274"
+        },
+        {
+          "name": "Sector12__CLO_Hat_warmCrown",
+          "vertices": 18,
+          "polygons": 10,
+          "triangles": 20,
+          "bounds_unity_m": {
+            "min": [
+              -0.104483,
+              1.652437,
+              -0.106086
+            ],
+            "max": [
+              -0.019261,
+              1.769563,
+              -0.017924
+            ],
+            "size": [
+              0.085222,
+              0.117126,
+              0.088162
+            ]
+          },
+          "semantic_sha256": "fedd1ca6d768998e004c8d9ff63bf9f0960fbfb410445ebb347d070aac88f03b"
+        },
+        {
+          "name": "Sector12__CLO_Hat_warmEarFlap.R",
+          "vertices": 13,
+          "polygons": 6,
+          "triangles": 12,
+          "bounds_unity_m": {
+            "min": [
+              -0.134651,
+              1.601,
+              -0.06
+            ],
+            "max": [
+              -0.091349,
+              1.65989,
+              -0.025413
+            ],
+            "size": [
+              0.043302,
+              0.05889,
+              0.034587
+            ]
+          },
+          "semantic_sha256": "22fd3d0e5d14e1d8fd1df3fe64b4d2be4cbe62111c74b9b520ef652ca35c6fa0"
+        },
+        {
+          "name": "Sector12__CLO_Hat_warmFrontFold",
+          "vertices": 4,
+          "polygons": 1,
+          "triangles": 2,
+          "bounds_unity_m": {
+            "min": [
+              -0.0985,
+              1.655,
+              -0.129
+            ],
+            "max": [
+              -0.096,
+              1.71,
+              -0.092
+            ],
+            "size": [
+              0.0025,
+              0.055,
+              0.037
+            ]
+          },
+          "semantic_sha256": "423424fa365ff3f8745157952d0c3bc7c0badfebdd383ed8ce4a382e56368505"
+        },
+        {
+          "name": "Sector12__CLO_Hat_workCrown",
+          "vertices": 16,
+          "polygons": 8,
+          "triangles": 16,
+          "bounds_unity_m": {
+            "min": [
+              -0.099079,
+              1.650536,
+              -0.09588
+            ],
+            "max": [
+              -0.018264,
+              1.769464,
+              -0.028509
+            ],
+            "size": [
+              0.080815,
+              0.118928,
+              0.067371
+            ]
+          },
+          "semantic_sha256": "a0f821074e5a80dcc522fdc4804204b6522c71f622cf7b6723adeac015af72a6"
+        },
+        {
+          "name": "Sector12__CLO_Hat_workFold",
+          "vertices": 9,
+          "polygons": 4,
+          "triangles": 8,
+          "bounds_unity_m": {
+            "min": [
+              -0.108094,
+              1.66,
+              -0.105398
+            ],
+            "max": [
+              -0.042861,
+              1.706,
+              -0.042564
+            ],
+            "size": [
+              0.065233,
+              0.046,
+              0.062834
+            ]
+          },
+          "semantic_sha256": "ead3597b0d26c9addf1e712734e4292806ac10db533820db8a9ebf02246af353"
+        },
+        {
+          "name": "Sector12__GEO_FaceSurface",
+          "vertices": 26,
+          "polygons": 15,
+          "triangles": 30,
+          "bounds_unity_m": {
+            "min": [
+              -0.099861,
+              1.598,
+              -0.099856
+            ],
+            "max": [
+              -0.008732,
+              1.728,
+              -0.023096
+            ],
+            "size": [
+              0.091129,
+              0.13,
+              0.07676
+            ]
+          },
+          "semantic_sha256": "853ead8fe948e41c74668a75ef8d66509823dc249026b8e96342f700b7b57192"
+        },
+        {
+          "name": "Sector12__GEO_Head",
+          "vertices": 4,
+          "polygons": 1,
+          "triangles": 2,
+          "bounds_unity_m": {
+            "min": [
+              -0.104894,
+              1.598,
+              -0.052356
+            ],
+            "max": [
+              -0.09891,
+              1.625,
+              -0.024217
+            ],
+            "size": [
+              0.005984,
+              0.027,
+              0.028139
+            ]
+          },
+          "semantic_sha256": "a23943fde2d91673f28786785fecfbfccdadaacdcd1250f0be9579c4b79aa0b3"
+        },
+        {
+          "name": "Sector12__HAIR_Crown",
+          "vertices": 10,
+          "polygons": 3,
+          "triangles": 6,
+          "bounds_unity_m": {
+            "min": [
+              -0.055145,
+              1.676493,
+              -0.060133
+            ],
+            "max": [
+              0.0,
+              1.731507,
+              -0.0279
+            ],
+            "size": [
+              0.055145,
+              0.055014,
+              0.032233
+            ]
+          },
+          "semantic_sha256": "efef6427811c9359c49ae47ba2aeec1415e47097ad86dc1b721b0c0c8d553e36"
+        },
+        {
+          "name": "Sector12__HAIR_Sides",
+          "vertices": 4,
+          "polygons": 1,
+          "triangles": 2,
+          "bounds_unity_m": {
+            "min": [
+              -0.106977,
+              1.611974,
+              -0.057322
+            ],
+            "max": [
+              -0.096924,
+              1.65574,
+              -0.031468
+            ],
+            "size": [
+              0.010053,
+              0.043766,
+              0.025854
+            ]
+          },
+          "semantic_sha256": "49066dfc0c7a3cfbfe5f1f963215351f01da2b32c108565719fd0bf4eb81a783"
+        },
+        {
+          "name": "Sector12__Interior",
+          "vertices": 56,
+          "polygons": 38,
+          "triangles": 76,
+          "bounds_unity_m": {
+            "min": [
+              -0.104894,
+              1.598,
+              -0.099856
+            ],
+            "max": [
+              -0.006811,
+              1.728,
+              -0.023096
+            ],
+            "size": [
+              0.098083,
+              0.13,
+              0.07676
+            ]
+          },
+          "semantic_sha256": "ee61b6d5c8270b3cd549cd6b8838aee4418630e59bbe99570fb85a09a9175967"
+        },
+        {
+          "name": "Sector13__CLO_Hat_everydayBand",
+          "vertices": 6,
+          "polygons": 2,
+          "triangles": 4,
+          "bounds_unity_m": {
+            "min": [
+              -0.079903,
+              1.674,
+              -0.13
+            ],
+            "max": [
+              0.0,
+              1.698,
+              -0.086074
+            ],
+            "size": [
+              0.079903,
+              0.024,
+              0.043926
+            ]
+          },
+          "semantic_sha256": "68e3dab5e0ae1b5039553c134ffa12ca54ebdffe07932a0d3b334b59639944a4"
+        },
+        {
+          "name": "Sector13__CLO_Hat_everydayCrown",
+          "vertices": 17,
+          "polygons": 12,
+          "triangles": 20,
+          "bounds_unity_m": {
+            "min": [
+              -0.082024,
+              1.662,
+              -0.153
+            ],
+            "max": [
+              0.0,
+              1.76,
+              -0.021
+            ],
+            "size": [
+              0.082024,
+              0.098,
+              0.132
+            ]
+          },
+          "semantic_sha256": "fff4d10ee3a906abf5d8ed84e0cd1760803fef0c80e1b7e3aa0aa45d138bf98f"
+        },
+        {
+          "name": "Sector13__CLO_Hat_everydayPeak",
+          "vertices": 16,
+          "polygons": 13,
+          "triangles": 16,
+          "bounds_unity_m": {
+            "min": [
+              -0.088335,
+              1.669,
+              -0.16322
+            ],
+            "max": [
+              0.0,
+              1.685,
+              -0.03678
+            ],
+            "size": [
+              0.088335,
+              0.016,
+              0.12644
+            ]
+          },
+          "semantic_sha256": "98fed56d8329e046ed87c79db89fb7840b0ceebec6b0ab1c1be0a5b915777ebb"
+        },
+        {
+          "name": "Sector13__CLO_Hat_warmCrown",
+          "vertices": 12,
+          "polygons": 5,
+          "triangles": 10,
+          "bounds_unity_m": {
+            "min": [
+              -0.043278,
+              1.652437,
+              -0.114991
+            ],
+            "max": [
+              0.0,
+              1.769563,
+              -0.046102
+            ],
+            "size": [
+              0.043278,
+              0.117126,
+              0.068889
+            ]
+          },
+          "semantic_sha256": "fbd337e4108384510748e7018aea009aac0ea33e2ef89ab7df4a9e4f5867ba47"
+        },
+        {
+          "name": "Sector13__CLO_Hat_workCrown",
+          "vertices": 12,
+          "polygons": 5,
+          "triangles": 10,
+          "bounds_unity_m": {
+            "min": [
+              -0.04104,
+              1.650536,
+              -0.104192
+            ],
+            "max": [
+              0.0,
+              1.769464,
+              -0.039896
+            ],
+            "size": [
+              0.04104,
+              0.118928,
+              0.064296
+            ]
+          },
+          "semantic_sha256": "06748bf6817576116a0ef3899f1e05276a3ee4b6e267c22037c66e314bd13190"
+        },
+        {
+          "name": "Sector13__CLO_Hat_workFold",
+          "vertices": 6,
+          "polygons": 2,
+          "triangles": 4,
+          "bounds_unity_m": {
+            "min": [
+              -0.044774,
+              1.66,
+              -0.114
+            ],
+            "max": [
+              0.0,
+              1.706,
+              -0.099931
+            ],
+            "size": [
+              0.044774,
+              0.046,
+              0.014069
+            ]
+          },
+          "semantic_sha256": "210aa1686ca90cdb1d091e462ab6cab3c4f7d43c136b7ba8c7344d87a7b1e19a"
+        },
+        {
+          "name": "Sector13__GEO_FaceSurface",
+          "vertices": 21,
+          "polygons": 12,
+          "triangles": 24,
+          "bounds_unity_m": {
+            "min": [
+              -0.061717,
+              1.598,
+              -0.135
+            ],
+            "max": [
+              0.0,
+              1.728,
+              -0.035147
+            ],
+            "size": [
+              0.061717,
+              0.13,
+              0.099853
+            ]
+          },
+          "semantic_sha256": "f17588321ac22ce8e1fd496f7eacb14ff9a7b4fdf0d256dc6d400fdded33a1b8"
+        },
+        {
+          "name": "Sector13__HAIR_Crown",
+          "vertices": 4,
+          "polygons": 1,
+          "triangles": 2,
+          "bounds_unity_m": {
+            "min": [
+              -0.029844,
+              1.693493,
+              -0.060133
+            ],
+            "max": [
+              0.0,
+              1.714507,
+              -0.054414
+            ],
+            "size": [
+              0.029844,
+              0.021014,
+              0.005719
+            ]
+          },
+          "semantic_sha256": "d37738e3c7811ec5a3386e7f6fb362d10f726483794d8a36c52ff5f6d3a56f22"
+        },
+        {
+          "name": "Sector13__Interior",
+          "vertices": 42,
+          "polygons": 28,
+          "triangles": 56,
+          "bounds_unity_m": {
+            "min": [
+              -0.061717,
+              1.598,
+              -0.135
+            ],
+            "max": [
+              0.0,
+              1.728,
+              -0.035147
+            ],
+            "size": [
+              0.061717,
+              0.13,
+              0.099853
+            ]
+          },
+          "semantic_sha256": "15a7b62ede43c3a2e09faf558f1ce003f02c12af9045efdcd7f894be8f472028"
+        },
+        {
+          "name": "Sector14__CLO_Hat_everydayBand",
+          "vertices": 6,
+          "polygons": 2,
+          "triangles": 4,
+          "bounds_unity_m": {
+            "min": [
+              0.0,
+              1.674,
+              -0.13
+            ],
+            "max": [
+              0.079903,
+              1.698,
+              -0.086074
+            ],
+            "size": [
+              0.079903,
+              0.024,
+              0.043926
+            ]
+          },
+          "semantic_sha256": "167b2633c61c0c913e3aab085dc1f0fb7e32f5d4cd26b07e1b0433e69008d110"
+        },
+        {
+          "name": "Sector14__CLO_Hat_everydayCrown",
+          "vertices": 17,
+          "polygons": 12,
+          "triangles": 20,
+          "bounds_unity_m": {
+            "min": [
+              0.0,
+              1.662,
+              -0.153
+            ],
+            "max": [
+              0.082024,
+              1.76,
+              -0.021
+            ],
+            "size": [
+              0.082024,
+              0.098,
+              0.132
+            ]
+          },
+          "semantic_sha256": "c5cc82f64e841d40204c22f0fa75434e719193e959447a96623b96aa30a1a28c"
+        },
+        {
+          "name": "Sector14__CLO_Hat_everydayPeak",
+          "vertices": 16,
+          "polygons": 13,
+          "triangles": 16,
+          "bounds_unity_m": {
+            "min": [
+              0.0,
+              1.669,
+              -0.16322
+            ],
+            "max": [
+              0.088335,
+              1.685,
+              -0.03678
+            ],
+            "size": [
+              0.088335,
+              0.016,
+              0.12644
+            ]
+          },
+          "semantic_sha256": "d4e18432d6f84cb7fa8316cf4663f6d3e83947f1948e8479e88037fd07800579"
+        },
+        {
+          "name": "Sector14__CLO_Hat_warmCrown",
+          "vertices": 12,
+          "polygons": 5,
+          "triangles": 10,
+          "bounds_unity_m": {
+            "min": [
+              0.0,
+              1.652437,
+              -0.114991
+            ],
+            "max": [
+              0.043278,
+              1.769563,
+              -0.046102
+            ],
+            "size": [
+              0.043278,
+              0.117126,
+              0.068889
+            ]
+          },
+          "semantic_sha256": "0c4628849757c8be500ceb2e10119f5d68ccc7b1119b6d56c4e77b524b8945e0"
+        },
+        {
+          "name": "Sector14__CLO_Hat_warmFrontFold",
+          "vertices": 8,
+          "polygons": 4,
+          "triangles": 8,
+          "bounds_unity_m": {
+            "min": [
+              -0.0985,
+              1.655,
+              -0.129
+            ],
+            "max": [
+              0.0985,
+              1.71,
+              -0.092
+            ],
+            "size": [
+              0.197,
+              0.055,
+              0.037
+            ]
+          },
+          "semantic_sha256": "b1376df731887e9d7a722d716c60741d40db9ae9b12bf11ef262e07cdfd4fdf6"
+        },
+        {
+          "name": "Sector14__CLO_Hat_workCrown",
+          "vertices": 12,
+          "polygons": 5,
+          "triangles": 10,
+          "bounds_unity_m": {
+            "min": [
+              0.0,
+              1.650536,
+              -0.104192
+            ],
+            "max": [
+              0.04104,
+              1.769464,
+              -0.039896
+            ],
+            "size": [
+              0.04104,
+              0.118928,
+              0.064296
+            ]
+          },
+          "semantic_sha256": "983966628a04cd0901e6d526a0626ff6ce8378c9de23bef96f274e2d9d8a42bb"
+        },
+        {
+          "name": "Sector14__CLO_Hat_workFold",
+          "vertices": 6,
+          "polygons": 2,
+          "triangles": 4,
+          "bounds_unity_m": {
+            "min": [
+              0.0,
+              1.66,
+              -0.114
+            ],
+            "max": [
+              0.044774,
+              1.706,
+              -0.099931
+            ],
+            "size": [
+              0.044774,
+              0.046,
+              0.014069
+            ]
+          },
+          "semantic_sha256": "a9a56530adb5bd9d927f00367450aaf663f2088f11cc917fdea2bcc0714e6d36"
+        },
+        {
+          "name": "Sector14__GEO_FaceSurface",
+          "vertices": 21,
+          "polygons": 12,
+          "triangles": 24,
+          "bounds_unity_m": {
+            "min": [
+              0.0,
+              1.598,
+              -0.135
+            ],
+            "max": [
+              0.061717,
+              1.728,
+              -0.035147
+            ],
+            "size": [
+              0.061717,
+              0.13,
+              0.099853
+            ]
+          },
+          "semantic_sha256": "cd53aaf0116cf0d93c7e676530952dfbcce36cdbcd590f101435a087f71155f3"
+        },
+        {
+          "name": "Sector14__HAIR_Crown",
+          "vertices": 4,
+          "polygons": 1,
+          "triangles": 2,
+          "bounds_unity_m": {
+            "min": [
+              0.0,
+              1.693493,
+              -0.060133
+            ],
+            "max": [
+              0.029844,
+              1.714507,
+              -0.054414
+            ],
+            "size": [
+              0.029844,
+              0.021014,
+              0.005719
+            ]
+          },
+          "semantic_sha256": "9abe1b8dcfe2dbd2eccfe98a876021c3a027e60ea4396e22d956942421b766c9"
+        },
+        {
+          "name": "Sector14__Interior",
+          "vertices": 42,
+          "polygons": 28,
+          "triangles": 56,
+          "bounds_unity_m": {
+            "min": [
+              0.0,
+              1.598,
+              -0.135
+            ],
+            "max": [
+              0.061717,
+              1.728,
+              -0.035147
+            ],
+            "size": [
+              0.061717,
+              0.13,
+              0.099853
+            ]
+          },
+          "semantic_sha256": "172edbe58a1caf4b4666f2e2fb08b6151f2011ae3b571eaf83622c2ed1e530a4"
+        },
+        {
+          "name": "Sector15__CLO_Hat_everydayBand",
+          "vertices": 4,
+          "polygons": 1,
+          "triangles": 2,
+          "bounds_unity_m": {
+            "min": [
+              0.077075,
+              1.674,
+              -0.095438
+            ],
+            "max": [
+              0.104398,
+              1.698,
+              -0.050712
+            ],
+            "size": [
+              0.027323,
+              0.024,
+              0.044726
+            ]
+          },
+          "semantic_sha256": "d0eace37c750b63c41bd4136a72b7ac62848fe211241b8f308c06006745775c4"
+        },
+        {
+          "name": "Sector15__CLO_Hat_everydayCrown",
+          "vertices": 17,
+          "polygons": 10,
+          "triangles": 18,
+          "bounds_unity_m": {
+            "min": [
+              0.0,
+              1.662,
+              -0.114338
+            ],
+            "max": [
+              0.116,
+              1.76,
+              -0.021
+            ],
+            "size": [
+              0.116,
+              0.098,
+              0.093338
+            ]
+          },
+          "semantic_sha256": "67ac4841e6bfb5c9ef3fbce298aaa6e428102d74cd4a27d78ae64c57ae27188d"
+        },
+        {
+          "name": "Sector15__CLO_Hat_everydayPeak",
+          "vertices": 14,
+          "polygons": 11,
+          "triangles": 16,
+          "bounds_unity_m": {
+            "min": [
+              0.0,
+              1.669,
+              -0.124193
+            ],
+            "max": [
+              0.088335,
+              1.685,
+              -0.03678
+            ],
+            "size": [
+              0.088335,
+              0.016,
+              0.087413
+            ]
+          },
+          "semantic_sha256": "bd63d4b255c141924aebe09239736d4fc518cbf26fde91bbba2668db66378c29"
+        },
+        {
+          "name": "Sector15__CLO_Hat_warmCrown",
+          "vertices": 18,
+          "polygons": 10,
+          "triangles": 20,
+          "bounds_unity_m": {
+            "min": [
+              0.019261,
+              1.652437,
+              -0.106086
+            ],
+            "max": [
+              0.104483,
+              1.769563,
+              -0.017924
+            ],
+            "size": [
+              0.085222,
+              0.117126,
+              0.088162
+            ]
+          },
+          "semantic_sha256": "5576104e967ba8c4ba6e26116ed0e505ba436e5567134733372c4010280c7f86"
+        },
+        {
+          "name": "Sector15__CLO_Hat_warmEarFlap.L",
+          "vertices": 13,
+          "polygons": 6,
+          "triangles": 12,
+          "bounds_unity_m": {
+            "min": [
+              0.091349,
+              1.601,
+              -0.06
+            ],
+            "max": [
+              0.134651,
+              1.65989,
+              -0.025413
+            ],
+            "size": [
+              0.043302,
+              0.05889,
+              0.034587
+            ]
+          },
+          "semantic_sha256": "f78b881b94e274548021692f03c6661a386c23f4ed18422a7178006e2a833122"
+        },
+        {
+          "name": "Sector15__CLO_Hat_warmFrontFold",
+          "vertices": 4,
+          "polygons": 1,
+          "triangles": 2,
+          "bounds_unity_m": {
+            "min": [
+              0.096,
+              1.655,
+              -0.129
+            ],
+            "max": [
+              0.0985,
+              1.71,
+              -0.092
+            ],
+            "size": [
+              0.0025,
+              0.055,
+              0.037
+            ]
+          },
+          "semantic_sha256": "af4de467c8e052d98537ab054f8393a699b69ff5bc0a050260b5077d9930e40d"
+        },
+        {
+          "name": "Sector15__CLO_Hat_workCrown",
+          "vertices": 16,
+          "polygons": 8,
+          "triangles": 16,
+          "bounds_unity_m": {
+            "min": [
+              0.018264,
+              1.650536,
+              -0.09588
+            ],
+            "max": [
+              0.099079,
+              1.769464,
+              -0.028509
+            ],
+            "size": [
+              0.080815,
+              0.118928,
+              0.067371
+            ]
+          },
+          "semantic_sha256": "a97a658034453486f411fe95bb7525e39d30bf0610893e9af632afdd3527c327"
+        },
+        {
+          "name": "Sector15__CLO_Hat_workFold",
+          "vertices": 9,
+          "polygons": 4,
+          "triangles": 8,
+          "bounds_unity_m": {
+            "min": [
+              0.042861,
+              1.66,
+              -0.105398
+            ],
+            "max": [
+              0.108094,
+              1.706,
+              -0.042564
+            ],
+            "size": [
+              0.065233,
+              0.046,
+              0.062834
+            ]
+          },
+          "semantic_sha256": "5bcc0af975547ecf4ba58796426612e81a342ed324c41a106a12c5e079d2cd45"
+        },
+        {
+          "name": "Sector15__GEO_FaceSurface",
+          "vertices": 26,
+          "polygons": 15,
+          "triangles": 30,
+          "bounds_unity_m": {
+            "min": [
+              0.008732,
+              1.598,
+              -0.099856
+            ],
+            "max": [
+              0.099861,
+              1.728,
+              -0.023096
+            ],
+            "size": [
+              0.091129,
+              0.13,
+              0.07676
+            ]
+          },
+          "semantic_sha256": "a0546ac24541b62234cda27a38945710b387eed2ab6679f4937a5c21ab41406b"
+        },
+        {
+          "name": "Sector15__GEO_Head",
+          "vertices": 4,
+          "polygons": 1,
+          "triangles": 2,
+          "bounds_unity_m": {
+            "min": [
+              0.09891,
+              1.598,
+              -0.052356
+            ],
+            "max": [
+              0.104894,
+              1.625,
+              -0.024217
+            ],
+            "size": [
+              0.005984,
+              0.027,
+              0.028139
+            ]
+          },
+          "semantic_sha256": "c25a78d6839a9966fec2d8e60da43c8e3079f574d937cc3a9f82ee401273ca4e"
+        },
+        {
+          "name": "Sector15__HAIR_Crown",
+          "vertices": 10,
+          "polygons": 3,
+          "triangles": 6,
+          "bounds_unity_m": {
+            "min": [
+              0.0,
+              1.676493,
+              -0.060133
+            ],
+            "max": [
+              0.055145,
+              1.731507,
+              -0.0279
+            ],
+            "size": [
+              0.055145,
+              0.055014,
+              0.032233
+            ]
+          },
+          "semantic_sha256": "82406781b04ff68821c3ed931a5db79a230b2c1e0b90b9cc53a1cf4cb94f3e61"
+        },
+        {
+          "name": "Sector15__HAIR_Sides",
+          "vertices": 4,
+          "polygons": 1,
+          "triangles": 2,
+          "bounds_unity_m": {
+            "min": [
+              0.096924,
+              1.611974,
+              -0.057322
+            ],
+            "max": [
+              0.106977,
+              1.65574,
+              -0.031468
+            ],
+            "size": [
+              0.010053,
+              0.043766,
+              0.025854
+            ]
+          },
+          "semantic_sha256": "6bd9dab463091d8d56d230176d77390167710181a8f91c1c23c0fd5e515868ee"
+        },
+        {
+          "name": "Sector15__Interior",
+          "vertices": 56,
+          "polygons": 38,
+          "triangles": 76,
+          "bounds_unity_m": {
+            "min": [
+              0.006811,
+              1.598,
+              -0.099856
+            ],
+            "max": [
+              0.104894,
+              1.728,
+              -0.023096
+            ],
+            "size": [
+              0.098083,
+              0.13,
+              0.07676
+            ]
+          },
+          "semantic_sha256": "c2b06d00234cbc848566584f80665247c336f204c94ba0646955d3b4870bf8df"
+        }
+      ],
+      "semantic_sha256": "ed6d935ca2ed72e71f2ed4530d26c81cc308079f665d075ff8c5e4cb1a82a169"
+    }
+  },
+  "files": {
+    "HeadHero.fbx": "64c6bcabb7dbe1a97e27602df65810e6a29324a45ce0cfe601d075993441fa55",
+    "HeadNpc.fbx": "7c0175276b5322c3b8a1009abb65f83439450ffafbea4afb8da9ab4fa41eed67",
+    "FleshSurface.png": "11d604f03ee50cc95d82731ef81b95b9bba688b5b62d96418b133020736f1bd0",
+    "BrainSurface.png": "2c2168ef409cde0259e4aa27c3f318ff778870b01f5b56ef376ba464849f61d7"
+  }
+}

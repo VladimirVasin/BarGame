@@ -4245,29 +4245,33 @@ OS dynamic fonts в IMGUI запрещены; Unity legacy — аварийны�
 ### Принятое исключение — боевой полигон
 
 §6:PS1-полигон вне сюжета.
-`2026-10-07`:лом/пистолет→Начать/Назад;NPC:лом;Оружие→выбор;UIсброс/Rreload.
-Gun:worn dark unbranded metal/Rpalm gait/2hand shoulder aim/cross/flash.
-Aim:strafe/diagonals;Space:1m cardinal/back;cam/upper aim kept.
-Idle↔aim:smooth reversible cam-FOV/grip;shot cross:fixed centre/expand-return.
-`2026-10-08`:rig recoil/stablecam/streak/zone impulse-SFX-darkblood/head0HP→ragdoll.
-Port case/slide return-emptylock;handmag:stash-new-seat/rack;phase-case SFX;interrupt/drop/E:stage/Rresume.
-Rig-ragdoll:holes/bleed→reset-exit;corpse hits:HP-result-pose kept.
-World:chips/sparks/dark hole→reset-exit;bounded.
-Bullet:g/1surface/end clear1x;pause-hitstop0;reset-exit clear.
-Drop/E:своё/sharedUI/ammo kept;gun no taunt.
-HP pose/dark blood/pools10s/reset/thud/6zones;bar rear-head=end.
+`2026-10-07`:лом/пистолет→Начать/Назад;NPCлом;Оружие→выбор;сброс/Rreload.
+Gun:worn dark unbranded metal/Rpalm gait/2hand aim/cross-flash.
+Aim:strafe/diagonal;Space:1m cardinal/back;cam-upper aim kept.
+Idle↔aim:reversible cam-FOV/grip;centred cross expand-return.
+`2026-10-08`:rig recoil/stablecam/streak/zone impulse-SFX/head0HP→ragdoll.
+Head:source head-hair-face/skull/brain sectors;local chord/exit;
+retained-only collision/camera suppression/repeat loss;muted flesh.
+Dark blood:144head burst/800budget;shared slowing pulse→24s0;
+Rig cut/stains/flow-fed pool/debris stay;terminal bullet:
+convulsions fade≤2.35s;corpse:HP-result-pose/impulse.
+Case/slide return-emptylock/mag stash-new-seat-rack/phaseSFX;
+interrupt/drop/E:stage-ammo/Rresume/sharedUI/no gun taunt.
+World:bounded chips/sparks/holes;bullet:g/1surface/end1x.
+Pause-hitstop0;reset-exit clears traces/restores head-collision-clocks.
+HP pose/bar pools10s/thud/6zones/rear-head=end.
 Shoulders↑/chin in/breath=stamina/tremor/tight swing/awkward return;NPC calm.
-Soft knees/pelvis-grip-elbows↓/step-swing support/face block/flex.
+Soft knees/pelvis-grip-elbows↓/step-swing support/face block-flex.
 ≤2шага/подсед-наклон-упор off/подъём:пол→рука→сброс;2руки/возврат≠parry.
-NPC:1м/отход/промах→ответ/встающий/взгляд-павший/3стиля.
-Замах1м/толчок-хват;Q/B:0крови-добивания/высокий блок насквозь/буфер/отдача.
-Start:dummy/freecam;Tab:AIreset/barfocus/gunfree;MMBfocus;reset:mode/focus;bar:sparks-wall-recoil.
-Лом-толчок:шатание-инерция-ноги до падения;Q-блок:опора.
-Q вдали:таз-стопа→/грудь←;вблизи:сгиб колена;Q-толчок резче/лом kept.
-Torso mirrors;L-shove←/0HP-blood/palm-bar-body.
-Точка груди контрастна;стена/вне кадра/конец→скрыта.
-Win walks;gun aim/fire/reload;bar-E:toilet §7 FP/body/bar L/body-floor R/no reaction.
-Силы-заряд;щит:тусклый открыт=нет/янтарь=запрос/закрыт=готов/залит=блок.
+NPC1м/отход/промах→ответ/встающий/взгляд-павший/3стиля.
+Замах1м/толчок-хват;Q/B:0крови-добивания/highguard насквозь/буфер/отдача.
+Start:dummy/freecam;Tab:AIreset/barfocus/gunfree;MMBfocus;reset:mode/focus.
+Лом:wall sparks-recoil/шатание-инерция-ноги;Q-блок:опора.
+Q far:таз-стопа→/грудь←;near:колено;резче/лом kept.
+Torso mirror/L-shove←/0HP-blood/palm-bar-body.
+Грудь контрастна;стена/вне кадра/конец→скрыто.
+Win walks/gun aim-fire-reload;bar-E:toilet §7 FP/body/barL/body-floorR/no reaction.
+Charge power;shield:dim-open=none/amber=request/closed=ready/filled=block.
 Без речи-сюжета/9проверок;`ai/architecture-notes.md`.
 
 ### Принятое исключение — иллюстрации загрузки

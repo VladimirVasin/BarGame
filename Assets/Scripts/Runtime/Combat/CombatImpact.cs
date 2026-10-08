@@ -20,6 +20,7 @@ namespace BarPromenade
         public float AttackPower { get; }
         public Player3DAnatomicalPart Part { get; }
         public Vector3 LocalPoint { get; }
+        public Vector3 LocalDirection { get; }
         public float WeaponSpeed { get; }
         /// <summary>World-space momentum (N s), separate from anatomical HP damage.</summary>
         public Vector3 Impulse { get; }
@@ -31,7 +32,8 @@ namespace BarPromenade
             Vector3 point, Vector3 normal, Vector3 direction, float healthBefore,
             float healthAfter, MeleeHitResult result, MeleeHitLocation location = default, float attackPower = 0f,
             Player3DAnatomicalPart part = Player3DAnatomicalPart.Torso, Vector3 localPoint = default,
-            float weaponSpeed = 0f, Vector3 impulse = default, CombatImpactKind kind = CombatImpactKind.Weapon)
+            float weaponSpeed = 0f, Vector3 impulse = default, CombatImpactKind kind = CombatImpactKind.Weapon,
+            Vector3 localDirection = default)
         {
             Source = source; Target = target; AttackSequence = sequence;
             Point = point; Normal = normal; Direction = direction;
@@ -40,6 +42,7 @@ namespace BarPromenade
             AttackPower = attackPower;
             Part = part; LocalPoint = localPoint; WeaponSpeed = weaponSpeed; Impulse = impulse;
             Kind = kind;
+            LocalDirection = localDirection;
         }
     }
 }

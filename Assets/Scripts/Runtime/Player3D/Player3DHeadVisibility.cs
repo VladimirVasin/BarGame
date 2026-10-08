@@ -28,6 +28,8 @@ namespace BarPromenade
         public const string FaceBonePrefix = "face.";
 
         private readonly List<Renderer> hidden = new List<Renderer>(24);
+        private static readonly HashSet<Renderer> temporarilyHidden = new HashSet<Renderer>();
+        internal static bool IsTemporarilyHidden(Renderer renderer) => temporarilyHidden.Contains(renderer);
 
         private Player3DHeadVisibility()
         {
@@ -129,6 +131,7 @@ namespace BarPromenade
 
                 binding.Renderer.enabled = false;
                 visibility.hidden.Add(binding.Renderer);
+                temporarilyHidden.Add(binding.Renderer);
             }
 
             return visibility;
@@ -139,7 +142,8 @@ namespace BarPromenade
             for (int index = 0; index < hidden.Count; index++)
             {
                 Renderer renderer = hidden[index];
-                if (renderer != null)
+                temporarilyHidden.Remove(renderer);
+                if (renderer != null && !CombatHeadDestruction.IsSuppressed(renderer))
                 {
                     renderer.enabled = true;
                 }

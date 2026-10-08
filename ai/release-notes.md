@@ -6,22 +6,22 @@ Earlier notes: [`release-notes-2026-09.md`](archive/release-notes-2026-09.md).
 
 ## Unreleased
 
-### 2026-10-08 — Пистолет: прицел, отдача и раны
+### 2026-10-08 — Пистолет и разрушение головы
 
-- Прицел: WASD/стик — ход во все стороны; мышь/правый стик — наведение.
-  Space — отскок 1 м, без ввода назад; камера/прицел сохранены.
-  Вход без падения;без прицела обычный ход.
-- Камера/руки: плавный обратимый переход; выстрел расширяет перекрестие.
-  Пауза держит импульс; победа/труп — камеру/прицел.
-  Стоп удара не копит огонь.
-- Отдача/след пули; голова — смерть из позы. Удар по зоне/тёмная кровь/звук;
-  раны кровят до сброса/выхода. Труп реагирует, сохраняя HP/результат/позу.
-  Среда: сколы/искры/дырки до сброса/выхода.
-- Затвор движется/пустой открыт; гильзы звенят. Рука меняет магазин/дёргает
-  затвор со звуками фаз. Срыв/падение/подбор: стадия/R продолжить.
-  Пауза:стоп;сброс:очистка;без прицела:справа.
-- Вход:мишень;Tab:ИИ/сброс,лом-фокус;СКМ:фокус.
-  Сброс хранит режим/включает фокус.
+- Прицел:WASD/стик ход;мышь/Rстик наведение.
+  Края головы/уши:прицел без дрейфа.
+  Space:1м/без ввода назад;камера/прицел сохранены.
+  Без прицела:ход/пистолет справа.
+- Камера/руки:обратимый переход/крест выстрела.
+  Пауза/стоп:без накопления огня;победа/труп:камера.
+- Голова:разлом/мозг по попаданию;остатки ловят пули.
+  Дыры пропускают;камера голову не вернёт.
+  Кровь:пульс→0 за24с;смерть:конвульсии2.35с;сброс:возврат.
+  Труп:импульс/HP-результат-поза;сколы/искры/раны остаются.
+- Отдача/след/звук;затвор/пустой открыт/звон гильз.
+  Рука:магазин/затвор/SFX;срыв-подбор:R со стадии.
+  Сброс:очистка;вход:мишень;Tab:ИИ/сброс,лом-фокус;
+  СКМ:фокус;сброс:режим прежний/фокус.
 - Проверки: `build-combat-pistol-3d-model.py`;
   `Range_PistolSelectionProjectileFlightReloadAndResetUseTheLiveDuel`,
   `Range_PistolWinningAndCorpseShotsKeepTheLiveFreeAimCamera`,
@@ -29,7 +29,11 @@ Earlier notes: [`release-notes-2026-09.md`](archive/release-notes-2026-09.md).
   `Range_DefaultTargetStartsUnfocusedAndModeChangesThroughLiveInput`,
   `Range_PistolAimMovesInAllDirectionsWithoutChangingAim`,
   `Range_PistolAimedStepUsesLiveInputAndKeepsFreeAim`.
-  Кадры; `check-docs.py`, `git diff --check`.
+  `build-combat-gore-3d-model.py`:OK;
+  `Range_HeadFractureBleedingAndConvulsionsFollowContactPauseAndReset`:OK.
+  `Range_ProjectileHeadEdgesMatchVisibleFrozenAndRetainedSurfaces`:OK.
+  `Range_FreePistolCentreAimHitsVisibleHeadEdgesFromActualMuzzle`:passed.
+  `check-docs.py`, `git diff --check`.
 
 ### 2026-10-07 — Оружие, удар и хват
 
