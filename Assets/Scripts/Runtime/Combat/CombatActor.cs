@@ -536,14 +536,18 @@ namespace BarPromenade
                 LastImpact.Damage <= 0f && supportGrip != null && supportGrip.IsSupportingWeapon;
             bool stagger = (State.Phase == MeleePhase.Stagger && !supportedShove) ||
                 State.Phase == MeleePhase.GuardBroken || State.IsDefeated;
+            bool projectileStagger = State.Phase == MeleePhase.Stagger && LastImpact.Kind == CombatImpactKind.Projectile;
             bool stepping = State.Phase == MeleePhase.Step;
             AnimationClip chosen = stepping ? (stepBlocked ? ready : stepClip) : State.IsDefeated ? defeat : State.Phase == MeleePhase.GuardBroken ? guardBreak : stagger ? hit :
                 reaction != null ? reaction : State.IsKicking ? kick : State.IsCharging ? Current.Charge : State.IsAttacking ? ReleaseClip : roundEnded || weaponDropped ? rest : State.IsBlocking ? block : ready;
+            // Exact-part projectile reactions own the additive pose. The shared
+            // melee hit clip would otherwise bend every wounded limb identically.
+            if (projectileStagger) chosen = IsPistol ? ChoosePistolClip() : weaponDropped ? rest : ready;
             bool pistolPose = IsPistol && !State.IsDefeated && !stepping && !stagger && reaction == null && !State.IsKicking;
             if (pistolPose) chosen = ChoosePistolClip();
             AnimationClip pistolStepUpper = IsPistol && stepping && Pistol.AimRequested ? ChoosePistolClip() : null;
             supportGrip?.SetTarget(chosen == block || chosen == guardImpact,
-                !weaponDropped && chosen != rest && chosen != hit && chosen != guardBreak && !State.IsDefeated && !State.IsShoving,
+                !weaponDropped && !projectileStagger && chosen != rest && chosen != hit && chosen != guardBreak && !State.IsDefeated && !State.IsShoving,
                 State.IsContinuation);
             PresentShovePose();
             ConfigureAttackReachPose(ReachAction);
@@ -557,6 +561,7 @@ namespace BarPromenade
             if (stepping) progress = stepBlocked ? 0f : State.StepProgress;
             else if (State.Phase == MeleePhase.GuardImpact) progress = State.PhaseProgress;
             if (pistolPose) progress = PistolClipProgress(chosen);
+            else if (projectileStagger) progress = IsPistol ? PistolClipProgress(chosen) : 0f;
             bool newSwing = (State.IsCharging || State.IsAttacking || State.IsKicking) && visibleAttackSequence != State.AttackSequence;
             if (hero != null)
             {
@@ -631,7 +636,7 @@ namespace BarPromenade
         }
 
         private float TransitionSeconds(AnimationClip chosen) => IsPistol && (chosen == pistolRaise || chosen == pistolLower)
-            ? pistolRaise.length : chosen == hit && State.Phase == MeleePhase.Stagger &&
+            ? pistolRaise.length : State.Phase == MeleePhase.Stagger &&
             LastImpact.Kind == CombatImpactKind.Projectile && ImpactMotion != null && ImpactMotion.Age < .05f ? .045f : chosen == rest ? .35f :
             chosen == block || visibleClip == block.name ? .18f :
             State.IsContinuation && (chosen == Current.Charge || chosen == ReleaseClip) ? .20f : PoseBlendSeconds;

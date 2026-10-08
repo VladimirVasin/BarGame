@@ -79,9 +79,9 @@ repair commands. Generation/publication: [../tools/README.md](../tools/README.md
 
 ## Implemented capabilities
 
-- CombatTest:bar/gun8∞;NPCbar/3AI;aim-strafe/Step/recoil/reload.
-  Head sectors/brains;blood fades24s;terminal convulsions;corpse hits.
-  World chips/holes;gap:pierce/balance.
+- CombatTest:bar/gun8∞;NPCbar/3AI;aim-strafe/Step/recoil/reload;
+  regional rig/wounds;head/brain;finite blood/convulsions/corpse;
+  world chips/holes. Gap:pierce/balance.
 - City: 20 metre types; district heights, curved old/service streets,
   courts/passages/wings, unified ground; river/shore, church and Route 01.
   First unpaused dock entry starts finite port→factory→shop supply once;

@@ -852,7 +852,10 @@ namespace BarPromenade
                 float error = Mathf.Max(Vector3.ProjectOnPlane(feet[0] - RecoveryTarget(0, capture), Vector3.up).magnitude,
                     Vector3.ProjectOnPlane(feet[1] - RecoveryTarget(1, capture), Vector3.up).magnitude);
                 float urgency = ImpactMotion.RecoveryUrgency;
-                bool stable = !needsLanding && urgency < .42f && error < .11f;
+                bool injuryCatch = sequenceSteps == 0 && !moving && !settlingFoot && !needsLanding &&
+                    ImpactMotion.InjuredLegSide >= 0 && ImpactMotion.InjuredLegAmount > .05f &&
+                    ImpactMotion.ProjectileReactionAge < .24f;
+                bool stable = !injuryCatch && !needsLanding && urgency < .42f && error < .11f;
                 if (stable || catchRetry > 0f ||
                     sequenceSteps >= ImpactMotion.MaximumRecoverySteps)
                 {
@@ -872,16 +875,23 @@ namespace BarPromenade
                         Mathf.Abs(rightLoad - .5f) > .1f ? (rightLoad > .5f ? 0 : 1) :
                         Mathf.Abs(lateral) > .06f ? (lateral > 0f ? 1 : 0) : displaced;
                 }
+                if (injuryCatch) swing = ImpactMotion.InjuredLegSide;
                 float skill = Mathf.Clamp01(ImpactMotion.RecoverySkill);
                 float severity = Mathf.Clamp01(urgency * .65f);
                 float duration = Mathf.Lerp(.30f, .19f, severity) + (1f - skill) * .055f;
                 catchLift = Mathf.Lerp(.045f, .105f, severity) + (1f - skill) * .015f;
+                if (injuryCatch) catchLift = Mathf.Max(catchLift,
+                    ImpactMotion.ProjectileReactionPart == Player3DAnatomicalPart.LeftFoot ||
+                    ImpactMotion.ProjectileReactionPart == Player3DAnatomicalPart.RightFoot ? .105f : .075f);
                 int preferred = swing;
-                bool found = TryCatchTarget(preferred, capture, skill, out Vector3 target, out float score);
+                Vector3 target;
+                float score = 0f;
+                bool found = injuryCatch ? TryInjuredFootTarget(preferred, out target) :
+                    TryCatchTarget(preferred, capture, skill, out target, out score);
                 // Compare useful support, rather than repeatedly moving whichever
                 // foot is easiest to lift. The loaded foot wins only for a clearly
                 // better landing; an already airborne boot must land first.
-                bool canChangeSide = !alreadyTransferring && supportConfirmed[preferred];
+                bool canChangeSide = !injuryCatch && !alreadyTransferring && supportConfirmed[preferred];
                 if (!found && !canChangeSide) canChangeSide = ConfirmCurrentContact(preferred);
                 if (canChangeSide && TryCatchTarget(1 - preferred, capture, skill, out Vector3 alternative, out float otherScore) &&
                     (!found || otherScore > score + .035f))
@@ -909,7 +919,7 @@ namespace BarPromenade
                 LastCatchTarget = target; LastCatchSide = swing;
                 moving = settlingFoot = false; gaitOffset = Vector3.zero;
                 ImpactMotion.BeginRecoveryStep(swing, target, settleDuration);
-                JournalCatch("catch_planned", "support_recovery");
+                JournalCatch("catch_planned", injuryCatch ? "injured_leg" : "support_recovery");
             }
             if (catchAwaitingContact)
             {
@@ -976,6 +986,14 @@ namespace BarPromenade
                 f4: GameLog.Field("target_y", catchTarget.y), f5: GameLog.Field("target_z", catchTarget.z),
                 f6: GameLog.Field("presented_gap", hasPresentedContacts ? Vector3.Distance(presentedFeet[swing], catchTarget) : -1f),
                 f7: GameLog.Field("duration", settleDuration));
+        }
+
+        private bool TryInjuredFootTarget(int side, out Vector3 target)
+        {
+            // A finite withdrawal uses the same swept path, landing validation,
+            // support budget and contact confirmation as every recovery step.
+            Vector3 candidate = feet[side] - frame.forward * .07f + frame.right * (side == 0 ? -.025f : .025f);
+            return TryCatchGround(candidate, side, out target) && LandingClear(target) && ClearFootTravel(feet[side], target);
         }
 
         private bool ConfirmCurrentContact(int side, float groundTolerance = .025f)

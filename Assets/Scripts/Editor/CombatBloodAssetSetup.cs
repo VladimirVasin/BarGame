@@ -9,7 +9,7 @@ namespace BarPromenade.Editor
     public sealed class CombatBloodAssetSetup : AssetPostprocessor
     {
         private const string Folder = "Assets/Resources/CombatBlood/";
-        public override uint GetVersion() => 2;
+        public override uint GetVersion() => 3;
         private bool IsBlood => assetPath.StartsWith(Folder, StringComparison.Ordinal);
 
         private void OnPreprocessTexture()
@@ -66,6 +66,7 @@ namespace BarPromenade.Editor
                 Vector3[] vertices = authored.vertices, normals = authored.normals;
                 Vector3[] sourceVertices = skin.vertices, sourceNormals = skin.normals;
                 BoneWeight[] sourceWeights = skin.boneWeights, weights = new BoneWeight[vertices.Length];
+                int[] sourceIndices = new int[vertices.Length];
                 float lift = .0018f / Mathf.Max(.0001f, original.transform.lossyScale.x);
                 for (int i = 0; i < vertices.Length; i++)
                 {
@@ -82,8 +83,28 @@ namespace BarPromenade.Editor
                         throw new InvalidOperationException("Authored wound detached from source (metres): " + patch.name + ": " + Mathf.Sqrt(best));
                     vertices[i] = sourceVertices[closest] + sourceNormals[closest] * lift;
                     normals[i] = sourceNormals[closest]; weights[i] = sourceWeights[closest];
+                    sourceIndices[i] = closest;
                 }
                 authored.vertices = vertices; authored.normals = normals; authored.boneWeights = weights;
+                // The original grip closes palms/fingers with blend shapes.
+                // Preserve those exact local deltas as well as their bone skin;
+                // an open-hand overlay is not the gripping surface it covers.
+                authored.ClearBlendShapes();
+                Vector3[] sourceDelta = new Vector3[skin.vertexCount], sourceNormalDelta = new Vector3[skin.vertexCount];
+                Vector3[] delta = new Vector3[vertices.Length], normalDelta = new Vector3[vertices.Length];
+                for (int shape = 0; shape < skin.blendShapeCount; shape++)
+                    for (int frame = 0; frame < skin.GetBlendShapeFrameCount(shape); frame++)
+                    {
+                        skin.GetBlendShapeFrameVertices(shape, frame, sourceDelta, sourceNormalDelta, null);
+                        for (int vertex = 0; vertex < vertices.Length; vertex++)
+                        {
+                            int originalIndex = sourceIndices[vertex];
+                            delta[vertex] = sourceDelta[originalIndex] + sourceNormalDelta[originalIndex] * lift;
+                            normalDelta[vertex] = sourceNormalDelta[originalIndex];
+                        }
+                        authored.AddBlendShapeFrame(skin.GetBlendShapeName(shape), skin.GetBlendShapeFrameWeight(shape, frame),
+                            delta, normalDelta, null);
+                    }
                 authored.bindposes = skin.bindposes; authored.RecalculateBounds();
                 Transform[] ordered = new Transform[original.bones.Length];
                 for (int i = 0; i < ordered.Length; i++)
@@ -111,6 +132,9 @@ namespace BarPromenade.Editor
                     if (mesh == null || mesh.boneWeights.Length != mesh.vertexCount || mesh.uv.Length != mesh.vertexCount ||
                         mesh.bindposes.Length != renderer.bones.Length)
                         throw new InvalidOperationException("Invalid wound skin/UV contract: " + renderer.name);
+                    if ((renderer.name.Contains("Hand") || renderer.name.Contains("Finger") || renderer.name.Contains("Thumb") ||
+                        renderer.name.Contains("Glove")) && mesh.blendShapeCount == 0)
+                        throw new InvalidOperationException("The hand wound lost its production grip shape: " + renderer.name);
                 }
             }
             if (AssetDatabase.LoadAssetAtPath<Texture2D>(Folder + "BloodSurface.png") == null)

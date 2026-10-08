@@ -6,33 +6,28 @@ Earlier notes: [`release-notes-2026-09.md`](archive/release-notes-2026-09.md).
 
 ## Unreleased
 
-### 2026-10-08 — Пистолет и разрушение головы
+### 2026-10-08 — Пистолет: реакция тела и раны
 
-- Прицел:WASD/стик ход;мышь/Rстик наведение.
-  Края головы/уши:прицел без дрейфа.
-  Space:1м/без ввода назад;камера/прицел сохранены.
-  Без прицела:ход/пистолет справа.
-- Камера/руки:обратимый переход/крест выстрела.
-  Пауза/стоп:без накопления огня;победа/труп:камера.
-- Голова:разлом/мозг по попаданию;остатки ловят пули.
-  Дыры пропускают;камера голову не вернёт.
-  Кровь:пульс→0 за24с;смерть:конвульсии2.35с;сброс:возврат.
-  Труп:импульс/HP-результат-поза;сколы/искры/раны остаются.
-- Отдача/след/звук;затвор/пустой открыт/звон гильз.
-  Рука:магазин/затвор/SFX;срыв-подбор:R со стадии.
-  Сброс:очистка;вход:мишень;Tab:ИИ/сброс,лом-фокус;
-  СКМ:фокус;сброс:режим прежний/фокус.
+- Попадания в разные части тела срывают позу; шаг возвращает опору.
+  Ткань рвётся и промокает; кожа и обувь имеют свои раны.
+  Повтор усиливает след без новой расчленёнки; камера и урон прежние.
+- Прицел: ход во все стороны, наведение без дрейфа по краям головы;
+  Space — 1 м, без ввода назад. Камера/прицел сохраняются.
+  Переход к прицелу обратим; без него пистолет справа при ходьбе.
+- Голова разрушается по попаданию; остатки ловят пули, пустоты пропускают.
+  Кровь пульсирует и затухает; после конца раунда — краткие конвульсии.
+  Труп реагирует; следы остаются до сброса. Гильзы, затвор и магазин
+  двигаются со звуком; после срыва/подбора R продолжает перезарядку.
 - Проверки: `build-combat-pistol-3d-model.py`;
   `Range_PistolSelectionProjectileFlightReloadAndResetUseTheLiveDuel`,
   `Range_PistolWinningAndCorpseShotsKeepTheLiveFreeAimCamera`,
-  `Range_UnfocusedPistolCarryKeepsBothArmsWalkingAndCanAim`,
-  `Range_DefaultTargetStartsUnfocusedAndModeChangesThroughLiveInput`,
   `Range_PistolAimMovesInAllDirectionsWithoutChangingAim`,
   `Range_PistolAimedStepUsesLiveInputAndKeepsFreeAim`.
-  `build-combat-gore-3d-model.py`:OK;
+  `build-combat-gore-3d-model.py`, `build-combat-blood-3d-model.py`;
   `Range_HeadFractureBleedingAndConvulsionsFollowContactPauseAndReset`:OK.
   `Range_ProjectileHeadEdgesMatchVisibleFrozenAndRetainedSurfaces`:OK.
   `Range_FreePistolCentreAimHitsVisibleHeadEdgesFromActualMuzzle`:passed.
+  `Range_PistolRegionalReactionsAndWoundsStayContinuousThroughPauseAndReset`:passed.
   `check-docs.py`, `git diff --check`.
 
 ### 2026-10-07 — Оружие, удар и хват

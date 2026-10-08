@@ -146,27 +146,24 @@ The vertical slice contains:
   City/Bar/lodge markers belong to one load, consumed once; later arrivals stay.
   Day one raises mother's-house quest/map marker; door/map entry or starting
   inside closes it. No village signpost;
-- CombatTest:bar/gun→Start;NPCbar/3AI;dummy/freecam.
-  MMBfocus/TabAIreset:barfocus;reset:AI/focus;bar-Q:focus.
-  Gun8/∞:RMBaim/LMBedge/R-Xreload1.8;Rpalm gait.
-  Aim:cam-planar WASD/stick/strafe/clamp/yaw;release tank.
-  Space:focus/aim/cardinal-back Step/cam-aim.
-  FOV-IK:.25s/reversible/ready;ray:world/anatomy/0motor/0sway.
-  Recoil/streak/stablecam/hitkick/cross;case/g-bounce/SFX;
-  slide-emptylock/handmag-rack/ammo last.
-  Interrupt hold/Rresume;drop/E:stage-ammo;win fire-reload/HP-result.
-  Bullet:g/sweep1/no pierce-ricochet-guard-parry;head0HP/ragdoll.
-  Head16/skull/brains8;chord/exitfan;
-  Bullet:skinned head-face-ear/remnant triangles;gaps miss;camera suppression.
-  Blood144head/800budget/shared pulse→24s0;
-  Rig cut/wall-floor stains/pool/marks/debris→reset-exit0.
-  Terminal:convulsions2.35s;corpse:impulse/HP-result-pose.
-  Pause-hitstop0/reset all/end clear1x.
-  World:chips/sparks/holes128FIFO/particles192;no damage.
-  Bar:6zones/rear-head end/aim¼lock/firsthit/metal sparks-recoil/Lrelease.
-  Q:free leg/dry/highguard bypass;Windup1m/finite shove-catch/support;
-  rise≠grip/drop;E own-ammo/sharedUI/0grant/toilet:bar.
-  Gap:pierce/balance;
+- CombatTest:bar/gun→Start;NPCbar/3AI;dummy/freecam;MMBfocus/
+  TabAIreset:barfocus;reset:AI/focus;bar-Q:focus.
+  Gun8/∞:RMBaim/LMBedge/R-Xreload1.8/Rpalm gait;aim:cam-planar
+  WASD-stick strafe/clamp/yaw/release tank;Space:focus-aim/cardinal-back/cam.
+  FOV-IK:.25s/reversible;ray:world/anatomy/0motor-sway;
+  recoil/streak/stablecam/hitkick/cross;cases:g-bounce/SFX;
+  slide-emptylock/mag-rack/Rresume/dropE stage-ammo/win fire-reload.
+  Bullet:g/sweep1/0pierce-ricochet-guard-parry;head0HP/ragdoll.
+  Rig:chest-abdomen/upperarm-forearm-hand/leg shift-drop/foot-owner catch;
+  HP-stagger-momentum kept. Wounds:skin/fabric/glove-boot;directional
+  irregular entry/wet-dry24s/repeat≤4/64persistent;surface-only/0extra severing.
+  Head16/skull/brains8/chord-exitfan;head-face-ear/remnant mesh/gaps miss/cam-hide.
+  Blood144head/800budget/pulse→24s0;rig cut/stains/pool/marks/debris.
+  Terminal:convulsions2.35s;corpse:impulse/HP-result-pose;
+  pause-hitstop0/reset-exit0/end clear1x.
+  World:chips-sparks/holes128FIFO/particles192/0damage.
+  Bar:6zones/rearhead-end/firsthit/metal recoil/Qsupport/drop-recovery/toilet;
+  Eown-ammo/sharedUI/0grant. Gap:pierce/balance;
 - the retained Home opening is reachable only by a legacy request: held bed loop,
   silent `05:59` clock with rare whole-display flicker, five-second input lock,
   then localized Wake Up/Quit. Wake sets `06:00`, runs the clock/alarm and hides

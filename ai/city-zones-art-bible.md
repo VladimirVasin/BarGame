@@ -4249,16 +4249,16 @@ OS dynamic fonts в IMGUI запрещены; Unity legacy — аварийны�
 Gun:worn dark unbranded metal/Rpalm gait/2hand aim/cross-flash.
 Aim:strafe/diagonal;Space:1m cardinal/back;cam-upper aim kept.
 Idle↔aim:reversible cam-FOV/grip;centred cross expand-return.
-`2026-10-08`:rig recoil/stablecam/streak/zone impulse-SFX/head0HP→ragdoll.
-Head:source head-hair-face/skull/brain sectors;local chord/exit;
-retained-only collision/camera suppression/repeat loss;muted flesh.
-Dark blood:144head burst/800budget;shared slowing pulse→24s0;
-Rig cut/stains/flow-fed pool/debris stay;terminal bullet:
-convulsions fade≤2.35s;corpse:HP-result-pose/impulse.
-Case/slide return-emptylock/mag stash-new-seat-rack/phaseSFX;
-interrupt/drop/E:stage-ammo/Rresume/sharedUI/no gun taunt.
-World:bounded chips/sparks/holes;bullet:g/1surface/end1x.
-Pause-hitstop0;reset-exit clears traces/restores head-collision-clocks.
+`2026-10-08`:recoil/stablecam/streak/impulse-SFX/head0HP→ragdoll.
+Rig:chest-abdomen/arm-forearm-hand/leg-catch;skin/fabric/glove-boot:
+irregular hit-entry/wet-dry/repeat/surface-only;0extra severing.
+Head-hair-face/skull/brain:chord-exit/remnant collision/cam-hide/
+repeat-loss;muted. Dark blood144head/800budget/pulse→24s0;
+rig cut/stains/flow-pool/debris;terminal convulsions fade≤2.35s;corpse HP-pose-impulse.
+Case/slide-emptylock/mag stash-seat-rack/SFX;
+interrupt/dropE:stage-ammo/Rresume/sharedUI/0gun-taunt.
+World:chips/sparks/holes bounded;g/1surface/end1x.
+Pause-hitstop0;reset-exit:traces0/head-collision-clocks restored.
 HP pose/bar pools10s/thud/6zones/rear-head=end.
 Shoulders↑/chin in/breath=stamina/tremor/tight swing/awkward return;NPC calm.
 Soft knees/pelvis-grip-elbows↓/step-swing support/face block-flex.

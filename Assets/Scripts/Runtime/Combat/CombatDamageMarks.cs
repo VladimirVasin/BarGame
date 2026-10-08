@@ -9,28 +9,97 @@ namespace BarPromenade
     public sealed class CombatDamageMarks
     {
         public const int MaximumProjectileWounds = 64;
+        internal const float ProjectileWoundDrySeconds = 24f;
         private const int HolesPerLayer = 8;
         private static Material sharedProjectileMaterial;
         private static readonly int BulletHolesId = Shader.PropertyToID("_BulletHoles");
+        private static readonly int BulletShapesId = Shader.PropertyToID("_BulletShapes");
+        private static readonly int BulletStatesId = Shader.PropertyToID("_BulletStates");
         private static readonly int BulletHoleCountId = Shader.PropertyToID("_BulletHoleCount");
+
+        internal enum ProjectileWoundSurface { Skin, Fabric, Glove }
+
+        internal readonly struct ProjectileWoundPresentation
+        {
+            public ProjectileWoundSurface Surface { get; }
+            public Vector2 DirectionUv { get; }
+            public float Stretch { get; }
+            public float AgeSeconds { get; }
+            public float Wetness { get; }
+            public float Spread { get; }
+            public int HitCount { get; }
+
+            internal ProjectileWoundPresentation(ProjectileWoundSurface surface, Vector2 directionUv,
+                float stretch, float ageSeconds, float wetness, float spread, int hitCount)
+            {
+                Surface = surface; DirectionUv = directionUv; Stretch = stretch; AgeSeconds = ageSeconds;
+                Wetness = wetness; Spread = spread; HitCount = hitCount;
+            }
+        }
+        private sealed class BlendShape
+        {
+            public int SourceIndex;
+            public float Weight = float.NaN;
+            public float[] Frames;
+            public Vector3[][] Vertices, Normals;
+        }
         private sealed class Patch
         {
             public SkinnedMeshRenderer Renderer, Source;
-            public Vector3 Vertex, Normal;
-            public BoneWeight Weight;
+            public int Centre;
             public Matrix4x4[] BindPoses;
             public Transform[] Bones;
             public Vector3[] Vertices, Normals, SkinnedVertices;
+            public Vector3[] DeformedVertices, DeformedNormals;
+            public BlendShape[] BlendShapes = Array.Empty<BlendShape>();
             public Vector2[] Uv;
             public BoneWeight[] Weights;
             public int[] Triangles;
             public bool Active;
             public int Grade;
 
-            public Vector3 Position => Skin(false);
-            public Vector3 Direction => Skin(true).normalized;
-            private Vector3 Skin(bool normal) => Skin(Vertex, Normal, Weight, normal);
-            public Vector3 SkinVertex(int index, bool normal) => Skin(Vertices[index], Normals[index], Weights[index], normal);
+            public Vector3 Position { get { RefreshBlendShapes(); return SkinVertex(Centre, false); } }
+            public Vector3 Direction { get { RefreshBlendShapes(); return SkinVertex(Centre, true).normalized; } }
+            public Vector3 SkinVertex(int index, bool normal) => Skin(DeformedVertices[index], DeformedNormals[index], Weights[index], normal);
+
+            public void RefreshBlendShapes()
+            {
+                if (Source == null || Renderer == null) return;
+                bool changed = false;
+                foreach (BlendShape shape in BlendShapes)
+                {
+                    float weight = Source.GetBlendShapeWeight(shape.SourceIndex);
+                    if (weight == shape.Weight) continue;
+                    shape.Weight = weight; changed = true;
+                }
+                if (!changed) return;
+                Array.Copy(Vertices, DeformedVertices, Vertices.Length);
+                Array.Copy(Normals, DeformedNormals, Normals.Length);
+                foreach (BlendShape shape in BlendShapes)
+                {
+                    if (Mathf.Abs(shape.Weight) < .00001f) continue;
+                    int high = 0;
+                    while (high < shape.Frames.Length - 1 && shape.Weight > shape.Frames[high]) high++;
+                    int low = high - 1;
+                    float lowerWeight = low < 0 ? 0f : shape.Frames[low];
+                    float fraction = (shape.Weight - lowerWeight) / Mathf.Max(.0001f, shape.Frames[high] - lowerWeight);
+                    for (int vertex = 0; vertex < Vertices.Length; vertex++)
+                    {
+                        Vector3 lowerVertex = low < 0 ? Vector3.zero : shape.Vertices[low][vertex];
+                        Vector3 lowerNormal = low < 0 ? Vector3.zero : shape.Normals[low][vertex];
+                        DeformedVertices[vertex] += Vector3.LerpUnclamped(lowerVertex, shape.Vertices[high][vertex], fraction);
+                        DeformedNormals[vertex] += Vector3.LerpUnclamped(lowerNormal, shape.Normals[high][vertex], fraction);
+                    }
+                }
+                SyncBlendShapeWeights(Renderer);
+            }
+
+            public void SyncBlendShapeWeights(SkinnedMeshRenderer target)
+            {
+                if (Source == null || target == null) return;
+                for (int shape = 0; shape < BlendShapes.Length; shape++)
+                    target.SetBlendShapeWeight(shape, Source.GetBlendShapeWeight(BlendShapes[shape].SourceIndex));
+            }
             private Vector3 Skin(Vector3 vertex, Vector3 vertexNormal, BoneWeight weights, bool normal)
             {
                 Vector3 result = Vector3.zero;
@@ -52,11 +121,23 @@ namespace BarPromenade
             public int A, B, C;
             public Vector3 Barycentric;
             public Vector2 Uv;
-            public float Radius;
+            public Vector2 DirectionUv;
+            public float Radius, Stretch, Seed, AgeSeconds, Spread = 1f;
+            public float RayDistance = float.PositiveInfinity;
+            public int HitCount = 1, Slot;
+            public ProjectileWoundSurface Surface;
+            public ProjectileLayer Layer;
+            public float Wetness => Mathf.Pow(Mathf.Clamp01(1f - AgeSeconds / ProjectileWoundDrySeconds), .75f);
+            public float TargetSpread => 1f + (Surface == ProjectileWoundSurface.Fabric ? 1.05f :
+                Surface == ProjectileWoundSurface.Skin ? .48f : .30f) + (HitCount - 1) * .10f;
             public Vector3 Position => Sample(false);
             public Vector3 Direction => Sample(true).normalized;
-            private Vector3 Sample(bool normal) => Patch.SkinVertex(A, normal) * Barycentric.x +
-                Patch.SkinVertex(B, normal) * Barycentric.y + Patch.SkinVertex(C, normal) * Barycentric.z;
+            private Vector3 Sample(bool normal)
+            {
+                Patch.RefreshBlendShapes();
+                return Patch.SkinVertex(A, normal) * Barycentric.x + Patch.SkinVertex(B, normal) * Barycentric.y +
+                    Patch.SkinVertex(C, normal) * Barycentric.z;
+            }
         }
 
         private sealed class ProjectileLayer
@@ -64,7 +145,10 @@ namespace BarPromenade
             public Patch Patch;
             public SkinnedMeshRenderer Renderer;
             public readonly Vector4[] Holes = new Vector4[HolesPerLayer];
+            public readonly Vector4[] Shapes = new Vector4[HolesPerLayer];
+            public readonly Vector4[] States = new Vector4[HolesPerLayer];
             public int Count;
+            public bool Dirty;
         }
 
         private readonly List<Patch> patches = new List<Patch>();
@@ -72,6 +156,7 @@ namespace BarPromenade
         private readonly List<ProjectileLayer> projectileLayers = new List<ProjectileLayer>();
         private readonly MaterialPropertyBlock properties = new MaterialPropertyBlock();
         private readonly Material bloodMaterial;
+        private readonly float projectileSurfaceReach;
         private Patch last;
         private ProjectileWound lastProjectile;
         public int Count { get; private set; }
@@ -85,13 +170,29 @@ namespace BarPromenade
             if (index < 0 || index >= projectileWounds.Count) return false;
             ProjectileWound wound = projectileWounds[index];
             if (wound.Patch.Source == null || !wound.Patch.Source.enabled || !wound.Patch.Source.gameObject.activeInHierarchy) return false;
+            wound.Patch.RefreshBlendShapes();
+            wound.Patch.SyncBlendShapeWeights(wound.Layer.Renderer);
             position = wound.Position; direction = wound.Direction;
+            return true;
+        }
+
+        internal bool TryGetProjectilePresentation(int index, out ProjectileWoundPresentation presentation)
+        {
+            presentation = default;
+            if (index < 0 || index >= projectileWounds.Count) return false;
+            ProjectileWound wound = projectileWounds[index];
+            presentation = new ProjectileWoundPresentation(wound.Surface, wound.DirectionUv, wound.Stretch,
+                wound.AgeSeconds, wound.Wetness, wound.Spread, wound.HitCount);
             return true;
         }
 
         public CombatDamageMarks(CombatActor actor, Material material)
         {
             bloodMaterial = material;
+            // A tilted torso's coarse collider can meet the ray well before
+            // its clothing. Bound the same projection window for every patch
+            // by the real actor dimensions, rather than a fixed skin offset.
+            projectileSurfaceReach = Mathf.Clamp(actor.Body != null ? actor.Body.height * .25f : .4f, .18f, .4f);
             Transform rig = actor.DamageRigRoot;
             if (rig == null) throw new InvalidOperationException("Blood requires the actor's original rendered rig.");
             GameObject model = Resources.Load<GameObject>("CombatBlood/Wounds" + (actor.IsHero ? "Hero" : "Npc"));
@@ -118,32 +219,68 @@ namespace BarPromenade
                 int centre = 0;
                 for (int i = 1; i < uv.Length; i++)
                     if ((uv[i] - Vector2.one * .5f).sqrMagnitude < (uv[centre] - Vector2.one * .5f).sqrMagnitude) centre = i;
-                patches.Add(new Patch { Renderer = renderer, Source = source, Vertex = mesh.vertices[centre],
-                    Normal = mesh.normals[centre], Weight = mesh.boneWeights[centre], BindPoses = mesh.bindposes, Bones = sourceBones,
+                Vector3[] meshVertices = mesh.vertices, meshNormals = mesh.normals;
+                var shapes = new BlendShape[mesh.blendShapeCount];
+                for (int shape = 0; shape < shapes.Length; shape++)
+                {
+                    int sourceIndex = source.sharedMesh.GetBlendShapeIndex(mesh.GetBlendShapeName(shape));
+                    if (sourceIndex < 0) throw new InvalidOperationException("The wound lost its original blend shape: " + renderer.name);
+                    int frames = mesh.GetBlendShapeFrameCount(shape);
+                    var blend = new BlendShape { SourceIndex = sourceIndex, Frames = new float[frames],
+                        Vertices = new Vector3[frames][], Normals = new Vector3[frames][] };
+                    for (int frame = 0; frame < frames; frame++)
+                    {
+                        blend.Frames[frame] = mesh.GetBlendShapeFrameWeight(shape, frame);
+                        blend.Vertices[frame] = new Vector3[mesh.vertexCount]; blend.Normals[frame] = new Vector3[mesh.vertexCount];
+                        mesh.GetBlendShapeFrameVertices(shape, frame, blend.Vertices[frame], blend.Normals[frame], null);
+                    }
+                    shapes[shape] = blend;
+                }
+                patches.Add(new Patch { Renderer = renderer, Source = source, Centre = centre,
+                    BindPoses = mesh.bindposes, Bones = sourceBones,
                     Vertices = mesh.vertices, Normals = mesh.normals, Uv = uv, Weights = mesh.boneWeights,
-                    Triangles = mesh.triangles, SkinnedVertices = new Vector3[mesh.vertexCount] });
+                    DeformedVertices = (Vector3[])meshVertices.Clone(), DeformedNormals = (Vector3[])meshNormals.Clone(),
+                    BlendShapes = shapes, Triangles = mesh.triangles, SkinnedVertices = new Vector3[mesh.vertexCount] });
             }
         }
 
-        public void Add(Vector3 point, Vector3 incoming, bool projectile = false, bool head = false)
+        public void Add(Vector3 point, Vector3 incoming, bool projectile = false, bool head = false,
+            Player3DAnatomicalPart? part = null)
         {
             Patch nearest = null;
+            ProjectileWound nearestWound = null;
             float best = float.PositiveInfinity;
             foreach (Patch patch in patches)
             {
                 if (patch.Source == null || (!patch.Source.enabled && !Player3DHeadVisibility.IsTemporarilyHidden(patch.Source)) ||
                     !patch.Source.gameObject.activeInHierarchy) continue;
                 if (projectile && head && patch.Source.name != "GEO_Head" && patch.Source.name != "GEO_FaceSurface") continue;
-                float distance = (patch.Position - point).sqrMagnitude;
-                float score = distance + Mathf.Max(0f, Vector3.Dot(patch.Direction, incoming)) * .15f;
+                if (projectile && part.HasValue && !MatchesProjectileEndpoint(patch.Source.name, part.Value)) continue;
+                ProjectileWound candidate = projectile ? LocateProjectile(patch, point, incoming, projectileSurfaceReach) : null;
+                Vector3 surfacePoint = candidate != null ? candidate.Position : patch.Position;
+                Vector3 surfaceNormal = candidate != null ? candidate.Direction : patch.Direction;
+                float distance = (surfacePoint - point).sqrMagnitude;
+                // Exact surface distance wins. A large facing penalty can move a
+                // wrist contact onto a sleeve several centimetres from its glove.
+                float score = distance + Mathf.Max(0f, Vector3.Dot(surfaceNormal, incoming)) * (projectile ? .0004f : .15f);
+                bool rayContact = candidate != null && float.IsFinite(candidate.RayDistance);
+                bool previousRayContact = nearestWound != null && float.IsFinite(nearestWound.RayDistance);
+                if (previousRayContact && !rayContact) continue;
+                if (rayContact)
+                {
+                    // An actual entry on the incoming line outranks every
+                    // nearest-point fallback, including on a different patch.
+                    if (!previousRayContact) best = float.PositiveInfinity;
+                    score = candidate.RayDistance;
+                }
                 if (patch.Active && !projectile) score += .045f;
                 if (score >= best) continue;
-                nearest = patch; best = score;
+                nearest = patch; nearestWound = candidate; best = score;
             }
             if (nearest == null) return;
             if (projectile)
             {
-                AddProjectile(nearest, point);
+                AddProjectile(nearestWound);
                 RefreshVisibility();
                 return;
             }
@@ -158,21 +295,56 @@ namespace BarPromenade
             RefreshVisibility();
         }
 
-        private void AddProjectile(Patch patch, Vector3 point)
+        private static bool MatchesProjectileEndpoint(string source, Player3DAnatomicalPart part)
         {
-            ProjectileWound wound = LocateProjectile(patch, point);
-            last = patch; lastProjectile = wound;
+            bool left = part == Player3DAnatomicalPart.LeftHand || part == Player3DAnatomicalPart.LeftFoot;
+            switch (part)
+            {
+                case Player3DAnatomicalPart.LeftHand:
+                case Player3DAnatomicalPart.RightHand:
+                    return source.EndsWith(left ? ".L" : ".R", StringComparison.Ordinal) &&
+                        (source.StartsWith("GEO_Hand.", StringComparison.Ordinal) ||
+                         source.StartsWith("GEO_HandPalm", StringComparison.Ordinal) ||
+                         source.StartsWith("GEO_Finger", StringComparison.Ordinal) ||
+                         source.StartsWith("GEO_Thumb.", StringComparison.Ordinal) ||
+                         source.StartsWith("CLO_Glove", StringComparison.Ordinal));
+                case Player3DAnatomicalPart.LeftFoot:
+                case Player3DAnatomicalPart.RightFoot:
+                    return source.EndsWith(left ? ".L" : ".R", StringComparison.Ordinal) &&
+                        (source.StartsWith("CLO_Boot", StringComparison.Ordinal) ||
+                         source.StartsWith("GEO_Foot", StringComparison.Ordinal));
+                default: return true;
+            }
+        }
+
+        private void AddProjectile(ProjectileWound wound)
+        {
+            Patch patch = wound.Patch;
             ProjectileWound closest = null;
             float best = float.PositiveInfinity;
             foreach (ProjectileWound existing in projectileWounds)
             {
+                if (existing.Patch.Source != patch.Source || Vector3.Dot(existing.Direction, wound.Direction) < .65f) continue;
                 float distance = (existing.Position - wound.Position).sqrMagnitude;
                 if (distance >= best) continue;
                 closest = existing; best = distance;
             }
-            // A repeated shot through the same opening keeps that opening. At
-            // saturation retain every old hole rather than overwriting history.
-            if (closest != null && (best < .012f * .012f || projectileWounds.Count >= MaximumProjectileWounds)) return;
+            float mergeDistance = wound.Surface == ProjectileWoundSurface.Glove ? .024f : .032f;
+            if (closest != null && best < mergeDistance * mergeDistance)
+            {
+                // Reopen and damage this same entry; neither a second overlay nor
+                // a new bleed source is fabricated over an existing opening.
+                closest.HitCount = Mathf.Min(4, closest.HitCount + 1);
+                closest.AgeSeconds = 0f;
+                closest.Stretch = Mathf.Max(closest.Stretch, wound.Stretch);
+                last = closest.Patch; lastProjectile = closest;
+                StoreProjectile(closest);
+                UploadProjectileLayer(closest.Layer);
+                return;
+            }
+            // Saturation retains the history already on the body. A far contact
+            // cannot enlarge an unrelated old opening just because the pool is full.
+            if (projectileWounds.Count >= MaximumProjectileWounds) return;
             ProjectileLayer layer = null;
             foreach (ProjectileLayer candidate in projectileLayers)
                 if (candidate.Patch == patch && candidate.Count < HolesPerLayer) { layer = candidate; break; }
@@ -188,14 +360,49 @@ namespace BarPromenade
                 }
                 ConfigureProjectileLayer(layer, patch);
             }
-            layer.Holes[layer.Count++] = new Vector4(wound.Uv.x, wound.Uv.y, wound.Radius, 0f);
+            wound.Layer = layer; wound.Slot = layer.Count++;
+            last = patch; lastProjectile = wound;
+            StoreProjectile(wound);
+            UploadProjectileLayer(layer);
+            projectileWounds.Add(wound);
+            Count++;
+        }
+
+        private static void StoreProjectile(ProjectileWound wound)
+        {
+            ProjectileLayer layer = wound.Layer;
+            layer.Holes[wound.Slot] = new Vector4(wound.Uv.x, wound.Uv.y, wound.Radius, (float)wound.Surface);
+            layer.Shapes[wound.Slot] = new Vector4(wound.DirectionUv.x, wound.DirectionUv.y, wound.Stretch, wound.Seed);
+            layer.States[wound.Slot] = new Vector4(wound.AgeSeconds, wound.Wetness, wound.Spread, wound.HitCount);
+            layer.Dirty = true;
+        }
+
+        private void UploadProjectileLayer(ProjectileLayer layer)
+        {
             properties.Clear();
             properties.SetFloat("_BulletWound", 1f);
             properties.SetFloat(BulletHoleCountId, layer.Count);
             properties.SetVectorArray(BulletHolesId, layer.Holes);
+            properties.SetVectorArray(BulletShapesId, layer.Shapes);
+            properties.SetVectorArray(BulletStatesId, layer.States);
             layer.Renderer.SetPropertyBlock(properties); properties.Clear();
-            projectileWounds.Add(wound);
-            Count++;
+            layer.Dirty = false;
+        }
+
+        /// <summary>The existing duel clock owns drying and soak; rendering never advances it.</summary>
+        public void Advance(float seconds)
+        {
+            if (!float.IsFinite(seconds) || seconds <= 0f) return;
+            foreach (ProjectileWound wound in projectileWounds)
+            {
+                if (wound.AgeSeconds >= ProjectileWoundDrySeconds) continue;
+                float step = Mathf.Min(seconds, ProjectileWoundDrySeconds - wound.AgeSeconds);
+                wound.AgeSeconds += step;
+                wound.Spread = Mathf.Lerp(wound.TargetSpread, wound.Spread, Mathf.Exp(-step * .36f));
+                StoreProjectile(wound);
+            }
+            foreach (ProjectileLayer layer in projectileLayers)
+                if (layer.Dirty) UploadProjectileLayer(layer);
         }
 
         private void ConfigureProjectileLayer(ProjectileLayer layer, Patch patch)
@@ -210,16 +417,33 @@ namespace BarPromenade
             renderer.shadowCastingMode = ShadowCastingMode.Off; renderer.receiveShadows = true;
             renderer.lightProbeUsage = LightProbeUsage.BlendProbes; renderer.reflectionProbeUsage = ReflectionProbeUsage.Off;
             renderer.updateWhenOffscreen = true;
+            patch.RefreshBlendShapes();
+            patch.SyncBlendShapeWeights(renderer);
         }
 
-        private static ProjectileWound LocateProjectile(Patch patch, Vector3 point)
+        private static ProjectileWound LocateProjectile(Patch patch, Vector3 point, Vector3 incoming, float surfaceReach)
         {
+            patch.RefreshBlendShapes();
             for (int i = 0; i < patch.Vertices.Length; i++) patch.SkinnedVertices[i] = patch.SkinVertex(i, false);
             var wound = new ProjectileWound { Patch = patch, Barycentric = Vector3.right };
+            Vector3 rayDirection = incoming.sqrMagnitude > .000001f ? incoming.normalized : -patch.Direction;
+            Vector3 rayOrigin = point - rayDirection * surfaceReach;
             float best = float.PositiveInfinity;
             for (int i = 0; i < patch.Triangles.Length; i += 3)
             {
                 int a = patch.Triangles[i], b = patch.Triangles[i + 1], c = patch.Triangles[i + 2];
+                if (RayTriangle(rayOrigin, rayDirection, patch.SkinnedVertices[a], patch.SkinnedVertices[b],
+                    patch.SkinnedVertices[c], out float rayDistance, out Vector3 rayBarycentric) &&
+                    rayDistance <= surfaceReach * 2f)
+                {
+                    if (rayDistance < wound.RayDistance)
+                    {
+                        wound.RayDistance = rayDistance;
+                        wound.A = a; wound.B = b; wound.C = c; wound.Barycentric = rayBarycentric;
+                    }
+                    continue;
+                }
+                if (float.IsFinite(wound.RayDistance)) continue;
                 Vector3 barycentric = ClosestTriangle(patch.SkinnedVertices[a], patch.SkinnedVertices[b], patch.SkinnedVertices[c], point);
                 Vector3 surface = patch.SkinnedVertices[a] * barycentric.x + patch.SkinnedVertices[b] * barycentric.y + patch.SkinnedVertices[c] * barycentric.z;
                 float distance = (surface - point).sqrMagnitude;
@@ -233,7 +457,58 @@ namespace BarPromenade
             float uvLength = Mathf.Max(.0001f, useA ? uvA.magnitude : uvB.magnitude);
             float worldLength = Vector3.Distance(patch.SkinnedVertices[wound.A], patch.SkinnedVertices[useA ? wound.B : wound.C]);
             wound.Radius = Mathf.Clamp(.014f * uvLength / Mathf.Max(.0001f, worldLength), .015f, .18f);
+            wound.Surface = patch.Source.name.StartsWith("CLO_Glove", StringComparison.Ordinal) ||
+                patch.Source.name.StartsWith("CLO_Boot", StringComparison.Ordinal) ||
+                patch.Source.name.StartsWith("GEO_FootShoe", StringComparison.Ordinal)
+                ? ProjectileWoundSurface.Glove : patch.Source.name.StartsWith("CLO_", StringComparison.Ordinal)
+                ? ProjectileWoundSurface.Fabric : ProjectileWoundSurface.Skin;
+            Vector3 normal = wound.Direction;
+            Vector3 travel = incoming.sqrMagnitude > .000001f ? incoming.normalized : -normal;
+            Vector3 tangent = Vector3.ProjectOnPlane(travel, normal);
+            float obliquity = Mathf.Clamp01(tangent.magnitude);
+            if (tangent.sqrMagnitude < .000001f)
+            {
+                tangent = Vector3.ProjectOnPlane(Vector3.up, normal);
+                if (tangent.sqrMagnitude < .000001f) tangent = Vector3.ProjectOnPlane(Vector3.right, normal);
+            }
+            Vector3 edgeA = patch.SkinnedVertices[wound.B] - patch.SkinnedVertices[wound.A];
+            Vector3 edgeB = patch.SkinnedVertices[wound.C] - patch.SkinnedVertices[wound.A];
+            float aa = Vector3.Dot(edgeA, edgeA), ab = Vector3.Dot(edgeA, edgeB), bb = Vector3.Dot(edgeB, edgeB);
+            float determinant = aa * bb - ab * ab;
+            Vector2 directionUv = Vector2.up;
+            if (determinant > .000000000001f)
+            {
+                float da = Vector3.Dot(tangent, edgeA), db = Vector3.Dot(tangent, edgeB);
+                directionUv = uvA * ((da * bb - db * ab) / determinant) + uvB * ((db * aa - da * ab) / determinant);
+            }
+            wound.DirectionUv = directionUv.sqrMagnitude > .000001f ? directionUv.normalized : Vector2.up;
+            wound.Stretch = 1f + obliquity * (wound.Surface == ProjectileWoundSurface.Fabric ? .85f :
+                wound.Surface == ProjectileWoundSurface.Glove ? .55f : .38f);
+            // Stable local variation: it follows the wound through ragdoll and reset,
+            // and does not consume any gameplay/particle random sequence.
+            wound.Seed = Mathf.Repeat(wound.Uv.x * 17.17f + wound.Uv.y * 37.71f + wound.A * .618f, 1f) * Mathf.PI * 2f;
             return wound;
+        }
+
+        private static bool RayTriangle(Vector3 origin, Vector3 direction, Vector3 a, Vector3 b, Vector3 c,
+            out float distance, out Vector3 barycentric)
+        {
+            distance = 0f; barycentric = default;
+            Vector3 ab = b - a, ac = c - a;
+            Vector3 cross = Vector3.Cross(direction, ac);
+            float determinant = Vector3.Dot(ab, cross);
+            if (Mathf.Abs(determinant) < .000000001f) return false;
+            float inverse = 1f / determinant;
+            Vector3 offset = origin - a;
+            float u = Vector3.Dot(offset, cross) * inverse;
+            if (u < 0f || u > 1f) return false;
+            Vector3 q = Vector3.Cross(offset, ab);
+            float v = Vector3.Dot(direction, q) * inverse;
+            if (v < 0f || u + v > 1f) return false;
+            distance = Vector3.Dot(ac, q) * inverse;
+            if (distance < 0f) return false;
+            barycentric = new Vector3(1f - u - v, u, v);
+            return true;
         }
 
         private static Vector3 ClosestTriangle(Vector3 a, Vector3 b, Vector3 c, Vector3 point)
@@ -262,12 +537,18 @@ namespace BarPromenade
         {
             foreach (Patch patch in patches)
                 if (patch.Renderer != null)
+                {
+                    patch.RefreshBlendShapes();
                     patch.Renderer.enabled = patch.Active && patch.Source != null && patch.Source.enabled &&
                         patch.Source.gameObject.activeInHierarchy;
+                }
             foreach (ProjectileLayer layer in projectileLayers)
                 if (layer.Renderer != null)
+                {
+                    layer.Patch.SyncBlendShapeWeights(layer.Renderer);
                     layer.Renderer.enabled = layer.Count > 0 && layer.Patch.Source != null && layer.Patch.Source.enabled &&
                         layer.Patch.Source.gameObject.activeInHierarchy;
+                }
         }
 
         public void Reset()
@@ -279,7 +560,10 @@ namespace BarPromenade
             }
             foreach (ProjectileLayer layer in projectileLayers)
             {
-                layer.Count = 0; Array.Clear(layer.Holes, 0, layer.Holes.Length);
+                layer.Count = 0; layer.Dirty = false;
+                Array.Clear(layer.Holes, 0, layer.Holes.Length);
+                Array.Clear(layer.Shapes, 0, layer.Shapes.Length);
+                Array.Clear(layer.States, 0, layer.States.Length);
                 if (layer.Renderer != null) { layer.Renderer.enabled = false; layer.Renderer.SetPropertyBlock(null); }
             }
             projectileWounds.Clear();

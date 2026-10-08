@@ -27,7 +27,7 @@ namespace BarPromenade
         public float BalanceLoad { get; private set; }
         public float Age => age;
         public bool WantsKnockdown { get; private set; }
-        public bool IsActive => age < .9f || velocity.sqrMagnitude > .0025f || rotation.sqrMagnitude > .0001f ||
+        public bool IsActive => ProjectileReactionActive || age < .9f || velocity.sqrMagnitude > .0025f || rotation.sqrMagnitude > .0001f ||
             recoveryStepActive || (ExperimentalRecovery && flywheelAngle.sqrMagnitude > .0004f);
         public float ReactionAmount => Mathf.Clamp01(Mathf.Max(rotation.magnitude * 2f, velocity.magnitude / 2f));
         public MeleeBodyRegion StruckRegion { get; private set; }
@@ -67,6 +67,7 @@ namespace BarPromenade
             BeginBalanceResponse(fresh, stamina01, intoxication01);
             LastImpact = impact; age = 0f;
             StruckRegion = impact.Location.Region;
+            if (impact.Kind == CombatImpactKind.Projectile) BeginProjectileReaction(impact);
             struckBone = ResponseBone(BoneIndex(impact.Part));
             Vector3 planar = Vector3.ProjectOnPlane(impact.Impulse, Vector3.up);
             if (fresh && Finite(carryVelocity)) velocity = Vector3.ProjectOnPlane(carryVelocity, Vector3.up) * .35f;
@@ -76,22 +77,15 @@ namespace BarPromenade
             // A centred strike also rocks the body about its loaded boot.
             torque += Vector3.Cross(Vector3.up, planar) / 115f;
             angularVelocity = Vector3.ClampMagnitude(angularVelocity + torque, 5.5f);
-            // A hand/forearm contact moves its shoulder; the elbow and wrist keep
-            // their authored bend. Planted legs belong to footwork IK throughout.
+            // The shared spring moves a contacted hand/forearm at its shoulder;
+            // projectile accents below own the exact joint. Legs belong to IK.
             // Exact contact still supplies the whole-body torque and support loss.
             if (struckBone >= 0)
             {
                 Vector3 localAxis = Vector3.Cross(Vector3.up, impact.Impulse.normalized);
                 Vector3 kick = localAxis * Mathf.Clamp(impact.Impulse.magnitude / 38f, .3f, 4.5f) + torque * .20f;
-                if (impact.Kind == CombatImpactKind.Projectile)
-                {
-                    // The abrupt local flinch is stronger than the bullet's whole-body
-                    // momentum; the short hit transition exposes it after contact.
-                    kick *= 2.6f;
-                    float accent = struckBone == 5 || struckBone == 8 ? .18f : .12f;
-                    localRotation[struckBone] = Vector3.ClampMagnitude(localRotation[struckBone] +
-                        AnatomicalRotation(struckBone, localAxis * accent), .20f);
-                }
+                // Projectiles have their own exact-joint envelope; the shared
+                // spring still carries their small physical momentum.
                 localVelocity[struckBone] = Vector3.ClampMagnitude(localVelocity[struckBone] + AnatomicalRotation(struckBone, kick), 6f);
             }
             bool leg = StruckRegion == MeleeBodyRegion.LeftLeg || StruckRegion == MeleeBodyRegion.RightLeg;
@@ -122,6 +116,7 @@ namespace BarPromenade
             while (remaining > .000001f)
             {
                 float dt = Mathf.Min(remaining, 1f / 120f); remaining -= dt; age += dt;
+                AdvanceProjectileReaction(dt);
                 recoveryElapsed += dt;
                 recoveryStepRemaining = Mathf.Max(0f, recoveryStepRemaining - dt);
                 if (ExperimentalRecovery) AdvanceCounterBalance(dt);
@@ -158,13 +153,14 @@ namespace BarPromenade
             if (!IsActive) return;
             for (int i = 0; i < bones.Length; i++) { basePositions[i] = bones[i].localPosition; baseRotations[i] = bones[i].localRotation; }
             applied = true;
-            bones[0].position += Vector3.up * Mathf.Max(-.16f,
-                drop - .055f * Mathf.Clamp01(BalanceLoad) - .055f * legWeakness);
+            bones[0].position += ProjectileWeightShift + Vector3.up * Mathf.Max(ProjectileReactionActive ? -.20f : -.16f,
+                drop - .055f * Mathf.Clamp01(BalanceLoad) - .055f * legWeakness - ProjectilePelvisDrop);
             // These are successive joints in one spine, so their bends add.
             // Bound the total added torso bend, including localized contacts.
             float torsoAmount = rotation.magnitude + localRotation[0].magnitude +
-                localRotation[1].magnitude + localRotation[2].magnitude;
-            float torsoScale = torsoAmount > .55f ? .55f / torsoAmount : 1f;
+                localRotation[1].magnitude + localRotation[2].magnitude + ProjectileTorsoAmount;
+            float torsoLimit = ProjectileReactionActive ? .70f : .55f;
+            float torsoScale = torsoAmount > torsoLimit ? torsoLimit / torsoAmount : 1f;
             Rotate(0, rotation * (.25f * torsoScale));
             Rotate(1, rotation * (.30f * torsoScale));
             Rotate(2, rotation * (.45f * torsoScale));
@@ -172,6 +168,7 @@ namespace BarPromenade
             Rotate(4, rotation * .17f);
             for (int i = 0; i < bones.Length; i++) Rotate(i,
                 AnatomicalRotation(i, localRotation[i]) * (i <= 2 ? torsoScale : 1f));
+            ApplyProjectileReaction(torsoScale);
             if (ExperimentalRecovery) ApplyCounterBalancePose();
         }
 
@@ -187,9 +184,11 @@ namespace BarPromenade
         {
             // Remove twist about the actual segment, including when the actor is
             // turned or the arm is raised. Never infer a hinge from imported axes.
-            int next = index switch { 0 => 1, 1 => 2, 2 => 3, 3 => 4, 5 => 6, 8 => 9, _ => -1 };
+            int next = index switch { 0 => 1, 1 => 2, 2 => 3, 3 => 4, 5 => 6, 6 => 7, 8 => 9, 9 => 10, _ => -1 };
             Vector3 axis = next >= 0 ? bones[next].position - bones[index].position :
-                index == 4 ? bones[4].position - bones[3].position : Vector3.zero;
+                index == 4 ? bones[4].position - bones[3].position :
+                index == 7 ? bones[7].position - bones[6].position :
+                index == 10 ? bones[10].position - bones[9].position : Vector3.zero;
             return axis.sqrMagnitude > .00001f ? Vector3.ProjectOnPlane(radians, axis.normalized) : Vector3.zero;
         }
 
@@ -213,6 +212,7 @@ namespace BarPromenade
             Array.Clear(localRotation, 0, localRotation.Length); Array.Clear(localVelocity, 0, localVelocity.Length);
             age = 10f; overload = drop = dropVelocity = legWeakness = BalanceLoad = 0f; CaptureOffset = Vector3.zero;
             LastImpact = default; StruckRegion = default; struckBone = 2;
+            ResetProjectileReaction();
             ResetBalance();
         }
         private static int BoneIndex(Player3DAnatomicalPart part) => part switch

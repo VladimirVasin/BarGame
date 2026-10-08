@@ -258,27 +258,28 @@
   §6/§12/art §10g/§16/§21/nine checks.
 
 - **Accepted — 2026-10-08, pistol aimed movement:**
-  CombatTest:cam-planar WASD/stick/strafe/clamp;ground Space Step1m/15:
-  Facing axis/noinput back/fixed yaw/cam-upper aim;wall-impact-pause.
-  `CombatFootwork`:move-yaw-legs;
-  Speed-inertia-focus/release tank-momentum/handoff0/noaim:noStep.
+  CombatTest:cam-planar/clamped WASD-stick strafe;ground Space1m/15:
+  facing-axis/noinput-back/fixed yaw-upperaim/wall-pause.
+  `CombatFootwork`:move-yaw-legs/speed-inertia/release tank/handoff0/noaim:noStep.
 - **Accepted exception 2026-10-08, pistol:**
-  §6/art§15a;dummy/freecam;bar-Qfocus/Stepfocus-aim;recoil-streak.
-  Freeaim:live nearest world/anatomy/0motor capsule/0sway.
-  Zone-dir impulse-SFX/head0HP/ragdoll/stablecam/hitkick/manual-motor.
-  Port case delay/g-bounce-cap/SFX/slide-return-emptylock;
-  handmag-seat/rack1.8/SFX/ammo last/interrupt hold/Rresume/dropE:stage-ammo.
-  0lock/pierce/ricochet/guard/parry/taunt/reward;win fire-reload/HP-result.
-  Holes/corpse impulse-HP-result-pose/pause-hitstop0/reset-exit0.
+  §6/art§15a:dummy/freecam;bar-Q/Step focus-aim;recoil-streak.
+  Freeaim:nearest world/anatomy/0motor-sway;zone-dir SFX/impulse;
+  head0HP/ragdoll/stablecam/hitkick/motor.
+  Cases:port-delay/g-bounce-cap/SFX;slide return-emptylock;
+  handmag-seat/rack1.8/SFX/ammo-last/interrupt hold/Rresume/dropE stage-ammo.
+  0lock-pierce-ricochet-guard-parry-taunt-reward;win fire-reload/HP-result;
+  corpse impulse-pose;pause-hitstop/reset-exit0.
 - **Accepted exception 2026-10-08, headshots:**
-  User/§6/art§15a:CombatTest head-skull-brain/local chord;
-  remnant collision/cam hide/repeat loss;finite pulse blood/
-  terminal convulsions fade/corpse impulse;pause-hitstop0/
-  reset-exit restore;0story/speech/reward;§16/§21/9checks.
-- **Accepted exception — 2026-10-08, world bullet impacts:**
-  §6/art§15a:CombatTest firstworldhit→chips/sparks/dark hole.
-  128FIFOholes/192particles;authored/shared shader;0damage/pierce.
-  Pause-hitstop0;ClearFlights keeps;reset-exit0.
+  Head-skull-brain/localchord;remnant
+  collision/cam-hide/repeat-loss;finite pulse-blood/fading terminal
+  convulsions/corpse impulse;pause-hitstop0/reset-exit restore.
+- **Accepted exception — 2026-10-08, world bullets:**
+  Firstworldhit→chips/sparks/dark hole;
+  128FIFOholes/192particles/shared shader/0damage-pierce;
+  pause-hitstop0/ClearFlights keeps/reset-exit0.
+- **Accepted — 2026-10-08, regional pistol hits:**
+  User:cinematic;rig chest/abdomen/arm/forearm/hand/leg-catch.
+  Skin/fabric/glove-boot:entry/wet/repeat;HP/physics/camera/parts stay.
 - **Accepted 2026-10-07, combat:**
   Floor no deeper;stall arm→drop/rise≠grip/HP-focus-AI.
   Pause-hitstop0;no bar:walk-Q-Step/hits-falls only.

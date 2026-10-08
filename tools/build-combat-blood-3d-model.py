@@ -37,11 +37,17 @@ def export(path):
 def selected(name, hero):
     if name in ("GEO_Head", "GEO_FaceSurface", "GEO_Neck"):
         return True
+    # Entry marks must also cover actual footwear, rather than jumping to a
+    # trouser patch when the anatomical contact is a foot. Keep lace detail
+    # passive; the shoe/shaft/sole beneath it owns the opening.
+    if name.startswith(("CLO_Boot", "GEO_Foot")) and "Lace" not in name:
+        return True
     if hero:
         return name.startswith(("CLO_JacketBody", "CLO_JacketSleeve", "CLO_JacketForearm",
-                                "CLO_TrousersThigh", "CLO_TrousersShin", "GEO_HandPalm"))
+                                "CLO_TrousersThigh", "CLO_TrousersShin", "GEO_Hand.", "GEO_HandPalm",
+                                "GEO_Finger", "GEO_Thumb."))
     return name.startswith(("CLO_Outer_workBody", "CLO_Outer_workSleeve",
-                           "CLO_Trousers_workUpper", "CLO_Trousers_workLower", "CLO_GlovePalm"))
+                           "CLO_Trousers_workUpper", "CLO_Trousers_workLower", "CLO_Glove"))
 
 
 def mesh_measurement(obj, wound=False):
@@ -162,6 +168,10 @@ def wounds(kind, out, publish=True):
         arm.animation_data_clear()
         for bone in arm.pose.bones:
             bone.matrix_basis.identity()
+    required_palms = {"GEO_Hand.L", "GEO_Hand.R"} if kind == "Hero" else {"CLO_GlovePalm.L", "CLO_GlovePalm.R"}
+    missing_palms = required_palms - {patch["source_renderer"] for patch in patches}
+    if missing_palms:
+        raise RuntimeError("Combat wound coverage lost its production palms: " + ", ".join(sorted(missing_palms)))
     if len(patches) < 16:
         raise RuntimeError("Too few authored surface patches: " + kind)
     measurements = model_measurement(wound=True)

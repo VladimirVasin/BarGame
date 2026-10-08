@@ -7,6 +7,7 @@ namespace BarPromenade
 {
     /// <summary>Scene-local, caller-clocked blood; all visible geometry is Blender-authored.</summary>
     [DisallowMultipleComponent]
+    [DefaultExecutionOrder(31000)]
     public sealed partial class CombatBloodEffects : MonoBehaviour
     {
         public const int MaximumDrops = 256, MaximumStains = 48;
@@ -97,6 +98,14 @@ namespace BarPromenade
                 injury.Marks.TryGetProjectileBleed(index, out point, out direction);
         }
 
+        internal bool TryGetProjectilePresentation(CombatActor actor, int index,
+            out CombatDamageMarks.ProjectileWoundPresentation presentation)
+        {
+            presentation = default;
+            return actor != null && injuries.TryGetValue(actor, out Injury injury) &&
+                injury.Marks.TryGetProjectilePresentation(index, out presentation);
+        }
+
         public void Initialize(Transform sceneRoot)
         {
             if (IsInitialized) return;
@@ -144,7 +153,7 @@ namespace BarPromenade
         // A new bullet contact wounds a corpse without inventing another HP transaction.
         public void Emit(CombatImpact impact) => Emit(impact.Target, impact.Point, impact.Direction,
             impact.Kind == CombatImpactKind.Projectile ? Mathf.Max(25f, impact.Damage) : impact.Damage,
-            impact.Kind == CombatImpactKind.Projectile, impact.Location.Region == MeleeBodyRegion.Head);
+            impact.Kind == CombatImpactKind.Projectile, impact.Location.Region == MeleeBodyRegion.Head, impact.Part);
 
         public void Emit(CombatActor actor, Vector3 point, Vector3 direction, float damage) =>
             Emit(actor, point, direction, damage, false, false);
@@ -162,7 +171,8 @@ namespace BarPromenade
             injury.HeadLocalDirection = retainedRigSource.InverseTransformDirection(worldOutward.normalized);
         }
 
-        private void Emit(CombatActor actor, Vector3 point, Vector3 direction, float damage, bool projectile, bool head)
+        private void Emit(CombatActor actor, Vector3 point, Vector3 direction, float damage, bool projectile, bool head,
+            Player3DAnatomicalPart? part = null)
         {
             if (!IsInitialized || actor == null || damage <= 0f || float.IsNaN(damage) || float.IsInfinity(damage) || !Finite(point) || !Finite(direction)) return;
             if (!injuries.TryGetValue(actor, out Injury injury))
@@ -172,7 +182,7 @@ namespace BarPromenade
             }
             Vector3 incoming = direction.sqrMagnitude > .0001f ? direction.normalized : actor.transform.forward;
             int oldWounds = injury.Marks.ProjectileCount;
-            injury.Marks.Add(point, incoming, projectile, head);
+            injury.Marks.Add(point, incoming, projectile, head, part);
             if (projectile)
             {
                 injury.HasProjectileBleed = true;
@@ -218,6 +228,7 @@ namespace BarPromenade
                 Injury injury = pair.Value;
                 injury.Marks.RefreshVisibility();
                 if (pair.Key == null || !pair.Key.isActiveAndEnabled) { ResetDefeatPool(injury); continue; }
+                injury.Marks.Advance(seconds);
                 if (injury.BleedSeconds > 0f)
                 {
                     float time = Mathf.Min(injury.BleedSeconds, seconds);
@@ -270,6 +281,14 @@ namespace BarPromenade
                 stain.Diameter = Mathf.MoveTowards(stain.Diameter, stain.TargetDiameter, seconds * 1.35f);
                 stain.Transform.localScale = Vector3.one * (stain.Diameter / stain.MeshUnit);
             }
+        }
+
+        // Grip weights are finalized with the original hero/NPC presentation.
+        // Copy only that rendered state here; the duel still exclusively owns
+        // injury age, wetness, emission and all other simulation clocks.
+        private void LateUpdate()
+        {
+            foreach (Injury injury in injuries.Values) injury.Marks.RefreshVisibility();
         }
 
         private void AdvanceProjectileBleeding(Injury injury, float seconds)

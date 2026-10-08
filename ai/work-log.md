@@ -3,37 +3,32 @@
 Newest outcomes/checks first. Archive whole dates at budget: [policy](README.md).
 Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-2026-08.md).
 
-## 2026-10-08 — Pistol, head fractures and Editor input
+## 2026-10-08 — Pistol wounds, regional reactions and Editor input
 
-- CombatTest:IK grip kick/torso catch/elbows;flight/zone impulse-blood-audio;
-  head0HP:live standing/fallen physics;corpse pose/HP/result.
-- Head16/brains8:chord/retained shapes/camera/reset;pulses24s0/
-  terminal convulsions2.35s;hidden head emits0. `BakeMesh(true)` compensates
-  imported100x before local-to-world;scene disable:no reparent.
-  Capsule missed edges;bullet:skinned head-face-ear/remnant triangles;gaps miss.
-  Physics bounds:anatomy;fracture chord:Interior.
-- World:bounded chips/sparks/holes;shared pool/0damage/wall chip
-  depth-fade;pause-hitstop0/end keeps marks.
-- Camera:win focus→free/corpse freeze keeps pose-FOV-aim;frozen triggers cancel;
-  wall/manual/motor/hitkick remain.
-- Cases bounce/SFX;slide return-emptylock;handmag swap-rack/ammo last.
-  Interrupt/drop/E keep props-clock;R resumes/no SFX replay;pause freeze/reset-exit0.
-  Free carry:idle-gait/Rpalm/late weight0/stopped hold/aim-reload-injury priority;
-  entry passive/free/MMBfocus/Tab barfocus-gunfree/reset mode-focus.
-- Idle↔aim:.25s reversible camera-FOV-rig-grip/fire clock/late recovery IK.
-  `BlendRecoveryRotation`:half-turn arc;IK clearance;visible soles replace stale
-  pelvis-pulling anchors. Centred cross expands/pause holds/hide-reset0.
-  Coarse camera ray caused head-edge parallax;freeaim:nearest world/anatomy
-  ray/current pose/0motor capsule/0sway;physical muzzle/recoil.
-- Aim:camera-planar strafe/clamped diagonals;actor yaw/CombatFootwork legs;
-  release:tank/momentum;handoff0. Airborne walk→aim:ordinary landing replaces
-  wrong hit recovery. Grounded Step/15:
-  facing axis/noinput back/feet-yaw/aim/final grip IK/carry gate.
-- Editor:MainMenu native input assertion;fresh old mode unreproduced.
-  Native cause unproven;domain-scene reload0 workaround. MothersHouse
-  Play/Awake prefab rebuild before Configure;Queue/RunQueuedBuild
-  guard isPlayingOrWillChangePlaymode. `Input startup verification`:passed.
-- Checks: `build-combat-pistol-3d-model.py` validator;
+- CombatTest:recoil/freeaim/aim-strafe/Step;actual head-face-ear/remnant
+  mesh catches edges the capsule missed. Head16/brains8:local chord,
+  finite pulse24s/terminal convulsions/corpse HP-result-pose;bounded
+  world chips/sparks/holes. Imported100x is baked before world space;
+  hidden head emits0;camera freeze retains pose/FOV/aim.
+- Regional bullets:sharp same-rig chest/abdomen/upperarm/forearm/hand
+  response;injured-leg transfer/foot-owner catch. Ordinary stance replaces
+  generic hit clip;HP/stagger/momentum/camera kept. Skin/fabric/glove-boot
+  entries follow shot direction, soak/dry and strengthen on nearby repeats;
+  surface relief adds no severing. Hand/boot/foot patches follow production skin;
+  obsolete palm names had omitted hero hands, now guarded by the generator.
+  Patches copy source HandGrip deltas and sync weights: skinning alone left wounds
+  on the hidden open-hand base.
+  Repeat entry drift came from the coarse hurtbox point; marks now choose the
+  first posed skin-triangle intersection along the shot before nearest fallback.
+- Carry/aim:FOV-grip reversible/free gait;cases/slide/mag clock-ammo survive
+  interrupt/drop;R resumes without replay. Grounded Step uses input/fixed
+  yaw/final grip;airborne aim keeps normal landing. Half-turn recovery arc,
+  IK clearance and visible soles avoid pelvis-pulling anchors.
+- Editor:MainMenu native assertion;old mode unreproduced/cause unproven;
+  domain-scene reload0 workaround. MothersHouse Awake rebuild precedes
+  Configure;queued build guards Play. `Input startup verification` passed.
+- Checks: `build-combat-pistol-3d-model.py`,
+  `build-combat-gore-3d-model.py`, `build-combat-blood-3d-model.py` validators;
   `Range_PistolSelectionProjectileFlightReloadAndResetUseTheLiveDuel`,
   `Range_PistolWinningAndCorpseShotsKeepTheLiveFreeAimCamera`,
   `Range_UnfocusedPistolCarryKeepsBothArmsWalkingAndCanAim`,
@@ -42,13 +37,14 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
   `Range_PistolSurfaceImpactsStayOnTheHitObjectUntilReset`,
   `Range_PistolAimMovesInAllDirectionsWithoutChangingAim`,
   `Range_FinalCatchRequiresStableMovingSupportBeforeRegrip`,
-  `Range_PistolAimedStepUsesLiveInputAndKeepsFreeAim`.
+  `Range_PistolAimedStepUsesLiveInputAndKeepsFreeAim`,
+  `Range_HeadFractureBleedingAndConvulsionsFollowContactPauseAndReset`
+  (frames inspected), `Range_ProjectileHeadEdgesMatchVisibleFrozenAndRetainedSurfaces`,
+  `Range_FreePistolCentreAimHitsVisibleHeadEdgesFromActualMuzzle`.
+  `Range_PistolRegionalReactionsAndWoundsStayContinuousThroughPauseAndReset`
+  proved original posed skin/morph attachment, reaction/aftermath/pause/reset;
+  representative reaction/material frames inspected.
   Prior composite floor-aim camera check failed.
-  `build-combat-gore-3d-model.py --validate-only`:passed.
-  `Range_HeadFractureBleedingAndConvulsionsFollowContactPauseAndReset`:passed;
-  frames inspected.
-  `Range_ProjectileHeadEdgesMatchVisibleFrozenAndRetainedSurfaces`:passed.
-  `Range_FreePistolCentreAimHitsVisibleHeadEdgesFromActualMuzzle`:passed.
   `check-docs.py`, `git diff --check`.
 
 ## 2026-10-07 — Combat openings, regrip and pistol
