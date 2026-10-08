@@ -8,7 +8,7 @@ namespace BarPromenade
         public bool CombatFocused { get; private set; } = true;
 
         private bool NeedsCombatPresentation => CombatFocused || (Pistol?.ReloadPending ?? false) ||
-            (Pistol?.AimRequested ?? false) || (IsPistol && pistolLowerProgress < 1f) || State.Phase != MeleePhase.Ready ||
+            (Pistol?.AimRequested ?? false) || (IsPistol && pistolVisualAimProgress > 0f) || State.Phase != MeleePhase.Ready ||
             collectSweep || collectShove || collectKick || IsKnockedDown || IsRagdollActive ||
             reaction != null || (ImpactMotion?.IsActive ?? false) || (footwork?.RecoveryEpisodeActive ?? false);
 
@@ -19,8 +19,9 @@ namespace BarPromenade
         public void SetCombatFocused(bool focused, bool preservePistolAim = false)
         {
             if (hero == null || CombatFocused == focused) return;
+            if (IsPistol && CombatFocused && !focused) pistolFreeAimPoint = PistolAimPoint;
             CombatFocused = focused;
-            if (!focused && !preservePistolAim) Pistol?.SetAim(false);
+            if (!focused && !preservePistolAim) SetPistolAim(false);
             // A rapid off/on toggle cannot grant another aim envelope to an existing swing.
             if (!CommittedActionOwnsFacing) ResetCombatFacing();
             if (!focused)
@@ -50,7 +51,7 @@ namespace BarPromenade
         private void ReleaseStandingPresentation()
         {
             bool ownedPose = hero.OwnsClip(this);
-            ReleasePresentation();
+            ReleasePresentation(preservePresentedPose: true);
             supportGrip?.SetTarget(false, false);
             hero.SetCombatSupportGrip(this, supportGrip, weaponConstraint);
             if (ownedPose) hero.BeginRecoveryPoseTransition(.35f);

@@ -11,8 +11,12 @@ namespace BarPromenade
         private AnimationClip pistolRest, pistolRaise, pistolAim, pistolFire, pistolReload, pistolLower;
         private bool pistolShotRequested;
         private int pistolShotRequest;
-        private float pistolLowerProgress = 1f;
+        // Visual travel reverses from its current position. The rules keep their
+        // separate raise clock, so a short release never grants an early shot.
+        private float pistolVisualAimProgress;
+        internal float PistolVisualAimProgress => pistolVisualAimProgress;
         private float pistolLeftClosure;
+        private float pistolBlendClosure;
         private Transform pistolFlash, pistolSupport;
         private Transform[] pistolArmBones;
         private Quaternion[] pistolArmRotations;
@@ -57,10 +61,9 @@ namespace BarPromenade
         public void SetPistolAim(bool held, Vector3? worldAimPoint = null)
         {
             if (Pistol == null) return;
-            if (!CombatFocused)
+            if (!CombatFocused && (held || worldAimPoint.HasValue))
                 pistolFreeAimPoint = worldAimPoint ?? (transform.position + Vector3.up * 1.4f + transform.forward * 40f);
             bool requested = held && PistolBodyAvailable && GameInput.CanRead(GameInputContext.Gameplay);
-            if (Pistol.AimRequested && !requested) pistolLowerProgress = 0f;
             Pistol.SetAim(requested);
         }
 
@@ -187,7 +190,10 @@ namespace BarPromenade
             else if (!reloading) pistolReloadSettleRemaining = 0f;
             Pistol.Advance(pistolSeconds);
             AdvancePistolReloadAudio(reloading, reloadBefore);
-            pistolLowerProgress = Mathf.Min(1f, pistolLowerProgress + seconds / Mathf.Max(.001f, pistolLower.length));
+            bool visuallyAiming = Pistol.AimRequested && !Pistol.ReloadPending && PistolBodyAvailable;
+            float travelSeconds = visuallyAiming ? pistolRaise.length : pistolLower.length;
+            pistolVisualAimProgress = Mathf.MoveTowards(pistolVisualAimProgress, visuallyAiming ? 1f : 0f,
+                seconds / Mathf.Max(.001f, travelSeconds));
             if (reloading && !Pistol.IsReloading)
             {
                 JournalEvent("pistol_reload_completed", f0: GameLog.Field("rounds", Pistol.Rounds));
@@ -207,6 +213,8 @@ namespace BarPromenade
         {
             CancelPendingPistolShot("action_ended");
             Pistol?.CancelAction();
+            pistolVisualAimProgress = 0f;
+            pistolLeftClosure = pistolBlendClosure = 0f;
             pistolReloadSettleRemaining = 0f;
             UpdatePistolMechanics();
             if (pistolFlash != null) pistolFlash.gameObject.SetActive(false);
@@ -219,23 +227,32 @@ namespace BarPromenade
             ResetPistolReloadAudio();
             pistolReloadSettleRemaining = 0f;
             UpdatePistolMechanics();
-            pistolLowerProgress = 1f;
+            pistolVisualAimProgress = 0f;
+            pistolLeftClosure = pistolBlendClosure = 0f;
             if (pistolFlash != null) pistolFlash.gameObject.SetActive(false);
         }
 
         private AnimationClip ChoosePistolClip() => weaponDropped || State.IsDefeated ? pistolRest : Pistol.ReloadPending ? pistolReload :
-            Pistol.IsRaising ? pistolRaise : Pistol.IsAiming ?
+            Pistol.AimRequested && pistolVisualAimProgress < 1f ? pistolRaise : Pistol.AimRequested ?
             (Pistol.CooldownRemaining > 0f && Pistol.ShotElapsed < pistolFire.length ? pistolFire : pistolAim) :
-            pistolLowerProgress < 1f ? pistolLower : pistolRest;
+            pistolVisualAimProgress > 0f ? pistolLower : pistolRest;
 
         private float PistolClipProgress(AnimationClip clip) => clip == pistolReload ? Pistol.ReloadProgress :
-            clip == pistolRaise ? Pistol.AimProgress : clip == pistolFire ? Mathf.Clamp01(Pistol.ShotElapsed / clip.length) :
-            clip == pistolLower ? pistolLowerProgress : Mathf.Repeat(poseClock, clip.length) / clip.length;
+            clip == pistolRaise ? pistolVisualAimProgress : clip == pistolFire ? Mathf.Clamp01(Pistol.ShotElapsed / clip.length) :
+            clip == pistolLower ? 1f - pistolVisualAimProgress : Mathf.Repeat(poseClock, clip.length) / clip.length;
 
         private float PistolSupportClosure(AnimationClip clip) => clip == pistolReload ? PistolReloadGripWeight : clip == pistolRaise
-            ? CombatPistolAssetProvider.SupportGripWeight * Mathf.SmoothStep(0f, 1f, Pistol.AimProgress)
+            ? CombatPistolAssetProvider.SupportGripWeight * Mathf.SmoothStep(0f, 1f, pistolVisualAimProgress)
             : clip == pistolAim || clip == pistolFire ? CombatPistolAssetProvider.SupportGripWeight
-            : clip == pistolLower ? CombatPistolAssetProvider.SupportGripWeight * (1f - Mathf.SmoothStep(0f, 1f, pistolLowerProgress)) : 0f;
+            : clip == pistolLower ? CombatPistolAssetProvider.SupportGripWeight * Mathf.SmoothStep(0f, 1f, pistolVisualAimProgress) : 0f;
+
+        private float BlendPistolClosure(float target)
+        {
+            if (poseBlendRemaining <= 0f) return target;
+            float t = Mathf.Clamp01(1f - poseBlendRemaining / poseBlendDuration);
+            float blend = t * t * t * (t * (t * 6f - 15f) + 10f);
+            return Mathf.Lerp(pistolBlendClosure, target, blend);
+        }
 
         // The late render and the contact sample use the same constrained, additive arm aim.
         // Restore before any graph evaluation; never accumulate corrections across samples.
@@ -258,7 +275,7 @@ namespace BarPromenade
             CombatPistolAssetProvider.PlacePistol(Weapon, weaponGrip, handPose);
             handPose.SetGrip(false, 1f);
             handPose.SetGrip(true, pistolLeftClosure);
-            if (!PistolBodyAvailable || !Pistol.AimRequested || Pistol.ReloadPending ||
+            if (!PistolBodyAvailable || pistolVisualAimProgress <= 0f || Pistol.ReloadPending ||
                 pistolArmBones[0] == null || pistolArmBones[1] == null || pistolArmBones[2] == null ||
                 pistolArmBones[3] == null || pistolArmBones[4] == null || pistolArmBones[5] == null)
             { CommitHeldPistolPose(); return; }
@@ -276,7 +293,7 @@ namespace BarPromenade
             pistolAimReachable = TrySolvePistolAim(pistolArmBones[0].position, PistolMuzzle.position,
                 PistolMuzzle.forward, pistolArmBones[0].position + shoulderToTarget, out Quaternion solved);
             Quaternion delta = Quaternion.RotateTowards(Quaternion.identity, solved,
-                (CombatFocused ? 22f : 80f) * Pistol.AimProgress);
+                (CombatFocused ? 22f : 80f) * pistolVisualAimProgress);
             Vector3 grip = handPose.CylinderCentre(false);
             Vector3 aimedGrip = pistolArmBones[0].position + delta * (grip - pistolArmBones[0].position);
             float forward = Vector3.Dot(aimedGrip - transform.position, transform.forward);
@@ -285,7 +302,10 @@ namespace BarPromenade
             bool lowAim = downward > .35f;
             bool highAim = downward < -.35f;
             bool keepGripForward = forward < minimumForward;
-            if (keepGripForward) aimedGrip += transform.forward * (minimumForward - forward);
+            float visualWeight = Mathf.SmoothStep(0f, 1f, pistolVisualAimProgress);
+            float forwardClearance = Mathf.Max(0f, minimumForward - forward);
+            float highAimWeight = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(.35f, .60f, -downward));
+            if (keepGripForward) aimedGrip += transform.forward * (forwardClearance * visualWeight);
             if (highAim)
             {
                 // A raised barrel with the wrist below its shoulder forces the
@@ -294,8 +314,7 @@ namespace BarPromenade
                 Vector3 wrist = aimedGrip + delta * (pistolArmBones[2].position - grip);
                 float forearm = Vector3.Distance(pistolArmBones[1].position, pistolArmBones[2].position);
                 float height = Vector3.Dot(pistolArmBones[0].position, transform.up) - downward * forearm * .6f;
-                float weight = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(.35f, .60f, -downward));
-                float lift = Mathf.Max(0f, height - Vector3.Dot(wrist, transform.up)) * weight;
+                float lift = Mathf.Max(0f, height - Vector3.Dot(wrist, transform.up)) * highAimWeight * visualWeight;
                 lift = Mathf.Min(lift, Mathf.Min(PistolMaximumLift(0, wrist), PistolMaximumLift(3,
                     PistolSupportWrist(aimedGrip, grip, delta))));
                 aimedGrip += transform.up * lift;
@@ -311,7 +330,7 @@ namespace BarPromenade
                         aimedGrip + PistolMuzzle.position - grip, PistolMuzzle.forward,
                         pistolArmBones[0].position + shoulderToTarget, out Quaternion gripRotation);
                     delta = Quaternion.RotateTowards(Quaternion.identity, gripRotation,
-                        (CombatFocused ? 22f : 80f) * Pistol.AimProgress);
+                        (CombatFocused ? 22f : 80f) * pistolVisualAimProgress);
                     if (pass == 3) break;
                     Vector3 rightWrist = aimedGrip + delta * (hand.position - grip);
                     Quaternion supportRotation = delta * pistolSupport.rotation;
@@ -328,13 +347,20 @@ namespace BarPromenade
                 Vector3 wrist = aimedGrip + delta * (hand.position - grip);
                 Quaternion rotation = delta * hand.rotation;
                 Vector3 shoulder = pistolArmBones[0].position;
-                Vector3 hint = highAim ? PistolUpperElbowHint(0, wrist, delta * PistolMuzzle.forward) :
+                Vector3 rotatedWrist = shoulder + delta * (hand.position - shoulder);
+                Vector3 inheritedHint = shoulder + Quaternion.FromToRotation(rotatedWrist - shoulder, wrist - shoulder) *
+                    (delta * (pistolArmBones[1].position - shoulder));
+                Vector3 clearanceHint = highAim ? PistolUpperElbowHint(0, wrist, delta * PistolMuzzle.forward) :
                     lowAim ? PistolLowElbowHint(0, wrist, delta * PistolMuzzle.forward)
-                    : shoulder + Quaternion.FromToRotation(hand.position - shoulder, wrist - shoulder) *
-                        (pistolArmBones[1].position - shoulder) + transform.right * .03f;
+                    : inheritedHint + transform.right * .03f;
+                float hintWeight = visualWeight * Mathf.Max(highAimWeight, Mathf.Clamp01(forwardClearance / .12f));
+                Vector3 hint = Vector3.Lerp(inheritedHint, clearanceHint, hintWeight);
+                // The wrist already carries the visual aim weight. Applying it
+                // again only on the clearance branch changes the arm abruptly
+                // when a lowering grip crosses that branch's boundary.
                 LimbTwoBoneIk.Solve(pistolArmBones[0], pistolArmBones[1], hand, wrist, rotation,
-                    hint, Mathf.SmoothStep(0f, 1f, Pistol.AimProgress), .999f, true);
-                if (Pistol.AimProgress >= .999f)
+                    hint, 1f, .999f, true);
+                if (pistolVisualAimProgress >= .999f)
                     pistolAimReachable &= Vector3.Distance(handPose.CylinderCentre(false), aimedGrip) <= .003f;
             }
             else pistolArmBones[0].rotation = delta * pistolArmBones[0].rotation;
@@ -349,7 +375,10 @@ namespace BarPromenade
                     ? PistolLowElbowHint(3, wrist, PistolMuzzle.forward)
                     : shoulder + Quaternion.FromToRotation(leftHand.position - shoulder, wrist - shoulder) *
                         (pistolArmBones[4].position - shoulder);
-                float supportWeight = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(.6f, 1f, Pistol.AimProgress));
+                // Spread the moving-pistol correction over the same travel as
+                // its authored reach and fingers. Compressing it into the last
+                // .1 seconds adds a second fast reach on top of the raise.
+                float supportWeight = Mathf.SmoothStep(0f, 1f, pistolVisualAimProgress);
                 // Blend the reaching wrist in world space, then solve the arm.
                 // Blending solved joint rotations can arc the sleeve through
                 // the chest even when both endpoint poses are clear.
@@ -359,10 +388,20 @@ namespace BarPromenade
                     transform.right * (.12f * Mathf.Sin(Mathf.PI * supportWeight));
                 LimbTwoBoneIk.Solve(pistolArmBones[3], pistolArmBones[4], leftHand, wrist, rotation,
                     hint, 1f, .999f, true);
-                if (Pistol.AimProgress >= .999f)
+                if (pistolVisualAimProgress >= .999f)
                     pistolAimReachable &= PistolSupportError <= .003f;
             }
             CommitHeldPistolPose();
+        }
+
+        internal void CompletePistolPresentation()
+        {
+            if (!IsPistol || weaponDropped || IsRagdollActive || Weapon == null) return;
+            // Shared recovery has blended the complete posed arms. Reattach the
+            // prop to that final palm, then retain this actual rendered source.
+            CombatPistolAssetProvider.PlacePistol(Weapon, weaponGrip, handPose);
+            CommitHeldPistolPose();
+            hero.RememberOwnedRecoveryPose(this, poseClock);
         }
 
         private Vector3 PistolSupportWrist(Vector3 aimedGrip, Vector3 grip, Quaternion delta)

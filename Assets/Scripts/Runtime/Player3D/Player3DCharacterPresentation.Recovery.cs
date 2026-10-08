@@ -112,12 +112,12 @@ namespace BarPromenade
             recoverySampleClock = clock;
         }
 
-        internal void ClearOwnedRecoveryPoseClock(object owner)
+        internal void ClearOwnedRecoveryPoseClock(object owner, bool preservePresentedPose = false)
         {
             if (!ReferenceEquals(recoverySampleClockOwner, owner)) return;
             recoverySampleClockOwner = null;
             recoverySampleClock = 0f;
-            visibleRecoverySamples = 0;
+            if (!preservePresentedPose) visibleRecoverySamples = 0;
         }
 
         internal static Vector3 RecoveryAngularVelocity(Quaternion from, Quaternion to, float dt)
@@ -130,6 +130,18 @@ namespace BarPromenade
             // one. Its vector still carries the velocity that acos would lose.
             return dt > 0f && sine > .0000001f && IsFinite(vector)
                 ? vector * (2f * Mathf.Atan2(sine, delta.w) / (sine * dt)) : Vector3.zero;
+        }
+
+        internal static Quaternion BlendRecoveryRotation(Quaternion source, Quaternion target,
+            Vector3 angularVelocity, float elapsed, float blend)
+        {
+            Quaternion rotation = Quaternion.Slerp(source, target, blend);
+            // Decay the retained velocity alongside the source contribution.
+            // Slerping an extrapolated source can cross 180 degrees relative to
+            // the target and reverse the chosen interpolation arc mid-return.
+            return angularVelocity.sqrMagnitude > .000001f
+                ? Quaternion.AngleAxis(angularVelocity.magnitude * elapsed * (1f - blend) * Mathf.Rad2Deg,
+                    angularVelocity.normalized) * rotation : rotation;
         }
 
         internal bool TryGetPresentedBoneVelocity(Transform bone, out Vector3 linear, out Vector3 angular)
@@ -145,6 +157,19 @@ namespace BarPromenade
                 angular = RecoveryAngularVelocity(previousRecoveryPose[i].WorldRotation,
                     visibleRecoveryPose[i].WorldRotation, visibleRecoveryDelta);
                 return IsFinite(linear) && IsFinite(angular);
+            }
+            return false;
+        }
+
+        internal bool TryGetPresentedBonePose(Transform bone, out Pose pose)
+        {
+            pose = default;
+            if (recoveryBones == null || visibleRecoverySamples == 0) return false;
+            for (int i = 0; i < recoveryBones.Length; i++)
+            {
+                if (recoveryBones[i] != bone) continue;
+                pose = new Pose(visibleRecoveryPose[i].WorldPosition, visibleRecoveryPose[i].WorldRotation);
+                return true;
             }
             return false;
         }
@@ -203,13 +228,10 @@ namespace BarPromenade
                 Transform bone = recoveryBones[i];
                 if (recoveryClockOwner != null) recoveryTargetPose[i] = RecoverySample.Read(bone);
                 RecoverySample source = transitionRecoveryPose[i];
-                Vector3 angular = transitionAngularVelocity[i];
-                Quaternion predicted = angular.sqrMagnitude > 0.000001f
-                    ? Quaternion.AngleAxis(angular.magnitude * elapsed * Mathf.Rad2Deg,
-                        angular.normalized) * source.Rotation : source.Rotation;
                 bone.localPosition = Vector3.Lerp(source.Position +
                     transitionLinearVelocity[i] * elapsed, bone.localPosition, blend);
-                bone.localRotation = Quaternion.Slerp(predicted, bone.localRotation, blend);
+                bone.localRotation = BlendRecoveryRotation(source.Rotation, bone.localRotation,
+                    transitionAngularVelocity[i], elapsed, blend);
             }
             recoveryTargetCaptured = recoveryClockOwner != null;
         }
@@ -278,8 +300,10 @@ namespace BarPromenade
                 ApplyAttentionPose(deltaTime);
                 ApplyCombatBodyMotion();
                 ApplyCombatDamagePose();
+                ApplyCombatFirearm();
                 CompleteRecoveryPresentation(deltaTime);
                 ApplyCombatSupportGrip();
+                CompleteCombatFirearmPresentation();
             }
             RememberRecoveryPose(deltaTime);
             AdvanceRecoveryPresentationClock(deltaTime);

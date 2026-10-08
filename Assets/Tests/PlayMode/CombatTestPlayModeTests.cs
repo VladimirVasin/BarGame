@@ -1101,8 +1101,26 @@ namespace BarPromenade.Tests.PlayMode
                     input.Press(keyboard.tabKey, queueEventOnly: true);
                     yield return null;
                     Assert.That(root.Sparring, Is.True, "Tab explicitly enables the active opponent.");
-                    AssertFocusState(true);
+                    bool automaticFocus = weapon != CombatWeaponId.Pistol;
+                    AssertFocusState(automaticFocus);
+                    Assert.That(root.CameraFollow.FreeAimActive, Is.False);
+                    if (root.Hero.IsPistol) Assert.That(root.Hero.Pistol.AimRequested, Is.False);
                     input.Release(keyboard.tabKey, queueEventOnly: true);
+                    yield return null;
+                    yield return CaptureFocusGameView(root.Hero.IsPistol ? "pistol-sparring-start" : "crowbar-sparring-start");
+                    if (root.Hero.IsPistol)
+                    {
+                        input.Press(mouse.middleButton, queueEventOnly: true);
+                        yield return null;
+                        AssertFocusState(true);
+                        Assert.That(root.Sparring, Is.True, "Manual pistol focus keeps the active opponent.");
+                        input.Release(mouse.middleButton, queueEventOnly: true);
+                        yield return null;
+                        input.Press(mouse.middleButton, queueEventOnly: true);
+                        yield return null;
+                        AssertFocusState(false);
+                        input.Release(mouse.middleButton, queueEventOnly: true);
+                    }
                     for (int frame = 0; frame < 90; frame++) yield return null;
                     Assert.That(root.OpponentDecisionSequence, Is.GreaterThan(0));
                     Assert.That(Vector3.Distance(root.Opponent.transform.position, targetStart), Is.GreaterThan(.1f),
@@ -1115,6 +1133,7 @@ namespace BarPromenade.Tests.PlayMode
                     input.Press(keyboard.tabKey, queueEventOnly: true);
                     yield return null;
                     Assert.That(root.Sparring, Is.False);
+                    AssertFocusState(automaticFocus);
                     input.Release(keyboard.tabKey, queueEventOnly: true);
                     yield return null;
                     root.ResetRound();
@@ -1127,6 +1146,7 @@ namespace BarPromenade.Tests.PlayMode
                     input.Press(keyboard.tabKey, queueEventOnly: true);
                     yield return null;
                     Assert.That(root.Sparring, Is.True);
+                    AssertFocusState(automaticFocus);
                     input.Release(keyboard.tabKey, queueEventOnly: true);
                     yield return null;
                     Assert.That(root.ReturnToMenu(), Is.True);
@@ -1584,12 +1604,17 @@ namespace BarPromenade.Tests.PlayMode
             root.AutomaticSimulation = false;
             // Most fixtures exercise a prepared fight. Startup-default
             // coverage opts out and observes the untouched scene entry.
-            if (prepareCombat) root.SetSparring(true);
+            if (prepareCombat)
+            {
+                root.SetSparring(true);
+                Assert.That(root.SetOpponentFocus(true), Is.True);
+            }
         }
 
         private void PlacePair(float distance)
         {
             root.SetSparring(false);
+            Assert.That(root.SetOpponentFocus(true), Is.True);
             Vector3 position = Vector3.up * PlayerFactory.GroundedRootOffset;
             root.Hero.ResetActor(position, Vector3.forward);
             root.Opponent.ResetActor(position + Vector3.forward * distance, Vector3.back);

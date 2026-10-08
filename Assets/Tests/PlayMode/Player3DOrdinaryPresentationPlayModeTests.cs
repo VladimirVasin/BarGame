@@ -499,6 +499,55 @@ namespace BarPromenade.Tests.PlayMode
         }
 
         [UnityTest]
+        public IEnumerator RecoveryPoseTransition_PreservesRotationAcrossHalfTurn()
+        {
+            cameraObject = new GameObject("Test recovery camera");
+            Camera camera = cameraObject.AddComponent<Camera>();
+            camera.enabled = false;
+            PlayerRuntime player = PlayerFactory.Create(null,
+                Vector3.up * PlayerFactory.GroundedRootOffset, camera, null, null);
+            playerObject = player.GameObject;
+            player.Motor.enabled = false;
+            yield return null;
+
+            var presentation = (Player3DCharacterPresentation)player.Visual;
+            Transform hand = GetPartBone(presentation.Registry, Player3DAnatomicalPart.LeftHand);
+            object owner = new object();
+            Assert.That(presentation.TryAcquireClip(owner, "Idle"), Is.True);
+            presentation.SampleOwnedClip(owner, 0f);
+            Quaternion neutral = hand.localRotation;
+            const float step = 1f / 60f, duration = .35f;
+            foreach (float direction in new[] { -1f, 1f })
+            {
+                presentation.CancelRecoveryPoseTransition();
+                presentation.ClearOwnedRecoveryPoseClock(owner);
+                hand.localRotation = Quaternion.AngleAxis(145f * direction, Vector3.up) * neutral;
+                presentation.RememberOwnedRecoveryPose(owner, 0f);
+                hand.localRotation = Quaternion.AngleAxis(150f * direction, Vector3.up) * neutral;
+                presentation.RememberOwnedRecoveryPose(owner, step);
+                presentation.BeginRecoveryPoseTransition(duration);
+                presentation.SetOwnedRecoveryPoseClock(owner, 0f);
+                presentation.SampleOwnedClip(owner, 0f);
+                presentation.ReapplyLatePresentationPose();
+                Quaternion previous = hand.localRotation;
+                Assert.That(Quaternion.Angle(previous,
+                    Quaternion.AngleAxis(150f * direction, Vector3.up) * neutral), Is.LessThan(.1f));
+                for (int frame = 1; frame <= 21; frame++)
+                {
+                    presentation.SetOwnedRecoveryPoseClock(owner, frame * step);
+                    presentation.SampleOwnedClip(owner, 0f);
+                    presentation.ReapplyLatePresentationPose();
+                    Assert.That(Quaternion.Angle(previous, hand.localRotation), Is.LessThan(20f),
+                        "A retained turn cannot reverse its interpolation arc when prediction passes a half turn.");
+                    previous = hand.localRotation;
+                }
+                Assert.That(Quaternion.Angle(hand.localRotation, neutral), Is.LessThan(.1f));
+            }
+            presentation.CancelRecoveryPoseTransition();
+            presentation.ReleaseOwnedClip(owner);
+        }
+
+        [UnityTest]
         public IEnumerator RiseClips_PassThroughGroundedAllFoursBeforeNeutral()
         {
             cameraObject = new GameObject("Player3D Rise Test Camera");

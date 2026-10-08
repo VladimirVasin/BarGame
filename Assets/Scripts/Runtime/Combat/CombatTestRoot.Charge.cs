@@ -109,6 +109,7 @@ namespace BarPromenade
             pistolApplicationFocused = focused;
             JournalApplicationFocus(focused);
             if (focused) return;
+            ResetPistolCrosshair();
             requirePistolAimRelease = true;
             ReleaseFreePistolAim();
             Hero?.CancelPendingKick("focus_lost");
@@ -120,6 +121,7 @@ namespace BarPromenade
 
         private void OnDisable()
         {
+            ResetPistolCrosshair();
             Projectiles?.Clear();
             Casings?.Clear();
             ReleaseFreePistolAim();

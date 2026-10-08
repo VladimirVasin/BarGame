@@ -4246,24 +4246,25 @@ OS dynamic fonts в IMGUI запрещены; Unity legacy — аварийны�
 
 §6:PS1-полигон вне сюжета.
 `2026-10-07`:лом/пистолет→Начать/Назад;NPC-лом;Оружие→выбор;сброс UI/R-reload.
-Gun:worn dark metal/no brand/base idle-gait/right palm/free 2hand shoulder aim+centre cross/flash.
+Gun:worn dark unbranded metal/idle-gait/Rpalm/free 2hand shoulder aim/centre cross/flash.
+Idle↔aim:camera-FOV/rig-grip smooth,reversible;shot cross:expand→return/centre kept.
 `2026-10-08`:rig recoil/stablecam/path streak/zone impulse-audio-dark blood/head→0HP-ragdoll.
-Port case/slide return-emptylock;handmag→stash-new-seat/rack;physical phase-case sounds;interrupt-drop-E keepsstage/Rresume.
-Bullet:skin holes/bleed→reset-exit/rig-ragdoll;corpse hits/HP-result-pose kept;pause-hitstop freeze/bounded pools.
-Пуля:gravity/1surface/pause/end clear1x/reset-exit clear.
-Drop;E:своё/общий экран/патроны kept;пистолет без надруг.
+Port case/slide return-emptylock;handmag:stash-new-seat/rack;phase-case audio;interrupt/drop/E keepsstage/Rresume.
+Holes/bleed:rig-ragdoll→reset-exit;corpse hits:HP-result-pose kept;pause-hitstop freeze/bounded pools.
+Bullet:g/1surface/pause/end clear1x/reset-exit clear.
+Drop/E:своё/sharedUI/ammo kept;gun no taunt.
 HP pose/dark blood/pools10s/reset/thud/6zones;bar rear-head=end.
 Shoulders↑/chin in/breath=stamina/tremor/tight swing/awkward return;NPC calm.
 Soft knees/pelvis-grip-elbows↓/step-swing support/face block/flex.
 ≤2шага/подсед-наклон-упор off/подъём:пол→рука→сброс;2руки/возврат≠parry.
 NPC:1м/отход/промах→ответ/встающий/взгляд на павшего/3стиля.
 Замах1м/толчок-хват;Q/B:0крови-добивания/высокий блок насквозь/буфер/отдача.
-Start→dummy/freecam;reset:mode kept/focus;bar:sparks-wall-recoil/step1m.
+Start→dummy/freecam;Tab:AIreset/barfocus/gunfree;MMBfocus;reset:mode kept/focus;bar:sparks-wall-recoil/step1m.
 Лом-толчок:шатание-инерция-ноги до падения;Q-блок:опора.
 Q вдали:таз-стопа→/грудь←;вблизи:сгиб колена;Q-толчок резче/лом kept.
 Torso mirrors;L-shove←/0HP-blood/palm-bar-body.
 Точка груди контрастна;стена/вне кадра/конец→скрыта.
-Победитель идёт;gun aim/fire/reload;E-лом:туалет §7 FP/тело/лом L/тело-пол R/без реакции.
+Win walks;gun aim/fire/reload;bar-E:toilet §7 FP/body/bar L/body-floor R/no reaction.
 Силы-заряд;щит:тусклый открыт=нет/янтарь=запрос/закрыт=готов/залит=блок.
 Без речи-сюжета/9проверок;`ai/architecture-notes.md`.
 

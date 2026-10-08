@@ -30,6 +30,7 @@ namespace BarPromenade
         [SerializeField, Min(0f)] private float maximumFocusLag = 0.45f;
         [SerializeField, Min(0f)] private float teleportSnapDistance = 1.75f;
         [SerializeField, Min(0f)] private float distanceRecoverySmoothTime = 0.32f;
+        [SerializeField, Min(0f)] private float aimTransitionDuration = 0.25f;
         [SerializeField, Range(-40f, 0f)] private float minimumOrbitPitch = -20f;
         [SerializeField, Range(0f, 75f)] private float maximumOrbitPitch = 55f;
         [SerializeField, Min(0f)] private float mouseYawSensitivity = 0.16f;
@@ -185,6 +186,8 @@ namespace BarPromenade
         public void Initialize(Camera camera, Transform target, bool interior)
         {
             ClearFreeAim(freeAimOwner);
+            CancelAimTransition();
+            freeAimOrbitFrame = -1;
             ResetTargetLockState();
             controlledCamera = camera != null ? camera : GetComponent<Camera>();
             followTarget = target;
@@ -288,6 +291,7 @@ namespace BarPromenade
                     "Fixed camera field of view must be between 20 and 100 degrees.");
             }
 
+            CancelAimTransition();
             if (!fixedPoseActive)
             {
                 // Handing the camera to an owner: remember the lens the
@@ -583,6 +587,7 @@ namespace BarPromenade
 
         public void Snap()
         {
+            CancelAimTransition();
             if (controlledCamera == null)
             {
                 return;
@@ -669,6 +674,9 @@ namespace BarPromenade
                 return;
             }
 
+            if (aimTransitionActive &&
+                (GameTimeScaleRuntime.IsPaused || PauseMenuController.IsAnyPaused)) return;
+
             ReadOrbitInput(deltaTime);
             if (ShouldSnapForTeleport())
             {
@@ -737,8 +745,9 @@ namespace BarPromenade
 
             AdvanceDollyZoom(deltaTime);
             ResolveDollyZoom();
-            ApplyPose(focusPoint, desiredRotation);
-            ConfigureCamera();
+            ApplyAimTransition(
+                focusPoint - desiredRotation * Vector3.forward * dollyDistance,
+                desiredRotation, dollyFieldOfView, focusPoint);
         }
 
         private void UpdateFixedPose(float deltaTime)

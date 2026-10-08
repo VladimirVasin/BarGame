@@ -146,20 +146,21 @@ The vertical slice contains:
   City/Bar/lodge markers belong to one load, consumed once; later arrivals stay.
   Day one raises mother's-house quest/map marker; door/map entry or starting
   inside closes it. No village signpost;
-- CombatTest:bar/pistol→Start;NPC bar/3AI;fresh:dummy/freecam.
-  MMB↔focus;Tab↔AI;reset:mode kept/focus;bar-Q-Step:focus.
-  Gun8/∞:RMBaim/LMBfresh/R-Xreload1.8;idle-gait/Rpalm/recoil/streak/free centre aim.
-  Root-stable camera;hero-hit kick kept;accepted shot→port case/gravity-bounce/audio;
-  slide return/emptylock. Handmag exchange/rack/audio;ammo last.
-  Handoff interruption→hold/Rresume;drop/E keepsstage-ammo.
-  Pause-hitstop freeze;reset-exit clear;win aim-fire-reload/HP-result kept.
+- CombatTest:bar/gun→Start;NPCbar/3AI;dummy/freecam.
+  MMBfocus/TabAIreset:focus=bar;reset:AI kept/focus;bar-Q-Step:focus.
+  8/∞:RMBfreeaim+cross/LMBedge/R-Xreload1.8;idle-gait/Rpalm.
+  Idle↔aim:cam-FOV .25s/reversible rig-grip/lateIKblend;ray=cam;ready≠visual.
+  Recoil/streak/stablecam/hero-hit kick;fired cross:.035s out/.165s back;
+  sim/pause hold/hide0;port case/g-bounce/SFX;slide return/emptylock.
+  Handmag-rack/SFX/ammo last;interrupt→hold/Rresume;drop/E keepsstage-ammo.
+  Pause-hitstop0/reset-exit clear;win aim-fire-reload/HP-result kept.
   Bullet:g/sweep1/no pierce-ricochet-guard-parry;head0HP/live ragdoll.
-  Hit/audio;rig-ragdoll holes/bleed→reset-exit/bounded pools.
-  Corpse hits:impulse/new wounds-blood/HP-result-pose kept;end shots clear1x.
-  Bar:6zones/rear-head end/aim¼lock/first contact/metal sparks-recoil/L release.
+  Hit/SFX;rig-ragdoll holes/bleed→reset-exit/pool caps.
+  Corpse:impulse/wounds-blood/HP-result-pose kept;end shots clear1x.
+  Bar:6zones/rear-head end/aim¼lock/firsthit/metal sparks-recoil/L release.
   Q:free leg/dry/high guard bypass;Windup1m/finite shove-catch/support;
   rise≠grip/drop;E own-ammo/sharedUI/0grant/toilet:bar.
-  Gap:penetration/balance;`ai/architecture-notes.md`;
+  Gap:pierce/balance;
 - the retained Home opening is reachable only by a legacy request: held bed loop,
   silent `05:59` clock with rare whole-display flicker, five-second input lock,
   then localized Wake Up/Quit. Wake sets `06:00`, runs the clock/alarm and hides

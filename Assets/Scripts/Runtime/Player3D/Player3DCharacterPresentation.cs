@@ -1035,10 +1035,11 @@ namespace BarPromenade
                 ApplyCombatBodyMotion();
                 ApplyCombatDamagePose();
                 ApplyCombatFootwork();
+                ApplyCombatFirearm();
                 CompleteRecoveryPresentation(deltaTime);
                 ConstrainCombatFootContacts();
                 ApplyCombatSupportGrip();
-                ApplyCombatFirearm();
+                CompleteCombatFirearmPresentation();
                 EmitSnowFootContacts();
             }
 
@@ -1153,10 +1154,11 @@ namespace BarPromenade
                 ApplyCombatBodyMotion();
                 ApplyCombatDamagePose();
                 ApplyCombatFootwork();
+                ApplyCombatFirearm();
                 CompleteRecoveryPresentation(0f);
                 ConstrainCombatFootContacts();
                 ApplyCombatSupportGrip();
-                ApplyCombatFirearm();
+                CompleteCombatFirearmPresentation();
             }
         }
 
@@ -1197,8 +1199,10 @@ namespace BarPromenade
                 ApplyCombatBodyMotion();
                 ApplyCombatDamagePose();
                 ApplyCombatFootwork();
-                ApplyCombatSupportGrip();
                 ApplyCombatFirearm();
+                CompleteRecoveryPresentation(0f);
+                ApplyCombatSupportGrip();
+                CompleteCombatFirearmPresentation();
             }
         }
 

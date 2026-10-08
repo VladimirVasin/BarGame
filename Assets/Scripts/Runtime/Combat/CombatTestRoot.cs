@@ -112,9 +112,9 @@ namespace BarPromenade
 
         public void SetSparring(bool enabled)
         {
-            if (!GameInput.CanRead(GameInputContext.Gameplay)) return;
+            if (!IsInitialized || !GameInput.CanRead(GameInputContext.Gameplay)) return;
             Sparring = enabled;
-            ResetRound();
+            PlaceRound(focusOpponent: !Hero.IsPistol);
         }
 
         public void ResetRound()
@@ -288,7 +288,12 @@ namespace BarPromenade
                 Hero.CaptureContactPose(); Opponent.CaptureContactPose();
                 Projectiles?.Advance(SimulationStep, Hero, Opponent);
                 Casings?.Tick(SimulationStep);
-                if (Hero.CommitPistolShot(Projectiles)) Casings.BeginShot(Hero);
+                AdvancePistolCrosshair(SimulationStep);
+                if (Hero.CommitPistolShot(Projectiles))
+                {
+                    Casings.BeginShot(Hero);
+                    PulsePistolCrosshair();
+                }
                 long contactStamp = JournalStamp();
                 sampledContacts = Hero.CollectContacts(pendingContacts) | Opponent.CollectContacts(pendingContacts);
                 Hero.CollectShoveContacts(pendingShoves); Opponent.CollectShoveContacts(pendingShoves);
@@ -386,7 +391,12 @@ namespace BarPromenade
                     Hero.CaptureContactPose(); Opponent.CaptureContactPose();
                     Projectiles.Advance(SimulationStep, Hero, Opponent);
                     Casings.Tick(SimulationStep);
-                    if (Hero.CommitPistolShot(Projectiles)) Casings.BeginShot(Hero);
+                    AdvancePistolCrosshair(SimulationStep);
+                    if (Hero.CommitPistolShot(Projectiles))
+                    {
+                        Casings.BeginShot(Hero);
+                        PulsePistolCrosshair();
+                    }
                     Projectiles.ApplyContacts();
                     BloodEffects.Tick(SimulationStep);
                     SparkEffects.Tick(SimulationStep);

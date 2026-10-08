@@ -7,9 +7,43 @@ namespace BarPromenade
         private readonly RaycastHit[] pistolAimHits = new RaycastHit[64];
         private bool pistolCursorOwned, pistolCursorVisible, pistolApplicationFocused = true, requirePistolAimRelease;
         private CursorLockMode pistolCursorLock;
+        private const float CrosshairExpandSeconds = .035f, CrosshairReturnSeconds = .165f;
+        private float pistolCrosshairElapsed = CrosshairExpandSeconds + CrosshairReturnSeconds;
+        private float pistolCrosshairFrom;
+
+        internal float PistolCrosshairExpansion
+        {
+            get
+            {
+                if (pistolCrosshairElapsed < CrosshairExpandSeconds)
+                    return Mathf.Lerp(pistolCrosshairFrom, 4f,
+                        Mathf.SmoothStep(0f, 1f, pistolCrosshairElapsed / CrosshairExpandSeconds));
+                return 4f * (1f - Mathf.SmoothStep(0f, 1f,
+                    (pistolCrosshairElapsed - CrosshairExpandSeconds) / CrosshairReturnSeconds));
+            }
+        }
+
+        private void AdvancePistolCrosshair(float seconds) => pistolCrosshairElapsed = Mathf.Min(
+            CrosshairExpandSeconds + CrosshairReturnSeconds, pistolCrosshairElapsed + seconds);
+
+        private void PulsePistolCrosshair()
+        {
+            if (!Hero.IsFreePistolAiming || !CameraFollow.FreeAimActive) return;
+            pistolCrosshairFrom = PistolCrosshairExpansion;
+            pistolCrosshairElapsed = 0f;
+        }
+
+        private void ResetPistolCrosshair()
+        {
+            pistolCrosshairElapsed = CrosshairExpandSeconds + CrosshairReturnSeconds;
+            pistolCrosshairFrom = 0f;
+        }
 
         private void ReleaseFreePistolAim()
         {
+            // A pause hides the HUD and freezes the live clock. Other handoffs
+            // discard the impulse so a new aim lease cannot resurrect it.
+            if (!GameTimeScaleRuntime.IsPaused && !PauseMenuController.IsAnyPaused) ResetPistolCrosshair();
             if (CameraFollow != null) CameraFollow.ClearFreeAim(this);
             if (!pistolCursorOwned) return;
             Cursor.lockState = pistolCursorLock;
@@ -104,10 +138,11 @@ namespace BarPromenade
                 Vector3 centre = CameraFollow.Camera.ViewportToScreenPoint(new Vector3(.5f, .5f, 0f));
                 Vector2 point = canvas.ScreenToLogical(new Vector2(centre.x, Screen.height - centre.y));
                 Color colour = Hero.Pistol.CanFire && Hero.PistolAimAligned ? RetroUiTheme.Text : RetroUiTheme.Muted;
-                RetroUiTheme.FillRect(new Rect(point.x - 3f, point.y - 1f, 7f, 3f), RetroUiTheme.Ink);
-                RetroUiTheme.FillRect(new Rect(point.x - 1f, point.y - 3f, 3f, 7f), RetroUiTheme.Ink);
-                RetroUiTheme.FillRect(new Rect(point.x - 2f, point.y, 5f, 1f), colour);
-                RetroUiTheme.FillRect(new Rect(point.x, point.y - 2f, 1f, 5f), colour);
+                float spread = Mathf.Round(PistolCrosshairExpansion);
+                RetroUiTheme.FillRect(new Rect(point.x - 1f, point.y - 1f, 3f, 3f), RetroUiTheme.Ink);
+                DrawPistolCrosshairArms(point, spread, RetroUiTheme.Ink, 1f);
+                DrawPistolCrosshairArms(point, spread, colour, 0f);
+                RetroUiTheme.FillRect(new Rect(point.x, point.y, 1f, 1f), colour);
             }
             var rect = new Rect(14, 273, 170, 25);
             RetroUiTheme.DrawPanel(rect, RetroUiTheme.PanelInset, RetroUiTheme.BorderMuted, false, 0f, 1f, .72f);
@@ -120,6 +155,14 @@ namespace BarPromenade
             if (Hero.Pistol.IsReloading)
                 RetroUiTheme.FillRect(new Rect(rect.x + 6f, rect.y + rect.height - 2f,
                     (rect.width - 12f) * Hero.Pistol.ReloadProgress, 1f), RetroUiTheme.Text);
+        }
+
+        private static void DrawPistolCrosshairArms(Vector2 point, float spread, Color colour, float rim)
+        {
+            RetroUiTheme.FillRect(new Rect(point.x - 2f - spread - rim, point.y - rim, 2f + rim * 2f, 1f + rim * 2f), colour);
+            RetroUiTheme.FillRect(new Rect(point.x + 1f + spread - rim, point.y - rim, 2f + rim * 2f, 1f + rim * 2f), colour);
+            RetroUiTheme.FillRect(new Rect(point.x - rim, point.y - 2f - spread - rim, 1f + rim * 2f, 2f + rim * 2f), colour);
+            RetroUiTheme.FillRect(new Rect(point.x - rim, point.y + 1f + spread - rim, 1f + rim * 2f, 2f + rim * 2f), colour);
         }
     }
 }

@@ -515,6 +515,10 @@ namespace BarPromenade
             RestoreCombatAttention();
             if (ready == null || winnerPresentationReleased) return;
             if (!NeedsCombatPresentation) { ReleaseFreeLocomotion(); return; }
+            if (freeLocomotionReleased && IsPistol && hero != null &&
+                hero.TryGetPresentedBonePose(hero.Registry.Anchors.LeftFoot, out Pose leftSole) &&
+                hero.TryGetPresentedBonePose(hero.Registry.Anchors.RightFoot, out Pose rightSole))
+                footwork?.AdoptPresentedStance(leftSole, rightSole);
             freeLocomotionReleased = false;
             if (PresentKnockdown() || IsRagdollActive) return;
             if (!State.IsKicking) footwork?.EndKickSupport();
@@ -596,7 +600,7 @@ namespace BarPromenade
             handPose.SetGrip(false, weaponDropped ? 0f : 1f);
             if (IsPistol)
             {
-                pistolLeftClosure = pistolPose && !weaponDropped ? PistolSupportClosure(chosen) : 0f;
+                pistolLeftClosure = pistolPose && !weaponDropped ? BlendPistolClosure(PistolSupportClosure(chosen)) : 0f;
                 handPose.SetGrip(true, pistolLeftClosure);
             }
             if (npc != null)
@@ -622,7 +626,8 @@ namespace BarPromenade
             else chosen.SampleAnimation(npc.Animator.gameObject, progress * chosen.length);
         }
 
-        private float TransitionSeconds(AnimationClip chosen) => chosen == hit && State.Phase == MeleePhase.Stagger &&
+        private float TransitionSeconds(AnimationClip chosen) => IsPistol && (chosen == pistolRaise || chosen == pistolLower)
+            ? pistolRaise.length : chosen == hit && State.Phase == MeleePhase.Stagger &&
             LastImpact.Kind == CombatImpactKind.Projectile && ImpactMotion != null && ImpactMotion.Age < .05f ? .045f : chosen == rest ? .35f :
             chosen == block || visibleClip == block.name ? .18f :
             State.IsContinuation && (chosen == Current.Charge || chosen == ReleaseClip) ? .20f : PoseBlendSeconds;
@@ -674,7 +679,7 @@ namespace BarPromenade
             Present();
         }
 
-        private void ReleasePresentation()
+        private void ReleasePresentation(bool preservePresentedPose = false)
         {
             simulationPosePending = false;
             ResetCombatFacing();
@@ -695,7 +700,7 @@ namespace BarPromenade
             footwork?.Reset();
             if (handPose != null) handPose.SetGrip(false, 0f);
             CancelPoseBlend();
-            if (hero != null) hero.ClearOwnedRecoveryPoseClock(this);
+            if (hero != null) hero.ClearOwnedRecoveryPoseClock(this, preservePresentedPose);
             if (hero != null) { hero.ReleaseOwnedClip(this); hero.ReleaseCarryPose(this); }
             if (motor != null) motor.ReleaseMovementConstraint(this);
             motor?.SetOwnedMovementFrozen(this, false);
@@ -707,6 +712,8 @@ namespace BarPromenade
         {
             CancelPendingPistolShot("disabled");
             Pistol?.CancelAction();
+            pistolVisualAimProgress = 0f;
+            pistolLeftClosure = pistolBlendClosure = 0f;
             if (State.IsShoving || State.IsKicking || State.Phase == MeleePhase.Step || State.HasBufferedStep)
                 State.CancelAction();
             ResetShove();

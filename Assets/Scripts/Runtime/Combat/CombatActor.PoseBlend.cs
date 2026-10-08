@@ -63,9 +63,10 @@ namespace BarPromenade
 
         private void BeginPoseBlend(float duration = PoseBlendSeconds)
         {
-            if (visibleClip == null || Time.frameCount <= poseBlendAfterFrame) return;
+            if ((hero == null && visibleClip == null) || Time.frameCount <= poseBlendAfterFrame) return;
             poseBlendDuration = duration;
             poseBlendRemaining = duration;
+            if (IsPistol) pistolBlendClosure = pistolLeftClosure;
             if (hero != null)
             {
                 // The shared final-pose blend preserves the last visible velocity,
@@ -106,12 +107,9 @@ namespace BarPromenade
             for (int i = 0; i < npcPoseBones.Length; i++)
             {
                 Transform bone = npcPoseBones[i];
-                Vector3 angular = npcBlendAngularVelocities[i];
-                Quaternion predicted = angular.sqrMagnitude > .000001f
-                    ? Quaternion.AngleAxis(angular.magnitude * elapsed * Mathf.Rad2Deg, angular.normalized) * npcBlendRotations[i]
-                    : npcBlendRotations[i];
                 bone.localPosition = Vector3.Lerp(npcBlendPositions[i] + npcBlendVelocities[i] * elapsed, bone.localPosition, t);
-                bone.localRotation = Quaternion.Slerp(predicted, bone.localRotation, t);
+                bone.localRotation = Player3DCharacterPresentation.BlendRecoveryRotation(npcBlendRotations[i],
+                    bone.localRotation, npcBlendAngularVelocities[i], elapsed, t);
             }
         }
 

@@ -83,14 +83,141 @@ namespace BarPromenade.Tests.PlayMode
                 input.Release(keyboard.wKey, queueEventOnly: true);
                 for (int frame = 0; frame < 40; frame++) yield return null;
                 AssertPistolOrdinaryIdle();
+
+                var transitionFrames = new List<PistolTransitionFrame>();
+                var armBones = new Transform[6];
+                string[] armNames = { "upper_arm.L", "forearm.L", "hand.L", "upper_arm.R", "forearm.R", "hand.R" };
+                for (int index = 0; index < armBones.Length; index++)
+                {
+                    armBones[index] = CityPedestrianHandProps.FindSocket(root.Hero.DamageRigRoot, armNames[index]);
+                    Assert.That(armBones[index], Is.Not.Null, armNames[index]);
+                }
+                probe.Sample = () => transitionFrames.Add(ReadPistolTransitionFrame(armBones, hands));
+                yield return null;
+                PistolTransitionFrame idle = transitionFrames[transitionFrames.Count - 1];
+                int shotsBeforeRaise = root.Hero.Pistol.ShotSequence;
+                int queuedInputFrame = Time.frameCount;
                 input.Press(mouse.rightButton, queueEventOnly: true);
-                for (int frame = 0; frame < 40; frame++) yield return null;
+                yield return WaitFor(() => probe.CompletedFrame > queuedInputFrame,
+                    "The queued aim input needs a completed gameplay frame.");
+                Assert.That(root.Hero.Pistol.AimRequested, Is.True,
+                    $"Completed aim input: held={mouse.rightButton.isPressed}, body={root.Hero.PistolBodyAvailable}, " +
+                    $"gameplay={GameInput.CanRead(GameInputContext.Gameplay)}, freeCamera={root.CameraFollow.FreeAimActive}.");
+                queuedInputFrame = Time.frameCount;
+                input.Press(mouse.leftButton, queueEventOnly: true);
+                yield return WaitFor(() => probe.CompletedFrame > queuedInputFrame,
+                    "The early trigger needs a completed gameplay frame.");
+                input.Release(mouse.leftButton, queueEventOnly: true);
+                Assert.That(root.Hero.Pistol.ShotSequence, Is.EqualTo(shotsBeforeRaise),
+                    "An early raise trigger must be rejected rather than deferred.");
+                Assert.That(root.PistolCrosshairExpansion, Is.Zero,
+                    "A rejected raise trigger cannot animate the crosshair.");
+                for (int frame = 0; frame < 39; frame++)
+                {
+                    yield return null;
+                    if (frame == 5) yield return CaptureFocusGameView("pistol-aim-enter-middle");
+                }
                 Assert.That(root.Hero.Pistol.IsAiming && root.CameraFollow.FreeAimActive, Is.True);
                 Assert.That(visual.OwnsClip(root.Hero), Is.True);
                 Assert.That(visual.OwnsCarryPose(root.Hero), Is.False);
                 Assert.That(root.Hero.PistolSupportError, Is.LessThan(.02f));
+                Assert.That(root.Hero.PistolVisualAimProgress, Is.EqualTo(1f).Within(.0001f));
+                PistolTransitionFrame aimed = transitionFrames[transitionFrames.Count - 1];
+                AssertPistolTransitionFrames(transitionFrames, armNames, "Idle to aim");
+                AssertPistolCameraHasIntermediateFrames(transitionFrames, idle.Camera, aimed.Camera, "Idle to aim");
                 yield return CaptureFocusGameView("pistol-free-walk-to-aim");
+
+                transitionFrames.Clear();
+                yield return null;
                 input.Release(mouse.rightButton, queueEventOnly: true);
+                for (int frame = 0; frame < 60; frame++)
+                {
+                    yield return null;
+                    if (frame == 6) yield return CaptureFocusGameView("pistol-aim-exit-middle");
+                }
+                AssertPistolTransitionFrames(transitionFrames, armNames, "Aim to idle");
+                AssertPistolCameraHasIntermediateFrames(transitionFrames, aimed.Camera,
+                    transitionFrames[transitionFrames.Count - 1].Camera, "Aim to idle");
+                Assert.That(root.Hero.PistolVisualAimProgress, Is.Zero);
+
+                // A tap never reaches aim, and reversing an unfinished lower
+                // must retain the last rendered camera, joints and grip weight.
+                transitionFrames.Clear();
+                yield return null;
+                input.Press(mouse.rightButton, queueEventOnly: true);
+                for (int frame = 0; frame < 2; frame++) yield return null;
+                Assert.That(root.Hero.PistolVisualAimProgress, Is.InRange(.01f, .99f));
+                input.Release(mouse.rightButton, queueEventOnly: true);
+                for (int frame = 0; frame < 40; frame++) yield return null;
+                AssertPistolTransitionFrames(transitionFrames, armNames, "Short aim tap");
+                AssertPistolOrdinaryIdle();
+
+                transitionFrames.Clear();
+                yield return null;
+                input.Press(mouse.rightButton, queueEventOnly: true);
+                for (int frame = 0; frame < 6; frame++) yield return null;
+                Assert.That(root.Hero.PistolVisualAimProgress, Is.InRange(.1f, .9f));
+                input.Release(mouse.rightButton, queueEventOnly: true);
+                for (int frame = 0; frame < 3; frame++) yield return null;
+                Assert.That(root.Hero.PistolVisualAimProgress, Is.InRange(.01f, .9f));
+                input.Press(mouse.rightButton, queueEventOnly: true);
+                for (int frame = 0; frame < 40; frame++) yield return null;
+                AssertPistolTransitionFrames(transitionFrames, armNames, "Reverse unfinished aim");
+                Assert.That(root.Hero.PistolVisualAimProgress, Is.EqualTo(1f).Within(.0001f));
+                Assert.That(hands.LeftGripWeight, Is.EqualTo(CombatPistolAssetProvider.SupportGripWeight).Within(.001f));
+                Assert.That(root.Hero.PistolSupportError, Is.LessThan(.02f));
+                AssertPistolCameraShotReady("Reversed aim endpoint");
+                probe.Sample = null;
+
+                // Keep the verified aim and move the passive target aside so
+                // accepted shots exercise the HUD without a body hit-stop.
+                root.Opponent.ResetActor(root.Opponent.transform.position + Vector3.right * 4f,
+                    root.Opponent.transform.forward);
+                for (int frame = 0; frame < 30; frame++) yield return null;
+                AssertPistolCameraShotReady("Crosshair shot");
+                Assert.That(root.PistolCrosshairExpansion, Is.Zero);
+                yield return CaptureFocusGameView("pistol-crosshair-rest");
+                int shots = root.Hero.Pistol.ShotSequence;
+                queuedInputFrame = Time.frameCount;
+                input.Press(mouse.leftButton, queueEventOnly: true);
+                yield return WaitFor(() => probe.CompletedFrame > queuedInputFrame,
+                    "The accepted trigger needs a completed gameplay frame.");
+                input.Release(mouse.leftButton, queueEventOnly: true);
+                Assert.That(root.Hero.Pistol.ShotSequence, Is.EqualTo(shots + 1));
+                Assert.That(root.PistolCrosshairExpansion, Is.GreaterThan(0f),
+                    "A committed shot must start its crosshair impulse in the same live frame.");
+                float pausedExpansion = root.PistolCrosshairExpansion;
+                Assert.That(root.PauseMenu.Open(), Is.True);
+                root.Tick(.8f);
+                for (int frame = 0; frame < 3; frame++) yield return null;
+                Assert.That(root.PistolCrosshairExpansion, Is.EqualTo(pausedExpansion).Within(.0001f),
+                    "Pause must hold the impulse clock while its HUD is hidden.");
+                Assert.That(root.PauseMenu.Cancel(), Is.True);
+                yield return WaitFor(() => GameInput.CanRead(GameInputContext.Gameplay), "Pause did not release the crosshair impulse.");
+                yield return null;
+                Assert.That(root.PistolCrosshairExpansion, Is.GreaterThan(0f), "The held impulse must resume with aiming after pause.");
+                root.AutomaticSimulation = false;
+                yield return CaptureFocusGameView("pistol-crosshair-shot-impulse");
+                root.AutomaticSimulation = true;
+                for (int frame = 0; frame < 30; frame++) yield return null;
+                Assert.That(root.PistolCrosshairExpansion, Is.Zero, "The crosshair must settle back to its original size.");
+                Assert.That(root.Hero.Pistol.ShotSequence, Is.EqualTo(shots + 1), "Holding a button cannot replay its trigger.");
+                yield return CaptureFocusGameView("pistol-crosshair-recovered");
+                queuedInputFrame = Time.frameCount;
+                input.Press(mouse.leftButton, queueEventOnly: true);
+                yield return WaitFor(() => probe.CompletedFrame > queuedInputFrame,
+                    "The second trigger needs a completed gameplay frame.");
+                queuedInputFrame = Time.frameCount;
+                input.Release(mouse.leftButton, queueEventOnly: true);
+                Assert.That(root.Hero.Pistol.ShotSequence, Is.EqualTo(shots + 2));
+                yield return WaitFor(() => probe.CompletedFrame > queuedInputFrame,
+                    "The trigger release must be consumed before releasing the other mouse button.");
+                Assert.That(root.PistolCrosshairExpansion, Is.GreaterThan(0f));
+                queuedInputFrame = Time.frameCount;
+                input.Release(mouse.rightButton, queueEventOnly: true);
+                yield return WaitFor(() => probe.CompletedFrame > queuedInputFrame,
+                    "Releasing aim needs a completed gameplay frame.");
+                Assert.That(root.PistolCrosshairExpansion, Is.Zero, "Hiding aim must clear a live impulse immediately.");
                 for (int frame = 0; frame < 60; frame++) yield return null;
                 yield return CapturePistolNearViews("ordinary-idle-after-aim");
                 AssertPistolOrdinaryIdle();
@@ -104,6 +231,85 @@ namespace BarPromenade.Tests.PlayMode
                 GameInput.HandleApplicationFocus(true);
                 input.TearDown();
             }
+        }
+
+        private PistolTransitionFrame ReadPistolTransitionFrame(Transform[] armBones, NpcHandPose hands)
+        {
+            var rotations = new Quaternion[armBones.Length];
+            for (int index = 0; index < armBones.Length; index++) rotations[index] = armBones[index].localRotation;
+            Ray centre = root.CameraFollow.Camera.ViewportPointToRay(new Vector3(.5f, .5f, 0f));
+            return new PistolTransitionFrame
+            {
+                Camera = ReadPistolCameraFrame(), Seconds = Time.deltaTime,
+                ArmRotations = rotations, LeftHand = armBones[2].position, RightHand = armBones[5].position,
+                LeftGrip = hands.LeftGripWeight, VisualAim = root.Hero.PistolVisualAimProgress,
+                PalmError = Vector3.Distance(root.Hero.Weapon.transform.position, hands.CylinderCentre(false)),
+                CentreRayError = Vector3.Angle(centre.direction, root.Hero.PistolAimPoint - centre.origin)
+            };
+        }
+
+        private static void AssertPistolTransitionFrames(List<PistolTransitionFrame> frames, string[] armNames, string context)
+        {
+            Assert.That(frames.Count, Is.GreaterThan(2), context + " needs completed LateUpdate samples.");
+            string reportDirectory = Path.Combine(Directory.GetCurrentDirectory(), "TestResults");
+            Directory.CreateDirectory(reportDirectory);
+            using (var report = new StreamWriter(Path.Combine(reportDirectory, "pistol-" + context.Replace(' ', '-') + ".csv")))
+            {
+                report.WriteLine("frame,seconds,visualAim,leftGrip,cameraStep,leftWristStep,rightWristStep,leftUpperAngle,leftForearmAngle,leftHandAngle,rightUpperAngle,rightForearmAngle,rightHandAngle,cameraX,cameraY,cameraZ,cameraAngle,fieldOfView");
+                for (int index = 1; index < frames.Count; index++)
+                {
+                    PistolTransitionFrame previous = frames[index - 1], current = frames[index];
+                    report.Write(System.FormattableString.Invariant($"{current.Camera.Frame},{current.Seconds:F6},{current.VisualAim:F6},{current.LeftGrip:F6},{Vector3.Distance(current.Camera.Position, previous.Camera.Position):F6},{Vector3.Distance(current.LeftHand, previous.LeftHand):F6},{Vector3.Distance(current.RightHand, previous.RightHand):F6}"));
+                    for (int bone = 0; bone < armNames.Length; bone++)
+                        report.Write(System.FormattableString.Invariant($",{Quaternion.Angle(current.ArmRotations[bone], previous.ArmRotations[bone]):F6}"));
+                    report.Write(System.FormattableString.Invariant($",{current.Camera.Position.x:F6},{current.Camera.Position.y:F6},{current.Camera.Position.z:F6},{Quaternion.Angle(current.Camera.Rotation, previous.Camera.Rotation):F6},{current.Camera.FieldOfView:F6}"));
+                    report.WriteLine();
+                }
+            }
+            for (int index = 1; index < frames.Count; index++)
+            {
+                PistolTransitionFrame previous = frames[index - 1], current = frames[index];
+                float seconds = Mathf.Max(CombatTestRoot.SimulationStep, current.Seconds);
+                string at = context + ", completed frame " + current.Camera.Frame;
+                Assert.That(current.Camera.Camera, Is.SameAs(previous.Camera.Camera), at);
+                Assert.That(current.Camera.FollowEnabled, Is.True, at);
+                Assert.That(Vector3.Distance(current.Camera.Position, previous.Camera.Position), Is.LessThan(.01f + 18f * seconds),
+                    at + ": camera position must travel rather than snap.");
+                Assert.That(Quaternion.Angle(current.Camera.Rotation, previous.Camera.Rotation), Is.LessThan(.1f + 150f * seconds), at);
+                Assert.That(Mathf.Abs(current.Camera.FieldOfView - previous.Camera.FieldOfView), Is.LessThan(.01f + 100f * seconds),
+                    at + ": FOV must blend with the camera.");
+                for (int bone = 0; bone < armNames.Length; bone++)
+                    Assert.That(Quaternion.Angle(current.ArmRotations[bone], previous.ArmRotations[bone]),
+                        Is.LessThan(.5f + 1100f * seconds), at + ": " + armNames[bone] + " must retain the visible pose.");
+                Assert.That(Vector3.Distance(current.LeftHand, previous.LeftHand), Is.LessThan(.005f + 8f * seconds), at + ": left wrist.");
+                Assert.That(Vector3.Distance(current.RightHand, previous.RightHand), Is.LessThan(.005f + 8f * seconds), at + ": right wrist.");
+                Assert.That(Mathf.Abs(current.LeftGrip - previous.LeftGrip), Is.LessThan(.001f + 14f * seconds), at + ": left grip.");
+                Assert.That(Mathf.Abs(current.VisualAim - previous.VisualAim), Is.LessThan(.001f + 8f * seconds),
+                    at + ": reversing cannot restart the visible raise or lower.");
+                Assert.That(current.PalmError, Is.LessThan(.001f), at + ": the pistol must remain in the right palm.");
+                if (current.Camera.FreeAim && current.Camera.AimRequested)
+                    Assert.That(current.CentreRayError, Is.LessThan(.05f),
+                        at + ": the aim point must use the displayed intermediate camera ray.");
+            }
+        }
+
+        private static void AssertPistolCameraHasIntermediateFrames(List<PistolTransitionFrame> frames,
+            PistolCameraFrame start, PistolCameraFrame end, string context)
+        {
+            Assert.That(Vector3.Distance(start.Position, end.Position), Is.GreaterThan(.1f), context + " must change the framing.");
+            int intermediate = 0;
+            foreach (PistolTransitionFrame frame in frames)
+                if (Vector3.Distance(frame.Camera.Position, start.Position) > .01f &&
+                    Vector3.Distance(frame.Camera.Position, end.Position) > .01f) intermediate++;
+            Assert.That(intermediate, Is.GreaterThan(2), context + " must show several intermediate camera positions.");
+        }
+
+        private struct PistolTransitionFrame
+        {
+            public PistolCameraFrame Camera;
+            public float Seconds, LeftGrip, VisualAim, PalmError, CentreRayError;
+            public Quaternion[] ArmRotations;
+            public Vector3 LeftHand, RightHand;
         }
 
         [UnityTest]
@@ -1844,6 +2050,11 @@ namespace BarPromenade.Tests.PlayMode
     public sealed class PistolCameraContinuityProbe : MonoBehaviour
     {
         public System.Action Sample;
-        private void LateUpdate() => Sample?.Invoke();
+        public int CompletedFrame { get; private set; } = -1;
+        private void LateUpdate()
+        {
+            CompletedFrame = Time.frameCount;
+            Sample?.Invoke();
+        }
     }
 }

@@ -178,6 +178,23 @@ namespace BarPromenade
             initialized = true;
         }
 
+        internal void AdoptPresentedStance(Pose left, Pose right)
+        {
+            // Ordinary locomotion may have travelled since this optional stance
+            // was released. Keep its actual soles rather than old world anchors
+            // which would pull the pelvis backwards/down on reacquisition.
+            Restore();
+            initialized = true; yielded = false; moving = settlingFoot = false;
+            gaitOffset = Vector3.zero;
+            previousPosition = frame.position; previousForward = frame.forward;
+            feet[0] = presentedFeet[0] = left.position;
+            feet[1] = presentedFeet[1] = right.position;
+            rotations[0] = left.rotation; rotations[1] = right.rotation;
+            hasPresentedContacts = true;
+            for (int side = 0; side < 2; side++)
+                supportConfirmed[side] = PresentedGrounded(side, out _);
+        }
+
         internal bool TryBeginKickSupport()
         {
             LastKickSupportFailure = KickSupportFailure.None;
