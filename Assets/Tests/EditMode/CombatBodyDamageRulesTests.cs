@@ -61,6 +61,10 @@ namespace BarPromenade.Tests.EditMode
             var body = new CombatBodyDamageState();
             Assert.That(body.Apply(region, 1, 2f, 1, 1, 0), Is.True);
             Assert.That(body.IsTerminal, Is.True);
+            if (CombatBodyDamageState.IsTorso(region))
+                for (int i = 0; i < CombatBodyDamageState.RegionCount; i++)
+                    Assert.That(body.IsAttached((BodyDamageRegion)i), Is.True,
+                        "Critical torso failure ends life while preserving the core and its connected anatomy.");
             Assert.That(body.CanCrawl, Is.False);
             body.Reset();
             Assert.That(body.IsTerminal, Is.False);
@@ -77,6 +81,20 @@ namespace BarPromenade.Tests.EditMode
             }
             Assert.That(body.Apply(region, 1, .1f, 1, 1, 0), Is.True,
                 "Reset also forgets the previous round's contact identity.");
+        }
+
+        [Test]
+        public void NewContactsRemainIdentifiableAfterTorsoTraumaSaturates()
+        {
+            var body = new CombatBodyDamageState();
+            Assert.That(body.Apply(BodyDamageRegion.Chest, 0, 2f, 1, 1, 0), Is.True);
+            uint revision = body.ContactRevision;
+            Assert.That(body.Apply(BodyDamageRegion.Chest, 0, .2f, 1, 1, 0), Is.False);
+            Assert.That(body.ContactRevision, Is.EqualTo(revision));
+            Assert.That(body.Apply(BodyDamageRegion.Chest, 0, .2f, 1, 2, 0), Is.False);
+            Assert.That(body.ContactRevision, Is.EqualTo(revision + 1),
+                "A fresh wound in the same coarse patch must still deepen its own local tissue field.");
+            body.Reset(); Assert.That(body.ContactRevision, Is.Zero);
         }
 
         [Test]

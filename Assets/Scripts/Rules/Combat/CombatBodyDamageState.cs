@@ -31,8 +31,11 @@ namespace BarPromenade
         private static readonly int[] Parents = { 1, 2, 3, 4, -1, 2, 5, 6, 2, 8, 9, 4, 11, 12, 4, 14, 15 };
 
         public CombatBodyDamageState() => Reset();
+        public uint ContactRevision { get; private set; }
+        public static bool IsTorso(BodyDamageRegion region) => region is BodyDamageRegion.Chest or BodyDamageRegion.Abdomen or BodyDamageRegion.Pelvis;
         public bool IsTerminal => !IsAttached(BodyDamageRegion.Head) || !IsAttached(BodyDamageRegion.Neck) ||
-            !IsAttached(BodyDamageRegion.Chest) || !IsAttached(BodyDamageRegion.Abdomen) || !IsAttached(BodyDamageRegion.Pelvis);
+            BoneContinuity(BodyDamageRegion.Chest) <= 0f || BoneContinuity(BodyDamageRegion.Abdomen) <= 0f ||
+            BoneContinuity(BodyDamageRegion.Pelvis) <= 0f;
         public bool CanUseRightHand => !IsTerminal && IsFunctional(BodyDamageRegion.RightUpperArm) &&
             IsFunctional(BodyDamageRegion.RightForearm) && IsFunctional(BodyDamageRegion.RightHand);
         public bool CanUseLeftHand => !IsTerminal && IsFunctional(BodyDamageRegion.LeftUpperArm) &&
@@ -117,10 +120,11 @@ namespace BarPromenade
                 shotOrder.Enqueue(key);
             }
             shots[key] = recorded | bit;
+            unchecked { ContactRevision++; }
             float next = Math.Min(SeparationTrauma, trauma[index] + amount);
             if (next <= trauma[index]) return false;
             trauma[index] = next;
-            if (next >= SeparationTrauma) Detach((int)region);
+            if (next >= SeparationTrauma && !IsTorso(region)) Detach((int)region);
             return true;
         }
 
@@ -130,6 +134,7 @@ namespace BarPromenade
             Array.Clear(limbHealthSpent, 0, limbHealthSpent.Length);
             for (int i = 0; i < attached.Length; i++) attached[i] = true;
             shots.Clear(); shotOrder.Clear(); newestShot.Clear(); retiredShot.Clear();
+            ContactRevision = 0;
         }
 
         private bool LegFunctional(bool left) => IsFunctional(left ? BodyDamageRegion.LeftThigh : BodyDamageRegion.RightThigh) &&

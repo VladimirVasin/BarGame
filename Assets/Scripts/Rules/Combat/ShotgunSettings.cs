@@ -15,7 +15,8 @@ namespace BarPromenade
         public float SpreadHalfAngleDegrees => 3f;
         private static readonly float[] Ranges = { 0f, 1f, 3f, 8f, 15f, 25f, 40f };
         private static readonly float[] Damage = { 26f, 24f, 20f, 10f, 4f, 1.5f, 0f };
-        private static readonly float[] Momentum = { 260f, 240f, 180f, 90f, 30f, 8f, 0f };
+        private static readonly float[] Momentum = { 420f, 380f, 200f, 50f, 10f, 2f, 0f };
+        public static float MaximumVolleyMomentum => Momentum[0];
         public ProjectileDamageProfile DamageProfile => ProjectileDamageProfile.Shotgun;
         public float OpenSeconds => ReloadSeconds * (.4f / 2.8f);
         public float EjectSpentSeconds => ReloadSeconds * (.65f / 2.8f);

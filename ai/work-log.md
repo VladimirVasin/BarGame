@@ -3,46 +3,50 @@
 Newest outcomes/checks first. Archive whole dates at budget: [policy](README.md).
 Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-2026-08.md).
 
-## 2026-10-09 — Shotgun force, local body destruction and survivors
+## 2026-10-09 — Shotgun force, torso erosion and survivors
 
-- Shotgun damage/momentum now decline continuously from muzzle to 40 m.
-  Actual pellet contacts own additive force across flight batches: the former
-  first-batch token discarded later momentum, while one limb absorbed the launch.
-  Mass-weighted whole-body impulse retains a smaller contact torque.
-- Head-only pellet trauma accumulates before/after the lethal batch, capped at
-  fourteen authored sectors per shot; a lone pellet cannot borrow a shell's power.
-  Close debris/blood fly faster; pistol fracture stays local. Bounded volley
-  ledgers, pause and reset retain the original rig/brain-piece lifecycle.
-- Accepted the user's CombatTest-only canon exception for both fighters/corpses.
-  Seventeen regions/four local patches accumulate tissue/bone loss; source-derived
-  closed surfaces and posed finite parts replace intact anatomy. Real near/far
-  contacts retain locality; full tissue loss exposes body/skull and retires brain.
-- Limb health budgets/capabilities preserve survival while limiting hands,
-  stance, recovery and two-hand actions. Lost support keeps a living physical
-  body with arm-stroke crawl and a loaded right-hand pistol; critical head/core
-  failure ends combat. Actual palm/muzzle checks found a floating prop; the same
-  rig now binds it physically. Manual gameplay/PhysX cadence must match for
-  queued gravity support. Pause freezes motion; reset restores anatomy and retires debris.
-- Checks: `Range_ShotgunDistanceControlsLaunchAndHeadBreakup`,
-  `DistanceScalesEveryPelletBeforeRegionalDamage`,
-  `Range_BodyDestructionFollowsLocalContactsSurvivalCorpsePauseAndReset`,
-  `CombatBodyDamageRulesTests`;
-  `build-combat-body-3d-model.py` and `build-combat-skull-3d-model.py` validators;
-  close/far, skeleton, cut, crawl and grounded-pistol frames inspected;
+- Shotgun HP/momentum fall continuously to 40 m; actual contacts accumulate
+  across flight batches. A first-batch token had discarded later force and one
+  limb absorbed the launch. Head-only trauma remains bounded/local; a lone
+  pellet cannot borrow a shell's power. Close head debris/blood fly faster.
+  Stronger close launch uses 420/380/200/50/10/2/0 Ns at
+  0/1/3/8/15/25/40 m;the whole-body cap follows 420, local 260 stays.
+  HP/head trauma unchanged; sharper momentum falloff.
+  Near-wall launch comparison now has open travel.
+- User's CombatTest-only correction keeps Chest/Abdomen/Pelvis joined through
+  critical failure: finite local authored cells deform/erode to rig-bound
+  skeleton without torso chunks. Head/limb closed cuts remain. Whole-body
+  momentum waits for final damage/ragdoll state and the first unfrozen step,
+  using current masses; strong non-pellet torso hits share the route.
+- Seventeen regions/four patches preserve local damage, corpse contacts and
+  reset. Limb budgets limit hands/two-hand actions and support; living bodies
+  crawl and retain a loaded right-hand pistol. Critical head/core failure ends
+  combat. Palm/muzzle checks found a floating prop; it now binds to the rig.
+  Manual gameplay/PhysX cadence matches queued gravity support.
+- Shotgun caches/lazy flesh and no hold for surviving pellets missed free-aim
+  CPU on wounded targets. Shared snapshots, bounded lazy triangle leaves,
+  analytic sweeps, source/blood caches and a persistent manual NPC clip graph
+  reduce work. Contact tolerance and authored poses remain; attack/charge
+  samplers stay. Regression covers nonfatal aimed multi-substep/held-aim frames;
+  exhaustive/contact/clip oracles protect topology, grazing, wounds and TRS.
+  Crowbar avoids firearm pools.
+- Focused checks: `Range_TorsoErosionKeepsConnectedLaunchCorpsePauseAndReset`,
+  `Range_ShotgunDistanceControlsLaunchAndHeadBreakup`,
+  `Range_DistantShotgunTorsoVolleyProfilesImpactPhases`,
+  `Range_SweptTriangleContactAnalyticMatchesBoundariesAndOracle`,
+  `Range_SkinnedTriangleQueryMatchesExhaustiveAfterDeformation`,
+  `Range_NpcManualAnimationMatchesAuthoredClipSampling`,
+  `Range_BodyDestructionDefersGeometryAndKeepsFrozenVisibleContacts`,
+  `build-combat-body-3d-model.py --validate-only`, `UnityValidateImportedOrThrow`;
+  Hero/NPC tissue/skeleton/reset and close/far connected launch frames inspected;
   `check-docs.py`, `git diff --check`.
-- Dismemberment logs exposed repeated pellet rebuilds and live hand mesh bakes.
-  One received batch synchronizes once; contacts/wounds prepare on entry.
-  Only damaged sources split; frozen bone bounds defer exact triangles.
-  Blendshapes, cloth revisions, released vertices and centre bindings reuse data.
-  Proxy keys ignore rigid motion but refresh for shape/scale changes.
-  Wounds share posed matrices/vertices and transient candidates; distant bounds
-  prune triangle scans without discarding ray contacts or nearer fallback wounds.
-  Checks: `Range_BodyDestructionDefersGeometryAndKeepsFrozenVisibleContacts`,
-  `Range_PistolRegionalReactionsAndWoundsStayContinuousThroughPauseAndReset`;
-  hero/NPC cut frames inspected; `check-docs.py`, `git diff --check`.
-- Fixed crowbar victory's null firearm pools in post-round steps; melee/body
-  simulation continues without creating gun systems. Check:
+- Earlier checks: `DistanceScalesEveryPelletBeforeRegionalDamage`,
+  `Range_BodyDestructionFollowsLocalContactsSurvivalCorpsePauseAndReset`,
+  `CombatBodyDamageRulesTests`,
+  `Range_PistolRegionalReactionsAndWoundsStayContinuousThroughPauseAndReset`,
   `Range_CrowbarVictoryAdvancesWithoutFirearmPools`;
+  `build-combat-body-3d-model.py` and `build-combat-skull-3d-model.py` validators;
+  close/far, head, cut, crawl and grounded-pistol frames inspected;
   `check-docs.py`, `git diff --check`.
 
 ## 2026-10-08 — Shotgun, pistol wounds and Editor input

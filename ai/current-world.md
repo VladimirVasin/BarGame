@@ -147,22 +147,23 @@ The vertical slice contains:
   Day one raises mother's-house quest/map marker; door/map entry or starting
   inside closes it. No village signpost;
 - CombatTest:bar/pistol8∞/shotgun2∞→Start;NPCbar/3AI;dummy/freecam;
-  MMBfocus/TabAIreset/resetAI-focus/bar-Qfocus;
+  MMBfocus/TabAIreset/bar-Qfocus;
   guns:RMBaim/LMBedge/R-Xreload/Rpalm gait/FOV-IK.25;
   cam-plane strafe/Space1m-cardinal-back/fixedupper/tankrelease.
-  Shotgun12/.55/head×2;linear1m24HP/240Ns→25m1.5/8→40m0;
-  one reaction/launch/head≤14/break2.8/eject-spent/load-missing/close.
-  DropE/Rresume barrel-stage-ammo/atomic spend/flights finish/win fire-reload.
-  Ray:nearest world/posed skin;gravity/recoil/streak/stablecam/0pierce-ricochet-guard.
-  Body17/patch4:cloth-tissue-bone loss/closed cuts/skeleton/finite severing;
-  whole skins;batch1sync;lazy contacts;wound/grip/cloth/proxy caches.
-  ArmHP≤35/leg≤45;both:Rhand drop/no weapon,Lhand no2hand-reload;
+  Shotgun12/.55/head×2;HP1m24/25m1.5/40m0;Ns1m380/25m2/40m0;
+  reaction1/end-only hold/head≤14/break2.8.
+  Launch:final/unfrozen1/current-mass;torso nonpellets.
+  DropE/Rresume stage-ammo/atomic spend/flights finish/win fire-reload.
+  Ray:first skin/world;analytic;gravity/recoil/streak/stablecam/0pierce-ricochet-guard.
+  Body17/patch4:cloth-tissue-bone loss/head-limb cuts/sever.
+  Chest-Abdomen-Pelvis joined even critical;local cells deform-erode→rig skeleton/0chunks.
+  Batch1sync/shared pose/lazy leaves/NPCgraph.
+  Arm35/leg45;Rhand0weapon/Lhand0twohand-reload;
   Rbar/loaded pistol remain;leg loss living ragdoll/crawl/no rise-step-kick.
-  Critical head-torso terminal/corpse damage/pause/reset restore all.
+  Head-torso critical end/corpse/pause/reset restores all.
   Pistol:reload1.8/slide-emptylock/mag-rack/cases/head3-5of16/brain8 jelly-squash;
   blood56/800/pulse24s0/cam-hide/convulsions2.35/worldhole128FIFO/particles192.
   Bar6zones/rearhead-end/metalrecoil/Qsupport/toilet/Eown-ammo/sharedUI/0grant;
-  gap:pierce/balance;
 - the retained Home opening is reachable only by a legacy request: held bed loop,
   silent `05:59` clock with rare whole-display flicker, five-second input lock,
   then localized Wake Up/Quit. Wake sets `06:00`, runs the clock/alarm and hides

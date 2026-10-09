@@ -17,7 +17,7 @@ namespace BarPromenade.Editor
         private bool IsBody => assetPath == Folder + "BodyHero.fbx" || assetPath == Folder + "BodyNpc.fbx" ||
             assetPath == Folder + "SkullHero.fbx" || assetPath == Folder + "SkullNpc.fbx";
         private static string SourceFor(string path) => path.EndsWith("Hero.fbx", StringComparison.Ordinal) ? HeroSource : NpcSource;
-        public override uint GetVersion() => 7;
+        public override uint GetVersion() => 8;
 
         [Serializable]
         private sealed class TessellationManifest
@@ -67,6 +67,9 @@ namespace BarPromenade.Editor
             if (source == null) return; // Source completion below reimports this derivative.
             var originals = new Dictionary<string, SkinnedMeshRenderer>(StringComparer.Ordinal);
             foreach (SkinnedMeshRenderer renderer in source.GetComponentsInChildren<SkinnedMeshRenderer>(true)) originals.Add(renderer.name, renderer);
+            // Axis baking and geometric origins differ between source renderers.
+            // Measure each metadata frame before restoring any mesh vertices.
+            Dictionary<string, Matrix4x4> torsoFrames = MeasureTorsoFrames(model, originals);
             var bones = new Dictionary<string, Transform>(StringComparer.Ordinal);
             foreach (Transform bone in model.GetComponentsInChildren<Transform>(true)) bones[bone.name] = bone;
             var allowances = new Dictionary<string, float>(StringComparer.Ordinal);
@@ -85,12 +88,13 @@ namespace BarPromenade.Editor
                     throw new InvalidOperationException("Body derivative lost its original surface: " + piece.name);
                 bool exterior = piece.name.StartsWith("Region", StringComparison.Ordinal);
                 float measuredWarp = allowances.TryGetValue(original.name, out float value) ? value : 0f;
-                RestoreSkin(piece, original, bones, exterior, Mathf.Max(.0007f, measuredWarp * 1.05f + .0001f));
+                RestoreSkin(piece, original, bones, exterior, Mathf.Max(.0007f, measuredWarp * 1.05f + .0001f),
+                    torsoFrames.TryGetValue(original.name, out Matrix4x4 torsoFrame) ? torsoFrame : Matrix4x4.identity);
             }
         }
 
         private static void RestoreSkin(SkinnedMeshRenderer piece, SkinnedMeshRenderer original,
-            Dictionary<string, Transform> bones, bool exterior, float maximumProjectionMetres)
+            Dictionary<string, Transform> bones, bool exterior, float maximumProjectionMetres, Matrix4x4 torsoFrame)
         {
             Mesh mesh = piece.sharedMesh, skin = original.sharedMesh;
             if (mesh == null || skin == null) throw new InvalidOperationException("Body derivative lacks mesh.");
@@ -146,6 +150,7 @@ namespace BarPromenade.Editor
             if (tangents != null) mesh.tangents = tangents;
             else if (exterior) mesh.RecalculateTangents();
             mesh.bindposes = skin.bindposes;
+            RestoreTorsoCells(mesh, torsoFrame);
             if (exterior)
             {
                 // Offline source correspondence follows per-instance cloth without
@@ -185,6 +190,118 @@ namespace BarPromenade.Editor
             piece.bones = ordered;
             piece.rootBone = original.rootBone != null && bones.TryGetValue(original.rootBone.name, out Transform root) ? root : ordered[0];
             piece.localBounds = mesh.bounds;
+        }
+
+        private sealed class TorsoFrameSamples
+        {
+            internal readonly List<Vector3> Authored = new List<Vector3>();
+            internal readonly List<Vector3> Imported = new List<Vector3>();
+        }
+
+        private static Dictionary<string, Matrix4x4> MeasureTorsoFrames(GameObject model,
+            Dictionary<string, SkinnedMeshRenderer> originals)
+        {
+            var samples = new Dictionary<string, TorsoFrameSamples>(StringComparer.Ordinal);
+            foreach (SkinnedMeshRenderer piece in model.GetComponentsInChildren<SkinnedMeshRenderer>(true))
+            {
+                var labels = new List<Vector2>(); piece.sharedMesh.GetUVs(1, labels);
+                if (labels.Count == 0) continue;
+                string name = piece.name.Substring(piece.name.IndexOf("__", StringComparison.Ordinal) + 2);
+                SkinnedMeshRenderer original = originals[name];
+                if (!samples.TryGetValue(name, out TorsoFrameSamples rows)) samples.Add(name, rows = new TorsoFrameSamples());
+                Matrix4x4 toSource = original.transform.worldToLocalMatrix * piece.transform.localToWorldMatrix;
+                Vector3[] vertices = piece.sharedMesh.vertices;
+                var xy = new List<Vector2>(); var z = new List<Vector2>();
+                if (piece.name.StartsWith("Flesh", StringComparison.Ordinal))
+                {
+                    piece.sharedMesh.GetUVs(4, xy); piece.sharedMesh.GetUVs(5, z);
+                    for (int i = 0; i < labels.Count; i++) if (labels[i].y < .5f)
+                    { rows.Authored.Add(new Vector3(xy[i].x, xy[i].y, z[i].x)); rows.Imported.Add(toSource.MultiplyPoint3x4(vertices[i])); }
+                }
+                else
+                {
+                    piece.sharedMesh.GetUVs(6, xy); piece.sharedMesh.GetUVs(7, z);
+                    var cells = new Dictionary<int, HashSet<Vector3>>();
+                    var centres = new Dictionary<int, Vector3>();
+                    for (int i = 0; i < labels.Count; i++)
+                    {
+                        int cell = Mathf.RoundToInt(labels[i].x);
+                        if (!cells.TryGetValue(cell, out HashSet<Vector3> points))
+                        { cells.Add(cell, points = new HashSet<Vector3>()); centres.Add(cell, new Vector3(xy[i].x, xy[i].y, z[i].x)); }
+                        points.Add(vertices[i]);
+                    }
+                    foreach (var cell in cells)
+                    {
+                        Vector3 centre = Vector3.zero; foreach (Vector3 point in cell.Value) centre += point;
+                        rows.Authored.Add(centres[cell.Key]); rows.Imported.Add(toSource.MultiplyPoint3x4(centre / cell.Value.Count));
+                    }
+                }
+            }
+            var frames = new Dictionary<string, Matrix4x4>(StringComparer.Ordinal);
+            float handedness = 0f;
+            // Volumetric sources establish FBX handedness before planar cloth.
+            foreach (bool planar in new[] { false, true }) foreach (var entry in samples)
+            {
+                List<Vector3> authored = entry.Value.Authored, imported = entry.Value.Imported;
+                int b = 0, c = 0, d = 0; float best = 0f;
+                for (int i = 1; i < authored.Count; i++)
+                { float distance = (authored[i] - authored[0]).sqrMagnitude; if (distance > best) { best = distance; b = i; } }
+                best = 0f; Vector3 axis = authored[b] - authored[0];
+                for (int i = 1; i < authored.Count; i++)
+                { float area = Vector3.Cross(axis, authored[i] - authored[0]).sqrMagnitude; if (area > best) { best = area; c = i; } }
+                best = 0f; Vector3 normal = Vector3.Cross(axis, authored[c] - authored[0]).normalized;
+                for (int i = 1; i < authored.Count; i++)
+                { float height = Mathf.Abs(Vector3.Dot(normal, authored[i] - authored[0])); if (height > best) { best = height; d = i; } }
+                bool isPlanar = best < .000001f;
+                if (isPlanar != planar) continue;
+                Matrix4x4 from = Frame(authored[0], authored[b], authored[c], authored[d]);
+                Matrix4x4 to = Frame(imported[0], imported[b], imported[c], imported[d]);
+                if (isPlanar)
+                {
+                    if (handedness == 0f || normal.sqrMagnitude < .9f)
+                        throw new InvalidOperationException("Torso metadata lacks an independent frame: " + entry.Key);
+                    Vector3 importedNormal = Vector3.Cross(imported[b] - imported[0], imported[c] - imported[0]).normalized;
+                    float scale = (imported[b] - imported[0]).magnitude / axis.magnitude;
+                    from = Frame(authored[0], authored[b], authored[c], authored[0] + normal * .01f);
+                    to = Frame(imported[0], imported[b], imported[c], imported[0] + importedNormal * (.01f * scale * handedness));
+                }
+                Matrix4x4 result = to * from.inverse;
+                if (!isPlanar) handedness = Mathf.Sign(result.determinant);
+                float metreScale = originals[entry.Key].transform.lossyScale.magnitude / Mathf.Sqrt(3f);
+                for (int i = 0; i < authored.Count; i++)
+                    if (Vector3.Distance(result.MultiplyPoint3x4(authored[i]), imported[i]) * metreScale > .0001f)
+                        throw new InvalidOperationException("Torso metadata lost its affine FBX basis: " + entry.Key);
+                frames.Add(entry.Key, result);
+            }
+            return frames;
+        }
+
+        private static Matrix4x4 Frame(Vector3 origin, Vector3 b, Vector3 c, Vector3 d)
+        {
+            Matrix4x4 result = Matrix4x4.identity;
+            result.SetColumn(0, (Vector4)(b - origin)); result.SetColumn(1, (Vector4)(c - origin));
+            result.SetColumn(2, (Vector4)(d - origin)); result.SetColumn(3, new Vector4(origin.x, origin.y, origin.z, 1f));
+            return result;
+        }
+
+        private static void RestoreTorsoCells(Mesh mesh, Matrix4x4 torsoFrame)
+        {
+            var labels = new List<Vector2>(); mesh.GetUVs(1, labels);
+            if (labels.Count == 0) return;
+            var innerXY = new List<Vector2>(); var innerZ = new List<Vector2>();
+            var centreXY = new List<Vector2>(); var centreZ = new List<Vector2>();
+            mesh.GetUVs(4, innerXY); mesh.GetUVs(5, innerZ);
+            mesh.GetUVs(6, centreXY); mesh.GetUVs(7, centreZ);
+            if (labels.Count != mesh.vertexCount || innerXY.Count != labels.Count || innerZ.Count != labels.Count ||
+                centreXY.Count != labels.Count || centreZ.Count != labels.Count)
+                throw new InvalidOperationException("Authored torso cell metadata is incomplete: " + mesh.name);
+            var targets = new List<Vector4>(labels.Count); var centres = new List<Vector4>(labels.Count);
+            for (int i = 0; i < labels.Count; i++)
+            {
+                targets.Add(torsoFrame.MultiplyPoint3x4(new Vector3(innerXY[i].x, innerXY[i].y, innerZ[i].x)));
+                centres.Add(torsoFrame.MultiplyPoint3x4(new Vector3(centreXY[i].x, centreXY[i].y, centreZ[i].x)));
+            }
+            mesh.SetUVs(4, targets); mesh.SetUVs(6, centres);
         }
 
         private static BoneWeight InterpolateWeights(BoneWeight a, BoneWeight b, BoneWeight c, Vector3 bary)
@@ -264,7 +381,11 @@ namespace BarPromenade.Editor
         }
 
         [MenuItem("Bar Promenade/Combat Test/Validate Body Anatomy Assets")]
-        public static void BuildOrThrow()
+        public static void BuildOrThrow() => ValidateBodies(true);
+
+        public static void ValidateImportedOrThrow() => ValidateBodies(false);
+
+        private static void ValidateBodies(bool reimport)
         {
             if (!File.Exists(Folder + "CombatBody3D.json")) throw new InvalidOperationException("Missing body anatomy manifest.");
             if (!File.Exists(Folder + "CombatSkull3D.json")) throw new InvalidOperationException("Missing skull anatomy manifest.");
@@ -273,7 +394,10 @@ namespace BarPromenade.Editor
                 string path = Folder + "Body" + kind + ".fbx";
                 if (AssetDatabase.LoadAssetAtPath<GameObject>(SourceFor(path)) == null)
                     AssetDatabase.ImportAsset(SourceFor(path), ImportAssetOptions.ForceSynchronousImport);
-                AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceSynchronousImport);
+                var originals = new Dictionary<string, SkinnedMeshRenderer>(StringComparer.Ordinal);
+                foreach (SkinnedMeshRenderer original in AssetDatabase.LoadAssetAtPath<GameObject>(SourceFor(path))
+                    .GetComponentsInChildren<SkinnedMeshRenderer>(true)) originals.Add(original.name, original);
+                if (reimport) AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceSynchronousImport);
                 GameObject model = AssetDatabase.LoadAssetAtPath<GameObject>(path);
                 if (model == null) throw new InvalidOperationException("Missing authored combat body " + kind);
                 var flesh = new HashSet<string>(StringComparer.Ordinal); int boneCount = 0;
@@ -285,13 +409,20 @@ namespace BarPromenade.Editor
                         throw new InvalidOperationException("Invalid body source skin/UV " + renderer.name);
                     if (renderer.name.StartsWith("FleshRegion", StringComparison.Ordinal)) flesh.Add(renderer.name);
                     if (renderer.name.StartsWith("BoneRegion", StringComparison.Ordinal)) boneCount++;
+                    if (renderer.name.StartsWith("Region2Patch", StringComparison.Ordinal) ||
+                        renderer.name.StartsWith("Region3Patch", StringComparison.Ordinal) ||
+                        renderer.name.StartsWith("Region4Patch", StringComparison.Ordinal) ||
+                        renderer.name.StartsWith("FleshRegion2Patch", StringComparison.Ordinal) ||
+                        renderer.name.StartsWith("FleshRegion3Patch", StringComparison.Ordinal) ||
+                        renderer.name.StartsWith("FleshRegion4Patch", StringComparison.Ordinal))
+                        ValidateTorsoCells(renderer, originals[renderer.name.Substring(renderer.name.IndexOf("__", StringComparison.Ordinal) + 2)].transform);
                     if (renderer.bounds.size.magnitude > 3f || renderer.bounds.center.y > 2.2f)
                         throw new InvalidOperationException("Body derivative lost imported metre scale: " + renderer.name);
                 }
                 if (flesh.Count != 64 || boneCount != 16)
                     throw new InvalidOperationException("Combat body requires four closed flesh patches and visible bones for sixteen body regions.");
                 string skullPath = Folder + "Skull" + kind + ".fbx";
-                AssetDatabase.ImportAsset(skullPath, ImportAssetOptions.ForceSynchronousImport);
+                if (reimport) AssetDatabase.ImportAsset(skullPath, ImportAssetOptions.ForceSynchronousImport);
                 GameObject skull = AssetDatabase.LoadAssetAtPath<GameObject>(skullPath);
                 var sectors = new HashSet<int>();
                 if (skull == null) throw new InvalidOperationException("Missing retained skull anatomy " + kind);
@@ -310,6 +441,32 @@ namespace BarPromenade.Editor
             if (AssetDatabase.LoadAssetAtPath<Texture2D>(Folder + "BoneSurface.png") == null)
                 throw new InvalidOperationException("Missing shared bone surface.");
             Debug.Log("COMBAT BODY IMPORTED SOURCE INTERPOLATION, SKIN, UV, REGIONS AND METRES OK");
+        }
+
+        private static void ValidateTorsoCells(SkinnedMeshRenderer renderer, Transform sourceFrame)
+        {
+            Mesh mesh = renderer.sharedMesh; var labels = new List<Vector2>();
+            var inner = new List<Vector4>(); var centres = new List<Vector4>();
+            mesh.GetUVs(1, labels); mesh.GetUVs(4, inner); mesh.GetUVs(6, centres);
+            if (labels.Count != mesh.vertexCount || inner.Count != labels.Count || centres.Count != labels.Count)
+                throw new InvalidOperationException("Torso requires finite authored erosion cells: " + renderer.name);
+            Vector3[] vertices = mesh.vertices;
+            for (int i = 0; i < labels.Count; i++)
+            {
+                // Restored geometry and metadata are both in the production
+                // renderer's frame, which the runtime uses for these templates.
+                float radius = sourceFrame.TransformVector(vertices[i] - (Vector3)centres[i]).magnitude;
+                float depth = sourceFrame.TransformVector(vertices[i] - (Vector3)inner[i]).magnitude;
+                float maximumRadius = renderer.name.StartsWith("Region", StringComparison.Ordinal) ? .05f : .45f;
+                if (labels[i].x < 0f || Mathf.Abs(labels[i].x - Mathf.Round(labels[i].x)) > .001f ||
+                    !float.IsFinite(radius) || radius > maximumRadius || !float.IsFinite(depth) || depth > .5f)
+                    throw new InvalidOperationException("Torso cell lost its source frame or metre scale: " + renderer.name +
+                        "; radius=" + radius + "; depth=" + depth + "; vertex=" + vertices[i].ToString("G9") + "; centre=" + centres[i].ToString("G9"));
+            }
+            int[] triangles = mesh.triangles;
+            for (int i = 0; i < triangles.Length; i += 3)
+                if (labels[triangles[i]].x != labels[triangles[i + 1]].x || labels[triangles[i]].x != labels[triangles[i + 2]].x)
+                    throw new InvalidOperationException("Torso face crosses erosion cells: " + renderer.name);
         }
     }
 }

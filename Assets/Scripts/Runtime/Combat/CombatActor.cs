@@ -24,6 +24,9 @@ namespace BarPromenade
         private bool presentationFrozen;
         private bool simulationPosePending;
         private float poseClock, reactionClock;
+        internal long NpcAnimationSampleTicks { get; private set; }
+        internal long NpcPoseCompositionTicks { get; private set; }
+        internal long NpcPoseSnapshotTicks { get; private set; }
         private bool receivedDuringStep;
         private bool guardHeld;
         private readonly List<Contact> standaloneContacts = new List<Contact>(4);
@@ -110,6 +113,7 @@ namespace BarPromenade
             Body = body;
             npc.ReleaseAnimation();
             LoadClips(true);
+            InitializeNpcAnimation();
             InitializeNpcPoseBlend();
             InitializeNpcChargeBlend();
             LoadStepClips(true);
@@ -428,11 +432,17 @@ namespace BarPromenade
                     break;
             }
             if (!postmortem && !detachedPart) reactionClock = 0f;
-            PublishImpact(new CombatImpact(source, this, sequence, point, normal, direction,
+            var impact = new CombatImpact(source, this, sequence, point, normal, direction,
                 healthBefore, State.Health, result, location, power, part, localPoint, weaponSpeed,
                 CombatImpactMotion.ResolveImpulse(direction, power, weaponSpeed, result),
-                woundDamage: requested, bodyRegion: bodyRegion, bodyPatch: bodyPatch, detachedPart: detachedPart), phaseBefore);
-            if (!postmortem && !detachedPart && State.IsDefeated) BeginDefeat(direction, point);
+                woundDamage: requested, bodyRegion: bodyRegion, bodyPatch: bodyPatch, detachedPart: detachedPart);
+            // A strong fatal torso strike hands the live pose to physics before
+            // publishing its momentum, just like a fatal projectile contact.
+            bool immediateFall = !postmortem && !detachedPart && State.IsDefeated &&
+                CombatBodyDamageState.IsTorso(region) && impact.Impulse.sqrMagnitude >= 120f * 120f;
+            if (immediateFall) BeginProjectileDefeat(impact);
+            PublishImpact(impact, phaseBefore);
+            if (!postmortem && !detachedPart && State.IsDefeated && !immediateFall) BeginDefeat(direction, point);
             receivedDuringStep = false;
             if (!postmortem && !detachedPart) Present();
             return result;
@@ -624,7 +634,9 @@ namespace BarPromenade
                     if (newSwing || !(visibleClip == Current.Charge.name && State.IsAttacking && reaction == null)) BeginPoseBlend(TransitionSeconds(chosen));
                     visibleClip = chosen.name;
                 }
+                long sampleStart = System.Diagnostics.Stopwatch.GetTimestamp();
                 SampleNpcAction(chosen, progress);
+                NpcAnimationSampleTicks += System.Diagnostics.Stopwatch.GetTimestamp() - sampleStart;
             }
             visibleAttackSequence = State.AttackSequence;
             handPose.SetGrip(false, weaponDropped ? 0f : 1f);
@@ -636,8 +648,12 @@ namespace BarPromenade
             }
             if (npc != null)
             {
+                long compositionStart = System.Diagnostics.Stopwatch.GetTimestamp();
                 ApplyNpcCombatPose();
+                NpcPoseCompositionTicks += System.Diagnostics.Stopwatch.GetTimestamp() - compositionStart;
+                long snapshotStart = System.Diagnostics.Stopwatch.GetTimestamp();
                 RememberNpcPresentedPose();
+                NpcPoseSnapshotTicks += System.Diagnostics.Stopwatch.GetTimestamp() - snapshotStart;
             }
             else
             {
@@ -654,7 +670,7 @@ namespace BarPromenade
         {
             if (State.IsAttacking && reaction == null) SampleNpcRelease(progress);
             else if (State.IsCharging) SampleNpcReleasePose(0f, State.Charge01);
-            else chosen.SampleAnimation(npc.Animator.gameObject, progress * chosen.length);
+            else SampleNpcClip(chosen, progress * chosen.length);
         }
 
         private float TransitionSeconds(AnimationClip chosen) => IsFirearm && (chosen == pistolRaise || chosen == pistolLower)
@@ -741,6 +757,7 @@ namespace BarPromenade
 
         private void OnDisable()
         {
+            ReleaseNpcAnimation();
             CancelPendingPistolShot("disabled");
             Firearm?.CancelAction();
             pistolVisualAimProgress = 0f;
@@ -761,6 +778,7 @@ namespace BarPromenade
 
         private void OnDestroy()
         {
+            ReleaseNpcAnimation();
             ResetKnockdown();
             Ragdoll?.Cancel();
             if (weaponDropped && Weapon != null) Destroy(Weapon);

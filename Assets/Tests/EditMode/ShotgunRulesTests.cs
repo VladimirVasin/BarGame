@@ -148,13 +148,13 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(shotgun.ShotSequence, Is.Not.EqualTo(sequence));
         }
 
-        [TestCase(0f, 26f, 260f)]
-        [TestCase(1f, 24f, 240f)]
-        [TestCase(2f, 22f, 210f)]
-        [TestCase(3f, 20f, 180f)]
-        [TestCase(8f, 10f, 90f)]
-        [TestCase(15f, 4f, 30f)]
-        [TestCase(25f, 1.5f, 8f)]
+        [TestCase(0f, 26f, 420f)]
+        [TestCase(1f, 24f, 380f)]
+        [TestCase(2f, 22f, 290f)]
+        [TestCase(3f, 20f, 200f)]
+        [TestCase(8f, 10f, 50f)]
+        [TestCase(15f, 4f, 10f)]
+        [TestCase(25f, 1.5f, 2f)]
         [TestCase(40f, 0f, 0f)]
         [TestCase(100f, 0f, 0f)]
         public void DistanceScalesEveryPelletBeforeRegionalDamage(float distance, float expected, float momentum)

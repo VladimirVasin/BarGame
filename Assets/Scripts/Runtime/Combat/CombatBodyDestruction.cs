@@ -22,7 +22,14 @@ namespace BarPromenade
             internal ProxyGeometry ProxyGeometry;
             internal CentrePose CentrePose;
             internal CombatBodySourceDeformation Deformation;
+            internal CombatTorsoDamageSurface Torso;
             internal Fragment Fragment;
+            internal uint GeometryVersion => unchecked((Deformation?.GeometryVersion ?? 0u) + (Torso?.GeometryVersion ?? 0u));
+            internal void RefreshSurface()
+            {
+                Deformation?.Refresh(Skin, Torso != null && Torso.IsRenderingOwnedMesh);
+                Torso?.Refresh(Deformation?.GeometryVersion ?? 0u);
+            }
         }
         private sealed class Body
         {
@@ -58,6 +65,12 @@ namespace BarPromenade
         private void Awake() => properties = new MaterialPropertyBlock();
         internal int ProxyGeometryBuilds { get; private set; }
         internal int ActorSynchronizationCount { get; private set; }
+        internal long ActorSynchronizationTicks { get; private set; }
+        internal long HeadSynchronizationTicks { get; private set; }
+        internal long SurfaceRefreshTicks { get; private set; }
+        internal long SurfaceVisibilityTicks { get; private set; }
+        internal long PhysicsSynchronizationTicks { get; private set; }
+        internal long ContactCaptureTicks { get; private set; }
         internal ProxyCacheInvalidation LastProxyCacheInvalidation { get; private set; }
 
         [Flags]
@@ -109,6 +122,13 @@ namespace BarPromenade
         public float DebrisAgeFor(CombatActor actor) => bodies.TryGetValue(actor, out Body body) && body.Fragments.Count > 0 ? body.Fragments[0].Age : 0f;
         public int TissueRendererCountFor(CombatActor actor) => Count(actor, false);
         public int ExposedBoneCountFor(CombatActor actor) => Count(actor, true);
+        internal int DepletedTorsoCellCountFor(CombatActor actor)
+        {
+            int count = 0;
+            if (bodies.TryGetValue(actor, out Body body))
+                foreach (Piece piece in body.Pieces) if (piece.Flesh && piece.Torso != null) count += piece.Torso.DepletedCellCount;
+            return count;
+        }
         private int Count(CombatActor actor, bool bones)
         {
             int count = 0;
@@ -121,6 +141,13 @@ namespace BarPromenade
         private static bool HasExposedPatch(CombatActor actor, BodyDamageRegion region)
         {
             if (HasDistalSever(actor, region)) return true;
+            if (CombatBodyDamageState.IsTorso(region) && owners.TryGetValue(actor, out CombatBodyDestruction owner) &&
+                owner.bodies.TryGetValue(actor, out Body body))
+            {
+                foreach (Piece piece in body.Pieces)
+                    if (piece.Region == region && piece.Torso != null && piece.Torso.DepletedCellCount > 0) return true;
+                return false;
+            }
             for (int p = 0; p < CombatBodyDamageState.PatchCount; p++)
                 if (actor.BodyDamage.TissueLoss(region, p) >= 1f) return true;
             return false;
@@ -175,13 +202,15 @@ namespace BarPromenade
                     Patch = patch, Flesh = isFlesh, Bone = isBone, Eligible = isFlesh || isBone || visible };
                 if (!isFlesh && !isBone || (region is 7 or 10))
                     piece.Deformation = new CombatBodySourceDeformation(template.sharedMesh, source);
+                if (piece.Eligible && !isBone && CombatBodyDamageState.IsTorso(piece.Region))
+                    piece.Torso = new CombatTorsoDamageSurface(skin, isFlesh);
                 body.Pieces.Add(piece);
                 if (!isFlesh && !isBone && !body.Originals.ContainsKey(source)) body.Originals.Add(source, visible);
             }
             if (body.Pieces.Count == 0) throw new InvalidOperationException("Empty authored combat body.");
             foreach (Piece piece in body.Pieces)
                 if (piece.Eligible && !piece.Bone)
-                { piece.Deformation?.Refresh(piece.Skin); SkinCentre(piece); }
+                { piece.RefreshSurface(); SkinCentre(piece); piece.Torso?.PrepareExteriorMesh(); }
             bodies.Add(actor, body);
             owners[actor] = this;
             actor.Hurtboxes.PrepareBodySurfaces(body.Pieces);
@@ -200,6 +229,7 @@ namespace BarPromenade
             float trauma = impact.Kind == CombatImpactKind.Projectile ?
                 (impact.IsPellet ? Mathf.Clamp(impact.WoundDamage / 24f, 0f, 1.1f) * .50f : .18f) :
                 Mathf.Lerp(.10f, .24f, Mathf.Clamp01(impact.AttackPower));
+            float tissueTrauma = trauma;
             if (region == BodyDamageRegion.Head)
             {
                 // The existing sixteen-sector fracture system owns skull continuity,
@@ -217,8 +247,25 @@ namespace BarPromenade
             }
             if (trauma <= 0f) return;
             int stream = unchecked((impact.Source != null ? impact.Source.GetEntityId().GetHashCode() : 0) * 397 ^ (int)impact.Kind);
-            if (impact.Target.BodyDamage.Apply(region, patch, trauma, stream,
-                impact.AttackSequence, impact.PelletIndex))
+            uint contactRevision = impact.Target.BodyDamage.ContactRevision;
+            bool changed = impact.Target.BodyDamage.Apply(region, patch, trauma, stream,
+                impact.AttackSequence, impact.PelletIndex);
+            bool newContact = impact.Target.BodyDamage.ContactRevision != contactRevision;
+            if (newContact && CombatBodyDamageState.IsTorso(region))
+            {
+                // Exposed bone contacts project back to the authored outer surface;
+                // new wounds in a saturated coarse patch remain locally meaningful.
+                float distance = float.PositiveInfinity; Vector3 centre = impact.Point;
+                foreach (Piece piece in body.Pieces)
+                    if (piece.Region == region && piece.Flesh && piece.Torso != null)
+                        piece.Torso.ClosestSurfacePoint(impact.Point, ref distance, ref centre);
+                float radius = impact.Kind == CombatImpactKind.Projectile ?
+                    impact.IsPellet ? Mathf.Lerp(.055f, .12f, Mathf.Clamp01(impact.WoundDamage / 24f)) : .075f :
+                    Mathf.Lerp(.07f, .12f, Mathf.Clamp01(impact.AttackPower));
+                foreach (Piece piece in body.Pieces)
+                    if (piece.Torso != null) changed |= piece.Torso.Apply(centre, radius, tissueTrauma);
+            }
+            if (changed)
             {
                 impact.Target.ApplyBodyCapabilities(impact);
                 if (body.VolleyDepth > 0)
@@ -259,6 +306,9 @@ namespace BarPromenade
             private uint capturedVersion;
             private Vector3 capturedCentre;
             private BoneWeight centreWeight;
+            private Matrix4x4 world0, world1, world2, world3;
+            private Vector3 worldCentre;
+            private bool worldCentreReady;
 
             internal CentrePose(SkinnedMeshRenderer skin)
             { weights = skin.sharedMesh.boneWeights; bind = skin.sharedMesh.bindposes; bones = skin.bones; }
@@ -267,8 +317,9 @@ namespace BarPromenade
             {
                 Mesh mesh = piece.Skin.sharedMesh;
                 Vector3 centre = mesh.bounds.center;
-                uint version = piece.Deformation?.GeometryVersion ?? 0u;
-                if (mesh != capturedMesh || version != capturedVersion || !centre.Equals(capturedCentre))
+                uint version = piece.GeometryVersion;
+                bool geometryChanged = mesh != capturedMesh || version != capturedVersion || !centre.Equals(capturedCentre);
+                if (geometryChanged)
                 {
                     mesh.GetVertices(vertices);
                     if (vertices.Count != weights.Length)
@@ -283,18 +334,37 @@ namespace BarPromenade
                     capturedVersion = version; capturedCentre = centre;
                 }
                 BoneWeight weight = centreWeight;
-                return (bones[weight.boneIndex0].localToWorldMatrix * bind[weight.boneIndex0]).MultiplyPoint3x4(centre) * weight.weight0 +
-                    (bones[weight.boneIndex1].localToWorldMatrix * bind[weight.boneIndex1]).MultiplyPoint3x4(centre) * weight.weight1 +
-                    (bones[weight.boneIndex2].localToWorldMatrix * bind[weight.boneIndex2]).MultiplyPoint3x4(centre) * weight.weight2 +
-                    (bones[weight.boneIndex3].localToWorldMatrix * bind[weight.boneIndex3]).MultiplyPoint3x4(centre) * weight.weight3;
+                Matrix4x4 p0 = weight.weight0 > 0f ? bones[weight.boneIndex0].localToWorldMatrix : default;
+                Matrix4x4 p1 = weight.weight1 > 0f ? bones[weight.boneIndex1].localToWorldMatrix : default;
+                Matrix4x4 p2 = weight.weight2 > 0f ? bones[weight.boneIndex2].localToWorldMatrix : default;
+                Matrix4x4 p3 = weight.weight3 > 0f ? bones[weight.boneIndex3].localToWorldMatrix : default;
+                if (worldCentreReady && !geometryChanged && (weight.weight0 <= 0f || p0.Equals(world0)) &&
+                    (weight.weight1 <= 0f || p1.Equals(world1)) && (weight.weight2 <= 0f || p2.Equals(world2)) &&
+                    (weight.weight3 <= 0f || p3.Equals(world3))) return worldCentre;
+                world0 = p0; world1 = p1; world2 = p2; world3 = p3;
+                Vector3 point = weight.weight0 > 0f ? (p0 * bind[weight.boneIndex0]).MultiplyPoint3x4(centre) * weight.weight0 : Vector3.zero;
+                if (weight.weight1 > 0f) point += (p1 * bind[weight.boneIndex1]).MultiplyPoint3x4(centre) * weight.weight1;
+                if (weight.weight2 > 0f) point += (p2 * bind[weight.boneIndex2]).MultiplyPoint3x4(centre) * weight.weight2;
+                if (weight.weight3 > 0f) point += (p3 * bind[weight.boneIndex3]).MultiplyPoint3x4(centre) * weight.weight3;
+                worldCentreReady = true;
+                return worldCentre = point;
             }
         }
 
         public void SynchronizeActor(CombatActor actor, CombatImpact impact)
         {
+            long start = System.Diagnostics.Stopwatch.GetTimestamp();
+            try { SynchronizeActorSurfaces(actor, impact); }
+            finally { ActorSynchronizationTicks += System.Diagnostics.Stopwatch.GetTimestamp() - start; }
+        }
+
+        private void SynchronizeActorSurfaces(CombatActor actor, CombatImpact impact)
+        {
             if (!bodies.TryGetValue(actor, out Body body)) return;
             ActorSynchronizationCount++;
-            GetComponent<CombatHeadDestruction>().SynchronizeTissue(actor);
+            long stageStart = System.Diagnostics.Stopwatch.GetTimestamp();
+            GetComponent<CombatHeadDestruction>().SynchronizeTissue(actor, captureImmediately: false);
+            HeadSynchronizationTicks += System.Diagnostics.Stopwatch.GetTimestamp() - stageStart;
             if (!body.Active)
             {
                 body.Active = true;
@@ -314,8 +384,13 @@ namespace BarPromenade
                 BodyDamageRegion parent = CombatBodyAnatomy.Parent(region);
                 if (actor.BodyDamage.IsAttached(parent) && body.Bones.TryGetValue(parent, out Transform retained) &&
                     body.Bones.TryGetValue(region, out Transform cut))
+                {
                     GetComponent<CombatBloodEffects>()?.SetBodyBleedSource(actor, region, retained, cut.position,
                         (cut.position - retained.position).normalized);
+                    if (CombatBodyDamageState.IsTorso(parent))
+                        foreach (Piece piece in body.Pieces)
+                            if (piece.Region == parent) piece.Torso?.Apply(cut.position, .065f, .35f);
+                }
             }
             // A damaged patch is one physical piece even when its authored surface
             // crosses several source meshes or garment layers.
@@ -323,7 +398,7 @@ namespace BarPromenade
                 for (int p = 0; p < CombatBodyDamageState.PatchCount; p++)
                 {
                     var region = (BodyDamageRegion)r;
-                    if (actor.BodyDamage.TissueLoss(region, p) < 1f) continue;
+                    if (CombatBodyDamageState.IsTorso(region) || actor.BodyDamage.TissueLoss(region, p) < 1f) continue;
                     var retained = new List<Piece>();
                     var released = new List<Piece>();
                     foreach (Piece piece in body.Pieces)
@@ -335,18 +410,24 @@ namespace BarPromenade
                     Release(body, retained, impact, false);
                     ReleaseDetachedTissue(body, released, impact);
                 }
+            stageStart = System.Diagnostics.Stopwatch.GetTimestamp();
+            foreach (Piece piece in body.Pieces) if (piece.Eligible && !piece.Emitted) piece.RefreshSurface();
+            SurfaceRefreshTicks += System.Diagnostics.Stopwatch.GetTimestamp() - stageStart;
+            stageStart = System.Diagnostics.Stopwatch.GetTimestamp();
             // Keep each intact production surface as one draw. Only a source that
             // actually loses a patch needs its authored replacement surfaces.
             foreach (Piece piece in body.Pieces)
                 if (piece.Eligible && !piece.Flesh && !piece.Bone &&
-                    (!actor.BodyDamage.IsAttached(piece.Region) || actor.BodyDamage.TissueLoss(piece.Region, piece.Patch) >= .25f) &&
+                    (!actor.BodyDamage.IsAttached(piece.Region) || (piece.Torso != null ? piece.Torso.HasDamage :
+                        actor.BodyDamage.TissueLoss(piece.Region, piece.Patch) >= .25f)) &&
                     body.Replaced.Add(piece.Source))
                 { suppressed.Add(piece.Source); piece.Source.enabled = false; }
             foreach (Piece piece in body.Pieces)
             {
+                if (!piece.Eligible) continue;
                 float loss = actor.BodyDamage.TissueLoss(piece.Region, piece.Patch);
                 bool attached = actor.BodyDamage.IsAttached(piece.Region);
-                bool visible = piece.Eligible && (piece.Bone ? HasExposedPatch(actor, piece.Region) :
+                bool visible = piece.Eligible && (piece.Torso != null ? piece.Torso.HasGeometry : piece.Bone ? HasExposedPatch(actor, piece.Region) :
                     piece.Flesh ? loss < 1f && (loss >= .25f || HasDistalSever(actor, piece.Region)) : loss < .25f);
                 piece.QueryOriginal = !piece.Flesh && !piece.Bone && attached && !piece.Emitted && visible &&
                     !body.Replaced.Contains(piece.Source);
@@ -354,11 +435,20 @@ namespace BarPromenade
                 if (piece.Released != null) piece.Released.enabled = piece.Debris ? piece.Eligible : visible;
                 bool collides = Collides(actor, piece);
                 if (collides && piece.Proxy == null) CreateProxy(body, piece);
-                if (piece.Proxy != null) SetColliderEnabled(piece.Proxy, collides);
+                if (piece.Proxy != null)
+                {
+                    SetColliderEnabled(piece.Proxy, collides);
+                    if (collides && piece.Torso != null) UpdateProxyBounds(piece);
+                }
             }
+            SurfaceVisibilityTicks += System.Diagnostics.Stopwatch.GetTimestamp() - stageStart;
+            stageStart = System.Diagnostics.Stopwatch.GetTimestamp();
             actor.Ragdoll.PhysicsController.SetCombatBodyDamage(actor.BodyDamage, true);
             foreach (Fragment fragment in body.Fragments) if (fragment.Anatomical) ResizeFragment(fragment);
-            actor.Hurtboxes.Capture();
+            PhysicsSynchronizationTicks += System.Diagnostics.Stopwatch.GetTimestamp() - stageStart;
+            stageStart = System.Diagnostics.Stopwatch.GetTimestamp();
+            actor.Hurtboxes.CapturePreparedPose();
+            ContactCaptureTicks += System.Diagnostics.Stopwatch.GetTimestamp() - stageStart;
         }
 
         private void CreateProxy(Body body, Piece piece)
@@ -378,13 +468,13 @@ namespace BarPromenade
             foreach (Fragment fragment in body.Fragments) Physics.IgnoreCollision(piece.Proxy, fragment.Collider, true);
         }
 
-        private static bool Collides(CombatActor actor, Piece piece) => (piece.Flesh || piece.Bone) && piece.Eligible && actor.IsRagdollActive &&
+        private static bool Collides(CombatActor actor, Piece piece) => (piece.Flesh || piece.Bone || piece.Torso != null) && piece.Eligible && actor.IsRagdollActive &&
             actor.BodyDamage.IsAttached(piece.Region) && (piece.Bone ? HasExposedPatch(actor, piece.Region) :
-                piece.Flesh && actor.BodyDamage.TissueLoss(piece.Region, piece.Patch) < 1f);
+                piece.Torso != null ? piece.Torso.HasGeometry : piece.Flesh && actor.BodyDamage.TissueLoss(piece.Region, piece.Patch) < 1f);
 
         private void UpdateProxyBounds(Piece piece)
         {
-            piece.Deformation?.Refresh(piece.Skin);
+            piece.RefreshSurface();
             piece.ProxyGeometry ??= new ProxyGeometry();
             Transform target = piece.Proxy.transform.parent;
             if (!piece.ProxyGeometry.Capture(piece, target, out Matrix4x4 matrix, out Vector3 minimum)) return;
@@ -394,8 +484,10 @@ namespace BarPromenade
             LastProxyCacheInvalidation = piece.ProxyGeometry.LastInvalidation;
             List<Vector3> vertices = piece.ProxyGeometry.Vertices;
             piece.ProxyMesh.GetVertices(vertices);
-            Bounds bounds = new Bounds(matrix.MultiplyPoint3x4(vertices[0]), Vector3.zero);
-            foreach (Vector3 vertex in vertices) bounds.Encapsulate(matrix.MultiplyPoint3x4(vertex));
+            int[] indices = piece.ProxyGeometry.ActiveIndices;
+            if (indices.Length == 0) { SetColliderEnabled(piece.Proxy, false); return; }
+            Bounds bounds = new Bounds(matrix.MultiplyPoint3x4(vertices[indices[0]]), Vector3.zero);
+            foreach (int index in indices) bounds.Encapsulate(matrix.MultiplyPoint3x4(vertices[index]));
             SetColliderBounds(piece.Proxy, bounds.center, Vector3.Max(bounds.size, minimum));
         }
 
@@ -411,6 +503,7 @@ namespace BarPromenade
         internal sealed class ProxyGeometry
         {
             internal readonly List<Vector3> Vertices = new List<Vector3>();
+            internal int[] ActiveIndices { get; private set; } = Array.Empty<int>();
             private Mesh mesh;
             private Transform[] bones;
             private int[] influencedBones;
@@ -452,7 +545,8 @@ namespace BarPromenade
                 minimum = new Vector3(.003f / Mathf.Max(.000001f, Mathf.Abs(scale.x)),
                     .003f / Mathf.Max(.000001f, Mathf.Abs(scale.y)), .003f / Mathf.Max(.000001f, Mathf.Abs(scale.z)));
                 bool rendererScaleChanged = rendererScalePose.Capture(out Vector3 currentRendererScale);
-                uint currentVersion = piece.Deformation?.GeometryVersion ?? 0u;
+                uint currentVersion = piece.GeometryVersion;
+                if (!captured || geometryVersion != currentVersion) ActiveIndices = current.triangles;
                 // BakeMesh compensates its renderer's position/rotation. That
                 // conversion cancels when the baked points enter the proxy frame;
                 // a shared rigid actor move cannot change these local bounds.
@@ -566,7 +660,7 @@ namespace BarPromenade
             foreach (Piece piece in pieces)
             {
                 if (piece.Emitted) continue;
-                piece.Deformation?.Refresh(piece.Skin);
+                piece.RefreshSurface();
                 piece.Emitted = true; piece.Debris = !anatomical;
                 if (piece.Baked == null) piece.Baked = new Mesh { name = "Released body surface" };
                 piece.Skin.BakeMesh(piece.Baked, true);
@@ -686,14 +780,14 @@ namespace BarPromenade
             {
                 if (body.Active) foreach (Piece piece in body.Pieces)
                 {
-                    if (piece.Skin.enabled) piece.Deformation?.Refresh(piece.Skin);
+                    if (piece.Skin.enabled) piece.RefreshSurface();
                     bool collides = Collides(body.Actor, piece);
                     if (collides && piece.Proxy == null) CreateProxy(body, piece);
                     if (piece.Proxy != null)
                     {
                         SetColliderEnabled(piece.Proxy, collides);
-                        if (collides && (piece.Region is BodyDamageRegion.LeftHand or BodyDamageRegion.RightHand) &&
-                            piece.Skin.sharedMesh.blendShapeCount > 0) UpdateProxyBounds(piece);
+                        if (collides && (piece.Torso != null || (piece.Region is BodyDamageRegion.LeftHand or BodyDamageRegion.RightHand) &&
+                            piece.Skin.sharedMesh.blendShapeCount > 0)) UpdateProxyBounds(piece);
                     }
                 }
                 foreach (Fragment fragment in body.Fragments)
@@ -730,6 +824,7 @@ namespace BarPromenade
             foreach (var original in body.Originals) { suppressed.Remove(original.Key); original.Key.enabled = original.Value; }
             foreach (Piece piece in body.Pieces)
             {
+                piece.Torso?.Reset();
                 piece.Skin.enabled = false; piece.Released = null; piece.Fragment = null;
                 piece.Emitted = piece.Debris = piece.QueryOriginal = false;
                 if (piece.Proxy != null) SetColliderEnabled(piece.Proxy, false);
@@ -751,6 +846,7 @@ namespace BarPromenade
                 {
                     if (piece.Baked != null) Destroy(piece.Baked);
                     if (piece.ProxyMesh != null) Destroy(piece.ProxyMesh);
+                    piece.Torso?.Dispose();
                     piece.Deformation?.Dispose();
                     if (piece.Skin != null) Destroy(piece.Skin.gameObject);
                     if (piece.Proxy != null) Destroy(piece.Proxy.gameObject);

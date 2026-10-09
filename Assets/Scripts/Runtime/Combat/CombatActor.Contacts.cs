@@ -33,13 +33,17 @@ namespace BarPromenade
 
         internal void SetContactTarget(CombatActor target)
         { contactTarget = target; weaponConstraint?.SetOpponent(target); heldWeaponPhysics?.SetOpponent(target); }
-        internal void CaptureContactPose()
+        internal void CaptureContactPose() => CaptureContactPose(true);
+
+        // The root can retain the anatomy already frozen for this substep's
+        // aim ray; guard and weapon histories still advance at the contact stage.
+        internal void CaptureContactPose(bool captureAnatomy)
         {
             // The final sampled palm can lose support after the input/clock
             // decision. Drop its guard before either actor resolves contacts;
             // restoring a guard still waits for the next presented duel step.
             if (guardHeld && State.IsBlocking && GuardSupportRejection != null) RefreshBlock();
-            Hurtboxes?.Capture();
+            if (captureAnatomy) Hurtboxes?.Capture();
             Pose pose = new Pose(Weapon.transform.position, Weapon.transform.rotation);
             frozenWeaponFrom = frozenWeaponValid ? frozenWeaponTo : pose;
             frozenWeaponTo = pose; frozenWeaponValid = true;

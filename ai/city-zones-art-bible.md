@@ -4254,7 +4254,7 @@ heavy recoil/flash-smoke/deep thud;2shots/break/eject spent/load/close.
 `2026-10-09`:near=max/body launch/head≤14/fast head debris-blood/falloff.
 Rig:chest-abdomen/arm-forearm-hand/leg-catch;skin-fabric-glove-boot:
 irregular wet-dry entry/repeat.
-`2026-10-09`:local cloth-tissue→skeleton/closed posed cuts/finite severed parts;
+`2026-10-09`:torso erodes→joined skeleton/0chunks;head-limb cuts/finite parts;
 near shotgun=max local hits;both survivors-corpses/crawl/whole reset.
 Pistol:3-5/16/low eject;brain8:full/wet-muted PS1 jelly/
 squash/bone-tissue/cam-hide/repeat-loss.

@@ -262,17 +262,16 @@
   dropE:stage-ammo/Rresume;0lock-pierce-ricochet-guard-parry-taunt-reward;
   win/corpse/pause-hitstop/reset-exit lifecycle.
 - **Accepted exception 2026-10-09, shotgun power:**
-  `ShotgunSettings`:near power-launch/head loss;2∞/12/.55/head×2/3°/barrel-click;
-  linear HP-momentum→40m0;sum body+torque/one sound-hitstop-terminal;
-  head≤14/prelethal/8ledgers/unique/fast debris-blood;
-  Break2.8/eject-spent/load-missing/close/drop:barrel-stage-ammo;
-  Eshared0grant/atomic spend/flights finish.
+  `ShotgunSettings`:close420Ns→40m0 steep;HPlinear;
+  immutable body+torque/finalstate/unfrozen1/current-mass shares;torso nonpellets too.
+  1SFX/terminal-only hitstop/head≤14/prelethal/8ledgers/fast debris-blood.
 - **Accepted exception 2026-10-09, local body destruction:**
-  User:CombatTest/both corpses/local cloth-tissue→skeleton;
-  close shotgun=max local hits;expose≠sever;closed posed cuts/finite parts.
-  Limb survival:Rhand drop/no weapon;Lhand no2hand-reload(loaded pistol/Rbar);
-  legs fall-crawl/no rise-step-kick. Player=AI;critical head-torso terminal;
-  corpse hits/surface=hit=physics/reset;§6/art§15a/§16/§21/9checks.
+  User:CombatTest/both corpses/cloth-tissue→rig skeleton;close shotgun=max local hits.
+  Chest-Abdomen-Pelvis joined even critical/0chunks-cellRB;finite point/radius cells
+  deform-erode;torso-only subdivision;expose≠sever/head-limb closed cuts/finite parts.
+  Rhand0weapon;Lhand0twohand-reload(Rbar/loaded pistol);legs fall-crawl0rise-step-kick.
+  Player=AI/critical head-torso terminal/corpse/surface=hit=physics/dedup-pause-reset;
+  §6/art§15a/§16/§21/9checks.
 - **Accepted exception 2026-10-08, headshots:**
   Head16:3-5/low eject/blood56;brain8:full/wet jelly/squash/loss1x;
   bone-tissue/cam-hide/finite pulse-fade/corpse impulse.

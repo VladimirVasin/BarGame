@@ -7,6 +7,9 @@ namespace BarPromenade
         public CombatBloodEffects BloodEffects { get; private set; }
         public CombatHeadDestruction HeadEffects { get; private set; }
         public CombatBodyDestruction BodyEffects { get; private set; }
+        internal long BloodImpactTicks { get; private set; }
+        internal long BodyImpactTicks { get; private set; }
+        internal long ImpactPresentationTicks { get; private set; }
 
         private void InitializeDamageEffects()
         {
@@ -32,9 +35,15 @@ namespace BarPromenade
             // Only a wounding contact bleeds: never a block, a parry or a miss.
             if ((impact.Result == MeleeHitResult.Hit || impact.Result == MeleeHitResult.GuardBroken) &&
                 (impact.Kind == CombatImpactKind.Projectile || impact.Kind == CombatImpactKind.Weapon && Mathf.Max(impact.WoundDamage, impact.Damage) > 0f) && BloodEffects != null)
+            {
+                long start = System.Diagnostics.Stopwatch.GetTimestamp();
                 BloodEffects.Emit(impact);
+                BloodImpactTicks += System.Diagnostics.Stopwatch.GetTimestamp() - start;
+            }
             if (impact.HeadFeedback) HeadEffects?.Apply(impact, BloodEffects);
+            long bodyStart = System.Diagnostics.Stopwatch.GetTimestamp();
             BodyEffects?.Apply(impact);
+            BodyImpactTicks += System.Diagnostics.Stopwatch.GetTimestamp() - bodyStart;
             if (!impact.PrimaryResponse) return;
             // Weight is time: a few frozen substeps and a small kick on the shoulder
             // camera, graded by what happened. A killing blow holds longest.
@@ -54,14 +63,23 @@ namespace BarPromenade
             {
                 bool head = impact.Location.Region == MeleeBodyRegion.Head;
                 bool arm = impact.Location.Region == MeleeBodyRegion.LeftArm || impact.Location.Region == MeleeBodyRegion.RightArm;
-                substeps = head ? 12 : arm ? 4 : 6;
+                // A surviving shotgun wound keeps the duel live. Even one weak
+                // distant pellet used to stop both fighters, flights and blood
+                // for the same fixed interval as a close, powerful impact.
+                bool survivingPellet = impact.IsPellet && impact.Target != null && !impact.Target.State.IsDefeated;
+                substeps = survivingPellet ? 0 : head ? 12 : arm ? 4 : 6;
                 kick = head ? .09f : arm ? .04f : .06f;
-                // PublishImpact already resolved motion. Freeze its transition source;
-                // terminal hits have already handed their live pose to physics.
-                impact.Target?.Present();
+                if (substeps > 0)
+                {
+                    // PublishImpact already resolved motion. Freeze its transition source;
+                    // terminal hits have already handed their live pose to physics.
+                    long presentationStart = System.Diagnostics.Stopwatch.GetTimestamp();
+                    impact.Target?.Present();
+                    ImpactPresentationTicks += System.Diagnostics.Stopwatch.GetTimestamp() - presentationStart;
+                }
             }
             else if (impact.Target != null && impact.Target.State.IsDefeated) { substeps = 24; kick = .05f; }
-            RequestHitStop(substeps);
+            if (substeps > 0) RequestHitStop(substeps);
             Vector3 direction = impact.Direction;
             direction.y = 0f;
             if ((impact.Kind != CombatImpactKind.Projectile || impact.Target == Hero) &&

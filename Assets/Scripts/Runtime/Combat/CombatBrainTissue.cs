@@ -10,16 +10,21 @@ namespace BarPromenade
         private Transform meshFrame;
         private Vector3[] rest, vertices;
         private Vector3 centre, strain, velocity, supportAxis;
+        private Vector3 lastScale;
         private Collider support;
-        private bool detached;
+        private bool detached, shapeValid;
+        internal uint GeometryVersion { get; private set; }
         internal float Deformation => strain.magnitude;
         internal bool HasSupport => support != null;
+        internal bool OwnsMesh(Mesh candidate) => mesh == candidate;
 
         internal void Initialize(Mesh target, Transform frame, Bounds bounds, bool released)
         {
             mesh = target; meshFrame = frame; rest = mesh.vertices; vertices = new Vector3[rest.Length];
             centre = bounds.center; detached = released;
             strain = velocity = supportAxis = Vector3.zero; support = null;
+            shapeValid = false;
+            unchecked { GeometryVersion++; }
             mesh.MarkDynamic();
         }
 
@@ -58,9 +63,14 @@ namespace BarPromenade
             Vector3 scale = Vector3.one + strain;
             // Equal volume during squeeze; a shared retained centre/strain keeps all cut faces joined.
             scale /= Mathf.Pow(scale.x * scale.y * scale.z, 1f / 3f);
+            // Rest/centre are fixed between Initialize calls. An identical float
+            // scale produces identical vertices; the spring clock still advances.
+            if (shapeValid && scale.Equals(lastScale)) return;
             for (int i = 0; i < rest.Length; i++) vertices[i] = centre + Vector3.Scale(rest[i] - centre, scale);
             mesh.vertices = vertices;
             mesh.RecalculateNormals(); mesh.RecalculateBounds();
+            lastScale = scale; shapeValid = true;
+            unchecked { GeometryVersion++; }
         }
 
         private void OnCollisionEnter(Collision collision)

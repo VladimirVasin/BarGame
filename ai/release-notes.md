@@ -6,26 +6,30 @@ Earlier notes: [`release-notes-2026-09.md`](archive/release-notes-2026-09.md).
 
 ## Unreleased
 
-### 2026-10-09 — Двустволка и разрушение тела
+### 2026-10-09 — Двустволка и разрушение корпуса
 
-- Чем ближе цель, тем сильнее урон и толчок: плотный близкий залп
-  отбрасывает тело. С расстоянием дробь расходится и теряет силу.
-- Близкое попадание в голову срывает большую часть черепа;
-  фрагменты и кровь разлетаются быстрее. Сила зависит от попавшей дроби.
-- Одежда и ткани разрушаются по месту попадания до костей; в упор дробовик
-  выбивает крупный дефект. Повторы отделяют части тела обоих бойцов и трупов.
-- Потеря конечностей ограничивает оружие/перезарядку и опору; можно выжить,
-  ползать и пользоваться заряженным пистолетом при целой правой руке.
-  Критическое разрушение головы/корпуса завершает раунд; сброс возвращает тело.
-- Расчленение: перестройка раз на пакет дроби; попадания — по запросу.
-  Кисти/ткань/обломки кешируются.
-- Победа с ломом: симуляция продолжается без исключения.
-- Проверки: `Range_ShotgunDistanceControlsLaunchAndHeadBreakup`,
-  `DistanceScalesEveryPelletBeforeRegionalDamage`,
+- Вблизи сильнее отброс всего тела; вдали резко слабее.
+- Близкий залп сильнее разрушает голову; фрагменты/кровь быстрее.
+  Сила — по попавшей дроби.
+- Корпус деформируется и разрушается до скелета без отрыва; голова/конечности
+  отделяются; бойцы/трупы повреждаемы по месту попадания.
+- Потеря конечностей ограничивает оружие/перезарядку и опору; можно ползать
+  и стрелять из заряженного пистолета целой правой рукой.
+  Критический урон головы/корпуса завершает раунд; сброс возвращает тело.
+- Несмертельная дробь без паузы; ниже нагрузка.
+- Победа с ломом без ошибки.
+- Проверено: `Range_TorsoErosionKeepsConnectedLaunchCorpsePauseAndReset`,
+  `Range_ShotgunDistanceControlsLaunchAndHeadBreakup`,
+  `Range_DistantShotgunTorsoVolleyProfilesImpactPhases`,
+  `Range_SweptTriangleContactAnalyticMatchesBoundariesAndOracle`,
+  `Range_SkinnedTriangleQueryMatchesExhaustiveAfterDeformation`,
+  `Range_NpcManualAnimationMatchesAuthoredClipSampling`;
+  осмотрены ткани/скелет/сброс и близкий/дальний отброс.
+- Ранее проверено: `DistanceScalesEveryPelletBeforeRegionalDamage`,
   `Range_BodyDestructionFollowsLocalContactsSurvivalCorpsePauseAndReset`,
   `Range_CrowbarVictoryAdvancesWithoutFirearmPools`,
   `Range_BodyDestructionDefersGeometryAndKeepsFrozenVisibleContacts`;
-  body/skull validators; кадры разрушения и выживших осмотрены;
+  body/skull validators; кадры разрушения и выживших;
   `check-docs.py`, `git diff --check`.
 
 ### 2026-10-08 — Двустволка, раны и желеобразный мозг

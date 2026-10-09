@@ -213,7 +213,9 @@ namespace BarPromenade
             }
             IsSettled = false;
             simulationSeconds = quietSeconds = 0f;
-            if (impact.IsPellet) physicsController.AddCombatVolleyImpulse(impact.Part, impact.Point, impact.Impulse);
+            if (impact.IsPellet || CombatBodyDamageState.IsTorso(impact.BodyRegion ?? CombatBodyAnatomy.ToRegion(impact.Part)) &&
+                impact.Impulse.sqrMagnitude >= 120f * 120f)
+                physicsController.AddCombatVolleyImpulse(impact.Part, impact.Point, impact.Impulse);
             else physicsController.AddCombatImpulse(impact.Part, impact.Point, impact.Impulse);
         }
 

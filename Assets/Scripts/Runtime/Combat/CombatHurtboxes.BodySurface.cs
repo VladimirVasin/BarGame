@@ -6,6 +6,9 @@ namespace BarPromenade
     internal sealed partial class CombatHurtboxes
     {
         private BodySurface[] bodySurfaces, preparedBodySurfaces;
+        private BodySurface[] querySurfaces;
+        private float[] queryEntries;
+        private int[] queryOrders;
         private IReadOnlyList<CombatBodyDestruction.Piece> preparedBodyPieces;
         private readonly Dictionary<Transform, Matrix4x4> bodyWorldBones = new Dictionary<Transform, Matrix4x4>();
         internal int BodySurfaceGeometryBuilds { get; private set; }
@@ -16,6 +19,9 @@ namespace BarPromenade
             foreach (CombatBodyDestruction.Piece piece in pieces)
                 if (piece.Eligible) prepared.Add(new BodySurface(piece));
             preparedBodyPieces = pieces; preparedBodySurfaces = prepared.ToArray();
+            querySurfaces = new BodySurface[preparedBodySurfaces.Length];
+            queryEntries = new float[preparedBodySurfaces.Length];
+            queryOrders = new int[preparedBodySurfaces.Length];
         }
         internal void SetBodySurfaces(IReadOnlyList<CombatBodyDestruction.Piece> pieces)
         {
@@ -28,25 +34,47 @@ namespace BarPromenade
             PrepareBodySurfaces(pieces);
             bodySurfaces = preparedBodySurfaces;
         }
-        private void CaptureBodySurfaces()
+        private void CaptureBodySurfaces(bool refreshSurfaces)
         {
             if (bodySurfaces == null) return;
             bodyWorldBones.Clear();
-            foreach (BodySurface surface in bodySurfaces) surface.Capture(bodyWorldBones);
+            foreach (BodySurface surface in bodySurfaces) surface.Capture(bodyWorldBones, refreshSurfaces);
         }
         private bool SweepBodySurfaces(Vector3 from, Vector3 to, float radius, Vector3 direction, ref Hit hit, float first)
         {
             if (bodySurfaces == null) return false;
             bool found = false; Vector3 delta = to - from;
-            foreach (BodySurface surface in bodySurfaces)
+            var query = new SegmentQuery(from, delta, radius);
+            int count = 0, firstSurface = -1;
+            // Nearer conservative bounds go first so an exact front surface can
+            // exclude hidden meshes before their posed triangles are built.
+            for (int order = 0; order < bodySurfaces.Length; order++)
             {
-                if (!surface.Active || !IntersectsSegment(surface.Bounds, from, delta, radius)) continue;
-                if (surface.EnsureGeometry()) BodySurfaceGeometryBuilds++;
-                if (!IntersectsSegment(surface.Bounds, from, delta, radius)) continue;
-                foreach (HeadTriangle triangle in surface.Triangles)
+                BodySurface surface = bodySurfaces[order];
+                if (!surface.Active || !query.TryIntersect(surface.Bounds, first, out float entry)) continue;
+                int slot = count++;
+                while (slot > 0 && entry < queryEntries[slot - 1])
                 {
-                    if (!IntersectsSegment(triangle.Bounds, from, delta, radius) ||
-                        !triangle.FirstContact(from, delta, radius, out float fraction) || fraction >= first) continue;
+                    querySurfaces[slot] = querySurfaces[slot - 1];
+                    queryEntries[slot] = queryEntries[slot - 1];
+                    queryOrders[slot] = queryOrders[slot - 1];
+                    slot--;
+                }
+                querySurfaces[slot] = surface; queryEntries[slot] = entry; queryOrders[slot] = order;
+            }
+            for (int candidate = 0; candidate < count; candidate++)
+            {
+                if (queryEntries[candidate] > first) break;
+                BodySurface surface = querySurfaces[candidate];
+                int order = queryOrders[candidate];
+                if (surface.PrepareQuery(query, first)) BodySurfaceGeometryBuilds++;
+                if (!query.Intersects(surface.Bounds, first)) continue;
+                for (int triangleIndex = 0; triangleIndex < surface.QueryTriangleCount; triangleIndex++)
+                {
+                    HeadTriangle triangle = surface.Triangles[triangleIndex];
+                    if (!query.Intersects(triangle.Bounds, first) ||
+                        !triangle.FirstContact(from, delta, radius, out float fraction) ||
+                        fraction > first || (fraction == first && order >= firstSurface)) continue;
                     Vector3 centre = from + delta * fraction, point = triangle.Closest(centre), normal = centre - point;
                     if (normal.sqrMagnitude < .00000001f)
                     {
@@ -61,7 +89,7 @@ namespace BarPromenade
                     hit = new Hit(point, normal, direction, fraction, location, CombatBodyAnatomy.ToPart(piece.Region),
                         actorFrame.InverseTransformPoint(point), actorFrame.InverseTransformDirection(direction),
                         piece.Region, piece.Patch, piece.Released != null);
-                    first = fraction; found = true;
+                    first = fraction; firstSurface = order; found = true;
                 }
             }
             return found;
@@ -77,25 +105,28 @@ namespace BarPromenade
             private HeadTriangle[] meshTriangles;
             private bool skinned, geometryReady;
             internal HeadTriangle[] Triangles;
+            internal int QueryTriangleCount;
             internal Bounds Bounds;
             internal bool Active;
             internal BodySurface(CombatBodyDestruction.Piece piece)
             {
-                Piece = piece; skin = new HeadSurface(piece.Skin, true, captureBlendShapes: true);
+                Piece = piece; skin = new HeadSurface(piece.Skin, true, captureBlendShapes: true,
+                    mutableTopology: piece.Torso != null, initialGeometryVersion: piece.GeometryVersion,
+                    initialTopologyVersion: piece.Torso?.TopologyBuilds);
                 indices = piece.Skin.sharedMesh.triangles;
                 points = new Vector3[piece.Skin.sharedMesh.vertexCount];
                 Triangles = skin.Triangles;
             }
-            internal void Capture(Dictionary<Transform, Matrix4x4> worldBones)
+            internal void Capture(Dictionary<Transform, Matrix4x4> worldBones, bool refreshSurface)
             {
                 geometryReady = false;
                 if (Piece.Debris) { Active = false; return; }
                 if (Piece.Skin.enabled || Piece.QueryOriginal)
                 {
-                    Piece.Deformation?.Refresh(Piece.Skin);
+                    if (refreshSurface) Piece.RefreshSurface();
                     // Blendshape vertices and bones share the same frozen snapshot;
                     // exact hand triangles can wait for an intersecting contact.
-                    skin.CapturePose(worldBones, Piece.Deformation?.GeometryVersion ?? 0u, Piece.QueryOriginal); skinned = true;
+                    skin.CapturePose(worldBones, Piece.GeometryVersion, Piece.QueryOriginal, Piece.Torso?.TopologyBuilds); skinned = true;
                     Active = skin.Active; Bounds = skin.Bounds; return;
                 }
                 MeshRenderer released = Piece.Released;
@@ -107,16 +138,21 @@ namespace BarPromenade
                 frozenMatrix = released.transform.localToWorldMatrix;
                 Bounds = TransformBounds(Piece.Baked.bounds, frozenMatrix);
             }
-            internal bool EnsureGeometry()
+            internal bool PrepareQuery(SegmentQuery query, float maximumFraction)
             {
-                if (geometryReady) return false;
+                bool firstQuery = !geometryReady;
                 geometryReady = true;
                 if (skinned)
                 {
-                    skin.EnsureGeometry(); Bounds = skin.Bounds; Triangles = skin.Triangles;
+                    skin.PrepareQuery(query, maximumFraction); Bounds = skin.Bounds; Triangles = skin.Triangles;
+                    QueryTriangleCount = skin.QueryTriangleCount;
                 }
-                else CaptureMesh();
-                return true;
+                else
+                {
+                    if (firstQuery) CaptureMesh();
+                    QueryTriangleCount = Triangles.Length;
+                }
+                return firstQuery;
             }
             private void CaptureMesh()
             {

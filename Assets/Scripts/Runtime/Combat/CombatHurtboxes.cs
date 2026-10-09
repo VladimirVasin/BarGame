@@ -96,15 +96,22 @@ namespace BarPromenade
             }
         }
 
-        internal void Capture()
+        internal void Capture() => CapturePose(true);
+
+        // Body synchronization has already refreshed every attached surface;
+        // capture its final geometry and bones without repeating those refreshes.
+        internal void CapturePreparedPose() => CapturePose(false);
+
+        private void CapturePose(bool refreshBodySurfaces)
         {
             for (int i = 0; i < activeShapes.Length; i++) snapshots[i] = activeShapes[i].Capture();
             CaptureHeadSurfaces();
-            CaptureBodySurfaces();
+            CaptureBodySurfaces(refreshBodySurfaces);
         }
 
         // Rebuild only on a fracture/reset, never in the contact sampling loop.
-        internal void SetHeadShapes(IReadOnlyList<BoxCollider> retained, IReadOnlyList<SkinnedMeshRenderer> surfaces = null)
+        internal void SetHeadShapes(IReadOnlyList<BoxCollider> retained, IReadOnlyList<SkinnedMeshRenderer> surfaces = null,
+            bool captureImmediately = true)
         {
             SetHeadSurfaces(retained == null ? null : surfaces ?? throw new ArgumentNullException(nameof(surfaces)));
             if (retained == null) activeShapes = shapes;
@@ -119,7 +126,9 @@ namespace BarPromenade
                 activeShapes = replacement.ToArray();
             }
             snapshots = new Snapshot[activeShapes.Length];
-            Capture();
+            // Body synchronization switches head and body surfaces together,
+            // then captures their final geometry once at the end of that scope.
+            if (captureImmediately) Capture();
         }
 
         internal bool GetRegionFrame(MeleeBodyRegion region, out Vector3 center, out Vector3 forward, out Vector3 up)

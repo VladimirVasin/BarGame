@@ -46,11 +46,14 @@ namespace BarPromenade
         private sealed class Patch
         {
             public SkinnedMeshRenderer Renderer, Source;
+            public string SourceName;
+            public ProjectileWoundSurface ProjectileSurface;
             public int Centre;
             public Matrix4x4[] BindPoses;
             public Transform[] Bones;
             public Vector3[] Vertices, Normals, SkinnedVertices;
-            public Bounds SkinnedBounds;
+            public Bounds SkinnedBounds, ConservativeBounds;
+            public Bounds[] TriangleBounds;
             public Vector3[] DeformedVertices, DeformedNormals;
             public BlendShape[] BlendShapes = Array.Empty<BlendShape>();
             public Vector2[] Uv;
@@ -64,7 +67,11 @@ namespace BarPromenade
             public ProjectileWound Projection;
             private Matrix4x4[] posedBones;
             private int[] usedBones;
-            private bool poseCaptured, skinnedVerticesReady;
+            private Bounds[] boneBounds;
+            private bool[] boneBoundsPresent;
+            private float minimumWeightSum, maximumWeightSum;
+            private bool localBoundsReady, conservativeBoundsReady;
+            private bool poseCaptured, skinnedVerticesReady, triangleBoundsReady;
 
             public Vector3 Position { get { RefreshBlendShapes(); return SkinVertex(Centre, false); } }
             public Vector3 Direction { get { RefreshBlendShapes(); return SkinVertex(Centre, true).normalized; } }
@@ -73,6 +80,7 @@ namespace BarPromenade
             public void InitializeSkinning()
             {
                 posedBones = new Matrix4x4[Bones.Length];
+                TriangleBounds = new Bounds[Triangles.Length / 3];
                 var used = new SortedSet<int>();
                 foreach (BoneWeight weight in Weights)
                 {
@@ -82,6 +90,10 @@ namespace BarPromenade
                     if (weight.weight3 > 0f) used.Add(weight.boneIndex3);
                 }
                 usedBones = new int[used.Count]; used.CopyTo(usedBones);
+                boneBounds = new Bounds[Bones.Length];
+                boneBoundsPresent = new bool[Bones.Length];
+                RefreshBlendShapes();
+                if (!localBoundsReady) RefreshBoneBounds();
             }
 
             public void CapturePose(Dictionary<Transform, Matrix4x4> worldBones)
@@ -92,10 +104,67 @@ namespace BarPromenade
                     if (!worldBones.TryGetValue(bone, out Matrix4x4 world))
                     { world = bone.localToWorldMatrix; worldBones.Add(bone, world); }
                     Matrix4x4 matrix = world * BindPoses[index];
-                    if (!posedBones[index].Equals(matrix)) skinnedVerticesReady = false;
+                    if (!posedBones[index].Equals(matrix)) skinnedVerticesReady = conservativeBoundsReady = false;
                     posedBones[index] = matrix;
                 }
                 poseCaptured = true;
+                if (!conservativeBoundsReady)
+                {
+                    bool started = false;
+                    foreach (int index in usedBones)
+                    {
+                        Bounds local = boneBounds[index];
+                        Matrix4x4 matrix = posedBones[index];
+                        Vector3 e = local.extents;
+                        Vector3 x = matrix.MultiplyVector(new Vector3(e.x, 0f, 0f));
+                        Vector3 y = matrix.MultiplyVector(new Vector3(0f, e.y, 0f));
+                        Vector3 z = matrix.MultiplyVector(new Vector3(0f, 0f, e.z));
+                        var world = new Bounds(matrix.MultiplyPoint3x4(local.center), new Vector3(
+                            Mathf.Abs(x.x) + Mathf.Abs(y.x) + Mathf.Abs(z.x),
+                            Mathf.Abs(x.y) + Mathf.Abs(y.y) + Mathf.Abs(z.y),
+                            Mathf.Abs(x.z) + Mathf.Abs(y.z) + Mathf.Abs(z.z)) * 2f);
+                        if (!started) { ConservativeBounds = world; started = true; }
+                        else ConservativeBounds.Encapsulate(world);
+                    }
+                    if (!started) ConservativeBounds = new Bounds(Vector3.zero, Vector3.zero);
+                    // A skinned point is a convex combination of its bone images,
+                    // multiplied by its positive weight sum. Include the exact sum
+                    // range as well, so unnormalized or unweighted vertices remain safe.
+                    Vector3 low = ConservativeBounds.min, high = ConservativeBounds.max;
+                    Vector3 a = low * minimumWeightSum, b = low * maximumWeightSum;
+                    Vector3 c = high * minimumWeightSum, d = high * maximumWeightSum;
+                    ConservativeBounds.SetMinMax(Vector3.Min(Vector3.Min(a, b), Vector3.Min(c, d)),
+                        Vector3.Max(Vector3.Max(a, b), Vector3.Max(c, d)));
+                    conservativeBoundsReady = true;
+                }
+            }
+
+            private void RefreshBoneBounds()
+            {
+                Array.Clear(boneBoundsPresent, 0, boneBoundsPresent.Length);
+                minimumWeightSum = float.PositiveInfinity; maximumWeightSum = 0f;
+                for (int vertex = 0; vertex < DeformedVertices.Length; vertex++)
+                {
+                    BoneWeight weights = Weights[vertex];
+                    Vector3 point = DeformedVertices[vertex];
+                    Include(weights.boneIndex0, weights.weight0, point);
+                    Include(weights.boneIndex1, weights.weight1, point);
+                    Include(weights.boneIndex2, weights.weight2, point);
+                    Include(weights.boneIndex3, weights.weight3, point);
+                    float sum = Mathf.Max(0f, weights.weight0) + Mathf.Max(0f, weights.weight1) +
+                        Mathf.Max(0f, weights.weight2) + Mathf.Max(0f, weights.weight3);
+                    minimumWeightSum = Mathf.Min(minimumWeightSum, sum);
+                    maximumWeightSum = Mathf.Max(maximumWeightSum, sum);
+                }
+                if (!float.IsFinite(minimumWeightSum)) minimumWeightSum = 0f;
+                localBoundsReady = true; conservativeBoundsReady = false;
+                void Include(int bone, float weight, Vector3 point)
+                {
+                    if (weight <= 0f) return;
+                    if (!boneBoundsPresent[bone])
+                    { boneBounds[bone] = new Bounds(point, Vector3.zero); boneBoundsPresent[bone] = true; }
+                    else boneBounds[bone].Encapsulate(point);
+                }
             }
 
             public void ReleasePose() => poseCaptured = false;
@@ -103,13 +172,31 @@ namespace BarPromenade
             public void RefreshSkinnedVertices()
             {
                 if (skinnedVerticesReady) return;
+                Vector3 minimum = Vector3.zero, maximum = Vector3.zero;
                 for (int i = 0; i < Vertices.Length; i++)
                 {
                     Vector3 point = SkinnedVertices[i] = SkinVertex(i, false);
-                    if (i == 0) SkinnedBounds = new Bounds(point, Vector3.zero);
-                    else SkinnedBounds.Encapsulate(point);
+                    if (i == 0) minimum = maximum = point;
+                    else { minimum = Vector3.Min(minimum, point); maximum = Vector3.Max(maximum, point); }
                 }
+                if (Vertices.Length > 0) SkinnedBounds.SetMinMax(minimum, maximum);
                 skinnedVerticesReady = true;
+                triangleBoundsReady = false;
+            }
+
+            public void EnsureTriangleBounds()
+            {
+                if (triangleBoundsReady) return;
+                for (int i = 0; i < Triangles.Length; i += 3)
+                {
+                    Vector3 a = SkinnedVertices[Triangles[i]], b = SkinnedVertices[Triangles[i + 1]],
+                        c = SkinnedVertices[Triangles[i + 2]];
+                    Bounds bounds = default;
+                    bounds.SetMinMax(Vector3.Min(a, Vector3.Min(b, c)), Vector3.Max(a, Vector3.Max(b, c)));
+                    bounds.Expand(.00002f);
+                    TriangleBounds[i / 3] = bounds;
+                }
+                triangleBoundsReady = true;
             }
 
             public void RefreshBlendShapes()
@@ -142,6 +229,7 @@ namespace BarPromenade
                         DeformedNormals[vertex] += Vector3.LerpUnclamped(lowerNormal, shape.Normals[high][vertex], fraction);
                     }
                 }
+                RefreshBoneBounds();
                 SyncBlendShapeWeights(Renderer);
             }
 
@@ -171,6 +259,7 @@ namespace BarPromenade
             public Patch Patch;
             public int A, B, C;
             public Vector3 Barycentric;
+            public Vector3 ProjectionPoint, ProjectionNormal;
             public Vector2 Uv;
             public Vector2 DirectionUv;
             public float Radius, Stretch, Seed, AgeSeconds, Spread = 1f;
@@ -210,6 +299,7 @@ namespace BarPromenade
         private readonly List<ProjectileWound> projectileWounds = new List<ProjectileWound>(MaximumProjectileWounds);
         private readonly List<ProjectileLayer> projectileLayers = new List<ProjectileLayer>();
         private readonly Dictionary<Transform, Matrix4x4> projectileWorldBones = new Dictionary<Transform, Matrix4x4>();
+        private readonly Dictionary<SkinnedMeshRenderer, bool> availableSources;
         private readonly MaterialPropertyBlock properties = new MaterialPropertyBlock();
         private readonly Material bloodMaterial;
         private readonly CombatActor actor;
@@ -218,6 +308,12 @@ namespace BarPromenade
         private ProjectileWound lastProjectile;
         public int Count { get; private set; }
         public int ProjectileCount => projectileWounds.Count;
+        internal long PoseCaptureTicks { get; private set; }
+        internal long SkinVerticesTicks { get; private set; }
+        internal long TriangleProjectionTicks { get; private set; }
+        internal long ClassificationTicks { get; private set; }
+        internal long WoundCommitTicks { get; private set; }
+        internal long VisibilityTicks { get; private set; }
         public Vector3 BleedPosition => TryGetBleed(out Vector3 point, out _) ? point : Vector3.zero;
         public Vector3 BleedDirection => TryGetBleed(out _, out Vector3 direction) ? direction : Vector3.up;
 
@@ -273,6 +369,7 @@ namespace BarPromenade
             var sources = new Dictionary<string, SkinnedMeshRenderer>(StringComparer.Ordinal);
             foreach (SkinnedMeshRenderer renderer in rig.GetComponentsInChildren<SkinnedMeshRenderer>(true))
                 sources[renderer.name] = renderer;
+            availableSources = new Dictionary<SkinnedMeshRenderer, bool>(sources.Count);
             foreach (SkinnedMeshRenderer template in model.GetComponentsInChildren<SkinnedMeshRenderer>(true))
             {
                 string[] name = template.name.Split(new[] { "__" }, StringSplitOptions.None);
@@ -309,7 +406,8 @@ namespace BarPromenade
                     }
                     shapes[shape] = blend;
                 }
-                var patch = new Patch { Renderer = renderer, Source = source, Centre = centre,
+                var patch = new Patch { Renderer = renderer, Source = source, SourceName = name[1],
+                    ProjectileSurface = ProjectileSurfaceFor(name[1]), Centre = centre,
                     BindPoses = mesh.bindposes, Bones = sourceBones,
                     Vertices = mesh.vertices, Normals = mesh.normals, Uv = uv, Weights = mesh.boneWeights,
                     DeformedVertices = (Vector3[])meshVertices.Clone(), DeformedNormals = (Vector3[])meshNormals.Clone(),
@@ -327,27 +425,29 @@ namespace BarPromenade
             ProjectileWound nearestWound = null;
             float best = float.PositiveInfinity;
             projectileWorldBones.Clear();
+            // A projection does not change its authored sources. Sample each live
+            // renderer once for this contact; the next contact must sample it again.
+            availableSources.Clear();
             foreach (Patch patch in patches)
             {
-                if (!CombatBodyDestruction.SourceAvailable(actor, patch.Source)) continue;
-                if (projectile && head && patch.Source.name != "GEO_Head" && patch.Source.name != "GEO_FaceSurface") continue;
-                if (projectile && part.HasValue && !MatchesProjectileEndpoint(patch.Source.name, part.Value)) continue;
+                if (!availableSources.TryGetValue(patch.Source, out bool available))
+                {
+                    available = CombatBodyDestruction.SourceAvailable(actor, patch.Source);
+                    availableSources.Add(patch.Source, available);
+                }
+                if (!available) continue;
+                if (projectile && head && patch.SourceName != "GEO_Head" && patch.SourceName != "GEO_FaceSurface") continue;
+                if (projectile && part.HasValue && !MatchesProjectileEndpoint(patch.SourceName, part.Value)) continue;
                 ProjectileWound candidate = projectile ? LocateProjectile(patch, point, incoming, projectileSurfaceReach,
                     projectileWorldBones, best, nearestWound != null && float.IsFinite(nearestWound.RayDistance)) : null;
                 if (projectile && candidate == null) continue;
-                Vector3 surfacePoint = candidate != null ? candidate.Position : patch.Position;
-                if (candidate != null)
-                {
-                    CombatBodyDestruction.TryClassifySurface(actor, patch.Source, surfacePoint,
-                        out candidate.Region, out candidate.BodyPatch);
-                    if (!Retains(candidate)) continue;
-                }
-                else
+                Vector3 surfacePoint = candidate != null ? candidate.ProjectionPoint : patch.Position;
+                if (candidate == null)
                 {
                     Classify(patch, surfacePoint);
                     if (!Retains(patch)) continue;
                 }
-                Vector3 surfaceNormal = candidate != null ? candidate.Direction : patch.Direction;
+                Vector3 surfaceNormal = candidate != null ? candidate.ProjectionNormal : patch.Direction;
                 float distance = (surfacePoint - point).sqrMagnitude;
                 // Exact surface distance wins. A large facing penalty can move a
                 // wrist contact onto a sleeve several centimetres from its glove.
@@ -359,17 +459,28 @@ namespace BarPromenade
                 {
                     // An actual entry on the incoming line outranks every
                     // nearest-point fallback, including on a different patch.
-                    if (!previousRayContact) best = float.PositiveInfinity;
                     score = candidate.RayDistance;
                 }
                 if (patch.Active && !projectile) score += .045f;
-                if (score >= best) continue;
+                if ((previousRayContact || !rayContact) && score >= best) continue;
+                if (candidate != null)
+                {
+                    // A discarded candidate cannot become the selected wound.
+                    // Resolve its regional retention only if its exact score can win.
+                    long start = System.Diagnostics.Stopwatch.GetTimestamp();
+                    CombatBodyDestruction.TryClassifySurface(actor, patch.Source, surfacePoint,
+                        out candidate.Region, out candidate.BodyPatch);
+                    ClassificationTicks += System.Diagnostics.Stopwatch.GetTimestamp() - start;
+                    if (!Retains(candidate)) continue;
+                }
                 nearest = patch; nearestWound = candidate; best = score;
             }
             if (nearest == null) return;
             if (projectile)
             {
+                long start = System.Diagnostics.Stopwatch.GetTimestamp();
                 AddProjectile(nearestWound);
+                WoundCommitTicks += System.Diagnostics.Stopwatch.GetTimestamp() - start;
                 RefreshVisibility();
                 return;
             }
@@ -405,6 +516,13 @@ namespace BarPromenade
                 default: return true;
             }
         }
+
+        private static ProjectileWoundSurface ProjectileSurfaceFor(string source) =>
+            source.StartsWith("CLO_Glove", StringComparison.Ordinal) ||
+            source.StartsWith("CLO_Boot", StringComparison.Ordinal) ||
+            source.StartsWith("GEO_FootShoe", StringComparison.Ordinal)
+                ? ProjectileWoundSurface.Glove : source.StartsWith("CLO_", StringComparison.Ordinal)
+                ? ProjectileWoundSurface.Fabric : ProjectileWoundSurface.Skin;
 
         private void AddProjectile(ProjectileWound wound)
         {
@@ -448,7 +566,7 @@ namespace BarPromenade
                     if (candidate.Count == 0) { layer = candidate; break; }
                 if (layer == null)
                 {
-                    var host = new GameObject("Projectile Wounds__" + patch.Source.name + "__" + projectileLayers.Count);
+                    var host = new GameObject("Projectile Wounds__" + patch.SourceName + "__" + projectileLayers.Count);
                     layer = new ProjectileLayer { Renderer = host.AddComponent<SkinnedMeshRenderer>() };
                     projectileLayers.Add(layer);
                 }
@@ -515,31 +633,46 @@ namespace BarPromenade
             patch.SyncBlendShapeWeights(renderer);
         }
 
-        private static ProjectileWound LocateProjectile(Patch patch, Vector3 point, Vector3 incoming, float surfaceReach,
+        private static bool CanProject(Bounds bounds, Vector3 point, Vector3 rayOrigin, Vector3 rayDirection,
+            float surfaceReach, float bestScore, bool previousRayContact)
+        {
+            bounds.Expand(.00002f);
+            float entry = 0f;
+            bool canMeetRay = bounds.Contains(rayOrigin) ||
+                bounds.IntersectRay(new Ray(rayOrigin, rayDirection), out entry) && entry <= surfaceReach * 2f;
+            Vector3 closest = Vector3.Max(bounds.min, Vector3.Min(point, bounds.max));
+            // Every ray contact outranks fallback distance. Without a possible
+            // ray, the AABB distance is a lower bound on the nonnegative score.
+            return canMeetRay && (!previousRayContact || entry < bestScore) ||
+                !previousRayContact && (closest - point).sqrMagnitude < bestScore;
+        }
+
+        private ProjectileWound LocateProjectile(Patch patch, Vector3 point, Vector3 incoming, float surfaceReach,
             Dictionary<Transform, Matrix4x4> worldBones, float bestScore, bool previousRayContact)
         {
             // A pellet samples one live pose. Share its bone matrices across wound
             // patches, then release the snapshot so later bleeding follows the rig.
+            long start = System.Diagnostics.Stopwatch.GetTimestamp();
+            patch.RefreshBlendShapes();
             patch.CapturePose(worldBones);
+            PoseCaptureTicks += System.Diagnostics.Stopwatch.GetTimestamp() - start;
             try { return LocateProjectileInPose(patch, point, incoming, surfaceReach, bestScore, previousRayContact); }
             finally { patch.ReleasePose(); }
         }
 
-        private static ProjectileWound LocateProjectileInPose(Patch patch, Vector3 point, Vector3 incoming, float surfaceReach,
+        private ProjectileWound LocateProjectileInPose(Patch patch, Vector3 point, Vector3 incoming, float surfaceReach,
             float bestScore, bool previousRayContact)
         {
             patch.RefreshBlendShapes();
-            patch.RefreshSkinnedVertices();
             Vector3 rayDirection = incoming.sqrMagnitude > .000001f ? incoming.normalized : -patch.Direction;
             Vector3 rayOrigin = point - rayDirection * surfaceReach;
-            Bounds bounds = patch.SkinnedBounds;
-            bounds.Expand(.00002f);
-            bool canMeetRay = bounds.IntersectRay(new Ray(rayOrigin, rayDirection), out float entry) &&
-                entry <= surfaceReach * 2f;
-            Vector3 closest = Vector3.Max(bounds.min, Vector3.Min(point, bounds.max));
-            // Every ray contact outranks fallback distance. Without a possible
-            // ray, the AABB distance is a lower bound on the nonnegative score.
-            if (!canMeetRay && (previousRayContact || (closest - point).sqrMagnitude >= bestScore)) return null;
+            if (!CanProject(patch.ConservativeBounds, point, rayOrigin, rayDirection, surfaceReach, bestScore, previousRayContact)) return null;
+            long skinStart = System.Diagnostics.Stopwatch.GetTimestamp();
+            patch.RefreshSkinnedVertices();
+            SkinVerticesTicks += System.Diagnostics.Stopwatch.GetTimestamp() - skinStart;
+            if (!CanProject(patch.SkinnedBounds, point, rayOrigin, rayDirection, surfaceReach, bestScore, previousRayContact)) return null;
+            long projectionStart = System.Diagnostics.Stopwatch.GetTimestamp();
+            patch.EnsureTriangleBounds();
             ProjectileWound wound = patch.Projection;
             wound.A = wound.B = wound.C = 0; wound.Barycentric = Vector3.right;
             wound.Uv = wound.DirectionUv = Vector2.zero;
@@ -549,21 +682,29 @@ namespace BarPromenade
             wound.BodyPatch = -1; wound.Retained = true;
             wound.Surface = ProjectileWoundSurface.Skin; wound.Layer = null;
             float best = float.PositiveInfinity;
+            float maximumRayDistance = surfaceReach * 2f;
+            var rayQuery = new CombatHurtboxes.SegmentQuery(rayOrigin, rayDirection * maximumRayDistance, 0f);
+            float closestRayFraction = 1f;
             for (int i = 0; i < patch.Triangles.Length; i += 3)
             {
                 int a = patch.Triangles[i], b = patch.Triangles[i + 1], c = patch.Triangles[i + 2];
-                if (RayTriangle(rayOrigin, rayDirection, patch.SkinnedVertices[a], patch.SkinnedVertices[b],
+                Bounds bounds = patch.TriangleBounds[i / 3];
+                if (rayQuery.Intersects(bounds, closestRayFraction) &&
+                    RayTriangle(rayOrigin, rayDirection, patch.SkinnedVertices[a], patch.SkinnedVertices[b],
                     patch.SkinnedVertices[c], out float rayDistance, out Vector3 rayBarycentric) &&
-                    rayDistance <= surfaceReach * 2f)
+                    rayDistance <= maximumRayDistance)
                 {
                     if (rayDistance < wound.RayDistance)
                     {
                         wound.RayDistance = rayDistance;
+                        closestRayFraction = rayDistance / maximumRayDistance;
                         wound.A = a; wound.B = b; wound.C = c; wound.Barycentric = rayBarycentric;
                     }
                     continue;
                 }
-                if (float.IsFinite(wound.RayDistance)) continue;
+                // Once a ray entry exists, later fallback distances cannot win.
+                // Otherwise the triangle's conservative box bounds its distance.
+                if (float.IsFinite(wound.RayDistance) || bounds.SqrDistance(point) >= best) continue;
                 Vector3 barycentric = ClosestTriangle(patch.SkinnedVertices[a], patch.SkinnedVertices[b], patch.SkinnedVertices[c], point);
                 Vector3 surface = patch.SkinnedVertices[a] * barycentric.x + patch.SkinnedVertices[b] * barycentric.y + patch.SkinnedVertices[c] * barycentric.z;
                 float distance = (surface - point).sqrMagnitude;
@@ -577,12 +718,11 @@ namespace BarPromenade
             float uvLength = Mathf.Max(.0001f, useA ? uvA.magnitude : uvB.magnitude);
             float worldLength = Vector3.Distance(patch.SkinnedVertices[wound.A], patch.SkinnedVertices[useA ? wound.B : wound.C]);
             wound.Radius = Mathf.Clamp(.014f * uvLength / Mathf.Max(.0001f, worldLength), .015f, .18f);
-            wound.Surface = patch.Source.name.StartsWith("CLO_Glove", StringComparison.Ordinal) ||
-                patch.Source.name.StartsWith("CLO_Boot", StringComparison.Ordinal) ||
-                patch.Source.name.StartsWith("GEO_FootShoe", StringComparison.Ordinal)
-                ? ProjectileWoundSurface.Glove : patch.Source.name.StartsWith("CLO_", StringComparison.Ordinal)
-                ? ProjectileWoundSurface.Fabric : ProjectileWoundSurface.Skin;
+            wound.Surface = patch.ProjectileSurface;
             Vector3 normal = wound.Direction;
+            wound.ProjectionPoint = patch.SkinnedVertices[wound.A] * wound.Barycentric.x +
+                patch.SkinnedVertices[wound.B] * wound.Barycentric.y + patch.SkinnedVertices[wound.C] * wound.Barycentric.z;
+            wound.ProjectionNormal = normal;
             Vector3 travel = incoming.sqrMagnitude > .000001f ? incoming.normalized : -normal;
             Vector3 tangent = Vector3.ProjectOnPlane(travel, normal);
             float obliquity = Mathf.Clamp01(tangent.magnitude);
@@ -607,6 +747,7 @@ namespace BarPromenade
             // Stable local variation: it follows the wound through ragdoll and reset,
             // and does not consume any gameplay/particle random sequence.
             wound.Seed = Mathf.Repeat(wound.Uv.x * 17.17f + wound.Uv.y * 37.71f + wound.A * .618f, 1f) * Mathf.PI * 2f;
+            TriangleProjectionTicks += System.Diagnostics.Stopwatch.GetTimestamp() - projectionStart;
             return wound;
         }
 
@@ -655,6 +796,7 @@ namespace BarPromenade
 
         public void RefreshVisibility()
         {
+            long start = System.Diagnostics.Stopwatch.GetTimestamp();
             foreach (Patch patch in patches)
                 if (patch.Renderer != null)
                 {
@@ -677,6 +819,7 @@ namespace BarPromenade
                     layer.Renderer.enabled = visible && CombatBodyDestruction.SourceAvailable(actor, layer.Patch.Source);
                     if (layer.Dirty) UploadProjectileLayer(layer);
                 }
+            VisibilityTicks += System.Diagnostics.Stopwatch.GetTimestamp() - start;
         }
 
         private void Classify(Patch patch, Vector3 position)

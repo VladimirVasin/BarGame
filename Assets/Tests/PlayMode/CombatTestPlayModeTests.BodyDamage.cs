@@ -9,8 +9,167 @@ using UnityEngine.TestTools;
 
 namespace BarPromenade.Tests.PlayMode
 {
+    public sealed class CombatTorsoAssetsSetup : IPrebuildSetup
+    {
+        public void Setup()
+        {
+#if UNITY_EDITOR
+            System.Type.GetType("BarPromenade.Editor.CombatBodyAssetSetup, BarPromenade.Editor", true)
+                .GetMethod("ValidateImportedOrThrow", System.Type.EmptyTypes).Invoke(null, null);
+#endif
+        }
+    }
+
     public sealed partial class CombatTestPlayModeTests
     {
+        [UnityTest]
+        [PrebuildSetup(typeof(CombatTorsoAssetsSetup))]
+        public IEnumerator Range_TorsoErosionKeepsConnectedLaunchCorpsePauseAndReset()
+        {
+            yield return SceneManager.LoadSceneAsync(SceneIds.MainMenu, LoadSceneMode.Single);
+            yield return EnterRange(false, CombatWeaponId.Shotgun);
+            foreach (bool hurtHero in new[] { false, true })
+            {
+                root.ResetRound(); PlacePair(6f);
+                CombatActor target = hurtHero ? root.Hero : root.Opponent;
+                CombatActor source = hurtHero ? root.Opponent : root.Hero;
+                string subject = hurtHero ? "hero" : "opponent";
+                var intactTissue = new Dictionary<SkinnedMeshRenderer, Vector3[]>();
+                foreach (SkinnedMeshRenderer renderer in target.DamageRigRoot.GetComponentsInChildren<SkinnedMeshRenderer>(true))
+                    if (renderer.name.StartsWith("Body FleshRegion")) intactTissue.Add(renderer, renderer.sharedMesh.vertices);
+                CaptureBodyDestruction(target, "torso-" + subject + "-intact", target.transform.forward);
+                CombatHurtboxes.Hit contact = TorsoContact(target, out Vector3 outward);
+                var one = new List<CombatProjectilePool.PelletHit> {
+                    new CombatProjectilePool.PelletHit(contact, -outward * CombatProjectilePool.MuzzleSpeed,
+                        1f, 0, root.Hero.Shotgun.Settings) };
+                target.ReceiveShotgunVolley(source, 1, one, true);
+                Assert.That(target.State.IsDefeated, Is.False);
+                Assert.That(root.BodyEffects.ActiveFragmentCount, Is.Zero);
+                Assert.That(HasDeformedTorsoTissue(target, intactTissue), Is.True,
+                    "A partial real contact must remove local exterior and dent finite tissue before exposing bone.");
+                target.CaptureContactPose();
+                CaptureBodyDestruction(target, "torso-" + subject + "-partial", outward);
+
+                contact = TorsoContact(target, out outward);
+                var volley = new List<CombatProjectilePool.PelletHit>();
+                for (int pellet = 0; pellet < 12; pellet++) volley.Add(new CombatProjectilePool.PelletHit(contact,
+                    -outward * CombatProjectilePool.MuzzleSpeed, 1f, pellet, root.Hero.Shotgun.Settings));
+                Vector3 start = target.Ragdoll.PelvisBody.position;
+                Assert.That(root.Projectiles.TrySpawnVolley(source,
+                    target.Ragdoll.PhysicsController.ChestBody.worldCenterOfMass + outward,
+                    Quaternion.LookRotation(-outward), 2, root.Hero.Shotgun.Settings), Is.True);
+                for (int step = 0; step < 60 && root.Projectiles.ActiveCount > 0; step++)
+                {
+                    target.CaptureContactPose();
+                    root.Projectiles.Advance(CombatTestRoot.SimulationStep, root.Hero, root.Opponent);
+                    root.Projectiles.ApplyContacts();
+                }
+                Assert.That(root.Projectiles.ActiveCount, Is.Zero);
+                Assert.That(target.State.IsDefeated && target.IsRagdollActive, Is.True);
+                AssertConnectedTorso(target);
+                Assert.That(root.BodyEffects.DepletedTorsoCellCountFor(target), Is.GreaterThan(0));
+                Assert.That(root.BodyEffects.ExposedBoneCountFor(target), Is.GreaterThan(0));
+                Assert.That(root.BodyEffects.ActiveFragmentCount, Is.Zero,
+                    "A torso wound must not emit tissue patches or cascade into limb separation.");
+                CaptureBodyDestruction(target, "torso-" + subject + "-exposed", outward);
+
+                // Hitstop retains the immutable impulse until the first physical step.
+                root.Tick(.2f);
+                float travel = 0f;
+                for (int step = 0; step < 45; step++)
+                {
+                    root.Tick(Time.fixedDeltaTime); yield return new WaitForFixedUpdate();
+                    travel = Mathf.Max(travel, Vector3.ProjectOnPlane(target.Ragdoll.PelvisBody.position - start,
+                        Vector3.up).magnitude);
+                }
+                Assert.That(travel, Is.GreaterThan(1.5f), "The connected ragdoll must leave the impact position.");
+                AssertConnectedTorso(target);
+                CaptureBodyDestruction(target, "torso-" + subject + "-launched", outward);
+
+                float health = target.State.Health;
+                int depleted = root.BodyEffects.DepletedTorsoCellCountFor(target);
+                contact = TorsoContact(target, out outward); volley.Clear();
+                for (int pellet = 0; pellet < 12; pellet++) volley.Add(new CombatProjectilePool.PelletHit(contact,
+                    -outward * CombatProjectilePool.MuzzleSpeed, 1f, pellet, root.Hero.Shotgun.Settings));
+                target.ReceiveShotgunVolley(source, 3, volley, true);
+                Assert.That(target.State.Health, Is.EqualTo(health));
+                Assert.That(root.BodyEffects.DepletedTorsoCellCountFor(target), Is.GreaterThanOrEqualTo(depleted));
+                Assert.That(root.PauseMenu.Open(), Is.True);
+                Vector3 paused = target.Ragdoll.PelvisBody.position;
+                root.Tick(.4f); yield return null;
+                Assert.That(target.Ragdoll.PelvisBody.position, Is.EqualTo(paused));
+                Assert.That(root.PauseMenu.Cancel(), Is.True);
+                yield return WaitFor(() => GameInput.CanRead(GameInputContext.Gameplay), "Torso test pause did not release input.");
+                root.Tick(.2f); start = target.Ragdoll.PelvisBody.position;
+                for (int step = 0; step < 18; step++)
+                { root.Tick(Time.fixedDeltaTime); yield return new WaitForFixedUpdate(); }
+                Assert.That(Vector3.Distance(target.Ragdoll.PelvisBody.position, start), Is.GreaterThan(.1f),
+                    "A new corpse contact must retain its launch across pause.");
+                AssertConnectedTorso(target);
+                Assert.That(root.BodyEffects.ActiveFragmentCount, Is.Zero);
+
+                // Critical core integrity can end life without retiring any central physics body.
+                foreach (BodyDamageRegion region in new[] { BodyDamageRegion.Chest, BodyDamageRegion.Abdomen, BodyDamageRegion.Pelvis })
+                    target.BodyDamage.Apply(region, 0, 2f, 99, (int)region, 0);
+                root.BodyEffects.SynchronizeActor(target, target.LastImpact);
+                Assert.That(target.BodyDamage.IsTerminal, Is.True);
+                AssertConnectedTorso(target);
+                root.ResetRound();
+                Assert.That(root.BodyEffects.DepletedTorsoCellCountFor(target), Is.Zero);
+                Assert.That(root.BodyEffects.ExposedBoneCountFor(target), Is.Zero);
+                Assert.That(root.BodyEffects.ActiveFragmentCount, Is.Zero);
+                Assert.That(target.BodyDamage.IsTerminal, Is.False);
+                Assert.That(target.IsRagdollActive, Is.False);
+                CaptureBodyDestruction(target, "torso-" + subject + "-reset", target.transform.forward);
+            }
+            LogAssert.NoUnexpectedReceived();
+        }
+
+        private static CombatHurtboxes.Hit TorsoContact(CombatActor target, out Vector3 outward)
+        {
+            target.CaptureContactPose(); Vector3 centre = target.Ragdoll.PhysicsController.ChestBody.worldCenterOfMass;
+            foreach (Vector3 direction in new[] { target.transform.forward, -target.transform.forward,
+                target.transform.right, -target.transform.right, Vector3.up, Vector3.down })
+                if (target.Hurtboxes.SweepProjectile(centre + direction * .75f, centre - direction * .4f,
+                    CombatProjectilePool.Radius, -direction, out CombatHurtboxes.Hit hit) &&
+                    CombatBodyDamageState.IsTorso(hit.DamageRegion ?? CombatBodyAnatomy.ToRegion(hit.Part)))
+                { outward = direction; return hit; }
+            Assert.Fail("The current posed torso must expose a real tissue or bone contact.");
+            outward = Vector3.forward; return default;
+        }
+
+        private static bool HasDeformedTorsoTissue(CombatActor target, Dictionary<SkinnedMeshRenderer, Vector3[]> intact)
+        {
+            foreach (SkinnedMeshRenderer renderer in target.DamageRigRoot.GetComponentsInChildren<SkinnedMeshRenderer>(true))
+                if (renderer.enabled && renderer.name.StartsWith("Body FleshRegion") &&
+                    renderer.sharedMesh.name.EndsWith("Local Erosion") && renderer.sharedMesh.triangles.Length > 0)
+                {
+                    Vector3[] changed = renderer.sharedMesh.vertices, before = intact[renderer];
+                    for (int i = 0; i < changed.Length; i++)
+                        if (renderer.transform.TransformVector(changed[i] - before[i]).magnitude > .001f) return true;
+                }
+            return false;
+        }
+
+        private static void AssertConnectedTorso(CombatActor target)
+        {
+            for (int r = 0; r < CombatBodyDamageState.RegionCount; r++)
+                Assert.That(target.BodyDamage.IsAttached((BodyDamageRegion)r), Is.True,
+                    "A torso contact cannot detach the core or its head/limb dependants.");
+            foreach (Player3DAnatomicalPart part in new[] { Player3DAnatomicalPart.Torso,
+                Player3DAnatomicalPart.LowerTorso, Player3DAnatomicalPart.Pelvis })
+            {
+                Rigidbody body = target.Ragdoll.PhysicsController.CombatBodyForPart(part);
+                Assert.That(body, Is.Not.Null);
+                ConfigurableJoint joint = body.GetComponent<ConfigurableJoint>();
+                if (joint != null)
+                {
+                    Assert.That(joint.connectedBody, Is.Not.Null);
+                    Assert.That(joint.xMotion, Is.Not.EqualTo(ConfigurableJointMotion.Free));
+                }
+            }
+        }
+
         [UnityTest]
         public IEnumerator Range_BodyDestructionDefersGeometryAndKeepsFrozenVisibleContacts()
         {

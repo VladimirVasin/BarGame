@@ -31,6 +31,69 @@ REGION_BONES = ("head", "neck", "chest", "spine", "pelvis", "upper_arm.L",
                 "forearm.L", "hand.L", "upper_arm.R", "forearm.R", "hand.R",
                 "thigh.L", "shin.L", "foot.L", "thigh.R", "shin.R", "foot.R")
 EPS = 1e-8
+TORSO_REGIONS = (2, 3, 4)
+TORSO_CELL_EDGE_M = .045
+
+
+def radial_target(point, basis, scale):
+    axis_point = basis["origin"] + basis["axis"]*(point-basis["origin"]).dot(basis["axis"])
+    return axis_point+(point-axis_point)*scale
+
+
+def tessellate(poly):
+    """Split the longest edge in world metres, retaining source UV and skin.
+
+    An edge is divided only while longer than the common limit, so shared
+    boundaries acquire the same dyadic samples. Quarter clipping happens AFTER
+    this subdivision; it cannot introduce a different sampling of either rim.
+    """
+    pending = [(poly[0], poly[i], poly[i+1]) for i in range(1, len(poly)-1)]
+    while pending:
+        tri = pending.pop()
+        lengths = [(tri[(i+1)%3][0]-tri[i][0]).length for i in range(3)]
+        edge = max(range(3), key=lambda i: (lengths[i], -i))
+        if lengths[edge] <= TORSO_CELL_EDGE_M+1e-9:
+            if (tri[1][0]-tri[0][0]).cross(tri[2][0]-tri[0][0]).length > 1e-12:
+                yield tri
+            continue
+        a, b, c = tri[edge], tri[(edge+1)%3], tri[(edge+2)%3]
+        midpoint = interpolate(a, b, .5)
+        pending.extend(((a, midpoint, c), (midpoint, b, c)))
+
+
+def region_patches(poly, basis, region):
+    for part in tessellate(poly) if region in TORSO_REGIONS else (poly,):
+        yield from patches(part, basis)
+
+
+def cell_uv_layers(obj, rows):
+    """FBX carries eight Vector2 UV channels without transforming their values.
+
+    UV1=(cell id, outer flag); UV2/3 are reserved source correspondence.
+    UV4/5=(inner X,Y)/(inner Z,0), UV6/7=(surface-centre X,Y)/(Z,0).
+    Coordinates are mesh-local metres, axes swapped to Unity. Importer measures
+    a separate affine frame for each source renderer from exterior cell centres
+    and flesh inner vertices, maps directly to restored source-local geometry,
+    then packs XYZ into Vector4 UV4 and UV6 matching imported mesh.vertices.
+    Cell IDs are local to a renderer, integer-valued and contiguous from zero.
+    Flesh centres always sample ORIGINAL bare skin, never its recessed layer.
+    """
+    inverse = obj.matrix_world.inverted()
+    scale = obj.matrix_world.to_scale()
+    if max(scale)-min(scale) > 1e-6:
+        raise RuntimeError("Torso metadata requires uniform authored scale "+obj.name)
+    def encoded(point):
+        local = (inverse @ point)*scale.x
+        return (local.x, local.z, local.y)
+    values = []
+    for cell, outer, inner, centre in rows:
+        x,y,z = encoded(inner); a,b,c = encoded(centre)
+        values.append(((cell, outer), (0,0), (0,0), (x,y), (z,0), (a,b), (c,0)))
+    for channel, name in enumerate(("TorsoCell", "SourceIndices", "SourceBarycentric",
+                                    "TorsoInnerXY", "TorsoInnerZ", "TorsoCentreXY", "TorsoCentreZ")):
+        layer = obj.data.uv_layers.new(name=name)
+        for loop in obj.data.loops:
+            layer.data[loop.index].uv = values[loop.vertex_index][channel]
 
 
 def digest(data):
@@ -167,18 +230,29 @@ def patches(poly, basis):
     return result
 
 
-def build_mesh(name, source, polys):
+def build_mesh(name, source, polys, basis=None):
     inverse = source.matrix_world.inverted()
     verts, faces, uvs, skin, materials, lookup = [], [], [], [], [], {}
-    for poly, material in polys:
+    metadata = []
+    if basis is not None:
+        # A triangle cell owns its vertices, including at coincident skin seams.
+        # Removing one cell therefore cannot remove or move its neighbour's data.
+        polys = [(tuple(poly[j] for j in (0,i,i+1)), material)
+                 for poly,material in polys for i in range(1,len(poly)-1)
+                 if (poly[i][0]-poly[0][0]).cross(poly[i+1][0]-poly[0][0]).length > 1e-12]
+    for cell, (poly, material) in enumerate(polys):
+        centre = sum((point[0] for point in poly), Vector())/len(poly)
         face = []
         for point in poly:
             local = inverse @ point[0]
             key = (tuple(round(v, 9) for v in local), tuple(round(v, 9) for v in point[1]),
-                   tuple(sorted((k, round(v, 7)) for k, v in point[3].items() if v > 1e-7)))
+                   tuple(sorted((k, round(v, 7)) for k, v in point[3].items() if v > 1e-7)),
+                   cell if basis is not None else None)
             if key not in lookup:
                 lookup[key] = len(verts)
                 verts.append(local); uvs.append(point[1]); skin.append(point[3])
+                if basis is not None:
+                    metadata.append((cell, 1, radial_target(point[0], basis, .32), centre))
             face.append(lookup[key])
         for i in range(1, len(face)-1):
             tri = (face[0], face[i], face[i+1])
@@ -197,6 +271,8 @@ def build_mesh(name, source, polys):
     layer = mesh.uv_layers.new(name="UVMap")
     for loop in mesh.loops:
         layer.data[loop.index].uv = uvs[loop.vertex_index]
+    if basis is not None:
+        cell_uv_layers(obj, metadata)
     for name in sorted({key for row in skin for key in row}):
         group = obj.vertex_groups.new(name=name)
         for i, row in enumerate(skin):
@@ -205,6 +281,73 @@ def build_mesh(name, source, polys):
     for mod in source.modifiers:
         if mod.type == "ARMATURE":
             obj.modifiers.new("Skin", "ARMATURE").object = mod.object
+    return obj
+
+
+def flesh_cells(name, source, polys, basis):
+    """Small closed authored prisms; runtime erodes them while they stay skinned.
+
+    They are never loose objects or fragment templates. Each cell's first vertex
+    is on the outer layer, so runtime can use its skin for its surface sample.
+    """
+    inverse = source.matrix_world.inverted()
+    vertices, faces, uv, skin, rows = [], [], [], [], []
+    cell = 0
+    for poly, _ in polys:
+        for i in range(1, len(poly)-1):
+            tri = (poly[0],poly[i],poly[i+1])
+            normal = (tri[1][0]-tri[0][0]).cross(tri[2][0]-tri[0][0])
+            # Clipping a shared plane within EPS can leave numerical slivers.
+            # Such sub-square-millimetre remnants cannot form a stable volume.
+            longest=max((tri[(j+1)%3][0]-tri[j][0]).length for j in range(3))
+            if normal.length <= 1e-9 or normal.length/max(1e-8,longest) < 1e-5:
+                continue
+            normal.normalize()
+            centre = sum((p[0] for p in tri), Vector())/3
+            outer = [radial_target(p[0],basis,.94) for p in tri]
+            inner = [radial_target(p[0],basis,.32) for p in tri]
+            topology = [(0,1,2),(5,4,3)]
+            for quad in ((1,0,3,4),(2,1,4,5),(0,2,5,3)):
+                # Radial recess can make the side nonplanar. Pick one diagonal
+                # explicitly; reversing a quad would otherwise change BOTH its
+                # winding and its triangulated volume. Neighbour cells use the
+                # same diagonal by ordering the original endpoint coordinates.
+                if tuple(outer[quad[0]]) > tuple(outer[quad[1]]):
+                    quad = quad[1:]+quad[:1]
+                topology.extend(((quad[0],quad[1],quad[2]),(quad[0],quad[2],quad[3])))
+            # Horizontal source caps and axis vertices have no radial thickness.
+            # Give those cells a 2mm inward floor instead of a degenerate prism.
+            if abs(signed_volume(outer+inner,topology,stable=True)) <= 1e-13 or any(
+                    (a-b).length <= 1e-7 for a,b in zip(outer,inner)):
+                inner = [point-normal*.002 for point in inner]
+            volume = signed_volume(outer+inner,topology,stable=True)
+            if abs(volume) <= 1e-13:
+                raise RuntimeError("Degenerate torso cell "+name+" "+str(cell))
+            if volume < 0:
+                topology = [tuple(reversed(face)) for face in topology]
+            offset = len(vertices)
+            for outer_flag, points in ((1,outer),(0,inner)):
+                for corner, point in enumerate(points):
+                    vertices.append(inverse@point);uv.append(tri[corner][1]);skin.append(tri[corner][3])
+                    rows.append((cell,outer_flag,inner[corner],centre))
+            faces.extend(tuple(offset+j for j in face) for face in topology)
+            cell += 1
+    if not faces:
+        return None
+    mesh = bpy.data.meshes.new(name)
+    mesh.from_pydata(vertices,[],faces);mesh.update()
+    obj = bpy.data.objects.new(name,mesh);bpy.context.collection.objects.link(obj)
+    obj.parent=source.parent;obj.matrix_world=source.matrix_world.copy()
+    layer=mesh.uv_layers.new(name="UVMap")
+    for loop in mesh.loops:
+        layer.data[loop.index].uv=uv[loop.vertex_index]
+    cell_uv_layers(obj,rows)
+    for bone in sorted({key for row in skin for key in row}):
+        group=obj.vertex_groups.new(name=bone)
+        for vertex,row in enumerate(skin):
+            if row.get(bone,0)>1e-7:group.add([vertex],row[bone],"REPLACE")
+    for mod in source.modifiers:
+        if mod.type=="ARMATURE":obj.modifiers.new("Skin","ARMATURE").object=mod.object
     return obj
 
 
@@ -223,7 +366,18 @@ def simple_mesh(name, source, vertices, faces, bone):
     return obj
 
 
-def signed_volume(vertices, faces):
+def signed_volume(vertices, faces, stable=False):
+    if stable:
+        # Float32 cross/dot at a 1m world offset can give a flat cap a spurious
+        # signed volume. Translate to a vertex and calculate in Python float64.
+        origin=vertices[faces[0][0]]
+        points=[tuple(float(p[i])-float(origin[i]) for i in range(3)) for p in vertices]
+        terms=[]
+        for face in faces:
+            for i in range(1,len(face)-1):
+                a,b,c=(points[j] for j in (face[0],face[i],face[i+1]))
+                terms.append((a[0]*(b[1]*c[2]-b[2]*c[1])+a[1]*(b[2]*c[0]-b[0]*c[2])+a[2]*(b[0]*c[1]-b[1]*c[0]))/6)
+        return math.fsum(terms)
     return sum(vertices[a].dot(vertices[b].cross(vertices[c]))/6
                for face in faces for a,b,c in [(face[0],face[i],face[i+1]) for i in range(1,len(face)-1)])
 
@@ -513,12 +667,50 @@ def measure(obj, closed=False):
         volume=signed_volume(world,[tuple(p.vertices) for p in mesh.polygons])
         if volume<=1e-11:
             raise RuntimeError("Nonpositive anatomy volume "+obj.name+" "+str(volume))
+    cells=None
+    if len(mesh.uv_layers)==8:
+        labels={}
+        for loop in mesh.loops:
+            value=mesh.uv_layers[1].data[loop.index].uv
+            label=(round(value.x),round(value.y))
+            if abs(value.x-label[0])>1e-5 or label[0]<0 or label[1] not in (0,1):
+                raise RuntimeError("Invalid authored torso cell label "+obj.name)
+            if loop.vertex_index in labels and labels[loop.vertex_index]!=label:
+                raise RuntimeError("A torso vertex belongs to two cells "+obj.name)
+            labels[loop.vertex_index]=label
+        grouped={}
+        for poly in mesh.polygons:
+            ids={labels[vertex][0] for vertex in poly.vertices}
+            if len(ids)!=1:raise RuntimeError("Triangle crosses torso cells "+obj.name)
+            grouped.setdefault(ids.pop(),[]).append(tuple(poly.vertices))
+        if set(grouped)!=set(range(len(grouped))):raise RuntimeError("Noncontiguous torso cells "+obj.name)
+        maximum=0.;volumes=[]
+        for cell,polygons in grouped.items():
+            members=sorted({vertex for poly in polygons for vertex in poly})
+            if labels[members[0]][1]!=1:raise RuntimeError("Torso cell starts at inner skin "+obj.name)
+            for poly in polygons:
+                for a,b in zip(poly,poly[1:]+poly[:1]):
+                    if labels[a][1] and labels[b][1]:maximum=max(maximum,(world[a]-world[b]).length)
+            if closed:
+                # Only this cell is needed, avoiding an O(cell_count*vertices)
+                # conversion while retaining the precise translated calculation.
+                remap={vertex:index for index,vertex in enumerate(members)}
+                cell_volume=signed_volume([world[v] for v in members],
+                    [tuple(remap[v] for v in poly) for poly in polygons],stable=True)
+                if cell_volume<=1e-13:raise RuntimeError("Nonpositive closed torso cell "+obj.name+" "+str((cell,cell_volume,[rnd(world[v]) for v in members],polygons)))
+                volumes.append(cell_volume)
+        if maximum>TORSO_CELL_EDGE_M+1e-6:raise RuntimeError("Torso cell exceeds metre edge budget "+obj.name)
+        cells={"count":len(grouped),"maximum_outer_edge_m":round(maximum,8),
+               "minimum_closed_volume_m3":round(min(volumes),13) if volumes else None}
     payload={"vertices":[rnd(p) for p in world],"triangles":[list(t.vertices) for t in mesh.loop_triangles],
              "uv":[rnd(v.uv) for v in mesh.uv_layers.active.data],"weights":weights,
              "materials":[p.material_index for p in mesh.polygons]}
-    return {"name":obj.name,"vertices":len(world),"triangles":len(mesh.loop_triangles),
+    if cells:payload["cell_uv_channels"]=[[rnd(v.uv) for v in layer.data] for layer in mesh.uv_layers]
+    result={"name":obj.name,"vertices":len(world),"triangles":len(mesh.loop_triangles),
             "bounds_unity_m":bounds(world),"closed_volume_m3":round(volume,10) if volume else None,
             "semantic_sha256":digest(json.dumps(payload,sort_keys=True,separators=(",",":")).encode())}
+    if cells:result["torso_cells"]=cells
+    return result
 
 
 def build(kind,out,publish=False):
@@ -549,7 +741,7 @@ def build(kind,out,publish=False):
             triangle_area=(poly[1][0]-poly[0][0]).cross(poly[2][0]-poly[0][0]).length*.5
             original_area+=triangle_area
             for region,part in split_regions(poly,arm,low,high):
-                for patch,piece in patches(part,frames[region]):
+                for patch,piece in region_patches(part,frames[region],region):
                     # Blender/Unity may choose opposite diagonals of a warped
                     # source quad. Measure the actual emitted cut vertices
                     # against every source-corner fan, not a global tolerance.
@@ -586,7 +778,8 @@ def build(kind,out,publish=False):
             coverage.append({"source":source.name,"source_area_m2":round(original_area,8),
                              "body_area_m2":round(partitioned_area,8),"head_excluded":False})
         for (region,patch),polys in sorted(collected.items()):
-            obj=build_mesh(f"Region{region}Patch{patch}__{source.name}",source,polys)
+            obj=build_mesh(f"Region{region}Patch{patch}__{source.name}",source,polys,
+                           frames[region] if region in TORSO_REGIONS else None)
             if obj is not None:outputs.append(obj)
     contracts=[]
     for region in range(1,17):
@@ -600,7 +793,9 @@ def build(kind,out,publish=False):
             polys=flesh.get((region,patch),[])
             if not polys:
                 raise RuntimeError("Empty flesh patch "+str((kind,region,patch)))
-            obj=flesh_shell(f"FleshRegion{region}Patch{patch}__{source.name}",source,polys,frames[region],REGION_BONES[region])
+            name=f"FleshRegion{region}Patch{patch}__{source.name}"
+            obj=(flesh_cells(name,source,polys,frames[region]) if region in TORSO_REGIONS else
+                 flesh_shell(name,source,polys,frames[region],REGION_BONES[region]))
             if obj is None:raise RuntimeError("Missing flesh patch")
             outputs.append(obj)
         vertices,faces=bone_geometry(region,frames[region],(region_min,region_max))
@@ -661,10 +856,16 @@ def main():
     if args.validate_only:
         if (out/"BoneSurface.png").read_bytes()!=pixels:raise RuntimeError("Bone texture is not deterministic")
     else:(out/"BoneSurface.png").write_bytes(pixels)
-    manifest={"version":1,"generator":"tools/build-combat-body-3d-model.py","test_only":True,
+    manifest={"version":2,"generator":"tools/build-combat-body-3d-model.py","test_only":True,
               "region_count":17,"body_region_count":16,"patch_count":4,
               "patch_mapping":"id=(dot(point-origin,cross)<0 ? 1 : 0)+(dot(point-origin,second)<0 ? 2 : 0)",
               "head_owner":"CombatGore/HeadHero.fbx,HeadNpc.fbx","sources":SOURCES,"models":models,
+              "torso_cells":{"regions":list(TORSO_REGIONS),"maximum_edge_m":TORSO_CELL_EDGE_M,
+                  "layer_scales":{"outer":.94,"inner":.32,"degenerate_cap_floor_m":.002},
+                  "coordinates":"mesh-local metres, Unity XYZ=(Blender X,Z,Y); import measures per-source affine frame from exterior centres and flesh inner vertices to restored source-local geometry",
+                  "uv_channels":{"1":"cell id, outer flag","2":"reserved source indices","3":"reserved source barycentric",
+                      "4":"inner X,Y","5":"inner Z,0","6":"original surface centre X,Y","7":"original surface centre Z,0"},
+                  "runtime_channels":{"4":"imported mesh-local inner XYZ","6":"imported mesh-local original surface centre XYZ"}},
               "source_tessellation_tolerances":[dict(kind=kind,**entry) for kind,model in models.items() for entry in model["source_tessellation"]],
               "files":{name:digest((out/name).read_bytes()) for name in ("BodyHero.fbx","BodyNpc.fbx","BoneSurface.png")}}
     if args.validate_only:

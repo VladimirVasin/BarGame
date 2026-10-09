@@ -15,6 +15,14 @@ namespace BarPromenade
         private Vector3[] suspendedLinear, suspendedAngular;
         private readonly List<PendingCombatImpulse> suspendedImpulses = new List<PendingCombatImpulse>(4);
         private readonly List<PendingCombatTorque> suspendedTorques = new List<PendingCombatTorque>(8);
+        private readonly List<PendingBodyImpulse> suspendedBodyImpulses = new List<PendingBodyImpulse>(4);
+        private readonly struct PendingBodyImpulse
+        {
+            internal readonly Player3DAnatomicalPart Part;
+            internal readonly Vector3 Point, Impulse;
+            internal PendingBodyImpulse(Player3DAnatomicalPart part, Vector3 point, Vector3 impulse)
+            { Part = part; Point = point; Impulse = impulse; }
+        }
         private bool combatHeadCollisionEnabled = true;
 
         public bool IsSimulationSuspended => simulationSuspended;
@@ -168,6 +176,8 @@ namespace BarPromenade
             // Contacts arrive on the duel clock and may start hit-stop later in the
             // same Update. PhysX discards pending forces when a body becomes kinematic,
             // so apply them only in the first unfrozen physics step.
+            foreach (PendingBodyImpulse impulse in suspendedBodyImpulses) DistributeBodyImpulse(impulse);
+            suspendedBodyImpulses.Clear();
             foreach (PendingCombatImpulse impulse in suspendedImpulses)
                 if (impulse.Body != null) impulse.Body.AddForceAtPosition(impulse.Impulse, impulse.Point, ForceMode.Impulse);
             suspendedImpulses.Clear();
@@ -201,14 +211,21 @@ namespace BarPromenade
         internal void AddCombatVolleyImpulse(Player3DAnatomicalPart part, Vector3 point, Vector3 impulse)
         {
             if (!IsSimulating || !FiniteCombatVector(point) || !FiniteCombatVector(impulse)) return;
-            impulse = Vector3.ClampMagnitude(impulse, 260f);
+            impulse = Vector3.ClampMagnitude(impulse, ShotgunSettings.MaximumVolleyMomentum);
+            suspendedBodyImpulses.Add(new PendingBodyImpulse(part, point, impulse));
+        }
+
+        private void DistributeBodyImpulse(PendingBodyImpulse pending)
+        {
             float mass = 0f;
             foreach (Rigidbody body in bodyList) if (!removedCombatBodies.Contains(body)) mass += body.mass;
             if (mass <= 0f) return;
             foreach (Rigidbody body in bodyList)
                 if (!removedCombatBodies.Contains(body)) suspendedImpulses.Add(new PendingCombatImpulse(body, body.worldCenterOfMass,
-                    impulse * (.8f * body.mass / mass)));
-            AddCombatImpulse(part, point, impulse * .2f);
+                    pending.Impulse * (.8f * body.mass / mass)));
+            Rigidbody contact = CombatBodyForPart(pending.Part);
+            if (contact != null && !removedCombatBodies.Contains(contact)) AddCombatImpulse(pending.Part, pending.Point, pending.Impulse * .2f);
+            else AddCombatImpulse(Player3DAnatomicalPart.Torso, ChestBody.worldCenterOfMass, pending.Impulse * .2f);
         }
 
         /// <summary>Contraction of a live anatomical joint. Matching opposite angular
@@ -293,6 +310,7 @@ namespace BarPromenade
             movingCombatAnchor = false;
             suspendedImpulses.Clear();
             suspendedTorques.Clear();
+            suspendedBodyImpulses.Clear();
             // Recovery/cancellation ends motion, not injury. The head/body
             // destruction owners explicitly restore collision, joints and mass
             // on ResetActor; a later fall must retain this same damaged body.

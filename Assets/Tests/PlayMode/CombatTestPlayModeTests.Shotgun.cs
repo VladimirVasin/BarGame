@@ -19,13 +19,14 @@ namespace BarPromenade.Tests.PlayMode
             yield return SceneManager.LoadSceneAsync(SceneIds.MainMenu, LoadSceneMode.Single);
             yield return EnterRange(false, CombatWeaponId.Shotgun);
             root.ResetRound();
-            PlacePair(6f);
+            // Leave room for the stronger launch before the arena's perimeter wall.
+            PlacePair(3f);
             Vector3 start = root.Opponent.Ragdoll.PelvisBody.position;
             List<CombatImpact> near = FireShotgunAtRegion(MeleeBodyRegion.Torso, 1f, 1);
             Assert.That(root.Opponent.State.IsDefeated, Is.True);
             Vector3 nearImpulse = ShotgunImpulse(near);
-            Assert.That(nearImpulse.magnitude, Is.GreaterThan(180f),
-                "A close real volley must impart several times the pistol's 32 N s torso impulse.");
+            Assert.That(nearImpulse.magnitude, Is.GreaterThan(300f),
+                "The strengthened close volley must exceed the former 260 N s launch cap.");
             Assert.That(root.Opponent.ShotgunVolleyResponseCount, Is.EqualTo(1));
             Assert.That(root.HeadEffects.DetachedSectorCountFor(root.Opponent), Is.Zero);
             // Consume the single hitstop before observing real fixed-step physics.
@@ -39,15 +40,15 @@ namespace BarPromenade.Tests.PlayMode
                 travel = Mathf.Max(travel, Vector3.ProjectOnPlane(displacement, Vector3.up).magnitude);
                 if (frame == 10 || frame == 30) CaptureShotgunImpactView(start, "shotgun-close-body-" + frame);
             }
-            Assert.That(travel, Is.GreaterThan(1.5f), "The whole corpse must leave its original position, not merely flex one joint.");
+            Assert.That(travel, Is.GreaterThan(2f), "The strengthened close volley must carry the whole corpse away.");
 
             root.ResetRound();
             PlacePair(6f);
             List<CombatImpact> far = FireShotgunAtRegion(MeleeBodyRegion.Torso, 15f, 2);
             Assert.That(far.Count, Is.GreaterThan(0), "The distant comparison must actually contact the target.");
             Assert.That(root.Opponent.State.Health, Is.GreaterThan(0f));
-            Assert.That(ShotgunImpulse(far).magnitude, Is.LessThan(35f));
-            Assert.That(ShotgunImpulse(far).magnitude, Is.LessThan(nearImpulse.magnitude / 5f));
+            Assert.That(ShotgunImpulse(far).magnitude, Is.LessThan(15f));
+            Assert.That(ShotgunImpulse(far).magnitude, Is.LessThan(nearImpulse.magnitude / 20f));
             CaptureShotgunImpactView(root.Opponent.Ragdoll.PelvisBody.position, "shotgun-far-body");
 
             root.ResetRound();

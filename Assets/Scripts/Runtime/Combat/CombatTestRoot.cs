@@ -57,6 +57,10 @@ namespace BarPromenade
         /// <summary>Simulation seconds the duel spent frozen on contacts; tests subtract it from wall budgets.</summary>
         public float HitStopSecondsConsumed { get; private set; }
         public CombatSparkEffects SparkEffects { get; private set; }
+        internal long SimulationPoseTicks { get; private set; }
+        internal long SimulationCaptureTicks { get; private set; }
+        internal long SimulationFlightTicks { get; private set; }
+        internal long SimulationEffectsTicks { get; private set; }
         public bool RoundCameraReleased => roundCameraReleased;
 
         private void Awake()
@@ -286,7 +290,9 @@ namespace BarPromenade
                 Opponent.CompleteSimulationPose(SimulationStep);
                 JournalTransitions("simulation");
                 long poseStamp = JournalStamp();
-                if (Hero.IsFreePistolAiming && CameraFollow.FreeAimActive)
+                long stageStart = System.Diagnostics.Stopwatch.GetTimestamp();
+                bool freeAim = Hero.IsFreePistolAiming && CameraFollow.FreeAimActive;
+                if (freeAim)
                 {
                     // Resolve against this step's completed target pose before
                     // the hero aligns the muzzle, including a moving head.
@@ -296,11 +302,16 @@ namespace BarPromenade
                     Hero.Present();
                 }
                 else { Hero.Present(); Opponent.Present(); }
+                SimulationPoseTicks += System.Diagnostics.Stopwatch.GetTimestamp() - stageStart;
                 JournalElapsed(poseStamp, ref journalPoseTicks);
                 // Both final poses are frozen as anatomical query data before either
                 // weapon is sampled. Sampling the first swing cannot move its hurtboxes.
-                Hero.CaptureContactPose(); Opponent.CaptureContactPose();
+                stageStart = System.Diagnostics.Stopwatch.GetTimestamp();
+                Hero.CaptureContactPose(); Opponent.CaptureContactPose(!freeAim);
+                SimulationCaptureTicks += System.Diagnostics.Stopwatch.GetTimestamp() - stageStart;
+                stageStart = System.Diagnostics.Stopwatch.GetTimestamp();
                 Projectiles?.Advance(SimulationStep, Hero, Opponent);
+                SimulationFlightTicks += System.Diagnostics.Stopwatch.GetTimestamp() - stageStart;
                 Casings?.Tick(SimulationStep);
                 AdvancePistolCrosshair(SimulationStep);
                 if (Hero.CommitPistolShot(Projectiles))
@@ -329,10 +340,12 @@ namespace BarPromenade
                     Hero.ContinueBufferedAttackAfterContacts();
                     Opponent.ContinueBufferedAttackAfterContacts();
                 }
+                stageStart = System.Diagnostics.Stopwatch.GetTimestamp();
                 BloodEffects.Tick(SimulationStep);
                 HeadEffects.Tick(SimulationStep);
                 BodyEffects.Tick(SimulationStep);
                 SparkEffects.Tick(SimulationStep);
+                SimulationEffectsTicks += System.Diagnostics.Stopwatch.GetTimestamp() - stageStart;
             }
             if (RoundFinished)
             {

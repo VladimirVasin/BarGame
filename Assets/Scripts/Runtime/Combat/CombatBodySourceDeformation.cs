@@ -11,7 +11,8 @@ namespace BarPromenade
         private readonly SkinnedMeshRenderer source;
         private readonly PlayerJacketCloth cloth;
         private readonly int clothSurface = -1;
-        private readonly Vector4[] indices, barycentric;
+        private readonly int[] indicesA, indicesB, indicesC;
+        private readonly Vector4[] barycentric;
         private readonly List<Vector3> sourceVertices = new List<Vector3>();
         private readonly List<Vector3> sourceNormals = new List<Vector3>();
         private readonly List<Vector4> sourceTangents = new List<Vector4>();
@@ -30,7 +31,14 @@ namespace BarPromenade
             this.template = template != null ? template : throw new ArgumentNullException(nameof(template));
             this.source = source != null ? source : throw new ArgumentNullException(nameof(source));
             normalMapped = source.sharedMaterial != null && source.sharedMaterial.IsKeywordEnabled("_NORMALMAP");
-            var data = new List<Vector4>(); template.GetUVs(2, data); indices = data.ToArray();
+            var data = new List<Vector4>(); template.GetUVs(2, data);
+            indicesA = new int[data.Count]; indicesB = new int[data.Count]; indicesC = new int[data.Count];
+            for (int i = 0; i < data.Count; i++)
+            {
+                indicesA[i] = Mathf.RoundToInt(data[i].x);
+                indicesB[i] = Mathf.RoundToInt(data[i].y);
+                indicesC[i] = Mathf.RoundToInt(data[i].z);
+            }
             data.Clear(); template.GetUVs(3, data); barycentric = data.ToArray();
             cloth = source.GetComponentInParent<PlayerJacketCloth>();
             if (cloth == null || !cloth.HasAuthoredBindings) return;
@@ -42,7 +50,7 @@ namespace BarPromenade
         internal bool IsMutableSource => !disposed && cloth != null && clothSurface >= 0 &&
             cloth.DeformedMesh(clothSurface) != null && source != null && source.sharedMesh == cloth.DeformedMesh(clothSurface);
 
-        internal void Refresh(SkinnedMeshRenderer renderer)
+        internal void Refresh(SkinnedMeshRenderer renderer, bool preserveCompositedMesh = false)
         {
             if (disposed || renderer == null || source == null || source.sharedMesh == null) return;
             target = renderer;
@@ -56,11 +64,13 @@ namespace BarPromenade
             uint sourceVersion = mutable ? cloth.SurfaceGeometryVersion(clothSurface) : 0u;
             if (owned != null && capturedSource == current && capturedSourceVersion == sourceVersion)
             {
-                renderer.sharedMesh = owned;
+                // An unchanged cloth snapshot may already be composed into torso
+                // erosion. Keep that renderer binding instead of swapping twice.
+                if (!preserveCompositedMesh && renderer.sharedMesh != owned) renderer.sharedMesh = owned;
                 renderer.localBounds = source.localBounds;
                 return;
             }
-            if (indices.Length != template.vertexCount || barycentric.Length != template.vertexCount)
+            if (indicesA.Length != template.vertexCount || barycentric.Length != template.vertexCount)
                 throw new InvalidOperationException("Combat cloth derivative lost its offline source correspondence: " + template.name);
             if (owned == null)
             {
@@ -77,7 +87,7 @@ namespace BarPromenade
                 throw new InvalidOperationException("Production cloth source lacks vertex normals: " + current.name);
             for (int i = 0; i < vertices.Length; i++)
             {
-                int a = Mathf.RoundToInt(indices[i].x), b = Mathf.RoundToInt(indices[i].y), c = Mathf.RoundToInt(indices[i].z);
+                int a = indicesA[i], b = indicesB[i], c = indicesC[i];
                 if ((uint)a >= sourceVertices.Count || (uint)b >= sourceVertices.Count || (uint)c >= sourceVertices.Count)
                     throw new InvalidOperationException("Production cloth topology changed under body damage: " + current.name);
                 Vector4 bary = barycentric[i];

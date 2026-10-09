@@ -5,6 +5,8 @@ namespace BarPromenade
     public sealed partial class CombatTestRoot
     {
         private readonly RaycastHit[] pistolAimHits = new RaycastHit[64];
+        internal int FreeAimQueryCount { get; private set; }
+        internal long FreeAimQueryTicks { get; private set; }
         private bool pistolCursorOwned, pistolCursorVisible, pistolApplicationFocused = true, requirePistolAimRelease;
         private CursorLockMode pistolCursorLock;
         private const float CrosshairExpandSeconds = .035f, CrosshairReturnSeconds = .165f;
@@ -69,6 +71,14 @@ namespace BarPromenade
         }
 
         private Vector3 ResolveFreePistolAim(Ray ray)
+        {
+            long start = System.Diagnostics.Stopwatch.GetTimestamp();
+            FreeAimQueryCount++;
+            try { return ResolveFreePistolAimSurface(ray); }
+            finally { FreeAimQueryTicks += System.Diagnostics.Stopwatch.GetTimestamp() - start; }
+        }
+
+        private Vector3 ResolveFreePistolAimSurface(Ray ray)
         {
             float distance = CombatProjectilePool.MaximumDistance;
             int count = Physics.RaycastNonAlloc(ray, pistolAimHits, distance,

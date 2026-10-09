@@ -113,7 +113,7 @@ namespace BarPromenade
         }
 
         // A batch resolves regional damage once, then publishes each physical entry wound.
-        // Each later batch contributes only its new momentum/trauma; sound and hitstop start once per volley.
+        // Later batches add only new momentum/trauma; sound and any terminal hit-stop start once per volley.
         internal void ReceiveShotgunVolley(CombatActor source, int sequence, List<CombatProjectilePool.PelletHit> hits,
             bool firstResponse)
         {

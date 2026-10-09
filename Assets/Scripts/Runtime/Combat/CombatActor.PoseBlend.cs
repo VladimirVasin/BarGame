@@ -107,9 +107,11 @@ namespace BarPromenade
             for (int i = 0; i < npcPoseBones.Length; i++)
             {
                 Transform bone = npcPoseBones[i];
-                bone.localPosition = Vector3.Lerp(npcBlendPositions[i] + npcBlendVelocities[i] * elapsed, bone.localPosition, t);
-                bone.localRotation = Player3DCharacterPresentation.BlendRecoveryRotation(npcBlendRotations[i],
-                    bone.localRotation, npcBlendAngularVelocities[i], elapsed, t);
+                bone.GetLocalPositionAndRotation(out Vector3 position, out Quaternion rotation);
+                position = Vector3.Lerp(npcBlendPositions[i] + npcBlendVelocities[i] * elapsed, position, t);
+                rotation = Player3DCharacterPresentation.BlendRecoveryRotation(npcBlendRotations[i],
+                    rotation, npcBlendAngularVelocities[i], elapsed, t);
+                bone.SetLocalPositionAndRotation(position, rotation);
             }
         }
 
@@ -123,8 +125,7 @@ namespace BarPromenade
                     npcPreviousPositions[i] = npcPresentedPositions[i];
                     npcPreviousRotations[i] = npcPresentedRotations[i];
                 }
-                npcPresentedPositions[i] = npcPoseBones[i].localPosition;
-                npcPresentedRotations[i] = npcPoseBones[i].localRotation;
+                npcPoseBones[i].GetLocalPositionAndRotation(out npcPresentedPositions[i], out npcPresentedRotations[i]);
             }
             if (advanced) npcPreviousClock = npcPresentedClock;
             else if (!npcPresentedPoseValid) npcPreviousClock = poseClock;

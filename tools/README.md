@@ -161,7 +161,7 @@ Test:`--actions-only --kick-only|--recovery-only|--footwork-only`;
 `--refresh-published-contracts --reuse-unchanged-actions --resume-npc-bank file.blend`.
 Blood:`--texture-only`;others:`--validate-only`.
 `CombatGore`:{Body,Skull}{Hero,Npc}/Combat{Body,Skull}3D;
-16regions×4 closed tissue+bone;skull16;UV/coverage/scale.
+Body16×4;torso cells erode→skeleton/0chunks;limbs/skull16.
 
 `player_jacket_cloth.py --write` derives hem/cuff metadata only; `--check` verifies it.
 Refresh `Player3DV2` via asset setup. Lower-body changes require

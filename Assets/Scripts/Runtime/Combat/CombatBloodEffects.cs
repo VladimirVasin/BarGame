@@ -68,17 +68,46 @@ namespace BarPromenade
         private float dropUnit;
         private uint randomState = 0x63BA74D1u;
         private int dropCursor, stainCursor;
+        private bool dropPoolPrepared;
 
         public bool IsInitialized { get; private set; }
         public int ActiveDropCount { get; private set; }
         public int StainCount { get; private set; }
         public int EmissionCount { get; private set; }
         internal int PreparedActorCount => injuries.Count;
+        internal long WoundProjectionTicks { get; private set; }
+        internal long BurstEmissionTicks { get; private set; }
+        internal long WoundPoseTicks
+        { get { long value = 0; foreach (Injury injury in injuries.Values) value += injury.Marks.PoseCaptureTicks; return value; } }
+        internal long WoundSkinTicks
+        { get { long value = 0; foreach (Injury injury in injuries.Values) value += injury.Marks.SkinVerticesTicks; return value; } }
+        internal long WoundTriangleTicks
+        { get { long value = 0; foreach (Injury injury in injuries.Values) value += injury.Marks.TriangleProjectionTicks; return value; } }
+        internal long WoundClassificationTicks
+        { get { long value = 0; foreach (Injury injury in injuries.Values) value += injury.Marks.ClassificationTicks; return value; } }
+        internal long WoundCommitTicks
+        { get { long value = 0; foreach (Injury injury in injuries.Values) value += injury.Marks.WoundCommitTicks; return value; } }
+        internal long WoundVisibilityTicks
+        { get { long value = 0; foreach (Injury injury in injuries.Values) value += injury.Marks.VisibilityTicks; return value; } }
 
         internal void PrepareActor(CombatActor actor)
         {
             if (actor == null || injuries.ContainsKey(actor)) return;
+            PrepareDropPool();
             injuries.Add(actor, new Injury { Actor = actor, Marks = new CombatDamageMarks(actor, RequireMaterial()) });
+        }
+
+        private void PrepareDropPool()
+        {
+            if (!IsInitialized || dropPoolPrepared) return;
+            for (int i = 0; i < drops.Length; i++)
+            {
+                if (drops[i] != null) continue;
+                var drop = new Drop { Transform = CreateRenderer("Blood Drop", dropMesh) };
+                drop.Transform.gameObject.SetActive(false);
+                drops[i] = drop;
+            }
+            dropPoolPrepared = true;
         }
         public float MinimumStainNormalAlignment
         {
@@ -250,7 +279,10 @@ namespace BarPromenade
             injury.Active = true;
             Vector3 incoming = direction.sqrMagnitude > .0001f ? direction.normalized : actor.transform.forward;
             int oldWounds = injury.Marks.ProjectileCount;
+            long projectionStart = System.Diagnostics.Stopwatch.GetTimestamp();
             injury.Marks.Add(point, incoming, projectile, head, part);
+            WoundProjectionTicks += System.Diagnostics.Stopwatch.GetTimestamp() - projectionStart;
+            long burstStart = System.Diagnostics.Stopwatch.GetTimestamp();
             if (projectile)
             {
                 injury.HasProjectileBleed = true;
@@ -289,6 +321,7 @@ namespace BarPromenade
                 injury.Remainder = 0f;
             }
             EmissionCount++;
+            BurstEmissionTicks += System.Diagnostics.Stopwatch.GetTimestamp() - burstStart;
         }
 
         public void Tick(float seconds)

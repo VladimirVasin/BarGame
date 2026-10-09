@@ -71,6 +71,14 @@ namespace BarPromenade
         private bool frozen;
         private void Awake() => properties = new MaterialPropertyBlock();
         public Vector3 LastEjectionDirection { get; private set; }
+        internal long TissueRequireTicks { get; private set; }
+        internal long TissueActivationTicks { get; private set; }
+        internal long TissueReleaseTicks { get; private set; }
+        internal long TissueVisibilityTicks { get; private set; }
+        internal long TissueShapesTicks { get; private set; }
+        internal long TissuePhysicsTicks { get; private set; }
+        internal long ActivationVisibilityTicks { get; private set; }
+        internal long ActivationCollisionTicks { get; private set; }
         internal static bool IsSuppressed(Renderer renderer) => suppressed.Contains(renderer) || CombatBodyDestruction.IsSuppressed(renderer);
         public int DetachedSectorCountFor(CombatActor actor)
         {
@@ -98,7 +106,14 @@ namespace BarPromenade
             }
             return amount;
         }
-        internal void PrepareActor(CombatActor actor) => RequireHead(actor);
+        internal void PrepareActor(CombatActor actor)
+        {
+            Head head = RequireHead(actor);
+            foreach (Sector sector in head.Sectors)
+                foreach (Piece piece in sector.Pieces)
+                    if (piece.Visible && piece.Anatomical) actor.Hurtboxes.PrepareHeadSurface(piece.Skin);
+            foreach (Piece piece in head.Brains) actor.Hurtboxes.PrepareHeadSurface(piece.Skin);
+        }
         public int DestroyedMaskFor(CombatActor actor)
         {
             int mask = 0;
@@ -352,19 +367,25 @@ namespace BarPromenade
             return bounds;
         }
 
-        private static void Activate(Head head)
+        private void Activate(Head head)
         {
+            long stamp = System.Diagnostics.Stopwatch.GetTimestamp();
             head.Active = true;
             foreach (SkinnedMeshRenderer original in head.Originals) { suppressed.Add(original); original.enabled = false; }
+            ActivationVisibilityTicks += System.Diagnostics.Stopwatch.GetTimestamp() - stamp;
             foreach (Sector sector in head.Sectors)
             {
+                stamp = System.Diagnostics.Stopwatch.GetTimestamp();
                 sector.Proxy.enabled = true;
                 foreach (Piece piece in sector.Pieces) Player3DHeadVisibility.SetDerivedEnabled(piece.Source, piece.Skin, TissueVisible(head, piece));
+                ActivationVisibilityTicks += System.Diagnostics.Stopwatch.GetTimestamp() - stamp;
+                stamp = System.Diagnostics.Stopwatch.GetTimestamp();
                 foreach (var anatomical in head.Actor.Ragdoll.PhysicsController.AnatomicalColliders)
                     Physics.IgnoreCollision(sector.Proxy, anatomical.Key, true);
                 if (head.Actor.Body != null) Physics.IgnoreCollision(sector.Proxy, head.Actor.Body, true);
                 foreach (Sector other in head.Sectors)
                     if (other != sector) Physics.IgnoreCollision(sector.Proxy, other.Proxy, true);
+                ActivationCollisionTicks += System.Diagnostics.Stopwatch.GetTimestamp() - stamp;
             }
         }
 
