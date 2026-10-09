@@ -409,15 +409,15 @@ namespace BarPromenade
                     Hero.CollectContacts(pendingContacts);
                     CombatActor.ApplyContacts(pendingContacts);
                     Hero.ContinueBufferedAttackAfterContacts();
-                    Projectiles.Advance(SimulationStep, Hero, Opponent);
-                    Casings.Tick(SimulationStep);
+                    Projectiles?.Advance(SimulationStep, Hero, Opponent);
+                    Casings?.Tick(SimulationStep);
                     AdvancePistolCrosshair(SimulationStep);
                     if (Hero.CommitPistolShot(Projectiles))
                     {
                         if (Hero.IsPistol) Casings.BeginShot(Hero);
                         PulsePistolCrosshair();
                     }
-                    Projectiles.ApplyContacts();
+                    Projectiles?.ApplyContacts();
                     BloodEffects.Tick(SimulationStep);
                     HeadEffects.Tick(SimulationStep);
                     BodyEffects.Tick(SimulationStep);

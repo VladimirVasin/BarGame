@@ -100,6 +100,7 @@ namespace BarPromenade
         public Vector3 RestWorldPoint(int index) => targets[index];
         public Mesh SourceMesh(int index) => bindings[index].Source;
         public Mesh DeformedMesh(int index) => surfaces == null ? null : surfaces[index].Mesh;
+        internal uint SurfaceGeometryVersion(int index) => surfaces == null ? 0u : surfaces[index].GeometryVersion;
 
         /// <summary>Editor measures the imported bind pose. Region 0 is the open hem; 1/2 are left/right cuffs.</summary>
         public void Configure(Player3DAssetRegistry owner, SurfaceBinding[] configured, Vector3[] hemNodesActorLocal,

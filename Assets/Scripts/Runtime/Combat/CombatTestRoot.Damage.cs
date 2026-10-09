@@ -18,6 +18,8 @@ namespace BarPromenade
             BodyEffects = gameObject.AddComponent<CombatBodyDestruction>();
             BodyEffects.PrepareActor(Hero);
             BodyEffects.PrepareActor(Opponent);
+            BloodEffects.PrepareActor(Hero);
+            BloodEffects.PrepareActor(Opponent);
             Hero.ImpactReceived += ShowImpact;
             Opponent.ImpactReceived += ShowImpact;
             Hero.DamageReset += ResetActorDamage;

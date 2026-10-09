@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using NUnit.Framework;
+using Unity.Profiling;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.TestTools;
@@ -10,6 +11,287 @@ namespace BarPromenade.Tests.PlayMode
 {
     public sealed partial class CombatTestPlayModeTests
     {
+        [UnityTest]
+        public IEnumerator Range_BodyDestructionDefersGeometryAndKeepsFrozenVisibleContacts()
+        {
+            yield return SceneManager.LoadSceneAsync(SceneIds.MainMenu, LoadSceneMode.Single);
+            yield return EnterRange(false, CombatWeaponId.Shotgun);
+            Assert.That(root.BloodEffects.PreparedActorCount, Is.EqualTo(2),
+                "Wound renderers must prepare before the first shot.");
+            Assert.That(root.BloodEffects.WoundCountFor(root.Hero), Is.Zero);
+            Assert.That(root.BloodEffects.WoundCountFor(root.Opponent), Is.Zero);
+            using var allocations = CreateBodyAllocationRecorder();
+            foreach (bool heroVictim in new[] { false, true })
+            {
+                root.ResetRound(); PlacePair(6f);
+                CombatActor target = heroVictim ? root.Hero : root.Opponent;
+                CombatActor source = heroVictim ? root.Opponent : root.Hero;
+                var originals = new List<SkinnedMeshRenderer>();
+                foreach (SkinnedMeshRenderer skin in target.DamageRigRoot.GetComponentsInChildren<SkinnedMeshRenderer>(true))
+                    if (skin.enabled && skin.gameObject.activeInHierarchy) originals.Add(skin);
+                int synchronizations = root.BodyEffects.ActorSynchronizationCount;
+                var damageTimer = System.Diagnostics.Stopwatch.StartNew();
+                allocations.Reset(); allocations.Start();
+                ApplyPreparedBodyForearmVolley(target, source, 1);
+                long damageAllocations = StopBodyAllocationRecorder(allocations);
+                damageTimer.Stop();
+                Assert.That(root.BodyEffects.ActorSynchronizationCount - synchronizations, Is.EqualTo(1),
+                    "All pellet damage is retained, but one received volley rebuilds the body only once.");
+                string damageMeasurement = $"Test body volley ({(heroVictim ? "hero" : "opponent")}): {damageTimer.Elapsed.TotalMilliseconds:F3} ms, {damageAllocations} allocations.";
+                LogAssert.Expect(LogType.Log, damageMeasurement); Debug.Log(damageMeasurement);
+                int intact = 0, replaced = 0;
+                foreach (SkinnedMeshRenderer skin in originals)
+                {
+                    if (CombatBodyDestruction.IsSuppressed(skin)) replaced++;
+                    else { Assert.That(skin.enabled, Is.True); intact++; }
+                }
+                Assert.That(replaced, Is.GreaterThan(0));
+                Assert.That(intact, Is.GreaterThan(replaced),
+                    "A local forearm hit must keep the untouched production surfaces instead of splitting the whole body into draws.");
+                AssertFrozenIntactBodyContact(target);
+                AssertFrozenGripBodyContact(target);
+                CaptureBodyDestruction(target, heroVictim ? "body-hero-optimized-cut" : "body-opponent-optimized-cut",
+                    target.transform.forward);
+
+                int builds = target.Hurtboxes.BodySurfaceGeometryBuilds;
+                var timer = System.Diagnostics.Stopwatch.StartNew();
+                allocations.Reset(); allocations.Start();
+                for (int sample = 0; sample < 32; sample++) target.Hurtboxes.Capture();
+                long captureAllocations = StopBodyAllocationRecorder(allocations);
+                timer.Stop();
+                Assert.That(captureAllocations, Is.Zero, "Repeated damaged-body snapshots must reuse their managed buffers.");
+                Assert.That(target.Hurtboxes.BodySurfaceGeometryBuilds, Is.EqualTo(builds),
+                    "Frozen pose capture must not rebuild precise body geometry without a contact query.");
+                Vector3 distant = Vector3.one * 500f;
+                Assert.That(target.Hurtboxes.SweepProjectile(distant, distant + Vector3.right, 0f,
+                    Vector3.right, out _), Is.False);
+                Assert.That(target.Hurtboxes.BodySurfaceGeometryBuilds, Is.EqualTo(builds),
+                    "A distant sweep must reject body surfaces before skinning vertices or building triangles.");
+                string measurement = $"Test damaged body pose capture ({(heroVictim ? "hero" : "opponent")}): {timer.Elapsed.TotalMilliseconds / 32d:F3} ms, {captureAllocations} allocations; exact geometry deferred.";
+                LogAssert.Expect(LogType.Log, measurement); Debug.Log(measurement);
+
+                CombatBodyFragment detached = null;
+                foreach (CombatBodyFragment fragment in root.BodyEffects.GetComponentsInChildren<CombatBodyFragment>())
+                    if (fragment.Owner == target && fragment.name == "Detached body part") { detached = fragment; break; }
+                Assert.That(detached, Is.Not.Null);
+                Rigidbody rigid = detached.GetComponent<Rigidbody>(); rigid.isKinematic = true;
+                detached.transform.position = new Vector3(0f, 5f, 0f);
+                var surfaces = new List<HeadContactSurface>();
+                foreach (MeshRenderer renderer in detached.GetComponentsInChildren<MeshRenderer>())
+                {
+                    if (!renderer.enabled) continue;
+                    Mesh mesh = renderer.GetComponent<MeshFilter>().sharedMesh;
+                    Vector3[] points = mesh.vertices;
+                    for (int i = 0; i < points.Length; i++) points[i] = renderer.transform.TransformPoint(points[i]);
+                    surfaces.Add(new HeadContactSurface { Name = renderer.name, Vertices = points, Triangles = mesh.triangles });
+                }
+                Assert.That(surfaces, Is.Not.Empty);
+                HeadContactSurface selected = surfaces[0];
+                Ray ray = BodyContactProbe(selected);
+                Assert.That(IndependentHeadRaycast(surfaces, ray, out Vector3 expected), Is.True);
+                target.Hurtboxes.Capture();
+                Vector3 move = Vector3.right * 3f;
+                detached.transform.position += move;
+                Assert.That(target.Hurtboxes.SweepProjectile(ray.origin, ray.GetPoint(.08f), 0f,
+                    ray.direction, out CombatHurtboxes.Hit hit), Is.True,
+                    "Deferred geometry must use the captured detached pose, even if the live fragment has already moved.");
+                Assert.That(hit.IsDetached, Is.True);
+                Assert.That(Vector3.Distance(hit.Point, expected), Is.LessThan(.002f),
+                    "Contact must match the independently rendered triangles, not the conservative bounds.");
+                int firstBuilds = target.Hurtboxes.BodySurfaceGeometryBuilds;
+                Assert.That(firstBuilds, Is.GreaterThan(builds));
+                Assert.That(target.Hurtboxes.SweepProjectile(ray.origin, ray.GetPoint(.08f), 0f, ray.direction, out _), Is.True);
+                Assert.That(target.Hurtboxes.BodySurfaceGeometryBuilds, Is.EqualTo(firstBuilds),
+                    "Pellets querying one frozen pose must share its precise geometry.");
+                target.Hurtboxes.Capture();
+                Assert.That(target.Hurtboxes.SweepProjectile(ray.origin, ray.GetPoint(.08f), 0f, ray.direction, out _), Is.False);
+                Assert.That(target.Hurtboxes.SweepProjectile(ray.origin + move, ray.GetPoint(.08f) + move, 0f,
+                    ray.direction, out hit), Is.True, "A same-frame recapture must observe the new fragment pose.");
+            }
+            AssertBodyClothRevisionCache();
+            AssertBodyProxyCache();
+            root.ResetRound();
+            Assert.That(root.BodyEffects.ActiveFragmentCount, Is.Zero);
+            foreach (SkinnedMeshRenderer skin in root.Hero.DamageRigRoot.GetComponentsInChildren<SkinnedMeshRenderer>(true))
+                Assert.That(CombatBodyDestruction.IsSuppressed(skin), Is.False);
+            LogAssert.NoUnexpectedReceived();
+        }
+
+        private static void AssertFrozenIntactBodyContact(CombatActor target, string sourcePrefix = "CLO_Boot")
+        {
+            var surfaces = new List<HeadContactSurface>();
+            HeadContactSurface boot = null;
+            var scratch = new Mesh { name = "Test visible body surface" };
+            try
+            {
+                foreach (SkinnedMeshRenderer skin in target.DamageRigRoot.GetComponentsInChildren<SkinnedMeshRenderer>(true))
+                {
+                    if (!skin.enabled || !skin.gameObject.activeInHierarchy) continue;
+                    skin.BakeMesh(scratch, true);
+                    Vector3[] points = scratch.vertices;
+                    for (int i = 0; i < points.Length; i++) points[i] = skin.transform.TransformPoint(points[i]);
+                    var surface = new HeadContactSurface { Name = skin.name, Vertices = points, Triangles = scratch.triangles };
+                    surfaces.Add(surface);
+                    if (boot == null && skin.name.StartsWith(sourcePrefix)) boot = surface;
+                }
+            }
+            finally { UnityEngine.Object.Destroy(scratch); }
+            Assert.That(boot, Is.Not.Null, "The untouched source must still render its original production surface: " + sourcePrefix);
+            Ray ray = BodyContactProbe(boot);
+            Assert.That(IndependentHeadRaycast(surfaces, ray, out Vector3 expected), Is.True);
+            target.Hurtboxes.Capture();
+            Vector3 position = target.transform.position;
+            try
+            {
+                target.transform.position += Vector3.right * 3f;
+                Assert.That(target.Hurtboxes.SweepProjectile(ray.origin, ray.GetPoint(.08f), 0f,
+                    ray.direction, out CombatHurtboxes.Hit hit), Is.True,
+                    "Intact originals must still query their frozen authored body partitions.");
+                Assert.That(Vector3.Distance(hit.Point, expected), Is.LessThan(.002f));
+            }
+            finally { target.transform.position = position; }
+        }
+
+        private static void AssertFrozenGripBodyContact(CombatActor target)
+        {
+            SkinnedMeshRenderer hand = null;
+            int shape = -1;
+            var hands = target.GetComponentInChildren<NpcHandPose>();
+            Assert.That(hands, Is.Not.Null);
+            foreach (NpcHandPose.HandBinding binding in hands.Hands)
+            {
+                if (!binding.IsLeft) continue;
+                foreach (SkinnedMeshRenderer skin in binding.Renderers)
+                {
+                    if (!skin.enabled || !skin.gameObject.activeInHierarchy) continue;
+                    for (int i = 0; i < skin.sharedMesh.blendShapeCount; i++)
+                    {
+                        string name = skin.sharedMesh.GetBlendShapeName(i);
+                        if (name != hands.ShapeName && !name.EndsWith("." + hands.ShapeName)) continue;
+                        hand = skin; shape = i; break;
+                    }
+                    if (hand != null) break;
+                }
+            }
+            Assert.That(hand, Is.Not.Null, "The surviving hand needs actual production grip blendshapes.");
+            float original = hand.GetBlendShapeWeight(shape);
+            try
+            {
+                foreach (float weight in new[] { 0f, 37.5f, 100f })
+                {
+                    hand.SetBlendShapeWeight(shape, weight);
+                    AssertFrozenIntactBodyContact(target, hand.name);
+                }
+            }
+            finally { hand.SetBlendShapeWeight(shape, original); }
+        }
+
+        private void AssertBodyProxyCache()
+        {
+            root.ResetRound(); PlacePair(6f);
+            CombatActor target = root.Opponent;
+            ApplyKnownBodyContact(target, root.Hero, BodyDamageRegion.RightShin, 0, 2f, 20);
+            Assert.That(target.IsRagdollActive, Is.True);
+            root.BodyEffects.Tick(CombatTestRoot.SimulationStep);
+            int builds = root.BodyEffects.ProxyGeometryBuilds;
+            using var allocations = CreateBodyAllocationRecorder();
+            allocations.Reset(); allocations.Start();
+            for (int step = 0; step < 32; step++) root.BodyEffects.Tick(CombatTestRoot.SimulationStep);
+            long allocated = StopBodyAllocationRecorder(allocations);
+            Assert.That(root.BodyEffects.ProxyGeometryBuilds, Is.EqualTo(builds),
+                "Unchanged hand shapes must reuse their collision bounds across simulation substeps.");
+            Assert.That(allocated, Is.Zero, "Proxy updates must reuse vertex buffers.");
+            Transform bone = FindAnatomicalBone(target, "hand.L");
+            var proxies = bone.GetComponentsInChildren<BoxCollider>();
+            var centres = new Vector3[proxies.Length]; var sizes = new Vector3[proxies.Length];
+            Assert.That(proxies, Is.Not.Empty);
+            for (int i = 0; i < proxies.Length; i++) { centres[i] = proxies[i].center; sizes[i] = proxies[i].size; }
+            Vector3 position = target.transform.position; Quaternion rotation = target.transform.rotation;
+            try
+            {
+                target.transform.SetPositionAndRotation(position + Vector3.right * 3f, Quaternion.Euler(0f, 45f, 0f) * rotation);
+                root.BodyEffects.Tick(CombatTestRoot.SimulationStep);
+                Assert.That(root.BodyEffects.ProxyGeometryBuilds, Is.EqualTo(builds),
+                    "Rigid movement of the actor must not rebake hand-local collision geometry. Last invalidation: " +
+                    root.BodyEffects.LastProxyCacheInvalidation);
+                for (int i = 0; i < proxies.Length; i++)
+                { Assert.That(proxies[i].center, Is.EqualTo(centres[i])); Assert.That(proxies[i].size, Is.EqualTo(sizes[i])); }
+            }
+            finally { target.transform.SetPositionAndRotation(position, rotation); }
+            Vector3 scale = target.transform.localScale;
+            try
+            {
+                target.transform.localScale = scale * 1.25f;
+                root.BodyEffects.Tick(CombatTestRoot.SimulationStep);
+                Assert.That(root.BodyEffects.ProxyGeometryBuilds, Is.GreaterThan(builds),
+                    "A real scale change must invalidate the collision geometry cache.");
+            }
+            finally { target.transform.localScale = scale; }
+        }
+
+        private static ProfilerRecorder CreateBodyAllocationRecorder()
+        {
+            // Unity Mono can return zero from GC.GetAllocatedBytesForCurrentThread.
+            // Prove this current-thread recorder observes a known managed allocation.
+            var recorder = new ProfilerRecorder(ProfilerCategory.Memory, "GC.Alloc", 1,
+                ProfilerRecorderOptions.WrapAroundWhenCapacityReached | ProfilerRecorderOptions.SumAllSamplesInFrame |
+                ProfilerRecorderOptions.CollectOnlyOnCurrentThread);
+            Assert.That(recorder.Valid, Is.True);
+            recorder.Start(); var control = new byte[16384]; recorder.Stop();
+            long count = recorder.Count > 0 ? recorder.GetSample(0).Count : 0;
+            System.GC.KeepAlive(control);
+            Assert.That(count, Is.GreaterThan(0), "The allocation recorder must observe its positive control.");
+            recorder.Reset(); return recorder;
+        }
+
+        private static long StopBodyAllocationRecorder(ProfilerRecorder recorder)
+        { recorder.Stop(); return recorder.Count > 0 ? recorder.GetSample(0).Count : 0; }
+
+        private static Ray BodyContactProbe(HeadContactSurface surface)
+        {
+            Vector3 centre = default, normal = default;
+            float area = 0f;
+            for (int i = 0; i < surface.Triangles.Length; i += 3)
+            {
+                Vector3 a = surface.Vertices[surface.Triangles[i]], b = surface.Vertices[surface.Triangles[i + 1]],
+                    c = surface.Vertices[surface.Triangles[i + 2]];
+                Vector3 cross = Vector3.Cross(b - a, c - a);
+                if (cross.sqrMagnitude <= area) continue;
+                area = cross.sqrMagnitude; normal = cross; centre = (a + b + c) / 3f;
+            }
+            Assert.That(area, Is.GreaterThan(1e-12f), "The visible contact probe needs a nondegenerate triangle.");
+            normal /= Mathf.Sqrt(area);
+            return new Ray(centre + normal * .04f, -normal);
+        }
+
+        private void AssertBodyClothRevisionCache()
+        {
+            var cloth = root.Hero.DamageRigRoot.GetComponentInParent<PlayerJacketCloth>();
+            Assert.That(cloth, Is.Not.Null);
+            SkinnedMeshRenderer source = null, template = null;
+            foreach (SkinnedMeshRenderer skin in root.Hero.DamageRigRoot.GetComponentsInChildren<SkinnedMeshRenderer>(true))
+                if (skin.name == "CLO_JacketBody") source = skin;
+                else if (skin.name.EndsWith("__CLO_JacketBody")) template = skin;
+            Assert.That(source, Is.Not.Null); Assert.That(template, Is.Not.Null);
+            var host = new GameObject("Test cloth derivative");
+            var skinTarget = host.AddComponent<SkinnedMeshRenderer>(); skinTarget.sharedMesh = template.sharedMesh;
+            var deformation = new CombatBodySourceDeformation(template.sharedMesh, source);
+            try
+            {
+                cloth.ApplyAt(0d, false, true, new WindSample(4f, 1f));
+                deformation.Refresh(skinTarget);
+                uint revision = deformation.GeometryVersion;
+                Assert.That(revision, Is.GreaterThan(0u));
+                deformation.Refresh(skinTarget);
+                Assert.That(deformation.GeometryVersion, Is.EqualTo(revision), "An unchanged cloth mesh must reuse its derivative.");
+                cloth.ApplyAt(.02d, false, true, new WindSample(4f, 1f));
+                deformation.Refresh(skinTarget);
+                Assert.That(deformation.GeometryVersion, Is.GreaterThan(revision),
+                    "Two source cloth writes in the same frame must remain visible to body contacts.");
+            }
+            finally { deformation.Dispose(); UnityEngine.Object.Destroy(host); }
+        }
+
         [UnityTest]
         public IEnumerator Range_BodyDestructionFollowsLocalContactsSurvivalCorpsePauseAndReset()
         {

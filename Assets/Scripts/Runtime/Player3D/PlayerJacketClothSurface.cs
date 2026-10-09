@@ -23,6 +23,7 @@ namespace BarPromenade
         public Mesh Mesh { get; }
         public Mesh Source => binding.Source;
         public SkinnedMeshRenderer Renderer => binding.Renderer;
+        internal uint GeometryVersion { get; private set; }
         public int VertexCount => original.Length;
         public Vector3 Original(int index) => original[index];
         public Vector3 World(int index) => world[index];
@@ -164,6 +165,9 @@ namespace BarPromenade
             // when these vertices are copied into the mirror or first person.
             if (normalMapped) Mesh.RecalculateTangents();
             Mesh.RecalculateBounds();
+            // Consumers can reuse this geometry between writes. A manual
+            // ApplyAt or a passive copy can write several poses in one frame.
+            unchecked { GeometryVersion++; }
             Renderer.sharedMesh = Mesh;
             // Skinned bounds are renderer-local; retain the authored animated
             // bounds and add the maximum free-cloth excursion on every axis.

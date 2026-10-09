@@ -18,9 +18,12 @@ namespace BarPromenade
         private readonly bool normalMapped;
         private Vector3[] vertices, normals;
         private Vector4[] tangents;
-        private Mesh owned;
+        private Mesh owned, capturedSource;
+        private uint capturedSourceVersion;
         private SkinnedMeshRenderer target;
         private bool disposed;
+
+        internal uint GeometryVersion { get; private set; }
 
         internal CombatBodySourceDeformation(Mesh template, SkinnedMeshRenderer source)
         {
@@ -48,7 +51,15 @@ namespace BarPromenade
             int shapeCount = Mathf.Min(current.blendShapeCount, rendered != null ? rendered.blendShapeCount : 0);
             for (int shape = 0; shape < shapeCount; shape++)
                 renderer.SetBlendShapeWeight(shape, source.GetBlendShapeWeight(shape));
-            if (!IsMutableSource && owned == null) return;
+            bool mutable = IsMutableSource;
+            if (!mutable && owned == null) return;
+            uint sourceVersion = mutable ? cloth.SurfaceGeometryVersion(clothSurface) : 0u;
+            if (owned != null && capturedSource == current && capturedSourceVersion == sourceVersion)
+            {
+                renderer.sharedMesh = owned;
+                renderer.localBounds = source.localBounds;
+                return;
+            }
             if (indices.Length != template.vertexCount || barycentric.Length != template.vertexCount)
                 throw new InvalidOperationException("Combat cloth derivative lost its offline source correspondence: " + template.name);
             if (owned == null)
@@ -86,6 +97,9 @@ namespace BarPromenade
                 if (sourceTangents.Count == sourceVertices.Count) owned.tangents = tangents;
                 else owned.RecalculateTangents();
             }
+            capturedSource = current;
+            capturedSourceVersion = sourceVersion;
+            unchecked { GeometryVersion++; }
             renderer.sharedMesh = owned;
             renderer.localBounds = source.localBounds;
         }

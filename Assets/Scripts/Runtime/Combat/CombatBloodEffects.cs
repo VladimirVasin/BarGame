@@ -32,6 +32,7 @@ namespace BarPromenade
         {
             public CombatActor Actor;
             public CombatDamageMarks Marks;
+            public bool Active;
             public float BleedSeconds, Remainder, BloodAge, PulsePhase;
             public float RemainingBlood = ActorBloodBudget;
             public bool HasProjectileBleed, HeadTrauma;
@@ -72,6 +73,13 @@ namespace BarPromenade
         public int ActiveDropCount { get; private set; }
         public int StainCount { get; private set; }
         public int EmissionCount { get; private set; }
+        internal int PreparedActorCount => injuries.Count;
+
+        internal void PrepareActor(CombatActor actor)
+        {
+            if (actor == null || injuries.ContainsKey(actor)) return;
+            injuries.Add(actor, new Injury { Actor = actor, Marks = new CombatDamageMarks(actor, RequireMaterial()) });
+        }
         public float MinimumStainNormalAlignment
         {
             get
@@ -186,11 +194,9 @@ namespace BarPromenade
         {
             if (!IsInitialized || actor == null || (uint)(int)cutRegion >= CombatBodyDamageState.RegionCount ||
                 retainedRigSource == null || !Finite(worldPoint) || !Finite(worldOutward)) return;
-            if (!injuries.TryGetValue(actor, out Injury injury))
-            {
-                injury = new Injury { Actor = actor, Marks = new CombatDamageMarks(actor, RequireMaterial()) };
-                injuries.Add(actor, injury);
-            }
+            PrepareActor(actor);
+            Injury injury = injuries[actor];
+            injury.Active = true;
             int index = (int)cutRegion;
             BodyCut cut = injury.BodyCuts[index];
             if (cut == null) injury.BodyCuts[index] = cut = new BodyCut();
@@ -239,11 +245,9 @@ namespace BarPromenade
             Player3DAnatomicalPart? part = null, bool pellet = false)
         {
             if (!IsInitialized || actor == null || damage <= 0f || float.IsNaN(damage) || float.IsInfinity(damage) || !Finite(point) || !Finite(direction)) return;
-            if (!injuries.TryGetValue(actor, out Injury injury))
-            {
-                injury = new Injury { Actor = actor, Marks = new CombatDamageMarks(actor, RequireMaterial()) };
-                injuries.Add(actor, injury);
-            }
+            PrepareActor(actor);
+            Injury injury = injuries[actor];
+            injury.Active = true;
             Vector3 incoming = direction.sqrMagnitude > .0001f ? direction.normalized : actor.transform.forward;
             int oldWounds = injury.Marks.ProjectileCount;
             injury.Marks.Add(point, incoming, projectile, head, part);
@@ -294,6 +298,7 @@ namespace BarPromenade
             foreach (KeyValuePair<CombatActor, Injury> pair in injuries)
             {
                 Injury injury = pair.Value;
+                if (!injury.Active) continue;
                 injury.Marks.RefreshVisibility();
                 if (pair.Key == null || !pair.Key.isActiveAndEnabled) { ResetDefeatPool(injury); continue; }
                 injury.Marks.Advance(seconds);
@@ -357,7 +362,7 @@ namespace BarPromenade
         // injury age, wetness, emission and all other simulation clocks.
         private void LateUpdate()
         {
-            foreach (Injury injury in injuries.Values) injury.Marks.RefreshVisibility();
+            foreach (Injury injury in injuries.Values) if (injury.Active) injury.Marks.RefreshVisibility();
         }
 
         private void AdvanceProjectileBleeding(Injury injury, float seconds)
@@ -549,6 +554,7 @@ namespace BarPromenade
 
         private static void ResetInjury(Injury injury)
         {
+            injury.Active = false;
             injury.Marks.Reset(); injury.BleedSeconds = injury.Remainder = injury.BloodAge = injury.PulsePhase = 0f;
             injury.RemainingBlood = ActorBloodBudget; injury.HasProjectileBleed = injury.HeadTrauma = false;
             injury.HeadSource = null; injury.HeadLocalPoint = injury.HeadLocalDirection = Vector3.zero;

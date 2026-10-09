@@ -752,6 +752,37 @@ namespace BarPromenade.Tests.PlayMode
         }
 
         [UnityTest]
+        public IEnumerator Range_CrowbarVictoryAdvancesWithoutFirearmPools()
+        {
+            yield return SceneManager.LoadSceneAsync(SceneIds.MainMenu, LoadSceneMode.Single);
+            yield return EnterRange(false);
+            Assert.That(root.HeroWeapon, Is.EqualTo(CombatWeaponId.Crowbar));
+            Assert.That(root.Projectiles, Is.Null);
+            Assert.That(root.Casings, Is.Null);
+            PlacePair(1.1f);
+            root.AutomaticSimulation = true;
+            yield return StrikeToDefeat(root.Hero, root.Opponent);
+            Assert.That(root.RoundFinished, Is.True);
+            Assert.That(root.Hero.State.IsDefeated, Is.False);
+
+            for (int frame = 0; frame < 8; frame++)
+            {
+                Assert.DoesNotThrow(() => root.TickFrame(CombatTestRoot.SimulationStep * 4f),
+                    "Post-victory simulation must continue without firearm pools.");
+                yield return null;
+            }
+            Assert.That(root.RoundFinished, Is.True);
+            root.ResetRound();
+            yield return null;
+            Assert.That(root.RoundFinished, Is.False);
+            Assert.That(root.Hero.State.Health, Is.EqualTo(S.MaxHealth));
+            Assert.That(root.Opponent.State.Health, Is.EqualTo(S.MaxHealth));
+            Assert.That(root.Projectiles, Is.Null);
+            Assert.That(root.Casings, Is.Null);
+            LogAssert.NoUnexpectedReceived();
+        }
+
+        [UnityTest]
         public IEnumerator Range_VictoryRestoresOrdinaryWalkingAndResetRestoresCombat()
         {
             var input = new InputTestFixture();

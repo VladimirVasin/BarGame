@@ -126,39 +126,199 @@ namespace BarPromenade
             private readonly SkinnedMeshRenderer source;
             private readonly Vector3[] vertices;
             private readonly List<Vector3> deformed;
+            private readonly List<Vector3> baseVertices;
+            private readonly SurfaceBlendShape[] blendShapes;
+            private Mesh blendShapeMesh;
             private readonly BoneWeight[] weights;
             private readonly Matrix4x4[] bind, posedBones;
             private readonly Transform[] bones;
-            private readonly int[] indices;
+            private readonly int[] indices, usedBones;
+            private readonly Bounds[] influenceBounds;
+            private readonly bool[] measuredBones;
+            private readonly float minimumWeight, maximumWeight;
+            private bool geometryReady;
+            private uint? capturedGeometryVersion;
+            private Mesh capturedGeometryMesh;
             internal readonly Vector3[] Points;
             internal readonly HeadTriangle[] Triangles;
             internal Bounds Bounds;
             internal bool Active;
 
-            internal HeadSurface(SkinnedMeshRenderer source, bool mutable = false)
+            internal HeadSurface(SkinnedMeshRenderer source, bool mutable = false, bool captureBlendShapes = false)
             {
                 this.source = source;
                 Mesh mesh = source.sharedMesh;
                 vertices = mesh.vertices; weights = mesh.boneWeights; bind = mesh.bindposes;
-                if (mutable || source.GetComponent<CombatBrainTissue>() != null) deformed = new List<Vector3>(vertices.Length);
+                int shapeCount = captureBlendShapes ? mesh.blendShapeCount : 0;
+                if (mutable || shapeCount > 0 || source.GetComponent<CombatBrainTissue>() != null)
+                    deformed = new List<Vector3>(vertices.Length);
+                if (shapeCount > 0)
+                {
+                    baseVertices = new List<Vector3>(vertices.Length);
+                    blendShapes = new SurfaceBlendShape[shapeCount];
+                    for (int shape = 0; shape < shapeCount; shape++)
+                        blendShapes[shape] = new SurfaceBlendShape(mesh, shape, vertices.Length);
+                    blendShapeMesh = mesh;
+                }
                 bones = source.bones; posedBones = new Matrix4x4[bones.Length]; indices = mesh.triangles;
                 Points = new Vector3[vertices.Length]; Triangles = new HeadTriangle[indices.Length / 3];
                 if (weights.Length != vertices.Length || bind.Length != bones.Length)
                     throw new InvalidOperationException("Combat head surface requires complete skin weights: " + source.name);
+                influenceBounds = new Bounds[bones.Length]; measuredBones = new bool[bones.Length];
+                minimumWeight = float.PositiveInfinity;
+                foreach (BoneWeight weight in weights)
+                {
+                    float total = weight.weight0 + weight.weight1 + weight.weight2 + weight.weight3;
+                    minimumWeight = Mathf.Min(minimumWeight, total); maximumWeight = Mathf.Max(maximumWeight, total);
+                }
+                RefreshInfluenceBounds();
+                var used = new List<int>();
+                for (int i = 0; i < measuredBones.Length; i++) if (measuredBones[i]) used.Add(i);
+                usedBones = used.ToArray();
             }
 
             internal void Capture()
             {
+                CapturePose();
+                EnsureGeometry();
+            }
+
+            internal void CapturePose(Dictionary<Transform, Matrix4x4> worldBones = null, uint? geometryVersion = null,
+                bool includeDisabled = false)
+            {
+                geometryReady = false;
                 Active = source != null && source.gameObject.activeInHierarchy &&
-                    (source.enabled || Player3DHeadVisibility.IsTemporarilyHidden(source));
+                    (includeDisabled || source.enabled || Player3DHeadVisibility.IsTemporarilyHidden(source));
                 if (!Active) return;
-                // Only tissue owns a mutable mesh. Capture exactly the vertices the renderer uses.
-                if (deformed != null) source.sharedMesh.GetVertices(deformed);
-                for (int i = 0; i < bones.Length; i++) posedBones[i] = bones[i].localToWorldMatrix * bind[i];
+                // Freeze mutable vertices now: a later contact must not see the next cloth/tissue pose.
+                CaptureVertices(geometryVersion);
+                bool measured = false;
+                foreach (int i in usedBones)
+                {
+                    Matrix4x4 world;
+                    if (worldBones == null) world = bones[i].localToWorldMatrix;
+                    else if (!worldBones.TryGetValue(bones[i], out world))
+                    { world = bones[i].localToWorldMatrix; worldBones.Add(bones[i], world); }
+                    Matrix4x4 matrix = posedBones[i] = world * bind[i];
+                    Bounds local = influenceBounds[i]; Vector3 extent = local.extents;
+                    Vector3 transformedExtent = new Vector3(
+                        Mathf.Abs(matrix.m00) * extent.x + Mathf.Abs(matrix.m01) * extent.y + Mathf.Abs(matrix.m02) * extent.z,
+                        Mathf.Abs(matrix.m10) * extent.x + Mathf.Abs(matrix.m11) * extent.y + Mathf.Abs(matrix.m12) * extent.z,
+                        Mathf.Abs(matrix.m20) * extent.x + Mathf.Abs(matrix.m21) * extent.y + Mathf.Abs(matrix.m22) * extent.z);
+                    var candidate = new Bounds(matrix.MultiplyPoint3x4(local.center), transformedExtent * 2f);
+                    if (!measured) { Bounds = candidate; measured = true; }
+                    else { Bounds.Encapsulate(candidate.min); Bounds.Encapsulate(candidate.max); }
+                }
+                if (!measured) Bounds = new Bounds(Vector3.zero, Vector3.zero);
+                else
+                {
+                    // Skin weights form a convex combination. Retain the small normalization
+                    // error too, so even a zero-radius projectile has conservative bounds.
+                    Vector3 min = Bounds.min, max = Bounds.max;
+                    Bounds.SetMinMax(Vector3.Min(min * minimumWeight, min * maximumWeight),
+                        Vector3.Max(max * minimumWeight, max * maximumWeight));
+                }
+            }
+
+            private void CaptureVertices(uint? geometryVersion)
+            {
+                if (deformed == null) return;
+                bool geometryChanged = !geometryVersion.HasValue || geometryVersion != capturedGeometryVersion ||
+                    capturedGeometryMesh != source.sharedMesh;
+                bool shapesChanged = false;
+                if (blendShapes != null)
+                {
+                    if (blendShapeMesh != source.sharedMesh)
+                    {
+                        if (source.sharedMesh.blendShapeCount != blendShapes.Length)
+                            throw new InvalidOperationException("Combat body source changed its blend shape topology: " + source.name);
+                        for (int shape = 0; shape < blendShapes.Length; shape++)
+                            blendShapes[shape] = new SurfaceBlendShape(source.sharedMesh, shape, vertices.Length);
+                        blendShapeMesh = source.sharedMesh;
+                    }
+                    for (int shape = 0; shape < blendShapes.Length; shape++)
+                    {
+                        float weight = source.GetBlendShapeWeight(shape);
+                        if (blendShapes[shape].Weight == weight) continue;
+                        blendShapes[shape].Weight = weight; shapesChanged = true;
+                    }
+                }
+                if (!geometryChanged && !shapesChanged) return;
+                if (geometryChanged)
+                {
+                    source.sharedMesh.GetVertices(baseVertices ?? deformed);
+                    capturedGeometryVersion = geometryVersion; capturedGeometryMesh = source.sharedMesh;
+                }
+                if (blendShapes != null)
+                {
+                    deformed.Clear(); deformed.AddRange(baseVertices);
+                    foreach (SurfaceBlendShape shape in blendShapes) shape.Apply(deformed);
+                }
+                RefreshInfluenceBounds();
+            }
+
+            private sealed class SurfaceBlendShape
+            {
+                private readonly float[] frames;
+                private readonly Vector3[][] deltas;
+                internal float Weight = float.NaN;
+
+                internal SurfaceBlendShape(Mesh mesh, int shape, int vertexCount)
+                {
+                    int count = mesh.GetBlendShapeFrameCount(shape);
+                    frames = new float[count]; deltas = new Vector3[count][];
+                    for (int frame = 0; frame < count; frame++)
+                    {
+                        frames[frame] = mesh.GetBlendShapeFrameWeight(shape, frame);
+                        deltas[frame] = new Vector3[vertexCount];
+                        mesh.GetBlendShapeFrameVertices(shape, frame, deltas[frame], null, null);
+                    }
+                }
+
+                internal void Apply(List<Vector3> output)
+                {
+                    if (Weight == 0f || frames.Length == 0) return;
+                    // Authored grip frames interpolate from the zero-weight base, then
+                    // between consecutive frames; weights beyond the ends extrapolate.
+                    int high = 0;
+                    while (high < frames.Length - 1 && Weight > frames[high]) high++;
+                    int low = high - 1;
+                    float lowerWeight = low < 0 ? 0f : frames[low];
+                    float fraction = (Weight - lowerWeight) / (frames[high] - lowerWeight);
+                    Vector3[] lower = low < 0 ? null : deltas[low], upper = deltas[high];
+                    for (int vertex = 0; vertex < output.Count; vertex++)
+                        output[vertex] += Vector3.LerpUnclamped(lower == null ? Vector3.zero : lower[vertex], upper[vertex], fraction);
+                }
+            }
+
+            private void RefreshInfluenceBounds()
+            {
+                if (usedBones != null) foreach (int i in usedBones) measuredBones[i] = false;
+                for (int i = 0; i < vertices.Length; i++)
+                {
+                    BoneWeight weight = weights[i];
+                    Vector3 vertex = deformed != null && deformed.Count > 0 ? deformed[i] : vertices[i];
+                    IncludeInfluence(weight.boneIndex0, weight.weight0, vertex);
+                    IncludeInfluence(weight.boneIndex1, weight.weight1, vertex);
+                    IncludeInfluence(weight.boneIndex2, weight.weight2, vertex);
+                    IncludeInfluence(weight.boneIndex3, weight.weight3, vertex);
+                }
+            }
+
+            private void IncludeInfluence(int bone, float weight, Vector3 vertex)
+            {
+                if (weight <= 0f) return;
+                if (!measuredBones[bone]) { influenceBounds[bone] = new Bounds(vertex, Vector3.zero); measuredBones[bone] = true; }
+                else influenceBounds[bone].Encapsulate(vertex);
+            }
+
+            internal void EnsureGeometry()
+            {
+                if (!Active || geometryReady) return;
                 for (int i = 0; i < vertices.Length; i++)
                 {
                     BoneWeight weight = weights[i]; Vector3 vertex = deformed != null ? deformed[i] : vertices[i];
-                    Vector3 point = posedBones[weight.boneIndex0].MultiplyPoint3x4(vertex) * weight.weight0;
+                    Vector3 point = weight.weight0 > 0f ? posedBones[weight.boneIndex0].MultiplyPoint3x4(vertex) * weight.weight0 : Vector3.zero;
                     if (weight.weight1 > 0f) point += posedBones[weight.boneIndex1].MultiplyPoint3x4(vertex) * weight.weight1;
                     if (weight.weight2 > 0f) point += posedBones[weight.boneIndex2].MultiplyPoint3x4(vertex) * weight.weight2;
                     if (weight.weight3 > 0f) point += posedBones[weight.boneIndex3].MultiplyPoint3x4(vertex) * weight.weight3;
@@ -167,6 +327,7 @@ namespace BarPromenade
                 }
                 for (int i = 0; i < Triangles.Length; i++)
                     Triangles[i] = new HeadTriangle(Points[indices[i * 3]], Points[indices[i * 3 + 1]], Points[indices[i * 3 + 2]]);
+                geometryReady = true;
             }
         }
 

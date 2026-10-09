@@ -30,6 +30,20 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
   `build-combat-body-3d-model.py` and `build-combat-skull-3d-model.py` validators;
   close/far, skeleton, cut, crawl and grounded-pistol frames inspected;
   `check-docs.py`, `git diff --check`.
+- Dismemberment logs exposed repeated pellet rebuilds and live hand mesh bakes.
+  One received batch synchronizes once; contacts/wounds prepare on entry.
+  Only damaged sources split; frozen bone bounds defer exact triangles.
+  Blendshapes, cloth revisions, released vertices and centre bindings reuse data.
+  Proxy keys ignore rigid motion but refresh for shape/scale changes.
+  Wounds share posed matrices/vertices and transient candidates; distant bounds
+  prune triangle scans without discarding ray contacts or nearer fallback wounds.
+  Checks: `Range_BodyDestructionDefersGeometryAndKeepsFrozenVisibleContacts`,
+  `Range_PistolRegionalReactionsAndWoundsStayContinuousThroughPauseAndReset`;
+  hero/NPC cut frames inspected; `check-docs.py`, `git diff --check`.
+- Fixed crowbar victory's null firearm pools in post-round steps; melee/body
+  simulation continues without creating gun systems. Check:
+  `Range_CrowbarVictoryAdvancesWithoutFirearmPools`;
+  `check-docs.py`, `git diff --check`.
 
 ## 2026-10-08 — Shotgun, pistol wounds and Editor input
 

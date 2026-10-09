@@ -14,10 +14,13 @@ namespace BarPromenade
             internal SkinnedMeshRenderer Skin, Source;
             internal MeshRenderer Released;
             internal Mesh Baked, ProxyMesh;
+            internal Vector3[] BakedVertices;
             internal BodyDamageRegion Region;
             internal int Patch;
-            internal bool Flesh, Bone, Eligible, Emitted, Debris;
+            internal bool Flesh, Bone, Eligible, Emitted, Debris, QueryOriginal;
             internal BoxCollider Proxy;
+            internal ProxyGeometry ProxyGeometry;
+            internal CentrePose CentrePose;
             internal CombatBodySourceDeformation Deformation;
             internal Fragment Fragment;
         }
@@ -25,10 +28,14 @@ namespace BarPromenade
         {
             internal CombatActor Actor;
             internal bool Active;
+            internal int VolleyDepth;
+            internal bool VolleyNeedsSynchronization;
+            internal CombatImpact LastVolleyImpact;
             internal readonly List<Piece> Pieces = new List<Piece>();
             internal readonly Dictionary<SkinnedMeshRenderer, bool> Originals = new Dictionary<SkinnedMeshRenderer, bool>();
             internal readonly Dictionary<BodyDamageRegion, Transform> Bones = new Dictionary<BodyDamageRegion, Transform>();
             internal readonly HashSet<BodyDamageRegion> Detached = new HashSet<BodyDamageRegion>();
+            internal readonly HashSet<SkinnedMeshRenderer> Replaced = new HashSet<SkinnedMeshRenderer>();
             internal readonly List<Fragment> Fragments = new List<Fragment>();
         }
         internal sealed class Fragment
@@ -49,6 +56,28 @@ namespace BarPromenade
         private Material flesh, bone;
         private bool frozen;
         private void Awake() => properties = new MaterialPropertyBlock();
+        internal int ProxyGeometryBuilds { get; private set; }
+        internal int ActorSynchronizationCount { get; private set; }
+        internal ProxyCacheInvalidation LastProxyCacheInvalidation { get; private set; }
+
+        [Flags]
+        internal enum ProxyCacheInvalidation
+        { None = 0, Initial = 1, Geometry = 2, Minimum = 4, RendererScale = 8, BonePose = 16, BlendShape = 32 }
+
+        internal static void BeginVolley(CombatActor actor)
+        {
+            if (actor != null && owners.TryGetValue(actor, out CombatBodyDestruction owner) &&
+                owner.bodies.TryGetValue(actor, out Body body)) body.VolleyDepth++;
+        }
+
+        internal static void EndVolley(CombatActor actor)
+        {
+            if (actor == null || !owners.TryGetValue(actor, out CombatBodyDestruction owner) ||
+                !owner.bodies.TryGetValue(actor, out Body body) || body.VolleyDepth == 0) return;
+            if (--body.VolleyDepth != 0 || !body.VolleyNeedsSynchronization) return;
+            body.VolleyNeedsSynchronization = false;
+            owner.SynchronizeActor(actor, body.LastVolleyImpact);
+        }
 
         internal static bool IsSuppressed(Renderer renderer) => suppressed.Contains(renderer);
         internal static bool SourceAvailable(CombatActor actor, SkinnedMeshRenderer source)
@@ -67,7 +96,7 @@ namespace BarPromenade
             foreach (Piece piece in body.Pieces)
             {
                 if (piece.Source != source || piece.Flesh || piece.Bone) continue;
-                float candidate = (SkinCentre(piece.Skin, piece.Skin.sharedMesh.bounds.center) - point).sqrMagnitude;
+                float candidate = (SkinCentre(piece) - point).sqrMagnitude;
                 if (candidate >= closest) continue;
                 closest = candidate; region = piece.Region; patch = piece.Patch;
             }
@@ -150,8 +179,12 @@ namespace BarPromenade
                 if (!isFlesh && !isBone && !body.Originals.ContainsKey(source)) body.Originals.Add(source, visible);
             }
             if (body.Pieces.Count == 0) throw new InvalidOperationException("Empty authored combat body.");
+            foreach (Piece piece in body.Pieces)
+                if (piece.Eligible && !piece.Bone)
+                { piece.Deformation?.Refresh(piece.Skin); SkinCentre(piece); }
             bodies.Add(actor, body);
             owners[actor] = this;
+            actor.Hurtboxes.PrepareBodySurfaces(body.Pieces);
         }
 
         /// <summary>One actual resolved contact; structural damage is independent of health delta.</summary>
@@ -188,7 +221,9 @@ namespace BarPromenade
                 impact.AttackSequence, impact.PelletIndex))
             {
                 impact.Target.ApplyBodyCapabilities(impact);
-                SynchronizeActor(impact.Target, impact);
+                if (body.VolleyDepth > 0)
+                { body.VolleyNeedsSynchronization = true; body.LastVolleyImpact = impact; }
+                else SynchronizeActor(impact.Target, impact);
             }
         }
 
@@ -198,43 +233,71 @@ namespace BarPromenade
             foreach (Piece piece in body.Pieces)
             {
                 if (piece.Region != region || !piece.Flesh) continue;
-                Bounds bounds = piece.Skin.sharedMesh.bounds;
                 // Bounds are expressed in the source mesh frame; the weighted centre follows its live rig.
-                Vector3 centre = SkinCentre(piece.Skin, bounds.center);
+                Vector3 centre = SkinCentre(piece);
                 float candidate = (centre - point).sqrMagnitude;
                 if (candidate < distance) { distance = candidate; patch = piece.Patch; }
             }
             return patch;
         }
 
-        private static Vector3 SkinCentre(SkinnedMeshRenderer skin, Vector3 point)
+        private static Vector3 SkinCentre(Piece piece)
         {
             // Interior pieces use an anatomical source binding. Using the dominant
             // centre vertex avoids reading a renderer's stale, whole-body bounds.
-            Mesh mesh = skin.sharedMesh;
-            Vector3[] vertices = mesh.vertices;
-            BoneWeight[] weights = mesh.boneWeights;
-            int nearest = 0; float best = float.PositiveInfinity;
-            for (int i = 0; i < vertices.Length; i++)
-                if ((vertices[i] - point).sqrMagnitude < best) { best = (vertices[i] - point).sqrMagnitude; nearest = i; }
-            BoneWeight weight = weights[nearest];
-            Matrix4x4[] bind = mesh.bindposes; Transform[] bones = skin.bones;
-            return (bones[weight.boneIndex0].localToWorldMatrix * bind[weight.boneIndex0]).MultiplyPoint3x4(point) * weight.weight0 +
-                (bones[weight.boneIndex1].localToWorldMatrix * bind[weight.boneIndex1]).MultiplyPoint3x4(point) * weight.weight1 +
-                (bones[weight.boneIndex2].localToWorldMatrix * bind[weight.boneIndex2]).MultiplyPoint3x4(point) * weight.weight2 +
-                (bones[weight.boneIndex3].localToWorldMatrix * bind[weight.boneIndex3]).MultiplyPoint3x4(point) * weight.weight3;
+            piece.CentrePose ??= new CentrePose(piece.Skin);
+            return piece.CentrePose.Evaluate(piece);
+        }
+
+        internal sealed class CentrePose
+        {
+            private readonly BoneWeight[] weights;
+            private readonly Matrix4x4[] bind;
+            private readonly Transform[] bones;
+            private readonly List<Vector3> vertices = new List<Vector3>();
+            private Mesh capturedMesh;
+            private uint capturedVersion;
+            private Vector3 capturedCentre;
+            private BoneWeight centreWeight;
+
+            internal CentrePose(SkinnedMeshRenderer skin)
+            { weights = skin.sharedMesh.boneWeights; bind = skin.sharedMesh.bindposes; bones = skin.bones; }
+
+            internal Vector3 Evaluate(Piece piece)
+            {
+                Mesh mesh = piece.Skin.sharedMesh;
+                Vector3 centre = mesh.bounds.center;
+                uint version = piece.Deformation?.GeometryVersion ?? 0u;
+                if (mesh != capturedMesh || version != capturedVersion || !centre.Equals(capturedCentre))
+                {
+                    mesh.GetVertices(vertices);
+                    if (vertices.Count != weights.Length)
+                        throw new InvalidOperationException("Combat body centre lost its authored skin topology: " + mesh.name);
+                    int nearest = 0; float best = float.PositiveInfinity;
+                    for (int i = 0; i < vertices.Count; i++)
+                    {
+                        float distance = (vertices[i] - centre).sqrMagnitude;
+                        if (distance < best) { best = distance; nearest = i; }
+                    }
+                    centreWeight = weights[nearest]; capturedMesh = mesh;
+                    capturedVersion = version; capturedCentre = centre;
+                }
+                BoneWeight weight = centreWeight;
+                return (bones[weight.boneIndex0].localToWorldMatrix * bind[weight.boneIndex0]).MultiplyPoint3x4(centre) * weight.weight0 +
+                    (bones[weight.boneIndex1].localToWorldMatrix * bind[weight.boneIndex1]).MultiplyPoint3x4(centre) * weight.weight1 +
+                    (bones[weight.boneIndex2].localToWorldMatrix * bind[weight.boneIndex2]).MultiplyPoint3x4(centre) * weight.weight2 +
+                    (bones[weight.boneIndex3].localToWorldMatrix * bind[weight.boneIndex3]).MultiplyPoint3x4(centre) * weight.weight3;
+            }
         }
 
         public void SynchronizeActor(CombatActor actor, CombatImpact impact)
         {
             if (!bodies.TryGetValue(actor, out Body body)) return;
+            ActorSynchronizationCount++;
             GetComponent<CombatHeadDestruction>().SynchronizeTissue(actor);
             if (!body.Active)
             {
                 body.Active = true;
-                foreach (var original in body.Originals) { suppressed.Add(original.Key); original.Key.enabled = false; }
-                foreach (Piece piece in body.Pieces)
-                    if (piece.Eligible && (piece.Flesh || piece.Bone)) CreateProxy(body, piece);
                 actor.Hurtboxes.SetBodySurfaces(body.Pieces);
             }
             // Each region leaves the attached graph once. Already released pieces
@@ -272,15 +335,26 @@ namespace BarPromenade
                     Release(body, retained, impact, false);
                     ReleaseDetachedTissue(body, released, impact);
                 }
+            // Keep each intact production surface as one draw. Only a source that
+            // actually loses a patch needs its authored replacement surfaces.
+            foreach (Piece piece in body.Pieces)
+                if (piece.Eligible && !piece.Flesh && !piece.Bone &&
+                    (!actor.BodyDamage.IsAttached(piece.Region) || actor.BodyDamage.TissueLoss(piece.Region, piece.Patch) >= .25f) &&
+                    body.Replaced.Add(piece.Source))
+                { suppressed.Add(piece.Source); piece.Source.enabled = false; }
             foreach (Piece piece in body.Pieces)
             {
                 float loss = actor.BodyDamage.TissueLoss(piece.Region, piece.Patch);
                 bool attached = actor.BodyDamage.IsAttached(piece.Region);
                 bool visible = piece.Eligible && (piece.Bone ? HasExposedPatch(actor, piece.Region) :
                     piece.Flesh ? loss < 1f && (loss >= .25f || HasDistalSever(actor, piece.Region)) : loss < .25f);
-                piece.Skin.enabled = attached && !piece.Emitted && visible;
+                piece.QueryOriginal = !piece.Flesh && !piece.Bone && attached && !piece.Emitted && visible &&
+                    !body.Replaced.Contains(piece.Source);
+                piece.Skin.enabled = attached && !piece.Emitted && visible && !piece.QueryOriginal;
                 if (piece.Released != null) piece.Released.enabled = piece.Debris ? piece.Eligible : visible;
-                if (piece.Proxy != null) piece.Proxy.enabled = Collides(actor, piece);
+                bool collides = Collides(actor, piece);
+                if (collides && piece.Proxy == null) CreateProxy(body, piece);
+                if (piece.Proxy != null) SetColliderEnabled(piece.Proxy, collides);
             }
             actor.Ragdoll.PhysicsController.SetCombatBodyDamage(actor.BodyDamage, true);
             foreach (Fragment fragment in body.Fragments) if (fragment.Anatomical) ResizeFragment(fragment);
@@ -300,26 +374,181 @@ namespace BarPromenade
                 Physics.IgnoreCollision(piece.Proxy, collider.Key, true);
             if (body.Actor.Body != null) Physics.IgnoreCollision(piece.Proxy, body.Actor.Body, true);
             foreach (Piece other in body.Pieces) if (other.Proxy != null && other != piece) Physics.IgnoreCollision(piece.Proxy, other.Proxy, true);
+            // Proxies may be created after an earlier standing hit released debris.
+            foreach (Fragment fragment in body.Fragments) Physics.IgnoreCollision(piece.Proxy, fragment.Collider, true);
         }
 
-        private static bool Collides(CombatActor actor, Piece piece) => piece.Eligible && actor.IsRagdollActive &&
+        private static bool Collides(CombatActor actor, Piece piece) => (piece.Flesh || piece.Bone) && piece.Eligible && actor.IsRagdollActive &&
             actor.BodyDamage.IsAttached(piece.Region) && (piece.Bone ? HasExposedPatch(actor, piece.Region) :
                 piece.Flesh && actor.BodyDamage.TissueLoss(piece.Region, piece.Patch) < 1f);
 
-        private static void UpdateProxyBounds(Piece piece)
+        private void UpdateProxyBounds(Piece piece)
         {
             piece.Deformation?.Refresh(piece.Skin);
+            piece.ProxyGeometry ??= new ProxyGeometry();
+            Transform target = piece.Proxy.transform.parent;
+            if (!piece.ProxyGeometry.Capture(piece, target, out Matrix4x4 matrix, out Vector3 minimum)) return;
             piece.ProxyMesh ??= new Mesh { name = "Remaining anatomy collision" };
             piece.Skin.BakeMesh(piece.ProxyMesh, true);
-            Transform target = piece.Proxy.transform.parent;
-            Matrix4x4 matrix = target.worldToLocalMatrix * piece.Skin.transform.localToWorldMatrix;
-            Vector3[] vertices = piece.ProxyMesh.vertices;
+            ProxyGeometryBuilds++;
+            LastProxyCacheInvalidation = piece.ProxyGeometry.LastInvalidation;
+            List<Vector3> vertices = piece.ProxyGeometry.Vertices;
+            piece.ProxyMesh.GetVertices(vertices);
             Bounds bounds = new Bounds(matrix.MultiplyPoint3x4(vertices[0]), Vector3.zero);
             foreach (Vector3 vertex in vertices) bounds.Encapsulate(matrix.MultiplyPoint3x4(vertex));
-            Vector3 scale = target.lossyScale;
-            Vector3 minimum = new Vector3(.003f / Mathf.Max(.000001f, Mathf.Abs(scale.x)),
-                .003f / Mathf.Max(.000001f, Mathf.Abs(scale.y)), .003f / Mathf.Max(.000001f, Mathf.Abs(scale.z)));
-            piece.Proxy.center = bounds.center; piece.Proxy.size = Vector3.Max(bounds.size, minimum);
+            SetColliderBounds(piece.Proxy, bounds.center, Vector3.Max(bounds.size, minimum));
+        }
+
+        private static void SetColliderEnabled(Collider collider, bool enabled)
+        { if (collider.enabled != enabled) collider.enabled = enabled; }
+
+        private static void SetColliderBounds(BoxCollider collider, Vector3 centre, Vector3 size)
+        {
+            if (!collider.center.Equals(centre)) collider.center = centre;
+            if (!collider.size.Equals(size)) collider.size = size;
+        }
+
+        internal sealed class ProxyGeometry
+        {
+            internal readonly List<Vector3> Vertices = new List<Vector3>();
+            private Mesh mesh;
+            private Transform[] bones;
+            private int[] influencedBones;
+            private Matrix4x4[] relativeBones;
+            private RelativePose[] relativePoses;
+            private float[] blendWeights;
+            private Vector3 minimumSize, rendererScale;
+            private ScalePose targetScalePose, rendererScalePose;
+            private uint geometryVersion;
+            private bool captured;
+            internal ProxyCacheInvalidation LastInvalidation { get; private set; }
+
+            internal bool Capture(Piece piece, Transform target, out Matrix4x4 matrix, out Vector3 minimum)
+            {
+                Mesh current = piece.Skin.sharedMesh;
+                if (mesh != current)
+                {
+                    mesh = current; bones = piece.Skin.bones;
+                    var used = new SortedSet<int>();
+                    foreach (BoneWeight weight in current.boneWeights)
+                    {
+                        if (weight.weight0 > 0f) used.Add(weight.boneIndex0);
+                        if (weight.weight1 > 0f) used.Add(weight.boneIndex1);
+                        if (weight.weight2 > 0f) used.Add(weight.boneIndex2);
+                        if (weight.weight3 > 0f) used.Add(weight.boneIndex3);
+                    }
+                    influencedBones = new int[used.Count]; used.CopyTo(influencedBones);
+                    relativeBones = new Matrix4x4[used.Count]; blendWeights = new float[current.blendShapeCount];
+                    relativePoses = new RelativePose[used.Count];
+                    for (int i = 0; i < influencedBones.Length; i++)
+                        relativePoses[i] = new RelativePose(bones[influencedBones[i]], target);
+                    captured = false;
+                }
+                Matrix4x4 inverse = target.worldToLocalMatrix;
+                matrix = inverse * piece.Skin.transform.localToWorldMatrix;
+                targetScalePose ??= new ScalePose(target);
+                rendererScalePose ??= new ScalePose(piece.Skin.transform);
+                bool targetScaleChanged = targetScalePose.Capture(out Vector3 scale);
+                minimum = new Vector3(.003f / Mathf.Max(.000001f, Mathf.Abs(scale.x)),
+                    .003f / Mathf.Max(.000001f, Mathf.Abs(scale.y)), .003f / Mathf.Max(.000001f, Mathf.Abs(scale.z)));
+                bool rendererScaleChanged = rendererScalePose.Capture(out Vector3 currentRendererScale);
+                uint currentVersion = piece.Deformation?.GeometryVersion ?? 0u;
+                // BakeMesh compensates its renderer's position/rotation. That
+                // conversion cancels when the baked points enter the proxy frame;
+                // a shared rigid actor move cannot change these local bounds.
+                ProxyCacheInvalidation invalidation = captured ? ProxyCacheInvalidation.None : ProxyCacheInvalidation.Initial;
+                if (geometryVersion != currentVersion) invalidation |= ProxyCacheInvalidation.Geometry;
+                if (targetScaleChanged || !minimumSize.Equals(minimum)) invalidation |= ProxyCacheInvalidation.Minimum;
+                if (rendererScaleChanged || !rendererScale.Equals(currentRendererScale)) invalidation |= ProxyCacheInvalidation.RendererScale;
+                for (int i = 0; i < influencedBones.Length; i++)
+                {
+                    Matrix4x4 relative = relativePoses[i].Capture();
+                    if (!relativeBones[i].Equals(relative)) invalidation |= ProxyCacheInvalidation.BonePose;
+                    relativeBones[i] = relative;
+                }
+                for (int i = 0; i < blendWeights.Length; i++)
+                {
+                    float weight = piece.Skin.GetBlendShapeWeight(i);
+                    if (!blendWeights[i].Equals(weight)) invalidation |= ProxyCacheInvalidation.BlendShape;
+                    blendWeights[i] = weight;
+                }
+                geometryVersion = currentVersion;
+                minimumSize = minimum; rendererScale = currentRendererScale; captured = true;
+                LastInvalidation = invalidation;
+                return invalidation != ProxyCacheInvalidation.None;
+            }
+
+            private sealed class ScalePose
+            {
+                private readonly Transform[] path;
+                private readonly Vector3[] scales;
+
+                internal ScalePose(Transform target)
+                {
+                    var ancestors = new List<Transform>();
+                    for (Transform current = target; current != null; current = current.parent) ancestors.Add(current);
+                    ancestors.Reverse(); path = ancestors.ToArray(); scales = new Vector3[path.Length];
+                }
+
+                internal bool Capture(out Vector3 scale)
+                {
+                    float uniform = 1f;
+                    Matrix4x4 matrix = Matrix4x4.identity;
+                    bool anisotropic = false, changed = false;
+                    for (int i = 0; i < path.Length; i++)
+                    {
+                        Vector3 local = path[i].localScale;
+                        changed |= !scales[i].Equals(local); scales[i] = local;
+                        if (!anisotropic)
+                        {
+                            float x = Mathf.Abs(local.x), y = Mathf.Abs(local.y), z = Mathf.Abs(local.z);
+                            if (x.Equals(y) && x.Equals(z)) { uniform *= x; continue; }
+                            anisotropic = true; matrix = Matrix4x4.Scale(local);
+                        }
+                        else matrix *= Matrix4x4.TRS(Vector3.zero, path[i].localRotation, local);
+                    }
+                    // Leading scaled orthogonal factors cannot alter column
+                    // lengths. Drop them, including the first anisotropic node's
+                    // rotation; keep every later rotation that can produce shear.
+                    scale = new Vector3(matrix.GetColumn(0).magnitude, matrix.GetColumn(1).magnitude,
+                        matrix.GetColumn(2).magnitude) * uniform;
+                    return changed;
+                }
+            }
+
+            private sealed class RelativePose
+            {
+                private readonly Transform[] sourcePath, targetPath;
+
+                internal RelativePose(Transform source, Transform target)
+                {
+                    var ancestors = new HashSet<Transform>();
+                    for (Transform current = target; current != null; current = current.parent) ancestors.Add(current);
+                    var path = new List<Transform>();
+                    Transform common = source;
+                    while (common != null && !ancestors.Contains(common))
+                    { path.Add(common); common = common.parent; }
+                    sourcePath = path.ToArray(); path.Clear();
+                    for (Transform current = target; current != common; current = current.parent) path.Add(current);
+                    targetPath = path.ToArray();
+                }
+
+                internal Matrix4x4 Capture()
+                {
+                    // Compose beneath the common ancestor. World-space matrix
+                    // inversion would introduce false pose changes on root motion.
+                    Matrix4x4 source = Compose(sourcePath);
+                    return targetPath.Length == 0 ? source : Compose(targetPath).inverse * source;
+                }
+
+                private static Matrix4x4 Compose(Transform[] path)
+                {
+                    Matrix4x4 result = Matrix4x4.identity;
+                    foreach (Transform current in path)
+                        result = Matrix4x4.TRS(current.localPosition, current.localRotation, current.localScale) * result;
+                    return result;
+                }
+            }
         }
 
         private void Release(Body body, List<Piece> pieces, CombatImpact impact, bool anatomical)
@@ -341,6 +570,7 @@ namespace BarPromenade
                 piece.Emitted = true; piece.Debris = !anatomical;
                 if (piece.Baked == null) piece.Baked = new Mesh { name = "Released body surface" };
                 piece.Skin.BakeMesh(piece.Baked, true);
+                piece.BakedVertices = piece.Baked.vertices;
                 var surface = new GameObject("Detached " + piece.Skin.name);
                 var renderer = surface.AddComponent<MeshRenderer>(); surface.AddComponent<MeshFilter>().sharedMesh = piece.Baked;
                 renderer.sharedMaterials = piece.Skin.sharedMaterials;
@@ -350,7 +580,7 @@ namespace BarPromenade
                 surface.transform.SetParent(host.transform, true); piece.Released = renderer;
                 piece.Skin.enabled = false;
                 Matrix4x4 matrix = host.transform.worldToLocalMatrix * surface.transform.localToWorldMatrix;
-                foreach (Vector3 vertex in piece.Baked.vertices)
+                foreach (Vector3 vertex in piece.BakedVertices)
                 {
                     Vector3 point = matrix.MultiplyPoint3x4(vertex);
                     if (!measured) { bounds = new Bounds(point, Vector3.zero); measured = true; } else bounds.Encapsulate(point);
@@ -407,17 +637,16 @@ namespace BarPromenade
             {
                 if (piece.Released == null || !piece.Released.enabled) continue;
                 Matrix4x4 matrix = inverse * piece.Released.transform.localToWorldMatrix;
-                foreach (Vector3 vertex in piece.Baked.vertices)
+                foreach (Vector3 vertex in piece.BakedVertices)
                 {
                     Vector3 point = matrix.MultiplyPoint3x4(vertex);
                     if (!measured) { bounds = new Bounds(point, Vector3.zero); measured = true; } else bounds.Encapsulate(point);
                 }
             }
-            fragment.Collider.enabled = measured;
+            SetColliderEnabled(fragment.Collider, measured);
             if (measured)
             {
-                var box = (BoxCollider)fragment.Collider; box.center = bounds.center;
-                box.size = Vector3.Max(bounds.size, Vector3.one * .005f);
+                SetColliderBounds((BoxCollider)fragment.Collider, bounds.center, Vector3.Max(bounds.size, Vector3.one * .005f));
             }
             if (fragment.Anatomical && fragment.Pieces.Count > 0)
             {
@@ -458,10 +687,12 @@ namespace BarPromenade
                 if (body.Active) foreach (Piece piece in body.Pieces)
                 {
                     if (piece.Skin.enabled) piece.Deformation?.Refresh(piece.Skin);
+                    bool collides = Collides(body.Actor, piece);
+                    if (collides && piece.Proxy == null) CreateProxy(body, piece);
                     if (piece.Proxy != null)
                     {
-                        piece.Proxy.enabled = Collides(body.Actor, piece);
-                        if (piece.Proxy.enabled && (piece.Region is BodyDamageRegion.LeftHand or BodyDamageRegion.RightHand) &&
+                        SetColliderEnabled(piece.Proxy, collides);
+                        if (collides && (piece.Region is BodyDamageRegion.LeftHand or BodyDamageRegion.RightHand) &&
                             piece.Skin.sharedMesh.blendShapeCount > 0) UpdateProxyBounds(piece);
                     }
                 }
@@ -489,7 +720,7 @@ namespace BarPromenade
             fragment.Frozen = value;
         }
         private void LateUpdate()
-        { foreach (Body body in bodies.Values) if (body.Active) foreach (var original in body.Originals) original.Key.enabled = false; }
+        { foreach (Body body in bodies.Values) if (body.Active) foreach (SkinnedMeshRenderer original in body.Replaced) original.enabled = false; }
 
         public void ResetActor(CombatActor actor)
         {
@@ -499,12 +730,14 @@ namespace BarPromenade
             foreach (var original in body.Originals) { suppressed.Remove(original.Key); original.Key.enabled = original.Value; }
             foreach (Piece piece in body.Pieces)
             {
-                piece.Skin.enabled = false; piece.Released = null; piece.Fragment = null; piece.Emitted = piece.Debris = false;
-                if (piece.Proxy != null) piece.Proxy.enabled = false;
+                piece.Skin.enabled = false; piece.Released = null; piece.Fragment = null;
+                piece.Emitted = piece.Debris = piece.QueryOriginal = false;
+                if (piece.Proxy != null) SetColliderEnabled(piece.Proxy, false);
             }
             foreach (Fragment fragment in body.Fragments)
                 if (fragment.Body != null) { fragment.Body.gameObject.SetActive(false); Destroy(fragment.Body.gameObject); }
-            body.Fragments.Clear(); body.Detached.Clear(); body.Active = false;
+            body.Fragments.Clear(); body.Detached.Clear(); body.Replaced.Clear(); body.Active = false;
+            body.VolleyDepth = 0; body.VolleyNeedsSynchronization = false;
         }
         public void ResetRound() { foreach (CombatActor actor in bodies.Keys) ResetActor(actor); frozen = false; }
         private void OnDestroy()

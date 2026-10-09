@@ -50,6 +50,7 @@ namespace BarPromenade
             public Matrix4x4[] BindPoses;
             public Transform[] Bones;
             public Vector3[] Vertices, Normals, SkinnedVertices;
+            public Bounds SkinnedBounds;
             public Vector3[] DeformedVertices, DeformedNormals;
             public BlendShape[] BlendShapes = Array.Empty<BlendShape>();
             public Vector2[] Uv;
@@ -60,10 +61,56 @@ namespace BarPromenade
             public BodyDamageRegion Region;
             public int BodyPatch = -1;
             public bool Classified;
+            public ProjectileWound Projection;
+            private Matrix4x4[] posedBones;
+            private int[] usedBones;
+            private bool poseCaptured, skinnedVerticesReady;
 
             public Vector3 Position { get { RefreshBlendShapes(); return SkinVertex(Centre, false); } }
             public Vector3 Direction { get { RefreshBlendShapes(); return SkinVertex(Centre, true).normalized; } }
             public Vector3 SkinVertex(int index, bool normal) => Skin(DeformedVertices[index], DeformedNormals[index], Weights[index], normal);
+
+            public void InitializeSkinning()
+            {
+                posedBones = new Matrix4x4[Bones.Length];
+                var used = new SortedSet<int>();
+                foreach (BoneWeight weight in Weights)
+                {
+                    if (weight.weight0 > 0f) used.Add(weight.boneIndex0);
+                    if (weight.weight1 > 0f) used.Add(weight.boneIndex1);
+                    if (weight.weight2 > 0f) used.Add(weight.boneIndex2);
+                    if (weight.weight3 > 0f) used.Add(weight.boneIndex3);
+                }
+                usedBones = new int[used.Count]; used.CopyTo(usedBones);
+            }
+
+            public void CapturePose(Dictionary<Transform, Matrix4x4> worldBones)
+            {
+                foreach (int index in usedBones)
+                {
+                    Transform bone = Bones[index];
+                    if (!worldBones.TryGetValue(bone, out Matrix4x4 world))
+                    { world = bone.localToWorldMatrix; worldBones.Add(bone, world); }
+                    Matrix4x4 matrix = world * BindPoses[index];
+                    if (!posedBones[index].Equals(matrix)) skinnedVerticesReady = false;
+                    posedBones[index] = matrix;
+                }
+                poseCaptured = true;
+            }
+
+            public void ReleasePose() => poseCaptured = false;
+
+            public void RefreshSkinnedVertices()
+            {
+                if (skinnedVerticesReady) return;
+                for (int i = 0; i < Vertices.Length; i++)
+                {
+                    Vector3 point = SkinnedVertices[i] = SkinVertex(i, false);
+                    if (i == 0) SkinnedBounds = new Bounds(point, Vector3.zero);
+                    else SkinnedBounds.Encapsulate(point);
+                }
+                skinnedVerticesReady = true;
+            }
 
             public void RefreshBlendShapes()
             {
@@ -76,6 +123,7 @@ namespace BarPromenade
                     shape.Weight = weight; changed = true;
                 }
                 if (!changed) return;
+                skinnedVerticesReady = false;
                 Array.Copy(Vertices, DeformedVertices, Vertices.Length);
                 Array.Copy(Normals, DeformedNormals, Normals.Length);
                 foreach (BlendShape shape in BlendShapes)
@@ -112,7 +160,7 @@ namespace BarPromenade
                 void Add(int index, float weight)
                 {
                     if (weight <= 0f) return;
-                    Matrix4x4 matrix = Bones[index].localToWorldMatrix * BindPoses[index];
+                    Matrix4x4 matrix = poseCaptured ? posedBones[index] : Bones[index].localToWorldMatrix * BindPoses[index];
                     result += (normal ? matrix.MultiplyVector(vertexNormal) : matrix.MultiplyPoint3x4(vertex)) * weight;
                 }
             }
@@ -138,6 +186,7 @@ namespace BarPromenade
                 Surface == ProjectileWoundSurface.Skin ? .48f : .30f) + (HitCount - 1) * .10f;
             public Vector3 Position => Sample(false);
             public Vector3 Direction => Sample(true).normalized;
+            public ProjectileWound CopyForHistory() => (ProjectileWound)MemberwiseClone();
             private Vector3 Sample(bool normal)
             {
                 Patch.RefreshBlendShapes();
@@ -160,6 +209,7 @@ namespace BarPromenade
         private readonly List<Patch> patches = new List<Patch>();
         private readonly List<ProjectileWound> projectileWounds = new List<ProjectileWound>(MaximumProjectileWounds);
         private readonly List<ProjectileLayer> projectileLayers = new List<ProjectileLayer>();
+        private readonly Dictionary<Transform, Matrix4x4> projectileWorldBones = new Dictionary<Transform, Matrix4x4>();
         private readonly MaterialPropertyBlock properties = new MaterialPropertyBlock();
         private readonly Material bloodMaterial;
         private readonly CombatActor actor;
@@ -259,11 +309,14 @@ namespace BarPromenade
                     }
                     shapes[shape] = blend;
                 }
-                patches.Add(new Patch { Renderer = renderer, Source = source, Centre = centre,
+                var patch = new Patch { Renderer = renderer, Source = source, Centre = centre,
                     BindPoses = mesh.bindposes, Bones = sourceBones,
                     Vertices = mesh.vertices, Normals = mesh.normals, Uv = uv, Weights = mesh.boneWeights,
                     DeformedVertices = (Vector3[])meshVertices.Clone(), DeformedNormals = (Vector3[])meshNormals.Clone(),
-                    BlendShapes = shapes, Triangles = mesh.triangles, SkinnedVertices = new Vector3[mesh.vertexCount] });
+                    BlendShapes = shapes, Triangles = mesh.triangles, SkinnedVertices = new Vector3[mesh.vertexCount] };
+                patch.InitializeSkinning();
+                patch.Projection = new ProjectileWound { Patch = patch };
+                patches.Add(patch);
             }
         }
 
@@ -273,12 +326,15 @@ namespace BarPromenade
             Patch nearest = null;
             ProjectileWound nearestWound = null;
             float best = float.PositiveInfinity;
+            projectileWorldBones.Clear();
             foreach (Patch patch in patches)
             {
                 if (!CombatBodyDestruction.SourceAvailable(actor, patch.Source)) continue;
                 if (projectile && head && patch.Source.name != "GEO_Head" && patch.Source.name != "GEO_FaceSurface") continue;
                 if (projectile && part.HasValue && !MatchesProjectileEndpoint(patch.Source.name, part.Value)) continue;
-                ProjectileWound candidate = projectile ? LocateProjectile(patch, point, incoming, projectileSurfaceReach) : null;
+                ProjectileWound candidate = projectile ? LocateProjectile(patch, point, incoming, projectileSurfaceReach,
+                    projectileWorldBones, best, nearestWound != null && float.IsFinite(nearestWound.RayDistance)) : null;
+                if (projectile && candidate == null) continue;
                 Vector3 surfacePoint = candidate != null ? candidate.Position : patch.Position;
                 if (candidate != null)
                 {
@@ -380,6 +436,9 @@ namespace BarPromenade
             // Saturation retains the history already on the body. A far contact
             // cannot enlarge an unrelated old opening just because the pool is full.
             if (projectileWounds.Count >= MaximumProjectileWounds) return;
+            // Projection objects belong to their patches and are reused for each
+            // pellet. Only a newly retained wound enters the persistent history.
+            wound = wound.CopyForHistory();
             ProjectileLayer layer = null;
             foreach (ProjectileLayer candidate in projectileLayers)
                 if (candidate.Patch == patch && candidate.Count < HolesPerLayer) { layer = candidate; break; }
@@ -456,13 +515,39 @@ namespace BarPromenade
             patch.SyncBlendShapeWeights(renderer);
         }
 
-        private static ProjectileWound LocateProjectile(Patch patch, Vector3 point, Vector3 incoming, float surfaceReach)
+        private static ProjectileWound LocateProjectile(Patch patch, Vector3 point, Vector3 incoming, float surfaceReach,
+            Dictionary<Transform, Matrix4x4> worldBones, float bestScore, bool previousRayContact)
+        {
+            // A pellet samples one live pose. Share its bone matrices across wound
+            // patches, then release the snapshot so later bleeding follows the rig.
+            patch.CapturePose(worldBones);
+            try { return LocateProjectileInPose(patch, point, incoming, surfaceReach, bestScore, previousRayContact); }
+            finally { patch.ReleasePose(); }
+        }
+
+        private static ProjectileWound LocateProjectileInPose(Patch patch, Vector3 point, Vector3 incoming, float surfaceReach,
+            float bestScore, bool previousRayContact)
         {
             patch.RefreshBlendShapes();
-            for (int i = 0; i < patch.Vertices.Length; i++) patch.SkinnedVertices[i] = patch.SkinVertex(i, false);
-            var wound = new ProjectileWound { Patch = patch, Barycentric = Vector3.right };
+            patch.RefreshSkinnedVertices();
             Vector3 rayDirection = incoming.sqrMagnitude > .000001f ? incoming.normalized : -patch.Direction;
             Vector3 rayOrigin = point - rayDirection * surfaceReach;
+            Bounds bounds = patch.SkinnedBounds;
+            bounds.Expand(.00002f);
+            bool canMeetRay = bounds.IntersectRay(new Ray(rayOrigin, rayDirection), out float entry) &&
+                entry <= surfaceReach * 2f;
+            Vector3 closest = Vector3.Max(bounds.min, Vector3.Min(point, bounds.max));
+            // Every ray contact outranks fallback distance. Without a possible
+            // ray, the AABB distance is a lower bound on the nonnegative score.
+            if (!canMeetRay && (previousRayContact || (closest - point).sqrMagnitude >= bestScore)) return null;
+            ProjectileWound wound = patch.Projection;
+            wound.A = wound.B = wound.C = 0; wound.Barycentric = Vector3.right;
+            wound.Uv = wound.DirectionUv = Vector2.zero;
+            wound.Radius = wound.Stretch = wound.Seed = wound.AgeSeconds = 0f;
+            wound.Spread = 1f; wound.HitCount = 1; wound.Slot = 0;
+            wound.RayDistance = float.PositiveInfinity; wound.Region = BodyDamageRegion.Chest;
+            wound.BodyPatch = -1; wound.Retained = true;
+            wound.Surface = ProjectileWoundSurface.Skin; wound.Layer = null;
             float best = float.PositiveInfinity;
             for (int i = 0; i < patch.Triangles.Length; i += 3)
             {

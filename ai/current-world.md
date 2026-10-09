@@ -154,8 +154,8 @@ The vertical slice contains:
   one reaction/launch/head≤14/break2.8/eject-spent/load-missing/close.
   DropE/Rresume barrel-stage-ammo/atomic spend/flights finish/win fire-reload.
   Ray:nearest world/posed skin;gravity/recoil/streak/stablecam/0pierce-ricochet-guard.
-  Body17/patch4:local cumulative cloth-tissue-bone loss/closed cuts/skeleton;
-  finite posed severed parts/surface queries/physical holes.
+  Body17/patch4:cloth-tissue-bone loss/closed cuts/skeleton/finite severing;
+  whole skins;batch1sync;lazy contacts;wound/grip/cloth/proxy caches.
   ArmHP≤35/leg≤45;both:Rhand drop/no weapon,Lhand no2hand-reload;
   Rbar/loaded pistol remain;leg loss living ragdoll/crawl/no rise-step-kick.
   Critical head-torso terminal/corpse damage/pause/reset restore all.

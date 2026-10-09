@@ -5,18 +5,34 @@ namespace BarPromenade
 {
     internal sealed partial class CombatHurtboxes
     {
-        private BodySurface[] bodySurfaces;
+        private BodySurface[] bodySurfaces, preparedBodySurfaces;
+        private IReadOnlyList<CombatBodyDestruction.Piece> preparedBodyPieces;
+        private readonly Dictionary<Transform, Matrix4x4> bodyWorldBones = new Dictionary<Transform, Matrix4x4>();
+        internal int BodySurfaceGeometryBuilds { get; private set; }
+        internal void PrepareBodySurfaces(IReadOnlyList<CombatBodyDestruction.Piece> pieces)
+        {
+            if (preparedBodyPieces == pieces) return;
+            var prepared = new List<BodySurface>();
+            foreach (CombatBodyDestruction.Piece piece in pieces)
+                if (piece.Eligible) prepared.Add(new BodySurface(piece));
+            preparedBodyPieces = pieces; preparedBodySurfaces = prepared.ToArray();
+        }
         internal void SetBodySurfaces(IReadOnlyList<CombatBodyDestruction.Piece> pieces)
         {
-            if (bodySurfaces != null) foreach (BodySurface surface in bodySurfaces) surface.Dispose();
-            if (pieces == null) { bodySurfaces = null; return; }
-            bodySurfaces = new BodySurface[pieces.Count];
-            for (int i = 0; i < pieces.Count; i++) bodySurfaces[i] = new BodySurface(pieces[i]);
+            if (pieces == null)
+            {
+                if (preparedBodySurfaces != null)
+                    foreach (BodySurface surface in preparedBodySurfaces) surface.ReleaseCapture();
+                bodySurfaces = null; bodyWorldBones.Clear(); return;
+            }
+            PrepareBodySurfaces(pieces);
+            bodySurfaces = preparedBodySurfaces;
         }
         private void CaptureBodySurfaces()
         {
             if (bodySurfaces == null) return;
-            foreach (BodySurface surface in bodySurfaces) surface.Capture();
+            bodyWorldBones.Clear();
+            foreach (BodySurface surface in bodySurfaces) surface.Capture(bodyWorldBones);
         }
         private bool SweepBodySurfaces(Vector3 from, Vector3 to, float radius, Vector3 direction, ref Hit hit, float first)
         {
@@ -25,6 +41,8 @@ namespace BarPromenade
             foreach (BodySurface surface in bodySurfaces)
             {
                 if (!surface.Active || !IntersectsSegment(surface.Bounds, from, delta, radius)) continue;
+                if (surface.EnsureGeometry()) BodySurfaceGeometryBuilds++;
+                if (!IntersectsSegment(surface.Bounds, from, delta, radius)) continue;
                 foreach (HeadTriangle triangle in surface.Triangles)
                 {
                     if (!IntersectsSegment(triangle.Bounds, from, delta, radius) ||
@@ -53,47 +71,82 @@ namespace BarPromenade
             internal readonly CombatBodyDestruction.Piece Piece;
             private readonly HeadSurface skin;
             private readonly int[] indices;
-            private readonly Vector3[] vertices, points;
-            private Mesh gripBake;
+            private readonly Vector3[] points;
+            private Matrix4x4 frozenMatrix;
+            private Vector3[] frozenVertices;
+            private HeadTriangle[] meshTriangles;
+            private bool skinned, geometryReady;
             internal HeadTriangle[] Triangles;
             internal Bounds Bounds;
             internal bool Active;
             internal BodySurface(CombatBodyDestruction.Piece piece)
             {
-                Piece = piece; skin = new HeadSurface(piece.Skin, true);
-                indices = piece.Skin.sharedMesh.triangles; vertices = piece.Skin.sharedMesh.vertices;
-                points = new Vector3[vertices.Length]; Triangles = new HeadTriangle[indices.Length / 3];
+                Piece = piece; skin = new HeadSurface(piece.Skin, true, captureBlendShapes: true);
+                indices = piece.Skin.sharedMesh.triangles;
+                points = new Vector3[piece.Skin.sharedMesh.vertexCount];
+                Triangles = skin.Triangles;
             }
-            internal void Capture()
+            internal void Capture(Dictionary<Transform, Matrix4x4> worldBones)
             {
+                geometryReady = false;
                 if (Piece.Debris) { Active = false; return; }
-                if (Piece.Skin.enabled)
+                if (Piece.Skin.enabled || Piece.QueryOriginal)
                 {
                     Piece.Deformation?.Refresh(Piece.Skin);
-                    if (Piece.Skin.sharedMesh.blendShapeCount == 0)
-                    { skin.Capture(); Active = skin.Active; Bounds = skin.Bounds; Triangles = skin.Triangles; return; }
-                    gripBake ??= new Mesh { name = "Posed body contact" };
-                    Piece.Skin.BakeMesh(gripBake, true);
-                    CaptureMesh(gripBake.vertices, Piece.Skin.transform.localToWorldMatrix); Active = true; return;
+                    // Blendshape vertices and bones share the same frozen snapshot;
+                    // exact hand triangles can wait for an intersecting contact.
+                    skin.CapturePose(worldBones, Piece.Deformation?.GeometryVersion ?? 0u, Piece.QueryOriginal); skinned = true;
+                    Active = skin.Active; Bounds = skin.Bounds; return;
                 }
                 MeshRenderer released = Piece.Released;
                 Active = released != null && released.enabled && released.gameObject.activeInHierarchy;
                 if (!Active) return;
                 // Baked vertices include the last live deformation and exact source scale.
-                CaptureMesh(Piece.Baked.vertices, released.transform.localToWorldMatrix);
+                skinned = false;
+                frozenVertices = Piece.BakedVertices;
+                frozenMatrix = released.transform.localToWorldMatrix;
+                Bounds = TransformBounds(Piece.Baked.bounds, frozenMatrix);
             }
-            private void CaptureMesh(Vector3[] detached, Matrix4x4 matrix)
+            internal bool EnsureGeometry()
+            {
+                if (geometryReady) return false;
+                geometryReady = true;
+                if (skinned)
+                {
+                    skin.EnsureGeometry(); Bounds = skin.Bounds; Triangles = skin.Triangles;
+                }
+                else CaptureMesh();
+                return true;
+            }
+            private void CaptureMesh()
             {
                 for (int i = 0; i < points.Length; i++)
                 {
-                    points[i] = matrix.MultiplyPoint3x4(detached[i]);
+                    points[i] = frozenMatrix.MultiplyPoint3x4(frozenVertices[i]);
                     if (i == 0) Bounds = new Bounds(points[i], Vector3.zero); else Bounds.Encapsulate(points[i]);
                 }
-                if (Triangles == skin.Triangles) Triangles = new HeadTriangle[indices.Length / 3];
+                meshTriangles ??= new HeadTriangle[indices.Length / 3];
+                Triangles = meshTriangles;
                 for (int i = 0; i < Triangles.Length; i++)
                     Triangles[i] = new HeadTriangle(points[indices[i * 3]], points[indices[i * 3 + 1]], points[indices[i * 3 + 2]]);
             }
-            internal void Dispose() { if (gripBake != null) Object.Destroy(gripBake); }
+            private static Bounds TransformBounds(Bounds local, Matrix4x4 matrix)
+            {
+                Vector3 e = local.extents;
+                Vector3 x = matrix.MultiplyVector(new Vector3(e.x, 0f, 0f));
+                Vector3 y = matrix.MultiplyVector(new Vector3(0f, e.y, 0f));
+                Vector3 z = matrix.MultiplyVector(new Vector3(0f, 0f, e.z));
+                return new Bounds(matrix.MultiplyPoint3x4(local.center), new Vector3(
+                    Mathf.Abs(x.x) + Mathf.Abs(y.x) + Mathf.Abs(z.x),
+                    Mathf.Abs(x.y) + Mathf.Abs(y.y) + Mathf.Abs(z.y),
+                    Mathf.Abs(x.z) + Mathf.Abs(y.z) + Mathf.Abs(z.z)) * 2f);
+            }
+            internal void ReleaseCapture()
+            {
+                Active = skinned = geometryReady = false;
+                frozenVertices = null; frozenMatrix = default; Bounds = default;
+                Triangles = skin.Triangles;
+            }
         }
     }
 }
