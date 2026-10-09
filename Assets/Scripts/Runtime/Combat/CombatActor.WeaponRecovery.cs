@@ -4,7 +4,7 @@ namespace BarPromenade
 {
     public sealed partial class CombatActor
     {
-        internal bool CanRecoverDroppedWeapon => isActiveAndEnabled && hero != null && weaponDropped &&
+        internal bool CanRecoverDroppedWeapon => BodyDamage.CanUseRightHand && isActiveAndEnabled && hero != null && weaponDropped &&
             !State.IsDefeated && !IsKnockedDown && !IsRagdollActive && State.Phase == MeleePhase.Ready;
 
         internal void SetDroppedWeaponInspected(bool inspecting, Vector3 velocity = default, Vector3 angularVelocity = default,

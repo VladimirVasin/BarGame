@@ -3,7 +3,7 @@
 Newest outcomes/checks first. Archive whole dates at budget: [policy](README.md).
 Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-2026-08.md).
 
-## 2026-10-09 — Shotgun distance, launch and head breakup
+## 2026-10-09 — Shotgun force, local body destruction and survivors
 
 - Shotgun damage/momentum now decline continuously from muzzle to 40 m.
   Actual pellet contacts own additive force across flight batches: the former
@@ -13,8 +13,22 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
   fourteen authored sectors per shot; a lone pellet cannot borrow a shell's power.
   Close debris/blood fly faster; pistol fracture stays local. Bounded volley
   ledgers, pause and reset retain the original rig/brain-piece lifecycle.
+- Accepted the user's CombatTest-only canon exception for both fighters/corpses.
+  Seventeen regions/four local patches accumulate tissue/bone loss; source-derived
+  closed surfaces and posed finite parts replace intact anatomy. Real near/far
+  contacts retain locality; full tissue loss exposes body/skull and retires brain.
+- Limb health budgets/capabilities preserve survival while limiting hands,
+  stance, recovery and two-hand actions. Lost support keeps a living physical
+  body with arm-stroke crawl and a loaded right-hand pistol; critical head/core
+  failure ends combat. Actual palm/muzzle checks found a floating prop; the same
+  rig now binds it physically. Manual gameplay/PhysX cadence must match for
+  queued gravity support. Pause freezes motion; reset restores anatomy and retires debris.
 - Checks: `Range_ShotgunDistanceControlsLaunchAndHeadBreakup`,
-  `DistanceScalesEveryPelletBeforeRegionalDamage`; body/head frames inspected;
+  `DistanceScalesEveryPelletBeforeRegionalDamage`,
+  `Range_BodyDestructionFollowsLocalContactsSurvivalCorpsePauseAndReset`,
+  `CombatBodyDamageRulesTests`;
+  `build-combat-body-3d-model.py` and `build-combat-skull-3d-model.py` validators;
+  close/far, skeleton, cut, crawl and grounded-pistol frames inspected;
   `check-docs.py`, `git diff --check`.
 
 ## 2026-10-08 — Shotgun, pistol wounds and Editor input

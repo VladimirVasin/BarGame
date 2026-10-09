@@ -75,6 +75,9 @@ namespace BarPromenade
             private readonly Player3DAnatomicalPart part;
             private readonly Vector3 localPoint;
             private readonly float weaponSpeed;
+            private readonly BodyDamageRegion? bodyRegion;
+            private readonly int bodyPatch;
+            private readonly bool detachedPart;
             private readonly bool solid, metal, otherActive, physicalBody, guarded;
             private readonly int otherSequence;
             private readonly float time;
@@ -86,7 +89,8 @@ namespace BarPromenade
 
             public Contact(CombatActor source, CombatActor target, Vector3 point, Vector3 normal, Vector3 direction,
                 MeleeHitLocation location, Player3DAnatomicalPart part = Player3DAnatomicalPart.Torso,
-                Vector3 localPoint = default, float weaponSpeed = 0f, float time = 0f, bool physicalBody = false)
+                Vector3 localPoint = default, float weaponSpeed = 0f, float time = 0f, bool physicalBody = false,
+                BodyDamageRegion? bodyRegion = null, int bodyPatch = -1, bool detachedPart = false)
             {
                 this.source = source; this.target = target;
                 this.point = point; this.normal = normal; this.direction = direction;
@@ -100,6 +104,7 @@ namespace BarPromenade
                 power = source.State.AttackPower;
                 this.time = time; solid = metal = otherActive = false; otherSequence = 0;
                 this.physicalBody = physicalBody;
+                this.bodyRegion = bodyRegion; this.bodyPatch = bodyPatch; this.detachedPart = detachedPart;
                 guarded = false;
                 Vector3 incoming = source.transform.position - target.transform.position;
                 incoming.y = 0f;
@@ -118,6 +123,7 @@ namespace BarPromenade
                     (source.transform.position - target.transform.position).normalized) >= .35f;
                 guarded = metal && target != null && target.State.IsBlocking && fromFront;
                 physicalBody = false;
+                bodyRegion = null; bodyPatch = -1; detachedPart = false;
                 location = default; part = default; localPoint = default;
             }
 
@@ -149,7 +155,8 @@ namespace BarPromenade
                     return;
                 }
                 MeleeHitResult result = target.Receive(source, fromFront, attackSequence, point, normal, direction,
-                    damage, blockCost, power, location, part, localPoint, weaponSpeed, physicalBody);
+                    damage, blockCost, power, location, part, localPoint, weaponSpeed, physicalBody,
+                    bodyRegion, bodyPatch, detachedPart);
                 source.JournalEvent("weapon_contact_resolved", target.JournalActorId, attackSequence, request,
                     GameLog.Field("result", (int)result), GameLog.Field("impact_seq", target.LastJournalImpactSequence),
                     GameLog.Field("from_front", fromFront), GameLog.Field("damage_requested", damage));
@@ -288,7 +295,8 @@ namespace BarPromenade
                 if (body && State.TryRegisterHit(target.GetEntityId().GetHashCode(), sequence))
                 {
                     pending.Add(new Contact(this, target, nearest.Point, nearest.Normal, nearest.Direction, nearest.Location,
-                        nearest.Part, nearest.LocalPoint, weaponSpeed, Mathf.Lerp(sampleStart, sampleEnd, bodyFraction), physicalBody: true));
+                        nearest.Part, nearest.LocalPoint, weaponSpeed, Mathf.Lerp(sampleStart, sampleEnd, bodyFraction), physicalBody: true,
+                        bodyRegion: nearest.DamageRegion, bodyPatch: nearest.DamagePatch, detachedPart: nearest.IsDetached));
                     JournalEvent("weapon_contact_provisional", target.JournalActorId, sequence, journalActionRequest,
                         GameLog.Field("part", (int)nearest.Part), GameLog.Field("fraction", bodyFraction),
                         GameLog.Field("point_x", nearest.Point.x), GameLog.Field("point_y", nearest.Point.y), GameLog.Field("point_z", nearest.Point.z),
@@ -314,8 +322,8 @@ namespace BarPromenade
             nearest = default; earliest = float.PositiveInfinity; weaponSpeed = 0f;
             CombatActor target = contactTarget;
             if (target == null) { JournalContactRejected("no_target", sequence); return false; }
-            if (!target.IsAvailable && !target.IsKnockedDown) { JournalContactRejected("target_unavailable", sequence); return false; }
-            if (target.State.IsDefeated) { JournalContactRejected("target_defeated", sequence); return false; }
+            if (!target.isActiveAndEnabled || !target.IsAvailable && !target.IsKnockedDown && !target.State.IsDefeated)
+            { JournalContactRejected("target_unavailable", sequence); return false; }
             if (target.Hurtboxes == null) { JournalContactRejected("hurtboxes_missing", sequence); return false; }
             // End-pose overlap is later than every swept contact. The row of moving
             // spheres retains the existing blade coverage, including translation.

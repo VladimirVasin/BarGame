@@ -15,6 +15,7 @@ namespace BarPromenade.Editor
         private static bool rebindingSources;
         public override uint GetVersion() => 2;
         private bool IsGore => assetPath.StartsWith(Folder, StringComparison.Ordinal);
+        private bool IsHeadModel => assetPath == Folder + "HeadHero.fbx" || assetPath == Folder + "HeadNpc.fbx";
         private static string SourceFor(string path) => path.EndsWith("HeadHero.fbx", StringComparison.Ordinal)
             ? HeroSource : NpcSource;
 
@@ -33,7 +34,7 @@ namespace BarPromenade.Editor
 
         private void OnPreprocessModel()
         {
-            if (!IsGore || !(assetImporter is ModelImporter importer)) return;
+            if (!IsHeadModel || !(assetImporter is ModelImporter importer)) return;
             // We consume imported vertices, normals and bind poses, not just
             // source bytes. An artifact dependency also covers source importer changes.
             context.DependsOnArtifact(SourceFor(assetPath));
@@ -55,7 +56,7 @@ namespace BarPromenade.Editor
 
         private void OnPostprocessModel(GameObject model)
         {
-            if (!IsGore) return;
+            if (!IsHeadModel) return;
             string sourcePath = SourceFor(assetPath);
             GameObject source = AssetDatabase.LoadAssetAtPath<GameObject>(sourcePath);
             // A clean checkout may import this FBX before its production source.

@@ -4247,14 +4247,15 @@ OS dynamic fonts в IMGUI запрещены; Unity legacy — аварийны�
 §6:PS1-полигон вне сюжета;9проверок;`ai/architecture-notes.md`.
 `2026-10-07`:лом/пистолет→Начать/Назад;NPCлом;Оружие→выбор/сброс.
 Gun:worn dark unbranded metal/Rpalm gait/2hand aim/cross-flash;
-strafe/Space1m/cam-upper/FOV-grip reversible/cross return.
+strafe/Step/uppercam/FOV-grip return.
 `2026-10-08`:recoil/stablecam/streak/impulse-SFX;pistol head0HP→ragdoll.
 Shotgun:worn dark steel/wood/twin barrels/shoulder-stock/Lforeend;
 heavy recoil/flash-smoke/deep thud;2shots/break/eject spent/load/close.
-`2026-10-09`:closer=stronger/whole-body launch/head≤14;
-Head hits→trauma/fast debris-blood;falloff.
+`2026-10-09`:near=max/body launch/head≤14/fast head debris-blood/falloff.
 Rig:chest-abdomen/arm-forearm-hand/leg-catch;skin-fabric-glove-boot:
-irregular wet-dry entry/repeat/0sever.
+irregular wet-dry entry/repeat.
+`2026-10-09`:local cloth-tissue→skeleton/closed posed cuts/finite severed parts;
+near shotgun=max local hits;both survivors-corpses/crawl/whole reset.
 Pistol:3-5/16/low eject;brain8:full/wet-muted PS1 jelly/
 squash/bone-tissue/cam-hide/repeat-loss.
 Dark blood:pistol56/800/narrow-slow/pulse→24s0/rig-cut/stains-pool-debris;
@@ -4265,8 +4266,8 @@ reset-exit:traces0/filled head restored. HPpose/bar pools10s/thud/6zones.
 Shoulders↑/chin in/breath=stamina/tremor/tight swing/awkward return;NPC calm.
 Soft knees/pelvis-grip-elbows↓/step-swing support/face block-flex.
 ≤2steps/optional crouch-lean-brace/floor→hand→drop recovery;2hands/return≠parry.
-NPC1м/отход/промах→ответ/встающий/взгляд-павший/3стиля.
-Замах1м/толчок-хват;Q/B:0крови-добивания/highguard насквозь/буфер/отдача.
+NPC1m/retreat/miss-counter/rising/gaze-fallen/3styles.
+Windup1m/shove-grip;Q/B:0blood-finish/through highguard/buffer/recoil.
 Start:dummy/freecam/TabAIreset/barfocus/gunfree/MMBfocus.
 Лом:wall sparks-recoil/шатание-инерция-ноги;Q-блок:опора.
 Qfar:pelvis-foot→/chest←;near:knee;sharper/bar kept;

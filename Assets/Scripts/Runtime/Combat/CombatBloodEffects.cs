@@ -30,18 +30,27 @@ namespace BarPromenade
         }
         private sealed class Injury
         {
+            public CombatActor Actor;
             public CombatDamageMarks Marks;
             public float BleedSeconds, Remainder, BloodAge, PulsePhase;
             public float RemainingBlood = ActorBloodBudget;
             public bool HasProjectileBleed, HeadTrauma;
             public readonly float[] WoundBirth = new float[CombatDamageMarks.MaximumProjectileWounds];
             public readonly float[] WoundRemainder = new float[CombatDamageMarks.MaximumProjectileWounds];
+            public readonly BodyCut[] BodyCuts = new BodyCut[CombatBodyDamageState.RegionCount];
             public Transform HeadSource;
             public Vector3 HeadLocalPoint, HeadLocalDirection;
             public float HeadRemainder, PoolFlowStep;
             public int BleedingDrops;
             public float GroundSeconds;
             public DefeatPool Pool;
+        }
+        private sealed class BodyCut
+        {
+            public Transform Source;
+            public BodyDamageRegion SupportRegion;
+            public Vector3 LocalPoint, LocalDirection;
+            public float Remainder;
         }
 
         private static Material sharedMaterial;
@@ -77,7 +86,7 @@ namespace BarPromenade
         public int BleedCount
         {
             get { int count = 0; foreach (Injury injury in injuries.Values)
-                if (injury.BleedSeconds > 0f && injury.RemainingBlood >= 1f ||
+                if (injury.BleedSeconds > 0f && injury.RemainingBlood >= 1f && injury.Marks.TryGetBleed(out _, out _) ||
                     ProjectilePressure(injury) > 0f && HasProjectileSource(injury)) count++; return count; }
         }
         public float TotalStainArea
@@ -152,7 +161,7 @@ namespace BarPromenade
 
         // A new bullet contact wounds a corpse without inventing another HP transaction.
         public void Emit(CombatImpact impact) => Emit(impact.Target, impact.Point, impact.Direction,
-            impact.Kind == CombatImpactKind.Projectile ? (impact.IsPellet ? impact.WoundDamage : Mathf.Max(25f, impact.Damage)) : impact.Damage,
+            impact.Kind == CombatImpactKind.Projectile ? (impact.IsPellet ? impact.WoundDamage : Mathf.Max(25f, impact.Damage)) : Mathf.Max(impact.WoundDamage, impact.Damage),
             impact.Kind == CombatImpactKind.Projectile, impact.Location.Region == MeleeBodyRegion.Head, impact.Part, impact.IsPellet);
 
         public void Emit(CombatActor actor, Vector3 point, Vector3 direction, float damage) =>
@@ -171,13 +180,68 @@ namespace BarPromenade
             injury.HeadLocalDirection = retainedRigSource.InverseTransformDirection(worldOutward.normalized);
         }
 
+        /// <summary>A separation bleeds from its retained parent, sharing the existing finite supply and clock.</summary>
+        public void SetBodyBleedSource(CombatActor actor, BodyDamageRegion cutRegion, Transform retainedRigSource,
+            Vector3 worldPoint, Vector3 worldOutward)
+        {
+            if (!IsInitialized || actor == null || (uint)(int)cutRegion >= CombatBodyDamageState.RegionCount ||
+                retainedRigSource == null || !Finite(worldPoint) || !Finite(worldOutward)) return;
+            if (!injuries.TryGetValue(actor, out Injury injury))
+            {
+                injury = new Injury { Actor = actor, Marks = new CombatDamageMarks(actor, RequireMaterial()) };
+                injuries.Add(actor, injury);
+            }
+            int index = (int)cutRegion;
+            BodyCut cut = injury.BodyCuts[index];
+            if (cut == null) injury.BodyCuts[index] = cut = new BodyCut();
+            cut.Source = retainedRigSource;
+            cut.SupportRegion = RetainedParent(cutRegion);
+            cut.LocalPoint = retainedRigSource.InverseTransformPoint(worldPoint);
+            cut.LocalDirection = retainedRigSource.InverseTransformDirection(worldOutward.normalized);
+            // Repeated synchronization updates only the same source; it cannot
+            // restart the pulse, refill blood or discard a partial emitted drop.
+            injury.HasProjectileBleed = true;
+        }
+
+        private static BodyDamageRegion RetainedParent(BodyDamageRegion region) => region switch
+        {
+            BodyDamageRegion.Head => BodyDamageRegion.Neck,
+            BodyDamageRegion.Neck or BodyDamageRegion.LeftUpperArm or BodyDamageRegion.RightUpperArm => BodyDamageRegion.Chest,
+            BodyDamageRegion.Chest => BodyDamageRegion.Abdomen,
+            BodyDamageRegion.Abdomen or BodyDamageRegion.LeftThigh or BodyDamageRegion.RightThigh => BodyDamageRegion.Pelvis,
+            BodyDamageRegion.LeftForearm => BodyDamageRegion.LeftUpperArm,
+            BodyDamageRegion.LeftHand => BodyDamageRegion.LeftForearm,
+            BodyDamageRegion.RightForearm => BodyDamageRegion.RightUpperArm,
+            BodyDamageRegion.RightHand => BodyDamageRegion.RightForearm,
+            BodyDamageRegion.LeftShin => BodyDamageRegion.LeftThigh,
+            BodyDamageRegion.LeftFoot => BodyDamageRegion.LeftShin,
+            BodyDamageRegion.RightShin => BodyDamageRegion.RightThigh,
+            BodyDamageRegion.RightFoot => BodyDamageRegion.RightShin,
+            _ => BodyDamageRegion.Pelvis
+        };
+
+        private static bool HasBodyCut(Injury injury, BodyCut cut) => cut != null && cut.Source != null &&
+            cut.Source.gameObject.activeInHierarchy && injury.Actor != null && injury.Actor.BodyDamage.IsAttached(cut.SupportRegion);
+
+        private static bool TryGetRetainedBleedSource(Injury injury, out Vector3 point)
+        {
+            if (injury.HeadSource != null)
+            { point = injury.HeadSource.TransformPoint(injury.HeadLocalPoint); return true; }
+            if (injury.Marks.TryGetBleed(out point, out _)) return true;
+            foreach (BodyCut cut in injury.BodyCuts)
+                if (HasBodyCut(injury, cut))
+                { point = cut.Source.TransformPoint(cut.LocalPoint); return true; }
+            point = Vector3.zero;
+            return false;
+        }
+
         private void Emit(CombatActor actor, Vector3 point, Vector3 direction, float damage, bool projectile, bool head,
             Player3DAnatomicalPart? part = null, bool pellet = false)
         {
             if (!IsInitialized || actor == null || damage <= 0f || float.IsNaN(damage) || float.IsInfinity(damage) || !Finite(point) || !Finite(direction)) return;
             if (!injuries.TryGetValue(actor, out Injury injury))
             {
-                injury = new Injury { Marks = new CombatDamageMarks(actor, RequireMaterial()) };
+                injury = new Injury { Actor = actor, Marks = new CombatDamageMarks(actor, RequireMaterial()) };
                 injuries.Add(actor, injury);
             }
             Vector3 incoming = direction.sqrMagnitude > .0001f ? direction.normalized : actor.transform.forward;
@@ -189,8 +253,9 @@ namespace BarPromenade
                 injury.HeadTrauma |= head;
                 for (int i = oldWounds; i < injury.Marks.ProjectileCount; i++) injury.WoundBirth[i] = injury.BloodAge;
             }
-            Vector3 origin = projectile ? point : injury.Marks.Count > 0 ? injury.Marks.BleedPosition : point;
-            Vector3 outward = injury.Marks.Count > 0 ? injury.Marks.BleedDirection : -incoming;
+            bool hasSurface = injury.Marks.TryGetBleed(out Vector3 bleedPoint, out Vector3 bleedDirection);
+            Vector3 origin = projectile || !hasSurface ? point : bleedPoint;
+            Vector3 outward = hasSurface ? bleedDirection : -incoming;
             int amount = Mathf.Clamp(12 + Mathf.RoundToInt(damage * .24f), 12, 26);
             if (projectile) amount = pellet ? 5 : 56;
             float headPower = pellet && head ? Mathf.Clamp01(damage / 24f) : 0f;
@@ -239,7 +304,8 @@ namespace BarPromenade
                     injury.Remainder += time * 8f;
                     int count = Mathf.FloorToInt(injury.Remainder);
                     injury.Remainder -= count;
-                    SpawnBleedingDrops(injury, injury.Marks.BleedPosition, injury.Marks.BleedDirection, count, 0f, 0f);
+                    if (injury.Marks.TryGetBleed(out Vector3 point, out Vector3 direction))
+                        SpawnBleedingDrops(injury, point, direction, count, 0f, 0f);
                 }
                 AdvanceProjectileBleeding(injury, seconds);
                 AdvanceDefeatPool(pair.Key, injury, seconds);
@@ -313,6 +379,8 @@ namespace BarPromenade
                 {
                     int wounds = injury.Marks.ProjectileCount;
                     float sourceWeight = injury.HeadSource != null ? 2.4f : 0f;
+                    foreach (BodyCut cut in injury.BodyCuts)
+                        if (HasBodyCut(injury, cut)) sourceWeight += 2.4f;
                     for (int i = 0; i < wounds; i++)
                         if (injury.Marks.TryGetProjectileBleed(i, out _, out _)) sourceWeight += WoundStrength(injury, i);
                     if (sourceWeight > 0f) injury.PoolFlowStep += step * pressure * (.35f + .65f * pulse) / 2.8f;
@@ -334,6 +402,15 @@ namespace BarPromenade
                         SpawnBleedingDrops(injury, injury.HeadSource.TransformPoint(injury.HeadLocalPoint),
                             injury.HeadSource.TransformDirection(injury.HeadLocalDirection), count, pressure, pulse);
                     }
+                    foreach (BodyCut cut in injury.BodyCuts)
+                    {
+                        if (!HasBodyCut(injury, cut)) continue;
+                        cut.Remainder += step * (5f + 110f * pulse) * pressure * rateScale;
+                        int count = Mathf.FloorToInt(cut.Remainder);
+                        cut.Remainder -= count;
+                        SpawnBleedingDrops(injury, cut.Source.TransformPoint(cut.LocalPoint),
+                            cut.Source.TransformDirection(cut.LocalDirection), count, pressure, pulse);
+                    }
                 }
                 remaining -= step;
             }
@@ -343,6 +420,8 @@ namespace BarPromenade
         private static bool HasProjectileSource(Injury injury)
         {
             if (injury.HeadSource != null) return true;
+            foreach (BodyCut cut in injury.BodyCuts)
+                if (HasBodyCut(injury, cut)) return true;
             for (int i = 0; i < injury.Marks.ProjectileCount; i++)
                 if (injury.Marks.TryGetProjectileBleed(i, out _, out _)) return true;
             return false;
@@ -476,6 +555,7 @@ namespace BarPromenade
             injury.HeadRemainder = injury.PoolFlowStep = 0f; injury.BleedingDrops = 0;
             Array.Clear(injury.WoundBirth, 0, injury.WoundBirth.Length);
             Array.Clear(injury.WoundRemainder, 0, injury.WoundRemainder.Length);
+            Array.Clear(injury.BodyCuts, 0, injury.BodyCuts.Length);
             ResetDefeatPool(injury);
         }
 

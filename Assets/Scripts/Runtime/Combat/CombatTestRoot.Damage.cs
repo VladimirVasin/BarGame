@@ -6,6 +6,7 @@ namespace BarPromenade
     {
         public CombatBloodEffects BloodEffects { get; private set; }
         public CombatHeadDestruction HeadEffects { get; private set; }
+        public CombatBodyDestruction BodyEffects { get; private set; }
 
         private void InitializeDamageEffects()
         {
@@ -14,6 +15,9 @@ namespace BarPromenade
             HeadEffects = gameObject.AddComponent<CombatHeadDestruction>();
             HeadEffects.PrepareActor(Hero);
             HeadEffects.PrepareActor(Opponent);
+            BodyEffects = gameObject.AddComponent<CombatBodyDestruction>();
+            BodyEffects.PrepareActor(Hero);
+            BodyEffects.PrepareActor(Opponent);
             Hero.ImpactReceived += ShowImpact;
             Opponent.ImpactReceived += ShowImpact;
             Hero.DamageReset += ResetActorDamage;
@@ -25,9 +29,10 @@ namespace BarPromenade
             if (impact.Target != null && impact.Target.State.IsDefeated) SparkEffects?.Clear();
             // Only a wounding contact bleeds: never a block, a parry or a miss.
             if ((impact.Result == MeleeHitResult.Hit || impact.Result == MeleeHitResult.GuardBroken) &&
-                (impact.Kind == CombatImpactKind.Projectile || impact.Kind == CombatImpactKind.Weapon && impact.Damage > 0f) && BloodEffects != null)
+                (impact.Kind == CombatImpactKind.Projectile || impact.Kind == CombatImpactKind.Weapon && Mathf.Max(impact.WoundDamage, impact.Damage) > 0f) && BloodEffects != null)
                 BloodEffects.Emit(impact);
             if (impact.HeadFeedback) HeadEffects?.Apply(impact, BloodEffects);
+            BodyEffects?.Apply(impact);
             if (!impact.PrimaryResponse) return;
             // Weight is time: a few frozen substeps and a small kick on the shoulder
             // camera, graded by what happened. A killing blow holds longest.
@@ -66,6 +71,7 @@ namespace BarPromenade
         {
             if (BloodEffects != null) BloodEffects.ResetActor(actor);
             HeadEffects?.ResetActor(actor);
+            BodyEffects?.ResetActor(actor);
             SparkEffects?.Clear();
         }
 

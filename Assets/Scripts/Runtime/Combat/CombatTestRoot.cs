@@ -134,6 +134,7 @@ namespace BarPromenade
             Casings?.ResetRound();
             BloodEffects?.ResetRound();
             HeadEffects?.ResetRound();
+            BodyEffects?.ResetRound();
             SparkEffects?.ResetRound();
             Taunt?.ResetRound();
             Hero.ResetActor(heroSpawn, Vector3.forward);
@@ -178,6 +179,7 @@ namespace BarPromenade
             Hero.SetPresentationFrozen(frozen);
             Opponent.SetPresentationFrozen(frozen);
             HeadEffects?.SetFrozen(frozen);
+            BodyEffects?.SetFrozen(frozen);
         }
 
         private void RequestHitStop(int substeps)
@@ -329,6 +331,7 @@ namespace BarPromenade
                 }
                 BloodEffects.Tick(SimulationStep);
                 HeadEffects.Tick(SimulationStep);
+                BodyEffects.Tick(SimulationStep);
                 SparkEffects.Tick(SimulationStep);
             }
             if (RoundFinished)
@@ -385,7 +388,7 @@ namespace BarPromenade
             if (seconds <= 0f) return;
             SetDuelFrozen(false);
             roundEndElapsed += seconds;
-            if (Hero.IsFirearm && !Hero.State.IsDefeated)
+            if (!Hero.State.IsDefeated)
             {
                 pendingSeconds += seconds;
                 while (pendingSeconds + .0000001d >= SimulationStep)
@@ -402,6 +405,10 @@ namespace BarPromenade
                     pendingSeconds = Math.Max(0d, pendingSeconds - SimulationStep);
                     Hero.AdvanceRoundEnd(SimulationStep); Opponent.AdvanceRoundEnd(SimulationStep);
                     Hero.CaptureContactPose(); Opponent.CaptureContactPose();
+                    pendingContacts.Clear();
+                    Hero.CollectContacts(pendingContacts);
+                    CombatActor.ApplyContacts(pendingContacts);
+                    Hero.ContinueBufferedAttackAfterContacts();
                     Projectiles.Advance(SimulationStep, Hero, Opponent);
                     Casings.Tick(SimulationStep);
                     AdvancePistolCrosshair(SimulationStep);
@@ -413,6 +420,7 @@ namespace BarPromenade
                     Projectiles.ApplyContacts();
                     BloodEffects.Tick(SimulationStep);
                     HeadEffects.Tick(SimulationStep);
+                    BodyEffects.Tick(SimulationStep);
                     SparkEffects.Tick(SimulationStep);
                 }
             }
@@ -424,6 +432,7 @@ namespace BarPromenade
                 Projectiles?.SurfaceEffects.Tick(seconds);
                 BloodEffects.Tick(seconds);
                 HeadEffects.Tick(seconds);
+                BodyEffects.Tick(seconds);
                 SparkEffects.Tick(seconds);
             }
             float settle = Mathf.Clamp01((float)(roundEndElapsed / RoundEndCameraReleaseSeconds));

@@ -252,35 +252,35 @@
   Shared plan/sampler/bounds/metres/collider, `48 m` buckets;
   §6/§12/art §10g/§16/§21/nine checks.
 
-- **Accepted — 2026-10-08, pistol aimed movement:**
-  CombatTest:clamped cam-plane WASD-stick strafe;ground Space1m/15:
-  facing-axis/noinput-back/fixed upperyaw/wall-pause.
-  `CombatFootwork`:legyaw/speed-inertia/release tank/handoff0/noaim:noStep.
+- **Accepted — 2026-10-08, pistol strafe:**
+  `CombatFootwork`:cam-plane WASD-stick/Space1m/15/facing/noinput-back/
+  upperyaw/wall-pause/legyaw/inertia/tank-release/handoff0/noaim:noStep.
 - **Accepted exception 2026-10-08, pistol:**
-  §6/art§15a:dummy/freecam;Q/Step focus-aim;recoil-streak;
-  nearest world/anatomy/0motor-sway/regional SFX-impulse;
-  head0HP/ragdoll/stablecam/hitkick;port-delay/g-bounce-cap/SFX;
-  slide-emptylock/handmag-seat-rack1.8/ammo-last;
-  interrupt-dropE:stage-ammo/Rresume;0lock-pierce-ricochet-guard-parry-taunt-reward;
-  win fire-reload/HP-result/corpse impulse-pose;pause-hitstop/reset-exit0.
+  Dummy/freecam/focus-aim/Q-Step;nearest world/anatomy;
+  regional SFX-force/recoil-streak/0motor-sway/stablecam-hitkick/head0HP-ragdoll;
+  cases:port-delay/gravity-bounce-cap;emptylock/mag-seat-rack1.8/ammo-last;
+  dropE:stage-ammo/Rresume;0lock-pierce-ricochet-guard-parry-taunt-reward;
+  win/corpse/pause-hitstop/reset-exit lifecycle.
 - **Accepted exception 2026-10-09, shotgun power:**
-  Closer=stronger/launch/head loss;2∞/barrel-click/12pellets/.55/head×2/3°.
-  `ShotgunSettings`:linear falloff;1m24HP/pellet/240Ns full→25m1.5/8→40m0.
-  Hits sum→body/contact torque;one sound-hitstop/terminal.
-  Head-only trauma≤14/shot;prelethal kept/8ledgers/unique pellets/fast debris-blood.
-  Break2.8/eject spent/load missing/close;interrupt-drop keeps barrel-stage-ammo;
-  Eshared0grant/atomic spend/flights finish/shared firearm lifecycle;
-  §6/art§15a/§16/§21/nine checks.
+  `ShotgunSettings`:near power-launch/head loss;2∞/12/.55/head×2/3°/barrel-click;
+  linear HP-momentum→40m0;sum body+torque/one sound-hitstop-terminal;
+  head≤14/prelethal/8ledgers/unique/fast debris-blood;
+  Break2.8/eject-spent/load-missing/close/drop:barrel-stage-ammo;
+  Eshared0grant/atomic spend/flights finish.
+- **Accepted exception 2026-10-09, local body destruction:**
+  User:CombatTest/both corpses/local cloth-tissue→skeleton;
+  close shotgun=max local hits;expose≠sever;closed posed cuts/finite parts.
+  Limb survival:Rhand drop/no weapon;Lhand no2hand-reload(loaded pistol/Rbar);
+  legs fall-crawl/no rise-step-kick. Player=AI;critical head-torso terminal;
+  corpse hits/surface=hit=physics/reset;§6/art§15a/§16/§21/9checks.
 - **Accepted exception 2026-10-08, headshots:**
-  Pistol head16:3-5/low eject/blood56;brain8:full/wet jelly/squash/loss1x;
-  bone-tissue/cam-hide/finite pulse-terminal fade/corpse impulse;
-  pause-hitstop0/reset-exit restore.
+  Head16:3-5/low eject/blood56;brain8:full/wet jelly/squash/loss1x;
+  bone-tissue/cam-hide/finite pulse-fade/corpse impulse.
 - **Accepted exception — 2026-10-08, world bullets:**
-  Firstworldhit:chips/sparks/dark hole;128FIFOholes/192particles/shared shader;
+  Firstworldhit:chips-sparks/dark hole128FIFO/particles192/shared shader;
   0damage-pierce/pause-hitstop0/ClearFlights keeps/reset-exit0.
 - **Accepted — 2026-10-08, regional pistol hits:**
-  User:cinematic;rig chest/abdomen/arm/forearm/hand/leg-catch;
-  skin/fabric/glove-boot entry/wet/repeat;HP/physics/camera/parts stay.
+  Cinematic rig/wet/repeat;shared physics-camera.
 - **Accepted 2026-10-07, combat:**
   Floor kept;stall arm→drop/rise≠grip/HP-focus-AI;pause-hitstop0.
   No bar:walk-Q-Step/hits-falls. Eshared/0grant/cancel floor;

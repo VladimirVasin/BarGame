@@ -1120,6 +1120,7 @@ namespace BarPromenade
                     Vector3.ProjectOnPlane(gameplayRoot.up, axisWorld).normalized).normalized;
                 ConfigureJointCommon(joint);
                 joints.Add(joint);
+                CaptureSurvivorArmJointReference(joint);
                 if (spec.Part == Player3DAnatomicalPart.Head)
                 {
                     headJoint = joint;
@@ -1409,7 +1410,7 @@ namespace BarPromenade
         {
             for (int index = 0; index < colliders.Count; index++)
             {
-                colliders[index].enabled = enabled;
+                colliders[index].enabled = enabled && CombatColliderAllowed(colliders[index]);
             }
         }
 

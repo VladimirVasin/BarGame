@@ -10,7 +10,7 @@ namespace BarPromenade
         internal Transform PistolMagazineSeat { get; private set; }
         internal float PistolSlideBack => Pistol?.SlideBack ?? 0f;
         internal bool PistolMagazineSeated => Pistol != null && Pistol.MagazineAttached;
-        internal bool PistolMagazineInHand => Pistol != null && Pistol.ReloadPending &&
+        internal bool PistolMagazineInHand => BodyDamage.CanUseLeftHand && Pistol != null && Pistol.ReloadPending &&
             (PistolReloadSeconds >= .25f && PistolReloadSeconds < .75f ||
              PistolReloadSeconds >= .9f && PistolReloadSeconds < 1.3f);
         internal Transform PistolMagazineTransform => PistolMagazineInHand ? pistolHandMagazine?.transform : pistolMountedMagazine;
@@ -22,6 +22,7 @@ namespace BarPromenade
 
         private void LateUpdate()
         {
+            BindGroundedFirearm();
             // ReleaseWeapon opens both hands for the shared crowbar path. A
             // suspended exchange still has a real magazine in the other palm,
             // including while that hand belongs to the visible ragdoll.

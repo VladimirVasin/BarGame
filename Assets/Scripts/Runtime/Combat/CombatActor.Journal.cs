@@ -167,6 +167,7 @@ namespace BarPromenade
                 MeleeCommandRejection.Cooldown => "cooldown",
                 MeleeCommandRejection.Stamina => "stamina",
                 MeleeCommandRejection.BufferWindow => "buffer_window",
+                MeleeCommandRejection.BodyUnavailable => "body_unavailable",
                 _ => "rules_unknown"
             };
             JournalEvent("command_result", contactTarget?.JournalActorId ?? 0, State.AttackSequence, request,

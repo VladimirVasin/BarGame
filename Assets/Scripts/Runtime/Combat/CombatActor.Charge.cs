@@ -18,16 +18,17 @@ namespace BarPromenade
         {
             if (IsFirearm) return false;
             int request = JournalCommand("charge");
-            if (!CombatFocused) return JournalCommandResult(request, "rejected", "unfocused");
-            if (roundEnded) return JournalCommandResult(request, "rejected", "round_ended");
+            if (!CombatFocused && !CanAttackFinishedBody) return JournalCommandResult(request, "rejected", "unfocused");
+            if (roundEnded && !CanAttackFinishedBody) return JournalCommandResult(request, "rejected", "round_ended");
             if (!IsAvailable) return JournalCommandResult(request, "rejected", "actor_unavailable");
             if (!GameInput.CanRead(GameInputContext.Gameplay)) return JournalCommandResult(request, "rejected", "input_gate");
+            if (!State.IsAttacking && BodyDamage.CanUseLeftHand && CheckShoveRange(request)) return TryBeginShove(request);
             if (!CanAttemptUpperBodyAttack) return JournalCommandResult(request, "rejected", UpperBodyAttackRejection);
-            if (!State.IsAttacking && CheckShoveRange(request)) return TryBeginShove(request);
             if (!State.RequestCharge(true)) return JournalRulesRejected(request, State.Settings.AttackCost);
             CancelPendingKick("replaced");
             ContinueBufferedAttackAfterContacts();
             if (State.IsCharging) { reaction = null; sweepValid = false; }
+            ResumeFinishedBodyAttack();
             Present();
             return JournalCommandResult(request, State.IsCharging ? "started" : "queued", "charge");
         }
@@ -36,8 +37,8 @@ namespace BarPromenade
         {
             if (IsFirearm) return false;
             int request = JournalCommand("charge_release");
-            if (!CombatFocused) return JournalCommandResult(request, "rejected", "unfocused");
-            if (roundEnded) return JournalCommandResult(request, "rejected", "round_ended");
+            if (!CombatFocused && !CanAttackFinishedBody) return JournalCommandResult(request, "rejected", "unfocused");
+            if (roundEnded && !CanAttackFinishedBody) return JournalCommandResult(request, "rejected", "round_ended");
             if (!IsAvailable) return JournalCommandResult(request, "rejected", "actor_unavailable");
             if (!GameInput.CanRead(GameInputContext.Gameplay)) return JournalCommandResult(request, "rejected", "input_gate");
             if (weaponDropped) return JournalCommandResult(request, "rejected", "weapon_missing");
@@ -49,7 +50,7 @@ namespace BarPromenade
                 bool started = ContinueBufferedAttackAfterContacts();
                 return JournalCommandResult(request, started ? "started" : "queued", "charge_release");
             }
-            if (State.IsCharging && CheckShoveRange(request)) return TryBeginShove(request);
+            if (State.IsCharging && BodyDamage.CanUseLeftHand && CheckShoveRange(request)) return TryBeginShove(request);
             if (!CanAttemptUpperBodyAttack)
             {
                 CancelCharge();
@@ -57,6 +58,7 @@ namespace BarPromenade
             }
             if (!State.ReleaseCharge()) return JournalCommandResult(request, "rejected", "no_held_or_queued_charge");
             if (State.IsAttacking) { reaction = null; sweepValid = false; }
+            ResumeFinishedBodyAttack();
             Present();
             return JournalCommandResult(request, State.IsAttacking ? "started" : "queued", "charge_release");
         }
@@ -75,14 +77,19 @@ namespace BarPromenade
         /// A new action must never relabel or erase the old swing's final sweep.</summary>
         internal bool ContinueBufferedAttackAfterContacts()
         {
-            if (!CombatFocused || roundEnded || presentationFrozen || !IsAvailable ||
+            if ((!CombatFocused || roundEnded) && !CanAttackFinishedBody || presentationFrozen || !IsAvailable ||
                 !GameInput.CanRead(GameInputContext.Gameplay) ||
-                (contactTarget != null && contactTarget.State.IsDefeated)) return false;
+                (contactTarget != null && contactTarget.State.IsDefeated && !CanAttackFinishedBody)) return false;
             MeleeBufferedAction action = State.BufferedAction;
+            if (CanAttackFinishedBody && action is not (MeleeBufferedAction.Attack or MeleeBufferedAction.Charge)) return false;
             if (action == MeleeBufferedAction.None) return false;
             if (action != MeleeBufferedAction.Kick) CancelPendingKick("replaced");
             bool upperBody = action is MeleeBufferedAction.Attack or MeleeBufferedAction.Charge or MeleeBufferedAction.Shove;
-            if (upperBody && !CanAttemptUpperBodyAttack) return false;
+            if (action == MeleeBufferedAction.Shove)
+            {
+                if (!BodyDamage.CanUseLeftHand || !CanAttemptBodyAction) return false;
+            }
+            else if (upperBody && !CanAttemptUpperBodyAttack) return false;
             if (!State.CanTransitionTo(action, upperBody)) return false;
             if (State.IsShoving && shoveContactPending) return false;
             if (State.Phase == MeleePhase.Step && action != MeleeBufferedAction.Step &&

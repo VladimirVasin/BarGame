@@ -36,6 +36,7 @@ namespace BarPromenade
             }
             foreach (Rigidbody body in bodyList)
             {
+                if (removedCombatBodies.Contains(body)) continue;
                 body.interpolation = RigidbodyInterpolation.Interpolate;
                 body.isKinematic = false;
             }
@@ -58,6 +59,7 @@ namespace BarPromenade
             Vector3 referenceAxisInUpperArm, float maximumFlexion)
         {
             Rigidbody upper = bodies[upperPart], forearm = bodies[forearmPart];
+            if (removedCombatBodies.Contains(upper) || removedCombatBodies.Contains(forearm)) return;
             Vector3 upperDirection = (forearm.position - upper.position).normalized;
             Vector3 lowerDirection = (bones[handPart].position - forearm.position).normalized;
             if (upperDirection.sqrMagnitude < .5f || lowerDirection.sqrMagnitude < .5f) return;
@@ -109,6 +111,7 @@ namespace BarPromenade
                 current.breakTorque = previous.breakTorque;
                 current.massScale = previous.massScale;
                 current.connectedMassScale = previous.connectedMassScale;
+                CaptureSurvivorArmJointReference(current, previous);
                 joints[index] = current;
 
                 // Destroy is deferred. Retire every constraint immediately so
@@ -141,6 +144,7 @@ namespace BarPromenade
             bool hasPelvis = recordedMotion != null && recordedMotion.TryGetValue(PelvisBody.transform, out pelvisMotion);
             foreach (Rigidbody body in bodyList)
             {
+                if (removedCombatBodies.Contains(body)) continue;
                 Vector3 relativeLinear = Vector3.zero, relativeAngular = Vector3.zero;
                 if (hasPelvis && recordedMotion.TryGetValue(body.transform, out RagdollBoneMotion bone))
                 {
@@ -186,6 +190,7 @@ namespace BarPromenade
                 _ => part
             };
             Rigidbody body = GetBody(physicalPart) ?? ChestBody;
+            if (removedCombatBodies.Contains(body)) return;
             // An outdated local contact must not become an arbitrarily long torque lever.
             point = body.worldCenterOfMass + Vector3.ClampMagnitude(point - body.worldCenterOfMass, .45f);
             impulse = Vector3.ClampMagnitude(impulse, 260f);
@@ -198,10 +203,10 @@ namespace BarPromenade
             if (!IsSimulating || !FiniteCombatVector(point) || !FiniteCombatVector(impulse)) return;
             impulse = Vector3.ClampMagnitude(impulse, 260f);
             float mass = 0f;
-            foreach (Rigidbody body in bodyList) mass += body.mass;
+            foreach (Rigidbody body in bodyList) if (!removedCombatBodies.Contains(body)) mass += body.mass;
             if (mass <= 0f) return;
             foreach (Rigidbody body in bodyList)
-                suspendedImpulses.Add(new PendingCombatImpulse(body, body.worldCenterOfMass,
+                if (!removedCombatBodies.Contains(body)) suspendedImpulses.Add(new PendingCombatImpulse(body, body.worldCenterOfMass,
                     impulse * (.8f * body.mass / mass)));
             AddCombatImpulse(part, point, impulse * .2f);
         }
@@ -212,7 +217,7 @@ namespace BarPromenade
         {
             if (!IsSimulating || float.IsNaN(angularImpulse) || float.IsInfinity(angularImpulse)) return;
             Rigidbody body = GetBody(part);
-            if (body == null) return;
+            if (body == null || removedCombatBodies.Contains(body)) return;
             foreach (ConfigurableJoint joint in joints)
             {
                 if (joint == null || joint.transform != body.transform || joint.connectedBody == null) continue;
@@ -249,6 +254,7 @@ namespace BarPromenade
                 for (int i = 0; i < bodyList.Count; i++)
                 {
                     Rigidbody body = bodyList[i];
+                    if (removedCombatBodies.Contains(body)) continue;
                     suspendedLinear[i] = body.linearVelocity;
                     suspendedAngular[i] = body.angularVelocity;
                     body.isKinematic = true;
@@ -260,6 +266,7 @@ namespace BarPromenade
                 for (int i = 0; i < bodyList.Count; i++)
                 {
                     Rigidbody body = bodyList[i];
+                    if (removedCombatBodies.Contains(body)) continue;
                     body.isKinematic = false;
                     body.interpolation = RigidbodyInterpolation.Interpolate;
                     body.linearVelocity = suspendedLinear[i];
@@ -286,7 +293,9 @@ namespace BarPromenade
             movingCombatAnchor = false;
             suspendedImpulses.Clear();
             suspendedTorques.Clear();
-            combatHeadCollisionEnabled = true;
+            // Recovery/cancellation ends motion, not injury. The head/body
+            // destruction owners explicitly restore collision, joints and mass
+            // on ResetActor; a later fall must retain this same damaged body.
         }
 
         private static bool FiniteCombatVector(Vector3 value) =>

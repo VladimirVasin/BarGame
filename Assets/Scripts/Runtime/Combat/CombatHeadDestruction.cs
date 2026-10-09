@@ -7,7 +7,7 @@ namespace BarPromenade
 {
     /// <summary>Persistent, source-skinned fractures. Authored sectors detach only once.</summary>
     [DisallowMultipleComponent]
-    public sealed class CombatHeadDestruction : MonoBehaviour
+    public sealed partial class CombatHeadDestruction : MonoBehaviour
     {
         private sealed class Piece
         {
@@ -17,7 +17,8 @@ namespace BarPromenade
             internal Mesh Baked, SoftMesh;
             internal CombatBrainTissue Tissue;
             internal Bounds Bounds;
-            internal bool Visible, Anatomical, Detached;
+            internal bool Visible, Anatomical, Detached, Interior, Bone, TissueEmitted;
+            internal int TissuePatch;
         }
         private sealed class Sector
         {
@@ -66,11 +67,11 @@ namespace BarPromenade
         private static readonly HashSet<Renderer> suppressed = new HashSet<Renderer>();
         private readonly Dictionary<CombatActor, Head> heads = new Dictionary<CombatActor, Head>();
         private MaterialPropertyBlock properties;
-        private Material flesh, brain;
+        private Material flesh, brain, bone;
         private bool frozen;
         private void Awake() => properties = new MaterialPropertyBlock();
         public Vector3 LastEjectionDirection { get; private set; }
-        internal static bool IsSuppressed(Renderer renderer) => suppressed.Contains(renderer);
+        internal static bool IsSuppressed(Renderer renderer) => suppressed.Contains(renderer) || CombatBodyDestruction.IsSuppressed(renderer);
         public int DetachedSectorCountFor(CombatActor actor)
         {
             int count = 0;
@@ -186,7 +187,7 @@ namespace BarPromenade
                 sector.Proxy.enabled = false;
                 Vector3 origin = head.Bone.TransformPoint(sector.Bounds.center);
                 Vector3 outward = (origin - head.Bone.TransformPoint(head.Bounds.center)).normalized;
-                Release(head, sector.Pieces, origin,
+                Release(head, VisiblePieces(head, sector), origin,
                     (impact.Direction * (1.4f + i * .12f) + outward * .7f + Vector3.up * .35f) * ejection,
                     false, sector.Index);
             }
@@ -221,7 +222,7 @@ namespace BarPromenade
                 {
                     proxies.Add(sector.Proxy);
                     foreach (Piece piece in sector.Pieces)
-                        if (piece.Visible && piece.Anatomical) surfaces.Add(piece.Skin);
+                        if (TissueVisible(head, piece) && piece.Anatomical) surfaces.Add(piece.Skin);
                 }
             foreach (Piece piece in head.Brains) if (!piece.Detached) surfaces.Add(piece.Skin);
             head.Actor.Hurtboxes.SetHeadShapes(proxies, surfaces);
@@ -281,7 +282,7 @@ namespace BarPromenade
                 skin.shadowCastingMode = ShadowCastingMode.On; skin.receiveShadows = true;
                 bool sourceVisible = source.enabled || Player3DHeadVisibility.IsTemporarilyHidden(source);
                 var piece = new Piece { Skin = skin, Source = source, Visible = interior || isBrain || sourceVisible && source.gameObject.activeInHierarchy,
-                    Anatomical = interior || CombatHurtboxes.IsHeadFlesh(sourceName) };
+                    Interior = interior, Anatomical = interior || CombatHurtboxes.IsHeadFlesh(sourceName) };
                 skin.enabled = false;
                 Player3DHeadVisibility.RegisterDerived(source, skin);
                 if (isBrain)
@@ -310,8 +311,10 @@ namespace BarPromenade
                     }
                 }
                 sector.Pieces.Add(piece);
+                piece.TissuePatch = index % 8 / 2;
                 if (!interior && included.Add(source)) { head.Originals.Add(source); head.OriginalVisibility.Add(sourceVisible); }
             }
+            PrepareSkull(head, skull);
             Bounds brainBounds = head.Brains[0].SoftMesh.bounds;
             foreach (Piece piece in head.Brains) brainBounds.Encapsulate(piece.SoftMesh.bounds);
             foreach (Piece piece in head.Brains)
@@ -356,9 +359,10 @@ namespace BarPromenade
             foreach (Sector sector in head.Sectors)
             {
                 sector.Proxy.enabled = true;
-                foreach (Piece piece in sector.Pieces) Player3DHeadVisibility.SetDerivedEnabled(piece.Source, piece.Skin, piece.Visible);
+                foreach (Piece piece in sector.Pieces) Player3DHeadVisibility.SetDerivedEnabled(piece.Source, piece.Skin, TissueVisible(head, piece));
                 foreach (var anatomical in head.Actor.Ragdoll.PhysicsController.AnatomicalColliders)
                     Physics.IgnoreCollision(sector.Proxy, anatomical.Key, true);
+                if (head.Actor.Body != null) Physics.IgnoreCollision(sector.Proxy, head.Actor.Body, true);
                 foreach (Sector other in head.Sectors)
                     if (other != sector) Physics.IgnoreCollision(sector.Proxy, other.Proxy, true);
             }
@@ -503,6 +507,7 @@ namespace BarPromenade
                 sector.Detached = false; sector.Proxy.enabled = false;
                 foreach (Piece piece in sector.Pieces)
                 {
+                    piece.TissueEmitted = false;
                     suppressed.Remove(piece.Skin);
                     Player3DHeadVisibility.SetDerivedEnabled(piece.Source, piece.Skin, false);
                 }
@@ -544,6 +549,7 @@ namespace BarPromenade
             }
             if (flesh != null) Destroy(flesh);
             if (brain != null) Destroy(brain);
+            if (bone != null) Destroy(bone);
             heads.Clear();
         }
         private static void Dispose(Piece piece)

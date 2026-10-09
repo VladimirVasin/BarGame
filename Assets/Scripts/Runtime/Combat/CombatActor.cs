@@ -38,12 +38,12 @@ namespace BarPromenade
         public Vector3 SupportGripWorldPosition => supportGrip != null ? supportGrip.Target : transform.position;
         public float SupportGripWeight => supportGrip?.Weight ?? 0f;
         public CombatArmSupportState SupportArmState => supportGrip?.State ?? CombatArmSupportState.SupportingWeapon;
-        public bool IsAvailable => isActiveAndEnabled && (hero == null ||
+        public bool IsAvailable => isActiveAndEnabled && (IsBodyGrounded || hero == null ||
             (hero.CanAcquireClip(this) && !interaction.IsActive && motor.InputEnabled));
 
         // Finishing a round prevents further attacks, but the standing winner
         // still walks. Defeat/stagger and the active swing own their own stop.
-        public float MovementScale => IsKnockedDown || (footwork?.RecoveryEpisodeActive ?? false) ||
+        public float MovementScale => !BodyDamage.CanStand || IsKnockedDown || (footwork?.RecoveryEpisodeActive ?? false) ||
             (ImpactMotion != null && ImpactMotion.Velocity.sqrMagnitude > .04f) ? 0f : State.Phase switch
         {
             MeleePhase.Charging => .22f,
@@ -157,12 +157,12 @@ namespace BarPromenade
 
         // Guard and kicks need stable support. An upper-body attempt may share
         // a catching step, but can never cancel an already committed fall.
-        internal bool HasAttackBalance => !IsKnockedDown && !(ImpactMotion?.RecoveryInProgress ?? false) &&
+        internal bool HasAttackBalance => BodyDamage.CanStand && !IsKnockedDown && !(ImpactMotion?.RecoveryInProgress ?? false) &&
             !(footwork?.RecoveryEpisodeActive ?? false);
-        private bool CanAttemptBodyAction => !IsKnockedDown && !State.IsKnockedDown &&
+        private bool CanAttemptBodyAction => BodyDamage.CanStand && !IsKnockedDown && !State.IsKnockedDown &&
             !IsRagdollActive && !State.IsDefeated && !(ImpactMotion?.WantsKnockdown ?? false);
-        internal bool CanAttemptUpperBodyAttack => !weaponDropped && CanAttemptBodyAction;
-        private string UpperBodyAttackRejection => weaponDropped ? "weapon_missing" : IsKnockedDown || State.IsKnockedDown || IsRagdollActive
+        internal bool CanAttemptUpperBodyAttack => BodyDamage.CanUseRightHand && !weaponDropped && CanAttemptBodyAction;
+        private string UpperBodyAttackRejection => !BodyDamage.CanUseRightHand ? "right_hand_unavailable" : weaponDropped ? "weapon_missing" : IsKnockedDown || State.IsKnockedDown || IsRagdollActive
             ? "knocked_down" : State.IsDefeated ? "defeated" : "fall_committed";
         internal const float WeaponSpacing = 1f;
         internal void ApplyMotorConstraint()
@@ -175,7 +175,7 @@ namespace BarPromenade
                 CombatFocused && State.Phase == MeleePhase.Windup ? WeaponSpacing : 0f);
         }
         private string AttackBalanceRejection => IsKnockedDown ? "knocked_down" : "balance_recovery";
-        internal bool HasTwoHandSupport => !weaponDropped && HasAttackBalance &&
+        internal bool HasTwoHandSupport => BodyDamage.CanUseLeftHand && BodyDamage.CanUseRightHand && !weaponDropped && HasAttackBalance &&
             (supportGrip == null || supportGrip.IsSupportingWeapon);
         public bool GuardRequested => guardHeld;
         public bool GuardReady => GuardSupportRejection == null &&
@@ -190,11 +190,11 @@ namespace BarPromenade
         {
             if (IsFirearm) return false;
             int request = JournalCommand("attack_immediate");
-            if (!CombatFocused) return JournalCommandResult(request, "rejected", "unfocused");
-            if (roundEnded) return JournalCommandResult(request, "rejected", "round_ended");
+            if (!CombatFocused && !CanAttackFinishedBody) return JournalCommandResult(request, "rejected", "unfocused");
+            if (roundEnded && !CanAttackFinishedBody) return JournalCommandResult(request, "rejected", "round_ended");
             if (!IsAvailable) return JournalCommandResult(request, "rejected", "actor_unavailable");
             if (!GameInput.CanRead(GameInputContext.Gameplay)) return JournalCommandResult(request, "rejected", "input_gate");
-            if (CheckShoveRange(request)) return TryBeginShove(request);
+            if (BodyDamage.CanUseLeftHand && CheckShoveRange(request)) return TryBeginShove(request);
             if (!CanAttemptUpperBodyAttack) return JournalCommandResult(request, "rejected", UpperBodyAttackRejection);
             if (State.Phase == MeleePhase.Step && State.CanTransitionTo(MeleeBufferedAction.Attack, true) &&
                 !(footwork?.PrepareStepAttackHandoff() ?? false))
@@ -202,6 +202,7 @@ namespace BarPromenade
             if (!State.TryStartRecoveryAttack()) return JournalRulesRejected(request, State.Settings.AttackCost);
             CancelPendingKick("replaced");
             reaction = null;
+            ResumeFinishedBodyAttack();
             Present();
             return JournalCommandResult(request, "started", "attack");
         }
@@ -210,17 +211,18 @@ namespace BarPromenade
         {
             if (IsFirearm) return false;
             int request = JournalCommand("attack");
-            if (!CombatFocused) return JournalCommandResult(request, "rejected", "unfocused");
-            if (roundEnded) return JournalCommandResult(request, "rejected", "round_ended");
+            if (!CombatFocused && !CanAttackFinishedBody) return JournalCommandResult(request, "rejected", "unfocused");
+            if (roundEnded && !CanAttackFinishedBody) return JournalCommandResult(request, "rejected", "round_ended");
             if (!IsAvailable) return JournalCommandResult(request, "rejected", "actor_unavailable");
             if (!GameInput.CanRead(GameInputContext.Gameplay)) return JournalCommandResult(request, "rejected", "input_gate");
+            if (!State.IsAttacking && BodyDamage.CanUseLeftHand && CheckShoveRange(request)) return TryBeginShove(request);
             if (!CanAttemptUpperBodyAttack) return JournalCommandResult(request, "rejected", UpperBodyAttackRejection);
-            if (!State.IsAttacking && CheckShoveRange(request)) return TryBeginShove(request);
             int previous = State.AttackSequence;
             if (!State.RequestAttack(true)) return JournalRulesRejected(request, State.Settings.AttackCost);
             CancelPendingKick("replaced");
             ContinueBufferedAttackAfterContacts();
             if (previous != State.AttackSequence) reaction = null;
+            ResumeFinishedBodyAttack();
             Present();
             return JournalCommandResult(request, previous == State.AttackSequence ? "queued" : "started", "attack");
         }
@@ -231,7 +233,7 @@ namespace BarPromenade
             if (!CombatFocused || roundEnded || !IsAvailable || !CanAttemptUpperBodyAttack ||
                 !GameInput.CanRead(GameInputContext.Gameplay))
                 return JournalCommandResult(request, "rejected", "counter_unavailable");
-            if (CheckShoveRange(request)) return TryBeginShove(request);
+            if (BodyDamage.CanUseLeftHand && CheckShoveRange(request)) return TryBeginShove(request);
             if (!State.TryStartObservedCounterAttack()) return JournalRulesRejected(request, State.Settings.AttackCost);
             reaction = null;
             Present();
@@ -315,7 +317,7 @@ namespace BarPromenade
             AdvanceVisualClock(seconds);
             AdvanceImpactMotion(seconds);
             if (guardHeld) RefreshBlock();
-            if (CombatFocused && !weaponDropped && State.Phase == MeleePhase.Windup && InShoveRange && !TryBeginShove()) State.CancelAction();
+            if (CombatFocused && BodyDamage.CanUseLeftHand && !weaponDropped && State.Phase == MeleePhase.Windup && InShoveRange && !TryBeginShove()) State.CancelAction();
             int sequence = State.AttackSequence;
             float from = State.AttackElapsed;
             MeleePhase previousPhase = State.Phase;
@@ -376,23 +378,38 @@ namespace BarPromenade
         private MeleeHitResult Receive(CombatActor source, bool front, int sequence, Vector3 point, Vector3 normal, Vector3 direction,
             float damage, float blockCost, float power, MeleeHitLocation location,
             Player3DAnatomicalPart part = Player3DAnatomicalPart.Torso, Vector3 localPoint = default, float weaponSpeed = 0f,
-            bool physicalBody = false)
+            bool physicalBody = false, BodyDamageRegion? bodyRegion = null, int bodyPatch = -1, bool detachedPart = false)
         {
+            if (damage <= 0f) return MeleeHitResult.Ignored;
             MeleePhase phaseBefore = State.Phase;
+            bool postmortem = State.IsDefeated;
             receivedDuringStep = State.Phase == MeleePhase.Step;
             float healthBefore = State.Health;
+            BodyDamageRegion region = bodyRegion ?? CombatBodyAnatomy.ToRegion(part);
+            float requested = MeleeDamageProfile.Crowbar.ResolveDamage(damage, State.Settings.MaxHealth, location);
+            bool structuralOnly = postmortem || detachedPart;
+            // Real body sweeps passed the physical weapon guard already. Charge
+            // only the shared limb wound budget that can actually reach health;
+            // the crowbar rules still own their anatomical damage profile.
+            if (!structuralOnly && (physicalBody || !front || !State.IsBlocking))
+            {
+                float allowed = BodyDamage.ResolveHealthDamage(region, requested);
+                structuralOnly = allowed <= 0f;
+                if (requested > 0f) damage *= allowed / requested;
+            }
             // Actual sweeps already tested the blocking prop before this body.
             // A guard flag cannot intercept a blade which physically went around it.
-            MeleeHitResult result = State.ReceiveHit(damage, blockCost, front && !physicalBody, power, location);
-            CancelInterruptedShoveContact();
-            if (result == MeleeHitResult.Ignored) return result;
+            MeleeHitResult result = structuralOnly ? MeleeHitResult.Hit :
+                State.ReceiveHit(damage, blockCost, front && !physicalBody, power, location);
+            if (!postmortem && !detachedPart) CancelInterruptedShoveContact();
+            if (result == MeleeHitResult.Ignored) { receivedDuringStep = false; return result; }
             // Weight lives in time and motion: the body is the loudest cue, a block
             // moves both fighters, a parry throws the attacker's weapon wide.
             switch (result)
             {
                 case MeleeHitResult.Hit:
                     RetroAudio.PlayAt(RetroSfxId.SpadeBite, point, Mathf.Lerp(.8f, 1f, power));
-                    reaction = null;
+                    if (!postmortem && !detachedPart) reaction = null;
                     break;
                 case MeleeHitResult.GuardBroken:
                     RetroAudio.PlayAt(RetroSfxId.SpadeBite, point, 1f);
@@ -410,13 +427,14 @@ namespace BarPromenade
                     reaction = guardImpact;
                     break;
             }
-            reactionClock = 0f;
+            if (!postmortem && !detachedPart) reactionClock = 0f;
             PublishImpact(new CombatImpact(source, this, sequence, point, normal, direction,
                 healthBefore, State.Health, result, location, power, part, localPoint, weaponSpeed,
-                CombatImpactMotion.ResolveImpulse(direction, power, weaponSpeed, result)), phaseBefore);
-            if (State.IsDefeated) BeginDefeat(direction, point);
+                CombatImpactMotion.ResolveImpulse(direction, power, weaponSpeed, result),
+                woundDamage: requested, bodyRegion: bodyRegion, bodyPatch: bodyPatch, detachedPart: detachedPart), phaseBefore);
+            if (!postmortem && !detachedPart && State.IsDefeated) BeginDefeat(direction, point);
             receivedDuringStep = false;
-            Present();
+            if (!postmortem && !detachedPart) Present();
             return result;
         }
 
@@ -453,7 +471,7 @@ namespace BarPromenade
             bodyMotion?.Restore();
             AnimationClip chosen = ReleaseClip;
             ConfigureAttackReachPose(MeleeBufferedAction.Attack, progress);
-            supportGrip?.SetTarget(false, true, State.IsContinuation);
+            supportGrip?.SetTarget(false, BodyDamage.CanUseLeftHand, State.IsContinuation);
             if (hero != null)
             {
                 if (visibleClip != chosen.name || !hero.OwnsClip(this))
@@ -523,6 +541,7 @@ namespace BarPromenade
                 hero.TryGetPresentedBonePose(hero.Registry.Anchors.RightFoot, out Pose rightSole))
                 footwork?.AdoptPresentedStance(leftSole, rightSole);
             freeLocomotionReleased = false;
+            BindGroundedFirearm();
             if (PresentKnockdown() || IsRagdollActive) return;
             if (!State.IsKicking) footwork?.EndKickSupport();
             RefreshCombatAttention();
@@ -549,8 +568,8 @@ namespace BarPromenade
             bool pistolPose = IsFirearm && !State.IsDefeated && !stepping && !stagger && reaction == null && !State.IsKicking;
             if (pistolPose) chosen = ChoosePistolClip();
             AnimationClip pistolStepUpper = IsFirearm && stepping && Firearm.AimRequested ? ChoosePistolClip() : null;
-            supportGrip?.SetTarget(chosen == block || chosen == guardImpact,
-                !weaponDropped && !projectileStagger && chosen != rest && chosen != hit && chosen != guardBreak && !State.IsDefeated && !State.IsShoving,
+            supportGrip?.SetTarget(BodyDamage.CanUseLeftHand && (chosen == block || chosen == guardImpact),
+                BodyDamage.CanUseLeftHand && !weaponDropped && !projectileStagger && chosen != rest && chosen != hit && chosen != guardBreak && !State.IsDefeated && !State.IsShoving,
                 State.IsContinuation);
             PresentShovePose();
             ConfigureAttackReachPose(ReachAction);

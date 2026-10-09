@@ -8,7 +8,7 @@ namespace BarPromenade
         public PistolState Pistol => Firearm as PistolState;
         public ShotgunState Shotgun => Firearm as ShotgunState;
         public Transform PistolMuzzle { get; private set; }
-        internal float PistolSupportError => IsFirearm && pistolSupport != null
+        internal float PistolSupportError => BodyDamage.CanUseLeftHand && IsFirearm && pistolSupport != null
             ? Vector3.Distance(handPose.CylinderCentre(true), pistolSupport.position) : 0f;
         private AnimationClip pistolRest, pistolRaise, pistolAim, pistolFire, pistolReload, pistolLower;
         private bool pistolShotRequested;
@@ -56,11 +56,12 @@ namespace BarPromenade
         }
 
         // A committed step keeps the upper-body aim; firing/reloading still wait for Ready.
-        internal bool PistolAimBodyAvailable => IsFirearm && Firearm != null && !weaponDropped && (!roundEnded || hero != null) &&
-            CanAttemptBodyAction && IsAvailable && (State.Phase is MeleePhase.Ready or MeleePhase.Step) &&
-            !(footwork?.RecoveryEpisodeActive ?? false);
+        internal bool PistolAimBodyAvailable => IsFirearm && Firearm != null && BodyDamage.CanUseRightHand &&
+            (!IsShotgun || BodyDamage.CanUseLeftHand) && !weaponDropped && !State.IsDefeated && (!roundEnded || hero != null) &&
+            (CanUseGroundedFirearm || CanAttemptBodyAction && IsAvailable &&
+                (State.Phase is MeleePhase.Ready or MeleePhase.Step) && !(footwork?.RecoveryEpisodeActive ?? false));
 
-        internal bool PistolBodyAvailable => PistolAimBodyAvailable && State.Phase == MeleePhase.Ready;
+        internal bool PistolBodyAvailable => PistolAimBodyAvailable && (CanUseGroundedFirearm || State.Phase == MeleePhase.Ready);
 
         public void SetPistolAim(bool held, Vector3? worldAimPoint = null)
         {
@@ -76,6 +77,8 @@ namespace BarPromenade
         {
             int request = BeginPistolShotRequest();
             if (!IsFirearm || Firearm == null) return RejectPistolShot(request, "no_pistol", "input");
+            if (!BodyDamage.CanUseRightHand || IsShotgun && !BodyDamage.CanUseLeftHand)
+                return RejectPistolShot(request, "grip_unavailable", "input");
             if (!GameInput.CanRead(GameInputContext.Gameplay)) return RejectPistolShot(request, "input_gate", "input");
             if (pistolShotRequested) return RejectPistolShot(request, "already_requested", "input");
             // This is an input edge, not a promise to fire. The first live step
@@ -116,6 +119,7 @@ namespace BarPromenade
         }
 
         private string PistolBodyRejection => !IsFirearm || Firearm == null ? "no_pistol" :
+            !BodyDamage.CanUseRightHand || IsShotgun && !BodyDamage.CanUseLeftHand ? "grip_unavailable" :
             weaponDropped ? "weapon_dropped" : State.IsDefeated ? "defeated" :
             IsKnockedDown || State.IsKnockedDown || IsRagdollActive ? "knocked_down" :
             !CanAttemptBodyAction || !IsAvailable ? "body_unavailable" :
@@ -124,7 +128,8 @@ namespace BarPromenade
         public bool TryReloadPistol()
         {
             bool resuming = Firearm?.ReloadPending ?? false;
-            if (!PistolBodyAvailable || !GameInput.CanRead(GameInputContext.Gameplay) || !Firearm.TryReload()) return false;
+            if (!BodyDamage.CanUseLeftHand || !BodyDamage.CanUseRightHand || IsBodyGrounded ||
+                !PistolBodyAvailable || !GameInput.CanRead(GameInputContext.Gameplay) || !Firearm.TryReload()) return false;
             pistolReloadSettleRemaining = resuming ? PoseBlendSeconds : 0f;
             if (!IsShotgun) BeginPistolReloadAudio(resuming);
             CancelPendingPistolShot("reload_started");
@@ -151,6 +156,7 @@ namespace BarPromenade
                 return RejectPistolShot(request, "empty", "commit");
             }
             if (!Firearm.CanFire) return RejectPistolShot(request, "cooldown", "commit");
+            BindGroundedFirearm();
             Vector3 target = PistolAimPoint, muzzle = PistolMuzzle.position;
             JournalEvent(IsShotgun ? "shotgun_shot_pose" : "pistol_shot_pose", request: request,
                 f0: GameLog.Field("x", muzzle.x), f1: GameLog.Field("y", muzzle.y), f2: GameLog.Field("z", muzzle.z),
@@ -171,6 +177,7 @@ namespace BarPromenade
                 projectiles.TrySpawn(this, position, velocity, unchecked(Firearm.ShotSequence + 1))))
                 return RejectPistolShot(request, "projectile_spawn", "commit");
             Firearm.TryFire();
+            ApplyGroundedFirearmRecoil(firingMuzzle.forward);
             UpdatePistolMechanics();
             if (pistolFlash != null) pistolFlash.gameObject.SetActive(true);
             RetroAudio.PlayAt(IsShotgun ? RetroSfxId.ShotgunFire : RetroSfxId.PistolFire, position, 1f);
@@ -184,6 +191,7 @@ namespace BarPromenade
         private void AdvancePistol(float seconds)
         {
             if (Firearm == null) return;
+            if (!BodyDamage.CanUseLeftHand || IsBodyGrounded) Firearm.CancelReload();
             if (!PistolAimBodyAvailable) { CancelPendingPistolShot(PistolBodyRejection); Firearm.CancelAction(); }
             else if (!PistolBodyAvailable) { CancelPendingPistolShot(PistolBodyRejection); Firearm.CancelReload(); }
             bool reloading = Firearm.IsReloading;
@@ -213,6 +221,7 @@ namespace BarPromenade
             if (pistolFlash != null) pistolFlash.gameObject.SetActive(!weaponDropped &&
                 Firearm.CooldownRemaining > 0f && Firearm.ShotElapsed < .05f);
             UpdatePistolMechanics();
+            AdvanceGroundedFirearmAim(seconds);
         }
 
         internal void SuspendPistolInput()
@@ -225,6 +234,7 @@ namespace BarPromenade
         {
             CancelPendingPistolShot("action_ended");
             Firearm?.CancelAction();
+            Ragdoll?.PhysicsController?.ResetCombatSurvivorArmAim();
             pistolVisualAimProgress = 0f;
             pistolLeftClosure = pistolBlendClosure = 0f;
             pistolReloadSettleRemaining = 0f;
@@ -256,7 +266,7 @@ namespace BarPromenade
             clip == pistolLower ? 1f - pistolVisualAimProgress : Mathf.Repeat(poseClock, clip.length) / clip.length;
 
         private float FirearmSupportGripWeight => IsShotgun ? CombatShotgunAssetProvider.SupportGripWeight : CombatPistolAssetProvider.SupportGripWeight;
-        private float PistolSupportClosure(AnimationClip clip) => clip == pistolReload ?
+        private float PistolSupportClosure(AnimationClip clip) => !BodyDamage.CanUseLeftHand ? 0f : clip == pistolReload ?
             (IsShotgun ? ShotgunReloadGripWeight : PistolReloadGripWeight) : clip == pistolRaise
             ? FirearmSupportGripWeight * Mathf.SmoothStep(0f, 1f, pistolVisualAimProgress)
             : clip == pistolAim || clip == pistolFire ? FirearmSupportGripWeight
@@ -286,6 +296,9 @@ namespace BarPromenade
 
         private void ApplyPistolAimPose(bool finalStep)
         {
+            // A living grounded body's arm belongs to physical muscle impulses.
+            // Neither this render callback nor contact previews overwrite that pose.
+            if (IsBodyGrounded) return;
             if (!finalStep) RestorePistolAimPose();
             pistolAimReachable = false;
             if (!IsFirearm || weaponDropped || IsRagdollActive || Weapon == null) return;
@@ -295,7 +308,7 @@ namespace BarPromenade
             handPose.SetGrip(true, pistolLeftClosure);
             if (!PistolAimBodyAvailable || pistolVisualAimProgress <= 0f || Firearm.ReloadPending ||
                 pistolArmBones[0] == null || pistolArmBones[1] == null || pistolArmBones[2] == null ||
-                pistolArmBones[3] == null || pistolArmBones[4] == null || pistolArmBones[5] == null)
+                BodyDamage.CanUseLeftHand && (pistolArmBones[3] == null || pistolArmBones[4] == null || pistolArmBones[5] == null))
             { CommitHeldPistolPose(); return; }
             if (!finalStep)
                 for (int i = 0; i < pistolArmBones.Length; i++)
@@ -308,13 +321,15 @@ namespace BarPromenade
             // at head edges. Keep the authored motion and firing kick below.
             if (CombatFocused)
             {
-                float sway = .25f + (motor != null ? motor.PlanarVelocity.magnitude * .3f : 0f);
+                float sway = (.25f + (motor != null ? motor.PlanarVelocity.magnitude * .3f : 0f)) *
+                    (BodyDamage.CanUseLeftHand ? 1f : 1.8f);
                 shoulderToTarget = Quaternion.AngleAxis(Mathf.Sin(poseClock * 8.3f) * sway, transform.up) * shoulderToTarget;
                 shoulderToTarget = Quaternion.AngleAxis(Mathf.Sin(poseClock * 6.1f) * sway * .6f, transform.right) * shoulderToTarget;
             }
             // Keep the authored firing kick visible instead of correcting it back to the target.
             float recoil = Firearm.CooldownRemaining > 0f ?
                 (IsShotgun ? ShotgunRecoilDegrees(Firearm.ShotElapsed) : PistolRecoilDegrees(Firearm.ShotElapsed)) : 0f;
+            if (!BodyDamage.CanUseLeftHand) recoil *= 1.25f;
             shoulderToTarget = Quaternion.AngleAxis(-recoil, transform.right) * shoulderToTarget;
             pistolAimReachable = TrySolvePistolAim(pistolArmBones[0].position, PistolMuzzle.position,
                 PistolMuzzle.forward, pistolArmBones[0].position + shoulderToTarget, out Quaternion solved);
@@ -344,8 +359,10 @@ namespace BarPromenade
                 float forearm = Vector3.Distance(pistolArmBones[1].position, pistolArmBones[2].position);
                 float height = Vector3.Dot(pistolArmBones[0].position, transform.up) - downward * forearm * .6f;
                 float lift = Mathf.Max(0f, height - Vector3.Dot(wrist, transform.up)) * highAimWeight * visualWeight;
-                lift = Mathf.Min(lift, Mathf.Min(PistolMaximumLift(0, wrist), PistolMaximumLift(3,
-                    PistolSupportWrist(aimedGrip, grip, delta))));
+                float availableLift = PistolMaximumLift(0, wrist);
+                if (BodyDamage.CanUseLeftHand)
+                    availableLift = Mathf.Min(availableLift, PistolMaximumLift(3, PistolSupportWrist(aimedGrip, grip, delta)));
+                lift = Mathf.Min(lift, availableLift);
                 aimedGrip += transform.up * lift;
             }
             if (keepGripForward || highAim || finalStep || IsShotgun)
@@ -370,9 +387,17 @@ namespace BarPromenade
                         // in both reach spheres, then re-aim from that hold.
                         Vector3 rightCorrection = PistolReachCorrection(0, rightWrist);
                         aimedGrip += rightCorrection;
-                        Vector3 leftCorrection = PistolReachCorrection(3, PistolSupportWrist(aimedGrip, grip, delta));
+                        Vector3 leftCorrection = BodyDamage.CanUseLeftHand ?
+                            PistolReachCorrection(3, PistolSupportWrist(aimedGrip, grip, delta)) : Vector3.zero;
                         aimedGrip += leftCorrection;
                         if (rightCorrection.sqrMagnitude + leftCorrection.sqrMagnitude < .0000000001f) break;
+                        continue;
+                    }
+                    if (!BodyDamage.CanUseLeftHand)
+                    {
+                        float rightLift = PistolReachLift(0, rightWrist);
+                        if (rightLift <= .0001f) break;
+                        aimedGrip += transform.up * rightLift;
                         continue;
                     }
                     Quaternion supportRotation = delta * pistolSupport.rotation;
@@ -407,13 +432,14 @@ namespace BarPromenade
             }
             else pistolArmBones[0].rotation = delta * pistolArmBones[0].rotation;
             ApplyPistolSupportPose(highAim, lowAim, keepGripForward);
-            if (pistolVisualAimProgress >= .999f)
+            if (BodyDamage.CanUseLeftHand && pistolVisualAimProgress >= .999f)
                 pistolAimReachable &= PistolSupportError <= .003f;
             CommitHeldPistolPose();
         }
 
         private void ApplyPistolSupportPose(bool highAim, bool lowAim, bool keepGripForward)
         {
+            if (!BodyDamage.CanUseLeftHand) return;
             Transform leftHand = pistolArmBones[5];
             if (leftHand != null && pistolArmBones[4] != null)
             {
@@ -577,7 +603,12 @@ namespace BarPromenade
                 _ => .32f
             };
             bool postmortem = State.IsDefeated && IsRagdollActive;
-            MeleeHitResult result = postmortem ? MeleeHitResult.Hit : State.ReceiveProjectileHit(25f, hit.Location, stagger);
+            BodyDamageRegion region = hit.DamageRegion ?? CombatBodyAnatomy.ToRegion(hit.Part);
+            float requestedDamage = ProjectileDamageProfile.Pistol.ResolveDamage(25f, hit.Location);
+            float healthDamage = postmortem || hit.IsDetached ? 0f : BodyDamage.ResolveHealthDamage(region, requestedDamage);
+            MeleeHitResult result = postmortem || hit.IsDetached || healthDamage <= 0f ? MeleeHitResult.Hit :
+                hit.Location.Region == MeleeBodyRegion.Head ? State.ReceiveProjectileHit(25f, hit.Location, stagger) :
+                    State.ReceiveProjectileHit(healthDamage, default, stagger, ProjectileDamageProfile.Shotgun);
             if (result == MeleeHitResult.Ignored) return;
             reaction = null;
             reactionClock = 0f;
@@ -590,14 +621,15 @@ namespace BarPromenade
             };
             var impact = new CombatImpact(source, this, sequence, hit.Point, hit.Normal, velocity.normalized,
                 health, State.Health, result, hit.Location, 0f, hit.Part, hit.LocalPoint, velocity.magnitude,
-                velocity.normalized * momentum, CombatImpactKind.Projectile, hit.LocalDirection);
+                velocity.normalized * momentum, CombatImpactKind.Projectile, hit.LocalDirection,
+                woundDamage: 25f, bodyRegion: hit.DamageRegion, bodyPatch: hit.DamagePatch, detachedPart: hit.IsDetached);
             // Physics takes the already visible pose before impact publication freezes
             // it. The shared impact path then applies this anatomical impulse once.
-            if (State.IsDefeated && !postmortem) BeginProjectileDefeat(impact);
+            if (State.IsDefeated && !postmortem && !hit.IsDetached) BeginProjectileDefeat(impact);
             RetroAudio.PlayAt(RetroSfxId.SpadeBite, hit.Point, 1f);
             RetroAudio.PlayAt(RetroSfxId.StoneTamp, hit.Point, hit.Location.Region == MeleeBodyRegion.Head ? .65f : .45f);
             PublishImpact(impact, phaseBefore);
-            if (State.IsDefeated && !postmortem) Ragdoll.BeginTerminalConvulsions();
+            if (State.IsDefeated && !postmortem && !hit.IsDetached) Ragdoll.BeginTerminalConvulsions();
             Present();
         }
 

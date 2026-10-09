@@ -46,7 +46,8 @@ namespace BarPromenade
             CancelInterruptedShoveContact();
             if (request == 0) request = JournalCommand("windup_to_shove");
             if (!CheckShoveRange(request)) return JournalCommandResult(request, "rejected", "shove_range");
-            if (!CanAttemptUpperBodyAttack) return JournalCommandResult(request, "rejected", UpperBodyAttackRejection);
+            if (!BodyDamage.CanUseLeftHand || !CanAttemptBodyAction)
+                return JournalCommandResult(request, "rejected", "left_hand_unavailable");
             int previous = State.AttackSequence;
             if (!State.RequestShove(true)) return JournalRulesRejected(request, State.Settings.ShoveCost);
             CancelPendingKick("replaced");
@@ -83,7 +84,7 @@ namespace BarPromenade
         private void PresentShovePose()
         {
             CombatHurtboxes.Hit surface = default;
-            bool active = State.IsShoving && ShoveSurface(out surface);
+            bool active = BodyDamage.CanUseLeftHand && State.IsShoving && ShoveSurface(out surface);
             Vector3 point = active ? surface.Point : Vector3.zero;
             bodyMotion?.SetShovePose(active, shoveDirection, State.ShoveElapsed,
                 State.Settings.ShoveContactSeconds, State.Settings.ShoveDurationSeconds);

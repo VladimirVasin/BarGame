@@ -23,6 +23,16 @@ namespace BarPromenade
         /// <summary>The standing winner's bar waits in his closed left hand while the right one is busy.</summary>
         public bool IsWeaponInLeftHand { get; private set; }
 
+        private bool CanAttackFinishedBody => hero != null && !IsFirearm && !State.IsDefeated &&
+            contactTarget != null && contactTarget.State.IsDefeated;
+
+        private void ResumeFinishedBodyAttack()
+        {
+            if (!CanAttackFinishedBody) return;
+            ReturnWeaponToRightHand();
+            winnerPresentationReleased = false;
+        }
+
         private void BeginDefeat(Vector3 direction, Vector3 point)
         {
             roundEnded = true;
@@ -62,6 +72,26 @@ namespace BarPromenade
         internal void AdvanceRoundEnd(float seconds)
         {
             roundEnded = true;
+            if (CanAttackFinishedBody)
+            {
+                State.SetBlocking(false);
+                guardHeld = false;
+                if (State.IsCharging || State.IsAttacking || State.HasBufferedAttack || State.HasBufferedCharge ||
+                    IsKnockedDown || IsRagdollActive || State.IsKnockedDown)
+                {
+                    ResumeFinishedBodyAttack();
+                    AdvanceSimulation(seconds);
+                    Present();
+                    return;
+                }
+                State.Advance(seconds);
+                if (!winnerPresentationReleased)
+                {
+                    ReleaseStandingPresentation();
+                    winnerPresentationReleased = true;
+                }
+                return;
+            }
             CancelPendingKick("round_ended");
             State.CancelCharge();
             State.SetBlocking(false);
@@ -231,7 +261,7 @@ namespace BarPromenade
         /// <summary>
         /// Only the finished round's standing winner: once combat has let the
         /// rig go, the bar moves to the closed left hand and the right opens
-        /// for a contextual action. No swing can follow until the round resets.
+        /// for a contextual action. A later corpse swing first returns it to the right hand.
         /// </summary>
         internal bool TryHoldWeaponInLeftHand()
         {

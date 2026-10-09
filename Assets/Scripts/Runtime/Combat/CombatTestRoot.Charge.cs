@@ -43,7 +43,7 @@ namespace BarPromenade
             if (GameInput.WasPressed(GameInputAction.CombatFocus, GameInputContext.Gameplay))
                 SetOpponentFocus(!IsOpponentFocused);
             if (Hero.IsFirearm) return UpdatePistolInput(held);
-            if (!IsOpponentFocused)
+            if (!IsOpponentFocused && !(RoundFinished && !Hero.State.IsDefeated))
             {
                 // Free movement leaves the same live duel clock and vulnerable body running.
                 Hero.SetBlock(false);
@@ -63,7 +63,7 @@ namespace BarPromenade
                 Hero.CancelPendingKick("step_requested");
                 Hero.TryStep(GameInput.ReadMovement());
             }
-            if (blocking || stepping || kickAccepted || RoundFinished)
+            if (blocking || stepping || kickAccepted || Hero.State.IsDefeated)
             {
                 CancelHeldHeroCharge();
                 attackInputOwned = false;
@@ -125,6 +125,7 @@ namespace BarPromenade
             Projectiles?.Clear();
             Casings?.Clear();
             HeadEffects?.ResetRound();
+            BodyEffects?.ResetRound();
             ReleaseFreePistolAim();
             Hero?.SuspendPistolInput();
             Hero?.CancelPendingKick("disabled");

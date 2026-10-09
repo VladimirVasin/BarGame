@@ -49,7 +49,8 @@ namespace BarPromenade
             supportGrip?.SetRecoveryOwned(true);
             supportGrip?.AllowRegrip(false);
             State.BeginKnockdown();
-            if (IsFirearm) ReleaseWeapon(linearVelocity * .25f, angularVelocity * .25f);
+            if (IsFirearm && (!bodySurvivorFall || !BodyDamage.CanUseRightHand || IsShotgun && !BodyDamage.CanUseLeftHand))
+                ReleaseWeapon(linearVelocity * .25f, angularVelocity * .25f);
             knockedDown = true;
             recoveryPoseBegun = recoveryRegrip = false;
             reaction = null;
@@ -68,6 +69,16 @@ namespace BarPromenade
             if (State.IsDefeated) { PromoteKnockdownToDefeat(); return true; }
             if (knockdownFrozen || PauseMenuController.IsAnyPaused || seconds <= 0f) return true;
             poseClock += seconds;
+            if (!BodyDamage.CanRise)
+            {
+                // Alive and physically supported is distinct from the two-footed
+                // authored rise. Remaining arms can still pull the same world rig.
+                if (Ragdoll.IsRecovering) Ragdoll.WakeLivingBody();
+                recoveryPoseBegun = recoveryRegrip = false;
+                State.BeginKnockdown();
+                AdvanceBodySurvivor(seconds);
+                return true;
+            }
             if ((recoveryPoseBegun || State.Phase == MeleePhase.Rising) && !Ragdoll.IsRecovering)
             {
                 JournalEvent("rise_interrupted", f0: GameLog.Field("reason", "ragdoll_resumed"), f1: GameLog.Field("impact_seq", LastJournalImpactSequence));

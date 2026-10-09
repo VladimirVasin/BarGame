@@ -106,7 +106,19 @@ namespace BarPromenade
             opponentSpaceRearmSeconds = Mathf.Max(0f, opponentSpaceRearmSeconds - seconds);
             strafeSeconds -= seconds;
             driftSeconds -= seconds;
-            if (HeroIsOnGround || Opponent.IsKnockedDown)
+            if (Opponent.IsBodyGrounded)
+            {
+                Opponent.SetBlock(false);
+                Vector3 crawl = Hero.BodyWorldPosition - Opponent.BodyWorldPosition;
+                crawl.y = 0f;
+                Vector3 local = Opponent.transform.InverseTransformDirection(crawl.normalized);
+                Opponent.SetCrawlInput(crawl.sqrMagnitude > .9f ? new Vector2(local.x, local.z) : Vector2.zero);
+                OpponentIntent = CombatOpponentIntent.Approach;
+                ResetOpponentMovement();
+                return;
+            }
+            Opponent.ClearCrawlInput();
+            if (HeroIsOnGround && !Hero.IsBodyGrounded || Opponent.IsKnockedDown)
             {
                 // A body still lying on the floor gets space. The visible rise
                 // is vulnerable: the partner resumes pursuit and may swing at it.
@@ -118,13 +130,23 @@ namespace BarPromenade
                 opponentDelay = Mathf.Max(opponentDelay, .4f);
                 return;
             }
-            Vector3 delta = Hero.transform.position - Opponent.transform.position;
+            Vector3 delta = Hero.BodyWorldPosition - Opponent.BodyWorldPosition;
             delta.y = 0f;
             float distance = delta.magnitude;
             if (distance < .0001f || !Opponent.IsAvailable || (!Hero.IsAvailable && Hero.State.Phase != MeleePhase.Rising)) return;
             Vector3 direction = delta / distance;
             MeleeCombatant me = Opponent.State;
             CombatOpponentProfile profile = OpponentProfile;
+            if (!Opponent.BodyDamage.CanUseRightHand)
+            {
+                Opponent.SetBlock(false);
+                OpponentIntent = CombatOpponentIntent.Approach;
+                if (distance > CombatActor.ShoveRange)
+                    MoveOpponent(direction, Mathf.Min(1.35f * seconds, distance - CombatActor.ShoveRange * .9f), seconds);
+                else if (Opponent.BodyDamage.CanUseLeftHand && Opponent.RequestBodyShove())
+                    OpponentIntent = CombatOpponentIntent.Shove;
+                return;
+            }
             readyIdleSeconds = me.Phase == MeleePhase.Ready ? readyIdleSeconds + seconds : 0f;
 
             // Recovery duration belongs to the actual result, not a guessed
@@ -212,7 +234,7 @@ namespace BarPromenade
             // Balance recovery owns the first answer to crowded bodies; an
             // attack rejected every simulation step cannot help plant the feet.
             if (MakeRoomForBalance(distance, direction, seconds)) return;
-            if (distance <= CombatActor.ShoveRange)
+            if (Opponent.BodyDamage.CanUseLeftHand && distance <= CombatActor.ShoveRange)
             {
                 Opponent.SetBlock(false);
                 OpponentIntent = CombatOpponentIntent.Recover;
@@ -441,7 +463,8 @@ namespace BarPromenade
             MeleeCombatant hero = Hero.State;
             CombatOpponentProfile profile = OpponentProfile;
             bool facing = Vector3.Dot(Opponent.transform.forward, direction) > .94f;
-            bool canGuard = me.Stamina >= me.Settings.BlockCost;
+            bool canGuard = Opponent.BodyDamage.CanUseLeftHand && Opponent.BodyDamage.CanUseRightHand &&
+                Opponent.BodyDamage.CanStand && me.Stamina >= me.Settings.BlockCost;
 
             // A held charge inside reach is answered, never waited out.
             if (hero.IsCharging && heroChargeSeconds >= heroChargeAnswerAt && distance < 1.3f)
@@ -607,7 +630,7 @@ namespace BarPromenade
         private void AdvanceOpponentMovement(float seconds)
         {
             if (seconds <= 0f) return;
-            if (!Sparring || Opponent == null || Hero == null || Opponent.IsKnockedDown || HeroIsOnGround || !Opponent.IsAvailable ||
+            if (!Sparring || Opponent == null || Hero == null || Opponent.IsKnockedDown || HeroIsOnGround && !Hero.IsBodyGrounded || !Opponent.IsAvailable ||
                 (!Hero.IsAvailable && Hero.State.Phase != MeleePhase.Rising) ||
                 Opponent.Body == null || !Opponent.Body.enabled)
             {

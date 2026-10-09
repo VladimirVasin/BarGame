@@ -57,6 +57,9 @@ namespace BarPromenade
             public int[] Triangles;
             public bool Active;
             public int Grade;
+            public BodyDamageRegion Region;
+            public int BodyPatch = -1;
+            public bool Classified;
 
             public Vector3 Position { get { RefreshBlendShapes(); return SkinVertex(Centre, false); } }
             public Vector3 Direction { get { RefreshBlendShapes(); return SkinVertex(Centre, true).normalized; } }
@@ -125,6 +128,9 @@ namespace BarPromenade
             public float Radius, Stretch, Seed, AgeSeconds, Spread = 1f;
             public float RayDistance = float.PositiveInfinity;
             public int HitCount = 1, Slot;
+            public BodyDamageRegion Region;
+            public int BodyPatch = -1;
+            public bool Retained = true;
             public ProjectileWoundSurface Surface;
             public ProjectileLayer Layer;
             public float Wetness => Mathf.Pow(Mathf.Clamp01(1f - AgeSeconds / ProjectileWoundDrySeconds), .75f);
@@ -156,20 +162,36 @@ namespace BarPromenade
         private readonly List<ProjectileLayer> projectileLayers = new List<ProjectileLayer>();
         private readonly MaterialPropertyBlock properties = new MaterialPropertyBlock();
         private readonly Material bloodMaterial;
+        private readonly CombatActor actor;
         private readonly float projectileSurfaceReach;
         private Patch last;
         private ProjectileWound lastProjectile;
         public int Count { get; private set; }
         public int ProjectileCount => projectileWounds.Count;
-        public Vector3 BleedPosition => lastProjectile != null ? lastProjectile.Position : last != null ? last.Position : Vector3.zero;
-        public Vector3 BleedDirection => lastProjectile != null ? lastProjectile.Direction : last != null ? last.Direction : Vector3.up;
+        public Vector3 BleedPosition => TryGetBleed(out Vector3 point, out _) ? point : Vector3.zero;
+        public Vector3 BleedDirection => TryGetBleed(out _, out Vector3 direction) ? direction : Vector3.up;
+
+        public bool TryGetBleed(out Vector3 position, out Vector3 direction)
+        {
+            position = Vector3.zero; direction = Vector3.up;
+            if (lastProjectile != null && Retains(lastProjectile))
+            { position = lastProjectile.Position; direction = lastProjectile.Direction; return true; }
+            if (last != null && last.Active && Retains(last))
+            { position = last.Position; direction = last.Direction; return true; }
+            for (int i = projectileWounds.Count - 1; i >= 0; i--)
+                if (TryGetProjectileBleed(i, out position, out direction)) return true;
+            for (int i = patches.Count - 1; i >= 0; i--)
+                if (patches[i].Active && Retains(patches[i]))
+                { position = patches[i].Position; direction = patches[i].Direction; return true; }
+            return false;
+        }
 
         public bool TryGetProjectileBleed(int index, out Vector3 position, out Vector3 direction)
         {
             position = Vector3.zero; direction = Vector3.up;
             if (index < 0 || index >= projectileWounds.Count) return false;
             ProjectileWound wound = projectileWounds[index];
-            if (wound.Patch.Source == null || !wound.Patch.Source.enabled || !wound.Patch.Source.gameObject.activeInHierarchy) return false;
+            if (!Retains(wound)) return false;
             wound.Patch.RefreshBlendShapes();
             wound.Patch.SyncBlendShapeWeights(wound.Layer.Renderer);
             position = wound.Position; direction = wound.Direction;
@@ -188,6 +210,7 @@ namespace BarPromenade
 
         public CombatDamageMarks(CombatActor actor, Material material)
         {
+            this.actor = actor;
             bloodMaterial = material;
             // A tilted torso's coarse collider can meet the ray well before
             // its clothing. Bound the same projection window for every patch
@@ -252,12 +275,22 @@ namespace BarPromenade
             float best = float.PositiveInfinity;
             foreach (Patch patch in patches)
             {
-                if (patch.Source == null || (!patch.Source.enabled && !Player3DHeadVisibility.IsTemporarilyHidden(patch.Source)) ||
-                    !patch.Source.gameObject.activeInHierarchy) continue;
+                if (!CombatBodyDestruction.SourceAvailable(actor, patch.Source)) continue;
                 if (projectile && head && patch.Source.name != "GEO_Head" && patch.Source.name != "GEO_FaceSurface") continue;
                 if (projectile && part.HasValue && !MatchesProjectileEndpoint(patch.Source.name, part.Value)) continue;
                 ProjectileWound candidate = projectile ? LocateProjectile(patch, point, incoming, projectileSurfaceReach) : null;
                 Vector3 surfacePoint = candidate != null ? candidate.Position : patch.Position;
+                if (candidate != null)
+                {
+                    CombatBodyDestruction.TryClassifySurface(actor, patch.Source, surfacePoint,
+                        out candidate.Region, out candidate.BodyPatch);
+                    if (!Retains(candidate)) continue;
+                }
+                else
+                {
+                    Classify(patch, surfacePoint);
+                    if (!Retains(patch)) continue;
+                }
                 Vector3 surfaceNormal = candidate != null ? candidate.Direction : patch.Direction;
                 float distance = (surfacePoint - point).sqrMagnitude;
                 // Exact surface distance wins. A large facing penalty can move a
@@ -324,7 +357,9 @@ namespace BarPromenade
             float best = float.PositiveInfinity;
             foreach (ProjectileWound existing in projectileWounds)
             {
-                if (existing.Patch.Source != patch.Source || Vector3.Dot(existing.Direction, wound.Direction) < .65f) continue;
+                if (!Retains(existing) || existing.Patch.Source != patch.Source ||
+                    existing.Region != wound.Region || existing.BodyPatch != wound.BodyPatch ||
+                    Vector3.Dot(existing.Direction, wound.Direction) < .65f) continue;
                 float distance = (existing.Position - wound.Position).sqrMagnitude;
                 if (distance >= best) continue;
                 closest = existing; best = distance;
@@ -371,7 +406,7 @@ namespace BarPromenade
         private static void StoreProjectile(ProjectileWound wound)
         {
             ProjectileLayer layer = wound.Layer;
-            layer.Holes[wound.Slot] = new Vector4(wound.Uv.x, wound.Uv.y, wound.Radius, (float)wound.Surface);
+            layer.Holes[wound.Slot] = new Vector4(wound.Uv.x, wound.Uv.y, wound.Retained ? wound.Radius : 0f, (float)wound.Surface);
             layer.Shapes[wound.Slot] = new Vector4(wound.DirectionUv.x, wound.DirectionUv.y, wound.Stretch, wound.Seed);
             layer.States[wound.Slot] = new Vector4(wound.AgeSeconds, wound.Wetness, wound.Spread, wound.HitCount);
             layer.Dirty = true;
@@ -539,17 +574,38 @@ namespace BarPromenade
                 if (patch.Renderer != null)
                 {
                     patch.RefreshBlendShapes();
-                    patch.Renderer.enabled = patch.Active && patch.Source != null && patch.Source.enabled &&
-                        patch.Source.gameObject.activeInHierarchy;
+                    patch.Renderer.enabled = patch.Active && Retains(patch);
                 }
+            foreach (ProjectileWound wound in projectileWounds)
+            {
+                bool retained = Retains(wound);
+                if (wound.Retained == retained) continue;
+                wound.Retained = retained;
+                StoreProjectile(wound);
+            }
             foreach (ProjectileLayer layer in projectileLayers)
                 if (layer.Renderer != null)
                 {
                     layer.Patch.SyncBlendShapeWeights(layer.Renderer);
-                    layer.Renderer.enabled = layer.Count > 0 && layer.Patch.Source != null && layer.Patch.Source.enabled &&
-                        layer.Patch.Source.gameObject.activeInHierarchy;
+                    bool visible = false;
+                    for (int i = 0; i < layer.Count; i++) visible |= layer.Holes[i].z > 0f;
+                    layer.Renderer.enabled = visible && CombatBodyDestruction.SourceAvailable(actor, layer.Patch.Source);
+                    if (layer.Dirty) UploadProjectileLayer(layer);
                 }
         }
+
+        private void Classify(Patch patch, Vector3 position)
+        {
+            if (patch.Classified) return;
+            CombatBodyDestruction.TryClassifySurface(actor, patch.Source, position, out patch.Region, out patch.BodyPatch);
+            patch.Classified = true;
+        }
+
+        private bool Retains(Patch patch) =>
+            CombatBodyDestruction.RetainsSurface(actor, patch.Source, patch.Region, patch.BodyPatch);
+
+        private bool Retains(ProjectileWound wound) =>
+            CombatBodyDestruction.RetainsSurface(actor, wound.Patch.Source, wound.Region, wound.BodyPatch);
 
         public void Reset()
         {

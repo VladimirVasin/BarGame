@@ -22,10 +22,15 @@ namespace BarPromenade
             internal readonly Vector3 LocalPoint;
             internal readonly Vector3 LocalDirection;
             internal readonly MeleeHitLocation Location;
+            internal readonly BodyDamageRegion? DamageRegion;
+            internal readonly int DamagePatch;
+            internal readonly bool IsDetached;
 
             internal Hit(Vector3 point, Vector3 normal, Vector3 direction, float fraction,
-                MeleeHitLocation location, Player3DAnatomicalPart part, Vector3 localPoint, Vector3 localDirection = default)
-            { Point = point; Normal = normal; Direction = direction; Fraction = fraction; Location = location; Part = part; LocalPoint = localPoint; LocalDirection = localDirection; }
+                MeleeHitLocation location, Player3DAnatomicalPart part, Vector3 localPoint, Vector3 localDirection = default,
+                BodyDamageRegion? damageRegion = null, int damagePatch = -1, bool detached = false)
+            { Point = point; Normal = normal; Direction = direction; Fraction = fraction; Location = location; Part = part; LocalPoint = localPoint; LocalDirection = localDirection;
+                DamageRegion = damageRegion; DamagePatch = damagePatch; IsDetached = detached; }
         }
 
         internal CombatHurtboxes(Transform rigRoot, Transform actorFrame, Player3DRagdollController ragdoll)
@@ -95,6 +100,7 @@ namespace BarPromenade
         {
             for (int i = 0; i < activeShapes.Length; i++) snapshots[i] = activeShapes[i].Capture();
             CaptureHeadSurfaces();
+            CaptureBodySurfaces();
         }
 
         // Rebuild only on a fracture/reset, never in the contact sampling loop.
@@ -142,6 +148,7 @@ namespace BarPromenade
             {
                 Snapshot shape = snapshots[i];
                 if (!includeHead && shape.Part == Player3DAnatomicalPart.Head) continue;
+                if (bodySurfaces != null && shape.Part != Player3DAnatomicalPart.Head) continue;
                 float reach = shape.BoundingRadius + radius;
                 if ((ClosestOnSegment(from, to, shape.Center) - shape.Center).sqrMagnitude > reach * reach)
                     continue;
@@ -155,7 +162,7 @@ namespace BarPromenade
                     shape.WorldToBone.MultiplyVector(direction).normalized);
                 found = true;
             }
-            return found;
+            return SweepBodySurfaces(from, to, radius, direction, ref hit, first) || found;
         }
 
         internal readonly struct SweepSurfaceGap

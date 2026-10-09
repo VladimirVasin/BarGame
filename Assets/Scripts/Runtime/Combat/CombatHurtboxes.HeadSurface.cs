@@ -135,12 +135,12 @@ namespace BarPromenade
             internal Bounds Bounds;
             internal bool Active;
 
-            internal HeadSurface(SkinnedMeshRenderer source)
+            internal HeadSurface(SkinnedMeshRenderer source, bool mutable = false)
             {
                 this.source = source;
                 Mesh mesh = source.sharedMesh;
                 vertices = mesh.vertices; weights = mesh.boneWeights; bind = mesh.bindposes;
-                if (source.GetComponent<CombatBrainTissue>() != null) deformed = new List<Vector3>(vertices.Length);
+                if (mutable || source.GetComponent<CombatBrainTissue>() != null) deformed = new List<Vector3>(vertices.Length);
                 bones = source.bones; posedBones = new Matrix4x4[bones.Length]; indices = mesh.triangles;
                 Points = new Vector3[vertices.Length]; Triangles = new HeadTriangle[indices.Length / 3];
                 if (weights.Length != vertices.Length || bind.Length != bones.Length)

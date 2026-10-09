@@ -416,6 +416,7 @@ namespace BarPromenade
         }
 
         internal static bool IsWorld(Collider shape, CombatActor source) => shape != null &&
+            shape.GetComponentInParent<CombatBodyFragment>() == null &&
             !shape.isTrigger && (source == null || !shape.transform.IsChildOf(source.transform)) &&
             shape.GetComponentInParent<CombatActor>() == null;
         private static bool Finite(Vector3 value) => !float.IsNaN(value.x) && !float.IsInfinity(value.x) &&

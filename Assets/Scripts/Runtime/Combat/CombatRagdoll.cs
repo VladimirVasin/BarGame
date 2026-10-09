@@ -7,7 +7,7 @@ namespace BarPromenade
     /// <summary>Round-local ownership of the existing anatomical ragdoll, on either combat rig.</summary>
     [DisallowMultipleComponent]
     [DefaultExecutionOrder(200)]
-    public sealed class CombatRagdoll : MonoBehaviour
+    public sealed partial class CombatRagdoll : MonoBehaviour
     {
         private Player3DRagdollController physicsController;
         private CharacterController capsule;
@@ -314,7 +314,7 @@ namespace BarPromenade
             {
                 ContactPoint contact = collision.GetContact(i);
                 // A held shaft shares the forearm body, but is not an anatomical support.
-                if (contact.thisCollider == null || !physicsController.AnatomicalColliders.ContainsKey(contact.thisCollider)) continue;
+                if (contact.thisCollider == null || !physicsController.IsCombatAnatomicalCollider(contact.thisCollider)) continue;
                 if (contact.normal.y > .65f && contact.separation <= .02f && Finite(contact.point)) return true;
             }
             return false;
@@ -383,7 +383,7 @@ namespace BarPromenade
             float speed = recoverable ? Mathf.Max(CentralSpeed(physicsController.PelvisBody),
                 CentralSpeed(physicsController.ChestBody)) : MaximumBodySpeed;
             quietSeconds = !IsConvulsing && speed < (recoverable ? .65f : .12f) ? quietSeconds + Time.fixedDeltaTime : 0f;
-            bool readyToRise = hasSupport && simulationSeconds >= .45f &&
+            bool readyToRise = !physicsController.HasActiveSurvivorArmAim && hasSupport && simulationSeconds >= .45f &&
                 (quietSeconds >= .18f || (supportSeconds >= 1.1f && speed < 1f));
             bool terminalRest = !IsConvulsing && ((simulationSeconds >= 1f && quietSeconds >= .5f) || simulationSeconds >= 4f);
             if (recoverable ? readyToRise : terminalRest)

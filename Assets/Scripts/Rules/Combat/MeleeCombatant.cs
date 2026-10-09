@@ -7,7 +7,8 @@ namespace BarPromenade
     public enum MeleeHitResult { Ignored, Hit, Blocked, GuardBroken, Parried }
     public enum MeleeAttackOutcome { None, Miss, Hit, Blocked, Obstacle, Parried }
     public enum MeleeBufferedAction { None, Attack, Charge, Step, Kick, Shove }
-    public enum MeleeCommandRejection { None, Defeated, KnockedDown, GuardBroken, Phase, Cooldown, Stamina, BufferWindow }
+    public enum MeleeCommandRejection { None, Defeated, KnockedDown, GuardBroken, Phase, Cooldown, Stamina, BufferWindow, BodyUnavailable }
+    public enum MeleeDefeatCause { None, HealthLoss, StructuralFailure }
     /// <summary>The side a swing comes from: the forehand sweeps right to left, the backhand left to right.</summary>
     public enum MeleeSwing { Forehand, Backhand }
 
@@ -52,6 +53,7 @@ namespace BarPromenade
         // that outrank it: the target's bearing and the last step's direction.
         private MeleeSwing rhythm;
         private int lateralCue, stepCue, pendingStepCue;
+        private bool bodyRightHand = true, bodyLeftHand = true, bodyStanding = true;
 
         public MeleeCombatant(MeleeCombatSettings settings = null)
         {
@@ -64,6 +66,7 @@ namespace BarPromenade
         public float Health { get; private set; }
         public float Stamina => (float)stamina;
         public bool IsDefeated => Phase == MeleePhase.Defeated;
+        public MeleeDefeatCause DefeatCause { get; private set; }
         public bool IsKnockedDown => Phase == MeleePhase.KnockedDown || Phase == MeleePhase.Rising;
         public bool IsCharging => Phase == MeleePhase.Charging;
         public bool IsShoving => Phase == MeleePhase.Shoving;
@@ -188,6 +191,7 @@ namespace BarPromenade
         {
             if (action == MeleeBufferedAction.None) return MeleeCommandRejection.Phase;
             if (IsDefeated) return MeleeCommandRejection.Defeated;
+            if (!BodyAllows(action)) return MeleeCommandRejection.BodyUnavailable;
             if (IsKnockedDown) return MeleeCommandRejection.KnockedDown;
             if (Phase == MeleePhase.GuardBroken) return MeleeCommandRejection.GuardBroken;
             bool ordinaryContinuation = IsWeaponAction(action) && Phase == MeleePhase.Recovery &&
@@ -212,6 +216,7 @@ namespace BarPromenade
         private MeleeCommandRejection QueueRejection(MeleeBufferedAction action)
         {
             if (IsDefeated) return MeleeCommandRejection.Defeated;
+            if (!BodyAllows(action)) return MeleeCommandRejection.BodyUnavailable;
             if (IsKnockedDown) return MeleeCommandRejection.KnockedDown;
             if (Phase == MeleePhase.Ready) return CooldownRemaining(action) <= Settings.AttackBufferSeconds
                 ? MeleeCommandRejection.None : MeleeCommandRejection.Cooldown;
@@ -266,7 +271,7 @@ namespace BarPromenade
         public void SetBlocking(bool held, bool freshPress = true)
         {
             if (held) CancelCharge();
-            bool next = held && !IsDefeated && !IsKnockedDown;
+            bool next = held && !IsDefeated && !IsKnockedDown && bodyRightHand && bodyLeftHand && bodyStanding;
             if (next && !blockHeld) guardPressedAt = Phase == MeleePhase.Ready && freshPress
                 ? clock : double.NegativeInfinity;
             else if (!next && blockHeld) guardReleasedAt = clock;
@@ -346,6 +351,7 @@ namespace BarPromenade
         public bool RequestRecoveryCharge()
         {
             BeginCommand(MeleeBufferedAction.Charge);
+            if (!BodyAllows(MeleeBufferedAction.Charge)) return RejectCommand(MeleeCommandRejection.BodyUnavailable);
             if (!(Phase == MeleePhase.Ready || CanBuffer)) return RejectCommand(MeleeCommandRejection.BufferWindow);
             if (stamina < Settings.AttackCost) return RejectCommand(MeleeCommandRejection.Stamina);
             bufferedAction = MeleeBufferedAction.Charge;
@@ -358,6 +364,7 @@ namespace BarPromenade
         private bool BeginCharge(bool fromBuffer = false, bool ignoreWeaponCooldown = false)
         {
             BeginCommand(MeleeBufferedAction.Charge);
+            if (!BodyAllows(MeleeBufferedAction.Charge)) return RejectCommand(MeleeCommandRejection.BodyUnavailable);
             if (Phase != MeleePhase.Ready) return RejectCommand(MeleeCommandRejection.Phase);
             if (!ignoreWeaponCooldown && clock + .000001d < weaponReadyAt) return RejectCommand(MeleeCommandRejection.Cooldown);
             if (stamina < Settings.AttackCost) return RejectCommand(MeleeCommandRejection.Stamina);
@@ -533,6 +540,7 @@ namespace BarPromenade
         private bool QueuePhysicalAction(MeleeBufferedAction action, float cost)
         {
             BeginCommand(action);
+            if (!BodyAllows(action)) return RejectCommand(MeleeCommandRejection.BodyUnavailable);
             if (!(Phase == MeleePhase.Ready || IsCharging || CanQueue(action))) return RejectCommand(QueueRejection(action));
             if (stamina < cost) return RejectCommand(MeleeCommandRejection.Stamina);
             bufferedAction = action;
@@ -570,6 +578,7 @@ namespace BarPromenade
         public bool RequestRecoveryStep(int lateralSign = 0)
         {
             BeginCommand(MeleeBufferedAction.Step);
+            if (!BodyAllows(MeleeBufferedAction.Step)) return RejectCommand(MeleeCommandRejection.BodyUnavailable);
             if (!(Phase == MeleePhase.Ready || CanBuffer)) return RejectCommand(MeleeCommandRejection.BufferWindow);
             if (stamina < Settings.StepCost) return RejectCommand(MeleeCommandRejection.Stamina);
             pendingStepCue = Math.Sign(lateralSign);
@@ -601,6 +610,7 @@ namespace BarPromenade
         private bool TryStartAttack(bool fromBuffer, bool ignoreWeaponCooldown = false)
         {
             BeginCommand(MeleeBufferedAction.Attack);
+            if (!BodyAllows(MeleeBufferedAction.Attack)) return RejectCommand(MeleeCommandRejection.BodyUnavailable);
             if (Phase != MeleePhase.Ready) return RejectCommand(MeleeCommandRejection.Phase);
             if (!ignoreWeaponCooldown && clock + .000001d < weaponReadyAt) return RejectCommand(MeleeCommandRejection.Cooldown);
             if (stamina < Settings.AttackCost) return RejectCommand(MeleeCommandRejection.Stamina);
@@ -634,6 +644,7 @@ namespace BarPromenade
         public bool TryStartShove()
         {
             BeginCommand(MeleeBufferedAction.Shove);
+            if (!BodyAllows(MeleeBufferedAction.Shove)) return RejectCommand(MeleeCommandRejection.BodyUnavailable);
             if (!(Phase == MeleePhase.Ready || IsCharging || Phase == MeleePhase.Windup)) return RejectCommand(MeleeCommandRejection.Phase);
             if (clock + .000001d < shoveReadyAt) return RejectCommand(MeleeCommandRejection.Cooldown);
             if (stamina < Settings.ShoveCost) return RejectCommand(MeleeCommandRejection.Stamina);
@@ -661,6 +672,7 @@ namespace BarPromenade
         public bool TryStartStep(int lateralSign = 0)
         {
             BeginCommand(MeleeBufferedAction.Step);
+            if (!BodyAllows(MeleeBufferedAction.Step)) return RejectCommand(MeleeCommandRejection.BodyUnavailable);
             if (!(Phase == MeleePhase.Ready || IsCharging)) return RejectCommand(MeleeCommandRejection.Phase);
             if (clock + .000001d < stepReadyAt) return RejectCommand(MeleeCommandRejection.Cooldown);
             if (stamina < Settings.StepCost) return RejectCommand(MeleeCommandRejection.Stamina);
@@ -671,6 +683,7 @@ namespace BarPromenade
         public bool TryStartRecoveryStep(int lateralSign = 0)
         {
             BeginCommand(MeleeBufferedAction.Step);
+            if (!BodyAllows(MeleeBufferedAction.Step)) return RejectCommand(MeleeCommandRejection.BodyUnavailable);
             if (!(Phase == MeleePhase.Ready || IsCharging || IsStunned)) return RejectCommand(MeleeCommandRejection.Phase);
             if (clock + .000001d < stepReadyAt) return RejectCommand(MeleeCommandRejection.Cooldown);
             if (stamina < Settings.StepCost) return RejectCommand(MeleeCommandRejection.Stamina);
@@ -705,6 +718,7 @@ namespace BarPromenade
         public bool TryStartKick()
         {
             BeginCommand(MeleeBufferedAction.Kick);
+            if (!BodyAllows(MeleeBufferedAction.Kick)) return RejectCommand(MeleeCommandRejection.BodyUnavailable);
             if (!(Phase == MeleePhase.Ready || IsCharging)) return RejectCommand(MeleeCommandRejection.Phase);
             if (clock + .000001d < kickReadyAt) return RejectCommand(MeleeCommandRejection.Cooldown);
             if (stamina < Settings.KickCost) return RejectCommand(MeleeCommandRejection.Stamina);
@@ -1014,6 +1028,7 @@ namespace BarPromenade
             CancelAction();
             if (Health == 0f)
             {
+                DefeatCause = MeleeDefeatCause.HealthLoss;
                 Phase = MeleePhase.Defeated;
                 return MeleeHitResult.Hit;
             }
@@ -1121,6 +1136,7 @@ namespace BarPromenade
             chained = false;
             if (Health == 0f)
             {
+                DefeatCause = MeleeDefeatCause.HealthLoss;
                 Phase = MeleePhase.Defeated;
                 DropGuard();
                 stunRemaining = 0d;
@@ -1162,6 +1178,7 @@ namespace BarPromenade
             CancelAction();
             if (Health == 0f)
             {
+                DefeatCause = MeleeDefeatCause.HealthLoss;
                 Phase = MeleePhase.Defeated;
                 return MeleeHitResult.Hit;
             }
@@ -1219,9 +1236,43 @@ namespace BarPromenade
             AttackSequence = unchecked(AttackSequence + 1);
         }
 
+        /// <summary>Shared anatomical command gates. Limb loss neither spends HP
+        /// nor finishes the duel; unsupported actions and their intents end now.</summary>
+        public void SetBodyCapabilities(bool rightHand, bool leftHand, bool standing)
+        {
+            bodyRightHand = rightHand; bodyLeftHand = leftHand; bodyStanding = standing;
+            if (!rightHand || !leftHand || !standing) DropGuard();
+            bool activeUnsupported = (IsAttacking || IsCharging) && !rightHand || IsShoving && !leftHand ||
+                (IsKicking || Phase == MeleePhase.Step) && !standing;
+            if (activeUnsupported) CancelAction();
+            else if (bufferedAction != MeleeBufferedAction.None && !BodyAllows(bufferedAction)) CancelBufferedAction(bufferedAction);
+        }
+
+        private bool BodyAllows(MeleeBufferedAction action) => action switch
+        {
+            MeleeBufferedAction.Attack or MeleeBufferedAction.Charge => bodyRightHand,
+            MeleeBufferedAction.Shove => bodyLeftHand,
+            MeleeBufferedAction.Step or MeleeBufferedAction.Kick => bodyStanding,
+            _ => true
+        };
+
+        /// <summary>A critical anatomical discontinuity is a rules-owned terminal
+        /// cause, never fabricated HP damage from a renderer.</summary>
+        public bool ApplyStructuralFailure()
+        {
+            if (IsDefeated) return false;
+            CancelAction();
+            Health = 0f;
+            DefeatCause = MeleeDefeatCause.StructuralFailure;
+            Phase = MeleePhase.Defeated;
+            return true;
+        }
+
         public void Reset()
         {
             BeginCommand(MeleeBufferedAction.None);
+            bodyRightHand = bodyLeftHand = bodyStanding = true;
+            DefeatCause = MeleeDefeatCause.None;
             Health = Settings.MaxHealth;
             AttackPower = 0f;
             ClearCharge();

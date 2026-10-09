@@ -51,7 +51,7 @@ namespace BarPromenade
                 shotgunShells[i].gameObject.SetActive(Shotgun.ChamberLoaded(i) || Shotgun.ChamberSpent(i));
             float time = Shotgun.ReloadElapsed;
             int barrel = time >= 1.8f && time < 2.2f ? 1 : time >= 1.05f && time < 1.6f ? 0 : -1;
-            bool held = Shotgun.ReloadPending && barrel >= 0 && (Shotgun.ReloadChamberMask & (1 << barrel)) != 0;
+            bool held = BodyDamage.CanUseLeftHand && Shotgun.ReloadPending && barrel >= 0 && (Shotgun.ReloadChamberMask & (1 << barrel)) != 0;
             if (held) CombatShotgunAssetProvider.PlaceShellInHand(shotgunHandShell, hero.Registry.Anchors.LeftGrip, handPose);
             shotgunHandShell.SetActive(held);
         }
@@ -119,30 +119,37 @@ namespace BarPromenade
         {
             if (hits.Count == 0) return;
             float damage = 0f, strongest = -1f;
+            var healthDamage = new float[hits.Count];
             Vector3 impulse = Vector3.zero;
             int primary = 0, headIndex = -1;
             for (int i = 0; i < hits.Count; i++)
             {
                 float regional = ProjectileDamageProfile.Shotgun.ResolveDamage(hits[i].Damage, hits[i].Hit.Location);
-                damage += regional;
+                healthDamage[i] = State.IsDefeated || hits[i].Hit.IsDetached ? 0f : BodyDamage.ResolveHealthDamage(
+                    hits[i].Hit.DamageRegion ?? CombatBodyAnatomy.ToRegion(hits[i].Hit.Part), regional);
+                damage += healthDamage[i];
                 Vector3 launch = (hits[i].Velocity.normalized + Vector3.up * .35f).normalized;
-                impulse += launch * hits[i].Momentum;
-                if (regional > strongest) { strongest = regional; primary = i; }
+                if (!hits[i].Hit.IsDetached) impulse += launch * hits[i].Momentum;
+                if (i == 0 || hits[primary].Hit.IsDetached && !hits[i].Hit.IsDetached ||
+                    hits[primary].Hit.IsDetached == hits[i].Hit.IsDetached && regional > strongest)
+                { strongest = regional; primary = i; }
                 if (headIndex < 0 && hits[i].Hit.Location.Region == MeleeBodyRegion.Head) headIndex = i;
             }
             MeleePhase before = State.Phase;
             float health = State.Health;
             bool wasDefeated = State.IsDefeated;
-            MeleeHitResult result = wasDefeated ? MeleeHitResult.Hit :
+            MeleeHitResult result = wasDefeated || damage <= 0f ? MeleeHitResult.Hit :
                 State.ReceiveProjectileHit(damage, default, .42f, ProjectileDamageProfile.Shotgun);
             if (result == MeleeHitResult.Ignored) return;
             bool terminal = !wasDefeated && State.IsDefeated;
-            if (headIndex >= 0 && State.IsDefeated) primary = headIndex;
+            if (headIndex >= 0 && State.IsDefeated && !hits[headIndex].Hit.IsDetached) primary = headIndex;
             var representative = hits[primary];
             var summary = new CombatImpact(source, this, sequence, representative.Hit.Point, representative.Hit.Normal,
                 representative.Velocity.normalized, health, State.Health, result, representative.Hit.Location, 0f,
                 representative.Hit.Part, representative.Hit.LocalPoint, representative.Velocity.magnitude,
-                impulse, CombatImpactKind.Projectile, representative.Hit.LocalDirection, representative.Index);
+                impulse, CombatImpactKind.Projectile, representative.Hit.LocalDirection, representative.Index,
+                bodyRegion: representative.Hit.DamageRegion, bodyPatch: representative.Hit.DamagePatch,
+                detachedPart: representative.Hit.IsDetached);
             if (terminal) BeginProjectileDefeat(summary);
             if (firstResponse)
             {
@@ -155,12 +162,14 @@ namespace BarPromenade
             {
                 int i = (primary + n) % hits.Count;
                 var pellet = hits[i];
-                float nextHealth = Mathf.Max(0f, allocatedHealth - ProjectileDamageProfile.Shotgun.ResolveDamage(pellet.Damage, pellet.Hit.Location));
+                float nextHealth = Mathf.Max(0f, allocatedHealth - healthDamage[i]);
                 var impact = new CombatImpact(source, this, sequence, pellet.Hit.Point, pellet.Hit.Normal,
                     pellet.Velocity.normalized, allocatedHealth, nextHealth, result, pellet.Hit.Location, 0f,
                     pellet.Hit.Part, pellet.Hit.LocalPoint, pellet.Velocity.magnitude,
-                    n == 0 ? impulse : Vector3.zero, CombatImpactKind.Projectile, pellet.Hit.LocalDirection,
-                    pellet.Index, n == 0 && firstResponse, true, pellet.Damage, pellet.HeadTrauma);
+                    pellet.Hit.IsDetached ? (pellet.Velocity.normalized + Vector3.up * .35f).normalized * pellet.Momentum :
+                        n == 0 ? impulse : Vector3.zero, CombatImpactKind.Projectile, pellet.Hit.LocalDirection,
+                    pellet.Index, n == 0 && firstResponse, true, pellet.Damage, pellet.HeadTrauma,
+                    pellet.Hit.DamageRegion, pellet.Hit.DamagePatch, pellet.Hit.IsDetached);
                 PublishImpact(impact, before);
                 allocatedHealth = nextHealth;
             }

@@ -61,12 +61,12 @@ namespace BarPromenade
             if (pool == null || !pool.Active)
             {
                 CombatRagdoll ragdoll = actor.Ragdoll;
-                if (!actor.State.IsDefeated || ragdoll == null || !ragdoll.HasGroundContact || injury.Marks.Count == 0) return;
+                if (!actor.State.IsDefeated || ragdoll == null || !ragdoll.HasGroundContact ||
+                    !TryGetRetainedBleedSource(injury, out Vector3 source)) return;
                 injury.GroundSeconds += seconds;
                 // Feet touching while standing are not a fall. Wait for the
                 // contacted body to slow before fixing the wound's floor source.
                 if (injury.GroundSeconds < .35f || (!ragdoll.IsSettled && ragdoll.MaximumBodySpeed > .8f)) return;
-                Vector3 source = injury.HeadSource != null ? injury.HeadSource.TransformPoint(injury.HeadLocalPoint) : injury.Marks.BleedPosition;
                 if (!FindPoolSupport(source + Vector3.up * .1f, 2f, out RaycastHit support)) return;
                 pool = injury.Pool ?? (injury.Pool = new DefeatPool());
                 StartDefeatPool(pool, support, actor.IsHero ? 1 : 0, injury.HeadTrauma);

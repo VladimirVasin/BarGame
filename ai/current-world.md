@@ -146,25 +146,23 @@ The vertical slice contains:
   City/Bar/lodge markers belong to one load, consumed once; later arrivals stay.
   Day one raises mother's-house quest/map marker; door/map entry or starting
   inside closes it. No village signpost;
-- CombatTest:bar/pistol/shotgun→Start;NPCbar/3AI;dummy/freecam;
+- CombatTest:bar/pistol8∞/shotgun2∞→Start;NPCbar/3AI;dummy/freecam;
   MMBfocus/TabAIreset/resetAI-focus/bar-Qfocus;
-  guns:RMBaim/LMBedge/R-Xreload/Rpalm gait/reversible FOV-IK.25;
-  cam-plane clamped strafe/yaw/release tank/Space:cardinal-back/fixed upper.
-  Pistol8/∞:reload1.8;head0HP;slide-empty/mag-rack/cases g-bounce/SFX.
-  Shotgun2∞/12pellets/.55/head×2;damage-momentum fade0→40m;
-  1m:24HP/pellet/240Ns full;hits sum/one reaction/launch/head≤14.
-  Break2.8/eject spent/load missing/close;atomic spend/flights finish;
-  Rresume/dropE stage-ammo/win fire-reload.
-  Ray:world/anatomy;recoil/streak/stablecam/cross/hitkick;
-  gravity/sweep1/0pierce-ricochet-guard-parry.
-  Rig:chest-abdomen/arm-forearm-hand/leg-drop/catch.
-  Wounds:skin-fabric-glove-boot/dir/wet-dry24s/repeat≤4/64/0sever.
-  Pistol head3-5/16;brain8:jelly/squash/gaps/cam-hide.
-  Blood:pistol head56/800/pulse→24s0/rig cut/stains-pool-debris/convulsions2.35;
-  corpse impulse/HP-result-pose;pause-hitstop/reset-exit0/end1x.
-  World:chips-sparks/holes128FIFO/particles192/0dmg;
-  Bar:6zones/rearhead-end/firsthit/metalrecoil/Qsupport/drop/toilet;
-  Eown-ammo/sharedUI/0grant;gap:pierce/balance;
+  guns:RMBaim/LMBedge/R-Xreload/Rpalm gait/FOV-IK.25;
+  cam-plane strafe/Space1m-cardinal-back/fixedupper/tankrelease.
+  Shotgun12/.55/head×2;linear1m24HP/240Ns→25m1.5/8→40m0;
+  one reaction/launch/head≤14/break2.8/eject-spent/load-missing/close.
+  DropE/Rresume barrel-stage-ammo/atomic spend/flights finish/win fire-reload.
+  Ray:nearest world/posed skin;gravity/recoil/streak/stablecam/0pierce-ricochet-guard.
+  Body17/patch4:local cumulative cloth-tissue-bone loss/closed cuts/skeleton;
+  finite posed severed parts/surface queries/physical holes.
+  ArmHP≤35/leg≤45;both:Rhand drop/no weapon,Lhand no2hand-reload;
+  Rbar/loaded pistol remain;leg loss living ragdoll/crawl/no rise-step-kick.
+  Critical head-torso terminal/corpse damage/pause/reset restore all.
+  Pistol:reload1.8/slide-emptylock/mag-rack/cases/head3-5of16/brain8 jelly-squash;
+  blood56/800/pulse24s0/cam-hide/convulsions2.35/worldhole128FIFO/particles192.
+  Bar6zones/rearhead-end/metalrecoil/Qsupport/toilet/Eown-ammo/sharedUI/0grant;
+  gap:pierce/balance;
 - the retained Home opening is reachable only by a legacy request: held bed loop,
   silent `05:59` clock with rare whole-display flicker, five-second input lock,
   then localized Wake Up/Quit. Wake sets `06:00`, runs the clock/alarm and hides
