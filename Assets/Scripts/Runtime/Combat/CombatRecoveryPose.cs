@@ -61,39 +61,120 @@ namespace BarPromenade
             ClipProgress < .80f ? "stand" : "regrip";
         public string SupportReason => FeetSupported ? "boots" : StageLabel;
 
+        // Bind data belongs to the original production rig, not the hundreds of
+        // damage renderers added beneath it. Keep only managed references and
+        // renderer-local bind matrices so a later fall can reuse them at its
+        // current world transform, including the imported authoring scale.
+        internal sealed class RigBindings
+        {
+            internal readonly Animator SourceAnimator;
+            internal readonly Transform SourceRoot;
+            internal readonly SkinnedMeshRenderer[] LeftSoles, RightSoles;
+            internal readonly Dictionary<string, Transform> Targets = new Dictionary<string, Transform>(StringComparer.Ordinal);
+            private readonly Dictionary<Transform, SkinBindFrame> frames = new Dictionary<Transform, SkinBindFrame>();
+            internal int SkinReads { get; private set; }
+
+            internal RigBindings(Transform rig, bool npc)
+            {
+                GameObject template = npc ? DefaultNpcCatalog.GetPrefab() : Resources.Load<GameObject>("Player/Player3DV2");
+                SourceAnimator = npc ? template.GetComponent<VillageResidentPresentation>()?.Animator :
+                    template != null ? template.GetComponentInChildren<Player3DAssetRegistry>(true)?.Animator : null;
+                if (SourceAnimator == null)
+                    throw new InvalidOperationException("Combat recovery requires the matching production skeleton.");
+                SourceRoot = CityPedestrianHandProps.FindSocket(SourceAnimator.transform, "root");
+                Transform targetRoot = CityPedestrianHandProps.FindSocket(rig, "root");
+                if (SourceRoot == null || targetRoot == null)
+                    throw new InvalidOperationException("The combat bank has no root joint.");
+                CollectTargets(targetRoot);
+                var needed = new HashSet<Transform>();
+                CollectNeeded(SourceRoot);
+                var sourceNames = new HashSet<string>(StringComparer.Ordinal);
+                foreach (SkinnedMeshRenderer source in template.GetComponentsInChildren<SkinnedMeshRenderer>(true))
+                    sourceNames.Add(source.name);
+                var bind = new List<Matrix4x4>();
+                var leftSoles = new List<SkinnedMeshRenderer>();
+                var rightSoles = new List<SkinnedMeshRenderer>();
+                foreach (SkinnedMeshRenderer skin in rig.GetComponentsInChildren<SkinnedMeshRenderer>(true))
+                {
+                    string name = skin.name;
+                    if (skin.sharedMesh == null || !sourceNames.Contains(name)) continue;
+                    // Original soles remain the complete authored lower envelope,
+                    // including when damage suppresses their source renderer.
+                    // Generated cut patches cannot add another supporting boot.
+                    if (name.EndsWith("Sole.L", StringComparison.Ordinal)) leftSoles.Add(skin);
+                    if (name.EndsWith("Sole.R", StringComparison.Ordinal)) rightSoles.Add(skin);
+                    if (needed.Count == 0) continue;
+                    Transform[] bones = skin.bones;
+                    skin.sharedMesh.GetBindposes(bind);
+                    SkinReads++;
+                    for (int i = 0; i < bones.Length && i < bind.Count; i++)
+                    {
+                        Transform bone = bones[i];
+                        if (bone == null || frames.ContainsKey(bone)) continue;
+                        frames.Add(bone, new SkinBindFrame(skin.transform, bind[i].inverse));
+                        needed.Remove(bone);
+                    }
+                }
+                LeftSoles = leftSoles.ToArray(); RightSoles = rightSoles.ToArray();
+
+                void CollectTargets(Transform target)
+                {
+                    if (!Targets.ContainsKey(target.name)) Targets.Add(target.name, target);
+                    for (int i = 0; i < target.childCount; i++) CollectTargets(target.GetChild(i));
+                }
+                void CollectNeeded(Transform source)
+                {
+                    if (!source.name.StartsWith("SOCKET_", StringComparison.Ordinal) &&
+                        Targets.TryGetValue(source.name, out Transform target))
+                    {
+                        needed.Add(target);
+                        if (target.parent != null && Targets.ContainsValue(target.parent)) needed.Add(target.parent);
+                    }
+                    for (int i = 0; i < source.childCount; i++) CollectNeeded(source.GetChild(i));
+                }
+            }
+
+            internal Dictionary<Transform, Matrix4x4> CaptureWorldFrames()
+            {
+                var world = new Dictionary<Transform, Matrix4x4>(frames.Count);
+                foreach (var frame in frames)
+                    world.Add(frame.Key, frame.Value.Renderer.localToWorldMatrix * frame.Value.InverseBind);
+                return world;
+            }
+
+            private readonly struct SkinBindFrame
+            {
+                internal readonly Transform Renderer;
+                internal readonly Matrix4x4 InverseBind;
+                internal SkinBindFrame(Transform renderer, Matrix4x4 inverseBind)
+                { Renderer = renderer; InverseBind = inverseBind; }
+            }
+        }
+
         internal CombatRecoveryPose(Transform actorRoot, Transform rig, CharacterController body,
-            CombatRagdoll physics, NpcHandPose handPose, bool isNpc, Transform weapon)
+            CombatRagdoll physics, NpcHandPose handPose, bool isNpc, Transform weapon, RigBindings preparedRig = null)
         {
             using var marker = PrepareMarker.Auto();
             actor = actorRoot; ownedWeapon = weapon; capsule = body; ragdoll = physics; hands = handPose; npc = isNpc;
-            Transform Bone(string name) => CityPedestrianHandProps.FindSocket(rig, name) ??
+            RigBindings rigBindings = preparedRig ?? new RigBindings(rig, npc);
+            Transform Bone(string name) => rigBindings.Targets.TryGetValue(name, out Transform bone) ? bone :
                 throw new InvalidOperationException("Combat recovery requires " + name);
             pelvis = Bone("pelvis"); chest = Bone("chest");
             leftFoot = Bone("foot.L"); rightFoot = Bone("foot.R");
             leftThigh = Bone("thigh.L"); leftShin = Bone("shin.L");
             rightThigh = Bone("thigh.R"); rightShin = Bone("shin.R");
-            GameObject template = npc ? DefaultNpcCatalog.GetPrefab() : Resources.Load<GameObject>("Player/Player3DV2");
-            Animator sourceAnimator = npc ? template.GetComponent<VillageResidentPresentation>()?.Animator :
-                template != null ? template.GetComponentInChildren<Player3DAssetRegistry>(true)?.Animator : null;
-            if (sourceAnimator == null)
-                throw new InvalidOperationException("Combat recovery requires the matching production skeleton.");
+            Animator sourceAnimator = rigBindings.SourceAnimator;
             sampler = new GameObject("Combat Recovery Bone Sampler");
             sampler.transform.SetParent(actor, false);
-            var rest = RestPositions(rig);
+            Dictionary<Transform, Matrix4x4> bindFrames = rigBindings.CaptureWorldFrames();
+            var rest = RestPositions(bindFrames);
             leftHipPosition = rest[leftThigh]; leftKneePosition = rest[leftShin]; leftAnklePosition = rest[leftFoot];
             rightHipPosition = rest[rightThigh]; rightKneePosition = rest[rightShin]; rightAnklePosition = rest[rightFoot];
             // Limits use the imported bind frame, never a lying root's world axes
             // or the already bent first animation sample.
             Matrix4x4 BindFrame(Transform target)
             {
-                foreach (SkinnedMeshRenderer skin in rig.GetComponentsInChildren<SkinnedMeshRenderer>(true))
-                {
-                    if (skin.sharedMesh == null) continue;
-                    Transform[] bones = skin.bones;
-                    Matrix4x4[] poses = skin.sharedMesh.bindposes;
-                    for (int i = 0; i < bones.Length && i < poses.Length; i++)
-                        if (bones[i] == target) return skin.localToWorldMatrix * poses[i].inverse;
-                }
+                if (bindFrames.TryGetValue(target, out Matrix4x4 frame)) return frame;
                 throw new InvalidOperationException("Combat recovery needs the bind frame of " + target.name);
             }
             Matrix4x4 pelvisBind = BindFrame(pelvis).inverse;
@@ -106,8 +187,7 @@ namespace BarPromenade
             rightAnkleRest = Quaternion.Inverse(BindFrame(rightShin).rotation) * BindFrame(rightFoot).rotation;
             // Generic clips bind by the full path under their Animator. The NPC and
             // hero banks share bone names, but have different armature parent paths.
-            Transform sourceRoot = CityPedestrianHandProps.FindSocket(sourceAnimator.transform, "root");
-            if (sourceRoot == null) throw new InvalidOperationException("The combat bank has no root joint.");
+            Transform sourceRoot = rigBindings.SourceRoot;
             Transform CopyParent(Transform original)
             {
                 if (original == sourceAnimator.transform) return sampler.transform;
@@ -116,7 +196,7 @@ namespace BarPromenade
             void CopyBones(Transform original, Transform parent)
             {
                 Transform copy = CopyTransform(original, parent);
-                Transform target = CityPedestrianHandProps.FindSocket(rig, original.name);
+                rigBindings.Targets.TryGetValue(original.name, out Transform target);
                 if (target != null && !original.name.StartsWith("SOCKET_", StringComparison.Ordinal))
                     bindings.Add(new BoneBinding(copy, target, rest.TryGetValue(target, out Vector3 position)
                         ? position : target.localPosition));
@@ -124,15 +204,8 @@ namespace BarPromenade
             }
             CopyBones(sourceRoot, CopyParent(sourceRoot.parent));
             var heroRegistry = rig.GetComponentInParent<Player3DAssetRegistry>();
-            var leftSoles = new List<SkinnedMeshRenderer>();
-            var rightSoles = new List<SkinnedMeshRenderer>();
-            foreach (SkinnedMeshRenderer skin in rig.GetComponentsInChildren<SkinnedMeshRenderer>(true))
-            {
-                if (skin.name.EndsWith("Sole.L", StringComparison.Ordinal)) leftSoles.Add(skin);
-                if (skin.name.EndsWith("Sole.R", StringComparison.Ordinal)) rightSoles.Add(skin);
-            }
             footProbe = heroRegistry != null ? Player3DFootGroundProbe.CreateForHero(heroRegistry, actor)
-                : Player3DFootGroundProbe.Create(leftSoles, rightSoles, actor);
+                : Player3DFootGroundProbe.Create(rigBindings.LeftSoles, rigBindings.RightSoles, actor);
         }
 
         internal bool Begin(in PlayerRagdollLyingPose lying)
@@ -478,17 +551,8 @@ namespace BarPromenade
             return copy;
         }
 
-        private static Dictionary<Transform, Vector3> RestPositions(Transform rig)
+        private static Dictionary<Transform, Vector3> RestPositions(Dictionary<Transform, Matrix4x4> world)
         {
-            var world = new Dictionary<Transform, Matrix4x4>();
-            foreach (SkinnedMeshRenderer skin in rig.GetComponentsInChildren<SkinnedMeshRenderer>(true))
-            {
-                if (skin.sharedMesh == null) continue;
-                Matrix4x4[] bind = skin.sharedMesh.bindposes;
-                Transform[] bones = skin.bones;
-                for (int i = 0; i < bones.Length && i < bind.Length; i++)
-                    if (bones[i] != null && !world.ContainsKey(bones[i])) world.Add(bones[i], skin.localToWorldMatrix * bind[i].inverse);
-            }
             var result = new Dictionary<Transform, Vector3>();
             foreach (var pair in world)
             {

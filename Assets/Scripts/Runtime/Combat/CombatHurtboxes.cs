@@ -13,6 +13,7 @@ namespace BarPromenade
         private Shape[] activeShapes;
         private readonly Transform headBone, actorFrame;
         private readonly Matrix4x4 headBind;
+        internal int PoseCaptureCount { get; private set; }
 
         internal readonly struct Hit
         {
@@ -104,6 +105,7 @@ namespace BarPromenade
 
         private void CapturePose(bool refreshBodySurfaces)
         {
+            PoseCaptureCount++;
             for (int i = 0; i < activeShapes.Length; i++) snapshots[i] = activeShapes[i].Capture();
             CaptureHeadSurfaces();
             CaptureBodySurfaces(refreshBodySurfaces);

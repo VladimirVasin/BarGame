@@ -22,6 +22,7 @@ namespace BarPromenade.Tests.PlayMode
             yield return EnterRange(false, CombatWeaponId.Shotgun);
             using var allocations = CreateBodyAllocationRecorder();
             var timer = new Stopwatch();
+            AssertFirstCombatKnockdownPreparation(allocations, timer);
             var allSamples = new List<DistantShotgunSample>(384);
             foreach (bool hurtHero in new[] { false, true })
             {
@@ -318,8 +319,183 @@ namespace BarPromenade.Tests.PlayMode
             root.Tick(.2f);
             Assert.That(root.HitStopSecondsConsumed, Is.GreaterThan(frozenBeforeTerminal),
                 "Removing the surviving-pellet stop must preserve the terminal contact clock.");
+            ApplyKnownBodyContact(root.Opponent, root.Hero, BodyDamageRegion.RightForearm, 0, 2f, 99);
+            Assert.That(root.BodyEffects.ActiveFragmentCount, Is.GreaterThan(0),
+                "The aftermath fixture must retain real physical debris while unused anatomy work is skipped.");
+            AssertQuietCombatAftermath(allocations, timer);
+            Assert.That(root.PauseMenu.Open(), Is.True);
+            int pausedCaptures = root.Hero.Hurtboxes.PoseCaptureCount + root.Opponent.Hurtboxes.PoseCaptureCount;
+            int pausedPoses = root.Hero.Hurtboxes.BodySurfacePoseBuilds + root.Opponent.Hurtboxes.BodySurfacePoseBuilds;
+            int pausedGeometry = root.Hero.Hurtboxes.BodySurfaceGeometryBuilds + root.Opponent.Hurtboxes.BodySurfaceGeometryBuilds;
+            int pausedProxies = root.BodyEffects.ProxyGeometryBuilds;
+            float pausedDebris = root.BodyEffects.DebrisAgeFor(root.Opponent);
+            root.TickFrame(CombatTestRoot.MaximumFrameSubsteps * CombatTestRoot.SimulationStep);
+            yield return null;
+            Assert.That(root.Hero.Hurtboxes.PoseCaptureCount + root.Opponent.Hurtboxes.PoseCaptureCount, Is.EqualTo(pausedCaptures));
+            Assert.That(root.Hero.Hurtboxes.BodySurfacePoseBuilds + root.Opponent.Hurtboxes.BodySurfacePoseBuilds, Is.EqualTo(pausedPoses));
+            Assert.That(root.Hero.Hurtboxes.BodySurfaceGeometryBuilds + root.Opponent.Hurtboxes.BodySurfaceGeometryBuilds, Is.EqualTo(pausedGeometry));
+            Assert.That(root.BodyEffects.ProxyGeometryBuilds, Is.EqualTo(pausedProxies));
+            Assert.That(root.BodyEffects.DebrisAgeFor(root.Opponent), Is.EqualTo(pausedDebris));
+            Assert.That(root.PauseMenu.Cancel(), Is.True);
+            yield return WaitFor(() => GameInput.CanRead(GameInputContext.Gameplay), "Pause did not release aftermath input.");
+            AssertAftermathProjectileContacts();
             root.ResetRound();
+            Assert.That(root.RoundFinished, Is.False);
+            Assert.That(root.Projectiles.ActiveCount, Is.Zero);
+            Assert.That(root.BodyEffects.ActiveFragmentCount, Is.Zero);
+            Assert.That(TotalBodyTissueLoss(root.Opponent), Is.Zero);
             LogAssert.NoUnexpectedReceived();
+        }
+
+        private void AssertFirstCombatKnockdownPreparation(ProfilerRecorder allocations, Stopwatch timer)
+        {
+            root.ResetRound(); PlacePair(6f);
+            CombatActor target = root.Opponent;
+            Assert.That(target.RecoveryPreparationCount, Is.Zero,
+                "The measurement must include the first actual recovery preparation, before any damage warms it.");
+            var skins = target.DamageRigRoot.GetComponentsInChildren<SkinnedMeshRenderer>(true);
+            var productionNames = new HashSet<string>(StringComparer.Ordinal);
+            foreach (SkinnedMeshRenderer skin in DefaultNpcCatalog.GetPrefab().GetComponentsInChildren<SkinnedMeshRenderer>(true))
+                if (skin.sharedMesh != null) productionNames.Add(skin.name);
+            int originals = 0, originalSoles = 0, allSoles = 0;
+            foreach (SkinnedMeshRenderer skin in skins)
+            {
+                bool original = skin.sharedMesh != null && productionNames.Contains(skin.name);
+                bool sole = skin.name.EndsWith("Sole.L", StringComparison.Ordinal) || skin.name.EndsWith("Sole.R", StringComparison.Ordinal);
+                if (original) originals++;
+                if (sole) { allSoles++; if (original) originalSoles++; }
+            }
+            Assert.That(originals, Is.GreaterThan(0).And.LessThan(skins.Length),
+                "The first-fall fixture must include both production surfaces and prepared damage derivatives.");
+            var impact = new CombatImpact(root.Hero, target, 100, target.BodyWorldPosition,
+                target.transform.forward, -target.transform.forward, target.State.Health, target.State.Health,
+                MeleeHitResult.Hit, new MeleeHitLocation(MeleeBodyRegion.Torso, MeleeHitSide.Front),
+                kind: CombatImpactKind.Projectile, bodyRegion: BodyDamageRegion.Chest);
+            allocations.Reset(); allocations.Start(); timer.Restart();
+            bool began = target.TryBeginKnockdown(impact, Vector3.up, Vector3.right * .1f);
+            timer.Stop(); long allocated = StopBodyAllocationRecorder(allocations);
+            TestContext.Out.WriteLine($"Test first combat knockdown: cpu={timer.Elapsed.TotalMilliseconds:F3} ms, " +
+                $"allocations={allocated}, bindSkinReads={target.RecoveryPreparationSkinReads}, productionSkins={originals}, " +
+                $"preparedSkins={skins.Length - originals}.");
+            Assert.That(began && target.IsKnockedDown && target.IsRagdollActive, Is.True,
+                "The cold measurement must begin a real physical fall, rather than only inspect a cached recovery object.");
+            Assert.That(target.RecoveryPreparationCount, Is.EqualTo(1));
+            Assert.That(target.RecoveryRigPreparationCount, Is.EqualTo(1));
+            Assert.That(target.RecoveryPreparationSkinReads, Is.InRange(1, originals),
+                "The bind lookup must read production surfaces once and ignore prepared gore renderer copies.");
+            Assert.That(originalSoles, Is.GreaterThan(0).And.LessThan(allSoles));
+            Assert.That(target.RecoverySoleRendererCount, Is.EqualTo(originalSoles),
+                "The recovery floor probe must retain authored production soles without baking disabled damage copies.");
+            Assert.That(target.RecoveryPreparationTicks, Is.GreaterThan(0));
+            AssertRecoveryBindFrames(target);
+            int reads = target.RecoveryPreparationSkinReads;
+            Assert.That(target.TryBeginKnockdown(impact, Vector3.up, Vector3.zero), Is.False);
+            Assert.That(target.RecoveryPreparationCount, Is.EqualTo(1));
+            Assert.That(target.RecoveryPreparationSkinReads, Is.EqualTo(reads),
+                "An already falling actor must not prepare another sampler or rescan bind poses.");
+            root.ResetRound(); PlacePair(6f);
+            target.transform.SetPositionAndRotation(target.transform.position + Vector3.right * .35f,
+                Quaternion.Euler(0f, 38f, 0f) * target.transform.rotation);
+            Assert.That(target.TryBeginKnockdown(impact, Vector3.up, Vector3.zero), Is.True);
+            Assert.That(target.RecoveryPreparationCount, Is.EqualTo(2),
+                "A reset round still creates its owned recovery sampler for the next real fall.");
+            Assert.That(target.RecoveryRigPreparationCount, Is.EqualTo(1));
+            Assert.That(target.RecoveryPreparationSkinReads, Is.EqualTo(reads),
+                "Round reset must retain immutable production bind metadata without retaining the old falling pose.");
+            AssertRecoveryBindFrames(target);
+            root.ResetRound();
+        }
+
+        private static void AssertRecoveryBindFrames(CombatActor target)
+        {
+            const BindingFlags flags = BindingFlags.Instance | BindingFlags.NonPublic;
+            var prepared = (CombatRecoveryPose.RigBindings)typeof(CombatActor).GetField("knockdownRigBindings", flags).GetValue(target);
+            var recovery = (CombatRecoveryPose)typeof(CombatActor).GetField("knockdownPose", flags).GetValue(target);
+            var expected = new Dictionary<Transform, Matrix4x4>();
+            // This is the original constructor's first-owner formula, independent
+            // of the cached renderer-local lookup and preserving the FBX root scale.
+            foreach (SkinnedMeshRenderer skin in target.DamageRigRoot.GetComponentsInChildren<SkinnedMeshRenderer>(true))
+            {
+                if (skin.sharedMesh == null) continue;
+                Transform[] bones = skin.bones;
+                Matrix4x4[] poses = skin.sharedMesh.bindposes;
+                for (int index = 0; index < bones.Length && index < poses.Length; index++)
+                    if (bones[index] != null && !expected.ContainsKey(bones[index]))
+                        expected.Add(bones[index], skin.localToWorldMatrix * poses[index].inverse);
+            }
+            Dictionary<Transform, Matrix4x4> frames = prepared.CaptureWorldFrames();
+            foreach (string name in new[] { "pelvis", "chest", "thigh.L", "shin.L", "foot.L", "thigh.R", "shin.R", "foot.R" })
+            {
+                Transform bone = FindAnatomicalBone(target, name);
+                Assert.That(frames.ContainsKey(bone), Is.True, "The recovery lookup requires " + name);
+                for (int column = 0; column < 4; column++)
+                    Assert.That((frames[bone].GetColumn(column) - expected[bone].GetColumn(column)).sqrMagnitude,
+                        Is.LessThan(.00000001f), "Cached recovery bind frame must preserve the first-owned imported frame: " + name);
+            }
+            foreach (var sample in new[] { ("thigh.L", "leftHipPosition"), ("shin.L", "leftKneePosition"),
+                ("foot.L", "leftAnklePosition"), ("thigh.R", "rightHipPosition"), ("shin.R", "rightKneePosition"), ("foot.R", "rightAnklePosition") })
+            {
+                Transform bone = FindAnatomicalBone(target, sample.Item1);
+                Matrix4x4 parent = expected.TryGetValue(bone.parent, out Matrix4x4 bind) ? bind : bone.parent.localToWorldMatrix;
+                Vector3 rest = (parent.inverse * expected[bone]).GetColumn(3);
+                Vector3 preparedRest = (Vector3)typeof(CombatRecoveryPose).GetField(sample.Item2, flags).GetValue(recovery);
+                Assert.That(Vector3.Distance(preparedRest, rest), Is.LessThan(.0001f),
+                    "Recovery joint limits must retain the authored local rest position across reset and yaw: " + sample.Item1);
+            }
+        }
+
+        private void AssertQuietCombatAftermath(ProfilerRecorder allocations, Stopwatch timer)
+        {
+            root.Hero.SetPistolAim(false, root.Opponent.BodyWorldPosition);
+            root.Tick(CombatTestRoot.SimulationStep * 2f);
+            Assert.That(root.RoundFinished && root.Opponent.State.IsDefeated, Is.True);
+            Assert.That(root.Projectiles.ActiveCount, Is.Zero);
+            Assert.That(root.Hero.IsFreePistolAiming, Is.False);
+            int captures = root.Hero.Hurtboxes.PoseCaptureCount + root.Opponent.Hurtboxes.PoseCaptureCount;
+            int poses = root.Hero.Hurtboxes.BodySurfacePoseBuilds + root.Opponent.Hurtboxes.BodySurfacePoseBuilds;
+            int geometry = root.Hero.Hurtboxes.BodySurfaceGeometryBuilds + root.Opponent.Hurtboxes.BodySurfaceGeometryBuilds;
+            int synchronizations = root.BodyEffects.ActorSynchronizationCount;
+            int proxies = root.BodyEffects.ProxyGeometryBuilds;
+            float debris = root.BodyEffects.DebrisAgeFor(root.Opponent);
+            allocations.Reset(); allocations.Start(); timer.Restart();
+            for (int frame = 0; frame < 16; frame++)
+                root.TickFrame(CombatTestRoot.MaximumFrameSubsteps * CombatTestRoot.SimulationStep);
+            timer.Stop(); long allocated = StopBodyAllocationRecorder(allocations);
+            Assert.That(root.Hero.Hurtboxes.PoseCaptureCount + root.Opponent.Hurtboxes.PoseCaptureCount, Is.EqualTo(captures),
+                "Quiet aftermath must advance clocks and weapon history without capturing contact anatomy every substep.");
+            Assert.That(root.Hero.Hurtboxes.BodySurfacePoseBuilds + root.Opponent.Hurtboxes.BodySurfacePoseBuilds, Is.EqualTo(poses));
+            Assert.That(root.Hero.Hurtboxes.BodySurfaceGeometryBuilds + root.Opponent.Hurtboxes.BodySurfaceGeometryBuilds, Is.EqualTo(geometry));
+            Assert.That(root.BodyEffects.ActorSynchronizationCount, Is.EqualTo(synchronizations));
+            Assert.That(root.BodyEffects.ProxyGeometryBuilds, Is.EqualTo(proxies),
+                "Repeated effects ticks in one unchanged physical pose must retain collision geometry.");
+            Assert.That(root.BodyEffects.DebrisAgeFor(root.Opponent), Is.GreaterThan(debris),
+                "Skipping unused contact snapshots must keep physical aftermath and debris clocks alive.");
+            TestContext.Out.WriteLine($"Test quiet combat aftermath: cpu={timer.Elapsed.TotalMilliseconds / 16d:F3} ms per frame, " +
+                $"allocations={allocated}, anatomyCaptures=0, bodyPoses=0, geometry=0.");
+        }
+
+        private void AssertAftermathProjectileContacts()
+        {
+            CombatActor target = root.Opponent;
+            target.CaptureContactPose();
+            Assert.That(target.Hurtboxes.GetRegionFrame(MeleeBodyRegion.Head, out Vector3 center,
+                out Vector3 outward, out _), Is.True);
+            var spread = root.Hero.Shotgun.Settings.PelletSpread(0, 100);
+            Quaternion direction = Quaternion.LookRotation(-outward) * Quaternion.FromToRotation(
+                new Vector3(spread.x, spread.y, 1f).normalized, Vector3.forward);
+            Assert.That(root.Projectiles.TrySpawnVolley(root.Hero, center + outward * 2f,
+                direction, 100, root.Hero.Shotgun.Settings), Is.True);
+            int captures = target.Hurtboxes.PoseCaptureCount;
+            int contacts = target.ReceivedImpactCount;
+            float health = target.State.Health;
+            for (int frame = 0; frame < 24 && root.Projectiles.ActiveCount > 0; frame++)
+                root.TickFrame(CombatTestRoot.MaximumFrameSubsteps * CombatTestRoot.SimulationStep);
+            Assert.That(root.Projectiles.ActiveCount, Is.Zero);
+            Assert.That(target.Hurtboxes.PoseCaptureCount, Is.GreaterThan(captures),
+                "A live aftermath projectile must restore fresh anatomical snapshots before its sweep.");
+            Assert.That(target.ReceivedImpactCount, Is.GreaterThan(contacts),
+                "The aftermath optimization must retain actual projectile impacts against the corpse.");
+            Assert.That(target.State.Health, Is.EqualTo(health));
         }
 
         [UnityTest]

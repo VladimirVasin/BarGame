@@ -68,9 +68,9 @@ focused=app/awaiting_neutral/target_focused=enemy.
 `vectors`/`movement_drive`:a=walk request,b=balance drift.
 `aim_locked`:kind/yaw/open s.
 `support_pose_rejected`: `contact_*`/depth/sweep/shape.
-`weapon_constraint`:rendered cause/depth.
-Crowbar `arm_snapshot`/`grip_snapshot`:wrist/elbow/shoulder_roll/elbow_signed;fresh/cached.
-No solver:omit arm/grip;presentation `grip=None`;state `two_hand_support=false`.
+`weapon_constraint`:cause/depth.
+Crowbar arm/grip `_snapshot`:wrist/elbow/shoulder_roll/elbow_signed;fresh/cached.
+No solver:no arm/grip;`grip=None`/`two_hand_support=false`.
 Guard:`balance_recovery`;attacks≠regrip.
 End/focus clears input;`opponent_style` header.
 `phase`: `action_kind`/kick `outcome`/`from_action`; `impact_kind`: impact_seq+kind.
@@ -85,31 +85,31 @@ End/focus clears input;`opponent_style` header.
 Impact/applied/geometry/anatomy/impulse:source→victim;`impact_seq`;
 kind=weapon/kick/shove/projectile;region/side/critical/finisher/pre-post phase/power.
 Pre-hit phase:nullable.
-`revision_identity`:Runtime/Rules MVID≠Editor commit/state;bank hashes once/play
+`revision_identity`:Runtime/Rules MVID≠Editor commit/state;bank hash/play
 (Player GUID);missing=null/`unavailable`;no replay/FPS guarantee.
 
 `frame_detail`:hero LateUpdate=`late_pose_ms`;impact=`impact_apply_ms`;
-`update_to_late_ms`:Update→LateStart incl.simulation/updates.
-`latest_target_wait_ms`=Unity; `latest_{present_wait,cpu_main,cpu_render}_ms`
-=FrameTiming. `latest_timing_repeat_frames`:-1 unavailable/0 new/>0 repeats≠age.
-`pose_work`: Present/Weapon/Support CPU/calls, support candidates/budget; outside Tick.
-`frame_delivery/late_to_next_update_ms`:LateStart→Update wall,
-render/editor/scheduling/waits≠CPU/GPU.
-`render_context_captured`:same-frame game-camera SRP:
-`late_to_render_begin_ms`/`render_context_span_ms`/`render_end_to_next_update_ms`.
-`render_contexts`:count;submission≠GPU finish;no callback=null.
-`weapon_constraint_sample`: candidates/sweeps/world+`anatomy_queries`/reuse/core/shoulder/budget; live world gates.
-Nested times:no sum;unsupported=null;main/render/GPU:latest.
-Header: pacing/capture/wait.
+`update_to_late_ms`:Update→LateStart.
+`latest_target_wait_ms`=Unity;`latest_{present_wait,cpu_main,cpu_render}_ms`=FrameTiming.
+`latest_timing_repeat_frames`:-1 unavailable/0 new/>0 repeats≠age.
+`pose_work`:Present/Weapon/Support CPU/calls/candidates/budget,incl.outside Tick.
+`frame_delivery/late_to_next_update_ms`:LateStart→Update wall;render/editor/waits≠CPU/GPU.
+Game-camera SRP:`render_context_captured`/`late_to_render_begin_ms`/
+`render_context_span_ms`/`render_end_to_next_update_ms`/`render_contexts`;
+same frame;submission≠GPU finish;absent=null.
+`weapon_constraint_sample`:candidates/sweeps/world/`anatomy_queries`/reuse/core/shoulder/budget.
+`frame_stage_sample`:capture/flight/effects/aim/proxy/recovery CPU;aftermath.
+`{damage,blood}_stage_sample`/`body_sync_sample`:impact/wound/sync CPU.
+Stages:prior-frame deltas;nested≠sum;unsupported=null;main/render/GPU:latest.
 
 Editor CombatTest:`Tools/Bar Promenade/Diagnostics/Capture Combat CPU Timeline (15 seconds)`.
 Trace+manifest/`Time.frameCount`:`TestResults/Test duel diagnostics`.
-Timeout/scene/Play/reload restores Profiler;active capture refuses;profiling overhead.
+Timeout/scene/Play/reload restores Profiler;active capture refuses;overhead.
 
-Producer:2048/4096 default/max packets+8 control slots; reused chars, no string/field copies.
-Drops/I/O/limits explicit;≤2 live/stalled workers, extra=`worker_limit`.
-20MiB/round/10 closed/100MiB; prune ordinary before marked/abandoned; never live/foreign.
-Bounded marks; one CombatLogs/no sweep. Cloth/hair matrix cache;120Hz/4 steps.
+Producer:2048/4096 default/max packets+8 control slots;reused chars,no string/field copies.
+Drops/I/O/limits explicit;≤2 live/stalled workers;extra=`worker_limit`.
+20MiB/round/10 closed/100MiB;prune ordinary before marked/abandoned;never live/foreign.
+Bounded marks;one CombatLogs/no sweep. Cloth/hair cached;120Hz/4 steps.
 
 ## Area performance capture
 

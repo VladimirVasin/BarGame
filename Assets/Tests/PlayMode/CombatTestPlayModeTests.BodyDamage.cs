@@ -209,16 +209,24 @@ namespace BarPromenade.Tests.PlayMode
                     "A local forearm hit must keep the untouched production surfaces instead of splitting the whole body into draws.");
                 AssertFrozenIntactBodyContact(target);
                 AssertFrozenGripBodyContact(target);
+                AssertSameFrameBodyBoneContact(target);
+                if (!heroVictim) AssertRecoverySoleEnvelope(target);
                 CaptureBodyDestruction(target, heroVictim ? "body-hero-optimized-cut" : "body-opponent-optimized-cut",
                     target.transform.forward);
 
+                target.Hurtboxes.Capture();
                 int builds = target.Hurtboxes.BodySurfaceGeometryBuilds;
+                int poseBuilds = target.Hurtboxes.BodySurfacePoseBuilds;
+                int poseCaptures = target.Hurtboxes.PoseCaptureCount;
                 var timer = System.Diagnostics.Stopwatch.StartNew();
                 allocations.Reset(); allocations.Start();
                 for (int sample = 0; sample < 32; sample++) target.Hurtboxes.Capture();
                 long captureAllocations = StopBodyAllocationRecorder(allocations);
                 timer.Stop();
                 Assert.That(captureAllocations, Is.Zero, "Repeated damaged-body snapshots must reuse their managed buffers.");
+                Assert.That(target.Hurtboxes.PoseCaptureCount, Is.EqualTo(poseCaptures + 32));
+                Assert.That(target.Hurtboxes.BodySurfacePoseBuilds, Is.EqualTo(poseBuilds),
+                    "Repeated captures of an unchanged pose must retain skin matrices and conservative bounds.");
                 Assert.That(target.Hurtboxes.BodySurfaceGeometryBuilds, Is.EqualTo(builds),
                     "Frozen pose capture must not rebuild precise body geometry without a contact query.");
                 Vector3 distant = Vector3.one * 500f;
@@ -307,8 +315,101 @@ namespace BarPromenade.Tests.PlayMode
                     ray.direction, out CombatHurtboxes.Hit hit), Is.True,
                     "Intact originals must still query their frozen authored body partitions.");
                 Assert.That(Vector3.Distance(hit.Point, expected), Is.LessThan(.002f));
+                int builds = target.Hurtboxes.BodySurfaceGeometryBuilds;
+                target.Hurtboxes.SweepProjectile(ray.origin, ray.GetPoint(.08f), 0f, ray.direction, out _);
+                Assert.That(target.Hurtboxes.BodySurfaceGeometryBuilds, Is.EqualTo(builds),
+                    "Repeated pellets against one frozen intact surface must reuse its exact geometry.");
+                int poses = target.Hurtboxes.BodySurfacePoseBuilds;
+                target.Hurtboxes.Capture();
+                Assert.That(target.Hurtboxes.BodySurfacePoseBuilds, Is.GreaterThan(poses),
+                    "A same-frame actor movement must refresh the frozen pose without relying on the render frame counter.");
+                Assert.That(target.Hurtboxes.SweepProjectile(ray.origin, ray.GetPoint(.08f), 0f,
+                    ray.direction, out _), Is.False);
+                Vector3 move = target.transform.position - position;
+                Assert.That(target.Hurtboxes.SweepProjectile(ray.origin + move, ray.GetPoint(.08f) + move,
+                    0f, ray.direction, out hit), Is.True);
+                Assert.That(Vector3.Distance(hit.Point, expected + move), Is.LessThan(.002f),
+                    "The refreshed contact must follow the moved production triangles exactly.");
             }
-            finally { target.transform.position = position; }
+            finally { target.transform.position = position; target.Hurtboxes.Capture(); }
+        }
+
+        private static void AssertSameFrameBodyBoneContact(CombatActor target)
+        {
+            Transform pelvis = FindAnatomicalBone(target, "pelvis");
+            Quaternion original = pelvis.localRotation;
+            var scratch = new Mesh { name = "Test changed body bone surface" };
+            var surfaces = new List<HeadContactSurface>();
+            try
+            {
+                target.Hurtboxes.Capture();
+                int poses = target.Hurtboxes.BodySurfacePoseBuilds;
+                pelvis.localRotation = original * Quaternion.Euler(0f, 32f, 0f);
+                HeadContactSurface boot = null;
+                foreach (SkinnedMeshRenderer skin in target.DamageRigRoot.GetComponentsInChildren<SkinnedMeshRenderer>(true))
+                {
+                    if (!skin.enabled || !skin.gameObject.activeInHierarchy) continue;
+                    skin.BakeMesh(scratch, true);
+                    Vector3[] points = scratch.vertices;
+                    for (int i = 0; i < points.Length; i++) points[i] = skin.transform.TransformPoint(points[i]);
+                    var surface = new HeadContactSurface { Name = skin.name, Vertices = points, Triangles = scratch.triangles };
+                    surfaces.Add(surface);
+                    if (boot == null && skin.name.StartsWith("CLO_Boot")) boot = surface;
+                }
+                Assert.That(boot, Is.Not.Null);
+                Ray ray = BodyContactProbe(boot);
+                Assert.That(IndependentHeadRaycast(surfaces, ray, out Vector3 expected), Is.True);
+                target.Hurtboxes.Capture();
+                Assert.That(target.Hurtboxes.BodySurfacePoseBuilds, Is.GreaterThan(poses),
+                    "A same-frame bone rotation must invalidate skin matrices even when the actor root stays still.");
+                Assert.That(target.Hurtboxes.SweepProjectile(ray.origin, ray.GetPoint(.08f), 0f,
+                    ray.direction, out CombatHurtboxes.Hit hit), Is.True);
+                Assert.That(Vector3.Distance(hit.Point, expected), Is.LessThan(.002f),
+                    "The changed bone contact must match an independent bake of the rendered production mesh.");
+                int builds = target.Hurtboxes.BodySurfaceGeometryBuilds;
+                int changedPoses = target.Hurtboxes.BodySurfacePoseBuilds;
+                target.Hurtboxes.Capture();
+                Assert.That(target.Hurtboxes.BodySurfacePoseBuilds, Is.EqualTo(changedPoses));
+                Assert.That(target.Hurtboxes.SweepProjectile(ray.origin, ray.GetPoint(.08f), 0f,
+                    ray.direction, out hit), Is.True);
+                Assert.That(Vector3.Distance(hit.Point, expected), Is.LessThan(.002f));
+                Assert.That(target.Hurtboxes.BodySurfaceGeometryBuilds, Is.EqualTo(builds),
+                    "An unchanged recapture must retain precise query geometry from the same bone pose.");
+            }
+            finally
+            {
+                pelvis.localRotation = original;
+                target.Hurtboxes.Capture();
+                UnityEngine.Object.Destroy(scratch);
+            }
+        }
+
+        private static void AssertRecoverySoleEnvelope(CombatActor target)
+        {
+            var originalLeft = new List<SkinnedMeshRenderer>();
+            var originalRight = new List<SkinnedMeshRenderer>();
+            var formerLeft = new List<SkinnedMeshRenderer>();
+            var formerRight = new List<SkinnedMeshRenderer>();
+            foreach (SkinnedMeshRenderer skin in target.DamageRigRoot.GetComponentsInChildren<SkinnedMeshRenderer>(true))
+            {
+                bool original = skin.name.StartsWith("GEO_", System.StringComparison.Ordinal) ||
+                    skin.name.StartsWith("CLO_", System.StringComparison.Ordinal);
+                if (skin.name.EndsWith("Sole.L", System.StringComparison.Ordinal))
+                { formerLeft.Add(skin); if (original) originalLeft.Add(skin); }
+                if (skin.name.EndsWith("Sole.R", System.StringComparison.Ordinal))
+                { formerRight.Add(skin); if (original) originalRight.Add(skin); }
+            }
+            Assert.That(formerLeft.Count + formerRight.Count, Is.GreaterThan(originalLeft.Count + originalRight.Count),
+                "The damaged NPC sole oracle must include the disabled derivative skins formerly baked during recovery.");
+            using var authored = Player3DFootGroundProbe.Create(originalLeft, originalRight, target.transform);
+            using var former = Player3DFootGroundProbe.Create(formerLeft, formerRight, target.transform);
+            foreach (FootSide side in new[] { FootSide.Left, FootSide.Right })
+            {
+                Assert.That(authored.TryGetSoleHeight(side, out float originalHeight), Is.True);
+                Assert.That(former.TryGetSoleHeight(side, out float formerHeight), Is.True);
+                Assert.That(Mathf.Abs(originalHeight - formerHeight), Is.LessThan(.0005f),
+                    "Skipping disabled damage copies must preserve the authored lowest recovery sole vertex: " + side);
+            }
         }
 
         private static void AssertFrozenGripBodyContact(CombatActor target)

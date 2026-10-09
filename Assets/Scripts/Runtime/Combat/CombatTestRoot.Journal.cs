@@ -29,6 +29,7 @@ namespace BarPromenade
         private long journalRenderBegin, journalRenderEnd;
         private int journalRenderContexts;
         private long journalQueriesAtFrameStart, journalSaturationsAtFrameStart;
+        private JournalStageCounters journalStagesAtFrameStart;
         private int journalMeasuredFrame;
         private int journalRound, journalFrameSubsteps, journalFrozenSteps, journalPoseSamples, journalDecision = -1;
         private double journalSeconds, journalLastSnapshot = -1d, journalFrameMilliseconds;
@@ -48,6 +49,16 @@ namespace BarPromenade
         private static readonly string[] JournalIntents = Enum.GetNames(typeof(CombatOpponentIntent));
         private static readonly string[] JournalOpponentStyles = Enum.GetNames(typeof(CombatOpponentStyle));
         private static readonly double JournalMillisecondsPerTick = 1000d / Stopwatch.Frequency;
+
+        private struct JournalStageCounters
+        {
+            internal long Capture, Flight, Effects, FreeAim, BodyProxy, RecoveryPreparation;
+            internal int FinishedRoundSubsteps;
+            internal long BloodImpact, BodyImpact, ImpactPresentation;
+            internal long BodySynchronization, HeadSynchronization, SurfaceRefresh, SurfaceVisibility, PhysicsSynchronization, ContactCapture;
+            internal int BodySynchronizationCount;
+            internal long WoundProjection, BurstEmission, WoundPose, WoundSkin, WoundTriangle, WoundClassification, WoundCommit, WoundVisibility;
+        }
 
         private sealed class JournalActorState
         {
@@ -118,6 +129,7 @@ namespace BarPromenade
             journalLatePoseFrame = -1; journalTimingStamp = 0; journalTimingRepeats = -1;
             journalLateFrameCaptured = false;
             journalRenderBegin = journalRenderEnd = 0; journalRenderContexts = 0;
+            journalStagesAtFrameStart = CaptureJournalStageCounters();
             Hero.BeginJournalWorkFrame(); Opponent.BeginJournalWorkFrame();
             journalDecision = -1; journalAttackHeld = journalFrozen = false;
             journalInputAllowed = GameInput.CanRead(GameInputContext.Gameplay);
@@ -313,6 +325,7 @@ namespace BarPromenade
                     f5: GameLog.Field("render_end_to_next_update_ms", journalRenderContexts > 0
                         ? (now - journalRenderEnd) * JournalMillisecondsPerTick : double.NaN),
                     f6: GameLog.Field("render_contexts", journalRenderContexts));
+                WriteJournalFrameStages();
                 Hero.WriteJournalWorkFrame(); Opponent.WriteJournalWorkFrame();
             }
             if (journalGpuEnabled) FrameTimingManager.CaptureFrameTimings();
@@ -328,6 +341,7 @@ namespace BarPromenade
             journalOpponentRequested = journalOpponentAchieved = Vector3.zero;
             journalQueriesAtFrameStart = Hero.JournalPhysicsQueries + Opponent.JournalPhysicsQueries;
             journalSaturationsAtFrameStart = Hero.JournalPhysicsBufferSaturations + Opponent.JournalPhysicsBufferSaturations;
+            journalStagesAtFrameStart = CaptureJournalStageCounters();
             duelJournal.SetClock(Time.frameCount, journalTick, journalSeconds);
             bool allowed = GameInput.CanRead(GameInputContext.Gameplay);
             if (allowed != journalInputAllowed)
@@ -336,6 +350,72 @@ namespace BarPromenade
                 duelJournal.Record("input_gate", f0: GameLog.Field("allowed", allowed),
                     f1: GameLog.Field("paused", PauseMenuController.IsAnyPaused), f2: GameLog.Field("transitioning", SceneTransitionService.IsTransitioning));
             }
+        }
+
+        private JournalStageCounters CaptureJournalStageCounters() => new JournalStageCounters
+        {
+            Capture = SimulationCaptureTicks, Flight = SimulationFlightTicks, Effects = SimulationEffectsTicks,
+            FreeAim = FreeAimQueryTicks, BodyProxy = BodyEffects?.ProxyGeometryTicks ?? 0,
+            RecoveryPreparation = Hero.RecoveryPreparationTicks + Opponent.RecoveryPreparationTicks,
+            FinishedRoundSubsteps = FinishedRoundSubsteps,
+            BloodImpact = BloodImpactTicks, BodyImpact = BodyImpactTicks, ImpactPresentation = ImpactPresentationTicks,
+            BodySynchronization = BodyEffects?.ActorSynchronizationTicks ?? 0,
+            BodySynchronizationCount = BodyEffects?.ActorSynchronizationCount ?? 0,
+            HeadSynchronization = BodyEffects?.HeadSynchronizationTicks ?? 0,
+            SurfaceRefresh = BodyEffects?.SurfaceRefreshTicks ?? 0,
+            SurfaceVisibility = BodyEffects?.SurfaceVisibilityTicks ?? 0,
+            PhysicsSynchronization = BodyEffects?.PhysicsSynchronizationTicks ?? 0,
+            ContactCapture = BodyEffects?.ContactCaptureTicks ?? 0,
+            WoundProjection = BloodEffects?.WoundProjectionTicks ?? 0,
+            BurstEmission = BloodEffects?.BurstEmissionTicks ?? 0,
+            WoundPose = BloodEffects?.WoundPoseTicks ?? 0,
+            WoundSkin = BloodEffects?.WoundSkinTicks ?? 0,
+            WoundTriangle = BloodEffects?.WoundTriangleTicks ?? 0,
+            WoundClassification = BloodEffects?.WoundClassificationTicks ?? 0,
+            WoundCommit = BloodEffects?.WoundCommitTicks ?? 0,
+            WoundVisibility = BloodEffects?.WoundVisibilityTicks ?? 0
+        };
+
+        private static double JournalStageMilliseconds(long current, long previous) =>
+            Math.Max(0L, current - previous) * JournalMillisecondsPerTick;
+
+        private void WriteJournalFrameStages()
+        {
+            JournalStageCounters current = CaptureJournalStageCounters();
+            JournalStageCounters previous = journalStagesAtFrameStart;
+            // Cumulative counters include calls outside Tick and finished-round work.
+            // These are the previous measured frame's deltas; nested stages overlap.
+            // The _sample suffix preserves the journal's existing telemetry policy.
+            duelJournal.Record("frame_stage_sample",
+                f0: GameLog.Field("capture_ms", JournalStageMilliseconds(current.Capture, previous.Capture)),
+                f1: GameLog.Field("flight_ms", JournalStageMilliseconds(current.Flight, previous.Flight)),
+                f2: GameLog.Field("effects_ms", JournalStageMilliseconds(current.Effects, previous.Effects)),
+                f3: GameLog.Field("free_aim_ms", JournalStageMilliseconds(current.FreeAim, previous.FreeAim)),
+                f4: GameLog.Field("body_proxy_ms", JournalStageMilliseconds(current.BodyProxy, previous.BodyProxy)),
+                f5: GameLog.Field("recovery_prepare_ms", JournalStageMilliseconds(current.RecoveryPreparation, previous.RecoveryPreparation)),
+                f6: GameLog.Field("post_round_steps", Math.Max(0, current.FinishedRoundSubsteps - previous.FinishedRoundSubsteps)),
+                f7: GameLog.Field("round_finished", journalResultWritten));
+            duelJournal.Record("damage_stage_sample",
+                f0: GameLog.Field("blood_impact_ms", JournalStageMilliseconds(current.BloodImpact, previous.BloodImpact)),
+                f1: GameLog.Field("body_impact_ms", JournalStageMilliseconds(current.BodyImpact, previous.BodyImpact)),
+                f2: GameLog.Field("impact_present_ms", JournalStageMilliseconds(current.ImpactPresentation, previous.ImpactPresentation)),
+                f3: GameLog.Field("body_sync_ms", JournalStageMilliseconds(current.BodySynchronization, previous.BodySynchronization)));
+            duelJournal.Record("body_sync_sample",
+                f0: GameLog.Field("head_ms", JournalStageMilliseconds(current.HeadSynchronization, previous.HeadSynchronization)),
+                f1: GameLog.Field("surface_refresh_ms", JournalStageMilliseconds(current.SurfaceRefresh, previous.SurfaceRefresh)),
+                f2: GameLog.Field("surface_visibility_ms", JournalStageMilliseconds(current.SurfaceVisibility, previous.SurfaceVisibility)),
+                f3: GameLog.Field("physics_ms", JournalStageMilliseconds(current.PhysicsSynchronization, previous.PhysicsSynchronization)),
+                f4: GameLog.Field("contact_capture_ms", JournalStageMilliseconds(current.ContactCapture, previous.ContactCapture)),
+                f5: GameLog.Field("calls", Math.Max(0, current.BodySynchronizationCount - previous.BodySynchronizationCount)));
+            duelJournal.Record("blood_stage_sample",
+                f0: GameLog.Field("projection_ms", JournalStageMilliseconds(current.WoundProjection, previous.WoundProjection)),
+                f1: GameLog.Field("burst_ms", JournalStageMilliseconds(current.BurstEmission, previous.BurstEmission)),
+                f2: GameLog.Field("pose_ms", JournalStageMilliseconds(current.WoundPose, previous.WoundPose)),
+                f3: GameLog.Field("skin_ms", JournalStageMilliseconds(current.WoundSkin, previous.WoundSkin)),
+                f4: GameLog.Field("triangles_ms", JournalStageMilliseconds(current.WoundTriangle, previous.WoundTriangle)),
+                f5: GameLog.Field("classification_ms", JournalStageMilliseconds(current.WoundClassification, previous.WoundClassification)),
+                f6: GameLog.Field("commit_ms", JournalStageMilliseconds(current.WoundCommit, previous.WoundCommit)),
+                f7: GameLog.Field("visibility_ms", JournalStageMilliseconds(current.WoundVisibility, previous.WoundVisibility)));
         }
 
         private bool IsJournalRenderContext(List<Camera> cameras)

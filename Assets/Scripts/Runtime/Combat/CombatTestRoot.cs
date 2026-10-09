@@ -61,6 +61,7 @@ namespace BarPromenade
         internal long SimulationCaptureTicks { get; private set; }
         internal long SimulationFlightTicks { get; private set; }
         internal long SimulationEffectsTicks { get; private set; }
+        internal int FinishedRoundSubsteps { get; private set; }
         public bool RoundCameraReleased => roundCameraReleased;
 
         private void Awake()
@@ -416,13 +417,24 @@ namespace BarPromenade
                         SetDuelFrozen(false);
                     }
                     pendingSeconds = Math.Max(0d, pendingSeconds - SimulationStep);
+                    FinishedRoundSubsteps++;
                     Hero.AdvanceRoundEnd(SimulationStep); Opponent.AdvanceRoundEnd(SimulationStep);
-                    Hero.CaptureContactPose(); Opponent.CaptureContactPose();
+                    long stageStart = System.Diagnostics.Stopwatch.GetTimestamp();
+                    // Newly committed bullets fly on the next substep. Until a
+                    // flight or a weapon sweep needs anatomy, retain only weapon
+                    // histories; corpse physics and effect clocks still advance.
+                    bool needsAnatomy = (Projectiles?.ActiveCount ?? 0) > 0 || Hero.HasPendingWeaponContact;
+                    Hero.CaptureContactPose(needsAnatomy); Opponent.CaptureContactPose(needsAnatomy);
+                    SimulationCaptureTicks += System.Diagnostics.Stopwatch.GetTimestamp() - stageStart;
                     pendingContacts.Clear();
                     Hero.CollectContacts(pendingContacts);
+                    long impactStamp = JournalStamp();
                     CombatActor.ApplyContacts(pendingContacts);
+                    JournalElapsed(impactStamp, ref journalImpactApplyTicks);
                     Hero.ContinueBufferedAttackAfterContacts();
+                    stageStart = System.Diagnostics.Stopwatch.GetTimestamp();
                     Projectiles?.Advance(SimulationStep, Hero, Opponent);
+                    SimulationFlightTicks += System.Diagnostics.Stopwatch.GetTimestamp() - stageStart;
                     Casings?.Tick(SimulationStep);
                     AdvancePistolCrosshair(SimulationStep);
                     if (Hero.CommitPistolShot(Projectiles))
@@ -430,11 +442,15 @@ namespace BarPromenade
                         if (Hero.IsPistol) Casings.BeginShot(Hero);
                         PulsePistolCrosshair();
                     }
+                    impactStamp = JournalStamp();
                     Projectiles?.ApplyContacts();
+                    JournalElapsed(impactStamp, ref journalImpactApplyTicks);
+                    stageStart = System.Diagnostics.Stopwatch.GetTimestamp();
                     BloodEffects.Tick(SimulationStep);
                     HeadEffects.Tick(SimulationStep);
                     BodyEffects.Tick(SimulationStep);
                     SparkEffects.Tick(SimulationStep);
+                    SimulationEffectsTicks += System.Diagnostics.Stopwatch.GetTimestamp() - stageStart;
                 }
             }
             else
@@ -443,10 +459,12 @@ namespace BarPromenade
                 Hero.AdvanceRoundEnd(seconds); Opponent.AdvanceRoundEnd(seconds);
                 Casings?.Tick(seconds);
                 Projectiles?.SurfaceEffects.Tick(seconds);
+                long stageStart = System.Diagnostics.Stopwatch.GetTimestamp();
                 BloodEffects.Tick(seconds);
                 HeadEffects.Tick(seconds);
                 BodyEffects.Tick(seconds);
                 SparkEffects.Tick(seconds);
+                SimulationEffectsTicks += System.Diagnostics.Stopwatch.GetTimestamp() - stageStart;
             }
             float settle = Mathf.Clamp01((float)(roundEndElapsed / RoundEndCameraReleaseSeconds));
             CameraFollow.SetTargetLockFarDistance(this, Mathf.Lerp(1.9f, 2.1f, settle));

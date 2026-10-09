@@ -10,6 +10,12 @@ namespace BarPromenade
         private static readonly ProfilerMarker RecoveryWeaponMarker = new ProfilerMarker("BarPromenade.CombatRecovery.WeaponApply");
         private static readonly ProfilerMarker RecoveryCommitMarker = new ProfilerMarker("BarPromenade.CombatRecovery.WeaponCommit");
         private CombatRecoveryPose knockdownPose;
+        private CombatRecoveryPose.RigBindings knockdownRigBindings;
+        internal long RecoveryPreparationTicks { get; private set; }
+        internal int RecoveryPreparationCount { get; private set; }
+        internal int RecoveryPreparationSkinReads { get; private set; }
+        internal int RecoveryRigPreparationCount { get; private set; }
+        internal int RecoverySoleRendererCount { get; private set; }
         private PlayerRagdollLyingPose knockdownLying;
         private bool knockedDown, knockdownFrozen, recoveryPoseBegun, recoveryRegrip;
         private string journalClearanceReason, journalClearanceStage;
@@ -26,7 +32,7 @@ namespace BarPromenade
             if (State.IsDefeated) return JournalKnockdownRejected("defeated");
             if (Ragdoll == null) return JournalKnockdownRejected("ragdoll_missing");
             if (IsRagdollActive) return JournalKnockdownRejected("ragdoll_active");
-            knockdownPose ??= new CombatRecoveryPose(transform, DamageRigRoot, Body, Ragdoll, handPose, hero == null, Weapon.transform);
+            PrepareKnockdownPose();
             hero?.SetOwnedPresentationFrozen(this, false);
             if (!Ragdoll.BeginKnockdown(linearVelocity, angularVelocity)) return JournalKnockdownRejected("ragdoll_begin_refused");
             ForgetPistolAimPose();
@@ -59,6 +65,23 @@ namespace BarPromenade
             ImpactMotion.CancelRecoveryStep();
             ImpactMotion.ClearHandSupport();
             return true;
+        }
+
+        private void PrepareKnockdownPose()
+        {
+            if (knockdownPose != null) return;
+            long started = System.Diagnostics.Stopwatch.GetTimestamp();
+            if (knockdownRigBindings == null)
+            {
+                knockdownRigBindings = new CombatRecoveryPose.RigBindings(DamageRigRoot, hero == null);
+                RecoveryRigPreparationCount++;
+                RecoveryPreparationSkinReads += knockdownRigBindings.SkinReads;
+                RecoverySoleRendererCount = knockdownRigBindings.LeftSoles.Length + knockdownRigBindings.RightSoles.Length;
+            }
+            knockdownPose = new CombatRecoveryPose(transform, DamageRigRoot, Body, Ragdoll, handPose,
+                hero == null, Weapon.transform, knockdownRigBindings);
+            RecoveryPreparationCount++;
+            RecoveryPreparationTicks += System.Diagnostics.Stopwatch.GetTimestamp() - started;
         }
 
         private bool AdvanceKnockdown(float seconds)
@@ -102,7 +125,7 @@ namespace BarPromenade
                 State.BeginRise();
                 JournalEvent("rise_started", f0: GameLog.Field("impact_seq", LastJournalImpactSequence));
             }
-            knockdownPose ??= new CombatRecoveryPose(transform, DamageRigRoot, Body, Ragdoll, handPose, hero == null, Weapon.transform);
+            PrepareKnockdownPose();
             if (!recoveryPoseBegun)
             {
                 if (!knockdownPose.Begin(knockdownLying))

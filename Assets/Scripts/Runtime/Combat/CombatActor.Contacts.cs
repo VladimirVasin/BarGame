@@ -25,6 +25,7 @@ namespace BarPromenade
         private float previewWorldFraction;
         private Vector3 previewWorldPoint, previewWorldNormal;
         internal int ContactPoseSamples { get; private set; }
+        internal bool HasPendingWeaponContact => collectSweep;
         internal int WeaponClashCount { get; private set; }
         internal int LastWeaponClashSequence { get; private set; }
         internal Vector3 LastWeaponClashPoint { get; private set; }

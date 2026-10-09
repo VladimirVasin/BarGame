@@ -3,33 +3,33 @@
 Newest outcomes/checks first. Archive whole dates at budget: [policy](README.md).
 Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-2026-08.md).
 
-## 2026-10-09 — Shotgun force, torso erosion and survivors
+## 2026-10-09 — Shotgun, body erosion and frame costs
 
-- Shotgun HP/momentum fall continuously to 40 m; actual contacts accumulate
+- Shotgun HP/momentum fall to 40 m; contacts accumulate
   across flight batches. A first-batch token had discarded later force and one
   limb absorbed the launch. Head-only trauma remains bounded/local; a lone
   pellet cannot borrow a shell's power. Close head debris/blood fly faster.
-  Stronger close launch uses 420/380/200/50/10/2/0 Ns at
-  0/1/3/8/15/25/40 m;the whole-body cap follows 420, local 260 stays.
-  HP/head trauma unchanged; sharper momentum falloff.
-  Near-wall launch comparison now has open travel.
+  Stronger close launch: 420/380/200/50/10/2/0 Ns at
+  0/1/3/8/15/25/40 m; whole-body cap 420/local 260. HP/trauma unchanged.
+  Wall comparison has travel.
 - User's CombatTest-only correction keeps Chest/Abdomen/Pelvis joined through
   critical failure: finite local authored cells deform/erode to rig-bound
   skeleton without torso chunks. Head/limb closed cuts remain. Whole-body
   momentum waits for final damage/ragdoll state and the first unfrozen step,
-  using current masses; strong non-pellet torso hits share the route.
+  using current masses; strong non-pellet torso hits share it.
 - Seventeen regions/four patches preserve local damage, corpse contacts and
   reset. Limb budgets limit hands/two-hand actions and support; living bodies
   crawl and retain a loaded right-hand pistol. Critical head/core failure ends
   combat. Palm/muzzle checks found a floating prop; it now binds to the rig.
-  Manual gameplay/PhysX cadence matches queued gravity support.
-- Shotgun caches/lazy flesh and no hold for surviving pellets missed free-aim
-  CPU on wounded targets. Shared snapshots, bounded lazy triangle leaves,
-  analytic sweeps, source/blood caches and a persistent manual NPC clip graph
-  reduce work. Contact tolerance and authored poses remain; attack/charge
-  samplers stay. Regression covers nonfatal aimed multi-substep/held-aim frames;
-  exhaustive/contact/clip oracles protect topology, grazing, wounds and TRS.
-  Crowbar avoids firearm pools.
+  Manual/PhysX cadence matches queued support.
+- Wounded free-aim needs shared snapshots/lazy triangle leaves, analytic sweeps,
+  source/blood caches and a persistent NPC clip graph. Unchanged body poses now
+  retain bounds/geometry; quiet aftermath skips anatomy, preserving physics
+  and new contacts. Region lists avoid whole-body damage scans. Recovery caches
+  production bind data and probes original soles: prepared cut skins had added
+  repeated scans/bakes. Sampled journal stages include aftermath/impact/sync/
+  recovery CPU. Contact/clip/bind/sole oracles retain topology/TRS;
+  regressions cover cold fall/reset/pause/corpse shots. Crowbar avoids pools.
 - Focused checks: `Range_TorsoErosionKeepsConnectedLaunchCorpsePauseAndReset`,
   `Range_ShotgunDistanceControlsLaunchAndHeadBreakup`,
   `Range_DistantShotgunTorsoVolleyProfilesImpactPhases`,

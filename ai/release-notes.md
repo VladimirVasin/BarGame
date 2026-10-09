@@ -15,8 +15,9 @@ Earlier notes: [`release-notes-2026-09.md`](archive/release-notes-2026-09.md).
   отделяются; бойцы/трупы повреждаемы по месту попадания.
 - Потеря конечностей ограничивает оружие/перезарядку и опору; можно ползать
   и стрелять из заряженного пистолета целой правой рукой.
-  Критический урон головы/корпуса завершает раунд; сброс возвращает тело.
-- Несмертельная дробь без паузы; ниже нагрузка.
+  Критический урон завершает раунд; сброс возвращает тело.
+- Несмертельная дробь без паузы; меньше повторных расчётов при падении,
+  подъёме и после раунда.
 - Победа с ломом без ошибки.
 - Проверено: `Range_TorsoErosionKeepsConnectedLaunchCorpsePauseAndReset`,
   `Range_ShotgunDistanceControlsLaunchAndHeadBreakup`,
@@ -25,9 +26,8 @@ Earlier notes: [`release-notes-2026-09.md`](archive/release-notes-2026-09.md).
   `Range_SkinnedTriangleQueryMatchesExhaustiveAfterDeformation`,
   `Range_NpcManualAnimationMatchesAuthoredClipSampling`;
   осмотрены ткани/скелет/сброс и близкий/дальний отброс.
-- Ранее проверено: `DistanceScalesEveryPelletBeforeRegionalDamage`,
+- Ранее: `DistanceScalesEveryPelletBeforeRegionalDamage`,
   `Range_BodyDestructionFollowsLocalContactsSurvivalCorpsePauseAndReset`,
-  `Range_CrowbarVictoryAdvancesWithoutFirearmPools`,
   `Range_BodyDestructionDefersGeometryAndKeepsFrozenVisibleContacts`;
   body/skull validators; кадры разрушения и выживших;
   `check-docs.py`, `git diff --check`.

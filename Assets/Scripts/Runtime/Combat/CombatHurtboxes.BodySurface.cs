@@ -12,6 +12,7 @@ namespace BarPromenade
         private IReadOnlyList<CombatBodyDestruction.Piece> preparedBodyPieces;
         private readonly Dictionary<Transform, Matrix4x4> bodyWorldBones = new Dictionary<Transform, Matrix4x4>();
         internal int BodySurfaceGeometryBuilds { get; private set; }
+        internal int BodySurfacePoseBuilds { get; private set; }
         internal void PrepareBodySurfaces(IReadOnlyList<CombatBodyDestruction.Piece> pieces)
         {
             if (preparedBodyPieces == pieces) return;
@@ -38,7 +39,8 @@ namespace BarPromenade
         {
             if (bodySurfaces == null) return;
             bodyWorldBones.Clear();
-            foreach (BodySurface surface in bodySurfaces) surface.Capture(bodyWorldBones, refreshSurfaces);
+            foreach (BodySurface surface in bodySurfaces)
+                if (surface.Capture(bodyWorldBones, refreshSurfaces)) BodySurfacePoseBuilds++;
         }
         private bool SweepBodySurfaces(Vector3 from, Vector3 to, float radius, Vector3 direction, ref Hit hit, float first)
         {
@@ -117,26 +119,32 @@ namespace BarPromenade
                 points = new Vector3[piece.Skin.sharedMesh.vertexCount];
                 Triangles = skin.Triangles;
             }
-            internal void Capture(Dictionary<Transform, Matrix4x4> worldBones, bool refreshSurface)
+            internal bool Capture(Dictionary<Transform, Matrix4x4> worldBones, bool refreshSurface)
             {
-                geometryReady = false;
-                if (Piece.Debris) { Active = false; return; }
+                bool wasActive = Active;
+                if (Piece.Debris) { Active = geometryReady = false; return wasActive; }
                 if (Piece.Skin.enabled || Piece.QueryOriginal)
                 {
                     if (refreshSurface) Piece.RefreshSurface();
                     // Blendshape vertices and bones share the same frozen snapshot;
                     // exact hand triangles can wait for an intersecting contact.
-                    skin.CapturePose(worldBones, Piece.GeometryVersion, Piece.QueryOriginal, Piece.Torso?.TopologyBuilds); skinned = true;
-                    Active = skin.Active; Bounds = skin.Bounds; return;
+                    bool captured = skin.CapturePose(worldBones, Piece.GeometryVersion, Piece.QueryOriginal, Piece.Torso?.TopologyBuilds);
+                    bool changed = captured || skin.Active && (!skinned || !wasActive);
+                    skinned = true;
+                    if (changed) geometryReady = false;
+                    Active = skin.Active; Bounds = skin.Bounds; return changed;
                 }
                 MeshRenderer released = Piece.Released;
                 Active = released != null && released.enabled && released.gameObject.activeInHierarchy;
-                if (!Active) return;
+                if (!Active) { geometryReady = false; return wasActive; }
                 // Baked vertices include the last live deformation and exact source scale.
+                Matrix4x4 matrix = released.transform.localToWorldMatrix;
+                bool moved = skinned || !wasActive || frozenVertices != Piece.BakedVertices || !frozenMatrix.Equals(matrix);
                 skinned = false;
                 frozenVertices = Piece.BakedVertices;
-                frozenMatrix = released.transform.localToWorldMatrix;
-                Bounds = TransformBounds(Piece.Baked.bounds, frozenMatrix);
+                frozenMatrix = matrix;
+                if (moved) { geometryReady = false; Bounds = TransformBounds(Piece.Baked.bounds, frozenMatrix); }
+                return moved;
             }
             internal bool PrepareQuery(SegmentQuery query, float maximumFraction)
             {

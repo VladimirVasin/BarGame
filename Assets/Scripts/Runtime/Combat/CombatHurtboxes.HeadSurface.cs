@@ -182,7 +182,7 @@ namespace BarPromenade
             private readonly bool[] measuredBones;
             private readonly float minimumWeight, maximumWeight;
             private readonly bool mutableTopology;
-            private bool geometryReady;
+            private bool geometryReady, poseCaptured;
             private bool queryBoundsDirty = true, queryWorldBoundsReady, queryPoseBuilt;
             private int queryPoseVersion;
             private readonly int[] vertexQueryVersions;
@@ -269,27 +269,37 @@ namespace BarPromenade
                 EnsureGeometry();
             }
 
-            internal void CapturePose(Dictionary<Transform, Matrix4x4> worldBones = null, uint? geometryVersion = null,
+            internal bool CapturePose(Dictionary<Transform, Matrix4x4> worldBones = null, uint? geometryVersion = null,
                 bool includeDisabled = false, int? topologyVersion = null)
             {
-                geometryReady = false;
-                queryPoseBuilt = false;
-                queryWorldBoundsReady = false;
-                unchecked { queryPoseVersion++; }
-                if (queryPoseVersion == 0) { Array.Clear(vertexQueryVersions, 0, vertexQueryVersions.Length); queryPoseVersion = 1; }
+                bool wasActive = Active;
                 Active = source != null && source.gameObject.activeInHierarchy &&
                     (includeDisabled || source.enabled || Player3DHeadVisibility.IsTemporarilyHidden(source));
-                if (!Active) return;
+                if (!Active) { poseCaptured = false; return wasActive; }
                 // Freeze mutable vertices now: a later contact must not see the next cloth/tissue pose.
-                CaptureVertices(geometryVersion, topologyVersion);
-                bool measured = false;
+                bool changed = CaptureVertices(geometryVersion, topologyVersion) || !poseCaptured;
                 foreach (int i in usedBones)
                 {
                     Matrix4x4 world;
                     if (worldBones == null) world = bones[i].localToWorldMatrix;
                     else if (!worldBones.TryGetValue(bones[i], out world))
                     { world = bones[i].localToWorldMatrix; worldBones.Add(bones[i], world); }
-                    Matrix4x4 matrix = posedBones[i] = world * bind[i];
+                    Matrix4x4 matrix = world * bind[i];
+                    changed |= !posedBones[i].Equals(matrix);
+                    posedBones[i] = matrix;
+                }
+                // Several 120 Hz steps can see the same PhysX/cloth pose. Retain
+                // its bounds and lazily posed query vertices across those steps;
+                // a same-frame bone, mesh or blend change still invalidates it.
+                if (!changed) return false;
+                poseCaptured = true;
+                geometryReady = queryPoseBuilt = queryWorldBoundsReady = false;
+                unchecked { queryPoseVersion++; }
+                if (queryPoseVersion == 0) { Array.Clear(vertexQueryVersions, 0, vertexQueryVersions.Length); queryPoseVersion = 1; }
+                bool measured = false;
+                foreach (int i in usedBones)
+                {
+                    Matrix4x4 matrix = posedBones[i];
                     Bounds local = influenceBounds[i]; Vector3 extent = local.extents;
                     Vector3 transformedExtent = new Vector3(
                         Mathf.Abs(matrix.m00) * extent.x + Mathf.Abs(matrix.m01) * extent.y + Mathf.Abs(matrix.m02) * extent.z,
@@ -308,11 +318,12 @@ namespace BarPromenade
                     Bounds.SetMinMax(Vector3.Min(min * minimumWeight, min * maximumWeight),
                         Vector3.Max(max * minimumWeight, max * maximumWeight));
                 }
+                return true;
             }
 
-            private void CaptureVertices(uint? geometryVersion, int? topologyVersion)
+            private bool CaptureVertices(uint? geometryVersion, int? topologyVersion)
             {
-                if (deformed == null) return;
+                if (deformed == null) return false;
                 if (!geometryVersion.HasValue && brain != null && brain.OwnsMesh(source.sharedMesh))
                     geometryVersion = brain.GeometryVersion;
                 bool meshChanged = capturedGeometryMesh != source.sharedMesh;
@@ -341,7 +352,7 @@ namespace BarPromenade
                         blendShapes[shape].Weight = weight; shapesChanged = true;
                     }
                 }
-                if (!geometryChanged && !shapesChanged && !topologyChanged) return;
+                if (!geometryChanged && !shapesChanged && !topologyChanged) return false;
                 queryBoundsDirty = true;
                 queryWorldBoundsReady = false;
                 if (geometryChanged)
@@ -360,13 +371,14 @@ namespace BarPromenade
                     { queryBounds = new Bounds[leaves]; worldQueryBounds = new Bounds[leaves]; queryCandidates = new bool[leaves]; }
                     capturedTopologyVersion = topologyVersion;
                 }
-                if (!geometryChanged && !shapesChanged) return;
+                if (!geometryChanged && !shapesChanged) return true;
                 if (blendShapes != null)
                 {
                     deformed.Clear(); deformed.AddRange(baseVertices);
                     foreach (SurfaceBlendShape shape in blendShapes) shape.Apply(deformed);
                 }
                 RefreshInfluenceBounds();
+                return true;
             }
 
             private sealed class SurfaceBlendShape
