@@ -493,6 +493,7 @@ namespace BarPromenade.Editor
                         transformsByName,
                         BottleGripAnchorName));
 
+                CharacterJointDeformation.Configure(prefabRoot);
                 GameObject saved = PrefabUtility.SaveAsPrefabAsset(
                     prefabRoot,
                     PrefabPath,

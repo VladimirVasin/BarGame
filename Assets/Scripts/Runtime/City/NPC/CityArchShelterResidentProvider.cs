@@ -206,11 +206,14 @@ namespace BarPromenade
 
             MonoBehaviour[] behaviours =
                 prefab.GetComponentsInChildren<MonoBehaviour>(true);
-            if (behaviours.Length != 1 || behaviours[0] != registry)
+            foreach (MonoBehaviour behaviour in behaviours)
             {
-                throw new InvalidOperationException(
-                    $"The {expectedRole} prefab may carry only its asset " +
-                    "registry.");
+                if (behaviour != registry && !(behaviour is CharacterJointDeformation))
+                {
+                    throw new InvalidOperationException(
+                        $"The {expectedRole} prefab may carry only its asset " +
+                        "registry and joint presentation.");
+                }
             }
         }
 

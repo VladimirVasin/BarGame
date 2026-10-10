@@ -167,6 +167,7 @@ namespace BarPromenade
             private readonly SkinnedMeshRenderer source;
             private readonly CombatBrainTissue brain;
             private readonly Vector3[] vertices;
+            private readonly Vector3[] authoredVertices;
             private readonly List<Vector3> deformed;
             private readonly List<Vector3> baseVertices;
             private readonly SurfaceBlendShape[] blendShapes;
@@ -189,6 +190,7 @@ namespace BarPromenade
             private Bounds[] queryBounds, worldQueryBounds;
             private bool[] queryCandidates;
             private HeadTriangle[] fullTriangles, queryTriangles;
+            private int[] queryTriangleIndices;
             private uint? capturedGeometryVersion;
             private int? capturedTopologyVersion;
             private Mesh capturedGeometryMesh;
@@ -199,13 +201,15 @@ namespace BarPromenade
             internal bool Active;
 
             internal HeadSurface(SkinnedMeshRenderer source, bool mutable = false, bool captureBlendShapes = false,
-                bool mutableTopology = false, uint? initialGeometryVersion = null, int? initialTopologyVersion = null)
+                bool mutableTopology = false, uint? initialGeometryVersion = null, int? initialTopologyVersion = null,
+                Mesh authoredMesh = null)
             {
                 this.source = source;
                 this.mutableTopology = mutableTopology;
                 Mesh mesh = source.sharedMesh;
                 brain = source.GetComponent<CombatBrainTissue>();
                 vertices = mesh.vertices; weights = mesh.boneWeights; bind = mesh.bindposes;
+                authoredVertices = authoredMesh != null && authoredMesh != mesh ? authoredMesh.vertices : vertices;
                 int shapeCount = captureBlendShapes ? mesh.blendShapeCount : 0;
                 if (mutable || shapeCount > 0 || brain != null)
                     deformed = new List<Vector3>(vertices.Length);
@@ -221,6 +225,7 @@ namespace BarPromenade
                 Points = new Vector3[vertices.Length];
                 fullTriangles = Triangles = new HeadTriangle[indices.Length / 3];
                 queryTriangles = new HeadTriangle[indices.Length / 3];
+                queryTriangleIndices = new int[indices.Length / 3];
                 vertexQueryVersions = new int[vertices.Length];
                 int leaves = (indices.Length / 3 + QueryLeafTriangleCount - 1) / QueryLeafTriangleCount;
                 queryBounds = new Bounds[leaves]; queryCandidates = new bool[leaves];
@@ -365,7 +370,8 @@ namespace BarPromenade
                     indices = source.sharedMesh.triangles;
                     int count = indices.Length / 3;
                     if (fullTriangles.Length != count) fullTriangles = new HeadTriangle[count];
-                    if (queryTriangles.Length < count) queryTriangles = new HeadTriangle[count];
+                    if (queryTriangles.Length < count)
+                    { queryTriangles = new HeadTriangle[count]; queryTriangleIndices = new int[count]; }
                     int leaves = (count + QueryLeafTriangleCount - 1) / QueryLeafTriangleCount;
                     if (queryBounds.Length < leaves)
                     { queryBounds = new Bounds[leaves]; worldQueryBounds = new Bounds[leaves]; queryCandidates = new bool[leaves]; }
@@ -530,12 +536,43 @@ namespace BarPromenade
                     {
                         int a = indices[index], b = indices[index + 1], c = indices[index + 2];
                         EnsureQueryPoint(a); EnsureQueryPoint(b); EnsureQueryPoint(c);
+                        queryTriangleIndices[QueryTriangleCount] = index;
                         queryTriangles[QueryTriangleCount++] = new HeadTriangle(Points[a], Points[b], Points[c]);
                     }
                 }
                 queryPoseBuilt = true;
                 return built;
             }
+
+            internal Vector3 AuthoredQueryPoint(int triangleIndex, Vector3 point)
+            {
+                HeadTriangle triangle = queryTriangles[triangleIndex];
+                Vector3 ab = triangle.B - triangle.A, ac = triangle.C - triangle.A, offset = point - triangle.A;
+                double aa = Dot(ab, ab), bb = Dot(ac, ac), cross = Dot(ab, ac);
+                double divisor = aa * bb - cross * cross;
+                float b = 0f, c = 0f;
+                if (divisor > 0d)
+                {
+                    double alongB = Dot(offset, ab), alongC = Dot(offset, ac);
+                    b = (float)((bb * alongB - cross * alongC) / divisor);
+                    c = (float)((aa * alongC - cross * alongB) / divisor);
+                }
+                else
+                {
+                    // Degenerate production faces still have finite edge contacts.
+                    // Retain their ownership along the longest surviving edge.
+                    Vector3 bc = triangle.C - triangle.B;
+                    double cc = Dot(bc, bc);
+                    if (cc > aa && cc > bb)
+                    { c = Mathf.Clamp01((float)(Dot(point - triangle.B, bc) / cc)); b = 1f - c; }
+                    else if (aa >= bb && aa > 0d) b = Mathf.Clamp01((float)(Dot(offset, ab) / aa));
+                    else if (bb > 0d) c = Mathf.Clamp01((float)(Dot(offset, ac) / bb));
+                }
+                int index = queryTriangleIndices[triangleIndex];
+                return authoredVertices[indices[index]] * (1f - b - c) + authoredVertices[indices[index + 1]] * b + authoredVertices[indices[index + 2]] * c;
+            }
+
+            private static double Dot(Vector3 a, Vector3 b) => (double)a.x * b.x + (double)a.y * b.y + (double)a.z * b.z;
 
             private void EnsureQueryPoint(int index)
             {

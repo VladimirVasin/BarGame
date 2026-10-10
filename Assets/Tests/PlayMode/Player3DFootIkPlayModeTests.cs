@@ -158,6 +158,8 @@ namespace BarPromenade.Tests.PlayMode
         [UnityTest]
         public IEnumerator FlatGround_WalkKeepsABootPlantedEveryFrame()
         {
+            PlayerBootDeformation footwear = registry.GetComponent<PlayerBootDeformation>();
+            Assert.That(footwear, Is.Not.Null);
             presentation.SetMotion(new PlayerMotionSample(
                 Vector3.forward *
                 Player3DCharacterPresentation.FullWalkSpeed,
@@ -173,10 +175,17 @@ namespace BarPromenade.Tests.PlayMode
             float firstLowerSole = float.NaN;
             float lowestLowerSole = float.PositiveInfinity;
             float highestLowerSole = float.NegativeInfinity;
+            float greatestForefootRoll = 0f;
             for (int frame = 0; frame < SampleFrames; frame++)
             {
                 yield return null;
                 presentation.ReapplyLatePresentationPose();
+                foreach (PlayerBootDeformation.FootBinding foot in footwear.Bindings)
+                    foreach (PlayerBootDeformation.ShapeBinding shape in foot.Shapes)
+                        greatestForefootRoll = Mathf.Max(greatestForefootRoll,
+                            (15f * shape.Renderer.GetBlendShapeWeight(shape.Toe15) +
+                             30f * shape.Renderer.GetBlendShapeWeight(shape.Toe30) +
+                             45f * shape.Renderer.GetBlendShapeWeight(shape.Toe45)) / 100f);
                 float lowerSole = Mathf.Min(
                     GetLowestVisibleMeshY(registry, "foot.L"),
                     GetLowestVisibleMeshY(registry, "foot.R"));
@@ -204,6 +213,8 @@ namespace BarPromenade.Tests.PlayMode
                 lowestLowerSole,
                 Is.GreaterThanOrEqualTo(GroundTopY - SoleTolerance),
                 "No sole may pass through the probed floor.");
+            Assert.That(greatestForefootRoll, Is.GreaterThan(.5f),
+                "The actual walking presentation must bend the forefoot during a supported roll.");
         }
 
         [UnityTest]

@@ -20,13 +20,18 @@ namespace BarPromenade
             float heelY,
             float toeY,
             Vector3 normal,
-            FootSurfaceKind kind)
+            FootSurfaceKind kind,
+            bool? hasToeSurface = null,
+            Vector3? toeSupportPoint = null)
         {
             HasSurface = hasSurface;
             HeelY = heelY;
             ToeY = toeY;
             Normal = normal;
             Kind = kind;
+            HasToeSurface = hasSurface && (hasToeSurface ?? true);
+            HasToeSupportPoint = toeSupportPoint.HasValue;
+            ToeSupportPoint = toeSupportPoint.GetValueOrDefault();
         }
 
         public static FootGroundSample None =>
@@ -39,6 +44,11 @@ namespace BarPromenade
 
         /// <summary>Whether the heel ray found ground the foot may use.</summary>
         public bool HasSurface { get; }
+
+        /// <summary>Whether the toe ray found real support, rather than borrowing the heel's height.</summary>
+        public bool HasToeSurface { get; }
+        public bool HasToeSupportPoint { get; }
+        public Vector3 ToeSupportPoint { get; }
 
         /// <summary>Surface height under the ankle.</summary>
         public float HeelY { get; }
@@ -85,6 +95,8 @@ namespace BarPromenade
 
         private readonly SkinnedMeshRenderer[][] soleRenderers;
         private readonly Transform ignoredRoot;
+        private readonly PlayerBootDeformation bootDeformation;
+        private readonly PlayerWardrobe wardrobe;
         private readonly Mesh bakedSoleMesh;
         private readonly List<Vector3> bakedSoleVertices =
             new List<Vector3>(64);
@@ -92,10 +104,14 @@ namespace BarPromenade
         private Player3DFootGroundProbe(
             SkinnedMeshRenderer[] leftRenderers,
             SkinnedMeshRenderer[] rightRenderers,
-            Transform rootToIgnore)
+            Transform rootToIgnore,
+            PlayerBootDeformation footwear = null,
+            PlayerWardrobe appearance = null)
         {
             soleRenderers = new[] { leftRenderers, rightRenderers };
             ignoredRoot = rootToIgnore;
+            bootDeformation = footwear;
+            wardrobe = appearance;
             bakedSoleMesh = new Mesh
             {
                 name = "Player3D Foot Ground Probe",
@@ -149,7 +165,9 @@ namespace BarPromenade
             return new Player3DFootGroundProbe(
                 left.ToArray(),
                 right.ToArray(),
-                rootToIgnore);
+                rootToIgnore,
+                registry.GetComponent<PlayerBootDeformation>(),
+                registry.GetComponent<PlayerWardrobe>());
         }
 
         /// <summary>
@@ -171,16 +189,18 @@ namespace BarPromenade
         /// The lowest vertex of this boot in the CURRENT pose, or false
         /// when the side has nothing to bake.
         /// </summary>
-        public bool TryGetSoleHeight(FootSide side, out float soleY)
+        public bool TryGetSoleHeight(FootSide side, out float soleY, bool applyFootwearPose = true)
         {
             using var marker = SoleBakeMarker.Auto();
             using var measurement = RuntimePerformanceCapture.MeasureFootBake();
+            if (applyFootwearPose) bootDeformation?.ApplyPose();
             soleY = float.PositiveInfinity;
             SkinnedMeshRenderer[] renderers = soleRenderers[(int)side];
             for (int index = 0; index < renderers.Length; index++)
             {
                 SkinnedMeshRenderer renderer = renderers[index];
-                if (renderer == null || renderer.sharedMesh == null)
+                if (renderer == null || renderer.sharedMesh == null ||
+                    wardrobe != null && !wardrobe.IsRendererWorn(renderer))
                 {
                     continue;
                 }
@@ -245,11 +265,14 @@ namespace BarPromenade
             Vector3 planarForward = footForward;
             planarForward.y = 0f;
             float toeY = heelY;
+            bool hasToe = false;
+            Vector3 toeOrigin = anklePosition;
             if (planarForward.sqrMagnitude > 0.0001f)
             {
-                Vector3 toeOrigin = anklePosition +
+                toeOrigin = anklePosition +
                                     planarForward.normalized * ToeDistance;
-                if (!TryCast(toeOrigin, actorGroundY, out toeY, out _))
+                hasToe = TryCast(toeOrigin, actorGroundY, out toeY, out _);
+                if (!hasToe)
                 {
                     toeY = heelY;
                 }
@@ -265,7 +288,9 @@ namespace BarPromenade
                 heelY,
                 toeY,
                 heelNormal,
-                kind);
+                kind,
+                hasToe,
+                hasToe ? new Vector3(toeOrigin.x, toeY, toeOrigin.z) : (Vector3?)null);
         }
 
         /// <summary>

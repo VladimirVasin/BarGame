@@ -2,6 +2,38 @@
 
 ## Current facts
 
+- **Accepted — 2026-10-10, independent military belt:**
+  Plain olive webbing/muted metal buckle over trousers on the pelvis rig.
+  `hero_belt` has its own `belt` slot, no body coverage; wardrobe removal/
+  restoration and seated waistband lowering include it. Replaces the buckle
+  exclusion; no insignia, ammunition or military biography.
+
+- **Accepted — 2026-10-10, hero footwear:**
+  User replaces military boots with burgundy Dr. Martens 1460 Smooth Leather
+  Lace Up Boots: rounded toe, eight eyelets, black laces, yellow welt stitching,
+  grooved sole. Boot leather/sole must bend at ankle/ball during foot roll;
+  existing core rig/actions and support footprint stay compatible.
+
+- **Accepted — 2026-10-10, hero body silhouette:**
+  Torso widens into continuous shoulders; shirt/M-65 follow. Tapered matching
+  neck follows the jaw. Male hips and two modest rounded buttocks with a cleft
+  join thighs; user reduces projection without merging cheeks. Trousers cover
+  actual anatomy. Lean identity/rig/actions/details stay; no story/§6 exception.
+
+- **Accepted — 2026-10-10, continuous character joints and loose hero garments:**
+  Hero/NPC rigs/actions/sockets/parts/wardrobe stay. `character_joint_surfaces_v1`
+  shares rings/weights/normals; import retains four influences.
+  `CharacterJointDeformation` drives `JointVolume.*` hip/elbow/knee/wrist volume
+  from swing through `135°`, ignores twist. Independent trousers retain clearance,
+  pinned waist and `TrouserKneeFold.*`; seated scales cloth by `1 - TrousersDown`.
+  M-65: flatter panels, shoulder seams/armholes, shaped sleeves/drape folds,
+  ease and smooth rear fall without inflation. `JacketElbowFold.*` precedes
+  bounded hem/cuff cloth; mirror/arms reuse motion, solve their own fold.
+  Hem clears trousers; jacket contacts pose cached skin/corrective planes/bounds;
+  all free vertices resolve, no live body baking/new solver. Combat/seated retain
+  source fields. Seam/volume/copy checks and renders cover `0/45/90/135°`.
+  Identity/palette/story §16/nine art checks stay; no §6 exception.
+
 - **Accepted — 2026-10-04, district heights:**
   User replaces the roof-hidden `36–52 m` ordinary contract: lower OldTown/
   Residential, wide low Industrial, Nightlife taller than neighbours.
@@ -427,54 +459,25 @@
   Imported/placed road/booth bounds verify metres/axes; §16/§21/nine art checks.
 
 - **Accepted — 2026-09-13, refined hero, M-65 and modular clothing:**
-  The user accepts refining the existing Hero V2 to the latest cannery
-  characters' detail level, with a recognisable Vietnam-era M-65, physical
-  parted curtains and a foundation for changing clothes. The same lean `1.75 m`
-  hero, face/expressions, right repair patch, 31 body bones, six sockets and
-  existing actions remain; no insignia, biography, speech or new activity.
-  The bartender's shared Walk copies body curves and excludes the hero's
-  auxiliary hair tracks, which have no target on that rig.
-  `player_detailed_model.py`: shaped hands/neck, slim torso/upper arms and shoulders inside an
-  oversized open M-65: slimmer upper sleeves, loose sides/hem, long bunched
-  cuffs, trouser/boot profiles, constructed
-  pockets/flaps/collar/plackets/cuffs, refined atlas painting. The manifest
-  measures hidden anatomy separately; dressed geometry stays within `8,000` triangles.
-  The user's same-day cloth-physics request uses `PlayerJacketCloth`: eight
-  open-hem nodes plus four per cuff, with smooth pinned-to-free fields over
-  the existing coat surfaces. Shoulders/chest/upper sleeves stay fixed;
-  loose sides, hem, lower pockets/plackets and cuffs respond to motion,
-  gravity and outdoor wind with damping/edge constraints. Hem/cuff tethers
-  cap excursion at `7.5/2.5 cm`. Shared body/hand envelopes exclude the jacket
-  itself and retain the shirt/trousers/boots.
-  Hair/coat contacts use cached mesh support planes so broad scarf ellipsoids
-  cannot trap cuffs or push locks outward; thin collar panels use boxes.
-  Owned mesh buffers preserve imported geometry, weights, shared materials and the existing bone/action
-  contract. Pause freezes cloth; discontinuities or removing the jacket reset
-  history. Camera hiding preserves it; mirror/first-person subsets copy the
-  live hero's vertices without another simulation. The manifest's
-  `hero_jacket_cloth_v1` fields come from `player_jacket_cloth.py`.
-  `PlayerWardrobe` binds explicit body coverage and
-  `shirt/jacket/trousers/boots` items. One original `hero_field_workwear` outfit
-  is supplied; catalogs can include alternatives per slot. Configuration and
-  replacement validate before mutation, share materials and preserve the
-  selected outfit through bathing/toilet leases. Whole-body visibility leases
-  lock outfit edits; restoring clothes never releases the independent head
-  lease. First-person arms copy the current outfit and the mirror copies
-  renderer state. The shower exposes actual bare anatomy without the old
-  shoulder/nape bridge overlays; seated toilet fabric derives from trousers,
-  skin from anatomy. Existing bathroom staging exceptions remain bounded.
-  The medium-length curtains have a part, full temples/ears and continuous nape
-  coverage. Sides and back share jaw/upper-neck length, without a ponytail;
-  three regions use 12 auxiliary bones. `PlayerHair` follows the
-  final body/scarf pose with inertia, gravity, damping, outdoor wind and
-  bounded bends/lengths. Shared `PlayerScarfBodyContacts` caches bare/primary
-  garment variants for at most 17 active anatomy envelopes: torso selects
-  jacket→shirt→skin, limbs select worn sleeves/trousers/boots. Camera hiding
-  retains clothing contacts; an undress lease selects bare anatomy. Pose
-  updates move cached envelopes without body baking. Hair adds collar/scarf
-  envelopes, existing scarf-tail vertices and strand separation; no scene scan.
-  Pause/transitions freeze it, discontinuities reset history, and the
-  mirror copies the solved pose. Derived arm prefabs never simulate hair.
+  User: cannery-level Hero V2 detail, Vietnam-era M-65, curtains/modular clothing.
+  Lean `1.75 m` identity/face/right patch, 31 bones/six sockets/actions stay;
+  no insignia/biography/speech/activity.
+  Bartender Walk copies body curves, excludes absent hero hair tracks.
+  `player_detailed_model.py`: anatomy, open M-65/pockets/collar/plackets/cuffs,
+  trousers/boots and atlas painting; current silhouette follows the decision above.
+  Manifest separates hidden anatomy; dressed geometry ≤`8,000` triangles.
+  `PlayerJacketCloth`/`hero_jacket_cloth_v1` retains bounded hem/cuff motion and
+  cached contacts on owned buffers. Sources/materials stay immutable; pause
+  freezes, discontinuities/removal reset, hiding preserves. Posed folds/copies
+  follow the joint contract above; parameters are in `player-art-spec.md`.
+  `PlayerWardrobe` validates coverage/replacements; outfit/shared materials
+  persist through bathing/toilet leases, which lock edits and retain head ownership.
+  Arms/mirror copy appearance. Shower uses bare anatomy; seated fabric/skin
+  derive from their sources. Bathroom exceptions stay bounded.
+  Curtains cover temples/ears/nape to jaw/upper neck, no ponytail; 12 bones.
+  `PlayerHair` follows body/scarf with bounded motion and cached garment/scarf/
+  strand contacts. Pause/transitions freeze, discontinuities reset, mirror copies;
+  arms never simulate hair. Contact parameters remain in `player-art-spec.md`.
   New outfits, acquisition, wardrobe UI and persistence are Deferred. Form is
   recorded in art-bible §2/player-art-spec; story-bible §7 preserves meaning.
 
@@ -1929,7 +1932,7 @@
   both the former static-shelter exception and older notes that kept ambient
   passengers on a `0.70 m` rig.
 - **Accepted — modular humanoid visibility follows the live pose, not the
-  model-FBX bind pose:** each character is split into many rigidly skinned
+  model-FBX bind pose:** each character is split into many addressable skinned
   renderers, while its model and clip banks are separate assets; clips and
   bounded procedural looks can still move parts outside imported per-part
   A-pose boxes. Those boxes therefore are not valid culling envelopes. The

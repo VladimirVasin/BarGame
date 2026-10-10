@@ -9,9 +9,9 @@
   "seed": 17301,
   "forward_axis": "-Y",
   "anatomical_left_axis": "+X",
-  "object_count": 91,
-  "mesh_count": 83,
-  "triangle_count": 8856,
+  "object_count": 93,
+  "mesh_count": 85,
+  "triangle_count": 9744,
   "action_count": 50,
   "socket_count": 6,
   "bounds_min": [
@@ -21,7 +21,7 @@
   ],
   "bounds_max": [
     0.777429,
-    0.124,
+    0.156,
     1.751787
   ],
   "sprite_parts": [
@@ -1050,14 +1050,40 @@
   ],
   "parts": [
     {
+      "name": "CLO_Belt",
+      "role": "clothing",
+      "bone": "pelvis",
+      "sprite_part": "Body",
+      "side": "Center",
+      "material": "MAT_JacketDark",
+      "vertices": 64,
+      "triangles": 128,
+      "default_visible": true,
+      "wardrobe_slot": "belt",
+      "body_coverage_region": ""
+    },
+    {
+      "name": "CLO_BeltBuckle",
+      "role": "clothing",
+      "bone": "pelvis",
+      "sprite_part": "Body",
+      "side": "Center",
+      "material": "MAT_Metal",
+      "vertices": 8,
+      "triangles": 12,
+      "default_visible": true,
+      "wardrobe_slot": "belt",
+      "body_coverage_region": ""
+    },
+    {
       "name": "CLO_Boot.L",
       "role": "clothing",
       "bone": "foot.L",
       "sprite_part": "LeftLowerLeg",
       "side": "Left",
       "material": "MAT_JeansAtlas",
-      "vertices": 48,
-      "triangles": 92,
+      "vertices": 112,
+      "triangles": 220,
       "default_visible": true,
       "wardrobe_slot": "boots",
       "body_coverage_region": ""
@@ -1069,8 +1095,8 @@
       "sprite_part": "RightLowerLeg",
       "side": "Right",
       "material": "MAT_JeansAtlas",
-      "vertices": 48,
-      "triangles": 92,
+      "vertices": 112,
+      "triangles": 220,
       "default_visible": true,
       "wardrobe_slot": "boots",
       "body_coverage_region": ""
@@ -1082,8 +1108,8 @@
       "sprite_part": "LeftLowerLeg",
       "side": "Left",
       "material": "MAT_BootSole",
-      "vertices": 24,
-      "triangles": 44,
+      "vertices": 48,
+      "triangles": 92,
       "default_visible": true,
       "wardrobe_slot": "boots",
       "body_coverage_region": ""
@@ -1095,8 +1121,8 @@
       "sprite_part": "RightLowerLeg",
       "side": "Right",
       "material": "MAT_BootSole",
-      "vertices": 24,
-      "triangles": 44,
+      "vertices": 48,
+      "triangles": 92,
       "default_visible": true,
       "wardrobe_slot": "boots",
       "body_coverage_region": ""
@@ -1108,8 +1134,8 @@
       "sprite_part": "Body",
       "side": "Center",
       "material": "MAT_JacketAtlas",
-      "vertices": 900,
-      "triangles": 1796,
+      "vertices": 634,
+      "triangles": 1272,
       "default_visible": true,
       "wardrobe_slot": "jacket",
       "body_coverage_region": ""
@@ -1225,8 +1251,8 @@
       "sprite_part": "LeftLowerArm",
       "side": "Left",
       "material": "MAT_JacketAtlas",
-      "vertices": 51,
-      "triangles": 98,
+      "vertices": 84,
+      "triangles": 164,
       "default_visible": true,
       "wardrobe_slot": "jacket",
       "body_coverage_region": ""
@@ -1238,8 +1264,8 @@
       "sprite_part": "RightLowerArm",
       "side": "Right",
       "material": "MAT_JacketAtlas",
-      "vertices": 49,
-      "triangles": 94,
+      "vertices": 84,
+      "triangles": 164,
       "default_visible": true,
       "wardrobe_slot": "jacket",
       "body_coverage_region": ""
@@ -1251,8 +1277,8 @@
       "sprite_part": "Body",
       "side": "Center",
       "material": "MAT_JacketDark",
-      "vertices": 72,
-      "triangles": 140,
+      "vertices": 52,
+      "triangles": 100,
       "default_visible": true,
       "wardrobe_slot": "jacket",
       "body_coverage_region": ""
@@ -1264,8 +1290,8 @@
       "sprite_part": "Body",
       "side": "Center",
       "material": "MAT_JacketDark",
-      "vertices": 72,
-      "triangles": 140,
+      "vertices": 52,
+      "triangles": 100,
       "default_visible": true,
       "wardrobe_slot": "jacket",
       "body_coverage_region": ""
@@ -1329,8 +1355,8 @@
       "sprite_part": "LeftUpperArm",
       "side": "Left",
       "material": "MAT_JacketAtlas",
-      "vertices": 78,
-      "triangles": 152,
+      "vertices": 84,
+      "triangles": 164,
       "default_visible": true,
       "wardrobe_slot": "jacket",
       "body_coverage_region": ""
@@ -1342,8 +1368,8 @@
       "sprite_part": "RightUpperArm",
       "side": "Right",
       "material": "MAT_JacketAtlas",
-      "vertices": 78,
-      "triangles": 152,
+      "vertices": 84,
+      "triangles": 164,
       "default_visible": true,
       "wardrobe_slot": "jacket",
       "body_coverage_region": ""
@@ -1368,8 +1394,8 @@
       "sprite_part": "Body",
       "side": "Center",
       "material": "MAT_JeansAtlas",
-      "vertices": 52,
-      "triangles": 100,
+      "vertices": 120,
+      "triangles": 236,
       "default_visible": true,
       "wardrobe_slot": "trousers",
       "body_coverage_region": ""
@@ -1381,8 +1407,8 @@
       "sprite_part": "LeftLowerLeg",
       "side": "Left",
       "material": "MAT_JeansAtlas",
-      "vertices": 84,
-      "triangles": 164,
+      "vertices": 72,
+      "triangles": 140,
       "default_visible": true,
       "wardrobe_slot": "trousers",
       "body_coverage_region": ""
@@ -1394,8 +1420,8 @@
       "sprite_part": "RightLowerLeg",
       "side": "Right",
       "material": "MAT_JeansAtlas",
-      "vertices": 84,
-      "triangles": 164,
+      "vertices": 72,
+      "triangles": 140,
       "default_visible": true,
       "wardrobe_slot": "trousers",
       "body_coverage_region": ""
@@ -1602,8 +1628,8 @@
       "sprite_part": "LeftLowerArm",
       "side": "Left",
       "material": "MAT_Skin",
-      "vertices": 16,
-      "triangles": 28,
+      "vertices": 50,
+      "triangles": 96,
       "default_visible": false,
       "wardrobe_slot": "",
       "body_coverage_region": "jacket"
@@ -1615,8 +1641,8 @@
       "sprite_part": "RightLowerArm",
       "side": "Right",
       "material": "MAT_Skin",
-      "vertices": 16,
-      "triangles": 28,
+      "vertices": 50,
+      "triangles": 96,
       "default_visible": false,
       "wardrobe_slot": "",
       "body_coverage_region": "jacket"
@@ -1965,9 +1991,9 @@
       "bone": "neck",
       "sprite_part": "Body",
       "side": "Center",
-      "material": "MAT_SkinShadow",
-      "vertices": 24,
-      "triangles": 44,
+      "material": "MAT_Skin",
+      "vertices": 48,
+      "triangles": 92,
       "default_visible": true,
       "wardrobe_slot": "",
       "body_coverage_region": ""
@@ -1979,8 +2005,8 @@
       "sprite_part": "Body",
       "side": "Center",
       "material": "MAT_Skin",
-      "vertices": 52,
-      "triangles": 100,
+      "vertices": 144,
+      "triangles": 284,
       "default_visible": false,
       "wardrobe_slot": "",
       "body_coverage_region": "trousers"
@@ -2018,8 +2044,8 @@
       "sprite_part": "LeftUpperArm",
       "side": "Left",
       "material": "MAT_Skin",
-      "vertices": 62,
-      "triangles": 120,
+      "vertices": 30,
+      "triangles": 56,
       "default_visible": false,
       "wardrobe_slot": "",
       "body_coverage_region": "jacket"
@@ -2031,8 +2057,8 @@
       "sprite_part": "RightUpperArm",
       "side": "Right",
       "material": "MAT_Skin",
-      "vertices": 62,
-      "triangles": 120,
+      "vertices": 30,
+      "triangles": 56,
       "default_visible": false,
       "wardrobe_slot": "",
       "body_coverage_region": "jacket"
@@ -2044,8 +2070,8 @@
       "sprite_part": "LeftUpperLeg",
       "side": "Left",
       "material": "MAT_Skin",
-      "vertices": 32,
-      "triangles": 60,
+      "vertices": 40,
+      "triangles": 76,
       "default_visible": false,
       "wardrobe_slot": "",
       "body_coverage_region": "trousers"
@@ -2057,8 +2083,8 @@
       "sprite_part": "RightUpperLeg",
       "side": "Right",
       "material": "MAT_Skin",
-      "vertices": 32,
-      "triangles": 60,
+      "vertices": 40,
+      "triangles": 76,
       "default_visible": false,
       "wardrobe_slot": "",
       "body_coverage_region": "trousers"
@@ -2096,8 +2122,8 @@
       "sprite_part": "Body",
       "side": "Center",
       "material": "MAT_Skin",
-      "vertices": 142,
-      "triangles": 280,
+      "vertices": 314,
+      "triangles": 624,
       "default_visible": false,
       "wardrobe_slot": "",
       "body_coverage_region": "shirt"
@@ -2108,9 +2134,9 @@
       "bone": "upper_arm.L",
       "sprite_part": "LeftUpperArm",
       "side": "Left",
-      "material": "MAT_SkinShadow",
-      "vertices": 16,
-      "triangles": 28,
+      "material": "MAT_Skin",
+      "vertices": 50,
+      "triangles": 96,
       "default_visible": false,
       "wardrobe_slot": "",
       "body_coverage_region": "jacket"
@@ -2121,17 +2147,95 @@
       "bone": "upper_arm.R",
       "sprite_part": "RightUpperArm",
       "side": "Right",
-      "material": "MAT_SkinShadow",
-      "vertices": 16,
-      "triangles": 28,
+      "material": "MAT_Skin",
+      "vertices": 50,
+      "triangles": 96,
       "default_visible": false,
       "wardrobe_slot": "",
       "body_coverage_region": "jacket"
     }
   ],
+  "hand_grip": {
+    "shape_name": "CylindricalGrip",
+    "cylinder_radius_m": 0.022,
+    "hands": [
+      {
+        "side": "L",
+        "bone": "hand.L",
+        "centre_anchor": "ANCHOR_HandGripCentre.L",
+        "axis_anchor": "ANCHOR_HandGripAxis.L",
+        "palm_anchor": "ANCHOR_HandGripPalm.L",
+        "renderers": [
+          "GEO_Hand.L",
+          "GEO_Thumb.L",
+          "GEO_Finger0.L",
+          "GEO_Finger1.L",
+          "GEO_Finger2.L",
+          "GEO_Finger3.L"
+        ]
+      },
+      {
+        "side": "R",
+        "bone": "hand.R",
+        "centre_anchor": "ANCHOR_HandGripCentre.R",
+        "axis_anchor": "ANCHOR_HandGripAxis.R",
+        "palm_anchor": "ANCHOR_HandGripPalm.R",
+        "renderers": [
+          "GEO_Hand.R",
+          "GEO_Thumb.R",
+          "GEO_Finger0.R",
+          "GEO_Finger1.R",
+          "GEO_Finger2.R",
+          "GEO_Finger3.R"
+        ]
+      }
+    ],
+    "shape_signature": "1e68f257f5c85a43263ed139f613bcec4d5a5327006f27ba4a887a77a7031247",
+    "validation": {
+      "surface_clearances_m": {
+        "GEO_Hand.L": 0.001,
+        "GEO_Thumb.L": -0.000248,
+        "GEO_Finger0.L": 0.002834,
+        "GEO_Finger1.L": 0.002329,
+        "GEO_Finger2.L": 0.002463,
+        "GEO_Finger3.L": 0.00287,
+        "GEO_Hand.R": 0.001,
+        "GEO_Thumb.R": -0.00097,
+        "GEO_Finger0.R": 0.002198,
+        "GEO_Finger1.R": 0.001659,
+        "GEO_Finger2.R": 0.001829,
+        "GEO_Finger3.R": 0.002309
+      },
+      "far_side_reach_m": {
+        "GEO_Thumb.L": 0.018556,
+        "GEO_Finger0.L": 0.004848,
+        "GEO_Finger1.L": 0.016489,
+        "GEO_Finger2.L": 0.013044,
+        "GEO_Finger3.L": 0.004723,
+        "GEO_Thumb.R": 0.01861,
+        "GEO_Finger0.R": 0.004838,
+        "GEO_Finger1.R": 0.016354,
+        "GEO_Finger2.R": 0.01295,
+        "GEO_Finger3.R": 0.004712
+      },
+      "finger_root_surface_gaps_m": {
+        "GEO_Finger0.L": 0.0,
+        "GEO_Finger1.L": 0.0,
+        "GEO_Finger2.L": 0.0,
+        "GEO_Finger3.L": 0.002004,
+        "GEO_Finger0.R": 0.001478,
+        "GEO_Finger1.R": 0.0,
+        "GEO_Finger2.R": 0.0,
+        "GEO_Finger3.R": 0.002756
+      },
+      "neutral_vertices_unchanged": true,
+      "wrist_unchanged": true
+    }
+  },
+  "hand_grip_authoring_sha256": "a54f30087360b47fefd54a0fa42f125426352fd5203b95a918d85c08ad8a8bea",
   "design_version": "HeroV2",
   "cold_authoring_sha256": "43e4d28adc2d45c8f1e679635306b733f134e011410f875a04649d19d57d3791",
-  "detail_authoring_sha256": "74614133762b9e36a5c4e4d1720c51616f3125f91b34d719417a3e83ba461d53",
+  "detail_authoring_sha256": "1005ed633302cde3d9c4a09b0b7d895785b5100f934f41e48bd56c3fb804b037",
   "face_paint_sha256": "3b74355582ac1095a8a6ed0a30840e53d4bd45d78e6087b7e67d4b5331189970",
   "hand_frames_sha256": "0a527fa0da29d22421d0af3d37b2825fc956f0a64f667e939eb9bb8d52b24e82",
   "lineage_reference": "ArtSource/Player/PlayerDirectionalTurntable.png",
@@ -2162,7 +2266,7 @@
     "action_count": 50,
     "preserves_authored_contacts": true
   },
-  "content_signature_sha256": "25324f39b321cae0c6572389c2fd0d5080cef40886f5a4fe66786e729c38e2f0",
+  "content_signature_sha256": "3a33690ea060752d82aa8da6fdfcbbec2540264683d0f2201231840e7d5fb3b1",
   "material_palette": {
     "MAT_FaceAtlas": "FFFFFF",
     "MAT_JacketAtlas": "FFFFFF",
@@ -2365,7 +2469,7 @@
       "uv_origin": "bottom_left",
       "uv_safe_inset_px": 1,
       "material_tint_hex": "FFFFFF",
-      "sha256": "57a15642260b1fcd34e639976a9a0303e7d5faff1b0c071b883c586e7cba2c6a",
+      "sha256": "d415529dcbc704e7f8d40d625a7f6f1dd057dab5a64532e78c0af490c68f7030",
       "regions": [
         {
           "name": "JacketBody",
@@ -2600,10 +2704,10 @@
     "heads_tall": 7.4914,
     "shoulder_width_m": 0.41814,
     "shoulder_joint_span_m": 0.41814,
-    "visible_neck_height_m": 0.045429,
-    "bare_visible_neck_m": 0.045429,
-    "neck_base_width_m": 0.148,
-    "neck_top_width_m": 0.127,
+    "visible_neck_height_m": 0.031857,
+    "bare_visible_neck_m": 0.031857,
+    "neck_base_width_m": 0.146734,
+    "neck_top_width_m": 0.108,
     "shoulder_span_head_width_ratio": 2.375795,
     "shoulder_to_wrist_m": 0.585625,
     "shoulder_to_wrist_ratio": 0.334643,
@@ -2611,28 +2715,2801 @@
     "pelvis_height_m": 0.835,
     "pelvis_joint_span_m": 0.184532,
     "torso_length_m": 0.543,
-    "torso_waist_half_width_m": 0.132933,
-    "torso_chest_half_width_m": 0.14975,
-    "jacket_hem_half_width_m": 0.168,
-    "jacket_waist_half_width_m": 0.169,
-    "jacket_chest_half_width_m": 0.19,
-    "jacket_yoke_half_width_m": 0.195,
+    "torso_waist_half_width_m": 0.133,
+    "torso_chest_half_width_m": 0.19,
+    "jacket_hem_half_width_m": 0.191,
+    "jacket_waist_half_width_m": 0.188,
+    "jacket_chest_half_width_m": 0.21,
+    "jacket_yoke_half_width_m": 0.204,
     "relaxed_left_wrist_z_m": 0.844539,
     "relaxed_right_wrist_z_m": 0.837188,
     "relaxed_left_fingertip_z_m": 0.750185,
     "relaxed_right_fingertip_z_m": 0.741906,
     "left_foot_length_m": 0.263,
     "left_foot_width_m": 0.13,
-    "left_upper_thigh_width_m": 0.146387,
+    "left_upper_thigh_width_m": 0.12882,
     "left_knee_width_m": 0.095375,
     "left_calf_width_m": 0.118398,
     "left_ankle_width_m": 0.072353,
     "right_foot_length_m": 0.267,
     "right_foot_width_m": 0.13,
-    "right_upper_thigh_width_m": 0.146373,
+    "right_upper_thigh_width_m": 0.128808,
     "right_knee_width_m": 0.095368,
     "right_calf_width_m": 0.118389,
     "right_ankle_width_m": 0.072348
+  },
+  "footwear": {
+    "contract": "hero_footwear_v1",
+    "source_space": "blender_z_up_minus_y_forward",
+    "reference_url": "https://www.drmartens.com/uk/en_gb/1460-burgundy-smooth-leather-lace-up-boots-burgundy/p/27277626",
+    "feet": [
+      {
+        "side": "L",
+        "foot_bone": "foot.L",
+        "shin_bone": "shin.L",
+        "renderers": [
+          "CLO_Boot.L",
+          "CLO_BootSole.L"
+        ],
+        "ball_pivot_blender": {
+          "x": 0.09600000083446503,
+          "y": -0.1420000046491623,
+          "z": 0.029999999329447746
+        },
+        "ball_contact_blender": {
+          "x": 0.09600000083446503,
+          "y": -0.1420000046491623,
+          "z": 0.0
+        },
+        "forward_blender": {
+          "x": 0.0,
+          "y": -1.0,
+          "z": 0.0
+        },
+        "lateral_blender": {
+          "x": 1.0,
+          "y": 0.0,
+          "z": 0.0
+        },
+        "up_blender": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 1.0
+        },
+        "toe_shapes": [
+          {
+            "shape": "BootToeRoll15.L",
+            "angle_degrees": 15
+          },
+          {
+            "shape": "BootToeRoll30.L",
+            "angle_degrees": 30
+          },
+          {
+            "shape": "BootToeRoll45.L",
+            "angle_degrees": 45
+          }
+        ],
+        "ankle_dorsiflex_shape": "BootAnkleDorsiflex.L",
+        "ankle_dorsiflex_max_degrees": 45,
+        "ankle_plantarflex_shape": "BootAnklePlantarflex.L",
+        "ankle_plantarflex_max_degrees": 30,
+        "ankle_weight_curve": "linear",
+        "eyelet_rows": 8,
+        "ankle_section_blender": [
+          {
+            "x": 0.09600000083446503,
+            "y": -0.057999998331069946,
+            "z": 0.1120000034570694
+          },
+          {
+            "x": 0.11628222465515137,
+            "y": -0.05434621870517731,
+            "z": 0.1120000034570694
+          },
+          {
+            "x": 0.13347665965557098,
+            "y": -0.04394112527370453,
+            "z": 0.1120000034570694
+          },
+          {
+            "x": 0.14496561884880066,
+            "y": -0.02836880460381508,
+            "z": 0.1120000034570694
+          },
+          {
+            "x": 0.14900000393390656,
+            "y": -0.009999999776482582,
+            "z": 0.1120000034570694
+          },
+          {
+            "x": 0.14496561884880066,
+            "y": 0.008368805050849915,
+            "z": 0.1120000034570694
+          },
+          {
+            "x": 0.13347665965557098,
+            "y": 0.023941125720739365,
+            "z": 0.1120000034570694
+          },
+          {
+            "x": 0.11628222465515137,
+            "y": 0.03434621915221214,
+            "z": 0.1120000034570694
+          },
+          {
+            "x": 0.09600000083446503,
+            "y": 0.03799999877810478,
+            "z": 0.1120000034570694
+          },
+          {
+            "x": 0.07571777701377869,
+            "y": 0.03434621915221214,
+            "z": 0.1120000034570694
+          },
+          {
+            "x": 0.05852334201335907,
+            "y": 0.023941125720739365,
+            "z": 0.1120000034570694
+          },
+          {
+            "x": 0.04703438654541969,
+            "y": 0.008368805050849915,
+            "z": 0.1120000034570694
+          },
+          {
+            "x": 0.0430000014603138,
+            "y": -0.009999999776482582,
+            "z": 0.1120000034570694
+          },
+          {
+            "x": 0.04703438654541969,
+            "y": -0.02836880460381508,
+            "z": 0.1120000034570694
+          },
+          {
+            "x": 0.05852334201335907,
+            "y": -0.04394112527370453,
+            "z": 0.1120000034570694
+          },
+          {
+            "x": 0.07571777701377869,
+            "y": -0.05434621870517731,
+            "z": 0.1120000034570694
+          }
+        ]
+      },
+      {
+        "side": "R",
+        "foot_bone": "foot.R",
+        "shin_bone": "shin.R",
+        "renderers": [
+          "CLO_Boot.R",
+          "CLO_BootSole.R"
+        ],
+        "ball_pivot_blender": {
+          "x": -0.09600000083446503,
+          "y": -0.11000000685453415,
+          "z": 0.029999999329447746
+        },
+        "ball_contact_blender": {
+          "x": -0.09600000083446503,
+          "y": -0.11000000685453415,
+          "z": 0.0
+        },
+        "forward_blender": {
+          "x": 0.0,
+          "y": -1.0,
+          "z": 0.0
+        },
+        "lateral_blender": {
+          "x": 1.0,
+          "y": 0.0,
+          "z": 0.0
+        },
+        "up_blender": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 1.0
+        },
+        "toe_shapes": [
+          {
+            "shape": "BootToeRoll15.R",
+            "angle_degrees": 15
+          },
+          {
+            "shape": "BootToeRoll30.R",
+            "angle_degrees": 30
+          },
+          {
+            "shape": "BootToeRoll45.R",
+            "angle_degrees": 45
+          }
+        ],
+        "ankle_dorsiflex_shape": "BootAnkleDorsiflex.R",
+        "ankle_dorsiflex_max_degrees": 45,
+        "ankle_plantarflex_shape": "BootAnklePlantarflex.R",
+        "ankle_plantarflex_max_degrees": 30,
+        "ankle_weight_curve": "linear",
+        "eyelet_rows": 8,
+        "ankle_section_blender": [
+          {
+            "x": -0.09600000083446503,
+            "y": -0.02199999801814556,
+            "z": 0.1120000034570694
+          },
+          {
+            "x": -0.07571777701377869,
+            "y": -0.018346218392252922,
+            "z": 0.1120000034570694
+          },
+          {
+            "x": -0.05852334201335907,
+            "y": -0.007941124960780144,
+            "z": 0.1120000034570694
+          },
+          {
+            "x": -0.04703438654541969,
+            "y": 0.007631195709109306,
+            "z": 0.1120000034570694
+          },
+          {
+            "x": -0.0430000014603138,
+            "y": 0.026000000536441803,
+            "z": 0.1120000034570694
+          },
+          {
+            "x": -0.04703438654541969,
+            "y": 0.04436880350112915,
+            "z": 0.1120000034570694
+          },
+          {
+            "x": -0.05852334201335907,
+            "y": 0.0599411204457283,
+            "z": 0.1120000034570694
+          },
+          {
+            "x": -0.07571777701377869,
+            "y": 0.07034622132778168,
+            "z": 0.1120000034570694
+          },
+          {
+            "x": -0.09600000083446503,
+            "y": 0.07400000095367432,
+            "z": 0.1120000034570694
+          },
+          {
+            "x": -0.11628222465515137,
+            "y": 0.07034622132778168,
+            "z": 0.1120000034570694
+          },
+          {
+            "x": -0.13347665965557098,
+            "y": 0.0599411204457283,
+            "z": 0.1120000034570694
+          },
+          {
+            "x": -0.14496561884880066,
+            "y": 0.04436880350112915,
+            "z": 0.1120000034570694
+          },
+          {
+            "x": -0.14900000393390656,
+            "y": 0.026000000536441803,
+            "z": 0.1120000034570694
+          },
+          {
+            "x": -0.14496561884880066,
+            "y": 0.007631195709109306,
+            "z": 0.1120000034570694
+          },
+          {
+            "x": -0.13347665965557098,
+            "y": -0.007941124960780144,
+            "z": 0.1120000034570694
+          },
+          {
+            "x": -0.11628222465515137,
+            "y": -0.018346218392252922,
+            "z": 0.1120000034570694
+          }
+        ]
+      }
+    ]
+  },
+  "joint_surfaces": {
+    "contract": "character_joint_surfaces_v1",
+    "source_space": "blender_z_up_minus_y_forward",
+    "max_influences": 4,
+    "seams": [
+      {
+        "id": "Skin shoulder.L",
+        "bone": "upper_arm.L",
+        "renderers": [
+          "GEO_Shoulder.L",
+          "GEO_UpperArm.L"
+        ],
+        "vertices_a": [
+          20,
+          21,
+          22,
+          23,
+          24,
+          25,
+          26,
+          27,
+          28,
+          29
+        ],
+        "vertices_b": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9
+        ],
+        "bones": [
+          "chest",
+          "upper_arm.L"
+        ],
+        "points_blender": [
+          {
+            "x": 0.1893007606267929,
+            "y": 0.008901981636881828,
+            "z": 1.394261360168457
+          },
+          {
+            "x": 0.19875913858413696,
+            "y": 0.024746336042881012,
+            "z": 1.4068506956100464
+          },
+          {
+            "x": 0.21251113712787628,
+            "y": 0.02961057610809803,
+            "z": 1.4259904623031616
+          },
+          {
+            "x": 0.22530397772789001,
+            "y": 0.021636709570884705,
+            "z": 1.4443700313568115
+          },
+          {
+            "x": 0.23225118219852448,
+            "y": 0.0038704941980540752,
+            "z": 1.454968810081482
+          },
+          {
+            "x": 0.23069924116134644,
+            "y": -0.016901982948184013,
+            "z": 1.4537386894226074
+          },
+          {
+            "x": 0.22124086320400238,
+            "y": -0.0327463373541832,
+            "z": 1.441149353981018
+          },
+          {
+            "x": 0.20748887956142426,
+            "y": -0.037610575556755066,
+            "z": 1.4220095872879028
+          },
+          {
+            "x": 0.19469600915908813,
+            "y": -0.02963671088218689,
+            "z": 1.403630018234253
+          },
+          {
+            "x": 0.18774881958961487,
+            "y": -0.011870497837662697,
+            "z": 1.3930312395095825
+          }
+        ],
+        "band_m": 0.06,
+        "loose": false,
+        "corrective_shape": "",
+        "corrective_angle_degrees": 0.0,
+        "weight_curve": "none",
+        "validation": {
+          "angles_degrees": [
+            0,
+            45,
+            90,
+            135.0
+          ],
+          "section_area_ratios": [
+            1.0,
+            0.923879,
+            0.707107,
+            0.382683
+          ],
+          "seam_tolerance_m": 2e-06
+        }
+      },
+      {
+        "id": "Skin elbow.L",
+        "bone": "forearm.L",
+        "renderers": [
+          "GEO_UpperArm.L",
+          "GEO_Forearm.L"
+        ],
+        "vertices_a": [
+          40,
+          41,
+          42,
+          43,
+          44,
+          45,
+          46,
+          47,
+          48,
+          49
+        ],
+        "vertices_b": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9
+        ],
+        "bones": [
+          "upper_arm.L",
+          "forearm.L"
+        ],
+        "points_blender": [
+          {
+            "x": 0.4321553409099579,
+            "y": 0.0014223111793398857,
+            "z": 1.2200146913528442
+          },
+          {
+            "x": 0.4425746500492096,
+            "y": 0.017905661836266518,
+            "z": 1.2326574325561523
+          },
+          {
+            "x": 0.457739919424057,
+            "y": 0.022966070100665092,
+            "z": 1.2519242763519287
+          },
+          {
+            "x": 0.4718587398529053,
+            "y": 0.014670622535049915,
+            "z": 1.270456314086914
+          },
+          {
+            "x": 0.47953808307647705,
+            "y": -0.003812092589214444,
+            "z": 1.281174659729004
+          },
+          {
+            "x": 0.4778446853160858,
+            "y": -0.025422312319278717,
+            "z": 1.2799853086471558
+          },
+          {
+            "x": 0.4674253761768341,
+            "y": -0.041905663907527924,
+            "z": 1.2673425674438477
+          },
+          {
+            "x": 0.4522601068019867,
+            "y": -0.0469660684466362,
+            "z": 1.2480757236480713
+          },
+          {
+            "x": 0.4381412863731384,
+            "y": -0.0386706218123436,
+            "z": 1.229543685913086
+          },
+          {
+            "x": 0.43046194314956665,
+            "y": -0.02018790692090988,
+            "z": 1.218825340270996
+          }
+        ],
+        "band_m": 0.055,
+        "loose": false,
+        "corrective_shape": "JointVolume.Elbow.L",
+        "corrective_angle_degrees": 135.0,
+        "weight_curve": "inverse_half_angle_cosine",
+        "validation": {
+          "angles_degrees": [
+            0,
+            45,
+            90,
+            135.0
+          ],
+          "section_area_ratios": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          "seam_tolerance_m": 2e-06
+        }
+      },
+      {
+        "id": "Jacket elbow.L",
+        "bone": "forearm.L",
+        "renderers": [
+          "CLO_JacketSleeve.L",
+          "CLO_JacketForearm.L"
+        ],
+        "vertices_a": [
+          72,
+          73,
+          74,
+          75,
+          76,
+          77,
+          78,
+          79,
+          80,
+          81,
+          82,
+          83
+        ],
+        "vertices_b": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11
+        ],
+        "bones": [
+          "upper_arm.L",
+          "forearm.L"
+        ],
+        "points_blender": [
+          {
+            "x": 0.42756399512290955,
+            "y": 0.004119934979826212,
+            "z": 1.213988184928894
+          },
+          {
+            "x": 0.43742695450782776,
+            "y": 0.021418752148747444,
+            "z": 1.225878357887268
+          },
+          {
+            "x": 0.4519985616207123,
+            "y": 0.02976304106414318,
+            "z": 1.2442318201065063
+          },
+          {
+            "x": 0.4673744738101959,
+            "y": 0.02691696025431156,
+            "z": 1.26413094997406
+          },
+          {
+            "x": 0.479434609413147,
+            "y": 0.013643110170960426,
+            "z": 1.2802436351776123
+          },
+          {
+            "x": 0.48494753241539,
+            "y": -0.006501790601760149,
+            "z": 1.288252592086792
+          },
+          {
+            "x": 0.48243603110313416,
+            "y": -0.02811993472278118,
+            "z": 1.286011815071106
+          },
+          {
+            "x": 0.47257307171821594,
+            "y": -0.04541875422000885,
+            "z": 1.274121642112732
+          },
+          {
+            "x": 0.4580014646053314,
+            "y": -0.05376303941011429,
+            "z": 1.2557681798934937
+          },
+          {
+            "x": 0.4426255524158478,
+            "y": -0.05091696232557297,
+            "z": 1.23586905002594
+          },
+          {
+            "x": 0.43056541681289673,
+            "y": -0.03764311224222183,
+            "z": 1.2197563648223877
+          },
+          {
+            "x": 0.4250524938106537,
+            "y": -0.017498210072517395,
+            "z": 1.211747407913208
+          }
+        ],
+        "band_m": 0.11,
+        "loose": true,
+        "corrective_shape": "JacketElbowFold.L",
+        "corrective_angle_degrees": 135.0,
+        "weight_curve": "inverse_half_angle_cosine",
+        "validation": {
+          "angles_degrees": [
+            0,
+            45,
+            90,
+            135.0
+          ],
+          "section_area_ratios": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          "seam_tolerance_m": 2e-06
+        }
+      },
+      {
+        "id": "Skin knee.L",
+        "bone": "shin.L",
+        "renderers": [
+          "GEO_Thigh.L",
+          "GEO_Shin.L"
+        ],
+        "vertices_a": [
+          32,
+          33,
+          34,
+          35,
+          36,
+          37,
+          38,
+          39
+        ],
+        "vertices_b": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "bones": [
+          "thigh.L",
+          "shin.L"
+        ],
+        "points_blender": [
+          {
+            "x": 0.040326349437236786,
+            "y": 0.0025899712927639484,
+            "z": 0.4836817979812622
+          },
+          {
+            "x": 0.06826687604188919,
+            "y": 0.026051735505461693,
+            "z": 0.4837736487388611
+          },
+          {
+            "x": 0.10776680707931519,
+            "y": 0.026051735505461693,
+            "z": 0.48458391427993774
+          },
+          {
+            "x": 0.13568760454654694,
+            "y": 0.002589971059933305,
+            "z": 0.485637903213501
+          },
+          {
+            "x": 0.1356736570596695,
+            "y": -0.03058997355401516,
+            "z": 0.4863182306289673
+          },
+          {
+            "x": 0.10773312300443649,
+            "y": -0.05405174195766449,
+            "z": 0.4862263798713684
+          },
+          {
+            "x": 0.0682331919670105,
+            "y": -0.05405174195766449,
+            "z": 0.48541611433029175
+          },
+          {
+            "x": 0.04031239077448845,
+            "y": -0.03058997355401516,
+            "z": 0.4843621253967285
+          }
+        ],
+        "band_m": 0.07,
+        "loose": false,
+        "corrective_shape": "JointVolume.Knee.L",
+        "corrective_angle_degrees": 135.0,
+        "weight_curve": "inverse_half_angle_cosine",
+        "validation": {
+          "angles_degrees": [
+            0,
+            45,
+            90,
+            135.0
+          ],
+          "section_area_ratios": [
+            1.0,
+            0.999998,
+            0.999994,
+            0.99999
+          ],
+          "seam_tolerance_m": 2e-06
+        }
+      },
+      {
+        "id": "Trouser knee.L",
+        "bone": "shin.L",
+        "renderers": [
+          "CLO_TrousersThigh.L",
+          "CLO_TrousersShin.L"
+        ],
+        "vertices_a": [
+          72,
+          73,
+          74,
+          75,
+          76,
+          77,
+          78,
+          79,
+          80,
+          81,
+          82,
+          83
+        ],
+        "vertices_b": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11
+        ],
+        "bones": [
+          "thigh.L",
+          "shin.L"
+        ],
+        "points_blender": [
+          {
+            "x": 0.03443409875035286,
+            "y": 0.004640417639166117,
+            "z": 0.4835188686847687
+          },
+          {
+            "x": 0.05271551385521889,
+            "y": 0.024644048884510994,
+            "z": 0.48348352313041687
+          },
+          {
+            "x": 0.08045138418674469,
+            "y": 0.0342930406332016,
+            "z": 0.4838545322418213
+          },
+          {
+            "x": 0.11020989716053009,
+            "y": 0.031001949682831764,
+            "z": 0.4845324754714966
+          },
+          {
+            "x": 0.13401728868484497,
+            "y": 0.015652623027563095,
+            "z": 0.48533570766448975
+          },
+          {
+            "x": 0.14549437165260315,
+            "y": -0.007642101030796766,
+            "z": 0.48604896664619446
+          },
+          {
+            "x": 0.14156590402126312,
+            "y": -0.03264041990041733,
+            "z": 0.4864811599254608
+          },
+          {
+            "x": 0.1232844814658165,
+            "y": -0.05264405161142349,
+            "z": 0.4865165054798126
+          },
+          {
+            "x": 0.095548614859581,
+            "y": -0.06229303777217865,
+            "z": 0.4861454963684082
+          },
+          {
+            "x": 0.0657901018857956,
+            "y": -0.05900195240974426,
+            "z": 0.4854675531387329
+          },
+          {
+            "x": 0.041982706636190414,
+            "y": -0.043652623891830444,
+            "z": 0.48466432094573975
+          },
+          {
+            "x": 0.03050561621785164,
+            "y": -0.020357899367809296,
+            "z": 0.48395106196403503
+          }
+        ],
+        "band_m": 0.12,
+        "loose": true,
+        "corrective_shape": "TrouserKneeFold.L",
+        "corrective_angle_degrees": 135.0,
+        "weight_curve": "inverse_half_angle_cosine",
+        "validation": {
+          "angles_degrees": [
+            0,
+            45,
+            90,
+            135.0
+          ],
+          "section_area_ratios": [
+            1.0,
+            0.999998,
+            0.999994,
+            0.999989
+          ],
+          "seam_tolerance_m": 2e-06
+        }
+      },
+      {
+        "id": "Skin wrist.L",
+        "bone": "hand.L",
+        "renderers": [
+          "GEO_Forearm.L",
+          "GEO_Hand.L"
+        ],
+        "vertices_a": [
+          40,
+          41,
+          42,
+          43,
+          44,
+          45,
+          46,
+          47,
+          48,
+          49
+        ],
+        "vertices_b": [
+          1,
+          3,
+          5,
+          7,
+          9,
+          8,
+          6,
+          4,
+          2,
+          0
+        ],
+        "bones": [
+          "forearm.L",
+          "hand.L"
+        ],
+        "points_blender": [
+          {
+            "x": 0.6743292808532715,
+            "y": -0.013824918307363987,
+            "z": 1.06509268283844
+          },
+          {
+            "x": 0.6769319772720337,
+            "y": -0.00383342825807631,
+            "z": 1.068613886833191
+          },
+          {
+            "x": 0.6807066202163696,
+            "y": -1.7019454389810562e-05,
+            "z": 1.07457435131073
+          },
+          {
+            "x": 0.6842113137245178,
+            "y": -0.003833429655060172,
+            "z": 1.0806975364685059
+          },
+          {
+            "x": 0.6861074566841125,
+            "y": -0.013824919238686562,
+            "z": 1.0846444368362427
+          },
+          {
+            "x": 0.6856707334518433,
+            "y": -0.026175081729888916,
+            "z": 1.0849074125289917
+          },
+          {
+            "x": 0.683068037033081,
+            "y": -0.03616657108068466,
+            "z": 1.0813863277435303
+          },
+          {
+            "x": 0.6792933940887451,
+            "y": -0.039982978254556656,
+            "z": 1.0754257440567017
+          },
+          {
+            "x": 0.6757887005805969,
+            "y": -0.03616657480597496,
+            "z": 1.0693026781082153
+          },
+          {
+            "x": 0.6738925576210022,
+            "y": -0.026175081729888916,
+            "z": 1.065355658531189
+          }
+        ],
+        "band_m": 0.025,
+        "loose": false,
+        "corrective_shape": "JointVolume.Wrist.L",
+        "corrective_angle_degrees": 135.0,
+        "weight_curve": "inverse_half_angle_cosine",
+        "validation": {
+          "angles_degrees": [
+            0,
+            45,
+            90,
+            135.0
+          ],
+          "section_area_ratios": [
+            1.000002,
+            0.999996,
+            0.999997,
+            0.999999
+          ],
+          "seam_tolerance_m": 2e-06
+        }
+      },
+      {
+        "id": "Skin hip.L",
+        "bone": "thigh.L",
+        "renderers": [
+          "GEO_Thigh.L",
+          "GEO_Thigh.L"
+        ],
+        "topology": "continuous",
+        "vertices_a": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "vertices_b": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "bones": [
+          "pelvis",
+          "thigh.L"
+        ],
+        "points_blender": [
+          {
+            "x": 0.047631844878196716,
+            "y": 0.028956295922398567,
+            "z": 0.9074771404266357
+          },
+          {
+            "x": 0.07360227406024933,
+            "y": 0.0515219122171402,
+            "z": 0.9058347344398499
+          },
+          {
+            "x": 0.11034984141588211,
+            "y": 0.0515219047665596,
+            "z": 0.9054607152938843
+          },
+          {
+            "x": 0.13634832203388214,
+            "y": 0.028956297785043716,
+            "z": 0.9065741896629333
+          },
+          {
+            "x": 0.13636815547943115,
+            "y": -0.0029562972486019135,
+            "z": 0.9085228443145752
+          },
+          {
+            "x": 0.11039772629737854,
+            "y": -0.025521909818053246,
+            "z": 0.9101652503013611
+          },
+          {
+            "x": 0.07365015894174576,
+            "y": -0.025521909818053246,
+            "z": 0.9105392694473267
+          },
+          {
+            "x": 0.047651682049036026,
+            "y": -0.0029562972486019135,
+            "z": 0.9094257950782776
+          }
+        ],
+        "band_m": 0.115,
+        "loose": false,
+        "corrective_shape": "JointVolume.Hip.L",
+        "corrective_angle_degrees": 135.0,
+        "weight_curve": "inverse_half_angle_cosine",
+        "validation": {
+          "angles_degrees": [
+            0,
+            45,
+            90,
+            135.0
+          ],
+          "section_area_ratios": [
+            1.0,
+            1.000804,
+            1.011936,
+            1.052062
+          ],
+          "seam_tolerance_m": 2e-06
+        }
+      },
+      {
+        "id": "Trouser hip.L",
+        "bone": "thigh.L",
+        "renderers": [
+          "CLO_TrousersThigh.L",
+          "CLO_TrousersThigh.L"
+        ],
+        "topology": "continuous",
+        "vertices_a": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11
+        ],
+        "vertices_b": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11
+        ],
+        "bones": [
+          "pelvis",
+          "thigh.L"
+        ],
+        "points_blender": [
+          {
+            "x": 0.03524557128548622,
+            "y": 0.03341082111001015,
+            "z": 0.9073311686515808
+          },
+          {
+            "x": 0.05458550900220871,
+            "y": 0.0553143247961998,
+            "z": 0.9057967662811279
+          },
+          {
+            "x": 0.08395063132047653,
+            "y": 0.06587976217269897,
+            "z": 0.9048526287078857
+          },
+          {
+            "x": 0.11547257006168365,
+            "y": 0.06227608025074005,
+            "z": 0.9047518372535706
+          },
+          {
+            "x": 0.14070506393909454,
+            "y": 0.04546893388032913,
+            "z": 0.9055213928222656
+          },
+          {
+            "x": 0.15288707613945007,
+            "y": 0.019961751997470856,
+            "z": 0.9069551229476929
+          },
+          {
+            "x": 0.14875441789627075,
+            "y": -0.007410820573568344,
+            "z": 0.9086688160896301
+          },
+          {
+            "x": 0.12941449880599976,
+            "y": -0.029314329847693443,
+            "z": 0.910203218460083
+          },
+          {
+            "x": 0.10004936903715134,
+            "y": -0.03987976163625717,
+            "z": 0.9111473560333252
+          },
+          {
+            "x": 0.06852742284536362,
+            "y": -0.03627609461545944,
+            "z": 0.9112481474876404
+          },
+          {
+            "x": 0.043294940143823624,
+            "y": -0.01946893334388733,
+            "z": 0.9104785919189453
+          },
+          {
+            "x": 0.03111293539404869,
+            "y": 0.006038248538970947,
+            "z": 0.9090448617935181
+          }
+        ],
+        "band_m": 0.14,
+        "loose": false,
+        "corrective_shape": "JointVolume.Hip.L",
+        "corrective_angle_degrees": 135.0,
+        "weight_curve": "inverse_half_angle_cosine",
+        "validation": {
+          "angles_degrees": [
+            0,
+            45,
+            90,
+            135.0
+          ],
+          "section_area_ratios": [
+            1.0,
+            1.000565,
+            1.008376,
+            1.036714
+          ],
+          "seam_tolerance_m": 2e-06
+        }
+      },
+      {
+        "id": "Skin shoulder.R",
+        "bone": "upper_arm.R",
+        "renderers": [
+          "GEO_Shoulder.R",
+          "GEO_UpperArm.R"
+        ],
+        "vertices_a": [
+          20,
+          21,
+          22,
+          23,
+          24,
+          25,
+          26,
+          27,
+          28,
+          29
+        ],
+        "vertices_b": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9
+        ],
+        "bones": [
+          "chest",
+          "upper_arm.R"
+        ],
+        "points_blender": [
+          {
+            "x": -0.2294340282678604,
+            "y": 0.017894495278596878,
+            "z": 1.4472167491912842
+          },
+          {
+            "x": -0.22087809443473816,
+            "y": 0.03372965008020401,
+            "z": 1.4339864253997803
+          },
+          {
+            "x": -0.20740313827991486,
+            "y": 0.03859106823801994,
+            "z": 1.4146498441696167
+          },
+          {
+            "x": -0.1941561996936798,
+            "y": 0.030621828511357307,
+            "z": 1.3965929746627808
+          },
+          {
+            "x": -0.18619704246520996,
+            "y": 0.012865928933024406,
+            "z": 1.386712670326233
+          },
+          {
+            "x": -0.18656589090824127,
+            "y": -0.007894490845501423,
+            "z": 1.3887830972671509
+          },
+          {
+            "x": -0.19512182474136353,
+            "y": -0.023729650303721428,
+            "z": 1.4020134210586548
+          },
+          {
+            "x": -0.20859679579734802,
+            "y": -0.02859106846153736,
+            "z": 1.4213500022888184
+          },
+          {
+            "x": -0.22184380888938904,
+            "y": -0.020621826872229576,
+            "z": 1.4394069910049438
+          },
+          {
+            "x": -0.2298029512166977,
+            "y": -0.002865925431251526,
+            "z": 1.4492871761322021
+          }
+        ],
+        "band_m": 0.06,
+        "loose": false,
+        "corrective_shape": "",
+        "corrective_angle_degrees": 0.0,
+        "weight_curve": "none",
+        "validation": {
+          "angles_degrees": [
+            0,
+            45,
+            90,
+            135.0
+          ],
+          "section_area_ratios": [
+            1.0,
+            0.92388,
+            0.707107,
+            0.382683
+          ],
+          "seam_tolerance_m": 2e-06
+        }
+      },
+      {
+        "id": "Skin elbow.R",
+        "bone": "forearm.R",
+        "renderers": [
+          "GEO_UpperArm.R",
+          "GEO_Forearm.R"
+        ],
+        "vertices_a": [
+          40,
+          41,
+          42,
+          43,
+          44,
+          45,
+          46,
+          47,
+          48,
+          49
+        ],
+        "vertices_b": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9
+        ],
+        "bones": [
+          "upper_arm.R",
+          "forearm.R"
+        ],
+        "points_blender": [
+          {
+            "x": -0.4764394164085388,
+            "y": 0.005422311369329691,
+            "z": 1.2735227346420288
+          },
+          {
+            "x": -0.46675050258636475,
+            "y": 0.02190565876662731,
+            "z": 1.2603120803833008
+          },
+          {
+            "x": -0.4518093168735504,
+            "y": 0.026966068893671036,
+            "z": 1.2408705949783325
+          },
+          {
+            "x": -0.43732303380966187,
+            "y": 0.018670616671442986,
+            "z": 1.222624659538269
+          },
+          {
+            "x": -0.428824782371521,
+            "y": 0.00018790451576933265,
+            "z": 1.212543249130249
+          },
+          {
+            "x": -0.4295606017112732,
+            "y": -0.021422311663627625,
+            "z": 1.2144771814346313
+          },
+          {
+            "x": -0.43924951553344727,
+            "y": -0.03790566325187683,
+            "z": 1.2276878356933594
+          },
+          {
+            "x": -0.4541907012462616,
+            "y": -0.042966071516275406,
+            "z": 1.2471293210983276
+          },
+          {
+            "x": -0.46867698431015015,
+            "y": -0.034670621156692505,
+            "z": 1.2653752565383911
+          },
+          {
+            "x": -0.477175235748291,
+            "y": -0.01618790440261364,
+            "z": 1.2754566669464111
+          }
+        ],
+        "band_m": 0.055,
+        "loose": false,
+        "corrective_shape": "JointVolume.Elbow.R",
+        "corrective_angle_degrees": 135.0,
+        "weight_curve": "inverse_half_angle_cosine",
+        "validation": {
+          "angles_degrees": [
+            0,
+            45,
+            90,
+            135.0
+          ],
+          "section_area_ratios": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          "seam_tolerance_m": 2e-06
+        }
+      },
+      {
+        "id": "Jacket elbow.R",
+        "bone": "forearm.R",
+        "renderers": [
+          "CLO_JacketSleeve.R",
+          "CLO_JacketForearm.R"
+        ],
+        "vertices_a": [
+          72,
+          73,
+          74,
+          75,
+          76,
+          77,
+          78,
+          79,
+          80,
+          81,
+          82,
+          83
+        ],
+        "vertices_b": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11
+        ],
+        "bones": [
+          "upper_arm.R",
+          "forearm.R"
+        ],
+        "points_blender": [
+          {
+            "x": -0.4811502695083618,
+            "y": 0.008119932375848293,
+            "z": 1.2794562578201294
+          },
+          {
+            "x": -0.4720538258552551,
+            "y": 0.02541874535381794,
+            "z": 1.2669700384140015
+          },
+          {
+            "x": -0.4578518271446228,
+            "y": 0.033763036131858826,
+            "z": 1.2483288049697876
+          },
+          {
+            "x": -0.4423498809337616,
+            "y": 0.030916953459382057,
+            "z": 1.2285279035568237
+          },
+          {
+            "x": -0.429701566696167,
+            "y": 0.01764311082661152,
+            "z": 1.2128725051879883
+          },
+          {
+            "x": -0.4232960641384125,
+            "y": -0.0025017913430929184,
+            "z": 1.2055578231811523
+          },
+          {
+            "x": -0.4248497486114502,
+            "y": -0.02411993220448494,
+            "z": 1.2085436582565308
+          },
+          {
+            "x": -0.4339461922645569,
+            "y": -0.04141874983906746,
+            "z": 1.2210298776626587
+          },
+          {
+            "x": -0.4481481909751892,
+            "y": -0.049763038754463196,
+            "z": 1.2396711111068726
+          },
+          {
+            "x": -0.4636501371860504,
+            "y": -0.04691695794463158,
+            "z": 1.2594720125198364
+          },
+          {
+            "x": -0.476298451423645,
+            "y": -0.03364310786128044,
+            "z": 1.2751274108886719
+          },
+          {
+            "x": -0.48270395398139954,
+            "y": -0.013498210348188877,
+            "z": 1.2824420928955078
+          }
+        ],
+        "band_m": 0.11,
+        "loose": true,
+        "corrective_shape": "JacketElbowFold.R",
+        "corrective_angle_degrees": 135.0,
+        "weight_curve": "inverse_half_angle_cosine",
+        "validation": {
+          "angles_degrees": [
+            0,
+            45,
+            90,
+            135.0
+          ],
+          "section_area_ratios": [
+            1.0,
+            1.0,
+            1.000001,
+            1.0
+          ],
+          "seam_tolerance_m": 2e-06
+        }
+      },
+      {
+        "id": "Skin knee.R",
+        "bone": "shin.R",
+        "renderers": [
+          "GEO_Thigh.R",
+          "GEO_Shin.R"
+        ],
+        "vertices_a": [
+          32,
+          33,
+          34,
+          35,
+          36,
+          37,
+          38,
+          39
+        ],
+        "vertices_b": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "bones": [
+          "thigh.R",
+          "shin.R"
+        ],
+        "points_blender": [
+          {
+            "x": -0.13567714393138885,
+            "y": 0.026592586189508438,
+            "z": 0.4861481785774231
+          },
+          {
+            "x": -0.10774154216051102,
+            "y": 0.05005805939435959,
+            "z": 0.4858158230781555
+          },
+          {
+            "x": -0.06824161112308502,
+            "y": 0.05005805939435959,
+            "z": 0.48500555753707886
+          },
+          {
+            "x": -0.04031588137149811,
+            "y": 0.026592586189508438,
+            "z": 0.4841920733451843
+          },
+          {
+            "x": -0.04032285884022713,
+            "y": -0.006592586636543274,
+            "z": 0.4838518500328064
+          },
+          {
+            "x": -0.06825845688581467,
+            "y": -0.03005805052816868,
+            "z": 0.484184205532074
+          },
+          {
+            "x": -0.10775838792324066,
+            "y": -0.03005805052816868,
+            "z": 0.48499447107315063
+          },
+          {
+            "x": -0.13568411767482758,
+            "y": -0.006592586636543274,
+            "z": 0.48580795526504517
+          }
+        ],
+        "band_m": 0.07,
+        "loose": false,
+        "corrective_shape": "JointVolume.Knee.R",
+        "corrective_angle_degrees": 135.0,
+        "weight_curve": "inverse_half_angle_cosine",
+        "validation": {
+          "angles_degrees": [
+            0,
+            45,
+            90,
+            135.0
+          ],
+          "section_area_ratios": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          "seam_tolerance_m": 2e-06
+        }
+      },
+      {
+        "id": "Trouser knee.R",
+        "bone": "shin.R",
+        "renderers": [
+          "CLO_TrousersThigh.R",
+          "CLO_TrousersShin.R"
+        ],
+        "vertices_a": [
+          72,
+          73,
+          74,
+          75,
+          76,
+          77,
+          78,
+          79,
+          80,
+          81,
+          82,
+          83
+        ],
+        "vertices_b": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11
+        ],
+        "bones": [
+          "thigh.R",
+          "shin.R"
+        ],
+        "points_blender": [
+          {
+            "x": -0.1415698230266571,
+            "y": 0.028643356636166573,
+            "z": 0.4862900972366333
+          },
+          {
+            "x": -0.12329261004924774,
+            "y": 0.048650145530700684,
+            "z": 0.4861203730106354
+          },
+          {
+            "x": -0.0955587700009346,
+            "y": 0.05830065906047821,
+            "z": 0.4856504499912262
+          },
+          {
+            "x": -0.06579956412315369,
+            "y": 0.05500905215740204,
+            "z": 0.4850062429904938
+          },
+          {
+            "x": -0.04198894277215004,
+            "y": 0.03965730220079422,
+            "z": 0.48436036705970764
+          },
+          {
+            "x": -0.030506953597068787,
+            "y": 0.01635890267789364,
+            "z": 0.48388588428497314
+          },
+          {
+            "x": -0.03443017601966858,
+            "y": -0.008643357083201408,
+            "z": 0.4837099313735962
+          },
+          {
+            "x": -0.05270738899707794,
+            "y": -0.02865014411509037,
+            "z": 0.4838796555995941
+          },
+          {
+            "x": -0.08044122904539108,
+            "y": -0.03830065578222275,
+            "z": 0.4843495786190033
+          },
+          {
+            "x": -0.110200434923172,
+            "y": -0.035009048879146576,
+            "z": 0.4849937856197357
+          },
+          {
+            "x": -0.13401105999946594,
+            "y": -0.019657300785183907,
+            "z": 0.48563966155052185
+          },
+          {
+            "x": -0.1454930454492569,
+            "y": 0.003641097340732813,
+            "z": 0.48611414432525635
+          }
+        ],
+        "band_m": 0.12,
+        "loose": true,
+        "corrective_shape": "TrouserKneeFold.R",
+        "corrective_angle_degrees": 135.0,
+        "weight_curve": "inverse_half_angle_cosine",
+        "validation": {
+          "angles_degrees": [
+            0,
+            45,
+            90,
+            135.0
+          ],
+          "section_area_ratios": [
+            1.0,
+            1.0,
+            1.0,
+            0.999999
+          ],
+          "seam_tolerance_m": 2e-06
+        }
+      },
+      {
+        "id": "Skin wrist.R",
+        "bone": "hand.R",
+        "renderers": [
+          "GEO_Forearm.R",
+          "GEO_Hand.R"
+        ],
+        "vertices_a": [
+          40,
+          41,
+          42,
+          43,
+          44,
+          45,
+          46,
+          47,
+          48,
+          49
+        ],
+        "vertices_b": [
+          30,
+          32,
+          34,
+          36,
+          38,
+          39,
+          37,
+          35,
+          33,
+          31
+        ],
+        "bones": [
+          "forearm.R",
+          "hand.R"
+        ],
+        "points_blender": [
+          {
+            "x": -0.6841074228286743,
+            "y": -0.009824919514358044,
+            "z": 1.0786443948745728
+          },
+          {
+            "x": -0.6822112798690796,
+            "y": 0.00016657111700624228,
+            "z": 1.074697494506836
+          },
+          {
+            "x": -0.6787065863609314,
+            "y": 0.003982979338616133,
+            "z": 1.0685744285583496
+          },
+          {
+            "x": -0.6749320030212402,
+            "y": 0.00016657193191349506,
+            "z": 1.062613844871521
+          },
+          {
+            "x": -0.6723292469978333,
+            "y": -0.009824920445680618,
+            "z": 1.05909264087677
+          },
+          {
+            "x": -0.671892523765564,
+            "y": -0.022175084799528122,
+            "z": 1.0593557357788086
+          },
+          {
+            "x": -0.6737886667251587,
+            "y": -0.03216657415032387,
+            "z": 1.0633026361465454
+          },
+          {
+            "x": -0.6772933602333069,
+            "y": -0.03598298132419586,
+            "z": 1.0694257020950317
+          },
+          {
+            "x": -0.6810680031776428,
+            "y": -0.03216657042503357,
+            "z": 1.0753862857818604
+          },
+          {
+            "x": -0.683670699596405,
+            "y": -0.022175082936882973,
+            "z": 1.0789074897766113
+          }
+        ],
+        "band_m": 0.025,
+        "loose": false,
+        "corrective_shape": "JointVolume.Wrist.R",
+        "corrective_angle_degrees": 135.0,
+        "weight_curve": "inverse_half_angle_cosine",
+        "validation": {
+          "angles_degrees": [
+            0,
+            45,
+            90,
+            135.0
+          ],
+          "section_area_ratios": [
+            1.0,
+            0.999993,
+            0.999996,
+            1.000002
+          ],
+          "seam_tolerance_m": 2e-06
+        }
+      },
+      {
+        "id": "Skin hip.R",
+        "bone": "thigh.R",
+        "renderers": [
+          "GEO_Thigh.R",
+          "GEO_Thigh.R"
+        ],
+        "topology": "continuous",
+        "vertices_a": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "vertices_b": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "bones": [
+          "pelvis",
+          "thigh.R"
+        ],
+        "points_blender": [
+          {
+            "x": -0.13636404275894165,
+            "y": 0.02897588536143303,
+            "z": 0.9081175327301025
+          },
+          {
+            "x": -0.11038776487112045,
+            "y": 0.05156920105218887,
+            "z": 0.9091867804527283
+          },
+          {
+            "x": -0.07364019751548767,
+            "y": 0.05156920105218887,
+            "z": 0.9095609188079834
+          },
+          {
+            "x": -0.04764755442738533,
+            "y": 0.02897588536143303,
+            "z": 0.9090205430984497
+          },
+          {
+            "x": -0.04763597249984741,
+            "y": -0.0029758866876363754,
+            "z": 0.9078824520111084
+          },
+          {
+            "x": -0.07361223548650742,
+            "y": -0.02556920051574707,
+            "z": 0.9068132042884827
+          },
+          {
+            "x": -0.1103598028421402,
+            "y": -0.02556920424103737,
+            "z": 0.9064390659332275
+          },
+          {
+            "x": -0.13635244965553284,
+            "y": -0.0029758866876363754,
+            "z": 0.9069794416427612
+          }
+        ],
+        "band_m": 0.115,
+        "loose": false,
+        "corrective_shape": "JointVolume.Hip.R",
+        "corrective_angle_degrees": 135.0,
+        "weight_curve": "inverse_half_angle_cosine",
+        "validation": {
+          "angles_degrees": [
+            0,
+            45,
+            90,
+            135.0
+          ],
+          "section_area_ratios": [
+            1.0,
+            1.000361,
+            1.010279,
+            1.04867
+          ],
+          "seam_tolerance_m": 2e-06
+        }
+      },
+      {
+        "id": "Trouser hip.R",
+        "bone": "thigh.R",
+        "renderers": [
+          "CLO_TrousersThigh.R",
+          "CLO_TrousersThigh.R"
+        ],
+        "topology": "continuous",
+        "vertices_a": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11
+        ],
+        "vertices_b": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11
+        ],
+        "bones": [
+          "pelvis",
+          "thigh.R"
+        ],
+        "points_blender": [
+          {
+            "x": -0.14874915778636932,
+            "y": 0.0334358811378479,
+            "z": 0.908150315284729
+          },
+          {
+            "x": -0.12940356135368347,
+            "y": 0.05536628141999245,
+            "z": 0.9091285467147827
+          },
+          {
+            "x": -0.10003569722175598,
+            "y": 0.06594467163085938,
+            "z": 0.9098042249679565
+          },
+          {
+            "x": -0.06851468980312347,
+            "y": 0.06233657896518707,
+            "z": 0.9099966287612915
+          },
+          {
+            "x": -0.04328655079007149,
+            "y": 0.045508790761232376,
+            "z": 0.909653902053833
+          },
+          {
+            "x": -0.031111132353544235,
+            "y": 0.019970297813415527,
+            "z": 0.9088680148124695
+          },
+          {
+            "x": -0.03525084629654884,
+            "y": -0.007435880601406097,
+            "z": 0.9078496694564819
+          },
+          {
+            "x": -0.05459645017981529,
+            "y": -0.029366280883550644,
+            "z": 0.9068714380264282
+          },
+          {
+            "x": -0.08396430313587189,
+            "y": -0.03994467109441757,
+            "z": 0.9061957597732544
+          },
+          {
+            "x": -0.1154853105545044,
+            "y": -0.03633657842874527,
+            "z": 0.9060033559799194
+          },
+          {
+            "x": -0.14071345329284668,
+            "y": -0.019508790224790573,
+            "z": 0.9063460826873779
+          },
+          {
+            "x": -0.15288886427879333,
+            "y": 0.006029701326042414,
+            "z": 0.9071319699287415
+          }
+        ],
+        "band_m": 0.14,
+        "loose": false,
+        "corrective_shape": "JointVolume.Hip.R",
+        "corrective_angle_degrees": 135.0,
+        "weight_curve": "inverse_half_angle_cosine",
+        "validation": {
+          "angles_degrees": [
+            0,
+            45,
+            90,
+            135.0
+          ],
+          "section_area_ratios": [
+            1.0,
+            1.000208,
+            1.007121,
+            1.034505
+          ],
+          "seam_tolerance_m": 2e-06
+        }
+      },
+      {
+        "id": "Skin waist",
+        "bone": "chest",
+        "renderers": [
+          "GEO_Pelvis",
+          "GEO_Torso"
+        ],
+        "vertices_a": [
+          96,
+          97,
+          98,
+          99,
+          100,
+          101,
+          102,
+          103,
+          104,
+          105,
+          106,
+          107,
+          108,
+          109,
+          110,
+          111,
+          112,
+          113,
+          114,
+          115,
+          116,
+          117,
+          118,
+          119
+        ],
+        "vertices_b": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20,
+          21,
+          22,
+          23
+        ],
+        "bones": [
+          "pelvis",
+          "chest"
+        ],
+        "points_blender": [
+          {
+            "x": 0.14000000059604645,
+            "y": 0.012000000104308128,
+            "z": 0.9200000166893005
+          },
+          {
+            "x": 0.13522961735725403,
+            "y": 0.0353156253695488,
+            "z": 0.9200000166893005
+          },
+          {
+            "x": 0.12124355882406235,
+            "y": 0.060182854533195496,
+            "z": 0.9200000166893005
+          },
+          {
+            "x": 0.09899494796991348,
+            "y": 0.08171221613883972,
+            "z": 0.9200000166893005
+          },
+          {
+            "x": 0.07000000029802322,
+            "y": 0.09712346643209457,
+            "z": 0.9200000166893005
+          },
+          {
+            "x": 0.03623466566205025,
+            "y": 0.10293281078338623,
+            "z": 0.9200000166893005
+          },
+          {
+            "x": 8.57252763722393e-18,
+            "y": 0.08579204231500626,
+            "z": 0.9200000166893005
+          },
+          {
+            "x": -0.03623466566205025,
+            "y": 0.10293281078338623,
+            "z": 0.9200000166893005
+          },
+          {
+            "x": -0.07000000029802322,
+            "y": 0.09712346643209457,
+            "z": 0.9200000166893005
+          },
+          {
+            "x": -0.09899494796991348,
+            "y": 0.08171221613883972,
+            "z": 0.9200000166893005
+          },
+          {
+            "x": -0.12124355882406235,
+            "y": 0.060182854533195496,
+            "z": 0.9200000166893005
+          },
+          {
+            "x": -0.13522961735725403,
+            "y": 0.0353156253695488,
+            "z": 0.9200000166893005
+          },
+          {
+            "x": -0.14000000059604645,
+            "y": 0.012000000104308128,
+            "z": 0.9200000166893005
+          },
+          {
+            "x": -0.13522961735725403,
+            "y": -0.006893790327012539,
+            "z": 0.9200000166893005
+          },
+          {
+            "x": -0.12124355882406235,
+            "y": -0.02449999935925007,
+            "z": 0.9200000166893005
+          },
+          {
+            "x": -0.09899494796991348,
+            "y": -0.03961879387497902,
+            "z": 0.9200000166893005
+          },
+          {
+            "x": -0.07000000029802322,
+            "y": -0.05121985450387001,
+            "z": 0.9200000166893005
+          },
+          {
+            "x": -0.03623466566205025,
+            "y": -0.05851258710026741,
+            "z": 0.9200000166893005
+          },
+          {
+            "x": -2.571758291167179e-17,
+            "y": -0.061000000685453415,
+            "z": 0.9200000166893005
+          },
+          {
+            "x": 0.03623466566205025,
+            "y": -0.05851258710026741,
+            "z": 0.9200000166893005
+          },
+          {
+            "x": 0.07000000029802322,
+            "y": -0.05121985450387001,
+            "z": 0.9200000166893005
+          },
+          {
+            "x": 0.09899494796991348,
+            "y": -0.03961879387497902,
+            "z": 0.9200000166893005
+          },
+          {
+            "x": 0.12124355882406235,
+            "y": -0.02449999935925007,
+            "z": 0.9200000166893005
+          },
+          {
+            "x": 0.13522961735725403,
+            "y": -0.006893790327012539,
+            "z": 0.9200000166893005
+          }
+        ],
+        "band_m": 0.035,
+        "loose": false,
+        "corrective_shape": "",
+        "corrective_angle_degrees": 0.0,
+        "weight_curve": "none",
+        "validation": {
+          "angles_degrees": [
+            0,
+            45,
+            90,
+            135.0
+          ],
+          "section_area_ratios": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          "seam_tolerance_m": 2e-06
+        }
+      },
+      {
+        "id": "Jacket shoulder.L",
+        "bone": "upper_arm.L",
+        "renderers": [
+          "CLO_JacketBody",
+          "CLO_JacketSleeve.L"
+        ],
+        "vertices_a": [
+          206,
+          207,
+          230,
+          251,
+          274,
+          273,
+          272,
+          271,
+          250,
+          229,
+          204,
+          205
+        ],
+        "vertices_b": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11
+        ],
+        "points_blender": [
+          {
+            "x": 0.20551139116287231,
+            "y": 0.023456156253814697,
+            "z": 1.3224999904632568
+          },
+          {
+            "x": 0.19359911978244781,
+            "y": 0.05565589293837547,
+            "z": 1.3224999904632568
+          },
+          {
+            "x": 0.19640490412712097,
+            "y": 0.052628934383392334,
+            "z": 1.3600000143051147
+          },
+          {
+            "x": 0.19109508395195007,
+            "y": 0.04388464614748955,
+            "z": 1.406000018119812
+          },
+          {
+            "x": 0.18565571308135986,
+            "y": 0.03671566769480705,
+            "z": 1.4520000219345093
+          },
+          {
+            "x": 0.19998881220817566,
+            "y": 0.012507729232311249,
+            "z": 1.4520000219345093
+          },
+          {
+            "x": 0.2039078325033188,
+            "y": -0.015508720651268959,
+            "z": 1.4520000219345093
+          },
+          {
+            "x": 0.19720867276191711,
+            "y": -0.039009422063827515,
+            "z": 1.4520000219345093
+          },
+          {
+            "x": 0.1970585733652115,
+            "y": -0.048602089285850525,
+            "z": 1.406000018119812
+          },
+          {
+            "x": 0.19627083837985992,
+            "y": -0.059431493282318115,
+            "z": 1.3600000143051147
+          },
+          {
+            "x": 0.19346696138381958,
+            "y": -0.05824414640665054,
+            "z": 1.3224999904632568
+          },
+          {
+            "x": 0.20546646416187286,
+            "y": -0.029733318835496902,
+            "z": 1.3224999904632568
+          }
+        ],
+        "bones": [
+          "chest",
+          "upper_arm.L"
+        ],
+        "band_m": 0.055,
+        "loose": true,
+        "corrective_shape": "",
+        "corrective_angle_degrees": 0.0,
+        "weight_curve": "none",
+        "validation": {
+          "angles_degrees": [
+            0,
+            45,
+            90,
+            135.0
+          ],
+          "section_area_ratios": [
+            1.0,
+            0.941996,
+            0.729115,
+            0.405452
+          ],
+          "seam_tolerance_m": 2e-06
+        }
+      },
+      {
+        "id": "Jacket shoulder.R",
+        "bone": "upper_arm.R",
+        "renderers": [
+          "CLO_JacketBody",
+          "CLO_JacketSleeve.R"
+        ],
+        "vertices_a": [
+          285,
+          284,
+          261,
+          240,
+          217,
+          218,
+          219,
+          220,
+          241,
+          262,
+          287,
+          286
+        ],
+        "vertices_b": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11
+        ],
+        "points_blender": [
+          {
+            "x": -0.19998881220817566,
+            "y": 0.012507729232311249,
+            "z": 1.4520000219345093
+          },
+          {
+            "x": -0.18565571308135986,
+            "y": 0.03671566769480705,
+            "z": 1.4520000219345093
+          },
+          {
+            "x": -0.19109508395195007,
+            "y": 0.04388464614748955,
+            "z": 1.406000018119812
+          },
+          {
+            "x": -0.19640490412712097,
+            "y": 0.052628934383392334,
+            "z": 1.3600000143051147
+          },
+          {
+            "x": -0.19359911978244781,
+            "y": 0.05565589293837547,
+            "z": 1.3224999904632568
+          },
+          {
+            "x": -0.20551139116287231,
+            "y": 0.023456156253814697,
+            "z": 1.3224999904632568
+          },
+          {
+            "x": -0.20546646416187286,
+            "y": -0.029733318835496902,
+            "z": 1.3224999904632568
+          },
+          {
+            "x": -0.19346696138381958,
+            "y": -0.05824414640665054,
+            "z": 1.3224999904632568
+          },
+          {
+            "x": -0.19627083837985992,
+            "y": -0.059431493282318115,
+            "z": 1.3600000143051147
+          },
+          {
+            "x": -0.1970585733652115,
+            "y": -0.048602089285850525,
+            "z": 1.406000018119812
+          },
+          {
+            "x": -0.19720867276191711,
+            "y": -0.039009422063827515,
+            "z": 1.4520000219345093
+          },
+          {
+            "x": -0.2039078325033188,
+            "y": -0.015508720651268959,
+            "z": 1.4520000219345093
+          }
+        ],
+        "bones": [
+          "chest",
+          "upper_arm.R"
+        ],
+        "band_m": 0.055,
+        "loose": true,
+        "corrective_shape": "",
+        "corrective_angle_degrees": 0.0,
+        "weight_curve": "none",
+        "validation": {
+          "angles_degrees": [
+            0,
+            45,
+            90,
+            135.0
+          ],
+          "section_area_ratios": [
+            1.0,
+            0.945255,
+            0.735765,
+            0.414261
+          ],
+          "seam_tolerance_m": 2e-06
+        }
+      }
+    ],
+    "surfaces": [
+      {
+        "name": "CLO_Boot.L",
+        "bones": [
+          "foot.L",
+          "shin.L"
+        ]
+      },
+      {
+        "name": "CLO_Boot.R",
+        "bones": [
+          "foot.R",
+          "shin.R"
+        ]
+      },
+      {
+        "name": "GEO_Pelvis",
+        "bones": [
+          "pelvis",
+          "thigh.L",
+          "thigh.R"
+        ]
+      },
+      {
+        "name": "CLO_TrousersPelvis",
+        "bones": [
+          "pelvis",
+          "thigh.L",
+          "thigh.R"
+        ]
+      },
+      {
+        "name": "GEO_Shoulder.L",
+        "bones": [
+          "chest",
+          "upper_arm.L"
+        ]
+      },
+      {
+        "name": "GEO_UpperArm.L",
+        "bones": [
+          "chest",
+          "forearm.L",
+          "upper_arm.L"
+        ]
+      },
+      {
+        "name": "GEO_Forearm.L",
+        "bones": [
+          "forearm.L",
+          "hand.L",
+          "upper_arm.L"
+        ]
+      },
+      {
+        "name": "CLO_JacketSleeve.L",
+        "bones": [
+          "chest",
+          "forearm.L",
+          "upper_arm.L"
+        ]
+      },
+      {
+        "name": "CLO_JacketForearm.L",
+        "bones": [
+          "forearm.L",
+          "upper_arm.L"
+        ]
+      },
+      {
+        "name": "GEO_Thigh.L",
+        "bones": [
+          "pelvis",
+          "shin.L",
+          "thigh.L"
+        ]
+      },
+      {
+        "name": "GEO_Shin.L",
+        "bones": [
+          "foot.L",
+          "shin.L",
+          "thigh.L"
+        ]
+      },
+      {
+        "name": "CLO_TrousersThigh.L",
+        "bones": [
+          "pelvis",
+          "shin.L",
+          "thigh.L"
+        ]
+      },
+      {
+        "name": "CLO_TrousersShin.L",
+        "bones": [
+          "shin.L",
+          "thigh.L"
+        ]
+      },
+      {
+        "name": "GEO_Hand.L",
+        "bones": [
+          "forearm.L",
+          "hand.L"
+        ]
+      },
+      {
+        "name": "GEO_Shoulder.R",
+        "bones": [
+          "chest",
+          "upper_arm.R"
+        ]
+      },
+      {
+        "name": "GEO_UpperArm.R",
+        "bones": [
+          "chest",
+          "forearm.R",
+          "upper_arm.R"
+        ]
+      },
+      {
+        "name": "GEO_Forearm.R",
+        "bones": [
+          "forearm.R",
+          "hand.R",
+          "upper_arm.R"
+        ]
+      },
+      {
+        "name": "CLO_JacketSleeve.R",
+        "bones": [
+          "chest",
+          "forearm.R",
+          "upper_arm.R"
+        ]
+      },
+      {
+        "name": "CLO_JacketForearm.R",
+        "bones": [
+          "forearm.R",
+          "upper_arm.R"
+        ]
+      },
+      {
+        "name": "GEO_Thigh.R",
+        "bones": [
+          "pelvis",
+          "shin.R",
+          "thigh.R"
+        ]
+      },
+      {
+        "name": "GEO_Shin.R",
+        "bones": [
+          "foot.R",
+          "shin.R",
+          "thigh.R"
+        ]
+      },
+      {
+        "name": "CLO_TrousersThigh.R",
+        "bones": [
+          "pelvis",
+          "shin.R",
+          "thigh.R"
+        ]
+      },
+      {
+        "name": "CLO_TrousersShin.R",
+        "bones": [
+          "shin.R",
+          "thigh.R"
+        ]
+      },
+      {
+        "name": "GEO_Hand.R",
+        "bones": [
+          "forearm.R",
+          "hand.R"
+        ]
+      },
+      {
+        "name": "GEO_Neck",
+        "bones": [
+          "chest",
+          "head",
+          "neck"
+        ]
+      },
+      {
+        "name": "GEO_Torso",
+        "bones": [
+          "chest",
+          "pelvis",
+          "spine"
+        ]
+      },
+      {
+        "name": "CLO_JacketBody",
+        "bones": [
+          "chest",
+          "pelvis",
+          "spine",
+          "upper_arm.L",
+          "upper_arm.R"
+        ]
+      }
+    ],
+    "attachments": [
+      {
+        "id": "GEO_Thigh.L attachment",
+        "name": "GEO_Thigh.L",
+        "bone": "thigh.L",
+        "parent_bone": "pelvis",
+        "band_m": 0.08,
+        "endpoint": "start"
+      },
+      {
+        "id": "CLO_TrousersThigh.L attachment",
+        "name": "CLO_TrousersThigh.L",
+        "bone": "thigh.L",
+        "parent_bone": "pelvis",
+        "band_m": 0.095,
+        "endpoint": "start"
+      },
+      {
+        "id": "GEO_Shin.L attachment",
+        "name": "GEO_Shin.L",
+        "bone": "shin.L",
+        "parent_bone": "foot.L",
+        "band_m": 0.045,
+        "endpoint": "end"
+      },
+      {
+        "id": "GEO_Thigh.R attachment",
+        "name": "GEO_Thigh.R",
+        "bone": "thigh.R",
+        "parent_bone": "pelvis",
+        "band_m": 0.08,
+        "endpoint": "start"
+      },
+      {
+        "id": "CLO_TrousersThigh.R attachment",
+        "name": "CLO_TrousersThigh.R",
+        "bone": "thigh.R",
+        "parent_bone": "pelvis",
+        "band_m": 0.095,
+        "endpoint": "start"
+      },
+      {
+        "id": "GEO_Shin.R attachment",
+        "name": "GEO_Shin.R",
+        "bone": "shin.R",
+        "parent_bone": "foot.R",
+        "band_m": 0.045,
+        "endpoint": "end"
+      },
+      {
+        "id": "Neck base",
+        "name": "GEO_Neck",
+        "bone": "neck",
+        "parent_bone": "chest",
+        "band_m": 0.038,
+        "endpoint": "start"
+      },
+      {
+        "id": "Neck jaw",
+        "name": "GEO_Neck",
+        "bone": "neck",
+        "parent_bone": "head",
+        "band_m": 0.053,
+        "endpoint": "end"
+      }
+    ],
+    "preserved_action_bank": true
   },
   "wardrobe": {
     "contract": "hero_outfit_v1",
@@ -2712,6 +5589,15 @@
           "GEO_Foot.L",
           "GEO_Foot.R"
         ]
+      },
+      {
+        "id": "hero_belt",
+        "slot": "belt",
+        "renderers": [
+          "CLO_Belt",
+          "CLO_BeltBuckle"
+        ],
+        "covered_body_renderers": []
       }
     ]
   },
@@ -2837,24 +5723,302 @@
     ]
   },
   "quality": {
-    "worn_triangle_count": 7764,
-    "hidden_body_triangle_count": 1092,
-    "complete_triangle_count": 8856,
+    "worn_triangle_count": 7948,
+    "hidden_body_triangle_count": 1796,
+    "complete_triangle_count": 9744,
     "worn_triangle_budget": [
       0,
       8000
     ]
   },
   "fit": {
-    "body_torso_width_factor": 0.88,
-    "shirt_torso_width_factor": 0.88,
+    "torso_contract": "lean_waist_to_shoulder_v1",
+    "body_torso_profiles_blender": [
+      [
+        0.878,
+        0.132,
+        0.07,
+        0.012
+      ],
+      [
+        0.97,
+        0.133,
+        0.074,
+        0.01
+      ],
+      [
+        1.105,
+        0.145,
+        0.081,
+        0.004
+      ],
+      [
+        1.25,
+        0.172,
+        0.089,
+        -0.004
+      ],
+      [
+        1.35,
+        0.19,
+        0.091,
+        -0.008
+      ],
+      [
+        1.415,
+        0.193,
+        0.085,
+        -0.01
+      ]
+    ],
+    "shirt_clearance_m": 0.004,
+    "shoulder_connector": "tapered_shared_upper_arm_ring",
+    "neck_top_width_m": 0.108,
+    "neck_base_width_m": 0.148,
+    "neck_skin_field": "chest_to_neck_to_head; upper ring fully follows head",
+    "pelvis_contract": "male_pelvis_gluteal_v1",
+    "pelvis_profiles_blender": [
+      [
+        0.775,
+        0.109,
+        0.07,
+        0.013,
+        0.0
+      ],
+      [
+        0.815,
+        0.145,
+        0.094,
+        0.018,
+        0.02
+      ],
+      [
+        0.85,
+        0.151,
+        0.102,
+        0.017,
+        0.034
+      ],
+      [
+        0.878,
+        0.148,
+        0.1,
+        0.014,
+        0.029
+      ],
+      [
+        0.92,
+        0.14,
+        0.082,
+        0.012,
+        0.012
+      ],
+      [
+        0.972,
+        0.124,
+        0.067,
+        0.01,
+        0.0
+      ]
+    ],
+    "trousers_pelvis_clearance_m": 0.008,
+    "pelvis_measured": {
+      "hip_half_width_m": 0.1509999930858612,
+      "posterior_extent_m": 0.13614420592784882,
+      "central_cleft_depth_m": 0.04339420795440674,
+      "left_crest_x_m": 0.039081674069166183,
+      "right_crest_x_m": -0.039081674069166183,
+      "waistband_half_width_m": 0.1420000046491623
+    },
+    "measured": {
+      "body_stations": [
+        {
+          "side_z_m": 0.9200000166893005,
+          "half_width_m": 0.14000000059604645,
+          "half_depth_m": 0.08196640573441982
+        },
+        {
+          "side_z_m": 0.9700000286102295,
+          "half_width_m": 0.13300000131130219,
+          "half_depth_m": 0.07400000095367432
+        },
+        {
+          "side_z_m": 1.0149999856948853,
+          "half_width_m": 0.13699999451637268,
+          "half_depth_m": 0.07633333280682564
+        },
+        {
+          "side_z_m": 1.059999942779541,
+          "half_width_m": 0.14100000262260437,
+          "half_depth_m": 0.07866666838526726
+        },
+        {
+          "side_z_m": 1.1050000190734863,
+          "half_width_m": 0.14499999582767487,
+          "half_depth_m": 0.08100000023841858
+        },
+        {
+          "side_z_m": 1.153333306312561,
+          "half_width_m": 0.15399999916553497,
+          "half_depth_m": 0.08366666734218597
+        },
+        {
+          "side_z_m": 1.2016667127609253,
+          "half_width_m": 0.16300000250339508,
+          "half_depth_m": 0.08633333444595337
+        },
+        {
+          "side_z_m": 1.25,
+          "half_width_m": 0.1720000058412552,
+          "half_depth_m": 0.08900000154972076
+        },
+        {
+          "side_z_m": 1.2833333015441895,
+          "half_width_m": 0.17800000309944153,
+          "half_depth_m": 0.08966666460037231
+        },
+        {
+          "side_z_m": 1.3166667222976685,
+          "half_width_m": 0.18400000035762787,
+          "half_depth_m": 0.09033333510160446
+        },
+        {
+          "side_z_m": 1.350000023841858,
+          "half_width_m": 0.1899999976158142,
+          "half_depth_m": 0.09099999815225601
+        },
+        {
+          "side_z_m": 1.3951205015182495,
+          "half_width_m": 0.1914999932050705,
+          "half_depth_m": 0.08800000324845314
+        },
+        {
+          "side_z_m": 1.4399999380111694,
+          "half_width_m": 0.19300000369548798,
+          "half_depth_m": 0.08500000089406967
+        }
+      ],
+      "jacket_stations": [
+        {
+          "z_m": 0.8050000071525574,
+          "half_width_m": 0.18962645530700684,
+          "rear_extent_m": 0.15600000321865082
+        },
+        {
+          "z_m": 0.8949999809265137,
+          "half_width_m": 0.18664802610874176,
+          "rear_extent_m": 0.15000000596046448
+        },
+        {
+          "z_m": 0.9700000286102295,
+          "half_width_m": 0.17969836294651031,
+          "rear_extent_m": 0.14499999582767487
+        },
+        {
+          "z_m": 1.0183333158493042,
+          "half_width_m": 0.18201491236686707,
+          "rear_extent_m": 0.14133332669734955
+        },
+        {
+          "z_m": 1.1150000095367432,
+          "half_width_m": 0.18664802610874176,
+          "rear_extent_m": 0.1340000033378601
+        },
+        {
+          "z_m": 1.1575000286102295,
+          "half_width_m": 0.19061926007270813,
+          "rear_extent_m": 0.13075000047683716
+        },
+        {
+          "z_m": 1.2424999475479126,
+          "half_width_m": 0.19856172800064087,
+          "rear_extent_m": 0.12425000220537186
+        },
+        {
+          "z_m": 1.284999966621399,
+          "half_width_m": 0.20253296196460724,
+          "rear_extent_m": 0.12099999934434891
+        },
+        {
+          "z_m": 1.3224999904632568,
+          "half_width_m": 0.20551139116287231,
+          "rear_extent_m": 0.11699999868869781
+        },
+        {
+          "z_m": 1.3600000143051147,
+          "half_width_m": 0.19640490412712097,
+          "rear_extent_m": 0.11299999803304672
+        },
+        {
+          "z_m": 1.406000018119812,
+          "half_width_m": 0.1970585733652115,
+          "rear_extent_m": 0.1054999977350235
+        },
+        {
+          "z_m": 1.4520000219345093,
+          "half_width_m": 0.2039078325033188,
+          "rear_extent_m": 0.09799999743700027
+        },
+        {
+          "z_m": 1.4769999980926514,
+          "half_width_m": 0.08799883723258972,
+          "rear_extent_m": 0.05700000002980232
+        }
+      ],
+      "waist_half_width_m": 0.13300000131130219,
+      "upper_ribcage_half_width_m": 0.1899999976158142,
+      "upper_ribcage_to_waist_ratio": 1.4285713965603415
+    },
     "hand_size_scale": 1.2,
     "hand_girth_scale": 0.85,
     "hand_wrist_blend_m": 0.03,
-    "torso_depth_factor": 0.87,
-    "upper_sleeve_max_radius_m": 0.05,
-    "shoulder_shell_half_width_m": 0.188,
-    "jacket": "narrow shoulders and upper sleeves; loose body, hem and long cuffs"
+    "upper_sleeve_max_radius_m": 0.06,
+    "shoulder_shell_half_width_m": 0.204,
+    "jacket_cut_contract": "m65_flat_panels_set_in_sleeves_v1",
+    "jacket_armhole_ring_vertices": 12,
+    "jacket_hem_nodes_blender": [
+      {
+        "x": 0.0454012006521225,
+        "y": -0.11888255178928375,
+        "z": 0.8050000071525574
+      },
+      {
+        "x": 0.1662510633468628,
+        "y": -0.0625208243727684,
+        "z": 0.8050000071525574
+      },
+      {
+        "x": 0.18020515143871307,
+        "y": 0.08300840109586716,
+        "z": 0.8050000071525574
+      },
+      {
+        "x": 0.07650209218263626,
+        "y": 0.14768794178962708,
+        "z": 0.8050000667572021
+      },
+      {
+        "x": -0.07650209218263626,
+        "y": 0.14768794178962708,
+        "z": 0.8050000667572021
+      },
+      {
+        "x": -0.18020515143871307,
+        "y": 0.08300840109586716,
+        "z": 0.8050000071525574
+      },
+      {
+        "x": -0.1662510633468628,
+        "y": -0.062520831823349,
+        "z": 0.8050000071525574
+      },
+      {
+        "x": -0.0454012006521225,
+        "y": -0.11888255178928375,
+        "z": 0.8050000071525574
+      }
+    ],
+    "jacket": "flat hanging M65 panels, set-in curved armholes, shaped sleeves and long cuffs"
   },
   "body_coverage": [
     {
@@ -2914,6 +6078,15 @@
       "region": "boots"
     }
   ],
+  "snow_authoring_sha256": "8861b52e4f3018056ff4e6bd0bbf1a27e4a28e7397d784820f62f5f917a85b51",
+  "snow_locomotion": {
+    "cycle_distance_m": 1.1,
+    "support_fraction": 0.6,
+    "left_contact_phase": 0.0,
+    "right_contact_phase": 0.5,
+    "snow_depth_m": 0.45,
+    "runtime_distance_driven": true
+  },
   "jacket_cloth": {
     "contract": "hero_jacket_cloth_v1",
     "source_space": "blender_z_up_minus_y_forward",
@@ -2932,43 +6105,43 @@
       ],
       "nodes_blender": [
         {
-          "x": 0.039934,
-          "y": -0.084019,
+          "x": 0.045401,
+          "y": -0.118883,
           "z": 0.805
         },
         {
-          "x": 0.147291,
-          "y": -0.033022,
+          "x": 0.166251,
+          "y": -0.062521,
           "z": 0.805
         },
         {
-          "x": 0.159084,
-          "y": 0.05043,
+          "x": 0.180205,
+          "y": 0.083008,
           "z": 0.805
         },
         {
-          "x": 0.067661,
-          "y": 0.112192,
+          "x": 0.076502,
+          "y": 0.147688,
           "z": 0.805
         },
         {
-          "x": -0.067661,
-          "y": 0.112192,
+          "x": -0.076502,
+          "y": 0.147688,
           "z": 0.805
         },
         {
-          "x": -0.159084,
-          "y": 0.05043,
+          "x": -0.180205,
+          "y": 0.083008,
           "z": 0.805
         },
         {
-          "x": -0.147291,
-          "y": -0.033022,
+          "x": -0.166251,
+          "y": -0.062521,
           "z": 0.805
         },
         {
-          "x": -0.039934,
-          "y": -0.084019,
+          "x": -0.045401,
+          "y": -0.118883,
           "z": 0.805
         }
       ],
@@ -2996,6 +6169,7 @@
       {
         "bone": "forearm.L",
         "renderers": [
+          "CLO_JacketSleeve.L",
           "CLO_JacketForearm.L",
           "CLO_JacketCuff.L"
         ],
@@ -3006,6 +6180,7 @@
       {
         "bone": "forearm.R",
         "renderers": [
+          "CLO_JacketSleeve.R",
           "CLO_JacketForearm.R",
           "CLO_JacketCuff.R"
         ],
@@ -3020,113 +6195,10 @@
       "CLO_JacketFlapChest.L",
       "CLO_JacketFlapChest.R",
       "CLO_JacketPocketChest.L",
-      "CLO_JacketPocketChest.R",
-      "CLO_JacketSleeve.L",
-      "CLO_JacketSleeve.R"
+      "CLO_JacketPocketChest.R"
     ]
   },
-  "jacket_cloth_authoring_sha256": "c58ae8cd1d82ca1c091c56c0032e331f1db478a39d2e16567c7c6000b288ec5b",
-  "hand_grip": {
-    "shape_name": "CylindricalGrip",
-    "cylinder_radius_m": 0.022,
-    "hands": [
-      {
-        "side": "L",
-        "bone": "hand.L",
-        "centre_anchor": "ANCHOR_HandGripCentre.L",
-        "axis_anchor": "ANCHOR_HandGripAxis.L",
-        "palm_anchor": "ANCHOR_HandGripPalm.L",
-        "renderers": [
-          "GEO_Hand.L",
-          "GEO_Thumb.L",
-          "GEO_Finger0.L",
-          "GEO_Finger1.L",
-          "GEO_Finger2.L",
-          "GEO_Finger3.L"
-        ]
-      },
-      {
-        "side": "R",
-        "bone": "hand.R",
-        "centre_anchor": "ANCHOR_HandGripCentre.R",
-        "axis_anchor": "ANCHOR_HandGripAxis.R",
-        "palm_anchor": "ANCHOR_HandGripPalm.R",
-        "renderers": [
-          "GEO_Hand.R",
-          "GEO_Thumb.R",
-          "GEO_Finger0.R",
-          "GEO_Finger1.R",
-          "GEO_Finger2.R",
-          "GEO_Finger3.R"
-        ]
-      }
-    ],
-    "shape_signature": "e1514f35fd87c12f62cb3f689837cf64f56c1660740687cd8f308811ea6259dd",
-    "validation": {
-      "surface_clearances_m": {
-        "GEO_Hand.L": 0.001,
-        "GEO_Thumb.L": -0.000248,
-        "GEO_Finger0.L": 0.002834,
-        "GEO_Finger1.L": 0.002329,
-        "GEO_Finger2.L": 0.002463,
-        "GEO_Finger3.L": 0.00287,
-        "GEO_Hand.R": 0.001,
-        "GEO_Thumb.R": -0.00097,
-        "GEO_Finger0.R": 0.002198,
-        "GEO_Finger1.R": 0.001659,
-        "GEO_Finger2.R": 0.001829,
-        "GEO_Finger3.R": 0.002309
-      },
-      "far_side_reach_m": {
-        "GEO_Thumb.L": 0.018556,
-        "GEO_Finger0.L": 0.004848,
-        "GEO_Finger1.L": 0.016489,
-        "GEO_Finger2.L": 0.013044,
-        "GEO_Finger3.L": 0.004723,
-        "GEO_Thumb.R": 0.01861,
-        "GEO_Finger0.R": 0.004838,
-        "GEO_Finger1.R": 0.016354,
-        "GEO_Finger2.R": 0.01295,
-        "GEO_Finger3.R": 0.004712
-      },
-      "finger_root_surface_gaps_m": {
-        "GEO_Finger0.L": 0.0,
-        "GEO_Finger1.L": 0.0,
-        "GEO_Finger2.L": 0.0,
-        "GEO_Finger3.L": 0.002004,
-        "GEO_Finger0.R": 0.001478,
-        "GEO_Finger1.R": 0.0,
-        "GEO_Finger2.R": 0.0,
-        "GEO_Finger3.R": 0.002756
-      },
-      "neutral_vertices_unchanged": true,
-      "wrist_unchanged": true
-    }
-  },
-  "hand_grip_authoring_sha256": "bd6ef66822e7db2c545564e802558f9962f53f0ed28d77a70980b27a23af2cce",
-  "snow_authoring_sha256": "8861b52e4f3018056ff4e6bd0bbf1a27e4a28e7397d784820f62f5f917a85b51",
-  "snow_locomotion": {
-    "cycle_distance_m": 1.1,
-    "support_fraction": 0.6,
-    "left_contact_phase": 0.0,
-    "right_contact_phase": 0.5,
-    "snow_depth_m": 0.45,
-    "runtime_distance_driven": true,
-    "validation": {
-      "SnowWalk": {
-        "maximum_ankle_lift_m": 0.490949,
-        "maximum_support_lift_m": 0.000221,
-        "maximum_target_error_m": 0.005059,
-        "maximum_knee_flex_degrees": 139.7135
-      },
-      "SnowWalkBackward": {
-        "maximum_ankle_lift_m": 0.490489,
-        "maximum_support_lift_m": 0.000212,
-        "maximum_target_error_m": 0.004874,
-        "maximum_knee_flex_degrees": 139.9436
-      }
-    }
-  },
+  "jacket_cloth_authoring_sha256": "745e0cc46bbaba3f4324b725fdef47501586afb77cb493c6ec213289cbc0d73e",
   "surface_bindings": [
     {
       "recipe": "Clothing",
@@ -3697,55 +6769,8 @@
   "surface_authoring": {
     "generator": "tools/player_body_hair_surfaces.py",
     "version": "1.0.0",
-    "sha256": "6e5bb4f46c85e07ab053cbf929576b6805ed3a75078ba51b7eb4a3daf5d8996e",
-    "geometry_rig_actions_preserved_sha256": "3dd60e21cfd059008f32ff5b70459e7fc6dd5a6899c44031e4bc0ce1edb0d963",
-    "changed_uv_renderers": [
-      "GEO_Ear.L",
-      "GEO_Ear.R",
-      "GEO_Finger0.L",
-      "GEO_Finger0.R",
-      "GEO_Finger1.L",
-      "GEO_Finger1.R",
-      "GEO_Finger2.L",
-      "GEO_Finger2.R",
-      "GEO_Finger3.L",
-      "GEO_Finger3.R",
-      "GEO_Forearm.L",
-      "GEO_Forearm.R",
-      "GEO_HairBack",
-      "GEO_HairBackLength",
-      "GEO_HairBackStrand0",
-      "GEO_HairBackStrand1",
-      "GEO_HairBackStrand2",
-      "GEO_HairCap",
-      "GEO_HairCrownStrand0.L",
-      "GEO_HairCrownStrand0.R",
-      "GEO_HairCrownStrand1.L",
-      "GEO_HairCrownStrand1.R",
-      "GEO_HairCurtain.L",
-      "GEO_HairCurtain.R",
-      "GEO_HairLeftLength",
-      "GEO_HairLeftStrand0",
-      "GEO_HairLeftStrand1",
-      "GEO_HairLeftStrand2",
-      "GEO_HairNape",
-      "GEO_HairRightLength",
-      "GEO_HairRightStrand0",
-      "GEO_HairRightStrand1",
-      "GEO_HairRightStrand2",
-      "GEO_HairTemple.L",
-      "GEO_HairTemple.R",
-      "GEO_Hand.L",
-      "GEO_Hand.R",
-      "GEO_Head",
-      "GEO_Neck",
-      "GEO_Shoulder.L",
-      "GEO_Shoulder.R",
-      "GEO_Thumb.L",
-      "GEO_Thumb.R",
-      "GEO_UpperArm.L",
-      "GEO_UpperArm.R"
-    ],
-    "original_albedos_unchanged": true
-  }
+    "sha256": "063a7ac2ab88338b14ecf4d6497bff79d8088dbec2b350dd920a98d3ce3b4431"
+  },
+  "joint_surface_authoring_sha256": "2d43005ce21ccc7308459166c42cfb005a758bb0f2fc385c33164b49e317c59a",
+  "footwear_authoring_sha256": "625bec75bc3be2412502806cd51c3048d50e18480ab6830c5b4abf9b5fc084a1"
 }

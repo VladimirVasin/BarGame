@@ -55,6 +55,13 @@ namespace BarPromenade
         [SerializeField] private SurfaceBinding[] bindings = Array.Empty<SurfaceBinding>();
         [SerializeField] private NodeBinding[] nodes = Array.Empty<NodeBinding>();
         private PlayerJacketClothSurface[] surfaces;
+        private PlayerJacketClothSurface hemPanel;
+        private struct SeamVertex
+        {
+            public int Surface, Vertex;
+            public SeamVertex(int surface, int vertex) { Surface = surface; Vertex = vertex; }
+        }
+        private readonly List<SeamVertex[]> sleeveSeams = new List<SeamVertex[]>();
         private PlayerScarfBodyContacts contacts;
         private PlayerWardrobe wardrobe;
         private PlayerSecondaryMotionEnvironment environment;
@@ -258,9 +265,94 @@ namespace BarPromenade
         {
             if (surfaces != null) return;
             surfaces = new PlayerJacketClothSurface[bindings.Length];
-            for (int i = 0; i < surfaces.Length; i++) surfaces[i] = new PlayerJacketClothSurface(bindings[i]);
+            Transform[] shoulders = { null, FindBone(Player3DAnatomicalPart.LeftUpperArm), FindBone(Player3DAnatomicalPart.RightUpperArm) };
+            Transform[] elbows = { null, FindBone(Player3DAnatomicalPart.LeftForearm), FindBone(Player3DAnatomicalPart.RightForearm) };
+            Transform[] wrists = { null, FindBone(Player3DAnatomicalPart.LeftHand), FindBone(Player3DAnatomicalPart.RightHand) };
+            for (int i = 0; i < surfaces.Length; i++)
+            {
+                int region = bindings[i].Region;
+                surfaces[i] = new PlayerJacketClothSurface(bindings[i], shoulders[region], elbows[region], wrists[region], transform);
+                if (surfaces[i].IsHemPanel && (hemPanel == null || surfaces[i].VertexCount > hemPanel.VertexCount))
+                    hemPanel = surfaces[i];
+            }
+            BuildSleeveSeams();
             wardrobe = registry.GetComponent<PlayerWardrobe>();
             contacts = new PlayerScarfBodyContacts(registry, "jacket", useMeshSupportPlanes: true);
+        }
+
+        private void BuildSleeveSeams()
+        {
+            sleeveSeams.Clear();
+            var groups = new Dictionary<Vector3Int, List<SeamVertex>>();
+            for (int s = 0; s < surfaces.Length; s++)
+            {
+                for (int v = 0; v < surfaces[s].VertexCount; v++)
+                {
+                    Vector3 point = surfaces[s].World(v);
+                    var key = new Vector3Int(Mathf.RoundToInt(point.x * 10000f),
+                        Mathf.RoundToInt(point.y * 10000f), Mathf.RoundToInt(point.z * 10000f));
+                    if (!groups.TryGetValue(key, out List<SeamVertex> group))
+                        groups[key] = group = new List<SeamVertex>();
+                    group.Add(new SeamVertex(s, v));
+                }
+            }
+            foreach (List<SeamVertex> group in groups.Values)
+            {
+                if (group.Count < 2) continue;
+                // Armholes join Region 0 to Region 1/2. UV and cap splits at
+                // that same point can retain a different hard-edge normal;
+                // they must not discard the matching outward surface pair.
+                var assigned = new bool[group.Count];
+                for (int seed = 0; seed < group.Count; seed++)
+                {
+                    if (assigned[seed]) continue;
+                    SeamVertex first = group[seed];
+                    int partner = -1;
+                    float bestDot = .8f;
+                    for (int candidate = seed + 1; candidate < group.Count; candidate++)
+                    {
+                        if (assigned[candidate] || group[candidate].Surface == first.Surface ||
+                            !Coincident(first, group[candidate])) continue;
+                        float dot = Vector3.Dot(surfaces[first.Surface].BindWorldNormal(first.Vertex),
+                            surfaces[group[candidate].Surface].BindWorldNormal(group[candidate].Vertex));
+                        if (dot <= bestDot) continue;
+                        bestDot = dot; partner = candidate;
+                    }
+                    if (partner < 0) continue;
+                    var smooth = new List<SeamVertex> { first, group[partner] };
+                    assigned[seed] = assigned[partner] = true;
+                    for (int candidate = 0; candidate < group.Count; candidate++)
+                    {
+                        if (assigned[candidate]) continue;
+                        bool matches = true;
+                        foreach (SeamVertex member in smooth)
+                            if (!Coincident(member, group[candidate]) ||
+                                Vector3.Dot(surfaces[member.Surface].BindWorldNormal(member.Vertex),
+                                    surfaces[group[candidate].Surface].BindWorldNormal(group[candidate].Vertex)) <= .8f)
+                            { matches = false; break; }
+                        if (!matches) continue;
+                        smooth.Add(group[candidate]); assigned[candidate] = true;
+                    }
+                    sleeveSeams.Add(smooth.ToArray());
+                }
+            }
+
+            bool Coincident(SeamVertex a, SeamVertex b) =>
+                (surfaces[a.Surface].World(a.Vertex) - surfaces[b.Surface].World(b.Vertex)).sqrMagnitude <= 1e-10f;
+        }
+
+        private void ReconcileSleeveNormals()
+        {
+            foreach (SeamVertex[] group in sleeveSeams)
+            {
+                Vector3 normal = Vector3.zero;
+                foreach (SeamVertex member in group) normal += surfaces[member.Surface].WorldNormal(member.Vertex);
+                if (normal.sqrMagnitude < .000001f) continue;
+                normal.Normalize();
+                foreach (SeamVertex member in group) surfaces[member.Surface].SetWorldNormal(member.Vertex, normal);
+            }
+            if (sleeveSeams.Count > 0)
+                foreach (PlayerJacketClothSurface surface in surfaces) surface.CommitSharedNormals();
         }
 
         private void LateUpdate()
@@ -333,7 +425,12 @@ namespace BarPromenade
                 MaximumDisplacement = Mathf.Max(MaximumDisplacement, displacements[i].magnitude);
             }
             foreach (PlayerJacketClothSurface surface in surfaces)
-            { surface.Deform(displacements, contacts); LastContactCount += contacts.LastContactCount; }
+                LastContactCount += surface.Deform(displacements, contacts);
+            if (hemPanel != null && hemPanel.TryHemFold(contacts, transform, surfaces,
+                out PlayerJacketClothSurface.HemFoldSet fold))
+                foreach (PlayerJacketClothSurface surface in surfaces)
+                    if (surface.ApplyHemFold(fold, contacts, transform)) LastContactCount += surface.VertexCount;
+            ReconcileSleeveNormals();
             Array.Copy(targets, previousTargets, NodeCount);
             previousPosition = transform.position; previousRotation = transform.rotation;
             previousSeconds = IsFinite(seconds) ? seconds : 0d;
@@ -370,9 +467,16 @@ namespace BarPromenade
             if (target == null || target == this || surfaces == null || !target.HasAuthoredBindings) return;
             target.driven = false;
             target.EnsureSurfaces();
+            if (!IsActive)
+            {
+                foreach (PlayerJacketClothSurface surface in target.surfaces) surface.Restore();
+                target.IsActive = false;
+                return;
+            }
             for (int i = 0; i < surfaces.Length; i++)
                 for (int j = 0; j < target.surfaces.Length; j++)
                     if (bindings[i].Source == target.bindings[j].Source) surfaces[i].CopyTo(target.surfaces[j]);
+            target.ReconcileSleeveNormals();
             target.IsActive = IsActive;
         }
 
@@ -381,6 +485,8 @@ namespace BarPromenade
             if (surfaces == null) return;
             foreach (PlayerJacketClothSurface surface in surfaces) surface?.Dispose();
             surfaces = null;
+            hemPanel = null;
+            sleeveSeams.Clear();
         }
         private static bool IsFinite(double value) => !double.IsNaN(value) && !double.IsInfinity(value);
         private void OnEnable() => RequestReset();

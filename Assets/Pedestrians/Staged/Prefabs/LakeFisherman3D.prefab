@@ -10,6 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1059208905652737218}
   - component: {fileID: 7494912495709786444}
+  - component: {fileID: 5529159934661350254}
   m_Layer: 0
   m_Name: LakeFisherman3D
   m_TagString: Untagged
@@ -512,12 +513,12 @@ MonoBehaviour:
   personalSpaceGuardClip: {fileID: 0}
   personalSpaceShoveClip: {fileID: 0}
   localBounds:
-    m_Center: {x: -0.01600647, y: 0.8749999, z: 0.018279627}
-    m_Extent: {x: 0.78216803, y: 0.8749999, z: 0.19939029}
+    m_Center: {x: -0.01600629, y: 0.875, z: 0.045993745}
+    m_Extent: {x: 0.78216815, y: 0.875, z: 0.30909497}
   sourceTriangleCount: 7760
   sourceGeneratorVersion: 4.5.2
   designId: lake_fisherman_v1
-  buildSignature: 0ab3813a2068e37db8a0df886a8bda884b91946415ea2b84a4874597257f59d6
+  buildSignature: 82296a665239a1cc07cc15eb0cc4118e45684718319ab51e458366a97a7ef5f7
   paletteVariant: 0
   headLamp: {fileID: 0}
   preservesAirborneMotion: 0
@@ -548,6 +549,59 @@ MonoBehaviour:
       column: 1
       row: 2
       soiled: 0
+--- !u!114 &5529159934661350254
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 321163864594238114}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b2be743ae8414fe69b45824c1d81d423, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: BarPromenade.Runtime::BarPromenade.CharacterJointDeformation
+  bindings:
+  - Renderer: {fileID: 5833085191228271003}
+    Bone: {fileID: 7963212852913434723}
+    RestRotation: {x: -0.020317057, y: -0.015963241, z: -0.015225763, w: 0.9995502}
+    LongitudinalAxis: {x: 0.000000011935024, y: 1, z: -0.00000052514105}
+    Shape: 0
+  - Renderer: {fileID: 2032997042162853347}
+    Bone: {fileID: 5892826046383384849}
+    RestRotation: {x: 0.012595064, y: 0.014988454, z: 0.0154044945, w: 0.9996897}
+    LongitudinalAxis: {x: 0.0000000023873787, y: 1, z: 0.000000035810682}
+    Shape: 0
+  - Renderer: {fileID: 809151624993621660}
+    Bone: {fileID: 8867036158218447580}
+    RestRotation: {x: 0.017877687, y: 0.02233826, z: 0.01239254, w: 0.9995138}
+    LongitudinalAxis: {x: -0.0000005274604, y: 1, z: -0.00000040498506}
+    Shape: 0
+  - Renderer: {fileID: 8492429773056657366}
+    Bone: {fileID: 8274900342792879612}
+    RestRotation: {x: 0.0129169, y: -0.022518253, z: -0.019055707, w: 0.9994814}
+    LongitudinalAxis: {x: 0.00000017309854, y: 1, z: -0.00000032496803}
+    Shape: 0
+  - Renderer: {fileID: 5530782810209542554}
+    Bone: {fileID: 8867036158218447580}
+    RestRotation: {x: 0.017877687, y: 0.02233826, z: 0.01239254, w: 0.9995138}
+    LongitudinalAxis: {x: -0.0000005274604, y: 1, z: -0.00000040498506}
+    Shape: 0
+  - Renderer: {fileID: 6642281583404001540}
+    Bone: {fileID: 8274900342792879612}
+    RestRotation: {x: 0.0129169, y: -0.022518253, z: -0.019055707, w: 0.9994814}
+    LongitudinalAxis: {x: 0.00000017309854, y: 1, z: -0.00000032496803}
+    Shape: 0
+  - Renderer: {fileID: 4664755594541835890}
+    Bone: {fileID: 7963212852913434723}
+    RestRotation: {x: -0.020317057, y: -0.015963241, z: -0.015225763, w: 0.9995502}
+    LongitudinalAxis: {x: 0.000000011935024, y: 1, z: -0.00000052514105}
+    Shape: 0
+  - Renderer: {fileID: 4929603016439431787}
+    Bone: {fileID: 5892826046383384849}
+    RestRotation: {x: 0.012595064, y: 0.014988454, z: 0.0154044945, w: 0.9996897}
+    LongitudinalAxis: {x: 0.0000000023873787, y: 1, z: 0.000000035810682}
+    Shape: 0
 --- !u!1 &5085600375507885633
 GameObject:
   m_ObjectHideFlags: 0
@@ -1159,6 +1213,11 @@ SkinnedMeshRenderer:
   m_CorrespondingSourceObject: {fileID: 894660126757327012, guid: 1bd76b7f0673aa84d984174b2fad9365, type: 3}
   m_PrefabInstance: {fileID: 6672417883950364991}
   m_PrefabAsset: {fileID: 0}
+--- !u!4 &5892826046383384849 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 963408202774007854, guid: 1bd76b7f0673aa84d984174b2fad9365, type: 3}
+  m_PrefabInstance: {fileID: 6672417883950364991}
+  m_PrefabAsset: {fileID: 0}
 --- !u!137 &6296275978295183781 stripped
 SkinnedMeshRenderer:
   m_CorrespondingSourceObject: {fileID: 862981465247264922, guid: 1bd76b7f0673aa84d984174b2fad9365, type: 3}
@@ -1234,9 +1293,19 @@ SkinnedMeshRenderer:
   m_CorrespondingSourceObject: {fileID: -5737507357649952700, guid: 1bd76b7f0673aa84d984174b2fad9365, type: 3}
   m_PrefabInstance: {fileID: 6672417883950364991}
   m_PrefabAsset: {fileID: 0}
+--- !u!4 &7963212852913434723 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 3610254473159100764, guid: 1bd76b7f0673aa84d984174b2fad9365, type: 3}
+  m_PrefabInstance: {fileID: 6672417883950364991}
+  m_PrefabAsset: {fileID: 0}
 --- !u!4 &8004653237461946051 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -5508169512097499140, guid: 1bd76b7f0673aa84d984174b2fad9365, type: 3}
+  m_PrefabInstance: {fileID: 6672417883950364991}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &8274900342792879612 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -5886368873632086845, guid: 1bd76b7f0673aa84d984174b2fad9365, type: 3}
   m_PrefabInstance: {fileID: 6672417883950364991}
   m_PrefabAsset: {fileID: 0}
 --- !u!137 &8276655127328282410 stripped
@@ -1267,6 +1336,11 @@ SkinnedMeshRenderer:
 --- !u!137 &8533144954317444696 stripped
 SkinnedMeshRenderer:
   m_CorrespondingSourceObject: {fileID: 3094785031031304039, guid: 1bd76b7f0673aa84d984174b2fad9365, type: 3}
+  m_PrefabInstance: {fileID: 6672417883950364991}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &8867036158218447580 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 2852813616820032483, guid: 1bd76b7f0673aa84d984174b2fad9365, type: 3}
   m_PrefabInstance: {fileID: 6672417883950364991}
   m_PrefabAsset: {fileID: 0}
 --- !u!137 &8963141263380549348 stripped

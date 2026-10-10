@@ -293,6 +293,7 @@ namespace BarPromenade.Editor
                     atlas, bounds, manifest.triangle_count,
                     manifest.generator_version, manifest.design_id,
                     manifest.build_signature);
+                CharacterJointDeformation.Configure(root);
                 GameObject saved = PrefabUtility.SaveAsPrefabAsset(
                     root, role.PrefabPath, out bool success);
                 if (!success || saved == null)
@@ -501,10 +502,11 @@ namespace BarPromenade.Editor
             }
             MonoBehaviour[] behaviours =
                 prefab.GetComponentsInChildren<MonoBehaviour>(true);
-            if (behaviours.Length != 1 || behaviours[0] != registry)
+            if (!behaviours.Contains(registry) || behaviours.Any(behaviour =>
+                behaviour != registry && !(behaviour is CharacterJointDeformation)))
             {
                 throw new InvalidOperationException(
-                    $"{role.DisplayName} may carry only its registry.");
+                    $"{role.DisplayName} may carry only its registry and joint deformation.");
             }
         }
         private static void ValidateProvider()
@@ -1410,7 +1412,10 @@ namespace BarPromenade.Editor
             importer.importCameras = false;
             importer.importLights = false;
             importer.addCollider = false;
-            importer.importBlendShapes = false;
+            importer.importBlendShapes = true;
+            importer.skinWeights = ModelImporterSkinWeights.Custom;
+            importer.maxBonesPerVertex = 4;
+            importer.minBoneWeight = 0f;
             importer.importNormals = ModelImporterNormals.Import;
             importer.importTangents = ModelImporterTangents.None;
             importer.meshCompression = ModelImporterMeshCompression.Off;

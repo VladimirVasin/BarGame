@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 8967541050277035239}
   - component: {fileID: 4826302011437513896}
   - component: {fileID: 3329080958701215131}
+  - component: {fileID: 3742375464839523485}
   m_Layer: 0
   m_Name: LastRouteFerryman3D
   m_TagString: Untagged
@@ -413,12 +414,12 @@ MonoBehaviour:
   personalSpaceGuardClip: {fileID: 0}
   personalSpaceShoveClip: {fileID: 0}
   localBounds:
-    m_Center: {x: -0.0010001659, y: 0.87499994, z: 0.03648752}
-    m_Extent: {x: 0.7827215, y: 0.87499994, z: 0.18979935}
+    m_Center: {x: -0.0010000467, y: 0.8750001, z: 0.041867614}
+    m_Extent: {x: 0.7827216, y: 0.8750001, z: 0.22948664}
   sourceTriangleCount: 1980
   sourceGeneratorVersion: 4.5.2
   designId: last_route_ferryman_v1
-  buildSignature: f7f46475e824b3f17843980746a44e227d552f2240430998e3c1e4551033aa88
+  buildSignature: 7878bda6c41c70ef6b72f5f538c885143dede7967f296c287bfb9d8bbca460f5
   paletteVariant: 0
   headLamp: {fileID: 0}
   preservesAirborneMotion: 0
@@ -445,7 +446,7 @@ MonoBehaviour:
   coinRestAnchor: {fileID: 5945638283025620257}
   coatHemAnchor: {fileID: 7139910872144190408}
   coatHemRenderer: {fileID: 125539622039208979}
-  coatHemSize: {x: 0.4312, y: 0.12213713}
+  coatHemSize: {x: 0.4312, y: 0.12213719}
   perchPelvisDrop: 0.482476
   dismountClip: {fileID: 295545915668322158, guid: 005737cb93f0f804cb25d506467be7ba, type: 3}
   leftUpperArm: {fileID: 1718679455523558788}
@@ -456,6 +457,59 @@ MonoBehaviour:
   rightForearm: {fileID: 582178385982036506}
   rightHand: {fileID: 6830500404689600998}
   rightGripSocket: {fileID: 5539313213174706489}
+--- !u!114 &3742375464839523485
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7818970081942921854}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b2be743ae8414fe69b45824c1d81d423, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: BarPromenade.Runtime::BarPromenade.CharacterJointDeformation
+  bindings:
+  - Renderer: {fileID: 3189036742501871851}
+    Bone: {fileID: 1459458520503621509}
+    RestRotation: {x: -0.020317057, y: -0.015963241, z: -0.015225763, w: 0.9995502}
+    LongitudinalAxis: {x: 0.000000011935024, y: 1, z: -0.00000052514105}
+    Shape: 0
+  - Renderer: {fileID: 7539120460209102173}
+    Bone: {fileID: 3100038116403711735}
+    RestRotation: {x: 0.012595064, y: 0.014988454, z: 0.0154044945, w: 0.9996897}
+    LongitudinalAxis: {x: 0.0000000023873787, y: 1, z: 0.000000035810682}
+    Shape: 0
+  - Renderer: {fileID: 3892028742357452412}
+    Bone: {fileID: 129478784206523706}
+    RestRotation: {x: 0.017877687, y: 0.02233826, z: 0.01239254, w: 0.9995138}
+    LongitudinalAxis: {x: -0.0000005274604, y: 1, z: -0.00000040498506}
+    Shape: 0
+  - Renderer: {fileID: 2804640602914410210}
+    Bone: {fileID: 582178385982036506}
+    RestRotation: {x: 0.0129169, y: -0.022518253, z: -0.019055707, w: 0.9994814}
+    LongitudinalAxis: {x: 0.00000017309854, y: 1, z: -0.00000032496803}
+    Shape: 0
+  - Renderer: {fileID: 6705746662048201457}
+    Bone: {fileID: 129478784206523706}
+    RestRotation: {x: 0.017877687, y: 0.02233826, z: 0.01239254, w: 0.9995138}
+    LongitudinalAxis: {x: -0.0000005274604, y: 1, z: -0.00000040498506}
+    Shape: 0
+  - Renderer: {fileID: 4276075060549411488}
+    Bone: {fileID: 582178385982036506}
+    RestRotation: {x: 0.0129169, y: -0.022518253, z: -0.019055707, w: 0.9994814}
+    LongitudinalAxis: {x: 0.00000017309854, y: 1, z: -0.00000032496803}
+    Shape: 0
+  - Renderer: {fileID: 6494873113491599207}
+    Bone: {fileID: 1459458520503621509}
+    RestRotation: {x: -0.020317057, y: -0.015963241, z: -0.015225763, w: 0.9995502}
+    LongitudinalAxis: {x: 0.000000011935024, y: 1, z: -0.00000052514105}
+    Shape: 0
+  - Renderer: {fileID: 2469219031981412798}
+    Bone: {fileID: 3100038116403711735}
+    RestRotation: {x: 0.012595064, y: 0.014988454, z: 0.0154044945, w: 0.9996897}
+    LongitudinalAxis: {x: 0.0000000023873787, y: 1, z: 0.000000035810682}
+    Shape: 0
 --- !u!1 &8042384279453589400
 GameObject:
   m_ObjectHideFlags: 0
@@ -481,7 +535,7 @@ Transform:
   m_GameObject: {fileID: 8042384279453589400}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -0.0000066138136, y: 0.00046393636, z: -0.0000060275233}
+  m_LocalPosition: {x: -0.0000066115363, y: 0.0004639351, z: -0.0000060273014}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -512,7 +566,7 @@ Transform:
   m_GameObject: {fileID: 8945441569086639999}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -9.259363e-12, y: 0.0017633664, z: 0.00006510698}
+  m_LocalPosition: {x: -9.259363e-12, y: 0.0017633692, z: 0.000065107044}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -904,6 +958,11 @@ SkinnedMeshRenderer:
   m_CorrespondingSourceObject: {fileID: 2966883130650730889, guid: 04e0947c16146c549829d5580bbe07b6, type: 3}
   m_PrefabInstance: {fileID: 2763867229595426521}
   m_PrefabAsset: {fileID: 0}
+--- !u!4 &1459458520503621509 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 3610254473159100764, guid: 04e0947c16146c549829d5580bbe07b6, type: 3}
+  m_PrefabInstance: {fileID: 2763867229595426521}
+  m_PrefabAsset: {fileID: 0}
 --- !u!4 &1572943300911589669 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -5508169512097499140, guid: 04e0947c16146c549829d5580bbe07b6, type: 3}
@@ -986,6 +1045,11 @@ Animator:
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorStateOnDisable: 0
   m_WriteDefaultValuesOnDisable: 0
+--- !u!4 &3100038116403711735 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 963408202774007854, guid: 04e0947c16146c549829d5580bbe07b6, type: 3}
+  m_PrefabInstance: {fileID: 2763867229595426521}
+  m_PrefabAsset: {fileID: 0}
 --- !u!137 &3145605603983069240 stripped
 SkinnedMeshRenderer:
   m_CorrespondingSourceObject: {fileID: 1007774130638114529, guid: 04e0947c16146c549829d5580bbe07b6, type: 3}

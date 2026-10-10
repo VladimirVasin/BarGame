@@ -1690,17 +1690,17 @@ The vertical slice contains:
 
 ### The hero
 
-- sole `Resources/Player/Player3DV2` in ten roots, derived
-  refrigerator/bar arms and portrait. Lean `1.75 m` hero: 31 body bones/48
-  actions, narrow shoulders/upper arms, refined hands/boots, oversized M-65
-  with slim upper sleeves and right repair patch.
-  `PlayerWardrobe`: shirt/jacket/trousers/boots, bare coverage, atomic slots
-  and appearance/visibility leases. `hero_field_workwear` only; other outfits/UI/save
-  Deferred. Medium curtains: 12 auxiliary bones; jacket
-  hem/cuffs use 16 nodes on owned meshes with pinned shoulders/chest.
-  Both have bounded inertia/wind, cached surface contacts, pause/reset
-  and passive mirror copies; arm subsets copy worn cloth. Hair also contacts
-  the scarf; jacket excludes itself. Lean `40/60`; `ai/player-art-spec.md`;
+- sole `Resources/Player/Player3DV2` in ten roots, derived arms/portrait.
+  Lean `1.75 m` hero: 31 body bones/50 actions; tapered torso, male hips/two
+  buttocks, slim arms/refined hands. Loose M-65/right repair patch; independent
+  trousers/knee folds, burgundy1460 boots with ankle/ball flex.
+  `PlayerWardrobe`: shirt/jacket/trousers/boots/belt, coverage/atomic slots/leases.
+  `hero_field_workwear` only; other outfits/UI/save Deferred. Curtains: 12 bones; jacket
+  hem/cuffs: 16 nodes, owned meshes, pinned shoulders/chest.
+  Garments own folds; joints share boundaries/volume.
+  Both have bounded motion/cached contacts/pause/reset and mirror copies;
+  arms copy cloth. Hair contacts scarf; jacket excludes itself.
+  Lean `40/60`; `ai/player-art-spec.md`;
 - one manual PlayableGraph presentation that damp-blends the in-place
   `Idle` (4 s), `Walk` (1 s), `Run` (.75 s/18 frames) and snow clips from
   actual constrained speed. Idle breathes/shifts weight; Walk articulates

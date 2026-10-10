@@ -75,7 +75,7 @@ Guard:`balance_recovery`;attacks≠regrip.
 End/focus clears input;`opponent_style` header.
 `phase`: `action_kind`/kick `outcome`/`from_action`; `impact_kind`: impact_seq+kind.
 `kick_support`: reason/gap/wait/support+strike side.
-`kick_surface_contact`: sole/toe<=64.
+`kick_surface_contact`: sole/toe<=128.
 `kick_sweep_sample`: boot/hit/world; `weapon_blocked`: metal stop/point.
 `recovery`: steps/gaps/stability; `ragdoll_snapshot`: speed/settle/support≠landing.
 `rise_clearance_*`: blocker/path/capsule/floor;change/1s.

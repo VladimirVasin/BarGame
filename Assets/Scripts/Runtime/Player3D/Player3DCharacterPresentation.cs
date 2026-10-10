@@ -152,6 +152,7 @@ namespace BarPromenade
             new Player3DFaceAtlasPresenter();
 
         private Player3DAssetRegistry registry;
+        private PlayerBootDeformation bootDeformation;
         private Transform actorFacingTransform;
         private PlayableGraph graph;
         private AnimationMixerPlayable locomotionMixer;
@@ -439,6 +440,8 @@ namespace BarPromenade
             layer.BindHead(neckBone, headBone);
             layer.BindMouth(registry.Anchors.Mouth);
             layer.Calibrate();
+            bootDeformation = registry.GetComponent<PlayerBootDeformation>();
+            bootDeformation?.BindPresentation(this);
         }
 
         public void SetMotion(in PlayerMotionSample motion)
@@ -1040,6 +1043,7 @@ namespace BarPromenade
                 ConstrainCombatFootContacts();
                 ApplyCombatSupportGrip();
                 CompleteCombatFirearmPresentation();
+                CompleteFootwearPresentation();
                 EmitSnowFootContacts();
             }
 
@@ -1159,7 +1163,15 @@ namespace BarPromenade
                 ConstrainCombatFootContacts();
                 ApplyCombatSupportGrip();
                 CompleteCombatFirearmPresentation();
+                CompleteFootwearPresentation();
             }
+        }
+
+        private void CompleteFootwearPresentation()
+        {
+            // Leather flex follows the completed foot/shin transforms, including
+            // combat contact samples made before the next rendered frame.
+            bootDeformation?.ApplyPose();
         }
 
         /// <summary>The late pass: the rise's limbs while a rise is on, the balance pose otherwise.</summary>

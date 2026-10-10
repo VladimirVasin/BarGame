@@ -2,14 +2,17 @@
 
 ## Current production lock
 
-- Silhouette: weary adult man with a slender torso, narrow shoulders and slim
-  upper arms; near-black medium-length
+- Silhouette: weary lean adult man; torso widens toward shoulders, male hips/glutes,
+  slim arms; near-black medium-length
   parted curtains, full temples/ears and a covered nape, without a ponytail;
   articulated hands and heavy work boots. Hand reach/width is 20% larger,
   with slimmer palm depth/finger girth (user decision, 2026-09-15).
   Original wrist joins, rig and grip sockets remain.
 - Clothing: faded, unfastened dark olive-drab M-65 visibly large on the lean torso, with long sleeves
-  over a charcoal shirt, desaturated navy trousers and dark military boots.
+  over a charcoal shirt, desaturated navy trousers, a separate olive military
+  webbing belt with a muted metal buckle, and burgundy Dr. Martens 1460
+  Smooth Leather Lace Up Boots: rounded toe, eight eyelets/black laces,
+  yellow welt stitching and grooved sole; ankle/forefoot flex on the same rig.
 - The accepted `2026-09-09` optional scarf is a separate yellow garment,
   following the user's same-day colour correction:
   neck/nape wrap, lower face covered when raised, back knot and a hanging cloth
@@ -32,7 +35,7 @@
 - Persistent physical asymmetry:
   - muted ochre patch on the **right** shoulder; both sleeves otherwise match,
     without a left bandage or answering patch;
-  - no diagonal strap, buckle or copied military insignia.
+  - no diagonal strap or copied military insignia; the plain waist belt is independent.
 - Mood: restrained low-poly PS1 survival horror, with readable dark outlines
   and value separation against gray-green City fog and the warm Bar interior.
 - Do not mirror the character. Blender anatomical left is `+X`, the character
@@ -40,52 +43,47 @@
 
 ## Production Hero V2
 
-Hero V2 is the sole packaged production player. All nine gameplay roots,
+Hero V2 is the sole packaged production player. All ten gameplay roots,
 prefab-derived first-person subsets and the inventory portrait resolve through
 the no-variant `Player3DResources` / `PlayerFactory` path to `Player3DV2`.
 
-- The same `1.75 m` lean adult retains his weary face, established body joints
-  and six sockets. The accepted `2026-09-13` refinement works on this model:
-  shaped palms and fingers, a continuous neck, a slender chest/waist and
-  upper arms, narrow shoulders, boot uppers and soles. The oversized M-65 has
-  narrower shoulders/upper sleeves, loose sides and hem, long sleeves bunching at
-  the cuffs. Garment volume must not make the body itself broad. It does not make him athletic or assign
-  a new identity. The `31` core bones and `50` bone-only production actions
-  remain compatible; `12` auxiliary hair bones extend the model hierarchy.
+- Same lean `1.75 m` man/face/six sockets, shaped hands and work boots.
+  User refinement `2026-10-10`: torso broadens into continuous shoulders;
+  waist/ribcage widths `26.6/38 cm`. Matching tapered neck follows the jaw:
+  base/top `14.8/10.8 cm`, `32 mm` visible above collar. Male hips/two modest
+  rounded buttocks with a cleft join thighs. Independent trousers retain
+  clearance, pinned waist and `TrouserKneeFold.*` through `135°`.
+  M-65: broad flatter panels, gentle waist shaping, smooth rear fall;
+  defined armholes, shaped sleeves with elbow room/taper/bunched cuffs.
+  Restrained drape folds give cloth weight without padding. Identity,
+  `31` core bones/`50` actions stay; `12` hair bones extend the rig.
 - The open M-65 has four constructed pockets and flaps, a standing collar,
   plackets, cuff thickness and a lined front opening. Its faded olive fabric
   keeps the right-shoulder ochre repair patch, restrained seams and wear;
   the two forearm atlas cells retain identical painting. Shirt, trousers and
   boots are independent garments over actual bare anatomy. No satchel strap,
   bandage, insignia, text or copied film marking supplies a military biography.
-- `PlayerJacketCloth` adds the user's accepted inertia/wind response to the
-  loose hem, sides and cuffs after the body pose. The authored
-  `hero_jacket_cloth_v1` field has eight open-hem nodes and four per cuff;
-  smooth masks keep shoulders, chest and upper sleeves fixed. Lower pockets
-  and plackets share the hem field, with no seam across the open front.
-  Damped gravity/motion/wind and edge constraints bound hem/cuff node travel to
-  `7.5/2.5 cm`. Body/hand contacts reuse `PlayerScarfBodyContacts` with cached
-  mesh support planes, excluding the jacket while retaining shirt/trousers/boots.
-  Eleven garment surfaces own deformation buffers; imported meshes, skin
-  weights, 31 body/12 hair bones, actions and shared materials remain intact.
-  Removing the jacket restores rest geometry and resets history; camera hiding
-  preserves simulation. Pause freezes it, teleport/time gaps reset it.
-  Only the live hero simulates; mirror and first-person subsets copy its
-  deformed vertices. No scene-wide collision scan or per-frame body baking.
+- `PlayerJacketCloth`/`hero_jacket_cloth_v1`: eight hem/four cuff nodes;
+  shoulders/chest pinned, open front separate, lower pockets/plackets follow hem.
+  Damped gravity/motion/wind/edges bound node travel to `7.5/2.5 cm`.
+  Wide sleeve fields/folds through `135°` precede secondary cloth; seam data match.
+  Hem clears trousers; cached skin/corrective contacts follow posed hips/legs
+  and clear free panels; paired folds bound stretch; pockets stay compact.
+  Body/hand contacts retain other clothes,
+  exclude jacket. Owned buffers preserve sources/materials. Removal resets;
+  hiding preserves, pause freezes, discontinuities reset. Live hero simulates;
+  mirror/arms reuse motion and solve their own fold. No scene scan/body baking.
 - Geometry: construction; the `256 x 256` Point clothing atlas retains
   seams, weave and wear. Accepted `2026-09-29`: UV0 normal/response companions
   add subtle cloth/leather, skin and directional hair relief/smoothness;
   base pixels/palette/face stay. Dressed budget: `8,000` triangles; manifest counts
   hidden anatomy/accessories apart.
-- `PlayerWardrobe` owns explicit `shirt/jacket/trousers/boots` slots in
-  `hero_field_workwear`. Each item lists its own renderers and covered bare
-  renderers. The catalog supports multiple authored items per slot; one starts
-  equipped, and invalid replacement leaves the current outfit untouched.
-  Removing, replacing and restoring items uses the same rig/shared materials.
-  Contextual appearance and whole-body visibility leases lock outfit edits;
-  restoring clothes leaves independent head/hand visibility owners alone.
-  Only the original complete outfit is supplied. New outfits, wardrobe UI,
-  acquisition and persistence are Deferred.
+- `PlayerWardrobe`: `shirt/jacket/trousers/boots/belt` in `hero_field_workwear`;
+  item renderers/body coverage, shared rig/materials, validated replacements.
+  Belt covers no anatomy and lowers with the waistband. Appearance/body leases
+  lock edits; restoration retains independent head/hand ownership. Catalogs
+  admit alternatives; only the original outfit ships. New outfits/UI/acquisition/
+  persistence are Deferred.
 - The haircut is medium-length parted curtains. Fuller side hair covers the
   temples and ears; side and rear ends share the same jaw/upper-neck length,
   forming a continuous silhouette. The rear does not hang lower than the sides.
@@ -185,7 +183,7 @@ This opt-in applies only during the interaction handoff without an active clip.
   and the face/clothing atlases under `Assets/Player3D/V2/Textures`.
 - Runtime source of truth: one
   `Assets/Resources/Player/Player3DV2.prefab`, loaded through the default
-  `Player3DResources`/`PlayerFactory` route in all nine gameplay roots.
+  `Player3DResources`/`PlayerFactory` route in all ten gameplay roots.
 - Canonical height is `1.75 m`. The production bind pose is an A-pose; Unity
   imports a Generic rig, preserves the hierarchy, disables root motion and
   keeps the Animator free of gameplay-owned transitions and events.
@@ -197,13 +195,15 @@ This opt-in applies only during the interaction handoff without an active clip.
   thigh, shin and foot.
 - Geometry owns anatomy, hair, jacket construction, sleeve, trouser and boot
   silhouettes. Face states, patch, weave and small wear are atlas pixels.
-  Meshes use unique source datablocks
-  and deterministic bone weights. The continuous `GEO_Torso` bare torso,
-  `CLO_ShirtBody` shirt and `CLO_JacketBody` shell have horizontal rings over three regions: pelvis,
-  lower spine and chest, with smooth transitions using at most two adjacent
-  bone influences per vertex. Their registered `chest` binding is the gameplay
-  anchor, not their only skin influence. Clothing follows the same torso field;
-  the auxiliary hair chains own the long locks' weights.
+  Unique mesh datablocks carry deterministic weights. `GEO_Torso`,
+  `CLO_ShirtBody` and `CLO_JacketBody` span pelvis/spine/chest. Named limb
+  parts share boundary rings/weights/normals and adjacent-bone fields;
+  overlapping attachments/import support four normalized influences.
+  `character_joint_surfaces_v1` declares surfaces/seams/correctives.
+  Serialized `CharacterJointDeformation` bindings drive hip/elbow/knee/wrist
+  volume from final rig swing through `135°`, ignoring axial twist. Registered
+  bones remain gameplay anchors. Shirt follows body fields; trousers and loose
+  sleeves own wider fields/folds; hair chains own long-lock weights.
   `CharacterSurfaceMaterialSetup` owns shared `Ps1Lit` Clothing/Skin/Hair;
   hero: `Player3DV2CharacterSurfaces`, manifest UV0 regions/map hashes.
   Linear mipmapped maps: normal `.65/.35/.5`; MPB colour/skin atlas stay.

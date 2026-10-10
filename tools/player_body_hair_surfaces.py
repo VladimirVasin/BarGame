@@ -307,7 +307,7 @@ def author(result, bare_regions: list[dict]) -> list[str]:
             if name.startswith("GEO_Ear."):
                 sides, poles = 6, True
             elif name.startswith("GEO_Shoulder."):
-                sides, poles = 12, True
+                sides, poles = (10, False) if obj.get("bp_shoulder_connector") else (12, True)
             elif name == "GEO_Head":
                 sides, poles = 12, True
             elif name == "GEO_Neck":
@@ -316,6 +316,8 @@ def author(result, bare_regions: list[dict]) -> list[str]:
                 sides, poles = 10, False
             elif name.startswith(("GEO_Finger", "GEO_Thumb.")):
                 sides, poles = 7, False
+            elif name.startswith(("GEO_UpperArm.", "GEO_Forearm.")) and obj.get("bp_joint_surface"):
+                sides, poles = 10, False
             else:
                 sides, poles = 8, False
             ring_uv(obj, rect, sides, poles)

@@ -890,6 +890,7 @@ namespace BarPromenade.Editor
                     manifest.build_signature,
                     detailAtlas);
 
+                CharacterJointDeformation.Configure(prefabRoot);
                 GameObject saved = PrefabUtility.SaveAsPrefabAsset(
                     prefabRoot,
                     variant.PrefabPath,

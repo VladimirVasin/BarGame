@@ -10,6 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 7969330982463657093}
   - component: {fileID: 1818970773742908488}
+  - component: {fileID: 128535881384942672}
   m_Layer: 0
   m_Name: HelmetLampPedestrian3D
   m_TagString: Untagged
@@ -432,12 +433,12 @@ MonoBehaviour:
   personalSpaceGuardClip: {fileID: 0}
   personalSpaceShoveClip: {fileID: 0}
   localBounds:
-    m_Center: {x: -0.0010001659, y: 0.8749999, z: 0.0933058}
-    m_Extent: {x: 0.775211, y: 0.8749999, z: 0.29469413}
-  sourceTriangleCount: 1084
+    m_Center: {x: -0.0010001063, y: 0.875, z: 0.0566096}
+    m_Extent: {x: 0.775211, y: 0.875, z: 0.3313903}
+  sourceTriangleCount: 1276
   sourceGeneratorVersion: 4.5.2
   designId: helmet_lamp_hopper_v1
-  buildSignature: 01bd7c0c97827fbce382ae3a43d8a82535b811ef5e8f2b3b0683995e8e9541cf
+  buildSignature: 91ef5837510820064f9510e0ca2b4de55ff36fb36d13f54bbc7bcc5dc1f3ed20
   paletteVariant: 0
   headLamp: {fileID: 2885974950837579249}
   preservesAirborneMotion: 1
@@ -448,6 +449,59 @@ MonoBehaviour:
     columns: 0
     rows: 0
     cells: []
+--- !u!114 &128535881384942672
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1329976393583983349}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b2be743ae8414fe69b45824c1d81d423, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: BarPromenade.Runtime::BarPromenade.CharacterJointDeformation
+  bindings:
+  - Renderer: {fileID: 7826248376477272478}
+    Bone: {fileID: 3400269259606850649}
+    RestRotation: {x: 0.017877687, y: 0.02233826, z: 0.01239254, w: 0.9995138}
+    LongitudinalAxis: {x: -0.0000005274604, y: 1, z: -0.00000040498506}
+    Shape: 0
+  - Renderer: {fileID: 303645723525869865}
+    Bone: {fileID: 2803629910772493177}
+    RestRotation: {x: 0.0129169, y: -0.022518253, z: -0.019055707, w: 0.9994814}
+    LongitudinalAxis: {x: 0.00000017309854, y: 1, z: -0.00000032496803}
+    Shape: 0
+  - Renderer: {fileID: 6926576545145504576}
+    Bone: {fileID: 4232582579575236326}
+    RestRotation: {x: -0.020317057, y: -0.015963241, z: -0.015225763, w: 0.9995502}
+    LongitudinalAxis: {x: 0.000000011935024, y: 1, z: -0.00000052514105}
+    Shape: 0
+  - Renderer: {fileID: 5237029561299919189}
+    Bone: {fileID: 430554017864990612}
+    RestRotation: {x: 0.012595064, y: 0.014988454, z: 0.0154044945, w: 0.9996897}
+    LongitudinalAxis: {x: 0.0000000023873787, y: 1, z: 0.000000035810682}
+    Shape: 0
+  - Renderer: {fileID: 282945346043875271}
+    Bone: {fileID: 4232582579575236326}
+    RestRotation: {x: -0.020317057, y: -0.015963241, z: -0.015225763, w: 0.9995502}
+    LongitudinalAxis: {x: 0.000000011935024, y: 1, z: -0.00000052514105}
+    Shape: 0
+  - Renderer: {fileID: 7740419658653072870}
+    Bone: {fileID: 430554017864990612}
+    RestRotation: {x: 0.012595064, y: 0.014988454, z: 0.0154044945, w: 0.9996897}
+    LongitudinalAxis: {x: 0.0000000023873787, y: 1, z: 0.000000035810682}
+    Shape: 0
+  - Renderer: {fileID: 3919230774712271586}
+    Bone: {fileID: 3400269259606850649}
+    RestRotation: {x: 0.017877687, y: 0.02233826, z: 0.01239254, w: 0.9995138}
+    LongitudinalAxis: {x: -0.0000005274604, y: 1, z: -0.00000040498506}
+    Shape: 0
+  - Renderer: {fileID: 4033010876895944386}
+    Bone: {fileID: 2803629910772493177}
+    RestRotation: {x: 0.0129169, y: -0.022518253, z: -0.019055707, w: 0.9994814}
+    LongitudinalAxis: {x: 0.00000017309854, y: 1, z: -0.00000032496803}
+    Shape: 0
 --- !u!1 &1897193864476602828
 GameObject:
   m_ObjectHideFlags: 0
@@ -941,6 +995,11 @@ Animator:
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorStateOnDisable: 0
   m_WriteDefaultValuesOnDisable: 0
+--- !u!4 &430554017864990612 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 963408202774007854, guid: c7745dd471f580348bf08af9926f281d, type: 3}
+  m_PrefabInstance: {fileID: 623489333952737210}
+  m_PrefabAsset: {fileID: 0}
 --- !u!137 &682539685463414001 stripped
 SkinnedMeshRenderer:
   m_CorrespondingSourceObject: {fileID: 135048635163884363, guid: c7745dd471f580348bf08af9926f281d, type: 3}
@@ -996,9 +1055,19 @@ SkinnedMeshRenderer:
   m_CorrespondingSourceObject: {fileID: -5932187954769016124, guid: c7745dd471f580348bf08af9926f281d, type: 3}
   m_PrefabInstance: {fileID: 623489333952737210}
   m_PrefabAsset: {fileID: 0}
+--- !u!4 &2803629910772493177 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -5886368873632086845, guid: c7745dd471f580348bf08af9926f281d, type: 3}
+  m_PrefabInstance: {fileID: 623489333952737210}
+  m_PrefabAsset: {fileID: 0}
 --- !u!137 &2845743456708067608 stripped
 SkinnedMeshRenderer:
   m_CorrespondingSourceObject: {fileID: -5775575536499331422, guid: c7745dd471f580348bf08af9926f281d, type: 3}
+  m_PrefabInstance: {fileID: 623489333952737210}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &3400269259606850649 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 2852813616820032483, guid: c7745dd471f580348bf08af9926f281d, type: 3}
   m_PrefabInstance: {fileID: 623489333952737210}
   m_PrefabAsset: {fileID: 0}
 --- !u!137 &3708843064949020167 stripped
@@ -1029,6 +1098,11 @@ SkinnedMeshRenderer:
 --- !u!137 &4033010876895944386 stripped
 SkinnedMeshRenderer:
   m_CorrespondingSourceObject: {fileID: -4656943872380489352, guid: c7745dd471f580348bf08af9926f281d, type: 3}
+  m_PrefabInstance: {fileID: 623489333952737210}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &4232582579575236326 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 3610254473159100764, guid: c7745dd471f580348bf08af9926f281d, type: 3}
   m_PrefabInstance: {fileID: 623489333952737210}
   m_PrefabAsset: {fileID: 0}
 --- !u!4 &4262684800507566150 stripped

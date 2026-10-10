@@ -565,6 +565,7 @@ class ReceiverBuilder(base.PedestrianBuilder):
                 self.add("GEO_BootLace"+str(i)+"."+side,tube_path(((ankle[0]-.026,y,z),(ankle[0]+.026,y,z+.009)),(.0028,.0028),6),"foot."+side,"sole","footwear")
         for part in self.result.parts:
             if part.obj.name!=FACE_NAME:self.uv(part)
+        base.npc_joint_surfaces.correct_continuous(self.result)
         return self.result
 
     def uv(self,part):
@@ -791,6 +792,7 @@ def manifest(result,wardrobe_hash,face_hash):
     if not 1.25<profile["chest_to_waist_ratio"]<1.32 or not .26<profile["abdomen_depth_m"]<.28:
         raise RuntimeError("Athletic chest-to-waist taper or flat abdomen differs")
     payload={"generator":Path(__file__).name,"version":VERSION,"role":"CanneryReceiver","anatomy_standard":"NpcHumanV2",
+             "joint_surfaces":base.npc_joint_surfaces.joints.manifest(result),
              "height_scale":1.,"height_m":HEIGHT,"dressed_height_m":DRESSED_HEIGHT,"bone_count":31,"body_bone_count":31,**metrics,"triangle_budget":[6000,8000],
              "closed_mesh_count":len(closed),"surface_signature":hash_json(surface),"atlas_sha256":wardrobe_hash,"face_atlas_sha256":face_hash,
              "profile":profile,"trouser_profile":trouser_profile,"beanie_side_to_ear_m":round(cuff_to_ear,6),
@@ -870,6 +872,7 @@ def main():
     parser.add_argument("--source-dir",type=Path,default=ROOT/"ArtSource/City/CanneryReceiver")
     parser.add_argument("--validate-only",action="store_true");parser.add_argument("--no-preview",action="store_true");parser.add_argument("--preview-only",action="store_true")
     parser.add_argument("--atlas-only",action="store_true",help="Publish only the body atlas and manifest after proving all non-atlas model data unchanged.")
+    parser.add_argument("--models-only",action="store_true",help="Publish the body without the unchanged action bank.")
     parser.add_argument("--preview-view",help="Render named source views, separated by commas, during a focused art iteration.")
     parser.add_argument("--inspect-hands",action="store_true")
     args=parser.parse_args(sys.argv[sys.argv.index("--")+1:] if "--" in sys.argv else [])
@@ -898,6 +901,14 @@ def main():
         if not args.no_preview:previews(result,args.source_dir,wardrobe,faces,args.preview_view)
         print("CANNERY RECEIVER ATLAS CONTRACT OK: all non-atlas model data unchanged",flush=True);return
     if not args.validate_only:base.export_fbx(args.model_dir/"CanneryReceiver.fbx",result)
+    if args.models_only:
+        publish_bytes(args.model_dir/"CanneryReceiver.json",(json.dumps(body,indent=2)+"\n").encode(),args.validate_only)
+        if not args.validate_only:
+            args.source_dir.mkdir(parents=True,exist_ok=True)
+            bpy.context.preferences.filepaths.save_version=0
+            bpy.ops.wm.save_as_mainfile(filepath=str(args.source_dir/"CanneryReceiver.blend"))
+        print("CANNERY RECEIVER BODY AND JOINTS OK",flush=True)
+        return
     actions=make_actions(result)
     for name,payload in (("CanneryReceiver",body),("CanneryReceiverActions",actions)):
         publish_bytes(args.model_dir/(name+".json"),(json.dumps(payload,indent=2)+"\n").encode(),args.validate_only)

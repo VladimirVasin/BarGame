@@ -8,7 +8,7 @@ using UnityEngine.TestTools;
 
 namespace BarPromenade.Tests.PlayMode
 {
-    public sealed class Player3DVisualCapturePlayModeTests
+    public sealed partial class Player3DVisualCapturePlayModeTests
     {
         private const int TileSize = 256;
         private GameObject playerRoot;

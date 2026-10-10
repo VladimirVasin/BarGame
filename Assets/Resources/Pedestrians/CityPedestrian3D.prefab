@@ -10,6 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1193812274730549167}
   - component: {fileID: 8515442396388683108}
+  - component: {fileID: 7755810159092693036}
   m_Layer: 0
   m_Name: CityPedestrian3D
   m_TagString: Untagged
@@ -442,12 +443,12 @@ MonoBehaviour:
   personalSpaceGuardClip: {fileID: 0}
   personalSpaceShoveClip: {fileID: 0}
   localBounds:
-    m_Center: {x: -0.00971365, y: 0.8749999, z: -0.01744759}
-    m_Extent: {x: 0.7774967, y: 0.8749999, z: 0.2504035}
-  sourceTriangleCount: 1160
+    m_Center: {x: -0.00971359, y: 0.875, z: -0.01662609}
+    m_Extent: {x: 0.77749676, y: 0.875, z: 0.251225}
+  sourceTriangleCount: 1352
   sourceGeneratorVersion: 4.5.2
   designId: lampshade_walker_v1
-  buildSignature: 229f5b504dc4bcee76cd9fb86b6b5682b60f8fc94d2d32098d6a36e3a727494e
+  buildSignature: 1dfa53d0f75ffe61cdcd6b7b8179e3cdd7a69a5d3d774ded372670f7300bb705
   paletteVariant: 0
   headLamp: {fileID: 0}
   preservesAirborneMotion: 0
@@ -458,6 +459,59 @@ MonoBehaviour:
     columns: 0
     rows: 0
     cells: []
+--- !u!114 &7755810159092693036
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1393531939545675489}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b2be743ae8414fe69b45824c1d81d423, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: BarPromenade.Runtime::BarPromenade.CharacterJointDeformation
+  bindings:
+  - Renderer: {fileID: 6166259899736940860}
+    Bone: {fileID: 1602913387721938171}
+    RestRotation: {x: 0.017877687, y: 0.02233826, z: 0.01239254, w: 0.9995138}
+    LongitudinalAxis: {x: -0.0000005274604, y: 1, z: -0.00000040498506}
+    Shape: 0
+  - Renderer: {fileID: 4411376950472006027}
+    Bone: {fileID: 2298772424506246107}
+    RestRotation: {x: 0.0129169, y: -0.022518253, z: -0.019055707, w: 0.9994814}
+    LongitudinalAxis: {x: 0.00000017309854, y: 1, z: -0.00000032496803}
+    Shape: 0
+  - Renderer: {fileID: 6426279811598707682}
+    Bone: {fileID: 266759894055456324}
+    RestRotation: {x: -0.020317057, y: -0.015963241, z: -0.015225763, w: 0.9995502}
+    LongitudinalAxis: {x: 0.000000011935024, y: 1, z: -0.00000052514105}
+    Shape: 0
+  - Renderer: {fileID: 8188447337285798391}
+    Bone: {fileID: 4393047317819430710}
+    RestRotation: {x: 0.012595064, y: 0.014988454, z: 0.0154044945, w: 0.9996897}
+    LongitudinalAxis: {x: 0.0000000023873787, y: 1, z: 0.000000035810682}
+    Shape: 0
+  - Renderer: {fileID: 4243418413711632229}
+    Bone: {fileID: 266759894055456324}
+    RestRotation: {x: -0.020317057, y: -0.015963241, z: -0.015225763, w: 0.9995502}
+    LongitudinalAxis: {x: 0.000000011935024, y: 1, z: -0.00000052514105}
+    Shape: 0
+  - Renderer: {fileID: 5937399558150477124}
+    Bone: {fileID: 4393047317819430710}
+    RestRotation: {x: 0.012595064, y: 0.014988454, z: 0.0154044945, w: 0.9996897}
+    LongitudinalAxis: {x: 0.0000000023873787, y: 1, z: 0.000000035810682}
+    Shape: 0
+  - Renderer: {fileID: 1111676918109350464}
+    Bone: {fileID: 1602913387721938171}
+    RestRotation: {x: 0.017877687, y: 0.02233826, z: 0.01239254, w: 0.9995138}
+    LongitudinalAxis: {x: -0.0000005274604, y: 1, z: -0.00000040498506}
+    Shape: 0
+  - Renderer: {fileID: 1078257921240004192}
+    Bone: {fileID: 2298772424506246107}
+    RestRotation: {x: 0.0129169, y: -0.022518253, z: -0.019055707, w: 0.9994814}
+    LongitudinalAxis: {x: 0.00000017309854, y: 1, z: -0.00000032496803}
+    Shape: 0
 --- !u!1001 &3578545196332664600
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -832,6 +886,11 @@ Transform:
   m_CorrespondingSourceObject: {fileID: -5508169512097499140, guid: 232152a1eaac1074fa4d269853d36d92, type: 3}
   m_PrefabInstance: {fileID: 3578545196332664600}
   m_PrefabAsset: {fileID: 0}
+--- !u!4 &266759894055456324 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 3610254473159100764, guid: 232152a1eaac1074fa4d269853d36d92, type: 3}
+  m_PrefabInstance: {fileID: 3578545196332664600}
+  m_PrefabAsset: {fileID: 0}
 --- !u!137 &580197476090941531 stripped
 SkinnedMeshRenderer:
   m_CorrespondingSourceObject: {fileID: -5069701456938117309, guid: 232152a1eaac1074fa4d269853d36d92, type: 3}
@@ -867,9 +926,19 @@ SkinnedMeshRenderer:
   m_CorrespondingSourceObject: {fileID: -4700364238101779112, guid: 232152a1eaac1074fa4d269853d36d92, type: 3}
   m_PrefabInstance: {fileID: 3578545196332664600}
   m_PrefabAsset: {fileID: 0}
+--- !u!4 &1602913387721938171 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 2852813616820032483, guid: 232152a1eaac1074fa4d269853d36d92, type: 3}
+  m_PrefabInstance: {fileID: 3578545196332664600}
+  m_PrefabAsset: {fileID: 0}
 --- !u!137 &1994798157615148406 stripped
 SkinnedMeshRenderer:
   m_CorrespondingSourceObject: {fileID: -6194848898639992210, guid: 232152a1eaac1074fa4d269853d36d92, type: 3}
+  m_PrefabInstance: {fileID: 3578545196332664600}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &2298772424506246107 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -5886368873632086845, guid: 232152a1eaac1074fa4d269853d36d92, type: 3}
   m_PrefabInstance: {fileID: 3578545196332664600}
   m_PrefabAsset: {fileID: 0}
 --- !u!137 &2452935528509941357 stripped
@@ -920,6 +989,11 @@ SkinnedMeshRenderer:
 --- !u!137 &4243418413711632229 stripped
 SkinnedMeshRenderer:
   m_CorrespondingSourceObject: {fileID: 813512667098833021, guid: 232152a1eaac1074fa4d269853d36d92, type: 3}
+  m_PrefabInstance: {fileID: 3578545196332664600}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &4393047317819430710 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 963408202774007854, guid: 232152a1eaac1074fa4d269853d36d92, type: 3}
   m_PrefabInstance: {fileID: 3578545196332664600}
   m_PrefabAsset: {fileID: 0}
 --- !u!137 &4411376950472006027 stripped

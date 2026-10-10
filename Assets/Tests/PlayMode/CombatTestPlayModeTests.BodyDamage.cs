@@ -208,6 +208,7 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(intact, Is.GreaterThan(replaced),
                     "A local forearm hit must keep the untouched production surfaces instead of splitting the whole body into draws.");
                 AssertFrozenIntactBodyContact(target);
+                AssertFrozenIntactBodyContact(target, sourceSuffix: ".R");
                 AssertFrozenGripBodyContact(target);
                 AssertSameFrameBodyBoneContact(target);
                 if (!heroVictim) AssertRecoverySoleEnvelope(target);
@@ -276,7 +277,6 @@ namespace BarPromenade.Tests.PlayMode
                     ray.direction, out hit), Is.True, "A same-frame recapture must observe the new fragment pose.");
             }
             AssertBodyClothRevisionCache();
-            AssertBodyProxyCache();
             root.ResetRound();
             Assert.That(root.BodyEffects.ActiveFragmentCount, Is.Zero);
             foreach (SkinnedMeshRenderer skin in root.Hero.DamageRigRoot.GetComponentsInChildren<SkinnedMeshRenderer>(true))
@@ -284,7 +284,7 @@ namespace BarPromenade.Tests.PlayMode
             LogAssert.NoUnexpectedReceived();
         }
 
-        private static void AssertFrozenIntactBodyContact(CombatActor target, string sourcePrefix = "CLO_Boot")
+        private static void AssertFrozenIntactBodyContact(CombatActor target, string sourcePrefix = "CLO_Boot", string sourceSuffix = null)
         {
             var surfaces = new List<HeadContactSurface>();
             HeadContactSurface boot = null;
@@ -299,7 +299,8 @@ namespace BarPromenade.Tests.PlayMode
                     for (int i = 0; i < points.Length; i++) points[i] = skin.transform.TransformPoint(points[i]);
                     var surface = new HeadContactSurface { Name = skin.name, Vertices = points, Triangles = scratch.triangles };
                     surfaces.Add(surface);
-                    if (boot == null && skin.name.StartsWith(sourcePrefix)) boot = surface;
+                    if (boot == null && skin.name.StartsWith(sourcePrefix) &&
+                        (sourceSuffix == null || skin.name.EndsWith(sourceSuffix))) boot = surface;
                 }
             }
             finally { UnityEngine.Object.Destroy(scratch); }
@@ -313,8 +314,17 @@ namespace BarPromenade.Tests.PlayMode
                 target.transform.position += Vector3.right * 3f;
                 Assert.That(target.Hurtboxes.SweepProjectile(ray.origin, ray.GetPoint(.08f), 0f,
                     ray.direction, out CombatHurtboxes.Hit hit), Is.True,
-                    "Intact originals must still query their frozen authored body partitions.");
-                Assert.That(Vector3.Distance(hit.Point, expected), Is.LessThan(.002f));
+                    "Intact originals must query their frozen production triangles.");
+                Assert.That(Vector3.Distance(hit.Point, expected), Is.LessThan(.002f),
+                    $"Frozen production contact for {boot.Name}: expected {expected}, hit {hit.Point} ({hit.DamageRegion}, patch {hit.DamagePatch}).");
+                if (boot.Name.StartsWith("CLO_Boot"))
+                {
+                    bool left = boot.Name.EndsWith(".L");
+                    Assert.That(hit.DamageRegion, Is.EqualTo(left ? BodyDamageRegion.LeftFoot : BodyDamageRegion.RightFoot)
+                        .Or.EqualTo(left ? BodyDamageRegion.LeftShin : BodyDamageRegion.RightShin),
+                        "The exact original surface must retain its owning leg's damage partition.");
+                    Assert.That(hit.DamagePatch, Is.InRange(0, 3));
+                }
                 int builds = target.Hurtboxes.BodySurfaceGeometryBuilds;
                 target.Hurtboxes.SweepProjectile(ray.origin, ray.GetPoint(.08f), 0f, ray.direction, out _);
                 Assert.That(target.Hurtboxes.BodySurfaceGeometryBuilds, Is.EqualTo(builds),
@@ -446,6 +456,16 @@ namespace BarPromenade.Tests.PlayMode
             finally { hand.SetBlendShapeWeight(shape, original); }
         }
 
+        [UnityTest]
+        public IEnumerator Range_BodyProxiesShareTransformsAndFollowSameFrameChanges()
+        {
+            yield return SceneManager.LoadSceneAsync(SceneIds.MainMenu, LoadSceneMode.Single);
+            yield return EnterRange(false, CombatWeaponId.Shotgun);
+            AssertBodyProxyCache();
+            root.ResetRound();
+            LogAssert.NoUnexpectedReceived();
+        }
+
         private void AssertBodyProxyCache()
         {
             root.ResetRound(); PlacePair(6f);
@@ -454,13 +474,49 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(target.IsRagdollActive, Is.True);
             root.BodyEffects.Tick(CombatTestRoot.SimulationStep);
             int builds = root.BodyEffects.ProxyGeometryBuilds;
+            long transformSamples = root.BodyEffects.ProxyTransformSamples;
+            int transformCount = root.BodyEffects.ProxyTransformCountFor(target);
+            Assert.That(transformCount, Is.GreaterThan(0));
             using var allocations = CreateBodyAllocationRecorder();
+            var proxyTimer = System.Diagnostics.Stopwatch.StartNew();
             allocations.Reset(); allocations.Start();
             for (int step = 0; step < 32; step++) root.BodyEffects.Tick(CombatTestRoot.SimulationStep);
             long allocated = StopBodyAllocationRecorder(allocations);
+            proxyTimer.Stop();
             Assert.That(root.BodyEffects.ProxyGeometryBuilds, Is.EqualTo(builds),
                 "Unchanged hand shapes must reuse their collision bounds across simulation substeps.");
             Assert.That(allocated, Is.Zero, "Proxy updates must reuse vertex buffers.");
+            Assert.That(root.BodyEffects.ProxyTransformSamples - transformSamples,
+                Is.InRange(1L, (long)transformCount * 32),
+                "One effects pass must sample a shared transform at most once across all body proxies.");
+            TestContext.Out.WriteLine($"Test cached body proxies: cpu={proxyTimer.Elapsed.TotalMilliseconds / 32d:F3} ms per tick, " +
+                $"transformSamples={root.BodyEffects.ProxyTransformSamples - transformSamples}, uniqueTransforms={transformCount}, allocations={allocated}.");
+            var hands = target.GetComponentInChildren<NpcHandPose>();
+            SkinnedMeshRenderer hand = null;
+            int gripShape = -1;
+            foreach (NpcHandPose.HandBinding binding in hands.Hands)
+            {
+                if (!binding.IsLeft) continue;
+                foreach (SkinnedMeshRenderer skin in binding.Renderers)
+                {
+                    int candidate = CharacterJointDeformation.FindShape(skin.sharedMesh, hands.ShapeName);
+                    if (candidate < 0) continue;
+                    hand = skin; gripShape = candidate; break;
+                }
+                if (hand != null) break;
+            }
+            Assert.That(hand, Is.Not.Null);
+            float gripWeight = hand.GetBlendShapeWeight(gripShape);
+            try
+            {
+                hand.SetBlendShapeWeight(gripShape, gripWeight == 100f ? 0f : 100f);
+                root.BodyEffects.Tick(CombatTestRoot.SimulationStep);
+                Assert.That(root.BodyEffects.ProxyGeometryBuilds, Is.GreaterThan(builds),
+                    "A changed hand corrective must refresh its proxies immediately in the same rendered frame.");
+            }
+            finally { hand.SetBlendShapeWeight(gripShape, gripWeight); }
+            root.BodyEffects.Tick(CombatTestRoot.SimulationStep);
+            builds = root.BodyEffects.ProxyGeometryBuilds;
             Transform bone = FindAnatomicalBone(target, "hand.L");
             var proxies = bone.GetComponentsInChildren<BoxCollider>();
             var centres = new Vector3[proxies.Length]; var sizes = new Vector3[proxies.Length];
@@ -487,6 +543,18 @@ namespace BarPromenade.Tests.PlayMode
                     "A real scale change must invalidate the collision geometry cache.");
             }
             finally { target.transform.localScale = scale; }
+            Quaternion handRotation = bone.localRotation;
+            try
+            {
+                target.transform.localScale = Vector3.Scale(scale, new Vector3(1.25f, .8f, 1.1f));
+                root.BodyEffects.Tick(CombatTestRoot.SimulationStep);
+                builds = root.BodyEffects.ProxyGeometryBuilds;
+                bone.localRotation = handRotation * Quaternion.Euler(0f, 0f, 31f);
+                root.BodyEffects.Tick(CombatTestRoot.SimulationStep);
+                Assert.That(root.BodyEffects.ProxyGeometryBuilds, Is.GreaterThan(builds),
+                    "Rotation under nonuniform scale must refresh the proxy's physical minimum in the same frame.");
+            }
+            finally { bone.localRotation = handRotation; target.transform.localScale = scale; }
         }
 
         private static ProfilerRecorder CreateBodyAllocationRecorder()

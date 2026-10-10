@@ -72,7 +72,7 @@ ModelImporter:
     preBakeTriangleCollisionMesh: 0
     importPhysicalCameras: 1
     importVisibility: 1
-    importBlendShapes: 0
+    importBlendShapes: 1
     importCameras: 0
     importLights: 0
     nodeNameCollisionStrategy: 1
@@ -84,9 +84,9 @@ ModelImporter:
     weldVertices: 1
     bakeAxisConversion: 1
     preserveHierarchy: 1
-    skinWeightsMode: 0
+    skinWeightsMode: 1
     maxBonesPerVertex: 4
-    minBoneWeight: 0.001
+    minBoneWeight: 0
     optimizeBones: 1
     generateMeshLods: 0
     meshLodGenerationFlags: 0

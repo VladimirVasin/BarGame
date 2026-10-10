@@ -3,39 +3,50 @@
 Newest outcomes/checks first. Archive whole dates at budget: [policy](README.md).
 Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-2026-08.md).
 
-## 2026-10-10 — Firearm walk cadence
+## 2026-10-10 — Firearm gait and character joints
 
-- Aim gait follows actual travel again. The reach predictor counted motor travel
-  twice and divided render motion by a combat substep; fixed landing deadlines
-  then rushed steps. It now uses actual motor velocity and compares support
-  expiry with the natural landing, accelerating only a necessary rescue.
-  Direction changes retain live retarget, anatomy/clearance and held aim;
-  authored stride, sprint gate and crowbar focus remain. At the user's request,
-  healthy aimed walking is 15% slower: forward/side 2.21 m/s, backward 1.19 m/s;
-  its distance-driven gait slows with travel and diagonals stay normalized.
-- Steady gait softens lift/plant acceleration with quintic endpoint blends;
-  travel stays within the authored anatomy. A cycle-wide reach envelope keeps
-  original limb lengths; cubic sampled positions carry knee/pelvis slopes.
-  A lower foot arc and narrower side stagger allow a steady pelvis with a small
-  load, avoiding reach-driven vertical pulses; entry retains the live height
-  correction. Motor speed,
-  stride, contacts, aim and the separate crowbar focus keep their contracts.
+- Aim gait counted motor travel twice and divided render travel by a substep;
+  fixed deadlines rushed steps. Actual velocity/natural landing now time rescue.
+  Live retarget/anatomy/clearance/aim/stride/sprint/bar focus remain. At the user's
+  request, aimwalk is 15% slower: forward/side 2.21 m/s, backward 1.19 m/s;
+  gait slows with travel and diagonals stay normalized.
+- Steady gait uses quintic lift/plant and cubic knee/pelvis slopes within
+  original limb lengths. Lower foot arcs/narrower stagger steady the pelvis;
+  entry keeps live height correction. Speed/stride/contacts/aim/bar focus kept.
 - Aimed hands absorb most lateral gait weight shift, keeping a small gun sway.
   Both wrists retain reach/contact without pulling the hold sideways; the real
   barrel is re-aimed after final foot closure. Repeated presentation applies
   compensation only before that pass; focused movement adds less angular sway.
-- Cleared importer whitespace; retained the regenerated Hero V2 dependency
-  stamp so the build gate accepts current sources.
-  Check: `PlayerBuildAssetValidation.ValidateHero`.
+- Hero dependency stamp retained. Check: `PlayerBuildAssetValidation.ValidateHero`.
 - Check: `Range_FirearmAimDirectionChangesKeepLegsWithinAuthoredAnatomy`
   covers actual foot-transfer cadence/intervals/distance alongside pose/aim/speed/
   Shift, presented steady contacts/body height/gun sway and moving recoil;
   frames inspected;
   `build-combat-firearm-walk-3d-model.py` checks actual endpoint derivatives,
   anatomy and deterministic export; `check-docs.py`, `git diff --check`.
-- Known turn corners: extended straight entry can trigger repeated emergency
-  landings; releasing sole avoidance can snap the airborne foot. The original
-  continuous route retains anatomy/cadence; steady contact is checked separately.
+- Known corners: long straight entry can repeat emergency landings; releasing
+  sole avoidance can snap the airborne foot. Continuous route retains anatomy/cadence.
+- Body proxies share exact transforms per effects pass and reuse unchanged
+  relative matrices; duplicate refreshes removed. Collider pose/shape/scale,
+  new corpse contacts and pause/reset stay live. Checks:
+  `Range_DistantShotgunTorsoVolleyProfilesImpactPhases`,
+  `Range_BodyProxiesShareTransformsAndFollowSameFrameChanges`.
+  Intact contacts use frozen source triangles and authored patches:
+  cut skin/triangulation displaced boots. Check:
+  `Range_BodyDestructionDefersGeometryAndKeepsFrozenVisibleContacts`.
+- Hero/NPC retain joint volume/light, rigs/actions and non-boot atlas pixels.
+  Hero: tapered torso/neck, modest separate buttocks; M-65/pants own folds,
+  removable belt. Posed contacts clear hem/pockets with paired folds.
+  Burgundy 1460 flex ankle/ball, preserving sole support. Kick skins
+  foot/shin leather/keys after final feet: the rigid-foot rule broke
+  startup. Shaft excluded; sole/toe witnesses keep zero radius.
+  Importer repairs UV normals; combat caps measure normal depth/
+  emitted cells; seated keeps full skin/belt.
+  Checks: `check-character-joint-export.py`, `Player3DJointSurfaceTests`,
+  `ProductionRig_RendersBareAndLooseClothedJointBends`,
+  `SeatedAppearance_PreservesMixedJointSkinAtFabricEndpoints`,
+  `FlatGround_WalkKeepsABootPlantedEveryFrame`,
+  `Range_CloseKicksAgreeWithPresentedBootAndFrozenAnatomy`; frames inspected.
 
 ## 2026-10-09 — Shotgun, body erosion, frame costs and firearm walk
 

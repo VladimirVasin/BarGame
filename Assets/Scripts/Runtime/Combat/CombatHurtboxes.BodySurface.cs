@@ -17,8 +17,17 @@ namespace BarPromenade
         {
             if (preparedBodyPieces == pieces) return;
             var prepared = new List<BodySurface>();
+            var originals = new Dictionary<SkinnedMeshRenderer, List<CombatBodyDestruction.Piece>>();
             foreach (CombatBodyDestruction.Piece piece in pieces)
-                if (piece.Eligible) prepared.Add(new BodySurface(piece));
+            {
+                if (!piece.Eligible) continue;
+                prepared.Add(new BodySurface(piece));
+                if (piece.Flesh || piece.Bone || piece.Source == null) continue;
+                if (!originals.TryGetValue(piece.Source, out var partitions))
+                { partitions = new List<CombatBodyDestruction.Piece>(); originals.Add(piece.Source, partitions); }
+                partitions.Add(piece);
+            }
+            foreach (var original in originals) prepared.Add(new BodySurface(original.Key, original.Value));
             preparedBodyPieces = pieces; preparedBodySurfaces = prepared.ToArray();
             querySurfaces = new BodySurface[preparedBodySurfaces.Length];
             queryEntries = new float[preparedBodySurfaces.Length];
@@ -84,7 +93,8 @@ namespace BarPromenade
                         if (Vector3.Dot(normal, direction) > 0f) normal = -normal;
                     }
                     else normal.Normalize();
-                    CombatBodyDestruction.Piece piece = surface.Piece;
+                    CombatBodyDestruction.Piece piece = surface.ContactPiece(triangleIndex, point);
+                    if (piece == null) continue;
                     MeleeBodyRegion region = CombatBodyAnatomy.CombatRegion(piece.Region);
                     Vector3 offset = actorFrame.InverseTransformVector(point - actorFrame.position);
                     var location = MeleeHitLocation.FromLocalSurface(region, offset.x, offset.y, offset.z);
@@ -100,6 +110,9 @@ namespace BarPromenade
         {
             internal readonly CombatBodyDestruction.Piece Piece;
             private readonly HeadSurface skin;
+            private readonly CombatBodyDestruction.Piece[] originals;
+            private readonly bool[] originalActive;
+            private readonly HeadTriangle[][] authoredPartitions;
             private readonly int[] indices;
             private readonly Vector3[] points;
             private Matrix4x4 frozenMatrix;
@@ -119,16 +132,71 @@ namespace BarPromenade
                 points = new Vector3[piece.Skin.sharedMesh.vertexCount];
                 Triangles = skin.Triangles;
             }
+            internal BodySurface(SkinnedMeshRenderer source, List<CombatBodyDestruction.Piece> partitions)
+            {
+                originals = partitions.ToArray(); originalActive = new bool[originals.Length];
+                authoredPartitions = new HeadTriangle[originals.Length][];
+                skin = new HeadSurface(source, true, captureBlendShapes: true,
+                    authoredMesh: originals[0].Deformation?.AuthoredSourceMesh);
+                for (int part = 0; part < originals.Length; part++)
+                {
+                    Mesh mesh = originals[part].Deformation?.AuthoredPartitionMesh ?? originals[part].Skin.sharedMesh;
+                    Vector3[] vertices = mesh.vertices; int[] triangles = mesh.triangles;
+                    var faces = authoredPartitions[part] = new HeadTriangle[triangles.Length / 3];
+                    for (int triangle = 0; triangle < faces.Length; triangle++)
+                        faces[triangle] = new HeadTriangle(vertices[triangles[triangle * 3]],
+                            vertices[triangles[triangle * 3 + 1]], vertices[triangles[triangle * 3 + 2]]);
+                }
+                Triangles = skin.Triangles;
+            }
+            internal CombatBodyDestruction.Piece ContactPiece(int triangleIndex, Vector3 point)
+            {
+                if (originals == null) return Piece;
+                // Classify the exact production contact in authored coordinates.
+                // A cut mesh can interpolate weights across a joint or bridge an
+                // imported nonplanar polygon; neither is the intact drawn surface.
+                Vector3 authored = skin.AuthoredQueryPoint(triangleIndex, point);
+                CombatBodyDestruction.Piece result = null;
+                float closest = float.PositiveInfinity;
+                for (int part = 0; part < originals.Length; part++)
+                {
+                    if (!originalActive[part]) continue;
+                    foreach (HeadTriangle triangle in authoredPartitions[part])
+                    {
+                        if (triangle.Bounds.SqrDistance(authored) >= closest) continue;
+                        float distance = (triangle.Closest(authored) - authored).sqrMagnitude;
+                        if (distance >= closest) continue;
+                        closest = distance; result = originals[part];
+                    }
+                }
+                return result;
+            }
             internal bool Capture(Dictionary<Transform, Matrix4x4> worldBones, bool refreshSurface)
             {
                 bool wasActive = Active;
+                if (originals != null)
+                {
+                    bool visible = false, changed = false;
+                    for (int part = 0; part < originals.Length; part++)
+                    {
+                        bool active = originals[part].QueryOriginal && !originals[part].Debris;
+                        changed |= originalActive[part] != active; originalActive[part] = active; visible |= active;
+                    }
+                    if (!visible) { Active = geometryReady = false; return wasActive; }
+                    changed |= skin.CapturePose(worldBones, originals[0].Deformation?.SourceGeometryVersion ?? 0u, true);
+                    Active = skin.Active; skinned = true;
+                    changed |= Active && !wasActive;
+                    if (changed) geometryReady = false;
+                    Bounds = skin.Bounds; return changed;
+                }
                 if (Piece.Debris) { Active = geometryReady = false; return wasActive; }
-                if (Piece.Skin.enabled || Piece.QueryOriginal)
+                if (Piece.QueryOriginal) { Active = geometryReady = false; return wasActive; }
+                if (Piece.Skin.enabled)
                 {
                     if (refreshSurface) Piece.RefreshSurface();
                     // Blendshape vertices and bones share the same frozen snapshot;
                     // exact hand triangles can wait for an intersecting contact.
-                    bool captured = skin.CapturePose(worldBones, Piece.GeometryVersion, Piece.QueryOriginal, Piece.Torso?.TopologyBuilds);
+                    bool captured = skin.CapturePose(worldBones, Piece.GeometryVersion, false, Piece.Torso?.TopologyBuilds);
                     bool changed = captured || skin.Active && (!skinned || !wasActive);
                     skinned = true;
                     if (changed) geometryReady = false;

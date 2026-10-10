@@ -88,6 +88,7 @@ import atlas_kit  # noqa: E402  (after the sys.path fix)
 import principal_npc_detail  # noqa: E402
 import npc_detail_atlas  # noqa: E402
 import fisherman_detail  # noqa: E402
+import npc_joint_surfaces  # noqa: E402
 
 # A design may dress a few of its parts with one small detail atlas. The
 # texture is pale grey-on-white detail only - seams, laces, grooves, chips -
@@ -1722,6 +1723,8 @@ def parse_args() -> argparse.Namespace:
         ),
     )
     parser.add_argument("--no-preview", action="store_true")
+    parser.add_argument("--models-only", action="store_true",
+                        help="Rebuild selected bodies without unchanged animation/hand-prop banks")
     parser.add_argument(
         "--hand-props-only",
         action="store_true",
@@ -2782,6 +2785,7 @@ class PedestrianBuilder:
         self.apply_face_atlas_uv(
             {part.obj.name: part for part in self.result.parts}
         )
+        npc_joint_surfaces.apply(self.result, self.spec.triangle_budget)
         self.configure_scene_metadata()
         return self.result
 
@@ -9426,13 +9430,8 @@ def validate_result(
         seen_meshes.add(mesh.as_pointer())
         if len(mesh.materials) != 1 or mesh.materials[0] != result.material:
             errors.append(f"{obj.name} does not use the one shared source material")
-        if len(obj.vertex_groups) != 1 or obj.vertex_groups[0].name != part.bone:
-            errors.append(f"{obj.name} must have one rigid group for {part.bone}")
+        npc_joint_surfaces.validate_weights(obj, part.bone, errors)
         for vertex in mesh.vertices:
-            weights = [group for group in vertex.groups if group.weight > 0.000001]
-            if len(weights) != 1 or abs(weights[0].weight - 1.0) > 0.000001:
-                errors.append(f"{obj.name} vertex {vertex.index} is not rigidly weighted")
-                break
             world_vertex = obj.matrix_world @ vertex.co
             world_vertices.append(world_vertex)
             if obj.name in {"GEO_Head", "GEO_Skull"}:
@@ -9458,6 +9457,8 @@ def validate_result(
                 for vertex in mesh.vertices
             ],
             "triangles": triangles,
+            "shape_keys": [(key.name, [[stable_float(c) for c in point.co] for point in key.data])
+                           for key in mesh.shape_keys.key_blocks] if mesh.shape_keys else [],
         }
         # Atlas keys only on parts that carry one, so every untextured
         # design keeps its signature byte for byte.
@@ -9571,6 +9572,7 @@ def validate_result(
         ],
         "parts": signature_parts,
         "pivots": signature_pivots,
+        "joint_surfaces": npc_joint_surfaces.joints.manifest(result),
     }
     if archetype.key in principal_npc_detail.KEYS:
         signature_payload["detail_version"] = principal_npc_detail.VERSION
@@ -9607,6 +9609,7 @@ def validate_result(
         json.dumps(signature_payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
     ).hexdigest()
 
+    npc_joint_surfaces.joints.validate(result, errors)
     if errors:
         formatted = "\n".join(f"  - {error}" for error in errors)
         raise RuntimeError(f"City pedestrian validation failed:\n{formatted}")
@@ -9642,19 +9645,49 @@ def select_export_objects(result: BuildResult) -> None:
 def export_fbx(path: Path, result: BuildResult) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     select_export_objects(result)
-    bpy.ops.export_scene.fbx(
-        filepath=str(path),
-        use_selection=True,
-        object_types={"EMPTY", "ARMATURE", "MESH"},
-        axis_forward="-Z",
-        axis_up="Y",
-        add_leaf_bones=False,
-        bake_anim=False,
-        use_armature_deform_only=False,
-        use_mesh_modifiers=True,
-        mesh_smooth_type="FACE",
-        use_custom_props=True,
-    )
+    evaluated_meshes = []
+    try:
+        for part in result.parts:
+            obj = part.obj
+            geometry_modifiers = [modifier for modifier in obj.modifiers
+                                  if modifier.show_viewport and modifier.type not in {"ARMATURE", "TRIANGULATE"}]
+            if not geometry_modifiers:
+                continue
+            if obj.data.shape_keys:
+                raise RuntimeError(f"{obj.name}: construct geometry modifiers before joint shape keys")
+            # Preserve evaluated garment thickness without asking FBX to apply
+            # every mesh modifier: that setting discards joint shape keys.
+            armatures = [(modifier, modifier.show_viewport) for modifier in obj.modifiers
+                         if modifier.type == "ARMATURE"]
+            try:
+                for modifier, _ in armatures:
+                    modifier.show_viewport = False
+                bpy.context.view_layer.update()
+                depsgraph = bpy.context.evaluated_depsgraph_get()
+                mesh = bpy.data.meshes.new_from_object(obj.evaluated_get(depsgraph),
+                                                      preserve_all_data_layers=True, depsgraph=depsgraph)
+                evaluated_meshes.append((obj, obj.data, mesh))
+                obj.data = mesh
+            finally:
+                for modifier, visible in armatures:
+                    modifier.show_viewport = visible
+        bpy.ops.export_scene.fbx(
+            filepath=str(path),
+            use_selection=True,
+            object_types={"EMPTY", "ARMATURE", "MESH"},
+            axis_forward="-Z",
+            axis_up="Y",
+            add_leaf_bones=False,
+            bake_anim=False,
+            use_armature_deform_only=False,
+            use_mesh_modifiers=False,
+            mesh_smooth_type="FACE",
+            use_custom_props=True,
+        )
+    finally:
+        for obj, source, temporary in evaluated_meshes:
+            obj.data = source
+            bpy.data.meshes.remove(temporary)
 
 
 def render_preview(path: Path, result: BuildResult, spec: ArchetypeSpec) -> None:
@@ -9844,6 +9877,7 @@ def write_manifest(
     payload = {
         "generator": "tools/build-city-pedestrian-3d-model.py",
         "generator_version": GENERATOR_VERSION,
+        "joint_surfaces": npc_joint_surfaces.joints.manifest(result),
         "blender_version": bpy.app.version_string,
         "design_id": spec.design_id,
         "display_name": spec.display_name,
@@ -17888,7 +17922,9 @@ def main() -> None:
             print(f"    Atlas: {atlas.path} sha256 {atlas.sha256}")
         print(f"    Blend: {blend_path}")
         print(f"    FBX: {fbx_path}")
-    if config.mother:
+    if config.models_only:
+        pass
+    elif config.mother:
         build_mother_animation_library(config)
     elif config.cafe_cast:
         build_cafe_animation_library(config)

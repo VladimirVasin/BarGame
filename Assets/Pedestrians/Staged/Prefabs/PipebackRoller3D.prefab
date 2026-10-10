@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 240273780001618267}
   - component: {fileID: 3970435940823450810}
   - component: {fileID: 2287324248261974789}
+  - component: {fileID: 3232897552093673203}
   m_Layer: 0
   m_Name: PipebackRoller3D
   m_TagString: Untagged
@@ -583,12 +584,12 @@ MonoBehaviour:
   personalSpaceGuardClip: {fileID: 0}
   personalSpaceShoveClip: {fileID: 0}
   localBounds:
-    m_Center: {x: -0.0010001659, y: 0.8749998, z: 0.10249999}
-    m_Extent: {x: 0.8385954, y: 0.8749999, z: 0.50750005}
+    m_Center: {x: -0.0010001063, y: 0.87499994, z: 0.10249999}
+    m_Extent: {x: 0.8385954, y: 0.875, z: 0.50750005}
   sourceTriangleCount: 2388
   sourceGeneratorVersion: 4.5.2
   designId: pipeback_roller_v1
-  buildSignature: d7bfa12e3a5f24109e83cc5f7e4836d5c8802a441712c4ff7047e76d3013f7cc
+  buildSignature: b463a624e1a6b7826915a8fe82771ba7a79e755c529033769f403aa9279e0f11
   paletteVariant: 0
   headLamp: {fileID: 0}
   preservesAirborneMotion: 0
@@ -618,6 +619,59 @@ MonoBehaviour:
   rightCasterPivot: {fileID: 2910623892302039783}
   bellowsPivot: {fileID: 6256046609881273999}
   pipeBankPivot: {fileID: 6788123561852634835}
+--- !u!114 &3232897552093673203
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3813222065861775117}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b2be743ae8414fe69b45824c1d81d423, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: BarPromenade.Runtime::BarPromenade.CharacterJointDeformation
+  bindings:
+  - Renderer: {fileID: 1715042485746536526}
+    Bone: {fileID: 6080223999915992457}
+    RestRotation: {x: 0.017877687, y: 0.02233826, z: 0.01239254, w: 0.9995138}
+    LongitudinalAxis: {x: -0.0000005274604, y: 1, z: -0.00000040498506}
+    Shape: 0
+  - Renderer: {fileID: 9180483723845740793}
+    Bone: {fileID: 6753459831862391465}
+    RestRotation: {x: 0.0129169, y: -0.022518253, z: -0.019055707, w: 0.9994814}
+    LongitudinalAxis: {x: 0.00000017309854, y: 1, z: -0.00000032496803}
+    Shape: 0
+  - Renderer: {fileID: 1977434040398289552}
+    Bone: {fileID: 4750244332321210166}
+    RestRotation: {x: -0.020317057, y: -0.015963241, z: -0.015225763, w: 0.9995502}
+    LongitudinalAxis: {x: 0.000000011935024, y: 1, z: -0.00000052514105}
+    Shape: 0
+  - Renderer: {fileID: 3746097416521627781}
+    Bone: {fileID: 9126764521979012676}
+    RestRotation: {x: 0.012595064, y: 0.014988454, z: 0.0154044945, w: 0.9996897}
+    LongitudinalAxis: {x: 0.0000000023873787, y: 1, z: 0.000000035810682}
+    Shape: 0
+  - Renderer: {fileID: 8699929907906237975}
+    Bone: {fileID: 4750244332321210166}
+    RestRotation: {x: -0.020317057, y: -0.015963241, z: -0.015225763, w: 0.9995502}
+    LongitudinalAxis: {x: 0.000000011935024, y: 1, z: -0.00000052514105}
+    Shape: 0
+  - Renderer: {fileID: 1169277601147036726}
+    Bone: {fileID: 9126764521979012676}
+    RestRotation: {x: 0.012595064, y: 0.014988454, z: 0.0154044945, w: 0.9996897}
+    LongitudinalAxis: {x: 0.0000000023873787, y: 1, z: 0.000000035810682}
+    Shape: 0
+  - Renderer: {fileID: 5562652512320150322}
+    Bone: {fileID: 6080223999915992457}
+    RestRotation: {x: 0.017877687, y: 0.02233826, z: 0.01239254, w: 0.9995138}
+    LongitudinalAxis: {x: -0.0000005274604, y: 1, z: -0.00000040498506}
+    Shape: 0
+  - Renderer: {fileID: 5524024918924887826}
+    Bone: {fileID: 6753459831862391465}
+    RestRotation: {x: 0.0129169, y: -0.022518253, z: -0.019055707, w: 0.9994814}
+    LongitudinalAxis: {x: 0.00000017309854, y: 1, z: -0.00000032496803}
+    Shape: 0
 --- !u!1001 &8355990806455694954
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1171,6 +1225,11 @@ SkinnedMeshRenderer:
   m_CorrespondingSourceObject: {fileID: 3656846343641415034, guid: df0016b4b2e550a44bf7d9c47f7cb2a7, type: 3}
   m_PrefabInstance: {fileID: 8355990806455694954}
   m_PrefabAsset: {fileID: 0}
+--- !u!4 &4750244332321210166 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 3610254473159100764, guid: df0016b4b2e550a44bf7d9c47f7cb2a7, type: 3}
+  m_PrefabInstance: {fileID: 8355990806455694954}
+  m_PrefabAsset: {fileID: 0}
 --- !u!137 &5199705374901587927 stripped
 SkinnedMeshRenderer:
   m_CorrespondingSourceObject: {fileID: -4909098274808759875, guid: df0016b4b2e550a44bf7d9c47f7cb2a7, type: 3}
@@ -1206,6 +1265,11 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 4365512976932153388, guid: df0016b4b2e550a44bf7d9c47f7cb2a7, type: 3}
   m_PrefabInstance: {fileID: 8355990806455694954}
   m_PrefabAsset: {fileID: 0}
+--- !u!4 &6080223999915992457 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 2852813616820032483, guid: df0016b4b2e550a44bf7d9c47f7cb2a7, type: 3}
+  m_PrefabInstance: {fileID: 8355990806455694954}
+  m_PrefabAsset: {fileID: 0}
 --- !u!4 &6256046609881273999 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -6546122369638194971, guid: df0016b4b2e550a44bf7d9c47f7cb2a7, type: 3}
@@ -1224,6 +1288,11 @@ Transform:
 --- !u!23 &6661794960032943508 stripped
 MeshRenderer:
   m_CorrespondingSourceObject: {fileID: 3424145727628573694, guid: df0016b4b2e550a44bf7d9c47f7cb2a7, type: 3}
+  m_PrefabInstance: {fileID: 8355990806455694954}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &6753459831862391465 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -5886368873632086845, guid: df0016b4b2e550a44bf7d9c47f7cb2a7, type: 3}
   m_PrefabInstance: {fileID: 8355990806455694954}
   m_PrefabAsset: {fileID: 0}
 --- !u!137 &6762659657572498513 stripped
@@ -1334,6 +1403,11 @@ SkinnedMeshRenderer:
 --- !u!23 &8751545274061779091 stripped
 MeshRenderer:
   m_CorrespondingSourceObject: {fileID: -8465134168390777095, guid: df0016b4b2e550a44bf7d9c47f7cb2a7, type: 3}
+  m_PrefabInstance: {fileID: 8355990806455694954}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &9126764521979012676 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 963408202774007854, guid: df0016b4b2e550a44bf7d9c47f7cb2a7, type: 3}
   m_PrefabInstance: {fileID: 8355990806455694954}
   m_PrefabAsset: {fileID: 0}
 --- !u!1 &9166822556936014651 stripped

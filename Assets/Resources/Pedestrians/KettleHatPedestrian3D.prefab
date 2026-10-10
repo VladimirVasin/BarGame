@@ -42,6 +42,7 @@ GameObject:
   - component: {fileID: 3416415619754355724}
   - component: {fileID: 612478226905194333}
   - component: {fileID: 4706014298453281898}
+  - component: {fileID: 4187559527099759634}
   m_Layer: 0
   m_Name: KettleHatPedestrian3D
   m_TagString: Untagged
@@ -614,12 +615,12 @@ MonoBehaviour:
   personalSpaceGuardClip: {fileID: 0}
   personalSpaceShoveClip: {fileID: 0}
   localBounds:
-    m_Center: {x: -0.0010001659, y: 0.8749999, z: 0.029669374}
-    m_Extent: {x: 0.81404775, y: 0.8749999, z: 0.38862503}
-  sourceTriangleCount: 2004
+    m_Center: {x: -0.0010000467, y: 0.875, z: 0.029669344}
+    m_Extent: {x: 0.8140478, y: 0.875, z: 0.38862506}
+  sourceTriangleCount: 2212
   sourceGeneratorVersion: 4.5.2
   designId: kettle_hat_walker_v1
-  buildSignature: 3e2efd8c07a24b1e4b68f03fe9b6cfdca8f4df668fadc014810c07b7f4ba13cf
+  buildSignature: e65c17184b12a640c880b6efb52540bb43af717ebfadf923aea6b28220adb7b0
   paletteVariant: 0
   headLamp: {fileID: 0}
   preservesAirborneMotion: 0
@@ -647,11 +648,64 @@ MonoBehaviour:
   spoutAnchor: {fileID: 2351126773749681363}
   lidRenderer: {fileID: 932090293881890459}
   knobRenderer: {fileID: 3553195022294123086}
-  lidCentreLocal: {x: -0.000035999925, y: 0.0014849098, z: 0.0005378663}
+  lidCentreLocal: {x: -0.000035999925, y: 0.0014849134, z: 0.00053786667}
   kettleAxisLocal: {x: -0.37742317, y: 0.91770476, z: -0.12397329}
-  lidTiltAxisALocal: {x: -0.32254875, y: -0.25576782, z: -0.91134226}
-  lidTiltAxisBLocal: {x: -0.8680519, y: -0.30397433, z: 0.39253727}
-  spoutReachMetres: 0.4567228
+  lidTiltAxisALocal: {x: -0.3225487, y: -0.25576794, z: -0.9113423}
+  lidTiltAxisBLocal: {x: -0.86805195, y: -0.30397433, z: 0.39253724}
+  spoutReachMetres: 0.45672286
+--- !u!114 &4187559527099759634
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4251953192794664766}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b2be743ae8414fe69b45824c1d81d423, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: BarPromenade.Runtime::BarPromenade.CharacterJointDeformation
+  bindings:
+  - Renderer: {fileID: 8762806552973837414}
+    Bone: {fileID: 4195098308518392225}
+    RestRotation: {x: 0.017877687, y: 0.02233826, z: 0.01239254, w: 0.9995138}
+    LongitudinalAxis: {x: -0.0000005274604, y: 1, z: -0.00000040498506}
+    Shape: 0
+  - Renderer: {fileID: 1238790486497180881}
+    Bone: {fileID: 3742398672124405377}
+    RestRotation: {x: 0.0129169, y: -0.022518253, z: -0.019055707, w: 0.9994814}
+    LongitudinalAxis: {x: 0.00000017309854, y: 1, z: -0.00000032496803}
+    Shape: 0
+  - Renderer: {fileID: 8441981989164945080}
+    Bone: {fileID: 3439327490081418014}
+    RestRotation: {x: -0.020317057, y: -0.015963241, z: -0.015225763, w: 0.9995502}
+    LongitudinalAxis: {x: 0.000000011935024, y: 1, z: -0.00000052514105}
+    Shape: 0
+  - Renderer: {fileID: 6749347645390531757}
+    Bone: {fileID: 1224547909864452716}
+    RestRotation: {x: 0.012595064, y: 0.014988454, z: 0.0154044945, w: 0.9996897}
+    LongitudinalAxis: {x: 0.0000000023873787, y: 1, z: 0.000000035810682}
+    Shape: 0
+  - Renderer: {fileID: 1651391715767271999}
+    Bone: {fileID: 3439327490081418014}
+    RestRotation: {x: -0.020317057, y: -0.015963241, z: -0.015225763, w: 0.9995502}
+    LongitudinalAxis: {x: 0.000000011935024, y: 1, z: -0.00000052514105}
+    Shape: 0
+  - Renderer: {fileID: 9109845143429066782}
+    Bone: {fileID: 1224547909864452716}
+    RestRotation: {x: 0.012595064, y: 0.014988454, z: 0.0154044945, w: 0.9996897}
+    LongitudinalAxis: {x: 0.0000000023873787, y: 1, z: 0.000000035810682}
+    Shape: 0
+  - Renderer: {fileID: 2550219162045533978}
+    Bone: {fileID: 4195098308518392225}
+    RestRotation: {x: 0.017877687, y: 0.02233826, z: 0.01239254, w: 0.9995138}
+    LongitudinalAxis: {x: -0.0000005274604, y: 1, z: -0.00000040498506}
+    Shape: 0
+  - Renderer: {fileID: 2522006210433258298}
+    Bone: {fileID: 3742398672124405377}
+    RestRotation: {x: 0.0129169, y: -0.022518253, z: -0.019055707, w: 0.9994814}
+    LongitudinalAxis: {x: 0.00000017309854, y: 1, z: -0.00000032496803}
+    Shape: 0
 --- !u!1 &7523810441934211924
 GameObject:
   m_ObjectHideFlags: 0
@@ -676,8 +730,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 7523810441934211924}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.10921353, y: -0.83278257, z: -0.3090556, w: -0.44612813}
-  m_LocalPosition: {x: 0.0041232095, y: 0.0013257696, z: -0.0014494978}
+  m_LocalRotation: {x: 0.10921359, y: -0.83278257, z: -0.3090556, w: -0.44612822}
+  m_LocalPosition: {x: 0.0041232095, y: 0.0013257734, z: -0.0014494973}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1223,6 +1277,11 @@ SkinnedMeshRenderer:
   m_CorrespondingSourceObject: {fileID: 1316772319786003304, guid: 98bef5a6b392d76498d5e30687a29a5c, type: 3}
   m_PrefabInstance: {fileID: 2134918918708404802}
   m_PrefabAsset: {fileID: 0}
+--- !u!4 &1224547909864452716 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 963408202774007854, guid: 98bef5a6b392d76498d5e30687a29a5c, type: 3}
+  m_PrefabInstance: {fileID: 2134918918708404802}
+  m_PrefabAsset: {fileID: 0}
 --- !u!137 &1238790486497180881 stripped
 SkinnedMeshRenderer:
   m_CorrespondingSourceObject: {fileID: -8317638253814735213, guid: 98bef5a6b392d76498d5e30687a29a5c, type: 3}
@@ -1315,6 +1374,11 @@ Transform:
   m_CorrespondingSourceObject: {fileID: -5508169512097499140, guid: 98bef5a6b392d76498d5e30687a29a5c, type: 3}
   m_PrefabInstance: {fileID: 2134918918708404802}
   m_PrefabAsset: {fileID: 0}
+--- !u!4 &3439327490081418014 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 3610254473159100764, guid: 98bef5a6b392d76498d5e30687a29a5c, type: 3}
+  m_PrefabInstance: {fileID: 2134918918708404802}
+  m_PrefabAsset: {fileID: 0}
 --- !u!137 &3462251124428662918 stripped
 SkinnedMeshRenderer:
   m_CorrespondingSourceObject: {fileID: -5932187954769016124, guid: 98bef5a6b392d76498d5e30687a29a5c, type: 3}
@@ -1323,6 +1387,16 @@ SkinnedMeshRenderer:
 --- !u!137 &3553195022294123086 stripped
 SkinnedMeshRenderer:
   m_CorrespondingSourceObject: {fileID: 3238015005637419020, guid: 98bef5a6b392d76498d5e30687a29a5c, type: 3}
+  m_PrefabInstance: {fileID: 2134918918708404802}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &3742398672124405377 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -5886368873632086845, guid: 98bef5a6b392d76498d5e30687a29a5c, type: 3}
+  m_PrefabInstance: {fileID: 2134918918708404802}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &4195098308518392225 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 2852813616820032483, guid: 98bef5a6b392d76498d5e30687a29a5c, type: 3}
   m_PrefabInstance: {fileID: 2134918918708404802}
   m_PrefabAsset: {fileID: 0}
 --- !u!137 &4199037607866448008 stripped

@@ -43,7 +43,7 @@ ModelImporter:
     preBakeTriangleCollisionMesh: 0
     importPhysicalCameras: 0
     importVisibility: 0
-    importBlendShapes: 0
+    importBlendShapes: 1
     importCameras: 0
     importLights: 0
     nodeNameCollisionStrategy: 0
@@ -55,9 +55,9 @@ ModelImporter:
     weldVertices: 1
     bakeAxisConversion: 1
     preserveHierarchy: 1
-    skinWeightsMode: 0
+    skinWeightsMode: 1
     maxBonesPerVertex: 4
-    minBoneWeight: 0.001
+    minBoneWeight: 0
     optimizeBones: 1
     generateMeshLods: 0
     meshLodGenerationFlags: 0
@@ -79,11 +79,11 @@ ModelImporter:
     normalSmoothAngle: 60
     normalImportMode: 0
     tangentImportMode: 2
-    normalCalculationMode: 0
-    legacyComputeAllNormalsFromSmoothingGroupsWhenMeshHasBlendShapes: 1
+    normalCalculationMode: 4
+    legacyComputeAllNormalsFromSmoothingGroupsWhenMeshHasBlendShapes: 0
     blendShapeNormalImportMode: 1
     normalSmoothingSource: 0
-    calculateBlendshapeNormalsDeltaFromImportedNormals: 1
+    calculateBlendshapeNormalsDeltaFromImportedNormals: 0
   referencedClips: []
   importAnimation: 0
   humanDescription:

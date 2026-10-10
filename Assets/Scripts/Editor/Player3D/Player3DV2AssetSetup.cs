@@ -512,6 +512,8 @@ namespace BarPromenade.Editor
             }
 
             ValidateParts(manifest);
+            ValidateJointSurfaceManifest(manifest);
+            ValidateFootwearManifest(manifest);
             ValidateHandGripManifest(manifest);
             ValidateAppearanceManifest(manifest);
             Player3DV2StaticTextureContract.ValidateManifest(
@@ -1098,8 +1100,12 @@ namespace BarPromenade.Editor
                     renderer.motionVectorGenerationMode =
                         MotionVectorGenerationMode.Object;
 
-                    if (source.name == "GEO_Torso" ||
-                        source.name == "CLO_JacketBody")
+                    if (manifest.joint_surfaces.surfaces.Any(surface => surface.name == source.name))
+                    {
+                        ValidateJointSurfaceSkinning(renderer, manifest.joint_surfaces.surfaces.Single(surface => surface.name == source.name));
+                    }
+                    else if (source.name == "GEO_Torso" ||
+                             source.name == "CLO_JacketBody")
                     {
                         ValidateTorsoSkinning(renderer);
                     }
@@ -1127,6 +1133,8 @@ namespace BarPromenade.Editor
                                 bone));
                     }
                 }
+
+                ValidateImportedJointSeams(prefabRoot.transform, manifest.joint_surfaces, renderersByName);
 
                 anatomicalBindings.Sort(
                     (left, right) => left.Part.CompareTo(right.Part));
@@ -1251,6 +1259,8 @@ namespace BarPromenade.Editor
                     manifest.hand_grip.shape_name,
                     manifest.hand_grip.cylinder_radius_m);
 
+                CharacterJointDeformation.Configure(prefabRoot);
+                ConfigureFootwear(prefabRoot, manifest, renderersByName, transformsByName);
                 GameObject saved = PrefabUtility.SaveAsPrefabAsset(
                     prefabRoot,
                     PrefabPath,
@@ -1331,9 +1341,9 @@ namespace BarPromenade.Editor
                     "pelvis, lower spine and chest, with blended transitions.");
             }
 
-            // Keep the two authored influences even if a quality preset uses
-            // single-bone skinning. Other parts retain their rigid weights.
-            skinned.quality = SkinQuality.Bone2;
+            // The declared torso field still uses two adjacent influences;
+            // the renderer also supports joint fields under lower presets.
+            skinned.quality = SkinQuality.Bone4;
         }
 
         private static string RequireTorsoInfluence(
@@ -1492,6 +1502,9 @@ namespace BarPromenade.Editor
                 DependencyStamp(MaterialPath),
                 DependencyStamp(SetupScriptPath),
                 DependencyStamp("Assets/Scripts/Editor/Player3D/Player3DV2AssetSetup.Appearance.cs"),
+                DependencyStamp("Assets/Scripts/Editor/Player3D/Player3DV2AssetSetup.Joints.cs"),
+                DependencyStamp("Assets/Scripts/Editor/Player3D/Player3DV2AssetSetup.Footwear.cs"),
+                DependencyStamp("Assets/Scripts/Editor/CharacterJointNormalImporter.cs"),
                 DependencyStamp(ModelImporterScriptPath),
                 DependencyStamp(TextureImporterScriptPath),
                 DependencyStamp(StaticTextureContractScriptPath),
@@ -1500,6 +1513,9 @@ namespace BarPromenade.Editor
                 DependencyStamp("Assets/Scripts/Runtime/Player3D/PlayerWardrobe.cs"),
                 DependencyStamp("Assets/Scripts/Runtime/Player3D/PlayerHair.cs"),
                 DependencyStamp("Assets/Scripts/Runtime/Player3D/PlayerJacketCloth.cs"),
+                DependencyStamp("Assets/Scripts/Runtime/Core/CharacterJointDeformation.cs"),
+                DependencyStamp("Assets/Scripts/Runtime/Player3D/PlayerBootDeformation.cs"),
+                AuthoringSignature("tools/player_boots.py"),
                 ColdAuthoringSignature(),
                 AuthoringSignature(SnowAuthoringPath)
             };
@@ -1751,6 +1767,8 @@ namespace BarPromenade.Editor
             public Player3DV2ManifestTextureBinding[] texture_bindings;
             public Player3DV2ManifestBareSkinAtlas bare_skin_atlas;
             public CharacterSurfaceBinding[] surface_bindings;
+            public CharacterJointSurfaceManifest joint_surfaces;
+            public FootwearManifest footwear;
         }
 
         [Serializable]

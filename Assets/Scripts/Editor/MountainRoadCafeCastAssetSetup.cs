@@ -624,6 +624,7 @@ namespace BarPromenade.Editor
                     bindings.ToArray(),
                     detailAtlas);
 
+                CharacterJointDeformation.Configure(prefabRoot);
                 GameObject saved = PrefabUtility.SaveAsPrefabAsset(
                     prefabRoot,
                     descriptor.PrefabPath,
@@ -848,11 +849,12 @@ namespace BarPromenade.Editor
 
             MonoBehaviour[] behaviours =
                 prefab.GetComponentsInChildren<MonoBehaviour>(true);
-            if (behaviours.Length != 1 || behaviours[0] != registry)
+            if (!behaviours.Contains(registry) || behaviours.Any(behaviour =>
+                behaviour != registry && !(behaviour is CharacterJointDeformation)))
             {
                 throw new InvalidOperationException(
                     $"{descriptor.DisplayName} staged prefab may carry " +
-                    "only its passive cafe cast asset registry.");
+                    "only its passive cafe cast registry and joint deformation.");
             }
         }
 
@@ -2239,7 +2241,10 @@ namespace BarPromenade.Editor
             importer.importCameras = false;
             importer.importLights = false;
             importer.addCollider = false;
-            importer.importBlendShapes = false;
+            importer.importBlendShapes = true;
+            importer.skinWeights = ModelImporterSkinWeights.Custom;
+            importer.maxBonesPerVertex = 4;
+            importer.minBoneWeight = 0f;
             importer.importNormals = ModelImporterNormals.Import;
             importer.importTangents = ModelImporterTangents.None;
             importer.meshCompression = ModelImporterMeshCompression.Off;

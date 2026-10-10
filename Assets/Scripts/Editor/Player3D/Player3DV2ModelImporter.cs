@@ -13,7 +13,7 @@ namespace BarPromenade.Editor
     {
         // Version the mesh postprocess as well as importer settings. Tangent
         // repair changes the serialized FBX result without changing its .meta.
-        public override uint GetVersion() => 1;
+        public override uint GetVersion() => 2;
 
         private static readonly ISet<string> LoopingClips =
             new HashSet<string>(StringComparer.Ordinal)
@@ -46,6 +46,10 @@ namespace BarPromenade.Editor
             if (string.Equals(assetPath, Player3DV2CharacterSurfaces.SeatedModelPath, StringComparison.OrdinalIgnoreCase))
             {
                 // This derived lower body borrows the selected trousers' material.
+                importer.importBlendShapes = true;
+                importer.skinWeights = ModelImporterSkinWeights.Custom;
+                importer.maxBonesPerVertex = 4;
+                importer.minBoneWeight = 0f;
                 importer.importTangents = ModelImporterTangents.CalculateMikk;
                 return;
             }
@@ -222,6 +226,11 @@ namespace BarPromenade.Editor
             importer.importLights = false;
             importer.addCollider = false;
             importer.importBlendShapes = true;
+            // Joint rings can blend torso, shoulder and arm fields. Preserve
+            // every authored influence rather than inheriting an import preset.
+            importer.skinWeights = ModelImporterSkinWeights.Custom;
+            importer.maxBonesPerVertex = 4;
+            importer.minBoneWeight = 0f;
             importer.importNormals = ModelImporterNormals.Import;
             importer.importTangents = ModelImporterTangents.None;
             importer.meshCompression = ModelImporterMeshCompression.Off;

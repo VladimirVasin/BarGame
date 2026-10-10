@@ -1,6 +1,681 @@
 {
   "generator": "tools/build-ordinary-bartender-3d-model.py",
   "generator_version": "4.0.0",
+  "joint_surfaces": {
+    "contract": "character_joint_surfaces_v1",
+    "source_space": "blender_z_up_minus_y_forward",
+    "max_influences": 4,
+    "seams": [
+      {
+        "id": "elbow.L",
+        "bone": "forearm.L",
+        "renderers": [
+          "GEO_UpperArm.L",
+          "GEO_Forearm.L"
+        ],
+        "vertices_a": [
+          72,
+          73,
+          74,
+          75,
+          76,
+          77,
+          78,
+          79,
+          80,
+          81,
+          82,
+          83
+        ],
+        "vertices_b": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11
+        ],
+        "bones": [
+          "upper_arm.L",
+          "forearm.L"
+        ],
+        "points_blender": [
+          {
+            "x": 0.46927863359451294,
+            "y": 0.048105500638484955,
+            "z": 1.2656105756759644
+          },
+          {
+            "x": 0.48559001088142395,
+            "y": 0.029512830078601837,
+            "z": 1.287432312965393
+          },
+          {
+            "x": 0.4937048554420471,
+            "y": -0.00020317494636401534,
+            "z": 1.2992241382598877
+          },
+          {
+            "x": 0.4914487898349762,
+            "y": -0.03308013081550598,
+            "z": 1.2978264093399048
+          },
+          {
+            "x": 0.47942623496055603,
+            "y": -0.06030867248773575,
+            "z": 1.2836135625839233
+          },
+          {
+            "x": 0.4608587622642517,
+            "y": -0.0745929628610611,
+            "z": 1.2603940963745117
+          },
+          {
+            "x": 0.44072139263153076,
+            "y": -0.0721055120229721,
+            "z": 1.2343894243240356
+          },
+          {
+            "x": 0.42441001534461975,
+            "y": -0.05351283401250839,
+            "z": 1.212567687034607
+          },
+          {
+            "x": 0.4162951707839966,
+            "y": -0.023796824738383293,
+            "z": 1.2007758617401123
+          },
+          {
+            "x": 0.4185512363910675,
+            "y": 0.009080130606889725,
+            "z": 1.2021735906600952
+          },
+          {
+            "x": 0.43057379126548767,
+            "y": 0.03630866855382919,
+            "z": 1.2163864374160767
+          },
+          {
+            "x": 0.449141263961792,
+            "y": 0.05059295892715454,
+            "z": 1.2396059036254883
+          }
+        ],
+        "band_m": 0.07,
+        "loose": false,
+        "corrective_shape": "JointVolume.Elbow.L",
+        "corrective_angle_degrees": 135.0,
+        "weight_curve": "inverse_half_angle_cosine",
+        "validation": {
+          "angles_degrees": [
+            0,
+            45,
+            90,
+            135.0
+          ],
+          "section_area_ratios": [
+            1.0,
+            1.0,
+            1.000001,
+            1.0
+          ],
+          "seam_tolerance_m": 2e-06
+        }
+      },
+      {
+        "id": "knee.L",
+        "bone": "shin.L",
+        "renderers": [
+          "GEO_Thigh.L",
+          "GEO_Shin.L"
+        ],
+        "vertices_a": [
+          72,
+          73,
+          74,
+          75,
+          76,
+          77,
+          78,
+          79,
+          80,
+          81,
+          82,
+          83
+        ],
+        "vertices_b": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11
+        ],
+        "bones": [
+          "thigh.L",
+          "shin.L"
+        ],
+        "points_blender": [
+          {
+            "x": 0.17448557913303375,
+            "y": 0.009053348563611507,
+            "z": 0.4863011837005615
+          },
+          {
+            "x": 0.1740604043006897,
+            "y": -0.036989811807870865,
+            "z": 0.48723694682121277
+          },
+          {
+            "x": 0.1505754292011261,
+            "y": -0.07687287032604218,
+            "z": 0.4875733256340027
+          },
+          {
+            "x": 0.11032341420650482,
+            "y": -0.09990918636322021,
+            "z": 0.4872201681137085
+          },
+          {
+            "x": 0.06408987939357758,
+            "y": -0.09992621839046478,
+            "z": 0.4862721264362335
+          },
+          {
+            "x": 0.024263009428977966,
+            "y": -0.07691937685012817,
+            "z": 0.4849832355976105
+          },
+          {
+            "x": 0.001514435512945056,
+            "y": -0.03705335035920143,
+            "z": 0.48369884490966797
+          },
+          {
+            "x": 0.0019395934650674462,
+            "y": 0.008989817462861538,
+            "z": 0.4827630817890167
+          },
+          {
+            "x": 0.025424567982554436,
+            "y": 0.048872873187065125,
+            "z": 0.4824267029762268
+          },
+          {
+            "x": 0.06567658483982086,
+            "y": 0.07190918922424316,
+            "z": 0.482779860496521
+          },
+          {
+            "x": 0.1119101345539093,
+            "y": 0.07192623615264893,
+            "z": 0.48372790217399597
+          },
+          {
+            "x": 0.15173698961734772,
+            "y": 0.04891937971115112,
+            "z": 0.485016793012619
+          }
+        ],
+        "band_m": 0.08,
+        "loose": false,
+        "corrective_shape": "JointVolume.Knee.L",
+        "corrective_angle_degrees": 135.0,
+        "weight_curve": "inverse_half_angle_cosine",
+        "validation": {
+          "angles_degrees": [
+            0,
+            45,
+            90,
+            135.0
+          ],
+          "section_area_ratios": [
+            1.0,
+            0.999998,
+            0.999994,
+            0.99999
+          ],
+          "seam_tolerance_m": 2e-06
+        }
+      },
+      {
+        "id": "elbow.R",
+        "bone": "forearm.R",
+        "renderers": [
+          "GEO_UpperArm.R",
+          "GEO_Forearm.R"
+        ],
+        "vertices_a": [
+          72,
+          73,
+          74,
+          75,
+          76,
+          77,
+          78,
+          79,
+          80,
+          81,
+          82,
+          83
+        ],
+        "vertices_b": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11
+        ],
+        "bones": [
+          "upper_arm.R",
+          "forearm.R"
+        ],
+        "points_blender": [
+          {
+            "x": -0.46287238597869873,
+            "y": -0.0690169632434845,
+            "z": 1.2594823837280273
+          },
+          {
+            "x": -0.48048996925354004,
+            "y": -0.0517047680914402,
+            "z": 1.2813421487808228
+          },
+          {
+            "x": -0.4907416105270386,
+            "y": -0.022681912407279015,
+            "z": 1.2931960821151733
+          },
+          {
+            "x": -0.49088042974472046,
+            "y": 0.010274949483573437,
+            "z": 1.291867971420288
+          },
+          {
+            "x": -0.48086920380592346,
+            "y": 0.03833504393696785,
+            "z": 1.277713656425476
+          },
+          {
+            "x": -0.4633904695510864,
+            "y": 0.05397971719503403,
+            "z": 1.2545257806777954
+          },
+          {
+            "x": -0.4431276321411133,
+            "y": 0.05301696062088013,
+            "z": 1.2285175323486328
+          },
+          {
+            "x": -0.425510048866272,
+            "y": 0.03570476919412613,
+            "z": 1.2066577672958374
+          },
+          {
+            "x": -0.41525840759277344,
+            "y": 0.006681912578642368,
+            "z": 1.1948038339614868
+          },
+          {
+            "x": -0.41511958837509155,
+            "y": -0.026274951174855232,
+            "z": 1.196131944656372
+          },
+          {
+            "x": -0.42513081431388855,
+            "y": -0.05433504283428192,
+            "z": 1.210286259651184
+          },
+          {
+            "x": -0.4426095485687256,
+            "y": -0.069979727268219,
+            "z": 1.2334741353988647
+          }
+        ],
+        "band_m": 0.07,
+        "loose": false,
+        "corrective_shape": "JointVolume.Elbow.R",
+        "corrective_angle_degrees": 135.0,
+        "weight_curve": "inverse_half_angle_cosine",
+        "validation": {
+          "angles_degrees": [
+            0,
+            45,
+            90,
+            135.0
+          ],
+          "section_area_ratios": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          "seam_tolerance_m": 2e-06
+        }
+      },
+      {
+        "id": "knee.R",
+        "bone": "shin.R",
+        "renderers": [
+          "GEO_Thigh.R",
+          "GEO_Shin.R"
+        ],
+        "vertices_a": [
+          72,
+          73,
+          74,
+          75,
+          76,
+          77,
+          78,
+          79,
+          80,
+          81,
+          82,
+          83
+        ],
+        "vertices_b": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11
+        ],
+        "bones": [
+          "thigh.R",
+          "shin.R"
+        ],
+        "points_blender": [
+          {
+            "x": -0.15806376934051514,
+            "y": -0.04570658504962921,
+            "z": 0.48586586117744446
+          },
+          {
+            "x": -0.17608731985092163,
+            "y": -0.0033328416757285595,
+            "z": 0.48667019605636597
+          },
+          {
+            "x": -0.17050796747207642,
+            "y": 0.0426134318113327,
+            "z": 0.48702698945999146
+          },
+          {
+            "x": -0.14282062649726868,
+            "y": 0.07982094585895538,
+            "z": 0.4868406653404236
+          },
+          {
+            "x": -0.10044418275356293,
+            "y": 0.09832000732421875,
+            "z": 0.48616111278533936
+          },
+          {
+            "x": -0.05473330616950989,
+            "y": 0.09315380454063416,
+            "z": 0.48517048358917236
+          },
+          {
+            "x": -0.017936227843165398,
+            "y": 0.06570657342672348,
+            "z": 0.48413416743278503
+          },
+          {
+            "x": 8.732160495128483e-05,
+            "y": 0.023332837969064713,
+            "z": 0.4833298325538635
+          },
+          {
+            "x": -0.005492039490491152,
+            "y": -0.022613437846302986,
+            "z": 0.48297303915023804
+          },
+          {
+            "x": -0.03317936137318611,
+            "y": -0.059820957481861115,
+            "z": 0.4831593632698059
+          },
+          {
+            "x": -0.07555581629276276,
+            "y": -0.07832001149654388,
+            "z": 0.48383891582489014
+          },
+          {
+            "x": -0.1212666928768158,
+            "y": -0.07315380126237869,
+            "z": 0.48482954502105713
+          }
+        ],
+        "band_m": 0.08,
+        "loose": false,
+        "corrective_shape": "JointVolume.Knee.R",
+        "corrective_angle_degrees": 135.0,
+        "weight_curve": "inverse_half_angle_cosine",
+        "validation": {
+          "angles_degrees": [
+            0,
+            45,
+            90,
+            135.0
+          ],
+          "section_area_ratios": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          "seam_tolerance_m": 2e-06
+        }
+      }
+    ],
+    "surfaces": [
+      {
+        "name": "GEO_UpperArm.L",
+        "bones": [
+          "chest",
+          "forearm.L",
+          "upper_arm.L"
+        ]
+      },
+      {
+        "name": "GEO_Forearm.L",
+        "bones": [
+          "forearm.L",
+          "upper_arm.L"
+        ]
+      },
+      {
+        "name": "GEO_Thigh.L",
+        "bones": [
+          "pelvis",
+          "shin.L",
+          "thigh.L"
+        ]
+      },
+      {
+        "name": "GEO_Shin.L",
+        "bones": [
+          "shin.L",
+          "thigh.L"
+        ]
+      },
+      {
+        "name": "GEO_Hand.L",
+        "bones": [
+          "forearm.L",
+          "hand.L"
+        ]
+      },
+      {
+        "name": "GEO_Foot.L",
+        "bones": [
+          "foot.L",
+          "shin.L"
+        ]
+      },
+      {
+        "name": "GEO_UpperArm.R",
+        "bones": [
+          "chest",
+          "forearm.R",
+          "upper_arm.R"
+        ]
+      },
+      {
+        "name": "GEO_Forearm.R",
+        "bones": [
+          "forearm.R",
+          "upper_arm.R"
+        ]
+      },
+      {
+        "name": "GEO_Thigh.R",
+        "bones": [
+          "pelvis",
+          "shin.R",
+          "thigh.R"
+        ]
+      },
+      {
+        "name": "GEO_Shin.R",
+        "bones": [
+          "shin.R",
+          "thigh.R"
+        ]
+      },
+      {
+        "name": "GEO_Hand.R",
+        "bones": [
+          "forearm.R",
+          "hand.R"
+        ]
+      },
+      {
+        "name": "GEO_Foot.R",
+        "bones": [
+          "foot.R",
+          "shin.R"
+        ]
+      },
+      {
+        "name": "GEO_NeckStub",
+        "bones": [
+          "chest",
+          "head",
+          "neck"
+        ]
+      }
+    ],
+    "attachments": [
+      {
+        "id": "shoulder.L",
+        "name": "GEO_UpperArm.L",
+        "bone": "upper_arm.L",
+        "parent_bone": "chest",
+        "band_m": 0.08,
+        "endpoint": "start"
+      },
+      {
+        "id": "hip.L",
+        "name": "GEO_Thigh.L",
+        "bone": "thigh.L",
+        "parent_bone": "pelvis",
+        "band_m": 0.09,
+        "endpoint": "start"
+      },
+      {
+        "id": "wrist.L",
+        "name": "GEO_Hand.L",
+        "bone": "hand.L",
+        "parent_bone": "forearm.L",
+        "band_m": 0.025,
+        "endpoint": "start"
+      },
+      {
+        "id": "ankle.L",
+        "name": "GEO_Foot.L",
+        "bone": "foot.L",
+        "parent_bone": "shin.L",
+        "band_m": 0.04,
+        "endpoint": "start"
+      },
+      {
+        "id": "shoulder.R",
+        "name": "GEO_UpperArm.R",
+        "bone": "upper_arm.R",
+        "parent_bone": "chest",
+        "band_m": 0.08,
+        "endpoint": "start"
+      },
+      {
+        "id": "hip.R",
+        "name": "GEO_Thigh.R",
+        "bone": "thigh.R",
+        "parent_bone": "pelvis",
+        "band_m": 0.09,
+        "endpoint": "start"
+      },
+      {
+        "id": "wrist.R",
+        "name": "GEO_Hand.R",
+        "bone": "hand.R",
+        "parent_bone": "forearm.R",
+        "band_m": 0.025,
+        "endpoint": "start"
+      },
+      {
+        "id": "ankle.R",
+        "name": "GEO_Foot.R",
+        "bone": "foot.R",
+        "parent_bone": "shin.R",
+        "band_m": 0.04,
+        "endpoint": "start"
+      },
+      {
+        "id": "neck.base",
+        "name": "GEO_NeckStub",
+        "bone": "neck",
+        "parent_bone": "chest",
+        "band_m": 0.035,
+        "endpoint": "start"
+      },
+      {
+        "id": "neck.head",
+        "name": "GEO_NeckStub",
+        "bone": "neck",
+        "parent_bone": "head",
+        "band_m": 0.03,
+        "endpoint": "end"
+      }
+    ]
+  },
   "blender_version": "5.0.1",
   "design_id": "bar_bartender_v2",
   "display_name": "Bar Bartender",
@@ -668,7 +1343,7 @@
   ],
   "locomotion_animation_asset": "Assets/Player3D/V2/Animations/PlayerCharacter3DV2Animations.fbx",
   "locomotion_clip": "Walk",
-  "build_signature": "7529ff98caa52e8a5d6a8745c9c3b2b306a025f5af7bbb34f10c1c1112d8417b",
+  "build_signature": "f8edd668a2ee00d65a8df35b4fcece3254527efccb359372c0f17f514b356d8c",
   "arm_design": "ordinary_two_armed_v2",
   "extra_arm_pairs": 0,
   "bones": [

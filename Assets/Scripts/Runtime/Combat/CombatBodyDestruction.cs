@@ -20,6 +20,7 @@ namespace BarPromenade
             internal bool Flesh, Bone, Eligible, Emitted, Debris, QueryOriginal;
             internal BoxCollider Proxy;
             internal ProxyGeometry ProxyGeometry;
+            internal ProxyPoseSnapshot ProxyPose;
             internal CentrePose CentrePose;
             internal CombatBodySourceDeformation Deformation;
             internal CombatTorsoDamageSurface Torso;
@@ -38,6 +39,7 @@ namespace BarPromenade
             internal int VolleyDepth;
             internal bool VolleyNeedsSynchronization;
             internal CombatImpact LastVolleyImpact;
+            internal ProxyPoseSnapshot ProxyPose;
             internal readonly List<Piece> Pieces = new List<Piece>();
             internal readonly List<Piece>[] Regions = new List<Piece>[CombatBodyDamageState.RegionCount];
             internal readonly Dictionary<SkinnedMeshRenderer, bool> Originals = new Dictionary<SkinnedMeshRenderer, bool>();
@@ -70,6 +72,9 @@ namespace BarPromenade
         private void Awake() => properties = new MaterialPropertyBlock();
         internal int ProxyGeometryBuilds { get; private set; }
         internal long ProxyGeometryTicks { get; private set; }
+        internal long ProxyTransformSamples { get; private set; }
+        internal int ProxyTransformCountFor(CombatActor actor) =>
+            bodies.TryGetValue(actor, out Body body) ? body.ProxyPose.Count : 0;
         internal int ActorSynchronizationCount { get; private set; }
         internal long ActorSynchronizationTicks { get; private set; }
         internal long HeadSynchronizationTicks { get; private set; }
@@ -174,7 +179,7 @@ namespace BarPromenade
             if (bodies.ContainsKey(actor)) return;
             GameObject model = Resources.Load<GameObject>("CombatGore/Body" + (actor.IsHero ? "Hero" : "Npc"));
             if (model == null) throw new InvalidOperationException("Missing authored combat body model.");
-            var body = new Body { Actor = actor };
+            var body = new Body { Actor = actor, ProxyPose = new ProxyPoseSnapshot(this) };
             var originals = new Dictionary<string, SkinnedMeshRenderer>(StringComparer.Ordinal);
             foreach (SkinnedMeshRenderer source in actor.DamageRigRoot.GetComponentsInChildren<SkinnedMeshRenderer>(true))
                 originals[source.name] = source;
@@ -205,7 +210,8 @@ namespace BarPromenade
                 skin.shadowCastingMode = ShadowCastingMode.On; skin.receiveShadows = true; skin.enabled = false;
                 bool visible = source.enabled && source.gameObject.activeInHierarchy;
                 var piece = new Piece { Skin = skin, Source = source, Region = (BodyDamageRegion)region,
-                    Patch = patch, Flesh = isFlesh, Bone = isBone, Eligible = isFlesh || isBone || visible };
+                    Patch = patch, Flesh = isFlesh, Bone = isBone, Eligible = isFlesh || isBone || visible,
+                    ProxyPose = body.ProxyPose };
                 if (!isFlesh && !isBone || (region is 7 or 10))
                     piece.Deformation = new CombatBodySourceDeformation(template.sharedMesh, source);
                 if (piece.Eligible && !isBone && CombatBodyDamageState.IsTorso(piece.Region))
@@ -420,6 +426,7 @@ namespace BarPromenade
             foreach (Piece piece in body.Pieces) if (piece.Eligible && !piece.Emitted) piece.RefreshSurface();
             SurfaceRefreshTicks += System.Diagnostics.Stopwatch.GetTimestamp() - stageStart;
             stageStart = System.Diagnostics.Stopwatch.GetTimestamp();
+            body.ProxyPose.BeginPass();
             // Keep each intact production surface as one draw. Only a source that
             // actually loses a patch needs its authored replacement surfaces.
             foreach (Piece piece in body.Pieces)
@@ -440,11 +447,12 @@ namespace BarPromenade
                 piece.Skin.enabled = attached && !piece.Emitted && visible && !piece.QueryOriginal;
                 if (piece.Released != null) piece.Released.enabled = piece.Debris ? piece.Eligible : visible;
                 bool collides = Collides(actor, piece);
-                if (collides && piece.Proxy == null) CreateProxy(body, piece);
+                bool created = collides && piece.Proxy == null;
+                if (created) CreateProxy(body, piece, !piece.Emitted);
                 if (piece.Proxy != null)
                 {
                     SetColliderEnabled(piece.Proxy, collides);
-                    if (collides && piece.Torso != null) UpdateProxyBounds(piece);
+                    if (!created && collides && piece.Torso != null) UpdateProxyBounds(piece, !piece.Emitted);
                 }
             }
             SurfaceVisibilityTicks += System.Diagnostics.Stopwatch.GetTimestamp() - stageStart;
@@ -457,7 +465,7 @@ namespace BarPromenade
             ContactCaptureTicks += System.Diagnostics.Stopwatch.GetTimestamp() - stageStart;
         }
 
-        private void CreateProxy(Body body, Piece piece)
+        private void CreateProxy(Body body, Piece piece, bool surfaceRefreshed = false)
         {
             if (piece.Proxy != null) return;
             if (!body.Bones.TryGetValue(piece.Region, out Transform target)) return;
@@ -465,7 +473,7 @@ namespace BarPromenade
             proxy.transform.SetParent(target, false);
             piece.Proxy = proxy.AddComponent<BoxCollider>(); piece.Proxy.enabled = false;
             body.Actor.Ragdoll.PhysicsController.RegisterCombatBodyCollider(piece.Proxy);
-            UpdateProxyBounds(piece);
+            UpdateProxyBounds(piece, surfaceRefreshed);
             foreach (var collider in body.Actor.Ragdoll.PhysicsController.AnatomicalColliders)
                 Physics.IgnoreCollision(piece.Proxy, collider.Key, true);
             if (body.Actor.Body != null) Physics.IgnoreCollision(piece.Proxy, body.Actor.Body, true);
@@ -478,16 +486,16 @@ namespace BarPromenade
             actor.BodyDamage.IsAttached(piece.Region) && (piece.Bone ? HasExposedPatch(actor, piece.Region) :
                 piece.Torso != null ? piece.Torso.HasGeometry : piece.Flesh && actor.BodyDamage.TissueLoss(piece.Region, piece.Patch) < 1f);
 
-        private void UpdateProxyBounds(Piece piece)
+        private void UpdateProxyBounds(Piece piece, bool surfaceRefreshed = false)
         {
             long start = System.Diagnostics.Stopwatch.GetTimestamp();
-            try { RefreshProxyBounds(piece); }
+            try { RefreshProxyBounds(piece, surfaceRefreshed); }
             finally { ProxyGeometryTicks += System.Diagnostics.Stopwatch.GetTimestamp() - start; }
         }
 
-        private void RefreshProxyBounds(Piece piece)
+        private void RefreshProxyBounds(Piece piece, bool surfaceRefreshed)
         {
-            piece.RefreshSurface();
+            if (!surfaceRefreshed) piece.RefreshSurface();
             piece.ProxyGeometry ??= new ProxyGeometry();
             Transform target = piece.Proxy.transform.parent;
             if (!piece.ProxyGeometry.Capture(piece, target, out Matrix4x4 matrix, out Vector3 minimum)) return;
@@ -511,6 +519,69 @@ namespace BarPromenade
         {
             if (!collider.center.Equals(centre)) collider.center = centre;
             if (!collider.size.Equals(size)) collider.size = size;
+        }
+
+        /// <summary>Exact local transforms shared by every proxy in one body validation pass.</summary>
+        internal sealed class ProxyPoseSnapshot
+        {
+            private readonly CombatBodyDestruction owner;
+            private readonly Dictionary<Transform, Node> nodes = new Dictionary<Transform, Node>();
+            private ulong pass;
+            internal int Count => nodes.Count;
+
+            internal ProxyPoseSnapshot(CombatBodyDestruction owner) => this.owner = owner;
+            internal void BeginPass() => pass++;
+
+            internal Node Register(Transform transform)
+            {
+                if (!nodes.TryGetValue(transform, out Node node))
+                { node = new Node(this, transform); nodes.Add(transform, node); }
+                return node;
+            }
+
+            internal sealed class Node
+            {
+                private readonly ProxyPoseSnapshot snapshot;
+                private readonly Transform transform;
+                private ulong capturedPass;
+                private bool captured, matrixReady;
+                private Matrix4x4 matrix;
+                internal Vector3 Position { get; private set; }
+                internal Quaternion Rotation { get; private set; }
+                internal Vector3 Scale { get; private set; }
+                internal ulong PoseVersion { get; private set; }
+                internal ulong ScaleVersion { get; private set; }
+                internal ulong RotationVersion { get; private set; }
+
+                internal Node(ProxyPoseSnapshot snapshot, Transform transform)
+                { this.snapshot = snapshot; this.transform = transform; }
+
+                internal void Capture()
+                {
+                    if (captured && capturedPass == snapshot.pass) return;
+                    transform.GetLocalPositionAndRotation(out Vector3 position, out Quaternion rotation);
+                    Vector3 scale = transform.localScale;
+                    snapshot.owner.ProxyTransformSamples++;
+                    bool scaleChanged = !captured || !Scale.Equals(scale);
+                    bool rotationChanged = !captured || !Rotation.Equals(rotation);
+                    if (!captured || !Position.Equals(position) || rotationChanged || scaleChanged)
+                    { PoseVersion++; matrixReady = false; }
+                    if (scaleChanged) ScaleVersion++;
+                    if (rotationChanged) RotationVersion++;
+                    Position = position; Rotation = rotation; Scale = scale;
+                    capturedPass = snapshot.pass; captured = true;
+                }
+
+                internal Matrix4x4 Matrix
+                {
+                    get
+                    {
+                        if (!matrixReady)
+                        { matrix = Matrix4x4.TRS(Position, Rotation, Scale); matrixReady = true; }
+                        return matrix;
+                    }
+                }
+            }
         }
 
         internal sealed class ProxyGeometry
@@ -547,13 +618,12 @@ namespace BarPromenade
                     relativeBones = new Matrix4x4[used.Count]; blendWeights = new float[current.blendShapeCount];
                     relativePoses = new RelativePose[used.Count];
                     for (int i = 0; i < influencedBones.Length; i++)
-                        relativePoses[i] = new RelativePose(bones[influencedBones[i]], target);
+                        relativePoses[i] = new RelativePose(bones[influencedBones[i]], target, piece.ProxyPose);
                     captured = false;
                 }
-                Matrix4x4 inverse = target.worldToLocalMatrix;
-                matrix = inverse * piece.Skin.transform.localToWorldMatrix;
-                targetScalePose ??= new ScalePose(target);
-                rendererScalePose ??= new ScalePose(piece.Skin.transform);
+                matrix = default;
+                targetScalePose ??= new ScalePose(target, piece.ProxyPose);
+                rendererScalePose ??= new ScalePose(piece.Skin.transform, piece.ProxyPose);
                 bool targetScaleChanged = targetScalePose.Capture(out Vector3 scale);
                 minimum = new Vector3(.003f / Mathf.Max(.000001f, Mathf.Abs(scale.x)),
                     .003f / Mathf.Max(.000001f, Mathf.Abs(scale.y)), .003f / Mathf.Max(.000001f, Mathf.Abs(scale.z)));
@@ -582,52 +652,76 @@ namespace BarPromenade
                 geometryVersion = currentVersion;
                 minimumSize = minimum; rendererScale = currentRendererScale; captured = true;
                 LastInvalidation = invalidation;
-                return invalidation != ProxyCacheInvalidation.None;
+                if (invalidation == ProxyCacheInvalidation.None) return false;
+                matrix = target.worldToLocalMatrix * piece.Skin.transform.localToWorldMatrix;
+                return true;
             }
 
             private sealed class ScalePose
             {
-                private readonly Transform[] path;
-                private readonly Vector3[] scales;
+                private readonly ProxyPoseSnapshot.Node[] path;
+                private readonly ulong[] scaleVersions, rotationVersions;
+                private Vector3 capturedScale;
+                private bool captured;
 
-                internal ScalePose(Transform target)
+                internal ScalePose(Transform target, ProxyPoseSnapshot snapshot)
                 {
                     var ancestors = new List<Transform>();
                     for (Transform current = target; current != null; current = current.parent) ancestors.Add(current);
-                    ancestors.Reverse(); path = ancestors.ToArray(); scales = new Vector3[path.Length];
+                    ancestors.Reverse(); path = new ProxyPoseSnapshot.Node[ancestors.Count];
+                    scaleVersions = new ulong[path.Length]; rotationVersions = new ulong[path.Length];
+                    for (int i = 0; i < path.Length; i++) path[i] = snapshot.Register(ancestors[i]);
                 }
 
                 internal bool Capture(out Vector3 scale)
                 {
-                    float uniform = 1f;
-                    Matrix4x4 matrix = Matrix4x4.identity;
-                    bool anisotropic = false, changed = false;
+                    bool changed = !captured, rotationChanged = false, anisotropic = false;
                     for (int i = 0; i < path.Length; i++)
                     {
-                        Vector3 local = path[i].localScale;
-                        changed |= !scales[i].Equals(local); scales[i] = local;
+                        ProxyPoseSnapshot.Node node = path[i]; node.Capture();
+                        changed |= scaleVersions[i] != node.ScaleVersion;
+                        if (anisotropic) rotationChanged |= rotationVersions[i] != node.RotationVersion;
+                        scaleVersions[i] = node.ScaleVersion; rotationVersions[i] = node.RotationVersion;
+                        Vector3 local = node.Scale;
+                        if (!anisotropic)
+                        {
+                            float x = Mathf.Abs(local.x), y = Mathf.Abs(local.y), z = Mathf.Abs(local.z);
+                            anisotropic = !x.Equals(y) || !x.Equals(z);
+                        }
+                    }
+                    if (captured && !changed && !rotationChanged) { scale = capturedScale; return false; }
+                    float uniform = 1f;
+                    Matrix4x4 matrix = Matrix4x4.identity;
+                    anisotropic = false;
+                    for (int i = 0; i < path.Length; i++)
+                    {
+                        Vector3 local = path[i].Scale;
                         if (!anisotropic)
                         {
                             float x = Mathf.Abs(local.x), y = Mathf.Abs(local.y), z = Mathf.Abs(local.z);
                             if (x.Equals(y) && x.Equals(z)) { uniform *= x; continue; }
                             anisotropic = true; matrix = Matrix4x4.Scale(local);
                         }
-                        else matrix *= Matrix4x4.TRS(Vector3.zero, path[i].localRotation, local);
+                        else matrix *= Matrix4x4.TRS(Vector3.zero, path[i].Rotation, local);
                     }
                     // Leading scaled orthogonal factors cannot alter column
                     // lengths. Drop them, including the first anisotropic node's
                     // rotation; keep every later rotation that can produce shear.
-                    scale = new Vector3(matrix.GetColumn(0).magnitude, matrix.GetColumn(1).magnitude,
+                    scale = capturedScale = new Vector3(matrix.GetColumn(0).magnitude, matrix.GetColumn(1).magnitude,
                         matrix.GetColumn(2).magnitude) * uniform;
+                    captured = true;
                     return changed;
                 }
             }
 
             private sealed class RelativePose
             {
-                private readonly Transform[] sourcePath, targetPath;
+                private readonly ProxyPoseSnapshot.Node[] sourcePath, targetPath;
+                private readonly ulong[] sourceVersions, targetVersions;
+                private bool captured;
+                private Matrix4x4 relative;
 
-                internal RelativePose(Transform source, Transform target)
+                internal RelativePose(Transform source, Transform target, ProxyPoseSnapshot snapshot)
                 {
                     var ancestors = new HashSet<Transform>();
                     for (Transform current = target; current != null; current = current.parent) ancestors.Add(current);
@@ -635,24 +729,41 @@ namespace BarPromenade
                     Transform common = source;
                     while (common != null && !ancestors.Contains(common))
                     { path.Add(common); common = common.parent; }
-                    sourcePath = path.ToArray(); path.Clear();
+                    sourcePath = new ProxyPoseSnapshot.Node[path.Count];
+                    for (int i = 0; i < path.Count; i++) sourcePath[i] = snapshot.Register(path[i]);
+                    sourceVersions = new ulong[sourcePath.Length]; path.Clear();
                     for (Transform current = target; current != common; current = current.parent) path.Add(current);
-                    targetPath = path.ToArray();
+                    targetPath = new ProxyPoseSnapshot.Node[path.Count];
+                    for (int i = 0; i < path.Count; i++) targetPath[i] = snapshot.Register(path[i]);
+                    targetVersions = new ulong[targetPath.Length];
                 }
 
                 internal Matrix4x4 Capture()
                 {
                     // Compose beneath the common ancestor. World-space matrix
                     // inversion would introduce false pose changes on root motion.
+                    bool changed = CapturePath(sourcePath, sourceVersions) | CapturePath(targetPath, targetVersions);
+                    if (captured && !changed) return relative;
                     Matrix4x4 source = Compose(sourcePath);
-                    return targetPath.Length == 0 ? source : Compose(targetPath).inverse * source;
+                    relative = targetPath.Length == 0 ? source : Compose(targetPath).inverse * source;
+                    captured = true; return relative;
                 }
 
-                private static Matrix4x4 Compose(Transform[] path)
+                private static bool CapturePath(ProxyPoseSnapshot.Node[] path, ulong[] versions)
+                {
+                    bool changed = false;
+                    for (int i = 0; i < path.Length; i++)
+                    {
+                        path[i].Capture(); changed |= versions[i] != path[i].PoseVersion;
+                        versions[i] = path[i].PoseVersion;
+                    }
+                    return changed;
+                }
+
+                private static Matrix4x4 Compose(ProxyPoseSnapshot.Node[] path)
                 {
                     Matrix4x4 result = Matrix4x4.identity;
-                    foreach (Transform current in path)
-                        result = Matrix4x4.TRS(current.localPosition, current.localRotation, current.localScale) * result;
+                    foreach (ProxyPoseSnapshot.Node current in path) result = current.Matrix * result;
                     return result;
                 }
             }
@@ -791,16 +902,25 @@ namespace BarPromenade
             if (seconds <= 0f || frozen) return;
             foreach (Body body in bodies.Values)
             {
-                if (body.Active) foreach (Piece piece in body.Pieces)
+                if (body.Active)
                 {
-                    if (piece.Skin.enabled) piece.RefreshSurface();
-                    bool collides = Collides(body.Actor, piece);
-                    if (collides && piece.Proxy == null) CreateProxy(body, piece);
-                    if (piece.Proxy != null)
+                    // Physics or a new contact may change a pose within one rendered
+                    // frame. Each validation pass samples shared transforms anew.
+                    body.ProxyPose.BeginPass();
+                    foreach (Piece piece in body.Pieces)
                     {
-                        SetColliderEnabled(piece.Proxy, collides);
-                        if (collides && (piece.Torso != null || (piece.Region is BodyDamageRegion.LeftHand or BodyDamageRegion.RightHand) &&
-                            piece.Skin.sharedMesh.blendShapeCount > 0)) UpdateProxyBounds(piece);
+                        bool surfaceRefreshed = piece.Skin.enabled;
+                        if (surfaceRefreshed) piece.RefreshSurface();
+                        bool collides = Collides(body.Actor, piece);
+                        bool created = collides && piece.Proxy == null;
+                        if (created) CreateProxy(body, piece, surfaceRefreshed);
+                        if (piece.Proxy != null)
+                        {
+                            SetColliderEnabled(piece.Proxy, collides);
+                            if (!created && collides && (piece.Torso != null ||
+                                (piece.Region is BodyDamageRegion.LeftHand or BodyDamageRegion.RightHand) &&
+                                piece.Skin.sharedMesh.blendShapeCount > 0)) UpdateProxyBounds(piece, surfaceRefreshed);
+                        }
                     }
                 }
                 foreach (Fragment fragment in body.Fragments)

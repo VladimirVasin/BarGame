@@ -774,9 +774,10 @@ namespace BarPromenade.Tests.EditMode
                 prefab.GetComponentsInChildren<MonoBehaviour>(true)
                     .All(behaviour =>
                         behaviour is CityPedestrianAssetRegistry ||
-                        behaviour is CityWheelchairNpcAssetRegistry),
+                        behaviour is CityWheelchairNpcAssetRegistry ||
+                        behaviour is CharacterJointDeformation),
                 Is.True,
-                "The staged prefab may carry passive asset registries only.");
+                "The staged prefab may carry passive asset registries and joint presentation only.");
 
             LocomotionManifest locomotionManifest =
                 JsonUtility.FromJson<LocomotionManifest>(

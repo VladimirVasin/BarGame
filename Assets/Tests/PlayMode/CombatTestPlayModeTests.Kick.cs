@@ -358,6 +358,9 @@ namespace BarPromenade.Tests.PlayMode
             var soleVertices = new System.Collections.Generic.List<Vector3>();
             var closePoses = new KickDistancePose[2];
             var farPoses = new KickDistancePose[2];
+            var airborneAnkleFlex = new bool[2];
+            PlayerBootDeformation footwear = ((Player3DCharacterPresentation)root.Player.Visual).Registry.GetComponent<PlayerBootDeformation>();
+            Assert.That(footwear, Is.Not.Null, "The production boot owns its ankle and forefoot flex.");
             string path = Path.GetFullPath("TestResults/kick-surface-geometry.csv");
             try
             {
@@ -389,20 +392,47 @@ namespace BarPromenade.Tests.PlayMode
                     float midpointChestTwist = float.NaN;
                     float maximumBeyondSphere = float.NegativeInfinity, maximumMissPenetration = 0f, maximumStrikingPenetration = 0f;
                     SkinnedMeshRenderer boot = null, sole = null;
+                    string bootSide = striking == 0 ? "L" : "R";
                     foreach (SkinnedMeshRenderer skin in ((Player3DCharacterPresentation)root.Player.Visual).Registry.ModelRoot.GetComponentsInChildren<SkinnedMeshRenderer>(true))
-                        if (skin.name.EndsWith("Boot." + (striking == 0 ? "L" : "R"), System.StringComparison.Ordinal))
+                    {
+                        if (skin.name == "CLO_Boot." + bootSide)
+                        {
+                            Assert.That(boot, Is.Null, "The independently baked production upper must be unique.");
                             boot = skin;
-                        else if (skin.name.EndsWith("BootSole." + (striking == 0 ? "L" : "R"), System.StringComparison.Ordinal))
+                        }
+                        else if (skin.name == "CLO_BootSole." + bootSide)
+                        {
+                            Assert.That(sole, Is.Null, "The independently baked production sole must be unique.");
                             sole = skin;
+                        }
+                    }
                     Assert.That(boot, Is.Not.Null, "The independent binding check uses the rendered production boot.");
                     Assert.That(sole, Is.Not.Null, "The sole mesh defines the striking surface without including the ankle cuff or shin.");
                     int[] triangles = boot.sharedMesh.triangles;
                     Vector3[] bootBindVertices = boot.sharedMesh.vertices;
                     int footIndex = System.Array.IndexOf(boot.bones, FindKickBone(striking == 0 ? "foot.L" : "foot.R"));
+                    int shinIndex = System.Array.IndexOf(boot.bones, FindKickBone(striking == 0 ? "shin.L" : "shin.R"));
+                    Assert.That(footIndex, Is.GreaterThanOrEqualTo(0));
+                    Assert.That(shinIndex, Is.GreaterThanOrEqualTo(0));
                     Vector3 bindAnkle = boot.transform.TransformPoint(boot.sharedMesh.bindposes[footIndex].inverse.GetColumn(3));
                     var forefoot = new bool[bootBindVertices.Length];
+                    BoneWeight[] bootWeights = boot.sharedMesh.boneWeights;
+                    bool mixedForefoot = false;
                     for (int i = 0; i < forefoot.Length; i++)
-                        forefoot[i] = Vector3.Dot(boot.transform.TransformPoint(bootBindVertices[i]) - bindAnkle, root.Hero.transform.forward) > 0f;
+                    {
+                        float totalWeight = bootWeights[i].weight0 + bootWeights[i].weight1 + bootWeights[i].weight2 + bootWeights[i].weight3;
+                        Assert.That(totalWeight, Is.GreaterThan(0f));
+                        float footWeight = KickBoneWeight(bootWeights[i], footIndex) / totalWeight;
+                        forefoot[i] = footWeight >= .5f &&
+                            Vector3.Dot(boot.transform.TransformPoint(bootBindVertices[i]) - bindAnkle, root.Hero.transform.forward) > 0f;
+                        mixedForefoot |= forefoot[i] && footWeight < .99999f && KickBoneWeight(bootWeights[i], shinIndex) > .00001f;
+                    }
+                    Assert.That(mixedForefoot, Is.True,
+                        "The binding regression must exercise leather that blends the owning foot and shin, while excluding the shaft.");
+                    PlayerBootDeformation.FootBinding strikingBoot = null;
+                    foreach (PlayerBootDeformation.FootBinding binding in footwear.Bindings)
+                        if (binding.Side == (striking == 0 ? FootSide.Left : FootSide.Right)) strikingBoot = binding;
+                    Assert.That(strikingBoot, Is.Not.Null);
                     for (int tick = 0; tick < 100 && root.Hero.State.KickElapsed <= S.KickWindupSeconds + S.KickActiveSeconds + .009f; tick++)
                     {
                         if (attacking && !requestedAttack && root.Hero.State.KickElapsed >= .025f)
@@ -455,13 +485,51 @@ namespace BarPromenade.Tests.PlayMode
                         for (int i = 0; i < vertices.Count; i++) if (forefoot[i]) strikingVertices.Add(vertices[i]);
                         sole.BakeMesh(mesh, true); soleVertices.Clear(); mesh.GetVertices(soleVertices);
                         foreach (Vector3 vertex in soleVertices) strikingVertices.Add(sole.transform.TransformPoint(vertex));
+                        float soleMinimum = float.PositiveInfinity;
+                        foreach (Vector3 vertex in soleVertices) soleMinimum = Mathf.Min(soleMinimum, sole.transform.TransformPoint(vertex).y);
+                        if (finalPoseAtSample && soleMinimum > root.Hero.transform.position.y + .05f)
+                        {
+                            foreach (PlayerBootDeformation.ShapeBinding shape in strikingBoot.Shapes)
+                            {
+                                Assert.That(shape.Renderer.GetBlendShapeWeight(shape.Toe15), Is.Zero,
+                                    "An airborne striking foot must release supported forefoot roll in the completed contact pose.");
+                                Assert.That(shape.Renderer.GetBlendShapeWeight(shape.Toe30), Is.Zero);
+                                Assert.That(shape.Renderer.GetBlendShapeWeight(shape.Toe45), Is.Zero);
+                                airborneAnkleFlex[striking] |= shape.Dorsiflex >= 0 && shape.Renderer.GetBlendShapeWeight(shape.Dorsiflex) > .01f ||
+                                    shape.Plantarflex >= 0 && shape.Renderer.GetBlendShapeWeight(shape.Plantarflex) > .01f;
+                            }
+                        }
                         for (int i = 0; i < presentedSurface.Length; i++)
                         {
                             presentedSurface[i] = root.Hero.KickSurfacePosition(i);
                             float binding = float.PositiveInfinity;
                             foreach (Vector3 vertex in strikingVertices)
                                 binding = Mathf.Min(binding, Vector3.Distance(vertex, presentedSurface[i]));
-                            Assert.That(binding, Is.LessThan(.0005f), "A cached witness must belong to the independently skinned sole/toe, never the cuff or shin.");
+                            string diagnostic = null;
+                            if (binding >= .0005f)
+                            {
+                                float allBootDistance = float.PositiveInfinity;
+                                int allBootIndex = -1;
+                                for (int vertex = 0; vertex < vertices.Count; vertex++)
+                                {
+                                    float candidate = Vector3.Distance(vertices[vertex], presentedSurface[i]);
+                                    if (candidate >= allBootDistance) continue;
+                                    allBootDistance = candidate; allBootIndex = vertex;
+                                }
+                                float soleDistance = float.PositiveInfinity;
+                                foreach (Vector3 vertex in soleVertices)
+                                    soleDistance = Mathf.Min(soleDistance, Vector3.Distance(sole.transform.TransformPoint(vertex), presentedSurface[i]));
+                                BoneWeight nearestWeight = bootWeights[allBootIndex];
+                                float nearestTotal = nearestWeight.weight0 + nearestWeight.weight1 + nearestWeight.weight2 + nearestWeight.weight3;
+                                float nearestFoot = KickBoneWeight(nearestWeight, footIndex);
+                                float nearestForward = Vector3.Dot(boot.transform.TransformPoint(bootBindVertices[allBootIndex]) - bindAnkle, root.Hero.transform.forward);
+                                diagnostic = $" Side={striking}, witness={i}, point={presentedSurface[i]:F6}, nearest strike={binding:F6}m, " +
+                                    $"nearest all boot={allBootDistance:F6}m at vertex={allBootIndex}, nearest sole={soleDistance:F6}m, " +
+                                    $"nearest boot selected={forefoot[allBootIndex]}, foot raw/normalized={nearestFoot:F9}/{nearestFoot / nearestTotal:F9}, " +
+                                    $"weight total={nearestTotal:F9}, shin={KickBoneWeight(nearestWeight, shinIndex):F9}, bind forward={nearestForward:F6}m.";
+                            }
+                            Assert.That(binding, Is.LessThan(.0005f),
+                                "A cached witness must belong to the independently skinned sole/toe, never the cuff or shin." + diagnostic);
                         }
                         if (sample.SurfaceWitness >= 0 && finalPoseAtSample)
                             Assert.That(Vector3.Distance(sample.SurfaceTo, presentedSurface[sample.SurfaceWitness]), Is.LessThan(.0005f),
@@ -571,6 +639,8 @@ namespace BarPromenade.Tests.PlayMode
                 for (int striking = 0; striking < 2; striking++)
                 {
                     string side = striking == 0 ? "left" : "right";
+                    Assert.That(airborneAnkleFlex[striking], Is.True,
+                        side + ": an independently baked kick must exercise an active ankle corrective on its airborne striking boot.");
                     Assert.That(farPoses[striking].PelvisForward, Is.GreaterThan(closePoses[striking].PelvisForward + .005f),
                         side + ": the distant kick sends its pelvis farther forward.");
                     Assert.That(farPoses[striking].BootForward, Is.GreaterThan(closePoses[striking].BootForward + .01f),
@@ -592,6 +662,14 @@ namespace BarPromenade.Tests.PlayMode
                 Object.Destroy(mesh);
                 TestContext.Out.WriteLine(path);
             }
+        }
+
+        private static float KickBoneWeight(BoneWeight weight, int boneIndex)
+        {
+            return (weight.boneIndex0 == boneIndex ? weight.weight0 : 0f) +
+                (weight.boneIndex1 == boneIndex ? weight.weight1 : 0f) +
+                (weight.boneIndex2 == boneIndex ? weight.weight2 : 0f) +
+                (weight.boneIndex3 == boneIndex ? weight.weight3 : 0f);
         }
 
         private readonly struct KickDistancePose

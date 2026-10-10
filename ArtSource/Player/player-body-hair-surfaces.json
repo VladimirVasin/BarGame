@@ -5,7 +5,7 @@
   "surface_bindings_sha256": "50f846302e22959bc5bf02a1b5496c8be63e54c7cf91e8a2907d552d186216bb",
   "source_albedos_sha256": {
     "Assets/Player3D/V2/Textures/PlayerFaceAtlas.png": "308ae66a0a2f01bb8705ce3dcd66e25e393b4a4c041b27ecaaaa6f6484f15bc0",
-    "Assets/Player3D/V2/Textures/PlayerClothingAtlas.png": "57a15642260b1fcd34e639976a9a0303e7d5faff1b0c071b883c586e7cba2c6a",
+    "Assets/Player3D/V2/Textures/PlayerClothingAtlas.png": "d415529dcbc704e7f8d40d625a7f6f1dd057dab5a64532e78c0af490c68f7030",
     "Assets/Resources/Player/PlayerBareSkinAtlas.png": "496ddd211220f109fd5a1051d86792965d64645764dfc3f7b781e9afe6eb579c"
   },
   "uv_channel": 0,

@@ -10,6 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 3593057238667221368}
   - component: {fileID: 8593038788449419731}
+  - component: {fileID: 2824437406544143259}
   m_Layer: 0
   m_Name: ParkChessPlayer3D
   m_TagString: Untagged
@@ -592,12 +593,12 @@ MonoBehaviour:
   personalSpaceGuardClip: {fileID: -2438489974477303547, guid: 1409e5d6bde7d42489da0f5a0a10c6bc, type: 3}
   personalSpaceShoveClip: {fileID: -8243347884327083129, guid: 1409e5d6bde7d42489da0f5a0a10c6bc, type: 3}
   localBounds:
-    m_Center: {x: -0.0010001659, y: 0.8749999, z: 0.03459625}
-    m_Extent: {x: 0.7883722, y: 0.8749999, z: 0.19649354}
+    m_Center: {x: -0.0010000467, y: 0.875, z: 0.041746706}
+    m_Extent: {x: 0.7883723, y: 0.875, z: 0.22605991}
   sourceTriangleCount: 2248
   sourceGeneratorVersion: 4.5.2
   designId: park_chess_player_v1
-  buildSignature: 11df35e48aa74071ed3c7cfedba108434b0656967e02328c0b5109c7e37129d4
+  buildSignature: 44f2018a7b820103d22b7e31681698a7fff7cc62e95b302e067a9f8199abaefd
   paletteVariant: 0
   headLamp: {fileID: 0}
   preservesAirborneMotion: 0
@@ -608,6 +609,59 @@ MonoBehaviour:
     columns: 0
     rows: 0
     cells: []
+--- !u!114 &2824437406544143259
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5351877950848271160}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b2be743ae8414fe69b45824c1d81d423, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: BarPromenade.Runtime::BarPromenade.CharacterJointDeformation
+  bindings:
+  - Renderer: {fileID: 2362774616620955632}
+    Bone: {fileID: 1786511992559194270}
+    RestRotation: {x: -0.020317057, y: -0.015963241, z: -0.015225763, w: 0.9995502}
+    LongitudinalAxis: {x: 0.000000011935024, y: 1, z: -0.00000052514105}
+    Shape: 0
+  - Renderer: {fileID: 7218048537846274630}
+    Bone: {fileID: 2850341810345363948}
+    RestRotation: {x: 0.012595064, y: 0.014988454, z: 0.0154044945, w: 0.9996897}
+    LongitudinalAxis: {x: 0.0000000023873787, y: 1, z: 0.000000035810682}
+    Shape: 0
+  - Renderer: {fileID: 4217829402507854183}
+    Bone: {fileID: 957013542180620833}
+    RestRotation: {x: 0.017877687, y: 0.02233826, z: 0.01239254, w: 0.9995138}
+    LongitudinalAxis: {x: -0.0000005274604, y: 1, z: -0.00000040498506}
+    Shape: 0
+  - Renderer: {fileID: 3055669529673173497}
+    Bone: {fileID: 333177122940050689}
+    RestRotation: {x: 0.0129169, y: -0.022518253, z: -0.019055707, w: 0.9994814}
+    LongitudinalAxis: {x: 0.00000017309854, y: 1, z: -0.00000032496803}
+    Shape: 0
+  - Renderer: {fileID: 5873934112361463274}
+    Bone: {fileID: 957013542180620833}
+    RestRotation: {x: 0.017877687, y: 0.02233826, z: 0.01239254, w: 0.9995138}
+    LongitudinalAxis: {x: -0.0000005274604, y: 1, z: -0.00000040498506}
+    Shape: 0
+  - Renderer: {fileID: 4025186067841426875}
+    Bone: {fileID: 333177122940050689}
+    RestRotation: {x: 0.0129169, y: -0.022518253, z: -0.019055707, w: 0.9994814}
+    LongitudinalAxis: {x: 0.00000017309854, y: 1, z: -0.00000032496803}
+    Shape: 0
+  - Renderer: {fileID: 6244683251535358076}
+    Bone: {fileID: 1786511992559194270}
+    RestRotation: {x: -0.020317057, y: -0.015963241, z: -0.015225763, w: 0.9995502}
+    LongitudinalAxis: {x: 0.000000011935024, y: 1, z: -0.00000052514105}
+    Shape: 0
+  - Renderer: {fileID: 3373076665539008165}
+    Bone: {fileID: 2850341810345363948}
+    RestRotation: {x: 0.012595064, y: 0.014988454, z: 0.0154044945, w: 0.9996897}
+    LongitudinalAxis: {x: 0.0000000023873787, y: 1, z: 0.000000035810682}
+    Shape: 0
 --- !u!1001 &3085181668359576002
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1102,6 +1156,11 @@ SkinnedMeshRenderer:
   m_CorrespondingSourceObject: {fileID: 2966883130650730889, guid: 0bb3717a1fde8e8408580e6d7c6cb8ae, type: 3}
   m_PrefabInstance: {fileID: 3085181668359576002}
   m_PrefabAsset: {fileID: 0}
+--- !u!4 &333177122940050689 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -5886368873632086845, guid: 0bb3717a1fde8e8408580e6d7c6cb8ae, type: 3}
+  m_PrefabInstance: {fileID: 3085181668359576002}
+  m_PrefabAsset: {fileID: 0}
 --- !u!137 &390088525060447572 stripped
 SkinnedMeshRenderer:
   m_CorrespondingSourceObject: {fileID: -5784562473714482026, guid: 0bb3717a1fde8e8408580e6d7c6cb8ae, type: 3}
@@ -1127,6 +1186,11 @@ SkinnedMeshRenderer:
   m_CorrespondingSourceObject: {fileID: 2874768829983136458, guid: 0bb3717a1fde8e8408580e6d7c6cb8ae, type: 3}
   m_PrefabInstance: {fileID: 3085181668359576002}
   m_PrefabAsset: {fileID: 0}
+--- !u!4 &957013542180620833 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 2852813616820032483, guid: 0bb3717a1fde8e8408580e6d7c6cb8ae, type: 3}
+  m_PrefabInstance: {fileID: 3085181668359576002}
+  m_PrefabAsset: {fileID: 0}
 --- !u!137 &1061020469109568324 stripped
 SkinnedMeshRenderer:
   m_CorrespondingSourceObject: {fileID: 2623703159510346374, guid: 0bb3717a1fde8e8408580e6d7c6cb8ae, type: 3}
@@ -1145,6 +1209,11 @@ SkinnedMeshRenderer:
 --- !u!4 &1604880766841958894 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 4365512976932153388, guid: 0bb3717a1fde8e8408580e6d7c6cb8ae, type: 3}
+  m_PrefabInstance: {fileID: 3085181668359576002}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &1786511992559194270 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 3610254473159100764, guid: 0bb3717a1fde8e8408580e6d7c6cb8ae, type: 3}
   m_PrefabInstance: {fileID: 3085181668359576002}
   m_PrefabAsset: {fileID: 0}
 --- !u!137 &1818230930316247683 stripped
@@ -1194,6 +1263,11 @@ Animator:
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorStateOnDisable: 0
   m_WriteDefaultValuesOnDisable: 0
+--- !u!4 &2850341810345363948 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 963408202774007854, guid: 0bb3717a1fde8e8408580e6d7c6cb8ae, type: 3}
+  m_PrefabInstance: {fileID: 3085181668359576002}
+  m_PrefabAsset: {fileID: 0}
 --- !u!4 &2947059390394904206 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -9063834517216086196, guid: 0bb3717a1fde8e8408580e6d7c6cb8ae, type: 3}

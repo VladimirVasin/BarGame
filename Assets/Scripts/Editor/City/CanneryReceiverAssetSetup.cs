@@ -90,6 +90,7 @@ namespace BarPromenade.Editor
                     AssetDatabase.LoadAssetAtPath<Texture2D>(Folder + "CanneryReceiverAtlas.png"), Own("Break"), Own("Listen"));
                 root.AddComponent<CanneryReceiverPresentation>().Configure(motion, face, Find("ANCHOR_Glasses"));
                 ValidateBody(root, manifest);
+                CharacterJointDeformation.Configure(root);
                 PrefabUtility.SaveAsPrefabAsset(root, PrefabPath);
                 AssetDatabase.SaveAssets();
             }
@@ -146,7 +147,10 @@ namespace BarPromenade.Editor
             importer.importAnimation = animation; importer.globalScale = 1f; importer.useFileScale = true;
             importer.bakeAxisConversion = true; importer.preserveHierarchy = true; importer.optimizeGameObjects = false;
             importer.isReadable = true; importer.importCameras = false; importer.importLights = false;
-            importer.addCollider = false; importer.importBlendShapes = false;
+            importer.addCollider = false; importer.importBlendShapes = !animation;
+            importer.skinWeights = ModelImporterSkinWeights.Custom;
+            importer.maxBonesPerVertex = 4;
+            importer.minBoneWeight = 0f;
             importer.materialImportMode = ModelImporterMaterialImportMode.None;
             importer.animationCompression = ModelImporterAnimationCompression.Off;
             importer.meshCompression = ModelImporterMeshCompression.Off;

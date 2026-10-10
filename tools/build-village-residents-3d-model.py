@@ -261,6 +261,7 @@ class ResidentBuilder(base.PedestrianBuilder):
                 part.obj.color = base.PALETTE["v_glove"]
                 part.color = base.PALETTE["v_glove"]
             self.uv(part)
+        base.npc_joint_surfaces.apply(self.result)
         return self.result
 
     def uv(self, part):
@@ -713,12 +714,13 @@ def build_phase_two(args,assets,sources):
             preview(result,sources/(role+".png"),assets/(role+"Atlas.png"))
             print("Rendered "+role,flush=True)
         return
-    protected=[assets/(name+suffix) for name in ROLE_NAMES for suffix in (".fbx",".json","Atlas.png")]
-    protected += [assets/("VillageResidentActions"+suffix) for suffix in (".fbx",".json")]
+    published=ROOT/"Assets/Resources/VillageLife"
+    protected=[published/(name+suffix) for name in ROLE_NAMES for suffix in (".fbx",".json","Atlas.png")]
+    protected += [published/("VillageResidentActions"+suffix) for suffix in (".fbx",".json")]
     if args.body_only_role:
-        protected += [assets/(role+suffix) for role in LIFE_ROLES if role!=args.body_only_role
+        protected += [published/(role+suffix) for role in LIFE_ROLES if role!=args.body_only_role
                       for suffix in (".fbx",".json","Atlas.png")]
-        protected += [assets/("VillageResidentLifeActions"+suffix) for suffix in (".fbx",".json")]
+        protected += [published/("VillageResidentLifeActions"+suffix) for suffix in (".fbx",".json")]
     before={p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in protected}
     for role in LIFE_ROLES:
         if args.body_only_role and args.body_only_role!=role:continue
@@ -726,6 +728,7 @@ def build_phase_two(args,assets,sources):
         result=LifeResidentBuilder(role).build();metrics=measured(result)
         if metrics["triangle_count"]<2384 or metrics["mesh_count"]<34:raise RuntimeError(f"{role} below hero detail: {metrics}")
         manifest={"generator":Path(__file__).name,"version":"2.0.0","role":role,"anatomy_standard":"NpcHumanV2",
+            "joint_surfaces":base.npc_joint_surfaces.joints.manifest(result),
             "height_scale":LIFE_HEIGHTS[role]/1.75,**metrics,"atlas_sha256":texture_hash,"geometry_signature":geometry_signature(result),
             "parts":[{"name":p.obj.name,"color":list(p.color)} for p in result.parts]}
         path=assets/(role+".json")
@@ -742,7 +745,7 @@ def build_phase_two(args,assets,sources):
                         if obj.type in ("CAMERA","LIGHT"):bpy.data.objects.remove(obj,do_unlink=True)
                     preview(result,sources/(role+suffix+".png"),texture,location,(0,-.01,1.41),.69,turn)
         print(role,json.dumps(metrics),flush=True)
-    if args.body_only_role:
+    if args.body_only_role or args.models_only:
         if before!={p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in protected}:raise RuntimeError("Unselected resident asset changed")
         print("Protected all other bodies and both action banks; selected body passed.",flush=True)
         return
@@ -775,6 +778,8 @@ def build_phase_two(args,assets,sources):
 
 
 def measured(result):
+    errors=[];base.npc_joint_surfaces.joints.validate(result,errors)
+    if errors:raise RuntimeError("Village joint surface check failed: "+"; ".join(errors))
     bpy.context.view_layer.update()
     verts=[p.obj.matrix_world @ v.co for p in result.parts for v in p.obj.data.vertices]
     triangles=0; deps=bpy.context.evaluated_depsgraph_get()
@@ -792,7 +797,9 @@ def geometry_signature(result):
         payload.append((part.obj.name,part.bone,list(part.color),
             [[round(c,7) for c in v.co] for v in part.obj.data.vertices],
             [list(p.vertices) for p in part.obj.data.polygons],
-            [[[g.group,round(g.weight,7)] for g in v.groups] for v in part.obj.data.vertices]))
+            [[[g.group,round(g.weight,7)] for g in v.groups] for v in part.obj.data.vertices],
+            [(key.name,[[round(c,7) for c in point.co] for point in key.data])
+             for key in part.obj.data.shape_keys.key_blocks] if part.obj.data.shape_keys else []))
     return hashlib.sha256(json.dumps(payload,separators=(",",":")).encode()).hexdigest()
 
 
@@ -863,6 +870,9 @@ def preview(result,path,atlas_path,camera_location=None,focus=None,ortho_size=No
 def main():
     parser=argparse.ArgumentParser(); parser.add_argument("--no-preview",action="store_true")
     parser.add_argument("--validate-only",action="store_true")
+    parser.add_argument("--models-only",action="store_true")
+    parser.add_argument("--model-dir",type=Path,default=ROOT/"Assets/Resources/VillageLife")
+    parser.add_argument("--source-dir",type=Path,default=ROOT/"ArtSource/VillageLife")
     parser.add_argument("--preview-role",choices=ROLE_NAMES+LIFE_ROLES)
     parser.add_argument("--phase-two",action="store_true")
     parser.add_argument("--preview-only",action="store_true")
@@ -871,7 +881,7 @@ def main():
     parser.add_argument("--workroom",action="store_true")
     parser.add_argument("--workroom-probe",action="store_true")
     args=parser.parse_args(sys.argv[sys.argv.index("--")+1:] if "--" in sys.argv else [])
-    assets=ROOT/"Assets/Resources/VillageLife"; sources=ROOT/"ArtSource/VillageLife"
+    assets=args.model_dir.resolve(); sources=args.source_dir.resolve()
     assets.mkdir(parents=True,exist_ok=True); sources.mkdir(parents=True,exist_ok=True)
     if args.workroom:
         module_spec=importlib.util.spec_from_file_location("village_workroom_actions",Path(__file__).with_name("build-village-workroom-actions-3d-model.py"))
@@ -894,6 +904,7 @@ def main():
         if len(result.rig.data.bones)!=31:
             raise RuntimeError("Village body must retain NpcHumanV2")
         payload={"generator":Path(__file__).name,"version":VERSION,"role":name,"anatomy_standard":"NpcHumanV2",
+                 "joint_surfaces":base.npc_joint_surfaces.joints.manifest(result),
                  "height_scale":1.78/1.75 if index==0 else WOMAN_SCALE,**metrics,"atlas_sha256":texture_hash,
                  "parts":[{"name":p.obj.name,"color":list(p.color)} for p in result.parts]}
         payload["geometry_signature"]=geometry_signature(result)
@@ -908,6 +919,7 @@ def main():
                 preview(result,sources/(name+".png"),texture)
             bpy.ops.wm.save_as_mainfile(filepath=str(sources/(name+".blend")))
         print(name,json.dumps(metrics),flush=True)
+    if args.models_only:return
     clips=make_actions(result)
     validation=validate_actions(result)
     manifest={"generator":Path(__file__).name,"version":VERSION,"bone_count":31,"fps":24,"clips":clips,

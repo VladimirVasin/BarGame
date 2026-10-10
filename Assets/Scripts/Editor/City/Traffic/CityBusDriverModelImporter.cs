@@ -43,7 +43,10 @@ namespace BarPromenade.Editor
             importer.importCameras = false;
             importer.importLights = false;
             importer.addCollider = false;
-            importer.importBlendShapes = false;
+            importer.importBlendShapes = true;
+            importer.skinWeights = ModelImporterSkinWeights.Custom;
+            importer.maxBonesPerVertex = 4;
+            importer.minBoneWeight = 0f;
             importer.importNormals = ModelImporterNormals.Import;
             importer.importTangents = ModelImporterTangents.None;
             importer.meshCompression = ModelImporterMeshCompression.Off;

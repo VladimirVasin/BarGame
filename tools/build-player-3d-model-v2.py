@@ -327,6 +327,8 @@ def parse_args() -> tuple[common.BuildConfig, Path, Path, Path, Path, Path, Path
                         help="Refresh hand contact shapes in the verified production source without rebuilding actions.")
     parser.add_argument("--surfaces-only", action="store_true",
                         help="Author skin/hair UVs in the verified production source without changing geometry or actions.")
+    parser.add_argument("--joint-surfaces-only", action="store_true",
+                        help="Reconstruct joint geometry and retain the verified production action bank verbatim.")
     parser.add_argument("--preview-only", action="store_true",
                         help="Validate geometry and render Relaxed studies into a review folder without publishing production assets.")
     parser.add_argument(
@@ -424,6 +426,7 @@ def parse_args() -> tuple[common.BuildConfig, Path, Path, Path, Path, Path, Path
         args.preview_only,
         args.hand_grip_only,
         args.surfaces_only,
+        args.joint_surfaces_only,
     )
 
 
@@ -1800,12 +1803,14 @@ class HeroV2Builder(common.ProductionPlayerBuilderBase):
             clothed_upper_start = shoulder.lerp(elbow, 0.12)
             self.add_part(
                 f"GEO_UpperArm.{side}",
-                common.make_frustum_between(clothed_upper_start, elbow, self.d(0.047), self.d(0.043), 8, 0.86),
+                make_profiled_segment_geometry(clothed_upper_start, elbow,
+                    tuple((t,self.d(.047+(.043-.047)*t),.86) for t in (0.,.15,.75,.90,1.)),10),
                 "SkinShadow", "core", f"upper_arm.{side}", upper_sprite, "body_part", anatomical,
             )
             self.add_part(
                 f"GEO_Forearm.{side}",
-                common.make_frustum_between(elbow, wrist, self.d(0.048), self.d(0.034), 8, 0.86),
+                make_profiled_segment_geometry(elbow, wrist,
+                    tuple((t,self.d(.048+(.034-.048)*t),.86) for t in (0.,.15,.75,.90,1.)),10),
                 "Skin", "core", f"forearm.{side}", lower_sprite, "body_part", anatomical,
             )
             hand_axis = hand_tail - wrist
@@ -1835,12 +1840,23 @@ class HeroV2Builder(common.ProductionPlayerBuilderBase):
                         (0.0, self.d(0.083), 0.87),
                         (0.22, self.d(0.089), 0.89),
                         (0.68, self.d(0.070), 0.86),
+                        (0.90, self.d(0.0610625), 0.845),
                         (1.0, self.d(0.057), 0.84),
                     ),
                 ),
                 "JeansAtlas", "core", f"thigh.{side}", upper_leg_sprite, "body_part", anatomical,
             )
-            assign_ring_strip_uv(thigh, f"JeansThigh{anatomical}", 8, 4)
+            assign_ring_strip_uv(thigh, f"JeansThigh{anatomical}", 8, 5)
+            # The extra knee transition station interpolates the old UV strip;
+            # established anatomical texels keep their original longitudinal V.
+            u0,v0,u1,v1=uv_region_normalized(f"JeansThigh{anatomical}")
+            strip_v=(0.,1/3,2/3,43/48,1.)
+            for polygon in thigh.data.polygons:
+                if len(polygon.vertices)>=8:
+                    continue
+                for loop in polygon.loop_indices:
+                    ring=thigh.data.loops[loop].vertex_index//8
+                    thigh.data.uv_layers.active.data[loop].uv.y=v0+(v1-v0)*strip_v[ring]
             shin = self.add_part(
                 f"GEO_Shin.{side}",
                 make_profiled_segment_geometry(
@@ -2215,6 +2231,19 @@ def mirrored_forearm_surface_gap(result: common.BuildResult) -> float:
                for point in surfaces[side][0])
 
 
+def export_model_fbx(path: Path, result: common.BuildResult) -> None:
+    """Keep shared custom normals on rigid and morph joint counterparts."""
+    modifiers=[(modifier,modifier.show_render,modifier.show_viewport)
+               for part in result.parts if part.obj.get("bp_joint_surface")
+               for modifier in part.obj.modifiers if modifier.type!="ARMATURE"]
+    for modifier,_,_ in modifiers:modifier.show_render=modifier.show_viewport=False
+    try:
+        common.export_fbx(path,result)
+    finally:
+        for modifier,render,viewport in modifiers:
+            modifier.show_render,modifier.show_viewport=render,viewport
+
+
 def validate_appearance_contracts(config: common.BuildConfig, result: common.BuildResult,
                                   errors: list[str]) -> None:
     """Cheap shape prerequisites run before authoring any production action."""
@@ -2228,28 +2257,8 @@ def validate_appearance_contracts(config: common.BuildConfig, result: common.Bui
     gap = mirrored_forearm_surface_gap(result)
     if gap > 1e-6:
         errors.append(f"Mirrored jacket forearm surfaces differ by {gap * 1000:.6f} mm")
-    for side in ("L", "R"):
-        foot = result.rig.data.bones[f"foot.{side}"]
-        reference, _ = make_adult_boot_geometry(foot.head_local.x, foot.head_local.y,
-                                                foot.tail_local.y, config.height / 1.75)
-        reference = [result.rig.matrix_world @ point for point in reference]
-        # All rigid-pose floor supports are determined by this convex envelope.
-        # Keeping its original vertices guarantees the original action contacts.
-        hull, faces = player_detailed_model.player_hand_frames.convex_hull_geometry(reference)
-        planes = [(hull[face[0]], (hull[face[1]] - hull[face[0]]).cross(
-                   hull[face[2]] - hull[face[0]]).normalized()) for face in faces]
-        boot = records[f"CLO_Boot.{side}"].obj
-        points = [boot.matrix_world @ vertex.co for vertex in boot.data.vertices]
-        missing = max(min((source - point).length for point in points) for source in reference)
-        if missing > 1e-6:
-            errors.append(f"CLO_Boot.{side} lost original support vertices by {missing * 1000:.6f} mm")
-        for name in (f"CLO_Boot.{side}", f"CLO_BootSole.{side}"):
-            obj = records[name].obj
-            excess = max(normal.dot(obj.matrix_world @ vertex.co - origin)
-                         for origin, normal in planes for vertex in obj.data.vertices)
-            if excess > 1e-6:
-                errors.append(f"{name} exceeds the original rigid boot envelope by {excess * 1000:.6f} mm")
-    print(f"Hero appearance preflight: head {ratio:.4f} heads; mirrored forearms {gap * 1000:.6f} mm; original boot supports checked", flush=True)
+    player_detailed_model.player_boots.validate(result, errors)
+    print(f"Hero appearance preflight: head {ratio:.4f} heads; mirrored forearms {gap * 1000:.6f} mm; rounded footwear supports and flex checked", flush=True)
 
 
 def read_region_pixels(
@@ -2628,19 +2637,28 @@ def validate_v2_result(
             used = set()
             blended = 0
             for vertex in mesh.vertices:
-                actual = {groups[item.group]: item.weight for item in vertex.groups}
+                actual = {groups[item.group]: item.weight for item in vertex.groups if item.weight > 1e-7}
                 height = (obj.matrix_local @ vertex.co).z / (config.height / 1.75)
                 expected = torso_weights(height)
+                # Set-in armholes add a declared upper-arm field while the
+                # remainder preserves the original longitudinal torso skin.
+                arm = {name: weight for name, weight in actual.items()
+                       if name in ("upper_arm.L", "upper_arm.R")}
+                if arm and obj.name == "CLO_JacketBody" and obj.get("bp_jacket_armhole.L"):
+                    expected = {name: weight * (1 - sum(arm.values()))
+                                for name, weight in expected.items()}
+                    expected.update(arm)
+                expected = {name: weight for name, weight in expected.items() if weight > 1e-7}
                 if (set(actual) != set(expected) or
                         any(abs(actual[name] - weight) > 1e-5
                             for name, weight in expected.items())):
                     errors.append(f"{obj.name} vertex {vertex.index} lost its torso skin weights")
                     break
-                used.update(actual)
-                blended += len(actual) == 2
+                used.update(name for name in actual if name in TORSO_SKIN_BONES)
+                blended += sum(name in TORSO_SKIN_BONES for name in actual) == 2
             if used != set(TORSO_SKIN_BONES) or blended < 20:
                 errors.append(f"{obj.name} must articulate all three torso regions with blended rings")
-        elif obj.get("bp_secondary_hair") or obj.get("bp_torso_weights"):
+        elif obj.get("bp_secondary_hair") or obj.get("bp_torso_weights") or obj.get("bp_joint_surface"):
             # Added strands and narrow garment seams use normalized shared
             # chains; their exact fields are checked in the detailed builder.
             pass
@@ -2702,25 +2720,23 @@ def validate_v2_result(
     visible_neck = measure_visual_neck_height(records)
     neck_base_width = neck_max.x - neck_min.x
     neck_top_width = float(records["GEO_Neck"].obj.get("bp_top_width_m", 0.0))
-    if not 0.040 <= visible_neck <= 0.050:
-        errors.append(f"Visible neckline-to-jaw height must be 0.040-0.050 m, got {visible_neck:.3f}")
+    if not 0.030 <= visible_neck <= 0.040:
+        errors.append(f"Readable neckline-to-jaw height above the fitted collar must be 0.030-0.040 m, got {visible_neck:.3f}")
     if not 0.145 <= neck_base_width <= 0.150:
         errors.append(f"Neck/trapezius base must be 0.145-0.150 m, got {neck_base_width:.3f}")
-    if not 0.125 <= neck_top_width <= 0.130:
-        errors.append(f"Neck top width must be 0.125-0.130 m, got {neck_top_width:.3f}")
-    if not 0.165 <= jacket_obj.get("bp_hem_half_width_m", 0.0) <= 0.172:
-        errors.append("Field-jacket hem half-width must stay boxy at 0.165-0.172 m")
-    if not 0.165 <= jacket_obj.get("bp_waist_half_width_m", 0.0) <= 0.172:
-        errors.append("Field-jacket waist half-width must stay within 0.165-0.172 m")
-    if not 0.180 <= jacket_obj.get("bp_chest_half_width_m", 0.0) <= 0.190:
-        errors.append("Field-jacket chest half-width must stay within 0.180-0.190 m")
-    if not 0.190 <= jacket_obj.get("bp_yoke_half_width_m", 0.0) <= 0.198:
-        errors.append("Field-jacket yoke half-width must stay within 0.190-0.198 m")
-    if jacket_obj.get("bp_yoke_half_width_m", 0.0) - jacket_obj.get("bp_hem_half_width_m", 0.0) > 0.035:
-        errors.append("Field-jacket sides must remain near-parallel, not inverted-triangular")
+    if not 0.104 <= neck_top_width <= 0.112:
+        errors.append(f"Tapered neck top width must stay 0.104-0.112 m inside the jaw, got {neck_top_width:.3f}")
+    if not 0.188 <= jacket_obj.get("bp_hem_half_width_m", 0.0) <= 0.194:
+        errors.append("M65 hanging hem half-width must remain within 0.188-0.194 m")
+    if not 0.185 <= jacket_obj.get("bp_waist_half_width_m", 0.0) <= 0.191:
+        errors.append("M65 waist half-width must remain within 0.185-0.191 m")
+    if not 0.207 <= jacket_obj.get("bp_chest_half_width_m", 0.0) <= 0.213:
+        errors.append("M65 upper chest half-width must remain within 0.207-0.213 m")
+    if not 0.201 <= jacket_obj.get("bp_yoke_half_width_m", 0.0) <= 0.207:
+        errors.append("Field-jacket yoke must retain its fitted shoulder transition")
     if not 0.020 <= jacket_obj.get("bp_shoulder_slope_height_m", 0.0) <= 0.035:
         errors.append("Field-jacket shoulder slope must remain a restrained 20-35 mm")
-    if not 0.045 <= jacket_obj.get("bp_yoke_rise_m", 0.0) <= 0.060:
+    if not 0.020 <= jacket_obj.get("bp_yoke_rise_m", 0.0) <= 0.030:
         errors.append("Open neckline must use one short yoke plane, not a raised collar tube")
 
     torso_obj = records["GEO_Torso"].obj
@@ -2734,8 +2750,8 @@ def validate_v2_result(
         errors.append(f"Pelvis joint span must be 0.180-0.190 m, got {hip_joint_span:.3f}")
     if not 0.130 <= torso_obj.get("bp_waist_half_width_m", 0.0) <= 0.138:
         errors.append("Independent slim torso waist half-width must be 0.130-0.138 m")
-    if not 0.145 <= torso_obj.get("bp_chest_half_width_m", 0.0) <= 0.154:
-        errors.append("Independent slim ribcage half-width must be 0.145-0.154 m")
+    if not 0.185 <= torso_obj.get("bp_chest_half_width_m", 0.0) <= 0.195:
+        errors.append("Lean upper ribcage half-width must taper from the waist to 0.185-0.195 m")
 
     relaxed_landmarks = measure_relaxed_arm_landmarks(result)
     for side in ("l", "r"):
@@ -2756,6 +2772,9 @@ def validate_v2_result(
 
     for side in ("L", "R"):
         foot_min, foot_max = common.mesh_bounds_world(records[f"CLO_Boot.{side}"].obj)
+        sole_min, sole_max = common.mesh_bounds_world(records[f"CLO_BootSole.{side}"].obj)
+        foot_min=Vector(tuple(min(a,b) for a,b in zip(foot_min,sole_min)))
+        foot_max=Vector(tuple(max(a,b) for a,b in zip(foot_max,sole_max)))
         foot_length = foot_max.y - foot_min.y
         foot_width = foot_max.x - foot_min.x
         if abs(foot_min.z) > 1e-6:
@@ -2768,12 +2787,14 @@ def validate_v2_result(
         shin_obj = records[f"GEO_Shin.{side}"].obj
         upper_thigh_width = measure_ring_width(thigh_obj, 8, 1)
         knee_width = max(
-            measure_ring_width(thigh_obj, 8, 3),
+            measure_ring_width(thigh_obj, 8, 4),
             measure_ring_width(shin_obj, 8, 0),
         )
         calf_width = measure_ring_width(shin_obj, 8, 2)
         ankle_width = measure_ring_width(shin_obj, 8, 4)
-        if not 0.137 <= upper_thigh_width <= 0.160:
+        # The proximal anatomical overlap now sits inside the shaped pelvis;
+        # it is slimmer than the former exposed capped upper-leg cylinder.
+        if not 0.125 <= upper_thigh_width <= 0.140:
             errors.append(f"GEO_Thigh.{side} upper width is implausible: {upper_thigh_width:.3f} m")
         if not 0.089 <= knee_width <= 0.103:
             errors.append(f"GEO_{side} knee width must remain narrow: {knee_width:.3f} m")
@@ -2802,6 +2823,9 @@ def validate_v2_result(
         sleeve = bpy.data.objects.get(sleeve_name)
         if sleeve is None or sleeve.get("bp_sleeve_coverage") != "shoulder_to_elbow":
             errors.append(f"{sleeve_name} must cover shoulder to elbow")
+        elif sleeve.get("bp_set_in_sleeve"):
+            if len(sleeve.get("bp_jacket_armhole_body_ids", ())) != 12:
+                errors.append(f"{sleeve_name} must retain its sewn twelve-point armhole")
         elif sleeve.get("bp_shoulder_overlap_m", 0.0) < 0.005:
             errors.append(f"{sleeve_name} must overlap the anatomical shoulder seam")
 
@@ -3115,6 +3139,9 @@ def write_v2_manifest(
     lower_body_metrics: dict[str, float] = {}
     for side, label in (("L", "left"), ("R", "right")):
         foot_min, foot_max = common.mesh_bounds_world(records[f"CLO_Boot.{side}"].obj)
+        sole_min, sole_max = common.mesh_bounds_world(records[f"CLO_BootSole.{side}"].obj)
+        foot_min=Vector(tuple(min(a,b) for a,b in zip(foot_min,sole_min)))
+        foot_max=Vector(tuple(max(a,b) for a,b in zip(foot_max,sole_max)))
         thigh_obj = records[f"GEO_Thigh.{side}"].obj
         shin_obj = records[f"GEO_Shin.{side}"].obj
         lower_body_metrics.update(
@@ -3124,7 +3151,7 @@ def write_v2_manifest(
                 f"{label}_upper_thigh_width_m": round(measure_ring_width(thigh_obj, 8, 1), 6),
                 f"{label}_knee_width_m": round(
                     max(
-                        measure_ring_width(thigh_obj, 8, 3),
+                        measure_ring_width(thigh_obj, 8, 4),
                         measure_ring_width(shin_obj, 8, 0),
                     ),
                     6,
@@ -3466,7 +3493,12 @@ def main() -> None:
         preview_only,
         hand_grip_only,
         surfaces_only,
+        joint_surfaces_only,
     ) = parse_args()
+    if joint_surfaces_only:
+        import player_joint_refresh
+        player_joint_refresh.refresh(sys.modules[__name__],config,clothing_atlas_path)
+        return
     if surfaces_only:
         player_body_hair_surfaces.refresh(sys.modules[__name__], config)
         return
@@ -3554,7 +3586,7 @@ def main() -> None:
         common.export_glb(config.glb, result)
     if config.fbx is not None:
         print("Hero export: model FBX", flush=True)
-        common.export_fbx(config.fbx, result)
+        export_model_fbx(config.fbx, result)
     if config.animation_fbx is not None:
         print("Hero export: animation FBX", flush=True)
         common.export_animation_fbx(config.animation_fbx, result)

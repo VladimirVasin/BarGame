@@ -10,6 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 3410270663513938894}
   - component: {fileID: 956038154345187116}
+  - component: {fileID: 8305827953825804149}
   m_Layer: 0
   m_Name: WeighbridgeAttendant3D
   m_TagString: Untagged
@@ -492,12 +493,12 @@ MonoBehaviour:
   personalSpaceGuardClip: {fileID: -745076687792294147, guid: 1409e5d6bde7d42489da0f5a0a10c6bc, type: 3}
   personalSpaceShoveClip: {fileID: 3345037529033634719, guid: 1409e5d6bde7d42489da0f5a0a10c6bc, type: 3}
   localBounds:
-    m_Center: {x: -0.0010001659, y: 0.8749999, z: 0.037137583}
-    m_Extent: {x: 0.7784672, y: 0.8749999, z: 0.19155073}
+    m_Center: {x: -0.0010000467, y: 0.875, z: 0.04194455}
+    m_Extent: {x: 0.77846724, y: 0.875, z: 0.22609255}
   sourceTriangleCount: 2160
   sourceGeneratorVersion: 4.5.2
   designId: weigh_attendant_v1
-  buildSignature: 9bc645f144fa4b57a32b86f47f6896347359b01f224e6239608aa004d0e0ce49
+  buildSignature: 68f54993220713fdce1c10e691735743726dd4132fccc94b494eecc1c7cf86ea
   paletteVariant: 0
   headLamp: {fileID: 0}
   preservesAirborneMotion: 0
@@ -508,6 +509,59 @@ MonoBehaviour:
     columns: 0
     rows: 0
     cells: []
+--- !u!114 &8305827953825804149
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 523129276086159948}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b2be743ae8414fe69b45824c1d81d423, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: BarPromenade.Runtime::BarPromenade.CharacterJointDeformation
+  bindings:
+  - Renderer: {fileID: 3654341620511068559}
+    Bone: {fileID: 771911693500151521}
+    RestRotation: {x: -0.020317057, y: -0.015963241, z: -0.015225763, w: 0.9995502}
+    LongitudinalAxis: {x: 0.000000011935024, y: 1, z: -0.00000052514105}
+    Shape: 0
+  - Renderer: {fileID: 8527352930949823545}
+    Bone: {fileID: 3887420594713063315}
+    RestRotation: {x: 0.012595064, y: 0.014988454, z: 0.0154044945, w: 0.9996897}
+    LongitudinalAxis: {x: 0.0000000023873787, y: 1, z: 0.000000035810682}
+    Shape: 0
+  - Renderer: {fileID: 2951031862376621848}
+    Bone: {fileID: 2250506884322077790}
+    RestRotation: {x: 0.017877687, y: 0.02233826, z: 0.01239254, w: 0.9995138}
+    LongitudinalAxis: {x: -0.0000005274604, y: 1, z: -0.00000040498506}
+    Shape: 0
+  - Renderer: {fileID: 4042963173917798278}
+    Bone: {fileID: 1649223987640433534}
+    RestRotation: {x: 0.0129169, y: -0.022518253, z: -0.019055707, w: 0.9994814}
+    LongitudinalAxis: {x: 0.00000017309854, y: 1, z: -0.00000032496803}
+    Shape: 0
+  - Renderer: {fileID: 4897929977693346709}
+    Bone: {fileID: 2250506884322077790}
+    RestRotation: {x: 0.017877687, y: 0.02233826, z: 0.01239254, w: 0.9995138}
+    LongitudinalAxis: {x: -0.0000005274604, y: 1, z: -0.00000040498506}
+    Shape: 0
+  - Renderer: {fileID: 2711382267069367236}
+    Bone: {fileID: 1649223987640433534}
+    RestRotation: {x: 0.0129169, y: -0.022518253, z: -0.019055707, w: 0.9994814}
+    LongitudinalAxis: {x: 0.00000017309854, y: 1, z: -0.00000032496803}
+    Shape: 0
+  - Renderer: {fileID: 4959876052259442179}
+    Bone: {fileID: 771911693500151521}
+    RestRotation: {x: -0.020317057, y: -0.015963241, z: -0.015225763, w: 0.9995502}
+    LongitudinalAxis: {x: 0.000000011935024, y: 1, z: -0.00000052514105}
+    Shape: 0
+  - Renderer: {fileID: 4373846201387200730}
+    Bone: {fileID: 3887420594713063315}
+    RestRotation: {x: 0.012595064, y: 0.014988454, z: 0.0154044945, w: 0.9996897}
+    LongitudinalAxis: {x: 0.0000000023873787, y: 1, z: 0.000000035810682}
+    Shape: 0
 --- !u!1001 &4083729984494124989
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -932,6 +986,11 @@ SkinnedMeshRenderer:
   m_CorrespondingSourceObject: {fileID: -4681209832995609076, guid: 51d0ebb8e8ef3424db09be3d97ba8ca1, type: 3}
   m_PrefabInstance: {fileID: 4083729984494124989}
   m_PrefabAsset: {fileID: 0}
+--- !u!4 &771911693500151521 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 3610254473159100764, guid: 51d0ebb8e8ef3424db09be3d97ba8ca1, type: 3}
+  m_PrefabInstance: {fileID: 4083729984494124989}
+  m_PrefabAsset: {fileID: 0}
 --- !u!4 &802590487988439105 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -5508169512097499140, guid: 51d0ebb8e8ef3424db09be3d97ba8ca1, type: 3}
@@ -962,6 +1021,11 @@ SkinnedMeshRenderer:
   m_CorrespondingSourceObject: {fileID: -5932187954769016124, guid: 51d0ebb8e8ef3424db09be3d97ba8ca1, type: 3}
   m_PrefabInstance: {fileID: 4083729984494124989}
   m_PrefabAsset: {fileID: 0}
+--- !u!4 &1649223987640433534 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -5886368873632086845, guid: 51d0ebb8e8ef3424db09be3d97ba8ca1, type: 3}
+  m_PrefabInstance: {fileID: 4083729984494124989}
+  m_PrefabAsset: {fileID: 0}
 --- !u!137 &1659109449347926335 stripped
 SkinnedMeshRenderer:
   m_CorrespondingSourceObject: {fileID: -5788808288426346878, guid: 51d0ebb8e8ef3424db09be3d97ba8ca1, type: 3}
@@ -970,6 +1034,11 @@ SkinnedMeshRenderer:
 --- !u!137 &1853595289023866779 stripped
 SkinnedMeshRenderer:
   m_CorrespondingSourceObject: {fileID: -6839532073720948698, guid: 51d0ebb8e8ef3424db09be3d97ba8ca1, type: 3}
+  m_PrefabInstance: {fileID: 4083729984494124989}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &2250506884322077790 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 2852813616820032483, guid: 51d0ebb8e8ef3424db09be3d97ba8ca1, type: 3}
   m_PrefabInstance: {fileID: 4083729984494124989}
   m_PrefabAsset: {fileID: 0}
 --- !u!137 &2340662436590763871 stripped
@@ -1049,6 +1118,11 @@ Animator:
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorStateOnDisable: 0
   m_WriteDefaultValuesOnDisable: 0
+--- !u!4 &3887420594713063315 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 963408202774007854, guid: 51d0ebb8e8ef3424db09be3d97ba8ca1, type: 3}
+  m_PrefabInstance: {fileID: 4083729984494124989}
+  m_PrefabAsset: {fileID: 0}
 --- !u!137 &4042963173917798278 stripped
 SkinnedMeshRenderer:
   m_CorrespondingSourceObject: {fileID: 51562004753223739, guid: 51d0ebb8e8ef3424db09be3d97ba8ca1, type: 3}

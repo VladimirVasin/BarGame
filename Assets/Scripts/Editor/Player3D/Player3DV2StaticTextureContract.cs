@@ -492,7 +492,8 @@ namespace BarPromenade.Editor
             {
                 if (partName.IndexOf("Bandage", StringComparison.Ordinal) >= 0 ||
                     partName.StartsWith("ACC_Strap", StringComparison.Ordinal) ||
-                    partName.IndexOf("Buckle", StringComparison.Ordinal) >= 0)
+                    (partName.IndexOf("Buckle", StringComparison.Ordinal) >= 0 &&
+                     !(partName == "CLO_BeltBuckle" && partMaterials[partName] == "MAT_Metal")))
                 {
                     throw new InvalidOperationException(
                         $"Hero V2 part '{partName}' restores a retired garment detail.");

@@ -23,6 +23,7 @@ namespace BarPromenade
 
         private Player3DAssetRegistry registry;
         private Player3DAssetRegistry sourceRegistry;
+        private CharacterJointDeformation jointDeformation;
         private readonly List<Player3DMeshBinding> armBindings = new List<Player3DMeshBinding>();
         private readonly Dictionary<string, Player3DMeshBinding> sourceBindings =
             new Dictionary<string, Player3DMeshBinding>(StringComparer.Ordinal);
@@ -56,6 +57,7 @@ namespace BarPromenade
                 subset.registry = Player3DResources.Instantiate(parent);
                 subset.registry.gameObject.name = instanceName;
                 subset.sourceRegistry = source;
+                subset.jointDeformation = subset.registry.GetComponent<CharacterJointDeformation>();
                 if (source != null)
                     foreach (Player3DMeshBinding binding in source.MeshBindings)
                         if (binding?.Renderer != null) subset.sourceBindings[binding.MeshName] = binding;
@@ -76,6 +78,7 @@ namespace BarPromenade
             armBindings.Clear();
             sourceBindings.Clear();
             sourceRegistry = null;
+            jointDeformation = null;
             SourceGrip = null;
             SourceUpperArm = null;
             if (registry == null)
@@ -210,6 +213,7 @@ namespace BarPromenade
         /// <summary>Copy the live outfit, then restrict it to this authored arm.</summary>
         public void RefreshAppearance(bool shown = true)
         {
+            jointDeformation?.ApplyPose();
             if (sourceRegistry != null && registry != null)
                 sourceRegistry.GetComponent<PlayerJacketCloth>()?.CopyPoseTo(registry.GetComponent<PlayerJacketCloth>());
             PlayerWardrobe sourceWardrobe = sourceRegistry != null ? sourceRegistry.GetComponent<PlayerWardrobe>() : null;

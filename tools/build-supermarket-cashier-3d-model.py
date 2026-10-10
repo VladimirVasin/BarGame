@@ -400,6 +400,7 @@ class CashierBuilder(base.PedestrianBuilder):
         # resolved first.
         bpy.context.view_layer.update()
         self.assign_atlas_uvs()
+        base.npc_joint_surfaces.apply(self.result)
         if self.atlas_path is not None:
             self.attach_preview_atlas(material)
         self.configure_scene_metadata()
@@ -1120,13 +1121,7 @@ def validate_cashier_result(result, atlas, variant: CashierVariant):
             errors.append(
                 f"{obj.name} does not use the one shared material"
             )
-        if (
-            len(obj.vertex_groups) != 1
-            or obj.vertex_groups[0].name != part.bone
-        ):
-            errors.append(
-                f"{obj.name} must have one rigid group for {part.bone}"
-            )
+        base.npc_joint_surfaces.validate_weights(obj, part.bone, errors)
         for vertex in mesh.vertices:
             world_vertices.append(obj.matrix_world @ vertex.co)
         triangle_count += base.triangulated_count(mesh)
@@ -1202,6 +1197,7 @@ def validate_cashier_result(result, atlas, variant: CashierVariant):
     ):
         errors.append("Export collection contains a light or camera")
 
+    base.npc_joint_surfaces.joints.validate(result, errors)
     if errors:
         formatted = "\n".join(f"  - {error}" for error in errors)
         raise RuntimeError(
@@ -1210,6 +1206,7 @@ def validate_cashier_result(result, atlas, variant: CashierVariant):
 
     signature_payload = {
         "generator_version": GENERATOR_VERSION,
+        "joint_surfaces": base.npc_joint_surfaces.joints.manifest(result),
         "design_id": DESIGN_ID,
         "seed": SEED,
         "anatomy_standard": base.NPC_ANATOMY_STANDARD,
@@ -1247,6 +1244,8 @@ def validate_cashier_result(result, atlas, variant: CashierVariant):
                     for vertex in part.obj.data.vertices
                 ],
                 "triangles": base.triangulated_count(part.obj.data),
+                "shape_keys": [(key.name, [[base.stable_float(c) for c in point.co] for point in key.data])
+                               for key in part.obj.data.shape_keys.key_blocks] if part.obj.data.shape_keys else [],
             }
             for part in sorted(
                 result.parts, key=lambda item: item.obj.name
@@ -1343,6 +1342,7 @@ def write_manifest(
     payload = {
         "generator": "tools/build-supermarket-cashier-3d-model.py",
         "generator_version": GENERATOR_VERSION,
+        "joint_surfaces": base.npc_joint_surfaces.joints.manifest(result),
         "blender_version": bpy.app.version_string,
         "design_id": DESIGN_ID,
         "display_name": DISPLAY_NAME,

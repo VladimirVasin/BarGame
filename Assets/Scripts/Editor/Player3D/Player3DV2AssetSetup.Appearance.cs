@@ -18,8 +18,8 @@ namespace BarPromenade.Editor
 
             PlayerWardrobeManifest wardrobe = manifest.wardrobe;
             if (wardrobe == null || wardrobe.contract != "hero_outfit_v1" ||
-                wardrobe.default_outfit_id != "hero_field_workwear" || wardrobe.items == null || wardrobe.items.Length != 4)
-                throw new InvalidOperationException("Hero requires the four independent original wardrobe items.");
+                wardrobe.default_outfit_id != "hero_field_workwear" || wardrobe.items == null || wardrobe.items.Length != 5)
+                throw new InvalidOperationException("Hero requires five independent wardrobe items, including the belt.");
             var parts = manifest.parts.ToDictionary(part => part.name, StringComparer.Ordinal);
             var ids = new HashSet<string>(StringComparer.Ordinal);
             var slots = new HashSet<string>(StringComparer.Ordinal);
@@ -38,10 +38,12 @@ namespace BarPromenade.Editor
                     if (!covered.Add(name) || !parts.TryGetValue(name, out Player3DV2ManifestPart part) || part.role != "body_part" ||
                         (part.material != "MAT_Skin" && part.material != "MAT_SkinShadow" && part.material != "MAT_SkinDark"))
                         throw new InvalidOperationException($"Wardrobe coverage '{name}' must name independent body geometry.");
+                if (item.slot == "belt" && item.covered_body_renderers.Length != 0)
+                    throw new InvalidOperationException("The independently removable belt must not hide body geometry.");
             }
-            if (!slots.SetEquals(new[] { "shirt", "jacket", "trousers", "boots" }) ||
+            if (!slots.SetEquals(new[] { "shirt", "jacket", "trousers", "boots", "belt" }) ||
                 !garments.SetEquals(manifest.parts.Where(part => part.role == "clothing").Select(part => part.name)))
-                throw new InvalidOperationException("Every hero garment must be covered by one of the four original wardrobe slots.");
+                throw new InvalidOperationException("Every hero garment must belong to a declared independent wardrobe slot.");
 
             if (manifest.hair?.contract != "hero_collar_hair_v1" ||
                 manifest.hair.chains == null || manifest.hair.chains.Length != 3)
@@ -128,7 +130,8 @@ namespace BarPromenade.Editor
                     throw new InvalidOperationException("Jacket cloth has an empty renderer field.");
                 foreach (string name in names)
                     if (!assigned.Add(name) || !parts.TryGetValue(name, out Player3DV2ManifestPart part) ||
-                        part.role != "clothing" || bone != null && part.bone != bone)
+                        part.role != "clothing" || bone != null && part.bone != bone &&
+                        part.bone != bone.Replace("forearm.", "upper_arm."))
                         throw new InvalidOperationException("Invalid physical jacket surface: " + name);
             }
             Include(cloth.hem.renderers);
@@ -142,6 +145,14 @@ namespace BarPromenade.Editor
                     cuff.free_tip_offset_m != cloth.cuffs[0].free_tip_offset_m)
                     throw new InvalidOperationException("Jacket cuffs must retain their original forearm anchors.");
                 Include(cuff.renderers, cuff.bone);
+                string side = i == 0 ? "L" : "R";
+                if (!cuff.renderers.Contains("CLO_JacketSleeve." + side) ||
+                    !cuff.renderers.Contains("CLO_JacketForearm." + side) ||
+                    !manifest.joint_surfaces.seams.Any(seam => seam.bone == cuff.bone &&
+                        seam.corrective_shape == "JacketElbowFold." + side &&
+                        seam.renderers.Contains("CLO_JacketSleeve." + side) &&
+                        seam.renderers.Contains("CLO_JacketForearm." + side)))
+                    throw new InvalidOperationException("The loose jacket elbow requires both continuous sleeve regions and its authored fold correction.");
             }
             Include(cloth.pinned_renderers);
             if (!assigned.SetEquals(jacket.renderers))

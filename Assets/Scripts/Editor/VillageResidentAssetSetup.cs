@@ -105,6 +105,7 @@ namespace BarPromenade.Editor
                         if (texture == null) throw new InvalidOperationException("Missing imported 2D village resident atlas: " + name);
                         presentation.Configure((VillageResidentRole)index, animator, model.transform, Find("SOCKET_Grip.R"), Find("SOCKET_Grip.L"), Find("head"),
                             roleBindings, renderers, colors, texture);
+                        CharacterJointDeformation.Configure(root);
                         prefabs[index] = PrefabUtility.SaveAsPrefabAsset(root, Folder + name + ".prefab");
                     }
                     finally { UnityEngine.Object.DestroyImmediate(root); }
@@ -134,6 +135,10 @@ namespace BarPromenade.Editor
             importer.materialImportMode = ModelImporterMaterialImportMode.None;
             importer.animationCompression = ModelImporterAnimationCompression.Off;
             importer.importNormals = ModelImporterNormals.Import; importer.importTangents = ModelImporterTangents.None;
+            importer.skinWeights = ModelImporterSkinWeights.Custom;
+            importer.importBlendShapes = true;
+            importer.maxBonesPerVertex = 4;
+            importer.minBoneWeight = 0f;
             importer.SaveAndReimport();
             if (!animation) return;
             var clips = importer.defaultClipAnimations;

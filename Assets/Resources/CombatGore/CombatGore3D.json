@@ -10,7 +10,7 @@
   "sources": {
     "Hero": {
       "path": "Assets/Player3D/V2/Models/PlayerCharacter3DV2.fbx",
-      "sha256": "7506bfec3effbcdeed55e25d5ae98ff0ea5ea998cef1b2b3391d25a47e7f9533",
+      "sha256": "782483e6f15e3bbae3788c2ce2ea79595f8059f7ec72e20b9af9c59b62ad6aaf",
       "renderers": [
         "GEO_Ear.L",
         "GEO_Ear.R",
@@ -43,7 +43,7 @@
     },
     "Npc": {
       "path": "Assets/Resources/VillageLife/StationWorker.fbx",
-      "sha256": "30e52d740e2c690fe5c7ffefca945fc0689dd41da0977f4cdf05fbb002ddc4d7",
+      "sha256": "1c13355b27052e4c53aad9cfd0fa3865a833b502b03611aa720c82a8f1963336",
       "renderers": [
         "CLO_Hat_everydayBand",
         "CLO_Hat_everydayCrown",
@@ -7602,8 +7602,8 @@
     }
   },
   "files": {
-    "HeadHero.fbx": "3d03cf8a8f2c8279e1c20052d14fd683468a1bd1a481464a48621143dfd9ba96",
-    "HeadNpc.fbx": "7fd685f18a13a3c4465fecdfa73c77ddb1bb902f81be72b79688417ca188a0e1",
+    "HeadHero.fbx": "2fe2a8ce704a2d88e3d22644093716ef319dd51a557c4ed183890afe13b9e3d0",
+    "HeadNpc.fbx": "941a55af868a009735dafd51f1bec948c909f1fa70504a0b5acf4b9878c31fd9",
     "FleshSurface.png": "11d604f03ee50cc95d82731ef81b95b9bba688b5b62d96418b133020736f1bd0",
     "BrainSurface.png": "2c2168ef409cde0259e4aa27c3f318ff778870b01f5b56ef376ba464849f61d7"
   }

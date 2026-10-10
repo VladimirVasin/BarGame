@@ -29,7 +29,7 @@
 | 12 | `CombatTest` | Isolated weapon test |
 
 All ten gameplay roots use `PlayerFactory`/`Resources/Player/Player3DV2.prefab`:
-one rig, `PlayerWardrobe` slots/coverage and bounded hair/jacket physics.
+one rig, joint skin/volume correction, wardrobe coverage and hair/jacket physics.
 Near-empty scenes compose validated plans at runtime. Authored geometry follows
 the Blender and world-canon rules in [../AI.md](../AI.md).
 

@@ -26,7 +26,7 @@ HEM_RENDERERS = (
     "CLO_JacketFlapHip.L", "CLO_JacketFlapHip.R",
 )
 CUFF_RENDERERS = {
-    side: (f"CLO_JacketForearm.{side}", f"CLO_JacketCuff.{side}")
+    side: (f"CLO_JacketSleeve.{side}", f"CLO_JacketForearm.{side}", f"CLO_JacketCuff.{side}")
     for side in ("L", "R")
 }
 METADATA_FIELDS = ("jacket_cloth", "jacket_cloth_authoring_sha256")
@@ -60,14 +60,20 @@ def build_contract(payload: dict) -> dict:
         if bone not in payload.get("bones", ()):
             raise ValueError("Jacket cuff requires the original bone " + bone)
         for name in CUFF_RENDERERS[side]:
-            if parts[name].get("bone") != bone:
-                raise ValueError(name + " must retain its original rigid forearm binding")
+            expected = f"upper_arm.{side}" if name.startswith("CLO_JacketSleeve.") else bone
+            if parts[name].get("bone") != expected:
+                raise ValueError(name + " must retain its original anatomical registry binding")
 
+    authored = payload.get("fit", {}).get("jacket_hem_nodes_blender")
+    if not isinstance(authored, list) or len(authored) != 8:
+        raise ValueError("Jacket cloth requires eight controls on its actual authored hem")
     nodes = []
-    for index in range(8):
-        angle = -math.pi / 2 + .24 + (math.tau - .48) * index / 7
-        nodes.append(dict(zip(("x", "y", "z"), (_number(value * scale) for value in
-                      (.168 * math.cos(angle), .017 + .104 * math.sin(angle), .805)))))
+    for node in authored:
+        if set(node) != {"x", "y", "z"} or any(not math.isfinite(float(node[key])) for key in node):
+            raise ValueError("Jacket hem controls must be finite source-space points")
+        if abs(float(node["z"]) - .805 * scale) > 2e-6:
+            raise ValueError("Jacket hem control must lie on the authored free hem")
+        nodes.append({key: _number(float(node[key])) for key in ("x", "y", "z")})
     # Distinct front edges form an open chain. Closing 7->0 would simulate a
     # stitched jacket front, contradicting the authored open shell and placket.
     return {

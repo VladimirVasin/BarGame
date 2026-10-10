@@ -10,6 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 597049235507878730}
   - component: {fileID: 2559025881300739104}
+  - component: {fileID: 8528779846285695304}
   m_Layer: 0
   m_Name: NightlifeShelterStandingResident3D
   m_TagString: Untagged
@@ -209,12 +210,65 @@ MonoBehaviour:
   rightFoot: {fileID: 3433714005614226387}
   detailAtlas: {fileID: 2800000, guid: fca010ce39e702e41aa9c3f5c0fbc572, type: 3}
   localBounds:
-    m_Center: {x: -0.0010001659, y: 0.8749999, z: 0.03463024}
-    m_Extent: {x: 0.77089155, y: 0.8749999, z: 0.19572872}
-  triangleCount: 1740
-  generatorVersion: 4.3.1
+    m_Center: {x: -0.0010000467, y: 0.875, z: 0.035267413}
+    m_Extent: {x: 0.7708916, y: 0.875, z: 0.23061395}
+  triangleCount: 1932
+  generatorVersion: 4.5.2
   designId: nightlife_shelter_standing_resident_v2
-  buildSignature: 41005ff20832373e223c9dcc250fc040348b66ca0c5c19f6b958955d57ab30cd
+  buildSignature: b3056c0d9c5d1a07405cd460488a1b43ab86c6ad0e534838e76ecb0587329387
+--- !u!114 &8528779846285695304
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6518494279610833712}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b2be743ae8414fe69b45824c1d81d423, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: BarPromenade.Runtime::BarPromenade.CharacterJointDeformation
+  bindings:
+  - Renderer: {fileID: 2849455482280391341}
+    Bone: {fileID: 2273184652680992195}
+    RestRotation: {x: -0.020317057, y: -0.015963241, z: -0.015225763, w: 0.9995502}
+    LongitudinalAxis: {x: 0.000000011935024, y: 1, z: -0.00000052514105}
+    Shape: 0
+  - Renderer: {fileID: 7163721441547263771}
+    Bone: {fileID: 2364245298492509361}
+    RestRotation: {x: 0.012595064, y: 0.014988454, z: 0.0154044945, w: 0.9996897}
+    LongitudinalAxis: {x: 0.0000000023873787, y: 1, z: 0.000000035810682}
+    Shape: 0
+  - Renderer: {fileID: 4452286701065274426}
+    Bone: {fileID: 722529685811416956}
+    RestRotation: {x: 0.017877687, y: 0.02233826, z: 0.01239254, w: 0.9995138}
+    LongitudinalAxis: {x: -0.0000005274604, y: 1, z: -0.00000040498506}
+    Shape: 0
+  - Renderer: {fileID: 3253540031494311076}
+    Bone: {fileID: 278836729442211932}
+    RestRotation: {x: 0.0129169, y: -0.022518253, z: -0.019055707, w: 0.9994814}
+    LongitudinalAxis: {x: 0.00000017309854, y: 1, z: -0.00000032496803}
+    Shape: 0
+  - Renderer: {fileID: 6252519797444475063}
+    Bone: {fileID: 722529685811416956}
+    RestRotation: {x: 0.017877687, y: 0.02233826, z: 0.01239254, w: 0.9995138}
+    LongitudinalAxis: {x: -0.0000005274604, y: 1, z: -0.00000040498506}
+    Shape: 0
+  - Renderer: {fileID: 3503056363189625062}
+    Bone: {fileID: 278836729442211932}
+    RestRotation: {x: 0.0129169, y: -0.022518253, z: -0.019055707, w: 0.9994814}
+    LongitudinalAxis: {x: 0.00000017309854, y: 1, z: -0.00000032496803}
+    Shape: 0
+  - Renderer: {fileID: 5902138835785248033}
+    Bone: {fileID: 2273184652680992195}
+    RestRotation: {x: -0.020317057, y: -0.015963241, z: -0.015225763, w: 0.9995502}
+    LongitudinalAxis: {x: 0.000000011935024, y: 1, z: -0.00000052514105}
+    Shape: 0
+  - Renderer: {fileID: 2994503493974250488}
+    Bone: {fileID: 2364245298492509361}
+    RestRotation: {x: 0.012595064, y: 0.014988454, z: 0.0154044945, w: 0.9996897}
+    LongitudinalAxis: {x: 0.0000000023873787, y: 1, z: 0.000000035810682}
+    Shape: 0
 --- !u!1001 &3283627934165916831
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -693,6 +747,11 @@ SkinnedMeshRenderer:
   m_CorrespondingSourceObject: {fileID: 3429778213823478985, guid: 71d465cc1aec8774fbc088441debb637, type: 3}
   m_PrefabInstance: {fileID: 3283627934165916831}
   m_PrefabAsset: {fileID: 0}
+--- !u!4 &278836729442211932 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -5886368873632086845, guid: 71d465cc1aec8774fbc088441debb637, type: 3}
+  m_PrefabInstance: {fileID: 3283627934165916831}
+  m_PrefabAsset: {fileID: 0}
 --- !u!137 &341629573983337750 stripped
 SkinnedMeshRenderer:
   m_CorrespondingSourceObject: {fileID: 2966883130650730889, guid: 71d465cc1aec8774fbc088441debb637, type: 3}
@@ -711,6 +770,11 @@ SkinnedMeshRenderer:
 --- !u!137 &681212678315976604 stripped
 SkinnedMeshRenderer:
   m_CorrespondingSourceObject: {fileID: 2658792182559177475, guid: 71d465cc1aec8774fbc088441debb637, type: 3}
+  m_PrefabInstance: {fileID: 3283627934165916831}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &722529685811416956 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 2852813616820032483, guid: 71d465cc1aec8774fbc088441debb637, type: 3}
   m_PrefabInstance: {fileID: 3283627934165916831}
   m_PrefabAsset: {fileID: 0}
 --- !u!137 &830988485824335977 stripped
@@ -756,6 +820,16 @@ SkinnedMeshRenderer:
 --- !u!4 &2170391106427612003 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -5508169512097499140, guid: 71d465cc1aec8774fbc088441debb637, type: 3}
+  m_PrefabInstance: {fileID: 3283627934165916831}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &2273184652680992195 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 3610254473159100764, guid: 71d465cc1aec8774fbc088441debb637, type: 3}
+  m_PrefabInstance: {fileID: 3283627934165916831}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &2364245298492509361 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 963408202774007854, guid: 71d465cc1aec8774fbc088441debb637, type: 3}
   m_PrefabInstance: {fileID: 3283627934165916831}
   m_PrefabAsset: {fileID: 0}
 --- !u!1 &2400598803360997838 stripped

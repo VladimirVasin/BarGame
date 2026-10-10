@@ -10,6 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 8555037877165956089}
   - component: {fileID: 5739439343982806456}
+  - component: {fileID: 3525754027888325648}
   m_Layer: 0
   m_Name: LongArmPedestrian3D
   m_TagString: Untagged
@@ -412,12 +413,12 @@ MonoBehaviour:
   personalSpaceGuardClip: {fileID: 0}
   personalSpaceShoveClip: {fileID: 0}
   localBounds:
-    m_Center: {x: -0.000000059604645, y: 0.8749999, z: 0.016318828}
-    m_Extent: {x: 0.6460844, y: 0.8749999, z: 0.15708897}
-  sourceTriangleCount: 1044
+    m_Center: {x: -0.000000059604645, y: 0.875, z: 0.014898777}
+    m_Extent: {x: 0.6460844, y: 0.875, z: 0.15850899}
+  sourceTriangleCount: 1236
   sourceGeneratorVersion: 4.5.2
   designId: long_arm_walker_v1
-  buildSignature: 78970c0830aa972c6a67edfa087c8759328907611f3f3806bb57895b0a704e98
+  buildSignature: 0e0871b1cb414d32a090a80d9588fad738b88201e3c44e2bfad2be4fba95905d
   paletteVariant: 0
   headLamp: {fileID: 0}
   preservesAirborneMotion: 0
@@ -428,6 +429,59 @@ MonoBehaviour:
     columns: 0
     rows: 0
     cells: []
+--- !u!114 &3525754027888325648
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3234133333115868244}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b2be743ae8414fe69b45824c1d81d423, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: BarPromenade.Runtime::BarPromenade.CharacterJointDeformation
+  bindings:
+  - Renderer: {fileID: 5411506141450813678}
+    Bone: {fileID: 627633830054425897}
+    RestRotation: {x: 0.017877687, y: 0.02233826, z: 0.01239254, w: 0.9995138}
+    LongitudinalAxis: {x: -0.0000005274604, y: 1, z: -0.00000040498506}
+    Shape: 0
+  - Renderer: {fileID: 2572443147014633561}
+    Bone: {fileID: 102911850422968841}
+    RestRotation: {x: 0.0129169, y: -0.022518253, z: -0.019055707, w: 0.9994814}
+    LongitudinalAxis: {x: 0.00000017309854, y: 1, z: -0.00000032496803}
+    Shape: 0
+  - Renderer: {fileID: 5162752380316535344}
+    Bone: {fileID: 2105648513633496982}
+    RestRotation: {x: -0.020317057, y: -0.015963241, z: -0.015225763, w: 0.9995502}
+    LongitudinalAxis: {x: 0.000000011935024, y: 1, z: -0.00000052514105}
+    Shape: 0
+  - Renderer: {fileID: 8009733195801225253}
+    Bone: {fileID: 2484933515965576932}
+    RestRotation: {x: 0.012595064, y: 0.014988454, z: 0.0154044945, w: 0.9996897}
+    LongitudinalAxis: {x: 0.0000000023873787, y: 1, z: 0.000000035810682}
+    Shape: 0
+  - Renderer: {fileID: 2623586544780904119}
+    Bone: {fileID: 2105648513633496982}
+    RestRotation: {x: -0.020317057, y: -0.015963241, z: -0.015225763, w: 0.9995502}
+    LongitudinalAxis: {x: 0.000000011935024, y: 1, z: -0.00000052514105}
+    Shape: 0
+  - Renderer: {fileID: 5543541843990803606}
+    Bone: {fileID: 2484933515965576932}
+    RestRotation: {x: 0.012595064, y: 0.014988454, z: 0.0154044945, w: 0.9996897}
+    LongitudinalAxis: {x: 0.0000000023873787, y: 1, z: 0.000000035810682}
+    Shape: 0
+  - Renderer: {fileID: 1289723682090093458}
+    Bone: {fileID: 627633830054425897}
+    RestRotation: {x: 0.017877687, y: 0.02233826, z: 0.01239254, w: 0.9995138}
+    LongitudinalAxis: {x: -0.0000005274604, y: 1, z: -0.00000040498506}
+    Shape: 0
+  - Renderer: {fileID: 1188318369033082802}
+    Bone: {fileID: 102911850422968841}
+    RestRotation: {x: 0.0129169, y: -0.022518253, z: -0.019055707, w: 0.9994814}
+    LongitudinalAxis: {x: 0.00000017309854, y: 1, z: -0.00000032496803}
+    Shape: 0
 --- !u!1001 &3396549172375971530
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -773,9 +827,19 @@ SkinnedMeshRenderer:
   m_CorrespondingSourceObject: {fileID: -5895288340243969477, guid: 4f1d51e53c02e654b9ee463d03e293b4, type: 3}
   m_PrefabInstance: {fileID: 3396549172375971530}
   m_PrefabAsset: {fileID: 0}
+--- !u!4 &102911850422968841 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -5886368873632086845, guid: 4f1d51e53c02e654b9ee463d03e293b4, type: 3}
+  m_PrefabInstance: {fileID: 3396549172375971530}
+  m_PrefabAsset: {fileID: 0}
 --- !u!137 &184178119945071630 stripped
 SkinnedMeshRenderer:
   m_CorrespondingSourceObject: {fileID: -5932187954769016124, guid: 4f1d51e53c02e654b9ee463d03e293b4, type: 3}
+  m_PrefabInstance: {fileID: 3396549172375971530}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &627633830054425897 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 2852813616820032483, guid: 4f1d51e53c02e654b9ee463d03e293b4, type: 3}
   m_PrefabInstance: {fileID: 3396549172375971530}
   m_PrefabAsset: {fileID: 0}
 --- !u!137 &830162401263846410 stripped
@@ -816,6 +880,16 @@ SkinnedMeshRenderer:
 --- !u!4 &2066583202257391926 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -5508169512097499140, guid: 4f1d51e53c02e654b9ee463d03e293b4, type: 3}
+  m_PrefabInstance: {fileID: 3396549172375971530}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &2105648513633496982 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 3610254473159100764, guid: 4f1d51e53c02e654b9ee463d03e293b4, type: 3}
+  m_PrefabInstance: {fileID: 3396549172375971530}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &2484933515965576932 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 963408202774007854, guid: 4f1d51e53c02e654b9ee463d03e293b4, type: 3}
   m_PrefabInstance: {fileID: 3396549172375971530}
   m_PrefabAsset: {fileID: 0}
 --- !u!137 &2572443147014633561 stripped

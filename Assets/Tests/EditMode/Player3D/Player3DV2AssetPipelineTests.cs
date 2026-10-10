@@ -433,7 +433,7 @@ namespace BarPromenade.Tests.EditMode
                 SkinnedMeshRenderer renderer =
                     FindBinding(registry, meshName).Renderer as SkinnedMeshRenderer;
                 Assert.That(renderer, Is.Not.Null);
-                Assert.That(renderer.quality, Is.EqualTo(SkinQuality.Bone2));
+                Assert.That(renderer.quality, Is.EqualTo(SkinQuality.Bone4));
                 Mesh source = renderer.sharedMesh;
                 Vector3[] vertices = source.vertices;
                 BoneWeight[] weights = source.boneWeights;
@@ -447,8 +447,9 @@ namespace BarPromenade.Tests.EditMode
                 {
                     Assert.That(weight.weight0, Is.GreaterThan(0f));
                     Assert.That(weight.weight1, Is.GreaterThanOrEqualTo(0f));
-                    Assert.That(weight.weight2 + weight.weight3, Is.Zero);
-                    Assert.That(weight.weight0 + weight.weight1,
+                    Assert.That(weight.weight2, Is.GreaterThanOrEqualTo(0f));
+                    Assert.That(weight.weight3, Is.GreaterThanOrEqualTo(0f));
+                    Assert.That(weight.weight0 + weight.weight1 + weight.weight2 + weight.weight3,
                         Is.EqualTo(1f).Within(0.0001f));
                     sections.Add(bones[weight.boneIndex0]);
                     if (weight.weight1 > 0f)
@@ -456,12 +457,14 @@ namespace BarPromenade.Tests.EditMode
                         sections.Add(bones[weight.boneIndex1]);
                         blendedVertexCount++;
                     }
+                    if (weight.weight2 > 0f) sections.Add(bones[weight.boneIndex2]);
+                    if (weight.weight3 > 0f) sections.Add(bones[weight.boneIndex3]);
                 }
 
-                Assert.That(sections, Is.EquivalentTo(new[]
+                Assert.That(new[]
                 {
                     anchors.Pelvis, anchors.Spine, anchors.Chest
-                }));
+                }, Is.SubsetOf(sections), "Joint blends must retain all three original torso regions.");
                 Assert.That(blendedVertexCount, Is.GreaterThan(0));
                 int chestIndex = Array.IndexOf(bones, anchors.Chest);
                 float maximumDepartureFromRigidChest = 0f;
@@ -520,6 +523,10 @@ namespace BarPromenade.Tests.EditMode
                                 expected += posedBones[weight.boneIndex1]
                                     .MultiplyPoint3x4(vertices[vertex]) * weight.weight1;
                             }
+                            if (weight.weight2 > 0f)
+                                expected += posedBones[weight.boneIndex2].MultiplyPoint3x4(vertices[vertex]) * weight.weight2;
+                            if (weight.weight3 > 0f)
+                                expected += posedBones[weight.boneIndex3].MultiplyPoint3x4(vertices[vertex]) * weight.weight3;
 
                             Vector3 world = renderer.transform.TransformPoint(
                                 actual[vertex]);
@@ -898,7 +905,10 @@ namespace BarPromenade.Tests.EditMode
                     Is.Not.EqualTo("clothing_detail"),
                     $"{part.name} should be painted into the clothing atlas.");
                 Assert.That(part.name, Does.Not.StartWith("ACC_Strap"));
-                Assert.That(part.name, Does.Not.Contain("Buckle"));
+                if (part.name == "CLO_BeltBuckle")
+                    Assert.That(part.material, Is.EqualTo("MAT_Metal"), "The separate military belt owns its plain metal buckle.");
+                else
+                    Assert.That(part.name, Does.Not.Contain("Buckle"));
                 Assert.That(
                     part.material,
                     Is.Not.EqualTo("MAT_Jeans")

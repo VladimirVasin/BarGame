@@ -1,14 +1,1022 @@
 {
   "schema_version": 1,
-  "generator_version": "1.2.0",
-  "source_hero_sha256": "a8e469950a086b040c86b36574d947a2872173935c0b797416ffd09691208fa3",
+  "generator_version": "1.4.0",
+  "source_hero_sha256": "c1b9b754e28da0dc2c2fac184718101fc9b6a2c854c6a1719a5e024bc8933e66",
+  "joint_surfaces": {
+    "contract": "character_joint_surfaces_v1",
+    "source_space": "blender_z_up_minus_y_forward",
+    "max_influences": 4,
+    "seams": [
+      {
+        "id": "Skin knee.L",
+        "bone": "shin.L",
+        "renderers": [
+          "Bare_Thigh.L",
+          "Bare_Shin.L"
+        ],
+        "vertices_a": [
+          32,
+          33,
+          34,
+          35,
+          36,
+          37,
+          38,
+          39
+        ],
+        "vertices_b": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "bones": [
+          "thigh.L",
+          "shin.L"
+        ],
+        "points_blender": [
+          {
+            "x": 0.0389149272069335,
+            "y": 0.00249932229751721,
+            "z": 0.4836817979812622
+          },
+          {
+            "x": 0.06587753538042307,
+            "y": 0.025139924762770532,
+            "z": 0.4837736487388611
+          },
+          {
+            "x": 0.10399496883153915,
+            "y": 0.025139924762770532,
+            "z": 0.48458391427993774
+          },
+          {
+            "x": 0.13093853838741779,
+            "y": 0.002499322072835639,
+            "z": 0.485637903213501
+          },
+          {
+            "x": 0.13092507906258105,
+            "y": -0.029519324479624628,
+            "z": 0.4863182306289673
+          },
+          {
+            "x": 0.10396246369928121,
+            "y": -0.05215993098914623,
+            "z": 0.4862263798713684
+          },
+          {
+            "x": 0.06584503024816513,
+            "y": -0.05215993098914623,
+            "z": 0.48541611433029175
+          },
+          {
+            "x": 0.03890145709738135,
+            "y": -0.029519324479624628,
+            "z": 0.4843621253967285
+          }
+        ],
+        "band_m": 0.07,
+        "loose": false,
+        "corrective_shape": "JointVolume.Knee.L",
+        "corrective_angle_degrees": 135.0,
+        "weight_curve": "inverse_half_angle_cosine",
+        "validation": {
+          "angles_degrees": [
+            0,
+            45,
+            90,
+            135.0
+          ],
+          "section_area_ratios": [
+            1.0,
+            0.999998,
+            0.999994,
+            0.999989
+          ],
+          "seam_tolerance_m": 2e-06
+        }
+      },
+      {
+        "id": "Trouser knee.L",
+        "bone": "shin.L",
+        "renderers": [
+          "Trousers_Thigh.L",
+          "Trousers_Shin.L"
+        ],
+        "vertices_a": [
+          72,
+          73,
+          74,
+          75,
+          76,
+          77,
+          78,
+          79,
+          80,
+          81,
+          82,
+          83
+        ],
+        "vertices_b": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11
+        ],
+        "bones": [
+          "thigh.L",
+          "shin.L"
+        ],
+        "points_blender": [
+          {
+            "x": 0.03443409875035286,
+            "y": 0.004640417639166117,
+            "z": 0.4835188686847687
+          },
+          {
+            "x": 0.05271551385521889,
+            "y": 0.024644048884510994,
+            "z": 0.48348352313041687
+          },
+          {
+            "x": 0.08045138418674469,
+            "y": 0.0342930406332016,
+            "z": 0.4838545322418213
+          },
+          {
+            "x": 0.11020989716053009,
+            "y": 0.031001949682831764,
+            "z": 0.4845324754714966
+          },
+          {
+            "x": 0.13401728868484497,
+            "y": 0.015652623027563095,
+            "z": 0.48533570766448975
+          },
+          {
+            "x": 0.14549437165260315,
+            "y": -0.007642101030796766,
+            "z": 0.48604896664619446
+          },
+          {
+            "x": 0.14156590402126312,
+            "y": -0.03264041990041733,
+            "z": 0.4864811599254608
+          },
+          {
+            "x": 0.1232844814658165,
+            "y": -0.05264405161142349,
+            "z": 0.4865165054798126
+          },
+          {
+            "x": 0.095548614859581,
+            "y": -0.06229303777217865,
+            "z": 0.4861454963684082
+          },
+          {
+            "x": 0.0657901018857956,
+            "y": -0.05900195240974426,
+            "z": 0.4854675531387329
+          },
+          {
+            "x": 0.041982706636190414,
+            "y": -0.043652623891830444,
+            "z": 0.48466432094573975
+          },
+          {
+            "x": 0.03050561621785164,
+            "y": -0.020357899367809296,
+            "z": 0.48395106196403503
+          }
+        ],
+        "band_m": 0.12,
+        "loose": true,
+        "corrective_shape": "TrouserKneeFold.L",
+        "corrective_angle_degrees": 135.0,
+        "weight_curve": "inverse_half_angle_cosine",
+        "validation": {
+          "angles_degrees": [
+            0,
+            45,
+            90,
+            135.0
+          ],
+          "section_area_ratios": [
+            1.0,
+            0.999998,
+            0.999994,
+            0.999989
+          ],
+          "seam_tolerance_m": 2e-06
+        }
+      },
+      {
+        "id": "Skin hip.L",
+        "bone": "thigh.L",
+        "renderers": [
+          "Bare_Thigh.L",
+          "Bare_Thigh.L"
+        ],
+        "topology": "continuous",
+        "vertices_a": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "vertices_b": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "bones": [
+          "pelvis",
+          "thigh.L"
+        ],
+        "points_blender": [
+          {
+            "x": 0.04596473030745983,
+            "y": 0.027942825565114616,
+            "z": 0.9074771404266357
+          },
+          {
+            "x": 0.0710261944681406,
+            "y": 0.049718645289540286,
+            "z": 0.9058347344398499
+          },
+          {
+            "x": 0.10648759696632623,
+            "y": 0.04971863809973001,
+            "z": 0.9054607152938843
+          },
+          {
+            "x": 0.13157613076269625,
+            "y": 0.027942827362567185,
+            "z": 0.9065741896629333
+          },
+          {
+            "x": 0.13159527003765106,
+            "y": -0.0028528268449008465,
+            "z": 0.9085228443145752
+          },
+          {
+            "x": 0.10653380587697028,
+            "y": -0.02462864297442138,
+            "z": 0.9101652503013611
+          },
+          {
+            "x": 0.07107240337878465,
+            "y": -0.02462864297442138,
+            "z": 0.9105392694473267
+          },
+          {
+            "x": 0.045983873177319765,
+            "y": -0.0028528268449008465,
+            "z": 0.9094257950782776
+          }
+        ],
+        "band_m": 0.115,
+        "loose": false,
+        "corrective_shape": "JointVolume.Hip.L",
+        "corrective_angle_degrees": 135.0,
+        "weight_curve": "inverse_half_angle_cosine",
+        "validation": {
+          "angles_degrees": [
+            0,
+            45,
+            90,
+            135.0
+          ],
+          "section_area_ratios": [
+            1.0,
+            1.000894,
+            1.01293,
+            1.05614
+          ],
+          "seam_tolerance_m": 2e-06
+        }
+      },
+      {
+        "id": "Trouser hip.L",
+        "bone": "thigh.L",
+        "renderers": [
+          "Trousers_Thigh.L",
+          "Trousers_Thigh.L"
+        ],
+        "topology": "continuous",
+        "vertices_a": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11
+        ],
+        "vertices_b": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11
+        ],
+        "bones": [
+          "pelvis",
+          "thigh.L"
+        ],
+        "points_blender": [
+          {
+            "x": 0.03524557128548622,
+            "y": 0.03341082111001015,
+            "z": 0.9073311686515808
+          },
+          {
+            "x": 0.05458550900220871,
+            "y": 0.0553143247961998,
+            "z": 0.9057967662811279
+          },
+          {
+            "x": 0.08395063132047653,
+            "y": 0.06587976217269897,
+            "z": 0.9048526287078857
+          },
+          {
+            "x": 0.11547257006168365,
+            "y": 0.06227608025074005,
+            "z": 0.9047518372535706
+          },
+          {
+            "x": 0.14070506393909454,
+            "y": 0.04546893388032913,
+            "z": 0.9055213928222656
+          },
+          {
+            "x": 0.15288707613945007,
+            "y": 0.019961751997470856,
+            "z": 0.9069551229476929
+          },
+          {
+            "x": 0.14875441789627075,
+            "y": -0.007410820573568344,
+            "z": 0.9086688160896301
+          },
+          {
+            "x": 0.12941449880599976,
+            "y": -0.029314329847693443,
+            "z": 0.910203218460083
+          },
+          {
+            "x": 0.10004936903715134,
+            "y": -0.03987976163625717,
+            "z": 0.9111473560333252
+          },
+          {
+            "x": 0.06852742284536362,
+            "y": -0.03627609461545944,
+            "z": 0.9112481474876404
+          },
+          {
+            "x": 0.043294940143823624,
+            "y": -0.01946893334388733,
+            "z": 0.9104785919189453
+          },
+          {
+            "x": 0.03111293539404869,
+            "y": 0.006038248538970947,
+            "z": 0.9090448617935181
+          }
+        ],
+        "band_m": 0.14,
+        "loose": false,
+        "corrective_shape": "JointVolume.Hip.L",
+        "corrective_angle_degrees": 135.0,
+        "weight_curve": "inverse_half_angle_cosine",
+        "validation": {
+          "angles_degrees": [
+            0,
+            45,
+            90,
+            135.0
+          ],
+          "section_area_ratios": [
+            1.0,
+            1.000565,
+            1.008376,
+            1.036714
+          ],
+          "seam_tolerance_m": 2e-06
+        }
+      },
+      {
+        "id": "Skin knee.R",
+        "bone": "shin.R",
+        "renderers": [
+          "Bare_Thigh.R",
+          "Bare_Shin.R"
+        ],
+        "vertices_a": [
+          32,
+          33,
+          34,
+          35,
+          36,
+          37,
+          38,
+          39
+        ],
+        "vertices_b": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "bones": [
+          "thigh.R",
+          "shin.R"
+        ],
+        "points_blender": [
+          {
+            "x": -0.13092844389379024,
+            "y": 0.025661845672875643,
+            "z": 0.4861481785774231
+          },
+          {
+            "x": -0.10397058818489313,
+            "y": 0.048306027315557,
+            "z": 0.4858158230781555
+          },
+          {
+            "x": -0.06585315473377705,
+            "y": 0.048306027315557,
+            "z": 0.48500555753707886
+          },
+          {
+            "x": -0.038904825523495674,
+            "y": 0.025661845672875643,
+            "z": 0.4841920733451843
+          },
+          {
+            "x": -0.03891155878081918,
+            "y": -0.0063618461042642595,
+            "z": 0.4838518500328064
+          },
+          {
+            "x": -0.06586941089481115,
+            "y": -0.029006018759682773,
+            "z": 0.484184205532074
+          },
+          {
+            "x": -0.10398684434592724,
+            "y": -0.029006018759682773,
+            "z": 0.48499447107315063
+          },
+          {
+            "x": -0.1309351735562086,
+            "y": -0.0063618461042642595,
+            "z": 0.48580795526504517
+          }
+        ],
+        "band_m": 0.07,
+        "loose": false,
+        "corrective_shape": "JointVolume.Knee.R",
+        "corrective_angle_degrees": 135.0,
+        "weight_curve": "inverse_half_angle_cosine",
+        "validation": {
+          "angles_degrees": [
+            0,
+            45,
+            90,
+            135.0
+          ],
+          "section_area_ratios": [
+            1.0,
+            1.0,
+            1.0,
+            0.999999
+          ],
+          "seam_tolerance_m": 2e-06
+        }
+      },
+      {
+        "id": "Trouser knee.R",
+        "bone": "shin.R",
+        "renderers": [
+          "Trousers_Thigh.R",
+          "Trousers_Shin.R"
+        ],
+        "vertices_a": [
+          72,
+          73,
+          74,
+          75,
+          76,
+          77,
+          78,
+          79,
+          80,
+          81,
+          82,
+          83
+        ],
+        "vertices_b": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11
+        ],
+        "bones": [
+          "thigh.R",
+          "shin.R"
+        ],
+        "points_blender": [
+          {
+            "x": -0.1415698230266571,
+            "y": 0.028643356636166573,
+            "z": 0.4862900972366333
+          },
+          {
+            "x": -0.12329261004924774,
+            "y": 0.048650145530700684,
+            "z": 0.4861203730106354
+          },
+          {
+            "x": -0.0955587700009346,
+            "y": 0.05830065906047821,
+            "z": 0.4856504499912262
+          },
+          {
+            "x": -0.06579956412315369,
+            "y": 0.05500905215740204,
+            "z": 0.4850062429904938
+          },
+          {
+            "x": -0.04198894277215004,
+            "y": 0.03965730220079422,
+            "z": 0.48436036705970764
+          },
+          {
+            "x": -0.030506953597068787,
+            "y": 0.01635890267789364,
+            "z": 0.48388588428497314
+          },
+          {
+            "x": -0.03443017601966858,
+            "y": -0.008643357083201408,
+            "z": 0.4837099313735962
+          },
+          {
+            "x": -0.05270738899707794,
+            "y": -0.02865014411509037,
+            "z": 0.4838796555995941
+          },
+          {
+            "x": -0.08044122904539108,
+            "y": -0.03830065578222275,
+            "z": 0.4843495786190033
+          },
+          {
+            "x": -0.110200434923172,
+            "y": -0.035009048879146576,
+            "z": 0.4849937856197357
+          },
+          {
+            "x": -0.13401105999946594,
+            "y": -0.019657300785183907,
+            "z": 0.48563966155052185
+          },
+          {
+            "x": -0.1454930454492569,
+            "y": 0.003641097340732813,
+            "z": 0.48611414432525635
+          }
+        ],
+        "band_m": 0.12,
+        "loose": true,
+        "corrective_shape": "TrouserKneeFold.R",
+        "corrective_angle_degrees": 135.0,
+        "weight_curve": "inverse_half_angle_cosine",
+        "validation": {
+          "angles_degrees": [
+            0,
+            45,
+            90,
+            135.0
+          ],
+          "section_area_ratios": [
+            1.0,
+            1.0,
+            1.0,
+            0.999999
+          ],
+          "seam_tolerance_m": 2e-06
+        }
+      },
+      {
+        "id": "Skin hip.R",
+        "bone": "thigh.R",
+        "renderers": [
+          "Bare_Thigh.R",
+          "Bare_Thigh.R"
+        ],
+        "topology": "continuous",
+        "vertices_a": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "vertices_b": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "bones": [
+          "pelvis",
+          "thigh.R"
+        ],
+        "points_blender": [
+          {
+            "x": -0.1315913012623787,
+            "y": 0.027961729373782874,
+            "z": 0.9081175327301025
+          },
+          {
+            "x": -0.10652419310063123,
+            "y": 0.04976427901536226,
+            "z": 0.9091867804527283
+          },
+          {
+            "x": -0.0710627906024456,
+            "y": 0.04976427901536226,
+            "z": 0.9095609188079834
+          },
+          {
+            "x": -0.04597989002242684,
+            "y": 0.027961729373782874,
+            "z": 0.9090205430984497
+          },
+          {
+            "x": -0.045968713462352755,
+            "y": -0.0028717306535691023,
+            "z": 0.9078824520111084
+          },
+          {
+            "x": -0.07103580724447965,
+            "y": -0.024674278497695924,
+            "z": 0.9068132042884827
+          },
+          {
+            "x": -0.10649720974266529,
+            "y": -0.02467428209260106,
+            "z": 0.9064390659332275
+          },
+          {
+            "x": -0.13158011391758917,
+            "y": -0.0028717306535691023,
+            "z": 0.9069794416427612
+          }
+        ],
+        "band_m": 0.115,
+        "loose": false,
+        "corrective_shape": "JointVolume.Hip.R",
+        "corrective_angle_degrees": 135.0,
+        "weight_curve": "inverse_half_angle_cosine",
+        "validation": {
+          "angles_degrees": [
+            0,
+            45,
+            90,
+            135.0
+          ],
+          "section_area_ratios": [
+            1.0,
+            1.000456,
+            1.011299,
+            1.052802
+          ],
+          "seam_tolerance_m": 2e-06
+        }
+      },
+      {
+        "id": "Trouser hip.R",
+        "bone": "thigh.R",
+        "renderers": [
+          "Trousers_Thigh.R",
+          "Trousers_Thigh.R"
+        ],
+        "topology": "continuous",
+        "vertices_a": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11
+        ],
+        "vertices_b": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11
+        ],
+        "bones": [
+          "pelvis",
+          "thigh.R"
+        ],
+        "points_blender": [
+          {
+            "x": -0.14874915778636932,
+            "y": 0.0334358811378479,
+            "z": 0.908150315284729
+          },
+          {
+            "x": -0.12940356135368347,
+            "y": 0.05536628141999245,
+            "z": 0.9091285467147827
+          },
+          {
+            "x": -0.10003569722175598,
+            "y": 0.06594467163085938,
+            "z": 0.9098042249679565
+          },
+          {
+            "x": -0.06851468980312347,
+            "y": 0.06233657896518707,
+            "z": 0.9099966287612915
+          },
+          {
+            "x": -0.04328655079007149,
+            "y": 0.045508790761232376,
+            "z": 0.909653902053833
+          },
+          {
+            "x": -0.031111132353544235,
+            "y": 0.019970297813415527,
+            "z": 0.9088680148124695
+          },
+          {
+            "x": -0.03525084629654884,
+            "y": -0.007435880601406097,
+            "z": 0.9078496694564819
+          },
+          {
+            "x": -0.05459645017981529,
+            "y": -0.029366280883550644,
+            "z": 0.9068714380264282
+          },
+          {
+            "x": -0.08396430313587189,
+            "y": -0.03994467109441757,
+            "z": 0.9061957597732544
+          },
+          {
+            "x": -0.1154853105545044,
+            "y": -0.03633657842874527,
+            "z": 0.9060033559799194
+          },
+          {
+            "x": -0.14071345329284668,
+            "y": -0.019508790224790573,
+            "z": 0.9063460826873779
+          },
+          {
+            "x": -0.15288886427879333,
+            "y": 0.006029701326042414,
+            "z": 0.9071319699287415
+          }
+        ],
+        "band_m": 0.14,
+        "loose": false,
+        "corrective_shape": "JointVolume.Hip.R",
+        "corrective_angle_degrees": 135.0,
+        "weight_curve": "inverse_half_angle_cosine",
+        "validation": {
+          "angles_degrees": [
+            0,
+            45,
+            90,
+            135.0
+          ],
+          "section_area_ratios": [
+            1.0,
+            1.000208,
+            1.007121,
+            1.034505
+          ],
+          "seam_tolerance_m": 2e-06
+        }
+      }
+    ],
+    "surfaces": [
+      {
+        "name": "Bare_Thigh.L",
+        "bones": [
+          "pelvis",
+          "shin.L",
+          "thigh.L"
+        ]
+      },
+      {
+        "name": "Bare_Shin.L",
+        "bones": [
+          "foot.L",
+          "shin.L",
+          "thigh.L"
+        ]
+      },
+      {
+        "name": "Trousers_Thigh.L",
+        "bones": [
+          "pelvis",
+          "shin.L",
+          "thigh.L"
+        ]
+      },
+      {
+        "name": "Trousers_Shin.L",
+        "bones": [
+          "shin.L",
+          "thigh.L"
+        ]
+      },
+      {
+        "name": "Bare_Thigh.R",
+        "bones": [
+          "pelvis",
+          "shin.R",
+          "thigh.R"
+        ]
+      },
+      {
+        "name": "Bare_Shin.R",
+        "bones": [
+          "foot.R",
+          "shin.R",
+          "thigh.R"
+        ]
+      },
+      {
+        "name": "Trousers_Thigh.R",
+        "bones": [
+          "pelvis",
+          "shin.R",
+          "thigh.R"
+        ]
+      },
+      {
+        "name": "Trousers_Shin.R",
+        "bones": [
+          "shin.R",
+          "thigh.R"
+        ]
+      },
+      {
+        "name": "Trousers_Pelvis",
+        "bones": [
+          "pelvis",
+          "thigh.L",
+          "thigh.R"
+        ]
+      },
+      {
+        "name": "Bare_Pelvis",
+        "bones": [
+          "pelvis"
+        ]
+      }
+    ],
+    "attachments": [
+      {
+        "id": "Bare_Thigh.L attachment",
+        "name": "Bare_Thigh.L",
+        "bone": "thigh.L",
+        "parent_bone": "pelvis",
+        "band_m": 0.08,
+        "endpoint": "start"
+      },
+      {
+        "id": "Trousers_Thigh.L attachment",
+        "name": "Trousers_Thigh.L",
+        "bone": "thigh.L",
+        "parent_bone": "pelvis",
+        "band_m": 0.095,
+        "endpoint": "start"
+      },
+      {
+        "id": "Bare_Shin.L attachment",
+        "name": "Bare_Shin.L",
+        "bone": "shin.L",
+        "parent_bone": "foot.L",
+        "band_m": 0.045,
+        "endpoint": "end"
+      },
+      {
+        "id": "Bare_Thigh.R attachment",
+        "name": "Bare_Thigh.R",
+        "bone": "thigh.R",
+        "parent_bone": "pelvis",
+        "band_m": 0.08,
+        "endpoint": "start"
+      },
+      {
+        "id": "Trousers_Thigh.R attachment",
+        "name": "Trousers_Thigh.R",
+        "bone": "thigh.R",
+        "parent_bone": "pelvis",
+        "band_m": 0.095,
+        "endpoint": "start"
+      },
+      {
+        "id": "Bare_Shin.R attachment",
+        "name": "Bare_Shin.R",
+        "bone": "shin.R",
+        "parent_bone": "foot.R",
+        "band_m": 0.045,
+        "endpoint": "end"
+      }
+    ]
+  },
   "coordinates": "Same FBX axis/unit/import contract as production Hero V2; stool localY up",
   "report": {
     "trousers_source_endpoints_exact": true,
-    "lowered_shape_count": 5,
-    "triangles": 1986,
+    "lowered_shape_count": 7,
+    "triangles": 2246,
     "real_bones_only": true,
     "closed_positive_volumes": true,
+    "normalized_source_joint_weights": true,
+    "belt_source_endpoints_exact": [
+      "Trousers_Belt",
+      "Trousers_BeltBuckle"
+    ],
     "bare_pelvis_watertight_components": 1,
     "bare_pelvis_outlet_surface_exact": true,
     "bare_pelvis_cleft_above_support": 0.01483,
@@ -39,7 +1047,21 @@
     "GEO_Shin.L": "shin.L",
     "GEO_Shin.R": "shin.R"
   },
-  "geometry_sha256": "96b475b90f83a2aae22806d20685857d1ce6d729d3f9b54ea76f041113755554",
+  "garment_accessories": {
+    "Trousers_Belt": {
+      "source": "CLO_Belt",
+      "bone": "pelvis",
+      "slot": "belt",
+      "garment_id": "hero_belt"
+    },
+    "Trousers_BeltBuckle": {
+      "source": "CLO_BeltBuckle",
+      "bone": "pelvis",
+      "slot": "belt",
+      "garment_id": "hero_belt"
+    }
+  },
+  "geometry_sha256": "242d08cb3db2e1337e8b34fc68c67e8e55e3c0f2690a57d8f1c8280c46e6336f",
   "trousers_contract": "Exact production source position/UV at Basis; Lowered shape gathers at knee via actual-bone presentation proxies",
   "stools": [
     {
@@ -53,5 +1075,5 @@
       "diameter": 0.034
     }
   ],
-  "signature": "2c995f48703dc71f5e8698a449ce898d1076e73ed86ba66769ec5a35b94a0bff"
+  "signature": "9fc4df24749f08cd9aead0c8d7940e33260559799af5ce7cfcc4d81e02e24f40"
 }

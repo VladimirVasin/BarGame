@@ -50,7 +50,7 @@ Only these statuses apply. Product scope cuts are `Deferred` in
 | Depth of field tiers | Exteriors keep broad Gaussian far blur; the six interior scenes cap it at radius `0.55`. | `RuntimeSceneSetup`, `DepthOfFieldSettingsBinder` | Current |
 | Runtime area composition | Ten gameplay roots; four build in frames; interior doors retain dormant City/village. | `Runtime/Core`, `Runtime/Scenes` | Current |
 | Combat test | Bar/pistol/shotgun:8 aimed gaits/reload;distance damage/launch/head loss. Gap:penetration/balance. | `CombatTestRoot`, `CombatFootwork`, `Runtime/Combat` | Partial |
-| Body destruction | Attached torso erosion/skeleton;head/limb sever;crawl/corpse/reset. | `CombatBodyDamageState`,`CombatBodyDestruction` | Current |
+| Body destruction | Intact contacts;torso erosion/skeleton;head/limb sever;crawl/corpse/reset. | `CombatBodyDamageState`,`CombatBodyDestruction` | Current |
 | New-game starting place | Twelve starts incl. lodge; village default, day `1`/`07:40`, ordinary loading. | `StartMenu{Root,Model}`, `NewGame{LocationCatalog,StartService}` | Current |
 | Retained Home waking opening | Frozen `05:59`, five-second lock, Wake Up/Quit, continuous wake. Gap: no shipped path reaches it. | `MainMenuRoot`, `HomeOpening{Controller,Timeline}` | Partial |
 | Session clock and day/night rules | Persistent 48-minute day at ×1; two real seconds per game minute. Intoxication preserves its rate. | `GameTimeState`, `GameTimeRuntime` | Current |
@@ -119,7 +119,7 @@ Only these statuses apply. Product scope cuts are `Deferred` in
 | Pedestrian personal space | Above alcohol `60`: guarding palm; above `80`: close shove. | `CityPedestrianPersonalSpace{Rules,Controller}`, `PlayerMotor` | Current |
 | Pedestrian street insults | Insult responses need the authored proximity/facing gates; the twenty-line bag deals once a round, surviving reloads. | `CityPedestrianInsult{Rules,Lines,Walk,SessionState,Controller}`, `CityPedestrianPersonalSpaceController` | Current |
 | City and Home street pedestrians | Pool = default NPC population (`city.pedestrian.NN`, any catalog model); Home reuses its first eight. | `Runtime/City/NPC`, `CityPedestrianDefaultNpcBody`, `DefaultNpcPopulation` | Current |
-| NPC Human V2 anatomy, appearance and visibility | Shared rigs; five ordinary models have shaped hands/clothes and validated surface UVs. | `NpcHumanV2AssetSetup`, `NpcDesignAppearanceCatalog`, `OrdinaryCharacterDetailAtlas` | Current |
+| NPC Human V2 anatomy, appearance and visibility | Shared rigs; joint fields/volume and shaped hands/clothes retain UVs. | `NpcHumanV2AssetSetup`, `NpcDesignAppearanceCatalog`, `CharacterJointDeformation` | Current |
 | City Route 01 bus | One validated route and pooled bus run in City. Gap: no Home simulation or live map vehicle marker. | `Runtime/Vehicles`, `CityBus{Plan,Planner,Actor,Audio,Director,Presentation,Factory,AssetRegistry}` | Partial |
 | Pedestrian bench rests | Eligible walkers reserve benches, play owned sit/rest/stand actions and return to their route. | `CityBenchRest{Plan,Planner}`, `CityBenchNpcRestController` | Current |
 | Route 01 passengers | Hero plus two ambient passenger places. Gap: fares, destination choice, persistence and live tracking. | `CityBusRide{Plan,Controller}`, `CityBusStopWait{Plan,Planner}` | Partial |
@@ -148,10 +148,10 @@ Only these statuses apply. Product scope cuts are `Deferred` in
 | Third-person chase camera | Shared collision-aware chase/orbit blends cinematic motion and yields to owned fixed/modal shots. | `PlayerCameraFollow`, `IntoxicationDollyZoomModel` | Current |
 | Home fixed camera | Authored fixed shots with explicit contextual ownership; the main-room shot pans up to 18/9 degrees to hold the hero. | `HomeCameraShot{,Selector}`, `HomeFixedCameraController`, `FixedCameraFocus` | Current |
 | Home player visibility | Grouped occluder dither and fixed-shot rules keep the hero visible without changing collision. | `HomeOcclusion{Registry,Resolver}`, `HomePlayerOcclusionController` | Current |
-| Modular 3D hero presentation | V2: 31 body/12 hair bones, 50 actions; Clothing/Skin/Hair, versioned mesh imports. | `Player3D*`, `PlayerFactory`, `CharacterSurfaceMaterialSetup` | Current |
+| Modular 3D hero presentation | V2: 31 body/12 hair bones, 50 actions; shared joint boundaries and posed volume correction. | `Player3D*`, `PlayerFactory`, `CharacterJointDeformation` | Current |
 | Hero wardrobe | Atomic slot replacement and body coverage; one authored outfit. Gap: extra outfits, UI and persistence. | `PlayerWardrobe`, `Player3DBathingAppearance` | Partial |
 | Hero hair | Parted curtains: bounded motion/wind/body/clothing/scarf contacts; pause freeze and copied mirror pose. | `PlayerHair`, `PlayerHairContacts` | Current |
-| Hero jacket cloth | Anchored hem/cuffs: motion/wind/body/hand contacts; pause/reset and passive mirror/arm copies. | `PlayerJacketCloth`, `PlayerJacketClothSurface` | Current |
+| Hero jacket cloth | Loose sleeve skin/folds; bounded hem/cuffs, contacts, pause/reset; mirror/arms reuse secondary motion. | `PlayerJacketCloth`, `PlayerJacketClothSurface` | Current |
 | Wearable scarf | Hero-only contacts; shared mouth/mirror pose. Location sets resting height after 5 s of free third-person play. | `PlayerScarf*`, `PlayerFactory`, `GameSessionState` | Current |
 | Alpine Village cold hero | Hug/rubs persist running; scarf halves shiver. Warmth stops cold/breath. | `Player3DCharacterPresentation.Cold`, `PlayerCold{PresentationModel,BreathEffect}` | Current |
 | Alpine frost presentation | Session frost; scarf halves growth, full frost stops cues; warm zones thaw. | `AlpineColdExposure{Model,Driver}`, `AlpineColdFrostPass`, `AlpineFrostAudio` | Current |

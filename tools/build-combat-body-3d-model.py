@@ -193,6 +193,14 @@ def split_regions(poly, arm, low, high):
         part = poly
         for other in range(7):
             if group != other:
+                # A shared joint cap can be equally weighted to two branches
+                # over its entire area. Give that face one deterministic owner;
+                # clipping both sides would duplicate its exterior coverage.
+                if part and max(abs(p[4][group]-p[4][other]) for p in part) <= EPS:
+                    if group > other:
+                        part = []
+                        break
+                    continue
                 part = clip(part, lambda p, g=group, o=other: p[4][g]-p[4][o])
         if len(part) < 3:
             continue
@@ -240,7 +248,10 @@ def build_mesh(name, source, polys, basis=None):
         polys = [(tuple(poly[j] for j in (0,i,i+1)), material)
                  for poly,material in polys for i in range(1,len(poly)-1)
                  if (poly[i][0]-poly[0][0]).cross(poly[i+1][0]-poly[0][0]).length > 1e-12]
-    for cell, (poly, material) in enumerate(polys):
+    cell = 0
+    for poly, material in polys:
+        vertex_start, face_start = len(verts), len(faces)
+        added_keys = []
         centre = sum((point[0] for point in poly), Vector())/len(poly)
         face = []
         for point in poly:
@@ -250,6 +261,7 @@ def build_mesh(name, source, polys, basis=None):
                    cell if basis is not None else None)
             if key not in lookup:
                 lookup[key] = len(verts)
+                added_keys.append(key)
                 verts.append(local); uvs.append(point[1]); skin.append(point[3])
                 if basis is not None:
                     metadata.append((cell, 1, radial_target(point[0], basis, .32), centre))
@@ -258,6 +270,16 @@ def build_mesh(name, source, polys, basis=None):
             tri = (face[0], face[i], face[i+1])
             if len(set(tri)) == 3 and (verts[tri[1]]-verts[tri[0]]).cross(verts[tri[2]]-verts[tri[0]]).length > 1e-14:
                 faces.append(tri); materials.append(material)
+        if basis is not None:
+            # Clipped slivers can merge below the mesh's vertex precision.
+            # Number only emitted cells; discard their unused vertex metadata
+            # so every authored cell still owns an actual surface triangle.
+            if len(faces) > face_start:
+                cell += 1
+            else:
+                for key in added_keys: del lookup[key]
+                del verts[vertex_start:]; del uvs[vertex_start:]
+                del skin[vertex_start:]; del metadata[vertex_start:]
     if not faces:
         return None
     mesh = bpy.data.meshes.new(name)
@@ -316,9 +338,11 @@ def flesh_cells(name, source, polys, basis):
                     quad = quad[1:]+quad[:1]
                 topology.extend(((quad[0],quad[1],quad[2]),(quad[0],quad[2],quad[3])))
             # Horizontal source caps and axis vertices have no radial thickness.
+            # Measure depth along the surface normal: radial travel in a flat
+            # cap can acquire a spurious volume from float32 round-off.
             # Give those cells a 2mm inward floor instead of a degenerate prism.
             if abs(signed_volume(outer+inner,topology,stable=True)) <= 1e-13 or any(
-                    (a-b).length <= 1e-7 for a,b in zip(outer,inner)):
+                    abs((a-b).dot(normal)) <= 1e-6 for a,b in zip(outer,inner)):
                 inner = [point-normal*.002 for point in inner]
             volume = signed_volume(outer+inner,topology,stable=True)
             if abs(volume) <= 1e-13:

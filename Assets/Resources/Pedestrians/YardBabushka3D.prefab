@@ -10,6 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 8804309344870608928}
   - component: {fileID: 4012514035661097492}
+  - component: {fileID: 2965940409037014459}
   m_Layer: 0
   m_Name: YardBabushka3D
   m_TagString: Untagged
@@ -402,12 +403,12 @@ MonoBehaviour:
   personalSpaceGuardClip: {fileID: 8915446743180063925, guid: 1409e5d6bde7d42489da0f5a0a10c6bc, type: 3}
   personalSpaceShoveClip: {fileID: 5490216812222849970, guid: 1409e5d6bde7d42489da0f5a0a10c6bc, type: 3}
   localBounds:
-    m_Center: {x: -0.0010001659, y: 0.8749999, z: -0.008401036}
-    m_Extent: {x: 0.7819869, y: 0.8749999, z: 0.2562982}
+    m_Center: {x: -0.0010000467, y: 0.875, z: -0.008401036}
+    m_Extent: {x: 0.78198695, y: 0.875, z: 0.2562982}
   sourceTriangleCount: 1692
   sourceGeneratorVersion: 4.5.2
   designId: yard_babushka_v1
-  buildSignature: e1cf33f141c9d6b8a656f034245a500f421c66b4ad3d29d2e4623fd051256c12
+  buildSignature: 2888ba254e5918350793c8cabb119f07f574b44c88240cb2f3131605fed9721d
   paletteVariant: 0
   headLamp: {fileID: 0}
   preservesAirborneMotion: 0
@@ -418,6 +419,39 @@ MonoBehaviour:
     columns: 0
     rows: 0
     cells: []
+--- !u!114 &2965940409037014459
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6190898219199859450}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b2be743ae8414fe69b45824c1d81d423, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: BarPromenade.Runtime::BarPromenade.CharacterJointDeformation
+  bindings:
+  - Renderer: {fileID: 8577802902654474684}
+    Bone: {fileID: 3155302611104067191}
+    RestRotation: {x: 0.017877687, y: 0.02233826, z: 0.01239254, w: 0.9995138}
+    LongitudinalAxis: {x: -0.0000005274604, y: 1, z: -0.00000040498506}
+    Shape: 0
+  - Renderer: {fileID: 1248140147335643629}
+    Bone: {fileID: 2454940553221159255}
+    RestRotation: {x: 0.0129169, y: -0.022518253, z: -0.019055707, w: 0.9994814}
+    LongitudinalAxis: {x: 0.00000017309854, y: 1, z: -0.00000032496803}
+    Shape: 0
+  - Renderer: {fileID: 7522601887612558256}
+    Bone: {fileID: 3155302611104067191}
+    RestRotation: {x: 0.017877687, y: 0.02233826, z: 0.01239254, w: 0.9995138}
+    LongitudinalAxis: {x: -0.0000005274604, y: 1, z: -0.00000040498506}
+    Shape: 0
+  - Renderer: {fileID: 58276095486649095}
+    Bone: {fileID: 2454940553221159255}
+    RestRotation: {x: 0.0129169, y: -0.022518253, z: -0.019055707, w: 0.9994814}
+    LongitudinalAxis: {x: 0.00000017309854, y: 1, z: -0.00000032496803}
+    Shape: 0
 --- !u!1001 &891389330169068948
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -837,6 +871,11 @@ SkinnedMeshRenderer:
   m_CorrespondingSourceObject: {fileID: -5932187954769016124, guid: 9293c981e9a11e64b82de62e9890d89c, type: 3}
   m_PrefabInstance: {fileID: 891389330169068948}
   m_PrefabAsset: {fileID: 0}
+--- !u!4 &2454940553221159255 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -5886368873632086845, guid: 9293c981e9a11e64b82de62e9890d89c, type: 3}
+  m_PrefabInstance: {fileID: 891389330169068948}
+  m_PrefabAsset: {fileID: 0}
 --- !u!137 &2590937953120176918 stripped
 SkinnedMeshRenderer:
   m_CorrespondingSourceObject: {fileID: -5788808288426346878, guid: 9293c981e9a11e64b82de62e9890d89c, type: 3}
@@ -850,6 +889,11 @@ SkinnedMeshRenderer:
 --- !u!137 &2698401248558046237 stripped
 SkinnedMeshRenderer:
   m_CorrespondingSourceObject: {fileID: 2966883130650730889, guid: 9293c981e9a11e64b82de62e9890d89c, type: 3}
+  m_PrefabInstance: {fileID: 891389330169068948}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &3155302611104067191 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 2852813616820032483, guid: 9293c981e9a11e64b82de62e9890d89c, type: 3}
   m_PrefabInstance: {fileID: 891389330169068948}
   m_PrefabAsset: {fileID: 0}
 --- !u!137 &3402653606927312784 stripped

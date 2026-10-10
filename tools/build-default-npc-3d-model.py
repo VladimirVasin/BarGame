@@ -668,6 +668,7 @@ class WorkerBuilder(base.PedestrianBuilder):
         self.accessories();self.active_item=None
         for part in self.result.parts:self.uv(part)
         bpy.context.view_layer.update()
+        base.npc_joint_surfaces.correct_continuous(self.result)
         return self.result
 
 
@@ -690,6 +691,8 @@ def visible_names(result,wardrobe_data,item_ids):
 
 def validate(builder,data):
     result=builder.result;parts={p.obj.name:p.obj for p in result.parts}
+    errors=[];base.npc_joint_surfaces.joints.validate(result,errors)
+    if errors:raise RuntimeError("Default NPC joint surface check failed: "+"; ".join(errors))
     if len(parts)!=len(result.parts):raise RuntimeError("Duplicate part names")
     if len({p.data.as_pointer() for p in parts.values()})!=len(parts):raise RuntimeError("Source meshes must not be shared between items")
     expected=base.npc_v2_bone_specs()
@@ -747,7 +750,7 @@ def hand_grip_manifest(builder):
     return {"shape_name":HAND_GRIP_SHAPE,"cylinder_radius_m":HAND_GRIP_WORLD_RADIUS,
             "source_cylinder_radius_m":HAND_GRIP_RADIUS,"hands":hands,
             "shape_signature":digest([(p.obj.name,[[round(float(c),7) for c in v.co] for v in p.obj.data.shape_keys.key_blocks[HAND_GRIP_SHAPE].data])
-                for p in builder.result.parts if p.obj.data.shape_keys])}
+                for p in builder.result.parts if p.obj.data.shape_keys and HAND_GRIP_SHAPE in p.obj.data.shape_keys.key_blocks])}
 
 
 def validate_grip(builder):
@@ -896,7 +899,7 @@ def grip_previews(result,data,texture):
     camera=bpy.data.cameras.new("GripReviewCamera");cam=bpy.data.objects.new(camera.name,camera);scene.collection.objects.link(cam);camera.type="ORTHO";camera.ortho_scale=.245;scene.camera=cam
     scene.render.resolution_x=900;scene.render.resolution_y=800
     for part in result.parts:
-        if part.obj.data.shape_keys:part.obj.data.shape_keys.key_blocks[HAND_GRIP_SHAPE].value=1.
+        if part.obj.data.shape_keys and HAND_GRIP_SHAPE in part.obj.data.shape_keys.key_blocks:part.obj.data.shape_keys.key_blocks[HAND_GRIP_SHAPE].value=1.
     for label,extra in (("Bare",[]),("Glove",["gloves.work"])):
         items=next(o["items"] for o in data["outfits"] if o["id"]=="everyday")+extra
         visible=visible_names(result,data,items)
@@ -905,7 +908,7 @@ def grip_previews(result,data,texture):
             cam.location=centre+offset;cam.rotation_euler=(-offset).to_track_quat("-Z","Y").to_euler()
             scene.render.filepath=str(SOURCE/(MODEL+"_Grip"+label+suffix+".png"));bpy.ops.render.render(write_still=True)
     for part in result.parts:
-        if part.obj.data.shape_keys:part.obj.data.shape_keys.key_blocks[HAND_GRIP_SHAPE].value=0.
+        if part.obj.data.shape_keys and HAND_GRIP_SHAPE in part.obj.data.shape_keys.key_blocks:part.obj.data.shape_keys.key_blocks[HAND_GRIP_SHAPE].value=0.
     cylinder.hide_render=True;base.reset_pose(result.rig)
     visible=visible_names(result,data,next(o["items"] for o in data["outfits"] if o["id"]=="warm"))
     for part in result.parts:part.obj.hide_render=part.obj.name not in visible
@@ -955,6 +958,7 @@ def main():
             hair_hashes.append({"face_id":face["id"],"hair_id":hair_id,"sha256":hashlib.sha256(path.read_bytes()).hexdigest()})
     metrics=resident.measured(result)
     payload={"generator":Path(__file__).name,"version":VERSION,"role":MODEL,"catalog_model_id":"ordinary-worker-v1","anatomy_standard":"NpcHumanV2",
+             "joint_surfaces":base.npc_joint_surfaces.joints.manifest(result),
              "height_scale":1.78/1.75,**metrics,"atlas_sha256":texture_hash,"atlas_size":[512,512],"palette_encoding":"linear",
              "parts":[{"name":p.obj.name,"color":list(p.color)} for p in result.parts],"wardrobe":data,"faces":face_data,"face_atlas_sha256":face_hashes,
              "geometry_signature":resident.geometry_signature(result),"validation":checks}

@@ -120,6 +120,7 @@ namespace BarPromenade.Editor
                         permanent.Where(renderer => renderer.name.StartsWith("HAIR_", StringComparison.Ordinal)).ToArray());
                     // Only the wardrobe owns clothes, including restoration after OnEnable.
                     ValidateGeometry(root, manifest);
+                    CharacterJointDeformation.Configure(root);
                     PrefabUtility.SaveAsPrefabAsset(root, PrefabPath);
                     AssetDatabase.SaveAssets();
                 }
@@ -232,6 +233,9 @@ namespace BarPromenade.Editor
             importer.sourceAvatar = avatar;
             importer.importAnimation = false;
             importer.importBlendShapes = true;
+            importer.skinWeights = ModelImporterSkinWeights.Custom;
+            importer.maxBonesPerVertex = 4;
+            importer.minBoneWeight = 0f;
             importer.globalScale = 1f;
             importer.useFileScale = true;
             importer.isReadable = true;

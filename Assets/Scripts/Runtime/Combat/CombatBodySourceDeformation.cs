@@ -50,6 +50,10 @@ namespace BarPromenade
         internal bool IsMutableSource => !disposed && cloth != null && clothSurface >= 0 &&
             cloth.DeformedMesh(clothSurface) != null && source != null && source.sharedMesh == cloth.DeformedMesh(clothSurface);
 
+        internal uint SourceGeometryVersion => IsMutableSource ? cloth.SurfaceGeometryVersion(clothSurface) : 0u;
+        internal Mesh AuthoredSourceMesh => cloth != null && clothSurface >= 0 ? cloth.SourceMesh(clothSurface) : source.sharedMesh;
+        internal Mesh AuthoredPartitionMesh => template;
+
         internal void Refresh(SkinnedMeshRenderer renderer, bool preserveCompositedMesh = false)
         {
             if (disposed || renderer == null || source == null || source.sharedMesh == null) return;

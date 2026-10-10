@@ -182,6 +182,7 @@ class DriverBuilder(base.PedestrianBuilder):
         self.build_body()
         self.build_face()
         self.build_uniform()
+        base.npc_joint_surfaces.apply(self.result)
         npc_detail_atlas.attach_preview(material,
             npc_detail_atlas.publish(npc_detail_atlas.ASSET_PATH))
         self.configure_scene_metadata()
@@ -811,15 +812,7 @@ def validate_driver_result(result):
             errors.append(
                 f"{obj.name} does not use the one shared material"
             )
-        if (
-            len(obj.vertex_groups) != 1
-            or obj.vertex_groups[0].name != part.bone
-        ):
-            errors.append(
-                f"{obj.name} must have one rigid group for {part.bone}"
-            )
-
-        rigid_weight_error = False
+        base.npc_joint_surfaces.validate_weights(obj, part.bone, errors)
         part_vertices = []
         for vertex in mesh.vertices:
             world_vertex = obj.matrix_world @ vertex.co
@@ -830,19 +823,6 @@ def validate_driver_result(result):
                     for component in world_vertex
                 ]
             )
-            weights = [
-                group
-                for group in vertex.groups
-                if group.weight > 0.000001
-            ]
-            if (
-                len(weights) != 1
-                or abs(weights[0].weight - 1.0) > 0.000001
-            ):
-                rigid_weight_error = True
-        if rigid_weight_error:
-            errors.append(f"{obj.name} is not rigidly weighted")
-
         triangles = base.triangulated_count(mesh)
         triangle_count += triangles
         signature_parts.append(
@@ -857,6 +837,8 @@ def validate_driver_result(result):
                 ],
                 "vertices": part_vertices,
                 "triangles": triangles,
+                "shape_keys": [(key.name, [[base.stable_float(c) for c in point.co] for point in key.data])
+                               for key in mesh.shape_keys.key_blocks] if mesh.shape_keys else [],
             }
         )
 
@@ -907,6 +889,7 @@ def validate_driver_result(result):
     ):
         errors.append("Export collection contains a light or camera")
 
+    base.npc_joint_surfaces.joints.validate(result, errors)
     if errors:
         formatted = "\n".join(f"  - {error}" for error in errors)
         raise RuntimeError(f"City bus driver validation failed:\n{formatted}")
@@ -932,6 +915,7 @@ def validate_driver_result(result):
         ],
         "parts": signature_parts,
         "pivots": [],
+        "joint_surfaces": base.npc_joint_surfaces.joints.manifest(result),
     }
     signature = hashlib.sha256(
         json.dumps(
@@ -1001,6 +985,7 @@ def write_manifest(path: Path, result, report) -> None:
     payload = {
         "generator": "tools/build-city-bus-driver-3d-model.py",
         "generator_version": GENERATOR_VERSION,
+        "joint_surfaces": base.npc_joint_surfaces.joints.manifest(result),
         "blender_version": bpy.app.version_string,
         "design_id": DESIGN_ID,
         "display_name": DISPLAY_NAME,

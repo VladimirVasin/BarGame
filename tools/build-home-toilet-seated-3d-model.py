@@ -2,11 +2,13 @@
 """Author only the seated toilet's compatible lower-body module and falling props."""
 from __future__ import annotations
 import argparse
+from copy import deepcopy
 import hashlib
 import json
 import math
 import sys
 from pathlib import Path
+from types import SimpleNamespace
 import bpy
 import bmesh
 from mathutils import Matrix, Vector
@@ -15,9 +17,11 @@ ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "ArtSource/HomeToiletSeated"
 RESOURCES = ROOT / "Assets/Resources/HomeToiletSeated"
 HERO_SOURCE = ROOT / "ArtSource/PlayerV2/Blender/PlayerCharacter3DV2.blend"
+HERO_MANIFEST = ROOT / "Assets/Player3D/V2/Models/PlayerCharacter3DV2.json"
 PARTS = {"GEO_Pelvis": "pelvis", "GEO_Thigh.L": "thigh.L", "GEO_Thigh.R": "thigh.R",
          "GEO_Shin.L": "shin.L", "GEO_Shin.R": "shin.R"}
-VERSION = "1.2.0"
+GARMENT_ACCESSORIES = {"CLO_Belt": "Trousers_Belt", "CLO_BeltBuckle": "Trousers_BeltBuckle"}
+VERSION = "1.4.0"
 OUTLET_SOURCE = (0, .033, .790)
 BARE_SUPPORT_SOURCE_Z = .775170
 SKIN_PATH = ROOT / "Assets/Resources/Player/PlayerBareSkinAtlas.png"
@@ -27,7 +31,7 @@ def garment_name(body_name):
 
 def load_hero():
     with bpy.data.libraries.load(str(HERO_SOURCE), link=False) as (data_from, data_to):
-        requested = set(PARTS) | {garment_name(name) for name in PARTS}
+        requested = set(PARTS) | {garment_name(name) for name in PARTS} | set(GARMENT_ACCESSORIES)
         data_to.objects = [name for name in data_from.objects if name in requested or "Armature" in name or name == "PlayerRig"]
     for obj in data_to.objects:
         if obj is not None:
@@ -63,11 +67,12 @@ def make_copy(source, name, rig):
     return obj
 
 def lower_shape(obj, rig, bone_name):
-    obj.shape_key_add(name="Basis")
+    if not obj.data.shape_keys:
+        obj.shape_key_add(name="Basis")
     key = obj.shape_key_add(name="Lowered")
     # Shape keys compress real, UV-identical source fabric into knee folds.
-    # Runtime transports these five one-bone pieces from their existing bone
-    # to the actual knee; mesh vertices are never generated at runtime.
+    # Runtime transports the complete source skin palette towards the knee,
+    # retaining the continuous production joint weights at the dressed endpoint.
     bone_matrix = rig.data.bones[bone_name].matrix_local
     inverse_bone = bone_matrix.inverted()
     inverse_object = obj.matrix_world.inverted()
@@ -226,12 +231,26 @@ def make_module(rig, originals):
         bare=make_copy(original,"Bare_"+name[4:],rig)
         if bone=="pelvis": add_cheeks(bare,rig)
         else:
-            for v in bare.data.vertices:
-                v.co.x*=.965
-                v.co.y*=.965
+            inverse = bare.matrix_world.inverted()
+            coordinates = ([key.data for key in bare.data.shape_keys.key_blocks]
+                           if bare.data.shape_keys else [bare.data.vertices])
+            for points in coordinates:
+                for vertex in points:
+                    point = bare.matrix_world @ vertex.co
+                    point.x *= .965
+                    point.y *= .965
+                    vertex.co = inverse @ point
+            if bare.data.shape_keys:
+                for vertex, basis in zip(bare.data.vertices, bare.data.shape_keys.key_blocks[0].data):
+                    vertex.co = basis.co
         bare.data.materials.clear()
         bare.data.materials.append(skin)
         models += [trousers,bare]
+    for source_name, module_name in GARMENT_ACCESSORIES.items():
+        assert source_name in originals, ("missing production belt source", source_name)
+        accessory = make_copy(originals[source_name], module_name, rig)
+        lower_shape(accessory, rig, "pelvis")
+        models.append(accessory)
     anchor=bpy.data.objects.new("ToiletOutlet",None)
     bpy.context.scene.collection.objects.link(anchor)
     anchor.parent=root
@@ -268,6 +287,77 @@ def make_stool(name,length,diameter,phase):
         anchor.parent=root;anchor.location=(0,0,z)
     return root,[obj]
 
+
+def joint_surface_manifest(rig, models):
+    """Retain the production joint contract in this renamed lower-body subset."""
+    sys.path.insert(0, str(Path(__file__).parent))
+    import character_joint_surfaces as joints
+    source = json.loads(HERO_MANIFEST.read_text(encoding="utf-8"))["joint_surfaces"]
+    assert source["contract"] == joints.CONTRACT
+    assert source["source_space"] == "blender_z_up_minus_y_forward"
+    assert source["max_influences"] == 4
+    parts = {obj.name: obj for obj in models}
+    renamed = {name: "Bare_" + name[4:] for name in PARTS if name != "GEO_Pelvis"}
+    renamed.update({garment_name(name): "Trousers_" + name[4:]
+                    for name in PARTS if name != "GEO_Pelvis"})
+    expected = {(f"{kind}_Thigh.{side}", f"{kind}_Shin.{side}")
+                for kind in ("Bare", "Trousers") for side in ("L", "R")}
+    payload = {key: source[key] for key in ("contract", "source_space", "max_influences")}
+    payload.update(seams=[], surfaces=[], attachments=[])
+    for seam in source["seams"]:
+        if not all(name in renamed for name in seam["renderers"]):
+            continue
+        row = deepcopy(seam)
+        row["renderers"] = [renamed[name] for name in row["renderers"]]
+        if row["renderers"][0].startswith("Bare_"):
+            for point in row["points_blender"]:
+                point["x"] *= .965
+                point["y"] *= .965
+        row.pop("validation", None)
+        payload["seams"].append(row)
+    knee_seams = [row for row in payload["seams"] if tuple(row["renderers"]) in expected]
+    assert {tuple(row["renderers"]) for row in knee_seams} == expected, "missing seated knee seam"
+    assert len(knee_seams) == len(expected), "duplicate seated knee seam"
+    assert len({row["id"] for row in payload["seams"]}) == len(payload["seams"]), "duplicate seated joint id"
+    for collection in ("surfaces", "attachments"):
+        for original in source[collection]:
+            if original["name"] not in renamed:
+                continue
+            row = deepcopy(original)
+            row["name"] = renamed[original["name"]]
+            if "id" in row:
+                row["id"] = row["id"].replace(original["name"], row["name"])
+            payload[collection].append(row)
+    for row in payload["seams"]:
+        a, b = [parts[name] for name in row["renderers"]]
+        assert row["bone"] in rig.data.bones and all(name in rig.data.bones for name in row["bones"])
+        assert row["band_m"] > 0 and row["corrective_angle_degrees"] == joints.MAX_ANGLE
+        assert len(row["vertices_a"]) == len(row["vertices_b"]) == len(row["points_blender"]) >= 3
+        for obj, indices in ((a, row["vertices_a"]), (b, row["vertices_b"])):
+            assert obj.data.shape_keys and row["corrective_shape"] in obj.data.shape_keys.key_blocks
+            assert len(indices) == len(set(indices))
+            for index, point in zip(indices, row["points_blender"]):
+                assert type(index) is int and 0 <= index < len(obj.data.vertices)
+                coordinate = Vector(tuple(point[axis] for axis in ("x", "y", "z")))
+                assert all(math.isfinite(value) for value in coordinate)
+                assert (obj.matrix_world @ obj.data.vertices[index].co - coordinate).length < 2e-6, \
+                    (obj.name, "joint point mapping drift", index)
+    for row in payload["surfaces"]:
+        assert row["name"] in parts and row["bones"] and all(name in rig.data.bones for name in row["bones"])
+    for row in payload["attachments"]:
+        assert row["name"] in parts and row["bone"] in rig.data.bones and row["parent_bone"] in rig.data.bones
+        assert row["band_m"] > 0 and row["endpoint"] in ("start", "end")
+    result = SimpleNamespace(rig=rig, parts=[SimpleNamespace(obj=obj) for obj in models], joint_surfaces=payload)
+    errors = []
+    pose_position = rig.data.pose_position
+    try:
+        rig.data.pose_position = "POSE"
+        joints.validate(result, errors)
+    finally:
+        rig.data.pose_position = pose_position
+    assert not errors, "Seated joint contract failed: " + "; ".join(errors)
+    return payload
+
 def signed_volume(mesh):
     mesh.calc_loop_triangles()
     return sum(mesh.vertices[t.vertices[0]].co.dot(mesh.vertices[t.vertices[1]].co.cross(
@@ -275,19 +365,31 @@ def signed_volume(mesh):
 
 def validate(rig,originals,models):
     report={"trousers_source_endpoints_exact":True,"lowered_shape_count":0,"triangles":0,
-            "real_bones_only":True,"closed_positive_volumes":True}
+            "real_bones_only":True,"closed_positive_volumes":True,"normalized_source_joint_weights":True}
+    garment_sources = {"Trousers_" + name[4:]: garment_name(name) for name in PARTS}
+    garment_sources.update({module_name: source_name for source_name, module_name in GARMENT_ACCESSORIES.items()})
     for obj in models:
         mesh=obj.data;mesh.calc_loop_triangles()
         assert signed_volume(mesh)>1e-8,(obj.name,"inverted solid",signed_volume(mesh))
-        assert all(len(v.groups)==1 for v in mesh.vertices),(obj.name,"must follow one production bone")
+        names = {group.index: group.name for group in obj.vertex_groups}
+        for vertex in mesh.vertices:
+            weights = [group for group in vertex.groups if group.weight > 0]
+            assert 1 <= len(weights) <= 4, (obj.name,"unsupported joint influence count")
+            assert abs(sum(group.weight for group in weights)-1) < 1e-5, (obj.name,"unnormalized joint weights")
+            assert all(names[group.group] in rig.data.bones for group in weights), (obj.name,"unknown joint bone")
         for t in mesh.loop_triangles:
             a,b,c=[mesh.vertices[i].co for i in t.vertices]
             assert (b-a).cross(c-a).length>1e-10,(obj.name,"degenerate")
         report["triangles"]+=len(mesh.loop_triangles)
         if obj.name.startswith("Trousers_"):
-            original=originals[garment_name("GEO_"+obj.name[len("Trousers_"):])]
+            original=originals[garment_sources[obj.name]]
             assert len(mesh.vertices)==len(original.data.vertices)
             assert all((a.co-b.co).length<1e-9 for a,b in zip(mesh.vertices,original.data.vertices)),obj.name
+            original_names = {group.index: group.name for group in original.vertex_groups}
+            for current,source in zip(mesh.vertices,original.data.vertices):
+                current_weights = {names[group.group]:round(group.weight,6) for group in current.groups if group.weight > 0}
+                source_weights = {original_names[group.group]:round(group.weight,6) for group in source.groups if group.weight > 0}
+                assert current_weights == source_weights, (obj.name,"source joint weights drift")
             assert (obj.matrix_world.translation-original.matrix_world.translation).length<1e-8
             assert "Lowered" in mesh.shape_keys.key_blocks
             assert max((a.co-b.co).length for a,b in zip(mesh.vertices,mesh.shape_keys.key_blocks["Lowered"].data))>.06
@@ -296,13 +398,20 @@ def validate(rig,originals,models):
             lower_volume=sum(lower_vertices[t.vertices[0]].dot(lower_vertices[t.vertices[1]].cross(
                 lower_vertices[t.vertices[2]])) for t in mesh.loop_triangles)/6
             assert lower_volume>1e-8,(obj.name,"inverted lowered cloth",lower_volume)
-            def uv_vertex_set(value):
+            assert [layer.name for layer in mesh.uv_layers] == [layer.name for layer in original.data.uv_layers], \
+                (obj.name,"source UV layers drift")
+            assert bool(mesh.uv_layers.active) == bool(original.data.uv_layers.active), \
+                (obj.name,"source active UV layer drift")
+            def uv_vertex_set(value, layer):
                 return {(tuple(round(c,7) for c in value.vertices[value.loops[i].vertex_index].co),
-                         tuple(round(c,7) for c in value.uv_layers.active.data[i].uv))
+                         tuple(round(c,7) for c in layer.data[i].uv))
                         for p in value.polygons for i in p.loop_indices}
-            assert uv_vertex_set(mesh)==uv_vertex_set(original.data),(obj.name,"source UV drift")
+            for layer, source_layer in zip(mesh.uv_layers, original.data.uv_layers):
+                assert uv_vertex_set(mesh,layer)==uv_vertex_set(original.data,source_layer), \
+                    (obj.name,"source UV drift",layer.name)
             report["lowered_shape_count"]+=1
-    assert report["lowered_shape_count"]==5
+    assert report["lowered_shape_count"] == len(garment_sources)
+    report["belt_source_endpoints_exact"] = sorted(GARMENT_ACCESSORIES.values())
     bare=next(o for o in models if o.name=="Bare_Pelvis")
     bm = bmesh.new()
     bm.from_mesh(bare.data)
@@ -413,10 +522,10 @@ def round_trip(expected):
             obj=next(o for o in bpy.context.scene.objects if o.type=="MESH" and o.name==name)
             actual=sorted(tuple(round(c,5) for c in obj.matrix_world@v.co) for v in obj.data.vertices)
             assert close(actual,geometry["vertices"]),(model,name,"FBX vertex/metre mismatch")
-            if geometry["lowered"] is not None:
-                key=next(k for k in obj.data.shape_keys.key_blocks if k.name.endswith("Lowered"))
+            for shape_name, wanted in geometry["shapes"].items():
+                key=next(k for k in obj.data.shape_keys.key_blocks if k.name.endswith(shape_name))
                 actual=sorted(tuple(round(c,5) for c in obj.matrix_world@v.co) for v in key.data)
-                assert close(actual,geometry["lowered"]),(model,name,"FBX Lowered mismatch")
+                assert close(actual,wanted),(model,name,"FBX shape mismatch",shape_name)
         for name,position in record["anchors"].items():
             obj=next(o for o in bpy.context.scene.objects if o.name==name)
             assert (obj.matrix_world.translation-Vector(position)).length<1e-6,(model,name,"anchor axis mismatch")
@@ -424,16 +533,20 @@ def round_trip(expected):
 def export_record(objects,anchors):
     return {"meshes":{obj.name:{
         "vertices":sorted(tuple(round(c,5) for c in obj.matrix_world@v.co) for v in obj.data.vertices),
-        "lowered":sorted(tuple(round(c,5) for c in obj.matrix_world@v.co)
-            for v in obj.data.shape_keys.key_blocks["Lowered"].data) if obj.data.shape_keys else None}
+        "shapes":{key.name:sorted(tuple(round(c,5) for c in obj.matrix_world@v.co) for v in key.data)
+            for key in list(obj.data.shape_keys.key_blocks)[1:]} if obj.data.shape_keys else {}}
         for obj in objects},"anchors":{obj.name:list(obj.matrix_world.translation) for obj in anchors}}
 
 def main():
+    global SOURCE, RESOURCES
     parser = argparse.ArgumentParser()
+    parser.add_argument("--source-dir", type=Path, default=SOURCE)
+    parser.add_argument("--resource-dir", type=Path, default=RESOURCES)
     parser.add_argument("--inspect", action="store_true")
     parser.add_argument("--validate-only", action="store_true")
     parser.add_argument("--preview", action="store_true")
     args = parser.parse_args(sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else [])
+    SOURCE, RESOURCES = args.source_dir, args.resource_dir
     bpy.ops.object.select_all(action="SELECT")
     bpy.ops.object.delete(use_global=False)
     rig, meshes = load_hero()
@@ -442,11 +555,13 @@ def main():
         "parts": {name: {"location": list(obj.location), "vertices": len(obj.data.vertices),
             "bounds": [[min((obj.matrix_world @ v.co)[axis] for v in obj.data.vertices) for axis in range(3)],
                        [max((obj.matrix_world @ v.co)[axis] for v in obj.data.vertices) for axis in range(3)]],
-            "bone_matrix": [list(row) for row in rig.data.bones[PARTS[name] if name in PARTS else PARTS[name.replace("CLO_Trousers", "GEO_")]].matrix_local]}
+            "bone_matrix": [list(row) for row in rig.data.bones["pelvis" if name in GARMENT_ACCESSORIES else
+                PARTS[name] if name in PARTS else PARTS[name.replace("CLO_Trousers", "GEO_")]].matrix_local]}
             for name,obj in meshes.items()}}), flush=True)
         return
     root,models,outlet=make_module(rig,meshes)
     bpy.context.view_layer.update()
+    joint_surfaces = joint_surface_manifest(rig, models)
     report=validate(rig,meshes,models)
     stools=[make_stool("Stool01",.08,.038,0),make_stool("Stool02",.07,.034,.5)]
     for _,objects in stools:
@@ -456,9 +571,12 @@ def main():
     for stool_root,objects in stools:
         expected[objects[0].name]=export_record(objects,[o for o in stool_root.children if o.type=="EMPTY"])
     payload={"schema_version":1,"generator_version":VERSION,"source_hero_sha256":hashlib.sha256(HERO_SOURCE.read_bytes()).hexdigest(),
+        "joint_surfaces":joint_surfaces,
         "coordinates":"Same FBX axis/unit/import contract as production Hero V2; stool localY up",
         "report":report,"models":["SeatedLowerBody","Stool01","Stool02"],
         "outlet_source_world":OUTLET_SOURCE,"source_parts":PARTS,
+        "garment_accessories":{module_name:{"source":source_name,"bone":"pelvis","slot":"belt","garment_id":"hero_belt"}
+            for source_name,module_name in GARMENT_ACCESSORIES.items()},
         "geometry_sha256":geometry_signature(models+[o for _,items in stools for o in items]),
         "trousers_contract":"Exact production source position/UV at Basis; Lowered shape gathers at knee via actual-bone presentation proxies",
         "stools":[{"name":"Stool01","length":.08,"diameter":.038},{"name":"Stool02","length":.07,"diameter":.034}]}
@@ -474,7 +592,7 @@ def main():
     for stool_root,objects in stools:export(RESOURCES/"Models"/(objects[0].name+".fbx"),[stool_root,*stool_root.children])
     if args.preview:preview(rig,models)
     bpy.context.preferences.filepaths.save_version=0
-    bpy.ops.wm.save_as_mainfile(filepath=str(SOURCE/"HomeToiletSeated.blend"))
+    bpy.ops.wm.save_as_mainfile(filepath=str(SOURCE/"HomeToiletSeated.blend"), relative_remap=False)
     round_trip(expected)
     report["fbx_round_trip_vertices_shapes_metres_anchors"]=True
     manifest.write_text(json.dumps(payload,indent=2)+"\n",encoding="utf-8");meta(manifest)

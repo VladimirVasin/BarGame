@@ -10,6 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 5520990709271949156}
   - component: {fileID: 8460187844265734991}
+  - component: {fileID: 7371426468768929920}
   m_Layer: 0
   m_Name: ParkCheckersPlayer3D
   m_TagString: Untagged
@@ -582,12 +583,12 @@ MonoBehaviour:
   personalSpaceGuardClip: {fileID: -8071138802302905759, guid: 1409e5d6bde7d42489da0f5a0a10c6bc, type: 3}
   personalSpaceShoveClip: {fileID: 1493351722043913448, guid: 1409e5d6bde7d42489da0f5a0a10c6bc, type: 3}
   localBounds:
-    m_Center: {x: -0.0010001659, y: 0.87499964, z: 0.03459625}
-    m_Extent: {x: 0.7883722, y: 0.87499964, z: 0.19649354}
+    m_Center: {x: -0.0010000467, y: 0.87499976, z: 0.041746706}
+    m_Extent: {x: 0.7883723, y: 0.87499976, z: 0.22605991}
   sourceTriangleCount: 2384
   sourceGeneratorVersion: 4.5.2
   designId: park_checkers_player_v1
-  buildSignature: 5c520cf9a0d894f70255c56f01838b07e698b1630c799f3bbd8a348488b1948f
+  buildSignature: 9c6b5e3f8116a6f21e665ecef2745ebc354a75b7577c58d13bbb2112e72bd974
   paletteVariant: 0
   headLamp: {fileID: 0}
   preservesAirborneMotion: 0
@@ -598,6 +599,59 @@ MonoBehaviour:
     columns: 0
     rows: 0
     cells: []
+--- !u!114 &7371426468768929920
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5884732334134701832}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b2be743ae8414fe69b45824c1d81d423, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: BarPromenade.Runtime::BarPromenade.CharacterJointDeformation
+  bindings:
+  - Renderer: {fileID: 4421545230106113387}
+    Bone: {fileID: 386410416780808709}
+    RestRotation: {x: -0.020317057, y: -0.015963241, z: -0.015225763, w: 0.9995502}
+    LongitudinalAxis: {x: 0.000000011935024, y: 1, z: -0.00000052514105}
+    Shape: 0
+  - Renderer: {fileID: 8772328100292106461}
+    Bone: {fileID: 4186179198636264311}
+    RestRotation: {x: 0.012595064, y: 0.014988454, z: 0.0154044945, w: 0.9996897}
+    LongitudinalAxis: {x: 0.0000000023873787, y: 1, z: 0.000000035810682}
+    Shape: 0
+  - Renderer: {fileID: 2818836057131418620}
+    Bone: {fileID: 1211969350918359226}
+    RestRotation: {x: 0.017877687, y: 0.02233826, z: 0.01239254, w: 0.9995138}
+    LongitudinalAxis: {x: -0.0000005274604, y: 1, z: -0.00000040498506}
+    Shape: 0
+  - Renderer: {fileID: 4031234264164715362}
+    Bone: {fileID: 1804140083715809178}
+    RestRotation: {x: 0.0129169, y: -0.022518253, z: -0.019055707, w: 0.9994814}
+    LongitudinalAxis: {x: 0.00000017309854, y: 1, z: -0.00000032496803}
+    Shape: 0
+  - Renderer: {fileID: 5481548146772737905}
+    Bone: {fileID: 1211969350918359226}
+    RestRotation: {x: 0.017877687, y: 0.02233826, z: 0.01239254, w: 0.9995138}
+    LongitudinalAxis: {x: -0.0000005274604, y: 1, z: -0.00000040498506}
+    Shape: 0
+  - Renderer: {fileID: 3047367309288433440}
+    Bone: {fileID: 1804140083715809178}
+    RestRotation: {x: 0.0129169, y: -0.022518253, z: -0.019055707, w: 0.9994814}
+    LongitudinalAxis: {x: 0.00000017309854, y: 1, z: -0.00000032496803}
+    Shape: 0
+  - Renderer: {fileID: 5422240904315726567}
+    Bone: {fileID: 386410416780808709}
+    RestRotation: {x: -0.020317057, y: -0.015963241, z: -0.015225763, w: 0.9995502}
+    LongitudinalAxis: {x: 0.000000011935024, y: 1, z: -0.00000052514105}
+    Shape: 0
+  - Renderer: {fileID: 3700175830296613950}
+    Bone: {fileID: 4186179198636264311}
+    RestRotation: {x: 0.012595064, y: 0.014988454, z: 0.0154044945, w: 0.9996897}
+    LongitudinalAxis: {x: 0.0000000023873787, y: 1, z: 0.000000035810682}
+    Shape: 0
 --- !u!1001 &3983149555130751833
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1084,6 +1138,11 @@ Transform:
   m_CorrespondingSourceObject: {fileID: -5508169512097499140, guid: a2de8f198398255449b050ec10b5ce18, type: 3}
   m_PrefabInstance: {fileID: 3983149555130751833}
   m_PrefabAsset: {fileID: 0}
+--- !u!4 &386410416780808709 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 3610254473159100764, guid: a2de8f198398255449b050ec10b5ce18, type: 3}
+  m_PrefabInstance: {fileID: 3983149555130751833}
+  m_PrefabAsset: {fileID: 0}
 --- !u!137 &831233580944152155 stripped
 SkinnedMeshRenderer:
   m_CorrespondingSourceObject: {fileID: -4841404907856622334, guid: a2de8f198398255449b050ec10b5ce18, type: 3}
@@ -1104,6 +1163,11 @@ SkinnedMeshRenderer:
   m_CorrespondingSourceObject: {fileID: 2874768829983136458, guid: a2de8f198398255449b050ec10b5ce18, type: 3}
   m_PrefabInstance: {fileID: 3983149555130751833}
   m_PrefabAsset: {fileID: 0}
+--- !u!4 &1211969350918359226 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 2852813616820032483, guid: a2de8f198398255449b050ec10b5ce18, type: 3}
+  m_PrefabInstance: {fileID: 3983149555130751833}
+  m_PrefabAsset: {fileID: 0}
 --- !u!137 &1664370624777243189 stripped
 SkinnedMeshRenderer:
   m_CorrespondingSourceObject: {fileID: 2332852690199220588, guid: a2de8f198398255449b050ec10b5ce18, type: 3}
@@ -1112,6 +1176,11 @@ SkinnedMeshRenderer:
 --- !u!137 &1796084003230477787 stripped
 SkinnedMeshRenderer:
   m_CorrespondingSourceObject: {fileID: -5788808288426346878, guid: a2de8f198398255449b050ec10b5ce18, type: 3}
+  m_PrefabInstance: {fileID: 3983149555130751833}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &1804140083715809178 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -5886368873632086845, guid: a2de8f198398255449b050ec10b5ce18, type: 3}
   m_PrefabInstance: {fileID: 3983149555130751833}
   m_PrefabAsset: {fileID: 0}
 --- !u!137 &1939467139911422365 stripped
@@ -1217,6 +1286,11 @@ Transform:
 --- !u!137 &4031234264164715362 stripped
 SkinnedMeshRenderer:
   m_CorrespondingSourceObject: {fileID: 51562004753223739, guid: a2de8f198398255449b050ec10b5ce18, type: 3}
+  m_PrefabInstance: {fileID: 3983149555130751833}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &4186179198636264311 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 963408202774007854, guid: a2de8f198398255449b050ec10b5ce18, type: 3}
   m_PrefabInstance: {fileID: 3983149555130751833}
   m_PrefabAsset: {fileID: 0}
 --- !u!1 &4289560702397441544 stripped

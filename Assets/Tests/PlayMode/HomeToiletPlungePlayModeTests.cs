@@ -1,6 +1,8 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -44,6 +46,197 @@ namespace BarPromenade.Tests.PlayMode
             camera = null;
             GameSessionState.BeginNewGame();
             yield return null;
+        }
+
+        [UnityTest]
+        [PrebuildSetup(typeof(JointSurfaceAssetsSetup))]
+        public IEnumerator SeatedAppearance_PreservesMixedJointSkinAtFabricEndpoints()
+        {
+            Assert.That(GameSessionState.TryStartGameTimeFromWake(), Is.True);
+            AsyncOperation load = SceneManager.LoadSceneAsync(SceneIds.HomeInterior, LoadSceneMode.Single);
+            while (load != null && !load.isDone) yield return null;
+            yield return WaitFor(() =>
+            {
+                home = Object.FindAnyObjectByType<HomeInteriorRoot>();
+                return home != null && home.IsInitialized;
+            }, "Home did not initialize.");
+            var registry = ((Player3DCharacterPresentation)home.Player.Visual).Registry;
+            registry.Animator.enabled = false;
+            Assert.That(registry.TryGetPart(Player3DAnatomicalPart.RightShin, out Player3DAnatomicalPartBinding shin), Is.True);
+            Transform knee = shin.Bone;
+            knee.localRotation *= Quaternion.AngleAxis(90f, Vector3.right);
+            registry.GetComponent<CharacterJointDeformation>().ApplyPose();
+            var owner = new GameObject("Test seated joint appearance");
+            HomeToiletSeatedAppearance appearance = owner.AddComponent<HomeToiletSeatedAppearance>();
+            var visibility = registry.MeshBindings.ToDictionary(binding => binding.Renderer, binding => binding.Renderer.enabled);
+            try
+            {
+                appearance.Initialize(home);
+                Assert.That(appearance.Prepare(), Is.True);
+                Assert.That(appearance.Begin(), Is.True);
+                Assert.That(appearance.Renderers.Count, Is.EqualTo(10));
+                SkinnedMeshRenderer[] belts = registry.ModelRoot.GetComponentsInChildren<SkinnedMeshRenderer>(true)
+                    .Where(renderer => renderer.name == "Trousers_Belt" || renderer.name == "Trousers_BeltBuckle").ToArray();
+                Assert.That(belts.Length, Is.EqualTo(2));
+                Assert.That(belts.All(renderer => renderer.enabled), Is.True);
+                Vector3[][] raisedBelts = null;
+                float beltTravel = 0f;
+                Assert.That(appearance.Renderers.OfType<SkinnedMeshRenderer>()
+                    .Where(renderer => renderer.name.StartsWith("Trousers_", StringComparison.Ordinal))
+                    .Any(renderer => renderer.sharedMesh.boneWeights.Any(weight => weight.weight1 > .001f)), Is.True,
+                    "The regression must exercise mixed joint influences, not rigid garment vertices.");
+                var raised = new Dictionary<Renderer, Vector3[]>();
+                var barePose = new Dictionary<Renderer, Vector3[]>();
+                float maximumTravel = 0f;
+                foreach (float lowered in new[] { 0f, .5f, 1f, 0f })
+                {
+                    appearance.Present(lowered);
+                    Vector3[][] beltPose = belts.Select(BakedWorldVertices).ToArray();
+                    if (raisedBelts == null) raisedBelts = beltPose;
+                    if (lowered == 1f)
+                        beltTravel = beltPose.Select((points, index) => points.Zip(raisedBelts[index], Vector3.Distance).Max()).Min();
+                    foreach (SkinnedMeshRenderer replacement in appearance.Renderers)
+                    {
+                        bool fabric = replacement.name.StartsWith("Trousers_", StringComparison.Ordinal);
+                        string suffix = replacement.name.Substring(fabric ? "Trousers_".Length : "Bare_".Length);
+                        string sourceName = (fabric ? "CLO_Trousers" : "GEO_") + suffix;
+                        var source = (SkinnedMeshRenderer)registry.MeshBindings.Single(binding => binding.MeshName == sourceName).Renderer;
+                        Vector3[] actual = BakedWorldVertices(replacement);
+                        Assert.That(actual.All(point => float.IsFinite(point.x) && float.IsFinite(point.y) && float.IsFinite(point.z)), Is.True,
+                            replacement.name + " must retain finite skin throughout lowering.");
+                        if (fabric && lowered == 0f)
+                        {
+                            Vector3[] expected = BakedWorldVertices(source);
+                            float gap = actual.Max(point => expected.Min(vertex => Vector3.Distance(point, vertex)));
+                            Assert.That(gap, Is.LessThan(.001f), sourceName + " must follow the complete posed source skin.");
+                        }
+                        for (int shape = 0; shape < replacement.sharedMesh.blendShapeCount; shape++)
+                        {
+                            string name = replacement.sharedMesh.GetBlendShapeName(shape);
+                            int marker = name.IndexOf("JointVolume.", StringComparison.Ordinal);
+                            if (marker < 0) marker = name.IndexOf("TrouserKneeFold.", StringComparison.Ordinal);
+                            if (marker < 0) continue;
+                            int sourceShape = CharacterJointDeformation.FindShape(source.sharedMesh, name.Substring(marker));
+                            Assert.That(sourceShape, Is.GreaterThanOrEqualTo(0));
+                            float expected = source.GetBlendShapeWeight(sourceShape) * (fabric ? 1f - lowered : 1f);
+                            Assert.That(replacement.GetBlendShapeWeight(shape), Is.EqualTo(expected).Within(.00001f),
+                                replacement.name + " must retain its own authored body or fabric correction.");
+                        }
+                        if (!fabric)
+                        {
+                            // This module intentionally authors a smaller bare
+                            // leg envelope and a separate pelvis. Lowering may
+                            // move only fabric, never those posed skin vertices.
+                            if (!barePose.TryGetValue(replacement, out Vector3[] initialSkin)) barePose.Add(replacement, actual);
+                            else Assert.That(actual.Zip(initialSkin, Vector3.Distance).Max(), Is.LessThan(.00001f),
+                                replacement.name + " must remain on the live anatomy while fabric lowers.");
+                            continue;
+                        }
+                        if (!raised.TryGetValue(replacement, out Vector3[] initial)) raised.Add(replacement, actual);
+                        else if (lowered == 1f)
+                            maximumTravel = Mathf.Max(maximumTravel, actual.Zip(initial, Vector3.Distance).Max());
+                    }
+                    foreach (string side in new[] { ".L", ".R" })
+                    {
+                        AssertSeatedKneeSurface(appearance, "Bare_", side);
+                        if (lowered == 0f) AssertSeatedKneeSurface(appearance, "Trousers_", side);
+                    }
+                }
+                Assert.That(maximumTravel, Is.GreaterThan(.03f), "Lowering must move the authored fabric while bare knee skin stays on the live rig.");
+                Assert.That(beltTravel, Is.GreaterThan(.03f), "The separate belt and buckle must travel with the lowered waistband.");
+                appearance.End();
+                foreach (var saved in visibility) Assert.That(saved.Key.enabled, Is.EqualTo(saved.Value));
+                PlayerWardrobe wardrobe = registry.GetComponent<PlayerWardrobe>();
+                PlayerWardrobe.OutfitSnapshot outfit = wardrobe.CaptureOutfit();
+                try
+                {
+                    wardrobe.SetSlot("belt", null);
+                    Assert.That(appearance.Begin(), Is.True);
+                    appearance.Present(1f);
+                    Assert.That(belts.All(renderer => !renderer.enabled), Is.True,
+                        "The seated module must not add a belt that the hero removed.");
+                    appearance.End();
+                }
+                finally { appearance.End(); wardrobe.RestoreOutfit(outfit); }
+            }
+            finally { appearance.End(); Object.DestroyImmediate(owner); }
+        }
+
+        private static Vector3[] BakedWorldVertices(SkinnedMeshRenderer renderer)
+        {
+            var mesh = new Mesh();
+            try
+            {
+                // FBX part transforms carry unit scale. Compensate it before
+                // converting the baked renderer-local points to world space.
+                renderer.BakeMesh(mesh, true);
+                Vector3[] actual = mesh.vertices.Select(renderer.transform.TransformPoint).ToArray();
+                Vector3[] authored = renderer.sharedMesh.vertices;
+                var delta = new Vector3[authored.Length];
+                for (int shape = 0; shape < renderer.sharedMesh.blendShapeCount; shape++)
+                {
+                    float weight = renderer.GetBlendShapeWeight(shape);
+                    if (weight == 0f) continue;
+                    Assert.That(renderer.sharedMesh.GetBlendShapeFrameCount(shape), Is.EqualTo(1),
+                        "The seated skin oracle expects the published single-frame corrections.");
+                    renderer.sharedMesh.GetBlendShapeFrameVertices(shape, 0, delta, null, null);
+                    float fraction = weight / renderer.sharedMesh.GetBlendShapeFrameWeight(shape, 0);
+                    for (int vertex = 0; vertex < authored.Length; vertex++) authored[vertex] += delta[vertex] * fraction;
+                }
+                Matrix4x4[] bind = renderer.sharedMesh.bindposes;
+                Transform[] bones = renderer.bones;
+                BoneWeight[] weights = renderer.sharedMesh.boneWeights;
+                for (int vertex = 0; vertex < authored.Length; vertex++)
+                {
+                    BoneWeight skin = weights[vertex];
+                    Vector3 expected = Influence(skin.boneIndex0, skin.weight0) + Influence(skin.boneIndex1, skin.weight1) +
+                        Influence(skin.boneIndex2, skin.weight2) + Influence(skin.boneIndex3, skin.weight3);
+                    Assert.That(Vector3.Distance(actual[vertex], expected), Is.LessThan(.0001f),
+                        renderer.name + " must measure the live weighted skin in world units.");
+                    Vector3 Influence(int bone, float weight) => weight <= 0f ? Vector3.zero :
+                        bones[bone].localToWorldMatrix.MultiplyPoint3x4(bind[bone].MultiplyPoint3x4(authored[vertex])) * weight;
+                }
+                return actual;
+            }
+            finally { Object.DestroyImmediate(mesh); }
+        }
+
+        private static void AssertSeatedKneeSurface(HomeToiletSeatedAppearance appearance, string prefix, string side)
+        {
+            var first = (SkinnedMeshRenderer)appearance.Renderers.Single(renderer => renderer.name == prefix + "Thigh" + side);
+            var second = (SkinnedMeshRenderer)appearance.Renderers.Single(renderer => renderer.name == prefix + "Shin" + side);
+            Vector3[] bindA = first.sharedMesh.vertices, bindB = second.sharedMesh.vertices;
+            Vector3[] baseA = first.sharedMesh.normals, baseB = second.sharedMesh.normals;
+            Matrix4x4 normalA = first.transform.localToWorldMatrix.inverse.transpose;
+            Matrix4x4 normalB = second.transform.localToWorldMatrix.inverse.transpose;
+            var bakedA = new Mesh(); var bakedB = new Mesh();
+            try
+            {
+                first.BakeMesh(bakedA, true); second.BakeMesh(bakedB, true);
+                Vector3[] a = bakedA.vertices, b = bakedB.vertices;
+                Vector3[] na = bakedA.normals, nb = bakedB.normals;
+                int matched = 0;
+                for (int ia = 0; ia < bindA.Length; ia++)
+                {
+                    Vector3 point = first.transform.TransformPoint(bindA[ia]);
+                    Vector3 originalNormal = normalA.MultiplyVector(baseA[ia]).normalized;
+                    int partner = -1; float best = .9995f;
+                    for (int ib = 0; ib < bindB.Length; ib++)
+                    {
+                        if (Vector3.Distance(point, second.transform.TransformPoint(bindB[ib])) > .00005f) continue;
+                        float dot = Vector3.Dot(originalNormal, normalB.MultiplyVector(baseB[ib]).normalized);
+                        if (dot > best) { best = dot; partner = ib; }
+                    }
+                    if (partner < 0) continue;
+                    matched++;
+                    Assert.That(Vector3.Distance(first.transform.TransformPoint(a[ia]), second.transform.TransformPoint(b[partner])),
+                        Is.LessThan(.0001f), prefix + side + " must retain a connected posed knee.");
+                    Assert.That(Vector3.Angle(normalA.MultiplyVector(na[ia]), normalB.MultiplyVector(nb[partner])),
+                        Is.LessThan(2f), prefix + side + " must retain continuous knee lighting.");
+                }
+                Assert.That(matched, Is.GreaterThanOrEqualTo(6), prefix + side + " must exercise the shared outer knee ring.");
+            }
+            finally { Object.DestroyImmediate(bakedA); Object.DestroyImmediate(bakedB); }
         }
 
         [UnityTest]

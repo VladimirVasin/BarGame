@@ -10,6 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 3931136673872022146}
   - component: {fileID: 1433535067619767668}
+  - component: {fileID: 8838869933789605493}
   m_Layer: 0
   m_Name: CemeteryMourner3D
   m_TagString: Untagged
@@ -412,12 +413,12 @@ MonoBehaviour:
   personalSpaceGuardClip: {fileID: 2670805136320832604, guid: 1409e5d6bde7d42489da0f5a0a10c6bc, type: 3}
   personalSpaceShoveClip: {fileID: -6223973721212317202, guid: 1409e5d6bde7d42489da0f5a0a10c6bc, type: 3}
   localBounds:
-    m_Center: {x: -0.0010001659, y: 0.8749999, z: -0.007390052}
-    m_Extent: {x: 0.7784672, y: 0.8749999, z: 0.23127547}
+    m_Center: {x: -0.0010000467, y: 0.875, z: -0.007390052}
+    m_Extent: {x: 0.77846724, y: 0.875, z: 0.23127547}
   sourceTriangleCount: 1712
   sourceGeneratorVersion: 4.5.2
   designId: cemetery_mourner_v1
-  buildSignature: 69479a463b057cc2b23b3cec219b40ad4fc3cbbdca026dfc9af81269205b0bb1
+  buildSignature: e8dcadee9fd5267898757504d92c43c5d372f1cf33bc7a6afa2bff094e10c744
   paletteVariant: 0
   headLamp: {fileID: 0}
   preservesAirborneMotion: 0
@@ -428,6 +429,39 @@ MonoBehaviour:
     columns: 0
     rows: 0
     cells: []
+--- !u!114 &8838869933789605493
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5460932323809776720}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b2be743ae8414fe69b45824c1d81d423, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: BarPromenade.Runtime::BarPromenade.CharacterJointDeformation
+  bindings:
+  - Renderer: {fileID: 5834242881015270674}
+    Bone: {fileID: 7437737925955257940}
+    RestRotation: {x: 0.017877687, y: 0.02233826, z: 0.01239254, w: 0.9995138}
+    LongitudinalAxis: {x: -0.0000005274604, y: 1, z: -0.00000040498506}
+    Shape: 0
+  - Renderer: {fileID: 4618497204138411404}
+    Bone: {fileID: 7989516926043378036}
+    RestRotation: {x: 0.0129169, y: -0.022518253, z: -0.019055707, w: 0.9994814}
+    LongitudinalAxis: {x: 0.00000017309854, y: 1, z: -0.00000032496803}
+    Shape: 0
+  - Renderer: {fileID: 4322257688029507999}
+    Bone: {fileID: 7437737925955257940}
+    RestRotation: {x: 0.017877687, y: 0.02233826, z: 0.01239254, w: 0.9995138}
+    LongitudinalAxis: {x: -0.0000005274604, y: 1, z: -0.00000040498506}
+    Shape: 0
+  - Renderer: {fileID: 6747391580352784846}
+    Bone: {fileID: 7989516926043378036}
+    RestRotation: {x: 0.0129169, y: -0.022518253, z: -0.019055707, w: 0.9994814}
+    LongitudinalAxis: {x: 0.00000017309854, y: 1, z: -0.00000032496803}
+    Shape: 0
 --- !u!1001 &4660976995884537271
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -950,6 +984,11 @@ SkinnedMeshRenderer:
   m_CorrespondingSourceObject: {fileID: -7130164652350849927, guid: d6a0c118a3434f648807b159e9f1ea02, type: 3}
   m_PrefabInstance: {fileID: 4660976995884537271}
   m_PrefabAsset: {fileID: 0}
+--- !u!4 &7437737925955257940 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 2852813616820032483, guid: d6a0c118a3434f648807b159e9f1ea02, type: 3}
+  m_PrefabInstance: {fileID: 4660976995884537271}
+  m_PrefabAsset: {fileID: 0}
 --- !u!137 &7442804107954720637 stripped
 SkinnedMeshRenderer:
   m_CorrespondingSourceObject: {fileID: 2874768829983136458, guid: d6a0c118a3434f648807b159e9f1ea02, type: 3}
@@ -968,6 +1007,11 @@ SkinnedMeshRenderer:
 --- !u!137 &7855332861309837171 stripped
 SkinnedMeshRenderer:
   m_CorrespondingSourceObject: {fileID: -5932187954769016124, guid: d6a0c118a3434f648807b159e9f1ea02, type: 3}
+  m_PrefabInstance: {fileID: 4660976995884537271}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &7989516926043378036 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -5886368873632086845, guid: d6a0c118a3434f648807b159e9f1ea02, type: 3}
   m_PrefabInstance: {fileID: 4660976995884537271}
   m_PrefabAsset: {fileID: 0}
 --- !u!137 &7990231353717635399 stripped

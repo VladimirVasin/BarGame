@@ -7,12 +7,12 @@ namespace BarPromenade
     {
         internal const float KickImpulse = 200f;
         internal const float BootRadius = .085f;
-        internal const int KickSurfaceWitnessLimit = 64;
+        internal const int KickSurfaceWitnessLimit = 128;
         private AnimationClip kick;
         private readonly AnimationClip[] kickClips = new AnimationClip[2];
         private readonly Transform[] kickFeet = new Transform[2];
         private readonly Vector3[] kickBootOffsets = new Vector3[2];
-        private readonly Vector3[][] kickSurfaceLocal = new Vector3[2][];
+        private readonly KickSurfaceWitness[][] kickSurfaceLocal = new KickSurfaceWitness[2][];
         private readonly Vector3[] previousKickSurface = new Vector3[KickSurfaceWitnessLimit];
         private readonly Vector3[] kickSurfaceFrom = new Vector3[KickSurfaceWitnessLimit];
         private Transform kickFoot;
@@ -38,7 +38,7 @@ namespace BarPromenade
         internal float KickAnimationProgress => kick != null ? State.KickAnimationSecondsAt(State.KickElapsed) / kick.length : 0f;
         internal int KickStrikingSide { get; private set; } = 1;
         internal int KickSurfaceWitnessCount => kickSurfaceLocal[KickStrikingSide]?.Length ?? 0;
-        internal Vector3 KickSurfacePosition(int witness) => kickFoot.TransformPoint(kickSurfaceLocal[KickStrikingSide][witness]);
+        internal Vector3 KickSurfacePosition(int witness) => kickSurfaceLocal[KickStrikingSide][witness].Position;
         internal KickSweepObservation LastKickSweep { get; private set; }
 
         internal readonly struct KickSweepObservation
@@ -78,10 +78,10 @@ namespace BarPromenade
 
         private void LoadKickSurface(int side)
         {
-            // These two production parts are rigidly weighted to this foot.
-            // Cache their bind-space surface once, without runtime skin baking.
-            // The sole and forefoot strike; the ankle cuff and shin do not.
-            var points = new List<Vector3>(KickSurfaceWitnessLimit);
+            // Cache source skin and corrective data once; contact follows the
+            // completed leather/sole pose without baking a mesh per sample.
+            // Foot-dominant forefoot and the sole strike; the shaft does not.
+            var points = new List<KickSurfaceWitness>(KickSurfaceWitnessLimit);
             bool soleFound = false, toeFound = false;
             string suffix = side == 0 ? "L" : "R";
             foreach (SkinnedMeshRenderer skin in DamageRigRoot.GetComponentsInChildren<SkinnedMeshRenderer>(true))
@@ -96,33 +96,132 @@ namespace BarPromenade
                 Matrix4x4 bind = mesh.bindposes[footIndex];
                 Vector3 ankle = skin.localToWorldMatrix.MultiplyPoint3x4(bind.inverse.GetColumn(3));
                 Vector3[] vertices = mesh.vertices;
-                BoneWeight[] weights = mesh.boneWeights;
-                if (weights.Length != vertices.Length)
-                    throw new System.InvalidOperationException("Kick surface requires rigid foot weights: " + skin.name);
+                var surface = new KickSurfaceSkin(skin, kickFeet[side], sole);
                 for (int i = 0; i < vertices.Length; i++)
                 {
                     Vector3 vertex = vertices[i];
-                    if (toe && Vector3.Dot(skin.localToWorldMatrix.MultiplyPoint3x4(vertex) - ankle, transform.forward) <= 0f)
+                    if (toe && (surface.FootWeights[i] < .5f ||
+                        Vector3.Dot(skin.localToWorldMatrix.MultiplyPoint3x4(vertex) - ankle, transform.forward) <= 0f))
                         continue;
-                    BoneWeight weight = weights[i];
-                    if (weight.boneIndex0 != footIndex || weight.weight0 < .99999f ||
-                        weight.weight1 > .00001f || weight.weight2 > .00001f || weight.weight3 > .00001f)
-                        throw new System.InvalidOperationException("Kick surface must follow only its owning foot: " + skin.name);
-                    Vector3 local = bind.MultiplyPoint3x4(vertex);
                     bool duplicate = false;
-                    foreach (Vector3 existing in points)
-                        if ((kickFeet[side].TransformVector(existing - local)).sqrMagnitude < .0000000001f)
+                    foreach (KickSurfaceWitness existing in points)
+                        if (existing.Surface == surface && surface.SameVertex(existing.Vertex, i))
                         { duplicate = true; break; }
                     if (duplicate) continue;
                     if (points.Count == KickSurfaceWitnessLimit)
                         throw new System.InvalidOperationException("Production kick surface exceeds its bounded witness budget.");
-                    points.Add(local);
+                    points.Add(new KickSurfaceWitness(surface, i));
                 }
                 soleFound |= sole; toeFound |= toe;
             }
             if (!soleFound || !toeFound || points.Count == 0)
                 throw new System.InvalidOperationException("Kick requires both production sole and toe surfaces.");
             kickSurfaceLocal[side] = points.ToArray();
+        }
+
+        private readonly struct KickSurfaceWitness
+        {
+            internal readonly KickSurfaceSkin Surface;
+            internal readonly int Vertex;
+            internal KickSurfaceWitness(KickSurfaceSkin surface, int vertex) { Surface = surface; Vertex = vertex; }
+            internal Vector3 Position => Surface.Position(Vertex);
+        }
+
+        private sealed class KickSurfaceSkin
+        {
+            private readonly SkinnedMeshRenderer renderer;
+            private readonly Transform foot, shin;
+            private readonly Matrix4x4 footBind, shinBind;
+            private readonly Vector3[] vertices;
+            private readonly KickSurfaceShape[] shapes;
+            internal readonly float[] FootWeights;
+
+            internal KickSurfaceSkin(SkinnedMeshRenderer renderer, Transform foot, bool sole)
+            {
+                this.renderer = renderer; this.foot = foot;
+                Mesh mesh = renderer.sharedMesh;
+                Transform[] bones = renderer.bones;
+                int footIndex = System.Array.IndexOf(bones, foot), shinIndex = System.Array.IndexOf(bones, foot.parent);
+                Matrix4x4[] bind = mesh.bindposes;
+                if (footIndex < 0 || shinIndex < 0 || footIndex >= bind.Length || shinIndex >= bind.Length)
+                    throw new System.InvalidOperationException("Kick surface requires its own foot/shin bind poses: " + renderer.name);
+                shin = bones[shinIndex]; footBind = bind[footIndex]; shinBind = bind[shinIndex];
+                vertices = mesh.vertices;
+                BoneWeight[] weights = mesh.boneWeights;
+                if (weights.Length != vertices.Length)
+                    throw new System.InvalidOperationException("Kick surface requires complete skin weights: " + renderer.name);
+                FootWeights = new float[vertices.Length];
+                for (int i = 0; i < weights.Length; i++)
+                {
+                    BoneWeight weight = weights[i]; float total = 0f, ownFoot = 0f;
+                    Include(weight.boneIndex0, weight.weight0); Include(weight.boneIndex1, weight.weight1);
+                    Include(weight.boneIndex2, weight.weight2); Include(weight.boneIndex3, weight.weight3);
+                    if (Mathf.Abs(total - 1f) > .0001f || sole && ownFoot < .99999f)
+                        throw new System.InvalidOperationException("Kick surface requires normalized owning-leg weights: " + renderer.name);
+                    FootWeights[i] = ownFoot / total;
+
+                    void Include(int bone, float amount)
+                    {
+                        if (amount <= 0f) return;
+                        if (bone != footIndex && bone != shinIndex)
+                            throw new System.InvalidOperationException("Kick surface must follow only its owning leg: " + renderer.name);
+                        total += amount; if (bone == footIndex) ownFoot += amount;
+                    }
+                }
+                shapes = new KickSurfaceShape[mesh.blendShapeCount];
+                for (int shape = 0; shape < shapes.Length; shape++) shapes[shape] = new KickSurfaceShape(mesh, shape);
+            }
+
+            internal Vector3 Position(int vertex)
+            {
+                Vector3 point = vertices[vertex];
+                for (int shape = 0; shape < shapes.Length; shape++)
+                    point += shapes[shape].Delta(vertex, renderer.GetBlendShapeWeight(shape));
+                float amount = FootWeights[vertex];
+                Vector3 world = foot.TransformPoint(footBind.MultiplyPoint3x4(point)) * amount;
+                return amount >= 1f ? world : world + shin.TransformPoint(shinBind.MultiplyPoint3x4(point)) * (1f - amount);
+            }
+
+            internal bool SameVertex(int a, int b)
+            {
+                if (Mathf.Abs(FootWeights[a] - FootWeights[b]) > .000001f ||
+                    renderer.transform.TransformVector(vertices[a] - vertices[b]).sqrMagnitude >= .0000000001f) return false;
+                foreach (KickSurfaceShape shape in shapes)
+                    if (!shape.SameVertex(a, b, renderer.transform)) return false;
+                return true;
+            }
+        }
+
+        private sealed class KickSurfaceShape
+        {
+            private readonly float[] frames;
+            private readonly Vector3[][] deltas;
+            internal KickSurfaceShape(Mesh mesh, int shape)
+            {
+                int count = mesh.GetBlendShapeFrameCount(shape);
+                frames = new float[count]; deltas = new Vector3[count][];
+                for (int frame = 0; frame < count; frame++)
+                {
+                    frames[frame] = mesh.GetBlendShapeFrameWeight(shape, frame);
+                    deltas[frame] = new Vector3[mesh.vertexCount];
+                    mesh.GetBlendShapeFrameVertices(shape, frame, deltas[frame], null, null);
+                }
+            }
+            internal Vector3 Delta(int vertex, float weight)
+            {
+                if (weight == 0f || frames.Length == 0) return Vector3.zero;
+                int high = 0;
+                while (high < frames.Length - 1 && weight > frames[high]) high++;
+                int low = high - 1;
+                float fraction = (weight - (low < 0 ? 0f : frames[low])) / (frames[high] - (low < 0 ? 0f : frames[low]));
+                return Vector3.LerpUnclamped(low < 0 ? Vector3.zero : deltas[low][vertex], deltas[high][vertex], fraction);
+            }
+            internal bool SameVertex(int a, int b, Transform space)
+            {
+                foreach (Vector3[] delta in deltas)
+                    if (space.TransformVector(delta[a] - delta[b]).sqrMagnitude >= .0000000001f) return false;
+                return true;
+            }
         }
 
         private void SelectKickFoot(int side)

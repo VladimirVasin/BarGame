@@ -9,6 +9,7 @@ from __future__ import annotations
 import math
 
 import bpy
+import bmesh
 import numpy as np
 
 TOLERANCE_M = 0.002
@@ -40,9 +41,26 @@ def evaluated_volume(obj, depsgraph, check_convex=False):
         points = np.array([tuple(evaluated.matrix_world @ vertex.co) for vertex in mesh.vertices])
         faces = np.array([tuple(triangle.vertices) for triangle in mesh.loop_triangles])
         edges = np.array([tuple(edge.vertices) for edge in mesh.edges])
+        if obj.get("bp_joint_surface"):
+            # Articulated visible regions need not stay convex. SAT uses their
+            # actual posed conservative envelope; never convexify the artwork.
+            hull = bmesh.new()
+            try:
+                for point in points:
+                    hull.verts.new(point)
+                bmesh.ops.convex_hull(hull,input=list(hull.verts),use_existing_faces=False)
+                hull.verts.index_update()
+                points=np.array([tuple(vertex.co) for vertex in hull.verts])
+                faces=np.array([tuple(v.index for v in face.verts) for face in hull.faces])
+                # Convex-hull faces are triangles in the pinned Blender build.
+                edges=np.array([tuple(v.index for v in edge.verts) for edge in hull.edges])
+            finally:
+                hull.free()
         raw_normals = np.cross(points[faces[:, 1]] - points[faces[:, 0]],
                                points[faces[:, 2]] - points[faces[:, 0]])
-        if check_convex:
+        # The generated hull is convex by construction. Nearly coplanar small
+        # triangles quantized by BMesh are not evidence of a visible mesh fault.
+        if check_convex and not obj.get("bp_joint_surface"):
             for normal, face in zip(raw_normals, faces):
                 length = np.linalg.norm(normal)
                 if length < 1e-9:

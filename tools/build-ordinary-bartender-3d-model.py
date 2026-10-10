@@ -240,6 +240,7 @@ class OrdinaryBartenderBuilder(legacy.BartenderBuilder):
                     else "hair" if palette in {"hair", "moustache"} and "Cap" not in name
                     else "cloth")
             surface_atlas.apply_uv(part.obj, kind)
+        base.npc_joint_surfaces.apply(self.result)
         self.build_service_anchors()
         self.configure_scene_metadata()
         return self.result
@@ -709,10 +710,7 @@ def validate_result(result):
         seen_meshes.add(mesh.as_pointer())
         if len(mesh.materials) != 1 or mesh.materials[0] != result.material:
             errors.append(f"{obj.name} does not use the one shared material")
-        if len(obj.vertex_groups) != 1 or obj.vertex_groups[0].name != part.bone:
-            errors.append(
-                f"{obj.name} must have one rigid group for {part.bone}"
-            )
+        base.npc_joint_surfaces.validate_weights(obj, part.bone, errors)
         for vertex in mesh.vertices:
             world_vertices.append(obj.matrix_world @ vertex.co)
         triangle_count += base.triangulated_count(mesh)
@@ -765,6 +763,7 @@ def validate_result(result):
     ):
         errors.append("Export collection contains a light or camera")
 
+    base.npc_joint_surfaces.joints.validate(result, errors)
     if errors:
         formatted = "\n".join(f"  - {error}" for error in errors)
         raise RuntimeError(
@@ -773,6 +772,7 @@ def validate_result(result):
 
     signature_payload = {
         "generator_version": GENERATOR_VERSION,
+        "joint_surfaces": base.npc_joint_surfaces.joints.manifest(result),
         "design_id": DESIGN_ID,
         "seed": SEED,
         "detail_atlas_sha256": hashlib.sha256(surface_atlas.png_bytes()).hexdigest(),
@@ -805,6 +805,8 @@ def validate_result(result):
                     for vertex in part.obj.data.vertices
                 ],
                 "triangles": base.triangulated_count(part.obj.data),
+                "shape_keys": [(key.name, [[base.stable_float(c) for c in point.co] for point in key.data])
+                               for key in part.obj.data.shape_keys.key_blocks] if part.obj.data.shape_keys else [],
                 "faces": [list(polygon.vertices) for polygon in part.obj.data.polygons],
                 "atlas_region": part.obj.get("bp_atlas_region", ""),
                 "uvs": [[base.stable_float(value) for value in loop.uv]
@@ -874,6 +876,7 @@ def write_manifest(path: Path, result, report) -> None:
     payload = {
         "generator": "tools/build-ordinary-bartender-3d-model.py",
         "generator_version": GENERATOR_VERSION,
+        "joint_surfaces": base.npc_joint_surfaces.joints.manifest(result),
         "blender_version": bpy.app.version_string,
         "design_id": DESIGN_ID,
         "display_name": DISPLAY_NAME,

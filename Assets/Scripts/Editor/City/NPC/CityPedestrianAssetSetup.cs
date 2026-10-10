@@ -2686,6 +2686,7 @@ namespace BarPromenade.Editor
                     behaviour != null &&
                     !(behaviour is CityPedestrianAssetRegistry) &&
                     !(behaviour is CityWheelchairNpcAssetRegistry) &&
+                    !(behaviour is CharacterJointDeformation) &&
                     !(behaviour is LastRouteFerrymanRigAnchors)))
             {
                 throw new InvalidOperationException(
@@ -4131,6 +4132,7 @@ namespace BarPromenade.Editor
                             "wheelchair prefab"));
                 }
 
+                CharacterJointDeformation.Configure(prefabRoot);
                 GameObject saved = PrefabUtility.SaveAsPrefabAsset(
                     prefabRoot,
                     descriptor.PrefabPath,

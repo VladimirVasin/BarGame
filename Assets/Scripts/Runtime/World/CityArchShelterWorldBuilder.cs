@@ -417,7 +417,8 @@ namespace BarPromenade
             for (int index = 0; index < behaviours.Length; index++)
             {
                 if (!(behaviours[index] is
-                        CityArchShelterResidentAssetRegistry))
+                        CityArchShelterResidentAssetRegistry) &&
+                    !(behaviours[index] is CharacterJointDeformation))
                 {
                     DestroyResident(instance);
                     throw new InvalidOperationException(

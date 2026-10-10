@@ -328,6 +328,7 @@ namespace BarPromenade
         private Transform head;
         private Transform mouth;
         private Player3DFootGroundProbe probe;
+        private PlayerBootDeformation boots;
         private bool baseCaptured;
         private float ikBlend;
         private float groundedFootHeightOffset;
@@ -408,6 +409,7 @@ namespace BarPromenade
             Restore();
             probe?.Dispose();
             registry = assetRegistry;
+            boots = assetRegistry != null ? assetRegistry.GetComponent<PlayerBootDeformation>() : null;
             actorRoot = actorFacingTransform;
             pelvis = pelvisBone;
             spine = assetRegistry != null ? assetRegistry.Anchors.Spine : null;
@@ -1267,6 +1269,20 @@ namespace BarPromenade
             float fallbackSole = rootY + groundedFootHeightOffset;
             Vector3 actorForward = PlanarForward();
 
+            // The existing rays run before baking authored footwear, so this frame's
+            // heel/toe roll is measured from this frame's support and completed clip.
+            if (boots != null)
+            {
+                for (int index = 0; index < legs.Length; index++)
+                {
+                    Leg leg = legs[index];
+                    samples[index] = leg.IsComplete && probe != null
+                        ? probe.Probe(leg.Foot.position, leg.FootForward(), rootY)
+                        : FootGroundSample.None;
+                }
+                boots.ApplyPose(samples[0], samples[1]);
+            }
+
             // The clip's own lowest sole is the reference every lift is
             // measured from: the planted boot has none, the swinging boot
             // keeps however much the animator gave it.
@@ -1309,7 +1325,7 @@ namespace BarPromenade
 
                 float plant = plants[index];
                 Vector3 anklePosition = leg.Foot.position;
-                FootGroundSample sample = probe != null
+                FootGroundSample sample = boots != null ? samples[index] : probe != null
                     ? probe.Probe(
                         anklePosition,
                         leg.FootForward(),
@@ -1611,6 +1627,64 @@ namespace BarPromenade
                 leg.LastAnklePosition = leg.Foot.position;
                 leg.HasLastAnklePosition = true;
             }
+            CloseFootwearSoles();
+        }
+
+        private void CloseFootwearSoles()
+        {
+            if (boots == null || probe == null) return;
+            if (ikBlend <= .001f)
+            {
+                boots.ApplyPose();
+                return;
+            }
+
+            // Keep the completed, already blended gait's sole height. Updating
+            // the authored flex must not move that contact after the leg solve.
+            for (int index = 0; index < legs.Length; index++)
+            {
+                Leg leg = legs[index];
+                leg.HasFootwearSole = leg.Prepared && samples[index].HasSurface &&
+                    probe.TryGetSoleHeight((FootSide)index,
+                        out leg.FootwearSoleY, applyFootwearPose: false);
+            }
+
+            // Moving the ankle can finish the existing contact fade. Re-bake
+            // that composed sole before the next bounded correction.
+            for (int pass = 0; pass < 3; pass++)
+            {
+                boots.ApplyPose(samples[0], samples[1]);
+                bool corrected = false;
+                for (int index = 0; index < legs.Length; index++)
+                {
+                    Leg leg = legs[index];
+                    if (!leg.HasFootwearSole || !probe.TryGetSoleHeight((FootSide)index,
+                        out float soleY, applyFootwearPose: false)) continue;
+                    float difference = leg.FootwearSoleY - soleY;
+                    if (Mathf.Abs(difference) <= .0001f) continue;
+
+                    Vector3 hip = leg.Thigh.position;
+                    Vector3 footPosition = leg.Foot.position;
+                    float reach = Mathf.Max(leg.Length * PlayerFootPlacementRules.DefaultReachFraction,
+                        Vector3.Distance(hip, footPosition));
+                    Vector3 target = ClampToReach(hip, footPosition + Vector3.up * difference, reach);
+                    Quaternion thighBefore = leg.Thigh.rotation;
+                    Vector3 thighAxisBefore = leg.Shin.position - hip;
+                    Quaternion shinBefore = leg.Shin.rotation;
+                    Vector3 shinAxisBefore = footPosition - leg.Shin.position;
+                    LimbTwoBoneIk.Solve(leg.Thigh, leg.Shin, leg.Foot, target,
+                        leg.Foot.rotation, KneeHint(leg, hip, target), 1f,
+                        float.PositiveInfinity, true);
+                    PreserveLegTwist(leg, thighBefore, thighAxisBefore, shinBefore, shinAxisBefore);
+                    AlignHingeRoll(leg.Thigh, leg.Shin, leg.Foot, leg.KneeForward(),
+                        1f, continuousLeg: leg);
+                    leg.LastAnklePosition = leg.Foot.position;
+                    leg.HasLastAnklePosition = true;
+                    corrected = true;
+                }
+                if (!corrected) break;
+            }
+            boots.ApplyPose(samples[0], samples[1]);
         }
 
         /// <summary>
@@ -1843,6 +1917,8 @@ namespace BarPromenade
             public float SoleY;
             public float TargetBoneY;
             public float Delta;
+            public float FootwearSoleY;
+            public bool HasFootwearSole;
 
             /// <summary>
             /// The smoothed surface target, held above the ACTOR ROOT so

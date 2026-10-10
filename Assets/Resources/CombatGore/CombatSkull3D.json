@@ -9,8 +9,8 @@
   "models": {
     "Hero": {
       "source": "Assets/Player3D/V2/Models/PlayerCharacter3DV2.fbx",
-      "source_sha256": "7506bfec3effbcdeed55e25d5ae98ff0ea5ea998cef1b2b3391d25a47e7f9533",
-      "head_contract_sha256": "3ce53757b0acab8925235ef40f305c2c179a436f1f5e42586473241d4fad4392",
+      "source_sha256": "782483e6f15e3bbae3788c2ce2ea79595f8059f7ec72e20b9af9c59b62ad6aaf",
+      "head_contract_sha256": "0f91b9873c23411521fef27fb3e8d61bbe810f6be62216136c6167f306a694e5",
       "head_center_unity_m": [
         0.0,
         1.6048,
@@ -423,8 +423,8 @@
     },
     "Npc": {
       "source": "Assets/Resources/VillageLife/StationWorker.fbx",
-      "source_sha256": "30e52d740e2c690fe5c7ffefca945fc0689dd41da0977f4cdf05fbb002ddc4d7",
-      "head_contract_sha256": "3ce53757b0acab8925235ef40f305c2c179a436f1f5e42586473241d4fad4392",
+      "source_sha256": "1c13355b27052e4c53aad9cfd0fa3865a833b502b03611aa720c82a8f1963336",
+      "head_contract_sha256": "0f91b9873c23411521fef27fb3e8d61bbe810f6be62216136c6167f306a694e5",
       "head_center_unity_m": [
         0.0,
         1.6,
@@ -837,7 +837,7 @@
     }
   },
   "files": {
-    "SkullHero.fbx": "cd53995285b96e41beb128f936a00aeec44e53b429c9d8f44bf99683bfb5ac61",
-    "SkullNpc.fbx": "31865e18a8f51eb9a5d9c15b8effd4be2c5f2a9dbdf4e679edc3d4aa0b486a1f"
+    "SkullHero.fbx": "6f68b8fd7d4b6f06226ff9160edb38cf0619ff6c7339d4da88ba71c25fcf9869",
+    "SkullNpc.fbx": "a19d425246352bccadc500b4d1bd592815fb16e846946bf0a8b504aba9c3b9e9"
   }
 }

@@ -10,6 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 5051976286164613415}
   - component: {fileID: 3598267066046454663}
+  - component: {fileID: 8673557201639496548}
   m_Layer: 0
   m_Name: SupermarketWatcherCashier
   m_TagString: Untagged
@@ -423,12 +424,65 @@ MonoBehaviour:
   - {fileID: 5950466444599480987}
   - {fileID: 4037046456075784994}
   localBounds:
-    m_Center: {x: -0.0010001659, y: 1.0249999, z: 0.0406812}
-    m_Extent: {x: 0.8050294, y: 1.0249999, z: 0.17551003}
-  sourceTriangleCount: 1588
+    m_Center: {x: -0.0010001063, y: 1.025, z: -0.0075434744}
+    m_Extent: {x: 0.8050294, y: 1.025, z: 0.23343453}
+  sourceTriangleCount: 1780
   sourceGeneratorVersion: 2.2.0
   designId: watcher_cashier_v1
-  buildSignature: 2ff45e3d6276d6b37a5ee00eaac752f53cc52a315844da5b744e0cd83cd95a0c
+  buildSignature: 84b0a723ed2469a32042f5f18b0d6fca897e38bbd6edd6c706832be243ea76da
+--- !u!114 &8673557201639496548
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5274490809151372825}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b2be743ae8414fe69b45824c1d81d423, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: BarPromenade.Runtime::BarPromenade.CharacterJointDeformation
+  bindings:
+  - Renderer: {fileID: 7415381105136010215}
+    Bone: {fileID: 2685548754343999008}
+    RestRotation: {x: 0.017877687, y: 0.02233826, z: 0.01239254, w: 0.9995138}
+    LongitudinalAxis: {x: -0.0000005274604, y: 1, z: -0.00000040498506}
+    Shape: 0
+  - Renderer: {fileID: 1027408472833145680}
+    Bone: {fileID: 3214633564639355136}
+    RestRotation: {x: 0.0129169, y: -0.022518253, z: -0.019055707, w: 0.9994814}
+    LongitudinalAxis: {x: 0.00000017309854, y: 1, z: -0.00000032496803}
+    Shape: 0
+  - Renderer: {fileID: 7662019440763078969}
+    Bone: {fileID: 3515611271065496735}
+    RestRotation: {x: -0.020317057, y: -0.015963241, z: -0.015225763, w: 0.9995502}
+    LongitudinalAxis: {x: 0.000000011935024, y: 1, z: -0.00000052514105}
+    Shape: 0
+  - Renderer: {fileID: 4817013350210808620}
+    Bone: {fileID: 1120675183772104173}
+    RestRotation: {x: 0.012595064, y: 0.014988454, z: 0.0154044945, w: 0.9996897}
+    LongitudinalAxis: {x: 0.0000000023873787, y: 1, z: 0.000000035810682}
+    Shape: 0
+  - Renderer: {fileID: 691843460913350078}
+    Bone: {fileID: 3515611271065496735}
+    RestRotation: {x: -0.020317057, y: -0.015963241, z: -0.015225763, w: 0.9995502}
+    LongitudinalAxis: {x: 0.000000011935024, y: 1, z: -0.00000052514105}
+    Shape: 0
+  - Renderer: {fileID: 6998501556451948447}
+    Bone: {fileID: 1120675183772104173}
+    RestRotation: {x: 0.012595064, y: 0.014988454, z: 0.0154044945, w: 0.9996897}
+    LongitudinalAxis: {x: 0.0000000023873787, y: 1, z: 0.000000035810682}
+    Shape: 0
+  - Renderer: {fileID: 4329987989596817563}
+    Bone: {fileID: 2685548754343999008}
+    RestRotation: {x: 0.017877687, y: 0.02233826, z: 0.01239254, w: 0.9995138}
+    LongitudinalAxis: {x: -0.0000005274604, y: 1, z: -0.00000040498506}
+    Shape: 0
+  - Renderer: {fileID: 4435184419313685691}
+    Bone: {fileID: 3214633564639355136}
+    RestRotation: {x: 0.0129169, y: -0.022518253, z: -0.019055707, w: 0.9994814}
+    LongitudinalAxis: {x: 0.00000017309854, y: 1, z: -0.00000032496803}
+    Shape: 0
 --- !u!1001 &203724676946339267
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -878,6 +932,11 @@ SkinnedMeshRenderer:
   m_CorrespondingSourceObject: {fileID: -8317638253814735213, guid: f67cc78fca365cd479ce72b42877101f, type: 3}
   m_PrefabInstance: {fileID: 203724676946339267}
   m_PrefabAsset: {fileID: 0}
+--- !u!4 &1120675183772104173 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 963408202774007854, guid: f67cc78fca365cd479ce72b42877101f, type: 3}
+  m_PrefabInstance: {fileID: 203724676946339267}
+  m_PrefabAsset: {fileID: 0}
 --- !u!137 &1126764108714681086 stripped
 SkinnedMeshRenderer:
   m_CorrespondingSourceObject: {fileID: -8254861176429148355, guid: f67cc78fca365cd479ce72b42877101f, type: 3}
@@ -936,6 +995,11 @@ Transform:
 --- !u!137 &3238626802689705947 stripped
 SkinnedMeshRenderer:
   m_CorrespondingSourceObject: {fileID: 3324271601616101912, guid: f67cc78fca365cd479ce72b42877101f, type: 3}
+  m_PrefabInstance: {fileID: 203724676946339267}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &3515611271065496735 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 3610254473159100764, guid: f67cc78fca365cd479ce72b42877101f, type: 3}
   m_PrefabInstance: {fileID: 203724676946339267}
   m_PrefabAsset: {fileID: 0}
 --- !u!4 &3556941558707425855 stripped
