@@ -128,25 +128,16 @@ Install Python packages: `python -m pip install Pillow==12.3.0 numpy==2.4.4`.
 `BP_BLENDER`/`--blender` selects another installation of the same pinned build.
 The native launcher locates pinned MSVC/SDK versions.
 
-Run from the repository root; arguments after `--` belong to the generator:
-
-```powershell
-python tools/run-blender.py tools/build-ordinary-bartender-3d-model.py --validate-only -- --validate-only
-```
-
-Launcher: pins/startup/errors/fresh `--expect` files/JSON;
-validators: `--validate-only` on launcher/generator.
+Run from repo root; args after `--` go to the generator. Launcher checks pins/
+startup/errors/fresh `--expect` files/JSON; `--validate-only` on both validates.
 Ordinary: `principal_npc_detail.py` (fish/mother), `service_npc_detail.py`
-(cashier/driver), ordinary bartender. `npc_detail_geometry.py` shares shapes;
-`npc_detail_atlas.py` supplies neutral cloth/leather/hair. Cashier keeps his
-atlas; bizarre variants stay.
+(cashier/driver), bartender. `npc_detail_geometry.py` shares shapes;
+`npc_detail_atlas.py`: neutral cloth/leather/hair. Cashier atlas/bizarre variants stay.
 
-Repeat `--stage-output=--model-dir=Assets/path` for model/source/texture/animation
-directory flags. Redirect **every output directory**; other arguments stay. Each maps
-to empty staging under `Captures/Tooling`; every `--expect` must belong to a
-mapped destination. Publish only after generation/output checks pass, preserve
-`.meta`, roll back replaced files on failure. This is not an atomic importer
-transaction: keep Unity closed during publication.
+Stage all model/source/texture/animation dirs with repeated
+`--stage-output=--model-dir=Assets/path` to empty `Captures/Tooling`; other args stay.
+Each `--expect` belongs to a mapped destination. Publish checked outputs with Unity
+closed; preserve `.meta`, roll back replacements on failure. Import is not atomic.
 
 The native command `tools/audio-vhs/build.ps1` validates the staged DLL before
 publishing it. `-Validate` remains compatible; `-CompileOnly` leaves its output
@@ -162,6 +153,11 @@ Test:`--actions-only --kick-only|--recovery-only|--footwork-only`;
 Blood:`--texture-only`;others:`--validate-only`.
 `CombatGore`:{Body,Skull}{Hero,Npc}/Combat{Body,Skull}3D;
 Body16×4;torso cells erode→skeleton/0chunks;limbs/skull16.
+Firearm walk: `python tools/run-blender.py tools/build-combat-firearm-walk-3d-model.py`.
+Validate: `-- --validate-only`.
+8 fixed-facing/1.6m/C2feet/levelpelvis;200Hz/rebuild.
+`Assets/Resources/CombatFirearmWalk/Actions.{fbx,json}`;
+`ArtSource/CombatFirearmWalk/Actions.blend`; import `CombatFirearmWalkAssetSetup`.
 
 `player_jacket_cloth.py --write` derives hem/cuff metadata only; `--check` verifies it.
 Refresh `Player3DV2` via asset setup. Lower-body changes require

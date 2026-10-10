@@ -7,6 +7,14 @@ namespace BarPromenade
         /// <summary>The hero's voluntary combat stance; the opponent remains engaged independently.</summary>
         public bool CombatFocused { get; private set; } = true;
 
+        // Dedicated directional firearm steps keep the body aimed forwards.
+        // Physical recovery and committed actions retain their combat contacts.
+        internal bool UsesFirearmWalkLocomotion => hero != null && IsFirearm &&
+            State.Phase == MeleePhase.Ready && Firearm != null && !Firearm.ReloadPending &&
+            (Firearm.AimRequested || pistolVisualAimProgress > 0f) && BodyDamage.CanStand &&
+            !IsKnockedDown && !IsRagdollActive && reaction == null &&
+            !(ImpactMotion?.IsActive ?? false) && !(footwork?.RecoveryEpisodeActive ?? false);
+
         private bool NeedsCombatPresentation => CombatFocused || (Firearm?.ReloadPending ?? false) ||
             (Firearm?.AimRequested ?? false) || (IsFirearm && pistolVisualAimProgress > 0f) || State.Phase != MeleePhase.Ready ||
             collectSweep || collectShove || collectKick || IsKnockedDown || IsRagdollActive ||

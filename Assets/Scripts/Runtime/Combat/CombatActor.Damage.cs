@@ -22,7 +22,8 @@ namespace BarPromenade
             damagePose.Initialize(DamageRigRoot, transform);
             bodyMotion = new CombatBodyMotion(DamageRigRoot, transform);
             footwork = new CombatFootwork(DamageRigRoot,
-                hero != null ? hero.Registry.Animator.gameObject : npc.Animator.gameObject, transform, ready, hero == null);
+                hero != null ? hero.Registry.Animator.gameObject : npc.Animator.gameObject, transform, ready, hero == null,
+                firearm: hero != null && IsFirearm);
             footwork.JournalActor = this;
             ImpactMotion = new CombatImpactMotion(DamageRigRoot, transform);
             ImpactMotion.ConfigureRecovery(IsHero, GameSessionState.CitySeed ^ (IsHero ? 193 : 997));

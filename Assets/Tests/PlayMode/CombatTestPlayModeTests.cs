@@ -859,6 +859,7 @@ namespace BarPromenade.Tests.PlayMode
             var input = new InputTestFixture();
             Mouse mouse = null;
             Keyboard keyboard = null;
+            PistolCameraContinuityProbe poseProbe = null;
             try
             {
                 input.Setup();
@@ -866,17 +867,22 @@ namespace BarPromenade.Tests.PlayMode
                 keyboard = InputSystem.AddDevice<Keyboard>();
                 yield return SceneManager.LoadSceneAsync(SceneIds.MainMenu, LoadSceneMode.Single);
                 yield return EnterRange();
+                root.SendMessage("OnApplicationFocus", true);
+                GameInput.HandleApplicationFocus(true);
                 // Keep the real menu-entry placement and initialization. A custom
                 // ResetActor/teleport here could conceal the reported frozen hero.
                 root.AutomaticSimulation = true;
                 for (int frame = 0; frame < 6; frame++) yield return null;
+                poseProbe = root.gameObject.AddComponent<PistolCameraContinuityProbe>();
                 var presentation = (Player3DCharacterPresentation)root.Player.Visual;
                 Vector3 forward = root.Hero.transform.forward;
                 input.Press(keyboard.wKey, queueEventOnly: true);
                 for (int frame = 0; frame < 8; frame++) yield return null;
                 Vector3 start = root.Hero.transform.position;
                 var walk = new WalkingLegProbe(root.Hero);
-                for (int frame = 0; frame < 24; frame++) { yield return null; walk.Sample(); }
+                poseProbe.Sample = walk.Sample;
+                for (int frame = 0; frame < 24; frame++) yield return null;
+                poseProbe.Sample = null;
                 float forwardDistance = Vector3.Dot(root.Hero.transform.position - start, forward);
                 Assert.That(forwardDistance, Is.GreaterThan(.45f), WalkingDiagnostic("W", start));
                 Assert.That(root.Hero.State.Phase, Is.EqualTo(MeleePhase.Ready));
@@ -893,7 +899,9 @@ namespace BarPromenade.Tests.PlayMode
                 for (int frame = 0; frame < 8; frame++) yield return null;
                 start = root.Hero.transform.position;
                 var backward = new WalkingLegProbe(root.Hero);
-                for (int frame = 0; frame < 24; frame++) { yield return null; backward.Sample(); }
+                poseProbe.Sample = backward.Sample;
+                for (int frame = 0; frame < 24; frame++) yield return null;
+                poseProbe.Sample = null;
                 Assert.That(Vector3.Dot(root.Hero.transform.position - start, forward), Is.LessThan(-.25f),
                     WalkingDiagnostic("S", start));
                 Assert.That(presentation.CurrentLocomotionState, Is.EqualTo(Player3DLocomotionState.WalkBack));
@@ -924,7 +932,9 @@ namespace BarPromenade.Tests.PlayMode
                 start = root.Hero.transform.position;
                 forward = root.Hero.transform.forward;
                 var guard = new WalkingLegProbe(root.Hero);
-                for (int frame = 0; frame < 24; frame++) { yield return null; guard.Sample(); }
+                poseProbe.Sample = guard.Sample;
+                for (int frame = 0; frame < 24; frame++) yield return null;
+                poseProbe.Sample = null;
                 float guardDistance = Vector3.Dot(root.Hero.transform.position - start, forward);
                 Assert.That(guardDistance, Is.GreaterThan(.15f), WalkingDiagnostic("RMB+W", start));
                 Assert.That(guardDistance, Is.LessThan(forwardDistance * .75f), "Held guard slows voluntary walking.");
@@ -936,7 +946,9 @@ namespace BarPromenade.Tests.PlayMode
                 for (int frame = 0; frame < 2; frame++) yield return null;
                 start = root.Hero.transform.position;
                 var paused = new WalkingLegProbe(root.Hero);
-                for (int frame = 0; frame < 12; frame++) { yield return null; paused.Sample(); }
+                poseProbe.Sample = paused.Sample;
+                for (int frame = 0; frame < 12; frame++) yield return null;
+                poseProbe.Sample = null;
                 Assert.That(Vector3.Distance(root.Hero.transform.position, start), Is.LessThan(.001f),
                     "Pause must freeze the capsule even while W remains held.");
                 Assert.That(paused.GreatestAngle, Is.LessThan(.1f), "Pause must freeze the visible walking pose.");
@@ -968,13 +980,16 @@ namespace BarPromenade.Tests.PlayMode
                 forward = root.Hero.transform.forward;
                 Transform pelvis = presentation.Registry.Anchors.Pelvis;
                 Vector3 pelvisStart = pelvis.position;
+                Vector3 pelvisEnd = pelvisStart;
                 var winnerWalk = new WalkingLegProbe(root.Hero);
-                for (int frame = 0; frame < 24; frame++) { yield return null; winnerWalk.Sample(); }
+                poseProbe.Sample = () => { winnerWalk.Sample(); pelvisEnd = pelvis.position; };
+                for (int frame = 0; frame < 24; frame++) yield return null;
+                poseProbe.Sample = null;
                 Assert.That(Vector3.Dot(root.Hero.transform.position - start, forward), Is.LessThan(-.25f),
                     WalkingDiagnostic("S after victory", start));
-                Assert.That(Vector3.Dot(pelvis.position - pelvisStart, forward), Is.LessThan(-.2f),
+                Assert.That(Vector3.Dot(pelvisEnd - pelvisStart, forward), Is.LessThan(-.2f),
                     "The winning hero's visible pelvis must follow its moving capsule.");
-                Assert.That(Vector3.ProjectOnPlane((pelvis.position - pelvisStart) -
+                Assert.That(Vector3.ProjectOnPlane((pelvisEnd - pelvisStart) -
                     (root.Hero.transform.position - start), Vector3.up).magnitude, Is.LessThan(.2f),
                     "A retained physics pose may not pin the winning model in place.");
                 winnerWalk.AssertMoving(2f, "The winning hero must keep animated steps after the round ends.");
@@ -1012,13 +1027,16 @@ namespace BarPromenade.Tests.PlayMode
                 start = root.Hero.transform.position;
                 forward = root.Hero.transform.forward;
                 pelvisStart = pelvis.position;
+                pelvisEnd = pelvisStart;
                 var resetWalk = new WalkingLegProbe(root.Hero);
-                for (int frame = 0; frame < 24; frame++) { yield return null; resetWalk.Sample(); }
+                poseProbe.Sample = () => { resetWalk.Sample(); pelvisEnd = pelvis.position; };
+                for (int frame = 0; frame < 24; frame++) yield return null;
+                poseProbe.Sample = null;
                 Assert.That(Vector3.Dot(root.Hero.transform.position - start, forward), Is.GreaterThan(.45f),
                     WalkingDiagnostic("W after ragdoll reset", start));
-                Assert.That(Vector3.Dot(pelvis.position - pelvisStart, forward), Is.GreaterThan(.4f),
+                Assert.That(Vector3.Dot(pelvisEnd - pelvisStart, forward), Is.GreaterThan(.4f),
                     "Reset must release the ragdoll's pinned world pose as well as enable the motor.");
-                Assert.That(Vector3.ProjectOnPlane((pelvis.position - pelvisStart) -
+                Assert.That(Vector3.ProjectOnPlane((pelvisEnd - pelvisStart) -
                     (root.Hero.transform.position - start), Vector3.up).magnitude, Is.LessThan(.2f));
                 resetWalk.AssertMoving(2f, "The reset hero must resume walking with both legs.");
                 input.Release(keyboard.wKey, queueEventOnly: true);
@@ -1028,6 +1046,7 @@ namespace BarPromenade.Tests.PlayMode
             finally
             {
                 if (root != null) root.AutomaticSimulation = false;
+                if (poseProbe != null) Object.DestroyImmediate(poseProbe);
                 if (mouse != null && mouse.added) InputSystem.RemoveDevice(mouse);
                 if (keyboard != null && keyboard.added) InputSystem.RemoveDevice(keyboard);
                 input.TearDown();

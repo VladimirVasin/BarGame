@@ -5,6 +5,7 @@ namespace BarPromenade
     public sealed partial class PlayerMotor
     {
         private const float SideStepSpeed = 1.5f;
+        private const float FirearmWalkSpeedScale = .85f;
         private object movementTargetOwner;
         private object movementFreezeOwner;
         private Transform movementTarget;
@@ -112,8 +113,10 @@ namespace BarPromenade
             Vector3 right = Vector3.Cross(Vector3.up, forward);
             float forwardSpeed = input.y >= 0f
                 ? SnowSpeed(sprintRequested ? RunSpeed : MoveSpeed) : SnowSpeed(BackwardMoveSpeed, true);
-            return (forward * (input.y * forwardSpeed) + right * (input.x * SnowSpeed(SideStepSpeed, true))) *
-                (speedMultiplier * ownedMoveScale);
+            float sideSpeed = ownedFirearmWalking ? SnowSpeed(MoveSpeed) : SnowSpeed(SideStepSpeed, true);
+            float walkScale = ownedFirearmWalking ? FirearmWalkSpeedScale : 1f;
+            return (forward * (input.y * forwardSpeed) + right * (input.x * sideSpeed)) *
+                (speedMultiplier * ownedMoveScale * walkScale);
         }
 
         /// <summary>Reserve room only from voluntary inward travel, including its braking tail.

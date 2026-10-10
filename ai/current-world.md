@@ -149,7 +149,10 @@ The vertical slice contains:
 - CombatTest:bar/pistol8∞/shotgun2∞→Start;NPCbar/3AI;dummy/freecam;
   MMBfocus/TabAIreset/bar-Qfocus;
   guns:RMBaim/LMBedge/R-Xreload/Rpalm gait/FOV-IK.25;
-  cam-plane strafe/Space1m-cardinal-back/fixedupper/tankrelease.
+  Aim:8clips/retarget/facing/2.21-back1.19/raise-aim-lower0run
+  dist/C2feet/levelpelvis-grip/cubic/reach/clearance
+  camplane normdiag/gun/Space1m-cardinal-back/tankreturn
+  Barfocus/reload/Step-kick/injury kept.
   Shotgun12/.55/head×2;HP1m24/25m1.5/40m0;Ns1m380/25m2/40m0;
   reaction1/end-only hold/head≤14/break2.8.
   Launch:final/unfrozen1/current-mass;torso nonpellets.
@@ -1733,14 +1736,12 @@ The vertical slice contains:
   gameplay root, plus one small light-independent analytic contact patch fixed
   to the grounded player root. The patch follows foot plant and expands,
   rotates and offsets for left/right falls without moving the physical root;
-- tank-control road-constrained movement: `W` walks along the hero's own
-  forward axis to a `2.6 m/s` maximum; holding either Shift or gamepad L3 with
-  positive forward input raises it to `4.2 m/s`. `S`: dedicated backpedal
-  at `1.4 m/s`; `A`/`D` yaw in place at `150°/s` with
-  step-turn clips/arcs, `6.5 m/s²` acceleration/`11 m/s²` braking.
-  Release coasts; modal/transition/teleport stops immediately; constraints store
-  no momentum. Camera basis:CombatTest aim only. Intoxication scales walk/run;
-  fatigue:no debuff;scripted approaches walk;
+- road-constrained tank motion: `W`→hero-forward `2.6 m/s`;
+  Shift/L3+forward→`4.2 m/s`; `S`: backpedal `1.4 m/s`;
+  `A`/`D`: step-turn clips/arcs, yaw in place `150°/s`.
+  Accel/brake `6.5/11 m/s²`; release coasts; modal/transition/teleport stop;
+  constraints retain no momentum. Camera-plane only in CombatTest aim.
+  Intoxication scales walk/run; fatigue no debuff; scripted approaches walk;
 - in City, BarInterior and ordinary Supermarket play, a very close freely
   orbiting perspective third-person chase camera with
   `2.6 m / 53°` exterior and `2.2 m / 57°` interior framing,

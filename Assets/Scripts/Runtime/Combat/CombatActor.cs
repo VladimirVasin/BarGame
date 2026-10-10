@@ -54,7 +54,7 @@ namespace BarPromenade
             MeleePhase.Windup => Mathf.Lerp(.55f, .2f, State.PhaseProgress),
             MeleePhase.Active => 0f,
             MeleePhase.Recovery => Mathf.Lerp(.15f, .65f, State.PhaseProgress),
-            MeleePhase.Ready => IsFirearm && Firearm != null && (Firearm.AimRequested || Firearm.IsReloading) ? .55f : State.IsBlocking ? .45f : 1f,
+            MeleePhase.Ready => IsFirearm && Firearm != null && Firearm.IsReloading ? .55f : State.IsBlocking ? .45f : 1f,
             MeleePhase.Kicking => 0f,
             _ => 0f
         };
@@ -176,7 +176,9 @@ namespace BarPromenade
             motor.SetOwnedMovementConstraint(this, MovementScale,
                 OwnsCombatFacing || (!CombatFocused && CommittedActionOwnsFacing) ? 0f : TurnScale,
                 contactTarget != null ? contactTarget.transform : null,
-                CombatFocused && State.Phase == MeleePhase.Windup ? WeaponSpacing : 0f);
+                CombatFocused && State.Phase == MeleePhase.Windup ? WeaponSpacing : 0f,
+                firearmWalking: UsesFirearmWalkLocomotion,
+                sprintBlocked: IsFirearm && (Firearm.AimRequested || pistolVisualAimProgress > 0f));
         }
         private string AttackBalanceRejection => IsKnockedDown ? "knocked_down" : "balance_recovery";
         internal bool HasTwoHandSupport => BodyDamage.CanUseLeftHand && BodyDamage.CanUseRightHand && !weaponDropped && HasAttackBalance &&
@@ -188,6 +190,7 @@ namespace BarPromenade
             State.IsDefeated ? "defeated" : !HasAttackBalance ? AttackBalanceRejection :
             !HasTwoHandSupport ? "two_hand_support" : null;
         internal CombatFootwork Footwork => footwork;
+        internal Vector3 AchievedPlanarVelocity => motor != null ? motor.PlanarVelocity : locomotionVelocity;
         internal CombatSupportGrip SupportGrip => supportGrip;
 
         public bool TryAttack()
@@ -374,6 +377,7 @@ namespace BarPromenade
             if (!NeedsCombatPresentation) { ReleaseFreeLocomotion(); return; }
             AdvanceCombatFacing(seconds);
             UpdateAttackReach(true);
+            footwork?.SetFirearmWalkLocomotion(UsesFirearmWalkLocomotion);
             footwork?.Advance(seconds, State);
             CompleteImpactRecoveryStep(seconds);
             AdvancePendingKick(seconds);
@@ -558,6 +562,7 @@ namespace BarPromenade
             UpdateAttackReach(false);
             supportGrip?.Restore();
             weaponConstraint?.Restore();
+            footwork?.SetFirearmWalkLocomotion(UsesFirearmWalkLocomotion);
             footwork?.Restore();
             damagePose?.Restore();
             bodyMotion?.Restore();

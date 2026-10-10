@@ -3,33 +3,65 @@
 Newest outcomes/checks first. Archive whole dates at budget: [policy](README.md).
 Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-2026-08.md).
 
-## 2026-10-09 — Shotgun, body erosion and frame costs
+## 2026-10-10 — Firearm walk cadence
 
-- Shotgun HP/momentum fall to 40 m; contacts accumulate
-  across flight batches. A first-batch token had discarded later force and one
-  limb absorbed the launch. Head-only trauma remains bounded/local; a lone
-  pellet cannot borrow a shell's power. Close head debris/blood fly faster.
-  Stronger close launch: 420/380/200/50/10/2/0 Ns at
-  0/1/3/8/15/25/40 m; whole-body cap 420/local 260. HP/trauma unchanged.
-  Wall comparison has travel.
-- User's CombatTest-only correction keeps Chest/Abdomen/Pelvis joined through
-  critical failure: finite local authored cells deform/erode to rig-bound
-  skeleton without torso chunks. Head/limb closed cuts remain. Whole-body
-  momentum waits for final damage/ragdoll state and the first unfrozen step,
-  using current masses; strong non-pellet torso hits share it.
-- Seventeen regions/four patches preserve local damage, corpse contacts and
-  reset. Limb budgets limit hands/two-hand actions and support; living bodies
-  crawl and retain a loaded right-hand pistol. Critical head/core failure ends
-  combat. Palm/muzzle checks found a floating prop; it now binds to the rig.
-  Manual/PhysX cadence matches queued support.
-- Wounded free-aim needs shared snapshots/lazy triangle leaves, analytic sweeps,
-  source/blood caches and a persistent NPC clip graph. Unchanged body poses now
-  retain bounds/geometry; quiet aftermath skips anatomy, preserving physics
-  and new contacts. Region lists avoid whole-body damage scans. Recovery caches
-  production bind data and probes original soles: prepared cut skins had added
-  repeated scans/bakes. Sampled journal stages include aftermath/impact/sync/
-  recovery CPU. Contact/clip/bind/sole oracles retain topology/TRS;
-  regressions cover cold fall/reset/pause/corpse shots. Crowbar avoids pools.
+- Aim gait follows actual travel again. The reach predictor counted motor travel
+  twice and divided render motion by a combat substep; fixed landing deadlines
+  then rushed steps. It now uses actual motor velocity and compares support
+  expiry with the natural landing, accelerating only a necessary rescue.
+  Direction changes retain live retarget, anatomy/clearance and held aim;
+  authored stride, sprint gate and crowbar focus remain. At the user's request,
+  healthy aimed walking is 15% slower: forward/side 2.21 m/s, backward 1.19 m/s;
+  its distance-driven gait slows with travel and diagonals stay normalized.
+- Steady gait softens lift/plant acceleration with quintic endpoint blends;
+  travel stays within the authored anatomy. A cycle-wide reach envelope keeps
+  original limb lengths; cubic sampled positions carry knee/pelvis slopes.
+  A lower foot arc and narrower side stagger allow a steady pelvis with a small
+  load, avoiding reach-driven vertical pulses; entry retains the live height
+  correction. Motor speed,
+  stride, contacts, aim and the separate crowbar focus keep their contracts.
+- Aimed hands absorb most lateral gait weight shift, keeping a small gun sway.
+  Both wrists retain reach/contact without pulling the hold sideways; the real
+  barrel is re-aimed after final foot closure. Repeated presentation applies
+  compensation only before that pass; focused movement adds less angular sway.
+- Check: `Range_FirearmAimDirectionChangesKeepLegsWithinAuthoredAnatomy`
+  covers actual foot-transfer cadence/intervals/distance alongside pose/aim/speed/
+  Shift, presented steady contacts/body height/gun sway and moving recoil;
+  frames inspected;
+  `build-combat-firearm-walk-3d-model.py` checks actual endpoint derivatives,
+  anatomy and deterministic export; `check-docs.py`, `git diff --check`.
+- Known turn corners: extended straight entry can trigger repeated emergency
+  landings; releasing sole avoidance can snap the airborne foot. The original
+  continuous route retains anatomy/cadence; steady contact is checked separately.
+
+## 2026-10-09 — Shotgun, body erosion, frame costs and firearm walk
+
+- Shotgun HP/force fall to40m/all flight batches: first token had lost force;
+  one limb absorbed launch. Local bounded head trauma; one pellet cannot borrow
+  shell power. Close head debris/blood faster. Ns@0/1/3/8/15/25/40m:
+  420/380/200/50/10/2/0; whole cap420/local260.
+  HP/trauma kept; wall comparison has travel.
+- User's CombatTest correction: Chest/Abdomen/Pelvis stay joined even critically;
+  finite authored point/radius cells erode/deform to rig skeleton, no torso chunks.
+  Head/limb closed cuts kept. Launch: final damage/ragdoll state, first unfrozen
+  step, current masses; strong non-pellet torso hits share it.
+- Body17/patch4 preserves local damage/corpse/reset. Limb budgets gate hands/
+  two-hand actions/support; living bodies crawl/retain a loaded right-hand pistol.
+  Critical head/core ends combat. Palm/muzzle checks found a floating prop, now
+  rig-bound. Manual/PhysX cadence matches queued support.
+- Wounded free-aim: snapshots/lazy triangle leaves/analytic sweeps/source-blood
+  caches/NPC graph; unchanged pose bounds/geometry kept. Quiet aftermath skips
+  anatomy, keeping physics/new contacts; region lists avoid full damage scans.
+  Bind/sole caches avoid cut-skin scans/bakes; cold fall/reset/pause/corpse
+  regressions; crowbar avoids pools.
+- Firearm aim:8 fixed-facing clips/2.6-back1.4/no Shift raise-aim-lower/cleanup;
+  bar focus/reload/Step/injury kept. Old pins lagged on turns; live retarget eases
+  pose; short landing/reach/clearance bound legs.
+  Checks: `build-combat-firearm-walk-3d-model.py`,
+  `Range_PistolAimMovesInAllDirectionsWithoutChangingAim`,
+  `Range_FirearmAimDirectionChangesKeepLegsWithinAuthoredAnatomy`; gait viewed.
+- Known failure: `Range_CombatWalkingUsesLiveInputAndMovingLegs` stale post-win
+  expectation; corpse melee is allowed.
 - Focused checks: `Range_TorsoErosionKeepsConnectedLaunchCorpsePauseAndReset`,
   `Range_ShotgunDistanceControlsLaunchAndHeadBreakup`,
   `Range_DistantShotgunTorsoVolleyProfilesImpactPhases`,
@@ -38,8 +70,7 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
   `Range_NpcManualAnimationMatchesAuthoredClipSampling`,
   `Range_BodyDestructionDefersGeometryAndKeepsFrozenVisibleContacts`,
   `build-combat-body-3d-model.py --validate-only`, `UnityValidateImportedOrThrow`;
-  Hero/NPC tissue/skeleton/reset and close/far connected launch frames inspected;
-  `check-docs.py`, `git diff --check`.
+  Hero/NPC tissue/skeleton/reset and close/far connected launch frames inspected.
 - Earlier checks: `DistanceScalesEveryPelletBeforeRegionalDamage`,
   `Range_BodyDestructionFollowsLocalContactsSurvivalCorpsePauseAndReset`,
   `CombatBodyDamageRulesTests`,

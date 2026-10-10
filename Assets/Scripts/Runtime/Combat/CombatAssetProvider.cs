@@ -58,6 +58,25 @@ namespace BarPromenade
             : new SwingClipSet(AttackClip, ReleaseLightClip, ReleaseHeavyClip, ChargeClip, RecoilClip);
         public static readonly string[] LocomotionClipNames = { AdvanceClip, RetreatClip, StrafeLeftClip, StrafeRightClip };
         public const float LocomotionCycleDistance = .60f;
+        // Authored independently of melee shuffles and the ordinary tank walk.
+        // Clockwise in the fixed aiming frame; a take owns one complete swing.
+        public static readonly string[] FirearmWalkClipNames = {
+            "FirearmWalkForward", "FirearmWalkForwardRight", "FirearmWalkRight", "FirearmWalkBackwardRight",
+            "FirearmWalkBackward", "FirearmWalkBackwardLeft", "FirearmWalkLeft", "FirearmWalkForwardLeft" };
+        public const float FirearmWalkCycleDistance = 1.6f;
+        public static AnimationClip LoadFirearmWalkClip(string name)
+        {
+            string key = "firearm_walk:" + name;
+            if (Clips.TryGetValue(key, out AnimationClip cached)) return cached;
+            foreach (AnimationClip clip in Resources.LoadAll<AnimationClip>("CombatFirearmWalk/Actions"))
+            {
+                if (clip.name != name) continue;
+                if (clip.events.Length != 0) throw new InvalidOperationException("Firearm walking clips cannot contain animation events.");
+                Clips[key] = clip;
+                return clip;
+            }
+            throw new InvalidOperationException("Missing authored firearm walking clip " + name);
+        }
         /// <summary>Both banks carry the four defensive steps; the opponent steps too.</summary>
         public static readonly string[] StepClipNames = { StepForwardClip, StepBackwardClip, StepLeftClip, StepRightClip };
         private static readonly Dictionary<string, Material> Materials = new Dictionary<string, Material>();

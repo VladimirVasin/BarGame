@@ -57,12 +57,14 @@ namespace BarPromenade
         public bool InputEnabled { get; private set; } = true;
         private object movementConstraintOwner;
         private float ownedMoveScale = 1f, ownedTurnScale = 1f;
+        private bool ownedFirearmWalking;
+        private bool ownedSprintBlocked;
         private Transform ownedSpacingTarget;
         private float ownedMinimumSpacing;
 
         /// <summary>Limits voluntary movement while keeping gravity and physical pushes alive.</summary>
         public bool SetOwnedMovementConstraint(object owner, float moveScale, float turnScale,
-            Transform spacingTarget = null, float minimumSpacing = 0f)
+            Transform spacingTarget = null, float minimumSpacing = 0f, bool firearmWalking = false, bool sprintBlocked = false)
         {
             if (owner == null || (movementConstraintOwner != null && !ReferenceEquals(owner, movementConstraintOwner)))
                 return false;
@@ -71,6 +73,8 @@ namespace BarPromenade
             ownedTurnScale = Mathf.Clamp01(turnScale);
             ownedSpacingTarget = spacingTarget;
             ownedMinimumSpacing = Mathf.Max(0f, minimumSpacing);
+            ownedFirearmWalking = firearmWalking;
+            ownedSprintBlocked = sprintBlocked;
             if (ownedTurnScale == 0f) targetYawVelocity = 0f;
             if (ownedMoveScale == 0f)
             {
@@ -86,6 +90,8 @@ namespace BarPromenade
             if (owner == null || !ReferenceEquals(owner, movementConstraintOwner)) return;
             movementConstraintOwner = null;
             ownedMoveScale = ownedTurnScale = 1f;
+            ownedFirearmWalking = false;
+            ownedSprintBlocked = false;
             ownedSpacingTarget = null;
             ownedMinimumSpacing = 0f;
             targetYawVelocity = 0f;
@@ -546,12 +552,15 @@ namespace BarPromenade
             UpdateSnowMotion(snowDirection, Time.deltaTime);
             bool sprintRequested = InputEnabled &&
                                    !isTransitioning &&
+                                   !ownedSprintBlocked &&
                                    !InDeepSnow && SnowBlend <= 0f &&
                                    IsSprintRequested();
             if (movementConstraintOwner is Object unityOwner && unityOwner == null)
             {
                 movementConstraintOwner = null;
                 ownedMoveScale = ownedTurnScale = 1f;
+                ownedFirearmWalking = false;
+                ownedSprintBlocked = false;
                 ownedSpacingTarget = null;
                 ownedMinimumSpacing = 0f;
             }

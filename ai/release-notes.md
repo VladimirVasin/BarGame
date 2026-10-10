@@ -6,7 +6,16 @@ Earlier notes: [`release-notes-2026-09.md`](archive/release-notes-2026-09.md).
 
 ## Unreleased
 
-### 2026-10-09 — Двустволка и разрушение корпуса
+### 2026-10-10 — Темп ходьбы с прицелом
+
+- Ходьба с прицелом сохраняет обычный темп шагов при смене направления.
+- Скорость прицеливания снижена на 15%; шаги замедляются вместе с движением.
+- Ровная ходьба мягче ставит ноги; корпус держит высоту без сильных скачков.
+- Руки удерживают оружие спокойнее при ходьбе, сохраняя прицел и отдачу.
+- Проверено: `Range_FirearmAimDirectionChangesKeepLegsWithinAuthoredAnatomy`,
+  `build-combat-firearm-walk-3d-model.py`, `check-docs.py`, `git diff --check`.
+
+### 2026-10-09 — Двустволка, корпус и прицел
 
 - Вблизи сильнее отброс всего тела; вдали резко слабее.
 - Близкий залп сильнее разрушает голову; фрагменты/кровь быстрее.
@@ -19,17 +28,17 @@ Earlier notes: [`release-notes-2026-09.md`](archive/release-notes-2026-09.md).
 - Несмертельная дробь без паузы; меньше повторных расчётов при падении,
   подъёме и после раунда.
 - Победа с ломом без ошибки.
+- Прицел: обычный шаг в 8 направлениях; смена курса без шпагата.
+  Без бега; фокус с ломом прежний.
 - Проверено: `Range_TorsoErosionKeepsConnectedLaunchCorpsePauseAndReset`,
   `Range_ShotgunDistanceControlsLaunchAndHeadBreakup`,
   `Range_DistantShotgunTorsoVolleyProfilesImpactPhases`,
   `Range_SweptTriangleContactAnalyticMatchesBoundariesAndOracle`,
   `Range_SkinnedTriangleQueryMatchesExhaustiveAfterDeformation`,
   `Range_NpcManualAnimationMatchesAuthoredClipSampling`;
-  осмотрены ткани/скелет/сброс и близкий/дальний отброс.
-- Ранее: `DistanceScalesEveryPelletBeforeRegionalDamage`,
-  `Range_BodyDestructionFollowsLocalContactsSurvivalCorpsePauseAndReset`,
-  `Range_BodyDestructionDefersGeometryAndKeepsFrozenVisibleContacts`;
-  body/skull validators; кадры разрушения и выживших;
+  `build-combat-firearm-walk-3d-model.py`;
+  `Range_FirearmAimDirectionChangesKeepLegsWithinAuthoredAnatomy`;
+  осмотрены ткани/скелет/сброс, близкий/дальний отброс и походка.
   `check-docs.py`, `git diff --check`.
 
 ### 2026-10-08 — Двустволка, раны и желеобразный мозг

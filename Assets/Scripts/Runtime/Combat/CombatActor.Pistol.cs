@@ -26,6 +26,7 @@ namespace BarPromenade
         private Vector3 pistolFreeAimPoint;
         private bool pistolAimReachable;
         internal const float MaximumPistolAimErrorDegrees = 5f;
+        private const float FirearmWalkGripStabilization = .85f;
         internal bool IsFreePistolAiming => !CombatFocused && (Firearm?.AimRequested ?? false);
         internal Vector3 PistolAimPoint => CombatFocused && contactTarget != null
             ? contactTarget.Ragdoll.PhysicsController.ChestBody.position : pistolFreeAimPoint;
@@ -316,12 +317,15 @@ namespace BarPromenade
             pistolAimApplied = true;
             Vector3 target = PistolAimPoint;
             Vector3 shoulderToTarget = target - pistolArmBones[0].position;
+            bool walkingAim = footwork != null && footwork.UsesFirearmWalkClips;
             // The free-aim crosshair is fixed on the camera ray. Angular sway
             // would move a real muzzle shot off that visible point, especially
             // at head edges. Keep the authored motion and firing kick below.
             if (CombatFocused)
             {
-                float sway = (.25f + (motor != null ? motor.PlanarVelocity.magnitude * .3f : 0f)) *
+                float movementSway = motor != null ? motor.PlanarVelocity.magnitude * .3f : 0f;
+                if (walkingAim) movementSway *= 1f - FirearmWalkGripStabilization;
+                float sway = (.25f + movementSway) *
                     (BodyDamage.CanUseLeftHand ? 1f : 1.8f);
                 shoulderToTarget = Quaternion.AngleAxis(Mathf.Sin(poseClock * 8.3f) * sway, transform.up) * shoulderToTarget;
                 shoulderToTarget = Quaternion.AngleAxis(Mathf.Sin(poseClock * 6.1f) * sway * .6f, transform.right) * shoulderToTarget;
@@ -337,6 +341,13 @@ namespace BarPromenade
                 (CombatFocused ? 22f : 80f) * pistolVisualAimProgress);
             Vector3 grip = handPose.CylinderCentre(false);
             Vector3 aimedGrip = pistolArmBones[0].position + delta * (grip - pistolArmBones[0].position);
+            // The aimed hands absorb most of the lateral weight transfer.
+            // Keep a small natural sway without carrying the pelvis's full
+            // movement into the gun against the root-mounted aiming camera.
+            // The final contact pass starts from this already corrected grip.
+            if (walkingAim && !finalStep)
+                aimedGrip -= transform.right * (footwork.FirearmWalkLateralOffset *
+                    FirearmWalkGripStabilization * Mathf.SmoothStep(0f, 1f, pistolVisualAimProgress));
             float forward = Vector3.Dot(aimedGrip - transform.position, transform.forward);
             float downward = -Vector3.Dot(delta * PistolMuzzle.forward, transform.up);
             // A shouldered long gun keeps its trigger hand near the chest;
@@ -365,7 +376,7 @@ namespace BarPromenade
                 lift = Mathf.Min(lift, availableLift);
                 aimedGrip += transform.up * lift;
             }
-            if (keepGripForward || highAim || finalStep || IsShotgun)
+            if (keepGripForward || highAim || finalStep || IsShotgun || walkingAim)
             {
                 // Solve from the cleared grip rather than rigidly rotating a
                 // bent arm through the torso. Re-aim from the translated hold.
@@ -380,15 +391,14 @@ namespace BarPromenade
                         (CombatFocused ? 22f : 80f) * pistolVisualAimProgress);
                     if (pass == passes - 1) break;
                     Vector3 rightWrist = aimedGrip + delta * (hand.position - grip);
-                    if (finalStep)
+                    if (finalStep || walkingAim)
                     {
-                        // A step tilts the shoulders. Raising the hold for one
-                        // arm can put it above the other's reach: keep the grip
-                        // in both reach spheres, then re-aim from that hold.
-                        Vector3 rightCorrection = PistolReachCorrection(0, rightWrist);
+                        // Both a tilted step and a stabilized walking hold
+                        // must fit both arms before re-aiming the real barrel.
+                        Vector3 rightCorrection = PistolReachCorrection(0, rightWrist, walkingAim);
                         aimedGrip += rightCorrection;
                         Vector3 leftCorrection = BodyDamage.CanUseLeftHand ?
-                            PistolReachCorrection(3, PistolSupportWrist(aimedGrip, grip, delta)) : Vector3.zero;
+                            PistolReachCorrection(3, PistolSupportWrist(aimedGrip, grip, delta), walkingAim) : Vector3.zero;
                         aimedGrip += leftCorrection;
                         if (rightCorrection.sqrMagnitude + leftCorrection.sqrMagnitude < .0000000001f) break;
                         continue;
@@ -473,7 +483,8 @@ namespace BarPromenade
             // Shared recovery has blended the complete posed arms. Reattach the
             // prop to that final palm, then retain this actual rendered source.
             PlaceHeldFirearm();
-            if (State.Phase == MeleePhase.Step && pistolAimApplied && pistolVisualAimProgress >= .999f)
+            if ((State.Phase == MeleePhase.Step || (footwork?.UsesFirearmWalkClips ?? false)) &&
+                pistolAimApplied && pistolVisualAimProgress >= .999f)
             {
                 // Constrain the actual blended chest without unwinding it or
                 // replacing the saved pre-IK arms needed by the next sample.
@@ -528,12 +539,26 @@ namespace BarPromenade
             return shoulder + offset + transform.forward * .06f;
         }
 
-        private Vector3 PistolReachCorrection(int root, Vector3 wrist)
+        private Vector3 PistolReachCorrection(int root, Vector3 wrist, bool preserveLateral)
         {
             Vector3 offset = wrist - pistolArmBones[root].position;
             float reach = (Vector3.Distance(pistolArmBones[root].position, pistolArmBones[root + 1].position) +
                 Vector3.Distance(pistolArmBones[root + 1].position, pistolArmBones[root + 2].position)) * .98f;
-            return offset.sqrMagnitude > reach * reach ? offset.normalized * reach - offset : Vector3.zero;
+            if (offset.sqrMagnitude <= reach * reach) return Vector3.zero;
+            if (preserveLateral)
+            {
+                // A nearly extended support arm must not pull the stabilized
+                // gun sideways with its shoulder. Keep that coordinate while
+                // bringing the wrist into the remaining forward/height disc.
+                float lateral = Vector3.Dot(offset, transform.right);
+                float remainingReachSquared = reach * reach - lateral * lateral;
+                if (remainingReachSquared > 0f)
+                {
+                    Vector3 sagittal = offset - transform.right * lateral;
+                    return sagittal.normalized * Mathf.Sqrt(remainingReachSquared) - sagittal;
+                }
+            }
+            return offset.normalized * reach - offset;
         }
 
         private float PistolReachLift(int root, Vector3 wrist)

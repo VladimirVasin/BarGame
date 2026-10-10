@@ -251,34 +251,35 @@
   No fall/death/new NPC/work/sound/clue/event; lodge: 2026-09-24.
   Shared plan/sampler/bounds/metres/collider, `48 m` buckets;
   §6/§12/art §10g/§16/§21/nine checks.
-
-- **Accepted — 2026-10-08, pistol strafe:**
-  `CombatFootwork`:cam-plane WASD-stick/Space1m/15/facing/noinput-back/
-  upperyaw/wall-pause/legyaw/inertia/tank-release/handoff0/noaim:noStep.
+- **Accepted 2026-10-10:** healthy gun aimwalk -15%
+- **Accepted 2026-10-09, aim gait:**
+  CombatFootwork:8clips/live-retarget/facing/normdiag/0run
+  Camplane/upperaim;Step1m/15/noinputback/wall-pause/tank-release/handoff0/aim0Step0.
+  Barfocus/reload/injury kept
 - **Accepted exception 2026-10-08, pistol:**
   Dummy/freecam/focus-aim/Q-Step;nearest world/anatomy;
   regional SFX-force/recoil-streak/0motor-sway/stablecam-hitkick/head0HP-ragdoll;
   cases:port-delay/gravity-bounce-cap;emptylock/mag-seat-rack1.8/ammo-last;
   dropE:stage-ammo/Rresume;0lock-pierce-ricochet-guard-parry-taunt-reward;
-  win/corpse/pause-hitstop/reset-exit lifecycle.
+  win/corpse/pause-hitstop/reset-exit.
 - **Accepted exception 2026-10-09, shotgun power:**
   `ShotgunSettings`:close420Ns→40m0 steep;HPlinear;
-  immutable body+torque/finalstate/unfrozen1/current-mass shares;torso nonpellets too.
-  1SFX/terminal-only hitstop/head≤14/prelethal/8ledgers/fast debris-blood.
-- **Accepted exception 2026-10-09, local body destruction:**
-  User:CombatTest/both corpses/cloth-tissue→rig skeleton;close shotgun=max local hits.
-  Chest-Abdomen-Pelvis joined even critical/0chunks-cellRB;finite point/radius cells
+  immutable body+torque/finalstate/unfrozen1/current-mass share/nonpellet torso.
+  1SFX/terminal hitstop/head≤14/prelethal/8ledgers/fast debris-blood
+- **Accepted exception 2026-10-09, body destruction:**
+  CombatTest/both corpses/cloth-tissue→rig skeleton;nearshotgun=max local hits.
+  Chest-Abdomen-Pelvis:critical joined/0chunks-cellRB;finite point/radius cells
   deform-erode;torso-only subdivision;expose≠sever/head-limb closed cuts/finite parts.
   Rhand0weapon;Lhand0twohand-reload(Rbar/loaded pistol);legs fall-crawl0rise-step-kick.
-  Player=AI/critical head-torso terminal/corpse/surface=hit=physics/dedup-pause-reset;
+  Hero=AI/critical head-torso terminal/corpse/surface=hit=physics/dedup-pause-reset;
   §6/art§15a/§16/§21/9checks.
 - **Accepted exception 2026-10-08, headshots:**
   Head16:3-5/low eject/blood56;brain8:full/wet jelly/squash/loss1x;
   bone-tissue/cam-hide/finite pulse-fade/corpse impulse.
-- **Accepted exception — 2026-10-08, world bullets:**
+- **Accepted exception 2026-10-08, bullets:**
   Firstworldhit:chips-sparks/dark hole128FIFO/particles192/shared shader;
   0damage-pierce/pause-hitstop0/ClearFlights keeps/reset-exit0.
-- **Accepted — 2026-10-08, regional pistol hits:**
+- **Accepted 2026-10-08, regional hits:**
   Cinematic rig/wet/repeat;shared physics-camera.
 - **Accepted 2026-10-07, combat:**
   Floor kept;stall arm→drop/rise≠grip/HP-focus-AI;pause-hitstop0.

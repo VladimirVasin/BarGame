@@ -3,9 +3,9 @@ using UnityEngine;
 
 namespace BarPromenade
 {
-    /// <summary>Authored shuffles, measured travel and world-space sole contacts share the duel clock.
+    /// <summary>Authored shuffles and aim strides, measured travel and world-space sole contacts share the duel clock.
     /// Sampling a weapon or presenting a frame never advances a step.</summary>
-    internal sealed class CombatFootwork
+    internal sealed partial class CombatFootwork
     {
         private const int Samples = 80;
         private readonly Transform frame, pelvis;
@@ -83,13 +83,13 @@ namespace BarPromenade
 
         private struct PoseFrame
         {
-            public Vector3 Pelvis, Left, Right;
+            public Vector3 Pelvis, Left, Right, LeftKnee, RightKnee;
             public Quaternion LeftRotation, RightRotation;
             public Vector3 Foot(int side) => side == 0 ? Left : Right;
             public Quaternion Rotation(int side) => side == 0 ? LeftRotation : RightRotation;
         }
 
-        public CombatFootwork(Transform rig, GameObject animationRoot, Transform actorFrame, AnimationClip ready, bool npc)
+        public CombatFootwork(Transform rig, GameObject animationRoot, Transform actorFrame, AnimationClip ready, bool npc, bool firearm = false)
         {
             frame = actorFrame;
             string[] names = { "pelvis", "thigh.L", "shin.L", "foot.L", "thigh.R", "shin.R", "foot.R" };
@@ -127,6 +127,7 @@ namespace BarPromenade
                         stepLandingPoses[d, half] = ReadPose();
                     }
                 }
+                if (firearm) LoadFirearmWalkCurves(animationRoot);
             }
             finally
             {
@@ -139,6 +140,7 @@ namespace BarPromenade
         {
             Pelvis = frame.InverseTransformPoint(pelvis.position),
             Left = frame.InverseTransformPoint(bones[3].position), Right = frame.InverseTransformPoint(bones[6].position),
+            LeftKnee = frame.InverseTransformPoint(bones[2].position), RightKnee = frame.InverseTransformPoint(bones[5].position),
             LeftRotation = Quaternion.Inverse(frame.rotation) * bones[3].rotation,
             RightRotation = Quaternion.Inverse(frame.rotation) * bones[6].rotation
         };
@@ -148,6 +150,8 @@ namespace BarPromenade
             if (catching) JournalCatch("catch_cancelled", "reset");
             ImpactMotion?.CancelRecoveryStep();
             Restore(); initialized = false; moving = settlingFoot = yielded = settlingAttack = catching = false;
+            UsesFirearmWalkClips = false;
+            FirearmWalkTransferSequence = 0;
             cycle = settling = 0f; gaitOffset = Vector3.zero; attackSequence = -1;
             idleSeconds = catchRetry = 0f; catchAwaitingContact = catchDecisionPending = catchStabilityPending = hasPresentedContacts = false;
             presentedStepLeading = -1; presentedStepTravel = 0f;
@@ -486,6 +490,15 @@ namespace BarPromenade
 
         private void ReportSupport()
         {
+            if (UsesFirearmWalkClips)
+            {
+                for (int side = 0; side < 2; side++)
+                    supportConfirmed[side] = (!(moving || settlingFoot) || swing != side) &&
+                        TryCatchGround(feet[side], side, out Vector3 ground) &&
+                        Vector3.Distance(feet[side], ground) <= .055f && LandingClear(ground);
+                ImpactMotion?.SetFootSupport(feet[0], feet[1], supportConfirmed[0], supportConfirmed[1]);
+                return;
+            }
             if (JournalActor != null && JournalActor.State.Phase == MeleePhase.Step &&
                 (recoveryStepOwned || ImpactMotion != null && ImpactMotion.IsActive))
             {
@@ -659,6 +672,11 @@ namespace BarPromenade
             float turn = Vector3.Angle(previousForward, frame.forward) * Mathf.Deg2Rad;
             previousPosition = frame.position; previousForward = frame.forward;
             displacement.y = 0f;
+            if (UsesFirearmWalkClips)
+            {
+                AdvanceFirearmWalk(seconds, displacement);
+                return;
+            }
             if (ordinaryStepTracked && state.Phase != MeleePhase.Step)
             {
                 // Keep the last rendered soles when the original clip returns
@@ -1227,10 +1245,12 @@ namespace BarPromenade
                     (kickOwnsFoot || kickLandingPending) && side == KickFootSide) continue;
                 Vector3 delta = bones[1 + side * 3].position - (authoredStep && !recoveryStepOwned ? authoredStepFeet[side] : feet[side]);
                 float horizontal = delta.x * delta.x + delta.z * delta.z;
-                float length = legLengths[side] * .997f;
+                float length = UsesFirearmWalkClips ? legLengths[side] - .018f : legLengths[side] * .997f;
                 lower = Mathf.Max(lower, delta.y - Mathf.Sqrt(Mathf.Max(.01f, length * length - horizontal)));
             }
-            float correction = Mathf.Clamp(lower, 0f, .18f);
+            // Aim walking keeps the authored bent-knee reserve. An obsolete
+            // support must be transferred, not hidden by a deep pelvis drop.
+            float correction = Mathf.Clamp(lower, 0f, UsesFirearmWalkClips ? .04f : .18f);
             if (ImpactMotion != null && ImpactMotion.IsActive)
                 correction = Mathf.Min(correction, Mathf.Max(0f, pelvis.position.y - impactPelvisFloor));
             pelvis.position -= Vector3.up * correction;
@@ -1242,14 +1262,16 @@ namespace BarPromenade
                 // The sampled target uses the ordinary knee pole. After the
                 // final pose blend, keep its inherited bend plane while closing
                 // the same sole: replacing that plane would snap a step's knee.
-                Vector3 hint = preserveBend && !authoredStep ? bones[i + 1].position :
+                Vector3 hint = UsesFirearmWalkClips && moving ? frame.TransformPoint(firearmWalkKnees[side]) :
+                    preserveBend && !authoredStep ? bones[i + 1].position :
                     bones[i].position + frame.forward * .7f + (side == 0 ? -frame.right : frame.right) * .08f;
                 LimbTwoBoneIk.Solve(bones[i], bones[i + 1], bones[i + 2],
                     authoredStep && !recoveryStepOwned ? authoredStepFeet[side] : feet[side],
                     authoredStep && !recoveryStepOwned ? authoredStepRotations[side] : rotations[side],
                     hint,
-                    1f, .999f, true);
+                    1f, UsesFirearmWalkClips ? 1f - .018f / legLengths[side] : .999f, true);
             }
+            if (UsesFirearmWalkClips && moving) ConstrainFirearmKnees();
         }
 
         private void ConstrainKickWorld()

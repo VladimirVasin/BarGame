@@ -4244,10 +4244,10 @@ OS dynamic fonts в IMGUI запрещены; Unity legacy — аварийны�
 
 ### Принятое исключение — боевой полигон
 
-§6:PS1-полигон вне сюжета;9проверок;`ai/architecture-notes.md`.
+§6:PS1 polygon вне сюжета;9checks;`ai/architecture-notes.md`.
 `2026-10-07`:лом/пистолет→Начать/Назад;NPCлом;Оружие→выбор/сброс.
 Gun:worn dark unbranded metal/Rpalm gait/2hand aim/cross-flash;
-strafe/Step/uppercam/FOV-grip return.
+Aim:8gaits/speed×.85/facing/Step/uppercam/FOV-grip return.
 `2026-10-08`:recoil/stablecam/streak/impulse-SFX;pistol head0HP→ragdoll.
 Shotgun:worn dark steel/wood/twin barrels/shoulder-stock/Lforeend;
 heavy recoil/flash-smoke/deep thud;2shots/break/eject spent/load/close.
@@ -4256,7 +4256,7 @@ Rig:chest-abdomen/arm-forearm-hand/leg-catch;skin-fabric-glove-boot:
 irregular wet-dry entry/repeat.
 `2026-10-09`:torso erodes→joined skeleton/0chunks;head-limb cuts/finite parts;
 near shotgun=max local hits;both survivors-corpses/crawl/whole reset.
-Pistol:3-5/16/low eject;brain8:full/wet-muted PS1 jelly/
+Pistol:3-5/16/low eject;brain8:full/wet-muted jelly/
 squash/bone-tissue/cam-hide/repeat-loss.
 Dark blood:pistol56/800/narrow-slow/pulse→24s0/rig-cut/stains-pool-debris;
 convulsions≤2.35s/corpse HP-pose-impulse;volley:one reaction/terminal.
