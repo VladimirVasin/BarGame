@@ -24,6 +24,9 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
   Both wrists retain reach/contact without pulling the hold sideways; the real
   barrel is re-aimed after final foot closure. Repeated presentation applies
   compensation only before that pass; focused movement adds less angular sway.
+- Cleared importer whitespace; retained the regenerated Hero V2 dependency
+  stamp so the build gate accepts current sources.
+  Check: `PlayerBuildAssetValidation.ValidateHero`.
 - Check: `Range_FirearmAimDirectionChangesKeepLegsWithinAuthoredAnatomy`
   covers actual foot-transfer cadence/intervals/distance alongside pose/aim/speed/
   Shift, presented steady contacts/body height/gun sway and moving recoil;
