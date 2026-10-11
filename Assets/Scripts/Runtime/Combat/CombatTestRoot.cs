@@ -43,9 +43,10 @@ namespace BarPromenade
         public PlayerRuntime Player { get; private set; }
         public CombatActor Hero { get; private set; }
         public CombatActor Opponent { get; private set; }
-        public CombatWeaponId HeroWeapon { get; private set; }
-        public CombatProjectilePool Projectiles { get; private set; }
-        public CombatCasingPool Casings { get; private set; }
+        public CombatWeaponId HeroWeapon => Hero != null ? Hero.WeaponId : CombatWeaponId.Crowbar;
+        public CombatLoadoutSelection LoadoutSelection => Hero.LoadoutSelection;
+        public CombatProjectilePool Projectiles => Hero != null && Hero.IsShotgun ? shotgunProjectiles : pistolProjectiles;
+        public CombatCasingPool Casings => Hero != null && Hero.IsShotgun ? shotgunCasings : pistolCasings;
         public PlayerCameraFollow CameraFollow { get; private set; }
         public PauseMenuController PauseMenu { get; private set; }
         public InteractionPromptView Prompt { get; private set; }
@@ -61,6 +62,7 @@ namespace BarPromenade
         internal long SimulationCaptureTicks { get; private set; }
         internal long SimulationFlightTicks { get; private set; }
         internal long SimulationEffectsTicks { get; private set; }
+        internal long TotalSimulationTicks { get; private set; }
         internal int FinishedRoundSubsteps { get; private set; }
         public bool RoundCameraReleased => roundCameraReleased;
 
@@ -81,14 +83,8 @@ namespace BarPromenade
             arenaBounds = new ArenaBounds();
             Player = PlayerFactory.Create(transform, heroSpawn, camera, arenaBounds, Prompt);
             Hero = Player.GameObject.AddComponent<CombatActor>();
-            HeroWeapon = CombatTestStartService.ConsumeWeapon();
-            Hero.InitializeHero(Player, HeroWeapon);
-            if (Hero.IsFirearm)
-            {
-                Projectiles = new CombatProjectilePool(transform, Hero.IsShotgun);
-                Casings = new CombatCasingPool(transform, Hero.IsShotgun);
-                Hero.ShotgunCasings = Casings;
-            }
+            Hero.InitializeHero(Player, CombatTestStartService.ConsumeLoadout());
+            InitializeWeaponPools();
             CameraFollow = camera.GetComponent<PlayerCameraFollow>() ?? camera.gameObject.AddComponent<PlayerCameraFollow>();
             CameraFollow.Initialize(camera, Player.GameObject.transform, false);
             opponentObject = new GameObject("Combat Opponent"); opponentObject.transform.SetParent(transform, false);
@@ -135,8 +131,7 @@ namespace BarPromenade
             Hero.CancelPendingPistolShot("reset");
             EndJournalRound("reset");
             ResetChargeInput();
-            Projectiles?.ResetRound();
-            Casings?.ResetRound();
+            ResetWeaponPools();
             BloodEffects?.ResetRound();
             HeadEffects?.ResetRound();
             BodyEffects?.ResetRound();
@@ -237,8 +232,13 @@ namespace BarPromenade
         public void Tick(float seconds)
         {
             long stamp = JournalStamp();
+            long started = System.Diagnostics.Stopwatch.GetTimestamp();
             try { TickCore(seconds); }
-            finally { JournalElapsed(stamp, ref journalSimulationTicks); }
+            finally
+            {
+                TotalSimulationTicks += System.Diagnostics.Stopwatch.GetTimestamp() - started;
+                JournalElapsed(stamp, ref journalSimulationTicks);
+            }
         }
 
         private void TickCore(float seconds)
@@ -311,9 +311,9 @@ namespace BarPromenade
                 Hero.CaptureContactPose(); Opponent.CaptureContactPose(!freeAim);
                 SimulationCaptureTicks += System.Diagnostics.Stopwatch.GetTimestamp() - stageStart;
                 stageStart = System.Diagnostics.Stopwatch.GetTimestamp();
-                Projectiles?.Advance(SimulationStep, Hero, Opponent);
+                AdvanceProjectilePools(SimulationStep);
                 SimulationFlightTicks += System.Diagnostics.Stopwatch.GetTimestamp() - stageStart;
-                Casings?.Tick(SimulationStep);
+                TickCasingPools(SimulationStep);
                 AdvancePistolCrosshair(SimulationStep);
                 if (Hero.CommitPistolShot(Projectiles))
                 {
@@ -333,7 +333,7 @@ namespace BarPromenade
                 CombatActor.ApplyContacts(pendingContacts);
                 foreach (CombatActor.ShoveContact contact in pendingShoves) contact.Apply();
                 foreach (CombatActor.KickContact contact in pendingKicks) contact.Apply();
-                Projectiles?.ApplyContacts();
+                ApplyProjectilePoolContacts();
                 JournalElapsed(impactStamp, ref journalImpactApplyTicks);
                 JournalTransitions("contacts_applied");
                 if (!RoundFinished && hitStopSubsteps == 0)
@@ -371,7 +371,7 @@ namespace BarPromenade
         {
             if (finishedRoundInitialized) return;
             finishedRoundInitialized = true;
-            if (!Hero.IsShotgun) Projectiles?.ClearFlights();
+            pistolProjectiles?.ClearFlights();
             if (!Hero.IsFirearm || Hero.State.IsDefeated) return;
             // Relinquish the defeated target without revoking a held aim.
             // Focus-to-free aim must inherit the exact accepted camera pose;
@@ -423,7 +423,7 @@ namespace BarPromenade
                     // Newly committed bullets fly on the next substep. Until a
                     // flight or a weapon sweep needs anatomy, retain only weapon
                     // histories; corpse physics and effect clocks still advance.
-                    bool needsAnatomy = (Projectiles?.ActiveCount ?? 0) > 0 || Hero.HasPendingWeaponContact;
+                    bool needsAnatomy = ActiveProjectileCount > 0 || Hero.HasPendingWeaponContact;
                     Hero.CaptureContactPose(needsAnatomy); Opponent.CaptureContactPose(needsAnatomy);
                     SimulationCaptureTicks += System.Diagnostics.Stopwatch.GetTimestamp() - stageStart;
                     pendingContacts.Clear();
@@ -433,9 +433,9 @@ namespace BarPromenade
                     JournalElapsed(impactStamp, ref journalImpactApplyTicks);
                     Hero.ContinueBufferedAttackAfterContacts();
                     stageStart = System.Diagnostics.Stopwatch.GetTimestamp();
-                    Projectiles?.Advance(SimulationStep, Hero, Opponent);
+                    AdvanceProjectilePools(SimulationStep);
                     SimulationFlightTicks += System.Diagnostics.Stopwatch.GetTimestamp() - stageStart;
-                    Casings?.Tick(SimulationStep);
+                    TickCasingPools(SimulationStep);
                     AdvancePistolCrosshair(SimulationStep);
                     if (Hero.CommitPistolShot(Projectiles))
                     {
@@ -443,7 +443,7 @@ namespace BarPromenade
                         PulsePistolCrosshair();
                     }
                     impactStamp = JournalStamp();
-                    Projectiles?.ApplyContacts();
+                    ApplyProjectilePoolContacts();
                     JournalElapsed(impactStamp, ref journalImpactApplyTicks);
                     stageStart = System.Diagnostics.Stopwatch.GetTimestamp();
                     BloodEffects.Tick(SimulationStep);
@@ -457,8 +457,8 @@ namespace BarPromenade
             {
                 pendingSeconds = 0d;
                 Hero.AdvanceRoundEnd(seconds); Opponent.AdvanceRoundEnd(seconds);
-                Casings?.Tick(seconds);
-                Projectiles?.SurfaceEffects.Tick(seconds);
+                TickCasingPools(seconds);
+                TickProjectileSurfaceEffects(seconds);
                 long stageStart = System.Diagnostics.Stopwatch.GetTimestamp();
                 BloodEffects.Tick(seconds);
                 HeadEffects.Tick(seconds);

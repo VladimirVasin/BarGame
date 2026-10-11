@@ -110,7 +110,7 @@ namespace BarPromenade
         private void LateUpdate()
         {
             if (IsInitialized && GameInput.CanRead(GameInputContext.Gameplay) && hitStopSubsteps == 0 && roundEndFreeze <= 0d)
-                Projectiles?.AdvancePresentation(Time.deltaTime);
+                AdvanceProjectilePoolPresentation(Time.deltaTime);
             if (GameLog.Profile == GameLogProfile.Off || !IsInitialized || Hero == null || Player.Motor == null) return;
             movementSamples++;
             Keyboard keyboard = Keyboard.current;
@@ -142,8 +142,7 @@ namespace BarPromenade
         private void OnApplicationQuit() { CloseDuelJournal("quit"); WriteMovementSummary(); }
         private void OnDestroy()
         {
-            Projectiles?.Clear();
-            Casings?.Clear();
+            ClearWeaponPools();
             ReleaseFreePistolAim();
             CloseDuelJournal("unload");
             ReleaseDamageEffects();

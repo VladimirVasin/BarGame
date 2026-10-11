@@ -3,50 +3,89 @@
 Newest outcomes/checks first. Archive whole dates at budget: [policy](README.md).
 Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-2026-08.md).
 
-## 2026-10-10 — Firearm gait and character joints
+## 2026-10-11 — Weapon carry, cloth and damage cost
 
-- Aim gait counted motor travel twice and divided render travel by a substep;
-  fixed deadlines rushed steps. Actual velocity/natural landing now time rescue.
-  Live retarget/anatomy/clearance/aim/stride/sprint/bar focus remain. At the user's
-  request, aimwalk is 15% slower: forward/side 2.21 m/s, backward 1.19 m/s;
-  gait slows with travel and diagonals stay normalized.
-- Steady gait uses quintic lift/plant and cubic knee/pelvis slopes within
-  original limb lengths. Lower foot arcs/narrower stagger steady the pelvis;
-  entry keeps live height correction. Speed/stride/contacts/aim/bar focus kept.
-- Aimed hands absorb most lateral gait weight shift, keeping a small gun sway.
-  Both wrists retain reach/contact without pulling the hold sideways; the real
-  barrel is re-aimed after final foot closure. Repeated presentation applies
-  compensation only before that pass; focused movement adds less angular sway.
-- Hero dependency stamp retained. Check: `PlayerBuildAssetValidation.ValidateHero`.
-- Check: `Range_FirearmAimDirectionChangesKeepLegsWithinAuthoredAnatomy`
-  covers actual foot-transfer cadence/intervals/distance alongside pose/aim/speed/
-  Shift, presented steady contacts/body height/gun sway and moving recoil;
-  frames inspected;
-  `build-combat-firearm-walk-3d-model.py` checks actual endpoint derivatives,
-  anatomy and deterministic export; `check-docs.py`, `git diff --check`.
-- Known corners: long straight entry can repeat emergency landings; releasing
-  sole avoidance can snap the airborne foot. Continuous route retains anatomy/cadence.
-- Body proxies share exact transforms per effects pass and reuse unchanged
-  relative matrices; duplicate refreshes removed. Collider pose/shape/scale,
-  new corpse contacts and pause/reset stay live. Checks:
-  `Range_DistantShotgunTorsoVolleyProfilesImpactPhases`,
-  `Range_BodyProxiesShareTransformsAndFollowSameFrameChanges`.
-  Intact contacts use frozen source triangles and authored patches:
-  cut skin/triangulation displaced boots. Check:
+- Repeated rig/body work stalled switching. The sling consumes final pose once
+  per rendered frame in `LateUpdate`; animation retains its clock. Pause,
+  detachment and reset release or rebuild contacts.
+- Relative skin/support/upload and lazy world/normal/plane caches retain geometry.
+  Two-way/free-space/nearest BVH caches preserve Mono winners/ties;pose invalidates.
+  Calibrated support/ray/length arithmetic falls back for unknown/nonfinite/overflow;
+  Mono required wide intermediates.
+- Warm integration/final live-pin fitting share 64 contact iterations;
+  conditional length repair adds at most 64 without body queries. Warm cloth
+  continues; reset/seed/tolerances stay. Diagnostics:final state;
+  no dead direct-ray scratch.
+- Shotgun ribbon: anatomical LEFT shoulder→whole front chest/abdomen→lower
+  right side. Swivels, shoulder/hand contacts and draw/stow persist. Jacket
+  ignores ribbon; gun/bar coat and scarf/hair contacts remain. JacketBody
+  padding covers ribbon width/sewn layers; models/ammo/handoffs are retained.
+  Skin/support/plane/ray/projection proofs stay untimed.
+- Walking contacts stretched hem edges. Cached material edges, bounded panel
+  sweeps and paired lining/outer walls limit strain after body contacts.
+  Touched pairs replace per-edge queries; final material pass, deep folds and
+  rigid free-pocket/flap fallback retain clearance/strain gates and mirror/arms.
+- Real Update→Late frames exposed cost beyond sling-only work.
+  Jacket≤3,hair/sling≤2 steps/frame at 120Hz; elapsed is consumed, no debt.
+  User permits cloth simplification: free panels reuse a current posed exit
+  before point/area passes only while body/gear/face-feasible and material
+  unchanged;else fallback. Only free patches use area/inner material 2/2;
+  pinned 4/8, final material 8/1.16 and deep-fold area 4 remain.
+  Dense hulls stay. A FALSE free-surface result is reused only within one Deform
+  for exact points and owner/pose/gear epochs. Contains rechecks its current plane,
+  else scans in original order. Pinned/area Burst shares owner/pose/gear-keyed
+  read-only contacts;mutable solves separate. Hair batches contacts;managed bends/fallback.
+- Damage shares source/pose capture;unchanged joint/blend/visibility writes skip.
+  Hits/effects remain synchronous. Disabled proxies/head pairs prewarm;activation
+  refreshes live bounds/pairs. Calibrated native bounds preserve ordered Bake corners;
+  fallback remains. Indices refresh only for mesh/topology changes;independent bit proof.
+- DuelJournal cloth stage/budgets separate cloth/rig CPU and discarded time;
+  projectile-defeat stages isolate preparation/ragdoll/drop. A loaded-frame
+  regression is not a general FPS guarantee.
+- Checks: `Range_WeaponCarryKeepsRealFramesBoundedThroughWalkingSwitchesAndHeadshot`,
+  `ProductionRig_WalkingKeepsJacketHemLength`, `check-docs.py`, `git diff --check`.
+
+## 2026-10-10 — Gait, character joints and weapon carry
+
+- Aim motor/render double-count/substep and rushed deadlines now use actual
+  velocity/natural rescue. Retarget/anatomy/clearance/stride/aim/sprint/bar focus
+  kept. Aimwalk −15%: forward/side 2.21 m/s, back 1.19 m/s; gait follows travel,
+  diagonals normalized. Quintic lift/plant and cubic knee/pelvis slopes preserve
+  limb lengths; lower arcs/narrow stagger steady pelvis, live entry height kept.
+  Hands absorb lateral shift with small sway/reach/contact; re-aim after final
+  foot closure; repeat compensation only before that pass, less focus angular sway.
+  Hero dependency stamp kept. Checks: `PlayerBuildAssetValidation.ValidateHero`,
+  `Range_FirearmAimDirectionChangesKeepLegsWithinAuthoredAnatomy` (transfer cadence/
+  intervals/distance, pose/aim/speed/Shift, steady contacts/height/sway/moving recoil),
+  `build-combat-firearm-walk-3d-model.py` (endpoint derivatives/anatomy/export);
+  frames inspected. Known corners: long straight entry can repeat emergency
+  landings; sole-avoidance release can snap airborne foot; route keeps anatomy/cadence.
+- Body effects share exact transforms/reuse unchanged relative matrices; duplicate
+  refreshes removed; collider pose/shape/scale/new corpse contacts/pause/reset live.
+  Frozen source triangles/authored intact patches preserve contacts: cut triangulation
+  displaced boots. Checks: `Range_DistantShotgunTorsoVolleyProfilesImpactPhases`,
+  `Range_BodyProxiesShareTransformsAndFollowSameFrameChanges`,
   `Range_BodyDestructionDefersGeometryAndKeepsFrozenVisibleContacts`.
-- Hero/NPC retain joint volume/light, rigs/actions and non-boot atlas pixels.
-  Hero: tapered torso/neck, modest separate buttocks; M-65/pants own folds,
-  removable belt. Posed contacts clear hem/pockets with paired folds.
-  Burgundy 1460 flex ankle/ball, preserving sole support. Kick skins
-  foot/shin leather/keys after final feet: the rigid-foot rule broke
-  startup. Shaft excluded; sole/toe witnesses keep zero radius.
-  Importer repairs UV normals; combat caps measure normal depth/
-  emitted cells; seated keeps full skin/belt.
+- Hero/NPC joint volume/light, rigs/actions/non-boot atlas pixels kept. Hero tapered
+  torso/neck/modest separate buttocks; loose flat-panel M-65/pants own folds,
+  removable belt, posed hem/pocket contacts/paired folds. Burgundy 1460 flex
+  ankle/ball/support. Kick skins foot/shin leather/keys after final feet: rigid
+  foot broke startup; shaft excluded/sole-toe witnesses zero radius. Importer
+  repairs UV normals; combat caps measure normal depth/emitted cells; seated full skin/belt.
   Checks: `check-character-joint-export.py`, `Player3DJointSurfaceTests`,
   `ProductionRig_RendersBareAndLooseClothedJointBends`,
   `SeatedAppearance_PreservesMixedJointSkinAtFabricEndpoints`,
   `FlatGround_WalkKeepsABootPlantedEveryFrame`,
   `Range_CloseKicksAgreeWithPresentedBootAndFrozenAnatomy`; frames inspected.
+- CombatTest:pistol Lchest/undercoat+bar Rbelt OR shotgun soft sling/back,
+  shoulder stow/0hardmount. Kit/start;1/2/DpadR;6stow/draw:model/ammo/mech/gait kept;
+  reload/last queued;pause/drop/E/reset. Pistol/holster0cloth;coat hides stowed
+  render;held/drop+no-coat holster visible;Lcoat-open;jacket/hair/scarf contacts.
+  Sling:source skin/livebones (rigid sleeve hit pin);0cloth feedback;
+  material-distance bounds. Checks:
+  `build-combat-weapon-carry-3d-model.py`,
+  `Range_WeaponCarrySwitchesKeepModelsAmmoAndPhysicalHandoffs`; frames inspected;
+  `check-docs.py`, `git diff --check`.
 
 ## 2026-10-09 — Shotgun, body erosion, frame costs and firearm walk
 

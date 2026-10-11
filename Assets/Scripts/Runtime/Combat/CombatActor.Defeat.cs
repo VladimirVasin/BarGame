@@ -19,9 +19,13 @@ namespace BarPromenade
         public CombatRagdoll Ragdoll { get; private set; }
         public bool IsRagdollActive => Ragdoll != null && Ragdoll.IsActive;
         public string ActiveClipName => visibleClip;
-        public bool IsWeaponDropped => weaponDropped;
+        public bool IsWeaponDropped => activeCarry == null ? weaponDropped : activeCarry.Location == CombatWeaponCarryLocation.Dropped;
         /// <summary>The standing winner's bar waits in his closed left hand while the right one is busy.</summary>
         public bool IsWeaponInLeftHand { get; private set; }
+        internal long ProjectileDefeatTicks { get; private set; }
+        internal long ProjectileDefeatPreparationTicks { get; private set; }
+        internal long ProjectileDefeatRagdollTicks { get; private set; }
+        internal long ProjectileDefeatDropTicks { get; private set; }
 
         private bool CanAttackFinishedBody => hero != null && !IsFirearm && !State.IsDefeated &&
             contactTarget != null && contactTarget.State.IsDefeated;
@@ -35,6 +39,7 @@ namespace BarPromenade
 
         private void BeginDefeat(Vector3 direction, Vector3 point)
         {
+            CancelWeaponCarry(retainPose: true);
             roundEnded = true;
             EndPistolAction();
             CancelPendingKick("round_ended");
@@ -48,30 +53,46 @@ namespace BarPromenade
 
         private void BeginProjectileDefeat(CombatImpact impact)
         {
-            BeginDefeat(impact.Direction, impact.Point);
-            // A lying or rising target already owns the same rig in physics.
-            // BeginDefeat promotes that fall without replaying a standing clip.
-            if (IsRagdollActive) return;
-            hero?.SetOwnedPresentationFrozen(this, false);
-            Vector3 carry = motor != null ? motor.PlanarVelocity : locomotionVelocity;
-            carry += ImpactMotion?.Velocity ?? Vector3.zero;
-            Vector3 angular = ImpactMotion?.AngularVelocity ?? Vector3.zero;
-            if (!Ragdoll.BeginTerminal(carry, angular))
-                throw new InvalidOperationException("The projectile-defeated combat rig could not hand its live pose to physics.");
-            ForgetPistolAimPose();
-            supportGrip?.Forget();
-            weaponConstraint?.Forget();
-            footwork?.Forget();
-            damagePose?.ForgetBase();
-            bodyMotion?.Forget();
-            ImpactMotion?.Forget();
-            CancelPoseBlend();
-            DropWeapon();
+            long start = System.Diagnostics.Stopwatch.GetTimestamp();
+            try
+            {
+                long stage = System.Diagnostics.Stopwatch.GetTimestamp();
+                try { BeginDefeat(impact.Direction, impact.Point); }
+                finally { ProjectileDefeatPreparationTicks += System.Diagnostics.Stopwatch.GetTimestamp() - stage; }
+                // A lying or rising target already owns the same rig in physics.
+                // BeginDefeat promotes that fall without replaying a standing clip.
+                if (IsRagdollActive) return;
+                hero?.SetOwnedPresentationFrozen(this, false);
+                Vector3 carry = motor != null ? motor.PlanarVelocity : locomotionVelocity;
+                carry += ImpactMotion?.Velocity ?? Vector3.zero;
+                Vector3 angular = ImpactMotion?.AngularVelocity ?? Vector3.zero;
+                stage = System.Diagnostics.Stopwatch.GetTimestamp();
+                try
+                {
+                    if (!Ragdoll.BeginTerminal(carry, angular))
+                        throw new InvalidOperationException("The projectile-defeated combat rig could not hand its live pose to physics.");
+                }
+                finally { ProjectileDefeatRagdollTicks += System.Diagnostics.Stopwatch.GetTimestamp() - stage; }
+                ForgetPistolAimPose();
+                supportGrip?.Forget();
+                weaponConstraint?.Forget();
+                footwork?.Forget();
+                damagePose?.ForgetBase();
+                bodyMotion?.Forget();
+                ImpactMotion?.Forget();
+                CancelPoseBlend();
+                stage = System.Diagnostics.Stopwatch.GetTimestamp();
+                try { DropWeapon(); }
+                finally { ProjectileDefeatDropTicks += System.Diagnostics.Stopwatch.GetTimestamp() - stage; }
+            }
+            finally { ProjectileDefeatTicks += System.Diagnostics.Stopwatch.GetTimestamp() - start; }
         }
 
         internal void AdvanceRoundEnd(float seconds)
         {
             roundEnded = true;
+            AdvanceWeaponCarry(seconds);
+            if (IsSwitchingWeapon) { AdvanceVisualClock(seconds); Present(); return; }
             if (CanAttackFinishedBody)
             {
                 State.SetBlocking(false);
@@ -215,6 +236,7 @@ namespace BarPromenade
         private void ReleaseWeapon(Vector3 linearVelocity, Vector3 angularVelocity)
         {
             if (weaponDropped || Weapon == null) return;
+            CancelWeaponCarry(retainPose: true);
             EndPistolAction();
             weaponConstraint?.EndRecoveryContact();
             handPose.SetGrip(false, 0f);
@@ -230,22 +252,28 @@ namespace BarPromenade
             weaponBody.linearVelocity = linearVelocity;
             weaponBody.angularVelocity = angularVelocity;
             weaponDropped = true;
+            if (activeCarry != null) activeCarry.Location = CombatWeaponCarryLocation.Dropped;
+            RefreshShotgunSling();
             if (hero != null)
             {
                 var pickup = Weapon.GetComponent<CombatDroppedWeaponPickup>();
                 if (pickup == null) pickup = Weapon.AddComponent<CombatDroppedWeaponPickup>();
-                pickup.Initialize(this);
+                pickup.Initialize(this, WeaponId);
             }
         }
 
         private void RestoreWeapon()
         {
+            if (activeCarry != null && activeCarry.Location != CombatWeaponCarryLocation.Dropped) return;
             Weapon?.GetComponent<CombatDroppedWeaponPickup>()?.CancelPickup();
             heldWeaponPhysics?.ResetWeapon();
             if (!weaponDropped || Weapon == null) return;
             if (IsFirearm) IgnorePistolBodyCollisions(false);
-            weaponBody.linearVelocity = Vector3.zero;
-            weaponBody.angularVelocity = Vector3.zero;
+            if (!weaponBody.isKinematic)
+            {
+                weaponBody.linearVelocity = Vector3.zero;
+                weaponBody.angularVelocity = Vector3.zero;
+            }
             weaponBody.isKinematic = true;
             weaponBody.useGravity = false;
             weaponBody.detectCollisions = false;
@@ -256,6 +284,8 @@ namespace BarPromenade
             Weapon.transform.localRotation = weaponRotation;
             Weapon.transform.localScale = weaponScale;
             weaponDropped = false;
+            if (activeCarry != null) activeCarry.Location = CombatWeaponCarryLocation.Held;
+            UpdateConcealedPistol();
         }
 
         /// <summary>

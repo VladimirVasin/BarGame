@@ -2,37 +2,46 @@
 
 ## Current facts
 
-- **Accepted — 2026-10-10, independent military belt:**
-  Plain olive webbing/muted metal buckle over trousers on the pelvis rig.
-  `hero_belt` has its own `belt` slot, no body coverage; wardrobe removal/
-  restoration and seated waistband lowering include it. Replaces the buckle
-  exclusion; no insignia, ammunition or military biography.
+- **Accepted — 2026-10-10, carry pair:**
+  CombatTest:pistol Lchest/M65+Rbelt bar OR own soft-sling back shotgun.
+  Holster0cloth:stored hidden;held/drop seen;coat-off visible.
+  6bone stow/draw;rig/models/ammo/handoffs;0hardmount;§6/art§15a/9checks.
+
+- **Accepted — 2026-10-11:** shotgun:LEFT shoulder→full front chest/abdomen→lower Rside;rig draw/stow.
+  Ribbon0jacket;gun/bar coat+scarf/hair contacts;JacketBody-only width/seam pad.
+
+- **Accepted — 2026-10-11, cloth:** user allows simplification.
+  Jacket≤3,hair/sling≤2steps/frame@120Hz;elapsed/0debt
+  Free:posed body/gear/face-safe exit+material unchanged;fallback.
+  Dense hulls;pinned/area Burst/shared snapshot/fallback.
+  Damage:disabled prewarm;live bounds;ordered native/fallback;topology keys.
+
+- **Accepted — 2026-10-10, separate military belt:**
+  Olive webbing/muted metal buckle;pelvis over trousers.
+  `hero_belt`/`belt`:0coverage;wardrobe remove/restore;seated waist lowers it.
+  Buckle allowed;0insignia/ammo/military bio.
 
 - **Accepted — 2026-10-10, hero footwear:**
-  User replaces military boots with burgundy Dr. Martens 1460 Smooth Leather
-  Lace Up Boots: rounded toe, eight eyelets, black laces, yellow welt stitching,
-  grooved sole. Boot leather/sole must bend at ankle/ball during foot roll;
-  existing core rig/actions and support footprint stay compatible.
+  Burgundy Dr. Martens 1460 Smooth Leather Lace Up Boots replace military boots:
+  rounded toe/8 eyelets/black laces/yellow welt stitching/grooved sole.
+  Leather/sole ankle/ball flex in foot roll;rig/actions/support footprint kept.
 
 - **Accepted — 2026-10-10, hero body silhouette:**
-  Torso widens into continuous shoulders; shirt/M-65 follow. Tapered matching
-  neck follows the jaw. Male hips and two modest rounded buttocks with a cleft
-  join thighs; user reduces projection without merging cheeks. Trousers cover
-  actual anatomy. Lean identity/rig/actions/details stay; no story/§6 exception.
+  Torso widens→continuous shoulders;shirt/M-65 follow;matching tapered
+  neck fits jaw. Male hips/thighs join two modest round buttocks/cleft;
+  projection reduced,cheeks distinct;trousers cover anatomy.
+  Lean identity/rig/actions/details;0story/§6 deviation.
 
-- **Accepted — 2026-10-10, continuous character joints and loose hero garments:**
-  Hero/NPC rigs/actions/sockets/parts/wardrobe stay. `character_joint_surfaces_v1`
-  shares rings/weights/normals; import retains four influences.
-  `CharacterJointDeformation` drives `JointVolume.*` hip/elbow/knee/wrist volume
-  from swing through `135°`, ignores twist. Independent trousers retain clearance,
-  pinned waist and `TrouserKneeFold.*`; seated scales cloth by `1 - TrousersDown`.
-  M-65: flatter panels, shoulder seams/armholes, shaped sleeves/drape folds,
-  ease and smooth rear fall without inflation. `JacketElbowFold.*` precedes
-  bounded hem/cuff cloth; mirror/arms reuse motion, solve their own fold.
-  Hem clears trousers; jacket contacts pose cached skin/corrective planes/bounds;
-  all free vertices resolve, no live body baking/new solver. Combat/seated retain
-  source fields. Seam/volume/copy checks and renders cover `0/45/90/135°`.
-  Identity/palette/story §16/nine art checks stay; no §6 exception.
+- **Accepted — 2026-10-10, continuous joints and loose hero garments:**
+  Hero/NPC:rig/actions/sockets/parts/wardrobe;`character_joint_surfaces_v1`:
+  rings/weights/normals/4weights;`CharacterJointDeformation`/`JointVolume.*`:
+  hip/elbow/knee/wrist≤`135°`/0twist. Trousers:clearance/pinned waist/
+  `TrouserKneeFold.*`;seated×`1 - TrousersDown`.
+  M-65:flat seams/armholes/sleeve drape-ease/rear fall/0inflation;
+  `JacketElbowFold.*`→hem-cuff/mirror-arms shared motion/fold.
+  Hem:trouser clearance/posed skin-correctives/bounds/free verts;
+  0live bake/new solver;combat-seated/seam-volume-copy-render `0/45/90/135°`;
+  identity/palette/§16/9checks/0§6 deviation.
 
 - **Accepted — 2026-10-04, district heights:**
   User replaces the roof-hidden `36–52 m` ordinary contract: lower OldTown/
@@ -285,45 +294,40 @@
   §6/§12/art §10g/§16/§21/nine checks.
 - **Accepted 2026-10-10:** healthy gun aimwalk -15%
 - **Accepted 2026-10-09, aim gait:**
-  CombatFootwork:8clips/live-retarget/facing/normdiag/0run
-  Camplane/upperaim;Step1m/15/noinputback/wall-pause/tank-release/handoff0/aim0Step0.
-  Barfocus/reload/injury kept
+  CombatFootwork:8clips/retarget/facing/normdiag/0run/camplane/upperaim;
+  Step1m/15/noinputback/wall-pause/tank-release/handoff0/aim0Step0;barfocus/reload/injury.
 - **Accepted exception 2026-10-08, pistol:**
-  Dummy/freecam/focus-aim/Q-Step;nearest world/anatomy;
-  regional SFX-force/recoil-streak/0motor-sway/stablecam-hitkick/head0HP-ragdoll;
-  cases:port-delay/gravity-bounce-cap;emptylock/mag-seat-rack1.8/ammo-last;
-  dropE:stage-ammo/Rresume;0lock-pierce-ricochet-guard-parry-taunt-reward;
-  win/corpse/pause-hitstop/reset-exit.
+  Dummy/freecam/focus/Q-Step;first world/anatomy;regional SFX-force/recoil-streak/
+  0motor-sway/stablecam-hitkick/head0HP-ragdoll. Cases:port-delay/gravity-bounce-cap;
+  emptylock/mag-seat-rack1.8/ammo-last/dropE stage-ammo/Rresume;
+  0lock-pierce-ricochet-guard-parry-taunt-reward;win/corpse/pause-hitstop/reset-exit.
 - **Accepted exception 2026-10-09, shotgun power:**
   `ShotgunSettings`:close420Ns→40m0 steep;HPlinear;
   immutable body+torque/finalstate/unfrozen1/current-mass share/nonpellet torso.
   1SFX/terminal hitstop/head≤14/prelethal/8ledgers/fast debris-blood
 - **Accepted exception 2026-10-09, body destruction:**
-  CombatTest/both corpses/cloth-tissue→rig skeleton;nearshotgun=max local hits.
-  Chest-Abdomen-Pelvis:critical joined/0chunks-cellRB;finite point/radius cells
-  deform-erode;torso-only subdivision;expose≠sever/head-limb closed cuts/finite parts.
-  Rhand0weapon;Lhand0twohand-reload(Rbar/loaded pistol);legs fall-crawl0rise-step-kick.
-  Hero=AI/critical head-torso terminal/corpse/surface=hit=physics/dedup-pause-reset;
-  §6/art§15a/§16/§21/9checks.
+  CombatTest/both corpses/cloth-tissue→rig skeleton/nearshotgun local max;
+  Chest-Abdomen-Pelvis critical joined/0chunks-cellRB;finite point/radius cells
+  deform-erode/torso subdivide/expose≠sever/head-limb closed cuts/finite parts.
+  Rhand0weapon/Lhand0twohand-reload(Rbar-loaded pistol)/legs fall-crawl0rise-step-kick;
+  Hero=AI/head-torso end/surface=hit=physics/dedup-pause-reset/§6/art§15a/§16/§21/9checks.
 - **Accepted exception 2026-10-08, headshots:**
-  Head16:3-5/low eject/blood56;brain8:full/wet jelly/squash/loss1x;
+  Head16:3-5/low eject/blood56/brain8 full-wet-jelly/squash/loss1x/
   bone-tissue/cam-hide/finite pulse-fade/corpse impulse.
 - **Accepted exception 2026-10-08, bullets:**
   Firstworldhit:chips-sparks/dark hole128FIFO/particles192/shared shader;
   0damage-pierce/pause-hitstop0/ClearFlights keeps/reset-exit0.
 - **Accepted 2026-10-08, regional hits:**
-  Cinematic rig/wet/repeat;shared physics-camera.
+  Rig/wet/repeat/shared physics-camera.
 - **Accepted 2026-10-07, combat:**
-  Floor kept;stall arm→drop/rise≠grip/HP-focus-AI;pause-hitstop0.
-  No bar:walk-Q-Step/hits-falls. Eshared/0grant/cancel floor;
-  NPC approach-Q/rise ignores own drop;MMBfocus/AIhits/reset mode-focus;
-  hitstop≠lock-reset.
-  Q:chest-gap/earlylock;far pelvis-foot→/chest←,near knee;
-  fast palm/bar kept/arc turn/3mirrored torsos/fixedroot.
+  Floor/stall-arm→drop/rise≠grip/HP-focus-AI/pause-hitstop0;
+  no bar:walk-Q-Step/hits-falls/Eshared/0grant/cancel floor.
+  NPC approach-Q/rise ignores own drop;MMBfocus/AIhits/reset mode-focus/hitstop≠lock-reset.
+  Q:chest-gap/earlylock/far pelvis-foot→chest←/near knee/fast palm/bar kept/
+  arc turn/3mirrored torsos/fixedroot/freeleg-loadR/guard support/fall veto.
   Aim¼Windup lock/Charge free/motor yield;bar-Q-palm clocks/contact;
-  Step1m/sole-catch/finite landing-overload;bar-palm:nonfall stagger/feet-impulse-aim;
-  Qfreeleg/loadR;guard support/fall veto.
-  First bar-world-body;metal-wall recoil-stop/guard-break/0HPparry/pooled sparks-SFX.
+  Step1m/sole-catch/finite landing-overload;bar-palm stagger/feet-impulse-aim.
+  First bar-world-body/metal-wall recoil-stop/guard-break/0HPparry/pooled sparks-SFX.
 - **Accepted 2026-10-02, combat:**
   R>L/Hit-Miss cut/.22→held.28/buffer.20/hit-fall-reset0;
   AI≥1m/retreat≤.6s/whiff.20→counter.22/Rising hits.
@@ -331,13 +335,13 @@
 - **Accepted 2026-10-03, combat:**
   Hero Windup1m/brake/side-back/drift/≤.85m 0HPshove;
   regrip≤600°/s wrist-elbow-shoulder/body-world-palm;
-  DuelJournal identity/anatomy/CPU-wall/Q/B/3AI/recoil hold;
+  Q/B/3AI/recoil hold;
   .20s walk wait/tail buffer/support≠chain.
 - **Accepted 2026-09-25, clinch shove:** Both:close swing→faster/stronger palm.
 - **Accepted 2026-09-26, recovery:**
-  Impact≤2steps;optional flywheel-crouch-brace;pause-hitstop/defeat separate.
-  Lowns→Rbody-floor-wall;`CombatWeaponGeometry`:8seg/heldmass→forearm/free→inertia;
-  hand-ignore expires/drop past capsule→anatomy0;ROelbow-pronation-5..120/side±8°/QA pending.
+  Impact≤2steps/flywheel-crouch-brace/pause-hitstop≠defeat/Lowns→Rbody-floor-wall;
+  `CombatWeaponGeometry`:8seg/heldmass→forearm/free→inertia/hand-ignore expires/
+  drop past capsule→anatomy0/ROelbow-pronation-5..120/side±8°/QA pending.
 - **Accepted 2026-09-21, body:**
   6bone-local zones/first sequence;bar head×2(50/80,cap.99MaxHP)/rear±45°defeat;
   torso1-rear1.25/arms.5/legs.75;frozen mutual zone-dir-power/1HP-ragdoll.
@@ -345,15 +349,14 @@
   stance.42/.28m/art§15a/Smoothstep feet;Hold:breath0/regen delay;
   aftermath:thud/bar pool grows10s,stays.
 - **Accepted 2026-09-20, two hands:**
-  Ready-Block-attack-recoil→L/Hit-GuardBreak-Defeat release;
-  Ready low/Block high/L opposed.16→.42m/breath4s/blend/injury/NPC RRest/Lsubdiv-gates;
-  injury HP/dir-pose/wounds/pools;dry:block-miss;ragdoll wins.
+  Ready-Block-attack-recoil→L/Hit-GuardBreak-Defeat release/Ready low-Block high/
+  L opposed.16→.42m/breath4s/blend/injury/NPC RRest-Lsubdiv gates;
+  HP/dir-pose/wounds/pools/dry:block-miss/ragdoll wins.
 - **Accepted 2026-09-21, duel:**
-  Barwin:swing→walk/off→reset;costs:free hits/guard20-35/charge20/regen30/s-.6s stuns/own spends;
-  Seeded AI/fall freecam;fore/back:through flips/stop repeats;step/target>15°≠strafe;
-  same dmg-time-cost;upper(t+q*.18*(1-smooth(t/.45)))/lower(t);
-  charge upper(.18q):retimed Attack/neutral lower;q=power/Forehand Light;
-  Backhand DAG:R elbow-hand roll/.56reach≥.95/free elbow;
+  Barwin:swing→walk/off→reset;free hits/guard20-35/charge20/regen30/s-.6s stuns/own spends;
+  seeded AI/fall freecam/fore-back flips/no repeats/step-target>15°≠strafe/same dmg-time-cost.
+  Charge:q=power/Forehand Light/upper(t+q*.18*(1-smooth(t/.45)))/lower(t)/
+  retimed Attack/neutral lower. Backhand DAG:R elbow-hand roll/.56reach≥.95/free elbow;
   recoil .56→Ready0/.48s inverse/C1/no dwell/wrist-core-speed-clearance gates.
 - **Accepted exception 2026-09-21, taunt:**
   E/settled defeat:Home toilet/view-timeline-stream-residue;

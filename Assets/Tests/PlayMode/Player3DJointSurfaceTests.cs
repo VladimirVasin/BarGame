@@ -78,13 +78,14 @@ namespace BarPromenade.Tests.PlayMode
             foreach (object proxy in (Array)Field(contacts, "proxies"))
             {
                 var planes = (Plane[])Field(proxy, "WorldPlanes");
-                if (!(bool)Field(proxy, "Active") || planes == null) continue;
+                if (!(bool)Field(proxy, "Active")) continue;
                 envelopes.Add(new ContactEnvelopeReplay
                 {
                     name = Field(proxy, "Part").ToString(),
                     minimum = (Vector3)Field(proxy, "WorldMinimum"), maximum = (Vector3)Field(proxy, "WorldMaximum"),
-                    normals = planes.Select(plane => plane.normal).ToArray(),
-                    distances = planes.Select(plane => plane.distance).ToArray()
+                    unitToWorld = (Matrix4x4)Field(proxy, "UnitToWorld"), worldToUnit = (Matrix4x4)Field(proxy, "WorldToUnit"),
+                    normals = planes?.Select(plane => plane.normal).ToArray(),
+                    distances = planes?.Select(plane => plane.distance).ToArray()
                 });
             }
             var surfaces = new List<ContactSurfaceReplay>();
@@ -95,13 +96,24 @@ namespace BarPromenade.Tests.PlayMode
                 var local = (Vector3[])Field(surface, "posedOriginal");
                 var skins = (Matrix4x4[])Field(surface, "skins");
                 var vertexSkins = (int[])Field(surface, "vertexSkins");
+                object panel = Field(surface, "panelShape");
                 surfaces.Add(new ContactSurfaceReplay
                 {
                     name = binding.Renderer.name,
                     raw = Enumerable.Range(0, local.Length).Select(index => skins[vertexSkins[index]].MultiplyPoint3x4(local[index])).ToArray(),
-                    preContact = (Vector3[])Field(Field(surface, "panelShape"), "Raw"),
+                    preContact = (Vector3[])Field(panel, "Raw"),
                     solved = (Vector3[])Field(surface, "world"), freedom = (float[])Field(surface, "contactFreedom"),
-                    canonical = (int[])Field(surface, "contactVertices"), triangles = (int[])Field(surface, "contactTriangles")
+                    canonical = (int[])Field(surface, "contactVertices"), triangles = (int[])Field(surface, "contactTriangles"),
+                    panel = new ContactPanelReplay
+                    {
+                        bind = (Vector3[])Field(panel, "bind"), pose = (Vector3[])Field(panel, "pose"),
+                        candidate = (Vector3[])Field(panel, "Candidate"), layers = (int[])Field(panel, "layers"),
+                        pinned = (bool[])Field(panel, "pinned"), hasPins = (bool)Field(panel, "HasPins"),
+                        halfWidth = (float)Field(panel, "HalfWidth"),
+                        bottom = ((Vector3[])Field(panel, "bind")).Min(point => point.y),
+                        start = (float)Field(panel, "Start"), middle = (float)Field(panel, "Middle"),
+                        peak = (float)Field(panel, "Peak"), pin = (float)Field(panel, "Pin")
+                    }
                 });
             }
             ContactSurfaceReplay[] trousers = registry.MeshBindings.Where(binding => binding.MeshName.StartsWith("CLO_Trousers", StringComparison.Ordinal))
@@ -110,7 +122,12 @@ namespace BarPromenade.Tests.PlayMode
                     var posed = new PosedSurface((SkinnedMeshRenderer)binding.Renderer);
                     return new ContactSurfaceReplay { name = posed.Name, raw = posed.Points, triangles = posed.Triangles };
                 }).ToArray();
-            var replay = new ContactReplay { bone = bone, angle = angle, envelopes = envelopes.ToArray(), surfaces = surfaces.ToArray(), trousers = trousers };
+            var replay = new ContactReplay
+            {
+                bone = bone, angle = angle, actorToWorld = registry.transform.localToWorldMatrix,
+                worldToActor = registry.transform.worldToLocalMatrix, envelopes = envelopes.ToArray(),
+                surfaces = surfaces.ToArray(), trousers = trousers
+            };
             string directory = Path.GetFullPath(Path.Combine(Application.dataPath, "..", "TestResults"));
             Directory.CreateDirectory(directory);
             File.WriteAllText(Path.Combine(directory, "player-3d-jacket-contacts-" + bone + "-" + angle.ToString("0", System.Globalization.CultureInfo.InvariantCulture) + ".json"),
@@ -120,18 +137,28 @@ namespace BarPromenade.Tests.PlayMode
         [Serializable] private sealed class ContactReplay
         {
             public string bone; public float angle;
+            public Matrix4x4 actorToWorld, worldToActor;
             public ContactEnvelopeReplay[] envelopes;
             public ContactSurfaceReplay[] surfaces, trousers;
         }
         [Serializable] private sealed class ContactEnvelopeReplay
         {
             public string name; public Vector3 minimum, maximum;
+            public Matrix4x4 unitToWorld, worldToUnit;
             public Vector3[] normals; public float[] distances;
         }
         [Serializable] private sealed class ContactSurfaceReplay
         {
             public string name; public Vector3[] raw, preContact, solved;
             public float[] freedom; public int[] canonical, triangles;
+            public ContactPanelReplay panel;
+        }
+        [Serializable] private sealed class ContactPanelReplay
+        {
+            public Vector3[] bind, pose, candidate;
+            public int[] layers; public bool[] pinned;
+            public bool hasPins;
+            public float halfWidth, bottom, start, middle, peak, pin;
         }
 
         [Test]

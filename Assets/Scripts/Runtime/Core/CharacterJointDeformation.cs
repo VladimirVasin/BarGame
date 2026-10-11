@@ -98,7 +98,8 @@ namespace BarPromenade
                 float angle = Vector3.Angle(binding.LongitudinalAxis, bend * binding.LongitudinalAxis);
                 float cosine = Mathf.Max(minimumCosine, Mathf.Cos(angle * Mathf.Deg2Rad * .5f));
                 float weight = Mathf.Clamp01((1f / cosine - 1f) / maximumExpansion) * 100f;
-                binding.Renderer.SetBlendShapeWeight(binding.Shape, weight);
+                if (binding.Renderer.GetBlendShapeWeight(binding.Shape) != weight)
+                    binding.Renderer.SetBlendShapeWeight(binding.Shape, weight);
             }
         }
 

@@ -7,6 +7,7 @@ namespace BarPromenade
     public sealed class CombatDroppedWeaponPickup : MonoBehaviour, IInteractable
     {
         private CombatActor owner;
+        private CombatWeaponId weaponId;
         private WorldItemFoundScreen screen;
         private SphereCollider interactionTrigger;
         private readonly RaycastHit[] sightHits = new RaycastHit[24];
@@ -14,14 +15,17 @@ namespace BarPromenade
         private RigidbodyInterpolation interpolation;
         private bool inspecting, accepted, cancelling, disabling;
 
-        public string PromptKey => owner != null && owner.IsShotgun ? "combat.weapon.pickup_shotgun" :
-            owner != null && owner.IsPistol ? "combat.weapon.pickup_pistol" : "combat.weapon.pickup";
+        public string PromptKey => weaponId == CombatWeaponId.Shotgun ? "combat.weapon.pickup_shotgun" :
+            weaponId == CombatWeaponId.Pistol ? "combat.weapon.pickup_pistol" : "combat.weapon.pickup";
         public Vector3 InteractionPosition => transform.position;
         public bool IsPresenting => inspecting;
 
-        internal void Initialize(CombatActor actor)
+        internal void Initialize(CombatActor actor) => Initialize(actor, actor.WeaponId);
+
+        internal void Initialize(CombatActor actor, CombatWeaponId id)
         {
             owner = actor;
+            weaponId = id;
             if (interactionTrigger == null)
             {
                 interactionTrigger = gameObject.AddComponent<SphereCollider>();
@@ -33,7 +37,7 @@ namespace BarPromenade
 
         public bool CanInteract(PlayerInteractor interactor)
         {
-            if (owner == null || !owner.CanRecoverDroppedWeapon || inspecting || interactor == null ||
+            if (owner == null || !owner.CanRecoverCarriedWeapon(weaponId) || inspecting || interactor == null ||
                 interactor.gameObject != owner.gameObject || !interactor.InputEnabled || interactor.InteractKeyClaimed ||
                 !GameInput.CanRead(GameInputContext.Contextual) || CounterMenuInput.IsBlockedByOtherUi() ||
                 SceneTransitionService.IsTransitioning) return false;
@@ -62,11 +66,11 @@ namespace BarPromenade
             velocity = body != null ? body.linearVelocity : Vector3.zero;
             angularVelocity = body != null ? body.angularVelocity : Vector3.zero;
             interpolation = body != null ? body.interpolation : RigidbodyInterpolation.None;
-            owner.SetDroppedWeaponInspected(true);
+            owner.SetDroppedWeaponInspected(weaponId, true);
             inspecting = true;
             accepted = false;
-            InventoryItemId item = owner.IsShotgun ? InventoryItemId.CombatShotgun :
-                owner.IsPistol ? InventoryItemId.CombatPistol : InventoryItemId.CombatCrowbar;
+            InventoryItemId item = weaponId == CombatWeaponId.Shotgun ? InventoryItemId.CombatShotgun :
+                weaponId == CombatWeaponId.Pistol ? InventoryItemId.CombatPistol : InventoryItemId.CombatCrowbar;
             if (screen.TryPresent(interactor, item, transform, Commit, Finish)) return true;
             if (inspecting) Finish(false);
             return false;
@@ -74,7 +78,7 @@ namespace BarPromenade
 
         private bool Commit()
         {
-            if (accepted || owner == null || !owner.CanRecoverDroppedWeapon) return false;
+            if (accepted || owner == null || !owner.CanRecoverCarriedWeapon(weaponId)) return false;
             accepted = true;
             return true;
         }
@@ -87,13 +91,13 @@ namespace BarPromenade
             if (owner == null) return;
             // The shared presenter has restored the actual prop's parent and pose
             // before this callback. Only now may it be attached back to the hand.
-            if (equip && owner.EquipRecoveredWeapon())
+            if (equip && owner.EquipRecoveredWeapon(weaponId))
             {
                 interactionTrigger.enabled = false;
                 return;
             }
             if (!disabling) gameObject.SetActive(true);
-            owner.SetDroppedWeaponInspected(false, velocity, angularVelocity, interpolation);
+            owner.SetDroppedWeaponInspected(weaponId, false, velocity, angularVelocity, interpolation);
         }
 
         internal void CancelPickup()

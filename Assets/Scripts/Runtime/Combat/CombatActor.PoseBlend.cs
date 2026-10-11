@@ -61,9 +61,9 @@ namespace BarPromenade
             }
         }
 
-        private void BeginPoseBlend(float duration = PoseBlendSeconds)
+        private void BeginPoseBlend(float duration = PoseBlendSeconds, bool force = false)
         {
-            if ((hero == null && visibleClip == null) || Time.frameCount <= poseBlendAfterFrame) return;
+            if (!force && ((hero == null && visibleClip == null) || Time.frameCount <= poseBlendAfterFrame)) return;
             poseBlendDuration = duration;
             poseBlendRemaining = duration;
             if (IsFirearm) pistolBlendClosure = pistolLeftClosure;

@@ -69,7 +69,7 @@ namespace BarPromenade
             if (Firearm == null) return;
             if (!CombatFocused && (held || worldAimPoint.HasValue))
                 pistolFreeAimPoint = worldAimPoint ?? (transform.position + Vector3.up * 1.4f + transform.forward * 40f);
-            bool requested = held && PistolAimBodyAvailable && GameInput.CanRead(GameInputContext.Gameplay);
+            bool requested = held && !HasWeaponSwitchRequest && PistolAimBodyAvailable && GameInput.CanRead(GameInputContext.Gameplay);
             Firearm.SetAim(requested);
         }
 
@@ -77,6 +77,7 @@ namespace BarPromenade
         public bool RequestPistolShot()
         {
             int request = BeginPistolShotRequest();
+            if (HasWeaponSwitchRequest) return RejectPistolShot(request, "weapon_switching", "input");
             if (!IsFirearm || Firearm == null) return RejectPistolShot(request, "no_pistol", "input");
             if (!BodyDamage.CanUseRightHand || IsShotgun && !BodyDamage.CanUseLeftHand)
                 return RejectPistolShot(request, "grip_unavailable", "input");
@@ -174,10 +175,11 @@ namespace BarPromenade
             // Both operations run synchronously after CanFire; spawn failure
             // must not consume ammunition or start the firing cooldown.
             if (!(IsShotgun ? projectiles.TrySpawnVolley(this, position, firingMuzzle.rotation,
-                unchecked(Firearm.ShotSequence + 1), Shotgun.Settings) :
-                projectiles.TrySpawn(this, position, velocity, unchecked(Firearm.ShotSequence + 1))))
+                unchecked(projectileSequence + 1), Shotgun.Settings) :
+                projectiles.TrySpawn(this, position, velocity, unchecked(projectileSequence + 1))))
                 return RejectPistolShot(request, "projectile_spawn", "commit");
             Firearm.TryFire();
+            projectileSequence = unchecked(projectileSequence + 1);
             ApplyGroundedFirearmRecoil(firingMuzzle.forward);
             UpdatePistolMechanics();
             if (pistolFlash != null) pistolFlash.gameObject.SetActive(true);
@@ -192,6 +194,7 @@ namespace BarPromenade
         private void AdvancePistol(float seconds)
         {
             if (Firearm == null) return;
+            if (IsSwitchingWeapon) { Firearm.Advance(seconds); UpdatePistolMechanics(); return; }
             if (!BodyDamage.CanUseLeftHand || IsBodyGrounded) Firearm.CancelReload();
             if (!PistolAimBodyAvailable) { CancelPendingPistolShot(PistolBodyRejection); Firearm.CancelAction(); }
             else if (!PistolBodyAvailable) { CancelPendingPistolShot(PistolBodyRejection); Firearm.CancelReload(); }

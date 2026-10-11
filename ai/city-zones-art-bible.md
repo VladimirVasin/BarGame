@@ -4246,33 +4246,31 @@ OS dynamic fonts в IMGUI запрещены; Unity legacy — аварийны�
 ### Принятое исключение — боевой полигон
 
 §6:PS1 polygon вне сюжета;9checks;`ai/architecture-notes.md`.
-`2026-10-07`:лом/пистолет→Начать/Назад;NPCлом;Оружие→выбор/сброс.
-Gun:worn dark unbranded metal/Rpalm gait/2hand aim/cross-flash;
-Aim:8gaits/speed×.85/facing/Step/uppercam/FOV-grip return.
+`2026-10-10`:pistol holster LunderM65+bar Rbelt|shotgun own sling/back;
+stow Lshoulder/frontdiagonal/0holster-hardmount;2slots/held/Start-Back;NPCbar.
+6bone-only stow/draw/contacts/rig-models-ammo/Ljacket-open/cloth-hair-scarf.
+Gun:worn unbranded dark metal/Rpalm gait/2hand aim/cross-flash;
+Aim:8gaits/×.85/facing/Step/uppercam/FOV-grip return.
 `2026-10-08`:recoil/stablecam/streak/impulse-SFX;pistol head0HP→ragdoll.
 Shotgun:worn dark steel/wood/twin barrels/shoulder-stock/Lforeend;
 heavy recoil/flash-smoke/deep thud;2shots/break/eject spent/load/close.
 `2026-10-09`:near=max/body launch/head≤14/fast head debris-blood/falloff.
-Rig:chest-abdomen/arm-forearm-hand/leg-catch;skin-fabric-glove-boot:
-irregular wet-dry entry/repeat.
+Rig:chest-abdomen/arm-forearm-hand/leg-catch;skin-fabric-glove-boot/wet-dry/repeat.
 `2026-10-09`:torso erodes→joined skeleton/0chunks;head-limb cuts/finite parts;
 near shotgun=max local hits;both survivors-corpses/crawl/whole reset.
-Pistol:3-5/16/low eject;brain8:full/wet-muted jelly/
-squash/bone-tissue/cam-hide/repeat-loss.
-Dark blood:pistol56/800/narrow-slow/pulse→24s0/rig-cut/stains-pool-debris;
+Pistol:3-5/16/low eject;brain8:full/wet-muted jelly/squash/bone-tissue/cam-hide/loss.
+Dark blood:pistol56/800/narrow-slow/pulse24s0/rig-cut/stains-pool-debris;
 convulsions≤2.35s/corpse HP-pose-impulse;volley:one reaction/terminal.
 Case/slide-emptylock/mag stash-seat-rack/SFX;Eshared.
-World:chips-sparks/holes cap;pause-hitstop0;
-reset-exit:traces0/filled head restored. HPpose/bar pools10s/thud/6zones.
-Shoulders↑/chin in/breath=stamina/tremor/tight swing/awkward return;NPC calm.
-Soft knees/pelvis-grip-elbows↓/step-swing support/face block-flex.
+World:chips-sparks/capped holes/pause-hitstop0/reset-exit traces0/head restored;
+HPpose/bar pools10s/thud/6zones. Shoulders↑/chin in/stamina breath/tremor/tight swing/
+awkward return;NPC calm. Soft knees/pelvis-grip-elbows↓/step support/face block-flex.
 ≤2steps/optional crouch-lean-brace/floor→hand→drop recovery;2hands/return≠parry.
 NPC1m/retreat/miss-counter/rising/gaze-fallen/3styles.
-Windup1m/shove-grip;Q/B:0blood-finish/through highguard/buffer/recoil.
-Start:dummy/freecam/TabAIreset/barfocus/gunfree/MMBfocus.
-Лом:wall sparks-recoil/шатание-инерция-ноги;Q-блок:опора.
-Qfar:pelvis-foot→/chest←;near:knee;sharper/bar kept;
-torso mirror/L-shove←/0HP-blood/palm-bar-body.
+Windup1m/shove-grip;Q/B:dry/0finish/highguard/buffer/recoil/guard support.
+Dummy/freecam/TabAIreset/barfocus/gunfree/MMBfocus.
+Bar:wall sparks-recoil/sway-inertia-feet. Qfar:pelvis-foot→/chest←;
+near knee/bar kept/torso mirror/L-shove←/palm-bar-body.
 Грудь контрастна;стена/вне кадра/конец→скрыто.
 Win walks/gun fire-reload/0gun-taunt;bar-E:toilet §7 FP/barL/body-floorR/no reaction.
 Charge power;shield:dim-open=none/amber=request/closed=ready/filled=block;без речи-сюжета.

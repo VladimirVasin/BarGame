@@ -30,7 +30,10 @@ namespace BarPromenade
         CombatStep,
         CombatKick,
         CombatFocus,
-        CombatReload
+        CombatReload,
+        EquipPistol,
+        EquipSecondary,
+        CombatNextWeapon
     }
 
     /// <summary>Input ownership rules with no device or scene dependencies.</summary>

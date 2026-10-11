@@ -15,6 +15,7 @@ namespace BarPromenade
         internal static CombatTestRoot JournalRoot { get; private set; }
         internal DuelJournal JournalForDiagnostics => duelJournal;
         internal double JournalCollectorMilliseconds { get; private set; }
+        internal long TotalLatePoseTicks { get; private set; }
         internal string JournalDirectory { get; private set; }
         private DuelJournal duelJournal;
         private CombatJournalFrameObserver journalObserver;
@@ -30,6 +31,10 @@ namespace BarPromenade
         private int journalRenderContexts;
         private long journalQueriesAtFrameStart, journalSaturationsAtFrameStart;
         private JournalStageCounters journalStagesAtFrameStart;
+        private PlayerJacketCloth journalJacket;
+        private PlayerHair journalHair;
+        private PlayerScarfPresentation journalScarf;
+        private CombatShotgunSling journalSling;
         private int journalMeasuredFrame;
         private int journalRound, journalFrameSubsteps, journalFrozenSteps, journalPoseSamples, journalDecision = -1;
         private double journalSeconds, journalLastSnapshot = -1d, journalFrameMilliseconds;
@@ -58,6 +63,11 @@ namespace BarPromenade
             internal long BodySynchronization, HeadSynchronization, SurfaceRefresh, SurfaceVisibility, PhysicsSynchronization, ContactCapture;
             internal int BodySynchronizationCount;
             internal long WoundProjection, BurstEmission, WoundPose, WoundSkin, WoundTriangle, WoundClassification, WoundCommit, WoundVisibility;
+            internal long HeadActivation, HeadRelease, HeadActivationVisibility, HeadActivationCollision;
+            internal long ProjectileDefeat, ProjectileDefeatPreparation, ProjectileDefeatRagdoll, ProjectileDefeatDrop;
+            internal long Sling, Jacket, Hair, Scarf, SlingCalls, JacketCalls, JacketSteps, HairSteps;
+            internal long SlingSteps;
+            internal double JacketDiscarded, HairDiscarded;
         }
 
         private sealed class JournalActorState
@@ -106,6 +116,12 @@ namespace BarPromenade
             journalFailureReported = false;
             JournalRoot = this;
             journalHero = new JournalActorState(Hero); journalOpponent = new JournalActorState(Opponent);
+            Player3DAssetRegistry rig = (Player.Visual as Player3DCharacterPresentation)?.Registry;
+            journalJacket = rig != null ? rig.GetComponent<PlayerJacketCloth>() : null;
+            journalHair = rig != null ? rig.GetComponent<PlayerHair>() : null;
+            journalScarf = rig != null ? rig.GetComponent<PlayerScarfPresentation>() : null;
+            GameObject shotgun = Hero.CarriedWeapon(CombatWeaponId.Shotgun);
+            journalSling = shotgun != null ? shotgun.GetComponent<CombatShotgunSling>() : null;
             if (journalObserver == null) journalObserver = gameObject.AddComponent<CombatJournalFrameObserver>();
             journalObserver.Root = this;
             journalMain = StartJournalRecorder(ProfilerCategory.Internal, "Main Thread");
@@ -260,7 +276,9 @@ namespace BarPromenade
             public void Dispose()
             {
                 if (owner == null) return;
-                owner.journalLatePoseTicks += Stopwatch.GetTimestamp() - started;
+                long elapsed = Stopwatch.GetTimestamp() - started;
+                owner.journalLatePoseTicks += elapsed;
+                owner.TotalLatePoseTicks += elapsed;
                 owner.journalLatePoseFrame = Time.frameCount;
             }
         }
@@ -373,7 +391,26 @@ namespace BarPromenade
             WoundTriangle = BloodEffects?.WoundTriangleTicks ?? 0,
             WoundClassification = BloodEffects?.WoundClassificationTicks ?? 0,
             WoundCommit = BloodEffects?.WoundCommitTicks ?? 0,
-            WoundVisibility = BloodEffects?.WoundVisibilityTicks ?? 0
+            WoundVisibility = BloodEffects?.WoundVisibilityTicks ?? 0,
+            HeadActivation = HeadEffects?.FragmentActivationTicks ?? 0,
+            HeadRelease = HeadEffects?.FragmentReleaseTicks ?? 0,
+            HeadActivationVisibility = HeadEffects?.ActivationVisibilityTicks ?? 0,
+            HeadActivationCollision = HeadEffects?.ActivationCollisionTicks ?? 0,
+            ProjectileDefeat = Hero.ProjectileDefeatTicks + Opponent.ProjectileDefeatTicks,
+            ProjectileDefeatPreparation = Hero.ProjectileDefeatPreparationTicks + Opponent.ProjectileDefeatPreparationTicks,
+            ProjectileDefeatRagdoll = Hero.ProjectileDefeatRagdollTicks + Opponent.ProjectileDefeatRagdollTicks,
+            ProjectileDefeatDrop = Hero.ProjectileDefeatDropTicks + Opponent.ProjectileDefeatDropTicks,
+            Sling = journalSling != null ? journalSling.TotalPresentTicks : 0,
+            Jacket = journalJacket != null ? journalJacket.TotalApplyTicks : 0,
+            Hair = journalHair != null ? journalHair.TotalApplyTicks : 0,
+            Scarf = journalScarf != null ? journalScarf.TotalGeometryTicks : 0,
+            SlingCalls = journalSling != null ? journalSling.TotalPresentCalls : 0,
+            JacketCalls = journalJacket != null ? journalJacket.TotalApplyCalls : 0,
+            JacketSteps = journalJacket != null ? journalJacket.TotalSimulationSteps : 0,
+            HairSteps = journalHair != null ? journalHair.TotalSimulationSteps : 0,
+            SlingSteps = journalSling != null ? journalSling.TotalSimulationSteps : 0,
+            JacketDiscarded = journalJacket != null ? journalJacket.TotalDiscardedSeconds : 0d,
+            HairDiscarded = journalHair != null ? journalHair.TotalDiscardedSeconds : 0d
         };
 
         private static double JournalStageMilliseconds(long current, long previous) =>
@@ -386,6 +423,21 @@ namespace BarPromenade
             // Cumulative counters include calls outside Tick and finished-round work.
             // These are the previous measured frame's deltas; nested stages overlap.
             // The _sample suffix preserves the journal's existing telemetry policy.
+            duelJournal.Record("cloth_stage_sample",
+                f0: GameLog.Field("sling_ms", JournalStageMilliseconds(current.Sling, previous.Sling)),
+                f1: GameLog.Field("jacket_ms", JournalStageMilliseconds(current.Jacket, previous.Jacket)),
+                f2: GameLog.Field("hair_ms", JournalStageMilliseconds(current.Hair, previous.Hair)),
+                f3: GameLog.Field("scarf_ms", JournalStageMilliseconds(current.Scarf, previous.Scarf)),
+                f4: GameLog.Field("sling_calls", Math.Max(0L, current.SlingCalls - previous.SlingCalls)),
+                f5: GameLog.Field("jacket_calls", Math.Max(0L, current.JacketCalls - previous.JacketCalls)),
+                f6: GameLog.Field("jacket_steps", Math.Max(0L, current.JacketSteps - previous.JacketSteps)),
+                f7: GameLog.Field("hair_steps", Math.Max(0L, current.HairSteps - previous.HairSteps)));
+            duelJournal.Record("cloth_budget_sample",
+                f0: GameLog.Field("sling_steps", Math.Max(0L, current.SlingSteps - previous.SlingSteps)),
+                f1: GameLog.Field("sling_contact_iterations", journalSling != null ? journalSling.SteadyProjectionIterations : 0),
+                f2: GameLog.Field("sling_length_iterations", journalSling != null ? journalSling.SteadyLengthRepairIterations : 0),
+                f3: GameLog.Field("jacket_discarded_ms", Math.Max(0d, current.JacketDiscarded - previous.JacketDiscarded) * 1000d),
+                f4: GameLog.Field("hair_discarded_ms", Math.Max(0d, current.HairDiscarded - previous.HairDiscarded) * 1000d));
             duelJournal.Record("frame_stage_sample",
                 f0: GameLog.Field("capture_ms", JournalStageMilliseconds(current.Capture, previous.Capture)),
                 f1: GameLog.Field("flight_ms", JournalStageMilliseconds(current.Flight, previous.Flight)),
@@ -416,6 +468,16 @@ namespace BarPromenade
                 f5: GameLog.Field("classification_ms", JournalStageMilliseconds(current.WoundClassification, previous.WoundClassification)),
                 f6: GameLog.Field("commit_ms", JournalStageMilliseconds(current.WoundCommit, previous.WoundCommit)),
                 f7: GameLog.Field("visibility_ms", JournalStageMilliseconds(current.WoundVisibility, previous.WoundVisibility)));
+            duelJournal.Record("head_stage_sample",
+                f0: GameLog.Field("activation_ms", JournalStageMilliseconds(current.HeadActivation, previous.HeadActivation)),
+                f1: GameLog.Field("release_ms", JournalStageMilliseconds(current.HeadRelease, previous.HeadRelease)),
+                f2: GameLog.Field("activation_visibility_ms", JournalStageMilliseconds(current.HeadActivationVisibility, previous.HeadActivationVisibility)),
+                f3: GameLog.Field("activation_collision_ms", JournalStageMilliseconds(current.HeadActivationCollision, previous.HeadActivationCollision)));
+            duelJournal.Record("projectile_defeat_stage_sample",
+                f0: GameLog.Field("total_ms", JournalStageMilliseconds(current.ProjectileDefeat, previous.ProjectileDefeat)),
+                f1: GameLog.Field("preparation_ms", JournalStageMilliseconds(current.ProjectileDefeatPreparation, previous.ProjectileDefeatPreparation)),
+                f2: GameLog.Field("ragdoll_ms", JournalStageMilliseconds(current.ProjectileDefeatRagdoll, previous.ProjectileDefeatRagdoll)),
+                f3: GameLog.Field("drop_ms", JournalStageMilliseconds(current.ProjectileDefeatDrop, previous.ProjectileDefeatDrop)));
         }
 
         private bool IsJournalRenderContext(List<Camera> cameras)

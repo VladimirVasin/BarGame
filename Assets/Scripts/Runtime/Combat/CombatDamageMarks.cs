@@ -237,7 +237,11 @@ namespace BarPromenade
             {
                 if (Source == null || target == null) return;
                 for (int shape = 0; shape < BlendShapes.Length; shape++)
-                    target.SetBlendShapeWeight(shape, Source.GetBlendShapeWeight(BlendShapes[shape].SourceIndex));
+                {
+                    float weight = Source.GetBlendShapeWeight(BlendShapes[shape].SourceIndex);
+                    if (target.GetBlendShapeWeight(shape) != weight)
+                        target.SetBlendShapeWeight(shape, weight);
+                }
             }
             private Vector3 Skin(Vector3 vertex, Vector3 vertexNormal, BoneWeight weights, bool normal)
             {
@@ -800,8 +804,9 @@ namespace BarPromenade
             foreach (Patch patch in patches)
                 if (patch.Renderer != null)
                 {
-                    patch.RefreshBlendShapes();
-                    patch.Renderer.enabled = patch.Active && Retains(patch);
+                    if (patch.Active) patch.RefreshBlendShapes();
+                    bool visible = patch.Active && Retains(patch);
+                    if (patch.Renderer.enabled != visible) patch.Renderer.enabled = visible;
                 }
             foreach (ProjectileWound wound in projectileWounds)
             {
@@ -816,7 +821,8 @@ namespace BarPromenade
                     layer.Patch.SyncBlendShapeWeights(layer.Renderer);
                     bool visible = false;
                     for (int i = 0; i < layer.Count; i++) visible |= layer.Holes[i].z > 0f;
-                    layer.Renderer.enabled = visible && CombatBodyDestruction.SourceAvailable(actor, layer.Patch.Source);
+                    bool enabled = visible && CombatBodyDestruction.SourceAvailable(actor, layer.Patch.Source);
+                    if (layer.Renderer.enabled != enabled) layer.Renderer.enabled = enabled;
                     if (layer.Dirty) UploadProjectileLayer(layer);
                 }
             VisibilityTicks += System.Diagnostics.Stopwatch.GetTimestamp() - start;

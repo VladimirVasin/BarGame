@@ -1,0 +1,441 @@
+{
+  "generator": "tools/build-combat-weapon-carry-3d-model.py",
+  "generator_version": "1.1.0",
+  "blender_version": "5.0.1",
+  "build_signature": "f68b2469e649137f88f133a2d6185e2c0e9750fa131c9c354860f42530ddb49d",
+  "units": "metres",
+  "unity_forward": "+Z",
+  "unity_up": "+Y",
+  "passive": true,
+  "fbx_bake_space_transform": false,
+  "exported_fbx_validation": "mesh and anchor world metres after FBX round trip",
+  "signed_volumes": "every solid positive before and after axis swap",
+  "determinism": "two independent geometry builds match",
+  "triangle_count": 1480,
+  "materials": {
+    "Leather": [
+      0.16,
+      0.17,
+      0.13
+    ],
+    "Webbing": [
+      0.22,
+      0.23,
+      0.16
+    ],
+    "Steel": [
+      0.24,
+      0.255,
+      0.23
+    ]
+  },
+  "models": [
+    {
+      "name": "CrowbarBeltHolder",
+      "bounds_min": [
+        -0.0365,
+        -0.087,
+        -0.067
+      ],
+      "bounds_max": [
+        0.0895,
+        0.111,
+        0.033932
+      ],
+      "triangle_count": 588,
+      "solid_count": 21,
+      "mesh_count": 4,
+      "anchors": [
+        {
+          "name": "GripContact",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "parent": null
+        },
+        {
+          "name": "BeltContact",
+          "position": [
+            0.07800000160932541,
+            0.057999998331069946,
+            -0.06400000303983688
+          ],
+          "parent": null
+        }
+      ]
+    },
+    {
+      "name": "PistolHolster",
+      "bounds_min": [
+        -0.025,
+        0.008,
+        -0.002
+      ],
+      "bounds_max": [
+        0.025,
+        0.116,
+        0.222
+      ],
+      "triangle_count": 248,
+      "solid_count": 18,
+      "mesh_count": 18,
+      "anchors": [
+        {
+          "name": "GripContact",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "parent": null
+        }
+      ]
+    },
+    {
+      "name": "ShotgunSling",
+      "bounds_min": [
+        0.0235,
+        -0.540702,
+        -0.3
+      ],
+      "bounds_max": [
+        0.0485,
+        0.073,
+        0.31
+      ],
+      "triangle_count": 644,
+      "solid_count": 1,
+      "mesh_count": 1,
+      "anchors": [
+        {
+          "name": "GripContact",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "parent": null
+        },
+        {
+          "name": "SlingStock",
+          "position": [
+            0.036,
+            0.062,
+            -0.3
+          ],
+          "parent": null
+        },
+        {
+          "name": "SlingForeend",
+          "position": [
+            0.036,
+            0.072,
+            0.31
+          ],
+          "parent": null
+        }
+      ]
+    }
+  ],
+  "test_only": true,
+  "slots": [
+    {
+      "weapon": "Crowbar",
+      "mount": "CrowbarBeltHolder",
+      "bone": "pelvis",
+      "source_contact": {
+        "centre": [
+          -0.22499972581863403,
+          0.05500006303191185,
+          1.0149998664855957
+        ],
+        "up": [
+          3.6055837426829385e-07,
+          8.940696716308594e-08,
+          -1.0
+        ],
+        "forward": [
+          2.682209867543861e-07,
+          -1.0,
+          -8.940686768710293e-08
+        ]
+      }
+    },
+    {
+      "weapon": "Pistol",
+      "mount": "PistolHolster",
+      "bone": "chest",
+      "source_contact": {
+        "centre": [
+          0.17499993741512299,
+          -0.07200007885694504,
+          1.3400002717971802
+        ],
+        "up": [
+          -0.9063075184822083,
+          -0.4226188659667969,
+          6.183981327012589e-07
+        ],
+        "forward": [
+          -3.9672360685472086e-07,
+          -6.124774358795548e-07,
+          -1.0
+        ]
+      }
+    },
+    {
+      "weapon": "Shotgun",
+      "mount": "ShotgunSling",
+      "bone": "chest",
+      "source_contact": {
+        "centre": [
+          -0.09999987483024597,
+          0.1399998664855957,
+          1.2400000095367432
+        ],
+        "up": [
+          0.8660252690315247,
+          1.1847343728277338e-07,
+          -0.5000002384185791
+        ],
+        "forward": [
+          -0.5000002384185791,
+          1.01633474969276e-07,
+          -0.8660252690315247
+        ]
+      }
+    }
+  ],
+  "actions": {
+    "source": "ArtSource/Combat/WeaponCarryActions.blend",
+    "bone_only": true,
+    "root_motion": false,
+    "animation_events": 0,
+    "fps": 100,
+    "validation": {
+      "actions": {
+        "CrowbarDraw": {
+          "duration_s": 1.3,
+          "transfer_s": 0.38,
+          "right_hand_travel_m": 1.831991
+        },
+        "CrowbarStow": {
+          "duration_s": 1.3,
+          "transfer_s": 0.92,
+          "right_hand_travel_m": 1.831992
+        },
+        "PistolDraw": {
+          "duration_s": 1.7,
+          "transfer_s": 0.48,
+          "right_hand_travel_m": 2.130448
+        },
+        "PistolStow": {
+          "duration_s": 1.7,
+          "transfer_s": 1.22,
+          "right_hand_travel_m": 2.130448
+        },
+        "ShotgunDraw": {
+          "duration_s": 2.65,
+          "transfer_s": 0.88,
+          "right_hand_travel_m": 2.527908
+        },
+        "ShotgunStow": {
+          "duration_s": 2.65,
+          "transfer_s": 1.77,
+          "right_hand_travel_m": 2.527907
+        }
+      },
+      "maximum_fixed_lower_error": 0.0,
+      "maximum_transfer_error_m": 3.8181953973191427e-07,
+      "maximum_endpoint_error_degrees": 2.0490567514741542e-05,
+      "maximum_hand_step_m": 0.045653527347051234,
+      "pistol_maximum_extraction_elbow_height_m": 1.3785264492034912,
+      "pistol_minimum_elbow_to_head_base_gap_m": 0.10672235488891602,
+      "pistol_maximum_elbow_step_m": 0.03253081884843939,
+      "shotgun_left_shoulder_route": {
+        "anchors": {
+          "neutral": {
+            "chest": [
+              -0.003977518063038588,
+              0.006634220946580172,
+              1.2049822807312012
+            ],
+            "pelvis": [
+              0.0,
+              0.00800000037997961,
+              0.8349999785423279
+            ],
+            "left_shoulder": [
+              0.20678533613681793,
+              0.0007012416608631611,
+              1.4232041835784912
+            ],
+            "right_shoulder": [
+              -0.21123184263706207,
+              0.00979622732847929,
+              1.4187430143356323
+            ],
+            "body_up": [
+              -0.0003228724526707083,
+              -0.08821006864309311,
+              0.9961018562316895
+            ],
+            "body_forward": [
+              -0.020726697519421577,
+              -0.9958873987197876,
+              -0.08819779753684998
+            ]
+          },
+          "held_rest": {
+            "chest": [
+              0.007158366497606039,
+              0.006636190228164196,
+              1.2048890590667725
+            ],
+            "pelvis": [
+              0.0,
+              0.00800000037997961,
+              0.8349999785423279
+            ],
+            "left_shoulder": [
+              0.2285151332616806,
+              -0.10828966647386551,
+              1.4429736137390137
+            ],
+            "right_shoulder": [
+              -0.15906737744808197,
+              -0.013401235453784466,
+              1.4372754096984863
+            ],
+            "body_up": [
+              0.1892206221818924,
+              -0.10556527972221375,
+              0.9762435555458069
+            ],
+            "body_forward": [
+              -0.2365652173757553,
+              -0.969821572303772,
+              -0.05901853367686272
+            ]
+          }
+        },
+        "rest_route": {
+          "points": [
+            [
+              0.10369358211755753,
+              0.10400000214576721,
+              1.468807578086853
+            ],
+            [
+              0.2179301381111145,
+              -0.045569971203804016,
+              1.4895315170288086
+            ],
+            [
+              0.052895866334438324,
+              -0.14405395090579987,
+              1.1923927068710327
+            ],
+            [
+              -0.13292169570922852,
+              -0.14447440207004547,
+              1.000563621520996
+            ],
+            [
+              -0.21956287324428558,
+              0.021235670894384384,
+              0.9639099836349487
+            ],
+            [
+              -0.19264617562294006,
+              0.10400000214576721,
+              0.9355321526527405
+            ]
+          ],
+          "length_m": 1.0923802534488647
+        },
+        "maximum_grasp_spans": {
+          "stock_to_hand": {
+            "length_m": 0.573468777244678,
+            "draw_second": 1.51,
+            "material_length_m": 0.63,
+            "minimum_geometric_reserve_m": 0.056531222755321964
+          },
+          "hand_to_foreend": {
+            "length_m": 0.7296361015257702,
+            "draw_second": 0.62,
+            "material_length_m": 0.77,
+            "minimum_geometric_reserve_m": 0.04036389847422983
+          },
+          "stock_via_shoulder_to_hand": {
+            "length_m": 0.5525765067326979,
+            "draw_second": 0.3,
+            "material_length_m": 0.63,
+            "minimum_geometric_reserve_m": 0.07742349326730213
+          }
+        },
+        "authored_centerline_length_m": 1.3999999827818093
+      }
+    },
+    "animation_signature": "2d8f2bbc3e9193f3f9e30a31398e766dc5ac66eb9585a0d59f86b932f5ed8ea1",
+    "fbx_validation": {
+      "maximum_position_error_m": 3.6980106987572153e-06,
+      "maximum_angle_error_degrees": 0.05595291023658669
+    }
+  },
+  "shotgun_sling": {
+    "model": "ShotgunSling",
+    "continuous_ribbon": true,
+    "segments": 80,
+    "width_m": 0.025,
+    "thickness_m": 0.002,
+    "parameter_uv": "UVMap.x=t, UVMap.y=width sign, Thickness.x=thickness sign",
+    "length_m": 1.4,
+    "stock": [
+      0.036,
+      0.062,
+      -0.3
+    ],
+    "foreend": [
+      0.036,
+      0.072,
+      0.31
+    ],
+    "hand_material_fraction": 0.45,
+    "throw_over": "left shoulder, controlled by left hand; diagonal across front chest and abdomen"
+  },
+  "pistol_body_fit": {
+    "source": "actual evaluated hero shirt, torso, pelvis and jacket meshes; outward runtime drape required",
+    "stowed": {
+      "Pistol": {
+        "vertices": 680,
+        "minimum_body_clearance_m": 0.0018794162897393107,
+        "maximum_body_penetration_m": 0.0,
+        "maximum_front_back_drape_m": 0.03806276246905327,
+        "maximum_side_drape_m": 0.0,
+        "points_requiring_front_back_drape": 614,
+        "points_requiring_side_drape": 0
+      },
+      "PistolHolster": {
+        "vertices": 160,
+        "minimum_body_clearance_m": 0.004603913519531488,
+        "maximum_body_penetration_m": 0.0,
+        "maximum_front_back_drape_m": 0.03895881026983261,
+        "maximum_side_drape_m": 0.0,
+        "points_requiring_front_back_drape": 158,
+        "points_requiring_side_drape": 0
+      }
+    },
+    "extraction_vertical_travel_m": 0.19999999999999996,
+    "muzzle_exit_clearance_m": 0.02649999463558192,
+    "jacket_access_hand": [
+      0.16,
+      -0.16,
+      1.35
+    ],
+    "maximum_allowed_drape_m": 0.04,
+    "method": "actual chest-bone carried vertices against evaluated M65 closest outward triangles; runtime separately proves complete garment occlusion"
+  }
+}

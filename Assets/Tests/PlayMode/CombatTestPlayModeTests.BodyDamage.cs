@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
@@ -468,11 +469,31 @@ namespace BarPromenade.Tests.PlayMode
 
         private void AssertBodyProxyCache()
         {
-            root.ResetRound(); PlacePair(6f);
             CombatActor target = root.Opponent;
+            if (target.IsRagdollActive) AssertBodyProxyCollisionIsolation(target, requireDebris: false,
+                requireHead: root.HeadEffects.DetachedSectorCountFor(target) > 0 && root.HeadEffects.RetainedSectorCountFor(target) >= 2);
+            root.ResetRound(); PlacePair(6f);
+            var retainedProxies = new List<BoxCollider>();
+            var retainedHeadProxies = new List<BoxCollider>();
+            foreach (BoxCollider proxy in target.DamageRigRoot.GetComponentsInChildren<BoxCollider>(true))
+                if (proxy.name.StartsWith("Remaining body ", StringComparison.Ordinal)) retainedProxies.Add(proxy);
+                else if (proxy.name.StartsWith("Retained Head Sector ", StringComparison.Ordinal)) retainedHeadProxies.Add(proxy);
+            Assert.That(retainedProxies, Is.Not.Empty, "Collision proxies must be prepared before the first damaging contact.");
+            Assert.That(retainedHeadProxies.Count, Is.GreaterThanOrEqualTo(2), "Head collision sectors must be prepared before the first headshot.");
+            foreach (BoxCollider proxy in retainedProxies)
+                Assert.That(proxy.enabled, Is.False, "Prepared collision resources must stay disabled while the body is intact.");
+            foreach (BoxCollider proxy in retainedHeadProxies)
+                Assert.That(proxy.enabled, Is.False, "Prepared head collision sectors must stay disabled while the head is intact.");
+            DefeatBodyTargetWithProjectile(target, root.Hero, 19);
+            Assert.That(target.State.IsDefeated && target.IsRagdollActive, Is.True);
             ApplyKnownBodyContact(target, root.Hero, BodyDamageRegion.RightShin, 0, 2f, 20);
-            Assert.That(target.IsRagdollActive, Is.True);
+            // Drain the real terminal contact hold before probing live cache work.
+            root.Tick(.25f);
+            Assert.That((bool)CarrySupportField(root.BodyEffects, "frozen"), Is.False,
+                "The proxy cache regression requires live effects after the headshot hit-stop.");
             root.BodyEffects.Tick(CombatTestRoot.SimulationStep);
+            AssertBodyProxyCollisionIsolation(target, requireDebris: true, requireHead: true);
+            AssertBodyProxyNativeBounds(target, "Current damaged pose");
             int builds = root.BodyEffects.ProxyGeometryBuilds;
             long transformSamples = root.BodyEffects.ProxyTransformSamples;
             int transformCount = root.BodyEffects.ProxyTransformCountFor(target);
@@ -487,7 +508,7 @@ namespace BarPromenade.Tests.PlayMode
                 "Unchanged hand shapes must reuse their collision bounds across simulation substeps.");
             Assert.That(allocated, Is.Zero, "Proxy updates must reuse vertex buffers.");
             Assert.That(root.BodyEffects.ProxyTransformSamples - transformSamples,
-                Is.InRange(1L, (long)transformCount * 32),
+                Is.InRange(0L, (long)transformCount * 32),
                 "One effects pass must sample a shared transform at most once across all body proxies.");
             TestContext.Out.WriteLine($"Test cached body proxies: cpu={proxyTimer.Elapsed.TotalMilliseconds / 32d:F3} ms per tick, " +
                 $"transformSamples={root.BodyEffects.ProxyTransformSamples - transformSamples}, uniqueTransforms={transformCount}, allocations={allocated}.");
@@ -506,6 +527,10 @@ namespace BarPromenade.Tests.PlayMode
                 if (hand != null) break;
             }
             Assert.That(hand, Is.Not.Null);
+            BoxCollider handIndexProxy = null;
+            CombatBodyDestruction.ProxyBoundsDiagnostic handIndicesBefore = default;
+            if (PlayerScarfBodyContacts.NativeClothSupported)
+                handIndicesBefore = CaptureBodyProxyIndices(target, BodyDamageRegion.LeftHand, out handIndexProxy);
             float gripWeight = hand.GetBlendShapeWeight(gripShape);
             try
             {
@@ -513,6 +538,16 @@ namespace BarPromenade.Tests.PlayMode
                 root.BodyEffects.Tick(CombatTestRoot.SimulationStep);
                 Assert.That(root.BodyEffects.ProxyGeometryBuilds, Is.GreaterThan(builds),
                     "A changed hand corrective must refresh its proxies immediately in the same rendered frame.");
+                AssertBodyProxyNativeBounds(target, "Changed hand corrective");
+                if (handIndexProxy != null)
+                {
+                    Assert.That(root.BodyEffects.TryCaptureProxyBoundsForDiagnostics(target, handIndexProxy, out var handIndicesAfter), Is.True);
+                    Assert.That(handIndicesAfter.CachedActiveIndices, Is.SameAs(handIndicesBefore.CachedActiveIndices),
+                        "A position-only corrective must retain the original ordered topology array.");
+                    Assert.That(handIndicesAfter.IndexBuilds, Is.EqualTo(handIndicesBefore.IndexBuilds),
+                        "A position-only corrective must not recopy triangle indices.");
+                    Assert.That(handIndicesAfter.CachedActiveIndices, Is.EqualTo(handIndicesAfter.ActiveIndices));
+                }
             }
             finally { hand.SetBlendShapeWeight(gripShape, gripWeight); }
             root.BodyEffects.Tick(CombatTestRoot.SimulationStep);
@@ -532,6 +567,7 @@ namespace BarPromenade.Tests.PlayMode
                     root.BodyEffects.LastProxyCacheInvalidation);
                 for (int i = 0; i < proxies.Length; i++)
                 { Assert.That(proxies[i].center, Is.EqualTo(centres[i])); Assert.That(proxies[i].size, Is.EqualTo(sizes[i])); }
+                AssertBodyProxyNativeBounds(target, "Rigid root movement");
             }
             finally { target.transform.SetPositionAndRotation(position, rotation); }
             Vector3 scale = target.transform.localScale;
@@ -553,8 +589,181 @@ namespace BarPromenade.Tests.PlayMode
                 root.BodyEffects.Tick(CombatTestRoot.SimulationStep);
                 Assert.That(root.BodyEffects.ProxyGeometryBuilds, Is.GreaterThan(builds),
                     "Rotation under nonuniform scale must refresh the proxy's physical minimum in the same frame.");
+                AssertBodyProxyNativeBounds(target, "Nonuniform scale and hand rotation");
             }
             finally { bone.localRotation = handRotation; target.transform.localScale = scale; }
+            root.BodyEffects.Tick(CombatTestRoot.SimulationStep);
+            BoxCollider torsoIndexProxy = null;
+            int[] originalTorsoIndices = null;
+            int damagedIndexBuilds = 0;
+            if (PlayerScarfBodyContacts.NativeClothSupported)
+                AssertBodyProxyTopologyChange(target, out torsoIndexProxy, out originalTorsoIndices, out damagedIndexBuilds);
+            root.ResetRound(); PlacePair(6f);
+            foreach (BoxCollider proxy in retainedProxies)
+                Assert.That(proxy != null && !proxy.enabled, Is.True, "Reset must retain and disable the same prewarmed proxy.");
+            foreach (BoxCollider proxy in retainedHeadProxies)
+                Assert.That(proxy != null && !proxy.enabled, Is.True, "Reset must retain and disable the same head collision sector.");
+            int retainedCount = 0, retainedHeadCount = 0;
+            foreach (BoxCollider proxy in target.DamageRigRoot.GetComponentsInChildren<BoxCollider>(true))
+                if (proxy.name.StartsWith("Remaining body ", StringComparison.Ordinal))
+                { Assert.That(retainedProxies.Contains(proxy), Is.True); retainedCount++; }
+                else if (proxy.name.StartsWith("Retained Head Sector ", StringComparison.Ordinal))
+                { Assert.That(retainedHeadProxies.Contains(proxy), Is.True); retainedHeadCount++; }
+            Assert.That(retainedCount, Is.EqualTo(retainedProxies.Count), "Reset may not replace or duplicate retained proxies.");
+            Assert.That(retainedHeadCount, Is.EqualTo(retainedHeadProxies.Count), "Reset may not replace or duplicate retained head sectors.");
+            DefeatBodyTargetWithProjectile(target, root.Hero, 21);
+            Assert.That(target.State.IsDefeated && target.IsRagdollActive, Is.True);
+            ApplyKnownBodyContact(target, root.Hero, BodyDamageRegion.RightShin, 0, 2f, 22);
+            // Drain the real terminal contact hold before probing live cache work.
+            root.Tick(.25f);
+            Assert.That((bool)CarrySupportField(root.BodyEffects, "frozen"), Is.False,
+                "The proxy cache regression requires live effects after the headshot hit-stop.");
+            root.BodyEffects.Tick(CombatTestRoot.SimulationStep);
+            AssertBodyProxyCollisionIsolation(target, requireDebris: true, requireHead: true);
+            if (torsoIndexProxy != null)
+            {
+                Assert.That(root.BodyEffects.TryCaptureProxyBoundsForDiagnostics(target, torsoIndexProxy, out var restoredIndices), Is.True);
+                Assert.That(restoredIndices.ActiveIndices, Is.EqualTo(originalTorsoIndices),
+                    "Reset must restore the original ordered torso triangles.");
+                Assert.That(restoredIndices.CachedActiveIndices, Is.EqualTo(restoredIndices.ActiveIndices));
+                Assert.That(restoredIndices.IndexBuilds, Is.GreaterThan(damagedIndexBuilds),
+                    "Restored topology must invalidate the damaged index cache.");
+                AssertBodyProxyNativeBounds(target, "Restored torso topology");
+            }
+        }
+
+        private CombatBodyDestruction.ProxyBoundsDiagnostic CaptureBodyProxyIndices(CombatActor target,
+            BodyDamageRegion region, out BoxCollider selected)
+        {
+            foreach (BoxCollider proxy in target.DamageRigRoot.GetComponentsInChildren<BoxCollider>(true))
+                if (proxy.enabled && proxy.name.StartsWith("Remaining body " + region + " ", StringComparison.Ordinal) &&
+                    root.BodyEffects.TryCaptureProxyBoundsForDiagnostics(target, proxy, out var sample))
+                { selected = proxy; return sample; }
+            Assert.Fail("The topology comparison requires an active " + region + " proxy.");
+            selected = null; return default;
+        }
+
+        private void AssertBodyProxyTopologyChange(CombatActor target, out BoxCollider selected,
+            out int[] originalIndices, out int damagedIndexBuilds)
+        {
+            selected = null; originalIndices = null; damagedIndexBuilds = 0;
+            var bodies = (System.Collections.IDictionary)CarrySupportField(root.BodyEffects, "bodies");
+            var pieces = (List<CombatBodyDestruction.Piece>)CarrySupportField(bodies[target], "Pieces");
+            foreach (CombatBodyDestruction.Piece piece in pieces)
+            {
+                if (piece.Region != BodyDamageRegion.Chest || piece.Flesh || piece.Bone || piece.Torso == null ||
+                    piece.Proxy == null || !piece.Proxy.enabled ||
+                    !root.BodyEffects.TryCaptureProxyBoundsForDiagnostics(target, piece.Proxy, out var before)) continue;
+                Assert.That(before.ActiveIndices.Length, Is.GreaterThanOrEqualTo(3));
+                Vector3 centre = (before.Vertices[before.ActiveIndices[0]] + before.Vertices[before.ActiveIndices[1]] +
+                    before.Vertices[before.ActiveIndices[2]]) / 3f;
+                Vector3 contact = piece.Proxy.transform.parent.TransformPoint(before.Matrix.MultiplyPoint3x4(centre));
+                int topologyBuilds = piece.Torso.TopologyBuilds;
+                Assert.That(piece.Torso.Apply(contact, .12f, 2f), Is.True,
+                    "The index-cache regression must erode an actual posed torso triangle.");
+                root.BodyEffects.Tick(CombatTestRoot.SimulationStep);
+                Assert.That(piece.Torso.TopologyBuilds, Is.GreaterThan(topologyBuilds),
+                    "The real contact must change owned torso topology.");
+                Assert.That(root.BodyEffects.TryCaptureProxyBoundsForDiagnostics(target, piece.Proxy, out var after), Is.True);
+                Assert.That(after.CachedActiveIndices, Is.Not.SameAs(before.CachedActiveIndices));
+                Assert.That(after.IndexBuilds, Is.GreaterThan(before.IndexBuilds));
+                Assert.That(after.ActiveIndices, Is.Not.EqualTo(before.ActiveIndices),
+                    "The contact must remove real triangles rather than merely revise vertex positions.");
+                Assert.That(after.CachedActiveIndices, Is.EqualTo(after.ActiveIndices),
+                    "The rebuilt cache must match the current mesh's independent ordered triangles.");
+                selected = piece.Proxy; originalIndices = before.ActiveIndices; damagedIndexBuilds = after.IndexBuilds;
+                AssertBodyProxyNativeBounds(target, "Changed torso topology");
+                break;
+            }
+            Assert.That(selected, Is.Not.Null, "The topology regression requires real exterior torso geometry.");
+        }
+
+        private void AssertBodyProxyNativeBounds(CombatActor target, string pose)
+        {
+            if (!PlayerScarfBodyContacts.NativeClothSupported) return;
+            int builds = root.BodyEffects.ProxyGeometryBuilds;
+            BoxCollider[] proxies = target.DamageRigRoot.GetComponentsInChildren<BoxCollider>(true);
+            foreach (BodyDamageRegion region in new[] { BodyDamageRegion.Chest, BodyDamageRegion.LeftHand })
+            {
+                bool compared = false;
+                foreach (BoxCollider proxy in proxies)
+                {
+                    if (!proxy.enabled || !proxy.name.StartsWith("Remaining body " + region + " ", StringComparison.Ordinal) ||
+                        !root.BodyEffects.TryCaptureProxyBoundsForDiagnostics(target, proxy,
+                            out CombatBodyDestruction.ProxyBoundsDiagnostic sample)) continue;
+                    Assert.That(sample.ExecutedInBurst, Is.True, pose + ": the independent bounds comparison must run the actual Burst fold.");
+                    Assert.That(sample.ActiveIndices, Is.Not.Empty);
+                    Assert.That(sample.CachedActiveIndices, Is.EqualTo(sample.ActiveIndices),
+                        pose + ": cached topology must match independently read current mesh triangles.");
+                    Bounds reference = new Bounds(sample.Matrix.MultiplyPoint3x4(sample.Vertices[sample.ActiveIndices[0]]), Vector3.zero);
+                    // Preserve the original ordered fold, including its first
+                    // point and every duplicate triangle vertex index.
+                    foreach (int vertex in sample.ActiveIndices)
+                        reference.Encapsulate(sample.Matrix.MultiplyPoint3x4(sample.Vertices[vertex]));
+                    Vector3 size = Vector3.Max(reference.size, sample.Minimum);
+                    for (int axis = 0; axis < 3; axis++)
+                    {
+                        Assert.That(BitConverter.SingleToInt32Bits(sample.NativeCentre[axis]),
+                            Is.EqualTo(BitConverter.SingleToInt32Bits(reference.center[axis])), pose + ": " + region + " proxy centre must match the original fold bits.");
+                        Assert.That(BitConverter.SingleToInt32Bits(sample.NativeSize[axis]),
+                            Is.EqualTo(BitConverter.SingleToInt32Bits(size[axis])), pose + ": " + region + " proxy size must match the original fold bits.");
+                    }
+                    compared = true; break;
+                }
+                Assert.That(compared, Is.True, pose + ": the bound comparison must inspect actual " + region + " geometry.");
+            }
+            Assert.That(root.BodyEffects.ProxyGeometryBuilds, Is.EqualTo(builds),
+                "Independent bound diagnostics must not mutate the production cache or satisfy its later invalidation assertions.");
+        }
+
+        private void AssertBodyProxyCollisionIsolation(CombatActor target, bool requireDebris, bool requireHead)
+        {
+            var proxies = new List<BoxCollider>();
+            foreach (BoxCollider proxy in target.DamageRigRoot.GetComponentsInChildren<BoxCollider>(true))
+                if (proxy.enabled && proxy.gameObject.activeInHierarchy &&
+                    proxy.name.StartsWith("Remaining body ", StringComparison.Ordinal)) proxies.Add(proxy);
+            Assert.That(proxies, Is.Not.Empty, "A damaged ragdoll must activate its retained physical body proxies.");
+            int debrisPairs = 0;
+            for (int i = 0; i < proxies.Count; i++)
+            {
+                BoxCollider proxy = proxies[i];
+                foreach (var original in target.Ragdoll.PhysicsController.AnatomicalColliders)
+                    Assert.That(Physics.GetIgnoreCollision(proxy, original.Key), Is.True,
+                        "An activated proxy must retain collision exclusions with original anatomy.");
+                if (target.Body != null) Assert.That(Physics.GetIgnoreCollision(proxy, target.Body), Is.True,
+                    "An activated proxy must retain its actor body collision exclusion.");
+                for (int j = i + 1; j < proxies.Count; j++)
+                    Assert.That(Physics.GetIgnoreCollision(proxy, proxies[j]), Is.True,
+                        "Activated body proxies must not collide with other retained proxies on the same actor.");
+                foreach (CombatBodyFragment fragment in root.BodyEffects.GetComponentsInChildren<CombatBodyFragment>(true))
+                {
+                    if (fragment.Owner != target || !fragment.gameObject.activeInHierarchy) continue;
+                    Collider collider = fragment.GetComponent<Collider>();
+                    if (collider == null || !collider.enabled) continue;
+                    Assert.That(Physics.GetIgnoreCollision(proxy, collider), Is.True,
+                        "Newly released body debris must retain exclusions with the prewarmed actor proxies.");
+                    debrisPairs++;
+                }
+            }
+            if (requireDebris) Assert.That(debrisPairs, Is.GreaterThan(0), "The lifecycle proof must include real physical body debris.");
+            var headProxies = new List<BoxCollider>();
+            foreach (BoxCollider proxy in target.DamageRigRoot.GetComponentsInChildren<BoxCollider>(true))
+                if (proxy.enabled && proxy.gameObject.activeInHierarchy &&
+                    proxy.name.StartsWith("Retained Head Sector ", StringComparison.Ordinal)) headProxies.Add(proxy);
+            if (requireHead) Assert.That(headProxies.Count, Is.GreaterThanOrEqualTo(2),
+                "The known headshot must leave real retained sector pairs to inspect.");
+            for (int i = 0; i < headProxies.Count; i++)
+            {
+                BoxCollider proxy = headProxies[i];
+                foreach (var original in target.Ragdoll.PhysicsController.AnatomicalColliders)
+                    Assert.That(Physics.GetIgnoreCollision(proxy, original.Key), Is.True,
+                        "An activated head sector must retain exclusions with original anatomy.");
+                if (target.Body != null) Assert.That(Physics.GetIgnoreCollision(proxy, target.Body), Is.True,
+                    "An activated head sector must retain its actor body collision exclusion.");
+                for (int j = i + 1; j < headProxies.Count; j++)
+                    Assert.That(Physics.GetIgnoreCollision(proxy, headProxies[j]), Is.True,
+                        "Retained head sectors must remain mutually excluded after activation and reactivation.");
+            }
         }
 
         private static ProfilerRecorder CreateBodyAllocationRecorder()

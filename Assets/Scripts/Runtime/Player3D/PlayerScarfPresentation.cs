@@ -59,6 +59,7 @@ namespace BarPromenade
         public bool IsVisible => visible;
         public float MouthLowered => mouthLowered;
         public double LastGeometryMilliseconds { get; private set; }
+        public long TotalGeometryTicks { get; private set; }
         public double LastSurfaceMilliseconds { get; private set; }
         public int LastSurfaceContactPassCount { get; private set; }
 
@@ -308,6 +309,13 @@ namespace BarPromenade
         }
 
         private void AdvanceGeometry(float delta, bool reset)
+        {
+            long started = System.Diagnostics.Stopwatch.GetTimestamp();
+            try { AdvanceGeometryCore(delta, reset); }
+            finally { TotalGeometryTicks += System.Diagnostics.Stopwatch.GetTimestamp() - started; }
+        }
+
+        private void AdvanceGeometryCore(float delta, bool reset)
         {
             long started = System.Diagnostics.Stopwatch.GetTimestamp();
             // A paused frame changes neither contacts nor vertex positions.

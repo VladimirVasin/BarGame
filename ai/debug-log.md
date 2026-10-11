@@ -1,6 +1,6 @@
 # Structured session diagnostics
 
-`debug.log`:context/actions/pending operations/Unity warnings/exceptions.
+`debug.log`:context/actions/pending/Unity warnings/exceptions.
 `DuelJournal`: CombatTest rounds.
 
 ## General log: location and profiles
@@ -39,7 +39,7 @@ Snapshots:hunger/stress/fatigue/intoxication/cash/drinking.
 `session/new_game_started`: `menu_reset`=menu; `combat_test_start`=range;
 `new_game_start`=normal/legacy; `new_game_start_rejected`=transition rollback.
 
-No frame/motion/animation/physics samples or `Debug.Log`.
+No per-frame/motion/physics samples or `Debug.Log`.
 Strings≤16,384; `needs/passive_progressed`: visible integers.
 Unity repeats:3 full,then10s summaries.
 Per10s:32 warnings/64 errors-assertions-exceptions;
@@ -49,7 +49,7 @@ Per10s:32 warnings/64 errors-assertions-exceptions;
 
 Rotate 5MiB; keep `debug.1.log`–`debug.3.log`. Flush: error/.5s/F8/pause/focus/exit.
 Fresh session→fault→F8→Shift+F8;collect archives/round;read error/`operation_id`.
-No intended usernames/save paths/frame telemetry;stacks may expose paths;review before sharing.
+No user/save paths/frame telemetry;stacks may expose paths;review sharing.
 
 ## DuelJournal: CombatTest rounds
 
@@ -60,8 +60,8 @@ Editor:CombatLogs;Player:`Application.persistentDataPath/CombatLogs`.
 Melee:`MeleeCommandRejection`→reason/`reason_checked`/cost/remaining/`cooldown_seconds`/phase/stamina.
 `recovery_step`: rescue; `fall_committed`: refusal; `observed_counter`: whiff.
 20Hz pose/support/CPU.
-Pistol:`pistol_shot_{requested,rejected,pose}`/`pistol_fired`:request/action IDs.
-Reject:reason/stage(input/commit/cancel)/phase/aim_error_degrees;pose:muzzle/target/reachable.
+Pistol:`pistol_shot_{requested,rejected,pose}`/`pistol_fired`:request/action IDs;
+reason/stage(input/commit/cancel)/phase/aim_error_degrees;pose:muzzle/target/reachable.
 20Hz`pistol_state`:ammo/aim/reload/body;`vectors`:pistol_{muzzle_and_target,forward_and_support_error}.
 `movement_input`:changes;keys=W1/S2/A4/D8,stick_x/y,effective x/y,
 focused=app/awaiting_neutral/target_focused=enemy.
@@ -82,25 +82,28 @@ End/focus clears input;`opponent_style` header.
 `suspected_stall`: living no progress>2s.
 `rise_escape_started`→`rise_weapon_released`;`weapon_recovered`:equipped.
 `post_round_time_discarded`:aftermath;snapshots to exit/reset.
-Impact/applied/geometry/anatomy/impulse:source→victim;`impact_seq`;
+Impact events:source→victim;`impact_seq`;
 kind=weapon/kick/shove/projectile;region/side/critical/finisher/pre-post phase/power.
 Pre-hit phase:nullable.
-`revision_identity`:Runtime/Rules MVID≠Editor commit/state;bank hash/play
-(Player GUID);missing=null/`unavailable`;no replay/FPS guarantee.
+`revision_identity`:Runtime/Rules MVID≠Editor commit/state;bank hash/Player GUID;
+null/`unavailable`;no replay/FPS guarantee.
 
-`frame_detail`:hero LateUpdate=`late_pose_ms`;impact=`impact_apply_ms`;
-`update_to_late_ms`:Update→LateStart.
+`frame_detail`:rig-only `late_pose_ms`;impact `impact_apply_ms`;
+`update_to_late_ms`:Update→cloth observer.
 `latest_target_wait_ms`=Unity;`latest_{present_wait,cpu_main,cpu_render}_ms`=FrameTiming.
-`latest_timing_repeat_frames`:-1 unavailable/0 new/>0 repeats≠age.
-`pose_work`:Present/Weapon/Support CPU/calls/candidates/budget,incl.outside Tick.
-`frame_delivery/late_to_next_update_ms`:LateStart→Update wall;render/editor/waits≠CPU/GPU.
-Game-camera SRP:`render_context_captured`/`late_to_render_begin_ms`/
+`latest_timing_repeat_frames`:-1 n/a/0 new/>0 repeats≠age.
+`pose_work`:Present/Weapon/Support CPU/calls/candidates/budget;0cloth.
+`frame_delivery/late_to_next_update_ms`:observer→Update wall;render/editor/waits≠CPU/GPU.
+Camera SRP:`render_context_captured`/`late_to_render_begin_ms`/
 `render_context_span_ms`/`render_end_to_next_update_ms`/`render_contexts`;
-same frame;submission≠GPU finish;absent=null.
+same frame;submit≠GPU finish;absent=null.
 `weapon_constraint_sample`:candidates/sweeps/world/`anatomy_queries`/reuse/core/shoulder/budget.
-`frame_stage_sample`:capture/flight/effects/aim/proxy/recovery CPU;aftermath.
-`{damage,blood}_stage_sample`/`body_sync_sample`:impact/wound/sync CPU.
-Stages:prior-frame deltas;nested≠sum;unsupported=null;main/render/GPU:latest.
+`frame_stage_sample`:capture/flight/effects/aim/proxy/recovery
+`{damage,blood,head}_stage_sample`/`body_sync_sample`:CPU.
+`projectile_defeat_stage_sample`:total/preparation/ragdoll/drop ms.
+`cloth_{stage,budget}_sample`:stage=sling/jacket/hair/scarf CPU/calls/steps;
+budget=sling steps/iterations,jacket/hair discard ms.
+Prior-frame;nested≠sum;unsupported=null;main/render/GPU:latest.
 
 Editor CombatTest:`Tools/Bar Promenade/Diagnostics/Capture Combat CPU Timeline (15 seconds)`.
 Trace+manifest/`Time.frameCount`:`TestResults/Test duel diagnostics`.
@@ -109,7 +112,7 @@ Timeout/scene/Play/reload restores Profiler;active capture refuses;overhead.
 Producer:2048/4096 default/max packets+8 control slots;reused chars,no string/field copies.
 Drops/I/O/limits explicit;≤2 live/stalled workers;extra=`worker_limit`.
 20MiB/round/10 closed/100MiB;prune ordinary before marked/abandoned;never live/foreign.
-Bounded marks;one CombatLogs/no sweep. Cloth/hair cached;120Hz/4 steps.
+Bounded marks;one CombatLogs/no sweep.
 
 ## Area performance capture
 

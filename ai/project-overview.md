@@ -79,8 +79,8 @@ repair commands. Generation/publication: [../tools/README.md](../tools/README.md
 
 ## Implemented capabilities
 
-- CombatTest:bar/pistol8∞/shotgun2∞;NPCbar/3AI;aim/Step/reload;
-  whole-body launch/torso erosion-skeleton/head-limb sever/survival/crawl/corpses.
+- CombatTest:pistol+bar/shotgun carry/six draw-stow;soft sling once/frame;NPCbar/3AI;
+  aim/Step/reload/launch/torso erosion/head-limb loss/crawl/corpses.
   Gap:pierce/balance.
 - City: 20 metre types; district heights, curved old/service streets,
   courts/passages/wings, unified ground; river/shore, church and Route 01.

@@ -147,17 +147,16 @@ in `Captures` and does not publish. See [audio-vhs/README.md](audio-vhs/README.m
 `--hand-grip-only --skip-animation-export --no-previews` refreshes hand shapes.
 Output: `Assets/Player3D/V2/Models/PlayerCharacter3DV2.{fbx,json}`.
 
-`build-combat-{test,blood,pistol,shotgun,gore,body,skull}-3d-model.py`.
-Test:`--actions-only --kick-only|--recovery-only|--footwork-only`;
-`--refresh-published-contracts --reuse-unchanged-actions --resume-npc-bank file.blend`.
-Blood:`--texture-only`;others:`--validate-only`.
-`CombatGore`:{Body,Skull}{Hero,Npc}/Combat{Body,Skull}3D;
-Body16×4;torso cells erode→skeleton/0chunks;limbs/skull16.
-Firearm walk: `python tools/run-blender.py tools/build-combat-firearm-walk-3d-model.py`.
-Validate: `-- --validate-only`.
-8 fixed-facing/1.6m/C2feet/levelpelvis;200Hz/rebuild.
+`build-combat-{test,blood,pistol,shotgun,gore,body,skull}-3d-model.py`:
+test `--actions-only --kick-only|--recovery-only|--footwork-only`,
+`--refresh-published-contracts --reuse-unchanged-actions --resume-npc-bank file.blend`;
+blood `--texture-only`, others `--validate-only`. `CombatGore` owns hero/NPC body/skull.
+`build-combat-firearm-walk-3d-model.py`:8fixed-facing/1.6m/C2feet/levelpelvis/200Hz;
 `Assets/Resources/CombatFirearmWalk/Actions.{fbx,json}`;
-`ArtSource/CombatFirearmWalk/Actions.blend`; import `CombatFirearmWalkAssetSetup`.
+import `CombatFirearmWalkAssetSetup`; validate via launcher `-- --validate-only`.
+`build-combat-weapon-carry-3d-model.py`:holster/belt/sling/6draw-stow;
+`Assets/Resources/CombatWeaponCarry`; launcher `-- --validate-only`;
+`CombatWeaponCarryAssetSetup`:import.
 
 `player_jacket_cloth.py --write` derives hem/cuff metadata only; `--check` verifies it.
 Refresh `Player3DV2` via asset setup. Lower-body changes require

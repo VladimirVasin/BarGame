@@ -28,8 +28,10 @@ namespace BarPromenade
             new Rect(218f, 195f, 204f, 22f);
         internal static Rect LocationPanelRect => new Rect(166f, 18f, 308f, 324f);
         internal static Rect LocationOptionRect(int index) => new Rect(178f, 54f + index * 22f, 284f, 20f);
-        internal static Rect CombatPanelRect => new Rect(166f, 80f, 308f, 200f);
-        internal static Rect CombatOptionRect(int index) => new Rect(178f, 120f + index * 28f, 284f, 22f);
+        internal static Rect CombatPanelRect => new Rect(154f, 34f, 332f, 292f);
+        internal static Rect CombatOptionRect(int index) => new Rect(166f,
+            index < 2 ? 108f + index * 24f : index < 4 ? 178f + (index - 2) * 24f :
+                236f + (index - 4) * 24f, 308f, 22f);
 
         private readonly StartMenuModel model = new StartMenuModel();
 
@@ -47,6 +49,7 @@ namespace BarPromenade
         public bool IsChoosingCombatWeapon => model.IsChoosingCombatWeapon;
         public NewGameLocation SelectedLocation => model.SelectedLocation;
         public CombatWeaponId SelectedCombatWeapon => model.SelectedCombatWeapon;
+        public CombatLoadoutSelection SelectedCombatLoadout => model.SelectedCombatLoadout;
         public CombatPreparationOption SelectedCombatOption => model.SelectedCombatOption;
         public bool IsBackSelected => model.IsBackSelected;
 
@@ -61,8 +64,8 @@ namespace BarPromenade
             // pause-menu restart must leave no clock running behind the card.
             GameSessionState.BeginNewGame("menu_reset");
             model.Open();
-            if (CombatTestStartService.TryConsumePreparation(out CombatWeaponId weapon))
-                model.OpenCombatPreparation(weapon);
+            if (CombatTestStartService.TryConsumePreparationLoadout(out CombatLoadoutSelection loadout))
+                model.OpenCombatPreparation(loadout);
             // The card is now interactive and will sit idle for as long as
             // the player reads it: fetch the hero and pooled pedestrian
             // prefabs in the background so the first composition finds them
@@ -147,6 +150,13 @@ namespace BarPromenade
             return true;
         }
 
+        public bool FocusCombatOption(CombatPreparationOption option)
+        {
+            if (IsBusy || !model.FocusCombatOption(option)) return false;
+            RetroAudio.Play(RetroSfxId.UiMove);
+            return true;
+        }
+
         public bool ReturnToMainMenu()
         {
             if (IsBusy || !model.ReturnToMainMenu()) return false;
@@ -180,11 +190,11 @@ namespace BarPromenade
         private bool BeginCombatTest()
         {
             IsStartingCombatTest = true;
-            CombatWeaponId weapon = model.SelectedCombatWeapon;
-            if (CombatTestStartService.TryStart(weapon)) return true;
+            CombatLoadoutSelection loadout = model.SelectedCombatLoadout;
+            if (CombatTestStartService.TryStart(loadout)) return true;
 
             IsStartingCombatTest = false;
-            model.OpenCombatPreparation(weapon);
+            model.OpenCombatPreparation(loadout);
             model.SelectCombatOption(CombatPreparationOption.Start);
             GameLog.Warning("menu", "combat_test_travel_refused");
             return false;
@@ -308,13 +318,19 @@ namespace BarPromenade
         {
             RetroUiTheme.DrawPanel(CombatPanelRect, RetroUiTheme.PanelInset, RetroUiTheme.FrameOuter,
                 false, 0f, 1f);
-            GUI.Label(new Rect(178f, 88f, 284f, 22f), LocalizationService.Get("combat.choose_weapon"), titleStyle);
+            GUI.Label(new Rect(166f, 42f, 308f, 22f), LocalizationService.Get("combat.choose_weapon"), titleStyle);
+            GUI.Label(new Rect(166f, 69f, 308f, 14f),
+                LocalizationService.Get("combat.loadout.pistol_carried"), descriptionStyle);
+            GUI.Label(new Rect(166f, 89f, 308f, 14f),
+                LocalizationService.Get("combat.loadout.secondary"), descriptionStyle);
+            GUI.Label(new Rect(166f, 159f, 308f, 14f),
+                LocalizationService.Get("combat.loadout.initial_held"), descriptionStyle);
             Vector2 mouse = RetroUiTheme.LogicalMousePosition(canvas);
             for (int index = 0; index < (int)CombatPreparationOption.Count; index++)
             {
                 var option = (CombatPreparationOption)index;
                 Rect rect = CombatOptionRect(index);
-                if (rect.Contains(mouse) && Event.current.type == EventType.MouseMove) SelectCombatOption(option);
+                if (rect.Contains(mouse) && Event.current.type == EventType.MouseMove) FocusCombatOption(option);
                 bool selected = model.SelectedCombatOption == option;
                 if (selected) RetroUiTheme.DrawSelection(rect, true);
                 string key = option switch
@@ -322,12 +338,20 @@ namespace BarPromenade
                     CombatPreparationOption.Crowbar => "combat.weapon.crowbar",
                     CombatPreparationOption.Pistol => "combat.weapon.pistol",
                     CombatPreparationOption.Shotgun => "combat.weapon.shotgun",
+                    CombatPreparationOption.Secondary => "combat.loadout.hold_secondary",
                     CombatPreparationOption.Start => "combat.start",
                     _ => "opening.back"
                 };
-                string mark = option == CombatPreparationOption.Crowbar || option == CombatPreparationOption.Pistol ||
-                    option == CombatPreparationOption.Shotgun
-                    ? ((int)model.SelectedCombatWeapon == index ? "[x] " : "[ ] ") : string.Empty;
+                bool choice = option <= CombatPreparationOption.Secondary;
+                bool chosen = option switch
+                {
+                    CombatPreparationOption.Crowbar => model.SelectedCombatLoadout.Secondary == CombatWeaponId.Crowbar,
+                    CombatPreparationOption.Shotgun => model.SelectedCombatLoadout.Secondary == CombatWeaponId.Shotgun,
+                    CombatPreparationOption.Pistol => model.SelectedCombatLoadout.InitialHeld == CombatWeaponId.Pistol,
+                    CombatPreparationOption.Secondary => model.SelectedCombatLoadout.InitialHeld == model.SelectedCombatLoadout.Secondary,
+                    _ => false
+                };
+                string mark = choice ? chosen ? "[x] " : "[ ] " : string.Empty;
                 if (GUI.Button(rect, (selected ? "> " : "  ") + mark + LocalizationService.Get(key),
                     selected ? selectedStyle : optionStyle))
                 {
@@ -336,13 +360,11 @@ namespace BarPromenade
                     break;
                 }
             }
-            string descriptionKey = model.SelectedCombatWeapon switch
-            {
-                CombatWeaponId.Pistol => "combat.weapon.pistol.description",
-                CombatWeaponId.Shotgun => "combat.weapon.shotgun.description",
-                _ => "combat.weapon.crowbar.description"
-            };
-            GUI.Label(new Rect(178f, 262f, 284f, 14f), LocalizationService.Get(descriptionKey), descriptionStyle);
+            GUI.Label(new Rect(166f, 290f, 308f, 14f),
+                LocalizationService.Get(model.SelectedCombatLoadout.Secondary == CombatWeaponId.Shotgun ?
+                    "combat.loadout.shotgun_carried" : "combat.loadout.crowbar_carried"), descriptionStyle);
+            GUI.Label(new Rect(166f, 307f, 308f, 14f),
+                LocalizationService.Get("combat.switch.controls"), descriptionStyle);
         }
 
         private void DrawOption(

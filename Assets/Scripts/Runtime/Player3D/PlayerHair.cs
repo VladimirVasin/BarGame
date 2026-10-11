@@ -1,4 +1,5 @@
 using System;
+using Unity.Profiling;
 using UnityEngine;
 
 namespace BarPromenade
@@ -12,11 +13,16 @@ namespace BarPromenade
         public const int ChainCount = 3;
         public const int PointsPerChain = 4;
         public const int PointCount = ChainCount * PointsPerChain;
+        public const int MaximumFrameSubsteps = 2;
         public const double MaximumContinuousStep = .25d;
         public const float RootBendLimitDegrees = 25f;
         public const float MiddleBendLimitDegrees = 35f;
         public const float TipBendLimitDegrees = 45f;
         private const float StepSeconds = 1f / 120f;
+        private static readonly ProfilerMarker ApplyMarker = new ProfilerMarker("BarPromenade.SecondaryMotion.Hair.Apply");
+        private static readonly ProfilerMarker PoseMarker = new ProfilerMarker("BarPromenade.SecondaryMotion.Hair.Pose");
+        private static readonly ProfilerMarker ConstrainMarker = new ProfilerMarker("BarPromenade.SecondaryMotion.Hair.Constrain");
+        private static readonly ProfilerMarker BonesMarker = new ProfilerMarker("BarPromenade.SecondaryMotion.Hair.Bones");
 
         [SerializeField] private Player3DAssetRegistry registry;
         [SerializeField] private Transform head;
@@ -55,6 +61,13 @@ namespace BarPromenade
         public float LastStepSeconds { get; private set; }
         public float MaximumDisplacement { get; private set; }
         public float MaximumLengthError { get; private set; }
+        public long TotalApplyTicks { get; private set; }
+        public long TotalApplyCalls { get; private set; }
+        public long TotalSimulationSteps { get; private set; }
+        public long LastApplyTicks { get; private set; }
+        public int LastSimulationSteps { get; private set; }
+        public double TotalDiscardedSeconds { get; private set; }
+        public double LastDiscardedSeconds { get; private set; }
         public float MaximumSpeed
         {
             get
@@ -67,6 +80,13 @@ namespace BarPromenade
         public Vector3 WorldPoint(int index) => points[index];
         public Vector3 RestWorldPoint(int index) => targets[index];
         internal Vector3 AuthoredWorldPoint(int index) => head.TransformPoint(headLocalRest[index]);
+        internal bool TryCompareContactSolverForDiagnostics(out Vector3[] managed, out Vector3[] native,
+            out int managedContacts, out int nativeContacts, out bool executedInBurst)
+        {
+            managed = native = null; managedContacts = nativeContacts = 0; executedInBurst = false;
+            return contacts != null && contacts.TryCompareForDiagnostics(points, out managed, out native,
+                out managedContacts, out nativeContacts, out executedInBurst);
+        }
 
         /// <summary>Editor binds ordered Back/Left/Right .00/.01/.02/.Tip chains in the imported rest pose.</summary>
         public void Configure(Player3DAssetRegistry owner, Transform[] orderedJoints)
@@ -92,7 +112,7 @@ namespace BarPromenade
                 headLocalRest[i] = head.InverseTransformPoint(joint.position);
                 hangingOffsets[i] = transform.InverseTransformVector(joint.position - joints[i / PointsPerChain * PointsPerChain].position);
             }
-            contacts = null;
+            contacts?.Dispose(); contacts = null;
             initialized = false;
             RequestReset();
         }
@@ -103,7 +123,7 @@ namespace BarPromenade
             if (!HasAuthoredBindings) throw new InvalidOperationException("The production hero has no authored hair bindings.");
             environment = new PlayerSecondaryMotionEnvironment(owner);
             scarf = registry.GetComponent<PlayerScarfPresentation>();
-            contacts = new PlayerHairContacts(registry, scarf);
+            contacts?.Dispose(); contacts = new PlayerHairContacts(registry, scarf);
             driven = true;
             RequestReset();
         }
@@ -121,6 +141,21 @@ namespace BarPromenade
 
         public void ApplyAt(double seconds, bool paused, bool outside, WindSample wind)
         {
+            using var profile = ApplyMarker.Auto();
+            long started = System.Diagnostics.Stopwatch.GetTimestamp();
+            LastSimulationSteps = 0;
+            LastDiscardedSeconds = 0d;
+            try { ApplyAtCore(seconds, paused, outside, wind); }
+            finally
+            {
+                LastApplyTicks = System.Diagnostics.Stopwatch.GetTimestamp() - started;
+                TotalApplyTicks += LastApplyTicks;
+                TotalApplyCalls++;
+            }
+        }
+
+        private void ApplyAtCore(double seconds, bool paused, bool outside, WindSample wind)
+        {
             if (!HasAuthoredBindings) return;
             // A paused actor keeps both its solved transforms and particle history unchanged.
             if (paused && initialized && !resetPending)
@@ -132,10 +167,13 @@ namespace BarPromenade
                 LastStepSeconds = 0f;
                 return;
             }
-            RestoreBindPose();
-            BuildTargets();
-            if (contacts == null) contacts = new PlayerHairContacts(registry, scarf);
-            contacts.UpdatePose();
+            using (PoseMarker.Auto())
+            {
+                RestoreBindPose();
+                BuildTargets();
+                if (contacts == null) contacts = new PlayerHairContacts(registry, scarf);
+                contacts.UpdatePose();
+            }
             double elapsed = seconds - previousSeconds;
             bool teleported = initialized && ((previousHead - head.position).sqrMagnitude > .3025f ||
                 Quaternion.Angle(previousHeadRotation, head.rotation) > 100f);
@@ -153,10 +191,18 @@ namespace BarPromenade
             }
             else
             {
-                LastStepSeconds = (float)elapsed;
+                // Advance at most two cosmetic steps, consuming the full
+                // timestamp so slow frames cannot create catch-up feedback.
+                double simulated = Math.Min(elapsed, MaximumFrameSubsteps * (double)StepSeconds);
+                LastDiscardedSeconds = elapsed - simulated;
+                TotalDiscardedSeconds += LastDiscardedSeconds;
+                LastStepSeconds = (float)simulated;
                 LastContactCount = 0;
-                int steps = elapsed > 0d ? Mathf.Max(1, Mathf.CeilToInt((float)elapsed / StepSeconds)) : 0;
-                float dt = steps > 0 ? (float)elapsed / steps : 0f;
+                int steps = simulated > 0d ? Mathf.Min(MaximumFrameSubsteps,
+                    Mathf.Max(1, Mathf.CeilToInt((float)simulated / StepSeconds))) : 0;
+                LastSimulationSteps = steps;
+                TotalSimulationSteps += steps;
+                float dt = steps > 0 ? (float)simulated / steps : 0f;
                 Vector3 air = outside ? wind.Velocity(1.25f) : Vector3.zero;
                 for (int step = 0; step < steps; step++)
                 {
@@ -213,6 +259,7 @@ namespace BarPromenade
 
         private void Constrain(float alpha)
         {
+            using var profile = ConstrainMarker.Auto();
             for (int chain = 0; chain < ChainCount; chain++)
             {
                 int root = chain * PointsPerChain;
@@ -233,6 +280,7 @@ namespace BarPromenade
 
         private void ApplyBones()
         {
+            using var profile = BonesMarker.Auto();
             MaximumDisplacement = MaximumLengthError = 0f;
             for (int chain = 0; chain < ChainCount; chain++)
             for (int point = 0; point < PointsPerChain - 1; point++)
@@ -247,7 +295,7 @@ namespace BarPromenade
                 for (int pass = 0; pass < 3; pass++)
                 {
                     Vector3 endpoint = joints[i + 1].position;
-                    Vector3 corrected = contacts.ResolvePoint(endpoint, point + 1);
+                    Vector3 corrected = contacts.ResolvePoint(endpoint, point + 1, i + 1);
                     if ((corrected - endpoint).sqrMagnitude < .00000001f) break;
                     desired = ClampBend(corrected - joints[i].position, reference, point);
                     joints[i].rotation = Quaternion.FromToRotation((endpoint - joints[i].position).normalized, desired) * joints[i].rotation;
@@ -304,5 +352,6 @@ namespace BarPromenade
         private static bool IsFinite(double value) => !double.IsNaN(value) && !double.IsInfinity(value);
         private void OnEnable() => RequestReset();
         private void OnDisable() { RequestReset(); if (HasAuthoredBindings) RestoreBindPose(); }
+        private void OnDestroy() { contacts?.Dispose(); contacts = null; }
     }
 }

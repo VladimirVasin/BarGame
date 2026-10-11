@@ -76,9 +76,12 @@ namespace BarPromenade
             _ => 0f
         };
 
-        public void InitializeHero(PlayerRuntime player, CombatWeaponId weapon = CombatWeaponId.Crowbar)
+        public void InitializeHero(PlayerRuntime player, CombatWeaponId weapon = CombatWeaponId.Crowbar) =>
+            InitializeHero(player, CombatLoadoutSelection.FromLegacyWeapon(weapon));
+
+        public void InitializeHero(PlayerRuntime player, CombatLoadoutSelection loadout)
         {
-            WeaponId = weapon;
+            WeaponId = loadout.InitialHeld;
             hero = (Player3DCharacterPresentation)player.Visual;
             motor = player.Motor;
             interaction = GetComponent<PlayerAnimatedInteractionController>();
@@ -98,9 +101,7 @@ namespace BarPromenade
             LoadStepClips(false);
             Ragdoll = gameObject.AddComponent<CombatRagdoll>();
             Ragdoll.InitializeHero(player);
-            AttachWeapon(hero.Registry.Anchors.RightGrip);
-            if (IsFirearm) InitializePistol();
-            hero.RegisterAccessoryRenderers(Weapon.GetComponentsInChildren<Renderer>());
+            InitializeWeaponCarry(loadout);
             InitializeDamagePose();
             LoadKickClip(false);
             InitializeCombatAttention();
@@ -163,9 +164,9 @@ namespace BarPromenade
         // a catching step, but can never cancel an already committed fall.
         internal bool HasAttackBalance => BodyDamage.CanStand && !IsKnockedDown && !(ImpactMotion?.RecoveryInProgress ?? false) &&
             !(footwork?.RecoveryEpisodeActive ?? false);
-        private bool CanAttemptBodyAction => BodyDamage.CanStand && !IsKnockedDown && !State.IsKnockedDown &&
+        private bool CanAttemptBodyAction => !IsSwitchingWeapon && BodyDamage.CanStand && !IsKnockedDown && !State.IsKnockedDown &&
             !IsRagdollActive && !State.IsDefeated && !(ImpactMotion?.WantsKnockdown ?? false);
-        internal bool CanAttemptUpperBodyAttack => BodyDamage.CanUseRightHand && !weaponDropped && CanAttemptBodyAction;
+        internal bool CanAttemptUpperBodyAttack => !HasWeaponSwitchRequest && BodyDamage.CanUseRightHand && !weaponDropped && CanAttemptBodyAction;
         private string UpperBodyAttackRejection => !BodyDamage.CanUseRightHand ? "right_hand_unavailable" : weaponDropped ? "weapon_missing" : IsKnockedDown || State.IsKnockedDown || IsRagdollActive
             ? "knocked_down" : State.IsDefeated ? "defeated" : "fall_committed";
         internal const float WeaponSpacing = 1f;
@@ -186,7 +187,7 @@ namespace BarPromenade
         public bool GuardRequested => guardHeld;
         public bool GuardReady => GuardSupportRejection == null &&
             (State.Phase == MeleePhase.Ready || State.Phase == MeleePhase.GuardImpact);
-        internal string GuardSupportRejection => IsFirearm ? "firearm" : !CombatFocused ? "unfocused" : weaponDropped ? "weapon_missing" : roundEnded ? "round_ended" : !IsAvailable ? "actor_unavailable" :
+        internal string GuardSupportRejection => HasWeaponSwitchRequest ? "weapon_switching" : IsFirearm ? "firearm" : !CombatFocused ? "unfocused" : weaponDropped ? "weapon_missing" : roundEnded ? "round_ended" : !IsAvailable ? "actor_unavailable" :
             State.IsDefeated ? "defeated" : !HasAttackBalance ? AttackBalanceRejection :
             !HasTwoHandSupport ? "two_hand_support" : null;
         internal CombatFootwork Footwork => footwork;
@@ -306,6 +307,7 @@ namespace BarPromenade
 
         internal void AdvanceSimulation(float seconds, bool deferPoseMotion = false)
         {
+            AdvanceWeaponCarry(seconds);
             AdvancePistol(seconds);
             simulationPosePending = false;
             collectSweep = false;
@@ -373,6 +375,7 @@ namespace BarPromenade
         {
             if (!simulationPosePending) return;
             simulationPosePending = false;
+            if (IsSwitchingWeapon) return;
             if (!IsAvailable || IsKnockedDown || State.IsDefeated) return;
             if (!NeedsCombatPresentation) { ReleaseFreeLocomotion(); return; }
             AdvanceCombatFacing(seconds);
@@ -546,6 +549,7 @@ namespace BarPromenade
             // Re-solving against a newly injured target during hit-stop would move
             // an NPC's weapon off that contact at the very same animation instant.
             if (presentationFrozen || PauseMenuController.IsAnyPaused || GameTimeScaleRuntime.IsPaused) return;
+            if (PresentWeaponCarry()) return;
             if (!IsRagdollActive) RestorePistolAimPose();
             RestoreCombatAttention();
             if (ready == null || winnerPresentationReleased) return;
@@ -698,6 +702,7 @@ namespace BarPromenade
             journalSaturatedBuffers = 0u;
             ResetKnockdown();
             Ragdoll?.Cancel();
+            ResetWeaponCarry();
             ReturnWeaponToRightHand();
             RestoreWeapon();
             ReleasePresentation();
@@ -762,6 +767,8 @@ namespace BarPromenade
 
         private void OnDisable()
         {
+            CancelWeaponCarry();
+            UnregisterWeaponEquipment();
             ReleaseNpcAnimation();
             CancelPendingPistolShot("disabled");
             Firearm?.CancelAction();
@@ -783,6 +790,7 @@ namespace BarPromenade
 
         private void OnDestroy()
         {
+            DisposeWeaponCarry();
             ReleaseNpcAnimation();
             ResetKnockdown();
             Ragdoll?.Cancel();

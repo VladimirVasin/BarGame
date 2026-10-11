@@ -35,6 +35,7 @@ namespace BarPromenade
             PrepareKnockdownPose();
             hero?.SetOwnedPresentationFrozen(this, false);
             if (!Ragdoll.BeginKnockdown(linearVelocity, angularVelocity)) return JournalKnockdownRejected("ragdoll_begin_refused");
+            CancelWeaponCarry(retainPose: true);
             ForgetPistolAimPose();
             journalFallReason = journalRiseReason = null;
             ResetRecoveryEscape();

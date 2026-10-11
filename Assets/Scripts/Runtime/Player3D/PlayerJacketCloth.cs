@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Unity.Profiling;
 using UnityEngine;
 
 namespace BarPromenade
@@ -10,8 +11,13 @@ namespace BarPromenade
     public sealed class PlayerJacketCloth : MonoBehaviour
     {
         public const int NodeCount = 16;
+        public const int MaximumFrameSubsteps = 3;
         private const float StepSeconds = 1f / 120f;
         private const float MaximumStep = .25f;
+        private static readonly ProfilerMarker ApplyMarker = new ProfilerMarker("BarPromenade.SecondaryMotion.Jacket.Apply");
+        private static readonly ProfilerMarker PoseMarker = new ProfilerMarker("BarPromenade.SecondaryMotion.Jacket.Pose");
+        private static readonly ProfilerMarker SurfaceMarker = new ProfilerMarker("BarPromenade.SecondaryMotion.Jacket.Surface");
+        private static readonly ProfilerMarker ConstrainMarker = new ProfilerMarker("BarPromenade.SecondaryMotion.Jacket.Constrain");
 
         [Serializable]
         public sealed class SurfaceBinding
@@ -55,6 +61,7 @@ namespace BarPromenade
         [SerializeField] private SurfaceBinding[] bindings = Array.Empty<SurfaceBinding>();
         [SerializeField] private NodeBinding[] nodes = Array.Empty<NodeBinding>();
         private PlayerJacketClothSurface[] surfaces;
+        private PlayerJacketClothSurface.NativeSnapshot nativeSnapshot;
         private PlayerJacketClothSurface hemPanel;
         private struct SeamVertex
         {
@@ -75,6 +82,25 @@ namespace BarPromenade
         private Quaternion previousRotation;
         private double previousSeconds, simulationSeconds;
         private bool driven, initialized, resetPending = true;
+        private object weaponAccessOwner;
+        private float weaponAccessAmount;
+
+        /// <summary>The authored hand action holds the open left panel while reaching the holster.</summary>
+        public void SetWeaponAccess(object owner, float amount)
+        {
+            if (owner == null || (weaponAccessOwner != null && !ReferenceEquals(owner, weaponAccessOwner))) return;
+            weaponAccessOwner = owner;
+            weaponAccessAmount = Mathf.Clamp01(amount);
+            if (weaponAccessAmount <= 0f) ClearWeaponAccess(owner);
+        }
+
+        public void ClearWeaponAccess(object owner)
+        {
+            if (!ReferenceEquals(owner, weaponAccessOwner)) return;
+            weaponAccessOwner = null;
+            weaponAccessAmount = 0f;
+            if (surfaces != null) foreach (PlayerJacketClothSurface surface in surfaces) surface.ClearWeaponAccess();
+        }
 
         public bool HasAuthoredBindings
         {
@@ -99,6 +125,13 @@ namespace BarPromenade
         public float LastStepSeconds { get; private set; }
         public float MaximumDisplacement { get; private set; }
         public int LastContactCount { get; private set; }
+        public long TotalApplyTicks { get; private set; }
+        public long TotalApplyCalls { get; private set; }
+        public long TotalSimulationSteps { get; private set; }
+        public long LastApplyTicks { get; private set; }
+        public int LastSimulationSteps { get; private set; }
+        public double TotalDiscardedSeconds { get; private set; }
+        public double LastDiscardedSeconds { get; private set; }
         public float MaximumSpeed
         {
             get { float value = 0f; foreach (Vector3 speed in velocities) value = Mathf.Max(value, speed.magnitude); return value; }
@@ -108,6 +141,36 @@ namespace BarPromenade
         public Mesh SourceMesh(int index) => bindings[index].Source;
         public Mesh DeformedMesh(int index) => surfaces == null ? null : surfaces[index].Mesh;
         internal uint SurfaceGeometryVersion(int index) => surfaces == null ? 0u : surfaces[index].GeometryVersion;
+        internal long NativeSnapshotCaptureCount => nativeSnapshot?.CaptureCount ?? 0;
+        internal long NativeSnapshotReuseCount => nativeSnapshot?.ReuseCount ?? 0;
+        internal bool TryCompareSurfaceSolverForDiagnostics(int surface, out Vector3[] managed, out Vector3[] native,
+            out int managedContacts, out int nativeContacts, out bool executedInBurst)
+        {
+            managed = native = null; managedContacts = nativeContacts = 0; executedInBurst = false;
+            return surfaces != null && (uint)surface < surfaces.Length &&
+                surfaces[surface].TryCompareNativeSolver(contacts, out managed, out native, out managedContacts,
+                    out nativeContacts, out executedInBurst);
+        }
+
+        internal bool TryCompareAreaSolverForDiagnostics(int surface, bool constrainMaterial, int areaPasses,
+            out Vector3[] managed, out Vector3[] native, out int managedContacts, out int nativeContacts,
+            out bool executedInBurst)
+        {
+            managed = native = null; managedContacts = nativeContacts = 0; executedInBurst = false;
+            return surfaces != null && (uint)surface < surfaces.Length &&
+                surfaces[surface].TryCompareNativeArea(contacts, constrainMaterial, areaPasses, out managed,
+                    out native, out managedContacts, out nativeContacts, out executedInBurst);
+        }
+
+        internal bool TryCompareFreeSurfaceMemoForDiagnostics(int surface, Vector3 originalOffset, Vector3 inputOffset,
+            Action invalidateContacts, out Vector3[] reference, out Vector3[] cached,
+            out bool referenceResult, out bool cachedResult, out long reuseDelta)
+        {
+            reference = cached = null; referenceResult = cachedResult = false; reuseDelta = 0;
+            return surfaces != null && (uint)surface < surfaces.Length &&
+                surfaces[surface].TryCompareFreeSurfaceMemo(contacts, originalOffset, inputOffset, invalidateContacts,
+                    out reference, out cached, out referenceResult, out cachedResult, out reuseDelta);
+        }
 
         /// <summary>Editor measures the imported bind pose. Region 0 is the open hem; 1/2 are left/right cuffs.</summary>
         public void Configure(Player3DAssetRegistry owner, SurfaceBinding[] configured, Vector3[] hemNodesActorLocal,
@@ -265,19 +328,22 @@ namespace BarPromenade
         {
             if (surfaces != null) return;
             surfaces = new PlayerJacketClothSurface[bindings.Length];
+            nativeSnapshot = new PlayerJacketClothSurface.NativeSnapshot();
             Transform[] shoulders = { null, FindBone(Player3DAnatomicalPart.LeftUpperArm), FindBone(Player3DAnatomicalPart.RightUpperArm) };
             Transform[] elbows = { null, FindBone(Player3DAnatomicalPart.LeftForearm), FindBone(Player3DAnatomicalPart.RightForearm) };
             Transform[] wrists = { null, FindBone(Player3DAnatomicalPart.LeftHand), FindBone(Player3DAnatomicalPart.RightHand) };
             for (int i = 0; i < surfaces.Length; i++)
             {
                 int region = bindings[i].Region;
-                surfaces[i] = new PlayerJacketClothSurface(bindings[i], shoulders[region], elbows[region], wrists[region], transform);
+                surfaces[i] = new PlayerJacketClothSurface(bindings[i], shoulders[region], elbows[region], wrists[region], transform,
+                    nativeSnapshot);
                 if (surfaces[i].IsHemPanel && (hemPanel == null || surfaces[i].VertexCount > hemPanel.VertexCount))
                     hemPanel = surfaces[i];
             }
             BuildSleeveSeams();
             wardrobe = registry.GetComponent<PlayerWardrobe>();
-            contacts = new PlayerScarfBodyContacts(registry, "jacket", useMeshSupportPlanes: true);
+            contacts = new PlayerScarfBodyContacts(registry, "jacket", useMeshSupportPlanes: true,
+                pointQuerySlots: 1, includeEquipmentRibbons: false);
         }
 
         private void BuildSleeveSeams()
@@ -368,6 +434,21 @@ namespace BarPromenade
 
         public void ApplyAt(double seconds, bool paused, bool outside, WindSample wind)
         {
+            using var profile = ApplyMarker.Auto();
+            long started = System.Diagnostics.Stopwatch.GetTimestamp();
+            LastSimulationSteps = 0;
+            LastDiscardedSeconds = 0d;
+            try { ApplyAtCore(seconds, paused, outside, wind); }
+            finally
+            {
+                LastApplyTicks = System.Diagnostics.Stopwatch.GetTimestamp() - started;
+                TotalApplyTicks += LastApplyTicks;
+                TotalApplyCalls++;
+            }
+        }
+
+        private void ApplyAtCore(double seconds, bool paused, bool outside, WindSample wind)
+        {
             if (!HasAuthoredBindings) return;
             EnsureSurfaces();
             bool worn = wardrobe == null || wardrobe.IsRendererWorn(bindings[0].Renderer);
@@ -382,10 +463,13 @@ namespace BarPromenade
             }
             if (paused && initialized && !resetPending)
             { if (IsFinite(seconds)) previousSeconds = seconds; LastStepSeconds = 0f; return; }
-            foreach (PlayerJacketClothSurface surface in surfaces) surface.UpdatePose();
-            for (int i = 0; i < NodeCount; i++)
-                targets[i] = surfaces[nodes[i].Surface].Skin(nodes[i].Vertex).MultiplyPoint3x4(nodes[i].MeshPoint);
-            contacts.UpdatePose();
+            using (PoseMarker.Auto())
+            {
+                foreach (PlayerJacketClothSurface surface in surfaces) surface.UpdatePose();
+                for (int i = 0; i < NodeCount; i++)
+                    targets[i] = surfaces[nodes[i].Surface].Skin(nodes[i].Vertex).MultiplyPoint3x4(nodes[i].MeshPoint);
+                contacts.UpdatePose();
+            }
             double elapsed = seconds - previousSeconds;
             bool teleported = initialized && ((transform.position - previousPosition).sqrMagnitude > .3025f ||
                 Quaternion.Angle(transform.rotation, previousRotation) > 100f);
@@ -397,9 +481,17 @@ namespace BarPromenade
             }
             else
             {
-                LastStepSeconds = (float)elapsed;
-                int steps = elapsed > 0d ? Mathf.Max(1, Mathf.CeilToInt((float)elapsed / StepSeconds)) : 0;
-                float dt = steps > 0 ? (float)elapsed / steps : 0f;
+                // Cosmetic motion follows the current rig; it never carries a
+                // wall-time backlog into the next rendered frame.
+                double simulated = Math.Min(elapsed, MaximumFrameSubsteps * (double)StepSeconds);
+                LastDiscardedSeconds = elapsed - simulated;
+                TotalDiscardedSeconds += LastDiscardedSeconds;
+                LastStepSeconds = (float)simulated;
+                int steps = simulated > 0d ? Mathf.Min(MaximumFrameSubsteps,
+                    Mathf.Max(1, Mathf.CeilToInt((float)simulated / StepSeconds))) : 0;
+                LastSimulationSteps = steps;
+                TotalSimulationSteps += steps;
+                float dt = steps > 0 ? (float)simulated / steps : 0f;
                 Vector3 air = outside ? wind.Velocity(1.25f) : Vector3.zero;
                 for (int step = 0; step < steps; step++)
                 {
@@ -424,13 +516,17 @@ namespace BarPromenade
                 displacements[i] = points[i] - targets[i];
                 MaximumDisplacement = Mathf.Max(MaximumDisplacement, displacements[i].magnitude);
             }
-            foreach (PlayerJacketClothSurface surface in surfaces)
-                LastContactCount += surface.Deform(displacements, contacts);
-            if (hemPanel != null && hemPanel.TryHemFold(contacts, transform, surfaces,
-                out PlayerJacketClothSurface.HemFoldSet fold))
+            using (SurfaceMarker.Auto())
+            {
                 foreach (PlayerJacketClothSurface surface in surfaces)
-                    if (surface.ApplyHemFold(fold, contacts, transform)) LastContactCount += surface.VertexCount;
-            ReconcileSleeveNormals();
+                    LastContactCount += surface.Deform(displacements, contacts,
+                        weaponAccessAmount > 0f ? registry.Anchors.LeftGrip : null, weaponAccessAmount);
+                if (hemPanel != null && hemPanel.TryHemFold(contacts, transform, surfaces,
+                    out PlayerJacketClothSurface.HemFoldSet fold))
+                    foreach (PlayerJacketClothSurface surface in surfaces)
+                        if (surface.ApplyHemFold(fold, contacts, transform)) LastContactCount += surface.VertexCount;
+                ReconcileSleeveNormals();
+            }
             Array.Copy(targets, previousTargets, NodeCount);
             previousPosition = transform.position; previousRotation = transform.rotation;
             previousSeconds = IsFinite(seconds) ? seconds : 0d;
@@ -438,6 +534,7 @@ namespace BarPromenade
 
         private void Constrain(float alpha)
         {
+            using var profile = ConstrainMarker.Auto();
             for (int pass = 0; pass < 4; pass++)
             {
                 for (int i = 0; i < NodeCount; i++)
@@ -482,15 +579,22 @@ namespace BarPromenade
 
         private void DisposeSurfaces()
         {
-            if (surfaces == null) return;
-            foreach (PlayerJacketClothSurface surface in surfaces) surface?.Dispose();
+            if (surfaces != null)
+                foreach (PlayerJacketClothSurface surface in surfaces) surface?.Dispose();
+            nativeSnapshot?.Dispose();
+            nativeSnapshot = null;
             surfaces = null;
             hemPanel = null;
             sleeveSeams.Clear();
         }
         private static bool IsFinite(double value) => !double.IsNaN(value) && !double.IsInfinity(value);
         private void OnEnable() => RequestReset();
-        private void OnDisable() { RequestReset(); if (surfaces != null) foreach (PlayerJacketClothSurface surface in surfaces) surface.Restore(); }
+        private void OnDisable()
+        {
+            ClearWeaponAccess(weaponAccessOwner);
+            RequestReset();
+            if (surfaces != null) foreach (PlayerJacketClothSurface surface in surfaces) surface.Restore();
+        }
         private void OnDestroy() => DisposeSurfaces();
     }
 }

@@ -79,6 +79,8 @@ namespace BarPromenade
         internal long TissuePhysicsTicks { get; private set; }
         internal long ActivationVisibilityTicks { get; private set; }
         internal long ActivationCollisionTicks { get; private set; }
+        internal long FragmentActivationTicks { get; private set; }
+        internal long FragmentReleaseTicks { get; private set; }
         internal static bool IsSuppressed(Renderer renderer) => suppressed.Contains(renderer) || CombatBodyDestruction.IsSuppressed(renderer);
         public int DetachedSectorCountFor(CombatActor actor)
         {
@@ -113,6 +115,7 @@ namespace BarPromenade
                 foreach (Piece piece in sector.Pieces)
                     if (piece.Visible && piece.Anatomical) actor.Hurtboxes.PrepareHeadSurface(piece.Skin);
             foreach (Piece piece in head.Brains) actor.Hurtboxes.PrepareHeadSurface(piece.Skin);
+            EnsureHeadCollisionPairs(head);
         }
         public int DestroyedMaskFor(CombatActor actor)
         {
@@ -369,6 +372,13 @@ namespace BarPromenade
 
         private void Activate(Head head)
         {
+            long start = System.Diagnostics.Stopwatch.GetTimestamp();
+            try { ActivateCore(head); }
+            finally { FragmentActivationTicks += System.Diagnostics.Stopwatch.GetTimestamp() - start; }
+        }
+
+        private void ActivateCore(Head head)
+        {
             long stamp = System.Diagnostics.Stopwatch.GetTimestamp();
             head.Active = true;
             foreach (SkinnedMeshRenderer original in head.Originals) { suppressed.Add(original); original.enabled = false; }
@@ -379,17 +389,39 @@ namespace BarPromenade
                 sector.Proxy.enabled = true;
                 foreach (Piece piece in sector.Pieces) Player3DHeadVisibility.SetDerivedEnabled(piece.Source, piece.Skin, TissueVisible(head, piece));
                 ActivationVisibilityTicks += System.Diagnostics.Stopwatch.GetTimestamp() - stamp;
-                stamp = System.Diagnostics.Stopwatch.GetTimestamp();
+            }
+            stamp = System.Diagnostics.Stopwatch.GetTimestamp();
+            EnsureHeadCollisionPairs(head);
+            ActivationCollisionTicks += System.Diagnostics.Stopwatch.GetTimestamp() - stamp;
+        }
+
+        private static void EnsureHeadCollisionPairs(Head head)
+        {
+            // Prepare while the retained colliders are disabled. Activation also
+            // checks the live pairs, so reset/disable cannot lose their isolation.
+            foreach (Sector sector in head.Sectors)
+            {
                 foreach (var anatomical in head.Actor.Ragdoll.PhysicsController.AnatomicalColliders)
-                    Physics.IgnoreCollision(sector.Proxy, anatomical.Key, true);
-                if (head.Actor.Body != null) Physics.IgnoreCollision(sector.Proxy, head.Actor.Body, true);
+                    IgnoreIfNeeded(sector.Proxy, anatomical.Key);
+                if (head.Actor.Body != null) IgnoreIfNeeded(sector.Proxy, head.Actor.Body);
                 foreach (Sector other in head.Sectors)
-                    if (other != sector) Physics.IgnoreCollision(sector.Proxy, other.Proxy, true);
-                ActivationCollisionTicks += System.Diagnostics.Stopwatch.GetTimestamp() - stamp;
+                    if (other.Index > sector.Index) IgnoreIfNeeded(sector.Proxy, other.Proxy);
+            }
+
+            static void IgnoreIfNeeded(Collider first, Collider second)
+            {
+                if (!Physics.GetIgnoreCollision(first, second)) Physics.IgnoreCollision(first, second, true);
             }
         }
 
         private void Release(Head head, List<Piece> pieces, Vector3 origin, Vector3 velocity, bool soft, int index)
+        {
+            long start = System.Diagnostics.Stopwatch.GetTimestamp();
+            try { ReleaseCore(head, pieces, origin, velocity, soft, index); }
+            finally { FragmentReleaseTicks += System.Diagnostics.Stopwatch.GetTimestamp() - start; }
+        }
+
+        private void ReleaseCore(Head head, List<Piece> pieces, Vector3 origin, Vector3 velocity, bool soft, int index)
         {
             var host = new GameObject(soft ? "Brain Fragment" : "Head Fragment");
             host.transform.SetParent(transform, false);
@@ -512,7 +544,8 @@ namespace BarPromenade
         private void LateUpdate()
         {
             foreach (Head head in heads.Values)
-                if (head.Active) foreach (SkinnedMeshRenderer original in head.Originals) if (original != null) original.enabled = false;
+                if (head.Active) foreach (SkinnedMeshRenderer original in head.Originals)
+                    if (original != null && original.enabled) original.enabled = false;
         }
         public void ResetActor(CombatActor actor)
         {

@@ -11,7 +11,7 @@ namespace BarPromenade
 
         private bool UpdateCombatInput()
         {
-            if (Hero.IsFirearm && !pistolApplicationFocused || !GameInput.CanRead(GameInputContext.Gameplay))
+            if ((Hero.IsFirearm || Hero.IsSwitchingWeapon) && !pistolApplicationFocused || !GameInput.CanRead(GameInputContext.Gameplay))
             {
                 if (Hero.IsFirearm && GameInput.WasPressed(GameInputAction.MeleeAttack, GameInputContext.PauseMenu))
                     Hero.RejectPistolInput(pistolApplicationFocused ? "input_gate" : "application_focus");
@@ -42,6 +42,15 @@ namespace BarPromenade
             { SetSparring(!Sparring); return false; }
             if (GameInput.WasPressed(GameInputAction.CombatFocus, GameInputContext.Gameplay))
                 SetOpponentFocus(!IsOpponentFocused);
+            ReadWeaponSelectionInput();
+            if (Hero.IsSwitchingWeapon)
+            {
+                ReleaseFreePistolAim(); Hero.SuspendPistolInput();
+                Hero.SetBlock(false); CancelHeldHeroCharge();
+                attackInputOwned = false; requireAttackRelease |= held;
+                requirePistolAimRelease = true;
+                return true;
+            }
             if (Hero.IsFirearm) return UpdatePistolInput(held);
             if (!IsOpponentFocused && !(RoundFinished && !Hero.State.IsDefeated))
             {
@@ -122,8 +131,7 @@ namespace BarPromenade
         private void OnDisable()
         {
             ResetPistolCrosshair();
-            Projectiles?.Clear();
-            Casings?.Clear();
+            ClearWeaponPools();
             HeadEffects?.ResetRound();
             BodyEffects?.ResetRound();
             ReleaseFreePistolAim();

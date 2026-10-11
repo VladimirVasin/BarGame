@@ -35,7 +35,7 @@
 - Persistent physical asymmetry:
   - muted ochre patch on the **right** shoulder; both sleeves otherwise match,
     without a left bandage or answering patch;
-  - no diagonal strap or copied military insignia; the plain waist belt is independent.
+  - no decorative strap or military insignia; the plain waist belt is independent.
 - Mood: restrained low-poly PS1 survival horror, with readable dark outlines
   and value separation against gray-green City fog and the warm Bar interior.
 - Do not mirror the character. Blender anatomical left is `+X`, the character
@@ -64,15 +64,16 @@ the no-variant `Player3DResources` / `PlayerFactory` path to `Player3DV2`.
   boots are independent garments over actual bare anatomy. No satchel strap,
   bandage, insignia, text or copied film marking supplies a military biography.
 - `PlayerJacketCloth`/`hero_jacket_cloth_v1`: eight hem/four cuff nodes;
-  shoulders/chest pinned, open front separate, lower pockets/plackets follow hem.
-  Damped gravity/motion/wind/edges bound node travel to `7.5/2.5 cm`.
-  Wide sleeve fields/folds through `135°` precede secondary cloth; seam data match.
-  Hem clears trousers; cached skin/corrective contacts follow posed hips/legs
-  and clear free panels; paired folds bound stretch; pockets stay compact.
-  Body/hand contacts retain other clothes,
-  exclude jacket. Owned buffers preserve sources/materials. Removal resets;
-  hiding preserves, pause freezes, discontinuities reset. Live hero simulates;
-  mirror/arms reuse motion and solve their own fold. No scene scan/body baking.
+  Shoulders/chest pin;open front;pockets/plackets follow hem.
+  Damped gravity/inertia/wind/edges: `7.5/2.5 cm`.
+  Wide sleeve fields/folds: `135°`, then cloth; seams match.
+  Hem clears trousers; posed skin/correctives follow hips/legs.
+  Material edges cap contact strain;lining/outer move jointly.
+  Deep folds:pockets/flaps;free:feasible whole exit first/fewer passes/fallback.
+  Body/hand/clothes/gear;0jacket/ribbon;pinned/area Burst/shared read-only snapshot/fallback.
+  120Hz/≤3 steps/frame;elapsed consumed/no debt;unchanged geometry skips writes.
+  Removal/discontinuity resets;hide retains;pause freezes.
+  Hero;mirror/arms copy/local folds;no scan/bake.
 - Geometry: construction; the `256 x 256` Point clothing atlas retains
   seams, weave and wear. Accepted `2026-09-29`: UV0 normal/response companions
   add subtle cloth/leather, skin and directional hair relief/smoothness;
@@ -90,18 +91,13 @@ the no-variant `Player3DResources` / `PlayerFactory` path to `Player3DV2`.
   There is no ponytail. A fixed cap and three weighted regions
   each use three joints and a terminal point. `PlayerHair` adds bounded inertia,
   gravity, damping, outdoor wind and bend/length constraints after the final
-  body pose. Hair and jacket use at most `17` active anatomy envelopes from
-  cached mesh support planes; bare and primary clothing variants are measured
-  once. The scarf retains its existing ellipsoids. Torso contacts choose
-  jacket, then shirt, then skin; limbs
-  choose the worn sleeves, trousers or boots. Camera hiding preserves the worn
-  envelope, while an undress lease selects bare anatomy. Animation moves these
-  cached envelopes without body mesh baking. Bounded boxes fit thin collar
-  panels without the empty volume that pushed hair outward or trapped cuffs.
-  Hair also uses scarf envelopes, existing tail vertices and strand separation.
-  Pause/transition freeze it; discontinuous time or teleport resets history.
-  Only the live hero simulates; the mirror copies its solved pose and
-  first-person subsets remain passive.
+  body pose. Hair/jacket:≤`17` posed skin/clothing envelopes;scarf ellipsoids.
+  Torso:jacket→shirt→skin;limbs:worn sleeves/trousers/boots. Camera hiding keeps
+  worn envelopes;undressing uses bare anatomy;no body bake. Thin collar boxes
+  prevent voids/trapped cuffs. Gear contacts:jacket/hair/scarf;0pistol-holster/world.
+  Hair:scarf/tail/strand contacts;persistent Burst/fallback;managed bends;120Hz/≤2/0debt.
+  Pause/transition freeze;discontinuity/teleport resets. Live hero only;mirror copies
+  solved pose/first-person subsets passive.
 - Expressive dialogue faces, accepted `2026-09-11`, use the same curved head
   and a separate `512 x 512` atlas under `Resources/Dialogue/Faces`.
   Six mouths (`Closed/Narrow/Open/Round/Wide/Teeth`) combine with five upper-face
@@ -216,12 +212,17 @@ This opt-in applies only during the interaction handoff without an active clip.
 
 ## Animation contract
 
-- Accepted `2026-09-21`, CombatTest: .42 m wide/.28 m staggered
-  stance, soft knees/low pelvis. Feet follow actual travel, plant in Windup.
-  Hero bank: raised shoulders, tucked chin, stiff grip, awkward effort/recovery;
-  NPC calmer. Duel-clock uneven breath follows stamina; small tremor/brief
-  seen-tell flinch preserve grips; tense face/blink uses the same atlas.
-  HP separate; input/timing/costs stay. No story/speech; notes/§6.
+- Accepted `2026-09-21`, CombatTest: .42 m wide/.28 m staggered stance;
+  soft knees/low pelvis/travel feet/plant in Windup. Raised shoulders/tucked chin/
+  stiff grip/awkward effort;NPC calmer. Stamina breath/tremor/flinch keep grips;
+  same face/blink/HP/input/costs;no story/speech, notes/§6.
+- Accepted `2026-10-10`, CombatTest: pistol holster left chest under M-65.
+  Pistol/holster0cloth;normal coat hides stored renders. Held/dropped
+  visible;holster sans jacket. Crowbar right belt OR shotgun own soft sling/
+  close back/0holster-hardmount.6bone-only in-place `Draw/Stow`:same rig/models/
+  transfers;torso over gait/Ljacket-open/0root-motion/events.
+- Accepted `2026-10-11`: sling LEFT shoulder→whole front chest/abdomen→lower
+  right side;hand/gun/cloth draw/stow.
 - The accepted `2026-09-07` exterior-AlpineVillage exception, refined by the
   user's direct request on `2026-09-08`, adds `ColdHold`
   (`4 s`), `ColdShoulderRub` (`2.5 s`) and non-looping `ColdShiver`

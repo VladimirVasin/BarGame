@@ -209,6 +209,8 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(menu.SelectCombatOption(CombatPreparationOption.Shotgun), Is.True);
                 Assert.That(menu.ConfirmSelection(), Is.True);
                 Assert.That(menu.SelectedCombatWeapon, Is.EqualTo(CombatWeaponId.Shotgun));
+                Assert.That(menu.SelectedCombatLoadout,
+                    Is.EqualTo(new CombatLoadoutSelection(CombatWeaponId.Shotgun, CombatWeaponId.Shotgun)));
                 Assert.That(menu.SelectCombatOption(CombatPreparationOption.Start), Is.True);
                 Assert.That(menu.ConfirmSelection(), Is.True);
                 yield return AwaitSelectedCombatRange();
@@ -450,12 +452,14 @@ namespace BarPromenade.Tests.PlayMode
                     root.Casings.ActiveCount + root.Casings.PendingCount + root.Casings.EjectionCount, Is.Zero);
                 Assert.That(root.Projectiles.SurfaceEffects.HoleCount, Is.Zero);
                 GameObject formerWeapon = root.Hero.Weapon;
-                Assert.That(CombatTestStartService.ReturnToPreparation(root.HeroWeapon), Is.True);
+                Assert.That(CombatTestStartService.ReturnToPreparation(root.Hero.LoadoutSelection), Is.True);
                 yield return WaitFor(() => SceneManager.GetActiveScene().name == SceneIds.MainMenu &&
                     !SceneTransitionService.IsTransitioning, "Shotgun preparation did not reopen.");
                 menu = Object.FindAnyObjectByType<StartMenuRoot>();
                 Assert.That(menu.IsChoosingCombatWeapon, Is.True);
                 Assert.That(menu.SelectedCombatWeapon, Is.EqualTo(CombatWeaponId.Shotgun));
+                Assert.That(menu.SelectedCombatLoadout,
+                    Is.EqualTo(new CombatLoadoutSelection(CombatWeaponId.Shotgun, CombatWeaponId.Shotgun)));
                 Assert.That(formerWeapon == null, Is.True, "The selected weapon must leave with its combat scene.");
                 Assert.That(Object.FindAnyObjectByType<CombatActor>(), Is.Null);
                 LogAssert.NoUnexpectedReceived();

@@ -1947,6 +1947,8 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(menu.SelectCombatOption(CombatPreparationOption.Pistol), Is.True);
                 Assert.That(menu.ConfirmSelection(), Is.True);
                 Assert.That(menu.SelectedCombatWeapon, Is.EqualTo(CombatWeaponId.Pistol));
+                Assert.That(menu.SelectedCombatLoadout,
+                    Is.EqualTo(new CombatLoadoutSelection(CombatWeaponId.Crowbar, CombatWeaponId.Pistol)));
                 Assert.That(menu.SelectCombatOption(CombatPreparationOption.Start), Is.True);
                 Assert.That(menu.ConfirmSelection(), Is.True);
                 yield return AwaitSelectedCombatRange();
@@ -2236,7 +2238,7 @@ namespace BarPromenade.Tests.PlayMode
                 yield return VerifyPistolAimGeometryAndTriggerBoundaries(input, mouse);
                 yield return VerifyPistolCarryAndWinnerInput(input, mouse, keyboard);
 
-                Assert.That(CombatTestStartService.ReturnToPreparation(root.HeroWeapon), Is.True);
+                Assert.That(CombatTestStartService.ReturnToPreparation(root.Hero.LoadoutSelection), Is.True);
                 yield return WaitFor(() => SceneManager.GetActiveScene().name == SceneIds.MainMenu &&
                     !SceneTransitionService.IsTransitioning, "Combat preparation did not reopen.");
                 yield return WaitFor(() => journal.Completion.IsCompleted, "Pistol journal did not close with its scene.");
@@ -2245,7 +2247,13 @@ namespace BarPromenade.Tests.PlayMode
                 menu = Object.FindAnyObjectByType<StartMenuRoot>();
                 Assert.That(menu.IsChoosingCombatWeapon, Is.True);
                 Assert.That(menu.SelectedCombatWeapon, Is.EqualTo(CombatWeaponId.Pistol));
+                Assert.That(menu.SelectedCombatLoadout,
+                    Is.EqualTo(new CombatLoadoutSelection(CombatWeaponId.Crowbar, CombatWeaponId.Pistol)));
                 Assert.That(menu.SelectCombatOption(CombatPreparationOption.Crowbar), Is.True);
+                Assert.That(menu.ConfirmSelection(), Is.True);
+                Assert.That(menu.SelectedCombatWeapon, Is.EqualTo(CombatWeaponId.Pistol),
+                    "The long-weapon choice must preserve the independent starting hand choice.");
+                Assert.That(menu.SelectCombatOption(CombatPreparationOption.Secondary), Is.True);
                 Assert.That(menu.ConfirmSelection(), Is.True);
                 Assert.That(menu.SelectCombatOption(CombatPreparationOption.Start), Is.True);
                 Assert.That(menu.ConfirmSelection(), Is.True);

@@ -43,6 +43,7 @@ namespace BarPromenade
 
         private bool TryBeginShove(int request = 0)
         {
+            if (HasWeaponSwitchRequest) return false;
             CancelInterruptedShoveContact();
             if (request == 0) request = JournalCommand("windup_to_shove");
             if (!CheckShoveRange(request)) return JournalCommandResult(request, "rejected", "shove_range");

@@ -6,26 +6,39 @@ Earlier notes: [`release-notes-2026-09.md`](archive/release-notes-2026-09.md).
 
 ## Unreleased
 
-### 2026-10-10 — Ходьба и суставы персонажей
+### 2026-10-11 — Оружие, ткань и тяжёлые кадры
 
-- Прицел: ходьба на 15% медленнее; шаги держат темп при смене направления.
-- Мягкая постановка ног и стабильная высота корпуса; руки сохраняют прицел/отдачу.
-- Локти и колени героя/NPC сохраняют соединение и объём при сгибе;
-  бёдра и кисти героя также имеют коррекцию объёма. Куртка и брюки —
-  отдельные тканевые оболочки со своими сгибами; крой M-65 свободнее,
-  с плоскими панелями и втачными рукавами. Полы куртки учитывают
-  текущую форму таза/ног. Корпус шире к плечам, шея следует голове;
-  две округлые ягодицы уменьшены. Военный ремень — отдельная одежда.
-  Обновлены отражение/руки, сидячая одежда и модели повреждений.
-- Бордовые Dr. Martens 1460: восемь пар люверсов, шнуровка и жёлтый шов;
-  сгибы стопы/голеностопа; пинок и попадания следуют видимой обуви.
-- Снижена нагрузка коллизий повреждённого тела после боя.
-- Проверено: `Range_FirearmAimDirectionChangesKeepLegsWithinAuthoredAnatomy`,
-  `Range_CloseKicksAgreeWithPresentedBootAndFrozenAnatomy`, `check-character-joint-export.py`,
-  `Player3DJointSurfaceTests`, `FlatGround_WalkKeepsABootPlantedEveryFrame`,
-  `Range_DistantShotgunTorsoVolleyProfilesImpactPhases`,
-  `Range_BodyProxiesShareTransformsAndFollowSameFrameChanges`,
-  `Range_BodyDestructionDefersGeometryAndKeepsFrozenVisibleContacts`.
+- Лямка: одна окончательная поза за кадр; точные кеши/запасной путь.
+  Контакты: 64 итерации, длина — ещё 64 без повторных запросов тела.
+- Мягкая лямка: левое плечо→вся грудь/живот спереди→низ правого бока.
+  Уборка/доставание, опора, хват, модели и патроны сохранены.
+- Полы M-65 держат длину после контактов; подкладка/наружная ткань движутся
+  вместе. Глубокие складки, прежние допуски и отражение/руки сохранены.
+- Куртка — до трёх подшагов, волосы/лямка — до двух; без долга. Свободные панели пробуют
+  допустимую плоскость; панели и площадь считают в Burst с общим снимком контактов и
+  запасным путём. Оболочки тела, проходы, длина/допуски сохранены.
+- Общие снимки/позы и точные нативные границы снижают повторную работу;
+  индексы меняются с топологией. Попадания/физика сразу. Журнал разделяет ткань/позу;
+  нагруженный кадр не гарантирует FPS всей игры.
+- Проверки: `Range_WeaponCarryKeepsRealFramesBoundedThroughWalkingSwitchesAndHeadshot`,
+  `ProductionRig_WalkingKeepsJacketHemLength`, `check-docs.py`, `git diff --check`.
+
+### 2026-10-10 — Ход, суставы, смена оружия
+
+- Прицел: ход −15%; плавный шаг/устойчивый корпус при смене курса;
+  руки держат прицел/отдачу.
+- Герой/NPC: локти/колени цельны/объёмны; герой: бёдра/кисти.
+  Плечи шире, шея за головой, ягодицы меньше/округлы.
+  M-65/брюки: свои сгибы; M-65 свободная/плоские панели/втачные рукава;
+  полы по тазу/ногам. Ремень отдельно; отражение/руки/сидячая одежда/раны.
+- Бордовые Dr. Martens 1460: 8 пар люверсов/шнуровка/жёлтый шов;
+  сгибы стопы/лодыжки; пинок/попадания по видимой обуви.
+- Коллизии повреждённого тела после боя легче.
+- Полигон: кобура/пистолет под курткой слева на груди/cloth0;лом справа на поясе/
+  двустволка у спины на своей мягкой лямке; уборка: через плечо;
+  без кобуры/жёсткого крепления. Длинное/первый хват;
+  1/2/крестовина вправо. 6 анимаций: убрать/достать; патроны/этапы сохранны.
+- Проверки: `Range_FirearmAimDirectionChangesKeepLegsWithinAuthoredAnatomy`,`Range_CloseKicksAgreeWithPresentedBootAndFrozenAnatomy`,`check-character-joint-export.py`,`Player3DJointSurfaceTests`,`FlatGround_WalkKeepsABootPlantedEveryFrame`,`Range_DistantShotgunTorsoVolleyProfilesImpactPhases`,`Range_BodyProxiesShareTransformsAndFollowSameFrameChanges`,`Range_BodyDestructionDefersGeometryAndKeepsFrozenVisibleContacts`,`build-combat-weapon-carry-3d-model.py`,`Range_WeaponCarrySwitchesKeepModelsAmmoAndPhysicalHandoffs`.
 
 ### 2026-10-09 — Двустволка, корпус и прицел
 

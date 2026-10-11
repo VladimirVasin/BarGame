@@ -146,26 +146,23 @@ The vertical slice contains:
   City/Bar/lodge markers belong to one load, consumed once; later arrivals stay.
   Day one raises mother's-house quest/map marker; door/map entry or starting
   inside closes it. No village signpost;
-- CombatTest:bar/pistol8∞/shotgun2∞→Start;NPCbar/3AI;dummy/freecam;
-  MMBfocus/TabAIreset/bar-Qfocus;
-  guns:RMBaim/LMBedge/R-Xreload/Rpalm gait/FOV-IK.25;
-  Aim:8clips/retarget/facing/2.21-back1.19/raise-aim-lower0run
-  dist/C2feet/levelpelvis-grip/cubic/reach/clearance
-  camplane normdiag/gun/Space1m-cardinal-back/tankreturn
-  Barfocus/reload/Step-kick/injury kept.
-  Shotgun12/.55/head×2;HP1m24/25m1.5/40m0;Ns1m380/25m2/40m0;
-  reaction1/end-only hold/head≤14/break2.8.
-  Launch:final/unfrozen1/current-mass;torso nonpellets.
-  DropE/Rresume stage-ammo/atomic spend/flights finish/win fire-reload.
-  Ray:first skin/world;analytic;gravity/recoil/streak/stablecam/0pierce-ricochet-guard.
-  Body17/patch4:cloth-tissue-bone loss/head-limb cuts/sever.
-  Chest-Abdomen-Pelvis joined even critical;local cells deform-erode→rig skeleton/0chunks.
-  Batch1sync/shared pose/lazy leaves/NPCgraph.
-  Arm35/leg45;Rhand0weapon/Lhand0twohand-reload;
-  Rbar/loaded pistol remain;leg loss living ragdoll/crawl/no rise-step-kick.
-  Head-torso critical end/corpse/pause/reset restores all.
-  Pistol:reload1.8/slide-emptylock/mag-rack/cases/head3-5of16/brain8 jelly-squash;
-  blood56/800/pulse24s0/cam-hide/convulsions2.35/worldhole128FIFO/particles192.
+- CombatTest:pistol+(bar|shotgun);secondary+initial hand→Start/Back.
+  Default:bar held;pistol Lchest/undercoat;bar Rbelt;shotgun sling/back.
+  Sling:Lshoulder→fullfront chest/abdomen→lower Rside.
+  1pistol/2secondary/DpadRcycle;6bone-only stow/draw/same rig/torso over gait.
+  Models/ammo/mechanics kept;last queued;reload first.
+  Pause/hitstop freeze;fall cancels/held drops;dropped owns slot;Erecord-specific.
+  Reset:launchkit/body;exit clear;bar/shotgun cloth contacts.
+  NPCbar/3AI;dummy/freecam;MMBfocus/TabAIreset/bar-Qfocus.
+  Guns:RMBaim/LMBedge/R-Xreload;8aimclips/2.21-back1.19/0run/FOV-IK.25;
+  camplane normdiag/Space1m-cardinal-back/tankreturn;barfocus/injury kept.
+  Pistol8∞/reload1.8/slide-emptylock/mag-rack/cases;
+  shotgun2∞/12pellets/.55/head×2/break2.8/stage-ammo/atomic spend/flights finish/win fire.
+  Near launch/falloff/one reaction-terminal/head≤14;ray first skin/world/0pierce-ricochet-guard.
+  Cloth-tissue-bone loss;head-limb sever/torso joined erodes→rig skeleton/0chunks.
+  Rhand0weapon/Lhand0twohand-reload;Rbar-loaded pistol retained;
+  leg loss fall/crawl/0rise-step-kick;critical head-torso end/corpses/reset restores.
+  Pistol head3-5of16/brain8 jelly-squash/blood pulse24s0/convulsions2.35/world chips-holes.
   Bar6zones/rearhead-end/metalrecoil/Qsupport/toilet/Eown-ammo/sharedUI/0grant;
 - the retained Home opening is reachable only by a legacy request: held bed loop,
   silent `05:59` clock with rare whole-display flicker, five-second input lock,

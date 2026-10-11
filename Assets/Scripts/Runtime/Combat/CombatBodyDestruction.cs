@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Unity.Collections;
 using UnityEngine;
 using UnityEngine.Rendering;
 
@@ -47,6 +48,9 @@ namespace BarPromenade
             internal readonly HashSet<BodyDamageRegion> Detached = new HashSet<BodyDamageRegion>();
             internal readonly HashSet<SkinnedMeshRenderer> Replaced = new HashSet<SkinnedMeshRenderer>();
             internal readonly List<Fragment> Fragments = new List<Fragment>();
+            internal readonly Dictionary<SkinnedMeshRenderer, CombatBodySourceDeformation.SourceSnapshot> SourceSnapshots =
+                new Dictionary<SkinnedMeshRenderer, CombatBodySourceDeformation.SourceSnapshot>();
+            internal readonly List<Piece> RetainedScratch = new List<Piece>(), ReleasedScratch = new List<Piece>();
             internal Body()
             {
                 for (int region = 0; region < Regions.Length; region++) Regions[region] = new List<Piece>();
@@ -68,9 +72,15 @@ namespace BarPromenade
         private readonly Dictionary<CombatActor, Body> bodies = new Dictionary<CombatActor, Body>();
         private MaterialPropertyBlock properties;
         private Material flesh, bone;
+        private CombatHeadDestruction headEffects;
+        private CombatBloodEffects bloodEffects;
+        private CombatHeadDestruction HeadEffects => headEffects != null ? headEffects : headEffects = GetComponent<CombatHeadDestruction>();
+        private CombatBloodEffects BloodEffects => bloodEffects != null ? bloodEffects : bloodEffects = GetComponent<CombatBloodEffects>();
         private bool frozen;
         private void Awake() => properties = new MaterialPropertyBlock();
         internal int ProxyGeometryBuilds { get; private set; }
+        internal long ProxyNativeBoundsFolds { get; private set; }
+        internal long ProxyBurstBoundsFolds { get; private set; }
         internal long ProxyGeometryTicks { get; private set; }
         internal long ProxyTransformSamples { get; private set; }
         internal int ProxyTransformCountFor(CombatActor actor) =>
@@ -213,7 +223,14 @@ namespace BarPromenade
                     Patch = patch, Flesh = isFlesh, Bone = isBone, Eligible = isFlesh || isBone || visible,
                     ProxyPose = body.ProxyPose };
                 if (!isFlesh && !isBone || (region is 7 or 10))
-                    piece.Deformation = new CombatBodySourceDeformation(template.sharedMesh, source);
+                {
+                    if (!body.SourceSnapshots.TryGetValue(source, out CombatBodySourceDeformation.SourceSnapshot snapshot))
+                    {
+                        snapshot = new CombatBodySourceDeformation.SourceSnapshot();
+                        body.SourceSnapshots.Add(source, snapshot);
+                    }
+                    piece.Deformation = new CombatBodySourceDeformation(template.sharedMesh, source, snapshot);
+                }
                 if (piece.Eligible && !isBone && CombatBodyDamageState.IsTorso(piece.Region))
                     piece.Torso = new CombatTorsoDamageSurface(skin, isFlesh);
                 body.Pieces.Add(piece);
@@ -224,6 +241,12 @@ namespace BarPromenade
             foreach (Piece piece in body.Pieces)
                 if (piece.Eligible && !piece.Bone)
                 { piece.RefreshSurface(); SkinCentre(piece); piece.Torso?.PrepareExteriorMesh(); }
+            // Prepare hidden collision resources before the first damaging hit.
+            // Activation still fits their bounds to the current damaged pose.
+            body.ProxyPose.BeginPass();
+            foreach (Piece piece in body.Pieces)
+                if (piece.Eligible && (piece.Flesh || piece.Bone || piece.Torso != null))
+                    CreateProxy(body, piece, !piece.Bone);
             bodies.Add(actor, body);
             owners[actor] = this;
             actor.Hurtboxes.PrepareBodySurfaces(body.Pieces);
@@ -238,7 +261,7 @@ namespace BarPromenade
             if (!bodies.TryGetValue(impact.Target, out Body body)) return;
             if (impact.DetachedPart) ApplyDetachedImpulse(body, region, impact);
             int patch = impact.BodyPatch >= 0 ? impact.BodyPatch : region == BodyDamageRegion.Head ?
-                GetComponent<CombatHeadDestruction>().TissuePatchFor(impact.Target, impact.Point) : ClosestPatch(body, region, impact.Point);
+                HeadEffects.TissuePatchFor(impact.Target, impact.Point) : ClosestPatch(body, region, impact.Point);
             float trauma = impact.Kind == CombatImpactKind.Projectile ?
                 (impact.IsPellet ? Mathf.Clamp(impact.WoundDamage / 24f, 0f, 1.1f) * .50f : .18f) :
                 Mathf.Lerp(.10f, .24f, Mathf.Clamp01(impact.AttackPower));
@@ -247,7 +270,7 @@ namespace BarPromenade
             {
                 // The existing sixteen-sector fracture system owns skull continuity,
                 // including its fourteen-sector cap for one shotgun volley.
-                bool skullGone = GetComponent<CombatHeadDestruction>().DetachedSectorCountFor(impact.Target) == 16;
+                bool skullGone = HeadEffects.DetachedSectorCountFor(impact.Target) == 16;
                 trauma = skullGone ? 2f : Mathf.Min(trauma, 1f - impact.Target.BodyDamage.TissueLoss(region, patch));
             }
             else if (impact.IsPellet)
@@ -376,7 +399,7 @@ namespace BarPromenade
             if (!bodies.TryGetValue(actor, out Body body)) return;
             ActorSynchronizationCount++;
             long stageStart = System.Diagnostics.Stopwatch.GetTimestamp();
-            GetComponent<CombatHeadDestruction>().SynchronizeTissue(actor, captureImmediately: false);
+            HeadEffects.SynchronizeTissue(actor, captureImmediately: false);
             HeadSynchronizationTicks += System.Diagnostics.Stopwatch.GetTimestamp() - stageStart;
             if (!body.Active)
             {
@@ -389,7 +412,8 @@ namespace BarPromenade
             {
                 var region = (BodyDamageRegion)r;
                 if (actor.BodyDamage.IsAttached(region) || !body.Detached.Add(region)) continue;
-                var selected = new List<Piece>();
+                List<Piece> selected = body.RetainedScratch;
+                selected.Clear();
                 foreach (Piece piece in body.Regions[r])
                     if (piece.Eligible && !piece.Emitted &&
                         (piece.Bone || actor.BodyDamage.TissueLoss(region, piece.Patch) < 1f)) selected.Add(piece);
@@ -398,7 +422,7 @@ namespace BarPromenade
                 if (actor.BodyDamage.IsAttached(parent) && body.Bones.TryGetValue(parent, out Transform retained) &&
                     body.Bones.TryGetValue(region, out Transform cut))
                 {
-                    GetComponent<CombatBloodEffects>()?.SetBodyBleedSource(actor, region, retained, cut.position,
+                    BloodEffects?.SetBodyBleedSource(actor, region, retained, cut.position,
                         (cut.position - retained.position).normalized);
                     if (CombatBodyDamageState.IsTorso(parent))
                         foreach (Piece piece in body.Regions[(int)parent]) piece.Torso?.Apply(cut.position, .065f, .35f);
@@ -411,8 +435,8 @@ namespace BarPromenade
                 {
                     var region = (BodyDamageRegion)r;
                     if (CombatBodyDamageState.IsTorso(region) || actor.BodyDamage.TissueLoss(region, p) < 1f) continue;
-                    var retained = new List<Piece>();
-                    var released = new List<Piece>();
+                    List<Piece> retained = body.RetainedScratch, released = body.ReleasedScratch;
+                    retained.Clear(); released.Clear();
                     foreach (Piece piece in body.Regions[r])
                     {
                         if (piece.Patch != p || piece.Bone || !piece.Eligible || piece.Debris) continue;
@@ -451,8 +475,9 @@ namespace BarPromenade
                 if (created) CreateProxy(body, piece, !piece.Emitted);
                 if (piece.Proxy != null)
                 {
+                    if (!created && collides && (!piece.Proxy.enabled || piece.Torso != null))
+                        UpdateProxyBounds(piece, !piece.Emitted);
                     SetColliderEnabled(piece.Proxy, collides);
-                    if (!created && collides && piece.Torso != null) UpdateProxyBounds(piece, !piece.Emitted);
                 }
             }
             SurfaceVisibilityTicks += System.Diagnostics.Stopwatch.GetTimestamp() - stageStart;
@@ -507,9 +532,62 @@ namespace BarPromenade
             piece.ProxyMesh.GetVertices(vertices);
             int[] indices = piece.ProxyGeometry.ActiveIndices;
             if (indices.Length == 0) { SetColliderEnabled(piece.Proxy, false); return; }
+            if (piece.ProxyGeometry.TryNativeBounds(vertices, indices, matrix, minimum,
+                out Vector3 centre, out Vector3 size, out bool burst))
+            {
+                ProxyNativeBoundsFolds++;
+                if (burst) ProxyBurstBoundsFolds++;
+                SetColliderBounds(piece.Proxy, centre, size);
+                return;
+            }
             Bounds bounds = new Bounds(matrix.MultiplyPoint3x4(vertices[indices[0]]), Vector3.zero);
             foreach (int index in indices) bounds.Encapsulate(matrix.MultiplyPoint3x4(vertices[index]));
             SetColliderBounds(piece.Proxy, bounds.center, Vector3.Max(bounds.size, minimum));
+        }
+
+        internal readonly struct ProxyBoundsDiagnostic
+        {
+            internal readonly Vector3[] Vertices;
+            internal readonly int[] ActiveIndices, CachedActiveIndices;
+            internal readonly int IndexBuilds;
+            internal readonly Matrix4x4 Matrix;
+            internal readonly Vector3 Minimum, NativeCentre, NativeSize;
+            internal readonly bool ExecutedInBurst;
+
+            internal ProxyBoundsDiagnostic(Vector3[] vertices, int[] indices, int[] cachedIndices, int indexBuilds,
+                Matrix4x4 matrix, Vector3 minimum, Vector3 centre, Vector3 size, bool burst)
+            {
+                Vertices = vertices; ActiveIndices = indices; CachedActiveIndices = cachedIndices; IndexBuilds = indexBuilds;
+                Matrix = matrix; Minimum = minimum;
+                NativeCentre = centre; NativeSize = size; ExecutedInBurst = burst;
+            }
+        }
+
+        internal bool TryCaptureProxyBoundsForDiagnostics(CombatActor actor, BoxCollider proxy, out ProxyBoundsDiagnostic sample)
+        {
+            sample = default;
+            if (!PlayerScarfBodyContacts.NativeClothSupported || actor == null || proxy == null ||
+                !bodies.TryGetValue(actor, out Body body)) return false;
+            foreach (Piece piece in body.Pieces)
+            {
+                if (piece.Proxy != proxy || piece.ProxyGeometry == null || piece.Skin == null) continue;
+                var baked = new Mesh();
+                try
+                {
+                    piece.Skin.BakeMesh(baked, true);
+                    var vertices = new List<Vector3>(); baked.GetVertices(vertices);
+                    int[] indices = piece.Skin.sharedMesh.triangles;
+                    Matrix4x4 matrix = proxy.transform.parent.worldToLocalMatrix * piece.Skin.transform.localToWorldMatrix;
+                    Vector3 minimum = piece.ProxyGeometry.MinimumSize;
+                    if (!piece.ProxyGeometry.TryNativeBounds(vertices, indices, matrix, minimum,
+                        out Vector3 centre, out Vector3 size, out bool burst)) return false;
+                    sample = new ProxyBoundsDiagnostic(vertices.ToArray(), indices, piece.ProxyGeometry.ActiveIndices,
+                        piece.ProxyGeometry.ActiveIndexBuilds, matrix, minimum, centre, size, burst);
+                    return true;
+                }
+                finally { Destroy(baked); }
+            }
+            return false;
         }
 
         private static void SetColliderEnabled(Collider collider, bool enabled)
@@ -526,8 +604,11 @@ namespace BarPromenade
         {
             private readonly CombatBodyDestruction owner;
             private readonly Dictionary<Transform, Node> nodes = new Dictionary<Transform, Node>();
+            private readonly Dictionary<(Transform, Transform), ProxyGeometry.RelativePose> relativePoses =
+                new Dictionary<(Transform, Transform), ProxyGeometry.RelativePose>();
             private ulong pass;
             internal int Count => nodes.Count;
+            internal ulong Pass => pass;
 
             internal ProxyPoseSnapshot(CombatBodyDestruction owner) => this.owner = owner;
             internal void BeginPass() => pass++;
@@ -537,6 +618,14 @@ namespace BarPromenade
                 if (!nodes.TryGetValue(transform, out Node node))
                 { node = new Node(this, transform); nodes.Add(transform, node); }
                 return node;
+            }
+
+            internal ProxyGeometry.RelativePose RelativeFor(Transform source, Transform target)
+            {
+                var key = (source, target);
+                if (!relativePoses.TryGetValue(key, out ProxyGeometry.RelativePose pose) || !pose.MatchesHierarchy(source, target))
+                    relativePoses[key] = pose = new ProxyGeometry.RelativePose(source, target, this);
+                return pose;
             }
 
             internal sealed class Node
@@ -552,6 +641,7 @@ namespace BarPromenade
                 internal ulong PoseVersion { get; private set; }
                 internal ulong ScaleVersion { get; private set; }
                 internal ulong RotationVersion { get; private set; }
+                internal Transform Transform => transform;
 
                 internal Node(ProxyPoseSnapshot snapshot, Transform transform)
                 { this.snapshot = snapshot; this.transform = transform; }
@@ -584,11 +674,14 @@ namespace BarPromenade
             }
         }
 
-        internal sealed class ProxyGeometry
+        internal sealed class ProxyGeometry : IDisposable
         {
             internal readonly List<Vector3> Vertices = new List<Vector3>();
             internal int[] ActiveIndices { get; private set; } = Array.Empty<int>();
+            internal int ActiveIndexBuilds { get; private set; }
             private Mesh mesh;
+            private Mesh indicesMesh;
+            private int indicesTopologyBuilds;
             private Transform[] bones;
             private int[] influencedBones;
             private Matrix4x4[] relativeBones;
@@ -598,7 +691,76 @@ namespace BarPromenade
             private ScalePose targetScalePose, rendererScalePose;
             private uint geometryVersion;
             private bool captured;
+            private ProxyBoundsWork boundsWork;
             internal ProxyCacheInvalidation LastInvalidation { get; private set; }
+            internal Vector3 MinimumSize => minimumSize;
+
+            internal bool TryNativeBounds(List<Vector3> vertices, int[] indices, Matrix4x4 matrix, Vector3 minimum,
+                out Vector3 centre, out Vector3 size, out bool burst)
+            {
+                centre = size = default; burst = false;
+                if (!PlayerScarfBodyContacts.NativeClothSupported || indices.Length == 0) return false;
+                boundsWork ??= new ProxyBoundsWork();
+                return boundsWork.Run(vertices, indices, matrix, minimum, out centre, out size, out burst);
+            }
+
+            public void Dispose() { boundsWork?.Dispose(); boundsWork = null; }
+
+            private sealed class ProxyBoundsWork : IDisposable
+            {
+                private NativeArray<Vector3> vertices, result;
+                private NativeArray<int> indices;
+                private Vector3[] upload = Array.Empty<Vector3>();
+                private int[] uploadedIndices;
+
+                internal bool Run(List<Vector3> cloud, int[] corners, Matrix4x4 matrix, Vector3 minimum,
+                    out Vector3 centre, out Vector3 size, out bool burst)
+                {
+                    centre = size = default; burst = false;
+                    try
+                    {
+                        if (!vertices.IsCreated || vertices.Length < cloud.Count)
+                        {
+                            if (vertices.IsCreated) vertices.Dispose();
+                            vertices = new NativeArray<Vector3>(cloud.Count, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
+                            upload = new Vector3[cloud.Count];
+                        }
+                        if (!indices.IsCreated || indices.Length < corners.Length)
+                        {
+                            if (indices.IsCreated) indices.Dispose();
+                            indices = new NativeArray<int>(corners.Length, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
+                            uploadedIndices = null;
+                        }
+                        if (!result.IsCreated) result = new NativeArray<Vector3>(2, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
+                        cloud.CopyTo(upload);
+                        NativeArray<Vector3>.Copy(upload, 0, vertices, 0, cloud.Count);
+                        if (!ReferenceEquals(uploadedIndices, corners))
+                        {
+                            NativeArray<int>.Copy(corners, 0, indices, 0, corners.Length);
+                            uploadedIndices = corners;
+                        }
+                        var job = new CombatBodyProxyBoundsJob
+                        {
+                            Vertices = vertices, Indices = indices, Result = result, Matrix = matrix,
+                            MinimumSize = minimum, VertexCount = cloud.Count, IndexCount = corners.Length
+                        };
+                        CombatBodyProxyBoundsJob.RunSynchronous(ref job);
+                        if (job.Completed == 0) return false;
+                        centre = result[0]; size = result[1]; burst = job.ExecutedInBurst != 0;
+                        return true;
+                    }
+                    catch { Dispose(); throw; }
+                }
+
+                public void Dispose()
+                {
+                    if (vertices.IsCreated) vertices.Dispose();
+                    if (indices.IsCreated) indices.Dispose();
+                    if (result.IsCreated) result.Dispose();
+                    vertices = default; indices = default; result = default;
+                    upload = Array.Empty<Vector3>(); uploadedIndices = null;
+                }
+            }
 
             internal bool Capture(Piece piece, Transform target, out Matrix4x4 matrix, out Vector3 minimum)
             {
@@ -618,7 +780,7 @@ namespace BarPromenade
                     relativeBones = new Matrix4x4[used.Count]; blendWeights = new float[current.blendShapeCount];
                     relativePoses = new RelativePose[used.Count];
                     for (int i = 0; i < influencedBones.Length; i++)
-                        relativePoses[i] = new RelativePose(bones[influencedBones[i]], target, piece.ProxyPose);
+                        relativePoses[i] = piece.ProxyPose.RelativeFor(bones[influencedBones[i]], target);
                     captured = false;
                 }
                 matrix = default;
@@ -629,12 +791,21 @@ namespace BarPromenade
                     .003f / Mathf.Max(.000001f, Mathf.Abs(scale.y)), .003f / Mathf.Max(.000001f, Mathf.Abs(scale.z)));
                 bool rendererScaleChanged = rendererScalePose.Capture(out Vector3 currentRendererScale);
                 uint currentVersion = piece.GeometryVersion;
-                if (!captured || geometryVersion != currentVersion) ActiveIndices = current.triangles;
+                int currentTopologyBuilds = piece.Torso != null && piece.Torso.IsRenderingOwnedMesh ? piece.Torso.TopologyBuilds : 0;
+                bool topologyChanged = indicesMesh != current || indicesTopologyBuilds != currentTopologyBuilds;
+                if (topologyChanged)
+                {
+                    // Cloth/grip revisions move vertices without changing corner
+                    // order. Only erosion SetTriangles or mesh replacement can
+                    // change the active topology of these prepared partitions.
+                    ActiveIndices = current.triangles; ActiveIndexBuilds++;
+                    indicesMesh = current; indicesTopologyBuilds = currentTopologyBuilds;
+                }
                 // BakeMesh compensates its renderer's position/rotation. That
                 // conversion cancels when the baked points enter the proxy frame;
                 // a shared rigid actor move cannot change these local bounds.
                 ProxyCacheInvalidation invalidation = captured ? ProxyCacheInvalidation.None : ProxyCacheInvalidation.Initial;
-                if (geometryVersion != currentVersion) invalidation |= ProxyCacheInvalidation.Geometry;
+                if (geometryVersion != currentVersion || topologyChanged) invalidation |= ProxyCacheInvalidation.Geometry;
                 if (targetScaleChanged || !minimumSize.Equals(minimum)) invalidation |= ProxyCacheInvalidation.Minimum;
                 if (rendererScaleChanged || !rendererScale.Equals(currentRendererScale)) invalidation |= ProxyCacheInvalidation.RendererScale;
                 for (int i = 0; i < influencedBones.Length; i++)
@@ -714,21 +885,26 @@ namespace BarPromenade
                 }
             }
 
-            private sealed class RelativePose
+            internal sealed class RelativePose
             {
+                private readonly ProxyPoseSnapshot snapshot;
+                private readonly Transform common;
                 private readonly ProxyPoseSnapshot.Node[] sourcePath, targetPath;
                 private readonly ulong[] sourceVersions, targetVersions;
+                private ulong capturedPass;
                 private bool captured;
                 private Matrix4x4 relative;
 
                 internal RelativePose(Transform source, Transform target, ProxyPoseSnapshot snapshot)
                 {
+                    this.snapshot = snapshot;
                     var ancestors = new HashSet<Transform>();
                     for (Transform current = target; current != null; current = current.parent) ancestors.Add(current);
                     var path = new List<Transform>();
                     Transform common = source;
                     while (common != null && !ancestors.Contains(common))
                     { path.Add(common); common = common.parent; }
+                    this.common = common;
                     sourcePath = new ProxyPoseSnapshot.Node[path.Count];
                     for (int i = 0; i < path.Count; i++) sourcePath[i] = snapshot.Register(path[i]);
                     sourceVersions = new ulong[sourcePath.Length]; path.Clear();
@@ -740,13 +916,28 @@ namespace BarPromenade
 
                 internal Matrix4x4 Capture()
                 {
+                    if (captured && capturedPass == snapshot.Pass) return relative;
                     // Compose beneath the common ancestor. World-space matrix
                     // inversion would introduce false pose changes on root motion.
                     bool changed = CapturePath(sourcePath, sourceVersions) | CapturePath(targetPath, targetVersions);
+                    capturedPass = snapshot.Pass;
                     if (captured && !changed) return relative;
                     Matrix4x4 source = Compose(sourcePath);
                     relative = targetPath.Length == 0 ? source : Compose(targetPath).inverse * source;
                     captured = true; return relative;
+                }
+
+                internal bool MatchesHierarchy(Transform source, Transform target) =>
+                    MatchesPath(source, sourcePath) && MatchesPath(target, targetPath);
+
+                private bool MatchesPath(Transform current, ProxyPoseSnapshot.Node[] path)
+                {
+                    foreach (ProxyPoseSnapshot.Node node in path)
+                    {
+                        if (current != node.Transform) return false;
+                        current = current.parent;
+                    }
+                    return current == common;
                 }
 
                 private static bool CapturePath(ProxyPoseSnapshot.Node[] path, ulong[] versions)
@@ -916,10 +1107,10 @@ namespace BarPromenade
                         if (created) CreateProxy(body, piece, surfaceRefreshed);
                         if (piece.Proxy != null)
                         {
-                            SetColliderEnabled(piece.Proxy, collides);
-                            if (!created && collides && (piece.Torso != null ||
+                            if (!created && collides && (!piece.Proxy.enabled || piece.Torso != null ||
                                 (piece.Region is BodyDamageRegion.LeftHand or BodyDamageRegion.RightHand) &&
                                 piece.Skin.sharedMesh.blendShapeCount > 0)) UpdateProxyBounds(piece, surfaceRefreshed);
+                            SetColliderEnabled(piece.Proxy, collides);
                         }
                     }
                 }
@@ -947,7 +1138,11 @@ namespace BarPromenade
             fragment.Frozen = value;
         }
         private void LateUpdate()
-        { foreach (Body body in bodies.Values) if (body.Active) foreach (SkinnedMeshRenderer original in body.Replaced) original.enabled = false; }
+        {
+            foreach (Body body in bodies.Values) if (body.Active)
+                foreach (SkinnedMeshRenderer original in body.Replaced)
+                    if (original.enabled) original.enabled = false;
+        }
 
         public void ResetActor(CombatActor actor)
         {
@@ -979,6 +1174,7 @@ namespace BarPromenade
                 {
                     if (piece.Baked != null) Destroy(piece.Baked);
                     if (piece.ProxyMesh != null) Destroy(piece.ProxyMesh);
+                    piece.ProxyGeometry?.Dispose();
                     piece.Torso?.Dispose();
                     piece.Deformation?.Dispose();
                     if (piece.Skin != null) Destroy(piece.Skin.gameObject);

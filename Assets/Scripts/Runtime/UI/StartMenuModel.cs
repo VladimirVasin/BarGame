@@ -21,7 +21,7 @@ namespace BarPromenade
         ChooseCombatWeapon = 6
     }
 
-    public enum CombatPreparationOption { Crowbar, Pistol, Shotgun, Start, Back, Count }
+    public enum CombatPreparationOption { Crowbar, Shotgun, Pistol, Secondary, Start, Back, Count }
 
     /// <summary>
     /// The launch card and its location and weapon pickers. Committing is one-shot: the
@@ -36,7 +36,8 @@ namespace BarPromenade
         public bool IsChoosingLocation { get; private set; }
         public bool IsChoosingCombatWeapon { get; private set; }
         public NewGameLocation SelectedLocation { get; private set; }
-        public CombatWeaponId SelectedCombatWeapon { get; private set; }
+        public CombatLoadoutSelection SelectedCombatLoadout { get; private set; }
+        public CombatWeaponId SelectedCombatWeapon => SelectedCombatLoadout.InitialHeld;
         public CombatPreparationOption SelectedCombatOption { get; private set; }
         public bool IsBackSelected => IsChoosingLocation && SelectedLocation == NewGameLocation.Count ||
             IsChoosingCombatWeapon && SelectedCombatOption == CombatPreparationOption.Back;
@@ -48,19 +49,20 @@ namespace BarPromenade
             IsChoosingLocation = false;
             IsChoosingCombatWeapon = false;
             SelectedLocation = NewGameLocation.AlpineVillage;
-            SelectedCombatWeapon = CombatWeaponId.Crowbar;
+            SelectedCombatLoadout = CombatLoadoutSelection.Default;
             SelectedCombatOption = CombatPreparationOption.Crowbar;
         }
 
         public void OpenCombatPreparation(CombatWeaponId weapon)
+            => OpenCombatPreparation(CombatLoadoutSelection.FromLegacyWeapon(weapon));
+
+        public void OpenCombatPreparation(CombatLoadoutSelection loadout)
         {
-            if (weapon != CombatWeaponId.Crowbar && weapon != CombatWeaponId.Pistol && weapon != CombatWeaponId.Shotgun)
-                throw new ArgumentOutOfRangeException(nameof(weapon));
             Open();
             SelectedOption = StartMenuOption.CombatTest;
             IsChoosingCombatWeapon = true;
-            SelectedCombatWeapon = weapon;
-            SelectedCombatOption = weapon switch
+            SelectedCombatLoadout = loadout;
+            SelectedCombatOption = loadout.InitialHeld switch
             {
                 CombatWeaponId.Pistol => CombatPreparationOption.Pistol,
                 CombatWeaponId.Shotgun => CombatPreparationOption.Shotgun,
@@ -86,7 +88,7 @@ namespace BarPromenade
             }
 
             if (IsChoosingLocation) SelectedLocation = (NewGameLocation)next;
-            else if (IsChoosingCombatWeapon) SelectCombatOption((CombatPreparationOption)next);
+            else if (IsChoosingCombatWeapon) FocusCombatOption((CombatPreparationOption)next);
             else SelectedOption = (StartMenuOption)next;
             return true;
         }
@@ -124,11 +126,27 @@ namespace BarPromenade
         public bool SelectCombatOption(CombatPreparationOption option)
         {
             if (IsCommitted || !IsChoosingCombatWeapon || option < CombatPreparationOption.Crowbar ||
+                option >= CombatPreparationOption.Count) return false;
+            CombatPreparationOption previousOption = SelectedCombatOption;
+            CombatLoadoutSelection previousLoadout = SelectedCombatLoadout;
+            SelectedCombatOption = option;
+            if (option == CombatPreparationOption.Crowbar)
+                SelectedCombatLoadout = SelectedCombatLoadout.WithSecondary(CombatWeaponId.Crowbar);
+            else if (option == CombatPreparationOption.Shotgun)
+                SelectedCombatLoadout = SelectedCombatLoadout.WithSecondary(CombatWeaponId.Shotgun);
+            else if (option == CombatPreparationOption.Pistol)
+                SelectedCombatLoadout = SelectedCombatLoadout.WithInitialHeld(CombatWeaponId.Pistol);
+            else if (option == CombatPreparationOption.Secondary)
+                SelectedCombatLoadout = SelectedCombatLoadout.WithInitialHeld(SelectedCombatLoadout.Secondary);
+            return previousOption != option || previousLoadout != SelectedCombatLoadout;
+        }
+
+        /// <summary>Navigation highlights a row without silently changing either radio choice.</summary>
+        public bool FocusCombatOption(CombatPreparationOption option)
+        {
+            if (IsCommitted || !IsChoosingCombatWeapon || option < CombatPreparationOption.Crowbar ||
                 option >= CombatPreparationOption.Count || option == SelectedCombatOption) return false;
             SelectedCombatOption = option;
-            if (option == CombatPreparationOption.Crowbar) SelectedCombatWeapon = CombatWeaponId.Crowbar;
-            else if (option == CombatPreparationOption.Pistol) SelectedCombatWeapon = CombatWeaponId.Pistol;
-            else if (option == CombatPreparationOption.Shotgun) SelectedCombatWeapon = CombatWeaponId.Shotgun;
             return true;
         }
 
@@ -168,7 +186,10 @@ namespace BarPromenade
                     return StartMenuAction.Back;
                 }
                 if (SelectedCombatOption != CombatPreparationOption.Start)
+                {
+                    SelectCombatOption(SelectedCombatOption);
                     return StartMenuAction.ChooseCombatWeapon;
+                }
                 IsCommitted = true;
                 return StartMenuAction.CombatTest;
             }
@@ -180,7 +201,7 @@ namespace BarPromenade
                     SelectedLocation = NewGameLocation.AlpineVillage;
                     return StartMenuAction.ChooseLocation;
                 case StartMenuOption.CombatTest:
-                    OpenCombatPreparation(SelectedCombatWeapon);
+                    OpenCombatPreparation(SelectedCombatLoadout);
                     return StartMenuAction.ChooseCombatWeapon;
                 case StartMenuOption.Quit:
                     IsCommitted = true;

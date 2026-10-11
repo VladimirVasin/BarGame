@@ -13,9 +13,7 @@ namespace BarPromenade
         private readonly int clothSurface = -1;
         private readonly int[] indicesA, indicesB, indicesC;
         private readonly Vector4[] barycentric;
-        private readonly List<Vector3> sourceVertices = new List<Vector3>();
-        private readonly List<Vector3> sourceNormals = new List<Vector3>();
-        private readonly List<Vector4> sourceTangents = new List<Vector4>();
+        private readonly SourceSnapshot snapshot;
         private readonly bool normalMapped;
         private Vector3[] vertices, normals;
         private Vector4[] tangents;
@@ -27,9 +25,13 @@ namespace BarPromenade
         internal uint GeometryVersion { get; private set; }
 
         internal CombatBodySourceDeformation(Mesh template, SkinnedMeshRenderer source)
+            : this(template, source, new SourceSnapshot()) { }
+
+        internal CombatBodySourceDeformation(Mesh template, SkinnedMeshRenderer source, SourceSnapshot snapshot)
         {
             this.template = template != null ? template : throw new ArgumentNullException(nameof(template));
             this.source = source != null ? source : throw new ArgumentNullException(nameof(source));
+            this.snapshot = snapshot ?? throw new ArgumentNullException(nameof(snapshot));
             normalMapped = source.sharedMaterial != null && source.sharedMaterial.IsKeywordEnabled("_NORMALMAP");
             var data = new List<Vector4>(); template.GetUVs(2, data);
             indicesA = new int[data.Count]; indicesB = new int[data.Count]; indicesC = new int[data.Count];
@@ -62,7 +64,11 @@ namespace BarPromenade
             Mesh rendered = renderer.sharedMesh;
             int shapeCount = Mathf.Min(current.blendShapeCount, rendered != null ? rendered.blendShapeCount : 0);
             for (int shape = 0; shape < shapeCount; shape++)
-                renderer.SetBlendShapeWeight(shape, source.GetBlendShapeWeight(shape));
+            {
+                float weight = source.GetBlendShapeWeight(shape);
+                if (renderer.GetBlendShapeWeight(shape) != weight)
+                    renderer.SetBlendShapeWeight(shape, weight);
+            }
             bool mutable = IsMutableSource;
             if (!mutable && owned == null) return;
             uint sourceVersion = mutable ? cloth.SurfaceGeometryVersion(clothSurface) : 0u;
@@ -85,8 +91,9 @@ namespace BarPromenade
                 vertices = new Vector3[template.vertexCount]; normals = new Vector3[template.vertexCount];
                 if (normalMapped) tangents = new Vector4[template.vertexCount];
             }
-            current.GetVertices(sourceVertices); current.GetNormals(sourceNormals);
-            if (normalMapped) current.GetTangents(sourceTangents);
+            snapshot.Capture(current, sourceVersion, normalMapped);
+            List<Vector3> sourceVertices = snapshot.Vertices, sourceNormals = snapshot.Normals;
+            List<Vector4> sourceTangents = snapshot.Tangents;
             if (sourceNormals.Count != sourceVertices.Count)
                 throw new InvalidOperationException("Production cloth source lacks vertex normals: " + current.name);
             for (int i = 0; i < vertices.Length; i++)
@@ -116,6 +123,33 @@ namespace BarPromenade
             unchecked { GeometryVersion++; }
             renderer.sharedMesh = owned;
             renderer.localBounds = source.localBounds;
+        }
+
+        // Every partition of one production renderer consumes the same exact
+        // cloth write. Copy its full mesh once, rather than once per partition.
+        // Mesh identity and the cloth's write revision also cover two writes in
+        // one frame and switching between authored and deformed wardrobe meshes.
+        internal sealed class SourceSnapshot
+        {
+            internal readonly List<Vector3> Vertices = new List<Vector3>();
+            internal readonly List<Vector3> Normals = new List<Vector3>();
+            internal readonly List<Vector4> Tangents = new List<Vector4>();
+            internal int CaptureCount { get; private set; }
+            private Mesh mesh;
+            private uint version;
+            private bool tangentsCaptured;
+
+            internal void Capture(Mesh current, uint currentVersion, bool requireTangents)
+            {
+                if (mesh != current || version != currentVersion)
+                {
+                    current.GetVertices(Vertices); current.GetNormals(Normals);
+                    mesh = current; version = currentVersion; tangentsCaptured = false;
+                    CaptureCount++;
+                }
+                if (requireTangents && !tangentsCaptured)
+                { current.GetTangents(Tangents); tangentsCaptured = true; }
+            }
         }
 
         public void Dispose()

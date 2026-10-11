@@ -101,7 +101,7 @@ namespace BarPromenade
         public bool ReturnToWeapons()
         {
             if (!IsInitialized || !GameInput.CanRead(GameInputContext.Gameplay)) return false;
-            return CombatTestStartService.ReturnToPreparation(HeroWeapon);
+            return CombatTestStartService.ReturnToPreparation(LoadoutSelection);
         }
 
         private bool UpdatePistolInput(bool held)

@@ -1,4 +1,3 @@
-using System;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -6,41 +5,47 @@ namespace BarPromenade
 {
     public static class CombatTestStartService
     {
-        private static CombatWeaponId pendingWeapon;
-        private static bool hasPendingWeapon;
-        private static CombatWeaponId preparationWeapon;
+        private static CombatLoadoutSelection pendingLoadout;
+        private static bool hasPendingLoadout;
+        private static CombatLoadoutSelection preparationLoadout;
         private static bool hasPreparation;
 
         public static bool TryStart(CombatWeaponId weapon = CombatWeaponId.Crowbar)
+            => TryStart(CombatLoadoutSelection.FromLegacyWeapon(weapon));
+
+        public static bool TryStart(CombatLoadoutSelection loadout)
         {
-            ValidateWeapon(weapon);
             if (SceneManager.GetActiveScene().name != SceneIds.MainMenu ||
                 SceneTransitionService.IsTransitioning || !Application.CanStreamedLevelBeLoaded(SceneIds.CombatTest))
                 return false;
             // Do not start the narrative calendar or its scheduled events.
             GameSessionState.BeginNewGame("combat_test_start");
-            pendingWeapon = weapon;
-            hasPendingWeapon = true;
+            pendingLoadout = loadout;
+            hasPendingLoadout = true;
             if (SceneTransitionService.RequestLoad(SceneIds.CombatTest)) return true;
-            hasPendingWeapon = false;
+            hasPendingLoadout = false;
             return false;
         }
 
-        /// <summary>One scene consumes the launch choice. Direct scene loads retain the crowbar default.</summary>
-        public static CombatWeaponId ConsumeWeapon()
+        /// <summary>One scene consumes both choices atomically. Direct loads use the default complete kit.</summary>
+        public static CombatLoadoutSelection ConsumeLoadout()
         {
-            CombatWeaponId weapon = hasPendingWeapon ? pendingWeapon : CombatWeaponId.Crowbar;
-            hasPendingWeapon = false;
-            return weapon;
+            CombatLoadoutSelection loadout = hasPendingLoadout ? pendingLoadout : CombatLoadoutSelection.Default;
+            hasPendingLoadout = false;
+            return loadout;
         }
 
+        public static CombatWeaponId ConsumeWeapon() => ConsumeLoadout().InitialHeld;
+
         public static bool ReturnToPreparation(CombatWeaponId weapon)
+            => ReturnToPreparation(CombatLoadoutSelection.FromLegacyWeapon(weapon));
+
+        public static bool ReturnToPreparation(CombatLoadoutSelection loadout)
         {
-            ValidateWeapon(weapon);
             if (SceneManager.GetActiveScene().name != SceneIds.CombatTest ||
                 SceneTransitionService.IsTransitioning || !Application.CanStreamedLevelBeLoaded(SceneIds.MainMenu))
                 return false;
-            preparationWeapon = weapon;
+            preparationLoadout = loadout;
             hasPreparation = true;
             if (SceneTransitionService.RequestLoad(SceneIds.MainMenu)) return true;
             hasPreparation = false;
@@ -49,23 +54,24 @@ namespace BarPromenade
 
         public static bool TryConsumePreparation(out CombatWeaponId weapon)
         {
-            weapon = hasPreparation ? preparationWeapon : CombatWeaponId.Crowbar;
+            bool pending = TryConsumePreparationLoadout(out CombatLoadoutSelection loadout);
+            weapon = loadout.InitialHeld;
+            return pending;
+        }
+
+        public static bool TryConsumePreparationLoadout(out CombatLoadoutSelection loadout)
+        {
+            loadout = hasPreparation ? preparationLoadout : CombatLoadoutSelection.Default;
             bool pending = hasPreparation;
             hasPreparation = false;
             return pending;
         }
 
-        private static void ValidateWeapon(CombatWeaponId weapon)
-        {
-            if (weapon != CombatWeaponId.Crowbar && weapon != CombatWeaponId.Pistol && weapon != CombatWeaponId.Shotgun)
-                throw new ArgumentOutOfRangeException(nameof(weapon));
-        }
-
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void Reset()
         {
-            pendingWeapon = preparationWeapon = CombatWeaponId.Crowbar;
-            hasPendingWeapon = hasPreparation = false;
+            pendingLoadout = preparationLoadout = CombatLoadoutSelection.Default;
+            hasPendingLoadout = hasPreparation = false;
         }
     }
 }
