@@ -197,6 +197,17 @@ namespace BarPromenade
             poseBlendAfterFrame = Time.frameCount + 1;
         }
 
+        internal void RetireDefeatedOpponent()
+        {
+            if (IsHero || !State.IsDefeated)
+                throw new InvalidOperationException("Only a defeated opponent can return to the encounter pool.");
+            // Dropped props live beside the actor. Restore ownership while the
+            // hierarchy is active; OnDisable deliberately cannot reparent them.
+            ReturnWeaponToRightHand();
+            RestoreWeapon();
+            gameObject.SetActive(false);
+        }
+
         private void PrepareWeaponPhysics()
         {
             weaponGrip = Weapon.transform.parent;

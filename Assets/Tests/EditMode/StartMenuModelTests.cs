@@ -245,7 +245,8 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(model.IsCommitted, Is.False);
             Assert.That(model.MoveSelection(1), Is.True);
             Assert.That(model.SelectedCombatOption, Is.EqualTo(CombatPreparationOption.OpponentLimit));
-            Assert.That(model.SelectedCombatEncounterSettings.MaximumLiveOpponents, Is.EqualTo(5));
+            Assert.That(model.SelectedCombatEncounterSettings.MaximumLiveOpponents,
+                Is.EqualTo(CombatEncounterSettings.DefaultMaximumLiveOpponents));
             Assert.That(model.MoveSelection(1), Is.True);
             Assert.That(model.SelectedCombatOption, Is.EqualTo(CombatPreparationOption.Start));
             if (confirmBack)
@@ -328,9 +329,17 @@ namespace BarPromenade.Tests.EditMode
             var model = new StartMenuModel();
             model.OpenCombatPreparation(new CombatTestSelection(CombatLoadoutSelection.Default, CombatTestMode.Endless));
             model.FocusCombatOption(CombatPreparationOption.OpponentLimit);
-            Assert.That(model.SelectedCombatEncounterSettings.MaximumLiveOpponents, Is.EqualTo(5),
+            Assert.That(model.SelectedCombatEncounterSettings.MaximumLiveOpponents,
+                Is.EqualTo(CombatEncounterSettings.DefaultMaximumLiveOpponents),
                 "Focus does not change the selected capacity.");
             Assert.That(model.Confirm(), Is.EqualTo(StartMenuAction.ChooseCombatWeapon));
+            Assert.That(model.SelectedCombatEncounterSettings.MaximumLiveOpponents, Is.EqualTo(3));
+            for (int expectedCapacity = 4; expectedCapacity <= CombatEncounterSettings.OpponentCapacity; expectedCapacity++)
+            {
+                model.Confirm();
+                Assert.That(model.SelectedCombatEncounterSettings.MaximumLiveOpponents, Is.EqualTo(expectedCapacity));
+            }
+            model.Confirm();
             Assert.That(model.SelectedCombatEncounterSettings.MaximumLiveOpponents, Is.EqualTo(1));
             model.Confirm();
             model.Confirm();

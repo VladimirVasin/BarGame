@@ -42,10 +42,12 @@ namespace BarPromenade
             {
                 if (!slot.Spawned || slot.DefeatCounted || !slot.Actor.State.IsDefeated) continue;
                 slot.DefeatCounted = true;
+                slot.DefeatOrder = ++opponentDefeatOrder;
                 defeated++;
                 duelJournal?.Record("endless_kill", actor: slot.Actor.JournalActorId,
                     f0: GameLog.Field("generation", slot.Generation));
             }
+            EnforceCorpseLimit();
             bool finished = endless.IsFinished;
             int live = LiveOpponentCount;
             endless.Observe(Hero.State.IsDefeated, live, defeated);
@@ -70,8 +72,7 @@ namespace BarPromenade
             foreach (OpponentSlot slot in opponentSlots)
                 if (!slot.Spawned) { available = slot; break; }
             if (available == null)
-                foreach (OpponentSlot slot in opponentSlots)
-                    if (slot.DefeatCounted) { available = slot; break; }
+                available = OldestOpponentCorpse();
             if (available == null) { endless.DeferSpawn(); return false; }
             long started = System.Diagnostics.Stopwatch.GetTimestamp();
             bool found;
@@ -82,8 +83,12 @@ namespace BarPromenade
             { endless.DeferSpawn(); return false; }
 
             CombatActor actor = available.Actor;
-            pistolProjectiles?.RetireActorContacts(actor);
-            shotgunProjectiles?.RetireActorContacts(actor);
+            if (available.Spawned) RetireOpponentCorpse(available, "reuse");
+            else
+            {
+                pistolProjectiles?.RetireActorContacts(actor);
+                shotgunProjectiles?.RetireActorContacts(actor);
+            }
             started = System.Diagnostics.Stopwatch.GetTimestamp();
             using (SpawnActivationMarker.Auto()) actor.gameObject.SetActive(true);
             LastSpawnActivationTicks = System.Diagnostics.Stopwatch.GetTimestamp() - started;
@@ -93,6 +98,7 @@ namespace BarPromenade
             LastSpawnResetTicks = System.Diagnostics.Stopwatch.GetTimestamp() - started;
             available.Spawned = true;
             available.DefeatCounted = false;
+            available.DefeatOrder = 0;
             available.Generation++;
             ResetOpponentDecisions(actor, available.Ai);
             Physics.SyncTransforms();
@@ -110,7 +116,8 @@ namespace BarPromenade
                 f2: GameLog.Field("search_ms", LastSpawnSearchTicks * JournalMillisecondsPerTick),
                 f3: GameLog.Field("activation_ms", LastSpawnActivationTicks * JournalMillisecondsPerTick),
                 f4: GameLog.Field("reset_ms", LastSpawnResetTicks * JournalMillisecondsPerTick),
-                f5: GameLog.Field("animation_graph_builds", actor.NpcAnimationGraphBuilds));
+                f5: GameLog.Field("animation_graph_builds", actor.NpcAnimationGraphBuilds),
+                f6: GameLog.Field("corpses", CorpseCount));
             return true;
         }
 

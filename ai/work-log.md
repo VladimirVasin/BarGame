@@ -3,7 +3,7 @@
 Newest outcomes/checks first. Archive whole dates at budget: [policy](README.md).
 Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-2026-08.md).
 
-## 2026-10-13 — Bounded world presentation costs
+## 2026-10-13 — Bounded world and combat population
 
 - City litter now shares a finite root-owned material palette without MPBs;
   dormant roots retain it and teardown leaves other palettes/defaults alive.
@@ -19,6 +19,11 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
   later queries reuse the allocation.
 - Three ordinary port albedos use Windows BC7 at the existing resolution/mips/
   sampling. Actual imported resources are checked, not only requested settings.
+- Endless defaults to two live opponents; the shared pool still permits five.
+  A separate corpse cap retires oldest deaths, including dropped props and
+  actor-owned damage/physics, without clearing survivors or unrelated flights.
+  The linked DuelJournal analysis supports a conservative default, not a
+  hardware maximum or an FPS gain; general debug logs contain no frame timings.
 - User made optimization a permanent design constraint for future work.
   `AGENTS.md` owns the rules; `AI.md` exposes them each session. Behavior/canon
   and FAST scope remain binding; comparable measurements distinguish gains
@@ -27,6 +32,8 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
   `RenderedLitter_SharesItsPaletteWithoutBlocksAndReleasesOnlyItsOwnMaterials`,
   `ForestChunks_PreserveGeometryWindBoundsShadowsAndOnePhysicalCollider`,
   `AreaCaptureFixture.WorldPerformance`, `check-docs.py`, `git diff --check`.
+  `Range_EndlessPopulationSpawnsGraduallyPreservesSurvivorsAndStopsOnExit`
+  proves corpse order/cleanup, pacing, refill, reset and exit; frame reviewed.
   City/forest frames and nearby hair return reviewed; worker frame selection
   checks visible coworker bounds as well as physics occlusion.
   Optional woman CPU capture distinguishes unmeasured iteration fields.

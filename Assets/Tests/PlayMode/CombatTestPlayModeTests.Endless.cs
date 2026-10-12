@@ -40,6 +40,9 @@ namespace BarPromenade.Tests.PlayMode
             root.SetSparring(false);
             Assert.That(root.Sparring, Is.True);
             Assert.That(root.LiveOpponentCount, Is.Zero, "The first opponent is delayed too.");
+            Assert.That(CombatEncounterSettings.Default.MaximumLiveOpponents, Is.EqualTo(2));
+            Assert.That(root.EncounterSettings.MaximumCorpses, Is.EqualTo(2));
+            Assert.That(root.CorpseCount, Is.Zero);
             Assert.That(root.Opponents.Count, Is.EqualTo(5));
             Assert.That(root.CameraFollow.TargetLockActive, Is.False, "There is no invisible target before arrival.");
             for (int index = 0; index < root.Opponents.Count; index++)
@@ -117,6 +120,7 @@ namespace BarPromenade.Tests.PlayMode
             root.Tick(0f);
             Assert.That(root.EndlessKills, Is.EqualTo(1));
             Assert.That(root.LiveOpponentCount, Is.EqualTo(4));
+            Assert.That(root.CorpseCount, Is.EqualTo(1));
             Assert.That(root.WaitingForNextOpponent, Is.True);
             Assert.That(root.RoundFinished || root.EndlessRunFinished, Is.False);
             Assert.That(root.Taunt.CanInteract(root.Player.Interactor), Is.False);
@@ -128,6 +132,7 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(root.Projectiles.TrySpawn(hero, new Vector3(-4f, 8f, -4f), Vector3.up, 20), Is.True);
             root.Tick(.35f);
             Assert.That(root.LiveOpponentCount, Is.EqualTo(5));
+            Assert.That(root.CorpseCount, Is.Zero, "Reusing the shared pool frees the old corpse place.");
             Assert.That(root.EndlessKills, Is.EqualTo(1), "The same defeated participant is credited only once.");
             Assert.That(defeated.State.IsDefeated || defeated.IsRagdollActive || defeated.IsWeaponDropped, Is.False);
             Assert.That(defeated.Weapon, Is.SameAs(defeatedWeapon));
@@ -144,11 +149,45 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(pistol.Rounds, Is.EqualTo(pistol.Settings.MagazineCapacity - 1));
             Assert.That(shotgun.Rounds, Is.EqualTo(shotgun.Settings.MagazineCapacity - 1));
 
+            // Defeat in reverse pool order: the oldest death, rather than the
+            // lowest actor index, must release its body, detached head and prop.
+            CombatActor oldestCorpse = root.Opponents[4];
+            GameObject droppedProp = oldestCorpse.Weapon;
+            for (int index = 4; index >= 2; index--)
+            {
+                CombatActor victim = root.Opponents[index];
+                QueueEndlessHeadshot(hero, victim, 30 + index);
+                root.Projectiles.Advance(CombatTestRoot.SimulationStep, participants);
+                root.Projectiles.ApplyContacts();
+                Assert.That(victim.IsRagdollActive && victim.IsWeaponDropped, Is.True);
+                root.Tick(0f);
+                Assert.That(root.CorpseCount, Is.EqualTo(Mathf.Min(5 - index, settings.MaximumCorpses)));
+                Assert.That(root.LiveOpponentCount, Is.EqualTo(index));
+                Assert.That(root.EndlessKills, Is.EqualTo(6 - index));
+            }
+            Assert.That(oldestCorpse.gameObject.activeInHierarchy, Is.False);
+            Assert.That(oldestCorpse.IsRagdollActive || oldestCorpse.IsWeaponDropped, Is.False);
+            Assert.That(droppedProp.activeInHierarchy, Is.False, "A detached dropped prop must retire with its owner.");
+            Assert.That(droppedProp.transform.IsChildOf(oldestCorpse.transform), Is.True);
+            Assert.That(root.HeadEffects.DetachedSectorCountFor(oldestCorpse), Is.Zero);
+            Assert.That(root.Opponents[2].gameObject.activeInHierarchy && root.Opponents[3].gameObject.activeInHierarchy, Is.True,
+                "The newest two corpses stay in the world.");
+            Assert.That(root.Projectiles.ActiveCount, Is.GreaterThan(0), "Corpse cleanup cannot erase an unrelated flight.");
+            Assert.That(survivor.State.Health, Is.EqualTo(survivorHealth).Within(.0001f));
+            Assert.That(survivor.BodyDamage.TissueLoss(BodyDamageRegion.LeftForearm, 0), Is.EqualTo(survivorTrauma));
+            AssertEndlessPreparedAnimationGraphs();
+            root.Tick(0f);
+            Assert.That(root.EndlessKills, Is.EqualTo(4), "Retired corpses cannot be credited a second time.");
+            yield return CaptureEndlessPopulationGameView("endless-corpses-ru");
+
             // Clearing every live place opens the separate supply transaction;
             // this observation neither resets the surviving rig nor its flights.
             foreach (CombatActor actor in root.Opponents) actor.State.ReceiveProjectileHit(actor.State.Settings.MaxHealth);
-            root.Tick(CombatTestRoot.SimulationStep);
+            // The preceding real headshots still own their twelve-substep hold;
+            // supply commits only once active simulation resumes after it.
+            root.Tick(13f * CombatTestRoot.SimulationStep);
             Assert.That(root.LiveOpponentCount, Is.Zero);
+            Assert.That(root.CorpseCount, Is.EqualTo(settings.MaximumCorpses));
             Assert.That(root.EndlessKills, Is.EqualTo(6));
             AssertEndlessAmmunition(pistol, pistolSequence);
             AssertEndlessAmmunition(shotgun, shotgunSequence);
@@ -168,6 +207,7 @@ namespace BarPromenade.Tests.PlayMode
             AssertEndlessPreparedAnimationGraphs();
             Assert.That(root.EndlessKills, Is.Zero);
             Assert.That(root.LiveOpponentCount, Is.Zero);
+            Assert.That(root.CorpseCount, Is.Zero, "Reset releases every retained body.");
             Assert.That(root.WaitingForNextOpponent, Is.True);
             Assert.That(hero.State.Health, Is.EqualTo(hero.State.Settings.MaxHealth));
             Assert.That(hero.BodyDamage.TissueLoss(BodyDamageRegion.LeftForearm, 0), Is.Zero);
@@ -750,7 +790,7 @@ namespace BarPromenade.Tests.PlayMode
             foreach (CombatActor actor in root.Opponents) actor.CaptureContactPose();
         }
 
-        private IEnumerator CaptureEndlessPopulationGameView()
+        private IEnumerator CaptureEndlessPopulationGameView(string name = "endless-population-ru")
         {
             Camera camera = root.CameraFollow.Camera;
             bool following = root.CameraFollow.enabled;
@@ -766,7 +806,7 @@ namespace BarPromenade.Tests.PlayMode
                 camera.transform.SetPositionAndRotation(overview,
                     Quaternion.LookRotation(new Vector3(0f, 2.2f, 2.5f) - overview));
                 camera.fieldOfView = 68f;
-                yield return CaptureEndlessGameView("endless-population-ru", "ru");
+                yield return CaptureEndlessGameView(name, "ru");
             }
             finally
             {

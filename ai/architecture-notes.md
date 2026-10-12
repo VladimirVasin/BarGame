@@ -12,12 +12,12 @@
   sampling. World/story unchanged; FPS unmeasured.
 
 - **Accepted architecture exception — 2026-10-12, warehouse polygon:**
-  seed+levels/reset keeps/flat:test-only;0story-hazards-fall dmg;
-  §6/art§15a/9checks.
-- **Accepted architecture exception — 2026-10-12, multi-opponent:**
-  User:Endless1–5(default5)/globalIDs/2–4→3–7active s/0backlog.
-  AI/hits/kill1x/heroend/reuse1/kept/empty settled→guns;
-  Standard1/Back kept;§6/art§15a/9checks;`current-world.md`.
+  seed/resetkeeps/levels/flat:test-only/0story-hazard-falldmg;§6/art§15a/9checks.
+- **Accepted architecture exception — 2026-10-13, bounded combat population:**
+  User:Endless1–5(default2)/corpses0–2(default2);pool=livecap≤5.
+  Excess oldest observed defeat retires;spawn unused else oldest.
+  Others/flights kept;Standard1/Ebody;conservative,0hardware max/60FPS/gain.
+  §6/art§15a/9checks;`debug-log.md`.
 - **Accepted — 2026-10-10, carry pair:**
   CombatTest:pistol Lchest/M65+Rbelt bar|soft-sling back shotgun;
   holster0cloth/stored hidden/held-drop-coat-off seen;
@@ -4075,12 +4075,12 @@
   game minutes so `GameSessionState` advances clock and needs from one delta;
   any owner that sets `timeScale` to zero naturally freezes both.
 - **Accepted — Bounded structured diagnostics:**
-  Fail-safe UTF-8 NDJSON/version/monotonic sequence/session-scene-seed/transition
-  IDs; boundaries/results/no frames/ordinary Unity logs. Editor-dev verbose/
-  release basic/batch off/5 MiB/3 archives/F8 snapshot+flush.
+  Fail-safe/versioned UTF-8 NDJSON/monotonic seq/session-scene-seed/transition IDs;
+  boundaries/results/Unity/0frames;Editor-dev verbose/release basic/batch off;
+  5MiB/3archives/F8snapshot-flush.
 - **Accepted — 2026-09-26, duel journal:**
-  `DuelJournal`:CombatTest on/batch off/CLI/round NDJSON-summary/F8mark/Shift+F8folder;
-  typed reasons/20Hz final state/frame CPU/async bounds/limits-priority pruning:`ai/debug-log.md`.
+  `DuelJournal`:CombatTest on/batch off/CLI;round NDJSON-summary/F8/Shift+F8;
+  reasons/state/CPU/async bounds/priority pruning:`ai/debug-log.md`.
 - **Accepted — Separate classic door transition:** Building doors first run
   the shared source-scene `DoorUseEnter/Loop/Exit` action from an explicit
   grounded dock. Only its terminal neutral completion reserves the

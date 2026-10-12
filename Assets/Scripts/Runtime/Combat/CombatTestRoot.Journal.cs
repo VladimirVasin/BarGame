@@ -229,6 +229,9 @@ namespace BarPromenade
                 f4: GameLog.Field("interval_max", EncounterSettings.SpawnIntervalMaxSeconds),
                 f5: GameLog.Field("run", encounterRun),
                 f6: GameLog.Field("actor_work_samples", "active_or_called"));
+            duelJournal.Record("corpse_settings", f0: GameLog.Field("maximum_corpses", EncounterSettings.MaximumCorpses),
+                f1: GameLog.Field("total_pool", combatOpponents.Count),
+                f2: GameLog.Field("retirement_order", "oldest_defeat_first"));
             if (WarehousePlan != null)
                 duelJournal.Record("warehouse_layout", f0: GameLog.Field("seed", WarehousePlan.Seed),
                     f1: GameLog.Field("generator_version", WarehouseArenaPlan.GeneratorVersion),

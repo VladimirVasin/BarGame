@@ -5,11 +5,9 @@
 
 ## General profiles
 
-| Runtime | Default | Location |
-| --- | --- | --- |
-| Editor | `verbose` | repository root, `debug.log` |
-| Development/Release Player | `verbose`/`basic` | `Application.persistentDataPath/Logs/debug.log` |
-| Batch/command-line tests | `off` | no file |
+Editor:`verbose`,repository root `debug.log`.
+Development/Release Player:`verbose`/`basic`,`Application.persistentDataPath/Logs/debug.log`.
+Batch/CLI tests:`off`,no file.
 
 `-bp-debug-log off|basic|verbose`: state/results; verbose adds timings/build sizes.
 `F8`:`diagnostics/snapshot`+CombatTest mark;`Shift+F8`:CombatLogs or general log directory.
@@ -25,9 +23,9 @@ Snapshots:hunger/stress/fatigue/intoxication/cash/drinking.
 | --- | --- |
 | `session` | start/end/seed/bar/return/drinking;resolved drink purchases/cash before-after |
 | `needs`, `inventory` | visible hunger/fatigue progression;explicit hunger/stress/fatigue;committed alcohol relief;atomic item-use results |
-| `scene` | loaded/ready;transition requested/rejected/fallback/completed/failed;`composition_frames`:frames/path(area/door)/`frame_budget_ms`/`AdvanceFrame` CPU-wall;door adds frames/`duration_ms` incl.build. |
+| `scene` | loaded/ready;transition requested/rejected/fallback/completed/failed;composition_frames:frames/path(area/door)/frame_budget_ms/AdvanceFrame CPU-wall;door duration_ms incl.build. |
 | `city`, `bar`, `mountain_road`, `alpine_village`, `home`, `stairwell`, `supermarket`, `church`, `mothers_house` | world/layout/bar/spawn/`initialize_phase`;first `cemetery_first_grave_sealed`/`cemetery_raven_{spawned,provider_missing,plot_missing}`;outdoor `raven_roost_{spawned,provider_missing}` |
-| `city`, `mountain_road`, `alpine_village` (verbose) | `world_build_block` (`seacoast/*`, `roads_and_river/east_exit*` sub-rows), `terrain_mesh` (`sample_ms`/`cook_ms`/`primed`), `terrain_grid`, `water_surface`, `cloth_panels`, `world_inventory`, `cannery_phase`; `city_plans_prime` started/finished/joined when an interior New Game primes City plans on a pool thread |
+| `city`, `mountain_road`, `alpine_village` (verbose) | world_build_block:seacoast/*,roads_and_river/east_exit*;terrain_mesh:sample_ms/cook_ms/primed;terrain_grid/water_surface/cloth_panels/world_inventory/cannery_phase;city_plans_prime started/finished/joined:interior New Game primes City plans on pool thread |
 | `primitive` (verbose) | `combined_mesh`: source count/vertices/combine/collider time |
 | `interaction`, `map` | entrance/exit, map lifecycle, City test-teleport mode/results |
 | `intoxication`, `balance` | stages, scheduling/start/result/fall/recovery/cancellation |
@@ -46,8 +44,8 @@ messages_rate_limited:drops/severity;separate exception budget.
 ## General retention
 
 Rotate 5MiB; keep `debug.1.log`–`debug.3.log`. Flush: error/.5s/F8/pause/focus/exit.
-Fresh session→fault→F8→Shift+F8;collect archives/round;read error/`operation_id`.
-No user/save paths/frame telemetry;stacks may expose paths;review sharing.
+Fault→F8→Shift+F8;collect archives/round;join error/`operation_id`.
+No user/save paths/frames;review stack paths before sharing.
 
 ## DuelJournal
 
@@ -93,7 +91,9 @@ latest_target_wait_ms=Unity;latest_{present_wait,cpu_main,cpu_render}_ms=FrameTi
 latest_timing_repeat_frames:-1 n/a/0 new/>0 repeats≠age.
 pose_work:Present/Weapon/Support CPU/calls/candidates/budget;0cloth.
 population_settings.actor_work_samples=active_or_called.
-opponent_spawn:search_ms/activation_ms/reset_ms/animation_graph_builds.
+corpse_settings:maximum_corpses/total_pool/retirement_order=oldest_defeat_first.
+corpse_retired:generation/reason/corpses;limit excess or pool reuse.
+opponent_spawn:search_ms/activation_ms/reset_ms/animation_graph_builds/corpses.
 frame_delivery/late_to_next_update_ms:observer→Update wall;render/editor/waits≠CPU/GPU.
 Camera SRP:render_context_captured/late_to_render_begin_ms/
 render_context_span_ms/render_end_to_next_update_ms/render_contexts;
@@ -127,7 +127,7 @@ CLI:
 -bp-perf-scene=City -bp-perf-seconds=30
 ```
 
-Waits for scene/transition;keeps position/render.
+Waits scene/transition;keeps position/render.
 Editor: `Tools > Bar Promenade > Diagnostics > Capture Performance (30 seconds)`.
 API: `RuntimePerformanceCapture.StartCapture`.
 
@@ -136,5 +136,5 @@ Capture1–120s/warmup≤60s/wait≤300s;scene/render changes end:reason.
 
 Reports:context+frame/CPU/GPU/GC/foot-bake/reflection p50/p95/p99/max.
 Markers:`BarPromenade.FootSoleBake`/`BarPromenade.WaterReflectionCube`.
-GPU:Frame Timing Stats required,unchanged;sampleCount=0 unavailable.
-Frames include waits;Editor≠player;match route/render;retain pause/focus counts.
+GPU:Frame Timing Stats required;sampleCount=0 unavailable.
+Frames include waits;Editor≠player;match route/render/pause/focus.

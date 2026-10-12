@@ -4248,8 +4248,9 @@ OS dynamic fonts в IMGUI запрещены; Unity legacy — аварийны�
 §6:PS1 polygon вне сюжета;9checks;`ai/architecture-notes.md`.
 `2026-10-12`:warehouse24×18×6m/upper2.6/2stairs/3layouts/cargo-racks/pipes→node;
 8lamps/2shadows/wear§8/vent/concrete-metal/reset keepsseed/new button/0lore.
-`2026-10-12`:Endless live1–5(default5)/poolIDs/first2–4,next3–7 active s/≥3m;
-ownAI/spacing-stairs/hero defeat ends/reuse one/empty settled→guns;current-world.md.
+`2026-10-12`:Endless live1–5/poolIDs/first2–4,next3–7 active s/≥3m;
+AI/spacing-stairs/heroend/empty settled→guns.
+`2026-10-13`:defaultlive2/corpses0–2(default2)/pool=livecap≤5/oldest retire-reuse.
 `2026-10-10`:pistol LunderM65+bar Rbelt|shotgun sling/back/0hardmount;
 Lshoulder/frontdiagonal/2slots/held;6bone rig-model-ammo/Ljacket-open/cloth-hair-scarf.
 Gun:worn unbranded dark metal/Rpalm gait/2hand aim/cross-flash;

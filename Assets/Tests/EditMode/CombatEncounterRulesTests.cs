@@ -10,14 +10,15 @@ namespace BarPromenade.Tests.EditMode
         {
             var first = new EndlessCombatState();
             var second = new EndlessCombatState();
-            first.Reset(CombatEncounterSettings.Default, 321);
-            second.Reset(CombatEncounterSettings.Default, 321);
+            var settings = CombatEncounterSettings.Default;
+            first.Reset(settings, 321);
+            second.Reset(settings, 321);
             Assert.That(first.RemainingSeconds, Is.InRange(2f, 4f));
             Assert.That(first.RemainingSeconds, Is.EqualTo(second.RemainingSeconds));
             float pausedRemaining = first.RemainingSeconds;
             Assert.That(first.Advance(0f, 0), Is.False);
             Assert.That(first.RemainingSeconds, Is.EqualTo(pausedRemaining));
-            for (int liveCount = 1; liveCount <= 5; liveCount++)
+            for (int liveCount = 1; liveCount <= settings.MaximumLiveOpponents; liveCount++)
             {
                 Assert.That(first.Advance(100f, liveCount - 1), Is.True);
                 Assert.That(second.Advance(100f, liveCount - 1), Is.True);
@@ -26,7 +27,7 @@ namespace BarPromenade.Tests.EditMode
                 Assert.That(first.RemainingSeconds, Is.EqualTo(second.RemainingSeconds));
                 Assert.That(first.Advance(0f, liveCount), Is.False,
                     "Elapsed time before creation must not carry into the next creation.");
-                if (liveCount < 5) Assert.That(first.RemainingSeconds, Is.InRange(3f, 7f));
+                if (liveCount < settings.MaximumLiveOpponents) Assert.That(first.RemainingSeconds, Is.InRange(3f, 7f));
             }
             Assert.That(first.IsWaiting, Is.False);
         }
@@ -76,21 +77,38 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(state.RemainingSeconds, Is.InRange(2f, 4f));
         }
 
-        [TestCase(0)]
-        [TestCase(6)]
-        public void EncounterSettingsRejectCapacityOutsidePermanentPool(int maximum)
+        [TestCase(0, 2)]
+        [TestCase(6, 2)]
+        [TestCase(2, -1)]
+        [TestCase(2, 3)]
+        public void EncounterSettingsRejectCapacityOutsidePermanentPool(int maximum, int maximumCorpses)
         {
-            Assert.Throws<ArgumentOutOfRangeException>(() => new CombatEncounterSettings(maximum));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new CombatEncounterSettings(maximum,
+                maximumCorpses: maximumCorpses));
         }
 
-        [Test]
-        public void SelectionIncludesTimingAndCapacityAndRejectsUninitializedSettings()
+        [TestCase(0)]
+        [TestCase(1)]
+        [TestCase(2)]
+        public void SelectionIncludesTimingAndCapacityAndRejectsUninitializedSettings(int maximumCorpses)
         {
+            Assert.That(CombatEncounterSettings.Default.MaximumCorpses, Is.EqualTo(CombatEncounterSettings.CorpseCapacity));
+            var settings = CombatEncounterSettings.Default.WithMaximumCorpses(maximumCorpses);
             var one = new CombatTestSelection(CombatLoadoutSelection.Default, CombatTestMode.Endless,
-                CombatEncounterSettings.Default.WithMaximumLiveOpponents(1));
-            var five = new CombatTestSelection(CombatLoadoutSelection.Default, CombatTestMode.Endless);
-            Assert.That(one, Is.Not.EqualTo(five));
-            Assert.That(five.EncounterSettings, Is.EqualTo(CombatEncounterSettings.Default));
+                settings.WithMaximumLiveOpponents(1));
+            var defaultLive = new CombatTestSelection(CombatLoadoutSelection.Default, CombatTestMode.Endless, settings);
+            Assert.That(one, Is.Not.EqualTo(defaultLive));
+            Assert.That(defaultLive.EncounterSettings, Is.EqualTo(settings));
+            Assert.That(settings.MaximumLiveOpponents, Is.EqualTo(CombatEncounterSettings.DefaultMaximumLiveOpponents));
+            Assert.That(settings.MaximumCorpses, Is.EqualTo(maximumCorpses));
+            Assert.That(one.EncounterSettings.MaximumCorpses, Is.EqualTo(maximumCorpses));
+            var otherCorpses = settings.WithMaximumCorpses((maximumCorpses + 1) % (CombatEncounterSettings.CorpseCapacity + 1));
+            Assert.That(defaultLive, Is.Not.EqualTo(new CombatTestSelection(
+                CombatLoadoutSelection.Default, CombatTestMode.Endless, otherCorpses)));
+            Assert.That(settings.GetHashCode(), Is.Not.EqualTo(otherCorpses.GetHashCode()));
+            Assert.That(otherCorpses.WithMaximumLiveOpponents(1).WithMaximumCorpses(maximumCorpses),
+                Is.EqualTo(one.EncounterSettings), "Both builders preserve the remaining encounter settings.");
+            Assert.DoesNotThrow(settings.Validate);
             Assert.Throws<ArgumentOutOfRangeException>(() => new CombatTestSelection(
                 CombatLoadoutSelection.Default, CombatTestMode.Endless, default(CombatEncounterSettings)));
         }

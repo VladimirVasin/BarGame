@@ -11,12 +11,14 @@ namespace BarPromenade
             internal OpponentAiContext Ai;
             internal bool Spawned, DefeatCounted;
             internal int Generation;
+            internal long DefeatOrder;
         }
 
         private readonly List<OpponentSlot> opponentSlots = new List<OpponentSlot>(5);
         private readonly List<CombatActor> combatOpponents = new List<CombatActor>(5);
         private readonly List<CombatActor> combatParticipants = new List<CombatActor>(6);
         private int encounterRun;
+        private long opponentDefeatOrder;
         private bool supplyPending, focusNextArrival;
         public IReadOnlyList<CombatActor> Opponents => combatOpponents;
         public CombatEncounterSettings EncounterSettings { get; private set; }
@@ -28,6 +30,49 @@ namespace BarPromenade
                 foreach (OpponentSlot slot in opponentSlots)
                     if (slot.Spawned && !slot.Actor.State.IsDefeated) count++;
                 return count;
+            }
+        }
+
+        public int CorpseCount
+        {
+            get
+            {
+                int count = 0;
+                foreach (OpponentSlot slot in opponentSlots)
+                    if (slot.Spawned && slot.Actor.State.IsDefeated) count++;
+                return count;
+            }
+        }
+
+        private OpponentSlot OldestOpponentCorpse()
+        {
+            OpponentSlot oldest = null;
+            foreach (OpponentSlot slot in opponentSlots)
+                if (slot.Spawned && slot.DefeatCounted &&
+                    (oldest == null || slot.DefeatOrder < oldest.DefeatOrder)) oldest = slot;
+            return oldest;
+        }
+
+        private void RetireOpponentCorpse(OpponentSlot slot, string reason)
+        {
+            CombatActor actor = slot.Actor;
+            pistolProjectiles?.RetireActorContacts(actor);
+            shotgunProjectiles?.RetireActorContacts(actor);
+            actor.RetireDefeatedOpponent();
+            slot.Spawned = false;
+            duelJournal?.Record("corpse_retired", actor: actor.JournalActorId,
+                f0: GameLog.Field("generation", slot.Generation),
+                f1: GameLog.Field("reason", reason),
+                f2: GameLog.Field("corpses", CorpseCount));
+        }
+
+        private void EnforceCorpseLimit()
+        {
+            while (CorpseCount > EncounterSettings.MaximumCorpses)
+            {
+                OpponentSlot oldest = OldestOpponentCorpse();
+                if (oldest == null) break;
+                RetireOpponentCorpse(oldest, "corpse_limit");
             }
         }
 
@@ -74,6 +119,7 @@ namespace BarPromenade
 
         private void ResetCombatOpponents()
         {
+            opponentDefeatOrder = 0;
             foreach (OpponentSlot slot in opponentSlots)
             {
                 slot.Actor.gameObject.SetActive(true);
@@ -82,6 +128,7 @@ namespace BarPromenade
                 slot.Spawned = Mode == CombatTestMode.Standard;
                 slot.DefeatCounted = false;
                 slot.Generation = 0;
+                slot.DefeatOrder = 0;
                 slot.Actor.gameObject.SetActive(slot.Spawned);
             }
             SelectCombatOpponent(combatOpponents[0]);
