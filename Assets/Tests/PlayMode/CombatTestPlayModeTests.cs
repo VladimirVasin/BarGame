@@ -47,6 +47,7 @@ namespace BarPromenade.Tests.PlayMode
         [UnitySetUp]
         public IEnumerator SetUp()
         {
+            CombatTestRoot.UseLegacyArenaForTests = true;
             previousCaptureDelta = Time.captureDeltaTime;
             previousAudioPause = AudioListener.pause;
             Time.captureDeltaTime = 1f / 60f;
@@ -61,6 +62,7 @@ namespace BarPromenade.Tests.PlayMode
         [UnityTearDown]
         public IEnumerator TearDown()
         {
+            CombatTestRoot.UseLegacyArenaForTests = false;
             if (root != null) root.AutomaticSimulation = false;
             // Contact voices are pooled under DontDestroyOnLoad. End them before
             // removing the scene's ear, then keep the synthetic cleanup scene valid

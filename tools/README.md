@@ -148,15 +148,15 @@ in `Captures` and does not publish. See [audio-vhs/README.md](audio-vhs/README.m
 Output: `Assets/Player3D/V2/Models/PlayerCharacter3DV2.{fbx,json}`.
 
 `build-combat-{test,blood,pistol,shotgun,gore,body,skull}-3d-model.py`:
-test `--actions-only --kick-only|--recovery-only|--footwork-only`,
+test `--actions-only --kick-only|--recovery-only|--footwork-only`
 `--refresh-published-contracts --reuse-unchanged-actions --resume-npc-bank file.blend`;
-blood `--texture-only`, others `--validate-only`. `CombatGore` owns hero/NPC body/skull.
-`build-combat-firearm-walk-3d-model.py`:8fixed-facing/1.6m/C2feet/levelpelvis/200Hz;
-`Assets/Resources/CombatFirearmWalk/Actions.{fbx,json}`;
-import `CombatFirearmWalkAssetSetup`; validate via launcher `-- --validate-only`.
-`build-combat-weapon-carry-3d-model.py`:holster/belt/sling/6draw-stow;
-`Assets/Resources/CombatWeaponCarry`; launcher `-- --validate-only`;
-`CombatWeaponCarryAssetSetup`:import.
+blood `--texture-only`;others `--validate-only`;`CombatGore`:hero/NPC body-skull.
+`build-combat-{firearm-walk,weapon-carry}-3d-model.py`:same launcher/check;
+`Assets/Resources/Combat{FirearmWalk,WeaponCarry}`/`*AssetSetup`.
+Walk:8fixed-facing/1.6m/C2feet/levelpelvis/200Hz;carry:holster/belt/sling/6draw-stow.
+`build-combat-warehouse-3d-model.py`:11FBX/JSON→`Assets/Resources/CombatWarehouse`;
+`ArtSource/CombatWarehouse`;check(det/FBX metres);
+read-only:`CombatWarehouseAssetValidation`.
 
 `player_jacket_cloth.py --write` derives hem/cuff metadata only; `--check` verifies it.
 Refresh `Player3DV2` via asset setup. Lower-body changes require

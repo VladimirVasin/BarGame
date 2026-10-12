@@ -84,6 +84,7 @@ namespace BarPromenade
         ShotgunOpen,
         ShotgunShellInsert,
         ShotgunClose,
+        FootstepMetal,
         Count
     }
 
@@ -861,7 +862,9 @@ namespace BarPromenade
             new RetroSfxDefinition(RetroSfxId.ShotgunShellInsert, RetroSfxCategory.World,
                 .14f, .38f, 1f, 2, .02f, 1, 2048, 4800f, .02f, 88),
             new RetroSfxDefinition(RetroSfxId.ShotgunClose, RetroSfxCategory.World,
-                .12f, .52f, 1f, 2, .02f, 1, 2048, 6800f, .015f, 80)
+                .12f, .52f, 1f, 2, .02f, 1, 2048, 6800f, .015f, 80),
+            new RetroSfxDefinition(RetroSfxId.FootstepMetal, RetroSfxCategory.World,
+                .28f, .25f, 1f, 2, .075f, 2, 1024, 6400f, .05f, 139, 3)
         };
 
         public static int Count => definitions.Length - 1;
@@ -1113,6 +1116,9 @@ namespace BarPromenade
                         duration,
                         ref noiseState,
                         detune);
+                case RetroSfxId.FootstepMetal:
+                    return GenerateFootstepConcrete(time, duration, ref noiseState, detune) * .65f +
+                        MetalModes(time, 710f, detune) * .35f * Envelope(time, duration, .001f, 18f);
                 case RetroSfxId.FootstepGrass:
                     return GenerateFootstepGrass(
                         time,

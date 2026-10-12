@@ -189,6 +189,10 @@ namespace BarPromenade
             WriteJournalActorConfiguration(Hero); WriteJournalActorConfiguration(Opponent);
             duelJournal.Record("combat_mode", f0: GameLog.Field("mode", Mode.ToString()),
                 f1: GameLog.Field("kills", EndlessKills));
+            if (WarehousePlan != null)
+                duelJournal.Record("warehouse_layout", f0: GameLog.Field("seed", WarehousePlan.Seed),
+                    f1: GameLog.Field("generator_version", WarehouseArenaPlan.GeneratorVersion),
+                    f2: GameLog.Field("template", WarehousePlan.Template.ToString()));
             journalForceSnapshot = true;
             GameLog.Info("combat", "duel_journal_started", GameLog.Field("duel_session", duelJournal.SessionId),
                 GameLog.Field("round", journalRound));

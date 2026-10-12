@@ -1,0 +1,414 @@
+{
+  "generator": "tools/build-combat-warehouse-3d-model.py",
+  "generator_version": "1.0.0",
+  "blender_version": "5.0.1",
+  "build_signature": "bbf3f41048321d82008d31b165b441a3af0cd9b4733a69450a6e2bc0acff0633",
+  "units": "metres",
+  "unity_forward": "+Z",
+  "unity_up": "+Y",
+  "passive": true,
+  "fbx_bake_space_transform": false,
+  "exported_fbx_validation": "mesh and anchor world metres after FBX round trip",
+  "signed_volumes": "every solid positive before and after axis swap",
+  "determinism": "two independent geometry builds match",
+  "triangle_count": 17204,
+  "materials": {
+    "Concrete": [
+      0.48,
+      0.49,
+      0.45
+    ],
+    "ConcreteDark": [
+      0.3,
+      0.33,
+      0.3
+    ],
+    "Steel": [
+      0.23,
+      0.29,
+      0.28
+    ],
+    "WornSteel": [
+      0.48,
+      0.51,
+      0.47
+    ],
+    "Rust": [
+      0.34,
+      0.23,
+      0.17
+    ],
+    "Timber": [
+      0.38,
+      0.3,
+      0.22
+    ],
+    "Cardboard": [
+      0.51,
+      0.43,
+      0.31
+    ],
+    "Glass": [
+      0.36,
+      0.43,
+      0.42
+    ],
+    "Lamp": [
+      0.88,
+      0.78,
+      0.59
+    ],
+    "Rubber": [
+      0.1,
+      0.12,
+      0.115
+    ]
+  },
+  "models": [
+    {
+      "name": "Shell",
+      "bounds_min": [
+        -12.3,
+        -0.24,
+        -9.3
+      ],
+      "bounds_max": [
+        12.3,
+        6.18,
+        9.3
+      ],
+      "triangle_count": 6224,
+      "solid_count": 164,
+      "mesh_count": 30,
+      "anchors": [
+        {
+          "name": "FloorCenter",
+          "position": [
+            0,
+            0,
+            0
+          ],
+          "parent": null
+        },
+        {
+          "name": "CeilingCenter",
+          "position": [
+            0,
+            6.0,
+            0
+          ],
+          "parent": null
+        }
+      ]
+    },
+    {
+      "name": "Platform",
+      "bounds_min": [
+        -1.5,
+        -2.6,
+        -1.5
+      ],
+      "bounds_max": [
+        1.5,
+        0.005,
+        1.5
+      ],
+      "triangle_count": 1244,
+      "solid_count": 49,
+      "mesh_count": 9,
+      "anchors": [
+        {
+          "name": "DeckCenter",
+          "position": [
+            0,
+            0,
+            0
+          ],
+          "parent": null
+        }
+      ]
+    },
+    {
+      "name": "Stair",
+      "bounds_min": [
+        -1.08,
+        -0.05914,
+        -0.07
+      ],
+      "bounds_max": [
+        1.08,
+        3.609269,
+        4.816686
+      ],
+      "triangle_count": 4816,
+      "solid_count": 164,
+      "mesh_count": 10,
+      "anchors": [
+        {
+          "name": "Foot",
+          "position": [
+            0,
+            0,
+            0
+          ],
+          "parent": null
+        },
+        {
+          "name": "Top",
+          "position": [
+            0,
+            2.6,
+            4.8
+          ],
+          "parent": null
+        }
+      ]
+    },
+    {
+      "name": "Rail",
+      "bounds_min": [
+        -0.5,
+        0.0,
+        -0.065
+      ],
+      "bounds_max": [
+        0.5,
+        1.048287,
+        0.065
+      ],
+      "triangle_count": 368,
+      "solid_count": 12,
+      "mesh_count": 7,
+      "anchors": []
+    },
+    {
+      "name": "Rack",
+      "bounds_min": [
+        -1.5,
+        0.0,
+        -0.6
+      ],
+      "bounds_max": [
+        1.5,
+        2.2,
+        0.6
+      ],
+      "triangle_count": 1024,
+      "solid_count": 36,
+      "mesh_count": 9,
+      "anchors": []
+    },
+    {
+      "name": "Cargo",
+      "bounds_min": [
+        -1.0,
+        0.0,
+        -0.7
+      ],
+      "bounds_max": [
+        1.0,
+        1.25,
+        0.7
+      ],
+      "triangle_count": 924,
+      "solid_count": 33,
+      "mesh_count": 7,
+      "anchors": []
+    },
+    {
+      "name": "Pipes",
+      "bounds_min": [
+        -5.075,
+        0.33,
+        0.0075
+      ],
+      "bounds_max": [
+        4.935,
+        5.08,
+        0.4105
+      ],
+      "triangle_count": 1344,
+      "solid_count": 40,
+      "mesh_count": 9,
+      "anchors": [
+        {
+          "name": "Supply",
+          "position": [
+            -4.8,
+            4.9,
+            0.2
+          ],
+          "parent": null
+        }
+      ]
+    },
+    {
+      "name": "Lamp",
+      "bounds_min": [
+        -0.6,
+        -0.352196,
+        -0.1775
+      ],
+      "bounds_max": [
+        0.6,
+        0.0,
+        0.1775
+      ],
+      "triangle_count": 300,
+      "solid_count": 11,
+      "mesh_count": 6,
+      "anchors": [
+        {
+          "name": "Light",
+          "position": [
+            0,
+            -0.37,
+            0
+          ],
+          "parent": null
+        }
+      ]
+    },
+    {
+      "name": "PipeStraight",
+      "bounds_min": [
+        -1.5,
+        -0.15,
+        -0.15
+      ],
+      "bounds_max": [
+        1.5,
+        0.15,
+        0.15
+      ],
+      "triangle_count": 124,
+      "solid_count": 3,
+      "mesh_count": 2,
+      "anchors": [
+        {
+          "name": "Start",
+          "position": [
+            -1.5,
+            0,
+            0
+          ],
+          "parent": null
+        },
+        {
+          "name": "End",
+          "position": [
+            1.5,
+            0,
+            0
+          ],
+          "parent": null
+        }
+      ]
+    },
+    {
+      "name": "PipeElbow",
+      "bounds_min": [
+        -0.00654,
+        -0.095106,
+        -0.099786
+      ],
+      "bounds_max": [
+        0.499786,
+        0.095106,
+        0.40654
+      ],
+      "triangle_count": 432,
+      "solid_count": 12,
+      "mesh_count": 1,
+      "anchors": [
+        {
+          "name": "Start",
+          "position": [
+            0,
+            0,
+            0
+          ],
+          "parent": null
+        },
+        {
+          "name": "End",
+          "position": [
+            0.4,
+            0,
+            0.4
+          ],
+          "parent": null
+        }
+      ]
+    },
+    {
+      "name": "PipeEnd",
+      "bounds_min": [
+        -0.275,
+        0.0,
+        0.0
+      ],
+      "bounds_max": [
+        0.275,
+        1.0,
+        0.3805
+      ],
+      "triangle_count": 404,
+      "solid_count": 11,
+      "mesh_count": 4,
+      "anchors": [
+        {
+          "name": "Connection",
+          "position": [
+            0,
+            0.95,
+            0.17
+          ],
+          "parent": null
+        }
+      ]
+    }
+  ],
+  "design_id": "combat_warehouse_modular_v1",
+  "contract": {
+    "shell_inner_dimensions": [
+      24,
+      6,
+      18
+    ],
+    "deck_tile_size": [
+      3,
+      0.18,
+      3
+    ],
+    "deck_top_local_y": 0,
+    "platform_height": 2.6,
+    "platform_posts_xz": [
+      -1.34,
+      1.34
+    ],
+    "platform_post_width": 0.14,
+    "platform_shoe_width": 0.26,
+    "stair_width": 2,
+    "stair_run": 4.8,
+    "stair_rise": 2.6,
+    "stair_treads": 16,
+    "stair_tread_depth": 0.3,
+    "stair_tread_rise": 0.1625,
+    "rail_length": 1,
+    "rack_footprint": [
+      3,
+      1.2
+    ],
+    "cargo_footprint": [
+      2,
+      1.4
+    ],
+    "light_anchor": [
+      0,
+      -0.37,
+      0
+    ],
+    "collision_mesh_prefix": "Collision_"
+  }
+}

@@ -5,10 +5,9 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 
 ## 2026-10-12 — Cloth, weapon switching and endless combat
 
-- Jacket spikes/impact cost: one final commit, live hem hints with contact/stretch
-  gates/native support/exact hem-depth/clearance/reference-bone skin. Sling
-  scratch lives until disposal. Deep-hip/real-frame proofs add unaimed diagonal
-  shotgun walking/boundary/skin-normal checks; warm-stow front route stays deferred.
+- Jacket: one commit/live hem/contact/stretch/native/reference-bone gates;
+  sling scratch retained. Deep-hip/diagonal walking/skin-normal proofs;
+  warm-stow front route deferred.
 - Cloth/erosion bindings/topology/native buffers persist; fresh poses/physics.
   Source index/contact-local bones match full-piece oracle on both rigs/
   poses/geometry/repeated volleys. Hero stamp refreshed; FPS remains unproven.
@@ -17,15 +16,12 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 - Unsorted discovery/inactive filtering; CS0618=error; DTO/analyzer warnings remain.
 - Slow original/fast trial→×2 playback/entry blends with normalized
   handoffs/jacket/sling; timing/ammo/pause/queue/cleanup/frames checked.
-- ShotgunDraw: Ropen barrel nudge; Loutside shoulder→vertical stock-top/palm-down
-  →outside/front chest→Rgrip/Lforeend; no crossing/imported offsets. Pause/drop
-  original; stow×2 kept; disable-drop fixed; handoff covers pickup/reset/catch/turn.
-  `build-combat-weapon-carry-3d-model.py`: body-BVH clearance/contacts/lower rig/
-  endpoints, untouched other clips/FBX/geometry/sling.
-- Endless: mode+kit survive Back; one reused foe/2.5 active s; injuries/position/
-  held stay, both guns refill. Full reset would heal; boundaries deduplicate/
-  clear old body-drop-flights and own pause/end/reset/exit. RU/EN preparation/
-  640×360 HUD inspected; labels fit.
+- ShotgunDraw: Rbarrel nudge; Loutside shoulder→stock-top/palm-down→front
+  →Rgrip/Lforeend; no crossing/offsets. Original drop/pause/stow×2; disable-drop
+  fixed. Carry generator proves BVH/grips/lower rig/endpoints; pickup/reset/turn.
+- Endless: mode+kit Back; one reused foe/2.5 active s; injuries/position/held
+  kept/both guns refill. Boundaries deduplicate/clear body-drop-flights;
+  pause/end/reset/exit owned. RU/EN preparation/HUD labels inspected.
 - Ray scopes rebuilt native scratch each time. Contacts now retain
   Persistent workspace; typed leases refresh pose/masks/reject overlap/stale
   scopes, owner Dispose frees. Jacket uploads only changed normals/tangents;
@@ -33,6 +29,10 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 - Known: `Range_VictoryRestoresOrdinaryWalkingAndResetRestoresCombat` one-frame
   clip-owner assertion; `Range_WeaponCarryHasBoundedPresentationWork` transfer
   assertion still fails as before optimization.
+- Warehouse: seed/three layouts/two physical stairs/upper gallery/cover/pipes/
+  practical lights. Cached NPC routes/height-LOS/gravity; safe endless spawns.
+  Reset keeps layout; New warehouse by AI style replaces seed row; seed journal/CLI.
+  Blender metre/winding+`CombatWarehouse`: traversal/reset/frames; `BarPromenade.Runtime` build: HUD.
 - Checks: `Range_BodyRayWorkspaceReusesFreshPoseAndReleasesOwnedBuffers`,
   `Range_WeaponSweepReusesOnlyIdenticalQueriesAndKeepsMovingAnatomy`,
   `Range_EndlessReusesOpponentPreservesHeroRefillsAmmoAndCancelsOnExit`,

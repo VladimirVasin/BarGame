@@ -4246,38 +4246,38 @@ OS dynamic fonts в IMGUI запрещены; Unity legacy — аварийны�
 ### Принятое исключение — боевой полигон
 
 §6:PS1 polygon вне сюжета;9checks;`ai/architecture-notes.md`.
-`2026-10-12`:standard/endless+count/mode+kit Start-Back;1 active reused NPC/2.5 active s/≥3m;
-HP/injuries/pose/kit/held kept/guns8/2/pause freeze/hero defeat end.
-Reset/cleanup/Tab-Ecorpse/style:current-world.md.
+`2026-10-12`:склад24×18×6м/верх2,6м/две лестницы;seed:3схемы/груз/стеллажи/марши.
+Трубы→узел;8рабочих ламп/2тени;износ §8/вентиляция/бетон-металл.
+Сброс:seed/кнопка:новый;0сюжет-lore.
+`2026-10-12`:endless:1 reused NPC/2.5 active s/≥3m;mode:current-world.md.
 `2026-10-10`:pistol LunderM65+bar Rbelt|shotgun sling/back/0hardmount;
-Lshoulder/frontdiagonal;2slots/held;6bone rig/model/ammo handoffs/Ljacket-open/cloth-hair-scarf.
+Lshoulder/frontdiagonal/2slots/held;6bone rig-model-ammo/Ljacket-open/cloth-hair-scarf.
 Gun:worn unbranded dark metal/Rpalm gait/2hand aim/cross-flash;
 Aim:8gaits/×.85/facing/Step/uppercam/FOV-grip return.
 `2026-10-08`:recoil/stablecam/streak/impulse-SFX;pistol head0HP→ragdoll.
 Shotgun:worn dark steel/wood/2barrels/shoulder-stock/Lforeend;
 heavy recoil/flash-smoke/deep thud;2shots/break/eject spent/load/close.
-`2026-10-12`:Draw Ropen nudges barrels below;Loutside/over Lshoulder→vertical stock-top/palm-down
+`2026-10-12`:Draw Ropen barrels↓;Loutside/over Lshoulder→vertical stock-top/palm-down
 →outside shoulder/front chest→Rgrip/Lforeend;0crossing;stow/model/rig/sling/2×.
 `2026-10-09`:near=max/body launch/head≤14/fast head debris-blood/falloff.
 Rig:chest-abdomen/arm-hand/leg-catch/skin-fabric-glove-boot/wet-dry/repeat.
 `2026-10-09`:torso→joined skeleton/0chunks;head-limb cuts/finite parts;
-Near shotgun=max local;both survivors-corpses/crawl/reset.
+Near shotgun=max;survivors-corpses/crawl/reset.
 Pistol3-5/16/low eject;brain8:full/wet-muted jelly/squash/bone-tissue/cam-hide/loss.
 Dark blood56/800/narrow-slow/pulse24s0/rig-cut/stains-pool-debris;
 convulsions≤2.35s/corpse HP-pose-impulse;volley1reaction/terminal.
 Case/slide-emptylock/mag stash-seat-rack/SFX;Eshared.
-World:chips-sparks/capped holes/pause-hitstop0/reset-exit traces0/head reset;
-HPpose/bar pools10s/thud/6zones;shoulders↑/chin in/breath-tremor/tight swing/
+World:chips-sparks/capped holes/pause-hitstop0/reset-exit-head clear;
+Shoulders↑/chin in/breath-tremor/tight swing/
 awkward return;NPC calm;soft knees/pelvis-grip-elbows↓/step/face block-flex.
-≤2steps/optional crouch-lean-brace/floor→hand→drop recovery;2hands/return≠parry.
-NPC1m/retreat/miss-counter/rise/gaze-fallen/3styles.
-Windup1m/shove-grip;Q/B:dry/0finish/highguard/buffer/recoil/guard support.
-Standard dummy/TabAIreset;freecam/barfocus/gunfree/MMBfocus.
+≤2steps/crouch-lean-brace?/floor→hand→drop recovery/2hands/return≠parry.
+NPC:retreat/miss-counter/rise/fallen-gaze.
+Windup1m/shove-grip/Q-B:dry/0finish/highguard/buffer/recoil/guard support.
 Bar:wall sparks-recoil/sway-inertia-feet;Qfar:pelvis-foot→/chest←;
 near knee/bar kept/torso mirror/L-shove←/palm-bar-body.
 Грудь контрастна;стена/край/конец→скрыто.
-Win walks/gun fire-reload/0gun-taunt;standard bar-E:toilet §7 FP/barL/body-floorR/no reaction.
-Charge power;shield:dim-open=none/amber=request/closed=ready/filled=block;без речи-сюжета.
+Win walks/gun fire-reload/0gun-taunt;bar-E:toilet §7 FP/barL/body-floorR/0reaction.
+Charge power/shield:dim-open=none/amber=request/closed=ready/filled=block;0речь-сюжет.
 
 ### Принятое исключение — иллюстрации загрузки
 

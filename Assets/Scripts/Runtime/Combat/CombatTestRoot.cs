@@ -32,7 +32,7 @@ namespace BarPromenade
         private bool roundCameraReleased;
         private bool finishedRoundInitialized;
         private GameObject opponentObject;
-        private ArenaBounds arenaBounds;
+        private IWalkableArea arenaBounds;
         private Transform opponentChest, heroChest;
         private readonly List<CombatActor.Contact> pendingContacts = new List<CombatActor.Contact>(4);
         private readonly List<CombatActor.ShoveContact> pendingShoves = new List<CombatActor.ShoveContact>(2);
@@ -108,12 +108,9 @@ namespace BarPromenade
             RenderSettings.fogEndDistance = 45f;
             if (RenderSettings.sun != null) RenderSettings.sun.transform.rotation = Quaternion.Euler(48f, -35f, 0f);
             RetroAudioService.EnsureInstalled();
-            GameObject arena = CombatAssetProvider.CreateArena(transform);
-            heroSpawn = CombatAssetProvider.FindAnchor(arena, "HeroSpawn").position + Vector3.up * PlayerFactory.GroundedRootOffset;
-            opponentSpawn = CombatAssetProvider.FindAnchor(arena, "OpponentSpawn").position + Vector3.up * PlayerFactory.GroundedRootOffset;
+            CreateCombatLocation();
             var ui = new GameObject("Combat UI"); ui.transform.SetParent(transform, false);
             Prompt = ui.AddComponent<InteractionPromptView>();
-            arenaBounds = new ArenaBounds();
             Player = PlayerFactory.Create(transform, heroSpawn, camera, arenaBounds, Prompt);
             Hero = Player.GameObject.AddComponent<CombatActor>();
             CombatTestSelection selection = CombatTestStartService.ConsumeSelection();
@@ -127,6 +124,7 @@ namespace BarPromenade
             var body = opponentObject.AddComponent<CharacterController>();
             body.height = 1.75f; body.radius = .32f; body.center = Vector3.up * .875f;
             body.skinWidth = PlayerFactory.GroundedRootOffset; body.stepOffset = PlayerFactory.StepOffset;
+            body.slopeLimit = PlayerFactory.SlopeLimitDegrees;
             body.minMoveDistance = 0f;
             VillageResidentPresentation presentation = DefaultNpcFactory.CreateForCharacter(
                 opponentObject.transform, DefaultNpcPopulation.CombatTestOpponent);
@@ -325,6 +323,7 @@ namespace BarPromenade
                 pendingKicks.Clear();
                 Hero.AdvanceSimulation(SimulationStep, true);
                 Opponent.AdvanceSimulation(SimulationStep, true);
+                AdvanceWarehouseOpponentGrounding(SimulationStep);
                 Hero.CompleteSimulationPose(SimulationStep);
                 Opponent.CompleteSimulationPose(SimulationStep);
                 JournalTransitions("simulation");
@@ -527,7 +526,8 @@ namespace BarPromenade
             Vector2 screenPosition = mouse.position.ReadValue();
             screenPosition.y = Screen.height - screenPosition.y;
             RetroUiCanvas canvas = RetroUiTheme.CalculateCanvas(Screen.width, Screen.height);
-            return ToolbarRect.Contains(canvas.ScreenToLogical(screenPosition));
+            Vector2 position = canvas.ScreenToLogical(screenPosition);
+            return ToolbarRect.Contains(position);
         }
 
         private void OnGUI()
@@ -548,10 +548,11 @@ namespace BarPromenade
                 RetroUiTheme.DrawPanel(ToolbarRect, RetroUiTheme.PanelInset, RetroUiTheme.BorderMuted, false, 0f, 1f, .72f);
                 if (DrawToolbarButton(canvas, new Rect(156, 12, 58, 18), "combat-weapons",
                     LocalizationService.Get("combat.weapons"))) ReturnToWeapons();
-                if (DrawToolbarButton(canvas, new Rect(220, 12, 166, 18), "combat-style",
+                if (DrawToolbarButton(canvas, new Rect(220, 12, WarehousePlan != null ? 94 : 166, 18), "combat-style",
                     LocalizationService.Get(OpponentStyleHudKeys[(int)OpponentStyle]),
                     Mode != CombatTestMode.Endless || EndlessRunFinished))
                     SetOpponentStyle((CombatOpponentStyle)(((int)OpponentStyle + 1) % 3));
+                DrawWarehouseButton(canvas);
                 if (Mode == CombatTestMode.Endless)
                     GUI.Label(new Rect(392, 12, 102, 18), endlessKillsLabel.Get(LocalizationService.Get("combat.kills"), EndlessKills), small);
                 else if (DrawToolbarButton(canvas, new Rect(392, 12, 102, 18), "combat-mode",

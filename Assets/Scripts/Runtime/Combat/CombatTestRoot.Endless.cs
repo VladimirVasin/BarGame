@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace BarPromenade
@@ -7,6 +8,7 @@ namespace BarPromenade
         private readonly EndlessCombatState endless = new EndlessCombatState();
         private readonly RaycastHit[] spawnGroundHits = new RaycastHit[16];
         private readonly Collider[] spawnOverlapHits = new Collider[32];
+        private readonly List<Vector3> warehouseSpawnRoute = new List<Vector3>(64);
         private string nextOpponentHudSource, nextOpponentHudText;
         private int nextOpponentHudTenths;
         private static readonly Vector3[] NextOpponentCandidates =
@@ -68,6 +70,7 @@ namespace BarPromenade
 
         private bool TryNextOpponentSpawn(out Vector3 spawn)
         {
+            if (WarehousePlan != null) return TryWarehouseOpponentSpawn(out spawn);
             spawn = default;
             float bestDistance = 9f;
             foreach (Vector3 candidate in NextOpponentCandidates)
@@ -81,6 +84,29 @@ namespace BarPromenade
             return bestDistance > 9f;
         }
 
+        private bool TryWarehouseOpponentSpawn(out Vector3 spawn)
+        {
+            spawn = default;
+            if (!(arenaBounds is WarehouseArenaArea area)) return false;
+            bool found = false;
+            float bestDistance = 9f;
+            for (int i = 0; i < WarehousePlan.SpawnPoints.Count; i++)
+            {
+                Vector3 candidate = WarehousePlan.SpawnPoints[i];
+                Vector3 delta = candidate - Hero.transform.position; delta.y = 0f;
+                float distance = delta.sqrMagnitude;
+                if (distance < bestDistance || !TrySpawnGround(candidate, out Vector3 grounded) ||
+                    !area.TryGetHeight(grounded, out float height, Opponent.Body.radius) ||
+                    Mathf.Abs(grounded.y - PlayerFactory.GroundedRootOffset - height) > .15f ||
+                    !area.FindRoute(grounded, Hero.transform.position, warehouseSpawnRoute, Opponent.Body.radius + .04f)) continue;
+                spawn = grounded;
+                bestDistance = distance;
+                found = true;
+            }
+            warehouseSpawnRoute.Clear();
+            return found;
+        }
+
         private bool TrySpawnGround(Vector3 candidate, out Vector3 grounded)
         {
             grounded = default;
@@ -91,8 +117,9 @@ namespace BarPromenade
             for (int i = 0; i < count; i++)
             {
                 RaycastHit hit = spawnGroundHits[i];
+                float expectedHeight = WarehousePlan != null ? candidate.y : heroSpawn.y - PlayerFactory.GroundedRootOffset;
                 if (hit.collider.GetComponentInParent<CombatActor>() != null || hit.normal.y < .7f ||
-                    Mathf.Abs(hit.point.y - (heroSpawn.y - PlayerFactory.GroundedRootOffset)) > .15f || hit.distance >= nearest) continue;
+                    Mathf.Abs(hit.point.y - expectedHeight) > .15f || hit.distance >= nearest) continue;
                 nearest = hit.distance;
                 grounded = hit.point + Vector3.up * PlayerFactory.GroundedRootOffset;
             }

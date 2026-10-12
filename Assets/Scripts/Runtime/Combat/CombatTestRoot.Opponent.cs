@@ -56,6 +56,7 @@ namespace BarPromenade
         private void ResetOpponentDecisions()
         {
             ResetOpponentMovement();
+            ResetWarehouseOpponentNavigation();
             OpponentRound = roundsPlaced++;
             // Round 0 keeps the seed every capture fixture was authored against; each reset re-rolls
             // the schedule while staying reproducible from the city seed and the round index.
@@ -134,10 +135,12 @@ namespace BarPromenade
             Vector3 delta = Hero.BodyWorldPosition - Opponent.BodyWorldPosition;
             delta.y = 0f;
             float distance = delta.magnitude;
-            if (distance < .0001f || !Opponent.IsAvailable || (!Hero.IsAvailable && Hero.State.Phase != MeleePhase.Rising)) return;
-            Vector3 direction = delta / distance;
+            if ((distance < .0001f && WarehousePlan == null) || !Opponent.IsAvailable ||
+                (!Hero.IsAvailable && Hero.State.Phase != MeleePhase.Rising)) return;
+            Vector3 direction = distance > .0001f ? delta / distance : Opponent.transform.forward;
             MeleeCombatant me = Opponent.State;
             CombatOpponentProfile profile = OpponentProfile;
+            if (AdvanceWarehouseOpponentPursuit(seconds)) return;
             if (!Opponent.BodyDamage.CanUseRightHand)
             {
                 Opponent.SetBlock(false);
@@ -658,8 +661,13 @@ namespace BarPromenade
             Vector3 before = Opponent.transform.position;
             Vector3 travel = LimitOpponentApproach(before, velocity * seconds);
             Vector3 desired = before + travel;
-            desired.x = Mathf.Clamp(desired.x, -7.3f, 7.3f);
-            desired.z = Mathf.Clamp(desired.z, -7.3f, 7.3f);
+            if (WarehousePlan != null)
+                desired = arenaBounds.Constrain(before, desired, Opponent.Body.radius);
+            else
+            {
+                desired.x = Mathf.Clamp(desired.x, -7.3f, 7.3f);
+                desired.z = Mathf.Clamp(desired.z, -7.3f, 7.3f);
+            }
             Opponent.Body.Move(desired - before);
             Vector3 moved = Opponent.transform.position - before; moved.y = 0f;
             journalOpponentRequested = desired - before;
@@ -668,10 +676,14 @@ namespace BarPromenade
             // momentum and release it on a later unobstructed frame.
             opponentMoveVelocity = moved / seconds;
             Opponent.SetLocomotion(opponentMoveVelocity);
+            ObserveWarehouseOpponentTravel(travel, moved, seconds);
         }
 
         private Vector3 LimitOpponentApproach(Vector3 before, Vector3 travel)
         {
+            // A fighter on the gallery must not stop another fighter directly
+            // below it from reaching the stair or passing under the platform.
+            if (WarehousePlan != null && !warehouseMeleeReachable) return travel;
             // Bound achieved travel, including the inertial braking tail. Keep
             // its original line: this cannot steer a committed swing after the
             // hero sidesteps, and a hero entering shove range still forces the

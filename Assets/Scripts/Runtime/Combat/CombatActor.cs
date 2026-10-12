@@ -177,7 +177,8 @@ namespace BarPromenade
             motor.SetOwnedMovementConstraint(this, MovementScale,
                 OwnsCombatFacing || (!CombatFocused && CommittedActionOwnsFacing) ? 0f : TurnScale,
                 contactTarget != null ? contactTarget.transform : null,
-                CombatFocused && State.Phase == MeleePhase.Windup ? WeaponSpacing : 0f,
+                CombatFocused && State.Phase == MeleePhase.Windup && contactTarget != null &&
+                    Mathf.Abs(contactTarget.transform.position.y - transform.position.y) < .5f ? WeaponSpacing : 0f,
                 firearmWalking: UsesFirearmWalkLocomotion,
                 sprintBlocked: IsFirearm && (Firearm.AimRequested || pistolVisualAimProgress > 0f));
         }

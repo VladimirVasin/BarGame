@@ -20,7 +20,8 @@ namespace BarPromenade
         Wood,
         Carpet,
         Tile,
-        Puddle
+        Puddle,
+        Metal
     }
 
     /// <summary>

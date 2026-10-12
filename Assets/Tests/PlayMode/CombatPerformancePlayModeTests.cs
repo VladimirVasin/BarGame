@@ -19,6 +19,7 @@ namespace BarPromenade.Tests.PlayMode
         [UnitySetUp]
         public IEnumerator SetUp()
         {
+            CombatTestRoot.UseLegacyArenaForTests = true;
             previousCaptureDelta = Time.captureDeltaTime;
             Time.captureDeltaTime = TickSeconds;
             RetroAudioService.Instance?.StopAll();
@@ -1314,6 +1315,7 @@ namespace BarPromenade.Tests.PlayMode
         [UnityTearDown]
         public IEnumerator TearDown()
         {
+            CombatTestRoot.UseLegacyArenaForTests = false;
             if (root != null) root.AutomaticSimulation = false;
             RetroAudioService.Instance?.StopAll();
             Scene active = SceneManager.GetActiveScene();

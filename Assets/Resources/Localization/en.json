@@ -4163,6 +4163,7 @@
     {
       "key": "city.shelter.sleeper.04.b",
       "value": "Do not."
-    }
+    },
+    {"key": "combat.warehouse.new", "value": "New warehouse"}
   ]
 }

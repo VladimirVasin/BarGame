@@ -25,6 +25,8 @@ namespace BarPromenade
             {
                 case FootstepGroundKind.Concrete:
                     return RetroSfxId.FootstepConcrete;
+                case FootstepGroundKind.Metal:
+                    return RetroSfxId.FootstepMetal;
                 case FootstepGroundKind.Stone:
                     return RetroSfxId.FootstepStone;
                 case FootstepGroundKind.Grass:

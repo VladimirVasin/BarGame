@@ -142,30 +142,31 @@ The vertical slice contains:
   docks/cannery clear pedestrians. City/Bar/lodge arrival markers: consumed once;
   later spawns stay. Day one mother's-house quest/map marker; door/map/start
   inside closes it; no village signpost;
-- CombatTest:standard/endless+pistol+(bar|shotgun);mode+kit atomic Start/Back.
+- CombatTest:seeded warehouse24×18×6m/upper2.6m/two stairs/straight-L-U galleries;
+  Blender kit/cargo-racks/pipes/8 fixed lamps/2 shadows/concrete-metal steps/vent.
+  NPC graph/gravity/height-LOS;reset keeps layout/New warehouse replaces;
+  seed/version:plan/journal/CLI;flat:test-only.
+  Standard/endless+pistol+(bar|shotgun)/mode-kit atomic Start-Back.
   Endless:1 reused NPC/2.5 active s/≥3m;injuries/pose/kit kept/guns8/2.
-  Pause freeze/hero defeat end/mutual kill count/reset new run.
-  Foe/parts/drop/flights clear;Tab/Ecorpse blocked;style after defeat.
-  Default:bar;pistol Lundercoat/bar Rbelt/shotgun back.
-  Sling:Lshoulder→front chest/abdomen→lower Rside.
-  1pistol/2secondary/DpadRcycle;6bone clips/same rig/torso over gait.
-  ShotgunDraw:barrel nudge/outside shoulder/stock-top/front turn:art§15a.
-  Import offsets/drop original.
-  2×carry/settle;pistol↔bar~1.7s/shotgun~2.4s@60Hz+guards;
-  rig/models/ammo kept;reload first/last queued;pause-hitstop freeze.
-  Fall cancels/drop original/current pose/ammo/owns slot;Erecord-specific.
-  Reset:kit/body;exit clear;cloth. NPCbar/3AI/freecam;
+  Pause/hero defeat end/mutual kill count/new run resets;
+  foe-parts-drop-flights clear/Tab-Ecorpse blocked/style after defeat.
+  Default:bar;pistol Lundercoat/bar Rbelt/shotgun back;
+  sling:Lshoulder→chest/abdomen→lower Rside;1pistol/2secondary/DpadR;
+  6bone/same rig/torso over gait.
+  2×carry/settle;pistol↔bar~1.7s/shotgun~2.4s;
+  rig-model-ammo/reload first-last queued/pause-hitstop.
+  Fall cancels/drop original+pose+ammo/owns slot;Erecord-specific.
+  NPCbar/3AI/freecam;
   standard dummy/TabAIreset;MMBfocus/bar-Qfocus.
-  Guns:RMBaim/LMBedge/R-Xreload;8aimclips/2.21-back1.19/0run/FOV-IK.25;
-  camplane normdiag/Space1m-cardinal-back/tankreturn;barfocus/injury.
+  Guns:RMBaim/LMBedge/R-Xreload;8clips/2.21-back1.19/0run/FOV-IK.25;
+  camplane normdiag/Space1m-cardinal-back/tankreturn/barfocus/injury.
   Pistol8∞/reload1.8/slide-emptylock/mag-rack/cases;
   shotgun2∞/12pellets/.55/head×2/break2.8/stage-ammo/atomic spend/flights finish/win fire.
-  Near launch/falloff/1reaction-terminal/head≤14;first skin/world/0pierce-ricochet-guard.
-  Cloth-tissue-bone loss;head-limb sever/torso erodes→joined skeleton/0chunks.
+  Near launch/falloff/1reaction/head≤14/skin-world first/0pierce-ricochet-guard.
+  Cloth-tissue-bone loss/head-limb sever/torso→joined skeleton/0chunks.
   Rhand0weapon/Lhand0twohand-reload;Rbar-loaded pistol retained;
   leg loss fall/crawl/0rise-step-kick;critical head-torso end/corpses/reset.
-  Head3-5of16/brain8 jelly/blood24s/convulsions2.35/chips-holes.
-  Bar6zones/rearhead-end/metalrecoil/Qsupport;standard toilet/Eshared/0grant;
+  Bar6zones/rearhead-end/metalrecoil/Qsupport;standard taunt/Eshared/0grant;
 - the retained Home opening is reachable only by a legacy request: held bed loop,
   silent `05:59` clock with rare whole-display flicker, five-second input lock,
   then localized Wake Up/Quit. Wake sets `06:00`, runs the clock/alarm and hides

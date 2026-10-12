@@ -4163,6 +4163,7 @@
     {
       "key": "city.shelter.sleeper.04.b",
       "value": "Не надо."
-    }
+    },
+    {"key": "combat.warehouse.new", "value": "Новый склад"}
   ]
 }

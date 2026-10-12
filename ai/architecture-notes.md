@@ -2,19 +2,24 @@
 
 ## Current facts
 
+- **Accepted architecture exception — 2026-10-12, warehouse polygon:**
+  User:CombatTest seed+levels/reset≠new/legacy:test-only.
+  0story-dialogue-hazards-fall damage;§6/art§15a/§16/§21/9checks.
+  `current-world.md`.
+
 - **Accepted architecture exception — 2026-10-12, endless polygon:**
-  User:polygon only/both carried guns refill between foes/reload settled on same rig;
+  User:polygon/both carried guns refill between foes/reload settled-same rig;
   IDs/cooldowns/injuries kept;§6/art§15a/9checks
 - **Accepted — 2026-10-10, carry pair:**
-  CombatTest:pistol Lchest/M65+Rbelt bar|soft-sling back shotgun.
-  Holster0cloth:stored hidden;held/drop/coat-off seen.
-  6bone stow/draw;rig/model/ammo handoffs;0hardmount.
+  CombatTest:pistol Lchest/M65+Rbelt bar|soft-sling back shotgun;
+  holster0cloth/stored hidden/held-drop-coat-off seen;
+  6bone stow-draw/rig-model-ammo handoffs/0hardmount.
 
 - **Accepted — 2026-10-12, ShotgunDraw:**
-  Ropen nudges barrels below;Loutside/over Lshoulder→vertical stock-top/palm-down catch
+  Ropen barrels↓;Loutside/over Lshoulder→vertical stock-top/palm-down catch
   →outside shoulder/front chest turn→Rgrip/Lforeend;0body crossing.
-  Imported offsets;continuous handoffs/pause freeze;drop=original/pose/ammo.
-  Stow/model/rig/sling/2× kept
+  Import offsets/continuous handoffs/pause freeze/drop=original-pose-ammo;
+  stow/model/rig/sling/2× kept
 
 - **Accepted — 2026-10-11:** shotgun:Lshoulder→front chest/abdomen→lower Rside;draw/stow.
   Ribbon0jacket;gun/bar coat+scarf/hair;JacketBody-only width/seam pad.
@@ -327,14 +332,11 @@
 - **Accepted 2026-10-08, regional hits:**
   Rig/wet/repeat/shared physics-camera.
 - **Accepted 2026-10-07, combat:**
-  Floor/stall-arm→drop/rise≠grip/HP-focus-AI/pause-hitstop0;
-  no bar:walk-Q-Step/hits-falls/Eshared/0grant/cancel floor.
-  NPC approach-Q/rise ignores drop;MMBfocus/AIhits/reset mode-focus/hitstop≠lock-reset.
-  Q:chest-gap/earlylock/far pelvis-foot→chest←/near knee/fast palm/bar kept;
-  arc/3mirror torsos/fixedroot/freeleg-loadR/guard support/fall veto.
-  Aim¼Windup lock/Charge free/motor yield;bar-Q-palm clocks/contact;
-  Step1m/sole-catch/finite landing-overload;bar-palm stagger/feet-impulse-aim.
-  First bar-world-body/metal-wall recoil-stop/guard-break/0HPparry/pooled sparks-SFX.
+  Floor/stall-arm→drop/rise≠grip;no bar:walk-Q-Step/hits-falls/Eshared/0grant/cancel floor.
+  NPC approach-Q/rise ignores drop;HP-focus-AI/MMB/reset mode-focus;
+  pause-hitstop0/hitstop≠lock-reset. Aim¼Windup lock/Charge free/motor yield;
+  Step1m/finite landing-overload/first bar-world-body/metal-wall recoil-stop/
+  guard-break/0HPparry/pooled sparks-SFX. Q/Step contacts-poses:art§15a/`CombatActor`.
 - **Accepted 2026-10-02, combat:**
   R>L/Hit-Miss cut/.22→held.28/buffer.20/hit-fall-reset0;
   AI≥1m/retreat≤.6s/whiff.20→counter.22/Rising hits.
@@ -358,16 +360,16 @@
   L opposed.16→.42m/breath4s/blend/injury/NPC RRest-Lsubdiv;
   Dry block-miss/ragdoll wins.
 - **Accepted 2026-09-21, duel:**
-  Standard barwin:swing→walk/off→reset;free hits/guard20-35/charge20/regen30/s-.6s stuns;
-  seeded AI/fall freecam/fore-back flips/no repeats/target>15°≠strafe/shared dmg-time-cost.
+  Standard barwin:swing→walk/off→reset/free hits/guard20-35/charge20/regen30/s-.6s stuns;
+  seeded AI/fall freecam/fore-back flips/0repeats/target>15°≠strafe/shared dmg-time-cost.
   Charge:q=power/Forehand Light/upper(t+q*.18*(1-smooth(t/.45)))/lower(t)/
   retimed Attack/neutral lower;Backhand DAG:R elbow-hand roll/.56reach≥.95/free elbow;
-  recoil .56→Ready0/.48s inverse/C1/no dwell/wrist-core-speed-clearance gates.
+  recoil .56→Ready0/.48s inverse/C1/0dwell/wrist-core-speed-clearance gates.
 - **Accepted exception 2026-09-21, taunt:**
   Standard E/settled defeat:Home toilet/view-timeline-stream-residue;
   Guided dock/aim/bone-floor;barL/§21-exempt silent/0speech-reaction-reward/6th FP.
 - **Accepted exception 2026-09-19, CombatTest:**
-  §6/§16.15/art§15a:one hero-input;hits/steps vulnerable/fall/reset/shoulder-wall;
+  §6/§16.15/art§15a:hero-input/hits-steps vulnerable/fall/reset/shoulder-wall;
   W-Swalk/A-Dstrafe/opponent last.
 
 - **Accepted — 2026-09-16, street pool is the default NPC catalog:**
@@ -4074,9 +4076,8 @@
   IDs; boundaries/results/no frames/ordinary Unity logs. Editor-dev verbose/
   release basic/batch off/5 MiB/3 archives/F8 snapshot+flush.
 - **Accepted — 2026-09-26, duel journal:**
-  `DuelJournal`: CombatTest on/batch off/CLI; round NDJSON/summary/F8 mark/
-  Shift+F8 folder; typed reasons/20Hz final state/frame CPU/async bounds/
-  limits/priority pruning: `ai/debug-log.md`.
+  `DuelJournal`:CombatTest on/batch off/CLI/round NDJSON-summary/F8mark/Shift+F8folder;
+  typed reasons/20Hz final state/frame CPU/async bounds/limits-priority pruning:`ai/debug-log.md`.
 - **Accepted — Separate classic door transition:** Building doors first run
   the shared source-scene `DoorUseEnter/Loop/Exit` action from an explicit
   grounded dock. Only its terminal neutral completion reserves the

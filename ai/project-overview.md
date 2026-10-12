@@ -79,9 +79,9 @@ repair commands. Generation/publication: [../tools/README.md](../tools/README.md
 
 ## Implemented capabilities
 
-- CombatTest:standard/endless;1 NPC/2.5 active s/count;hero injuries persist,
-  both carried guns refill. Pistol+bar/shotgun;rig carry/aim/Step/destruction.
-  Gap:pierce/balance.
+- CombatTest:seeded warehouse/2stairs/3galleries/NPC graph-height-LOS.
+  Standard/endless:1NPC/2.5s/injuries kept/guns refill;pistol+bar/shotgun/
+  destruction;gap:pierce/balance.
 - City: 20 metre types; district heights, curved old/service streets,
   courts/passages/wings, unified ground; river/shore, church and Route 01.
   First unpaused dock entry starts finite port→factory→shop supply once;
