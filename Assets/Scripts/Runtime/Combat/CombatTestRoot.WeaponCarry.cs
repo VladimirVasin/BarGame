@@ -29,6 +29,7 @@ namespace BarPromenade
 
         private void AdvanceProjectilePools(float seconds)
         {
+            AdvanceAmmoPickups(seconds);
             pistolProjectiles?.Advance(seconds, combatParticipants);
             shotgunProjectiles?.Advance(seconds, combatParticipants);
         }

@@ -11,6 +11,8 @@ namespace BarPromenade.Tests.EditMode
         public void EachRequestSpendsExactlyOneChamberAndEmptyBarrelsCannotFire()
         {
             var shotgun = new ShotgunState();
+            Assert.That(shotgun.ReserveRounds, Is.EqualTo(8));
+            Assert.That(shotgun.ReserveCapacity, Is.EqualTo(16));
             Assert.That(shotgun.TryReload(), Is.False);
             Assert.That(shotgun.TryFire(), Is.False);
             shotgun.SetAim(true);
@@ -46,6 +48,7 @@ namespace BarPromenade.Tests.EditMode
             var shotgun = FiredShotgun(shots);
             Assert.That(shotgun.TryReload(), Is.True);
             Assert.That(shotgun.ReloadChamberMask, Is.EqualTo(shots == 1 ? 1 : 3));
+            Assert.That(shotgun.ReloadLoadMask, Is.EqualTo(shotgun.ReloadChamberMask));
             shotgun.Advance(.45f);
             Assert.That(shotgun.BreakOpen01, Is.EqualTo(1f).Within(Eps));
             Assert.That(shotgun.ChamberSpent(0), Is.True);
@@ -57,19 +60,23 @@ namespace BarPromenade.Tests.EditMode
                 "An unused live shell remains in its chamber throughout the reload.");
             shotgun.Advance(.949f);
             Assert.That(shotgun.ChamberLoaded(0), Is.False);
+            Assert.That(shotgun.ReserveRounds, Is.EqualTo(8));
             shotgun.Advance(.001f);
             Assert.That(shotgun.ChamberLoaded(0), Is.True);
+            Assert.That(shotgun.ReserveRounds, Is.EqualTo(7));
             Assert.That(shotgun.Rounds, Is.EqualTo(shots == 1 ? 2 : 1));
             shotgun.Advance(.599f);
             Assert.That(shotgun.ChamberLoaded(1), Is.EqualTo(shots == 1));
             shotgun.Advance(.001f);
             Assert.That(shotgun.Rounds, Is.EqualTo(2));
+            Assert.That(shotgun.ReserveRounds, Is.EqualTo(8 - shots));
             Assert.That(shotgun.TryFire(), Is.False, "Loaded shells cannot fire while the action is open.");
             shotgun.Advance(.599f);
             Assert.That(shotgun.ReloadPending, Is.True);
             shotgun.Advance(.001f);
             Assert.That(shotgun.MagazineAttached, Is.True);
             Assert.That(shotgun.ReloadPending, Is.False);
+            Assert.That(shotgun.ReloadLoadMask, Is.Zero);
             Assert.That(shotgun.IsRaising, Is.True);
             shotgun.Advance(.35f);
             Assert.That(shotgun.CanFire, Is.True);
@@ -83,10 +90,11 @@ namespace BarPromenade.Tests.EditMode
         [TestCase(2.6f)]
         public void CancellationPreservesChambersAngleAndClockUntilExplicitResume(float elapsed)
         {
-            var shotgun = FiredShotgun(2);
+            var shotgun = FiredShotgun(2, settings: new ShotgunSettings(startingReserveRounds: 2, reserveCapacity: 4));
             shotgun.TryReload();
             shotgun.Advance(elapsed);
             int rounds = shotgun.Rounds;
+            int reserve = shotgun.ReserveRounds;
             float angle = shotgun.BreakOpen01;
             bool firstSpent = shotgun.ChamberSpent(0), secondSpent = shotgun.ChamberSpent(1);
             shotgun.CancelAction();
@@ -94,8 +102,10 @@ namespace BarPromenade.Tests.EditMode
             shotgun.Advance(20f);
             shotgun.SetAim(true);
             Assert.That(shotgun.ReloadPending, Is.True);
+            Assert.That(shotgun.ReloadLoadMask, Is.EqualTo(3));
             Assert.That(shotgun.IsReloading, Is.False);
             Assert.That(shotgun.Rounds, Is.EqualTo(rounds));
+            Assert.That(shotgun.ReserveRounds, Is.EqualTo(reserve));
             Assert.That(shotgun.ReloadElapsed, Is.EqualTo(elapsed).Within(Eps));
             Assert.That(shotgun.BreakOpen01, Is.EqualTo(angle).Within(Eps));
             Assert.That(shotgun.ChamberSpent(0), Is.EqualTo(firstSpent));
@@ -104,9 +114,55 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(shotgun.TryReload(), Is.True);
             shotgun.Advance(shotgun.Settings.ReloadSeconds - elapsed + shotgun.Settings.RaiseSeconds);
             Assert.That(shotgun.Rounds, Is.EqualTo(2));
+            Assert.That(shotgun.ReserveRounds, Is.Zero);
             Assert.That(shotgun.ReloadPending, Is.False);
             Assert.That(shotgun.CanFire, Is.True);
             Assert.That(shotgun.TryReload(), Is.False, "Resuming cannot duplicate shells or queue another full reload.");
+        }
+
+        [Test]
+        public void OneShellReloadCanResumeClosingEmptyReserveWithoutCreatingTheSecondShell()
+        {
+            var shotgun = FiredShotgun(2, settings: new ShotgunSettings(startingReserveRounds: 1, reserveCapacity: 2));
+            Assert.That(shotgun.TryReload(), Is.True);
+            Assert.That(shotgun.ReloadChamberMask, Is.EqualTo(3));
+            Assert.That(shotgun.ReloadLoadMask, Is.EqualTo(1));
+            shotgun.Advance(shotgun.Settings.LoadFirstSeconds);
+            Assert.That(shotgun.Rounds, Is.EqualTo(1));
+            Assert.That(shotgun.ReserveRounds, Is.Zero);
+            shotgun.CancelAction();
+            Assert.That(shotgun.ReloadLoadMask, Is.EqualTo(1));
+            Assert.That(shotgun.TryReload(), Is.True, "An interrupted action must still close after spending the last reserve shell.");
+            shotgun.Advance(shotgun.Settings.LoadSecondSeconds - shotgun.Settings.LoadFirstSeconds);
+            Assert.That(shotgun.ChamberLoaded(1), Is.False);
+            Assert.That(shotgun.AddReserveRounds(0), Is.Zero);
+            Assert.Throws<ArgumentOutOfRangeException>(() => shotgun.AddReserveRounds(-1));
+            Assert.That(shotgun.AddReserveRounds(int.MaxValue), Is.EqualTo(2));
+            Assert.That(shotgun.AddReserveRounds(1), Is.Zero);
+            shotgun.CancelAction();
+            Assert.That(shotgun.TryReload(), Is.True);
+            shotgun.Advance(shotgun.Settings.ReloadSeconds - shotgun.Settings.LoadSecondSeconds);
+            Assert.That(shotgun.Rounds, Is.EqualTo(1), "A pickup after the insert boundary waits for another physical reload.");
+            Assert.That(shotgun.ReserveRounds, Is.EqualTo(2));
+            Assert.That(shotgun.ReloadPending, Is.False);
+            Assert.That(shotgun.ReloadLoadMask, Is.Zero);
+            Assert.That(shotgun.TryReload(), Is.True);
+            Assert.That(shotgun.ReloadChamberMask, Is.EqualTo(2));
+            Assert.That(shotgun.ReloadLoadMask, Is.EqualTo(2));
+            shotgun.Advance(shotgun.Settings.LoadFirstSeconds);
+            Assert.That(shotgun.ReserveRounds, Is.EqualTo(2));
+            shotgun.Advance(shotgun.Settings.LoadSecondSeconds - shotgun.Settings.LoadFirstSeconds);
+            Assert.That(shotgun.Rounds, Is.EqualTo(2));
+            Assert.That(shotgun.ReserveRounds, Is.EqualTo(1));
+            Assert.That(shotgun.ReloadLoadMask, Is.EqualTo(2));
+            shotgun.Reset();
+            Assert.That(shotgun.Rounds, Is.EqualTo(2));
+            Assert.That(shotgun.ReserveRounds, Is.EqualTo(1));
+            Assert.That(shotgun.ReloadLoadMask, Is.Zero);
+
+            var emptyReserve = FiredShotgun(2, settings: new ShotgunSettings(startingReserveRounds: 0));
+            Assert.That(emptyReserve.TryReload(), Is.False);
+            Assert.That(emptyReserve.ReloadPending, Is.False);
         }
 
         [TestCase(1)]
@@ -120,6 +176,7 @@ namespace BarPromenade.Tests.EditMode
             for (int step = 0; step < 378; step++) fine.Advance(1f / 120f);
             hitch.Advance(378f / 120f);
             Assert.That(fine.Rounds, Is.EqualTo(hitch.Rounds));
+            Assert.That(fine.ReserveRounds, Is.EqualTo(hitch.ReserveRounds));
             Assert.That(fine.ReloadPending, Is.EqualTo(hitch.ReloadPending));
             Assert.That(fine.AimProgress, Is.EqualTo(hitch.AimProgress).Within(Eps));
             Assert.That(fine.CanFire && hitch.CanFire, Is.True);
@@ -142,6 +199,7 @@ namespace BarPromenade.Tests.EditMode
             int sequence = shotgun.ShotSequence;
             shotgun.Reset();
             Assert.That(shotgun.Rounds, Is.EqualTo(2));
+            Assert.That(shotgun.ReserveRounds, Is.EqualTo(8));
             Assert.That(shotgun.ChamberSpent(0) || shotgun.ChamberSpent(1), Is.False);
             Assert.That(shotgun.ReloadPending || shotgun.AimRequested, Is.False);
             Assert.That(shotgun.CooldownRemaining, Is.Zero);
@@ -225,6 +283,8 @@ namespace BarPromenade.Tests.EditMode
             IFirearmState firearm = pistol;
             Assert.That(firearm.Settings, Is.SameAs(pistol.Settings));
             Assert.That(firearm.Settings.MagazineCapacity, Is.EqualTo(8));
+            Assert.That(firearm.ReserveRounds, Is.EqualTo(24));
+            Assert.That(firearm.ReserveCapacity, Is.EqualTo(48));
             firearm.SetAim(true);
             firearm.Advance(.25f);
             Assert.That(firearm.TryFire(), Is.True);
@@ -238,14 +298,15 @@ namespace BarPromenade.Tests.EditMode
             firearm.TryReload();
             firearm.Advance(.5f);
             Assert.That(firearm.Rounds, Is.EqualTo(8));
+            Assert.That(firearm.ReserveRounds, Is.EqualTo(23));
             var body = new MeleeCombatant(new MeleeCombatSettings(maxHealth: 500f));
             body.ReceiveProjectileHit(.01f, new MeleeHitLocation(MeleeBodyRegion.Head, MeleeHitSide.Front));
             Assert.That(body.IsDefeated, Is.True);
         }
 
-        private static ShotgunState FiredShotgun(int shots, bool advanceCooldown = true)
+        private static ShotgunState FiredShotgun(int shots, bool advanceCooldown = true, ShotgunSettings settings = null)
         {
-            var shotgun = new ShotgunState();
+            var shotgun = new ShotgunState(settings);
             shotgun.SetAim(true);
             shotgun.Advance(shotgun.Settings.RaiseSeconds);
             for (int shot = 0; shot < shots; shot++)

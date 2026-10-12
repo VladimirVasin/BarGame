@@ -18,10 +18,14 @@ namespace BarPromenade
         public ShotgunSettings Settings { get; }
         FirearmSettings IFirearmState.Settings => Settings;
         public int Rounds => (loaded[0] ? 1 : 0) + (loaded[1] ? 1 : 0);
+        public int ReserveRounds { get; private set; }
+        public int ReserveCapacity => Settings.ReserveCapacity;
         public int ShotSequence { get; private set; }
         public int NextBarrel => loaded[0] ? 0 : loaded[1] ? 1 : -1;
         public int LastFiredBarrel { get; private set; }
         public int ReloadChamberMask { get; private set; }
+        /// <summary>Shells selected from the reserve when the action starts; pickups wait for the next action.</summary>
+        public int ReloadLoadMask { get; private set; }
         public bool AimRequested { get; private set; }
         public bool IsReloading => reloading;
         public bool ReloadPending => ReloadChamberMask != 0;
@@ -64,8 +68,19 @@ namespace BarPromenade
 
         public bool TryReload()
         {
-            if (reloading || !ReloadPending && Rounds == 2) return false;
-            if (!ReloadPending) ReloadChamberMask = (loaded[0] ? 0 : 1) | (loaded[1] ? 0 : 2);
+            if (reloading || !ReloadPending && (Rounds == 2 || ReserveRounds == 0)) return false;
+            if (!ReloadPending)
+            {
+                ReloadChamberMask = (loaded[0] ? 0 : 1) | (loaded[1] ? 0 : 2);
+                int available = ReserveRounds;
+                ReloadLoadMask = 0;
+                if ((ReloadChamberMask & 1) != 0 && available > 0)
+                {
+                    ReloadLoadMask |= 1;
+                    available--;
+                }
+                if ((ReloadChamberMask & 2) != 0 && available > 0) ReloadLoadMask |= 2;
+            }
             reloading = true;
             aimElapsed = 0d;
             return true;
@@ -101,6 +116,7 @@ namespace BarPromenade
                 remaining = Math.Max(0d, remaining - untilComplete);
                 reloading = false;
                 ReloadChamberMask = 0;
+                ReloadLoadMask = 0;
                 reloadElapsed = aimElapsed = 0d;
             }
             if (AimRequested && !ReloadPending) aimElapsed = Math.Min(Settings.RaiseSeconds, aimElapsed + remaining);
@@ -113,27 +129,35 @@ namespace BarPromenade
                 if ((ReloadChamberMask & 1) != 0) spent[0] = false;
                 if ((ReloadChamberMask & 2) != 0) spent[1] = false;
             }
-            if (reloadElapsed + .000001d >= Settings.LoadFirstSeconds && (ReloadChamberMask & 1) != 0)
-                loaded[0] = true;
-            if (reloadElapsed + .000001d >= Settings.LoadSecondSeconds && (ReloadChamberMask & 2) != 0)
-                loaded[1] = true;
+            if (reloadElapsed + .000001d >= Settings.LoadFirstSeconds && (ReloadLoadMask & 1) != 0)
+                CommitShell(0);
+            if (reloadElapsed + .000001d >= Settings.LoadSecondSeconds && (ReloadLoadMask & 2) != 0)
+                CommitShell(1);
         }
 
-        public void RefillForEncounter()
+        private void CommitShell(int barrel)
         {
-            loaded[0] = loaded[1] = true;
-            spent[0] = spent[1] = false;
-            ReloadChamberMask = 0;
-            reloading = false;
-            reloadElapsed = 0d;
+            if (loaded[barrel] || ReserveRounds == 0) return;
+            loaded[barrel] = true;
+            ReserveRounds--;
+        }
+
+        public int AddReserveRounds(int amount)
+        {
+            if (amount < 0) throw new ArgumentOutOfRangeException(nameof(amount));
+            int accepted = Math.Min(amount, ReserveCapacity - ReserveRounds);
+            ReserveRounds += accepted;
+            return accepted;
         }
 
         public void Reset()
         {
             loaded[0] = loaded[1] = true;
+            ReserveRounds = Settings.StartingReserveRounds;
             spent[0] = spent[1] = false;
             LastFiredBarrel = -1;
             ReloadChamberMask = 0;
+            ReloadLoadMask = 0;
             ShotSequence = unchecked(ShotSequence + 1);
             AimRequested = reloading = false;
             aimElapsed = reloadElapsed = cooldownRemaining = 0d;

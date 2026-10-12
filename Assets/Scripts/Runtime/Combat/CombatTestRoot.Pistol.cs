@@ -20,16 +20,16 @@ namespace BarPromenade
         private static readonly string[] ShotgunHudKeys =
         { "combat.shotgun.ammo", "combat.shotgun.reloading", "combat.shotgun.empty", "combat.shotgun.reload" };
         private string ammunitionHudSource, ammunitionHudText;
-        private int ammunitionHudRounds, ammunitionHudCapacity;
+        private int ammunitionHudRounds, ammunitionHudReserve;
 
-        private string AmmunitionHudText(string caption, int rounds, int capacity)
+        private string AmmunitionHudText(string caption, int rounds, int reserve)
         {
             if (ammunitionHudText == null || ammunitionHudSource != caption ||
-                ammunitionHudRounds != rounds || ammunitionHudCapacity != capacity)
+                ammunitionHudRounds != rounds || ammunitionHudReserve != reserve)
             {
                 ammunitionHudSource = caption;
-                ammunitionHudRounds = rounds; ammunitionHudCapacity = capacity;
-                ammunitionHudText = caption + " " + rounds + "/" + capacity;
+                ammunitionHudRounds = rounds; ammunitionHudReserve = reserve;
+                ammunitionHudText = caption + " " + rounds + " / " + reserve;
             }
             return ammunitionHudText;
         }
@@ -244,9 +244,10 @@ namespace BarPromenade
             RetroUiTheme.DrawPanel(rect, RetroUiTheme.PanelInset, RetroUiTheme.BorderMuted, false, 0f, 1f, .72f);
             string[] keys = Hero.IsShotgun ? ShotgunHudKeys : PistolHudKeys;
             string ammunition = AmmunitionHudText(LocalizationService.Get(keys[0]), Hero.Firearm.Rounds,
-                Hero.Firearm.Settings.MagazineCapacity);
+                Hero.Firearm.ReserveRounds);
             GUI.Label(new Rect(rect.x + 6f, rect.y + 1f, rect.width - 12f, 12f), ammunition, small);
-            string status = LocalizationService.Get(keys[Hero.Firearm.ReloadPending ? 1 : Hero.Firearm.Rounds == 0 ? 2 : 3]);
+            string status = LocalizationService.Get(Hero.Firearm.ReloadPending ? keys[1] :
+                Hero.Firearm.ReserveRounds == 0 ? "combat.ammo.no_reserve" : keys[Hero.Firearm.Rounds == 0 ? 2 : 3]);
             GUI.Label(new Rect(rect.x + 6f, rect.y + 12f, rect.width - 12f, 12f), status, controls);
             if (Hero.Firearm.IsReloading)
                 RetroUiTheme.FillRect(new Rect(rect.x + 6f, rect.y + rect.height - 2f,

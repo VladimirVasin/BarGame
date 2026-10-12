@@ -120,6 +120,7 @@ namespace BarPromenade
             Sparring = Mode == CombatTestMode.Endless;
             Hero.InitializeHero(Player, selection.Loadout);
             InitializeWeaponPools();
+            InitializeAmmoPickups();
             CameraFollow = camera.GetComponent<PlayerCameraFollow>() ?? camera.gameObject.AddComponent<PlayerCameraFollow>();
             CameraFollow.Initialize(camera, Player.GameObject.transform, false);
             CreateCombatOpponents();
@@ -165,6 +166,7 @@ namespace BarPromenade
             Taunt?.ResetRound();
             Hero.ResetActor(heroSpawn, Vector3.forward);
             ResetCombatOpponents();
+            ResetAmmoPickups();
             Physics.SyncTransforms();
             opponentDelay = .8f;
             pendingSeconds = roundEndFreeze = roundEndElapsed = 0d;
@@ -269,7 +271,8 @@ namespace BarPromenade
 
         private void TickCore(float seconds)
         {
-            if (!IsInitialized || !GameInput.CanRead(GameInputContext.Gameplay)) return;
+            if (!IsInitialized || !isActiveAndEnabled || !GameInput.CanRead(GameInputContext.Gameplay)) return;
+            AmmoSpawns?.SetInteractionEnabled(!Hero.State.IsDefeated && pistolApplicationFocused);
             if (float.IsNaN(seconds) || float.IsInfinity(seconds) || seconds < 0f)
                 throw new ArgumentOutOfRangeException(nameof(seconds));
             if (Mode == CombatTestMode.Endless) { TickEndlessCore(seconds); return; }

@@ -34,6 +34,7 @@ This screen moves an item model; it does not authorize a new hero animation.
 | An already confirmed grant, including woodpiles | `InventoryTargetInteractionController` for Yes/No, then `WorldItemFoundScreen.TryPresentReceived` | Source calls `TryAddInventoryItem` once after rechecking capacity. Screen shows success and Close; closing/Escape cannot grant or refund. |
 | Inspection inside an existing modal interaction | `HomeRefrigeratorItemInspectionController` pattern | Reuse `WorldItemInspectionPresenter`, `WorldItemInspectionTimeline` and `RetroItemPanel`; retain the outer owner, do not acquire a competing lock. |
 | Reclaim CombatTest equipment | `WorldItemFoundScreen`: `CombatCrowbar`/`CombatPistol`/`CombatShotgun` | Take re-equips the same weapon after return, preserving ammo/reload. No grant; Cancel leaves it on the floor. |
+| CombatTest ammunition | `WorldItemFoundScreen`: authored magazine/shells | Take credits the carried `IFirearmState` reserve once; full reserve refuses, a partial fill consumes one pack. No inventory grant; Cancel leaves the pack. |
 
 `WorldItemFoundScreen` is installed once on the hero by `PlayerFactory`, resolved
 through `WorldItemFoundScreen.For(interactor)`. `InventoryItemModelFactory` and
@@ -48,9 +49,10 @@ completion; an already granted receipt carries its success line on the screen.
 Production players must have the initialized shared screen; stripped test rigs
 may use the existing direct-grant fallback, which does not prove presentation.
 
-Capacity and collection state belong to `GameSessionState`, not the screen or
-individual pile. Replenishable sources use a temporary model instance owned by
-the source and leave their stock visible. A duplicate refusal appears only on
+Ordinary inventory capacity/collection belong to `GameSessionState`; CombatTest
+gear/ammo belong to the actor/firearm state, never the screen. Replenishable
+inventory sources own a temporary model and leave their stock visible.
+A duplicate refusal appears only on
 a new deliberate interaction. Never emulate a grant by a success label alone.
 
 ## Input and lifetime

@@ -5,46 +5,46 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 
 ## 2026-10-13 — Bounded world and combat population
 
-- City litter: finite root-owned shared material palette/0MPBs; dormant roots
-  retain it, teardown leaves others/defaults. Float colours use tolerance.
-- Forest chunks within original layers keep whole-layer geometry/UV/normal
-  and collision oracles, wind/shadows and one collider; its renderless trunk
-  buffer is duplicated.
-- Cannery hair: distance/camera hysteresis, physical time/contacts/pause/near
-  continuity retained; EditMode releases authored animation graphs.
-- Village: automatic greetings use simulation time/E immediate; saturated
-  visibility buffers grow/retry/reuse, retaining walls.
-- Three ordinary port albedos use Windows BC7 at the existing resolution/mips/
-  sampling. Actual imported resources are checked, not only requested settings.
-- Endless defaults to two live opponents; the shared pool still permits five.
-  A separate corpse cap retires oldest deaths, including dropped props and
-  actor-owned damage/physics, without clearing survivors or unrelated flights.
-  The linked DuelJournal analysis supports a conservative default, not a
-  hardware maximum or an FPS gain; general debug logs contain no frame timings.
-- User made optimization a permanent design constraint for future work.
-  `AGENTS.md` owns the rules; `AI.md` exposes them each session. Behavior/canon
-  and FAST scope remain binding; comparable measurements distinguish gains
-  from expectations. `check-docs.py` and diff review verify the memory update.
-- CombatTest hero now breathes/trembles through firearm aim, with stronger
-  walk/settle drift and asymmetric recoil/overshoot; peaks stay.
-  Supporting fingers regrip while palm contact holds; shot blink/chin/breath
-  reuse body tension and the same rig. Real-muzzle reticle agrees with shots;
-  camera and intended leg heading stay stable, including grounded aim.
-  NPC aim is unchanged; bounded phases freeze/reset with ownership.
-- CombatTest carries all three weapons; prep chooses the held one, 1/2/3
-  selects it. Existing mounts, models, ammo and animated handoffs stay separate.
+- City litter: root-owned finite shared palette/0MPBs, retained while dormant;
+  teardown preserves others/defaults. Float colours use tolerance.
+- Forest chunks preserve whole-layer geometry/UV/normals/collision, wind/shadows
+  and one collider; renderless trunk buffer duplicated.
+- Cannery hair: distance/camera hysteresis retains time/contacts/pause/near
+  continuity; EditMode releases authored graphs.
+- Village: greetings use simulation time/E immediate; saturated visibility
+  buffers grow/retry/reuse, keeping walls.
+- Three port albedos: Windows BC7/same resolution-mips-sampling; actual imports
+  checked beyond requested settings.
+- Endless defaults to two live opponents, pool still permits five. Corpse cap
+  retires oldest deaths/props/owned damage-physics, preserving survivors/flights.
+  DuelJournal supports a conservative default, no hardware max/FPS gain;
+  general debug logs contain no frame timings.
+- Optimization is mandatory: `AGENTS.md` rules/`AI.md` entry; behavior/canon/FAST
+  retained, gains need comparable measurements. Memory: checker/diff review.
+- Hero firearm aim: breath/tremor/walk-settle/asymmetric recoil-overshoot,
+  original peaks; fingers regrip with palm contact; blink/chin/breath reuse
+  body tension/rig. Muzzle reticle agrees with shots; camera/intended legs stay
+  stable, including grounded aim. NPC unchanged; phases freeze/reset with owner.
+- All3/prepheld/1-2-3; separate existing mounts/models/ammo/animated handoffs.
+- Finite pistol8+24/shotgun2+8, caps48/16; physical/partial reload spends reserve,
+  no wave refill. Four authored-model packs grant +8/+4 once through shared E
+  screen; capacity/cancel/partial-safe, respawn12active s indefinitely.
+  Pause/modal/focus/disable/defeat freeze; reset restores pool, Standardwin stays live.
 - Checks: `WorldPresentationBudgetTests`, `CityPortSurfaceImportTests`,
   `RenderedLitter_SharesItsPaletteWithoutBlocksAndReleasesOnlyItsOwnMaterials`,
   `ForestChunks_PreserveGeometryWindBoundsShadowsAndOnePhysicalCollider`,
   `AreaCaptureFixture.WorldPerformance`, `check-docs.py`, `git diff --check`.
   `Range_EndlessPopulationSpawnsGraduallyPreservesSurvivorsAndStopsOnExit`
-  proves corpse order/cleanup, pacing, refill, reset and exit; frame reviewed.
+  proves corpse order/cleanup, pacing, reset and exit; frame reviewed.
   City/forest frames and nearby hair return reviewed; worker frame selection
   checks visible coworker bounds as well as physics occlusion.
   Optional woman CPU capture distinguishes unmeasured iteration fields.
   `Range_InexperiencedFirearmAimKeepsMuzzleReticleAndShotTogether` verifies
   novice motion, barrel projection, fire direction, pause and reset.
   `Range_WeaponCarrySwitchesKeepModelsAmmoAndPhysicalHandoffs` proves all3.
+  `Range_AmmoReservesAndRespawningPickupsStayFinite` proves spend/one credit/
+  respawn/freeze/reset-layout/unload. Found screens/HUD/full-reserve refusal
+  reviewed: models fit, text/buttons readable.
 
 ## 2026-10-12 — Cloth, weapon switching and endless combat
 

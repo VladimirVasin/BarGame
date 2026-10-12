@@ -128,7 +128,7 @@ namespace BarPromenade.Tests.PlayMode
             root.Tick(CombatTestRoot.SimulationStep);
             Assert.That(root.NextOpponentSeconds, Is.EqualTo(beforeHold).Within(.00001f), "Contact hold cannot advance the spawn clock.");
             Assert.That(pistol.Rounds, Is.EqualTo(pistol.Settings.MagazineCapacity - 1));
-            Assert.That(shotgun.Rounds, Is.EqualTo(shotgun.Settings.MagazineCapacity - 1), "A survivor prevents supply.");
+            Assert.That(shotgun.Rounds, Is.EqualTo(shotgun.Settings.MagazineCapacity - 1), "Opponent turnover cannot supply ammunition.");
             Assert.That(root.Projectiles.TrySpawn(hero, new Vector3(-4f, 8f, -4f), Vector3.up, 20), Is.True);
             root.Tick(.35f);
             Assert.That(root.LiveOpponentCount, Is.EqualTo(5));
@@ -180,11 +180,11 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(root.EndlessKills, Is.EqualTo(4), "Retired corpses cannot be credited a second time.");
             yield return CaptureEndlessPopulationGameView("endless-corpses-ru");
 
-            // Clearing every live place opens the separate supply transaction;
-            // this observation neither resets the surviving rig nor its flights.
+            // Clearing every live place retains spent ammunition, the surviving
+            // rig and its flights until the next opponent arrives.
             foreach (CombatActor actor in root.Opponents) actor.State.ReceiveProjectileHit(actor.State.Settings.MaxHealth);
             // The preceding real headshots still own their twelve-substep hold;
-            // supply commits only once active simulation resumes after it.
+            // the population updates once active simulation resumes after it.
             root.Tick(13f * CombatTestRoot.SimulationStep);
             Assert.That(root.LiveOpponentCount, Is.Zero);
             Assert.That(root.CorpseCount, Is.EqualTo(settings.MaximumCorpses));
@@ -200,7 +200,7 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(root.EndlessRunFinished, Is.True);
             Assert.That(root.WaitingForNextOpponent, Is.False);
             root.Tick(1f);
-            Assert.That(root.LiveOpponentCount, Is.Zero, "Hero defeat cancels the pending refill arrival.");
+            Assert.That(root.LiveOpponentCount, Is.Zero, "Hero defeat cancels the pending opponent arrival.");
             Assert.That(root.EndlessKills, Is.EqualTo(6));
 
             root.ResetRound();
@@ -562,7 +562,7 @@ namespace BarPromenade.Tests.PlayMode
         {
             Directory.CreateDirectory(folder);
             var report = new StringBuilder();
-            report.AppendLine("Test rendered Endless warehouse; seed=-41128863; hero=Pistol plus carried Shotgun; NPC=Crowbar; capacity=5; controlled first/refill schedule=60s; captureDeltaTime=0; target=60; vSync=0; framebuffer=" + Screen.width + "x" + Screen.height + ".");
+            report.AppendLine("Test rendered Endless warehouse; seed=-41128863; hero=Pistol plus carried Shotgun; NPC=Crowbar; capacity=5; controlled first/next opponent schedule=60s; captureDeltaTime=0; target=60; vSync=0; framebuffer=" + Screen.width + "x" + Screen.height + ".");
             report.AppendLine("Machine-specific measurements, without absolute FPS assertions. Coroutine wall covers actual rendered intervals; Tick/pose/contacts/cloth scopes overlap and must not be summed. Latest GPU/present timings can refer to older frames. Duel frame_delivery partitions after-LateUpdate/render submission/next-Update wall time, not GPU completion.");
             report.AppendLine("Between phases only spawn readiness is prepared; activation/reset still belongs to the production Tick. The settlement preparation pauses combat/spawn advancement while real PhysX settles the damaged body, outside timing buckets. Main/PlayerLoop recorder samples can lag; exact source attribution is in the optional CPU Timeline and matching Unity-frame markers.");
             report.AppendLine("CPU Timeline: " + (timelineDirectory ?? "not requested; use -endlessPerformanceCpuTimeline"));
@@ -823,6 +823,7 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(firearm.TryFire(), Is.True);
             firearm.CancelAction();
             Assert.That(firearm.Rounds, Is.EqualTo(firearm.Settings.MagazineCapacity - 1));
+            Assert.That(firearm.ReserveRounds, Is.EqualTo(firearm.Settings.StartingReserveRounds));
         }
 
         private void QueueEndlessHeadshot(CombatActor source, CombatActor target, int sequence)
@@ -837,14 +838,22 @@ namespace BarPromenade.Tests.PlayMode
 
         private static void AssertEndlessAmmunition(IFirearmState firearm, int sequence)
         {
-            Assert.That(firearm.Rounds, Is.EqualTo(firearm.Settings.MagazineCapacity));
-            Assert.That(firearm.ShotSequence, Is.EqualTo(sequence), "Refilling must retain the monotonic shot identity.");
+            Assert.That(firearm.Rounds, Is.EqualTo(firearm.Settings.MagazineCapacity - 1),
+                "Defeating every opponent cannot replace the spent round.");
+            Assert.That(firearm.ReserveRounds, Is.EqualTo(firearm.Settings.StartingReserveRounds),
+                "Opponent turnover leaves the carried reserve unchanged.");
+            Assert.That(firearm.ShotSequence, Is.EqualTo(sequence), "Opponent turnover retains the monotonic shot identity.");
             Assert.That(firearm.IsReloading || firearm.ReloadPending, Is.False);
+            Assert.That(firearm.AimRequested, Is.False);
             Assert.That(firearm.MagazineAttached, Is.True);
             if (firearm is ShotgunState shotgun)
             {
-                Assert.That(shotgun.ChamberLoaded(0) && shotgun.ChamberLoaded(1), Is.True);
-                Assert.That(shotgun.ChamberSpent(0) || shotgun.ChamberSpent(1), Is.False);
+                Assert.That(shotgun.ChamberLoaded(0), Is.False);
+                Assert.That(shotgun.ChamberLoaded(1), Is.True);
+                Assert.That(shotgun.ChamberSpent(0), Is.True);
+                Assert.That(shotgun.ChamberSpent(1), Is.False);
+                Assert.That(shotgun.LastFiredBarrel, Is.EqualTo(0));
+                Assert.That(shotgun.ReloadChamberMask | shotgun.ReloadLoadMask, Is.Zero);
             }
         }
 

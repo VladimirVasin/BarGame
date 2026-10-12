@@ -142,6 +142,7 @@ namespace BarPromenade
         private void OnApplicationQuit() { CloseDuelJournal("quit"); WriteMovementSummary(); }
         private void OnDestroy()
         {
+            AmmoSpawns?.Dispose();
             ClearWeaponPools();
             ReleaseFreePistolAim();
             CloseDuelJournal("unload");

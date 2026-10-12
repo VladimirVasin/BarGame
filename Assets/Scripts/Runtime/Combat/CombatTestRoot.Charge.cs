@@ -116,6 +116,7 @@ namespace BarPromenade
         private void OnApplicationFocus(bool focused)
         {
             pistolApplicationFocused = focused;
+            AmmoSpawns?.SetInteractionEnabled(focused && isActiveAndEnabled && Hero != null && !Hero.State.IsDefeated);
             JournalApplicationFocus(focused);
             if (focused) return;
             ResetPistolCrosshair();
@@ -130,6 +131,7 @@ namespace BarPromenade
 
         private void OnDisable()
         {
+            AmmoSpawns?.SetInteractionEnabled(false);
             ResetPistolCrosshair();
             ClearWeaponPools();
             HeadEffects?.ResetRound();

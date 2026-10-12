@@ -18,6 +18,8 @@ namespace BarPromenade
         public PistolSettings Settings { get; }
         FirearmSettings IFirearmState.Settings => Settings;
         public int Rounds { get; private set; }
+        public int ReserveRounds { get; private set; }
+        public int ReserveCapacity => Settings.ReserveCapacity;
         public int ShotSequence { get; private set; }
         public bool AimRequested { get; private set; }
         public bool IsReloading => reloading;
@@ -63,10 +65,10 @@ namespace BarPromenade
             return true;
         }
 
-        /// <summary>The infinite reserve is committed only at the reload's completed boundary.</summary>
+        /// <summary>The finite reserve is committed only at the reload's completed boundary.</summary>
         public bool TryReload()
         {
-            if (reloading || !ReloadPending && Rounds == Settings.MagazineCapacity) return false;
+            if (reloading || !ReloadPending && (Rounds == Settings.MagazineCapacity || ReserveRounds == 0)) return false;
             reloading = true;
             aimElapsed = 0d;
             return true;
@@ -105,23 +107,27 @@ namespace BarPromenade
                     return;
                 }
                 remaining = Math.Max(0d, remaining - untilComplete);
-                Rounds = Settings.MagazineCapacity;
+                int transferred = Math.Min(Settings.MagazineCapacity - Rounds, ReserveRounds);
+                Rounds += transferred;
+                ReserveRounds -= transferred;
                 reloading = false;
                 reloadElapsed = aimElapsed = 0d;
             }
             if (AimRequested && !ReloadPending) aimElapsed = Math.Min(Settings.RaiseSeconds, aimElapsed + remaining);
         }
 
-        public void RefillForEncounter()
+        public int AddReserveRounds(int amount)
         {
-            Rounds = Settings.MagazineCapacity;
-            reloading = false;
-            reloadElapsed = 0d;
+            if (amount < 0) throw new ArgumentOutOfRangeException(nameof(amount));
+            int accepted = Math.Min(amount, ReserveCapacity - ReserveRounds);
+            ReserveRounds += accepted;
+            return accepted;
         }
 
         public void Reset()
         {
             Rounds = Settings.MagazineCapacity;
+            ReserveRounds = Settings.StartingReserveRounds;
             ShotSequence = unchecked(ShotSequence + 1);
             AimRequested = reloading = false;
             aimElapsed = reloadElapsed = cooldownRemaining = 0d;

@@ -19,7 +19,7 @@ namespace BarPromenade
         private readonly List<CombatActor> combatParticipants = new List<CombatActor>(6);
         private int encounterRun;
         private long opponentDefeatOrder;
-        private bool supplyPending, focusNextArrival;
+        private bool focusNextArrival;
         public IReadOnlyList<CombatActor> Opponents => combatOpponents;
         public CombatEncounterSettings EncounterSettings { get; private set; }
         public int LiveOpponentCount
@@ -132,7 +132,6 @@ namespace BarPromenade
                 slot.Actor.gameObject.SetActive(slot.Spawned);
             }
             SelectCombatOpponent(combatOpponents[0]);
-            supplyPending = false;
             focusNextArrival = Mode == CombatTestMode.Endless && !Hero.IsFirearm;
             int seed = unchecked((WarehousePlan?.Seed ?? GameSessionState.CitySeed) ^ ++encounterRun * 486187739);
             endless.Reset(EncounterSettings, seed);

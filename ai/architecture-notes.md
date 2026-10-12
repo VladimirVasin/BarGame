@@ -2,6 +2,11 @@
 
 ## Current facts
 
+- **Accepted exception — 2026-10-13, finite combat ammunition:**
+  User:CombatTest finite reserve/endless level respawn/0wave refill/0story.
+  4slots/authored ammo/shared item standard/reserve-only grant;
+  §6/art§15a/§21/9checks.
+
 - **Accepted — 2026-10-13, three-weapon carry:**
   User:CombatTest all3/1held/2stowed.
   Bounded3/mount-action-ammo/drop-recover-reset/0story;§6/art§15a/9checks.
@@ -4927,19 +4932,15 @@
   remain valid in every state; no guests, readable clues, flies, blood or new
   supernatural effects are introduced. The corresponding story §6 row and
   art §7 define the accepted scope.
-- **Accepted — Data-first interactive Home refrigerator:** The refrigerator is
-  derived from the kitchen footprint as its own validated plan instead of
-  remaining an indistinct cube embedded in the counter. The counter is split
-  around its `1.08 x 0.76 m` footprint and the table moves `0.30 m` deeper in
-  Home-local Z, leaving a player-width waypoint route and a dedicated approach
-  trigger. Runtime composition builds a hollow worn cabinet, three shelves,
-  lower drawer and two door bins around six cavity plus two door storage slots;
-  stable slot IDs initially place one vodka bottle, chicken egg and open stew
-  can. `HomeRefrigeratorItemCatalog` owns each occupant's localized name,
-  description and preview transform, while `HomeRefrigeratorItemView` registers
-  its original root, renderers and tight trigger collider. Stable slot IDs now
-  map to session-owned world-item IDs; collected slots remain physically empty
-  when Home is rebuilt after a scene round trip.
+- **Accepted — Data-first interactive Home refrigerator:** A validated
+  kitchen-footprint plan splits the counter around `1.08 x 0.76 m` and moves
+  the table `0.30 m` deeper in Home-local Z, retaining a player-width waypoint
+  route and dedicated approach trigger. Runtime: hollow worn cabinet/three
+  shelves/lower drawer/two door bins/six cavity+two door slots, initially one
+  vodka bottle/chicken egg/open stew can. `HomeRefrigeratorItemCatalog`: localized
+  name/description/preview transform; `HomeRefrigeratorItemView`: original root/renderers/
+  tight trigger. Stable slot IDs map to session world-item IDs; collected slots
+  stay physically empty across Home rebuilds/scene trips.
   `HomeRefrigeratorInteraction` owns a separate unscaled
   `CameraApproach -> Reach -> Unsealing -> Opening -> Inspecting -> Closing ->
   Sealing -> CameraReturn` timeline. It captures the shared modal lock, keeps

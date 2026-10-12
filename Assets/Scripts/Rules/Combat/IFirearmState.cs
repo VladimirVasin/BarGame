@@ -5,6 +5,8 @@ namespace BarPromenade
     {
         FirearmSettings Settings { get; }
         int Rounds { get; }
+        int ReserveRounds { get; }
+        int ReserveCapacity { get; }
         int ShotSequence { get; }
         bool AimRequested { get; }
         bool IsReloading { get; }
@@ -24,8 +26,8 @@ namespace BarPromenade
         void CancelReload();
         void CancelAction();
         void Advance(float seconds);
-        /// <summary>Combat polygon's inter-encounter supply; shot identity and cooldown survive.</summary>
-        void RefillForEncounter();
+        /// <summary>Adds only the rounds that fit in the carried reserve.</summary>
+        int AddReserveRounds(int amount);
         void Reset();
     }
 }

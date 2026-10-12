@@ -6,8 +6,9 @@ namespace BarPromenade
         public static PistolSettings Prototype { get; } = new PistolSettings();
 
         public PistolSettings(int magazineCapacity = 8, float fireCooldownSeconds = .4f,
-            float raiseSeconds = .25f, float reloadSeconds = 1.8f)
-            : base(magazineCapacity, fireCooldownSeconds, raiseSeconds, reloadSeconds)
+            float raiseSeconds = .25f, float reloadSeconds = 1.8f,
+            int startingReserveRounds = 24, int reserveCapacity = 48)
+            : base(magazineCapacity, fireCooldownSeconds, raiseSeconds, reloadSeconds, startingReserveRounds, reserveCapacity)
         {
         }
 

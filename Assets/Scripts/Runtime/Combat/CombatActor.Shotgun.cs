@@ -51,7 +51,8 @@ namespace BarPromenade
                 shotgunShells[i].gameObject.SetActive(Shotgun.ChamberLoaded(i) || Shotgun.ChamberSpent(i));
             float time = Shotgun.ReloadElapsed;
             int barrel = time >= 1.8f && time < 2.2f ? 1 : time >= 1.05f && time < 1.6f ? 0 : -1;
-            bool held = BodyDamage.CanUseLeftHand && Shotgun.ReloadPending && barrel >= 0 && (Shotgun.ReloadChamberMask & (1 << barrel)) != 0;
+            bool held = BodyDamage.CanUseLeftHand && Shotgun.ReloadPending && barrel >= 0 &&
+                (Shotgun.ReloadLoadMask & (1 << barrel)) != 0 && !Shotgun.ChamberLoaded(barrel) && Shotgun.ReserveRounds > 0;
             if (held) CombatShotgunAssetProvider.PlaceShellInHand(shotgunHandShell, hero.Registry.Anchors.LeftGrip, handPose);
             shotgunHandShell.SetActive(held);
         }
@@ -64,9 +65,9 @@ namespace BarPromenade
                 // Reuse equal authored poses: pouch(.95) == pouch(1.8),
                 // and open foreend(.65) == close foreend(2.4).
                 // Only the empty left hand travels on the reversed return.
-                if (Shotgun.ReloadChamberMask == 1 && time > 1.8f && time < 2.4f)
+                if (Shotgun.ReloadLoadMask == 1 && time > 1.8f && time < 2.4f)
                     return Mathf.Lerp(.95f, .65f, (time - 1.8f) / .6f);
-                if (Shotgun.ReloadChamberMask == 2 && time > .65f && time < 1.8f)
+                if (Shotgun.ReloadLoadMask == 2 && time > .65f && time < 1.8f)
                     return Mathf.Lerp(.65f, .95f, Mathf.InverseLerp(1.5f, 1.8f, time));
                 return time;
             }
@@ -84,7 +85,7 @@ namespace BarPromenade
             }
         }
 
-        private void AdvanceShotgunReload(int spentBefore, bool wasReloading)
+        private void AdvanceShotgunReload(int spentBefore, int loadMaskBefore, bool wasReloading)
         {
             UpdateShotgunMechanics();
             if (!wasReloading) return;
@@ -95,7 +96,8 @@ namespace BarPromenade
             while (shotgunReloadCue < ShotgunReloadCues.Length && through + .000001f >= ShotgunReloadCues[shotgunReloadCue])
             {
                 int cue = shotgunReloadCue++;
-                if (cue == 3 && (Shotgun.ReloadChamberMask & 1) == 0 || cue == 4 && (Shotgun.ReloadChamberMask & 2) == 0) continue;
+                if (cue == 3 && ((loadMaskBefore & 1) == 0 || !Shotgun.ChamberLoaded(0)) ||
+                    cue == 4 && ((loadMaskBefore & 2) == 0 || !Shotgun.ChamberLoaded(1))) continue;
                 RetroSfxId sound = cue == 5 ? RetroSfxId.ShotgunClose : cue < 2 ? RetroSfxId.ShotgunOpen :
                     cue == 2 ? RetroSfxId.PistolCasingEject : RetroSfxId.ShotgunShellInsert;
                 RetroAudio.PlayAt(sound, cue >= 3 && cue < 5 ? handPose.CylinderCentre(true) : shotgunHinge.position);

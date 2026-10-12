@@ -80,9 +80,9 @@ repair commands. Generation/publication: [../tools/README.md](../tools/README.md
 
 ## Implemented capabilities
 
-- CombatTest:warehouse/routes;Standard1;Endless1–5(default2)/corpses≤2.
-  Pool≤5/oldest;2–4→3–7s/empty supply/hits.
-  All3/1-2-3/damage;hero sway/recoil/muzzle reticle;gap:pierce/balance.
+- CombatTest:warehouse/routes;Standard1;Endless1–5(default2)/corpses≤2/pool≤5.
+  2–4→3–7s/oldest;8+24/2+8 ammo/4 slots/+8/+4/12s respawn.
+  All3/1-2-3/damage/novice sway-recoil/muzzle reticle;gap:pierce/balance.
 - City: 20 metre types; district heights, curved old/service streets,
   courts/passages/wings, unified ground; river/shore, church and Route 01.
   First unpaused dock entry starts finite port→factory→shop supply once;
@@ -143,10 +143,9 @@ coverage do not imply that any broad regression or player build has just run.
 
 ## Verification policy
 
-FAST is the default for ordinary work, including shared changes. Use one
-primary relevant check, with one additional focused check only where a shared
-framework needs it. Complete suites require an explicit release/full-regression
-request; a build request authorizes that build, not extra suites or a smoke.
+FAST defaults to one relevant check, plus a focused check only for a shared
+framework. Full suites require an explicit release/full-regression request;
+a build request authorizes that build, not extra suites or a smoke.
 [../AGENTS.md](../AGENTS.md) owns the policy; [prompt-templates.md](prompt-templates.md)
 implements it. Record actual execution evidence in the work log, separately
 from these current implementation facts.

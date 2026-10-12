@@ -232,6 +232,7 @@ namespace BarPromenade
             else if (!PistolBodyAvailable) { CancelPendingPistolShot(PistolBodyRejection); Firearm.CancelReload(); }
             bool reloading = Firearm.IsReloading;
             int spentBefore = IsShotgun ? ShotgunSpentMask : 0;
+            int loadMaskBefore = IsShotgun ? Shotgun.ReloadLoadMask : 0;
             float reloadBefore = Firearm.ReloadProgress * 1.8f;
             float pistolSeconds = seconds;
             if (reloading && pistolReloadSettleRemaining > 0f)
@@ -244,7 +245,7 @@ namespace BarPromenade
             }
             else if (!reloading) pistolReloadSettleRemaining = 0f;
             Firearm.Advance(pistolSeconds);
-            if (IsShotgun) AdvanceShotgunReload(spentBefore, reloading);
+            if (IsShotgun) AdvanceShotgunReload(spentBefore, loadMaskBefore, reloading);
             else AdvancePistolReloadAudio(reloading, reloadBefore);
             bool visuallyAiming = Firearm.AimRequested && !Firearm.ReloadPending && PistolAimBodyAvailable;
             float travelSeconds = visuallyAiming ? pistolRaise.length : pistolLower.length;

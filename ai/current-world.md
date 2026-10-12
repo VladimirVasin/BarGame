@@ -140,16 +140,15 @@ The vertical slice contains:
   docks/cannery clear pedestrians. City/Bar/lodge arrival markers: consumed once;
   later spawns stay. Day one mother's-house quest/map marker; door/map/start
   inside closes it; no village signpost;
-- CombatTest:seeded warehouse24×18×6m/upper2.6m/two stairs/straight-L-U galleries;
-  Blender kit/cargo-racks/pipes/8 fixed lamps/2 shadows/concrete-metal steps/vent.
-  NPC graph/gravity/height-LOS;resetkeep/Newreplace;
-  seed/v:plan/journal/CLI;flat:test-only.
-  Standard1/Ebody;Endless1–5(default2)/corpses0–2(default2);Backsettings.
-  2–4→3–7active s/free≥3m-route/0backlog.
-  Pool=livecap≤5/IDs/AI-space-stairs/kill1x/heroend.
-  Injury/action/ammo/flights kept;empty+settled/no reload→guns8/2.
+- CombatTest:seeded warehouse24×18×6m/upper2.6m/2stairs/straight-L-U galleries;
+  Blender kit/cargo-racks/pipes/8lamps/2shadows/concrete-metal steps/vent.
+  NPC graph/gravity/height-LOS;resetkeep/Newreplace;seed/v:plan/journal/CLI;
+  flat:test-only. Standard1/Ebody;Endless1–5(default2)/corpses0–2(default2);
+  Backsettings;2–4→3–7active s/free≥3m-route/0backlog.
+  Pool=livecap≤5/IDs/AI-space-stairs/kill1x/heroend;
+  injury/action/ammo/flights/survivors kept/0encounterrefill.
   Unused→oldest corpse reuse;excess oldest retire/body-drop0;
-  survivors kept/focus≠hits/shotgun-victim/Tab-E0.
+  focus≠hits/shotgun-victim/Tab-E0.
   All3/prepheld(defaultbar);pistol Lundercoat/bar Rbelt/shotgunback;
   sling:Lshoulder→chest/abdomen→low Rside;1/2/3;DpadR cycle-skipdrop;
   6stow-draw/torso-gait;2×/settle;pistol↔bar~1.7s/shotgun~2.4s;
@@ -160,23 +159,23 @@ The vertical slice contains:
   camplane normdiag/Space1m-4way-back/tankreturn/barfocus/injury.
   Hero:breath-tremor/walk-settle/recoil-yaw-overshoot/regrip/blink-chin;
   reticle=muzzle/shotgun centre;stablecam/intent legs/NPC kept.
-  Pistol8∞/reload1.8/slide-emptylock/mag-rack/cases;
-  shotgun2∞/12pellets/.55/head×2/break2.8/stageammo/atomicspend/flightsfinish/winfire.
+  Pistol8+24(cap48)/reload1.8/slide-emptylock/mag-rack/cases;
+  shotgun2+8(cap16)/12pellets/.55/head×2/break2.8/stageammo/atomicspend/winfire.
+  Partial reload/physical spend/0reserve refusal;
+  ammo:4fixed lower-upper/+8Magazine/+4Shells/Eshared confirm1x/full refusal/
+  partial consumes/12active s endless/pause-modal-focus-disable-defeat0/resetpool/Standardwin live.
   Near launch/falloff/1react/head≤14/skin-world first/0pierce-ricochet-guard.
   Cloth-tissue-bone loss/head-limb sever/torso→joined skeleton/0chunks.
   Rhand0weapon/Lhand0twohand-reload;Rbar-loaded pistol;
   Legloss fall/crawl/0rise-step-kick;critical head-torso end/corpses/reset.
   Bar6zones/rearhead-end/metalrecoil/Qsupport;standard taunt/Eshared/0grant;
-- the retained Home opening is reachable only by a legacy request: held bed loop,
-  silent `05:59` clock with rare whole-display flicker, five-second input lock,
-  then localized Wake Up/Quit. Wake sets `06:00`, runs the clock/alarm and hides
-  the menu. Three unscaled seconds later the alarm stops; wake lasts `6.9 s`
-  (`6 s` exit at `1.15`), with a `2.25 s` camera glide followed by gameplay easing;
-- one Home F9 debug window with exact reversible apartment day `1–7`
-  selection and a separate button to enter City at home with its debug map
-  open. Opening, contextual actions, door actions and other modal owners block
-  the window. The city-map button retains the existing one-shot arrival
-  request consumed after the transition;
+- legacy-only Home opening: held bed loop/silent `05:59`/rare whole-clock flicker,
+  five-second input lock/localized Wake Up-Quit. Wake sets `06:00`, starts
+  clock/alarm, hides menu; alarm stops after three unscaled seconds.
+  Wake `6.9 s` (`6 s` exit at `1.15`): `2.25 s` camera glide→gameplay easing;
+- Home F9: exact reversible apartment day `1–7` picker and City-at-home/debug-map
+  button. Opening/contextual/door/modal owners block it;
+  map button retains the one-shot arrival request consumed after transition;
 - one session clock starts at `07:40`/day `1` when the starting place is confirmed
   and persists through Single-mode scene loads.
   The retained Home opening still holds it frozen at `05:59` until its Wake or

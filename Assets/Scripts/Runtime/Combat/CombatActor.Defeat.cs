@@ -184,7 +184,6 @@ namespace BarPromenade
             collectSweep = collectShove = collectKick = sweepValid = false;
             ResetWeaponContacts();
             hero.SetCombatSupportGrip(this, supportGrip, weaponConstraint);
-            RefillCarriedFirearms();
             Present();
         }
 

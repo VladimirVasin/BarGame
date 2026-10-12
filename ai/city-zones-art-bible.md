@@ -4208,11 +4208,9 @@ OS dynamic fonts в IMGUI запрещены; Unity legacy — аварийны�
 Заголовок/основная/приглушённая служебная строка различаются размером/светлотой,
 не цветной плашкой. Разрядка без пробелов/поломки локализации.
 
-Речь по решению `2026-09-11`: `24` знака/с, щелчки не чаще раза в `0,13 с`;
-показ и паузы ответа оставляют время прочесть.
-
-Существующие строки сохраняются. Системные подписи коротки и функциональны;
-внутриигровой текст подчинён `ai/city-story-bible.md` §21.
+Речь (`2026-09-11`): `24` знака/с, щелчки не чаще `0,13 с`;
+показ/паузы ответа дают прочесть. Строки сохранены;
+подписи коротки/функциональны, текст — `ai/city-story-bible.md` §21.
 
 ### Фокус и действие
 
@@ -4248,11 +4246,13 @@ OS dynamic fonts в IMGUI запрещены; Unity legacy — аварийны�
 §6:PS1/вне сюжета/9checks;`ai/architecture-notes.md`.
 `2026-10-12`:warehouse24×18×6m/upper2.6/2stairs/3layouts/cargo-racks/pipes→node;
 8lamps/2shadows/§8wear/vent/concrete-metal/resetseed/New;
-Endless live1–5/poolIDs/2–4→3–7active s/≥3m/AI-spacing-stairs/heroend/empty settled→guns.
+Endless live1–5/poolIDs/2–4→3–7active s/≥3m/AI-spacing-stairs/heroend.
 `2026-10-13`:defaultlive2/corpses0–2(default2)/pool=livecap≤5/oldest retire-reuse.
 `2026-10-10`:pistol LunderM65/bar Rbelt/shotgun sling/back/0hardmount;
 Lshoulder/frontdiag/6stow-draw/rig-model-ammo/Ljacketopen/cloth-hair-scarf.
-`2026-10-13`:all3/1held/2stowed.
+`2026-10-13`:all3/1held/2stowed/finite reserve/0wave refill;
+4fixed lower-upper slots:authored Magazine/4Shells/Esharedscreen;
+12active s endless respawn/pause-modal-focus-disable-defeat0/resetpool.
 Gun:worn unbranded darkmetal/Rpalm gait/2hand aim/crossflash;
 Aim:8gaits/×.85/facing/Step/uppercam/FOV-grip return.
 `2026-10-13`:hero gun:drift/recoil/overshoot/finger regrip/blink;

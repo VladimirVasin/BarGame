@@ -124,12 +124,29 @@ namespace BarPromenade
                     return CombatPistolAssetProvider.CreatePistol(parent).transform;
                 case InventoryItemId.CombatShotgun:
                     return CombatShotgunAssetProvider.CreateShotgun(parent).transform;
+                case InventoryItemId.CombatPistolAmmo:
+                    return CombatPistolAssetProvider.CreateMagazine(parent).transform;
+                case InventoryItemId.CombatShotgunAmmo:
+                    return BuildShotgunAmmo(parent);
                 default:
                     throw new ArgumentOutOfRangeException(
                         nameof(itemId),
                         itemId,
                         "An inventory model requires a concrete item ID.");
             }
+        }
+
+        private static Transform BuildShotgunAmmo(Transform parent)
+        {
+            var root = new GameObject("Shotgun ammunition").transform;
+            root.SetParent(parent, false);
+            for (int index = 0; index < 4; index++)
+            {
+                Transform shell = CombatShotgunAssetProvider.CreateShell(root).transform;
+                shell.localPosition = new Vector3((index - 1.5f) * .025f, 0f, 0f);
+                shell.localRotation = Quaternion.identity;
+            }
+            return root;
         }
 
         private static Transform BuildApartmentKeys(

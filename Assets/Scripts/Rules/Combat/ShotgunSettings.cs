@@ -7,8 +7,9 @@ namespace BarPromenade
     {
         public static ShotgunSettings Prototype { get; } = new ShotgunSettings();
 
-        public ShotgunSettings(float fireCooldownSeconds = .55f, float raiseSeconds = .35f, float reloadSeconds = 2.8f)
-            : base(2, fireCooldownSeconds, raiseSeconds, reloadSeconds) { }
+        public ShotgunSettings(float fireCooldownSeconds = .55f, float raiseSeconds = .35f, float reloadSeconds = 2.8f,
+            int startingReserveRounds = 8, int reserveCapacity = 16)
+            : base(2, fireCooldownSeconds, raiseSeconds, reloadSeconds, startingReserveRounds, reserveCapacity) { }
 
         public int PelletCount => 12;
         public float PelletDamage => 26f;

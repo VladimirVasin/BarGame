@@ -51,7 +51,6 @@ namespace BarPromenade
             bool finished = endless.IsFinished;
             int live = LiveOpponentCount;
             endless.Observe(Hero.State.IsDefeated, live, defeated);
-            if (defeated > 0 && live == 0 && !Hero.State.IsDefeated) supplyPending = true;
             if (!finished && endless.IsFinished)
                 duelJournal?.Record("endless_finished", f0: GameLog.Field("kills", endless.Kills));
         }
@@ -61,12 +60,6 @@ namespace BarPromenade
             if (Mode != CombatTestMode.Endless) return false;
             ObserveEndlessOutcome();
             int live = LiveOpponentCount;
-            if (supplyPending && live == 0 && Hero.TryReceiveEndlessSupply())
-            {
-                supplyPending = false;
-                duelJournal?.Record("endless_supply", actor: 1, f0: GameLog.Field("kills", endless.Kills));
-            }
-            if (live > 0) supplyPending = false;
             if (!endless.Advance(seconds, live)) return false;
             OpponentSlot available = null;
             foreach (OpponentSlot slot in opponentSlots)
