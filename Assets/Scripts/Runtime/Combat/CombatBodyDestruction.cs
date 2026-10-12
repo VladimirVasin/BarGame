@@ -14,7 +14,7 @@ namespace BarPromenade
         {
             internal SkinnedMeshRenderer Skin, Source;
             internal MeshRenderer Released;
-            internal Mesh Baked, ProxyMesh;
+            internal Mesh Baked, ProxyMesh, AuthoredMesh;
             internal Vector3[] BakedVertices;
             internal BodyDamageRegion Region;
             internal int Patch;
@@ -27,6 +27,8 @@ namespace BarPromenade
             internal CombatTorsoDamageSurface Torso;
             internal Fragment Fragment;
             internal uint GeometryVersion => unchecked((Deformation?.GeometryVersion ?? 0u) + (Torso?.GeometryVersion ?? 0u));
+            internal bool PreservesSkinBinding(Mesh candidate) => candidate != null && (candidate == AuthoredMesh ||
+                Deformation?.PreservesPartitionSkinBinding(candidate) == true || Torso?.PreservesSkinBinding(candidate) == true);
             internal void RefreshSurface()
             {
                 Deformation?.Refresh(Skin, Torso != null && Torso.IsRenderingOwnedMesh);
@@ -219,7 +221,7 @@ namespace BarPromenade
                 { source.GetPropertyBlock(properties); skin.SetPropertyBlock(properties); properties.Clear(); }
                 skin.shadowCastingMode = ShadowCastingMode.On; skin.receiveShadows = true; skin.enabled = false;
                 bool visible = source.enabled && source.gameObject.activeInHierarchy;
-                var piece = new Piece { Skin = skin, Source = source, Region = (BodyDamageRegion)region,
+                var piece = new Piece { Skin = skin, Source = source, AuthoredMesh = template.sharedMesh, Region = (BodyDamageRegion)region,
                     Patch = patch, Flesh = isFlesh, Bone = isBone, Eligible = isFlesh || isBone || visible,
                     ProxyPose = body.ProxyPose };
                 if (!isFlesh && !isBone || (region is 7 or 10))
@@ -530,9 +532,9 @@ namespace BarPromenade
             LastProxyCacheInvalidation = piece.ProxyGeometry.LastInvalidation;
             List<Vector3> vertices = piece.ProxyGeometry.Vertices;
             piece.ProxyMesh.GetVertices(vertices);
-            int[] indices = piece.ProxyGeometry.ActiveIndices;
-            if (indices.Length == 0) { SetColliderEnabled(piece.Proxy, false); return; }
-            if (piece.ProxyGeometry.TryNativeBounds(vertices, indices, matrix, minimum,
+            IReadOnlyList<int> indices = piece.ProxyGeometry.ActiveIndices;
+            if (indices.Count == 0) { SetColliderEnabled(piece.Proxy, false); return; }
+            if (piece.ProxyGeometry.TryNativeBounds(vertices, indices, piece.ProxyGeometry.ActiveIndexBuilds, matrix, minimum,
                 out Vector3 centre, out Vector3 size, out bool burst))
             {
                 ProxyNativeBoundsFolds++;
@@ -541,7 +543,7 @@ namespace BarPromenade
                 return;
             }
             Bounds bounds = new Bounds(matrix.MultiplyPoint3x4(vertices[indices[0]]), Vector3.zero);
-            foreach (int index in indices) bounds.Encapsulate(matrix.MultiplyPoint3x4(vertices[index]));
+            for (int i = 0; i < indices.Count; i++) bounds.Encapsulate(matrix.MultiplyPoint3x4(vertices[indices[i]]));
             SetColliderBounds(piece.Proxy, bounds.center, Vector3.Max(bounds.size, minimum));
         }
 
@@ -549,15 +551,16 @@ namespace BarPromenade
         {
             internal readonly Vector3[] Vertices;
             internal readonly int[] ActiveIndices, CachedActiveIndices;
-            internal readonly int IndexBuilds;
+            internal readonly int IndexBuilds, SkinBindingBuilds;
             internal readonly Matrix4x4 Matrix;
             internal readonly Vector3 Minimum, NativeCentre, NativeSize;
             internal readonly bool ExecutedInBurst;
 
-            internal ProxyBoundsDiagnostic(Vector3[] vertices, int[] indices, int[] cachedIndices, int indexBuilds,
+            internal ProxyBoundsDiagnostic(Vector3[] vertices, int[] indices, int[] cachedIndices, int indexBuilds, int skinBindingBuilds,
                 Matrix4x4 matrix, Vector3 minimum, Vector3 centre, Vector3 size, bool burst)
             {
                 Vertices = vertices; ActiveIndices = indices; CachedActiveIndices = cachedIndices; IndexBuilds = indexBuilds;
+                SkinBindingBuilds = skinBindingBuilds;
                 Matrix = matrix; Minimum = minimum;
                 NativeCentre = centre; NativeSize = size; ExecutedInBurst = burst;
             }
@@ -579,10 +582,10 @@ namespace BarPromenade
                     int[] indices = piece.Skin.sharedMesh.triangles;
                     Matrix4x4 matrix = proxy.transform.parent.worldToLocalMatrix * piece.Skin.transform.localToWorldMatrix;
                     Vector3 minimum = piece.ProxyGeometry.MinimumSize;
-                    if (!piece.ProxyGeometry.TryNativeBounds(vertices, indices, matrix, minimum,
+                    if (!piece.ProxyGeometry.TryNativeBounds(vertices, indices, 0, matrix, minimum,
                         out Vector3 centre, out Vector3 size, out bool burst)) return false;
-                    sample = new ProxyBoundsDiagnostic(vertices.ToArray(), indices, piece.ProxyGeometry.ActiveIndices,
-                        piece.ProxyGeometry.ActiveIndexBuilds, matrix, minimum, centre, size, burst);
+                    sample = new ProxyBoundsDiagnostic(vertices.ToArray(), indices, piece.ProxyGeometry.DiagnosticActiveIndices,
+                        piece.ProxyGeometry.ActiveIndexBuilds, piece.ProxyGeometry.SkinBindingBuilds, matrix, minimum, centre, size, burst);
                     return true;
                 }
                 finally { Destroy(baked); }
@@ -606,6 +609,7 @@ namespace BarPromenade
             private readonly Dictionary<Transform, Node> nodes = new Dictionary<Transform, Node>();
             private readonly Dictionary<(Transform, Transform), ProxyGeometry.RelativePose> relativePoses =
                 new Dictionary<(Transform, Transform), ProxyGeometry.RelativePose>();
+            private readonly Dictionary<Transform, ProxyGeometry.ScalePose> scalePoses = new Dictionary<Transform, ProxyGeometry.ScalePose>();
             private ulong pass;
             internal int Count => nodes.Count;
             internal ulong Pass => pass;
@@ -618,6 +622,13 @@ namespace BarPromenade
                 if (!nodes.TryGetValue(transform, out Node node))
                 { node = new Node(this, transform); nodes.Add(transform, node); }
                 return node;
+            }
+
+            internal ProxyGeometry.ScalePose ScaleFor(Transform transform)
+            {
+                if (!scalePoses.TryGetValue(transform, out ProxyGeometry.ScalePose pose))
+                    scalePoses.Add(transform, pose = new ProxyGeometry.ScalePose(transform, this));
+                return pose;
             }
 
             internal ProxyGeometry.RelativePose RelativeFor(Transform source, Transform target)
@@ -677,9 +688,22 @@ namespace BarPromenade
         internal sealed class ProxyGeometry : IDisposable
         {
             internal readonly List<Vector3> Vertices = new List<Vector3>();
-            internal int[] ActiveIndices { get; private set; } = Array.Empty<int>();
+            private readonly List<int> activeIndices = new List<int>(), submeshIndices = new List<int>();
+            internal IReadOnlyList<int> ActiveIndices => activeIndices;
             internal int ActiveIndexBuilds { get; private set; }
-            private Mesh mesh;
+            internal int SkinBindingBuilds { get; private set; }
+            private int diagnosticIndexBuilds = -1;
+            private int[] diagnosticIndices;
+            internal int[] DiagnosticActiveIndices
+            {
+                get
+                {
+                    if (diagnosticIndexBuilds != ActiveIndexBuilds)
+                    { diagnosticIndices = activeIndices.ToArray(); diagnosticIndexBuilds = ActiveIndexBuilds; }
+                    return diagnosticIndices;
+                }
+            }
+            private Mesh bindingMesh;
             private Mesh indicesMesh;
             private int indicesTopologyBuilds;
             private Transform[] bones;
@@ -695,13 +719,13 @@ namespace BarPromenade
             internal ProxyCacheInvalidation LastInvalidation { get; private set; }
             internal Vector3 MinimumSize => minimumSize;
 
-            internal bool TryNativeBounds(List<Vector3> vertices, int[] indices, Matrix4x4 matrix, Vector3 minimum,
+            internal bool TryNativeBounds(List<Vector3> vertices, IReadOnlyList<int> indices, int indicesVersion, Matrix4x4 matrix, Vector3 minimum,
                 out Vector3 centre, out Vector3 size, out bool burst)
             {
                 centre = size = default; burst = false;
-                if (!PlayerScarfBodyContacts.NativeClothSupported || indices.Length == 0) return false;
+                if (!PlayerScarfBodyContacts.NativeClothSupported || indices.Count == 0) return false;
                 boundsWork ??= new ProxyBoundsWork();
-                return boundsWork.Run(vertices, indices, matrix, minimum, out centre, out size, out burst);
+                return boundsWork.Run(vertices, indices, indicesVersion, matrix, minimum, out centre, out size, out burst);
             }
 
             public void Dispose() { boundsWork?.Dispose(); boundsWork = null; }
@@ -711,9 +735,11 @@ namespace BarPromenade
                 private NativeArray<Vector3> vertices, result;
                 private NativeArray<int> indices;
                 private Vector3[] upload = Array.Empty<Vector3>();
-                private int[] uploadedIndices;
+                private int[] indexUpload = Array.Empty<int>();
+                private IReadOnlyList<int> uploadedIndices;
+                private int uploadedIndicesVersion;
 
-                internal bool Run(List<Vector3> cloud, int[] corners, Matrix4x4 matrix, Vector3 minimum,
+                internal bool Run(List<Vector3> cloud, IReadOnlyList<int> corners, int cornersVersion, Matrix4x4 matrix, Vector3 minimum,
                     out Vector3 centre, out Vector3 size, out bool burst)
                 {
                     centre = size = default; burst = false;
@@ -725,24 +751,28 @@ namespace BarPromenade
                             vertices = new NativeArray<Vector3>(cloud.Count, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
                             upload = new Vector3[cloud.Count];
                         }
-                        if (!indices.IsCreated || indices.Length < corners.Length)
+                        if (!indices.IsCreated || indices.Length < corners.Count)
                         {
                             if (indices.IsCreated) indices.Dispose();
-                            indices = new NativeArray<int>(corners.Length, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
+                            indices = new NativeArray<int>(corners.Count, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
+                            indexUpload = new int[corners.Count];
                             uploadedIndices = null;
                         }
                         if (!result.IsCreated) result = new NativeArray<Vector3>(2, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
                         cloud.CopyTo(upload);
                         NativeArray<Vector3>.Copy(upload, 0, vertices, 0, cloud.Count);
-                        if (!ReferenceEquals(uploadedIndices, corners))
+                        if (!ReferenceEquals(uploadedIndices, corners) || uploadedIndicesVersion != cornersVersion)
                         {
-                            NativeArray<int>.Copy(corners, 0, indices, 0, corners.Length);
-                            uploadedIndices = corners;
+                            if (corners is List<int> ordered) ordered.CopyTo(indexUpload);
+                            else if (corners is int[] array) Array.Copy(array, indexUpload, corners.Count);
+                            else for (int i = 0; i < corners.Count; i++) indexUpload[i] = corners[i];
+                            NativeArray<int>.Copy(indexUpload, 0, indices, 0, corners.Count);
+                            uploadedIndices = corners; uploadedIndicesVersion = cornersVersion;
                         }
                         var job = new CombatBodyProxyBoundsJob
                         {
                             Vertices = vertices, Indices = indices, Result = result, Matrix = matrix,
-                            MinimumSize = minimum, VertexCount = cloud.Count, IndexCount = corners.Length
+                            MinimumSize = minimum, VertexCount = cloud.Count, IndexCount = corners.Count
                         };
                         CombatBodyProxyBoundsJob.RunSynchronous(ref job);
                         if (job.Completed == 0) return false;
@@ -758,16 +788,19 @@ namespace BarPromenade
                     if (indices.IsCreated) indices.Dispose();
                     if (result.IsCreated) result.Dispose();
                     vertices = default; indices = default; result = default;
-                    upload = Array.Empty<Vector3>(); uploadedIndices = null;
+                    upload = Array.Empty<Vector3>(); indexUpload = Array.Empty<int>(); uploadedIndices = null;
                 }
             }
 
             internal bool Capture(Piece piece, Transform target, out Matrix4x4 matrix, out Vector3 minimum)
             {
                 Mesh current = piece.Skin.sharedMesh;
-                if (mesh != current)
+                // Our cloth/erosion meshes clone the same weights, bones and blend
+                // definitions. A changed vertex/index revision does not rebind skin.
+                if (bindingMesh != current && !(piece.PreservesSkinBinding(bindingMesh) && piece.PreservesSkinBinding(current)))
                 {
-                    mesh = current; bones = piece.Skin.bones;
+                    bindingMesh = current; bones = piece.Skin.bones;
+                    SkinBindingBuilds++;
                     var used = new SortedSet<int>();
                     foreach (BoneWeight weight in current.boneWeights)
                     {
@@ -784,8 +817,8 @@ namespace BarPromenade
                     captured = false;
                 }
                 matrix = default;
-                targetScalePose ??= new ScalePose(target, piece.ProxyPose);
-                rendererScalePose ??= new ScalePose(piece.Skin.transform, piece.ProxyPose);
+                targetScalePose ??= piece.ProxyPose.ScaleFor(target);
+                rendererScalePose ??= piece.ProxyPose.ScaleFor(piece.Skin.transform);
                 bool targetScaleChanged = targetScalePose.Capture(out Vector3 scale);
                 minimum = new Vector3(.003f / Mathf.Max(.000001f, Mathf.Abs(scale.x)),
                     .003f / Mathf.Max(.000001f, Mathf.Abs(scale.y)), .003f / Mathf.Max(.000001f, Mathf.Abs(scale.z)));
@@ -798,7 +831,10 @@ namespace BarPromenade
                     // Cloth/grip revisions move vertices without changing corner
                     // order. Only erosion SetTriangles or mesh replacement can
                     // change the active topology of these prepared partitions.
-                    ActiveIndices = current.triangles; ActiveIndexBuilds++;
+                    activeIndices.Clear();
+                    for (int sub = 0; sub < current.subMeshCount; sub++)
+                    { current.GetTriangles(submeshIndices, sub); activeIndices.AddRange(submeshIndices); }
+                    ActiveIndexBuilds++;
                     indicesMesh = current; indicesTopologyBuilds = currentTopologyBuilds;
                 }
                 // BakeMesh compensates its renderer's position/rotation. That
@@ -828,15 +864,18 @@ namespace BarPromenade
                 return true;
             }
 
-            private sealed class ScalePose
+            internal sealed class ScalePose
             {
+                private readonly ProxyPoseSnapshot snapshot;
                 private readonly ProxyPoseSnapshot.Node[] path;
                 private readonly ulong[] scaleVersions, rotationVersions;
                 private Vector3 capturedScale;
-                private bool captured;
+                private bool captured, changedInPass;
+                private ulong capturedPass;
 
                 internal ScalePose(Transform target, ProxyPoseSnapshot snapshot)
                 {
+                    this.snapshot = snapshot;
                     var ancestors = new List<Transform>();
                     for (Transform current = target; current != null; current = current.parent) ancestors.Add(current);
                     ancestors.Reverse(); path = new ProxyPoseSnapshot.Node[ancestors.Count];
@@ -846,6 +885,8 @@ namespace BarPromenade
 
                 internal bool Capture(out Vector3 scale)
                 {
+                    if (captured && capturedPass == snapshot.Pass)
+                    { scale = capturedScale; return changedInPass; }
                     bool changed = !captured, rotationChanged = false, anisotropic = false;
                     for (int i = 0; i < path.Length; i++)
                     {
@@ -860,7 +901,9 @@ namespace BarPromenade
                             anisotropic = !x.Equals(y) || !x.Equals(z);
                         }
                     }
-                    if (captured && !changed && !rotationChanged) { scale = capturedScale; return false; }
+                    capturedPass = snapshot.Pass;
+                    if (captured && !changed && !rotationChanged)
+                    { scale = capturedScale; changedInPass = false; return false; }
                     float uniform = 1f;
                     Matrix4x4 matrix = Matrix4x4.identity;
                     anisotropic = false;
@@ -880,8 +923,8 @@ namespace BarPromenade
                     // rotation; keep every later rotation that can produce shear.
                     scale = capturedScale = new Vector3(matrix.GetColumn(0).magnitude, matrix.GetColumn(1).magnitude,
                         matrix.GetColumn(2).magnitude) * uniform;
-                    captured = true;
-                    return changed;
+                    captured = true; changedInPass = changed;
+                    return changedInPass;
                 }
             }
 

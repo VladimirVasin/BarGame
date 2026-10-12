@@ -3,7 +3,7 @@
 `debug.log`:context/actions/pending/Unity warnings/exceptions.
 `DuelJournal`: CombatTest rounds.
 
-## General log: location and profiles
+## General profiles
 
 | Runtime | Default | Location |
 | --- | --- | --- |
@@ -14,7 +14,7 @@
 `-bp-debug-log off|basic|verbose`: state/results; verbose adds timings/build sizes.
 `F8`:`diagnostics/snapshot`+CombatTest mark;`Shift+F8`:CombatLogs or general log directory.
 
-## General log format and boundaries
+## General format
 
 UTF-8 NDJSON:
 `schema_version`, `utc`, `mono_ms`, `seq`, `level`, `category`, `event`,
@@ -45,13 +45,13 @@ Unity repeats:3 full,then10s summaries.
 Per10s:32 warnings/64 errors-assertions-exceptions;
 `messages_rate_limited`: drops/severity; exceptions retain their own budget.
 
-## General log retention and reporting
+## General retention
 
 Rotate 5MiB; keep `debug.1.log`–`debug.3.log`. Flush: error/.5s/F8/pause/focus/exit.
 Fresh session→fault→F8→Shift+F8;collect archives/round;read error/`operation_id`.
 No user/save paths/frame telemetry;stacks may expose paths;review sharing.
 
-## DuelJournal: CombatTest rounds
+## DuelJournal
 
 `-bp-duel-log on|off`:Editor/Player on,batch off.
 Editor:CombatLogs;Player:`Application.persistentDataPath/CombatLogs`.
@@ -110,26 +110,29 @@ Trace+manifest/`Time.frameCount`:`TestResults/Test duel diagnostics`.
 Timeout/scene/Play/reload restores Profiler;active capture refuses;overhead.
 
 Producer:2048/4096 default/max packets+8 control slots;reused chars,no string/field copies.
+Duel v2:`stage_sample_encoding=absent_numeric_zero`;`zero_stage_events`
+lists damage/sync/blood/head/defeat stages. Missing rows=zero only for
+measured frames without losses;nonzero/unavailable/causal rows stay. Envelope=v1.
 Drops/I/O/limits explicit;≤2 live/stalled workers;extra=`worker_limit`.
 20MiB/round/10 closed/100MiB;prune ordinary before marked/abandoned;never live/foreign.
 Bounded marks;one CombatLogs/no sweep.
 
 ## Area performance capture
 
-Area frame samples:
+CLI:
 
 ```text
--bp-perf-scene=City -bp-perf-label=1080p-walk -bp-perf-warmup=5 -bp-perf-seconds=30 -bp-perf-target-fps=60
+-bp-perf-scene=City -bp-perf-seconds=30
 ```
 
 Waits for scene/transition;keeps position/render.
 Editor: `Tools > Bar Promenade > Diagnostics > Capture Performance (30 seconds)`.
-API: `RuntimePerformanceCapture.StartCapture(options, outputDirectory)`.
+API: `RuntimePerformanceCapture.StartCapture`.
 
 Default:`Application.persistentDataPath/PerformanceCaptures`;8 JSON/≤36,000 samples.
 Capture1–120s/warmup≤60s/wait≤300s;scene/render changes end:reason.
 
-Reports:render/pacing/hardware/world;frame p50/p95/p99/max/main/render/GC/foot-bake/reflection.
+Reports:context+frame/CPU/GPU/GC/foot-bake/reflection p50/p95/p99/max.
 Markers:`BarPromenade.FootSoleBake`/`BarPromenade.WaterReflectionCube`.
 GPU:needs Frame Timing Stats,unchanged.`sampleCount=0`:unavailable.
-Frames include waits/threads/pacing;Editor≠player.Compare same route/render;keep pause/focus counts.
+Frames include waits;Editor≠player.Match route/render;retain pause/focus counts.

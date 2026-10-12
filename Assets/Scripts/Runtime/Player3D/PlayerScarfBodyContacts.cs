@@ -81,6 +81,12 @@ namespace BarPromenade
             public Envelope Envelope;
             public Plane[] Planes;
             public int PlaneIndex;
+            public readonly int[] SeparatingPlaneIndices;
+            public FreeSurfaceSupport(int proxyCount)
+            {
+                SeparatingPlaneIndices = new int[proxyCount];
+                Array.Fill(SeparatingPlaneIndices, -1);
+            }
         }
         private readonly Dictionary<Vector3[], FreeSurfaceSupport> freeSurfaceSupports =
             new Dictionary<Vector3[], FreeSurfaceSupport>();
@@ -2562,7 +2568,7 @@ namespace BarPromenade
             // escapes may already have stretched it around opposite sides.
             // Pinned panels keep their existing area-constraint path.
             if (!freeSurfaceSupports.TryGetValue(best, out FreeSurfaceSupport remembered))
-                freeSurfaceSupports.Add(best, remembered = new FreeSurfaceSupport());
+                freeSurfaceSupports.Add(best, remembered = new FreeSurfaceSupport(proxies.Length));
             Proxy cached = remembered.Proxy;
             // Recompute from the current pose and current support plane. A
             // still-feasible prior support gives a continuous cloth fold;
@@ -2579,9 +2585,10 @@ namespace BarPromenade
                 return true;
             }
             float bestCost = float.PositiveInfinity;
-            foreach (Proxy obstacle in proxies)
+            for (int proxyIndex = 0; proxyIndex < proxies.Length; proxyIndex++)
             {
-                if (!obstacle.Active || obstacle.WorldPlanes == null || Separated(obstacle, original)) continue;
+                Proxy obstacle = proxies[proxyIndex];
+                if (!obstacle.Active || obstacle.WorldPlanes == null || Separated(obstacle, original, proxyIndex)) continue;
                 for (int planeIndex = 0; planeIndex < obstacle.WorldPlanes.Length; planeIndex++)
                 {
                     if (!Build(obstacle.WorldPlanes[planeIndex], out float cost) || cost >= bestCost || !Feasible()) continue;
@@ -2633,21 +2640,36 @@ namespace BarPromenade
                 }
                 // A proposed escape may enter another body volume. Every
                 // corner/face must share a separating plane for every hull.
-                foreach (Proxy proxy in proxies)
-                    if (proxy.Active && (proxy.WorldPlanes == null || !Separated(proxy, candidate))) return false;
+                for (int proxyIndex = 0; proxyIndex < proxies.Length; proxyIndex++)
+                {
+                    Proxy proxy = proxies[proxyIndex];
+                    if (proxy.Active && (proxy.WorldPlanes == null || !Separated(proxy, candidate, proxyIndex))) return false;
+                }
                 return true;
             }
 
-            bool Separated(Proxy proxy, Vector3[] points)
+            bool Separated(Proxy proxy, Vector3[] points, int proxyIndex)
             {
-                foreach (Plane plane in proxy.WorldPlanes)
+                Plane[] planes = proxy.WorldPlanes;
+                int hint = remembered.SeparatingPlaneIndices[proxyIndex];
+                // The fixed proxy slot stores only an index, never old points
+                // or planes. Recheck every current point against the current
+                // plane; a failed hint keeps the original ordered full scan.
+                if ((uint)hint < (uint)planes.Length && Separates(planes[hint])) return true;
+                for (int planeIndex = 0; planeIndex < planes.Length; planeIndex++)
                 {
-                    bool outside = true;
-                    foreach (Vector3 point in points)
-                        if (plane.GetDistanceToPoint(point) < .00009f) { outside = false; break; }
-                    if (outside) return true;
+                    if (!Separates(planes[planeIndex])) continue;
+                    remembered.SeparatingPlaneIndices[proxyIndex] = planeIndex;
+                    return true;
                 }
                 return false;
+
+                bool Separates(Plane plane)
+                {
+                    foreach (Vector3 point in points)
+                        if (plane.GetDistanceToPoint(point) < .00009f) return false;
+                    return true;
+                }
             }
         }
 

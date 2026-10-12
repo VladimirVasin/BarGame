@@ -10,6 +10,7 @@ namespace BarPromenade
     internal sealed partial class DuelJournal : IDisposable
     {
         private enum Kind { Begin, Event, End, Flush }
+        private const string ZeroStageEvents = "damage_stage_sample,body_sync_sample,blood_stage_sample,head_stage_sample,projectile_defeat_stage_sample";
         private static int liveWorkers;
         private struct Packet
         {
@@ -131,9 +132,18 @@ namespace BarPromenade
                 lock (sync)
                 {
                     if (!roundOpen || stopping || !enabled) return 0;
-                    if (queued >= eventCapacity || string.IsNullOrEmpty(eventName) || eventName.Length > 96 ||
+                    if (string.IsNullOrEmpty(eventName) || eventName.Length > 96 ||
                         !Bounded(f0) || !Bounded(f1) || !Bounded(f2) || !Bounded(f3) ||
                         !Bounded(f4) || !Bounded(f5) || !Bounded(f6) || !Bounded(f7))
+                    { producerDropped++; Interlocked.Increment(ref dropped); return 0; }
+                    // These measured stage deltas have an explicit sparse contract
+                    // in round_begin. Preserve unavailable values and causal events.
+                    if (ZeroStageEvent(eventName) &&
+                        (HasField(f0) || HasField(f1) || HasField(f2) || HasField(f3) ||
+                         HasField(f4) || HasField(f5) || HasField(f6) || HasField(f7)) &&
+                        NumericZero(f0) && NumericZero(f1) && NumericZero(f2) && NumericZero(f3) &&
+                        NumericZero(f4) && NumericZero(f5) && NumericZero(f6) && NumericZero(f7)) return 0;
+                    if (queued >= eventCapacity)
                     { producerDropped++; Interlocked.Increment(ref dropped); return 0; }
                     Packet packet = NewPacket(Kind.Event, eventName);
                     packet.Actor = actor; packet.Target = target; packet.Action = action; packet.Request = request;
@@ -228,6 +238,22 @@ namespace BarPromenade
 
         private static bool Bounded(GameLogField field) =>
             (field.Name == null || field.Name.Length <= 64) && (field.StringValue == null || field.StringValue.Length <= 512);
+
+        private static bool ZeroStageEvent(string name) => name == "damage_stage_sample" || name == "body_sync_sample" ||
+            name == "blood_stage_sample" || name == "head_stage_sample" || name == "projectile_defeat_stage_sample";
+
+        private static bool HasField(GameLogField field) => !string.IsNullOrEmpty(field.Name);
+
+        private static bool NumericZero(GameLogField field)
+        {
+            if (!HasField(field)) return true;
+            return field.Type switch
+            {
+                GameLogFieldType.Int32 or GameLogFieldType.Int64 => field.IntegerValue == 0,
+                GameLogFieldType.Single or GameLogFieldType.Double => field.NumberValue == 0d,
+                _ => false
+            };
+        }
 
         private static GameLogField BoundedMetadata(GameLogField field)
         {

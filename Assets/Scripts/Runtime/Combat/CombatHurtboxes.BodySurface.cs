@@ -127,7 +127,7 @@ namespace BarPromenade
             {
                 Piece = piece; skin = new HeadSurface(piece.Skin, true, captureBlendShapes: true,
                     mutableTopology: piece.Torso != null, initialGeometryVersion: piece.GeometryVersion,
-                    initialTopologyVersion: piece.Torso?.TopologyBuilds);
+                    initialTopologyVersion: piece.Torso?.TopologyBuilds, preservesSkinBinding: piece.PreservesSkinBinding);
                 indices = piece.Skin.sharedMesh.triangles;
                 points = new Vector3[piece.Skin.sharedMesh.vertexCount];
                 Triangles = skin.Triangles;
@@ -137,7 +137,8 @@ namespace BarPromenade
                 originals = partitions.ToArray(); originalActive = new bool[originals.Length];
                 authoredPartitions = new HeadTriangle[originals.Length][];
                 skin = new HeadSurface(source, true, captureBlendShapes: true,
-                    authoredMesh: originals[0].Deformation?.AuthoredSourceMesh);
+                    authoredMesh: originals[0].Deformation?.AuthoredSourceMesh,
+                    preservesSkinBinding: candidate => originals[0].Deformation?.PreservesSourceSkinBinding(candidate) == true);
                 for (int part = 0; part < originals.Length; part++)
                 {
                     Mesh mesh = originals[part].Deformation?.AuthoredPartitionMesh ?? originals[part].Skin.sharedMesh;

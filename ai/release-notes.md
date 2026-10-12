@@ -6,6 +6,23 @@ Earlier notes: [`release-notes-2026-09.md`](archive/release-notes-2026-09.md).
 
 ## Unreleased
 
+### 2026-10-12 — Повторная работа ткани и повреждений
+
+- Куртка использует принятую складку и одну итоговую запись сетки;
+  подсказки плоскостей заново проверяют живые контакты. Лямка переиспользует
+  буферы; точность, длина и прежние ограничения сохранены.
+- Повреждения переиспользуют привязки к костям и буферы треугольников.
+  Поза/физика/попадания остаются живыми внутри кадра; сброс восстанавливает тело.
+- Журнал явно обозначает нулевые замеры, экономя место без повышения лимита.
+  Проверка нагруженного кадра не гарантирует FPS всего проекта.
+- Проверки: `Range_WeaponCarryKeepsRealFramesBoundedThroughWalkingSwitchesAndHeadshot`,
+  `ProductionRig_WalkingKeepsJacketHemLength`,
+  `ProductionRig_RendersBareAndLooseClothedJointBends`,
+  `Range_BodyProxiesShareTransformsAndFollowSameFrameChanges`,
+  `Range_SkinnedTriangleQueryMatchesExhaustiveAfterDeformation`,
+  `ZeroStageSamplesPreserveNonzeroUnavailableAndCausalRecordsWithoutAllocation`,
+  `check-docs.py`, `git diff --check`.
+
 ### 2026-10-11 — Оружие, ткань и тяжёлые кадры
 
 - Лямка: одна окончательная поза за кадр; точные кеши/запасной путь.

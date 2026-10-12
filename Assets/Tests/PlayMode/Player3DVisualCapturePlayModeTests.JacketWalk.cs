@@ -74,6 +74,14 @@ namespace BarPromenade.Tests.PlayMode
                             cloth.ApplyAt(seconds, false, false, new WindSample(0f, 0f));
                             clothClock.Stop();
                             clothMilliseconds[frame] = clothClock.Elapsed.TotalMilliseconds;
+                            Assert.That(cloth.LastMaximumSurfaceGeometryWrites, Is.LessThanOrEqualTo(1),
+                                "A rendered cloth solve must upload each surface only after the final fold is selected.");
+                            Assert.That(cloth.LastHemCandidateReuses, Is.EqualTo(cloth.LastHemFoldSurfaces),
+                                "A successful fold must consume its already accepted candidate in the same pose.");
+                            result.maximumSurfaceGeometryWrites = Mathf.Max(result.maximumSurfaceGeometryWrites,
+                                cloth.LastMaximumSurfaceGeometryWrites);
+                            result.hemFoldSurfaces += cloth.LastHemFoldSurfaces;
+                            result.hemCandidateReuses += cloth.LastHemCandidateReuses;
                             float top = registry.Anchors.Pelvis.position.y + .22f;
                             float stretch = 1f;
                             string edge = "none";
@@ -134,10 +142,11 @@ namespace BarPromenade.Tests.PlayMode
                 {
                     string detail = string.Format(CultureInfo.InvariantCulture,
                         "{0}: worst frame={1}, seconds={2:F4}, stretch={3:F4}, edge={4}, vertical up/down={5:F4}/{6:F4}m, " +
-                        "pinned={7:F6}m, actual trouser penetration={8:F6}m",
+                        "pinned={7:F6}m, actual trouser penetration={8:F6}m, maximum surface writes={9}, accepted fold reuse={10}/{11}",
                         result.clip, result.worstFrame, result.worstSeconds, result.maximumStretch, result.worstEdge,
                         result.maximumUpwardDisplacement, result.maximumDownwardDisplacement, result.maximumPinnedDisplacement,
-                        result.maximumPenetration);
+                        result.maximumPenetration, result.maximumSurfaceGeometryWrites, result.hemCandidateReuses,
+                        result.hemFoldSurfaces);
                     TestContext.Out.WriteLine(detail);
                     Assert.That(result.finite, Is.True, detail);
                     Assert.That(result.maximumStretch, Is.LessThanOrEqualTo(1.2f), "Walking fabric must preserve material edge length. " + detail);
@@ -164,7 +173,7 @@ namespace BarPromenade.Tests.PlayMode
         [Serializable] private sealed class JacketWalkResult
         {
             public string clip, worstEdge;
-            public int worstFrame;
+            public int worstFrame, maximumSurfaceGeometryWrites, hemFoldSurfaces, hemCandidateReuses;
             public bool finite;
             public float worstSeconds, maximumStretch, maximumUpwardDisplacement, maximumDownwardDisplacement,
                 maximumPinnedDisplacement, maximumPenetration;

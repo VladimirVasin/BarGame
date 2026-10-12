@@ -160,6 +160,12 @@ namespace BarPromenade
             fields.Add(GameLog.Field("duel_seconds", packet.Seconds)); fields.Add(GameLog.Field("actor", packet.Actor));
             fields.Add(GameLog.Field("target", packet.Target)); fields.Add(GameLog.Field("action", packet.Action));
             fields.Add(GameLog.Field("request", packet.Request));
+            if (packet.Kind == Kind.Begin && packet.Name == "round_begin")
+            {
+                fields.Add(GameLog.Field("duel_schema_version", 2));
+                fields.Add(GameLog.Field("stage_sample_encoding", "absent_numeric_zero"));
+                fields.Add(GameLog.Field("zero_stage_events", ZeroStageEvents));
+            }
             if (packet.Dropped > seenProducerDrops)
                 fields.Add(GameLog.Field("queue_dropped_before", packet.Dropped - seenProducerDrops));
             if (packet.Metadata != null)
@@ -232,6 +238,7 @@ namespace BarPromenade
             text.AppendLine("Losses: " + losses + "; file_limit: " + fileLimited + "; oversized: " + oversized +
                 "; io_error: " + (roundIoError ?? "none") + "; marked: " + marked);
             text.AppendLine("Repeated rejection records summarized (not lost): " + summarizedRejections);
+            text.AppendLine("Absent numeric-zero stage samples (not lost): " + ZeroStageEvents);
             text.AppendLine("Collector stopwatch ticks: " + CollectorTicks + "/" + Stopwatch.Frequency +
                 "; maximum queued: " + MaximumQueued);
             text.AppendLine("Event counts:"); foreach (var item in events) text.AppendLine("  " + item.Key + ": " + item.Value);

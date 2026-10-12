@@ -49,6 +49,7 @@ namespace BarPromenade
         internal bool HasDamage { get; private set; }
         internal bool HasGeometry { get; private set; }
         internal bool IsRenderingOwnedMesh => owned != null && skin != null && skin.sharedMesh == owned;
+        internal bool PreservesSkinBinding(Mesh candidate) => candidate != null && (candidate == template || candidate == owned);
         internal int DepletedCellCount { get; private set; }
         internal int CellCount => cells.Length;
         internal int CellTests { get; private set; }

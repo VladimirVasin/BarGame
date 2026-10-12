@@ -667,6 +667,8 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(root.BodyEffects.TryCaptureProxyBoundsForDiagnostics(target, piece.Proxy, out var after), Is.True);
                 Assert.That(after.CachedActiveIndices, Is.Not.SameAs(before.CachedActiveIndices));
                 Assert.That(after.IndexBuilds, Is.GreaterThan(before.IndexBuilds));
+                Assert.That(after.SkinBindingBuilds, Is.EqualTo(before.SkinBindingBuilds),
+                    "An owned erosion mesh must retain the authored skin binding while its active triangles change.");
                 Assert.That(after.ActiveIndices, Is.Not.EqualTo(before.ActiveIndices),
                     "The contact must remove real triangles rather than merely revise vertex positions.");
                 Assert.That(after.CachedActiveIndices, Is.EqualTo(after.ActiveIndices),

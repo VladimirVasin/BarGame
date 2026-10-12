@@ -77,6 +77,52 @@ namespace BarPromenade.Tests.PlayMode
         }
 
         [Test]
+        public void ZeroStageSamplesPreserveNonzeroUnavailableAndCausalRecordsWithoutAllocation()
+        {
+            using var journal = new DuelJournal(directory, "Test sparse stages");
+            journal.BeginRound(1);
+            Wait(journal.FlushAsync());
+            string[] stages = { "damage_stage_sample", "body_sync_sample", "blood_stage_sample",
+                "head_stage_sample", "projectile_defeat_stage_sample" };
+            long before = GC.GetAllocatedBytesForCurrentThread();
+            long omittedSequences = 0;
+            for (int i = 0; i < 128; i++)
+                foreach (string stage in stages)
+                    omittedSequences += journal.Record(stage, f0: GameLog.Field("first_ms", 0d),
+                        f1: GameLog.Field("second_ms", 0f), f2: GameLog.Field("calls", 0), f3: GameLog.Field("steps", 0L));
+            long allocated = GC.GetAllocatedBytesForCurrentThread() - before;
+            Assert.That(allocated, Is.Zero, "Omitting zero measurements cannot allocate on the producer thread.");
+            Assert.That(omittedSequences, Is.Zero, "Zero samples are omitted before queueing or assigning sequence IDs.");
+            foreach (string stage in stages)
+                journal.Record(stage, f0: GameLog.Field("measured_ms", .001d));
+            journal.Record("head_stage_sample", f0: GameLog.Field("unavailable_ms", double.NaN));
+            journal.Record("head_stage_sample", f0: GameLog.Field("unsupported_ms", (string)null));
+            journal.Record("head_stage_sample");
+            journal.Record("head_stage_sample", f0: GameLog.Field("available", false));
+            journal.Record("unknown_stage_sample", f0: GameLog.Field("measured_ms", 0d));
+            journal.Record("impact", 1, 2, 4, 8, f0: GameLog.Field("power", 0f));
+            journal.Record("round_result", f0: GameLog.Field("hero_defeated", false));
+            journal.EndRound("Test sparse stages ended");
+            Wait(journal.FlushAsync());
+            string folder = Directory.GetDirectories(directory).Single();
+            string[] rows = File.ReadAllLines(Path.Combine(folder, "duel.ndjson"));
+            StringAssert.Contains("\"duel_schema_version\":2", rows[0]);
+            StringAssert.Contains("\"stage_sample_encoding\":\"absent_numeric_zero\"", rows[0]);
+            StringAssert.Contains("\"zero_stage_events\":\"" + string.Join(",", stages) + "\"", rows[0]);
+            foreach (string stage in stages)
+                Assert.That(rows.Count(row => row.Contains("\"event\":\"" + stage + "\"")),
+                    Is.EqualTo(stage == "head_stage_sample" ? 5 : 1));
+            Assert.That(rows.Any(row => row.Contains("\"unavailable_ms\":null")), Is.True);
+            Assert.That(rows.Any(row => row.Contains("\"unsupported_ms\":null")), Is.True);
+            Assert.That(rows.Any(row => row.Contains("\"available\":false")), Is.True);
+            Assert.That(rows.Any(row => row.Contains("\"event\":\"unknown_stage_sample\"")), Is.True);
+            Assert.That(rows.Any(row => row.Contains("\"event\":\"impact\"") &&
+                row.Contains("\"actor\":1,\"target\":2,\"action\":4,\"request\":8")), Is.True);
+            Assert.That(rows.Any(row => row.Contains("\"event\":\"round_result\"")), Is.True);
+            Assert.That(journal.DroppedRecords, Is.Zero, "Sparse zero measurements are represented, rather than lost.");
+        }
+
+        [Test]
         public void RuleRequestReasonsKeepTheirActionClockAndClearFailedStartWhenQueued()
         {
             var state = new MeleeCombatant(new MeleeCombatSettings(maxStamina: 15f));

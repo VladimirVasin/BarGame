@@ -3,6 +3,33 @@
 Newest outcomes/checks first. Archive whole dates at budget: [policy](README.md).
 Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-2026-08.md).
 
+## 2026-10-12 — Exact cloth and damage cache reuse
+
+- Latest manual duel exposed persistent jacket cost and impact spikes.
+  Jacket commits final geometry once; accepted hem candidates and revalidated
+  separating-plane hints retain the original contact/stretch thresholds.
+  Deep-hip proof compares cached and contact-invalidated vertices exactly.
+  Sling reuses owner-lifetime projection buffers; iteration budgets stay.
+- Known cloth/erosion clones retain skin/blend bindings. Ordered topology
+  and native-upload buffers survive damage changes; exhaustive contact arrays
+  resize only for diagnostics. Scale results share a validation pass; fresh
+  passes still sample transforms, including same-frame physics/pose changes.
+  Unity refreshed the hero dependency stamp. Comparative capture reduced
+  scratch allocation; overall warm-frame acceleration remains unproven.
+- Duel schema 2 declares implicit numeric-zero stage rows; unavailable values
+  and causal events remain explicit. File budget stays; gaps with losses stay unknown.
+- Real-frame test discovery uses the current unsorted object-search overload;
+  inactive filtering stays, and aggregation does not depend on result order.
+  Compilation treats CS0618 as an error; unrelated DTO/analyzer warnings remain.
+- Checks: `Range_WeaponCarryKeepsRealFramesBoundedThroughWalkingSwitchesAndHeadshot`,
+  `ProductionRig_WalkingKeepsJacketHemLength`,
+  `ProductionRig_RendersBareAndLooseClothedJointBends`,
+  `Range_BodyProxiesShareTransformsAndFollowSameFrameChanges`,
+  `Range_SkinnedTriangleQueryMatchesExhaustiveAfterDeformation`,
+  `ZeroStageSamplesPreserveNonzeroUnavailableAndCausalRecordsWithoutAllocation`,
+  `dotnet build BarPromenade.PlayModeTests.csproj -p:WarningsAsErrors=CS0618`,
+  `check-docs.py`, `git diff --check`.
+
 ## 2026-10-11 — Weapon carry, cloth and damage cost
 
 - Repeated rig/body work stalled switching. The sling consumes final pose once

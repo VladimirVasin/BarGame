@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -261,13 +262,26 @@ namespace BarPromenade.Tests.PlayMode
             File.WriteAllText(Path.Combine(directory, "player-3d-joint-surface-sheet.txt"),
                 "Columns: straight, 45 degrees, 90 degrees, 135 degrees.\nRows: bare elbow, jacket elbow, bare knee, trouser knee.\nTorso row: bare front, dressed front, bare side, dressed side.\nNeck row: bare turn, dressed turn, bare tilt, dressed tilt.\nPelvis row: bare rear, trouser rear, bare side, trouser side (jacket removed).\nFootwear row: supported forefoot roll 0, 15, 30, 45 degrees (trousers removed).\nLower jacket row: standing, hip45, hip90, crouch.\n");
             Assert.That(new FileInfo(output).Length, Is.GreaterThan(4096));
+            int foldedSurfaceSamples = 0;
+            bool acceptedFoldChecked = false;
             foreach (string side in new[] { "L", "R" })
             {
                 foreach (KeyValuePair<Transform, Quaternion> pose in rest) pose.Key.localRotation = pose.Value;
                 Player3DJointSurfaceTests.SetBend(registry, "thigh." + side, 135f);
                 registry.GetComponent<CharacterJointDeformation>().ApplyPose();
                 jacket.RequestReset();
-                for (int frame = 0; frame < 20; frame++) jacket.ApplyAt(frame / 60d, false, false, new WindSample(0f, 0f));
+                for (int frame = 0; frame < 20; frame++)
+                {
+                    jacket.ApplyAt(frame / 60d, false, false, new WindSample(0f, 0f));
+                    Assert.That(jacket.LastMaximumSurfaceGeometryWrites, Is.LessThanOrEqualTo(1));
+                    Assert.That(jacket.LastHemCandidateReuses, Is.EqualTo(jacket.LastHemFoldSurfaces));
+                    foldedSurfaceSamples += jacket.LastHemFoldSurfaces;
+                    if (!acceptedFoldChecked && jacket.LastHemCandidateReuses > 0)
+                    {
+                        AssertHemCandidateReuseAndInvalidation(registry, jacket);
+                        acceptedFoldChecked = true;
+                    }
+                }
                 yield return null;
                 Vector3 forward = registry.transform.TransformDirection(registry.Metrics.LocalForward).normalized;
                 Vector3 right = Vector3.Cross(Vector3.up, forward).normalized;
@@ -289,7 +303,53 @@ namespace BarPromenade.Tests.PlayMode
                 }
                 finally { Object.Destroy(tile); }
             }
+            Assert.That(foldedSurfaceSamples, Is.GreaterThan(0), "Deep hip poses must exercise a real accepted hem fold.");
+            Assert.That(acceptedFoldChecked, Is.True, "The accepted fold and its invalidated fallback must both be verified.");
             Assert.That(fabricFailures, Is.Empty, string.Join("\n", fabricFailures));
+        }
+
+        private static void AssertHemCandidateReuseAndInvalidation(Player3DAssetRegistry registry, PlayerJacketCloth jacket)
+        {
+            const BindingFlags flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+            object Field(object owner, string name) => owner.GetType().GetField(name, flags).GetValue(owner);
+            object Property(object owner, string name) => owner.GetType().GetProperty(name, flags).GetValue(owner);
+            object Invoke(object owner, string name, params object[] args) => owner.GetType().GetMethod(name, flags).Invoke(owner, args);
+            object surface = ((Array)Field(jacket, "surfaces")).Cast<object>().First(item =>
+                (bool)Property(item, "LastHemCandidateReused") && (bool)Field(Field(item, "panelShape"), "HasPins"));
+            var contacts = (PlayerScarfBodyContacts)Field(jacket, "contacts");
+            object fold = Field(surface, "acceptedHemFold");
+            // Recreate a real surface input while preserving the selected
+            // deep-hip fold. Both paths below consume these exact same points.
+            Invoke(surface, "UpdatePose");
+            Invoke(surface, "Deform", Field(jacket, "displacements"), contacts, null, 0f, true);
+            var world = (Vector3[])Field(surface, "world");
+            Vector3[] input = (Vector3[])world.Clone();
+            Assert.That((bool)Invoke(surface, "AcceptsHemFold", fold, contacts, registry.transform), Is.True);
+            Assert.That((bool)Invoke(surface, "ApplyHemFold", fold, contacts, registry.transform, true), Is.True);
+            Assert.That((bool)Property(surface, "LastHemCandidateReused"), Is.True);
+            Vector3[] acceptedWorld = (Vector3[])world.Clone();
+            Invoke(surface, "CommitDeformation");
+            var mesh = (Mesh)Property(surface, "Mesh");
+            Vector3[] acceptedVertices = mesh.vertices;
+
+            Array.Copy(input, world, input.Length);
+            Assert.That((bool)Invoke(surface, "AcceptsHemFold", fold, contacts, registry.transform), Is.True);
+            // A fresh contact pose is a real cache invalidation even when the
+            // bones remain fixed. The original full solve must still agree.
+            contacts.UpdatePose();
+            Assert.That((bool)Invoke(surface, "ApplyHemFold", fold, contacts, registry.transform, true), Is.True);
+            Assert.That((bool)Property(surface, "LastHemCandidateReused"), Is.False);
+            AssertExactVertices(world, acceptedWorld, "Invalidating contacts must preserve the accepted world geometry.");
+            Invoke(surface, "CommitDeformation");
+            AssertExactVertices(mesh.vertices, acceptedVertices, "Cached and fallback folds must upload identical vertices.");
+            Player3DJointSurfaceTests.AssertJacketHemClear(registry, "accepted fold and invalidated contact pose");
+
+            static void AssertExactVertices(Vector3[] actual, Vector3[] expected, string message)
+            {
+                Assert.That(actual.Length, Is.EqualTo(expected.Length), message);
+                for (int vertex = 0; vertex < actual.Length; vertex++)
+                    Assert.That(actual[vertex].Equals(expected[vertex]), Is.True, message + " Vertex " + vertex);
+            }
         }
 
         private Texture2D CaptureJoint(Camera camera)

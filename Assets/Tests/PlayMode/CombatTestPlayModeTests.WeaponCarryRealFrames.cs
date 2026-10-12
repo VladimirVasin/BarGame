@@ -73,6 +73,10 @@ namespace BarPromenade.Tests.PlayMode
 
                 RealCarryFrameBucket startup = AddBucket("Initial real frames", false);
                 yield return MeasureRealCarryFrames(measurement, startup, 20);
+                CombatShotgunSling sling = shotgun.GetComponent<CombatShotgunSling>();
+                Assert.That(sling, Is.Not.Null);
+                int slingWorkspaces = sling.ProjectionWorkspaceAllocations;
+                Assert.That(slingWorkspaces, Is.EqualTo(1), "Warm sling frames must share one retained projection workspace.");
                 AssertConcealedRenderers(pistol, false);
                 AssertPistolChestFit(hero);
                 AssertShotgunFrontRoute(hero);
@@ -150,6 +154,8 @@ namespace BarPromenade.Tests.PlayMode
                 yield return MeasureRealCarryFrames(measurement, impact, 12);
                 yield return MeasureRealCarryFrames(measurement, AddBucket("Post-death live frames", true), 120);
                 Assert.That(root.Opponent.State.Health, Is.Zero);
+                Assert.That(sling.ProjectionWorkspaceAllocations, Is.EqualTo(slingWorkspaces),
+                    "Walking, weapon switches and the lethal contact must reuse the sling workspace.");
                 long gameplayBodyNativeBounds = root.BodyEffects.ProxyNativeBoundsFolds - bodyNativeBoundsBeforeFrames;
                 long gameplayBodyBurstBounds = root.BodyEffects.ProxyBurstBoundsFolds - bodyBurstBoundsBeforeFrames;
                 TestContext.Out.WriteLine("Gameplay body proxy bound folds: native=" + gameplayBodyNativeBounds +
@@ -295,9 +301,9 @@ namespace BarPromenade.Tests.PlayMode
 
         private sealed class RealCarryFrameRecorder : IDisposable
         {
-            internal readonly PlayerJacketCloth[] Jackets = Object.FindObjectsByType<PlayerJacketCloth>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
-            internal readonly PlayerHair[] Hairs = Object.FindObjectsByType<PlayerHair>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
-            private readonly PlayerScarfPresentation[] scarves = Object.FindObjectsByType<PlayerScarfPresentation>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
+            internal readonly PlayerJacketCloth[] Jackets = Object.FindObjectsByType<PlayerJacketCloth>(FindObjectsInactive.Exclude);
+            internal readonly PlayerHair[] Hairs = Object.FindObjectsByType<PlayerHair>(FindObjectsInactive.Exclude);
+            private readonly PlayerScarfPresentation[] scarves = Object.FindObjectsByType<PlayerScarfPresentation>(FindObjectsInactive.Exclude);
             private readonly CombatShotgunSling sling;
             private readonly CombatTestRoot root;
             private readonly ProfilerRecorder[] recorders;

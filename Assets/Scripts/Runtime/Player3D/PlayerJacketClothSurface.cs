@@ -62,10 +62,17 @@ namespace BarPromenade
         private readonly Vector3[] bindActorPoints;
         private readonly Transform actor;
         private int weaponAccessVertex = -1;
+        private bool acceptedHemCandidate;
+        private HemFoldSet acceptedHemFold;
+        private PlayerScarfBodyContacts acceptedHemOwner;
+        private uint acceptedHemPoseVersion, acceptedHemEquipmentVersion;
+        private Matrix4x4 acceptedHemActorMatrix;
         public Mesh Mesh { get; }
         public Mesh Source => binding.Source;
         public SkinnedMeshRenderer Renderer => binding.Renderer;
         internal uint GeometryVersion { get; private set; }
+        internal int LastDeformGeometryWrites { get; private set; }
+        internal bool LastHemCandidateReused { get; private set; }
         public int VertexCount => original.Length;
         internal bool IsHemPanel => panelShape != null && panelShape.HasPins;
         public Vector3 Original(int index) => original[index];
@@ -198,6 +205,7 @@ namespace BarPromenade
 
         public void UpdatePose()
         {
+            acceptedHemCandidate = false;
             for (int i = 0; i < matrices.Length; i++) matrices[i] = bones[i].localToWorldMatrix * bindposes[i];
             for (int i = 0; i < skins.Length; i++)
             {
@@ -248,8 +256,11 @@ namespace BarPromenade
         }
 
         public int Deform(Vector3[] displacements, PlayerScarfBodyContacts contacts,
-            Transform heldPanelGrip = null, float weaponAccessAmount = 0f)
+            Transform heldPanelGrip = null, float weaponAccessAmount = 0f, bool deferWrite = false)
         {
+            acceptedHemCandidate = false;
+            LastDeformGeometryWrites = 0;
+            LastHemCandidateReused = false;
             falseFreeValid = false;
             if (pointQueryCache == null || !ReferenceEquals(pointQueryCache.Owner, contacts))
                 pointQueryCache = contacts.CreatePointQueryCache(world.Length + (clearAreaPoints?.Length ?? 0));
@@ -291,10 +302,15 @@ namespace BarPromenade
                     panelShape?.LimitMaterialDistances(world, contacts, queryCache: pointQueryCache);
                 }
             }
+            if (!deferWrite) CommitDeformation();
+            return contactCount;
+        }
+
+        internal void CommitDeformation()
+        {
             for (int i = 0; i < output.Length; i++)
                 output[i] = contactFreedom[i] <= 0f ? posedOriginal[i] : inverseSkins[vertexSkins[i]].MultiplyPoint3x4(world[i]);
             Write();
-            return contactCount;
         }
 
         private bool TryNativeSolve(PlayerScarfBodyContacts contacts, Vector3[] positions, out int contactCount)
@@ -588,7 +604,11 @@ namespace BarPromenade
             }
         }
 
-        internal void ClearWeaponAccess() => weaponAccessVertex = -1;
+        internal void ClearWeaponAccess()
+        {
+            acceptedHemCandidate = false;
+            weaponAccessVertex = -1;
+        }
 
         private void UpdateWeaponAccessFreedom(Transform grip, float amount)
         {
@@ -714,23 +734,41 @@ namespace BarPromenade
         {
             if (panelShape == null) return true;
             BuildHemCandidate(folds, contacts, actor);
-            return panelShape.Clear(contacts) && !panelShape.Stretched(panelShape.Candidate);
+            if (!panelShape.Clear(contacts) || panelShape.Stretched(panelShape.Candidate)) return false;
+            // Candidate belongs only to this unchanged surface solve. Another
+            // candidate, pose, or deformation invalidates it before any reuse.
+            acceptedHemCandidate = true;
+            acceptedHemFold = folds;
+            acceptedHemOwner = contacts;
+            acceptedHemPoseVersion = contacts.ClothPoseVersion;
+            acceptedHemEquipmentVersion = contacts.ClothEquipmentVersion;
+            acceptedHemActorMatrix = actor.localToWorldMatrix;
+            return true;
         }
 
-        internal bool ApplyHemFold(HemFoldSet folds, PlayerScarfBodyContacts contacts, Transform actor)
+        internal bool ApplyHemFold(HemFoldSet folds, PlayerScarfBodyContacts contacts, Transform actor,
+            bool deferWrite = false)
         {
             if (panelShape == null) return false;
-            BuildHemCandidate(folds, contacts, actor);
-            if (!panelShape.Clear(contacts) || panelShape.Stretched(panelShape.Candidate)) return false;
+            bool reuse = acceptedHemCandidate && acceptedHemFold.Matches(folds) &&
+                ReferenceEquals(acceptedHemOwner, contacts) && acceptedHemPoseVersion == contacts.ClothPoseVersion &&
+                acceptedHemEquipmentVersion == contacts.ClothEquipmentVersion &&
+                acceptedHemActorMatrix.Equals(actor.localToWorldMatrix);
+            if (!reuse)
+            {
+                BuildHemCandidate(folds, contacts, actor);
+                if (!panelShape.Clear(contacts) || panelShape.Stretched(panelShape.Candidate)) return false;
+            }
+            acceptedHemCandidate = false;
+            LastHemCandidateReused = reuse;
             Array.Copy(panelShape.Candidate, world, world.Length);
-            for (int i = 0; i < output.Length; i++)
-                output[i] = contactFreedom[i] <= 0f ? posedOriginal[i] : inverseSkins[vertexSkins[i]].MultiplyPoint3x4(world[i]);
-            Write();
+            if (!deferWrite) CommitDeformation();
             return true;
         }
 
         private void BuildHemCandidate(HemFoldSet folds, PlayerScarfBodyContacts contacts, Transform actor)
         {
+            acceptedHemCandidate = false;
             panelShape.Apply(folds, world, actor);
             if (!folds.RefineContacts) return;
             if (freeSurfaceOriginal != null) Array.Copy(panelShape.Candidate, freeSurfaceOriginal, world.Length);
@@ -750,6 +788,9 @@ namespace BarPromenade
                 float secondaryMotion = 1f)
             { Side = side; Lateral = lateral; Lift = lift; Start = start; Middle = middle; Peak = peak; Pin = pin;
                 SecondaryMotion = secondaryMotion; }
+            internal bool Matches(HemFold other) => Side.Equals(other.Side) && Lateral.Equals(other.Lateral) &&
+                Lift.Equals(other.Lift) && Start.Equals(other.Start) && Middle.Equals(other.Middle) &&
+                Peak.Equals(other.Peak) && Pin.Equals(other.Pin) && SecondaryMotion.Equals(other.SecondaryMotion);
         }
 
         internal readonly struct HemFoldSet
@@ -758,6 +799,8 @@ namespace BarPromenade
             public readonly bool RefineContacts;
             public HemFoldSet(HemFold first, HemFold second = default, bool refineContacts = false)
             { First = first; Second = second; RefineContacts = refineContacts; }
+            internal bool Matches(HemFoldSet other) => RefineContacts == other.RefineContacts &&
+                First.Matches(other.First) && Second.Matches(other.Second);
         }
 
         // Cached cloth particles join UV splits and the two extrusion layers.
@@ -1129,6 +1172,7 @@ namespace BarPromenade
 
         public void Restore()
         {
+            acceptedHemCandidate = false;
             Array.Copy(original, output, original.Length);
             Array.Copy(original, posedOriginal, original.Length);
             if (foldShape >= 0) Renderer.SetBlendShapeWeight(foldShape, 0f);
@@ -1168,6 +1212,7 @@ namespace BarPromenade
             // Consumers can reuse this geometry between writes. A manual
             // ApplyAt or a passive copy can write several poses in one frame.
             unchecked { GeometryVersion++; }
+            LastDeformGeometryWrites++;
             Renderer.sharedMesh = Mesh;
             // Skinned bounds are renderer-local; retain the authored animated
             // bounds and add the maximum free-cloth excursion on every axis.

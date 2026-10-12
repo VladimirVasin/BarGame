@@ -125,6 +125,9 @@ namespace BarPromenade
         public float LastStepSeconds { get; private set; }
         public float MaximumDisplacement { get; private set; }
         public int LastContactCount { get; private set; }
+        public int LastMaximumSurfaceGeometryWrites { get; private set; }
+        public int LastHemFoldSurfaces { get; private set; }
+        public int LastHemCandidateReuses { get; private set; }
         public long TotalApplyTicks { get; private set; }
         public long TotalApplyCalls { get; private set; }
         public long TotalSimulationSteps { get; private set; }
@@ -438,6 +441,7 @@ namespace BarPromenade
             long started = System.Diagnostics.Stopwatch.GetTimestamp();
             LastSimulationSteps = 0;
             LastDiscardedSeconds = 0d;
+            LastMaximumSurfaceGeometryWrites = LastHemFoldSurfaces = LastHemCandidateReuses = 0;
             try { ApplyAtCore(seconds, paused, outside, wind); }
             finally
             {
@@ -520,11 +524,24 @@ namespace BarPromenade
             {
                 foreach (PlayerJacketClothSurface surface in surfaces)
                     LastContactCount += surface.Deform(displacements, contacts,
-                        weaponAccessAmount > 0f ? registry.Anchors.LeftGrip : null, weaponAccessAmount);
+                        weaponAccessAmount > 0f ? registry.Anchors.LeftGrip : null, weaponAccessAmount, deferWrite: true);
                 if (hemPanel != null && hemPanel.TryHemFold(contacts, transform, surfaces,
                     out PlayerJacketClothSurface.HemFoldSet fold))
                     foreach (PlayerJacketClothSurface surface in surfaces)
-                        if (surface.ApplyHemFold(fold, contacts, transform)) LastContactCount += surface.VertexCount;
+                        if (surface.ApplyHemFold(fold, contacts, transform, deferWrite: true))
+                        {
+                            LastContactCount += surface.VertexCount;
+                            LastHemFoldSurfaces++;
+                            if (surface.LastHemCandidateReused) LastHemCandidateReuses++;
+                        }
+                // Upload only the final accepted geometry, then reconcile its
+                // lighting seam. Mirror/first-person copies consume this pose.
+                foreach (PlayerJacketClothSurface surface in surfaces)
+                {
+                    surface.CommitDeformation();
+                    LastMaximumSurfaceGeometryWrites = Mathf.Max(LastMaximumSurfaceGeometryWrites,
+                        surface.LastDeformGeometryWrites);
+                }
                 ReconcileSleeveNormals();
             }
             Array.Copy(targets, previousTargets, NodeCount);

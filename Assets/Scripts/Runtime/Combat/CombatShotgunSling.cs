@@ -100,36 +100,65 @@ namespace BarPromenade
         private bool contactsRegistered;
         private float shoulderAmount, handAmount, lastShoulderAmount, lastHandAmount, previousStep = StepSeconds;
         private int shoulderPoint = 9, simulatedFrame = -1;
-        private ProjectionWorkArena projectionWork;
+        private ProjectionWorkArena projectionWork, retainedProjectionWork;
+        internal int ProjectionWorkspaceAllocations { get; private set; }
 
-        private static ProjectionWorkArena CreateProjectionWorkArena(CombatShotgunSling owner, int count)
+        private static ProjectionWorkScope CreateProjectionWorkArena(CombatShotgunSling owner, int count)
         {
             using var profile = ProjectionWorkspaceMarker.Auto();
-            return new ProjectionWorkArena(owner, count);
+            if (owner == null) return new ProjectionWorkScope(null, new ProjectionWorkArena(count, Allocator.TempJob));
+            if (owner.projectionWork != null)
+                throw new InvalidOperationException("Sling projection scopes cannot overlap.");
+            if (owner.retainedProjectionWork != null &&
+                owner.retainedProjectionWork.NativeSupported != NativeProjectionSupported)
+            {
+                owner.retainedProjectionWork.Dispose();
+                owner.retainedProjectionWork = null;
+            }
+            if (owner.retainedProjectionWork == null)
+            {
+                owner.retainedProjectionWork = new ProjectionWorkArena(count, Allocator.Persistent);
+                owner.ProjectionWorkspaceAllocations++;
+            }
+            owner.projectionWork = owner.retainedProjectionWork;
+            return new ProjectionWorkScope(owner, owner.projectionWork);
+        }
+
+        // A rendered pass borrows its owner's buffers; diagnostic invocations
+        // retain the original temporary lifetime. Neither path changes the solve.
+        private readonly struct ProjectionWorkScope : IDisposable
+        {
+            private readonly CombatShotgunSling owner;
+            private readonly ProjectionWorkArena work;
+            internal ProjectionWorkScope(CombatShotgunSling owner, ProjectionWorkArena work)
+            { this.owner = owner; this.work = work; }
+            internal void SetMasses(float[] source) => work.SetMasses(source);
+            internal bool Project(Vector3[] source, CombatSlingProjectionJob.Parameters settings) => work.Project(source, settings);
+            public void Dispose()
+            {
+                if (ReferenceEquals(owner, null)) work.Dispose();
+                else if (ReferenceEquals(owner.projectionWork, work)) owner.projectionWork = null;
+            }
         }
 
         private sealed class ProjectionWorkArena : IDisposable
         {
-            private CombatShotgunSling owner;
             private readonly bool nativeSupported;
+            internal bool NativeSupported => nativeSupported;
             private float[] managedMasses;
             private NativeArray<Vector3> points;
             private NativeArray<float> inverseMass;
 
-            public ProjectionWorkArena(CombatShotgunSling owner, int count)
+            public ProjectionWorkArena(int count, Allocator allocator)
             {
-                if (owner != null && owner.projectionWork != null)
-                    throw new InvalidOperationException("Sling projection scopes cannot overlap.");
-                this.owner = owner;
                 nativeSupported = NativeProjectionSupported;
                 try
                 {
                     if (nativeSupported)
                     {
-                        points = new NativeArray<Vector3>(count, Allocator.TempJob, NativeArrayOptions.UninitializedMemory);
-                        inverseMass = new NativeArray<float>(count, Allocator.TempJob, NativeArrayOptions.UninitializedMemory);
+                        points = new NativeArray<Vector3>(count, allocator, NativeArrayOptions.UninitializedMemory);
+                        inverseMass = new NativeArray<float>(count, allocator, NativeArrayOptions.UninitializedMemory);
                     }
-                    if (owner != null) owner.projectionWork = this;
                 }
                 catch { Dispose(); throw; }
             }
@@ -158,8 +187,6 @@ namespace BarPromenade
             public void Dispose()
             {
                 using var profile = ProjectionWorkspaceMarker.Auto();
-                if (owner != null && ReferenceEquals(owner.projectionWork, this)) owner.projectionWork = null;
-                owner = null;
                 if (inverseMass.IsCreated) inverseMass.Dispose();
                 if (points.IsCreated) points.Dispose();
             }
@@ -847,6 +874,8 @@ namespace BarPromenade
         private void OnDisable() => ReleaseContacts();
         private void OnDestroy()
         {
+            retainedProjectionWork?.Dispose();
+            retainedProjectionWork = projectionWork = null;
             if (equipment != null) equipment.Unregister(this);
             if (ribbon != null && ribbon.sharedMesh == deformedMesh) ribbon.sharedMesh = source;
             if (deformedMesh != null) Destroy(deformedMesh);

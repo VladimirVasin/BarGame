@@ -172,10 +172,11 @@ namespace BarPromenade
             private readonly List<Vector3> baseVertices;
             private readonly SurfaceBlendShape[] blendShapes;
             private Mesh blendShapeMesh;
+            private readonly Func<Mesh, bool> preservesSkinBinding;
             private readonly BoneWeight[] weights;
             private readonly Matrix4x4[] bind, posedBones;
             private readonly Transform[] bones;
-            private int[] indices;
+            private readonly List<int> indices = new List<int>(), submeshIndices = new List<int>();
             private readonly int[] usedBones;
             private readonly int[] rigidBones;
             private readonly Bounds[] influenceBounds;
@@ -202,9 +203,10 @@ namespace BarPromenade
 
             internal HeadSurface(SkinnedMeshRenderer source, bool mutable = false, bool captureBlendShapes = false,
                 bool mutableTopology = false, uint? initialGeometryVersion = null, int? initialTopologyVersion = null,
-                Mesh authoredMesh = null)
+                Mesh authoredMesh = null, Func<Mesh, bool> preservesSkinBinding = null)
             {
                 this.source = source;
+                this.preservesSkinBinding = preservesSkinBinding;
                 this.mutableTopology = mutableTopology;
                 Mesh mesh = source.sharedMesh;
                 brain = source.GetComponent<CombatBrainTissue>();
@@ -221,13 +223,13 @@ namespace BarPromenade
                         blendShapes[shape] = new SurfaceBlendShape(mesh, shape, vertices.Length);
                     blendShapeMesh = mesh;
                 }
-                bones = source.bones; posedBones = new Matrix4x4[bones.Length]; indices = mesh.triangles;
+                bones = source.bones; posedBones = new Matrix4x4[bones.Length]; CaptureIndices(mesh);
                 Points = new Vector3[vertices.Length];
-                fullTriangles = Triangles = new HeadTriangle[indices.Length / 3];
-                queryTriangles = new HeadTriangle[indices.Length / 3];
-                queryTriangleIndices = new int[indices.Length / 3];
+                fullTriangles = Triangles = new HeadTriangle[indices.Count / 3];
+                queryTriangles = new HeadTriangle[indices.Count / 3];
+                queryTriangleIndices = new int[indices.Count / 3];
                 vertexQueryVersions = new int[vertices.Length];
-                int leaves = (indices.Length / 3 + QueryLeafTriangleCount - 1) / QueryLeafTriangleCount;
+                int leaves = (indices.Count / 3 + QueryLeafTriangleCount - 1) / QueryLeafTriangleCount;
                 queryBounds = new Bounds[leaves]; queryCandidates = new bool[leaves];
                 worldQueryBounds = new Bounds[leaves];
                 if (weights.Length != vertices.Length || bind.Length != bones.Length)
@@ -342,7 +344,8 @@ namespace BarPromenade
                 bool shapesChanged = false;
                 if (blendShapes != null)
                 {
-                    if (blendShapeMesh != source.sharedMesh)
+                    if (blendShapeMesh != source.sharedMesh && !(preservesSkinBinding?.Invoke(blendShapeMesh) == true &&
+                        preservesSkinBinding(source.sharedMesh)))
                     {
                         if (source.sharedMesh.blendShapeCount != blendShapes.Length)
                             throw new InvalidOperationException("Combat body source changed its blend shape topology: " + source.name);
@@ -367,9 +370,8 @@ namespace BarPromenade
                 }
                 if (topologyChanged)
                 {
-                    indices = source.sharedMesh.triangles;
-                    int count = indices.Length / 3;
-                    if (fullTriangles.Length != count) fullTriangles = new HeadTriangle[count];
+                    CaptureIndices(source.sharedMesh);
+                    int count = indices.Count / 3;
                     if (queryTriangles.Length < count)
                     { queryTriangles = new HeadTriangle[count]; queryTriangleIndices = new int[count]; }
                     int leaves = (count + QueryLeafTriangleCount - 1) / QueryLeafTriangleCount;
@@ -385,6 +387,13 @@ namespace BarPromenade
                 }
                 RefreshInfluenceBounds();
                 return true;
+            }
+
+            private void CaptureIndices(Mesh mesh)
+            {
+                indices.Clear();
+                for (int sub = 0; sub < mesh.subMeshCount; sub++)
+                { mesh.GetTriangles(submeshIndices, sub); indices.AddRange(submeshIndices); }
             }
 
             private sealed class SurfaceBlendShape
@@ -455,6 +464,9 @@ namespace BarPromenade
 
             internal void EnsureGeometry()
             {
+                // Production contacts use the retained query buffers. Only an
+                // exhaustive diagnostic needs an exact-length full triangle array.
+                if (fullTriangles.Length != indices.Count / 3) fullTriangles = new HeadTriangle[indices.Count / 3];
                 Triangles = fullTriangles;
                 QueryTriangleCount = fullTriangles.Length;
                 if (!Active || geometryReady) return;
@@ -476,12 +488,12 @@ namespace BarPromenade
             {
                 Triangles = queryTriangles; QueryTriangleCount = 0;
                 if (!Active) return false;
-                int leaves = (indices.Length / 3 + QueryLeafTriangleCount - 1) / QueryLeafTriangleCount;
+                int leaves = (indices.Count / 3 + QueryLeafTriangleCount - 1) / QueryLeafTriangleCount;
                 if (queryBoundsDirty)
                 {
                     for (int leaf = 0; leaf < leaves; leaf++)
                     {
-                        int start = leaf * QueryLeafTriangleCount * 3, end = Math.Min(indices.Length, start + QueryLeafTriangleCount * 3);
+                        int start = leaf * QueryLeafTriangleCount * 3, end = Math.Min(indices.Count, start + QueryLeafTriangleCount * 3);
                         Vector3 minimum = default, maximum = default;
                         for (int index = start; index < end; index++)
                         {
@@ -531,7 +543,7 @@ namespace BarPromenade
                 for (int leaf = 0; leaf < leaves; leaf++)
                 {
                     if (!queryCandidates[leaf]) continue;
-                    int start = leaf * QueryLeafTriangleCount * 3, end = Math.Min(indices.Length, start + QueryLeafTriangleCount * 3);
+                    int start = leaf * QueryLeafTriangleCount * 3, end = Math.Min(indices.Count, start + QueryLeafTriangleCount * 3);
                     for (int index = start; index < end; index += 3)
                     {
                         int a = indices[index], b = indices[index + 1], c = indices[index + 2];
