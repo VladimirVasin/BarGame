@@ -2573,10 +2573,8 @@ namespace BarPromenade.Tests.PlayMode
                     Is.EqualTo(new CombatLoadoutSelection(CombatWeaponId.Crowbar, CombatWeaponId.Pistol)));
                 Assert.That(menu.SelectCombatOption(CombatPreparationOption.Crowbar), Is.True);
                 Assert.That(menu.ConfirmSelection(), Is.True);
-                Assert.That(menu.SelectedCombatWeapon, Is.EqualTo(CombatWeaponId.Pistol),
-                    "The long-weapon choice must preserve the independent starting hand choice.");
-                Assert.That(menu.SelectCombatOption(CombatPreparationOption.Secondary), Is.True);
-                Assert.That(menu.ConfirmSelection(), Is.True);
+                Assert.That(menu.SelectedCombatWeapon, Is.EqualTo(CombatWeaponId.Crowbar),
+                    "The weapon row chooses the first held weapon while all three remain carried.");
                 Assert.That(menu.SelectCombatOption(CombatPreparationOption.Start), Is.True);
                 Assert.That(menu.ConfirmSelection(), Is.True);
                 yield return AwaitSelectedCombatRange();

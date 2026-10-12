@@ -34,44 +34,40 @@ namespace BarPromenade
         public static bool operator !=(CombatTestSelection left, CombatTestSelection right) => !left.Equals(right);
     }
 
-    /// <summary>A pistol and exactly one long weapon, with an independent starting hand choice.</summary>
+    /// <summary>All three weapons are carried; only the starting hand choice varies.</summary>
     public readonly struct CombatLoadoutSelection : IEquatable<CombatLoadoutSelection>
     {
-        public CombatWeaponId Secondary { get; }
         public CombatWeaponId InitialHeld { get; }
-        public static CombatLoadoutSelection Default => new CombatLoadoutSelection(
-            CombatWeaponId.Crowbar, CombatWeaponId.Crowbar);
+        public static CombatLoadoutSelection Default => new CombatLoadoutSelection(CombatWeaponId.Crowbar);
 
-        public CombatLoadoutSelection(CombatWeaponId secondary, CombatWeaponId initialHeld)
+        public CombatLoadoutSelection(CombatWeaponId initialHeld)
         {
-            if (secondary != CombatWeaponId.Crowbar && secondary != CombatWeaponId.Shotgun)
-                throw new ArgumentOutOfRangeException(nameof(secondary));
-            if (initialHeld != CombatWeaponId.Pistol && initialHeld != secondary)
+            if (!ContainsWeapon(initialHeld))
                 throw new ArgumentOutOfRangeException(nameof(initialHeld));
-            Secondary = secondary;
             InitialHeld = initialHeld;
         }
 
-        public bool Contains(CombatWeaponId weapon) => weapon == CombatWeaponId.Pistol || weapon == Secondary;
-
-        public CombatLoadoutSelection WithSecondary(CombatWeaponId secondary) =>
-            new CombatLoadoutSelection(secondary,
-                InitialHeld == CombatWeaponId.Pistol ? CombatWeaponId.Pistol : secondary);
-
-        public CombatLoadoutSelection WithInitialHeld(CombatWeaponId weapon) =>
-            new CombatLoadoutSelection(Secondary, weapon);
-
-        /// <summary>Legacy single-weapon launches retain their starting hand choice.</summary>
-        public static CombatLoadoutSelection FromLegacyWeapon(CombatWeaponId weapon)
+        /// <summary>Legacy pair selections retain the starting hand choice, with every weapon now carried.</summary>
+        public CombatLoadoutSelection(CombatWeaponId secondary, CombatWeaponId initialHeld) : this(initialHeld)
         {
-            if (weapon == CombatWeaponId.Pistol)
-                return new CombatLoadoutSelection(CombatWeaponId.Crowbar, CombatWeaponId.Pistol);
-            return new CombatLoadoutSelection(weapon, weapon);
+            if (secondary != CombatWeaponId.Crowbar && secondary != CombatWeaponId.Shotgun)
+                throw new ArgumentOutOfRangeException(nameof(secondary));
         }
 
-        public bool Equals(CombatLoadoutSelection other) => Secondary == other.Secondary && InitialHeld == other.InitialHeld;
+        public bool Contains(CombatWeaponId weapon) => ContainsWeapon(weapon);
+
+        private static bool ContainsWeapon(CombatWeaponId weapon) => weapon == CombatWeaponId.Pistol ||
+            weapon == CombatWeaponId.Crowbar || weapon == CombatWeaponId.Shotgun;
+
+        public CombatLoadoutSelection WithInitialHeld(CombatWeaponId weapon) =>
+            new CombatLoadoutSelection(weapon);
+
+        /// <summary>Legacy single-weapon launches retain their starting hand choice.</summary>
+        public static CombatLoadoutSelection FromLegacyWeapon(CombatWeaponId weapon) => new CombatLoadoutSelection(weapon);
+
+        public bool Equals(CombatLoadoutSelection other) => InitialHeld == other.InitialHeld;
         public override bool Equals(object obj) => obj is CombatLoadoutSelection other && Equals(other);
-        public override int GetHashCode() => ((int)Secondary * 397) ^ (int)InitialHeld;
+        public override int GetHashCode() => (int)InitialHeld;
         public static bool operator ==(CombatLoadoutSelection left, CombatLoadoutSelection right) => left.Equals(right);
         public static bool operator !=(CombatLoadoutSelection left, CombatLoadoutSelection right) => !left.Equals(right);
     }

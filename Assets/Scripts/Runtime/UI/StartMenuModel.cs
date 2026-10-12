@@ -21,7 +21,7 @@ namespace BarPromenade
         ChooseCombatWeapon = 6
     }
 
-    public enum CombatPreparationOption { Crowbar, Shotgun, Pistol, Secondary, Standard, Endless, OpponentLimit, Start, Back, Count }
+    public enum CombatPreparationOption { Crowbar, Shotgun, Pistol, Standard, Endless, OpponentLimit, Start, Back, Count }
 
     /// <summary>
     /// The launch card and its location and weapon pickers. Committing is one-shot: the
@@ -144,13 +144,11 @@ namespace BarPromenade
             CombatEncounterSettings previousSettings = SelectedCombatEncounterSettings;
             SelectedCombatOption = option;
             if (option == CombatPreparationOption.Crowbar)
-                SelectedCombatLoadout = SelectedCombatLoadout.WithSecondary(CombatWeaponId.Crowbar);
+                SelectedCombatLoadout = SelectedCombatLoadout.WithInitialHeld(CombatWeaponId.Crowbar);
             else if (option == CombatPreparationOption.Shotgun)
-                SelectedCombatLoadout = SelectedCombatLoadout.WithSecondary(CombatWeaponId.Shotgun);
+                SelectedCombatLoadout = SelectedCombatLoadout.WithInitialHeld(CombatWeaponId.Shotgun);
             else if (option == CombatPreparationOption.Pistol)
                 SelectedCombatLoadout = SelectedCombatLoadout.WithInitialHeld(CombatWeaponId.Pistol);
-            else if (option == CombatPreparationOption.Secondary)
-                SelectedCombatLoadout = SelectedCombatLoadout.WithInitialHeld(SelectedCombatLoadout.Secondary);
             else if (option == CombatPreparationOption.Standard)
                 SelectedCombatMode = CombatTestMode.Standard;
             else if (option == CombatPreparationOption.Endless)

@@ -10,7 +10,6 @@ namespace BarPromenade
         {
             pistolProjectiles = new CombatProjectilePool(transform);
             pistolCasings = new CombatCasingPool(transform);
-            if (LoadoutSelection.Secondary != CombatWeaponId.Shotgun) return;
             shotgunProjectiles = new CombatProjectilePool(transform, true);
             shotgunCasings = new CombatCasingPool(transform, true);
             Hero.ShotgunCasings = shotgunCasings;
@@ -20,10 +19,12 @@ namespace BarPromenade
         {
             if (GameInput.WasPressed(GameInputAction.EquipPistol, GameInputContext.Gameplay))
                 Hero.TrySelectWeapon(CombatWeaponId.Pistol);
-            else if (GameInput.WasPressed(GameInputAction.EquipSecondary, GameInputContext.Gameplay))
-                Hero.TrySelectWeapon(LoadoutSelection.Secondary);
+            else if (GameInput.WasPressed(GameInputAction.EquipCrowbar, GameInputContext.Gameplay))
+                Hero.TrySelectWeapon(CombatWeaponId.Crowbar);
+            else if (GameInput.WasPressed(GameInputAction.EquipShotgun, GameInputContext.Gameplay))
+                Hero.TrySelectWeapon(CombatWeaponId.Shotgun);
             else if (GameInput.WasPressed(GameInputAction.CombatNextWeapon, GameInputContext.Gameplay))
-                Hero.TrySelectWeapon(Hero.WeaponId == CombatWeaponId.Pistol ? LoadoutSelection.Secondary : CombatWeaponId.Pistol);
+                Hero.TrySelectNextWeapon();
         }
 
         private void AdvanceProjectilePools(float seconds)

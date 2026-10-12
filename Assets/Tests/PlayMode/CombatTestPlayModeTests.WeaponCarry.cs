@@ -9,6 +9,9 @@ namespace BarPromenade.Tests.PlayMode
 {
     public sealed partial class CombatTestPlayModeTests
     {
+        private static readonly CombatWeaponId[] CarryWeaponIds =
+            { CombatWeaponId.Pistol, CombatWeaponId.Crowbar, CombatWeaponId.Shotgun };
+
         [UnityTest]
         public IEnumerator Range_WeaponCarrySwitchesKeepModelsAmmoAndPhysicalHandoffs()
         {
@@ -20,13 +23,17 @@ namespace BarPromenade.Tests.PlayMode
                 input.Setup();
                 keyboard = InputSystem.AddDevice<Keyboard>();
                 gamepad = InputSystem.AddDevice<Gamepad>();
+                VerifyThreeWeaponPreparation();
                 foreach (CombatWeaponId secondary in new[] { CombatWeaponId.Crowbar, CombatWeaponId.Shotgun })
                 {
                     yield return SceneManager.LoadSceneAsync(SceneIds.MainMenu, LoadSceneMode.Single);
-                    var selection = new CombatLoadoutSelection(secondary, secondary);
+                    var selection = new CombatLoadoutSelection(secondary);
                     Assert.That(CombatTestStartService.TryStart(selection), Is.True);
                     yield return AwaitSelectedCombatRange();
                     PlacePair(8f);
+                    // Keep control shots clear of the opponent so a round-end cannot cancel a carry action.
+                    root.Opponent.ResetActor(root.Hero.transform.position + Vector3.right * 8f, Vector3.left);
+                    Physics.SyncTransforms();
                     Assert.That(root.SetOpponentFocus(false), Is.True);
                     root.SendMessage("OnApplicationFocus", true);
                     GameInput.HandleApplicationFocus(true);
@@ -35,16 +42,18 @@ namespace BarPromenade.Tests.PlayMode
                     var visual = (Player3DCharacterPresentation)root.Player.Visual;
                     GameObject pistol = hero.CarriedWeapon(CombatWeaponId.Pistol);
                     GameObject longWeapon = hero.CarriedWeapon(secondary);
+                    CombatWeaponId other = secondary == CombatWeaponId.Crowbar ? CombatWeaponId.Shotgun : CombatWeaponId.Crowbar;
+                    GameObject otherWeapon = hero.CarriedWeapon(other);
                     IFirearmState pistolState = hero.CarriedFirearm(CombatWeaponId.Pistol);
+                    IFirearmState shotgunState = hero.CarriedFirearm(CombatWeaponId.Shotgun);
                     Assert.That(hero.LoadoutSelection, Is.EqualTo(selection));
-                    Assert.That(pistol != null && longWeapon != null && pistol != longWeapon, Is.True);
-                    Assert.That(hero.CarriedWeapon(secondary == CombatWeaponId.Crowbar ?
-                        CombatWeaponId.Shotgun : CombatWeaponId.Crowbar), Is.Null);
-                    Assert.That(hero.TrySelectWeapon(secondary == CombatWeaponId.Crowbar ?
-                        CombatWeaponId.Shotgun : CombatWeaponId.Crowbar), Is.False);
+                    Assert.That(pistol != null && longWeapon != null && otherWeapon != null &&
+                        pistol != longWeapon && pistol != otherWeapon && longWeapon != otherWeapon, Is.True);
+                    Assert.That(shotgunState, Is.Not.Null, "The stowed shotgun retains its own live firearm state even when the crowbar starts in hand.");
                     Assert.That(hero.Weapon, Is.SameAs(longWeapon));
                     Assert.That(root.Projectiles, Is.Not.Null, "The initially holstered pistol still needs live projectile support.");
                     AssertStowedCarry(hero, CombatWeaponId.Pistol);
+                    AssertStowedCarry(hero, other);
                     AssertShotgunSling(hero);
                     CaptureWeaponCarryViews(secondary + "-start", true);
                     AssertPistolConcealedByJacket(hero);
@@ -81,7 +90,7 @@ namespace BarPromenade.Tests.PlayMode
                     root.Tick(.2f);
                     float pausedProgress = hero.WeaponCarryActionProgress;
                     Vector3 pausedPistol = pistol.transform.position;
-                    CombatShotgunSling pausedSling = longWeapon.GetComponent<CombatShotgunSling>();
+                    CombatShotgunSling pausedSling = hero.CarriedWeapon(CombatWeaponId.Shotgun).GetComponent<CombatShotgunSling>();
                     Vector3[] pausedFabric = pausedSling == null ? null : new Vector3[pausedSling.CenterlinePointCount];
                     if (pausedFabric != null)
                         for (int i = 0; i < pausedFabric.Length; i++) pausedFabric[i] = pausedSling.WorldCenterlinePoint(i);
@@ -100,6 +109,7 @@ namespace BarPromenade.Tests.PlayMode
                     Assert.That(hero.Weapon, Is.SameAs(pistol));
                     Assert.That(hero.CarriedFirearm(CombatWeaponId.Pistol), Is.SameAs(pistolState));
                     AssertStowedCarry(hero, secondary);
+                    AssertStowedCarry(hero, other);
                     if (secondary == CombatWeaponId.Shotgun)
                     {
                         AssertShotgunFrontRoute(hero);
@@ -120,17 +130,43 @@ namespace BarPromenade.Tests.PlayMode
                     hero.SetPistolAim(false);
                     root.Tick(.45f);
                     root.AutomaticSimulation = true;
-                    input.Press(keyboard.digit2Key, queueEventOnly: true);
+                    var longWeaponKey = secondary == CombatWeaponId.Crowbar ? keyboard.digit2Key : keyboard.digit3Key;
+                    input.Press(longWeaponKey, queueEventOnly: true);
                     yield return null;
-                    input.Release(keyboard.digit2Key, queueEventOnly: true);
+                    input.Release(longWeaponKey, queueEventOnly: true);
                     yield return null;
                     root.AutomaticSimulation = false;
-                    Assert.That(hero.IsSwitchingWeapon, Is.True, "Key 2 returns to the equipped long weapon.");
+                    Assert.That(hero.IsSwitchingWeapon, Is.True, "Keys 2 and 3 select their fixed crowbar and shotgun records.");
                     yield return FinishWeaponCarry(secondary, secondary + "-from-pistol",
                         secondary == CombatWeaponId.Crowbar ? 1.8f : 2.5f);
                     Assert.That(hero.Weapon, Is.SameAs(longWeapon));
                     Assert.That(pistolState.Rounds, Is.EqualTo(beforeShot - 1));
                     Assert.That(pistolState.ShotSequence, Is.EqualTo(shotSequence));
+                    AssertStowedCarry(hero, other);
+                    if (secondary == CombatWeaponId.Crowbar)
+                    {
+                        // These direct long-weapon transfers complete all six ordered pairs.
+                        root.AutomaticSimulation = true;
+                        input.Press(keyboard.digit3Key, queueEventOnly: true);
+                        yield return null;
+                        input.Release(keyboard.digit3Key, queueEventOnly: true);
+                        yield return null;
+                        root.AutomaticSimulation = false;
+                        yield return FinishWeaponCarry(CombatWeaponId.Shotgun, "Crowbar-to-Shotgun");
+                        AssertStowedCarry(hero, CombatWeaponId.Crowbar);
+                        hero.SetPistolAim(true, new Vector3(0f, 1.4f, 20f));
+                        root.Tick(.65f);
+                        Assert.That(hero.RequestPistolShot(), Is.True);
+                        root.Tick(CombatTestRoot.SimulationStep);
+                        Assert.That(shotgunState.Rounds, Is.EqualTo(1));
+                        root.Tick(.7f);
+                        hero.SetPistolAim(false);
+                        root.Tick(.45f);
+                        Assert.That(hero.TrySelectWeapon(CombatWeaponId.Crowbar), Is.True);
+                        yield return FinishWeaponCarry(CombatWeaponId.Crowbar, "Shotgun-to-Crowbar");
+                        Assert.That(shotgunState.Rounds, Is.EqualTo(1));
+                        AssertStowedCarry(hero, CombatWeaponId.Shotgun);
+                    }
                     if (secondary == CombatWeaponId.Shotgun)
                     {
                         hero.SetPistolAim(true, new Vector3(0f, 1.4f, 20f));
@@ -157,6 +193,17 @@ namespace BarPromenade.Tests.PlayMode
                     Assert.That(hero.CarriedWeaponLocation(secondary), Is.EqualTo(CombatWeaponCarryLocation.Dropped));
                     Assert.That(longWeapon.transform.IsChildOf(hero.transform), Is.False);
                     Assert.That(pistolState.Rounds, Is.EqualTo(beforeShot - 1));
+                    Assert.That(hero.CarriedWeapon(other), Is.SameAs(otherWeapon));
+                    AssertStowedCarry(hero, other);
+                    Assert.That(hero.CarriedFirearm(CombatWeaponId.Shotgun), Is.SameAs(shotgunState));
+                    Assert.That(shotgunState.Rounds, Is.EqualTo(1));
+                    yield return PressCarryCycle(other);
+                    yield return FinishWeaponCarry(other, null);
+                    Assert.That(hero.CarriedWeaponLocation(secondary), Is.EqualTo(CombatWeaponCarryLocation.Dropped),
+                        "Cycling skips the dropped record and leaves its original floor prop alone.");
+                    Assert.That(hero.TrySelectWeapon(CombatWeaponId.Pistol), Is.True);
+                    yield return FinishWeaponCarry(CombatWeaponId.Pistol, null);
+                    Assert.That(pickup.PromptKey, Is.EqualTo(pickupPrompt));
 
                     // The shared screen reclaims the exact floor record even while
                     // the other weapon is in hand. Cancelling cannot equip it.
@@ -187,28 +234,36 @@ namespace BarPromenade.Tests.PlayMode
                     Assert.That(pistolState.Rounds, Is.EqualTo(beforeShot - 1));
                     if (secondary == CombatWeaponId.Shotgun) Assert.That(hero.Shotgun.Rounds, Is.EqualTo(1));
 
-                    // Reset reclaims the two originals, including the detached prop.
+                    // Reset reclaims all three originals, including the detached prop.
                     root.ResetRound();
                     Assert.That(hero.LoadoutSelection, Is.EqualTo(selection));
                     Assert.That(hero.Weapon, Is.SameAs(longWeapon));
                     Assert.That(hero.CarriedWeapon(CombatWeaponId.Pistol), Is.SameAs(pistol));
                     Assert.That(hero.CarriedWeaponLocation(secondary), Is.EqualTo(CombatWeaponCarryLocation.Held));
                     Assert.That(pistolState.Rounds, Is.EqualTo(beforeShot));
+                    Assert.That(hero.CarriedWeapon(other), Is.SameAs(otherWeapon));
+                    Assert.That(shotgunState.Rounds, Is.EqualTo(2));
                     AssertStowedCarry(hero, CombatWeaponId.Pistol);
+                    AssertStowedCarry(hero, other);
 
                     // The gamepad uses the same selection path. A later request is queued
                     // until the visible action reaches a stable endpoint.
-                    root.AutomaticSimulation = true;
-                    input.Press(gamepad.dpad.right, queueEventOnly: true);
-                    yield return null;
-                    input.Release(gamepad.dpad.right, queueEventOnly: true);
-                    yield return null;
-                    root.AutomaticSimulation = false;
-                    Assert.That(hero.IsSwitchingWeapon, Is.True);
-                    Assert.That(hero.TrySelectWeapon(secondary), Is.True);
+                    CombatWeaponId next = secondary == CombatWeaponId.Crowbar ? CombatWeaponId.Shotgun : CombatWeaponId.Pistol;
+                    yield return PressCarryCycle(next);
+                    yield return FinishWeaponCarry(next, null);
+                    next = next == CombatWeaponId.Shotgun ? CombatWeaponId.Pistol : CombatWeaponId.Crowbar;
+                    yield return PressCarryCycle(next);
+                    yield return FinishWeaponCarry(next, null);
+                    yield return PressCarryCycle(secondary);
+                    yield return FinishWeaponCarry(secondary, null);
+                    yield return PressCarryCycle(secondary == CombatWeaponId.Crowbar ? CombatWeaponId.Shotgun : CombatWeaponId.Pistol);
+                    Assert.That(hero.TrySelectNextWeapon(), Is.True);
+                    Assert.That(hero.TrySelectNextWeapon(), Is.True,
+                        "Repeated cycles advance the pending choice across all three weapons while a physical switch is active.");
                     TestContext.WriteLine(secondary + " carry: queued round-trip after reset.");
                     yield return FinishWeaponCarry(secondary, null);
                     Assert.That(hero.Weapon, Is.SameAs(longWeapon));
+                    AssertStowedCarry(hero, other);
 
                     Assert.That(hero.TrySelectWeapon(CombatWeaponId.Pistol), Is.True);
                     root.Tick(.3f);
@@ -219,6 +274,7 @@ namespace BarPromenade.Tests.PlayMode
                     root.ResetRound();
                     Assert.That(hero.Weapon, Is.SameAs(longWeapon));
                     AssertStowedCarry(hero, CombatWeaponId.Pistol);
+                    AssertStowedCarry(hero, other);
                     root.AutomaticSimulation = false;
                     if (secondary == CombatWeaponId.Shotgun)
                     {
@@ -227,7 +283,6 @@ namespace BarPromenade.Tests.PlayMode
                         {
                             Assert.That(hero.TrySelectWeapon(CombatWeaponId.Pistol), Is.True);
                             yield return FinishWeaponCarry(CombatWeaponId.Pistol, null);
-                            IFirearmState shotgunState = hero.CarriedFirearm(CombatWeaponId.Shotgun);
                             int rounds = shotgunState.Rounds;
                             Assert.That(hero.TrySelectWeapon(CombatWeaponId.Shotgun), Is.True);
                             int seek = 0;
@@ -256,6 +311,18 @@ namespace BarPromenade.Tests.PlayMode
                             yield return null;
                         }
                     }
+
+                    IEnumerator PressCarryCycle(CombatWeaponId expected)
+                    {
+                        root.AutomaticSimulation = true;
+                        input.Press(gamepad.dpad.right, queueEventOnly: true);
+                        yield return null;
+                        input.Release(gamepad.dpad.right, queueEventOnly: true);
+                        yield return null;
+                        root.AutomaticSimulation = false;
+                        Assert.That(hero.IsSwitchingWeapon, Is.True, "The gamepad cycles Pistol, Crowbar and Shotgun.");
+                        TestContext.WriteLine("Carry cycle queued " + expected + ".");
+                    }
                 }
             }
             finally
@@ -264,6 +331,37 @@ namespace BarPromenade.Tests.PlayMode
                 if (gamepad != null && gamepad.added) InputSystem.RemoveDevice(gamepad);
                 input.TearDown();
             }
+        }
+
+        private static void VerifyThreeWeaponPreparation()
+        {
+            foreach (CombatTestMode mode in new[] { CombatTestMode.Standard, CombatTestMode.Endless })
+                foreach (CombatWeaponId initial in CarryWeaponIds)
+                {
+                    var selection = new CombatTestSelection(new CombatLoadoutSelection(initial), mode);
+                    var model = new StartMenuModel();
+                    model.OpenCombatPreparation(CombatTestSelection.Default);
+                    model.SelectCombatOption(initial switch
+                    {
+                        CombatWeaponId.Pistol => CombatPreparationOption.Pistol,
+                        CombatWeaponId.Shotgun => CombatPreparationOption.Shotgun,
+                        _ => CombatPreparationOption.Crowbar
+                    });
+                    model.SelectCombatOption(mode == CombatTestMode.Endless ?
+                        CombatPreparationOption.Endless : CombatPreparationOption.Standard);
+                    Assert.That(model.SelectedCombatSelection, Is.EqualTo(selection));
+                    foreach (CombatWeaponId id in CarryWeaponIds)
+                        Assert.That(model.SelectedCombatLoadout.Contains(id), Is.True,
+                            "Preparation chooses the first held weapon while retaining all three.");
+                    model.SelectBack(); model.Confirm(); model.Confirm();
+                    Assert.That(model.SelectedCombatSelection, Is.EqualTo(selection));
+                    model.SelectCombatOption(CombatPreparationOption.Start); model.Confirm();
+                    model.OpenCombatPreparation(selection);
+                    Assert.That(model.IsCommitted, Is.False);
+                    Assert.That(model.SelectedCombatSelection, Is.EqualTo(selection));
+                    Assert.That(new CombatLoadoutSelection(CombatWeaponId.Crowbar, initial), Is.EqualTo(selection.Loadout));
+                    Assert.That(new CombatLoadoutSelection(CombatWeaponId.Shotgun, initial), Is.EqualTo(selection.Loadout));
+                }
         }
 
         private static void AssertStowedCarry(CombatActor hero, CombatWeaponId id)
@@ -285,28 +383,36 @@ namespace BarPromenade.Tests.PlayMode
         {
             var hero = root.Hero;
             GameObject pistol = hero.CarriedWeapon(CombatWeaponId.Pistol);
-            GameObject secondary = hero.CarriedWeapon(hero.LoadoutSelection.Secondary);
+            var models = new GameObject[CarryWeaponIds.Length];
+            var parents = new Transform[CarryWeaponIds.Length];
+            var positions = new Vector3[CarryWeaponIds.Length];
+            for (int index = 0; index < models.Length; index++) models[index] = hero.CarriedWeapon(CarryWeaponIds[index]);
             int transfers = 0;
             int shotgunDrawTransfers = 0;
             bool middleCaptured = false, pistolAccessCaptured = false, shotgunAboveCaptured = false, shotgunTurnCaptured = false;
             int frame = 0;
             for (; frame < 600 && (hero.IsSwitchingWeapon || !hero.HasWeaponInHand || hero.WeaponId != expected); frame++)
             {
-                Transform pistolParent = pistol.transform.parent, secondaryParent = secondary.transform.parent;
-                Vector3 pistolPosition = pistol.transform.position, secondaryPosition = secondary.transform.position;
+                for (int index = 0; index < models.Length; index++)
+                {
+                    parents[index] = models[index].transform.parent;
+                    positions[index] = models[index].transform.position;
+                }
                 root.Tick(1f / 60f);
                 yield return null;
                 AssertShotgunSling(hero);
-                if (pistol.transform.parent != pistolParent || secondary.transform.parent != secondaryParent)
+                for (int index = 0; index < models.Length; index++)
                 {
-                    GameObject transferred = pistol.transform.parent != pistolParent ? pistol : secondary;
-                    Vector3 before = transferred == pistol ? pistolPosition : secondaryPosition;
+                    GameObject transferred = models[index];
+                    Assert.That(hero.CarriedWeapon(CarryWeaponIds[index]), Is.SameAs(transferred));
+                    if (transferred.transform.parent == parents[index]) continue;
+                    Vector3 before = positions[index];
                     Assert.That(Vector3.Distance(before, transferred.transform.position), Is.LessThan(.1f),
                         "A body/hand parent transfer must retain the visible metric pose.");
                     if (transferred == pistol)
                         AssertConcealedRenderers(pistol,
                             hero.CarriedWeaponLocation(CombatWeaponId.Pistol) == CombatWeaponCarryLocation.Stowed);
-                    else if (secondary == hero.CarriedWeapon(CombatWeaponId.Shotgun) && hero.WeaponCarryActionIsDraw)
+                    else if (CarryWeaponIds[index] == CombatWeaponId.Shotgun && hero.WeaponCarryActionIsDraw)
                     {
                         shotgunDrawTransfers++;
                         var rig = hero.GetComponentInChildren<Player3DAssetRegistry>();
@@ -376,6 +482,10 @@ namespace BarPromenade.Tests.PlayMode
             }
             Assert.That(hero.HasWeaponInHand, Is.True);
             Assert.That(hero.WeaponId, Is.EqualTo(expected));
+            Assert.That(hero.Weapon, Is.SameAs(hero.CarriedWeapon(expected)));
+            foreach (CombatWeaponId id in CarryWeaponIds)
+                if (id != expected && hero.CarriedWeaponLocation(id) != CombatWeaponCarryLocation.Dropped)
+                    AssertStowedCarry(hero, id);
             if (expected != CombatWeaponId.Pistol) AssertPistolConcealedByJacket(hero);
             else AssertConcealedRenderers(pistol, false);
             if (capture != null)
@@ -395,6 +505,7 @@ namespace BarPromenade.Tests.PlayMode
             float fov = camera.fieldOfView;
             try
             {
+                ((Player3DCharacterPresentation)root.Player.Visual).ReapplyLatePresentationPose();
                 Capture("gameplay");
                 if (!includeSides) return;
                 Player3DAssetRegistry rig = ((Player3DCharacterPresentation)root.Player.Visual).Registry;

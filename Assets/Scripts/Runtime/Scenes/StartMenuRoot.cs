@@ -30,8 +30,8 @@ namespace BarPromenade
         internal static Rect LocationOptionRect(int index) => new Rect(178f, 54f + index * 22f, 284f, 20f);
         internal static Rect CombatPanelRect => new Rect(154f, 10f, 332f, 340f);
         internal static Rect CombatOptionRect(int index) => new Rect(166f,
-            index < 2 ? 70f + index * 22f : index < 4 ? 130f + (index - 2) * 22f :
-                index < 6 ? 190f + (index - 4) * 22f : 240f + (index - 6) * 26f, 308f, 20f);
+            index < 3 ? 106f + index * 22f : index < 5 ? 197f + (index - 3) * 22f :
+                247f + (index - 5) * 26f, 308f, 20f);
 
         private readonly StartMenuModel model = new StartMenuModel();
 
@@ -325,10 +325,12 @@ namespace BarPromenade
             GUI.Label(new Rect(166f, 41f, 308f, 12f),
                 LocalizationService.Get("combat.loadout.pistol_carried"), descriptionStyle);
             GUI.Label(new Rect(166f, 54f, 308f, 14f),
-                LocalizationService.Get("combat.loadout.secondary"), descriptionStyle);
-            GUI.Label(new Rect(166f, 114f, 308f, 14f),
+                LocalizationService.Get("combat.loadout.crowbar_carried"), descriptionStyle);
+            GUI.Label(new Rect(166f, 67f, 308f, 14f),
+                LocalizationService.Get("combat.loadout.shotgun_carried"), descriptionStyle);
+            GUI.Label(new Rect(166f, 90f, 308f, 14f),
                 LocalizationService.Get("combat.loadout.initial_held"), descriptionStyle);
-            GUI.Label(new Rect(166f, 174f, 308f, 14f),
+            GUI.Label(new Rect(166f, 181f, 308f, 14f),
                 LocalizationService.Get("combat.mode.title"), descriptionStyle);
             Vector2 mouse = RetroUiTheme.LogicalMousePosition(canvas);
             for (int index = 0; index < (int)CombatPreparationOption.Count; index++)
@@ -343,7 +345,6 @@ namespace BarPromenade
                     CombatPreparationOption.Crowbar => "combat.weapon.crowbar",
                     CombatPreparationOption.Pistol => "combat.weapon.pistol",
                     CombatPreparationOption.Shotgun => "combat.weapon.shotgun",
-                    CombatPreparationOption.Secondary => "combat.loadout.hold_secondary",
                     CombatPreparationOption.Standard => "combat.mode.standard",
                     CombatPreparationOption.Endless => "combat.mode.endless",
                     CombatPreparationOption.OpponentLimit => "combat.endless.limit",
@@ -353,10 +354,9 @@ namespace BarPromenade
                 bool choice = option < CombatPreparationOption.OpponentLimit;
                 bool chosen = option switch
                 {
-                    CombatPreparationOption.Crowbar => model.SelectedCombatLoadout.Secondary == CombatWeaponId.Crowbar,
-                    CombatPreparationOption.Shotgun => model.SelectedCombatLoadout.Secondary == CombatWeaponId.Shotgun,
+                    CombatPreparationOption.Crowbar => model.SelectedCombatLoadout.InitialHeld == CombatWeaponId.Crowbar,
+                    CombatPreparationOption.Shotgun => model.SelectedCombatLoadout.InitialHeld == CombatWeaponId.Shotgun,
                     CombatPreparationOption.Pistol => model.SelectedCombatLoadout.InitialHeld == CombatWeaponId.Pistol,
-                    CombatPreparationOption.Secondary => model.SelectedCombatLoadout.InitialHeld == model.SelectedCombatLoadout.Secondary,
                     CombatPreparationOption.Standard => model.SelectedCombatMode == CombatTestMode.Standard,
                     CombatPreparationOption.Endless => model.SelectedCombatMode == CombatTestMode.Endless,
                     _ => false
@@ -373,9 +373,6 @@ namespace BarPromenade
                     break;
                 }
             }
-            GUI.Label(new Rect(166f, 312f, 308f, 14f),
-                LocalizationService.Get(model.SelectedCombatLoadout.Secondary == CombatWeaponId.Shotgun ?
-                    "combat.loadout.shotgun_carried" : "combat.loadout.crowbar_carried"), descriptionStyle);
             GUI.Label(new Rect(166f, 329f, 308f, 14f),
                 LocalizationService.Get("combat.switch.controls"), descriptionStyle);
         }

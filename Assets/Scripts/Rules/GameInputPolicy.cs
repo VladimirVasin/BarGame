@@ -32,8 +32,9 @@ namespace BarPromenade
         CombatFocus,
         CombatReload,
         EquipPistol,
-        EquipSecondary,
-        CombatNextWeapon
+        EquipCrowbar,
+        CombatNextWeapon,
+        EquipShotgun
     }
 
     /// <summary>Input ownership rules with no device or scene dependencies.</summary>

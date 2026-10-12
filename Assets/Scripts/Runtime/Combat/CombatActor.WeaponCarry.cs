@@ -8,7 +8,7 @@ namespace BarPromenade
 
     public sealed partial class CombatActor
     {
-        // The pair owns real models and live ammunition for the entire round.
+        // Three bounded records own real models and live ammunition for the round.
         // CombatActor's existing contact adapter binds only the current record.
         private sealed class CarriedWeaponRecord
         {
@@ -89,9 +89,10 @@ namespace BarPromenade
         private void InitializeWeaponCarry(CombatLoadoutSelection selection)
         {
             LoadoutSelection = selection;
-            carriedWeapons = new CarriedWeaponRecord[2];
+            carriedWeapons = new CarriedWeaponRecord[3];
             carriedWeapons[0] = CreateCarriedWeapon(CombatWeaponId.Pistol);
-            carriedWeapons[1] = CreateCarriedWeapon(selection.Secondary);
+            carriedWeapons[1] = CreateCarriedWeapon(CombatWeaponId.Crowbar);
+            carriedWeapons[2] = CreateCarriedWeapon(CombatWeaponId.Shotgun);
             BindCarriedWeapon(FindCarriedWeapon(selection.InitialHeld));
             activeCarry.Location = CombatWeaponCarryLocation.Held;
             PlaceCarriedWeaponInHand(activeCarry);
@@ -186,6 +187,25 @@ namespace BarPromenade
             CancelPendingKick("weapon_selection");
             TryBeginPendingWeaponCarry();
             return true;
+        }
+
+        internal bool TrySelectNextWeapon()
+        {
+            if (carriedWeapons == null) return false;
+            CombatWeaponId next = requestedCarry ?? WeaponId;
+            for (int index = 0; index < carriedWeapons.Length; index++)
+            {
+                next = next switch
+                {
+                    CombatWeaponId.Pistol => CombatWeaponId.Crowbar,
+                    CombatWeaponId.Crowbar => CombatWeaponId.Shotgun,
+                    _ => CombatWeaponId.Pistol
+                };
+                CarriedWeaponRecord record = FindCarriedWeapon(next);
+                if (record != null && record.Location != CombatWeaponCarryLocation.Dropped && TrySelectWeapon(next))
+                    return true;
+            }
+            return false;
         }
 
         private bool CanStartWeaponCarry => hero != null && BodyDamage.CanStand && BodyDamage.CanUseRightHand &&
@@ -416,8 +436,8 @@ namespace BarPromenade
             // Concealed chest gear does not drive jacket cloth. The authored
             // hand opens the coat; no inflated collision envelope is needed.
             equipment.Register(this, new[] { carriedWeapons[0].Model.transform, carriedWeapons[0].Mount.Root.transform },
-                carriedWeapons[0].Model, carriedWeapons[1].Model,
-                carriedWeapons[0].Mount.Root, carriedWeapons[1].Mount.Root);
+                carriedWeapons[0].Model, carriedWeapons[1].Model, carriedWeapons[2].Model,
+                carriedWeapons[0].Mount.Root, carriedWeapons[1].Mount.Root, carriedWeapons[2].Mount.Root);
         }
 
         private void UpdateConcealedPistol()

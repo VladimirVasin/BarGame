@@ -202,8 +202,10 @@ namespace BarPromenade
                     return Read(Mouse.current?.middleButton, held);
                 case GameInputAction.EquipPistol:
                     return Read(keyboard?.digit1Key, held);
-                case GameInputAction.EquipSecondary:
+                case GameInputAction.EquipCrowbar:
                     return Read(keyboard?.digit2Key, held);
+                case GameInputAction.EquipShotgun:
+                    return Read(keyboard?.digit3Key, held);
                 case GameInputAction.CombatNextWeapon:
                     return Read(gamepad?.dpad.right, held);
                 default:

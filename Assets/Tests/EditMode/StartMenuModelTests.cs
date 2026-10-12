@@ -154,7 +154,7 @@ namespace BarPromenade.Tests.EditMode
                     "combat.shotgun.ready", "combat.shotgun.empty", "combat.shotgun.reload", "combat.controls.shotgun",
                     "combat.weapon.pickup_shotgun", "inventory.item.combat_shotgun.name",
                     "inventory.item.combat_shotgun.description", "combat.start", "combat.loadout.pistol_carried",
-                    "combat.loadout.secondary", "combat.loadout.initial_held", "combat.loadout.hold_secondary",
+                    "combat.loadout.initial_held",
                     "combat.loadout.crowbar_carried", "combat.loadout.shotgun_carried", "combat.switch.controls",
                     "combat.weapon.switching", "combat.mode.title", "combat.mode.standard", "combat.mode.endless" })
                     Assert.That(values.TryGetValue(key, out string value) && !string.IsNullOrWhiteSpace(value), Is.True, key);
@@ -233,8 +233,6 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(model.MoveSelection(1), Is.True);
             Assert.That(model.SelectedCombatOption, Is.EqualTo(CombatPreparationOption.Pistol));
             Assert.That(model.MoveSelection(1), Is.True);
-            Assert.That(model.SelectedCombatOption, Is.EqualTo(CombatPreparationOption.Secondary));
-            Assert.That(model.MoveSelection(1), Is.True);
             Assert.That(model.SelectedCombatOption, Is.EqualTo(CombatPreparationOption.Standard));
             Assert.That(model.MoveSelection(1), Is.True);
             Assert.That(model.SelectedCombatOption, Is.EqualTo(CombatPreparationOption.Endless));
@@ -272,34 +270,34 @@ namespace BarPromenade.Tests.EditMode
                 "Legacy preparation overloads retain the ordinary polygon default.");
         }
 
-        [TestCase(CombatWeaponId.Crowbar, CombatWeaponId.Pistol, CombatTestMode.Standard)]
-        [TestCase(CombatWeaponId.Crowbar, CombatWeaponId.Crowbar, CombatTestMode.Standard)]
-        [TestCase(CombatWeaponId.Shotgun, CombatWeaponId.Pistol, CombatTestMode.Standard)]
-        [TestCase(CombatWeaponId.Shotgun, CombatWeaponId.Shotgun, CombatTestMode.Standard)]
-        [TestCase(CombatWeaponId.Crowbar, CombatWeaponId.Pistol, CombatTestMode.Endless)]
-        [TestCase(CombatWeaponId.Crowbar, CombatWeaponId.Crowbar, CombatTestMode.Endless)]
-        [TestCase(CombatWeaponId.Shotgun, CombatWeaponId.Pistol, CombatTestMode.Endless)]
-        [TestCase(CombatWeaponId.Shotgun, CombatWeaponId.Shotgun, CombatTestMode.Endless)]
-        public void CombatPreparation_IndependentSlotsSurviveBackAndRefusedLaunch(
-            CombatWeaponId secondary, CombatWeaponId initialHeld,
-            CombatTestMode mode)
+        [TestCase(CombatWeaponId.Pistol, CombatTestMode.Standard)]
+        [TestCase(CombatWeaponId.Crowbar, CombatTestMode.Standard)]
+        [TestCase(CombatWeaponId.Shotgun, CombatTestMode.Standard)]
+        [TestCase(CombatWeaponId.Pistol, CombatTestMode.Endless)]
+        [TestCase(CombatWeaponId.Crowbar, CombatTestMode.Endless)]
+        [TestCase(CombatWeaponId.Shotgun, CombatTestMode.Endless)]
+        public void CombatPreparation_ThreeWeaponsAndInitialHandSurviveBackAndRefusedLaunch(
+            CombatWeaponId initialHeld, CombatTestMode mode)
         {
             var model = new StartMenuModel();
-            var expected = new CombatLoadoutSelection(secondary, initialHeld);
+            var expected = new CombatLoadoutSelection(initialHeld);
             var expectedSelection = new CombatTestSelection(expected, mode);
             model.OpenCombatPreparation(CombatLoadoutSelection.Default);
-            model.SelectCombatOption(secondary == CombatWeaponId.Shotgun ?
-                CombatPreparationOption.Shotgun : CombatPreparationOption.Crowbar);
-            model.SelectCombatOption(initialHeld == CombatWeaponId.Pistol ?
-                CombatPreparationOption.Pistol : CombatPreparationOption.Secondary);
+            model.SelectCombatOption(initialHeld switch
+            {
+                CombatWeaponId.Pistol => CombatPreparationOption.Pistol,
+                CombatWeaponId.Shotgun => CombatPreparationOption.Shotgun,
+                _ => CombatPreparationOption.Crowbar
+            });
             model.FocusCombatOption(mode == CombatTestMode.Endless ?
                 CombatPreparationOption.Endless : CombatPreparationOption.Standard);
             model.Confirm();
             Assert.That(model.SelectedCombatSelection, Is.EqualTo(expectedSelection));
             Assert.That(model.SelectedCombatLoadout, Is.EqualTo(expected));
-            Assert.That(model.SelectedCombatLoadout.Contains(CombatWeaponId.Pistol), Is.True);
-            Assert.That(model.SelectedCombatLoadout.Contains(secondary == CombatWeaponId.Crowbar ?
-                CombatWeaponId.Shotgun : CombatWeaponId.Crowbar), Is.False);
+            foreach (CombatWeaponId carried in new[] { CombatWeaponId.Pistol, CombatWeaponId.Crowbar, CombatWeaponId.Shotgun })
+                Assert.That(model.SelectedCombatLoadout.Contains(carried), Is.True);
+            Assert.That(new CombatLoadoutSelection(CombatWeaponId.Crowbar, initialHeld), Is.EqualTo(expected));
+            Assert.That(new CombatLoadoutSelection(CombatWeaponId.Shotgun, initialHeld), Is.EqualTo(expected));
 
             model.SelectBack();
             model.Confirm();
@@ -313,13 +311,13 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(model.SelectedCombatMode, Is.EqualTo(mode));
             Assert.That(model.IsCommitted, Is.False);
 
-            CombatWeaponId replacement = secondary == CombatWeaponId.Crowbar ?
+            CombatWeaponId replacement = initialHeld == CombatWeaponId.Crowbar ?
                 CombatWeaponId.Shotgun : CombatWeaponId.Crowbar;
             model.SelectCombatOption(replacement == CombatWeaponId.Shotgun ?
                 CombatPreparationOption.Shotgun : CombatPreparationOption.Crowbar);
-            Assert.That(model.SelectedCombatLoadout.Secondary, Is.EqualTo(replacement));
-            Assert.That(model.SelectedCombatLoadout.InitialHeld,
-                Is.EqualTo(initialHeld == CombatWeaponId.Pistol ? CombatWeaponId.Pistol : replacement));
+            Assert.That(model.SelectedCombatLoadout.InitialHeld, Is.EqualTo(replacement));
+            foreach (CombatWeaponId carried in new[] { CombatWeaponId.Pistol, CombatWeaponId.Crowbar, CombatWeaponId.Shotgun })
+                Assert.That(model.SelectedCombatLoadout.Contains(carried), Is.True);
             Assert.That(model.SelectedCombatMode, Is.EqualTo(mode));
         }
 
@@ -363,14 +361,14 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [TestCase(CombatWeaponId.Pistol, CombatWeaponId.Pistol)]
-        [TestCase(CombatWeaponId.Crowbar, CombatWeaponId.Shotgun)]
-        [TestCase(CombatWeaponId.Shotgun, CombatWeaponId.Crowbar)]
         [TestCase((CombatWeaponId)99, CombatWeaponId.Pistol)]
         [TestCase(CombatWeaponId.Crowbar, (CombatWeaponId)99)]
-        public void CombatLoadout_RejectsUncarriedInitialWeaponAndNonLongSecondary(
+        public void CombatLoadout_RejectsInvalidWeaponAndInvalidLegacyLongArgument(
             CombatWeaponId secondary, CombatWeaponId initialHeld)
         {
             Assert.Throws<ArgumentOutOfRangeException>(() => new CombatLoadoutSelection(secondary, initialHeld));
+            if (initialHeld == (CombatWeaponId)99)
+                Assert.Throws<ArgumentOutOfRangeException>(() => new CombatLoadoutSelection(initialHeld));
         }
 
         [Test]

@@ -5,18 +5,15 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 
 ## 2026-10-13 — Bounded world and combat population
 
-- City litter now shares a finite root-owned material palette without MPBs;
-  dormant roots retain it and teardown leaves other palettes/defaults alive.
-  Material colour reads need a floating-point tolerance.
-- Mountain forest rendering uses spatial chunks within each original layer.
-  Whole-layer geometry/UV/normal and collision oracles retain wind bounds,
-  shadows and one physical collider; its renderless trunk buffer is duplicated.
-- Cannery hair transitions surface refinement with distance/camera hysteresis;
-  physical time, contacts, pause and nearby continuity remain intact. EditMode
-  fixtures release authored animation graphs explicitly.
-- Village automatic greeting retries use simulation time; explicit E remains
-  immediate. Saturated visibility rays grow/retry rather than omit a wall;
-  later queries reuse the allocation.
+- City litter: finite root-owned shared material palette/0MPBs; dormant roots
+  retain it, teardown leaves others/defaults. Float colours use tolerance.
+- Forest chunks within original layers keep whole-layer geometry/UV/normal
+  and collision oracles, wind/shadows and one collider; its renderless trunk
+  buffer is duplicated.
+- Cannery hair: distance/camera hysteresis, physical time/contacts/pause/near
+  continuity retained; EditMode releases authored animation graphs.
+- Village: automatic greetings use simulation time/E immediate; saturated
+  visibility buffers grow/retry/reuse, retaining walls.
 - Three ordinary port albedos use Windows BC7 at the existing resolution/mips/
   sampling. Actual imported resources are checked, not only requested settings.
 - Endless defaults to two live opponents; the shared pool still permits five.
@@ -34,6 +31,8 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
   reuse body tension and the same rig. Real-muzzle reticle agrees with shots;
   camera and intended leg heading stay stable, including grounded aim.
   NPC aim is unchanged; bounded phases freeze/reset with ownership.
+- CombatTest carries all three weapons; prep chooses the held one, 1/2/3
+  selects it. Existing mounts, models, ammo and animated handoffs stay separate.
 - Checks: `WorldPresentationBudgetTests`, `CityPortSurfaceImportTests`,
   `RenderedLitter_SharesItsPaletteWithoutBlocksAndReleasesOnlyItsOwnMaterials`,
   `ForestChunks_PreserveGeometryWindBoundsShadowsAndOnePhysicalCollider`,
@@ -45,6 +44,7 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
   Optional woman CPU capture distinguishes unmeasured iteration fields.
   `Range_InexperiencedFirearmAimKeepsMuzzleReticleAndShotTogether` verifies
   novice motion, barrel projection, fire direction, pause and reset.
+  `Range_WeaponCarrySwitchesKeepModelsAmmoAndPhysicalHandoffs` proves all3.
 
 ## 2026-10-12 — Cloth, weapon switching and endless combat
 

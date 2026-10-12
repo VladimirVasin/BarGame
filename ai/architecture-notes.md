@@ -2,41 +2,43 @@
 
 ## Current facts
 
+- **Accepted — 2026-10-13, three-weapon carry:**
+  User:CombatTest all3/1held/2stowed.
+  Bounded3/mount-action-ammo/drop-recover-reset/0story;§6/art§15a/9checks.
+
 - **Accepted exception 2026-10-13, novice firearms:**
-  CombatTest hero nonmilitary:breath/tremor/walk-settle/recoil-yaw/overshoot/
-  finger regrip/blink-chin-breath/same rig;NPC kept.
-  Muzzle reticle/shotgun centre/stablecam/intent legs/0assets-lore;
-  §6/§7/art§15a/9checks.
+  Hero nonmilitary:CombatTest sway/walk-settle/recoil-yaw-overshoot/
+  regrip/blink-chin-breath;NPC/same rig kept. Muzzle reticle/shotgun centre/
+  stablecam/intent legs/0assets-lore;§6/§7/art§15a/9checks.
 
 - **Accepted — 2026-10-13, bounded world presentation:**
-  User: finite litter palette/root lifetime/no MPB; forest 48 m/layer chunks,
-  same geometry/UV/wind bounds/shadows/one collider (duplicate trunk buffer).
-  Cannery hair keeps physical time/constraints: 8→2 refinement/0.2 s, 20/24 m;
-  screen height≥0.025/forced/authoring keeps full. Village auto retry
-  0.2 simulation s/E immediate; visibility buffer grows/retries saturation.
-  PortConcrete/PortTimber/PortWarehousePlaster: Windows BC7 HQ, same512/mips/
-  sampling. World/story unchanged; FPS unmeasured.
+  User:litter finitepalette/root lifetime/0MPB;forest48m/layerchunks;
+  same geometry/UV/windbounds/shadows/1collider;duplicate trunkbuffer.
+  Canneryhair:physical time/constraints kept/8→2refinement/.2s/20/24m;
+  screenheight≥.025/forced/authoring full. Village autoretry/.2sim s/E immediate;
+  visibilitybuffer grow-retry saturation. PortConcrete/PortTimber/
+  PortWarehousePlaster:Windows BC7HQ/same512-mips-sampling;
+  0world-storychange/FPSunmeasured.
 
-- **Accepted architecture exception — 2026-10-12, warehouse polygon:**
+- **Accepted exception — 2026-10-12, warehouse polygon:**
   seed/resetkeeps/levels/flat:test-only/0story-hazard-falldmg;§6/art§15a/9checks.
-- **Accepted architecture exception — 2026-10-13, bounded combat population:**
+- **Accepted exception — 2026-10-13, bounded combat population:**
   User:Endless1–5(default2)/corpses0–2(default2);pool=livecap≤5.
   Excess oldest observed defeat retires;spawn unused else oldest.
   Others/flights kept;Standard1/Ebody;conservative,0hardware max/60FPS/gain.
   §6/art§15a/9checks;`debug-log.md`.
-- **Accepted — 2026-10-10, carry pair:**
-  CombatTest:pistol Lchest/M65+Rbelt bar|soft-sling back shotgun;
-  holster0cloth/stored hidden/held-drop-coat-off seen;
-  6bone stow-draw/rig-model-ammo handoffs/0hardmount.
+- **Accepted — 2026-10-10, carry mounts:**
+  CombatTest:pistol Lchest/M65;bar Rbelt;shotgun soft-sling/back.
+  Holster0cloth:stored hidden/else seen;6stow-draw/rig-model-ammo/0hardmount.
 
 - **Accepted — 2026-10-12, ShotgunDraw:**
-  Ropen barrels↓;Loutside/over Lshoulder→vertical stock-top/palm-down catch
-  →outside shoulder/front chest turn→Rgrip/Lforeend;0body crossing.
-  Import offsets/continuous handoffs/pause freeze/drop=original-pose-ammo;
-  stow/model/rig/sling/2× kept
+  Ropen barrels↓;Loutside/Lshoulder→vertical stocktop/palmdown catch
+  →outside shoulder/front chest→Rgrip/Lforeend;0crossing.
+  Importoffsets/continuous handoffs/pause/drop=original-pose-ammo;
+  stow-model-rig-sling/2×.
 
-- **Accepted — 2026-10-11:** shotgun:Lshoulder→front chest/abdomen→lower Rside;draw/stow.
-  Ribbon0jacket;gun/bar coat+scarf/hair;JacketBody-only width/seam pad.
+- **Accepted — 2026-10-11:** shotgun:Lshoulder→chest/abdomen→low Rside;draw/stow.
+  Ribbon0jacket;gun/bar-coat/scarf/hair;JacketBody-only width/seam pad.
 
 - **Accepted — 2026-10-12, secondary-motion baking:**
   User:physical120Hz→30Hz hair/jacket/sling;same rig.

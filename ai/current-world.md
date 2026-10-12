@@ -148,20 +148,20 @@ The vertical slice contains:
   2–4→3–7active s/free≥3m-route/0backlog.
   Pool=livecap≤5/IDs/AI-space-stairs/kill1x/heroend.
   Injury/action/ammo/flights kept;empty+settled/no reload→guns8/2.
-  Unused else oldest corpse reuse;excess oldest retire/body-drop0;
+  Unused→oldest corpse reuse;excess oldest retire/body-drop0;
   survivors kept/focus≠hits/shotgun-victim/Tab-E0.
-  Defaultbar;pistol Lundercoat/bar Rbelt/shotgun back;
-  sling:Lshoulder→chest/abdomen→low Rside;1pistol/2long/DpadR;
-  6bone/torso over gait;2×carry/settle;pistol↔bar~1.7s/shotgun~2.4s;
-  rig-model-ammo/reload first-last queue/pause-hitstop.
+  All3/prepheld(defaultbar);pistol Lundercoat/bar Rbelt/shotgunback;
+  sling:Lshoulder→chest/abdomen→low Rside;1/2/3;DpadR cycle-skipdrop;
+  6stow-draw/torso-gait;2×/settle;pistol↔bar~1.7s/shotgun~2.4s;
+  rig-model-ammo/reloadfirst/lastqueue/pause-hitstop.
   Fallcancel/original+pose+ammo+slot;Erecord.
   NPCbar/3AI/freecam;dummy/TabAIreset;MMBfocus/bar-Qfocus.
   Guns:RMBaim/LMBedge/R-Xreload;8clips/2.21-back1.19/0run/FOV-IK.25;
   camplane normdiag/Space1m-4way-back/tankreturn/barfocus/injury.
-  Hero:breath/tremor/walk-settle/recoil-yaw/overshoot/finger regrip/blink-chin;
+  Hero:breath-tremor/walk-settle/recoil-yaw-overshoot/regrip/blink-chin;
   reticle=muzzle/shotgun centre;stablecam/intent legs/NPC kept.
   Pistol8∞/reload1.8/slide-emptylock/mag-rack/cases;
-  shotgun2∞/12pellets/.55/head×2/break2.8/stage-ammo/atomic spend/flightsfinish/winfire.
+  shotgun2∞/12pellets/.55/head×2/break2.8/stageammo/atomicspend/flightsfinish/winfire.
   Near launch/falloff/1react/head≤14/skin-world first/0pierce-ricochet-guard.
   Cloth-tissue-bone loss/head-limb sever/torso→joined skeleton/0chunks.
   Rhand0weapon/Lhand0twohand-reload;Rbar-loaded pistol;

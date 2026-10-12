@@ -4250,21 +4250,22 @@ OS dynamic fonts в IMGUI запрещены; Unity legacy — аварийны�
 8lamps/2shadows/§8wear/vent/concrete-metal/resetseed/New;
 Endless live1–5/poolIDs/2–4→3–7active s/≥3m/AI-spacing-stairs/heroend/empty settled→guns.
 `2026-10-13`:defaultlive2/corpses0–2(default2)/pool=livecap≤5/oldest retire-reuse.
-`2026-10-10`:pistol LunderM65+bar Rbelt|shotgun sling/back/0hardmount;
-Lshoulder/frontdiagonal/2slots/held;6bone rig-model-ammo/Ljacketopen/cloth-hair-scarf.
-Gun:worn unbranded dark metal/Rpalm gait/2hand aim/crossflash;
+`2026-10-10`:pistol LunderM65/bar Rbelt/shotgun sling/back/0hardmount;
+Lshoulder/frontdiag/6stow-draw/rig-model-ammo/Ljacketopen/cloth-hair-scarf.
+`2026-10-13`:all3/1held/2stowed.
+Gun:worn unbranded darkmetal/Rpalm gait/2hand aim/crossflash;
 Aim:8gaits/×.85/facing/Step/uppercam/FOV-grip return.
 `2026-10-13`:hero gun:drift/recoil/overshoot/finger regrip/blink;
-muzzle reticle/shotgun centre/stablecam/intent legs.
+muzzlereticle/shotguncentre/stablecam/intent legs.
 `2026-10-08`:streak/impulse-SFX;pistol head0HP→ragdoll.
 Shotgun:worn dark steel/wood/2barrels/shoulder-stock/Lforeend;
 heavy recoil/flash-smoke/deepthud;2shots/break/spent eject/load/close.
-`2026-10-12`:Draw Ropen barrels↓;Loutside over Lshoulder→vertical stocktop/palmdown
-→outside shoulder/front chest→Rgrip/Lforeend;0crossing;stow-model-rig-sling/2×.
+`2026-10-12`:Draw Ropen barrels↓;Loutside/Lshoulder→vertical stocktop/palmdown
+→outside shoulder/chest→Rgrip/Lforeend;0crossing;stow-model-rig-sling/2×.
 `2026-10-09`:near=max/body launch/head≤14/fast head debris-blood/falloff.
 Rig:chest-abdomen/arm-hand/leg-catch/skin-fabric-glove-boot/wet-dry/repeat.
 `2026-10-09`:torso→joined skeleton/0chunks;head-limb cuts/finite parts;
-Near shotgun=max;survivors-corpses/crawl/reset.
+Nearshotgun=max;survivors-corpses/crawl/reset.
 Pistol3-5/16/low eject;brain8:full/wetmuted jelly/squash/bone-tissue/cam-hide/loss.
 Dark blood56/800/narrow-slow/pulse24s0/rig-cut/stains-pool-debris;
 convulsions≤2.35s/corpse HP-pose-impulse;volley1reaction/terminal.
@@ -4279,7 +4280,7 @@ Bar:wall sparks-recoil/sway-inertia-feet;Qfar:pelvis-foot→/chest←;
 near knee/bar kept/torso mirror/L-shove←/palm-bar-body.
 Грудь контрастна;стена/край/конец→скрыто.
 Win:walk/gun fire-reload;barE:toilet §7 FP/barL/body-floorR/0reaction.
-Charge/shield:dim-open=none/amber=request/closed=ready/filled=block;0речь-сюжет.
+Charge/shield:dim-open=none/amber=request/closed=ready/filled=block;0speech-story.
 
 ### Принятое исключение — иллюстрации загрузки
 
