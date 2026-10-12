@@ -3,13 +3,12 @@
 ## Current facts
 
 - **Accepted architecture exception — 2026-10-12, warehouse polygon:**
-  User:CombatTest seed+levels/reset≠new/legacy:test-only.
-  0story-dialogue-hazards-fall damage;§6/art§15a/§16/§21/9checks.
-  `current-world.md`.
-
-- **Accepted architecture exception — 2026-10-12, endless polygon:**
-  User:polygon/both carried guns refill between foes/reload settled-same rig;
-  IDs/cooldowns/injuries kept;§6/art§15a/9checks
+  seed+levels/reset keeps/flat:test-only;0story-hazards-fall dmg;
+  §6/art§15a/9checks.
+- **Accepted architecture exception — 2026-10-12, multi-opponent:**
+  User:Endless1–5(default5)/globalIDs/2–4→3–7active s/0backlog.
+  AI/hits/kill1x/heroend/reuse1/kept/empty settled→guns;
+  Standard1/Back kept;§6/art§15a/9checks;`current-world.md`.
 - **Accepted — 2026-10-10, carry pair:**
   CombatTest:pistol Lchest/M65+Rbelt bar|soft-sling back shotgun;
   holster0cloth/stored hidden/held-drop-coat-off seen;
@@ -24,11 +23,11 @@
 - **Accepted — 2026-10-11:** shotgun:Lshoulder→front chest/abdomen→lower Rside;draw/stow.
   Ribbon0jacket;gun/bar coat+scarf/hair;JacketBody-only width/seam pad.
 
-- **Accepted — 2026-10-11, cloth simplification:**
-  Jacket≤3,hair/sling≤2@120Hz;0debt. Free:body/gear/face-safe/material/fallback.
-  Burst support/pinned/area;live scratch;hem depth/clearance tree;
-  skin:bones/inverses;damage:0prewarm/bounds/source index/contact bones;
-  native/fallback/topology.
+- **Accepted — 2026-10-12, secondary-motion baking:**
+  User:physical120Hz→30Hz hair/jacket/sling;same rig.
+  Final pose/gear;Idle≤20mm Y/all17+gear/motion proof.
+  Whole warm cycles;unsafe tracks/wind/falls→live≤3/2/2,0debt.
+  Pins/material/body/gear/face-safe;hashes/reference/render/CPU.
 
 - **Accepted — 2026-10-10, separate military belt:**
   Olive webbing/muted metal buckle;pelvis over trousers.

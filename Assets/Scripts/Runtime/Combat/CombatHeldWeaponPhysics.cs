@@ -25,11 +25,25 @@ namespace BarPromenade
         internal bool IsHeld { get; private set; }
         internal bool IsDropped { get; private set; }
         internal int DroppedAnatomyContactCount { get; private set; }
+        internal int DroppedAnatomySweepsSkipped { get; private set; }
+        internal long DroppedAnatomyPoseSamples { get; private set; }
         internal Player3DAnatomicalPart LastDroppedAnatomyPart { get; private set; }
         private const float DroppedSkin = .001f;
         private readonly List<Collider> opponentAnatomy = new List<Collider>();
         private readonly List<Player3DAnatomicalPart> opponentParts = new List<Player3DAnatomicalPart>();
+        private readonly List<CombatActor> anatomyOwners = new List<CombatActor>();
+        private CombatActor owner, opponent;
+        private IReadOnlyList<CombatActor> participants;
+        private int[] anatomyGenerations = Array.Empty<int>();
         private Pose[] previousAnatomy = Array.Empty<Pose>(), currentAnatomy = Array.Empty<Pose>();
+        private Pose[] sampledAnatomy = Array.Empty<Pose>();
+        private bool[] animatedAnatomy = Array.Empty<bool>();
+        private float[] anatomyRadii = Array.Empty<float>();
+        private CombatWeaponGeometry.ShapeBounds[] anatomyBounds = Array.Empty<CombatWeaponGeometry.ShapeBounds>();
+        private Bounds[] sampledAnatomyBounds = Array.Empty<Bounds>();
+        private readonly CombatPrimitiveQueryCache anatomyQueries = new CombatPrimitiveQueryCache();
+        private Collider[] preparedAnatomyQueries = Array.Empty<Collider>();
+        private readonly float[] droppedRadii = new float[CombatWeaponGeometry.Segments.Count];
         private readonly RaycastHit[] droppedCasts = new RaycastHit[64];
         private readonly Collider[] droppedOverlaps = new Collider[64];
         private Pose previousDropped;
@@ -41,14 +55,52 @@ namespace BarPromenade
             internal float Remaining;
         }
 
-        internal void SetOpponent(CombatActor opponent)
+        internal void SetOpponent(CombatActor target)
         {
-            opponentAnatomy.Clear(); opponentParts.Clear();
-            if (opponent != null && opponent.Ragdoll != null)
-                foreach (var entry in opponent.Ragdoll.PhysicsController.AnatomicalColliders)
-                { opponentAnatomy.Add(entry.Key); opponentParts.Add(entry.Value); }
+            owner ??= GetComponent<CombatActor>();
+            if (owner?.CombatParticipants != null) { SetCombatParticipants(owner.CombatParticipants); return; }
+            if (opponent == target && participants == null) return;
+            participants = null; opponent = target;
+            opponentAnatomy.Clear(); opponentParts.Clear(); anatomyOwners.Clear();
+            AddOpponentAnatomy(target);
+            InitializeOpponentAnatomy();
+        }
+
+        internal void SetCombatParticipants(IReadOnlyList<CombatActor> values)
+        {
+            if (ReferenceEquals(participants, values)) return;
+            owner ??= GetComponent<CombatActor>();
+            participants = values;
+            opponentAnatomy.Clear(); opponentParts.Clear(); anatomyOwners.Clear();
+            if (values != null)
+            {
+                for (int i = 0; i < values.Count; i++)
+                    if (values[i] != owner) AddOpponentAnatomy(values[i]);
+            }
+            else AddOpponentAnatomy(opponent);
+            InitializeOpponentAnatomy();
+        }
+
+        private void AddOpponentAnatomy(CombatActor target)
+        {
+            if (target == null || target.Ragdoll == null) return;
+            foreach (var entry in target.Ragdoll.PhysicsController.AnatomicalColliders)
+            { opponentAnatomy.Add(entry.Key); opponentParts.Add(entry.Value); anatomyOwners.Add(target); }
+        }
+
+        private void InitializeOpponentAnatomy()
+        {
+            anatomyQueries.Clear();
             previousAnatomy = new Pose[opponentAnatomy.Count];
             currentAnatomy = new Pose[opponentAnatomy.Count];
+            sampledAnatomy = new Pose[opponentAnatomy.Count];
+            animatedAnatomy = new bool[opponentAnatomy.Count];
+            anatomyRadii = new float[opponentAnatomy.Count];
+            anatomyBounds = new CombatWeaponGeometry.ShapeBounds[opponentAnatomy.Count];
+            sampledAnatomyBounds = new Bounds[opponentAnatomy.Count];
+            preparedAnatomyQueries = new Collider[opponentAnatomy.Count];
+            anatomyGenerations = new int[opponentAnatomy.Count];
+            for (int i = 0; i < anatomyGenerations.Length; i++) anatomyGenerations[i] = anatomyOwners[i].ContactGeneration;
             hasDroppedSnapshot = false;
         }
 
@@ -60,6 +112,7 @@ namespace BarPromenade
             weaponBody = targetBody != null ? targetBody : throw new ArgumentNullException(nameof(targetBody));
             forearm = rightForearm != null ? rightForearm : throw new ArgumentNullException(nameof(rightForearm));
             hands = handPose;
+            owner = GetComponent<CombatActor>();
             foreach (var entry in anatomy)
             {
                 if (entry.Value == Player3DAnatomicalPart.RightForearm || entry.Value == Player3DAnatomicalPart.RightHand)
@@ -69,6 +122,7 @@ namespace BarPromenade
             }
             held = CreateShapes(forearm.transform, "Held Crowbar Collision");
             dropped = CreateShapes(weapon, "Dropped Crowbar Collision");
+            if (owner?.CombatParticipants != null) SetCombatParticipants(owner.CombatParticipants);
         }
 
         internal void EnableHeld()
@@ -166,6 +220,8 @@ namespace BarPromenade
             IsDropped = false;
             hasDroppedSnapshot = false;
             DroppedAnatomyContactCount = 0;
+            DroppedAnatomySweepsSkipped = 0;
+            DroppedAnatomyPoseSamples = 0;
         }
 
         private CapsuleCollider[] CreateShapes(Transform parent, string label)
@@ -261,22 +317,48 @@ namespace BarPromenade
             if (!IsDropped || weaponBody == null || weaponBody.isKinematic) return;
             if (!hasDroppedSnapshot) { CaptureDroppedSnapshot(); return; }
             Pose target = new Pose(weaponBody.position, weaponBody.rotation);
-            float travel = Vector3.Distance(previousDropped.position, target.position) +
-                Quaternion.Angle(previousDropped.rotation, target.rotation) * Mathf.Deg2Rad * .7f;
-            bool hasAnimatedBody = false;
+            float weaponLinearTravel = Vector3.Distance(previousDropped.position, target.position);
+            float weaponAngularTravel = Quaternion.Angle(previousDropped.rotation, target.rotation) * Mathf.Deg2Rad * .7f;
+            float travel = weaponLinearTravel + weaponAngularTravel;
+            float weaponRadius = .7f;
+            for (int segment = 0; segment < dropped.Length; segment++)
+            {
+                droppedRadii[segment] = dropped[segment].radius;
+                CombatWeaponGeometry.Segment geometry = CombatWeaponGeometry.Segments[segment];
+                weaponRadius = Mathf.Max(weaponRadius, Mathf.Max(geometry.A.magnitude, geometry.B.magnitude) + droppedRadii[segment]);
+            }
+            Bounds sweptWeapon = PivotSweepBounds(previousDropped.position, target.position, weaponRadius + DroppedSkin);
+            bool hasAnimatedBody = false, mayContact = false;
             for (int i = 0; i < opponentAnatomy.Count; i++)
             {
                 Collider shape = opponentAnatomy[i];
+                animatedAnatomy[i] = false;
+                preparedAnatomyQueries[i] = null;
                 if (shape == null) continue;
-                currentAnatomy[i] = new Pose(shape.transform.position, shape.transform.rotation);
-                if (shape.enabled || !shape.gameObject.activeInHierarchy) continue;
-                hasAnimatedBody = true;
+                shape.transform.GetPositionAndRotation(out Vector3 position, out Quaternion rotation);
+                currentAnatomy[i] = new Pose(position, rotation);
+                if (anatomyGenerations[i] != anatomyOwners[i].ContactGeneration)
+                {
+                    previousAnatomy[i] = currentAnatomy[i];
+                    anatomyGenerations[i] = anatomyOwners[i].ContactGeneration;
+                }
+                if (shape.enabled || !shape.gameObject.activeInHierarchy || !anatomyOwners[i].isActiveAndEnabled ||
+                    !anatomyOwners[i].Ragdoll.PhysicsController.IsCombatAnatomicalQueryAllowed(shape)) continue;
+                animatedAnatomy[i] = hasAnimatedBody = true;
+                anatomyRadii[i] = ShapeRadius(shape);
+                anatomyBounds[i] = new CombatWeaponGeometry.ShapeBounds(shape);
+                mayContact |= sweptWeapon.Intersects(PivotSweepBounds(previousAnatomy[i].position, currentAnatomy[i].position,
+                    Mathf.Max(anatomyRadii[i], anatomyBounds[i].PivotRadius) + DroppedSkin));
                 travel = Mathf.Max(travel, Vector3.Distance(previousAnatomy[i].position, currentAnatomy[i].position) +
-                    Quaternion.Angle(previousAnatomy[i].rotation, currentAnatomy[i].rotation) * Mathf.Deg2Rad * ShapeRadius(shape) +
-                    Vector3.Distance(previousDropped.position, target.position) +
-                    Quaternion.Angle(previousDropped.rotation, target.rotation) * Mathf.Deg2Rad * .7f);
+                    Quaternion.Angle(previousAnatomy[i].rotation, currentAnatomy[i].rotation) * Mathf.Deg2Rad * anatomyRadii[i] +
+                    weaponLinearTravel + weaponAngularTravel);
             }
-            if (!hasAnimatedBody) { CaptureDroppedSnapshot(); return; }
+            if (!hasAnimatedBody || !mayContact)
+            {
+                if (hasAnimatedBody) DroppedAnatomySweepsSkipped++;
+                CaptureCurrentDroppedSnapshot();
+                return;
+            }
             // FixedUpdate and LateUpdate expose different time clocks. A frame's
             // authored limb motion must not acquire a near-zero denominator
             // merely because a fixed step captured its previous pose just before it.
@@ -290,6 +372,13 @@ namespace BarPromenade
             for (int step = 1; step <= steps; step++)
             {
                 float t = step / (float)steps;
+                for (int body = 0; body < opponentAnatomy.Count; body++)
+                {
+                    if (!animatedAnatomy[body]) continue;
+                    Pose sampled = sampledAnatomy[body] = Interpolate(previousAnatomy[body], currentAnatomy[body], t);
+                    sampledAnatomyBounds[body] = anatomyBounds[body].At(sampled.position, sampled.rotation);
+                    DroppedAnatomyPoseSamples++;
+                }
                 Vector3 planned = Vector3.Lerp(previousDropped.position, target.position, t);
                 Pose next = new Pose(planned + slide, Quaternion.Slerp(previousDropped.rotation, target.rotation, t));
                 if (touched)
@@ -299,11 +388,11 @@ namespace BarPromenade
                 }
                 for (int iteration = 0; iteration < 8; iteration++)
                 {
-                    if (!FindAnimatedContact(next, t, out Vector3 normal, out float depth, out Vector3 point, out int part)) break;
+                    if (!FindAnimatedContact(next, out Vector3 normal, out float depth, out Vector3 point, out int part)) break;
                     touched = true;
                     DroppedAnatomyContactCount++;
                     LastDroppedAnatomyPart = opponentParts[part];
-                    Pose bodyPose = Interpolate(previousAnatomy[part], currentAnatomy[part], t);
+                    Pose bodyPose = sampledAnatomy[part];
                     Vector3 localContact = Quaternion.Inverse(bodyPose.rotation) * (point - bodyPose.position);
                     Vector3 bodyVelocity = (currentAnatomy[part].position + currentAnatomy[part].rotation * localContact -
                         previousAnatomy[part].position - previousAnatomy[part].rotation * localContact) / seconds;
@@ -329,29 +418,53 @@ namespace BarPromenade
                 // the contact pass has put the body back on its near surface.
                 weapon.SetPositionAndRotation(solved.position, solved.rotation);
             }
-            CaptureDroppedSnapshot();
+            CaptureCurrentDroppedSnapshot();
         }
 
-        private bool FindAnimatedContact(Pose pose, float t, out Vector3 normal, out float depth,
+        private void CaptureCurrentDroppedSnapshot()
+        {
+            previousDropped = new Pose(weaponBody.position, weaponBody.rotation);
+            Array.Copy(currentAnatomy, previousAnatomy, currentAnatomy.Length);
+            hasDroppedSnapshot = true;
+        }
+
+        private static Bounds PivotSweepBounds(Vector3 from, Vector3 to, float radius)
+        {
+            var bounds = new Bounds(from, Vector3.one * (radius * 2f));
+            bounds.Encapsulate(to - Vector3.one * radius); bounds.Encapsulate(to + Vector3.one * radius);
+            return bounds;
+        }
+
+        private bool FindAnimatedContact(Pose pose, out Vector3 normal, out float depth,
             out Vector3 point, out int bodyIndex)
         {
             normal = point = Vector3.zero; depth = 0f; bodyIndex = -1;
             for (int segment = 0; segment < dropped.Length; segment++)
             {
                 SegmentPose(pose, segment, out Vector3 a, out Vector3 b, out Quaternion rotation);
+                Vector3 centre = (a + b) * .5f;
+                float segmentReach = Vector3.Distance(a, b) * .5f + droppedRadii[segment];
+                var segmentBounds = new Bounds();
+                segmentBounds.SetMinMax(Vector3.Min(a, b), Vector3.Max(a, b));
+                segmentBounds.Expand((droppedRadii[segment] + DroppedSkin) * 2f);
                 for (int body = 0; body < opponentAnatomy.Count; body++)
                 {
+                    if (!animatedAnatomy[body] || !segmentBounds.Intersects(sampledAnatomyBounds[body])) continue;
                     Collider shape = opponentAnatomy[body];
-                    if (shape == null || shape.enabled || !shape.gameObject.activeInHierarchy) continue;
-                    Pose bodyPose = Interpolate(previousAnatomy[body], currentAnatomy[body], t);
-                    if (Vector3.Distance((a + b) * .5f, bodyPose.position) >
-                        ShapeRadius(shape) + Vector3.Distance(a, b) * .5f + dropped[segment].radius) continue;
-                    if (!Physics.ComputePenetration(dropped[segment], (a + b) * .5f, rotation,
-                        shape, bodyPose.position, bodyPose.rotation, out Vector3 direction, out float overlap) || overlap <= depth) continue;
+                    Pose bodyPose = sampledAnatomy[body];
+                    float reach = anatomyRadii[body] + segmentReach + DroppedSkin;
+                    if ((centre - bodyPose.position).sqrMagnitude > reach * reach) continue;
+                    // Native penetration requires both shapes enabled. Copy only
+                    // a candidate's geometry once in this pass; its sampled pose
+                    // remains the real animated body's pose, with physics off.
+                    Collider query = preparedAnatomyQueries[body] ??=
+                        anatomyQueries.Prepare(shape);
+                    if (!Physics.ComputePenetration(dropped[segment], centre, rotation,
+                        query, bodyPose.position, bodyPose.rotation, out Vector3 direction, out float overlap) || overlap <= depth) continue;
                     depth = overlap; normal = direction; bodyIndex = body;
                     Vector3 line = b - a;
                     float along = line.sqrMagnitude > .000001f ? Mathf.Clamp01(Vector3.Dot(bodyPose.position - a, line) / line.sqrMagnitude) : 0f;
-                    point = Vector3.Lerp(a, b, along) - direction * dropped[segment].radius;
+                    point = Vector3.Lerp(a, b, along) - direction * droppedRadii[segment];
                 }
             }
             return bodyIndex >= 0;
@@ -457,6 +570,7 @@ namespace BarPromenade
 
         internal void Dispose()
         {
+            anatomyQueries.Dispose();
             if (IsDropped && weaponBody != null)
             { weaponBody.isKinematic = true; weaponBody.useGravity = false; weaponBody.detectCollisions = false; }
             ResetWeapon();

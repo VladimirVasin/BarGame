@@ -19,7 +19,8 @@ namespace BarPromenade
         internal string JournalDirectory { get; private set; }
         private DuelJournal duelJournal;
         private CombatJournalFrameObserver journalObserver;
-        private JournalActorState journalHero, journalOpponent;
+        private JournalActorState journalHero;
+        private readonly List<JournalActorState> journalOpponents = new List<JournalActorState>(5);
         private long journalTick, journalFrameStart, journalSimulationTicks, journalPoseTicks, journalContactTicks;
         private long journalLastCollector, journalSnapshotTicks;
         private long journalLatePoseTicks, journalImpactApplyTicks;
@@ -36,7 +37,7 @@ namespace BarPromenade
         private PlayerScarfPresentation journalScarf;
         private CombatShotgunSling journalSling;
         private int journalMeasuredFrame;
-        private int journalRound, journalFrameSubsteps, journalFrozenSteps, journalPoseSamples, journalDecision = -1;
+        private int journalRound, journalFrameSubsteps, journalFrozenSteps, journalPoseSamples;
         private double journalSeconds, journalLastSnapshot = -1d, journalFrameMilliseconds;
         private bool journalRoundOpen, journalResultWritten, journalInputAllowed, journalAttackHeld, journalFrozen;
         private bool journalForceSnapshot, journalFocus = true;
@@ -44,8 +45,6 @@ namespace BarPromenade
         private bool journalMovementCaptured, journalMovementFocused, journalMovementAwaitingNeutral, journalTargetFocused;
         private int journalMovementKeys;
         private Vector2 journalMovementStick, journalMovementInput;
-        private CombatOpponentIntent journalIntent;
-        private Vector3 journalOpponentRequested, journalOpponentAchieved;
         private ProfilerRecorder journalMain, journalRender, journalGc, journalTargetWait;
         private readonly FrameTiming[] journalGpu = new FrameTiming[1];
         private bool journalGpuEnabled;
@@ -54,6 +53,35 @@ namespace BarPromenade
         private static readonly string[] JournalIntents = Enum.GetNames(typeof(CombatOpponentIntent));
         private static readonly string[] JournalOpponentStyles = Enum.GetNames(typeof(CombatOpponentStyle));
         private static readonly double JournalMillisecondsPerTick = 1000d / Stopwatch.Frequency;
+        private int JournalSnapshotHz => Mode == CombatTestMode.Endless ? 10 : 20;
+
+        private JournalActorState SavedJournalOpponent(CombatActor actor)
+        {
+            foreach (JournalActorState saved in journalOpponents) if (saved.Actor == actor) return saved;
+            return null;
+        }
+
+        private static void ResetJournalActorState(JournalActorState saved)
+        {
+            saved.Phase = saved.Actor.State.Phase; saved.Action = saved.Actor.State.AttackSequence;
+            saved.Grip = saved.Actor.SupportArmState;
+            saved.PhaseStarted = saved.GripStarted = 0;
+            saved.Recovering = saved.Warned = false; saved.Decision = -1;
+            saved.RequestedMove = saved.AchievedMove = Vector3.zero;
+        }
+
+        private void JournalOpponentMovement(CombatActor actor, Vector3 requested, Vector3 achieved)
+        {
+            JournalActorState saved = SavedJournalOpponent(actor);
+            if (saved != null) { saved.RequestedMove = requested; saved.AchievedMove = achieved; }
+        }
+
+        private long SumCombatCounter(Func<CombatActor, long> counter)
+        {
+            long sum = 0;
+            foreach (CombatActor actor in combatParticipants) sum += counter(actor);
+            return sum;
+        }
 
         private struct JournalStageCounters
         {
@@ -67,6 +95,7 @@ namespace BarPromenade
             internal long ProjectileDefeat, ProjectileDefeatPreparation, ProjectileDefeatRagdoll, ProjectileDefeatDrop;
             internal long Sling, Jacket, Hair, Scarf, SlingCalls, JacketCalls, JacketSteps, HairSteps;
             internal long SlingSteps;
+            internal long SlingBaked, JacketBaked, HairBaked;
             internal double JacketDiscarded, HairDiscarded;
         }
 
@@ -82,6 +111,9 @@ namespace BarPromenade
             internal MeleePhase RecoveryPhase;
             internal float RiseProgress;
             internal int Action;
+            internal int Decision = -1;
+            internal CombatOpponentIntent Intent;
+            internal Vector3 RequestedMove, AchievedMove;
             internal static readonly string[] Names = { "pelvis", "chest", "hand.L", "hand.R", "foot.L", "foot.R" };
 
             internal JournalActorState(CombatActor actor)
@@ -115,7 +147,9 @@ namespace BarPromenade
             duelJournal = new DuelJournal(JournalDirectory);
             journalFailureReported = false;
             JournalRoot = this;
-            journalHero = new JournalActorState(Hero); journalOpponent = new JournalActorState(Opponent);
+            journalHero = new JournalActorState(Hero);
+            journalOpponents.Clear();
+            foreach (CombatActor actor in combatOpponents) journalOpponents.Add(new JournalActorState(actor));
             Player3DAssetRegistry rig = (Player.Visual as Player3DCharacterPresentation)?.Registry;
             journalJacket = rig != null ? rig.GetComponent<PlayerJacketCloth>() : null;
             journalHair = rig != null ? rig.GetComponent<PlayerHair>() : null;
@@ -146,16 +180,12 @@ namespace BarPromenade
             journalLateFrameCaptured = false;
             journalRenderBegin = journalRenderEnd = 0; journalRenderContexts = 0;
             journalStagesAtFrameStart = CaptureJournalStageCounters();
-            Hero.BeginJournalWorkFrame(); Opponent.BeginJournalWorkFrame();
-            journalDecision = -1; journalAttackHeld = journalFrozen = false;
+            foreach (CombatActor actor in combatParticipants) actor.BeginJournalWorkFrame();
+            journalAttackHeld = journalFrozen = false;
             journalInputAllowed = GameInput.CanRead(GameInputContext.Gameplay);
             journalMovementCaptured = false;
-            journalHero.Phase = Hero.State.Phase; journalOpponent.Phase = Opponent.State.Phase;
-            journalHero.Action = Hero.State.AttackSequence; journalOpponent.Action = Opponent.State.AttackSequence;
-            journalHero.Grip = Hero.SupportArmState; journalOpponent.Grip = Opponent.SupportArmState;
-            journalHero.PhaseStarted = journalOpponent.PhaseStarted = 0;
-            journalHero.GripStarted = journalOpponent.GripStarted = 0;
-            journalHero.Recovering = journalOpponent.Recovering = false;
+            ResetJournalActorState(journalHero);
+            foreach (JournalActorState saved in journalOpponents) ResetJournalActorState(saved);
             duelJournal.SetClock(Time.frameCount, 0, 0);
             duelJournal.BeginRound(++journalRound,
                 GameLog.Field("scene", SceneIds.CombatTest), GameLog.Field("unity", Application.unityVersion),
@@ -168,7 +198,7 @@ namespace BarPromenade
                 GameLog.Field("quality", QualitySettings.GetQualityLevel()), GameLog.Field("vsync", QualitySettings.vSyncCount),
                 GameLog.Field("target_fps", Application.targetFrameRate), GameLog.Field("cpu", SystemInfo.processorType),
                 GameLog.Field("gpu", SystemInfo.graphicsDeviceName), GameLog.Field("simulation_step", SimulationStep),
-                GameLog.Field("max_substeps", MaximumFrameSubsteps), GameLog.Field("snapshot_hz", 20),
+                GameLog.Field("max_substeps", MaximumFrameSubsteps), GameLog.Field("snapshot_hz", JournalSnapshotHz),
                 GameLog.Field("gpu_timing_available", journalGpuEnabled),
                 GameLog.Field("render_interval", OnDemandRendering.renderFrameInterval),
                 GameLog.Field("capture_delta_time", Time.captureDeltaTime),
@@ -183,12 +213,22 @@ namespace BarPromenade
                 f4: GameLog.Field("hero_animation_revision", journalIdentity.HeroAnimation),
                 f5: GameLog.Field("npc_animation_revision", journalIdentity.NpcAnimation),
                 f6: GameLog.Field("timing_scopes", "actor_present/weapon_constraint/support_grip"));
-            Hero.JournalActorId = 1; Opponent.JournalActorId = 2;
-            Hero.Journal = Opponent.Journal = duelJournal;
-            Hero.ImpactReceived += RequestJournalSnapshot; Opponent.ImpactReceived += RequestJournalSnapshot;
-            WriteJournalActorConfiguration(Hero); WriteJournalActorConfiguration(Opponent);
+            Hero.JournalActorId = 1;
+            foreach (CombatActor actor in combatParticipants)
+            {
+                actor.Journal = duelJournal;
+                actor.ImpactReceived += RequestJournalSnapshot;
+                WriteJournalActorConfiguration(actor);
+            }
             duelJournal.Record("combat_mode", f0: GameLog.Field("mode", Mode.ToString()),
                 f1: GameLog.Field("kills", EndlessKills));
+            duelJournal.Record("population_settings", f0: GameLog.Field("maximum_live", EncounterSettings.MaximumLiveOpponents),
+                f1: GameLog.Field("first_min", EncounterSettings.FirstSpawnMinSeconds),
+                f2: GameLog.Field("first_max", EncounterSettings.FirstSpawnMaxSeconds),
+                f3: GameLog.Field("interval_min", EncounterSettings.SpawnIntervalMinSeconds),
+                f4: GameLog.Field("interval_max", EncounterSettings.SpawnIntervalMaxSeconds),
+                f5: GameLog.Field("run", encounterRun),
+                f6: GameLog.Field("actor_work_samples", "active_or_called"));
             if (WarehousePlan != null)
                 duelJournal.Record("warehouse_layout", f0: GameLog.Field("seed", WarehousePlan.Seed),
                     f1: GameLog.Field("generator_version", WarehouseArenaPlan.GeneratorVersion),
@@ -214,7 +254,7 @@ namespace BarPromenade
                 f6: GameLog.Field("animation_asset_revision", actor.IsHero ? journalIdentity.HeroAnimation : journalIdentity.NpcAnimation),
                 f7: GameLog.Field("intoxication", actor.IsHero ? GameSessionState.IntoxicationLevel : 0));
             duelJournal.Record("character", actor: actor.JournalActorId,
-                f0: GameLog.Field("id", actor.IsHero ? "hero" : DefaultNpcPopulation.CombatTestOpponent));
+                f0: GameLog.Field("id", actor.IsHero ? "hero" : DefaultNpcPopulation.CombatTestOpponentId(combatOpponents.IndexOf(actor))));
         }
 
         private void EndJournalRound(string reason)
@@ -222,9 +262,13 @@ namespace BarPromenade
             if (duelJournal == null || !journalRoundOpen) return;
             duelJournal.Record("round_status", f0: GameLog.Field("finished", RoundFinished),
                 f1: GameLog.Field("hero_health", Hero.State.Health), f2: GameLog.Field("opponent_health", Opponent.State.Health));
-            WriteJournalOpenIntervals(journalHero); WriteJournalOpenIntervals(journalOpponent);
-            Hero.ImpactReceived -= RequestJournalSnapshot; Opponent.ImpactReceived -= RequestJournalSnapshot;
-            Hero.Journal = Opponent.Journal = null;
+            WriteJournalOpenIntervals(journalHero);
+            foreach (JournalActorState saved in journalOpponents) WriteJournalOpenIntervals(saved);
+            foreach (CombatActor actor in combatParticipants)
+            {
+                actor.ImpactReceived -= RequestJournalSnapshot;
+                actor.Journal = null;
+            }
             duelJournal.EndRound(reason); journalRoundOpen = false;
             GameLog.Info("combat", "duel_journal_ended", GameLog.Field("duel_session", duelJournal.SessionId),
                 GameLog.Field("round", journalRound), GameLog.Field("reason", reason));
@@ -350,7 +394,8 @@ namespace BarPromenade
                         ? (now - journalRenderEnd) * JournalMillisecondsPerTick : double.NaN),
                     f6: GameLog.Field("render_contexts", journalRenderContexts));
                 WriteJournalFrameStages();
-                Hero.WriteJournalWorkFrame(); Opponent.WriteJournalWorkFrame();
+                foreach (CombatActor actor in combatParticipants)
+                    if (actor.gameObject.activeInHierarchy || actor.HasJournalWork) actor.WriteJournalWorkFrame();
             }
             if (journalGpuEnabled) FrameTimingManager.CaptureFrameTimings();
             journalFrameStart = now;
@@ -360,11 +405,11 @@ namespace BarPromenade
             journalLatePoseFrame = -1; journalUpdateToLateMilliseconds = 0;
             journalLateFrameCaptured = false;
             journalRenderBegin = journalRenderEnd = 0; journalRenderContexts = 0;
-            Hero.BeginJournalWorkFrame(); Opponent.BeginJournalWorkFrame();
+            foreach (CombatActor actor in combatParticipants) actor.BeginJournalWorkFrame();
             journalFrameSubsteps = journalFrozenSteps = journalPoseSamples = 0;
-            journalOpponentRequested = journalOpponentAchieved = Vector3.zero;
-            journalQueriesAtFrameStart = Hero.JournalPhysicsQueries + Opponent.JournalPhysicsQueries;
-            journalSaturationsAtFrameStart = Hero.JournalPhysicsBufferSaturations + Opponent.JournalPhysicsBufferSaturations;
+            foreach (JournalActorState saved in journalOpponents) saved.RequestedMove = saved.AchievedMove = Vector3.zero;
+            journalQueriesAtFrameStart = SumCombatCounter(actor => actor.JournalPhysicsQueries);
+            journalSaturationsAtFrameStart = SumCombatCounter(actor => actor.JournalPhysicsBufferSaturations);
             journalStagesAtFrameStart = CaptureJournalStageCounters();
             duelJournal.SetClock(Time.frameCount, journalTick, journalSeconds);
             bool allowed = GameInput.CanRead(GameInputContext.Gameplay);
@@ -380,7 +425,7 @@ namespace BarPromenade
         {
             Capture = SimulationCaptureTicks, Flight = SimulationFlightTicks, Effects = SimulationEffectsTicks,
             FreeAim = FreeAimQueryTicks, BodyProxy = BodyEffects?.ProxyGeometryTicks ?? 0,
-            RecoveryPreparation = Hero.RecoveryPreparationTicks + Opponent.RecoveryPreparationTicks,
+            RecoveryPreparation = SumCombatCounter(actor => actor.RecoveryPreparationTicks),
             FinishedRoundSubsteps = FinishedRoundSubsteps,
             BloodImpact = BloodImpactTicks, BodyImpact = BodyImpactTicks, ImpactPresentation = ImpactPresentationTicks,
             BodySynchronization = BodyEffects?.ActorSynchronizationTicks ?? 0,
@@ -402,10 +447,10 @@ namespace BarPromenade
             HeadRelease = HeadEffects?.FragmentReleaseTicks ?? 0,
             HeadActivationVisibility = HeadEffects?.ActivationVisibilityTicks ?? 0,
             HeadActivationCollision = HeadEffects?.ActivationCollisionTicks ?? 0,
-            ProjectileDefeat = Hero.ProjectileDefeatTicks + Opponent.ProjectileDefeatTicks,
-            ProjectileDefeatPreparation = Hero.ProjectileDefeatPreparationTicks + Opponent.ProjectileDefeatPreparationTicks,
-            ProjectileDefeatRagdoll = Hero.ProjectileDefeatRagdollTicks + Opponent.ProjectileDefeatRagdollTicks,
-            ProjectileDefeatDrop = Hero.ProjectileDefeatDropTicks + Opponent.ProjectileDefeatDropTicks,
+            ProjectileDefeat = SumCombatCounter(actor => actor.ProjectileDefeatTicks),
+            ProjectileDefeatPreparation = SumCombatCounter(actor => actor.ProjectileDefeatPreparationTicks),
+            ProjectileDefeatRagdoll = SumCombatCounter(actor => actor.ProjectileDefeatRagdollTicks),
+            ProjectileDefeatDrop = SumCombatCounter(actor => actor.ProjectileDefeatDropTicks),
             Sling = journalSling != null ? journalSling.TotalPresentTicks : 0,
             Jacket = journalJacket != null ? journalJacket.TotalApplyTicks : 0,
             Hair = journalHair != null ? journalHair.TotalApplyTicks : 0,
@@ -415,6 +460,9 @@ namespace BarPromenade
             JacketSteps = journalJacket != null ? journalJacket.TotalSimulationSteps : 0,
             HairSteps = journalHair != null ? journalHair.TotalSimulationSteps : 0,
             SlingSteps = journalSling != null ? journalSling.TotalSimulationSteps : 0,
+            SlingBaked = journalSling != null ? journalSling.BakedPlaybackFrames : 0,
+            JacketBaked = journalJacket != null ? journalJacket.TotalBakedPoseCalls : 0,
+            HairBaked = journalHair != null ? journalHair.TotalBakedPoseCalls : 0,
             JacketDiscarded = journalJacket != null ? journalJacket.TotalDiscardedSeconds : 0d,
             HairDiscarded = journalHair != null ? journalHair.TotalDiscardedSeconds : 0d
         };
@@ -443,7 +491,10 @@ namespace BarPromenade
                 f1: GameLog.Field("sling_contact_iterations", journalSling != null ? journalSling.SteadyProjectionIterations : 0),
                 f2: GameLog.Field("sling_length_iterations", journalSling != null ? journalSling.SteadyLengthRepairIterations : 0),
                 f3: GameLog.Field("jacket_discarded_ms", Math.Max(0d, current.JacketDiscarded - previous.JacketDiscarded) * 1000d),
-                f4: GameLog.Field("hair_discarded_ms", Math.Max(0d, current.HairDiscarded - previous.HairDiscarded) * 1000d));
+                f4: GameLog.Field("hair_discarded_ms", Math.Max(0d, current.HairDiscarded - previous.HairDiscarded) * 1000d),
+                f5: GameLog.Field("sling_baked_calls", Math.Max(0L, current.SlingBaked - previous.SlingBaked)),
+                f6: GameLog.Field("jacket_baked_calls", Math.Max(0L, current.JacketBaked - previous.JacketBaked)),
+                f7: GameLog.Field("hair_baked_calls", Math.Max(0L, current.HairBaked - previous.HairBaked)));
             duelJournal.Record("frame_stage_sample",
                 f0: GameLog.Field("capture_ms", JournalStageMilliseconds(current.Capture, previous.Capture)),
                 f1: GameLog.Field("flight_ms", JournalStageMilliseconds(current.Flight, previous.Flight)),
@@ -557,11 +608,13 @@ namespace BarPromenade
 
         private void JournalOpponentDecision()
         {
-            if (duelJournal == null || (journalDecision == OpponentDecisionSequence && journalIntent == OpponentIntent)) return;
-            journalDecision = OpponentDecisionSequence; journalIntent = OpponentIntent;
-            duelJournal.Record("ai_decision", actor: 2, target: 1,
-                f0: GameLog.Field("decision", journalDecision), f1: GameLog.Field("intent", JournalIntents[(int)OpponentIntent]),
-                f2: GameLog.Field("distance", Vector3.Distance(Hero.transform.position, Opponent.transform.position)),
+            if (duelJournal == null) return;
+            JournalActorState saved = SavedJournalOpponent(AiOpponent);
+            if (saved == null || saved.Decision == OpponentDecisionSequence && saved.Intent == OpponentIntent) return;
+            saved.Decision = OpponentDecisionSequence; saved.Intent = OpponentIntent;
+            duelJournal.Record("ai_decision", actor: AiOpponent.JournalActorId, target: 1,
+                f0: GameLog.Field("decision", saved.Decision), f1: GameLog.Field("intent", JournalIntents[(int)OpponentIntent]),
+                f2: GameLog.Field("distance", Vector3.Distance(Hero.transform.position, AiOpponent.transform.position)),
                 f3: GameLog.Field("observed_phase", JournalPhases[(int)Hero.State.Phase]), f4: GameLog.Field("reaction_seconds", observationSeconds),
                 f5: GameLog.Field("making_space", opponentMakingSpace), f6: GameLog.Field("delay", opponentDelay),
                 f7: GameLog.Field("draw_count", draws));
@@ -570,7 +623,9 @@ namespace BarPromenade
         private void JournalTransitions(string stage)
         {
             if (duelJournal == null) return;
-            JournalTransition(journalHero, stage); JournalTransition(journalOpponent, stage);
+            JournalTransition(journalHero, stage);
+            foreach (JournalActorState saved in journalOpponents)
+                if (saved.Actor.gameObject.activeInHierarchy) JournalTransition(saved, stage);
         }
 
         private void JournalTransition(JournalActorState saved, string stage)
@@ -639,10 +694,12 @@ namespace BarPromenade
             JournalTransitions("final_presentation");
             // Finished-round ragdolls still move while the combat clock is stopped.
             double snapshotSeconds = journalSeconds + roundEndElapsed;
-            if (journalForceSnapshot || snapshotSeconds - journalLastSnapshot >= .05d)
+            if (journalForceSnapshot || snapshotSeconds - journalLastSnapshot >= 1d / JournalSnapshotHz)
             {
                 journalForceSnapshot = false; journalLastSnapshot = snapshotSeconds;
-                WriteJournalSnapshot(journalHero); WriteJournalSnapshot(journalOpponent);
+                WriteJournalSnapshot(journalHero);
+                foreach (JournalActorState saved in journalOpponents)
+                    if (saved.Actor.gameObject.activeInHierarchy) WriteJournalSnapshot(saved);
             }
             journalSnapshotTicks += Stopwatch.GetTimestamp() - start - (duelJournal.CollectorTicks - collector);
             long collected = duelJournal.CollectorTicks;
@@ -651,8 +708,8 @@ namespace BarPromenade
                 f1: GameLog.Field("frozen_substeps", journalFrozenSteps), f2: GameLog.Field("extra_pose_samples", journalPoseSamples),
                 f3: GameLog.Field("collector_ms", JournalCollectorMilliseconds),
                 f4: GameLog.Field("dropped_records", duelJournal.DroppedRecords), f5: GameLog.Field("maximum_queued", duelJournal.MaximumQueued),
-                f6: GameLog.Field("physics_queries", Math.Max(0L, Hero.JournalPhysicsQueries + Opponent.JournalPhysicsQueries - journalQueriesAtFrameStart)),
-                f7: GameLog.Field("query_buffer_saturations", Math.Max(0L, Hero.JournalPhysicsBufferSaturations + Opponent.JournalPhysicsBufferSaturations - journalSaturationsAtFrameStart)));
+                f6: GameLog.Field("physics_queries", Math.Max(0L, SumCombatCounter(actor => actor.JournalPhysicsQueries) - journalQueriesAtFrameStart)),
+                f7: GameLog.Field("query_buffer_saturations", Math.Max(0L, SumCombatCounter(actor => actor.JournalPhysicsBufferSaturations) - journalSaturationsAtFrameStart)));
             journalLastCollector = collected;
         }
 
@@ -726,7 +783,7 @@ namespace BarPromenade
             WriteJournalVectors(id, "mass_and_capture", impact.CentreOfMass, impact.CaptureOffset);
             WriteJournalVectors(id, "support_and_target", impact.SupportCentre, actor.Footwork.LastCatchTarget);
             if (grip != null) WriteJournalVectors(id, "hand_and_grip_target", actor.ShovePalmPosition, actor.SupportGripWorldPosition);
-            if (id == 2) WriteJournalVectors(id, "requested_and_achieved_move", journalOpponentRequested, journalOpponentAchieved);
+            if (!actor.IsHero) WriteJournalVectors(id, "requested_and_achieved_move", saved.RequestedMove, saved.AchievedMove);
             else
             {
                 WriteJournalVectors(id, "movement", Player.Motor.PlanarVelocity, actor.Body != null ? actor.Body.velocity : Vector3.zero);

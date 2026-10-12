@@ -770,7 +770,7 @@ namespace BarPromenade
         {
             bool releasedTransientCarry = CancelWeaponCarry();
             UnregisterWeaponEquipment();
-            ReleaseNpcAnimation();
+            SuspendNpcAnimation();
             CancelPendingPistolShot("disabled");
             Firearm?.CancelAction();
             pistolVisualAimProgress = 0f;

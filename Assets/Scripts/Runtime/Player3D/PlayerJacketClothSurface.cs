@@ -23,6 +23,7 @@ namespace BarPromenade
         internal static long TotalFreeSurfaceQueries { get; private set; }
         private readonly Matrix4x4[] bindposes;
         private readonly Matrix4x4[] matrices;
+        private readonly BonePoseSnapshot bonePoseSnapshot;
         private readonly Transform[] bones;
         private readonly int[] usedBones;
         private readonly BoneWeight[] skinWeights;
@@ -30,10 +31,12 @@ namespace BarPromenade
         private readonly Matrix4x4[] skins;
         private readonly Matrix4x4[] inverseSkins;
         private readonly bool[] deformSkins;
+        private bool skinPoseInitialized;
         private readonly Vector3[] original;
         private readonly Vector3[] sourceNormals;
         private readonly Vector3[] output;
         private readonly Vector3[] writtenOutput;
+        private Vector3[] transitionResidual;
         private readonly Vector3[] world;
         private readonly Vector3[] foldDelta;
         private readonly Vector3[] posedOriginal;
@@ -86,10 +89,11 @@ namespace BarPromenade
 
         public PlayerJacketClothSurface(PlayerJacketCloth.SurfaceBinding source,
             Transform shoulder = null, Transform elbow = null, Transform wrist = null, Transform actor = null,
-            NativeSnapshot nativeSnapshot = null)
+            NativeSnapshot nativeSnapshot = null, BonePoseSnapshot bonePoseSnapshot = null)
         {
             binding = source;
             this.nativeSnapshot = nativeSnapshot;
+            this.bonePoseSnapshot = bonePoseSnapshot;
             this.actor = actor;
             this.shoulder = shoulder; this.elbow = elbow; this.wrist = wrist;
             Material material = source.Renderer.sharedMaterial;
@@ -208,6 +212,7 @@ namespace BarPromenade
             Mesh.MarkDynamic();
             source.Renderer.sharedMesh = Mesh;
             Mesh.GetNormals(normals);
+            if (normalMapped) Mesh.GetTangents(tangents);
             UpdatePose();
             if (source.Region == 0 && actor != null)
             {
@@ -219,15 +224,33 @@ namespace BarPromenade
                     contactFreedom, contactVertices, contactTriangles, vertexSkins);
         }
 
-        public void UpdatePose()
+        public void UpdatePose(bool useSharedSnapshot = false)
         {
             acceptedHemCandidate = false;
-            foreach (int bone in usedBones) matrices[bone] = bones[bone].localToWorldMatrix * bindposes[bone];
+            foreach (int bone in usedBones)
+                matrices[bone] = (useSharedSnapshot && bonePoseSnapshot != null ? bonePoseSnapshot.Matrix(bones[bone]) :
+                    bones[bone].localToWorldMatrix) * bindposes[bone];
             for (int i = 0; i < skins.Length; i++)
             {
-                skins[i] = BuildSkin(skinWeights[i]);
-                if (deformSkins[i]) inverseSkins[i] = skins[i].inverse;
+                Matrix4x4 skin = BuildSkin(skinWeights[i]);
+                // Exact equality keeps the prior inverse only for the same
+                // skin pose; moving bones still rebuild it immediately.
+                if (deformSkins[i] && (!skinPoseInitialized || !skins[i].Equals(skin)))
+                    inverseSkins[i] = skin.inverse;
+                skins[i] = skin;
             }
+            skinPoseInitialized = true;
+            float fold = CurrentFold();
+            for (int i = 0; i < original.Length; i++)
+            {
+                posedOriginal[i] = original[i] + (foldDelta == null ? Vector3.zero : foldDelta[i] * fold);
+                world[i] = Skin(i).MultiplyPoint3x4(posedOriginal[i]);
+            }
+            panelShape?.CapturePose(world);
+        }
+
+        private float CurrentFold()
+        {
             float fold = 0f;
             if (foldDelta != null)
             {
@@ -239,15 +262,42 @@ namespace BarPromenade
                 if (Renderer.GetBlendShapeWeight(foldShape) != 0f)
                     Renderer.SetBlendShapeWeight(foldShape, 0f);
             }
-            for (int i = 0; i < original.Length; i++)
-            {
-                posedOriginal[i] = original[i] + (foldDelta == null ? Vector3.zero : foldDelta[i] * fold);
-                world[i] = Skin(i).MultiplyPoint3x4(posedOriginal[i]);
-            }
-            panelShape?.CapturePose(world);
+            return fold;
         }
 
         public Matrix4x4 Skin(int vertex) => skins[vertexSkins[vertex]];
+
+        internal Matrix4x4 CurrentNodeSkin(int vertex, BonePoseSnapshot snapshot)
+        {
+            BoneWeight weight = skinWeights[vertexSkins[vertex]];
+            Capture(weight.boneIndex0);
+            if (weight.weight1 > 0f) Capture(weight.boneIndex1);
+            if (weight.weight2 > 0f) Capture(weight.boneIndex2);
+            if (weight.weight3 > 0f) Capture(weight.boneIndex3);
+            return BuildSkin(weight);
+
+            void Capture(int bone) => matrices[bone] = snapshot.Matrix(bones[bone]) * bindposes[bone];
+        }
+
+        internal sealed class BonePoseSnapshot
+        {
+            private readonly Dictionary<Transform, Matrix4x4> matrices = new Dictionary<Transform, Matrix4x4>(32);
+
+            // All panels sample one completed rig without mutating its bones.
+            // A new manual ApplyAt or passive copy starts a fresh snapshot,
+            // even when both calls happen within the same Unity frame.
+            public void BeginPose() => matrices.Clear();
+
+            public Matrix4x4 Matrix(Transform bone)
+            {
+                if (!matrices.TryGetValue(bone, out Matrix4x4 matrix))
+                {
+                    matrix = bone.localToWorldMatrix;
+                    matrices.Add(bone, matrix);
+                }
+                return matrix;
+            }
+        }
 
         private Matrix4x4 BuildSkin(BoneWeight weight)
         {
@@ -274,6 +324,23 @@ namespace BarPromenade
         public int Deform(Vector3[] displacements, PlayerScarfBodyContacts contacts,
             Transform heldPanelGrip = null, float weaponAccessAmount = 0f, bool deferWrite = false)
         {
+            BeginDeformation(contacts);
+            UpdateWeaponAccessFreedom(heldPanelGrip, weaponAccessAmount);
+            ApplyWeaponAccess(heldPanelGrip, weaponAccessAmount);
+            for (int i = 0; i < world.Length; i++)
+            {
+                float freedom = binding.Freedom[i];
+                if (freedom <= 0f) continue;
+                world[i] += Vector3.Lerp(displacements[binding.FirstNode[i]], displacements[binding.SecondNode[i]],
+                    binding.SecondWeight[i]) * freedom;
+            }
+            int contactCount = ResolveDeformation(contacts);
+            if (!deferWrite) CommitDeformation();
+            return contactCount;
+        }
+
+        private void BeginDeformation(PlayerScarfBodyContacts contacts)
+        {
             acceptedHemCandidate = false;
             LastDeformGeometryWrites = 0;
             LastHemCandidateReused = false;
@@ -284,15 +351,10 @@ namespace BarPromenade
             // Reuse only an unchanged point that was already found clear.
             Array.Clear(clearVertices, 0, clearVertices.Length);
             if (clearAreaSamples != null) Array.Clear(clearAreaSamples, 0, clearAreaSamples.Length);
-            UpdateWeaponAccessFreedom(heldPanelGrip, weaponAccessAmount);
-            ApplyWeaponAccess(heldPanelGrip, weaponAccessAmount);
-            for (int i = 0; i < world.Length; i++)
-            {
-                float freedom = binding.Freedom[i];
-                if (freedom <= 0f) continue;
-                world[i] += Vector3.Lerp(displacements[binding.FirstNode[i]], displacements[binding.SecondNode[i]],
-                    binding.SecondWeight[i]) * freedom;
-            }
+        }
+
+        private int ResolveDeformation(PlayerScarfBodyContacts contacts)
+        {
             if (freeSurfaceOriginal != null) Array.Copy(world, freeSurfaceOriginal, world.Length);
             panelShape?.CaptureRaw(world);
             int contactCount;
@@ -318,8 +380,43 @@ namespace BarPromenade
                     panelShape?.LimitMaterialDistances(world, contacts, queryCache: pointQueryCache);
                 }
             }
-            if (!deferWrite) CommitDeformation();
             return contactCount;
+        }
+
+        internal void CaptureTransitionResidual()
+        {
+            transitionResidual ??= new Vector3[output.Length];
+            for (int i = 0; i < output.Length; i++) transitionResidual[i] = output[i] - posedOriginal[i];
+        }
+
+        internal int DeformBakedTransition(float[] from, float[] to, float sampleAlpha, float transitionAlpha,
+            ref int offset, PlayerScarfBodyContacts contacts)
+        {
+            BeginDeformation(contacts);
+            UpdateWeaponAccessFreedom(null, 0f);
+            // Both endpoints include the complete accepted hem/area response.
+            // Interpolate before collision/material resolution, never after it.
+            offset += 6;
+            for (int i = 0; i < world.Length; i++)
+            {
+                Vector3 destination = original[i] + ReadVector(from, to, sampleAlpha, ref offset);
+                offset += normalMapped ? 7 : 3;
+                Vector3 local = contactFreedom[i] <= 0f ? posedOriginal[i] :
+                    Vector3.Lerp(posedOriginal[i] + transitionResidual[i], destination, transitionAlpha);
+                world[i] = Skin(i).MultiplyPoint3x4(local);
+            }
+            return ResolveDeformation(contacts);
+        }
+
+        internal int BlendLiveTransition(float alpha, PlayerScarfBodyContacts contacts)
+        {
+            BeginDeformation(contacts);
+            for (int i = 0; i < world.Length; i++)
+                if (contactFreedom[i] > 0f)
+                    world[i] = Vector3.Lerp(Skin(i).MultiplyPoint3x4(posedOriginal[i] + transitionResidual[i]), world[i], alpha);
+            // The live target was already solved, including authored hem folds;
+            // resolve only the mixed candidate without applying that fold twice.
+            return ResolveDeformation(contacts);
         }
 
         internal void CommitDeformation()
@@ -629,14 +726,15 @@ namespace BarPromenade
         private void UpdateWeaponAccessFreedom(Transform grip, float amount)
         {
             if (bindActorPoints == null) return;
-            float handHeight = grip == null ? 0f : actor.InverseTransformPoint(grip.position).y;
+            Matrix4x4 worldToActor = actor.worldToLocalMatrix;
+            float handHeight = grip == null ? 0f : worldToActor.MultiplyPoint3x4(grip.position).y;
             for (int i = 0; i < world.Length; i++)
             {
                 // The left hand can lift the chest-height inner edge above the
                 // ordinary free hem. Release only its local access region.
                 Vector3 bind = bindActorPoints[i];
                 bool access = amount > 0f && grip != null && bind.x < -.01f && bind.z > .025f &&
-                    Mathf.Abs(actor.InverseTransformPoint(world[i]).y - handHeight) < .20f;
+                    Mathf.Abs(worldToActor.MultiplyPoint3x4(world[i]).y - handHeight) < .20f;
                 contactFreedom[i] = access ? 1f : baseContactFreedom[i];
             }
         }
@@ -648,7 +746,9 @@ namespace BarPromenade
             // Grasp the free inner edge of the left front panel. Picking the
             // closest outer panel only dents the pocket and leaves the jacket
             // opening across the holster. The actual hand supplies the target.
-            Vector3 hand = actor.InverseTransformPoint(grip.position);
+            Matrix4x4 worldToActor = actor.worldToLocalMatrix;
+            Vector3 gripPosition = grip.position;
+            Vector3 hand = worldToActor.MultiplyPoint3x4(gripPosition);
             if (weaponAccessVertex < 0 || amount < .95f)
             {
                 float nearest = float.PositiveInfinity;
@@ -656,7 +756,7 @@ namespace BarPromenade
                 {
                     Vector3 bind = bindActorPoints[i];
                     if (contactFreedom[i] <= 0f || bind.x <= -.11f || bind.x >= -.01f || bind.z <= .025f) continue;
-                    Vector3 posed = actor.InverseTransformPoint(world[i]);
+                    Vector3 posed = worldToActor.MultiplyPoint3x4(world[i]);
                     float distance = 4f * (bind.x + .025f) * (bind.x + .025f) +
                         (posed.y - hand.y) * (posed.y - hand.y) + .1f * (posed.z - hand.z) * (posed.z - hand.z);
                     if (distance >= nearest) continue;
@@ -664,7 +764,7 @@ namespace BarPromenade
                 }
             }
             if (weaponAccessVertex < 0) return;
-            Vector3 delta = Vector3.ClampMagnitude(grip.position - world[weaponAccessVertex], .24f) * amount;
+            Vector3 delta = Vector3.ClampMagnitude(gripPosition - world[weaponAccessVertex], .24f) * amount;
             Vector3 reference = bindActorPoints[weaponAccessVertex];
             for (int i = 0; i < world.Length; i++)
             {
@@ -1030,6 +1130,7 @@ namespace BarPromenade
             public void Apply(HemFoldSet folds, Vector3[] solved, Transform actor)
             {
                 Array.Copy(solved, Candidate, solved.Length);
+                Matrix4x4 actorToWorld = actor.localToWorldMatrix;
                 // A pocket or flap has no pinned upper seam in this surface.
                 // Its small patch follows the fold at its centre without
                 // stretching across the fold's steep vertical field.
@@ -1042,7 +1143,7 @@ namespace BarPromenade
                     HemFold fold = point.x * folds.First.Side > 0f ? folds.First : folds.Second;
                     if (point.x * fold.Side <= 0f) continue;
                     Candidate[i] = Vector3.LerpUnclamped(pose[i], Raw[i], fold.SecondaryMotion) +
-                        actor.TransformVector(translate ? offset : Displacement(point));
+                        actorToWorld.MultiplyVector(translate ? offset : Displacement(point));
                 }
 
                 Vector3 Displacement(Vector3 point)
@@ -1202,12 +1303,122 @@ namespace BarPromenade
             Write();
         }
 
-        public void CopyTo(PlayerJacketClothSurface target)
+        internal int BakedPoseValueCount => 6 + original.Length * (normalMapped ? 10 : 6);
+        internal bool SupportsBakedPose => Renderer.sharedMesh == Mesh && Mesh.vertexCount == original.Length &&
+            normals.Count == original.Length && (!normalMapped || tangents.Count == original.Length) &&
+            (Renderer.sharedMaterial != null && Renderer.sharedMaterial.IsKeywordEnabled("_NORMALMAP")) == normalMapped;
+
+        internal void AppendBakeSignature(ref ulong hash)
+        {
+            ulong computed = hash;
+            Hash(binding.Region); Hash(normalMapped ? 1 : 0);
+            foreach (Vector3 value in original) Vector(value);
+            foreach (Vector3 value in sourceNormals) Vector(value);
+            Hash(foldDelta == null ? 0 : 1);
+            if (foldDelta != null) foreach (Vector3 value in foldDelta) Vector(value);
+            foreach (int value in Source.triangles) Hash(value);
+            foreach (Vector2 value in Source.uv) { Scalar(value.x); Scalar(value.y); }
+            foreach (Matrix4x4 value in bindposes) for (int i = 0; i < 16; i++) Scalar(value[i]);
+            foreach (int value in vertexSkins) Hash(value);
+            foreach (BoneWeight value in skinWeights)
+            {
+                Hash(value.boneIndex0); Hash(value.boneIndex1); Hash(value.boneIndex2); Hash(value.boneIndex3);
+                Scalar(value.weight0); Scalar(value.weight1); Scalar(value.weight2); Scalar(value.weight3);
+            }
+            foreach (float value in binding.Freedom) Scalar(value);
+            foreach (int value in binding.FirstNode) Hash(value);
+            foreach (int value in binding.SecondNode) Hash(value);
+            foreach (float value in binding.SecondWeight) Scalar(value);
+            hash = computed;
+
+            void Hash(int value) { unchecked { computed = (computed ^ (uint)value) * 1099511628211UL; } }
+            void Scalar(float value) => Hash(value.GetHashCode());
+            void Vector(Vector3 value) { Scalar(value.x); Scalar(value.y); Scalar(value.z); }
+        }
+
+        internal void CaptureBakedPose(float[] destination, ref int offset)
+        {
+            WriteVector(destination, ref offset, Mesh.bounds.min);
+            WriteVector(destination, ref offset, Mesh.bounds.max);
+            for (int i = 0; i < original.Length; i++)
+            {
+                WriteVector(destination, ref offset, output[i] - original[i]);
+                WriteVector(destination, ref offset, normals[i]);
+                if (normalMapped)
+                {
+                    Vector4 tangent = tangents[i];
+                    WriteVector(destination, ref offset, new Vector3(tangent.x, tangent.y, tangent.z));
+                    destination[offset++] = tangent.w;
+                }
+            }
+        }
+
+        internal void ApplyBakedPose(float[] from, float[] to, float alpha, ref int offset)
+        {
+            LastDeformGeometryWrites = 0;
+            LastHemCandidateReused = false;
+            acceptedHemCandidate = false;
+            falseFreeValid = false;
+            int boundsOffset = offset;
+            Vector3 minimum = Vector3.Min(ReadVector(from, to, 0f, ref offset),
+                new Vector3(to[boundsOffset], to[boundsOffset + 1], to[boundsOffset + 2]));
+            boundsOffset = offset;
+            Vector3 maximum = Vector3.Max(ReadVector(from, to, 0f, ref offset),
+                new Vector3(to[boundsOffset], to[boundsOffset + 1], to[boundsOffset + 2]));
+            float fold = CurrentFold();
+            bool geometryChanged = false, normalsChanged = false, tangentsChanged = false;
+            for (int i = 0; i < original.Length; i++)
+            {
+                output[i] = original[i] + ReadVector(from, to, alpha, ref offset);
+                geometryChanged |= !output[i].Equals(writtenOutput[i]);
+                if (foldDelta != null) posedOriginal[i] = original[i] + foldDelta[i] * fold;
+                Vector3 normal = ReadVector(from, to, alpha, ref offset).normalized;
+                normalsChanged |= !normal.Equals(normals[i]);
+                normals[i] = normal;
+                if (normalMapped)
+                {
+                    Vector3 direction = Vector3.ProjectOnPlane(ReadVector(from, to, alpha, ref offset), normal).normalized;
+                    float sign = alpha < .5f ? from[offset] : to[offset];
+                    offset++;
+                    Vector4 tangent = new Vector4(direction.x, direction.y, direction.z, sign);
+                    tangentsChanged |= !tangent.Equals(tangents[i]);
+                    tangents[i] = tangent;
+                }
+            }
+            if (geometryChanged)
+            {
+                Array.Copy(output, writtenOutput, output.Length);
+                Mesh.vertices = output;
+                unchecked { GeometryVersion++; }
+                LastDeformGeometryWrites = 1;
+            }
+            if (normalsChanged) Mesh.SetNormals(normals);
+            if (tangentsChanged) Mesh.SetTangents(tangents);
+            sharedNormalsDirty = sharedTangentsDirty = false;
+            Bounds bounds = new Bounds();
+            bounds.SetMinMax(minimum, maximum);
+            if (!Mesh.bounds.Equals(bounds)) Mesh.bounds = bounds;
+            UpdateRendererBounds();
+        }
+
+        internal static void WriteVector(float[] destination, ref int offset, Vector3 value)
+        { destination[offset++] = value.x; destination[offset++] = value.y; destination[offset++] = value.z; }
+
+        internal static Vector3 ReadVector(float[] from, float[] to, float alpha, ref int offset)
+        {
+            Vector3 value = new Vector3(Mathf.LerpUnclamped(from[offset], to[offset], alpha),
+                Mathf.LerpUnclamped(from[offset + 1], to[offset + 1], alpha),
+                Mathf.LerpUnclamped(from[offset + 2], to[offset + 2], alpha));
+            offset += 3;
+            return value;
+        }
+
+        public void CopyTo(PlayerJacketClothSurface target, bool useSharedSnapshot = false)
         {
             if (target == null || target.output.Length != output.Length) return;
             // A camera-local arm may have its own elbow pose. Copy only secondary motion;
             // derive its authored sleeve correction from that instance's actual bones.
-            target.UpdatePose();
+            target.UpdatePose(useSharedSnapshot);
             for (int i = 0; i < output.Length; i++)
                 target.output[i] = target.posedOriginal[i] + output[i] - posedOriginal[i];
             if (target.foldShape >= 0) target.Renderer.SetBlendShapeWeight(target.foldShape, 0f);
@@ -1237,14 +1448,19 @@ namespace BarPromenade
             // ApplyAt or a passive copy can write several poses in one frame.
             unchecked { GeometryVersion++; }
             LastDeformGeometryWrites++;
-            Renderer.sharedMesh = Mesh;
+            if (Renderer.sharedMesh != Mesh) Renderer.sharedMesh = Mesh;
+            UpdateRendererBounds();
+        }
+
+        private void UpdateRendererBounds()
+        {
             // Skinned bounds are renderer-local; retain the authored animated
             // bounds and add the maximum free-cloth excursion on every axis.
             Bounds bounds = binding.AuthoredBounds;
             Vector3 scale = Renderer.transform.lossyScale;
             bounds.Expand(new Vector3(.18f / Mathf.Max(.0001f, Mathf.Abs(scale.x)),
                 .18f / Mathf.Max(.0001f, Mathf.Abs(scale.y)), .18f / Mathf.Max(.0001f, Mathf.Abs(scale.z))));
-            Renderer.localBounds = bounds;
+            if (!Renderer.localBounds.Equals(bounds)) Renderer.localBounds = bounds;
         }
 
         public void Dispose()

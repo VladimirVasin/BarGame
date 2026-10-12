@@ -11,6 +11,16 @@ namespace BarPromenade
         private int[] queryOrders;
         private IReadOnlyList<CombatBodyDestruction.Piece> preparedBodyPieces;
         private readonly Dictionary<Transform, Matrix4x4> bodyWorldBones = new Dictionary<Transform, Matrix4x4>();
+        private CombatActor projectileBoundsActor;
+        private Bounds projectileBounds;
+        private bool projectileBoundsCaptured;
+        private ulong projectileBodyRevision;
+        private Shape[] projectileShapes;
+        private HeadSurface[] projectileHeadSurfaces;
+        private BodySurface[] projectileBodySurfaces;
+        private HeadPoseState[] projectileHeadStates;
+        private Transform[] projectileHeadBones;
+        private Matrix4x4[] projectileHeadMatrices;
         internal int BodySurfaceGeometryBuilds { get; private set; }
         internal int BodySurfacePoseBuilds { get; private set; }
         internal void PrepareBodySurfaces(IReadOnlyList<CombatBodyDestruction.Piece> pieces)
@@ -46,10 +56,88 @@ namespace BarPromenade
         }
         private void CaptureBodySurfaces(bool refreshSurfaces)
         {
-            if (bodySurfaces == null) return;
-            bodyWorldBones.Clear();
-            foreach (BodySurface surface in bodySurfaces)
-                if (surface.Capture(bodyWorldBones, refreshSurfaces)) BodySurfacePoseBuilds++;
+            if (bodySurfaces != null)
+            {
+                bodyWorldBones.Clear();
+                foreach (BodySurface surface in bodySurfaces)
+                    if (surface.Capture(bodyWorldBones, refreshSurfaces)) BodySurfacePoseBuilds++;
+            }
+        }
+
+        // Reject a missed stable actor before copying its full contact pose. If
+        // any live rig/source state differs, the normal capture owns fresh bounds.
+        internal bool MayIntersectProjectile(Vector3 from, Vector3 to, float radius)
+        {
+            if (!projectileBoundsCaptured || projectileShapes != activeShapes ||
+                projectileHeadSurfaces != activeHeadSurfaces || projectileBodySurfaces != bodySurfaces ||
+                projectileHeadStates.Length != headSurfaceCache.Count ||
+                !CombatBodyDestruction.TryCaptureBodyPoseRevision(projectileBoundsActor, out ulong revision) ||
+                revision != projectileBodyRevision) return true;
+            foreach (HeadPoseState state in projectileHeadStates) if (!state.IsCurrent) return true;
+            for (int i = 0; i < projectileHeadBones.Length; i++)
+                if (!projectileHeadMatrices[i].Equals(projectileHeadBones[i].localToWorldMatrix)) return true;
+            if (bodySurfaces != null)
+                foreach (BodySurface surface in bodySurfaces) if (!surface.ReleasedPoseUnchanged) return true;
+            return IntersectsSegment(projectileBounds, from, to - from, radius);
+        }
+
+        // Ordinary 120 Hz contact capture does not need an aim-query cache.
+        // The caller primes it only after an actual detailed free-aim capture.
+        internal void CaptureProjectileAimBounds()
+        {
+            projectileBoundsActor ??= actorFrame.GetComponent<CombatActor>();
+            projectileBoundsCaptured = CombatBodyDestruction.TryCaptureBodyPoseRevision(projectileBoundsActor, out projectileBodyRevision);
+            if (!projectileBoundsCaptured) return;
+            if (projectileHeadStates == null || projectileHeadStates.Length != headSurfaceCache.Count)
+            {
+                var states = new List<HeadPoseState>(headSurfaceCache.Count);
+                var bones = new HashSet<Transform>();
+                foreach (SkinnedMeshRenderer source in headSurfaceCache.Keys)
+                {
+                    states.Add(new HeadPoseState(source));
+                    foreach (Transform bone in source.bones) if (bone != null) bones.Add(bone);
+                }
+                projectileHeadStates = states.ToArray(); projectileHeadBones = new List<Transform>(bones).ToArray();
+                projectileHeadMatrices = new Matrix4x4[projectileHeadBones.Length];
+            }
+            foreach (HeadPoseState state in projectileHeadStates) state.Capture();
+            for (int i = 0; i < projectileHeadBones.Length; i++)
+                projectileHeadMatrices[i] = projectileHeadBones[i].localToWorldMatrix;
+            bool measured = false;
+            foreach (Snapshot shape in snapshots)
+                Include(new Bounds(shape.Center, Vector3.one * (shape.BoundingRadius * 2f)));
+            foreach (HeadSurface surface in activeHeadSurfaces) if (surface.Active) Include(surface.Bounds);
+            if (bodySurfaces != null) foreach (BodySurface surface in bodySurfaces) if (surface.Active) Include(surface.Bounds);
+            projectileShapes = activeShapes; projectileHeadSurfaces = activeHeadSurfaces; projectileBodySurfaces = bodySurfaces;
+
+            void Include(Bounds bounds)
+            {
+                if (!measured) { projectileBounds = bounds; measured = true; }
+                else { projectileBounds.Encapsulate(bounds.min); projectileBounds.Encapsulate(bounds.max); }
+            }
+        }
+
+        private sealed class HeadPoseState
+        {
+            private readonly SkinnedMeshRenderer source;
+            private readonly CombatBrainTissue brain;
+            private Mesh mesh;
+            private uint geometryVersion;
+            private bool enabled;
+            internal HeadPoseState(SkinnedMeshRenderer source)
+            { this.source = source; brain = source.GetComponent<CombatBrainTissue>(); }
+            internal bool IsCurrent => mesh == source.sharedMesh &&
+                geometryVersion == (brain != null && brain.OwnsMesh(source.sharedMesh) ? brain.GeometryVersion : 0u) &&
+                enabled == (source.enabled && source.gameObject.activeInHierarchy);
+            internal bool Capture()
+            {
+                Mesh current = source.sharedMesh;
+                uint version = brain != null && brain.OwnsMesh(current) ? brain.GeometryVersion : 0u;
+                bool visible = source.enabled && source.gameObject.activeInHierarchy;
+                bool changed = mesh != current || geometryVersion != version || enabled != visible;
+                mesh = current; geometryVersion = version; enabled = visible;
+                return changed;
+            }
         }
         private bool SweepBodySurfaces(Vector3 from, Vector3 to, float radius, Vector3 direction, ref Hit hit, float first)
         {
@@ -123,6 +211,16 @@ namespace BarPromenade
             internal int QueryTriangleCount;
             internal Bounds Bounds;
             internal bool Active;
+            internal bool ReleasedPoseUnchanged
+            {
+                get
+                {
+                    if (originals != null || Piece.Skin.enabled || Piece.QueryOriginal || Piece.Debris) return true;
+                    MeshRenderer released = Piece.Released;
+                    bool visible = released != null && released.enabled && released.gameObject.activeInHierarchy;
+                    return visible == Active && (!visible || frozenMatrix.Equals(released.transform.localToWorldMatrix));
+                }
+            }
             internal BodySurface(CombatBodyDestruction.Piece piece)
             {
                 Piece = piece; skin = new HeadSurface(piece.Skin, true, captureBlendShapes: true,

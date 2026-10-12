@@ -30,8 +30,8 @@ namespace BarPromenade
         internal static Rect LocationOptionRect(int index) => new Rect(178f, 54f + index * 22f, 284f, 20f);
         internal static Rect CombatPanelRect => new Rect(154f, 10f, 332f, 340f);
         internal static Rect CombatOptionRect(int index) => new Rect(166f,
-            index < 2 ? 78f + index * 22f : index < 4 ? 142f + (index - 2) * 22f :
-                index < 6 ? 206f + (index - 4) * 22f : 260f + (index - 6) * 26f, 308f, 20f);
+            index < 2 ? 70f + index * 22f : index < 4 ? 130f + (index - 2) * 22f :
+                index < 6 ? 190f + (index - 4) * 22f : 240f + (index - 6) * 26f, 308f, 20f);
 
         private readonly StartMenuModel model = new StartMenuModel();
 
@@ -51,6 +51,7 @@ namespace BarPromenade
         public CombatWeaponId SelectedCombatWeapon => model.SelectedCombatWeapon;
         public CombatLoadoutSelection SelectedCombatLoadout => model.SelectedCombatLoadout;
         public CombatTestMode SelectedCombatMode => model.SelectedCombatMode;
+        public CombatEncounterSettings SelectedCombatEncounterSettings => model.SelectedCombatEncounterSettings;
         public CombatTestSelection SelectedCombatSelection => model.SelectedCombatSelection;
         public CombatPreparationOption SelectedCombatOption => model.SelectedCombatOption;
         public bool IsBackSelected => model.IsBackSelected;
@@ -321,13 +322,13 @@ namespace BarPromenade
             RetroUiTheme.DrawPanel(CombatPanelRect, RetroUiTheme.PanelInset, RetroUiTheme.FrameOuter,
                 false, 0f, 1f);
             GUI.Label(new Rect(166f, 18f, 308f, 20f), LocalizationService.Get("combat.choose_weapon"), titleStyle);
-            GUI.Label(new Rect(166f, 41f, 308f, 14f),
+            GUI.Label(new Rect(166f, 41f, 308f, 12f),
                 LocalizationService.Get("combat.loadout.pistol_carried"), descriptionStyle);
-            GUI.Label(new Rect(166f, 62f, 308f, 14f),
+            GUI.Label(new Rect(166f, 54f, 308f, 14f),
                 LocalizationService.Get("combat.loadout.secondary"), descriptionStyle);
-            GUI.Label(new Rect(166f, 126f, 308f, 14f),
+            GUI.Label(new Rect(166f, 114f, 308f, 14f),
                 LocalizationService.Get("combat.loadout.initial_held"), descriptionStyle);
-            GUI.Label(new Rect(166f, 190f, 308f, 14f),
+            GUI.Label(new Rect(166f, 174f, 308f, 14f),
                 LocalizationService.Get("combat.mode.title"), descriptionStyle);
             Vector2 mouse = RetroUiTheme.LogicalMousePosition(canvas);
             for (int index = 0; index < (int)CombatPreparationOption.Count; index++)
@@ -345,10 +346,11 @@ namespace BarPromenade
                     CombatPreparationOption.Secondary => "combat.loadout.hold_secondary",
                     CombatPreparationOption.Standard => "combat.mode.standard",
                     CombatPreparationOption.Endless => "combat.mode.endless",
+                    CombatPreparationOption.OpponentLimit => "combat.endless.limit",
                     CombatPreparationOption.Start => "combat.start",
                     _ => "opening.back"
                 };
-                bool choice = option < CombatPreparationOption.Start;
+                bool choice = option < CombatPreparationOption.OpponentLimit;
                 bool chosen = option switch
                 {
                     CombatPreparationOption.Crowbar => model.SelectedCombatLoadout.Secondary == CombatWeaponId.Crowbar,
@@ -360,10 +362,13 @@ namespace BarPromenade
                     _ => false
                 };
                 string mark = choice ? chosen ? "[x] " : "[ ] " : string.Empty;
-                if (GUI.Button(rect, (selected ? "> " : "  ") + mark + LocalizationService.Get(key),
+                string label = option == CombatPreparationOption.OpponentLimit ?
+                    string.Format(LocalizationService.Get(key), model.SelectedCombatEncounterSettings.MaximumLiveOpponents) :
+                    LocalizationService.Get(key);
+                if (GUI.Button(rect, (selected ? "> " : "  ") + mark + label,
                     selected ? selectedStyle : optionStyle))
                 {
-                    SelectCombatOption(option);
+                    FocusCombatOption(option);
                     ConfirmSelection();
                     break;
                 }

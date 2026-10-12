@@ -6,11 +6,10 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 ## 2026-10-12 — Cloth, weapon switching and endless combat
 
 - Jacket: one commit/live hem/contact/stretch/native/reference-bone gates;
-  sling scratch retained. Deep-hip/diagonal walking/skin-normal proofs;
-  warm-stow front route deferred.
+  sling scratch; deep-hip/diagonal/skin-normal proofs; warm-stow route deferred.
 - Cloth/erosion bindings/topology/native buffers persist; fresh poses/physics.
   Source index/contact-local bones match full-piece oracle on both rigs/
-  poses/geometry/repeated volleys. Hero stamp refreshed; FPS remains unproven.
+  poses/geometry/volleys. Hero stamp refreshed; rendered FPS below60.
 - Duel schema 2: implicit numeric-zero stages; unavailable values/causal events
   explicit, budget kept, loss gaps unknown.
 - Unsorted discovery/inactive filtering; CS0618=error; DTO/analyzer warnings remain.
@@ -19,32 +18,35 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 - ShotgunDraw: Rbarrel nudge; Loutside shoulder→stock-top/palm-down→front
   →Rgrip/Lforeend; no crossing/offsets. Original drop/pause/stow×2; disable-drop
   fixed. Carry generator proves BVH/grips/lower rig/endpoints; pickup/reset/turn.
-- Endless: mode+kit Back; one reused foe/2.5 active s; injuries/position/held
-  kept/both guns refill. Boundaries deduplicate/clear body-drop-flights;
-  pause/end/reset/exit owned. RU/EN preparation/HUD labels inspected.
-- Ray scopes rebuilt native scratch each time. Contacts now retain
-  Persistent workspace; typed leases refresh pose/masks/reject overlap/stale
-  scopes, owner Dispose frees. Jacket uploads only changed normals/tangents;
-  exact sweep cache hits skip BodySweep prep; HUD labels rebuild only on change.
+- Endless:max1–5(default5)/2–4→3–7active s/Back kept/poolIDs/ownAI.
+  Kill1x/hero-end/reuse1/others kept/empty settled supply;focus≠hits/shotgun pervictim.
+- Contacts:Persistent scratch/typed leases/fresh pose+masks/no overlap or stale
+  scopes/owner disposal. Changed-only jacket normals/tangents/HUD;
+  exact sweep hits skip BodySweep prep.
+- Pool graphs/routes;weapon/drop/corpse/aim bounds/culls;cloth reuse.
+  Query copies keep attached anatomy disabled;aim primes only for aim.
+  Endless10Hz/active-or-called;spawn/pose scopes.
+- Offline120→30Hz hair/jacket/sling with source hashes. Final-pose guards,
+  grounded Idle and closed cycles stop gun-area cloth switching. Safe live
+  fallback;pose-independent sling seat;owned bake buffers disposed.
 - Known: `Range_VictoryRestoresOrdinaryWalkingAndResetRestoresCombat` one-frame
   clip-owner assertion; `Range_WeaponCarryHasBoundedPresentationWork` transfer
   assertion still fails as before optimization.
-- Warehouse: seed/three layouts/two physical stairs/upper gallery/cover/pipes/
-  practical lights. Cached NPC routes/height-LOS/gravity; safe endless spawns.
-  Reset keeps layout; New warehouse by AI style replaces seed row; seed journal/CLI.
-  Blender metre/winding+`CombatWarehouse`: traversal/reset/frames; `BarPromenade.Runtime` build: HUD.
-- Checks: `Range_BodyRayWorkspaceReusesFreshPoseAndReleasesOwnedBuffers`,
-  `Range_WeaponSweepReusesOnlyIdenticalQueriesAndKeepsMovingAnatomy`,
+- Warehouse:seed/3layouts/stairs2/upper/cover-pipes-lights/CLI-journal.
+  NPCroute-height-LOS-gravity/safe spawns;reset keeps/New at AIstyle.
+  Blender metre-winding+`CombatWarehouse`:traversal-reset-frames;
+  `BarPromenade.Runtime` build:HUD.
+- Checks: `Range_EndlessPopulationSpawnsGraduallyPreservesSurvivorsAndStopsOnExit`,
+  `Range_EndlessWarehouseRetainsRenderedPerformanceEvidence`,
+  `Range_EndlessProjectilesResolveEveryVictim`,
   `Range_EndlessReusesOpponentPreservesHeroRefillsAmmoAndCancelsOnExit`,
   `Range_DistantShotgunTorsoVolleyProfilesImpactPhases`,
   `Range_WeaponCarryKeepsRealFramesBoundedThroughWalkingSwitchesAndHeadshot`,
-  `Range_WeaponCarrySwitchesKeepModelsAmmoAndPhysicalHandoffs`,
   `ProductionRig_WalkingKeepsJacketHemLength`,
-  `ProductionRig_RendersBareAndLooseClothedJointBends`,
   `Range_BodyProxiesShareTransformsAndFollowSameFrameChanges`,
-  `Range_SkinnedTriangleQueryMatchesExhaustiveAfterDeformation`,
+  `RecordedPhysicalMotionReplaysWithSafeFallbackAndRetainsPerformanceEvidence`,
   `ZeroStageSamplesPreserveNonzeroUnavailableAndCausalRecordsWithoutAllocation`,
-  `dotnet build BarPromenade.PlayModeTests.csproj -p:WarningsAsErrors=CS0618`,
+  PlayModeTests CS0618 build,
   `check-docs.py`, `git diff --check`.
 
 ## 2026-10-11 — Weapon carry, cloth and damage cost

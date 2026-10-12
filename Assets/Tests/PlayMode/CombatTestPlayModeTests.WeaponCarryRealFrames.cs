@@ -361,6 +361,7 @@ namespace BarPromenade.Tests.PlayMode
                 "BarPromenade.WeaponCarry.Sling.Projection.Workspace", "BarPromenade.WeaponCarry.BodyContacts.Ray.Workspace"
             };
             private long began, jacketTicks, hairTicks, scarfTicks, slingTicks, slingCalls, jacketCalls, hairCalls, simulationTicks, latePoseTicks;
+            private long jacketBaked, hairBaked, slingBaked;
             internal RealCarryFrameRecorder(CombatTestRoot owner)
             {
                 root = owner;
@@ -376,6 +377,10 @@ namespace BarPromenade.Tests.PlayMode
             internal void Begin()
             {
                 jacketTicks = hairTicks = scarfTicks = jacketCalls = hairCalls = 0L;
+                jacketBaked = hairBaked = 0L;
+                foreach (PlayerJacketCloth cloth in Jackets) jacketBaked += cloth.TotalBakedPoseCalls;
+                foreach (PlayerHair hair in Hairs) hairBaked += hair.TotalBakedPoseCalls;
+                slingBaked = sling.BakedPlaybackFrames;
                 foreach (PlayerJacketCloth cloth in Jackets) { jacketTicks += cloth.TotalApplyTicks; jacketCalls += cloth.TotalApplyCalls; }
                 foreach (PlayerHair hair in Hairs) { hairTicks += hair.TotalApplyTicks; hairCalls += hair.TotalApplyCalls; }
                 foreach (PlayerScarfPresentation scarf in scarves) scarfTicks += scarf.TotalGeometryTicks;
@@ -388,14 +393,17 @@ namespace BarPromenade.Tests.PlayMode
             {
                 long ended = Stopwatch.GetTimestamp(), jacket = -jacketTicks, hair = -hairTicks, scarf = -scarfTicks;
                 long jacketCount = -jacketCalls, hairCount = -hairCalls;
+                long bakedJacket = -jacketBaked, bakedHair = -hairBaked;
                 foreach (PlayerJacketCloth cloth in Jackets)
                 {
                     jacket += cloth.TotalApplyTicks; jacketCount += cloth.TotalApplyCalls;
+                    bakedJacket += cloth.TotalBakedPoseCalls;
                     bucket.MaximumJacketSteps = Math.Max(bucket.MaximumJacketSteps, cloth.LastSimulationSteps);
                 }
                 foreach (PlayerHair item in Hairs)
                 {
                     hair += item.TotalApplyTicks; hairCount += item.TotalApplyCalls;
+                    bakedHair += item.TotalBakedPoseCalls;
                     bucket.MaximumHairSteps = Math.Max(bucket.MaximumHairSteps, item.LastSimulationSteps);
                 }
                 foreach (PlayerScarfPresentation item in scarves) scarf += item.TotalGeometryTicks;
@@ -414,6 +422,8 @@ namespace BarPromenade.Tests.PlayMode
                 bucket.Scarf.Add(evidence.Scarf, 1); bucket.Sling.Add(evidence.Sling, slingCount);
                 bucket.MaximumSlingSteps = Math.Max(bucket.MaximumSlingSteps, sling.LastSimulationSteps);
                 bucket.MaterialError = Mathf.Max(bucket.MaterialError, Mathf.Abs(sling.PresentedLength - sling.AuthoredLength));
+                bucket.JacketBaked += bakedJacket; bucket.HairBaked += bakedHair;
+                bucket.SlingBaked += sling.BakedPlaybackFrames - slingBaked;
                 for (int i = 0; i < recorders.Length; i++)
                     if (recorders[i].Valid && recorders[i].Count > 0)
                     {
@@ -440,6 +450,7 @@ namespace BarPromenade.Tests.PlayMode
 
         private sealed class RealCarryFrameBucket
         {
+            internal long JacketBaked, HairBaked, SlingBaked;
             internal readonly string Name;
             internal readonly bool Warm;
             internal readonly CarryPerformanceStage Wall = new CarryPerformanceStage(), Cloth = new CarryPerformanceStage();
@@ -479,6 +490,7 @@ namespace BarPromenade.Tests.PlayMode
                     else Recorded[i].AppendTo(report, RealCarryFrameRecorder.MarkerName(i) + (i == 1 ? " (diagnostic marker only)" : ""));
                 }
                 report.AppendLine(string.Format(CultureInfo.InvariantCulture, "Maximum steps jacket/hair/sling={0}/{1}/{2}; maximum material error={3:F6}m", MaximumJacketSteps, MaximumHairSteps, MaximumSlingSteps, MaterialError));
+                report.AppendLine($"Baked playback calls jacket/hair/sling={JacketBaked}/{HairBaked}/{SlingBaked}; physical fallback is included in CPU timings.");
             }
         }
 
@@ -494,6 +506,7 @@ namespace BarPromenade.Tests.PlayMode
             var wind = new WindSample(0f, 0f);
             foreach (PlayerJacketCloth cloth in jackets)
             {
+                using IDisposable physicalCapture = cloth.BeginBakeCapture();
                 cloth.RequestReset(); cloth.ApplyAt(0d, false, false, wind);
                 int resets = cloth.ResetCount;
                 cloth.ApplyAt(.20d, false, false, wind);
@@ -508,6 +521,7 @@ namespace BarPromenade.Tests.PlayMode
             }
             foreach (PlayerHair hair in hairs)
             {
+                using IDisposable physicalCapture = hair.BeginBakeCapture();
                 hair.RequestReset(); hair.ApplyAt(0d, false, false, wind);
                 int resets = hair.ResetCount;
                 hair.ApplyAt(.20d, false, false, wind);

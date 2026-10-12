@@ -12,11 +12,39 @@ namespace BarPromenade
     {
         public const string RibbonName = "Ribbon__Webbing";
         public const int MaximumFrameSubsteps = 2;
+        public enum BakedPlaybackDecision
+        {
+            None, PhysicalCapture, Paused, UnsupportedState, SharedSampleRejected,
+            ShoulderIndexMismatch, AttachmentAmountMismatch, StockAnchorMismatch,
+            ForeendAnchorMismatch, ShoulderAnchorMismatch, HandAnchorMismatch,
+            MaterialMismatch, Prepared, WarmClock, WarmContact, WarmLength,
+            WarmFit, WarmReady, Pure
+        }
+        public BakedPlaybackDecision LastBakedDecision { get; private set; }
+        public float BakedEntryFitError { get; private set; }
+        public float BakedEntryCandidateContactError { get; private set; }
+        public float BakedEntryCandidateLinkError { get; private set; }
+        public float BakedEntryCandidateLengthError { get; private set; }
         public long TotalPresentTicks { get; private set; }
         public long TotalPresentCalls { get; private set; }
         public long LastPresentTicks { get; private set; }
         public long TotalSimulationSteps { get; private set; }
         public int LastSimulationSteps { get; private set; }
+        internal long BakedPlaybackFrames { get; private set; }
+        internal bool IsEnteringBakedPlayback => bakedEntryActive;
+        internal float BakedEntryElapsed => bakedEntryElapsed;
+        public float BakedEntryElapsedSeconds => bakedEntryElapsed;
+        internal int BakedPoseValueCount => (Links + 1) * 3 + 15;
+        internal int BakedStateValueCount => (Links + 1) * 3;
+        internal string BakedPoseSignature { get; private set; }
+        public bool LastBakeQualityApplied { get; private set; }
+        public int LastBakeQualityIterations { get; private set; }
+        public bool LastBakeQualityContactFallback { get; private set; }
+        public bool LastBakeQualityConverged { get; private set; }
+        public float LastBakeQualityPreFallbackContactError { get; private set; }
+        public float LastBakeQualityPreFallbackLinkError { get; private set; }
+        public int LastBakeQualityPreFallbackContactIndex { get; private set; }
+        public int LastBakeQualityPreFallbackLinkIndex { get; private set; }
         internal static bool NativeProjectionSupported => PlayerScarfBodyContacts.NativeArithmeticMode == 1;
         private static readonly ProfilerMarker PresentMarker = new ProfilerMarker("BarPromenade.WeaponCarry.Sling.Present");
         private static readonly ProfilerMarker PoseMarker = new ProfilerMarker("BarPromenade.WeaponCarry.Sling.Pose");
@@ -32,13 +60,19 @@ namespace BarPromenade
         // Grasp just before the material midpoint: the foreend leg needs more
         // length while the left hand carries the loop over the shoulder.
         private const int Segments = 80, Links = 40, HandPoint = 18;
+        // The supported shoulder seat belongs to this material span, rather
+        // than whichever animation happened to present the gun first.
+        private const int ShoulderMaterialPoint = 7;
         private const float HalfWidth = .0125f, HalfThickness = .001f;
         private const float StepSeconds = 1f / 120f, MaximumElapsed = StepSeconds * MaximumFrameSubsteps;
         private const float LinkTolerance = .00025f, ContactTolerance = .001f;
+        private const float BakedPresentationContactTolerance = .0015f;
+        private const float BakedEntryDuration = .12f;
         private const int ContactCacheSlots = 16;
         private const int ContactCacheBankSize = (Links + 1) * ContactCacheSlots;
         internal const int SteadyProjectionIterationBudget = 64;
         internal const int SteadyLengthRepairIterationBudget = 64;
+        private const int BakeQualityIterationBudget = 1024;
         private const int FinalProjectionReserve = 32;
         internal int SteadyProjectionIterations { get; private set; }
         internal int SteadyLengthRepairIterations { get; private set; }
@@ -79,8 +113,9 @@ namespace BarPromenade
         private MeshFilter ribbon;
         private Mesh source, deformedMesh;
         private Vector2[] alongWidth, thickness;
-        private Vector3[] vertices;
+        private Vector3[] vertices, writtenVertices;
         private readonly Vector3[] points = new Vector3[Links + 1], previous = new Vector3[Links + 1];
+        private readonly Vector3[] bakedPoints = new Vector3[Links + 1];
         private readonly Vector3[] contactDirections = new Vector3[Links + 1];
         private readonly Vector3[] contactInputs = new Vector3[ContactCacheBankSize * 2];
         private readonly Vector3[] contactOutputs = new Vector3[ContactCacheBankSize * 2];
@@ -99,7 +134,19 @@ namespace BarPromenade
         private bool initialized, resetPending = true, wasAttached, wasInspecting, wasPaused, hasFloor;
         private bool contactsRegistered;
         private float shoulderAmount, handAmount, lastShoulderAmount, lastHandAmount, previousStep = StepSeconds;
-        private int shoulderPoint = 9, simulatedFrame = -1;
+        private readonly int shoulderPoint = ShoulderMaterialPoint;
+        private int simulatedFrame = -1;
+        private bool bakeCapture, bakeStepPending, bakeQuality, bakedLastPresent;
+        private bool IsOwnedBakeQuality => bakeQuality && bakeOwnerObject != null && bakeCapture && !warmPreviewPending;
+        private bool bakedEntryActive, bakedEntryReady, warmPreviewPending, warmPreviewUseBaked;
+        private float bakedEntryElapsed, warmPreviewSeconds, preparedBakedLinkError;
+        private int preparedBakedLinkErrorIndex;
+        private string bakeVariant;
+        private string bakePreviewVariant = "stored-shotgun";
+        private float bakeProgress, bakeStepSeconds;
+        private Vector3 bakedGravity;
+        private CombatWeaponCarryAssetProvider.Mount bakeMount;
+        private GameObject bakeOwnerObject;
         private ProjectionWorkArena projectionWork, retainedProjectionWork;
         internal int ProjectionWorkspaceAllocations { get; private set; }
 
@@ -207,13 +254,17 @@ namespace BarPromenade
                 if (filter.name == RibbonName) { ribbon = filter; break; }
             if (stock == null || foreend == null || ribbon == null || ribbon.sharedMesh == null || shoulder == null)
                 throw new InvalidOperationException("The shotgun sling needs its authored ribbon, swivel anchors and production left shoulder.");
-            stockOffset = mount.Root.transform.InverseTransformPoint(stock.position);
-            foreendOffset = mount.Root.transform.InverseTransformPoint(foreend.position);
+            // These offsets are authored under the mount. Composing only that
+            // local hierarchy avoids pose-dependent world/inverse rounding in
+            // both the physical swivels and the recording profile hash.
+            stockOffset = AuthoredAnchorPosition(mount.Root.transform, stock);
+            foreendOffset = AuthoredAnchorPosition(mount.Root.transform, foreend);
             source = ribbon.sharedMesh;
             alongWidth = source.uv; thickness = source.uv2;
             if (alongWidth.Length != source.vertexCount || thickness.Length != source.vertexCount)
                 throw new InvalidOperationException("The imported shotgun ribbon lacks its arclength/width/thickness coordinates.");
             vertices = new Vector3[source.vertexCount];
+            writtenVertices = source.vertices;
             deformedMesh = Instantiate(source);
             deformedMesh.name = "Shotgun Sling Deformed";
             deformedMesh.hideFlags = HideFlags.DontSave;
@@ -231,6 +282,253 @@ namespace BarPromenade
             bodyContacts = new PlayerScarfBodyContacts(rig, useMeshSupportPlanes: true,
                 includeEquipment: false, poseSourceSkin: true, pointQuerySlots: Links + 1,
                 jacketSurfacePadding: .013f + HalfThickness + HalfWidth * .5f);
+            // The bank owns physical chain points, independent of the ribbon's
+            // imported vertex density. Its profile still rejects altered UVs,
+            // swivels or material dimensions before reusing an authored bake.
+            int profileHash = source.vertexCount;
+            bakedGravity = Physics.gravity;
+            unchecked
+            {
+                profileHash = profileHash * 397 ^ ShoulderMaterialPoint;
+                profileHash = profileHash * 397 ^ bakedGravity.GetHashCode();
+                profileHash = profileHash * 397 ^ stockOffset.GetHashCode();
+                profileHash = profileHash * 397 ^ foreendOffset.GetHashCode();
+                for (int i = 0; i < alongWidth.Length; i++)
+                {
+                    profileHash = profileHash * 397 ^ alongWidth[i].GetHashCode();
+                    profileHash = profileHash * 397 ^ thickness[i].GetHashCode();
+                }
+            }
+            BakedPoseSignature = "shotgun-sling-physical-v1-40-1.40-.0125-.001-" +
+                profileHash.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        }
+
+        private static Vector3 AuthoredAnchorPosition(Transform root, Transform anchor)
+        {
+            if (root == null || anchor == null || anchor == root || !anchor.IsChildOf(root))
+                throw new InvalidOperationException("A sling swivel must be a descendant of its authored mount root.");
+            Matrix4x4 local = Matrix4x4.identity;
+            for (Transform current = anchor; current != root; current = current.parent)
+            {
+                if (current == null)
+                    throw new InvalidOperationException("The sling swivel hierarchy left its authored mount root.");
+                local = Matrix4x4.TRS(current.localPosition, current.localRotation, current.localScale) * local;
+            }
+            return local.MultiplyPoint3x4(Vector3.zero);
+        }
+
+        internal static CombatShotgunSling CreateBakeSling(Player3DAssetRegistry rig)
+        {
+            if (rig == null) throw new ArgumentNullException(nameof(rig));
+            NpcHandPose pose = rig.Anchors.RightGrip.GetComponentInParent<NpcHandPose>();
+            if (pose == null) throw new InvalidOperationException("Sling baking requires the production hand bindings.");
+            var ownerObject = new GameObject("Test sling bake owner");
+            ownerObject.transform.SetParent(rig.transform, false);
+            CombatActor actor = ownerObject.AddComponent<CombatActor>();
+            actor.enabled = false;
+            CombatWeaponCarryAssetProvider.Mount mount = null;
+            GameObject gun = null;
+            try
+            {
+                mount = CombatWeaponCarryAssetProvider.CreateMount(CombatWeaponId.Shotgun, rig);
+                gun = CombatShotgunAssetProvider.CreateShotgun(rig.Anchors.RightGrip, pose);
+                CombatShotgunSling sling = gun.AddComponent<CombatShotgunSling>();
+                sling.Initialize(actor, rig, mount);
+                sling.bakeMount = mount; sling.bakeOwnerObject = ownerObject;
+                CombatWeaponCarryAssetProvider.PlaceOnMount(gun, mount.WeaponDock);
+                sling.equipment = rig.GetComponent<PlayerEquipmentContacts>() ?? rig.gameObject.AddComponent<PlayerEquipmentContacts>();
+                sling.equipment.Register(sling, gun, mount.Root);
+                return sling;
+            }
+            catch
+            {
+                if (gun != null) gun.GetComponent<CombatShotgunSling>()?.DisposePresentationResources();
+                DestroyBakeObject(gun);
+                if (mount != null) DestroyBakeObject(mount.Root);
+                DestroyBakeObject(ownerObject);
+                throw;
+            }
+        }
+
+        internal IDisposable BeginBakeCapture(string variant = "stored-shotgun")
+        {
+            if (bakeCapture) throw new InvalidOperationException("Sling bake scopes cannot overlap.");
+            if (variant != "stored-shotgun" && variant != "draw-shotgun" && variant != "stow-shotgun")
+                throw new ArgumentOutOfRangeException(nameof(variant));
+            bakeCapture = true; bakeVariant = variant; bakeProgress = 0f;
+            if (bakeOwnerObject != null) bakePreviewVariant = variant;
+            initialized = false; resetPending = true; bakedLastPresent = wasPaused = false;
+            bakedEntryActive = bakedEntryReady = false; bakedEntryElapsed = 0f;
+            simulatedFrame = -1;
+            return new BakeCaptureScope(this);
+        }
+
+        private sealed class BakeCaptureScope : IDisposable
+        {
+            private CombatShotgunSling sling;
+            internal BakeCaptureScope(CombatShotgunSling sling) => this.sling = sling;
+            public void Dispose()
+            {
+                if (sling == null) return;
+                sling.bakeCapture = sling.bakeStepPending = sling.bakeQuality = false;
+                sling.bakeVariant = null; sling.resetPending = true;
+                sling = null;
+            }
+        }
+
+        internal IDisposable BeginBakeQuality()
+        {
+            if (bakeOwnerObject == null || !bakeCapture || warmPreviewPending)
+                throw new InvalidOperationException("Only the isolated physical sling baker may refine a capture.");
+            if (bakeQuality) throw new InvalidOperationException("Sling bake quality scopes cannot overlap.");
+            bakeQuality = true;
+            return new BakeQualityScope(this);
+        }
+
+        private sealed class BakeQualityScope : IDisposable
+        {
+            private CombatShotgunSling sling;
+            internal BakeQualityScope(CombatShotgunSling sling) => this.sling = sling;
+            public void Dispose()
+            {
+                if (sling == null) return;
+                sling.bakeQuality = false;
+                sling = null;
+            }
+        }
+
+        internal void SimulateBakeStep(float seconds, float normalizedPhase)
+        {
+            if (!bakeCapture) throw new InvalidOperationException("A sling bake capture scope is required.");
+            if (float.IsNaN(seconds) || float.IsInfinity(seconds) || seconds <= 0f || seconds > StepSeconds + .000001f)
+                throw new ArgumentOutOfRangeException(nameof(seconds));
+            if (float.IsNaN(normalizedPhase) || float.IsInfinity(normalizedPhase))
+                throw new ArgumentOutOfRangeException(nameof(normalizedPhase));
+            bakeStepSeconds = seconds; bakeProgress = Mathf.Clamp01(normalizedPhase);
+            SetBakeAttachmentState();
+            bakeStepPending = true;
+            try { Present(); }
+            finally { bakeStepPending = false; }
+        }
+
+        private void SetBakeAttachmentState()
+        {
+            if (bakeMount == null) return; // A live actor may also be captured by a focused fixture.
+            float seconds = bakeProgress * CombatWeaponCarryAssetProvider.PhaseDuration(CombatWeaponId.Shotgun, true);
+            bool draw = bakeVariant == "draw-shotgun";
+            bool stored = bakeVariant == "stored-shotgun" || draw && seconds < CombatWeaponCarryAssetProvider.ShotgunPushSeconds ||
+                bakeVariant == "stow-shotgun" && bakeProgress >= CombatWeaponCarryAssetProvider.TransferNormalizedTime(CombatWeaponId.Shotgun, false);
+            if (stored) CombatWeaponCarryAssetProvider.PlaceOnMount(gameObject, bakeMount.WeaponDock);
+            else if (draw && seconds < CombatWeaponCarryAssetProvider.ShotgunCatchSeconds)
+                CombatWeaponCarryAssetProvider.PlaceInTransferHand(gameObject, registry.Anchors.RightGrip,
+                    bakeMount.Binding.PushHandLocalPosition, bakeMount.Binding.PushHandLocalRotation);
+            else if (draw && seconds < CombatWeaponCarryAssetProvider.ShotgunGripSeconds)
+                CombatWeaponCarryAssetProvider.PlaceInTransferHand(gameObject, registry.Anchors.LeftGrip,
+                    bakeMount.Binding.CatchHandLocalPosition, bakeMount.Binding.CatchHandLocalRotation);
+            else CombatShotgunAssetProvider.PlaceShotgun(gameObject, registry.Anchors.RightGrip, hands);
+            hands.SetGrip(false, draw ? CombatWeaponCarryAssetProvider.ShotgunDrawHandClosure(false, bakeProgress) : stored ? 0f : 1f);
+            hands.SetGrip(true, draw ? CombatWeaponCarryAssetProvider.ShotgunDrawHandClosure(true, bakeProgress) :
+                bakeVariant == "stow-shotgun" ? .55f * CombatWeaponCarryAssetProvider.SlingLeftHandAmount(false, bakeProgress) : 0f);
+            equipment?.UpdatePose();
+        }
+
+        internal void CaptureBakedPose(float[] destination)
+        {
+            if (destination == null || destination.Length != BakedPoseValueCount)
+                throw new ArgumentException("A sling bake requires the complete physical chain and anchors.", nameof(destination));
+            if (!initialized) throw new InvalidOperationException("Simulate the sling before capturing it.");
+            Matrix4x4 local = registry.transform.worldToLocalMatrix;
+            int at = 0;
+            for (int i = 0; i <= Links; i++) Write(local.MultiplyPoint3x4(points[i]));
+            Write(local.MultiplyPoint3x4(from)); Write(local.MultiplyPoint3x4(to));
+            Write(local.MultiplyPoint3x4(shoulderTarget)); Write(local.MultiplyPoint3x4(handTarget));
+            destination[at++] = shoulderPoint;
+            destination[at++] = shoulderAmount; destination[at] = handAmount;
+
+            void Write(Vector3 value)
+            { destination[at++] = value.x; destination[at++] = value.y; destination[at++] = value.z; }
+        }
+
+        // The recorded pose supplies current positions; these previous Verlet
+        // positions let the baker also compare physical velocity at a loop seam.
+        internal void CaptureBakedState(float[] destination)
+        {
+            if (bakeOwnerObject == null || !bakeCapture || warmPreviewPending || !initialized)
+                throw new InvalidOperationException("Simulate an isolated sling capture before reading its physical state.");
+            if (destination == null || destination.Length != BakedStateValueCount)
+                throw new ArgumentException("A sling state requires every previous physical node.", nameof(destination));
+            Matrix4x4 local = registry.transform.worldToLocalMatrix;
+            for (int i = 0; i <= Links; i++)
+            {
+                Vector3 value = local.MultiplyPoint3x4(previous[i]);
+                destination[i * 3] = value.x;
+                destination[i * 3 + 1] = value.y;
+                destination[i * 3 + 2] = value.z;
+            }
+        }
+
+        internal bool PreviewBakedPose(float normalizedPhase)
+        {
+            if (bakeOwnerObject == null)
+                throw new InvalidOperationException("Only the isolated sling authoring fixture may preview a bake.");
+            if (float.IsNaN(normalizedPhase) || float.IsInfinity(normalizedPhase))
+                throw new ArgumentOutOfRangeException(nameof(normalizedPhase));
+            bool priorCapture = bakeCapture;
+            string priorVariant = bakeVariant;
+            bakeCapture = true; bakeVariant = bakePreviewVariant;
+            bakeProgress = Mathf.Clamp01(normalizedPhase);
+            try
+            {
+                SetBakeAttachmentState();
+                ReadTargets(true);
+            }
+            finally { bakeCapture = priorCapture; bakeVariant = priorVariant; }
+            LastSimulationSteps = SteadyProjectionIterations = SteadyLengthRepairIterations = 0;
+            return TryPresentBakedSample(bakePreviewVariant, attached: true, inspecting: false);
+        }
+
+        internal bool PreviewBakedTransition(float normalizedPhase, float elapsed, bool useBaked = true)
+        {
+            if (bakeOwnerObject == null)
+                throw new InvalidOperationException("Only the isolated sling authoring fixture may preview a bake transition.");
+            if (!float.IsFinite(normalizedPhase) || !float.IsFinite(elapsed) || elapsed < 0f || elapsed > .25f)
+                throw new ArgumentOutOfRangeException(nameof(elapsed));
+            bool priorCapture = bakeCapture;
+            string priorVariant = bakeVariant;
+            bakeCapture = true; bakeVariant = bakePreviewVariant;
+            bakeProgress = Mathf.Clamp01(normalizedPhase);
+            warmPreviewPending = true; warmPreviewUseBaked = useBaked; warmPreviewSeconds = elapsed;
+            try
+            {
+                SetBakeAttachmentState();
+                Present();
+                return bakedLastPresent;
+            }
+            finally
+            {
+                bakeCapture = priorCapture; bakeVariant = priorVariant;
+                warmPreviewPending = false;
+            }
+        }
+
+        internal void DisposeBakeSling()
+        {
+            if (bakeOwnerObject == null) return;
+            GameObject ownerObject = bakeOwnerObject;
+            GameObject mountObject = bakeMount?.Root;
+            bakeOwnerObject = null; bakeMount = null;
+            // Edit-mode authoring components may never receive Awake/OnDestroy.
+            // Release native work and query ownership before destroying the rig.
+            DisposePresentationResources();
+            DestroyBakeObject(gameObject);
+            DestroyBakeObject(mountObject);
+            DestroyBakeObject(ownerObject);
+        }
+
+        private static void DestroyBakeObject(UnityEngine.Object value)
+        {
+            if (value == null) return;
+            if (Application.isPlaying) Destroy(value); else DestroyImmediate(value);
         }
 
         private void LateUpdate() => Present();
@@ -248,6 +546,13 @@ namespace BarPromenade
         {
             long started = System.Diagnostics.Stopwatch.GetTimestamp();
             LastSimulationSteps = 0;
+            LastBakedDecision = BakedPlaybackDecision.None;
+            BakedEntryFitError = 0f;
+            BakedEntryCandidateContactError = BakedEntryCandidateLinkError = BakedEntryCandidateLengthError = 0f;
+            LastBakeQualityApplied = LastBakeQualityContactFallback = LastBakeQualityConverged = false;
+            LastBakeQualityIterations = 0;
+            LastBakeQualityPreFallbackContactError = LastBakeQualityPreFallbackLinkError = 0f;
+            LastBakeQualityPreFallbackContactIndex = LastBakeQualityPreFallbackLinkIndex = -1;
             try { PresentCore(); }
             finally
             {
@@ -260,15 +565,18 @@ namespace BarPromenade
         private void PresentCore()
         {
             if (owner == null || registry == null || ribbon == null || deformedMesh == null) return;
+            if (bakeCapture && !bakeStepPending && !warmPreviewPending)
+            { LastBakedDecision = BakedPlaybackDecision.PhysicalCapture; return; }
             using var profile = PresentMarker.Auto();
             if (pickup == null) pickup = GetComponent<CombatDroppedWeaponPickup>();
             bool inspecting = pickup != null && pickup.IsPresenting;
-            bool attached = owner.isActiveAndEnabled && transform.IsChildOf(owner.transform) && !inspecting;
-            bool paused = PauseMenuController.IsAnyPaused || GameTimeScaleRuntime.IsPaused;
+            bool attached = bakeCapture || owner.isActiveAndEnabled && transform.IsChildOf(owner.transform) && !inspecting;
+            bool paused = !bakeCapture && (PauseMenuController.IsAnyPaused || GameTimeScaleRuntime.IsPaused);
             SteadyProjectionIterations = 0;
             SteadyLengthRepairIterations = 0;
             if (paused && initialized)
             {
+                LastBakedDecision = BakedPlaybackDecision.Paused;
                 wasPaused = true;
                 simulatedFrame = Time.frameCount;
                 return;
@@ -279,6 +587,38 @@ namespace BarPromenade
                 Quaternion.Angle(owner.transform.rotation, lastRootRotation) > 110f);
             bool changedOwnership = initialized && (attached != wasAttached || inspecting != wasInspecting);
             bool coldReset = !initialized || resetPending || teleported || changedOwnership;
+            bool preparedBaked = warmPreviewPending ? warmPreviewUseBaked && TryPrepareBakedSample(bakePreviewVariant) :
+                !bakeCapture && TryPrepareBaked(attached, inspecting);
+            bool startingBakedEntry = false;
+            if (preparedBaked)
+            {
+                if (coldReset || bakedLastPresent || bakedEntryReady)
+                {
+                    PresentPreparedBaked(attached, inspecting);
+                    return;
+                }
+                if (!bakedEntryActive)
+                {
+                    bakedEntryActive = startingBakedEntry = true;
+                    bakedEntryElapsed = 0f;
+                }
+            }
+            else if (bakedEntryActive)
+            {
+                // A rejected recording resumes from the last displayed,
+                // contact-projected chain, never from its unprojected target.
+                Array.Copy(points, previous, points.Length);
+                previousStep = StepSeconds;
+                bakedEntryActive = bakedEntryReady = false; bakedEntryElapsed = 0f;
+            }
+            if (bakedLastPresent)
+            {
+                // Resume real inertia from the last displayed chain, without
+                // adding playback displacement as an artificial launch velocity.
+                Array.Copy(points, previous, points.Length);
+                previousStep = StepSeconds;
+                bakedLastPresent = false;
+            }
             if (attached)
             {
                 using var poseProfile = PoseMarker.Auto();
@@ -316,23 +656,31 @@ namespace BarPromenade
                 }
                 Array.Copy(points, previous, points.Length);
             }
-            else if (simulatedFrame != Time.frameCount)
+            else if (bakeCapture || simulatedFrame != Time.frameCount)
             {
-                float elapsed = Mathf.Clamp(Time.deltaTime, 0f, MaximumElapsed);
+                float elapsed = warmPreviewPending ? Mathf.Min(warmPreviewSeconds, MaximumElapsed) :
+                    bakeCapture ? bakeStepSeconds : Mathf.Clamp(Time.deltaTime, 0f, MaximumElapsed);
                 int steps = elapsed > 0f ? Mathf.Min(MaximumFrameSubsteps, Mathf.CeilToInt(elapsed / StepSeconds)) : 0;
                 LastSimulationSteps = steps;
                 TotalSimulationSteps += steps;
                 float seconds = steps > 0 ? elapsed / steps : StepSeconds;
                 int substepIterations = steps > 0 ? Mathf.Min(16,
                     (SteadyProjectionIterationBudget - FinalProjectionReserve) / (steps * 4) * 4) : 0;
+                // Presentation time is independent of the bounded live physics
+                // catch-up. Paused presents returned above; duplicate presents
+                // cannot advance this clock twice in one rendered frame.
+                float entryElapsed = preparedBaked && !startingBakedEntry ?
+                    (warmPreviewPending ? warmPreviewSeconds : Mathf.Max(0f, Time.unscaledDeltaTime)) : 0f;
                 for (int step = 0; step < steps; step++)
                 {
                     float alpha = (step + 1f) / steps;
                     SetMasses(Mathf.Lerp(lastShoulderAmount, shoulderAmount, alpha), Mathf.Lerp(lastHandAmount, handAmount, alpha));
                     Integrate(seconds);
                     AttractToPins(alpha, seconds);
+                    if (preparedBaked) PullTowardsBaked(entryElapsed / steps);
                     finalPinsConverged = Constrain(attached, alpha, substepIterations, measureMetrics: false, countSteady: true);
                 }
+                if (preparedBaked && steps == 0) PullTowardsBaked(entryElapsed);
                 simulatedFrame = Time.frameCount;
             }
             // Reconcile the final live pins after the interpolated physics
@@ -342,20 +690,271 @@ namespace BarPromenade
             if (!finalPinsConverged || changedMasses)
                 Constrain(attached, 1f, SteadyProjectionIterationBudget - SteadyProjectionIterations,
                     measureMetrics: false, countSteady: true);
-            RepairMaterialLength();
+            bool qualityCapture = IsOwnedBakeQuality;
+            if (qualityCapture)
+            {
+                LastBakeQualityApplied = true;
+                // The same live pose, native query scope and fixed hard pins
+                // remain active. Refinement projects contacts and material
+                // together, without advancing time or inventing loop endpoints.
+                bool converged = LengthsConverged(AuthoredLength / Links) && ContactsConverged(attached);
+                if (!converged)
+                    converged = Constrain(attached, 1f, BakeQualityIterationBudget,
+                        measureMetrics: false, countBakeQuality: true);
+                if (!converged)
+                {
+                    MeasureConstraintErrors(attached, out _);
+                    LastBakeQualityPreFallbackContactError = MaximumContactError;
+                    LastBakeQualityPreFallbackLinkError = MaximumLinkError;
+                    LastBakeQualityPreFallbackContactIndex = MaximumContactErrorIndex;
+                    LastBakeQualityPreFallbackLinkIndex = MaximumLinkErrorIndex;
+                    // Prefer the actual contact-projected state to a final
+                    // length-only pass that can bury it in the body again.
+                    // Both residuals are measured below; an infeasible state
+                    // remains a failed capture for the authoring tool to reject.
+                    ResolveContacts(attached);
+                    LastBakeQualityContactFallback = true;
+                }
+            }
+            else if (preparedBaked)
+            {
+                // Entry fitting may use the existing repair allowance, but
+                // must keep body clearance and material length coupled.
+                if (!LengthsConverged(AuthoredLength / Links) || !ContactsConverged(attached))
+                    Constrain(attached, 1f, SteadyLengthRepairIterationBudget,
+                        measureMetrics: false, countRepair: true);
+            }
+            else RepairMaterialLength();
             // Keep the warm chain for the next frame if a contact/length seam
             // has not converged. Its targets and final hard pins are already
             // current; repeated fitting must not consume the whole frame.
-            MeasureConstraintErrors(attached, out _);
-            using (SnapshotMarker.Auto())
+            MeasureConstraintErrors(attached, out float presentedLength);
+            if (qualityCapture)
+                LastBakeQualityConverged = MaximumLinkError <= LinkTolerance &&
+                    Mathf.Abs(presentedLength - AuthoredLength) <= .006f && MaximumContactError <= ContactTolerance;
+            if (preparedBaked)
             {
-                lastFrom = from; lastTo = to; lastShoulder = shoulderTarget; lastHand = handTarget;
-                lastShoulderAmount = shoulderAmount; lastHandAmount = handAmount;
-                lastRootPosition = owner.transform.position; lastRootRotation = owner.transform.rotation;
-                lastGunPosition = transform.position; lastGunRotation = transform.rotation;
-                wasAttached = attached; wasInspecting = inspecting; wasPaused = false;
+                BakedEntryFitError = PreparedBakedFitError();
+                if (bakedEntryElapsed >= BakedEntryDuration)
+                    bakedEntryReady = TryCompleteBakedEntry(attached);
+                else
+                    LastBakedDecision = MaximumContactError > ContactTolerance ? BakedPlaybackDecision.WarmContact :
+                        MaximumLinkError > LinkTolerance || Mathf.Abs(presentedLength - AuthoredLength) > .006f ?
+                            BakedPlaybackDecision.WarmLength : BakedEntryFitError > ContactTolerance ?
+                                BakedPlaybackDecision.WarmFit : BakedPlaybackDecision.WarmClock;
             }
+            RememberPresentedState(attached, inspecting);
             Render(attached);
+        }
+
+        private bool TryPrepareBaked(bool attached, bool inspecting)
+        {
+            if (!attached || inspecting || owner.IsRagdollActive || owner.IsKnockedDown || owner.BodyDamage.ContactRevision != 0 ||
+                !bakedGravity.Equals(Physics.gravity))
+                return RejectBaked(BakedPlaybackDecision.UnsupportedState);
+            string variant;
+            if (owner.IsSwitchingWeapon && owner.WeaponCarryActionWeapon == CombatWeaponId.Shotgun)
+                variant = owner.WeaponCarryActionIsDraw ? "draw-shotgun" : "stow-shotgun";
+            else if (owner.CarriedWeaponLocation(CombatWeaponId.Shotgun) == CombatWeaponCarryLocation.Stowed)
+                variant = "stored-shotgun";
+            else return RejectBaked(BakedPlaybackDecision.UnsupportedState);
+            return TryPrepareBakedSample(variant);
+        }
+
+        private bool TryPresentBakedSample(string variant, bool attached, bool inspecting)
+        {
+            if (!TryPrepareBakedSample(variant)) return false;
+            PresentPreparedBaked(attached, inspecting);
+            return true;
+        }
+
+        private bool TryPrepareBakedSample(string variant)
+        {
+            if (!SecondaryMotionBakeRuntime.TrySample(registry, SecondaryMotionBakePart.Sling, BakedPoseSignature,
+                BakedPoseValueCount, false, new WindSample(0f, 0f), out SecondaryMotionBakeSample sample, variant))
+                return RejectBaked(BakedPlaybackDecision.SharedSampleRejected);
+            int anchorAt = (Links + 1) * 3;
+            int bakedShoulder = Mathf.RoundToInt(sample.From[anchorAt + 12]);
+            if (bakedShoulder != Mathf.RoundToInt(sample.To[anchorAt + 12]) || bakedShoulder != shoulderPoint)
+                return RejectBaked(BakedPlaybackDecision.ShoulderIndexMismatch);
+            if (Mathf.Abs(Value(anchorAt + 13) - shoulderAmount) > .002f ||
+                Mathf.Abs(Value(anchorAt + 14) - handAmount) > .002f)
+                return RejectBaked(BakedPlaybackDecision.AttachmentAmountMismatch);
+            Matrix4x4 world = registry.transform.localToWorldMatrix;
+            Vector3 stockDelta = from - WorldPoint(anchorAt);
+            Vector3 foreendDelta = to - WorldPoint(anchorAt + 3);
+            Vector3 shoulderDelta = shoulderTarget - WorldPoint(anchorAt + 6);
+            Vector3 handDelta = handTarget - WorldPoint(anchorAt + 9);
+            // A bake never substitutes for a genuinely different gun/body pose.
+            // Small residuals arise from phase interpolation and late pose layers;
+            // larger mismatches retain the live contact/material solver.
+            const float maximumResidualSquared = .0001f;
+            if (stockDelta.sqrMagnitude > maximumResidualSquared) return RejectBaked(BakedPlaybackDecision.StockAnchorMismatch);
+            if (foreendDelta.sqrMagnitude > maximumResidualSquared) return RejectBaked(BakedPlaybackDecision.ForeendAnchorMismatch);
+            if (shoulderAmount > .001f && shoulderDelta.sqrMagnitude > maximumResidualSquared)
+                return RejectBaked(BakedPlaybackDecision.ShoulderAnchorMismatch);
+            if (handAmount > .001f && handDelta.sqrMagnitude > maximumResidualSquared)
+                return RejectBaked(BakedPlaybackDecision.HandAnchorMismatch);
+            Vector3 correctedShoulder = Vector3.Lerp(Vector3.Lerp(stockDelta, foreendDelta, shoulderPoint / (float)Links),
+                shoulderDelta, shoulderAmount);
+            Vector3 correctedHand = Vector3.Lerp(Vector3.Lerp(stockDelta, foreendDelta, HandPoint / (float)Links), handDelta, handAmount);
+            float referenceLength = 0f, correctedLength = 0f, referenceError = 0f, correctedError = 0f;
+            int correctedErrorIndex = -1;
+            Vector3 priorReference = default;
+            float rest = AuthoredLength / Links;
+            for (int i = 0; i <= Links; i++)
+            {
+                int lower = 0, upper = Links;
+                Vector3 lowerDelta = stockDelta, upperDelta = foreendDelta;
+                if (shoulderAmount > .001f)
+                {
+                    if (i <= shoulderPoint) { upper = shoulderPoint; upperDelta = correctedShoulder; }
+                    else { lower = shoulderPoint; lowerDelta = correctedShoulder; }
+                }
+                if (handAmount > .001f)
+                {
+                    if (i <= HandPoint && HandPoint < upper) { upper = HandPoint; upperDelta = correctedHand; }
+                    else if (i > HandPoint) { lower = HandPoint; lowerDelta = correctedHand; }
+                }
+                Vector3 reference = WorldPoint(i * 3);
+                bakedPoints[i] = reference +
+                    Vector3.Lerp(lowerDelta, upperDelta, (i - lower) / (float)(upper - lower));
+                if (i == 0) bakedPoints[i] = from;
+                else if (i == Links) bakedPoints[i] = to;
+                else if (i == shoulderPoint && shoulderAmount >= .999f) bakedPoints[i] = shoulderTarget;
+                else if (i == HandPoint && handAmount >= .999f) bakedPoints[i] = handTarget;
+                if (i > 0)
+                {
+                    float referenceLink = Vector3.Distance(priorReference, reference);
+                    float correctedLink = Vector3.Distance(bakedPoints[i - 1], bakedPoints[i]);
+                    referenceLength += referenceLink; correctedLength += correctedLink;
+                    referenceError = Mathf.Max(referenceError, Mathf.Abs(referenceLink - rest));
+                    float error = Mathf.Abs(correctedLink - rest);
+                    if (error > correctedError) { correctedError = error; correctedErrorIndex = i - 1; }
+                }
+                priorReference = reference;
+            }
+            if (correctedError > referenceError + LinkTolerance ||
+                Mathf.Abs(correctedLength - AuthoredLength) > Mathf.Abs(referenceLength - AuthoredLength) + .006f)
+                return RejectBaked(BakedPlaybackDecision.MaterialMismatch);
+            preparedBakedLinkError = correctedError; preparedBakedLinkErrorIndex = correctedErrorIndex;
+            LastBakedDecision = BakedPlaybackDecision.Prepared;
+            return true;
+
+            float Value(int index) => Mathf.LerpUnclamped(sample.From[index], sample.To[index], sample.Alpha);
+            Vector3 Point(int index) => new Vector3(Value(index), Value(index + 1), Value(index + 2));
+            Vector3 WorldPoint(int index) => world.MultiplyPoint3x4(Point(index)) + sample.WorldOffset;
+        }
+
+        private void PresentPreparedBaked(bool attached, bool inspecting)
+        {
+            LastBakedDecision = BakedPlaybackDecision.Pure;
+            BakedEntryFitError = 0f;
+            if (!initialized || resetPending || !wasAttached || wasInspecting ||
+                (owner.transform.position - lastRootPosition).sqrMagnitude > .3025f ||
+                Quaternion.Angle(owner.transform.rotation, lastRootRotation) > 110f)
+                Array.Clear(normals, 0, normals.Length);
+            Array.Copy(bakedPoints, points, points.Length);
+            MaximumLinkError = preparedBakedLinkError; MaximumLinkErrorIndex = preparedBakedLinkErrorIndex;
+            MaximumLinkErrorWorldCentre = preparedBakedLinkErrorIndex >= 0 ?
+                (points[preparedBakedLinkErrorIndex] + points[preparedBakedLinkErrorIndex + 1]) * .5f : Vector3.zero;
+            Array.Copy(points, previous, points.Length);
+            previousStep = StepSeconds; initialized = true; resetPending = false;
+            bakedEntryActive = bakedEntryReady = false; bakedEntryElapsed = 0f;
+            bakedLastPresent = true; simulatedFrame = Time.frameCount;
+            LastSimulationSteps = SteadyProjectionIterations = SteadyLengthRepairIterations = 0;
+            BakedPlaybackFrames++;
+            RememberPresentedState(attached, inspecting);
+            Render(attached);
+        }
+
+        private void PullTowardsBaked(float seconds)
+        {
+            float prior = Mathf.Clamp01(bakedEntryElapsed / BakedEntryDuration);
+            bakedEntryElapsed = Mathf.Min(BakedEntryDuration, bakedEntryElapsed + seconds);
+            float next = Mathf.Clamp01(bakedEntryElapsed / BakedEntryDuration);
+            float priorWeight = Mathf.SmoothStep(0f, 1f, prior);
+            float nextWeight = Mathf.SmoothStep(0f, 1f, next);
+            float amount = next >= 1f ? 1f : (nextWeight - priorWeight) / Mathf.Max(.000001f, 1f - priorWeight);
+            for (int i = 1; i < Links; i++)
+            {
+                if (inverseMass[i] == 0f) continue;
+                Vector3 displacement = (bakedPoints[i] - points[i]) * amount;
+                points[i] += displacement;
+                previous[i] += displacement;
+            }
+        }
+
+        private bool RejectBaked(BakedPlaybackDecision reason)
+        {
+            LastBakedDecision = reason;
+            return false;
+        }
+
+        private float PreparedBakedFitError()
+        {
+            float maximum = 0f;
+            for (int i = 0; i <= Links; i++)
+                maximum = Mathf.Max(maximum, (points[i] - bakedPoints[i]).sqrMagnitude);
+            return Mathf.Sqrt(maximum);
+        }
+
+        private bool TryCompleteBakedEntry(bool attached)
+        {
+            float length = 0f, linkError = 0f;
+            int linkIndex = -1;
+            for (int i = 0; i < Links; i++)
+            {
+                float link = Vector3.Distance(bakedPoints[i], bakedPoints[i + 1]);
+                length += link;
+                float error = Mathf.Abs(link - AuthoredLength / Links);
+                if (error > linkError) { linkError = error; linkIndex = i; }
+            }
+            BakedEntryCandidateLinkError = linkError;
+            BakedEntryCandidateLengthError = Mathf.Abs(length - AuthoredLength);
+            BakedEntryCandidateContactError = 0f;
+            // Decoded geometry retains the existing presentation margin:
+            // authored link error plus the allowed small live-anchor residual.
+            // Solver convergence itself remains at the stricter LinkTolerance.
+            if (!float.IsFinite(length) || !(linkError < LinkTolerance * 2f) ||
+                !(BakedEntryCandidateLengthError <= .006f))
+                return RejectBaked(BakedPlaybackDecision.WarmLength);
+            int contactIndex = -1;
+            for (int i = 1; i < Links; i++)
+            {
+                if (inverseMass[i] == 0f) continue;
+                float error = Vector3.Distance(bakedPoints[i], ContactPoint(bakedPoints[i], attached, i));
+                if (!float.IsFinite(error)) return RejectBaked(BakedPlaybackDecision.WarmContact);
+                if (error > BakedEntryCandidateContactError)
+                { BakedEntryCandidateContactError = error; contactIndex = i; }
+            }
+            // Recorded/retargeted presentation has the same 1.5 mm clearance
+            // allowance as its independent native geometry proof. Authoring
+            // and ordinary physical convergence retain the stricter 1 mm.
+            if (!(BakedEntryCandidateContactError < BakedPresentationContactTolerance))
+                return RejectBaked(BakedPlaybackDecision.WarmContact);
+            // The real-time blend has reached its full weight. Certifying the
+            // selected target completes that blend; a reprojected live chain
+            // need not independently chase the target within another 1 mm.
+            // This remains a hybrid frame, and keeps its real solver counters.
+            Array.Copy(bakedPoints, points, points.Length);
+            MaximumLinkError = linkError; MaximumLinkErrorIndex = linkIndex;
+            MaximumLinkErrorWorldCentre = linkIndex >= 0 ? (points[linkIndex] + points[linkIndex + 1]) * .5f : Vector3.zero;
+            MaximumContactError = BakedEntryCandidateContactError; MaximumContactErrorIndex = contactIndex;
+            MaximumContactErrorWorldPoint = contactIndex >= 0 ? points[contactIndex] : Vector3.zero;
+            BakedEntryFitError = 0f;
+            LastBakedDecision = BakedPlaybackDecision.WarmReady;
+            return true;
+        }
+
+        private void RememberPresentedState(bool attached, bool inspecting)
+        {
+            using var profile = SnapshotMarker.Auto();
+            lastFrom = from; lastTo = to; lastShoulder = shoulderTarget; lastHand = handTarget;
+            lastShoulderAmount = shoulderAmount; lastHandAmount = handAmount;
+            lastRootPosition = owner.transform.position; lastRootRotation = owner.transform.rotation;
+            lastGunPosition = transform.position; lastGunRotation = transform.rotation;
+            wasAttached = attached; wasInspecting = inspecting; wasPaused = false;
         }
 
         private void ReadTargets(bool attached)
@@ -379,15 +978,17 @@ namespace BarPromenade
             graspAbdomenLength = Vector3.Distance(handTarget, frontAbdomen);
             graspSideLength = graspAbdomenLength + Vector3.Distance(frontAbdomen, rightSide);
             graspRouteLength = graspSideLength + Vector3.Distance(rightSide, to);
-            shoulderAmount = attached && owner.CarriedWeaponLocation(CombatWeaponId.Shotgun) == CombatWeaponCarryLocation.Stowed ? 1f : 0f;
+            shoulderAmount = attached && (bakeCapture ? bakeVariant == "stored-shotgun" :
+                owner.CarriedWeaponLocation(CombatWeaponId.Shotgun) == CombatWeaponCarryLocation.Stowed) ? 1f : 0f;
             handAmount = 0f;
-            if (attached && owner.IsSwitchingWeapon && owner.WeaponCarryActionWeapon == CombatWeaponId.Shotgun)
+            if (attached && (bakeCapture ? bakeVariant == "draw-shotgun" || bakeVariant == "stow-shotgun" :
+                owner.IsSwitchingWeapon && owner.WeaponCarryActionWeapon == CombatWeaponId.Shotgun))
             {
-                shoulderAmount = CombatWeaponCarryAssetProvider.SlingShoulderAmount(owner.WeaponCarryActionIsDraw, owner.WeaponCarryActionProgress);
-                handAmount = CombatWeaponCarryAssetProvider.SlingLeftHandAmount(owner.WeaponCarryActionIsDraw, owner.WeaponCarryActionProgress);
+                bool draw = bakeCapture ? bakeVariant == "draw-shotgun" : owner.WeaponCarryActionIsDraw;
+                float progress = bakeCapture ? bakeProgress : owner.WeaponCarryActionProgress;
+                shoulderAmount = CombatWeaponCarryAssetProvider.SlingShoulderAmount(draw, progress);
+                handAmount = CombatWeaponCarryAssetProvider.SlingLeftHandAmount(draw, progress);
             }
-            if ((lastShoulderAmount <= .001f && shoulderAmount > .001f) || !initialized)
-                shoulderPoint = Mathf.Clamp(Mathf.CeilToInt(Vector3.Distance(from, shoulderTarget) / (AuthoredLength / Links)) + 1, 3, HandPoint - 3);
             UpdateContactDirections();
         }
 
@@ -529,7 +1130,7 @@ namespace BarPromenade
         }
 
         private bool Constrain(bool attached, float alpha, int iterations, int extraIterations = 0,
-            bool measureMetrics = true, bool countSteady = false)
+            bool measureMetrics = true, bool countSteady = false, bool countBakeQuality = false, bool countRepair = false)
         {
             using var profile = SolveMarker.Auto();
             float rest = AuthoredLength / Links;
@@ -545,6 +1146,8 @@ namespace BarPromenade
                 if (projectionWork != null) projectionWork.Project(points, settings);
                 else RunManagedProjectionGroup(points, inverseMass, settings);
                 if (countSteady) SteadyProjectionIterations += settings.IterationCount;
+                if (countBakeQuality) LastBakeQualityIterations += settings.IterationCount;
+                if (countRepair) SteadyLengthRepairIterations += settings.IterationCount;
                 if (((iteration + settings.IterationCount - 1) & 7) == 7 && LengthsConverged(rest))
                 {
                     if (!measureMetrics)
@@ -733,8 +1336,11 @@ namespace BarPromenade
                 Vector3 point = ContactPoint(points[i], attached, i);
                 Vector3 correction = point - points[i];
                 points[i] = point;
-                // Friction prevents contact corrections becoming stored velocity.
-                if (correction.sqrMagnitude > .00000001f) previous[i] += correction * .9f;
+                // Owned offline solves preserve the pre-step Verlet position:
+                // all contact iterations fit geometry at the same instant.
+                // The live solver retains its existing contact friction.
+                if (!IsOwnedBakeQuality && correction.sqrMagnitude > .00000001f)
+                    previous[i] += correction * .9f;
             }
         }
 
@@ -849,8 +1455,17 @@ namespace BarPromenade
                 vertices[i] = worldToRibbon.MultiplyPoint3x4(centre + side * (HalfWidth * alongWidth[i].y) +
                     normal * (HalfThickness * thickness[i].x));
             }
-            deformedMesh.vertices = vertices;
-            deformedMesh.RecalculateNormals(); deformedMesh.RecalculateBounds();
+            // Repeated presentation of an identical local ribbon needs no
+            // mesh upload or rebuild; live contact registration still runs.
+            bool geometryChanged = false;
+            for (int i = 0; i < vertices.Length; i++)
+                if (!vertices[i].Equals(writtenVertices[i])) { geometryChanged = true; break; }
+            if (geometryChanged)
+            {
+                Array.Copy(vertices, writtenVertices, vertices.Length);
+                deformedMesh.vertices = vertices;
+                deformedMesh.RecalculateNormals(); deformedMesh.RecalculateBounds();
+            }
             if (equipment == null) equipment = registry.GetComponent<PlayerEquipmentContacts>();
             if (equipment == null) return;
             if (attached)
@@ -872,15 +1487,20 @@ namespace BarPromenade
             resetPending = true;
         }
         private void OnDisable() => ReleaseContacts();
-        private void OnDestroy()
+        private void OnDestroy() => DisposePresentationResources();
+
+        private void DisposePresentationResources()
         {
+            ReleaseContacts();
             bodyContacts?.Dispose();
             bodyContacts = null;
             retainedProjectionWork?.Dispose();
             retainedProjectionWork = projectionWork = null;
             if (equipment != null) equipment.Unregister(this);
+            equipment = null;
             if (ribbon != null && ribbon.sharedMesh == deformedMesh) ribbon.sharedMesh = source;
-            if (deformedMesh != null) Destroy(deformedMesh);
+            DestroyBakeObject(deformedMesh);
+            deformedMesh = null;
         }
     }
 }

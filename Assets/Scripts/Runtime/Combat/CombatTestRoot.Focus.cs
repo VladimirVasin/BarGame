@@ -7,7 +7,8 @@ namespace BarPromenade
         private readonly RaycastHit[] focusVisibilityHits = new RaycastHit[32];
 
         public bool IsOpponentFocused => isActiveAndEnabled && IsInitialized &&
-            Hero != null && Hero.CombatFocused && !RoundFinished && CameraFollow.TargetLockActive;
+            Hero != null && Hero.CombatFocused && !RoundFinished && CameraFollow.TargetLockActive &&
+            Opponent.gameObject.activeInHierarchy && !Opponent.State.IsDefeated;
         public bool FocusMarkerVisible => TryGetFocusMarkerScreenPosition(out _);
 
         /// <summary>Only the hero leaves focus; the opponent and duel retain their live state.</summary>
@@ -30,6 +31,12 @@ namespace BarPromenade
 
         private bool TryFocusOpponent()
         {
+            if (Mode == CombatTestMode.Endless)
+            {
+                CombatActor best = BestLiveOpponent();
+                if (best == null) return false;
+                SelectCombatOpponent(best);
+            }
             ReleaseFreePistolAim();
             if (!CameraFollow.SetTargetLock(this, opponentObject.transform, opponentChest, heroChest, Hero.IsFirearm)) return false;
             if (!Player.Motor.SetMovementTarget(this, opponentChest, true))
@@ -40,6 +47,55 @@ namespace BarPromenade
             Player.Motor.SetMovementTargetFrozen(this, hitStopSubsteps > 0 || roundEndFreeze > 0d);
             Hero.SetCombatFocused(true);
             return true;
+        }
+
+        private CombatActor BestLiveOpponent()
+        {
+            CombatActor best = null;
+            float bestScore = float.PositiveInfinity;
+            Camera camera = CameraFollow.Camera;
+            foreach (OpponentSlot slot in opponentSlots)
+            {
+                CombatActor actor = slot.Actor;
+                if (!slot.Spawned || actor.State.IsDefeated) continue;
+                Vector3 chest = actor.Ragdoll.PhysicsController.ChestBody.position;
+                Vector3 ray = chest - camera.transform.position;
+                float length = ray.magnitude;
+                if (length < .001f) continue;
+                int count = Physics.RaycastNonAlloc(camera.transform.position, ray / length, focusVisibilityHits,
+                    length, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore);
+                if (count == focusVisibilityHits.Length) continue;
+                bool blocked = false;
+                for (int i = 0; i < count; i++)
+                {
+                    Transform hit = focusVisibilityHits[i].transform;
+                    if (hit != null && !hit.IsChildOf(Hero.transform) && !hit.IsChildOf(actor.transform))
+                    { blocked = true; break; }
+                }
+                if (blocked) continue;
+                float score = 1f - Vector3.Dot(camera.transform.forward, ray / length) + length * .01f;
+                if (score >= bestScore) continue;
+                best = actor; bestScore = score;
+            }
+            return best;
+        }
+
+        private void UpdateEndlessFocus()
+        {
+            if (Opponent.gameObject.activeInHierarchy && !Opponent.State.IsDefeated) return;
+            bool refocus = Hero.CombatFocused && CameraFollow.TargetLockActive;
+            CombatActor next = BestLiveOpponent();
+            if (next != null)
+            {
+                SelectCombatOpponent(next);
+                if (refocus) TryFocusOpponent();
+                return;
+            }
+            if (!refocus) return;
+            ClearFocusTracking(preserveCameraPose: Hero.IsFirearm);
+            Hero.SetCombatFocused(false, preservePistolAim: Hero.IsFirearm);
+            Hero.SetContactTarget(null);
+            focusNextArrival = !Hero.IsFirearm;
         }
 
         private void ClearFocusTracking(bool preserveCameraPose = false)

@@ -22,14 +22,47 @@ namespace BarPromenade
         private RaycastHit[] casts = new RaycastHit[32];
         private Collider[] overlaps = new Collider[32];
         private readonly Volley[] volleys = new Volley[8];
+        private readonly CombatActor[] pairParticipants = new CombatActor[2];
         private ParticleSystem muzzleSmoke;
 
         private sealed class Volley
         {
-            internal CombatActor Source, Target;
+            internal CombatActor Source;
             internal int Sequence, Remaining;
-            internal bool Active, ResponseApplied;
+            internal bool Active;
+            internal readonly List<VolleyVictim> Victims = new List<VolleyVictim>(6);
+
+            internal Volley()
+            {
+                for (int i = 0; i < 6; i++) Victims.Add(new VolleyVictim());
+            }
+
+            internal VolleyVictim For(CombatActor target)
+            {
+                foreach (VolleyVictim victim in Victims)
+                    if (victim.Target == target && victim.Generation == target.ContactGeneration) return victim;
+                foreach (VolleyVictim victim in Victims)
+                    if (victim.Target == null)
+                    { victim.Begin(target); return victim; }
+                var added = new VolleyVictim(); added.Begin(target); Victims.Add(added); return added;
+            }
+
+            internal void Clear()
+            {
+                Active = false; Source = null; Remaining = 0;
+                foreach (VolleyVictim victim in Victims) victim.Clear();
+            }
+        }
+
+        private sealed class VolleyVictim
+        {
+            internal CombatActor Target;
+            internal int Generation;
+            internal bool ResponseApplied;
             internal readonly List<PelletHit> Contacts = new List<PelletHit>(12);
+            internal void Begin(CombatActor target)
+            { Target = target; Generation = target.ContactGeneration; ResponseApplied = false; Contacts.Clear(); }
+            internal void Clear() { Target = null; ResponseApplied = false; Contacts.Clear(); }
         }
 
         internal readonly struct PelletHit
@@ -78,8 +111,12 @@ namespace BarPromenade
             internal readonly CombatHurtboxes.Hit Hit;
             internal readonly Vector3 Velocity;
             internal readonly int Sequence;
+            internal readonly int TargetGeneration;
             internal Impact(Projectile p, CombatActor target, CombatHurtboxes.Hit hit)
-            { Source = p.Source; Target = target; Hit = hit; Velocity = p.Velocity; Sequence = p.Sequence; }
+            {
+                Source = p.Source; Target = target; Hit = hit; Velocity = p.Velocity; Sequence = p.Sequence;
+                TargetGeneration = target.ContactGeneration;
+            }
         }
 
         public int ActiveCount { get; private set; }
@@ -167,10 +204,9 @@ namespace BarPromenade
             Volley volley = null;
             foreach (Volley candidate in volleys) if (!candidate.Active) { volley = candidate; break; }
             if (volley == null) return false;
-            volley.Source = source; volley.Target = null; volley.Sequence = sequence;
+            volley.Clear(); volley.Source = source; volley.Sequence = sequence;
             volley.Remaining = settings.PelletCount;
-            volley.ResponseApplied = false;
-            volley.Contacts.Clear(); volley.Active = true;
+            volley.Active = true;
             int pellet = 0;
             foreach (Projectile p in slots)
             {
@@ -223,6 +259,12 @@ namespace BarPromenade
 
         internal void Advance(float seconds, CombatActor hero, CombatActor opponent)
         {
+            pairParticipants[0] = hero; pairParticipants[1] = opponent;
+            Advance(seconds, pairParticipants);
+        }
+
+        internal void Advance(float seconds, IReadOnlyList<CombatActor> participants)
+        {
             if (float.IsNaN(seconds) || float.IsInfinity(seconds) || seconds < 0f)
                 throw new ArgumentOutOfRangeException(nameof(seconds));
             contacts.Clear();
@@ -247,19 +289,28 @@ namespace BarPromenade
                 }
                 p.Velocity += acceleration * dt;
                 bool world = WorldSegment(p.Source, from, to, out WorldHit worldHit);
-                CombatActor target = p.Source == hero ? opponent : hero;
+                CombatActor target = null;
                 CombatHurtboxes.Hit hit = default;
-                bool body = target != null && target.Hurtboxes != null &&
-                    target.Hurtboxes.SweepProjectile(from, to, Radius, p.Velocity.normalized, out hit);
+                float nearestFraction = float.PositiveInfinity;
+                if (participants != null)
+                    for (int i = 0; i < participants.Count; i++)
+                    {
+                        CombatActor candidate = participants[i];
+                        if (candidate == p.Source || !CombatActor.HasPhysicalBody(candidate) ||
+                            !candidate.Hurtboxes.SweepProjectile(from, to, Radius, p.Velocity.normalized, out var bodyHit) ||
+                            bodyHit.Fraction >= nearestFraction) continue;
+                        target = candidate; hit = bodyHit; nearestFraction = bodyHit.Fraction;
+                    }
+                bool body = target != null;
                 if (body && (!world || hit.Fraction < worldHit.Fraction))
                 {
                     p.Position = hit.Point;
-                    if (p.Volley == null) contacts.Add(new Impact(p, target, hit));
-                    else
+                    // Friendly bodies stop a flight physically, without wounds.
+                    if (p.Source.CanDamageParticipant(target))
                     {
-                        p.Volley.Target = target;
-                        p.Volley.Contacts.Add(new PelletHit(hit, p.Velocity,
-                            p.Distance + Vector3.Distance(from, hit.Point), p.PelletIndex, p.Shotgun));
+                        if (p.Volley == null) contacts.Add(new Impact(p, target, hit));
+                        else p.Volley.For(target).Contacts.Add(new PelletHit(hit, p.Velocity,
+                                p.Distance + Vector3.Distance(from, hit.Point), p.PelletIndex, p.Shotgun));
                     }
                     ImpactCount++; LastImpactPoint = hit.Point;
                     Retire(p);
@@ -285,21 +336,38 @@ namespace BarPromenade
         internal void ApplyContacts()
         {
             foreach (Impact impact in contacts)
-                if (impact.Target != null)
+                if (CombatActor.HasPhysicalBody(impact.Target) && impact.Target.ContactGeneration == impact.TargetGeneration)
                     impact.Target.ReceiveProjectile(impact.Source, impact.Sequence, impact.Hit, impact.Velocity);
             contacts.Clear();
             foreach (Volley volley in volleys)
             {
                 if (!volley.Active) continue;
-                if (volley.Target != null && volley.Contacts.Count > 0)
+                foreach (VolleyVictim victim in volley.Victims)
                 {
-                    volley.Target.ReceiveShotgunVolley(volley.Source, volley.Sequence,
-                        volley.Contacts, !volley.ResponseApplied);
-                    volley.ResponseApplied = true;
+                    if (CombatActor.HasPhysicalBody(victim.Target) && victim.Target.ContactGeneration == victim.Generation &&
+                        victim.Contacts.Count > 0)
+                    {
+                        victim.Target.ReceiveShotgunVolley(volley.Source, volley.Sequence,
+                            victim.Contacts, !victim.ResponseApplied);
+                        victim.ResponseApplied = true;
+                    }
+                    victim.Contacts.Clear();
                 }
-                volley.Contacts.Clear();
-                if (volley.Remaining == 0) { volley.Active = false; volley.Source = volley.Target = null; }
+                if (volley.Remaining == 0) volley.Clear();
             }
+        }
+
+        // Reusing one body invalidates only its frozen contacts. Flights from
+        // every participant, including this defeated shooter, keep travelling.
+        internal void RetireActorContacts(CombatActor actor)
+        {
+            if (actor == null) return;
+            actor.InvalidateCombatContacts();
+            for (int i = contacts.Count - 1; i >= 0; i--)
+                if (contacts[i].Target == actor) contacts.RemoveAt(i);
+            foreach (Volley volley in volleys)
+                foreach (VolleyVictim victim in volley.Victims)
+                    if (victim.Target == actor) victim.Clear();
         }
 
         private void ShowFlightSegment(Projectile p, Vector3 from, Vector3 to)
@@ -336,7 +404,7 @@ namespace BarPromenade
             foreach (Projectile p in slots) Retire(p);
             contacts.Clear();
             foreach (Volley volley in volleys)
-            { volley.Active = false; volley.Source = volley.Target = null; volley.Contacts.Clear(); volley.Remaining = 0; }
+                volley.Clear();
         }
 
         public void Clear()

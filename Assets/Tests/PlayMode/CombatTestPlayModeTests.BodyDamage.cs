@@ -491,6 +491,8 @@ namespace BarPromenade.Tests.PlayMode
             root.Tick(.25f);
             Assert.That((bool)CarrySupportField(root.BodyEffects, "frozen"), Is.False,
                 "The proxy cache regression requires live effects after the headshot hit-stop.");
+            Assert.That(target.Ragdoll.PhysicsController.FreezeInPlace(), Is.True);
+            typeof(CombatRagdoll).GetProperty(nameof(CombatRagdoll.IsSettled)).SetValue(target.Ragdoll, true);
             root.BodyEffects.Tick(CombatTestRoot.SimulationStep);
             AssertBodyProxyCollisionIsolation(target, requireDebris: true, requireHead: true);
             AssertBodyProxyNativeBounds(target, "Current damaged pose");
@@ -498,6 +500,7 @@ namespace BarPromenade.Tests.PlayMode
             long transformSamples = root.BodyEffects.ProxyTransformSamples;
             int transformCount = root.BodyEffects.ProxyTransformCountFor(target);
             Assert.That(transformCount, Is.GreaterThan(0));
+            long unchangedSkips = root.BodyEffects.UnchangedBodyPoseSkips;
             using var allocations = CreateBodyAllocationRecorder();
             var proxyTimer = System.Diagnostics.Stopwatch.StartNew();
             allocations.Reset(); allocations.Start();
@@ -507,11 +510,25 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(root.BodyEffects.ProxyGeometryBuilds, Is.EqualTo(builds),
                 "Unchanged hand shapes must reuse their collision bounds across simulation substeps.");
             Assert.That(allocated, Is.Zero, "Proxy updates must reuse vertex buffers.");
+            Assert.That(root.BodyEffects.UnchangedBodyPoseSkips - unchangedSkips, Is.EqualTo(32),
+                "A settled unchanged corpse must skip the full partition/proxy pass while retaining its collision.");
             Assert.That(root.BodyEffects.ProxyTransformSamples - transformSamples,
                 Is.InRange(0L, (long)transformCount * 32),
                 "One effects pass must sample a shared transform at most once across all body proxies.");
             TestContext.Out.WriteLine($"Test cached body proxies: cpu={proxyTimer.Elapsed.TotalMilliseconds / 32d:F3} ms per tick, " +
                 $"transformSamples={root.BodyEffects.ProxyTransformSamples - transformSamples}, uniqueTransforms={transformCount}, allocations={allocated}.");
+            target.Hurtboxes.Capture();
+            target.Hurtboxes.CaptureProjectileAimBounds();
+            Vector3 offRay = target.transform.position + Vector3.up * 1000f;
+            int captures = target.Hurtboxes.PoseCaptureCount;
+            typeof(CombatTestRoot).GetMethod("ResolveFreePistolAimSurface", System.Reflection.BindingFlags.Instance |
+                System.Reflection.BindingFlags.NonPublic).Invoke(root, new object[] { new Ray(offRay, Vector3.right) });
+            Assert.That(target.Hurtboxes.PoseCaptureCount, Is.EqualTo(captures),
+                "An off-ray settled corpse must be rejected before detailed anatomy capture.");
+            Vector3 headCentre = FindAnatomicalBone(target, "head").position;
+            Assert.That(target.Hurtboxes.MayIntersectProjectile(headCentre - Vector3.right * 2f,
+                headCentre + Vector3.right * 2f, 0f), Is.True,
+                "The broad phase must retain the corpse's current anatomical footprint.");
             var hands = target.GetComponentInChildren<NpcHandPose>();
             SkinnedMeshRenderer hand = null;
             int gripShape = -1;

@@ -59,6 +59,29 @@ namespace BarPromenade
             return count;
         }
 
+        internal void CaptureBakeSnapshot(Transform frame, float[] destination, int offset)
+        {
+            Matrix4x4 toFrame = frame.worldToLocalMatrix;
+            foreach (Envelope[] group in registrations.Values)
+                foreach (Envelope envelope in group)
+                {
+                    if (!envelope.Active) continue;
+                    Matrix4x4 matrix = toFrame * envelope.ToWorld;
+                    for (int i = 0; i < 16; i++) destination[offset++] = matrix[i];
+                    Put(envelope.LocalBounds.center); Put(envelope.LocalBounds.extents); Put(envelope.Padding);
+                }
+            void Put(Vector3 value)
+            { destination[offset++] = value.x; destination[offset++] = value.y; destination[offset++] = value.z; }
+        }
+
+        internal string BakeSnapshotName(int index)
+        {
+            foreach (Envelope[] group in registrations.Values)
+                foreach (Envelope envelope in group)
+                    if (envelope.Active && index-- == 0) return envelope.Transform.name;
+            return "unknown";
+        }
+
         internal int CopyBoxSnapshots(NativeArray<BoxSnapshot> destination, bool includeRibbons)
         {
             int count = 0;

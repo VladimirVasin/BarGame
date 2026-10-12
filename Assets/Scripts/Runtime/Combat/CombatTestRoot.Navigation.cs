@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using UnityEngine;
 
 namespace BarPromenade
@@ -8,103 +7,98 @@ namespace BarPromenade
         private const float WarehousePerceptionSeconds = .12f;
         private const float WarehouseRouteSeconds = .35f;
         private const float WarehouseMeleeHeight = .4f;
-        private readonly List<Vector3> warehouseOpponentRoute = new List<Vector3>(64);
-        private readonly RaycastHit[] warehouseVisibilityHits = new RaycastHit[32];
-        private int warehouseRouteIndex;
-        private float warehousePerceptionWait, warehouseRouteWait, warehouseStuckSeconds;
-        private float warehouseOpponentVerticalSpeed;
-        private bool warehouseMeleeReachable, warehouseDirectTravel, warehouseOpponentGrounded;
-        private Vector3 warehouseRouteTarget;
 
         internal string DescribeWarehouseOpponentNavigation()
         {
-            string next = warehouseRouteIndex < warehouseOpponentRoute.Count
-                ? warehouseOpponentRoute[warehouseRouteIndex].ToString("F3") : "none";
-            return $"route={warehouseRouteIndex}/{warehouseOpponentRoute.Count}, next={next}, " +
-                $"target={warehouseRouteTarget.ToString("F3")}, direct={warehouseDirectTravel}, melee={warehouseMeleeReachable}, " +
-                $"stuck={warehouseStuckSeconds:F3}, wait={warehouseRouteWait:F3}, vertical={warehouseOpponentVerticalSpeed:F3}, " +
-                $"grounded={warehouseOpponentGrounded}, velocity={opponentMoveVelocity.ToString("F3")}";
+            string next = opponentContext.warehouseRouteIndex < opponentContext.warehouseOpponentRoute.Count
+                ? opponentContext.warehouseOpponentRoute[opponentContext.warehouseRouteIndex].ToString("F3") : "none";
+            return $"route={opponentContext.warehouseRouteIndex}/{opponentContext.warehouseOpponentRoute.Count}, next={next}, " +
+                $"target={opponentContext.warehouseRouteTarget.ToString("F3")}, direct={opponentContext.warehouseDirectTravel}, melee={opponentContext.warehouseMeleeReachable}, " +
+                $"stuck={opponentContext.warehouseStuckSeconds:F3}, wait={opponentContext.warehouseRouteWait:F3}, vertical={opponentContext.warehouseOpponentVerticalSpeed:F3}, " +
+                $"grounded={opponentContext.warehouseOpponentGrounded}, crowd_wait={opponentContext.warehouseCrowdWaiting}, " +
+                $"velocity={opponentContext.opponentMoveVelocity.ToString("F3")}";
         }
 
         private void ResetWarehouseOpponentNavigation()
         {
-            warehouseOpponentRoute.Clear();
-            warehouseRouteIndex = 0;
-            warehousePerceptionWait = warehouseRouteWait = warehouseStuckSeconds = 0f;
-            warehouseOpponentVerticalSpeed = 0f;
-            warehouseMeleeReachable = warehouseDirectTravel = warehouseOpponentGrounded = false;
+            opponentContext.warehouseOpponentRoute.Clear();
+            opponentContext.warehouseRouteIndex = 0;
+            opponentContext.warehousePerceptionWait = opponentContext.warehouseRouteWait = opponentContext.warehouseStuckSeconds = 0f;
+            opponentContext.warehouseOpponentVerticalSpeed = 0f;
+            opponentContext.warehouseMeleeReachable = opponentContext.warehouseDirectTravel = opponentContext.warehouseOpponentGrounded = false;
+            opponentContext.warehouseCrowdWaiting = false;
         }
 
         /// <summary>Route only where the flat duel's honest local movement cannot reach the target.</summary>
         private bool AdvanceWarehouseOpponentPursuit(float seconds)
         {
             if (WarehousePlan == null || !(arenaBounds is WarehouseArenaArea area)) return false;
-            warehousePerceptionWait -= seconds;
-            warehouseRouteWait = Mathf.Max(0f, warehouseRouteWait - seconds);
-            Vector3 from = Opponent.transform.position, target = Hero.transform.position;
-            if (warehousePerceptionWait <= 0f)
+            opponentContext.warehousePerceptionWait -= seconds;
+            opponentContext.warehouseRouteWait = Mathf.Max(0f, opponentContext.warehouseRouteWait - seconds);
+            Vector3 from = AiOpponent.transform.position, target = Hero.transform.position;
+            if (opponentContext.warehousePerceptionWait <= 0f)
             {
-                warehousePerceptionWait = WarehousePerceptionSeconds;
+                opponentContext.warehousePerceptionWait = WarehousePerceptionSeconds;
                 bool visible = WarehouseTargetVisible(from, target);
-                warehouseMeleeReachable = visible && Mathf.Abs(target.y - from.y) <= WarehouseMeleeHeight;
-                warehouseDirectTravel = area.SameSurface(from, target) &&
-                    area.CanTraverse(from, target, Opponent.Body.radius + .04f);
+                opponentContext.warehouseMeleeReachable = visible && Mathf.Abs(target.y - from.y) <= WarehouseMeleeHeight;
+                opponentContext.warehouseDirectTravel = area.SameSurface(from, target) &&
+                    area.CanTraverse(from, target, AiOpponent.Body.radius + .04f);
             }
             // Height is live even between the bounded visibility/graph samples.
-            if (Mathf.Abs(target.y - from.y) > WarehouseMeleeHeight) warehouseMeleeReachable = false;
-            if (warehouseDirectTravel && warehouseMeleeReachable)
+            if (Mathf.Abs(target.y - from.y) > WarehouseMeleeHeight) opponentContext.warehouseMeleeReachable = false;
+            if (opponentContext.warehouseDirectTravel && opponentContext.warehouseMeleeReachable)
             {
-                warehouseOpponentRoute.Clear();
-                warehouseRouteIndex = 0;
-                warehouseStuckSeconds = 0f;
+                opponentContext.warehouseOpponentRoute.Clear();
+                opponentContext.warehouseRouteIndex = 0;
+                opponentContext.warehouseStuckSeconds = 0f;
                 return false;
             }
 
             // An obstructed or upstairs target contributes no invisible windup,
             // guard, kick or whiff observations to the duel policy.
-            Opponent.SetBlock(false);
-            guardThisAttack = lateGuard = stepThisAttack = stepBackThisAttack = false;
-            guardMemorySeconds = observationSeconds = missObservationSeconds = 0f;
-            kickObservationSeconds = kickMissObservationSeconds = heroChargeSeconds = heroGuardSeconds = 0f;
-            observedAttackSequence = observedKickSequence = -1;
-            readyIdleSeconds = decisionElapsed = 0f;
+            AiOpponent.SetBlock(false);
+            opponentContext.guardThisAttack = opponentContext.lateGuard = opponentContext.stepThisAttack = opponentContext.stepBackThisAttack = false;
+            opponentContext.guardMemorySeconds = opponentContext.observationSeconds = opponentContext.missObservationSeconds = 0f;
+            opponentContext.kickObservationSeconds = opponentContext.kickMissObservationSeconds = opponentContext.heroChargeSeconds = opponentContext.heroGuardSeconds = 0f;
+            opponentContext.observedAttackSequence = opponentContext.observedKickSequence = -1;
+            opponentContext.readyIdleSeconds = opponentContext.decisionElapsed = 0f;
             OpponentObservedVelocity = Vector3.zero;
-            previousObservedPosition = target;
-            feinting = postFeintLight = punishing = queueBackhand = queueBackStep = false;
-            if (Opponent.State.IsCharging) Opponent.CancelCharge();
-            previousOpponentPhase = Opponent.State.Phase;
-            opponentWasAttacking = Opponent.State.IsAttacking || Opponent.State.IsShoving;
-            OpponentIntent = Opponent.State.Phase == MeleePhase.Ready
+            opponentContext.previousObservedPosition = target;
+            opponentContext.feinting = opponentContext.postFeintLight = opponentContext.punishing = opponentContext.queueBackhand = opponentContext.queueBackStep = false;
+            if (AiOpponent.State.IsCharging) AiOpponent.CancelCharge();
+            opponentContext.previousOpponentPhase = AiOpponent.State.Phase;
+            opponentContext.opponentWasAttacking = AiOpponent.State.IsAttacking || AiOpponent.State.IsShoving;
+            OpponentIntent = AiOpponent.State.Phase == MeleePhase.Ready
                 ? CombatOpponentIntent.Approach : CombatOpponentIntent.Recover;
-            if (Opponent.State.Phase != MeleePhase.Ready) return true;
+            if (AiOpponent.State.Phase != MeleePhase.Ready) return true;
 
-            Vector3 targetChange = target - warehouseRouteTarget;
+            Vector3 targetChange = target - opponentContext.warehouseRouteTarget;
             bool targetMoved = targetChange.sqrMagnitude > .64f;
-            bool needsRoute = warehouseRouteIndex >= warehouseOpponentRoute.Count ||
-                targetMoved || warehouseStuckSeconds >= .5f;
-            if (needsRoute && warehouseRouteWait <= 0f)
+            bool needsRoute = opponentContext.warehouseRouteIndex >= opponentContext.warehouseOpponentRoute.Count ||
+                targetMoved || opponentContext.warehouseStuckSeconds >= .5f;
+            if (needsRoute && opponentContext.warehouseRouteWait <= 0f)
             {
-                warehouseRouteWait = WarehouseRouteSeconds;
-                warehouseRouteTarget = target;
-                warehouseRouteIndex = 0;
-                warehouseStuckSeconds = 0f;
-                if (!area.FindRoute(from, target, warehouseOpponentRoute, Opponent.Body.radius + .04f))
-                    warehouseOpponentRoute.Clear();
+                opponentContext.warehouseRouteWait = WarehouseRouteSeconds;
+                opponentContext.warehouseRouteTarget = target;
+                opponentContext.warehouseRouteIndex = 0;
+                opponentContext.warehouseStuckSeconds = 0f;
+                if (!area.FindRoute(from, target, opponentContext.warehouseOpponentRoute, AiOpponent.Body.radius + .04f))
+                    opponentContext.warehouseOpponentRoute.Clear();
             }
-            while (warehouseRouteIndex < warehouseOpponentRoute.Count)
+            while (opponentContext.warehouseRouteIndex < opponentContext.warehouseOpponentRoute.Count)
             {
-                Vector3 waypoint = warehouseOpponentRoute[warehouseRouteIndex];
+                Vector3 waypoint = opponentContext.warehouseOpponentRoute[opponentContext.warehouseRouteIndex];
                 Vector3 delta = waypoint - from;
                 float height = Mathf.Abs(delta.y);
                 delta.y = 0f;
                 if (delta.sqrMagnitude <= .0484f && height <= .32f)
-                { warehouseRouteIndex++; continue; }
+                { opponentContext.warehouseRouteIndex++; continue; }
                 float distance = delta.magnitude;
                 if (distance > .001f)
                 {
                     MoveOpponent(delta / distance, Mathf.Min(1.8f * seconds, distance), seconds,
                         steerAroundObstacle: false);
-                    if (opponentMoveRequest.sqrMagnitude < .000001f) warehouseStuckSeconds += seconds;
+                    if (opponentContext.opponentMoveRequest.sqrMagnitude < .000001f) opponentContext.warehouseStuckSeconds += seconds;
                 }
                 break;
             }
@@ -118,38 +112,41 @@ namespace BarPromenade
             Vector3 delta = target - from;
             float distance = delta.magnitude;
             if (distance <= .001f) return true;
-            int count = Physics.RaycastNonAlloc(from, delta / distance, warehouseVisibilityHits,
+            int count = Physics.RaycastNonAlloc(from, delta / distance, opponentContext.warehouseVisibilityHits,
                 distance, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore);
-            if (count == warehouseVisibilityHits.Length) return false;
+            if (count == opponentContext.warehouseVisibilityHits.Length) return false;
             for (int i = 0; i < count; i++)
-                if (warehouseVisibilityHits[i].collider.GetComponentInParent<CombatActor>() == null) return false;
+                if (opponentContext.warehouseVisibilityHits[i].collider.GetComponentInParent<CombatActor>() == null) return false;
             return true;
         }
 
         private void ObserveWarehouseOpponentTravel(Vector3 requested, Vector3 achieved, float seconds)
         {
-            if (WarehousePlan == null || warehouseOpponentRoute.Count == 0) return;
+            if (WarehousePlan == null || opponentContext.warehouseOpponentRoute.Count == 0) return;
+            // A fellow capsule is temporary traffic, not a broken immutable graph.
+            // Keep the current stair route rather than repeatedly finding it again.
+            if (opponentContext.warehouseCrowdWaiting) { opponentContext.warehouseStuckSeconds = 0f; return; }
             requested.y = achieved.y = 0f;
             if (requested.sqrMagnitude > .000001f && achieved.sqrMagnitude < requested.sqrMagnitude * .0625f)
-                warehouseStuckSeconds += seconds;
-            else if (requested.sqrMagnitude > .000001f) warehouseStuckSeconds = 0f;
+                opponentContext.warehouseStuckSeconds += seconds;
+            else if (requested.sqrMagnitude > .000001f) opponentContext.warehouseStuckSeconds = 0f;
         }
 
         /// <summary>After ordinary and owned Step travel, ground the capsule on the shared duel clock.</summary>
         private void AdvanceWarehouseOpponentGrounding(float seconds)
         {
-            if (WarehousePlan == null || seconds <= 0f || Opponent == null || Opponent.Body == null ||
-                !Opponent.Body.enabled || Opponent.IsKnockedDown || Opponent.IsBodyGrounded || Opponent.IsRagdollActive)
+            if (WarehousePlan == null || seconds <= 0f || AiOpponent == null || AiOpponent.Body == null ||
+                !AiOpponent.Body.enabled || AiOpponent.IsKnockedDown || AiOpponent.IsBodyGrounded || AiOpponent.IsRagdollActive)
             {
-                warehouseOpponentVerticalSpeed = 0f;
-                warehouseOpponentGrounded = false;
+                opponentContext.warehouseOpponentVerticalSpeed = 0f;
+                opponentContext.warehouseOpponentGrounded = false;
                 return;
             }
-            if ((warehouseOpponentGrounded || Opponent.Body.isGrounded) && warehouseOpponentVerticalSpeed <= 0f)
-                warehouseOpponentVerticalSpeed = -2f;
-            else warehouseOpponentVerticalSpeed = Mathf.Max(-24f, warehouseOpponentVerticalSpeed - 24f * seconds);
-            CollisionFlags flags = Opponent.Body.Move(Vector3.up * (warehouseOpponentVerticalSpeed * seconds));
-            warehouseOpponentGrounded = (flags & CollisionFlags.Below) != 0;
+            if ((opponentContext.warehouseOpponentGrounded || AiOpponent.Body.isGrounded) && opponentContext.warehouseOpponentVerticalSpeed <= 0f)
+                opponentContext.warehouseOpponentVerticalSpeed = -2f;
+            else opponentContext.warehouseOpponentVerticalSpeed = Mathf.Max(-24f, opponentContext.warehouseOpponentVerticalSpeed - 24f * seconds);
+            CollisionFlags flags = AiOpponent.Body.Move(Vector3.up * (opponentContext.warehouseOpponentVerticalSpeed * seconds));
+            opponentContext.warehouseOpponentGrounded = (flags & CollisionFlags.Below) != 0;
         }
     }
 }

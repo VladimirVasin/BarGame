@@ -107,10 +107,13 @@ namespace BarPromenade
             // A standing motor capsule is not the surface visible under the
             // crosshair. Converge the actual muzzle on the same anatomy that
             // bullets hit, while allowing nearer world geometry to occlude it.
-            if (Opponent?.Hurtboxes != null)
+            foreach (CombatActor actor in combatOpponents)
             {
-                Opponent.Hurtboxes.Capture();
-                if (Opponent.Hurtboxes.SweepProjectile(ray.origin, ray.GetPoint(distance), 0f, ray.direction, out var hit))
+                if (!actor.gameObject.activeInHierarchy || actor.Hurtboxes == null) continue;
+                if (!actor.Hurtboxes.MayIntersectProjectile(ray.origin, ray.GetPoint(distance), 0f)) continue;
+                actor.Hurtboxes.Capture();
+                actor.Hurtboxes.CaptureProjectileAimBounds();
+                if (actor.Hurtboxes.SweepProjectile(ray.origin, ray.GetPoint(distance), 0f, ray.direction, out var hit))
                     distance *= hit.Fraction;
             }
             return ray.GetPoint(Mathf.Max(distance, Vector3.Dot(heroChest.position - ray.origin, ray.direction) + .5f));
@@ -119,7 +122,7 @@ namespace BarPromenade
         public bool ReturnToWeapons()
         {
             if (!IsInitialized || !GameInput.CanRead(GameInputContext.Gameplay)) return false;
-            return CombatTestStartService.ReturnToPreparation(new CombatTestSelection(LoadoutSelection, Mode));
+            return CombatTestStartService.ReturnToPreparation(new CombatTestSelection(LoadoutSelection, Mode, EncounterSettings));
         }
 
         private bool UpdatePistolInput(bool held)

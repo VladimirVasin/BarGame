@@ -12,8 +12,9 @@ namespace BarPromenade
         public const string CanneryRetort = "cannery.retort";
         public const string DeliveryDriver = "cannery.delivery-driver";
         public const string VillageStationWorker = "village.station-worker";
-        // Sort after the narrative population so this test participant cannot reshuffle it.
+        // Sort after the narrative population so these test participants cannot reshuffle it.
         public const string CombatTestOpponent = "zz.combat-test.opponent";
+        public const int CombatTestOpponentCount = CombatEncounterSettings.OpponentCapacity;
         private static readonly string[] FairIds = { "fair.vendor.0", "fair.vendor.1", "fair.vendor.2", "fair.vendor.3" };
         public const int FairVisitorCount = 3;
         private static readonly string[] PortIds = { "port.captain", "port.deckhand", "port.crane.west", "port.crane.east", "port.docker" };
@@ -89,6 +90,12 @@ namespace BarPromenade
         }
         public static string PortWorkerId(int index) => PortIds[index];
 
+        public static string CombatTestOpponentId(int index)
+        {
+            if (index < 0 || index >= CombatTestOpponentCount) throw new ArgumentOutOfRangeException(nameof(index));
+            return index == 0 ? CombatTestOpponent : CombatTestOpponent + "." + index;
+        }
+
         public static string PedestrianId(int index)
         {
             if (index < 0 || index >= PedestrianCount)
@@ -145,13 +152,14 @@ namespace BarPromenade
                     new SlotConstraint("gloves", null, "gloves.work"),
                     new SlotConstraint("scarf", null, "scarf.warm"),
                     new SlotConstraint("headwear", null, "headwear.everyday", "headwear.work", "headwear.warm")));
-            roster.Add(new CharacterDefinition(CombatTestOpponent, model,
-                new SlotConstraint("outerwear", "outerwear.work"),
-                new SlotConstraint("boots", "boots.work"),
-                new SlotConstraint("headwear", new string[] { null }),
-                new SlotConstraint("gloves", "gloves.work"),
-                new SlotConstraint("scarf", new string[] { null }),
-                new SlotConstraint("apron", new string[] { null })));
+            for (int i = 0; i < CombatTestOpponentCount; i++)
+                roster.Add(new CharacterDefinition(CombatTestOpponentId(i), model,
+                    new SlotConstraint("outerwear", "outerwear.work"),
+                    new SlotConstraint("boots", "boots.work"),
+                    new SlotConstraint("headwear", new string[] { null }),
+                    new SlotConstraint("gloves", "gloves.work"),
+                    new SlotConstraint("scarf", new string[] { null }),
+                    new SlotConstraint("apron", new string[] { null })));
             roster.Sort((a, b) => string.CompareOrdinal(a.Id, b.Id));
             return roster.ToArray();
         }

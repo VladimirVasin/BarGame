@@ -12,19 +12,24 @@ namespace BarPromenade
     {
         public CombatLoadoutSelection Loadout { get; }
         public CombatTestMode Mode { get; }
+        public CombatEncounterSettings EncounterSettings { get; }
         public static CombatTestSelection Default => new CombatTestSelection(CombatLoadoutSelection.Default);
 
-        public CombatTestSelection(CombatLoadoutSelection loadout, CombatTestMode mode = CombatTestMode.Standard)
+        public CombatTestSelection(CombatLoadoutSelection loadout, CombatTestMode mode = CombatTestMode.Standard,
+            CombatEncounterSettings? encounterSettings = null)
         {
             if (mode != CombatTestMode.Standard && mode != CombatTestMode.Endless)
                 throw new ArgumentOutOfRangeException(nameof(mode));
             Loadout = loadout;
             Mode = mode;
+            EncounterSettings = encounterSettings ?? CombatEncounterSettings.Default;
+            EncounterSettings.Validate();
         }
 
-        public bool Equals(CombatTestSelection other) => Loadout == other.Loadout && Mode == other.Mode;
+        public bool Equals(CombatTestSelection other) => Loadout == other.Loadout && Mode == other.Mode &&
+            EncounterSettings == other.EncounterSettings;
         public override bool Equals(object obj) => obj is CombatTestSelection other && Equals(other);
-        public override int GetHashCode() => (Loadout.GetHashCode() * 397) ^ (int)Mode;
+        public override int GetHashCode() => ((Loadout.GetHashCode() * 397) ^ (int)Mode) * 397 ^ EncounterSettings.GetHashCode();
         public static bool operator ==(CombatTestSelection left, CombatTestSelection right) => left.Equals(right);
         public static bool operator !=(CombatTestSelection left, CombatTestSelection right) => !left.Equals(right);
     }

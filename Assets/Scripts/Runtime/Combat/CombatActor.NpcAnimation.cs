@@ -13,6 +13,7 @@ namespace BarPromenade
         private readonly Dictionary<AnimationClip, AnimationClipPlayable> npcAnimationClips =
             new Dictionary<AnimationClip, AnimationClipPlayable>(32);
         private AnimationClip npcSampledClip;
+        internal int NpcAnimationGraphBuilds { get; private set; }
 
         internal void InitializeNpcAnimation()
         {
@@ -21,6 +22,7 @@ namespace BarPromenade
             // retains native clip bindings without adding an animation clock.
             npc.ReleaseAnimation();
             npcAnimationGraph = PlayableGraph.Create("Combat Opponent Body");
+            NpcAnimationGraphBuilds++;
             npcAnimationGraph.SetTimeUpdateMode(DirectorUpdateMode.Manual);
             npcAnimationOutput = AnimationPlayableOutput.Create(npcAnimationGraph, "Body", npc.Animator);
             Prepare(CombatAssetProvider.ClipNames);
@@ -52,6 +54,7 @@ namespace BarPromenade
             if (clip == null) throw new ArgumentNullException(nameof(clip));
             InitializeNpcAnimation();
             if (!npcAnimationGraph.IsValid()) return;
+            if (!npcAnimationGraph.IsPlaying()) npcAnimationGraph.Play();
             AnimationClipPlayable playable = NpcAnimationClip(clip);
             if (npcSampledClip != clip)
             {
@@ -60,6 +63,14 @@ namespace BarPromenade
             }
             playable.SetTime(absoluteTime);
             npcAnimationGraph.Evaluate(0f);
+        }
+
+        internal void SuspendNpcAnimation()
+        {
+            // A pooled opponent has already paid for clip bindings at creation.
+            // Manual sampling cannot advance while disabled; retain those bindings
+            // for the next arrival and release them at the owning actor's teardown.
+            if (npcAnimationGraph.IsValid()) npcAnimationGraph.Stop();
         }
 
         internal void ReleaseNpcAnimation()

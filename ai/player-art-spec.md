@@ -71,9 +71,9 @@ the no-variant `Player3DResources` / `PlayerFactory` path to `Player3DV2`.
   Material edges cap contact strain;lining/outer move jointly.
   Deep folds:pockets/flaps;free:feasible whole exit first/fewer passes/fallback.
   Body/hand/clothes/gear;0jacket/ribbon;pinned/area Burst/shared read-only snapshot/fallback.
-  120Hz/≤3 steps/frame;elapsed consumed/no debt;unchanged geometry skips writes.
+  Recorded vertices/normals;live fallback120Hz/≤3 steps;0debt.
   Removal/discontinuity resets;hide retains;pause freezes.
-  Hero;mirror/arms copy/local folds;no scan/bake.
+  Hero;mirror/arms copy/local folds;no live body bake.
 - Geometry: construction; the `256 x 256` Point clothing atlas retains
   seams, weave and wear. Accepted `2026-09-29`: UV0 normal/response companions
   add subtle cloth/leather, skin and directional hair relief/smoothness;
@@ -89,9 +89,9 @@ the no-variant `Player3DResources` / `PlayerFactory` path to `Player3DV2`.
   temples and ears; side and rear ends share the same jaw/upper-neck length,
   forming a continuous silhouette. The rear does not hang lower than the sides.
   There is no ponytail. A fixed cap and three weighted regions
-  each use three joints and a terminal point. `PlayerHair` adds bounded inertia,
-  gravity, damping, outdoor wind and bend/length constraints after the final
-  body pose. Hair/jacket:≤`17` posed skin/clothing envelopes;scarf ellipsoids.
+  each use three joints and a terminal point. `PlayerHair` replays physical bones;
+  pose/gear mismatch→live inertia/gravity/wind/bends after final body pose.
+  Hair/jacket:≤`17` posed skin/clothing envelopes;scarf ellipsoids.
   Torso:jacket→shirt→skin;limbs:worn sleeves/trousers/boots. Camera hiding keeps
   worn envelopes;undressing uses bare anatomy;no body bake. Thin collar boxes
   prevent voids/trapped cuffs. Gear contacts:jacket/hair/scarf;0pistol-holster/world.

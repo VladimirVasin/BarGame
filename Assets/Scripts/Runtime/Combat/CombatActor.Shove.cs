@@ -14,24 +14,42 @@ namespace BarPromenade
         private int shoveContactSequence, shoveContactRequest, shoveContactToken, shoveContactAttempts;
         private float shoveLastPalmGap, shoveLastAttemptSeconds;
         private Vector3 shoveDirection;
+        private CombatActor shoveContactTarget;
         internal Vector3 ShovePalmPosition => supportGrip?.ShovePalmPosition ?? transform.position;
 
         private bool InShoveRange => CheckShoveRange();
 
         private bool CheckShoveRange(int request = 0)
         {
-            if (contactTarget == null) return JournalShoveRange(false, "no_target", 0f, 0f, request);
+            CombatActor target = shoveContactPending ? shoveContactTarget : FindShoveTarget();
+            if (target == null) return JournalShoveRange(false, "no_target", 0f, 0f, request);
             if (IsKnockedDown) return JournalShoveRange(false, "source_knocked_down", 0f, 0f, request);
-            if (contactTarget.IsKnockedDown) return JournalShoveRange(false, "target_knocked_down", 0f, 0f, request);
-            if (contactTarget.State.IsDefeated) return JournalShoveRange(false, "target_defeated", 0f, 0f, request);
-            if (!contactTarget.IsAvailable) return JournalShoveRange(false, "target_unavailable", 0f, 0f, request);
-            Vector3 delta = Vector3.ProjectOnPlane(contactTarget.transform.position - transform.position, Vector3.up);
+            if (target.IsKnockedDown) return JournalShoveRange(false, "target_knocked_down", 0f, 0f, request);
+            if (target.State.IsDefeated) return JournalShoveRange(false, "target_defeated", 0f, 0f, request);
+            if (!target.IsAvailable) return JournalShoveRange(false, "target_unavailable", 0f, 0f, request);
+            Vector3 delta = Vector3.ProjectOnPlane(target.transform.position - transform.position, Vector3.up);
             if (!(delta.sqrMagnitude <= ShoveRange * ShoveRange))
                 return JournalShoveRange(false, "distance_squared", delta.sqrMagnitude, ShoveRange * ShoveRange, request);
             float facing = Vector3.Dot(transform.forward, delta.normalized);
             if (!(facing > .35f)) return JournalShoveRange(false, "facing_dot", facing, .35f, request);
-            float height = Mathf.Abs(contactTarget.transform.position.y - transform.position.y);
+            float height = Mathf.Abs(target.transform.position.y - transform.position.y);
             return JournalShoveRange(height < .45f, "height", height, .45f, request);
+        }
+
+        private CombatActor FindShoveTarget()
+        {
+            if (CombatParticipants == null) return contactTarget;
+            CombatActor nearest = null; float distance = ShoveRange * ShoveRange;
+            for (int i = 0; i < ContactParticipantCount; i++)
+            {
+                CombatActor candidate = ContactParticipantAt(i);
+                if (!CanDamageParticipant(candidate) || candidate.IsKnockedDown || candidate.State.IsDefeated || !candidate.IsAvailable ||
+                    Mathf.Abs(candidate.transform.position.y - transform.position.y) >= .45f) continue;
+                Vector3 delta = Vector3.ProjectOnPlane(candidate.transform.position - transform.position, Vector3.up);
+                if (delta.sqrMagnitude > distance || Vector3.Dot(transform.forward, delta.normalized) <= .35f) continue;
+                nearest = candidate; distance = delta.sqrMagnitude;
+            }
+            return nearest;
         }
 
         private bool JournalShoveRange(bool result, string reason, float value, float threshold, int request)
@@ -68,18 +86,20 @@ namespace BarPromenade
             shoveContactSequence = State.AttackSequence; shoveContactRequest = request;
             shoveContactToken = unchecked(shoveContactToken + 1); shoveContactAttempts = 0;
             shoveLastPalmGap = shoveLastAttemptSeconds = 0f;
-            shoveDirection = Vector3.ProjectOnPlane(contactTarget.transform.position - transform.position, Vector3.up).normalized;
+            shoveContactTarget = FindShoveTarget();
+            shoveDirection = shoveContactTarget != null ?
+                Vector3.ProjectOnPlane(shoveContactTarget.transform.position - transform.position, Vector3.up).normalized : transform.forward;
             reaction = null; reactionClock = 0f; sweepValid = collectSweep = collectShove = false;
         }
 
         private bool ShoveSurface(out CombatHurtboxes.Hit hit)
         {
             hit = default;
-            if (contactTarget?.Hurtboxes == null) return false;
+            if (!HasPhysicalBody(shoveContactTarget)) return false;
             // A palm meets the near face of the real posed chest, on the left
             // shoulder's line. Neither the controller capsule nor its centre is skin.
             Vector3 from = transform.position - transform.right * .12f;
-            return contactTarget.Hurtboxes.ChestSurface(from, shoveDirection, out hit);
+            return shoveContactTarget.Hurtboxes.ChestSurface(from, shoveDirection, out hit);
         }
 
         private void PresentShovePose()
@@ -90,7 +110,7 @@ namespace BarPromenade
             bodyMotion?.SetShovePose(active, shoveDirection, State.ShoveElapsed,
                 State.Settings.ShoveContactSeconds, State.Settings.ShoveDurationSeconds);
             supportGrip?.SetShovePose(active, point, shoveDirection, State.ShoveElapsed,
-                State.Settings.ShoveContactSeconds, State.Settings.ShoveDurationSeconds, contactTarget?.transform,
+                State.Settings.ShoveContactSeconds, State.Settings.ShoveDurationSeconds, shoveContactTarget?.transform,
                 shoveContactPending);
         }
 
@@ -134,12 +154,12 @@ namespace BarPromenade
             for (int i = 0; i < count; i++)
             {
                 Transform obstacle = shoveObstacles[i].collider.transform;
-                if (!obstacle.IsChildOf(transform) && !obstacle.IsChildOf(contactTarget.transform))
+                if (!obstacle.IsChildOf(transform) && !obstacle.IsChildOf(shoveContactTarget.transform))
                 { RejectShoveContact("world_obstacle"); return; }
             }
             shoveContactPending = false;
-            pending.Add(new ShoveContact(this, contactTarget, hit, shoveDirection));
-            JournalEvent("shove_contact_provisional", contactTarget.JournalActorId, shoveContactSequence, shoveContactRequest,
+            pending.Add(new ShoveContact(this, shoveContactTarget, hit, shoveDirection));
+            JournalEvent("shove_contact_provisional", shoveContactTarget.JournalActorId, shoveContactSequence, shoveContactRequest,
                 GameLog.Field("palm_gap", palmGap), GameLog.Field("contact_seconds", State.ShoveElapsed),
                 GameLog.Field("point_x", hit.Point.x), GameLog.Field("point_y", hit.Point.y), GameLog.Field("point_z", hit.Point.z),
                 GameLog.Field("attempts", shoveContactAttempts));
@@ -163,6 +183,7 @@ namespace BarPromenade
         private void ResetShove()
         {
             collectShove = shoveContactPending = shoveContactApplied = false; shoveDirection = Vector3.zero;
+            shoveContactTarget = null;
             shoveContactToken = unchecked(shoveContactToken + 1);
             shoveContactSequence = shoveContactRequest = shoveContactAttempts = 0;
             shoveLastPalmGap = shoveLastAttemptSeconds = 0f;
@@ -177,16 +198,20 @@ namespace BarPromenade
             private readonly CombatHurtboxes.Hit hit;
             private readonly Vector3 direction;
             private readonly int sequence, request, token;
+            private readonly int sourceGeneration, targetGeneration;
 
             internal ShoveContact(CombatActor source, CombatActor target, CombatHurtboxes.Hit hit, Vector3 direction)
             {
                 this.source = source; this.target = target; this.hit = hit; this.direction = direction;
                 sequence = source.State.AttackSequence;
                 request = source.shoveContactRequest; token = source.shoveContactToken;
+                sourceGeneration = source.ContactGeneration; targetGeneration = target.ContactGeneration;
             }
 
             internal void Apply()
             {
+                if (source.ContactGeneration != sourceGeneration || target.ContactGeneration != targetGeneration ||
+                    !HasPhysicalBody(target) || !source.isActiveAndEnabled) return;
                 if (source.shoveContactToken != token || source.shoveContactApplied) return;
                 source.shoveContactApplied = true;
                 MeleePhase phaseBefore = target.State.Phase;

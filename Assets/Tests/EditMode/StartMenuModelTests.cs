@@ -244,6 +244,9 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(model.SelectedCombatMode, Is.EqualTo(CombatTestMode.Endless));
             Assert.That(model.IsCommitted, Is.False);
             Assert.That(model.MoveSelection(1), Is.True);
+            Assert.That(model.SelectedCombatOption, Is.EqualTo(CombatPreparationOption.OpponentLimit));
+            Assert.That(model.SelectedCombatEncounterSettings.MaximumLiveOpponents, Is.EqualTo(5));
+            Assert.That(model.MoveSelection(1), Is.True);
             Assert.That(model.SelectedCombatOption, Is.EqualTo(CombatPreparationOption.Start));
             if (confirmBack)
             {
@@ -317,6 +320,37 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(model.SelectedCombatLoadout.InitialHeld,
                 Is.EqualTo(initialHeld == CombatWeaponId.Pistol ? CombatWeaponId.Pistol : replacement));
             Assert.That(model.SelectedCombatMode, Is.EqualTo(mode));
+        }
+
+        [Test]
+        public void CombatPreparation_CapacityActivationWrapsAndSurvivesPreparationReturn()
+        {
+            var model = new StartMenuModel();
+            model.OpenCombatPreparation(new CombatTestSelection(CombatLoadoutSelection.Default, CombatTestMode.Endless));
+            model.FocusCombatOption(CombatPreparationOption.OpponentLimit);
+            Assert.That(model.SelectedCombatEncounterSettings.MaximumLiveOpponents, Is.EqualTo(5),
+                "Focus does not change the selected capacity.");
+            Assert.That(model.Confirm(), Is.EqualTo(StartMenuAction.ChooseCombatWeapon));
+            Assert.That(model.SelectedCombatEncounterSettings.MaximumLiveOpponents, Is.EqualTo(1));
+            model.Confirm();
+            model.Confirm();
+            Assert.That(model.SelectedCombatEncounterSettings.MaximumLiveOpponents, Is.EqualTo(3));
+            model.SelectCombatOption(CombatPreparationOption.Standard);
+            model.SelectCombatOption(CombatPreparationOption.Endless);
+            Assert.That(model.SelectedCombatEncounterSettings.MaximumLiveOpponents, Is.EqualTo(3));
+            CombatTestSelection expected = model.SelectedCombatSelection;
+            model.ReturnToMainMenu();
+            model.Confirm();
+            Assert.That(model.SelectedCombatSelection, Is.EqualTo(expected));
+            model.SelectCombatOption(CombatPreparationOption.Start);
+            model.Confirm();
+            model.OpenCombatPreparation(expected);
+            Assert.That(model.SelectedCombatSelection, Is.EqualTo(expected));
+            Assert.That(model.IsCommitted, Is.False);
+            model.SelectCombatOption(CombatPreparationOption.Start);
+            model.Confirm();
+            Assert.That(model.SelectCombatOption(CombatPreparationOption.OpponentLimit), Is.False);
+            Assert.That(model.SelectedCombatSelection, Is.EqualTo(expected));
         }
 
         [TestCase(CombatWeaponId.Pistol, CombatWeaponId.Pistol)]

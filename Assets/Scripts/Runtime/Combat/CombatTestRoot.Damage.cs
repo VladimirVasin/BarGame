@@ -17,16 +17,16 @@ namespace BarPromenade
             BloodEffects.Initialize(transform);
             HeadEffects = gameObject.AddComponent<CombatHeadDestruction>();
             HeadEffects.PrepareActor(Hero);
-            HeadEffects.PrepareActor(Opponent);
             BodyEffects = gameObject.AddComponent<CombatBodyDestruction>();
             BodyEffects.PrepareActor(Hero);
-            BodyEffects.PrepareActor(Opponent);
             BloodEffects.PrepareActor(Hero);
-            BloodEffects.PrepareActor(Opponent);
             Hero.ImpactReceived += ShowImpact;
-            Opponent.ImpactReceived += ShowImpact;
             Hero.DamageReset += ResetActorDamage;
-            Opponent.DamageReset += ResetActorDamage;
+            foreach (CombatActor actor in combatOpponents)
+            {
+                HeadEffects.PrepareActor(actor); BodyEffects.PrepareActor(actor); BloodEffects.PrepareActor(actor);
+                actor.ImpactReceived += ShowImpact; actor.DamageReset += ResetActorDamage;
+            }
         }
 
         private void ShowImpact(CombatImpact impact)
@@ -92,13 +92,14 @@ namespace BarPromenade
             if (BloodEffects != null) BloodEffects.ResetActor(actor);
             HeadEffects?.ResetActor(actor);
             BodyEffects?.ResetActor(actor);
-            SparkEffects?.Clear();
+            if (Mode == CombatTestMode.Standard) SparkEffects?.Clear();
         }
 
         private void ReleaseDamageEffects()
         {
             if (Hero != null) { Hero.ImpactReceived -= ShowImpact; Hero.DamageReset -= ResetActorDamage; }
-            if (Opponent != null) { Opponent.ImpactReceived -= ShowImpact; Opponent.DamageReset -= ResetActorDamage; }
+            foreach (CombatActor actor in combatOpponents)
+                if (actor != null) { actor.ImpactReceived -= ShowImpact; actor.DamageReset -= ResetActorDamage; }
         }
     }
 }

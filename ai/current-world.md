@@ -146,10 +146,12 @@ The vertical slice contains:
   Blender kit/cargo-racks/pipes/8 fixed lamps/2 shadows/concrete-metal steps/vent.
   NPC graph/gravity/height-LOS;reset keeps layout/New warehouse replaces;
   seed/version:plan/journal/CLI;flat:test-only.
-  Standard/endless+pistol+(bar|shotgun)/mode-kit atomic Start-Back.
-  Endless:1 reused NPC/2.5 active s/≥3m;injuries/pose/kit kept/guns8/2.
-  Pause/hero defeat end/mutual kill count/new run resets;
-  foe-parts-drop-flights clear/Tab-Ecorpse blocked/style after defeat.
+  Standard1/Endless1–5(default5);Backsettings.
+  2–4→3–7active s/free≥3m-route/0backlog.
+  PoolIDs/AI-space-stairs/kill1x/heroend.
+  Injury/action/ammo/flights kept;empty+settled/no reload→guns8/2.
+  Reuse1/body-drop0/focus≠hits/shotgun/victim.
+  Tab-E0.
   Default:bar;pistol Lundercoat/bar Rbelt/shotgun back;
   sling:Lshoulder→chest/abdomen→lower Rside;1pistol/2secondary/DpadR;
   6bone/same rig/torso over gait.

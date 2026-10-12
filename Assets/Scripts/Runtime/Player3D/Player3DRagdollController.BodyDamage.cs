@@ -13,6 +13,16 @@ namespace BarPromenade
         private readonly Dictionary<Rigidbody, float> completeCombatMass = new Dictionary<Rigidbody, float>();
         internal void RegisterCombatBodyCollider(Collider collider) => authoredCombatColliders.Add(collider);
         internal bool IsCombatAnatomicalCollider(Collider collider) => partByCollider.ContainsKey(collider) || authoredCombatColliders.Contains(collider);
+        internal bool IsCombatAnatomicalQueryAllowed(Collider collider)
+        {
+            if (collider == null) return false;
+            if (!partByCollider.TryGetValue(collider, out Player3DAnatomicalPart part)) return true;
+            if (part == Player3DAnatomicalPart.Head && !combatHeadCollisionEnabled) return false;
+            if (combatBodyDamage != null && !combatBodyDamage.IsAttached(CombatBodyAnatomy.ToRegion(part))) return false;
+            // Standing/recovering bodies retain their posed query envelopes.
+            // Authored replacement proxies own physical collision during a fall.
+            return !(IsSimulating || IsFrozen) || CombatColliderAllowed(collider);
+        }
         public float ActiveCombatMass
         { get { float mass = 0f; foreach (Rigidbody body in bodyList) if (!removedCombatBodies.Contains(body)) mass += body.mass; return mass; } }
         internal Rigidbody CombatBodyForPart(Player3DAnatomicalPart part) => GetBody(part switch

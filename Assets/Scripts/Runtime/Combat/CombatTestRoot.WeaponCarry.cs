@@ -28,8 +28,8 @@ namespace BarPromenade
 
         private void AdvanceProjectilePools(float seconds)
         {
-            pistolProjectiles?.Advance(seconds, Hero, Opponent);
-            shotgunProjectiles?.Advance(seconds, Hero, Opponent);
+            pistolProjectiles?.Advance(seconds, combatParticipants);
+            shotgunProjectiles?.Advance(seconds, combatParticipants);
         }
 
         private void ApplyProjectilePoolContacts()

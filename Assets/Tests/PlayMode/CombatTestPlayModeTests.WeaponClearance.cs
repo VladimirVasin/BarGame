@@ -54,9 +54,15 @@ namespace BarPromenade.Tests.PlayMode
             }
 
             using var constraint = new CombatWeaponConstraint(actor);
-            constraint.SetOpponent(other);
+            constraint.SetCombatParticipants(new[] { actor, other });
+            long capturedInputs = constraint.OtherAnatomyInputCaptures;
             constraint.Apply();
+            Assert.That(constraint.OtherAnatomyInputCaptures - capturedInputs,
+                Is.EqualTo(other.Ragdoll.PhysicsController.AnatomicalColliders.Count),
+                "A synchronous Apply captures foreign primitive inputs once, regardless of candidate/sweep count.");
             constraint.CommitPresentedPose(null);
+            Assert.That(constraint.OtherAnatomyDepthCulled, Is.GreaterThan(0),
+                "Remote participant shapes must leave the per-segment depth candidate list.");
             var flags = BindingFlags.Instance | BindingFlags.NonPublic;
             MethodInfo gather = typeof(CombatWeaponConstraint).GetMethod("GatherObstacles", flags);
             MethodInfo sweep = typeof(CombatWeaponConstraint).GetMethod("SweepClear", flags);
@@ -67,16 +73,19 @@ namespace BarPromenade.Tests.PlayMode
             Pose to = new Pose(origin + Vector3.forward * .2f, Quaternion.identity);
             bool Sweep(Pose a, Pose b) => (bool)sweep.Invoke(constraint, new object[] { a, b });
             void Gather() { Physics.SyncTransforms(); gather.Invoke(constraint, null); }
-            CapsuleCollider moving = null, supporting = null;
+            CapsuleCollider moving = null, supporting = null, otherHead = null;
             foreach (var entry in other.Ragdoll.PhysicsController.AnatomicalColliders)
+            {
                 if (entry.Value == Player3DAnatomicalPart.RightForearm) moving = entry.Key as CapsuleCollider;
+                if (entry.Value == Player3DAnatomicalPart.Head) otherHead = entry.Key as CapsuleCollider;
+            }
             foreach (var entry in actor.Ragdoll.PhysicsController.AnatomicalColliders)
                 if (entry.Value == Player3DAnatomicalPart.LeftForearm) supporting = entry.Key as CapsuleCollider;
-            Assert.That(moving != null && supporting != null, Is.True);
+            Assert.That(moving != null && supporting != null && otherHead != null, Is.True);
 
             // The mesh's broad bounds span the whole prop path, but its physical
-            // aperture clears every surface. Native casts must run and miss;
-            // exact shared endpoints may reuse only that same time sample's miss.
+            // aperture clears every surface. A fresh full swept-envelope query
+            // must reject those broad bounds before the per-point native casts.
             var panel = new GameObject("Weapon sweep aperture fixture");
             panel.transform.position = origin;
             var mesh = new Mesh { name = "Weapon sweep aperture" };
@@ -101,9 +110,34 @@ namespace BarPromenade.Tests.PlayMode
             {
                 constraint.Apply();
                 Gather();
+                long emptyQueries = constraint.WorldQueries, emptyCulls = constraint.WorldBoundsCulls;
+                Assert.That(Sweep(from, to), Is.True, "The complete prop must pass through the physical aperture.");
+                Assert.That(constraint.WorldQueries - emptyQueries, Is.EqualTo(1L),
+                    "A complete native envelope miss must replace the aperture's many per-point casts with one query.");
+                Assert.That(constraint.WorldBoundsCulls, Is.EqualTo(emptyCulls + 1),
+                    "Physical mesh geometry, rather than its whole-panel AABB, determines the empty path.");
+
+                // This corner lies inside the union box but beyond the actual
+                // shaft. The envelope must retain the original miss casts,
+                // including reuse of identical segment endpoints at one sample.
+                BoxCollider corner = panel.AddComponent<BoxCollider>();
+                corner.center = new Vector3(.034f, .30f, 0f);
+                corner.size = new Vector3(.004f, .05f, .006f);
+                constraint.Apply();
+                Gather();
                 long queries = constraint.WorldQueries, avoided = constraint.RepeatedWorldQueriesAvoided;
                 long sampleCount = constraint.SweepSamples;
+                long preparedBodies = constraint.OtherAnatomyGeometryBuilds;
+                long reusedBodies = constraint.OtherAnatomyGeometryReuses;
+                long bodyCandidates = constraint.OtherAnatomySweepCandidates;
+                long culledBodies = constraint.OtherAnatomySweepCulled;
                 Assert.That(Sweep(from, to), Is.True, "The complete prop must pass through the physical aperture.");
+                Assert.That(constraint.OtherAnatomyGeometryBuilds, Is.EqualTo(preparedBodies),
+                    "A stable participant reuses its exact primitive/pose preparation across shoulder candidates.");
+                Assert.That(constraint.OtherAnatomyGeometryReuses, Is.GreaterThan(reusedBodies));
+                Assert.That(constraint.OtherAnatomySweepCandidates, Is.EqualTo(bodyCandidates),
+                    "Disjoint foreign anatomy must not enter interpolation or segment penetration loops.");
+                Assert.That(constraint.OtherAnatomySweepCulled, Is.GreaterThan(culledBodies));
                 long actual = constraint.WorldQueries - queries, reused = constraint.RepeatedWorldQueriesAvoided - avoided;
                 long baselineSamples = constraint.SweepSamples - sampleCount;
                 Assert.That(baselineSamples, Is.LessThan(48L), "The unchanged short path must leave room to detect the old remote-body 48-sample regression.");
@@ -119,13 +153,44 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(constraint.WorldQueries - queries, Is.GreaterThan(0),
                     "Anatomical reuse cannot suppress the live aperture's native world casts.");
 
+                var crowded = new List<BoxCollider>();
+                try
+                {
+                    for (int i = 0; i < 96; i++)
+                    {
+                        BoxCollider shape = panel.AddComponent<BoxCollider>();
+                        shape.center = corner.center; shape.size = corner.size;
+                        crowded.Add(shape);
+                    }
+                    Gather();
+                    queries = constraint.WorldQueries; emptyCulls = constraint.WorldBoundsCulls;
+                    Assert.That(Sweep(from, to), Is.True);
+                    Assert.That(constraint.WorldBoundsCulls, Is.EqualTo(emptyCulls),
+                        "A full envelope result cannot prove that an omitted wall is absent.");
+                    Assert.That(constraint.WorldQueries - queries, Is.GreaterThan(1L),
+                        "Envelope saturation conservatively retains the original per-point casts.");
+                }
+                finally
+                {
+                    foreach (BoxCollider shape in crowded) Object.DestroyImmediate(shape);
+                    Gather();
+                }
+
+                corner.center = Vector3.up * .30f;
+                Physics.SyncTransforms();
+                Assert.That(Sweep(from, to), Is.False,
+                    "A wall moved into the previously clear path must stop it at the same clock, without another gather.");
+                corner.center = new Vector3(.034f, .30f, 0f);
+                Physics.SyncTransforms();
+                Assert.That(Sweep(from, to), Is.True);
+
                 // An unrelated moving body used to force all native world casts
                 // to the 48-sample cap, even though its swept bounds miss the prop.
                 Vector3 distantPosition = moving.transform.position;
                 try
                 {
                     moving.transform.position = origin + Vector3.right * 6f;
-                    constraint.SetOpponent(other);
+                    other.InvalidateCombatContacts(); Gather();
                     moving.transform.position += Vector3.right * 5f;
                     Gather();
                     queries = constraint.WorldQueries; sampleCount = constraint.SweepSamples;
@@ -138,7 +203,7 @@ namespace BarPromenade.Tests.PlayMode
                     TestContext.Out.WriteLine($"Swept pair pruning: {baselineSamples} samples/{prunedQueries} native world casts; " +
                         "unpruned five-metre body travel would require the 48-sample cap.");
                 }
-                finally { moving.transform.position = distantPosition; constraint.SetOpponent(other); }
+                finally { moving.transform.position = distantPosition; other.InvalidateCombatContacts(); }
 
                 constraint.Apply(); Gather();
                 Assert.That(Sweep(from, to), Is.True);
@@ -160,6 +225,7 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(Sweep(from, to), Is.True);
 
                 Object.DestroyImmediate(aperture);
+                Object.DestroyImmediate(corner);
                 BoxCollider wall = panel.AddComponent<BoxCollider>();
                 wall.center = Vector3.up * .25f;
                 wall.size = new Vector3(.18f, .9f, .006f);
@@ -172,21 +238,39 @@ namespace BarPromenade.Tests.PlayMode
 
             Vector3 savedPosition = moving.transform.position;
             bool savedEnabled = moving.enabled, probeEnabled = nativeProbe.enabled;
+            float savedRadius = moving.radius, savedHeight = moving.height;
+            Vector3 savedScale = moving.transform.localScale;
+            Assert.That(moving.enabled, Is.False, "Keep the real animated anatomical source disabled throughout its query proof.");
             var oracleObject = new GameObject("Moving anatomy sweep positive control");
+            oracleObject.transform.position = Vector3.up * 10000f;
             SphereCollider oracle = oracleObject.AddComponent<SphereCollider>();
-            oracle.radius = .019f;
+            oracle.radius = .019f; oracle.isTrigger = true;
+            var targetOracleObject = new GameObject("Test moving anatomy geometry oracle");
+            targetOracleObject.transform.position = Vector3.up * 10000f + Vector3.right;
+            CapsuleCollider targetOracle = targetOracleObject.AddComponent<CapsuleCollider>();
+            targetOracle.isTrigger = true;
             Vector3 contact = origin + Vector3.up * .25f;
             void MoveCentre(Vector3 point) => moving.transform.position += point - moving.transform.TransformPoint(moving.center);
-            bool IntersectsOracle() => Physics.ComputePenetration(oracle, contact, Quaternion.identity,
-                moving, moving.transform.position, moving.transform.rotation, out _, out _);
+            bool IntersectsShapeOracle(CapsuleCollider source)
+            {
+                // Independent enabled native copy with the source's original
+                // parameters/scale; do not use the solver's baked query helper.
+                targetOracle.center = source.center; targetOracle.radius = source.radius;
+                targetOracle.height = source.height; targetOracle.direction = source.direction;
+                targetOracle.transform.localScale = source.transform.lossyScale;
+                Physics.SyncTransforms();
+                return Physics.ComputePenetration(oracle, contact, Quaternion.identity,
+                    targetOracle, source.transform.position, source.transform.rotation, out _, out _);
+            }
+            bool IntersectsOracle() => IntersectsShapeOracle(moving);
             try
             {
-                moving.enabled = nativeProbe.enabled = true;
+                nativeProbe.enabled = true;
                 MoveCentre(contact);
-                Assert.That(IntersectsOracle(), Is.True, "The native enabled forearm must cross a real point of the still shaft.");
+                Assert.That(IntersectsOracle(), Is.True, "The independently enabled copy proves the disabled forearm crosses a real shaft point.");
                 MoveCentre(contact - Vector3.right * .45f);
                 Assert.That(IntersectsOracle(), Is.False);
-                constraint.SetOpponent(other); // Capture the real starting anatomy, not a damage snapshot.
+                other.InvalidateCombatContacts(); Gather(); // A recycled participant starts a new physical history.
                 constraint.Apply();
                 long anatomyReuse = constraint.RepeatedAnatomySweepsAvoided;
                 Assert.That(Sweep(from, to), Is.True);
@@ -199,14 +283,109 @@ namespace BarPromenade.Tests.PlayMode
                     "Moving opposing anatomy must stop a stationary weapon, including after an earlier clear world sweep.");
                 Assert.That(constraint.RepeatedAnatomySweepsAvoided, Is.EqualTo(anatomyReuse),
                     "A moved opposing collider must not reuse the previously clear anatomical input.");
+
+                bool ownerEnabled = other.enabled;
+                try
+                {
+                    other.enabled = false; Gather();
+                    Assert.That(Sweep(from, to), Is.True, "An inactive actor cannot contribute physical anatomy.");
+                    anatomyReuse = constraint.RepeatedAnatomySweepsAvoided;
+                    other.enabled = true;
+                    Assert.That(Sweep(from, to), Is.False,
+                        "Reactivation at the same clock must restore the moving body's crossing without another gather.");
+                    Assert.That(constraint.RepeatedAnatomySweepsAvoided, Is.EqualTo(anatomyReuse),
+                        "Owner enablement must invalidate a clear anatomical result even when the collider remains active.");
+                    other.InvalidateCombatContacts(); Gather();
+                    Assert.That(Sweep(from, to), Is.True,
+                        "Recycling must retire the previous crossing, while the current clear endpoint stays physical.");
+                }
+                finally { other.enabled = ownerEnabled; }
+
+                moving.height = moving.radius * 2f;
+                MoveCentre(contact + Vector3.right * .10f);
+                other.InvalidateCombatContacts(); Gather();
+                Assert.That(IntersectsOracle(), Is.False);
+                Assert.That(Sweep(from, to), Is.True);
+                Vector3 scale = moving.transform.lossyScale;
+                float perpendicularScale = Mathf.Max(Mathf.Abs(scale[(moving.direction + 1) % 3]),
+                    Mathf.Abs(scale[(moving.direction + 2) % 3]));
+                moving.radius = .12f / perpendicularScale;
+                moving.height = moving.radius * 2f;
+                Assert.That(IntersectsOracle(), Is.True);
+                Assert.That(Sweep(from, to), Is.False,
+                    "Native query geometry must refresh an enlarged disabled primitive at the same pose and clock.");
+                moving.radius = savedRadius; moving.height = moving.radius * 2f;
+                Assert.That(Sweep(from, to), Is.True);
+                moving.transform.localScale = savedScale * 3f;
+                MoveCentre(contact + Vector3.right * .10f);
+                Assert.That(IntersectsOracle(), Is.True);
+                Assert.That(Sweep(from, to), Is.False,
+                    "A changed source scale must refresh the baked native dimensions at the same clock.");
+                Assert.That(moving.enabled, Is.False);
+
+                var physics = other.Ragdoll.PhysicsController;
+                var priorBody = (CombatBodyDamageState)typeof(Player3DRagdollController)
+                    .GetField("combatBodyDamage", flags).GetValue(physics);
+                bool priorAuthored = (bool)typeof(Player3DRagdollController)
+                    .GetField("authoredBodyCollision", flags).GetValue(physics);
+                Vector3 savedHead = otherHead.transform.position;
+                try
+                {
+                    moving.radius = savedRadius; moving.height = savedHeight; moving.transform.localScale = savedScale;
+                    MoveCentre(contact);
+                    other.InvalidateCombatContacts(); Gather();
+                    var bodyState = new CombatBodyDamageState();
+                    physics.SetCombatBodyDamage(bodyState, true);
+                    Assert.That(physics.IsCombatAnatomicalQueryAllowed(moving), Is.True,
+                        "Attached standing anatomy retains its posed query envelope even when authored body resources are bound.");
+                    Assert.That(Sweep(from, to), Is.False);
+                    Assert.That(bodyState.Apply(BodyDamageRegion.RightForearm, 0, 2f, 1, 1, 0), Is.True);
+                    physics.SetCombatBodyDamage(bodyState, true);
+                    Assert.That(Sweep(from, to), Is.True,
+                        "Detaching a source region retires its native query at the same clock without another gather.");
+                    bodyState.Reset();
+                    physics.SetCombatBodyDamage(bodyState, true);
+                    Assert.That(Sweep(from, to), Is.False,
+                        "Reset restores attached standing input immediately, including invalidating an earlier clear sweep.");
+
+                    MoveCentre(contact + Vector3.right * 2f);
+                    otherHead.transform.position += contact - otherHead.transform.TransformPoint(otherHead.center);
+                    other.InvalidateCombatContacts(); Gather();
+                    Assert.That(IntersectsShapeOracle(otherHead), Is.True);
+                    Assert.That(otherHead.enabled, Is.False);
+                    Assert.That(Sweep(from, to), Is.False);
+                    physics.SetCombatHeadCollisionEnabled(false);
+                    Assert.That(Sweep(from, to), Is.True,
+                        "Authored replacement of the head suppresses its old complete primitive at the same clock.");
+                    anatomyReuse = constraint.RepeatedAnatomySweepsAvoided;
+                    physics.SetCombatHeadCollisionEnabled(true);
+                    Assert.That(Sweep(from, to), Is.False,
+                        "Resetting head ownership restores its posed primitive without a gather or clock advance.");
+                    Assert.That(constraint.RepeatedAnatomySweepsAvoided, Is.EqualTo(anatomyReuse));
+                    Assert.That(otherHead.enabled, Is.False);
+                }
+                finally
+                {
+                    otherHead.transform.position = savedHead;
+                    physics.SetCombatHeadCollisionEnabled(true);
+                    physics.SetCombatBodyDamage(null, false);
+                    if (priorBody != null) physics.SetCombatBodyDamage(priorBody, priorAuthored);
+                }
             }
             finally
             {
+                moving.radius = savedRadius; moving.height = savedHeight; moving.transform.localScale = savedScale;
                 moving.transform.position = savedPosition;
                 moving.enabled = savedEnabled; nativeProbe.enabled = probeEnabled;
                 Object.DestroyImmediate(oracleObject);
+                Object.DestroyImmediate(targetOracleObject);
                 constraint.Restore();
             }
+            var queryCache = (CombatPrimitiveQueryCache)typeof(CombatWeaponConstraint)
+                .GetField("anatomyQueries", flags).GetValue(constraint);
+            Assert.That(queryCache.Count, Is.GreaterThan(0));
+            constraint.SetCombatParticipants(new[] { actor, other });
+            Assert.That(queryCache.Count, Is.EqualTo(0), "Rebinding participants releases all source-bound query copies.");
             VerifyFinalWeaponCommitRollback(actor, other, upper, supporting);
             LogAssert.NoUnexpectedReceived();
         }
@@ -289,6 +468,16 @@ namespace BarPromenade.Tests.PlayMode
     public sealed partial class CombatTestPlayModeTests
     {
         private WeaponMeshClearanceProbe weaponMeshClearance;
+
+        [UnityTest]
+        public IEnumerator Range_DroppedWeaponCullsDistantBodiesAndKeepsMovingLimbContacts()
+        {
+            yield return UnityEngine.SceneManagement.SceneManager.LoadSceneAsync(SceneIds.MainMenu);
+            yield return EnterRange();
+            yield return VerifyDroppedWeaponClearance(root.Opponent, "Test dropped crowbar");
+            root.ResetRound();
+            LogAssert.NoUnexpectedReceived();
+        }
 
         private IEnumerator VerifyMixedWeaponSupport(CombatActor actor, string subject)
         {
@@ -461,6 +650,8 @@ namespace BarPromenade.Tests.PlayMode
 
         private IEnumerator VerifyDroppedWeaponClearance(CombatActor actor, string subject)
         {
+            Assert.That(actor.WeaponId, Is.EqualTo(CombatWeaponId.Crowbar),
+                "The dropped shaft regression uses the actual imported crowbar.");
             PlacePair(4f);
             yield return null;
             PresentInertiaPose();
@@ -502,14 +693,19 @@ namespace BarPromenade.Tests.PlayMode
                 if ((entry.Value != Player3DAnatomicalPart.LeftForearm && entry.Value != Player3DAnatomicalPart.RightForearm) ||
                     !(entry.Key is CapsuleCollider capsule)) continue;
                 Vector3 axis = capsule.direction == 0 ? Vector3.right : capsule.direction == 1 ? Vector3.up : Vector3.forward;
-                float half = Mathf.Max(0f, capsule.height * .5f - capsule.radius);
+                Vector3 signedScale = capsule.transform.lossyScale;
+                Vector3 scale = new Vector3(Mathf.Abs(signedScale.x), Mathf.Abs(signedScale.y), Mathf.Abs(signedScale.z));
+                float capsuleRadius = capsule.radius * Mathf.Max(scale[(capsule.direction + 1) % 3],
+                    scale[(capsule.direction + 2) % 3]);
+                float half = Mathf.Max(0f, capsule.height * scale[capsule.direction] * .5f - capsuleRadius);
                 foreach (float end in new[] { -1f, 1f })
                 {
-                    Vector3 point = capsule.transform.TransformPoint(capsule.center + axis * (end * half));
+                    Vector3 point = capsule.transform.TransformPoint(capsule.center) +
+                        capsule.transform.rotation * axis * (end * half);
                     Vector3 radial = Vector3.ProjectOnPlane(point - target.transform.position, Vector3.up);
                     if (radial.magnitude <= furthest) continue;
                     furthest = radial.magnitude; arm = capsule; contact = point; outward = radial.normalized;
-                    armPointLocal = capsule.center + axis * (end * half);
+                    armPointLocal = capsule.transform.InverseTransformPoint(point);
                 }
             }
             Assert.That(arm, Is.Not.Null);
@@ -522,19 +718,45 @@ namespace BarPromenade.Tests.PlayMode
             body.interpolation = RigidbodyInterpolation.None;
             body.rotation = Quaternion.LookRotation(outward, Vector3.up);
             body.angularVelocity = Vector3.zero;
-            Vector3 shaftOffset = Vector3.up * .25f;
-            float radius = arm.radius * Mathf.Max(arm.transform.lossyScale.x,
-                Mathf.Max(arm.transform.lossyScale.y, arm.transform.lossyScale.z));
-            body.position = contact + outward * (radius + .01f) - shaftOffset;
             actor.Weapon.transform.SetPositionAndRotation(body.position, body.rotation);
+            // Align an actual imported shaft surface, rather than assuming its
+            // axial sample or the scaled capsule end centre matches this rig.
+            Vector3 shaftOffset = ClearanceProbe.ShaftSurfaceOffset(actor, -outward, out Vector3 shaftSampleLocal);
+            Vector3 armScale = arm.transform.lossyScale;
+            float radius = arm.radius * Mathf.Max(Mathf.Abs(armScale[(arm.direction + 1) % 3]),
+                Mathf.Abs(armScale[(arm.direction + 2) % 3]));
+            body.position = contact + outward * (radius - .01f) - shaftOffset;
+            actor.Weapon.transform.SetPositionAndRotation(body.position, body.rotation);
+            droppedPhysics.EnableDropped();
             Physics.SyncTransforms();
-            Assert.That(ClearanceProbe.DepthAgainst(actor, arm), Is.GreaterThan(.005f),
+            float meshDepth = ClearanceProbe.DepthAgainst(actor, arm);
+            Collider queryArm = ClearanceProbe.QueryShape(arm);
+            Assert.That(arm.enabled, Is.False, "Query geometry must leave the real animated forearm disabled.");
+            Assert.That(queryArm, Is.Not.SameAs(arm));
+            Assert.That(queryArm.enabled, Is.True);
+            float nativeDepth = 0f;
+            foreach (CapsuleCollider capsule in actor.Weapon.GetComponentsInChildren<CapsuleCollider>())
+            {
+                if (!capsule.enabled || !capsule.name.StartsWith("Dropped Crowbar Collision")) continue;
+                if (Physics.ComputePenetration(capsule, capsule.transform.position, capsule.transform.rotation,
+                    queryArm, arm.transform.position, arm.transform.rotation, out _, out float depth))
+                    nativeDepth = Mathf.Max(nativeDepth, depth);
+            }
+            Vector3 actualSample = actor.Weapon.transform.position + actor.Weapon.transform.rotation * shaftSampleLocal;
+            Vector3 intendedSample = contact + outward * (radius - .01f);
+            Assert.That(Vector3.Distance(actualSample, intendedSample), Is.LessThan(.0001f),
+                "The controlled contact must stay on the actual imported shaft after native shape preparation.");
+            TestContext.WriteLine("Dropped shaft positive control: rendered depth=" + meshDepth.ToString("F4") +
+                ", native capsule depth=" + nativeDepth.ToString("F4") + ", real arm enabled=" + arm.enabled);
+            Assert.That(nativeDepth, Is.GreaterThan(.005f),
+                "An actual dropped capsule must intersect the independently copied real disabled forearm geometry.");
+            Assert.That(meshDepth, Is.GreaterThan(.005f),
                 "The intended path must cross the rendered shaft and this real disabled forearm.");
             Assert.That(ClearanceProbe.DepthAgainst(actor, target.Body), Is.LessThan(.001f),
                 "The same contact pose must be outside the central CharacterController: it cannot prove this contract.");
             Assert.That(ClearanceProbe.RadialClearanceFrom(actor, target.Body), Is.GreaterThan(.001f),
                 "Every mesh sample must stay outside even the controller's infinite central cylinder.");
-            body.position = contact + outward * (radius + .16f) - shaftOffset;
+            body.position = contact + outward * (radius + .14f) - shaftOffset;
             actor.Weapon.transform.SetPositionAndRotation(body.position, body.rotation);
             Physics.SyncTransforms();
             droppedPhysics.EnableDropped(); // Begin at the controlled, already detached launch pose.
@@ -553,22 +775,117 @@ namespace BarPromenade.Tests.PlayMode
             }
             Assert.That(droppedPhysics.DroppedAnatomyContactCount, Is.GreaterThan(contactsBefore),
                 "The animated limb, rather than the central capsule, must receive the dropped-prop contact.");
+            Assert.That(arm.enabled, Is.False, "Animated contact must not activate the real physical forearm.");
 
             // Moving anatomy must also be swept when the weapon itself is still.
             body.linearVelocity = body.angularVelocity = Vector3.zero;
             contact = arm.transform.TransformPoint(armPointLocal);
             outward = Vector3.ProjectOnPlane(contact - target.transform.position, Vector3.up).normalized;
             body.rotation = Quaternion.LookRotation(outward, Vector3.up);
-            body.position = contact + outward * (radius + .04f) - shaftOffset;
+            actor.Weapon.transform.SetPositionAndRotation(body.position, body.rotation);
+            shaftOffset = ClearanceProbe.ShaftSurfaceOffset(actor, -outward);
+            body.position = contact + outward * (radius + .02f) - shaftOffset;
             actor.Weapon.transform.SetPositionAndRotation(body.position, body.rotation);
             Physics.SyncTransforms();
             droppedPhysics.EnableDropped();
             contactsBefore = droppedPhysics.DroppedAnatomyContactCount;
-            target.Body.Move(outward * .08f);
+            Assert.That(ClearanceProbe.DepthAgainst(actor, arm), Is.LessThan(.001f),
+                "The stationary prop must begin clear of the moving forearm.");
+            Rigidbody forearmBody = arm.GetComponentInParent<Rigidbody>();
+            Assert.That(forearmBody, Is.Not.Null, "The disabled anatomical proxy must retain its real rig body's hierarchy.");
+            Transform forearmBone = forearmBody.transform;
+            Vector3 savedForearmLocal = forearmBone.localPosition;
+            Vector3 savedRootPosition = target.transform.position, stationaryWeaponPosition = body.position;
+            Vector3 armPositionBefore = arm.transform.position;
+            forearmBone.position += outward * .08f;
             Physics.SyncTransforms();
+            Assert.That(Vector3.Distance(arm.transform.position - armPositionBefore, outward * .08f), Is.LessThan(.0001f),
+                "The real animated forearm, rather than the movement capsule, must cross the shaft.");
+            Assert.That(target.transform.position, Is.EqualTo(savedRootPosition));
+            Assert.That(body.position, Is.EqualTo(stationaryWeaponPosition));
+            Assert.That(ClearanceProbe.DepthAgainst(actor, arm), Is.GreaterThan(.005f),
+                "The moved rendered forearm must independently intersect the unchanged imported prop before solving.");
+            queryArm = ClearanceProbe.QueryShape(arm);
+            nativeDepth = 0f;
+            foreach (CapsuleCollider capsule in actor.Weapon.GetComponentsInChildren<CapsuleCollider>())
+                if (capsule.enabled && capsule.name.StartsWith("Dropped Crowbar Collision") &&
+                    Physics.ComputePenetration(capsule, capsule.transform.position, capsule.transform.rotation,
+                        queryArm, arm.transform.position, arm.transform.rotation, out _, out float depth))
+                    nativeDepth = Mathf.Max(nativeDepth, depth);
+            Assert.That(nativeDepth, Is.GreaterThan(.005f),
+                "The same moving-limb crossing must intersect an actual native dropped shaft capsule.");
             droppedPhysics.ResolveDroppedAnatomy();
             AssertWeaponClearance(actor, subject + "/animated arm moves into stationary dropped prop");
             Assert.That(droppedPhysics.DroppedAnatomyContactCount, Is.GreaterThan(contactsBefore));
+            Assert.That(arm.enabled, Is.False, "Relative-motion contact must keep standing anatomy query-only.");
+
+            // A cached original envelope cannot survive detachment at the same
+            // clock, and restoring the region must immediately restore contact.
+            Player3DRagdollController targetPhysics = target.Ragdoll.PhysicsController;
+            targetPhysics.SetCombatBodyDamage(target.BodyDamage, true);
+            BodyDamageRegion removedArm = target.Ragdoll.PhysicsController.AnatomicalColliders[arm] == Player3DAnatomicalPart.LeftForearm
+                ? BodyDamageRegion.LeftUpperArm : BodyDamageRegion.RightUpperArm;
+            contact = arm.transform.TransformPoint(armPointLocal);
+            shaftOffset = ClearanceProbe.ShaftSurfaceOffset(actor, -outward);
+            body.position = contact + outward * (radius - .01f) - shaftOffset;
+            actor.Weapon.transform.SetPositionAndRotation(body.position, body.rotation);
+            body.linearVelocity = body.angularVelocity = Vector3.zero;
+            Physics.SyncTransforms();
+            droppedPhysics.EnableDropped();
+            contactsBefore = droppedPhysics.DroppedAnatomyContactCount;
+            try
+            {
+                Assert.That(targetPhysics.IsCombatAnatomicalQueryAllowed(arm), Is.True);
+                Assert.That(target.BodyDamage.Apply(removedArm, 0, CombatBodyDamageState.SeparationTrauma, 99, 1, 0), Is.True);
+                Assert.That(targetPhysics.IsCombatAnatomicalQueryAllowed(arm), Is.False);
+                Assert.That(ClearanceProbe.DepthAgainst(actor, arm), Is.GreaterThan(.005f),
+                    "The old primitive remains geometrically overlapping; only its actual regional eligibility changes.");
+                Assert.That(ClearanceProbe.MaximumDepth(actor, out _), Is.LessThan(.001f),
+                    "No other eligible anatomy may explain this controlled detached-region contact.");
+                droppedPhysics.ResolveDroppedAnatomy();
+                Assert.That(droppedPhysics.DroppedAnatomyContactCount, Is.EqualTo(contactsBefore),
+                    "A same-clock detached region must not contribute its cached intact envelope.");
+                target.BodyDamage.Reset();
+                Assert.That(targetPhysics.IsCombatAnatomicalQueryAllowed(arm), Is.True);
+                droppedPhysics.ResolveDroppedAnatomy();
+                Assert.That(droppedPhysics.DroppedAnatomyContactCount, Is.GreaterThan(contactsBefore),
+                    "A same-clock region reset must restore the still-overlapping live envelope.");
+                Assert.That(arm.enabled, Is.False);
+            }
+            finally
+            {
+                target.BodyDamage.Reset();
+                forearmBone.localPosition = savedForearmLocal;
+                Physics.SyncTransforms();
+            }
+
+            // Motion far from the entire prop cannot create a correction. Reject
+            // that complete sweep before subdividing unrelated limb travel.
+            Vector3 savedWeaponPosition = body.position, savedTargetPosition = target.transform.position;
+            try
+            {
+                body.position = savedWeaponPosition + Vector3.up * 100f;
+                actor.Weapon.transform.SetPositionAndRotation(body.position, body.rotation);
+                Physics.SyncTransforms();
+                droppedPhysics.EnableDropped();
+                int skipped = droppedPhysics.DroppedAnatomySweepsSkipped;
+                long sampled = droppedPhysics.DroppedAnatomyPoseSamples;
+                target.Body.Move(Vector3.right * 2f);
+                Physics.SyncTransforms();
+                droppedPhysics.ResolveDroppedAnatomy();
+                Assert.That(droppedPhysics.DroppedAnatomySweepsSkipped, Is.GreaterThan(skipped),
+                    "Unrelated moving anatomy must miss the complete swept prop before relative-motion sampling.");
+                Assert.That(droppedPhysics.DroppedAnatomyPoseSamples, Is.EqualTo(sampled),
+                    "A proven distant miss must not interpolate every primitive through hundreds of time samples.");
+            }
+            finally
+            {
+                body.position = savedWeaponPosition;
+                actor.Weapon.transform.SetPositionAndRotation(body.position, body.rotation);
+                target.transform.position = savedTargetPosition;
+                Physics.SyncTransforms();
+                droppedPhysics.EnableDropped();
+            }
         }
 
         private WeaponMeshClearanceProbe ClearanceProbe
@@ -601,6 +918,7 @@ namespace BarPromenade.Tests.PlayMode
             private readonly CombatTestRoot range;
             private readonly SphereCollider probe;
             private readonly Dictionary<GameObject, Vector3[]> samples = new Dictionary<GameObject, Vector3[]>();
+            private readonly Dictionary<Collider, Collider> primitiveCopies = new Dictionary<Collider, Collider>();
             private readonly Collider[] nearby = new Collider[128];
             private readonly HashSet<Collider> candidates = new HashSet<Collider>();
 
@@ -611,9 +929,14 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(range, Is.Not.Null);
                 var query = new GameObject("Weapon mesh clearance oracle") { hideFlags = HideFlags.HideAndDontSave };
                 query.transform.SetParent(parent, false);
+                // Fresh disabled primitives have no native query shape on the
+                // pinned backend. Keep the independent sphere as a remote trigger.
+                query.transform.position = Vector3.up * 10000f;
                 probe = query.AddComponent<SphereCollider>();
                 probe.radius = SampleRadius;
-                probe.enabled = false;
+                probe.isTrigger = true;
+                probe.enabled = true;
+                Physics.SyncTransforms();
             }
 
             internal bool BelongsTo(Transform parent) => owner != null && owner == parent && probe != null;
@@ -641,6 +964,26 @@ namespace BarPromenade.Tests.PlayMode
                     if (point.y < lowest.y) lowest = point;
                 }
                 return lowest;
+            }
+
+            internal Vector3 ShaftSurfaceOffset(CombatActor actor, Vector3 toward)
+                => ShaftSurfaceOffset(actor, toward, out _);
+
+            internal Vector3 ShaftSurfaceOffset(CombatActor actor, Vector3 toward, out Vector3 sample)
+            {
+                Vector3 grip = CombatAssetProvider.FindAnchor(actor.Weapon, "Grip").position;
+                Vector3 axis = (CombatAssetProvider.FindAnchor(actor.Weapon, "StrikeBase").position - grip).normalized;
+                Vector3 desired = grip + axis * .25f + toward * .019f;
+                Vector3 closest = Vector3.zero;
+                sample = Vector3.zero;
+                float distance = float.PositiveInfinity;
+                foreach (Vector3 local in Samples(actor))
+                {
+                    Vector3 point = World(actor, local);
+                    float candidate = (point - desired).sqrMagnitude;
+                    if (candidate < distance) { closest = point; distance = candidate; sample = local; }
+                }
+                return closest - actor.Weapon.transform.position;
             }
 
             internal float RadialClearanceFrom(CombatActor actor, CharacterController controller)
@@ -674,14 +1017,16 @@ namespace BarPromenade.Tests.PlayMode
                 // Only the intentional fingers/palm grip is exempt; forearms remain.
                 if (!actor.IsWeaponDropped)
                     foreach (var entry in actor.Ragdoll.PhysicsController.AnatomicalColliders)
-                        if (entry.Value != Player3DAnatomicalPart.LeftHand && entry.Value != Player3DAnatomicalPart.RightHand)
+                        if (entry.Value != Player3DAnatomicalPart.LeftHand && entry.Value != Player3DAnatomicalPart.RightHand &&
+                            actor.Ragdoll.PhysicsController.IsCombatAnatomicalQueryAllowed(entry.Key))
                             candidates.Add(entry.Key);
                 // Opposing anatomy is disabled while animated too. A registered
                 // hit must stop the visible steel at the struck body surface.
                 CombatActor other = actor == range.Hero ? range.Opponent : range.Hero;
                 if (other != null && other.Ragdoll != null)
                     foreach (var entry in other.Ragdoll.PhysicsController.AnatomicalColliders)
-                        candidates.Add(entry.Key);
+                        if (other.Ragdoll.PhysicsController.IsCombatAnatomicalQueryAllowed(entry.Key))
+                            candidates.Add(entry.Key);
 
                 float maximum = 0f;
                 obstacle = "nothing";
@@ -712,15 +1057,51 @@ namespace BarPromenade.Tests.PlayMode
                 float maximum = 0f;
                 Vector3 origin = actor.Weapon.transform.position;
                 Quaternion rotation = actor.Weapon.transform.rotation;
+                Collider query = null;
                 foreach (Vector3 local in Samples(actor))
                 {
                     Vector3 point = origin + rotation * local;
                     if (!bounds.Contains(point)) continue;
-                    if (Physics.ComputePenetration(probe, point, Quaternion.identity, collider,
+                    query ??= QueryShape(collider);
+                    if (Physics.ComputePenetration(probe, point, Quaternion.identity, query,
                         collider.transform.position, collider.transform.rotation, out _, out float depth))
                         maximum = Mathf.Max(maximum, depth - SampleRadius);
                 }
                 return maximum;
+            }
+
+            internal Collider QueryShape(Collider source)
+            {
+                if (source.enabled || !(source is CapsuleCollider || source is BoxCollider || source is SphereCollider))
+                    return source;
+                if (!primitiveCopies.TryGetValue(source, out Collider copy))
+                {
+                    var control = new GameObject("Test native anatomical clearance query") { hideFlags = HideFlags.HideAndDontSave };
+                    control.transform.position = Vector3.up * 10000f + Vector3.right * (primitiveCopies.Count * 2f);
+                    control.transform.SetParent(owner, true);
+                    copy = source is CapsuleCollider ? control.AddComponent<CapsuleCollider>() :
+                        source is BoxCollider ? (Collider)control.AddComponent<BoxCollider>() : control.AddComponent<SphereCollider>();
+                    copy.isTrigger = true; copy.enabled = true;
+                    primitiveCopies.Add(source, copy);
+                }
+                Vector3 signedScale = source.transform.lossyScale;
+                Vector3 scale = new Vector3(Mathf.Abs(signedScale.x), Mathf.Abs(signedScale.y), Mathf.Abs(signedScale.z));
+                if (source is CapsuleCollider capsule && copy is CapsuleCollider copiedCapsule)
+                {
+                    copiedCapsule.center = Vector3.Scale(capsule.center, signedScale);
+                    copiedCapsule.direction = capsule.direction;
+                    copiedCapsule.radius = capsule.radius * Mathf.Max(scale[(capsule.direction + 1) % 3], scale[(capsule.direction + 2) % 3]);
+                    copiedCapsule.height = Mathf.Max(capsule.height * scale[capsule.direction], copiedCapsule.radius * 2f);
+                }
+                else if (source is BoxCollider box && copy is BoxCollider copiedBox)
+                { copiedBox.center = Vector3.Scale(box.center, signedScale); copiedBox.size = Vector3.Scale(box.size, scale); }
+                else if (source is SphereCollider sphere && copy is SphereCollider copiedSphere)
+                {
+                    copiedSphere.center = Vector3.Scale(sphere.center, signedScale);
+                    copiedSphere.radius = sphere.radius * Mathf.Max(scale.x, Mathf.Max(scale.y, scale.z));
+                }
+                Physics.SyncTransforms();
+                return copy;
             }
 
             private static Bounds ShapeBounds(Collider collider)
@@ -728,9 +1109,20 @@ namespace BarPromenade.Tests.PlayMode
                 Vector3 center, size;
                 if (collider is CapsuleCollider capsule)
                 {
-                    center = capsule.center;
-                    size = Vector3.one * capsule.radius * 2f;
-                    size[capsule.direction] = Mathf.Max(capsule.height, size[capsule.direction]);
+                    Vector3 signedScale = capsule.transform.lossyScale;
+                    Vector3 scale = new Vector3(Mathf.Abs(signedScale.x), Mathf.Abs(signedScale.y), Mathf.Abs(signedScale.z));
+                    float radius = capsule.radius * Mathf.Max(scale[(capsule.direction + 1) % 3],
+                        scale[(capsule.direction + 2) % 3]);
+                    Vector3 extents = Vector3.one * radius;
+                    extents[capsule.direction] = Mathf.Max(capsule.height * scale[capsule.direction] * .5f, radius);
+                    Vector3 worldCenter = capsule.transform.TransformPoint(capsule.center);
+                    var capsuleBounds = new Bounds(worldCenter, Vector3.zero);
+                    for (int x = -1; x <= 1; x += 2)
+                        for (int y = -1; y <= 1; y += 2)
+                            for (int z = -1; z <= 1; z += 2)
+                                capsuleBounds.Encapsulate(worldCenter + capsule.transform.rotation *
+                                    Vector3.Scale(extents, new Vector3(x, y, z)));
+                    return capsuleBounds;
                 }
                 else if (collider is BoxCollider box) { center = box.center; size = box.size; }
                 else if (collider is SphereCollider sphere) { center = sphere.center; size = Vector3.one * sphere.radius * 2f; }

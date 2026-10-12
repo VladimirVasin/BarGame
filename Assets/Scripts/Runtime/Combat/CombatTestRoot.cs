@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Unity.Profiling;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -22,9 +23,9 @@ namespace BarPromenade
         }
 
         private Vector3 heroSpawn, opponentSpawn;
-        private float opponentDelay = .8f;
         public const float SimulationStep = 1f / 120f;
         internal const int MaximumFrameSubsteps = 4;
+        private static readonly ProfilerMarker SimulationMarker = new ProfilerMarker("BarPromenade.Combat.Simulation");
         /// <summary>Once the round has ended and the body has settled, the shoulder lock lets go.</summary>
         public const float RoundEndCameraReleaseSeconds = 1.5f;
         private double pendingSeconds, roundEndFreeze, roundEndElapsed;
@@ -86,7 +87,7 @@ namespace BarPromenade
         /// <summary>The finished round's `E` interaction over the settled body.</summary>
         public CombatTauntInteraction Taunt { get; private set; }
         public bool Sparring { get; private set; }
-        public bool RoundFinished => Hero.State.IsDefeated || Opponent.State.IsDefeated;
+        public bool RoundFinished => Hero.State.IsDefeated || Mode == CombatTestMode.Standard && Opponent.State.IsDefeated;
         public bool AutomaticSimulation { get; set; } = true;
         /// <summary>Simulation seconds the duel spent frozen on contacts; tests subtract it from wall budgets.</summary>
         public float HitStopSecondsConsumed { get; private set; }
@@ -115,23 +116,13 @@ namespace BarPromenade
             Hero = Player.GameObject.AddComponent<CombatActor>();
             CombatTestSelection selection = CombatTestStartService.ConsumeSelection();
             Mode = selection.Mode;
+            EncounterSettings = selection.EncounterSettings;
             Sparring = Mode == CombatTestMode.Endless;
             Hero.InitializeHero(Player, selection.Loadout);
             InitializeWeaponPools();
             CameraFollow = camera.GetComponent<PlayerCameraFollow>() ?? camera.gameObject.AddComponent<PlayerCameraFollow>();
             CameraFollow.Initialize(camera, Player.GameObject.transform, false);
-            opponentObject = new GameObject("Combat Opponent"); opponentObject.transform.SetParent(transform, false);
-            var body = opponentObject.AddComponent<CharacterController>();
-            body.height = 1.75f; body.radius = .32f; body.center = Vector3.up * .875f;
-            body.skinWidth = PlayerFactory.GroundedRootOffset; body.stepOffset = PlayerFactory.StepOffset;
-            body.slopeLimit = PlayerFactory.SlopeLimitDegrees;
-            body.minMoveDistance = 0f;
-            VillageResidentPresentation presentation = DefaultNpcFactory.CreateForCharacter(
-                opponentObject.transform, DefaultNpcPopulation.CombatTestOpponent);
-            Opponent = opponentObject.AddComponent<CombatActor>();
-            Opponent.InitializeOpponent(presentation, body);
-            Hero.SetContactTarget(Opponent);
-            Opponent.SetContactTarget(Hero);
+            CreateCombatOpponents();
             InitializeDamageEffects();
             SparkEffects = gameObject.AddComponent<CombatSparkEffects>();
             SparkEffects.Initialize(transform);
@@ -164,7 +155,6 @@ namespace BarPromenade
             ReleaseFreePistolAim();
             Hero.CancelPendingPistolShot("reset");
             EndJournalRound("reset");
-            endless.Reset();
             if (Mode == CombatTestMode.Endless) Sparring = true;
             ResetChargeInput();
             ResetWeaponPools();
@@ -174,7 +164,7 @@ namespace BarPromenade
             SparkEffects?.ResetRound();
             Taunt?.ResetRound();
             Hero.ResetActor(heroSpawn, Vector3.forward);
-            Opponent.ResetActor(opponentSpawn, Vector3.back);
+            ResetCombatOpponents();
             Physics.SyncTransforms();
             opponentDelay = .8f;
             pendingSeconds = roundEndFreeze = roundEndElapsed = 0d;
@@ -182,8 +172,7 @@ namespace BarPromenade
             HitStopSecondsConsumed = 0f;
             roundCameraReleased = false;
             finishedRoundInitialized = false;
-            ResetOpponentDecisions();
-            if (focusOpponent) LockOnOpponent();
+            if (focusOpponent && Mode == CombatTestMode.Standard) LockOnOpponent();
             else
             {
                 ClearFocusTracking();
@@ -213,7 +202,7 @@ namespace BarPromenade
         {
             Player.Motor.SetMovementTargetFrozen(this, frozen);
             Hero.SetPresentationFrozen(frozen);
-            Opponent.SetPresentationFrozen(frozen);
+            foreach (CombatActor actor in combatOpponents) actor.SetPresentationFrozen(frozen);
             HeadEffects?.SetFrozen(frozen);
             BodyEffects?.SetFrozen(frozen);
         }
@@ -267,6 +256,7 @@ namespace BarPromenade
 
         public void Tick(float seconds)
         {
+            using var profile = SimulationMarker.Auto();
             long stamp = JournalStamp();
             long started = System.Diagnostics.Stopwatch.GetTimestamp();
             try { TickCore(seconds); }
@@ -282,6 +272,7 @@ namespace BarPromenade
             if (!IsInitialized || !GameInput.CanRead(GameInputContext.Gameplay)) return;
             if (float.IsNaN(seconds) || float.IsInfinity(seconds) || seconds < 0f)
                 throw new ArgumentOutOfRangeException(nameof(seconds));
+            if (Mode == CombatTestMode.Endless) { TickEndlessCore(seconds); return; }
             if (RoundFinished)
             {
                 BeginFinishedRound();
@@ -411,6 +402,7 @@ namespace BarPromenade
             finishedRoundInitialized = true;
             JournalRoundResult();
             pistolProjectiles?.ClearFlights();
+            if (Hero.State.IsDefeated) shotgunProjectiles?.ClearFlights();
             if (!Hero.IsFirearm || Hero.State.IsDefeated) return;
             // Relinquish the defeated target without revoking a held aim.
             // Focus-to-free aim must inherit the exact accepted camera pose;
@@ -562,7 +554,8 @@ namespace BarPromenade
                 if (DrawToolbarButton(canvas, new Rect(572, 12, 48, 18), "combat-menu",
                     LocalizationService.Get("combat.menu"))) ReturnToMenu();
                 DrawFighterHud(new Rect(14, 302, 138, 37), "combat.health", Hero);
-                DrawFighterHud(new Rect(488, 302, 138, 37), "combat.opponent", Opponent);
+                if (Opponent.gameObject.activeInHierarchy)
+                    DrawFighterHud(new Rect(488, 302, 138, 37), "combat.opponent", Opponent);
                 DrawChargeMeter();
                 DrawPistolHud(canvas);
                 DrawFocusMarker(canvas);

@@ -39,6 +39,10 @@ namespace BarPromenade
         {
             internal CombatActor Actor;
             internal bool Active;
+            internal ulong PoseRevision, AppliedPoseRevision;
+            internal bool PoseCaptured;
+            internal PiecePoseState[] PieceStates;
+            internal SourcePoseState[] SourceStates;
             internal int VolleyDepth;
             internal bool VolleyNeedsSynchronization;
             internal CombatImpact LastVolleyImpact;
@@ -58,6 +62,67 @@ namespace BarPromenade
             internal Body()
             {
                 for (int region = 0; region < Regions.Length; region++) Regions[region] = new List<Piece>();
+            }
+        }
+        private sealed class SourcePoseState
+        {
+            private readonly SkinnedMeshRenderer source;
+            private readonly CombatBodySourceDeformation deformation;
+            private Mesh mesh;
+            private uint geometryVersion;
+            private float[] blendWeights;
+            private bool active;
+            internal SourcePoseState(Piece piece)
+            {
+                source = piece.Source; deformation = piece.Deformation;
+                blendWeights = new float[source.sharedMesh.blendShapeCount];
+            }
+            internal bool Capture()
+            {
+                Mesh current = source.sharedMesh;
+                uint version = deformation?.SourceGeometryVersion ?? 0u;
+                bool visible = source.enabled && source.gameObject.activeInHierarchy;
+                bool changed = mesh != current || geometryVersion != version || active != visible;
+                mesh = current; geometryVersion = version; active = visible;
+                if (blendWeights.Length != current.blendShapeCount)
+                { blendWeights = new float[current.blendShapeCount]; changed = true; }
+                for (int i = 0; i < blendWeights.Length; i++)
+                {
+                    float weight = source.GetBlendShapeWeight(i);
+                    changed |= !blendWeights[i].Equals(weight); blendWeights[i] = weight;
+                }
+                return changed;
+            }
+        }
+        private sealed class PiecePoseState
+        {
+            private readonly Piece piece;
+            private Mesh mesh;
+            private uint geometryVersion;
+            private int topologyVersion;
+            private bool visible, colliding;
+            private float[] blendWeights;
+            internal PiecePoseState(Piece piece)
+            { this.piece = piece; blendWeights = new float[piece.Skin.sharedMesh.blendShapeCount]; }
+            internal bool Capture()
+            {
+                Mesh current = piece.Skin.sharedMesh;
+                uint version = piece.GeometryVersion;
+                int topology = piece.Torso?.TopologyBuilds ?? 0;
+                bool enabled = piece.Skin.enabled, collision = piece.Proxy != null && piece.Proxy.enabled;
+                bool changed = mesh != current || geometryVersion != version || topologyVersion != topology ||
+                    visible != enabled || colliding != collision ||
+                    (enabled || collision) && piece.Torso?.HasPendingDamage == true;
+                mesh = current; geometryVersion = version; topologyVersion = topology;
+                visible = enabled; colliding = collision;
+                if (blendWeights.Length != current.blendShapeCount)
+                { blendWeights = new float[current.blendShapeCount]; changed = true; }
+                for (int i = 0; i < blendWeights.Length; i++)
+                {
+                    float weight = piece.Skin.GetBlendShapeWeight(i);
+                    changed |= !blendWeights[i].Equals(weight); blendWeights[i] = weight;
+                }
+                return changed;
             }
         }
         internal sealed class Fragment
@@ -87,6 +152,7 @@ namespace BarPromenade
         internal long ProxyBurstBoundsFolds { get; private set; }
         internal long ProxyGeometryTicks { get; private set; }
         internal long ProxyTransformSamples { get; private set; }
+        internal long UnchangedBodyPoseSkips { get; private set; }
         internal int ProxyTransformCountFor(CombatActor actor) =>
             bodies.TryGetValue(actor, out Body body) ? body.ProxyPose.Count : 0;
         internal int ActorSynchronizationCount { get; private set; }
@@ -259,6 +325,16 @@ namespace BarPromenade
             foreach (Piece piece in body.Pieces)
                 if (piece.Eligible && (piece.Flesh || piece.Bone || piece.Torso != null))
                     CreateProxy(body, piece, !piece.Bone);
+            body.PieceStates = new PiecePoseState[body.Pieces.Count];
+            var sources = new Dictionary<SkinnedMeshRenderer, SourcePoseState>();
+            for (int i = 0; i < body.Pieces.Count; i++)
+            {
+                Piece piece = body.Pieces[i];
+                body.PieceStates[i] = new PiecePoseState(piece);
+                if (piece.Deformation != null && !sources.ContainsKey(piece.Source))
+                    sources.Add(piece.Source, new SourcePoseState(piece));
+            }
+            body.SourceStates = new List<SourcePoseState>(sources.Values).ToArray();
             bodies.Add(actor, body);
             owners[actor] = this;
             actor.Hurtboxes.PrepareBodySurfaces(body.Pieces);
@@ -417,6 +493,7 @@ namespace BarPromenade
         private void SynchronizeActorSurfaces(CombatActor actor, CombatImpact impact)
         {
             if (!bodies.TryGetValue(actor, out Body body)) return;
+            body.PoseCaptured = false;
             ActorSynchronizationCount++;
             long stageStart = System.Diagnostics.Stopwatch.GetTimestamp();
             HeadEffects.SynchronizeTissue(actor, captureImmediately: false);
@@ -620,6 +697,30 @@ namespace BarPromenade
             if (!collider.size.Equals(size)) collider.size = size;
         }
 
+        // This observes exact shared state without clearing Transform.hasChanged.
+        // Contacts, cloth writes, root/scale changes and corrective weights can all
+        // arrive more than once within one rendered frame.
+        private static ulong CaptureBodyPoseRevision(Body body, bool beginPass = true)
+        {
+            if (beginPass) body.ProxyPose.BeginPass();
+            bool changed = body.ProxyPose.CaptureAll() || !body.PoseCaptured;
+            foreach (SourcePoseState source in body.SourceStates) changed |= source.Capture();
+            foreach (PiecePoseState piece in body.PieceStates) changed |= piece.Capture();
+            if (changed) body.PoseRevision++;
+            body.PoseCaptured = true;
+            return body.PoseRevision;
+        }
+
+        internal static bool TryCaptureBodyPoseRevision(CombatActor actor, out ulong revision)
+        {
+            revision = 0;
+            if (actor == null || !actor.State.IsDefeated || actor.Ragdoll == null || !actor.Ragdoll.IsSettled ||
+                !owners.TryGetValue(actor, out CombatBodyDestruction owner) ||
+                !owner.bodies.TryGetValue(actor, out Body body)) return false;
+            revision = CaptureBodyPoseRevision(body);
+            return true;
+        }
+
         /// <summary>Exact local transforms shared by every proxy in one body validation pass.</summary>
         internal sealed class ProxyPoseSnapshot
         {
@@ -629,11 +730,18 @@ namespace BarPromenade
                 new Dictionary<(Transform, Transform), ProxyGeometry.RelativePose>();
             private readonly Dictionary<Transform, ProxyGeometry.ScalePose> scalePoses = new Dictionary<Transform, ProxyGeometry.ScalePose>();
             private ulong pass;
+            private ulong revision;
             internal int Count => nodes.Count;
             internal ulong Pass => pass;
 
             internal ProxyPoseSnapshot(CombatBodyDestruction owner) => this.owner = owner;
             internal void BeginPass() => pass++;
+            internal bool CaptureAll()
+            {
+                ulong previous = revision;
+                foreach (Node node in nodes.Values) node.Capture();
+                return previous != revision;
+            }
 
             internal Node Register(Transform transform)
             {
@@ -684,7 +792,7 @@ namespace BarPromenade
                     bool scaleChanged = !captured || !Scale.Equals(scale);
                     bool rotationChanged = !captured || !Rotation.Equals(rotation);
                     if (!captured || !Position.Equals(position) || rotationChanged || scaleChanged)
-                    { PoseVersion++; matrixReady = false; }
+                    { PoseVersion++; snapshot.revision++; matrixReady = false; }
                     if (scaleChanged) ScaleVersion++;
                     if (rotationChanged) RotationVersion++;
                     Position = position; Rotation = rotation; Scale = scale;
@@ -1159,20 +1267,28 @@ namespace BarPromenade
                     // Physics or a new contact may change a pose within one rendered
                     // frame. Each validation pass samples shared transforms anew.
                     body.ProxyPose.BeginPass();
-                    foreach (Piece piece in body.Pieces)
+                    bool settled = body.Actor.State.IsDefeated && body.Actor.Ragdoll.IsSettled;
+                    ulong revision = settled ? CaptureBodyPoseRevision(body, beginPass: false) : 0;
+                    if (settled && body.AppliedPoseRevision == revision) UnchangedBodyPoseSkips++;
+                    else
                     {
-                        bool surfaceRefreshed = piece.Skin.enabled;
-                        if (surfaceRefreshed) piece.RefreshSurface();
-                        bool collides = Collides(body.Actor, piece);
-                        bool created = collides && piece.Proxy == null;
-                        if (created) CreateProxy(body, piece, surfaceRefreshed);
-                        if (piece.Proxy != null)
+                        foreach (Piece piece in body.Pieces)
                         {
-                            if (!created && collides && (!piece.Proxy.enabled || piece.Torso != null ||
-                                (piece.Region is BodyDamageRegion.LeftHand or BodyDamageRegion.RightHand) &&
-                                piece.Skin.sharedMesh.blendShapeCount > 0)) UpdateProxyBounds(piece, surfaceRefreshed);
-                            SetColliderEnabled(piece.Proxy, collides);
+                            bool surfaceRefreshed = piece.Skin.enabled;
+                            if (surfaceRefreshed) piece.RefreshSurface();
+                            bool collides = Collides(body.Actor, piece);
+                            bool created = collides && piece.Proxy == null;
+                            if (created) CreateProxy(body, piece, surfaceRefreshed);
+                            if (piece.Proxy != null)
+                            {
+                                if (!created && collides && (!piece.Proxy.enabled || piece.Torso != null ||
+                                    (piece.Region is BodyDamageRegion.LeftHand or BodyDamageRegion.RightHand) &&
+                                    piece.Skin.sharedMesh.blendShapeCount > 0)) UpdateProxyBounds(piece, surfaceRefreshed);
+                                SetColliderEnabled(piece.Proxy, collides);
+                            }
                         }
+                        if (settled) body.AppliedPoseRevision = CaptureBodyPoseRevision(body, beginPass: false);
+                        else body.PoseCaptured = false;
                     }
                 }
                 foreach (Fragment fragment in body.Fragments)
@@ -1208,6 +1324,7 @@ namespace BarPromenade
         public void ResetActor(CombatActor actor)
         {
             if (actor == null || !bodies.TryGetValue(actor, out Body body)) return;
+            body.PoseCaptured = false;
             actor.Hurtboxes.SetBodySurfaces(null);
             actor.Ragdoll.PhysicsController.SetCombatBodyDamage(null, false);
             foreach (var original in body.Originals) { suppressed.Remove(original.Key); original.Key.enabled = original.Value; }

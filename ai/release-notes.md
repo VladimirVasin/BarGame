@@ -8,24 +8,25 @@ Earlier notes: [`release-notes-2026-09.md`](archive/release-notes-2026-09.md).
 
 ### 2026-10-12 — Ткань, смена оружия и бесконечный бой
 
-- Куртка/лямка: буферы/native-опора/поиск подола; одна запись, прежние контакты/длина.
-- Повреждения: буферы/индекс частей/кости на контакт; живая поза/физика/попадания.
-- Журнал обозначает нули; FPS проекта не гарантирован.
+- Волосы/куртка/лямка: запись проверенной физики; Idle под ружьём
+  без лишних переключений. Ветер/иная поза — плавный живой расчёт.
+  NPC сохраняют анимацию;труп вне прицела дешевле;лом упирается в тело.
 - Смена ×2 после ручной пробы: пистолет ↔ лом ~1,7 с, ↔ двустволка ~2,4 с;
   патроны/очередь.
 - Двустволка: руки подхватывают/разворачивают перед грудью; срыв роняет оригинал.
-- Бесконечный: один враг/2,5 с; травмы остаются, оружие полно; счёт/конец по поражению.
-- Полигон — случайный склад: три схемы, антресоль/две лестницы, груз/трубы/свет.
-  NPC ходит между этажами; сброс сохраняет склад. «Новый склад» у стиля ИИ меняет его.
-  Проверка: `CombatWarehouse`, Blender-контракт моделей.
-- Проверки: `Range_EndlessReusesOpponentPreservesHeroRefillsAmmoAndCancelsOnExit`,
+- Бесконечный: лимит 1–5 (старт 5); первый 2–4 с, затем 3–7 с.
+  Гибель врага +1; бой продолжается. Поражение героя — конец.
+- Склад: 3 схемы/антресоль/2 лестницы/груз-трубы-свет; NPC по этажам.
+  Сброс сохраняет склад; «Новый склад» меняет. `CombatWarehouse`, Blender.
+- Проверки: `Range_EndlessPopulationSpawnsGraduallyPreservesSurvivorsAndStopsOnExit`,
+  `Range_EndlessWarehouseRetainsRenderedPerformanceEvidence`,
+  `Range_EndlessProjectilesResolveEveryVictim`,
+  `Range_EndlessReusesOpponentPreservesHeroRefillsAmmoAndCancelsOnExit`,
   `Range_DistantShotgunTorsoVolleyProfilesImpactPhases`,
   `Range_WeaponCarryKeepsRealFramesBoundedThroughWalkingSwitchesAndHeadshot`,
-  `Range_WeaponCarrySwitchesKeepModelsAmmoAndPhysicalHandoffs`,
   `ProductionRig_WalkingKeepsJacketHemLength`,
-  `ProductionRig_RendersBareAndLooseClothedJointBends`,
   `Range_BodyProxiesShareTransformsAndFollowSameFrameChanges`,
-  `Range_SkinnedTriangleQueryMatchesExhaustiveAfterDeformation`,
+  `RecordedPhysicalMotionReplaysWithSafeFallbackAndRetainsPerformanceEvidence`,
   `ZeroStageSamplesPreserveNonzeroUnavailableAndCausalRecordsWithoutAllocation`,
   `check-docs.py`, `git diff --check`.
 

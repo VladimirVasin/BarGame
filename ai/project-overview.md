@@ -29,7 +29,7 @@
 | 12 | `CombatTest` | Isolated weapon test |
 
 All ten gameplay roots use `PlayerFactory`/`Resources/Player/Player3DV2.prefab`:
-one rig, joint skin/volume correction, wardrobe coverage and hair/jacket physics.
+one rig, skin/volume, wardrobe and recorded hair/jacket motion with live fallback.
 Near-empty scenes compose validated plans at runtime. Authored geometry follows
 the Blender and world-canon rules in [../AI.md](../AI.md).
 
@@ -79,9 +79,9 @@ repair commands. Generation/publication: [../tools/README.md](../tools/README.md
 
 ## Implemented capabilities
 
-- CombatTest:seeded warehouse/2stairs/3galleries/NPC graph-height-LOS.
-  Standard/endless:1NPC/2.5s/injuries kept/guns refill;pistol+bar/shotgun/
-  destruction;gap:pierce/balance.
+- CombatTest:warehouse/2stairs/3layouts/routes;Standard1/Endless≤5.
+  2–4→3–7s;injuries-ammo kept/empty supply;allhits.
+  Pistol+bar/shotgun/destruction;gap:pierce/balance.
 - City: 20 metre types; district heights, curved old/service streets,
   courts/passages/wings, unified ground; river/shore, church and Route 01.
   First unpaused dock entry starts finite port→factory→shop supply once;

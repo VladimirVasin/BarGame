@@ -14,6 +14,7 @@ namespace BarPromenade
         public const int MaximumFrameSubsteps = 3;
         private const float StepSeconds = 1f / 120f;
         private const float MaximumStep = .25f;
+        private const double BakeTransitionSeconds = .12d;
         private static readonly ProfilerMarker ApplyMarker = new ProfilerMarker("BarPromenade.SecondaryMotion.Jacket.Apply");
         private static readonly ProfilerMarker PoseMarker = new ProfilerMarker("BarPromenade.SecondaryMotion.Jacket.Pose");
         private static readonly ProfilerMarker SurfaceMarker = new ProfilerMarker("BarPromenade.SecondaryMotion.Jacket.Surface");
@@ -62,6 +63,7 @@ namespace BarPromenade
         [SerializeField] private NodeBinding[] nodes = Array.Empty<NodeBinding>();
         private PlayerJacketClothSurface[] surfaces;
         private PlayerJacketClothSurface.NativeSnapshot nativeSnapshot;
+        private PlayerJacketClothSurface.BonePoseSnapshot bonePoseSnapshot;
         private PlayerJacketClothSurface hemPanel;
         private struct SeamVertex
         {
@@ -78,12 +80,103 @@ namespace BarPromenade
         private readonly Vector3[] previousTargets = new Vector3[NodeCount];
         private readonly Vector3[] before = new Vector3[NodeCount];
         private readonly Vector3[] displacements = new Vector3[NodeCount];
+        private readonly Vector3[] constraintTargets = new Vector3[NodeCount];
+        private readonly float[] constraintLengths = new float[NodeCount];
         private Vector3 previousPosition;
         private Quaternion previousRotation;
         private double previousSeconds, simulationSeconds;
         private bool driven, initialized, resetPending = true;
         private object weaponAccessOwner;
         private float weaponAccessAmount;
+        private int bakeCaptureDepth;
+        private string bakedPoseSignature;
+        private bool bakedPlaybackActive, bakeTransitionActive, bakeTransitionToBaked;
+        private object bakedTrackIdentity;
+        private double bakeTransitionStarted;
+        private readonly Vector3[] transitionNodeOffsets = new Vector3[NodeCount];
+        private readonly Vector3[] transitionNodeVelocities = new Vector3[NodeCount];
+
+        public long TotalBakedPoseCalls { get; private set; }
+        public long TotalBakedFallbacks { get; private set; }
+        public long TotalBakedTransitionCalls { get; private set; }
+        public bool LastPoseWasBaked { get; private set; }
+        public bool LastPoseWasTransition { get; private set; }
+        internal int BakedPoseValueCount
+        {
+            get
+            {
+                if (!HasAuthoredBindings) return 0;
+                EnsureSurfaces();
+                int count = NodeCount * 6;
+                foreach (PlayerJacketClothSurface surface in surfaces) count += surface.BakedPoseValueCount;
+                return count;
+            }
+        }
+        internal string BakedPoseSignature
+        {
+            get
+            {
+                if (!HasAuthoredBindings) return string.Empty;
+                EnsureSurfaces();
+                if (bakedPoseSignature != null) return bakedPoseSignature;
+                ulong hash = 14695981039346656037UL;
+                foreach (PlayerJacketClothSurface surface in surfaces) surface.AppendBakeSignature(ref hash);
+                foreach (NodeBinding node in nodes)
+                {
+                    Hash(node.Surface); Hash(node.Vertex);
+                    Hash(node.MeshPoint.x.GetHashCode()); Hash(node.MeshPoint.y.GetHashCode()); Hash(node.MeshPoint.z.GetHashCode());
+                }
+                bakedPoseSignature = "jacket-v1-" + hash.ToString("X16");
+                return bakedPoseSignature;
+                void Hash(int value) { unchecked { hash = (hash ^ (uint)value) * 1099511628211UL; } }
+            }
+        }
+
+        internal IDisposable BeginBakeCapture()
+        {
+            if (!HasAuthoredBindings) throw new InvalidOperationException("A jacket bake needs its authored cloth bindings.");
+            // The editor baker explicitly initializes these resources; Awake is
+            // not guaranteed to run for its hidden prefab instance.
+            EnsureSurfaces();
+            var lease = new BakeCaptureLease(this, driven);
+            bakeCaptureDepth++;
+            driven = false;
+            bakedPlaybackActive = bakeTransitionActive = false;
+            bakedTrackIdentity = null;
+            RequestReset();
+            return lease;
+        }
+
+        internal void CaptureBakedPose(float[] destination)
+        {
+            if (destination == null || destination.Length != BakedPoseValueCount || !initialized || !IsActive ||
+                LastPoseWasBaked || LastPoseWasTransition)
+                throw new ArgumentException("Capture the final active jacket pose into its exact bake layout.");
+            int offset = 0;
+            foreach (PlayerJacketClothSurface surface in surfaces) surface.CaptureBakedPose(destination, ref offset);
+            Matrix4x4 toLocal = registry.transform.worldToLocalMatrix;
+            for (int i = 0; i < NodeCount; i++)
+            {
+                PlayerJacketClothSurface.WriteVector(destination, ref offset, toLocal.MultiplyVector(points[i] - targets[i]));
+                PlayerJacketClothSurface.WriteVector(destination, ref offset, toLocal.MultiplyVector(velocities[i]));
+            }
+        }
+
+        private sealed class BakeCaptureLease : IDisposable
+        {
+            private PlayerJacketCloth owner;
+            private readonly bool wasDriven;
+            internal BakeCaptureLease(PlayerJacketCloth owner, bool wasDriven)
+            { this.owner = owner; this.wasDriven = wasDriven; }
+            public void Dispose()
+            {
+                if (owner == null) return;
+                owner.bakeCaptureDepth--;
+                owner.driven = wasDriven;
+                owner.RequestReset();
+                owner = null;
+            }
+        }
 
         /// <summary>The authored hand action holds the open left panel while reaching the holster.</summary>
         public void SetWeaponAccess(object owner, float amount)
@@ -332,6 +425,7 @@ namespace BarPromenade
             if (surfaces != null) return;
             surfaces = new PlayerJacketClothSurface[bindings.Length];
             nativeSnapshot = new PlayerJacketClothSurface.NativeSnapshot();
+            bonePoseSnapshot = new PlayerJacketClothSurface.BonePoseSnapshot();
             Transform[] shoulders = { null, FindBone(Player3DAnatomicalPart.LeftUpperArm), FindBone(Player3DAnatomicalPart.RightUpperArm) };
             Transform[] elbows = { null, FindBone(Player3DAnatomicalPart.LeftForearm), FindBone(Player3DAnatomicalPart.RightForearm) };
             Transform[] wrists = { null, FindBone(Player3DAnatomicalPart.LeftHand), FindBone(Player3DAnatomicalPart.RightHand) };
@@ -339,7 +433,7 @@ namespace BarPromenade
             {
                 int region = bindings[i].Region;
                 surfaces[i] = new PlayerJacketClothSurface(bindings[i], shoulders[region], elbows[region], wrists[region], transform,
-                    nativeSnapshot);
+                    nativeSnapshot, bonePoseSnapshot);
                 if (surfaces[i].IsHemPanel && (hemPanel == null || surfaces[i].VertexCount > hemPanel.VertexCount))
                     hemPanel = surfaces[i];
             }
@@ -441,6 +535,8 @@ namespace BarPromenade
             long started = System.Diagnostics.Stopwatch.GetTimestamp();
             LastSimulationSteps = 0;
             LastDiscardedSeconds = 0d;
+            LastPoseWasBaked = false;
+            LastPoseWasTransition = false;
             LastMaximumSurfaceGeometryWrites = LastHemFoldSurfaces = LastHemCandidateReuses = 0;
             try { ApplyAtCore(seconds, paused, outside, wind); }
             finally
@@ -462,14 +558,23 @@ namespace BarPromenade
             {
                 if (initialized) foreach (PlayerJacketClothSurface surface in surfaces) surface.Restore();
                 initialized = false; resetPending = true; LastStepSeconds = MaximumDisplacement = 0f;
+                bakedPlaybackActive = bakeTransitionActive = false;
+                bakedTrackIdentity = null;
                 Array.Clear(velocities, 0, velocities.Length);
                 return;
             }
             if (paused && initialized && !resetPending)
             { if (IsFinite(seconds)) previousSeconds = seconds; LastStepSeconds = 0f; return; }
+            bool hasBake = TryGetBakedPose(seconds, outside, wind, out SecondaryMotionBakeSample sample);
+            if (PrepareBakeTransition(seconds, hasBake, sample.TrackIdentity))
+            { ApplyBakedPose(seconds, sample); return; }
+            if (bakeCaptureDepth == 0) TotalBakedFallbacks++;
+            float transitionAlpha = bakeTransitionActive ?
+                Mathf.SmoothStep(0f, 1f, (float)((seconds - bakeTransitionStarted) / BakeTransitionSeconds)) : 1f;
             using (PoseMarker.Auto())
             {
-                foreach (PlayerJacketClothSurface surface in surfaces) surface.UpdatePose();
+                bonePoseSnapshot.BeginPose();
+                foreach (PlayerJacketClothSurface surface in surfaces) surface.UpdatePose(useSharedSnapshot: true);
                 for (int i = 0; i < NodeCount; i++)
                     targets[i] = surfaces[nodes[i].Surface].Skin(nodes[i].Vertex).MultiplyPoint3x4(nodes[i].MeshPoint);
                 contacts.UpdatePose();
@@ -514,6 +619,7 @@ namespace BarPromenade
                     for (int i = 0; i < NodeCount; i++) velocities[i] = Vector3.ClampMagnitude((points[i] - before[i]) / dt, 1.5f);
                 }
             }
+            if (bakeTransitionActive && bakeTransitionToBaked) ApplyTransitionNodes(sample, transitionAlpha);
             LastContactCount = 0; MaximumDisplacement = 0f;
             for (int i = 0; i < NodeCount; i++)
             {
@@ -522,18 +628,31 @@ namespace BarPromenade
             }
             using (SurfaceMarker.Auto())
             {
-                foreach (PlayerJacketClothSurface surface in surfaces)
-                    LastContactCount += surface.Deform(displacements, contacts,
-                        weaponAccessAmount > 0f ? registry.Anchors.LeftGrip : null, weaponAccessAmount, deferWrite: true);
-                if (hemPanel != null && hemPanel.TryHemFold(contacts, transform, surfaces,
-                    out PlayerJacketClothSurface.HemFoldSet fold))
+                if (bakeTransitionActive && bakeTransitionToBaked)
+                {
+                    int offset = 0;
                     foreach (PlayerJacketClothSurface surface in surfaces)
-                        if (surface.ApplyHemFold(fold, contacts, transform, deferWrite: true))
-                        {
-                            LastContactCount += surface.VertexCount;
-                            LastHemFoldSurfaces++;
-                            if (surface.LastHemCandidateReused) LastHemCandidateReuses++;
-                        }
+                        LastContactCount += surface.DeformBakedTransition(sample.From, sample.To, sample.Alpha,
+                            transitionAlpha, ref offset, contacts);
+                }
+                else
+                {
+                    foreach (PlayerJacketClothSurface surface in surfaces)
+                        LastContactCount += surface.Deform(displacements, contacts,
+                            weaponAccessAmount > 0f ? registry.Anchors.LeftGrip : null, weaponAccessAmount, deferWrite: true);
+                    if (hemPanel != null && hemPanel.TryHemFold(contacts, transform, surfaces,
+                        out PlayerJacketClothSurface.HemFoldSet fold))
+                        foreach (PlayerJacketClothSurface surface in surfaces)
+                            if (surface.ApplyHemFold(fold, contacts, transform, deferWrite: true))
+                            {
+                                LastContactCount += surface.VertexCount;
+                                LastHemFoldSurfaces++;
+                                if (surface.LastHemCandidateReused) LastHemCandidateReuses++;
+                            }
+                    if (bakeTransitionActive)
+                        foreach (PlayerJacketClothSurface surface in surfaces)
+                            LastContactCount += surface.BlendLiveTransition(transitionAlpha, contacts);
+                }
                 // Upload only the final accepted geometry, then reconcile its
                 // lighting seam. Mirror/first-person copies consume this pose.
                 foreach (PlayerJacketClothSurface surface in surfaces)
@@ -544,32 +663,142 @@ namespace BarPromenade
                 }
                 ReconcileSleeveNormals();
             }
+            if (bakeTransitionActive)
+            { LastPoseWasTransition = true; TotalBakedTransitionCalls++; }
             Array.Copy(targets, previousTargets, NodeCount);
             previousPosition = transform.position; previousRotation = transform.rotation;
             previousSeconds = IsFinite(seconds) ? seconds : 0d;
         }
 
+        private bool TryGetBakedPose(double seconds, bool outside, WindSample wind, out SecondaryMotionBakeSample sample)
+        {
+            sample = default;
+            if (bakeCaptureDepth > 0 || weaponAccessAmount > 0f || !IsFinite(seconds) ||
+                wardrobe != null && wardrobe.HasAppearanceLease) return false;
+            foreach (PlayerJacketClothSurface surface in surfaces) if (!surface.SupportsBakedPose) return false;
+            if (!SecondaryMotionBakeRuntime.TrySample(registry, SecondaryMotionBakePart.Jacket,
+                BakedPoseSignature, BakedPoseValueCount, outside, wind, out sample)) return false;
+            if (sample.From == null || sample.To == null || sample.From.Length != BakedPoseValueCount ||
+                sample.To.Length != BakedPoseValueCount || float.IsNaN(sample.Alpha) || float.IsInfinity(sample.Alpha)) return false;
+            return true;
+        }
+
+        private bool PrepareBakeTransition(double seconds, bool hasBake, object trackIdentity)
+        {
+            bool continuous = initialized && !resetPending && IsFinite(seconds) && seconds >= previousSeconds &&
+                seconds - previousSeconds <= MaximumStep && (transform.position - previousPosition).sqrMagnitude <= .3025f &&
+                Quaternion.Angle(transform.rotation, previousRotation) <= 100f;
+            if (bakeCaptureDepth > 0 || !continuous)
+            {
+                bakedPlaybackActive = bakeTransitionActive = false;
+                bakedTrackIdentity = hasBake ? trackIdentity : null;
+                return hasBake;
+            }
+            if (hasBake)
+            {
+                if ((bakedTrackIdentity != null && !ReferenceEquals(bakedTrackIdentity, trackIdentity)) ||
+                    (!bakedPlaybackActive && (!bakeTransitionActive || !bakeTransitionToBaked))) BeginBakeTransition(seconds, true);
+                bakedTrackIdentity = trackIdentity;
+            }
+            else
+            {
+                if (bakedPlaybackActive || bakeTransitionActive && bakeTransitionToBaked) BeginBakeTransition(seconds, false);
+                bakedPlaybackActive = false;
+                bakedTrackIdentity = null;
+            }
+            if (bakeTransitionActive && seconds - bakeTransitionStarted >= BakeTransitionSeconds) bakeTransitionActive = false;
+            return hasBake && !bakeTransitionActive;
+        }
+
+        private void BeginBakeTransition(double seconds, bool toBaked)
+        {
+            foreach (PlayerJacketClothSurface surface in surfaces) surface.CaptureTransitionResidual();
+            Matrix4x4 toLocal = registry.transform.worldToLocalMatrix;
+            for (int i = 0; i < NodeCount; i++)
+            {
+                transitionNodeOffsets[i] = toLocal.MultiplyVector(points[i] - targets[i]);
+                transitionNodeVelocities[i] = toLocal.MultiplyVector(velocities[i]);
+            }
+            bakedPlaybackActive = false;
+            bakeTransitionActive = true; bakeTransitionToBaked = toBaked;
+            bakeTransitionStarted = seconds;
+        }
+
+        private void ApplyTransitionNodes(SecondaryMotionBakeSample sample, float alpha)
+        {
+            int offset = 0;
+            foreach (PlayerJacketClothSurface surface in surfaces) offset += surface.BakedPoseValueCount;
+            Matrix4x4 toWorld = registry.transform.localToWorldMatrix;
+            for (int i = 0; i < NodeCount; i++)
+            {
+                Vector3 displacement = PlayerJacketClothSurface.ReadVector(sample.From, sample.To, sample.Alpha, ref offset);
+                Vector3 velocity = PlayerJacketClothSurface.ReadVector(sample.From, sample.To, sample.Alpha, ref offset);
+                points[i] = targets[i] + toWorld.MultiplyVector(Vector3.Lerp(transitionNodeOffsets[i], displacement, alpha));
+                velocities[i] = Vector3.ClampMagnitude(toWorld.MultiplyVector(Vector3.Lerp(transitionNodeVelocities[i], velocity, alpha)) +
+                    sample.WorldOffsetVelocity * alpha, 1.5f);
+            }
+            Constrain(1f);
+        }
+
+        private void ApplyBakedPose(double seconds, SecondaryMotionBakeSample sample)
+        {
+            using var profile = SurfaceMarker.Auto();
+            bonePoseSnapshot.BeginPose();
+            for (int i = 0; i < NodeCount; i++)
+                targets[i] = surfaces[nodes[i].Surface].CurrentNodeSkin(nodes[i].Vertex, bonePoseSnapshot)
+                    .MultiplyPoint3x4(nodes[i].MeshPoint);
+            int offset = 0;
+            foreach (PlayerJacketClothSurface surface in surfaces)
+            {
+                surface.ApplyBakedPose(sample.From, sample.To, sample.Alpha, ref offset);
+                LastMaximumSurfaceGeometryWrites = Mathf.Max(LastMaximumSurfaceGeometryWrites, surface.LastDeformGeometryWrites);
+            }
+            Matrix4x4 toWorld = registry.transform.localToWorldMatrix;
+            MaximumDisplacement = 0f;
+            for (int i = 0; i < NodeCount; i++)
+            {
+                displacements[i] = toWorld.MultiplyVector(PlayerJacketClothSurface.ReadVector(sample.From, sample.To, sample.Alpha, ref offset));
+                velocities[i] = toWorld.MultiplyVector(PlayerJacketClothSurface.ReadVector(sample.From, sample.To, sample.Alpha, ref offset)) + sample.WorldOffsetVelocity;
+                points[i] = targets[i] + displacements[i];
+                MaximumDisplacement = Mathf.Max(MaximumDisplacement, displacements[i].magnitude);
+            }
+            if (!initialized || resetPending) ResetCount++;
+            initialized = bakedPlaybackActive = true; resetPending = false;
+            LastStepSeconds = 0f; LastContactCount = 0;
+            Array.Copy(targets, previousTargets, NodeCount);
+            previousPosition = transform.position; previousRotation = transform.rotation;
+            previousSeconds = seconds;
+            LastPoseWasBaked = true;
+            TotalBakedPoseCalls++;
+        }
+
         private void Constrain(float alpha)
         {
             using var profile = ConstrainMarker.Auto();
+            // The interpolated rig does not change between constraint passes.
+            for (int i = 0; i < NodeCount; i++)
+                constraintTargets[i] = Vector3.Lerp(previousTargets[i], targets[i], alpha);
+            for (int i = 0; i < NodeCount; i++)
+            {
+                int next = i < 7 ? i + 1 : i == 7 ? -1 : i == 11 ? 8 : i == 15 ? 12 : i + 1;
+                if (next >= 0) constraintLengths[i] = Vector3.Distance(constraintTargets[i], constraintTargets[next]);
+            }
             for (int pass = 0; pass < 4; pass++)
             {
                 for (int i = 0; i < NodeCount; i++)
                 {
                     int next = i < 7 ? i + 1 : i == 7 ? -1 : i == 11 ? 8 : i == 15 ? 12 : i + 1;
                     if (next < 0) continue; // The two open front edges are never sewn together.
-                    Vector3 a = Vector3.Lerp(previousTargets[i], targets[i], alpha);
-                    Vector3 b = Vector3.Lerp(previousTargets[next], targets[next], alpha);
                     Vector3 edge = points[next] - points[i];
                     float length = edge.magnitude;
                     if (length < .00001f) continue;
-                    Vector3 correction = edge * ((length - Vector3.Distance(a, b)) / length) * .38f;
+                    Vector3 correction = edge * ((length - constraintLengths[i]) / length) * .38f;
                     points[i] += correction; points[next] -= correction;
                 }
                 contacts.Resolve(points);
                 for (int i = 0; i < NodeCount; i++)
                 {
-                    Vector3 rest = Vector3.Lerp(previousTargets[i], targets[i], alpha);
+                    Vector3 rest = constraintTargets[i];
                     points[i] = rest + Vector3.ClampMagnitude(points[i] - rest, i < 8 ? .075f : .025f);
                 }
             }
@@ -581,6 +810,7 @@ namespace BarPromenade
             if (target == null || target == this || surfaces == null || !target.HasAuthoredBindings) return;
             target.driven = false;
             target.EnsureSurfaces();
+            target.bonePoseSnapshot.BeginPose();
             if (!IsActive)
             {
                 foreach (PlayerJacketClothSurface surface in target.surfaces) surface.Restore();
@@ -589,9 +819,18 @@ namespace BarPromenade
             }
             for (int i = 0; i < surfaces.Length; i++)
                 for (int j = 0; j < target.surfaces.Length; j++)
-                    if (bindings[i].Source == target.bindings[j].Source) surfaces[i].CopyTo(target.surfaces[j]);
+                    if (bindings[i].Source == target.bindings[j].Source)
+                        surfaces[i].CopyTo(target.surfaces[j], useSharedSnapshot: true);
             target.ReconcileSleeveNormals();
             target.IsActive = IsActive;
+        }
+
+        internal void DisposeOwnedBakeResources(GameObject authoringOwner)
+        {
+            if (Application.isPlaying || authoringOwner == null || !transform.IsChildOf(authoringOwner.transform) ||
+                (authoringOwner.hideFlags & HideFlags.HideAndDontSave) != HideFlags.HideAndDontSave)
+                throw new InvalidOperationException("Only an owned hidden authoring clone may release jacket bake resources.");
+            DisposeSurfaces();
         }
 
         private void DisposeSurfaces()
@@ -602,7 +841,11 @@ namespace BarPromenade
                 foreach (PlayerJacketClothSurface surface in surfaces) surface?.Dispose();
             nativeSnapshot?.Dispose();
             nativeSnapshot = null;
+            bonePoseSnapshot = null;
             surfaces = null;
+            bakedPoseSignature = null;
+            bakedPlaybackActive = bakeTransitionActive = false;
+            bakedTrackIdentity = null;
             hemPanel = null;
             sleeveSeams.Clear();
         }

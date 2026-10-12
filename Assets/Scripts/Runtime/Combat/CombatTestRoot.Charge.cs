@@ -138,7 +138,7 @@ namespace BarPromenade
             Hero?.SuspendPistolInput();
             Hero?.CancelPendingKick("disabled");
             CloseDuelJournal("disabled");
-            ResetOpponentMovement();
+            ResetAllOpponentMovement();
             if (IsInitialized) SetDuelFrozen(false);
             CancelHeldHeroCharge();
             if (Opponent != null && (Opponent.State.IsCharging || Opponent.State.HasBufferedCharge)) Opponent.CancelCharge();

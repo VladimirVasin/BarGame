@@ -16,10 +16,9 @@
 
 ## General format
 
-UTF-8 NDJSON:
-`schema_version`, `utc`, `mono_ms`, `seq`, `level`, `category`, `event`,
-`session_id`, `scene`, `city_seed`, typed `data`. Order:utc/mono/seq;
-Join:operation_id=transition/sequence=balance/snapshot_id=support.
+UTF-8 NDJSON:schema_version/utc/mono_ms/seq/level/category/event/
+session_id/scene/city_seed/data(typed). Order:utc/mono/seq;
+Join:operation_id(transition)/sequence(balance)/snapshot_id(support).
 Snapshots:hunger/stress/fatigue/intoxication/cash/drinking.
 
 | Category | Boundaries/results |
@@ -39,11 +38,10 @@ Snapshots:hunger/stress/fatigue/intoxication/cash/drinking.
 `session/new_game_started`: `menu_reset`=menu; `combat_test_start`=range;
 `new_game_start`=normal/legacy; `new_game_start_rejected`=transition rollback.
 
-No per-frame/motion/physics samples or `Debug.Log`.
-Strings≤16,384; `needs/passive_progressed`: visible integers.
-Unity repeats:3 full,then10s summaries.
-Per10s:32 warnings/64 errors-assertions-exceptions;
-`messages_rate_limited`: drops/severity; exceptions retain their own budget.
+No per-frame/motion/physics samples or Debug.Log;strings≤16,384.
+needs/passive_progressed:visible integers.
+Unity repeats:3 full then10s summaries;per10s:32 warnings/64 errors-assertions-exceptions;
+messages_rate_limited:drops/severity;separate exception budget.
 
 ## General retention
 
@@ -53,68 +51,72 @@ No user/save paths/frame telemetry;stacks may expose paths;review sharing.
 
 ## DuelJournal
 
-`-bp-duel-log on|off`:Editor/Player on,batch off.
-Editor:CombatLogs;Player:`Application.persistentDataPath/CombatLogs`.
-`duel_<session>_<round>`: `summary.txt`/`duel.ndjson`.
+-bp-duel-log on|off:default on,batch off.
+Editor:CombatLogs;Player:persistentDataPath/CombatLogs.
+duel_<session>_<round>:{summary.txt,duel.ndjson}.
 
-Melee:`MeleeCommandRejection`→reason/`reason_checked`/cost/remaining/`cooldown_seconds`/phase/stamina.
-`recovery_step`: rescue; `fall_committed`: refusal; `observed_counter`: whiff.
-20Hz pose/support/CPU.
-Pistol:`pistol_shot_{requested,rejected,pose}`/`pistol_fired`:request/action IDs;
+Melee:MeleeCommandRejection→reason/reason_checked/cost/remaining/cooldown_seconds/phase/stamina.
+recovery_step: rescue; fall_committed: refusal; observed_counter: whiff.
+Standard20Hz/Endless10Hz pose/support/CPU/pistol;impact/F8 force.
+Pistol:pistol_shot_{requested,rejected,pose}/pistol_fired:request/action IDs;
 reason/stage(input/commit/cancel)/phase/aim_error_degrees;pose:muzzle/target/reachable.
-20Hz`pistol_state`:ammo/aim/reload/body;`vectors`:pistol_{muzzle_and_target,forward_and_support_error}.
-`movement_input`:changes;keys=W1/S2/A4/D8,stick_x/y,effective x/y,
+pistol_state:ammo/aim/reload/body;vectors:pistol_{muzzle_and_target,forward_and_support_error}.
+movement_input:changes;keys=W1/S2/A4/D8,stick_x/y,effective x/y,
 focused=app/awaiting_neutral/target_focused=enemy.
-`vectors`/`movement_drive`:a=walk request,b=balance drift.
-`aim_locked`:kind/yaw/open s.
-`support_pose_rejected`: `contact_*`/depth/sweep/shape.
-`weapon_constraint`:cause/depth.
-Crowbar arm/grip `_snapshot`:wrist/elbow/shoulder_roll/elbow_signed;fresh/cached.
-No solver:no arm/grip;`grip=None`/`two_hand_support=false`.
-Guard:`balance_recovery`;attacks≠regrip.
-End/focus clears input;`opponent_style` header.
-`phase`: `action_kind`/kick `outcome`/`from_action`; `impact_kind`: impact_seq+kind.
-`kick_support`: reason/gap/wait/support+strike side.
-`kick_surface_contact`: sole/toe<=128.
-`kick_sweep_sample`: boot/hit/world; `weapon_blocked`: metal stop/point.
-`recovery`: steps/gaps/stability; `ragdoll_snapshot`: speed/settle/support≠landing.
-`rise_clearance_*`: blocker/path/capsule/floor;change/1s.
-`suspected_stall`: living no progress>2s.
-`rise_escape_started`→`rise_weapon_released`;`weapon_recovered`:equipped.
-`post_round_time_discarded`:aftermath;snapshots to exit/reset.
-Impact events:source→victim;`impact_seq`;
+vectors/movement_drive:a=walk request,b=balance drift.
+aim_locked:kind/yaw/open s.
+support_pose_rejected: contact_*/depth/sweep/shape.
+weapon_constraint:cause/depth.
+Crowbar arm/grip _snapshot:wrist/elbow/shoulder_roll/elbow_signed;fresh/cached.
+No solver:no arm/grip;grip=None/two_hand_support=false.
+Guard:balance_recovery;attacks≠regrip.
+End/focus clears input;opponent_style header.
+phase: action_kind/kick outcome/from_action; impact_kind: impact_seq+kind.
+kick_support: reason/gap/wait/support+strike side.
+kick_surface_contact: sole/toe<=128.
+kick_sweep_sample: boot/hit/world; weapon_blocked: metal stop/point.
+recovery: steps/gaps/stability; ragdoll_snapshot: speed/settle/support≠landing.
+rise_clearance_*: blocker/path/capsule/floor;change/1s.
+suspected_stall: living no progress>2s.
+rise_escape_started→rise_weapon_released;weapon_recovered:equipped.
+post_round_time_discarded:aftermath;snapshots to exit/reset.
+Impact events:source→victim;impact_seq;
 kind=weapon/kick/shove/projectile;region/side/critical/finisher/pre-post phase/power.
 Pre-hit phase:nullable.
-`revision_identity`:Runtime/Rules MVID≠Editor commit/state;bank hash/Player GUID;
-null/`unavailable`;no replay/FPS guarantee.
+revision_identity:Runtime/Rules MVID≠Editor commit/state;bank hash/Player GUID;
+null/unavailable;no replay/FPS guarantee.
 
-`frame_detail`:rig-only `late_pose_ms`;impact `impact_apply_ms`;
-`update_to_late_ms`:Update→cloth observer.
-`latest_target_wait_ms`=Unity;`latest_{present_wait,cpu_main,cpu_render}_ms`=FrameTiming.
-`latest_timing_repeat_frames`:-1 n/a/0 new/>0 repeats≠age.
-`pose_work`:Present/Weapon/Support CPU/calls/candidates/budget;0cloth.
-`frame_delivery/late_to_next_update_ms`:observer→Update wall;render/editor/waits≠CPU/GPU.
-Camera SRP:`render_context_captured`/`late_to_render_begin_ms`/
-`render_context_span_ms`/`render_end_to_next_update_ms`/`render_contexts`;
+frame.pose_ms:Present CPU incl.Endless.
+frame_detail:rig-only late_pose_ms;impact impact_apply_ms;
+update_to_late_ms:Update→cloth observer.
+latest_target_wait_ms=Unity;latest_{present_wait,cpu_main,cpu_render}_ms=FrameTiming.
+latest_timing_repeat_frames:-1 n/a/0 new/>0 repeats≠age.
+pose_work:Present/Weapon/Support CPU/calls/candidates/budget;0cloth.
+population_settings.actor_work_samples=active_or_called.
+opponent_spawn:search_ms/activation_ms/reset_ms/animation_graph_builds.
+frame_delivery/late_to_next_update_ms:observer→Update wall;render/editor/waits≠CPU/GPU.
+Camera SRP:render_context_captured/late_to_render_begin_ms/
+render_context_span_ms/render_end_to_next_update_ms/render_contexts;
 same frame;submit≠GPU finish;absent=null.
-`weapon_constraint_sample`:candidates/sweeps/world/`anatomy_queries`/reuse/core/shoulder/budget.
-`frame_stage_sample`:capture/flight/effects/aim/proxy/recovery
-`{damage,blood,head}_stage_sample`/`body_sync_sample`:CPU.
-`projectile_defeat_stage_sample`:total/preparation/ragdoll/drop ms.
-`cloth_{stage,budget}_sample`:stage=sling/jacket/hair/scarf CPU/calls/steps;
-budget=sling steps/iterations,jacket/hair discard ms.
-Prior-frame;nested≠sum;unsupported=null;main/render/GPU:latest.
+weapon_constraint_sample:candidates/sweeps/world/anatomy_queries/reuse/core/shoulder/budget.
+frame_stage_sample:capture/flight/effects/aim/proxy/recovery
+{damage,blood,head}_stage_sample/body_sync_sample:CPU.
+projectile_defeat_stage_sample:total/preparation/ragdoll/drop ms.
+cloth_{stage,budget}_sample:stage=sling/jacket/hair/scarf CPU/calls/steps;
+budget=sling steps/iterations;discard ms;{sling,jacket,hair}_baked_calls.
+Prior;nested≠sum;unsupported=null;GPU latest.
 
-Editor CombatTest:`Tools/Bar Promenade/Diagnostics/Capture Combat CPU Timeline (15 seconds)`.
-Trace+manifest/`Time.frameCount`:`TestResults/Test duel diagnostics`.
-Timeout/scene/Play/reload restores Profiler;active capture refuses;overhead.
+Editor:`Tools/Bar Promenade/Diagnostics/Capture Combat CPU Timeline (15 seconds)`.
+Trace/manifest frames:TestResults/Test duel diagnostics;
+timeout/scene/Play/reload restores Profiler;active capture refuses;overhead.
+Rendered Editor explicit:`Range_EndlessWarehouseRetainsRenderedPerformanceEvidence`.
 
-Producer:2048/4096 default/max packets+8 control slots;reused chars,no string/field copies.
-Duel v2:`stage_sample_encoding=absent_numeric_zero`;`zero_stage_events`
-lists damage/sync/blood/head/defeat stages. Missing rows=zero only for
-measured frames without losses;nonzero/unavailable/causal rows stay. Envelope=v1.
-Drops/I/O/limits explicit;≤2 live/stalled workers;extra=`worker_limit`.
-20MiB/round/10 closed/100MiB;prune ordinary before marked/abandoned;never live/foreign.
+Queue:2048/4096 default/max+8 control;reused chars/0 string-field copies.
+v2:stage_sample_encoding=absent_numeric_zero;
+zero_stage_events:damage/sync/blood/head/defeat.
+Missing=0 only for measured lossless frames;nonzero/unavailable/causal stay;envelope=v1.
+Drops/I/O/limits;≤2 live/stalled workers;extra=worker_limit.
+20MiB/round/10 closed/100MiB;prune ordinary then marked/abandoned;never live/foreign.
 Bounded marks;one CombatLogs/no sweep.
 
 ## Area performance capture
@@ -134,5 +136,5 @@ Capture1–120s/warmup≤60s/wait≤300s;scene/render changes end:reason.
 
 Reports:context+frame/CPU/GPU/GC/foot-bake/reflection p50/p95/p99/max.
 Markers:`BarPromenade.FootSoleBake`/`BarPromenade.WaterReflectionCube`.
-GPU:needs Frame Timing Stats,unchanged.`sampleCount=0`:unavailable.
-Frames include waits;Editor≠player.Match route/render;retain pause/focus counts.
+GPU:Frame Timing Stats required,unchanged;sampleCount=0 unavailable.
+Frames include waits;Editor≠player;match route/render;retain pause/focus counts.

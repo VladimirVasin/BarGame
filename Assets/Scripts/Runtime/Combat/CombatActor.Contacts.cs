@@ -33,7 +33,10 @@ namespace BarPromenade
         private string journalContactRejectedReason;
 
         internal void SetContactTarget(CombatActor target)
-        { contactTarget = target; weaponConstraint?.SetOpponent(target); heldWeaponPhysics?.SetOpponent(target); }
+        {
+            if (contactTarget == target) return;
+            contactTarget = target; weaponConstraint?.SetOpponent(target); heldWeaponPhysics?.SetOpponent(target);
+        }
         internal void CaptureContactPose() => CaptureContactPose(true);
 
         // The root can retain the anatomy already frozen for this substep's
@@ -74,6 +77,7 @@ namespace BarPromenade
             private readonly bool fromFront;
             private readonly int attackSequence;
             private readonly int request;
+            private readonly int sourceGeneration, targetGeneration;
             private readonly Vector3 point, normal, direction;
             private readonly float damage, blockCost, power;
             private readonly MeleeHitLocation location;
@@ -91,6 +95,8 @@ namespace BarPromenade
             internal float Time => time;
             internal int Priority => !solid ? 2 : metal ? 1 : 0;
             internal int SourceId => source.GetEntityId().GetHashCode();
+            internal bool IsCurrent => source != null && source.ContactGeneration == sourceGeneration && source.isActiveAndEnabled &&
+                (target == null || target.ContactGeneration == targetGeneration && target.isActiveAndEnabled);
 
             public Contact(CombatActor source, CombatActor target, Vector3 point, Vector3 normal, Vector3 direction,
                 MeleeHitLocation location, Player3DAnatomicalPart part = Player3DAnatomicalPart.Torso,
@@ -98,6 +104,7 @@ namespace BarPromenade
                 BodyDamageRegion? bodyRegion = null, int bodyPatch = -1, bool detachedPart = false)
             {
                 this.source = source; this.target = target;
+                sourceGeneration = source.ContactGeneration; targetGeneration = target.ContactGeneration;
                 this.point = point; this.normal = normal; this.direction = direction;
                 this.location = location; this.part = part; this.localPoint = localPoint; this.weaponSpeed = weaponSpeed;
                 attackSequence = source.State.AttackSequence;
@@ -120,6 +127,7 @@ namespace BarPromenade
                 float time, bool metal, bool otherActive)
             {
                 this.source = source; this.target = target; this.point = point; this.normal = normal; this.direction = direction;
+                sourceGeneration = source.ContactGeneration; targetGeneration = target != null ? target.ContactGeneration : 0;
                 this.time = time; this.metal = metal; this.otherActive = otherActive; solid = true;
                 attackSequence = source.State.AttackSequence; otherSequence = target != null ? target.frozenWeaponSequence : 0;
                 request = source.journalActionRequest;
@@ -145,6 +153,7 @@ namespace BarPromenade
 
             public void Apply()
             {
+                if (!IsCurrent) return;
                 if (solid)
                 {
                     source.StopWeaponOnSolid(attackSequence, point, normal, metal);
@@ -186,6 +195,7 @@ namespace BarPromenade
             for (int i = 0; i < contacts.Count; i++)
             {
                 Contact contact = contacts[i];
+                if (!contact.IsCurrent) continue;
                 bool stopped = false;
                 for (int j = 0; j < accepted; j++)
                     if (contacts[j].Stops(contact)) { stopped = true; break; }
@@ -283,34 +293,43 @@ namespace BarPromenade
                     world = true; solidFraction = previewWorldFraction; solidPoint = previewWorldPoint; solidNormal = previewWorldNormal;
                 }
                 bool metal = false;
-                CombatActor target = contactTarget;
-                if (target != null && !target.IsFirearm && !target.weaponDropped && target.frozenWeaponValid && target.Weapon.activeInHierarchy &&
-                    CombatWeaponGeometry.Sweep(sweepValid ? previousWeapon : currentWeapon, currentWeapon,
-                        CombatWeaponGeometry.At(target.frozenWeaponFrom, target.frozenWeaponTo, sampleStart),
-                        CombatWeaponGeometry.At(target.frozenWeaponFrom, target.frozenWeaponTo, sampleEnd),
-                        out float metalFraction, out Vector3 metalPoint, out Vector3 metalNormal) && metalFraction <= solidFraction)
+                CombatActor metalTarget = null;
+                for (int participant = 0; participant < ContactParticipantCount; participant++)
                 {
+                    CombatActor target = ContactParticipantAt(participant);
+                    if (target == this || !HasPhysicalBody(target) || target.IsFirearm || target.weaponDropped ||
+                        !target.frozenWeaponValid || !target.Weapon.activeInHierarchy ||
+                        !CombatWeaponGeometry.Sweep(sweepValid ? previousWeapon : currentWeapon, currentWeapon,
+                            CombatWeaponGeometry.At(target.frozenWeaponFrom, target.frozenWeaponTo, sampleStart),
+                            CombatWeaponGeometry.At(target.frozenWeaponFrom, target.frozenWeaponTo, sampleEnd),
+                            out float metalFraction, out Vector3 metalPoint, out Vector3 metalNormal) || metalFraction > solidFraction) continue;
+                    metalTarget = target;
                     metal = true; world = false; solidFraction = metalFraction; solidPoint = metalPoint; solidNormal = metalNormal;
                 }
                 bool body = FindAnatomicalContact(currentBase, currentTip, travel.normalized, sequence, sampleSeconds,
-                    out CombatHurtboxes.Hit nearest, out float bodyFraction, out float weaponSpeed);
+                    out CombatActor bodyTarget, out CombatHurtboxes.Hit nearest, out float bodyFraction, out float weaponSpeed);
                 // Keep the body candidate behind a proposed interception until
                 // BOTH sweeps have been collected. The other moving bar may itself
                 // have met a wall earlier; only an accepted hard contact occludes.
-                if (body && State.TryRegisterHit(target.GetEntityId().GetHashCode(), sequence))
+                if (body && CanDamageParticipant(bodyTarget) && State.TryRegisterHit(bodyTarget.GetEntityId().GetHashCode(), sequence))
                 {
-                    pending.Add(new Contact(this, target, nearest.Point, nearest.Normal, nearest.Direction, nearest.Location,
+                    pending.Add(new Contact(this, bodyTarget, nearest.Point, nearest.Normal, nearest.Direction, nearest.Location,
                         nearest.Part, nearest.LocalPoint, weaponSpeed, Mathf.Lerp(sampleStart, sampleEnd, bodyFraction), physicalBody: true,
                         bodyRegion: nearest.DamageRegion, bodyPatch: nearest.DamagePatch, detachedPart: nearest.IsDetached));
-                    JournalEvent("weapon_contact_provisional", target.JournalActorId, sequence, journalActionRequest,
+                    JournalEvent("weapon_contact_provisional", bodyTarget.JournalActorId, sequence, journalActionRequest,
                         GameLog.Field("part", (int)nearest.Part), GameLog.Field("fraction", bodyFraction),
                         GameLog.Field("point_x", nearest.Point.x), GameLog.Field("point_y", nearest.Point.y), GameLog.Field("point_z", nearest.Point.z),
                         GameLog.Field("weapon_speed", weaponSpeed), GameLog.Field("damage_requested", State.AttackDamage));
                 }
+                if (body && !CanDamageParticipant(bodyTarget) && bodyFraction < solidFraction)
+                {
+                    world = true; metal = false; solidFraction = bodyFraction;
+                    solidPoint = nearest.Point; solidNormal = nearest.Normal;
+                }
                 if (world || metal)
                 {
-                    pending.Add(Contact.Obstacle(this, metal ? target : null, solidPoint, solidNormal, travel.normalized,
-                        Mathf.Lerp(sampleStart, sampleEnd, solidFraction), metal, metal && target.frozenWeaponActive));
+                    pending.Add(Contact.Obstacle(this, metal ? metalTarget : null, solidPoint, solidNormal, travel.normalized,
+                        Mathf.Lerp(sampleStart, sampleEnd, solidFraction), metal, metal && metalTarget.frozenWeaponActive));
                     sweepValid = false; return;
                 }
                 previousBase = currentBase; previousTip = currentTip; previousWeapon = currentWeapon;
@@ -322,14 +341,25 @@ namespace BarPromenade
         }
 
         private bool FindAnatomicalContact(Vector3 currentBase, Vector3 currentTip, Vector3 direction,
-            int sequence, float sampleSeconds, out CombatHurtboxes.Hit nearest, out float earliest, out float weaponSpeed)
+            int sequence, float sampleSeconds, out CombatActor target, out CombatHurtboxes.Hit nearest, out float earliest, out float weaponSpeed)
         {
-            nearest = default; earliest = float.PositiveInfinity; weaponSpeed = 0f;
-            CombatActor target = contactTarget;
-            if (target == null) { JournalContactRejected("no_target", sequence); return false; }
-            if (!target.isActiveAndEnabled || !target.IsAvailable && !target.IsKnockedDown && !target.State.IsDefeated)
-            { JournalContactRejected("target_unavailable", sequence); return false; }
-            if (target.Hurtboxes == null) { JournalContactRejected("hurtboxes_missing", sequence); return false; }
+            target = null; nearest = default; earliest = float.PositiveInfinity; weaponSpeed = 0f;
+            for (int i = 0; i < ContactParticipantCount; i++)
+            {
+                CombatActor candidate = ContactParticipantAt(i);
+                if (candidate == this || !HasPhysicalBody(candidate) ||
+                    !candidate.IsAvailable && !candidate.IsKnockedDown && !candidate.State.IsDefeated ||
+                    !FindAnatomicalContact(candidate, currentBase, currentTip, direction, sampleSeconds,
+                        out var hit, out float fraction, out float speed) || fraction >= earliest) continue;
+                target = candidate; nearest = hit; earliest = fraction; weaponSpeed = speed;
+            }
+            if (ContactParticipantCount == 0) JournalContactRejected("no_target", sequence);
+            return target != null;
+        }
+
+        private bool FindAnatomicalContact(CombatActor target, Vector3 currentBase, Vector3 currentTip, Vector3 direction,
+            float sampleSeconds, out CombatHurtboxes.Hit nearest, out float earliest, out float weaponSpeed)
+        {
             // End-pose overlap is later than every swept contact. The row of moving
             // spheres retains the existing blade coverage, including translation.
             weaponSpeed = sweepValid ? ((currentBase - previousBase).magnitude + (currentTip - previousTip).magnitude) * .5f / sampleSeconds : 0f;

@@ -56,7 +56,8 @@ namespace BarPromenade
             { Sequence = sequence; Sample = sample; From = from; To = to; PresentedBoot = presentedBoot;
                 ClipSeconds = clipSeconds; Elapsed = elapsed; HasHit = hasHit; ObstacleDistance = obstacleDistance;
                 SphereHit = sphereHit; SurfaceWitness = surfaceWitness; SurfaceFrom = surfaceFrom; SurfaceTo = surfaceTo;
-                TargetPhase = targetState.Phase; TargetPhaseProgress = targetState.PhaseProgress; TargetAttackElapsed = targetState.AttackElapsed; }
+                TargetPhase = targetState?.Phase ?? MeleePhase.Ready; TargetPhaseProgress = targetState?.PhaseProgress ?? 0f;
+                TargetAttackElapsed = targetState?.AttackElapsed ?? 0f; }
         }
 
         private void LoadKickClip(bool forNpc)
@@ -363,11 +364,12 @@ namespace BarPromenade
 
         internal void CollectKickContacts(List<KickContact> pending)
         {
-            if (!collectKick || kickFoot == null || contactTarget?.Hurtboxes == null)
+            if (!collectKick || kickFoot == null || ContactParticipantCount == 0)
             { kickSweepValid = false; return; }
             collectKick = false;
             if (State.AttackSequence != kickSequence) { kickSweepValid = false; return; }
-            if (contactTarget.IsKnockedDown || contactTarget.State.IsDefeated)
+            if ((CombatParticipants == null || CombatParticipants.Count == 2) && contactTarget != null &&
+                (contactTarget.IsKnockedDown || contactTarget.State.IsDefeated))
             {
                 kickSweepValid = false;
                 if (Journal != null && journalKickImmuneSequence != kickSequence)
@@ -409,7 +411,7 @@ namespace BarPromenade
             previousKickBoot = to; kickSweepTo = kickTo; kickSweepSequence = kickSequence;
             kickSweepValid = true;
             Vector3 direction = transform.forward;
-            bool sphereHit = contactTarget.Hurtboxes.SweepSphere(from, to, BootRadius, direction, out var hit);
+            bool sphereHit = FindKickBodyContact(from, to, BootRadius, direction, out CombatActor target, out var hit);
             bool hasHit = sphereHit;
             int surfaceWitness = -1;
             Vector3 surfaceFrom = default, surfaceTo = default;
@@ -421,9 +423,9 @@ namespace BarPromenade
                 // Only actual sole/toe points may repair that Miss, with zero
                 // added reach. Preserve earliest contact among those witnesses.
                 if (sphereHit || State.KickOutcome == MeleeAttackOutcome.Hit ||
-                    !contactTarget.Hurtboxes.SweepSphere(kickSurfaceFrom[i], point, 0f, direction, out var surfaceHit) ||
+                    !FindKickBodyContact(kickSurfaceFrom[i], point, 0f, direction, out CombatActor surfaceTarget, out var surfaceHit) ||
                     hasHit && surfaceHit.Fraction >= hit.Fraction) continue;
-                hasHit = true; hit = surfaceHit; surfaceWitness = i;
+                hasHit = true; target = surfaceTarget; hit = surfaceHit; surfaceWitness = i;
                 surfaceFrom = kickSurfaceFrom[i]; surfaceTo = point;
             }
             Vector3 travel = to - from;
@@ -437,7 +439,7 @@ namespace BarPromenade
                 RejectBlockedKick(); return;
             }
             for (int i = 0; i < overlapCount; i++)
-                if (!kickOverlaps[i].transform.IsChildOf(transform) && !kickOverlaps[i].transform.IsChildOf(contactTarget.transform))
+                if (!IsParticipantShape(kickOverlaps[i].transform))
                     obstacleDistance = 0f;
             JournalPhysicsQuery();
             int count = Physics.SphereCastNonAlloc(from, BootRadius, length > .000001f ? travel / length : direction,
@@ -450,7 +452,7 @@ namespace BarPromenade
             for (int i = 0; i < count; i++)
             {
                 Transform obstacle = kickObstacles[i].collider.transform;
-                if (!obstacle.IsChildOf(transform) && !obstacle.IsChildOf(contactTarget.transform))
+                if (!IsParticipantShape(obstacle))
                     obstacleDistance = Mathf.Min(obstacleDistance, kickObstacles[i].distance);
             }
             float obstacleFraction = float.IsFinite(obstacleDistance) ?
@@ -466,14 +468,14 @@ namespace BarPromenade
             }
             LastKickSweep = new KickSweepObservation(kickSequence, LastKickSweep.Sample + 1, from, to, presentedBoot,
                 clipSeconds, State.KickElapsed, hasHit, sphereHit, surfaceWitness,
-                surfaceFrom, surfaceTo, obstacleDistance, contactTarget.State);
+                surfaceFrom, surfaceTo, obstacleDistance, (target ?? contactTarget)?.State);
             if (Journal != null)
-                JournalEvent("kick_sweep_sample", contactTarget.JournalActorId, kickSequence, journalActionRequest,
+                JournalEvent("kick_sweep_sample", (target ?? contactTarget)?.JournalActorId ?? 0, kickSequence, journalActionRequest,
                     GameLog.Field("from_x", from.x), GameLog.Field("from_y", from.y), GameLog.Field("from_z", from.z),
                     GameLog.Field("to_x", to.x), GameLog.Field("to_y", to.y), GameLog.Field("to_z", to.z),
                     GameLog.Field("has_hit", hasHit), GameLog.Field("obstacle_distance", float.IsFinite(obstacleDistance) ? obstacleDistance : -1f));
             if (Journal != null && surfaceWitness >= 0 && State.KickOutcome != MeleeAttackOutcome.Hit)
-                JournalEvent("kick_surface_contact", contactTarget.JournalActorId, kickSequence, journalActionRequest,
+                JournalEvent("kick_surface_contact", target?.JournalActorId ?? 0, kickSequence, journalActionRequest,
                     GameLog.Field("witness", surfaceWitness), GameLog.Field("witness_count", KickSurfaceWitnessCount),
                     GameLog.Field("fraction", hit.Fraction), GameLog.Field("part", hit.Part.ToString()),
                     GameLog.Field("to_x", surfaceTo.x), GameLog.Field("to_y", surfaceTo.y), GameLog.Field("to_z", surfaceTo.z),
@@ -481,19 +483,35 @@ namespace BarPromenade
             if (obstacleFraction < float.PositiveInfinity && (!hasHit || obstacleFraction <= hit.Fraction))
             {
                 RejectBlockedKick();
-                JournalEvent("kick_contact_rejected", contactTarget.JournalActorId, kickSequence, journalActionRequest,
+                JournalEvent("kick_contact_rejected", target?.JournalActorId ?? 0, kickSequence, journalActionRequest,
                     GameLog.Field("reason", "world_obstacle"));
                 return;
             }
             if (!hasHit && worldBlocked)
             {
                 RejectBlockedKick();
-                JournalEvent("kick_contact_rejected", contactTarget.JournalActorId, kickSequence, journalActionRequest,
+                JournalEvent("kick_contact_rejected", target?.JournalActorId ?? 0, kickSequence, journalActionRequest,
                     GameLog.Field("reason", "kick_leg_world_obstacle"));
                 return;
             }
-            if (!hasHit || !State.TryRegisterKickHit(contactTarget.GetEntityId().GetHashCode(), kickSequence)) return;
-            pending.Add(new KickContact(this, contactTarget, hit, direction, kickSequence, State.Settings.KickDamage));
+            if (!hasHit || !CanDamageParticipant(target) || target.IsKnockedDown || target.State.IsDefeated ||
+                !State.TryRegisterKickHit(target.GetEntityId().GetHashCode(), kickSequence)) return;
+            pending.Add(new KickContact(this, target, hit, direction, kickSequence, State.Settings.KickDamage));
+        }
+
+        private bool FindKickBodyContact(Vector3 from, Vector3 to, float radius, Vector3 direction,
+            out CombatActor target, out CombatHurtboxes.Hit hit)
+        {
+            target = null; hit = default; float fraction = float.PositiveInfinity;
+            for (int i = 0; i < ContactParticipantCount; i++)
+            {
+                CombatActor candidate = ContactParticipantAt(i);
+                if (candidate == this || !HasPhysicalBody(candidate) ||
+                    !candidate.Hurtboxes.SweepSphere(from, to, radius, direction, out var candidateHit) ||
+                    candidateHit.Fraction >= fraction) continue;
+                target = candidate; hit = candidateHit; fraction = candidateHit.Fraction;
+            }
+            return target != null;
         }
 
         private bool KickSurfaceWorldPath(Vector3 from, Vector3 to, out float obstacleFraction)
@@ -506,7 +524,7 @@ namespace BarPromenade
             if (count == kickOverlaps.Length)
             { JournalQueryBufferFull(14, "kick_surface_overlap", kickOverlaps.Length); return false; }
             for (int i = 0; i < count; i++)
-                if (!kickOverlaps[i].transform.IsChildOf(transform) && !kickOverlaps[i].transform.IsChildOf(contactTarget.transform))
+                if (!IsParticipantShape(kickOverlaps[i].transform))
                     obstacleFraction = 0f;
             Vector3 travel = to - from;
             float length = travel.magnitude;
@@ -516,7 +534,7 @@ namespace BarPromenade
             if (count == kickObstacles.Length)
             { JournalQueryBufferFull(13, "kick_surface_obstacles", kickObstacles.Length); return false; }
             for (int i = 0; i < count; i++)
-                if (!kickObstacles[i].transform.IsChildOf(transform) && !kickObstacles[i].transform.IsChildOf(contactTarget.transform))
+                if (!IsParticipantShape(kickObstacles[i].transform))
                     obstacleFraction = Mathf.Min(obstacleFraction, kickObstacles[i].distance / length);
             return true;
         }
@@ -534,11 +552,17 @@ namespace BarPromenade
             private readonly CombatHurtboxes.Hit hit;
             private readonly Vector3 direction;
             private readonly int sequence;
+            private readonly int sourceGeneration, targetGeneration;
             private readonly float damage;
             internal KickContact(CombatActor source, CombatActor target, CombatHurtboxes.Hit hit, Vector3 direction, int sequence, float damage)
-            { this.source = source; this.target = target; this.hit = hit; this.direction = direction; this.sequence = sequence; this.damage = damage; }
+            {
+                this.source = source; this.target = target; this.hit = hit; this.direction = direction; this.sequence = sequence; this.damage = damage;
+                sourceGeneration = source.ContactGeneration; targetGeneration = target.ContactGeneration;
+            }
             internal void Apply()
             {
+                if (source.ContactGeneration != sourceGeneration || target.ContactGeneration != targetGeneration ||
+                    !HasPhysicalBody(target) || !source.isActiveAndEnabled) return;
                 // Both actors register contacts before either is interrupted by the other's strike.
                 MeleePhase before = target.State.Phase;
                 float health = target.State.Health;

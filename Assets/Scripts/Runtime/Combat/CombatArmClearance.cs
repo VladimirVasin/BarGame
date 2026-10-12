@@ -11,11 +11,12 @@ namespace BarPromenade
         private const float AllowedOverlap = .004f;
         private readonly CombatActor actor;
         private readonly Transform upper, forearm;
-        private readonly Collider forearmShape;
+        private readonly Collider forearmShape, upperShape;
         private readonly Collider[] core;
         private readonly int[] upperCoreIndices;
         private readonly LiveShape[] liveCore;
         private readonly CapsuleCollider probe;
+        private readonly CombatPrimitiveQueryCache anatomyQueries = new CombatPrimitiveQueryCache();
         private int coreSolveDepth;
         internal int CoreSnapshotCount { get; private set; }
         internal string LastBlockingShape { get; private set; }
@@ -32,6 +33,7 @@ namespace BarPromenade
             foreach (var entry in actor.Ragdoll.PhysicsController.AnatomicalColliders)
             {
                 if (entry.Value == Player3DAnatomicalPart.RightForearm) forearmShape = entry.Key;
+                if (entry.Value == Player3DAnatomicalPart.RightUpperArm) upperShape = entry.Key;
                 if (entry.Value == Player3DAnatomicalPart.Pelvis || entry.Value == Player3DAnatomicalPart.LowerTorso ||
                     entry.Value == Player3DAnatomicalPart.Torso || entry.Value == Player3DAnatomicalPart.Head)
                     body.Add(entry.Key);
@@ -45,8 +47,9 @@ namespace BarPromenade
             upperCoreIndices = new int[shoulder.Count];
             for (int i = 0; i < shoulder.Count; i++) upperCoreIndices[i] = Array.IndexOf(core, shoulder[i]);
             var query = new GameObject("Combat right arm clearance query") { hideFlags = HideFlags.HideAndDontSave };
+            query.transform.position = Vector3.up * 10000f;
             probe = query.AddComponent<CapsuleCollider>();
-            probe.enabled = false; probe.direction = 1;
+            probe.isTrigger = true; probe.enabled = true; probe.direction = 1;
         }
 
         internal bool IsClear()
@@ -54,19 +57,24 @@ namespace BarPromenade
             LastBlockingShape = null;
             if (probe == null || forearmShape == null || upper == null || forearm == null) return false;
             if (coreSolveDepth == 0) SnapshotCore();
-            Vector3 forearmPosition = forearmShape.transform.position;
-            Quaternion forearmRotation = forearmShape.transform.rotation;
-            Bounds forearmBounds = new CombatWeaponGeometry.ShapeBounds(forearmShape).At(forearmPosition, forearmRotation);
-            foreach (LiveShape body in liveCore)
-                if (Intersects(forearmShape, forearmPosition, forearmRotation, forearmBounds, body)) return false;
+            if (actor.Ragdoll.PhysicsController.IsCombatAnatomicalQueryAllowed(forearmShape))
+            {
+                Vector3 forearmPosition = forearmShape.transform.position;
+                Quaternion forearmRotation = forearmShape.transform.rotation;
+                Bounds forearmBounds = new CombatWeaponGeometry.ShapeBounds(forearmShape).At(forearmPosition, forearmRotation);
+                Collider forearmQuery = anatomyQueries.Prepare(forearmShape);
+                foreach (LiveShape body in liveCore)
+                    if (Intersects(forearmQuery, forearmPosition, forearmRotation, forearmBounds, body)) return false;
 
-            // The rounded end of the limb collider tapers to the hinge. A small
-            // elbow envelope prevents that point from being tucked inside the chest.
-            probe.center = Vector3.zero;
-            probe.radius = .025f; probe.height = .05f;
-            Bounds elbowBounds = new Bounds(forearm.position, Vector3.one * .05f);
-            foreach (LiveShape body in liveCore)
-                if (Intersects(probe, forearm.position, Quaternion.identity, elbowBounds, body)) return false;
+                // The rounded end of the limb collider tapers to the hinge. A small
+                // elbow envelope prevents that point from being tucked inside the chest.
+                probe.center = Vector3.zero;
+                probe.radius = .025f; probe.height = .05f;
+                Bounds elbowBounds = new Bounds(forearm.position, Vector3.one * .05f);
+                foreach (LiveShape body in liveCore)
+                    if (Intersects(probe, forearm.position, Quaternion.identity, elbowBounds, body)) return false;
+            }
+            if (!actor.Ragdoll.PhysicsController.IsCombatAnatomicalQueryAllowed(upperShape)) return true;
 
             // Exclude the proximal shoulder, where the arm naturally joins the torso.
             // The distal humerus must still remain outside chest and head when an
@@ -106,7 +114,7 @@ namespace BarPromenade
                     if (body.Collider == null || !body.Bounds.Intersects(segmentBounds)) continue;
                     actor.JournalPhysicsQuery();
                     if (Physics.ComputePenetration(probe, (start + end) * .5f, rotation,
-                        body.Collider, body.Pose.position, body.Pose.rotation, out _, out float depth) && depth > .00001f)
+                        body.Query, body.Pose.position, body.Pose.rotation, out _, out float depth) && depth > .00001f)
                         return false;
                 }
                 return true;
@@ -117,7 +125,7 @@ namespace BarPromenade
         {
             if (body.Collider == null || !body.Bounds.Intersects(armBounds)) return false;
             actor.JournalPhysicsQuery();
-            if (!Physics.ComputePenetration(arm, position, rotation, body.Collider, body.Pose.position,
+            if (!Physics.ComputePenetration(arm, position, rotation, body.Query, body.Pose.position,
                 body.Pose.rotation, out _, out float depth) || depth <= AllowedOverlap) return false;
             LastBlockingShape = body.Collider.name;
             return true;
@@ -126,7 +134,9 @@ namespace BarPromenade
         private void SnapshotCore()
         {
             CoreSnapshotCount++;
-            for (int i = 0; i < core.Length; i++) liveCore[i] = new LiveShape(core[i]);
+            for (int i = 0; i < core.Length; i++)
+                liveCore[i] = actor.Ragdoll.PhysicsController.IsCombatAnatomicalQueryAllowed(core[i])
+                    ? new LiveShape(core[i], anatomyQueries.Prepare(core[i])) : default;
         }
 
         /// <summary>Only for a synchronous search that does not mutate the rig.
@@ -163,12 +173,13 @@ namespace BarPromenade
         private readonly struct LiveShape
         {
             internal readonly Collider Collider;
+            internal readonly Collider Query;
             internal readonly Pose Pose;
             internal readonly Bounds Bounds;
 
-            internal LiveShape(Collider collider)
+            internal LiveShape(Collider collider, Collider query)
             {
-                Collider = collider;
+                Collider = collider; Query = query;
                 Pose = collider != null ? new Pose(collider.transform.position, collider.transform.rotation) : default;
                 Bounds = collider != null
                     ? new CombatWeaponGeometry.ShapeBounds(collider).At(Pose.position, Pose.rotation) : default;
@@ -177,6 +188,7 @@ namespace BarPromenade
 
         public void Dispose()
         {
+            anatomyQueries.Dispose();
             if (probe != null) UnityEngine.Object.Destroy(probe.gameObject);
         }
     }

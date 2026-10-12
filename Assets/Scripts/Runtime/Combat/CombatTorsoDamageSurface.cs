@@ -46,6 +46,7 @@ namespace BarPromenade
         private uint inputVersion = uint.MaxValue, damageVersion, renderedDamageVersion = uint.MaxValue;
 
         internal uint GeometryVersion { get; private set; }
+        internal bool HasPendingDamage => HasDamage && damageVersion != renderedDamageVersion;
         internal bool HasDamage { get; private set; }
         internal bool HasGeometry { get; private set; }
         internal bool IsRenderingOwnedMesh => owned != null && skin != null && skin.sharedMesh == owned;

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Unity.Profiling;
 using UnityEngine;
 
 namespace BarPromenade
@@ -9,6 +10,14 @@ namespace BarPromenade
         private readonly RaycastHit[] spawnGroundHits = new RaycastHit[16];
         private readonly Collider[] spawnOverlapHits = new Collider[32];
         private readonly List<Vector3> warehouseSpawnRoute = new List<Vector3>(64);
+        private readonly List<Vector3> validSpawnPoints = new List<Vector3>(32);
+        private uint spawnPointSeed;
+        private static readonly ProfilerMarker SpawnSearchMarker = new ProfilerMarker("BarPromenade.CombatSpawn.Search");
+        private static readonly ProfilerMarker SpawnActivationMarker = new ProfilerMarker("BarPromenade.CombatSpawn.Activate");
+        private static readonly ProfilerMarker SpawnResetMarker = new ProfilerMarker("BarPromenade.CombatSpawn.Reset");
+        internal long LastSpawnSearchTicks { get; private set; }
+        internal long LastSpawnActivationTicks { get; private set; }
+        internal long LastSpawnResetTicks { get; private set; }
         private string nextOpponentHudSource, nextOpponentHudText;
         private int nextOpponentHudTenths;
         private static readonly Vector3[] NextOpponentCandidates =
@@ -28,11 +37,19 @@ namespace BarPromenade
         private void ObserveEndlessOutcome()
         {
             if (Mode != CombatTestMode.Endless) return;
-            long kills = endless.Kills;
+            int defeated = 0;
+            foreach (OpponentSlot slot in opponentSlots)
+            {
+                if (!slot.Spawned || slot.DefeatCounted || !slot.Actor.State.IsDefeated) continue;
+                slot.DefeatCounted = true;
+                defeated++;
+                duelJournal?.Record("endless_kill", actor: slot.Actor.JournalActorId,
+                    f0: GameLog.Field("generation", slot.Generation));
+            }
             bool finished = endless.IsFinished;
-            endless.ObserveDefeats(Hero.State.IsDefeated, Opponent.State.IsDefeated);
-            if (kills != endless.Kills)
-                duelJournal?.Record("endless_kill", f0: GameLog.Field("kills", endless.Kills));
+            int live = LiveOpponentCount;
+            endless.Observe(Hero.State.IsDefeated, live, defeated);
+            if (defeated > 0 && live == 0 && !Hero.State.IsDefeated) supplyPending = true;
             if (!finished && endless.IsFinished)
                 duelJournal?.Record("endless_finished", f0: GameLog.Field("kills", endless.Kills));
         }
@@ -41,73 +58,100 @@ namespace BarPromenade
         {
             if (Mode != CombatTestMode.Endless) return false;
             ObserveEndlessOutcome();
-            if (!endless.Advance(seconds) || Hero.IsSwitchingWeapon || !TryNextOpponentSpawn(out Vector3 spawn))
-                return false;
+            int live = LiveOpponentCount;
+            if (supplyPending && live == 0 && Hero.TryReceiveEndlessSupply())
+            {
+                supplyPending = false;
+                duelJournal?.Record("endless_supply", actor: 1, f0: GameLog.Field("kills", endless.Kills));
+            }
+            if (live > 0) supplyPending = false;
+            if (!endless.Advance(seconds, live)) return false;
+            OpponentSlot available = null;
+            foreach (OpponentSlot slot in opponentSlots)
+                if (!slot.Spawned) { available = slot; break; }
+            if (available == null)
+                foreach (OpponentSlot slot in opponentSlots)
+                    if (slot.DefeatCounted) { available = slot; break; }
+            if (available == null) { endless.DeferSpawn(); return false; }
+            long started = System.Diagnostics.Stopwatch.GetTimestamp();
+            bool found;
+            Vector3 spawn;
+            using (SpawnSearchMarker.Auto()) found = TryNextOpponentSpawn(available.Actor, out spawn);
+            LastSpawnSearchTicks = System.Diagnostics.Stopwatch.GetTimestamp() - started;
+            if (!found)
+            { endless.DeferSpawn(); return false; }
 
-            EndJournalRound("next_opponent");
-            Hero.CancelPendingPistolShot("next_opponent");
-            ResetChargeInput();
-            ResetWeaponPools();
-            pendingContacts.Clear(); pendingShoves.Clear(); pendingKicks.Clear();
-            Taunt.ResetRound();
+            CombatActor actor = available.Actor;
+            pistolProjectiles?.RetireActorContacts(actor);
+            shotgunProjectiles?.RetireActorContacts(actor);
+            started = System.Diagnostics.Stopwatch.GetTimestamp();
+            using (SpawnActivationMarker.Auto()) actor.gameObject.SetActive(true);
+            LastSpawnActivationTicks = System.Diagnostics.Stopwatch.GetTimestamp() - started;
             Vector3 facing = Hero.transform.position - spawn; facing.y = 0f;
-            Opponent.ResetActor(spawn, facing.normalized);
-            Hero.ResumeForNextOpponent();
+            started = System.Diagnostics.Stopwatch.GetTimestamp();
+            using (SpawnResetMarker.Auto()) actor.ResetActor(spawn, facing.normalized);
+            LastSpawnResetTicks = System.Diagnostics.Stopwatch.GetTimestamp() - started;
+            available.Spawned = true;
+            available.DefeatCounted = false;
+            available.Generation++;
+            ResetOpponentDecisions(actor, available.Ai);
             Physics.SyncTransforms();
-            endless.BeginNextOpponent();
-            pendingSeconds = roundEndFreeze = roundEndElapsed = 0d;
-            hitStopSubsteps = 0;
-            roundCameraReleased = finishedRoundInitialized = false;
-            opponentDelay = .8f;
-            ResetOpponentDecisions();
-            SetDuelFrozen(false);
-            if (!Hero.IsFirearm) LockOnOpponent();
-            else Hero.SetCombatFocused(false, preservePistolAim: true);
-            BeginJournalRound();
-            duelJournal?.Record("endless_supply", actor: 1, f0: GameLog.Field("kills", endless.Kills));
+            endless.ConfirmSpawn(live + 1);
+            if (!Opponent.gameObject.activeInHierarchy || Opponent.State.IsDefeated)
+                SelectCombatOpponent(actor);
+            if (focusNextArrival && !Hero.IsFirearm)
+            {
+                if (TryFocusOpponent()) focusNextArrival = false;
+            }
+            RestoreSelectedOpponentContext();
+            duelJournal?.Record("opponent_spawn", actor: actor.JournalActorId,
+                f0: GameLog.Field("generation", available.Generation),
+                f1: GameLog.Field("live", live + 1),
+                f2: GameLog.Field("search_ms", LastSpawnSearchTicks * JournalMillisecondsPerTick),
+                f3: GameLog.Field("activation_ms", LastSpawnActivationTicks * JournalMillisecondsPerTick),
+                f4: GameLog.Field("reset_ms", LastSpawnResetTicks * JournalMillisecondsPerTick),
+                f5: GameLog.Field("animation_graph_builds", actor.NpcAnimationGraphBuilds));
             return true;
         }
 
-        private bool TryNextOpponentSpawn(out Vector3 spawn)
-        {
-            if (WarehousePlan != null) return TryWarehouseOpponentSpawn(out spawn);
-            spawn = default;
-            float bestDistance = 9f;
-            foreach (Vector3 candidate in NextOpponentCandidates)
-            {
-                Vector3 delta = candidate - Hero.transform.position; delta.y = 0f;
-                float distance = delta.sqrMagnitude;
-                if (distance < bestDistance || !TrySpawnGround(candidate, out Vector3 grounded)) continue;
-                spawn = grounded;
-                bestDistance = distance;
-            }
-            return bestDistance > 9f;
-        }
-
-        private bool TryWarehouseOpponentSpawn(out Vector3 spawn)
+        private bool TryNextOpponentSpawn(CombatActor recycled, out Vector3 spawn)
         {
             spawn = default;
-            if (!(arenaBounds is WarehouseArenaArea area)) return false;
-            bool found = false;
-            float bestDistance = 9f;
-            for (int i = 0; i < WarehousePlan.SpawnPoints.Count; i++)
+            validSpawnPoints.Clear();
+            float minimumSquared = EncounterSettings.MinimumHeroDistance * EncounterSettings.MinimumHeroDistance;
+            IReadOnlyList<Vector3> candidates = WarehousePlan != null ? WarehousePlan.SpawnPoints : NextOpponentCandidates;
+            foreach (Vector3 candidate in candidates)
             {
-                Vector3 candidate = WarehousePlan.SpawnPoints[i];
                 Vector3 delta = candidate - Hero.transform.position; delta.y = 0f;
-                float distance = delta.sqrMagnitude;
-                if (distance < bestDistance || !TrySpawnGround(candidate, out Vector3 grounded) ||
-                    !area.TryGetHeight(grounded, out float height, Opponent.Body.radius) ||
-                    Mathf.Abs(grounded.y - PlayerFactory.GroundedRootOffset - height) > .15f ||
-                    !area.FindRoute(grounded, Hero.transform.position, warehouseSpawnRoute, Opponent.Body.radius + .04f)) continue;
-                spawn = grounded;
-                bestDistance = distance;
-                found = true;
+                if (delta.sqrMagnitude < minimumSquared || !TrySpawnGround(candidate, recycled, out Vector3 grounded)) continue;
+                if (WarehousePlan != null)
+                {
+                    if (!(arenaBounds is WarehouseArenaArea area) ||
+                        !area.TryGetHeight(grounded, out float height, recycled.Body.radius) ||
+                        Mathf.Abs(grounded.y - PlayerFactory.GroundedRootOffset - height) > .15f) continue;
+                }
+                validSpawnPoints.Add(grounded);
             }
             warehouseSpawnRoute.Clear();
-            return found;
+            // Sample without replacement, proving a route only for the selected
+            // candidate. Rejected routes cannot bias the choice toward the first
+            // usable point or trigger a full graph search for every spawn point.
+            while (validSpawnPoints.Count > 0)
+            {
+                spawnPointSeed ^= spawnPointSeed << 13; spawnPointSeed ^= spawnPointSeed >> 17; spawnPointSeed ^= spawnPointSeed << 5;
+                int index = (int)(spawnPointSeed % (uint)validSpawnPoints.Count);
+                spawn = validSpawnPoints[index];
+                bool reachable = WarehousePlan == null || arenaBounds is WarehouseArenaArea area &&
+                    area.FindRoute(spawn, Hero.transform.position, warehouseSpawnRoute, recycled.Body.radius + .04f);
+                warehouseSpawnRoute.Clear();
+                if (reachable) return true;
+                validSpawnPoints[index] = validSpawnPoints[validSpawnPoints.Count - 1];
+                validSpawnPoints.RemoveAt(validSpawnPoints.Count - 1);
+            }
+            return false;
         }
 
-        private bool TrySpawnGround(Vector3 candidate, out Vector3 grounded)
+        private bool TrySpawnGround(Vector3 candidate, CombatActor recycled, out Vector3 grounded)
         {
             grounded = default;
             int count = Physics.RaycastNonAlloc(candidate + Vector3.up * 3f, Vector3.down,
@@ -129,7 +173,7 @@ namespace BarPromenade
                 Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore);
             if (count == spawnOverlapHits.Length) return false;
             for (int i = 0; i < count; i++)
-                if (spawnOverlapHits[i].GetComponentInParent<CombatActor>() != Opponent) return false;
+                if (spawnOverlapHits[i].GetComponentInParent<CombatActor>() != recycled) return false;
             return true;
         }
 
@@ -139,6 +183,8 @@ namespace BarPromenade
             RetroUiTheme.DrawPanel(new Rect(14, 10, 130, 22), RetroUiTheme.PanelInset,
                 RetroUiTheme.BorderMuted, false, 0f, 1f, .72f);
             GUI.Label(new Rect(20, 12, 120, 18), LocalizationService.Get("combat.mode.endless"), small);
+            GUI.Label(new Rect(14, 36, 138, 18), string.Format(LocalizationService.Get("combat.enemies.live"),
+                LiveOpponentCount, EncounterSettings.MaximumLiveOpponents), small);
             if (EndlessRunFinished)
                 GUI.Label(new Rect(156, 36, 460, 18), LocalizationService.Get("combat.endless.finished"), small);
             else if (WaitingForNextOpponent)

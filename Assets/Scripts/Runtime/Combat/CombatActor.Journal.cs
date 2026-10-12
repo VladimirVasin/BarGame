@@ -29,6 +29,7 @@ namespace BarPromenade
         private int journalWeaponCoreSnapshots;
         private long journalShoulderChoicesReused, journalCandidateBudgetExhaustions;
         private long journalSupportCandidates, journalSupportBudgetExhaustions;
+        internal bool HasJournalWork => journalPresentCalls != 0 || journalWeaponCalls != 0 || journalSupportCalls != 0;
         private static readonly double JournalMillisecondsPerTick = 1000d / Stopwatch.Frequency;
 
         // Struct scopes record actual work, including calls outside the root's Tick.

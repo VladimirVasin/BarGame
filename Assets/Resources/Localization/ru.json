@@ -229,6 +229,8 @@
     { "key": "combat.mode.title", "value": "Режим" },
     { "key": "combat.mode.standard", "value": "Обычный полигон" },
     { "key": "combat.mode.endless", "value": "Бесконечный бой" },
+    { "key": "combat.endless.limit", "value": "Максимум в бесконечном: {0}" },
+    { "key": "combat.enemies.live", "value": "Противники: {0}/{1}" },
     { "key": "combat.kills", "value": "Побеждено" },
     { "key": "combat.new_run", "value": "Новый забег" },
     { "key": "combat.endless.finished", "value": "Забег завершён" },

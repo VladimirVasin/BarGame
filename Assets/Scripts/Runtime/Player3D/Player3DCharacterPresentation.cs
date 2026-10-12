@@ -3179,11 +3179,13 @@ namespace BarPromenade
                 SampleColdPose();
                 SampleCarryPose();
                 graph.Evaluate(Mathf.Max(0f, deltaTime));
+                PublishSecondaryMotionClock();
             }
         }
 
         private void DestroyGraph()
         {
+            SecondaryMotionBakeRuntime.Release(registry);
             scopedClipOwner = null;
             ClearSideStepGaits();
             ClearSnowGaits();

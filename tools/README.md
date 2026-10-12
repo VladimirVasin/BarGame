@@ -161,11 +161,11 @@ read-only:`CombatWarehouseAssetValidation`.
 `player_jacket_cloth.py --write` derives hem/cuff metadata only; `--check` verifies it.
 Refresh `Player3DV2` via asset setup. Lower-body changes require
 `build-home-toilet-seated-3d-model.py`: trousers supply fabric, anatomy skin.
-`player_cold_actions.py --refresh-actions --stage-dir
-Captures/Tooling/cold-actions` stages an isolated cold refresh through the same
-launcher. It checks endpoints, fixed lower body, hand travel, arm clearance and
-determinism. Publish bank/manifest/Blender source with Unity closed; preserve
-`.meta` files and refresh `Player3DV2`.
+`player_cold_actions.py --refresh-actions --stage-dir Captures/Tooling/cold-actions`:
+endpoint/lower-body/hand/arm/determinism checks; publish with Unity closed,
+keep `.meta`, refresh `Player3DV2`.
+Unity: `Tools/Bar Promenade/Player/Bake secondary motion` records
+hair/jacket/sling at120Hz→30Hz. Build rejects stale source hashes.
 
 Pipeline failure/rollback regressions use synthetic files and a mocked Blender
 process, without generating art or compiling native code:

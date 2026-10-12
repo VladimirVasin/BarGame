@@ -34,22 +34,36 @@ namespace BarPromenade.Tests.PlayMode
         {
             var core = new List<Collider>();
             Collider head = null;
+            CapsuleCollider sourceForearm = null;
             foreach (var entry in actor.Ragdoll.PhysicsController.AnatomicalColliders)
             {
                 if (entry.Value == Player3DAnatomicalPart.Pelvis || entry.Value == Player3DAnatomicalPart.LowerTorso ||
                     entry.Value == Player3DAnatomicalPart.Torso || entry.Value == Player3DAnatomicalPart.Head)
                     core.Add(entry.Key);
                 if (entry.Value == Player3DAnatomicalPart.Head) head = entry.Key;
+                if (entry.Value == Player3DAnatomicalPart.RightForearm) sourceForearm = entry.Key as CapsuleCollider;
             }
             Assert.That(core.Count, Is.EqualTo(4));
             Assert.That(head, Is.Not.Null);
+            Assert.That(sourceForearm, Is.Not.Null);
             Assert.That(head.enabled, Is.False, "Use the animated rig's real disabled anatomy.");
             Vector3 shoulder = ArmMotionBone(actor, "upper_arm.L").position;
             Vector3 elbow = ArmMotionBone(actor, "forearm.L").position;
             Vector3 wrist = ArmMotionBone(actor, "hand.L").position;
             var query = new GameObject("Unpruned support arm oracle");
+            query.transform.position = Vector3.up * 10000f;
             CapsuleCollider probe = query.AddComponent<CapsuleCollider>();
-            probe.enabled = false; probe.direction = 1; probe.radius = .005f;
+            probe.isTrigger = true; probe.direction = 1; probe.radius = .005f;
+            var oracleShapes = new Dictionary<Collider, Collider>();
+            foreach (Collider body in core)
+            {
+                var copy = new GameObject("Test arm core geometry oracle");
+                copy.transform.SetParent(query.transform, false);
+                Collider native = body is CapsuleCollider ? copy.AddComponent<CapsuleCollider>() :
+                    body is BoxCollider ? copy.AddComponent<BoxCollider>() : (Collider)copy.AddComponent<SphereCollider>();
+                native.isTrigger = true;
+                oracleShapes.Add(body, native);
+            }
             using var clearance = new CombatArmClearance(actor, ArmMotionBone(actor, "upper_arm.R"),
                 ArmMotionBone(actor, "forearm.R"));
             try
@@ -77,9 +91,12 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(clearance.CoreSnapshotCount, Is.EqualTo(snapshots + 2),
                     "Disposal must force the next independent check to reread live anatomy.");
 
-                // Keep native disabled-shape behavior equal to the unpruned
-                // oracle while proving the broadphase sees this newly moved core.
+                // An enabled independent copy proves the exact native geometry,
+                // while every original posed source stays disabled.
                 Vector3 savedPosition = head.transform.position;
+                var headCapsule = (CapsuleCollider)head;
+                float savedRadius = headCapsule.radius, savedHeight = headCapsule.height;
+                Vector3 savedScale = head.transform.localScale;
                 Vector3 localCentre = head is CapsuleCollider capsule ? capsule.center :
                     head is BoxCollider box ? box.center : ((SphereCollider)head).center;
                 try
@@ -92,38 +109,75 @@ namespace BarPromenade.Tests.PlayMode
                     pathBounds.Encapsulate(wrist); pathBounds.Expand(.01f);
                     Assert.That(headBounds.Intersects(pathBounds), Is.True, "The moved primitive bounds must cover the arm path.");
                     bool nativeClear = ReferenceClear(out _);
+                    Assert.That(nativeClear, Is.False, "The independent native copy must positively intersect the fixed arm path.");
                     before = actor.JournalPhysicsQueries;
                     Assert.That(clearance.IsSupportPathClear(shoulder, elbow, wrist), Is.EqualTo(nativeClear),
                         "Pruning must preserve the native result for disabled anatomy.");
                     Assert.That(actor.JournalPhysicsQueries - before, Is.GreaterThan(0),
                         "New nearby bounds must require the exact query immediately, without a physics sync.");
 
-                    // This native setup requires enabled colliders. A
-                    // synchronous positive control proves pruning preserves real
-                    // penetration too; restore every flag before another frame.
-                    CapsuleCollider nativeProbe = typeof(CombatArmClearance).GetField("probe",
-                        BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(clearance) as CapsuleCollider;
-                    Assert.That(nativeProbe, Is.Not.Null);
-                    bool headEnabled = head.enabled, probeEnabled = probe.enabled, nativeProbeEnabled = nativeProbe.enabled;
-                    try
-                    {
-                        head.enabled = probe.enabled = nativeProbe.enabled = true;
-                        Assert.That(ReferenceClear(out _), Is.False, "The enabled moved head must intersect the same fixed arm path.");
-                        before = actor.JournalPhysicsQueries;
-                        Assert.That(clearance.IsSupportPathClear(shoulder, elbow, wrist), Is.False,
-                            "The broadphase must preserve the exact positive penetration result.");
-                        Assert.That(actor.JournalPhysicsQueries - before, Is.GreaterThan(0));
-                    }
-                    finally { head.enabled = headEnabled; probe.enabled = probeEnabled; nativeProbe.enabled = nativeProbeEnabled; }
+                    Assert.That(head.enabled, Is.False);
+                    actor.Ragdoll.PhysicsController.SetCombatHeadCollisionEnabled(false);
+                    Assert.That(clearance.IsSupportPathClear(shoulder, elbow, wrist), Is.True,
+                        "A replaced core primitive must not block the arm through its old complete geometry.");
+                    actor.Ragdoll.PhysicsController.SetCombatHeadCollisionEnabled(true);
+                    Assert.That(clearance.IsSupportPathClear(shoulder, elbow, wrist), Is.False,
+                        "Restoring core ownership must restore the positive contact at the same clock.");
+                    Vector3 scale = head.transform.lossyScale;
+                    headCapsule.radius = .001f / Mathf.Max(Mathf.Abs(scale[(headCapsule.direction + 1) % 3]),
+                        Mathf.Abs(scale[(headCapsule.direction + 2) % 3]));
+                    headCapsule.height = .002f / Mathf.Abs(scale[headCapsule.direction]);
+                    Assert.That(ReferenceClear(out _), Is.True);
+                    Assert.That(clearance.IsSupportPathClear(shoulder, elbow, wrist), Is.True,
+                        "Shrinking a disabled primitive at the same pose/clock must retire its old native geometry.");
+                    headCapsule.radius = savedRadius; headCapsule.height = savedHeight;
+                    Assert.That(clearance.IsSupportPathClear(shoulder, elbow, wrist), Is.False);
+                    head.transform.localScale = savedScale * .01f;
+                    Assert.That(ReferenceClear(out _), Is.True);
+                    Assert.That(clearance.IsSupportPathClear(shoulder, elbow, wrist), Is.True,
+                        "Changed source scale must refresh native dimensions without a simulation or clock advance.");
+                    head.transform.localScale = savedScale;
+                    Assert.That(ReferenceClear(out _), Is.False);
+                    Assert.That(clearance.IsSupportPathClear(shoulder, elbow, wrist), Is.False);
                 }
-                finally { head.transform.position = savedPosition; }
+                finally
+                {
+                    actor.Ragdoll.PhysicsController.SetCombatHeadCollisionEnabled(true);
+                    headCapsule.radius = savedRadius; headCapsule.height = savedHeight;
+                    head.transform.localScale = savedScale; head.transform.position = savedPosition;
+                }
                 Assert.That(clearance.IsSupportPathClear(shoulder, elbow, wrist), Is.True,
                     "Restoring a live shape must restore clearance immediately.");
+
+                Vector3 savedForearm = sourceForearm.transform.position;
+                var forearmCopy = new GameObject("Test disabled forearm geometry oracle");
+                forearmCopy.transform.SetParent(query.transform, false);
+                CapsuleCollider nativeForearm = forearmCopy.AddComponent<CapsuleCollider>();
+                nativeForearm.isTrigger = true;
+                try
+                {
+                    Assert.That(sourceForearm.enabled, Is.False);
+                    sourceForearm.transform.position += head.transform.TransformPoint(localCentre) -
+                        sourceForearm.transform.TransformPoint(sourceForearm.center);
+                    RefreshOracleGeometry(sourceForearm, nativeForearm);
+                    ReferenceClear(out _); // Refresh the independent head copy too.
+                    Assert.That(Physics.ComputePenetration(nativeForearm, sourceForearm.transform.position,
+                        sourceForearm.transform.rotation, oracleShapes[head], head.transform.position, head.transform.rotation,
+                        out _, out float depth) && depth > .004f, Is.True,
+                        "The independent enabled geometries prove a real forearm/core overlap.");
+                    Assert.That(clearance.IsClear(), Is.False,
+                        "Both disabled forearm and disabled core must participate in right-arm clearance.");
+                    Assert.That(clearance.LastBlockingShape, Is.Not.Null);
+                    Assert.That(sourceForearm.enabled || head.enabled, Is.False);
+                }
+                finally { sourceForearm.transform.position = savedForearm; }
             }
             finally { Object.DestroyImmediate(query); }
 
             bool ReferenceClear(out int queries)
             {
+                foreach (Collider body in core) RefreshOracleGeometry(body, oracleShapes[body]);
+                Physics.SyncTransforms();
                 queries = 0;
                 return SegmentClear(Vector3.Lerp(shoulder, elbow, .65f), elbow, ref queries) &&
                     SegmentClear(elbow, wrist, ref queries);
@@ -138,11 +192,24 @@ namespace BarPromenade.Tests.PlayMode
                 foreach (Collider body in core)
                 {
                     queries++;
-                    if (Physics.ComputePenetration(probe, (start + end) * .5f, rotation, body,
+                    if (Physics.ComputePenetration(probe, (start + end) * .5f, rotation, oracleShapes[body],
                         body.transform.position, body.transform.rotation, out _, out float depth) && depth > .00001f)
                         return false;
                 }
                 return true;
+            }
+
+            void RefreshOracleGeometry(Collider source, Collider native)
+            {
+                // Independent unbaked copy: Unity applies the original source
+                // scale, rather than reusing runtime helper dimensions or code.
+                native.transform.localScale = source.transform.lossyScale;
+                if (source is CapsuleCollider capsule && native is CapsuleCollider copy)
+                { copy.direction = capsule.direction; copy.center = capsule.center; copy.radius = capsule.radius; copy.height = capsule.height; }
+                else if (source is BoxCollider box && native is BoxCollider boxCopy)
+                { boxCopy.center = box.center; boxCopy.size = box.size; }
+                else if (source is SphereCollider sphere && native is SphereCollider sphereCopy)
+                { sphereCopy.center = sphere.center; sphereCopy.radius = sphere.radius; }
             }
         }
 
