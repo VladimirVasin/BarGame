@@ -462,7 +462,7 @@
 | `0` | §12/§19/§21; худ. §10g | фото/пассивность базы | `2026-09-25`: фото базы/подъёмника без лиц, лыжи/стул, границы — §12. §16/§21/девять проверок; `ai/architecture-notes.md`. |
 | `0` | §12/§21 «Нельзя», «Проверка»; худ. §10g | пассивность/вопрос без ответа/нижний ответ | `2026-09-25`: люк приподнимается/упирается/закрывается→точная нижняя строка; границы — §12. §16/остальной §21/девять проверок; `ai/architecture-notes.md`. |
 | `0` | §12; худ. §1/§10g | единая походка/скорость; нет замедления вне троп | `2026-09-25`: сугроб деревни — отдельный шаг без бега; глубина/следы/расчистка, не граница. Без урона/возврата/опасности/сюжета/текста; §16/§21/девять проверок, `ai/architecture-notes.md`. |
-| вне шкалы | §6 «Не снимается никогда»/§7/§16.15/§21/худ.§15a | бой/проигрыш/UI/кровь/череп-мозг/конвульсии/надруг. | `2026-09-19`:polygon/bar;`2026-09-20`:HP/blood;`2026-09-21`:free/counter/grip/fall-rise/pool/FPtoilet/rearhead-end/shy-calm;`2026-09-25`:palm/0HP-blood/≤2steps;`2026-10-02`:miss-counter/rise/gaze/shield;`2026-10-03`:drykick/0finish/3AI/recoil;`2026-10-07`:turn/Step/feet/sparks/Qsupport/torsos/focus/rise-drop/Eshared;guns/NPCbar/freeaim/reload/ammo/winfire;`2026-10-08`:aim/recoil/cases/mag-rack/SFX/Rresume/force/wet-repeat/headloss/jelly/cam-hide/finite blood-convulsions/corpse/worldhole/shotgun/flights/pause-reset;`2026-10-09`:near-launch/head≤14/joined skeleton/0chunks/sever/crawl/critical/aim8;`2026-10-10`:underjacket+bar/shotgun-sling/shoulder-stow/6stow-draw/cloth-hair-scarf;`2026-10-12`:Endless live1–5/poolIDs/2–4→3–7active/≥3m/route/0backlog/AI/kill1x/heroend/kept/empty settled→guns;warehouse24×18/upper2.6/stairs2/layouts3/pipes/8lamps/resetseed/new;`2026-10-13`:default2/corpses0–2(default2)/oldest retire-reuse/pool≤5. 0сюжета/9checks/худ.§15a. |
+| вне шкалы | §6 «Не снимается никогда»/§7/§16.15/§21/худ.§15a | бой/проигрыш/UI/кровь/череп-мозг/конвульсии/надруг. | `2026-09-19`:bar;`2026-09-20`:HP/blood;`2026-09-21`:duel/grip/fall-rise/FPtoilet/rearhead-end/shy-calm;`2026-09-25`:palm/blood/steps;`2026-10-02`:counter/rise/gaze/shield;`2026-10-03`:drykick/3AI/recoil;`2026-10-07`:footwork/body/drop/focus/pickup/firearms;`2026-10-08`:aim/recoil/reload/impacts/destruction/shotgun/flights;`2026-10-09`:power/sever/crawl/critical/aim8;`2026-10-10`:carry/6stow-draw/cloth;`2026-10-12`:warehouse/endless;`2026-10-13`:bounded population/hero novice firearms+muzzle reticle. Только CombatTest/0сюжета/9checks;границы:худ.§15a/`ai/architecture-notes.md`. |
 | `0` | §18 «Междомовая арка»; §21 «Проверка» | «молчат», «добавить разговор»; первый пул троих | `2026-09-16`: двое у бочки переговариваются между собой, спящий отвечает из-под одеяла; общие пузыри, пары без повторов, в слышимости героя. Без обращения к нему, просьб, реакции, квеста; §16/§21. |
 | `0` | худ. §2.1a/§10e/§16/§18.19/22 | нет восточной горы/фонарей; равнина/пустая трасса | `2026-09-15`: спуск к городу на дне долины; машины/фонари, первый в пуле `12`, дальше без Light. `ai/architecture-notes.md`. |
 | `0` | худ. §10e | «без россыпей/мелкого мусора» | `2026-09-14`: пассивный мусор по всей доступной полосе `12 м` дорога→ограда. Мелочь проходима; крупное вне путей. Без свалки/эстетики ржавчины/лагеря/текста/новых следов; §16/§21. |
@@ -571,6 +571,10 @@
 «шторки», в великоватой выцветшей оливковой M-65 поверх угольной рубахи.
 Он приехал за работой,
 как все, — поздно, к концу, когда работы уже не хватало, и остался.
+
+Он не военный и почти не умеет стрелять. Только на полигоне (§6,
+`2026-10-13`): дрожь рук, вздрагивание, неловкая отдача. Без реплик
+о навыке и новой биографии.
 
 Социопатия подаётся **только формой речи и выбором кадра**, никогда диагнозом.
 Слово «социопат» в игре не звучит.

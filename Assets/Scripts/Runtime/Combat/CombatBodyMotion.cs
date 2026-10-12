@@ -24,20 +24,36 @@ namespace BarPromenade
         private float fearTarget, exhaustionTarget, effortTarget, threatTarget;
         private float breathPhase, irregularPhase, tremorPhase;
         private float flinchClock = FlinchSeconds, flinchPeak;
+        private float firearmShotClock, firearmShotDuration, firearmShotStart, firearmShotPeak;
         private bool threatObserved;
         private Vector3 previousForward;
         private Vector3 shoveAxis;
         private float shoveReach;
         private bool applied;
         private const float FlinchSeconds = .36f;
+        private const float FirearmShotAttackSeconds = .04f;
 
         public float FearAmount => Mathf.Clamp01(fear.Value);
         public float EffortAmount => Mathf.Clamp01(effort.Value);
         public float FlinchAmount => FearAmount * Mathf.Clamp01(flinch.Value);
+        public float FirearmShotReaction
+        {
+            get
+            {
+                if (firearmShotClock >= firearmShotDuration) return 0f;
+                if (firearmShotClock < FirearmShotAttackSeconds)
+                    return Mathf.Lerp(firearmShotStart, firearmShotPeak,
+                        Mathf.SmoothStep(0f, 1f, firearmShotClock / FirearmShotAttackSeconds));
+                return firearmShotPeak * (1f - Mathf.SmoothStep(0f, 1f,
+                    (firearmShotClock - FirearmShotAttackSeconds) /
+                    (firearmShotDuration - FirearmShotAttackSeconds)));
+            }
+        }
         // Degrees of chest breathing, independent of the existing HP response.
         public float BreathAmplitude => FearAmount * (1.05f + .9f * Mathf.Clamp01(exhaustion.Value) + .25f * EffortAmount);
         public float BreathAmount => BreathAmplitude *
-            (.8f * Mathf.Sin(breathPhase) + .2f * Mathf.Sin(2f * breathPhase + irregularPhase));
+            (.8f * Mathf.Sin(breathPhase) + .2f * Mathf.Sin(2f * breathPhase + irregularPhase)) *
+            (1f - .9f * FirearmShotReaction);
 
         public CombatBodyMotion(Transform root, Transform actorFrame)
         {
@@ -54,6 +70,15 @@ namespace BarPromenade
 
         public void SetAttackReachPose(MeleeBufferedAction action, float distance01, float weight, float turnWeight, int side, MeleeSwing swing) =>
             attackReach.SetPose(action, distance01, weight, turnWeight, side, swing);
+
+        /// <summary>The hero reacts only after a committed shot, on the same simulation clock as breathing.</summary>
+        public void NotifyFirearmShot(bool shotgun)
+        {
+            firearmShotStart = FirearmShotReaction;
+            firearmShotPeak = Mathf.Max(firearmShotStart, shotgun ? 1f : .7f);
+            firearmShotDuration = shotgun ? .43f : .29f;
+            firearmShotClock = 0f;
+        }
 
         /// <summary>
         /// Observations only: the caller supplies a nearby, visible opponent's
@@ -110,6 +135,7 @@ namespace BarPromenade
             {
                 float step = Mathf.Min(remaining, SecondOrderFilter.MaximumSubStepSeconds);
                 remaining -= step;
+                firearmShotClock = Mathf.Min(firearmShotDuration, firearmShotClock + step);
                 fear.Advance(fearTarget, step);
                 exhaustion.Advance(exhaustionTarget, step);
                 effort.Advance(effortTarget, step);
@@ -138,7 +164,8 @@ namespace BarPromenade
                 irregularPhase = Mathf.Repeat(irregularPhase + step * .87f, Mathf.PI * 2f);
                 float breathRate = 3.2f + 1.7f * Mathf.Clamp01(exhaustion.Value) + .45f * EffortAmount;
                 breathPhase = Mathf.Repeat(breathPhase + step * breathRate *
-                    (1f + .13f * Mathf.Sin(irregularPhase)), Mathf.PI * 2f);
+                    (1f + .13f * Mathf.Sin(irregularPhase)) *
+                    (1f - .85f * FirearmShotReaction), Mathf.PI * 2f);
                 tremorPhase = Mathf.Repeat(tremorPhase + step * 48f, Mathf.PI * 2f);
             }
         }
@@ -162,6 +189,7 @@ namespace BarPromenade
             float breath = BreathAmount;
             float tense = FearAmount;
             float shrink = FlinchAmount;
+            float shot = FirearmShotReaction;
             float brace = tense * (1f - .75f * EffortAmount) * (1f - shoveReach);
             float tremor = tense * (.1f + .12f * EffortAmount) *
                 Mathf.Sin(tremorPhase) * (.65f + .35f * Mathf.Sin(irregularPhase));
@@ -178,6 +206,16 @@ namespace BarPromenade
             Rotate(2, frame.right, tense * .5f + shrink * .9f + breath * .12f);
             Rotate(3, frame.right, tense * .85f + shrink * 2.3f + EffortAmount * .4f);
             Rotate(3, frame.forward, shrink * -.8f);
+            // The shot briefly folds the chest back and tucks the chin. The
+            // original shoulder/arm chain carries both hands into contact IK;
+            // lower-body support and the separate observed-threat response stay intact.
+            if (shot > 0f)
+            {
+                Rotate(0, frame.right, shot * -1.3f);
+                Rotate(1, frame.right, shot * -2.8f);
+                Rotate(2, frame.right, shot * 2f);
+                Rotate(3, frame.right, shot * 4.2f);
+            }
             // Reach comes from leaning over the planted stance, never extending
             // an arm bone. Concentrating the drive at the spine carries both
             // shoulders forward before weapon clearance and left-palm IK run.
@@ -213,6 +251,7 @@ namespace BarPromenade
             fearTarget = exhaustionTarget = effortTarget = threatTarget = 0f;
             breathPhase = irregularPhase = tremorPhase = flinchPeak = 0f;
             flinchClock = FlinchSeconds;
+            firearmShotClock = firearmShotDuration = firearmShotStart = firearmShotPeak = 0f;
             threatObserved = false;
             shoveReach = 0f; shoveAxis = Vector3.zero;
             previousForward = frame.forward;

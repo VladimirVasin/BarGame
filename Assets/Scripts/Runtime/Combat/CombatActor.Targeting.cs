@@ -81,7 +81,7 @@ namespace BarPromenade
             }
             // Aim at the actual rig, including its body lean, rather than a
             // controller centre that can stay behind the visible opponent.
-            Vector3 direction = (IsFreePistolAiming ? PistolAimPoint :
+            Vector3 direction = (IsFreePistolAiming ? PistolAimIntentPoint :
                 contactTarget.ImpactMotion?.CentreOfMass ?? contactTarget.transform.position) -
                 (ImpactMotion?.CentreOfMass ?? transform.position);
             direction.y = 0f;

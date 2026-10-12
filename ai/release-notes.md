@@ -6,7 +6,7 @@ Earlier notes: [`release-notes-2026-09.md`](archive/release-notes-2026-09.md).
 
 ## Unreleased
 
-### 2026-10-13 — Расход ресурсов и лимиты полигона
+### 2026-10-13 — Ресурсы и полигон
 
 - Мусор использует общую палитру материалов; лес горной дороги отсекается
   участками с прежними деревьями, тенями и коллизией.
@@ -18,11 +18,14 @@ Earlier notes: [`release-notes-2026-09.md`](archive/release-notes-2026-09.md).
 - Бесконечный бой: стартовый лимит — два врага, выбор 1–5 сохранён.
   Трупов не больше двух; старейшее тело убирается с оружием и частями.
   Живые участники, травмы и летящие пули сохраняются.
+- На полигоне руки дрожат сильнее на ходу; после выстрела ствол возвращается
+  неровно. Крестик следует стволу, камера стабильна.
 - Проверки: `WorldPresentationBudgetTests`, `CityPortSurfaceImportTests`,
   `RenderedLitter_SharesItsPaletteWithoutBlocksAndReleasesOnlyItsOwnMaterials`,
   `ForestChunks_PreserveGeometryWindBoundsShadowsAndOnePhysicalCollider`,
   `AreaCaptureFixture.WorldPerformance`, `check-docs.py`, `git diff --check`.
   `Range_EndlessPopulationSpawnsGraduallyPreservesSurvivorsAndStopsOnExit`.
+  `Range_InexperiencedFirearmAimKeepsMuzzleReticleAndShotTogether`.
 
 ### 2026-10-12 — Ткань, смена оружия и бесконечный бой
 

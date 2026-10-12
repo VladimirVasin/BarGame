@@ -245,7 +245,7 @@ namespace BarPromenade.Tests.PlayMode
                 ArmRotations = rotations, LeftHand = armBones[2].position, RightHand = armBones[5].position,
                 LeftGrip = hands.LeftGripWeight, VisualAim = root.Hero.PistolVisualAimProgress,
                 PalmError = Vector3.Distance(root.Hero.Weapon.transform.position, hands.CylinderCentre(false)),
-                CentreRayError = Vector3.Angle(centre.direction, root.Hero.PistolAimPoint - centre.origin)
+                CentreRayError = Vector3.Angle(centre.direction, root.Hero.PistolAimIntentPoint - centre.origin)
             };
         }
 
@@ -290,7 +290,7 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(current.PalmError, Is.LessThan(.001f), at + ": the pistol must remain in the right palm.");
                 if (current.Camera.FreeAim && current.Camera.AimRequested)
                     Assert.That(current.CentreRayError, Is.LessThan(.05f),
-                        at + ": the aim point must use the displayed intermediate camera ray.");
+                        at + ": the aim intent must use the displayed intermediate camera ray.");
             }
         }
 
@@ -316,6 +316,306 @@ namespace BarPromenade.Tests.PlayMode
         private static readonly CombatWeaponId[] AimedMovementWeapons =
             { CombatWeaponId.Pistol, CombatWeaponId.Shotgun };
         private const float AimedWalkSpeed = 2.21f, AimedBackwardSpeed = 1.19f;
+
+        [UnityTest]
+        public IEnumerator Range_InexperiencedFirearmAimKeepsMuzzleReticleAndShotTogether(
+            [ValueSource(nameof(AimedMovementWeapons))] CombatWeaponId weapon)
+        {
+            var input = new InputTestFixture();
+            Keyboard keyboard = null;
+            Mouse mouse = null;
+            PistolCameraContinuityProbe probe = null;
+            GameObject panel = null;
+            try
+            {
+                input.Setup();
+                keyboard = InputSystem.AddDevice<Keyboard>();
+                mouse = InputSystem.AddDevice<Mouse>();
+                yield return SceneManager.LoadSceneAsync(SceneIds.MainMenu, LoadSceneMode.Single);
+                Assert.That(CombatTestStartService.TryStart(weapon), Is.True);
+                yield return AwaitSelectedCombatRange();
+                PlacePair(8f);
+                root.Opponent.ResetActor(new Vector3(7f, PlayerFactory.GroundedRootOffset, 8f), Vector3.back);
+                root.SendMessage("OnApplicationFocus", true);
+                GameInput.HandleApplicationFocus(true);
+                Assert.That(root.SetOpponentFocus(false), Is.True);
+                root.AutomaticSimulation = true;
+                input.Press(mouse.rightButton, queueEventOnly: true);
+                for (int frame = 0; frame < 40; frame++) yield return null;
+                Camera camera = root.CameraFollow.Camera;
+                float pitch = Mathf.DeltaAngle(0f, camera.transform.eulerAngles.x);
+                input.Set(mouse.delta, new Vector2(-300f, pitch / .14f), queueEventOnly: true);
+                yield return null;
+                input.Set(mouse.delta, Vector2.zero, queueEventOnly: true);
+                for (int frame = 0; frame < 60; frame++) yield return null;
+
+                // An isolated collider gives the displaced reticle a known first
+                // surface without adding a visible prop or a body hit-stop.
+                panel = new GameObject("Test aim panel");
+                panel.transform.SetPositionAndRotation(camera.transform.position + camera.transform.forward * 8f,
+                    camera.transform.rotation);
+                panel.AddComponent<BoxCollider>().size = new Vector3(8f, 8f, .1f);
+                Physics.SyncTransforms();
+                for (int frame = 0; frame < 40; frame++) yield return null;
+                AssertPistolCameraShotReady("Inexperienced " + weapon + " aim");
+                Quaternion acceptedView = camera.transform.rotation, acceptedHeading = root.Hero.transform.rotation;
+                Vector2 firstOffset = root.Hero.FirearmAimOffsetDegrees;
+                Vector3 firstMuzzleForward = root.Hero.PistolMuzzle.forward;
+                float offsetSpan = 0f, muzzleSpan = 0f, cameraDrift = 0f, headingDrift = 0f;
+                float reticleError = 0f, surfaceError = 0f, supportError = 0f, cacheError = 0f;
+                bool reticleAvailable = true;
+                int samples = 0;
+                probe = root.gameObject.AddComponent<PistolCameraContinuityProbe>();
+                probe.Sample = () =>
+                {
+                    samples++;
+                    offsetSpan = Mathf.Max(offsetSpan, Vector2.Distance(firstOffset, root.Hero.FirearmAimOffsetDegrees));
+                    muzzleSpan = Mathf.Max(muzzleSpan, Vector3.Angle(firstMuzzleForward, root.Hero.PistolMuzzle.forward));
+                    cameraDrift = Mathf.Max(cameraDrift, Quaternion.Angle(acceptedView, camera.transform.rotation));
+                    headingDrift = Mathf.Max(headingDrift, Quaternion.Angle(acceptedHeading, root.Hero.transform.rotation));
+                    supportError = Mathf.Max(supportError, root.Hero.PistolSupportError);
+                    bool available = root.TryGetFirearmCrosshairPoint(out Vector3 point);
+                    reticleAvailable &= available;
+                    if (!available) return;
+                    Transform muzzle = root.Hero.IsShotgun ? root.Hero.ShotgunMuzzle(root.Hero.Shotgun.NextBarrel) : root.Hero.PistolMuzzle;
+                    reticleError = Mathf.Max(reticleError, Vector3.Angle(muzzle.forward, point - muzzle.position));
+                    Vector3 localPoint = panel.transform.InverseTransformPoint(point);
+                    surfaceError = Mathf.Max(surfaceError, Mathf.Abs(localPoint.z + .05f));
+                    reticleAvailable &= root.TryGetFirearmCrosshairPoint(out Vector3 repeated);
+                    cacheError = Mathf.Max(cacheError, Vector3.Distance(point, repeated));
+                };
+                for (int frame = 0; frame < 90; frame++) yield return null;
+                probe.Sample = null;
+                Assert.That(samples, Is.GreaterThanOrEqualTo(85), "Observe completed gameplay poses, not unsampled rule offsets.");
+                Assert.That(offsetSpan, Is.GreaterThan(.15f), "A stopped inexperienced hero keeps breathing and trembling.");
+                Assert.That(muzzleSpan, Is.GreaterThan(.1f), "The live world weapon must move with the aim offset.");
+                Assert.That(cameraDrift, Is.LessThan(.03f), "Hand sway cannot rotate the player's accepted view.");
+                Assert.That(headingDrift, Is.LessThan(.03f), "Hand sway cannot continually turn the hero's feet.");
+                Assert.That(reticleAvailable, Is.True);
+                Assert.That(reticleError, Is.LessThan(.05f), "The reticle follows the final physical firing barrel.");
+                Assert.That(surfaceError, Is.LessThan(.005f), "The reticle stops on the first world surface.");
+                Assert.That(cacheError, Is.LessThan(.000001f), "Two queries of the same completed pose must agree.");
+                Assert.That(supportError, Is.LessThan(.025f), "Aim motion must retain both physical hand contacts.");
+                Assert.That(root.Opponent.FirearmAimOffsetDegrees, Is.EqualTo(Vector2.zero), "The hero's tremor cannot leak to another actor.");
+                string prefix = weapon.ToString().ToLowerInvariant() + "-inexperienced";
+                PrepareInexperiencedFirearmCapture();
+                yield return CaptureFocusGameView(prefix + "-rest");
+
+                Vector3 strafeStart = root.Hero.transform.position, acceptedRight = camera.transform.right;
+                input.Press(keyboard.dKey, queueEventOnly: true);
+                float strafeElapsed = 0f;
+                float strafeDeadline = Time.realtimeSinceStartup + 3f;
+                while (Time.realtimeSinceStartup < strafeDeadline &&
+                    Vector3.ProjectOnPlane(root.Hero.transform.position - strafeStart, Vector3.up).magnitude < .65f)
+                {
+                    yield return null;
+                    if (GameInput.CanRead(GameInputContext.Gameplay)) strafeElapsed += Time.deltaTime;
+                }
+                int releaseFrame = Time.frameCount;
+                input.Release(keyboard.dKey, queueEventOnly: true);
+                yield return WaitFor(() => probe.CompletedFrame > releaseFrame, "The strafe release needs a completed gameplay frame.");
+                Vector3 travel = Vector3.ProjectOnPlane(root.Hero.transform.position - strafeStart, Vector3.up);
+                Assert.That(travel.magnitude, Is.GreaterThan(.25f));
+                Assert.That(Vector3.Angle(travel, Vector3.ProjectOnPlane(acceptedRight, Vector3.up)), Is.LessThan(1f),
+                    "Movement uses the camera heading while the hands drift independently.");
+                for (int frame = 0; frame < 90; frame++) yield return null;
+                AssertPistolCameraShotReady($"Settled inexperienced {weapon} shot; supplied mouse current={Mouse.current == mouse}, " +
+                    $"RMB held={mouse.rightButton.isPressed}, application focused={Application.isFocused}, movement focused={GameInput.MovementFocused}, " +
+                    $"body available={root.Hero.PistolBodyAvailable}, grounded={root.Hero.IsBodyGrounded}, knocked down={root.Hero.IsKnockedDown}, " +
+                    $"phase={root.Hero.State.Phase}, strafe time={strafeElapsed:F3}, distance={travel.magnitude:F3}");
+
+                // Commit from an actual completed rig pose, then advance only one
+                // flight step: no later recoil pose may steer the emitted shot.
+                root.AutomaticSimulation = false;
+                Transform firingMuzzle = root.Hero.IsShotgun ? root.Hero.ShotgunMuzzle(root.Hero.Shotgun.NextBarrel) : root.Hero.PistolMuzzle;
+                Vector3 origin = firingMuzzle.position, forward = firingMuzzle.forward;
+                int rounds = root.Hero.Firearm.Rounds, shots = root.Hero.Firearm.ShotSequence;
+                Assert.That(root.Hero.RequestPistolShot(), Is.True);
+                Assert.That(root.Hero.CommitPistolShot(root.Projectiles), Is.True);
+                Assert.That(root.Projectiles.LastPosition, Is.EqualTo(origin));
+                Assert.That(root.Hero.Firearm.ShotSequence, Is.EqualTo(shots + 1));
+                Assert.That(root.Hero.Firearm.Rounds, Is.EqualTo(rounds - 1));
+                root.Tick(CombatTestRoot.SimulationStep);
+                Vector3 flight = root.Projectiles.LastPosition - origin;
+                Assert.That(flight.magnitude, Is.GreaterThan(1f), "A committed shot starts a real ballistic flight.");
+                Assert.That(Vector3.Angle(forward, flight), Is.LessThan(weapon == CombatWeaponId.Shotgun
+                    ? ShotgunSettings.Prototype.SpreadHalfAngleDegrees + .05f : .05f),
+                    "The emitted bullet or pellet cone follows the muzzle before recoil.");
+
+                acceptedView = camera.transform.rotation;
+                float peakRecoil = 0f, peakReaction = 0f;
+                supportError = cameraDrift = reticleError = 0f;
+                reticleAvailable = true;
+                probe.Sample = () =>
+                {
+                    peakRecoil = Mathf.Max(peakRecoil, Vector3.Angle(forward, root.Hero.PistolMuzzle.forward));
+                    peakReaction = Mathf.Max(peakReaction, root.Hero.FirearmShotReaction);
+                    supportError = Mathf.Max(supportError, root.Hero.PistolSupportError);
+                    cameraDrift = Mathf.Max(cameraDrift, Quaternion.Angle(acceptedView, camera.transform.rotation));
+                    bool available = root.TryGetFirearmCrosshairPoint(out Vector3 point);
+                    reticleAvailable &= available;
+                    if (available)
+                    {
+                        Transform muzzle = root.Hero.IsShotgun ? root.Hero.ShotgunMuzzle(root.Hero.Shotgun.NextBarrel) : root.Hero.PistolMuzzle;
+                        reticleError = Mathf.Max(reticleError, Vector3.Angle(muzzle.forward, point - muzzle.position));
+                    }
+                };
+                root.AutomaticSimulation = true;
+                for (int frame = 0; frame < 120; frame++)
+                {
+                    yield return null;
+                    if (frame == 2)
+                    {
+                        root.AutomaticSimulation = false;
+                        System.Action recoilSample = probe.Sample;
+                        probe.Sample = null;
+                        PrepareInexperiencedFirearmCapture();
+                        yield return CaptureFocusGameView(prefix + "-recoil");
+                        yield return CaptureInexperiencedFirearmNearPose(prefix + "-recoil-near");
+                        probe.Sample = recoilSample;
+                        root.AutomaticSimulation = true;
+                    }
+                }
+                probe.Sample = null;
+                Assert.That(peakRecoil, Is.GreaterThan(3f), "The shot must visibly knock the live muzzle off its pre-shot direction.");
+                Assert.That(peakReaction, Is.GreaterThan(.2f), "The same rig must flinch at its own shot.");
+                Assert.That(root.Hero.FirearmShotReaction, Is.LessThan(.01f), "The bodily reaction settles on active simulation time.");
+                Assert.That(cameraDrift, Is.LessThan(.03f), "Even a strong recoil leaves accepted camera look stable.");
+                Assert.That(supportError, Is.LessThan(.025f), "Recoil and recovery preserve the supporting palm.");
+                Assert.That(reticleAvailable, Is.True);
+                Assert.That(reticleError, Is.LessThan(.05f), "During recoil the reticle still describes the actual barrel.");
+                AssertPistolCameraShotReady("Recovered inexperienced " + weapon + " aim");
+                PrepareInexperiencedFirearmCapture();
+                yield return CaptureFocusGameView(prefix + "-recovered");
+                root.AutomaticSimulation = false;
+                yield return CaptureInexperiencedFirearmNearPose(prefix + "-recovered-near");
+                root.AutomaticSimulation = true;
+
+                int triggerFrame = Time.frameCount;
+                input.Press(mouse.leftButton, queueEventOnly: true);
+                yield return WaitFor(() => probe.CompletedFrame > triggerFrame, "The second trigger needs a completed gameplay frame.");
+                input.Release(mouse.leftButton, queueEventOnly: true);
+                Assert.That(root.Hero.Firearm.ShotSequence, Is.EqualTo(shots + 2), "A fresh live input can fire after recovery.");
+                Vector2 pausedOffset = root.Hero.FirearmAimOffsetDegrees;
+                float pausedReaction = root.Hero.FirearmShotReaction;
+                Assert.That(root.PauseMenu.Open(), Is.True);
+                root.Tick(.8f);
+                for (int frame = 0; frame < 3; frame++) yield return null;
+                Assert.That(root.Hero.FirearmAimOffsetDegrees, Is.EqualTo(pausedOffset), "Pause freezes the hand-motion clock.");
+                Assert.That(root.Hero.FirearmShotReaction, Is.EqualTo(pausedReaction).Within(.0001f), "Pause freezes the shot reaction clock.");
+                input.Release(mouse.rightButton, queueEventOnly: true);
+                yield return null;
+                Assert.That(root.PauseMenu.Cancel(), Is.True);
+                yield return WaitFor(() => GameInput.CanRead(GameInputContext.Gameplay), "Pause did not release gameplay input.");
+                input.Press(mouse.rightButton, queueEventOnly: true);
+                for (int frame = 0; frame < 45; frame++) yield return null;
+                Assert.That(root.Hero.FirearmAimOffsetDegrees.magnitude, Is.GreaterThan(.01f), "Reacquiring aim resumes live sway.");
+
+                Assert.That(root.Hero.TryReloadPistol(), Is.True);
+                Assert.That(root.Hero.Firearm.AimRequested, Is.True, "Reload can retain the player's held aim request.");
+                yield return WaitFor(() => !root.Hero.Firearm.ReloadPending, "The held-aim reload did not complete.");
+                for (int frame = 0; frame < 45; frame++) yield return null;
+                Assert.That(root.Hero.FirearmAimRecoveryDegrees, Is.EqualTo(Vector2.zero),
+                    "A completed reload cannot resurrect the previous shot's frozen hand correction.");
+                AssertPistolCameraShotReady("Inexperienced " + weapon + " aim after reload");
+                triggerFrame = Time.frameCount;
+                input.Press(mouse.leftButton, queueEventOnly: true);
+                yield return WaitFor(() => probe.CompletedFrame > triggerFrame, "The post-reload trigger needs a completed gameplay frame.");
+                input.Release(mouse.leftButton, queueEventOnly: true);
+                Assert.That(root.Hero.Firearm.ShotSequence, Is.EqualTo(shots + 3));
+                yield return WaitFor(() => root.Hero.FirearmAimRecoveryDegrees.sqrMagnitude > .0001f,
+                    "A fresh shot must begin a new imperfect hand correction on active simulation time.");
+                Assert.That(root.Hero.TryReloadPistol(), Is.True);
+                Assert.That(root.Hero.Firearm.AimRequested, Is.True);
+                yield return WaitFor(() => !root.Hero.Firearm.ReloadPending, "Reload from an active hand correction did not complete.");
+                for (int frame = 0; frame < 45; frame++) yield return null;
+                Assert.That(root.Hero.FirearmAimRecoveryDegrees, Is.EqualTo(Vector2.zero),
+                    "Keeping aim held through reload cannot suspend and then resurrect an active shot correction.");
+
+                Assert.That(root.SetOpponentFocus(true), Is.True);
+                Vector3 focusedIntent = root.Hero.PistolAimIntentPoint;
+                Assert.That(root.SetOpponentFocus(false), Is.True);
+                Assert.That(root.Hero.PistolAimIntentPoint, Is.EqualTo(focusedIntent),
+                    "Leaving focus retains its accepted intent without applying the current drift twice.");
+                Assert.That(root.Hero.FirearmAimRecoveryDegrees, Is.EqualTo(Vector2.zero), "Releasing focused aim clears the hand correction.");
+                Assert.That(root.Hero.Firearm.AimRequested || root.Player.Motor.MovementTargetActive ||
+                    root.Player.Motor.MovementBasisActive || root.CameraFollow.FreeAimActive, Is.False);
+                root.ResetRound();
+                Assert.That(root.Hero.FirearmAimOffsetDegrees, Is.EqualTo(Vector2.zero), "Round reset clears the previous hand-motion state.");
+                Assert.That(root.Hero.FirearmAimRecoveryDegrees, Is.EqualTo(Vector2.zero), "Round reset clears raw hand correction even without an aim lease.");
+                Assert.That(root.Hero.FirearmShotReaction, Is.Zero, "Round reset clears the previous bodily shot reaction.");
+                Assert.That(root.Hero.Firearm.AimRequested || root.Player.Motor.MovementBasisActive, Is.False);
+                input.Release(mouse.rightButton, queueEventOnly: true);
+                yield return null;
+
+                // End on a fresh live correction, so disable proves cleanup of
+                // the internal motion rather than only hiding an aim property.
+                root.AutomaticSimulation = false;
+                root.Opponent.ResetActor(new Vector3(7f, PlayerFactory.GroundedRootOffset, 8f), Vector3.back);
+                Physics.SyncTransforms();
+                root.Hero.SetPistolAim(true, root.Hero.transform.position + root.Hero.transform.forward * 20f + Vector3.up * 1.35f);
+                root.Tick(.6f);
+                Assert.That(root.Hero.RequestPistolShot(), Is.True);
+                Assert.That(root.Hero.CommitPistolShot(root.Projectiles), Is.True);
+                root.Tick(.05f);
+                Assert.That(root.Hero.FirearmAimRecoveryDegrees.sqrMagnitude, Is.GreaterThan(.0001f));
+                root.Hero.enabled = false;
+                Assert.That(root.Hero.FirearmAimRecoveryDegrees, Is.EqualTo(Vector2.zero), "Disable clears the active hand-correction owner.");
+                Assert.That(root.Hero.FirearmAimOffsetDegrees, Is.EqualTo(Vector2.zero));
+                Assert.That(root.Hero.FirearmShotReaction, Is.Zero, "Disable clears the bodily shot-reaction owner.");
+                TestContext.Out.WriteLine($"{weapon}: live offset span={offsetSpan:F3} degrees; recoil={peakRecoil:F3} degrees; reaction={peakReaction:F3}.");
+                LogAssert.NoUnexpectedReceived();
+            }
+            finally
+            {
+                if (root != null) root.AutomaticSimulation = false;
+                if (probe != null) Object.DestroyImmediate(probe);
+                if (panel != null) Object.DestroyImmediate(panel);
+                if (mouse != null && mouse.added) InputSystem.RemoveDevice(mouse);
+                if (keyboard != null && keyboard.added) InputSystem.RemoveDevice(keyboard);
+                GameInput.HandleApplicationFocus(true);
+                input.TearDown();
+            }
+        }
+
+        private void PrepareInexperiencedFirearmCapture()
+        {
+            ((Player3DCharacterPresentation)root.Player.Visual).ReapplyLatePresentationPose();
+            var hands = root.Hero.GetComponentInChildren<NpcHandPose>();
+            Assert.That(Vector3.Distance(root.Hero.Weapon.transform.position, hands.CylinderCentre(false)), Is.LessThan(.001f),
+                "The captured weapon must remain in the actual right palm after the final pose is reapplied.");
+            Assert.That(root.Hero.PistolSupportError, Is.LessThan(.025f),
+                "The captured supporting palm must retain the final weapon contact.");
+        }
+
+        private IEnumerator CaptureInexperiencedFirearmNearPose(string name)
+        {
+            Camera camera = root.CameraFollow.Camera;
+            Transform actor = root.Hero.transform;
+            Vector3 originalPosition = camera.transform.position;
+            Quaternion originalRotation = camera.transform.rotation;
+            float originalFieldOfView = camera.fieldOfView;
+            bool followEnabled = root.CameraFollow.enabled;
+            try
+            {
+                root.CameraFollow.enabled = false;
+                camera.fieldOfView = 45f;
+                Vector3 target = root.Hero.Ragdoll.PhysicsController.ChestBody.position + actor.forward * .28f + actor.up * .12f;
+                Vector3 eye = actor.position + actor.right * 1.5f + actor.forward * 1.1f + actor.up * 1.6f;
+                camera.transform.SetPositionAndRotation(eye, Quaternion.LookRotation(target - eye, actor.up));
+                yield return null;
+                PrepareInexperiencedFirearmCapture();
+                string path = Path.Combine(Directory.GetCurrentDirectory(), "Captures", SceneIds.CombatTest, name + ".png");
+                LogAssert.Expect(LogType.Log, "Area capture wrote " + path);
+                AreaCaptureFixture.CaptureCurrentCamera(camera, SceneIds.CombatTest, name);
+            }
+            finally
+            {
+                root.CameraFollow.enabled = followEnabled;
+                camera.fieldOfView = originalFieldOfView;
+                camera.transform.SetPositionAndRotation(originalPosition, originalRotation);
+            }
+        }
 
         [UnityTest]
         public IEnumerator Range_PistolAimMovesInAllDirectionsWithoutChangingAim(
@@ -897,7 +1197,7 @@ namespace BarPromenade.Tests.PlayMode
             private const float MaximumSteadyPelvisAmplitude = .02f, MaximumSteadyPelvisSpeed = .18f;
             private const float MaximumSteadyMuzzleAmplitude = .012f, MaximumSteadyMuzzleSpeed = .10f;
             private readonly CombatActor actor;
-            private readonly Transform pelvis;
+            private readonly Transform pelvis, rightShoulder;
             private readonly Transform[] soles, knees;
             private readonly List<Frame> history = new List<Frame>(4);
             private readonly int initialSequence;
@@ -911,18 +1211,20 @@ namespace BarPromenade.Tests.PlayMode
             private float steadyPelvisMinimum = float.PositiveInfinity, steadyPelvisMaximum = float.NegativeInfinity, steadyPelvisSpeed;
             private string steadyLowEvidence, steadyHighEvidence, steadyPelvisSpeedEvidence, entryPelvisSpeedEvidence;
             private float steadyMuzzleMinimum = float.PositiveInfinity, steadyMuzzleMaximum = float.NegativeInfinity, steadyMuzzleSpeed;
+            private Frame steadyMuzzleLowFrame, steadyMuzzleHighFrame;
             private string steadyMuzzleLowEvidence, steadyMuzzleHighEvidence, steadyMuzzleSpeedEvidence;
 
             private struct Frame
             {
-                public float Seconds, Speed, PelvisHeight, RootHeight, AimError, SupportError;
+                public float Seconds, Speed, PelvisHeight, RootHeight, AimError, SupportError, AimLever;
                 public int Number, Sample, TransferSequence;
                 public Vector3 LeftSole, RightSole, LeftKnee, RightKnee, MuzzleLocal;
+                public Quaternion AimMotionRotation;
                 public Vector3 Sole(int side) => side == 0 ? LeftSole : RightSole;
                 public Vector3 Knee(int side) => side == 0 ? LeftKnee : RightKnee;
                 public override string ToString() => $"frame={Number}, sample={Sample}, transfer={TransferSequence}, time={Seconds:F6}, speed={Speed:F4}, " +
                     $"pelvisAboveRoot={PelvisHeight:F6}, rootHeight={RootHeight:F6}, " +
-                    $"muzzleLocal={MuzzleLocal:F6}, aimError={AimError:F6}, supportError={SupportError:F6}, " +
+                    $"muzzleLocal={MuzzleLocal:F6}, aimError={AimError:F6}, supportError={SupportError:F6}, aimLever={AimLever:F6}, " +
                     $"soles={LeftSole:F6}/{RightSole:F6}, knees={LeftKnee:F6}/{RightKnee:F6}";
             }
 
@@ -930,6 +1232,7 @@ namespace BarPromenade.Tests.PlayMode
             {
                 this.actor = actor;
                 pelvis = FindAnatomicalBone(actor, "pelvis");
+                rightShoulder = FindAnatomicalBone(actor, "upper_arm.R");
                 entryPreviousHeight = entryPelvisMinimum = entryPelvisMaximum = pelvis.position.y - actor.transform.position.y;
                 soles = new[] { FindAnatomicalBone(actor, "foot.L"), FindAnatomicalBone(actor, "foot.R") };
                 knees = new[] { FindAnatomicalBone(actor, "shin.L"), FindAnatomicalBone(actor, "shin.R") };
@@ -947,6 +1250,9 @@ namespace BarPromenade.Tests.PlayMode
                     PelvisHeight = pelvis.position.y - actor.transform.position.y, RootHeight = actor.transform.position.y,
                     MuzzleLocal = actor.transform.InverseTransformPoint(actor.PistolMuzzle.position),
                     AimError = actor.PistolAimErrorDegrees, SupportError = actor.PistolSupportError,
+                    AimMotionRotation = Quaternion.FromToRotation(actor.PistolAimIntentPoint - rightShoulder.position,
+                        actor.PistolAimPoint - rightShoulder.position),
+                    AimLever = Vector3.Distance(rightShoulder.position, actor.PistolMuzzle.position),
                     LeftSole = soles[0].position, RightSole = soles[1].position,
                     LeftKnee = knees[0].position, RightKnee = knees[1].position
                 };
@@ -1013,9 +1319,17 @@ namespace BarPromenade.Tests.PlayMode
                 if (current.PelvisHeight > steadyPelvisMaximum)
                 { steadyPelvisMaximum = current.PelvisHeight; steadyHighEvidence = $"{context}, current[{current}]"; }
                 if (current.MuzzleLocal.x < steadyMuzzleMinimum)
-                { steadyMuzzleMinimum = current.MuzzleLocal.x; steadyMuzzleLowEvidence = $"{context}, current[{current}]"; }
+                {
+                    steadyMuzzleMinimum = current.MuzzleLocal.x;
+                    steadyMuzzleLowFrame = current;
+                    steadyMuzzleLowEvidence = $"{context}, current[{current}]";
+                }
                 if (current.MuzzleLocal.x > steadyMuzzleMaximum)
-                { steadyMuzzleMaximum = current.MuzzleLocal.x; steadyMuzzleHighEvidence = $"{context}, current[{current}]"; }
+                {
+                    steadyMuzzleMaximum = current.MuzzleLocal.x;
+                    steadyMuzzleHighFrame = current;
+                    steadyMuzzleHighEvidence = $"{context}, current[{current}]";
+                }
                 if (history.Count == 0) return;
                 Frame previous = history[history.Count - 1];
                 if (previous.Sample < 30 || previous.TransferSequence < initialSequence + 2 ||
@@ -1027,12 +1341,18 @@ namespace BarPromenade.Tests.PlayMode
                     steadyPelvisSpeedEvidence = $"{context}, previous[{previous}], current[{current}]";
                 }
                 float muzzleSpeed = Mathf.Abs(current.MuzzleLocal.x - previous.MuzzleLocal.x) / (current.Seconds - previous.Seconds);
-                if (muzzleSpeed > steadyMuzzleSpeed)
+                float motionAllowance = AimMotionTravelAllowance(previous, current) / (current.Seconds - previous.Seconds);
+                float residualSpeed = Mathf.Max(0f, muzzleSpeed - motionAllowance);
+                if (residualSpeed > steadyMuzzleSpeed)
                 {
-                    steadyMuzzleSpeed = muzzleSpeed;
-                    steadyMuzzleSpeedEvidence = $"{context}, previous[{previous}], current[{current}]";
+                    steadyMuzzleSpeed = residualSpeed;
+                    steadyMuzzleSpeedEvidence = $"{context}, raw={muzzleSpeed:F6} m/s, aim allowance={motionAllowance:F6} m/s; previous[{previous}], current[{current}]";
                 }
             }
+
+            private static float AimMotionTravelAllowance(Frame previous, Frame current) =>
+                Quaternion.Angle(previous.AimMotionRotation, current.AimMotionRotation) * Mathf.Deg2Rad *
+                Mathf.Max(previous.AimLever, current.AimLever);
 
             private bool QualifiedWindow(Frame current)
             {
@@ -1109,16 +1429,18 @@ namespace BarPromenade.Tests.PlayMode
             {
                 Assert.That(steadyPelvisSamples, Is.GreaterThanOrEqualTo(40),
                     "Measure the actual muzzle after two transfers at full aimed walking speed. " + DescribeMuzzle());
-                Assert.That(steadyMuzzleMaximum - steadyMuzzleMinimum, Is.LessThanOrEqualTo(MaximumSteadyMuzzleAmplitude),
-                    "The aimed firearm must retain a quiet lateral hold while the body transfers weight. " + DescribeMuzzle());
+                float aimAllowance = AimMotionTravelAllowance(steadyMuzzleLowFrame, steadyMuzzleHighFrame);
+                Assert.That(steadyMuzzleMaximum - steadyMuzzleMinimum, Is.LessThanOrEqualTo(MaximumSteadyMuzzleAmplitude + aimAllowance),
+                    "Body transfers retain the lateral hold apart from the measured angular movement of the hands. " + DescribeMuzzle());
                 Assert.That(steadyMuzzleSpeed, Is.LessThanOrEqualTo(MaximumSteadyMuzzleSpeed),
-                    "The final muzzle must not shake rapidly from side to side. " + DescribeMuzzle());
+                    "Body transfers cannot add rapid lateral shaking beyond the measured angular hand motion. " + DescribeMuzzle());
             }
 
             private string DescribeMuzzle() =>
                 $"settled muzzle samples={steadyPelvisSamples}, actor-local lateral range={steadyMuzzleMinimum:F6}..{steadyMuzzleMaximum:F6} m, " +
-                $"amplitude={steadyMuzzleMaximum - steadyMuzzleMinimum:F6}/{MaximumSteadyMuzzleAmplitude:F3} m, " +
-                $"lateral speed={steadyMuzzleSpeed:F6}/{MaximumSteadyMuzzleSpeed:F2} m/s; " +
+                $"amplitude={steadyMuzzleMaximum - steadyMuzzleMinimum:F6}/{MaximumSteadyMuzzleAmplitude:F3} m + " +
+                $"aim allowance={AimMotionTravelAllowance(steadyMuzzleLowFrame, steadyMuzzleHighFrame):F6} m, " +
+                $"residual lateral speed={steadyMuzzleSpeed:F6}/{MaximumSteadyMuzzleSpeed:F2} m/s; " +
                 $"low[{steadyMuzzleLowEvidence}], high[{steadyMuzzleHighEvidence}], fastest[{steadyMuzzleSpeedEvidence}]";
 
             public void ReportExtrema(string label, bool log = false)
@@ -2540,7 +2862,7 @@ namespace BarPromenade.Tests.PlayMode
             // include the reach from the body, not just the weapon's own length.
             Vector3 chest = root.Hero.Ragdoll.PhysicsController.ChestBody.position;
             Vector3 grip = root.Hero.Weapon.transform.position;
-            Vector3 clearAimPoint = root.Hero.PistolAimPoint;
+            Vector3 clearAimPoint = root.Hero.PistolAimIntentPoint;
             var barrier = new GameObject("Test close aiming wall");
             var shape = barrier.AddComponent<BoxCollider>();
             shape.size = new Vector3(.3f, .3f, .015f);
@@ -2586,7 +2908,7 @@ namespace BarPromenade.Tests.PlayMode
                 "The shot keeps the player's accepted pitch instead of adding camera recoil.");
             Assert.That(Mathf.DeltaAngle(0f, camera.transform.eulerAngles.z), Is.EqualTo(0f).Within(.02f));
             Vector3 position = root.Projectiles.LastPosition;
-            Vector3 shotForward = (root.Hero.PistolAimPoint - position).normalized;
+            Vector3 shotForward = (root.Hero.PistolAimIntentPoint - position).normalized;
             root.Tick(CombatTestRoot.SimulationStep);
             Assert.That(Vector3.Dot((root.Projectiles.LastPosition - position).normalized, shotForward), Is.GreaterThan(.99f));
             root.Tick(.1f);
@@ -2647,7 +2969,7 @@ namespace BarPromenade.Tests.PlayMode
             for (int index = 0; index < targets.Length; index++)
             {
                 root.Hero.SetPistolAim(true, targets[index]);
-                Assert.That(root.Hero.PistolAimPoint, Is.EqualTo(targets[index]), names[index]);
+                Assert.That(root.Hero.PistolAimIntentPoint, Is.EqualTo(targets[index]), names[index]);
                 if (index == 0)
                 {
                     for (int step = 0; step < 10; step++)
@@ -2715,7 +3037,7 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(root.SetOpponentFocus(false), Is.True);
             Assert.That(root.Hero.CombatFocused, Is.False);
             root.Hero.SetPistolAim(true, new Vector3(0f, 1.35f, 20f));
-            Assert.That(root.Hero.PistolAimPoint, Is.EqualTo(new Vector3(0f, 1.35f, 20f)));
+            Assert.That(root.Hero.PistolAimIntentPoint, Is.EqualTo(new Vector3(0f, 1.35f, 20f)));
             float step = CombatTestRoot.SimulationStep;
             root.Tick(root.Hero.Pistol.Settings.RaiseSeconds - step);
             Assert.That(root.Hero.Pistol.IsRaising, Is.True);
@@ -3384,10 +3706,11 @@ namespace BarPromenade.Tests.PlayMode
                 else if (root.Hero.Pistol.IsAiming)
                 {
                     Assert.That(root.Hero.PistolSupportError, Is.LessThan(.02f), "The left hand must keep physical support at the pistol.");
-                    Assert.That(hands.LeftGripWeight, Is.EqualTo(CombatPistolAssetProvider.SupportGripWeight));
+                    float expectedClosure = CombatPistolAssetProvider.SupportGripWeight * (1f - .12f * root.Hero.FirearmShotReaction);
+                    Assert.That(hands.LeftGripWeight, Is.EqualTo(expectedClosure).Within(.001f));
                     foreach (SkinnedMeshRenderer skin in binding.Renderers)
                         Assert.That(skin.GetBlendShapeWeight(skin.sharedMesh.GetBlendShapeIndex(hands.ShapeName)),
-                            Is.EqualTo(CombatPistolAssetProvider.SupportGripWeight * 100f));
+                            Is.EqualTo(hands.LeftGripWeight * 100f).Within(.001f));
                 }
             if (root.Hero.Pistol.IsAiming && !root.Hero.Pistol.IsReloading)
             {

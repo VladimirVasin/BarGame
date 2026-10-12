@@ -8,6 +8,8 @@ namespace BarPromenade
         public PistolState Pistol => Firearm as PistolState;
         public ShotgunState Shotgun => Firearm as ShotgunState;
         public Transform PistolMuzzle { get; private set; }
+        internal Transform FirearmAimingMuzzle => IsShotgun && Shotgun != null && Shotgun.NextBarrel >= 0
+            ? ShotgunMuzzle(Shotgun.NextBarrel) : PistolMuzzle;
         internal float PistolSupportError => BodyDamage.CanUseLeftHand && IsFirearm && pistolSupport != null
             ? Vector3.Distance(handPose.CylinderCentre(true), pistolSupport.position) : 0f;
         private AnimationClip pistolRest, pistolRaise, pistolAim, pistolFire, pistolReload, pistolLower;
@@ -25,11 +27,34 @@ namespace BarPromenade
         private bool pistolAimApplied;
         private Vector3 pistolFreeAimPoint;
         private bool pistolAimReachable;
+        private readonly CombatFirearmAimMotion firearmAimMotion = new CombatFirearmAimMotion();
         internal const float MaximumPistolAimErrorDegrees = 5f;
         private const float FirearmWalkGripStabilization = .85f;
         internal bool IsFreePistolAiming => !CombatFocused && (Firearm?.AimRequested ?? false);
-        internal Vector3 PistolAimPoint => CombatFocused && contactTarget != null
+        internal Vector3 PistolAimIntentPoint => CombatFocused && contactTarget != null
             ? contactTarget.Ragdoll.PhysicsController.ChestBody.position : pistolFreeAimPoint;
+        internal float FirearmShotReaction => bodyMotion?.FirearmShotReaction ?? 0f;
+        internal Vector2 FirearmAimRecoveryDegrees => firearmAimMotion.RecoveryOffset;
+        internal Vector2 FirearmAimOffsetDegrees => hero != null && IsFirearm && !weaponDropped &&
+            Firearm != null && !Firearm.ReloadPending && !State.IsDefeated
+            ? (firearmAimMotion.Offset(IsShotgun) + Vector2.up *
+                (-(bodyMotion?.BreathAmount ?? 0f) * (IsShotgun ? .12f : .18f))) *
+                Mathf.SmoothStep(0f, 1f, pistolVisualAimProgress) : Vector2.zero;
+        internal Vector3 PistolAimPoint
+        {
+            get
+            {
+                Vector3 target = PistolAimIntentPoint;
+                Vector2 offset = FirearmAimOffsetDegrees;
+                if (offset == Vector2.zero || !FinitePistolVector(target)) return target;
+                Vector3 origin = transform.position + transform.up * 1.4f;
+                Vector3 direction = target - origin;
+                Vector3 right = Vector3.Cross(transform.up, direction).normalized;
+                if (right.sqrMagnitude < .0001f) right = transform.right;
+                return origin + Quaternion.AngleAxis(offset.x, transform.up) *
+                    (Quaternion.AngleAxis(-offset.y, right) * direction);
+            }
+        }
         internal float PistolAimErrorDegrees => PistolMuzzle != null && FinitePistolVector(PistolAimPoint)
             ? Vector3.Angle(PistolMuzzle.forward, PistolAimPoint - PistolMuzzle.position) : 180f;
         internal bool PistolAimAligned => pistolAimReachable && PistolAimErrorDegrees <= MaximumPistolAimErrorDegrees;
@@ -71,6 +96,8 @@ namespace BarPromenade
                 pistolFreeAimPoint = worldAimPoint ?? (transform.position + Vector3.up * 1.4f + transform.forward * 40f);
             bool requested = held && !HasWeaponSwitchRequest && PistolAimBodyAvailable && GameInput.CanRead(GameInputContext.Gameplay);
             Firearm.SetAim(requested);
+            if (!requested && !GameTimeScaleRuntime.IsPaused && !PauseMenuController.IsAnyPaused)
+                firearmAimMotion.Reset();
         }
 
         /// <summary>Queue one trigger edge for a single attempt on the next live step; true does not promise a shot.</summary>
@@ -180,6 +207,11 @@ namespace BarPromenade
                 return RejectPistolShot(request, "projectile_spawn", "commit");
             Firearm.TryFire();
             projectileSequence = unchecked(projectileSequence + 1);
+            if (hero != null)
+            {
+                firearmAimMotion.NotifyShot(IsShotgun, Firearm.ShotSequence);
+                bodyMotion?.NotifyFirearmShot(IsShotgun);
+            }
             ApplyGroundedFirearmRecoil(firingMuzzle.forward);
             UpdatePistolMechanics();
             if (pistolFlash != null) pistolFlash.gameObject.SetActive(true);
@@ -225,6 +257,8 @@ namespace BarPromenade
             if (pistolFlash != null) pistolFlash.gameObject.SetActive(!weaponDropped &&
                 Firearm.CooldownRemaining > 0f && Firearm.ShotElapsed < .05f);
             UpdatePistolMechanics();
+            if (hero != null)
+                firearmAimMotion.Advance(seconds, motor != null ? motor.PlanarVelocity.magnitude : 0f, visuallyAiming);
             AdvanceGroundedFirearmAim(seconds);
         }
 
@@ -242,6 +276,7 @@ namespace BarPromenade
             pistolVisualAimProgress = 0f;
             pistolLeftClosure = pistolBlendClosure = 0f;
             pistolReloadSettleRemaining = 0f;
+            firearmAimMotion.Reset();
             UpdatePistolMechanics();
             if (pistolFlash != null) pistolFlash.gameObject.SetActive(false);
         }
@@ -250,6 +285,7 @@ namespace BarPromenade
         {
             CancelPendingPistolShot("reset");
             Firearm?.Reset();
+            firearmAimMotion.Reset();
             ResetPistolReloadAudio();
             shotgunReloadCue = ShotgunVolleyResponseCount = 0;
             pistolReloadSettleRemaining = 0f;
@@ -273,7 +309,7 @@ namespace BarPromenade
         private float PistolSupportClosure(AnimationClip clip) => !BodyDamage.CanUseLeftHand ? 0f : clip == pistolReload ?
             (IsShotgun ? ShotgunReloadGripWeight : PistolReloadGripWeight) : clip == pistolRaise
             ? FirearmSupportGripWeight * Mathf.SmoothStep(0f, 1f, pistolVisualAimProgress)
-            : clip == pistolAim || clip == pistolFire ? FirearmSupportGripWeight
+            : clip == pistolAim || clip == pistolFire ? FirearmSupportGripWeight * (1f - .12f * FirearmShotReaction)
             : clip == pistolLower ? FirearmSupportGripWeight * Mathf.SmoothStep(0f, 1f, pistolVisualAimProgress) : 0f;
 
         private float BlendPistolClosure(float target)
@@ -321,10 +357,9 @@ namespace BarPromenade
             Vector3 target = PistolAimPoint;
             Vector3 shoulderToTarget = target - pistolArmBones[0].position;
             bool walkingAim = footwork != null && footwork.UsesFirearmWalkClips;
-            // The free-aim crosshair is fixed on the camera ray. Angular sway
-            // would move a real muzzle shot off that visible point, especially
-            // at head edges. Keep the authored motion and firing kick below.
-            if (CombatFocused)
+            // The hero's effective target owns hand drift; the HUD reads the
+            // final barrel. Preserve the existing focused NPC hold separately.
+            if (CombatFocused && hero == null)
             {
                 float movementSway = motor != null ? motor.PlanarVelocity.magnitude * .3f : 0f;
                 if (walkingAim) movementSway *= 1f - FirearmWalkGripStabilization;

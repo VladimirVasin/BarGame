@@ -773,6 +773,7 @@ namespace BarPromenade
             SuspendNpcAnimation();
             CancelPendingPistolShot("disabled");
             Firearm?.CancelAction();
+            firearmAimMotion.Reset();
             pistolVisualAimProgress = 0f;
             pistolLeftClosure = pistolBlendClosure = 0f;
             if (State.IsShoving || State.IsKicking || State.Phase == MeleePhase.Step || State.HasBufferedStep)

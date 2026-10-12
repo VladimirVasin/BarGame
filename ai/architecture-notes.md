@@ -2,6 +2,12 @@
 
 ## Current facts
 
+- **Accepted exception 2026-10-13, novice firearms:**
+  CombatTest hero nonmilitary:breath/tremor/walk-settle/recoil-yaw/overshoot/
+  finger regrip/blink-chin-breath/same rig;NPC kept.
+  Muzzle reticle/shotgun centre/stablecam/intent legs/0assets-lore;
+  §6/§7/art§15a/9checks.
+
 - **Accepted — 2026-10-13, bounded world presentation:**
   User: finite litter palette/root lifetime/no MPB; forest 48 m/layer chunks,
   same geometry/UV/wind bounds/shadows/one collider (duplicate trunk buffer).
@@ -315,20 +321,20 @@
 - **Accepted 2026-10-10:** healthy gun aimwalk -15%
 - **Accepted 2026-10-09, aim gait:**
   CombatFootwork:8clips/retarget/facing/normdiag/0run/camplane/upperaim;
-  Step1m/15/noinputback/wall-pause/tank-release/handoff0/aim0Step0;barfocus/reload/injury.
+  Step1m/15/noinputback/wall-pause/tankreturn/0handoff/aim0Step0;barfocus/reload/injury.
 - **Accepted exception 2026-10-08, pistol:**
-  Standard dummy/freecam/focus/Q-Step;first world/anatomy;regional SFX-force;
-  stablecam-hitkick/recoil-streak/0motor-sway/head0HP-ragdoll.
-  Cases:port-delay/gravity-bounce-cap;emptylock/mag-seat-rack1.8/ammo-last/dropE/Rresume.
+  Standard dummy/freecam/focus/Q-Step;first world/anatomy;regional SFX-force.
+  stablecam/hitkick/recoil-streak/head0HP-ragdoll;
+  cases:port-delay/gravity-bounce-cap;emptylock/mag-seat-rack1.8/ammo-last/E/Rresume.
   0lock-pierce-ricochet-guard-parry-taunt-reward;stage/win/pause:art§15a.
 - **Accepted exception 2026-10-09, shotgun power:**
   `ShotgunSettings`:close420Ns→40m0 steep;HPlinear;
   immutable finalbody+torque/unfrozen1/current-mass share/nonpellet torso.
   1SFX/terminal hitstop/head≤14/prelethal/8ledgers/fast debris-blood
 - **Accepted exception 2026-10-09, body destruction:**
-  Both/cloth-tissue→rig skeleton/nearshotgun max;Chest-Abdomen-Pelvis critical joined/
-  0chunks-cellRB;finite point-radius cells deform-erode/torso subdivide/expose≠sever;
-  head-limb closed cuts/finite parts.
+  Both/cloth-tissue→rig skeleton/nearshotgun max;critical Chest-Abdomen-Pelvis joined/
+  0chunks-cellRB;finite radius cells deform-erode/subdiv torso/expose≠sever;
+  closed head-limb cuts/finite parts.
   Rhand0weapon/Lhand0twohand-reload(Rbar-loaded pistol)/legs fall-crawl0rise-step-kick;
   Hero=AI/head-torso end/surface=hit=physics/dedup-pause-reset.
 - **Accepted exception 2026-10-08, headshots:**
@@ -340,11 +346,11 @@
 - **Accepted 2026-10-08, regional hits:**
   Rig/wet/repeat/shared physics-camera.
 - **Accepted 2026-10-07, combat:**
-  Floor/stall-arm→drop/rise≠grip;no bar:walk-Q-Step/hits-falls/Eshared/0grant/cancel floor.
+  Floor/stall-arm→drop/rise≠grip;no bar:walk-Q-Step/hits-falls/Eshared/0grant/floorcancel.
   NPC approach-Q/rise ignores drop;HP-focus-AI/MMB/reset mode-focus;
-  pause-hitstop0/hitstop≠lock-reset. Aim¼Windup lock/Charge free/motor yield;
-  Step1m/finite landing-overload/first bar-world-body/metal-wall recoil-stop/
-  guard-break/0HPparry/pooled sparks-SFX. Q/Step contacts-poses:art§15a/`CombatActor`.
+  pause-hitstop0/hitstop≠lock-reset;Aim¼Windup lock/Charge free/motor yield;
+  Step1m/bounded landing-overload/first bar-world-body/metal-wall recoil-stop/
+  guard-break/0HPparry/pooled sparks-SFX;Q/Step contacts-poses:art§15a/`CombatActor`.
 - **Accepted 2026-10-02, combat:**
   R>L/Hit-Miss cut/.22→held.28/buffer.20/hit-fall-reset0;
   AI≥1m/retreat≤.6s/whiff.20→counter.22/Rising hits.
@@ -359,7 +365,7 @@
   `CombatWeaponGeometry`:8seg/heldmass→forearm/free→inertia/hand-ignore expires/
   drop past capsule→anatomy0/ROelbow-pronation-5..120/side±8°/QA pending.
 - **Accepted 2026-09-21, body:**
-  6bone-local zones/first sequence;bar head×2(50/80,cap.99MaxHP)/rear±45°defeat;
+  6bone zones/first seq;bar head×2(50/80,cap.99MaxHP)/rear±45°defeat;
   torso1-rear1.25/arms.5/legs.75;frozen mutual zone-dir-power/1HP-ragdoll.
   C1pose-contact/travel-yaw:return.15→.75/stun.35;stance.42/.28m/Smoothstep feet;
   Hold:breath0/regen delay;thud/bar pool grows10s/stays.
@@ -377,8 +383,8 @@
   Standard E/settled defeat:Home toilet/view-timeline-stream-residue;
   Guided dock/aim/bone-floor;barL/§21-exempt silent/0speech-reaction-reward/6th FP.
 - **Accepted exception 2026-09-19, CombatTest:**
-  §6/§16.15/art§15a:hero-input/hits-steps vulnerable/fall/reset/shoulder-wall;
-  W-Swalk/A-Dstrafe/opponent last.
+  §6/§16.15/art§15a:input/hits-steps vulnerable/fall/reset/shoulder-wall;
+  W-Swalk/A-Dstrafe.
 
 - **Accepted — 2026-09-16, street pool is the default NPC catalog:**
   User: default-only, new models join immediately. `DefaultNpcPopulation`:
@@ -5491,17 +5497,14 @@
   actor:facing;`WalkPlanarStep`:travel-facing. `PlayerMotionSample`:planar velocity/
   signed forward speed/turn→`Walk`/`Run`/`WalkBack`/`TurnLeft`/`TurnRight`,six-input mixer.
 - **Accepted — Bounded inertial walk/run locomotion:** Character-relative
-  input targets `2.6/4.2 m/s` forward walk/run or `1.4 m/s` backward;
-  acceleration `6.5 m/s²`, braking `11 m/s²`. Actual constrained displacement
-  feeds next-step velocity, so road edges/collisions store no hidden impulse.
-  Normal input release coasts, while modal
-  ownership, scene transitions, input disable and teleport still stop planar
-  motion immediately. The existing intoxication multiplier scales both
-  forward targets and the turn rate; fatigue has no movement debuff. Scripted
-  interaction approaches continue to call the walking step directly and never
-  inherit held sprint input. `PlayerMotionSample.RunBlend` is derived from the
-  signed speed that remains after collision and walkable-area constraints, not
-  from the key request, so a blocked hero cannot run in place.
+  targets: `2.6/4.2 m/s` forward walk/run, `1.4 m/s` back;
+  acceleration/brake `6.5/11 m/s²`. Constrained displacement feeds next velocity;
+  road edges/collision retain no hidden impulse. Input release coasts;
+  modal/transition/input disable/teleport immediately stop planar motion.
+  Intoxication scales forward targets/turn; fatigue has no debuff. Scripted
+  approaches call the walking step directly without held sprint.
+  `PlayerMotionSample.RunBlend`: signed speed after collision/walkable constraints,
+  not requested keys; a blocked hero cannot run in place.
 - **Accepted — Run is one production-only authored gait:** Hero V2 appends one
   bone-only, in-place `Run` Action (`0.75 s`, `18` frames at `24 fps`) to reach
   `38` production Actions at that decision; the later three-part seated drink

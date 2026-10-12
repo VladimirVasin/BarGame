@@ -4,7 +4,10 @@ namespace BarPromenade
 {
     public sealed partial class CombatTestRoot
     {
-        private readonly RaycastHit[] pistolAimHits = new RaycastHit[64];
+        private RaycastHit[] pistolAimHits = new RaycastHit[64];
+        private int firearmCrosshairFrame = -1;
+        private float firearmCrosshairClock;
+        private Vector3 firearmCrosshairOrigin, firearmCrosshairDirection, firearmCrosshairPoint;
         internal int FreeAimQueryCount { get; private set; }
         internal long FreeAimQueryTicks { get; private set; }
         private bool pistolCursorOwned, pistolCursorVisible, pistolApplicationFocused = true, requirePistolAimRelease;
@@ -55,6 +58,7 @@ namespace BarPromenade
 
         private void ResetPistolCrosshair()
         {
+            firearmCrosshairFrame = -1;
             pistolCrosshairElapsed = CrosshairExpandSeconds + CrosshairReturnSeconds;
             pistolCrosshairFrom = 0f;
         }
@@ -88,22 +92,33 @@ namespace BarPromenade
             return ResolveFreePistolAim(ray);
         }
 
-        private Vector3 ResolveFreePistolAim(Ray ray)
+        private Vector3 ResolveFreePistolAim(Ray ray, bool fromMuzzle = false)
         {
             long start = System.Diagnostics.Stopwatch.GetTimestamp();
             FreeAimQueryCount++;
-            try { return ResolveFreePistolAimSurface(ray); }
+            try { return ResolveFreePistolAimSurface(ray, fromMuzzle); }
             finally { FreeAimQueryTicks += System.Diagnostics.Stopwatch.GetTimestamp() - start; }
         }
 
-        private Vector3 ResolveFreePistolAimSurface(Ray ray)
+        private Vector3 ResolveFreePistolAimSurface(Ray ray, bool fromMuzzle)
         {
             float distance = CombatProjectilePool.MaximumDistance;
             int count = Physics.RaycastNonAlloc(ray, pistolAimHits, distance,
                 Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore);
+            // A full NonAlloc buffer is unordered and may omit the nearest wall.
+            // Grow only on saturation; retain the normal allocation-free path.
+            while (count == pistolAimHits.Length && pistolAimHits.Length < 1024)
+            {
+                pistolAimHits = new RaycastHit[pistolAimHits.Length * 2];
+                count = Physics.RaycastNonAlloc(ray, pistolAimHits, distance,
+                    Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore);
+            }
+            RaycastHit[] hits = count == pistolAimHits.Length
+                ? Physics.RaycastAll(ray, distance, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore) : pistolAimHits;
+            if (!ReferenceEquals(hits, pistolAimHits)) count = hits.Length;
             for (int i = 0; i < count; i++)
-                if (CombatProjectilePool.IsWorld(pistolAimHits[i].collider, Hero))
-                    distance = Mathf.Min(distance, pistolAimHits[i].distance);
+                if (CombatProjectilePool.IsWorld(hits[i].collider, Hero))
+                    distance = Mathf.Min(distance, hits[i].distance);
             // A standing motor capsule is not the surface visible under the
             // crosshair. Converge the actual muzzle on the same anatomy that
             // bullets hit, while allowing nearer world geometry to occlude it.
@@ -116,7 +131,29 @@ namespace BarPromenade
                 if (actor.Hurtboxes.SweepProjectile(ray.origin, ray.GetPoint(distance), 0f, ray.direction, out var hit))
                     distance *= hit.Fraction;
             }
-            return ray.GetPoint(Mathf.Max(distance, Vector3.Dot(heroChest.position - ray.origin, ray.direction) + .5f));
+            return ray.GetPoint(fromMuzzle ? distance :
+                Mathf.Max(distance, Vector3.Dot(heroChest.position - ray.origin, ray.direction) + .5f));
+        }
+
+        internal bool TryGetFirearmCrosshairPoint(out Vector3 worldPoint)
+        {
+            worldPoint = default;
+            if (!IsInitialized || !Hero.IsFreePistolAiming || !CameraFollow.FreeAimActive) return false;
+            Transform muzzle = Hero.FirearmAimingMuzzle;
+            if (muzzle == null) return false;
+            Vector3 origin = muzzle.position, direction = muzzle.forward;
+            // IMGUI has layout/repaint passes. Reuse the final muzzle sample,
+            // while manual simulation substeps in one frame still invalidate it.
+            if (firearmCrosshairFrame != Time.frameCount || firearmCrosshairClock != Hero.JournalPoseClock ||
+                firearmCrosshairOrigin != origin || firearmCrosshairDirection != direction)
+            {
+                firearmCrosshairFrame = Time.frameCount;
+                firearmCrosshairClock = Hero.JournalPoseClock;
+                firearmCrosshairOrigin = origin; firearmCrosshairDirection = direction;
+                firearmCrosshairPoint = ResolveFreePistolAim(new Ray(origin, direction), true);
+            }
+            worldPoint = firearmCrosshairPoint;
+            return true;
         }
 
         public bool ReturnToWeapons()
@@ -188,16 +225,20 @@ namespace BarPromenade
         private void DrawPistolHud(RetroUiCanvas canvas)
         {
             if (!Hero.IsFirearm || Hero.Firearm == null) return;
-            if (Hero.IsFreePistolAiming && CameraFollow.FreeAimActive && GameInput.CanRead(GameInputContext.Gameplay))
+            if (Hero.IsFreePistolAiming && CameraFollow.FreeAimActive && GameInput.CanRead(GameInputContext.Gameplay) &&
+                TryGetFirearmCrosshairPoint(out Vector3 aimPoint))
             {
-                Vector3 centre = CameraFollow.Camera.ViewportToScreenPoint(new Vector3(.5f, .5f, 0f));
+                Vector3 centre = CameraFollow.Camera.WorldToScreenPoint(aimPoint);
                 Vector2 point = canvas.ScreenToLogical(new Vector2(centre.x, Screen.height - centre.y));
                 Color colour = Hero.PistolBodyAvailable && Hero.Firearm.CanFire && Hero.PistolAimAligned ? RetroUiTheme.Text : RetroUiTheme.Muted;
                 float spread = Mathf.Round(PistolCrosshairExpansion) + (Hero.IsShotgun ? 5f : 0f);
-                RetroUiTheme.FillRect(new Rect(point.x - 1f, point.y - 1f, 3f, 3f), RetroUiTheme.Ink);
-                DrawPistolCrosshairArms(point, spread, RetroUiTheme.Ink, 1f);
-                DrawPistolCrosshairArms(point, spread, colour, 0f);
-                RetroUiTheme.FillRect(new Rect(point.x, point.y, 1f, 1f), colour);
+                if (centre.z > 0f && centre.x >= 0f && centre.x < Screen.width && centre.y >= 0f && centre.y < Screen.height)
+                {
+                    RetroUiTheme.FillRect(new Rect(point.x - 1f, point.y - 1f, 3f, 3f), RetroUiTheme.Ink);
+                    DrawPistolCrosshairArms(point, spread, RetroUiTheme.Ink, 1f);
+                    DrawPistolCrosshairArms(point, spread, colour, 0f);
+                    RetroUiTheme.FillRect(new Rect(point.x, point.y, 1f, 1f), colour);
+                }
             }
             var rect = new Rect(14, 273, 170, 25);
             RetroUiTheme.DrawPanel(rect, RetroUiTheme.PanelInset, RetroUiTheme.BorderMuted, false, 0f, 1f, .72f);

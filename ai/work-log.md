@@ -28,6 +28,12 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
   `AGENTS.md` owns the rules; `AI.md` exposes them each session. Behavior/canon
   and FAST scope remain binding; comparable measurements distinguish gains
   from expectations. `check-docs.py` and diff review verify the memory update.
+- CombatTest hero now breathes/trembles through firearm aim, with stronger
+  walk/settle drift and asymmetric recoil/overshoot; peaks stay.
+  Supporting fingers regrip while palm contact holds; shot blink/chin/breath
+  reuse body tension and the same rig. Real-muzzle reticle agrees with shots;
+  camera and intended leg heading stay stable, including grounded aim.
+  NPC aim is unchanged; bounded phases freeze/reset with ownership.
 - Checks: `WorldPresentationBudgetTests`, `CityPortSurfaceImportTests`,
   `RenderedLitter_SharesItsPaletteWithoutBlocksAndReleasesOnlyItsOwnMaterials`,
   `ForestChunks_PreserveGeometryWindBoundsShadowsAndOnePhysicalCollider`,
@@ -37,6 +43,8 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
   City/forest frames and nearby hair return reviewed; worker frame selection
   checks visible coworker bounds as well as physics occlusion.
   Optional woman CPU capture distinguishes unmeasured iteration fields.
+  `Range_InexperiencedFirearmAimKeepsMuzzleReticleAndShotTogether` verifies
+  novice motion, barrel projection, fire direction, pause and reset.
 
 ## 2026-10-12 — Cloth, weapon switching and endless combat
 

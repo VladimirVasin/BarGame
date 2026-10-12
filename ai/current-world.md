@@ -142,31 +142,30 @@ The vertical slice contains:
   inside closes it; no village signpost;
 - CombatTest:seeded warehouse24×18×6m/upper2.6m/two stairs/straight-L-U galleries;
   Blender kit/cargo-racks/pipes/8 fixed lamps/2 shadows/concrete-metal steps/vent.
-  NPC graph/gravity/height-LOS;reset keeps layout/New warehouse replaces;
-  seed/version:plan/journal/CLI;flat:test-only.
+  NPC graph/gravity/height-LOS;resetkeep/Newreplace;
+  seed/v:plan/journal/CLI;flat:test-only.
   Standard1/Ebody;Endless1–5(default2)/corpses0–2(default2);Backsettings.
   2–4→3–7active s/free≥3m-route/0backlog.
   Pool=livecap≤5/IDs/AI-space-stairs/kill1x/heroend.
   Injury/action/ammo/flights kept;empty+settled/no reload→guns8/2.
-  Unused slot else oldest corpse reuse;excess oldest retire/body-drop0.
-  Flights/survivors kept/focus≠hits/shotgun/victim.
-  Tab-E0.
-  Default:bar;pistol Lundercoat/bar Rbelt/shotgun back;
-  sling:Lshoulder→chest/abdomen→lower Rside;1pistol/2secondary/DpadR;
-  6bone/same rig/torso over gait.
-  2×carry/settle;pistol↔bar~1.7s/shotgun~2.4s;
-  rig-model-ammo/reload first-last queued/pause-hitstop.
-  Fall cancels/drop original+pose+ammo/owns slot;Erecord-specific.
-  NPCbar/3AI/freecam;
-  standard dummy/TabAIreset;MMBfocus/bar-Qfocus.
+  Unused else oldest corpse reuse;excess oldest retire/body-drop0;
+  survivors kept/focus≠hits/shotgun-victim/Tab-E0.
+  Defaultbar;pistol Lundercoat/bar Rbelt/shotgun back;
+  sling:Lshoulder→chest/abdomen→low Rside;1pistol/2long/DpadR;
+  6bone/torso over gait;2×carry/settle;pistol↔bar~1.7s/shotgun~2.4s;
+  rig-model-ammo/reload first-last queue/pause-hitstop.
+  Fallcancel/original+pose+ammo+slot;Erecord.
+  NPCbar/3AI/freecam;dummy/TabAIreset;MMBfocus/bar-Qfocus.
   Guns:RMBaim/LMBedge/R-Xreload;8clips/2.21-back1.19/0run/FOV-IK.25;
-  camplane normdiag/Space1m-cardinal-back/tankreturn/barfocus/injury.
+  camplane normdiag/Space1m-4way-back/tankreturn/barfocus/injury.
+  Hero:breath/tremor/walk-settle/recoil-yaw/overshoot/finger regrip/blink-chin;
+  reticle=muzzle/shotgun centre;stablecam/intent legs/NPC kept.
   Pistol8∞/reload1.8/slide-emptylock/mag-rack/cases;
-  shotgun2∞/12pellets/.55/head×2/break2.8/stage-ammo/atomic spend/flights finish/win fire.
-  Near launch/falloff/1reaction/head≤14/skin-world first/0pierce-ricochet-guard.
+  shotgun2∞/12pellets/.55/head×2/break2.8/stage-ammo/atomic spend/flightsfinish/winfire.
+  Near launch/falloff/1react/head≤14/skin-world first/0pierce-ricochet-guard.
   Cloth-tissue-bone loss/head-limb sever/torso→joined skeleton/0chunks.
-  Rhand0weapon/Lhand0twohand-reload;Rbar-loaded pistol retained;
-  leg loss fall/crawl/0rise-step-kick;critical head-torso end/corpses/reset.
+  Rhand0weapon/Lhand0twohand-reload;Rbar-loaded pistol;
+  Legloss fall/crawl/0rise-step-kick;critical head-torso end/corpses/reset.
   Bar6zones/rearhead-end/metalrecoil/Qsupport;standard taunt/Eshared/0grant;
 - the retained Home opening is reachable only by a legacy request: held bed loop,
   silent `05:59` clock with rare whole-display flicker, five-second input lock,

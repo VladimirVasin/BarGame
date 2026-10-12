@@ -81,8 +81,8 @@ repair commands. Generation/publication: [../tools/README.md](../tools/README.md
 ## Implemented capabilities
 
 - CombatTest:warehouse/routes;Standard1;Endless1–5(default2)/corpses≤2.
-  Shared pool≤5/oldest retire-reuse;2–4→3–7s/empty supply;allhits.
-  Guns+bar/destruction;gap:pierce/balance.
+  Pool≤5/oldest;2–4→3–7s/empty supply/hits.
+  Guns/bar/damage;hero tremor/recoil/muzzle reticle;gap:pierce/balance.
 - City: 20 metre types; district heights, curved old/service streets,
   courts/passages/wings, unified ground; river/shore, church and Route 01.
   First unpaused dock entry starts finite port→factory→shop supply once;

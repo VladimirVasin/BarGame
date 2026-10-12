@@ -10,11 +10,15 @@ namespace BarPromenade
         {
             if (hero != null)
             {
-                if (!CombatFocused || roundEnded || State.IsDefeated) hero.ReleaseContextualFacialExpression(this);
+                bool firearmAim = IsFirearm && Firearm != null && (Firearm.AimRequested || FirearmShotReaction > .01f);
+                if ((!CombatFocused && !firearmAim) || State.IsDefeated || roundEnded && !firearmAim)
+                    hero.ReleaseContextualFacialExpression(this);
                 else
                 {
                     float blink = Mathf.Repeat(poseClock + 1f, 3.1f);
-                    PlayerFacialExpression face = blink < .065f ? PlayerFacialExpression.ClosedBlink :
+                    PlayerFacialExpression face = FirearmShotReaction > .3f ? PlayerFacialExpression.ClosedBlink :
+                        FirearmShotReaction > .12f ? PlayerFacialExpression.HalfBlink :
+                        blink < .065f ? PlayerFacialExpression.ClosedBlink :
                         blink < .12f ? PlayerFacialExpression.HalfBlink :
                         State.IsAttacking || State.IsCharging || State.IsShoving || State.IsBlocking || (bodyMotion?.FlinchAmount ?? 0f) > .1f
                             ? PlayerFacialExpression.Tense : PlayerFacialExpression.Watchful;
@@ -40,7 +44,7 @@ namespace BarPromenade
             float effort = State.Phase == MeleePhase.Recovery ? 1f - State.PhaseProgress :
                 State.IsAttacking || State.IsShoving ? 1f : State.IsCharging ? .35f + .65f * State.Charge01 : 0f;
             bodyMotion?.SetEmotionTargets(hero != null, State.Stamina / State.Settings.MaxStamina,
-                threat, effort, CombatFocused && !roundEnded && !State.IsDefeated);
+                threat, effort, (CombatFocused && !roundEnded || IsFirearm && (Firearm?.AimRequested ?? false)) && !State.IsDefeated);
         }
     }
 }

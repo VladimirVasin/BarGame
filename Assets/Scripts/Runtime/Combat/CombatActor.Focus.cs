@@ -27,7 +27,7 @@ namespace BarPromenade
         public void SetCombatFocused(bool focused, bool preservePistolAim = false)
         {
             if (hero == null || CombatFocused == focused) return;
-            if (IsFirearm && CombatFocused && !focused) pistolFreeAimPoint = PistolAimPoint;
+            if (IsFirearm && CombatFocused && !focused) pistolFreeAimPoint = PistolAimIntentPoint;
             CombatFocused = focused;
             if (!focused && !preservePistolAim) SetPistolAim(false);
             // A rapid off/on toggle cannot grant another aim envelope to an existing swing.
