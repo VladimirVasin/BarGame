@@ -238,8 +238,12 @@
         },
         "ShotgunDraw": {
           "duration_s": 2.65,
-          "transfer_s": 0.88,
-          "right_hand_travel_m": 2.527908
+          "right_hand_travel_m": 1.634304,
+          "hand_transfers_s": [
+            0.3,
+            0.7,
+            1.65
+          ]
         },
         "ShotgunStow": {
           "duration_s": 2.65,
@@ -254,12 +258,34 @@
       "pistol_maximum_extraction_elbow_height_m": 1.3785264492034912,
       "pistol_minimum_elbow_to_head_base_gap_m": 0.10672235488891602,
       "pistol_maximum_elbow_step_m": 0.03253081884843939,
+      "shotgun_draw_handoffs": {
+        "hand_transfers_s": [
+          0.3,
+          0.7,
+          1.65
+        ],
+        "right_push_grip_local_m": [
+          0.02,
+          0.14,
+          0.3
+        ],
+        "left_catch_grip_local_m": [
+          0.0,
+          -0.04,
+          -0.35
+        ],
+        "maximum_weapon_path_error_m": 7.621838345406659e-07,
+        "maximum_weapon_path_angle_error_degrees": 7.415552829691839e-05,
+        "maximum_elbow_above_shoulder_m": 0.0817723274230957,
+        "minimum_left_forearm_palm_body_clearance_m": 0.06011839598417282,
+        "left_catch_approach": "outside left shoulder, then vertical from above; palm down"
+      },
       "shotgun_left_shoulder_route": {
         "anchors": {
           "neutral": {
             "chest": [
-              -0.003977518063038588,
-              0.006634220946580172,
+              -0.003977518994361162,
+              0.0066342223435640335,
               1.2049822807312012
             ],
             "pelvis": [
@@ -269,16 +295,16 @@
             ],
             "left_shoulder": [
               0.20678533613681793,
-              0.0007012416608631611,
+              0.0007012425921857357,
               1.4232041835784912
             ],
             "right_shoulder": [
               -0.21123184263706207,
-              0.00979622732847929,
+              0.009796228259801865,
               1.4187430143356323
             ],
             "body_up": [
-              -0.0003228724526707083,
+              -0.00032287577050738037,
               -0.08821006864309311,
               0.9961018562316895
             ],
@@ -300,24 +326,24 @@
               0.8349999785423279
             ],
             "left_shoulder": [
-              0.2285151332616806,
+              0.2285151183605194,
               -0.10828966647386551,
               1.4429736137390137
             ],
             "right_shoulder": [
-              -0.15906737744808197,
-              -0.013401235453784466,
+              -0.15906739234924316,
+              -0.013401232659816742,
               1.4372754096984863
             ],
             "body_up": [
-              0.1892206221818924,
+              0.1892205774784088,
               -0.10556527972221375,
               0.9762435555458069
             ],
             "body_forward": [
               -0.2365652173757553,
               -0.969821572303772,
-              -0.05901853367686272
+              -0.05901854485273361
             ]
           }
         },
@@ -339,7 +365,7 @@
               1.1923927068710327
             ],
             [
-              -0.13292169570922852,
+              -0.1329217106103897,
               -0.14447440207004547,
               1.000563621520996
             ],
@@ -354,32 +380,32 @@
               0.9355321526527405
             ]
           ],
-          "length_m": 1.0923802534488647
+          "length_m": 1.0923802461176118
         },
         "maximum_grasp_spans": {
           "stock_to_hand": {
-            "length_m": 0.573468777244678,
+            "length_m": 0.5734687837407427,
             "draw_second": 1.51,
             "material_length_m": 0.63,
-            "minimum_geometric_reserve_m": 0.056531222755321964
+            "minimum_geometric_reserve_m": 0.05653121625925728
           },
           "hand_to_foreend": {
-            "length_m": 0.7296361015257702,
+            "length_m": 0.7296360274933698,
             "draw_second": 0.62,
             "material_length_m": 0.77,
-            "minimum_geometric_reserve_m": 0.04036389847422983
+            "minimum_geometric_reserve_m": 0.040363972506630263
           },
           "stock_via_shoulder_to_hand": {
-            "length_m": 0.5525765067326979,
+            "length_m": 0.5525765357999409,
             "draw_second": 0.3,
             "material_length_m": 0.63,
-            "minimum_geometric_reserve_m": 0.07742349326730213
+            "minimum_geometric_reserve_m": 0.07742346420005908
           }
         },
         "authored_centerline_length_m": 1.3999999827818093
       }
     },
-    "animation_signature": "2d8f2bbc3e9193f3f9e30a31398e766dc5ac66eb9585a0d59f86b932f5ed8ea1",
+    "animation_signature": "a30f3f48292a192673e0514f77b220d2f01104d138b50960a867dd2d4a06141a",
     "fbx_validation": {
       "maximum_position_error_m": 3.6980106987572153e-06,
       "maximum_angle_error_degrees": 0.05595291023658669
@@ -404,7 +430,7 @@
       0.31
     ],
     "hand_material_fraction": 0.45,
-    "throw_over": "left shoulder, controlled by left hand; diagonal across front chest and abdomen"
+    "throw_over": "stow: left shoulder controlled by left hand; draw: open right palm lifts barrels, left upper catch rotates gun, then firing grip; diagonal front body route"
   },
   "pistol_body_fit": {
     "source": "actual evaluated hero shirt, torso, pelvis and jacket meshes; outward runtime drape required",

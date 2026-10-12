@@ -126,7 +126,8 @@ namespace BarPromenade.Tests.PlayMode
                     yield return null;
                     root.AutomaticSimulation = false;
                     Assert.That(hero.IsSwitchingWeapon, Is.True, "Key 2 returns to the equipped long weapon.");
-                    yield return FinishWeaponCarry(secondary, secondary + "-from-pistol");
+                    yield return FinishWeaponCarry(secondary, secondary + "-from-pistol",
+                        secondary == CombatWeaponId.Crowbar ? 1.8f : 2.5f);
                     Assert.That(hero.Weapon, Is.SameAs(longWeapon));
                     Assert.That(pistolState.Rounds, Is.EqualTo(beforeShot - 1));
                     Assert.That(pistolState.ShotSequence, Is.EqualTo(shotSequence));
@@ -219,6 +220,42 @@ namespace BarPromenade.Tests.PlayMode
                     Assert.That(hero.Weapon, Is.SameAs(longWeapon));
                     AssertStowedCarry(hero, CombatWeaponId.Pistol);
                     root.AutomaticSimulation = false;
+                    if (secondary == CombatWeaponId.Shotgun)
+                    {
+                        var rig = hero.GetComponentInChildren<Player3DAssetRegistry>();
+                        foreach (Transform transientHand in new[] { rig.Anchors.RightGrip, rig.Anchors.LeftGrip })
+                        {
+                            Assert.That(hero.TrySelectWeapon(CombatWeaponId.Pistol), Is.True);
+                            yield return FinishWeaponCarry(CombatWeaponId.Pistol, null);
+                            IFirearmState shotgunState = hero.CarriedFirearm(CombatWeaponId.Shotgun);
+                            int rounds = shotgunState.Rounds;
+                            Assert.That(hero.TrySelectWeapon(CombatWeaponId.Shotgun), Is.True);
+                            int seek = 0;
+                            for (; seek < 240 && longWeapon.transform.parent != transientHand; seek++)
+                            {
+                                root.Tick(1f / 60f);
+                                yield return null;
+                            }
+                            Assert.That(longWeapon.transform.parent, Is.SameAs(transientHand),
+                                "Both temporary physical holds must be reachable before the firing grip.");
+                            Vector3 position = longWeapon.transform.position;
+                            Quaternion rotation = longWeapon.transform.rotation;
+                            hero.enabled = false;
+                            Assert.That(hero.CarriedWeaponLocation(CombatWeaponId.Shotgun), Is.EqualTo(CombatWeaponCarryLocation.Dropped));
+                            Assert.That(Vector3.Distance(longWeapon.transform.position, position), Is.LessThan(.001f));
+                            Assert.That(Quaternion.Angle(longWeapon.transform.rotation, rotation), Is.LessThan(.1f),
+                                "Interrupted palm/catch ownership releases at its live pose without a hidden grip snap.");
+                            Assert.That(longWeapon.GetComponent<CombatDroppedWeaponPickup>(), Is.Not.Null);
+                            Assert.That(hero.CarriedFirearm(CombatWeaponId.Shotgun), Is.SameAs(shotgunState));
+                            Assert.That(shotgunState.Rounds, Is.EqualTo(rounds));
+                            Assert.That(visual.OwnsClip(hero), Is.False);
+                            hero.enabled = true;
+                            root.ResetRound();
+                            Assert.That(hero.Weapon, Is.SameAs(longWeapon));
+                            AssertStowedCarry(hero, CombatWeaponId.Pistol);
+                            yield return null;
+                        }
+                    }
                 }
             }
             finally
@@ -244,14 +281,16 @@ namespace BarPromenade.Tests.PlayMode
                 (Quaternion.Inverse(hero.transform.rotation) * dock.rotation).ToString("F6"));
         }
 
-        private IEnumerator FinishWeaponCarry(CombatWeaponId expected, string capture)
+        private IEnumerator FinishWeaponCarry(CombatWeaponId expected, string capture, float? maximumSeconds = null)
         {
             var hero = root.Hero;
             GameObject pistol = hero.CarriedWeapon(CombatWeaponId.Pistol);
             GameObject secondary = hero.CarriedWeapon(hero.LoadoutSelection.Secondary);
             int transfers = 0;
-            bool middleCaptured = false, pistolAccessCaptured = false;
-            for (int frame = 0; frame < 600 && (hero.IsSwitchingWeapon || !hero.HasWeaponInHand || hero.WeaponId != expected); frame++)
+            int shotgunDrawTransfers = 0;
+            bool middleCaptured = false, pistolAccessCaptured = false, shotgunAboveCaptured = false, shotgunTurnCaptured = false;
+            int frame = 0;
+            for (; frame < 600 && (hero.IsSwitchingWeapon || !hero.HasWeaponInHand || hero.WeaponId != expected); frame++)
             {
                 Transform pistolParent = pistol.transform.parent, secondaryParent = secondary.transform.parent;
                 Vector3 pistolPosition = pistol.transform.position, secondaryPosition = secondary.transform.position;
@@ -267,6 +306,29 @@ namespace BarPromenade.Tests.PlayMode
                     if (transferred == pistol)
                         AssertConcealedRenderers(pistol,
                             hero.CarriedWeaponLocation(CombatWeaponId.Pistol) == CombatWeaponCarryLocation.Stowed);
+                    else if (secondary == hero.CarriedWeapon(CombatWeaponId.Shotgun) && hero.WeaponCarryActionIsDraw)
+                    {
+                        shotgunDrawTransfers++;
+                        var rig = hero.GetComponentInChildren<Player3DAssetRegistry>();
+                        var hands = hero.GetComponentInChildren<NpcHandPose>();
+                        Assert.That(transferred.transform.parent, Is.SameAs(shotgunDrawTransfers == 2
+                            ? rig.Anchors.LeftGrip : rig.Anchors.RightGrip),
+                            "The original shotgun passes from the right barrel push through the left upper catch into its firing grip.");
+                        Assert.That(hero.HasWeaponInHand, Is.True, "Physical palm and catch ownership must retain the live held weapon.");
+                        if (shotgunDrawTransfers == 1)
+                        {
+                            Vector3 palm = hands.CylinderCentre(false);
+                            Vector3 contact = transferred.transform.position + transferred.transform.rotation * new Vector3(.020f, .140f, .300f);
+                            Vector3 barrelAxis = transferred.transform.position + transferred.transform.rotation * new Vector3(.020f, .110f, .300f);
+                            Assert.That(Vector3.Distance(palm, contact), Is.LessThan(.03f),
+                                "The right palm reaches the lower barrel surface instead of twisting to the trigger behind the shoulder.");
+                            Assert.That(Vector3.Dot(palm - barrelAxis, transferred.transform.up), Is.GreaterThan(.005f),
+                                "The palm contacts the underside of the hanging barrels.");
+                            Assert.That(Vector3.Dot(hands.PalmNormal(false), -transferred.transform.up), Is.GreaterThan(.90f),
+                                "The open right palm pushes inward against the underside of the barrels.");
+                            Assert.That(hands.RightGripWeight, Is.LessThan(.25f), "A barrel push keeps the palm open.");
+                        }
+                    }
                     transfers++;
                     if (capture != null) CaptureWeaponCarryViews(capture + "-contact-" + transfers, true);
                 }
@@ -274,6 +336,22 @@ namespace BarPromenade.Tests.PlayMode
                 {
                     if (capture != null) CaptureWeaponCarryViews(capture + "-reach", false);
                     middleCaptured = true;
+                }
+                if (capture != null && hero.IsSwitchingWeapon && hero.WeaponCarryActionWeapon == CombatWeaponId.Shotgun &&
+                    hero.WeaponCarryActionIsDraw)
+                {
+                    float authoredSeconds = hero.WeaponCarryActionProgress *
+                        CombatWeaponCarryAssetProvider.PhaseDuration(CombatWeaponId.Shotgun, true);
+                    if (!shotgunAboveCaptured && authoredSeconds >= .58f)
+                    {
+                        CaptureWeaponCarryViews(capture + "-above-stock", true);
+                        shotgunAboveCaptured = true;
+                    }
+                    if (!shotgunTurnCaptured && authoredSeconds >= 1.15f)
+                    {
+                        CaptureWeaponCarryViews(capture + "-turn", true);
+                        shotgunTurnCaptured = true;
+                    }
                 }
                 if (!pistolAccessCaptured && capture != null && hero.IsSwitchingWeapon &&
                     hero.WeaponCarryActionWeapon == CombatWeaponId.Pistol && hero.WeaponCarryActionIsDraw &&
@@ -289,13 +367,22 @@ namespace BarPromenade.Tests.PlayMode
                 }
             }
             Assert.That(hero.IsSwitchingWeapon, Is.False, "The switch must leave its terminal pose and release action ownership.");
+            if (maximumSeconds.HasValue)
+            {
+                float elapsed = frame / 60f;
+                TestContext.WriteLine("Pistol to " + expected + " switch completed in " + elapsed.ToString("F3") + " simulation seconds.");
+                Assert.That(elapsed, Is.LessThanOrEqualTo(maximumSeconds.Value),
+                    "The full stow/draw switch must return control within its responsive gameplay budget.");
+            }
             Assert.That(hero.HasWeaponInHand, Is.True);
             Assert.That(hero.WeaponId, Is.EqualTo(expected));
             if (expected != CombatWeaponId.Pistol) AssertPistolConcealedByJacket(hero);
             else AssertConcealedRenderers(pistol, false);
             if (capture != null)
             {
-                Assert.That(transfers, Is.EqualTo(2), "A full switch stows one original and draws the other.");
+                Assert.That(transfers, Is.EqualTo(expected == CombatWeaponId.Shotgun ? 4 : 2),
+                    "A full switch retains its originals, including the shotgun's push, catch and final grip transfers.");
+                if (expected == CombatWeaponId.Shotgun) Assert.That(shotgunDrawTransfers, Is.EqualTo(3));
                 CaptureWeaponCarryViews(capture + "-ready", true);
             }
         }

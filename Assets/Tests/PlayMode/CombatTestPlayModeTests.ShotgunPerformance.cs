@@ -86,6 +86,28 @@ namespace BarPromenade.Tests.PlayMode
                         "The real weak torso impact must retain its wound on the body.");
                     Assert.That(root.BloodEffects.TryGetProjectileWound(target, 0, out _, out _), Is.True);
 
+                    var classificationBones = new Dictionary<Transform, Matrix4x4>();
+                    var classificationPoints = new[] { point, point + target.transform.right * .12f,
+                        point + target.transform.up * .2f, point - target.transform.up * .3f };
+                    AssertBodyClassificationMatchesExhaustive(target, pieces, classificationPoints,
+                        classificationBones, subject + " after first volley");
+                    Transform classificationChest = FindAnatomicalBone(target, "chest");
+                    Vector3 chestPosition = classificationChest.localPosition;
+                    Quaternion chestRotation = classificationChest.localRotation;
+                    int classificationFrame = Time.frameCount;
+                    try
+                    {
+                        classificationChest.localPosition += new Vector3(.13f, .06f, -.08f);
+                        classificationChest.localRotation *= Quaternion.Euler(11f, -17f, 7f);
+                        AssertBodyClassificationMatchesExhaustive(target, pieces, classificationPoints,
+                            classificationBones, subject + " same-frame changed chest");
+                        Assert.That(Time.frameCount, Is.EqualTo(classificationFrame));
+                    }
+                    finally { classificationChest.SetLocalPositionAndRotation(chestPosition, chestRotation); }
+                    AssertBodyClassificationMatchesExhaustive(target, pieces, classificationPoints,
+                        classificationBones, subject + " same-frame restored chest");
+                    Assert.That(Time.frameCount, Is.EqualTo(classificationFrame));
+
                     Assert.That(surfaces, Is.Not.Empty);
                     CombatTorsoDamageSurface exterior = null;
                     int woundedHiddenFlesh = 0;
@@ -154,6 +176,8 @@ namespace BarPromenade.Tests.PlayMode
 
                     Assert.That(exterior, Is.Not.Null, "A real torso contact must damage an existing exterior surface.");
                     exterior.PrepareSource(); exterior.Refresh(1); // Warm the source-version-only update.
+                    AssertBodyClassificationMatchesExhaustive(target, pieces, classificationPoints,
+                        classificationBones, subject + " before source refresh");
                     int topology = exterior.TopologyBuilds;
                     uint geometryVersion = exterior.GeometryVersion;
                     Action refresh = () => { exterior.PrepareSource(); exterior.Refresh(2); };
@@ -165,6 +189,8 @@ namespace BarPromenade.Tests.PlayMode
                         "A changed source pose must refresh vertices without rebuilding unchanged wound topology.");
                     Assert.That(refreshed.Allocations, Is.Zero,
                         "A warmed exterior refresh must reuse its vertex, normal and tangent buffers.");
+                    AssertBodyClassificationMatchesExhaustive(target, pieces, classificationPoints,
+                        classificationBones, subject + " after source refresh");
 
                     for (int frame = 0; frame < 8; frame++)
                     {
@@ -205,6 +231,8 @@ namespace BarPromenade.Tests.PlayMode
                             secondTorsoLoss += target.BodyDamage.TissueLoss((BodyDamageRegion)region, patch);
                     Assert.That(secondTorsoLoss, Is.GreaterThan(torsoLoss),
                         "The second measured impact must deepen actual torso damage rather than profile a miss.");
+                    AssertBodyClassificationMatchesExhaustive(target, pieces, classificationPoints,
+                        classificationBones, subject + " after second volley");
                     samples.Add(MeasureDistantShotgunPhase(target, allocations, timer,
                         "postflight", 0, postflightFrame, 2));
                     Assert.That(root.HitStopSecondsConsumed, Is.EqualTo(frozenSeconds),
@@ -645,6 +673,49 @@ namespace BarPromenade.Tests.PlayMode
                 result.Add(piece.Torso);
             }
             return result;
+        }
+
+        private static void AssertBodyClassificationMatchesExhaustive(CombatActor target,
+            List<CombatBodyDestruction.Piece> pieces, IReadOnlyList<Vector3> points,
+            Dictionary<Transform, Matrix4x4> worldBones, string context)
+        {
+            var sources = new List<SkinnedMeshRenderer>();
+            foreach (CombatBodyDestruction.Piece piece in pieces)
+                if (!piece.Flesh && !piece.Bone && !sources.Contains(piece.Source)) sources.Add(piece.Source);
+            Assert.That(sources.Count, Is.GreaterThan(1), "Classification proof requires several authored sources.");
+            MethodInfo skinCentre = typeof(CombatBodyDestruction).GetMethod("SkinCentre",
+                BindingFlags.Static | BindingFlags.NonPublic);
+            Assert.That(skinCentre, Is.Not.Null);
+            var centreArguments = new object[] { null, null };
+            foreach (Vector3 point in points)
+            {
+                // One contact shares sampled bones across sources; the next point
+                // must sample again, even when its transform changes in this frame.
+                worldBones.Clear();
+                foreach (SkinnedMeshRenderer source in sources)
+                {
+                    bool actual = CombatBodyDestruction.TryClassifySurface(target, source, point,
+                        out BodyDamageRegion actualRegion, out int actualPatch, worldBones);
+                    BodyDamageRegion expectedRegion = BodyDamageRegion.Chest;
+                    int expectedPatch = -1;
+                    float closest = float.PositiveInfinity;
+                    // Independently preserve the old full-list scan and live null
+                    // path; do not consult the runtime's per-source index or snapshot.
+                    foreach (CombatBodyDestruction.Piece piece in pieces)
+                    {
+                        if (piece.Source != source || piece.Flesh || piece.Bone) continue;
+                        centreArguments[0] = piece;
+                        Vector3 centre = (Vector3)skinCentre.Invoke(null, centreArguments);
+                        float candidate = (centre - point).sqrMagnitude;
+                        if (candidate >= closest) continue;
+                        closest = candidate; expectedRegion = piece.Region; expectedPatch = piece.Patch;
+                    }
+                    string proof = context + ": " + source.name + " at " + point;
+                    Assert.That(actual, Is.EqualTo(expectedPatch >= 0), proof);
+                    Assert.That(actualRegion, Is.EqualTo(expectedRegion), proof);
+                    Assert.That(actualPatch, Is.EqualTo(expectedPatch), proof);
+                }
+            }
         }
 
         private readonly struct DistantShotgunSample

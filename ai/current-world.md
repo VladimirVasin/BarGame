@@ -129,39 +129,39 @@ The vertical slice contains:
   always draws the same greeting; while he is within `6 m` and on her floor
   she says a short line every `35-55 s`, and `E` at a trigger in front of the
   chair answers out of the same shuffled bag, so nothing repeats before the
-  pool is spent. The bag is ten ordinary domestic lines plus an eleventh —
-  her direct request to put the scarf on — which retires once it is worn; a
-  separate first request raises that quest. The bag survives the door, so
-  re-entering does not restart it. She holds nothing, the hero does not
-  answer, and there is no branch or choice. Cat, dinner and the news remain
-  outside this MVP;
-- `MainMenu` is build index `0` and Editor Play's session boundary: black card,
-  New Game/Combat Test/Quit. Twelve starts: nine story scenes, City docks/cannery,
-  ski lodge; village first/default. Back returns; mouse/keyboard/gamepad select.
-  `NewGameStartService`: day `1`/`07:40`, areas via `AreaLoading`, six interiors
-  directly without door travel; no prologue/ride/cabin/arrival/travel illustration.
-- Default village: lane foot, 2 m above station threshold facing mother's house.
-  Ski lodge: 3 m outside its entrance facing the door. Other choices use their
-  roots; City uses home's return point, docks/cannery clear pedestrian positions.
-  City/Bar/lodge markers belong to one load, consumed once; later arrivals stay.
-  Day one raises mother's-house quest/map marker; door/map entry or starting
-  inside closes it. No village signpost;
+  pool is spent. The bag: ten domestic lines plus a scarf request retired when
+  worn; a separate first request raises the quest. Door reload keeps the bag.
+  Empty hands, silent hero, no branch/choice; Cat/dinner/news outside this MVP;
+- `MainMenu`: build index `0`, Editor Play boundary; black New Game/
+  Combat Test/Quit;12 starts: 9 story scenes, City docks/cannery,
+  ski lodge;village first/default;Back;mouse/keyboard/gamepad select.
+  `NewGameStartService`:day `1`/`07:40`;areas via `AreaLoading`,six interiors
+  direct;no door travel/prologue/ride/cabin/arrival/travel illustration.
+- Default village: lane foot, 2 m above station threshold toward mother's house.
+  Lodge: 3 m outside entry toward door. Others: root spawn; City home's return,
+  docks/cannery clear pedestrians. City/Bar/lodge arrival markers: consumed once;
+  later spawns stay. Day one mother's-house quest/map marker; door/map/start
+  inside closes it; no village signpost;
 - CombatTest:pistol+(bar|shotgun);secondary+initial hand→Start/Back.
-  Default:bar held;pistol Lchest/undercoat;bar Rbelt;shotgun sling/back.
-  Sling:Lshoulder→fullfront chest/abdomen→lower Rside.
-  1pistol/2secondary/DpadRcycle;6bone-only stow/draw/same rig/torso over gait.
-  Models/ammo/mechanics kept;last queued;reload first.
-  Pause/hitstop freeze;fall cancels/held drops;dropped owns slot;Erecord-specific.
-  Reset:launchkit/body;exit clear;bar/shotgun cloth contacts.
-  NPCbar/3AI;dummy/freecam;MMBfocus/TabAIreset/bar-Qfocus.
+  Default:bar held;pistol Lchest/undercoat;bar Rbelt;shotgun back.
+  Sling:Lshoulder→front chest/abdomen→lower Rside.
+  1pistol/2secondary/DpadRcycle;6bone clips/same rig/torso over gait.
+  ShotgunDraw:Ropen nudges barrels below;Loutside/over Lshoulder→vertical stock-top/palm-down
+  catch→outside shoulder/front chest turn→Rgrip/Lforeend;0body crossing.
+  Stow kept;imported-rig offsets;pause freeze;interim drop=original/current pose/ammo.
+  2×carry/settle;normalized handoffs;pistol↔bar~1.7s/shotgun~2.4s@60Hz+guards.
+  Models/ammo/rules kept;last queued;reload first.
+  Pause/hitstop freeze;fall drops/cancels;drop owns slot;Erecord-specific.
+  Reset:kit/body;exit clear;bar/shotgun cloth contacts.
+  NPCbar/3AI/dummy/freecam;MMBfocus/TabAIreset/bar-Qfocus.
   Guns:RMBaim/LMBedge/R-Xreload;8aimclips/2.21-back1.19/0run/FOV-IK.25;
   camplane normdiag/Space1m-cardinal-back/tankreturn;barfocus/injury kept.
   Pistol8∞/reload1.8/slide-emptylock/mag-rack/cases;
   shotgun2∞/12pellets/.55/head×2/break2.8/stage-ammo/atomic spend/flights finish/win fire.
-  Near launch/falloff/one reaction-terminal/head≤14;ray first skin/world/0pierce-ricochet-guard.
+  Near launch/falloff/1reaction-terminal/head≤14;ray first skin/world/0pierce-ricochet-guard.
   Cloth-tissue-bone loss;head-limb sever/torso joined erodes→rig skeleton/0chunks.
   Rhand0weapon/Lhand0twohand-reload;Rbar-loaded pistol retained;
-  leg loss fall/crawl/0rise-step-kick;critical head-torso end/corpses/reset restores.
+  leg loss fall/crawl/0rise-step-kick;critical head-torso end/corpses/reset.
   Pistol head3-5of16/brain8 jelly-squash/blood pulse24s0/convulsions2.35/world chips-holes.
   Bar6zones/rearhead-end/metalrecoil/Qsupport/toilet/Eown-ammo/sharedUI/0grant;
 - the retained Home opening is reachable only by a legacy request: held bed loop,

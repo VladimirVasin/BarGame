@@ -216,6 +216,7 @@ namespace BarPromenade
         { if (buffer.IsCreated) buffer.Dispose(); buffer = default; }
         public void Dispose()
         {
+            body?.Dispose();
             Release(ref nativePoints); Release(ref nativeSamples); Release(ref nativeOriginals); Release(ref nativeBodies);
             Release(ref nativePlanes); Release(ref nativeBoxes); Release(ref nativeGarments); Release(ref nativeTail); Release(ref nativeHints);
             nativeReady = false;

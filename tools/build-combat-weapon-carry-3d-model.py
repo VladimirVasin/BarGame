@@ -27,6 +27,14 @@ FPS = 100
 SURFACES = {"Leather": (.16, .17, .13), "Webbing": (.22, .23, .16), "Steel": (.24, .255, .23)}
 DURATIONS = {"Crowbar": 1.30, "Pistol": 1.70, "Shotgun": 2.65}
 TRANSFER = {"Crowbar": .38, "Pistol": .48, "Shotgun": .88}
+SHOTGUN_PUSH, SHOTGUN_CATCH, SHOTGUN_GRIP = .30, .70, 1.65
+# Open right palm below the lower barrels, then the left palm above the stock.
+# These are grip-local metres, not new weapon geometry or a moved body dock.
+SHOTGUN_PUSH_POINT = (.020, .140, .300)
+SHOTGUN_CATCH_POINT = (0., -.040, -.350)
+SHOTGUN_PUSHED_CENTRE = (.040, .200, 1.290)
+SHOTGUN_PUSHED_UP = (.642787610, 0., -.766044443)
+SHOTGUN_PUSHED_FORWARD = (-.766044443, 0., -.642787610)
 CLIPS = tuple((weapon + phase, duration, False) for weapon, duration in DURATIONS.items() for phase in ("Draw", "Stow"))
 NAMES = {"Crowbar": "CrowbarBeltHolder", "Pistol": "PistolHolster", "Shotgun": "ShotgunSling"}
 # Anatomy is source +X left, -Y front and +Z up. Weapons use grip-local
@@ -190,7 +198,214 @@ def solve_hand(builder, side, centre, up, forward, pole):
     builder.solve_arm(side, wrist, rotation, Vector(pole))
 
 
-def author_actions():
+def carry_frame(centre, up, forward):
+    up, forward = Vector(up).normalized(), Vector(forward).normalized()
+    forward = (forward-up*forward.dot(up)).normalized()
+    # Quaternion interpolation needs a proper right-handed rotation. Grip-local
+    # weapon X is reflected by the project's Unity/Blender axis convention.
+    return Vector(centre), Matrix((up.cross(forward), up, forward)).transposed().to_quaternion()
+
+
+def sample_carry_frames(stops, second):
+    index = next((i for i in range(len(stops)-1) if second <= stops[i+1][0]+1e-8), len(stops)-2)
+    a, b = stops[index:index+2]
+    amount = combat.dialogue.smooth(max(0., min(1., (second-a[0])/(b[0]-a[0]))))
+    return a[1][0].lerp(b[1][0], amount), a[1][1].slerp(b[1][1], amount)
+
+
+def frame_hand(frame, local_point, local_rotation):
+    centre, rotation = frame
+    point = Vector(local_point); point.x = -point.x
+    return centre+rotation@point, rotation@local_rotation
+
+
+def frame_from_contact(centre, rotation, local_point):
+    point = Vector(local_point); point.x = -point.x
+    return Vector(centre)-rotation@point, rotation
+
+
+def solve_frame_hand(builder, side, frame, pole):
+    centre, rotation = frame
+    solve_hand(builder, side, centre, rotation@Vector((0., 1., 0.)), rotation@Vector((0., 0., 1.)), pole)
+
+
+def shotgun_draw_frames(builder, neutral, rest):
+    """Author one physical gun path with two temporary, measured hand contacts."""
+    slot = SLOTS["Shotgun"]
+    stored = carry_frame(*(slot[key] for key in ("centre", "up", "forward")))
+    pushed = carry_frame(SHOTGUN_PUSHED_CENTRE, SHOTGUN_PUSHED_UP, SHOTGUN_PUSHED_FORWARD)
+    forward = carry_frame((-.20, -.58, 1.28), (0., 0., 1.), (0., -1., 0.))
+    builder._reset_pose(); builder._apply_pose(neutral)
+    relaxed = {side: carry_frame(*posed_hand(builder, side)[:3]) for side in ("R", "L")}
+    relaxed_poles = {side: (builder.result.rig.pose.bones["forearm."+side].head-
+                           builder.result.rig.pose.bones["upper_arm."+side].head).normalized() for side in ("R", "L")}
+    builder._reset_pose(); builder._apply_pose(rest)
+    final = {side: carry_frame(*posed_hand(builder, side)[:3]) for side in ("R", "L")}
+    # Fingers follow the barrels; the open right palm faces into their underside.
+    push_rotation = carry_frame((0., 0., 0.), (1., 0., 0.), (0., 0., 1.))[1]
+    # At the catch the left palm faces down. Retain that rigid contact as the
+    # stock rotates, then release it only once the normal right grip is secure.
+    catch_world = carry_frame((0., 0., 0.), (1., 0., 0.), (0., 1., 0.))[1]
+    catch_rotation = pushed[1].inverted()@catch_world
+    # Carry the stock around the OUTSIDE of the left shoulder and then in
+    # front of the chest. Interpolating gun origins alone sends its upper
+    # catch through the neck as the long stock rotates.
+    gun_stops = ((0., stored), (SHOTGUN_PUSH, stored), (SHOTGUN_CATCH, pushed),
+                 (.90, frame_from_contact((.38, -.10, 1.65), pushed[1].slerp(forward[1], .25), SHOTGUN_CATCH_POINT)),
+                 (1.15, frame_from_contact((.30, -.32, 1.53), pushed[1].slerp(forward[1], .75), SHOTGUN_CATCH_POINT)),
+                 (1.45, frame_from_contact((.03, -.38, 1.32), forward[1], SHOTGUN_CATCH_POINT)),
+                 (SHOTGUN_GRIP, forward), (2.30, final["R"]), (2.65, final["R"]))
+    push = frame_hand(stored, SHOTGUN_PUSH_POINT, push_rotation)
+    push_end = frame_hand(pushed, SHOTGUN_PUSH_POINT, push_rotation)
+    catch = frame_hand(pushed, SHOTGUN_CATCH_POINT, catch_rotation)
+    catch_end = frame_hand(forward, SHOTGUN_CATCH_POINT, catch_rotation)
+    right_stops = ((0., relaxed["R"]), (SHOTGUN_PUSH, push), (SHOTGUN_CATCH, push_end),
+                   (.95, carry_frame((-.34, -.20, 1.00), (0., 0., 1.), (0., -1., 0.))),
+                   (SHOTGUN_GRIP, forward), (2.30, final["R"]), (2.65, final["R"]))
+    # Approach the butt vertically from above after going outside the body.
+    above = catch[0]+Vector((0., 0., .15))
+    left_stops = ((0., relaxed["L"]), (.25, carry_frame((.46, -.10, 1.38), (1., 0., 0.), (0., 1., 0.))),
+                  (.45, carry_frame((.43, .12, 1.72), (1., 0., 0.), (0., 1., 0.))),
+                  (.58, carry_frame(above, (1., 0., 0.), (0., 1., 0.))),
+                  (SHOTGUN_CATCH, catch), (SHOTGUN_GRIP, catch_end),
+                  (1.95, carry_frame((.14, -.44, 1.40), (1., 0., 0.), (0., -1., 0.))),
+                  (2.30, final["L"]), (2.65, final["L"]))
+    poses = []
+    for frame in range(round(DURATIONS["Shotgun"]*FPS)+1):
+        second = frame/FPS
+        rest_amount = combat.dialogue.smooth(max(0., min(1., (second-SHOTGUN_GRIP)/.65)))
+        base = builder.blend(neutral, rest, rest_amount)
+        builder._reset_pose(); builder._apply_pose(base)
+        gun = sample_carry_frames(gun_stops, second)
+        right = (frame_hand(gun, SHOTGUN_PUSH_POINT, push_rotation) if SHOTGUN_PUSH <= second <= SHOTGUN_CATCH
+                 else gun if second >= SHOTGUN_GRIP else sample_carry_frames(right_stops, second))
+        left = (frame_hand(gun, SHOTGUN_CATCH_POINT, catch_rotation) if SHOTGUN_CATCH <= second <= SHOTGUN_GRIP
+                else sample_carry_frames(left_stops, second))
+        # The right elbow stays low; the left elbow opens outward for the
+        # overhead catch rather than folding its forearm through the body.
+        try:
+            entry = combat.dialogue.smooth(max(0., min(1., second/.25)))
+            right_pole = relaxed_poles["R"].lerp(Vector((-.95, -.30, -.65)).normalized(), entry)
+            solve_frame_hand(builder, "R", right, right_pole)
+            pole_amount = combat.dialogue.smooth(max(0., min(1., (second-.75)/.45)))
+            left_pole = Vector((.95, .30, -.25)).normalized().lerp(Vector((.85, -.65, -.25)).normalized(), pole_amount)
+            left_pole = relaxed_poles["L"].lerp(left_pole, entry)
+            solve_frame_hand(builder, "L", left, left_pole)
+        except ValueError as error:
+            raise ValueError(f"Shotgun draw at {second:.2f}s: {error}; palms R {tuple(right[0])}, L {tuple(left[0])}") from error
+        pose = builder.snapshot_pose()
+        if second <= .10:
+            # Exact relaxed endpoint; enter the Cartesian arm solve smoothly.
+            pose = builder.blend(neutral, pose, combat.dialogue.smooth(second/.10))
+        elif second >= 2.30:
+            pose = builder.blend(pose, rest, combat.dialogue.smooth((second-2.30)/.35))
+        poses.append(pose)
+    builder.shotgun_draw_contract = dict(push_point=list(SHOTGUN_PUSH_POINT), catch_point=list(SHOTGUN_CATCH_POINT),
+        push_rotation=push_rotation.copy(), catch_rotation=catch_rotation.copy(), gun_stops=gun_stops)
+    return poses
+
+
+def shotgun_draw_gun_frame(builder, second):
+    """Reconstruct the weapon from its current physical parent, as Unity does."""
+    slot = SLOTS["Shotgun"]
+    if second < SHOTGUN_PUSH:
+        return carry_frame(*(slot[key] for key in ("centre", "up", "forward")))
+    side = "R" if second < SHOTGUN_CATCH or second >= SHOTGUN_GRIP else "L"
+    hand = carry_frame(*posed_hand(builder, side)[:3])
+    if second >= SHOTGUN_GRIP: return hand
+    if side == "R":
+        point = SHOTGUN_PUSH_POINT
+        offset = carry_frame((0., 0., 0.), (1., 0., 0.), (0., 0., 1.))[1]
+    else:
+        point = SHOTGUN_CATCH_POINT
+        pushed = carry_frame(SHOTGUN_PUSHED_CENTRE, SHOTGUN_PUSHED_UP, SHOTGUN_PUSHED_FORWARD)
+        offset = pushed[1].inverted()@carry_frame((0., 0., 0.), (1., 0., 0.), (0., 1., 0.))[1]
+    rotation = hand[1]@offset.inverted()
+    local = Vector(point); local.x = -local.x
+    return hand[0]-rotation@local, rotation
+
+
+def validate_shotgun_draw(builder):
+    rig = builder.result.rig
+    rig.animation_data.action = builder.result.actions["ShotgunDraw"].action
+    bpy.context.scene.frame_set(0); bpy.context.view_layer.update()
+    # The torso, neck and head are stationary until the final right-hand grip.
+    # Measure the left forearm/palm against their evaluated production meshes,
+    # rather than treating a reachable wrist as proof that its arm clears them.
+    surfaces = []
+    depsgraph = bpy.context.evaluated_depsgraph_get()
+    for obj in bpy.data.objects:
+        if obj.type != "MESH" or obj.name not in ("GEO_Torso", "GEO_Pelvis", "GEO_Head", "GEO_Neck", "GEO_NeckStub"): continue
+        hidden = obj.hide_get(); obj.hide_set(False); bpy.context.view_layer.update()
+        evaluated = obj.evaluated_get(depsgraph); mesh = evaluated.to_mesh()
+        vertices = [evaluated.matrix_world@v.co for v in mesh.vertices]
+        faces = [tuple(p.vertices) for p in mesh.polygons]
+        bounds = tuple(Vector(tuple(f(v[axis] for v in vertices) for axis in range(3))) for f in (min, max))
+        surfaces.append((obj.name, BVHTree.FromPolygons(vertices, faces), bounds))
+        evaluated.to_mesh_clear(); obj.hide_set(hidden)
+    if not any(name == "GEO_Torso" for name, _, _ in surfaces): raise ValueError("Missing actual hero torso for shotgun catch clearance")
+    error_position = error_angle = maximum_elbow_height = 0.
+    minimum_body_clearance = float("inf")
+    previous = {}
+    previous_elbows = {}
+    for frame in range(round(2.30*FPS)+1):
+        second = frame/FPS
+        bpy.context.scene.frame_set(frame); bpy.context.view_layer.update()
+        for side in ("R", "L"):
+            palm = posed_hand(builder, side)[0]
+            elbow, shoulder = (rig.pose.bones[name+"."+side].head for name in ("forearm", "upper_arm"))
+            maximum_elbow_height = max(maximum_elbow_height, elbow.z-shoulder.z)
+            if side == "R" and elbow.z > shoulder.z+.04:
+                raise ValueError(f"Shotgun pickup raises right elbow above shoulder at {second:.2f}s")
+            if side in previous and (palm-previous[side]).length > .09:
+                raise ValueError(f"Shotgun {side} palm jumps at {second:.2f}s")
+            previous[side] = palm.copy()
+            if side in previous_elbows and (elbow-previous_elbows[side]).length > .04:
+                raise ValueError(f"Shotgun {side} elbow jumps at {second:.2f}s")
+            previous_elbows[side] = elbow.copy()
+        if .15 <= second <= SHOTGUN_GRIP:
+            elbow, wrist = (rig.pose.bones[name+".L"].head for name in ("forearm", "hand"))
+            samples = [(elbow.lerp(wrist, i/10), .035) for i in range(11)]
+            samples.append((posed_hand(builder, "L")[0], .025))
+            samples.extend((wrist.lerp(rig.pose.bones["hand.L"].tail, i/4), .025) for i in range(1, 5))
+            for point, radius in samples:
+                for name, surface, bounds in surfaces:
+                    nearest, normal, _, distance = surface.find_nearest(point)
+                    # Open neck/face rings have no meaningful interior beyond
+                    # their finite mesh bounds (a point beside/below them is
+                    # outside even when the nearest end-ring normal faces away).
+                    within = all(bounds[0][axis] <= point[axis] <= bounds[1][axis] for axis in range(3))
+                    signed = -distance if within and (point-nearest).dot(normal) < 0. else distance
+                    clearance = signed-radius
+                    minimum_body_clearance = min(minimum_body_clearance, clearance)
+                    if clearance < -.004:
+                        raise ValueError(f"Shotgun left arm crosses actual {name} at {second:.2f}s: {clearance:.6f}m {tuple(point)}")
+        if .58 <= second <= SHOTGUN_CATCH:
+            palm, up, forward, _ = posed_hand(builder, "L")
+            target = frame_hand(sample_carry_frames(builder.shotgun_draw_contract["gun_stops"], SHOTGUN_CATCH),
+                                SHOTGUN_CATCH_POINT, builder.shotgun_draw_contract["catch_rotation"])[0]
+            if abs(palm.x-target.x) > .00005 or abs(palm.y-target.y) > .00005 or palm.z < target.z-.00005:
+                raise ValueError("Shotgun left hand does not approach the stock strictly from above")
+            if forward.cross(up).dot(Vector((0., 0., -1.))) < .999:
+                raise ValueError("Shotgun left palm does not face down for the upper catch")
+        if SHOTGUN_PUSH <= second <= 2.30:
+            planned = sample_carry_frames(builder.shotgun_draw_contract["gun_stops"], second)
+            actual = shotgun_draw_gun_frame(builder, second)
+            error_position = max(error_position, (planned[0]-actual[0]).length)
+            difference = planned[1].inverted()@actual[1]
+            sine = math.sqrt(difference.x*difference.x+difference.y*difference.y+difference.z*difference.z)
+            error_angle = max(error_angle, math.degrees(2.*math.atan2(sine, abs(difference.w))))
+    if error_position > .00005 or error_angle > .05:
+        raise ValueError(f"Shotgun physical parent differs from its continuous gun path: {error_position:.7f}m/{error_angle:.5f}deg")
+    return dict(hand_transfers_s=[SHOTGUN_PUSH, SHOTGUN_CATCH, SHOTGUN_GRIP],
+                right_push_grip_local_m=list(SHOTGUN_PUSH_POINT), left_catch_grip_local_m=list(SHOTGUN_CATCH_POINT),
+                maximum_weapon_path_error_m=error_position, maximum_weapon_path_angle_error_degrees=error_angle,
+                maximum_elbow_above_shoulder_m=maximum_elbow_height,
+                minimum_left_forearm_palm_body_clearance_m=minimum_body_clearance,
+                left_catch_approach="outside left shoulder, then vertical from above; palm down")
+
+
+def author_actions(shotgun_draw_only=False):
     bpy.ops.wm.open_mainfile(filepath=str(hero.DEFAULT_OUTPUT))
     rig = bpy.data.objects["RIG_Player"]
     config = common.BuildConfig(None, None, None, None, None, None, None, 1.75, 20261010, "apose")
@@ -219,6 +434,12 @@ def author_actions():
     for action in list(bpy.data.actions): bpy.data.actions.remove(action)
     common.ANIMATION_FPS = FPS
     bpy.context.scene.render.fps = FPS
+    if shotgun_draw_only:
+        poses = shotgun_draw_frames(builder, neutral, rests["Shotgun"])
+        duration = DURATIONS["Shotgun"]
+        builder._create_action("ShotgunDraw", "combat_weapon_carry", duration, False, round(duration*FPS), FPS,
+                               [(frame/round(duration*FPS), pose) for frame, pose in enumerate(poses)])
+        return builder, neutral, rests, {}
 
     def landmark(weapon, target, up, forward, left="neutral", pole=None):
         builder._reset_pose(); builder._apply_pose(neutral)
@@ -292,7 +513,11 @@ def author_actions():
                 # quaternion when the Cartesian solve is applied.
                 pose.update({name: solved[name] for name in ("clavicle.L", "upper_arm.L", "forearm.L", "hand.L")})
             draw_poses.append(pose)
-        for phase, poses in (("Draw", draw_poses), ("Stow", list(reversed(draw_poses)))):
+        # Preserve the established stow exactly; the new pickup is deliberately
+        # not the reverse of putting the gun over the shoulder.
+        stow_poses = list(reversed(draw_poses))
+        if weapon == "Shotgun": draw_poses = shotgun_draw_frames(builder, neutral, rests[weapon])
+        for phase, poses in (("Draw", draw_poses), ("Stow", stow_poses)):
             builder._create_action(weapon + phase, "combat_weapon_carry", duration, False, round(duration * FPS), FPS,
                                    [(frame / round(duration * FPS), pose) for frame, pose in enumerate(poses)])
         builder._reset_pose(); builder._apply_pose(contact)
@@ -304,13 +529,15 @@ def author_actions():
 
 def measure_sling_route(builder):
     rig = builder.result.rig
-    rig.animation_data.action = builder.result.actions["ShotgunDraw"].action
+    # The unchanged stow still uses the left hand to guide the webbing. New
+    # Draw uses that hand for the weapon, so it does not pin the sling to it.
+    rig.animation_data.action = builder.result.actions["ShotgunStow"].action
     maximum = {"stock_to_hand": (0., 0.), "hand_to_foreend": (0., 0.), "stock_via_shoulder_to_hand": (0., 0.)}
     rest_route = None
     anchors = {}
     for frame in range(round(DURATIONS["Shotgun"]*FPS)+1):
         second = frame/FPS
-        bpy.context.scene.frame_set(frame); bpy.context.view_layer.update()
+        bpy.context.scene.frame_set(round(DURATIONS["Shotgun"]*FPS)-frame); bpy.context.view_layer.update()
         grip, up, forward, _ = posed_hand(builder, "R")
         if second < TRANSFER["Shotgun"]:
             grip, up, forward = (Vector(SLOTS["Shotgun"][key]) for key in ("centre", "up", "forward"))
@@ -358,19 +585,18 @@ def validate_sling_route(builder):
 
 
 def validate_unchanged_carry_curves(builder):
-    """A sling revision owns the left arm only; adjacent carry assets stay exact."""
+    """Only ShotgunDraw is re-authored; all other five clips remain exact."""
     source = ROOT / "ArtSource/Combat/WeaponCarryActions.blend"
-    left = tuple(f'pose.bones["{name}.L"]' for name in ("clavicle", "upper_arm", "forearm", "hand"))
     for name, _, _ in CLIPS:
+        if name == "ShotgunDraw": continue
         previous = append_action(source, name)
         def values(action):
             return sorted((curve.data_path, curve.array_index, [(float(key.co.x), float(key.co.y)) for key in curve.keyframe_points])
-                          for curve in common.iter_action_fcurves(action)
-                          if not (name.startswith("Shotgun") and curve.data_path.startswith(left)))
+                          for curve in common.iter_action_fcurves(action))
         old, new = values(previous), values(builder.result.actions[name].action)
         if old != new:
             difference = next(((a, b) for a, b in zip(old, new) if a != b), (len(old), len(new)))
-            raise ValueError("Left-shoulder sling revision changed an unrelated carry curve " + name + ": " + str(difference))
+            raise ValueError("Shotgun pickup changed an unrelated carry curve " + name + ": " + str(difference))
         bpy.data.actions.remove(previous)
 
 
@@ -427,7 +653,7 @@ def validate_actions(builder, neutral, rests):
                     if (left_centre - Vector(FLAP)).length > .00005:
                         raise ValueError("Pistol extraction released the jacket before clearing its pocket " + name)
                 transfer = TRANSFER[weapon] if phase == "Draw" else duration - TRANSFER[weapon]
-                if frame == round(transfer * FPS):
+                if frame == round(transfer * FPS) and name != "ShotgunDraw":
                     error = (point - Vector(SLOTS[weapon]["centre"])).length
                     maximum_contact = max(maximum_contact, error)
                     if error > .00002 or axis.dot(Vector(SLOTS[weapon]["up"])) < .9999:
@@ -441,6 +667,9 @@ def validate_actions(builder, neutral, rests):
                         if error > .005: raise ValueError("Carry neutral/rest endpoint differs " + name + "/" + bone)
             if path_length < .20: raise ValueError("Carry action has no real hand travel " + name)
             reports[name] = dict(duration_s=duration, transfer_s=transfer, right_hand_travel_m=round(path_length, 6))
+            if name == "ShotgunDraw":
+                reports[name].pop("transfer_s")
+                reports[name]["hand_transfers_s"] = [SHOTGUN_PUSH, SHOTGUN_CATCH, SHOTGUN_GRIP]
     if maximum_jump > .09: raise ValueError("Carry right-hand path jumps more than 9 cm per 10 ms")
     return dict(actions=reports, maximum_fixed_lower_error=maximum_lower,
                 maximum_transfer_error_m=maximum_contact, maximum_endpoint_error_degrees=maximum_endpoint,
@@ -466,7 +695,7 @@ def payload(items, contacts, report):
                                  width_m=.025, thickness_m=.002, parameter_uv="UVMap.x=t, UVMap.y=width sign, Thickness.x=thickness sign",
                                  length_m=SLING_LENGTH, stock=SLING_STOCK, foreend=SLING_FOREEND,
                                  hand_material_fraction=SLING_HAND_FRACTION,
-                                 throw_over="left shoulder, controlled by left hand; diagonal across front chest and abdomen")
+                                 throw_over="stow: left shoulder controlled by left hand; draw: open right palm lifts barrels, left upper catch rotates gun, then firing grip; diagonal front body route")
     return data
 
 
@@ -639,13 +868,20 @@ def preview(model_dir, source_dir, destination):
     scene.camera.data.type = "ORTHO"; scene.camera.data.ortho_scale = 2.05
     destination.mkdir(parents=True, exist_ok=True)
     for weapon in DURATIONS:
-        for second, label in ((0., "stowed"), (TRANSFER[weapon], "contact"),
-                              (TRANSFER[weapon] + .25, "extract"), (DURATIONS[weapon], "held")):
+        samples = ((0., "stowed"), (TRANSFER[weapon], "contact"),
+                   (TRANSFER[weapon]+.25, "extract"), (DURATIONS[weapon], "held"))
+        if weapon == "Shotgun":
+            samples = ((0., "stowed"), (SHOTGUN_PUSH, "barrel-push"), (SHOTGUN_CATCH, "upper-catch"),
+                       (1.10, "rotate"), (SHOTGUN_GRIP, "firing-grip"), (DURATIONS[weapon], "held"))
+        for second, label in samples:
             rig.animation_data.action = bpy.data.actions[weapon + "Draw"]
             scene.frame_set(round(second * FPS)); bpy.context.view_layer.update()
             for held, obj in models.items():
                 slot = SLOTS[held]
-                if held == weapon and second > TRANSFER[weapon]:
+                if held == weapon == "Shotgun":
+                    centre, orientation = shotgun_draw_gun_frame(builder, second)
+                    up, forward = orientation@Vector((0., 1., 0.)), orientation@Vector((0., 0., 1.))
+                elif held == weapon and second > TRANSFER[weapon]:
                     centre, up, forward, _ = posed_hand(builder, "R")
                 else: centre, up, forward = (Vector(slot[k]) for k in ("centre", "up", "forward"))
                 rotation = Matrix((forward.cross(up), forward, up)).transposed().to_4x4()
@@ -685,6 +921,7 @@ def main():
     parser.add_argument("--preview-only", action="store_true")
     parser.add_argument("--preview-dir", type=Path)
     parser.add_argument("--measure-sling-route", action="store_true", help="Measure candidate shoulder route and actual grasp spans without writing assets.")
+    parser.add_argument("--probe-shotgun-draw", action="store_true", help="Check only the revised draw against the actual body without publishing assets.")
     args = parser.parse_args(sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else [])
     if args.preview_only:
         if args.preview_dir is None: raise ValueError("Preview-only requires --preview-dir")
@@ -693,11 +930,17 @@ def main():
     items = make_items()
     if geometry_signature(items) != geometry_signature(make_items()):
         raise ValueError("Weapon carry independent geometry builds differ")
-    builder, neutral, rests, contacts = author_actions()
+    builder, neutral, rests, contacts = author_actions(shotgun_draw_only=args.probe_shotgun_draw)
+    print("CARRY AUTHORED: validating sampled contacts, endpoints and body clearance", flush=True)
+    if args.probe_shotgun_draw:
+        print(json.dumps(validate_shotgun_draw(builder), indent=2), flush=True)
+        return
     if args.measure_sling_route:
         print(json.dumps(measure_sling_route(builder), indent=2), flush=True)
         return
     report = validate_actions(builder, neutral, rests)
+    report["shotgun_draw_handoffs"] = validate_shotgun_draw(builder)
+    print("SHOTGUN DRAW: continuous handoffs, upper approach and actual-body clearance OK", flush=True)
     report["shotgun_left_shoulder_route"] = validate_sling_route(builder)
     if args.shotgun_only: validate_unchanged_carry_curves(builder)
     for obj, hidden in builder.carry_mesh_visibility: obj.hide_set(hidden)

@@ -30,6 +30,7 @@ namespace BarPromenade.Tests.PlayMode
             string journalDirectory = Path.GetFullPath(Path.Combine(Application.dataPath, "..", "TestResults", "weapon-carry-real-frames-journal"));
             string journalSession = null;
             int measuredJournalRound = -1;
+            AssertionException frontRouteFailure = null;
             var buckets = new List<RealCarryFrameBucket>();
             try
             {
@@ -77,10 +78,17 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(sling, Is.Not.Null);
                 int slingWorkspaces = sling.ProjectionWorkspaceAllocations;
                 Assert.That(slingWorkspaces, Is.EqualTo(1), "Warm sling frames must share one retained projection workspace.");
+                var slingContacts = (PlayerScarfBodyContacts)CarrySupportField(sling, "bodyContacts");
+                Assert.That(slingContacts.SupportArenaCreateCount, Is.EqualTo(1));
+                object supportWorkspace = CarrySupportField(slingContacts, "retainedSupportWork");
+                Assert.That(supportWorkspace, Is.Not.Null);
                 AssertConcealedRenderers(pistol, false);
                 AssertPistolChestFit(hero);
                 AssertShotgunFrontRoute(hero);
                 yield return MeasureRealCarryFrames(measurement, AddBucket("Initial physical proof recovery", false), 5);
+                AssertRealCarryPointQueryEquivalence(((Player3DCharacterPresentation)root.Player.Visual).Registry);
+                AssertRealCarrySurfaceSkinFreshness(measurement.Jackets);
+                yield return MeasureRealCarryFrames(measurement, AddBucket("Exact contact proof recovery", false), 5);
                 Vector3 walkingStart = hero.transform.position;
                 input.Press(keyboard.wKey, queueEventOnly: true);
                 yield return MeasureRealCarryFrames(measurement, AddBucket("Walking with shotgun on the body", true), 100);
@@ -111,7 +119,14 @@ namespace BarPromenade.Tests.PlayMode
                     AddBucket("Walking shotgun to pistol", true));
                 input.Release(keyboard.wKey, queueEventOnly: true);
                 yield return null;
-                AssertShotgunFrontRoute(hero);
+                try { AssertShotgunFrontRoute(hero); }
+                catch (AssertionException error)
+                {
+                    // Retain this mandatory physical failure while collecting
+                    // the remaining frame gates and independent contact proofs.
+                    frontRouteFailure = error;
+                    TestContext.Out.WriteLine("Deferred front-route failure: " + error.Message);
+                }
                 AssertConcealedRenderers(pistol, false);
                 CaptureRealCarryViews("Shotgun Test real frame front-ready");
                 yield return MeasureRealCarryFrames(measurement, AddBucket("Camera capture recovery after front route", false), 5);
@@ -153,9 +168,25 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(root.BloodEffects.ProjectileWoundCountFor(root.Opponent), Is.EqualTo(1));
                 yield return MeasureRealCarryFrames(measurement, impact, 12);
                 yield return MeasureRealCarryFrames(measurement, AddBucket("Post-death live frames", true), 120);
+                input.Release(mouse.rightButton, queueEventOnly: true);
+                yield return null;
+                yield return MeasureRealCarrySwitch(input, keyboard, CombatWeaponId.Shotgun, measurement,
+                    AddBucket("Post-death pistol to shotgun", true));
+                Vector3 diagonalStart = hero.transform.position;
+                input.Press(keyboard.wKey, queueEventOnly: true);
+                input.Press(keyboard.aKey, queueEventOnly: true);
+                yield return MeasureRealCarryFrames(measurement, AddBucket("Post-death diagonal walking with shotgun", true), 120);
+                input.Release(keyboard.wKey, queueEventOnly: true);
+                input.Release(keyboard.aKey, queueEventOnly: true);
+                Assert.That(Vector3.Distance(hero.transform.position, diagonalStart), Is.GreaterThan(.3f));
+                Assert.That(hero.WeaponId, Is.EqualTo(CombatWeaponId.Shotgun));
+                Assert.That(hero.Firearm.AimProgress, Is.Zero, "The fresh-log walking reproduction must retain its unaimed shotgun pose.");
                 Assert.That(root.Opponent.State.Health, Is.Zero);
                 Assert.That(sling.ProjectionWorkspaceAllocations, Is.EqualTo(slingWorkspaces),
                     "Walking, weapon switches and the lethal contact must reuse the sling workspace.");
+                Assert.That(slingContacts.SupportArenaCreateCount, Is.EqualTo(1));
+                Assert.That(CarrySupportField(slingContacts, "retainedSupportWork"), Is.SameAs(supportWorkspace),
+                    "Live poses must reuse support scratch buffers through walking, transfers and impact.");
                 long gameplayBodyNativeBounds = root.BodyEffects.ProxyNativeBoundsFolds - bodyNativeBoundsBeforeFrames;
                 long gameplayBodyBurstBounds = root.BodyEffects.ProxyBurstBoundsFolds - bodyBurstBoundsBeforeFrames;
                 TestContext.Out.WriteLine("Gameplay body proxy bound folds: native=" + gameplayBodyNativeBounds +
@@ -174,7 +205,14 @@ namespace BarPromenade.Tests.PlayMode
                 root.TickFrame(.20f);
                 Assert.That(root.FinishedRoundSubsteps - finishedSteps, Is.InRange(1, 4),
                     "A real frame hitch must also bound finished-round combat/effects work.");
-                AssertRealCarryPointQueryEquivalence(((Player3DCharacterPresentation)root.Player.Visual).Registry);
+                AssertCarrySupportExtrema(hero);
+                foreach (PlayerJacketCloth jacket in measurement.Jackets)
+                    if (jacket.HasAuthoredBindings)
+                    {
+                        var jacketContacts = (PlayerScarfBodyContacts)CarrySupportField(jacket, "contacts");
+                        Assert.That(jacketContacts.SupportArenaCreateCount, Is.EqualTo(1));
+                        AssertCarrySupportExtrema(jacketContacts, nativePose: false);
+                    }
                 AssertRealCarrySharedClothSnapshot();
                 AssertBodyProxyCache();
                 var flush = root.JournalForDiagnostics.FlushAsync();
@@ -199,6 +237,8 @@ namespace BarPromenade.Tests.PlayMode
                             bucket.Name + ": secondary motion must fit within half of the 30 FPS frame budget; the full-frame gate remains mandatory.");
                     }
                 }
+                if (frontRouteFailure != null)
+                    System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(frontRouteFailure).Throw();
 
                 RealCarryFrameBucket AddBucket(string name, bool warm)
                 {
@@ -718,8 +758,8 @@ namespace BarPromenade.Tests.PlayMode
         {
             foreach (string excludedSlot in new[] { "jacket", null })
             {
-                var optimized = new PlayerScarfBodyContacts(rig, excludedSlot, useMeshSupportPlanes: true, pointQuerySlots: 1);
-                var scalar = new PlayerScarfBodyContacts(rig, excludedSlot, useMeshSupportPlanes: true, pointQuerySlots: 0);
+                using var optimized = new PlayerScarfBodyContacts(rig, excludedSlot, useMeshSupportPlanes: true, pointQuerySlots: 1);
+                using var scalar = new PlayerScarfBodyContacts(rig, excludedSlot, useMeshSupportPlanes: true, pointQuerySlots: 0);
                 optimized.UpdatePose(); scalar.UpdatePose();
                 var points = new List<Vector3>();
                 var exclusions = new List<Player3DAnatomicalPart?>();
@@ -736,6 +776,9 @@ namespace BarPromenade.Tests.PlayMode
                     }
                 }
                 var cache = optimized.CreatePointQueryCache(points.Count);
+                Vector3[] hemPoints = points.ToArray();
+                var hemFreedom = new float[hemPoints.Length];
+                Array.Fill(hemFreedom, 1f);
                 Transform arm = CityPedestrianHandProps.FindSocket(rig.Animator.transform, "upper_arm.L");
                 Assert.That(arm, Is.Not.Null);
                 Quaternion rotation = arm.localRotation;
@@ -749,6 +792,17 @@ namespace BarPromenade.Tests.PlayMode
                     {
                         arm.localRotation = pose == 1 ? rotation * Quaternion.Euler(0f, 0f, 12f) : rotation;
                         optimized.UpdatePose(); scalar.UpdatePose();
+                        AssertRealCarrySourceSupport(optimized, points);
+                        foreach (float side in new[] { -1f, 0f, 1f })
+                        {
+                            bool fastHem = optimized.TryHemObstacle(hemPoints, hemFreedom, rig.transform,
+                                out Bounds fastBounds, out float fastSide, side);
+                            bool referenceHem = scalar.TryHemObstacle(hemPoints, hemFreedom, rig.transform,
+                                out Bounds referenceBounds, out float referenceSide, side);
+                            Assert.That(fastHem, Is.EqualTo(referenceHem), "Hem selection must match the exhaustive current-plane scan.");
+                            Assert.That(fastBounds.Equals(referenceBounds), Is.True);
+                            Assert.That(BitConverter.SingleToInt32Bits(fastSide), Is.EqualTo(BitConverter.SingleToInt32Bits(referenceSide)));
+                        }
                         for (int index = 0; index < points.Count; index++)
                         foreach (Vector3 offset in new[] { Vector3.zero, Vector3.right * .0007f, Vector3.left * .0004f })
                         for (int repeat = 0; repeat < 2; repeat++)
@@ -777,6 +831,106 @@ namespace BarPromenade.Tests.PlayMode
                     optimized.UpdatePose(); scalar.UpdatePose();
                 }
                 Assert.That(checkedPoints, Is.GreaterThan(0)); Assert.That(corrected, Is.GreaterThan(0));
+            }
+        }
+
+        private static void AssertRealCarrySourceSupport(PlayerScarfBodyContacts contacts, List<Vector3> points)
+        {
+            var equipment = CarrySupportField(contacts, "equipment") as PlayerEquipmentContacts;
+            var proxies = (Array)CarrySupportField(contacts, "proxies");
+            foreach (Vector3 point in points)
+            {
+                bool outside = equipment == null || !equipment.Contains(point, .0001f);
+                foreach (object proxy in proxies)
+                {
+                    if (!outside) break;
+                    if (!(bool)CarrySupportField(proxy, "Active")) continue;
+                    var planes = CarrySupportField(proxy, "WorldPlanes") as Plane[];
+                    if (planes == null) { outside = false; break; }
+                    float padding = (float)CarrySupportField(CarrySupportField(proxy, "Selected"), "SurfacePadding");
+                    bool separated = false;
+                    foreach (Plane plane in planes)
+                        if (plane.GetDistanceToPoint(point) >= .0001f - padding) { separated = true; break; }
+                    if (!separated) { outside = false; break; }
+                }
+                Assert.That(contacts.OutsideSourceSupport(point), Is.EqualTo(outside),
+                    "Source-hull clearance must match the original live exhaustive scan without a bounds shortcut.");
+            }
+            int checkedTrees = 0;
+            foreach (object proxy in proxies)
+            {
+                if (!(bool)CarrySupportField(proxy, "Active")) continue;
+                object tree = CarrySupportField(proxy, "ScoreTree");
+                if (tree == null) continue;
+                var planes = (Plane[])CarrySupportField(proxy, "WorldPlanes");
+                float padding = (float)CarrySupportField(CarrySupportField(proxy, "Selected"), "SurfacePadding");
+                Vector3 centre = ((Vector3)CarrySupportField(proxy, "WorldMinimum") +
+                    (Vector3)CarrySupportField(proxy, "WorldMaximum")) * .5f;
+                var contains = tree.GetType().GetMethod("ContainsAtThreshold");
+                Assert.That(contains, Is.Not.Null);
+                foreach (float threshold in new[] { .0001f - padding, 0f, .0001f })
+                foreach (int planeIndex in new[] { 0, planes.Length / 2, planes.Length - 1 })
+                foreach (float offset in new[] { -.000001f, 0f, .000001f })
+                {
+                    Plane boundary = planes[planeIndex];
+                    Vector3 point = centre + boundary.normal *
+                        ((threshold + offset - boundary.GetDistanceToPoint(centre)) / boundary.normal.sqrMagnitude);
+                    bool reference = true;
+                    foreach (Plane plane in planes)
+                        if (plane.GetDistanceToPoint(point) >= threshold) { reference = false; break; }
+                    object[] arguments = { point, planes.Length - 1, threshold };
+                    Assert.That((bool)contains.Invoke(tree, arguments), Is.EqualTo(reference),
+                        "Shifted plane-tree clearance must retain exact float comparisons at boundary crossings.");
+                }
+                checkedTrees++;
+            }
+            Assert.That(checkedTrees, Is.GreaterThan(0));
+        }
+
+        private static void AssertRealCarrySurfaceSkinFreshness(PlayerJacketCloth[] jackets)
+        {
+            foreach (PlayerJacketCloth cloth in jackets)
+            foreach (var surface in (PlayerJacketClothSurface[])CarrySupportField(cloth, "surfaces"))
+            {
+                BoneWeight[] weights = surface.Source.boneWeights;
+                Matrix4x4[] bind = surface.Source.bindposes;
+                Transform[] bones = surface.Renderer.bones;
+                var matrices = new Matrix4x4[bind.Length];
+                var normals = (List<Vector3>)CarrySupportField(surface, "normals");
+                Vector3[] bindNormals = surface.Source.normals;
+                Transform changedBone = bones[weights[0].boneIndex0];
+                Quaternion rotation = changedBone.localRotation;
+                try
+                {
+                    for (int pose = 0; pose < 3; pose++)
+                    {
+                        changedBone.localRotation = pose == 1 ? rotation * Quaternion.Euler(3f, 5f, 0f) : rotation;
+                        surface.UpdatePose();
+                        for (int bone = 0; bone < matrices.Length; bone++) matrices[bone] = bones[bone].localToWorldMatrix * bind[bone];
+                        var checkedWeights = new HashSet<BoneWeight>();
+                        for (int vertex = 0; vertex < weights.Length; vertex++)
+                        {
+                            BoneWeight weight = weights[vertex];
+                            if (!checkedWeights.Add(weight)) continue;
+                            Matrix4x4 reference = matrices[weight.boneIndex0];
+                            for (int column = 0; column < 4; column++) reference.SetColumn(column, reference.GetColumn(column) * weight.weight0);
+                            Add(weight.boneIndex1, weight.weight1); Add(weight.boneIndex2, weight.weight2); Add(weight.boneIndex3, weight.weight3);
+                            Assert.That(surface.Skin(vertex).Equals(reference), Is.True,
+                                "Referenced-bone capture must preserve full-rig skin arithmetic across same-frame poses.");
+                            Matrix4x4 normalMatrix = reference.inverse.transpose;
+                            Assert.That(surface.WorldNormal(vertex).Equals(normalMatrix.MultiplyVector(normals[vertex]).normalized), Is.True);
+                            Assert.That(surface.BindWorldNormal(vertex).Equals(normalMatrix.MultiplyVector(bindNormals[vertex]).normalized), Is.True);
+
+                            void Add(int bone, float influence)
+                            {
+                                if (influence <= 0f) return;
+                                for (int column = 0; column < 4; column++)
+                                    reference.SetColumn(column, reference.GetColumn(column) + matrices[bone].GetColumn(column) * influence);
+                            }
+                        }
+                    }
+                }
+                finally { changedBone.localRotation = rotation; surface.UpdatePose(); }
             }
         }
 

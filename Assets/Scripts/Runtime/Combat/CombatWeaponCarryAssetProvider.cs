@@ -9,10 +9,12 @@ namespace BarPromenade
     public static class CombatWeaponCarryAssetProvider
     {
         public const string ResourceFolder = "CombatWeaponCarry/";
+        public const float ShotgunPushSeconds = .30f, ShotgunCatchSeconds = .70f, ShotgunGripSeconds = 1.65f;
         public sealed class Mount
         {
             public GameObject Root { get; }
             public Transform WeaponDock { get; }
+            public CombatWeaponCarryBindings.Slot Binding { get; internal set; }
             internal Mount(GameObject root, Transform dock) { Root = root; WeaponDock = dock; }
         }
 
@@ -40,7 +42,7 @@ namespace BarPromenade
             {
                 CombatWeaponId.Crowbar => .38f,
                 CombatWeaponId.Pistol => .48f,
-                CombatWeaponId.Shotgun => .88f,
+                CombatWeaponId.Shotgun => draw ? ShotgunPushSeconds : .88f,
                 _ => throw new ArgumentOutOfRangeException(nameof(id))
             };
             return draw ? seconds : PhaseDuration(id, false) - seconds;
@@ -71,6 +73,7 @@ namespace BarPromenade
             if (bindings == null) throw new InvalidOperationException("Weapon carry requires imported production-rig bindings.");
             Mount result = CreateUnboundMount(id, GetMountBone(id, registry));
             CombatWeaponCarryBindings.Slot slot = bindings.For(id);
+            result.Binding = slot;
             result.Root.transform.localPosition = slot.BoneLocalPosition;
             result.Root.transform.localRotation = slot.BoneLocalRotation;
             return result;
@@ -112,6 +115,33 @@ namespace BarPromenade
             weapon.transform.localScale = InverseScale(dock.lossyScale);
         }
 
+        public static void PlaceInTransferHand(GameObject weapon, Transform grip, Vector3 position, Quaternion rotation)
+        {
+            if (weapon == null || grip == null) throw new ArgumentException("A weapon handoff requires the original grip.");
+            weapon.transform.SetParent(grip, false);
+            weapon.transform.localPosition = position;
+            weapon.transform.localRotation = rotation;
+            weapon.transform.localScale = InverseScale(grip.lossyScale);
+        }
+
+        public static float ShotgunDrawTransferSeconds(int stage) => stage switch
+        {
+            1 => ShotgunPushSeconds,
+            2 => ShotgunCatchSeconds,
+            3 => ShotgunGripSeconds,
+            _ => throw new ArgumentOutOfRangeException(nameof(stage))
+        };
+
+        public static float ShotgunDrawHandClosure(bool left, float normalizedTime)
+        {
+            float seconds = Mathf.Clamp01(normalizedTime) * PhaseDuration(CombatWeaponId.Shotgun, true);
+            if (!left) return Mathf.SmoothStep(0f, 1f, (seconds - 1.35f) / .30f);
+            float catchClosure = .65f * Mathf.SmoothStep(0f, 1f, (seconds - .60f) / .10f) *
+                Mathf.SmoothStep(1f, 0f, (seconds - 1.65f) / .20f);
+            float foreendClosure = .9f * Mathf.SmoothStep(0f, 1f, (seconds - 2.05f) / .25f);
+            return Mathf.Max(catchClosure, foreendClosure);
+        }
+
         public static float JacketAccessAmount(CombatWeaponId id, bool draw, float normalizedTime)
         {
             if (id != CombatWeaponId.Pistol) return 0f;
@@ -129,6 +159,7 @@ namespace BarPromenade
 
         public static float SlingLeftHandAmount(bool draw, float normalizedTime)
         {
+            if (draw) return 0f;
             float seconds = SlingDrawSeconds(draw, normalizedTime);
             return seconds < .30f ? Mathf.SmoothStep(0f, 1f, (seconds - .16f) / .14f) :
                 seconds <= 1.75f ? 1f : Mathf.SmoothStep(1f, 0f, (seconds - 1.75f) / .40f);

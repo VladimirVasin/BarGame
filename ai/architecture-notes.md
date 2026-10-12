@@ -3,18 +3,24 @@
 ## Current facts
 
 - **Accepted — 2026-10-10, carry pair:**
-  CombatTest:pistol Lchest/M65+Rbelt bar OR own soft-sling back shotgun.
-  Holster0cloth:stored hidden;held/drop seen;coat-off visible.
+  CombatTest:pistol Lchest/M65+Rbelt bar|soft-sling back shotgun.
+  Holster0cloth:stored hidden;held/drop/coat-off seen.
   6bone stow/draw;rig/models/ammo/handoffs;0hardmount;§6/art§15a/9checks.
 
-- **Accepted — 2026-10-11:** shotgun:LEFT shoulder→full front chest/abdomen→lower Rside;rig draw/stow.
-  Ribbon0jacket;gun/bar coat+scarf/hair contacts;JacketBody-only width/seam pad.
+- **Accepted — 2026-10-12, ShotgunDraw:**
+  Ropen nudges barrels below;Loutside/over Lshoulder→vertical stock-top/palm-down catch
+  →outside shoulder/front chest turn→Rgrip/Lforeend;0body crossing.
+  Imported-rig offsets;continuous handoffs/pause freeze;interim drop=original/pose/ammo.
+  Stow/geometry/rig/sling/2× kept
 
-- **Accepted — 2026-10-11, cloth:** user allows simplification.
-  Jacket≤3,hair/sling≤2steps/frame@120Hz;elapsed/0debt
-  Free:posed body/gear/face-safe exit+material unchanged;fallback.
-  Dense hulls;pinned/area Burst/shared snapshot/fallback.
-  Damage:disabled prewarm;live bounds;ordered native/fallback;topology keys.
+- **Accepted — 2026-10-11:** shotgun:Lshoulder→front chest/abdomen→lower Rside;draw/stow.
+  Ribbon0jacket;gun/bar coat+scarf/hair;JacketBody-only width/seam pad.
+
+- **Accepted — 2026-10-11, cloth simplification:**
+  Jacket≤3,hair/sling≤2@120Hz;0debt. Free:body/gear/face-safe/material/fallback.
+  Burst support/pinned/area;live scratch;hem depth/clearance tree;
+  skin:bones/inverses;damage:0prewarm/bounds/source index/contact bones;
+  native/fallback/topology.
 
 - **Accepted — 2026-10-10, separate military belt:**
   Olive webbing/muted metal buckle;pelvis over trousers.
@@ -22,14 +28,14 @@
   Buckle allowed;0insignia/ammo/military bio.
 
 - **Accepted — 2026-10-10, hero footwear:**
-  Burgundy Dr. Martens 1460 Smooth Leather Lace Up Boots replace military boots:
+  Burgundy Dr. Martens 1460 Smooth Leather Lace Up Boots:
   rounded toe/8 eyelets/black laces/yellow welt stitching/grooved sole.
   Leather/sole ankle/ball flex in foot roll;rig/actions/support footprint kept.
 
 - **Accepted — 2026-10-10, hero body silhouette:**
-  Torso widens→continuous shoulders;shirt/M-65 follow;matching tapered
-  neck fits jaw. Male hips/thighs join two modest round buttocks/cleft;
-  projection reduced,cheeks distinct;trousers cover anatomy.
+  Wide torso→continuous shoulders;shirt/M-65 follow;tapered neck fits jaw.
+  Male hips/thighs→two modest round buttocks/cleft;low projection/distinct
+  cheeks/trouser coverage.
   Lean identity/rig/actions/details;0story/§6 deviation.
 
 - **Accepted — 2026-10-10, continuous joints and loose hero garments:**
@@ -44,23 +50,21 @@
   identity/palette/§16/9checks/0§6 deviation.
 
 - **Accepted — 2026-10-04, district heights:**
-  User replaces the roof-hidden `36–52 m` ordinary contract: lower OldTown/
-  Residential, wide low Industrial, Nightlife taller than neighbours.
+  Lower OldTown/Residential;wide low Industrial;taller Nightlife.
   Compact heights `18/15/10/27 m`; long/passage `16.2/14.4/8.4/24.6 m`;
   L `17.4/15.6/9.3/26.4 m`; wing `12.6/11.8/6.9/18.6 m` (district order above).
-  Fallback `8–28 m`; roofs participate in silhouette. Fog `0.070`/far `48 m`,
-  home/shop/bar heights, meaning and nine art checks remain.
+  Fallback `8–28 m`;roofs in silhouette;fog `0.070`/far `48 m`.
+  Home/shop/bar heights,meaning/9checks kept.
 
 - **Accepted — 2026-10-04, district street structure:**
-  Stable address/node IDs; `8 m` roads/`6 m` carriageways. Coast/river/park,
-  central/bus spines, seeded stairs and special approaches retain datums.
-  Baseline elevation picks stair edges before curves; highest buildable row
-  and coast connectors form a straight service band. Cargo search/paving:
-  straight streets, retained supply/parking anchors and turn aprons, no fixed route.
+  Stable address/node IDs;`8 m` roads/`6 m` carriageways. Coast/river/park,
+  central/bus spines/seeded stairs/special approaches retain datums.
+  Stair edges before curves;highest buildable row+coast links→straight service band.
+  Cargo search/paving:straight streets/supply-parking anchors/turn aprons;0fixed route.
   Inner OldTown bends `1.4–2.15 m` terrace/shore; upper Industrial `0.75–0.9 m`;
-  Residential regular/Nightlife precincts straight. Special sites use pilot
-  geometry before ordinary replanning; legacy/custom uniform straight.
-  Ribbons own ground subtraction/body poses/distances; exits/story §16 unchanged.
+  Residential regular/Nightlife straight;pilot geometry before ordinary replan;
+  legacy/custom straight.
+  Ribbons:ground subtraction/body poses/distances;exits/story §16 kept.
 
 - **Accepted — 2026-10-04, district block ensembles:**
   User:whole-city structural replanning/new Blender objects. District front/rear

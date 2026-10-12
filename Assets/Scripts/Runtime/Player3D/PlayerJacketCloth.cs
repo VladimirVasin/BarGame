@@ -596,6 +596,8 @@ namespace BarPromenade
 
         private void DisposeSurfaces()
         {
+            contacts?.Dispose();
+            contacts = null;
             if (surfaces != null)
                 foreach (PlayerJacketClothSurface surface in surfaces) surface?.Dispose();
             nativeSnapshot?.Dispose();

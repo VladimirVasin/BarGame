@@ -4254,6 +4254,9 @@ Aim:8gaits/×.85/facing/Step/uppercam/FOV-grip return.
 `2026-10-08`:recoil/stablecam/streak/impulse-SFX;pistol head0HP→ragdoll.
 Shotgun:worn dark steel/wood/twin barrels/shoulder-stock/Lforeend;
 heavy recoil/flash-smoke/deep thud;2shots/break/eject spent/load/close.
+`2026-10-12`:Draw Ropen nudges barrels below;Loutside/over Lshoulder→vertical stock-top/palm-down
+catch→outside shoulder/front chest turn→Rgrip/Lforeend;0body crossing.
+ShotgunStow/geometry/rig/sling/2× kept.
 `2026-10-09`:near=max/body launch/head≤14/fast head debris-blood/falloff.
 Rig:chest-abdomen/arm-forearm-hand/leg-catch;skin-fabric-glove-boot/wet-dry/repeat.
 `2026-10-09`:torso erodes→joined skeleton/0chunks;head-limb cuts/finite parts;
@@ -4277,10 +4280,8 @@ Charge power;shield:dim-open=none/amber=request/closed=ready/filled=block;без
 
 ### Принятое исключение — иллюстрации загрузки
 
-По решению пользователя `2026-09-06` ([architecture-notes.md](architecture-notes.md))
-только четыре статичные живописные иллюстрации существующей игры в `AreaLoading`
-заменяют чёрный экран и строгую PS1-растровость. Интерфейс, мир, камера, свет,
-материалы и PS1-композит сохраняются.
+[Decision `2026-09-06`](architecture-notes.md): 4 static painterly `AreaLoading`
+frames replace black/PS1 raster;UI/world/camera/light/materials/PS1 compositor kept.
 
 | Направление | Единственная иллюстрация |
 | --- | --- |

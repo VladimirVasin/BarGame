@@ -473,7 +473,7 @@ namespace BarPromenade
                     // Resolve its regional retention only if its exact score can win.
                     long start = System.Diagnostics.Stopwatch.GetTimestamp();
                     CombatBodyDestruction.TryClassifySurface(actor, patch.Source, surfacePoint,
-                        out candidate.Region, out candidate.BodyPatch);
+                        out candidate.Region, out candidate.BodyPatch, projectileWorldBones);
                     ClassificationTicks += System.Diagnostics.Stopwatch.GetTimestamp() - start;
                     if (!Retains(candidate)) continue;
                 }

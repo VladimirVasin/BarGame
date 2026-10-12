@@ -36,7 +36,10 @@ namespace BarPromenade
         private bool carryDraw, carryTransferred, carrySettling, resettingCarry, disposingCarry;
         private float carryElapsed, carrySettleElapsed;
         private int carryTerminalFrame = -1;
-        private const float CarrySettleSeconds = .16f;
+        private int shotgunDrawStage;
+        // Retiming preserves authored contact phases for the rig, jacket and sling.
+        private const float CarryPlaybackSpeed = 2f;
+        private const float CarrySettleSeconds = .16f / CarryPlaybackSpeed;
         private static readonly ProfilerMarker WeaponCarryPresentMarker = new ProfilerMarker("BarPromenade.WeaponCarry.Present");
         private int projectileSequence;
 
@@ -48,12 +51,15 @@ namespace BarPromenade
         public CombatWeaponId? WeaponCarryActionWeapon => carryAction?.Id;
         public bool WeaponCarryActionIsDraw => carryDraw;
         public float WeaponCarryActionProgress => carryAction == null ? 0f : Mathf.Clamp01(
-            carryElapsed / CombatWeaponCarryAssetProvider.PhaseDuration(carryAction.Id, carryDraw));
+            carryElapsed / CarryPhaseDuration(carryAction.Id, carryDraw));
         public GameObject CarriedWeapon(CombatWeaponId id) => FindCarriedWeapon(id)?.Model;
         public Transform CarryMount(CombatWeaponId id) => FindCarriedWeapon(id)?.Mount.WeaponDock;
         public IFirearmState CarriedFirearm(CombatWeaponId id) => FindCarriedWeapon(id)?.Firearm;
         public CombatWeaponCarryLocation CarriedWeaponLocation(CombatWeaponId id) =>
             FindCarriedWeapon(id)?.Location ?? throw new ArgumentOutOfRangeException(nameof(id));
+
+        private static float CarryPhaseDuration(CombatWeaponId id, bool draw) =>
+            CombatWeaponCarryAssetProvider.PhaseDuration(id, draw) / CarryPlaybackSpeed;
 
         private CarriedWeaponRecord FindCarriedWeapon(CombatWeaponId id)
         {
@@ -186,6 +192,7 @@ namespace BarPromenade
             EndPistolAction(); ReleasePresentation(preservePresentedPose: true);
             if (draw) BindCarriedWeapon(record);
             carryAction = record; carryDraw = draw; carryTransferred = false;
+            shotgunDrawStage = 0;
             carryElapsed = carrySettleElapsed = 0f; carryTerminalFrame = -1; carrySettling = true;
             AnimationClip clip = record.CarryClips[draw ? 1 : 0];
             if (!hero.TryAcquireClip(this, clip.name)) { CancelWeaponCarry(); return; }
@@ -240,8 +247,22 @@ namespace BarPromenade
                 carrySettling = false; CancelPoseBlend();
                 return;
             }
-            float duration = CombatWeaponCarryAssetProvider.PhaseDuration(carryAction.Id, carryDraw);
+            float duration = CarryPhaseDuration(carryAction.Id, carryDraw);
             float next = Mathf.Min(duration, carryElapsed + seconds);
+            if (carryAction.Id == CombatWeaponId.Shotgun && carryDraw)
+            {
+                while (shotgunDrawStage < 3)
+                {
+                    float contact = CombatWeaponCarryAssetProvider.ShotgunDrawTransferSeconds(shotgunDrawStage + 1) / CarryPlaybackSpeed;
+                    if (next + .000001f < contact) break;
+                    carryElapsed = contact;
+                    PresentWeaponCarry();
+                    PlaceShotgunDrawStage(++shotgunDrawStage);
+                }
+                carryElapsed = next;
+                if (next + .000001f >= duration) carryTerminalFrame = Time.frameCount;
+                return;
+            }
             float transfer = duration * CombatWeaponCarryAssetProvider.TransferNormalizedTime(carryAction.Id, carryDraw);
             if (!carryTransferred && next + .000001f >= transfer)
             {
@@ -266,6 +287,21 @@ namespace BarPromenade
             if (next + .000001f >= duration) carryTerminalFrame = Time.frameCount;
         }
 
+        private void PlaceShotgunDrawStage(int stage)
+        {
+            CombatWeaponCarryBindings.Slot slot = carryAction.Mount.Binding;
+            if (stage == 1)
+                CombatWeaponCarryAssetProvider.PlaceInTransferHand(carryAction.Model, hero.Registry.Anchors.RightGrip,
+                    slot.PushHandLocalPosition, slot.PushHandLocalRotation);
+            else if (stage == 2)
+                CombatWeaponCarryAssetProvider.PlaceInTransferHand(carryAction.Model, hero.Registry.Anchors.LeftGrip,
+                    slot.CatchHandLocalPosition, slot.CatchHandLocalRotation);
+            else PlaceCarriedWeaponInHand(carryAction);
+            carryAction.Location = CombatWeaponCarryLocation.Held;
+            weaponDropped = false;
+            carryTransferred = true;
+        }
+
         private bool PresentWeaponCarry()
         {
             if (!IsSwitchingWeapon || hero == null || IsRagdollActive || State.IsDefeated) return false;
@@ -275,8 +311,11 @@ namespace BarPromenade
             hero.SetOwnedClipLocomotion(this, true);
             hero.SampleOwnedClip(this, WeaponCarryActionProgress);
             hero.ClearCombatFirearm(this); hero.ClearCombatSupportGrip(this);
-            handPose.SetGrip(false, HasWeaponInHand ? 1f : 0f);
-            handPose.SetGrip(true, carryAction.Id == CombatWeaponId.Shotgun ? .55f *
+            bool shotgunDraw = carryAction.Id == CombatWeaponId.Shotgun && carryDraw;
+            handPose.SetGrip(false, shotgunDraw ? CombatWeaponCarryAssetProvider.ShotgunDrawHandClosure(false,
+                WeaponCarryActionProgress) : HasWeaponInHand ? 1f : 0f);
+            handPose.SetGrip(true, shotgunDraw ? CombatWeaponCarryAssetProvider.ShotgunDrawHandClosure(true,
+                WeaponCarryActionProgress) : carryAction.Id == CombatWeaponId.Shotgun ? .55f *
                 CombatWeaponCarryAssetProvider.SlingLeftHandAmount(carryDraw, WeaponCarryActionProgress) : 0f);
             CombatWeaponCarryAssetProvider.SetJacketAccess(hero.Registry,
                 CombatWeaponCarryAssetProvider.JacketAccessAmount(carryAction.Id, carryDraw, WeaponCarryActionProgress));
@@ -288,14 +327,21 @@ namespace BarPromenade
             return true;
         }
 
-        private void CancelWeaponCarry(bool retainPose = false)
+        private bool CancelWeaponCarry(bool retainPose = false)
         {
             requestedCarry = null;
-            if (!IsSwitchingWeapon) return;
+            if (!IsSwitchingWeapon) return false;
+            bool releaseTransientHold = carryAction.Id == CombatWeaponId.Shotgun && carryDraw &&
+                shotgunDrawStage > 0 && shotgunDrawStage < 3 && !resettingCarry && !disposingCarry && gameObject.activeInHierarchy;
             carryAction = null; carryTerminalFrame = -1;
+            // A palm push or upper catch is not a stable firing hold. Interruptions
+            // release the same real gun at its live pose instead of snapping it to
+            // the distant trigger hand; normal drop/pickup retains its ammunition.
+            if (releaseTransientHold) ReleaseWeapon(Vector3.zero, Vector3.zero);
             if (hero != null) CombatWeaponCarryAssetProvider.SetJacketAccess(hero.Registry, 0f);
             motor?.ReleaseMovementConstraint(this);
             if (!retainPose) ReleasePresentation(preservePresentedPose: true);
+            return releaseTransientHold;
         }
 
         private void ResetWeaponCarry()

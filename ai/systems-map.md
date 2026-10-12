@@ -49,7 +49,7 @@ Only these statuses apply. Product scope cuts are `Deferred` in
 | PS1 presentation | Shared low-res composite. Optional 4:3, vertex jitter and Begotten keep controls; Begotten ramps `15 s` in, `3 s` out. | `Runtime/Rendering`, `IntoxicationRenderState`, `BegottenModeRamp` | Current |
 | Depth of field tiers | Exteriors keep broad Gaussian far blur; the six interior scenes cap it at radius `0.55`. | `RuntimeSceneSetup`, `DepthOfFieldSettingsBinder` | Current |
 | Runtime area composition | Ten gameplay roots; four build in frames; interior doors retain dormant City/village. | `Runtime/Core`, `Runtime/Scenes` | Current |
-| Combat test | Pistol+bar/shotgun:switch/aim/reload;bounded sling;sync damage caches. Gap:pierce/balance. | `CombatTestRoot`, `CombatActor.WeaponCarry`, `CombatFootwork` | Partial |
+| Combat test | Pistol+bar/shotgun:2× carry/settle;aim/reload;bounded sling/caches. Gap:pierce/balance. | `CombatTestRoot`, `CombatActor.WeaponCarry`, `CombatFootwork` | Partial |
 | Body destruction | Torso→skeleton/sever/crawl/corpse/reset;clone skin/topology buffers/bounds. | `CombatBodyDamageState`,`CombatBodyDestruction` | Current |
 | New-game starting place | Twelve starts incl. lodge; village default, day `1`/`07:40`, ordinary loading. | `StartMenu{Root,Model}`, `NewGame{LocationCatalog,StartService}` | Current |
 | Retained Home waking opening | Frozen `05:59`, five-second lock, Wake Up/Quit, continuous wake. Gap: no shipped path reaches it. | `MainMenuRoot`, `HomeOpening{Controller,Timeline}` | Partial |
@@ -151,7 +151,7 @@ Only these statuses apply. Product scope cuts are `Deferred` in
 | Modular 3D hero presentation | V2: 31 body/12 hair bones, 50 actions; shared joint boundaries and posed volume correction. | `Player3D*`, `PlayerFactory`, `CharacterJointDeformation` | Current |
 | Hero wardrobe | Atomic slot replacement and body coverage; one authored outfit. Gap: extra outfits, UI and persistence. | `PlayerWardrobe`, `Player3DBathingAppearance` | Partial |
 | Hero hair | Curtains:≤2/no debt;batched contacts/Burst fallback;wind/scarf;bends/pause/mirror. | `PlayerHair`, `PlayerHairContacts` | Current |
-| Hero jacket cloth | Hem/sleeve gates;≤3 steps/no debt;pinned/area Burst/fallback;free exits/hints/write reuse;pause/reset/mirror/arms. | `PlayerJacketCloth`, `PlayerJacketClothSurface` | Current |
+| Hero jacket cloth | Hem/sleeve gates;≤3 steps/no debt;native support/area;exact clearance tree;skin/scratch;pause/reset/mirror/arms. | `PlayerJacketCloth`, `PlayerJacketClothSurface` | Current |
 | Wearable scarf | Hero-only contacts; shared mouth/mirror pose. Location sets resting height after 5 s of free third-person play. | `PlayerScarf*`, `PlayerFactory`, `GameSessionState` | Current |
 | Alpine Village cold hero | Hug/rubs persist running; scarf halves shiver. Warmth stops cold/breath. | `Player3DCharacterPresentation.Cold`, `PlayerCold{PresentationModel,BreathEffect}` | Current |
 | Alpine frost presentation | Session frost; scarf halves growth, full frost stops cues; warm zones thaw. | `AlpineColdExposure{Model,Driver}`, `AlpineColdFrostPass`, `AlpineFrostAudio` | Current |

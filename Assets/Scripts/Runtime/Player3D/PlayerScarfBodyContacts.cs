@@ -15,7 +15,7 @@ namespace BarPromenade
     /// into posing cached source skin and corrective data for the worn shell.
     /// No scene geometry, physics queries or per-frame body baking is involved.
     /// </summary>
-    public sealed class PlayerScarfBodyContacts
+    public sealed class PlayerScarfBodyContacts : IDisposable
     {
         private const int MaximumParts = 17;
         private const float DefaultSurfacePadding = .003f;
@@ -51,6 +51,9 @@ namespace BarPromenade
         private readonly Dictionary<Transform, LocalJoint> localJoints = new Dictionary<Transform, LocalJoint>();
         private readonly bool nativeQueriesEnabled;
         private NativeRayQueries nativeRayQueries;
+        private SupportWorkArena retainedSupportWork;
+        internal int SupportArenaCreateCount { get; private set; }
+        internal bool HasRetainedSupportWorkspace => retainedSupportWork != null;
         private static readonly int ExactRayArithmeticMode = CalibrateRayArithmetic();
         internal static int NativeArithmeticMode => ExactRayArithmeticMode;
         internal static bool NativeClothSupported => NativeArithmeticMode == 1 && WideMonoBounds;
@@ -220,7 +223,8 @@ namespace BarPromenade
                 UploadedVertices = source;
             }
 
-            public SupportWorkArena(int vertexCapacity, int nodeCapacity, int normalCapacity, int matrixCapacity = 1)
+            public SupportWorkArena(int vertexCapacity, int nodeCapacity, int normalCapacity, int matrixCapacity = 1,
+                Allocator allocator = Allocator.TempJob)
             {
                 vertexCapacity = Mathf.Max(1, vertexCapacity);
                 nodeCapacity = Mathf.Max(1, nodeCapacity);
@@ -228,25 +232,25 @@ namespace BarPromenade
                 matrixCapacity = Mathf.Max(1, matrixCapacity);
                 try
                 {
-                    Vertices = new NativeArray<Vector3>(vertexCapacity, Allocator.TempJob, NativeArrayOptions.UninitializedMemory);
-                    Order = new NativeArray<int>(vertexCapacity, Allocator.TempJob, NativeArrayOptions.UninitializedMemory);
-                    Nodes = new NativeArray<PlayerBodySupportJob.Node>(nodeCapacity, Allocator.TempJob, NativeArrayOptions.UninitializedMemory);
-                    Changed = new NativeArray<bool>(vertexCapacity, Allocator.TempJob, NativeArrayOptions.UninitializedMemory);
-                    Normals = new NativeArray<Vector3>(normalCapacity, Allocator.TempJob, NativeArrayOptions.UninitializedMemory);
-                    Offsets = new NativeArray<float>(normalCapacity, Allocator.TempJob, NativeArrayOptions.UninitializedMemory);
-                    Points = new NativeArray<int>(normalCapacity, Allocator.TempJob, NativeArrayOptions.UninitializedMemory);
+                    Vertices = new NativeArray<Vector3>(vertexCapacity, allocator, NativeArrayOptions.UninitializedMemory);
+                    Order = new NativeArray<int>(vertexCapacity, allocator, NativeArrayOptions.UninitializedMemory);
+                    Nodes = new NativeArray<PlayerBodySupportJob.Node>(nodeCapacity, allocator, NativeArrayOptions.UninitializedMemory);
+                    Changed = new NativeArray<bool>(vertexCapacity, allocator, NativeArrayOptions.UninitializedMemory);
+                    Normals = new NativeArray<Vector3>(normalCapacity, allocator, NativeArrayOptions.UninitializedMemory);
+                    Offsets = new NativeArray<float>(normalCapacity, allocator, NativeArrayOptions.UninitializedMemory);
+                    Points = new NativeArray<int>(normalCapacity, allocator, NativeArrayOptions.UninitializedMemory);
                     Candidates = new NativeArray<int>(normalCapacity * PlayerBodySupportJob.CandidateCapacity,
-                        Allocator.TempJob, NativeArrayOptions.UninitializedMemory);
-                    CandidateCounts = new NativeArray<int>(normalCapacity, Allocator.TempJob, NativeArrayOptions.UninitializedMemory);
-                    Stack = new NativeArray<int>(PlayerBodySupportJob.RequiredStackCapacity, Allocator.TempJob, NativeArrayOptions.UninitializedMemory);
+                        allocator, NativeArrayOptions.UninitializedMemory);
+                    CandidateCounts = new NativeArray<int>(normalCapacity, allocator, NativeArrayOptions.UninitializedMemory);
+                    Stack = new NativeArray<int>(PlayerBodySupportJob.RequiredStackCapacity, allocator, NativeArrayOptions.UninitializedMemory);
                     Scores = new NativeArray<double>(PlayerBodySupportJob.CandidateCapacity + PlayerBodySupportJob.RequiredStackCapacity,
-                        Allocator.TempJob, NativeArrayOptions.UninitializedMemory);
-                    SourcePoints = new NativeArray<Vector3>(vertexCapacity, Allocator.TempJob, NativeArrayOptions.UninitializedMemory);
-                    Weights = new NativeArray<BoneWeight>(vertexCapacity, Allocator.TempJob, NativeArrayOptions.UninitializedMemory);
-                    Matrices = new NativeArray<Matrix4x4>(matrixCapacity, Allocator.TempJob, NativeArrayOptions.UninitializedMemory);
-                    ScorePlanes = new NativeArray<Plane>(normalCapacity, Allocator.TempJob, NativeArrayOptions.UninitializedMemory);
-                    ScoreOrder = new NativeArray<int>(normalCapacity, Allocator.TempJob, NativeArrayOptions.UninitializedMemory);
-                    ScoreNodes = new NativeArray<PlayerBodyRayJob.Node>(normalCapacity * 2, Allocator.TempJob, NativeArrayOptions.UninitializedMemory);
+                        allocator, NativeArrayOptions.UninitializedMemory);
+                    SourcePoints = new NativeArray<Vector3>(vertexCapacity, allocator, NativeArrayOptions.UninitializedMemory);
+                    Weights = new NativeArray<BoneWeight>(vertexCapacity, allocator, NativeArrayOptions.UninitializedMemory);
+                    Matrices = new NativeArray<Matrix4x4>(matrixCapacity, allocator, NativeArrayOptions.UninitializedMemory);
+                    ScorePlanes = new NativeArray<Plane>(normalCapacity, allocator, NativeArrayOptions.UninitializedMemory);
+                    ScoreOrder = new NativeArray<int>(normalCapacity, allocator, NativeArrayOptions.UninitializedMemory);
+                    ScoreNodes = new NativeArray<PlayerBodyRayJob.Node>(normalCapacity * 2, allocator, NativeArrayOptions.UninitializedMemory);
                 }
                 catch
                 {
@@ -568,7 +572,9 @@ namespace BarPromenade
             private bool initialized;
             private bool worldVerticesCurrent;
             private readonly Vector3[] worldVertices;
-            public readonly bool Profile;
+            // Support acceleration is independent of skin/bounds arithmetic.
+            // Jacket keeps its original Mono pose while sharing native support.
+            public readonly bool Profile, NativePose;
             public Vector3[] WorldVertices
             {
                 get
@@ -591,10 +597,11 @@ namespace BarPromenade
                 public int[] AffectedVertices;
             }
 
-            public PosedMesh(SkinnedMeshRenderer source, Mesh mesh, bool profile)
+            public PosedMesh(SkinnedMeshRenderer source, Mesh mesh, bool profile, bool nativePose)
             {
                 renderer = source;
                 Profile = profile;
+                NativePose = nativePose;
                 vertices = mesh.vertices;
                 correctedVertices = new Vector3[vertices.Length];
                 weights = mesh.boneWeights;
@@ -714,7 +721,7 @@ namespace BarPromenade
                 paths = new BoneRelativePath[skin.Bones.Length];
                 matrices = new Matrix4x4[skin.Bones.Length];
                 ownedWeights = new BoneWeight[vertices.Length];
-                sourcePoints = skin.Profile ? new Vector3[vertices.Length] : null;
+                sourcePoints = skin.NativePose ? new Vector3[vertices.Length] : null;
                 var used = new bool[skin.Bones.Length];
                 for (int i = 0; i < vertices.Length; i++)
                 {
@@ -745,7 +752,7 @@ namespace BarPromenade
                 if (!changed) return false;
                 if (shapesChanged && sourcePoints != null)
                     for (int i = 0; i < vertices.Length; i++) sourcePoints[i] = skin.CorrectedVertices[vertices[i]];
-                if (skin.Profile && arena != null && vertices.Length <= arena.Vertices.Length && matrices.Length <= arena.Matrices.Length)
+                if (skin.NativePose && arena != null && vertices.Length <= arena.Vertices.Length && matrices.Length <= arena.Matrices.Length)
                 {
                     NativeArray<Vector3>.Copy(sourcePoints, 0, arena.SourcePoints, 0, sourcePoints.Length);
                     NativeArray<BoneWeight>.Copy(ownedWeights, 0, arena.Weights, 0, ownedWeights.Length);
@@ -1077,27 +1084,33 @@ namespace BarPromenade
             }
 
             public bool Contains(Vector3 point, ref int separatingPlane)
+                => ContainsAtThreshold(point, ref separatingPlane, 0f);
+
+            public bool ContainsAtThreshold(Vector3 point, ref int separatingPlane, float threshold)
             {
                 Query query = At(point);
-                return !SearchSeparation(0, UpperBound(in nodes[0], in query), in query, ref separatingPlane);
+                return !SearchSeparation(0, UpperBound(in nodes[0], in query), in query, ref separatingPlane, threshold);
             }
 
-            private bool SearchSeparation(int index, double bound, in Query query, ref int separatingPlane)
+            private bool SearchSeparation(int index, double bound, in Query query, ref int separatingPlane, float threshold)
             {
-                if (bound < 0d) return false;
+                // The bound encloses the original float plane distances. A
+                // shifted clearance gate changes only the comparison, never
+                // the posed planes or the leaf arithmetic.
+                if (bound < threshold) return false;
                 ref PlayerBodyRayJob.Node node = ref nodes[index];
                 if (node.Left < 0)
                 {
                     for (int i = node.First; i < node.First + node.Count; i++)
-                        if (Planes[order[i]].GetDistanceToPoint(query.Point) >= 0f) { separatingPlane = order[i]; return true; }
+                        if (Planes[order[i]].GetDistanceToPoint(query.Point) >= threshold) { separatingPlane = order[i]; return true; }
                     return false;
                 }
                 double left = UpperBound(in nodes[node.Left], in query), right = UpperBound(in nodes[node.Right], in query);
                 if (left >= right)
-                    return SearchSeparation(node.Left, left, in query, ref separatingPlane) ||
-                        SearchSeparation(node.Right, right, in query, ref separatingPlane);
-                return SearchSeparation(node.Right, right, in query, ref separatingPlane) ||
-                    SearchSeparation(node.Left, left, in query, ref separatingPlane);
+                    return SearchSeparation(node.Left, left, in query, ref separatingPlane, threshold) ||
+                        SearchSeparation(node.Right, right, in query, ref separatingPlane, threshold);
+                return SearchSeparation(node.Right, right, in query, ref separatingPlane, threshold) ||
+                    SearchSeparation(node.Left, left, in query, ref separatingPlane, threshold);
             }
 
             // The caller already certified every native plane distance is
@@ -1312,7 +1325,11 @@ namespace BarPromenade
                     if (mesh == null || !mesh.isReadable) return null;
                     if (!posedMeshes.TryGetValue(renderer, out PosedMesh cached))
                     {
-                        cached = new PosedMesh(skin, mesh, poseSourceSkin);
+                        // Jacket contacts already pose their immutable body
+                        // sources. Use the same ordered native support path as
+                        // the sling without changing which mesh is sampled.
+                        cached = new PosedMesh(skin, mesh, poseSourceSkin ||
+                            nativeQueriesEnabled && excludedGarmentSlot == "jacket", nativePose: poseSourceSkin);
                         posedMeshes.Add(renderer, cached);
                     }
                     return cached;
@@ -1362,7 +1379,8 @@ namespace BarPromenade
             escapeContaining = new bool[proxies.Length];
             escapeDepths = new float[proxies.Length];
             escapeNormals = new Vector3[proxies.Length];
-            UpdatePose();
+            try { UpdatePose(); }
+            catch { Dispose(); throw; }
 
             void MeasureSupportCapacity(Envelope envelope)
             {
@@ -1380,8 +1398,10 @@ namespace BarPromenade
             if (includeEquipment && equipment == null && registry != null) equipment = registry.GetComponent<PlayerEquipmentContacts>();
             equipment?.UpdatePose();
             unchecked { poseVersion++; }
-            using var supportWork = supportVertexCapacity > 0 ?
-                new SupportWorkArena(supportVertexCapacity, supportVertexCapacity * 2, supportNormalCapacity, supportMatrixCapacity) : null;
+            SupportWorkArena supportWork = RetainSupportWorkspace();
+            // The buffers persist, but a mutable cloud upload belongs only to
+            // this pose. Envelope updates invalidate it again before skinning.
+            if (supportWork != null) supportWork.UploadedVertices = null;
             foreach (Proxy proxy in proxies)
             {
                 proxy.Active = proxy.Bone != null;
@@ -1487,6 +1507,27 @@ namespace BarPromenade
                 }
                 else { proxy.WorldPlanes = null; proxy.ScoreTree = null; }
             }
+        }
+
+        private SupportWorkArena RetainSupportWorkspace()
+        {
+            if (supportVertexCapacity <= 0) return null;
+            // Every bare/equipped envelope was measured at construction. Their
+            // immutable topology fixes the owner's maximum required capacity.
+            if (retainedSupportWork == null)
+            {
+                retainedSupportWork = new SupportWorkArena(supportVertexCapacity, supportVertexCapacity * 2,
+                    supportNormalCapacity, supportMatrixCapacity, Allocator.Persistent);
+                SupportArenaCreateCount++;
+            }
+            return retainedSupportWork;
+        }
+
+        public void Dispose()
+        {
+            nativeRayQueries?.Dispose();
+            retainedSupportWork?.Dispose();
+            retainedSupportWork = null;
         }
 
         private static bool TryGenerateWorldPlanes(Envelope envelope, Matrix4x4 boneToWorld,
@@ -2511,9 +2552,23 @@ namespace BarPromenade
                 for (int i = 0; i < original.Length; i++)
                 {
                     if (freedom[i] < 1e-7f) continue;
-                    float separation = float.NegativeInfinity;
-                    foreach (Plane plane in proxy.WorldPlanes)
-                        separation = Mathf.Max(separation, plane.GetDistanceToPoint(original[i]));
+                    float separation;
+                    if (proxy.ScoreTree != null)
+                    {
+                        // Only an interior point deeper than the current winner
+                        // can select a thigh. The same live plane tree returns
+                        // the exact maximum plane distance without scanning
+                        // every face for every free hem vertex.
+                        ref int hint = ref SeparatingPlaneHint(proxy, -1);
+                        if ((uint)hint >= (uint)proxy.WorldPlanes.Length) hint = 0;
+                        if (!proxy.ScoreTree.NearestInside(original[i], ref hint, out separation)) continue;
+                    }
+                    else
+                    {
+                        separation = float.NegativeInfinity;
+                        foreach (Plane plane in proxy.WorldPlanes)
+                            separation = Mathf.Max(separation, plane.GetDistanceToPoint(original[i]));
+                    }
                     if (-separation > deepest) { deepest = -separation; selected = proxy; }
                 }
             }
@@ -2541,9 +2596,21 @@ namespace BarPromenade
             {
                 if (!proxy.Active) continue;
                 if (proxy.WorldPlanes == null) return false;
+                float threshold = .0001f - proxy.Selected.SurfacePadding;
+                ref int hint = ref SeparatingPlaneHint(proxy, -1);
+                // A hint is only an index into this live hull. Recheck the
+                // exact current distance before using its clearance proof.
+                if ((uint)hint < (uint)proxy.WorldPlanes.Length &&
+                    proxy.WorldPlanes[hint].GetDistanceToPoint(point) >= threshold) continue;
+                if (proxy.ScoreTree != null)
+                {
+                    if (proxy.ScoreTree.ContainsAtThreshold(point, ref hint, threshold)) return false;
+                    continue;
+                }
                 bool separated = false;
-                foreach (Plane plane in proxy.WorldPlanes)
-                    if (plane.GetDistanceToPoint(point) >= .0001f - proxy.Selected.SurfacePadding) { separated = true; break; }
+                for (int i = 0; i < proxy.WorldPlanes.Length; i++)
+                    if (proxy.WorldPlanes[i].GetDistanceToPoint(point) >= threshold)
+                    { hint = i; separated = true; break; }
                 if (!separated) return false;
             }
             return true;
@@ -2814,7 +2881,7 @@ namespace BarPromenade
 
         private static void SetEnvelopeBoundsForPose(Envelope envelope, Vector3[] vertices, Vector3 padding, SupportWorkArena arena)
         {
-            if (!envelope.Skin.Profile || !WideMonoBounds || arena == null || vertices.Length > arena.Vertices.Length || arena.Normals.Length < 2)
+            if (!envelope.Skin.NativePose || !WideMonoBounds || arena == null || vertices.Length > arena.Vertices.Length || arena.Normals.Length < 2)
             {
                 SetEnvelopeBoundsWithPadding(envelope, vertices, padding);
                 return;

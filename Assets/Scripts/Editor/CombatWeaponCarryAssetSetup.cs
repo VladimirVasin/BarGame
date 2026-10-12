@@ -16,7 +16,7 @@ namespace BarPromenade.Editor
         public const string BindingsPath = Folder + "Bindings.asset";
         private static bool validationQueued;
         public int callbackOrder => 0;
-        public override uint GetVersion() => 1;
+        public override uint GetVersion() => 2;
         private bool IsCarry => assetPath.StartsWith(Folder, StringComparison.Ordinal);
         private bool IsBank => assetPath == Folder + "CarryActions.fbx";
 
@@ -152,8 +152,12 @@ namespace BarPromenade.Editor
                 for (int index = 0; index < ids.Length; index++)
                 {
                     CombatWeaponId id = ids[index];
-                    AnimationClip draw = CombatWeaponCarryAssetProvider.LoadClip(id, true);
-                    draw.SampleAnimation(registry.Animator.gameObject, CombatWeaponCarryAssetProvider.TransferSeconds(id, true));
+                    // The unchanged stow action owns the shotgun's existing body
+                    // slot. Its new draw first touches the barrel with an open palm.
+                    bool dockFromDraw = id != CombatWeaponId.Shotgun;
+                    AnimationClip dockClip = CombatWeaponCarryAssetProvider.LoadClip(id, dockFromDraw);
+                    dockClip.SampleAnimation(registry.Animator.gameObject,
+                        CombatWeaponCarryAssetProvider.TransferSeconds(id, dockFromDraw));
                     GameObject weapon = CreateHeldWeapon(id, registry.Anchors.RightGrip, hands);
                     CombatWeaponCarryAssetProvider.Mount mount = CombatWeaponCarryAssetProvider.CreateUnboundMount(id,
                         CombatWeaponCarryAssetProvider.GetMountBone(id, registry));
@@ -175,6 +179,12 @@ namespace BarPromenade.Editor
                         CombatWeaponCarryAssetProvider.PlaceOnMount(weapon, mount.WeaponDock);
                         foreach (bool drawing in new[] { true, false })
                         {
+                            if (id == CombatWeaponId.Shotgun && drawing)
+                            {
+                                ValidateShotgunDrawTransfers(registry, hands, weapon, slot);
+                                CombatWeaponCarryAssetProvider.PlaceOnMount(weapon, mount.WeaponDock);
+                                continue;
+                            }
                             AnimationClip clip = CombatWeaponCarryAssetProvider.LoadClip(id, drawing);
                             clip.SampleAnimation(registry.Animator.gameObject, CombatWeaponCarryAssetProvider.TransferSeconds(id, drawing));
                             Vector3 before = weapon.transform.position;
@@ -197,6 +207,44 @@ namespace BarPromenade.Editor
                 { EditorUtility.SetDirty(bindings); AssetDatabase.SaveAssetIfDirty(bindings); }
             }
             finally { UnityEngine.Object.DestroyImmediate(actor); }
+        }
+
+        private static void ValidateShotgunDrawTransfers(Player3DAssetRegistry registry, NpcHandPose hands,
+            GameObject weapon, CombatWeaponCarryBindings.Slot slot)
+        {
+            AnimationClip clip = CombatWeaponCarryAssetProvider.LoadClip(CombatWeaponId.Shotgun, true);
+            clip.SampleAnimation(registry.Animator.gameObject, CombatWeaponCarryAssetProvider.ShotgunPushSeconds);
+            Transform right = registry.Anchors.RightGrip, left = registry.Anchors.LeftGrip;
+            slot.PushHandLocalPosition = right.InverseTransformPoint(weapon.transform.position);
+            slot.PushHandLocalRotation = Quaternion.Inverse(right.rotation) * weapon.transform.rotation;
+            Vector3 before = weapon.transform.position;
+            Quaternion orientation = weapon.transform.rotation;
+            CombatWeaponCarryAssetProvider.PlaceInTransferHand(weapon, right,
+                slot.PushHandLocalPosition, slot.PushHandLocalRotation);
+            RequireContinuousTransfer(weapon, before, orientation, "ShotgunDraw barrel push");
+
+            clip.SampleAnimation(registry.Animator.gameObject, CombatWeaponCarryAssetProvider.ShotgunCatchSeconds);
+            slot.CatchHandLocalPosition = left.InverseTransformPoint(weapon.transform.position);
+            slot.CatchHandLocalRotation = Quaternion.Inverse(left.rotation) * weapon.transform.rotation;
+            before = weapon.transform.position;
+            orientation = weapon.transform.rotation;
+            CombatWeaponCarryAssetProvider.PlaceInTransferHand(weapon, left,
+                slot.CatchHandLocalPosition, slot.CatchHandLocalRotation);
+            RequireContinuousTransfer(weapon, before, orientation, "ShotgunDraw upper catch");
+
+            clip.SampleAnimation(registry.Animator.gameObject, CombatWeaponCarryAssetProvider.ShotgunGripSeconds);
+            before = weapon.transform.position;
+            orientation = weapon.transform.rotation;
+            CombatShotgunAssetProvider.PlaceShotgun(weapon, right, hands);
+            RequireContinuousTransfer(weapon, before, orientation, "ShotgunDraw firing grip");
+        }
+
+        private static void RequireContinuousTransfer(GameObject weapon, Vector3 before, Quaternion orientation, string label)
+        {
+            if (Vector3.Distance(before, weapon.transform.position) > .001f || Quaternion.Angle(orientation, weapon.transform.rotation) > .1f)
+                throw new InvalidOperationException("Weapon carry hand transfer is discontinuous: " + label +
+                    "; " + Vector3.Distance(before, weapon.transform.position) + "m / " +
+                    Quaternion.Angle(orientation, weapon.transform.rotation) + " degrees");
         }
 
         private static GameObject CreateHeldWeapon(CombatWeaponId id, Transform grip, NpcHandPose hands) => id switch

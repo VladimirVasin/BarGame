@@ -767,7 +767,7 @@ namespace BarPromenade
 
         private void OnDisable()
         {
-            CancelWeaponCarry();
+            bool releasedTransientCarry = CancelWeaponCarry();
             UnregisterWeaponEquipment();
             ReleaseNpcAnimation();
             CancelPendingPistolShot("disabled");
@@ -783,7 +783,7 @@ namespace BarPromenade
             Ragdoll?.Cancel();
             // Scene teardown is already deactivating the arena hierarchy;
             // Unity forbids reparenting the dropped prop during that operation.
-            if (gameObject.activeInHierarchy) { ReturnWeaponToRightHand(); RestoreWeapon(); }
+            if (gameObject.activeInHierarchy && !releasedTransientCarry) { ReturnWeaponToRightHand(); RestoreWeapon(); }
             ReleasePresentation();
             ResetDamage();
         }

@@ -24,6 +24,7 @@ namespace BarPromenade
         private readonly Matrix4x4[] bindposes;
         private readonly Matrix4x4[] matrices;
         private readonly Transform[] bones;
+        private readonly int[] usedBones;
         private readonly BoneWeight[] skinWeights;
         private readonly int[] vertexSkins;
         private readonly Matrix4x4[] skins;
@@ -77,8 +78,8 @@ namespace BarPromenade
         internal bool IsHemPanel => panelShape != null && panelShape.HasPins;
         public Vector3 Original(int index) => original[index];
         public Vector3 World(int index) => world[index];
-        public Vector3 WorldNormal(int index) => Skin(index).inverse.transpose.MultiplyVector(normals[index]).normalized;
-        public Vector3 BindWorldNormal(int index) => Skin(index).inverse.transpose.MultiplyVector(sourceNormals[index]).normalized;
+        public Vector3 WorldNormal(int index) => inverseSkins[vertexSkins[index]].transpose.MultiplyVector(normals[index]).normalized;
+        public Vector3 BindWorldNormal(int index) => inverseSkins[vertexSkins[index]].transpose.MultiplyVector(sourceNormals[index]).normalized;
 
         public PlayerJacketClothSurface(PlayerJacketCloth.SurfaceBinding source,
             Transform shoulder = null, Transform elbow = null, Transform wrist = null, Transform actor = null,
@@ -130,6 +131,18 @@ namespace BarPromenade
                 vertexSkins[i] = skin;
             }
             skinWeights = uniqueWeights.ToArray();
+            var referencedBones = new SortedSet<int>();
+            foreach (BoneWeight weight in skinWeights)
+            {
+                // BuildSkin always reads its first matrix, even at zero weight.
+                // Keep that read and the weighted accumulation exactly intact.
+                referencedBones.Add(weight.boneIndex0);
+                if (weight.weight1 > 0f) referencedBones.Add(weight.boneIndex1);
+                if (weight.weight2 > 0f) referencedBones.Add(weight.boneIndex2);
+                if (weight.weight3 > 0f) referencedBones.Add(weight.boneIndex3);
+            }
+            usedBones = new int[referencedBones.Count];
+            referencedBones.CopyTo(usedBones);
             if (source.Region == 0)
             {
                 // Imported UV splits share one physical cloth point. Cache
@@ -206,7 +219,7 @@ namespace BarPromenade
         public void UpdatePose()
         {
             acceptedHemCandidate = false;
-            for (int i = 0; i < matrices.Length; i++) matrices[i] = bones[i].localToWorldMatrix * bindposes[i];
+            foreach (int bone in usedBones) matrices[bone] = bones[bone].localToWorldMatrix * bindposes[bone];
             for (int i = 0; i < skins.Length; i++)
             {
                 skins[i] = BuildSkin(skinWeights[i]);

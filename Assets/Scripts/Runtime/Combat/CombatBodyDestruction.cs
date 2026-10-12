@@ -44,6 +44,8 @@ namespace BarPromenade
             internal CombatImpact LastVolleyImpact;
             internal ProxyPoseSnapshot ProxyPose;
             internal readonly List<Piece> Pieces = new List<Piece>();
+            internal readonly Dictionary<SkinnedMeshRenderer, List<Piece>> SurfacePieces =
+                new Dictionary<SkinnedMeshRenderer, List<Piece>>();
             internal readonly List<Piece>[] Regions = new List<Piece>[CombatBodyDamageState.RegionCount];
             internal readonly Dictionary<SkinnedMeshRenderer, bool> Originals = new Dictionary<SkinnedMeshRenderer, bool>();
             internal readonly Dictionary<BodyDamageRegion, Transform> Bones = new Dictionary<BodyDamageRegion, Transform>();
@@ -124,15 +126,15 @@ namespace BarPromenade
             return source.enabled || Player3DHeadVisibility.IsTemporarilyHidden(source);
         }
         internal static bool TryClassifySurface(CombatActor actor, SkinnedMeshRenderer source, Vector3 point,
-            out BodyDamageRegion region, out int patch)
+            out BodyDamageRegion region, out int patch, Dictionary<Transform, Matrix4x4> worldBones = null)
         {
             region = BodyDamageRegion.Chest; patch = -1;
             if (!owners.TryGetValue(actor, out CombatBodyDestruction owner) || !owner.bodies.TryGetValue(actor, out Body body)) return false;
+            if (ReferenceEquals(source, null) || !body.SurfacePieces.TryGetValue(source, out List<Piece> pieces)) return false;
             float closest = float.PositiveInfinity;
-            foreach (Piece piece in body.Pieces)
+            foreach (Piece piece in pieces)
             {
-                if (piece.Source != source || piece.Flesh || piece.Bone) continue;
-                float candidate = (SkinCentre(piece) - point).sqrMagnitude;
+                float candidate = (SkinCentre(piece, worldBones) - point).sqrMagnitude;
                 if (candidate >= closest) continue;
                 closest = candidate; region = piece.Region; patch = piece.Patch;
             }
@@ -240,6 +242,14 @@ namespace BarPromenade
                 if (!isFlesh && !isBone && !body.Originals.ContainsKey(source)) body.Originals.Add(source, visible);
             }
             if (body.Pieces.Count == 0) throw new InvalidOperationException("Empty authored combat body.");
+            // Preserve the authored filtered order, including classification ties.
+            foreach (Piece piece in body.Pieces)
+                if (!piece.Flesh && !piece.Bone)
+                {
+                    if (!body.SurfacePieces.TryGetValue(piece.Source, out List<Piece> surfaces))
+                    { surfaces = new List<Piece>(); body.SurfacePieces.Add(piece.Source, surfaces); }
+                    surfaces.Add(piece);
+                }
             foreach (Piece piece in body.Pieces)
                 if (piece.Eligible && !piece.Bone)
                 { piece.RefreshSurface(); SkinCentre(piece); piece.Torso?.PrepareExteriorMesh(); }
@@ -326,12 +336,12 @@ namespace BarPromenade
             return patch;
         }
 
-        private static Vector3 SkinCentre(Piece piece)
+        private static Vector3 SkinCentre(Piece piece, Dictionary<Transform, Matrix4x4> worldBones = null)
         {
             // Interior pieces use an anatomical source binding. Using the dominant
             // centre vertex avoids reading a renderer's stale, whole-body bounds.
             piece.CentrePose ??= new CentrePose(piece.Skin);
-            return piece.CentrePose.Evaluate(piece);
+            return piece.CentrePose.Evaluate(piece, worldBones);
         }
 
         internal sealed class CentrePose
@@ -351,7 +361,7 @@ namespace BarPromenade
             internal CentrePose(SkinnedMeshRenderer skin)
             { weights = skin.sharedMesh.boneWeights; bind = skin.sharedMesh.bindposes; bones = skin.bones; }
 
-            internal Vector3 Evaluate(Piece piece)
+            internal Vector3 Evaluate(Piece piece, Dictionary<Transform, Matrix4x4> worldBones = null)
             {
                 Mesh mesh = piece.Skin.sharedMesh;
                 Vector3 centre = mesh.bounds.center;
@@ -372,10 +382,10 @@ namespace BarPromenade
                     capturedVersion = version; capturedCentre = centre;
                 }
                 BoneWeight weight = centreWeight;
-                Matrix4x4 p0 = weight.weight0 > 0f ? bones[weight.boneIndex0].localToWorldMatrix : default;
-                Matrix4x4 p1 = weight.weight1 > 0f ? bones[weight.boneIndex1].localToWorldMatrix : default;
-                Matrix4x4 p2 = weight.weight2 > 0f ? bones[weight.boneIndex2].localToWorldMatrix : default;
-                Matrix4x4 p3 = weight.weight3 > 0f ? bones[weight.boneIndex3].localToWorldMatrix : default;
+                Matrix4x4 p0 = weight.weight0 > 0f ? SampleWorld(bones[weight.boneIndex0], worldBones) : default;
+                Matrix4x4 p1 = weight.weight1 > 0f ? SampleWorld(bones[weight.boneIndex1], worldBones) : default;
+                Matrix4x4 p2 = weight.weight2 > 0f ? SampleWorld(bones[weight.boneIndex2], worldBones) : default;
+                Matrix4x4 p3 = weight.weight3 > 0f ? SampleWorld(bones[weight.boneIndex3], worldBones) : default;
                 if (worldCentreReady && !geometryChanged && (weight.weight0 <= 0f || p0.Equals(world0)) &&
                     (weight.weight1 <= 0f || p1.Equals(world1)) && (weight.weight2 <= 0f || p2.Equals(world2)) &&
                     (weight.weight3 <= 0f || p3.Equals(world3))) return worldCentre;
@@ -386,6 +396,14 @@ namespace BarPromenade
                 if (weight.weight3 > 0f) point += (p3 * bind[weight.boneIndex3]).MultiplyPoint3x4(centre) * weight.weight3;
                 worldCentreReady = true;
                 return worldCentre = point;
+            }
+
+            private static Matrix4x4 SampleWorld(Transform bone, Dictionary<Transform, Matrix4x4> worldBones)
+            {
+                if (worldBones == null) return bone.localToWorldMatrix;
+                if (!worldBones.TryGetValue(bone, out Matrix4x4 world))
+                { world = bone.localToWorldMatrix; worldBones.Add(bone, world); }
+                return world;
             }
         }
 

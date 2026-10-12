@@ -12,6 +12,8 @@ namespace BarPromenade
             public CombatWeaponId Weapon;
             public Vector3 BoneLocalPosition;
             public Quaternion BoneLocalRotation;
+            public Vector3 PushHandLocalPosition, CatchHandLocalPosition;
+            public Quaternion PushHandLocalRotation = Quaternion.identity, CatchHandLocalRotation = Quaternion.identity;
         }
 
         public Slot[] Slots = Array.Empty<Slot>();

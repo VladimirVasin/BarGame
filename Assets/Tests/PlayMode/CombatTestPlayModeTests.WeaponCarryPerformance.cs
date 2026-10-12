@@ -282,6 +282,11 @@ namespace BarPromenade.Tests.PlayMode
             AssertCarryProjectionGroups(sling);
             var contacts = CarrySupportField(sling, "bodyContacts") as PlayerScarfBodyContacts;
             Assert.That(contacts, Is.Not.Null, "The live soft sling must retain its posed body contacts.");
+            AssertCarrySupportExtrema(contacts);
+        }
+
+        private static void AssertCarrySupportExtrema(PlayerScarfBodyContacts contacts, bool nativePose = true)
+        {
             contacts.UpdatePose();
             var proxies = CarrySupportField(contacts, "proxies") as Array;
             Assert.That(proxies, Is.Not.Null);
@@ -372,7 +377,7 @@ namespace BarPromenade.Tests.PlayMode
                 "; max world source error=" + maximumSourceError.ToString("G9", CultureInfo.InvariantCulture) +
                 "m; max cache lag=" + maximumCacheLag.ToString("G9", CultureInfo.InvariantCulture) + "m");
             AssertCarryRayBroadPhase(contacts, proxies);
-            AssertCarryPlaneQueries(contacts, proxies);
+            AssertCarryPlaneQueries(contacts, proxies, nativePose);
             AssertCarryNativeNearest(contacts, proxies);
             AssertCarryNativeBurst(contacts);
             AssertCarryFreeSpaceQueries(contacts, proxies);
@@ -640,7 +645,7 @@ namespace BarPromenade.Tests.PlayMode
             }
         }
 
-        private static void AssertCarryPlaneQueries(PlayerScarfBodyContacts contacts, Array proxies)
+        private static void AssertCarryPlaneQueries(PlayerScarfBodyContacts contacts, Array proxies, bool nativePose = true)
         {
             MethodInfo nearest = contacts.GetType().GetMethod("TryNearestProxyExit", BindingFlags.Static | BindingFlags.NonPublic);
             MethodInfo contains = contacts.GetType().GetMethod("ProxyContains", BindingFlags.Static | BindingFlags.NonPublic);
@@ -771,7 +776,14 @@ namespace BarPromenade.Tests.PlayMode
                 "; tree queries=" + treeQueries + "; inside rays=" + insideRays + "; native inside rays=" + nativeInsideRays +
                 "; exact ordered normal/depth/index, contains and float ray interval; query slots=-1/0");
             AssertCarryPlaneTreeRefit(proxies);
-            AssertCarryEnvelopeBounds(proxies);
+            if (nativePose) AssertCarryEnvelopeBounds(proxies);
+            else foreach (object proxy in proxies)
+            {
+                object selected = CarrySupportField(proxy, "Selected");
+                if (selected != null)
+                    Assert.That((bool)CarrySupportField(selected, "HasNativeBounds"), Is.False,
+                        "Jacket bounds must retain the original managed pose calculation.");
+            }
         }
 
         private static void AssertCarryEnvelopeBounds(Array proxies)

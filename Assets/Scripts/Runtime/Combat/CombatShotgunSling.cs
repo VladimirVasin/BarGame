@@ -874,6 +874,8 @@ namespace BarPromenade
         private void OnDisable() => ReleaseContacts();
         private void OnDestroy()
         {
+            bodyContacts?.Dispose();
+            bodyContacts = null;
             retainedProjectionWork?.Dispose();
             retainedProjectionWork = projectionWork = null;
             if (equipment != null) equipment.Unregister(this);

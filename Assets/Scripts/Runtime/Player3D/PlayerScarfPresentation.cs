@@ -445,6 +445,8 @@ namespace BarPromenade
                 if (instance != null && !instance.mirror) { hasPhysicalOwner = true; break; }
             if (!hasPhysicalOwner) PlayerScarfContactSolver.ReleaseBuffers();
             simulation?.Dispose();
+            bodyContacts?.Dispose();
+            bodyContacts = null;
             collisionWorld?.Dispose();
             foreach (PlayerScarfContactSurface surface in surfaces) surface.Dispose();
             if (tail != null) PlayerScarfResources.DestroyOwned(tail.gameObject);

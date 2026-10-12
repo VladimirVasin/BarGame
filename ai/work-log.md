@@ -3,25 +3,41 @@
 Newest outcomes/checks first. Archive whole dates at budget: [policy](README.md).
 Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-2026-08.md).
 
-## 2026-10-12 — Exact cloth and damage cache reuse
+## 2026-10-12 — Cloth/damage reuse and faster weapon switching
 
-- Latest manual duel exposed persistent jacket cost and impact spikes.
-  Jacket commits final geometry once; accepted hem candidates and revalidated
-  separating-plane hints retain the original contact/stretch thresholds.
-  Deep-hip proof compares cached and contact-invalidated vertices exactly.
-  Sling reuses owner-lifetime projection buffers; iteration budgets stay.
-- Known cloth/erosion clones retain skin/blend bindings. Ordered topology
-  and native-upload buffers survive damage changes; exhaustive contact arrays
-  resize only for diagnostics. Scale results share a validation pass; fresh
-  passes still sample transforms, including same-frame physics/pose changes.
-  Unity refreshed the hero dependency stamp. Comparative capture reduced
-  scratch allocation; overall warm-frame acceleration remains unproven.
+- Fresh complete duel exposed jacket spikes during post-death diagonal walking
+  and separate impact cost. Jacket commits final geometry once; accepted hem
+  candidates/live hints retain contact/stretch thresholds. Deep-hip proof
+  compares invalidated vertices. Sling projection/support scratch persists
+  until owner disposal; pose uploads stay fresh. Jacket uses native support;
+  exact trees serve hem depth and shifted source-hull clearance. Skin reads
+  referenced bones/reuses inverses. Real-frame proof adds unaimed shotgun
+  diagonal walking, exhaustive boundary gates and same-frame skin/normal checks.
+  Frame gates pass; warm-stow front route fails (deferred assertion retained).
+- Cloth/erosion clones retain bindings; ordered topology/native buffers survive
+  damage changes. Fresh validation passes sample live physics/poses. Projectile
+  classification uses an ordered source index and contact-local bone snapshot;
+  full-piece oracle covers both rigs/pose/geometry/repeated volleys.
+  Unity refreshed hero stamp; overall FPS remains unproven.
 - Duel schema 2 declares implicit numeric-zero stage rows; unavailable values
   and causal events remain explicit. File budget stays; gaps with losses stay unknown.
-- Real-frame test discovery uses the current unsorted object-search overload;
-  inactive filtering stays, and aggregation does not depend on result order.
-  Compilation treats CS0618 as an error; unrelated DTO/analyzer warnings remain.
-- Checks: `Range_WeaponCarryKeepsRealFramesBoundedThroughWalkingSwitchesAndHeadshot`,
+- Discovery uses unsorted search; inactive filtering; CS0618=error;
+  unrelated DTO/analyzer warnings remain.
+- Slow stow/draw delayed control; manual feedback found the first trial too fast.
+  Playback/entry blends run at twice speed; normalized handoffs/jacket/sling
+  stay aligned. Integration checked timing/ammo/pause/queue/cleanup and frames.
+- Shotgun draw: open right palm nudges barrels from below; left rises outside
+  over its shoulder, catches stock vertically from above/palm down, carries it
+  around shoulder/front of chest, then right grip/left foreend. No body crossing.
+  Imported-rig offsets/continuous transfers; pause freeze; interim drop keeps
+  original/pose/ammo; stow/2× unchanged. Disable restored interim weapon; fixed.
+  Handoff test verified pickup/reset/disable drops and above-stock/turn clearance.
+  `build-combat-weapon-carry-3d-model.py` validated actual body-BVH arm/hand
+  clearance, vertical/palm-down catch, continuous contacts, lower rig/endpoints,
+  untouched clips/FBX/geometry/sling.
+- Checks: `Range_DistantShotgunTorsoVolleyProfilesImpactPhases`,
+  `Range_WeaponCarryKeepsRealFramesBoundedThroughWalkingSwitchesAndHeadshot`,
+  `Range_WeaponCarrySwitchesKeepModelsAmmoAndPhysicalHandoffs`,
   `ProductionRig_WalkingKeepsJacketHemLength`,
   `ProductionRig_RendersBareAndLooseClothedJointBends`,
   `Range_BodyProxiesShareTransformsAndFollowSameFrameChanges`,
