@@ -23,6 +23,8 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(model.IsChoosingCombatWeapon, Is.False);
             Assert.That(model.SelectedCombatWeapon, Is.EqualTo(CombatWeaponId.Crowbar));
             Assert.That(model.SelectedCombatLoadout, Is.EqualTo(CombatLoadoutSelection.Default));
+            Assert.That(model.SelectedCombatMode, Is.EqualTo(CombatTestMode.Standard));
+            Assert.That(model.SelectedCombatSelection, Is.EqualTo(CombatTestSelection.Default));
             Assert.That(model.SelectedLocation, Is.EqualTo(NewGameLocation.AlpineVillage));
             Assert.That(model.IsBackSelected, Is.False);
         }
@@ -154,7 +156,7 @@ namespace BarPromenade.Tests.EditMode
                     "inventory.item.combat_shotgun.description", "combat.start", "combat.loadout.pistol_carried",
                     "combat.loadout.secondary", "combat.loadout.initial_held", "combat.loadout.hold_secondary",
                     "combat.loadout.crowbar_carried", "combat.loadout.shotgun_carried", "combat.switch.controls",
-                    "combat.weapon.switching" })
+                    "combat.weapon.switching", "combat.mode.title", "combat.mode.standard", "combat.mode.endless" })
                     Assert.That(values.TryGetValue(key, out string value) && !string.IsNullOrWhiteSpace(value), Is.True, key);
             }
         }
@@ -233,6 +235,15 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(model.MoveSelection(1), Is.True);
             Assert.That(model.SelectedCombatOption, Is.EqualTo(CombatPreparationOption.Secondary));
             Assert.That(model.MoveSelection(1), Is.True);
+            Assert.That(model.SelectedCombatOption, Is.EqualTo(CombatPreparationOption.Standard));
+            Assert.That(model.MoveSelection(1), Is.True);
+            Assert.That(model.SelectedCombatOption, Is.EqualTo(CombatPreparationOption.Endless));
+            Assert.That(model.SelectedCombatMode, Is.EqualTo(CombatTestMode.Standard),
+                "Mode focus must leave the active radio choice unchanged until confirmation.");
+            Assert.That(model.Confirm(), Is.EqualTo(StartMenuAction.ChooseCombatWeapon));
+            Assert.That(model.SelectedCombatMode, Is.EqualTo(CombatTestMode.Endless));
+            Assert.That(model.IsCommitted, Is.False);
+            Assert.That(model.MoveSelection(1), Is.True);
             Assert.That(model.SelectedCombatOption, Is.EqualTo(CombatPreparationOption.Start));
             if (confirmBack)
             {
@@ -246,28 +257,41 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(model.Confirm(), Is.EqualTo(StartMenuAction.ChooseCombatWeapon));
             Assert.That(model.SelectedCombatWeapon, Is.EqualTo(CombatWeaponId.Shotgun));
             Assert.That(model.SelectedCombatOption, Is.EqualTo(CombatPreparationOption.Shotgun));
+            Assert.That(model.SelectedCombatMode, Is.EqualTo(CombatTestMode.Endless));
 
             model.SelectCombatOption(CombatPreparationOption.Start);
             model.Confirm();
             model.OpenCombatPreparation(CombatWeaponId.Shotgun);
             Assert.That(model.IsCommitted, Is.False, "A refused trip must return to an interactive preparation screen.");
             Assert.That(model.SelectedCombatWeapon, Is.EqualTo(CombatWeaponId.Shotgun));
+            Assert.That(model.SelectedCombatMode, Is.EqualTo(CombatTestMode.Standard),
+                "Legacy preparation overloads retain the ordinary polygon default.");
         }
 
-        [TestCase(CombatWeaponId.Crowbar, CombatWeaponId.Pistol)]
-        [TestCase(CombatWeaponId.Crowbar, CombatWeaponId.Crowbar)]
-        [TestCase(CombatWeaponId.Shotgun, CombatWeaponId.Pistol)]
-        [TestCase(CombatWeaponId.Shotgun, CombatWeaponId.Shotgun)]
+        [TestCase(CombatWeaponId.Crowbar, CombatWeaponId.Pistol, CombatTestMode.Standard)]
+        [TestCase(CombatWeaponId.Crowbar, CombatWeaponId.Crowbar, CombatTestMode.Standard)]
+        [TestCase(CombatWeaponId.Shotgun, CombatWeaponId.Pistol, CombatTestMode.Standard)]
+        [TestCase(CombatWeaponId.Shotgun, CombatWeaponId.Shotgun, CombatTestMode.Standard)]
+        [TestCase(CombatWeaponId.Crowbar, CombatWeaponId.Pistol, CombatTestMode.Endless)]
+        [TestCase(CombatWeaponId.Crowbar, CombatWeaponId.Crowbar, CombatTestMode.Endless)]
+        [TestCase(CombatWeaponId.Shotgun, CombatWeaponId.Pistol, CombatTestMode.Endless)]
+        [TestCase(CombatWeaponId.Shotgun, CombatWeaponId.Shotgun, CombatTestMode.Endless)]
         public void CombatPreparation_IndependentSlotsSurviveBackAndRefusedLaunch(
-            CombatWeaponId secondary, CombatWeaponId initialHeld)
+            CombatWeaponId secondary, CombatWeaponId initialHeld,
+            CombatTestMode mode)
         {
             var model = new StartMenuModel();
             var expected = new CombatLoadoutSelection(secondary, initialHeld);
+            var expectedSelection = new CombatTestSelection(expected, mode);
             model.OpenCombatPreparation(CombatLoadoutSelection.Default);
             model.SelectCombatOption(secondary == CombatWeaponId.Shotgun ?
                 CombatPreparationOption.Shotgun : CombatPreparationOption.Crowbar);
             model.SelectCombatOption(initialHeld == CombatWeaponId.Pistol ?
                 CombatPreparationOption.Pistol : CombatPreparationOption.Secondary);
+            model.FocusCombatOption(mode == CombatTestMode.Endless ?
+                CombatPreparationOption.Endless : CombatPreparationOption.Standard);
+            model.Confirm();
+            Assert.That(model.SelectedCombatSelection, Is.EqualTo(expectedSelection));
             Assert.That(model.SelectedCombatLoadout, Is.EqualTo(expected));
             Assert.That(model.SelectedCombatLoadout.Contains(CombatWeaponId.Pistol), Is.True);
             Assert.That(model.SelectedCombatLoadout.Contains(secondary == CombatWeaponId.Crowbar ?
@@ -277,10 +301,12 @@ namespace BarPromenade.Tests.EditMode
             model.Confirm();
             model.Confirm();
             Assert.That(model.SelectedCombatLoadout, Is.EqualTo(expected));
+            Assert.That(model.SelectedCombatMode, Is.EqualTo(mode));
             model.SelectCombatOption(CombatPreparationOption.Start);
             model.Confirm();
-            model.OpenCombatPreparation(expected);
+            model.OpenCombatPreparation(expectedSelection);
             Assert.That(model.SelectedCombatLoadout, Is.EqualTo(expected));
+            Assert.That(model.SelectedCombatMode, Is.EqualTo(mode));
             Assert.That(model.IsCommitted, Is.False);
 
             CombatWeaponId replacement = secondary == CombatWeaponId.Crowbar ?
@@ -290,6 +316,7 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(model.SelectedCombatLoadout.Secondary, Is.EqualTo(replacement));
             Assert.That(model.SelectedCombatLoadout.InitialHeld,
                 Is.EqualTo(initialHeld == CombatWeaponId.Pistol ? CombatWeaponId.Pistol : replacement));
+            Assert.That(model.SelectedCombatMode, Is.EqualTo(mode));
         }
 
         [TestCase(CombatWeaponId.Pistol, CombatWeaponId.Pistol)]

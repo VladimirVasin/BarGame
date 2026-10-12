@@ -12,6 +12,24 @@ namespace BarPromenade
         private const float CrosshairExpandSeconds = .035f, CrosshairReturnSeconds = .165f;
         private float pistolCrosshairElapsed = CrosshairExpandSeconds + CrosshairReturnSeconds;
         private float pistolCrosshairFrom;
+        private static readonly string[] PistolHudKeys =
+        { "combat.pistol.ammo", "combat.pistol.reloading", "combat.pistol.empty", "combat.pistol.reload" };
+        private static readonly string[] ShotgunHudKeys =
+        { "combat.shotgun.ammo", "combat.shotgun.reloading", "combat.shotgun.empty", "combat.shotgun.reload" };
+        private string ammunitionHudSource, ammunitionHudText;
+        private int ammunitionHudRounds, ammunitionHudCapacity;
+
+        private string AmmunitionHudText(string caption, int rounds, int capacity)
+        {
+            if (ammunitionHudText == null || ammunitionHudSource != caption ||
+                ammunitionHudRounds != rounds || ammunitionHudCapacity != capacity)
+            {
+                ammunitionHudSource = caption;
+                ammunitionHudRounds = rounds; ammunitionHudCapacity = capacity;
+                ammunitionHudText = caption + " " + rounds + "/" + capacity;
+            }
+            return ammunitionHudText;
+        }
 
         internal float PistolCrosshairExpansion
         {
@@ -101,7 +119,7 @@ namespace BarPromenade
         public bool ReturnToWeapons()
         {
             if (!IsInitialized || !GameInput.CanRead(GameInputContext.Gameplay)) return false;
-            return CombatTestStartService.ReturnToPreparation(LoadoutSelection);
+            return CombatTestStartService.ReturnToPreparation(new CombatTestSelection(LoadoutSelection, Mode));
         }
 
         private bool UpdatePistolInput(bool held)
@@ -180,12 +198,11 @@ namespace BarPromenade
             }
             var rect = new Rect(14, 273, 170, 25);
             RetroUiTheme.DrawPanel(rect, RetroUiTheme.PanelInset, RetroUiTheme.BorderMuted, false, 0f, 1f, .72f);
-            string prefix = Hero.IsShotgun ? "combat.shotgun." : "combat.pistol.";
-            string ammunition = LocalizationService.Get(prefix + "ammo") + " " + Hero.Firearm.Rounds + "/" +
-                Hero.Firearm.Settings.MagazineCapacity;
+            string[] keys = Hero.IsShotgun ? ShotgunHudKeys : PistolHudKeys;
+            string ammunition = AmmunitionHudText(LocalizationService.Get(keys[0]), Hero.Firearm.Rounds,
+                Hero.Firearm.Settings.MagazineCapacity);
             GUI.Label(new Rect(rect.x + 6f, rect.y + 1f, rect.width - 12f, 12f), ammunition, small);
-            string status = Hero.Firearm.ReloadPending ? LocalizationService.Get(prefix + "reloading") :
-                Hero.Firearm.Rounds == 0 ? LocalizationService.Get(prefix + "empty") : LocalizationService.Get(prefix + "reload");
+            string status = LocalizationService.Get(keys[Hero.Firearm.ReloadPending ? 1 : Hero.Firearm.Rounds == 0 ? 2 : 3]);
             GUI.Label(new Rect(rect.x + 6f, rect.y + 12f, rect.width - 12f, 12f), status, controls);
             if (Hero.Firearm.IsReloading)
                 RetroUiTheme.FillRect(new Rect(rect.x + 6f, rect.y + rect.height - 2f,

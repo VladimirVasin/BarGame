@@ -41,7 +41,8 @@ namespace BarPromenade
 
         public bool SetOpponentStyle(CombatOpponentStyle style)
         {
-            if (!IsInitialized || !GameInput.CanRead(GameInputContext.Gameplay)) return false;
+            if (!IsInitialized || Mode == CombatTestMode.Endless && !EndlessRunFinished ||
+                !GameInput.CanRead(GameInputContext.Gameplay)) return false;
             CombatOpponentProfile.For(style);
             OpponentStyle = style;
             ResetRound();

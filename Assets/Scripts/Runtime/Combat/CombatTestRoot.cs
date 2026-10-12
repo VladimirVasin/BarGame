@@ -39,6 +39,39 @@ namespace BarPromenade
         private readonly List<CombatActor.KickContact> pendingKicks = new List<CombatActor.KickContact>(2);
         private GUIStyle small, button, controls;
         private static readonly Rect ToolbarRect = new Rect(150, 10, 476, 22);
+        private static readonly string[] OpponentStyleHudKeys =
+        { "combat.style.cautious", "combat.style.pressuring", "combat.style.patient" };
+        private readonly HudCounterLabel heroHealthLabel = new HudCounterLabel("  ");
+        private readonly HudCounterLabel heroStaminaLabel = new HudCounterLabel("  ");
+        private readonly HudCounterLabel opponentHealthLabel = new HudCounterLabel("  ");
+        private readonly HudCounterLabel opponentStaminaLabel = new HudCounterLabel("  ");
+        private readonly HudCounterLabel endlessKillsLabel = new HudCounterLabel(": ");
+        private string modeHudSource, modeHudText;
+
+        // IMGUI calls presentation more than once per frame. LocalizationService
+        // owns cached static values; compose numeric text only when its visible
+        // value or source caption changes, including catalog replacement.
+        private sealed class HudCounterLabel
+        {
+            private readonly string separator;
+            private string source, text;
+            private long value;
+            internal HudCounterLabel(string separator) { this.separator = separator; }
+            internal string Get(string caption, long next)
+            {
+                if (text == null || value != next || source != caption)
+                { source = caption; value = next; text = caption + separator + next; }
+                return text;
+            }
+        }
+
+        private string ModeHudText()
+        {
+            string source = LocalizationService.Get(Sparring ? "combat.sparring" : "combat.target");
+            if (modeHudText == null || modeHudSource != source)
+            { modeHudSource = source; modeHudText = "Tab · " + source; }
+            return modeHudText;
+        }
         public bool IsInitialized { get; private set; }
         public PlayerRuntime Player { get; private set; }
         public CombatActor Hero { get; private set; }
@@ -83,7 +116,10 @@ namespace BarPromenade
             arenaBounds = new ArenaBounds();
             Player = PlayerFactory.Create(transform, heroSpawn, camera, arenaBounds, Prompt);
             Hero = Player.GameObject.AddComponent<CombatActor>();
-            Hero.InitializeHero(Player, CombatTestStartService.ConsumeLoadout());
+            CombatTestSelection selection = CombatTestStartService.ConsumeSelection();
+            Mode = selection.Mode;
+            Sparring = Mode == CombatTestMode.Endless;
+            Hero.InitializeHero(Player, selection.Loadout);
             InitializeWeaponPools();
             CameraFollow = camera.GetComponent<PlayerCameraFollow>() ?? camera.gameObject.AddComponent<PlayerCameraFollow>();
             CameraFollow.Initialize(camera, Player.GameObject.transform, false);
@@ -109,12 +145,12 @@ namespace BarPromenade
             PauseMenu.Initialize(Player, CameraFollow, null);
             IsInitialized = true;
             InitializeDuelJournal();
-            PlaceRound(focusOpponent: false);
+            PlaceRound(focusOpponent: Mode == CombatTestMode.Endless && !Hero.IsFirearm);
         }
 
         public void SetSparring(bool enabled)
         {
-            if (!IsInitialized || !GameInput.CanRead(GameInputContext.Gameplay)) return;
+            if (!IsInitialized || Mode == CombatTestMode.Endless || !GameInput.CanRead(GameInputContext.Gameplay)) return;
             Sparring = enabled;
             PlaceRound(focusOpponent: !Hero.IsFirearm);
         }
@@ -122,7 +158,7 @@ namespace BarPromenade
         public void ResetRound()
         {
             if (!IsInitialized || !GameInput.CanRead(GameInputContext.Gameplay)) return;
-            PlaceRound(focusOpponent: true);
+            PlaceRound(focusOpponent: Mode == CombatTestMode.Standard || !Hero.IsFirearm);
         }
 
         private void PlaceRound(bool focusOpponent)
@@ -130,6 +166,8 @@ namespace BarPromenade
             ReleaseFreePistolAim();
             Hero.CancelPendingPistolShot("reset");
             EndJournalRound("reset");
+            endless.Reset();
+            if (Mode == CombatTestMode.Endless) Sparring = true;
             ResetChargeInput();
             ResetWeaponPools();
             BloodEffects?.ResetRound();
@@ -369,8 +407,10 @@ namespace BarPromenade
 
         private void BeginFinishedRound()
         {
+            ObserveEndlessOutcome();
             if (finishedRoundInitialized) return;
             finishedRoundInitialized = true;
+            JournalRoundResult();
             pistolProjectiles?.ClearFlights();
             if (!Hero.IsFirearm || Hero.State.IsDefeated) return;
             // Relinquish the defeated target without revoking a held aim.
@@ -451,6 +491,7 @@ namespace BarPromenade
                     BodyEffects.Tick(SimulationStep);
                     SparkEffects.Tick(SimulationStep);
                     SimulationEffectsTicks += System.Diagnostics.Stopwatch.GetTimestamp() - stageStart;
+                    if (AdvanceEndlessInterval(SimulationStep)) return;
                 }
             }
             else
@@ -508,12 +549,15 @@ namespace BarPromenade
                 if (DrawToolbarButton(canvas, new Rect(156, 12, 58, 18), "combat-weapons",
                     LocalizationService.Get("combat.weapons"))) ReturnToWeapons();
                 if (DrawToolbarButton(canvas, new Rect(220, 12, 166, 18), "combat-style",
-                    LocalizationService.Get("combat.style." + OpponentStyle.ToString().ToLowerInvariant())))
+                    LocalizationService.Get(OpponentStyleHudKeys[(int)OpponentStyle]),
+                    Mode != CombatTestMode.Endless || EndlessRunFinished))
                     SetOpponentStyle((CombatOpponentStyle)(((int)OpponentStyle + 1) % 3));
-                if (DrawToolbarButton(canvas, new Rect(392, 12, 102, 18), "combat-mode",
-                    "Tab · " + LocalizationService.Get(Sparring ? "combat.sparring" : "combat.target"))) SetSparring(!Sparring);
+                if (Mode == CombatTestMode.Endless)
+                    GUI.Label(new Rect(392, 12, 102, 18), endlessKillsLabel.Get(LocalizationService.Get("combat.kills"), EndlessKills), small);
+                else if (DrawToolbarButton(canvas, new Rect(392, 12, 102, 18), "combat-mode",
+                    ModeHudText())) SetSparring(!Sparring);
                 if (DrawToolbarButton(canvas, new Rect(498, 12, 70, 18), "combat-reset",
-                    LocalizationService.Get("combat.reset"))) ResetRound();
+                    LocalizationService.Get(Mode == CombatTestMode.Endless ? "combat.new_run" : "combat.reset"))) ResetRound();
                 if (DrawToolbarButton(canvas, new Rect(572, 12, 48, 18), "combat-menu",
                     LocalizationService.Get("combat.menu"))) ReturnToMenu();
                 DrawFighterHud(new Rect(14, 302, 138, 37), "combat.health", Hero);
@@ -521,26 +565,33 @@ namespace BarPromenade
                 DrawChargeMeter();
                 DrawPistolHud(canvas);
                 DrawFocusMarker(canvas);
+                DrawEndlessStatus();
                 GUI.Label(new Rect(14, 342, 612, 14), LocalizationService.Get(Hero.IsShotgun ? "combat.controls.shotgun" :
                     Hero.IsPistol ? "combat.controls.pistol" : "combat.controls"), controls);
             }
             finally { RetroUiTheme.EndCanvas(matrix); }
         }
 
-        private bool DrawToolbarButton(RetroUiCanvas canvas, Rect rect, string control, string text)
+        private bool DrawToolbarButton(RetroUiCanvas canvas, Rect rect, string control, string text, bool enabled = true)
         {
-            RetroUiTheme.DrawSelection(rect, rect.Contains(RetroUiTheme.LogicalMousePosition(canvas)) || GUI.GetNameOfFocusedControl() == control);
+            RetroUiTheme.DrawSelection(rect, enabled && (rect.Contains(RetroUiTheme.LogicalMousePosition(canvas)) || GUI.GetNameOfFocusedControl() == control));
             GUI.SetNextControlName(control);
-            return GUI.Button(rect, text, button);
+            bool previousEnabled = GUI.enabled;
+            GUI.enabled = previousEnabled && enabled;
+            bool pressed = GUI.Button(rect, text, button);
+            GUI.enabled = previousEnabled;
+            return pressed;
         }
 
         private void DrawFighterHud(Rect rect, string healthKey, CombatActor actor)
         {
             RetroUiTheme.DrawPanel(rect, RetroUiTheme.PanelInset, RetroUiTheme.BorderMuted, false, 0f, 1f, .72f);
             DrawMeter(new Rect(rect.x + 6f, rect.y + 3f, rect.width - (actor.IsHero ? 32f : 12f), 14f), healthKey,
-                actor.State.Health, actor.State.Settings.MaxHealth, RetroUiTheme.AccentPale, 3f);
+                actor.State.Health, actor.State.Settings.MaxHealth, RetroUiTheme.AccentPale, 3f,
+                actor.IsHero ? heroHealthLabel : opponentHealthLabel);
             DrawMeter(new Rect(rect.x + 6f, rect.y + 19f, rect.width - 12f, 13f), "combat.stamina",
-                actor.State.Stamina, actor.State.Settings.MaxStamina, RetroUiTheme.Muted, 2f);
+                actor.State.Stamina, actor.State.Settings.MaxStamina, RetroUiTheme.Muted, 2f,
+                actor.IsHero ? heroStaminaLabel : opponentStaminaLabel);
             if (actor.IsHero) DrawGuardReadiness(new Rect(rect.xMax - 22f, rect.y + 2f, 15f, 15f), actor);
         }
 
@@ -568,13 +619,13 @@ namespace BarPromenade
                 RetroUiTheme.FillRect(new Rect(rect.x + 4f, rect.y + 3f, rect.width - 8f, 5f), RetroUiTheme.AccentPale);
         }
 
-        private void DrawMeter(Rect rect, string key, float value, float max, Color color, float thickness)
+        private void DrawMeter(Rect rect, string key, float value, float max, Color color, float thickness, HudCounterLabel label)
         {
             var track = new Rect(rect.x, rect.yMax - thickness, rect.width, thickness);
             RetroUiTheme.FillRect(track, RetroUiTheme.Shadow);
             RetroUiTheme.FillRect(new Rect(track.x, track.y, track.width * Mathf.Clamp01(value / max), thickness), color);
             GUI.Label(new Rect(rect.x, rect.y - 2f, rect.width, 12f),
-                LocalizationService.Get(key) + "  " + Mathf.CeilToInt(value), small);
+                label.Get(LocalizationService.Get(key), Mathf.CeilToInt(value)), small);
         }
     }
 }

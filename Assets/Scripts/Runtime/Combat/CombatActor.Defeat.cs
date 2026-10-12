@@ -170,6 +170,24 @@ namespace BarPromenade
             DropWeapon();
         }
 
+        /// <summary>Reopens the surviving rig without restoring HP, limbs, motion or weapon ownership.</summary>
+        internal void ResumeForNextOpponent()
+        {
+            if (hero == null || State.IsDefeated) return;
+            roundEnded = winnerPresentationReleased = freeLocomotionReleased = false;
+            State.CancelCharge();
+            State.CancelBufferedAction(State.BufferedAction);
+            State.SetBlocking(false);
+            guardHeld = false;
+            CancelPendingKick("next_opponent");
+            CancelPendingPistolShot("next_opponent");
+            collectSweep = collectShove = collectKick = sweepValid = false;
+            ResetWeaponContacts();
+            hero.SetCombatSupportGrip(this, supportGrip, weaponConstraint);
+            RefillCarriedFirearms();
+            Present();
+        }
+
         private void ResetDefeat()
         {
             roundEnded = false;

@@ -119,6 +119,15 @@ namespace BarPromenade
                 loaded[1] = true;
         }
 
+        public void RefillForEncounter()
+        {
+            loaded[0] = loaded[1] = true;
+            spent[0] = spent[1] = false;
+            ReloadChamberMask = 0;
+            reloading = false;
+            reloadElapsed = 0d;
+        }
+
         public void Reset()
         {
             loaded[0] = loaded[1] = true;

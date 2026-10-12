@@ -112,6 +112,13 @@ namespace BarPromenade
             if (AimRequested && !ReloadPending) aimElapsed = Math.Min(Settings.RaiseSeconds, aimElapsed + remaining);
         }
 
+        public void RefillForEncounter()
+        {
+            Rounds = Settings.MagazineCapacity;
+            reloading = false;
+            reloadElapsed = 0d;
+        }
+
         public void Reset()
         {
             Rounds = Settings.MagazineCapacity;

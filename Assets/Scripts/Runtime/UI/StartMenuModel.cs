@@ -21,7 +21,7 @@ namespace BarPromenade
         ChooseCombatWeapon = 6
     }
 
-    public enum CombatPreparationOption { Crowbar, Shotgun, Pistol, Secondary, Start, Back, Count }
+    public enum CombatPreparationOption { Crowbar, Shotgun, Pistol, Secondary, Standard, Endless, Start, Back, Count }
 
     /// <summary>
     /// The launch card and its location and weapon pickers. Committing is one-shot: the
@@ -37,6 +37,8 @@ namespace BarPromenade
         public bool IsChoosingCombatWeapon { get; private set; }
         public NewGameLocation SelectedLocation { get; private set; }
         public CombatLoadoutSelection SelectedCombatLoadout { get; private set; }
+        public CombatTestMode SelectedCombatMode { get; private set; }
+        public CombatTestSelection SelectedCombatSelection => new CombatTestSelection(SelectedCombatLoadout, SelectedCombatMode);
         public CombatWeaponId SelectedCombatWeapon => SelectedCombatLoadout.InitialHeld;
         public CombatPreparationOption SelectedCombatOption { get; private set; }
         public bool IsBackSelected => IsChoosingLocation && SelectedLocation == NewGameLocation.Count ||
@@ -50,6 +52,7 @@ namespace BarPromenade
             IsChoosingCombatWeapon = false;
             SelectedLocation = NewGameLocation.AlpineVillage;
             SelectedCombatLoadout = CombatLoadoutSelection.Default;
+            SelectedCombatMode = CombatTestMode.Standard;
             SelectedCombatOption = CombatPreparationOption.Crowbar;
         }
 
@@ -57,12 +60,16 @@ namespace BarPromenade
             => OpenCombatPreparation(CombatLoadoutSelection.FromLegacyWeapon(weapon));
 
         public void OpenCombatPreparation(CombatLoadoutSelection loadout)
+            => OpenCombatPreparation(new CombatTestSelection(loadout));
+
+        public void OpenCombatPreparation(CombatTestSelection selection)
         {
             Open();
             SelectedOption = StartMenuOption.CombatTest;
             IsChoosingCombatWeapon = true;
-            SelectedCombatLoadout = loadout;
-            SelectedCombatOption = loadout.InitialHeld switch
+            SelectedCombatLoadout = selection.Loadout;
+            SelectedCombatMode = selection.Mode;
+            SelectedCombatOption = selection.Loadout.InitialHeld switch
             {
                 CombatWeaponId.Pistol => CombatPreparationOption.Pistol,
                 CombatWeaponId.Shotgun => CombatPreparationOption.Shotgun,
@@ -129,6 +136,7 @@ namespace BarPromenade
                 option >= CombatPreparationOption.Count) return false;
             CombatPreparationOption previousOption = SelectedCombatOption;
             CombatLoadoutSelection previousLoadout = SelectedCombatLoadout;
+            CombatTestMode previousMode = SelectedCombatMode;
             SelectedCombatOption = option;
             if (option == CombatPreparationOption.Crowbar)
                 SelectedCombatLoadout = SelectedCombatLoadout.WithSecondary(CombatWeaponId.Crowbar);
@@ -138,10 +146,14 @@ namespace BarPromenade
                 SelectedCombatLoadout = SelectedCombatLoadout.WithInitialHeld(CombatWeaponId.Pistol);
             else if (option == CombatPreparationOption.Secondary)
                 SelectedCombatLoadout = SelectedCombatLoadout.WithInitialHeld(SelectedCombatLoadout.Secondary);
-            return previousOption != option || previousLoadout != SelectedCombatLoadout;
+            else if (option == CombatPreparationOption.Standard)
+                SelectedCombatMode = CombatTestMode.Standard;
+            else if (option == CombatPreparationOption.Endless)
+                SelectedCombatMode = CombatTestMode.Endless;
+            return previousOption != option || previousLoadout != SelectedCombatLoadout || previousMode != SelectedCombatMode;
         }
 
-        /// <summary>Navigation highlights a row without silently changing either radio choice.</summary>
+        /// <summary>Navigation highlights a row without silently changing the launch choices.</summary>
         public bool FocusCombatOption(CombatPreparationOption option)
         {
             if (IsCommitted || !IsChoosingCombatWeapon || option < CombatPreparationOption.Crowbar ||
@@ -201,7 +213,7 @@ namespace BarPromenade
                     SelectedLocation = NewGameLocation.AlpineVillage;
                     return StartMenuAction.ChooseLocation;
                 case StartMenuOption.CombatTest:
-                    OpenCombatPreparation(SelectedCombatLoadout);
+                    OpenCombatPreparation(SelectedCombatSelection);
                     return StartMenuAction.ChooseCombatWeapon;
                 case StartMenuOption.Quit:
                     IsCommitted = true;

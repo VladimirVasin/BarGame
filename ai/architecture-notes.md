@@ -2,16 +2,19 @@
 
 ## Current facts
 
+- **Accepted architecture exception — 2026-10-12, endless polygon:**
+  User:polygon only/both carried guns refill between foes/reload settled on same rig;
+  IDs/cooldowns/injuries kept;§6/art§15a/9checks
 - **Accepted — 2026-10-10, carry pair:**
   CombatTest:pistol Lchest/M65+Rbelt bar|soft-sling back shotgun.
   Holster0cloth:stored hidden;held/drop/coat-off seen.
-  6bone stow/draw;rig/models/ammo/handoffs;0hardmount;§6/art§15a/9checks.
+  6bone stow/draw;rig/model/ammo handoffs;0hardmount.
 
 - **Accepted — 2026-10-12, ShotgunDraw:**
   Ropen nudges barrels below;Loutside/over Lshoulder→vertical stock-top/palm-down catch
   →outside shoulder/front chest turn→Rgrip/Lforeend;0body crossing.
-  Imported-rig offsets;continuous handoffs/pause freeze;interim drop=original/pose/ammo.
-  Stow/geometry/rig/sling/2× kept
+  Imported offsets;continuous handoffs/pause freeze;drop=original/pose/ammo.
+  Stow/model/rig/sling/2× kept
 
 - **Accepted — 2026-10-11:** shotgun:Lshoulder→front chest/abdomen→lower Rside;draw/stow.
   Ribbon0jacket;gun/bar coat+scarf/hair;JacketBody-only width/seam pad.
@@ -301,20 +304,20 @@
   CombatFootwork:8clips/retarget/facing/normdiag/0run/camplane/upperaim;
   Step1m/15/noinputback/wall-pause/tank-release/handoff0/aim0Step0;barfocus/reload/injury.
 - **Accepted exception 2026-10-08, pistol:**
-  Dummy/freecam/focus/Q-Step;first world/anatomy;regional SFX-force/recoil-streak/
-  0motor-sway/stablecam-hitkick/head0HP-ragdoll. Cases:port-delay/gravity-bounce-cap;
-  emptylock/mag-seat-rack1.8/ammo-last/dropE stage-ammo/Rresume;
-  0lock-pierce-ricochet-guard-parry-taunt-reward;win/corpse/pause-hitstop/reset-exit.
+  Standard dummy/freecam/focus/Q-Step;first world/anatomy;regional SFX-force;
+  stablecam-hitkick/recoil-streak/0motor-sway/head0HP-ragdoll.
+  Cases:port-delay/gravity-bounce-cap;emptylock/mag-seat-rack1.8/ammo-last/dropE/Rresume.
+  0lock-pierce-ricochet-guard-parry-taunt-reward;stage/win/pause:art§15a.
 - **Accepted exception 2026-10-09, shotgun power:**
   `ShotgunSettings`:close420Ns→40m0 steep;HPlinear;
-  immutable body+torque/finalstate/unfrozen1/current-mass share/nonpellet torso.
+  immutable finalbody+torque/unfrozen1/current-mass share/nonpellet torso.
   1SFX/terminal hitstop/head≤14/prelethal/8ledgers/fast debris-blood
 - **Accepted exception 2026-10-09, body destruction:**
-  CombatTest/both corpses/cloth-tissue→rig skeleton/nearshotgun local max;
-  Chest-Abdomen-Pelvis critical joined/0chunks-cellRB;finite point/radius cells
-  deform-erode/torso subdivide/expose≠sever/head-limb closed cuts/finite parts.
+  Both/cloth-tissue→rig skeleton/nearshotgun max;Chest-Abdomen-Pelvis critical joined/
+  0chunks-cellRB;finite point-radius cells deform-erode/torso subdivide/expose≠sever;
+  head-limb closed cuts/finite parts.
   Rhand0weapon/Lhand0twohand-reload(Rbar-loaded pistol)/legs fall-crawl0rise-step-kick;
-  Hero=AI/head-torso end/surface=hit=physics/dedup-pause-reset/§6/art§15a/§16/§21/9checks.
+  Hero=AI/head-torso end/surface=hit=physics/dedup-pause-reset.
 - **Accepted exception 2026-10-08, headshots:**
   Head16:3-5/low eject/blood56/brain8 full-wet-jelly/squash/loss1x/
   bone-tissue/cam-hide/finite pulse-fade/corpse impulse.
@@ -326,9 +329,9 @@
 - **Accepted 2026-10-07, combat:**
   Floor/stall-arm→drop/rise≠grip/HP-focus-AI/pause-hitstop0;
   no bar:walk-Q-Step/hits-falls/Eshared/0grant/cancel floor.
-  NPC approach-Q/rise ignores own drop;MMBfocus/AIhits/reset mode-focus/hitstop≠lock-reset.
-  Q:chest-gap/earlylock/far pelvis-foot→chest←/near knee/fast palm/bar kept/
-  arc turn/3mirrored torsos/fixedroot/freeleg-loadR/guard support/fall veto.
+  NPC approach-Q/rise ignores drop;MMBfocus/AIhits/reset mode-focus/hitstop≠lock-reset.
+  Q:chest-gap/earlylock/far pelvis-foot→chest←/near knee/fast palm/bar kept;
+  arc/3mirror torsos/fixedroot/freeleg-loadR/guard support/fall veto.
   Aim¼Windup lock/Charge free/motor yield;bar-Q-palm clocks/contact;
   Step1m/sole-catch/finite landing-overload;bar-palm stagger/feet-impulse-aim.
   First bar-world-body/metal-wall recoil-stop/guard-break/0HPparry/pooled sparks-SFX.
@@ -339,8 +342,7 @@
 - **Accepted 2026-10-03, combat:**
   Hero Windup1m/brake/side-back/drift/≤.85m 0HPshove;
   regrip≤600°/s wrist-elbow-shoulder/body-world-palm;
-  Q/B/3AI/recoil hold;
-  .20s walk wait/tail buffer/support≠chain.
+  Q/B/3AI/recoil hold;.20s walk wait/tail buffer/support≠chain.
 - **Accepted 2026-09-25, clinch shove:** Both:close swing→faster/stronger palm.
 - **Accepted 2026-09-26, recovery:**
   Impact≤2steps/flywheel-crouch-brace/pause-hitstop≠defeat/Lowns→Rbody-floor-wall;
@@ -349,22 +351,21 @@
 - **Accepted 2026-09-21, body:**
   6bone-local zones/first sequence;bar head×2(50/80,cap.99MaxHP)/rear±45°defeat;
   torso1-rear1.25/arms.5/legs.75;frozen mutual zone-dir-power/1HP-ragdoll.
-  C1pose-contact/travel-yaw:return.15→.75/stun.35;
-  stance.42/.28m/art§15a/Smoothstep feet;Hold:breath0/regen delay;
-  aftermath:thud/bar pool grows10s,stays.
+  C1pose-contact/travel-yaw:return.15→.75/stun.35;stance.42/.28m/Smoothstep feet;
+  Hold:breath0/regen delay;thud/bar pool grows10s/stays.
 - **Accepted 2026-09-20, two hands:**
-  Ready-Block-attack-recoil→L/Hit-GuardBreak-Defeat release/Ready low-Block high/
-  L opposed.16→.42m/breath4s/blend/injury/NPC RRest-Lsubdiv gates;
-  HP/dir-pose/wounds/pools/dry:block-miss/ragdoll wins.
+  Ready low/Block high/attack-recoil→L;Hit-GuardBreak-Defeat release;
+  L opposed.16→.42m/breath4s/blend/injury/NPC RRest-Lsubdiv;
+  Dry block-miss/ragdoll wins.
 - **Accepted 2026-09-21, duel:**
-  Barwin:swing→walk/off→reset;free hits/guard20-35/charge20/regen30/s-.6s stuns/own spends;
-  seeded AI/fall freecam/fore-back flips/no repeats/step-target>15°≠strafe/same dmg-time-cost.
+  Standard barwin:swing→walk/off→reset;free hits/guard20-35/charge20/regen30/s-.6s stuns;
+  seeded AI/fall freecam/fore-back flips/no repeats/target>15°≠strafe/shared dmg-time-cost.
   Charge:q=power/Forehand Light/upper(t+q*.18*(1-smooth(t/.45)))/lower(t)/
-  retimed Attack/neutral lower. Backhand DAG:R elbow-hand roll/.56reach≥.95/free elbow;
+  retimed Attack/neutral lower;Backhand DAG:R elbow-hand roll/.56reach≥.95/free elbow;
   recoil .56→Ready0/.48s inverse/C1/no dwell/wrist-core-speed-clearance gates.
 - **Accepted exception 2026-09-21, taunt:**
-  E/settled defeat:Home toilet/view-timeline-stream-residue;
-  Guided dock/aim/bone-floor marks;bar L-return/§21-exempt silent/no speech-reaction-reward/6th FP.
+  Standard E/settled defeat:Home toilet/view-timeline-stream-residue;
+  Guided dock/aim/bone-floor;barL/§21-exempt silent/0speech-reaction-reward/6th FP.
 - **Accepted exception 2026-09-19, CombatTest:**
   §6/§16.15/art§15a:one hero-input;hits/steps vulnerable/fall/reset/shoulder-wall;
   W-Swalk/A-Dstrafe/opponent last.

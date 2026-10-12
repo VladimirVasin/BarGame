@@ -3,39 +3,40 @@
 Newest outcomes/checks first. Archive whole dates at budget: [policy](README.md).
 Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-2026-08.md).
 
-## 2026-10-12 — Cloth/damage reuse and faster weapon switching
+## 2026-10-12 — Cloth, weapon switching and endless combat
 
-- Fresh complete duel exposed jacket spikes during post-death diagonal walking
-  and separate impact cost. Jacket commits final geometry once; accepted hem
-  candidates/live hints retain contact/stretch thresholds. Deep-hip proof
-  compares invalidated vertices. Sling projection/support scratch persists
-  until owner disposal; pose uploads stay fresh. Jacket uses native support;
-  exact trees serve hem depth and shifted source-hull clearance. Skin reads
-  referenced bones/reuses inverses. Real-frame proof adds unaimed shotgun
-  diagonal walking, exhaustive boundary gates and same-frame skin/normal checks.
-  Frame gates pass; warm-stow front route fails (deferred assertion retained).
-- Cloth/erosion clones retain bindings; ordered topology/native buffers survive
-  damage changes. Fresh validation passes sample live physics/poses. Projectile
-  classification uses an ordered source index and contact-local bone snapshot;
-  full-piece oracle covers both rigs/pose/geometry/repeated volleys.
-  Unity refreshed hero stamp; overall FPS remains unproven.
-- Duel schema 2 declares implicit numeric-zero stage rows; unavailable values
-  and causal events remain explicit. File budget stays; gaps with losses stay unknown.
-- Discovery uses unsorted search; inactive filtering; CS0618=error;
-  unrelated DTO/analyzer warnings remain.
-- Slow stow/draw delayed control; manual feedback found the first trial too fast.
-  Playback/entry blends run at twice speed; normalized handoffs/jacket/sling
-  stay aligned. Integration checked timing/ammo/pause/queue/cleanup and frames.
-- Shotgun draw: open right palm nudges barrels from below; left rises outside
-  over its shoulder, catches stock vertically from above/palm down, carries it
-  around shoulder/front of chest, then right grip/left foreend. No body crossing.
-  Imported-rig offsets/continuous transfers; pause freeze; interim drop keeps
-  original/pose/ammo; stow/2× unchanged. Disable restored interim weapon; fixed.
-  Handoff test verified pickup/reset/disable drops and above-stock/turn clearance.
-  `build-combat-weapon-carry-3d-model.py` validated actual body-BVH arm/hand
-  clearance, vertical/palm-down catch, continuous contacts, lower rig/endpoints,
-  untouched clips/FBX/geometry/sling.
-- Checks: `Range_DistantShotgunTorsoVolleyProfilesImpactPhases`,
+- Jacket spikes/impact cost: one final commit, live hem hints with contact/stretch
+  gates/native support/exact hem-depth/clearance/reference-bone skin. Sling
+  scratch lives until disposal. Deep-hip/real-frame proofs add unaimed diagonal
+  shotgun walking/boundary/skin-normal checks; warm-stow front route stays deferred.
+- Cloth/erosion bindings/topology/native buffers persist; fresh poses/physics.
+  Source index/contact-local bones match full-piece oracle on both rigs/
+  poses/geometry/repeated volleys. Hero stamp refreshed; FPS remains unproven.
+- Duel schema 2: implicit numeric-zero stages; unavailable values/causal events
+  explicit, budget kept, loss gaps unknown.
+- Unsorted discovery/inactive filtering; CS0618=error; DTO/analyzer warnings remain.
+- Slow original/fast trial→×2 playback/entry blends with normalized
+  handoffs/jacket/sling; timing/ammo/pause/queue/cleanup/frames checked.
+- ShotgunDraw: Ropen barrel nudge; Loutside shoulder→vertical stock-top/palm-down
+  →outside/front chest→Rgrip/Lforeend; no crossing/imported offsets. Pause/drop
+  original; stow×2 kept; disable-drop fixed; handoff covers pickup/reset/catch/turn.
+  `build-combat-weapon-carry-3d-model.py`: body-BVH clearance/contacts/lower rig/
+  endpoints, untouched other clips/FBX/geometry/sling.
+- Endless: mode+kit survive Back; one reused foe/2.5 active s; injuries/position/
+  held stay, both guns refill. Full reset would heal; boundaries deduplicate/
+  clear old body-drop-flights and own pause/end/reset/exit. RU/EN preparation/
+  640×360 HUD inspected; labels fit.
+- Ray scopes rebuilt native scratch each time. Contacts now retain
+  Persistent workspace; typed leases refresh pose/masks/reject overlap/stale
+  scopes, owner Dispose frees. Jacket uploads only changed normals/tangents;
+  exact sweep cache hits skip BodySweep prep; HUD labels rebuild only on change.
+- Known: `Range_VictoryRestoresOrdinaryWalkingAndResetRestoresCombat` one-frame
+  clip-owner assertion; `Range_WeaponCarryHasBoundedPresentationWork` transfer
+  assertion still fails as before optimization.
+- Checks: `Range_BodyRayWorkspaceReusesFreshPoseAndReleasesOwnedBuffers`,
+  `Range_WeaponSweepReusesOnlyIdenticalQueriesAndKeepsMovingAnatomy`,
+  `Range_EndlessReusesOpponentPreservesHeroRefillsAmmoAndCancelsOnExit`,
+  `Range_DistantShotgunTorsoVolleyProfilesImpactPhases`,
   `Range_WeaponCarryKeepsRealFramesBoundedThroughWalkingSwitchesAndHeadshot`,
   `Range_WeaponCarrySwitchesKeepModelsAmmoAndPhysicalHandoffs`,
   `ProductionRig_WalkingKeepsJacketHemLength`,

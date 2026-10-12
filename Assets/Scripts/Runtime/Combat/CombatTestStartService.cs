@@ -5,35 +5,40 @@ namespace BarPromenade
 {
     public static class CombatTestStartService
     {
-        private static CombatLoadoutSelection pendingLoadout;
-        private static bool hasPendingLoadout;
-        private static CombatLoadoutSelection preparationLoadout;
+        private static CombatTestSelection pendingSelection;
+        private static bool hasPendingSelection;
+        private static CombatTestSelection preparationSelection;
         private static bool hasPreparation;
 
         public static bool TryStart(CombatWeaponId weapon = CombatWeaponId.Crowbar)
             => TryStart(CombatLoadoutSelection.FromLegacyWeapon(weapon));
 
         public static bool TryStart(CombatLoadoutSelection loadout)
+            => TryStart(new CombatTestSelection(loadout));
+
+        public static bool TryStart(CombatTestSelection selection)
         {
             if (SceneManager.GetActiveScene().name != SceneIds.MainMenu ||
                 SceneTransitionService.IsTransitioning || !Application.CanStreamedLevelBeLoaded(SceneIds.CombatTest))
                 return false;
             // Do not start the narrative calendar or its scheduled events.
             GameSessionState.BeginNewGame("combat_test_start");
-            pendingLoadout = loadout;
-            hasPendingLoadout = true;
+            pendingSelection = selection;
+            hasPendingSelection = true;
             if (SceneTransitionService.RequestLoad(SceneIds.CombatTest)) return true;
-            hasPendingLoadout = false;
+            hasPendingSelection = false;
             return false;
         }
 
-        /// <summary>One scene consumes both choices atomically. Direct loads use the default complete kit.</summary>
-        public static CombatLoadoutSelection ConsumeLoadout()
+        /// <summary>One scene consumes mode and kit atomically. Direct loads use the standard default kit.</summary>
+        public static CombatTestSelection ConsumeSelection()
         {
-            CombatLoadoutSelection loadout = hasPendingLoadout ? pendingLoadout : CombatLoadoutSelection.Default;
-            hasPendingLoadout = false;
-            return loadout;
+            CombatTestSelection selection = hasPendingSelection ? pendingSelection : CombatTestSelection.Default;
+            hasPendingSelection = false;
+            return selection;
         }
+
+        public static CombatLoadoutSelection ConsumeLoadout() => ConsumeSelection().Loadout;
 
         public static CombatWeaponId ConsumeWeapon() => ConsumeLoadout().InitialHeld;
 
@@ -41,11 +46,14 @@ namespace BarPromenade
             => ReturnToPreparation(CombatLoadoutSelection.FromLegacyWeapon(weapon));
 
         public static bool ReturnToPreparation(CombatLoadoutSelection loadout)
+            => ReturnToPreparation(new CombatTestSelection(loadout));
+
+        public static bool ReturnToPreparation(CombatTestSelection selection)
         {
             if (SceneManager.GetActiveScene().name != SceneIds.CombatTest ||
                 SceneTransitionService.IsTransitioning || !Application.CanStreamedLevelBeLoaded(SceneIds.MainMenu))
                 return false;
-            preparationLoadout = loadout;
+            preparationSelection = selection;
             hasPreparation = true;
             if (SceneTransitionService.RequestLoad(SceneIds.MainMenu)) return true;
             hasPreparation = false;
@@ -61,7 +69,14 @@ namespace BarPromenade
 
         public static bool TryConsumePreparationLoadout(out CombatLoadoutSelection loadout)
         {
-            loadout = hasPreparation ? preparationLoadout : CombatLoadoutSelection.Default;
+            bool pending = TryConsumePreparationSelection(out CombatTestSelection selection);
+            loadout = selection.Loadout;
+            return pending;
+        }
+
+        public static bool TryConsumePreparationSelection(out CombatTestSelection selection)
+        {
+            selection = hasPreparation ? preparationSelection : CombatTestSelection.Default;
             bool pending = hasPreparation;
             hasPreparation = false;
             return pending;
@@ -70,8 +85,8 @@ namespace BarPromenade
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void Reset()
         {
-            pendingLoadout = preparationLoadout = CombatLoadoutSelection.Default;
-            hasPendingLoadout = hasPreparation = false;
+            pendingSelection = preparationSelection = CombatTestSelection.Default;
+            hasPendingSelection = hasPreparation = false;
         }
     }
 }

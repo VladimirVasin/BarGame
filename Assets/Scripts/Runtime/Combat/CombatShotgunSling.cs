@@ -285,7 +285,7 @@ namespace BarPromenade
                 bodyContacts.UpdatePose();
             }
             if (!attached && !inspecting) MeasureFloor(); else hasFloor = false;
-            using var nativeQueries = attached ? bodyContacts.BeginNativeQueries() : null;
+            using PlayerScarfBodyContacts.RayQueryScope nativeQueries = attached ? bodyContacts.BeginNativeQueries() : default;
             using var nativeProjection = CreateProjectionWorkArena(this, Links + 1);
             // Pose, escape directions, grip cavity and floor are fixed for this
             // presentation. Repeated exact inputs can reuse their projection,

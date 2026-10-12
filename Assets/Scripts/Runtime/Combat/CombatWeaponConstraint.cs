@@ -53,6 +53,8 @@ namespace BarPromenade
         private readonly Bounds[] segmentSweepBounds = new Bounds[CombatWeaponGeometry.Segments.Count];
         private bool anatomyReuseActive, hasClearAnatomySweep;
         private Pose clearAnatomyFrom, clearAnatomyTo;
+        private float clearAnatomyBodyTravel;
+        private bool clearAnatomyNearOther;
         private bool clearAnatomyProbeEnabled;
         private bool clearAnatomyProbeActive, clearAnatomyProbeTrigger;
         private Vector3 clearAnatomyProbeScale, clearAnatomyProbeCenter;
@@ -601,24 +603,30 @@ namespace BarPromenade
             Bounds travelBounds = BuildSegmentSweepBounds(from, to, angle);
             bool reuseAnatomy = CanReuseAnatomySweep(from, to);
             if (reuseAnatomy) RepeatedAnatomySweepsAvoided++;
-            float bodyTravel = 0f;
-            for (int i = 0; i < anatomy.Count; i++)
-                if (anatomy[i] != null)
-                {
-                    anatomySweep[i] = new BodySweep(anatomy[i], previousAnatomy[i]);
-                    anatomySweep[i].SegmentMask = SweptPairs(anatomySweep[i].TravelBounds);
-                    if (anatomySweep[i].SegmentMask != 0) bodyTravel = Mathf.Max(bodyTravel, anatomySweep[i].Travel);
-                }
-            bool nearOther = false;
-            for (int i = 0; i < otherAnatomy.Count; i++)
+            // The exact live-input guard proves these derived bounds/travel too.
+            // Reusing only native query results would still rebuild every body
+            // primitive and segment pair again during the final commit.
+            float bodyTravel = reuseAnatomy ? clearAnatomyBodyTravel : 0f;
+            bool nearOther = reuseAnatomy && clearAnatomyNearOther;
+            if (!reuseAnatomy)
             {
-                Collider shape = otherAnatomy[i];
-                if (shape == null) continue;
-                otherSweep[i] = new BodySweep(shape, previousOtherAnatomy[i]);
-                otherSweep[i].SegmentMask = SweptPairs(otherSweep[i].TravelBounds);
-                if (otherSweep[i].SegmentMask == 0) continue;
-                nearOther = true;
-                bodyTravel = Mathf.Max(bodyTravel, otherSweep[i].Travel);
+                for (int i = 0; i < anatomy.Count; i++)
+                    if (anatomy[i] != null)
+                    {
+                        anatomySweep[i] = new BodySweep(anatomy[i], previousAnatomy[i]);
+                        anatomySweep[i].SegmentMask = SweptPairs(anatomySweep[i].TravelBounds);
+                        if (anatomySweep[i].SegmentMask != 0) bodyTravel = Mathf.Max(bodyTravel, anatomySweep[i].Travel);
+                    }
+                for (int i = 0; i < otherAnatomy.Count; i++)
+                {
+                    Collider shape = otherAnatomy[i];
+                    if (shape == null) continue;
+                    otherSweep[i] = new BodySweep(shape, previousOtherAnatomy[i]);
+                    otherSweep[i].SegmentMask = SweptPairs(otherSweep[i].TravelBounds);
+                    if (otherSweep[i].SegmentMask == 0) continue;
+                    nearOther = true;
+                    bodyTravel = Mathf.Max(bodyTravel, otherSweep[i].Travel);
+                }
             }
             // A planted hand does not make the torso or the other fighter static.
             // Bound relative surface travel, including rotation about each shape's
@@ -744,7 +752,7 @@ namespace BarPromenade
                 if (sampleWorldBlocked) return false;
                 previous = next;
             }
-            if (!anatomyBlocked && !reuseAnatomy) RememberClearAnatomySweep(from, to);
+            if (!anatomyBlocked && !reuseAnatomy) RememberClearAnatomySweep(from, to, bodyTravel, nearOther);
             return !anatomyBlocked;
         }
 
@@ -797,9 +805,10 @@ namespace BarPromenade
             return true;
         }
 
-        private void RememberClearAnatomySweep(Pose from, Pose to)
+        private void RememberClearAnatomySweep(Pose from, Pose to, float bodyTravel, bool nearOther)
         {
             if (!anatomyReuseActive || contactPreview) return;
+            clearAnatomyBodyTravel = bodyTravel; clearAnatomyNearOther = nearOther;
             clearAnatomyFrom = from; clearAnatomyTo = to; clearAnatomyProbeEnabled = probe.enabled;
             clearAnatomyProbeActive = probe.gameObject.activeInHierarchy; clearAnatomyProbeTrigger = probe.isTrigger;
             clearAnatomyProbeDirection = probe.direction; clearAnatomyProbeScale = probe.transform.lossyScale;

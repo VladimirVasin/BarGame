@@ -35,8 +35,252 @@ namespace BarPromenade.Tests.PlayMode
             "BarPromenade.WeaponCarry.Sling.Targets",
             "BarPromenade.WeaponCarry.Sling.Snapshot",
             "BarPromenade.WeaponCarry.Sling.Projection.Workspace",
-            "BarPromenade.WeaponCarry.BodyContacts.Ray.Workspace"
+            "BarPromenade.WeaponCarry.BodyContacts.Ray.Workspace",
+            "BarPromenade.SecondaryMotion.Jacket.Apply", "BarPromenade.SecondaryMotion.Jacket.Pose",
+            "BarPromenade.SecondaryMotion.Jacket.Surface", "BarPromenade.SecondaryMotion.Jacket.Constrain",
+            "BarPromenade.SecondaryMotion.Jacket.NativeSolver", "BarPromenade.SecondaryMotion.Jacket.NativeArea",
+            "BarPromenade.SecondaryMotion.Jacket.Write", "BarPromenade.SecondaryMotion.Jacket.Material",
+            "BarPromenade.SecondaryMotion.Jacket.Area", "BarPromenade.SecondaryMotion.Jacket.FreeSurface"
         };
+
+        [UnityTest]
+        public IEnumerator Range_BodyRayWorkspaceReusesFreshPoseAndReleasesOwnedBuffers()
+        {
+            yield return SceneManager.LoadSceneAsync(SceneIds.MainMenu, LoadSceneMode.Single);
+            Assert.That(CombatTestStartService.TryStart(new CombatLoadoutSelection(
+                CombatWeaponId.Shotgun, CombatWeaponId.Shotgun)), Is.True);
+            yield return AwaitSelectedCombatRange();
+            PlacePair(8f);
+            Assert.That(root.SetOpponentFocus(false), Is.True);
+            yield return null;
+            CombatActor hero = root.Hero;
+            GameObject shotgun = hero.CarriedWeapon(CombatWeaponId.Shotgun);
+            CombatShotgunSling sling = shotgun.GetComponent<CombatShotgunSling>();
+            var contacts = (PlayerScarfBodyContacts)CarrySupportField(sling, "bodyContacts");
+            contacts.UpdatePose();
+            using (contacts.BeginNativeQueries()) { }
+            object workspace = CarrySupportField(contacts, "retainedNativeRayQueries");
+            int allocations = contacts.NativeRayBufferAllocationCount;
+            Assert.That(contacts.NativeRayWorkspaceCreateCount, Is.EqualTo(1));
+            Assert.That(allocations, Is.GreaterThan(0));
+            Assert.That(contacts.HasRetainedRayWorkspace, Is.True);
+
+            AssertCarryRayScopeLifetime(contacts, workspace);
+            var proxies = (Array)CarrySupportField(contacts, "proxies");
+            AssertCarryRayBroadPhase(contacts, proxies);
+            AssertCarryNativeNearest(contacts, proxies);
+            Vector3 probe = ((Player3DCharacterPresentation)root.Player.Visual).Registry.Anchors.Chest.position;
+            uint mask = proxies.Length == 32 ? uint.MaxValue : (1u << proxies.Length) - 1u;
+            using var recorder = CreateBodyAllocationRecorder();
+            // Warm the typed call path independently of reflection-based proofs.
+            RunCarryRayScopes(contacts, probe, mask, 1);
+            recorder.Start();
+            long started = Stopwatch.GetTimestamp();
+            RunCarryRayScopes(contacts, probe, mask, 32);
+            double milliseconds = (Stopwatch.GetTimestamp() - started) * 1000d / Stopwatch.Frequency;
+            long managedAllocations = StopBodyAllocationRecorder(recorder);
+            Assert.That(managedAllocations, Is.Zero,
+                "Warm body ray scopes must reuse both their native buffers and managed query storage.");
+            AssertCarryRetainedRayWorkspace(contacts, workspace, allocations);
+
+            Vector3 position = hero.transform.position;
+            Quaternion rotation = hero.transform.rotation;
+            int changedHull = -1;
+            Plane precedingPlane = default;
+            for (int index = 0; index < proxies.Length; index++)
+            {
+                var planes = CarrySupportField(proxies.GetValue(index), "WorldPlanes") as Plane[];
+                if (planes == null || planes.Length == 0 || !(bool)CarrySupportField(proxies.GetValue(index), "Active")) continue;
+                changedHull = index; precedingPlane = planes[0]; break;
+            }
+            Assert.That(changedHull, Is.GreaterThanOrEqualTo(0));
+            try
+            {
+                hero.transform.SetPositionAndRotation(position + new Vector3(.33f, .15f, -.21f),
+                    Quaternion.Euler(0f, 27f, 0f) * rotation);
+                contacts.UpdatePose();
+                var movedPlanes = (Plane[])CarrySupportField(proxies.GetValue(changedHull), "WorldPlanes");
+                Assert.That(movedPlanes[0].Equals(precedingPlane), Is.False,
+                    "The fresh-pose proof must exercise a changed world hull.");
+                // The same retained workspace must capture the moved hulls, not
+                // pass an equivalence proof against its preceding frame's pose.
+                AssertCarryRayBroadPhase(contacts, proxies);
+                AssertCarryNativeNearest(contacts, proxies);
+                AssertCarryRetainedRayWorkspace(contacts, workspace, allocations);
+            }
+            finally
+            {
+                hero.transform.SetPositionAndRotation(position, rotation);
+                contacts.UpdatePose();
+            }
+            root.ResetRound();
+            yield return null;
+            Assert.That(hero.CarriedWeapon(CombatWeaponId.Shotgun), Is.SameAs(shotgun));
+            Assert.That(CarrySupportField(sling, "bodyContacts"), Is.SameAs(contacts));
+            AssertCarrySupportExtrema(hero);
+            AssertCarryRetainedRayWorkspace(contacts, workspace, allocations);
+            AssertCarrySharedNormalUploads(((Player3DCharacterPresentation)root.Player.Visual).Registry);
+
+            // Disposing another owner with an open lease must release all of
+            // its buffers without invalidating this live sling's workspace.
+            var registry = ((Player3DCharacterPresentation)root.Player.Visual).Registry;
+            var disposable = new PlayerScarfBodyContacts(registry, useMeshSupportPlanes: true,
+                includeEquipment: false, poseSourceSkin: true, pointQuerySlots: 41);
+            try
+            {
+                disposable.UpdatePose();
+                var active = disposable.BeginNativeQueries();
+                object disposedWorkspace = CarrySupportField(disposable, "retainedNativeRayQueries");
+                disposable.Dispose();
+                active.Dispose();
+                disposable.Dispose();
+                Assert.Throws<ObjectDisposedException>(() => disposable.BeginNativeQueries());
+                AssertCarryReleasedRayWorkspace(disposable, disposedWorkspace);
+            }
+            finally { disposable.Dispose(); }
+            AssertCarryRetainedRayWorkspace(contacts, workspace, allocations);
+
+            if (Array.IndexOf(Environment.GetCommandLineArgs(), "-weaponCarryPerformanceCapture") >= 0)
+                CaptureCarryRayWorkspaceViews();
+            string report = string.Format(CultureInfo.InvariantCulture,
+                "Test body ray workspace: warm scope CPU={0:F4} ms/scope; managed allocations={1}; " +
+                "workspace creations={2}; native buffer allocations={3}; fresh pose/reset and exact ray/nearest proofs preserved.",
+                milliseconds / 32d, managedAllocations, contacts.NativeRayWorkspaceCreateCount, allocations);
+            string reportPath = Path.GetFullPath("TestResults/body-ray-workspace-performance.txt");
+            Directory.CreateDirectory(Path.GetDirectoryName(reportPath));
+            File.WriteAllText(reportPath, report + Environment.NewLine);
+            TestContext.Progress.WriteLine(report);
+            yield return SceneManager.LoadSceneAsync(SceneIds.MainMenu, LoadSceneMode.Single);
+            yield return null;
+            AssertCarryReleasedRayWorkspace(contacts, workspace);
+        }
+
+        private static void RunCarryRayScopes(PlayerScarfBodyContacts contacts, Vector3 point, uint mask, int count)
+        {
+            for (int iteration = 0; iteration < count; iteration++)
+            {
+                using var scope = contacts.BeginNativeQueries();
+                scope.Clip(point, Vector3.right, null, float.PositiveInfinity);
+                scope.TryInterval(0, out _, out _);
+                scope.PrepareNearest(point, mask, 0);
+                scope.TryNearest(0, out _, out _, out _);
+            }
+        }
+
+        private static void AssertCarryRayScopeLifetime(PlayerScarfBodyContacts contacts, object workspace)
+        {
+            var first = contacts.BeginNativeQueries();
+            try
+            {
+                Assert.Throws<InvalidOperationException>(() => contacts.BeginNativeQueries(),
+                    "An active query scope must reject an overlapping lease.");
+            }
+            finally { first.Dispose(); }
+            first.Dispose();
+            Assert.Throws<InvalidOperationException>(() => first.Clip(Vector3.zero, Vector3.right, null, float.PositiveInfinity),
+                "A closed lease cannot issue a query against a retained workspace.");
+            var second = contacts.BeginNativeQueries();
+            try
+            {
+                first.Dispose();
+                Assert.That(CarrySupportField(contacts, "nativeRayQueries"), Is.SameAs(workspace),
+                    "Closing an old or copied lease cannot close a newer scope.");
+                Assert.Throws<InvalidOperationException>(() => first.Clip(Vector3.zero, Vector3.right, null, float.PositiveInfinity),
+                    "An old lease cannot query another presentation's retained workspace.");
+            }
+            finally { second.Dispose(); }
+            Assert.That(CarrySupportField(contacts, "nativeRayQueries"), Is.Null);
+        }
+
+        private static void AssertCarryRetainedRayWorkspace(PlayerScarfBodyContacts contacts, object workspace, int allocations)
+        {
+            Assert.That(contacts.HasRetainedRayWorkspace, Is.True);
+            Assert.That(CarrySupportField(contacts, "retainedNativeRayQueries"), Is.SameAs(workspace));
+            Assert.That(contacts.NativeRayWorkspaceCreateCount, Is.EqualTo(1));
+            Assert.That(contacts.NativeRayBufferAllocationCount, Is.EqualTo(allocations),
+                "Movement, reset and repeated proofs must retain the warmed native query buffers.");
+        }
+
+        private static void AssertCarryReleasedRayWorkspace(PlayerScarfBodyContacts contacts, object workspace)
+        {
+            Assert.That(contacts.HasRetainedRayWorkspace, Is.False);
+            Assert.That(CarrySupportField(contacts, "nativeRayQueries"), Is.Null);
+            int buffers = 0;
+            foreach (FieldInfo field in workspace.GetType().GetFields(BindingFlags.Instance | BindingFlags.NonPublic))
+            {
+                if (!field.FieldType.IsGenericType || field.FieldType.GetGenericTypeDefinition() != typeof(Unity.Collections.NativeArray<>)) continue;
+                buffers++;
+                object buffer = field.GetValue(workspace);
+                Assert.That((bool)field.FieldType.GetProperty("IsCreated").GetValue(buffer), Is.False,
+                    "Destroyed body contact ownership retained its native buffer: " + field.Name);
+            }
+            Assert.That(buffers, Is.GreaterThan(0));
+        }
+
+        private static void AssertCarrySharedNormalUploads(Player3DAssetRegistry registry)
+        {
+            PlayerJacketCloth cloth = registry.GetComponent<PlayerJacketCloth>();
+            Assert.That(cloth, Is.Not.Null);
+            var surfaces = (PlayerJacketClothSurface[])CarrySupportField(cloth, "surfaces");
+            foreach (PlayerJacketClothSurface surface in surfaces)
+            {
+                surface.CommitSharedNormals();
+                long normals = surface.SharedNormalUploadCount, tangents = surface.SharedTangentUploadCount;
+                surface.CommitSharedNormals();
+                Assert.That(surface.SharedNormalUploadCount, Is.EqualTo(normals));
+                Assert.That(surface.SharedTangentUploadCount, Is.EqualTo(tangents),
+                    "An unchanged shared lighting basis must not upload another mesh array.");
+                CollectionAssert.AreEqual((List<Vector3>)CarrySupportField(surface, "normals"), surface.Mesh.normals);
+                var expectedTangents = (List<Vector4>)CarrySupportField(surface, "tangents");
+                if (expectedTangents.Count > 0) CollectionAssert.AreEqual(expectedTangents, surface.Mesh.tangents);
+            }
+        }
+
+        private void CaptureCarryRayWorkspaceViews()
+        {
+            Camera camera = root.CameraFollow.Camera;
+            Vector3 position = camera.transform.position;
+            Quaternion rotation = camera.transform.rotation;
+            float fieldOfView = camera.fieldOfView;
+            RenderTexture previousTarget = camera.targetTexture, previousActive = RenderTexture.active;
+            var target = new RenderTexture(640, 360, 24);
+            var frame = new Texture2D(640, 360, TextureFormat.RGB24, false);
+            try
+            {
+                camera.targetTexture = target;
+                camera.fieldOfView = 43f;
+                foreach (bool rear in new[] { false, true })
+                {
+                    Vector3 focus = root.Hero.transform.position + Vector3.up * 1.10f;
+                    Vector3 eye = root.Hero.transform.TransformPoint(rear ?
+                        new Vector3(1.65f, 1.4f, -2.3f) : new Vector3(-.8f, 1.35f, 2.75f));
+                    camera.transform.SetPositionAndRotation(eye, Quaternion.LookRotation(focus - eye));
+                    camera.Render();
+                    RenderTexture.active = target;
+                    frame.ReadPixels(new Rect(0f, 0f, 640, 360), 0, 0);
+                    frame.Apply();
+                    bool visible = false;
+                    foreach (Color32 pixel in frame.GetPixels32())
+                        if (pixel.r > 4 || pixel.g > 4 || pixel.b > 4) { visible = true; break; }
+                    Assert.That(visible, Is.True, "The cloth view requires a rendered production camera frame.");
+                    string path = Path.GetFullPath(Path.Combine("Captures", SceneIds.CombatTest, "WeaponCarry",
+                        rear ? "Test shotgun back.png" : "Test shotgun front.png"));
+                    Directory.CreateDirectory(Path.GetDirectoryName(path));
+                    File.WriteAllBytes(path, frame.EncodeToPNG());
+                    TestContext.Progress.WriteLine("Test cloth view: " + path);
+                }
+            }
+            finally
+            {
+                camera.targetTexture = previousTarget;
+                RenderTexture.active = previousActive;
+                camera.transform.SetPositionAndRotation(position, rotation);
+                camera.fieldOfView = fieldOfView;
+                UnityEngine.Object.DestroyImmediate(frame);
+                target.Release();
+                UnityEngine.Object.DestroyImmediate(target);
+            }
+        }
 
         [UnityTest]
         public IEnumerator Range_WeaponCarryHasBoundedPresentationWork()

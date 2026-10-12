@@ -5,6 +5,30 @@ namespace BarPromenade
     /// <summary>The bounded weapon choices offered by the isolated combat test.</summary>
     public enum CombatWeaponId { Crowbar, Pistol, Shotgun }
 
+    public enum CombatTestMode { Standard, Endless }
+
+    /// <summary>The complete isolated combat launch selection, consumed as one session value.</summary>
+    public readonly struct CombatTestSelection : IEquatable<CombatTestSelection>
+    {
+        public CombatLoadoutSelection Loadout { get; }
+        public CombatTestMode Mode { get; }
+        public static CombatTestSelection Default => new CombatTestSelection(CombatLoadoutSelection.Default);
+
+        public CombatTestSelection(CombatLoadoutSelection loadout, CombatTestMode mode = CombatTestMode.Standard)
+        {
+            if (mode != CombatTestMode.Standard && mode != CombatTestMode.Endless)
+                throw new ArgumentOutOfRangeException(nameof(mode));
+            Loadout = loadout;
+            Mode = mode;
+        }
+
+        public bool Equals(CombatTestSelection other) => Loadout == other.Loadout && Mode == other.Mode;
+        public override bool Equals(object obj) => obj is CombatTestSelection other && Equals(other);
+        public override int GetHashCode() => (Loadout.GetHashCode() * 397) ^ (int)Mode;
+        public static bool operator ==(CombatTestSelection left, CombatTestSelection right) => left.Equals(right);
+        public static bool operator !=(CombatTestSelection left, CombatTestSelection right) => !left.Equals(right);
+    }
+
     /// <summary>A pistol and exactly one long weapon, with an independent starting hand choice.</summary>
     public readonly struct CombatLoadoutSelection : IEquatable<CombatLoadoutSelection>
     {

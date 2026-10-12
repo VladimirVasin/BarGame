@@ -51,6 +51,12 @@ namespace BarPromenade
         private readonly Dictionary<Transform, LocalJoint> localJoints = new Dictionary<Transform, LocalJoint>();
         private readonly bool nativeQueriesEnabled;
         private NativeRayQueries nativeRayQueries;
+        private NativeRayQueries retainedNativeRayQueries;
+        private ulong nativeRayQueryLease;
+        private bool disposed;
+        internal int NativeRayWorkspaceCreateCount { get; private set; }
+        internal int NativeRayBufferAllocationCount { get; private set; }
+        internal bool HasRetainedRayWorkspace => retainedNativeRayQueries != null;
         private SupportWorkArena retainedSupportWork;
         internal int SupportArenaCreateCount { get; private set; }
         internal bool HasRetainedSupportWorkspace => retainedSupportWork != null;
@@ -1525,7 +1531,11 @@ namespace BarPromenade
 
         public void Dispose()
         {
-            nativeRayQueries?.Dispose();
+            if (disposed) return;
+            disposed = true;
+            nativeRayQueries = null;
+            retainedNativeRayQueries?.Dispose();
+            retainedNativeRayQueries = null;
             retainedSupportWork?.Dispose();
             retainedSupportWork = null;
         }
@@ -1927,14 +1937,63 @@ namespace BarPromenade
             return ref proxy.SeparatingPlane;
         }
 
-        // The world planes remain fixed until this short-lived scope ends.
-        // Other contact owners and queries outside a presentation stay managed.
-        internal IDisposable BeginNativeQueries()
+        // Each lease fixes fresh world planes; its scratch allocation belongs
+        // to the contact owner, rather than to one rendered presentation.
+        internal RayQueryScope BeginNativeQueries()
         {
-            if (!nativeQueriesEnabled) return null;
+            if (disposed) throw new ObjectDisposedException(nameof(PlayerScarfBodyContacts));
+            if (!nativeQueriesEnabled) return default;
             if (nativeRayQueries != null) throw new InvalidOperationException("Body ray query scopes cannot overlap.");
             using var workspaceProfile = RayWorkspaceMarker.Auto();
-            return nativeRayQueries = new NativeRayQueries(this);
+            if (retainedNativeRayQueries == null)
+            {
+                retainedNativeRayQueries = new NativeRayQueries(this);
+                NativeRayWorkspaceCreateCount++;
+            }
+            try { retainedNativeRayQueries.RefreshPose(); }
+            catch
+            {
+                retainedNativeRayQueries.Dispose();
+                retainedNativeRayQueries = null;
+                throw;
+            }
+            nativeRayQueries = retainedNativeRayQueries;
+            if (++nativeRayQueryLease == 0) nativeRayQueryLease++;
+            return new RayQueryScope(this, nativeRayQueryLease);
+        }
+
+        private NativeRayQueries RayQueriesForLease(ulong lease)
+        {
+            if (disposed) throw new ObjectDisposedException(nameof(PlayerScarfBodyContacts));
+            if (lease != nativeRayQueryLease || nativeRayQueries == null)
+                throw new InvalidOperationException("The body ray query scope has ended.");
+            return nativeRayQueries;
+        }
+
+        internal readonly struct RayQueryScope : IDisposable
+        {
+            private readonly PlayerScarfBodyContacts owner;
+            private readonly ulong lease;
+            internal RayQueryScope(PlayerScarfBodyContacts owner, ulong lease)
+            { this.owner = owner; this.lease = lease; }
+            private NativeRayQueries Queries => owner.RayQueriesForLease(lease);
+            public void PrepareNearest(Vector3 point, uint mask, int slot) => Queries.PrepareNearest(point, mask, slot);
+            public bool TryNearest(int proxy, out bool inside, out int plane, out float distance) =>
+                Queries.TryNearest(proxy, out inside, out plane, out distance);
+            public void Clip(Vector3 point, Vector3 direction, Player3DAnatomicalPart? excluded, float travel) =>
+                Queries.Clip(point, direction, excluded, travel);
+            public void ClipContaining(Vector3 point, Vector3 direction, Player3DAnatomicalPart? excluded, float travel) =>
+                Queries.ClipContaining(point, direction, excluded, travel);
+            public void ClipRemaining(Vector3 point, Vector3 direction, Player3DAnatomicalPart? excluded, float travel) =>
+                Queries.ClipRemaining(point, direction, excluded, travel);
+            public void ClipFromInside(Vector3 point, Vector3 direction, int proxy) => Queries.ClipFromInside(point, direction, proxy);
+            public bool IsEligible(int proxy) => Queries.IsEligible(proxy);
+            public bool TryInterval(int proxy, out float entry, out float exit) => Queries.TryInterval(proxy, out entry, out exit);
+            public void Dispose()
+            {
+                // A copied or already closed lease cannot close a newer one.
+                if (owner != null && owner.nativeRayQueryLease == lease) owner.nativeRayQueries = null;
+            }
         }
 
         private static int CalibrateRayArithmetic()
@@ -2023,98 +2082,116 @@ namespace BarPromenade
                 results = new PlayerBodyRayJob.Interval[owner.proxies.Length];
                 verified = new bool[owner.proxies.Length];
                 nearestCached = new PlayerBodyNearestJob.Result[owner.proxies.Length];
-                try
+            }
+
+            public void RefreshPose()
+            {
+                // Retained point stamps remain monotonic across leases. The first
+                // ray in every fresh pose advances the stamp, invalidating all
+                // old distance data without clearing the entire search tree.
+                hasCachedPoint = hasContainingMask = false;
+                nearestPreparedMask = nearestValidMask = eligibleMask = insideMask = containingMask = 0;
+                nearestQuerySlot = 0;
+                Array.Clear(results, 0, results.Length);
+                Array.Clear(verified, 0, verified.Length);
+                bool conservative = ExactRayArithmeticMode == 0;
+                bool nearestEnabled = owner.NativeNearestSupported;
+                int count = 0, packCount = 0;
+                int nodeCount = 0, orderCount = 0;
+                foreach (Proxy proxy in owner.proxies)
                 {
-                    bool conservative = ExactRayArithmeticMode == 0;
-                    bool nearestEnabled = owner.NativeNearestSupported;
-                    int count = 0, packCount = 0;
-                    int nodeCount = 0, orderCount = 0;
-                    foreach (Proxy proxy in owner.proxies)
+                    if (proxy.WorldPlanes != null)
                     {
-                        if (proxy.WorldPlanes != null)
-                        {
-                            count += proxy.WorldPlanes.Length;
-                            if (conservative) packCount += (proxy.WorldPlanes.Length + 3) / 4;
-                        }
-                        if (!(conservative || nearestEnabled) || proxy.ScoreTree == null) continue;
-                        nodeCount += proxy.ScoreTree.NodeCount;
-                        orderCount += proxy.ScoreTree.Planes.Length;
+                        count += proxy.WorldPlanes.Length;
+                        if (conservative) packCount += (proxy.WorldPlanes.Length + 3) / 4;
                     }
-                    planes = new NativeArray<Plane>(count, Allocator.TempJob, NativeArrayOptions.UninitializedMemory);
-                    ranges = new NativeArray<PlayerBodyRayJob.Range>(owner.proxies.Length, Allocator.TempJob, NativeArrayOptions.UninitializedMemory);
-                    eligible = new NativeArray<bool>(owner.proxies.Length, Allocator.TempJob, NativeArrayOptions.UninitializedMemory);
-                    inside = new NativeArray<bool>(owner.proxies.Length, Allocator.TempJob, NativeArrayOptions.UninitializedMemory);
-                    exactPointDistances = new NativeArray<float>(count, Allocator.TempJob, NativeArrayOptions.UninitializedMemory);
-                    exactPointVersions = new NativeArray<uint>(owner.proxies.Length, Allocator.TempJob);
-                    directResults = new NativeArray<PlayerBodyRayJob.DirectResult>(owner.proxies.Length, Allocator.TempJob, NativeArrayOptions.UninitializedMemory);
-                    candidateCounts = new NativeArray<int>(owner.proxies.Length, Allocator.TempJob, NativeArrayOptions.UninitializedMemory);
-                    // Calibrated nearest queries and conservative rays share
-                    // immutable search data and sequential traversal scratch.
-                    if (conservative || nearestEnabled)
-                    {
-                        trees = new NativeArray<PlayerBodyRayJob.Tree>(owner.proxies.Length, Allocator.TempJob, NativeArrayOptions.UninitializedMemory);
-                        nodes = new NativeArray<PlayerBodyRayJob.Node>(nodeCount, Allocator.TempJob, NativeArrayOptions.UninitializedMemory);
-                        order = new NativeArray<int>(orderCount, Allocator.TempJob, NativeArrayOptions.UninitializedMemory);
-                        stack = new NativeArray<PlayerBodyRayJob.Work>(PlayerBodyRayJob.StackCapacity, Allocator.TempJob, NativeArrayOptions.UninitializedMemory);
-                    }
-                    if (nearestEnabled)
-                    {
-                        nearestSeeds = new NativeArray<PlayerBodyNearestJob.Seed>(owner.proxies.Length, Allocator.TempJob, NativeArrayOptions.UninitializedMemory);
-                        nearestResults = new NativeArray<PlayerBodyNearestJob.Result>(owner.proxies.Length, Allocator.TempJob, NativeArrayOptions.UninitializedMemory);
-                    }
+                    if (!(conservative || nearestEnabled) || proxy.ScoreTree == null) continue;
+                    nodeCount += proxy.ScoreTree.NodeCount;
+                    orderCount += proxy.ScoreTree.Planes.Length;
+                }
+                RetainBuffer(ref planes, count);
+                RetainBuffer(ref ranges, owner.proxies.Length);
+                RetainBuffer(ref eligible, owner.proxies.Length);
+                RetainBuffer(ref inside, owner.proxies.Length);
+                RetainBuffer(ref exactPointDistances, count);
+                RetainBuffer(ref exactPointVersions, owner.proxies.Length, true);
+                RetainBuffer(ref directResults, owner.proxies.Length);
+                RetainBuffer(ref candidateCounts, owner.proxies.Length);
+                for (int i = 0; i < owner.proxies.Length; i++) eligible[i] = inside[i] = false;
+                // Calibrated nearest queries and conservative rays share
+                // immutable search data and sequential traversal scratch.
+                if (conservative || nearestEnabled)
+                {
+                    RetainBuffer(ref trees, owner.proxies.Length);
+                    RetainBuffer(ref nodes, nodeCount);
+                    RetainBuffer(ref order, orderCount);
+                    RetainBuffer(ref stack, PlayerBodyRayJob.StackCapacity);
+                }
+                if (nearestEnabled)
+                {
+                    RetainBuffer(ref nearestSeeds, owner.proxies.Length);
+                    RetainBuffer(ref nearestResults, owner.proxies.Length);
+                }
+                if (conservative)
+                {
+                    RetainBuffer(ref maximumDistances, nodeCount);
+                    RetainBuffer(ref distanceVersions, nodeCount, true);
+                    RetainBuffer(ref pointPlanes, count);
+                    RetainBuffer(ref proxyPointVersions, owner.proxies.Length, true);
+                    RetainBuffer(ref packRanges, owner.proxies.Length);
+                    RetainBuffer(ref planePacks, packCount);
+                    RetainBuffer(ref pointPacks, packCount);
+                    RetainBuffer(ref packPointVersions, owner.proxies.Length, true);
+                    RetainBuffer(ref crossings, count);
+                    RetainBuffer(ref candidateIndices, owner.proxies.Length * PlayerBodyRayJob.CandidateCapacity);
+                }
+                int first = 0;
+                int nodeFirst = 0, orderFirst = 0, packFirst = 0;
+                for (int i = 0; i < owner.proxies.Length; i++)
+                {
+                    Plane[] source = owner.proxies[i].WorldPlanes;
+                    int length = source?.Length ?? 0;
+                    ranges[i] = new PlayerBodyRayJob.Range { First = first, Count = length };
+                    if (length > 0) NativeArray<Plane>.Copy(source, 0, planes, first, length);
+                    first += length;
+                    if (!(conservative || nearestEnabled)) continue;
                     if (conservative)
                     {
-                        maximumDistances = new NativeArray<double>(nodeCount, Allocator.TempJob, NativeArrayOptions.UninitializedMemory);
-                        distanceVersions = new NativeArray<uint>(nodeCount, Allocator.TempJob);
-                        pointPlanes = new NativeArray<PlayerBodyRayJob.PointPlane>(count, Allocator.TempJob, NativeArrayOptions.UninitializedMemory);
-                        proxyPointVersions = new NativeArray<uint>(owner.proxies.Length, Allocator.TempJob);
-                        packRanges = new NativeArray<PlayerBodyRayJob.Range>(owner.proxies.Length, Allocator.TempJob, NativeArrayOptions.UninitializedMemory);
-                        planePacks = new NativeArray<PlayerBodyRayJob.PlanePack>(packCount, Allocator.TempJob, NativeArrayOptions.UninitializedMemory);
-                        pointPacks = new NativeArray<PlayerBodyRayJob.PointPack>(packCount, Allocator.TempJob, NativeArrayOptions.UninitializedMemory);
-                        packPointVersions = new NativeArray<uint>(owner.proxies.Length, Allocator.TempJob);
-                        crossings = new NativeArray<PlayerBodyRayJob.Crossing>(count, Allocator.TempJob, NativeArrayOptions.UninitializedMemory);
-                        candidateIndices = new NativeArray<int>(owner.proxies.Length * PlayerBodyRayJob.CandidateCapacity, Allocator.TempJob, NativeArrayOptions.UninitializedMemory);
+                        int groups = (length + 3) / 4;
+                        packRanges[i] = new PlayerBodyRayJob.Range { First = packFirst, Count = groups };
+                        for (int group = 0; group < groups; group++) planePacks[packFirst + group] = PackPlanes(source, group * 4);
+                        packFirst += groups;
                     }
-                    int first = 0;
-                    int nodeFirst = 0, orderFirst = 0, packFirst = 0;
-                    for (int i = 0; i < owner.proxies.Length; i++)
+                    PlaneScoreTree tree = owner.proxies[i].ScoreTree;
+                    trees[i] = tree == null ? default : new PlayerBodyRayJob.Tree
                     {
-                        Plane[] source = owner.proxies[i].WorldPlanes;
-                        int length = source?.Length ?? 0;
-                        ranges[i] = new PlayerBodyRayJob.Range { First = first, Count = length };
-                        if (length > 0) NativeArray<Plane>.Copy(source, 0, planes, first, length);
-                        first += length;
-                        if (!(conservative || nearestEnabled)) continue;
-                        if (conservative)
-                        {
-                            int groups = (length + 3) / 4;
-                            packRanges[i] = new PlayerBodyRayJob.Range { First = packFirst, Count = groups };
-                            for (int group = 0; group < groups; group++) planePacks[packFirst + group] = PackPlanes(source, group * 4);
-                            packFirst += groups;
-                        }
-                        PlaneScoreTree tree = owner.proxies[i].ScoreTree;
-                        trees[i] = tree == null ? default : new PlayerBodyRayJob.Tree
-                        {
-                            First = nodeFirst, Count = tree.NodeCount, OrderFirst = orderFirst,
-                            Origin = tree.CopyRayTree(nodes, nodeFirst, order, orderFirst)
-                        };
-                        if (tree == null) continue;
-                        nodeFirst += tree.NodeCount; orderFirst += tree.Planes.Length;
-                    }
-                    if (nearestEnabled)
-                    {
-                        var validation = new PlayerBodyNearestJob
-                        {
-                            Planes = planes, Ranges = ranges, Trees = trees, Nodes = nodes,
-                            Results = nearestResults, EligibleMask = owner.proxies.Length == 32 ? uint.MaxValue : (1u << owner.proxies.Length) - 1u,
-                            ValidateOnly = 1
-                        };
-                        PlayerBodyNearestJob.RunSynchronous(ref validation);
-                        for (int i = 0; i < owner.proxies.Length; i++)
-                            if (nearestResults[i].Status == 3) nearestValidMask |= 1u << i;
-                    }
+                        First = nodeFirst, Count = tree.NodeCount, OrderFirst = orderFirst,
+                        Origin = tree.CopyRayTree(nodes, nodeFirst, order, orderFirst)
+                    };
+                    if (tree == null) continue;
+                    nodeFirst += tree.NodeCount; orderFirst += tree.Planes.Length;
                 }
-                catch { Dispose(); throw; }
+                if (nearestEnabled)
+                {
+                    var validation = new PlayerBodyNearestJob
+                    {
+                        Planes = planes, Ranges = ranges, Trees = trees, Nodes = nodes,
+                        Results = nearestResults, EligibleMask = owner.proxies.Length == 32 ? uint.MaxValue : (1u << owner.proxies.Length) - 1u,
+                        ValidateOnly = 1
+                    };
+                    PlayerBodyNearestJob.RunSynchronous(ref validation);
+                    for (int i = 0; i < owner.proxies.Length; i++)
+                        if (nearestResults[i].Status == 3) nearestValidMask |= 1u << i;
+                }
+            }
+
+            private void RetainBuffer<T>(ref NativeArray<T> buffer, int count, bool clear = false) where T : struct
+            {
+                if (buffer.IsCreated && buffer.Length >= count) return;
+                if (buffer.IsCreated) buffer.Dispose();
+                buffer = new NativeArray<T>(count, Allocator.Persistent,
+                    clear ? NativeArrayOptions.ClearMemory : NativeArrayOptions.UninitializedMemory);
+                owner.NativeRayBufferAllocationCount++;
             }
 
             public void PrepareNearest(Vector3 point, uint requestedMask, int querySlot)

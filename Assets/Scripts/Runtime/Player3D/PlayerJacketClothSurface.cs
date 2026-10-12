@@ -58,6 +58,7 @@ namespace BarPromenade
         private readonly int foldShape;
         private readonly List<Vector3> normals = new List<Vector3>();
         private readonly List<Vector4> tangents = new List<Vector4>();
+        private bool sharedNormalsDirty, sharedTangentsDirty;
         private readonly bool normalMapped;
         private readonly PlayerJacketCloth.SurfaceBinding binding;
         private readonly Vector3[] bindActorPoints;
@@ -74,6 +75,8 @@ namespace BarPromenade
         internal uint GeometryVersion { get; private set; }
         internal int LastDeformGeometryWrites { get; private set; }
         internal bool LastHemCandidateReused { get; private set; }
+        internal long SharedNormalUploadCount { get; private set; }
+        internal long SharedTangentUploadCount { get; private set; }
         public int VertexCount => original.Length;
         internal bool IsHemPanel => panelShape != null && panelShape.HasPins;
         public Vector3 Original(int index) => original[index];
@@ -1143,19 +1146,26 @@ namespace BarPromenade
         public void SetWorldNormal(int index, Vector3 normal)
         {
             Vector3 local = Skin(index).transpose.MultiplyVector(normal).normalized;
-            normals[index] = local;
+            if (!normals[index].Equals(local))
+            { normals[index] = local; sharedNormalsDirty = true; }
             if (tangents.Count == original.Length)
             {
                 Vector4 tangent = tangents[index];
                 Vector3 direction = Vector3.ProjectOnPlane(new Vector3(tangent.x, tangent.y, tangent.z), local).normalized;
-                tangents[index] = new Vector4(direction.x, direction.y, direction.z, tangent.w);
+                Vector4 resolved = new Vector4(direction.x, direction.y, direction.z, tangent.w);
+                if (!tangent.Equals(resolved))
+                { tangents[index] = resolved; sharedTangentsDirty = true; }
             }
         }
 
         public void CommitSharedNormals()
         {
-            Mesh.SetNormals(normals);
-            if (tangents.Count == original.Length) Mesh.SetTangents(tangents);
+            // Only seam members can have changed these arrays. Untouched
+            // panels and an identical reconciled basis need no mesh upload.
+            if (sharedNormalsDirty)
+            { Mesh.SetNormals(normals); SharedNormalUploadCount++; sharedNormalsDirty = false; }
+            if (sharedTangentsDirty)
+            { Mesh.SetTangents(tangents); SharedTangentUploadCount++; sharedTangentsDirty = false; }
         }
 
         private sealed class ExactWeights : IEqualityComparer<BoneWeight>
@@ -1221,6 +1231,7 @@ namespace BarPromenade
             if (normalMapped) Mesh.RecalculateTangents();
             Mesh.GetNormals(normals);
             if (normalMapped) Mesh.GetTangents(tangents);
+            sharedNormalsDirty = sharedTangentsDirty = false;
             Mesh.RecalculateBounds();
             // Consumers can reuse this geometry between writes. A manual
             // ApplyAt or a passive copy can write several poses in one frame.

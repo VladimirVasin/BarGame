@@ -38,7 +38,7 @@ namespace BarPromenade
                 inputSuspended = releasedWhileSuspended = false;
             }
             if (!held) requireAttackRelease = false;
-            if (GameInput.WasPressed(GameInputAction.CombatMode, GameInputContext.Gameplay))
+            if (Mode == CombatTestMode.Standard && GameInput.WasPressed(GameInputAction.CombatMode, GameInputContext.Gameplay))
             { SetSparring(!Sparring); return false; }
             if (GameInput.WasPressed(GameInputAction.CombatFocus, GameInputContext.Gameplay))
                 SetOpponentFocus(!IsOpponentFocused);

@@ -24,6 +24,8 @@ namespace BarPromenade
         void CancelReload();
         void CancelAction();
         void Advance(float seconds);
+        /// <summary>Combat polygon's inter-encounter supply; shot identity and cooldown survive.</summary>
+        void RefillForEncounter();
         void Reset();
     }
 }

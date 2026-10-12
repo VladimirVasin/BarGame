@@ -187,6 +187,8 @@ namespace BarPromenade
             Hero.Journal = Opponent.Journal = duelJournal;
             Hero.ImpactReceived += RequestJournalSnapshot; Opponent.ImpactReceived += RequestJournalSnapshot;
             WriteJournalActorConfiguration(Hero); WriteJournalActorConfiguration(Opponent);
+            duelJournal.Record("combat_mode", f0: GameLog.Field("mode", Mode.ToString()),
+                f1: GameLog.Field("kills", EndlessKills));
             journalForceSnapshot = true;
             GameLog.Info("combat", "duel_journal_started", GameLog.Field("duel_session", duelJournal.SessionId),
                 GameLog.Field("round", journalRound));

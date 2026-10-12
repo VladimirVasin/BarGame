@@ -58,6 +58,23 @@ namespace BarPromenade
         public CombatWeaponCarryLocation CarriedWeaponLocation(CombatWeaponId id) =>
             FindCarriedWeapon(id)?.Location ?? throw new ArgumentOutOfRangeException(nameof(id));
 
+        private void RefillCarriedFirearms()
+        {
+            bool wasReloading = Firearm?.ReloadPending ?? false;
+            if (carriedWeapons != null)
+                foreach (CarriedWeaponRecord record in carriedWeapons)
+                {
+                    record.Firearm?.RefillForEncounter();
+                    UpdateStowedWeaponMechanics(record);
+                }
+            ResetPistolReloadAudio();
+            shotgunReloadCue = 0;
+            pistolReloadSettleRemaining = 0f;
+            if (!IsFirearm) return;
+            UpdatePistolMechanics();
+            if (wasReloading) BeginPoseBlend(force: true);
+        }
+
         private static float CarryPhaseDuration(CombatWeaponId id, bool draw) =>
             CombatWeaponCarryAssetProvider.PhaseDuration(id, draw) / CarryPlaybackSpeed;
 
