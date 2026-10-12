@@ -2,11 +2,132 @@ using System.Linq;
 using System.Collections.Generic;
 using NUnit.Framework;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 namespace BarPromenade.Tests.EditMode
 {
     public sealed class MountainRoadTests
     {
+        [Test]
+        [Category("MountainRoad")]
+        public void ForestChunks_PreserveGeometryWindBoundsShadowsAndOnePhysicalCollider()
+        {
+            MountainRoadPlan plan = MountainRoadPlanner.Create(GameSessionState.DefaultCitySeed);
+            var parent = new GameObject("Test mountain forest");
+            var references = new List<Mesh>();
+            GameObject referenceCollision = null;
+            try
+            {
+                GameObject forest = MountainRoadWorldBuilder.BuildForest(parent.transform, plan.Forest);
+                MeshCollider[] colliders = forest.GetComponentsInChildren<MeshCollider>(true);
+                Assert.That(colliders, Has.Length.EqualTo(1),
+                    "Only the original physical trunks own collision; rendering chunks add none.");
+                Assert.That(colliders[0].GetComponent<Renderer>(), Is.Null);
+                Assert.That(colliders[0].GetComponent<RuntimeGeneratedMeshOwner>(), Is.Not.Null);
+                MeshFilter[] filters = forest.GetComponentsInChildren<MeshFilter>(true);
+                Assert.That(filters.Length, Is.GreaterThan(6), "A full forest layer cannot remain one culling envelope.");
+                var generated = filters.Select(filter => filter.sharedMesh).ToList();
+                generated.Add(colliders[0].sharedMesh);
+
+                foreach (MountainRoadForestLayer layer in new[]
+                         { MountainRoadForestLayer.Physical, MountainRoadForestLayer.Mid, MountainRoadForestLayer.Far })
+                {
+                    MountainRoadForestDescriptor[] trees = plan.Forest.Where(tree => tree.Layer == layer).ToArray();
+                    string crownName = layer + " Conifer Crowns";
+                    string trunkName = layer + " Conifer Trunks";
+                    MeshFilter[] crowns = filters.Where(filter => filter.name == crownName).ToArray();
+                    MeshFilter[] trunks = filters.Where(filter => filter.name == trunkName).ToArray();
+                    int chunkCount = trees.Select(tree => new Vector2Int(
+                        Mathf.FloorToInt(tree.Position.x / MountainRoadWorldBuilder.ForestChunkSize),
+                        Mathf.FloorToInt(tree.Position.z / MountainRoadWorldBuilder.ForestChunkSize)))
+                        .Distinct().Count();
+                    Assert.That(crowns.Length, Is.EqualTo(chunkCount));
+                    Assert.That(trunks.Length, Is.EqualTo(chunkCount));
+                    Assert.That(trunks.Sum(filter => filter.sharedMesh.vertexCount), Is.EqualTo(trees.Length * 24));
+                    foreach (MeshFilter filter in crowns.Concat(trunks))
+                    {
+                        Assert.That(filter.transform.localPosition, Is.EqualTo(Vector3.zero));
+                        Assert.That(filter.transform.localRotation, Is.EqualTo(Quaternion.identity));
+                        Assert.That(filter.transform.localScale, Is.EqualTo(Vector3.one));
+                        Assert.That(filter.transform.parent.localPosition, Is.EqualTo(Vector3.zero));
+                        MeshRenderer renderer = filter.GetComponent<MeshRenderer>();
+                        Assert.That(renderer.shadowCastingMode, Is.EqualTo(ShadowCastingMode.On));
+                        Assert.That(renderer.receiveShadows, Is.True,
+                            "Every layer stays visible to the passing car's headlights.");
+                        Assert.That(filter.GetComponent<Collider>(), Is.Null);
+                        Assert.That(filter.GetComponent<RuntimeGeneratedMeshOwner>(), Is.Not.Null);
+                    }
+
+                    // Compare against the previous unpartitioned layer, not
+                    // against a second copy of the new grouping algorithm.
+                    Mesh reference = MountainRoadSceneryMeshFactory.CreateConiferCrowns(
+                        "Test forest reference", trees);
+                    references.Add(reference);
+                    var actual = new Dictionary<(Vector3, Vector2, Vector3), int>();
+                    Bounds layerBounds = crowns[0].sharedMesh.bounds;
+                    foreach (MeshFilter crown in crowns)
+                    {
+                        Mesh mesh = crown.sharedMesh;
+                        Vector3[] vertices = mesh.vertices;
+                        Vector2[] uvs = mesh.uv;
+                        Vector3[] normals = mesh.normals;
+                        var geometry = new Bounds(vertices[0], Vector3.zero);
+                        for (int vertex = 0; vertex < vertices.Length; vertex++)
+                        {
+                            var attributes = (vertices[vertex], uvs[vertex], normals[vertex]);
+                            actual.TryGetValue(attributes, out int occurrences);
+                            actual[attributes] = occurrences + 1;
+                            geometry.Encapsulate(vertices[vertex]);
+                        }
+                        Vector3 padding = Vector3.one * MountainRoadSceneryMeshFactory.WindCullingHeadroom;
+                        Assert.That(Vector3.Distance(mesh.bounds.min, geometry.min - padding), Is.LessThan(.001f));
+                        Assert.That(Vector3.Distance(mesh.bounds.max, geometry.max + padding), Is.LessThan(.001f));
+                        Assert.That(mesh.bounds.size.x, Is.LessThanOrEqualTo(
+                            MountainRoadWorldBuilder.ForestChunkSize + trees.Max(tree => tree.CrownRadius) * 2f + padding.x * 2f + .01f));
+                        Assert.That(mesh.bounds.size.z, Is.LessThanOrEqualTo(
+                            MountainRoadWorldBuilder.ForestChunkSize + trees.Max(tree => tree.CrownRadius) * 2f + padding.z * 2f + .01f));
+                        layerBounds.Encapsulate(mesh.bounds);
+                        Assert.That(crown.GetComponent<MeshRenderer>().sharedMaterial,
+                            Is.SameAs(MountainRoadSurfaceAppearance.FoliageMaterial));
+                    }
+                    Vector3[] expectedVertices = reference.vertices;
+                    Vector2[] expectedUvs = reference.uv;
+                    Vector3[] expectedNormals = reference.normals;
+                    var expected = Enumerable.Range(0, reference.vertexCount)
+                        .GroupBy(index => (expectedVertices[index], expectedUvs[index], expectedNormals[index]))
+                        .ToDictionary(group => group.Key, group => group.Count());
+                    Assert.That(actual.Count, Is.EqualTo(expected.Count));
+                    Assert.That(actual.All(entry => expected.TryGetValue(entry.Key, out int count) && count == entry.Value), Is.True,
+                        "Partitioning must preserve every crown vertex, UV and normal.");
+                    Assert.That(crowns.Sum(filter => filter.sharedMesh.triangles.Length), Is.EqualTo(reference.triangles.Length));
+                    Assert.That(Vector3.Distance(layerBounds.min, reference.bounds.min), Is.LessThan(.001f));
+                    Assert.That(Vector3.Distance(layerBounds.max, reference.bounds.max), Is.LessThan(.001f));
+                }
+
+                var physicalTrunks = plan.Forest.Where(tree => tree.Layer == MountainRoadForestLayer.Physical)
+                    .Select(tree => new RuntimeOrientedBox(
+                        tree.Position + Vector3.up * (tree.Height * .32f * .5f),
+                        Quaternion.Euler(0f, tree.YawDegrees, 0f),
+                        new Vector3(tree.TrunkRadius * 2f, tree.Height * .32f, tree.TrunkRadius * 2f))).ToArray();
+                referenceCollision = RuntimePrimitiveFactory.CreateCombinedOrientedBoxes(
+                    "Test original forest collision", parent.transform, physicalTrunks, Color.white, true,
+                    MountainRoadSurfaceAppearance.GetRecipe(MountainRoadSurfaceKind.BarkAndDeadwood).MetersPerTile,
+                    RuntimeWorldUvMode.BoxProjected);
+                Mesh expectedCollision = referenceCollision.GetComponent<MeshCollider>().sharedMesh;
+                Assert.That(colliders[0].sharedMesh.vertices, Is.EqualTo(expectedCollision.vertices));
+                Assert.That(colliders[0].sharedMesh.triangles, Is.EqualTo(expectedCollision.triangles));
+                Assert.That(colliders[0].sharedMesh.uv, Is.EqualTo(expectedCollision.uv));
+                UnityEngine.Object.DestroyImmediate(forest);
+                Assert.That(generated.All(mesh => mesh == null), Is.True,
+                    "Both presentation and collision meshes must be released with the forest.");
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(parent);
+                foreach (Mesh mesh in references) if (mesh != null) UnityEngine.Object.DestroyImmediate(mesh);
+            }
+        }
+
         [Test]
         [Category("MountainRoad")]
         public void DefaultPlan_BuildsAbsurdHighTenHairpinBridgeWorld()

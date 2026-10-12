@@ -19,6 +19,8 @@ namespace BarPromenade
         private readonly bool[] greeted = new bool[6];
         private readonly float[] speechRemaining = new float[6];
         private readonly float[] speechCooldown = new float[6];
+        internal const float AutomaticGreetingInterval = .2f;
+        private readonly float[] automaticGreetingCooldown = new float[6];
         private readonly NpcSpeaker[] speakers = new NpcSpeaker[6];
         private Transform hero;
         private NpcSpeechBubbleView bubbles;
@@ -192,6 +194,7 @@ namespace BarPromenade
             {
                 speechRemaining[i] = Mathf.Max(0f, speechRemaining[i] - dt);
                 speechCooldown[i] = Mathf.Max(0f, speechCooldown[i] - dt);
+                automaticGreetingCooldown[i] = Mathf.Max(0f, automaticGreetingCooldown[i] - dt);
             }
             AdvanceNeighbours(dt, minutes, gust, windDirection);
         }
@@ -424,7 +427,9 @@ namespace BarPromenade
         private void TryAutomaticGreeting(VillageResidentRole role, VillageResidentPresentation actor)
         {
             int index = (int)role;
-            if (!greeted[index] && hero != null &&
+            if (greeted[index] || automaticGreetingCooldown[index] > 0f) return;
+            automaticGreetingCooldown[index] = AutomaticGreetingInterval;
+            if (hero != null &&
                 Vector3.Distance(hero.position, actor.transform.position) < 4.8f) TryGreet(role);
         }
 

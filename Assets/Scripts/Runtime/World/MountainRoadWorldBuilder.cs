@@ -71,6 +71,8 @@ namespace BarPromenade
     /// </summary>
     public static class MountainRoadWorldBuilder
     {
+        internal const float ForestChunkSize = 48f;
+
         private static readonly Color RoadColor =
             new Color(0.115f, 0.125f, 0.118f, 1f);
         private static readonly Color TerminalApronColor =
@@ -556,10 +558,12 @@ namespace BarPromenade
                 shellBatch.GetComponent<Renderer>(), surface, color);
         }
 
-        private static void BuildForest(
+        internal static GameObject BuildForest(
             Transform parent,
             IReadOnlyList<MountainRoadForestDescriptor> forest)
         {
+            if (parent == null) throw new ArgumentNullException(nameof(parent));
+            if (forest == null) throw new ArgumentNullException(nameof(forest));
             var root = new GameObject("Batched Melancholic Forest");
             root.transform.SetParent(parent, false);
             MountainRoadForestLayer[] layers =
@@ -576,8 +580,13 @@ namespace BarPromenade
             };
             for (int layerIndex = 0; layerIndex < layers.Length; layerIndex++)
             {
-                var trees = new List<MountainRoadForestDescriptor>();
-                var trunks = new List<RuntimeOrientedBox>();
+                // The village uses the same 48 m partition. Preserve the
+                // authored layer and world-space vertices/UVs inside each
+                // part, while allowing camera and shadow culling to reject
+                // the rest of a long forest stand.
+                var chunks = new SortedDictionary<Vector2Int, List<MountainRoadForestDescriptor>>(
+                    Comparer<Vector2Int>.Create((a, b) => a.x != b.x ? a.x.CompareTo(b.x) : a.y.CompareTo(b.y)));
+                var physicalTrunks = new List<RuntimeOrientedBox>();
                 for (int index = 0; index < forest.Count; index++)
                 {
                     MountainRoadForestDescriptor tree = forest[index];
@@ -586,15 +595,17 @@ namespace BarPromenade
                         continue;
                     }
 
+                    var key = new Vector2Int(
+                        Mathf.FloorToInt(tree.Position.x / ForestChunkSize),
+                        Mathf.FloorToInt(tree.Position.z / ForestChunkSize));
+                    if (!chunks.TryGetValue(key, out List<MountainRoadForestDescriptor> trees))
+                    {
+                        trees = new List<MountainRoadForestDescriptor>();
+                        chunks.Add(key, trees);
+                    }
                     trees.Add(tree);
-                    float trunkHeight = tree.Height * 0.32f;
-                    trunks.Add(new RuntimeOrientedBox(
-                        tree.Position + Vector3.up * (trunkHeight * 0.5f),
-                        Quaternion.Euler(0f, tree.YawDegrees, 0f),
-                        new Vector3(
-                            tree.TrunkRadius * 2f,
-                            trunkHeight,
-                            tree.TrunkRadius * 2f)));
+                    if (tree.Layer == MountainRoadForestLayer.Physical)
+                        physicalTrunks.Add(CreateForestTrunkBox(tree));
                 }
 
                 // Every layer casts and receives now, the far one included.
@@ -604,32 +615,71 @@ namespace BarPromenade
                 // only thing between the beam and the void. A forest the
                 // headlights sweep without anything changing is the whole
                 // effect thrown away.
-                GameObject crowns = CreateMeshObject(
-                    $"{layers[layerIndex]} Conifer Crowns",
-                    root.transform,
-                    MountainRoadSceneryMeshFactory.CreateConiferCrowns(
+                foreach (KeyValuePair<Vector2Int, List<MountainRoadForestDescriptor>> entry in chunks)
+                {
+                    var chunk = new GameObject($"Forest {layers[layerIndex]} {entry.Key.x} {entry.Key.y}");
+                    chunk.transform.SetParent(root.transform, false);
+                    CreateMeshObject(
                         $"{layers[layerIndex]} Conifer Crowns",
-                        trees),
-                    crownColors[layerIndex],
-                    false,
-                    ShadowCastingMode.On,
-                    MountainRoadSurfaceKind.ConiferNeedles,
-                    MountainRoadSurfaceAppearance.FoliageMaterial);
-                GameObject trunkBatch =
-                    RuntimePrimitiveFactory.CreateCombinedOrientedBoxes(
+                        chunk.transform,
+                        MountainRoadSceneryMeshFactory.CreateConiferCrowns(
+                            $"{layers[layerIndex]} Conifer Crowns", entry.Value),
+                        crownColors[layerIndex],
+                        false,
+                        ShadowCastingMode.On,
+                        MountainRoadSurfaceKind.ConiferNeedles,
+                        MountainRoadSurfaceAppearance.FoliageMaterial);
+                    var trunks = new List<RuntimeOrientedBox>(entry.Value.Count);
+                    foreach (MountainRoadForestDescriptor tree in entry.Value)
+                        trunks.Add(CreateForestTrunkBox(tree));
+                    GameObject trunkBatch = RuntimePrimitiveFactory.CreateCombinedOrientedBoxes(
                         $"{layers[layerIndex]} Conifer Trunks",
-                        root.transform,
+                        chunk.transform,
                         trunks,
                         TrunkColor,
-                        layers[layerIndex] ==
-                            MountainRoadForestLayer.Physical,
+                        false,
                         BarkMetersPerTile,
                         RuntimeWorldUvMode.BoxProjected);
-                MountainRoadSurfaceAppearance.ApplyCombined(
-                    trunkBatch.GetComponent<Renderer>(),
-                    MountainRoadSurfaceKind.BarkAndDeadwood,
-                    TrunkColor);
+                    MountainRoadSurfaceAppearance.ApplyCombined(
+                        trunkBatch.GetComponent<Renderer>(),
+                        MountainRoadSurfaceKind.BarkAndDeadwood,
+                        TrunkColor);
+                }
+
+                // Rendering is partitioned; physics keeps the original one
+                // combined physical-trunk mesh rather than gaining colliders
+                // as a side effect. The generated mesh owner still releases it.
+                if (physicalTrunks.Count > 0)
+                {
+                    GameObject collision = RuntimePrimitiveFactory.CreateCombinedOrientedBoxes(
+                        "Physical Conifer Trunk Collision", root.transform,
+                        physicalTrunks, TrunkColor, true, BarkMetersPerTile,
+                        RuntimeWorldUvMode.BoxProjected);
+                    MeshRenderer renderer = collision.GetComponent<MeshRenderer>();
+                    renderer.enabled = false;
+                    MeshFilter filter = collision.GetComponent<MeshFilter>();
+                    if (Application.isPlaying)
+                    {
+                        UnityEngine.Object.Destroy(renderer);
+                        UnityEngine.Object.Destroy(filter);
+                    }
+                    else
+                    {
+                        UnityEngine.Object.DestroyImmediate(renderer);
+                        UnityEngine.Object.DestroyImmediate(filter);
+                    }
+                }
             }
+            return root;
+        }
+
+        private static RuntimeOrientedBox CreateForestTrunkBox(MountainRoadForestDescriptor tree)
+        {
+            float height = tree.Height * 0.32f;
+            return new RuntimeOrientedBox(
+                tree.Position + Vector3.up * (height * 0.5f),
+                Quaternion.Euler(0f, tree.YawDegrees, 0f),
+                new Vector3(tree.TrunkRadius * 2f, height, tree.TrunkRadius * 2f));
         }
 
         private static void BuildMisc(

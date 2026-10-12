@@ -27,7 +27,8 @@ namespace BarPromenade.Tests.PlayMode
         [Serializable] private sealed class WomanPerformanceRow
         {
             public string phase;
-            public double meanMilliseconds, medianMilliseconds, p95Milliseconds, bytesPerCall;
+            public bool surfaceIterationsMeasured;
+            public double meanMilliseconds, medianMilliseconds, p95Milliseconds, bytesPerCall, meanSurfaceIterations;
         }
 
         private static IEnumerator MeasureCanneryWomanPerformance(Camera camera, CityGameRoot city,
@@ -65,7 +66,18 @@ namespace BarPromenade.Tests.PlayMode
                             actor.transform.up) * headRest;
                         hair.ApplyAt(time += 1d / 60d, false, !work, default);
                     };
-                    rows.Add(MeasureWomanCpu(phase + "/hair", step, 240));
+                    rows.Add(MeasureWomanCpu(phase + "/hair", step, 240, hair));
+                    Vector3 distantObserver = actor.Head.position + actor.transform.forward * 32f;
+                    Action distantStep = () =>
+                    {
+                        actor.Head.rotation = Quaternion.AngleAxis((work ? 4f : 12f) * Mathf.Sin(sample++ * .055f),
+                            actor.transform.up) * headRest;
+                        hair.ApplyForObserver(time += 1d / 60d, false, !work, default, distantObserver, null);
+                    };
+                    rows.Add(MeasureWomanCpu(phase + "/hair-distant", distantStep, 240, hair));
+                    Assert.That(hair.SurfaceContactIterationLimit, Is.EqualTo(2));
+                    // The following detailed stage breakdown remains full quality.
+                    hair.ApplyAt(time += 1d / 60d, false, !work, default);
                     // Bind reflection once, outside measured loops. These fixed-pose
                     // stages explain the total; they are not added to it.
                     foreach (string method in new[] { "UpdateBody", "SolveSurfaceContacts", "MeasureSurfaceContacts", "RefreshSurfaceMatrices" })
@@ -96,7 +108,11 @@ namespace BarPromenade.Tests.PlayMode
                 Directory.CreateDirectory(directory);
                 File.WriteAllText(Path.Combine(directory, "cannery-woman-performance.json"), JsonUtility.ToJson(report, true));
                 foreach (WomanPerformanceRow row in rows)
-                    Debug.Log(FormattableString.Invariant($"CANNERY WOMAN CPU {row.phase}: mean {row.meanMilliseconds:F3} ms, p95 {row.p95Milliseconds:F3} ms, {row.bytesPerCall:F1} B/call."));
+                {
+                    string iterations = row.surfaceIterationsMeasured
+                        ? FormattableString.Invariant($"{row.meanSurfaceIterations:F2}") : "unmeasured";
+                    Debug.Log(FormattableString.Invariant($"CANNERY WOMAN CPU {row.phase}: mean {row.meanMilliseconds:F3} ms, p95 {row.p95Milliseconds:F3} ms, {row.bytesPerCall:F1} B/call, {iterations} surface iterations/call."));
+                }
             }
             finally
             {
@@ -105,11 +121,12 @@ namespace BarPromenade.Tests.PlayMode
             }
         }
 
-        private static WomanPerformanceRow MeasureWomanCpu(string phase, Action action, int samples)
+        private static WomanPerformanceRow MeasureWomanCpu(string phase, Action action, int samples, CanneryWomanHair hair = null)
         {
             for (int i = 0; i < 32; i++) action();
             var timings = new double[samples];
             double sum = 0d;
+            long iterations = hair != null ? hair.TotalSurfaceContactIterations : 0;
             long allocated = GC.GetAllocatedBytesForCurrentThread();
             for (int i = 0; i < samples; i++)
             {
@@ -123,7 +140,9 @@ namespace BarPromenade.Tests.PlayMode
             return new WomanPerformanceRow
             {
                 phase = phase, meanMilliseconds = sum / samples, medianMilliseconds = timings[samples / 2],
-                p95Milliseconds = timings[(int)(samples * .95f)], bytesPerCall = (double)allocated / samples
+                p95Milliseconds = timings[(int)(samples * .95f)], bytesPerCall = (double)allocated / samples,
+                surfaceIterationsMeasured = hair != null,
+                meanSurfaceIterations = hair != null ? (double)(hair.TotalSurfaceContactIterations - iterations) / samples : 0d
             };
         }
     }

@@ -16,8 +16,7 @@ namespace BarPromenade
     internal sealed class CityLitterInstancer
     {
         private readonly Dictionary<string, Template> templates = new Dictionary<string, Template>(StringComparer.Ordinal);
-        private readonly Dictionary<string, MaterialPropertyBlock> appearances =
-            new Dictionary<string, MaterialPropertyBlock>(StringComparer.Ordinal);
+        private CityLitterMaterialOwner appearances;
 
         internal CityLitterInstancer(CityLitterCatalog catalog)
         {
@@ -41,6 +40,12 @@ namespace BarPromenade
         internal Transform Place(Transform root, string id, CityLitterItem item, Vector3 position, Quaternion rotation,
             float scale, CityLitterGroundSample sample)
         {
+            if (root == null) throw new ArgumentNullException(nameof(root));
+            if (appearances == null || appearances.transform != root)
+            {
+                appearances = root.GetComponent<CityLitterMaterialOwner>();
+                if (appearances == null) appearances = root.gameObject.AddComponent<CityLitterMaterialOwner>();
+            }
             Template template = templates[item.Name];
             // Use every actual vertex to find the first supporting contact.
             // Tilting a rigid bottle is valid; bending it like grass is not.
@@ -63,17 +68,10 @@ namespace BarPromenade
             foreach (Renderer renderer in clone.GetComponentsInChildren<Renderer>(true))
             {
                 string role = renderer.name.Substring(renderer.name.LastIndexOf('_') + 1);
-                if (!appearances.TryGetValue(role, out MaterialPropertyBlock properties))
-                {
-                    Color tint = Tint(role);
-                    properties = new MaterialPropertyBlock();
-                    properties.SetColor("_BaseColor", tint); properties.SetColor("_Color", tint);
-                    properties.SetFloat("_Smoothness", role.StartsWith("Glass", StringComparison.Ordinal) ? .30f : .10f);
-                    properties.SetFloat("_Metallic", role == "Steel" ? .18f : 0f);
-                    appearances.Add(role, properties);
-                }
-                renderer.sharedMaterial = RuntimePrimitiveFactory.DefaultMaterial;
-                renderer.SetPropertyBlock(properties);
+                renderer.sharedMaterial = appearances.GetOrCreate(role, Tint(role));
+                // An otherwise compatible rigid renderer loses SRP Batcher and
+                // GPU Resident Drawer eligibility when it carries a property block.
+                renderer.SetPropertyBlock(null);
                 renderer.shadowCastingMode = item.Solid ? ShadowCastingMode.On : ShadowCastingMode.Off;
                 renderer.receiveShadows = true;
             }
@@ -134,6 +132,44 @@ namespace BarPromenade
                 case "Dark": return new Color(.09f, .10f, .08f);
                 default: throw new InvalidOperationException("Unknown shared litter surface: " + role);
             }
+        }
+    }
+
+    /// <summary>
+    /// One finite palette for a litter root, shared by all of its rigid copies.
+    /// Dormant worlds retain the palette; destroying the root releases it once.
+    /// </summary>
+    [ExecuteAlways]
+    internal sealed class CityLitterMaterialOwner : MonoBehaviour
+    {
+        private readonly Dictionary<string, Material> materials =
+            new Dictionary<string, Material>(StringComparer.Ordinal);
+
+        internal Material GetOrCreate(string role, Color tint)
+        {
+            if (materials.TryGetValue(role, out Material material)) return material;
+            material = new Material(RuntimePrimitiveFactory.DefaultMaterial)
+            {
+                name = "Litter " + role,
+                hideFlags = HideFlags.HideAndDontSave
+            };
+            material.SetColor("_BaseColor", tint);
+            material.SetColor("_Color", tint);
+            material.SetFloat("_Smoothness", role.StartsWith("Glass", StringComparison.Ordinal) ? .30f : .10f);
+            material.SetFloat("_Metallic", role == "Steel" ? .18f : 0f);
+            materials.Add(role, material);
+            return material;
+        }
+
+        private void OnDestroy()
+        {
+            foreach (Material material in materials.Values)
+            {
+                if (material == null) continue;
+                if (Application.isPlaying) Object.Destroy(material);
+                else Object.DestroyImmediate(material);
+            }
+            materials.Clear();
         }
     }
 }

@@ -435,8 +435,10 @@ namespace BarPromenade
             contactDiagnosticsDirty = true;
             if (!HasSurfaceBindings) return;
             for (int i = 0; i < PointCount; i++) contactStartPoints[i] = joints[i].position;
-            for (int iteration = 0; iteration < ContactIterations; iteration++)
+            for (int iteration = 0; iteration < surfaceContactIterationLimit; iteration++)
             {
+                LastSurfaceContactIterations++;
+                TotalSurfaceContactIterations++;
                 RefreshSurfaceMatrices();
                 Array.Clear(contactSystems, 0, contactSystems.Length);
                 bool corrected = AccumulateSampleBodyContacts();

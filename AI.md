@@ -41,6 +41,9 @@ repository evidence. This does not require running every test layer.
   is the requested deliverable or release gate; add a smoke only when requested
   or when packaged startup behavior is the changed contract.
 - Start from `ai/project-overview.md` and `ai/systems-map.md`.
+- **Optimize from the start.** Every change follows the mandatory
+  `Optimization from the start` rules in [AGENTS.md](AGENTS.md), from design
+  through focused verification; performance claims require measurements.
 - **New default NPCs use the global population.** Register a permanent ID/model/
   garment constraints in `DefaultNpcPopulation`; create through
   `DefaultNpcFactory.CreateForCharacter`. Whole-world allocation keeps face/hair/

@@ -102,21 +102,32 @@ Rules:
   approach the standard once described is retired. A deviation requires an
   explicit user decision recorded as an accepted architecture exception.
 
+## Optimization from the start
+
+Every future feature/fix/refactor/asset must consider CPU/GPU, memory/GC and
+loading from design onward; performance is a standing constraint.
+
+- Bound recurring work/populations/caches/build stages. Reuse assets, materials,
+  buffers and references; avoid repeated searches/loads and needless hot-loop
+  allocations. NonAlloc overflow needs grow/retry or a correct fallback.
+- Use events and suitable background update rates. Distance/visibility scales
+  presentation while preserving authoritative time/simulation, collision and
+  immediate input. Keep visual/wind bounds, rig/contact continuity, NPC identity
+  and pause/disable/destroy/scene cleanup correct.
+- Match techniques to workload/pipeline. Compression/LOD/culling/batching retain
+  accepted quality/canon. Claim gains from comparable measurements; identify
+  unmeasured expectations.
+- Follow FAST below; no broad profiling or unrelated rewrite is implied.
+
 ## Workspace retention
 
-Every gitignored path declares a keep-policy in `tools/workspace-budget.json`,
-enforced by `python tools/check-workspace.py`, which exits non-zero: `never`, a
-`retain` window in days, an `idle` window for a regenerable cache, `declared`
-for output a person curates, or `allowed`. **An ignored path with no row is an
-error**, so a new kind of leftover cannot appear unnoticed. The checker reads
-every sibling worktree from `git worktree list` — three idle `Library/` caches
-out there held 5.7 GB while every in-repo measure stayed green.
-
-`--sweep` lists what the manifest already declared removable and
-`--sweep --apply` removes it, refusing while Unity or Blender holds the
-checkout, refusing any tracked file, and refusing anything a live document
-cites. An ephemeral path that only grows has no owner: fix whatever writes it,
-or shorten the window — do not raise the number.
+Every ignored path needs a keep-policy in `tools/workspace-budget.json`:
+`never`, `retain` days, `idle` regenerable-cache days, `declared` curated output,
+or `allowed`. `python tools/check-workspace.py` checks all sibling worktrees
+from `git worktree list`; **a missing policy is an error**.
+`--sweep` lists manifest-declared removals; `--sweep --apply` refuses busy
+Unity/Blender checkouts, tracked files and live document references. For an
+ever-growing ephemeral path, fix its writer or shorten retention; never raise it.
 
 ## Quality and documentation
 
@@ -124,9 +135,8 @@ or shorten the window — do not raise the number.
 - Prefer reusing or extending focused/parameterized coverage. Add a new test
   only for a distinct contract or regression that existing coverage cannot
   express.
-- Follow the minimal verification policy below. Prefer one focused test that
-  also compiles its dependencies; do not require compilation plus both Unity
-  test layers for every change.
+- Follow minimal verification below: a focused test compiles dependencies;
+  do not stack compilation and both Unity test layers.
 - Update `ai/project-overview.md` or `ai/systems-map.md` when their facts change.
   There is no checked-in file tree: `git ls-files` and `rg` are the path
   reference, and unlike a copy they are never stale.
@@ -144,13 +154,10 @@ or shorten the window — do not raise the number.
   the type says how you write to it.** `python tools/check-docs.py` enforces both
   and is the primary check for a documentation change.
   - `ledger` (`ai/work-log.md`, `ai/release-notes.md`): **one entry per date, not
-    per slice.** A second session on the same day extends that day's entry; it
-    does not add another. Cap `3000 B` / `2000 B`. Say what changed, why it was
-    not obvious, and **name the check that proved it** — never a duration, a
-    pass count, a sample size, a path under `TestResults/` or `Captures/` (both
-    gitignored, so they are dead in any other clone), or a note about which
-    suites were skipped. Archiving is triggered by size, not by the calendar:
-    past the budget, move whole dates into `ai/archive/` until under the floor.
+    per slice**; extend today's entry. Caps `3000 B` / `2000 B`: changed facts,
+    why non-obvious, **named proof**. Never durations/counts/sample sizes,
+    `TestResults/`/`Captures/` paths or skipped-suite notes. At the byte budget,
+    archive whole dates into `ai/archive/` until under the floor; not by calendar.
   - `state` (`ai/current-world.md`, `README.md`, `tools/README.md`): describes
     the world **as it is now**. A change to reality is a rewrite of the affected
     paragraph, never a paragraph beside it.
@@ -180,9 +187,7 @@ valuable; it does not automatically authorize a broad regression run.
 - Make the requested change first, then run only the smallest relevant check.
   Do not run full suites, player builds, smoke checks or broad cross-review by
   default. Say what was intentionally not run in one short sentence **in the
-  reply to the user**. It does not belong in `ai/work-log.md`: a note that the
-  full suites were skipped is true of nearly every entry, and repeating it once
-  per session is what grew a fifth of the log into paraphrased boilerplate.
+  reply to the user**, never in `ai/work-log.md`.
 - In either mode, treat 30 seconds without useful progress as a soft timeout:
   inspect the process immediately instead of repeating long polling cycles.
 - Do not start a check already known to take several minutes unless it is the
@@ -194,10 +199,9 @@ valuable; it does not automatically authorize a broad regression run.
 
 ## Minimal verification policy
 
-For a normal request, use one primary check. A shared-framework change may use
-one additional focused check. Stop once they provide sufficient evidence; the
-default cap is one Unity invocation, or two narrowly filtered invocations for a
-shared framework.
+Normal work: one primary check; a shared framework may add one focused check.
+Stop when sufficient. Cap: one Unity invocation, two narrowly filtered
+invocations for a shared framework.
 
 - Documentation/comments: run `python tools/check-docs.py` and review the diff;
   also run `git diff --check`. No Unity test or build. The checker enforces
@@ -214,10 +218,10 @@ shared framework.
   change—an affected scene test, a manual smoke or a player build. Do not stack
   them by default.
 
-Never run Runtime, EditModeTests and PlayModeTests builds redundantly. Never run
-complete EditMode/PlayMode suites, a Windows player build and a startup smoke in
-the same ordinary task. Use existing tests for targeted or explicit release
-checks; their count does not justify a full run.
+Never build Runtime/EditModeTests/PlayModeTests redundantly or stack complete
+EditMode/PlayMode suites, a Windows build and startup smoke in ordinary work.
+Use focused or explicitly requested release checks; test counts never justify
+a full run.
 
 Record unrelated known failures briefly and continue the task; do not broaden
 the run or repair them outside scope.

@@ -11,6 +11,12 @@ namespace BarPromenade.Editor
     {
         public const string ModelFolder = "Assets/Resources/City/Port/";
         public const string ManifestPath = ModelFolder + "CityPort3D.json";
+        private static readonly string[] CompressedSurfacePaths =
+        {
+            ModelFolder + "Textures/PortConcreteAlbedo.png",
+            ModelFolder + "Textures/PortTimberAlbedo.png",
+            ModelFolder + "Textures/PortWarehousePlasterAlbedo.png"
+        };
         public override uint GetVersion() => 6;
 
         private void OnPreprocessModel()
@@ -58,6 +64,51 @@ namespace BarPromenade.Editor
             // uses the same 512px material budget as the city road sheets.
             importer.maxTextureSize = palette ? 32 : 512;
             importer.anisoLevel = palette ? 0 : 4;
+            if (Array.IndexOf(CompressedSurfacePaths, assetPath) >= 0)
+            {
+                // Limit the Windows compression pilot to ordinary colour
+                // surfaces; retain the existing resolution and sampling.
+                TextureImporterPlatformSettings standalone =
+                    importer.GetPlatformTextureSettings("Standalone");
+                standalone.overridden = true;
+                standalone.maxTextureSize = importer.maxTextureSize;
+                standalone.format = TextureImporterFormat.BC7;
+                standalone.textureCompression = TextureImporterCompression.CompressedHQ;
+                standalone.compressionQuality = 100;
+                standalone.crunchedCompression = false;
+                importer.SetPlatformTextureSettings(standalone);
+            }
+        }
+
+        [MenuItem("Bar Promenade/City Port/Reimport Windows Surface Textures")]
+        public static void ReimportCompressedSurfaceTextures()
+        {
+            foreach (string path in CompressedSurfacePaths)
+                AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceUpdate);
+            ValidateCompressedSurfaceTexturesOrThrow();
+        }
+
+        public static void ValidateCompressedSurfaceTexturesOrThrow()
+        {
+            foreach (string path in CompressedSurfacePaths)
+            {
+                var importer = AssetImporter.GetAtPath(path) as TextureImporter;
+                Texture2D texture = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+                if (importer == null || texture == null)
+                    throw new InvalidOperationException("Missing port surface: " + path);
+                TextureImporterPlatformSettings standalone =
+                    importer.GetPlatformTextureSettings("Standalone");
+                if (!standalone.overridden || standalone.maxTextureSize != 512 ||
+                    standalone.format != TextureImporterFormat.BC7 ||
+                    standalone.textureCompression != TextureImporterCompression.CompressedHQ ||
+                    standalone.compressionQuality != 100 || standalone.crunchedCompression ||
+                    importer.textureType != TextureImporterType.Default ||
+                    importer.textureShape != TextureImporterShape.Texture2D ||
+                    !importer.sRGBTexture || !importer.mipmapEnabled || importer.isReadable ||
+                    importer.filterMode != FilterMode.Bilinear ||
+                    importer.wrapMode != TextureWrapMode.Repeat || importer.anisoLevel != 4)
+                    throw new InvalidOperationException("Port surface needs the 512px Windows BC7 profile: " + path);
+            }
         }
 
         private void OnPostprocessModel(GameObject model)
@@ -88,6 +139,7 @@ namespace BarPromenade.Editor
         [MenuItem("Bar Promenade/City Port/Validate Imported Contract")]
         public static void ValidateOrThrow()
         {
+            ValidateCompressedSurfaceTexturesOrThrow();
             const string palettePath = ModelFolder + "PortPalette.png";
             var paletteImporter = AssetImporter.GetAtPath(palettePath) as TextureImporter;
             Texture2D palette = AssetDatabase.LoadAssetAtPath<Texture2D>(palettePath);

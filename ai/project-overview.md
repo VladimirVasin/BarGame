@@ -55,14 +55,15 @@ modal priority, balance recovery stays live. Unfocused movement input=0;
 return waits for neutral WASD+left stick. Impulses remain. Look/debug stay local;
 rebinding UI is not implemented.
 
-Area travel loads its destination in Single mode. City/MountainRoad/AlpineVillage share
-incremental builders and synchronous `Build` entry points. The overlay stays
-until root completion: 20% scene loading, 80% construction. An 8 ms best-effort
-budget yields between indivisible stages; a stage may exceed it. World time,
-input and gameplay audio pause until ready. Owners release activation/state on teardown.
-Village terrain and surface interpolation share exact lazy grid heights, keyed
-by plan/brook identity; replacing either clears the cache. Snow evaluates only
-retained field vertices; path refinement reuses edge work.
+Area travel uses Single loading; City/Village doors retain one dormant exterior.
+Builders share incremental/synchronous entry points. Overlay: 20% loading/80%
+construction; 8 ms best-effort yields between indivisible stages. Time/input/
+gameplay audio pause until ready; teardown releases ownership. Village terrain
+and surfaces share lazy grid heights keyed by plan/brook, invalidated on change;
+snow evaluates retained vertices and paths reuse edge work.
+
+Litter palette, forest chunks, hair detail, greetings and port BC7:
+accepted `2026-10-13` decision in [architecture-notes.md](architecture-notes.md).
 
 The accepted `2026-09-06` loading UI uses a static painterly image per directed
 City ↔ MountainRoad ↔ AlpineVillage edge and a bottom bar; cross-area map travel

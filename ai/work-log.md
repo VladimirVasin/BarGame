@@ -3,6 +3,34 @@
 Newest outcomes/checks first. Archive whole dates at budget: [policy](README.md).
 Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-2026-08.md).
 
+## 2026-10-13 — Bounded world presentation costs
+
+- City litter now shares a finite root-owned material palette without MPBs;
+  dormant roots retain it and teardown leaves other palettes/defaults alive.
+  Material colour reads need a floating-point tolerance.
+- Mountain forest rendering uses spatial chunks within each original layer.
+  Whole-layer geometry/UV/normal and collision oracles retain wind bounds,
+  shadows and one physical collider; its renderless trunk buffer is duplicated.
+- Cannery hair transitions surface refinement with distance/camera hysteresis;
+  physical time, contacts, pause and nearby continuity remain intact. EditMode
+  fixtures release authored animation graphs explicitly.
+- Village automatic greeting retries use simulation time; explicit E remains
+  immediate. Saturated visibility rays grow/retry rather than omit a wall;
+  later queries reuse the allocation.
+- Three ordinary port albedos use Windows BC7 at the existing resolution/mips/
+  sampling. Actual imported resources are checked, not only requested settings.
+- User made optimization a permanent design constraint for future work.
+  `AGENTS.md` owns the rules; `AI.md` exposes them each session. Behavior/canon
+  and FAST scope remain binding; comparable measurements distinguish gains
+  from expectations. `check-docs.py` and diff review verify the memory update.
+- Checks: `WorldPresentationBudgetTests`, `CityPortSurfaceImportTests`,
+  `RenderedLitter_SharesItsPaletteWithoutBlocksAndReleasesOnlyItsOwnMaterials`,
+  `ForestChunks_PreserveGeometryWindBoundsShadowsAndOnePhysicalCollider`,
+  `AreaCaptureFixture.WorldPerformance`, `check-docs.py`, `git diff --check`.
+  City/forest frames and nearby hair return reviewed; worker frame selection
+  checks visible coworker bounds as well as physics occlusion.
+  Optional woman CPU capture distinguishes unmeasured iteration fields.
+
 ## 2026-10-12 — Cloth, weapon switching and endless combat
 
 - Jacket: one commit/live hem/contact/stretch/native/reference-bone gates;

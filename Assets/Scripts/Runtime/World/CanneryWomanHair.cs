@@ -10,6 +10,10 @@ namespace BarPromenade
         public const int ChainCount = 3, PointsPerChain = 4, PointCount = ChainCount * PointsPerChain;
         public const float RootBendLimitDegrees = 20f, MiddleBendLimitDegrees = 30f, TipBendLimitDegrees = 40f;
         public const double MaximumContinuousStep = .25d;
+        internal const float FullDetailEnterDistance = 20f, FullDetailExitDistance = 24f;
+        private const float MinimumDetailedScreenHeight = .025f, HairHeight = .6f;
+        private const int ReducedContactIterations = 2;
+        private const float DetailTransitionSeconds = .2f;
         private const float StepSeconds = 1f / 120f;
         private static readonly float[] BendCosines = { Mathf.Cos(RootBendLimitDegrees * Mathf.Deg2Rad),
             Mathf.Cos(MiddleBendLimitDegrees * Mathf.Deg2Rad), Mathf.Cos(TipBendLimitDegrees * Mathf.Deg2Rad) };
@@ -31,6 +35,9 @@ namespace BarPromenade
         private Vector3 contactTransportVelocity;
         private readonly Vector3[] headRestDirections = new Vector3[ChainCount];
         private Matrix4x4[] bodyToWorld, worldToBody;
+        private bool fullDetail = true;
+        private float contactIterationBudget = ContactIterations;
+        private int surfaceContactIterationLimit = ContactIterations;
 
         [Serializable] private struct BodyPlane { public Vector3 Normal; public float Distance; }
         [Serializable] private struct BodySample
@@ -58,6 +65,9 @@ namespace BarPromenade
         public float MaximumDisplacement { get; private set; }
         public float MaximumLengthError { get; private set; }
         public float LastStepSeconds { get; private set; }
+        internal int SurfaceContactIterationLimit => surfaceContactIterationLimit;
+        internal int LastSurfaceContactIterations { get; private set; }
+        internal long TotalSurfaceContactIterations { get; private set; }
         public float PeakIntegratedDisplacement { get; private set; }
         public float PeakConstrainedDisplacement { get; private set; }
         public float PeakBoneCorrectionDegrees { get; private set; }
@@ -120,6 +130,44 @@ namespace BarPromenade
 
         public void ApplyAt(double seconds, bool paused, bool outside, WindSample wind)
         {
+            // Direct authoring/inspection samples keep the original exact contract.
+            fullDetail = true;
+            contactIterationBudget = surfaceContactIterationLimit = ContactIterations;
+            ApplyPhysicalPose(seconds, paused, outside, wind);
+        }
+
+        internal void ApplyForObserver(double seconds, bool paused, bool outside, WindSample wind,
+            Vector3? observerPosition, Camera camera, bool forceFullDetail = false)
+        {
+            if (head == null) return;
+            float distance = observerPosition.HasValue ? Vector3.Distance(head.position, observerPosition.Value) : 0f;
+            float screenHeight = 0f;
+            if (camera != null && camera.isActiveAndEnabled)
+                screenHeight = camera.orthographic ? HairHeight / Mathf.Max(.001f, camera.orthographicSize * 2f) :
+                    HairHeight / Mathf.Max(.001f, 2f * Vector3.Distance(head.position, camera.transform.position) *
+                        Mathf.Tan(camera.fieldOfView * .5f * Mathf.Deg2Rad));
+            fullDetail = ShouldUseFullDetail(distance, screenHeight, fullDetail, forceFullDetail);
+            int target = fullDetail ? ContactIterations : ReducedContactIterations;
+            float elapsed = !paused && initialized && IsFinite(seconds)
+                ? Mathf.Clamp((float)(seconds - previousSeconds), 0f, (float)MaximumContinuousStep) : 0f;
+            contactIterationBudget = !initialized || resetPending ? target : Mathf.MoveTowards(contactIterationBudget,
+                target, elapsed * (ContactIterations - ReducedContactIterations) / DetailTransitionSeconds);
+            surfaceContactIterationLimit = Mathf.CeilToInt(contactIterationBudget);
+            // Both tiers consume every physical step. Only refinement work changes;
+            // returning nearby has neither skipped elapsed time nor a fresh pose reset.
+            ApplyPhysicalPose(seconds, paused, outside, wind);
+        }
+
+        internal static bool ShouldUseFullDetail(float distance, float screenHeight, bool wasFull, bool force = false)
+        {
+            if (force || !float.IsFinite(distance) || !float.IsFinite(screenHeight)) return true;
+            return distance <= (wasFull ? FullDetailExitDistance : FullDetailEnterDistance) ||
+                screenHeight >= MinimumDetailedScreenHeight;
+        }
+
+        private void ApplyPhysicalPose(double seconds, bool paused, bool outside, WindSample wind)
+        {
+            LastSurfaceContactIterations = 0;
             if (head == null || joints.Length != PointCount) return;
             EnsureState();
             RestoreBindPose();
@@ -361,7 +409,12 @@ namespace BarPromenade
         }
 
         private static bool IsFinite(double value) => !double.IsNaN(value) && !double.IsInfinity(value);
-        private void OnEnable() => resetPending = true;
+        private void OnEnable()
+        {
+            resetPending = true;
+            fullDetail = true;
+            contactIterationBudget = surfaceContactIterationLimit = ContactIterations;
+        }
         private void OnDisable() { resetPending = true; initialized = false; }
     }
 }

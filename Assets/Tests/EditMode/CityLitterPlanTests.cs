@@ -249,5 +249,82 @@ namespace BarPromenade.Tests.EditMode
             for (int index = 0; index < plan.Parts.Count; index++)
                 Assert.That(first.Parts[index].Id, Is.EqualTo(plan.Parts[index].Id));
         }
+
+        [Test]
+        public void RenderedLitter_SharesItsPaletteWithoutBlocksAndReleasesOnlyItsOwnMaterials()
+        {
+            var root = new GameObject("Test discarded objects");
+            var otherRoot = new GameObject("Test retained roadside objects");
+            var palette = new Dictionary<string, Material>();
+            Material defaults = RuntimePrimitiveFactory.DefaultMaterial;
+            Color originalTint = defaults.GetColor("_BaseColor");
+            float originalSmoothness = defaults.GetFloat("_Smoothness");
+            float originalMetallic = defaults.GetFloat("_Metallic");
+            try
+            {
+                CityLitterCatalog catalog = CityLitterCatalog.Load();
+                var instancer = new CityLitterInstancer(catalog);
+                foreach (CityLitterItem item in catalog.Items)
+                {
+                    for (int copy = 0; copy < 2; copy++)
+                    {
+                        Transform placed = instancer.Place(root.transform,
+                            copy == 0 ? "Test discarded object" : "Test spare discarded object",
+                            item, Vector3.zero, Quaternion.identity, 1f,
+                            (Vector2 point, out float height) => { height = 0f; return true; });
+                        foreach (Renderer renderer in placed.GetComponentsInChildren<Renderer>(true))
+                        {
+                            string role = renderer.name.Substring(renderer.name.LastIndexOf('_') + 1);
+                            Material material = renderer.sharedMaterial;
+                            Assert.That(renderer.HasPropertyBlock(), Is.False,
+                                "Rigid litter must remain eligible for SRP/GPU resident batching.");
+                            Assert.That(material, Is.Not.SameAs(defaults));
+                            Assert.That(material.shader, Is.SameAs(defaults.shader));
+                            Assert.That(material.enableInstancing, Is.EqualTo(defaults.enableInstancing));
+                            Assert.That(material.GetFloat("_Smoothness"),
+                                Is.EqualTo(role.StartsWith("Glass") ? .30f : .10f).Within(.0001f));
+                            Assert.That(material.GetFloat("_Metallic"),
+                                Is.EqualTo(role == "Steel" ? .18f : 0f).Within(.0001f));
+                            Assert.That(material.GetColor("_Color"), Is.EqualTo(material.GetColor("_BaseColor")));
+                            if (palette.TryGetValue(role, out Material shared))
+                                Assert.That(material, Is.SameAs(shared), "A surface role owns one shared material.");
+                            else palette.Add(role, material);
+                        }
+                    }
+                }
+                Assert.That(palette.Count, Is.InRange(1, 13), "The palette cannot grow with placement count.");
+                Assert.That(Vector4.Distance(palette["GlassGreen"].GetColor("_BaseColor"),
+                    new Color(.16f, .24f, .16f)), Is.LessThan(.00001f));
+                Assert.That(Vector4.Distance(palette["Steel"].GetColor("_BaseColor"),
+                    new Color(.35f, .37f, .33f)), Is.LessThan(.00001f));
+                Assert.That(defaults.GetColor("_BaseColor"), Is.EqualTo(originalTint));
+                Assert.That(defaults.GetFloat("_Smoothness"), Is.EqualTo(originalSmoothness));
+                Assert.That(defaults.GetFloat("_Metallic"), Is.EqualTo(originalMetallic));
+
+                root.SetActive(false);
+                Assert.That(palette.Values.All(material => material != null), Is.True,
+                    "An exterior dormant behind an interior door must retain its palette.");
+                root.SetActive(true);
+                var otherInstancer = new CityLitterInstancer(catalog);
+                Transform other = otherInstancer.Place(otherRoot.transform, "Test retained discarded object",
+                    catalog.Items[0], Vector3.zero, Quaternion.identity, 1f,
+                    (Vector2 point, out float height) => { height = 0f; return true; });
+                Material[] retained = other.GetComponentsInChildren<Renderer>(true)
+                    .Select(renderer => renderer.sharedMaterial).ToArray();
+                UnityEngine.Object.DestroyImmediate(root);
+                Assert.That(palette.Values.All(material => material == null), Is.True,
+                    "Generated shared materials must be released with their root.");
+                Assert.That(retained.All(material => material != null), Is.True,
+                    "Destroying one litter root must leave the other root's materials alive.");
+                Assert.That(defaults != null, Is.True, "The packaged shared material is never owned by litter.");
+                UnityEngine.Object.DestroyImmediate(otherRoot);
+                Assert.That(retained.All(material => material == null), Is.True);
+            }
+            finally
+            {
+                if (root != null) UnityEngine.Object.DestroyImmediate(root);
+                if (otherRoot != null) UnityEngine.Object.DestroyImmediate(otherRoot);
+            }
+        }
     }
 }

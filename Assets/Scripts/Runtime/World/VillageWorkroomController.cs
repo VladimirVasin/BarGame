@@ -15,6 +15,7 @@ namespace BarPromenade
         }
 
         private readonly Work repair = new Work(), sewing = new Work();
+        private RaycastHit[] visibilityHits = new RaycastHit[16];
         private AlpineVillageRoot village;
         private VillageLifeAudio sounds;
         private Transform hammer, mitten, cloth, box, lid, flap, rail, thread;
@@ -289,8 +290,25 @@ namespace BarPromenade
             if (village.Player.GameObject == null) return false;
             Vector3 from = village.Player.GameObject.transform.position + Vector3.up * 1.5f;
             Vector3 to = actor.Head.position;
-            foreach (RaycastHit hit in Physics.RaycastAll(from, (to - from).normalized, Vector3.Distance(from, to), ~0, QueryTriggerInteraction.Ignore))
-                if (!hit.transform.IsChildOf(actor.transform) && !hit.transform.IsChildOf(village.Player.GameObject.transform)) return false;
+            return HasClearResidentView(from, to, village.Player.GameObject.transform, actor.transform);
+        }
+
+        internal bool HasClearResidentView(Vector3 from, Vector3 to, Transform viewer, Transform resident)
+        {
+            Vector3 offset = to - from;
+            float distance = offset.magnitude;
+            if (distance <= .000001f) return true;
+            int count;
+            while (true)
+            {
+                count = Physics.RaycastNonAlloc(from, offset / distance, visibilityHits, distance, ~0, QueryTriggerInteraction.Ignore);
+                // A saturated unordered result can omit the wall behind our own
+                // colliders. Grow and repeat; never report a truncated ray as clear.
+                if (count < visibilityHits.Length) break;
+                Array.Resize(ref visibilityHits, checked(visibilityHits.Length * 2));
+            }
+            for (int i = 0; i < count; i++)
+                if (!visibilityHits[i].transform.IsChildOf(resident) && !visibilityHits[i].transform.IsChildOf(viewer)) return false;
             return true;
         }
         public string WorkLine(VillageResidentRole role) => role == VillageResidentRole.RepairNeighbor ?

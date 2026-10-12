@@ -2,6 +2,15 @@
 
 ## Current facts
 
+- **Accepted — 2026-10-13, bounded world presentation:**
+  User: finite litter palette/root lifetime/no MPB; forest 48 m/layer chunks,
+  same geometry/UV/wind bounds/shadows/one collider (duplicate trunk buffer).
+  Cannery hair keeps physical time/constraints: 8→2 refinement/0.2 s, 20/24 m;
+  screen height≥0.025/forced/authoring keeps full. Village auto retry
+  0.2 simulation s/E immediate; visibility buffer grows/retries saturation.
+  PortConcrete/PortTimber/PortWarehousePlaster: Windows BC7 HQ, same512/mips/
+  sampling. World/story unchanged; FPS unmeasured.
+
 - **Accepted architecture exception — 2026-10-12, warehouse polygon:**
   seed+levels/reset keeps/flat:test-only;0story-hazards-fall dmg;
   §6/art§15a/9checks.
@@ -1590,23 +1599,18 @@
   keep it that way. A static field holding a `UnityEngine.Object` is the worst
   case, because it survives as a DESTROYED object rather than as null.
 - **Accepted:** Appearance is verified by rendering, not by asserting.
-  `Assets/Tests/PlayMode/AreaCaptureFixture.cs` photographs a world scene
-  through its own main camera, so the frames carry the real lighting and
-  post-processing. The captures are `[Explicit]`: they are not tests and must
-  be run one area at a time, because heavy scene-loading fixtures run together
-  trip `ExitPlayModeTask`.
+  `Assets/Tests/PlayMode/AreaCaptureFixture.cs` uses the world's main camera,
+  lighting and post-processing. `[Explicit]` captures run sequentially by area;
+  concurrent heavy scene-loading fixtures trip `ExitPlayModeTask`.
 - **Accepted:** Interior generators share `tools/interior_kit.py` — wall runs
   with real openings, swept mouldings, chamfers, panelled leaves, turned legs.
   It holds no value belonging to any one room, which is the only test of
   whether it is general; the next interior must import it unedited.
 - **Accepted:** A Blender-authored interior gets NO material assets. Every
-  renderer shares `RuntimePrimitiveLit` and receives its sheet, tint,
-  smoothness and metallic through a `MaterialPropertyBlock`, which is the same
-  path `BarSurfaceAppearance.Apply` takes for a runtime primitive. This
-  diverges from the church, which creates one material asset per slot, and it
-  is deliberate: the bar's appearance varies by district, and a district tint
-  is a `_BaseColor` in a property block. Baking materials into the FBX or into
-  per-slot assets would need a material set per district per part.
+  renderer shares `RuntimePrimitiveLit` with sheet/tint/smoothness/metallic MPBs,
+  as `BarSurfaceAppearance.Apply` does. Bar district `_BaseColor` varies through
+  MPBs; FBX/per-slot assets would multiply materials by district and part.
+  Church keeps its separate per-slot material assets.
 - **Accepted:** Model UVs are baked in Blender at each sheet's measured
   metres-per-tile, so `_BaseMap_ST` stays the identity. `SurfaceAppearance`
   remains the source of those numbers but is not applied to an authored
@@ -5531,16 +5535,12 @@
   and fall reactions remain visible. Fixed Home/Stairwell and contextual
   camera owners remain non-orbiting; the bus keeps its separate seated bounds.
 - **Accepted — Runtime presentation:** City geometry, primitive colors and the
-  shared interior are built at runtime. The hero, ambient City pedestrians and
-  the stairwell cat all load as low-poly 3D prefabs; the runtime draws no
-  world-space gameplay sprites any more (`BillboardSprite` is deleted — the
-  cat was its last consumer).
-- **Accepted — Shared rendering state:** Primitive colors use
-  `MaterialPropertyBlock`; every ordinary runtime primitive explicitly shares
-  the serialized Resources `RuntimePrimitiveLit` URP material so Player builds
-  do not depend on Editor-only primitive defaults. Emissive and atmosphere
-  effects reuse their cached specialized resources, with no per-instance
-  materials or runtime `Shader.Find`.
+  shared interior are runtime-built. Hero, City pedestrians and stairwell cat
+  load low-poly 3D prefabs; no world gameplay sprites/`BillboardSprite` remain.
+- **Accepted — Shared rendering state:** Ordinary primitives share Resources
+  `RuntimePrimitiveLit`/MPBs; litter uses its finite palette decision above.
+  Emissive/atmosphere resources are cached; no per-instance materials,
+  Editor-only defaults or runtime `Shader.Find`.
 - **Accepted — Geometry-locked district facade albedos remain a bounded legacy
   path:** the player-home shell, the supermarket's crossing-only fallback and a
   prototype crossing the Home

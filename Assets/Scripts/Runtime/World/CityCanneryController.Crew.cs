@@ -6,6 +6,7 @@ namespace BarPromenade
     public sealed partial class CityCanneryController
     {
         private VillageResidentPresentation[] workers;
+        private Camera hairDetailCamera;
         public CanneryWomanPresentation Woman { get; private set; }
         public CanneryReceiverPresentation Receiver { get; private set; }
         private Transform driverPelvis, driverSeat, driverLeftHand, driverRightHand, driverFoot;
@@ -28,6 +29,7 @@ namespace BarPromenade
 
         private void CreateWorkers()
         {
+            hairDetailCamera = GetComponentInParent<CityGameRoot>()?.Camera;
             DefaultNpcCatalog.GetPrefab();
             string[] names = { "Cannery Receiver", "Cannery Preparation Worker", "Cannery Seamer",
                 "Cannery Retort and Packing Worker", "Fish Delivery Driver" };
@@ -130,8 +132,9 @@ namespace BarPromenade
             if (Woman != null && Woman.gameObject.activeInHierarchy)
             {
                 Woman.ApplyFaceAt(LifeSeconds, FactoryConversation?.Bubbles);
-                Woman.Hair?.ApplyAt(LifeSeconds, !GameSessionState.IsGameTimeRunning || GameTimeScaleRuntime.IsPaused,
-                    factoryWaitingOutside[CanneryWomanPresentation.WorkerSlot], GameWeatherRules.EvaluateCurrentWind());
+                Woman.Hair?.ApplyForObserver(LifeSeconds, !GameSessionState.IsGameTimeRunning || GameTimeScaleRuntime.IsPaused,
+                    factoryWaitingOutside[CanneryWomanPresentation.WorkerSlot], GameWeatherRules.EvaluateCurrentWind(),
+                    hero != null ? hero.position : (Vector3?)null, hairDetailCamera, ForcePresentation);
             }
         }
 

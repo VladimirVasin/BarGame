@@ -24,7 +24,7 @@ Only these statuses apply. Product scope cuts are `Deferred` in
 | Lodge stove | Soft fire; both doors shut: whole lodge warm, else indoor 2.5 m. | `LodgeStove{Interaction,SessionState}` | Current |
 | Lodge shelter | Doors/wind/lamp/seats/photo/hatch; 7 wood maps. Gap: cot/tea stubs. | `LodgeShelter*`, `LodgeInteriorInteractions`, `LodgeWoodAppearance`, `VillageInteriorAcoustics` | Partial |
 | Village paths | Ground junctions; brook bridge. | `AlpineVillage{JunctionPlan,FootbridgePlan}` | Current |
-| Village life | Six named residents/31 homes; help persists. | `AlpineVillageLifeController`, `VillageOutdoorHelpController`, `VillageHousehold{Progress,Catalog}` | Current |
+| Village life | Six residents/31 homes; help persists; automatic greetings 5 Hz, E immediate; reusable visibility buffer. | `AlpineVillageLifeController`, `VillageWorkroomController`, `VillageHousehold*` | Current |
 | Narrative inspection | 24 outdoor + 4 lodge RU/EN; low/right hatch close-up, compact choice, lid attempt→bottom reply. | `NarrativeInteraction*`, `AlpineVillageNarrative*` | Current |
 | Independent rules assembly | Calendar/day schedule, input priorities and temporary vehicle ownership have no Unity dependencies. | `Scripts/Rules`, `BarPromenade.Rules.asmdef` | Current |
 | Shared input actions | Shared bindings; pause/transitions take priority. | `GameInput`, `GameInputPolicy` | Current |
@@ -68,10 +68,10 @@ Only these statuses apply. Product scope cuts are `Deferred` in
 | City elevation and exterior stairs | Validated elevation plans keep external stairs and walkable ground consistent with collision. | `CityElevation{Plan,Planner,Validator,Rebaser,StairPlacement}`, `CityTerrainSurfacePlan` | Current |
 | City mountain boundary and open tunnel | `default-coastal` closes west/south around the non-traversable river cave and one gate-free `8 x 5.5 m` portal. | `CityMountainBoundary*`, `CityMountainBackdrop*` | Current |
 | Eastern mainland view | Closed post; shared descent/lamp/traffic datum, city on valley floor. One pooled mast, passive distance. | `CityEastExit*`, `CityEastRoadProfile`, `CityEastDistance*` | Current |
-| City litter | 36 passive Blender variants: dense eastern verge, sparse city-wide off roads/scenes, no near repeats; solids block. | `CityLitterCatalog`, `CityLitter{Plan,Planner,WorldBuilder,Instancer}`, `CityEastLitter*` | Current |
+| City litter | 36 Blender variants off roads; dense east/no near repeats; solids block; finite shared palette per root. | `CityLitterCatalog`, `CityLitter{Plan,Planner,WorldBuilder,Instancer}`, `CityEastLitter*` | Current |
 | Eastern checkpoint guards | Distinct guards alternate physical patrols; shared pair/E bubbles, passive shoulder rifles, pause/cleanup. | `CityEastGuard{Duty,Plan,Controller}`, `EastGuardActor` | Current |
 | South tunnel travel stub | Walking triggers the authored refusal/return. Gap: no pedestrian transition to Mountain Road. | `CityTunnelTravel{Plan,Planner,Controller,CrossingModel}`, `InteractionPromptView` | Partial |
-| Mountain Road area | Open curved tunnel tail, ten hairpins, gorge bridge, forest, summit cafe and cableway; plans own surfaces. | `MountainRoad*`, `MountainRoadBridge*` | Current |
+| Mountain Road area | Tunnel, ten hairpins, bridge, cafe/cableway; forest render chunks 48 m, all shadows, one trunk collider. | `MountainRoad*`, `MountainRoadBridge*` | Current |
 | Village above the cableway | Snow bowl, abandoned settlement, ski base; mother's house. Gap: dinner/news/Cat and chapel interior. | `AlpineVillage{ExpansionPlan,SnowPlan,SnowTreading,PeripheralStorm*,WorldBuilder}` | Partial |
 | Mother's house interior | Two bedrooms and a passive bathroom in a supported rear wing; shared windows, walkable stairs, five cameras. | `MothersHouseInterior*`, `MothersHouseWindowLayout`, `HomeFixedCameraController` | Current |
 | The cableway carries | Both arrivals approach aboard, dock and exit with a working safety bar; ride leases release on completion/teardown. | `AlpineCableway{RidePlan,CabinSeat,RideController,RideFactory}` | Current |
@@ -86,7 +86,7 @@ Only these statuses apply. Product scope cuts are `Deferred` in
 | District public places | Four public lots retain validated street approaches, causal props and bounded local practicals. | `CityDistrictPointOfInterest{Plan,Planner,WorldBuilder}`, `CityPointOfInterestSurfaceAppearance` | Current |
 | Drying yard babushkas | Staged drying-yard residents share authored domestic actions and local speech/prop ownership. | `DryingYardBabushka{Provider,Plan,Presentation,Factory}`, `CityPedestrianHandProps` | Current |
 | Cannery and fish deliveries | FIFO/weighing gate loading; driver lunches on bench; shared speech/clear routes. Gap: empty-tare return. | `CityCannery*`, `CityFishSupply{Cycle,Session}`, `WorldDistancePresentation` | Partial |
-| Cannery woman | Seamer/painted face/own actions; hair/body contacts; shared speech/pause, one outfit. | `CanneryWoman{AssetProvider,Presentation,Hair,Wardrobe}`, `CanneryWomanAssetSetup` | Current |
+| Cannery woman | Seamer/painted face/actions; hair contacts 8→2 afar with continuous time; camera/near keeps full; speech/pause. | `CanneryWoman{AssetProvider,Presentation,Hair,Wardrobe}`, `CanneryWomanAssetSetup` | Current |
 | Cannery receiver | Athletic 1.96 m actor/ski hat/3D glasses/painted face; own actions, shared contacts/speech/pause. | `CanneryReceiver{AssetProvider,Presentation}`, `CanneryReceiverAssetSetup` | Current |
 | Authored NPC outfits | Fixed outfits and modular items/slots/coverage/presets; editor selection. Gameplay clothing UI/save Deferred. | `NpcWardrobe`, `CanneryWomanWardrobe`, `NpcWardrobeEditor` | Current |
 | Global default NPCs | Unique resource paths; stable IDs, four faces/three hair colors/modular clothes; no repeats. | `DefaultNpcCatalog`, `DefaultNpcPopulation`, `DefaultNpcFactory`, `DefaultNpcAppearance` | Current |
