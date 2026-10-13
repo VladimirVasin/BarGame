@@ -52,6 +52,8 @@ namespace BarPromenade.Tests.PlayMode
             string method = TestContext.CurrentContext.Test.MethodName;
             if (method != nameof(Range_ThreeWeaponSecondaryMotionUsesPreparedPlaybackWithoutColdReloads) &&
                 method != nameof(Range_CrowbarAttackAndBlockUseFacingWithoutTargetFocus) &&
+                method != nameof(Range_CorpseTraversalKeepsMovementFootClearanceAndPoolReuse) &&
+                method != nameof(Range_CombatClothRemainsRigidAcrossMovementWeaponsAndLifecycle) &&
                 method != nameof(Range_ZombieLungeUsesHandsObstaclesPauseAndRecycledBodies))
                 Assert.Ignore("Retired human duel fixture: this legacy scenario has not been migrated to zombie-only combat.");
             zombieFixtureStarted = true;

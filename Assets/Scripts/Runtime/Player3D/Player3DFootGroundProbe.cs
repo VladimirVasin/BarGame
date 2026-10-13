@@ -91,7 +91,7 @@ namespace BarPromenade
         /// <summary>Ankle to toe, along the foot's captured forward.</summary>
         public const float ToeDistance = 0.14f;
 
-        private static readonly RaycastHit[] Hits = new RaycastHit[16];
+        private static RaycastHit[] Hits = new RaycastHit[16];
 
         private readonly SkinnedMeshRenderer[][] soleRenderers;
         private readonly Transform ignoredRoot;
@@ -352,20 +352,22 @@ namespace BarPromenade
             // FootProbe layer, invisible to every obstacle sweep) count as
             // ground; any other trigger — a door volume, the cat's reach —
             // is not a floor and is skipped.
-            int count = Physics.RaycastNonAlloc(
+            RaycastHit[] contacts = CombatTraversalQueries.Raycast(
                 origin,
                 Vector3.down,
-                Hits,
+                ref Hits,
                 ProbeDistance,
                 FootProbeSurface.ProbeMask,
-                triggers);
+                triggers,
+                out int count);
             float closestDistance = float.PositiveInfinity;
             bool found = false;
             float ceiling = actorGroundY + MaximumRise;
             for (int index = 0; index < count; index++)
             {
-                RaycastHit hit = Hits[index];
+                RaycastHit hit = contacts[index];
                 if (hit.collider == null ||
+                    CombatCorpseTraversal.IsCorpse(hit.collider) ||
                     (hit.collider.isTrigger &&
                      hit.collider.gameObject.layer !=
                      FootProbeSurface.LayerIndex) ||

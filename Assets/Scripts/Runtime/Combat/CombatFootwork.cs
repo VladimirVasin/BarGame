@@ -17,8 +17,8 @@ namespace BarPromenade
         private readonly Vector3[] restFeet = new Vector3[2], feet = new Vector3[2], correction = new Vector3[2];
         private readonly Quaternion[] restRotations = new Quaternion[2], rotations = new Quaternion[2], swingRotations = new Quaternion[2];
         private readonly float[] legLengths = new float[2];
-        private readonly RaycastHit[] groundHits = new RaycastHit[16], sweepHits = new RaycastHit[16];
-        private readonly Collider[] landingOverlaps = new Collider[16];
+        private RaycastHit[] groundHits = new RaycastHit[16], sweepHits = new RaycastHit[16];
+        private Collider[] landingOverlaps = new Collider[16];
         private readonly bool[] supportConfirmed = { true, true };
         private readonly Vector3[] presentedFeet = new Vector3[2];
         private readonly Vector3[] authoredStepFeet = new Vector3[2];
@@ -615,12 +615,11 @@ namespace BarPromenade
             float radius = Mathf.Max(.01f, body.radius - body.skinWidth);
             float half = Mathf.Max(0f, body.height * .5f - body.radius);
             JournalActor.JournalPhysicsQuery();
-            int count = Physics.CapsuleCastNonAlloc(centre + Vector3.up * half, centre - Vector3.up * half,
-                radius, travel.normalized, sweepHits, travel.magnitude, ~0, QueryTriggerInteraction.Ignore);
-            if (count == sweepHits.Length) return false;
+            RaycastHit[] contacts = CombatTraversalQueries.CapsuleCast(centre + Vector3.up * half, centre - Vector3.up * half,
+                radius, travel.normalized, ref sweepHits, travel.magnitude, ~0, QueryTriggerInteraction.Ignore, out int count);
             for (int i = 0; i < count; i++)
-                if (sweepHits[i].collider != null && !sweepHits[i].collider.transform.IsChildOf(frame) &&
-                    sweepHits[i].normal.y < .65f) return false;
+                if (contacts[i].collider != null && !contacts[i].collider.transform.IsChildOf(frame) &&
+                    !CombatCorpseTraversal.IsCorpse(contacts[i].collider) && contacts[i].normal.y < .65f) return false;
             return true;
         }
 
@@ -1096,14 +1095,13 @@ namespace BarPromenade
             float distance = travel.magnitude;
             if (distance < .001f) return true;
             JournalActor?.JournalPhysicsQuery();
-            int count = Physics.SphereCastNonAlloc(start, .045f, travel / distance,
-                sweepHits, distance, ~0, QueryTriggerInteraction.Ignore);
-            if (count == sweepHits.Length)
-            { JournalActor?.JournalQueryBufferFull(10, "foot_travel", sweepHits.Length); return false; }
+            RaycastHit[] contacts = CombatTraversalQueries.SphereCast(start, .045f, travel / distance,
+                ref sweepHits, distance, ~0, QueryTriggerInteraction.Ignore, out int count);
             for (int i = 0; i < count; i++)
             {
-                RaycastHit hit = sweepHits[i];
-                if (hit.collider != null && !hit.collider.transform.IsChildOf(frame) && hit.normal.y < .65f) return false;
+                RaycastHit hit = contacts[i];
+                if (hit.collider != null && !hit.collider.transform.IsChildOf(frame) &&
+                    !CombatCorpseTraversal.IsCorpse(hit.collider) && hit.normal.y < .65f) return false;
             }
             return true;
         }
@@ -1111,12 +1109,11 @@ namespace BarPromenade
         private bool LandingClear(Vector3 point)
         {
             JournalActor?.JournalPhysicsQuery();
-            int count = Physics.OverlapSphereNonAlloc(point + Vector3.up * .025f, .04f,
-                landingOverlaps, ~0, QueryTriggerInteraction.Ignore);
-            if (count == landingOverlaps.Length)
-            { JournalActor?.JournalQueryBufferFull(11, "foot_landing", landingOverlaps.Length); return false; }
+            Collider[] contacts = CombatTraversalQueries.OverlapSphere(point + Vector3.up * .025f, .04f,
+                ref landingOverlaps, ~0, QueryTriggerInteraction.Ignore, out int count);
             for (int i = 0; i < count; i++)
-                if (landingOverlaps[i] != null && !landingOverlaps[i].transform.IsChildOf(frame)) return false;
+                if (contacts[i] != null && !contacts[i].transform.IsChildOf(frame) &&
+                    !CombatCorpseTraversal.IsCorpse(contacts[i])) return false;
             return true;
         }
 
@@ -1125,14 +1122,12 @@ namespace BarPromenade
             grounded = desired;
             float nearest = float.PositiveInfinity;
             JournalActor?.JournalPhysicsQuery();
-            int count = Physics.RaycastNonAlloc(desired + Vector3.up * .55f, Vector3.down,
-                groundHits, 1.1f, ~0, QueryTriggerInteraction.Ignore);
-            if (count == groundHits.Length)
-            { JournalActor?.JournalQueryBufferFull(12, "foot_ground", groundHits.Length); return false; }
+            RaycastHit[] contacts = CombatTraversalQueries.Raycast(desired + Vector3.up * .55f, Vector3.down,
+                ref groundHits, 1.1f, ~0, QueryTriggerInteraction.Ignore, out int count);
             for (int i = 0; i < count; i++)
             {
-                RaycastHit hit = groundHits[i];
-                if (hit.collider == null || hit.collider.GetComponentInParent<CombatActor>() != null ||
+                RaycastHit hit = contacts[i];
+                if (hit.collider == null || CombatCorpseTraversal.IsCorpse(hit.collider) || hit.collider.GetComponentInParent<CombatActor>() != null ||
                     hit.normal.y < .65f || hit.distance >= nearest) continue;
                 nearest = hit.distance;
                 grounded = hit.point + Vector3.up * Mathf.Max(.025f, restFeet[side].y);
@@ -1282,14 +1277,14 @@ namespace BarPromenade
             float length = travel.magnitude;
             if (length < .00001f) return;
             JournalActor?.JournalPhysicsQuery();
-            int count = Physics.SphereCastNonAlloc(origin, .12f, travel / length, sweepHits, length, ~0,
-                QueryTriggerInteraction.Ignore);
+            RaycastHit[] contacts = CombatTraversalQueries.SphereCast(origin, .12f, travel / length, ref sweepHits, length, ~0,
+                QueryTriggerInteraction.Ignore, out int count);
             float distance = length;
-            if (count == sweepHits.Length) distance = 0f;
             for (int i = 0; i < count; i++)
             {
-                RaycastHit hit = sweepHits[i];
-                if (hit.collider == null || hit.collider.GetComponentInParent<CombatActor>() != null || hit.normal.y > .65f) continue;
+                RaycastHit hit = contacts[i];
+                if (hit.collider == null || CombatCorpseTraversal.IsCorpse(hit.collider) ||
+                    hit.collider.GetComponentInParent<CombatActor>() != null || hit.normal.y > .65f) continue;
                 distance = Mathf.Min(distance, Mathf.Max(0f, hit.distance - .04f));
             }
             if (distance >= length) return;

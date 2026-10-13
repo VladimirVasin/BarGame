@@ -68,6 +68,7 @@ namespace BarPromenade
         private readonly Transform actor;
         private int weaponAccessVertex = -1;
         private bool acceptedHemCandidate;
+        private bool rigPoseActive;
         private HemFoldSet acceptedHemFold;
         private PlayerScarfBodyContacts acceptedHemOwner;
         private uint acceptedHemPoseVersion, acceptedHemEquipmentVersion;
@@ -251,18 +252,19 @@ namespace BarPromenade
 
         private float CurrentFold()
         {
-            float fold = 0f;
-            if (foldDelta != null)
-            {
-                float angle = Vector3.Angle(elbow.position - shoulder.position, wrist.position - elbow.position);
-                float minimumCosine = Mathf.Cos(135f * Mathf.Deg2Rad * .5f);
-                float cosine = Mathf.Max(minimumCosine, Mathf.Cos(angle * Mathf.Deg2Rad * .5f));
-                fold = Mathf.Clamp01((1f / cosine - 1f) / (1f / minimumCosine - 1f));
-                // The composed vertices already contain this shape; renderer skinning must not add it twice.
-                if (Renderer.GetBlendShapeWeight(foldShape) != 0f)
-                    Renderer.SetBlendShapeWeight(foldShape, 0f);
-            }
-            return fold;
+            // The composed vertices already contain this shape; renderer skinning must not add it twice.
+            if (foldDelta != null && Renderer.GetBlendShapeWeight(foldShape) != 0f)
+                Renderer.SetBlendShapeWeight(foldShape, 0f);
+            return RigFold();
+        }
+
+        private float RigFold()
+        {
+            if (foldDelta == null) return 0f;
+            float angle = Vector3.Angle(elbow.position - shoulder.position, wrist.position - elbow.position);
+            float minimumCosine = Mathf.Cos(135f * Mathf.Deg2Rad * .5f);
+            float cosine = Mathf.Max(minimumCosine, Mathf.Cos(angle * Mathf.Deg2Rad * .5f));
+            return Mathf.Clamp01((1f / cosine - 1f) / (1f / minimumCosine - 1f));
         }
 
         public Matrix4x4 Skin(int vertex) => skins[vertexSkins[vertex]];
@@ -733,6 +735,53 @@ namespace BarPromenade
         {
             acceptedHemCandidate = false;
             weaponAccessVertex = -1;
+        }
+
+        internal void ApplyRigAppearance(Transform grip, float amount, bool useSharedSnapshot)
+        {
+            LastDeformGeometryWrites = 0;
+            LastHemCandidateReused = false;
+            if (grip == null || amount <= 0f || bindActorPoints == null)
+            {
+                RestoreRigPose();
+                return;
+            }
+            UpdatePose(useSharedSnapshot);
+            UpdateWeaponAccessFreedom(grip, amount);
+            ApplyWeaponAccess(grip, amount);
+            // This is the authored hand action only: no inertia, wind,
+            // body/equipment contacts, material constraints or bake decoding.
+            CommitDeformation();
+            if (Renderer.sharedMesh != Mesh) Renderer.sharedMesh = Mesh;
+            UpdateRendererBounds();
+            rigPoseActive = false;
+        }
+
+        internal void RestoreRigPose()
+        {
+            if (!rigPoseActive)
+            {
+                acceptedHemCandidate = false;
+                acceptedHemOwner = null;
+                acceptedHemFold = default;
+                falseFreeValid = false;
+                falseFreeOwner = null;
+                weaponAccessVertex = -1;
+                pointQueryCache = null;
+                if (transitionResidual != null) Array.Clear(transitionResidual, 0, transitionResidual.Length);
+                Array.Copy(baseContactFreedom, contactFreedom, contactFreedom.Length);
+                Array.Copy(original, output, original.Length);
+                Array.Copy(original, posedOriginal, original.Length);
+                Renderer.sharedMesh = Source;
+                Renderer.localBounds = binding.AuthoredBounds;
+                rigPoseActive = true;
+            }
+            if (foldShape >= 0)
+            {
+                float weight = RigFold() * 100f;
+                if (Renderer.GetBlendShapeWeight(foldShape) != weight)
+                    Renderer.SetBlendShapeWeight(foldShape, weight);
+            }
         }
 
         private void UpdateWeaponAccessFreedom(Transform grip, float amount)
@@ -1410,6 +1459,8 @@ namespace BarPromenade
             Bounds bounds = new Bounds();
             bounds.SetMinMax(minimum, maximum);
             if (!Mesh.bounds.Equals(bounds)) Mesh.bounds = bounds;
+            if (Renderer.sharedMesh != Mesh) Renderer.sharedMesh = Mesh;
+            rigPoseActive = false;
             UpdateRendererBounds();
         }
 
@@ -1428,6 +1479,11 @@ namespace BarPromenade
         public void CopyTo(PlayerJacketClothSurface target, bool useSharedSnapshot = false)
         {
             if (target == null || target.output.Length != output.Length) return;
+            if (rigPoseActive)
+            {
+                target.RestoreRigPose();
+                return;
+            }
             // A camera-local arm may have its own elbow pose. Copy only secondary motion;
             // derive its authored sleeve correction from that instance's actual bones.
             target.UpdatePose(useSharedSnapshot);
@@ -1435,6 +1491,9 @@ namespace BarPromenade
                 target.output[i] = target.posedOriginal[i] + output[i] - posedOriginal[i];
             if (target.foldShape >= 0) target.Renderer.SetBlendShapeWeight(target.foldShape, 0f);
             target.Write();
+            if (target.Renderer.sharedMesh != target.Mesh) target.Renderer.sharedMesh = target.Mesh;
+            target.UpdateRendererBounds();
+            target.rigPoseActive = false;
         }
 
         private void Write()
@@ -1445,7 +1504,15 @@ namespace BarPromenade
             bool changed = false;
             for (int i = 0; i < output.Length; i++)
                 if (!output[i].Equals(writtenOutput[i])) { changed = true; break; }
-            if (!changed) return;
+            if (!changed)
+            {
+                // Returning from rig-only rendering still restores the owned
+                // mesh even when this bind-space appearance is unchanged.
+                if (Renderer.sharedMesh != Mesh) Renderer.sharedMesh = Mesh;
+                rigPoseActive = false;
+                UpdateRendererBounds();
+                return;
+            }
             Array.Copy(output, writtenOutput, output.Length);
             Mesh.vertices = output;
             Mesh.RecalculateNormals();
@@ -1461,6 +1528,7 @@ namespace BarPromenade
             unchecked { GeometryVersion++; }
             LastDeformGeometryWrites++;
             if (Renderer.sharedMesh != Mesh) Renderer.sharedMesh = Mesh;
+            rigPoseActive = false;
             UpdateRendererBounds();
         }
 

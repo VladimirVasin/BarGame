@@ -149,10 +149,10 @@ The vertical slice contains:
   body-drop0/focus≠hits/shotgun-victim/Tab-E0.
   All3/prepheld(defaultbar)/1-2-3/DpadR;physical stow-draw/mounts/reloadfirst;
   fallcancel/original-pose-ammo-slot/Erecord;mounts-timing:architecture.
-  Zombies:3worn corpse looks/gait-clips/groan-lunge;
+  Zombies:3worn looks/clips/groan-lunge;
   slow chase→telegraph→latched lunge→miss recovery/hand firstsurface/1hit/0metal;
   no guard-counter-retreat-stamina;one hand→other/both0-grounded0attack;
-  Rearhead0finisher/0world-infection;zombies only.
+  Rearhead0finisher/0world-infection.
   Freecam/dummy/Tabfight/MMBfocus/bar-Qfocus;
   Rise:tread support/accepted pose→Rising/retry/real blockers.
   Guns:RMBaim/LMBedge/R-Xreload/8gaits/0run/FOV-IK;
@@ -165,12 +165,13 @@ The vertical slice contains:
   Ammo:4fixed/+8Magazine/+4Shells/Eshared1x/full refusal/partial consumes;
   12active s endless/pause-modal-focus-disable-defeat0/resetpool/win live.
   Near launch/falloff/1react/head≤14/skin-world first/0pierce-ricochet-guard.
-  Cloth-tissue-bone loss/head-limb sever/torso→joined skeleton/0chunks.
-  Rhand0weapon/Lhand0twohand-reload;Rbar-loaded pistol;
-  Legloss fall/crawl/0rise-step-kick;critical head-torso end/corpses/reset.
+  Cloth-tissue-bone loss/sever/torso→skeleton/0chunks;Rhand0weapon/Lhand0twohand-reload;Rbar-loaded pistol.
+  Legloss fall/crawl/0rise-step-kick;critical head-torso end/reset.
+  Remains:passable/rig foot lift/floor-walls/pool reset.
   Bar:bat/hook→/shoulder+block/charge/free;8segments/firstsurface/1hit/recoil/6zones;
   standard taunt/Eshared/0grant.
-  Cloth:LRU/prewarm/buffered decode/unsafe→live.
+  Jacket/scarf/sling:rig/anchors/hand-opening;0live-baked physics;hair kept.
+  Pause/drop/reset cleanup;world on/fresh resume.
 - legacy-only Home opening: held bed loop/silent `05:59`/rare whole-clock flicker,
   five-second input lock/localized Wake Up-Quit. Wake sets `06:00`, starts
   clock/alarm, hides menu; alarm stops after three unscaled seconds.
@@ -1691,16 +1692,16 @@ The vertical slice contains:
 
 ### The hero
 
-- sole `Resources/Player/Player3DV2` in ten roots, derived arms/portrait.
-  Lean `1.75 m` hero: 31 body bones/50 actions; tapered torso, male hips/two
-  buttocks, slim arms/refined hands. Loose M-65/right repair patch; independent
-  trousers/knee folds, burgundy1460 boots with ankle/ball flex.
-  `PlayerWardrobe`: shirt/jacket/trousers/boots/belt, coverage/atomic slots/leases.
-  `hero_field_workwear` only; other outfits/UI/save Deferred. Curtains: 12 bones; jacket
-  hem/cuffs: 16 nodes, owned meshes, pinned shoulders/chest.
-  Garments own folds; joints share boundaries/volume.
-  Both have bounded motion/cached contacts/pause/reset and mirror copies;
-  arms copy cloth. Hair contacts scarf; jacket excludes itself.
+- sole `Resources/Player/Player3DV2` in ten roots;arms/portrait.
+  Lean `1.75 m`:31 body bones/50 actions/tapered torso/male hips-two buttocks/
+  slim arms/refined hands. Loose M-65/right patch; separate trousers/knee folds,
+  burgundy1460 boots/ankle-ball flex.
+  `PlayerWardrobe`:shirt-jacket-trousers-boots-belt/coverage/atomic slots/leases.
+  `hero_field_workwear` only; outfits/UI/save Deferred. Curtains12 bones;
+  jacket hem-cuffs16 nodes/owned meshes/pinned shoulders-chest.
+  Garment folds/joint boundaries-volume.
+  Hair/world-jacket:bounded motion/cached contacts/pause-reset/mirrors;
+  arms copy jacket;hair→scarf;jacket0self.
   Lean `40/60`; `ai/player-art-spec.md`;
 - one manual PlayableGraph presentation that damp-blends the in-place
   `Idle` (4 s), `Walk` (1 s), `Run` (.75 s/18 frames) and snow clips from

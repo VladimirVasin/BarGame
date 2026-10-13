@@ -34,6 +34,8 @@ namespace BarPromenade
         private PlayerScarfClothSimulation simulation;
         private PlayerScarfCollisionWorld collisionWorld;
         private PlayerScarfBodyContacts bodyContacts;
+        private PlayerClothPhysicsPolicy clothPhysicsPolicy;
+        private bool physicsSimulationEnabled = true;
         private int loweredShape = -1;
         private bool equipped;
         private bool temporaryRemoved;
@@ -62,6 +64,10 @@ namespace BarPromenade
         public long TotalGeometryTicks { get; private set; }
         public double LastSurfaceMilliseconds { get; private set; }
         public int LastSurfaceContactPassCount { get; private set; }
+        public bool PhysicsSimulationEnabled => physicsSimulationEnabled;
+        public bool IsTailContactActive => simulation != null && isActiveAndEnabled && equipped && !temporaryRemoved && worldDrawn;
+        public long TotalSimulationSteps { get; private set; }
+        public int LastSimulationSteps { get; private set; }
 
         public static PlayerScarfPresentation Install(PlayerRuntime runtime)
         {
@@ -84,6 +90,12 @@ namespace BarPromenade
         {
             registry = owner;
             mirror = isMirror;
+            clothPhysicsPolicy = PlayerClothPhysicsPolicy.Find(registry.transform);
+            if (clothPhysicsPolicy != null)
+            {
+                physicsSimulationEnabled = clothPhysicsPolicy.SimulationEnabled;
+                clothPhysicsPolicy.Changed += OnClothPhysicsChanged;
+            }
             var bones = new Dictionary<string, Transform>(StringComparer.Ordinal);
             foreach (Player3DMeshBinding binding in registry.MeshBindings)
                 if (binding != null && binding.Bone != null && !string.IsNullOrEmpty(binding.BoneName))
@@ -140,7 +152,65 @@ namespace BarPromenade
             instances.Add(this);
             lastPosition = head.position;
             lastRotation = head.rotation;
+            if (!physicsSimulationEnabled) RestoreAuthoredCloth();
             ApplyVisibility();
+        }
+
+        private void OnClothPhysicsChanged(bool enabled)
+        {
+            if (physicsSimulationEnabled == enabled) return;
+            physicsSimulationEnabled = enabled;
+            hasPreviousBounds = false;
+            physicalActive = false;
+            LastGeometryMilliseconds = LastSurfaceMilliseconds = 0d;
+            LastSurfaceContactPassCount = LastSimulationSteps = 0;
+            foreach (PlayerScarfContactSurface surface in surfaces)
+            {
+                surface.ResetHistory();
+                SkinnedMeshRenderer renderer = surface.Renderer;
+                renderer.transform.SetParent(enabled ? registry.transform : surface.Source.transform, false);
+                renderer.sharedMesh = enabled ? surface.Mesh : surface.Source.sharedMesh;
+                renderer.bones = enabled ? new[] { renderer.transform } : surface.Source.bones;
+                renderer.rootBone = enabled ? renderer.transform : surface.Source.rootBone;
+                renderer.localBounds = enabled ? surface.Mesh.bounds : surface.Source.localBounds;
+            }
+            if (!enabled) RestoreAuthoredTail();
+            SetMouthLowered(mouthLowered);
+            ApplyVisibility();
+        }
+
+        private void RestoreAuthoredCloth()
+        {
+            foreach (PlayerScarfContactSurface surface in surfaces)
+            {
+                // Keep the same visible renderer/visibility owner; native skinning
+                // follows the authored rig without baking or contact projection.
+                SkinnedMeshRenderer renderer = surface.Renderer;
+                renderer.transform.SetParent(surface.Source.transform, false);
+                renderer.sharedMesh = surface.Source.sharedMesh;
+                renderer.bones = surface.Source.bones;
+                renderer.rootBone = surface.Source.rootBone;
+                renderer.localBounds = surface.Source.localBounds;
+                surface.ResetHistory();
+            }
+            RestoreAuthoredTail();
+            SetMouthLowered(mouthLowered);
+        }
+
+        private void RestoreAuthoredTail()
+        {
+            if (tailMesh == null || clothFrame == null) return;
+            UpdateTailFrame();
+            if (simulation != null)
+            {
+                simulation.IsActive = false;
+                simulation.Reset(clothFrame);
+            }
+            tailMesh.vertices = tailRestVertices;
+            tailMesh.normals = metreTailMesh.normals;
+            tailMesh.tangents = metreTailMesh.tangents;
+            tailMesh.bounds = metreTailMesh.bounds;
+            tail.localBounds = tailMesh.bounds;
         }
 
         // The former exact world-contact implementation remains available to
@@ -148,7 +218,7 @@ namespace BarPromenade
         // updates a collision world, including on equip and scene loading.
         public void EnableDetailedContactsForDiagnostics()
         {
-            if (mirror || collisionWorld != null) return;
+            if (mirror || collisionWorld != null || !physicsSimulationEnabled) return;
             Vector3 external = simulation.ExternalAcceleration;
             Vector3 random = simulation.RandomAcceleration;
             simulation.Dispose();
@@ -249,6 +319,8 @@ namespace BarPromenade
         {
             mouthLowered = Mathf.Clamp01(amount);
             if (wrap != null && loweredShape >= 0) wrap.SetBlendShapeWeight(loweredShape, mouthLowered * 100f);
+            if (!physicsSimulationEnabled && loweredShape >= 0 && surfaces.Count > 0)
+                surfaces[0].Renderer.SetBlendShapeWeight(loweredShape, mouthLowered * 100f);
         }
 
         public void SetEnvironment(bool exterior, WindSample wind)
@@ -271,7 +343,7 @@ namespace BarPromenade
         {
             bool next = isActiveAndEnabled && equipped && !temporaryRemoved && headDrawn && worldDrawn;
             foreach (Renderer renderer in renderers) if (renderer != null) renderer.enabled = next;
-            bool nextPhysical = isActiveAndEnabled && equipped && !temporaryRemoved && worldDrawn;
+            bool nextPhysical = isActiveAndEnabled && equipped && !temporaryRemoved && worldDrawn && physicsSimulationEnabled;
             if (simulation != null)
             {
                 simulation.IsActive = nextPhysical;
@@ -291,7 +363,23 @@ namespace BarPromenade
         private void LateUpdate()
         {
             LastGeometryMilliseconds = LastSurfaceMilliseconds = 0d;
-            LastSurfaceContactPassCount = 0;
+            LastSurfaceContactPassCount = LastSimulationSteps = 0;
+            if (!physicsSimulationEnabled)
+            {
+                // The immutable tail now follows only its head frame. Updating
+                // that transform keeps it current even through fall/drop poses.
+                UpdateTailFrame();
+                if (IsTailContactActive)
+                {
+                    // Hair still contacts the same scarf. Only transform the
+                    // immutable rest geometry; no scarf solver/contact work runs.
+                    Matrix4x4 toWorld = clothFrame.localToWorldMatrix;
+                    for (int i = 0; i < tailRestVertices.Length; i++)
+                        simulation.WorldVertices[i] = toWorld.MultiplyPoint3x4(tailRestVertices[i]);
+                }
+                if (head != null) { lastPosition = head.position; lastRotation = head.rotation; }
+                return;
+            }
             if (mirror || registry == null || simulation == null || !physicalActive) return;
             UpdateTailFrame();
             bool teleported = (head.position - lastPosition).sqrMagnitude > .64f ||
@@ -317,6 +405,7 @@ namespace BarPromenade
 
         private void AdvanceGeometryCore(float delta, bool reset)
         {
+            if (!physicsSimulationEnabled) return;
             long started = System.Diagnostics.Stopwatch.GetTimestamp();
             // A paused frame changes neither contacts nor vertex positions.
             // Initial activation/teleport gets exactly one contact correction.
@@ -329,6 +418,8 @@ namespace BarPromenade
             {
                 bodyContacts.UpdatePose();
                 simulation.StepBodyOnly(delta, clothFrame, bodyContacts);
+                LastSimulationSteps++;
+                TotalSimulationSteps++;
                 simulation.WriteToMesh(tailMesh, clothFrame);
                 tail.localBounds = tailMesh.bounds;
                 long bodyStarted = System.Diagnostics.Stopwatch.GetTimestamp();
@@ -362,6 +453,8 @@ namespace BarPromenade
             collisionWorld.Update(swept, collisionExclusions);
 
             simulation.Step(delta, clothFrame, collisionWorld);
+            LastSimulationSteps++;
+            TotalSimulationSteps++;
             simulation.WriteToMesh(tailMesh, clothFrame);
 
             tail.localBounds = tailMesh.bounds;
@@ -439,6 +532,8 @@ namespace BarPromenade
 
         private void OnDestroy()
         {
+            if (clothPhysicsPolicy != null) clothPhysicsPolicy.Changed -= OnClothPhysicsChanged;
+            clothPhysicsPolicy = null;
             instances.Remove(this);
             bool hasPhysicalOwner = false;
             foreach (PlayerScarfPresentation instance in instances)

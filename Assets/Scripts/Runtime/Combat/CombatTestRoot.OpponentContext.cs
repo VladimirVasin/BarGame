@@ -29,9 +29,9 @@ namespace BarPromenade
             internal Vector3 previousObservedPosition, committedDirection;
             internal Vector3 opponentMoveRequest, opponentMoveVelocity;
             internal uint decisionSeed;
-            internal readonly RaycastHit[] navigationContacts = new RaycastHit[16];
+            internal RaycastHit[] navigationContacts = new RaycastHit[16];
             internal readonly List<Vector3> warehouseOpponentRoute = new List<Vector3>(64);
-            internal readonly RaycastHit[] warehouseVisibilityHits = new RaycastHit[32];
+            internal RaycastHit[] warehouseVisibilityHits = new RaycastHit[32];
             internal int warehouseRouteIndex;
             internal float warehousePerceptionWait, warehouseRouteWait, warehouseStuckSeconds;
             internal float warehouseOpponentVerticalSpeed;

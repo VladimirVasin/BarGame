@@ -418,6 +418,7 @@ namespace BarPromenade
 
         private void OnEnable()
         {
+            CombatCorpseTraversal.RegisterActor(this);
             if (carriedWeapons == null || hero == null) return;
             RegisterWeaponEquipment(hero.Registry.GetComponent<PlayerEquipmentContacts>());
             UpdateConcealedPistol();

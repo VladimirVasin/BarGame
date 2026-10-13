@@ -588,14 +588,15 @@ namespace BarPromenade
         {
             if (distance <= 0f || seconds <= 0f) return;
             Vector3 before = AiOpponent.transform.position;
-            int count = Physics.SphereCastNonAlloc(before + Vector3.up * .9f, .34f, direction,
-                opponentContext.navigationContacts, distance + .3f, ~0, QueryTriggerInteraction.Ignore);
+            RaycastHit[] contacts = CombatTraversalQueries.SphereCast(before + Vector3.up * .9f, .34f, direction,
+                ref opponentContext.navigationContacts, distance + .3f, ~0, QueryTriggerInteraction.Ignore, out int count);
             float nearest = float.PositiveInfinity;
             Vector3 normal = Vector3.zero;
             for (int i = 0; i < count; i++)
             {
-                RaycastHit contact = opponentContext.navigationContacts[i];
-                if (contact.collider.GetComponentInParent<CombatActor>() != null || contact.distance >= nearest) continue;
+                RaycastHit contact = contacts[i];
+                if (contact.collider == null || CombatCorpseTraversal.IsCorpse(contact.collider) ||
+                    contact.collider.GetComponentInParent<CombatActor>() != null || contact.distance >= nearest) continue;
                 nearest = contact.distance; normal = contact.normal;
             }
             if (normal.sqrMagnitude > 0f)

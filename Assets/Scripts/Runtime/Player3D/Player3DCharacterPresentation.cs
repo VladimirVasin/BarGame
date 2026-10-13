@@ -247,6 +247,8 @@ namespace BarPromenade
         private Transform rightShinBone;
         private Transform leftFootBone;
         private Transform rightFootBone;
+        private CombatCorpseStepPose corpseStepPose;
+        internal CombatCorpseStepPose CorpseStepPose => corpseStepPose;
         private Transform headBone;
         private Transform neckBone;
         private Vector3? attentionFocus;
@@ -416,6 +418,8 @@ namespace BarPromenade
             ApplyLocomotionWeights(immediate: true);
             EvaluateGraph(0f);
             ApplyFacialExpression(PlayerFacialExpression.Neutral);
+            corpseStepPose = new CombatCorpseStepPose(actorFacingTransform, pelvisBone,
+                leftThighBone, leftShinBone, leftFootBone, rightThighBone, rightShinBone, rightFootBone);
             layer.Bind(
                 registry,
                 actorFacingTransform,
@@ -759,6 +763,7 @@ namespace BarPromenade
             ForgetCombatDamagePose();
             combatBodyMotion?.Forget();
             combatFootwork?.Forget();
+            corpseStepPose?.Forget();
             combatGrip?.Forget();
             combatWeapon?.Forget();
             ReleaseBalanceStep();
@@ -832,6 +837,7 @@ namespace BarPromenade
                 return;
             }
 
+            RestoreCorpseStepPose();
             RestoreCombatSupportGrip();
             RestoreRecoveryPoseTransition();
             RestoreCombatFootwork();
@@ -839,6 +845,7 @@ namespace BarPromenade
             RestoreCombatBodyMotion();
             layer.Restore();
             ragdollPoseActive = active;
+            corpseStepPose?.Forget();
             if (active)
             {
                 ragdollPoseSince = Time.time;
@@ -999,6 +1006,8 @@ namespace BarPromenade
                 return;
             }
 
+            corpseStepPose?.Advance(deltaTime);
+
             if (!IsClipActive || scopedClipLocomotion)
             {
                 ApplyLocomotionWeights(immediate: false);
@@ -1020,6 +1029,7 @@ namespace BarPromenade
         {
             using var journalTiming = CombatTestRoot.MeasureJournalLatePose(this);
             if (OwnedAttentionPresentationFrozen) return;
+            RestoreCorpseStepPose();
             RestoreCombatFirearm();
             float deltaTime = scopedPresentationFrozen ? 0f : Time.deltaTime;
             if (!ragdollPoseActive)
@@ -1041,6 +1051,7 @@ namespace BarPromenade
                 ApplyCombatFirearm();
                 CompleteRecoveryPresentation(deltaTime);
                 ConstrainCombatFootContacts();
+                ApplyCorpseStepPose();
                 ApplyCombatSupportGrip();
                 CompleteCombatFirearmPresentation();
                 CompleteFootwearPresentation();
@@ -1145,6 +1156,7 @@ namespace BarPromenade
             // Match the real late pass: a contact freeze retains its completed
             // rig, including a blended continuation and its planted soles.
             if (OwnedAttentionPresentationFrozen) return;
+            RestoreCorpseStepPose();
             RestoreCombatFirearm();
             // A deterministic seam for checks that run in batch mode, where
             // WaitForEndOfFrame is not dispatched. It reapplies the current
@@ -1161,6 +1173,7 @@ namespace BarPromenade
                 ApplyCombatFirearm();
                 CompleteRecoveryPresentation(0f);
                 ConstrainCombatFootContacts();
+                ApplyCorpseStepPose();
                 ApplyCombatSupportGrip();
                 CompleteCombatFirearmPresentation();
                 CompleteFootwearPresentation();
@@ -1174,9 +1187,28 @@ namespace BarPromenade
             bootDeformation?.ApplyPose();
         }
 
+        internal void RestoreCorpseStepPose() => corpseStepPose?.Restore();
+
+        internal void ResetCorpseStepPose()
+        {
+            if (ragdollPoseActive) corpseStepPose?.Forget();
+            else corpseStepPose?.Reset();
+        }
+
+        private void ApplyCorpseStepPose()
+        {
+            // Optional combat and ordinary gait share this final lower-body
+            // pass. Contextual endpoints, falls, crawl and rise retain ownership.
+            bool allowed = !ragdollPoseActive && !interactionHandoffLocked && !risePose.Active && fallAmount <= .01f &&
+                (!IsClipActive || scopedClipOwner is CombatActor actor && actor.CanPresentCorpseStep);
+            if (!allowed) { corpseStepPose?.Forget(); return; }
+            corpseStepPose?.Apply();
+        }
+
         /// <summary>The late pass: the rise's limbs while a rise is on, the balance pose otherwise.</summary>
         private void ApplyLatePose(float deltaTime)
         {
+            RestoreCorpseStepPose();
             RestoreCombatSupportGrip();
             RestoreRecoveryPoseTransition();
             RestoreCombatFootwork();
@@ -1202,6 +1234,7 @@ namespace BarPromenade
         /// </summary>
         internal void SettleLatePresentationPose(float seconds)
         {
+            RestoreCorpseStepPose();
             RestoreCombatFirearm();
             if (!ragdollPoseActive)
             {
@@ -1213,6 +1246,8 @@ namespace BarPromenade
                 ApplyCombatFootwork();
                 ApplyCombatFirearm();
                 CompleteRecoveryPresentation(0f);
+                ConstrainCombatFootContacts();
+                ApplyCorpseStepPose();
                 ApplyCombatSupportGrip();
                 CompleteCombatFirearmPresentation();
             }
@@ -1220,6 +1255,7 @@ namespace BarPromenade
 
         private void OnDisable()
         {
+            ResetCorpseStepPose();
             ClearCombatSupportGrip(combatGripOwner);
             ClearCombatDamagePose();
             ClearCombatBodyMotion(combatMotionOwner);
@@ -1284,6 +1320,7 @@ namespace BarPromenade
 
         private void OnDestroy()
         {
+            ResetCorpseStepPose();
             ClearCombatSupportGrip(combatGripOwner);
             ClearCombatDamagePose();
             ClearSpeechFace();
@@ -3162,6 +3199,7 @@ namespace BarPromenade
 
         private void EvaluateGraph(float deltaTime)
         {
+            RestoreCorpseStepPose();
             RestoreCombatFirearm();
             RestoreCombatSupportGrip();
             RestoreRecoveryPoseTransition();
@@ -3185,6 +3223,8 @@ namespace BarPromenade
 
         private void DestroyGraph()
         {
+            ResetCorpseStepPose();
+            corpseStepPose = null;
             SecondaryMotionBakeRuntime.Release(registry);
             scopedClipOwner = null;
             ClearSideStepGaits();

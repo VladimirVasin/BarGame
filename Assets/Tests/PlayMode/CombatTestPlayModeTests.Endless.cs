@@ -276,6 +276,9 @@ namespace BarPromenade.Tests.PlayMode
                     Assert.That(opponent.IsZombie, Is.True, "The cache proof retains the production zombie population.");
                     Assert.That(opponent.Weapon, Is.Null);
                 }
+                // This opt-in diagnostic compares the normal world's live and
+                // recorded fabric paths; CombatTest's production default stays off.
+                root.GetComponent<PlayerClothPhysicsPolicy>().SetSimulationEnabled(true);
                 root.SendMessage("OnApplicationFocus", true); GameInput.HandleApplicationFocus(true);
                 foreach (CombatWeaponId id in new[] { CombatWeaponId.Pistol, CombatWeaponId.Crowbar, CombatWeaponId.Shotgun })
                     Assert.That(root.Hero.CarriedWeapon(id), Is.Not.Null);
@@ -465,10 +468,10 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(root.LiveOpponentCount, Is.Zero);
                 Assert.That(phases[0].BakeResults[(int)SecondaryMotionBakePart.Jacket, (int)SecondaryMotionBakeResult.FinalPose], Is.Zero,
                     "Production completed Idle with its real stored shotgun must not alternate between recorded cloth and physical contact solving.");
-                Assert.That(phases[0].Cloth.JacketBaked, Is.GreaterThanOrEqualTo(15),
-                    "The proof must actually consume the recorded jacket through the production LateUpdate path.");
-                Assert.That(phases[0].Cloth.SlingBaked, Is.GreaterThanOrEqualTo(15),
-                    "The production stored-shotgun attachment must consume its recorded material seat rather than reject it because of its initial pose.");
+                Assert.That(phases[0].Cloth.JacketBaked, Is.Zero,
+                    "Production CombatTest keeps jacket physics and its recorded motion disabled.");
+                Assert.That(phases[0].Cloth.SlingBaked, Is.Zero,
+                    "Production CombatTest uses the attachment curve without recorded sling physics.");
 
                 PrepareEndlessPerformanceArrival();
                 yield return MeasureEndlessPerformancePhase(recorder, phases, timelinePhases, "Test one live opponent", 30);

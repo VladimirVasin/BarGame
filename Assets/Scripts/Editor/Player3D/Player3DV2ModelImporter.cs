@@ -85,6 +85,7 @@ namespace BarPromenade.Editor
             importer.importAnimation = true;
             importer.materialImportMode = ModelImporterMaterialImportMode.None;
 
+            context.DependsOnArtifact(Player3DV2AssetSetup.ModelPath);
             Avatar v2Avatar = FindV2SourceAvatar();
             if (v2Avatar != null)
             {
@@ -94,8 +95,8 @@ namespace BarPromenade.Editor
             else
             {
                 // Initial parallel imports can reach the animation before the
-                // model. BuildOrThrow imports the model first and then forces
-                // this asset through CopyFromOther on the next pass.
+                // model. The artifact dependency reimports this bank through
+                // CopyFromOther after the production model completes.
                 importer.avatarSetup =
                     ModelImporterAvatarSetup.CreateFromThisModel;
                 importer.sourceAvatar = null;
@@ -170,7 +171,7 @@ namespace BarPromenade.Editor
             string[] movedAssets,
             string[] movedFromAssetPaths)
         {
-            if (Application.isBatchMode ||
+            if (AssetDatabase.IsAssetImportWorkerProcess() || Application.isBatchMode ||
                 Player3DV2AssetSetup.IsBuilding ||
                 CityPedestrianAssetSetup.IsBuilding)
             {

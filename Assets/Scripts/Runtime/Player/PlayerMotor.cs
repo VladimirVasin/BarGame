@@ -271,6 +271,7 @@ namespace BarPromenade
             if (controller != null)
             {
                 controller.enabled = wasEnabled;
+                if (wasEnabled) CombatCorpseTraversal.NotifyColliderEnabled(controller);
             }
         }
 

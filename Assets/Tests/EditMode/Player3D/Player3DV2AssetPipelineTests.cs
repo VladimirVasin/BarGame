@@ -93,6 +93,83 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
+        public void ProductionRebuild_UsesCompletedSourcesAndPreservesModelReferences()
+        {
+            Type setup = Type.GetType("BarPromenade.Editor.Player3DV2AssetSetup, BarPromenade.Editor");
+            Assert.That(setup, Is.Not.Null);
+            var build = setup.GetMethod("BuildOrThrow", Type.EmptyTypes);
+            Assert.That(build, Is.Not.Null);
+            string modelGuid = AssetDatabase.AssetPathToGUID(V2ModelPath);
+            Assert.That(modelGuid, Is.Not.Empty);
+            Dictionary<long, string> previousMeshes =
+                AssetDatabase.GetMainAssetTypeAtPath(V2ModelPath) == typeof(GameObject)
+                    ? ModelMeshIdentifiers(modelGuid) : null;
+
+            // A failed placeholder still exercises the real rebuild. Once
+            // complete, repeating it must preserve every imported reference.
+            for (int pass = 0; pass < 2; pass++)
+            {
+                build.Invoke(null, null);
+                Assert.That(AssetDatabase.GetMainAssetTypeAtPath(V2ModelPath), Is.EqualTo(typeof(GameObject)));
+                Assert.That(AssetDatabase.GetMainAssetTypeAtPath(V2AnimationPath), Is.EqualTo(typeof(GameObject)));
+                Assert.That(AssetDatabase.AssetPathToGUID(V2ModelPath), Is.EqualTo(modelGuid));
+                if (pass == 0)
+                    foreach (string prefix in new[] { "Body", "Skull", "Head" })
+                    {
+                        string path = "Assets/Resources/CombatGore/" + prefix + "Hero.fbx";
+                        Assert.That(AssetDatabase.GetMainAssetTypeAtPath(path), Is.EqualTo(typeof(GameObject)), path);
+                        var importLog = AssetImporter.GetImportLog(path);
+                        if (importLog == null) continue;
+                        foreach (var entry in importLog.logEntries)
+                            Assert.That((entry.flags & UnityEditor.AssetImporters.ImportLogFlags.Error) != 0, Is.False,
+                                "A completed hero source must leave its derivative imported without errors: " + path);
+                    }
+
+                Avatar modelAvatar = null;
+                foreach (UnityEngine.Object asset in AssetDatabase.LoadAllAssetsAtPath(V2ModelPath))
+                    if (asset is Avatar avatar) modelAvatar = avatar;
+                Assert.That(modelAvatar, Is.Not.Null);
+                Assert.That(modelAvatar.isValid, Is.True);
+                var animationImporter = AssetImporter.GetAtPath(V2AnimationPath) as ModelImporter;
+                Assert.That(animationImporter, Is.Not.Null);
+                Assert.That(animationImporter.avatarSetup, Is.EqualTo(ModelImporterAvatarSetup.CopyFromOther));
+                Assert.That(animationImporter.sourceAvatar, Is.SameAs(modelAvatar));
+
+                GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(V2PrefabPath);
+                Assert.That(prefab, Is.Not.Null);
+                Player3DAssetRegistry registry = prefab.GetComponent<Player3DAssetRegistry>();
+                Assert.That(registry, Is.Not.Null);
+                Assert.That(registry.Animator, Is.Not.Null);
+                Assert.That(registry.Animator.avatar, Is.SameAs(modelAvatar));
+
+                Dictionary<long, string> currentMeshes = ModelMeshIdentifiers(modelGuid);
+                Assert.That(currentMeshes, Is.Not.Empty);
+                if (previousMeshes != null)
+                {
+                    Assert.That(currentMeshes.Keys, Is.EquivalentTo(previousMeshes.Keys),
+                        "A production rebuild must preserve imported mesh local IDs.");
+                    foreach (var pair in previousMeshes)
+                        Assert.That(currentMeshes[pair.Key], Is.EqualTo(pair.Value),
+                            "A mesh reference must retain its original local ID: " + pair.Value);
+                }
+                previousMeshes = currentMeshes;
+            }
+        }
+
+        private static Dictionary<long, string> ModelMeshIdentifiers(string modelGuid)
+        {
+            var identifiers = new Dictionary<long, string>();
+            foreach (UnityEngine.Object asset in AssetDatabase.LoadAllAssetsAtPath(V2ModelPath))
+            {
+                if (!(asset is Mesh mesh)) continue;
+                Assert.That(AssetDatabase.TryGetGUIDAndLocalFileIdentifier(mesh, out string guid, out long id), Is.True);
+                Assert.That(guid, Is.EqualTo(modelGuid));
+                identifiers.Add(id, mesh.name);
+            }
+            return identifiers;
+        }
+
+        [Test]
         public void ProductionResources_ContainOnlyHeroV2()
         {
             Assert.That(

@@ -350,6 +350,7 @@ namespace BarPromenade
                 sector.Proxy.center = sector.ContactBounds.center;
                 sector.Proxy.size = sector.ContactBounds.size;
                 sector.Proxy.enabled = false;
+                CombatCorpseTraversal.RegisterCollider(head.Actor, sector.Proxy);
             }
             heads.Add(actor, head);
             head.PreviousPosition = head.Bone.position;
@@ -387,6 +388,7 @@ namespace BarPromenade
             {
                 stamp = System.Diagnostics.Stopwatch.GetTimestamp();
                 sector.Proxy.enabled = true;
+                CombatCorpseTraversal.NotifyColliderEnabled(sector.Proxy);
                 foreach (Piece piece in sector.Pieces) Player3DHeadVisibility.SetDerivedEnabled(piece.Source, piece.Skin, TissueVisible(head, piece));
                 ActivationVisibilityTicks += System.Diagnostics.Stopwatch.GetTimestamp() - stamp;
             }
@@ -480,6 +482,7 @@ namespace BarPromenade
             }
             head.Fragments.Add(fragment);
             Freeze(fragment, frozen);
+            CombatCorpseTraversal.RegisterCollider(head.Actor, collider, detached: true);
         }
 
         internal void Tick(float seconds)
@@ -569,6 +572,7 @@ namespace BarPromenade
             actor.Hurtboxes.SetHeadShapes(null);
             foreach (Fragment fragment in head.Fragments)
             {
+                CombatCorpseTraversal.ReleaseCollider(fragment.Collider);
                 if (fragment.Body == null) continue;
                 if (fragment.Body.gameObject.activeInHierarchy) fragment.Body.gameObject.SetActive(false);
                 // Destruction also runs during scene deactivation, when Unity
@@ -586,6 +590,7 @@ namespace BarPromenade
                 Player3DHeadVisibility.SetDerivedEnabled(piece.Source, piece.Skin, true);
             }
             head.PreviousPosition = head.Bone.position; head.PreviousVelocity = Vector3.zero;
+            CombatCorpseTraversal.RefreshActor(actor);
         }
         public void ResetRound()
         {
@@ -596,6 +601,8 @@ namespace BarPromenade
         {
             foreach (Head head in heads.Values)
             {
+                foreach (Fragment fragment in head.Fragments) CombatCorpseTraversal.ReleaseCollider(fragment.Collider);
+                foreach (Sector sector in head.Sectors) CombatCorpseTraversal.ReleaseCollider(sector.Proxy);
                 foreach (Renderer original in head.Originals) suppressed.Remove(original);
                 foreach (Sector sector in head.Sectors) foreach (Piece piece in sector.Pieces) Dispose(piece);
                 foreach (Piece piece in head.Brains) Dispose(piece);

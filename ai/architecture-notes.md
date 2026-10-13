@@ -2,15 +2,24 @@
 
 ## Current facts
 
+- **Accepted — 2026-10-14, combat cloth policy:**
+  User:fabric only;CombatTest:no live/baked jacket-scarf-sling;hair kept.
+  Rig/hand-opening/anchors/cloth0solve-contact-wind-request;pause/drop/reset/dispose;
+  world default on/fresh resume.
+  `PlayerClothPhysicsPolicy`;§6/art§15a/9checks.
+
+- **Accepted — 2026-10-14, corpse traversal:**
+  CombatTest:auto corpse-part step/rig/cached ownership;live fall≠corpse;
+  world-weapon physics kept/lifecycle;§6/art§15a/9checks.
+
 - **Accepted exception — 2026-10-13, zombie duel:**
   CombatTest:unarmed dead only/slow→lunge/0world-infection;
-  §6/art§15a/§16/§21/9checks;user removed human duel/tests.
+  §6/art§15a/§16/§21/9checks;human duel/tests retired.
 
 - **Accepted — 2026-10-13, simple crowbar strike:**
   User:2actions;bat/RaboveL/end/85mm/hook→;shoulder load→accent→return/block.
-  One arc/powers;natural palms;Ready matched;legacy arms blend;free-facing.
-  World rig/stops/continuous return;existing 25mm/12° contacts;0paired DAG.
-  Polygon-only/§6/art§15a/9checks.
+  One arc/powers/natural palms/Ready match/legacy arm blend/free-facing.
+  Polygon:rig/stops/continuous return/25mm/12° contacts/0paired DAG;§6/art§15a/9checks.
 
 - **Accepted — 2026-10-13, diagnostic retention:**
   GameLog:v1/seq-context-IDs/Unity;Editor-dev verbose/release basic/
@@ -18,7 +27,7 @@
   Duel:on/batchoff/CLI/async;20MiB/sample70%body/causal reserve;
   adaptive detail-essential/forced urgent-terminal quotas;sampling≠loss;
   32-action tail≠solver/original envelopes/clip-loss/flush/end/reset.
-  See:`ai/debug-log.md`.
+  `ai/debug-log.md`.
 
 - **Accepted exception — 2026-10-13, finite combat ammunition:**
   User:finite ammo/0wave refill/0story;start-reset loaded8/2+0reserve.
@@ -43,28 +52,27 @@
   seed/resetkeeps/levels/flat:test-only/0story-hazard-falldmg;§6/art§15a/9checks.
 - **Accepted exception — 2026-10-13, bounded combat population:**
   User:Endless1–5(default2)/corpses0–2(default2);pool=livecap≤5.
-  Excess oldest observed defeat retires;spawn unused else oldest.
-  Others/flights kept;Standard1/Ebody;conservative,0hardware max/60FPS/gain.
+  Oldest defeat retires;unused→oldest spawn;others/flights kept;Standard1/Ebody.
+  Conservative;0hardware max/60FPS/gain.
   §6/art§15a/9checks;`debug-log.md`.
 - **Accepted — 2026-10-10, carry mounts:**
   CombatTest:pistol Lchest/M65;bar Rbelt;shotgun soft-sling/back.
   Holster0cloth:stored hidden/else seen;6stow-draw/rig-model-ammo/0hardmount.
 
 - **Accepted — 2026-10-12, ShotgunDraw:**
-  Ropen barrels↓;Loutside/Lshoulder→vertical stocktop/palmdown catch
-  →outside shoulder/front chest→Rgrip/Lforeend;0crossing.
-  Importoffsets/continuous handoffs/pause/drop=original-pose-ammo;
-  stow-model-rig-sling/2×.
+  Ropen/barrels↓;Loutside/Lshoulder→vertical stocktop/palmdown catch
+  →outside shoulder/frontchest→Rgrip/Lforeend;0crossing.
+  Importoffsets/continuous handoffs/pause-drop=original-pose-ammo/stow-model-rig-sling/2×.
 
 - **Accepted — 2026-10-11:** shotgun:Lshoulder→chest/abdomen→low Rside;draw/stow.
-  Ribbon0jacket;gun/bar-coat/scarf/hair;JacketBody-only width/seam pad.
+  Ribbon0jacket;gun/bar→hair;JacketBody-only width/seam pad.
 
 - **Accepted — 2026-10-13, secondary-motion baking:**
-  120→30Hz/same rig-pose-gear/Idle≤20mm Y/all17/warm cycles;
-  unsafe/wind/falls→live≤3/2/2,0debt;pins/material/body/face/hash-reference-render-CPU.
-  Prewarm/bounded LRU/buffered decode/guard;bad layout→GuardLayout live.
-  Idle prepared/Aim FinalPose→live;stowed bar;build:fullbank refresh.
-  Bounded reason/decode/load/resident/eviction;FPSgain unmeasured.
+  Hair/world-jacket:120→30Hz/rig-pose-gear/Idle≤20mmY/all17/warmcycles;
+  unsafe-wind-falls→live≤3/2/2,0debt;pins/material/body/face/hash-reference-render-CPU.
+  Bounded LRU/prewarm/buffered decode/layout guard→GuardLayout live.
+  Idle prepared/Aim FinalPose→live;stowedbar/build:fullbank refresh.
+  Bounded reason-decode-load-resident-eviction;FPSunmeasured.
 
 - **Accepted — 2026-10-10, separate military belt:**
   Olive webbing/muted metal buckle;pelvis over trousers.
@@ -77,21 +85,20 @@
   Leather/sole ankle/ball flex in foot roll;rig/actions/support footprint kept.
 
 - **Accepted — 2026-10-10, hero body silhouette:**
-  Wide torso→continuous shoulders;shirt/M-65 follow;tapered neck fits jaw.
-  Male hips/thighs→two modest round buttocks/cleft;low projection/distinct
-  cheeks/trouser coverage.
-  Lean identity/rig/actions/details;0story/§6 deviation.
+  Wide torso/continuous shoulders/shirt-M65/tapered neck-jaw;
+  male hips-thighs→two modest round buttocks/cleft/low distinct cheeks/trouser coverage.
+  Lean identity/rig/actions/details/0story/§6 deviation.
 
 - **Accepted — 2026-10-10, continuous joints and loose hero garments:**
-  Hero/NPC:rig/actions/sockets/parts/wardrobe;`character_joint_surfaces_v1`:
-  rings/weights/normals/4weights;`CharacterJointDeformation`/`JointVolume.*`:
-  hip/elbow/knee/wrist≤`135°`/0twist. Trousers:clearance/pinned waist/
-  `TrouserKneeFold.*`;seated×`1 - TrousersDown`.
+  Hero/NPC rig-actions-sockets-parts-wardrobe;`character_joint_surfaces_v1`:
+  rings-weights-normals/4weights;`CharacterJointDeformation`/`JointVolume.*`:
+  hip-elbow-knee-wrist≤`135°`/0twist. Trousers:clearance/pinned waist/
+  `TrouserKneeFold.*`/seated×`1 - TrousersDown`.
   M-65:flat seams/armholes/sleeve drape-ease/rear fall/0inflation;
   `JacketElbowFold.*`→hem-cuff/mirror-arms shared motion/fold.
-  Hem:trouser clearance/posed skin-correctives/bounds/free verts;
-  0live bake/new solver;combat-seated/seam-volume-copy-render `0/45/90/135°`;
-  identity/palette/§16/9checks/0§6 deviation.
+  Hem:trouser clearance/posed skin-correctives/bounds/freeverts;
+  0live bake/newsolver;combat-seated/seam-volume-copy-render `0/45/90/135°`;
+  identity-palette/§16/9checks/0§6 deviation.
 
 - **Accepted — 2026-10-04, district heights:**
   Lower OldTown/Residential;wide low Industrial;taller Nightlife.
@@ -342,67 +349,38 @@
   §6/§12/art §10g/§16/§21/nine checks.
 - **Accepted 2026-10-10:** healthy gun aimwalk -15%
 - **Accepted 2026-10-09, aim gait:**
-  CombatFootwork:8clips/retarget/facing/normdiag/0run/camplane/upperaim;
-  Step1m/15/noinputback/wall-pause/tankreturn/0handoff/aim0Step0;barfocus/reload/injury.
+  CombatFootwork:8clips/retarget/facing/normdiag/0run/camplane/upperaim;Step1m/15/noinputback/wall-pause/tankreturn/0handoff/aim0Step0;barfocus/reload/injury.
 - **Accepted exception 2026-10-08, pistol:**
-  Dummy/freecam/focus/Q-Step/firstworld-anatomy/regional SFX-force;
-  stablecam/hitkick/recoil-streak/head0HP-ragdoll/cases:port-delay-gravity-bounce-cap;
-  emptylock/mag-seat-rack1.8/ammo-last/E/Rresume;
-  0lock-pierce-ricochet-guard-parry-taunt-reward/stage-win-pause:art§15a.
+  Dummy/freecam/focus/Q-Step/firstworld-anatomy/regional SFX-force;stablecam/hitkick/recoil-streak/head0HP-ragdoll/cases:port-delay-gravity-bounce-cap;emptylock/mag-seat-rack1.8/ammo-last/E/Rresume;0lock-pierce-ricochet-guard-parry-taunt-reward/stage-win-pause:art§15a.
 - **Accepted exception 2026-10-09, shotgun power:**
-  `ShotgunSettings`:close420Ns→40m0 steep;HPlinear;
-  immutable finalbody+torque/unfrozen1/current-mass share/nonpellet torso.
-  1SFX/terminal hitstop/head≤14/prelethal/8ledgers/fast debris-blood
+  `ShotgunSettings`:close420Ns→40m0 steep;HPlinear;immutable finalbody+torque/unfrozen1/current-mass share/nonpellet torso. 1SFX/terminal hitstop/head≤14/prelethal/8ledgers/fast debris-blood
 - **Accepted exception 2026-10-09, body destruction:**
-  Both/cloth-tissue→rig skeleton/nearshotgun max;critical Chest-Abdomen-Pelvis joined/
-  0chunks-cellRB;finite radius cells deform-erode/subdiv torso/expose≠sever;
-  closed head-limb cuts/finite parts.
-  Rhand0weapon/Lhand0twohand-reload(Rbar-loaded pistol)/legs fall-crawl0rise-step-kick;
-  Hero=AI/head-torso end/surface=hit=physics/dedup-pause-reset.
+  Both/cloth-tissue→rig skeleton/nearshotgun max;critical Chest-Abdomen-Pelvis joined/0chunks-cellRB;finite radius cells deform-erode/subdiv torso/expose≠sever;closed head-limb cuts/finite parts. Rhand0weapon/Lhand0twohand-reload(Rbar-loaded pistol)/legs fall-crawl0rise-step-kick;Hero=AI/head-torso end/surface=hit=physics/dedup-pause-reset.
 - **Accepted exception 2026-10-08, headshots:**
-  Head16:3-5/low eject/blood56/brain8 full-wet-jelly/squash/loss1x/
-  bone-tissue/cam-hide/finite pulse-fade/corpse impulse.
+  Head16:3-5/low eject/blood56/brain8 full-wet-jelly/squash/loss1x/bone-tissue/cam-hide/finite pulse-fade/corpse impulse.
 - **Accepted exception 2026-10-08, bullets:**
-  Firstworldhit:chips-sparks/dark hole128FIFO/particles192/shared shader;
-  0damage-pierce/pause-hitstop0/ClearFlights keeps/reset-exit0.
+  Firstworldhit:chips-sparks/dark hole128FIFO/particles192/shared shader;0damage-pierce/pause-hitstop0/ClearFlights keeps/reset-exit0.
 - **Accepted 2026-10-08, regional hits:**
   Rig/wet/repeat/shared physics-camera.
 - **Accepted 2026-10-07, combat:**
-  Floor/stall-arm→drop/rise≠grip;no bar:walk-Q-Step/hits-falls/Eshared/0grant/floorcancel.
-  HP-focus/MMB/reset mode-focus;
-  pause-hitstop0/hitstop≠lock-reset;Aim¼Windup lock/Charge free/motor yield;
-  Step1m/bounded landing-overload/first bar-world-body/metal-wall recoil-stop/
-  guard-break/0HPparry/pooled sparks-SFX;Q/Step contacts-poses:art§15a/`CombatActor`.
+  Floor/stall-arm→drop/rise≠grip;no bar:walk-Q-Step/hits-falls/Eshared/0grant/floorcancel. HP-focus/MMB/reset mode-focus;pause-hitstop0/hitstop≠lock-reset;Aim¼Windup lock/Charge free/motor yield;Step1m/bounded landing-overload/first bar-world-body/metal-wall recoil-stop/guard-break/0HPparry/pooled sparks-SFX;Q/Step contacts-poses:art§15a/`CombatActor`.
 - **Accepted 2026-10-02, combat:**
-  R>L/Hit-Miss cut/.22→held.28/buffer.20/hit-fall-reset0;
-  Hold≠parry;shield:art§15a;gaze clip-physics;pause-hitstop-defeat/regrip.
+  R>L/Hit-Miss cut/.22→held.28/buffer.20/hit-fall-reset0;Hold≠parry;shield:art§15a;gaze clip-physics;pause-hitstop-defeat/regrip.
 - **Accepted 2026-10-03, combat:**
-  Hero Windup1m/brake/side-back/drift/≤.85m 0HPshove;
-  regrip≤600°/s wrist-elbow-shoulder/body-world-palm;
-  Q/B/recoil hold;.20s walk wait/tail buffer/support≠chain.
+  Hero Windup1m/brake/side-back/drift/≤.85m 0HPshove;regrip≤600°/s wrist-elbow-shoulder/body-world-palm;Q/B/recoil hold;.20s walk wait/tail buffer/support≠chain.
 - **Accepted 2026-09-25, clinch shove:** Both:close swing→faster/stronger palm.
 - **Accepted 2026-09-26, recovery:**
-  Impact≤2steps/flywheel-crouch-brace/pause-hitstop≠defeat/Lowns→Rbody-floor-wall;
-  `CombatWeaponGeometry`:8seg/heldmass→forearm/free→inertia/hand-ignore expires/
-  drop past capsule→anatomy0/ROelbow-pronation-5..120/side±8°.
+  Impact≤2steps/flywheel-crouch-brace/pause-hitstop≠defeat/Lowns→Rbody-floor-wall;`CombatWeaponGeometry`:8seg/heldmass→forearm/free→inertia/hand-ignore expires/drop past capsule→anatomy0/ROelbow-pronation-5..120/side±8°.
 - **Accepted 2026-09-21, body:**
-  6bone zones/first seq;bar head×2(50/80,cap.99MaxHP)/rear±45°defeat;
-  torso1-rear1.25/arms.5/legs.75;frozen mutual zone-dir-power/1HP-ragdoll.
-  C1pose-contact/travel-yaw:return.15→.75/stun.35;stance.42/.28m/Smoothstep feet;
-  Hold:breath0/regen delay;thud/bar pool grows10s/stays.
+  6bone zones/first seq;bar head×2(50/80,cap.99MaxHP)/rear±45°defeat;torso1-rear1.25/arms.5/legs.75;frozen mutual zone-dir-power/1HP-ragdoll. C1pose-contact/travel-yaw:return.15→.75/stun.35;stance.42/.28m/Smoothstep feet;Hold:breath0/regen delay;thud/bar pool grows10s/stays.
 - **Accepted 2026-09-20, two hands:**
-  Ready low/Block high;Hit-GuardBreak-Defeat release;
-  L opposed.16→.42m/breath4s/blend/injury;
-  Dry block-miss/ragdoll wins.
+  Ready low/Block high;Hit-GuardBreak-Defeat release;L opposed.16→.42m/breath4s/blend/injury;Dry block-miss/ragdoll wins.
 - **Accepted 2026-09-21, duel:**
-  Standard barwin:swing→walk/off→reset/free hits/guard20-35/charge20/regen30/s-.6s stuns;
-  Fall freecam/shared dmg-time-cost;Charge:q=power.
+  Standard barwin:swing→walk/off→reset/free hits/guard20-35/charge20/regen30/s-.6s stuns;Fall freecam/shared dmg-time-cost;Charge:q=power.
 - **Accepted exception 2026-09-21, taunt:**
-  Standard E/settled defeat:Home toilet/view-timeline-stream-residue;
-  Guided dock/aim/bone-floor;barL/§21-exempt silent/0speech-reaction-reward/6th FP.
+  Standard E/settled defeat:Home toilet/view-timeline-stream-residue;Guided dock/aim/bone-floor;barL/§21-exempt silent/0speech-reaction-reward/6th FP.
 - **Accepted exception 2026-09-19, CombatTest:**
-  §6/§16.15/art§15a:input/hits-steps vulnerable/fall/reset/shoulder-wall;
-  W-Swalk/A-Dstrafe.
+  §6/§16.15/art§15a:input/hits-steps vulnerable/fall/reset/shoulder-wall;W-Swalk/A-Dstrafe.
 
 - **Accepted — 2026-09-16, street pool is the default NPC catalog:**
   User: default-only, new models join immediately. `DefaultNpcPopulation`:
@@ -501,21 +479,17 @@
   Imported/placed road/booth bounds verify metres/axes; §16/§21/nine art checks.
 
 - **Accepted — 2026-09-13, refined hero, M-65 and modular clothing:**
-  User: cannery-level Hero V2 detail, Vietnam-era M-65, curtains/modular clothing.
-  Lean `1.75 m` identity/face/right patch, 31 bones/six sockets/actions stay;
-  no insignia/biography/speech/activity.
-  Bartender Walk copies body curves, excludes absent hero hair tracks.
-  `player_detailed_model.py`: anatomy, open M-65/pockets/collar/plackets/cuffs,
-  trousers/boots and atlas painting; current silhouette follows the decision above.
-  Manifest separates hidden anatomy; dressed geometry ≤`8,000` triangles.
-  `PlayerJacketCloth`/`hero_jacket_cloth_v1` retains bounded hem/cuff motion and
-  cached contacts on owned buffers. Sources/materials stay immutable; pause
-  freezes, discontinuities/removal reset, hiding preserves. Posed folds/copies
-  follow the joint contract above; parameters are in `player-art-spec.md`.
-  `PlayerWardrobe` validates coverage/replacements; outfit/shared materials
-  persist through bathing/toilet leases, which lock edits and retain head ownership.
-  Arms/mirror copy appearance. Shower uses bare anatomy; seated fabric/skin
-  derive from their sources. Bathroom exceptions stay bounded.
+  Cannery-level Hero V2/Vietnam M-65/curtains/modular clothes;lean `1.75 m`/
+  identity-face-right patch/31 bones/six sockets/actions;0insignia-bio-speech-activity.
+  Bartender Walk:body curves/0absent hero-hair tracks.
+  `player_detailed_model.py`:anatomy/open M65/pockets-collar-plackets-cuffs/
+  trousers-boots/atlas;silhouette per above/hidden anatomy manifest/≤`8,000` dressed triangles.
+  `PlayerJacketCloth`/`hero_jacket_cloth_v1`:world bounded hem-cuffs/contacts/
+  owned buffers;immutable sources-materials;pause freezes;discontinuity-removal reset;
+  hiding preserves;posed folds-copies follow joint contract;`player-art-spec.md` parameters.
+  `PlayerWardrobe`:coverage/replacements/outfit/shared materials/bathing-toilet
+  leases/edit lock/head ownership. Arms-mirror copy;shower bare anatomy;
+  seated fabric-skin from sources/bathroom exceptions bounded.
   Curtains cover temples/ears/nape to jaw/upper neck, no ponytail; 12 bones.
   `PlayerHair` follows body/scarf with bounded motion and cached garment/scarf/
   strand contacts. Pause/transitions freeze, discontinuities reset, mirror copies;

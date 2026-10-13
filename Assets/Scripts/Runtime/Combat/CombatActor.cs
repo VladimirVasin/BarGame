@@ -106,6 +106,7 @@ namespace BarPromenade
             InitializeDamagePose();
             LoadKickClip(false);
             InitializeCombatAttention();
+            CombatCorpseTraversal.RegisterActor(this);
             Present();
         }
 
@@ -125,6 +126,7 @@ namespace BarPromenade
             InitializeZombieHands();
             InitializeDamagePose();
             InitializeCombatAttention();
+            CombatCorpseTraversal.RegisterActor(this);
             Present();
         }
 
@@ -391,6 +393,7 @@ namespace BarPromenade
             footwork?.Advance(seconds, State);
             CompleteImpactRecoveryStep(seconds);
             AdvancePendingKick(seconds);
+            AdvanceCorpseStepPose(seconds);
         }
 
         private MeleeHitResult Receive(CombatActor source, bool front, int sequence, Vector3 point, Vector3 normal, Vector3 direction,
@@ -578,6 +581,7 @@ namespace BarPromenade
             // Re-solving against a newly injured target during hit-stop would move
             // an NPC's weapon off that contact at the very same animation instant.
             if (presentationFrozen || PauseMenuController.IsAnyPaused || GameTimeScaleRuntime.IsPaused) return;
+            if (!IsRagdollActive) RestoreCorpseStepPose();
             if (PresentWeaponCarry()) return;
             if (!IsRagdollActive) RestorePistolAimPose();
             RestoreCombatAttention();
@@ -697,6 +701,7 @@ namespace BarPromenade
             {
                 long compositionStart = System.Diagnostics.Stopwatch.GetTimestamp();
                 ApplyNpcCombatPose();
+                ApplyCorpseStepPose();
                 NpcPoseCompositionTicks += System.Diagnostics.Stopwatch.GetTimestamp() - compositionStart;
                 long snapshotStart = System.Diagnostics.Stopwatch.GetTimestamp();
                 RememberNpcPresentedPose();
@@ -728,6 +733,7 @@ namespace BarPromenade
 
         public void ResetActor(Vector3 position, Vector3 facing)
         {
+            ResetCorpseStepPose();
             CombatFocused = true;
             freeLocomotionReleased = false;
             presentationFrozen = false;
@@ -772,11 +778,14 @@ namespace BarPromenade
             ResetCombatFacing();
             bodyMotion?.Reset();
             footwork?.Reset();
+            CombatCorpseTraversal.RegisterActor(this);
             Present();
         }
 
         private void ReleasePresentation(bool preservePresentedPose = false)
         {
+            if (IsRagdollActive || preservePresentedPose) ForgetCorpseStepPose();
+            else ResetCorpseStepPose();
             simulationPosePending = false;
             ResetCombatFacing();
             CancelPendingKick("presentation_released");
@@ -806,6 +815,7 @@ namespace BarPromenade
 
         private void OnDisable()
         {
+            CombatCorpseTraversal.RefreshActor(this);
             if (IsZombie) { State.CancelAction(); ResetZombieAttack(); }
             bool releasedTransientCarry = CancelWeaponCarry();
             UnregisterWeaponEquipment();
@@ -831,6 +841,7 @@ namespace BarPromenade
 
         private void OnDestroy()
         {
+            CombatCorpseTraversal.UnregisterActor(this);
             DisposeWeaponCarry();
             ReleaseNpcAnimation();
             ResetKnockdown();

@@ -29,9 +29,9 @@
 | 12 | `CombatTest` | Isolated weapon test |
 
 All ten gameplay roots use `PlayerFactory`/`Resources/Player/Player3DV2.prefab`:
-one rig, skin/volume, wardrobe and recorded hair/jacket motion with live fallback.
-Near-empty scenes compose validated plans at runtime. Authored geometry follows
-the Blender and world-canon rules in [../AI.md](../AI.md).
+one rig/skin/volume/wardrobe; recorded hair/world-jacket,live fallback.
+CombatTest jacket/scarf/sling follow rig/anchors without physics; hair kept.
+Near-empty scenes compose validated plans. Geometry: Blender/canon in [../AI.md](../AI.md).
 
 ## Technical ownership
 
@@ -39,7 +39,7 @@ the Blender and world-canon rules in [../AI.md](../AI.md).
 | --- | --- |
 | `BarPromenade.Rules` | Engine-independent calendar, fish supply, melee timing, vehicle ownership and input priorities |
 | `BarPromenade.Runtime` | World composition, gameplay, rendering, audio and shared input bindings |
-| `BarPromenade.Editor` | Authoring/import, scene setup, read-only player-build asset gate and diagnostic commands |
+| `BarPromenade.Editor` | Authoring; ordered hero imports; scenes; read-only player-build asset gate; diagnostics |
 | `BarPromenade.TestSupport` | Shared test lifecycle support, including listener muting |
 | `BarPromenade.EditModeTests`, `BarPromenade.PlayModeTests` | Pure/asset contracts and focused runtime scenarios |
 | `tools/` | Deterministic generators, pinned toolchain, staging/publishing and native-audio build |
@@ -83,7 +83,7 @@ repair commands. Generation/publication: [../tools/README.md](../tools/README.md
 - CombatTest:warehouse/routes;zombies only/slow chase/committed lunge;
   Standard1;Endless1–5(default2)/corpses≤2/pool≤5.
   2–4→3–7s/oldest;start-reset8+0/2+0 ammo/4 slots/+8/+4/12s respawn.
-  All3/1-2-3/whole-bar hits/safe rise/novice aim;gap:pierce/balance.
+  All3/1-2-3/bar/safe rise/novice aim;corpses passable/foot lift;gap:pierce/balance.
 - City: 20 metre types; district heights, curved old/service streets,
   courts/passages/wings, unified ground; river/shore, church and Route 01.
   First unpaused dock entry starts finite port→factory→shop supply once;
@@ -121,9 +121,9 @@ repair commands. Generation/publication: [../tools/README.md](../tools/README.md
   equipment and reduces alpine shivering and the rate of new frost exposure.
   After five seconds of free third-person play it lowers outside Alpine Village
   and rises there; its resting posture survives travel and yields to mouth actions.
-  Its yellow wrap and 45 cm tail follow wind/motion with simple hero contacts;
-  running lifts the tail. External objects/NPCs are ignored. Detailed contacts
-  remain diagnostic-only; see [current-world.md](current-world.md).
+  Outside CombatTest, yellow wrap/45 cm tail follow wind/motion/hero contacts;
+  running lifts it. External contacts ignored; detailed contacts diagnostic-only.
+  See [current-world.md](current-world.md).
 - Home toilet choices share actual hand-operated lid actions; the seated
   branch coordinates the original rig, lowered clothing, inspection/flush
   and an underwater camera that returns while the hero dresses.

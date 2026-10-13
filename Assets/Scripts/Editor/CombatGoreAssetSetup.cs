@@ -12,12 +12,133 @@ namespace BarPromenade.Editor
         private const string Folder = "Assets/Resources/CombatGore/";
         private const string HeroSource = "Assets/Player3D/V2/Models/PlayerCharacter3DV2.fbx";
         private const string NpcSource = "Assets/Resources/VillageLife/StationWorker.fbx";
-        private static bool rebindingSources;
+        internal const string SourceSkinRecipe = "BarPromenade/CombatGore/SourceSkinRecipe";
+        private const int SourceSkinRecipeRevision = 2;
+        private const string SourceSkinUserDataPrefix = "BarPromenade.CombatGore.SourceSkinRecipe=";
+        private static readonly string[] HeroSourceSkins =
+            { Folder + "BodyHero.fbx", Folder + "SkullHero.fbx", Folder + "HeadHero.fbx" };
+        private static string SourceSkinImportMarker => "BarPromenade.CombatGore.SourceSkin." +
+            Hash128.Compute(Path.GetFullPath(Application.dataPath)) + "." + SourceSkinRecipeRevision;
+        private static bool sourceSkinBootstrapQueued;
         public override uint GetVersion() => 2;
         private bool IsGore => assetPath.StartsWith(Folder, StringComparison.Ordinal);
         private bool IsHeadModel => assetPath == Folder + "HeadHero.fbx" || assetPath == Folder + "HeadNpc.fbx";
         private static string SourceFor(string path) => path.EndsWith("HeadHero.fbx", StringComparison.Ordinal)
             ? HeroSource : NpcSource;
+
+        [InitializeOnLoadMethod]
+        private static void QueueSourceSkinBootstrap()
+        {
+            if (AssetDatabase.IsAssetImportWorkerProcess() || sourceSkinBootstrapQueued) return;
+            sourceSkinBootstrapQueued = true;
+            EditorApplication.delayCall += RunSourceSkinBootstrap;
+        }
+
+        private static void RunSourceSkinBootstrap()
+        {
+            sourceSkinBootstrapQueued = false;
+            if (EditorApplication.isCompiling || EditorApplication.isUpdating)
+            {
+                QueueSourceSkinBootstrap();
+                return;
+            }
+            try { EnsureHeroSourceSkins(); }
+            catch (Exception exception)
+            {
+                Debug.LogError("Could not recover hero source-skin imports: " + exception);
+            }
+        }
+
+        internal static void EnsureHeroSourceSkins()
+        {
+            if (AssetDatabase.IsAssetImportWorkerProcess()) return;
+            // Register outside import callbacks. The local recipe changes only
+            // these derivative keys, leaving Unity's global FBX version frozen.
+            AssetDatabase.RegisterCustomDependency(SourceSkinRecipe,
+                Hash128.Compute("combat-source-skin-recipe:" + SourceSkinRecipeRevision));
+            foreach (string path in HeroSourceSkins)
+                if (!File.Exists(path)) return;
+            if (AssetDatabase.GetMainAssetTypeAtPath(HeroSource) != typeof(GameObject)) return;
+
+            string marker = SourceSkinImportMarker;
+            bool migrated = EditorPrefs.GetBool(marker, false);
+            bool importsComplete = true;
+            foreach (string path in HeroSourceSkins)
+                if (!SourceSkinImportComplete(path, out _)) importsComplete = false;
+            if (migrated && importsComplete) return;
+            string attempt = marker + ".attempt";
+            if (SessionState.GetBool(attempt, false))
+                throw new InvalidOperationException("Hero source-skin import recovery already ran in this Editor session.");
+            SessionState.SetBool(attempt, true);
+
+            // Failed artifacts never recorded the dynamic recipe dependency.
+            // A per-asset metadata stamp also changes their static import key,
+            // so no earlier source variant can select that failed result again.
+            foreach (string path in HeroSourceSkins) StampSourceSkinRecipe(path);
+            foreach (string path in HeroSourceSkins)
+            {
+                Debug.Log("HERO SOURCE-SKIN LOCAL IMPORT: " + path);
+                AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceUpdate |
+                    ImportAssetOptions.ForceSynchronousImport | ImportAssetOptions.DontDownloadFromCacheServer);
+            }
+            foreach (string path in HeroSourceSkins)
+                if (!SourceSkinImportComplete(path, out string reason))
+                    throw new InvalidOperationException("Hero source-skin import remains incomplete: " + path + "; " + reason);
+            // An interrupted or failed import never certifies this migration.
+            EditorPrefs.SetBool(marker, true);
+        }
+
+        private static void StampSourceSkinRecipe(string path)
+        {
+            var importer = AssetImporter.GetAtPath(path) as ModelImporter;
+            if (importer == null)
+                throw new InvalidOperationException("Hero source skin requires its model importer: " + path);
+            string userData = SourceSkinUserData(importer.userData);
+            if (importer.userData == userData) return;
+            importer.userData = userData;
+            AssetDatabase.WriteImportSettingsIfDirty(path);
+        }
+
+        private static string SourceSkinUserData(string userData)
+        {
+            userData = userData ?? string.Empty;
+            // Replace only our final recipe line. Preserve all pre-existing
+            // user data exactly, including its original trailing newlines.
+            int marker = userData.LastIndexOf("\n" + SourceSkinUserDataPrefix, StringComparison.Ordinal);
+            if (marker >= 0 && int.TryParse(userData.Substring(marker + 1 + SourceSkinUserDataPrefix.Length), out _))
+                userData = userData.Substring(0, marker);
+            else if (userData.StartsWith(SourceSkinUserDataPrefix, StringComparison.Ordinal) &&
+                     int.TryParse(userData.Substring(SourceSkinUserDataPrefix.Length), out _))
+                userData = string.Empty;
+            string recipe = SourceSkinUserDataPrefix + SourceSkinRecipeRevision;
+            return userData.Length == 0 ? recipe : userData + "\n" + recipe;
+        }
+
+        private static bool SourceSkinImportComplete(string path, out string reason)
+        {
+            Type mainType = AssetDatabase.GetMainAssetTypeAtPath(path);
+            if (mainType != typeof(GameObject))
+            {
+                reason = mainType == null ? "missing imported model" : mainType.Name;
+                return false;
+            }
+            var importer = AssetImporter.GetAtPath(path) as ModelImporter;
+            if (importer == null || importer.userData != SourceSkinUserData(importer.userData))
+            {
+                reason = "missing current source-skin metadata recipe";
+                return false;
+            }
+            var importLog = AssetImporter.GetImportLog(path);
+            if (importLog != null)
+                foreach (var entry in importLog.logEntries)
+                    if ((entry.flags & UnityEditor.AssetImporters.ImportLogFlags.Error) != 0)
+                    {
+                        reason = entry.message;
+                        return false;
+                    }
+            reason = null;
+            return true;
+        }
 
         private void OnPreprocessTexture()
         {
@@ -37,6 +158,7 @@ namespace BarPromenade.Editor
             if (!IsHeadModel || !(assetImporter is ModelImporter importer)) return;
             // We consume imported vertices, normals and bind poses, not just
             // source bytes. An artifact dependency also covers source importer changes.
+            context.DependsOnCustomDependency(SourceSkinRecipe);
             context.DependsOnArtifact(SourceFor(assetPath));
             importer.globalScale = 1f;
             importer.useFileScale = true;
@@ -60,8 +182,8 @@ namespace BarPromenade.Editor
             string sourcePath = SourceFor(assetPath);
             GameObject source = AssetDatabase.LoadAssetAtPath<GameObject>(sourcePath);
             // A clean checkout may import this FBX before its production source.
-            // Keep the authored skin on that initial pass; source completion below
-            // reimports only the matching derivative and restores exact source bindings.
+            // Keep the authored skin initially; the declared artifact dependency
+            // reimports this derivative after its source completes.
             if (source == null) return;
             var originals = new Dictionary<string, SkinnedMeshRenderer>(StringComparer.Ordinal);
             foreach (SkinnedMeshRenderer renderer in source.GetComponentsInChildren<SkinnedMeshRenderer>(true))
@@ -116,31 +238,6 @@ namespace BarPromenade.Editor
                     ? root : ordered.Length > 0 ? ordered[0] : null;
                 piece.localBounds = mesh.bounds;
             }
-        }
-
-        private static void OnPostprocessAllAssets(string[] imported, string[] deleted,
-            string[] moved, string[] movedFrom)
-        {
-            if (rebindingSources) return;
-            bool hero = Array.IndexOf(imported, HeroSource) >= 0;
-            bool npc = Array.IndexOf(imported, NpcSource) >= 0;
-            if (!hero && !npc) return;
-            // Asset loading/importing is supported once this import batch ends.
-            // Never import a production source recursively from OnPostprocessModel.
-            rebindingSources = true;
-            try
-            {
-                if (hero) ReimportDerivative("Hero", HeroSource);
-                if (npc) ReimportDerivative("Npc", NpcSource);
-            }
-            finally { rebindingSources = false; }
-        }
-
-        private static void ReimportDerivative(string kind, string sourcePath)
-        {
-            string path = Folder + "Head" + kind + ".fbx";
-            if (File.Exists(path) && AssetDatabase.LoadAssetAtPath<GameObject>(sourcePath) != null)
-                AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceSynchronousImport);
         }
 
         public static void BuildOrThrow()

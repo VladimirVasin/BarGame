@@ -112,11 +112,11 @@ namespace BarPromenade
             Vector3 delta = target - from;
             float distance = delta.magnitude;
             if (distance <= .001f) return true;
-            int count = Physics.RaycastNonAlloc(from, delta / distance, opponentContext.warehouseVisibilityHits,
-                distance, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore);
-            if (count == opponentContext.warehouseVisibilityHits.Length) return false;
+            RaycastHit[] contacts = CombatTraversalQueries.Raycast(from, delta / distance, ref opponentContext.warehouseVisibilityHits,
+                distance, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore, out int count);
             for (int i = 0; i < count; i++)
-                if (opponentContext.warehouseVisibilityHits[i].collider.GetComponentInParent<CombatActor>() == null) return false;
+                if (contacts[i].collider != null && !CombatCorpseTraversal.IsCorpse(contacts[i].collider) &&
+                    contacts[i].collider.GetComponentInParent<CombatActor>() == null) return false;
             return true;
         }
 

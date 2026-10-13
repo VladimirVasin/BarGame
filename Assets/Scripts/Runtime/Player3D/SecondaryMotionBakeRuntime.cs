@@ -36,6 +36,8 @@ namespace BarPromenade
 
         private sealed class Context
         {
+            internal readonly PlayerClothPhysicsPolicy ClothPolicy;
+            internal Context(Player3DAssetRegistry registry) => ClothPolicy = PlayerClothPhysicsPolicy.Find(registry.transform);
             internal AnimationClip Clip;
             internal string ClipName;
             internal double Seconds;
@@ -82,7 +84,7 @@ namespace BarPromenade
         {
             if (registry == null) return;
             if (!contexts.TryGetValue(registry, out Context context))
-                contexts.Add(registry, context = new Context());
+                contexts.Add(registry, context = new Context(registry));
             if (context.Clip != clip) context.ClipName = clip != null ? clip.name : null;
             if (validateRootMotion)
             {
@@ -140,6 +142,8 @@ namespace BarPromenade
             if (registry == null || !contexts.TryGetValue(registry, out Context context))
             { RecordResult(part, SecondaryMotionBakeResult.NoContext); return false; }
             if (!Enabled) return Reject(SecondaryMotionBakeResult.Disabled);
+            if (part != SecondaryMotionBakePart.Hair && context.ClothPolicy != null && !context.ClothPolicy.SimulationEnabled)
+                return Reject(SecondaryMotionBakeResult.Disabled);
             if (outside && wind.Strength01 > .01f) return Reject(SecondaryMotionBakeResult.Wind);
             if (context.Clip == null) return Reject(SecondaryMotionBakeResult.NoAnimation);
             if (context.Frame != Time.frameCount) return Reject(SecondaryMotionBakeResult.StaleClock);

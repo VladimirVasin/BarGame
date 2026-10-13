@@ -18,7 +18,7 @@ namespace BarPromenade
             ShoulderIndexMismatch, AttachmentAmountMismatch, StockAnchorMismatch,
             ForeendAnchorMismatch, ShoulderAnchorMismatch, HandAnchorMismatch,
             MaterialMismatch, Prepared, WarmClock, WarmContact, WarmLength,
-            WarmFit, WarmReady, Pure
+            WarmFit, WarmReady, Pure, Kinematic
         }
         public BakedPlaybackDecision LastBakedDecision { get; private set; }
         public float BakedEntryFitError { get; private set; }
@@ -30,6 +30,7 @@ namespace BarPromenade
         public long LastPresentTicks { get; private set; }
         public long TotalSimulationSteps { get; private set; }
         public int LastSimulationSteps { get; private set; }
+        public bool PhysicsSimulationEnabled => physicsSimulationEnabled;
         internal long BakedPlaybackFrames { get; private set; }
         internal bool IsEnteringBakedPlayback => bakedEntryActive;
         internal float BakedEntryElapsed => bakedEntryElapsed;
@@ -106,6 +107,8 @@ namespace BarPromenade
         private Player3DAssetRegistry registry;
         private PlayerEquipmentContacts equipment;
         private PlayerScarfBodyContacts bodyContacts;
+        private PlayerClothPhysicsPolicy clothPhysicsPolicy;
+        private bool physicsSimulationEnabled = true;
         private NpcHandPose hands;
         private CombatDroppedWeaponPickup pickup;
         private Transform shoulder, oppositeShoulder, stock, foreend;
@@ -244,6 +247,14 @@ namespace BarPromenade
         internal void Initialize(CombatActor actor, Player3DAssetRegistry rig, CombatWeaponCarryAssetProvider.Mount mount)
         {
             owner = actor; registry = rig;
+            // The gun can become a sibling dropped object; its scene policy
+            // remains the one acquired from its original character owner.
+            clothPhysicsPolicy = PlayerClothPhysicsPolicy.Find(rig.transform);
+            if (clothPhysicsPolicy != null)
+            {
+                physicsSimulationEnabled = clothPhysicsPolicy.SimulationEnabled;
+                clothPhysicsPolicy.Changed += OnClothPhysicsChanged;
+            }
             hands = rig.Anchors.RightGrip.GetComponentInParent<NpcHandPose>();
             shoulder = CityPedestrianHandProps.FindSocket(rig.Animator.transform, "upper_arm.L");
             oppositeShoulder = CityPedestrianHandProps.FindSocket(rig.Animator.transform, "upper_arm.R");
@@ -281,9 +292,7 @@ namespace BarPromenade
             }
             // The primary coat shell omits sewn pockets/flaps. Its clearance
             // covers the ribbon edges and underside without sampling cloth output.
-            bodyContacts = new PlayerScarfBodyContacts(rig, useMeshSupportPlanes: true,
-                includeEquipment: false, poseSourceSkin: true, pointQuerySlots: Links + 1,
-                jacketSurfacePadding: .013f + HalfThickness + HalfWidth * .5f);
+            if (physicsSimulationEnabled) EnsureBodyContacts();
             // The bank owns physical chain points, independent of the ribbon's
             // imported vertex density. Its profile still rejects altered UVs,
             // swivels or material dimensions before reusing an authored bake.
@@ -303,6 +312,34 @@ namespace BarPromenade
             }
             BakedPoseSignature = "shotgun-sling-physical-v1-40-1.40-.0125-.001-" +
                 profileHash.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        }
+
+        private void EnsureBodyContacts()
+        {
+            if (bodyContacts != null) return;
+            bodyContacts = new PlayerScarfBodyContacts(registry, useMeshSupportPlanes: true,
+                includeEquipment: false, poseSourceSkin: true, pointQuerySlots: Links + 1,
+                jacketSurfacePadding: .013f + HalfThickness + HalfWidth * .5f);
+        }
+
+        private void OnClothPhysicsChanged(bool enabled)
+        {
+            if (physicsSimulationEnabled == enabled) return;
+            physicsSimulationEnabled = enabled;
+            initialized = false;
+            resetPending = true;
+            simulatedFrame = -1;
+            bakedLastPresent = bakedEntryActive = bakedEntryReady = wasPaused = false;
+            bakedEntryElapsed = 0f;
+            LastSimulationSteps = SteadyProjectionIterations = SteadyLengthRepairIterations = 0;
+            LastBakeQualityIterations = 0;
+            LastBakedDecision = enabled ? BakedPlaybackDecision.None : BakedPlaybackDecision.Kinematic;
+            Array.Clear(normals, 0, normals.Length);
+            if (!enabled)
+            {
+                retainedProjectionWork?.Dispose();
+                retainedProjectionWork = projectionWork = null;
+            }
         }
 
         private static Vector3 AuthoredAnchorPosition(Transform root, Transform anchor)
@@ -597,6 +634,11 @@ namespace BarPromenade
             bool paused = !bakeCapture && (PauseMenuController.IsAnyPaused || GameTimeScaleRuntime.IsPaused);
             SteadyProjectionIterations = 0;
             SteadyLengthRepairIterations = 0;
+            if (!physicsSimulationEnabled)
+            {
+                PresentKinematic(attached, inspecting);
+                return;
+            }
             if (paused && initialized)
             {
                 LastBakedDecision = BakedPlaybackDecision.Paused;
@@ -605,6 +647,7 @@ namespace BarPromenade
                 return;
             }
             ReadTargets(attached);
+            EnsureBodyContacts();
             bool teleported = initialized && ((owner.transform.position - lastRootPosition).sqrMagnitude > .3025f ||
                 (transform.position - lastGunPosition).sqrMagnitude > .3025f ||
                 Quaternion.Angle(owner.transform.rotation, lastRootRotation) > 110f);
@@ -766,6 +809,64 @@ namespace BarPromenade
                             BakedPlaybackDecision.WarmLength : BakedEntryFitError > ContactTolerance ?
                                 BakedPlaybackDecision.WarmFit : BakedPlaybackDecision.WarmClock;
             }
+            RememberPresentedState(attached, inspecting);
+            Render(attached);
+        }
+
+        private void PresentKinematic(bool attached, bool inspecting)
+        {
+            // This branch deliberately precedes recording lookup, floor queries,
+            // body snapshots and every contact/material iteration. The whole
+            // curve is derived anew from the current weapon/rig, so an idle or
+            // dropped gun never inherits a frozen world-space chain.
+            ReadTargets(attached, updateContactDirections: false);
+            Vector3 sag = (attached ? Vector3.down : -transform.up) * .6067021f;
+            for (int i = 0; i <= Links; i++)
+            {
+                float progress = i / (float)Links;
+                Vector3 free = Vector3.Lerp(from, to, progress) + sag * Mathf.Sin(Mathf.PI * progress);
+                Vector3 overShoulder = i <= shoulderPoint ?
+                    Vector3.Lerp(from, shoulderTarget, i / (float)shoulderPoint) :
+                    SampleFrontRoute((i - shoulderPoint) / (float)(Links - shoulderPoint));
+                Vector3 point = Vector3.Lerp(free, overShoulder, shoulderAmount);
+                if (handAmount > 0f)
+                {
+                    Vector3 grasp;
+                    if (i <= HandPoint)
+                    {
+                        grasp = Vector3.Lerp(from, handTarget, i / (float)HandPoint);
+                        Vector3 shoulderGrasp = i <= shoulderPoint ?
+                            Vector3.Lerp(from, shoulderTarget, i / (float)shoulderPoint) :
+                            Vector3.Lerp(shoulderTarget, handTarget, (i - shoulderPoint) / (float)(HandPoint - shoulderPoint));
+                        grasp = Vector3.Lerp(grasp, shoulderGrasp, shoulderAmount);
+                    }
+                    else
+                    {
+                        float tailProgress = (i - HandPoint) / (float)(Links - HandPoint);
+                        grasp = Vector3.Lerp(Vector3.Lerp(handTarget, to, tailProgress),
+                            SampleGraspTail(tailProgress), shoulderAmount);
+                    }
+                    point = Vector3.Lerp(point, grasp, handAmount);
+                }
+                points[i] = previous[i] = point;
+            }
+            points[0] = previous[0] = from;
+            points[Links] = previous[Links] = to;
+            if (shoulderAmount >= .999f) points[shoulderPoint] = previous[shoulderPoint] = shoulderTarget;
+            if (handAmount >= .999f) points[HandPoint] = previous[HandPoint] = handTarget;
+            // Ribbon orientation is also current-pose-only, with no temporal
+            // smoothing of a previous simulated normal.
+            Array.Clear(normals, 0, normals.Length);
+            MaximumLinkError = MaximumContactError = StockBodyContactError = ForeendBodyContactError = HardGripBodyContactError = 0f;
+            MaximumLinkErrorIndex = MaximumContactErrorIndex = -1;
+            MaximumLinkErrorWorldCentre = MaximumContactErrorWorldPoint = Vector3.zero;
+            LastBakedDecision = BakedPlaybackDecision.Kinematic;
+            hasFloor = bakedLastPresent = bakedEntryActive = bakedEntryReady = false;
+            bakedEntryElapsed = 0f;
+            previousStep = StepSeconds;
+            initialized = true;
+            resetPending = false;
+            simulatedFrame = Time.frameCount;
             RememberPresentedState(attached, inspecting);
             Render(attached);
         }
@@ -980,7 +1081,7 @@ namespace BarPromenade
             wasAttached = attached; wasInspecting = inspecting; wasPaused = false;
         }
 
-        private void ReadTargets(bool attached)
+        private void ReadTargets(bool attached, bool updateContactDirections = true)
         {
             using var profile = TargetsMarker.Auto();
             from = transform.TransformPoint(stockOffset); to = transform.TransformPoint(foreendOffset);
@@ -1012,7 +1113,7 @@ namespace BarPromenade
                 shoulderAmount = CombatWeaponCarryAssetProvider.SlingShoulderAmount(draw, progress);
                 handAmount = CombatWeaponCarryAssetProvider.SlingLeftHandAmount(draw, progress);
             }
-            UpdateContactDirections();
+            if (updateContactDirections) UpdateContactDirections();
         }
 
         private void UpdateContactDirections()
@@ -1514,6 +1615,8 @@ namespace BarPromenade
 
         private void DisposePresentationResources()
         {
+            if (clothPhysicsPolicy != null) clothPhysicsPolicy.Changed -= OnClothPhysicsChanged;
+            clothPhysicsPolicy = null;
             ReleaseContacts();
             bodyContacts?.Dispose();
             bodyContacts = null;

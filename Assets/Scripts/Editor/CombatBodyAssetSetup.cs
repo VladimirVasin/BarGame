@@ -12,8 +12,6 @@ namespace BarPromenade.Editor
         private const string Folder = "Assets/Resources/CombatGore/";
         private const string HeroSource = "Assets/Player3D/V2/Models/PlayerCharacter3DV2.fbx";
         private const string NpcSource = "Assets/Resources/VillageLife/StationWorker.fbx";
-        private static bool rebinding;
-        private static readonly Dictionary<string, Hash128> processedSourceHashes = new Dictionary<string, Hash128>(StringComparer.Ordinal);
         private bool IsBody => assetPath == Folder + "BodyHero.fbx" || assetPath == Folder + "BodyNpc.fbx" ||
             assetPath == Folder + "SkullHero.fbx" || assetPath == Folder + "SkullNpc.fbx";
         private static string SourceFor(string path) => path.EndsWith("Hero.fbx", StringComparison.Ordinal) ? HeroSource : NpcSource;
@@ -36,6 +34,7 @@ namespace BarPromenade.Editor
         private void OnPreprocessModel()
         {
             if (!IsBody || !(assetImporter is ModelImporter importer)) return;
+            context.DependsOnCustomDependency(CombatGoreAssetSetup.SourceSkinRecipe);
             context.DependsOnArtifact(SourceFor(assetPath));
             if (assetPath.Contains("Body")) context.DependsOnSourceAsset(Folder + "CombatBody3D.json");
             importer.globalScale = 1f; importer.useFileScale = true; importer.bakeAxisConversion = true;
@@ -64,7 +63,9 @@ namespace BarPromenade.Editor
         {
             if (!IsBody) return;
             GameObject source = AssetDatabase.LoadAssetAtPath<GameObject>(SourceFor(assetPath));
-            if (source == null) return; // Source completion below reimports this derivative.
+            // The declared artifact dependency reimports this derivative after
+            // its production source completes, including a clean first import.
+            if (source == null) return;
             var originals = new Dictionary<string, SkinnedMeshRenderer>(StringComparer.Ordinal);
             foreach (SkinnedMeshRenderer renderer in source.GetComponentsInChildren<SkinnedMeshRenderer>(true)) originals.Add(renderer.name, renderer);
             // Axis baking and geometric origins differ between source renderers.
@@ -352,32 +353,6 @@ namespace BarPromenade.Editor
             float denominator = va + vb + vc;
             if (Mathf.Abs(denominator) < 1e-20f) return new Vector3(1, 0, 0);
             return new Vector3(va, vb, vc) / denominator;
-        }
-
-        private static void OnPostprocessAllAssets(string[] imported, string[] deleted, string[] moved, string[] movedFrom)
-        {
-            if (rebinding) return;
-            bool hero = Array.IndexOf(imported, HeroSource) >= 0, npc = Array.IndexOf(imported, NpcSource) >= 0;
-            if (!hero && !npc) return;
-            rebinding = true;
-            try { if (hero) Reimport("Hero"); if (npc) Reimport("Npc"); }
-            finally { rebinding = false; }
-        }
-
-        private static void Reimport(string kind)
-        {
-            string sourcePath = kind == "Hero" ? HeroSource : NpcSource;
-            if (AssetDatabase.LoadAssetAtPath<GameObject>(sourcePath) == null) return;
-            Hash128 dependencyHash = AssetDatabase.GetAssetDependencyHash(sourcePath);
-            bool alreadyProcessed = processedSourceHashes.TryGetValue(sourcePath, out Hash128 previous) && previous == dependencyHash;
-            foreach (string prefix in new[] { "Body", "Skull" })
-            {
-                string path = Folder + prefix + kind + ".fbx";
-                if (!File.Exists(path)) continue;
-                if (alreadyProcessed && AssetDatabase.LoadAssetAtPath<GameObject>(path) != null) continue;
-                AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceSynchronousImport);
-            }
-            processedSourceHashes[sourcePath] = dependencyHash;
         }
 
         [MenuItem("Bar Promenade/Combat Test/Validate Body Anatomy Assets")]

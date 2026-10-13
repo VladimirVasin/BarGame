@@ -50,6 +50,7 @@ namespace BarPromenade
             if (IsKnockedDown) PromoteKnockdownToDefeat();
             reaction = null;
             sweepValid = false;
+            CombatCorpseTraversal.RefreshActor(this);
         }
 
         private void BeginProjectileDefeat(CombatImpact impact)

@@ -10,6 +10,7 @@ namespace BarPromenade
     public sealed partial class CombatRagdoll : MonoBehaviour
     {
         private Player3DRagdollController physicsController;
+        private CombatActor combatActor;
         private CharacterController capsule;
         private PlayerMotor motor;
         private PlayerBalanceController balance;
@@ -73,6 +74,7 @@ namespace BarPromenade
 
         public void InitializeHero(PlayerRuntime player)
         {
+            combatActor = GetComponent<CombatActor>();
             if (physicsController != null) throw new InvalidOperationException("Combat ragdoll is already initialized.");
             if (!(player.Visual is Player3DCharacterPresentation hero) || player.Ragdoll == null ||
                 !player.Ragdoll.IsInitialized)
@@ -91,6 +93,7 @@ namespace BarPromenade
 
         public void InitializeOpponent(VillageResidentPresentation presentation, CharacterController controller)
         {
+            combatActor = GetComponent<CombatActor>();
             if (physicsController != null) throw new InvalidOperationException("Combat ragdoll is already initialized.");
             if (presentation == null || presentation.ModelRoot == null || controller == null)
                 throw new ArgumentException("Combat opponent requires its authored rig and controller.");
@@ -141,6 +144,7 @@ namespace BarPromenade
             Vector3 point = Finite(impactPoint) ? impactPoint : chest.worldCenterOfMass;
             point = chest.worldCenterOfMass + Vector3.ClampMagnitude(point - chest.worldCenterOfMass, .3f);
             chest.AddForceAtPosition(direction * .3f, point, ForceMode.VelocityChange);
+            RefreshTraversalCollisions();
             return true;
         }
 
@@ -161,6 +165,7 @@ namespace BarPromenade
             simulationSeconds = quietSeconds = 0f;
             ClearGroundContact();
             DisableOwners();
+            RefreshTraversalCollisions();
             return true;
         }
 
@@ -230,6 +235,7 @@ namespace BarPromenade
             // Reattach the weapon's mass before hit-stop records COM velocities.
             GetComponent<CombatActor>()?.EnableHeldWeaponPhysics();
             if (hitStopFrozen) physicsController.SetSimulationSuspended(true);
+            RefreshTraversalCollisions();
             return true;
         }
 
@@ -261,6 +267,7 @@ namespace BarPromenade
         {
             if (!IsActive) return;
             recoverable = false;
+            RefreshTraversalCollisions();
             if (!IsRecovering) return;
             presentedMotion.TryGetValue(PelvisBody.transform, out RagdollBoneMotion motion);
             physicsController.BeginCombatSimulation(motion.Linear, motion.Angular, presentedMotion, true);
@@ -268,6 +275,7 @@ namespace BarPromenade
             simulationSeconds = quietSeconds = 0f;
             DisableOwners();
             if (hitStopFrozen) physicsController.SetSimulationSuspended(true);
+            RefreshTraversalCollisions();
         }
 
         /// <summary>Return the final visible standing pose, never the initial round pose.</summary>
@@ -279,6 +287,7 @@ namespace BarPromenade
             RestorePose(finalPose);
             IsActive = IsSettled = IsRecovering = recoverable = hitStopFrozen = false;
             RestoreOwners();
+            RefreshTraversalCollisions();
         }
 
         private void LateUpdate()
@@ -440,7 +449,10 @@ namespace BarPromenade
             previousWorldPose.Clear();
             presentedMotion.Clear();
             RestoreOwners();
+            RefreshTraversalCollisions();
         }
+
+        private void RefreshTraversalCollisions() => CombatCorpseTraversal.RefreshActor(combatActor);
 
         private void RestoreOwners()
         {

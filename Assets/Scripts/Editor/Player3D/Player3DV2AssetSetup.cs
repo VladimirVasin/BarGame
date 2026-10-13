@@ -228,7 +228,7 @@ namespace BarPromenade.Editor
 
         static Player3DV2AssetSetup()
         {
-            if (!Application.isBatchMode)
+            if (!Application.isBatchMode && !AssetDatabase.IsAssetImportWorkerProcess())
             {
                 EditorApplication.delayCall += ValidatePrefabDependencyStamp;
             }
@@ -265,7 +265,7 @@ namespace BarPromenade.Editor
 
         public static void QueueBuildWhenSourcesExist()
         {
-            if (isBuilding || buildQueued || !SourcesExist())
+            if (AssetDatabase.IsAssetImportWorkerProcess() || isBuilding || buildQueued || !SourcesExist())
             {
                 return;
             }
@@ -276,6 +276,8 @@ namespace BarPromenade.Editor
 
         public static void BuildOrThrow()
         {
+            if (AssetDatabase.IsAssetImportWorkerProcess())
+                throw new InvalidOperationException("Hero V2 prefab building requires the main Editor process.");
             if (isBuilding)
             {
                 return;
@@ -293,6 +295,7 @@ namespace BarPromenade.Editor
             try
             {
                 EnsureFolderForAsset(PrefabPath);
+                CombatGoreAssetSetup.EnsureHeroSourceSkins();
                 ImportSource(ModelPath);
                 ImportSource(ManifestPath);
                 ImportSource(AnimationPath);
@@ -386,6 +389,12 @@ namespace BarPromenade.Editor
         private static void RunQueuedBuild()
         {
             buildQueued = false;
+            if (AssetDatabase.IsAssetImportWorkerProcess()) return;
+            if (EditorApplication.isCompiling || EditorApplication.isUpdating)
+            {
+                QueueBuildWhenSourcesExist();
+                return;
+            }
             if (!SourcesExist())
             {
                 return;
@@ -404,7 +413,17 @@ namespace BarPromenade.Editor
 
         private static void ImportSource(string assetPath)
         {
-            AssetDatabase.ImportAsset(assetPath, ImportAssetOptions.ForceUpdate);
+            // The animation importer reads the model's avatar. Finish each
+            // source before proceeding. A prefab dependency change does not
+            // require reimporting already valid FBXs and textures.
+            ImportAssetOptions options = ImportAssetOptions.ForceSynchronousImport;
+            if (AssetDatabase.GetMainAssetTypeAtPath(assetPath) == typeof(DefaultAsset))
+                options |= ImportAssetOptions.ForceUpdate | ImportAssetOptions.DontDownloadFromCacheServer;
+            AssetDatabase.ImportAsset(assetPath, options);
+            if (AssetDatabase.GetMainAssetTypeAtPath(assetPath) == typeof(DefaultAsset))
+                throw new InvalidOperationException(
+                    $"Hero V2 source remains a failed import placeholder: '{assetPath}'. " +
+                    "Inspect its AssetImportWorker log before rebuilding the prefab.");
         }
 
         private static Player3DV2Manifest LoadAndValidateManifest()

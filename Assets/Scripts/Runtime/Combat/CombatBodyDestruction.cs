@@ -595,6 +595,7 @@ namespace BarPromenade
             proxy.transform.SetParent(target, false);
             piece.Proxy = proxy.AddComponent<BoxCollider>(); piece.Proxy.enabled = false;
             body.Actor.Ragdoll.PhysicsController.RegisterCombatBodyCollider(piece.Proxy);
+            CombatCorpseTraversal.RegisterCollider(body.Actor, piece.Proxy);
             UpdateProxyBounds(piece, surfaceRefreshed);
             foreach (var collider in body.Actor.Ragdoll.PhysicsController.AnatomicalColliders)
                 Physics.IgnoreCollision(piece.Proxy, collider.Key, true);
@@ -689,7 +690,11 @@ namespace BarPromenade
         }
 
         private static void SetColliderEnabled(Collider collider, bool enabled)
-        { if (collider.enabled != enabled) collider.enabled = enabled; }
+        {
+            if (collider.enabled == enabled) return;
+            collider.enabled = enabled;
+            if (enabled) CombatCorpseTraversal.NotifyColliderEnabled(collider);
+        }
 
         private static void SetColliderBounds(BoxCollider collider, Vector3 centre, Vector3 size)
         {
@@ -1176,6 +1181,7 @@ namespace BarPromenade
             var fragment = new Fragment { Body = rigid, Collider = collider, Anatomical = anatomical };
             foreach (Piece piece in pieces) { fragment.Pieces.Add(piece); piece.Fragment = fragment; }
             body.Fragments.Add(fragment); Freeze(fragment, frozen);
+            CombatCorpseTraversal.RegisterCollider(body.Actor, collider, detached: true);
         }
 
         private void ReleaseDetachedTissue(Body body, List<Piece> pieces, CombatImpact impact)
@@ -1205,6 +1211,7 @@ namespace BarPromenade
             rigid.linearVelocity = (former != null ? former.Frozen ? former.Velocity : former.Body.linearVelocity : Vector3.zero) + impact.Direction * 2.4f;
             rigid.angularVelocity = new Vector3(2f, 3f, -2f);
             body.Fragments.Add(fragment); Freeze(fragment, frozen);
+            CombatCorpseTraversal.RegisterCollider(body.Actor, fragment.Collider, detached: true);
         }
 
         private static void ResizeFragment(Fragment fragment)
@@ -1336,7 +1343,10 @@ namespace BarPromenade
                 if (piece.Proxy != null) SetColliderEnabled(piece.Proxy, false);
             }
             foreach (Fragment fragment in body.Fragments)
+            {
+                CombatCorpseTraversal.ReleaseCollider(fragment.Collider);
                 if (fragment.Body != null) { fragment.Body.gameObject.SetActive(false); Destroy(fragment.Body.gameObject); }
+            }
             body.Fragments.Clear(); body.Detached.Clear(); body.Replaced.Clear(); body.Active = false;
             body.VolleyDepth = 0; body.VolleyNeedsSynchronization = false;
         }
@@ -1348,8 +1358,10 @@ namespace BarPromenade
                 owners.Remove(body.Actor);
                 body.Actor.Hurtboxes?.SetBodySurfaces(null);
                 foreach (var original in body.Originals) suppressed.Remove(original.Key);
+                foreach (Fragment fragment in body.Fragments) CombatCorpseTraversal.ReleaseCollider(fragment.Collider);
                 foreach (Piece piece in body.Pieces)
                 {
+                    CombatCorpseTraversal.ReleaseCollider(piece.Proxy);
                     if (piece.Baked != null) Destroy(piece.Baked);
                     if (piece.ProxyMesh != null) Destroy(piece.ProxyMesh);
                     piece.ProxyGeometry?.Dispose();

@@ -84,6 +84,7 @@ namespace BarPromenade
 
         private void PresentZombie()
         {
+            RestoreCorpseStepPose();
             footwork?.Restore(); damagePose?.Restore(); bodyMotion?.Restore();
             bool stagger = State.IsStunned;
             AnimationClip chosen = State.IsDefeated ? defeat : stagger ? hit : State.IsAttacking
@@ -104,6 +105,7 @@ namespace BarPromenade
             if (recoveryFeet) footwork.Apply();
             ApplyCombatAttention(); ApplyNpcPoseBlend();
             if (recoveryFeet) footwork.ConstrainContacts();
+            ApplyCorpseStepPose();
             handPose.SetGrip(false, 0f); handPose.SetGrip(true, 0f);
             visibleAttackSequence = State.AttackSequence;
             RememberNpcPresentedPose();

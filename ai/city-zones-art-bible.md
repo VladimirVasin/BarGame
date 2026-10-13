@@ -4243,21 +4243,23 @@ OS dynamic fonts в IMGUI запрещены; Unity legacy — аварийны�
 
 ### Принятое исключение — боевой полигон
 
-§6:PS1/вне сюжета/9checks;`ai/architecture-notes.md`.
-`2026-10-12`:warehouse24×18×6m/upper2.6/2stairs/3layouts/cargo-racks/pipes→node;
+§6:PS1/0story/9checks;`ai/architecture-notes.md`.
+`2026-10-12`:warehouse24×18×6m/upper2.6/2stairs/3layouts/racks/pipes→node;
 8lamps/2shadows/§8wear/vent/concrete-metal/resetseed/New;
-Endless live1–5/poolIDs/2–4→3–7active s/≥3m/AI-spacing-stairs/heroend.
+Endless1–5/poolIDs/2–4→3–7active s/≥3m/AI-spacing-stairs/heroend.
 `2026-10-13`:defaultlive2/corpses0–2(default2)/pool=livecap≤5/oldest retire-reuse.
-`2026-10-13`:CombatTest undead only/0lore-infection/3worn looks/pale-dark eyes;
-slump/heavy asym gait/palms/idle-walk-RL lunge/telegraph→rush→return/groan-hiss.
-`2026-10-10`:pistol LunderM65/bar Rbelt/shotgun soft sling/Lshoulder-frontdiag-back;
-6stow-draw/rig-model-ammo/Ljacketopen/cloth-hair-scarf/0hardmount.
+`2026-10-13`:undead-only/0lore-infection/3worn/pale-darkeyes;
+slump/heavy-asymgait/palms/idle-walk/RLlunge/telegraph→rush→return/groan-hiss.
+`2026-10-14`:remains step/rig-contour;livefall≠corpse/physics kept;
+coat-scarf rig/sling anchors;physics0/hair kept.
+`2026-10-10`:pistol LunderM65/bar Rbelt/shotgun softsling/Lshoulder-frontdiag-back;
+6stow-draw/rig-model-ammo/Lcoatopen/hair/0hardmount.
 `2026-10-13`:all3/1held-2stowed/finiteammo/0wave refill/4fixed packs/Eshared;
 endless12active s/pause-modal-focus-defeat0/resetpool.
 Gun:worn unbranded darkmetal/Rpalm gait/2hand aim/crossflash;
 Aim:8gaits/×.85/facing/Step/uppercam/FOV-grip return.
-`2026-10-13`:hero gun:drift/recoil/overshoot/finger regrip/blink;
-muzzlereticle/shotguncentre/stablecam/intent legs.
+`2026-10-13`:hero:drift/recoil/overshoot/finger regrip/blink;
+muzzlereticle/shotguncentre/stablecam/intentlegs.
 `2026-10-08`:streak/impulse-SFX;pistol head0HP→ragdoll.
 Shotgun:worn dark steel/wood/2barrels/shoulder-stock/Lforeend;
 heavy recoil/flash-smoke/deepthud;2shots/break/spent eject/load/close.
@@ -4266,7 +4268,7 @@ heavy recoil/flash-smoke/deepthud;2shots/break/spent eject/load/close.
 `2026-10-09`:nearmax/body launch/head≤14/fast debris-blood/falloff.
 Rig:chest-abdomen/arm-hand/leg-catch/skin-fabric-glove-boot/wet-dry/repeat.
 `2026-10-09`:torso→joined skeleton/0chunks;head-limb cuts/finite parts;
-Survivors-corpses/crawl/reset.
+Survivor-corpse/crawl/reset.
 Pistol3-5/16/low eject;brain8:full/wetmuted jelly/squash/bone-tissue/cam-hide/loss.
 Dark blood/narrow-slow/finitepulse/rig-cut/stains-pool-debris;
 convulsions≤2.35s/corpse HP-pose-impulse;volley1reaction/terminal.
@@ -4278,7 +4280,7 @@ softknees/pelvis-grip-elbows↓/step/face block-flex.
 Bar:bat grip/end/hook→/shoulder+block/charge/free;wall sparks/recoil.
 Windup1m/Q-B:dry/0finish/highguard/buffer;Qfar:pelvis-foot→/chest←;
 near knee/bar kept/torso mirror/L-shove←/palm-bar-body.
-Грудь контрастна;стена/край/конец→скрыто.
+Chest contrast;wall-edge-end→hide.
 Win:walk/gun fire-reload;barE:toilet §7 FP/barL/body-floorR/0reaction.
 Charge/shield:dim0/amber=request/closed=ready/filled=block/0story.
 

@@ -1411,6 +1411,7 @@ namespace BarPromenade
             for (int index = 0; index < colliders.Count; index++)
             {
                 colliders[index].enabled = enabled && CombatColliderAllowed(colliders[index]);
+                if (colliders[index].enabled) CombatCorpseTraversal.NotifyColliderEnabled(colliders[index]);
             }
         }
 

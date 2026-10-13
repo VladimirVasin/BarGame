@@ -85,7 +85,7 @@ namespace BarPromenade
             }
             // The scarf already owns these deformed vertices. Reading its bounded tail
             // needs no additional mesh bake, deformation buffer or scene-geometry scan.
-            tailActive = scarf != null && scarf.TailSimulation != null && scarf.TailSimulation.IsActive;
+            tailActive = scarf != null && scarf.IsTailContactActive;
             if (tailActive)
             {
                 Vector3[] vertices = scarf.TailSimulation.WorldVertices;

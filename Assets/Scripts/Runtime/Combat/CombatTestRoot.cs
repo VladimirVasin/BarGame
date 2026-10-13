@@ -112,6 +112,7 @@ namespace BarPromenade
             CreateCombatLocation();
             var ui = new GameObject("Combat UI"); ui.transform.SetParent(transform, false);
             Prompt = ui.AddComponent<InteractionPromptView>();
+            gameObject.AddComponent<PlayerClothPhysicsPolicy>().SetSimulationEnabled(false);
             Player = PlayerFactory.Create(transform, heroSpawn, camera, arenaBounds, Prompt);
             Hero = Player.GameObject.AddComponent<CombatActor>();
             CombatTestSelection selection = CombatTestStartService.ConsumeSelection();

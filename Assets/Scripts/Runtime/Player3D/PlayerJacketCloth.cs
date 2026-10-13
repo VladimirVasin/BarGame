@@ -74,6 +74,9 @@ namespace BarPromenade
         private PlayerScarfBodyContacts contacts;
         private PlayerWardrobe wardrobe;
         private PlayerSecondaryMotionEnvironment environment;
+        private PlayerClothPhysicsPolicy physicsPolicy;
+        private bool physicsPolicySubscribed;
+        private bool clothPhysicsEnabled = true;
         private readonly Vector3[] points = new Vector3[NodeCount];
         private readonly Vector3[] velocities = new Vector3[NodeCount];
         private readonly Vector3[] targets = new Vector3[NodeCount];
@@ -135,6 +138,7 @@ namespace BarPromenade
         internal IDisposable BeginBakeCapture()
         {
             if (!HasAuthoredBindings) throw new InvalidOperationException("A jacket bake needs its authored cloth bindings.");
+            if (!clothPhysicsEnabled) throw new InvalidOperationException("Jacket cloth physics is disabled by the area policy.");
             // The editor baker explicitly initializes these resources; Awake is
             // not guaranteed to run for its hidden prefab instance.
             EnsureSurfaces();
@@ -211,6 +215,7 @@ namespace BarPromenade
             }
         }
         public bool IsInitialized => initialized;
+        public bool ClothPhysicsEnabled => clothPhysicsEnabled;
         public bool IsRuntimeDriven => driven;
         public bool IsActive { get; private set; }
         public int SurfaceCount => bindings.Length;
@@ -243,7 +248,7 @@ namespace BarPromenade
             out int managedContacts, out int nativeContacts, out bool executedInBurst)
         {
             managed = native = null; managedContacts = nativeContacts = 0; executedInBurst = false;
-            return surfaces != null && (uint)surface < surfaces.Length &&
+            return clothPhysicsEnabled && surfaces != null && (uint)surface < surfaces.Length &&
                 surfaces[surface].TryCompareNativeSolver(contacts, out managed, out native, out managedContacts,
                     out nativeContacts, out executedInBurst);
         }
@@ -253,7 +258,7 @@ namespace BarPromenade
             out bool executedInBurst)
         {
             managed = native = null; managedContacts = nativeContacts = 0; executedInBurst = false;
-            return surfaces != null && (uint)surface < surfaces.Length &&
+            return clothPhysicsEnabled && surfaces != null && (uint)surface < surfaces.Length &&
                 surfaces[surface].TryCompareNativeArea(contacts, constrainMaterial, areaPasses, out managed,
                     out native, out managedContacts, out nativeContacts, out executedInBurst);
         }
@@ -263,7 +268,7 @@ namespace BarPromenade
             out bool referenceResult, out bool cachedResult, out long reuseDelta)
         {
             reference = cached = null; referenceResult = cachedResult = false; reuseDelta = 0;
-            return surfaces != null && (uint)surface < surfaces.Length &&
+            return clothPhysicsEnabled && surfaces != null && (uint)surface < surfaces.Length &&
                 surfaces[surface].TryCompareFreeSurfaceMemo(contacts, originalOffset, inputOffset, invalidateContacts,
                     out reference, out cached, out referenceResult, out cachedResult, out reuseDelta);
         }
@@ -414,10 +419,61 @@ namespace BarPromenade
         public void BindRuntime(PlayerRuntime owner)
         {
             if (!HasAuthoredBindings) throw new InvalidOperationException("The production jacket has no authored cloth bindings.");
+            UnsubscribePhysicsPolicy();
+            physicsPolicy = PlayerClothPhysicsPolicy.Find(owner.GameObject.transform);
+            SubscribePhysicsPolicy();
             environment = new PlayerSecondaryMotionEnvironment(owner);
             driven = true;
             EnsureSurfaces();
+            if (!clothPhysicsEnabled) ApplyRigAppearance(worn: true);
             RequestReset();
+        }
+
+        private void SubscribePhysicsPolicy()
+        {
+            if (physicsPolicy != null && !physicsPolicySubscribed)
+            {
+                physicsPolicy.Changed += SetClothPhysicsEnabled;
+                physicsPolicySubscribed = true;
+            }
+            SetClothPhysicsEnabled(physicsPolicy == null || physicsPolicy.SimulationEnabled);
+        }
+
+        private void UnsubscribePhysicsPolicy()
+        {
+            if (physicsPolicySubscribed && physicsPolicy != null)
+                physicsPolicy.Changed -= SetClothPhysicsEnabled;
+            physicsPolicySubscribed = false;
+        }
+
+        private void SetClothPhysicsEnabled(bool value)
+        {
+            if (clothPhysicsEnabled == value) return;
+            clothPhysicsEnabled = value;
+            initialized = false;
+            resetPending = true;
+            simulationSeconds = previousSeconds = 0d;
+            bakedPlaybackActive = bakeTransitionActive = false;
+            bakedTrackIdentity = null;
+            LastStepSeconds = MaximumDisplacement = 0f;
+            LastContactCount = LastSimulationSteps = 0;
+            LastMaximumSurfaceGeometryWrites = LastHemFoldSurfaces = LastHemCandidateReuses = 0;
+            LastDiscardedSeconds = 0d;
+            LastPoseWasBaked = LastPoseWasTransition = false;
+            Array.Clear(points, 0, NodeCount);
+            Array.Clear(targets, 0, NodeCount);
+            Array.Clear(previousTargets, 0, NodeCount);
+            Array.Clear(velocities, 0, NodeCount);
+            Array.Clear(displacements, 0, NodeCount);
+            Array.Clear(transitionNodeOffsets, 0, NodeCount);
+            Array.Clear(transitionNodeVelocities, 0, NodeCount);
+            if (!value)
+            {
+                contacts?.Dispose();
+                contacts = null;
+                if (surfaces != null)
+                    foreach (PlayerJacketClothSurface surface in surfaces) surface.RestoreRigPose();
+            }
         }
 
         private void EnsureSurfaces()
@@ -439,8 +495,14 @@ namespace BarPromenade
             }
             BuildSleeveSeams();
             wardrobe = registry.GetComponent<PlayerWardrobe>();
-            contacts = new PlayerScarfBodyContacts(registry, "jacket", useMeshSupportPlanes: true,
-                pointQuerySlots: 1, includeEquipmentRibbons: false);
+            if (clothPhysicsEnabled) EnsureContacts();
+        }
+
+        private void EnsureContacts()
+        {
+            if (contacts == null)
+                contacts = new PlayerScarfBodyContacts(registry, "jacket", useMeshSupportPlanes: true,
+                    pointQuerySlots: 1, includeEquipmentRibbons: false);
         }
 
         private void BuildSleeveSeams()
@@ -522,6 +584,11 @@ namespace BarPromenade
         {
             if (!driven) return;
             bool paused = GameTimeScaleRuntime.IsPaused || SceneTransitionService.IsTransitioning;
+            if (!clothPhysicsEnabled)
+            {
+                ApplyAt(simulationSeconds, paused, outside: false, wind: default);
+                return;
+            }
             if (!paused) simulationSeconds += Time.deltaTime;
             environment.Sample(out bool outside, out WindSample wind);
             ApplyAt(simulationSeconds, paused, outside, wind);
@@ -554,6 +621,12 @@ namespace BarPromenade
             bool worn = wardrobe == null || wardrobe.IsRendererWorn(bindings[0].Renderer);
             if (wardrobe != null && wardrobe.HasAppearanceLease && !bindings[0].Renderer.enabled) worn = false;
             IsActive = worn;
+            if (!clothPhysicsEnabled)
+            {
+                ApplyRigAppearance(worn);
+                return;
+            }
+            EnsureContacts();
             if (!worn)
             {
                 if (initialized) foreach (PlayerJacketClothSurface surface in surfaces) surface.Restore();
@@ -668,6 +741,23 @@ namespace BarPromenade
             Array.Copy(targets, previousTargets, NodeCount);
             previousPosition = transform.position; previousRotation = transform.rotation;
             previousSeconds = IsFinite(seconds) ? seconds : 0d;
+        }
+
+        private void ApplyRigAppearance(bool worn)
+        {
+            // Ordinary bones and authored elbow folds remain visible. Only the
+            // held left panel needs a mesh write; it never enters a contact or
+            // secondary-motion solve, including manual ApplyAt calls.
+            LastStepSeconds = MaximumDisplacement = 0f;
+            LastContactCount = 0;
+            bonePoseSnapshot.BeginPose();
+            foreach (PlayerJacketClothSurface surface in surfaces)
+            {
+                surface.ApplyRigAppearance(worn && weaponAccessAmount > 0f ? registry.Anchors.LeftGrip : null,
+                    worn ? weaponAccessAmount : 0f, useSharedSnapshot: true);
+                LastMaximumSurfaceGeometryWrites = Mathf.Max(LastMaximumSurfaceGeometryWrites,
+                    surface.LastDeformGeometryWrites);
+            }
         }
 
         private bool TryGetBakedPose(double seconds, bool outside, WindSample wind, out SecondaryMotionBakeSample sample)
@@ -809,11 +899,14 @@ namespace BarPromenade
         {
             if (target == null || target == this || surfaces == null || !target.HasAuthoredBindings) return;
             target.driven = false;
+            target.SetClothPhysicsEnabled(clothPhysicsEnabled);
             target.EnsureSurfaces();
             target.bonePoseSnapshot.BeginPose();
             if (!IsActive)
             {
-                foreach (PlayerJacketClothSurface surface in target.surfaces) surface.Restore();
+                foreach (PlayerJacketClothSurface surface in target.surfaces)
+                    if (clothPhysicsEnabled) surface.Restore();
+                    else surface.RestoreRigPose();
                 target.IsActive = false;
                 return;
             }
@@ -821,7 +914,7 @@ namespace BarPromenade
                 for (int j = 0; j < target.surfaces.Length; j++)
                     if (bindings[i].Source == target.bindings[j].Source)
                         surfaces[i].CopyTo(target.surfaces[j], useSharedSnapshot: true);
-            target.ReconcileSleeveNormals();
+            if (clothPhysicsEnabled) target.ReconcileSleeveNormals();
             target.IsActive = IsActive;
         }
 
@@ -850,13 +943,26 @@ namespace BarPromenade
             sleeveSeams.Clear();
         }
         private static bool IsFinite(double value) => !double.IsNaN(value) && !double.IsInfinity(value);
-        private void OnEnable() => RequestReset();
+        private void OnEnable()
+        {
+            // A passive mirror/subset inherits the source state in CopyPoseTo.
+            if (driven) SubscribePhysicsPolicy();
+            RequestReset();
+        }
         private void OnDisable()
         {
+            UnsubscribePhysicsPolicy();
             ClearWeaponAccess(weaponAccessOwner);
             RequestReset();
-            if (surfaces != null) foreach (PlayerJacketClothSurface surface in surfaces) surface.Restore();
+            if (surfaces != null)
+                foreach (PlayerJacketClothSurface surface in surfaces)
+                    if (clothPhysicsEnabled) surface.Restore();
+                    else surface.RestoreRigPose();
         }
-        private void OnDestroy() => DisposeSurfaces();
+        private void OnDestroy()
+        {
+            UnsubscribePhysicsPolicy();
+            DisposeSurfaces();
+        }
     }
 }

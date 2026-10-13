@@ -102,6 +102,7 @@ namespace BarPromenade
                     continue;
                 }
                 sector.Proxy.enabled = true; proxies.Add(sector.Proxy);
+                CombatCorpseTraversal.NotifyColliderEnabled(sector.Proxy);
                 var tissue = new List<Piece>();
                 foreach (Piece piece in sector.Pieces)
                     if (!piece.Bone && piece.Visible && !piece.TissueEmitted &&

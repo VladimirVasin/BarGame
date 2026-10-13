@@ -140,7 +140,8 @@ namespace BarPromenade
             for (int i = 0; i < count; i++)
             {
                 RaycastHit contact = contacts[i];
-                if (contact.collider.GetComponentInParent<CombatActor>() != null) continue;
+                if (contact.collider == null || CombatCorpseTraversal.IsCorpse(contact.collider) ||
+                    contact.collider.GetComponentInParent<CombatActor>() != null) continue;
                 allowed = Mathf.Min(allowed, Mathf.Max(0f, contact.distance - body.skinWidth));
             }
             return travel * (allowed / length);

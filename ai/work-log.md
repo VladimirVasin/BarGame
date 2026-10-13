@@ -3,7 +3,7 @@
 Newest outcomes/checks first. Archive whole dates at budget: [policy](README.md).
 Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-2026-08.md).
 
-## 2026-10-14 - Two-hand crowbar
+## 2026-10-14 - Two-hand crowbar, corpse traversal and combat cloth
 
 - User chose adjacent bat grip at the handle end, right fist above left;
   raised hook faces forward. One broad shoulder strike with accented contact
@@ -16,6 +16,24 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
   the rigid hook follows torso winding within its forward cone.
 - Proof: `TWO HAND STRIKE EXPORTED PROOF`; source/export SHA matched;
   `CROWBAR PIVOT SHAPE, ANCHORS AND COLLISION OK`. Current HeroV2 motion reviewed.
+- Hero/zombies cross retained bodies and detached remains; shared original-leg
+  clearance keeps floor/walls authoritative, including chase/lunge and living crawl.
+  Owned collision exclusions reset even on disabled pooled anatomy; query scratch
+  grows/retries instead of treating crowded remains as an absent floor.
+- Proof: `Range_CorpseTraversalKeepsMovementFootClearanceAndPoolReuse`;
+  ordinary/aimed movement, committed step, pause, stairs and reuse; crossing frames reviewed.
+- CombatTest selects cloth-off before hero creation: jacket/scarf use the rig,
+  shotgun ribbon follows anchors; pistol hand opening stays. Hair and world-default
+  motion remain. Cloth solvers/contacts/playback stay off through pause, drop,
+  pickup, defeat and reset; restoring simulation starts fresh.
+- Proof: `Range_CombatClothRemainsRigidAcrossMovementWeaponsAndLifecycle`;
+  solver/playback counters, hair continuity, attachments and rendered frames reviewed.
+- Hero rebuild exposed a cached failed BodyHero artifact. Scoped source-skin
+  metadata/recipe migration prevents reselection; ordered main-Editor imports
+  retain avatar/mesh identity. Declared dependencies replace nested body/head
+  reimports; global importer versions and model geometry stay unchanged.
+- Proof: `ProductionRebuild_UsesCompletedSourcesAndPreservesModelReferences`;
+  repeated rebuild and derivative import logs are clean.
 
 ## 2026-10-13 - Bounded world and simple combat
 
