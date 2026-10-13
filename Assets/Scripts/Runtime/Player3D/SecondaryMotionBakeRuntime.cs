@@ -28,7 +28,9 @@ namespace BarPromenade
         private const int Magic = 0x42504d53, Version = 4, MaximumResidentClips = 12;
         private static readonly Dictionary<Player3DAssetRegistry, Context> contexts = new();
         private static readonly Dictionary<ClipKey, ClipData> clips = new();
-        private static readonly Queue<ClipKey> residentOrder = new();
+        // Least recently used first. The bounded list avoids allocating a node
+        // on each hair/jacket/sling cache hit in the same rendered frame.
+        private static readonly List<ClipKey> residentOrder = new(MaximumResidentClips);
         internal static bool Enabled { get; set; } = true;
         internal static bool CaptureRejectionDetails { get; set; }
 
@@ -349,7 +351,11 @@ namespace BarPromenade
                 if (bytes == null || bytes.Length == 0 || bytes.Length > 80000000) return null;
                 using var input = new MemoryStream(bytes, false);
                 using var decompressor = new DeflateStream(input, CompressionMode.Decompress);
-                using var reader = new BinaryReader(decompressor);
+                // Channel headers contain many single-byte/single-float reads.
+                // Feed those from one bounded buffer rather than repeatedly
+                // entering Deflate for every header and constant channel.
+                using var buffered = new BufferedStream(decompressor, 65536);
+                using var reader = new BinaryReader(buffered);
                 if (reader.ReadInt32() != Magic) return null;
                 int format = reader.ReadInt32();
                 if (format != 2 && format != 3 && format != Version) return null;
@@ -381,7 +387,7 @@ namespace BarPromenade
                     track.Guards = ReadChannels(guardFrames, guards);
                     clip.Tracks[index] = track;
                 }
-                if (decompressor.ReadByte() != -1) return null;
+                if (buffered.ReadByte() != -1) return null;
                 return clip;
 
                 float[][] ReadChannels(int frames, int channels)

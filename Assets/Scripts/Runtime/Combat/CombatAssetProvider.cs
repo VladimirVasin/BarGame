@@ -31,14 +31,6 @@ namespace BarPromenade
         public static float ReleaseSourceSeconds(float seconds, float power, bool continuation = false)
         {
             float t = Mathf.Clamp01(seconds / ReleaseConvergenceSeconds);
-            if (continuation && seconds < ReleaseConvergenceSeconds)
-            {
-                // Enter the next preparation, never through Ready0. Full charge
-                // holds the authored loaded key, before the overhead acceleration.
-                // Rejoin the original arc before any weapon contact is sampled.
-                float entry = Mathf.Lerp(.25f, .33f, Mathf.Clamp01(power));
-                return Mathf.Lerp(entry, ReleaseConvergenceSeconds, t * t * (3f - 2f * t));
-            }
             return seconds + Mathf.Clamp01(power) * ChargePreparationAdvanceSeconds * (1f - t * t * (3f - 2f * t));
         }
         public static readonly string[] ClipNames = { ReadyClip, RestClip, AttackClip, BlockClip, HitClip,
@@ -53,9 +45,10 @@ namespace BarPromenade
             { Attack = attack; ReleaseLight = light; ReleaseHeavy = heavy; Charge = charge; Recoil = recoil; }
         }
 
-        public static SwingClipSet SwingClips(MeleeSwing swing) => swing == MeleeSwing.Backhand
-            ? new SwingClipSet(BackhandClip, BackhandClip, BackhandHeavyClip, BackhandChargeClip, BackhandRecoilClip)
-            : new SwingClipSet(AttackClip, ReleaseLightClip, ReleaseHeavyClip, ChargeClip, RecoilClip);
+        // The rules can retain their alternating side/power bookkeeping. Both
+        // presses present the same one-handed arc on the continuous world rig.
+        public static SwingClipSet SwingClips(MeleeSwing swing) =>
+            new SwingClipSet(AttackClip, ReleaseLightClip, ReleaseHeavyClip, ChargeClip, RecoilClip);
         public static readonly string[] LocomotionClipNames = { AdvanceClip, RetreatClip, StrafeLeftClip, StrafeRightClip };
         public const float LocomotionCycleDistance = .60f;
         // Authored independently of melee shuffles and the ordinary tank walk.

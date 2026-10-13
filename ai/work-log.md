@@ -3,46 +3,38 @@
 Newest outcomes/checks first. Archive whole dates at budget: [policy](README.md).
 Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-2026-08.md).
 
-## 2026-10-13 — Bounded world and combat population
+## 2026-10-13 - Bounded world and simple combat
 
-- Litter:root palette/0MPB/owned cleanup/tolerance;forest:geometry-UV-normal-collision/
-  wind-shadow/one collider/trunk buffer. Hair:distance-camera/time-contact-pause/
-  near continuity/EditMode graph cleanup. Village:sim greetings/E/visibility grow-retry.
-  Port:Windows BC7/same sampling. Optimization:AGENTS/AI/canon/FAST/FPSunmeasured.
-- Endless:bounded pool/oldest corpse retirement/survivors-flights kept.
-- Guns:breath-tremor/walk-settle/asymmetric recoil/regrip/blink-chin/reticle=muzzle/
-  camera-legs stable/freeze-reset;all3/1-2-3/mount-model-ammo-handoffs.
-- Ammo:start-reset8+0/2+0/caps48-16/partial physical reload/0wave refill;
-  4packs/+8-4/Eshared1x/full-cancel-partial safe/endless respawn/freeze-reset/win live.
-- Bar diagnosis:Hero/NPC forehand wrist illegal in Blender+FBX;retained refresh missed anatomy certificate.
-  Forehand family reauthoring pending;Ready/unrelated curves kept. Runtime:8metal segments/coupled forearm sweep/
-  physical refusal→Obstacle recovery/original gates kept;strike proof pending.
-  NPC rise:query grow-retry/real blockers kept;empty wound scratch preloaded/reused reset.
-- Journal:sample quota protects causal events inside old cap;independent action tail/
-  live flush/explicit sample-causal-producer losses. Reserve/reload/carry/input owner
-  visible;cached movement summary before sink closes.
-- Cloth:prewarm/guard reused/old gear→GuardLayout live/Idle prepared/Aim FinalPose→live;
-  fullbank provenance refresh pending/FPSgain unmeasured.
-- Zombies:polygon-only exception/three worn civilian looks/own grounded clips/SFX;
-  slow chase→latched hand lunge/miss return/1hit/world stops/remaining arm/pool-reset.
-  Proof:`COMBAT ZOMBIE ART CONTRACT OK`;`Range_ZombieLungeUsesHandsObstaclesPauseAndRecycledBodies`;
-  `ZombieCannotChainOrShortenItsLongReturn`;frames viewed.
-- Compile:EntityId/CurrentAssemblies API fixes;`BarPromenade.PlayModeTests` dependency build.
-- Proof: `WorldPresentationBudgetTests`, `CityPortSurfaceImportTests`,
-  `RenderedLitter_SharesItsPaletteWithoutBlocksAndReleasesOnlyItsOwnMaterials`,
-  `ForestChunks_PreserveGeometryWindBoundsShadowsAndOnePhysicalCollider`,
-  `AreaCaptureFixture.WorldPerformance`,
-  `Range_EndlessPopulationSpawnsGraduallyPreservesSurvivorsAndStopsOnExit`,
-  `Range_InexperiencedFirearmAimKeepsMuzzleReticleAndShotTogether`,
-  `Range_WeaponCarrySwitchesKeepModelsAmmoAndPhysicalHandoffs`,
-  `Range_AmmoReservesAndRespawningPickupsStayFinite`.
-  Selected `DuelJournalTests`:priority/tail/loss/zero-stage/shutdown;
-  `Range_RecoveryQueriesGrowPastOwnShapesAndStillRejectRealBlockers`,
-  `Range_ProjectileWoundPreparationReusesTheFirstLayerThroughReset`,
-  `Range_ThreeWeaponSecondaryMotionUsesPreparedPlaybackWithoutColdReloads`,
-  `Range_QueuedWeaponCarryJournalKeepsItsSelectionRequests`;
-  `check-docs.py`, `git diff --check`.
-  City/forest/hair/found-screen/HUD/full-reserve frames reviewed;unmeasured fields unavailable.
+- World:shared litter palette;forest chunks retain geometry, wind and collision;
+  distance-aware hair and greetings;port BC7 keeps sampling. Optimization remains mandatory.
+- Combat:bounded global pool/oldest corpse retirement;survivors and flights retained.
+  User removed human duel/tests;zombies only, shared fall/rise assets retained.
+  Polygon-only zombies:three worn looks/grounded clips/groan/slow chase-hand lunge;
+  world stops/remaining arm/pool reset/no world infection.
+- Guns:novice tremor/recoil/regrip/blink;reticle follows muzzle/stable camera;
+  all three weapons/physical mounts and handoffs. Finite loaded-only starts,
+  reserve reload/fixed shared packs/endless respawn/freeze-reset/partial safe.
+- Bar:user chose one short authored right-arm arc and one clip clock for both sides;
+  charge keeps power. Left contact only guard;ordinary strike and return stay free.
+  Native exported FBX proof retains Ready/unrelated curves and physical anatomy gates.
+- Rise:floor under each root/search around real tread support;publish Rising only
+  after pose accepts/bounded simulation retry/real blockers and body continuity retained.
+- Journal:old byte cap/causal reserve retained;adaptive detail-essential groups avoid
+  cadence aliasing;separate routine/manual-stall/terminal snapshot quotas.
+  Deliberate thinning differs from loss;original action tail/cached movement finals.
+- Cloth:bounded LRU retains hot recordings;buffered decode/exact skin arithmetic;
+  unsafe pose/gear stays live. FPS gain unmeasured;full-bank provenance refresh remains
+  the packaging gate. Empty wound scratch retained and reused.
+- Import:global hook revision frozen;combat-local recipe/manifest dependency;
+  bounded retry of interrupted FBX placeholders, no world import reset.
+- Proof: hero `SIMPLE STRIKE EXPORTED PROOF`/export-source SHA;
+  `COMBAT IMPORT RECOVERY OK`;`BarPromenade.Editor` dependency compile;
+  `check-docs.py`/scoped `git diff --check`.
+  Earlier focused `WorldPresentationBudgetTests`, `CityPortSurfaceImportTests`,
+  `AreaCaptureFixture.WorldPerformance`, `COMBAT ZOMBIE ART CONTRACT OK`,
+  `Range_ZombieLungeUsesHandsObstaclesPauseAndRecycledBodies`,
+  `ZombieCannotChainOrShortenItsLongReturn`, selected `DuelJournalTests`;
+  world/HUD/zombie frames reviewed.
 
 ## 2026-10-12 — Cloth, weapon switching and endless combat
 

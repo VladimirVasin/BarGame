@@ -399,6 +399,8 @@ MonoBehaviour:
     paletteName: hair
     renderer: {fileID: 4760111703786480846}
     baseColor: {r: 0.075, g: 0.07, b: 0.06, a: 1}
+  detailAtlas: {fileID: 0}
+  detailAtlasRenderers: []
   pelvis: {fileID: 5557725884711454450}
   spine: {fileID: 5171495039220359206}
   chest: {fileID: 4776476279652864969}

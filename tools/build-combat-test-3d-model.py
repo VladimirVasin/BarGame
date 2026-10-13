@@ -4105,6 +4105,7 @@ def main():
     parser.add_argument("--probe-published-contracts", type=Path)
     parser.add_argument("--refresh-published-contracts", action="store_true")
     parser.add_argument("--repair-forehand-only", action="store_true")
+    parser.add_argument("--simple-strike-only", action="store_true")
     parser.add_argument("--refresh-published-metadata", action="store_true")
     parser.add_argument("--refresh-weapon-collision-metadata", action="store_true")
     parser.add_argument("--probe-only", action="store_true")
@@ -4116,6 +4117,19 @@ def main():
     parser.add_argument("--output-dir", type=Path, default=OUT)
     parser.add_argument("--source-dir", type=Path, default=SOURCE)
     args = parser.parse_args(sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else [])
+    focused_other = any((args.kick_only, args.footwork_only, args.recovery_only, args.rebase_npc_recovery,
+        args.finish_recovery_banks, args.review_kick, args.pack_review_source, args.probe_published_contracts,
+        args.refresh_published_contracts, args.refresh_published_metadata, args.refresh_weapon_collision_metadata,
+        args.probe_only, args.dense_hero_probe, args.recovery_probe, args.pose_probe, args.resume_npc_bank))
+    if args.simple_strike_only or args.repair_forehand_only or (not args.validate_only and not focused_other):
+        if args.validate_only or focused_other:
+            parser.error("Simple strike authoring is separate from other focused authoring and validation")
+        # Ordinary regeneration preserves the complete production banks and
+        # replaces only the common one-handed arc. The retired coupled DAG is
+        # never an implicit regeneration path for the player-facing strike.
+        module("combat_simple_strike", "build-combat-simple-strike.py").build(
+            args.output_dir.resolve(), args.source_dir.resolve())
+        return
     if args.repair_forehand_only:
         if any((args.actions_only,args.validate_only,args.kick_only,args.footwork_only,args.recovery_only,
                 args.rebase_npc_recovery,args.finish_recovery_banks,args.probe_only,args.dense_hero_probe,

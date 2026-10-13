@@ -35,6 +35,11 @@ namespace BarPromenade
         private Packet roundHeader, lastPacket;
         private long bytes, telemetryBytes, written, fileDropped, telemetryDropped, causalDropped,
             oversized, seenProducerDrops, summarizedRejections;
+        private long detailBytes, essentialBytes, forcedBytes, detailSampledOut, essentialSampledOut;
+        private long forcedRoutineBytes, forcedUrgentBytes, forcedTerminalBytes;
+        private long firstSampledSequence, lastSampledSequence;
+        private int detailFrame = -1, essentialFrame = -1, detailStride = 1, essentialStride = 1;
+        private int stateFrame = -1, stateStride = 1, essentialFrameIndex, stateFrameIndex;
         private bool fileLimited, telemetryLimited, causalLimited, limitMarkerWritten, marked;
 
         private void Run()
@@ -104,6 +109,12 @@ namespace BarPromenade
         // Samples cannot consume the room reserved for commands, contacts and
         // results. Unused sample space remains available to causal records.
         private long TelemetryBudget => RecordBudget * 7 / 10;
+        private long DetailBudget => TelemetryBudget * 55 / 100;
+        private long EssentialBudget => TelemetryBudget * 30 / 100;
+        private long ForcedBudget => TelemetryBudget - DetailBudget - EssentialBudget;
+        private long ForcedRoutineBudget => ForcedBudget * 7 / 10;
+        private long ForcedUrgentBudget => ForcedBudget / 5;
+        private long ForcedTerminalBudget => ForcedBudget - ForcedRoutineBudget - ForcedUrgentBudget;
 
         // Packets carry eight inline fields; pass by reference through IO/error
         // boundaries instead of copying the large struct across worker frames.
@@ -115,6 +126,11 @@ namespace BarPromenade
             Array.Clear(rejectionSeries, 0, rejectionSeries.Length); finishedSeries.Clear();
             Array.Clear(causalTail, 0, causalTail.Length); causalTailNext = causalTailCount = 0;
             bytes = telemetryBytes = written = fileDropped = telemetryDropped = causalDropped = oversized = summarizedRejections = 0;
+            detailBytes = essentialBytes = forcedBytes = detailSampledOut = essentialSampledOut = 0;
+            forcedRoutineBytes = forcedUrgentBytes = forcedTerminalBytes = 0;
+            firstSampledSequence = lastSampledSequence = 0;
+            detailFrame = essentialFrame = -1; detailStride = essentialStride = 1;
+            stateFrame = -1; stateStride = 1; essentialFrameIndex = stateFrameIndex = 0;
             seenProducerDrops = packet.Dropped;
             fileLimited = telemetryLimited = causalLimited = limitMarkerWritten = marked = false; roundIoError = null;
             roundDirectory = ReserveRound(directory, folderSession, packet.Round, maxRoundBytes, out activeLock);
@@ -159,26 +175,78 @@ namespace BarPromenade
             }
             if (CausalTailEvent(packet.Name)) RememberCausalTail(packet);
             bool sample = SampleEvent(packet.Name);
-            if (roundIoError != null || causalLimited || sample && telemetryLimited)
+            if (roundIoError != null || causalLimited)
             { DropFileRecord(sample); return; }
+            bool forced = sample && packet.ForcedSampleReason != null;
+            bool essential = sample && EssentialSampleEvent(packet.Name);
+            bool frameSample = essential && EssentialFrameEvent(packet.Name);
+            if (sample && !forced)
+            {
+                // Decide once per priority/frame so correlated fields and actor
+                // poses use the same stride. Snapshot and frame encounter clocks
+                // are separate: fixed snapshot cadence must not alias a stride.
+                if (frameSample && essentialFrame != packet.Frame)
+                { essentialFrame = packet.Frame; essentialFrameIndex++; essentialStride = SamplingStride(essentialBytes, EssentialBudget); }
+                if (essential && !frameSample && stateFrame != packet.Frame)
+                { stateFrame = packet.Frame; stateFrameIndex++; stateStride = SamplingStride(essentialBytes, EssentialBudget); }
+                if (!essential && detailFrame != packet.Frame)
+                { detailFrame = packet.Frame; detailStride = SamplingStride(detailBytes, DetailBudget); }
+                packet.SampleStride = essential ? frameSample ? essentialStride : stateStride : detailStride;
+                int sampleIndex = essential ? frameSample ? essentialFrameIndex : stateFrameIndex : packet.Frame;
+                if (sampleIndex % packet.SampleStride != 0)
+                { SampleOut(packet, essential); return; }
+            }
+            else if (sample) packet.SampleStride = 1;
             if (!FormatPacket(packet)) { DropFileRecord(sample); return; }
             if (FormattedByteLength > 16384) { oversized++; DropFileRecord(sample); return; }
-            if (sample && telemetryBytes + FormattedByteLength > TelemetryBudget)
+            bool terminal = forced && TerminalSnapshot(packet.ForcedSampleReason);
+            bool urgent = forced && UrgentSnapshot(packet.ForcedSampleReason);
+            long sampleBytes = forced ? terminal ? forcedTerminalBytes : urgent ? forcedUrgentBytes : forcedRoutineBytes :
+                essential ? essentialBytes : detailBytes;
+            long sampleBudget = forced ? terminal ? ForcedTerminalBudget : urgent ? ForcedUrgentBudget : ForcedRoutineBudget :
+                essential ? EssentialBudget : DetailBudget;
+            if (sample && sampleBytes + FormattedByteLength > sampleBudget)
             {
                 telemetryLimited = fileLimited = true;
-                DropFileRecord(true);
+                if (forced) DropFileRecord(true); else SampleOut(packet, essential);
                 WriteLimitMarker(packet, "telemetry_budget");
                 return;
             }
             long before = bytes;
             if (WritePacket(packet, false, alreadyFormatted: true))
             {
-                if (sample) telemetryBytes += bytes - before;
+                if (sample)
+                {
+                    long added = bytes - before;
+                    telemetryBytes += added;
+                    if (forced)
+                    {
+                        forcedBytes += added;
+                        if (terminal) forcedTerminalBytes += added;
+                        else if (urgent) forcedUrgentBytes += added;
+                        else forcedRoutineBytes += added;
+                    }
+                    else if (essential) essentialBytes += added;
+                    else detailBytes += added;
+                }
                 return;
             }
             DropFileRecord(sample);
             causalLimited = fileLimited = true;
             WriteLimitMarker(packet, "round_budget");
+        }
+
+        private static int SamplingStride(long used, long budget) =>
+            used < budget / 2 ? 1 : used < budget * 3 / 4 ? 4 : used < budget * 9 / 10 ? 16 : 64;
+
+        private static bool TerminalSnapshot(string reason) => reason == "round_result" || reason == "round_ended";
+        private static bool UrgentSnapshot(string reason) => reason == "marked" || reason == "recovery_stall";
+
+        private void SampleOut(in Packet packet, bool essential)
+        {
+            if (essential) essentialSampledOut++; else detailSampledOut++;
+            if (firstSampledSequence == 0) firstSampledSequence = packet.Sequence;
+            lastSampledSequence = packet.Sequence;
         }
 
         private void DropFileRecord(bool sample)
@@ -199,7 +267,10 @@ namespace BarPromenade
             marker.F2 = GameLog.Field("cause", cause);
             marker.F3 = GameLog.Field("telemetry_budget_bytes", TelemetryBudget);
             marker.F4 = GameLog.Field("causal_reserve_bytes", RecordBudget - TelemetryBudget);
-            marker.F5 = marker.F6 = marker.F7 = default;
+            marker.F5 = GameLog.Field("sample_priority", packet.ForcedSampleReason != null ? "forced" :
+                EssentialSampleEvent(packet.Name) ? "essential" : "detail");
+            marker.F6 = marker.F7 = default;
+            marker.ForcedSampleReason = null; marker.SampleStride = 0;
             limitMarkerWritten = WritePacket(marker, true);
             Prune(directory);
         }
@@ -216,11 +287,26 @@ namespace BarPromenade
             fields.Add(GameLog.Field("request", packet.Request));
             if (packet.Kind == Kind.Begin && packet.Name == "round_begin")
             {
-                fields.Add(GameLog.Field("duel_schema_version", 2));
+                fields.Add(GameLog.Field("duel_schema_version", 3));
                 fields.Add(GameLog.Field("stage_sample_encoding", "absent_numeric_zero"));
                 fields.Add(GameLog.Field("zero_stage_events", ZeroStageEvents));
+                fields.Add(GameLog.Field("sample_absence", "unknown_on_thinned_or_limited_frames"));
+                fields.Add(GameLog.Field("sampling_strides", "1,4,16,64_at_0,50,75,90_percent_per_priority"));
+                fields.Add(GameLog.Field("detail_budget_bytes", DetailBudget));
+                fields.Add(GameLog.Field("essential_budget_bytes", EssentialBudget));
+                fields.Add(GameLog.Field("forced_budget_bytes", ForcedBudget));
+                fields.Add(GameLog.Field("forced_reserve_percent", "routine70/marked-stall20/terminal10"));
                 fields.Add(GameLog.Field("telemetry_budget_bytes", TelemetryBudget));
                 fields.Add(GameLog.Field("causal_tail", "summary_original_envelopes"));
+            }
+            if (packet.SampleStride > 0)
+            {
+                fields.Add(GameLog.Field("sample_priority", packet.ForcedSampleReason != null ? "forced" :
+                    EssentialSampleEvent(packet.Name) ? "essential" : "detail"));
+                fields.Add(GameLog.Field("sample_group", packet.ForcedSampleReason != null ? "forced_snapshot" :
+                    EssentialFrameEvent(packet.Name) ? "frame" : EssentialSampleEvent(packet.Name) ? "snapshot" : "detail_frame"));
+                fields.Add(GameLog.Field("sample_group_stride", packet.SampleStride));
+                if (packet.ForcedSampleReason != null) fields.Add(GameLog.Field("snapshot_reason", packet.ForcedSampleReason));
             }
             if (packet.Dropped > seenProducerDrops)
                 fields.Add(GameLog.Field("queue_dropped_before", packet.Dropped - seenProducerDrops));
@@ -279,6 +365,10 @@ namespace BarPromenade
                         GameLog.Field("telemetry_dropped_records", telemetryDropped),
                         GameLog.Field("causal_dropped_records", causalDropped),
                         GameLog.Field("producer_dropped_records", Math.Max(0, packet.Dropped - roundHeader.Dropped)),
+                        GameLog.Field("detail_sampled_out_records", detailSampledOut),
+                        GameLog.Field("essential_sampled_out_records", essentialSampledOut),
+                        GameLog.Field("first_sampled_out_seq", firstSampledSequence),
+                        GameLog.Field("last_sampled_out_seq", lastSampledSequence),
                         GameLog.Field("telemetry_limit", telemetryLimited), GameLog.Field("causal_limit", causalLimited) };
                     footer.F0 = GameLog.Field("reason", Clip(packet.Name, 128));
                     footer.F1 = GameLog.Field("dropped_records", losses);
@@ -315,6 +405,12 @@ namespace BarPromenade
             text.AppendLine("File omissions: telemetry=" + telemetryDropped + "; causal=" + causalDropped +
                 "; telemetry_budget_bytes=" + TelemetryBudget + "; causal_reserve_bytes=" + (RecordBudget - TelemetryBudget));
             text.AppendLine("Repeated rejection records summarized (not lost): " + summarizedRejections);
+            text.AppendLine("Adaptive samples omitted (not losses): detail=" + detailSampledOut + "; essential=" + essentialSampledOut +
+                "; first_seq=" + firstSampledSequence + "; last_seq=" + lastSampledSequence);
+            text.AppendLine("Sample bytes used/budget: detail=" + detailBytes + "/" + DetailBudget +
+                "; essential=" + essentialBytes + "/" + EssentialBudget + "; forced=" + forcedBytes + "/" + ForcedBudget);
+            text.AppendLine("Forced bytes used/budget: routine=" + forcedRoutineBytes + "/" + ForcedRoutineBudget +
+                "; marked-stall=" + forcedUrgentBytes + "/" + ForcedUrgentBudget + "; terminal=" + forcedTerminalBytes + "/" + ForcedTerminalBudget);
             text.AppendLine("Absent numeric-zero stage samples (not lost): " + ZeroStageEvents);
             text.AppendLine("Collector stopwatch ticks: " + CollectorTicks + "/" + Stopwatch.Frequency +
                 "; maximum queued: " + MaximumQueued);
@@ -373,13 +469,19 @@ namespace BarPromenade
             name == "impulse_movement" ||
             name.EndsWith("_snapshot", StringComparison.Ordinal) || name.EndsWith("_sample", StringComparison.Ordinal);
 
+        private static bool EssentialSampleEvent(string name) => name == "state" || name == "presentation" || name == "balance" ||
+            EssentialFrameEvent(name) || name.EndsWith("_snapshot", StringComparison.Ordinal);
+
+        private static bool EssentialFrameEvent(string name) => name == "frame" || name == "frame_work" ||
+            name == "frame_detail" || name == "frame_delivery" || name == "frame_stage_sample";
+
         // Keep actions and outcomes separate from repeated solver corrections,
         // discarded time, AI decisions and clearance candidate geometry. The
         // existing milestone list still describes those diagnostic transitions.
         private static bool CausalTailEvent(string name) => name == "command_requested" || name == "command_result" ||
             name == "input" || name == "input_rejected" || name == "input_gate" || name == "focus" ||
             name == "application_pause" || name == "phase" || name == "impact_applied" || name == "impact_kind" ||
-            name == "mark" || name == "round_result" ||
+            name == "mark" || name == "round_result" || name == "snapshot_forced" ||
             name.StartsWith("weapon_", StringComparison.Ordinal) && name != "weapon_constraint" && !SampleEvent(name) ||
             name.StartsWith("ammo_", StringComparison.Ordinal) || name.StartsWith("reload_", StringComparison.Ordinal) ||
             name.StartsWith("carry_", StringComparison.Ordinal) || name.EndsWith("_fired", StringComparison.Ordinal) ||

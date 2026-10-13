@@ -312,12 +312,24 @@ namespace BarPromenade
         {
             if (weight <= 0f) return;
             Matrix4x4 value = matrices[bone];
-            for (int i = 0; i < 4; i++) result.SetColumn(i, result.GetColumn(i) + value.GetColumn(i) * weight);
+            // Preserve the original multiply/add order while avoiding column
+            // extraction and matrix index switches for every distinct skin.
+            result.m00 += value.m00 * weight; result.m10 += value.m10 * weight;
+            result.m20 += value.m20 * weight; result.m30 += value.m30 * weight;
+            result.m01 += value.m01 * weight; result.m11 += value.m11 * weight;
+            result.m21 += value.m21 * weight; result.m31 += value.m31 * weight;
+            result.m02 += value.m02 * weight; result.m12 += value.m12 * weight;
+            result.m22 += value.m22 * weight; result.m32 += value.m32 * weight;
+            result.m03 += value.m03 * weight; result.m13 += value.m13 * weight;
+            result.m23 += value.m23 * weight; result.m33 += value.m33 * weight;
         }
 
         private static Matrix4x4 Scale(Matrix4x4 value, float weight)
         {
-            for (int i = 0; i < 4; i++) value.SetColumn(i, value.GetColumn(i) * weight);
+            value.m00 *= weight; value.m10 *= weight; value.m20 *= weight; value.m30 *= weight;
+            value.m01 *= weight; value.m11 *= weight; value.m21 *= weight; value.m31 *= weight;
+            value.m02 *= weight; value.m12 *= weight; value.m22 *= weight; value.m32 *= weight;
+            value.m03 *= weight; value.m13 *= weight; value.m23 *= weight; value.m33 *= weight;
             return value;
         }
 

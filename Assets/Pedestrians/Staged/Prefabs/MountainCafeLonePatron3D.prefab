@@ -192,7 +192,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b2be743ae8414fe69b45824c1d81d423, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: BarPromenade.Runtime::BarPromenade.CharacterJointDeformation
   bindings:
   - Renderer: {fileID: 3073158939568300405}

@@ -19,6 +19,8 @@ namespace BarPromenade
             internal int Round, Frame, Actor, Target, Action, Request;
             internal long Sequence, Stamp, Tick, Dropped;
             internal double Seconds;
+            internal string ForcedSampleReason;
+            internal int SampleStride;
             internal GameLogField F0, F1, F2, F3, F4, F5, F6, F7;
             internal GameLogField[] Metadata;
             internal TaskCompletionSource<bool> Barrier;
@@ -38,6 +40,8 @@ namespace BarPromenade
         private bool roundOpen, stopping;
         private volatile bool enabled = true;
         private string lastError;
+        private string forcedSampleReason;
+        private long forcedScopeGeneration;
 
         internal DuelJournal(string outputDirectory, string sessionId = null, int capacity = 2048,
             long maxRoundBytes = 20L * 1024L * 1024L)
@@ -97,6 +101,8 @@ namespace BarPromenade
                 if (stopping) return;
                 if (roundOpen) EnqueueControl(NewPacket(Kind.End, "reset"));
                 this.round = Math.Max(0, round);
+                forcedSampleReason = null;
+                forcedScopeGeneration++;
                 var packet = NewPacket(Kind.Begin, "round_begin");
                 // This is a cold boundary. Never retain a caller-owned mutable array.
                 if (metadata != null)
@@ -147,6 +153,7 @@ namespace BarPromenade
                     { producerDropped++; Interlocked.Increment(ref dropped); return 0; }
                     Packet packet = NewPacket(Kind.Event, eventName);
                     packet.Actor = actor; packet.Target = target; packet.Action = action; packet.Request = request;
+                    if (SampleEvent(eventName)) packet.ForcedSampleReason = forcedSampleReason;
                     packet.F0 = f0; packet.F1 = f1; packet.F2 = f2; packet.F3 = f3;
                     packet.F4 = f4; packet.F5 = f5; packet.F6 = f6; packet.F7 = f7;
                     Enqueue(ref packet);
@@ -165,6 +172,35 @@ namespace BarPromenade
                 Packet packet = NewPacket(Kind.Event, "mark");
                 packet.F0 = GameLog.Field("label", Clip(label, 512));
                 EnqueueControl(packet);
+            }
+        }
+
+        // Main-thread snapshot hooks borrow a dedicated sample quota. The scope
+        // does not allocate or relabel events, and restores an outer scope safely.
+        internal ForcedSnapshotScope ForceSnapshot(string reason)
+        {
+            lock (sync)
+            {
+                if (!roundOpen || stopping || !enabled) return default;
+                string previous = forcedSampleReason;
+                forcedSampleReason = Clip(string.IsNullOrEmpty(reason) ? "requested" : reason, 64);
+                Record("snapshot_forced", f0: GameLog.Field("reason", forcedSampleReason));
+                return new ForcedSnapshotScope(this, previous, forcedScopeGeneration);
+            }
+        }
+
+        internal readonly struct ForcedSnapshotScope : IDisposable
+        {
+            private readonly DuelJournal owner;
+            private readonly string previous;
+            private readonly long generation;
+            internal ForcedSnapshotScope(DuelJournal owner, string previous, long generation)
+            { this.owner = owner; this.previous = previous; this.generation = generation; }
+            public void Dispose()
+            {
+                if (owner == null) return;
+                lock (owner.sync)
+                    if (owner.roundOpen && owner.forcedScopeGeneration == generation) owner.forcedSampleReason = previous;
             }
         }
 

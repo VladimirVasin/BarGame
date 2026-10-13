@@ -964,139 +964,156 @@ namespace BarPromenade.Tests.PlayMode
         }
 
         [UnityTest]
-        public IEnumerator Range_MovingRegripCarriesTheArmAndRestoresAttack()
+        public IEnumerator Range_SimpleCrowbarStrikeUsesOneArcAndPhysicalContacts()
         {
-            foreach (bool heroActs in new[] { true, false })
-            {
-                PlacePair(.82f);
-                CombatActor actor = heroActs ? root.Hero : root.Opponent;
-                CombatActor target = heroActs ? root.Opponent : root.Hero;
-                string label = heroActs ? "Test hero returning grip" : "Test opponent returning grip";
-                for (int frame = 0; frame < 6; frame++) { root.Tick(TickSeconds); yield return null; }
-                Assert.That(actor.RequestAttack(), Is.True, "A real shove opens the supporting hand.");
-                for (int frame = 0; frame < 90 && !actor.SupportGrip.IsRegripping; frame++)
-                { root.Tick(TickSeconds); yield return null; }
-                Assert.That(target.ReceivedImpactCount, Is.EqualTo(1), label);
-                Assert.That(actor.SupportGrip.IsRegripping, Is.True, label);
-                // Reposition only the recipient: the source keeps its actual
-                // post-shove shoulder, wrist, and returning open palm.
-                target.ResetActor(actor.transform.position + actor.transform.forward * 4f, -actor.transform.forward);
-                Physics.SyncTransforms();
-                var route = new MovingGripRoute(actor.transform.position.x);
-                actor.SetBlock(true);
-                Assert.That(actor.GuardRequested && !actor.State.IsBlocking, Is.True, label);
-                yield return ObserveMovingGripReturn(actor, label, "after-shove", true, route);
-                actor.AdvanceSimulation(CombatTestRoot.SimulationStep);
-                actor.Present();
-                Assert.That(actor.GuardReady && actor.State.IsBlocking, Is.True, label);
-                actor.SetBlock(false);
-                for (int frame = 0; frame < 18; frame++) { root.Tick(TickSeconds); yield return null; }
-
-                // Exercise the real recoil owner and a subsequent queued swing,
-                // without resetting the source or waiting for L to recover.
-                for (int repetition = 0; repetition < 2; repetition++)
-                {
-                    actor.SupportGrip.RequestRelease(-actor.transform.right, .65f);
-                    Assert.That(actor.RequestCharge(), Is.True, label + ": R can charge with L open");
-                    for (int frame = 0; frame < 6; frame++) { root.Tick(TickSeconds); yield return null; }
-                    Assert.That(actor.ReleaseCharge(), Is.True, label);
-                    for (int frame = 0; frame < 90 && actor.State.Phase != MeleePhase.Active; frame++)
-                    { root.Tick(CombatTestRoot.SimulationStep); yield return null; }
-                    Assert.That(actor.State.Phase, Is.EqualTo(MeleePhase.Active), label);
-                    CombatActor.Contact.Obstacle(actor, null, actor.Weapon.transform.position,
-                        -actor.transform.forward, actor.transform.forward, 0f, false).Apply();
-                    Assert.That(actor.State.AttackOutcome, Is.EqualTo(MeleeAttackOutcome.Obstacle), label);
-                    actor.SupportGrip.RequestRelease(-actor.transform.right, .65f);
-                    root.Tick(CombatTestRoot.SimulationStep);
-                    yield return null;
-                    int sequence = actor.State.AttackSequence;
-                    Assert.That(actor.RequestAttack(), Is.True, label + ": queue the next swing during recoil");
-                    for (int frame = 0; frame < 120 && actor.State.AttackSequence == sequence; frame++)
-                    { root.Tick(CombatTestRoot.SimulationStep); yield return null; }
-                    Assert.That(actor.State.AttackSequence, Is.Not.EqualTo(sequence), label);
-                    yield return ObserveMovingGripReturn(actor, label, (repetition == 0 ? "after-first-recoil" : "after-second-recoil"), false, route);
-                }
-
-                // Block the live contact volume with a separate moving world
-                // solid. It is never parented to the actor or its weapon.
-                CombatSupportGrip grip = actor.SupportGrip;
-                actor.Present();
-                // A Ready release opens fingers but need not move the palm far
-                // from its bar. Use the actual extended shove hand instead.
-                target.ResetActor(actor.transform.position + actor.transform.forward * .82f, -actor.transform.forward);
-                Physics.SyncTransforms();
-                int shoveImpacts = target.ReceivedImpactCount;
-                Assert.That(actor.RequestAttack() && actor.State.IsShoving, Is.True, label + ": open L through a real shove");
-                for (int frame = 0; frame < 60 && (target.ReceivedImpactCount == shoveImpacts ||
-                    Vector3.Distance(grip.ShovePalmPosition, grip.Target) < .24f); frame++)
-                { root.Tick(CombatTestRoot.SimulationStep); yield return null; }
-                Assert.That(target.ReceivedImpactCount, Is.EqualTo(shoveImpacts + 1), label + ": the opening shove contacts the real chest");
-                actor.Present();
-                Vector3 openPalm = grip.ShovePalmPosition;
-                Assert.That(Vector3.Distance(openPalm, grip.Target), Is.GreaterThan(.20f), label);
-                Assert.That(actor.State.IsShoving, Is.True, label + ": place the barrier before the real return starts");
-                target.ResetActor(actor.transform.position + actor.transform.forward * 4f, -actor.transform.forward);
-                Physics.SyncTransforms();
-                var obstruction = new GameObject("Test returning hand obstruction");
-                var obstacleObservations = new System.Text.StringBuilder("frame,phase,arm,wait,palm_x,palm_y,palm_z,contact_x,contact_y,contact_z,wall_x,wall_y,wall_z,wall_qx,wall_qy,wall_qz,wall_qw,palm_overlap,prior_arm_penetration,arm_penetration\n");
-                try
-                {
-                    BoxCollider wall = obstruction.AddComponent<BoxCollider>();
-                    // Leave the physical shaft clear while overlapping the
-                    // live 35 mm palm sphere. The 120 mm shaft length covers
-                    // every admitted +/-25 mm station and 12 degree hand turn.
-                    wall.size = new Vector3(.01f, .12f, .08f);
-                    Pose initialContact = PlaceReturningGripObstacle(actor, wall);
-                    Assert.That(ReturningGripObstacleStartsClear(actor, wall), Is.True,
-                        label + ": the real obstacle begins outside the extended arm and physical bar");
-                    Assert.That(ReturningGripPalmOverlaps(wall, initialContact.position), Is.True,
-                        label + ": the external obstacle covers the live palm volume");
-                    bool waitedOpen = false, contactRejected = false;
-                    for (int frame = 0; frame < 120; frame++)
-                    {
-                        actor.Present();
-                        PlaceReturningGripObstacle(actor, wall);
-                        float priorArmPenetration = ReturningGripObstacleArmPenetration(actor, wall);
-                        root.Tick(CombatTestRoot.SimulationStep);
-                        Pose liveContact = ReturningGripContact(grip);
-                        Vector3 palm = grip.ShovePalmPosition;
-                        bool palmOverlap = ReturningGripPalmOverlaps(wall, liveContact.position);
-                        float armPenetration = ReturningGripObstacleArmPenetration(actor, wall);
-                        Vector3 wallPosition = wall.transform.position;
-                        Quaternion wallRotation = wall.transform.rotation;
-                        obstacleObservations.AppendLine(System.FormattableString.Invariant($"{frame},{actor.State.Phase},{actor.SupportArmState},{grip.JournalGripReason},{palm.x:F6},{palm.y:F6},{palm.z:F6},{liveContact.position.x:F6},{liveContact.position.y:F6},{liveContact.position.z:F6},{wallPosition.x:F6},{wallPosition.y:F6},{wallPosition.z:F6},{wallRotation.x:F6},{wallRotation.y:F6},{wallRotation.z:F6},{wallRotation.w:F6},{palmOverlap},{priorArmPenetration:F6},{armPenetration:F6}"));
-                        if (actor.HasTwoHandSupport || priorArmPenetration > .00001f || armPenetration > .00001f ||
-                            (actor.State.Phase == MeleePhase.Ready && !palmOverlap))
-                            CaptureDuelFrame("balance/" + label, "obstructed-contact-diagnostic");
-                        Assert.That(priorArmPenetration, Is.LessThanOrEqualTo(.00001f),
-                            label + ": the moving fixture cannot be placed through the accepted open arm, sample=" + frame);
-                        if (actor.State.Phase == MeleePhase.Ready)
-                            Assert.That(palmOverlap, Is.True, label + ": the live Ready contact remains physically obstructed, sample=" + frame);
-                        Assert.That(actor.HasTwoHandSupport, Is.False,
-                            label + ": an obstructed live palm volume forbids restored grip, sample=" + frame + ", overlap=" + palmOverlap);
-                        Assert.That(armPenetration, Is.LessThanOrEqualTo(.00001f), label + ": the open arm cannot pass through the obstacle");
-                        Assert.That(actor.State.IsBlocking, Is.False, label);
-                        waitedOpen |= grip.State == CombatArmSupportState.Free;
-                        contactRejected |= grip.JournalGripReason == "contact_palm_overlap";
-                        AssertRepeatedGripPresentation(actor, label);
-                        yield return null;
-                    }
-                    Assert.That(waitedOpen, Is.True, label + ": an impossible route waits open rather than chasing forever");
-                    Assert.That(contactRejected, Is.True, label + ": the actual world-contact gate rejects the covered palm");
-                    CaptureDuelFrame("balance/" + label, "obstructed-open-hand");
-                    Assert.That(actor.RequestAttack(), Is.True, label + ": the open L does not disable R");
-                    Assert.That(actor.State.IsAttacking, Is.True, label);
-                }
-                finally
-                {
-                    WriteReturningGripObservations(label, "obstruction", obstacleObservations);
-                    Object.Destroy(obstruction);
-                }
-                yield return null;
-                Physics.SyncTransforms();
-                yield return ObserveMovingGripReturn(actor, label, "after-obstruction", false, route);
-            }
+            yield return ObserveDrawnCrowbarMovingStrikes();
+            Assert.That(CombatAssetProvider.SwingClips(MeleeSwing.Backhand).Attack,
+                Is.EqualTo(CombatAssetProvider.SwingClips(MeleeSwing.Forehand).Attack));
+            Assert.That(CombatAssetProvider.ReleaseSourceSeconds(.50f, 1f), Is.EqualTo(.50f),
+                "Charge rejoins the same physical active arc.");
+            yield return ObserveSimpleCrowbarContact(false, false);
+            yield return ObserveSimpleCrowbarContact(true, false);
+            yield return ObserveSimpleCrowbarContact(false, true);
             LogAssert.NoUnexpectedReceived();
+        }
+
+        private IEnumerator ObserveSimpleCrowbarContact(bool charged, bool wallBlocked)
+        {
+            PlacePair(wallBlocked ? 4f : .90f);
+            CombatActor actor = root.Hero;
+            GameObject wall = null;
+            try
+            {
+                if (wallBlocked)
+                {
+                    wall = new GameObject("Test simple strike wall");
+                    wall.transform.position = actor.transform.position + actor.transform.forward * .65f + Vector3.up * 1.2f;
+                    wall.AddComponent<BoxCollider>().size = new Vector3(2f, 2f, .08f);
+                    Physics.SyncTransforms();
+                }
+                int impacts = root.Opponent.ReceivedImpactCount;
+                float health = root.Opponent.State.Health;
+                if (charged)
+                {
+                    Assert.That(actor.RequestCharge(), Is.True);
+                    for (int frame = 0; frame < 60; frame++) { root.Tick(TickSeconds); yield return null; }
+                    Assert.That(actor.ReleaseCharge(), Is.True);
+                    Assert.That(actor.State.AttackPower, Is.GreaterThan(.9f));
+                }
+                else Assert.That(actor.RequestAttack(), Is.True);
+                for (int frame = 0; frame < 180 && actor.State.AttackOutcome == MeleeAttackOutcome.None; frame++)
+                {
+                    root.Tick(CombatTestRoot.SimulationStep);
+                    actor.Present();
+                    Assert.That(actor.HasTwoHandSupport, Is.False, "A physical right-hand strike leaves L free.");
+                    Assert.That(actor.WeaponPenetrationDepth, Is.LessThanOrEqualTo(.00001f));
+                    yield return null;
+                }
+                if (wallBlocked)
+                {
+                    Assert.That(actor.State.AttackOutcome, Is.EqualTo(MeleeAttackOutcome.Obstacle));
+                    Assert.That(root.Opponent.ReceivedImpactCount, Is.EqualTo(impacts));
+                    Assert.That(root.Opponent.State.Health, Is.EqualTo(health));
+                }
+                else
+                {
+                    Assert.That(actor.State.AttackOutcome, Is.EqualTo(MeleeAttackOutcome.Hit));
+                    Assert.That(root.Opponent.ReceivedImpactCount, Is.EqualTo(impacts + 1));
+                    Assert.That(root.Opponent.State.Health, Is.LessThan(health));
+                }
+                CaptureDuelFrame("balance/Test simple crowbar", wallBlocked ? "wall-stop" : charged ? "charged-hit" : "simple-hit");
+            }
+            finally { if (wall != null) Object.Destroy(wall); }
+            yield return null;
+        }
+
+        private IEnumerator ObserveDrawnCrowbarMovingStrikes()
+        {
+            // The manual duel drew the carried bar, then chained swings while
+            // walking. A fresh Ready reset misses that visible open-hand entry.
+            PlacePair(4f);
+            CombatActor actor = root.Hero;
+            const string label = "Test drawn crowbar while moving";
+            var route = new MovingGripRoute(actor.transform.position.x);
+            foreach (CombatWeaponId weapon in new[] { CombatWeaponId.Pistol, CombatWeaponId.Crowbar })
+            {
+                Assert.That(actor.TrySelectWeapon(weapon), Is.True, label);
+                for (int frame = 0; frame < 420 &&
+                    (actor.IsSwitchingWeapon || !actor.HasWeaponInHand || actor.WeaponId != weapon); frame++)
+                {
+                    root.Tick(TickSeconds);
+                    route.Advance(actor, label);
+                    Physics.SyncTransforms();
+                    actor.Present();
+                    yield return null;
+                }
+                Assert.That(actor.IsSwitchingWeapon, Is.False, label + ": real carry reaches its terminal pose");
+                Assert.That(actor.HasWeaponInHand && actor.WeaponId == weapon, Is.True, label);
+            }
+            CaptureDuelFrame("balance/" + label, "draw-terminal");
+            Assert.That(actor.RequestCharge(), Is.True, label);
+            for (int frame = 0; frame < 4; frame++)
+            {
+                root.Tick(TickSeconds);
+                route.Advance(actor, label);
+                Physics.SyncTransforms();
+                actor.Present();
+                yield return null;
+            }
+            Assert.That(actor.ReleaseCharge(), Is.True, label);
+            for (int strike = 0; strike < 4; strike++)
+            {
+                int sequence = actor.State.AttackSequence;
+                bool active = false, queued = false, completed = false, captured = false;
+                for (int frame = 0; frame < 180; frame++)
+                {
+                    root.Tick(CombatTestRoot.SimulationStep);
+                    route.Advance(actor, label, CombatTestRoot.SimulationStep);
+                    Physics.SyncTransforms();
+                    actor.Present();
+                    string detail = label + ": strike=" + strike + ", phase=" + actor.State.Phase +
+                        ", shape=" + actor.WeaponBlockingShape + ", arm=" + actor.SupportArmState +
+                        ", wait=" + actor.SupportGrip.JournalGripReason;
+                    Assert.That(actor.State.AttackOutcome, Is.Not.EqualTo(MeleeAttackOutcome.Obstacle),
+                        detail + ": a clear aisle cannot terminate a strike against the actor's own body");
+                    Assert.That(actor.WeaponPenetrationDepth, Is.LessThanOrEqualTo(.00001f), detail);
+                    Assert.That(actor.HasTwoHandSupport, Is.False, detail + ": one-handed strike has no returning-grip dependency");
+                    active |= actor.State.Phase == MeleePhase.Active;
+                    if (active && !captured && strike < 2)
+                    {
+                        CaptureDuelFrame("balance/" + label, strike == 0 ? "first-strike" : "repeat-strike");
+                        captured = true;
+                    }
+                    if (active && strike < 3 && !queued)
+                    {
+                        Assert.That(actor.RequestAttack(), Is.True, detail + ": queue the next real strike");
+                        queued = true;
+                    }
+                    AssertRepeatedGripPresentation(actor, label);
+                    yield return null;
+                    completed = actor.State.AttackSequence != sequence || actor.State.Phase == MeleePhase.Ready;
+                    if (completed) break;
+                }
+                Assert.That(active && completed, Is.True, label + ": strike completes its active window");
+                if (strike < 3)
+                    Assert.That(actor.State.AttackSequence, Is.Not.EqualTo(sequence),
+                        label + ": queued strike continues without a source reset");
+            }
+            actor.SetCombatFocused(true);
+            actor.Present();
+            Assert.That(actor.HasTwoHandSupport, Is.False, label + ": ordinary Ready leaves L free");
+            Assert.That(actor.SupportGripWeight, Is.Zero, label + ": attacks do not wait for a second grip");
+            actor.SetBlock(true);
+            Assert.That(actor.GuardRequested && !actor.State.IsBlocking, Is.True,
+                label + ": guard waits for actual palm contact");
+            CaptureDuelFrame("balance/" + label, "guard-open");
+            yield return ObserveMovingGripReturn(actor, label, "guard-after-simple-strikes", true, route);
+            actor.AdvanceSimulation(CombatTestRoot.SimulationStep);
+            actor.Present();
+            Assert.That(actor.GuardReady && actor.State.IsBlocking, Is.True, label);
+            actor.SetBlock(false);
+            actor.Present();
+            Assert.That(actor.HasTwoHandSupport, Is.False, label + ": releasing guard returns L to the ordinary pose");
         }
 
         private static Pose PlaceReturningGripObstacle(CombatActor actor, Collider wall)
@@ -1173,16 +1190,16 @@ namespace BarPromenade.Tests.PlayMode
 
             internal MovingGripRoute(float centreX) { this.centreX = centreX; }
 
-            internal void Advance(CombatActor actor, string label)
+            internal void Advance(CombatActor actor, string label, float seconds = TickSeconds)
             {
                 // Keep one continuous route across shove and both recoils. The
                 // previous accumulating rightward walk reached the arena wall
                 // at x=2.775, invalidating the unobstructed Ready premise.
                 if ((actor.transform.position.x - centreX) * travelDirection >= .30f)
                     travelDirection = -travelDirection;
-                actor.Body.Move(Vector3.right * (travelDirection * 2f * TickSeconds));
+                actor.Body.Move(Vector3.right * (travelDirection * 2f * seconds));
                 if (yawOffset * yawDirection >= 10f) yawDirection = -yawDirection;
-                float yawStep = yawDirection * 30f * TickSeconds;
+                float yawStep = yawDirection * 30f * seconds;
                 yawOffset += yawStep;
                 actor.transform.rotation *= Quaternion.Euler(0f, yawStep, 0f);
                 Assert.That(Mathf.Abs(actor.transform.position.x - centreX), Is.LessThan(.40f),

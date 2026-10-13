@@ -18,6 +18,7 @@ namespace BarPromenade
         internal int RecoverySoleRendererCount { get; private set; }
         private PlayerRagdollLyingPose knockdownLying;
         private bool knockedDown, knockdownFrozen, recoveryPoseBegun, recoveryRegrip;
+        private float recoveryPoseRetrySeconds;
         private string journalClearanceReason, journalClearanceStage;
         private Collider journalClearanceObstacle;
         private int journalClearanceCount;
@@ -60,6 +61,7 @@ namespace BarPromenade
                 ReleaseWeapon(linearVelocity * .25f, angularVelocity * .25f);
             knockedDown = true;
             recoveryPoseBegun = recoveryRegrip = false;
+            recoveryPoseRetrySeconds = 0f;
             reaction = null;
             sweepValid = collectSweep = false;
             collectShove = false;
@@ -99,6 +101,7 @@ namespace BarPromenade
                 // authored rise. Remaining arms can still pull the same world rig.
                 if (Ragdoll.IsRecovering) Ragdoll.WakeLivingBody();
                 recoveryPoseBegun = recoveryRegrip = false;
+                recoveryPoseRetrySeconds = 0f;
                 State.BeginKnockdown();
                 AdvanceBodySurvivor(seconds);
                 return true;
@@ -111,6 +114,7 @@ namespace BarPromenade
                 knockdownPose?.Dispose();
                 knockdownPose = null;
                 recoveryPoseBegun = recoveryRegrip = false;
+                recoveryPoseRetrySeconds = 0f;
                 ResetRecoveryEscape();
                 supportGrip?.SetRecoveryOwned(true);
                 supportGrip?.AllowRegrip(false);
@@ -123,15 +127,25 @@ namespace BarPromenade
                 DisableHeldWeaponPhysics();
                 weaponConstraint?.Forget();
                 if (!weaponDropped) weaponConstraint?.BeginRecoveryContact();
-                State.BeginRise();
-                JournalEvent("rise_started", f0: GameLog.Field("impact_seq", LastJournalImpactSequence));
+                recoveryPoseRetrySeconds = 0f;
             }
             PrepareKnockdownPose();
             if (!recoveryPoseBegun)
             {
+                recoveryPoseRetrySeconds = Mathf.Max(0f, recoveryPoseRetrySeconds - seconds);
+                if (recoveryPoseRetrySeconds > 0f) return JournalRiseWait("recovery_pose_begin_refused");
                 if (!knockdownPose.Begin(knockdownLying))
-                { JournalRiseClearance("begin"); return JournalRiseWait("recovery_pose_begin_refused"); }
+                {
+                    // A fixed landing does not become a rise until a supported
+                    // pose accepts it. Retry world changes at a bounded rate;
+                    // pause and hit-stop never spend this simulation budget.
+                    recoveryPoseRetrySeconds = .2f;
+                    JournalRiseClearance("begin");
+                    return JournalRiseWait("recovery_pose_begin_refused");
+                }
                 recoveryPoseBegun = true;
+                State.BeginRise();
+                JournalEvent("rise_started", f0: GameLog.Field("impact_seq", LastJournalImpactSequence));
                 knockdownPose.Present();
             }
             knockdownPose.Advance(seconds);
@@ -143,10 +157,10 @@ namespace BarPromenade
             { knockdownPose.RejectAdvance(seconds); return WaitForRecoveryWeapon(seconds); }
             if (!weaponDropped && !recoveryRegrip && knockdownPose.HandsReleased)
             {
-                // The boots already accept the weight. Regrip overlaps the last authored
-                // rise arc, starting at this hand's live knee pose, without a second dwell.
+                // The boots already accept the weight. Return the free left
+                // arm through the remaining authored rise without a grip dwell.
                 supportGrip?.SetRecoveryOwned(false);
-                supportGrip?.SetTarget(false, true);
+                supportGrip?.SetTarget(false, false);
                 supportGrip?.AllowRegrip(true);
                 recoveryRegrip = true;
             }
@@ -207,6 +221,7 @@ namespace BarPromenade
             else RememberNpcPresentedPose();
             State.EndKnockdown();
             knockedDown = knockdownFrozen = recoveryPoseBegun = recoveryRegrip = false;
+            recoveryPoseRetrySeconds = 0f;
             supportGrip?.SetRecoveryOwned(false);
             supportGrip?.AllowRegrip(!weaponDropped);
             FinishImpactRecovery();
@@ -223,6 +238,7 @@ namespace BarPromenade
             Ragdoll.MakeTerminal();
             supportGrip?.SetRecoveryOwned(true);
             knockedDown = recoveryPoseBegun = recoveryRegrip = false;
+            recoveryPoseRetrySeconds = 0f;
             sweepValid = collectSweep = false;
             DropWeapon();
         }
@@ -237,6 +253,7 @@ namespace BarPromenade
             knockdownPose = null;
             if (knockedDown && !State.IsDefeated) State.EndKnockdown();
             knockedDown = knockdownFrozen = recoveryPoseBegun = recoveryRegrip = false;
+            recoveryPoseRetrySeconds = 0f;
             supportGrip?.SetRecoveryOwned(false);
             supportGrip?.AllowRegrip(true);
         }

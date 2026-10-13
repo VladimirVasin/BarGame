@@ -12,7 +12,6 @@ namespace BarPromenade.Tests.PlayMode
         [UnityTest]
         public IEnumerator Range_ZombieLungeUsesHandsObstaclesPauseAndRecycledBodies()
         {
-            CombatTestRoot.UseHumanOpponentsForTests = false;
             yield return SceneManager.LoadSceneAsync(SceneIds.MainMenu, LoadSceneMode.Single);
             yield return EnterRange();
             CombatActor zombie = root.Opponent;

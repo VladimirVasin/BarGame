@@ -271,6 +271,11 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(CombatTestStartService.TryStart(new CombatTestSelection(
                     new CombatLoadoutSelection(CombatWeaponId.Pistol), CombatTestMode.Endless, schedule)), Is.True);
                 yield return AwaitSelectedCombatRange();
+                foreach (CombatActor opponent in root.Opponents)
+                {
+                    Assert.That(opponent.IsZombie, Is.True, "The cache proof retains the production zombie population.");
+                    Assert.That(opponent.Weapon, Is.Null);
+                }
                 root.SendMessage("OnApplicationFocus", true); GameInput.HandleApplicationFocus(true);
                 foreach (CombatWeaponId id in new[] { CombatWeaponId.Pistol, CombatWeaponId.Crowbar, CombatWeaponId.Shotgun })
                     Assert.That(root.Hero.CarriedWeapon(id), Is.Not.Null);
@@ -332,6 +337,30 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(cached.ResidentClips, Is.LessThanOrEqualTo(12));
                 Assert.That(cached.ResidentFloatValues, Is.LessThanOrEqualTo(16000000));
                 measurements.Add(FormattableString.Invariant($"Test selected recordings: cold={EndlessMilliseconds(coldTicks):F5}ms/{coldAllocations} GC.Alloc events; prepared={EndlessMilliseconds(hitTicks):F5}ms/{hitAllocations} GC.Alloc events; decoded={prepared.DecodeCount - before.DecodeCount}; resident={cached.ResidentFloatValues * 4}B; evictions={cached.Evictions - before.Evictions}. Lookup scopes exclude frame rendering; allocation event counts use the current-thread recorder with a positive control, not unsupported Mono byte counters."));
+
+                // Weapon changes introduce more recordings than fit together.
+                // Idle and aim are used between those changes and must retain
+                // their hot decoded data rather than be evicted by load order.
+                long beforeEvictions = cached.Evictions;
+                foreach (string name in new[] { "CombatReady", "CrowbarDraw", "CrowbarStow", "PistolDraw", "PistolStow",
+                    "ShotgunRest", "ShotgunAim", "PistolFire", "CombatAttack", "CombatBackhand", "Idle" })
+                {
+                    long beforeHits = SecondaryMotionBakeRuntime.Diagnostics.DecodeCount;
+                    Assert.That(SecondaryMotionBakeRuntime.Prewarm("stored-shotgun", "Idle"), Is.True);
+                    Assert.That(SecondaryMotionBakeRuntime.Prewarm("stored-shotgun", "PistolAim"), Is.True);
+                    Assert.That(SecondaryMotionBakeRuntime.Diagnostics.DecodeCount, Is.EqualTo(beforeHits),
+                        "Frequently sampled recordings must survive other weapon clips entering the bounded cache.");
+                    Assert.That(SecondaryMotionBakeRuntime.Prewarm("no-gear", name), Is.True);
+                    Assert.That(SecondaryMotionBakeRuntime.Diagnostics.ResidentClips, Is.LessThanOrEqualTo(12));
+                    Assert.That(SecondaryMotionBakeRuntime.Diagnostics.ResidentFloatValues, Is.LessThanOrEqualTo(16000000));
+                }
+                long afterChanges = SecondaryMotionBakeRuntime.Diagnostics.DecodeCount;
+                Assert.That(SecondaryMotionBakeRuntime.Prewarm("stored-shotgun", "Idle") &&
+                    SecondaryMotionBakeRuntime.Prewarm("stored-shotgun", "PistolAim"), Is.True);
+                Assert.That(SecondaryMotionBakeRuntime.Diagnostics.DecodeCount, Is.EqualTo(afterChanges));
+                Assert.That(SecondaryMotionBakeRuntime.Diagnostics.Evictions, Is.GreaterThan(beforeEvictions),
+                    "This regression must exercise real memory/count pressure, not a cache that never fills.");
+                measurements.Add("Test weapon recording changes: frequent Idle/aim stay decoded while less recently used recordings leave the bounded cache.");
 
                 SecondaryMotionBakeRuntime.Enabled = true;
                 for (int warm = 0; warm < 16; warm++) yield return null;

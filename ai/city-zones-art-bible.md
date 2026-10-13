@@ -4248,7 +4248,7 @@ OS dynamic fonts в IMGUI запрещены; Unity legacy — аварийны�
 8lamps/2shadows/§8wear/vent/concrete-metal/resetseed/New;
 Endless live1–5/poolIDs/2–4→3–7active s/≥3m/AI-spacing-stairs/heroend.
 `2026-10-13`:defaultlive2/corpses0–2(default2)/pool=livecap≤5/oldest retire-reuse.
-`2026-10-13`:CombatTest undead/0lore-infection/3worn looks/pale-dark eyes;
+`2026-10-13`:CombatTest undead only/0lore-infection/3worn looks/pale-dark eyes;
 slump/heavy asym gait/palms/idle-walk-RL lunge/telegraph→rush→return/groan-hiss.
 `2026-10-10`:pistol LunderM65/bar Rbelt/shotgun soft sling/Lshoulder-frontdiag-back;
 6stow-draw/rig-model-ammo/Ljacketopen/cloth-hair-scarf/0hardmount.
@@ -4274,9 +4274,9 @@ Case/slide-emptylock/mag-stash-seat-rack/SFX/Eshared.
 World:chips-sparks/finite holes/freeze-reset-exit-head0;
 Shoulders↑/chin in/breath-tremor/tight swing/awkward return;
 softknees/pelvis-grip-elbows↓/step/face block-flex.
-≤2steps/crouch-lean-brace?/floor→hand→drop/2hands/return≠parry.
-Windup1m/shove-grip/Q-B:dry/0finish/highguard/buffer/recoil/guard support.
-Bar:wall sparks-recoil/sway-inertia-feet;Qfar:pelvis-foot→/chest←;
+≤2steps/crouch-brace/floor→hand→drop/return≠parry.
+Bar:R short arc/shared charge;Lguard only;wall sparks/recoil.
+Windup1m/Q-B:dry/0finish/highguard/buffer;Qfar:pelvis-foot→/chest←;
 near knee/bar kept/torso mirror/L-shove←/palm-bar-body.
 Грудь контрастна;стена/край/конец→скрыто.
 Win:walk/gun fire-reload;barE:toilet §7 FP/barL/body-floorR/0reaction.

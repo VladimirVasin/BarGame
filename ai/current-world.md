@@ -152,9 +152,9 @@ The vertical slice contains:
   Zombies:3worn corpse looks/gait-clips/groan-lunge;
   slow chase→telegraph→latched lunge→miss recovery/hand firstsurface/1hit/0metal;
   no guard-counter-retreat-stamina;one hand→other/both0-grounded0attack;
-  Rearhead0finisher/0world-infection;human:test-only.
+  Rearhead0finisher/0world-infection;zombies only.
   Freecam/dummy/Tabfight/MMBfocus/bar-Qfocus;
-  rise queries grow-retry/fallback;real blockers kept.
+  Rise:tread support/accepted pose→Rising/retry/real blockers.
   Guns:RMBaim/LMBedge/R-Xreload/8gaits/0run/FOV-IK;
   camplane normdiag/Space1m-4way-back/tankreturn/barfocus/injury.
   Hero:breath-tremor/walk-settle/recoil-yaw-overshoot/regrip/blink-chin;
@@ -168,9 +168,9 @@ The vertical slice contains:
   Cloth-tissue-bone loss/head-limb sever/torso→joined skeleton/0chunks.
   Rhand0weapon/Lhand0twohand-reload;Rbar-loaded pistol;
   Legloss fall/crawl/0rise-step-kick;critical head-torso end/corpses/reset.
-  Bar8segments/skin/firstsurface/1hit/blocked→recoil/6zones/rearhead-end/Qsupport;
+  Bar:R short arc/shared charge/Lguard;8segments/firstsurface/1hit/blocked→recoil/6zones;
   standard taunt/Eshared/0grant.
-  Cloth:prewarm/guard reuse/Aim/old gear→live;wound scratch ready.
+  Cloth:LRU/prewarm/buffered decode/unsafe→live.
 - legacy-only Home opening: held bed loop/silent `05:59`/rare whole-clock flicker,
   five-second input lock/localized Wake Up-Quit. Wake sets `06:00`, starts
   clock/alarm, hides menu; alarm stops after three unscaled seconds.

@@ -110,17 +110,18 @@ Editor:`Tools/Bar Promenade/Diagnostics/Capture Combat CPU Timeline (15 seconds)
 trace/manifest;timeout/scene/Play/reload restores Profiler;active refuses;overhead.
 Rendered Editor explicit:`Range_EndlessWarehouseRetainsRenderedPerformanceEvidence`.
 
-Queue:2048/4096 default/max+8controls;reused chars/0string copies.
-v2:stage_sample_encoding=absent_numeric_zero;
-zero_stage_events:damage/sync/blood/head/defeat.
-Measured lossless frames:absent=0;unavailable explicit;envelope=v1.
-20MiB incl.summary/footer:telemetry≤70%body;causal reserve.
-file_limit.cause=telemetry_budget|round_budget;one warning,causal continues after sample limit.
-round_end:{telemetry,causal,producer}_dropped_records+limit flags;loss gaps unknown.
-32-action ring≠solver milestones;summary.txt:latest original JSON,≤half its budget.
-causal_tail_copy=true;strings>64:tail_strings_clipped. Flush after limit:live;end:final;reset:clear.
-≤2 workers;worker_limit/I/O explicit;10 closed/100MiB,ordinary→marked/abandoned;
-never live/foreign;bounded marks/one CombatLogs/no sweep.
+Queue2048/max4096+8controls;reused chars;envelope=v1.
+v3:absent_numeric_zero damage/sync/blood/head/defeat:lossless measured frames only;
+thinned/limited gaps unknown.
+20MiB incl.summary/footer;70%telemetry/causal reserve.
+Telemetry:55%detail/30%essential/15%forced;adaptive stride1/4/16/64.
+Forced70%routine/20%F8-stall/10%result-end.
+Samples:priority/group/group_stride/reason;detail/essential_sampled_out_records≠loss;
+{telemetry,causal,producer}_dropped_records/limit flags;first-last omitted seq.
+file_limit:telemetry_budget|round_budget;causal survives sample cap.
+32-action tail≠solver;summary:original envelopes≤half budget/clipped strings.
+Flush live/end final/reset clear;≤2workers/I/O explicit;10closed/100MiB;
+ordinary→marked/abandoned;never live/foreign;bounded marks/no sweep.
 
 ## Area performance capture
 

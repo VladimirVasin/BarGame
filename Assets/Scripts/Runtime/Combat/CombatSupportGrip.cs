@@ -31,11 +31,11 @@ namespace BarPromenade
         private readonly Collider[] overlaps = new Collider[24];
         private readonly float[] wristArcBoundaries = new float[16];
         private Quaternion upperBase, forearmBase, handBase;
-        private bool applied, initialized, wantsSupport = true, recoveryOwned, regripAllowed = true;
+        private bool applied, initialized, wantsSupport, recoveryOwned, regripAllowed = true;
         private bool protective, hasPresentedPose, preserveSupportBranch;
         private float distance = ReadyDistance, startDistance = ReadyDistance, targetDistance = ReadyDistance;
         private float slideElapsed = SlideSeconds, releaseHold, urgency;
-        private float weight = 1f, armWeight = 1f, closeElapsed, lostSupportElapsed, presentedContactError, presentedContactAngle;
+        private float weight, armWeight, closeElapsed, lostSupportElapsed, presentedContactError, presentedContactAngle;
         private float reachProgress, reachDuration, reachStepSeconds;
         private Vector3 direction, palmPosition, palmVelocity, elbowHint, presentedPalmLocal, presentedElbowLocal;
         private Vector3 reachStartOffset, reachStartElbow, reachStepPalmLocal, reachStepElbowLocal;
@@ -270,7 +270,7 @@ namespace BarPromenade
 
         public float Weight => initialized ? weight : 0f;
         public Vector3 Target => weapon != null ? weapon.TransformPoint(new Vector3(0f, distance, 0f)) : Vector3.zero;
-        public CombatArmSupportState State { get; private set; } = CombatArmSupportState.SupportingWeapon;
+        public CombatArmSupportState State { get; private set; } = CombatArmSupportState.Free;
         public bool IsSupportingWeapon => initialized && State == CombatArmSupportState.SupportingWeapon && weight >= .99f &&
             presentedContactError <= ContactTolerance && presentedContactAngle <= 12f && presentedWristSafe;
         public bool IsReleased => State == CombatArmSupportState.Free || State == CombatArmSupportState.RecoverySupport;
@@ -372,16 +372,18 @@ namespace BarPromenade
             if (!foundRest) throw new InvalidOperationException("Combat support requires the arm's original skin bind pose.");
         }
 
-        // Presentation selects a shaft contact; it cannot cancel an explicit protective release.
+        // Only guard asks the left palm to hold the shaft. The ordinary arm
+        // remains clip-owned; physical protective/recovery support keeps priority.
         public void SetTarget(bool blocking, bool supported, bool continuous = false)
         {
+            supported &= blocking;
             preserveSupportBranch = continuous;
             float next = blocking ? BlockDistance : ReadyDistance;
             if (!initialized)
             {
                 initialized = true; distance = startDistance = targetDistance = next;
-                weight = armWeight = supported ? 1f : 0f;
-                State = supported ? CombatArmSupportState.SupportingWeapon : CombatArmSupportState.Free;
+                weight = armWeight = 0f;
+                State = CombatArmSupportState.Free;
                 CaptureArm(true);
             }
             if (!Mathf.Approximately(next, targetDistance))
@@ -393,6 +395,11 @@ namespace BarPromenade
                 (ImpactMotion == null || !ImpactMotion.IsActive || ImpactMotion.RecoveryUrgency <= .12f)) protective = false;
             if (wasSupported && !supported && !recoveryOwned &&
                 (State == CombatArmSupportState.SupportingWeapon || IsRegripping)) BeginRelease(false);
+            if (!supported)
+            {
+                regripWaiting = regripProbePending = regripProposalValid = regripCommittedThisStep = false;
+                regripCommitSeconds = 0f;
+            }
         }
 
         public void RequestRelease(Vector3 worldDirection, float releaseUrgency)
@@ -405,7 +412,7 @@ namespace BarPromenade
             // any longer wait through AllowRegrip instead of a second timer.
             releaseHold = Mathf.Max(releaseHold, Mathf.Lerp(.10f, .18f, urgency));
             protective = true;
-            if (!initialized) SetTarget(false, true);
+            if (!initialized) SetTarget(false, false);
             if (!recoveryOwned && State != CombatArmSupportState.Releasing && State != CombatArmSupportState.Free)
                 BeginRelease(true);
         }
@@ -959,6 +966,12 @@ namespace BarPromenade
             if (!initialized || weapon == null || hand == null || hands == null) return;
             if (shoveActive) { CaptureArmReference(); ApplyShove(); return; }
             if (balanceCollider != null) { ApplyBalanceHand(); return; }
+            if (!wantsSupport && !protective && State == CombatArmSupportState.Free)
+            {
+                hands.SetGrip(true, 0f);
+                RememberPresentedArm();
+                return;
+            }
             float slide = Mathf.Sin(Mathf.PI * Mathf.Clamp01(slideElapsed / SlideSeconds));
             float fingers = State == CombatArmSupportState.SupportingWeapon ? weight * (1f - .28f * slide) : weight;
             if (armWeight <= 0f)
@@ -2005,7 +2018,7 @@ closestAngle={closestWristAngle:F9}; closestWrist={closestWristAngles:F9}; close
             journalGripReason = null;
             LastPoseRejection = contactRejection = contactBlockingShape = null;
             ClearBalanceHand();
-            Restore(); initialized = false; wantsSupport = regripAllowed = true;
+            Restore(); initialized = wantsSupport = false; regripAllowed = true;
             shoveActive = shoveContactPending = false; shoveContactRoot = null;
             recoveryOwned = protective = hasPresentedPose = false;
             hasArmStep = armStepHadContactAdjustment = false; armStepSeconds = 0f;
@@ -2017,14 +2030,14 @@ closestAngle={closestWristAngle:F9}; closestWrist={closestWristAngles:F9}; close
             distance = startDistance = targetDistance = ReadyDistance;
             slideElapsed = SlideSeconds; releaseHold = closeElapsed = urgency = 0f;
             lostSupportElapsed = presentedContactError = presentedContactAngle = reachProgress = reachStepSeconds = 0f;
-            weight = armWeight = 1f; presentedWristSafe = true; direction = palmVelocity = Vector3.zero;
+            weight = armWeight = 0f; presentedWristSafe = true; direction = palmVelocity = Vector3.zero;
             balanceSearchClock = balanceStableSeconds = balanceLostSeconds = balanceSeekSeconds = 0f;
             balanceSearchCount = balanceSurfaceCount = balanceTargetCount = balanceSpanRejects = 0;
             balanceWristRejects = balanceOwnRejects = balanceWorldRejects = balancePoseRejects = 0;
             balanceIntermediateRejects = balancePoseWristRejects = balancePoseClearRejects = 0;
             balanceMaxNeed = balanceLastSpan = balanceLastLength = 0f;
             balanceClosestGap = float.PositiveInfinity; balanceStage = "idle";
-            State = CombatArmSupportState.SupportingWeapon;
+            State = CombatArmSupportState.Free;
             if (hands != null) hands.SetGrip(true, 0f);
         }
 

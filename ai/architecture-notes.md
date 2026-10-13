@@ -4,17 +4,19 @@
 
 - **Accepted exception — 2026-10-13, zombie duel:**
   CombatTest:unarmed dead only/slow→lunge/0world-infection;
-  §6/art§15a/§16/§21/9checks;human:tests.
+  §6/art§15a/§16/§21/9checks;user removed human duel/tests.
 
-- **Proposed — 2026-10-13, forehand repair:**
-  Hero/NPC forehand/Ready-unrelated kept/arc measured.
-  Arm overlap≤4mm/wrist25-55-65/elbows≤6m/s/C1/metal≥5mm.
-  Retained FBX anatomy gate;proof pending.
+- **Accepted — 2026-10-13, simple crowbar strike:**
+  User:one short right-hand arc;normal/backhand/charged share its path.
+  Power retained;left support only guard;Ready/unrelated clips kept.
+  Authored world rig/physical body-world stops/continuous return;
+  no paired strike DAG. Polygon-only/§6/art§15a/9checks.
 
 - **Accepted — 2026-10-13, diagnostic retention:**
   GameLog:v1/seq-context-IDs/Unity;Editor-dev verbose/release basic/
   batchoff/5MiB+3/F8;cached finals before close/fault-isolated/reset.
-  Duel:on/batchoff/CLI/async;20MiB total/sample70%body/causal reserve/
+  Duel:on/batchoff/CLI/async;20MiB/sample70%body/causal reserve;
+  adaptive detail-essential/forced urgent-terminal quotas;sampling≠loss;
   32-action tail≠solver/original envelopes/clip-loss/flush/end/reset.
   See:`ai/debug-log.md`.
 
@@ -60,7 +62,7 @@
 - **Accepted — 2026-10-13, secondary-motion baking:**
   120→30Hz/same rig-pose-gear/Idle≤20mm Y/all17/warm cycles;
   unsafe/wind/falls→live≤3/2/2,0debt;pins/material/body/face/hash-reference-render-CPU.
-  Prewarm/cached keys/guard;bad layout→GuardLayout live.
+  Prewarm/bounded LRU/buffered decode/guard;bad layout→GuardLayout live.
   Idle prepared/Aim FinalPose→live;stowed bar;build:fullbank refresh.
   Bounded reason/decode/load/resident/eviction;FPSgain unmeasured.
 
@@ -389,15 +391,12 @@
   C1pose-contact/travel-yaw:return.15→.75/stun.35;stance.42/.28m/Smoothstep feet;
   Hold:breath0/regen delay;thud/bar pool grows10s/stays.
 - **Accepted 2026-09-20, two hands:**
-  Ready low/Block high/attack-recoil→L;Hit-GuardBreak-Defeat release;
+  Ready low/Block high;Hit-GuardBreak-Defeat release;
   L opposed.16→.42m/breath4s/blend/injury;
   Dry block-miss/ragdoll wins.
 - **Accepted 2026-09-21, duel:**
   Standard barwin:swing→walk/off→reset/free hits/guard20-35/charge20/regen30/s-.6s stuns;
-  Fall freecam/fore-back flips/0repeats/shared dmg-time-cost.
-  Charge:q=power/Forehand Light/upper(t+q*.18*(1-smooth(t/.45)))/lower(t)/
-  retimed Attack/neutral lower;Backhand DAG:R elbow-hand roll/.56reach≥.95/free elbow;
-  recoil .56→Ready0/.48s inverse/C1/0dwell/wrist-core-speed-clearance gates.
+  Fall freecam/shared dmg-time-cost;Charge:q=power.
 - **Accepted exception 2026-09-21, taunt:**
   Standard E/settled defeat:Home toilet/view-timeline-stream-residue;
   Guided dock/aim/bone-floor;barL/§21-exempt silent/0speech-reaction-reward/6th FP.

@@ -12,15 +12,137 @@ namespace BarPromenade.Editor
     {
         public const string Folder = "Assets/Resources/Combat/";
         public const string ManifestPath = Folder + "CombatTest3D.json";
-        public override uint GetVersion() => 6;
+        // Model callback versions enter Unity's global model-import hash. Keep
+        // this frozen; future combat-only changes advance the local recipe.
+        public override uint GetVersion() => 8;
+        private const string ImportDependency = "BarPromenade/CombatTest/ImportRecipe";
+        private const int ImportRecipeRevision = 1;
+        private static readonly string[] LocalModels = { Folder + "Arena.fbx", Folder + "Crowbar.fbx",
+            Folder + "CombatActions.fbx", Folder + "CombatNpcActions.fbx" };
+        private static readonly string[] ImportProofModels = { Player3DV2AssetSetup.ModelPath,
+            "Assets/Resources/CombatGore/BodyHero.fbx", Folder + "CombatActions.fbx",
+            CombatZombieAssetSetup.BankPath, Folder + "CombatNpcActions.fbx" };
+        private static string ImportMarker => "BarPromenade.CombatTest.Import." +
+            Hash128.Compute(Path.GetFullPath(Application.dataPath)) + "." + ImportRecipeRevision;
+        private static bool importBootstrapQueued;
         private readonly Dictionary<string, AnimationClip> importedClips = new Dictionary<string, AnimationClip>();
+        private bool? simpleStrikeImport;
         private bool IsCombat => assetPath.StartsWith(Folder, StringComparison.Ordinal) &&
             !assetPath.StartsWith(Folder + "Zombie", StringComparison.Ordinal);
         private bool IsBank => IsCombat && assetPath.EndsWith("Actions.fbx", StringComparison.Ordinal);
+        private bool IsHumanBank => assetPath.EndsWith("CombatNpcActions.fbx", StringComparison.Ordinal);
+
+        [InitializeOnLoadMethod]
+        private static void QueueLocalImportBootstrap()
+        {
+            if (AssetDatabase.IsAssetImportWorkerProcess() || importBootstrapQueued) return;
+            importBootstrapQueued = true;
+            EditorApplication.delayCall += RunLocalImportBootstrap;
+        }
+
+        private static void RunLocalImportBootstrap()
+        {
+            importBootstrapQueued = false;
+            if (EditorApplication.isCompiling || EditorApplication.isUpdating)
+            { QueueLocalImportBootstrap(); return; }
+            EnsureLocalImports();
+        }
+
+        private static void EnsureLocalImports()
+        {
+            if (AssetDatabase.IsAssetImportWorkerProcess()) return;
+            RegisterImportDependency();
+            if (!EditorPrefs.GetBool(ImportMarker, false))
+            {
+                foreach (string path in LocalModels)
+                    if (File.Exists(path)) ImportModelOnce(path);
+                EditorPrefs.SetBool(ImportMarker, true);
+            }
+            foreach (string path in LocalModels.Concat(new[] { CombatZombieAssetSetup.BankPath }))
+                RecoverDefaultModelOnce(path);
+        }
+
+        private static void RegisterImportDependency()
+        {
+            // Registration is deliberately outside every import callback.
+            AssetDatabase.RegisterCustomDependency(ImportDependency,
+                Hash128.Compute("combat-import-recipe:" + ImportRecipeRevision));
+        }
+
+        private static void ImportModelOnce(string path)
+        {
+            string attempt = ImportMarker + ".attempt." + path;
+            if (SessionState.GetBool(attempt, false)) return;
+            SessionState.SetBool(attempt, true);
+            Debug.Log("COMBAT SCOPED MODEL IMPORT: " + path);
+            AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceSynchronousImport | ImportAssetOptions.ForceUpdate);
+        }
+
+        private static void RecoverDefaultModelOnce(string path)
+        {
+            if (File.Exists(path) && AssetDatabase.GetMainAssetTypeAtPath(path) == typeof(DefaultAsset))
+            {
+                Debug.Log("COMBAT IMPORT RECOVER DEFAULT MODEL: " + path);
+                ImportModelOnce(path);
+            }
+        }
+
+        /// <summary>One bounded importer proof, without scenes, player builds or test suites.</summary>
+        public static void VerifyImportOrThrow()
+        {
+            if (AssetDatabase.IsAssetImportWorkerProcess())
+                throw new InvalidOperationException("Combat import proof must run in the main Editor process.");
+            RegisterImportDependency();
+            foreach (string path in ImportProofModels) RecoverDefaultModelOnce(path);
+            EnsureLocalImports();
+            RequireImportedModels();
+            RequireAnimationBank(Folder + "CombatActions.fbx", CombatAssetProvider.ClipNames
+                .Concat(CombatAssetProvider.LocomotionClipNames).Concat(CombatAssetProvider.StepClipNames)
+                .Concat(CombatAssetProvider.RecoveryClipNames).ToArray(), true);
+            RequireAnimationBank(CombatZombieAssetSetup.BankPath, CombatZombieAssetProvider.ClipNames, true, true);
+            RequireAnimationBank(Folder + "CombatNpcActions.fbx", new[] { CombatAssetProvider.ReadyClip,
+                CombatAssetProvider.DefeatClip }.Concat(CombatAssetProvider.RecoveryClipNames).ToArray(), false);
+            Debug.Log("COMBAT IMPORT RECOVERY OK");
+        }
+
+        private static void RequireImportedModels()
+        {
+            foreach (string path in ImportProofModels)
+            {
+                Type mainType = AssetDatabase.GetMainAssetTypeAtPath(path);
+                if (mainType == typeof(DefaultAsset) || !(AssetDatabase.LoadMainAssetAtPath(path) is GameObject))
+                    throw new InvalidOperationException("Combat import proof requires GameObject, not " +
+                        (mainType == null ? "missing asset" : mainType.Name) + ": " + path);
+            }
+        }
+
+        private static void RequireAnimationBank(string path, string[] expectedNames, bool exactCount, bool zombie = false)
+        {
+            AnimationClip[] clips = AssetDatabase.LoadAllAssetsAtPath(path).OfType<AnimationClip>()
+                .Where(clip => !clip.name.StartsWith("__preview__", StringComparison.Ordinal)).ToArray();
+            if (clips.Length < expectedNames.Length || exactCount && clips.Length != expectedNames.Length)
+                throw new InvalidOperationException("Combat import has an incomplete animation bank: " + path +
+                    "; imported=" + clips.Length + ", required=" + expectedNames.Length);
+            foreach (string name in expectedNames)
+            {
+                AnimationClip[] matches = clips.Where(clip => clip.name == name).ToArray();
+                if (matches.Length != 1 || matches[0].empty || matches[0].length <= 0f)
+                    throw new InvalidOperationException("Combat import requires one nonempty animation: " + path + "/" + name);
+                AnimationClip clip = matches[0];
+                float duration = zombie ? CombatZombieAssetProvider.ClipDuration(name) : CombatAssetProvider.ClipDuration(name);
+                bool looping = zombie ? CombatZombieAssetProvider.IsLoop(name) : CombatAssetProvider.IsLoop(name);
+                if (Mathf.Abs(clip.length - duration) > .003f || clip.isLooping != looping || clip.events.Length != 0)
+                    throw new InvalidOperationException("Combat import changed animation clock/loop/events: " + path + "/" + name);
+                ValidateInPlaceClip(clip);
+            }
+            Debug.Log("COMBAT IMPORT BANK OK: " + path + "; imported=" + clips.Length + ", required=" + expectedNames.Length);
+        }
 
         private void OnPreprocessModel()
         {
             if (!IsCombat || !(assetImporter is ModelImporter importer)) return;
+            context.DependsOnCustomDependency(ImportDependency);
+            if (assetPath == Folder + "CombatActions.fbx") context.DependsOnSourceAsset(ManifestPath);
             importer.globalScale = 1f; importer.useFileScale = true; importer.bakeAxisConversion = true;
             importer.preserveHierarchy = true; importer.optimizeGameObjects = false;
             importer.importCameras = false; importer.importLights = false; importer.addCollider = false;
@@ -32,6 +154,7 @@ namespace BarPromenade.Editor
             importer.animationType = IsBank ? ModelImporterAnimationType.Generic : ModelImporterAnimationType.None;
             if (!IsBank) return;
             importer.animationCompression = ModelImporterAnimationCompression.Off;
+            context.DependsOnArtifact(Player3DV2AssetSetup.ModelPath);
             Avatar avatar = AssetDatabase.LoadAllAssetsAtPath(Player3DV2AssetSetup.ModelPath).OfType<Avatar>().FirstOrDefault();
             importer.avatarSetup = avatar != null ? ModelImporterAvatarSetup.CopyFromOther : ModelImporterAvatarSetup.CreateFromThisModel;
             importer.sourceAvatar = avatar;
@@ -54,7 +177,7 @@ namespace BarPromenade.Editor
 
         private void OnPostprocessAnimation(GameObject rootObject, AnimationClip clip)
         {
-            if (!IsBank) return;
+            if (!IsBank || IsHumanBank) return;
             int separator = clip.name.LastIndexOf('|');
             string name = separator >= 0 ? clip.name.Substring(separator + 1) : clip.name;
             importedClips[name] = clip;
@@ -63,17 +186,16 @@ namespace BarPromenade.Editor
             // therefore cannot reproduce the imported curve between its keys.
             // Derive the compatibility Charge take from that same imported
             // source curve; scaling time and tangents preserves every pose.
-            foreach (MeleeSwing swing in new[] { MeleeSwing.Forehand, MeleeSwing.Backhand })
-            {
-                CombatAssetProvider.SwingClipSet names = CombatAssetProvider.SwingClips(swing);
-                if (name != names.Attack && name != names.Charge) continue;
-                if (importedClips.TryGetValue(names.Attack, out AnimationClip source) &&
-                    importedClips.TryGetValue(names.Charge, out AnimationClip charge))
-                    RetimedChargeCurves(rootObject, source, charge);
-            }
+            // Both rule swing sides now name this same pair. Derive it once.
+            CombatAssetProvider.SwingClipSet names = CombatAssetProvider.SwingClips(MeleeSwing.Forehand);
+            if (name != names.Attack && name != names.Charge) return;
+            if (!simpleStrikeImport.HasValue) simpleStrikeImport = HasSimpleStrike(false);
+            if (importedClips.TryGetValue(names.Attack, out AnimationClip source) &&
+                importedClips.TryGetValue(names.Charge, out AnimationClip charge))
+                RetimedChargeCurves(rootObject, source, charge, simpleStrikeImport.Value);
         }
 
-        private static void RetimedChargeCurves(GameObject rootObject, AnimationClip source, AnimationClip charge)
+        private static void RetimedChargeCurves(GameObject rootObject, AnimationClip source, AnimationClip charge, bool wholeClip)
         {
             Transform spine = rootObject.GetComponentsInChildren<Transform>(true).First(bone => bone.name == "spine");
             var upperPaths = new HashSet<string>(spine.GetComponentsInChildren<Transform>(true)
@@ -81,7 +203,7 @@ namespace BarPromenade.Editor
             float advance = CombatAssetProvider.ChargePreparationAdvanceSeconds;
             foreach (EditorCurveBinding binding in AnimationUtility.GetCurveBindings(source))
             {
-                if (binding.type != typeof(Transform) || !upperPaths.Contains(binding.path)) continue;
+                if (binding.type != typeof(Transform) || !wholeClip && !upperPaths.Contains(binding.path)) continue;
                 AnimationCurve curve = AnimationUtility.GetEditorCurve(source, binding);
                 Keyframe[] keys = curve.keys.Where(key => key.time <= advance + .000001f).ToArray();
                 bool constant = curve.keys.All(key => key.value == curve.keys[0].value && key.inTangent == 0f && key.outTangent == 0f);
@@ -117,19 +239,21 @@ namespace BarPromenade.Editor
         {
             CombatBloodAssetSetup.BuildOrThrow();
             CombatGoreAssetSetup.BuildOrThrow();
-            foreach (string file in new[] { "Arena.fbx", "Crowbar.fbx", "CombatActions.fbx", "CombatNpcActions.fbx", "CombatTest3D.json" })
+            CombatZombieAssetSetup.BuildOrThrow();
+            foreach (string file in new[] { "Arena.fbx", "Crowbar.fbx", "CombatActions.fbx", "CombatTest3D.json" })
                 AssetDatabase.ImportAsset(Folder + file, ImportAssetOptions.ForceSynchronousImport);
             Manifest manifest = JsonUtility.FromJson<Manifest>(File.ReadAllText(ManifestPath));
             if (manifest == null || !manifest.test_only || manifest.models == null || manifest.models.Length != 2 ||
                 manifest.actions == null || manifest.actions.root_motion || manifest.actions.animation_events != 0 ||
                 manifest.actions.maximum_support_error > .001f || manifest.actions.maximum_support_angle_degrees > .1f ||
-                manifest.actions.attack_pelvis_travel_m < .04f || manifest.actions.attack_knee_travel_degrees < 7f ||
+                manifest.actions.simple_strike == null &&
+                    (manifest.actions.attack_pelvis_travel_m < .04f || manifest.actions.attack_knee_travel_degrees < 7f) ||
                 Mathf.Abs(manifest.actions.defeat_handoff_seconds - CombatAssetProvider.DefeatHandoffSeconds) > .0001f ||
                 manifest.actions.reactions == null || manifest.actions.reactions.Length != 4 ||
                 manifest.actions.released_support_clips == null || manifest.actions.released_support_clips.Length != 3 ||
                 !new[] { "CombatHit", "CombatGuardBreak", "CombatDefeat" }.All(manifest.actions.released_support_clips.Contains) ||
                 manifest.actions.reaction_silhouette_contract != "tip_20cm_or_head_12cm_and_elbow_10cm" ||
-                manifest.actions.swings == null || manifest.actions.swings.Length != 2)
+                manifest.actions.simple_strike == null && (manifest.actions.swings == null || manifest.actions.swings.Length != 2))
                 throw new InvalidOperationException("Combat manifest violated its isolated, grounded, in-place contract.");
             ValidateKickManifests(manifest.actions);
             DefensiveStep step = manifest.actions.defensive_step;
@@ -141,7 +265,8 @@ namespace BarPromenade.Editor
                 throw new InvalidOperationException("Combat defensive step differs from its constrained motor travel.");
             // Both swing sides carry the same authored strike and charge contract; the
             // runtime registry names are the truth the manifest must agree with.
-            foreach (Swing swing in manifest.actions.swings)
+            if (manifest.actions.simple_strike != null) ValidateSimpleStrike(manifest.actions.simple_strike);
+            foreach (Swing swing in manifest.actions.simple_strike != null ? Array.Empty<Swing>() : manifest.actions.swings)
             {
                 CombatAssetProvider.SwingClipSet names = CombatAssetProvider.SwingClips(
                     swing.name == "backhand" ? MeleeSwing.Backhand : MeleeSwing.Forehand);
@@ -198,16 +323,14 @@ namespace BarPromenade.Editor
                 }
                 finally { UnityEngine.Object.DestroyImmediate(model); }
             }
-            foreach (bool npc in new[] { false, true })
             foreach (string name in CombatAssetProvider.ClipNames.Concat(CombatAssetProvider.LocomotionClipNames)
                 .Concat(CombatAssetProvider.StepClipNames).Concat(CombatAssetProvider.RecoveryClipNames))
             {
-                if (npc && CombatAssetProvider.IsKickClip(name)) continue;
-                AnimationClip clip = CombatAssetProvider.LoadClip(name, npc);
+                AnimationClip clip = CombatAssetProvider.LoadClip(name);
                 ValidateInPlaceClip(clip);
             }
-            ValidateGripMotion(false);
-            ValidateGripMotion(true);
+            ValidateGripMotion(false, manifest.actions.simple_strike != null);
+            ValidateZombieHandoff();
             Debug.Log("COMBAT IMPORTED METRES, ANCHORS AND IN-PLACE ACTIONS OK");
         }
 
@@ -252,11 +375,12 @@ namespace BarPromenade.Editor
         [MenuItem("Bar Promenade/Combat Test/Diagnose Imported Charge Entries")]
         public static void DiagnoseChargeEntriesOrThrow()
         {
-            foreach (string file in new[] { "CombatActions.fbx", "CombatNpcActions.fbx" })
+            foreach (string file in new[] { "CombatActions.fbx" })
                 AssetDatabase.ImportAsset(Folder + file, ImportAssetOptions.ForceSynchronousImport);
             bool failed = false;
-            foreach (bool npc in new[] { false, true })
+            foreach (bool npc in new[] { false })
             {
+                bool simpleStrike = HasSimpleStrike(npc);
                 GameObject template = npc ? DefaultNpcCatalog.GetPrefab() :
                     AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Resources/Player/Player3DV2.prefab");
                 GameObject actor = UnityEngine.Object.Instantiate(template);
@@ -291,8 +415,8 @@ namespace BarPromenade.Editor
                             light.SampleAnimation(animator.gameObject, CombatAssetProvider.ReleaseSourceSeconds(0f, q));
                             for (int i = 0; i < bones.Length; i++)
                             {
-                                Vector3 position = upper[i] ? bones[i].localPosition : neutralPositions[i];
-                                Quaternion rotation = upper[i] ? bones[i].localRotation : neutralRotations[i];
+                                Vector3 position = simpleStrike || upper[i] ? bones[i].localPosition : neutralPositions[i];
+                                Quaternion rotation = simpleStrike || upper[i] ? bones[i].localRotation : neutralRotations[i];
                                 float positionError = Vector3.Distance(chargePositions[i], position);
                                 float angleError = Quaternion.Angle(chargeRotations[i], rotation);
                                 maximumPosition = Mathf.Max(maximumPosition, positionError);
@@ -349,7 +473,43 @@ namespace BarPromenade.Editor
             }
         }
 
-        private static void ValidateGripMotion(bool npc)
+        private static bool HasSimpleStrike(bool npc)
+        {
+            if (npc || !File.Exists(ManifestPath)) return false;
+            Manifest manifest = JsonUtility.FromJson<Manifest>(File.ReadAllText(ManifestPath));
+            return manifest?.actions?.simple_strike != null;
+        }
+
+        private static void ValidateZombieHandoff()
+        {
+            // ZombieActions owns pursuit and unarmed strikes. The retained
+            // Generic bank supplies only shared anatomical death/rise handoffs.
+            GameObject actor = UnityEngine.Object.Instantiate(DefaultNpcCatalog.GetPrefab());
+            try
+            {
+                VillageResidentPresentation presentation = actor.GetComponent<VillageResidentPresentation>();
+                presentation.ReleaseAnimation();
+                Animator animator = presentation.Animator;
+                animator.enabled = false;
+                Transform[] bones = animator.GetComponentsInChildren<Transform>(true);
+                AnimationClip ready = CombatAssetProvider.LoadClip(CombatAssetProvider.ReadyClip, true);
+                AnimationClip defeat = CombatAssetProvider.LoadClip(CombatAssetProvider.DefeatClip, true);
+                ValidateInPlaceClip(ready);
+                ValidateInPlaceClip(defeat);
+                foreach (string name in CombatAssetProvider.RecoveryClipNames)
+                {
+                    AnimationClip rise = CombatAssetProvider.LoadClip(name, true);
+                    ValidateInPlaceClip(rise);
+                    CompareEndpoint(rise, rise.length, ready, 0f, animator, bones, name + " zombie handoff exit");
+                }
+                CompareEndpoint(defeat, 0f, ready, 0f, animator, bones, "zombie defeat entry");
+                CompareEndpoint(defeat, CombatAssetProvider.DefeatHandoffSeconds, defeat, defeat.length,
+                    animator, bones, "zombie defeat physical handoff hold");
+            }
+            finally { UnityEngine.Object.DestroyImmediate(actor); }
+        }
+
+        private static void ValidateGripMotion(bool npc, bool simpleStrike)
         {
             GameObject template = npc ? DefaultNpcCatalog.GetPrefab() :
                 AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Resources/Player/Player3DV2.prefab");
@@ -384,7 +544,7 @@ namespace BarPromenade.Editor
                     AnimationClip rise = CombatAssetProvider.LoadClip(name, npc);
                     CompareEndpoint(rise, rise.length, ready, 0f, animator, bones, name + " supported exit");
                 }
-                foreach (MeleeSwing swing in new[] { MeleeSwing.Forehand, MeleeSwing.Backhand })
+                foreach (MeleeSwing swing in simpleStrike ? new[] { MeleeSwing.Forehand } : new[] { MeleeSwing.Forehand, MeleeSwing.Backhand })
                 {
                     CombatAssetProvider.SwingClipSet names = CombatAssetProvider.SwingClips(swing);
                     AnimationClip attack = CombatAssetProvider.LoadClip(names.Attack, npc);
@@ -407,13 +567,14 @@ namespace BarPromenade.Editor
                     }
                     // The compact backhand crosses at least one weapon length;
                     // the forehand retains its wide arc. Both must reach the same target.
-                    float minimumTravel = swing == MeleeSwing.Backhand ? .60f : 1f;
-                    if (reach < .95f || travel < minimumTravel)
+                    float minimumTravel = simpleStrike ? .12f : swing == MeleeSwing.Backhand ? .60f : 1f;
+                    float minimumReach = simpleStrike ? .80f : .95f;
+                    if (reach < minimumReach || travel < minimumTravel)
                         throw new InvalidOperationException($"Combat imported {(npc ? "NPC" : "hero")} {names.Attack} cannot reach the front target: reach={reach}, travel={travel}.");
-                    ValidateChargedRelease(animator, actor.transform, handPose, bar, origin, tip, npc, names);
+                    ValidateChargedRelease(animator, actor.transform, handPose, bar, origin, tip, npc, names, simpleStrike);
                 }
-                ValidateReactions(animator, grip, tip, npc);
-                ValidateWeightAndHandoff(animator, npc);
+                ValidateReactions(animator, grip, tip, npc, simpleStrike);
+                ValidateWeightAndHandoff(animator, npc, simpleStrike);
                 if (!npc) ValidateKick(animator, actor.transform, handPose, bar, origin);
                 ValidateCombatLocomotion(animator, actor.transform, npc);
                 ValidateDefensiveSteps(animator, actor.transform, npc);
@@ -421,7 +582,7 @@ namespace BarPromenade.Editor
             finally { UnityEngine.Object.DestroyImmediate(actor); }
         }
 
-        private static void ValidateWeightAndHandoff(Animator animator, bool npc)
+        private static void ValidateWeightAndHandoff(Animator animator, bool npc, bool simpleStrike)
         {
             Transform[] bones = animator.GetComponentsInChildren<Transform>(true);
             Transform pelvis = bones.First(bone => bone.name == "pelvis");
@@ -451,7 +612,8 @@ namespace BarPromenade.Editor
                     if (side >= 0) shifts[side] = Mathf.Max(shifts[side], Vector3.Distance(initialPelvis, pelvis.position));
                 }
             }
-            if (shifts[0] < .025f || shifts[1] < .025f) throw new InvalidOperationException("Combat imported attack lost its hip weight shift.");
+            if (!simpleStrike && (shifts[0] < .025f || shifts[1] < .025f))
+                throw new InvalidOperationException("Combat imported attack lost its hip weight shift.");
             AnimationClip defeat = CombatAssetProvider.LoadClip(CombatAssetProvider.DefeatClip, npc);
             CompareEndpoint(defeat, 0f, ready, 0f, animator, bones, "defeat entry");
             CompareEndpoint(defeat, CombatAssetProvider.DefeatHandoffSeconds, defeat, defeat.length, animator, bones, "defeat handoff hold");
@@ -497,7 +659,7 @@ namespace BarPromenade.Editor
         }
 
         private static void ValidateChargedRelease(Animator animator, Transform actor, NpcHandPose handPose,
-            GameObject bar, Transform origin, Transform tip, bool npc, CombatAssetProvider.SwingClipSet names)
+            GameObject bar, Transform origin, Transform tip, bool npc, CombatAssetProvider.SwingClipSet names, bool simpleStrike)
         {
             Transform[] bones = animator.GetComponentsInChildren<Transform>(true);
             Transform[] feet = { bones.First(bone => bone.name == "foot.L"), bones.First(bone => bone.name == "foot.R") };
@@ -514,6 +676,13 @@ namespace BarPromenade.Editor
             bool[] upperBody = bones.Select(bone => bone.IsChildOf(spine)).ToArray();
             void Blend(float seconds, float q)
             {
+                if (simpleStrike)
+                {
+                    // Runtime now clocks the whole one-handed take. L is an
+                    // ordinary authored arm; only a requested guard owns IK.
+                    light.SampleAnimation(animator.gameObject, CombatAssetProvider.ReleaseSourceSeconds(seconds, q));
+                    return;
+                }
                 light.SampleAnimation(animator.gameObject, seconds);
                 for (int i = 0; i < bones.Length; i++)
                 { positions[i] = bones[i].localPosition; rotations[i] = bones[i].localRotation; }
@@ -556,7 +725,8 @@ namespace BarPromenade.Editor
                         throw new InvalidOperationException("Charged blend lost the crowbar grip: " + q);
                     if (seconds >= .45f && seconds <= .63f) reach = Mathf.Max(reach, actor.InverseTransformPoint(tip.position).z);
                 }
-                if (reach < .95f) throw new InvalidOperationException("Charged blend cannot reach its target: " + names.Attack + "/" + q);
+                if (reach < (simpleStrike ? .80f : .95f))
+                    throw new InvalidOperationException("Charged blend cannot reach its target: " + names.Attack + "/" + q);
             }
         }
 
@@ -643,7 +813,7 @@ namespace BarPromenade.Editor
             }
         }
 
-        private static void ValidateReactions(Animator animator, Transform grip, Transform tip, bool npc)
+        private static void ValidateReactions(Animator animator, Transform grip, Transform tip, bool npc, bool simpleStrike)
         {
             Manifest manifest = JsonUtility.FromJson<Manifest>(File.ReadAllText(ManifestPath));
             Transform[] bones = animator.GetComponentsInChildren<Transform>(true);
@@ -658,7 +828,8 @@ namespace BarPromenade.Editor
             {
                 Reaction reaction = manifest.actions.reactions[index];
                 AnimationClip clip = CombatAssetProvider.LoadClip(reaction.name, npc);
-                CompareEndpoint(clip, 0f, CombatAssetProvider.LoadClip(reaction.entry_clip, npc), reaction.entry_seconds,
+                bool simpleRecoil = simpleStrike && reaction.name == CombatAssetProvider.RecoilClip;
+                CompareEndpoint(clip, 0f, CombatAssetProvider.LoadClip(reaction.entry_clip, npc), simpleRecoil ? .63f : reaction.entry_seconds,
                     animator, bones, reaction.name + " entry");
                 CompareEndpoint(clip, clip.length, CombatAssetProvider.LoadClip(reaction.exit_clip, npc), reaction.exit_seconds,
                     animator, bones, reaction.name + " exit");
@@ -669,12 +840,25 @@ namespace BarPromenade.Editor
                 peakHeads[index] = head.position;
                 peakLeftElbows[index] = leftElbow.position;
                 peakRightElbows[index] = rightElbow.position;
-                if (Vector3.Distance(start, grip.position) < .08f)
+                float gripTravel = Vector3.Distance(start, grip.position);
+                if (simpleRecoil)
+                {
+                    // A simple recoil returns along its one arc; it no longer
+                    // has the old separate head/hip impact silhouette at 70 ms.
+                    for (int frame = 0; frame <= 48; frame++)
+                    {
+                        clip.SampleAnimation(animator.gameObject, Mathf.Min(clip.length, frame / 100f));
+                        gripTravel = Mathf.Max(gripTravel, Vector3.Distance(start, grip.position));
+                    }
+                }
+                if (gripTravel < .08f)
                     throw new InvalidOperationException("Combat imported reaction lost its visible impact: " + reaction.name);
             }
             for (int i = 0; i < peakTips.Length; i++)
             for (int j = i + 1; j < peakTips.Length; j++)
             {
+                if (simpleStrike && (manifest.actions.reactions[i].name == CombatAssetProvider.RecoilClip ||
+                    manifest.actions.reactions[j].name == CombatAssetProvider.RecoilClip)) continue;
                 // A released support arm and a falling head also distinguish a
                 // broken guard when the safely held weapon tips remain nearby.
                 bool bodyDistinct = Vector3.Distance(peakHeads[i], peakHeads[j]) >= .12f &&
@@ -745,8 +929,39 @@ namespace BarPromenade.Editor
             public string[] released_support_clips;
             public DefensiveStep defensive_step;
             public Swing[] swings;
+            public SimpleStrike simple_strike;
             public Kick kick;
             public Kick[] kicks;
+        }
+        private static void ValidateSimpleStrike(SimpleStrike strike)
+        {
+            if (strike.clips == null || string.IsNullOrEmpty(strike.fbx_sha256) || string.IsNullOrEmpty(strike.source_sha256))
+                throw new InvalidOperationException("Simple crowbar strike has no exported-file anatomy proof.");
+            foreach (SimpleStrikeSample sample in new[] { strike.clips.CombatAttack, strike.clips.CombatReleaseLight,
+                strike.clips.CombatReleaseHeavy, strike.clips.CombatCharge, strike.clips.CombatRecoil })
+                if (sample == null || !float.IsFinite(sample.maximum_right_wrist_degrees) ||
+                    sample.maximum_right_wrist_degrees > 65.01f || sample.maximum_right_deviation_degrees > 25.01f ||
+                    sample.maximum_right_flexion_degrees > 55.01f || sample.minimum_body_clearance_m < .004f ||
+                    sample.minimum_floor_clearance_m < .025f || sample.minimum_native_right_arm_gap_m < -.004f ||
+                    sample.maximum_right_elbow_speed_m_s > 6.01f)
+                    throw new InvalidOperationException("Simple crowbar strike lost its anatomical wrist/body/floor gates.");
+            if (strike.clips.CombatAttack.active_tip_travel_m < .12f || strike.clips.CombatAttack.maximum_forward_reach_m < .80f)
+                throw new InvalidOperationException("Simple crowbar strike has no usable physical contact arc.");
+        }
+        [Serializable] private sealed class SimpleStrike
+        {
+            public string source_sha256, fbx_sha256;
+            public SimpleStrikeClips clips;
+        }
+        [Serializable] private sealed class SimpleStrikeClips
+        {
+            public SimpleStrikeSample CombatAttack, CombatReleaseLight, CombatReleaseHeavy, CombatCharge, CombatRecoil;
+        }
+        [Serializable] private sealed class SimpleStrikeSample
+        {
+            public float maximum_right_wrist_degrees, maximum_right_deviation_degrees, maximum_right_flexion_degrees;
+            public float minimum_body_clearance_m, minimum_floor_clearance_m, minimum_native_right_arm_gap_m;
+            public float maximum_right_elbow_speed_m_s, active_tip_travel_m, maximum_forward_reach_m;
         }
         [Serializable] private sealed class Kick
         {

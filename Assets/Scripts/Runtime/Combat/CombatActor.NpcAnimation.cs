@@ -25,17 +25,8 @@ namespace BarPromenade
             NpcAnimationGraphBuilds++;
             npcAnimationGraph.SetTimeUpdateMode(DirectorUpdateMode.Manual);
             npcAnimationOutput = AnimationPlayableOutput.Create(npcAnimationGraph, "Body", npc.Animator);
-            if (IsZombie)
-            {
-                foreach (AnimationClip clip in new[] { ready, zombieWalk, zombieAttackRight, zombieAttackLeft, hit, defeat })
-                    NpcAnimationClip(clip);
-            }
-            else
-            {
-                Prepare(CombatAssetProvider.ClipNames);
-                Prepare(CombatAssetProvider.StepClipNames);
-                Prepare(CombatAssetProvider.LocomotionClipNames);
-            }
+            foreach (AnimationClip clip in new[] { ready, zombieWalk, zombieAttackRight, zombieAttackLeft, hit, defeat })
+                NpcAnimationClip(clip);
             Prepare(CombatAssetProvider.RecoveryClipNames);
             npcAnimationGraph.Play();
 

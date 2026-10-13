@@ -109,23 +109,20 @@ namespace BarPromenade
             Present();
         }
 
-        public void InitializeOpponent(VillageResidentPresentation presentation, CharacterController body, bool zombie = false)
+        public void InitializeOpponent(VillageResidentPresentation presentation, CharacterController body)
         {
-            IsZombie = zombie;
-            if (zombie) State = new MeleeCombatant(MeleeCombatSettings.ZombieUnarmed);
+            IsZombie = true;
+            State = new MeleeCombatant(MeleeCombatSettings.ZombieUnarmed);
             npc = presentation;
             Body = body;
             npc.ReleaseAnimation();
-            if (zombie) LoadZombieClips();
-            else LoadClips(true);
+            LoadZombieClips();
             InitializeNpcAnimation();
             InitializeNpcPoseBlend();
-            if (!zombie) InitializeNpcChargeBlend();
             LoadStepClips(true);
             Ragdoll = gameObject.AddComponent<CombatRagdoll>();
             Ragdoll.InitializeOpponent(presentation, body);
-            if (zombie) InitializeZombieHands();
-            else AttachWeapon(npc.RightGrip);
+            InitializeZombieHands();
             InitializeDamagePose();
             InitializeCombatAttention();
             Present();
@@ -513,7 +510,7 @@ namespace BarPromenade
             bodyMotion?.Restore();
             AnimationClip chosen = ReleaseClip;
             ConfigureAttackReachPose(MeleeBufferedAction.Attack, progress);
-            supportGrip?.SetTarget(false, BodyDamage.CanUseLeftHand, State.IsContinuation);
+            supportGrip?.SetTarget(false, false);
             if (hero != null)
             {
                 if (visibleClip != chosen.name || !hero.OwnsClip(this))
@@ -614,17 +611,21 @@ namespace BarPromenade
                 State.Phase == MeleePhase.GuardBroken || State.IsDefeated;
             bool projectileStagger = State.Phase == MeleePhase.Stagger && LastImpact.Kind == CombatImpactKind.Projectile;
             bool stepping = State.Phase == MeleePhase.Step;
+            // Pose the requested guard while the open left palm reaches it;
+            // gameplay blocking still waits for the real accepted contact.
+            bool guardPoseRequested = guardHeld && BodyDamage.CanUseLeftHand && BodyDamage.CanUseRightHand &&
+                (State.Phase == MeleePhase.Ready || State.Phase == MeleePhase.GuardImpact) &&
+                (GuardSupportRejection is null or "two_hand_support");
             AnimationClip chosen = stepping ? (stepBlocked ? ready : stepClip) : State.IsDefeated ? defeat : State.Phase == MeleePhase.GuardBroken ? guardBreak : stagger ? hit :
-                reaction != null ? reaction : State.IsKicking ? kick : State.IsCharging ? Current.Charge : State.IsAttacking ? ReleaseClip : roundEnded || weaponDropped ? rest : State.IsBlocking ? block : ready;
+                reaction != null ? reaction : State.IsKicking ? kick : State.IsCharging ? Current.Charge : State.IsAttacking ? ReleaseClip : roundEnded || weaponDropped ? rest : State.IsBlocking || guardPoseRequested ? block : ready;
             // Exact-part projectile reactions own the additive pose. The shared
             // melee hit clip would otherwise bend every wounded limb identically.
             if (projectileStagger) chosen = IsFirearm ? ChoosePistolClip() : weaponDropped ? rest : ready;
             bool pistolPose = IsFirearm && !State.IsDefeated && !stepping && !stagger && reaction == null && !State.IsKicking;
             if (pistolPose) chosen = ChoosePistolClip();
             AnimationClip pistolStepUpper = IsFirearm && stepping && Firearm.AimRequested ? ChoosePistolClip() : null;
-            supportGrip?.SetTarget(BodyDamage.CanUseLeftHand && (chosen == block || chosen == guardImpact),
-                BodyDamage.CanUseLeftHand && !weaponDropped && !projectileStagger && chosen != rest && chosen != hit && chosen != guardBreak && !State.IsDefeated && !State.IsShoving,
-                State.IsContinuation);
+            bool guardContactRequested = guardPoseRequested && (chosen == block || chosen == guardImpact);
+            supportGrip?.SetTarget(guardContactRequested, guardContactRequested);
             PresentShovePose();
             ConfigureAttackReachPose(ReachAction);
             float progress = stagger ?

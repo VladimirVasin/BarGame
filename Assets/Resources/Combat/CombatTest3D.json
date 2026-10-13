@@ -383,8 +383,8 @@
     },
     "defeat_handoff_seconds": 0.16,
     "defeat_pelvis_drop_m": 0.07199996709823608,
-    "animation_signature": "ccdb580febf1c824d7a1fbf8e132e94c4a52a0be1a29c55464100a3c6af556e8",
-    "base_action_signature": "6deba1a7eedef21de27bbeb6372fe8b821d473b02f205575592178170bad7b6d",
+    "animation_signature": "2b595673e1434b1fb4fd43c0c0d73ea23453a9f26583e7a8a2e93db41f6eefa9",
+    "base_action_signature": "57b303de9a56614eeb697e1a04b8e41690855186688b108db5d98968d41629b2",
     "strike_samples": [
       {
         "seconds": 0.0,
@@ -2639,6 +2639,80 @@
         },
         "animation_signature": "2fe98442af6cca731367d1103c30cf3667c6170c961ccf5e6ca8f7ec043d8f34"
       }
-    ]
+    ],
+    "simple_strike": {
+      "source_sha256": "a70c07b58951d29abab26ff399cdc4c77bbca71722314d31428303b6b5f9ce49",
+      "unchanged_action_signature": "bd8d79258aae6c373b7de957953545d6b819927918acd6d158a60cd8a748c79f",
+      "fbx_sha256": "251c76d9ca45ff0abefceec62c39576d0be1d55bc9f4f5e5fa52954e698b5cb5",
+      "windup_shoulder_quaternion": [
+        0.8324190378189087,
+        -0.42277204990386963,
+        0.18000170588493347,
+        -0.30974453687667847
+      ],
+      "contact_shoulder_quaternion": [
+        0.879728376865387,
+        -0.45171019434928894,
+        0.08423034846782684,
+        -0.12223393470048904
+      ],
+      "clips": {
+        "CombatAttack": {
+          "maximum_right_wrist_degrees": 47.77897641418008,
+          "maximum_right_deviation_degrees": 15.37964407551442,
+          "maximum_right_flexion_degrees": 45.817156564638076,
+          "minimum_body_clearance_m": 0.03971167282017156,
+          "minimum_floor_clearance_m": 0.8154185057067871,
+          "minimum_native_right_arm_gap_m": -0.003579555153846739,
+          "maximum_right_elbow_speed_m_s": 0.9099515061687777,
+          "active_tip_travel_m": 0.3755055610840686,
+          "maximum_forward_reach_m": 0.8600165843963623
+        },
+        "CombatReleaseLight": {
+          "maximum_right_wrist_degrees": 47.77897641418008,
+          "maximum_right_deviation_degrees": 15.37964407551442,
+          "maximum_right_flexion_degrees": 45.817156564638076,
+          "minimum_body_clearance_m": 0.03971167282017156,
+          "minimum_floor_clearance_m": 0.8154185057067871,
+          "minimum_native_right_arm_gap_m": -0.003579555153846739,
+          "maximum_right_elbow_speed_m_s": 0.9099515061687777,
+          "active_tip_travel_m": 0.3755055610840686,
+          "maximum_forward_reach_m": 0.8600165843963623
+        },
+        "CombatReleaseHeavy": {
+          "maximum_right_wrist_degrees": 47.77897641418008,
+          "maximum_right_deviation_degrees": 15.37964407551442,
+          "maximum_right_flexion_degrees": 45.817156564638076,
+          "minimum_body_clearance_m": 0.03971167282017156,
+          "minimum_floor_clearance_m": 0.8154185057067871,
+          "minimum_native_right_arm_gap_m": -0.003579555153846739,
+          "maximum_right_elbow_speed_m_s": 0.9099515061687777,
+          "active_tip_travel_m": 0.3755055610840686,
+          "maximum_forward_reach_m": 0.8600165843963623
+        },
+        "CombatCharge": {
+          "maximum_right_wrist_degrees": 47.77891835757213,
+          "maximum_right_deviation_degrees": 15.37964518236826,
+          "maximum_right_flexion_degrees": 45.81711739575842,
+          "minimum_body_clearance_m": 0.039711722081399684,
+          "minimum_floor_clearance_m": 0.815425956287384,
+          "minimum_native_right_arm_gap_m": -0.003579555153846739,
+          "maximum_right_elbow_speed_m_s": 0.1207255564723378,
+          "active_tip_travel_m": 0.06093595668820655,
+          "maximum_forward_reach_m": 0.5488251447677612
+        },
+        "CombatRecoil": {
+          "maximum_right_wrist_degrees": 47.778962753801736,
+          "maximum_right_deviation_degrees": 15.379648945671361,
+          "maximum_right_flexion_degrees": 45.8171484014562,
+          "minimum_body_clearance_m": 0.03971170362943703,
+          "minimum_floor_clearance_m": 0.8154186249160766,
+          "minimum_native_right_arm_gap_m": -0.0035795998573303206,
+          "maximum_right_elbow_speed_m_s": 1.1308047942938235,
+          "active_tip_travel_m": 0.00022748446356281947,
+          "maximum_forward_reach_m": 0.44734811782836914
+        }
+      }
+    }
   }
 }

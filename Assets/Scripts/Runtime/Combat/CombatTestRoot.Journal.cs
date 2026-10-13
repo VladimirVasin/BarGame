@@ -41,6 +41,7 @@ namespace BarPromenade
         private double journalSeconds, journalLastSnapshot = -1d, journalFrameMilliseconds;
         private bool journalRoundOpen, journalResultWritten, journalInputAllowed, journalAttackHeld, journalFrozen;
         private bool journalForceSnapshot, journalFocus = true;
+        private string journalForcedSnapshotReason;
         private bool journalFailureReported;
         private string journalInputOwner;
         private WorldItemFoundScreen journalFoundScreen;
@@ -245,7 +246,7 @@ namespace BarPromenade
                 duelJournal.Record("warehouse_layout", f0: GameLog.Field("seed", WarehousePlan.Seed),
                     f1: GameLog.Field("generator_version", WarehouseArenaPlan.GeneratorVersion),
                     f2: GameLog.Field("template", WarehousePlan.Template.ToString()));
-            journalForceSnapshot = true;
+            ForceJournalSnapshot("round_started");
             GameLog.Info("combat", "duel_journal_started", GameLog.Field("duel_session", duelJournal.SessionId),
                 GameLog.Field("round", journalRound));
         }
@@ -272,6 +273,12 @@ namespace BarPromenade
         private void EndJournalRound(string reason)
         {
             if (duelJournal == null || !journalRoundOpen) return;
+            using (duelJournal.ForceSnapshot("round_ended"))
+            {
+                WriteJournalSnapshot(journalHero);
+                foreach (JournalActorState saved in journalOpponents)
+                    if (saved.Actor.gameObject.activeInHierarchy) WriteJournalSnapshot(saved);
+            }
             duelJournal.Record("round_status", f0: GameLog.Field("finished", RoundFinished),
                 f1: GameLog.Field("hero_health", Hero.State.Health), f2: GameLog.Field("opponent_health", Opponent.State.Health));
             WriteJournalOpenIntervals(journalHero);
@@ -313,11 +320,13 @@ namespace BarPromenade
         internal bool MarkDuelProblem(string reason)
         {
             if (duelJournal == null || !journalRoundOpen) return false;
-            duelJournal.Mark(reason); journalForceSnapshot = true;
+            duelJournal.Mark(reason); ForceJournalSnapshot("marked");
             return true;
         }
 
-        private void RequestJournalSnapshot(CombatImpact _) => journalForceSnapshot = true;
+        private void ForceJournalSnapshot(string reason)
+        { journalForceSnapshot = true; journalForcedSnapshotReason = reason; }
+        private void RequestJournalSnapshot(CombatImpact _) => ForceJournalSnapshot("impact");
         private long JournalStamp() => duelJournal != null ? Stopwatch.GetTimestamp() : 0;
         private static void JournalElapsed(long start, ref long accumulator)
         { if (start != 0) accumulator += Stopwatch.GetTimestamp() - start; }
@@ -433,7 +442,7 @@ namespace BarPromenade
                 BarMinigameModalLock.IsAnyLocked ? "modal_lock" : "gameplay";
             if (allowed != journalInputAllowed || owner != journalInputOwner)
             {
-                journalInputAllowed = allowed; journalInputOwner = owner; journalForceSnapshot = true;
+                journalInputAllowed = allowed; journalInputOwner = owner; ForceJournalSnapshot("input_gate");
                 duelJournal.Record("input_gate", f0: GameLog.Field("allowed", allowed),
                     f1: GameLog.Field("paused", PauseMenuController.IsAnyPaused), f2: GameLog.Field("transitioning", SceneTransitionService.IsTransitioning),
                     f3: GameLog.Field("owner", owner), f4: GameLog.Field("application_focused", pistolApplicationFocused),
@@ -693,13 +702,14 @@ namespace BarPromenade
                     f2: GameLog.Field("phase", JournalPhases[(int)actor.State.Phase]), f3: GameLog.Field("stage", actor.JournalRiseStage),
                     f4: GameLog.Field("rise_progress", actor.JournalRiseProgress));
                 duelJournal.Mark("RecoveryWithoutProgress");
+                ForceJournalSnapshot("recovery_stall");
             }
         }
 
         private void JournalRoundResult()
         {
             if (duelJournal == null || journalResultWritten || !RoundFinished) return;
-            journalResultWritten = true; journalForceSnapshot = true;
+            journalResultWritten = true; ForceJournalSnapshot("round_result");
             duelJournal.Record("round_result", f0: GameLog.Field("hero_defeated", Hero.State.IsDefeated),
                 f1: GameLog.Field("opponent_defeated", Opponent.State.IsDefeated));
         }
@@ -717,10 +727,13 @@ namespace BarPromenade
             double snapshotSeconds = journalSeconds + roundEndElapsed;
             if (journalForceSnapshot || snapshotSeconds - journalLastSnapshot >= 1d / JournalSnapshotHz)
             {
-                journalForceSnapshot = false; journalLastSnapshot = snapshotSeconds;
-                WriteJournalSnapshot(journalHero);
-                foreach (JournalActorState saved in journalOpponents)
-                    if (saved.Actor.gameObject.activeInHierarchy) WriteJournalSnapshot(saved);
+                using (journalForceSnapshot ? duelJournal.ForceSnapshot(journalForcedSnapshotReason) : default)
+                {
+                    journalForceSnapshot = false; journalForcedSnapshotReason = null; journalLastSnapshot = snapshotSeconds;
+                    WriteJournalSnapshot(journalHero);
+                    foreach (JournalActorState saved in journalOpponents)
+                        if (saved.Actor.gameObject.activeInHierarchy) WriteJournalSnapshot(saved);
+                }
             }
             journalSnapshotTicks += Stopwatch.GetTimestamp() - start - (duelJournal.CollectorTicks - collector);
             long collected = duelJournal.CollectorTicks;

@@ -106,7 +106,7 @@ namespace BarPromenade.Tests.PlayMode
             Wait(journal.FlushAsync());
             string folder = Directory.GetDirectories(directory).Single();
             string[] rows = File.ReadAllLines(Path.Combine(folder, "duel.ndjson"));
-            StringAssert.Contains("\"duel_schema_version\":2", rows[0]);
+            StringAssert.Contains("\"duel_schema_version\":3", rows[0]);
             StringAssert.Contains("\"stage_sample_encoding\":\"absent_numeric_zero\"", rows[0]);
             StringAssert.Contains("\"zero_stage_events\":\"" + string.Join(",", stages) + "\"", rows[0]);
             foreach (string stage in stages)
@@ -191,21 +191,81 @@ namespace BarPromenade.Tests.PlayMode
         [Test]
         public void TelemetryLimitKeepsLateCausalRecordsWithinTheRoundBudget()
         {
-            const int budget = 32768;
+            const int budget = 131072;
             using var journal = new DuelJournal(directory, "Test causal priority", capacity: 32, maxRoundBytes: budget);
             journal.BeginRound(1);
             Wait(journal.FlushAsync());
             GameLogField payload = GameLog.Field("text", new string('x', 256));
+            long thinnedDetail = 0;
             for (int batch = 0; batch < 20; batch++)
             {
                 for (int sample = 0; sample < 8; sample++) journal.Record("pose", f0: payload);
                 Wait(journal.FlushAsync()); // File policy, rather than a full producer queue, is under test.
+                if (batch == 4)
+                {
+                    journal.SetClock(1004, 0, 0d);
+                    journal.Record("pose", f0: GameLog.Field("bone", "pelvis"));
+                    journal.SetClock(1005, 0, 0d);
+                    thinnedDetail = journal.Record("pose", f0: payload);
+                    journal.SetClock(0, 0, 0d);
+                    Wait(journal.FlushAsync());
+                }
             }
             journal.SetClock(1500, 9000, 75d);
+            journal.Record("state", actor: 1, f0: GameLog.Field("phase", "Rising"));
+            journal.Record("frame", f0: GameLog.Field("frame_ms", 55d));
+            Wait(journal.FlushAsync());
+            // Ordinary detail cannot exhaust the independent essential quota.
+            // Force that quota to its own limit before the requested snapshots.
+            long retainedSnapshot = 0;
+            for (int batch = 0; batch < 20; batch++)
+            {
+                for (int sample = 0; sample < 8; sample++) journal.Record("state", f0: payload);
+                Wait(journal.FlushAsync());
+                if (batch == 1)
+                {
+                    // All these regular snapshots miss frame%4. Encounter-based
+                    // sampling must retain one complete actor state group anyway.
+                    for (int sample = 0; sample < 6; sample++)
+                    {
+                        journal.SetClock(1501 + sample * 64, 9000, 75d);
+                        long snapshot = journal.Record("state", actor: 2, f0: GameLog.Field("phase", "Rising"));
+                        if (sample == 2) retainedSnapshot = snapshot;
+                    }
+                    journal.SetClock(1500, 9000, 75d);
+                    Wait(journal.FlushAsync());
+                }
+            }
+            Assert.That(journal.DroppedRecords, Is.Zero, "Deliberate thinning is reported separately from data loss.");
+            using (journal.ForceSnapshot("impact"))
+            {
+                journal.Record("state", actor: 1, f0: GameLog.Field("phase", "Defeated"));
+                journal.Record("pose", actor: 1, f0: GameLog.Field("bone", "pelvis"));
+            }
+            // Automatic impact bursts also have a finite quota; they cannot
+            // consume the reserved manual/stall or terminal state capacity.
+            for (int batch = 0; batch < 20; batch++)
+            {
+                using (journal.ForceSnapshot("impact"))
+                    for (int sample = 0; sample < 8; sample++) journal.Record("pose", f0: payload);
+                Wait(journal.FlushAsync());
+            }
+            string[] reasons = { "recovery_stall", "marked", "round_ended" };
+            long before = GC.GetAllocatedBytesForCurrentThread();
+            foreach (string reason in reasons)
+                using (journal.ForceSnapshot(reason))
+                {
+                    journal.Record("state", actor: 1, f0: GameLog.Field("phase", "Defeated"));
+                    journal.Record("pose", actor: 1, f0: GameLog.Field("bone", "pelvis"));
+                }
+            Assert.That(GC.GetAllocatedBytesForCurrentThread() - before, Is.Zero,
+                "A forced snapshot scope and its producer events cannot allocate.");
             long request = journal.Record("command_requested", 1, 2, 4, 11, GameLog.Field("command", "charge"));
             journal.Record("command_result", 1, 2, 4, 11, GameLog.Field("result", "accepted"));
             journal.Record("impact_applied", 1, 2, 4, 11, GameLog.Field("power", 12f));
             journal.Mark("Test late visible strike");
+            var staleScope = journal.ForceSnapshot("impact");
+            var staleNestedScope = journal.ForceSnapshot("marked");
             journal.EndRound("Test priority ended");
             Wait(journal.FlushAsync());
             string folder = Directory.GetDirectories(directory).Single();
@@ -221,8 +281,36 @@ namespace BarPromenade.Tests.PlayMode
             StringAssert.Contains("\"producer_dropped_records\":0", trace);
             StringAssert.Contains("\"telemetry_limit\":true", trace);
             StringAssert.Contains("\"causal_limit\":false", trace);
+            StringAssert.Contains("\"phase\":\"Rising\"", trace);
+            StringAssert.Contains("\"frame_ms\":55", trace);
+            StringAssert.Contains("\"sample_group_stride\":4", trace);
+            StringAssert.Contains("\"seq\":" + retainedSnapshot + ",", trace);
+            Assert.That(trace.Contains("\"seq\":" + thinnedDetail + ","), Is.False,
+                "The ordinary detail policy deliberately thins a frame before exhausting its quota.");
+            foreach (string reason in reasons)
+                Assert.That(File.ReadAllLines(Path.Combine(folder, "duel.ndjson")).Count(row =>
+                    row.Contains("\"sample_priority\":\"forced\"") && row.Contains("\"snapshot_reason\":\"" + reason + "\"")),
+                    Is.EqualTo(2), "A late requested state and pelvis pose survive both ordinary quotas.");
+            Assert.That(File.ReadAllLines(Path.Combine(folder, "duel.ndjson")).Count(row =>
+                row.Contains("\"snapshot_reason\":\"impact\"") && row.Contains("\"bone\":\"pelvis\"")), Is.EqualTo(1));
+            Assert.That(journal.DroppedRecords, Is.GreaterThan(0), "Exhausted forced capacity is real, explicit loss.");
+            Assert.That(trace.Contains("\"telemetry_dropped_records\":0"), Is.False);
+            string summary = File.ReadAllText(Path.Combine(folder, "summary.txt"));
+            StringAssert.Contains("Adaptive samples omitted (not losses): detail=", summary);
+            Assert.That(trace.Contains("\"detail_sampled_out_records\":0"), Is.False);
+            Assert.That(trace.Contains("\"essential_sampled_out_records\":0"), Is.False);
             Assert.That(Directory.GetFiles(folder).Sum(path => new FileInfo(path).Length), Is.LessThanOrEqualTo(budget));
             Assert.That(File.Exists(Path.Combine(folder, ".complete")), Is.True);
+            journal.BeginRound(2);
+            staleNestedScope.Dispose();
+            staleScope.Dispose();
+            journal.Record("pose", f0: GameLog.Field("bone", "pelvis"));
+            journal.EndRound("Test fresh priority round");
+            Wait(journal.FlushAsync());
+            string reset = File.ReadAllText(Path.Combine(directory, "duel_Test-causal-priority_000002", "duel.ndjson"));
+            StringAssert.Contains("\"detail_sampled_out_records\":0", reset);
+            StringAssert.Contains("\"essential_sampled_out_records\":0", reset);
+            Assert.That(reset.Contains("\"snapshot_reason\""), Is.False, "Forced scopes and budgets do not leak to another round.");
         }
 
         [Test]

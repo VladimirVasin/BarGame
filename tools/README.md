@@ -152,10 +152,10 @@ test:--actions-only+--kick-only/--recovery-only/--footwork-only;
 --refresh-published-contracts/--reuse-unchanged-actions/--resume-npc-bank file.blend;
 blood:--texture-only;others:--validate-only;CombatGore:hero/NPC body-skull.
 zombie:ZombieActions/3faces/2SFX;NPCrig/anatomy/loops/determinism.
-Forehand pending:Hero/NPC;Ready/unrelated retained.
+Simple hero Rarm strike;Ready/unrelated retained.
 
 ```powershell
-python tools/run-blender.py tools/build-combat-test-3d-model.py -- --repair-forehand-only --output-dir Captures/Tooling/Forehand --source-dir Captures/Tooling/Forehand/Source
+python tools/run-blender.py tools/build-combat-test-3d-model.py -- --simple-strike-only --output-dir Captures/Tooling/Strike --source-dir Captures/Tooling/Strike/Source
 ```
 
 `build-combat-{firearm-walk,weapon-carry}-3d-model.py`:same launcher/check;

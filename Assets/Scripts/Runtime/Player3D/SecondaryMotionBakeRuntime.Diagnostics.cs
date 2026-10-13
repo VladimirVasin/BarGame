@@ -71,7 +71,14 @@ namespace BarPromenade
 
         private static ClipData GetOrLoadClip(ClipKey key)
         {
-            if (clips.TryGetValue(key, out ClipData clip)) { cacheHits++; return clip; }
+            if (clips.TryGetValue(key, out ClipData clip))
+            {
+                cacheHits++;
+                int index = residentOrder.IndexOf(key);
+                if (index != residentOrder.Count - 1)
+                { residentOrder.RemoveAt(index); residentOrder.Add(key); }
+                return clip;
+            }
             cacheMisses++;
             long started = Stopwatch.GetTimestamp();
             TextAsset asset = Resources.Load<TextAsset>(ResourceRoot + key);
@@ -92,9 +99,9 @@ namespace BarPromenade
             while (residentOrder.Count > 0 && (clips.Count >= MaximumResidentClips ||
                 ResidentValues() + Values(clip) > 16000000))
             {
-                clips.Remove(residentOrder.Dequeue()); evictions++;
+                clips.Remove(residentOrder[0]); residentOrder.RemoveAt(0); evictions++;
             }
-            clips.Add(key, clip); residentOrder.Enqueue(key);
+            clips.Add(key, clip); residentOrder.Add(key);
             return clip;
         }
     }

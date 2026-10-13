@@ -24,7 +24,6 @@ namespace BarPromenade
 
         private Vector3 heroSpawn, opponentSpawn;
         public const float SimulationStep = 1f / 120f;
-        internal static bool UseHumanOpponentsForTests { get; set; }
         internal const int MaximumFrameSubsteps = 4;
         private static readonly ProfilerMarker SimulationMarker = new ProfilerMarker("BarPromenade.Combat.Simulation");
         /// <summary>Once the round has ended and the body has settled, the shoulder lock lets go.</summary>
@@ -118,7 +117,7 @@ namespace BarPromenade
             CombatTestSelection selection = CombatTestStartService.ConsumeSelection();
             Mode = selection.Mode;
             EncounterSettings = selection.EncounterSettings;
-            Sparring = !UseHumanOpponentsForTests || Mode == CombatTestMode.Endless;
+            Sparring = true;
             Hero.InitializeHero(Player, selection.Loadout);
             InitializeWeaponPools();
             InitializeAmmoPickups();

@@ -36,7 +36,8 @@ namespace BarPromenade
             catch { /* Some Player backends cannot expose managed module identities. */ }
 #if UNITY_EDITOR
             identity.HeroAnimation = JournalEditorAnimationRevision("CombatActions");
-            identity.NpcAnimation = JournalEditorAnimationRevision("CombatNpcActions");
+            identity.NpcAnimation = JournalEditorAnimationRevision("ZombieActions") +
+                ":handoff:" + JournalEditorAnimationRevision("CombatNpcActions");
             // One bounded, read-only local query per play session, never a frame or
             // round operation. Only commit/state survive; no output paths are logged.
             try
@@ -79,7 +80,7 @@ namespace BarPromenade
             if (Guid.TryParse(build, out Guid buildId) && buildId != Guid.Empty)
             {
                 identity.HeroAnimation = "build:" + build + ":CombatActions";
-                identity.NpcAnimation = "build:" + build + ":CombatNpcActions";
+                identity.NpcAnimation = "build:" + build + ":ZombieActions+CombatNpcActions-handoff";
                 if (identity.Code == "unavailable")
                 { identity.Code = "build:" + build; identity.CodeSource = "packaged_build_guid"; }
             }
