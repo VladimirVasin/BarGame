@@ -9,6 +9,9 @@ namespace BarPromenade
     public static class CombatAssetProvider
     {
         public const string ResourceFolder = "Combat/";
+        public const float HeldShaftRollDegrees = -112.417766f;
+        public const float LoadedHookForwardAngleDegrees = 30f;
+        private const float ImportedSocketRollDegrees = 180f;
         public const string ReadyClip = "CombatReady", RestClip = "CombatRest", AttackClip = "CombatAttack",
             ChargeClip = "CombatCharge", ReleaseLightClip = "CombatReleaseLight", ReleaseHeavyClip = "CombatReleaseHeavy",
             BlockClip = "CombatBlock", HitClip = "CombatHit", GuardImpactClip = "CombatGuardImpact",
@@ -46,7 +49,7 @@ namespace BarPromenade
         }
 
         // The rules can retain their alternating side/power bookkeeping. Both
-        // presses present the same one-handed arc on the continuous world rig.
+        // presses present the same two-handed arc on the continuous world rig.
         public static SwingClipSet SwingClips(MeleeSwing swing) =>
             new SwingClipSet(AttackClip, ReleaseLightClip, ReleaseHeavyClip, ChargeClip, RecoilClip);
         public static readonly string[] LocomotionClipNames = { AdvanceClip, RetreatClip, StrafeLeftClip, StrafeRightClip };
@@ -127,7 +130,14 @@ namespace BarPromenade
             // fingers instead wrap the authored cylinder centre, with its
             // axis running across the palm toward the thumb.
             bar.position = handPose.CylinderCentre(isLeft);
-            bar.rotation = Quaternion.FromToRotation(bar.up, handPose.CylinderAxis(isLeft)) * bar.rotation;
+            // Retain the authored socket roll: the bent tip follows the wrist,
+            // while only the shaft is aligned to its closed cylindrical grip.
+            Quaternion socketRotation = grip.rotation;
+            // The FBX bone's transverse socket basis differs from the source
+            // cylinder frame by a half-turn. Apply that conversion once.
+            bar.rotation = Quaternion.FromToRotation(socketRotation * Vector3.up,
+                handPose.CylinderAxis(isLeft)) * socketRotation *
+                Quaternion.AngleAxis(HeldShaftRollDegrees + ImportedSocketRollDegrees, Vector3.up);
         }
 
         public static GameObject Create(string name, Transform parent, bool collision = false)

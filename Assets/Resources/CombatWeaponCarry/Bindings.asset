@@ -15,7 +15,7 @@ MonoBehaviour:
   Slots:
   - Weapon: 0
     BoneLocalPosition: {x: -0.0022499945, y: 0.0017890986, z: 0.0005098766}
-    BoneLocalRotation: {x: -0.8705818, y: -0.005465205, z: 0.4918983, w: 0.009670562}
+    BoneLocalRotation: {x: -0.9970924, y: 0.00083643204, z: -0.07538656, w: 0.011076454}
     PushHandLocalPosition: {x: 0, y: 0, z: 0}
     CatchHandLocalPosition: {x: 0, y: 0, z: 0}
     PushHandLocalRotation: {x: 0, y: 0, z: 0, w: 1}

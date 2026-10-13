@@ -4275,7 +4275,7 @@ World:chips-sparks/finite holes/freeze-reset-exit-head0;
 Shoulders↑/chin in/breath-tremor/tight swing/awkward return;
 softknees/pelvis-grip-elbows↓/step/face block-flex.
 ≤2steps/crouch-brace/floor→hand→drop/return≠parry.
-Bar:R short arc/shared charge;Lguard only;wall sparks/recoil.
+Bar:bat grip/end/hook→/shoulder+block/charge/free;wall sparks/recoil.
 Windup1m/Q-B:dry/0finish/highguard/buffer;Qfar:pelvis-foot→/chest←;
 near knee/bar kept/torso mirror/L-shove←/palm-bar-body.
 Грудь контрастна;стена/край/конец→скрыто.

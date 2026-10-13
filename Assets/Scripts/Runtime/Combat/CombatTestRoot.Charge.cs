@@ -6,7 +6,7 @@ namespace BarPromenade
     {
         private bool attackInputOwned, requireAttackRelease, inputSuspended, releasedWhileSuspended;
 
-        public bool ChargeMeterVisible => IsOpponentFocused && Hero.State.IsCharging &&
+        public bool ChargeMeterVisible => isActiveAndEnabled && IsInitialized && Hero.State.IsCharging &&
             !PauseMenuController.IsAnyPaused && !SceneTransitionService.IsTransitioning;
 
         private bool UpdateCombatInput()
@@ -52,20 +52,10 @@ namespace BarPromenade
                 return true;
             }
             if (Hero.IsFirearm) return UpdatePistolInput(held);
-            if (!IsOpponentFocused && !(RoundFinished && !Hero.State.IsDefeated))
-            {
-                // Free movement leaves the same live duel clock and vulnerable body running.
-                Hero.SetBlock(false);
-                CancelHeldHeroCharge();
-                attackInputOwned = false;
-                requireAttackRelease |= held;
-                return true;
-            }
-
             bool blocking = GameInput.IsHeld(GameInputAction.MeleeBlock, GameInputContext.Gameplay);
             Hero.SetBlock(blocking);
-            bool stepping = !RoundFinished && GameInput.WasPressed(GameInputAction.CombatStep, GameInputContext.Gameplay);
-            bool kicking = !RoundFinished && GameInput.WasPressed(GameInputAction.CombatKick, GameInputContext.Gameplay);
+            bool stepping = !RoundFinished && IsOpponentFocused && GameInput.WasPressed(GameInputAction.CombatStep, GameInputContext.Gameplay);
+            bool kicking = !RoundFinished && IsOpponentFocused && GameInput.WasPressed(GameInputAction.CombatKick, GameInputContext.Gameplay);
             bool kickAccepted = kicking && Hero.TryKick();
             if (stepping)
             {

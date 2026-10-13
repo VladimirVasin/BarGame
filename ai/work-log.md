@@ -3,6 +3,20 @@
 Newest outcomes/checks first. Archive whole dates at budget: [policy](README.md).
 Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-2026-08.md).
 
+## 2026-10-14 - Two-hand crowbar
+
+- User chose adjacent bat grip at the handle end, right fist above left;
+  raised hook faces forward. One broad shoulder strike with accented contact
+  and return, plus block; all swing sides/powers use the same authored take.
+- Strike/block no longer require target focus; free strike follows hero facing.
+  Shared world rig, physical stops and bounded support ownership remain.
+- Ready matches the new take; retained actions enter through their existing
+  arm blend. Offline left-arm continuity has no runtime graph or added actions.
+- Fixed FBX socket half-turn maps the source hook to world forward;
+  the rigid hook follows torso winding within its forward cone.
+- Proof: `TWO HAND STRIKE EXPORTED PROOF`; source/export SHA matched;
+  `CROWBAR PIVOT SHAPE, ANCHORS AND COLLISION OK`. Current HeroV2 motion reviewed.
+
 ## 2026-10-13 - Bounded world and simple combat
 
 - World:shared litter palette;forest chunks retain geometry, wind and collision;

@@ -366,7 +366,8 @@ namespace BarPromenade.Editor
                 NpcHandPose handPose = grip.GetComponentInParent<NpcHandPose>();
                 GameObject bar = CombatAssetProvider.CreateCrowbar(grip, handPose);
                 handPose.SetGrip(false, 1f);
-                ValidateKick(registry.Animator, actor.transform, handPose, bar, CombatAssetProvider.FindAnchor(bar, "Grip"));
+                ValidateKick(registry.Animator, actor.transform, handPose, bar, CombatAssetProvider.FindAnchor(bar, "Grip"),
+                    allowReadyArmBlend: HasSimpleStrike(false));
             }
             finally { UnityEngine.Object.DestroyImmediate(actor); }
             Debug.Log("COMBAT IMPORTED KICK CLOCK, GRIP, SUPPORT AND READY ENDPOINTS OK");
@@ -539,35 +540,54 @@ namespace BarPromenade.Editor
                 Transform origin = CombatAssetProvider.FindAnchor(bar, "Grip");
                 Transform[] bones = animator.GetComponentsInChildren<Transform>(true);
                 AnimationClip ready = CombatAssetProvider.LoadClip(CombatAssetProvider.ReadyClip, npc);
+                if (!npc && simpleStrike)
+                {
+                    ready.SampleAnimation(animator.gameObject, 0f);
+                    CombatAssetProvider.PlaceCrowbar(bar, grip, handPose, false);
+                    ValidateTwoHandContact(handPose, bar.transform, "baseball Ready");
+                    ValidateCrowbarHookForward(bar.transform, origin, tip, actor.transform);
+                    if (Vector3.Dot(bar.transform.up, actor.transform.up) < .70f)
+                        throw new InvalidOperationException("Combat baseball Ready lost its upright shaft.");
+                }
                 foreach (string name in CombatAssetProvider.RecoveryClipNames)
                 {
                     AnimationClip rise = CombatAssetProvider.LoadClip(name, npc);
-                    CompareEndpoint(rise, rise.length, ready, 0f, animator, bones, name + " supported exit");
+                    CompareReadyEndpoint(rise, rise.length, ready, 0f, animator, bones, name + " supported exit",
+                        allowArmBlend: !npc && simpleStrike);
                 }
                 foreach (MeleeSwing swing in simpleStrike ? new[] { MeleeSwing.Forehand } : new[] { MeleeSwing.Forehand, MeleeSwing.Backhand })
                 {
                     CombatAssetProvider.SwingClipSet names = CombatAssetProvider.SwingClips(swing);
                     AnimationClip attack = CombatAssetProvider.LoadClip(names.Attack, npc);
-                    // Every side starts and ends in the shared Ready pose on the imported rig too.
-                    CompareEndpoint(attack, 0f, ready, 0f, animator, bones, names.Attack + " entry");
-                    CompareEndpoint(attack, attack.length, ready, 0f, animator, bones, names.Attack + " exit");
+                    // The fresh strike meets the new baseball Ready with both
+                    // arms exactly; only retained actions need the visible blend.
+                    CompareReadyEndpoint(attack, 0f, ready, 0f, animator, bones, names.Attack + " entry");
+                    CompareReadyEndpoint(attack, attack.length, ready, 0f, animator, bones, names.Attack + " exit");
                     float reach = 0f, travel = 0f;
-                    attack.SampleAnimation(animator.gameObject, .45f);
+                    attack.SampleAnimation(animator.gameObject, simpleStrike ? .30f : .45f);
+                    CombatAssetProvider.PlaceCrowbar(bar, grip, handPose, false);
                     Vector3 windup = actor.transform.InverseTransformPoint(tip.position);
+                    if (simpleStrike && windup.z > -.10f)
+                        throw new InvalidOperationException($"Combat crowbar does not load behind the shoulder: " +
+                            $"tip={windup:F5}, grip={actor.transform.InverseTransformPoint(origin.position):F5}, " +
+                            $"axis={actor.transform.InverseTransformDirection(bar.transform.up):F5}, " +
+                            $"hook={actor.transform.InverseTransformDirection(bar.transform.forward):F5}.");
+                    if (simpleStrike) ValidateCrowbarHookForward(bar.transform, origin, tip, actor.transform);
                     for (int frame = 45; frame <= 63; frame++)
                     {
                         attack.SampleAnimation(animator.gameObject, frame / 100f);
+                        CombatAssetProvider.PlaceCrowbar(bar, grip, handPose, false);
                         Vector3 point = actor.transform.InverseTransformPoint(tip.position);
                         reach = Mathf.Max(reach, point.z);
                         travel = Mathf.Max(travel, Vector3.Distance(windup, point));
                         if (Vector3.Distance(origin.position, handPose.CylinderCentre(false)) > .001f ||
                             Vector3.Dot(bar.transform.up, handPose.CylinderAxis(false)) < .999f ||
-                            Vector3.Distance(origin.position, tip.position) < .60f || Vector3.Distance(origin.position, tip.position) > .63f)
+                            Mathf.Abs(Vector3.Distance(origin.position, tip.position) - CombatWeaponGeometry.StrikeTipLocal.magnitude) > .003f)
                             throw new InvalidOperationException("Combat crowbar grip or unit factor differs for " + (npc ? "NPC" : "hero"));
                     }
                     // The compact backhand crosses at least one weapon length;
                     // the forehand retains its wide arc. Both must reach the same target.
-                    float minimumTravel = simpleStrike ? .12f : swing == MeleeSwing.Backhand ? .60f : 1f;
+                    float minimumTravel = simpleStrike ? .80f : swing == MeleeSwing.Backhand ? .60f : 1f;
                     float minimumReach = simpleStrike ? .80f : .95f;
                     if (reach < minimumReach || travel < minimumTravel)
                         throw new InvalidOperationException($"Combat imported {(npc ? "NPC" : "hero")} {names.Attack} cannot reach the front target: reach={reach}, travel={travel}.");
@@ -575,9 +595,9 @@ namespace BarPromenade.Editor
                 }
                 ValidateReactions(animator, grip, tip, npc, simpleStrike);
                 ValidateWeightAndHandoff(animator, npc, simpleStrike);
-                if (!npc) ValidateKick(animator, actor.transform, handPose, bar, origin);
-                ValidateCombatLocomotion(animator, actor.transform, npc);
-                ValidateDefensiveSteps(animator, actor.transform, npc);
+                if (!npc) ValidateKick(animator, actor.transform, handPose, bar, origin, allowReadyArmBlend: simpleStrike);
+                ValidateCombatLocomotion(animator, actor.transform, npc, simpleStrike);
+                ValidateDefensiveSteps(animator, actor.transform, npc, simpleStrike);
             }
             finally { UnityEngine.Object.DestroyImmediate(actor); }
         }
@@ -615,7 +635,8 @@ namespace BarPromenade.Editor
             if (!simpleStrike && (shifts[0] < .025f || shifts[1] < .025f))
                 throw new InvalidOperationException("Combat imported attack lost its hip weight shift.");
             AnimationClip defeat = CombatAssetProvider.LoadClip(CombatAssetProvider.DefeatClip, npc);
-            CompareEndpoint(defeat, 0f, ready, 0f, animator, bones, "defeat entry");
+            CompareReadyEndpoint(defeat, 0f, ready, 0f, animator, bones, "defeat entry",
+                allowArmBlend: !npc && simpleStrike);
             CompareEndpoint(defeat, CombatAssetProvider.DefeatHandoffSeconds, defeat, defeat.length, animator, bones, "defeat handoff hold");
             defeat.SampleAnimation(animator.gameObject, CombatAssetProvider.DefeatHandoffSeconds);
             float drop = initialPelvis.y - pelvis.position.y;
@@ -623,7 +644,8 @@ namespace BarPromenade.Editor
                 throw new InvalidOperationException("Combat imported defeat lost balance or authored the physical fall prematurely.");
         }
 
-        private static void ValidateKick(Animator animator, Transform actor, NpcHandPose handPose, GameObject bar, Transform origin)
+        private static void ValidateKick(Animator animator, Transform actor, NpcHandPose handPose, GameObject bar, Transform origin,
+            bool allowReadyArmBlend = false)
         {
             Transform[] bones = animator.GetComponentsInChildren<Transform>(true);
             Transform[] feet = { bones.First(bone => bone.name == "foot.L"), bones.First(bone => bone.name == "foot.R") };
@@ -633,8 +655,8 @@ namespace BarPromenade.Editor
             {
                 Transform support = feet[1 - side], striking = feet[side];
                 AnimationClip kick = CombatAssetProvider.LoadClip(CombatAssetProvider.KickClipNames[side]);
-                CompareEndpoint(kick, 0f, ready, 0f, animator, bones, "kick entry");
-                CompareEndpoint(kick, kick.length, ready, 0f, animator, bones, "kick exit");
+                CompareReadyEndpoint(kick, 0f, ready, 0f, animator, bones, "kick entry", allowReadyArmBlend);
+                CompareReadyEndpoint(kick, kick.length, ready, 0f, animator, bones, "kick exit", allowReadyArmBlend);
                 ready.SampleAnimation(animator.gameObject, 0f);
                 Vector3 planted = support.position, rootPosition = root.position;
                 Quaternion flat = support.rotation;
@@ -663,6 +685,7 @@ namespace BarPromenade.Editor
         {
             Transform[] bones = animator.GetComponentsInChildren<Transform>(true);
             Transform[] feet = { bones.First(bone => bone.name == "foot.L"), bones.First(bone => bone.name == "foot.R") };
+            Transform rightGrip = handPose.Hands.First(binding => !binding.IsLeft).GripSocket;
             AnimationClip charge = CombatAssetProvider.LoadClip(names.Charge, npc);
             AnimationClip light = CombatAssetProvider.LoadClip(names.ReleaseLight, npc);
             AnimationClip attack = CombatAssetProvider.LoadClip(names.Attack, npc);
@@ -678,8 +701,8 @@ namespace BarPromenade.Editor
             {
                 if (simpleStrike)
                 {
-                    // Runtime now clocks the whole one-handed take. L is an
-                    // ordinary authored arm; only a requested guard owns IK.
+                    // Both hands follow the same authored take. The physical
+                    // support owner keeps its lower-shaft contact through charge.
                     light.SampleAnimation(animator.gameObject, CombatAssetProvider.ReleaseSourceSeconds(seconds, q));
                     return;
                 }
@@ -717,12 +740,20 @@ namespace BarPromenade.Editor
                     float seconds = frame / 100f;
                     if (q == 0f && lightCopy) CompareEndpoint(light, seconds, attack, seconds, animator, bones, "light legacy strike");
                     Blend(seconds, q);
+                    CombatAssetProvider.PlaceCrowbar(bar, rightGrip, handPose, false);
                     for (int i = 0; i < feet.Length; i++)
                         if (Vector3.Distance(planted[i], feet[i].position) > .002f || Quaternion.Angle(flat[i], feet[i].rotation) > .15f)
                             throw new InvalidOperationException("Charged blend moved an authored support foot: " + q);
                     if (Vector3.Distance(origin.position, handPose.CylinderCentre(false)) > .001f ||
                         Vector3.Dot(bar.transform.up, handPose.CylinderAxis(false)) < .999f)
                         throw new InvalidOperationException("Charged blend lost the crowbar grip: " + q);
+                    if (simpleStrike)
+                    {
+                        ValidateTwoHandContact(handPose, bar.transform, names.Attack + "/" + q);
+                        float sourceSeconds = CombatAssetProvider.ReleaseSourceSeconds(seconds, q);
+                        if (sourceSeconds >= .25f && sourceSeconds <= .30f)
+                            ValidateCrowbarHookForward(bar.transform, origin, tip, actor);
+                    }
                     if (seconds >= .45f && seconds <= .63f) reach = Mathf.Max(reach, actor.InverseTransformPoint(tip.position).z);
                 }
                 if (reach < (simpleStrike ? .80f : .95f))
@@ -730,7 +761,36 @@ namespace BarPromenade.Editor
             }
         }
 
-        private static void ValidateCombatLocomotion(Animator animator, Transform actorFrame, bool npc)
+        private static void ValidateTwoHandContact(NpcHandPose handPose, Transform bar, string label)
+        {
+            Vector3 target = bar.TransformPoint(new Vector3(0f, CombatSupportGrip.ReadyDistance, 0f));
+            Pose contact = handPose.GetSocketPose(true, target, handPose.CylinderAxis(true), handPose.PalmNormal(true));
+            NpcHandPose.HandBinding left = handPose.Hands.First(binding => binding.IsLeft);
+            // Subframe interpolation of the two-bone arc keeps a 12 mm
+            // reserve inside the existing live 25 mm cylinder contact.
+            if (Vector3.Distance(handPose.CylinderCentre(true), target) > .012f ||
+                Vector3.Angle(handPose.CylinderAxis(true), bar.up) > 12.01f ||
+                Vector3.Distance(left.GripSocket.position, contact.position) > .012f ||
+                Quaternion.Angle(left.Hand.rotation, contact.rotation) > .25f)
+                throw new InvalidOperationException("Combat imported strike lost its left shaft contact: " + label);
+        }
+
+        private static void ValidateCrowbarHookForward(Transform bar, Transform origin, Transform tip, Transform actor)
+        {
+            Vector3 forward = Vector3.ProjectOnPlane(actor.forward, bar.up);
+            if (forward.sqrMagnitude < .01f) return;
+            Vector3 hook = Vector3.ProjectOnPlane(tip.position - origin.position, bar.up);
+            // The wrist keeps the rigid hook facing forward while the torso
+            // turns into its shoulder load; the hook does not counter-rotate.
+            float minimumDot = Mathf.Cos(CombatAssetProvider.LoadedHookForwardAngleDegrees * Mathf.Deg2Rad);
+            if (hook.sqrMagnitude < .001f || Vector3.Dot(hook.normalized, forward.normalized) < minimumDot)
+                throw new InvalidOperationException($"Combat imported crowbar bent tip does not face forward: " +
+                    $"hook={actor.InverseTransformDirection(hook.normalized):F5}, " +
+                    $"forward={actor.InverseTransformDirection(forward.normalized):F5}, " +
+                    $"shaft={actor.InverseTransformDirection(bar.up):F5}.");
+        }
+
+        private static void ValidateCombatLocomotion(Animator animator, Transform actorFrame, bool npc, bool simpleStrike)
         {
             Transform[] bones = animator.GetComponentsInChildren<Transform>(true);
             Transform[] feet = { bones.First(bone => bone.name == "foot.L"), bones.First(bone => bone.name == "foot.R") };
@@ -742,8 +802,10 @@ namespace BarPromenade.Editor
                 Vector3 direction = name == CombatAssetProvider.AdvanceClip ? Vector3.forward :
                     name == CombatAssetProvider.RetreatClip ? Vector3.back :
                     name == CombatAssetProvider.StrafeLeftClip ? Vector3.left : Vector3.right;
-                CompareEndpoint(clip, 0f, ready, 0f, animator, bones, name + " entry");
-                CompareEndpoint(clip, clip.length, ready, 0f, animator, bones, name + " loop seam");
+                CompareReadyEndpoint(clip, 0f, ready, 0f, animator, bones, name + " entry",
+                    allowArmBlend: !npc && simpleStrike);
+                CompareReadyEndpoint(clip, clip.length, ready, 0f, animator, bones, name + " loop seam",
+                    allowArmBlend: !npc && simpleStrike);
                 ready.SampleAnimation(animator.gameObject, 0f);
                 // A population prefab can carry its character's height scale.
                 // The bank contract is authored metres in the actor frame.
@@ -767,7 +829,7 @@ namespace BarPromenade.Editor
             }
         }
 
-        private static void ValidateDefensiveSteps(Animator animator, Transform actorFrame, bool npc)
+        private static void ValidateDefensiveSteps(Animator animator, Transform actorFrame, bool npc, bool simpleStrike)
         {
             Transform[] bones = animator.GetComponentsInChildren<Transform>(true);
             Transform[] feet = { bones.First(bone => bone.name == "foot.L"), bones.First(bone => bone.name == "foot.R") };
@@ -780,8 +842,10 @@ namespace BarPromenade.Editor
                     name == CombatAssetProvider.StepBackwardClip ? Vector3.back :
                     name == CombatAssetProvider.StepLeftClip ? Vector3.left : Vector3.right;
                 int leading = name == CombatAssetProvider.StepForwardClip || name == CombatAssetProvider.StepLeftClip ? 0 : 1;
-                CompareEndpoint(clip, 0f, ready, 0f, animator, bones, name + " entry");
-                CompareEndpoint(clip, clip.length, ready, 0f, animator, bones, name + " settled exit");
+                CompareReadyEndpoint(clip, 0f, ready, 0f, animator, bones, name + " entry",
+                    allowArmBlend: !npc && simpleStrike);
+                CompareReadyEndpoint(clip, clip.length, ready, 0f, animator, bones, name + " settled exit",
+                    allowArmBlend: !npc && simpleStrike);
                 ready.SampleAnimation(animator.gameObject, 0f);
                 Vector3[] start = feet.Select(foot => actorFrame.InverseTransformPoint(foot.position)).ToArray();
                 Quaternion[] flat = feet.Select(foot => foot.rotation).ToArray();
@@ -829,10 +893,14 @@ namespace BarPromenade.Editor
                 Reaction reaction = manifest.actions.reactions[index];
                 AnimationClip clip = CombatAssetProvider.LoadClip(reaction.name, npc);
                 bool simpleRecoil = simpleStrike && reaction.name == CombatAssetProvider.RecoilClip;
-                CompareEndpoint(clip, 0f, CombatAssetProvider.LoadClip(reaction.entry_clip, npc), simpleRecoil ? .63f : reaction.entry_seconds,
-                    animator, bones, reaction.name + " entry");
-                CompareEndpoint(clip, clip.length, CombatAssetProvider.LoadClip(reaction.exit_clip, npc), reaction.exit_seconds,
-                    animator, bones, reaction.name + " exit");
+                AnimationClip entry = CombatAssetProvider.LoadClip(reaction.entry_clip, npc);
+                AnimationClip exit = CombatAssetProvider.LoadClip(reaction.exit_clip, npc);
+                CompareReadyEndpoint(clip, 0f, entry, simpleRecoil ? .63f : reaction.entry_seconds,
+                    animator, bones, reaction.name + " entry",
+                    allowArmBlend: !npc && simpleStrike && reaction.entry_clip == CombatAssetProvider.ReadyClip);
+                CompareReadyEndpoint(clip, clip.length, exit, reaction.exit_seconds,
+                    animator, bones, reaction.name + " exit",
+                    allowArmBlend: !npc && simpleStrike && !simpleRecoil && reaction.exit_clip == CombatAssetProvider.ReadyClip);
                 clip.SampleAnimation(animator.gameObject, 0f);
                 Vector3 start = grip.position;
                 clip.SampleAnimation(animator.gameObject, reaction.peak_seconds);
@@ -867,6 +935,21 @@ namespace BarPromenade.Editor
                 if (Vector3.Distance(peakTips[i], peakTips[j]) < .20f && !bodyDistinct)
                     throw new InvalidOperationException("Combat imported reactions lost their distinct silhouettes.");
             }
+        }
+
+        private static void CompareReadyEndpoint(AnimationClip a, float timeA, AnimationClip ready, float readyTime,
+            Animator animator, Transform[] bones, string label, bool allowArmBlend = false)
+        {
+            if (allowArmBlend)
+            {
+                // Retained hero actions keep their authored contacts and body.
+                // The shared visible pose transition gathers only their arms
+                // into the newly requested chest-level baseball stance.
+                Transform left = bones.First(bone => bone.name == "upper_arm.L");
+                Transform right = bones.First(bone => bone.name == "upper_arm.R");
+                bones = bones.Where(bone => !bone.IsChildOf(left) && !bone.IsChildOf(right)).ToArray();
+            }
+            CompareEndpoint(a, timeA, ready, readyTime, animator, bones, label);
         }
 
         private static void CompareEndpoint(AnimationClip a, float timeA, AnimationClip b, float timeB,
@@ -943,9 +1026,13 @@ namespace BarPromenade.Editor
                     sample.maximum_right_wrist_degrees > 65.01f || sample.maximum_right_deviation_degrees > 25.01f ||
                     sample.maximum_right_flexion_degrees > 55.01f || sample.minimum_body_clearance_m < .004f ||
                     sample.minimum_floor_clearance_m < .025f || sample.minimum_native_right_arm_gap_m < -.004f ||
-                    sample.maximum_right_elbow_speed_m_s > 6.01f)
+                    sample.maximum_right_elbow_speed_m_s > 6.01f ||
+                    !float.IsFinite(sample.maximum_left_wrist_degrees) || sample.maximum_left_wrist_degrees > 65.01f ||
+                    sample.maximum_left_deviation_degrees > 25.01f || sample.maximum_left_flexion_degrees > 55.01f ||
+                    sample.maximum_support_error_m > .012f || sample.maximum_support_angle_degrees > 12.01f)
                     throw new InvalidOperationException("Simple crowbar strike lost its anatomical wrist/body/floor gates.");
-            if (strike.clips.CombatAttack.active_tip_travel_m < .12f || strike.clips.CombatAttack.maximum_forward_reach_m < .80f)
+            if (strike.clips.CombatAttack.active_tip_travel_m < .80f || strike.clips.CombatAttack.maximum_forward_reach_m < .80f ||
+                strike.clips.CombatAttack.minimum_windup_tip_backward_m < .10f)
                 throw new InvalidOperationException("Simple crowbar strike has no usable physical contact arc.");
         }
         [Serializable] private sealed class SimpleStrike
@@ -962,6 +1049,8 @@ namespace BarPromenade.Editor
             public float maximum_right_wrist_degrees, maximum_right_deviation_degrees, maximum_right_flexion_degrees;
             public float minimum_body_clearance_m, minimum_floor_clearance_m, minimum_native_right_arm_gap_m;
             public float maximum_right_elbow_speed_m_s, active_tip_travel_m, maximum_forward_reach_m;
+            public float maximum_left_wrist_degrees, maximum_left_deviation_degrees, maximum_left_flexion_degrees;
+            public float maximum_support_error_m, maximum_support_angle_degrees, minimum_windup_tip_backward_m;
         }
         [Serializable] private sealed class Kick
         {

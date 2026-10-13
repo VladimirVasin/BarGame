@@ -7,10 +7,10 @@
   §6/art§15a/§16/§21/9checks;user removed human duel/tests.
 
 - **Accepted — 2026-10-13, simple crowbar strike:**
-  User:one short right-hand arc;normal/backhand/charged share its path.
-  Power retained;left support only guard;Ready/unrelated clips kept.
-  Authored world rig/physical body-world stops/continuous return;
-  no paired strike DAG. Polygon-only/§6/art§15a/9checks.
+  User:2actions;bat/RaboveL/end/85mm/hook→;shoulder load→accent→return/block.
+  One arc/powers;natural palms;Ready matched;legacy arms blend;free-facing.
+  World rig/stops/continuous return;existing 25mm/12° contacts;0paired DAG.
+  Polygon-only/§6/art§15a/9checks.
 
 - **Accepted — 2026-10-13, diagnostic retention:**
   GameLog:v1/seq-context-IDs/Unity;Editor-dev verbose/release basic/

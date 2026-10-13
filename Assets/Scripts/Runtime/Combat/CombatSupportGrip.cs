@@ -6,7 +6,7 @@ namespace BarPromenade
     /// <summary>One left-arm owner: weapon contact, protective reach, or recovery support.</summary>
     public sealed class CombatSupportGrip
     {
-        public const float ReadyDistance = .16f, BlockDistance = .42f;
+        public const float ReadyDistance = -.085f, BlockDistance = .38f;
         public const float ReleaseThreshold = .2f;
         private const float SlideSeconds = .18f, OpenSeconds = .10f, CloseSeconds = .08f;
         private const float ReachFraction = .999f, ReachSpeed = 2.2f;
@@ -56,6 +56,8 @@ namespace BarPromenade
         private Vector3 regripProposalElbow;
         private string regripProposalReason;
         private float regripCommitSeconds, regripRetrySeconds, regripNoProgressSeconds, regripPreviousError;
+        private Vector3 authoredPalmLocal;
+        private bool hasAuthoredPalm;
 
         internal ContactPreviewScope BeginContactPreview() => new ContactPreviewScope(this);
 
@@ -65,9 +67,9 @@ namespace BarPromenade
         {
             private readonly CombatSupportGrip owner;
             private readonly CombatArmSupportState state;
-            private readonly bool protective, wantsSupport, branch, target, closing, waiting, probe, proposal, completed, wrist;
+            private readonly bool protective, wantsSupport, branch, target, closing, waiting, probe, proposal, completed, wrist, authoredPalmCaptured;
             private readonly float weight, close, lost, hold, urgency, distance, start, destination, slide, error, angle, station;
-            private readonly Vector3 palm, elbow, direction;
+            private readonly Vector3 palm, elbow, direction, authoredPalm;
             private readonly Quaternion rotation;
             private readonly Pose proposed;
             private readonly Vector3 proposedElbow;
@@ -78,6 +80,7 @@ namespace BarPromenade
                 branch = grip.preserveSupportBranch; target = grip.hasRegripTarget; closing = grip.regripClosing;
                 waiting = grip.regripWaiting; probe = grip.regripProbePending; proposal = grip.regripProposalValid;
                 completed = grip.regripCommittedThisStep; wrist = grip.presentedWristSafe;
+                authoredPalmCaptured = grip.hasAuthoredPalm; authoredPalm = grip.authoredPalmLocal;
                 weight = grip.weight; close = grip.closeElapsed; lost = grip.lostSupportElapsed;
                 hold = grip.releaseHold; urgency = grip.urgency; distance = grip.distance;
                 start = grip.startDistance; destination = grip.targetDistance; slide = grip.slideElapsed;
@@ -94,6 +97,7 @@ namespace BarPromenade
                 owner.preserveSupportBranch = branch; owner.hasRegripTarget = target; owner.regripClosing = closing;
                 owner.regripWaiting = waiting; owner.regripProbePending = probe; owner.regripProposalValid = proposal;
                 owner.regripCommittedThisStep = completed; owner.presentedWristSafe = wrist;
+                owner.hasAuthoredPalm = authoredPalmCaptured; owner.authoredPalmLocal = authoredPalm;
                 owner.weight = weight; owner.closeElapsed = close; owner.lostSupportElapsed = lost;
                 owner.releaseHold = hold; owner.urgency = urgency; owner.distance = distance;
                 owner.startDistance = start; owner.targetDistance = destination; owner.slideElapsed = slide;
@@ -273,6 +277,8 @@ namespace BarPromenade
         public CombatArmSupportState State { get; private set; } = CombatArmSupportState.Free;
         public bool IsSupportingWeapon => initialized && State == CombatArmSupportState.SupportingWeapon && weight >= .99f &&
             presentedContactError <= ContactTolerance && presentedContactAngle <= 12f && presentedWristSafe;
+        internal bool IsSupportingGuard => IsSupportingWeapon && Mathf.Abs(distance - BlockDistance) <= .001f &&
+            Mathf.Abs(targetDistance - BlockDistance) <= .001f;
         public bool IsReleased => State == CombatArmSupportState.Free || State == CombatArmSupportState.RecoverySupport;
         public bool IsRegripping => State == CombatArmSupportState.Regripping;
         public bool IsRecoveryOwned => recoveryOwned;
@@ -372,11 +378,10 @@ namespace BarPromenade
             if (!foundRest) throw new InvalidOperationException("Combat support requires the arm's original skin bind pose.");
         }
 
-        // Only guard asks the left palm to hold the shaft. The ordinary arm
-        // remains clip-owned; physical protective/recovery support keeps priority.
+        // Ready and the shared strike hold the lower shaft; guard moves that
+        // same palm upward. Protective/recovery support keeps priority.
         public void SetTarget(bool blocking, bool supported, bool continuous = false)
         {
-            supported &= blocking;
             preserveSupportBranch = continuous;
             float next = blocking ? BlockDistance : ReadyDistance;
             if (!initialized)
@@ -981,6 +986,10 @@ namespace BarPromenade
                 return;
             }
             upperBase = upper.localRotation; forearmBase = forearm.localRotation; handBase = hand.localRotation;
+            // Capture the clip's palm before restoring last step's IK joints.
+            // Root travel carries this authored roll with the same actor frame.
+            authoredPalmLocal = frame.InverseTransformDirection(hands.PalmNormal(true));
+            hasAuthoredPalm = true;
             applied = true;
             if (regripCommittedThisStep && (State == CombatArmSupportState.SupportingWeapon || IsRegripping ||
                 (State == CombatArmSupportState.Free && regripWaiting)))
@@ -1546,10 +1555,19 @@ authoredWristAngles=({radial:F9},{flexion:F9}); authoredContactError={Vector3.Di
             contact = default;
             if (weapon == null) return false;
             Vector3 axis = weapon.up;
-            Vector3 palm = Vector3.ProjectOnPlane(-hands.PalmNormal(false), axis).normalized;
-            if (palm.sqrMagnitude < .1f) palm = Vector3.ProjectOnPlane(-frame.forward, axis).normalized;
-            if (palm.sqrMagnitude < .1f) palm = Vector3.ProjectOnPlane(frame.right, axis).normalized;
-            if (palm.sqrMagnitude < .1f) return false;
+            Vector3 opposed = Vector3.ProjectOnPlane(-hands.PalmNormal(false), axis).normalized;
+            if (opposed.sqrMagnitude < .1f) opposed = Vector3.ProjectOnPlane(-frame.forward, axis).normalized;
+            if (opposed.sqrMagnitude < .1f) opposed = Vector3.ProjectOnPlane(frame.right, axis).normalized;
+            if (opposed.sqrMagnitude < .1f) return false;
+            // Adjacent bat hands retain their independently authored palm roll.
+            // The higher guard gradually returns to its opposing wrap; crossing
+            // the top-hand origin never switches the wrist frame abruptly.
+            Vector3 authored = Vector3.ProjectOnPlane(hasAuthoredPalm ? frame.TransformDirection(authoredPalmLocal) :
+                hands.PalmNormal(true), axis).normalized;
+            if (authored.sqrMagnitude < .1f) authored = opposed;
+            float guard = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(distance / BlockDistance));
+            Vector3 palm = guard <= 0f ? authored : guard >= 1f ? opposed :
+                Quaternion.AngleAxis(Vector3.SignedAngle(authored, opposed, axis) * guard, axis) * authored;
             contact = hands.GetSocketPose(true, Target, axis, palm);
             return true;
         }
@@ -2001,6 +2019,7 @@ closestAngle={closestWristAngle:F9}; closestWrist={closestWristAngles:F9}; close
 
         public void Restore()
         {
+            hasAuthoredPalm = false;
             if (!applied) return;
             if (!recoveryOwned)
             {
@@ -2011,7 +2030,7 @@ closestAngle={closestWristAngle:F9}; closestWrist={closestWristAngles:F9}; close
             applied = false;
         }
 
-        public void Forget() => applied = false;
+        public void Forget() { applied = hasAuthoredPalm = false; }
 
         public void Reset()
         {

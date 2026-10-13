@@ -14,6 +14,105 @@ namespace BarPromenade.Tests.PlayMode
     public sealed partial class CombatTestPlayModeTests
     {
         [UnityTest]
+        public IEnumerator Range_CrowbarAttackAndBlockUseFacingWithoutTargetFocus()
+        {
+            var input = new InputTestFixture();
+            Mouse mouse = null;
+            try
+            {
+                input.Setup();
+                mouse = InputSystem.AddDevice<Mouse>();
+                input.Set(mouse.position, new Vector2(Screen.width * .75f, Screen.height * .5f), queueEventOnly: true);
+                yield return SceneManager.LoadSceneAsync(SceneIds.MainMenu, LoadSceneMode.Single);
+                yield return EnterRange();
+                root.SendMessage("OnApplicationFocus", true);
+                GameInput.HandleApplicationFocus(true);
+                PlacePair(4f);
+                root.Hero.ResetActor(root.Hero.transform.position, Vector3.right);
+                Assert.That(root.SetOpponentFocus(false), Is.True);
+                AssertFocusState(false);
+                var presentation = (Player3DCharacterPresentation)root.Player.Visual;
+                root.AutomaticSimulation = true;
+                for (int frame = 0; frame < 4; frame++) yield return null;
+
+                Quaternion facing = root.Hero.transform.rotation;
+                int beforeSwing = root.Hero.State.AttackSequence;
+                input.Press(mouse.leftButton, queueEventOnly: true);
+                for (int frame = 0; frame < 2; frame++) yield return null;
+                Assert.That(root.Hero.State.IsCharging, Is.True, "LMB works without a target lock.");
+                Assert.That(root.ChargeMeterVisible, Is.True);
+                Assert.That(presentation.OwnsClip(root.Hero), Is.True, "The free swing claims the same visible hero rig.");
+                AssertFocusState(false);
+                input.Release(mouse.leftButton, queueEventOnly: true);
+                for (int frame = 0; frame < 2; frame++) yield return null;
+                Assert.That(root.Hero.State.IsAttacking, Is.True, "Releasing LMB commits the forward swing.");
+                Assert.That(root.Hero.State.AttackSequence, Is.GreaterThan(beforeSwing));
+                for (int frame = 0; frame < 120 && root.Hero.State.Phase != MeleePhase.Ready; frame++)
+                {
+                    Assert.That(Quaternion.Angle(facing, root.Hero.transform.rotation), Is.LessThan(.1f),
+                        "An unfocused strike keeps the hero's facing instead of turning toward the selected opponent.");
+                    yield return null;
+                }
+                Assert.That(root.Hero.State.Phase, Is.EqualTo(MeleePhase.Ready));
+                Assert.That(root.Opponent.ReceivedImpactCount, Is.Zero, "A target outside the forward arc takes no damage.");
+                Assert.That(presentation.OwnsClip(root.Hero), Is.False, "The finished free strike returns to ordinary movement.");
+                AssertFocusState(false);
+
+                input.Press(mouse.rightButton, queueEventOnly: true);
+                for (int frame = 0; frame < 40 && !root.Hero.State.IsBlocking; frame++) yield return null;
+                Assert.That(root.Hero.State.IsBlocking, Is.True, "RMB raises the two-hand block without a target lock.");
+                Assert.That(presentation.OwnsClip(root.Hero), Is.True);
+                Assert.That(Quaternion.Angle(facing, root.Hero.transform.rotation), Is.LessThan(.1f));
+                AssertFocusState(false);
+                input.Release(mouse.rightButton, queueEventOnly: true);
+                for (int frame = 0; frame < 4; frame++) yield return null;
+                Assert.That(root.Hero.State.IsBlocking || root.Hero.GuardRequested, Is.False);
+                Assert.That(presentation.OwnsClip(root.Hero), Is.False);
+
+                Assert.That(root.PauseMenu.Open(), Is.True);
+                yield return null;
+                Assert.That(root.Hero.TryAttack() || root.Hero.RequestCharge(), Is.False,
+                    "Removing target focus does not bypass the modal input owner.");
+                input.Press(mouse.leftButton, queueEventOnly: true);
+                for (int frame = 0; frame < 2; frame++) yield return null;
+                Assert.That(root.Hero.State.IsCharging || root.Hero.State.IsAttacking, Is.False);
+                Assert.That(root.PauseMenu.Cancel(), Is.True);
+                yield return WaitFor(() => GameInput.CanRead(GameInputContext.Gameplay), "Pause did not release free melee input.");
+                for (int frame = 0; frame < 2; frame++) yield return null;
+                Assert.That(root.Hero.State.IsCharging || root.Hero.State.IsAttacking, Is.False,
+                    "An attack button held through pause must wait for release and a new press.");
+                input.Release(mouse.leftButton, queueEventOnly: true);
+                for (int frame = 0; frame < 2; frame++) yield return null;
+
+                // Direct commands share the input bridge's optional-focus contract.
+                root.AutomaticSimulation = false;
+                PlacePair(.82f);
+                Assert.That(root.SetOpponentFocus(false), Is.True);
+                Assert.That(root.Hero.TryAttack(), Is.True);
+                Assert.That(root.Hero.State.IsAttacking, Is.True);
+                Assert.That(root.Hero.State.IsShoving, Is.False, "Free melee remains a crowbar swing at close range.");
+
+                PlacePair(1.1f);
+                Assert.That(root.SetOpponentFocus(false), Is.True);
+                Assert.That(root.Hero.RequestCharge(), Is.True);
+                root.Hero.Step(.1f);
+                Assert.That(root.Hero.ReleaseCharge(), Is.True);
+                root.Hero.Step(2f);
+                Assert.That(root.Opponent.ReceivedImpactCount, Is.EqualTo(1),
+                    "The same actual crowbar collision can hit a body ahead without a focus marker.");
+                Assert.That(root.Opponent.LastImpact.Damage, Is.GreaterThan(0f));
+                AssertFocusState(false);
+                LogAssert.NoUnexpectedReceived();
+            }
+            finally
+            {
+                if (root != null) root.AutomaticSimulation = false;
+                if (mouse != null && mouse.added) InputSystem.RemoveDevice(mouse);
+                input.TearDown();
+            }
+        }
+
+        [UnityTest]
         public IEnumerator Range_MiddleMouseToggleRestoresWalkingWithoutEndingHostility()
         {
             var input = new InputTestFixture();
@@ -75,12 +174,11 @@ namespace BarPromenade.Tests.PlayMode
                 AssertFocusState(false); // Holding MMB must not toggle again.
                 input.Release(mouse.middleButton, queueEventOnly: true);
                 yield return null;
-                Assert.That(root.Hero.TryAttack(), Is.False);
-                Assert.That(root.Hero.RequestCharge(), Is.False);
                 Assert.That(root.Hero.TryKick(), Is.False);
                 Assert.That(root.Hero.TryStep(Vector2.down), Is.False);
                 root.Hero.SetBlock(true);
-                Assert.That(root.Hero.State.IsBlocking, Is.False);
+                Assert.That(root.Hero.GuardRequested, Is.True, "The basic guard remains available without focus.");
+                root.Hero.SetBlock(false);
 
                 input.Press(mouse.middleButton, queueEventOnly: true);
                 yield return null;

@@ -3,6 +3,7 @@
 Run via tools/run-blender.py; --validate-only rebuilds measurements, compares
 the manifest and checks the published passive FBX files through a round trip.
 --actions-only publishes the banks/manifest without rewriting passive geometry.
+--crowbar-only exports only the rebased passive crowbar and its mergeable model metadata.
 --kick-only appends/refreshes only the hero kick in the existing source bank, proving
 that every older action curve is unchanged before staged publication.
 --recovery-only replaces both rise clips in each existing bank.
@@ -114,7 +115,7 @@ RECOVERY_MARKERS = {
 }
 PELVIS_LOWERING = .075
 SUPPORT_GRIP = .16
-BLOCK_GRIP = .42
+BLOCK_GRIP = .38
 LEFT_GRIP_AXIS = 1
 GUARD_HEIGHTS = {"block": 1.490, "block_breath": 1.497, "guard_impact": 1.430}
 GUARD_PALM_ROLL_DEGREES = -90.
@@ -157,15 +158,17 @@ SURFACES = {"Concrete": (.50, .51, .47), "ConcreteDark": (.34, .36, .33),
             "Steel": (.25, .28, .27), "WornSteel": (.52, .55, .52),
             "Rubber": (.13, .15, .14)}
 kit.SURFACES = SURFACES
-CROWBAR_PATH=((0.,-.11,0.),(0.,.49,0.),(0.,.55,.022),(0.,.59,.065),(0.,.605,.112),(0.,.59,.145))
+CROWBAR_PIVOT_SHIFT = .025
+CROWBAR_PATH=((0.,-.135,0.),(0.,.465,0.),(0.,.525,.022),(0.,.565,.065),(0.,.58,.112),(0.,.565,.145))
+CROWBAR_WRAP = ((0.,-.10,0.), (0.,.055,0.), .024)
+CROWBAR_END_BOXES = (((0.,-.144,.012),.03671), ((0.,.562,.152),.02802))
 
 
 def weapon_collision_payload():
     return dict(space="grip_local_unity_metres",segments=[
         dict(start=a,end=b,radius=.019) for a,b in zip(CROWBAR_PATH,CROWBAR_PATH[1:])]+
-        [dict(start=(0.,-.075,0.),end=(0.,.08,0.),radius=.024),
-         dict(start=(0.,-.119,.012),end=(0.,-.119,.012),radius=.03671),
-         dict(start=(0.,.587,.152),end=(0.,.587,.152),radius=.02802)])
+        [dict(start=CROWBAR_WRAP[0],end=CROWBAR_WRAP[1],radius=CROWBAR_WRAP[2])]+
+        [dict(start=centre,end=centre,radius=radius) for centre,radius in CROWBAR_END_BOXES])
 
 
 def validate_published_weapon_collision(model_dir):
@@ -228,22 +231,76 @@ def make_items():
     arena.anchor("HeroSpawn", (0, 0, -2.5))
     arena.anchor("OpponentSpawn", (0, 0, 1))
     arena.anchor("ObstacleCenter", (3, .75, 1))
+    return [arena, make_crowbar()]
+
+
+def make_crowbar():
     crowbar = kit.Item("Crowbar")
-    # Grip at origin. Local +Y is the grip socket's authored forward axis;
-    # Unity uses identity local rotation when attaching the unit wrapper.
+    # The right top hand is the origin. The unchanged metal shape is rebased
+    # 25 mm upward along the shaft, leaving room for the lower left fist.
     path = CROWBAR_PATH
     for a, b in zip(path, path[1:]):
         crowbar.rod("Steel", a, b, .019, "Bar", 8)
-    crowbar.rod("Rubber", (0, -.075, 0), (0, .08, 0), .023, "GripWrap", 8)
+    crowbar.rod("Rubber", CROWBAR_WRAP[0], CROWBAR_WRAP[1], .023, "GripWrap", 8)
     for i in range(7):
-        y = -.06 + i * .02
+        y = -.085 + i * .02
         crowbar.rod("Steel", (0, y, 0), (0, y + .003, 0), .0234, "GripBands", 8)
-    crowbar.box("WornSteel", (0, -.119, .012), (.047, .034, .045), "Chisel", .004)
-    crowbar.box("WornSteel", (0, .587, .152), (.044, .024, .025), "Claw", .003)
+    crowbar.box("WornSteel", CROWBAR_END_BOXES[0][0], (.047, .034, .045), "Chisel", .004)
+    crowbar.box("WornSteel", CROWBAR_END_BOXES[1][0], (.044, .024, .025), "Claw", .003)
     crowbar.anchor("Grip", (0, 0, 0))
-    crowbar.anchor("StrikeBase", (0, .10, 0))
-    crowbar.anchor("StrikeTip", (0, .595, .145))
-    return [arena, crowbar]
+    crowbar.anchor("StrikeBase", (0, .075, 0))
+    crowbar.anchor("StrikeTip", (0, .570, .145))
+    return crowbar
+
+
+def build_crowbar_only(destination):
+    """Prove the rebased grip changes the origin, not the physical metal shape."""
+    items = [make_crowbar()]
+    signature = kit.signature(items)
+    if kit.signature([make_crowbar()]) != signature:
+        raise ValueError("Crowbar generation is not deterministic")
+    payload = kit.manifest(items, signature)
+    payload.update(generator="tools/build-combat-test-3d-model.py", generator_version="2.0.0", test_only=True,
+        pivot_shift_m=CROWBAR_PIVOT_SHIFT, combat_build_signature=kit.signature(make_items()))
+    destination.mkdir(parents=True, exist_ok=True)
+    kit.export(kit.build_objects(items)[0], destination / "Crowbar.fbx")
+    kit.verify_fbx(destination, payload)
+    payload["models"][0]["collision_shapes"] = validate_published_weapon_collision(destination)
+
+    def points(path):
+        bpy.ops.wm.read_factory_settings(use_empty=True)
+        bpy.ops.import_scene.fbx(filepath=str(path), use_anim=False)
+        tips = [obj for obj in bpy.context.scene.objects if obj.type == "EMPTY" and obj.name.split(".")[0] == "StrikeTip"]
+        if len(tips) != 1:
+            raise ValueError("Crowbar pivot parity requires its exact StrikeTip anchor")
+        tip_y = tips[0].matrix_world.translation.z
+        original_tip_y = .595
+        if min(abs(tip_y - value) for value in (.570, original_tip_y)) > .00001:
+            raise ValueError(f"Crowbar pivot parity found an unrecognized grip frame: tip={tip_y}")
+        compensate_shift = original_tip_y - tip_y
+        result = []
+        for obj in bpy.context.scene.objects:
+            if obj.type != "MESH": continue
+            for vertex in obj.data.vertices:
+                point = obj.matrix_world @ vertex.co
+                result.append(tuple(round(v, 6) for v in (point.x, point.z + compensate_shift, point.y)))
+        return sorted(result), compensate_shift
+
+    before, reference_shift = points(OUT / "Crowbar.fbx")
+    after, _ = points(destination / "Crowbar.fbx")
+    if len(before) != len(after):
+        raise ValueError("Crowbar pivot changed mesh vertices")
+    error = max(abs(a - b) for old, new in zip(before, after) for a, b in zip(old, new))
+    if error > .00001:
+        raise ValueError(f"Crowbar pivot changed its physical shape by {error}m")
+    payload["pivot_geometry_parity"] = dict(translation_m=(0., -CROWBAR_PIVOT_SHIFT, 0.),
+        reference_pivot_shift_m=round(reference_shift, 6), maximum_vertex_error_m=error)
+    holding = json.loads((OUT / "CombatTest3D.json").read_text(encoding="utf8"))["actions"]["holding"]
+    payload["holding_update"] = dict(block_grip_offset_m=BLOCK_GRIP,
+        block_hook_clearance_m=CROWBAR_PATH[1][1]-BLOCK_GRIP-holding["left_hand_shaft_extent_m"])
+    payload["fbx_sha256"] = hashlib.sha256((destination / "Crowbar.fbx").read_bytes()).hexdigest()
+    (destination / "CrowbarPivot.json").write_text(json.dumps(payload, indent=2) + "\n", encoding="utf8")
+    print("CROWBAR PIVOT SHAPE, ANCHORS AND COLLISION OK " + json.dumps(payload["pivot_geometry_parity"]), flush=True)
 
 
 # Source coordinates: X left, -Y forward, Z up. Arms are solved in armature
@@ -1549,7 +1606,7 @@ class CombatBuilder(dialogue.DialogueBuilder):
             flexion=math.degrees(math.atan2(lower_axis.dot(palm),lower_axis.dot(fingers)))
             deviation_limit=radial_limit if radial_limit is not None else 24.8 if nearest else getattr(self,"grip_deviation_limit",25.)
             if abs(wrist_deviation)>deviation_limit or (not ignore_flexion and (abs(flexion)>55. or wrist_angle>total_limit)): return None
-            if weapon_check and self.weapon_clearance(arms={side:(shoulder,elbow,wrist)})["body_gap_m"]<.0005: return None
+            if weapon_check and self.weapon_clearance(arms={side:(shoulder,elbow,wrist)})["body_gap_m"]<.005: return None
             deviation=abs(math.degrees(math.atan2(math.sin(angle),math.cos(angle))))
             distance=abs(math.degrees(math.atan2(math.sin(angle-target_angle),math.cos(angle-target_angle))))
             score=distance+.002*wrist_angle if nearest else wrist_angle+.35*deviation
@@ -1633,15 +1690,15 @@ class CombatBuilder(dialogue.DialogueBuilder):
             best=min(best,distance)
         return math.sqrt(best)
 
-    def weapon_clearance(self, origin=None, rotation=None, arms=None):
+    def weapon_clearance(self, origin=None, rotation=None, arms=None, ignore_arm_sides=()):
         """Full bent steel path, radii and end boxes against the visible body's capsules."""
         rig=self.result.rig
         if origin is None: origin,rotation=self.weapon_frame()
         arms=arms or {}
         points=[origin+rotation @ Vector(p) for p in CROWBAR_PATH]
         bars=[(a,b,.019) for a,b in zip(points,points[1:])]
-        bars.append((origin+rotation@Vector((0.,-.075,0.)),origin+rotation@Vector((0.,.08,0.)),.024))
-        for centre,radius in (((0.,-.119,.012),.03671),((0.,.587,.152),.02802)):
+        bars.append((origin+rotation@Vector(CROWBAR_WRAP[0]),origin+rotation@Vector(CROWBAR_WRAP[1]),CROWBAR_WRAP[2]))
+        for centre,radius in CROWBAR_END_BOXES:
             point=origin+rotation @ Vector(centre); bars.append((point,point,radius))
         capsules=[]
         head=rig.pose.bones["head"]
@@ -1649,6 +1706,7 @@ class CombatBuilder(dialogue.DialogueBuilder):
         capsules.append(("head",head.head+head_rotation@Vector((0.,0.,-.02)),head.head+head_rotation@Vector((0.,0.,.32)),.12))
         for side in ("L","R"):
             for a,b,radius in (("upper_arm","forearm",.06),("forearm","hand",.05),("thigh","shin",.085),("shin","foot",.07)):
+                if side in ignore_arm_sides and a in ("upper_arm","forearm"): continue
                 start,end=rig.pose.bones[a+"."+side].head.copy(),rig.pose.bones[b+"."+side].head.copy()
                 if side in arms and a in ("upper_arm","forearm"):
                     index=0 if a=="upper_arm" else 1
@@ -2566,7 +2624,7 @@ class CombatBuilder(dialogue.DialogueBuilder):
             matrix = self.result.rig.matrix_world.inverted() @ obj.matrix_world
             shape = obj.data.shape_keys.key_blocks["CylindricalGrip"]
             far_extent = max(far_extent, max((matrix @ vertex.co-centre).dot(axis * LEFT_GRIP_AXIS) for vertex in shape.data))
-        if BLOCK_GRIP + far_extent > .485:
+        if BLOCK_GRIP + far_extent > CROWBAR_PATH[1][1]-.005:
             raise ValueError(f"Left grip reaches the hook: offset={BLOCK_GRIP}, closed-hand extent={far_extent:.4f}")
         self.closed_left_hand_shaft_extent = far_extent
         for family in SWING_FAMILIES:
@@ -2575,7 +2633,7 @@ class CombatBuilder(dialogue.DialogueBuilder):
                 self._reset_pose(); self._apply_pose(poses[name])
                 origin, rotation = self.weapon_frame()
                 tip = origin + rotation @ Vector((0, .595, .145))
-                print(f"Two-hand landmark {name}: physical reach={-tip.y:.4f}m; hook clearance={.49-BLOCK_GRIP-far_extent:.4f}m", flush=True)
+                print(f"Two-hand landmark {name}: physical reach={-tip.y:.4f}m; hook clearance={CROWBAR_PATH[1][1]-BLOCK_GRIP-far_extent:.4f}m", flush=True)
                 if -tip.y < .95:
                     raise ValueError(f"Two-handed {name} needs physical reach >=0.95m, got {-tip.y:.4f}m")
         for kind in ("ready", "block", "block_breath", "guard_impact"):
@@ -3248,7 +3306,7 @@ def holding_payload(builder):
                 breathing_grip_travel_m=loop_travel,
                 maximum_two_hand_grip_reposition_m=getattr(builder, "maximum_grip_adjustment", 0.),
                 left_hand_shaft_extent_m=builder.closed_left_hand_shaft_extent,
-                block_hook_clearance_m=.49-BLOCK_GRIP-builder.closed_left_hand_shaft_extent,
+                block_hook_clearance_m=CROWBAR_PATH[1][1]-BLOCK_GRIP-builder.closed_left_hand_shaft_extent,
                 foot_offsets_blender_m=SUPPORT_OFFSETS,
                 foot_yaw_blender_degrees=SUPPORT_YAW_DEGREES,
                 stance_width_m=width, stance_stagger_m=stagger,
@@ -4095,6 +4153,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--validate-only", action="store_true")
     parser.add_argument("--actions-only", action="store_true")
+    parser.add_argument("--crowbar-only", action="store_true")
     parser.add_argument("--kick-only", action="store_true")
     parser.add_argument("--footwork-only", action="store_true")
     parser.add_argument("--recovery-only", action="store_true")
@@ -4117,6 +4176,16 @@ def main():
     parser.add_argument("--output-dir", type=Path, default=OUT)
     parser.add_argument("--source-dir", type=Path, default=SOURCE)
     args = parser.parse_args(sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else [])
+    if args.crowbar_only:
+        if any((args.validate_only, args.actions_only, args.simple_strike_only, args.kick_only, args.footwork_only,
+                args.recovery_only, args.rebase_npc_recovery, args.finish_recovery_banks, args.review_kick,
+                args.pack_review_source, args.probe_published_contracts, args.refresh_published_contracts,
+                args.repair_forehand_only, args.refresh_published_metadata, args.refresh_weapon_collision_metadata,
+                args.probe_only, args.dense_hero_probe, args.recovery_probe, args.pose_probe,
+                args.reuse_unchanged_actions, args.resume_npc_bank)):
+            parser.error("--crowbar-only is a standalone passive publication")
+        build_crowbar_only(args.output_dir.resolve())
+        return
     focused_other = any((args.kick_only, args.footwork_only, args.recovery_only, args.rebase_npc_recovery,
         args.finish_recovery_banks, args.review_kick, args.pack_review_source, args.probe_published_contracts,
         args.refresh_published_contracts, args.refresh_published_metadata, args.refresh_weapon_collision_metadata,
@@ -4125,7 +4194,7 @@ def main():
         if args.validate_only or focused_other:
             parser.error("Simple strike authoring is separate from other focused authoring and validation")
         # Ordinary regeneration preserves the complete production banks and
-        # replaces only the common one-handed arc. The retired coupled DAG is
+        # replaces only the common two-handed shoulder arc. The retired coupled DAG is
         # never an implicit regeneration path for the player-facing strike.
         module("combat_simple_strike", "build-combat-simple-strike.py").build(
             args.output_dir.resolve(), args.source_dir.resolve())

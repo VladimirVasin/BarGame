@@ -2,7 +2,7 @@
   "generator": "tools/build-combat-test-3d-model.py",
   "generator_version": "2.0.0",
   "blender_version": "5.0.1",
-  "build_signature": "a9be5aed30097210e6e58139547b4b1d1d7b7ba8ab75212ebddf417d17ebb587",
+  "build_signature": "5dfab61f8fd1bc509bd8cac4761fdf712cdbb6fec53f2e0d3704c8a555e85471",
   "units": "metres",
   "unity_forward": "+Z",
   "unity_up": "+Y",
@@ -99,12 +99,12 @@
       "name": "Crowbar",
       "bounds_min": [
         -0.0235,
-        -0.136,
+        -0.161,
         -0.0234
       ],
       "bounds_max": [
         0.0235,
-        0.623101,
+        0.5981,
         0.1645
       ],
       "triangle_count": 420,
@@ -124,7 +124,7 @@
           "name": "StrikeBase",
           "position": [
             0,
-            0.1,
+            0.075,
             0
           ],
           "parent": null
@@ -133,7 +133,7 @@
           "name": "StrikeTip",
           "position": [
             0,
-            0.595,
+            0.57,
             0.145
           ],
           "parent": null
@@ -145,12 +145,12 @@
           {
             "start": [
               0.0,
-              -0.11,
+              -0.135,
               0.0
             ],
             "end": [
               0.0,
-              0.49,
+              0.465,
               0.0
             ],
             "radius": 0.019
@@ -158,12 +158,12 @@
           {
             "start": [
               0.0,
-              0.49,
+              0.465,
               0.0
             ],
             "end": [
               0.0,
-              0.55,
+              0.525,
               0.022
             ],
             "radius": 0.019
@@ -171,12 +171,12 @@
           {
             "start": [
               0.0,
-              0.55,
+              0.525,
               0.022
             ],
             "end": [
               0.0,
-              0.59,
+              0.565,
               0.065
             ],
             "radius": 0.019
@@ -184,12 +184,12 @@
           {
             "start": [
               0.0,
-              0.59,
+              0.565,
               0.065
             ],
             "end": [
               0.0,
-              0.605,
+              0.58,
               0.112
             ],
             "radius": 0.019
@@ -197,12 +197,12 @@
           {
             "start": [
               0.0,
-              0.605,
+              0.58,
               0.112
             ],
             "end": [
               0.0,
-              0.59,
+              0.565,
               0.145
             ],
             "radius": 0.019
@@ -210,12 +210,12 @@
           {
             "start": [
               0.0,
-              -0.075,
+              -0.1,
               0.0
             ],
             "end": [
               0.0,
-              0.08,
+              0.055,
               0.0
             ],
             "radius": 0.024
@@ -223,12 +223,12 @@
           {
             "start": [
               0.0,
-              -0.119,
+              -0.144,
               0.012
             ],
             "end": [
               0.0,
-              -0.119,
+              -0.144,
               0.012
             ],
             "radius": 0.03671
@@ -236,12 +236,12 @@
           {
             "start": [
               0.0,
-              0.587,
+              0.562,
               0.152
             ],
             "end": [
               0.0,
-              0.587,
+              0.562,
               0.152
             ],
             "radius": 0.02802
@@ -383,8 +383,8 @@
     },
     "defeat_handoff_seconds": 0.16,
     "defeat_pelvis_drop_m": 0.07199996709823608,
-    "animation_signature": "2b595673e1434b1fb4fd43c0c0d73ea23453a9f26583e7a8a2e93db41f6eefa9",
-    "base_action_signature": "57b303de9a56614eeb697e1a04b8e41690855186688b108db5d98968d41629b2",
+    "animation_signature": "7ad9aea915f89968e6d11371b5c0819a4ee9b5c949bba4fde44d59760d80b4d2",
+    "base_action_signature": "1adc0c479fcbc829eeafe894aaf114375a7daef465ae688a195571fd7420dba9",
     "strike_samples": [
       {
         "seconds": 0.0,
@@ -911,25 +911,25 @@
       }
     ],
     "holding": {
-      "ready_grip_offset_m": 0.16,
-      "block_grip_offset_m": 0.42,
+      "ready_grip_offset_m": -0.085,
+      "block_grip_offset_m": 0.38,
       "left_grip_axis_sign": 1,
-      "maximum_authored_left_contact_error_m": 1.072573120172507e-06,
+      "maximum_authored_left_contact_error_m": 6.177358103198115e-07,
       "maximum_opposed_palm_error": 1.387670636177063e-07,
-      "maximum_left_axis_error": 4.3213367462158203e-07,
+      "maximum_left_axis_error": 0.010104834533192109,
       "maximum_block_elevation_degrees": 5.369382607047087,
-      "minimum_ready_grip_height_m": 0.9220618009567261,
-      "maximum_ready_grip_height_m": 0.9356225728988647,
+      "minimum_ready_grip_height_m": 1.2999999523162842,
+      "maximum_ready_grip_height_m": 1.2999999523162842,
       "minimum_block_grip_height_m": 1.4550000429153442,
       "maximum_block_grip_height_m": 1.4620000123977661,
       "maximum_guard_wrist_deflection_degrees": 26.58271034400152,
       "breathing_grip_travel_m": {
-        "CombatReady": 0.014828936845562435,
+        "CombatReady": 0.0,
         "CombatBlock": 0.008038025946262269
       },
       "maximum_two_hand_grip_reposition_m": 0.5166855691488643,
       "left_hand_shaft_extent_m": 0.04889146296409308,
-      "block_hook_clearance_m": 0.021108537035906927,
+      "block_hook_clearance_m": 0.03610853703590694,
       "foot_offsets_blender_m": {
         "L": [
           0.115,
@@ -953,12 +953,14 @@
         "L": 45.52091245947928,
         "R": 49.389610152549956
       },
-      "runtime_contract": "final left cylinder solve after charge blend, injury and pose recovery; same shaft axis, opposed palms",
+      "runtime_contract": "independent left palm on the cylinder dock; contact-axis correction <=12 degrees; opposed palms apply only to guard",
       "released_support_clips": [
         "CombatHit",
         "CombatGuardBreak",
         "CombatDefeat"
-      ]
+      ],
+      "maximum_supported_left_axis_degrees": 12.0,
+      "opposed_palm_scope": "guard"
     },
     "recovery": {
       "lead_foot": "Left",
@@ -2641,76 +2643,109 @@
       }
     ],
     "simple_strike": {
-      "source_sha256": "a70c07b58951d29abab26ff399cdc4c77bbca71722314d31428303b6b5f9ce49",
-      "unchanged_action_signature": "bd8d79258aae6c373b7de957953545d6b819927918acd6d158a60cd8a748c79f",
-      "fbx_sha256": "251c76d9ca45ff0abefceec62c39576d0be1d55bc9f4f5e5fa52954e698b5cb5",
-      "windup_shoulder_quaternion": [
-        0.8324190378189087,
-        -0.42277204990386963,
-        0.18000170588493347,
-        -0.30974453687667847
-      ],
-      "contact_shoulder_quaternion": [
-        0.879728376865387,
-        -0.45171019434928894,
-        0.08423034846782684,
-        -0.12223393470048904
+      "source_sha256": "4efa3231e4834793c87d94ccaba7de196d2abe0df7f2c13fefaea4a4a3b1ac84",
+      "unchanged_action_signature": "d419948c77de39c8e4d1f8120238dc80dd9abf7913b72aeb6c370f23c9f0476c",
+      "fbx_sha256": "b71ae0153eb1d0c62f07ee6b7612570e87e2cbd30d7ed493d980fc068be71140",
+      "two_handed": true,
+      "support_grip_metres": -0.085,
+      "held_shaft_roll_degrees": -112.41776594368515,
+      "blended_ready_endpoints": true,
+      "authored_stops": [
+        0.0,
+        0.3,
+        0.44,
+        0.54,
+        0.63,
+        0.73,
+        0.8,
+        1.1,
+        1.28
       ],
       "clips": {
         "CombatAttack": {
-          "maximum_right_wrist_degrees": 47.77897641418008,
-          "maximum_right_deviation_degrees": 15.37964407551442,
-          "maximum_right_flexion_degrees": 45.817156564638076,
-          "minimum_body_clearance_m": 0.03971167282017156,
-          "minimum_floor_clearance_m": 0.8154185057067871,
-          "minimum_native_right_arm_gap_m": -0.003579555153846739,
-          "maximum_right_elbow_speed_m_s": 0.9099515061687777,
-          "active_tip_travel_m": 0.3755055610840686,
-          "maximum_forward_reach_m": 0.8600165843963623
+          "maximum_right_wrist_degrees": 16.04729893606047,
+          "maximum_right_deviation_degrees": 15.944273941135682,
+          "maximum_right_flexion_degrees": 1.8394179315656833,
+          "minimum_body_clearance_m": 0.0049711884322219055,
+          "minimum_floor_clearance_m": 1.0818845272445679,
+          "minimum_native_right_arm_gap_m": -0.0021051895618438704,
+          "maximum_right_elbow_speed_m_s": 5.582314010860234,
+          "active_tip_travel_m": 1.0349470466967312,
+          "maximum_forward_reach_m": 0.900101900100708,
+          "maximum_left_wrist_degrees": 55.921306395454806,
+          "maximum_left_deviation_degrees": 24.490610154839572,
+          "maximum_left_flexion_degrees": 54.49407242725326,
+          "maximum_support_error_m": 0.0019283047355193993,
+          "maximum_support_angle_degrees": 8.152083491409508,
+          "minimum_windup_tip_backward_m": 0.18984943628311157
         },
         "CombatReleaseLight": {
-          "maximum_right_wrist_degrees": 47.77897641418008,
-          "maximum_right_deviation_degrees": 15.37964407551442,
-          "maximum_right_flexion_degrees": 45.817156564638076,
-          "minimum_body_clearance_m": 0.03971167282017156,
-          "minimum_floor_clearance_m": 0.8154185057067871,
-          "minimum_native_right_arm_gap_m": -0.003579555153846739,
-          "maximum_right_elbow_speed_m_s": 0.9099515061687777,
-          "active_tip_travel_m": 0.3755055610840686,
-          "maximum_forward_reach_m": 0.8600165843963623
+          "maximum_right_wrist_degrees": 16.04729893606047,
+          "maximum_right_deviation_degrees": 15.944273941135682,
+          "maximum_right_flexion_degrees": 1.8394179315656833,
+          "minimum_body_clearance_m": 0.0049711884322219055,
+          "minimum_floor_clearance_m": 1.0818845272445679,
+          "minimum_native_right_arm_gap_m": -0.0021051895618438704,
+          "maximum_right_elbow_speed_m_s": 5.582314010860234,
+          "active_tip_travel_m": 1.0349470466967312,
+          "maximum_forward_reach_m": 0.900101900100708,
+          "maximum_left_wrist_degrees": 55.921306395454806,
+          "maximum_left_deviation_degrees": 24.490610154839572,
+          "maximum_left_flexion_degrees": 54.49407242725326,
+          "maximum_support_error_m": 0.0019283047355193993,
+          "maximum_support_angle_degrees": 8.152083491409508,
+          "minimum_windup_tip_backward_m": 0.18984943628311157
         },
         "CombatReleaseHeavy": {
-          "maximum_right_wrist_degrees": 47.77897641418008,
-          "maximum_right_deviation_degrees": 15.37964407551442,
-          "maximum_right_flexion_degrees": 45.817156564638076,
-          "minimum_body_clearance_m": 0.03971167282017156,
-          "minimum_floor_clearance_m": 0.8154185057067871,
-          "minimum_native_right_arm_gap_m": -0.003579555153846739,
-          "maximum_right_elbow_speed_m_s": 0.9099515061687777,
-          "active_tip_travel_m": 0.3755055610840686,
-          "maximum_forward_reach_m": 0.8600165843963623
+          "maximum_right_wrist_degrees": 16.04729893606047,
+          "maximum_right_deviation_degrees": 15.944273941135682,
+          "maximum_right_flexion_degrees": 1.8394179315656833,
+          "minimum_body_clearance_m": 0.0049711884322219055,
+          "minimum_floor_clearance_m": 1.0818845272445679,
+          "minimum_native_right_arm_gap_m": -0.0021051895618438704,
+          "maximum_right_elbow_speed_m_s": 5.582314010860234,
+          "active_tip_travel_m": 1.0349470466967312,
+          "maximum_forward_reach_m": 0.900101900100708,
+          "maximum_left_wrist_degrees": 55.921306395454806,
+          "maximum_left_deviation_degrees": 24.490610154839572,
+          "maximum_left_flexion_degrees": 54.49407242725326,
+          "maximum_support_error_m": 0.0019283047355193993,
+          "maximum_support_angle_degrees": 8.152083491409508,
+          "minimum_windup_tip_backward_m": 0.18984943628311157
         },
         "CombatCharge": {
-          "maximum_right_wrist_degrees": 47.77891835757213,
-          "maximum_right_deviation_degrees": 15.37964518236826,
-          "maximum_right_flexion_degrees": 45.81711739575842,
-          "minimum_body_clearance_m": 0.039711722081399684,
-          "minimum_floor_clearance_m": 0.815425956287384,
-          "minimum_native_right_arm_gap_m": -0.003579555153846739,
-          "maximum_right_elbow_speed_m_s": 0.1207255564723378,
-          "active_tip_travel_m": 0.06093595668820655,
-          "maximum_forward_reach_m": 0.5488251447677612
+          "maximum_right_wrist_degrees": 3.823105753474019,
+          "maximum_right_deviation_degrees": 3.463535831811368,
+          "maximum_right_flexion_degrees": 1.6198018668918923,
+          "minimum_body_clearance_m": 0.03683034386549695,
+          "minimum_floor_clearance_m": 1.1654672861480713,
+          "minimum_native_right_arm_gap_m": 0.00015826702117920088,
+          "maximum_right_elbow_speed_m_s": 0.09471642670809689,
+          "active_tip_travel_m": 0.030905994302072252,
+          "maximum_forward_reach_m": -0.08532997965812683,
+          "maximum_left_wrist_degrees": 15.519607058521748,
+          "maximum_left_deviation_degrees": 14.173148040189325,
+          "maximum_left_flexion_degrees": 6.388801271250924,
+          "maximum_support_error_m": 1.9103730333491977e-06,
+          "maximum_support_angle_degrees": 0.0,
+          "minimum_windup_tip_backward_m": 0.07907718420028687
         },
         "CombatRecoil": {
-          "maximum_right_wrist_degrees": 47.778962753801736,
-          "maximum_right_deviation_degrees": 15.379648945671361,
-          "maximum_right_flexion_degrees": 45.8171484014562,
-          "minimum_body_clearance_m": 0.03971170362943703,
-          "minimum_floor_clearance_m": 0.8154186249160766,
-          "minimum_native_right_arm_gap_m": -0.0035795998573303206,
-          "maximum_right_elbow_speed_m_s": 1.1308047942938235,
-          "active_tip_travel_m": 0.00022748446356281947,
-          "maximum_forward_reach_m": 0.44734811782836914
+          "maximum_right_wrist_degrees": 11.637569152228389,
+          "maximum_right_deviation_degrees": 11.588317658277749,
+          "maximum_right_flexion_degrees": 1.6197887171083063,
+          "minimum_body_clearance_m": 0.006637170567440766,
+          "minimum_floor_clearance_m": 1.0818853617095947,
+          "minimum_native_right_arm_gap_m": 0.0001581180095672624,
+          "maximum_right_elbow_speed_m_s": 5.582287317276189,
+          "active_tip_travel_m": 0.010031857862373993,
+          "maximum_forward_reach_m": -0.061350807547569275,
+          "maximum_left_wrist_degrees": 55.921299565265635,
+          "maximum_left_deviation_degrees": 19.12704538973874,
+          "maximum_left_flexion_degrees": 54.49405999609424,
+          "maximum_support_error_m": 0.0014148046434470719,
+          "maximum_support_angle_degrees": 0.5947902685627527,
+          "minimum_windup_tip_backward_m": 0.189849391579628
         }
       }
     }

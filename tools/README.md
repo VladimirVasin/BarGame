@@ -152,7 +152,7 @@ test:--actions-only+--kick-only/--recovery-only/--footwork-only;
 --refresh-published-contracts/--reuse-unchanged-actions/--resume-npc-bank file.blend;
 blood:--texture-only;others:--validate-only;CombatGore:hero/NPC body-skull.
 zombie:ZombieActions/3faces/2SFX;NPCrig/anatomy/loops/determinism.
-Simple hero Rarm strike;Ready/unrelated retained.
+Hero:bat grip/hook→/strike-block/Ready.
 
 ```powershell
 python tools/run-blender.py tools/build-combat-test-3d-model.py -- --simple-strike-only --output-dir Captures/Tooling/Strike --source-dir Captures/Tooling/Strike/Source

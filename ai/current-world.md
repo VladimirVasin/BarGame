@@ -156,7 +156,7 @@ The vertical slice contains:
   Freecam/dummy/Tabfight/MMBfocus/bar-Qfocus;
   Rise:tread support/accepted pose→Rising/retry/real blockers.
   Guns:RMBaim/LMBedge/R-Xreload/8gaits/0run/FOV-IK;
-  camplane normdiag/Space1m-4way-back/tankreturn/barfocus/injury.
+  camplane normdiag/Space1m-4way-back/tankreturn/bar free focus/injury.
   Hero:breath-tremor/walk-settle/recoil-yaw-overshoot/regrip/blink-chin;
   reticle=muzzle/shotgun centre;stablecam/intent legs/NPC kept.
   Start/reset:Pistol8+0(cap48)/slide-emptylock/mag-rack/cases;
@@ -168,7 +168,7 @@ The vertical slice contains:
   Cloth-tissue-bone loss/head-limb sever/torso→joined skeleton/0chunks.
   Rhand0weapon/Lhand0twohand-reload;Rbar-loaded pistol;
   Legloss fall/crawl/0rise-step-kick;critical head-torso end/corpses/reset.
-  Bar:R short arc/shared charge/Lguard;8segments/firstsurface/1hit/blocked→recoil/6zones;
+  Bar:bat/hook→/shoulder+block/charge/free;8segments/firstsurface/1hit/recoil/6zones;
   standard taunt/Eshared/0grant.
   Cloth:LRU/prewarm/buffered decode/unsafe→live.
 - legacy-only Home opening: held bed loop/silent `05:59`/rare whole-clock flicker,

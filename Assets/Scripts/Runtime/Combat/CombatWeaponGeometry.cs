@@ -11,6 +11,8 @@ namespace BarPromenade
         // A contact is admitted just outside the constraint's 4 mm clearance.
         // All outgoing queries use this same small skin, never a broad damage halo.
         internal const float ContactSkin = .005f;
+        internal static readonly Vector3 StrikeBaseLocal = new Vector3(0f, .075f, 0f);
+        internal static readonly Vector3 StrikeTipLocal = new Vector3(0f, .570f, .145f);
         internal readonly struct Segment
         {
             public readonly Vector3 A, B;
@@ -66,14 +68,14 @@ namespace BarPromenade
         // Zero-length capsules bound the complete end boxes, including their corners.
         internal static IReadOnlyList<Segment> Segments { get; } = Array.AsReadOnly(new[]
         {
-            new Segment(new Vector3(0f, -.11f, 0f), new Vector3(0f, .49f, 0f), .019f),
-            new Segment(new Vector3(0f, .49f, 0f), new Vector3(0f, .55f, .022f), .019f),
-            new Segment(new Vector3(0f, .55f, .022f), new Vector3(0f, .59f, .065f), .019f),
-            new Segment(new Vector3(0f, .59f, .065f), new Vector3(0f, .605f, .112f), .019f),
-            new Segment(new Vector3(0f, .605f, .112f), new Vector3(0f, .59f, .145f), .019f),
-            new Segment(new Vector3(0f, -.075f, 0f), new Vector3(0f, .08f, 0f), .024f),
-            new Segment(new Vector3(0f, -.119f, .012f), new Vector3(0f, -.119f, .012f), .03671f),
-            new Segment(new Vector3(0f, .587f, .152f), new Vector3(0f, .587f, .152f), .02802f)
+            new Segment(new Vector3(0f, -.135f, 0f), new Vector3(0f, .465f, 0f), .019f),
+            new Segment(new Vector3(0f, .465f, 0f), new Vector3(0f, .525f, .022f), .019f),
+            new Segment(new Vector3(0f, .525f, .022f), new Vector3(0f, .565f, .065f), .019f),
+            new Segment(new Vector3(0f, .565f, .065f), new Vector3(0f, .58f, .112f), .019f),
+            new Segment(new Vector3(0f, .58f, .112f), new Vector3(0f, .565f, .145f), .019f),
+            new Segment(new Vector3(0f, -.10f, 0f), new Vector3(0f, .055f, 0f), .024f),
+            new Segment(new Vector3(0f, -.144f, .012f), new Vector3(0f, -.144f, .012f), .03671f),
+            new Segment(new Vector3(0f, .562f, .152f), new Vector3(0f, .562f, .152f), .02802f)
         });
 
         /// <summary>Continuous relative motion of both complete props, including a

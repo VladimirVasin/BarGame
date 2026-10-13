@@ -190,9 +190,9 @@ namespace BarPromenade
         public bool GuardRequested => guardHeld;
         public bool GuardReady => !IsZombie && GuardSupportRejection == null &&
             (State.Phase == MeleePhase.Ready || State.Phase == MeleePhase.GuardImpact);
-        internal string GuardSupportRejection => HasWeaponSwitchRequest ? "weapon_switching" : IsFirearm ? "firearm" : !CombatFocused ? "unfocused" : weaponDropped ? "weapon_missing" : roundEnded ? "round_ended" : !IsAvailable ? "actor_unavailable" :
+        internal string GuardSupportRejection => HasWeaponSwitchRequest ? "weapon_switching" : IsFirearm ? "firearm" : weaponDropped ? "weapon_missing" : roundEnded ? "round_ended" : !IsAvailable ? "actor_unavailable" :
             State.IsDefeated ? "defeated" : !HasAttackBalance ? AttackBalanceRejection :
-            !HasTwoHandSupport ? "two_hand_support" : null;
+            !HasTwoHandSupport || (guardHeld && supportGrip != null && !supportGrip.IsSupportingGuard) ? "two_hand_support" : null;
         internal CombatFootwork Footwork => footwork;
         internal Vector3 AchievedPlanarVelocity => motor != null ? motor.PlanarVelocity : locomotionVelocity;
         internal CombatSupportGrip SupportGrip => supportGrip;
@@ -202,11 +202,10 @@ namespace BarPromenade
             if (IsZombie) return TryZombieAttack();
             if (IsFirearm) return false;
             int request = JournalCommand("attack_immediate");
-            if (!CombatFocused && !CanAttackFinishedBody) return JournalCommandResult(request, "rejected", "unfocused");
             if (roundEnded && !CanAttackFinishedBody) return JournalCommandResult(request, "rejected", "round_ended");
             if (!IsAvailable) return JournalCommandResult(request, "rejected", "actor_unavailable");
             if (!GameInput.CanRead(GameInputContext.Gameplay)) return JournalCommandResult(request, "rejected", "input_gate");
-            if (BodyDamage.CanUseLeftHand && CheckShoveRange(request)) return TryBeginShove(request);
+            if (CombatFocused && BodyDamage.CanUseLeftHand && CheckShoveRange(request)) return TryBeginShove(request);
             if (!CanAttemptUpperBodyAttack) return JournalCommandResult(request, "rejected", UpperBodyAttackRejection);
             if (State.Phase == MeleePhase.Step && State.CanTransitionTo(MeleeBufferedAction.Attack, true) &&
                 !(footwork?.PrepareStepAttackHandoff() ?? false))
@@ -224,11 +223,10 @@ namespace BarPromenade
             if (IsZombie) return TryZombieAttack();
             if (IsFirearm) return false;
             int request = JournalCommand("attack");
-            if (!CombatFocused && !CanAttackFinishedBody) return JournalCommandResult(request, "rejected", "unfocused");
             if (roundEnded && !CanAttackFinishedBody) return JournalCommandResult(request, "rejected", "round_ended");
             if (!IsAvailable) return JournalCommandResult(request, "rejected", "actor_unavailable");
             if (!GameInput.CanRead(GameInputContext.Gameplay)) return JournalCommandResult(request, "rejected", "input_gate");
-            if (!State.IsAttacking && BodyDamage.CanUseLeftHand && CheckShoveRange(request)) return TryBeginShove(request);
+            if (CombatFocused && !State.IsAttacking && BodyDamage.CanUseLeftHand && CheckShoveRange(request)) return TryBeginShove(request);
             if (!CanAttemptUpperBodyAttack) return JournalCommandResult(request, "rejected", UpperBodyAttackRejection);
             int previous = State.AttackSequence;
             if (!State.RequestAttack(true)) return JournalRulesRejected(request, State.Settings.AttackCost);
@@ -257,7 +255,7 @@ namespace BarPromenade
         {
             if (IsFirearm || IsZombie) held = false;
             bool freshPress = held && !guardHeld;
-            guardHeld = held && CombatFocused;
+            guardHeld = held;
             RefreshBlock(freshPress);
         }
 
@@ -510,7 +508,7 @@ namespace BarPromenade
             bodyMotion?.Restore();
             AnimationClip chosen = ReleaseClip;
             ConfigureAttackReachPose(MeleeBufferedAction.Attack, progress);
-            supportGrip?.SetTarget(false, false);
+            supportGrip?.SetTarget(false, !weaponDropped && BodyDamage.CanUseLeftHand && BodyDamage.CanUseRightHand, true);
             if (hero != null)
             {
                 if (visibleClip != chosen.name || !hero.OwnsClip(this))
@@ -625,7 +623,11 @@ namespace BarPromenade
             if (pistolPose) chosen = ChoosePistolClip();
             AnimationClip pistolStepUpper = IsFirearm && stepping && Firearm.AimRequested ? ChoosePistolClip() : null;
             bool guardContactRequested = guardPoseRequested && (chosen == block || chosen == guardImpact);
-            supportGrip?.SetTarget(guardContactRequested, guardContactRequested);
+            bool strikeContactRequested = !IsFirearm && !weaponDropped && !roundEnded && !stagger &&
+                BodyDamage.CanUseLeftHand && BodyDamage.CanUseRightHand &&
+                (chosen == ready || State.IsCharging || State.IsAttacking || reaction == Current.Recoil);
+            supportGrip?.SetTarget(guardContactRequested, guardContactRequested || strikeContactRequested,
+                State.IsCharging || State.IsAttacking);
             PresentShovePose();
             ConfigureAttackReachPose(ReachAction);
             float progress = stagger ?

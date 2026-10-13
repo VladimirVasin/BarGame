@@ -49,7 +49,7 @@ Only these statuses apply. Product scope cuts are `Deferred` in
 | PS1 presentation | Shared low-res composite. Optional 4:3, vertex jitter and Begotten keep controls; Begotten ramps `15 s` in, `3 s` out. | `Runtime/Rendering`, `IntoxicationRenderState`, `BegottenModeRamp` | Current |
 | Depth of field tiers | Exteriors keep broad Gaussian far blur; the six interior scenes cap it at radius `0.55`. | `RuntimeSceneSetup`, `DepthOfFieldSettingsBinder` | Current |
 | Runtime area composition | Ten gameplay roots; four build in frames; interior doors retain dormant City/village. | `Runtime/Core`, `Runtime/Scenes` | Current |
-| Combat | Zombies only/slow chase/lunge;Standard1;Endless1–5/≤2corpses;all3;gap:pierce/balance. | `CombatTestRoot`, `CombatActor`, `CombatAmmoPickup` | Partial |
+| Combat | Zombies;Endless1–5/≤2corpses;all3;2hand swing/block/free-facing;gap:pierce/balance. | `CombatTestRoot`, `CombatActor`, `CombatAmmoPickup` | Partial |
 | Body destruction | Torso→skeleton/sever/crawl/corpse/reset;clone skin/topology;pose/scale proxy reuse. | `CombatBodyDamageState`,`CombatBodyDestruction` | Current |
 | New-game starting place | Twelve starts incl. lodge; village default, day `1`/`07:40`, ordinary loading. | `StartMenu{Root,Model}`, `NewGame{LocationCatalog,StartService}` | Current |
 | Retained Home waking opening | Frozen `05:59`, five-second lock, Wake Up/Quit, continuous wake. Gap: no shipped path reaches it. | `MainMenuRoot`, `HomeOpening{Controller,Timeline}` | Partial |

@@ -1296,7 +1296,7 @@ namespace BarPromenade.Tests.PlayMode
             $"age={actor.ImpactMotion.Age:F3}, load={actor.ImpactMotion.BalanceLoad:F3}, " +
             actor.Footwork.SupportDiagnostics;
 
-        private void CaptureDuelFrame(string subject, string name)
+        private void CaptureDuelFrame(string subject, string name, bool front = false)
         {
             Camera camera = root.CameraFollow.Camera;
             Vector3 position = camera.transform.position;
@@ -1310,6 +1310,7 @@ namespace BarPromenade.Tests.PlayMode
                     CombatActor victim = subject.Contains("opponent") ? root.Opponent : root.Hero;
                     focus = victim.transform.position + Vector3.up * .9f;
                     eye = focus - victim.transform.right * 3f + Vector3.up * .5f + victim.transform.forward * .4f;
+                    if (front) eye = focus + victim.transform.forward * 3f + victim.transform.right * .45f + Vector3.up * .4f;
                 }
                 if (name.StartsWith("wall")) eye = focus + new Vector3(2.2f, .6f, 2.4f);
                 camera.transform.SetPositionAndRotation(eye, Quaternion.LookRotation(focus - eye));

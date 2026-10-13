@@ -15,11 +15,10 @@ namespace BarPromenade
         {
             if (IsFirearm || IsZombie) return false;
             int request = JournalCommand("charge");
-            if (!CombatFocused && !CanAttackFinishedBody) return JournalCommandResult(request, "rejected", "unfocused");
             if (roundEnded && !CanAttackFinishedBody) return JournalCommandResult(request, "rejected", "round_ended");
             if (!IsAvailable) return JournalCommandResult(request, "rejected", "actor_unavailable");
             if (!GameInput.CanRead(GameInputContext.Gameplay)) return JournalCommandResult(request, "rejected", "input_gate");
-            if (!State.IsAttacking && BodyDamage.CanUseLeftHand && CheckShoveRange(request)) return TryBeginShove(request);
+            if (CombatFocused && !State.IsAttacking && BodyDamage.CanUseLeftHand && CheckShoveRange(request)) return TryBeginShove(request);
             if (!CanAttemptUpperBodyAttack) return JournalCommandResult(request, "rejected", UpperBodyAttackRejection);
             if (!State.RequestCharge(true)) return JournalRulesRejected(request, State.Settings.AttackCost);
             CancelPendingKick("replaced");
@@ -34,7 +33,6 @@ namespace BarPromenade
         {
             if (IsFirearm) return false;
             int request = JournalCommand("charge_release");
-            if (!CombatFocused && !CanAttackFinishedBody) return JournalCommandResult(request, "rejected", "unfocused");
             if (roundEnded && !CanAttackFinishedBody) return JournalCommandResult(request, "rejected", "round_ended");
             if (!IsAvailable) return JournalCommandResult(request, "rejected", "actor_unavailable");
             if (!GameInput.CanRead(GameInputContext.Gameplay)) return JournalCommandResult(request, "rejected", "input_gate");
@@ -47,7 +45,7 @@ namespace BarPromenade
                 bool started = ContinueBufferedAttackAfterContacts();
                 return JournalCommandResult(request, started ? "started" : "queued", "charge_release");
             }
-            if (State.IsCharging && BodyDamage.CanUseLeftHand && CheckShoveRange(request)) return TryBeginShove(request);
+            if (CombatFocused && State.IsCharging && BodyDamage.CanUseLeftHand && CheckShoveRange(request)) return TryBeginShove(request);
             if (!CanAttemptUpperBodyAttack)
             {
                 CancelCharge();
@@ -74,10 +72,11 @@ namespace BarPromenade
         /// A new action must never relabel or erase the old swing's final sweep.</summary>
         internal bool ContinueBufferedAttackAfterContacts()
         {
-            if ((!CombatFocused || roundEnded) && !CanAttackFinishedBody || presentationFrozen || !IsAvailable ||
-                !GameInput.CanRead(GameInputContext.Gameplay) ||
-                (contactTarget != null && contactTarget.State.IsDefeated && !CanAttackFinishedBody)) return false;
             MeleeBufferedAction action = State.BufferedAction;
+            bool freeSwing = action is MeleeBufferedAction.Attack or MeleeBufferedAction.Charge;
+            if ((!CombatFocused && !freeSwing || roundEnded) && !CanAttackFinishedBody || presentationFrozen || !IsAvailable ||
+                !GameInput.CanRead(GameInputContext.Gameplay) ||
+                (CombatFocused && contactTarget != null && contactTarget.State.IsDefeated && !CanAttackFinishedBody)) return false;
             if (CanAttackFinishedBody && action is not (MeleeBufferedAction.Attack or MeleeBufferedAction.Charge)) return false;
             if (action == MeleeBufferedAction.None) return false;
             if (action != MeleeBufferedAction.Kick) CancelPendingKick("replaced");

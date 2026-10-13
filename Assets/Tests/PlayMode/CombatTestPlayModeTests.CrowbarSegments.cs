@@ -39,13 +39,13 @@ namespace BarPromenade.Tests.PlayMode
             SphereCollider shape = obstacle.AddComponent<SphereCollider>();
             shape.radius = .006f;
             var pose = new Pose(new Vector3(0f, 3f, 0f), Quaternion.identity);
-            Vector3 shaft = pose.position + new Vector3(0f, .49f, 0f);
+            Vector3 shaft = pose.position + new Vector3(0f, .465f, 0f);
             shape.transform.position = shaft;
             try
             {
                 Physics.SyncTransforms();
-                Vector3 chordA = pose.position + new Vector3(0f, .10f, 0f);
-                Vector3 chordB = pose.position + new Vector3(0f, .595f, .145f);
+                Vector3 chordA = pose.position + CombatWeaponGeometry.StrikeBaseLocal;
+                Vector3 chordB = pose.position + CombatWeaponGeometry.StrikeTipLocal;
                 Assert.That(Vector3.Distance(ClosestCrowbarChord(chordA, chordB, shaft), shaft), Is.GreaterThan(.10f));
                 Assert.That(Physics.CheckCapsule(chordA, chordB, .024f, ~0, QueryTriggerInteraction.Ignore), Is.False,
                     "The old damage chord completely misses the visible shaft contact.");
@@ -118,13 +118,13 @@ namespace BarPromenade.Tests.PlayMode
             // actual imported chest. This probes surface contact rather than a
             // hand-built substitute hurtbox, whose shape could mask the bug.
             bool foundOutsideChord = false;
-            foreach (Vector3 local in new[] { new Vector3(0f, .49f, 0f), new Vector3(0f, .55f, .022f), new Vector3(0f, .587f, .152f) })
+            foreach (Vector3 local in new[] { new Vector3(0f, .465f, 0f), new Vector3(0f, .525f, .022f), new Vector3(0f, .562f, .152f) })
             for (int roll = 0; roll < 12 && !foundOutsideChord; roll++)
             {
                 Quaternion rotation = Quaternion.AngleAxis(roll * 30f, chest.Normal) * Quaternion.LookRotation(chest.Normal, Vector3.up);
                 var pose = new Pose(chest.Point + chest.Normal * .023f - rotation * local, rotation);
-                bool chord = target.Hurtboxes.SweepSphere(pose.position + rotation * new Vector3(0f, .10f, 0f),
-                    pose.position + rotation * new Vector3(0f, .595f, .145f), .024f, -chest.Normal, out _);
+                bool chord = target.Hurtboxes.SweepSphere(pose.position + rotation * CombatWeaponGeometry.StrikeBaseLocal,
+                    pose.position + rotation * CombatWeaponGeometry.StrikeTipLocal, .024f, -chest.Normal, out _);
                 bool real = CombatWeaponGeometry.SweepAnatomy(target.Hurtboxes, pose, pose,
                     CombatTestRoot.SimulationStep, -chest.Normal, out var hit, out float fraction, out _);
                 if (chord || !real) continue;

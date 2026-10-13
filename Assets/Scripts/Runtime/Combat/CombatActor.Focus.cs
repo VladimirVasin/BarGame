@@ -15,7 +15,7 @@ namespace BarPromenade
             !IsKnockedDown && !IsRagdollActive && reaction == null &&
             !(ImpactMotion?.IsActive ?? false) && !(footwork?.RecoveryEpisodeActive ?? false);
 
-        private bool NeedsCombatPresentation => CombatFocused || (Firearm?.ReloadPending ?? false) ||
+        private bool NeedsCombatPresentation => CombatFocused || guardHeld || (Firearm?.ReloadPending ?? false) ||
             (Firearm?.AimRequested ?? false) || (IsFirearm && pistolVisualAimProgress > 0f) || State.Phase != MeleePhase.Ready ||
             collectSweep || collectShove || collectKick || IsKnockedDown || IsRagdollActive ||
             reaction != null || (ImpactMotion?.IsActive ?? false) || (footwork?.RecoveryEpisodeActive ?? false);
